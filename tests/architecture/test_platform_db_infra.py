@@ -23,14 +23,19 @@ def db() -> sqlite3.Connection:
 
 def test_migrations_apply_idempotently(db: sqlite3.Connection) -> None:
     applied = migrations.apply_migrations(db)
-    assert applied == ["0001_bootstrap"]
+    # 0002_conversation_core joins in Phase 1 P1A (TASK-OPI-091f35c3.11);
+    # DATA_MODEL §26.1: migrations bump schema_version explicitly.
+    assert applied == ["0001_bootstrap", "0002_conversation_core"]
     # Second run is a no-op.
     assert migrations.apply_migrations(db) == []
     rows = db.execute(
         "SELECT migration_id FROM schema_migrations ORDER BY migration_id"
     ).fetchall()
-    assert [row[0] for row in rows] == ["0001_bootstrap"]
-    assert migrations.schema_version(db) == "1"
+    assert [row[0] for row in rows] == [
+        "0001_bootstrap",
+        "0002_conversation_core",
+    ]
+    assert migrations.schema_version(db) == "2"
 
 
 def test_runtime_epoch_fence_restarts_and_stales(db: sqlite3.Connection) -> None:

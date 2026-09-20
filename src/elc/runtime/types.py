@@ -110,7 +110,12 @@ class InterruptRequest:
 
 @dataclass(frozen=True)
 class TurnRecordData:
-    """docs/DATA_MODEL.md §4 TurnRecord (schema view)."""
+    """docs/DATA_MODEL.md §4 TurnRecord (schema view).
+
+    ``state_version`` is the compare-and-swap counter every multi-event
+    state transition must advance through (docs/STATE_MACHINES.md §20:
+    "state_version + compare-and-swap").
+    """
 
     turn_id: TurnId
     conversation_id: str
@@ -121,6 +126,20 @@ class TurnRecordData:
     failure_class: str | None
     runtime_version: RuntimeVersion
     owner_epoch: RuntimeEpoch
+    state_version: int
+
+
+#: Terminal coordination states (docs/STATE_MACHINES.md §10): once a
+#: TurnRecord reaches one of these, no further coordination transition is
+#: legal; recovery scanning skips them (docs/RUNTIME_ARCHITECTURE.md §22
+#: "Recovery 扫描非 terminal").
+TERMINAL_TURN_STATUSES: frozenset[TurnStatus] = frozenset(
+    {
+        TurnStatus.COMPLETED,
+        TurnStatus.CANCELLED_BY_USER,
+        TurnStatus.FAILED_FINAL,
+    }
+)
 
 
 @dataclass(frozen=True)

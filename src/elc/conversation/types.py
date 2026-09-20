@@ -20,7 +20,6 @@ from elc.platform.types import (
     AssistantTurnId,
     ClientMessageId,
     ConversationId,
-    DeliveryId,
     InputId,
     InteractionChannel,
     MessageSequence,
@@ -28,7 +27,6 @@ from elc.platform.types import (
     SceneId,
     TurnId,
     TurnSequence,
-    UserId,
     UserTurnId,
 )
 
@@ -51,22 +49,39 @@ class TurnOutcome(StrEnum):
 
 
 class DeliveryState(StrEnum):
-    """docs/STATE_MACHINES.md assistant turn delivery progression."""
+    """AssistantTurn.delivery_state vocabulary.
 
-    PENDING = "PENDING"
-    PARTIAL = "PARTIAL"
-    FULL = "FULL"
+    docs/DATA_MODEL.md §3 names the ``delivery_state`` column but pins no
+    value list (adjudicated open point, DEC-…091f35c3.7). The members below
+    are derived from docs/STATE_MACHINES.md §13 ServerDeliveryRecord
+    (NOT_SENT / SENDING / SENT_PARTIAL / SENT_COMPLETE / FAILED / CANCELLED)
+    with docs/DATA_MODEL.md §22 Delivery Data as the record-level semantics;
+    only the SENT_* states may appear on a canonical AssistantTurn, because
+    undelivered provider output never enters the transcript
+    (docs/DOMAIN_MODEL.md §3 key rule).
+    """
+
+    NOT_SENT = "NOT_SENT"
+    SENDING = "SENDING"
+    SENT_PARTIAL = "SENT_PARTIAL"
+    SENT_COMPLETE = "SENT_COMPLETE"
     FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+
+
+#: delivery states that admit an AssistantTurn into the canonical transcript.
+CANONICAL_DELIVERY_STATES: frozenset[DeliveryState] = frozenset(
+    {DeliveryState.SENT_PARTIAL, DeliveryState.SENT_COMPLETE}
+)
 
 
 @dataclass(frozen=True)
 class ConversationRecord:
-    """docs/DATA_MODEL.md §3 Conversation."""
+    """docs/DATA_MODEL.md §3 Conversation (column set verbatim)."""
 
     conversation_id: ConversationId
     persona_id: PersonaId | None
     scene_id: SceneId | None
-    user_id: UserId
     status: ConversationStatus
     next_turn_sequence: TurnSequence
     next_message_sequence: MessageSequence
@@ -90,7 +105,7 @@ class UserTurnRecord:
 
 @dataclass(frozen=True)
 class AssistantTurnRecord:
-    """docs/DATA_MODEL.md §3 AssistantTurn."""
+    """docs/DATA_MODEL.md §3 AssistantTurn (column set verbatim)."""
 
     assistant_turn_id: AssistantTurnId
     turn_id: TurnId
@@ -101,7 +116,6 @@ class AssistantTurnRecord:
     content: str
     delivery_state: DeliveryState
     delivery_certainty: str
-    delivery_id: DeliveryId | None
 
 
 @dataclass(frozen=True)
