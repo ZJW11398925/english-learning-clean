@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from elc.platform.types import (
     ActionId,
@@ -24,11 +25,19 @@ from elc.platform.types import (
     InteractionChannel,
     MessageSequence,
     PersonaId,
+    RuntimeEpoch,
     SceneId,
     TurnId,
     TurnSequence,
     UserTurnId,
 )
+
+if TYPE_CHECKING:
+    # Annotation-only (dataclasses never evaluate these at runtime); a
+    # runtime import here would make elc.conversation.types ↔ elc.runtime
+    # import-cyclic, because elc.runtime.commands imports this module for
+    # CommitUserTurn.
+    from elc.runtime.types import InputEnvelope
 
 
 class ConversationStatus(StrEnum):
@@ -128,6 +137,46 @@ class CanonicalTurnSlice:
     user_turn: UserTurnRecord
     assistant_turn: AssistantTurnRecord | None
     outcome: TurnOutcome | None
+
+
+@dataclass(frozen=True)
+class CommitUserTurn:
+    """One CP0 write unit (docs/RUNTIME_ARCHITECTURE.md §6 CP0).
+
+    ``envelope`` is deduped/durable inside the same short transaction;
+    ``raw_content`` / ``normalized_content`` are the conversation-domain view
+    of what the user said (docs/DATA_MODEL.md §3 UserTurn). ``turn_id`` /
+    ``user_turn_id`` may be supplied by the orchestrator as stable opaque IDs
+    (docs/DATA_MODEL.md §1.2) or left None for the store to mint.
+
+    Lives in elc.conversation.types (not commands) so the runtime command
+    face can import it without an import cycle — commands re-exports it."""
+
+    conversation_id: ConversationId
+    envelope: "InputEnvelope"
+    raw_content: str
+    runtime_version: str
+    normalized_content: str | None = None
+    turn_id: TurnId | None = None
+    user_turn_id: UserTurnId | None = None
+
+
+@dataclass(frozen=True)
+class Cp0Commit:
+    """The durable result of one CP0 unit.
+
+    turn_sequence / message_sequence are allocated inside the CP0 short
+    transaction from conversation.next_turn_sequence /
+    next_message_sequence (docs/DATA_MODEL.md §3 Sequence Semantics) and are
+    therefore durable the moment CP0 commits."""
+
+    turn_id: TurnId
+    input_id: InputId
+    user_turn_id: UserTurnId
+    turn_sequence: TurnSequence
+    message_sequence: MessageSequence
+    owner_epoch: RuntimeEpoch
+    state_version: int
 
 
 class SequenceAllocator:

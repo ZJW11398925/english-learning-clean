@@ -523,6 +523,44 @@ class SqliteConversationStore:
 
     # -- ConversationQueries -----------------------------------------------
 
+    def get_turn_record(self, turn_id: TurnId) -> Result[TurnRecordData | None]:
+        """Durable TurnRecord read (RuntimeQueries.get_turn_record face)."""
+        row = self._turn_row(turn_id)
+        return Ok(None if row is None else self._turn_record_data(row))
+
+    def claim_turn_for_recovery(self, turn_id: TurnId) -> Result[TurnRecordData]:
+        """Startup-recovery adoption: the new runtime epoch takes over an
+        old-epoch nonterminal TurnRecord (RUNTIME §24 restart ownership; SM
+        §17.1 rule 3 — the recovery owner may finish/terminalize old work).
+
+        Advances owner_epoch to the current epoch under state_version CAS;
+        terminal turns are returned unchanged. The committed UserTurn is
+        only referenced, never replayed (§22; VAL ④ of the P1A slice)."""
+
+        with short_transaction(self._conn):
+            row = self._turn_row(turn_id)
+            if row is None:
+                return _err(
+                    DomainErrorCode.NOT_FOUND, f"turn record not found: {turn_id}"
+                )
+            if TurnStatus(str(row[4])) in TERMINAL_TURN_STATUSES:
+                return Ok(self._turn_record_data(row))
+            if row[8] == self._fence.current:
+                return Ok(self._turn_record_data(row))  # already ours
+            self._require_current_epoch()
+            expected = int(row[9])
+            self._conn.execute(
+                "UPDATE turn_record SET owner_epoch = ?,"
+                " state_version = state_version + 1, updated_at = ?"
+                " WHERE turn_id = ? AND state_version = ?"
+                " AND status NOT IN"
+                "  ('COMPLETED', 'CANCELLED_BY_USER', 'FAILED_FINAL')",
+                (self._fence.current, _now(), turn_id, expected),
+            )
+            updated = self._turn_row(turn_id)
+            assert updated is not None  # row existed above, same tx
+            return Ok(self._turn_record_data(updated))
+
     def get_conversation(
         self, conversation_id: ConversationId
     ) -> Result[ConversationRecord | None]:

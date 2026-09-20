@@ -1,7 +1,9 @@
-"""Shared fixtures for the Phase 1 P1A tests (TASK-OPI-091f35c3.11).
+"""Shared fixtures for the Phase 1 tests (P1A TASK-OPI-091f35c3.11 +
+P1B TASK-OPI-d7937fd7.9).
 
 Each test gets a fresh in-memory app.db with migrations applied, an opened
-runtime epoch, and the durable conversation store bound to that epoch.
+runtime epoch, and the durable conversation / generation stores bound to
+that epoch.
 """
 
 from __future__ import annotations
@@ -12,6 +14,13 @@ from typing import Iterator
 import pytest
 
 from elc.conversation import CommitUserTurn, Cp0Commit, SqliteConversationStore
+from elc.persona import (
+    PersonaRuntime,
+    PromptCompiler,
+    ResponseValidator,
+    ScriptedPersonaProvider,
+    SqliteGenerationStore,
+)
 from elc.platform.db import connection, epoch, migrations
 from elc.platform.db.epoch import RuntimeEpochFence
 from elc.platform.types import (
@@ -49,6 +58,13 @@ def store(db: sqlite3.Connection, fence: RuntimeEpochFence) -> SqliteConversatio
 
 
 @pytest.fixture()
+def generation_store(
+    db: sqlite3.Connection, fence: RuntimeEpochFence
+) -> SqliteGenerationStore:
+    return SqliteGenerationStore(db, fence)
+
+
+@pytest.fixture()
 def lease(fence: RuntimeEpochFence) -> ConversationCoordinatorLease:
     holder = ConversationCoordinatorLease()
     holder.adopt_epoch(fence.current)
@@ -62,6 +78,41 @@ def conversation(store: SqliteConversationStore) -> ConversationId:
     )
     assert isinstance(result, Ok)
     return result.value
+
+
+def make_persons_runtime(
+    generation_store: SqliteGenerationStore,
+    provider: ScriptedPersonaProvider,
+    max_provider_attempts: int = 3,
+) -> PersonaRuntime:
+    """Assemble the PersonaRuntime with deterministic fake pieces."""
+
+    return PersonaRuntime(
+        actions=generation_store,
+        provider=provider,
+        compiler=PromptCompiler(),
+        validator=ResponseValidator(),
+        max_provider_attempts=max_provider_attempts,
+    )
+
+
+def make_coordinator(
+    store: SqliteConversationStore,
+    generation_store: SqliteGenerationStore,
+    lease: ConversationCoordinatorLease,
+    provider: ScriptedPersonaProvider,
+    max_provider_attempts: int = 3,
+):
+    from elc.runtime import ConversationCoordinator
+
+    persona = make_persons_runtime(generation_store, provider, max_provider_attempts)
+    return ConversationCoordinator(
+        lease=lease,
+        conversation_commands=store,
+        conversation_queries=store,
+        persona=persona,
+        generation_actions=generation_store,
+    )
 
 
 def make_envelope(

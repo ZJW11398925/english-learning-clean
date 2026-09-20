@@ -16,27 +16,24 @@ InterruptRequest 可在 coordinator guard 外 durable).
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 from elc.conversation.types import (
     AssistantTurnRecord,
     CanonicalTurnSlice,
+    CommitUserTurn,
+    Cp0Commit,
     TurnOutcome,
 )
 from elc.platform.types import (
     AssistantTurnId,
     ConversationId,
     InputId,
-    MessageSequence,
     PersonaId,
     Result,
-    RuntimeEpoch,
     SceneId,
     TurnId,
-    TurnSequence,
     UserId,
-    UserTurnId,
 )
 from elc.runtime.types import (
     InputEnvelope,
@@ -44,45 +41,6 @@ from elc.runtime.types import (
     TurnRecordData,
     TurnStatus,
 )
-
-
-@dataclass(frozen=True)
-class CommitUserTurn:
-    """One CP0 write unit (docs/RUNTIME_ARCHITECTURE.md §6 CP0).
-
-    ``envelope`` is deduped/durable inside the same short transaction;
-    ``raw_content`` / ``normalized_content`` are the conversation-domain view
-    of what the user said (docs/DATA_MODEL.md §3 UserTurn). ``turn_id`` /
-    ``user_turn_id`` may be supplied by the orchestrator as stable opaque IDs
-    (docs/DATA_MODEL.md §1.2) or left None for the store to mint.
-    """
-
-    conversation_id: ConversationId
-    envelope: InputEnvelope
-    raw_content: str
-    runtime_version: str
-    normalized_content: str | None = None
-    turn_id: TurnId | None = None
-    user_turn_id: UserTurnId | None = None
-
-
-@dataclass(frozen=True)
-class Cp0Commit:
-    """The durable result of one CP0 unit.
-
-    turn_sequence / message_sequence are allocated inside the CP0 short
-    transaction from conversation.next_turn_sequence /
-    next_message_sequence (docs/DATA_MODEL.md §3 Sequence Semantics) and are
-    therefore durable the moment CP0 commits.
-    """
-
-    turn_id: TurnId
-    input_id: InputId
-    user_turn_id: UserTurnId
-    turn_sequence: TurnSequence
-    message_sequence: MessageSequence
-    owner_epoch: RuntimeEpoch
-    state_version: int
 
 
 @runtime_checkable
@@ -141,6 +99,16 @@ class ConversationCommands(Protocol):
         self, turn_id: TurnId, outcome: TurnOutcome
     ) -> Result[TurnRecordData]:
         """Write the terminal CanonicalTurnSlice outcome (STATE_MACHINES §10)."""
+        ...
+
+    def claim_turn_for_recovery(self, turn_id: TurnId) -> Result[TurnRecordData]:
+        """Adopt an old-epoch nonterminal TurnRecord for the current epoch
+        (RUNTIME §24 restart ownership; SM §17.1 rule 3 — the recovery owner
+        finishes old work; the committed UserTurn is never replayed, §22)."""
+        ...
+
+    def get_turn_record(self, turn_id: TurnId) -> Result[TurnRecordData | None]:
+        """Durable TurnRecord read (RuntimeQueries.get_turn_record face)."""
         ...
 
 

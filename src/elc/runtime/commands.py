@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
+from elc.conversation.types import CommitUserTurn
 from elc.platform.types import (
     ActionId,
     DecisionCycleId,
@@ -27,7 +28,7 @@ from elc.runtime.types import (
     ProjectionJobRecord,
     ProviderAttemptRecord,
     RecoveryAction,
-    TurnRecordData,
+    TurnCompletion,
 )
 
 
@@ -42,8 +43,12 @@ class RuntimeCommands(Protocol):
     def request_interrupt(self, interrupt: InterruptRequest) -> Result[InputId]:
         ...
 
-    def begin_turn(self, turn: TurnRecordData) -> Result[TurnId]:
-        """CP0 unit together with Conversation.commit_user_turn."""
+    def begin_turn(self, command: CommitUserTurn) -> Result[TurnCompletion]:
+        """Minimum closed loop (Phase 1 P1B): coordinator guard → CP0
+        (idempotent) → generation pipeline (STATE_MACHINES §14 action state
+        machine, action-level retry) → BUFFERED_VALIDATED delivery →
+        canonical AssistantTurn → turn terminalization. Never retries a
+        whole turn (R-INV-007)."""
         ...
 
     def open_decision_cycle(

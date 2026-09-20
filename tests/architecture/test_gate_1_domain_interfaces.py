@@ -72,12 +72,21 @@ def test_domain_controller_is_empty_skeleton(package: str) -> None:
     """Phase 0 red line: no domain business logic — every controller method
     raises NotImplementedError. `infra_allowlist` names the few platform
     infrastructure hooks a controller may already wire (they touch no domain
-    truth)."""
+    truth); `phase1_class_allowlist` names the Phase 1 pipeline classes that
+    graduated from the skeleton (they coordinate through domain interfaces
+    only — Gate 2 still proves they carry no SQL/DB surface)."""
     infra_allowlist: dict[str, set[str]] = {
         # Startup fence adoption is platform infra, not domain logic.
         "runtime": {"open_startup_fence"},
     }
+    phase1_class_allowlist: dict[str, set[str]] = {
+        # P1B (TASK-OPI-d7937fd7.9 ⑥): the minimum turn-loop facade —
+        # guard + CP0 + persona pipeline + buffered validated delivery,
+        # sequencing only, never truth (DOMAIN_MODEL §16).
+        "runtime": {"ConversationCoordinator"},
+    }
     allowed = infra_allowlist.get(package, set())
+    skipped_classes = phase1_class_allowlist.get(package, set())
 
     controller_mod = importlib.import_module(f"elc.{package}.controller")
     controllers = [
@@ -85,6 +94,7 @@ def test_domain_controller_is_empty_skeleton(package: str) -> None:
         for name, obj in vars(controller_mod).items()
         if inspect.isclass(obj)
         if obj.__module__ == controller_mod.__name__
+        if name not in skipped_classes
     ]
     assert controllers, f"elc.{package}.controller has no controller class"
 

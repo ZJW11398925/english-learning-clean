@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Generic, Mapping, NewType, TypeVar, Union
+from typing import Any, Generic, Mapping, NewType, TypeVar, Union
 
 # ---------------------------------------------------------------------------
 # Stable opaque IDs (docs/DATA_MODEL.md §1.2)
@@ -119,6 +119,11 @@ VERSION_FIELDS: Mapping[str, type] = {
 # ---------------------------------------------------------------------------
 
 T = TypeVar("T")
+#: Covariant phantom parameter for Err: the error envelope never carries
+#: its result type at runtime, so an ``Err[X]`` may flow wherever an
+#: ``Err[Y]`` is expected (errors propagate across result types — the
+#: orchestrator forwards a domain Err unchanged to its own callers).
+TErr = TypeVar("TErr", covariant=True)
 
 
 class DomainErrorCode(StrEnum):
@@ -145,11 +150,16 @@ class Ok(Generic[T]):
 
 
 @dataclass(frozen=True)
-class Err(Generic[T]):
+class Err(Generic[TErr]):
+    """Error envelope; ``TErr`` is a phantom covariance marker only."""
+
     error: DomainError
 
 
-Result = Union[Ok[T], Err[T]]
+#: Result: the value channel is parameterized (Ok[T]); the error channel is
+#: deliberately untyped (Err[Any]) — a failure carries no result payload,
+#: so any Err flows wherever a Result is expected.
+Result = Union[Ok[T], Err[Any]]
 
 
 # ---------------------------------------------------------------------------

@@ -53,14 +53,24 @@ class TurnStatus(StrEnum):
 
 
 class GenerationActionStatus(StrEnum):
-    """Action-level retry, never whole-turn retry (R-INV-007)."""
+    """GenerationActionIntent states, word for word, from
+    docs/STATE_MACHINES.md §14 lines 465-472.
 
-    PENDING = "PENDING"
-    IN_FLIGHT = "IN_FLIGHT"
-    ACCEPTED = "ACCEPTED"
-    SUPERSEDED = "SUPERSEDED"
-    CANCELLED = "CANCELLED"
-    FAILED = "FAILED"
+    Corrects the Phase 0 six-value placeholder (PENDING/IN_FLIGHT/ACCEPTED/
+    SUPERSEDED/CANCELLED/FAILED — adjudicated as a legacy deviation in
+    DEC-OPI-091f35c3.7): §14 pins exactly the seven values below. An action
+    may have multiple ProviderAttempts but at most one canonical accepted
+    result; a late result for a cancelled/superseded action must never
+    produce a canonical side effect (§14; action-level retry, never
+    whole-turn retry — R-INV-007)."""
+
+    PREPARED = "PREPARED"
+    REQUESTED = "REQUESTED"
+    GENERATING = "GENERATING"
+    VALIDATING = "VALIDATING"
+    READY_TO_DELIVER = "READY_TO_DELIVER"
+    DELIVERING = "DELIVERING"
+    TERMINAL = "TERMINAL"
 
 
 class ProjectionJobState(StrEnum):
@@ -160,6 +170,26 @@ class DecisionCycleRecord:
 
 
 @dataclass(frozen=True)
+class GenerationActionIntentRecord:
+    """docs/DATA_MODEL.md §20 GenerationActionIntent (column set verbatim;
+    decision_cycle_id stays nullable until the decision phases — Phase 2
+    tightens it, same transition window as turn_record's adjudication in
+    DEC-OPI-091f35c3.7)."""
+
+    action_id: ActionId
+    turn_id: TurnId
+    decision_cycle_id: DecisionCycleId | None
+    moment_id: str | None
+    assistant_turn_id: str
+    action_type: GenerationActionType
+    generation_contract_id: str
+    status: GenerationActionStatus
+    attempt_count: int
+    created_at: str | None = None
+    owner_epoch: RuntimeEpoch | None = None
+
+
+@dataclass(frozen=True)
 class ProviderAttemptRecord:
     """docs/DATA_MODEL.md §20 — many attempts, one canonical accepted result."""
 
@@ -168,6 +198,10 @@ class ProviderAttemptRecord:
     attempt_no: int
     request_hash: str
     status: str
+    provider_request_id: str | None = None
+    result_hash: str | None = None
+    created_at: str | None = None
+    terminal_at: str | None = None
 
 
 @dataclass(frozen=True)
@@ -205,3 +239,20 @@ class RecoveryAction:
     kind: str  # TURN | PROJECTION | LOCK | TEACHING
     id: str
     action: str
+
+
+@dataclass(frozen=True)
+class TurnCompletion:
+    """Terminal result of one full turn through the minimum pipeline
+    (IMPLEMENTATION_PLAN §3: UserTurn durable → Persona Runtime →
+    Validator → Delivery → AssistantTurn)."""
+
+    turn_id: TurnId
+    action_id: ActionId
+    assistant_turn_id: str | None
+    turn_status: TurnStatus
+    action_status: GenerationActionStatus
+    outcome: str | None  # TurnOutcome value (str to avoid a cycle here)
+    reply_text: str | None
+    failure_reason: str | None
+    state_version: int
