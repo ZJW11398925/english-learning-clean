@@ -69,10 +69,16 @@ class LearnerDimension(StrEnum):
 class EvidencePolarity(StrEnum):
     """BF-01A claim polarity (behavioral_baselines/estimator/
     BF-01_Estimator_V1_Operational_Spec_v1.1.md; negative-evidence rule
-    docs/DOMAIN_MODEL.md §6)."""
+    docs/DOMAIN_MODEL.md §6).
+
+    Three values, word for word, from docs/DATA_MODEL.md §6 Polarity
+    (POSITIVE / NEGATIVE / NEUTRAL — review F3: NEUTRAL was missing).
+    The migration CHECK constraint (0004_learning_evidence.sql,
+    evidence_claim.polarity) already admits all three."""
 
     POSITIVE = "POSITIVE"
     NEGATIVE = "NEGATIVE"
+    NEUTRAL = "NEUTRAL"
 
 
 class AttemptOutcome(StrEnum):

@@ -152,6 +152,40 @@ def test_negative_attempted_use_without_opportunity_is_committed(
         assert isinstance(result, Ok), (performance, result)
 
 
+def test_neutral_polarity_is_committable_three_value_vocabulary(
+    db: sqlite3.Connection,
+    learning: SqliteLearningStore,
+    store,
+    fence: RuntimeEpochFence,
+    conversation,
+) -> None:
+    """Review F3: DATA_MODEL §6 Polarity is three-valued
+    (POSITIVE/NEGATIVE/NEUTRAL). A NEUTRAL claim is constructible and
+    committable — it never trips the §6 negative-evidence gate (only
+    NEGATIVE does), lands ACTIVE, and advances the watermark. The enum
+    is pinned to exactly the three §6 words."""
+    cp0 = commit_ok(store, conversation, "cm-neutral", "so so")
+    result = learning.commit_evidence_group(
+        make_group(
+            "eg-neutral", (make_claim(polarity=EvidencePolarity.NEUTRAL),)
+        ),
+        source_turn_id=cp0.turn_id,
+        conversation_id=str(conversation),
+    )
+    assert isinstance(result, Ok), result
+    row = db.execute(
+        "SELECT polarity, status FROM evidence_claim"
+    ).fetchone()
+    assert row[0] == "NEUTRAL"
+    assert row[1] == "ACTIVE"
+    assert learning.get_evidence_watermark() == 1
+    assert {polarity.value for polarity in EvidencePolarity} == {
+        "POSITIVE",
+        "NEGATIVE",
+        "NEUTRAL",
+    }
+
+
 def test_supersede_applies_the_negative_gate_to_the_replacement(
     db: sqlite3.Connection,
     learning: SqliteLearningStore,

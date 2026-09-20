@@ -201,9 +201,11 @@ class ConversationCoordinator:
     generation — durable LEARNING_EVIDENCE AnalysisArtifact → Learning
     validates/commits → CP1 (durable watermark) — under the canonical
     TurnRecord statuses (USER_COMMITTED → ANALYZING → GENERATING,
-    STATE_MACHINES §10 order). ``learning=None`` keeps the Phase 1
-    assembly (the P1 tests pin that loop); no DecisionCycle is created
-    here (Phase 3+, DEC-…eaaa5a1d.26 a)."""
+    STATE_MACHINES §10 order). A learning-leg failure degrades per
+    RA §21 (REJECTED / durable-pending + normal persona; see
+    _run_learning_analysis) — it never blocks the turn. ``learning=None``
+    keeps the Phase 1 assembly (the P1 tests pin that loop); no
+    DecisionCycle is created here (Phase 3+, DEC-…eaaa5a1d.26 a)."""
 
     def __init__(
         self,
@@ -273,11 +275,16 @@ class ConversationCoordinator:
                     turn = advanced.value
                     state_version = turn.state_version
                 if turn.status == TurnStatus.ANALYZING:
-                    learned = self._run_learning_analysis(
+                    # RA §21 degradation: the learning leg never blocks
+                    # the turn (review F1) — Learning's REJECT decision
+                    # and an unavailable commit both continue to the
+                    # normal persona path, so no dispatch can leave this
+                    # turn pinned at ANALYZING (see _run_learning_analysis
+                    # for the two degraded outcomes and the no-stuck
+                    # argument).
+                    self._run_learning_analysis(
                         cp0.turn_id, command.conversation_id
                     )
-                    if isinstance(learned, Err):
-                        return learned
                     advanced = self._commands.transition_turn(
                         cp0.turn_id, state_version, TurnStatus.GENERATING
                     )
@@ -515,32 +522,58 @@ class ConversationCoordinator:
 
     def _run_learning_analysis(
         self, turn_id: TurnId, conversation_id: ConversationId
-    ) -> Result[None]:
+    ) -> None:
         """RA §4 steps 3-4 through the injected LearningTurnAnalysis
         port: durable LEARNING_EVIDENCE artifact (idempotent re-entry)
         → Learning validates/commits → CP1 with the durable watermark.
-        Failure of the learning leg fails the turn (the canonical order
-        forbids generating before the current turn's behavior entered
-        Learning, RA §8)."""
+
+        RA §21 degradation — this leg never blocks the turn (review F1).
+        Two degraded outcomes, both with the normal persona reply:
+
+        - REJECTED: Learning's validation refuses the proposal (an
+          unobservable behavior) and durably flips the artifact to
+          REJECTED; the turn continues and the artifact stays REJECTED
+          as the audit trail.
+        - pending: the commit is unavailable (every other failure — a
+          dependency-down analysis leg, a transient store failure, a
+          re-entry CONFLICT on an already-decided artifact). The durable
+          proposal stays PRODUCED (pending) and the turn continues —
+          deliberately no retry and no block.
+
+        Both are "Learning commit unavailable → durable proposal pending
+        + normal persona + no risky automatic remediation" (RA §21).
+        RA §8's analysis-before-generation order governs the normal
+        path; §21 is the sanctioned degraded path around it.
+
+        Because no failure returns from here, a dispatched turn always
+        advances past ANALYZING in the same call: a crash at ANALYZING
+        resolves on re-dispatch (the epoch claim adopts the turn, RA
+        §24; the leg re-runs and either commits, replays the commit, or
+        degrades). The permanent stuck-at-ANALYZING channel of review F1
+        (REJECTED artifact → re-entry CONFLICT loop, no terminalize
+        path) is therefore unreachable under this semantics — SM §10
+        FAILED_RECOVERABLE/FAILED_FINAL terminalization stays reserved
+        for the generation/delivery legs (the P1B precedent)."""
 
         slice_result = self._queries.get_canonical_turn_slice(turn_id)
         if isinstance(slice_result, Err):
-            return slice_result
+            return  # RA §21 degraded path: never block the turn
         slice_ = slice_result.value
         if slice_ is None:
-            return _missing(f"canonical turn slice not found: {turn_id}")
+            return  # ditto — unreachable after CP0 in the same call
         learning = self._learning
         assert learning is not None  # caller holds the Phase 2 assembly
         artifact = learning.record_learning_analysis(slice_)
         if isinstance(artifact, Err):
-            return artifact
+            return  # pending: nothing durable yet, turn continues
         persona_id = self._persona_id(conversation_id)
-        committed = learning.commit_learning_evidence(
+        # Ok → CP1 durable (the normal RA §4 path). Err → one of the two
+        # RA §21 degraded outcomes above; the durable artifact state
+        # (REJECTED vs PRODUCED) is Learning's audit trail, not a branch
+        # for the coordinator.
+        learning.commit_learning_evidence(
             artifact.value, slice_, str(persona_id)
         )
-        if isinstance(committed, Err):
-            return committed
-        return Ok(None)
 
     def _replay_terminal(self, turn: TurnRecordData) -> Result[TurnCompletion]:
         slice_result = self._queries.get_canonical_turn_slice(turn.turn_id)
