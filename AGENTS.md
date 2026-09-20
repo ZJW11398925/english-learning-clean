@@ -8,17 +8,17 @@
 
 - **workspace_id**：`ws-7585bd9c-f6ec-4c73-be14-d2e635a37033`（**schema 5**；旧工作区 `ws-db58afd2-…` 已随旧仓归档，别用）
 - **续接顺序**：①读本文件 → ②`design_status` 刷基 → ③`design_get` `DEC-OPI-d7937fd7-2f4e-4e4b-940e-25a8b32143f4.12`（**PHASE 1 COMPLETE** + 客户端边界裁定 + P1B 六项偏差处置）→ ④`git log --oneline` → ⑤开工前读 `docs/IMPLEMENTATION_PLAN.md` §5（Phase 2 Detail Block）与 §1.5（normative 顺序），再按派单协议铸 Phase 2 任务书（四查+VAL+TASK 同铸）
-- **当前状态**（2026-09-20 第六会话末）：**PHASE 2 COMPLETE**（rev 39，sync 零告警）——P2A `b53a8e8`（VR-…32）+ P2A 修复 `ba1794c`（VR-…39，RA §21 降级归位）+ **P2B 返工重交付 `a354290`**（VR-…46：BF-01 v1.1 三十二节自实现、53/53 golden+stress 与冻结参考全等零差异且变异抽查证明比较器有杀伤力、LearnerTargetState §11/LearningSnapshot §12、F2 水位升格、Validator≠Evaluator 分离）；相位门 VAL-…17 六命题满足（VR-…47 PASS）；收口 `DEC-…eaaa5a1d.48`（评审 5 findings：F1 MINOR 快照水位一致性 DEFER P3+、F2-F5 INFO 留痕/顺带修）。**违规 #4 执法已兑现**：P2B 首交付 e9bd982 因 Bash 直写被拒收（revert `49baf6d`）→ 同执行者 Write/Edit 通道返工（零语义差异）——政策可信度已建立。**下一步 = Phase 3**（用户发起 TeachingMoment vertical slice，基线 §9/§1.5；开工四查含 CharacterPackage 供给面核验+P3 重审包：F1 快照一致性/LearningController 接线/§7 前移 commit 面/F4-F5 顺带修/decision_cycle_id 收紧/F4 canonicalize fence/F3 id 工厂上移）
+- **当前状态**（2026-09-20 第七会话末）：**PHASE 2 COMPLETE 不变；Phase 3 已开工，P3-0 Entry Gates COMPLETE**（rev 43，sync 零告警）——外部评审采纳 `DEC-…eaaa5a1d.51`（六门对五 DEFER 册收敛+四修正）；metadata 三件清陈 `2e5e5df`；P3-0 五门 `373f746`（`VR-…eaaa5a1d.57` PASS，**零违规**——拒收政策后首次全程清白）：快照水位一致性（stale 拒读）/LearningController 真实面/CharacterPackage 十五列 fixture 入正常链/DecisionCycle 表 0006（零写入面）/canonicalize 双道 epoch fence；聚焦评审 6 findings 处置 `DEC-…eaaa5a1d.58`（无 MAJOR，F1-F5 微修打包 P3-1 必做顺带项，F6 口径注记）。**下一步 = P3-1**（用户发起 TeachingMoment vertical slice：设计类任务书**须过 grilling 前沿**→开工决策；必带：F1-F5 微修清单+DecisionCycle lineage 语义（用户发起 vs planner 授权两源）+Opportunity 顺序硬不变量+opportunity_id 链接+0002 注释清陈+10–20 validated target fixtures；随后 P3-2 OQ-024A 状态压力→P3-3 全链验收（before≠after 可追溯 Evidence，禁 moment 直接改 mastery））
 - **对象索引**（全 id 可直接 design_get；OPI 前缀 `eaaa5a1d-7ac7-4746-bcdf-c02bc9147492`）：
-  - `DEC-…eaaa5a1d.48` **PHASE 2 COMPLETE** 收口（评审 F1-F5 裁定+违规 #4 执法留痕）
-  - `VR-…eaaa5a1d.46`/`VR-…eaaa5a1d.47` P2B 返工验收 + 相位门 PASS；`VAL-…eaaa5a1d.42`/`TASK-…eaaa5a1d.44` P2B 三件（前沿三裁定在 why）
-  - `DEC-…eaaa5a1d.33` P2A 评审处置（F1 MAJOR+F3 修复/F2→P2B/F4→P3+；拒收政策升格）；`DEC-…eaaa5a1d.26` **Phase 2 开工**（两刀切分+裁定 a–f）
-  - `VAL-…eaaa5a1d.28`/`TASK-…eaaa5a1d.30`/`VR-…eaaa5a1d.32` P2A 三件；`VAL-…eaaa5a1d.35`/`TASK-…eaaa5a1d.37`/`VR-…eaaa5a1d.39` P2A 修复三件
-  - `PLAN-…eaaa5a1d.19` Phase 2 PLAN（三工作项全部执行完毕）；`VAL-…eaaa5a1d.17` 相位验收门（已 PASS）
-  - `DEC-…eaaa5a1d.2` 外部评审采纳；`DEC-…eaaa5a1d.9` 边界修复评审处置；边界修复三件 VR-…8、微修复三件 VR-…15
-  - `DEC-…d7937fd7.19` Phase 1 独立评审处置；`DEC-…d7937fd7.12` **PHASE 1 COMPLETE**+客户端边界
-  - `DEC-…9dc4e77f.4` **契约载体**（rev 2；跨会话重建先读它）；`DEC-…091f35c3.7`/`.13` Phase 1 开工+派单阻塞
-  - `DEC-…d5b616bf.3` 例外修订范式；`DEC-…7bf80972.2` **PHASE 0 COMPLETE**
+  - `DEC-…eaaa5a1d.58` P3-0 评审处置（6 findings；F1-F5 打包 P3-1；transition/terminalize store 级 fence 悬题 P3+）
+  - `VAL-…eaaa5a1d.53`/`TASK-…eaaa5a1d.55`/`VR-…eaaa5a1d.57` P3-0 三件（PASS）
+  - `DEC-…eaaa5a1d.51` **外部评审采纳**（Phase 3 GO+六门+P3-0/1/2/3 分解+四修正+metadata 授权）
+  - `DEC-…eaaa5a1d.48` **PHASE 2 COMPLETE**；`VR-…eaaa5a1d.46/.47` P2B+相位门；`VAL/TASK/VR-…eaaa5a1d.42/.44/.46` P2B 三件
+  - `DEC-…eaaa5a1d.33` P2A 评审处置（拒收政策升格）；`DEC-…eaaa5a1d.26` Phase 2 开工（裁定 a–f）
+  - P2A 三件 `.28/.30/.32`、修复三件 `.35/.37/.39`、边界修复 `.4/.6/.8`、微修复 `.11/.13/.15`
+  - `PLAN-…eaaa5a1d.19` Phase 2 PLAN（执行完毕）；`VAL-…eaaa5a1d.17` 相位门（PASS）
+  - `DEC-…eaaa5a1d.2` 外部评审采纳（权威漂移）；`DEC-…d7937fd7.19`/`DEC-…d7937fd7.12` Phase 1 评审/COMPLETE
+  - `DEC-…9dc4e77f.4` **契约载体**（跨会话重建先读它）；`DEC-…091f35c3.7/.13`；`DEC-…d5b616bf.3/.7`；`DEC-…7bf80972.2` PHASE 0
 
 ## dmcp 工作流协议（v2，2026-09-20 用户纠正后立——总控必守）
 
@@ -38,7 +38,7 @@
 ## 工程事实与红线（本仓特有）
 
 - **远程**：github.com/ZJW11398925/english-learning-clean（public）；**CI 四门**：ruff → mypy → compileall → pytest（push+PR，Ubuntu，0 skipped 为准）
-- **测试**：`python -m pytest`（当前 242/0/0）；静态：ruff + mypy（82 文件）；migrations 到 0005（schema_version 5）；GenerationAction 权威在 runtime（DM §16）
+- **测试**：`python -m pytest`（当前 264/0/0）；静态：ruff + mypy（82 文件）；migrations 到 0006（schema_version 6）；GenerationAction 权威在 runtime（DM §16）
 - **Mimosa 安全钩子**：Bash 直写源码/配置被拦——**.py/.sql/.yml/.toml 一律 Write/Edit 工具落盘**（P1B 执行者曾一次 Bash 直写 .py 未被钩子拦但违反明令，已在 `DEC-…d7937fd7.12` 训诫留痕——总控与执行者均不得再犯）；SQL 一律参数绑定或全字面量（标识符用白名单全字面量），禁任何拼接
 - **基线冻结**：`behavioral_baselines/` 的 .py 一字节不改（例外须按 `DEC-…d5b616bf.3` 范式：显式决策+最小改动+manifest 重钉）；六 canonical 文档只许 `DECISION_REGISTER.md` 的版本条目
 - **不做**（纪律）：未到位次的域逻辑/域表提前实现（位次见基线 §1.5：Phase 2=Learning Evidence Kernel 已解锁，其余域仍禁）；Redis/Kafka/分布式锁/TTL/heartbeat（Local V1 §24.1 永禁）；自动教学（Phase 8 才开）；`decision_cycle_id` 等 Phase 2 收紧钩子见 `DEC-…091f35c3.7` 裁定 b
