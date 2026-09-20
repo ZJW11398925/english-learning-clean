@@ -4,7 +4,7 @@ Canonical Implementation Baseline V1（2026-09-20）。规范优先级：`docs/`
 
 - `docs/` — PRODUCT_CONTRACT / DOMAIN_MODEL / STATE_MACHINES / DATA_MODEL / RUNTIME_ARCHITECTURE / IMPLEMENTATION_PLAN + DECISION_REGISTER + ARCHITECTURE_BASELINE + 一致性报告（机器复核 60/60 PASS）
 - `behavioral_baselines/` — BF-01～07（Estimator / Planner / Gate / Golden / Modality / Local Runtime / Security）：**实现合同，不是设计参考**；新仓库必须自动回归
-- `src/` — 域模块骨架（Phase 0，按 IMPLEMENTATION_PLAN §2 填充：conversation / persona / relationship / learning / curriculum / scheduler / planner / teaching / runtime / content / platform）
+- `src/` — 域模块（Phase 0–2 已填充：conversation / persona / learning / runtime / platform；其余域骨架按 IMPLEMENTATION_PLAN §1.5 位次待填）
 - `tests/` — architecture / state-machine / determinism / property / failure-injection / golden（IMPLEMENTATION_PLAN §14）
 - `migrations/` — app.db 迁移
 
