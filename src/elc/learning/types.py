@@ -12,18 +12,17 @@ relationship memory.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 
 from elc.platform.types import (
     AttemptId,
-    EstimatorVersion,
     EvaluatorVersion,
     EvidenceGroupId,
     EvidenceModality,
     LearningSnapshotId,
     MomentId,
-    StateVersion,
     TargetId,
 )
 
@@ -175,35 +174,107 @@ class EvidenceGroupRecord:
 
 
 @dataclass(frozen=True)
-class LearnerTargetStateRecord:
-    """Keyed by target_type + target_id + evidence_modality (DATA_MODEL §24.14).
+class LearnerDimensionState:
+    """DATA_MODEL §11 per-dimension block.
 
-    UNKNOWN is expressed as estimate=None — never 0 (docs/DOMAIN_MODEL.md §6).
+    UNKNOWN is expressed as estimate=None — never 0 (docs/DOMAIN_MODEL.md
+    §6). ``last_relevant_evidence_at`` is the newest claim timestamp whose
+    contribution touched the dimension (implementation-defined per
+    DATA_MODEL §27; BF-01 does not track it).
     """
 
+    estimate: float | None
+    confidence: float
+    last_relevant_evidence_at: str | None
+
+
+@dataclass(frozen=True)
+class LearnerCoverage:
+    """DATA_MODEL §11 coverage counts (BF-01 §12/§15 diversity basis).
+    ``sessions`` counts distinct conversations (Local V1: one session ≡
+    one conversation — implementation-defined, DATA_MODEL §27)."""
+
+    evidence_groups: int
+    independent_clusters: int
+    sessions: int
+    days: int
+    contexts: int
+    personas: int
+    realizations: int
+    modalities: int
+
+
+@dataclass(frozen=True)
+class LearnerFreshness:
+    """DATA_MODEL §11 freshness block (BF-01 §22: strong-retrieval
+    only; time never changes historical ability mass)."""
+
+    last_strong_retrieval_at: str | None
+    elapsed_since_strong_retrieval_days: float | None
+    freshness_band: str
+
+
+@dataclass(frozen=True)
+class LearnerProjection:
+    """DATA_MODEL §11 projection block (BF-01 §24 bands + §25 flags)."""
+
+    ability_band: str
+    confidence_band: str
+    transfer_band: str
+    support_band: str
+    stability_band: str
+    learning_flags: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class LearnerTargetStateRecord:
+    """Keyed by target_type + target_id + evidence_modality (DATA_MODEL
+    §11; the Phase 0 sketch lacked target_type — §11 lists it in the
+    base scope). Materialized projection: deletable and rebuildable from
+    append-only ACTIVE evidence (§11 "可删后重建").
+
+    The eight §11 dimensions are recognition / guided_production /
+    independent_production / spontaneous_production / transfer /
+    accuracy / pragmatic_control / support_dependency (BF-01 §4).
+    """
+
+    target_type: str
     target_id: TargetId
-    evidence_modality: EvidenceModality
-    estimator_version: EstimatorVersion
-    evidence_watermark: str
-    state_version: StateVersion
-    estimates: dict[str, float | None]
-    confidences: dict[str, float]
+    evidence_modality: str
+    dimensions: Mapping[str, LearnerDimensionState]
+    coverage: LearnerCoverage
+    freshness: LearnerFreshness
+    projection: LearnerProjection
+    estimator_version: str
+    evidence_watermark: int
+    updated_at: str
 
 
 @dataclass(frozen=True)
 class LearningSnapshot:
-    """Planner input authority view (docs/DOMAIN_MODEL.md §10)."""
+    """Planner input authority view (docs/DOMAIN_MODEL.md §10; DATA_MODEL
+    §12). TargetLearningView is evidence-derived ONLY — goal importance /
+    review due / teaching priority / exam importance are structurally
+    absent (§12 red line; pinned by test)."""
 
     learning_snapshot_id: LearningSnapshotId
-    evidence_watermark: str
-    estimator_version: EstimatorVersion
-    states: tuple[LearnerTargetStateRecord, ...]
+    user_scope_id: str
+    as_of: str
+    estimator_version: str
+    evidence_watermark: int
+    targets: tuple[LearnerTargetStateRecord, ...]
 
 
 @dataclass(frozen=True)
 class FreshnessView:
-    """What Learning may hand the Scheduler: freshness only (D-INV-009)."""
+    """What Learning may hand the Scheduler: freshness only (D-INV-009).
+    The Phase 0 sketch carried a sequence number placeholder; the §11
+    freshness face is timestamp + elapsed + band (implementation-defined
+    field set, DATA_MODEL §27). ``stability_band`` is the strongest
+    modality's §23 stability signal (None when no state exists)."""
 
     target_id: TargetId
-    last_strong_retrieval_seq: int | None
-    stability_signal: float | None
+    last_strong_retrieval_at: str | None
+    days_since_strong_retrieval: float | None
+    freshness_band: str
+    stability_band: str | None

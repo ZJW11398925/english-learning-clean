@@ -171,8 +171,13 @@ def test_invalidate_flips_active_claim_only(
     row = learning.get_claim(EvidenceClaimId(original_id))
     assert isinstance(row, Ok) and row.value is not None
     assert row.value.status == "INVALIDATED"
-    # Status correction adds no evidence row: no watermark move.
-    assert learning.get_evidence_watermark() == watermark_before
+    # F2 (P2B, DEC-…eaaa5a1d.26): the watermark is the durable
+    # EVIDENCE-CHANGE sequence — commit / supersede / invalidate all
+    # advance it. (The former P2A self-adjudication "invalidate does not
+    # move the watermark" pinned right below was revised with this
+    # semantics upgrade; the upgrade is the adjudicated behavior, not a
+    # regression.)
+    assert learning.get_evidence_watermark() == watermark_before + 1
 
     again = learning.invalidate_claim(EvidenceClaimId(original_id))
     assert isinstance(again, Err)

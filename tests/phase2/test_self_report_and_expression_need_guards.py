@@ -12,8 +12,6 @@ from __future__ import annotations
 
 import sqlite3
 
-import pytest
-
 from elc.learning import LearningCommands
 from elc.learning.store import SqliteLearningStore
 from elc.platform.db.epoch import RuntimeEpochFence
@@ -24,9 +22,11 @@ from tests.phase2.conftest import commit_ok
 def test_store_satisfies_the_frozen_protocol_faces(
     learning: SqliteLearningStore,
 ) -> None:
-    """The Phase 0 protocol signatures stay callable (Gate 1 face);
-    the P2B entity reads raise NotImplementedError with signatures
-    frozen (reported boundary)."""
+    """The Phase 0 protocol signatures stay callable (Gate 1 face).
+    P2B (TASK-…44) implemented the projection faces — the four former
+    NotImplementedError pins were revised to real-callable reads (the
+    P2A boundary note they carried is superseded)."""
+
     assert isinstance(learning, LearningCommands)
     from elc.learning.queries import LearningQueries
 
@@ -35,14 +35,19 @@ def test_store_satisfies_the_frozen_protocol_faces(
 
     assert isinstance(learning, LearningTurnAnalysis)
 
-    with pytest.raises(NotImplementedError):
-        learning.rebuild_learner_state(TargetId("res-1"), "TEXT_PRODUCTION")
-    with pytest.raises(NotImplementedError):
-        learning.get_learner_target_state(TargetId("res-1"), "TEXT_PRODUCTION")
-    with pytest.raises(NotImplementedError):
-        learning.get_learning_snapshot()
-    with pytest.raises(NotImplementedError):
-        learning.get_freshness(TargetId("res-1"))
+    rebuilt = learning.rebuild_learner_state(
+        TargetId("res-1"), "TEXT_PRODUCTION"
+    )
+    assert isinstance(rebuilt, Ok) and rebuilt.value.startswith("sv-")
+    state = learning.get_learner_target_state(
+        TargetId("res-1"), "TEXT_PRODUCTION"
+    )
+    assert isinstance(state, Ok) and state.value is None
+    snapshot = learning.get_learning_snapshot()
+    assert isinstance(snapshot, Ok)
+    freshness = learning.get_freshness(TargetId("res-1"))
+    assert isinstance(freshness, Ok)
+    assert freshness.value.freshness_band == "UNKNOWN"
 
 
 def test_self_report_never_enters_the_evidence_kernel(
