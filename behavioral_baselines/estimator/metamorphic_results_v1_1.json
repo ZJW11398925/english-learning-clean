@@ -1,0 +1,34 @@
+[
+  {
+    "id": "M01_ADD_POSITIVE_NONDECREASE",
+    "pass": true
+  },
+  {
+    "id": "M02_ADD_NEGATIVE_NONINCREASE",
+    "pass": true
+  },
+  {
+    "id": "M03_CROSS_DAY_CONFIDENCE_GT_SAME_CLUSTER",
+    "pass": true
+  },
+  {
+    "id": "M04_EXPOSURE_MONOTONIC",
+    "pass": true
+  },
+  {
+    "id": "M05_INVALIDATED_EQ_ABSENT",
+    "pass": true
+  },
+  {
+    "id": "M06_EVALUATOR_CONFIDENCE_MASS_MONOTONIC",
+    "pass": true
+  },
+  {
+    "id": "M07_CAPABILITY_CONFIDENCE_NOT_GREATER_SINGLE_REALIZATION",
+    "pass": true
+  },
+  {
+    "id": "M08_TIME_ONLY_CHANGES_FRESHNESS_NOT_ABILITY",
+    "pass": true
+  }
+]

@@ -1,0 +1,2728 @@
+[
+  {
+    "id": "S01_MULTI_MANUAL_PRIORITY",
+    "description": "Explicit primary request must be served before secondary request.",
+    "input": {
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "z_primary",
+          "canonical_key": "z_primary",
+          "initiative": "REACTIVE",
+          "origins": [
+            "MANUAL_USER_REQUEST"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.4,
+            "personal_relevance": 0.5,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        },
+        {
+          "id": "a_secondary",
+          "canonical_key": "a_secondary",
+          "initiative": "REACTIVE",
+          "origins": [
+            "MANUAL_USER_REQUEST"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 1,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 1.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        }
+      ]
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "z_primary",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S02_COMMUNICATIVE_IMPACT",
+    "description": "Blocking error must beat otherwise-equivalent low-impact error.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "a_article",
+          "canonical_key": "a_article",
+          "initiative": "REACTIVE",
+          "origins": [
+            "CURRENT_USER_ERROR"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R4",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.4,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.4,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 1.0,
+            "communicative_impact": 0.1
+          },
+          "cost": {
+            "interruption_cost": 0.15,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        },
+        {
+          "id": "z_blocking",
+          "canonical_key": "z_blocking",
+          "initiative": "REACTIVE",
+          "origins": [
+            "CURRENT_USER_ERROR"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R4",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.4,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.4,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 1.0,
+            "communicative_impact": 1.0
+          },
+          "cost": {
+            "interruption_cost": 0.15,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "z_blocking",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S03_PARETO",
+    "description": "Pareto-dominated near-tie candidate cannot win by stable ID.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "z_better",
+          "canonical_key": "z_better",
+          "initiative": "OPPORTUNISTIC",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.51,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.8,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.2,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        },
+        {
+          "id": "a_worse",
+          "canonical_key": "a_worse",
+          "initiative": "OPPORTUNISTIC",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.8,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.2,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "z_better",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S04_DUPLICATE_CANONICAL",
+    "description": "Duplicate canonical candidate must be rejected before scoring.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "d1",
+          "canonical_key": "same",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.7,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.8,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        },
+        {
+          "id": "d2",
+          "canonical_key": "same",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.7,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.8,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": null,
+      "selected": null,
+      "reason": null,
+      "error": true,
+      "custom": null
+    }
+  },
+  {
+    "id": "S05_AUTH_UNAVAILABLE",
+    "description": "Incomplete authoritative feature assembly degrades instead of fabricating a decision.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "x",
+          "canonical_key": "x",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ],
+      "planning_context": {
+        "feature_assembly_status": "INCOMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": [
+          "SCHEDULER"
+        ]
+      }
+    },
+    "expected": {
+      "decision": null,
+      "selected": null,
+      "reason": null,
+      "error": false,
+      "custom": "DEGRADED"
+    }
+  },
+  {
+    "id": "S06_STALE_SNAPSHOT",
+    "description": "Stale/materially invalid snapshot degrades instead of planning normally.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "x",
+          "canonical_key": "x",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ],
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "STALE",
+        "natural_break_available": false,
+        "missing_authorities": []
+      }
+    },
+    "expected": {
+      "decision": null,
+      "selected": null,
+      "reason": null,
+      "error": false,
+      "custom": "DEGRADED"
+    }
+  },
+  {
+    "id": "S07_JUSTCHAT_CONTRADICTION",
+    "description": "JUST_CHAT plus user-initiated learning candidate is an upstream contract contradiction.",
+    "input": {
+      "user_intent_scope": "JUST_CHAT",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "u",
+          "canonical_key": "u",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        }
+      ]
+    },
+    "expected": {
+      "decision": null,
+      "selected": null,
+      "reason": null,
+      "error": true,
+      "custom": null
+    }
+  },
+  {
+    "id": "S08_RUNTIME_READY_AUTO_ERROR",
+    "description": "Runtime-generated material cannot bypass R4 for automatic current-error teaching.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "rg",
+          "canonical_key": "rg",
+          "initiative": "REACTIVE",
+          "origins": [
+            "CURRENT_USER_ERROR"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R1",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 1.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "runtime_generated_ready": true
+        }
+      ]
+    },
+    "expected": {
+      "decision": "NO_TARGET",
+      "selected": null,
+      "reason": "NO_ELIGIBLE_CANDIDATE",
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S09_RUNTIME_READY_AUTO_GENERAL",
+    "description": "Runtime-generated material cannot bypass R3 for automatic general teaching.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "STUDY_FIRST",
+      "candidates": [
+        {
+          "id": "rg2",
+          "canonical_key": "rg2",
+          "initiative": "PROACTIVE",
+          "origins": [
+            "CORE_COVERAGE"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R1",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 1.0,
+            "goal_relevance": 1.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "runtime_generated_ready": true
+        }
+      ]
+    },
+    "expected": {
+      "decision": "NO_TARGET",
+      "selected": null,
+      "reason": "NO_ELIGIBLE_CANDIDATE",
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S10_RUNTIME_READY_USER",
+    "description": "Explicit user request may use runtime-generated-ready content path.",
+    "input": {
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "policy_profile": "LOUNGE",
+      "candidates": [
+        {
+          "id": "rgu",
+          "canonical_key": "rgu",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R1",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.2,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.6,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "runtime_generated_ready": true,
+          "user_initiated": true,
+          "request_aligned": true
+        }
+      ]
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "rgu",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S11_SCAFFOLD_COST",
+    "description": "Scaffold-required candidate cannot hide zero support/cognitive cost.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "STUDY_FIRST",
+      "candidates": [
+        {
+          "id": "sc",
+          "canonical_key": "sc",
+          "initiative": "PROACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY_WITH_SCAFFOLD",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.8,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.8,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.5,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "scaffold_required": true
+        }
+      ]
+    },
+    "expected": {
+      "decision": null,
+      "selected": null,
+      "reason": null,
+      "error": true,
+      "custom": null
+    }
+  },
+  {
+    "id": "S12_COVERAGE_STARVATION",
+    "description": "Critical coverage obligation must eventually win at an available natural break.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "react",
+          "canonical_key": "react",
+          "initiative": "REACTIVE",
+          "origins": [
+            "CURRENT_EXPRESSION_NEED"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.45,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.5,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.8,
+            "personal_relevance": 0.8,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 1.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.15,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        },
+        {
+          "id": "debt",
+          "canonical_key": "debt",
+          "initiative": "PROACTIVE",
+          "origins": [
+            "COVERAGE_DEBT"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "CRITICAL",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 1.0,
+            "goal_relevance": 0.9,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.5,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 1.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.15,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ],
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": true,
+        "missing_authorities": []
+      }
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "debt",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S13_DEBT_SCOPE",
+    "description": "Coverage debt cannot override targeted user request.",
+    "input": {
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "debt",
+          "canonical_key": "debt",
+          "initiative": "PROACTIVE",
+          "origins": [
+            "COVERAGE_DEBT"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "CRITICAL",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 1.0,
+            "goal_relevance": 0.9,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.5,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 1.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.15,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "request_aligned": false
+        },
+        {
+          "id": "z_primary",
+          "canonical_key": "z_primary",
+          "initiative": "REACTIVE",
+          "origins": [
+            "MANUAL_USER_REQUEST"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.4,
+            "personal_relevance": 0.5,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        }
+      ],
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": true,
+        "missing_authorities": []
+      }
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "z_primary",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S14_DEBT_JUSTCHAT",
+    "description": "Coverage debt cannot override JUST_CHAT.",
+    "input": {
+      "user_intent_scope": "JUST_CHAT",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "debt",
+          "canonical_key": "debt",
+          "initiative": "PROACTIVE",
+          "origins": [
+            "COVERAGE_DEBT"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "CRITICAL",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 1.0,
+            "goal_relevance": 0.9,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.5,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 1.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.15,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ],
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": true,
+        "missing_authorities": []
+      }
+    },
+    "expected": {
+      "decision": "NO_TARGET",
+      "selected": null,
+      "reason": "NO_ELIGIBLE_CANDIDATE",
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S15_BLOCKING_ERROR_VS_REVIEW",
+    "description": "Blocking current error should beat overdue review.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "z_err",
+          "canonical_key": "z_err",
+          "initiative": "REACTIVE",
+          "origins": [
+            "CURRENT_USER_ERROR"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R4",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.4,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.4,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 1.0,
+            "communicative_impact": 1.0
+          },
+          "cost": {
+            "interruption_cost": 0.15,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        },
+        {
+          "id": "z_review",
+          "canonical_key": "z_review",
+          "initiative": "PROACTIVE",
+          "origins": [
+            "SCHEDULED_REVIEW"
+          ],
+          "target_mode": "REVIEW",
+          "learning_intent": "CONSOLIDATE",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.8,
+            "goal_relevance": 0.8,
+            "schedule_urgency": 1.0,
+            "context_fit": 0.5,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "z_err",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S16_LOW_ERROR_VS_REVIEW",
+    "description": "Low-impact local error need not displace overdue review.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "a_lowerr",
+          "canonical_key": "a_lowerr",
+          "initiative": "REACTIVE",
+          "origins": [
+            "CURRENT_USER_ERROR"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R4",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.4,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.4,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 1.0,
+            "communicative_impact": 0.1
+          },
+          "cost": {
+            "interruption_cost": 0.15,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        },
+        {
+          "id": "z_review",
+          "canonical_key": "z_review",
+          "initiative": "PROACTIVE",
+          "origins": [
+            "SCHEDULED_REVIEW"
+          ],
+          "target_mode": "REVIEW",
+          "learning_intent": "CONSOLIDATE",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.8,
+            "goal_relevance": 0.8,
+            "schedule_urgency": 1.0,
+            "context_fit": 0.5,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "z_review",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S17_REQUEST_BINDING",
+    "description": "Related support candidate cannot steal focus absent a hard prerequisite.",
+    "input": {
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "z_direct",
+          "canonical_key": "z_direct",
+          "initiative": "REACTIVE",
+          "origins": [
+            "MANUAL_USER_REQUEST"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.4,
+            "personal_relevance": 0.4,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.2,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        },
+        {
+          "id": "a_support",
+          "canonical_key": "a_support",
+          "initiative": "REACTIVE",
+          "origins": [
+            "PREREQUISITE_SUPPORT"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 1,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 1.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "request_aligned": true
+        }
+      ]
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "z_direct",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S18_EQUAL_REQUEST_PRIORITY",
+    "description": "Equal-priority explicit requests rank by utility.",
+    "input": {
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "u1",
+          "canonical_key": "u1",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.8,
+            "personal_relevance": 0.7,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        },
+        {
+          "id": "u2",
+          "canonical_key": "u2",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 1.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        }
+      ]
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "u2",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S19_PROTECTED_GATE_BOUNDARY",
+    "description": "Planner may still judge a target worthwhile; Gate owns hard protected-state denial.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "STUDY_FIRST",
+      "candidates": [
+        {
+          "id": "protected",
+          "canonical_key": "protected",
+          "initiative": "REACTIVE",
+          "origins": [
+            "CURRENT_USER_ERROR"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R4",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 1.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 1.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 1.0,
+            "communicative_impact": 1.0
+          },
+          "cost": {
+            "interruption_cost": 1.0,
+            "cognitive_load": 0.1,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "protected",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S20_MISSING_FACTOR_DEGRADE",
+    "description": "Missing authority-derived factor with incomplete assembly must degrade, not become zero.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "x",
+          "canonical_key": "x",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ],
+      "planning_context": {
+        "feature_assembly_status": "INCOMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": [
+          "SCHEDULER"
+        ]
+      }
+    },
+    "expected": {
+      "decision": null,
+      "selected": null,
+      "reason": null,
+      "error": false,
+      "custom": "DEGRADED"
+    }
+  },
+  {
+    "id": "S21_ORIGIN_NO_SCORE",
+    "description": "Origin labels alone do not increase utility.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "o1",
+          "canonical_key": "o1",
+          "initiative": "OPPORTUNISTIC",
+          "origins": [
+            "A"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.7,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.2,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        },
+        {
+          "id": "o2",
+          "canonical_key": "o2",
+          "initiative": "OPPORTUNISTIC",
+          "origins": [
+            "A",
+            "B",
+            "C"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.7,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.2,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": null,
+      "selected": null,
+      "reason": null,
+      "error": false,
+      "custom": "EQUAL_UTILITY"
+    }
+  },
+  {
+    "id": "S22_TARGET_SCOPE",
+    "description": "Unrelated target excluded in targeted scope.",
+    "input": {
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "n",
+          "canonical_key": "n",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "request_aligned": false
+        }
+      ]
+    },
+    "expected": {
+      "decision": "NO_TARGET",
+      "selected": null,
+      "reason": "NO_ELIGIBLE_CANDIDATE",
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S23_R2_ORDINARY",
+    "description": "R2 ordinary automatic teaching is not eligible.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "STUDY_FIRST",
+      "candidates": [
+        {
+          "id": "r2",
+          "canonical_key": "r2",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R2",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": "NO_TARGET",
+      "selected": null,
+      "reason": "NO_ELIGIBLE_CANDIDATE",
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S24_R2_PROBE",
+    "description": "R2 diagnostic probe is eligible.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "STUDY_FIRST",
+      "candidates": [
+        {
+          "id": "r2p",
+          "canonical_key": "r2p",
+          "initiative": "PROACTIVE",
+          "origins": [],
+          "target_mode": "PROBE",
+          "learning_intent": "PROBE",
+          "content_readiness": "R2",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 1.0,
+            "curriculum_value": 0.7,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.7,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "r2p",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S25_SOFT_RESISTANCE",
+    "description": "Soft resistance remains a penalty, not hard suppression.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "STUDY_FIRST",
+      "candidates": [
+        {
+          "id": "resist",
+          "canonical_key": "resist",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.8,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 1.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "resist",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S26_SUPPRESSION",
+    "description": "Hard suppression excludes candidate.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "STUDY_FIRST",
+      "candidates": [
+        {
+          "id": "supp",
+          "canonical_key": "supp",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.8,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 1.0
+          },
+          "suppressed": true
+        }
+      ]
+    },
+    "expected": {
+      "decision": "NO_TARGET",
+      "selected": null,
+      "reason": "NO_ELIGIBLE_CANDIDATE",
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S27_POLICY_LOUNGE",
+    "description": "Proactive candidate can remain below Lounge threshold.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "LOUNGE",
+      "candidates": [
+        {
+          "id": "pc",
+          "canonical_key": "pc",
+          "initiative": "PROACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.8,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 1.0,
+            "goal_relevance": 1.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.6,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.3,
+            "cognitive_load": 0.3,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": "NO_TARGET",
+      "selected": null,
+      "reason": "BELOW_ACTIVATION_THRESHOLD",
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S28_POLICY_STUDY",
+    "description": "Same proactive candidate can activate in Study-first.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "STUDY_FIRST",
+      "candidates": [
+        {
+          "id": "pc",
+          "canonical_key": "pc",
+          "initiative": "PROACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.8,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 1.0,
+            "goal_relevance": 1.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.6,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.3,
+            "cognitive_load": 0.3,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "pc",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S29_BENEFIT_MONOTONIC",
+    "description": "Higher context fit cannot lower utility.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "lo",
+          "canonical_key": "lo",
+          "initiative": "OPPORTUNISTIC",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.6,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.6,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        },
+        {
+          "id": "hi",
+          "canonical_key": "hi",
+          "initiative": "OPPORTUNISTIC",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.6,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.9,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": null,
+      "selected": null,
+      "reason": null,
+      "error": false,
+      "custom": "HI_UTILITY_GE"
+    }
+  },
+  {
+    "id": "S30_COST_MONOTONIC",
+    "description": "Higher interruption cost cannot raise utility.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "cl",
+          "canonical_key": "cl",
+          "initiative": "OPPORTUNISTIC",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.6,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.7,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.8,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        },
+        {
+          "id": "ch",
+          "canonical_key": "ch",
+          "initiative": "OPPORTUNISTIC",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.6,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.7,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.8,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.8,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": null,
+      "selected": null,
+      "reason": null,
+      "error": false,
+      "custom": "LOW_COST_UTILITY_GE"
+    }
+  },
+  {
+    "id": "S31_ORDER",
+    "description": "Candidate input order cannot change decision.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "STUDY_FIRST",
+      "candidates": [
+        {
+          "id": "react",
+          "canonical_key": "react",
+          "initiative": "REACTIVE",
+          "origins": [
+            "CURRENT_EXPRESSION_NEED"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.45,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.5,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.8,
+            "personal_relevance": 0.8,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 1.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.15,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        },
+        {
+          "id": "debt",
+          "canonical_key": "debt",
+          "initiative": "PROACTIVE",
+          "origins": [
+            "COVERAGE_DEBT"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "CRITICAL",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 1.0,
+            "goal_relevance": 0.9,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.5,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 1.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.15,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ],
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": true,
+        "missing_authorities": []
+      }
+    },
+    "expected": {
+      "decision": null,
+      "selected": null,
+      "reason": null,
+      "error": false,
+      "custom": "ORDER_DETERMINISM"
+    }
+  },
+  {
+    "id": "S32_DEBT_LOUNGE",
+    "description": "Critical debt still respects Lounge automatic policy.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "LOUNGE",
+      "candidates": [
+        {
+          "id": "debt",
+          "canonical_key": "debt",
+          "initiative": "PROACTIVE",
+          "origins": [
+            "COVERAGE_DEBT"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "CRITICAL",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 1.0,
+            "goal_relevance": 0.9,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.5,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 1.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.15,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ],
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": true,
+        "missing_authorities": []
+      }
+    },
+    "expected": {
+      "decision": "NO_TARGET",
+      "selected": null,
+      "reason": "BELOW_ACTIVATION_THRESHOLD",
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S33_CONTEXT_META_VALID",
+    "description": "Valid planning context leaves decision path normal.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "x",
+          "canonical_key": "x",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ],
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      }
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "x",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S34_HARD_PREREQ",
+    "description": "Hard prerequisite block excludes.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "STUDY_FIRST",
+      "candidates": [
+        {
+          "id": "blk",
+          "canonical_key": "blk",
+          "initiative": "PROACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "BLOCKED",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 1.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": "NO_TARGET",
+      "selected": null,
+      "reason": "NO_ELIGIBLE_CANDIDATE",
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S35_UNKNOWN_SCAFFOLD",
+    "description": "Unknown but explicitly scaffoldable prerequisite may proceed with explicit costs.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "STUDY_FIRST",
+      "candidates": [
+        {
+          "id": "usc",
+          "canonical_key": "usc",
+          "initiative": "PROACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "UNKNOWN",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 1.0,
+            "goal_relevance": 1.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.8,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.4,
+            "overexposure": 0.0,
+            "support_cost": 0.4,
+            "user_resistance": 0.0
+          },
+          "prerequisite_scaffoldable": true,
+          "scaffold_required": true
+        }
+      ]
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "usc",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S36_EXPIRED",
+    "description": "Expired candidate excluded.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "exp",
+          "canonical_key": "exp",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "expired": true
+        }
+      ]
+    },
+    "expected": {
+      "decision": "NO_TARGET",
+      "selected": null,
+      "reason": "NO_ELIGIBLE_CANDIDATE",
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S37_DEPRECATED",
+    "description": "Deprecated candidate excluded.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "dep",
+          "canonical_key": "dep",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "deprecated": true
+        }
+      ]
+    },
+    "expected": {
+      "decision": "NO_TARGET",
+      "selected": null,
+      "reason": "NO_ELIGIBLE_CANDIDATE",
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S38_MODALITY",
+    "description": "Unavailable modality excluded.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "mod",
+          "canonical_key": "mod",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "modality_available": false
+        }
+      ]
+    },
+    "expected": {
+      "decision": "NO_TARGET",
+      "selected": null,
+      "reason": "NO_ELIGIBLE_CANDIDATE",
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S39_GATE_BOUNDARY",
+    "description": "Planner does not absorb Gate hard-budget authority.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "gb",
+          "canonical_key": "gb",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ],
+      "gate_state": {
+        "hard_budget_exhausted": true
+      }
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "gb",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S40_EXPLICIT_OVERRIDES_SOFT_RESISTANCE",
+    "description": "Explicit request remains activated despite historical soft resistance.",
+    "input": {
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "policy_profile": "LOUNGE",
+      "candidates": [
+        {
+          "id": "ur",
+          "canonical_key": "ur",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.2,
+            "personal_relevance": 0.2,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.8,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 1.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        }
+      ]
+    },
+    "expected": {
+      "decision": "SELECT",
+      "selected": "ur",
+      "reason": null,
+      "error": false,
+      "custom": null
+    }
+  },
+  {
+    "id": "S41_INVALID_MODE_INTENT",
+    "description": "Invalid TargetMode/LearningIntent pair rejected.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "inv",
+          "canonical_key": "inv",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "PROBE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 1.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": null,
+      "selected": null,
+      "reason": null,
+      "error": true,
+      "custom": null
+    }
+  },
+  {
+    "id": "S42_DUP_ID",
+    "description": "Duplicate candidate id rejected.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "x",
+          "canonical_key": "x",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        },
+        {
+          "id": "x",
+          "canonical_key": "x",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": null,
+      "selected": null,
+      "reason": null,
+      "error": true,
+      "custom": null
+    }
+  },
+  {
+    "id": "S43_FACTOR_RANGE",
+    "description": "Out-of-range normalized factor rejected.",
+    "input": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "candidates": [
+        {
+          "id": "oor",
+          "canonical_key": "oor",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1.2,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1.0,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "decision": null,
+      "selected": null,
+      "reason": null,
+      "error": true,
+      "custom": null
+    }
+  }
+]

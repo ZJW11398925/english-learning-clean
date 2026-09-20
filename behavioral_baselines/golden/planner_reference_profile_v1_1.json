@@ -1,0 +1,175 @@
+{
+  "profile_id": "planner-v1.1-reference-2026-09-stress-tested",
+  "status": "REFERENCE_DEFAULT_CALIBRATABLE",
+  "benefit_weights": {
+    "learning_need": 0.17,
+    "uncertainty_reduction": 0.1,
+    "curriculum_value": 0.08,
+    "goal_relevance": 0.09,
+    "schedule_urgency": 0.08,
+    "context_fit": 0.13,
+    "personal_relevance": 0.08,
+    "transfer_value": 0.05,
+    "coverage_debt": 0.08,
+    "opportunity_expiry": 0.02,
+    "communicative_impact": 0.12
+  },
+  "cost_weights": {
+    "interruption_cost": 0.4,
+    "cognitive_load": 0.2,
+    "overexposure": 0.2,
+    "support_cost": 0.1,
+    "user_resistance": 0.1
+  },
+  "policy_profiles": {
+    "LOUNGE": {
+      "initiative_multiplier": {
+        "REACTIVE": 1.0,
+        "OPPORTUNISTIC": 0.9,
+        "PROACTIVE": 0.55
+      },
+      "cost_multiplier": 1.0,
+      "automatic_activation_threshold": 0.36
+    },
+    "BALANCED": {
+      "initiative_multiplier": {
+        "REACTIVE": 1.0,
+        "OPPORTUNISTIC": 0.95,
+        "PROACTIVE": 0.8
+      },
+      "cost_multiplier": 0.8,
+      "automatic_activation_threshold": 0.195
+    },
+    "STUDY_FIRST": {
+      "initiative_multiplier": {
+        "REACTIVE": 1.0,
+        "OPPORTUNISTIC": 0.98,
+        "PROACTIVE": 0.95
+      },
+      "cost_multiplier": 0.55,
+      "automatic_activation_threshold": 0.18
+    }
+  },
+  "tie_epsilon": 0.015,
+  "readiness_rank": {
+    "R0": 0,
+    "R1": 1,
+    "R2": 2,
+    "R3": 3,
+    "R4": 4
+  },
+  "initiative_rank": {
+    "PROACTIVE": 1,
+    "OPPORTUNISTIC": 2,
+    "REACTIVE": 3
+  },
+  "reference_factor_bands": {
+    "learning_need": {
+      "NONE": 0.0,
+      "LOW": 0.25,
+      "MODERATE": 0.5,
+      "HIGH": 0.75,
+      "CONFIRMED_GAP": 1.0
+    },
+    "uncertainty_reduction": {
+      "NONE": 0.0,
+      "LOW": 0.25,
+      "MEDIUM": 0.5,
+      "HIGH": 0.75,
+      "UNKNOWN_OR_CONFLICTED": 1.0
+    },
+    "curriculum_value": {
+      "MINOR": 0.25,
+      "SUPPORTING": 0.5,
+      "IMPORTANT": 0.75,
+      "CORE": 1.0
+    },
+    "schedule_urgency": {
+      "NOT_SCHEDULED": 0.0,
+      "UPCOMING": 0.25,
+      "DUE": 0.75,
+      "OVERDUE": 1.0
+    },
+    "context_fit": {
+      "NONE": 0.0,
+      "LOW": 0.25,
+      "MEDIUM": 0.5,
+      "HIGH": 0.75,
+      "DIRECT": 1.0
+    },
+    "personal_relevance": {
+      "NONE": 0.0,
+      "RELEVANT": 0.5,
+      "RECURRING": 0.75,
+      "CURRENT_EXPRESSION": 1.0
+    },
+    "transfer_value": {
+      "NONE": 0.0,
+      "LOW": 0.25,
+      "MEDIUM": 0.5,
+      "HIGH": 0.75,
+      "DIRECT_OPPORTUNITY": 1.0
+    },
+    "opportunity_expiry": {
+      "PERSISTENT": 0.0,
+      "SESSION": 0.25,
+      "NEXT_TURN": 0.75,
+      "THIS_TURN": 1.0
+    },
+    "interruption_cost": {
+      "LOW": 0.1,
+      "NORMAL": 0.35,
+      "HIGH": 0.75,
+      "PROTECTED": 1.0
+    },
+    "cognitive_load": {
+      "LOW": 0.2,
+      "MEDIUM": 0.5,
+      "HIGH": 0.8,
+      "OVERLOAD": 1.0
+    },
+    "overexposure": {
+      "NONE": 0.0,
+      "LOW": 0.25,
+      "MEDIUM": 0.5,
+      "HIGH": 0.75,
+      "SATURATED": 1.0
+    },
+    "support_cost": {
+      "NONE": 0.0,
+      "LOW": 0.25,
+      "MEDIUM": 0.5,
+      "HIGH": 0.75,
+      "VERY_HIGH": 1.0
+    },
+    "user_resistance": {
+      "NONE": 0.0,
+      "RECENT_SKIP": 0.35,
+      "REPEATED_SKIP": 0.75,
+      "SOFT_RESISTANCE": 1.0
+    },
+    "communicative_impact": {
+      "NONE": 0.0,
+      "LOW": 0.1,
+      "MEDIUM": 0.5,
+      "HIGH": 0.8,
+      "BLOCKING": 1.0
+    }
+  },
+  "notes": [
+    "v1.1 is stress-tested against BF-02 initial benchmark + BF-02A stress suite.",
+    "Factor topology, authority, hard eligibility, request priority, activation-before-tie, Pareto pruning, NO_TARGET semantics and deterministic tie-break are normative.",
+    "Weights, thresholds, normalization-band numeric values and coverage service bonus are reference defaults and empirically calibratable.",
+    "Runtime-generated content is only a user-initiated escape hatch in V1; it cannot bypass R3/R4 for automatic teaching.",
+    "Planner execution must degrade rather than fabricate a decision when snapshot or feature assembly is incomplete."
+  ],
+  "coverage_service_bonus": {
+    "LOUNGE": 0.0,
+    "BALANCED": 0.08,
+    "STUDY_FIRST": 0.1
+  },
+  "scaffold_min_cost": {
+    "support_cost": 0.25,
+    "cognitive_load": 0.2
+  }
+}

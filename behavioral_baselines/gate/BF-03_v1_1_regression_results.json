@@ -1,0 +1,761 @@
+[
+  {
+    "id": "G01_AUTO_OPEN_ALLOW",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G02_AUTO_OPEN_JUSTCHAT",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "USER_INTENT_BLOCK",
+        "reasons": [
+          "USER_INTENT_BLOCK"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G03_AUTO_OPEN_NONLEARNING",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "USER_INTENT_BLOCK",
+        "reasons": [
+          "USER_INTENT_BLOCK"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G04_AUTO_DISABLED",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "AUTO_TEACH_DISABLED",
+        "reasons": [
+          "AUTO_TEACH_DISABLED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G05_AUTO_BUDGET",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "AUTO_SESSION_BUDGET_EXHAUSTED",
+        "reasons": [
+          "AUTO_SESSION_BUDGET_EXHAUSTED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G06_AUTO_COOLDOWN",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "HARD_COOLDOWN_ACTIVE",
+        "reasons": [
+          "HARD_COOLDOWN_ACTIVE"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G07_AUTO_PROTECTED",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "HARD_PROTECTED_FLOW",
+        "reasons": [
+          "HARD_PROTECTED_FLOW"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G08_OPEN_LOCK_CONFLICT",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "TEACHING_LOCK_CONFLICT",
+        "reasons": [
+          "TEACHING_LOCK_CONFLICT"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G09_CYCLE_INVALID",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "AUTHORIZATION_INVALID",
+        "reasons": [
+          "AUTHORIZATION_INVALID"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G10_CYCLE_STALE",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "AUTHORIZATION_INVALID",
+        "reasons": [
+          "AUTHORIZATION_INVALID"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G11_SELECTION_CANCELLED",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "ACTION_CANCELLED",
+        "reasons": [
+          "ACTION_CANCELLED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G12_SELECTION_SUPERSEDED",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "ACTION_SUPERSEDED",
+        "reasons": [
+          "ACTION_SUPERSEDED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G13_TARGET_INVALID",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "TARGET_INVALID",
+        "reasons": [
+          "TARGET_INVALID"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G14_CONTENT_INVALID",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "CONTENT_INVALID",
+        "reasons": [
+          "CONTENT_INVALID"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G15_SUPPRESSED",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "TARGET_SUPPRESSED",
+        "reasons": [
+          "TARGET_SUPPRESSED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G16_SAFETY",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "SAFETY_PRIVACY_BLOCK",
+        "reasons": [
+          "SAFETY_PRIVACY_BLOCK"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G17_USER_OPEN_ALLOW",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G18_USER_BYPASS_AUTO_PREF",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G19_USER_BYPASS_AUTO_BUDGET",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G20_USER_BYPASS_COOLDOWN",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G21_USER_BYPASS_FLOW",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G22_USER_STILL_SUPPRESSED",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "TARGET_SUPPRESSED",
+        "reasons": [
+          "TARGET_SUPPRESSED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G23_USER_INTENT_CHANGED",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "USER_INTENT_BLOCK",
+        "reasons": [
+          "USER_INTENT_BLOCK"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G24_USER_SAFETY",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "SAFETY_PRIVACY_BLOCK",
+        "reasons": [
+          "SAFETY_PRIVACY_BLOCK"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G25_AUTO_CONT_ALLOW",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G26_AUTO_CONT_AUTO_DISABLED",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "AUTO_TEACH_DISABLED",
+        "reasons": [
+          "AUTO_TEACH_DISABLED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G27_AUTO_CONT_USER_ORIGIN",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G28_AUTO_CONT_PROTECTED",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "HARD_PROTECTED_FLOW",
+        "reasons": [
+          "HARD_PROTECTED_FLOW"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G29_AUTO_CONT_INTENT_CHANGED",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "USER_INTENT_BLOCK",
+        "reasons": [
+          "USER_INTENT_BLOCK"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G30_AUTO_CONT_LOCK_LOST",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "TEACHING_LOCK_INVALID",
+        "reasons": [
+          "TEACHING_LOCK_INVALID"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G31_AUTO_CONT_OTHER_LOCK",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "TEACHING_LOCK_CONFLICT",
+        "reasons": [
+          "TEACHING_LOCK_CONFLICT"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G32_AUTO_CONT_STATE",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "MOMENT_NOT_CONTINUABLE",
+        "reasons": [
+          "MOMENT_NOT_CONTINUABLE"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G33_AUTO_CONT_RETRY_CAP",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "HARD_ATTEMPT_LIMIT",
+        "reasons": [
+          "HARD_ATTEMPT_LIMIT"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G34_AUTO_CONT_REVEAL_AFTER_ATTEMPT_CAP",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G35_AUTO_CONT_TURN_CAP",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "HARD_TEACHING_TURN_LIMIT",
+        "reasons": [
+          "HARD_TEACHING_TURN_LIMIT"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G36_AUTO_CONT_REVEAL_TURN_CAP",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G37_AUTO_CONT_EXPLANATION_CAP",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "HARD_TEACHING_TURN_LIMIT",
+        "reasons": [
+          "HARD_TEACHING_TURN_LIMIT"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G38_AUTO_CONT_TERMINAL_EXPLANATION",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G39_USER_CONT_ALLOW",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G40_USER_CONT_BYPASS_AUTO_PREF",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G41_USER_CONT_BYPASS_PROTECTED",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G42_USER_CONT_RETRY_CAP",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "HARD_ATTEMPT_LIMIT",
+        "reasons": [
+          "HARD_ATTEMPT_LIMIT"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G43_USER_CONT_REVEAL_CAP",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G44_USER_CONT_TURN_CAP",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "HARD_TEACHING_TURN_LIMIT",
+        "reasons": [
+          "HARD_TEACHING_TURN_LIMIT"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G45_USER_CONT_REVEAL_TURN_CAP",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G46_USER_CONT_SUPPRESSED",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "TARGET_SUPPRESSED",
+        "reasons": [
+          "TARGET_SUPPRESSED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G47_USER_CONT_LOCK",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "TEACHING_LOCK_CONFLICT",
+        "reasons": [
+          "TEACHING_LOCK_CONFLICT"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G48_USER_CONT_SAFETY",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "SAFETY_PRIVACY_BLOCK",
+        "reasons": [
+          "SAFETY_PRIVACY_BLOCK"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G49_UNKNOWN_SAFETY",
+    "pass": true,
+    "result": {
+      "execution_status": "DEGRADED",
+      "degraded_reason": "CRITICAL_GATE_STATE_INCOMPLETE",
+      "missing_or_unknown": [
+        "safety_privacy_status"
+      ],
+      "decision": null
+    }
+  },
+  {
+    "id": "G50_UNKNOWN_LOCK",
+    "pass": true,
+    "result": {
+      "execution_status": "DEGRADED",
+      "degraded_reason": "CRITICAL_GATE_STATE_INCOMPLETE",
+      "missing_or_unknown": [
+        "lock_state"
+      ],
+      "decision": null
+    }
+  },
+  {
+    "id": "G51_GATE_STATE_INCOMPLETE",
+    "pass": true,
+    "result": {
+      "execution_status": "DEGRADED",
+      "degraded_reason": "CRITICAL_GATE_STATE_INCOMPLETE",
+      "missing_or_unknown": [
+        "gate_state"
+      ],
+      "decision": null
+    }
+  },
+  {
+    "id": "G52_NO_PLANNER_SELECT",
+    "pass": true,
+    "result": null
+  },
+  {
+    "id": "G53_WRONG_ACTION",
+    "pass": true,
+    "result": null
+  },
+  {
+    "id": "G54_USER_CONT_NO_REQUEST",
+    "pass": true,
+    "result": null
+  },
+  {
+    "id": "G55_MULTI_BLOCKERS",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "SAFETY_PRIVACY_BLOCK",
+        "reasons": [
+          "SAFETY_PRIVACY_BLOCK",
+          "ACTION_SUPERSEDED",
+          "AUTHORIZATION_INVALID",
+          "TARGET_INVALID",
+          "CONTENT_INVALID",
+          "TARGET_SUPPRESSED",
+          "AUTO_TEACH_DISABLED",
+          "HARD_PROTECTED_FLOW",
+          "AUTO_SESSION_BUDGET_EXHAUSTED",
+          "HARD_COOLDOWN_ACTIVE"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G56_GATE_NO_RERANK",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G57_BUDGET_NOT_MIDMOMENT",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G58_COOLDOWN_NOT_MIDMOMENT",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "ALLOW",
+        "reasons": []
+      }
+    }
+  },
+  {
+    "id": "G59_TOPIC_SWITCH",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "USER_INTENT_BLOCK",
+        "reasons": [
+          "USER_INTENT_BLOCK"
+        ]
+      }
+    }
+  },
+  {
+    "id": "G60_CONT_CONTENT_INVALID",
+    "pass": true,
+    "result": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "CONTENT_INVALID",
+        "reasons": [
+          "CONTENT_INVALID"
+        ]
+      }
+    }
+  }
+]

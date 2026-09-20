@@ -1,0 +1,91 @@
+{
+  "version": "modality-scope-v1.0-2026-09",
+  "status": "BEHAVIORAL_BASELINE_V1",
+  "goal_modalities": [
+    "SPEAKING",
+    "LISTENING",
+    "READING",
+    "WRITING"
+  ],
+  "evidence_modalities": {
+    "V1_OPERATIONAL": [
+      "TEXT_PRODUCTION",
+      "TEXT_COMPREHENSION"
+    ],
+    "FUTURE": [
+      "VOICE_PRODUCTION",
+      "AUDIO_COMPREHENSION"
+    ]
+  },
+  "interaction_channels": {
+    "V1": [
+      "TEXT"
+    ],
+    "FUTURE": [
+      "VOICE",
+      "AUDIO"
+    ]
+  },
+  "v1_runtime_capabilities": {
+    "voice_input": false,
+    "live_audio_output_for_assessment": false,
+    "pronunciation_evaluator": false,
+    "speaking_fluency_evaluator": false,
+    "listening_comprehension_evaluator": false
+  },
+  "goal_relevance_matrix": {
+    "TEXT_PRODUCTION": {
+      "SPEAKING": "PREPARATORY",
+      "LISTENING": "NONE",
+      "READING": "NONE",
+      "WRITING": "PREPARATORY"
+    },
+    "TEXT_COMPREHENSION": {
+      "SPEAKING": "NONE",
+      "LISTENING": "NONE",
+      "READING": "DIRECT_TARGET_LEVEL",
+      "WRITING": "NONE"
+    },
+    "VOICE_PRODUCTION": {
+      "SPEAKING": "DIRECT_TARGET_LEVEL",
+      "LISTENING": "NONE",
+      "READING": "NONE",
+      "WRITING": "NONE"
+    },
+    "AUDIO_COMPREHENSION": {
+      "SPEAKING": "NONE",
+      "LISTENING": "DIRECT_TARGET_LEVEL",
+      "READING": "NONE",
+      "WRITING": "NONE"
+    }
+  },
+  "contextual_overrides": [
+    {
+      "if": {
+        "evidence_modality": "TEXT_PRODUCTION",
+        "task_contract": "EXPLICIT_WRITING_TASK"
+      },
+      "goal_modality": "WRITING",
+      "relation": "DIRECT_TARGET_LEVEL"
+    }
+  ],
+  "forbidden_v1_claims_from_text_only": [
+    "SPEAKING_FLUENCY",
+    "PRONUNCIATION",
+    "LISTENING_COMPREHENSION",
+    "SPEAKING_MASTERY",
+    "LISTENING_MASTERY",
+    "IELTS_SPEAKING_BAND_PREDICTION"
+  ],
+  "allowed_v1_product_claims": [
+    "typed_conversational_expression_control",
+    "target_level_text_comprehension_when_explicitly_tested",
+    "written_composition_support_when_explicit_writing_task",
+    "speaking_preparation_without_speaking_measurement"
+  ],
+  "coverage_rules": {
+    "unsupported_direct_goal_obligation": "UNAVAILABLE_IN_CURRENT_RUNTIME",
+    "unsupported_direct_goal_debt_accrual": false,
+    "preparatory_training_may_receive_goal_relevance": true
+  }
+}

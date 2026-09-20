@@ -1,0 +1,18 @@
+{
+  "status": "GOLDEN_SCENARIO_BASELINE_V1",
+  "golden_scenarios": {
+    "passed": 28,
+    "total": 28
+  },
+  "bf03_gate_v1_1_regression": {
+    "passed": 60,
+    "total": 60
+  },
+  "supersessions": [
+    {
+      "old": "BF-03 Gate v1.0 continuation DecisionCycle freshness check",
+      "new": "BF-03 Gate v1.1 ACTIVE_MOMENT authorization"
+    }
+  ],
+  "next": "BF-05 Security / Privacy / Deletion Contract"
+}

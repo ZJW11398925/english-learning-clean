@@ -1,0 +1,602 @@
+[
+  {
+    "id": "GS01_NORMAL_NO_TARGET",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true
+      ],
+      "planner": {
+        "type": "NO_TARGET",
+        "reason": "BELOW_ACTIVATION_THRESHOLD",
+        "top_candidate_id": "minor"
+      },
+      "gate": null,
+      "moment": null
+    }
+  },
+  {
+    "id": "GS02_CURRENT_SUCCESS_PREVENTS_REDUNDANT_TEACH",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true
+      ],
+      "planner": {
+        "type": "NO_TARGET",
+        "reason": "BELOW_ACTIVATION_THRESHOLD",
+        "top_candidate_id": "same_target"
+      },
+      "gate": null,
+      "moment": null
+    }
+  },
+  {
+    "id": "GS03_AUTO_ERROR_TO_SUCCESS",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "planner": {
+        "type": "SELECT",
+        "candidate_id": "teach_meeting",
+        "utility": 0.47,
+        "activation_path": "AUTOMATIC"
+      },
+      "gate": {
+        "type": "ALLOW",
+        "reasons": []
+      },
+      "moment": {
+        "state": "TEACHING_TERMINAL",
+        "lock": false,
+        "outcome": "SUCCESS_UNSUPPORTED",
+        "abort_reason": null,
+        "events": [
+          "MOMENT_OPENED",
+          "ATTEMPT_EVIDENCE_COMMITTED",
+          "RESOLVED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "GS04_FAILURE_HINT_SUCCESS_SUPPORT_DEPENDENCY",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "planner": {
+        "type": "SELECT",
+        "candidate_id": "cond",
+        "utility": 0.321,
+        "activation_path": "AUTOMATIC"
+      },
+      "gate": {
+        "type": "ALLOW",
+        "reasons": []
+      },
+      "moment": {
+        "state": "TEACHING_TERMINAL",
+        "lock": false,
+        "outcome": "SUCCESS_SUPPORTED",
+        "abort_reason": null,
+        "events": [
+          "MOMENT_OPENED",
+          "ATTEMPT_EVIDENCE_COMMITTED",
+          "FAILED",
+          "HINT_DELIVERED",
+          "ATTEMPT_EVIDENCE_COMMITTED",
+          "RESOLVED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "GS05_REVEAL_DOES_NOT_CREATE_INDEPENDENCE",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "planner": {
+        "type": "SELECT",
+        "candidate_id": "manual",
+        "utility": -0.214,
+        "activation_path": "USER_INITIATED"
+      },
+      "gate": {
+        "type": "ALLOW",
+        "reasons": []
+      },
+      "moment": {
+        "state": "TEACHING_TERMINAL",
+        "lock": false,
+        "outcome": "SUCCESS_SUPPORTED",
+        "abort_reason": null,
+        "events": [
+          "MOMENT_OPENED",
+          "REVEAL_SHOWN",
+          "ATTEMPT_EVIDENCE_COMMITTED",
+          "RESOLVED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "GS06_JUST_CHAT",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true
+      ],
+      "planner": {
+        "type": "NO_TARGET",
+        "reason": "NO_ELIGIBLE_CANDIDATE"
+      },
+      "gate": null,
+      "moment": null
+    }
+  },
+  {
+    "id": "GS07_PROTECTED_FLOW_GATE_DENY",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "planner": {
+        "type": "SELECT",
+        "candidate_id": "block",
+        "utility": 0.39,
+        "activation_path": "AUTOMATIC"
+      },
+      "gate": {
+        "type": "DENY",
+        "primary_reason": "HARD_PROTECTED_FLOW",
+        "reasons": [
+          "HARD_PROTECTED_FLOW"
+        ]
+      },
+      "moment": null
+    }
+  },
+  {
+    "id": "GS08_USER_REQUEST_BYPASSES_FLOW",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true,
+        true
+      ],
+      "planner": {
+        "type": "SELECT",
+        "candidate_id": "manual",
+        "utility": -0.249,
+        "activation_path": "USER_INITIATED"
+      },
+      "gate": {
+        "type": "ALLOW",
+        "reasons": []
+      },
+      "moment": {
+        "state": "AWAITING_USER",
+        "lock": true,
+        "outcome": null,
+        "abort_reason": null,
+        "events": [
+          "MOMENT_OPENED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "GS09_FRESH_SUPPRESSION_AFTER_PLANNING",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "planner": {
+        "type": "SELECT",
+        "candidate_id": "t",
+        "utility": 0.21,
+        "activation_path": "USER_INITIATED"
+      },
+      "gate": {
+        "type": "DENY",
+        "primary_reason": "TARGET_SUPPRESSED",
+        "reasons": [
+          "TARGET_SUPPRESSED"
+        ]
+      },
+      "moment": null
+    }
+  },
+  {
+    "id": "GS10_CAPABILITY_ALTERNATIVE_SUCCESS",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "planner": {
+        "type": "SELECT",
+        "candidate_id": "cap",
+        "utility": 0.21,
+        "activation_path": "USER_INITIATED"
+      },
+      "gate": {
+        "type": "ALLOW",
+        "reasons": []
+      },
+      "moment": {
+        "state": "TEACHING_TERMINAL",
+        "lock": false,
+        "outcome": "SUCCESS_ALTERNATIVE",
+        "abort_reason": null,
+        "events": [
+          "MOMENT_OPENED",
+          "ATTEMPT_EVIDENCE_COMMITTED",
+          "RESOLVED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "GS11_RESOURCE_MISS_CAPABILITY_SUCCESS",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "planner": {
+        "type": "SELECT",
+        "candidate_id": "res",
+        "utility": 0.21,
+        "activation_path": "USER_INITIATED"
+      },
+      "gate": {
+        "type": "ALLOW",
+        "reasons": []
+      },
+      "moment": {
+        "state": "TEACHING_TERMINAL",
+        "lock": false,
+        "outcome": "SUCCESS_ALTERNATIVE",
+        "abort_reason": null,
+        "events": [
+          "MOMENT_OPENED",
+          "ATTEMPT_EVIDENCE_COMMITTED",
+          "RESOLVED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "GS12_SKIP_NO_NEGATIVE_EVIDENCE",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "planner": {
+        "type": "SELECT",
+        "candidate_id": "skip_t",
+        "utility": 0.21,
+        "activation_path": "USER_INITIATED"
+      },
+      "gate": {
+        "type": "ALLOW",
+        "reasons": []
+      },
+      "moment": {
+        "state": "TEACHING_TERMINAL",
+        "lock": false,
+        "outcome": null,
+        "abort_reason": "USER_SKIP",
+        "events": [
+          "MOMENT_OPENED",
+          "USER_SKIPPED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "GS13_ATTEMPT_THEN_SWITCH_TARGET",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    }
+  },
+  {
+    "id": "GS14_NO_NESTED_AUTOMATIC_MOMENT",
+    "pass": true,
+    "result": {
+      "pass": true
+    }
+  },
+  {
+    "id": "GS15_PLANNER_DEGRADED",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true,
+        true
+      ],
+      "planner": null,
+      "gate": null,
+      "moment": null
+    }
+  },
+  {
+    "id": "GS16_GATE_DEGRADED_UNKNOWN_LOCK",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true,
+        true
+      ],
+      "planner": {
+        "type": "SELECT",
+        "candidate_id": "x",
+        "utility": 0.42,
+        "activation_path": "AUTOMATIC"
+      },
+      "gate": null,
+      "moment": null
+    }
+  },
+  {
+    "id": "GS17_PREDELIVERY_INVALIDATION",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "moment": {
+        "state": "TEACHING_TERMINAL",
+        "lock": false,
+        "exposure": "NONE",
+        "presented": false,
+        "abort_reason": "PRE_DELIVERY_INVALIDATED"
+      }
+    }
+  },
+  {
+    "id": "GS18_EVIDENCE_SURVIVES_REPLY_FAILURE",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "state": {
+        "ability_band": "INDEPENDENT",
+        "confidence_band": "LOW",
+        "transfer_band": "NARROW",
+        "support_band": "UNKNOWN",
+        "stability_band": "FRAGILE",
+        "learning_flags": [
+          "NARROW_EVIDENCE"
+        ]
+      }
+    }
+  },
+  {
+    "id": "GS19_CONSERVATIVE_EXPOSURE",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true
+      ],
+      "planner": null,
+      "gate": null,
+      "moment": null
+    }
+  },
+  {
+    "id": "GS20_COVERAGE_DEBT_NATURAL_BREAK",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true
+      ],
+      "planner": {
+        "type": "SELECT",
+        "candidate_id": "debt",
+        "utility": 0.3128,
+        "activation_path": "AUTOMATIC"
+      },
+      "gate": null,
+      "moment": null
+    }
+  },
+  {
+    "id": "GS21_UNKNOWN_PROBE_STUDY",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true,
+        true
+      ],
+      "planner": {
+        "type": "SELECT",
+        "candidate_id": "probe",
+        "utility": 0.2695,
+        "activation_path": "AUTOMATIC"
+      },
+      "gate": {
+        "type": "ALLOW",
+        "reasons": []
+      },
+      "moment": {
+        "state": "AWAITING_USER",
+        "lock": true,
+        "outcome": null,
+        "abort_reason": null,
+        "events": [
+          "MOMENT_OPENED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "GS22_DUPLICATE_PROPOSALS_MERGE",
+    "pass": true,
+    "result": {
+      "pass": true
+    }
+  },
+  {
+    "id": "GS23_STALE_REVIEW",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true
+      ],
+      "planner": {
+        "type": "SELECT",
+        "candidate_id": "review",
+        "utility": 0.218,
+        "activation_path": "AUTOMATIC"
+      },
+      "gate": {
+        "type": "ALLOW",
+        "reasons": []
+      },
+      "moment": {
+        "state": "AWAITING_USER",
+        "lock": true,
+        "outcome": null,
+        "abort_reason": null,
+        "events": [
+          "MOMENT_OPENED"
+        ]
+      }
+    }
+  },
+  {
+    "id": "GS24_MODALITY_ISOLATION",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true,
+        true
+      ],
+      "planner": null,
+      "gate": null,
+      "moment": null
+    }
+  },
+  {
+    "id": "GS25_SELF_REPORT_NOT_MASTERY",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "checks": [
+        true
+      ],
+      "planner": null,
+      "gate": null,
+      "moment": null
+    }
+  },
+  {
+    "id": "GS26_GATE_DENY_NO_SECOND_CANDIDATE",
+    "pass": true,
+    "result": {
+      "pass": true
+    }
+  },
+  {
+    "id": "GS27_DUPLICATE_CALLBACK_CANONICAL_ONCE",
+    "pass": true,
+    "result": {
+      "pass": true
+    }
+  },
+  {
+    "id": "GS28_IN_MOMENT_EVIDENCE_MUST_NOT_INVALIDATE_CONTINUATION",
+    "pass": true,
+    "result": {
+      "pass": true,
+      "v10": {
+        "execution_status": "SUCCEEDED",
+        "decision": {
+          "type": "DENY",
+          "primary_reason": "DECISION_CYCLE_INVALID",
+          "reasons": [
+            "DECISION_CYCLE_INVALID"
+          ]
+        }
+      },
+      "v11": {
+        "execution_status": "SUCCEEDED",
+        "decision": {
+          "type": "ALLOW",
+          "reasons": []
+        }
+      }
+    }
+  }
+]

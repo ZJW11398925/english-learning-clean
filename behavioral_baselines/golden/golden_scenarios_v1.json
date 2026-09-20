@@ -1,0 +1,2210 @@
+[
+  {
+    "id": "GS01_NORMAL_NO_TARGET",
+    "title": "Natural chat with no worthwhile teaching",
+    "kind": "pipeline",
+    "estimator_queries": [],
+    "planner": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "minor",
+          "canonical_key": "minor",
+          "initiative": "OPPORTUNISTIC",
+          "origins": [
+            "PRAGMATIC_REGISTER_OPPORTUNITY"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.3,
+            "personal_relevance": 0.2,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.1
+          },
+          "cost": {
+            "interruption_cost": 0.6,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "planner": "NO_TARGET",
+      "moment_created": false
+    }
+  },
+  {
+    "id": "GS02_CURRENT_SUCCESS_PREVENTS_REDUNDANT_TEACH",
+    "title": "Current-turn spontaneous success reaches Learning before Planner",
+    "kind": "pipeline",
+    "initial_claims": [
+      {
+        "group_id": "g1",
+        "timestamp": "2026-09-20T10:00:00+00:00",
+        "performance_type": "SPONTANEOUS_PRODUCTION",
+        "polarity": "POSITIVE",
+        "outcome": "SUCCESS",
+        "evaluator_confidence": 0.95,
+        "support_level": "NONE",
+        "exposure_level": "NONE",
+        "opportunity_type": "NATURAL",
+        "qualifiers": [],
+        "error_attribution": "UNKNOWN",
+        "accuracy": 0.95,
+        "pragmatic_fit": 0.95,
+        "conversation_id": "c1",
+        "teaching_moment_id": null,
+        "persona_id": "p1",
+        "context_key": "family",
+        "realization_key": "look-forward",
+        "target_type": "RESOURCE",
+        "target_id": "expr.look_forward",
+        "modality": "TEXT_PRODUCTION",
+        "status": "ACTIVE",
+        "spontaneity": null
+      }
+    ],
+    "estimator_queries": [
+      {
+        "tt": "RESOURCE",
+        "tid": "expr.look_forward",
+        "mod": "TEXT_PRODUCTION"
+      }
+    ],
+    "planner": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "same_target",
+          "canonical_key": "same_target",
+          "initiative": "REACTIVE",
+          "origins": [
+            "CORE_COVERAGE"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.05,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.4,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.2,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.3,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "planner": "NO_TARGET",
+      "state": {
+        "expr.look_forward": "SPONTANEOUS"
+      }
+    }
+  },
+  {
+    "id": "GS03_AUTO_ERROR_TO_SUCCESS",
+    "title": "Confirmed gap opens automatic teaching and user succeeds independently",
+    "kind": "pipeline",
+    "initial_claims": [
+      {
+        "group_id": "e1",
+        "timestamp": "2026-09-15T10:00:00+00:00",
+        "performance_type": "FAILED_ATTEMPT",
+        "polarity": "NEGATIVE",
+        "outcome": "FAILURE",
+        "evaluator_confidence": 0.95,
+        "support_level": "NONE",
+        "exposure_level": "NONE",
+        "opportunity_type": "ELICITED",
+        "qualifiers": [],
+        "error_attribution": "SYSTEMATIC_PATTERN",
+        "accuracy": null,
+        "pragmatic_fit": null,
+        "conversation_id": "c1",
+        "teaching_moment_id": null,
+        "persona_id": "p1",
+        "context_key": "c1",
+        "realization_key": "r1",
+        "target_type": "RESOURCE",
+        "target_id": "expr.meeting",
+        "modality": "TEXT_PRODUCTION",
+        "status": "ACTIVE",
+        "spontaneity": null
+      },
+      {
+        "group_id": "e2",
+        "timestamp": "2026-09-17T10:00:00+00:00",
+        "performance_type": "FAILED_ATTEMPT",
+        "polarity": "NEGATIVE",
+        "outcome": "FAILURE",
+        "evaluator_confidence": 0.95,
+        "support_level": "NONE",
+        "exposure_level": "NONE",
+        "opportunity_type": "ELICITED",
+        "qualifiers": [],
+        "error_attribution": "SYSTEMATIC_PATTERN",
+        "accuracy": null,
+        "pragmatic_fit": null,
+        "conversation_id": "c2",
+        "teaching_moment_id": null,
+        "persona_id": "p1",
+        "context_key": "c2",
+        "realization_key": "r1",
+        "target_type": "RESOURCE",
+        "target_id": "expr.meeting",
+        "modality": "TEXT_PRODUCTION",
+        "status": "ACTIVE",
+        "spontaneity": null
+      },
+      {
+        "group_id": "e3",
+        "timestamp": "2026-09-19T10:00:00+00:00",
+        "performance_type": "FAILED_ATTEMPT",
+        "polarity": "NEGATIVE",
+        "outcome": "FAILURE",
+        "evaluator_confidence": 0.95,
+        "support_level": "NONE",
+        "exposure_level": "NONE",
+        "opportunity_type": "ELICITED",
+        "qualifiers": [],
+        "error_attribution": "SYSTEMATIC_PATTERN",
+        "accuracy": null,
+        "pragmatic_fit": null,
+        "conversation_id": "c3",
+        "teaching_moment_id": null,
+        "persona_id": "p1",
+        "context_key": "c3",
+        "realization_key": "r1",
+        "target_type": "RESOURCE",
+        "target_id": "expr.meeting",
+        "modality": "TEXT_PRODUCTION",
+        "status": "ACTIVE",
+        "spontaneity": null
+      }
+    ],
+    "estimator_queries": [
+      {
+        "tt": "RESOURCE",
+        "tid": "expr.meeting",
+        "mod": "TEXT_PRODUCTION"
+      }
+    ],
+    "planner": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "teach_meeting",
+          "canonical_key": "teach_meeting",
+          "initiative": "REACTIVE",
+          "origins": [
+            "CURRENT_USER_ERROR",
+            "CONFIRMED_GAP"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R4",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.6,
+            "schedule_urgency": 0.0,
+            "context_fit": 1,
+            "personal_relevance": 0.8,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 1,
+            "communicative_impact": 0.8
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "gate": {
+      "gate_context": "OPEN",
+      "proposed_action": "OPENING",
+      "authorization_path": "AUTOMATIC",
+      "authorization_basis": "DECISION_CYCLE",
+      "authorization_status": "VALID",
+      "planner_execution_status": "SUCCEEDED",
+      "planner_decision": "SELECT",
+      "selected_candidate_id": "teach_meeting",
+      "user_initiated": false,
+      "user_intent_scope": "OPEN",
+      "subject_status": "ACTIVE",
+      "target_status": "VALID",
+      "content_status": "VALID",
+      "safety_privacy_status": "ALLOW",
+      "lock_state": "NONE",
+      "gate_state_status": "COMPLETE",
+      "target_suppressed": false,
+      "automatic_teaching_enabled": true,
+      "hard_protected_flow": false,
+      "automatic_session_budget_exhausted": false,
+      "hard_cooldown_active": false,
+      "moment_id": null
+    },
+    "teaching": {
+      "moment_id": "m3",
+      "focus": "expr.meeting",
+      "responses": [
+        {
+          "evaluation_outcome": "SUCCESS",
+          "control_intent": "CONTINUE",
+          "support_level": "NONE",
+          "attempt_claims": [
+            {
+              "group_id": "e4",
+              "timestamp": "2026-09-20T10:02:00+00:00",
+              "performance_type": "INDEPENDENT_PRODUCTION",
+              "polarity": "POSITIVE",
+              "outcome": "SUCCESS",
+              "evaluator_confidence": 0.95,
+              "support_level": "NONE",
+              "exposure_level": "NONE",
+              "opportunity_type": "ELICITED",
+              "qualifiers": [],
+              "error_attribution": "UNKNOWN",
+              "accuracy": null,
+              "pragmatic_fit": null,
+              "conversation_id": "c4",
+              "teaching_moment_id": "m3",
+              "persona_id": "p1",
+              "context_key": "c4",
+              "realization_key": "meeting",
+              "target_type": "RESOURCE",
+              "target_id": "expr.meeting",
+              "modality": "TEXT_PRODUCTION",
+              "status": "ACTIVE",
+              "spontaneity": null
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "planner": "SELECT",
+      "gate": "ALLOW",
+      "moment_terminal": true,
+      "evidence_added": 1,
+      "lock_released": true
+    }
+  },
+  {
+    "id": "GS04_FAILURE_HINT_SUCCESS_SUPPORT_DEPENDENCY",
+    "title": "Repeated low-support failure + assisted success yields support-dependent state",
+    "kind": "pipeline",
+    "initial_claims": [
+      {
+        "group_id": "s1",
+        "timestamp": "2026-09-15T10:00:00+00:00",
+        "performance_type": "FAILED_ATTEMPT",
+        "polarity": "NEGATIVE",
+        "outcome": "FAILURE",
+        "evaluator_confidence": 0.95,
+        "support_level": "NONE",
+        "exposure_level": "NONE",
+        "opportunity_type": "ELICITED",
+        "qualifiers": [],
+        "error_attribution": "LIKELY_KNOWLEDGE_GAP",
+        "accuracy": null,
+        "pragmatic_fit": null,
+        "conversation_id": "c1",
+        "teaching_moment_id": "old1",
+        "persona_id": "p1",
+        "context_key": "ctx1",
+        "realization_key": "r1",
+        "target_type": "RESOURCE",
+        "target_id": "expr.conditional",
+        "modality": "TEXT_PRODUCTION",
+        "status": "ACTIVE",
+        "spontaneity": null
+      },
+      {
+        "group_id": "s2",
+        "timestamp": "2026-09-15T10:02:00+00:00",
+        "performance_type": "GUIDED_PRODUCTION",
+        "polarity": "POSITIVE",
+        "outcome": "SUCCESS",
+        "evaluator_confidence": 0.95,
+        "support_level": "SEMANTIC_HINT",
+        "exposure_level": "NONE",
+        "opportunity_type": "ELICITED",
+        "qualifiers": [],
+        "error_attribution": "UNKNOWN",
+        "accuracy": null,
+        "pragmatic_fit": null,
+        "conversation_id": "c1",
+        "teaching_moment_id": "old1",
+        "persona_id": "p1",
+        "context_key": "ctx1",
+        "realization_key": "r1",
+        "target_type": "RESOURCE",
+        "target_id": "expr.conditional",
+        "modality": "TEXT_PRODUCTION",
+        "status": "ACTIVE",
+        "spontaneity": null
+      }
+    ],
+    "estimator_queries": [
+      {
+        "tt": "RESOURCE",
+        "tid": "expr.conditional",
+        "mod": "TEXT_PRODUCTION"
+      }
+    ],
+    "planner": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "STUDY_FIRST",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "cond",
+          "canonical_key": "cond",
+          "initiative": "REACTIVE",
+          "origins": [
+            "SUPPORT_WITHDRAWAL",
+            "CONFIRMED_GAP"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R4",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.8,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.7,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.9,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.5
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.3,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "gate": {
+      "gate_context": "OPEN",
+      "proposed_action": "OPENING",
+      "authorization_path": "AUTOMATIC",
+      "authorization_basis": "DECISION_CYCLE",
+      "authorization_status": "VALID",
+      "planner_execution_status": "SUCCEEDED",
+      "planner_decision": "SELECT",
+      "selected_candidate_id": "cond",
+      "user_initiated": false,
+      "user_intent_scope": "OPEN",
+      "subject_status": "ACTIVE",
+      "target_status": "VALID",
+      "content_status": "VALID",
+      "safety_privacy_status": "ALLOW",
+      "lock_state": "NONE",
+      "gate_state_status": "COMPLETE",
+      "target_suppressed": false,
+      "automatic_teaching_enabled": true,
+      "hard_protected_flow": false,
+      "automatic_session_budget_exhausted": false,
+      "hard_cooldown_active": false,
+      "moment_id": null
+    },
+    "teaching": {
+      "moment_id": "m4",
+      "focus": "expr.conditional",
+      "responses": [
+        {
+          "evaluation_outcome": "FAILURE",
+          "control_intent": "CONTINUE",
+          "attempt_claims": [
+            {
+              "group_id": "s3",
+              "timestamp": "2026-09-20T10:00:00+00:00",
+              "performance_type": "FAILED_ATTEMPT",
+              "polarity": "NEGATIVE",
+              "outcome": "FAILURE",
+              "evaluator_confidence": 0.95,
+              "support_level": "NONE",
+              "exposure_level": "NONE",
+              "opportunity_type": "ELICITED",
+              "qualifiers": [],
+              "error_attribution": "LIKELY_KNOWLEDGE_GAP",
+              "accuracy": null,
+              "pragmatic_fit": null,
+              "conversation_id": "c4",
+              "teaching_moment_id": "m4",
+              "persona_id": "p1",
+              "context_key": "ctx1",
+              "realization_key": "r1",
+              "target_type": "RESOURCE",
+              "target_id": "expr.conditional",
+              "modality": "TEXT_PRODUCTION",
+              "status": "ACTIVE",
+              "spontaneity": null
+            }
+          ]
+        },
+        {
+          "gate_continuation": "HINT"
+        },
+        {
+          "evaluation_outcome": "SUCCESS",
+          "control_intent": "CONTINUE",
+          "support_level": "STRUCTURAL_HINT",
+          "attempt_claims": [
+            {
+              "group_id": "s4",
+              "timestamp": "2026-09-20T10:02:00+00:00",
+              "performance_type": "GUIDED_PRODUCTION",
+              "polarity": "POSITIVE",
+              "outcome": "SUCCESS",
+              "evaluator_confidence": 0.95,
+              "support_level": "STRUCTURAL_HINT",
+              "exposure_level": "NONE",
+              "opportunity_type": "ELICITED",
+              "qualifiers": [],
+              "error_attribution": "UNKNOWN",
+              "accuracy": null,
+              "pragmatic_fit": null,
+              "conversation_id": "c4",
+              "teaching_moment_id": "m4",
+              "persona_id": "p1",
+              "context_key": "ctx1",
+              "realization_key": "r1",
+              "target_type": "RESOURCE",
+              "target_id": "expr.conditional",
+              "modality": "TEXT_PRODUCTION",
+              "status": "ACTIVE",
+              "spontaneity": null
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "planner": "SELECT",
+      "gate": "ALLOW",
+      "continuation_gate": "ALLOW",
+      "final_flag": "SUPPORT_DEPENDENT",
+      "lock_released": true
+    }
+  },
+  {
+    "id": "GS05_REVEAL_DOES_NOT_CREATE_INDEPENDENCE",
+    "title": "Full reveal then imitation does not create independent control",
+    "kind": "pipeline",
+    "initial_claims": [],
+    "estimator_queries": [
+      {
+        "tt": "RESOURCE",
+        "tid": "expr.reveal",
+        "mod": "TEXT_PRODUCTION"
+      }
+    ],
+    "planner": {
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "policy_profile": "LOUNGE",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "manual",
+          "canonical_key": "manual",
+          "initiative": "REACTIVE",
+          "origins": [
+            "MANUAL_USER_REQUEST"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.2,
+            "personal_relevance": 1,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.8,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        }
+      ]
+    },
+    "gate": {
+      "gate_context": "OPEN",
+      "proposed_action": "OPENING",
+      "authorization_path": "USER_INITIATED",
+      "authorization_basis": "DECISION_CYCLE",
+      "authorization_status": "VALID",
+      "planner_execution_status": "SUCCEEDED",
+      "planner_decision": "SELECT",
+      "selected_candidate_id": "manual",
+      "user_initiated": true,
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "subject_status": "ACTIVE",
+      "target_status": "VALID",
+      "content_status": "VALID",
+      "safety_privacy_status": "ALLOW",
+      "lock_state": "NONE",
+      "gate_state_status": "COMPLETE",
+      "target_suppressed": false,
+      "automatic_teaching_enabled": true,
+      "hard_protected_flow": false,
+      "automatic_session_budget_exhausted": false,
+      "hard_cooldown_active": false,
+      "moment_id": null
+    },
+    "teaching": {
+      "moment_id": "m5",
+      "focus": "expr.reveal",
+      "responses": [
+        {
+          "control_intent": "ASK_ANSWER"
+        },
+        {
+          "evaluation_outcome": "SUCCESS",
+          "control_intent": "CONTINUE",
+          "support_level": "FULL_FORM_SHOWN",
+          "attempt_claims": [
+            {
+              "group_id": "r1",
+              "timestamp": "2026-09-20T10:03:00+00:00",
+              "performance_type": "IMITATIVE_PRODUCTION",
+              "polarity": "POSITIVE",
+              "outcome": "SUCCESS",
+              "evaluator_confidence": 0.95,
+              "support_level": "FULL_FORM_SHOWN",
+              "exposure_level": "FULL",
+              "opportunity_type": "ELICITED",
+              "qualifiers": [],
+              "error_attribution": "UNKNOWN",
+              "accuracy": null,
+              "pragmatic_fit": null,
+              "conversation_id": "c1",
+              "teaching_moment_id": "m5",
+              "persona_id": "p1",
+              "context_key": "ctx1",
+              "realization_key": "r1",
+              "target_type": "RESOURCE",
+              "target_id": "expr.reveal",
+              "modality": "TEXT_PRODUCTION",
+              "status": "ACTIVE",
+              "spontaneity": null
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "planner": "SELECT",
+      "gate": "ALLOW",
+      "independent_unknown": "expr.reveal",
+      "lock_released": true
+    }
+  },
+  {
+    "id": "GS06_JUST_CHAT",
+    "title": "Just-chat hard excludes automatic teaching",
+    "kind": "pipeline",
+    "estimator_queries": [],
+    "planner": {
+      "user_intent_scope": "JUST_CHAT",
+      "policy_profile": "BALANCED",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "gap",
+          "canonical_key": "gap",
+          "initiative": "REACTIVE",
+          "origins": [
+            "CONFIRMED_GAP"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R4",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.8
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "planner": "NO_TARGET",
+      "moment_created": false
+    }
+  },
+  {
+    "id": "GS07_PROTECTED_FLOW_GATE_DENY",
+    "title": "Planner sees value but Gate protects automatic conversation flow",
+    "kind": "pipeline",
+    "estimator_queries": [],
+    "planner": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "STUDY_FIRST",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "block",
+          "canonical_key": "block",
+          "initiative": "REACTIVE",
+          "origins": [
+            "CURRENT_USER_ERROR"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R4",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 1,
+            "schedule_urgency": 0.0,
+            "context_fit": 1,
+            "personal_relevance": 1,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 1,
+            "communicative_impact": 1
+          },
+          "cost": {
+            "interruption_cost": 1,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "gate": {
+      "gate_context": "OPEN",
+      "proposed_action": "OPENING",
+      "authorization_path": "AUTOMATIC",
+      "authorization_basis": "DECISION_CYCLE",
+      "authorization_status": "VALID",
+      "planner_execution_status": "SUCCEEDED",
+      "planner_decision": "SELECT",
+      "selected_candidate_id": "block",
+      "user_initiated": false,
+      "user_intent_scope": "OPEN",
+      "subject_status": "ACTIVE",
+      "target_status": "VALID",
+      "content_status": "VALID",
+      "safety_privacy_status": "ALLOW",
+      "lock_state": "NONE",
+      "gate_state_status": "COMPLETE",
+      "target_suppressed": false,
+      "automatic_teaching_enabled": true,
+      "hard_protected_flow": true,
+      "automatic_session_budget_exhausted": false,
+      "hard_cooldown_active": false,
+      "moment_id": null
+    },
+    "expected": {
+      "planner": "SELECT",
+      "gate": "DENY",
+      "gate_reason": "HARD_PROTECTED_FLOW",
+      "moment_created": false
+    }
+  },
+  {
+    "id": "GS08_USER_REQUEST_BYPASSES_FLOW",
+    "title": "Latest explicit learning request overrides flow-protection-only block",
+    "kind": "pipeline",
+    "estimator_queries": [],
+    "planner": {
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "policy_profile": "LOUNGE",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "manual",
+          "canonical_key": "manual",
+          "initiative": "REACTIVE",
+          "origins": [
+            "MANUAL_USER_REQUEST"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.3,
+            "personal_relevance": 0.4,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.8,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        }
+      ]
+    },
+    "gate": {
+      "gate_context": "OPEN",
+      "proposed_action": "OPENING",
+      "authorization_path": "USER_INITIATED",
+      "authorization_basis": "DECISION_CYCLE",
+      "authorization_status": "VALID",
+      "planner_execution_status": "SUCCEEDED",
+      "planner_decision": "SELECT",
+      "selected_candidate_id": "manual",
+      "user_initiated": true,
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "subject_status": "ACTIVE",
+      "target_status": "VALID",
+      "content_status": "VALID",
+      "safety_privacy_status": "ALLOW",
+      "lock_state": "NONE",
+      "gate_state_status": "COMPLETE",
+      "target_suppressed": false,
+      "automatic_teaching_enabled": true,
+      "hard_protected_flow": true,
+      "automatic_session_budget_exhausted": false,
+      "hard_cooldown_active": false,
+      "moment_id": null
+    },
+    "expected": {
+      "planner": "SELECT",
+      "gate": "ALLOW",
+      "moment_created": true
+    }
+  },
+  {
+    "id": "GS09_FRESH_SUPPRESSION_AFTER_PLANNING",
+    "title": "Suppression added after Planner is revalidated by Gate",
+    "kind": "pipeline",
+    "estimator_queries": [],
+    "planner": {
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "policy_profile": "BALANCED",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "t",
+          "canonical_key": "t",
+          "initiative": "REACTIVE",
+          "origins": [
+            "MANUAL_USER_REQUEST"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1,
+            "personal_relevance": 1,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        }
+      ]
+    },
+    "gate": {
+      "gate_context": "OPEN",
+      "proposed_action": "OPENING",
+      "authorization_path": "USER_INITIATED",
+      "authorization_basis": "DECISION_CYCLE",
+      "authorization_status": "VALID",
+      "planner_execution_status": "SUCCEEDED",
+      "planner_decision": "SELECT",
+      "selected_candidate_id": "t",
+      "user_initiated": true,
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "subject_status": "ACTIVE",
+      "target_status": "VALID",
+      "content_status": "VALID",
+      "safety_privacy_status": "ALLOW",
+      "lock_state": "NONE",
+      "gate_state_status": "COMPLETE",
+      "target_suppressed": true,
+      "automatic_teaching_enabled": true,
+      "hard_protected_flow": false,
+      "automatic_session_budget_exhausted": false,
+      "hard_cooldown_active": false,
+      "moment_id": null
+    },
+    "expected": {
+      "planner": "SELECT",
+      "gate": "DENY",
+      "gate_reason": "TARGET_SUPPRESSED",
+      "moment_created": false
+    }
+  },
+  {
+    "id": "GS10_CAPABILITY_ALTERNATIVE_SUCCESS",
+    "title": "Capability practice accepts valid alternative realization",
+    "kind": "pipeline",
+    "initial_claims": [],
+    "estimator_queries": [
+      {
+        "tt": "CAPABILITY",
+        "tid": "cap.disagree",
+        "mod": "TEXT_PRODUCTION"
+      }
+    ],
+    "planner": {
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "policy_profile": "BALANCED",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "cap",
+          "canonical_key": "cap",
+          "initiative": "REACTIVE",
+          "origins": [
+            "MANUAL_USER_REQUEST"
+          ],
+          "target_mode": "CAPABILITY_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1,
+            "personal_relevance": 1,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        }
+      ]
+    },
+    "gate": {
+      "gate_context": "OPEN",
+      "proposed_action": "OPENING",
+      "authorization_path": "USER_INITIATED",
+      "authorization_basis": "DECISION_CYCLE",
+      "authorization_status": "VALID",
+      "planner_execution_status": "SUCCEEDED",
+      "planner_decision": "SELECT",
+      "selected_candidate_id": "cap",
+      "user_initiated": true,
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "subject_status": "ACTIVE",
+      "target_status": "VALID",
+      "content_status": "VALID",
+      "safety_privacy_status": "ALLOW",
+      "lock_state": "NONE",
+      "gate_state_status": "COMPLETE",
+      "target_suppressed": false,
+      "automatic_teaching_enabled": true,
+      "hard_protected_flow": false,
+      "automatic_session_budget_exhausted": false,
+      "hard_cooldown_active": false,
+      "moment_id": null
+    },
+    "teaching": {
+      "moment_id": "m10",
+      "focus": "cap.disagree",
+      "responses": [
+        {
+          "evaluation_outcome": "ALTERNATIVE_SUCCESS",
+          "control_intent": "CONTINUE",
+          "attempt_claims": [
+            {
+              "group_id": "ca1",
+              "timestamp": "2026-09-20T10:00:00+00:00",
+              "performance_type": "INDEPENDENT_PRODUCTION",
+              "polarity": "POSITIVE",
+              "outcome": "SUCCESS",
+              "evaluator_confidence": 0.95,
+              "support_level": "NONE",
+              "exposure_level": "NONE",
+              "opportunity_type": "ELICITED",
+              "qualifiers": [],
+              "error_attribution": "UNKNOWN",
+              "accuracy": null,
+              "pragmatic_fit": null,
+              "conversation_id": "c1",
+              "teaching_moment_id": null,
+              "persona_id": "p1",
+              "context_key": "ctx1",
+              "realization_key": "alt-phrase",
+              "target_type": "CAPABILITY",
+              "target_id": "cap.disagree",
+              "modality": "TEXT_PRODUCTION",
+              "status": "ACTIVE",
+              "spontaneity": null
+            }
+          ],
+          "support_level": "NONE"
+        }
+      ]
+    },
+    "expected": {
+      "planner": "SELECT",
+      "gate": "ALLOW",
+      "moment_outcome": "SUCCESS_ALTERNATIVE",
+      "state_known": "cap.disagree"
+    }
+  },
+  {
+    "id": "GS11_RESOURCE_MISS_CAPABILITY_SUCCESS",
+    "title": "Resource practice miss does not erase successful communication capability",
+    "kind": "pipeline",
+    "initial_claims": [],
+    "estimator_queries": [
+      {
+        "tt": "RESOURCE",
+        "tid": "expr.specific",
+        "mod": "TEXT_PRODUCTION"
+      },
+      {
+        "tt": "CAPABILITY",
+        "tid": "cap.circumlocute",
+        "mod": "TEXT_PRODUCTION"
+      }
+    ],
+    "planner": {
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "policy_profile": "BALANCED",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "res",
+          "canonical_key": "res",
+          "initiative": "REACTIVE",
+          "origins": [
+            "MANUAL_USER_REQUEST"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1,
+            "personal_relevance": 1,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        }
+      ]
+    },
+    "gate": {
+      "gate_context": "OPEN",
+      "proposed_action": "OPENING",
+      "authorization_path": "USER_INITIATED",
+      "authorization_basis": "DECISION_CYCLE",
+      "authorization_status": "VALID",
+      "planner_execution_status": "SUCCEEDED",
+      "planner_decision": "SELECT",
+      "selected_candidate_id": "res",
+      "user_initiated": true,
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "subject_status": "ACTIVE",
+      "target_status": "VALID",
+      "content_status": "VALID",
+      "safety_privacy_status": "ALLOW",
+      "lock_state": "NONE",
+      "gate_state_status": "COMPLETE",
+      "target_suppressed": false,
+      "automatic_teaching_enabled": true,
+      "hard_protected_flow": false,
+      "automatic_session_budget_exhausted": false,
+      "hard_cooldown_active": false,
+      "moment_id": null
+    },
+    "teaching": {
+      "moment_id": "m11",
+      "focus": "expr.specific",
+      "responses": [
+        {
+          "evaluation_outcome": "ALTERNATIVE_SUCCESS",
+          "control_intent": "CONTINUE",
+          "attempt_claims": [
+            {
+              "group_id": "rc1",
+              "timestamp": "2026-09-20T10:00:00+00:00",
+              "performance_type": "INDEPENDENT_PRODUCTION",
+              "polarity": "POSITIVE",
+              "outcome": "SUCCESS",
+              "evaluator_confidence": 0.95,
+              "support_level": "NONE",
+              "exposure_level": "NONE",
+              "opportunity_type": "ELICITED",
+              "qualifiers": [],
+              "error_attribution": "UNKNOWN",
+              "accuracy": null,
+              "pragmatic_fit": null,
+              "conversation_id": "c1",
+              "teaching_moment_id": null,
+              "persona_id": "p1",
+              "context_key": "ctx1",
+              "realization_key": "circumlocution",
+              "target_type": "CAPABILITY",
+              "target_id": "cap.circumlocute",
+              "modality": "TEXT_PRODUCTION",
+              "status": "ACTIVE",
+              "spontaneity": null
+            }
+          ],
+          "support_level": "NONE"
+        }
+      ]
+    },
+    "expected": {
+      "planner": "SELECT",
+      "gate": "ALLOW",
+      "resource_unknown": "expr.specific",
+      "state_known": "cap.circumlocute"
+    }
+  },
+  {
+    "id": "GS12_SKIP_NO_NEGATIVE_EVIDENCE",
+    "title": "Skip ends moment but creates no negative mastery evidence",
+    "kind": "pipeline",
+    "initial_claims": [],
+    "estimator_queries": [
+      {
+        "tt": "RESOURCE",
+        "tid": "expr.skip",
+        "mod": "TEXT_PRODUCTION"
+      }
+    ],
+    "planner": {
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "policy_profile": "BALANCED",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "skip_t",
+          "canonical_key": "skip_t",
+          "initiative": "REACTIVE",
+          "origins": [
+            "MANUAL_USER_REQUEST"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1,
+            "personal_relevance": 1,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        }
+      ]
+    },
+    "gate": {
+      "gate_context": "OPEN",
+      "proposed_action": "OPENING",
+      "authorization_path": "USER_INITIATED",
+      "authorization_basis": "DECISION_CYCLE",
+      "authorization_status": "VALID",
+      "planner_execution_status": "SUCCEEDED",
+      "planner_decision": "SELECT",
+      "selected_candidate_id": "skip_t",
+      "user_initiated": true,
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "subject_status": "ACTIVE",
+      "target_status": "VALID",
+      "content_status": "VALID",
+      "safety_privacy_status": "ALLOW",
+      "lock_state": "NONE",
+      "gate_state_status": "COMPLETE",
+      "target_suppressed": false,
+      "automatic_teaching_enabled": true,
+      "hard_protected_flow": false,
+      "automatic_session_budget_exhausted": false,
+      "hard_cooldown_active": false,
+      "moment_id": null
+    },
+    "teaching": {
+      "moment_id": "m12",
+      "focus": "expr.skip",
+      "responses": [
+        {
+          "control_intent": "SKIP"
+        }
+      ]
+    },
+    "expected": {
+      "planner": "SELECT",
+      "gate": "ALLOW",
+      "abort_reason": "USER_SKIP",
+      "state_unknown": "expr.skip",
+      "lock_released": true
+    }
+  },
+  {
+    "id": "GS13_ATTEMPT_THEN_SWITCH_TARGET",
+    "title": "Attempt evidence commits before explicit same-turn target switch",
+    "kind": "switch_pipeline",
+    "initial_claims": [],
+    "first_planner": {
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "policy_profile": "BALANCED",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "old",
+          "canonical_key": "old",
+          "initiative": "REACTIVE",
+          "origins": [
+            "MANUAL_USER_REQUEST"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1,
+            "personal_relevance": 1,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        }
+      ]
+    },
+    "first_gate": {
+      "gate_context": "OPEN",
+      "proposed_action": "OPENING",
+      "authorization_path": "USER_INITIATED",
+      "authorization_basis": "DECISION_CYCLE",
+      "authorization_status": "VALID",
+      "planner_execution_status": "SUCCEEDED",
+      "planner_decision": "SELECT",
+      "selected_candidate_id": "old",
+      "user_initiated": true,
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "subject_status": "ACTIVE",
+      "target_status": "VALID",
+      "content_status": "VALID",
+      "safety_privacy_status": "ALLOW",
+      "lock_state": "NONE",
+      "gate_state_status": "COMPLETE",
+      "target_suppressed": false,
+      "automatic_teaching_enabled": true,
+      "hard_protected_flow": false,
+      "automatic_session_budget_exhausted": false,
+      "hard_cooldown_active": false,
+      "moment_id": null
+    },
+    "first_response": {
+      "evaluation_outcome": "SUCCESS",
+      "control_intent": "SWITCH_TARGET",
+      "attempt_claims": [
+        {
+          "group_id": "sw1",
+          "timestamp": "2026-09-20T10:00:00+00:00",
+          "performance_type": "INDEPENDENT_PRODUCTION",
+          "polarity": "POSITIVE",
+          "outcome": "SUCCESS",
+          "evaluator_confidence": 0.95,
+          "support_level": "NONE",
+          "exposure_level": "NONE",
+          "opportunity_type": "ELICITED",
+          "qualifiers": [],
+          "error_attribution": "UNKNOWN",
+          "accuracy": null,
+          "pragmatic_fit": null,
+          "conversation_id": "c1",
+          "teaching_moment_id": "m13",
+          "persona_id": "p1",
+          "context_key": "ctx1",
+          "realization_key": "r1",
+          "target_type": "RESOURCE",
+          "target_id": "expr.old",
+          "modality": "TEXT_PRODUCTION",
+          "status": "ACTIVE",
+          "spontaneity": null
+        }
+      ],
+      "support_level": "NONE"
+    },
+    "second_planner": {
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "policy_profile": "BALANCED",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "new",
+          "canonical_key": "new",
+          "initiative": "REACTIVE",
+          "origins": [
+            "MANUAL_USER_REQUEST"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1,
+            "personal_relevance": 1,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          },
+          "user_initiated": true,
+          "request_aligned": true
+        }
+      ]
+    },
+    "second_gate": {
+      "gate_context": "OPEN",
+      "proposed_action": "OPENING",
+      "authorization_path": "USER_INITIATED",
+      "authorization_basis": "DECISION_CYCLE",
+      "authorization_status": "VALID",
+      "planner_execution_status": "SUCCEEDED",
+      "planner_decision": "SELECT",
+      "selected_candidate_id": "new",
+      "user_initiated": true,
+      "user_intent_scope": "TARGETED_LEARNING_REQUEST",
+      "subject_status": "ACTIVE",
+      "target_status": "VALID",
+      "content_status": "VALID",
+      "safety_privacy_status": "ALLOW",
+      "lock_state": "NONE",
+      "gate_state_status": "COMPLETE",
+      "target_suppressed": false,
+      "automatic_teaching_enabled": true,
+      "hard_protected_flow": false,
+      "automatic_session_budget_exhausted": false,
+      "hard_cooldown_active": false,
+      "moment_id": null
+    },
+    "expected": {
+      "old_state_known": true,
+      "old_closed": true,
+      "second_planner": "SELECT",
+      "second_gate": "ALLOW",
+      "second_moment_created": true
+    }
+  },
+  {
+    "id": "GS14_NO_NESTED_AUTOMATIC_MOMENT",
+    "title": "New error observed during active TeachingMoment is deferred",
+    "kind": "runtime_contract",
+    "contract": "ACTIVE_TEACHING_LOCK_BLOCKS_NESTED_AUTO",
+    "expected": {
+      "pass": true
+    }
+  },
+  {
+    "id": "GS15_PLANNER_DEGRADED",
+    "title": "Stale snapshot yields degraded planning, not NO_TARGET",
+    "kind": "pipeline",
+    "estimator_queries": [],
+    "planner": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "STALE",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "x",
+          "canonical_key": "x",
+          "initiative": "REACTIVE",
+          "origins": [],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "planner_execution": "DEGRADED",
+      "gate_called": false,
+      "moment_created": false
+    }
+  },
+  {
+    "id": "GS16_GATE_DEGRADED_UNKNOWN_LOCK",
+    "title": "Unknown critical Gate state yields no decision and no moment",
+    "kind": "pipeline",
+    "estimator_queries": [],
+    "planner": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "STUDY_FIRST",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "x",
+          "canonical_key": "x",
+          "initiative": "REACTIVE",
+          "origins": [
+            "CURRENT_USER_ERROR"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R4",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 1,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.0,
+            "schedule_urgency": 0.0,
+            "context_fit": 1,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 1
+          },
+          "cost": {
+            "interruption_cost": 0.0,
+            "cognitive_load": 0.0,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "gate": {
+      "gate_context": "OPEN",
+      "proposed_action": "OPENING",
+      "authorization_path": "AUTOMATIC",
+      "authorization_basis": "DECISION_CYCLE",
+      "authorization_status": "VALID",
+      "planner_execution_status": "SUCCEEDED",
+      "planner_decision": "SELECT",
+      "selected_candidate_id": "x",
+      "user_initiated": false,
+      "user_intent_scope": "OPEN",
+      "subject_status": "ACTIVE",
+      "target_status": "VALID",
+      "content_status": "VALID",
+      "safety_privacy_status": "ALLOW",
+      "lock_state": "UNKNOWN",
+      "gate_state_status": "COMPLETE",
+      "target_suppressed": false,
+      "automatic_teaching_enabled": true,
+      "hard_protected_flow": false,
+      "automatic_session_budget_exhausted": false,
+      "hard_cooldown_active": false,
+      "moment_id": null
+    },
+    "expected": {
+      "planner": "SELECT",
+      "gate_execution": "DEGRADED",
+      "moment_created": false
+    }
+  },
+  {
+    "id": "GS17_PREDELIVERY_INVALIDATION",
+    "title": "Opened teaching invalidated before delivery records selected-but-not-presented",
+    "kind": "runtime_contract",
+    "contract": "PREDELIVERY_INVALIDATION_NO_EXPOSURE",
+    "expected": {
+      "pass": true
+    }
+  },
+  {
+    "id": "GS18_EVIDENCE_SURVIVES_REPLY_FAILURE",
+    "title": "Committed attempt evidence survives assistant provider failure",
+    "kind": "runtime_contract",
+    "contract": "EVIDENCE_COMMIT_INDEPENDENT_OF_REPLY",
+    "payload": {
+      "claim": {
+        "group_id": "pf1",
+        "timestamp": "2026-09-20T10:00:00+00:00",
+        "performance_type": "INDEPENDENT_PRODUCTION",
+        "polarity": "POSITIVE",
+        "outcome": "SUCCESS",
+        "evaluator_confidence": 0.95,
+        "support_level": "NONE",
+        "exposure_level": "NONE",
+        "opportunity_type": "ELICITED",
+        "qualifiers": [],
+        "error_attribution": "UNKNOWN",
+        "accuracy": null,
+        "pragmatic_fit": null,
+        "conversation_id": "c1",
+        "teaching_moment_id": "m18",
+        "persona_id": "p1",
+        "context_key": "ctx1",
+        "realization_key": "r1",
+        "target_type": "RESOURCE",
+        "target_id": "expr.persist",
+        "modality": "TEXT_PRODUCTION",
+        "status": "ACTIVE",
+        "spontaneity": null
+      },
+      "target": "expr.persist"
+    },
+    "expected": {
+      "pass": true
+    }
+  },
+  {
+    "id": "GS19_CONSERVATIVE_EXPOSURE",
+    "title": "Uncertain delivery uses max-possible exposure and must not overstate independence",
+    "kind": "pipeline",
+    "initial_claims": [
+      {
+        "group_id": "ux1",
+        "timestamp": "2026-09-20T10:00:00+00:00",
+        "performance_type": "IMITATIVE_PRODUCTION",
+        "polarity": "POSITIVE",
+        "outcome": "SUCCESS",
+        "evaluator_confidence": 0.95,
+        "support_level": "FULL_FORM_SHOWN",
+        "exposure_level": "FULL",
+        "opportunity_type": "ELICITED",
+        "qualifiers": [],
+        "error_attribution": "UNKNOWN",
+        "accuracy": null,
+        "pragmatic_fit": null,
+        "conversation_id": "c1",
+        "teaching_moment_id": "m19",
+        "persona_id": "p1",
+        "context_key": "ctx1",
+        "realization_key": "r1",
+        "target_type": "RESOURCE",
+        "target_id": "expr.exposure",
+        "modality": "TEXT_PRODUCTION",
+        "status": "ACTIVE",
+        "spontaneity": null
+      }
+    ],
+    "estimator_queries": [
+      {
+        "tt": "RESOURCE",
+        "tid": "expr.exposure",
+        "mod": "TEXT_PRODUCTION"
+      }
+    ],
+    "planner": null,
+    "expected": {
+      "independent_unknown": "expr.exposure"
+    }
+  },
+  {
+    "id": "GS20_COVERAGE_DEBT_NATURAL_BREAK",
+    "title": "Critical coverage debt can surface at a natural break without overriding user authority",
+    "kind": "pipeline",
+    "estimator_queries": [],
+    "planner": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": true,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "react",
+          "canonical_key": "react",
+          "initiative": "REACTIVE",
+          "origins": [
+            "CURRENT_EXPRESSION_NEED"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.45,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.0,
+            "goal_relevance": 0.5,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.8,
+            "personal_relevance": 0.8,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 1,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.15,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        },
+        {
+          "id": "debt",
+          "canonical_key": "debt",
+          "initiative": "PROACTIVE",
+          "origins": [
+            "COVERAGE_DEBT"
+          ],
+          "target_mode": "RESOURCE_PRACTICE",
+          "learning_intent": "DEVELOP",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "CRITICAL",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.5,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 1,
+            "goal_relevance": 0.9,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.5,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 1,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.15,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "expected": {
+      "planner": "SELECT",
+      "selected": "debt"
+    }
+  },
+  {
+    "id": "GS21_UNKNOWN_PROBE_STUDY",
+    "title": "Study-first may probe high-value unknown target",
+    "kind": "pipeline",
+    "estimator_queries": [],
+    "planner": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "STUDY_FIRST",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "probe",
+          "canonical_key": "probe",
+          "initiative": "PROACTIVE",
+          "origins": [
+            "UNKNOWN_PROBE"
+          ],
+          "target_mode": "PROBE",
+          "learning_intent": "PROBE",
+          "content_readiness": "R2",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.0,
+            "uncertainty_reduction": 1,
+            "curriculum_value": 1,
+            "goal_relevance": 0.8,
+            "schedule_urgency": 0.0,
+            "context_fit": 0.6,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.2,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "gate": {
+      "gate_context": "OPEN",
+      "proposed_action": "OPENING",
+      "authorization_path": "AUTOMATIC",
+      "authorization_basis": "DECISION_CYCLE",
+      "authorization_status": "VALID",
+      "planner_execution_status": "SUCCEEDED",
+      "planner_decision": "SELECT",
+      "selected_candidate_id": "probe",
+      "user_initiated": false,
+      "user_intent_scope": "OPEN",
+      "subject_status": "ACTIVE",
+      "target_status": "VALID",
+      "content_status": "VALID",
+      "safety_privacy_status": "ALLOW",
+      "lock_state": "NONE",
+      "gate_state_status": "COMPLETE",
+      "target_suppressed": false,
+      "automatic_teaching_enabled": true,
+      "hard_protected_flow": false,
+      "automatic_session_budget_exhausted": false,
+      "hard_cooldown_active": false,
+      "moment_id": null
+    },
+    "expected": {
+      "planner": "SELECT",
+      "gate": "ALLOW",
+      "moment_created": true
+    }
+  },
+  {
+    "id": "GS22_DUPLICATE_PROPOSALS_MERGE",
+    "title": "Duplicate generator proposals merge before factor assembly",
+    "kind": "canonicalization",
+    "proposals": [
+      {
+        "canonical_key": "k",
+        "initiative": "PROACTIVE",
+        "origins": [
+          "COVERAGE_DEBT"
+        ],
+        "target_mode": "RESOURCE_PRACTICE",
+        "learning_intent": "DEVELOP",
+        "modality": "TEXT_PRODUCTION",
+        "focus_target": "expr.k",
+        "opportunity_binding_class": "CURRENT",
+        "request_priority": 0
+      },
+      {
+        "canonical_key": "k",
+        "initiative": "REACTIVE",
+        "origins": [
+          "CURRENT_EXPRESSION_NEED"
+        ],
+        "target_mode": "RESOURCE_PRACTICE",
+        "learning_intent": "DEVELOP",
+        "modality": "TEXT_PRODUCTION",
+        "focus_target": "expr.k",
+        "opportunity_binding_class": "CURRENT",
+        "request_priority": 0
+      }
+    ],
+    "expected": {
+      "count": 1,
+      "origins": [
+        "COVERAGE_DEBT",
+        "CURRENT_EXPRESSION_NEED"
+      ],
+      "initiative": "REACTIVE"
+    }
+  },
+  {
+    "id": "GS23_STALE_REVIEW",
+    "title": "Strong-but-stale knowledge can produce low-cost retrieval review",
+    "kind": "pipeline",
+    "estimator_queries": [],
+    "planner": {
+      "user_intent_scope": "OPEN",
+      "policy_profile": "BALANCED",
+      "planning_context": {
+        "feature_assembly_status": "COMPLETE",
+        "snapshot_status": "VALID",
+        "natural_break_available": false,
+        "missing_authorities": []
+      },
+      "candidates": [
+        {
+          "id": "review",
+          "canonical_key": "review",
+          "initiative": "PROACTIVE",
+          "origins": [
+            "SCHEDULED_REVIEW"
+          ],
+          "target_mode": "REVIEW",
+          "learning_intent": "CONSOLIDATE",
+          "content_readiness": "R3",
+          "prerequisite_state": "READY",
+          "coverage_service_state": "NONE",
+          "request_priority": 0,
+          "benefit": {
+            "learning_need": 0.25,
+            "uncertainty_reduction": 0.0,
+            "curriculum_value": 0.7,
+            "goal_relevance": 0.7,
+            "schedule_urgency": 1,
+            "context_fit": 0.7,
+            "personal_relevance": 0.0,
+            "transfer_value": 0.0,
+            "coverage_debt": 0.0,
+            "opportunity_expiry": 0.0,
+            "communicative_impact": 0.0
+          },
+          "cost": {
+            "interruption_cost": 0.1,
+            "cognitive_load": 0.1,
+            "overexposure": 0.0,
+            "support_cost": 0.0,
+            "user_resistance": 0.0
+          }
+        }
+      ]
+    },
+    "gate": {
+      "gate_context": "OPEN",
+      "proposed_action": "OPENING",
+      "authorization_path": "AUTOMATIC",
+      "authorization_basis": "DECISION_CYCLE",
+      "authorization_status": "VALID",
+      "planner_execution_status": "SUCCEEDED",
+      "planner_decision": "SELECT",
+      "selected_candidate_id": "review",
+      "user_initiated": false,
+      "user_intent_scope": "OPEN",
+      "subject_status": "ACTIVE",
+      "target_status": "VALID",
+      "content_status": "VALID",
+      "safety_privacy_status": "ALLOW",
+      "lock_state": "NONE",
+      "gate_state_status": "COMPLETE",
+      "target_suppressed": false,
+      "automatic_teaching_enabled": true,
+      "hard_protected_flow": false,
+      "automatic_session_budget_exhausted": false,
+      "hard_cooldown_active": false,
+      "moment_id": null
+    },
+    "expected": {
+      "planner": "SELECT",
+      "gate": "ALLOW"
+    }
+  },
+  {
+    "id": "GS24_MODALITY_ISOLATION",
+    "title": "Text production evidence does not create speaking/listening state",
+    "kind": "pipeline",
+    "initial_claims": [
+      {
+        "group_id": "md1",
+        "timestamp": "2026-09-20T10:00:00+00:00",
+        "performance_type": "SPONTANEOUS_PRODUCTION",
+        "polarity": "POSITIVE",
+        "outcome": "SUCCESS",
+        "evaluator_confidence": 0.95,
+        "support_level": "NONE",
+        "exposure_level": "NONE",
+        "opportunity_type": "NATURAL",
+        "qualifiers": [],
+        "error_attribution": "UNKNOWN",
+        "accuracy": null,
+        "pragmatic_fit": null,
+        "conversation_id": "c1",
+        "teaching_moment_id": null,
+        "persona_id": "p1",
+        "context_key": "ctx1",
+        "realization_key": "r1",
+        "target_type": "RESOURCE",
+        "target_id": "expr.modality",
+        "modality": "TEXT_PRODUCTION",
+        "status": "ACTIVE",
+        "spontaneity": null
+      }
+    ],
+    "estimator_queries": [
+      {
+        "tt": "RESOURCE",
+        "tid": "expr.modality",
+        "mod": "TEXT_PRODUCTION"
+      },
+      {
+        "tt": "RESOURCE",
+        "tid": "expr.modality",
+        "mod": "SPEAKING"
+      }
+    ],
+    "planner": null,
+    "expected": {
+      "state": {
+        "TEXT_PRODUCTION": "SPONTANEOUS",
+        "SPEAKING": "UNKNOWN"
+      }
+    }
+  },
+  {
+    "id": "GS25_SELF_REPORT_NOT_MASTERY",
+    "title": "'I know this' does not write performance evidence",
+    "kind": "pipeline",
+    "initial_claims": [],
+    "estimator_queries": [
+      {
+        "tt": "RESOURCE",
+        "tid": "expr.known",
+        "mod": "TEXT_PRODUCTION"
+      }
+    ],
+    "planner": null,
+    "self_reports": [
+      {
+        "type": "CLAIMS_KNOWN",
+        "target_id": "expr.known"
+      }
+    ],
+    "expected": {
+      "state_unknown": "expr.known"
+    }
+  },
+  {
+    "id": "GS26_GATE_DENY_NO_SECOND_CANDIDATE",
+    "title": "Gate denial does not let Planner cycle to runner-up in the same decision cycle",
+    "kind": "runtime_contract",
+    "contract": "NO_GATE_BYPASS_WITH_SECOND_CANDIDATE",
+    "expected": {
+      "pass": true
+    }
+  },
+  {
+    "id": "GS27_DUPLICATE_CALLBACK_CANONICAL_ONCE",
+    "title": "Duplicate provider/delivery callback yields one canonical assistant effect",
+    "kind": "runtime_contract",
+    "contract": "DUPLICATE_CALLBACK_IDEMPOTENT",
+    "expected": {
+      "pass": true
+    }
+  },
+  {
+    "id": "GS28_IN_MOMENT_EVIDENCE_MUST_NOT_INVALIDATE_CONTINUATION",
+    "title": "In-moment Evidence advances Learning watermark but active Moment authorization remains valid",
+    "kind": "cross_layer_gate_revision",
+    "attempt_claim": {
+      "group_id": "ct1",
+      "timestamp": "2026-09-20T10:00:00+00:00",
+      "performance_type": "FAILED_ATTEMPT",
+      "polarity": "NEGATIVE",
+      "outcome": "FAILURE",
+      "evaluator_confidence": 0.95,
+      "support_level": "NONE",
+      "exposure_level": "NONE",
+      "opportunity_type": "ELICITED",
+      "qualifiers": [],
+      "error_attribution": "LIKELY_KNOWLEDGE_GAP",
+      "accuracy": null,
+      "pragmatic_fit": null,
+      "conversation_id": "c1",
+      "teaching_moment_id": "m28",
+      "persona_id": "p1",
+      "context_key": "ctx1",
+      "realization_key": "r1",
+      "target_type": "RESOURCE",
+      "target_id": "expr.cont",
+      "modality": "TEXT_PRODUCTION",
+      "status": "ACTIVE",
+      "spontaneity": null
+    },
+    "expected": {
+      "gate_v1_0": "DENY",
+      "gate_v1_1": "ALLOW"
+    }
+  }
+]

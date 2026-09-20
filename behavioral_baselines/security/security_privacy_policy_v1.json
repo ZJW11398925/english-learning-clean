@@ -1,0 +1,240 @@
+{
+  "version": "security-privacy-v1.0-2026-09",
+  "status": "SECURITY_PRIVACY_CONTRACT_BASELINE_V1",
+  "data_classes": {
+    "GLOBAL_PUBLIC": {
+      "examples": [
+        "Canonical Curriculum Graph",
+        "Content Library global resources"
+      ],
+      "user_owned": false,
+      "portable_export": false,
+      "deletable_by_user_data_delete": false
+    },
+    "PRIVATE_CONFIG": {
+      "examples": [
+        "model name",
+        "baseURL",
+        "UI settings",
+        "policy profile"
+      ],
+      "user_owned": true,
+      "portable_export": true,
+      "deletable_by_user_data_delete": true
+    },
+    "PERSONAL": {
+      "examples": [
+        "conversation transcript",
+        "goals",
+        "profile facts",
+        "relationship memories",
+        "episode memories"
+      ],
+      "user_owned": true,
+      "portable_export": true,
+      "deletable_by_user_data_delete": true
+    },
+    "HIGH_SENSITIVITY": {
+      "examples": [
+        "health",
+        "religion",
+        "political affiliation",
+        "sexuality",
+        "financial account details",
+        "precise home address"
+      ],
+      "user_owned": true,
+      "portable_export": true,
+      "auto_promote_to_durable_memory": false,
+      "explicit_persistence_required": true
+    },
+    "LEARNING_PRIVATE": {
+      "examples": [
+        "Evidence",
+        "LearnerState",
+        "review history",
+        "Planner trace linked to user learning"
+      ],
+      "user_owned": true,
+      "portable_export": true,
+      "deletable_by_user_data_delete": true
+    },
+    "DERIVED_PRIVATE": {
+      "examples": [
+        "retrieval index",
+        "embeddings",
+        "episode projection",
+        "relationship projection",
+        "materialized state"
+      ],
+      "user_owned": true,
+      "portable_export": "ONLY_IF_REQUIRED_FOR_RESTORE",
+      "rebuildable": true
+    },
+    "RUNTIME_DIAGNOSTIC": {
+      "examples": [
+        "structured traces",
+        "provider attempt metadata",
+        "validator diagnostics"
+      ],
+      "user_owned": true,
+      "portable_export": false,
+      "raw_content_default": "FORBIDDEN"
+    },
+    "SECRET": {
+      "examples": [
+        "API keys",
+        "access tokens",
+        "refresh tokens"
+      ],
+      "user_owned": true,
+      "portable_export": false,
+      "loggable": false,
+      "promptable": false
+    }
+  },
+  "trust_classes": {
+    "TRUSTED_AUTHORITY": [
+      "typed user setting change",
+      "domain-validated canonical write",
+      "system policy"
+    ],
+    "UNTRUSTED_CONTENT": [
+      "user free text",
+      "persona card text",
+      "lore text",
+      "provider/model output",
+      "retrieved memory text",
+      "external content candidate"
+    ],
+    "MODEL_PROPOSAL": [
+      "LLM evidence proposal",
+      "LLM relationship proposal",
+      "LLM profile proposal",
+      "LLM evaluator output"
+    ]
+  },
+  "sensitive_memory_policy": {
+    "transcript_storage": "ALLOWED_AS_USER_AUTHORED_CONTENT",
+    "automatic_profile_promotion": "DENY",
+    "automatic_relationship_promotion": "DENY",
+    "explicit_user_persistence": "ALLOW_AFTER_VALIDATION",
+    "system_inference": "DENY_FOR_HIGH_SENSITIVITY"
+  },
+  "provider_actions": {
+    "PERSONA_REPLY": {
+      "allow": [
+        "ConversationWindow",
+        "CharacterPackage",
+        "SamePersonaRelationshipView",
+        "EpisodeView",
+        "DisclosedUserProfile",
+        "WorldLoreView",
+        "EphemeralTeachingDirective"
+      ],
+      "deny": [
+        "OtherPersonaRelationship",
+        "RawLearningEvidence",
+        "LearnerStateFull",
+        "APISecret",
+        "DeletionLedger",
+        "RawDiagnostics"
+      ]
+    },
+    "LEARNING_EVALUATION": {
+      "allow": [
+        "CurrentUserTurn",
+        "MinimalConversationContext",
+        "TeachingTargetIfAny",
+        "OpportunityContext",
+        "SupportExposureContext"
+      ],
+      "deny": [
+        "RelationshipMemory",
+        "OtherPersonaData",
+        "APISecret",
+        "UserProfileUnlessNecessaryAndExplicit",
+        "RawDiagnostics"
+      ]
+    },
+    "TEACHING_EVALUATION": {
+      "allow": [
+        "CurrentAttempt",
+        "FocusTarget",
+        "ImmediateTeachingContext",
+        "SupportExposureContext"
+      ],
+      "deny": [
+        "BroadUserProfile",
+        "RelationshipMemory",
+        "OtherPersonaData",
+        "APISecret",
+        "RawDiagnostics"
+      ]
+    },
+    "RELATIONSHIP_PROPOSAL": {
+      "allow": [
+        "CanonicalTurnSlice",
+        "SamePersonaExistingRelationshipSummary"
+      ],
+      "deny": [
+        "LearnerState",
+        "LearningEvidence",
+        "TeachingTrace",
+        "OtherPersonaRelationship",
+        "APISecret"
+      ]
+    },
+    "EPISODE_SUMMARY": {
+      "allow": [
+        "CanonicalConversationSlice"
+      ],
+      "deny": [
+        "APISecret",
+        "OtherPersonaRelationship",
+        "RawLearningEvidence"
+      ]
+    }
+  },
+  "log_policy": {
+    "default_raw_user_text": false,
+    "default_raw_provider_prompt": false,
+    "default_raw_provider_response": false,
+    "allow": [
+      "ids",
+      "timestamps",
+      "enum states",
+      "versions",
+      "counts",
+      "reason codes",
+      "content hashes"
+    ],
+    "redact_patterns": [
+      "api_key",
+      "authorization",
+      "bearer",
+      "access_token",
+      "refresh_token",
+      "secret"
+    ],
+    "diagnostic_raw_capture": "EXPLICIT_OPT_IN_AND_BOUNDED_RETENTION_ONLY"
+  },
+  "export_policy": {
+    "portable_export_excludes": [
+      "SECRET",
+      "RUNTIME_DIAGNOSTIC"
+    ],
+    "includes_deletion_tombstones": true,
+    "api_secret_reentry_required_on_import": true
+  },
+  "deletion_scopes": [
+    "PROFILE_FIELD",
+    "MEMORY_ITEM",
+    "CONVERSATION",
+    "RELATIONSHIP_PAIR",
+    "LEARNING_TARGET",
+    "ALL_LEARNING_HISTORY",
+    "PERSONA_PACKAGE",
+    "ALL_USER_DATA"
+  ]
+}

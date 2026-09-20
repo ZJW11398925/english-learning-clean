@@ -1,0 +1,174 @@
+{
+  "version": "gate-v1.0-2026-09",
+  "gate_contexts": [
+    "OPEN",
+    "AUTO_CONTINUE",
+    "USER_REQUESTED_CONTINUE"
+  ],
+  "actions": [
+    "OPENING",
+    "HINT",
+    "RETRY",
+    "EXPLANATION",
+    "REVEAL",
+    "TERMINAL_FEEDBACK"
+  ],
+  "execution_status": [
+    "SUCCEEDED",
+    "DEGRADED"
+  ],
+  "decisions": [
+    "ALLOW",
+    "DENY"
+  ],
+  "deny_precedence": [
+    "SAFETY_PRIVACY_BLOCK",
+    "ACTION_CANCELLED",
+    "ACTION_SUPERSEDED",
+    "DECISION_CYCLE_INVALID",
+    "TARGET_INVALID",
+    "CONTENT_INVALID",
+    "TARGET_SUPPRESSED",
+    "USER_INTENT_BLOCK",
+    "AUTO_TEACH_DISABLED",
+    "TEACHING_LOCK_CONFLICT",
+    "TEACHING_LOCK_INVALID",
+    "MOMENT_NOT_CONTINUABLE",
+    "HARD_PROTECTED_FLOW",
+    "AUTO_SESSION_BUDGET_EXHAUSTED",
+    "HARD_COOLDOWN_ACTIVE",
+    "HARD_ATTEMPT_LIMIT",
+    "HARD_TEACHING_TURN_LIMIT"
+  ],
+  "rules": [
+    {
+      "id": "R01",
+      "applies": "ALL",
+      "condition": "critical gate state UNKNOWN/INCOMPLETE",
+      "effect": "DEGRADED_NO_DECISION"
+    },
+    {
+      "id": "R02",
+      "applies": "ALL",
+      "condition": "safety_privacy_status=BLOCK",
+      "effect": "DENY:SAFETY_PRIVACY_BLOCK"
+    },
+    {
+      "id": "R03",
+      "applies": "ALL",
+      "condition": "subject CANCELLED/SUPERSEDED",
+      "effect": "DENY:ACTION_CANCELLED/ACTION_SUPERSEDED"
+    },
+    {
+      "id": "R04",
+      "applies": "ALL",
+      "condition": "DecisionCycle INVALIDATED/STALE",
+      "effect": "DENY:DECISION_CYCLE_INVALID"
+    },
+    {
+      "id": "R05",
+      "applies": "ALL",
+      "condition": "target/content invalid",
+      "effect": "DENY:TARGET_INVALID/CONTENT_INVALID"
+    },
+    {
+      "id": "R06",
+      "applies": "ALL",
+      "condition": "target_suppressed=true",
+      "effect": "DENY:TARGET_SUPPRESSED"
+    },
+    {
+      "id": "R07",
+      "applies": "OPEN AUTOMATIC",
+      "condition": "latest intent != OPEN",
+      "effect": "DENY:USER_INTENT_BLOCK"
+    },
+    {
+      "id": "R08",
+      "applies": "OPEN USER_INITIATED",
+      "condition": "latest intent not LEARNING_REQUEST/TARGETED_LEARNING_REQUEST",
+      "effect": "DENY:USER_INTENT_BLOCK"
+    },
+    {
+      "id": "R09",
+      "applies": "CONTINUATION",
+      "condition": "latest intent != ACTIVE_TEACHING_CONTINUATION",
+      "effect": "DENY:USER_INTENT_BLOCK"
+    },
+    {
+      "id": "R10",
+      "applies": "OPEN AUTOMATIC",
+      "condition": "automatic_teaching_enabled=false",
+      "effect": "DENY:AUTO_TEACH_DISABLED"
+    },
+    {
+      "id": "R11",
+      "applies": "AUTO_CONTINUE of AUTO_OPENED moment",
+      "condition": "automatic_teaching_enabled=false",
+      "effect": "DENY:AUTO_TEACH_DISABLED"
+    },
+    {
+      "id": "R12",
+      "applies": "OPEN",
+      "condition": "teaching lock already occupied",
+      "effect": "DENY:TEACHING_LOCK_CONFLICT"
+    },
+    {
+      "id": "R13",
+      "applies": "CONTINUATION",
+      "condition": "lock not owned by this moment or moment not DECIDING_NEXT_ACTION",
+      "effect": "DENY:LOCK/LIFECYCLE"
+    },
+    {
+      "id": "R14",
+      "applies": "OPEN AUTOMATIC + AUTO_CONTINUE",
+      "condition": "hard_protected_flow=true",
+      "effect": "DENY:HARD_PROTECTED_FLOW"
+    },
+    {
+      "id": "R15",
+      "applies": "OPEN AUTOMATIC",
+      "condition": "automatic session budget exhausted",
+      "effect": "DENY:AUTO_SESSION_BUDGET_EXHAUSTED"
+    },
+    {
+      "id": "R16",
+      "applies": "OPEN AUTOMATIC",
+      "condition": "hard cooldown active",
+      "effect": "DENY:HARD_COOLDOWN_ACTIVE"
+    },
+    {
+      "id": "R17",
+      "applies": "CONTINUATION HINT/RETRY",
+      "condition": "hard attempt limit exhausted",
+      "effect": "DENY:HARD_ATTEMPT_LIMIT"
+    },
+    {
+      "id": "R18",
+      "applies": "CONTINUATION nonterminal action",
+      "condition": "hard teaching-turn limit exhausted",
+      "effect": "DENY:HARD_TEACHING_TURN_LIMIT"
+    },
+    {
+      "id": "R19",
+      "applies": "USER-INITIATED/REQUESTED",
+      "condition": "auto preference/budget/cooldown/flow protection only",
+      "effect": "BYPASS these automatic-interruption controls"
+    },
+    {
+      "id": "R20",
+      "applies": "ALL",
+      "condition": "no blocking rule",
+      "effect": "ALLOW"
+    }
+  ],
+  "non_authorities": [
+    "learning_need",
+    "curriculum_value",
+    "goal_relevance",
+    "schedule_urgency",
+    "coverage_debt",
+    "planner_utility",
+    "candidate_ranking"
+  ]
+}

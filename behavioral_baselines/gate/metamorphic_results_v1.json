@@ -1,0 +1,104 @@
+[
+  {
+    "id": "M01_SAFETY_MONOTONIC",
+    "description": "Adding a safety/privacy block cannot turn DENY into ALLOW.",
+    "pass": true,
+    "detail": null
+  },
+  {
+    "id": "M02_SUPPRESSION_ALL_CONTEXTS",
+    "description": "Active suppression blocks automatic open, user open, and user continuation.",
+    "pass": true,
+    "detail": null
+  },
+  {
+    "id": "M03_USER_BYPASSES_AUTO_PREF",
+    "description": "Disabling auto teaching blocks automatic opening but not explicit user opening.",
+    "pass": true,
+    "detail": null
+  },
+  {
+    "id": "M04_AUTO_BUDGET_OPEN_ONLY",
+    "description": "Automatic session budget applies to new automatic opening, not current moment continuation.",
+    "pass": true,
+    "detail": null
+  },
+  {
+    "id": "M05_COOLDOWN_OPEN_ONLY",
+    "description": "Hard opening cooldown does not kill an active moment.",
+    "pass": true,
+    "detail": null
+  },
+  {
+    "id": "M06_FLOW_PROTECTION_USER_AGENCY",
+    "description": "Hard protected flow blocks automatic execution but not latest explicit user request.",
+    "pass": true,
+    "detail": null
+  },
+  {
+    "id": "M07_ATTEMPT_CAP_ACTION_SENSITIVE",
+    "description": "Hard attempt cap blocks retry but allows reveal.",
+    "pass": true,
+    "detail": null
+  },
+  {
+    "id": "M08_TURN_CAP_TERMINAL_ESCAPE",
+    "description": "Hard teaching-turn cap blocks nonterminal hint but allows terminal reveal.",
+    "pass": true,
+    "detail": null
+  },
+  {
+    "id": "M09_UNKNOWN_DEGRADES",
+    "description": "Unknown critical state yields DEGRADED with no synthetic DENY.",
+    "pass": true,
+    "detail": null
+  },
+  {
+    "id": "M10_NO_PEDAGOGY_RERANK",
+    "description": "Extraneous Planner factors cannot change Gate result.",
+    "pass": true,
+    "detail": null
+  },
+  {
+    "id": "M11_REASON_ORDER_DETERMINISTIC",
+    "description": "Deny reason ordering is stable and input-order independent.",
+    "pass": true,
+    "detail": {
+      "execution_status": "SUCCEEDED",
+      "decision": {
+        "type": "DENY",
+        "primary_reason": "SAFETY_PRIVACY_BLOCK",
+        "reasons": [
+          "SAFETY_PRIVACY_BLOCK",
+          "ACTION_SUPERSEDED",
+          "DECISION_CYCLE_INVALID",
+          "TARGET_INVALID",
+          "CONTENT_INVALID",
+          "TARGET_SUPPRESSED",
+          "AUTO_TEACH_DISABLED",
+          "HARD_PROTECTED_FLOW",
+          "AUTO_SESSION_BUDGET_EXHAUSTED",
+          "HARD_COOLDOWN_ACTIVE"
+        ]
+      }
+    }
+  },
+  {
+    "id": "M12_LOCK_OWNERSHIP",
+    "description": "Continuation requires lock owned by current moment.",
+    "pass": true,
+    "detail": null
+  },
+  {
+    "id": "M13_LATEST_INTENT_REVALIDATED",
+    "description": "Changing latest user intent from teaching continuation blocks automatic continuation.",
+    "pass": true,
+    "detail": null
+  },
+  {
+    "id": "M14_TERMINALIZING_FLAG",
+    "description": "A terminalizing explanation may close a moment after hard turn cap.",
+    "pass": true,
+    "detail": null
+  }
+]

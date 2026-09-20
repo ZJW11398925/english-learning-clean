@@ -1,0 +1,86 @@
+{
+  "profile_id": "local-runtime-v1.0-2026-09",
+  "status": "LOCAL_RUNTIME_BASELINE_V1",
+  "process_model": "SINGLE_PROCESS_SINGLE_DEVICE",
+  "stores": {
+    "app.db": {
+      "role": "ALL_MUTABLE_USER_AND_RUNTIME_STATE",
+      "required_for_atomic_groups": [
+        "CP0_INPUT_USER_TURN",
+        "CP2_GATE_MOMENT_LOCK_FIRST_ACTION",
+        "TEACHING_TERMINAL_LOCK_RELEASE",
+        "CP3_DELIVERY_ASSISTANT_CANONICALIZATION"
+      ],
+      "sqlite_pragmas": {
+        "journal_mode": "WAL",
+        "foreign_keys": "ON",
+        "busy_timeout_ms": 5000,
+        "synchronous": "NORMAL_REFERENCE_DEFAULT"
+      }
+    },
+    "content.db": {
+      "role": "READ_ONLY_CONTENT_RELEASE_ARTIFACT",
+      "mutable_user_state": false
+    },
+    "secret_store": {
+      "role": "OS_OR_PLATFORM_SECRET_STORE",
+      "stores": [
+        "API keys",
+        "tokens"
+      ],
+      "excluded_from_app_db": true
+    }
+  },
+  "coordination": {
+    "conversation": {
+      "logical_contract": "ConversationCoordinatorLease",
+      "local_implementation": "IN_PROCESS_KEYED_MUTEX_PLUS_RUNTIME_EPOCH",
+      "heartbeat": false,
+      "ttl_expiry": false,
+      "distributed_lease_service": false
+    },
+    "teaching": {
+      "logical_contract": "TeachingLockLease",
+      "local_implementation": "DURABLE_ACTIVE_TEACHING_LOCK_ROW_PLUS_CAS",
+      "heartbeat": false,
+      "ttl_expiry": false
+    }
+  },
+  "recovery": {
+    "required": true,
+    "trigger": [
+      "APP_STARTUP",
+      "OPPORTUNISTIC_BEFORE_CONVERSATION_OPEN"
+    ],
+    "background_daemon_required": false,
+    "whole_turn_replay": false,
+    "runtime_epoch_fencing": true
+  },
+  "external_execution": {
+    "provider_semantics": "AT_LEAST_ONCE_OR_UNCERTAIN",
+    "canonical_semantics": "EXACTLY_ONCE_CANONICALIZATION",
+    "provider_call_inside_sql_transaction": false
+  },
+  "streaming": {
+    "phase_1_default": "BUFFERED_VALIDATED",
+    "guarded_streaming_later": true,
+    "barge_in": "IN_PROCESS_CANCELLATION_TOKEN_PLUS_DURABLE_INTERRUPT_REQUEST"
+  },
+  "projections": {
+    "durable_job_record": true,
+    "run_after_conversation_guard_release": true,
+    "background_service_required": false,
+    "resume_on_startup_or_idle": true
+  },
+  "explicit_non_requirements_v1": [
+    "Redis",
+    "Kafka",
+    "distributed lease/lock service",
+    "heartbeat renewal loop",
+    "leader election",
+    "multi-worker orchestration",
+    "distributed transaction coordinator",
+    "always-on recovery daemon",
+    "cross-device sync"
+  ]
+}

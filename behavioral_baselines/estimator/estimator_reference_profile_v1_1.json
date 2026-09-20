@@ -1,0 +1,113 @@
+{
+  "profile_id": "estimator-v1.1-reference-2026-09-stress-tested",
+  "status": "BEHAVIORAL_BASELINE_V1_REFERENCE_CALIBRATABLE",
+  "claim_min_confidence": 0.5,
+  "dimension_min_effective_mass": 0.55,
+  "confidence_tau": 2.4,
+  "same_cluster_repeat_weights": [
+    1.0,
+    0.35,
+    0.15
+  ],
+  "same_cluster_mass_cap_multiple": 1.6,
+  "positive_mapping": {
+    "RECOGNITION": {
+      "recognition": 1.0
+    },
+    "IMITATIVE_PRODUCTION": {
+      "recognition": 0.65,
+      "guided_production": 0.25
+    },
+    "GUIDED_PRODUCTION": {
+      "recognition": 0.75,
+      "guided_production": 1.0
+    },
+    "INDEPENDENT_PRODUCTION": {
+      "recognition": 0.85,
+      "guided_production": 0.75,
+      "independent_production": 1.0
+    },
+    "SPONTANEOUS_PRODUCTION": {
+      "recognition": 0.9,
+      "guided_production": 0.8,
+      "independent_production": 1.0,
+      "spontaneous_production": 1.0
+    },
+    "SELF_REPAIR": {
+      "recognition": 0.65,
+      "guided_production": 0.55,
+      "independent_production": 0.7
+    }
+  },
+  "support_factor": {
+    "NONE": 1.0,
+    "CONTEXT_ONLY": 0.9,
+    "SEMANTIC_HINT": 0.7,
+    "STRUCTURAL_HINT": 0.5,
+    "PARTIAL_FORM": 0.3,
+    "FULL_FORM_SHOWN": 0.1
+  },
+  "exposure_factor": {
+    "NONE": 1.0,
+    "PARTIAL": 0.6,
+    "FULL": 0.15
+  },
+  "support_burden": {
+    "NONE": 0.0,
+    "CONTEXT_ONLY": 0.1,
+    "SEMANTIC_HINT": 0.35,
+    "STRUCTURAL_HINT": 0.55,
+    "PARTIAL_FORM": 0.75,
+    "FULL_FORM_SHOWN": 0.95
+  },
+  "error_attribution_multiplier": {
+    "LIKELY_SLIP": 0.2,
+    "UNKNOWN": 0.6,
+    "LIKELY_KNOWLEDGE_GAP": 1.0,
+    "SYSTEMATIC_PATTERN": 1.35
+  },
+  "outcome_factor": {
+    "SUCCESS": 1.0,
+    "PARTIAL": 0.5,
+    "FAILURE": 1.0,
+    "ABSTAIN": 0.0
+  },
+  "quality_strength": {
+    "IMITATIVE_PRODUCTION": 0.3,
+    "GUIDED_PRODUCTION": 0.65,
+    "INDEPENDENT_PRODUCTION": 1.0,
+    "SPONTANEOUS_PRODUCTION": 1.0,
+    "SELF_REPAIR": 0.8,
+    "MISUSE": 0.8
+  },
+  "support_dependency_min_mass": 1.2,
+  "freshness_days": {
+    "FRESH_MAX": 7,
+    "AGING_MAX": 21
+  },
+  "confidence_bands": {
+    "LOW_MAX": 0.39,
+    "MEDIUM_MAX": 0.69
+  },
+  "planning_thresholds": {
+    "CONFIRMED_GAP_estimate_max": 0.35,
+    "CONFIRMED_GAP_confidence_min": 0.65,
+    "SUPPORT_DEPENDENT_estimate_min": 0.65,
+    "SUPPORT_DEPENDENT_confidence_min": 0.55,
+    "STRONG_CONTROL_estimate_min": 0.8,
+    "STRONG_CONTROL_confidence_min": 0.65,
+    "CONFLICT_mass_min_each": 0.8,
+    "CONFLICT_ratio_low": 0.35,
+    "CONFLICT_ratio_high": 0.65
+  },
+  "capability_confidence_caps": {
+    "independent_or_spontaneous_if_realization_diversity_lt_2": 0.65,
+    "transfer_if_context_diversity_lt_2": 0.55
+  },
+  "notes": [
+    "Behavioral topology is baseline-frozen for V1 engineering consistency.",
+    "Numeric parameters remain calibratable and require profile version bump + full regression.",
+    "V1.1 adds PARTIAL mixed evidence, claim contract validation, strong self-repair restriction, transfer cluster deduplication, strong-only diversity/stability, and hierarchy conflict handling."
+  ],
+  "partial_direct_negative_fraction": 0.5
+}

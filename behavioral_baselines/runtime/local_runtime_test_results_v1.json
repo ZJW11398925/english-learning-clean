@@ -1,0 +1,416 @@
+[
+  {
+    "id": "L01_SQLITE_PROFILE",
+    "description": "SQLite local runtime initializes.",
+    "pass": true,
+    "detail": "sqlite"
+  },
+  {
+    "id": "L02_FOREIGN_KEYS",
+    "description": "Foreign keys enabled.",
+    "pass": true,
+    "detail": "on"
+  },
+  {
+    "id": "L03_WAL_OR_MEMORY_TESTMODE",
+    "description": "WAL is used for file DB; in-memory test DB may report memory.",
+    "pass": true,
+    "detail": "ok"
+  },
+  {
+    "id": "L04_PROVIDER_OUTSIDE_TX",
+    "description": "External provider call is forbidden inside SQL transaction.",
+    "pass": true,
+    "detail": "provider outside transaction invariant"
+  },
+  {
+    "id": "L05_DUPLICATE_INPUT",
+    "description": "InputEnvelope dedupe is durable.",
+    "pass": true,
+    "detail": {
+      "inserted": [
+        true,
+        false
+      ],
+      "count": 1
+    }
+  },
+  {
+    "id": "L06_INTERRUPT_WHILE_GUARD_HELD",
+    "description": "New input can durably request interruption while old coordinator holds guard.",
+    "pass": true,
+    "detail": {
+      "interrupts": 1
+    }
+  },
+  {
+    "id": "L07_COORDINATOR_SERIAL",
+    "description": "Per-conversation coordinator is single-owner in process.",
+    "pass": true,
+    "detail": "second coordinator rejected"
+  },
+  {
+    "id": "L08_CP0_ATOMIC",
+    "description": "CP0 commits TurnRecord + UserTurn together.",
+    "pass": true,
+    "detail": {
+      "turn": 1,
+      "user": 1
+    }
+  },
+  {
+    "id": "L09_CP2_ROLLBACK_AFTER_GATE",
+    "description": "CP2 rollback after Gate leaves no partial teaching state.",
+    "pass": true,
+    "detail": {
+      "gate_decision": 0,
+      "teaching_moment": 0,
+      "active_teaching_lock": 0,
+      "generation_action": 0
+    }
+  },
+  {
+    "id": "L10_CP2_ROLLBACK_AFTER_MOMENT",
+    "description": "CP2 rollback after Moment leaves no partial teaching state.",
+    "pass": true,
+    "detail": {
+      "gate_decision": 0,
+      "teaching_moment": 0,
+      "active_teaching_lock": 0,
+      "generation_action": 0
+    }
+  },
+  {
+    "id": "L11_CP2_ROLLBACK_AFTER_LOCK",
+    "description": "CP2 rollback after Lock leaves no partial teaching state.",
+    "pass": true,
+    "detail": {
+      "gate_decision": 0,
+      "teaching_moment": 0,
+      "active_teaching_lock": 0,
+      "generation_action": 0
+    }
+  },
+  {
+    "id": "L12_CP2_ROLLBACK_AFTER_ACTION",
+    "description": "CP2 rollback after Action leaves no partial teaching state.",
+    "pass": true,
+    "detail": {
+      "gate_decision": 0,
+      "teaching_moment": 0,
+      "active_teaching_lock": 0,
+      "generation_action": 0
+    }
+  },
+  {
+    "id": "L13_CP2_SUCCESS",
+    "description": "Gate+Moment+Lock+first Action commit atomically.",
+    "pass": true,
+    "detail": {
+      "gate_decision": 1,
+      "teaching_moment": 1,
+      "active_teaching_lock": 1,
+      "generation_action": 1
+    }
+  },
+  {
+    "id": "L14_TEACHING_LOCK_UNIQUE",
+    "description": "One conversation cannot hold two active TeachingLocks.",
+    "pass": true,
+    "detail": "unique active teaching lock"
+  },
+  {
+    "id": "L15_TERMINAL_RELEASE",
+    "description": "Teaching terminalization releases durable active lock.",
+    "pass": true,
+    "detail": {
+      "lock": 0,
+      "state": "TEACHING_TERMINAL"
+    }
+  },
+  {
+    "id": "L16_ACTION_RETRY",
+    "description": "Provider retry creates new attempt under same action.",
+    "pass": true,
+    "detail": {
+      "attempts": [
+        "act1:p1",
+        "act1:p2"
+      ]
+    }
+  },
+  {
+    "id": "L17_ACCEPT_ONCE",
+    "description": "At most one ProviderAttempt accepted per GenerationAction.",
+    "pass": true,
+    "detail": {
+      "first": "ACCEPTED",
+      "second": "DUPLICATE_IGNORED"
+    }
+  },
+  {
+    "id": "L18_LATE_RESULT_IGNORED",
+    "description": "Late result after supersede is ignored.",
+    "pass": true,
+    "detail": "IGNORED_LATE_RESULT"
+  },
+  {
+    "id": "L19_CANONICAL_ASSISTANT_ONCE",
+    "description": "Duplicate delivery callback canonicalizes AssistantTurn once.",
+    "pass": true,
+    "detail": {
+      "commits": [
+        true,
+        false
+      ],
+      "count": 1
+    }
+  },
+  {
+    "id": "L20_ACK_ASYNC",
+    "description": "ClientRenderAck can arrive after terminal turn.",
+    "pass": true,
+    "detail": 1
+  },
+  {
+    "id": "L21_CP4_AFTER_GUARD",
+    "description": "Projection execution does not run under conversation guard.",
+    "pass": true,
+    "detail": {
+      "blocked_while_guard": true,
+      "state": "COMPLETED"
+    }
+  },
+  {
+    "id": "L22_INTERRUPT_HANDOFF",
+    "description": "Barge-in terminalizes old action/turn before handoff.",
+    "pass": true,
+    "detail": {
+      "turn": "CANCELLED",
+      "interrupt": "HANDOFF_READY"
+    }
+  },
+  {
+    "id": "L23_NO_PARALLEL_VISIBLE_STREAM",
+    "description": "One coordinator owns visible path per conversation.",
+    "pass": true,
+    "detail": "single coordinator owns visible path"
+  },
+  {
+    "id": "L24_RECOVER_CP0",
+    "description": "Crash after CP0 resumes analysis.",
+    "pass": true,
+    "detail": {
+      "epoch": [
+        1,
+        2
+      ],
+      "actions": [
+        "RESUME_ANALYSIS"
+      ]
+    }
+  },
+  {
+    "id": "L25_RECOVER_CP1",
+    "description": "Crash after CP1 resumes decision.",
+    "pass": true,
+    "detail": {
+      "epoch": [
+        1,
+        2
+      ],
+      "actions": [
+        "RESUME_DECISION"
+      ]
+    }
+  },
+  {
+    "id": "L26_RECOVER_CP2",
+    "description": "Crash after CP2 resumes same stable action.",
+    "pass": true,
+    "detail": {
+      "epoch": [
+        1,
+        2
+      ],
+      "actions": [
+        "RESUME_ACTION_BY_STABLE_ACTION_ID"
+      ]
+    }
+  },
+  {
+    "id": "L27_RECOVER_UNCERTAIN_DELIVERY",
+    "description": "Crash around uncertain delivery uses conservative reconciliation.",
+    "pass": true,
+    "detail": {
+      "epoch": [
+        1,
+        2
+      ],
+      "actions": [
+        "CONSERVATIVE_DELIVERY_RECONCILIATION"
+      ]
+    }
+  },
+  {
+    "id": "L28_RECOVER_PROJECTION",
+    "description": "Pending projection survives restart.",
+    "pass": true,
+    "detail": [
+      {
+        "kind": "PROJECTION",
+        "id": "pr1",
+        "action": "REVALIDATE_AND_RUN"
+      },
+      {
+        "kind": "TURN",
+        "id": "t1",
+        "action": "RESUME_ANALYSIS"
+      }
+    ]
+  },
+  {
+    "id": "L29_ORPHAN_LOCK",
+    "description": "Terminal Moment with orphan lock is repaired on recovery.",
+    "pass": true,
+    "detail": [
+      {
+        "kind": "LOCK",
+        "id": "m1",
+        "action": "RELEASE_ORPHAN_LOCK"
+      },
+      {
+        "kind": "TURN",
+        "id": "t1",
+        "action": "RESUME_ACTION_BY_STABLE_ACTION_ID"
+      }
+    ]
+  },
+  {
+    "id": "L30_ACTIVE_MOMENT_REVALIDATE",
+    "description": "Nonterminal TeachingMoment is revalidated, not blindly reopened.",
+    "pass": true,
+    "detail": [
+      {
+        "kind": "TEACHING",
+        "id": "m1",
+        "action": "REVALIDATE_ACTIVE_MOMENT"
+      },
+      {
+        "kind": "TURN",
+        "id": "t1",
+        "action": "RESUME_ACTION_BY_STABLE_ACTION_ID"
+      }
+    ]
+  },
+  {
+    "id": "L31_NO_HEARTBEAT",
+    "description": "Local TeachingLock has no heartbeat/TTL columns.",
+    "pass": true,
+    "detail": [
+      "conversation_id",
+      "moment_id",
+      "state_version"
+    ]
+  },
+  {
+    "id": "L32_NO_DISTRIBUTED_COORD_TABLE",
+    "description": "Conversation coordination does not require durable distributed lease table.",
+    "pass": true,
+    "detail": [
+      "active_teaching_lock",
+      "assistant_turn",
+      "client_render_ack",
+      "gate_decision",
+      "generation_action",
+      "input_envelope",
+      "interrupt_request",
+      "projection_job",
+      "provider_attempt",
+      "runtime_meta",
+      "server_delivery",
+      "teaching_moment",
+      "turn_record",
+      "user_turn"
+    ]
+  },
+  {
+    "id": "L33_INGEST_OUTSIDE_COORD",
+    "description": "Input ingestion does not require coordinator ownership.",
+    "pass": true,
+    "detail": "input durable while old coordinator held"
+  },
+  {
+    "id": "L34_HANDOFF_AFTER_RELEASE",
+    "description": "Next turn may acquire coordinator after release.",
+    "pass": true,
+    "detail": "handoff after release"
+  },
+  {
+    "id": "L35_CONTENT_SEPARATE",
+    "description": "Read-only content store remains physically separate.",
+    "pass": true,
+    "detail": "content.db read-only separate; app.db mutable user/runtime"
+  },
+  {
+    "id": "L36_SECRET_SEPARATE",
+    "description": "Secrets remain outside app.db.",
+    "pass": true,
+    "detail": "secrets by reference only; excluded from app.db"
+  },
+  {
+    "id": "L37_NO_WHOLE_TURN_REPLAY",
+    "description": "Recovery resumes action/checkpoint rather than replaying whole turn.",
+    "pass": true,
+    "detail": [
+      "RESUME_ACTION_BY_STABLE_ACTION_ID"
+    ]
+  },
+  {
+    "id": "L38_STABLE_ACTION_RETRY",
+    "description": "Retries retain stable GenerationAction identity.",
+    "pass": true,
+    "detail": {
+      "action_ids": [
+        "act1"
+      ],
+      "attempts": [
+        "act1:p1",
+        "act1:p2"
+      ]
+    }
+  },
+  {
+    "id": "L39_TERMINAL_NOT_RECOVERED",
+    "description": "Terminal turns are not replayed on startup.",
+    "pass": true,
+    "detail": []
+  },
+  {
+    "id": "L40_PROJECTION_INDEPENDENT",
+    "description": "Projection may complete after turn terminalization.",
+    "pass": true,
+    "detail": "COMPLETED"
+  },
+  {
+    "id": "L41_PENDING_PROJECTION_NO_BLOCK",
+    "description": "Pending CP4 work does not block next turn.",
+    "pass": true,
+    "detail": "pending projection does not own coordinator"
+  },
+  {
+    "id": "L42_CANCELLED_LATE_RESULT",
+    "description": "Cancelled provider result cannot create canonical side effect.",
+    "pass": true,
+    "detail": "IGNORED_LATE_RESULT"
+  },
+  {
+    "id": "L43_LATE_ACK_NO_REOPEN",
+    "description": "Late ClientRenderAck does not reopen terminal turn.",
+    "pass": true,
+    "detail": {
+      "before": "COMPLETED",
+      "after": "COMPLETED"
+    }
+  }
+]

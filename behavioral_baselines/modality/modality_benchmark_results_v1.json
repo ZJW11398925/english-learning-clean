@@ -1,0 +1,341 @@
+[
+  {
+    "id": "M01_TYPED_CHAT",
+    "pass": true,
+    "result": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "TEXT_PRODUCTION"
+    }
+  },
+  {
+    "id": "M02_TYPED_ATTEMPT",
+    "pass": true,
+    "result": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "TEXT_PRODUCTION"
+    }
+  },
+  {
+    "id": "M03_SELF_REPORT",
+    "pass": true,
+    "result": {
+      "status": "NO_PERFORMANCE_EVIDENCE",
+      "evidence_modality": null
+    }
+  },
+  {
+    "id": "M04_EXPOSURE_ONLY",
+    "pass": true,
+    "result": {
+      "status": "NO_PERFORMANCE_EVIDENCE",
+      "evidence_modality": null
+    }
+  },
+  {
+    "id": "M05_TEXT_COMPREHENSION",
+    "pass": true,
+    "result": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "TEXT_COMPREHENSION"
+    }
+  },
+  {
+    "id": "M06_FAKE_COMPREHENSION",
+    "pass": true,
+    "result": {
+      "status": "NO_PERFORMANCE_EVIDENCE",
+      "evidence_modality": null
+    }
+  },
+  {
+    "id": "M07_EXPLICIT_WRITING",
+    "pass": true,
+    "result": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "TEXT_PRODUCTION"
+    }
+  },
+  {
+    "id": "M08_VOICE_UNSUPPORTED",
+    "pass": true,
+    "result": {
+      "status": "UNSUPPORTED_RUNTIME",
+      "evidence_modality": null
+    }
+  },
+  {
+    "id": "M09_AUDIO_UNSUPPORTED",
+    "pass": true,
+    "result": {
+      "status": "UNSUPPORTED_RUNTIME",
+      "evidence_modality": null
+    }
+  },
+  {
+    "id": "M10_VOICE_FUTURE",
+    "pass": true,
+    "result": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "VOICE_PRODUCTION"
+    }
+  },
+  {
+    "id": "M11_AUDIO_FUTURE",
+    "pass": true,
+    "result": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "AUDIO_COMPREHENSION"
+    }
+  },
+  {
+    "id": "M12_AUDIO_TRANSCRIPT_CONTAMINATION",
+    "pass": true,
+    "result": {
+      "status": "NO_PERFORMANCE_EVIDENCE",
+      "evidence_modality": null,
+      "reason": "AUDIO_ATTRIBUTION_CONTAMINATED_BY_TRANSCRIPT"
+    }
+  },
+  {
+    "id": "M13_TEXT_TO_SPEAKING",
+    "pass": true,
+    "result": {
+      "relation": "PREPARATORY"
+    }
+  },
+  {
+    "id": "M14_TEXT_TO_WRITING_CHAT",
+    "pass": true,
+    "result": {
+      "relation": "PREPARATORY"
+    }
+  },
+  {
+    "id": "M15_TEXT_TO_WRITING_TASK",
+    "pass": true,
+    "result": {
+      "relation": "DIRECT_TARGET_LEVEL"
+    }
+  },
+  {
+    "id": "M16_TEXTCOMP_TO_READING",
+    "pass": true,
+    "result": {
+      "relation": "DIRECT_TARGET_LEVEL"
+    }
+  },
+  {
+    "id": "M17_TEXTCOMP_TO_LISTENING",
+    "pass": true,
+    "result": {
+      "relation": "NONE"
+    }
+  },
+  {
+    "id": "M18_VOICE_TO_SPEAKING",
+    "pass": true,
+    "result": {
+      "relation": "DIRECT_TARGET_LEVEL"
+    }
+  },
+  {
+    "id": "M19_AUDIO_TO_LISTENING",
+    "pass": true,
+    "result": {
+      "relation": "DIRECT_TARGET_LEVEL"
+    }
+  },
+  {
+    "id": "M20_TEXT_NO_SPEAKING_FLUENCY",
+    "pass": true,
+    "result": {
+      "dims": [
+        "accuracy",
+        "guided_production",
+        "independent_production",
+        "pragmatic_control",
+        "recognition",
+        "spontaneous_production",
+        "support_dependency",
+        "transfer"
+      ]
+    }
+  },
+  {
+    "id": "M21_TEXTCOMP_LIMITED",
+    "pass": true,
+    "result": {
+      "dims": [
+        "accuracy",
+        "recognition",
+        "support_dependency",
+        "transfer"
+      ]
+    }
+  },
+  {
+    "id": "M22_VOICE_FUTURE_DIMS",
+    "pass": true,
+    "result": {
+      "dims": [
+        "accuracy",
+        "guided_production",
+        "independent_production",
+        "pragmatic_control",
+        "pronunciation",
+        "recognition",
+        "speaking_fluency",
+        "spontaneous_production",
+        "support_dependency",
+        "transfer"
+      ]
+    }
+  },
+  {
+    "id": "M23_AUDIO_FUTURE_DIMS",
+    "pass": true,
+    "result": {
+      "dims": [
+        "accuracy",
+        "listening_comprehension",
+        "recognition",
+        "support_dependency",
+        "transfer"
+      ]
+    }
+  },
+  {
+    "id": "M24_CLAIM_TYPED_CONTROL",
+    "pass": true,
+    "result": {
+      "allowed": true
+    }
+  },
+  {
+    "id": "M25_CLAIM_SPEAKING_FLUENCY_TEXT_ONLY",
+    "pass": true,
+    "result": {
+      "allowed": false
+    }
+  },
+  {
+    "id": "M26_CLAIM_PRONUNCIATION_TEXT_ONLY",
+    "pass": true,
+    "result": {
+      "allowed": false
+    }
+  },
+  {
+    "id": "M27_CLAIM_LISTENING_TEXT_ONLY",
+    "pass": true,
+    "result": {
+      "allowed": false
+    }
+  },
+  {
+    "id": "M28_CLAIM_READING_TARGET",
+    "pass": true,
+    "result": {
+      "allowed": true
+    }
+  },
+  {
+    "id": "M29_CLAIM_IELTS_BAND_TEXT_ONLY",
+    "pass": true,
+    "result": {
+      "allowed": false
+    }
+  },
+  {
+    "id": "M30_CLAIM_IELTS_BAND_VOICE_NO_VALIDATION",
+    "pass": true,
+    "result": {
+      "allowed": false
+    }
+  },
+  {
+    "id": "M31_CLAIM_IELTS_BAND_VALIDATED",
+    "pass": true,
+    "result": {
+      "allowed": true
+    }
+  },
+  {
+    "id": "M32_SPEAKING_COVERAGE_V1",
+    "pass": true,
+    "result": {
+      "direct_obligation": "UNAVAILABLE_IN_CURRENT_RUNTIME",
+      "accrue_direct_coverage_debt": false,
+      "preparatory_training_allowed": true
+    }
+  },
+  {
+    "id": "M33_LISTENING_COVERAGE_V1",
+    "pass": true,
+    "result": {
+      "direct_obligation": "UNAVAILABLE_IN_CURRENT_RUNTIME",
+      "accrue_direct_coverage_debt": false,
+      "preparatory_training_allowed": true
+    }
+  },
+  {
+    "id": "M34_READING_COVERAGE_V1",
+    "pass": true,
+    "result": {
+      "direct_obligation": "AVAILABLE",
+      "accrue_direct_coverage_debt": true,
+      "preparatory_training_allowed": true
+    }
+  },
+  {
+    "id": "M35_WRITING_COVERAGE_V1",
+    "pass": true,
+    "result": {
+      "direct_obligation": "AVAILABLE",
+      "accrue_direct_coverage_debt": true,
+      "preparatory_training_allowed": true
+    }
+  },
+  {
+    "id": "M36_STATE_KEY_TEXT",
+    "pass": true,
+    "result": {
+      "key": [
+        "RESOURCE",
+        "expr.x",
+        "TEXT_PRODUCTION"
+      ]
+    }
+  },
+  {
+    "id": "M37_GOAL_DOES_NOT_CHANGE_EVIDENCE",
+    "pass": true,
+    "result": {
+      "relation": "PREPARATORY"
+    }
+  },
+  {
+    "id": "M38_TYPED_IN_SPEAKING_PREP_STILL_TEXT",
+    "pass": true,
+    "result": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "TEXT_PRODUCTION"
+    }
+  },
+  {
+    "id": "M39_ASR_TRANSCRIPT_SOURCE_VOICE",
+    "pass": true,
+    "result": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "VOICE_PRODUCTION"
+    }
+  },
+  {
+    "id": "M40_AUDIO_TRANSCRIPT_TEXT_TASK",
+    "pass": true,
+    "result": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "TEXT_COMPREHENSION"
+    }
+  }
+]

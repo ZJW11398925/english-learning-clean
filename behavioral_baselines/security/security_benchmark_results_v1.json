@@ -1,0 +1,771 @@
+[
+  {
+    "id": "S01",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "ALLOW_SEPARATE_SELF_REPORT",
+      "reason": "NOT_PERFORMANCE_EVIDENCE"
+    }
+  },
+  {
+    "id": "S02",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "NO_OBSERVABLE_BEHAVIOR"
+    }
+  },
+  {
+    "id": "S03",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "MODEL_PROPOSAL_NOT_VALIDATED"
+    }
+  },
+  {
+    "id": "S04",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "ALLOW",
+      "reason": "VALIDATED_PERFORMANCE_EVIDENCE"
+    }
+  },
+  {
+    "id": "S05",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "ALLOW",
+      "reason": "PROFILE_WRITE_ALLOWED"
+    }
+  },
+  {
+    "id": "S06",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "SENSITIVE_EXPLICIT_PERSISTENCE_REQUIRED"
+    }
+  },
+  {
+    "id": "S07",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "ALLOW",
+      "reason": "PROFILE_WRITE_ALLOWED"
+    }
+  },
+  {
+    "id": "S08",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "NO_SENSITIVE_INFERENCE"
+    }
+  },
+  {
+    "id": "S09",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "CROSS_PERSONA_RELATIONSHIP_WRITE"
+    }
+  },
+  {
+    "id": "S10",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "TEACHING_STATE_NOT_RELATIONSHIP_MEMORY"
+    }
+  },
+  {
+    "id": "S11",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "ALLOW",
+      "reason": "RELATIONSHIP_WRITE_ALLOWED"
+    }
+  },
+  {
+    "id": "S12",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "SENSITIVE_EXPLICIT_PERSISTENCE_REQUIRED"
+    }
+  },
+  {
+    "id": "S13",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "ALLOW",
+      "reason": "RELATIONSHIP_WRITE_ALLOWED"
+    }
+  },
+  {
+    "id": "S14",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "MODEL_PROPOSAL_NOT_VALIDATED"
+    }
+  },
+  {
+    "id": "S15",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "ALLOW",
+      "reason": "EPISODE_WRITE_ALLOWED"
+    }
+  },
+  {
+    "id": "S16",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "MISSING_PROVENANCE"
+    }
+  },
+  {
+    "id": "S17",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "MODEL_PROPOSAL_NOT_VALIDATED"
+    }
+  },
+  {
+    "id": "S18",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "ALLOW_SEPARATE_SELF_REPORT",
+      "reason": "NOT_PERFORMANCE_EVIDENCE"
+    }
+  },
+  {
+    "id": "S19",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "INVALID_LEARNING_WRITE_KIND"
+    }
+  },
+  {
+    "id": "S20",
+    "category": "memory_write",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "UNKNOWN_DOMAIN"
+    }
+  },
+  {
+    "id": "S21",
+    "category": "provider",
+    "pass": true,
+    "result": {
+      "decision": "ALLOW",
+      "approved": [
+        "CharacterPackage",
+        "ConversationWindow",
+        "DisclosedUserProfile",
+        "SamePersonaRelationshipView"
+      ],
+      "denied": []
+    }
+  },
+  {
+    "id": "S22",
+    "category": "provider",
+    "pass": true,
+    "result": {
+      "decision": "FILTER",
+      "approved": [
+        "ConversationWindow"
+      ],
+      "denied": [
+        "OtherPersonaRelationship"
+      ]
+    }
+  },
+  {
+    "id": "S23",
+    "category": "provider",
+    "pass": true,
+    "result": {
+      "decision": "FILTER",
+      "approved": [
+        "ConversationWindow"
+      ],
+      "denied": [
+        "RawLearningEvidence"
+      ]
+    }
+  },
+  {
+    "id": "S24",
+    "category": "provider",
+    "pass": true,
+    "result": {
+      "decision": "FILTER",
+      "approved": [
+        "ConversationWindow"
+      ],
+      "denied": [
+        "APISecret"
+      ]
+    }
+  },
+  {
+    "id": "S25",
+    "category": "provider",
+    "pass": true,
+    "result": {
+      "decision": "ALLOW",
+      "approved": [
+        "CurrentUserTurn",
+        "MinimalConversationContext",
+        "SupportExposureContext"
+      ],
+      "denied": []
+    }
+  },
+  {
+    "id": "S26",
+    "category": "provider",
+    "pass": true,
+    "result": {
+      "decision": "FILTER",
+      "approved": [
+        "CurrentUserTurn"
+      ],
+      "denied": [
+        "RelationshipMemory"
+      ]
+    }
+  },
+  {
+    "id": "S27",
+    "category": "provider",
+    "pass": true,
+    "result": {
+      "decision": "FILTER",
+      "approved": [
+        "CurrentAttempt",
+        "FocusTarget"
+      ],
+      "denied": [
+        "BroadUserProfile"
+      ]
+    }
+  },
+  {
+    "id": "S28",
+    "category": "provider",
+    "pass": true,
+    "result": {
+      "decision": "FILTER",
+      "approved": [
+        "CanonicalTurnSlice"
+      ],
+      "denied": [
+        "LearnerState"
+      ]
+    }
+  },
+  {
+    "id": "S29",
+    "category": "provider",
+    "pass": true,
+    "result": {
+      "decision": "ALLOW",
+      "approved": [
+        "CanonicalTurnSlice",
+        "SamePersonaExistingRelationshipSummary"
+      ],
+      "denied": []
+    }
+  },
+  {
+    "id": "S30",
+    "category": "provider",
+    "pass": true,
+    "result": {
+      "decision": "FILTER",
+      "approved": [
+        "CanonicalConversationSlice"
+      ],
+      "denied": [
+        "OtherPersonaRelationship"
+      ]
+    }
+  },
+  {
+    "id": "S31",
+    "category": "provider",
+    "pass": true,
+    "result": {
+      "decision": "FILTER",
+      "approved": [
+        "ConversationWindow"
+      ],
+      "denied": [
+        "RandomDatabaseDump"
+      ]
+    }
+  },
+  {
+    "id": "S32",
+    "category": "log",
+    "pass": true,
+    "result": {
+      "api_key": "[REDACTED]",
+      "status": "FAILED"
+    }
+  },
+  {
+    "id": "S33",
+    "category": "log",
+    "pass": true,
+    "result": {
+      "headers": {
+        "Authorization": "[REDACTED]"
+      },
+      "status": "OK"
+    }
+  },
+  {
+    "id": "S34",
+    "category": "log",
+    "pass": true,
+    "result": {
+      "raw_provider_prompt": "[OMITTED_RAW_CONTENT]",
+      "action_id": "a1"
+    }
+  },
+  {
+    "id": "S35",
+    "category": "log",
+    "pass": true,
+    "result": {
+      "message_body": "[OMITTED_RAW_CONTENT]",
+      "turn_id": "t1"
+    }
+  },
+  {
+    "id": "S36",
+    "category": "log",
+    "pass": true,
+    "result": {
+      "detail": "request failed Bearer [REDACTED]"
+    }
+  },
+  {
+    "id": "S37",
+    "category": "export",
+    "pass": true,
+    "result": {
+      "included": [
+        "profile"
+      ],
+      "excluded": [
+        "secret"
+      ],
+      "requires_secret_reentry": true
+    }
+  },
+  {
+    "id": "S38",
+    "category": "export",
+    "pass": true,
+    "result": {
+      "included": [
+        "goal"
+      ],
+      "excluded": [
+        "diag"
+      ],
+      "requires_secret_reentry": true
+    }
+  },
+  {
+    "id": "S39",
+    "category": "export",
+    "pass": true,
+    "result": {
+      "included": [
+        "e"
+      ],
+      "excluded": [
+        "idx"
+      ],
+      "requires_secret_reentry": true
+    }
+  },
+  {
+    "id": "S40",
+    "category": "export",
+    "pass": true,
+    "result": {
+      "included": [
+        "mat"
+      ],
+      "excluded": [],
+      "requires_secret_reentry": true
+    }
+  },
+  {
+    "id": "S41",
+    "category": "deletion",
+    "pass": true,
+    "result": {
+      "delete": [
+        "a1",
+        "action",
+        "conv1",
+        "episode1",
+        "ev1",
+        "job",
+        "ledger1",
+        "profile_city",
+        "rel1",
+        "review1",
+        "state1",
+        "u1"
+      ],
+      "rebuild": [
+        "idx",
+        "relproj"
+      ],
+      "cancel": [
+        "action",
+        "job"
+      ],
+      "tombstones": [
+        "a1",
+        "conv1",
+        "episode1",
+        "u1"
+      ]
+    }
+  },
+  {
+    "id": "S42",
+    "category": "deletion",
+    "pass": true,
+    "result": {
+      "delete": [
+        "idx",
+        "rel1",
+        "rel2",
+        "relproj"
+      ],
+      "rebuild": [],
+      "cancel": [],
+      "tombstones": [
+        "rel1",
+        "rel2",
+        "relproj"
+      ]
+    }
+  },
+  {
+    "id": "S43",
+    "category": "deletion",
+    "pass": true,
+    "result": {
+      "delete": [
+        "ev1",
+        "ledger1",
+        "review1",
+        "state1"
+      ],
+      "rebuild": [],
+      "cancel": [],
+      "tombstones": [
+        "ev1",
+        "ledger1",
+        "review1",
+        "state1"
+      ]
+    }
+  },
+  {
+    "id": "S44",
+    "category": "deletion",
+    "pass": true,
+    "result": {
+      "delete": [
+        "profile_city"
+      ],
+      "rebuild": [],
+      "cancel": [],
+      "tombstones": [
+        "profile_city"
+      ]
+    }
+  },
+  {
+    "id": "S45",
+    "category": "deletion",
+    "pass": true,
+    "result": {
+      "delete": [
+        "char1"
+      ],
+      "rebuild": [],
+      "cancel": [],
+      "tombstones": [
+        "char1"
+      ]
+    }
+  },
+  {
+    "id": "S46",
+    "category": "deletion",
+    "pass": true,
+    "result": {
+      "delete": [
+        "a1",
+        "action",
+        "char1",
+        "conv1",
+        "episode1",
+        "ev1",
+        "idx",
+        "job",
+        "ledger1",
+        "profile_city",
+        "profile_lang",
+        "rel1",
+        "rel2",
+        "relproj",
+        "review1",
+        "state1",
+        "u1",
+        "u2"
+      ],
+      "rebuild": [],
+      "cancel": [],
+      "tombstones": [
+        "a1",
+        "action",
+        "char1",
+        "conv1",
+        "episode1",
+        "ev1",
+        "idx",
+        "job",
+        "ledger1",
+        "profile_city",
+        "profile_lang",
+        "rel1",
+        "rel2",
+        "relproj",
+        "review1",
+        "state1",
+        "u1",
+        "u2"
+      ]
+    }
+  },
+  {
+    "id": "S47",
+    "category": "deletion",
+    "pass": true,
+    "result": {
+      "delete": [
+        "a1",
+        "action",
+        "conv1",
+        "episode1",
+        "ev1",
+        "job",
+        "ledger1",
+        "profile_city",
+        "rel1",
+        "review1",
+        "state1",
+        "u1"
+      ],
+      "rebuild": [
+        "idx",
+        "relproj"
+      ],
+      "cancel": [
+        "action",
+        "job"
+      ],
+      "tombstones": [
+        "a1",
+        "conv1",
+        "episode1",
+        "u1"
+      ]
+    }
+  },
+  {
+    "id": "S48",
+    "category": "deletion",
+    "pass": true,
+    "result": {
+      "delete": [
+        "ev1",
+        "ledger1",
+        "review1",
+        "state1"
+      ],
+      "rebuild": [],
+      "cancel": [],
+      "tombstones": [
+        "ev1",
+        "ledger1",
+        "review1",
+        "state1"
+      ]
+    }
+  },
+  {
+    "id": "S49",
+    "category": "import",
+    "pass": true,
+    "result": [
+      {
+        "id": "keep",
+        "data": "ok"
+      }
+    ]
+  },
+  {
+    "id": "S50",
+    "category": "import",
+    "pass": true,
+    "result": [
+      {
+        "id": "rel2"
+      }
+    ]
+  },
+  {
+    "id": "S51",
+    "category": "endpoint",
+    "pass": true,
+    "result": {
+      "decision": "ALLOW",
+      "reason": "HTTPS_REMOTE_OR_LOCAL"
+    }
+  },
+  {
+    "id": "S52",
+    "category": "endpoint",
+    "pass": true,
+    "result": {
+      "decision": "ALLOW",
+      "reason": "LOOPBACK_HTTP_ALLOWED"
+    }
+  },
+  {
+    "id": "S53",
+    "category": "endpoint",
+    "pass": true,
+    "result": {
+      "decision": "ALLOW",
+      "reason": "LOOPBACK_HTTP_ALLOWED"
+    }
+  },
+  {
+    "id": "S54",
+    "category": "endpoint",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "INSECURE_PROVIDER_ENDPOINT"
+    }
+  },
+  {
+    "id": "S55",
+    "category": "external_delete",
+    "pass": true,
+    "result": {
+      "local_action": "CANCEL",
+      "external_action": "NONE",
+      "remote_revocation": "NOT_APPLICABLE"
+    }
+  },
+  {
+    "id": "S56",
+    "category": "external_delete",
+    "pass": true,
+    "result": {
+      "local_action": "DELETE_LOCAL_RECEIPT_CONTENT_REFS",
+      "external_action": "NONE",
+      "remote_revocation": "CANNOT_BE_GUARANTEED_BY_APP"
+    }
+  },
+  {
+    "id": "S57",
+    "category": "external_delete",
+    "pass": true,
+    "result": {
+      "local_action": "DELETE_LOCAL_RECEIPT_CONTENT_REFS",
+      "external_action": "SCHEDULE_PROVIDER_DELETE",
+      "remote_revocation": "PENDING_PROVIDER"
+    }
+  },
+  {
+    "id": "S58",
+    "category": "endpoint",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "SECRET_IN_PROVIDER_URL"
+    }
+  },
+  {
+    "id": "S59",
+    "category": "endpoint",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "SECRET_IN_PROVIDER_URL"
+    }
+  },
+  {
+    "id": "S60",
+    "category": "provider_action",
+    "pass": true,
+    "result": {
+      "decision": "ALLOW",
+      "reason": "SECRET_BY_REFERENCE"
+    }
+  },
+  {
+    "id": "S61",
+    "category": "provider_action",
+    "pass": true,
+    "result": {
+      "decision": "DENY",
+      "reason": "RAW_SECRET_IN_DURABLE_ACTION"
+    }
+  }
+]

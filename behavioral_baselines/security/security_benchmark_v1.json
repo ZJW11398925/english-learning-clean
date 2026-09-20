@@ -1,0 +1,2713 @@
+[
+  {
+    "id": "S01",
+    "category": "memory_write",
+    "input": {
+      "domain": "LEARNING",
+      "proposal_kind": "SELF_REPORT",
+      "source_type": "USER_FREE_TEXT",
+      "provenance_present": true
+    },
+    "expected": {
+      "decision": "ALLOW_SEPARATE_SELF_REPORT"
+    }
+  },
+  {
+    "id": "S02",
+    "category": "memory_write",
+    "input": {
+      "domain": "LEARNING",
+      "proposal_kind": "PERFORMANCE_EVIDENCE",
+      "source_type": "MODEL_PROPOSAL",
+      "provenance_present": true,
+      "observable_behavior": false,
+      "domain_validation_passed": true
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "NO_OBSERVABLE_BEHAVIOR"
+    }
+  },
+  {
+    "id": "S03",
+    "category": "memory_write",
+    "input": {
+      "domain": "LEARNING",
+      "proposal_kind": "PERFORMANCE_EVIDENCE",
+      "source_type": "MODEL_PROPOSAL",
+      "provenance_present": true,
+      "observable_behavior": true,
+      "domain_validation_passed": false
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "MODEL_PROPOSAL_NOT_VALIDATED"
+    }
+  },
+  {
+    "id": "S04",
+    "category": "memory_write",
+    "input": {
+      "domain": "LEARNING",
+      "proposal_kind": "PERFORMANCE_EVIDENCE",
+      "source_type": "MODEL_PROPOSAL",
+      "provenance_present": true,
+      "observable_behavior": true,
+      "domain_validation_passed": true
+    },
+    "expected": {
+      "decision": "ALLOW"
+    }
+  },
+  {
+    "id": "S05",
+    "category": "memory_write",
+    "input": {
+      "domain": "USER_PROFILE",
+      "proposal_kind": "USER_STATED_FACT",
+      "source_type": "USER_FREE_TEXT",
+      "provenance_present": true,
+      "sensitivity": "NORMAL"
+    },
+    "expected": {
+      "decision": "ALLOW"
+    }
+  },
+  {
+    "id": "S06",
+    "category": "memory_write",
+    "input": {
+      "domain": "USER_PROFILE",
+      "proposal_kind": "USER_STATED_FACT",
+      "source_type": "USER_FREE_TEXT",
+      "provenance_present": true,
+      "sensitivity": "HIGH",
+      "explicit_persistence": false
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "SENSITIVE_EXPLICIT_PERSISTENCE_REQUIRED"
+    }
+  },
+  {
+    "id": "S07",
+    "category": "memory_write",
+    "input": {
+      "domain": "USER_PROFILE",
+      "proposal_kind": "USER_STATED_FACT",
+      "source_type": "USER_STRUCTURED_EDIT",
+      "provenance_present": true,
+      "sensitivity": "HIGH",
+      "explicit_persistence": true
+    },
+    "expected": {
+      "decision": "ALLOW"
+    }
+  },
+  {
+    "id": "S08",
+    "category": "memory_write",
+    "input": {
+      "domain": "USER_PROFILE",
+      "proposal_kind": "SYSTEM_INFERRED_FACT",
+      "source_type": "MODEL_PROPOSAL",
+      "provenance_present": true,
+      "sensitivity": "HIGH",
+      "explicit_persistence": true,
+      "domain_validation_passed": true
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "NO_SENSITIVE_INFERENCE"
+    }
+  },
+  {
+    "id": "S09",
+    "category": "memory_write",
+    "input": {
+      "domain": "RELATIONSHIP",
+      "proposal_kind": "SHARED_EVENT",
+      "source_type": "MODEL_PROPOSAL",
+      "provenance_present": true,
+      "same_persona": false,
+      "domain_validation_passed": true
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "CROSS_PERSONA_RELATIONSHIP_WRITE"
+    }
+  },
+  {
+    "id": "S10",
+    "category": "memory_write",
+    "input": {
+      "domain": "RELATIONSHIP",
+      "proposal_kind": "TEACHING_STATE",
+      "source_type": "SYSTEM_EVENT",
+      "provenance_present": true,
+      "same_persona": true
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "TEACHING_STATE_NOT_RELATIONSHIP_MEMORY"
+    }
+  },
+  {
+    "id": "S11",
+    "category": "memory_write",
+    "input": {
+      "domain": "RELATIONSHIP",
+      "proposal_kind": "SHARED_EVENT",
+      "source_type": "MODEL_PROPOSAL",
+      "provenance_present": true,
+      "same_persona": true,
+      "domain_validation_passed": true,
+      "sensitivity": "NORMAL"
+    },
+    "expected": {
+      "decision": "ALLOW"
+    }
+  },
+  {
+    "id": "S12",
+    "category": "memory_write",
+    "input": {
+      "domain": "RELATIONSHIP",
+      "proposal_kind": "USER_STATED_FACT",
+      "source_type": "MODEL_PROPOSAL",
+      "provenance_present": true,
+      "same_persona": true,
+      "domain_validation_passed": true,
+      "sensitivity": "HIGH",
+      "explicit_persistence": false
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "SENSITIVE_EXPLICIT_PERSISTENCE_REQUIRED"
+    }
+  },
+  {
+    "id": "S13",
+    "category": "memory_write",
+    "input": {
+      "domain": "RELATIONSHIP",
+      "proposal_kind": "USER_STATED_FACT",
+      "source_type": "MODEL_PROPOSAL",
+      "provenance_present": true,
+      "same_persona": true,
+      "domain_validation_passed": true,
+      "sensitivity": "HIGH",
+      "explicit_persistence": true
+    },
+    "expected": {
+      "decision": "ALLOW"
+    }
+  },
+  {
+    "id": "S14",
+    "category": "memory_write",
+    "input": {
+      "domain": "EPISODE",
+      "proposal_kind": "SUMMARY",
+      "source_type": "MODEL_PROPOSAL",
+      "provenance_present": true,
+      "domain_validation_passed": false
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "MODEL_PROPOSAL_NOT_VALIDATED"
+    }
+  },
+  {
+    "id": "S15",
+    "category": "memory_write",
+    "input": {
+      "domain": "EPISODE",
+      "proposal_kind": "SUMMARY",
+      "source_type": "MODEL_PROPOSAL",
+      "provenance_present": true,
+      "domain_validation_passed": true
+    },
+    "expected": {
+      "decision": "ALLOW"
+    }
+  },
+  {
+    "id": "S16",
+    "category": "memory_write",
+    "input": {
+      "domain": "USER_PROFILE",
+      "proposal_kind": "USER_STATED_FACT",
+      "source_type": "USER_FREE_TEXT",
+      "provenance_present": false
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "MISSING_PROVENANCE"
+    }
+  },
+  {
+    "id": "S17",
+    "category": "memory_write",
+    "input": {
+      "domain": "USER_PROFILE",
+      "proposal_kind": "SYSTEM_INFERRED_FACT",
+      "source_type": "MODEL_PROPOSAL",
+      "provenance_present": true,
+      "sensitivity": "NORMAL",
+      "domain_validation_passed": false
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "MODEL_PROPOSAL_NOT_VALIDATED"
+    }
+  },
+  {
+    "id": "S18",
+    "category": "memory_write",
+    "input": {
+      "domain": "LEARNING",
+      "proposal_kind": "SELF_REPORT",
+      "source_type": "USER_FREE_TEXT",
+      "provenance_present": true
+    },
+    "expected": {
+      "decision": "ALLOW_SEPARATE_SELF_REPORT"
+    }
+  },
+  {
+    "id": "S19",
+    "category": "memory_write",
+    "input": {
+      "domain": "LEARNING",
+      "proposal_kind": "MASTERY_OVERRIDE",
+      "source_type": "SYSTEM_EVENT",
+      "provenance_present": true
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "INVALID_LEARNING_WRITE_KIND"
+    }
+  },
+  {
+    "id": "S20",
+    "category": "memory_write",
+    "input": {
+      "domain": "PERSONA",
+      "proposal_kind": "WRITE_ANYTHING",
+      "source_type": "MODEL_PROPOSAL",
+      "provenance_present": true
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "UNKNOWN_DOMAIN"
+    }
+  },
+  {
+    "id": "S21",
+    "category": "provider",
+    "input": {
+      "action": "PERSONA_REPLY",
+      "views": [
+        "ConversationWindow",
+        "CharacterPackage",
+        "SamePersonaRelationshipView",
+        "DisclosedUserProfile"
+      ]
+    },
+    "expected": {
+      "decision": "ALLOW",
+      "denied": []
+    }
+  },
+  {
+    "id": "S22",
+    "category": "provider",
+    "input": {
+      "action": "PERSONA_REPLY",
+      "views": [
+        "ConversationWindow",
+        "OtherPersonaRelationship"
+      ]
+    },
+    "expected": {
+      "decision": "FILTER",
+      "denied": [
+        "OtherPersonaRelationship"
+      ]
+    }
+  },
+  {
+    "id": "S23",
+    "category": "provider",
+    "input": {
+      "action": "PERSONA_REPLY",
+      "views": [
+        "ConversationWindow",
+        "RawLearningEvidence"
+      ]
+    },
+    "expected": {
+      "decision": "FILTER",
+      "denied": [
+        "RawLearningEvidence"
+      ]
+    }
+  },
+  {
+    "id": "S24",
+    "category": "provider",
+    "input": {
+      "action": "PERSONA_REPLY",
+      "views": [
+        "ConversationWindow",
+        "APISecret"
+      ]
+    },
+    "expected": {
+      "decision": "FILTER",
+      "denied": [
+        "APISecret"
+      ]
+    }
+  },
+  {
+    "id": "S25",
+    "category": "provider",
+    "input": {
+      "action": "LEARNING_EVALUATION",
+      "views": [
+        "CurrentUserTurn",
+        "MinimalConversationContext",
+        "SupportExposureContext"
+      ]
+    },
+    "expected": {
+      "decision": "ALLOW",
+      "denied": []
+    }
+  },
+  {
+    "id": "S26",
+    "category": "provider",
+    "input": {
+      "action": "LEARNING_EVALUATION",
+      "views": [
+        "CurrentUserTurn",
+        "RelationshipMemory"
+      ]
+    },
+    "expected": {
+      "decision": "FILTER",
+      "denied": [
+        "RelationshipMemory"
+      ]
+    }
+  },
+  {
+    "id": "S27",
+    "category": "provider",
+    "input": {
+      "action": "TEACHING_EVALUATION",
+      "views": [
+        "CurrentAttempt",
+        "FocusTarget",
+        "BroadUserProfile"
+      ]
+    },
+    "expected": {
+      "decision": "FILTER",
+      "denied": [
+        "BroadUserProfile"
+      ]
+    }
+  },
+  {
+    "id": "S28",
+    "category": "provider",
+    "input": {
+      "action": "RELATIONSHIP_PROPOSAL",
+      "views": [
+        "CanonicalTurnSlice",
+        "LearnerState"
+      ]
+    },
+    "expected": {
+      "decision": "FILTER",
+      "denied": [
+        "LearnerState"
+      ]
+    }
+  },
+  {
+    "id": "S29",
+    "category": "provider",
+    "input": {
+      "action": "RELATIONSHIP_PROPOSAL",
+      "views": [
+        "CanonicalTurnSlice",
+        "SamePersonaExistingRelationshipSummary"
+      ]
+    },
+    "expected": {
+      "decision": "ALLOW",
+      "denied": []
+    }
+  },
+  {
+    "id": "S30",
+    "category": "provider",
+    "input": {
+      "action": "EPISODE_SUMMARY",
+      "views": [
+        "CanonicalConversationSlice",
+        "OtherPersonaRelationship"
+      ]
+    },
+    "expected": {
+      "decision": "FILTER",
+      "denied": [
+        "OtherPersonaRelationship"
+      ]
+    }
+  },
+  {
+    "id": "S31",
+    "category": "provider",
+    "input": {
+      "action": "PERSONA_REPLY",
+      "views": [
+        "ConversationWindow",
+        "RandomDatabaseDump"
+      ]
+    },
+    "expected": {
+      "decision": "FILTER",
+      "denied": [
+        "RandomDatabaseDump"
+      ]
+    }
+  },
+  {
+    "id": "S32",
+    "category": "log",
+    "input": {
+      "event": {
+        "api_key": "sk-testsecret",
+        "status": "FAILED"
+      }
+    },
+    "expected": {
+      "api_key": "[REDACTED]"
+    }
+  },
+  {
+    "id": "S33",
+    "category": "log",
+    "input": {
+      "event": {
+        "headers": {
+          "Authorization": "Bearer abcdefghijk"
+        },
+        "status": "OK"
+      }
+    },
+    "expected": {
+      "contains": "[REDACTED]"
+    }
+  },
+  {
+    "id": "S34",
+    "category": "log",
+    "input": {
+      "event": {
+        "raw_provider_prompt": "private user text",
+        "action_id": "a1"
+      }
+    },
+    "expected": {
+      "raw_provider_prompt": "[OMITTED_RAW_CONTENT]"
+    }
+  },
+  {
+    "id": "S35",
+    "category": "log",
+    "input": {
+      "event": {
+        "message_body": "sensitive transcript",
+        "turn_id": "t1"
+      }
+    },
+    "expected": {
+      "message_body": "[OMITTED_RAW_CONTENT]"
+    }
+  },
+  {
+    "id": "S36",
+    "category": "log",
+    "input": {
+      "event": {
+        "detail": "request failed Bearer abcdefghijklmnop"
+      }
+    },
+    "expected": {
+      "contains": "Bearer [REDACTED]"
+    }
+  },
+  {
+    "id": "S37",
+    "category": "export",
+    "input": {
+      "records": [
+        {
+          "id": "secret",
+          "data_class": "SECRET"
+        },
+        {
+          "id": "profile",
+          "data_class": "PERSONAL"
+        }
+      ]
+    },
+    "expected": {
+      "included": [
+        "profile"
+      ],
+      "excluded": [
+        "secret"
+      ]
+    }
+  },
+  {
+    "id": "S38",
+    "category": "export",
+    "input": {
+      "records": [
+        {
+          "id": "diag",
+          "data_class": "RUNTIME_DIAGNOSTIC"
+        },
+        {
+          "id": "goal",
+          "data_class": "PERSONAL"
+        }
+      ]
+    },
+    "expected": {
+      "included": [
+        "goal"
+      ],
+      "excluded": [
+        "diag"
+      ]
+    }
+  },
+  {
+    "id": "S39",
+    "category": "export",
+    "input": {
+      "records": [
+        {
+          "id": "idx",
+          "data_class": "DERIVED_PRIVATE",
+          "required_for_restore": false
+        },
+        {
+          "id": "e",
+          "data_class": "LEARNING_PRIVATE"
+        }
+      ]
+    },
+    "expected": {
+      "included": [
+        "e"
+      ],
+      "excluded": [
+        "idx"
+      ]
+    }
+  },
+  {
+    "id": "S40",
+    "category": "export",
+    "input": {
+      "records": [
+        {
+          "id": "mat",
+          "data_class": "DERIVED_PRIVATE",
+          "required_for_restore": true
+        }
+      ]
+    },
+    "expected": {
+      "included": [
+        "mat"
+      ],
+      "excluded": []
+    }
+  },
+  {
+    "id": "S41",
+    "category": "deletion",
+    "input": {
+      "request": {
+        "scope": "CONVERSATION",
+        "conversation_id": "c1"
+      },
+      "graph": [
+        {
+          "id": "conv1",
+          "owner": "USER",
+          "kind": "CONVERSATION",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "u1",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "a1",
+          "owner": "USER",
+          "kind": "ASSISTANT_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "u2",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c2",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "rel1",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u1"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "rel2",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u2"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "relproj",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_PROJECTION",
+          "data_class": "DERIVED_PRIVATE",
+          "persona_id": "p1",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "episode1",
+          "owner": "USER",
+          "kind": "EPISODE_MEMORY",
+          "data_class": "DERIVED_PRIVATE",
+          "conversation_id": "c1",
+          "source_ids": [
+            "u1",
+            "a1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "idx",
+          "owner": "USER",
+          "kind": "RETRIEVAL_INDEX",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "job",
+          "owner": "USER",
+          "kind": "PENDING_PROJECTION_JOB",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "action",
+          "owner": "USER",
+          "kind": "PENDING_PROVIDER_ACTION",
+          "data_class": "RUNTIME_DIAGNOSTIC",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "ev1",
+          "owner": "USER",
+          "kind": "EVIDENCE",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "state1",
+          "owner": "USER",
+          "kind": "LEARNER_STATE",
+          "data_class": "DERIVED_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "review1",
+          "owner": "USER",
+          "kind": "REVIEW_EVENT",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "ledger1",
+          "owner": "USER",
+          "kind": "PLANNING_LEDGER_ENTRY",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_city",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "city",
+          "data_class": "PERSONAL",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_lang",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "language",
+          "data_class": "PERSONAL",
+          "source_ids": [],
+          "canonical": true
+        },
+        {
+          "id": "char1",
+          "owner": "USER",
+          "kind": "CHARACTER_PACKAGE",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "content1",
+          "owner": "GLOBAL",
+          "kind": "CONTENT_RESOURCE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "curr1",
+          "owner": "GLOBAL",
+          "kind": "CURRICULUM_NODE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        }
+      ]
+    },
+    "expected": {
+      "must_delete": [
+        "conv1",
+        "u1",
+        "a1",
+        "episode1",
+        "rel1",
+        "profile_city",
+        "job",
+        "action",
+        "ev1",
+        "state1",
+        "review1",
+        "ledger1"
+      ],
+      "must_rebuild": [
+        "relproj",
+        "idx"
+      ],
+      "must_keep": [
+        "u2",
+        "rel2",
+        "content1",
+        "curr1"
+      ]
+    }
+  },
+  {
+    "id": "S42",
+    "category": "deletion",
+    "input": {
+      "request": {
+        "scope": "RELATIONSHIP_PAIR",
+        "persona_id": "p1"
+      },
+      "graph": [
+        {
+          "id": "conv1",
+          "owner": "USER",
+          "kind": "CONVERSATION",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "u1",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "a1",
+          "owner": "USER",
+          "kind": "ASSISTANT_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "u2",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c2",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "rel1",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u1"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "rel2",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u2"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "relproj",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_PROJECTION",
+          "data_class": "DERIVED_PRIVATE",
+          "persona_id": "p1",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "episode1",
+          "owner": "USER",
+          "kind": "EPISODE_MEMORY",
+          "data_class": "DERIVED_PRIVATE",
+          "conversation_id": "c1",
+          "source_ids": [
+            "u1",
+            "a1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "idx",
+          "owner": "USER",
+          "kind": "RETRIEVAL_INDEX",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "job",
+          "owner": "USER",
+          "kind": "PENDING_PROJECTION_JOB",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "action",
+          "owner": "USER",
+          "kind": "PENDING_PROVIDER_ACTION",
+          "data_class": "RUNTIME_DIAGNOSTIC",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "ev1",
+          "owner": "USER",
+          "kind": "EVIDENCE",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "state1",
+          "owner": "USER",
+          "kind": "LEARNER_STATE",
+          "data_class": "DERIVED_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "review1",
+          "owner": "USER",
+          "kind": "REVIEW_EVENT",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "ledger1",
+          "owner": "USER",
+          "kind": "PLANNING_LEDGER_ENTRY",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_city",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "city",
+          "data_class": "PERSONAL",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_lang",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "language",
+          "data_class": "PERSONAL",
+          "source_ids": [],
+          "canonical": true
+        },
+        {
+          "id": "char1",
+          "owner": "USER",
+          "kind": "CHARACTER_PACKAGE",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "content1",
+          "owner": "GLOBAL",
+          "kind": "CONTENT_RESOURCE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "curr1",
+          "owner": "GLOBAL",
+          "kind": "CURRICULUM_NODE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        }
+      ]
+    },
+    "expected": {
+      "must_delete": [
+        "rel1",
+        "rel2",
+        "relproj",
+        "idx"
+      ],
+      "must_keep": [
+        "u1",
+        "u2",
+        "ev1",
+        "char1"
+      ]
+    }
+  },
+  {
+    "id": "S43",
+    "category": "deletion",
+    "input": {
+      "request": {
+        "scope": "LEARNING_TARGET",
+        "target_id": "t1"
+      },
+      "graph": [
+        {
+          "id": "conv1",
+          "owner": "USER",
+          "kind": "CONVERSATION",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "u1",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "a1",
+          "owner": "USER",
+          "kind": "ASSISTANT_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "u2",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c2",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "rel1",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u1"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "rel2",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u2"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "relproj",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_PROJECTION",
+          "data_class": "DERIVED_PRIVATE",
+          "persona_id": "p1",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "episode1",
+          "owner": "USER",
+          "kind": "EPISODE_MEMORY",
+          "data_class": "DERIVED_PRIVATE",
+          "conversation_id": "c1",
+          "source_ids": [
+            "u1",
+            "a1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "idx",
+          "owner": "USER",
+          "kind": "RETRIEVAL_INDEX",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "job",
+          "owner": "USER",
+          "kind": "PENDING_PROJECTION_JOB",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "action",
+          "owner": "USER",
+          "kind": "PENDING_PROVIDER_ACTION",
+          "data_class": "RUNTIME_DIAGNOSTIC",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "ev1",
+          "owner": "USER",
+          "kind": "EVIDENCE",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "state1",
+          "owner": "USER",
+          "kind": "LEARNER_STATE",
+          "data_class": "DERIVED_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "review1",
+          "owner": "USER",
+          "kind": "REVIEW_EVENT",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "ledger1",
+          "owner": "USER",
+          "kind": "PLANNING_LEDGER_ENTRY",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_city",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "city",
+          "data_class": "PERSONAL",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_lang",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "language",
+          "data_class": "PERSONAL",
+          "source_ids": [],
+          "canonical": true
+        },
+        {
+          "id": "char1",
+          "owner": "USER",
+          "kind": "CHARACTER_PACKAGE",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "content1",
+          "owner": "GLOBAL",
+          "kind": "CONTENT_RESOURCE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "curr1",
+          "owner": "GLOBAL",
+          "kind": "CURRICULUM_NODE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        }
+      ]
+    },
+    "expected": {
+      "must_delete": [
+        "ev1",
+        "state1",
+        "review1",
+        "ledger1"
+      ],
+      "must_keep": [
+        "u1",
+        "rel1",
+        "content1"
+      ]
+    }
+  },
+  {
+    "id": "S44",
+    "category": "deletion",
+    "input": {
+      "request": {
+        "scope": "PROFILE_FIELD",
+        "field_key": "city"
+      },
+      "graph": [
+        {
+          "id": "conv1",
+          "owner": "USER",
+          "kind": "CONVERSATION",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "u1",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "a1",
+          "owner": "USER",
+          "kind": "ASSISTANT_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "u2",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c2",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "rel1",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u1"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "rel2",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u2"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "relproj",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_PROJECTION",
+          "data_class": "DERIVED_PRIVATE",
+          "persona_id": "p1",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "episode1",
+          "owner": "USER",
+          "kind": "EPISODE_MEMORY",
+          "data_class": "DERIVED_PRIVATE",
+          "conversation_id": "c1",
+          "source_ids": [
+            "u1",
+            "a1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "idx",
+          "owner": "USER",
+          "kind": "RETRIEVAL_INDEX",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "job",
+          "owner": "USER",
+          "kind": "PENDING_PROJECTION_JOB",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "action",
+          "owner": "USER",
+          "kind": "PENDING_PROVIDER_ACTION",
+          "data_class": "RUNTIME_DIAGNOSTIC",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "ev1",
+          "owner": "USER",
+          "kind": "EVIDENCE",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "state1",
+          "owner": "USER",
+          "kind": "LEARNER_STATE",
+          "data_class": "DERIVED_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "review1",
+          "owner": "USER",
+          "kind": "REVIEW_EVENT",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "ledger1",
+          "owner": "USER",
+          "kind": "PLANNING_LEDGER_ENTRY",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_city",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "city",
+          "data_class": "PERSONAL",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_lang",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "language",
+          "data_class": "PERSONAL",
+          "source_ids": [],
+          "canonical": true
+        },
+        {
+          "id": "char1",
+          "owner": "USER",
+          "kind": "CHARACTER_PACKAGE",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "content1",
+          "owner": "GLOBAL",
+          "kind": "CONTENT_RESOURCE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "curr1",
+          "owner": "GLOBAL",
+          "kind": "CURRICULUM_NODE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        }
+      ]
+    },
+    "expected": {
+      "must_delete": [
+        "profile_city"
+      ],
+      "must_keep": [
+        "profile_lang",
+        "u1"
+      ]
+    }
+  },
+  {
+    "id": "S45",
+    "category": "deletion",
+    "input": {
+      "request": {
+        "scope": "PERSONA_PACKAGE",
+        "persona_id": "p1"
+      },
+      "graph": [
+        {
+          "id": "conv1",
+          "owner": "USER",
+          "kind": "CONVERSATION",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "u1",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "a1",
+          "owner": "USER",
+          "kind": "ASSISTANT_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "u2",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c2",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "rel1",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u1"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "rel2",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u2"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "relproj",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_PROJECTION",
+          "data_class": "DERIVED_PRIVATE",
+          "persona_id": "p1",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "episode1",
+          "owner": "USER",
+          "kind": "EPISODE_MEMORY",
+          "data_class": "DERIVED_PRIVATE",
+          "conversation_id": "c1",
+          "source_ids": [
+            "u1",
+            "a1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "idx",
+          "owner": "USER",
+          "kind": "RETRIEVAL_INDEX",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "job",
+          "owner": "USER",
+          "kind": "PENDING_PROJECTION_JOB",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "action",
+          "owner": "USER",
+          "kind": "PENDING_PROVIDER_ACTION",
+          "data_class": "RUNTIME_DIAGNOSTIC",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "ev1",
+          "owner": "USER",
+          "kind": "EVIDENCE",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "state1",
+          "owner": "USER",
+          "kind": "LEARNER_STATE",
+          "data_class": "DERIVED_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "review1",
+          "owner": "USER",
+          "kind": "REVIEW_EVENT",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "ledger1",
+          "owner": "USER",
+          "kind": "PLANNING_LEDGER_ENTRY",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_city",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "city",
+          "data_class": "PERSONAL",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_lang",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "language",
+          "data_class": "PERSONAL",
+          "source_ids": [],
+          "canonical": true
+        },
+        {
+          "id": "char1",
+          "owner": "USER",
+          "kind": "CHARACTER_PACKAGE",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "content1",
+          "owner": "GLOBAL",
+          "kind": "CONTENT_RESOURCE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "curr1",
+          "owner": "GLOBAL",
+          "kind": "CURRICULUM_NODE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        }
+      ]
+    },
+    "expected": {
+      "must_delete": [
+        "char1"
+      ],
+      "must_keep": [
+        "rel1",
+        "rel2"
+      ]
+    }
+  },
+  {
+    "id": "S46",
+    "category": "deletion",
+    "input": {
+      "request": {
+        "scope": "ALL_USER_DATA"
+      },
+      "graph": [
+        {
+          "id": "conv1",
+          "owner": "USER",
+          "kind": "CONVERSATION",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "u1",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "a1",
+          "owner": "USER",
+          "kind": "ASSISTANT_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "u2",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c2",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "rel1",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u1"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "rel2",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u2"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "relproj",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_PROJECTION",
+          "data_class": "DERIVED_PRIVATE",
+          "persona_id": "p1",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "episode1",
+          "owner": "USER",
+          "kind": "EPISODE_MEMORY",
+          "data_class": "DERIVED_PRIVATE",
+          "conversation_id": "c1",
+          "source_ids": [
+            "u1",
+            "a1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "idx",
+          "owner": "USER",
+          "kind": "RETRIEVAL_INDEX",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "job",
+          "owner": "USER",
+          "kind": "PENDING_PROJECTION_JOB",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "action",
+          "owner": "USER",
+          "kind": "PENDING_PROVIDER_ACTION",
+          "data_class": "RUNTIME_DIAGNOSTIC",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "ev1",
+          "owner": "USER",
+          "kind": "EVIDENCE",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "state1",
+          "owner": "USER",
+          "kind": "LEARNER_STATE",
+          "data_class": "DERIVED_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "review1",
+          "owner": "USER",
+          "kind": "REVIEW_EVENT",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "ledger1",
+          "owner": "USER",
+          "kind": "PLANNING_LEDGER_ENTRY",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_city",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "city",
+          "data_class": "PERSONAL",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_lang",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "language",
+          "data_class": "PERSONAL",
+          "source_ids": [],
+          "canonical": true
+        },
+        {
+          "id": "char1",
+          "owner": "USER",
+          "kind": "CHARACTER_PACKAGE",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "content1",
+          "owner": "GLOBAL",
+          "kind": "CONTENT_RESOURCE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "curr1",
+          "owner": "GLOBAL",
+          "kind": "CURRICULUM_NODE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        }
+      ]
+    },
+    "expected": {
+      "must_delete": [
+        "conv1",
+        "u1",
+        "a1",
+        "u2",
+        "rel1",
+        "rel2",
+        "relproj",
+        "episode1",
+        "idx",
+        "job",
+        "action",
+        "ev1",
+        "state1",
+        "review1",
+        "ledger1",
+        "profile_city",
+        "profile_lang",
+        "char1"
+      ],
+      "must_keep": [
+        "content1",
+        "curr1"
+      ]
+    }
+  },
+  {
+    "id": "S47",
+    "category": "deletion",
+    "input": {
+      "request": {
+        "scope": "CONVERSATION",
+        "conversation_id": "c1"
+      },
+      "graph": [
+        {
+          "id": "conv1",
+          "owner": "USER",
+          "kind": "CONVERSATION",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "u1",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "a1",
+          "owner": "USER",
+          "kind": "ASSISTANT_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "u2",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c2",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "rel1",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u1"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "rel2",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u2"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "relproj",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_PROJECTION",
+          "data_class": "DERIVED_PRIVATE",
+          "persona_id": "p1",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "episode1",
+          "owner": "USER",
+          "kind": "EPISODE_MEMORY",
+          "data_class": "DERIVED_PRIVATE",
+          "conversation_id": "c1",
+          "source_ids": [
+            "u1",
+            "a1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "idx",
+          "owner": "USER",
+          "kind": "RETRIEVAL_INDEX",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "job",
+          "owner": "USER",
+          "kind": "PENDING_PROJECTION_JOB",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "action",
+          "owner": "USER",
+          "kind": "PENDING_PROVIDER_ACTION",
+          "data_class": "RUNTIME_DIAGNOSTIC",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "ev1",
+          "owner": "USER",
+          "kind": "EVIDENCE",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "state1",
+          "owner": "USER",
+          "kind": "LEARNER_STATE",
+          "data_class": "DERIVED_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "review1",
+          "owner": "USER",
+          "kind": "REVIEW_EVENT",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "ledger1",
+          "owner": "USER",
+          "kind": "PLANNING_LEDGER_ENTRY",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_city",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "city",
+          "data_class": "PERSONAL",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_lang",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "language",
+          "data_class": "PERSONAL",
+          "source_ids": [],
+          "canonical": true
+        },
+        {
+          "id": "char1",
+          "owner": "USER",
+          "kind": "CHARACTER_PACKAGE",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "content1",
+          "owner": "GLOBAL",
+          "kind": "CONTENT_RESOURCE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "curr1",
+          "owner": "GLOBAL",
+          "kind": "CURRICULUM_NODE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        }
+      ]
+    },
+    "expected": {
+      "must_cancel": [
+        "job",
+        "action"
+      ]
+    }
+  },
+  {
+    "id": "S48",
+    "category": "deletion",
+    "input": {
+      "request": {
+        "scope": "LEARNING_TARGET",
+        "target_id": "t1"
+      },
+      "graph": [
+        {
+          "id": "conv1",
+          "owner": "USER",
+          "kind": "CONVERSATION",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "u1",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "a1",
+          "owner": "USER",
+          "kind": "ASSISTANT_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c1",
+          "canonical": true,
+          "source_ids": [
+            "conv1"
+          ]
+        },
+        {
+          "id": "u2",
+          "owner": "USER",
+          "kind": "USER_TURN",
+          "data_class": "PERSONAL",
+          "conversation_id": "c2",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "rel1",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u1"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "rel2",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_MEMORY",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": [
+            "u2"
+          ],
+          "derived_from_sources": true
+        },
+        {
+          "id": "relproj",
+          "owner": "USER",
+          "kind": "RELATIONSHIP_PROJECTION",
+          "data_class": "DERIVED_PRIVATE",
+          "persona_id": "p1",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "episode1",
+          "owner": "USER",
+          "kind": "EPISODE_MEMORY",
+          "data_class": "DERIVED_PRIVATE",
+          "conversation_id": "c1",
+          "source_ids": [
+            "u1",
+            "a1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "idx",
+          "owner": "USER",
+          "kind": "RETRIEVAL_INDEX",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "rel1",
+            "rel2"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "job",
+          "owner": "USER",
+          "kind": "PENDING_PROJECTION_JOB",
+          "data_class": "DERIVED_PRIVATE",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "action",
+          "owner": "USER",
+          "kind": "PENDING_PROVIDER_ACTION",
+          "data_class": "RUNTIME_DIAGNOSTIC",
+          "source_ids": [
+            "u1"
+          ]
+        },
+        {
+          "id": "ev1",
+          "owner": "USER",
+          "kind": "EVIDENCE",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "state1",
+          "owner": "USER",
+          "kind": "LEARNER_STATE",
+          "data_class": "DERIVED_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "rebuildable": true
+        },
+        {
+          "id": "review1",
+          "owner": "USER",
+          "kind": "REVIEW_EVENT",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "ledger1",
+          "owner": "USER",
+          "kind": "PLANNING_LEDGER_ENTRY",
+          "data_class": "LEARNING_PRIVATE",
+          "target_id": "t1",
+          "source_ids": [
+            "ev1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_city",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "city",
+          "data_class": "PERSONAL",
+          "source_ids": [
+            "u1"
+          ],
+          "canonical": true,
+          "derived_from_sources": true
+        },
+        {
+          "id": "profile_lang",
+          "owner": "USER",
+          "kind": "PROFILE_FIELD",
+          "field_key": "language",
+          "data_class": "PERSONAL",
+          "source_ids": [],
+          "canonical": true
+        },
+        {
+          "id": "char1",
+          "owner": "USER",
+          "kind": "CHARACTER_PACKAGE",
+          "data_class": "PERSONAL",
+          "persona_id": "p1",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "content1",
+          "owner": "GLOBAL",
+          "kind": "CONTENT_RESOURCE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        },
+        {
+          "id": "curr1",
+          "owner": "GLOBAL",
+          "kind": "CURRICULUM_NODE",
+          "data_class": "GLOBAL_PUBLIC",
+          "canonical": true,
+          "source_ids": []
+        }
+      ]
+    },
+    "expected": {
+      "must_tombstone": [
+        "ev1",
+        "review1",
+        "ledger1"
+      ]
+    }
+  },
+  {
+    "id": "S49",
+    "category": "import",
+    "input": {
+      "records": [
+        {
+          "id": "old",
+          "data": "deleted"
+        },
+        {
+          "id": "keep",
+          "data": "ok"
+        }
+      ],
+      "tombstones": [
+        "old"
+      ]
+    },
+    "expected": {
+      "ids": [
+        "keep"
+      ]
+    }
+  },
+  {
+    "id": "S50",
+    "category": "import",
+    "input": {
+      "records": [
+        {
+          "id": "rel1"
+        },
+        {
+          "id": "rel2"
+        }
+      ],
+      "tombstones": [
+        "rel1"
+      ]
+    },
+    "expected": {
+      "ids": [
+        "rel2"
+      ]
+    }
+  },
+  {
+    "id": "S51",
+    "category": "endpoint",
+    "input": {
+      "url": "https://api.example.com/v1"
+    },
+    "expected": {
+      "decision": "ALLOW"
+    }
+  },
+  {
+    "id": "S52",
+    "category": "endpoint",
+    "input": {
+      "url": "http://localhost:11434/v1"
+    },
+    "expected": {
+      "decision": "ALLOW"
+    }
+  },
+  {
+    "id": "S53",
+    "category": "endpoint",
+    "input": {
+      "url": "http://127.0.0.1:8000/v1"
+    },
+    "expected": {
+      "decision": "ALLOW"
+    }
+  },
+  {
+    "id": "S54",
+    "category": "endpoint",
+    "input": {
+      "url": "http://api.example.com/v1"
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "INSECURE_PROVIDER_ENDPOINT"
+    }
+  },
+  {
+    "id": "S55",
+    "category": "external_delete",
+    "input": {
+      "disclosure": {
+        "status": "NOT_SENT"
+      }
+    },
+    "expected": {
+      "external_action": "NONE",
+      "remote_revocation": "NOT_APPLICABLE"
+    }
+  },
+  {
+    "id": "S56",
+    "category": "external_delete",
+    "input": {
+      "disclosure": {
+        "status": "SENT",
+        "provider_delete_supported": false
+      }
+    },
+    "expected": {
+      "external_action": "NONE",
+      "remote_revocation": "CANNOT_BE_GUARANTEED_BY_APP"
+    }
+  },
+  {
+    "id": "S57",
+    "category": "external_delete",
+    "input": {
+      "disclosure": {
+        "status": "SENT",
+        "provider_delete_supported": true,
+        "provider_request_id": "req1"
+      }
+    },
+    "expected": {
+      "external_action": "SCHEDULE_PROVIDER_DELETE",
+      "remote_revocation": "PENDING_PROVIDER"
+    }
+  },
+  {
+    "id": "S58",
+    "category": "endpoint",
+    "input": {
+      "url": "https://user:pass@example.com/v1"
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "SECRET_IN_PROVIDER_URL"
+    }
+  },
+  {
+    "id": "S59",
+    "category": "endpoint",
+    "input": {
+      "url": "https://example.com/v1?api_key=abc"
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "SECRET_IN_PROVIDER_URL"
+    }
+  },
+  {
+    "id": "S60",
+    "category": "provider_action",
+    "input": {
+      "action": {
+        "action_id": "a1",
+        "secret_ref": "secret://provider/main"
+      }
+    },
+    "expected": {
+      "decision": "ALLOW",
+      "reason": "SECRET_BY_REFERENCE"
+    }
+  },
+  {
+    "id": "S61",
+    "category": "provider_action",
+    "input": {
+      "action": {
+        "action_id": "a1",
+        "api_key": "sk-raw"
+      }
+    },
+    "expected": {
+      "decision": "DENY",
+      "reason": "RAW_SECRET_IN_DURABLE_ACTION"
+    }
+  }
+]

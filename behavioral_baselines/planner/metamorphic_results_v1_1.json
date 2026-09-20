@@ -1,0 +1,138 @@
+[
+  {
+    "id": "M01_BENEFIT_MONOTONIC",
+    "description": "Increasing benefit cannot lower utility.",
+    "pass": true,
+    "detail": {
+      "m": 0.19885,
+      "mhi": 0.2473
+    }
+  },
+  {
+    "id": "M02_COST_MONOTONIC",
+    "description": "Increasing cost cannot raise utility.",
+    "pass": true,
+    "detail": {
+      "m": 0.19885,
+      "mcost": -0.02515
+    }
+  },
+  {
+    "id": "M03_SCOPE_DOMINATES_SCORE",
+    "description": "Targeted scope beats unrelated huge utility.",
+    "pass": true,
+    "detail": {
+      "type": "SELECT",
+      "candidate_id": "small",
+      "utility": -0.307,
+      "activation_path": "USER_INITIATED"
+    }
+  },
+  {
+    "id": "M04_SUPPRESSION_ABSOLUTE",
+    "description": "Hard suppression cannot be outscored.",
+    "pass": true,
+    "detail": {
+      "type": "NO_TARGET",
+      "reason": "NO_ELIGIBLE_CANDIDATE"
+    }
+  },
+  {
+    "id": "M05_POLICY_DIRECTION",
+    "description": "Study-first cannot make the same proactive candidate less attractive than Lounge.",
+    "pass": true,
+    "detail": [
+      -0.0205,
+      0.1765
+    ]
+  },
+  {
+    "id": "M06_ORDER_DETERMINISM",
+    "description": "Candidate list order does not change decision.",
+    "pass": true,
+    "detail": [
+      {
+        "type": "SELECT",
+        "candidate_id": "debt",
+        "utility": 0.41645,
+        "activation_path": "AUTOMATIC"
+      },
+      {
+        "type": "SELECT",
+        "candidate_id": "debt",
+        "utility": 0.41645,
+        "activation_path": "AUTOMATIC"
+      }
+    ]
+  },
+  {
+    "id": "M07_ORIGIN_NOT_DOUBLE_COUNTED",
+    "description": "Adding origin labels alone does not raise utility.",
+    "pass": true,
+    "detail": {
+      "orig1": 0.1032,
+      "orig2": 0.1032
+    }
+  },
+  {
+    "id": "M08_THRESHOLD_BEFORE_TIE",
+    "description": "Inactive candidate cannot win a near-tie.",
+    "pass": true,
+    "detail": {
+      "type": "SELECT",
+      "candidate_id": "above",
+      "utility": 0.19885,
+      "activation_path": "AUTOMATIC"
+    }
+  },
+  {
+    "id": "M09_PARETO",
+    "description": "Pareto-dominated same-class candidate cannot win.",
+    "pass": true,
+    "detail": {
+      "type": "SELECT",
+      "candidate_id": "z_better",
+      "utility": 0.257465,
+      "activation_path": "AUTOMATIC"
+    }
+  },
+  {
+    "id": "M10_IMPACT_MONOTONIC",
+    "description": "Higher communicative impact cannot lower utility.",
+    "pass": true,
+    "detail": {
+      "imp0": 0.223,
+      "imp1": 0.343
+    }
+  },
+  {
+    "id": "M11_DEBT_RESPECTS_SCOPE",
+    "description": "Coverage service cannot override explicit targeted request.",
+    "pass": true,
+    "detail": {
+      "type": "SELECT",
+      "candidate_id": "z_primary",
+      "utility": 0.06,
+      "activation_path": "USER_INITIATED"
+    }
+  },
+  {
+    "id": "M12_REQUEST_PRIORITY_DETERMINISTIC",
+    "description": "Explicit request priority is stable under input order.",
+    "pass": true,
+    "detail": [
+      {
+        "type": "SELECT",
+        "candidate_id": "z_primary",
+        "utility": 0.06,
+        "activation_path": "USER_INITIATED"
+      },
+      {
+        "type": "SELECT",
+        "candidate_id": "z_primary",
+        "utility": 0.06,
+        "activation_path": "USER_INITIATED"
+      }
+    ]
+  }
+]

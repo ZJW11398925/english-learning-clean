@@ -1,0 +1,534 @@
+[
+  {
+    "id": "M01_TYPED_CHAT",
+    "category": "classify",
+    "input": {
+      "input_channel": "TEXT",
+      "task_contract": "FREE_CHAT",
+      "behavior_basis": "USER_PRODUCTION"
+    },
+    "expected": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "TEXT_PRODUCTION"
+    }
+  },
+  {
+    "id": "M02_TYPED_ATTEMPT",
+    "category": "classify",
+    "input": {
+      "input_channel": "TEXT",
+      "task_contract": "FREE_CHAT",
+      "behavior_basis": "ATTEMPT"
+    },
+    "expected": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "TEXT_PRODUCTION"
+    }
+  },
+  {
+    "id": "M03_SELF_REPORT",
+    "category": "classify",
+    "input": {
+      "input_channel": "TEXT",
+      "task_contract": "FREE_CHAT",
+      "behavior_basis": "SELF_REPORT"
+    },
+    "expected": {
+      "status": "NO_PERFORMANCE_EVIDENCE",
+      "evidence_modality": null
+    }
+  },
+  {
+    "id": "M04_EXPOSURE_ONLY",
+    "category": "classify",
+    "input": {
+      "input_channel": "TEXT",
+      "task_contract": "FREE_CHAT",
+      "behavior_basis": "EXPOSURE_ONLY"
+    },
+    "expected": {
+      "status": "NO_PERFORMANCE_EVIDENCE",
+      "evidence_modality": null
+    }
+  },
+  {
+    "id": "M05_TEXT_COMPREHENSION",
+    "category": "classify",
+    "input": {
+      "input_channel": "TEXT",
+      "task_contract": "EXPLICIT_TEXT_COMPREHENSION_TASK",
+      "behavior_basis": "ATTEMPT",
+      "genuine_comprehension_opportunity": true
+    },
+    "expected": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "TEXT_COMPREHENSION"
+    }
+  },
+  {
+    "id": "M06_FAKE_COMPREHENSION",
+    "category": "classify",
+    "input": {
+      "input_channel": "TEXT",
+      "task_contract": "EXPLICIT_TEXT_COMPREHENSION_TASK",
+      "behavior_basis": "ATTEMPT",
+      "genuine_comprehension_opportunity": false
+    },
+    "expected": {
+      "status": "NO_PERFORMANCE_EVIDENCE",
+      "evidence_modality": null
+    }
+  },
+  {
+    "id": "M07_EXPLICIT_WRITING",
+    "category": "classify",
+    "input": {
+      "input_channel": "TEXT",
+      "task_contract": "EXPLICIT_WRITING_TASK",
+      "behavior_basis": "USER_PRODUCTION"
+    },
+    "expected": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "TEXT_PRODUCTION"
+    }
+  },
+  {
+    "id": "M08_VOICE_UNSUPPORTED",
+    "category": "classify",
+    "input": {
+      "input_channel": "VOICE",
+      "task_contract": "SPEAKING_TASK",
+      "behavior_basis": "USER_PRODUCTION"
+    },
+    "expected": {
+      "status": "UNSUPPORTED_RUNTIME",
+      "evidence_modality": null
+    }
+  },
+  {
+    "id": "M09_AUDIO_UNSUPPORTED",
+    "category": "classify",
+    "input": {
+      "input_channel": "AUDIO",
+      "task_contract": "EXPLICIT_LISTENING_TASK",
+      "behavior_basis": "ATTEMPT",
+      "genuine_comprehension_opportunity": true
+    },
+    "expected": {
+      "status": "UNSUPPORTED_RUNTIME",
+      "evidence_modality": null
+    }
+  },
+  {
+    "id": "M10_VOICE_FUTURE",
+    "category": "classify_future",
+    "input": {
+      "input_channel": "VOICE",
+      "task_contract": "SPEAKING_TASK",
+      "behavior_basis": "USER_PRODUCTION"
+    },
+    "expected": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "VOICE_PRODUCTION"
+    }
+  },
+  {
+    "id": "M11_AUDIO_FUTURE",
+    "category": "classify_future",
+    "input": {
+      "input_channel": "AUDIO",
+      "task_contract": "EXPLICIT_LISTENING_TASK",
+      "behavior_basis": "ATTEMPT",
+      "genuine_comprehension_opportunity": true,
+      "transcript_exposed_before_response": false
+    },
+    "expected": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "AUDIO_COMPREHENSION"
+    }
+  },
+  {
+    "id": "M12_AUDIO_TRANSCRIPT_CONTAMINATION",
+    "category": "classify_future",
+    "input": {
+      "input_channel": "AUDIO",
+      "task_contract": "EXPLICIT_LISTENING_TASK",
+      "behavior_basis": "ATTEMPT",
+      "genuine_comprehension_opportunity": true,
+      "transcript_exposed_before_response": true
+    },
+    "expected": {
+      "status": "NO_PERFORMANCE_EVIDENCE",
+      "evidence_modality": null
+    }
+  },
+  {
+    "id": "M13_TEXT_TO_SPEAKING",
+    "category": "relation",
+    "input": {
+      "evidence_modality": "TEXT_PRODUCTION",
+      "goal_modality": "SPEAKING",
+      "task_contract": "FREE_CHAT"
+    },
+    "expected": {
+      "relation": "PREPARATORY"
+    }
+  },
+  {
+    "id": "M14_TEXT_TO_WRITING_CHAT",
+    "category": "relation",
+    "input": {
+      "evidence_modality": "TEXT_PRODUCTION",
+      "goal_modality": "WRITING",
+      "task_contract": "FREE_CHAT"
+    },
+    "expected": {
+      "relation": "PREPARATORY"
+    }
+  },
+  {
+    "id": "M15_TEXT_TO_WRITING_TASK",
+    "category": "relation",
+    "input": {
+      "evidence_modality": "TEXT_PRODUCTION",
+      "goal_modality": "WRITING",
+      "task_contract": "EXPLICIT_WRITING_TASK"
+    },
+    "expected": {
+      "relation": "DIRECT_TARGET_LEVEL"
+    }
+  },
+  {
+    "id": "M16_TEXTCOMP_TO_READING",
+    "category": "relation",
+    "input": {
+      "evidence_modality": "TEXT_COMPREHENSION",
+      "goal_modality": "READING",
+      "task_contract": "EXPLICIT_TEXT_COMPREHENSION_TASK"
+    },
+    "expected": {
+      "relation": "DIRECT_TARGET_LEVEL"
+    }
+  },
+  {
+    "id": "M17_TEXTCOMP_TO_LISTENING",
+    "category": "relation",
+    "input": {
+      "evidence_modality": "TEXT_COMPREHENSION",
+      "goal_modality": "LISTENING",
+      "task_contract": "EXPLICIT_TEXT_COMPREHENSION_TASK"
+    },
+    "expected": {
+      "relation": "NONE"
+    }
+  },
+  {
+    "id": "M18_VOICE_TO_SPEAKING",
+    "category": "relation",
+    "input": {
+      "evidence_modality": "VOICE_PRODUCTION",
+      "goal_modality": "SPEAKING",
+      "task_contract": "SPEAKING_TASK"
+    },
+    "expected": {
+      "relation": "DIRECT_TARGET_LEVEL"
+    }
+  },
+  {
+    "id": "M19_AUDIO_TO_LISTENING",
+    "category": "relation",
+    "input": {
+      "evidence_modality": "AUDIO_COMPREHENSION",
+      "goal_modality": "LISTENING",
+      "task_contract": "EXPLICIT_LISTENING_TASK"
+    },
+    "expected": {
+      "relation": "DIRECT_TARGET_LEVEL"
+    }
+  },
+  {
+    "id": "M20_TEXT_NO_SPEAKING_FLUENCY",
+    "category": "dims",
+    "input": {
+      "evidence_modality": "TEXT_PRODUCTION",
+      "runtime": "v1"
+    },
+    "expected": {
+      "forbid": [
+        "speaking_fluency",
+        "pronunciation",
+        "listening_comprehension"
+      ]
+    }
+  },
+  {
+    "id": "M21_TEXTCOMP_LIMITED",
+    "category": "dims",
+    "input": {
+      "evidence_modality": "TEXT_COMPREHENSION",
+      "runtime": "v1"
+    },
+    "expected": {
+      "allow": [
+        "recognition"
+      ],
+      "forbid": [
+        "spontaneous_production",
+        "speaking_fluency",
+        "pronunciation"
+      ]
+    }
+  },
+  {
+    "id": "M22_VOICE_FUTURE_DIMS",
+    "category": "dims",
+    "input": {
+      "evidence_modality": "VOICE_PRODUCTION",
+      "runtime": "future"
+    },
+    "expected": {
+      "allow": [
+        "speaking_fluency",
+        "pronunciation"
+      ]
+    }
+  },
+  {
+    "id": "M23_AUDIO_FUTURE_DIMS",
+    "category": "dims",
+    "input": {
+      "evidence_modality": "AUDIO_COMPREHENSION",
+      "runtime": "future"
+    },
+    "expected": {
+      "allow": [
+        "listening_comprehension"
+      ]
+    }
+  },
+  {
+    "id": "M24_CLAIM_TYPED_CONTROL",
+    "category": "claim",
+    "input": {
+      "claim_kind": "TYPED_CONVERSATIONAL_CONTROL",
+      "evidence_modalities": [
+        "TEXT_PRODUCTION"
+      ]
+    },
+    "expected": {
+      "allowed": true
+    }
+  },
+  {
+    "id": "M25_CLAIM_SPEAKING_FLUENCY_TEXT_ONLY",
+    "category": "claim",
+    "input": {
+      "claim_kind": "SPEAKING_FLUENCY",
+      "evidence_modalities": [
+        "TEXT_PRODUCTION"
+      ]
+    },
+    "expected": {
+      "allowed": false
+    }
+  },
+  {
+    "id": "M26_CLAIM_PRONUNCIATION_TEXT_ONLY",
+    "category": "claim",
+    "input": {
+      "claim_kind": "PRONUNCIATION",
+      "evidence_modalities": [
+        "TEXT_PRODUCTION"
+      ]
+    },
+    "expected": {
+      "allowed": false
+    }
+  },
+  {
+    "id": "M27_CLAIM_LISTENING_TEXT_ONLY",
+    "category": "claim",
+    "input": {
+      "claim_kind": "LISTENING_COMPREHENSION",
+      "evidence_modalities": [
+        "TEXT_COMPREHENSION"
+      ]
+    },
+    "expected": {
+      "allowed": false
+    }
+  },
+  {
+    "id": "M28_CLAIM_READING_TARGET",
+    "category": "claim",
+    "input": {
+      "claim_kind": "TARGET_LEVEL_TEXT_COMPREHENSION",
+      "evidence_modalities": [
+        "TEXT_COMPREHENSION"
+      ]
+    },
+    "expected": {
+      "allowed": true
+    }
+  },
+  {
+    "id": "M29_CLAIM_IELTS_BAND_TEXT_ONLY",
+    "category": "claim",
+    "input": {
+      "claim_kind": "IELTS_SPEAKING_BAND_PREDICTION",
+      "evidence_modalities": [
+        "TEXT_PRODUCTION"
+      ],
+      "validated_assessment_module": false
+    },
+    "expected": {
+      "allowed": false
+    }
+  },
+  {
+    "id": "M30_CLAIM_IELTS_BAND_VOICE_NO_VALIDATION",
+    "category": "claim_future",
+    "input": {
+      "claim_kind": "IELTS_SPEAKING_BAND_PREDICTION",
+      "evidence_modalities": [
+        "VOICE_PRODUCTION"
+      ],
+      "validated_assessment_module": false
+    },
+    "expected": {
+      "allowed": false
+    }
+  },
+  {
+    "id": "M31_CLAIM_IELTS_BAND_VALIDATED",
+    "category": "claim_future",
+    "input": {
+      "claim_kind": "IELTS_SPEAKING_BAND_PREDICTION",
+      "evidence_modalities": [
+        "VOICE_PRODUCTION"
+      ],
+      "validated_assessment_module": true
+    },
+    "expected": {
+      "allowed": true
+    }
+  },
+  {
+    "id": "M32_SPEAKING_COVERAGE_V1",
+    "category": "coverage",
+    "input": {
+      "goal_modality": "SPEAKING",
+      "runtime": "v1"
+    },
+    "expected": {
+      "direct_obligation": "UNAVAILABLE_IN_CURRENT_RUNTIME",
+      "accrue_direct_coverage_debt": false
+    }
+  },
+  {
+    "id": "M33_LISTENING_COVERAGE_V1",
+    "category": "coverage",
+    "input": {
+      "goal_modality": "LISTENING",
+      "runtime": "v1"
+    },
+    "expected": {
+      "direct_obligation": "UNAVAILABLE_IN_CURRENT_RUNTIME",
+      "accrue_direct_coverage_debt": false
+    }
+  },
+  {
+    "id": "M34_READING_COVERAGE_V1",
+    "category": "coverage",
+    "input": {
+      "goal_modality": "READING",
+      "runtime": "v1"
+    },
+    "expected": {
+      "direct_obligation": "AVAILABLE",
+      "accrue_direct_coverage_debt": true
+    }
+  },
+  {
+    "id": "M35_WRITING_COVERAGE_V1",
+    "category": "coverage",
+    "input": {
+      "goal_modality": "WRITING",
+      "runtime": "v1"
+    },
+    "expected": {
+      "direct_obligation": "AVAILABLE",
+      "accrue_direct_coverage_debt": true
+    }
+  },
+  {
+    "id": "M36_STATE_KEY_TEXT",
+    "category": "state_key",
+    "input": {
+      "target_type": "RESOURCE",
+      "target_id": "expr.x",
+      "evidence_modality": "TEXT_PRODUCTION"
+    },
+    "expected": {
+      "key": [
+        "RESOURCE",
+        "expr.x",
+        "TEXT_PRODUCTION"
+      ]
+    }
+  },
+  {
+    "id": "M37_GOAL_DOES_NOT_CHANGE_EVIDENCE",
+    "category": "relation",
+    "input": {
+      "evidence_modality": "TEXT_PRODUCTION",
+      "goal_modality": "SPEAKING",
+      "task_contract": "IELTS_SPEAKING_PREP"
+    },
+    "expected": {
+      "relation": "PREPARATORY"
+    }
+  },
+  {
+    "id": "M38_TYPED_IN_SPEAKING_PREP_STILL_TEXT",
+    "category": "classify",
+    "input": {
+      "input_channel": "TEXT",
+      "task_contract": "IELTS_SPEAKING_PREP",
+      "behavior_basis": "USER_PRODUCTION"
+    },
+    "expected": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "TEXT_PRODUCTION"
+    }
+  },
+  {
+    "id": "M39_ASR_TRANSCRIPT_SOURCE_VOICE",
+    "category": "classify_future",
+    "input": {
+      "input_channel": "VOICE",
+      "task_contract": "SPEAKING_TASK",
+      "behavior_basis": "USER_PRODUCTION",
+      "asr_transcript_available": true
+    },
+    "expected": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "VOICE_PRODUCTION"
+    }
+  },
+  {
+    "id": "M40_AUDIO_TRANSCRIPT_TEXT_TASK",
+    "category": "classify",
+    "input": {
+      "input_channel": "TEXT",
+      "task_contract": "EXPLICIT_TEXT_COMPREHENSION_TASK",
+      "behavior_basis": "ATTEMPT",
+      "genuine_comprehension_opportunity": true,
+      "source_was_audio_transcript": true
+    },
+    "expected": {
+      "status": "PERFORMANCE_EVIDENCE",
+      "evidence_modality": "TEXT_COMPREHENSION"
+    }
+  }
+]
