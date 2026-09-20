@@ -25,11 +25,13 @@ def test_migrations_apply_idempotently(db: sqlite3.Connection) -> None:
     applied = migrations.apply_migrations(db)
     # 0002_conversation_core joins in Phase 1 P1A (TASK-OPI-091f35c3.11);
     # 0003_generation_provider joins in Phase 1 P1B (TASK-OPI-d7937fd7.9);
+    # 0004_learning_evidence joins in Phase 2 P2A (TASK-OPI-eaaa5a1d-30).
     # DATA_MODEL §26.1: migrations bump schema_version explicitly.
     assert applied == [
         "0001_bootstrap",
         "0002_conversation_core",
         "0003_generation_provider",
+        "0004_learning_evidence",
     ]
     # Second run is a no-op.
     assert migrations.apply_migrations(db) == []
@@ -40,8 +42,9 @@ def test_migrations_apply_idempotently(db: sqlite3.Connection) -> None:
         "0001_bootstrap",
         "0002_conversation_core",
         "0003_generation_provider",
+        "0004_learning_evidence",
     ]
-    assert migrations.schema_version(db) == "3"
+    assert migrations.schema_version(db) == "4"
 
 
 def test_runtime_epoch_fence_restarts_and_stales(db: sqlite3.Connection) -> None:

@@ -39,6 +39,7 @@ from elc.conversation.types import (
     DeliveryState,
     TurnOutcome,
 )
+from elc.learning.analysis import LearningTurnAnalysis
 from elc.persona.runtime import PersonaRuntime, action_intent_for_turn
 from elc.persona.types import (
     GenerationContext,
@@ -192,7 +193,17 @@ class ConversationCoordinator:
     """The single working orchestrator facade of Phase 1: lease +
     conversation store + persona pipeline (IMPLEMENTATION_PLAN §3).
     RuntimeOrchestrator above stays an unimplemented skeleton, so this is
-    the only live turn-loop entry point. SQL-free by construction."""
+    the only live turn-loop entry point. SQL-free by construction.
+
+    Phase 2 P2A (TASK-…30 ⑥): inject the ``learning`` port
+    (LearningTurnAnalysis, implemented by elc.learning.store.
+    SqliteLearningStore) to open RA §4 steps 3-4 between CP0 and persona
+    generation — durable LEARNING_EVIDENCE AnalysisArtifact → Learning
+    validates/commits → CP1 (durable watermark) — under the canonical
+    TurnRecord statuses (USER_COMMITTED → ANALYZING → GENERATING,
+    STATE_MACHINES §10 order). ``learning=None`` keeps the Phase 1
+    assembly (the P1 tests pin that loop); no DecisionCycle is created
+    here (Phase 3+, DEC-…eaaa5a1d.26 a)."""
 
     def __init__(
         self,
@@ -201,12 +212,14 @@ class ConversationCoordinator:
         conversation_queries: ConversationQueries,
         persona: PersonaRuntime,
         generation_actions: GenerationActionStore,
+        learning: LearningTurnAnalysis | None = None,
     ) -> None:
         self._lease = lease
         self._commands = conversation_commands
         self._queries = conversation_queries
         self._persona = persona
         self._generation = generation_actions
+        self._learning = learning
 
     # -- minimum turn loop ---------------------------------------------------
 
@@ -243,7 +256,40 @@ class ConversationCoordinator:
                 return self._replay_terminal(turn)
 
             state_version = turn.state_version
-            if turn.status == TurnStatus.USER_COMMITTED:
+            if self._learning is not None:
+                # RA §4 steps 2-4 canonical order: CP0 → durable
+                # AnalysisArtifacts → Learning validates/commits (CP1)
+                # → generation. ANALYZING is the SM §10 coordination
+                # slot for steps 3-4; re-entry after a crash replays the
+                # analysis and CP1 idempotently (deterministic store
+                # keys), and a turn already past ANALYZING never re-runs
+                # them ("crash after CP1 不重复 Evidence", RA §22/§23).
+                if turn.status == TurnStatus.USER_COMMITTED:
+                    advanced = self._commands.transition_turn(
+                        cp0.turn_id, state_version, TurnStatus.ANALYZING
+                    )
+                    if isinstance(advanced, Err):
+                        return advanced
+                    turn = advanced.value
+                    state_version = turn.state_version
+                if turn.status == TurnStatus.ANALYZING:
+                    learned = self._run_learning_analysis(
+                        cp0.turn_id, command.conversation_id
+                    )
+                    if isinstance(learned, Err):
+                        return learned
+                    advanced = self._commands.transition_turn(
+                        cp0.turn_id, state_version, TurnStatus.GENERATING
+                    )
+                    if isinstance(advanced, Err):
+                        return advanced
+                    state_version = advanced.value.state_version
+                elif turn.status != TurnStatus.GENERATING:
+                    return _conflict(
+                        "turn re-entry from status"
+                        f" {turn.status.value} is outside the Phase 2 loop"
+                    )
+            elif turn.status == TurnStatus.USER_COMMITTED:
                 advanced = self._commands.transition_turn(
                     cp0.turn_id, state_version, TurnStatus.GENERATING
                 )
@@ -466,6 +512,35 @@ class ConversationCoordinator:
         )
 
     # -- internals -----------------------------------------------------------
+
+    def _run_learning_analysis(
+        self, turn_id: TurnId, conversation_id: ConversationId
+    ) -> Result[None]:
+        """RA §4 steps 3-4 through the injected LearningTurnAnalysis
+        port: durable LEARNING_EVIDENCE artifact (idempotent re-entry)
+        → Learning validates/commits → CP1 with the durable watermark.
+        Failure of the learning leg fails the turn (the canonical order
+        forbids generating before the current turn's behavior entered
+        Learning, RA §8)."""
+
+        slice_result = self._queries.get_canonical_turn_slice(turn_id)
+        if isinstance(slice_result, Err):
+            return slice_result
+        slice_ = slice_result.value
+        if slice_ is None:
+            return _missing(f"canonical turn slice not found: {turn_id}")
+        learning = self._learning
+        assert learning is not None  # caller holds the Phase 2 assembly
+        artifact = learning.record_learning_analysis(slice_)
+        if isinstance(artifact, Err):
+            return artifact
+        persona_id = self._persona_id(conversation_id)
+        committed = learning.commit_learning_evidence(
+            artifact.value, slice_, str(persona_id)
+        )
+        if isinstance(committed, Err):
+            return committed
+        return Ok(None)
 
     def _replay_terminal(self, turn: TurnRecordData) -> Result[TurnCompletion]:
         slice_result = self._queries.get_canonical_turn_slice(turn.turn_id)
