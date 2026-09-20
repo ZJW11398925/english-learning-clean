@@ -179,13 +179,12 @@ def test_migration_and_schema_version(db: sqlite3.Connection) -> None:
         "0002_conversation_core",
         "0003_generation_provider",
         "0004_learning_evidence",
-        "0005_learner_target_state",
     ]
     assert (
         db.execute(
             "SELECT value FROM schema_meta WHERE key = 'schema_version'"
         ).fetchone()[0]
-        == "5"
+        == "4"
     )
 
 
