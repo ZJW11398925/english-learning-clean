@@ -22,6 +22,7 @@ from elc.persona import (
 from elc.persona.provider import request_hash
 from elc.platform.db.generation_store import SqliteGenerationStore
 from elc.platform.types import ActionId, ConversationId, Err, PersonaId
+from elc.runtime.generation import GENERATION_ACTION_TRANSITIONS
 from elc.runtime.types import GenerationActionStatus, GenerationActionType
 
 from .conftest import commit_ok
@@ -228,6 +229,76 @@ def test_transition_action_table_and_invalid_transitions(
             GenerationActionStatus.PREPARED,
             GenerationActionStatus.REQUESTED,
         )
+
+
+def test_transition_table_rejects_out_of_table_nonterminal_edges(
+    generation_store: SqliteGenerationStore,
+    store: SqliteConversationStore,
+    conversation: ConversationId,
+) -> None:
+    """F2 (TASK-OPI-eaaa5a1d.13): an out-of-table nonterminal edge is
+    refused by transition_action even when the durable status matches —
+    in particular the §24 recovery re-arm edge READY_TO_DELIVER →
+    REQUESTED stays out of the edge table (it is held only by the claim
+    channel, claim_rearm / RECOVERY_REARM_STATUS), so mis-adding an
+    illegal edge to GENERATION_ACTION_TRANSITIONS cannot let a re-arm or
+    a pipeline skip sneak past the CAS."""
+
+    actions = generation_store
+    intent = action_intent_for_turn(
+        turn_id=_committed_turn(store, conversation, "oob"),
+        action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
+        generation_contract_id="gc",
+    )
+    assert isinstance(actions.create_action(intent).value, str)
+
+    # Drive the durable status to VALIDATING so the refusal below is the
+    # edge-table refusal, not a status CAS mismatch or the TERMINAL rule.
+    to_validating = (
+        GenerationActionStatus.PREPARED,
+        GenerationActionStatus.REQUESTED,
+        GenerationActionStatus.GENERATING,
+        GenerationActionStatus.VALIDATING,
+    )
+    for expected, new in zip(to_validating, to_validating[1:], strict=False):
+        stepped = actions.transition_action(intent.action_id, expected, new)
+        assert not isinstance(stepped, Err), stepped
+
+    skipped = actions.transition_action(
+        intent.action_id,
+        GenerationActionStatus.VALIDATING,
+        GenerationActionStatus.GENERATING,
+    )
+    assert isinstance(skipped, Err)
+    assert skipped.error.code.value == "VALIDATION_FAILED"
+    assert "is not a STATE_MACHINES §14 transition" in skipped.error.message
+
+    stepped = actions.transition_action(
+        intent.action_id,
+        GenerationActionStatus.VALIDATING,
+        GenerationActionStatus.READY_TO_DELIVER,
+    )
+    assert not isinstance(stepped, Err), stepped
+
+    rearm = actions.transition_action(
+        intent.action_id,
+        GenerationActionStatus.READY_TO_DELIVER,
+        GenerationActionStatus.REQUESTED,
+    )
+    assert isinstance(rearm, Err)
+    assert rearm.error.code.value == "VALIDATION_FAILED"
+    assert "is not a STATE_MACHINES §14 transition" in rearm.error.message
+
+    # And the table content itself: neither re-arm edge is a table key —
+    # a hand-added DELIVERING → REQUESTED would fail this guard too.
+    assert (
+        GenerationActionStatus.READY_TO_DELIVER,
+        GenerationActionStatus.REQUESTED,
+    ) not in GENERATION_ACTION_TRANSITIONS
+    assert (
+        GenerationActionStatus.DELIVERING,
+        GenerationActionStatus.REQUESTED,
+    ) not in GENERATION_ACTION_TRANSITIONS
 
 
 def test_claim_action_for_recovery_is_idempotent_for_own_epoch(

@@ -58,7 +58,11 @@ _NONTERMINAL_STATUSES: tuple[GenerationActionStatus, ...] = tuple(
 #: R-INV-007), and the generic "<nonterminal> → TERMINAL" rule (bounded
 #: retries exhausted, supervisor abort, late-callback discard). TERMINAL
 #: is never a source — a late result for a cancelled/superseded/terminal
-#: action must not produce a canonical side effect (§14).
+#: action must not produce a canonical side effect (§14). Cross-note: the
+#: recovery re-arm edges (RA §24 new-epoch adoption, e.g.
+#: READY_TO_DELIVER → REQUESTED) do NOT go through this table — they are
+#: held by the claim channel (claim_rearm / RECOVERY_REARM_STATUS), so
+#: this table alone is not the complete machine truth.
 GENERATION_ACTION_TRANSITIONS: frozenset[
     tuple[GenerationActionStatus, GenerationActionStatus]
 ] = frozenset(
@@ -167,7 +171,9 @@ def claim_rearm(
     runtime epoch adopts it and re-arms it at RECOVERY_REARM_STATUS.
     TERMINAL actions and actions already owned by the current epoch are
     returned unchanged (idempotent; a validated own-epoch buffer is never
-    discarded)."""
+    discarded). Cross-note: the pipeline edge table is
+    GENERATION_ACTION_TRANSITIONS — re-arm edges deliberately do not live
+    there (see the cross-note on that table)."""
 
     if status == GenerationActionStatus.TERMINAL:
         return False
