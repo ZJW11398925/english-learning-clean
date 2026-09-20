@@ -238,8 +238,10 @@ class SqliteGenerationStore:
 
         Re-arms the action at REQUESTED under the current epoch so
         re-dispatch retries at the action level (same stable action_id,
-        §23 "Crash after CP2: 继续同 action_id"); TERMINAL actions are
-        returned unchanged (nothing to recover)."""
+        §23 "Crash after CP2: 继续同 action_id"); TERMINAL actions and
+        actions already owned by the current epoch are returned unchanged
+        (nothing to recover — idempotent, so an own-epoch READY_TO_DELIVER
+        never has its validated buffer discarded)."""
 
         with short_transaction(self._conn):
             row = self._action_row(action_id)
@@ -250,6 +252,8 @@ class SqliteGenerationStore:
                 )
             if GenerationActionStatus(str(row[7])) == GenerationActionStatus.TERMINAL:
                 return Ok(self._record(row))
+            if row[9] == self._fence.current:
+                return Ok(self._record(row))  # already ours
             self._require_current_epoch()
             self._conn.execute(
                 "UPDATE generation_action_intent SET status = ?,"

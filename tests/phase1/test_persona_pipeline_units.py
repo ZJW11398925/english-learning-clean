@@ -228,3 +228,43 @@ def test_transition_action_table_and_invalid_transitions(
             GenerationActionStatus.PREPARED,
             GenerationActionStatus.REQUESTED,
         )
+
+
+def test_claim_action_for_recovery_is_idempotent_for_own_epoch(
+    generation_store: SqliteGenerationStore,
+    store: SqliteConversationStore,
+    conversation: ConversationId,
+) -> None:
+    """F5 (DEC-OPI-d7937fd7.19): claiming an action the current epoch
+    already owns returns it unchanged — a validated READY_TO_DELIVER buffer
+    survives the recovery call (status stays READY_TO_DELIVER,
+    attempt_count untouched), mirroring claim_turn_for_recovery's
+    already-ours early return."""
+
+    intent = action_intent_for_turn(
+        turn_id=_committed_turn(store, conversation, "idem"),
+        action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
+        generation_contract_id="gc",
+    )
+    assert isinstance(generation_store.create_action(intent).value, str)
+
+    chain = (
+        GenerationActionStatus.PREPARED,
+        GenerationActionStatus.REQUESTED,
+        GenerationActionStatus.GENERATING,
+        GenerationActionStatus.VALIDATING,
+        GenerationActionStatus.READY_TO_DELIVER,
+    )
+    for expected, new in zip(chain, chain[1:], strict=False):
+        stepped = generation_store.transition_action(intent.action_id, expected, new)
+        assert not isinstance(stepped, Err), stepped
+
+    before = generation_store.get_action(intent.action_id)
+    assert before.value is not None
+    assert before.value.status == GenerationActionStatus.READY_TO_DELIVER
+
+    claimed = generation_store.claim_action_for_recovery(intent.action_id)
+    assert not isinstance(claimed, Err), claimed
+    assert claimed.value.status == GenerationActionStatus.READY_TO_DELIVER
+    assert claimed.value.attempt_count == before.value.attempt_count
+    assert claimed.value.owner_epoch == before.value.owner_epoch

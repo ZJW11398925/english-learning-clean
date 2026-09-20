@@ -74,11 +74,17 @@ class GenerationActionStatus(StrEnum):
 
 
 class ProjectionJobState(StrEnum):
-    """CP4 work; pending/failure never blocks the next user-visible turn."""
+    """ProjectionJob states, word for word, from docs/DATA_MODEL.md §22.1
+    (correcting the Phase 0 three-value placeholder PENDING/COMPLETED/
+    FAILED); identical to the projection_job status CHECK constraint in
+    migrations/0002_conversation_core.sql. CP4 work; pending/failure never
+    blocks the next user-visible turn."""
 
     PENDING = "PENDING"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
+    RUNNING = "RUNNING"
+    COMMITTED = "COMMITTED"
+    FAILED_RETRYABLE = "FAILED_RETRYABLE"
+    REJECTED = "REJECTED"
 
 
 class GenerationActionType(StrEnum):
