@@ -14,7 +14,7 @@ from elc.persona.types import (
     CompiledPrompt,
     PromptCompilationRequest,
 )
-from elc.platform.types import CharacterPackageId, PersonaId, Result
+from elc.platform.types import CharacterPackageId, Result
 
 
 @runtime_checkable

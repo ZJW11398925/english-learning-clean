@@ -4,9 +4,9 @@ from elc.user_config.commands import UserConfigCommands
 from elc.user_config.controller import UserConfigController
 from elc.user_config.queries import UserConfigQueries
 from elc.user_config.types import (
+    DisclosedUserProfile,
     DisclosureLevel,
     DisclosurePolicy,
-    DisclosedUserProfile,
     LearningGoal,
     LearningGoalPortfolio,
     SessionFocus,

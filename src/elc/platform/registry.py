@@ -32,6 +32,7 @@ from elc.user_config.types import (
     TeachingPolicyProfile,
     UserProfile,
 )
+from elc.world_lore.types import WorldLoreRecord
 
 # Owner authority labels — one per canonical object. The owning module lives
 # under src/elc/<owner>/ and must exist (asserted by tests/architecture).
@@ -46,6 +47,7 @@ OWNER_PLANNER = "planner"
 OWNER_TEACHING = "teaching"
 OWNER_RUNTIME = "runtime"
 OWNER_CONTENT = "content"
+OWNER_WORLD_LORE = "world_lore"
 
 
 @dataclass(frozen=True)
@@ -132,6 +134,12 @@ CANONICAL_OBJECTS: Mapping[str, CanonicalObject] = {
     ),
     "teaching_moment": CanonicalObject(
         "TeachingMomentRecord", OWNER_TEACHING, TeachingMomentRecord
+    ),
+    # -- World/Lore canonical facts (docs/DOMAIN_MODEL.md §2 Authority
+    # Matrix; docs/DATA_MODEL.md §5.1 — Persona Runtime only consumes the
+    # resolved WorldLoreView).
+    "world_lore_fact": CanonicalObject(
+        "WorldLoreRecord", OWNER_WORLD_LORE, WorldLoreRecord
     ),
     "teaching_unit": CanonicalObject(
         "TeachingUnit", OWNER_CONTENT, TeachingUnit,

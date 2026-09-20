@@ -67,6 +67,7 @@ RelationshipMemoryId = NewType("RelationshipMemoryId", str)
 EpisodeId = NewType("EpisodeId", str)
 ProjectionJobId = NewType("ProjectionJobId", str)
 SecretRef = NewType("SecretRef", str)
+WorldLoreFactId = NewType("WorldLoreFactId", str)
 
 # Sequence counters are canonical conversation-owned state
 # (docs/DATA_MODEL.md §3 "Sequence Semantics"). Distinct types: cross

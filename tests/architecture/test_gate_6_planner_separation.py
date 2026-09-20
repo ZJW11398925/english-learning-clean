@@ -1,11 +1,19 @@
 """Gate item 6 — PlannerDecision(NO_TARGET) and PlannerExecutionStatus are
 completely separated.
 
-docs/IMPLEMENTATION_PLAN.md §2 Gate; docs/DOMAIN_MODEL.md §10 ("Planner
-failure/unavailable 不伪装成 PlannerDecision"); docs/DATA_MODEL.md §14
-("Runtime degradation is not a PlannerDecision"). Verified structurally:
-separate enum types with disjoint members/values, record dataclasses with
-disjoint fields, and PlanningOutcome enforcing decision XOR status.
+docs/IMPLEMENTATION_PLAN.md §2 Gate; docs/DOMAIN_MODEL.md §10 line 559
+("Planner failure/unavailable 不伪装成 PlannerDecision；它由 Runtime 的
+PlannerExecutionStatus 表达。") and §10.1 line 625 ("缺失 authoritative
+view 或 invalid snapshot 进入 PlannerExecutionStatus=DEGRADED/FAILED/
+UNAVAILABLE，不得伪造 NO_TARGET。"); docs/DATA_MODEL.md §14 line 889
+("Runtime degradation is not a PlannerDecision.");
+behavioral_baselines/planner/BF-02_Planner_Decision_Spec_v1.1.md §5
+lines 161-174 (PlannerExecutionStatus = DEGRADED ⟹ PlannerDecision = none).
+
+Canonical coupling enforced by PlanningOutcome: SUCCEEDED ⟹ a
+PlannerDecision must be present; DEGRADED/FAILED/UNAVAILABLE ⟹ no
+PlannerDecision at all. Verified structurally: separate enum types with
+disjoint members/values, record dataclasses with disjoint fields.
 """
 
 from __future__ import annotations
@@ -13,10 +21,10 @@ from __future__ import annotations
 import pytest
 
 from elc.planner import (
-    PlanningOutcome,
-    PlannerEvaluation,
     PlannerDecisionOutcome,
+    PlannerEvaluation,
     PlannerExecutionStatusValue,
+    PlanningOutcome,
 )
 from elc.planner.types import PlannerDecision, PlannerExecutionStatusRecord
 from elc.platform.types import (
@@ -26,6 +34,7 @@ from elc.platform.types import (
     PlannerVersion,
     PolicyVersion,
     RuntimeDecisionOutcomeValue,
+    TargetId,
 )
 
 
@@ -102,29 +111,91 @@ def _evaluation() -> PlannerEvaluation:
     )
 
 
-def test_planning_outcome_enforces_decision_xor_status() -> None:
+def test_planning_outcome_succeeded_requires_decision() -> None:
+    """Canonical rule (docs/DOMAIN_MODEL.md §10/§10.1; BF-02 §5): a
+    SUCCEEDED run must carry a PlannerDecision — SELECT *and* NO_TARGET are
+    both constructible outcomes."""
+    select = PlanningOutcome(
+        evaluation=_evaluation(),
+        decision=PlannerDecision(
+            planner_decision_id=PlannerDecisionId("pd-1"),
+            decision_cycle_id=DecisionCycleId("dc-1"),
+            decision=PlannerDecisionOutcome.SELECT,
+            planner_evaluation_id=PlannerEvaluationId("pe-1"),
+            selected_candidate_id=TargetId("c-1"),
+        ),
+        execution_status=_status(PlannerExecutionStatusValue.SUCCEEDED),
+    )
+    no_target = PlanningOutcome(
+        evaluation=_evaluation(),
+        decision=_decision(),
+        execution_status=_status(PlannerExecutionStatusValue.SUCCEEDED),
+    )
+    assert select.decision is not None
+    assert select.decision.decision is PlannerDecisionOutcome.SELECT
+    assert select.execution_status.status is PlannerExecutionStatusValue.SUCCEEDED
+    assert no_target.decision is not None
+    assert no_target.decision.decision is PlannerDecisionOutcome.NO_TARGET
+
+
+def test_planning_outcome_succeeded_without_decision_is_rejected() -> None:
+    """docs/DOMAIN_MODEL.md §10.1 line 625: a successful run ending without
+    SELECT/NO_TARGET is not a legitimate outcome shape — the pipeline
+    (BF-02 §3) always terminates in SELECT / NO_TARGET on SUCCEEDED."""
+    with pytest.raises(ValueError):
+        PlanningOutcome(
+            evaluation=_evaluation(),
+            decision=None,
+            execution_status=_status(PlannerExecutionStatusValue.SUCCEEDED),
+        )
+
+
+@pytest.mark.parametrize(
+    "status",
+    [
+        PlannerExecutionStatusValue.DEGRADED,
+        PlannerExecutionStatusValue.FAILED,
+        PlannerExecutionStatusValue.UNAVAILABLE,
+    ],
+)
+def test_planning_outcome_degraded_status_carries_no_decision(
+    status: PlannerExecutionStatusValue,
+) -> None:
+    """BF-02 §5 lines 161-174: feature-assembly incompleteness or an invalid
+    snapshot yields PlannerExecutionStatus=DEGRADED with PlannerDecision=none
+    — the degraded run stays constructible and never invents NO_TARGET."""
+    outcome = PlanningOutcome(
+        evaluation=_evaluation(),
+        decision=None,
+        execution_status=_status(status),
+    )
+    assert outcome.decision is None
+    assert outcome.execution_status.status is status
+
+
+@pytest.mark.parametrize(
+    "status",
+    [
+        PlannerExecutionStatusValue.DEGRADED,
+        PlannerExecutionStatusValue.FAILED,
+        PlannerExecutionStatusValue.UNAVAILABLE,
+    ],
+)
+def test_planning_outcome_degraded_status_with_decision_is_rejected(
+    status: PlannerExecutionStatusValue,
+) -> None:
+    """docs/DOMAIN_MODEL.md §10 line 559: failure/unavailable must not be
+    disguised as a PlannerDecision — a DEGRADED/FAILED/UNAVAILABLE record
+    carrying a decision is a contract violation, not a NO_TARGET."""
     with pytest.raises(ValueError):
         PlanningOutcome(
             evaluation=_evaluation(),
             decision=_decision(),
-            execution_status=PlannerExecutionStatusRecord(
-                decision_cycle_id=DecisionCycleId("dc-1"),
-                status=PlannerExecutionStatusValue.DEGRADED,
-            ),
+            execution_status=_status(status),
         )
-    with pytest.raises(ValueError):
-        PlanningOutcome(evaluation=_evaluation(), decision=None, execution_status=None)
 
-    decision_only = PlanningOutcome(
-        evaluation=_evaluation(), decision=_decision(), execution_status=None
+
+def _status(value: PlannerExecutionStatusValue) -> PlannerExecutionStatusRecord:
+    return PlannerExecutionStatusRecord(
+        decision_cycle_id=DecisionCycleId("dc-1"), status=value
     )
-    degraded_only = PlanningOutcome(
-        evaluation=_evaluation(),
-        decision=None,
-        execution_status=PlannerExecutionStatusRecord(
-            decision_cycle_id=DecisionCycleId("dc-1"),
-            status=PlannerExecutionStatusValue.UNAVAILABLE,
-        ),
-    )
-    assert decision_only.decision is not None and decision_only.execution_status is None
-    assert degraded_only.decision is None and degraded_only.execution_status is not None

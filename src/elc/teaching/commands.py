@@ -7,7 +7,6 @@ from typing import Protocol, runtime_checkable
 from elc.platform.types import (
     AttemptEvaluationId,
     AttemptId,
-    GateDecisionId,
     MomentId,
     Result,
 )

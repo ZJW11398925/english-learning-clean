@@ -12,14 +12,13 @@ from __future__ import annotations
 from elc.platform.sync import KeyedMutex
 from elc.platform.types import (
     ActionId,
-    ConversationId,
     DecisionCycleId,
     InputId,
     ProjectionJobId,
     ProviderAttemptId,
     Result,
-    TurnId,
     RuntimeEpoch,
+    TurnId,
 )
 from elc.runtime.types import (
     DecisionCycleRecord,

@@ -19,3 +19,31 @@ where = ["src"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-q"
+
+# --- Static gates (CI: ruff → mypy → compileall → pytest) -------------------
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+src = ["src", "tests"]
+extend-exclude = ["behavioral_baselines", "docs"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes (undefined names — catches missing imports)
+    "I",   # import order
+]
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "src"
+packages = ["elc"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
+# behavioral_baselines reference implementations are byte-pinned baseline
+# evidence (v1.0.1 exception exhausted); they are compiled, never type-gated.
+exclude = "behavioral_baselines/"

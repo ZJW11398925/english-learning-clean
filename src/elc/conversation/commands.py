@@ -13,7 +13,6 @@ from typing import Protocol, runtime_checkable
 from elc.conversation.types import (
     AssistantTurnRecord,
     CanonicalTurnSlice,
-    ConversationRecord,
     TurnOutcome,
     UserTurnRecord,
 )

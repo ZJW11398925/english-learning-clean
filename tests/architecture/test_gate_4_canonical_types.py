@@ -12,13 +12,12 @@ docs/IMPLEMENTATION_PLAN.md §2 Gate: "canonical IDs / version fields 统一."
 from __future__ import annotations
 
 import ast
+import importlib
 from pathlib import Path
 from typing import NewType
 
 import elc.platform.types as platform_types
 from tests.conftest import DOMAIN_PACKAGES, SRC_ROOT
-
-import importlib
 
 
 def _python_files() -> list[Path]:

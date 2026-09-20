@@ -9,16 +9,14 @@ only, no domain business logic).
 
 from __future__ import annotations
 
+import importlib
 import inspect
 from typing import get_type_hints
 
 import pytest
 
-from tests.conftest import DOMAIN_PACKAGES
-
-import importlib
-
 import elc.platform.types as platform_types
+from tests.conftest import DOMAIN_PACKAGES
 
 
 def _protocol_methods(protocol_cls: type) -> dict[str, inspect.Signature]:
@@ -33,7 +31,6 @@ def _protocol_methods(protocol_cls: type) -> dict[str, inspect.Signature]:
 def test_domain_exposes_command_and_query_interfaces(package: str) -> None:
     commands_mod = importlib.import_module(f"elc.{package}.commands")
     queries_mod = importlib.import_module(f"elc.{package}.queries")
-    controller_mod = importlib.import_module(f"elc.{package}.controller")
 
     commands = [
         name

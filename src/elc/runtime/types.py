@@ -20,11 +20,8 @@ from enum import StrEnum
 
 from elc.platform.types import (
     ActionId,
-    AnalysisId,
-    ClientAckId,
     ClientMessageId,
     DecisionCycleId,
-    DeliveryId,
     InputId,
     InteractionChannel,
     ProjectionJobId,
@@ -37,12 +34,22 @@ from elc.platform.types import (
 
 
 class TurnStatus(StrEnum):
-    """docs/DATA_MODEL.md §4 TurnRecord.status."""
+    """TurnRecord coordination states, word for word, from
+    docs/STATE_MACHINES.md §10 lines 278-291 (协调状态). Vocabulary only:
+    transition semantics belong to the Runtime Orchestrator (later phases)."""
 
-    WORKING = "WORKING"
+    RECEIVED = "RECEIVED"
+    USER_COMMITTED = "USER_COMMITTED"
+    ANALYZING = "ANALYZING"
+    DECIDING = "DECIDING"
+    GENERATING = "GENERATING"
+    DELIVERING = "DELIVERING"
+    DELIVERY_TERMINAL = "DELIVERY_TERMINAL"
+    POSTPROCESSING = "POSTPROCESSING"
     COMPLETED = "COMPLETED"
-    CANCELLED = "CANCELLED"
-    FAILED = "FAILED"
+    CANCELLED_BY_USER = "CANCELLED_BY_USER"
+    FAILED_RECOVERABLE = "FAILED_RECOVERABLE"
+    FAILED_FINAL = "FAILED_FINAL"
 
 
 class GenerationActionStatus(StrEnum):

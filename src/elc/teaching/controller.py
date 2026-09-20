@@ -6,7 +6,6 @@ from elc.platform.types import (
     AttemptEvaluationId,
     AttemptId,
     ConversationId,
-    GateDecisionId,
     MomentId,
     Result,
 )

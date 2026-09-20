@@ -8,20 +8,31 @@ from elc.learning.commands import LearningCommands
 from elc.learning.controller import LearningController
 from elc.learning.queries import LearningQueries
 from elc.learning.types import (
+    AttemptOutcome,
+    ErrorAttribution,
     EvidenceClaimView,
     EvidenceGroupRecord,
+    EvidencePolarity,
     EvidenceQualifier,
+    EvidenceStatus,
+    ExposureLevel,
     FreshnessView,
     LearnerDimension,
     LearnerTargetStateRecord,
     LearningSnapshot,
     PerformanceType,
+    SupportLevel,
 )
 
 __all__ = [
+    "AttemptOutcome",
+    "ErrorAttribution",
     "EvidenceClaimView",
     "EvidenceGroupRecord",
+    "EvidencePolarity",
     "EvidenceQualifier",
+    "EvidenceStatus",
+    "ExposureLevel",
     "FreshnessView",
     "LearnerDimension",
     "LearnerTargetStateRecord",
@@ -30,4 +41,5 @@ __all__ = [
     "LearningQueries",
     "LearningSnapshot",
     "PerformanceType",
+    "SupportLevel",
 ]

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from elc.content.types import ReadinessLevel, TeachingUnit
-from elc.platform.types import ContentId, ContentVersion, Result, ResourceId, TargetId
+from elc.platform.types import ContentId, ContentVersion, ResourceId, Result, TargetId
 
 
 class ContentController:

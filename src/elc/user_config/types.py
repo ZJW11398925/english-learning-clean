@@ -19,7 +19,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from elc.platform.types import GoalId, GoalVersion, PolicyVersion, PersonaId, UserId
+from elc.platform.types import GoalId, GoalVersion, PersonaId, PolicyVersion, UserId
 
 
 class TeachingFrequency(StrEnum):
@@ -77,7 +77,8 @@ class LearningGoal:
 
 @dataclass(frozen=True)
 class LearningGoalPortfolio:
-    """Versioned goal portfolio (docs/DATA_MODEL.md §315 base_goal_portfolio_version)."""
+    """Versioned goal portfolio (docs/DATA_MODEL.md §315
+    base_goal_portfolio_version)."""
 
     user_id: UserId
     goal_version: GoalVersion

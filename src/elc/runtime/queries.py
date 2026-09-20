@@ -4,18 +4,17 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
+from elc.platform.types import (
+    ConversationId,
+    DecisionCycleId,
+    Result,
+    TurnId,
+)
 from elc.runtime.types import (
     DecisionCycleRecord,
     ProjectionJobRecord,
     RecoveryAction,
     TurnRecordData,
-)
-from elc.platform.types import (
-    ConversationId,
-    DecisionCycleId,
-    ProjectionJobId,
-    Result,
-    TurnId,
 )
 
 

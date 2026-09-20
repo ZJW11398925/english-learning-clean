@@ -53,4 +53,6 @@ def test_prompt_compiler_imported_only_from_persona() -> None:
                 if not module.startswith(("elc.persona", "elc.persona.commands")):
                     rel = path.relative_to(SRC_ROOT).as_posix()
                     offenders.append(f"{rel}:{node.lineno} imports {module}")
-    assert not offenders, f"PromptCompiler imported outside Persona Runtime: {offenders}"
+    assert not offenders, (
+        f"PromptCompiler imported outside Persona Runtime: {offenders}"
+    )

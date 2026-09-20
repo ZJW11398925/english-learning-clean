@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from elc.platform.types import GoalVersion, PersonaId, PolicyVersion, Result, UserId
 from elc.user_config.types import (
-    DisclosurePolicy,
     DisclosedUserProfile,
+    DisclosurePolicy,
     LearningGoalPortfolio,
     SessionFocus,
     TeachingPolicyProfile,

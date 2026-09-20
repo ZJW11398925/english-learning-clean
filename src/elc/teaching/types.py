@@ -60,11 +60,21 @@ class AuthorizationBasis(StrEnum):
 
 
 class MomentState(StrEnum):
-    """TeachingMoment lifecycle (docs/STATE_MACHINES.md teaching paths)."""
+    """TeachingMoment lifecycle — the canonical state list, word for word,
+    from docs/STATE_MACHINES.md §1 "Canonical lifecycle states" lines 13-22.
+    Vocabulary only: transitions are owned by the Teaching domain
+    controller (later phases), not by this enum."""
 
-    OPEN = "OPEN"
-    AWAITING_ATTEMPT = "AWAITING_ATTEMPT"
+    AUTHORIZED = "AUTHORIZED"
+    OPENING = "OPENING"
+    AWAITING_USER = "AWAITING_USER"
+    EVALUATING = "EVALUATING"
+    DECIDING_NEXT_ACTION = "DECIDING_NEXT_ACTION"
+    COMPLETING = "COMPLETING"
+    ABORTING = "ABORTING"
     TEACHING_TERMINAL = "TEACHING_TERMINAL"
+    RESUMING = "RESUMING"
+    CLOSED = "CLOSED"
 
 
 @dataclass(frozen=True)

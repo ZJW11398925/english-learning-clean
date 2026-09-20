@@ -120,21 +120,37 @@ class PlanningRequest:
 
 @dataclass(frozen=True)
 class PlanningOutcome:
-    """Decision XOR degraded status — never both, never neither.
+    """Canonical decision/status coupling — keyed by PlannerExecutionStatus.
 
-    docs/DOMAIN_MODEL.md §10: planner failure/unavailable must not be
-    disguised as PlannerDecision(NO_TARGET).
+    docs/DOMAIN_MODEL.md §10: "Planner failure/unavailable 不伪装成
+    PlannerDecision；它由 Runtime 的 PlannerExecutionStatus 表达。" §10.1:
+    "缺失 authoritative view 或 invalid snapshot 进入
+    PlannerExecutionStatus=DEGRADED/FAILED/UNAVAILABLE，不得伪造 NO_TARGET。"
+    behavioral_baselines/planner/BF-02_Planner_Decision_Spec_v1.1.md §5:
+    PlannerExecutionStatus = DEGRADED 时 PlannerDecision = none.
+
+    Rule: SUCCEEDED ⟹ a PlannerDecision (SELECT or NO_TARGET) must be
+    present; DEGRADED/FAILED/UNAVAILABLE ⟹ no PlannerDecision at all.
     """
 
     evaluation: PlannerEvaluation
+    execution_status: PlannerExecutionStatusRecord
     decision: PlannerDecision | None
-    execution_status: PlannerExecutionStatusRecord | None
 
     def __post_init__(self) -> None:
-        if (self.decision is None) == (self.execution_status is None):
+        succeeded = (
+            self.execution_status.status is PlannerExecutionStatusValue.SUCCEEDED
+        )
+        if succeeded and self.decision is None:
             raise ValueError(
-                "PlanningOutcome requires exactly one of PlannerDecision / "
-                "PlannerExecutionStatus (degradation is not a decision)"
+                "PlanningOutcome with PlannerExecutionStatus=SUCCEEDED "
+                "requires a PlannerDecision (SELECT or NO_TARGET)"
+            )
+        if not succeeded and self.decision is not None:
+            raise ValueError(
+                "PlanningOutcome with PlannerExecutionStatus="
+                f"{self.execution_status.status.value} must carry no "
+                "PlannerDecision (degradation is not a decision)"
             )
 
 

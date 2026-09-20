@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Protocol, runtime_checkable
 
 from elc.content.types import ReadinessLevel, TeachingUnit
-from elc.platform.types import ContentId, Result, ResourceId, TargetId
+from elc.platform.types import ContentId, ResourceId, Result, TargetId
 
 
 @runtime_checkable

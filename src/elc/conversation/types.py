@@ -18,17 +18,18 @@ from enum import StrEnum
 from elc.platform.types import (
     ActionId,
     AssistantTurnId,
+    ClientMessageId,
     ConversationId,
     DeliveryId,
     InputId,
+    InteractionChannel,
     MessageSequence,
     PersonaId,
     SceneId,
     TurnId,
     TurnSequence,
     UserId,
-    ClientMessageId,
-    InteractionChannel,
+    UserTurnId,
 )
 
 
@@ -38,11 +39,15 @@ class ConversationStatus(StrEnum):
 
 
 class TurnOutcome(StrEnum):
-    """docs/DOMAIN_MODEL.md canonical turn outcomes (terminal states)."""
+    """Turn outcome vocabulary, word for word, from docs/STATE_MACHINES.md
+    §10 lines 296-301 ("Turn outcome 单独记录"). Terminal, recorded
+    separately from the TurnRecord coordination status."""
 
     REPLIED_FULL = "REPLIED_FULL"
+    REPLIED_PARTIAL = "REPLIED_PARTIAL"
     NO_ASSISTANT_OUTPUT = "NO_ASSISTANT_OUTPUT"
-    CANCELLED = "CANCELLED"
+    CANCELLED_BY_USER = "CANCELLED_BY_USER"
+    FAILED_USER_VISIBLE = "FAILED_USER_VISIBLE"
 
 
 class DeliveryState(StrEnum):
