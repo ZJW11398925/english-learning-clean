@@ -21,16 +21,28 @@ Commit-unit discipline:
   physical keys.
 - The watermark storage face is the ``evidence_watermark`` table
   (migration 0004): one row per user_scope_id, monotonically increasing,
-  bumped inside the same CP1 transaction. P2B's LearnerTargetState /
-  LearningSnapshot (DATA_MODEL §11/§12) consume it.
+  bumped inside the same CP1 transaction. The watermark semantics is the
+  durable EVIDENCE-CHANGE sequence number (P2B F2, adjudicated in the
+  mother decision DEC-…eaaa5a1d.26): commit / supersede / invalidate all
+  advance it — any durable change to the estimating (ACTIVE) claim set
+  moves the sequence. P2B's LearnerTargetState / LearningSnapshot
+  (DATA_MODEL §11/§12) consume it as the projection's as-of stamp.
 - epoch fencing mirrors elc.conversation.store (RA §24).
 
-Phase boundary (TASK-…30): Estimator / LearnerTargetState /
-LearningSnapshot entities are P2B — the three ``LearningQueries``
-methods and ``rebuild_learner_state`` keep their frozen signatures and
-raise NotImplementedError (the watermark face is the P2B interface
-reserved here). No DecisionCycle is created (Phase 3+;
-decision_cycle_id stays nullable, DEC-…eaaa5a1d.26 a).
+Phase 2 P2B (TASK-…44): the Estimator lives in
+elc.learning.estimator (BF-01 v1.1, zero behavioral_baselines imports);
+``rebuild_learner_state`` recomputes the materialized
+LearnerTargetState projection from ACTIVE claims and the three
+``LearningQueries`` faces read it (migration 0005 stores one §11
+document row per user_scope × target_type × target_id × modality — a
+deletable, rebuildable materialized face; DATA_MODEL §11 "可删后重建").
+Rebuild consumes ONLY ACTIVE claims — a pending PRODUCED artifact is a
+proposal, not evidence, and is never estimated (adjudicated: pending
+PRODUCED = audit-only, P3+ re-visit). A claim set that violates the
+BF-01 §7 EstimatorClaimView contract makes the rebuild fail loudly
+(VALIDATION_FAILED) rather than silently computing corrupted canon. No
+DecisionCycle is created (Phase 3+; decision_cycle_id stays nullable,
+DEC-…eaaa5a1d.26 a).
 
 Default column values for claims committed through the Phase 0 protocol
 face (``EvidenceGroupRecord`` / ``EvidenceClaimView`` carry fewer fields
@@ -56,9 +68,10 @@ import hashlib
 import json
 import sqlite3
 import uuid
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import TypeVar
+from typing import TypeVar, cast
 
 from elc.conversation.types import CanonicalTurnSlice
 from elc.learning.analysis import (
@@ -69,10 +82,26 @@ from elc.learning.analysis import (
     deterministic_evidence_group_id,
     produce_learning_evidence_proposal,
 )
+from elc.learning.estimator import (
+    ESTIMATOR_PROFILE_ID,
+    FRESHNESS_DAYS_AGING_MAX,
+    FRESHNESS_DAYS_FRESH_MAX,
+    EstimatorClaimView,
+    EstimatorContractError,
+    TargetStateEstimate,
+    estimate_target_state,
+)
 from elc.learning.types import (
     EvidenceClaimView,
     EvidenceGroupRecord,
     EvidenceStatus,
+    FreshnessView,
+    LearnerCoverage,
+    LearnerDimensionState,
+    LearnerFreshness,
+    LearnerProjection,
+    LearnerTargetStateRecord,
+    LearningSnapshot,
 )
 from elc.learning.validation import negative_evidence_refusal
 from elc.platform.db.epoch import RuntimeEpochFence, StaleEpochError
@@ -88,6 +117,7 @@ from elc.platform.types import (
     EvidenceCommitId,
     EvidenceGroupId,
     LearningOpportunityId,
+    LearningSnapshotId,
     MomentId,
     Ok,
     Result,
@@ -162,6 +192,25 @@ _CLAIM_COLUMNS: tuple[str, ...] = (
     "attempt_id",
     "claim_role",
     "created_at",
+)
+
+
+#: Full-literal evidence_claim SELECT — the column-name whitelist as one
+#: compile-time literal (identifiers are never assembled from runtime
+#: values); shared by _claim_row / _claim_records_for so the pinned
+#: column order has a single source.
+_CLAIM_SELECT = (
+    "SELECT evidence_claim_id, evidence_group_id, opportunity_id,"
+    " target_type, target_id, performance_type, polarity, outcome,"
+    " qualifiers, evidence_modality, elicitation_type, spontaneity,"
+    " support_level, answer_exposure_state, exposure_estimate_id,"
+    " support_attribution_certainty, support_attribution_basis,"
+    " accuracy, pragmatic_fit, fluency, error_attribution, delay_seconds,"
+    " context_novelty, persona_novelty, evidence_modality_novelty,"
+    " capability_evidence_basis, source_turn_id, conversation_id,"
+    " persona_id, teaching_moment_id, evaluator_id, evaluator_version,"
+    " evaluator_confidence, status, supersedes_claim_id, attempt_id,"
+    " claim_role, created_at FROM evidence_claim"
 )
 
 
@@ -626,29 +675,249 @@ class SqliteLearningStore:
         target_id: TargetId,
         evidence_modality: str,
     ) -> Result[str]:
-        """P2B: the deterministic Evidence-Mass Estimator and the
-        LearnerTargetState projection (IMPLEMENTATION_PLAN §5) are the
-        next slice; the watermark face reserved by this store is the
-        rebuild's as-of stamp. Signature frozen (Phase 0 protocol)."""
+        """P2B (TASK-…44): recompute the materialized LearnerTargetState
+        projection (DATA_MODEL §11) for one target_id × evidence_modality
+        from the ACTIVE canonical claims, for every target_type that
+        target's claims span. One short transaction: estimate all scopes
+        first, then replace the stored rows — a refusal leaves the
+        previous projection intact.
 
-        raise NotImplementedError(
-            "P2B: estimator + LearnerTargetState projection"
-        )
+        The rebuild consumes ONLY ACTIVE claims (BF-01 §29): a pending
+        PRODUCED artifact is a proposal and is never estimated. The
+        projection is stamped with the durable evidence watermark and the
+        rebuild wall clock (freshness is evaluated at rebuild time; time
+        never changes historical ability mass, BF-01 §22). Committed
+        claims violating the BF-01 §7 contract fail loudly
+        (VALIDATION_FAILED) instead of being silently computed. Signature
+        frozen (Phase 0 protocol; the returned str is the opaque
+        StateVersion of this rebuild)."""
 
-    # -- LearningQueries (P2B entities; signatures frozen) ------------------
+        try:
+            with short_transaction(self._conn):
+                self._require_current_epoch()
+                type_rows = self._conn.execute(
+                    "SELECT DISTINCT target_type FROM evidence_claim"
+                    " WHERE target_id = ? AND evidence_modality = ?"
+                    " ORDER BY target_type",
+                    (target_id, evidence_modality),
+                ).fetchall()
+                watermark = self.get_evidence_watermark()
+                as_of = _now()
+                documents: list[tuple[str, str]] = []
+                for row in type_rows:
+                    target_type = str(row[0])
+                    claims = self._claim_records_for(
+                        target_type, target_id, evidence_modality
+                    )
+                    views = [_estimator_view(claim) for claim in claims]
+                    try:
+                        estimate = estimate_target_state(
+                            views,
+                            target_type=target_type,
+                            target_id=str(target_id),
+                            modality=evidence_modality,
+                            as_of=as_of,
+                        )
+                    except EstimatorContractError as exc:
+                        return _err(
+                            DomainErrorCode.VALIDATION_FAILED,
+                            "BF-01 §7 contract violation among committed"
+                            f" claims for {target_type}/{target_id}/"
+                            f"{evidence_modality}: {exc}",
+                        )
+                    record = _record_from_estimate(
+                        estimate, watermark, as_of
+                    )
+                    documents.append(
+                        (target_type, _state_document(record))
+                    )
+                self._conn.execute(
+                    "DELETE FROM learner_target_state"
+                    " WHERE user_scope_id = ? AND target_id = ?"
+                    " AND evidence_modality = ?",
+                    (self._user_scope_id, target_id, evidence_modality),
+                )
+                for target_type, document in documents:
+                    self._conn.execute(
+                        "INSERT INTO learner_target_state ("
+                        " user_scope_id, target_type, target_id,"
+                        " evidence_modality, estimator_version,"
+                        " evidence_watermark, state_json, updated_at"
+                        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        (
+                            self._user_scope_id,
+                            target_type,
+                            target_id,
+                            evidence_modality,
+                            ESTIMATOR_PROFILE_ID,
+                            watermark,
+                            document,
+                            as_of,
+                        ),
+                    )
+                version = "sv-" + _stable_digest(
+                    self._user_scope_id,
+                    str(target_id),
+                    evidence_modality,
+                    str(watermark),
+                    as_of,
+                )[:24]
+                return Ok(version)
+        except sqlite3.IntegrityError as exc:
+            return _err(DomainErrorCode.CONFLICT, str(exc))
+
+    # -- LearningQueries (P2B; signatures frozen) ---------------------------
 
     def get_learner_target_state(
         self, target_id: TargetId, evidence_modality: str
-    ) -> Result[object]:
-        raise NotImplementedError("P2B: LearnerTargetState entity")
+    ) -> Result[LearnerTargetStateRecord | None]:
+        """Read the materialized §11 projection row for one target_id ×
+        modality. Ok(None) when the scope was never rebuilt."""
+
+        rows = self._conn.execute(
+            "SELECT state_json FROM learner_target_state"
+            " WHERE user_scope_id = ? AND target_id = ?"
+            " AND evidence_modality = ? ORDER BY target_type",
+            (self._user_scope_id, target_id, evidence_modality),
+        ).fetchall()
+        if not rows:
+            return Ok(None)
+        if len(rows) > 1:
+            return _err(
+                DomainErrorCode.CONFLICT,
+                "target_id spans multiple target_types in the §11"
+                " projection scope; the frozen Phase 0 query face carries"
+                " no target_type — read the LearningSnapshot for the"
+                " full per-type view",
+            )
+        document: dict[str, object] = json.loads(str(rows[0][0]))
+        return Ok(_record_from_document(document))
 
     def get_learning_snapshot(
         self, learning_snapshot_id: str | None = None
-    ) -> Result[object]:
-        raise NotImplementedError("P2B: LearningSnapshot entity")
+    ) -> Result[LearningSnapshot]:
+        """Materialize the §12 LearningSnapshot: every LearnerTargetState
+        of the store's user scope + the durable watermark + estimator
+        version. Evidence-derived ONLY (§12 red line: goal importance /
+        review due / teaching priority / exam importance are structurally
+        absent — pinned by test).
 
-    def get_freshness(self, target_id: TargetId) -> Result[object]:
-        raise NotImplementedError("P2B: freshness projection")
+        ``learning_snapshot_id`` (frozen Phase 0 parameter): Local V1
+        keeps no snapshot archive — the snapshot is a view over the
+        current projection — so the id is derived deterministically from
+        (estimator version, watermark, target keys) and passing any other
+        id is NOT_FOUND (implementation-defined narrowing, DATA_MODEL
+        §27). ``as_of`` is the read wall clock."""
+
+        rows = self._conn.execute(
+            "SELECT target_type, target_id, evidence_modality, state_json"
+            " FROM learner_target_state WHERE user_scope_id = ?"
+            " ORDER BY target_type, target_id, evidence_modality",
+            (self._user_scope_id,),
+        ).fetchall()
+        watermark = self.get_evidence_watermark()
+        keys = [
+            f"{row[0]}\x1f{row[1]}\x1f{row[2]}" for row in rows
+        ]
+        snapshot_id = LearningSnapshotId(
+            "lsnap-"
+            + _stable_digest(
+                ESTIMATOR_PROFILE_ID, str(watermark), *keys
+            )[:24]
+        )
+        if learning_snapshot_id is not None and learning_snapshot_id != snapshot_id:
+            return _err(
+                DomainErrorCode.NOT_FOUND,
+                f"learning snapshot {learning_snapshot_id} not found —"
+                " Local V1 materializes only the current projection"
+                f" snapshot ({snapshot_id})",
+            )
+        targets = tuple(
+            _record_from_document(json.loads(str(row[3])))
+            for row in rows
+        )
+        estimator_version = (
+            targets[0].estimator_version if targets else ESTIMATOR_PROFILE_ID
+        )
+        return Ok(
+            LearningSnapshot(
+                learning_snapshot_id=snapshot_id,
+                user_scope_id=self._user_scope_id,
+                as_of=_now(),
+                estimator_version=estimator_version,
+                evidence_watermark=watermark,
+                targets=targets,
+            )
+        )
+
+    def get_freshness(self, target_id: TargetId) -> Result[FreshnessView]:
+        """The only thing Learning owes the Scheduler (D-INV-009):
+        freshness across the target's modality projections — the newest
+        strong retrieval wins, elapsed is recomputed at read time (BF-01
+        §22: time never changes historical ability mass)."""
+
+        rows = self._conn.execute(
+            "SELECT state_json FROM learner_target_state"
+            " WHERE user_scope_id = ? AND target_id = ?"
+            " ORDER BY updated_at, target_type, evidence_modality",
+            (self._user_scope_id, target_id),
+        ).fetchall()
+        if not rows:
+            return Ok(
+                FreshnessView(
+                    target_id=target_id,
+                    last_strong_retrieval_at=None,
+                    days_since_strong_retrieval=None,
+                    freshness_band="UNKNOWN",
+                    stability_band=None,
+                )
+            )
+        records = [
+            _record_from_document(json.loads(str(row[0]))) for row in rows
+        ]
+        with_strong = [
+            record
+            for record in records
+            if record.freshness.last_strong_retrieval_at is not None
+        ]
+        as_of = datetime.now(tz=UTC)
+        if with_strong:
+            newest = max(
+                with_strong,
+                key=lambda record: (
+                    record.freshness.last_strong_retrieval_at or "",
+                    record.updated_at,
+                ),
+            )
+            last = datetime.fromisoformat(
+                str(newest.freshness.last_strong_retrieval_at)
+            )
+            days = max(0.0, (as_of - last).total_seconds() / 86400)
+            if days <= FRESHNESS_DAYS_FRESH_MAX:
+                band = "FRESH"
+            elif days <= FRESHNESS_DAYS_AGING_MAX:
+                band = "AGING"
+            else:
+                band = "STALE"
+            return Ok(
+                FreshnessView(
+                    target_id=target_id,
+                    last_strong_retrieval_at=newest.freshness.last_strong_retrieval_at,
+                    days_since_strong_retrieval=round(days, 2),
+                    freshness_band=band,
+                    stability_band=newest.projection.stability_band,
+                )
+            )
+        newest = max(records, key=lambda record: record.updated_at)
+        return Ok(
+            FreshnessView(
+                target_id=target_id,
+                last_strong_retrieval_at=None,
+                days_since_strong_retrieval=None,
+                freshness_band="UNKNOWN",
+                stability_band=newest.projection.stability_band,
+            )
+        )
 
     # -- opportunity / expression-need write faces --------------------------
 
@@ -848,8 +1117,16 @@ class SqliteLearningStore:
     ) -> Result[EvidenceClaimId]:
         """Invalidate one ACTIVE claim (STATE_MACHINES §18): the row
         stays append-only traceable with status INVALIDATED and leaves
-        the estimating set. No watermark move — a status correction adds
-        no new evidence row."""
+        the estimating set.
+
+        F2 (adjudicated in the P2B mother decision DEC-…eaaa5a1d.26):
+        the watermark is the durable EVIDENCE-CHANGE sequence number —
+        commit / supersede / invalidate ALL advance it. An invalidation
+        durably changes the ACTIVE claim set the projection rebuilds
+        from, so it moves the sequence exactly like a supersede (the
+        former P2A self-adjudication "invalidate adds no evidence row →
+        no watermark move" is superseded by this semantics upgrade; the
+        old pin was revised with it)."""
 
         with short_transaction(self._conn):
             self._require_current_epoch()
@@ -869,6 +1146,7 @@ class SqliteLearningStore:
                 " WHERE evidence_claim_id = ? AND status = 'ACTIVE'",
                 (claim_id,),
             )
+            self._bump_watermark()
         return Ok(claim_id)
 
     # -- read faces ----------------------------------------------------------
@@ -894,15 +1172,24 @@ class SqliteLearningStore:
         group = self._group_row(evidence_group_id)
         if group is None:
             return Ok(None)
+        # P2B fix: this read face used "SELECT *" and fed the raw tuple
+        # into the name-indexed claim parser — it had no claiming caller
+        # in P2A, so the breakage was latent. Pinned to the shared
+        # literal select + column whitelist like every other claim read.
         rows = self._conn.execute(
-            "SELECT * FROM evidence_claim WHERE evidence_group_id = ?"
+            _CLAIM_SELECT + " WHERE evidence_group_id = ?"
             " ORDER BY created_at, evidence_claim_id",
             (evidence_group_id,),
         ).fetchall()
         return Ok(
             (
                 self._group_record(group),
-                tuple(self._claim_record(row) for row in rows),
+                tuple(
+                    self._claim_record(
+                        dict(zip(_CLAIM_COLUMNS, row, strict=True))
+                    )
+                    for row in rows
+                ),
             )
         )
 
@@ -1196,29 +1483,37 @@ class SqliteLearningStore:
         keeps the 38-column surface index-error-free)."""
 
         row = self._conn.execute(
-            "SELECT evidence_claim_id, evidence_group_id, opportunity_id,"
-            " target_type, target_id, performance_type, polarity, outcome,"
-            " qualifiers, evidence_modality, elicitation_type,"
-            " spontaneity, support_level, answer_exposure_state,"
-            " exposure_estimate_id, support_attribution_certainty,"
-            " support_attribution_basis, accuracy, pragmatic_fit,"
-            " fluency, error_attribution, delay_seconds, context_novelty,"
-            " persona_novelty, evidence_modality_novelty,"
-            " capability_evidence_basis, source_turn_id, conversation_id,"
-            " persona_id, teaching_moment_id, evaluator_id,"
-            " evaluator_version, evaluator_confidence, status,"
-            " supersedes_claim_id, attempt_id, claim_role, created_at"
-            " FROM evidence_claim WHERE evidence_claim_id = ?",
+            _CLAIM_SELECT + " WHERE evidence_claim_id = ?",
             (claim_id,),
         ).fetchone()
         if row is None:
             return None
         return dict(zip(_CLAIM_COLUMNS, row, strict=True))
 
+    def _claim_records_for(
+        self,
+        target_type: str,
+        target_id: TargetId,
+        evidence_modality: str,
+    ) -> tuple[ClaimRecord, ...]:
+        """ACTIVE claims of one §11 scope key (target_type × target_id ×
+        modality) in deterministic order — the rebuild's input set
+        (BF-01 §29: only ACTIVE evidence enters estimation)."""
+
+        rows = self._conn.execute(
+            _CLAIM_SELECT
+            + " WHERE target_type = ? AND target_id = ?"
+            " AND evidence_modality = ? AND status = 'ACTIVE'"
+            " ORDER BY created_at, evidence_claim_id",
+            (target_type, target_id, evidence_modality),
+        ).fetchall()
+        return tuple(
+            self._claim_record(dict(zip(_CLAIM_COLUMNS, row, strict=True)))
+            for row in rows
+        )
+
     @staticmethod
     def _claim_record(row: dict[str, object]) -> ClaimRecord:
-        from typing import cast
-
         def text(key: str) -> str:
             return str(row[key])
 
@@ -1334,3 +1629,237 @@ def _stable_digest(*parts: str) -> str:
         hasher.update(part.encode("utf-8"))
         hasher.update(b"\x1f")
     return hasher.hexdigest()
+
+
+# -- P2B: estimator view adapter + §11 document (de)serialization ----------
+
+
+def _estimator_view(claim: ClaimRecord) -> EstimatorClaimView:
+    """Adapt one durable §6 claim row to the BF-01 §7 estimator view.
+
+    Column mapping (implementation-defined per DATA_MODEL §27):
+    - opportunity_type ← elicitation_type (the §7 opportunity
+      vocabulary root-shares the elicitation words; the protocol-face
+      default fill is 'NATURAL' — module docstring).
+    - timestamp ← created_at (the claim's durable evidence time).
+    - error_attribution None → 'UNKNOWN' (BF-01 §6 default multiplier).
+    - context_key / realization_key are None: the §6 column set carries
+      novelty reals (context_novelty / persona_novelty /
+      evidence_modality_novelty), not context/realization keys, so the
+      estimator's documented fallbacks apply ("context:unknown" /
+      "realization:unknown"; qualifier-driven novel: fallbacks still
+      fire). Diversity therefore rides conversation/day/persona until a
+      later migration adds the keys.
+    """
+
+    return EstimatorClaimView(
+        group_id=claim.evidence_group_id,
+        timestamp=claim.created_at,
+        performance_type=claim.performance_type,
+        polarity=claim.polarity,
+        outcome=claim.outcome,
+        evaluator_confidence=claim.evaluator_confidence,
+        support_level=claim.support_level,
+        exposure_level=claim.answer_exposure_state,
+        opportunity_type=claim.elicitation_type,
+        qualifiers=claim.qualifiers,
+        error_attribution=claim.error_attribution or "UNKNOWN",
+        accuracy=claim.accuracy,
+        pragmatic_fit=claim.pragmatic_fit,
+        conversation_id=claim.conversation_id,
+        teaching_moment_id=claim.teaching_moment_id,
+        persona_id=claim.persona_id,
+        context_key=None,
+        realization_key=None,
+        target_type=claim.target_type,
+        target_id=claim.target_id,
+        modality=claim.evidence_modality,
+        status=claim.status,
+        spontaneity=claim.spontaneity,
+    )
+
+
+def _record_from_estimate(
+    estimate: TargetStateEstimate, watermark: int, updated_at: str
+) -> LearnerTargetStateRecord:
+    """§11 record from the estimator output (masses stay in the
+    estimator's own result; the projection surface is the §11 field
+    set)."""
+
+    dimensions = {
+        name: LearnerDimensionState(
+            estimate=state.estimate,
+            confidence=state.confidence,
+            last_relevant_evidence_at=state.last_relevant_evidence_at,
+        )
+        for name, state in estimate.dimensions.items()
+    }
+    return LearnerTargetStateRecord(
+        target_type=estimate.target_type,
+        target_id=TargetId(estimate.target_id),
+        evidence_modality=estimate.modality,
+        dimensions=dimensions,
+        coverage=LearnerCoverage(
+            evidence_groups=estimate.coverage.evidence_groups,
+            independent_clusters=estimate.coverage.independent_clusters,
+            sessions=estimate.coverage.sessions,
+            days=estimate.coverage.days,
+            contexts=estimate.coverage.contexts,
+            personas=estimate.coverage.personas,
+            realizations=estimate.coverage.realizations,
+            modalities=estimate.coverage.modalities,
+        ),
+        freshness=LearnerFreshness(
+            last_strong_retrieval_at=(
+                estimate.freshness.last_strong_retrieval_at
+            ),
+            elapsed_since_strong_retrieval_days=(
+                estimate.freshness.days_since_strong_retrieval
+            ),
+            freshness_band=estimate.freshness.band,
+        ),
+        projection=LearnerProjection(
+            ability_band=estimate.projection.ability_band,
+            confidence_band=estimate.projection.confidence_band,
+            transfer_band=estimate.projection.transfer_band,
+            support_band=estimate.projection.support_band,
+            stability_band=estimate.projection.stability_band,
+            learning_flags=estimate.projection.learning_flags,
+        ),
+        estimator_version=ESTIMATOR_PROFILE_ID,
+        evidence_watermark=watermark,
+        updated_at=updated_at,
+    )
+
+
+def _state_document(record: LearnerTargetStateRecord) -> str:
+    """Canonical JSON of the §11 document (sorted keys, fixed
+    separators) — the migration-0005 state_json payload."""
+
+    return json.dumps(
+        {
+            "target_type": record.target_type,
+            "target_id": str(record.target_id),
+            "evidence_modality": record.evidence_modality,
+            "dimensions": {
+                name: {
+                    "estimate": state.estimate,
+                    "confidence": state.confidence,
+                    "last_relevant_evidence_at": (
+                        state.last_relevant_evidence_at
+                    ),
+                }
+                for name, state in record.dimensions.items()
+            },
+            "coverage": {
+                "evidence_groups": record.coverage.evidence_groups,
+                "independent_clusters": (
+                    record.coverage.independent_clusters
+                ),
+                "sessions": record.coverage.sessions,
+                "days": record.coverage.days,
+                "contexts": record.coverage.contexts,
+                "personas": record.coverage.personas,
+                "realizations": record.coverage.realizations,
+                "modalities": record.coverage.modalities,
+            },
+            "freshness": {
+                "last_strong_retrieval_at": (
+                    record.freshness.last_strong_retrieval_at
+                ),
+                "elapsed_since_strong_retrieval_days": (
+                    record.freshness.elapsed_since_strong_retrieval_days
+                ),
+                "freshness_band": record.freshness.freshness_band,
+            },
+            "projection": {
+                "ability_band": record.projection.ability_band,
+                "confidence_band": record.projection.confidence_band,
+                "transfer_band": record.projection.transfer_band,
+                "support_band": record.projection.support_band,
+                "stability_band": record.projection.stability_band,
+                "learning_flags": list(record.projection.learning_flags),
+            },
+            "meta": {
+                "estimator_version": record.estimator_version,
+                "evidence_watermark": record.evidence_watermark,
+                "updated_at": record.updated_at,
+            },
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+
+
+def _record_from_document(
+    document: Mapping[str, object],
+) -> LearnerTargetStateRecord:
+    """Parse the §11 state_json document back into the typed record."""
+
+    def count(block: Mapping[str, object], key: str) -> int:
+        return int(cast(int, block[key]))
+
+    def opt_text(block: Mapping[str, object], key: str) -> str | None:
+        return None if block[key] is None else str(block[key])
+
+    def opt_float(block: Mapping[str, object], key: str) -> float | None:
+        return (
+            None if block[key] is None else float(cast(float, block[key]))
+        )
+
+    dimensions_raw = cast(
+        Mapping[str, Mapping[str, object]], document["dimensions"]
+    )
+    coverage_raw = cast(Mapping[str, object], document["coverage"])
+    freshness_raw = cast(Mapping[str, object], document["freshness"])
+    projection_raw = cast(Mapping[str, object], document["projection"])
+    meta_raw = cast(Mapping[str, object], document["meta"])
+    flags_raw = cast(Sequence[object], projection_raw["learning_flags"])
+    return LearnerTargetStateRecord(
+        target_type=str(document["target_type"]),
+        target_id=TargetId(str(document["target_id"])),
+        evidence_modality=str(document["evidence_modality"]),
+        dimensions={
+            name: LearnerDimensionState(
+                estimate=opt_float(block, "estimate"),
+                confidence=float(cast(float, block["confidence"])),
+                last_relevant_evidence_at=opt_text(
+                    block, "last_relevant_evidence_at"
+                ),
+            )
+            for name, block in dimensions_raw.items()
+        },
+        coverage=LearnerCoverage(
+            evidence_groups=count(coverage_raw, "evidence_groups"),
+            independent_clusters=count(
+                coverage_raw, "independent_clusters"
+            ),
+            sessions=count(coverage_raw, "sessions"),
+            days=count(coverage_raw, "days"),
+            contexts=count(coverage_raw, "contexts"),
+            personas=count(coverage_raw, "personas"),
+            realizations=count(coverage_raw, "realizations"),
+            modalities=count(coverage_raw, "modalities"),
+        ),
+        freshness=LearnerFreshness(
+            last_strong_retrieval_at=opt_text(
+                freshness_raw, "last_strong_retrieval_at"
+            ),
+            elapsed_since_strong_retrieval_days=opt_float(
+                freshness_raw, "elapsed_since_strong_retrieval_days"
+            ),
+            freshness_band=str(freshness_raw["freshness_band"]),
+        ),
+        projection=LearnerProjection(
+            ability_band=str(projection_raw["ability_band"]),
+            confidence_band=str(projection_raw["confidence_band"]),
+            transfer_band=str(projection_raw["transfer_band"]),
+            support_band=str(projection_raw["support_band"]),
+            stability_band=str(projection_raw["stability_band"]),
+            learning_flags=tuple(str(flag) for flag in flags_raw),
+        ),
+        estimator_version=str(meta_raw["estimator_version"]),
+        evidence_watermark=int(cast(int, meta_raw["evidence_watermark"])),
+        updated_at=str(meta_raw["updated_at"]),
+    )
