@@ -3,6 +3,11 @@
 docs/DOMAIN_MODEL.md D-INV-012: the final provider prompt is built only by
 Persona Runtime / PromptCompiler. tests/architecture enforces that this
 class exists nowhere else.
+
+The GenerationActionStore port moved to elc.runtime.generation in
+TASK-OPI-eaaa5a1d.6: GenerationActionIntent / ProviderAttempt are
+Runtime-specific records (docs/DOMAIN_MODEL.md §16), so their durable face
+and §14 state-machine authority are runtime-owned, not persona-owned.
 """
 
 from __future__ import annotations
@@ -15,17 +20,9 @@ from elc.persona.types import (
     PromptCompilationRequest,
 )
 from elc.platform.types import (
-    ActionId,
     CharacterPackageId,
     Ok,
     Result,
-    RuntimeEpoch,
-    TurnId,
-)
-from elc.runtime.types import (
-    GenerationActionIntentRecord,
-    GenerationActionStatus,
-    ProviderAttemptRecord,
 )
 
 
@@ -42,51 +39,6 @@ class PersonaCommands(Protocol):
         self, request: PromptCompilationRequest
     ) -> Result[CompiledPrompt]:
         """Build the final provider prompt via PromptCompiler."""
-        ...
-
-
-@runtime_checkable
-class GenerationActionStore(Protocol):
-    """Durable face for GenerationActionIntent / ProviderAttempt rows
-    (implemented by elc.persona.store.SqliteGenerationStore; §14 state
-    authority + CP2.5 attempt log, RUNTIME §6)."""
-
-    def create_action(
-        self, intent: GenerationActionIntentRecord
-    ) -> Result[ActionId]:
-        ...
-
-    def transition_action(
-        self,
-        action_id: ActionId,
-        expected: GenerationActionStatus,
-        new: GenerationActionStatus,
-    ) -> Result[GenerationActionIntentRecord]:
-        ...
-
-    def record_attempt(
-        self, attempt: ProviderAttemptRecord
-    ) -> Result[ProviderAttemptRecord]:
-        ...
-
-    def get_action(
-        self, action_id: ActionId
-    ) -> Result[GenerationActionIntentRecord | None]:
-        ...
-
-    def get_action_for_turn(
-        self, turn_id: TurnId
-    ) -> Result[GenerationActionIntentRecord | None]:
-        ...
-
-    def claim_action_for_recovery(
-        self, action_id: ActionId
-    ) -> Result[GenerationActionIntentRecord]:
-        ...
-
-    def recoverable_generation_actions(
-        self, current_epoch: RuntimeEpoch
-    ) -> tuple[GenerationActionIntentRecord, ...]:
         ...
 
 

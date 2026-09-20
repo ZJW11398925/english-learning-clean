@@ -2,7 +2,9 @@
 
 docs/RUNTIME_ARCHITECTURE.md §4 steps 11-13 (Persona Runtime builds final
 prompt → Provider generation → Response Validator) realized on the
-docs/STATE_MACHINES.md §14 GenerationActionStatus state machine:
+docs/STATE_MACHINES.md §14 GenerationActionStatus state machine, whose
+authority is runtime-owned (elc.runtime.generation; DOMAIN_MODEL §16 lists
+GenerationActionIntent / ProviderAttempt as Runtime-specific records):
 
     PREPARED → REQUESTED → GENERATING → VALIDATING
       VALIDATING → READY_TO_DELIVER (validator ACCEPT; BUFFERED_VALIDATED)
@@ -11,6 +13,11 @@ docs/STATE_MACHINES.md §14 GenerationActionStatus state machine:
       GENERATING → REQUESTED        (provider failure — action-level retry)
       READY_TO_DELIVER → DELIVERING → TERMINAL (buffered delivery completes)
       <nonterminal> → TERMINAL      (bounded retries exhausted → failed)
+
+This module drives the machine as the pipeline body (prompt → provider →
+validator, all persona-domain duties); it does not define the machine —
+the port and the §14 transition table live in elc.runtime.generation, and
+the durable CAS executor is elc.platform.db.generation_store.
 
 Action-level retry only (RUNTIME §16 "Never retry whole Turn"; R-INV-007):
 every retry appends one ProviderAttempt under the SAME stable action_id;
@@ -35,7 +42,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from elc.persona.commands import GenerationActionStore, PromptCompiler
+from elc.persona.commands import PromptCompiler
 from elc.persona.provider import (
     PersonaProvider,
     request_hash,
@@ -61,6 +68,7 @@ from elc.platform.types import (
     Result,
     TurnId,
 )
+from elc.runtime.generation import GenerationActionStore
 from elc.runtime.types import (
     GenerationActionIntentRecord,
     GenerationActionStatus,
@@ -118,8 +126,10 @@ def _new_attempt_id() -> ProviderAttemptId:
 
 
 class PersonaRuntime:
-    """Persona Runtime — sole owner of the final prompt and the generation
-    action state machine (DOMAIN_MODEL §4; SM §14)."""
+    """Persona Runtime — sole owner of the final prompt (DOMAIN_MODEL §4,
+    D-INV-012). It drives the §14 generation action machine through the
+    runtime-owned GenerationActionStore port (elc.runtime.generation,
+    DOMAIN_MODEL §16) but does not define it."""
 
     def __init__(
         self,

@@ -28,13 +28,13 @@ from elc.conversation import SqliteConversationStore
 from elc.persona import (
     ProviderOutput,
     ScriptedPersonaProvider,
-    SqliteGenerationStore,
     action_intent_for_turn,
     no_output,
     normal_output,
 )
 from elc.platform.db import epoch
 from elc.platform.db.epoch import RuntimeEpochFence
+from elc.platform.db.generation_store import SqliteGenerationStore
 from elc.platform.types import ConversationId, Ok
 from elc.runtime import (
     ConversationCoordinatorLease,
@@ -386,7 +386,7 @@ def test_late_callback_from_fenced_epoch_is_discarded(
 
     # The old owner can no longer advance the action (durable fencing), and
     # nothing entered the transcript.
-    from elc.persona.store import StaleStoreEpochError
+    from elc.platform.db.generation_store import StaleStoreEpochError
 
     with pytest.raises(StaleStoreEpochError):
         generation_store.transition_action(

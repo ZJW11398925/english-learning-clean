@@ -15,12 +15,12 @@ from elc.persona import (
     PromptCompiler,
     ProviderOutput,
     ResponseValidator,
-    SqliteGenerationStore,
     ValidatorDecision,
     action_intent_for_turn,
     no_output,
 )
 from elc.persona.provider import request_hash
+from elc.platform.db.generation_store import SqliteGenerationStore
 from elc.platform.types import ActionId, ConversationId, Err, PersonaId
 from elc.runtime.types import GenerationActionStatus, GenerationActionType
 
@@ -209,8 +209,8 @@ def test_transition_action_table_and_invalid_transitions(
 
     # A fenced (old-epoch) owner cannot advance the action (§24 fencing).
     # (Seed first: the conversation store is bound to the current epoch.)
-    from elc.persona.store import StaleStoreEpochError
     from elc.platform.db import epoch
+    from elc.platform.db.generation_store import StaleStoreEpochError
 
     fenced_turn = _committed_turn(store, conversation, "fenced")
     old_fence = epoch.open_runtime_epoch(db)

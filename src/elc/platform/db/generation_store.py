@@ -1,11 +1,19 @@
 """SQLite durable store for generation/provider records (Phase 1 P1B).
 
-TASK-OPI-d7937fd7.9 deliverables ③/④: durable GenerationActionIntent /
-ProviderAttempt persistence. The tables are runtime-owned coordination
-records (docs/DOMAIN_MODEL.md §16), but their physical persistence lives in
-this persona-domain package — never in ``elc.runtime`` (Gate item 2 keeps
-the orchestrator SQL-free; D-INV-001), mirroring how P1A colocated the
+TASK-OPI-d7937fd7.9 deliverables ③/④ moved the durable
+GenerationActionIntent / ProviderAttempt persistence here from the persona
+package in TASK-OPI-eaaa5a1d.6: the records are runtime-owned coordination
+records (docs/DOMAIN_MODEL.md §16) and their §14 state-machine authority
+lives in elc.runtime.generation, so their physical persistence belongs in
+the platform DB layer (never in ``elc.runtime`` — Gate item 2 keeps the
+orchestrator SQL-free; D-INV-001), mirroring how P1A colocated the
 TurnRecord persistence in the conversation store.
+
+This store is the CAS executor, never the policy: which transitions are
+legal (STATE_MACHINES §14, including TERMINAL immutability) and when a
+recovery claim re-arms an action (RUNTIME §24) are decided by the pure
+functions in elc.runtime.generation; this module only executes them
+durably.
 
 Discipline:
 - every state advance is a compare-and-swap on the durable status column
@@ -43,6 +51,12 @@ from elc.platform.types import (
     Result,
     RuntimeEpoch,
     TurnId,
+)
+from elc.runtime.generation import (
+    RECOVERY_REARM_STATUS,
+    claim_rearm,
+    terminal_refusal,
+    transition_refusal,
 )
 from elc.runtime.types import (
     GenerationActionIntentRecord,
@@ -141,17 +155,16 @@ class SqliteGenerationStore:
     ) -> Result[GenerationActionIntentRecord]:
         """Advance the §14 state machine under status CAS + epoch fence.
 
-        TERMINAL is immutable: no transition ever leaves it (§14 late-result
-        rule). A mismatched expected status or a fenced owner_epoch is a
+        Which (expected → new) edges are legal is runtime-owned policy
+        (elc.runtime.generation.transition_refusal — TERMINAL is immutable,
+        the §14 late-result rule); this executor only guards the durable
+        CAS. A mismatched expected status or a fenced owner_epoch is a
         conflict, never a silent overwrite (§20).
         """
 
-        if expected == GenerationActionStatus.TERMINAL:
-            return _err(
-                DomainErrorCode.VALIDATION_FAILED,
-                f"action {action_id} is TERMINAL — late results never"
-                " overwrite a terminal action (STATE_MACHINES §14)",
-            )
+        refusal = transition_refusal(action_id, expected, new)
+        if refusal is not None:
+            return Err(refusal)
         with short_transaction(self._conn):
             # Fence inside the write transaction: the adopted epoch must
             # still be the newest in app.db (RUNTIME §24 restart fencing —
@@ -170,12 +183,9 @@ class SqliteGenerationStore:
                     f" epoch={self._fence.current}",
                 )
             durable = GenerationActionStatus(str(row[7]))
-            if durable == GenerationActionStatus.TERMINAL:
-                return _err(
-                    DomainErrorCode.VALIDATION_FAILED,
-                    f"action {action_id} is TERMINAL ({durable}) — no"
-                    " canonical side effect from late work",
-                )
+            late = terminal_refusal(action_id, durable)
+            if late is not None:
+                return Err(late)
             if durable != expected:
                 return _err(
                     DomainErrorCode.CONFLICT,
@@ -236,7 +246,9 @@ class SqliteGenerationStore:
         old-epoch nonterminal action (RUNTIME §22/§24; SM §17.1 rule 3 —
         the recovery owner may cancel/supersede/finish old work).
 
-        Re-arms the action at REQUESTED under the current epoch so
+        Whether a claim re-arms is runtime-owned policy
+        (elc.runtime.generation.claim_rearm): a nonterminal old-epoch
+        action is re-armed at REQUESTED under the current epoch so
         re-dispatch retries at the action level (same stable action_id,
         §23 "Crash after CP2: 继续同 action_id"); TERMINAL actions and
         actions already owned by the current epoch are returned unchanged
@@ -250,16 +262,16 @@ class SqliteGenerationStore:
                     DomainErrorCode.NOT_FOUND,
                     f"generation action not found: {action_id}",
                 )
-            if GenerationActionStatus(str(row[7])) == GenerationActionStatus.TERMINAL:
+            if not claim_rearm(
+                GenerationActionStatus(str(row[7])), row[9], self._fence.current
+            ):
                 return Ok(self._record(row))
-            if row[9] == self._fence.current:
-                return Ok(self._record(row))  # already ours
             self._require_current_epoch()
             self._conn.execute(
                 "UPDATE generation_action_intent SET status = ?,"
                 " owner_epoch = ? WHERE action_id = ? AND status != 'TERMINAL'",
                 (
-                    GenerationActionStatus.REQUESTED.value,
+                    RECOVERY_REARM_STATUS.value,
                     self._fence.current,
                     action_id,
                 ),

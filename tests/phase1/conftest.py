@@ -19,10 +19,10 @@ from elc.persona import (
     PromptCompiler,
     ResponseValidator,
     ScriptedPersonaProvider,
-    SqliteGenerationStore,
 )
 from elc.platform.db import connection, epoch, migrations
 from elc.platform.db.epoch import RuntimeEpochFence
+from elc.platform.db.generation_store import SqliteGenerationStore
 from elc.platform.types import (
     ClientMessageId,
     ConversationId,

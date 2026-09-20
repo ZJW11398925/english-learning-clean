@@ -3,7 +3,9 @@
 The orchestrator coordinates through domain command/query interfaces only:
 its DB posture is "none" — no sqlite3 import, no SQL execution, no direct
 table mutation (Gate item 2; enforced by tests/architecture). Persistence
-lives in the conversation / persona domain stores and elc.platform.db.
+lives in the conversation domain store and elc.platform.db (including the
+generation action / provider attempt store, whose §14 state-machine
+authority this package owns in elc.runtime.generation).
 
 ConversationCoordinator (TASK-OPI-d7937fd7.9 deliverable ⑥) assembles the
 P1A pieces with the P1B persona pipeline into the minimum turn loop of
@@ -12,7 +14,8 @@ docs/IMPLEMENTATION_PLAN.md §3:
     coordinator guard (ConversationCoordinatorLease)
     → CP0 commit (idempotent InputEnvelope dedupe + UserTurn + TurnRecord)
     → TurnRecord USER_COMMITTED → GENERATING (state_version CAS)
-    → PersonaRuntime §14 action machine (action-level retry, R-INV-007)
+    → generation pipeline on the §14 action machine via the runtime-owned
+      GenerationActionStore port (action-level retry, R-INV-007)
     → BUFFERED_VALIDATED delivery: validated output buffered at
       READY_TO_DELIVER, then canonicalized exactly once via the
       conversation store (SENT_COMPLETE / SENT_PARTIAL)
@@ -36,7 +39,6 @@ from elc.conversation.types import (
     DeliveryState,
     TurnOutcome,
 )
-from elc.persona.commands import GenerationActionStore
 from elc.persona.runtime import PersonaRuntime, action_intent_for_turn
 from elc.persona.types import (
     GenerationContext,
@@ -63,6 +65,7 @@ from elc.platform.types import (
     TurnId,
     TurnSequence,
 )
+from elc.runtime.generation import GenerationActionStore
 from elc.runtime.lease import ConversationCoordinatorLease
 from elc.runtime.types import (
     TERMINAL_TURN_STATUSES,
@@ -106,9 +109,15 @@ class AssistantDelivery:
 
 
 class RuntimeOrchestrator:
-    """Sequencing, retry, recovery — owns no canonical truth (Phase 0 face,
-    kept for later phases; the Phase 1 loop lives on
-    :class:`ConversationCoordinator`)."""
+    """Sequencing, retry, recovery — owns no canonical truth.
+
+    Phase 0 twelve-domain skeleton kept for later phases. The single
+    working orchestrator facade of Phase 1 is :class:`ConversationCoordinator`
+    (below): every method here either points there or names the phase that
+    will implement it — there is deliberately no second live entry point.
+    tests/architecture Gate 1 (phase1_class_allowlist) pins exactly this
+    split: only ConversationCoordinator graduated from the skeleton.
+    """
 
     def __init__(self) -> None:
         # Live per-conversation coordinator (docs/RUNTIME_ARCHITECTURE.md §24).
@@ -146,12 +155,21 @@ class RuntimeOrchestrator:
         action_type: GenerationActionType,
         action_id: ActionId,
     ) -> Result[ActionId]:
-        raise NotImplementedError("persona runtime owns the action machine")
+        raise NotImplementedError(
+            "generation actions are created through the runtime-owned"
+            " GenerationActionStore port (elc.runtime.generation) — the"
+            " Phase 1 loop lives on ConversationCoordinator.begin_turn"
+        )
 
     def create_provider_attempt(
         self, action_id: ActionId, attempt: ProviderAttemptRecord
     ) -> Result[ProviderAttemptId]:
-        raise NotImplementedError("persona runtime owns action-level retry")
+        raise NotImplementedError(
+            "provider attempts are appended through the runtime-owned"
+            " GenerationActionStore port — action-level retry runs in the"
+            " Phase 1 loop (ConversationCoordinator.begin_turn via"
+            " PersonaRuntime.run_action)"
+        )
 
     def enqueue_projection(
         self, job: ProjectionJobRecord
@@ -171,8 +189,10 @@ class RuntimeOrchestrator:
 
 
 class ConversationCoordinator:
-    """Minimum turn loop facade: lease + conversation store + persona
-    pipeline (IMPLEMENTATION_PLAN §3). SQL-free by construction."""
+    """The single working orchestrator facade of Phase 1: lease +
+    conversation store + persona pipeline (IMPLEMENTATION_PLAN §3).
+    RuntimeOrchestrator above stays an unimplemented skeleton, so this is
+    the only live turn-loop entry point. SQL-free by construction."""
 
     def __init__(
         self,

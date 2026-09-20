@@ -1,9 +1,11 @@
 """Runtime / Platform domain — Conversation Orchestrator.
 
 docs/DOMAIN_MODEL.md §16. Sequencing, not truth. All DB mechanics stay in
-elc.platform.db (and, since Phase 1 P1A, in the conversation store; since
-P1B, in the persona generation store); this package is SQL-free by
-architecture test.
+elc.platform.db and the conversation domain store; this package is SQL-free
+by architecture test. The §14 GenerationAction authority (port + pure
+state-machine policy, elc.runtime.generation) lives here because
+GenerationActionIntent / ProviderAttempt are Runtime-specific records —
+its durable executor is elc.platform.db.generation_store.
 
 The controller module loads lazily (PEP 562): both the conversation and
 persona command faces import elc.runtime.types, so importing the
@@ -13,6 +15,14 @@ controller eagerly here would create an initialization cycle.
 from typing import Any
 
 from elc.runtime.commands import RuntimeCommands
+from elc.runtime.generation import (
+    GENERATION_ACTION_TRANSITIONS,
+    RECOVERY_REARM_STATUS,
+    GenerationActionStore,
+    claim_rearm,
+    terminal_refusal,
+    transition_refusal,
+)
 from elc.runtime.lease import (
     ConversationCoordinatorLease,
     LeaseGuard,
@@ -51,12 +61,15 @@ _CONTROLLER_EXPORTS = (
 
 __all__ = [
     "AssistantDelivery",
+    "GENERATION_ACTION_TRANSITIONS",
+    "RECOVERY_REARM_STATUS",
     "TERMINAL_TURN_STATUSES",
     "ConversationCoordinator",
     "ConversationCoordinatorLease",
     "DecisionCycleRecord",
     "GenerationActionIntentRecord",
     "GenerationActionStatus",
+    "GenerationActionStore",
     "GenerationActionType",
     "InputEnvelope",
     "InterruptRequest",
@@ -75,7 +88,10 @@ __all__ = [
     "TurnRecordRecoverySource",
     "TurnStatus",
     "ValidatorResultRecord",
+    "claim_rearm",
     "recovery_disposition",
+    "terminal_refusal",
+    "transition_refusal",
 ]
 
 

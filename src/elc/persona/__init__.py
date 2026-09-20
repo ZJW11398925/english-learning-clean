@@ -1,10 +1,13 @@
 """Persona domain — CharacterPackage + the sole PromptCompiler.
 
 docs/DOMAIN_MODEL.md §4. PromptCompiler lives only here (Gate item 3).
+The GenerationActionStore port and SqliteGenerationStore moved to
+elc.runtime.generation / elc.platform.db.generation_store in
+TASK-OPI-eaaa5a1d.6 (GenerationActionIntent / ProviderAttempt are
+Runtime-specific records, DOMAIN_MODEL §16).
 """
 
 from elc.persona.commands import (
-    GenerationActionStore,
     PersonaCommands,
     PromptCompiler,
 )
@@ -24,7 +27,6 @@ from elc.persona.runtime import (
     PersonaRuntime,
     action_intent_for_turn,
 )
-from elc.persona.store import SqliteGenerationStore
 from elc.persona.types import (
     DEFAULT_FORBIDDEN_CLAIMS,
     CharacterPackageRecord,
@@ -48,7 +50,6 @@ __all__ = [
     "BufferedReply",
     "CharacterPackageRecord",
     "CompiledPrompt",
-    "GenerationActionStore",
     "GenerationContext",
     "GenerationContract",
     "GenerationOutcome",
@@ -62,7 +63,6 @@ __all__ = [
     "ProviderOutput",
     "ResponseValidator",
     "ScriptedPersonaProvider",
-    "SqliteGenerationStore",
     "ValidatorDecision",
     "ValidatorResult",
     "action_intent_for_turn",
