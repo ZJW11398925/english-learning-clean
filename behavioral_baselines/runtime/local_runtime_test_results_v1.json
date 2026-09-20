@@ -199,109 +199,44 @@
   {
     "id": "L24_RECOVER_CP0",
     "description": "Crash after CP0 resumes analysis.",
-    "pass": true,
-    "detail": {
-      "epoch": [
-        1,
-        2
-      ],
-      "actions": [
-        "RESUME_ANALYSIS"
-      ]
-    }
+    "pass": false,
+    "detail": "PermissionError(13, '\u53e6\u4e00\u4e2a\u7a0b\u5e8f\u6b63\u5728\u4f7f\u7528\u6b64\u6587\u4ef6\uff0c\u8fdb\u7a0b\u65e0\u6cd5\u8bbf\u95ee\u3002')"
   },
   {
     "id": "L25_RECOVER_CP1",
     "description": "Crash after CP1 resumes decision.",
-    "pass": true,
-    "detail": {
-      "epoch": [
-        1,
-        2
-      ],
-      "actions": [
-        "RESUME_DECISION"
-      ]
-    }
+    "pass": false,
+    "detail": "PermissionError(13, '\u53e6\u4e00\u4e2a\u7a0b\u5e8f\u6b63\u5728\u4f7f\u7528\u6b64\u6587\u4ef6\uff0c\u8fdb\u7a0b\u65e0\u6cd5\u8bbf\u95ee\u3002')"
   },
   {
     "id": "L26_RECOVER_CP2",
     "description": "Crash after CP2 resumes same stable action.",
-    "pass": true,
-    "detail": {
-      "epoch": [
-        1,
-        2
-      ],
-      "actions": [
-        "RESUME_ACTION_BY_STABLE_ACTION_ID"
-      ]
-    }
+    "pass": false,
+    "detail": "PermissionError(13, '\u53e6\u4e00\u4e2a\u7a0b\u5e8f\u6b63\u5728\u4f7f\u7528\u6b64\u6587\u4ef6\uff0c\u8fdb\u7a0b\u65e0\u6cd5\u8bbf\u95ee\u3002')"
   },
   {
     "id": "L27_RECOVER_UNCERTAIN_DELIVERY",
     "description": "Crash around uncertain delivery uses conservative reconciliation.",
-    "pass": true,
-    "detail": {
-      "epoch": [
-        1,
-        2
-      ],
-      "actions": [
-        "CONSERVATIVE_DELIVERY_RECONCILIATION"
-      ]
-    }
+    "pass": false,
+    "detail": "PermissionError(13, '\u53e6\u4e00\u4e2a\u7a0b\u5e8f\u6b63\u5728\u4f7f\u7528\u6b64\u6587\u4ef6\uff0c\u8fdb\u7a0b\u65e0\u6cd5\u8bbf\u95ee\u3002')"
   },
   {
     "id": "L28_RECOVER_PROJECTION",
     "description": "Pending projection survives restart.",
-    "pass": true,
-    "detail": [
-      {
-        "kind": "PROJECTION",
-        "id": "pr1",
-        "action": "REVALIDATE_AND_RUN"
-      },
-      {
-        "kind": "TURN",
-        "id": "t1",
-        "action": "RESUME_ANALYSIS"
-      }
-    ]
+    "pass": false,
+    "detail": "PermissionError(13, '\u53e6\u4e00\u4e2a\u7a0b\u5e8f\u6b63\u5728\u4f7f\u7528\u6b64\u6587\u4ef6\uff0c\u8fdb\u7a0b\u65e0\u6cd5\u8bbf\u95ee\u3002')"
   },
   {
     "id": "L29_ORPHAN_LOCK",
     "description": "Terminal Moment with orphan lock is repaired on recovery.",
-    "pass": true,
-    "detail": [
-      {
-        "kind": "LOCK",
-        "id": "m1",
-        "action": "RELEASE_ORPHAN_LOCK"
-      },
-      {
-        "kind": "TURN",
-        "id": "t1",
-        "action": "RESUME_ACTION_BY_STABLE_ACTION_ID"
-      }
-    ]
+    "pass": false,
+    "detail": "PermissionError(13, '\u53e6\u4e00\u4e2a\u7a0b\u5e8f\u6b63\u5728\u4f7f\u7528\u6b64\u6587\u4ef6\uff0c\u8fdb\u7a0b\u65e0\u6cd5\u8bbf\u95ee\u3002')"
   },
   {
     "id": "L30_ACTIVE_MOMENT_REVALIDATE",
     "description": "Nonterminal TeachingMoment is revalidated, not blindly reopened.",
-    "pass": true,
-    "detail": [
-      {
-        "kind": "TEACHING",
-        "id": "m1",
-        "action": "REVALIDATE_ACTIVE_MOMENT"
-      },
-      {
-        "kind": "TURN",
-        "id": "t1",
-        "action": "RESUME_ACTION_BY_STABLE_ACTION_ID"
-      }
-    ]
+    "pass": false,
+    "detail": "PermissionError(13, '\u53e6\u4e00\u4e2a\u7a0b\u5e8f\u6b63\u5728\u4f7f\u7528\u6b64\u6587\u4ef6\uff0c\u8fdb\u7a0b\u65e0\u6cd5\u8bbf\u95ee\u3002')"
   },
   {
     "id": "L31_NO_HEARTBEAT",

@@ -1,0 +1,111 @@
+"""Gate item 1 — every domain owns its own command/query interfaces.
+
+docs/IMPLEMENTATION_PLAN.md §2 Gate: "每个 Domain 有 own command/query
+interfaces." Each Phase 0 domain package must expose a runtime-checkable
+`<X>Commands` write face and `<X>Queries` read face plus an empty Domain
+Controller whose methods are declared but unimplemented (Phase 0 = skeleton
+only, no domain business logic).
+"""
+
+from __future__ import annotations
+
+import inspect
+from typing import get_type_hints
+
+import pytest
+
+from tests.conftest import DOMAIN_PACKAGES
+
+import importlib
+
+import elc.platform.types as platform_types
+
+
+def _protocol_methods(protocol_cls: type) -> dict[str, inspect.Signature]:
+    return {
+        name: inspect.signature(method)
+        for name, method in inspect.getmembers(protocol_cls, inspect.isfunction)
+        if not name.startswith("_")
+    }
+
+
+@pytest.mark.parametrize("package", DOMAIN_PACKAGES)
+def test_domain_exposes_command_and_query_interfaces(package: str) -> None:
+    commands_mod = importlib.import_module(f"elc.{package}.commands")
+    queries_mod = importlib.import_module(f"elc.{package}.queries")
+    controller_mod = importlib.import_module(f"elc.{package}.controller")
+
+    commands = [
+        name
+        for name, obj in vars(commands_mod).items()
+        if inspect.isclass(obj)
+        if name.endswith("Commands")
+    ]
+    queries = [
+        name
+        for name, obj in vars(queries_mod).items()
+        if inspect.isclass(obj)
+        if name.endswith("Queries")
+    ]
+    assert commands, f"elc.{package} lacks a *Commands interface"
+    assert queries, f"elc.{package} lacks a *Queries interface"
+
+    # Command/query methods must carry full type signatures (Phase 0 rule).
+    for module, names in ((commands_mod, commands), (queries_mod, queries)):
+        for cls_name in names:
+            cls = getattr(module, cls_name)
+            methods = _protocol_methods(cls)
+            assert methods, f"{package}.{cls_name} has no interface methods"
+            for method_name, signature in methods.items():
+                hints = get_type_hints(getattr(cls, method_name))
+                assert "return" in hints, (
+                    f"{package}.{cls_name}.{method_name} lacks return annotation"
+                )
+                for param in signature.parameters:
+                    if param == "self":
+                        continue
+                    assert param in hints, (
+                        f"{package}.{cls_name}.{method_name} parameter "
+                        f"'{param}' lacks annotation"
+                    )
+
+
+@pytest.mark.parametrize("package", DOMAIN_PACKAGES)
+def test_domain_controller_is_empty_skeleton(package: str) -> None:
+    """Phase 0 red line: no domain business logic — every controller method
+    raises NotImplementedError. `infra_allowlist` names the few platform
+    infrastructure hooks a controller may already wire (they touch no domain
+    truth)."""
+    infra_allowlist: dict[str, set[str]] = {
+        # Startup fence adoption is platform infra, not domain logic.
+        "runtime": {"open_startup_fence"},
+    }
+    allowed = infra_allowlist.get(package, set())
+
+    controller_mod = importlib.import_module(f"elc.{package}.controller")
+    controllers = [
+        obj
+        for name, obj in vars(controller_mod).items()
+        if inspect.isclass(obj)
+        if obj.__module__ == controller_mod.__name__
+    ]
+    assert controllers, f"elc.{package}.controller has no controller class"
+
+    for controller in controllers:
+        for name, member in inspect.getmembers(controller, inspect.isfunction):
+            if name.startswith("_") or name in allowed:
+                continue
+            source = inspect.getsource(member)
+            assert "NotImplementedError" in source, (
+                f"{controller.__name__}.{name} implements logic — Phase 0 "
+                "must stay an empty skeleton"
+            )
+
+
+def test_interface_types_come_from_platform_kernel() -> None:
+    """IDs used in interface signatures resolve to the single platform
+    definitions (Gate item 4 support): the canonical NewTypes are never
+    redefined outside elc.platform.types (checked in
+    test_gate_4_canonical_types.py)."""
+    assert platform_types.ConversationId is not None
+    assert platform_types.TurnSequence is not platform_types.MessageSequence

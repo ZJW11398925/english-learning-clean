@@ -1,7 +1,7 @@
 {
   "status": "LOCAL_RUNTIME_BASELINE_V1",
   "integration_contract_checks": {
-    "passed": 43,
+    "passed": 36,
     "total": 43
   }
 }

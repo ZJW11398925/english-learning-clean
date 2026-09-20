@@ -1,6 +1,6 @@
 {
   "package": "english_learning_clean_rewrite_implementation_baseline_v1",
-  "status": "IMPLEMENTATION_BASELINE_V1",
+  "status": "IMPLEMENTATION_BASELINE_V1_P1",
   "date": "2026-09-20",
   "supersedes": "english_learning_clean_rewrite_baseline_rc2",
   "implementation_ready": true,
@@ -93,7 +93,7 @@
     "behavioral_baselines/runtime/local_runtime_profile_v1.json": "f29c5ff8ddfdfa9c750de2e1d3737326ab74461934d28653eb4cae1372550a7d",
     "behavioral_baselines/runtime/local_runtime_reference_v1.py": "865394ebc90f3bcf98b20fbaff87171f509478099db083e68aec313a49f66853",
     "behavioral_baselines/runtime/local_runtime_test_results_v1.json": "ce92257d25acfcc292d0a328b53a80b85ef48bbe6a5d68d64fbf5c864ece5d5c",
-    "behavioral_baselines/runtime/run_local_runtime_tests.py": "01c5e3b5ca5cefa686da8558a102fa1edf045a42b3b6cd26febbf3fbc308040d",
+    "behavioral_baselines/runtime/run_local_runtime_tests.py": "4d8f82555876863d90359f6e643a9448535c4e11a8b304af11d66c7f3879f93f",
     "behavioral_baselines/runtime/test_summary.json": "7da96e00985e82cbfed8c4b66e555790730504121bbca1d360bcf821a5a9544a",
     "behavioral_baselines/security/SECURITY_PRIVACY_DELETION_CONTRACT_v1.0.md": "5e2439108643abeaf42835ea2ee4c7de9cb3ac12bc8c4b4a489b83072582763c",
     "behavioral_baselines/security/__pycache__/security_reference_v1.cpython-313.pyc": "194e45f3000826c6f452fb57996d26da59d030d3e14b003cd678b236edfc1044",

@@ -63,6 +63,16 @@ def cp0_atomic():
     b=r.conn.execute("SELECT COUNT(*) FROM user_turn").fetchone()[0]
     return a==1 and b==1,{"turn":a,"user":b}
 
+# Baseline v1.0.1 (2026-09-20, explicit exception DEC-OPI-d5b616bf-…3):
+# the two f-string COUNT lookups below were rewritten as fully literal SQL
+# per table (identifiers cannot be parameter-bound; values are unchanged).
+_COUNT_SQL = {
+    "gate_decision": "SELECT COUNT(*) FROM gate_decision",
+    "teaching_moment": "SELECT COUNT(*) FROM teaching_moment",
+    "active_teaching_lock": "SELECT COUNT(*) FROM active_teaching_lock",
+    "generation_action": "SELECT COUNT(*) FROM generation_action",
+}
+
 def cp2_rollback(stage):
     r=fresh(); seed_turn(r)
     try:
@@ -71,13 +81,13 @@ def cp2_rollback(stage):
         pass
     counts={}
     for table in ["gate_decision","teaching_moment","active_teaching_lock","generation_action"]:
-        counts[table]=r.conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+        counts[table]=r.conn.execute(_COUNT_SQL[table]).fetchone()[0]
     return all(v==0 for v in counts.values()),counts
 
 def cp2_success():
     r=fresh(); seed_turn(r)
     r.commit_cp2_open("t1","c1","g1","m1","target","act1")
-    counts={t:r.conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+    counts={t:r.conn.execute(_COUNT_SQL[t]).fetchone()[0]
             for t in ["gate_decision","teaching_moment","active_teaching_lock","generation_action"]}
     return all(v==1 for v in counts.values()),counts
 
