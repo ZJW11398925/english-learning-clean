@@ -403,6 +403,16 @@ class SqliteConversationStore:
         docs/STATE_MACHINES.md §13 — see DeliveryState). The assistant turn
         shares the coordination turn's turn_sequence (DATA_MODEL §3) and
         takes the next message_sequence in the same short transaction.
+
+        Epoch fencing (P3-0, TASK-…55 ⑤ — DEC-…d7937fd7.19 F4 disposition;
+        same paradigm as transition_turn / terminalize_turn): the store
+        fence must still be the newest runtime epoch
+        (``_require_current_epoch`` — raises the StaleEpochError family)
+        and the turn_record must be owned by the current epoch
+        (owner_epoch mismatch → AUTHORITY_VIOLATION). A new epoch opening
+        therefore fences the old epoch's canonicalization before anything
+        writes — the transcript is never polluted by stale-epoch content
+        (DATA_MODEL §19; RUNTIME_ARCHITECTURE §24).
         """
         if turn.delivery_state not in CANONICAL_DELIVERY_STATES:
             return _err(
@@ -413,6 +423,27 @@ class SqliteConversationStore:
             )
         try:
             with short_transaction(self._conn):
+                self._require_current_epoch()
+                turn_row = self._conn.execute(
+                    "SELECT owner_epoch FROM turn_record WHERE turn_id = ?",
+                    (turn.turn_id,),
+                ).fetchone()
+                if turn_row is None:
+                    return _err(
+                        DomainErrorCode.NOT_FOUND,
+                        f"turn record not found: {turn.turn_id}",
+                    )
+                if int(turn_row[0]) != self._fence.current:
+                    # DATA_MODEL §19: stale-epoch work is fenced; only the
+                    # current epoch's owner writes assistant content into
+                    # the transcript (recovery claims the turn first —
+                    # claim_turn_for_recovery — the transition_turn /
+                    # terminalize_turn precedent).
+                    return _err(
+                        DomainErrorCode.AUTHORITY_VIOLATION,
+                        f"owner_epoch={turn_row[0]} fenced by"
+                        f" current epoch={self._fence.current}",
+                    )
                 existing = self._conn.execute(
                     "SELECT assistant_turn_id FROM assistant_turn"
                     " WHERE turn_id = ?",

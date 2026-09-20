@@ -27,7 +27,9 @@ def test_migrations_apply_idempotently(db: sqlite3.Connection) -> None:
     # 0003_generation_provider joins in Phase 1 P1B (TASK-OPI-d7937fd7.9);
     # 0004_learning_evidence joins in Phase 2 P2A (TASK-OPI-eaaa5a1d-30);
     # 0005_learner_target_state joins in Phase 2 P2B (TASK-…44 — the
-    # materialized §11 projection consumed by the Estimator rebuild).
+    # materialized §11 projection consumed by the Estimator rebuild);
+    # 0006_decision_cycle joins in Phase 3 P3-0 (TASK-…55 ④ — §4 table
+    # only, no write face until P3-1 lineage semantics).
     # DATA_MODEL §26.1: migrations bump schema_version explicitly.
     assert applied == [
         "0001_bootstrap",
@@ -35,6 +37,7 @@ def test_migrations_apply_idempotently(db: sqlite3.Connection) -> None:
         "0003_generation_provider",
         "0004_learning_evidence",
         "0005_learner_target_state",
+        "0006_decision_cycle",
     ]
     # Second run is a no-op.
     assert migrations.apply_migrations(db) == []
@@ -47,8 +50,9 @@ def test_migrations_apply_idempotently(db: sqlite3.Connection) -> None:
         "0003_generation_provider",
         "0004_learning_evidence",
         "0005_learner_target_state",
+        "0006_decision_cycle",
     ]
-    assert migrations.schema_version(db) == "5"
+    assert migrations.schema_version(db) == "6"
 
 
 def test_runtime_epoch_fence_restarts_and_stales(db: sqlite3.Connection) -> None:

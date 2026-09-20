@@ -84,21 +84,31 @@ def test_domain_controller_is_empty_skeleton(package: str) -> None:
         # guard + CP0 + persona pipeline + buffered validated delivery,
         # sequencing only, never truth (DOMAIN_MODEL §16).
         "runtime": {"ConversationCoordinator"},
+        # P3-0 (TASK-OPI-eaaa5a1d-7ac7-4746-bcdf-c02bc9147492.55 ②):
+        # LearningController graduated from the skeleton as the domain
+        # authority face — pure delegation to SqliteLearningStore (the
+        # durable kernel keeps all truth and SQL); Phase 3 consumers go
+        # through it. Same graduation mechanism as the P1B entry above.
+        "learning": {"LearningController"},
     }
     allowed = infra_allowlist.get(package, set())
     skipped_classes = phase1_class_allowlist.get(package, set())
 
     controller_mod = importlib.import_module(f"elc.{package}.controller")
+    # Graduated classes count toward module presence (a package whose only
+    # controller graduated — learning/LearningController, P3-0 — still has
+    # a controller); the NotImplementedError red line below skips them.
     controllers = [
         obj
         for name, obj in vars(controller_mod).items()
         if inspect.isclass(obj)
         if obj.__module__ == controller_mod.__name__
-        if name not in skipped_classes
     ]
     assert controllers, f"elc.{package}.controller has no controller class"
 
     for controller in controllers:
+        if controller.__name__ in skipped_classes:
+            continue
         for name, member in inspect.getmembers(controller, inspect.isfunction):
             if name.startswith("_") or name in allowed:
                 continue

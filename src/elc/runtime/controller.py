@@ -42,6 +42,7 @@ from elc.conversation.types import (
 from elc.learning.analysis import LearningTurnAnalysis
 from elc.persona.runtime import PersonaRuntime, action_intent_for_turn
 from elc.persona.types import (
+    CharacterPackageRecord,
     GenerationContext,
     GenerationContract,
     PromptCompilationRequest,
@@ -205,7 +206,16 @@ class ConversationCoordinator:
     RA §21 (REJECTED / durable-pending + normal persona; see
     _run_learning_analysis) — it never blocks the turn. ``learning=None``
     keeps the Phase 1 assembly (the P1 tests pin that loop); no
-    DecisionCycle is created here (Phase 3+, DEC-…eaaa5a1d.26 a)."""
+    DecisionCycle is created here (Phase 3+, DEC-…eaaa5a1d.26 a).
+
+    Phase 3 P3-0 (TASK-…55 ③): the optional ``character_package``
+    injection lets the normal path carry a non-None canonical §5.1
+    CharacterPackage into the GenerationContext (PromptCompiler consumes
+    its fields). ``character_package=None`` keeps the existing assembly
+    (the P1 tests pin that loop). Real production package sourcing
+    (registry / durable store / persona resolution) is Phase 5 — until
+    then tests inject the persona domain's deterministic
+    ``sample_character_package`` fixture."""
 
     def __init__(
         self,
@@ -215,6 +225,7 @@ class ConversationCoordinator:
         persona: PersonaRuntime,
         generation_actions: GenerationActionStore,
         learning: LearningTurnAnalysis | None = None,
+        character_package: CharacterPackageRecord | None = None,
     ) -> None:
         self._lease = lease
         self._commands = conversation_commands
@@ -222,6 +233,7 @@ class ConversationCoordinator:
         self._persona = persona
         self._generation = generation_actions
         self._learning = learning
+        self._character_package = character_package
 
     # -- minimum turn loop ---------------------------------------------------
 
@@ -346,7 +358,7 @@ class ConversationCoordinator:
             persona_id = self._persona_id(command.conversation_id)
             contract = self._contract(persona_id)
             context = GenerationContext(
-                character_package=None,
+                character_package=self._character_package,
                 relationship_view=None,
                 episode_view=None,
                 world_lore_view=None,

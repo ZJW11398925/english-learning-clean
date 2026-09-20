@@ -33,13 +33,90 @@ from elc.runtime.types import GenerationActionType
 
 @dataclass(frozen=True)
 class CharacterPackageRecord:
-    """Persona-owned character aggregate (schema stub, docs/DOMAIN_MODEL.md §4)."""
+    """Persona-owned character aggregate — the canonical CharacterPackage
+    column set, word for word (docs/DATA_MODEL.md §5.1:235-256; "Owned by
+    Persona Domain").
+
+    P3-0 (TASK-OPI-eaaa5a1d-7ac7-4746-bcdf-c02bc9147492.55 ③): the former
+    Phase 0 schema stub (display_name / language_policy / generation_policy)
+    is replaced by the real §5.1 shape. ``revision`` is the package
+    revision counter; ``lore_refs`` is the §5.1 ``lore_refs[]`` list
+    (tuple storage form — implementation-defined per DATA_MODEL §27);
+    ``status`` / ``updated_at`` are lifecycle metadata. Real production
+    sourcing (registry / durable store / persona resolution) lands in
+    Phase 5 — until then the persona domain supplies the deterministic
+    :func:`sample_character_package` fixture below.
+    """
 
     character_package_id: CharacterPackageId
     persona_id: PersonaId
-    display_name: str
-    language_policy: str
+    revision: int
+    identity: str
+    personality: str
+    background: str
+    speech_style: str
+    values: str
+    boundaries: str
+    opening: str
+    scenario: str
     generation_policy: str
+    lore_refs: tuple[str, ...]
+    status: str
+    updated_at: str
+
+
+def sample_character_package(
+    *,
+    character_package_id: str = "cpkg-sample-maya",
+    persona_id: str = "persona-maya",
+    revision: int = 1,
+    identity: str = (
+        "Maya, a barista at a small Seattle coffee shop"
+    ),
+    personality: str = "warm, curious, gently playful",
+    background: str = (
+        "grew up in Portland; studied literature before finding coffee"
+    ),
+    speech_style: str = (
+        "casual American English, short sentences, occasional coffee"
+        " metaphors"
+    ),
+    values: str = "honesty, kindness, genuine curiosity about people",
+    boundaries: str = "never lectures; changes topic when asked",
+    opening: str = "Hey! Welcome in — what can I get started for you?",
+    scenario: str = "morning shift at the coffee shop",
+    generation_policy: str = "persona-normal-v1",
+    lore_refs: tuple[str, ...] = ("lore-shop-menu", "lore-city-seattle"),
+    status: str = "ACTIVE",
+    updated_at: str = "2026-09-20T00:00:00+00:00",
+) -> CharacterPackageRecord:
+    """Deterministic real-shaped CharacterPackage fixture (P3-0 ③).
+
+    Every field is a keyword override away from the defaults, the values
+    are fixed (no clock, no randomness — two calls construct equal
+    packages, so prompts compiled from them are byte-stable). Real
+    production package sourcing is Phase 5; until then this fixture is
+    the persona domain's supply of a non-None §5.1 package for the
+    normal generation chain (ConversationCoordinator optional injection
+    → GenerationContext → PromptCompiler)."""
+
+    return CharacterPackageRecord(
+        character_package_id=CharacterPackageId(character_package_id),
+        persona_id=PersonaId(persona_id),
+        revision=revision,
+        identity=identity,
+        personality=personality,
+        background=background,
+        speech_style=speech_style,
+        values=values,
+        boundaries=boundaries,
+        opening=opening,
+        scenario=scenario,
+        generation_policy=generation_policy,
+        lore_refs=lore_refs,
+        status=status,
+        updated_at=updated_at,
+    )
 
 
 @dataclass(frozen=True)

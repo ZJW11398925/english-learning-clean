@@ -37,6 +37,7 @@ from elc.persona.types import (
     ProviderOutput,
     ValidatorDecision,
     ValidatorResult,
+    sample_character_package,
 )
 from elc.persona.validator import (
     VALIDATOR_VERSION,
@@ -69,4 +70,5 @@ __all__ = [
     "no_output",
     "normal_output",
     "provider_failure",
+    "sample_character_package",
 ]

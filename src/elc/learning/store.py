@@ -44,6 +44,13 @@ BF-01 §7 EstimatorClaimView contract makes the rebuild fail loudly
 DecisionCycle is created (Phase 3+; decision_cycle_id stays nullable,
 DEC-…eaaa5a1d.26 a).
 
+Phase 3 P3-0 (TASK-…55 ①): ``get_learning_snapshot`` validates
+projection/watermark consistency at read time — any §11 row whose
+meta.evidence_watermark lags the durable watermark makes the read fail
+CONFLICT instead of returning a stale view wearing the new watermark
+(adjudicated disposition of DEC-…eaaa5a1d.48 F1; deterministic refusal,
+no silent auto-rebuild).
+
 Default column values for claims committed through the Phase 0 protocol
 face (``EvidenceGroupRecord`` / ``EvidenceClaimView`` carry fewer fields
 than the DATA_MODEL §6 column set; the fill values below are
@@ -802,12 +809,26 @@ class SqliteLearningStore:
         review due / teaching priority / exam importance are structurally
         absent — pinned by test).
 
+        Read-time watermark consistency (P3-0, TASK-…55 ① / DEC-…48 F1
+        adjudication): every target row's §11 meta.evidence_watermark must
+        equal the current durable watermark. A commit / supersede /
+        invalidate that advanced the sequence (F2) without a rebuild left
+        the projection stale, and this read deterministically REFUSES
+        (CONFLICT) — it never materializes a snapshot whose top-level
+        watermark=N+1 rides targets computed at <=N (the review
+        counterexample). Refusal over silent masking by design: no
+        auto-rebuild fires here; the caller runs ``rebuild_learner_state``
+        for the affected targets and re-reads (rebuild stamps the current
+        watermark, so the refusal clears).
+
         ``learning_snapshot_id`` (frozen Phase 0 parameter): Local V1
         keeps no snapshot archive — the snapshot is a view over the
         current projection — so the id is derived deterministically from
         (estimator version, watermark, target keys) and passing any other
         id is NOT_FOUND (implementation-defined narrowing, DATA_MODEL
-        §27). ``as_of`` is the read wall clock."""
+        §27). ``as_of`` is the read wall clock. An empty projection
+        (no §11 rows) has nothing to be stale and reads Ok with zero
+        targets."""
 
         rows = self._conn.execute(
             "SELECT target_type, target_id, evidence_modality, state_json"
@@ -816,6 +837,28 @@ class SqliteLearningStore:
             (self._user_scope_id,),
         ).fetchall()
         watermark = self.get_evidence_watermark()
+        targets = tuple(
+            _record_from_document(json.loads(str(row[3])))
+            for row in rows
+        )
+        stale = [
+            record
+            for record in targets
+            if record.evidence_watermark != watermark
+        ]
+        if stale:
+            example = stale[0]
+            return _err(
+                DomainErrorCode.CONFLICT,
+                "stale LearnerTargetState projection: "
+                f"{example.target_type}/{example.target_id}/"
+                f"{example.evidence_modality} carries"
+                f" evidence_watermark={example.evidence_watermark} but"
+                f" the durable watermark is {watermark} —"
+                " rebuild_learner_state must run before the snapshot is"
+                " read (read-time refusal, no silent auto-rebuild;"
+                " DEC-…eaaa5a1d.48 F1)",
+            )
         keys = [
             f"{row[0]}\x1f{row[1]}\x1f{row[2]}" for row in rows
         ]
@@ -832,10 +875,6 @@ class SqliteLearningStore:
                 " Local V1 materializes only the current projection"
                 f" snapshot ({snapshot_id})",
             )
-        targets = tuple(
-            _record_from_document(json.loads(str(row[3])))
-            for row in rows
-        )
         estimator_version = (
             targets[0].estimator_version if targets else ESTIMATOR_PROFILE_ID
         )

@@ -55,6 +55,16 @@ class PromptCompiler:
     same request always yields byte-identical prompt text — no randomness,
     no timestamps, no environment reads; conversation-window slices render
     in turn_sequence order.
+
+    P3-0 (TASK-…55 ③): the [persona] section consumes the canonical
+    CharacterPackage §5.1 fields (identity / personality / background /
+    speech_style / values / boundaries / opening / scenario /
+    generation_policy / lore_refs plus the id/revision provenance) —
+    package fields really enter the compiled prompt (a different package
+    yields a different prompt, pinned by test). Lifecycle metadata
+    (status / updated_at) deliberately stays OUT of the prompt: it is not
+    character content, and rendering a clock stamp would break
+    byte-determinism.
     """
 
     def compile(self, request: PromptCompilationRequest) -> Result[CompiledPrompt]:
@@ -67,14 +77,25 @@ class PromptCompiler:
 
         if context is not None and context.character_package is not None:
             package = context.character_package
+            lore_refs = "; ".join(package.lore_refs)
             style = "; ".join(contract.style_constraints) if contract else ""
             forbidden = "; ".join(contract.forbidden_claims) if contract else ""
             sections.append(
                 "[persona]\n"
-                f"name: {package.display_name}\n"
+                f"character_package_id: {package.character_package_id}\n"
                 f"persona_id: {package.persona_id}\n"
-                f"language_policy: {package.language_policy}\n"
+                f"revision: {package.revision}\n"
+                f"identity: {package.identity}\n"
+                f"personality: {package.personality}\n"
+                f"background: {package.background}\n"
+                f"speech_style: {package.speech_style}\n"
+                f"values: {package.values}\n"
+                f"boundaries: {package.boundaries}\n"
+                f"opening: {package.opening}\n"
+                f"scenario: {package.scenario}\n"
                 f"generation_policy: {package.generation_policy}\n"
+                f"lore_refs: {lore_refs}\n"
+                f"language_policy: {context.language_policy}\n"
                 f"style_constraints: {style}\n"
                 f"forbidden_claims: {forbidden}"
             )

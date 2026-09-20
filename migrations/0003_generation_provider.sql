@@ -31,9 +31,12 @@
 -- Deviations / adjudications (each minimal, no silent widening):
 --   * decision_cycle_id is NULLABLE here: canonical §20 lists it as a
 --     required column, but Phase 1 has no DecisionCycle yet
---     (IMPLEMENTATION_PLAN §3); Phase 2 (decision phases) tightens it to
---     NOT NULL (adjudicated DEC-OPI-091f35c3.7 for the sibling
---     turn_record.active_decision_cycle_id; same transition window).
+--     (IMPLEMENTATION_PLAN §3). The decision_cycle TABLE lands in
+--     migration 0006 (Phase 3 P3-0, no write face); the NOT NULL
+--     tighten-up rides P3-1 lineage semantics (adjudicated
+--     DEC-OPI-091f35c3.7 for the sibling
+--     turn_record.active_decision_cycle_id; note re-pointed to P3-1 by
+--     TASK-OPI-eaaa5a1d-7ac7-4746-bcdf-c02bc9147492.55 ④).
 --   * provider_attempt.status carries no canonical vocabulary (§20 names
 --     the column, pins no value list); P1B pins the minimal deterministic
 --     set SUCCEEDED / FAILED below — revisit when a later phase needs
