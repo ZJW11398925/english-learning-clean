@@ -295,6 +295,36 @@ class ContentStore:
         ).fetchall()
         return tuple(str(row[0]) for row in rows)
 
+    def get_examples(
+        self, entity_id: str, role: ExampleLinkRole | str
+    ) -> Result[tuple[str, ...]]:
+        """The §24.5 example rows of one entity in one role, in authored order.
+
+        Added by P5-1 so the readiness ladder can read the §24.5 ``CONTRAST``
+        role directly instead of deriving "the target declares a contrast"
+        from a constant. An unknown entity id is NOT_FOUND, and a role outside
+        the §24.5 vocabulary is VALIDATION_FAILED — never a silent empty
+        answer.
+        """
+
+        if not self._exists(
+            "SELECT 1 FROM content_entity WHERE entity_id = ?", entity_id
+        ):
+            return _not_found("content entity", entity_id)
+        try:
+            link_role = ExampleLinkRole(role)
+        except ValueError:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"unknown §24.5 example role {role!r}; declared roles "
+                        f"are {[str(member) for member in ExampleLinkRole]}"
+                    ),
+                )
+            )
+        return Ok(self._forms(entity_id, link_role))
+
     def _slots(self, entity_id: str) -> tuple[tuple[str, ...], ...]:
         rows = self._conn.execute(
             "SELECT group_ordinal, token FROM content_slot WHERE entity_id = ? "

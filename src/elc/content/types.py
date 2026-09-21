@@ -53,6 +53,74 @@ LIFECYCLE_STATUSES = (
     "REPLACED",
 )
 
+
+class ContentOrigin(StrEnum):
+    """Where a content entity came from (P5-1, IMPLEMENTATION_PLAN §6
+    "Personal Content origin separation" / acceptance "canonical/personal
+    origin preserved").
+
+    docs/DATA_MODEL.md §24 declares no Personal Content entity and no origin
+    column, so Local V1 states the two-member vocabulary here and states the
+    artifact's own origin as a fact (:data:`ARTIFACT_CONTENT_ORIGIN`) instead
+    of inventing a column — the §24.1 seven-column pin is exactly what an
+    eighth column would break.
+
+    - ``CANONICAL`` — built from the canonical authoring tree (`content_src/*`
+      + `curriculum/*`, docs/DATA_MODEL.md §24). Every row of the content.db
+      artifact is this origin, by construction.
+    - ``PERSONAL`` — learner-owned content. Local V1 ships the vocabulary
+      member and the check that reads it, and produces **no row**: the
+      personal source is not wired (:data:`PERSONAL_CONTENT_WIRED` is False),
+      which is the "interface only" half of the same declaration.
+    """
+
+    CANONICAL = "CANONICAL"
+    PERSONAL = "PERSONAL"
+
+
+#: The two origins, as an ordered tuple (the declared vocabulary).
+CONTENT_ORIGINS = tuple(str(origin) for origin in ContentOrigin)
+
+#: The origin of every row of the content.db artifact. Not a stored column:
+#: the artifact is generated from the canonical tree only
+#: (elc.content.build.load_source reads `content_src/*` + `curriculum/*` and
+#: refuses any document outside the indexed set), so a build-derived origin
+#: is the only truthful answer the read face can give.
+ARTIFACT_CONTENT_ORIGIN = ContentOrigin.CANONICAL
+
+#: Local V1 posture: a personal-content source is *not* wired. The read face
+#: therefore never answers ``PERSONAL`` today — a declared absence, not a
+#: silent one (the constant is asserted by tests/phase5).
+PERSONAL_CONTENT_WIRED = False
+
+#: docs/DATA_MODEL.md §24.11 — the only lifecycle status a content entity may
+#: carry and still enter teaching/planner supply. "Model-generated candidate
+#: 默认不是 ``CANONICAL_APPROVED``", so a candidate (or any other unapproved
+#: status) is excluded from supply (IMPLEMENTATION_PLAN §6 acceptance
+#: "candidate content excluded"). Readiness is a different axis and never
+#: substitutes for this gate (docs/PRODUCT_CONTRACT.md §8.1).
+SUPPLY_LIFECYCLE_STATUS = "CANONICAL_APPROVED"
+
+#: docs/DATA_MODEL.md §24.11 retired statuses. They are *deterministic*
+#: non-supply states (the entity still exists and still says what it is),
+#: which is why the teaching port reports them instead of hiding them behind
+#: "no such target" (elc.curriculum.provider).
+RETIRED_LIFECYCLE_STATUSES = ("DEPRECATED", "REPLACED")
+
+
+def supply_eligible(lifecycle_status: str) -> bool:
+    """May an entity with this §24.11 ``lifecycle_status`` enter
+    teaching/planner supply?
+
+    One predicate, used by both supply faces (the curriculum read adapter and
+    the teaching target provider) so the two cannot drift. It answers only the
+    §24.11 supply question: it is not a readiness judgement (docs/
+    PRODUCT_CONTRACT.md §8.1) and it never decides a Gate outcome.
+    """
+
+    return lifecycle_status == SUPPLY_LIFECYCLE_STATUS
+
+
 #: docs/DOMAIN_MODEL.md §6 — the two claim target scopes. The Teaching Gate
 #: port (elc.teaching.targets.TARGET_TYPES) pins the same two values for the
 #: consumer side; this copy lets the content build validate its own source
