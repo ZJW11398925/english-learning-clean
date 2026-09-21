@@ -75,9 +75,20 @@ from elc.runtime.types import (
 __all__ = [
     "SqliteConversationStore",
     "StaleStoreEpochError",
+    "TEACHING_REQUEST_PAYLOAD_MARKER",
 ]
 
 T = TypeVar("T")
+
+#: Canonical payload discriminator of a teaching command turn
+#: (elc.teaching.request.teaching_request_payload emits sorted-key /
+#: fixed-separator JSON, so this substring is deterministic). A command
+#: turn says nothing the persona should read as an utterance — the
+#: ConversationWindow excludes it (the teaching meaning travels through
+#: the typed payload, P3-1A mother decision). The teaching module owns the
+#: payload; a test pins this marker against the builder so the two cannot
+#: drift.
+TEACHING_REQUEST_PAYLOAD_MARKER = '"type":"TEACHING_REQUEST"'
 
 
 class StaleStoreEpochError(StaleEpochError):
@@ -404,15 +415,23 @@ class SqliteConversationStore:
         shares the coordination turn's turn_sequence (DATA_MODEL §3) and
         takes the next message_sequence in the same short transaction.
 
-        Epoch fencing (P3-0, TASK-…55 ⑤ — DEC-…d7937fd7.19 F4 disposition;
-        same paradigm as transition_turn / terminalize_turn): the store
-        fence must still be the newest runtime epoch
+        Epoch fencing (P3-0, TASK-…55 ⑤ — DEC-…d7937fd7.19 F4 disposition):
+        the store fence must still be the newest runtime epoch
         (``_require_current_epoch`` — raises the StaleEpochError family)
         and the turn_record must be owned by the current epoch
         (owner_epoch mismatch → AUTHORITY_VIOLATION). A new epoch opening
         therefore fences the old epoch's canonicalization before anything
         writes — the transcript is never polluted by stale-epoch content
         (DATA_MODEL §19; RUNTIME_ARCHITECTURE §24).
+
+        Attribution note (P3-0 review F2, DEC-…eaaa5a1d.58): this unit's
+        fence is the *combined* one — store-level epoch check AND turn
+        ownership check. ``transition_turn`` / ``terminalize_turn`` are
+        weaker: they compare the turn's owner_epoch against the store
+        fence but never consult the newest durable epoch themselves. The
+        earlier "same paradigm" wording was wrong and is withdrawn;
+        whether those two units gain a store-level fence is an open P3+
+        question, not something this method changes.
         """
         if turn.delivery_state not in CANONICAL_DELIVERY_STATES:
             return _err(
@@ -644,14 +663,32 @@ class SqliteConversationStore:
     ) -> Result[ConversationWindow]:
         """Canonical transcript window (docs/DOMAIN_MODEL.md §3 key rule:
         only canonicalized, delivered assistant output appears; undelivered
-        provider output is never stored as an AssistantTurn)."""
+        provider output is never stored as an AssistantTurn).
+
+        Teaching command turns are excluded (P3-1A): a ``request_teaching``
+        call writes a UserTurn with ``raw_content=""`` whose typed payload
+        lives in the InputEnvelope — it is a command, not something the
+        user said, so it must never reach the persona as an utterance
+        (the transcript itself keeps it: ``get_canonical_turn_slice`` is
+        unchanged). The filter is the canonical payload discriminator plus
+        the empty raw content, both bound as parameters.
+        """
+
         rows = self._conn.execute(
-            "SELECT user_turn_id, turn_id, conversation_id, turn_sequence,"
-            " message_sequence, input_id, client_message_id,"
-            " interaction_channel, raw_content, normalized_content"
-            " FROM user_turn WHERE conversation_id = ?"
-            " ORDER BY turn_sequence DESC LIMIT ?",
-            (conversation_id, max_turns),
+            "SELECT u.user_turn_id, u.turn_id, u.conversation_id,"
+            " u.turn_sequence, u.message_sequence, u.input_id,"
+            " u.client_message_id, u.interaction_channel, u.raw_content,"
+            " u.normalized_content"
+            " FROM user_turn u"
+            " JOIN input_envelope e ON e.input_id = u.input_id"
+            " WHERE u.conversation_id = ?"
+            "  AND NOT (u.raw_content = '' AND e.raw_payload LIKE ?)"
+            " ORDER BY u.turn_sequence DESC LIMIT ?",
+            (
+                conversation_id,
+                f"%{TEACHING_REQUEST_PAYLOAD_MARKER}%",
+                max_turns,
+            ),
         ).fetchall()
         slices = [
             CanonicalTurnSlice(

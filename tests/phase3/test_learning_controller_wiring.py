@@ -174,3 +174,77 @@ def test_controller_self_report_and_watermark_gate_ride_through(
     refused = controller.get_learning_snapshot()
     assert isinstance(refused, Err)
     assert refused.error.code.value == "CONFLICT"
+
+
+def test_record_opportunity_is_exposed_on_the_controller_face(
+    db,
+    learning: SqliteLearningStore,
+    store,
+    conversation,
+) -> None:
+    """P3-1A ⑧: LearningOpportunityRecord (DATA_MODEL §7) through the
+    authority face — the "genuine Opportunity" leg of the §6 negative
+    evidence rule was store-only before this slice; it now returns the
+    durable LearningOpportunityId and takes the moment link.
+
+    Re-recording the same id is refused as CONFLICT (the durable row
+    exists; the §7 write face is an insert, not an upsert) — pinned here
+    so the behavior is a contract, not a surprise.
+    """
+
+    from elc.platform.types import LearningOpportunityId
+
+    controller = LearningController(learning)
+    cp0 = commit_ok(store, conversation, "cm-ctl-lor", "negative attempt")
+    recorded = controller.record_opportunity(
+        source_turn_id=cp0.turn_id,
+        target_type="RESOURCE",
+        target_id=TargetId("res-ctl-lor"),
+        opportunity_type="ELICITED",
+        target_explicitness="EXPLICIT_TARGET",
+        attempt_observed=True,
+        alternative_realizations_allowed=True,
+    )
+    assert isinstance(recorded, Ok), recorded
+    assert isinstance(recorded.value, str)  # LearningOpportunityId (NewType)
+
+    replay = controller.record_opportunity(
+        source_turn_id=cp0.turn_id,
+        target_type="RESOURCE",
+        target_id=TargetId("res-ctl-lor"),
+        opportunity_type="ELICITED",
+        target_explicitness="EXPLICIT_TARGET",
+        attempt_observed=True,
+        alternative_realizations_allowed=True,
+        learning_opportunity_id=LearningOpportunityId(recorded.value),
+    )
+    assert not isinstance(replay, Ok)  # duplicate durable id
+    assert replay.error.code.value == "CONFLICT"
+
+    row = db.execute(
+        "SELECT target_type, target_id, opportunity_type,"
+        " target_explicitness, attempt_observed,"
+        " alternative_realizations_allowed, teaching_moment_id"
+        " FROM learning_opportunity_record"
+    ).fetchone()
+    assert row == (
+        "RESOURCE",
+        "res-ctl-lor",
+        "ELICITED",
+        "EXPLICIT_TARGET",
+        1,
+        1,
+        None,
+    )
+
+    # The opportunity vocabulary is rejected when malformed (the §7 words).
+    refused = controller.record_opportunity(
+        source_turn_id=cp0.turn_id,
+        target_type="RESOURCE",
+        target_id=TargetId("res-ctl-lor"),
+        opportunity_type="NOT_A_TYPE",
+        target_explicitness="IMPLICIT",
+        attempt_observed=False,
+        alternative_realizations_allowed=True,
+    )
+    assert not isinstance(refused, Ok)

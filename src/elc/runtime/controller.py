@@ -29,8 +29,10 @@ UserTurn is never replayed and a whole turn is never retried.
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
-from typing import TypeVar
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, TypeVar
 
 from elc.conversation.commands import CommitUserTurn, ConversationCommands
 from elc.conversation.queries import ConversationQueries
@@ -56,16 +58,24 @@ from elc.platform.types import (
     DomainError,
     DomainErrorCode,
     Err,
+    EvidenceModality,
+    GateDecisionId,
     InputId,
     MessageSequence,
+    MomentId,
     Ok,
     PersonaId,
+    PolicyVersion,
     ProjectionJobId,
     ProviderAttemptId,
     Result,
     RuntimeEpoch,
     TurnId,
     TurnSequence,
+)
+from elc.runtime.decision_cycles import (
+    DecisionCycleBindings,
+    DecisionCycleStore,
 )
 from elc.runtime.generation import GenerationActionStore
 from elc.runtime.lease import ConversationCoordinatorLease
@@ -83,6 +93,41 @@ from elc.runtime.types import (
     TurnRecordData,
     TurnStatus,
 )
+from elc.teaching.gate import (
+    GATE_POLICY_VERSION,
+    GateVerdict,
+    UserInitiatedOpenFacts,
+)
+from elc.teaching.request import (
+    TeachingRequest,
+    intent_scope_for_request,
+    teaching_request_payload,
+)
+from elc.teaching.store import CP2OpenRequest, cp2_action_intent
+from elc.teaching.targets import TeachingTargetProvider, TeachingTargetView
+from elc.teaching.types import (
+    AuthorizationBasis,
+    GateDecisionContext,
+    GateDecisionRecord,
+    GateDecisionValue,
+    GateExecutionStatusRecord,
+    GateExecutionStatusValue,
+    MomentSource,
+    MomentState,
+    PresentationPhase,
+    TeachingMomentRecord,
+    TeachingSupportLevel,
+    TeachingTargetRef,
+)
+
+if TYPE_CHECKING:
+    # Annotations only: the coordinator calls the injected authority faces,
+    # and importing the concrete controllers here would deepen the runtime
+    # package's import graph for no runtime benefit (the P1/P2 assemblies
+    # inject the store ports).
+    from elc.learning.controller import LearningController
+    from elc.learning.types import LearningSnapshot
+    from elc.teaching.controller import TeachingController
 
 #: Delivery certainty for a server-side buffered delivery with no
 #: ClientRenderAck yet (STATE_MACHINES §13 ExposureEstimate certainty).
@@ -91,6 +136,15 @@ SERVER_SENT_UNCONFIRMED = "SERVER_SENT_UNCONFIRMED"
 #: Conversation window size handed to Persona Runtime (RUNTIME §11
 #: ConversationWindow view).
 CONVERSATION_WINDOW_MAX_TURNS = 20
+
+#: GenerationContract id of the CP2 first teaching action (§20
+#: generation_contract_id; the teaching-generation contract itself is
+#: P3-1B's — the row is created at PREPARED and not dispatched here).
+TEACHING_OPEN_CONTRACT_ID = "gc-teaching-open"
+
+
+def _now() -> str:
+    return datetime.now(tz=UTC).isoformat()
 
 
 @dataclass(frozen=True)
@@ -108,6 +162,37 @@ class AssistantDelivery:
     message_sequence: MessageSequence
     delivery_state: DeliveryState
     outcome: TurnOutcome
+
+
+@dataclass(frozen=True)
+class TeachingTurnResult:
+    """The outcome of one ``request_teaching`` command turn (P3-1A).
+
+    The three Gate outputs map here directly: ALLOW carries
+    ``moment_id`` / ``action_id`` / ``moment_state=OPENING`` /
+    ``action_status=PREPARED``; DENY carries the reason codes and no
+    moment; DEGRADED carries ``missing_or_unknown`` and no decision.
+
+    ``outcome`` stays None in P3-1A: the stop point is CP2 (the opening
+    delivery is P3-1B), so no user-visible delivery happened and the turn
+    is deliberately left nonterminal with no ``turn_outcome`` — the
+    outcome is chosen by the real delivery (STATE_MACHINES §10 "Turn
+    outcome 单独记录").
+    """
+
+    turn_id: TurnId
+    conversation_id: ConversationId
+    decision_cycle_id: DecisionCycleId | None
+    gate_execution_status: str
+    gate_decision: str | None
+    reason_codes: tuple[str, ...]
+    missing_or_unknown: tuple[str, ...]
+    moment_id: MomentId | None
+    action_id: ActionId | None
+    moment_state: MomentState | None
+    action_status: GenerationActionStatus | None
+    turn_status: TurnStatus
+    outcome: str | None
 
 
 class RuntimeOrchestrator:
@@ -149,7 +234,12 @@ class RuntimeOrchestrator:
     def open_decision_cycle(
         self, cycle: DecisionCycleRecord
     ) -> Result[DecisionCycleId]:
-        raise NotImplementedError("Phase 2: decision cycle")
+        raise NotImplementedError(
+            "DecisionCycle creation is the Runtime-owned DecisionCycleStore"
+            " port (elc.runtime.decision_cycles, P3-1A TASK-…17 ②), driven"
+            " by ConversationCoordinator — this skeleton entry stays a"
+            " pointer"
+        )
 
     def create_generation_action(
         self,
@@ -187,7 +277,10 @@ class RuntimeOrchestrator:
     def get_decision_cycle(
         self, decision_cycle_id: DecisionCycleId
     ) -> Result[DecisionCycleRecord | None]:
-        raise NotImplementedError("Phase 2: decision cycle read")
+        raise NotImplementedError(
+            "use the Runtime-owned DecisionCycleStore read face"
+            " (elc.runtime.decision_cycles, P3-1A TASK-…17 ②)"
+        )
 
 
 class ConversationCoordinator:
@@ -215,7 +308,29 @@ class ConversationCoordinator:
     (the P1 tests pin that loop). Real production package sourcing
     (registry / durable store / persona resolution) is Phase 5 — until
     then tests inject the persona domain's deterministic
-    ``sample_character_package`` fixture."""
+    ``sample_character_package`` fixture.
+
+    Phase 3 P3-1A (TASK-…17 ②⑤⑥): four more optional ports turn the same
+    coordinator into the user-initiated teaching entry point —
+
+    - ``decision_cycles`` (elc.runtime.decision_cycles.DecisionCycleStore):
+      every normal persona turn opens its §4 cycle after CP1, and the
+      teaching path opens cycle 0 / repair cycles under the TurnRecord
+      state_version CAS;
+    - ``learning_controller`` (elc.learning.controller.LearningController):
+      the snapshot read + the pre-cycle repair face
+      (``stale_projection_targets`` → ``rebuild_learner_state``);
+    - ``teaching`` (elc.teaching.controller.TeachingController): the Gate
+      profile, CP2, the two other Gate outputs and the durable reads;
+    - ``targets`` (elc.teaching.targets.TeachingTargetProvider): the
+      narrow target/content validity port the Gate consumes.
+
+    ``request_teaching`` needs all four (otherwise it refuses with
+    DEPENDENCY_UNAVAILABLE); ``begin_turn`` only uses ``decision_cycles``
+    when it is present. Every other assembly (P1, P2, P3-0) keeps the
+    exact behavior its tests pin — the same optional-injection discipline
+    as ``learning`` / ``character_package`` above.
+    """
 
     def __init__(
         self,
@@ -226,6 +341,10 @@ class ConversationCoordinator:
         generation_actions: GenerationActionStore,
         learning: LearningTurnAnalysis | None = None,
         character_package: CharacterPackageRecord | None = None,
+        decision_cycles: DecisionCycleStore | None = None,
+        learning_controller: LearningController | None = None,
+        teaching: TeachingController | None = None,
+        targets: TeachingTargetProvider | None = None,
     ) -> None:
         self._lease = lease
         self._commands = conversation_commands
@@ -234,6 +353,10 @@ class ConversationCoordinator:
         self._generation = generation_actions
         self._learning = learning
         self._character_package = character_package
+        self._decision_cycles = decision_cycles
+        self._learning_controller = learning_controller
+        self._teaching = teaching
+        self._targets = targets
 
     # -- minimum turn loop ---------------------------------------------------
 
@@ -321,6 +444,41 @@ class ConversationCoordinator:
                     f" {turn.status.value} is outside the Phase 1 loop"
                 )
 
+            # RA §4 step 5 / migration 0007 lineage (P3-1A ②): every
+            # generation action belongs to a DecisionCycle, and the normal
+            # persona turn opens its own — before generation, after the
+            # CP1 learning leg (RA §8 analysis-before-planner order). The
+            # bindings are all-None on this path: Phase 3 has no
+            # Planner/Gate and no Curriculum/Goal/Schedule/Policy source to
+            # stamp (planner/gate/快照字段全 NULL; None is the honest "no
+            # source", never a fabricated version). Re-entry with an
+            # existing cycle replays the durable row (deterministic id, no
+            # second write, no extra state_version bump).
+            if self._decision_cycles is None:
+                return Err(
+                    DomainError(
+                        code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                        message=(
+                            "every generation action must belong to a"
+                            " decision cycle (migration 0007); inject the"
+                            " DecisionCycleStore"
+                        ),
+                    )
+                )
+            cycle_result = self._decision_cycles.record_decision_cycle(
+                decision_cycle_id=self._cycle_id(cp0.turn_id, ""),
+                turn_id=cp0.turn_id,
+                bindings=DecisionCycleBindings(),
+                expected_turn_state_version=state_version,
+            )
+            if isinstance(cycle_result, Err):
+                return cycle_result
+            active_cycle = cycle_result.value
+            version_result = self._turn_state_version(cp0.turn_id)
+            if isinstance(version_result, Err):
+                return version_result
+            state_version = version_result.value
+
             existing_result = self._generation.get_action_for_turn(cp0.turn_id)
             if isinstance(existing_result, Err):
                 return existing_result
@@ -344,6 +502,7 @@ class ConversationCoordinator:
                     turn_id=cp0.turn_id,
                     action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
                     generation_contract_id="gc-normal-persona-reply",
+                    decision_cycle_id=str(active_cycle.decision_cycle_id),
                 )
             )
 
@@ -529,6 +688,610 @@ class ConversationCoordinator:
             "late result on a live nonterminal action is outside the"
             " Phase 1 pipeline"
         )
+
+    # -- user-initiated teaching open (P3-1A) --------------------------------
+
+    def request_teaching(
+        self, request: TeachingRequest
+    ) -> Result[TeachingTurnResult]:
+        """One user-initiated TeachingMoment command turn (TASK-…17 ⑤⑥).
+
+        Flow (RA §4 with the mother decision's teaching specialization):
+        coordinator guard → CP0 (command turn) → Learning snapshot read
+        with at most one pre-cycle repair → DecisionCycle → Gate
+        USER_INITIATED OPEN (target resolution + durable lock + snapshot
+        consistency facts) → CP2 / DENY / DEGRADED. Stop point: CP2 —
+        TEACHING_OPEN stays PREPARED and the opening delivery is P3-1B's.
+
+        Deliberate scope notes:
+
+        - a command turn runs no LEARNING_EVIDENCE analysis: nothing was
+          said (``raw_content=""``), so there is no observable behavior —
+          no TEXT_* Evidence, no analysis artifact, no watermark move, and
+          the turn goes USER_COMMITTED → DECIDING without ANALYZING;
+        - the turn is never terminalized here (no delivery happened), so
+          no ``turn_outcome`` is written — the outcome belongs to the real
+          delivery (STATE_MACHINES §10);
+        - re-entry (duplicate client_message_id, or a crash after CP2)
+          replays the durable outcome instead of re-running the Gate: one
+          cycle opens at most one moment (RUNTIME §23);
+        - snapshot CONFLICT has exactly two handling points (mother
+          decision): PRE-cycle the coordinator repairs the lagging
+          targets and re-reads (the Gate never ran, so no DEGRADED row is
+          written), POST-cycle the Gate reports DEGRADED with
+          ``missing_or_unknown=[LEARNING_SNAPSHOT]`` and the coordinator
+          freezes that cycle, opens ``cycle_index+1`` and re-runs the Gate
+          once — a second degradation stops with no teaching and both
+          DEGRADED rows as the trace. The Gate itself never rebuilds.
+        - target resolution failure is deterministic: an unknown target
+          (resolver NOT_FOUND) yields MISSING + content INVALID (a target
+          that does not exist has no content that could be valid) → DENY
+          TARGET_INVALID; any other resolver failure leaves both facts
+          UNKNOWN → DEGRADED.
+        """
+
+        decision_cycles = self._decision_cycles
+        learning = self._learning_controller
+        teaching = self._teaching
+        targets = self._targets
+        if (
+            decision_cycles is None
+            or learning is None
+            or teaching is None
+            or targets is None
+        ):
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=(
+                        "request_teaching needs the P3-1A assembly"
+                        " (decision_cycles + learning_controller + teaching"
+                        " + targets injected)"
+                    ),
+                )
+            )
+
+        with self._lease.hold(request.conversation_id):
+            cp0_result = self._commands.commit_user_turn(
+                CommitUserTurn(
+                    conversation_id=request.conversation_id,
+                    envelope=InputEnvelope(
+                        input_id=self._command_input_id(request),
+                        client_message_id=request.client_message_id,
+                        conversation_id=str(request.conversation_id),
+                        persona_id=None,
+                        scene_id=None,
+                        interaction_channel=request.interaction_channel,
+                        raw_payload=teaching_request_payload(request),
+                        received_at=request.requested_at or _now(),
+                    ),
+                    raw_content="",
+                    normalized_content=None,
+                    runtime_version=request.runtime_version,
+                )
+            )
+            if isinstance(cp0_result, Err):
+                return cp0_result
+            cp0 = cp0_result.value
+
+            turn_result = self._commands.get_turn_record(cp0.turn_id)
+            if isinstance(turn_result, Err):
+                return turn_result
+            turn = turn_result.value
+            if turn is None:
+                return _missing(f"turn record not found: {cp0.turn_id}")
+            epoch = self._lease.epoch
+            if epoch is not None and turn.owner_epoch != epoch:
+                claimed = self._commands.claim_turn_for_recovery(cp0.turn_id)
+                if isinstance(claimed, Err):
+                    return claimed
+                turn = claimed.value
+
+            # Idempotent replay: a turn that already has an active cycle
+            # returns the durable Gate outcome (never a second Gate run).
+            existing_cycle = decision_cycles.get_active_decision_cycle(
+                cp0.turn_id
+            )
+            if isinstance(existing_cycle, Err):
+                return existing_cycle
+            if existing_cycle.value is not None:
+                return self._replay_teaching(turn, existing_cycle.value, teaching)
+            if turn.status in TERMINAL_TURN_STATUSES:
+                return _conflict(
+                    "terminal teaching turn without an active decision"
+                    " cycle: nothing durable to replay"
+                )
+
+            state_version = turn.state_version
+            if turn.status == TurnStatus.USER_COMMITTED:
+                advanced = self._commands.transition_turn(
+                    cp0.turn_id, state_version, TurnStatus.DECIDING
+                )
+                if isinstance(advanced, Err):
+                    return advanced
+                state_version = advanced.value.state_version
+            elif turn.status != TurnStatus.DECIDING:
+                return _conflict(
+                    "teaching turn re-entry from status"
+                    f" {turn.status.value} is outside the P3-1A flow"
+                )
+
+            # Pre-cycle snapshot: repair the lagging projection at most
+            # once, and only then open the cycle (no Gate run → no
+            # DEGRADED row).
+            snapshot_result = self._snapshot_with_repair(learning)
+            if isinstance(snapshot_result, Err):
+                return snapshot_result
+            snapshot = snapshot_result.value
+
+            cycle_result = decision_cycles.record_decision_cycle(
+                decision_cycle_id=self._cycle_id(cp0.turn_id, ""),
+                turn_id=cp0.turn_id,
+                bindings=DecisionCycleBindings(
+                    learning_snapshot_id=str(snapshot.learning_snapshot_id),
+                    evidence_watermark=snapshot.evidence_watermark,
+                ),
+                expected_turn_state_version=state_version,
+            )
+            if isinstance(cycle_result, Err):
+                return cycle_result
+            cycle = cycle_result.value
+
+            candidate_id = f"cand-explicit-{cp0.turn_id}"
+
+            repair_used = False
+            while True:
+                # Each attempt assembles its facts fresh (the repair cycle
+                # is a new execution, not a replay of the frozen one).
+                view, target_status, content_status = self._resolve_target(
+                    targets, request
+                )
+                lock_result = teaching.observed_lock_state(
+                    request.conversation_id
+                )
+                lock_state = (
+                    lock_result.value if isinstance(lock_result, Ok) else "UNKNOWN"
+                )
+                facts = UserInitiatedOpenFacts(
+                    decision_cycle_id=str(cycle.decision_cycle_id),
+                    candidate_id=candidate_id,
+                    user_intent_scope=intent_scope_for_request(request),
+                    target_status=target_status,
+                    content_status=content_status,
+                    lock_state=lock_state,
+                    learning_snapshot_status=self._snapshot_status(
+                        learning, cycle
+                    ),
+                )
+                verdict = teaching.decide_user_initiated_open(facts)
+                status_record = self._gate_status_record(
+                    cp0.turn_id, cycle, facts, verdict
+                )
+
+                if verdict.decision == "ALLOW":
+                    return self._commit_teaching_open(
+                        request=request,
+                        turn_id=cp0.turn_id,
+                        cycle=cycle,
+                        candidate_id=candidate_id,
+                        view=view,
+                        verdict=verdict,
+                        status_record=status_record,
+                        teaching=teaching,
+                    )
+
+                if verdict.decision == "DENY":
+                    denial = teaching.record_gate_denial(
+                        status_record,
+                        GateDecisionRecord(
+                            gate_decision_id=self._gate_decision_id(
+                                cp0.turn_id, cycle
+                            ),
+                            decision_cycle_id=cycle.decision_cycle_id,
+                            candidate_id=candidate_id,
+                            context=GateDecisionContext.OPEN,
+                            decision=GateDecisionValue.DENY,
+                            reason_codes=verdict.reasons,
+                            policy_version=PolicyVersion(GATE_POLICY_VERSION),
+                        ),
+                    )
+                    if isinstance(denial, Err):
+                        return denial
+                    return Ok(
+                        self._teaching_result(
+                            turn_id=cp0.turn_id,
+                            conversation_id=request.conversation_id,
+                            turn_status=TurnStatus.DECIDING,
+                            cycle=cycle,
+                            verdict=verdict,
+                        )
+                    )
+
+                # DEGRADED: persist the trace; only a snapshot degradation
+                # has a repair move (one repair cycle), and only once.
+                degraded = teaching.record_gate_degraded(status_record)
+                if isinstance(degraded, Err):
+                    return degraded
+                if repair_used or (
+                    "LEARNING_SNAPSHOT" not in verdict.missing_or_unknown
+                ):
+                    # No teaching, one DEGRADED row: either the single
+                    # repair is already spent (two DEGRADED rows are the
+                    # trace) or the unknown fact is not the snapshot — a
+                    # target/content (or any other) UNKNOWN has no repair
+                    # move, so it must not burn a second cycle. No Moment,
+                    # no synthetic DENY in either case.
+                    return Ok(
+                        self._teaching_result(
+                            turn_id=cp0.turn_id,
+                            conversation_id=request.conversation_id,
+                            turn_status=TurnStatus.DECIDING,
+                            cycle=cycle,
+                            verdict=verdict,
+                        )
+                    )
+                repair_used = True
+                repaired = self._snapshot_with_repair(learning)
+                if isinstance(repaired, Err):
+                    return Ok(
+                        self._teaching_result(
+                            turn_id=cp0.turn_id,
+                            conversation_id=request.conversation_id,
+                            turn_status=TurnStatus.DECIDING,
+                            cycle=cycle,
+                            verdict=verdict,
+                        )
+                    )
+                version_result = self._turn_state_version(cp0.turn_id)
+                if isinstance(version_result, Err):
+                    return version_result
+                next_cycle = decision_cycles.record_decision_cycle(
+                    decision_cycle_id=self._cycle_id(cp0.turn_id, "-repair1"),
+                    turn_id=cp0.turn_id,
+                    bindings=DecisionCycleBindings(
+                        learning_snapshot_id=str(
+                            repaired.value.learning_snapshot_id
+                        ),
+                        evidence_watermark=repaired.value.evidence_watermark,
+                    ),
+                    expected_turn_state_version=version_result.value,
+                )
+                if isinstance(next_cycle, Err):
+                    return next_cycle
+                cycle = next_cycle.value
+
+    def _commit_teaching_open(
+        self,
+        *,
+        request: TeachingRequest,
+        turn_id: TurnId,
+        cycle: DecisionCycleRecord,
+        candidate_id: str,
+        view: TeachingTargetView | None,
+        verdict: GateVerdict,
+        status_record: GateExecutionStatusRecord,
+        teaching: TeachingController,
+    ) -> Result[TeachingTurnResult]:
+        """CP2: the five-fact atomic open, then the stop-point result."""
+
+        if view is None:
+            return _conflict(
+                "Gate ALLOW without a resolved target view (the Gate"
+                " degrades on unknown validity, so this is unreachable)"
+            )
+        moment_id = MomentId(f"tm-{turn_id}")
+        gate_decision_id = self._gate_decision_id(turn_id, cycle)
+        action_id = ActionId(f"ga-{turn_id}-teaching-open")
+        moment = TeachingMomentRecord(
+            moment_id=moment_id,
+            conversation_id=request.conversation_id,
+            persona_id=self._conversation_persona(request.conversation_id),
+            source=MomentSource.USER_INITIATED,
+            decision_cycle_id=cycle.decision_cycle_id,
+            candidate_id=candidate_id,
+            gate_decision_id=gate_decision_id,
+            focus_target=TeachingTargetRef(
+                target_type=request.target_type,
+                target_id=str(request.focus_target_id),
+            ),
+            supporting_targets=(),
+            target_mode=request.target_mode
+            if request.target_mode is not None
+            else view.target_mode,
+            learning_intent=view.learning_intent,
+            evidence_modality=EvidenceModality(view.evidence_modality),
+            evidence_goal=None,
+            preferred_support_ceiling=None,
+            learning_snapshot_id=cycle.learning_snapshot_id,
+            evidence_watermark=cycle.evidence_watermark,
+            curriculum_version=cycle.curriculum_version,
+            content_version=None,
+            policy_version=cycle.policy_version,
+            lifecycle_state=MomentState.OPENING,
+            presentation_phase=PresentationPhase.INITIAL_PROMPT,
+            attempt_index=0,
+            support_level=TeachingSupportLevel.NONE,
+            completion_outcome=None,
+            abort_reason=None,
+            state_version=1,
+        )
+        opened = teaching.commit_cp2_open(
+            CP2OpenRequest(
+                gate_execution_status=status_record,
+                gate_decision=GateDecisionRecord(
+                    gate_decision_id=gate_decision_id,
+                    decision_cycle_id=cycle.decision_cycle_id,
+                    candidate_id=candidate_id,
+                    context=GateDecisionContext.OPEN,
+                    decision=GateDecisionValue.ALLOW,
+                    reason_codes=(),
+                    policy_version=PolicyVersion(GATE_POLICY_VERSION),
+                ),
+                moment=moment,
+                action=cp2_action_intent(
+                    turn_id=turn_id,
+                    moment_id=moment_id,
+                    decision_cycle_id=cycle.decision_cycle_id,
+                    action_id=action_id,
+                    assistant_turn_id=f"aturn-{turn_id}-teaching-open",
+                    generation_contract_id=TEACHING_OPEN_CONTRACT_ID,
+                    owner_epoch=self._lease.epoch
+                    if self._lease.epoch is not None
+                    else 1,
+                ),
+                owner_epoch=self._lease.epoch if self._lease.epoch is not None else 1,
+            )
+        )
+        if isinstance(opened, Err):
+            return opened
+        return Ok(
+            self._teaching_result(
+                turn_id=turn_id,
+                conversation_id=request.conversation_id,
+                turn_status=TurnStatus.DECIDING,
+                cycle=cycle,
+                verdict=verdict,
+                moment_id=opened.value,
+                action_id=action_id,
+                moment_state=MomentState.OPENING,
+                action_status=GenerationActionStatus.PREPARED,
+            )
+        )
+
+    def _replay_teaching(
+        self,
+        turn: TurnRecordData,
+        cycle: DecisionCycleRecord,
+        teaching: TeachingController,
+    ) -> Result[TeachingTurnResult]:
+        """Replay the durable outcome of a turn that already ran the Gate."""
+
+        moment_result = teaching.get_moment_for_cycle(cycle.decision_cycle_id)
+        if isinstance(moment_result, Err):
+            return moment_result
+        moment = moment_result.value
+        if moment is not None:
+            action_result = self._generation.get_action_for_turn(turn.turn_id)
+            if isinstance(action_result, Err):
+                return action_result
+            action = action_result.value
+            return Ok(
+                self._teaching_result(
+                    turn_id=turn.turn_id,
+                    conversation_id=ConversationId(turn.conversation_id),
+                    turn_status=turn.status,
+                    cycle=cycle,
+                    verdict=GateVerdict(
+                        execution_status="SUCCEEDED",
+                        decision="ALLOW",
+                        primary_reason=None,
+                        reasons=(),
+                        missing_or_unknown=(),
+                    ),
+                    moment_id=moment.moment_id,
+                    action_id=action.action_id if action is not None else None,
+                    moment_state=moment.lifecycle_state,
+                    action_status=(
+                        action.status if action is not None else None
+                    ),
+                    decision_cycle_id=cycle.decision_cycle_id,
+                )
+            )
+        statuses = teaching.get_gate_execution_statuses(cycle.decision_cycle_id)
+        if isinstance(statuses, Err):
+            return statuses
+        if not statuses.value:
+            return _conflict(
+                "active teaching cycle without a Gate outcome: nothing"
+                " durable to replay"
+            )
+        latest = statuses.value[-1]
+        decisions = teaching.get_gate_decisions(cycle.decision_cycle_id)
+        if isinstance(decisions, Err):
+            return decisions
+        decision = decisions.value[-1] if decisions.value else None
+        verdict = GateVerdict(
+            execution_status=latest.status.value,
+            decision=decision.decision.value if decision is not None else None,
+            primary_reason=(
+                decision.reason_codes[0] if decision is not None
+                and decision.reason_codes else None
+            ),
+            reasons=decision.reason_codes if decision is not None else (),
+            missing_or_unknown=latest.missing_or_unknown,
+        )
+        return Ok(
+            self._teaching_result(
+                turn_id=turn.turn_id,
+                conversation_id=ConversationId(turn.conversation_id),
+                turn_status=turn.status,
+                cycle=cycle,
+                verdict=verdict,
+            )
+        )
+
+    def _teaching_result(
+        self,
+        *,
+        turn_id: TurnId,
+        conversation_id: ConversationId,
+        turn_status: TurnStatus,
+        cycle: DecisionCycleRecord,
+        verdict: GateVerdict,
+        moment_id: MomentId | None = None,
+        action_id: ActionId | None = None,
+        moment_state: MomentState | None = None,
+        action_status: GenerationActionStatus | None = None,
+        decision_cycle_id: DecisionCycleId | None = None,
+    ) -> TeachingTurnResult:
+        return TeachingTurnResult(
+            turn_id=turn_id,
+            conversation_id=conversation_id,
+            decision_cycle_id=(
+                decision_cycle_id
+                if decision_cycle_id is not None
+                else cycle.decision_cycle_id
+            ),
+            gate_execution_status=verdict.execution_status,
+            gate_decision=verdict.decision,
+            reason_codes=verdict.reasons,
+            missing_or_unknown=verdict.missing_or_unknown,
+            moment_id=moment_id,
+            action_id=action_id,
+            moment_state=moment_state,
+            action_status=action_status,
+            turn_status=turn_status,
+            outcome=None,
+        )
+
+    def _gate_status_record(
+        self,
+        turn_id: TurnId,
+        cycle: DecisionCycleRecord,
+        facts: UserInitiatedOpenFacts,
+        verdict: GateVerdict,
+    ) -> GateExecutionStatusRecord:
+        return GateExecutionStatusRecord(
+            gate_execution_status_id=(
+                f"ges-{turn_id}-{cycle.cycle_index}"
+            ),
+            decision_cycle_id=cycle.decision_cycle_id,
+            moment_id=None,
+            gate_context=GateDecisionContext.OPEN,
+            authorization_basis=AuthorizationBasis.DECISION_CYCLE,
+            authorization_status=facts.authorization_status,
+            status=(
+                GateExecutionStatusValue.SUCCEEDED
+                if verdict.execution_status == "SUCCEEDED"
+                else GateExecutionStatusValue.DEGRADED
+            ),
+            missing_or_unknown=verdict.missing_or_unknown,
+        )
+
+    @staticmethod
+    def _gate_decision_id(
+        turn_id: TurnId, cycle: DecisionCycleRecord
+    ) -> GateDecisionId:
+        return GateDecisionId(f"gd-{turn_id}-{cycle.cycle_index}")
+
+    @staticmethod
+    def _cycle_id(turn_id: TurnId, suffix: str) -> DecisionCycleId:
+        """Deterministic cycle id (stable opaque id, DATA_MODEL §1.2):
+        derived from the turn + a role suffix, so a crash re-entry
+        re-derives the identical id and the store replays the durable row
+        instead of double-writing."""
+
+        return DecisionCycleId(f"dcy-{turn_id}{suffix}")
+
+    @staticmethod
+    def _command_input_id(request: TeachingRequest) -> InputId:
+        """The command turn's stable opaque input id (DATA_MODEL §4/§1.2).
+
+        ``client_message_id`` is OPTIONAL dedupe (mother decision ⑥): with
+        one supplied, the input id derives from it, so a repeat call
+        dedupes at CP0 to the original turn (replay, not a second turn).
+        WITHOUT one there is no dedupe key at all, so every call mints a
+        FRESH input id — the P1 uuid-minting precedent
+        (``conversation.store._new_id``). A derived constant here would be
+        silently deduped by ``_cp0_commit_for_input`` and swallow a
+        genuine second request as a replay of the first (review F1); the
+        freshness applies to NEW calls only — re-entering an already-open
+        turn still goes through the CP0 dedupe / active-cycle replay paths.
+        """
+
+        if request.input_id is not None:
+            return request.input_id
+        if request.client_message_id is not None:
+            return InputId(f"in-{request.client_message_id}")
+        return InputId(f"in-teaching-{uuid.uuid4().hex}")
+
+    def _snapshot_with_repair(
+        self, learning: LearningController
+    ) -> Result[LearningSnapshot]:
+        """Read the Learning snapshot; on the read-time staleness refusal
+        rebuild the lagging targets once and re-read (the P3-1A
+        pre-cycle repair — the Gate never runs before this succeeds)."""
+
+        snapshot = learning.get_learning_snapshot()
+        if isinstance(snapshot, Ok):
+            return snapshot
+        if snapshot.error.code != DomainErrorCode.CONFLICT:
+            return snapshot
+        stale = learning.stale_projection_targets()
+        if isinstance(stale, Err):
+            return stale
+        for target_id, modality in stale.value:
+            rebuilt = learning.rebuild_learner_state(target_id, modality)
+            if isinstance(rebuilt, Err):
+                return rebuilt
+        return learning.get_learning_snapshot()
+
+    @staticmethod
+    def _snapshot_status(
+        learning: LearningController, cycle: DecisionCycleRecord
+    ) -> str:
+        """The Gate's LEARNING_SNAPSHOT fact: VALID only while the durable
+        watermark still equals the cycle's stamp (a commit / supersede /
+        invalidate since cycle creation is exactly the staleness the
+        DEGRADED path exists for). No repair here — that is the
+        coordinator's move, never the Gate's."""
+
+        fresh = learning.get_learning_snapshot()
+        if isinstance(fresh, Err):
+            return "UNKNOWN"
+        if cycle.evidence_watermark is None:
+            return "UNKNOWN"
+        if fresh.value.evidence_watermark != cycle.evidence_watermark:
+            return "UNKNOWN"
+        return "VALID"
+
+    @staticmethod
+    def _resolve_target(
+        targets: TeachingTargetProvider, request: TeachingRequest
+    ) -> tuple[TeachingTargetView | None, str, str]:
+        resolved = targets.resolve(request.target_type, str(request.focus_target_id))
+        if isinstance(resolved, Ok):
+            view = resolved.value
+            return view, view.target_status, view.content_status
+        if resolved.error.code == DomainErrorCode.NOT_FOUND:
+            return None, "MISSING", "INVALID"
+        return None, "UNKNOWN", "UNKNOWN"
+
+    def _turn_state_version(self, turn_id: TurnId) -> Result[int]:
+        current = self._commands.get_turn_record(turn_id)
+        if isinstance(current, Err):
+            return current
+        if current.value is None:
+            return _missing(f"turn record not found: {turn_id}")
+        return Ok(current.value.state_version)
+
+    def _conversation_persona(
+        self, conversation_id: ConversationId
+    ) -> PersonaId | None:
+        record = self._queries.get_conversation(conversation_id)
+        if isinstance(record, Ok) and record.value is not None:
+            return record.value.persona_id
+        return None
 
     # -- internals -----------------------------------------------------------
 

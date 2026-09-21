@@ -49,6 +49,7 @@ from elc.platform.types import (
 )
 from elc.runtime import ConversationCoordinator, ConversationCoordinatorLease
 from elc.runtime.types import TurnStatus
+from tests.conftest import AssemblyGenerationStore
 from tests.phase2.conftest import (
     RUNTIME_VERSION,
     commit_ok,
@@ -93,6 +94,13 @@ def _coordinator(
         persona=persona,
         generation_actions=generation_store,
         learning=learning,
+        # Migration 0007: every generation action belongs to a DecisionCycle
+        # — the fixture pair carries both stores (AssemblyGenerationStore).
+        decision_cycles=(
+            generation_store.decision_cycles
+            if isinstance(generation_store, AssemblyGenerationStore)
+            else None
+        ),
     )
 
 
@@ -329,7 +337,6 @@ def test_crash_at_analyzing_with_rejected_artifact_progresses(
     is needed because the degraded leg always advances the turn)."""
     from elc.conversation.store import SqliteConversationStore
     from elc.platform.db import epoch as epoch_module
-    from elc.platform.db.generation_store import SqliteGenerationStore
 
     command = _turn_command(store, conversation, "cm-stuck", "   ")
     cp0 = commit_ok(store, conversation, "cm-stuck", "   ")
@@ -349,7 +356,7 @@ def test_crash_at_analyzing_with_rejected_artifact_progresses(
 
     new_fence = epoch_module.open_runtime_epoch(db)
     new_store = SqliteConversationStore(db, new_fence)
-    new_generation = SqliteGenerationStore(db, new_fence)
+    new_generation = AssemblyGenerationStore(db, new_fence)
     new_learning = SqliteLearningStore(db, new_fence)
     provider = ScriptedPersonaProvider()
     coordinator = _coordinator(
@@ -379,7 +386,6 @@ def test_crash_after_cp0_reentry_commits_evidence_once(
     CP1 exactly once."""
     from elc.conversation.store import SqliteConversationStore
     from elc.platform.db import epoch as epoch_module
-    from elc.platform.db.generation_store import SqliteGenerationStore
 
     command = _turn_command(
         store, conversation, "cm-crash0", "crash after cp0"
@@ -391,7 +397,7 @@ def test_crash_after_cp0_reentry_commits_evidence_once(
     # stores bound to the new fence (P1 recovery convention).
     new_fence = epoch_module.open_runtime_epoch(db)
     new_store = SqliteConversationStore(db, new_fence)
-    new_generation = SqliteGenerationStore(db, new_fence)
+    new_generation = AssemblyGenerationStore(db, new_fence)
     new_learning = SqliteLearningStore(db, new_fence)
     provider = ScriptedPersonaProvider()
     coordinator = _coordinator(
@@ -419,7 +425,6 @@ def test_crash_after_cp1_reentry_does_not_repeat_evidence(
     generation."""
     from elc.conversation.store import SqliteConversationStore
     from elc.platform.db import epoch as epoch_module
-    from elc.platform.db.generation_store import SqliteGenerationStore
 
     command = _turn_command(
         store, conversation, "cm-crash1", "crash after cp1"
@@ -443,7 +448,7 @@ def test_crash_after_cp1_reentry_does_not_repeat_evidence(
 
     new_fence = epoch_module.open_runtime_epoch(db)
     new_store = SqliteConversationStore(db, new_fence)
-    new_generation = SqliteGenerationStore(db, new_fence)
+    new_generation = AssemblyGenerationStore(db, new_fence)
     new_learning = SqliteLearningStore(db, new_fence)
     provider = ScriptedPersonaProvider()
     coordinator = _coordinator(

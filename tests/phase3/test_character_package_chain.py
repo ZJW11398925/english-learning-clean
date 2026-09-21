@@ -29,7 +29,6 @@ from elc.persona import (
 )
 from elc.persona.types import CharacterPackageRecord
 from elc.platform.db import connection, epoch, migrations
-from elc.platform.db.generation_store import SqliteGenerationStore
 from elc.platform.types import (
     CharacterPackageId,
     ConversationId,
@@ -38,6 +37,7 @@ from elc.platform.types import (
     PersonaId,
     UserId,
 )
+from tests.conftest import AssemblyGenerationStore
 
 from .conftest import begin_turn_ok, make_coordinator, make_lease
 
@@ -205,7 +205,7 @@ def _fresh_world(
     migrations.apply_migrations(conn)
     fence = epoch.open_runtime_epoch(conn)
     conv_store = SqliteConversationStore(conn, fence)
-    gen_store = SqliteGenerationStore(conn, fence)
+    gen_store = AssemblyGenerationStore(conn, fence)
     opened = conv_store.open_conversation(
         ConversationId("conv-pkg-chain"),
         user_id=UserId("user-1"),

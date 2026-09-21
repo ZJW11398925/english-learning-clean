@@ -25,7 +25,7 @@ from elc.platform.types import ActionId, ConversationId, Err, PersonaId
 from elc.runtime.generation import GENERATION_ACTION_TRANSITIONS
 from elc.runtime.types import GenerationActionStatus, GenerationActionType
 
-from .conftest import commit_ok
+from .conftest import commit_ok, seed_decision_cycle
 
 
 def _committed_turn(
@@ -33,6 +33,21 @@ def _committed_turn(
 ) -> str:
     cp0 = commit_ok(store, conversation, f"cmid-unit-{tag}", f"unit-{tag}")
     return cp0.turn_id
+
+
+def _committed_turn_with_cycle(
+    store: SqliteConversationStore,
+    conversation: ConversationId,
+    db: sqlite3.Connection,
+    tag: str,
+) -> tuple[str, str]:
+    """One USER_COMMITTED turn plus the §4 cycle row its action belongs to
+    (migration 0007 tightened generation_action_intent.decision_cycle_id to
+    NOT NULL + FK(decision_cycle): no hand-built action exists without a
+    cycle)."""
+
+    turn_id = _committed_turn(store, conversation, tag)
+    return turn_id, seed_decision_cycle(db, turn_id)
 
 
 def _contract(max_length: int | None = None) -> GenerationContract:
@@ -153,10 +168,14 @@ def test_transition_action_table_and_invalid_transitions(
     cannot advance the action."""
 
     actions = generation_store
+    chain_turn, chain_cycle = _committed_turn_with_cycle(
+        store, conversation, db, "chain"
+    )
     intent = action_intent_for_turn(
-        turn_id=_committed_turn(store, conversation, "chain"),
+        turn_id=chain_turn,
         action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
         generation_contract_id="gc",
+        decision_cycle_id=chain_cycle,
     )
     assert isinstance(actions.create_action(intent).value, str)
 
@@ -195,10 +214,14 @@ def test_transition_action_table_and_invalid_transitions(
         assert isinstance(refused, Err)
 
     # Status CAS mismatch is a conflict, never an overwrite (§20).
+    mismatch_turn, mismatch_cycle = _committed_turn_with_cycle(
+        store, conversation, db, "mismatch"
+    )
     other = action_intent_for_turn(
-        turn_id=_committed_turn(store, conversation, "mismatch"),
+        turn_id=mismatch_turn,
         action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
         generation_contract_id="gc",
+        decision_cycle_id=mismatch_cycle,
     )
     assert isinstance(actions.create_action(other).value, str)
     mismatch = actions.transition_action(
@@ -213,13 +236,16 @@ def test_transition_action_table_and_invalid_transitions(
     from elc.platform.db import epoch
     from elc.platform.db.generation_store import StaleStoreEpochError
 
-    fenced_turn = _committed_turn(store, conversation, "fenced")
+    fenced_turn, fenced_cycle = _committed_turn_with_cycle(
+        store, conversation, db, "fenced"
+    )
     old_fence = epoch.open_runtime_epoch(db)
     old_store = SqliteGenerationStore(db, old_fence)
     fenced_intent = action_intent_for_turn(
         turn_id=fenced_turn,
         action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
         generation_contract_id="gc",
+        decision_cycle_id=fenced_cycle,
     )
     assert isinstance(old_store.create_action(fenced_intent).value, str)
     epoch.open_runtime_epoch(db)  # a newer epoch now exists
@@ -235,6 +261,7 @@ def test_transition_table_rejects_out_of_table_nonterminal_edges(
     generation_store: SqliteGenerationStore,
     store: SqliteConversationStore,
     conversation: ConversationId,
+    db: sqlite3.Connection,
 ) -> None:
     """F2 (TASK-OPI-eaaa5a1d.13): an out-of-table nonterminal edge is
     refused by transition_action even when the durable status matches —
@@ -245,10 +272,14 @@ def test_transition_table_rejects_out_of_table_nonterminal_edges(
     a pipeline skip sneak past the CAS."""
 
     actions = generation_store
+    oob_turn, oob_cycle = _committed_turn_with_cycle(
+        store, conversation, db, "oob"
+    )
     intent = action_intent_for_turn(
-        turn_id=_committed_turn(store, conversation, "oob"),
+        turn_id=oob_turn,
         action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
         generation_contract_id="gc",
+        decision_cycle_id=oob_cycle,
     )
     assert isinstance(actions.create_action(intent).value, str)
 
@@ -305,6 +336,7 @@ def test_claim_action_for_recovery_is_idempotent_for_own_epoch(
     generation_store: SqliteGenerationStore,
     store: SqliteConversationStore,
     conversation: ConversationId,
+    db: sqlite3.Connection,
 ) -> None:
     """F5 (DEC-OPI-d7937fd7.19): claiming an action the current epoch
     already owns returns it unchanged — a validated READY_TO_DELIVER buffer
@@ -312,10 +344,14 @@ def test_claim_action_for_recovery_is_idempotent_for_own_epoch(
     attempt_count untouched), mirroring claim_turn_for_recovery's
     already-ours early return."""
 
+    idem_turn, idem_cycle = _committed_turn_with_cycle(
+        store, conversation, db, "idem"
+    )
     intent = action_intent_for_turn(
-        turn_id=_committed_turn(store, conversation, "idem"),
+        turn_id=idem_turn,
         action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
         generation_contract_id="gc",
+        decision_cycle_id=idem_cycle,
     )
     assert isinstance(generation_store.create_action(intent).value, str)
 

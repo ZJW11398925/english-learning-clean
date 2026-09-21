@@ -779,7 +779,16 @@ class SqliteLearningStore:
         self, target_id: TargetId, evidence_modality: str
     ) -> Result[LearnerTargetStateRecord | None]:
         """Read the materialized §11 projection row for one target_id ×
-        modality. Ok(None) when the scope was never rebuilt."""
+        modality. Ok(None) when the scope was never rebuilt.
+
+        Scope note (P3-0 review F5, DEC-…eaaa5a1d.58): this single-row
+        read is deliberately NOT subject to the snapshot read-time
+        watermark gate. The gate exists so a *snapshot* never claims
+        watermark=N+1 while riding targets computed at <=N; a single row
+        reports its own stored stamp (which the caller can compare), and
+        the P3-0 test pins that it stays readable while the snapshot
+        refuses. Reading one row is not materializing the projection
+        view."""
 
         rows = self._conn.execute(
             "SELECT state_json FROM learner_target_state"
@@ -830,12 +839,7 @@ class SqliteLearningStore:
         (no §11 rows) has nothing to be stale and reads Ok with zero
         targets."""
 
-        rows = self._conn.execute(
-            "SELECT target_type, target_id, evidence_modality, state_json"
-            " FROM learner_target_state WHERE user_scope_id = ?"
-            " ORDER BY target_type, target_id, evidence_modality",
-            (self._user_scope_id,),
-        ).fetchall()
+        rows = self._projection_rows()
         watermark = self.get_evidence_watermark()
         targets = tuple(
             _record_from_document(json.loads(str(row[3])))
@@ -889,12 +893,38 @@ class SqliteLearningStore:
             )
         )
 
+    def stale_projection_targets(
+        self,
+    ) -> Result[tuple[tuple[TargetId, str], ...]]:
+        """The §11 rows whose meta.evidence_watermark lags the durable
+        watermark — exactly the set ``get_learning_snapshot`` refuses on,
+        in the same deterministic order (target_type, target_id,
+        evidence_modality) and computed by the same staleness rule.
+
+        This is the repair face the caller needs when a snapshot read
+        returns the CONFLICT above (P3-1A keep-snapshot-consistent
+        coordination): rebuild every returned (target_id, modality) with
+        ``rebuild_learner_state`` and re-read. The read itself never
+        auto-rebuilds (the P3-0 adjudication: refusal over silent
+        masking); it only names what must be rebuilt.
+
+        Adjudicated name/vocabulary: the frozen Phase 0 query face has no
+        such method, so this is an explicit Phase 3 extension (F1's
+        scope-declaration lesson) — no protocol changes."""
+
+        watermark = self.get_evidence_watermark()
+        stale: list[tuple[TargetId, str]] = []
+        for row in self._projection_rows():
+            record = _record_from_document(json.loads(str(row[3])))
+            if record.evidence_watermark != watermark:
+                stale.append((TargetId(str(row[1])), str(row[2])))
+        return Ok(tuple(stale))
+
     def get_freshness(self, target_id: TargetId) -> Result[FreshnessView]:
         """The only thing Learning owes the Scheduler (D-INV-009):
         freshness across the target's modality projections — the newest
         strong retrieval wins, elapsed is recomputed at read time (BF-01
         §22: time never changes historical ability mass)."""
-
         rows = self._conn.execute(
             "SELECT state_json FROM learner_target_state"
             " WHERE user_scope_id = ? AND target_id = ?"
@@ -1428,6 +1458,19 @@ class SqliteLearningStore:
                 _now(),
             ),
         )
+
+    def _projection_rows(self) -> list[sqlite3.Row]:
+        """The §11 projection rows in the read's deterministic order —
+        shared by get_learning_snapshot (the consistency gate) and
+        stale_projection_targets (the repair face), so the two can never
+        disagree about which rows lag."""
+
+        return self._conn.execute(
+            "SELECT target_type, target_id, evidence_modality, state_json"
+            " FROM learner_target_state WHERE user_scope_id = ?"
+            " ORDER BY target_type, target_id, evidence_modality",
+            (self._user_scope_id,),
+        ).fetchall()
 
     def _artifact_row_for(
         self, turn_id: TurnId, analysis_type: str, producer_id: str

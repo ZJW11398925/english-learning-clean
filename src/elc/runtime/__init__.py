@@ -15,6 +15,10 @@ controller eagerly here would create an initialization cycle.
 from typing import Any
 
 from elc.runtime.commands import RuntimeCommands
+from elc.runtime.decision_cycles import (
+    DecisionCycleBindings,
+    DecisionCycleStore,
+)
 from elc.runtime.generation import (
     GENERATION_ACTION_TRANSITIONS,
     RECOVERY_REARM_STATUS,
@@ -57,6 +61,7 @@ _CONTROLLER_EXPORTS = (
     "AssistantDelivery",
     "ConversationCoordinator",
     "RuntimeOrchestrator",
+    "TeachingTurnResult",
 )
 
 __all__ = [
@@ -66,7 +71,9 @@ __all__ = [
     "TERMINAL_TURN_STATUSES",
     "ConversationCoordinator",
     "ConversationCoordinatorLease",
+    "DecisionCycleBindings",
     "DecisionCycleRecord",
+    "DecisionCycleStore",
     "GenerationActionIntentRecord",
     "GenerationActionStatus",
     "GenerationActionStore",

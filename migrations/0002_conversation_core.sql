@@ -100,10 +100,13 @@ CREATE TABLE IF NOT EXISTS assistant_turn (
 --                     RUNTIME_ARCHITECTURE §24.
 --   state_version   — STATE_MACHINES §20: all multi-event state transitions
 --                     use "state_version + compare-and-swap".
---   active_decision_cycle_id is nullable per §4; Phase 1 P1A has no
---   DecisionCycle yet (IMPLEMENTATION_PLAN §3), so generation-side
---   decision_cycle_id nullability tightens in Phase 2
---   (adjudicated DEC-…091f35c3.7).
+--   active_decision_cycle_id is nullable per §4 and stays a plain
+--   back-reference (no FK), exactly like the 0006 gate_decision_id
+--   precedent; its writer is the Runtime-owned DecisionCycle store
+--   (Phase 3 P3-1A, TASK-OPI-2babb21e-….17 ②). This clears the stale
+--   Phase 1 note that pointed the generation-side tighten at "Phase 2"
+--   (adjudicated DEC-…091f35c3.7): that tighten is the
+--   generation_action_intent rebuild in migration 0007.
 CREATE TABLE IF NOT EXISTS turn_record (
     turn_id                  TEXT PRIMARY KEY,
     conversation_id          TEXT NOT NULL

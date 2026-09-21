@@ -161,18 +161,30 @@ TERMINAL_TURN_STATUSES: frozenset[TurnStatus] = frozenset(
 @dataclass(frozen=True)
 class DecisionCycleRecord:
     """docs/DATA_MODEL.md §4 — snapshot/version fields fixed inside the cycle
-    (R-INV-003); occupies no message sequence."""
+    (R-INV-003); occupies no message sequence.
+
+    Phase 3 P3-1A: the record carries the full §4 column set — the
+    snapshot/version columns are ``None`` when no authority has stamped
+    them (the legacy backfill of migration 0007 and the Phase 3 cycles
+    whose Curriculum/Goal/Schedule/Policy sources have not arrived yet;
+    see elc.runtime.decision_cycles.DecisionCycleBindings). ``None`` is
+    the honest "no source", never a fabricated version string.
+    """
 
     decision_cycle_id: DecisionCycleId
     turn_id: TurnId
     cycle_index: int
     learning_snapshot_id: str | None
-    evidence_watermark: str | None
+    evidence_watermark: int | None
     curriculum_version: str | None
     goal_version: str | None
     schedule_version: str | None
     policy_version: str | None
     context_view_version: str | None
+    relationship_view_version: str | None = None
+    planner_decision_id: str | None = None
+    gate_decision_id: str | None = None
+    created_at: str | None = None
 
 
 @dataclass(frozen=True)

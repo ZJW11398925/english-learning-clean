@@ -50,6 +50,7 @@ from elc.platform.types import (
 from elc.platform.types import ConversationId as ConvId
 from elc.runtime import ConversationCoordinator, ConversationCoordinatorLease
 from elc.runtime.types import InputEnvelope
+from tests.conftest import AssemblyGenerationStore
 
 CONV = ConvId("conv-p2a")
 RUNTIME_VERSION = "runtime-v1"
@@ -82,8 +83,8 @@ def store(db: sqlite3.Connection, fence: RuntimeEpochFence) -> SqliteConversatio
 @pytest.fixture()
 def generation_store(
     db: sqlite3.Connection, fence: RuntimeEpochFence
-) -> SqliteGenerationStore:
-    return SqliteGenerationStore(db, fence)
+) -> AssemblyGenerationStore:
+    return AssemblyGenerationStore(db, fence)
 
 
 @pytest.fixture()
@@ -189,6 +190,13 @@ def make_coordinator(
     provider: ScriptedPersonaProvider,
     learning: SqliteLearningStore | None = None,
 ):
+    # Migration 0007: every generation action belongs to a DecisionCycle —
+    # the fixture pair carries both stores (AssemblyGenerationStore).
+    decision_cycles = (
+        generation_store.decision_cycles
+        if isinstance(generation_store, AssemblyGenerationStore)
+        else None
+    )
     persona = PersonaRuntime(
         actions=generation_store,
         provider=provider,
@@ -203,6 +211,7 @@ def make_coordinator(
         persona=persona,
         generation_actions=generation_store,
         learning=learning,
+        decision_cycles=decision_cycles,
     )
 
 

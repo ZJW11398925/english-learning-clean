@@ -71,9 +71,10 @@ _PRAGMA_SQL = {
 
 _INSERT_ACTION_SQL = (
     "INSERT INTO generation_action_intent (action_id, turn_id,"
-    " assistant_turn_id, action_type, generation_contract_id,"
-    " status, attempt_count, owner_epoch, created_at)"
-    " VALUES (?, 't1', ?, ?, 'gc', ?, 0, 1,"
+    " decision_cycle_id, assistant_turn_id, action_type,"
+    " generation_contract_id, status, attempt_count, owner_epoch,"
+    " created_at)"
+    " VALUES (?, 't1', 'dcy-t1', ?, ?, 'gc', ?, 0, 1,"
     " '2026-09-20T00:00:00+00:00')"
 )
 
@@ -113,6 +114,13 @@ def _seed_turn(db: sqlite3.Connection) -> None:
         " owner_epoch, state_version)"
         " VALUES ('t1', 'c', 1, 'i1', 'USER_COMMITTED', 'v',"
         " '2026-09-20T00:00:00+00:00', '2026-09-20T00:00:00+00:00', 1, 1)"
+    )
+    # Migration 0007 lineage: every generation action belongs to a
+    # DecisionCycle — the raw action inserts below carry 'dcy-t1'.
+    db.execute(
+        "INSERT INTO decision_cycle (decision_cycle_id, turn_id, cycle_index,"
+        " created_at) VALUES ('dcy-t1', 't1', 0,"
+        " '2026-09-20T00:00:00+00:00')"
     )
 
 
@@ -191,9 +199,10 @@ def test_attempt_no_unique_per_action_dm25(db: sqlite3.Connection) -> None:
     _seed_turn(db)
     db.execute(
         "INSERT INTO generation_action_intent (action_id, turn_id,"
-        " assistant_turn_id, action_type, generation_contract_id,"
-        " status, attempt_count, owner_epoch, created_at)"
-        " VALUES ('ga1', 't1', 'at1', 'NORMAL_PERSONA_REPLY', 'gc',"
+        " decision_cycle_id, assistant_turn_id, action_type,"
+        " generation_contract_id, status, attempt_count, owner_epoch,"
+        " created_at)"
+        " VALUES ('ga1', 't1', 'dcy-t1', 'at1', 'NORMAL_PERSONA_REPLY', 'gc',"
         " 'TERMINAL', 2, 1, '2026-09-20T00:00:00+00:00')"
     )
     for attempt_no in (1, 2):

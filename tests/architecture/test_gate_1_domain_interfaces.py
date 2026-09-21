@@ -90,6 +90,13 @@ def test_domain_controller_is_empty_skeleton(package: str) -> None:
         # durable kernel keeps all truth and SQL); Phase 3 consumers go
         # through it. Same graduation mechanism as the P1B entry above.
         "learning": {"LearningController"},
+        # P3-1A (TASK-OPI-2babb21e-….17 ③④): TeachingController graduated
+        # as the Teaching authority face — the Gate profile is pure
+        # (elc.teaching.gate), the CP2 five-fact unit and all SQL live in
+        # elc.teaching.store, and the methods P3-1B/Phase 8 own
+        # (record_attempt / terminalize_moment / …) still raise
+        # NotImplementedError with a phase pointer.
+        "teaching": {"TeachingController"},
     }
     allowed = infra_allowlist.get(package, set())
     skipped_classes = phase1_class_allowlist.get(package, set())

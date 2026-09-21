@@ -14,6 +14,7 @@ from typing import Iterator
 import pytest
 
 from elc.conversation import CommitUserTurn, SqliteConversationStore
+from elc.learning.controller import LearningController
 from elc.learning.store import SqliteLearningStore
 from elc.persona import (
     PersonaRuntime,
@@ -23,6 +24,7 @@ from elc.persona import (
 )
 from elc.persona.types import CharacterPackageRecord
 from elc.platform.db import connection, epoch, migrations
+from elc.platform.db.decision_cycle_store import SqliteDecisionCycleStore
 from elc.platform.db.epoch import RuntimeEpochFence
 from elc.platform.db.generation_store import SqliteGenerationStore
 from elc.platform.types import (
@@ -35,6 +37,11 @@ from elc.platform.types import (
 from elc.platform.types import ConversationId as ConvId
 from elc.runtime import ConversationCoordinator, ConversationCoordinatorLease
 from elc.runtime.types import InputEnvelope
+from elc.teaching.controller import TeachingController
+from elc.teaching.store import SqliteTeachingStore
+from elc.teaching.targets import TeachingTargetProvider
+from tests.conftest import AssemblyGenerationStore
+from tests.phase3.target_fixtures import FixtureTeachingTargetProvider
 
 CONV = ConvId("conv-p3")
 RUNTIME_VERSION = "runtime-v1"
@@ -67,8 +74,8 @@ def store(db: sqlite3.Connection, fence: RuntimeEpochFence) -> SqliteConversatio
 @pytest.fixture()
 def generation_store(
     db: sqlite3.Connection, fence: RuntimeEpochFence
-) -> SqliteGenerationStore:
-    return SqliteGenerationStore(db, fence)
+) -> AssemblyGenerationStore:
+    return AssemblyGenerationStore(db, fence)
 
 
 @pytest.fixture()
@@ -86,6 +93,81 @@ def make_lease(fence: RuntimeEpochFence) -> ConversationCoordinatorLease:
     return holder
 
 
+@pytest.fixture()
+def decision_cycle_store(
+    db: sqlite3.Connection, fence: RuntimeEpochFence
+) -> SqliteDecisionCycleStore:
+    """Runtime-owned DecisionCycle store over this test's app.db + epoch."""
+
+    return SqliteDecisionCycleStore(db, fence)
+
+
+@pytest.fixture()
+def teaching_store(
+    db: sqlite3.Connection, fence: RuntimeEpochFence
+) -> SqliteTeachingStore:
+    """Teaching domain store (CP2 + Gate facts + moment/lock reads)."""
+
+    return SqliteTeachingStore(db, fence)
+
+
+@pytest.fixture()
+def teaching_controller(teaching_store: SqliteTeachingStore) -> TeachingController:
+    return TeachingController(teaching_store)
+
+
+@pytest.fixture()
+def learning_controller(learning: SqliteLearningStore) -> LearningController:
+    return LearningController(learning)
+
+
+@pytest.fixture()
+def target_provider() -> FixtureTeachingTargetProvider:
+    """The 14 validated-target fixture provider (target_fixtures)."""
+
+    return FixtureTeachingTargetProvider()
+
+
+def make_teaching_coordinator(
+    store: SqliteConversationStore,
+    generation_store: SqliteGenerationStore,
+    lease: ConversationCoordinatorLease,
+    provider: ScriptedPersonaProvider,
+    learning: SqliteLearningStore,
+    decision_cycles: SqliteDecisionCycleStore,
+    teaching: TeachingController,
+    targets: TeachingTargetProvider,
+) -> ConversationCoordinator:
+    """The P3-1A assembly: all four teaching-path ports injected
+    (decision cycles + learning controller + teaching controller + target
+    provider) so ``request_teaching`` is live."""
+
+    decision_cycles_port = (
+        generation_store.decision_cycles
+        if isinstance(generation_store, AssemblyGenerationStore)
+        else decision_cycles
+    )
+    persona = PersonaRuntime(
+        actions=generation_store,
+        provider=provider,
+        compiler=PromptCompiler(),
+        validator=ResponseValidator(),
+        max_provider_attempts=3,
+    )
+    return ConversationCoordinator(
+        lease=lease,
+        conversation_commands=store,
+        conversation_queries=store,
+        persona=persona,
+        generation_actions=generation_store,
+        learning=learning,
+        decision_cycles=decision_cycles_port,
+        learning_controller=LearningController(learning),
+        teaching=teaching,
+        targets=targets,
+    )
+
+
 def make_coordinator(
     store: SqliteConversationStore,
     generation_store: SqliteGenerationStore,
@@ -94,8 +176,15 @@ def make_coordinator(
     character_package: CharacterPackageRecord | None = None,
 ) -> ConversationCoordinator:
     """P3-0 ③ assembly face: the coordinator with an optional injected
-    canonical §5.1 CharacterPackage (None keeps the P1/P2 assembly)."""
+    canonical §5.1 CharacterPackage (None keeps the P1/P2 assembly) and the
+    fixture-carried DecisionCycle store (migration 0007: every generation
+    action belongs to a cycle)."""
 
+    decision_cycles = (
+        generation_store.decision_cycles
+        if isinstance(generation_store, AssemblyGenerationStore)
+        else None
+    )
     persona = PersonaRuntime(
         actions=generation_store,
         provider=provider,
@@ -110,6 +199,7 @@ def make_coordinator(
         persona=persona,
         generation_actions=generation_store,
         character_package=character_package,
+        decision_cycles=decision_cycles,
     )
 
 

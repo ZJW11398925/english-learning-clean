@@ -1,5 +1,17 @@
-"""VAL ④ — migration 0006 decision_cycle: the canonical §4 table, the
-UNIQUE key, and the P3-1 no-write-face fence (P3-0 ④).
+"""VAL ① (migration half) — migration 0007 teaching lineage.
+
+P3-0's ``decision_cycle`` table test, carried forward to P3-1A:
+
+- the three new §14.1/§15 tables exist with their canonical column sets
+  word for word;
+- the §4 ``decision_cycle`` column set is unchanged, and its
+  snapshot/version columns accept NULL after 0007 (the legacy export
+  requires the honest all-NULL bindings — the migration header carries the
+  full rationale);
+- schema_version is 7 and 0007 is the newest migration;
+- the decision_cycle / gate / moment write faces belong to their owning
+  adapters only (AST-based scan, P3-0 review F3 — a substring scan is
+  defeatable by multi-line SQL literals).
 """
 
 from __future__ import annotations
@@ -10,6 +22,7 @@ import pytest
 
 from elc.platform.db import connection, migrations
 from tests.conftest import REPO_ROOT, SRC_ROOT
+from tests.phase3.sql_write_scan import write_targets
 
 # DATA_MODEL §4:165-192 verbatim column list (the thirteen §4 columns
 # plus created_at; relationship_view_version / planner_decision_id /
@@ -31,6 +44,76 @@ DECISION_CYCLE_COLUMNS = [
     "created_at",
 ]
 
+# DATA_MODEL §14.1 gate_decision, word for word.
+GATE_DECISION_COLUMNS = [
+    "gate_decision_id",
+    "decision_cycle_id",
+    "candidate_id",
+    "context",
+    "decision",
+    "reason_codes",
+    "policy_version",
+    "created_at",
+]
+
+# DATA_MODEL §14.1 gate_execution_status, word for word.
+GATE_EXECUTION_STATUS_COLUMNS = [
+    "gate_execution_status_id",
+    "decision_cycle_id",
+    "moment_id",
+    "gate_context",
+    "authorization_basis",
+    "authorization_status",
+    "status",
+    "missing_or_unknown",
+    "created_at",
+]
+
+# DATA_MODEL §15 teaching_moment, word for word (thirty columns).
+TEACHING_MOMENT_COLUMNS = [
+    "moment_id",
+    "conversation_id",
+    "persona_id",
+    "source",
+    "decision_cycle_id",
+    "candidate_id",
+    "gate_decision_id",
+    "focus_target",
+    "supporting_targets",
+    "target_mode",
+    "learning_intent",
+    "evidence_modality",
+    "evidence_goal",
+    "preferred_support_ceiling",
+    "learning_snapshot_id",
+    "evidence_watermark",
+    "curriculum_version",
+    "content_version",
+    "policy_version",
+    "lifecycle_state",
+    "presentation_phase",
+    "attempt_index",
+    "support_level",
+    "completion_outcome",
+    "abort_reason",
+    "state_version",
+    "created_at",
+    "opened_at",
+    "teaching_terminal_at",
+    "closed_at",
+]
+
+#: The P3-1A tables and the only modules allowed to write them (the
+#: Runtime-owned DecisionCycle adapter + the Teaching domain store).
+P3_1A_WRITE_OWNERS: dict[str, set[str]] = {
+    "platform/db/decision_cycle_store.py": {"decision_cycle"},
+    "teaching/store.py": {
+        "gate_decision",
+        "gate_execution_status",
+        "teaching_moment",
+    },
+}
+
 
 @pytest.fixture()
 def db() -> sqlite3.Connection:
@@ -40,8 +123,8 @@ def db() -> sqlite3.Connection:
     conn.close()
 
 
-def _columns(db: sqlite3.Connection) -> list[str]:
-    return [str(row[1]) for row in db.execute("PRAGMA table_info(decision_cycle)")]
+def _columns(db: sqlite3.Connection, table: str) -> list[str]:
+    return [str(row[1]) for row in db.execute(f"PRAGMA table_info({table})")]
 
 
 def _seed_turn(db: sqlite3.Connection) -> None:
@@ -66,7 +149,27 @@ def _seed_turn(db: sqlite3.Connection) -> None:
 
 
 def test_decision_cycle_columns_match_canonical(db: sqlite3.Connection) -> None:
-    assert sorted(_columns(db)) == sorted(DECISION_CYCLE_COLUMNS)
+    assert sorted(_columns(db, "decision_cycle")) == sorted(
+        DECISION_CYCLE_COLUMNS
+    )
+
+
+def test_gate_and_moment_columns_match_canonical(db: sqlite3.Connection) -> None:
+    assert sorted(_columns(db, "gate_decision")) == sorted(
+        GATE_DECISION_COLUMNS
+    )
+    assert sorted(_columns(db, "gate_execution_status")) == sorted(
+        GATE_EXECUTION_STATUS_COLUMNS
+    )
+    assert sorted(_columns(db, "teaching_moment")) == sorted(
+        TEACHING_MOMENT_COLUMNS
+    )
+    # Column order is the §15 order, word for word.
+    assert _columns(db, "teaching_moment") == TEACHING_MOMENT_COLUMNS
+    assert _columns(db, "gate_decision") == GATE_DECISION_COLUMNS
+    assert _columns(db, "gate_execution_status") == (
+        GATE_EXECUTION_STATUS_COLUMNS
+    )
 
 
 def test_migration_list_and_schema_version(db: sqlite3.Connection) -> None:
@@ -80,23 +183,28 @@ def test_migration_list_and_schema_version(db: sqlite3.Connection) -> None:
         "0004_learning_evidence",
         "0005_learner_target_state",
         "0006_decision_cycle",
+        "0007_teaching_lineage",
     ]
     version = db.execute(
         "SELECT value FROM schema_meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert version is not None and version[0] == "6"
+    assert version is not None and version[0] == "7"
 
 
-def test_optional_columns_are_exactly_the_three_marked(
+def test_snapshot_columns_accept_null_for_legacy_cycles(
     db: sqlite3.Connection,
 ) -> None:
-    """§4 marks exactly relationship_view_version / planner_decision_id /
-    gate_decision_id with '?': those three accept NULL, every other
-    column refuses it. (decision_cycle_id also shows notnull=0 in PRAGMA
-    table_info — the SQLite TEXT-PRIMARY-KEY quirk shared by every
-    migration in this repo; a NULL id is still rejected behaviorally by
-    the PRIMARY KEY uniqueness on first duplicate, and ids are minted,
-    never null, by every caller.)"""
+    """Migration 0007 rebuilds decision_cycle so the snapshot/version
+    columns accept NULL: the legacy export (and the Phase 3 cycles whose
+    Curriculum/Goal/Schedule/Policy sources have not arrived) must be able
+    to say "no source" honestly instead of fabricating a stamp. The §4
+    '?' columns and the structural columns are unchanged; every other
+    column still refuses NULL.
+
+    (P3-0 asserted exactly the three §4 '?' columns; the 0007 relaxation
+    is the semantic change this slice carries — adjudicated in the task
+    book ①d and documented in the migration header.)
+    """
 
     nullmap = {
         str(row[1]): bool(row[3])
@@ -104,25 +212,43 @@ def test_optional_columns_are_exactly_the_three_marked(
     }
     nullable = sorted(name for name, notnull in nullmap.items() if not notnull)
     assert nullable == [
+        "context_view_version",
+        "curriculum_version",
         "decision_cycle_id",  # SQLite TEXT-PK quirk (notnull=0 in PRAGMA)
+        "evidence_watermark",
         "gate_decision_id",
+        "goal_version",
+        "learning_snapshot_id",
         "planner_decision_id",
+        "policy_version",
         "relationship_view_version",
+        "schedule_version",
     ]
     _seed_turn(db)
+    # The structural columns still refuse NULL: turn_id / cycle_index /
+    # created_at.
     with pytest.raises(sqlite3.IntegrityError):
         db.execute(
-            "INSERT INTO decision_cycle (decision_cycle_id, turn_id,"
-            " cycle_index, learning_snapshot_id, evidence_watermark,"
-            " curriculum_version, created_at)"
-            " VALUES ('dc-bad', 't-dc', 0, 'lsnap-x', 1, 'cv-1', 'now')"
+            "INSERT INTO decision_cycle (decision_cycle_id, cycle_index,"
+            " created_at) VALUES ('dc-bad', 0, 'now')"
         )
     db.rollback()
+    # The all-NULL legacy shape is legal now (and is what 0007 exported).
+    db.execute(
+        "INSERT INTO decision_cycle (decision_cycle_id, turn_id, cycle_index,"
+        " created_at) VALUES ('dc-legacy', 't-dc', 0, 'now')"
+    )
+    db.commit()
+    row = db.execute(
+        "SELECT learning_snapshot_id, evidence_watermark, planner_decision_id"
+        " FROM decision_cycle WHERE decision_cycle_id = 'dc-legacy'"
+    ).fetchone()
+    assert row is not None and tuple(row) == (None, None, None)
 
 
 def test_unique_turn_cycle_index_enforced(db: sqlite3.Connection) -> None:
-    """§4 Unique (turn_id, cycle_index): one row per coordination slot;
-    the next cycle_index of the same turn is a distinct row."""
+    """§4/§25 Unique (turn_id, cycle_index) survives the 0007 rebuild:
+    one row per coordination slot; cycle_index 1 is a distinct row."""
 
     _seed_turn(db)
     insert = (
@@ -146,30 +272,44 @@ def test_unique_turn_cycle_index_enforced(db: sqlite3.Connection) -> None:
     assert [row[0] for row in rows] == ["dc-1", "dc-3"]
 
 
-def test_no_write_face_until_p3_1() -> None:
-    """P3-0 scope fence: no src code writes decision_cycle rows — the
-    write face lands with P3-1 lineage semantics (plain-source scan;
-    comments may mention the table, INSERT/UPDATE/DELETE may not)."""
+def test_write_faces_belong_to_the_owning_adapters_only() -> None:
+    """AST-based write-face pin (P3-0 review F3): the decision_cycle / gate
+    / moment tables are written only by the Runtime-owned DecisionCycle
+    adapter and the Teaching domain store — the multi-line-literal-proof
+    replacement for P3-0's substring scan (that fence is retired: P3-1A is
+    exactly the slice that lands the write faces)."""
 
+    p3_1a_tables = {
+        "decision_cycle",
+        "gate_decision",
+        "gate_execution_status",
+        "teaching_moment",
+    }
     offenders: list[str] = []
-    verbs = (
-        "INSERT INTO decision_cycle",
-        "UPDATE decision_cycle",
-        "DELETE FROM decision_cycle",
-    )
     for path in sorted(SRC_ROOT.rglob("*.py")):
-        text = path.read_text(encoding="utf-8")
-        for verb in verbs:
-            if verb in text:
-                offenders.append(f"{path}:{verb}")
+        relative = path.relative_to(SRC_ROOT).as_posix()
+        written = write_targets(path) & p3_1a_tables
+        allowed = P3_1A_WRITE_OWNERS.get(relative, set())
+        for table in sorted(written - allowed):
+            offenders.append(f"{relative} writes {table}")
     assert not offenders, offenders
 
+    # Non-vacuous: the owning adapters really do write their tables (a
+    # broken fold would otherwise pass silently).
+    assert write_targets(SRC_ROOT / "platform" / "db" / "decision_cycle_store.py") >= {
+        "decision_cycle"
+    }
+    teaching_writes = write_targets(SRC_ROOT / "teaching" / "store.py")
+    assert {"gate_decision", "gate_execution_status", "teaching_moment"} <= (
+        teaching_writes
+    )
 
-def test_migrations_directory_0006_is_newest() -> None:
-    """0006 is the newest migration; nothing ahead of the P3-0 slice
+
+def test_migrations_directory_0007_is_newest() -> None:
+    """0007 is the newest migration; nothing ahead of the P3-1A slice
     smuggles schema (the migration runner is filename-ordered)."""
 
     names = sorted(
         path.name for path in (REPO_ROOT / "migrations").glob("*.sql")
     )
-    assert names[-1] == "0006_decision_cycle.sql"
+    assert names[-1] == "0007_teaching_lineage.sql"

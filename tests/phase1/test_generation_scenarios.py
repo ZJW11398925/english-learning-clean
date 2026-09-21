@@ -46,8 +46,15 @@ from elc.runtime.types import (
     ProviderAttemptRecord,
     TurnStatus,
 )
+from tests.conftest import AssemblyGenerationStore
 
-from .conftest import RUNTIME_VERSION, commit_ok, make_coordinator, make_envelope
+from .conftest import (
+    RUNTIME_VERSION,
+    commit_ok,
+    make_coordinator,
+    make_envelope,
+    seed_decision_cycle,
+)
 
 # Full-literal count statements (no identifier assembly).
 _COUNT_SQL = {
@@ -245,10 +252,13 @@ def test_validator_retry_is_bounded_and_action_level(
     _unwrap(
         store.transition_turn(cp0.turn_id, cp0.state_version, TurnStatus.GENERATING)
     )
+    # Migration 0007 lineage: the hand-built action needs its cycle row.
+    cycle_id = seed_decision_cycle(db, cp0.turn_id)
     intent = action_intent_for_turn(
         turn_id=cp0.turn_id,
         action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
         generation_contract_id="gc-test",
+        decision_cycle_id=cycle_id,
     )
     too_long = ProviderOutput(text="y" * 200, error=None)
     fine = ProviderOutput(text="ok", error=None)
@@ -357,10 +367,13 @@ def test_late_callback_from_fenced_epoch_is_discarded(
     _unwrap(
         store.transition_turn(cp0.turn_id, cp0.state_version, TurnStatus.GENERATING)
     )
+    # Migration 0007 lineage: the hand-built action needs its cycle row.
+    cycle_id = seed_decision_cycle(db, cp0.turn_id)
     intent = action_intent_for_turn(
         turn_id=cp0.turn_id,
         action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
         generation_contract_id="gc-normal-persona-reply",
+        decision_cycle_id=cycle_id,
     )
     _unwrap(generation_store.create_action(intent))
     _unwrap(
@@ -375,7 +388,7 @@ def test_late_callback_from_fenced_epoch_is_discarded(
     # owner. The old action's late result is fenced out.
     fence2 = epoch.open_runtime_epoch(db)
     store2 = SqliteConversationStore(db, RuntimeEpochFence(current=fence2.current))
-    gen2 = SqliteGenerationStore(db, RuntimeEpochFence(current=fence2.current))
+    gen2 = AssemblyGenerationStore(db, RuntimeEpochFence(current=fence2.current))
     lease2 = ConversationCoordinatorLease()
     lease2.adopt_epoch(fence2.current)
     coordinator2 = make_coordinator(
@@ -425,10 +438,13 @@ def test_crash_after_user_commit_recovers_via_new_epoch(
     _unwrap(
         store.transition_turn(cp0.turn_id, cp0.state_version, TurnStatus.GENERATING)
     )
+    # Migration 0007 lineage: the hand-built action needs its cycle row.
+    cycle_id = seed_decision_cycle(db, cp0.turn_id)
     intent = action_intent_for_turn(
         turn_id=cp0.turn_id,
         action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
         generation_contract_id="gc-normal-persona-reply",
+        decision_cycle_id=cycle_id,
     )
     _unwrap(generation_store.create_action(intent))
     _unwrap(
@@ -458,7 +474,7 @@ def test_crash_after_user_commit_recovers_via_new_epoch(
     # -- epoch 2: startup scan identifies the old-epoch nonterminal work.
     fence2 = epoch.open_runtime_epoch(db)
     store2 = SqliteConversationStore(db, RuntimeEpochFence(current=fence2.current))
-    gen2 = SqliteGenerationStore(db, RuntimeEpochFence(current=fence2.current))
+    gen2 = AssemblyGenerationStore(db, RuntimeEpochFence(current=fence2.current))
     lease2 = ConversationCoordinatorLease()
     lease2.adopt_epoch(fence2.current)
     scanner = StartupRecoveryScanner(source=store2, lease=lease2)
@@ -526,10 +542,13 @@ def test_partial_delivery_terminalizes_as_replied_partial(
     _unwrap(
         store.transition_turn(cp0.turn_id, cp0.state_version, TurnStatus.GENERATING)
     )
+    # Migration 0007 lineage: the hand-built action needs its cycle row.
+    cycle_id = seed_decision_cycle(db, cp0.turn_id)
     intent = action_intent_for_turn(
         turn_id=cp0.turn_id,
         action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
         generation_contract_id="gc-normal-persona-reply",
+        decision_cycle_id=cycle_id,
     )
     runtime = PersonaRuntime(
         actions=generation_store,
