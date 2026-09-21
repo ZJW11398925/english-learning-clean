@@ -7,20 +7,18 @@
 ## 🔴 dmcp 段（新会话续接第一入口）
 
 - **workspace_id**：`ws-7585bd9c-f6ec-4c73-be14-d2e635a37033`（**schema 5**；旧工作区 `ws-db58afd2-…` 已随旧仓归档，别用）
-- **续接顺序**：①读本文件 → ②`design_status` 刷基 → ③`design_get` `DEC-OPI-5ba74efc-9f26-483b-a7de-c833834275a4.65`（**PHASE 3 COMPLETE 收口**：遗留清单七项+承接相位）→ ④`git log --oneline` → ⑤开工前读 `docs/IMPLEMENTATION_PLAN.md` §6（Phase 4 Relationship+Episode Detail Block）与 §1.5（normative 顺序），再按派单协议铸 Phase 4 任务书（四查+VAL+TASK 同铸；**四查必答：transition/terminalize store 级 fence 悬题（DEC-…eaaa5a1d.58 遗留 P3+ 复审已到期）**）
-- **当前状态**（2026-09-21 第八会话末）：**PHASE 3 COMPLETE**（rev 57，sync REBUILD+CHECK 零告警）——五刀全闭环：P3-0 入口门 `373f746`（VR-…57）→P3-1A 开链 `148f96f`（VR-…25）→P3-1B 教学链闭 `f763d55`（VR-…13）→P3-2 状态压力 `e17af89`（VR-…38）→P3-3 全链验收 `49b029c`（VR-…57）+收口 `DEC-…5ba74efc.65`；**IP §1.5 第一条学习 vertical slice 端到端成立且可追溯**（before≠after 双向对账+moment 不直接改 mastery+full reveal 无 independent 误记+学习腿失败不拖垮聊天）；测试读数 521/0/0、mypy 96 文件、migrations 0008/v8。**Phase 3 遗留清单七项**（DEC-…65）：①宿主装配调用 run_startup_recovery（宿主侧）②content runtime（IP §17-08，Phase 5 面或独立刀）③F1/F2 文书项（P3-3 评审）④transition/terminalize store 级 fence 悬题（DEC-…58，**Phase 4 四查必答**）⑤Bash 直写违规趋势（四次+一次形态警示，继续盯）⑥_close_residual_turns 原子性备查⑦跨午夜 UTC 时间断言边界。**下一步 = Phase 4**（Relationship+Episode projection，基线 §1.5 次序：Phase 4 在 Phase 5 Curriculum 前；开工第 0 步 plan_build 铸 Phase 4 PLAN；设计类任务书先过 grilling）
-- **对象索引**（全 id 可直接 design_get；新增 OPI 前缀 `2babb21e-bc72-47a2-9382-e773c92211d2`，Phase 3 系列全在此；旧系列 OPI 前缀 `eaaa5a1d-7ac7-4746-bcdf-c02bc9147492`）：
-  - `DEC-…5ba74efc.65` **PHASE 3 COMPLETE 收口**（五刀链+遗留清单七项+承接相位——Phase 4 续接先读）
-  - `DEC-…2babb21e.5` P3-1 开工基线（grilling 20 问全量；两核心裁定+CP2 五事实+两时点+request_teaching+evaluator 五值+limits+provider port）
-  - `DEC-…5ba74efc.43/.20/.2babb21e.34` P3-2/P3-1B/P3-1A 评审处置三件
+- **续接顺序**：①读本文件 → ②`design_status` 刷基 → ③`design_get` `DEC-OPI-5ba74efc-9f26-483b-a7de-c833834275a4.68`（**外部评审采纳**：PHASE 3 COMPLETE 认可+表述收窄+P4-0 两 carryover+Phase 4 切法+P4-G1 门）→ ④`git log --oneline` → ⑤开工前读 `docs/IMPLEMENTATION_PLAN.md` §6（Phase 4 Detail Block）与 §1.5，再按派单协议铸下一刀任务书（四查+VAL+TASK 同铸；**四查必答：列名/词表照 canonical 原文（P4-0 修复刀教训）；P4-1 任务书必带 DEC-…5ba74efc.96 的 F1/F4/F6 与覆盖界限**）
+- **当前状态**（2026-09-21 第八会话末）：**Phase 4 进行中，P4-0 COMPLETE**（rev 66，sync REBUILD+CHECK 零告警）——外部评审采纳 `DEC-…5ba74efc.68`（七项核实全实；表述收窄：**Teaching-driven learning vertical slice COMPLETE，natural-conversation target-specific silent Evidence 留 Phase 5**）；Phase 4 母计划 `PLAN-…5ba74efc.82`（p4-0→p4-1→p4-2→p4-3→p4-4）+五 VAL（`.70/.72/.74/.76/.80`）；P4-0 交付（`VR-…5ba74efc.91` PASS）：C1 durable pending teaching Evidence proposal（Learning-owned `teaching_evidence_proposal` 表+幂等 retry+反例场景）+C2 Teaching owner-lineage fence（Moment→turn.owner_epoch 链）+0009 relationship_memory 表（18 列=DATA_MODEL §23 十列逐字+DEC-…68 增列八列；provenance 三词照 DOMAIN_MODEL §5）/types 同步+projection contracts+P4-G1 门骨架；总控复核发现 canonical 拼写漂移→修复刀改向 canonical（规范优先级执行案例）；评审 6 findings 全 LOW/INFO 处置 `DEC-…5ba74efc.96`（**P4-1/P4-2 必带**：F1 refs↔proposal 对账扫描、F4 attempt 面 fence+docstring 限定词、F6 recorder_version 实填；F2/F3 随下次触碰）；测试读数 549/0/0、mypy 96 文件、migrations 0009/v9。**下一步 = P4-1**（Relationship durable core：Recorder 消费 CanonicalTurnSlice+SamePersonaExistingRelationshipSummary（P4-G1 门：不消费 LearnerState/LearningEvidence/TeachingTrace/OtherPersonaRelationship/APISecret；command turn 过滤）/proposal 落库/validate+dedupe/append-first supersede/Persona×User 隔离/sensitive-memory gate（BF-05：高敏感不自动晋升+模型推断→DENY+显式持久化 validation 后允许）；验收=VAL-…5ba74efc.72）→ P4-2（CP4 projection runtime）→ P4-3（Episode+DisclosedUserProfile+PromptCompiler 消费）→ P4-4（stress+端到端验收）→ Phase 4 收口
+- **对象索引**（全 id 可直接 design_get；OPI 前缀：Phase 3 早期 `2babb21e-bc72-47a2-9382-e773c92211d2`、P3-1B 起及 Phase 4 全在 `5ba74efc-9f26-483b-a7de-c833834275a4`；旧系列 `eaaa5a1d-7ac7-4746-bcdf-c02bc9147492`）：
+  - `DEC-…5ba74efc.68` **外部评审采纳（Phase 3 复核+P4-0 授权）**——Phase 4 续接先读
+  - `DEC-…5ba74efc.96` P4-0 处置（P4-1/P4-2 必带 F1/F4/F6；canonical 拼写修复刀留痕）
+  - `PLAN-…5ba74efc.82` Phase 4 母计划（p4-0..p4-4）；`VAL-…5ba74efc.70/.72/.74/.76/.80` 五验收；`TASK-…5ba74efc.84`+`VR-…5ba74efc.91` P4-0 两件（PASS）
+  - `DEC-…5ba74efc.65` **PHASE 3 COMPLETE 收口**（五刀链+遗留清单七项）
+  - `DEC-…2babb21e.5` P3-1 开工基线；`DEC-…5ba74efc.43/.20`+`DEC-…2babb21e.34` P3-2/P3-1B/P3-1A 评审处置
   - `TASK-…5ba74efc.2/.24/.47`+`VR-…5ba74efc.13/.38/.57` P3-1B/P3-2/P3-3 任务书+盖章（PASS）
-  - `VAL-…2babb21e.7/.9/.11/.13` P3 四验收（全 PASS）；`PLAN-…2babb21e.15` Phase 3 母计划（执行完毕）；`TASK-…2babb21e.17`+`VR-…2babb21e.25` P3-1A 两件
-  - `DEC-…eaaa5a1d.58` P3-0 评审处置（六顺带已随 P3-1A 全清；transition/terminalize store 级 fence 悬题 P3+ 复审）
-  - `DEC-…eaaa5a1d.51` **外部评审采纳**（Phase 3 GO+六门+P3-0/1/2/3 分解+四修正+metadata 授权）
-  - `DEC-…eaaa5a1d.48` **PHASE 2 COMPLETE**；`VR-…eaaa5a1d.46/.47` P2B+相位门；`VAL/TASK/VR-…eaaa5a1d.42/.44/.46` P2B 三件
-  - `DEC-…eaaa5a1d.33` P2A 评审处置（拒收政策升格）；`DEC-…eaaa5a1d.26` Phase 2 开工（裁定 a–f）
-  - P2A 三件 `.28/.30/.32`、修复三件 `.35/.37/.39`、边界修复 `.4/.6/.8`、微修复 `.11/.13/.15`
-  - `PLAN-…eaaa5a1d.19` Phase 2 PLAN（执行完毕）；`VAL-…eaaa5a1d.17` 相位门（PASS）
+  - `VAL-…2babb21e.7/.9/.11/.13` P3 四验收（全 PASS）；`PLAN-…2babb21e.15` Phase 3 母计划；`TASK-…2babb21e.17`+`VR-…2babb21e.25` P3-1A 两件
+  - `DEC-…eaaa5a1d.58` P3-0 评审处置；`DEC-…eaaa5a1d.51` 外部评审采纳（Phase 3 GO）；`DEC-…eaaa5a1d.48` PHASE 2 COMPLETE；`DEC-…eaaa5a1d.33` 拒收政策升格；`DEC-…eaaa5a1d.26` Phase 2 开工
+  - `PLAN-…eaaa5a1d.19` Phase 2 PLAN；`VAL-…eaaa5a1d.17` 相位门；P2A/P2B 各系列 id 见旧交接（`git log` 可溯）
   - `DEC-…eaaa5a1d.2` 外部评审采纳（权威漂移）；`DEC-…d7937fd7.19`/`DEC-…d7937fd7.12` Phase 1 评审/COMPLETE
   - `DEC-…9dc4e77f.4` **契约载体**（跨会话重建先读它）；`DEC-…091f35c3.7/.13`；`DEC-…d5b616bf.3/.7`；`DEC-…7bf80972.2` PHASE 0
 
@@ -42,10 +40,11 @@
 ## 工程事实与红线（本仓特有）
 
 - **远程**：github.com/ZJW11398925/english-learning-clean（public）；**CI 四门**：ruff → mypy → compileall → pytest（push+PR，Ubuntu，0 skipped 为准）
-- **测试**：`python -m pytest`（当前 507/0/0）；静态：ruff + mypy（96 文件）；migrations 到 0008（schema_version 8）；GenerationAction 权威在 runtime（DM §16）；DecisionCycle 权威在 Runtime（`DEC-…2babb21e.5`）；TeachingMoment/Attempt 全链+OQ-024A 状态压力已实装（P3-1A/1B/2，`DEC-…2babb21e.5`）
+- **测试**：`python -m pytest`（当前 549/0/0）；静态：ruff + mypy（96 文件）；migrations 到 0009（schema_version 9）；GenerationAction 权威在 runtime（DM §16）；DecisionCycle 权威在 Runtime（`DEC-…2babb21e.5`）；TeachingMoment/Attempt 全链已实装（P3-1/2/3）；Relationship 契约已落（relationship_memory 18 列照 DATA_MODEL §23+DEC-…68 增列；P4-1 起写入面）
+- **规范优先级执行**（P4-0 教训留痕）：canonical 与既有实现漂移时**实现服从 canonical**（列名/词表逐字照原文；无决策裁定不得以「Phase 0 拼写」为由倒置）；本仓已有两例（0007 列集、P4-0 relationship 列名/枚举）——任务书四查加「列名/词表照 canonical 原文」必答项
 - **Mimosa 安全钩子**：Bash 直写源码/配置被拦——**.py/.sql/.yml/.toml 一律 Write/Edit 工具落盘**（P1B 执行者曾一次 Bash 直写 .py 未被钩子拦但违反明令，已在 `DEC-…d7937fd7.12` 训诫留痕——总控与执行者均不得再犯）；SQL 一律参数绑定或全字面量（标识符用白名单全字面量），禁任何拼接
 - **基线冻结**：`behavioral_baselines/` 的 .py 一字节不改（例外须按 `DEC-…d5b616bf.3` 范式：显式决策+最小改动+manifest 重钉）；六 canonical 文档只许 `DECISION_REGISTER.md` 的版本条目
-- **不做**（纪律）：未到位次的域逻辑/域表提前实现（位次见基线 §1.5：Phase 3=用户发起 TeachingMoment 已实装+状态压力已过（P3-1A/1B/2）；P3-3=全链验收待开工；其余域仍禁）；Redis/Kafka/分布式锁/TTL/heartbeat（Local V1 §24.1 永禁）；自动教学/Planner SELECT（Phase 8 才开）；`decision_cycle_id` 收紧已随 0007 兑现（`DEC-…091f35c3.7` 裁定 b 闭环）
+- **不做**（纪律）：未到位次的域逻辑/域表提前实现（位次见基线 §1.5：Phase 4=Relationship+Episode 进行中（P4-0 契约完成，P4-1 起写入面）；natural-conversation silent Evidence 留 Phase 5；其余域仍禁）；Redis/Kafka/分布式锁/TTL/heartbeat（Local V1 §24.1 永禁）；自动教学/Planner SELECT（Phase 8 才开）；`decision_cycle_id` 收紧已随 0007 兑现（`DEC-…091f35c3.7` 裁定 b 闭环）
 - docs/run_post_bf_regression.py 的 ROOT 自相矛盾是原件冻结缺陷，永久不可修——repo-native 七套件是长期替代；勿再尝试修它
 - Windows：core.autocrlf 与 blob 有字节差，哈希校验须 CRLF 归一；建议后续加 .gitattributes（勿扰动冻结文件行尾）
 
