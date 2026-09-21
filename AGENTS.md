@@ -7,15 +7,14 @@
 ## 🔴 dmcp 段（新会话续接第一入口）
 
 - **workspace_id**：`ws-7585bd9c-f6ec-4c73-be14-d2e635a37033`（**schema 5**；旧工作区 `ws-db58afd2-…` 已随旧仓归档，别用）
-- **续接顺序**：①读本文件 → ②`design_status` 刷基 → ③`design_get` `DEC-OPI-2babb21e-bc72-47a2-9382-e773c92211d2.5`（**P3-1 开工基线**：grilling 两轮 20 问全量裁定，两项核心裁定=USER_INITIATED Gate specialization/Legacy DecisionCycle backfill）→ ④`git log --oneline` → ⑤开工前读 `docs/IMPLEMENTATION_PLAN.md` §9（Teaching Detail Block）与 §1.5（normative 顺序），再按派单协议铸任务书（四查+VAL+TASK 同铸；P3-1B 任务书必带 DEC-…2babb21e.34 的 F5+F9/F8/F10 清单）
-- **当前状态**（2026-09-21 第八会话末）：**Phase 3 进行中，P3-1A+P3-1B+P3-2 COMPLETE**（rev 55，sync REBUILD+CHECK 零告警）——P3-1A `148f96f`+P3-1B `f763d55`（教学链全实装）+P3-2 `e17af89`（`VR-…5ba74efc.38` PASS）：OQ-024A 自铸案例集 32 case（本体不可考裁定，快照式真断言，§1 逐边+非法转换六项+§6/§7 词表分区完备+cycle 链+continuation+attempt 链顺序）+三项留痕落地（孤儿锁挂启动扫描（计划点名+纯读+活锁不误收）/DELIVERING 槽重入（已落补完/未落 DELIVERY_FAILURE 收尾/跨 epoch fence）/跨 turn 冲突防护）+§1 尾链两臂守卫（TERMINAL→{RESUMING,CLOSED}+CLOSED 只从尾链来源）。评审 8 findings 处置 `DEC-…5ba74efc.43`（F1/F2 canonical 边界修正+F4/F5 已做；**P3-3 必带**：F3 recovery_disposition DELIVERING 映射修正、F6 启动扫描装配接线+装配测试、F7 跨 epoch turn 残余对账；F8 尾环收敛）。**下一步 = P3-3**（Phase 3 全链验收：真实 CharacterPackage→target→TeachingMoment→user attempt→Evidence→LearnerState before/after 端到端场景——before≠after 差异逐条可追溯 canonical Evidence/LOR lineage；moment 直接改 mastery 反例钉（拒）；full reveal 后无 independent 误记；CLOSED 不 reopen；学习腿失败不拖垮聊天；若需 minimal content 供给面（IP §17-08）另前置小刀；验收=VAL-…2babb21e.13；必带 DEC-…43 三项留痕）→ Phase 3 收口（PHASE 3 COMPLETE 决策）→ Phase 4（Relationship+Episode projection，基线 §1.5 次序）
+- **续接顺序**：①读本文件 → ②`design_status` 刷基 → ③`design_get` `DEC-OPI-5ba74efc-9f26-483b-a7de-c833834275a4.65`（**PHASE 3 COMPLETE 收口**：遗留清单七项+承接相位）→ ④`git log --oneline` → ⑤开工前读 `docs/IMPLEMENTATION_PLAN.md` §6（Phase 4 Relationship+Episode Detail Block）与 §1.5（normative 顺序），再按派单协议铸 Phase 4 任务书（四查+VAL+TASK 同铸；**四查必答：transition/terminalize store 级 fence 悬题（DEC-…eaaa5a1d.58 遗留 P3+ 复审已到期）**）
+- **当前状态**（2026-09-21 第八会话末）：**PHASE 3 COMPLETE**（rev 57，sync REBUILD+CHECK 零告警）——五刀全闭环：P3-0 入口门 `373f746`（VR-…57）→P3-1A 开链 `148f96f`（VR-…25）→P3-1B 教学链闭 `f763d55`（VR-…13）→P3-2 状态压力 `e17af89`（VR-…38）→P3-3 全链验收 `49b029c`（VR-…57）+收口 `DEC-…5ba74efc.65`；**IP §1.5 第一条学习 vertical slice 端到端成立且可追溯**（before≠after 双向对账+moment 不直接改 mastery+full reveal 无 independent 误记+学习腿失败不拖垮聊天）；测试读数 521/0/0、mypy 96 文件、migrations 0008/v8。**Phase 3 遗留清单七项**（DEC-…65）：①宿主装配调用 run_startup_recovery（宿主侧）②content runtime（IP §17-08，Phase 5 面或独立刀）③F1/F2 文书项（P3-3 评审）④transition/terminalize store 级 fence 悬题（DEC-…58，**Phase 4 四查必答**）⑤Bash 直写违规趋势（四次+一次形态警示，继续盯）⑥_close_residual_turns 原子性备查⑦跨午夜 UTC 时间断言边界。**下一步 = Phase 4**（Relationship+Episode projection，基线 §1.5 次序：Phase 4 在 Phase 5 Curriculum 前；开工第 0 步 plan_build 铸 Phase 4 PLAN；设计类任务书先过 grilling）
 - **对象索引**（全 id 可直接 design_get；新增 OPI 前缀 `2babb21e-bc72-47a2-9382-e773c92211d2`，Phase 3 系列全在此；旧系列 OPI 前缀 `eaaa5a1d-7ac7-4746-bcdf-c02bc9147492`）：
-  - `DEC-…2babb21e.5` **P3-1 开工基线**（grilling 20 问全量；两核心裁定+CP2 五事实+两时点+request_teaching+evaluator 五值+limits+provider port）
-  - `DEC-…5ba74efc.43` **P3-2 评审处置**（F1/F2 canonical 边界修正+F4/F5 已做；P3-3 必带：F3 recovery_disposition 映射/F6 启动扫描装配接线/F7 跨 epoch turn 残余）
-  - `DEC-…5ba74efc.20` P3-1B 评审处置（F1-F3 MAJOR 崩溃重入幂等族全修；A 刀 fixture 失真留痕；违规第四次）
-  - `DEC-…2babb21e.34` P3-1A 评审处置（F7 字面量白名单 join 口径；违规执法留痕）
-  - `TASK-…5ba74efc.2/.24`+`VR-…5ba74efc.13/.38` P3-1B/P3-2 任务书+盖章（PASS）
-  - `VAL-…2babb21e.7/.9/.11/.13` P3-1A/P3-1B/P3-2/P3-3 四验收；`PLAN-…2babb21e.15` Phase 3 母计划；`TASK-…2babb21e.17` P3-1A 任务书；`VR-…2babb21e.25` P3-1A 盖章（PASS）
+  - `DEC-…5ba74efc.65` **PHASE 3 COMPLETE 收口**（五刀链+遗留清单七项+承接相位——Phase 4 续接先读）
+  - `DEC-…2babb21e.5` P3-1 开工基线（grilling 20 问全量；两核心裁定+CP2 五事实+两时点+request_teaching+evaluator 五值+limits+provider port）
+  - `DEC-…5ba74efc.43/.20/.2babb21e.34` P3-2/P3-1B/P3-1A 评审处置三件
+  - `TASK-…5ba74efc.2/.24/.47`+`VR-…5ba74efc.13/.38/.57` P3-1B/P3-2/P3-3 任务书+盖章（PASS）
+  - `VAL-…2babb21e.7/.9/.11/.13` P3 四验收（全 PASS）；`PLAN-…2babb21e.15` Phase 3 母计划（执行完毕）；`TASK-…2babb21e.17`+`VR-…2babb21e.25` P3-1A 两件
   - `DEC-…eaaa5a1d.58` P3-0 评审处置（六顺带已随 P3-1A 全清；transition/terminalize store 级 fence 悬题 P3+ 复审）
   - `DEC-…eaaa5a1d.51` **外部评审采纳**（Phase 3 GO+六门+P3-0/1/2/3 分解+四修正+metadata 授权）
   - `DEC-…eaaa5a1d.48` **PHASE 2 COMPLETE**；`VR-…eaaa5a1d.46/.47` P2B+相位门；`VAL/TASK/VR-…eaaa5a1d.42/.44/.46` P2B 三件
