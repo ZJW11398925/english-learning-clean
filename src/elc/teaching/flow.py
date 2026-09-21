@@ -64,6 +64,7 @@ __all__ = [
     "DEGRADED_ABORT_REASON",
     "DEFAULT_GATE_DENIAL_REASON",
     "GATE_DENIAL_ABORT_REASONS",
+    "TEACHING_EVIDENCE_PROPOSAL_PREFIX",
     "answer_key_for",
     "attempt_record_for",
     "closing_reason_for_gate_denial",
@@ -73,6 +74,13 @@ __all__ = [
     "evidence_proposal_refs_for",
     "opportunity_id_for",
 ]
+
+#: The proposal-id prefix of §17 ``evidence_proposal_refs`` (P4-0 ①): a ref
+#: names Learning's durable teaching-evidence proposal, whose id is
+#: ``tep-{attempt_id}``. The spelling is repeated here — not imported — in
+#: elc.learning.store (the two-way AST pin between the packages), and the
+#: two spellings are reconciled by tests/phase4.
+TEACHING_EVIDENCE_PROPOSAL_PREFIX = "tep-"
 
 #: The §7 words a Gate refusal of a continuation can close with, by the
 #: refusal code that names the precise reason. Everything else is a policy
@@ -170,14 +178,22 @@ def evidence_proposal_refs_for(
     """The §17 ``evidence_proposal_refs[]`` of one evaluation.
 
     The refs name the durable evidence *proposal* the evaluation produced —
-    the deterministic evidence-group id Learning uses (and replays) when
-    the proposal is committed. An ABSTAIN produced no proposal, so it
-    carries no ref: nothing was judged, so nothing is asserted.
+    the deterministic proposal id Learning keys its
+    ``teaching_evidence_proposal`` row by (migration 0009) — so a ref
+    resolves to a durable verdict (PENDING / COMMITTED / REJECTED) instead
+    of a bare group-name convention. P4-0 ① upgrade: before it the ref was
+    the evidence-*group* id (``eg-teaching-{attempt}``); that group
+    namespace is preserved as the id the committed group carries once the
+    proposal commits, so the two namespaces stay isomorphic and the
+    reconciliation is pinned by test (tests/phase4).
+
+    An ABSTAIN produced no proposal, so it carries no ref: nothing was
+    judged, so nothing is asserted.
     """
 
     if evaluation.outcome is AttemptOutcome.ABSTAIN:
         return ()
-    return (f"eg-teaching-{attempt_id}",)
+    return (f"{TEACHING_EVIDENCE_PROPOSAL_PREFIX}{attempt_id}",)
 
 
 def evaluation_record_for(

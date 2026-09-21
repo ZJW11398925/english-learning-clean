@@ -1520,8 +1520,12 @@ def _case_attempt_chain_under_pressure(env: CaseEnv) -> dict[str, object]:
         "attempt_round_order": attempt_round,
         "attempts": attempts,
         "evaluations": evaluations,
+        # P4-0 ① upgraded the §17 refs from the evidence-*group* id to the
+        # durable evidence-*proposal* id (tep-{attempt}); the group
+        # namespace below is unchanged, and the isomorphism between the two
+        # is pinned in tests/phase4.
         "proposal_refs_link_their_attempt": all(
-            group.startswith('["eg-teaching-at-') for group in groups
+            group.startswith('["tep-at-') for group in groups
         ),
         "claim_groups_match_attempts_in_order": [claim[0] for claim in claims]
         == [f"eg-teaching-{attempt_id}" for attempt_id in attempt_ids],

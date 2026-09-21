@@ -36,6 +36,19 @@ newest durable epoch and refuses fenced work before anything is written
 another epoch (AUTHORITY_VIOLATION) — the canonicalize_assistant_turn
 paradigm.
 
+Owner-lineage fencing (P4-0 ②; DEC-…5ba74efc.68 C2): the two *normal*
+moment-mutation faces — :meth:`SqliteTeachingStore.transition_moment` and
+:meth:`SqliteTeachingStore.terminalize_moment` — additionally require the
+moment's owning turn to belong to the current runtime epoch, along the
+durable lineage Moment → decision_cycle_id → decision_cycle.turn_id →
+turn_record.owner_epoch. A foreign-epoch moment is another process's live
+work, so a normal mutation refuses it with AUTHORITY_VIOLATION and names
+the explicit recovery channel; the only faces that may touch foreign-epoch
+residue are the recovery sweep
+(:meth:`SqliteTeachingStore.recover_orphan_teaching_locks`) and the
+recovery adoption of the owning turn (``claim_turn_for_recovery``), which
+moves the lineage on purpose rather than bypassing the fence.
+
 All SQL is a fixed literal with bound parameters — no identifier assembly.
 JSON columns follow migration 0007's storage note (the 0004 qualifiers
 precedent).
@@ -278,6 +291,69 @@ class SqliteTeachingStore:
                 f"teaching store epoch={self._fence.current} fenced by"
                 f" db epoch={newest}"
             )
+
+    def _owning_epoch_refusal(self, moment_id: MomentId) -> DomainError | None:
+        """The owner-lineage fence of the two normal mutation faces (P4-0 ②;
+        DEC-…5ba74efc.68 C2).
+
+        The store-epoch fence answers "is this store still the newest
+        process?" and raises, because a stale store is a programming error.
+        This one answers a different question and returns an Err, because it
+        is a *policy* outcome: the moment's owning turn belongs to another
+        runtime epoch along the durable lineage
+
+            Moment → decision_cycle_id → decision_cycle.turn_id →
+            turn_record.owner_epoch
+
+        so the moment is another process's live work. Before P4-0 the two
+        normal mutation faces only checked the store fence, which meant a
+        live epoch could advance (or terminalize) a dead epoch's episode
+        without ever passing through recovery — the bypass this closes.
+
+        Foreign-epoch residue has exactly two owner-sanctioned exits:
+
+        1. the explicit recovery channel —
+           :meth:`recover_orphan_teaching_locks`,
+           ``ConversationCoordinator.recover_orphan_teaching`` and the
+           ``StartupRecoveryScanner`` LOCK plan item
+           (``RELEASE_ORPHAN_TEACHING_LOCK``) — which closes the orphan with
+           ``SYSTEM_RECOVERY_ABORT`` and releases its lock; and
+        2. ``claim_turn_for_recovery`` on the owning turn, which moves
+           ``turn_record.owner_epoch`` to the current epoch on purpose
+           (RUNTIME §24 restart ownership) and thereby makes the lineage
+           current.
+
+        ``None`` = the lineage row is missing (the caller's NOT_FOUND path
+        owns that case) or the moment is ours.
+        """
+
+        row = self._conn.execute(
+            "SELECT t.owner_epoch FROM teaching_moment m"
+            " JOIN decision_cycle d"
+            " ON d.decision_cycle_id = m.decision_cycle_id"
+            " JOIN turn_record t ON t.turn_id = d.turn_id"
+            " WHERE m.moment_id = ?",
+            (moment_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        owning = int(row[0])
+        if owning == self._fence.current:
+            return None
+        return DomainError(
+            code=DomainErrorCode.AUTHORITY_VIOLATION,
+            message=(
+                f"moment {moment_id} belongs to the turn of runtime epoch"
+                f" {owning}; current epoch {self._fence.current} — a normal"
+                " transition / terminalize never mutates another epoch's"
+                " teaching work (STATE_MACHINES §9). Foreign-epoch residue"
+                " is released through the explicit recovery channel:"
+                " ConversationCoordinator.recover_orphan_teaching /"
+                " StartupRecoveryScanner"
+                " (RELEASE_ORPHAN_TEACHING_LOCK), or claim the owning turn"
+                " for recovery first"
+            ),
+        )
 
     # -- CP2: the five-fact atomic open ------------------------------------
 
@@ -791,6 +867,11 @@ class SqliteTeachingStore:
         directly would leave a closed episode still holding its
         TeachingLockLease. A ladder-only move (no lifecycle target) stays
         free — it does not touch the lifecycle column at all.
+
+        P4-0 ②: a foreign-epoch moment is refused before the CAS is even
+        evaluated (``_owning_epoch_refusal``) — authority beats staleness,
+        and the refusal names the recovery channel that may release the
+        residue.
         """
 
         try:
@@ -802,6 +883,9 @@ class SqliteTeachingStore:
                         DomainErrorCode.NOT_FOUND,
                         f"moment not found: {moment_id}",
                     )
+                lineage = self._owning_epoch_refusal(moment_id)
+                if lineage is not None:
+                    return Err(lineage)
                 current = int(row[25])
                 if current != expected_state_version:
                     return _err(
@@ -884,6 +968,10 @@ class SqliteTeachingStore:
         with a §7 reason (SM §1 "finalize teaching outcome"). The lock row
         is deleted in the same unit, so "moment terminal, lock still held"
         is unreachable.
+
+        P4-0 ②: like ``transition_moment``, this normal mutation face
+        refuses a foreign-epoch moment (AUTHORITY_VIOLATION naming the
+        recovery channel) before anything is written.
         """
 
         if (completion_outcome is None) == (abort_reason is None):
@@ -916,6 +1004,9 @@ class SqliteTeachingStore:
                         DomainErrorCode.NOT_FOUND,
                         f"moment not found: {moment_id}",
                     )
+                lineage = self._owning_epoch_refusal(moment_id)
+                if lineage is not None:
+                    return Err(lineage)
                 state = MomentState(str(row[19]))
                 if state is MomentState.TEACHING_TERMINAL:
                     # Replay: the durable terminal row is canonical.
@@ -985,6 +1076,13 @@ class SqliteTeachingStore:
         deleted, which is what unseals the conversation for a new request.
 
         Returns the recovered moment ids (empty when there is no orphan).
+
+        P4-0 ②: this sweep is — with ``claim_turn_for_recovery`` — one of the
+        two sanctioned exits for foreign-epoch residue, and therefore the
+        *only* face that mutates a moment its own epoch fence would refuse
+        (it writes the rows directly, under the store-epoch fence, precisely
+        because the owner-lineage fence of the normal faces exists to route
+        the residue here).
         """
 
         rows = self._orphan_lock_rows(current_epoch)

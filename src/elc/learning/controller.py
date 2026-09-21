@@ -37,7 +37,7 @@ helpers.
 
 from __future__ import annotations
 
-from elc.learning.store import SqliteLearningStore
+from elc.learning.store import SqliteLearningStore, TeachingEvidenceProposalRecord
 from elc.learning.teaching_evidence import TeachingEvidenceSource
 from elc.learning.types import (
     EvidenceGroupRecord,
@@ -165,9 +165,10 @@ class LearningController:
         *,
         source_turn_id: TurnId,
         conversation_id: str,
+        source_evaluation_id: str,
         persona_id: str | None = None,
     ) -> Result[EvidenceCommitId]:
-        """CP1 for one teaching attempt (TASK-…2.2 ③④).
+        """CP1 for one teaching attempt (TASK-…2.2 ③④; P4-0 ① chain).
 
         The proposal is the teaching-side record
         (``elc.teaching.evidence.TeachingEvidenceProposal``), consumed
@@ -175,14 +176,42 @@ class LearningController:
         capability-positive / resource-neutral mapping of an
         ALTERNATIVE_SUCCESS — and the durable LOR association checks. The
         caller (the orchestrator) hands the facts over; Learning decides.
+
+        Since P4-0 the durable proposal is written PENDING *before* the
+        commit is attempted (RA §21 "durable proposal pending"), so the
+        caller's Err means "the evidence did not land yet" — never "the
+        evidence was lost". ``source_evaluation_id`` is the durable §17
+        evaluation the proposal was produced from (the chain's FK).
         """
 
         return self._store.commit_teaching_evidence(
             proposal,
             source_turn_id=source_turn_id,
             conversation_id=conversation_id,
+            source_evaluation_id=source_evaluation_id,
             persona_id=persona_id,
         )
+
+    def retry_pending_teaching_evidence(
+        self,
+    ) -> Result[tuple[tuple[str, EvidenceCommitId], ...]]:
+        """The explicit retry face of the durable pending backlog (P4-0 ①).
+
+        Not auto-wired: the caller is the host or the later recovery line
+        (RA §21 "no risky automatic remediation"). Idempotent — committed
+        proposals are not revisited, and a repeated call after a successful
+        retry returns an empty tuple.
+        """
+
+        return self._store.retry_pending_teaching_evidence()
+
+    def get_teaching_evidence_proposal(
+        self, proposal_id: str
+    ) -> Result[TeachingEvidenceProposalRecord | None]:
+        """Read one durable teaching-evidence proposal (the pending/committed
+        audit face; ``None`` = never recorded)."""
+
+        return self._store.get_teaching_evidence_proposal(proposal_id)
 
     def rebuild_learner_state(
         self, target_id: TargetId, evidence_modality: EvidenceModality

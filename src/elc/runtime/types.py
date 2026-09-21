@@ -11,6 +11,43 @@ resolve runtime state, call domain commands, handle retry/recovery and emit
 traces — but never directly updates Domain-owned canonical state
 (D-INV-001). Architecturally enforced by tests/architecture (Gate item 2):
 this package must not touch sqlite3 / SQL at all.
+
+CP4 projection contracts (P4-0 ④ — semantics fixed here; the runtime that
+executes them is P4-2, and nothing in this slice pretends otherwise):
+
+- **stable projection_id** — the job id is *derived*, not minted: one
+  (projection_type, source turn) pair always yields the same
+  ``projection_id``, so a re-enqueue or a recovery补齐 addresses the same
+  durable row.
+- **idempotent enqueue** — enqueuing an existing job is a replay of the
+  durable row, never a second job and never a reset of its state.
+- **state machine** — PENDING → RUNNING → COMMITTED, and
+  FAILED_RETRYABLE → REJECTED; the five words are DATA_MODEL §22.1's and
+  are enforced durably by migration 0002's status CHECK (see
+  ProjectionJobState).
+- **source-aware + version-aware revalidation** — a retry revalidates
+  ``source_turn_slice_hash`` (the canonical slice the job was computed
+  from is unchanged) and ``base_domain_version`` (the derived base the
+  projection builds on). DATA_MODEL §22.1: "Projection retry 必须
+  source-aware + version-aware revalidation，不允许 blind SQL replay".
+- **CP4 never holds the ConversationCoordinatorLease** — projections run
+  after the canonical turn, and a failing projection does not keep
+  occupying the conversation's one-coordinator guarantee
+  (RUNTIME_ARCHITECTURE §19 "不继续占用 ConversationCoordinatorLease").
+- **failure is not the turn's failure** — a projection failure never rolls
+  back the transcript, never re-sends the assistant message and never
+  blocks the next turn (§19/§21 "turn still succeeds / projection
+  retry/rebuild").
+- **crash-gap** — a job that was lost between the turn's commit points is
+  not re-derived from a message log: ``ensure_projection_job`` re-creates
+  it from the same deterministic id (the P4-2 face), which is exactly what
+  the stable-id rule buys.
+
+Not in this package's contract: teaching-evidence proposals. Learning's
+durable pending proposal (migration 0009, ``teaching_evidence_proposal``)
+is canonical evidence input owned by the Learning domain, deliberately NOT
+a projection_job row — evidence truth never rides a rebuildable
+projection's retry policy.
 """
 
 from __future__ import annotations
@@ -224,7 +261,13 @@ class ProviderAttemptRecord:
 
 @dataclass(frozen=True)
 class ProjectionJobRecord:
-    """docs/DOMAIN_MODEL.md §16 ProjectionJob (registry schema)."""
+    """docs/DOMAIN_MODEL.md §16 ProjectionJob (registry schema).
+
+    The durable CP4 work row is migration 0002's ``projection_job`` table;
+    its semantics are adjudicated in this module's docstring (P4-0 ④
+    contracts). This record is the registry schema view — a projection job
+    is derived, rebuildable work, never a domain truth.
+    """
 
     projection_job_id: ProjectionJobId
     conversation_id: str

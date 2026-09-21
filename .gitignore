@@ -8,3 +8,4 @@ dist/
 .mimosa/
 .venv/
 *.egg-info/
+.zcodeignore

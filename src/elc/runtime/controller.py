@@ -463,7 +463,26 @@ class RuntimeOrchestrator:
     def enqueue_projection(
         self, job: ProjectionJobRecord
     ) -> Result[ProjectionJobId]:
-        raise NotImplementedError("Phase 4: CP4 projection job")
+        """CP4 projection enqueue — deliberately unimplemented until P4-2.
+
+        P4-0 ④ fixes the *contract* (elc.runtime.types module docstring:
+        deterministic projection_id, idempotent enqueue, the §22.1
+        PENDING → RUNNING → COMMITTED / FAILED_RETRYABLE → REJECTED states,
+        source_turn_slice_hash + base_domain_version revalidation on retry,
+        no ConversationCoordinatorLease held, a failure that neither rolls
+        back the transcript nor re-sends the assistant nor blocks the next
+        turn, and ``ensure_projection_job`` re-creating a crash-gap job from
+        its deterministic id). The runtime that executes it — the
+        post-guard execution, the retry loop and the ensure face — is P4-2;
+        this face stays a raise so no caller can mistake the contract for an
+        implementation.
+        """
+
+        raise NotImplementedError(
+            "CP4 projection runtime is P4-2: P4-0 lands the durable table"
+            " (migration 0002), the §22.1 states and the contracts only"
+            " (elc.runtime.types module docstring)"
+        )
 
     def startup_recovery(self) -> Result[tuple[RecoveryAction, ...]]:
         raise NotImplementedError("use StartupRecoveryScanner")
@@ -2110,12 +2129,17 @@ class ConversationCoordinator:
                     if view is not None
                     else unjudgeable_evaluation()
                 )
+                # The evaluation id is deterministic on the attempt, and the
+                # durable proposal (P4-0 ①) is keyed by the same attempt — so
+                # the id is computed once here and travels into both the §17
+                # row and the Learning chain's source_evaluation_id.
+                evaluation_id = f"ae-{attempt.attempt_id}"
                 recorded_evaluation = teaching.record_attempt_evaluation(
                     evaluation_record_for(
                         moment=moment,
                         attempt=attempt,
                         evaluation=evaluation,
-                        evaluation_id=f"ae-{attempt.attempt_id}",
+                        evaluation_id=evaluation_id,
                     )
                 )
                 if isinstance(recorded_evaluation, Err):
@@ -2143,6 +2167,7 @@ class ConversationCoordinator:
                         moment=moment,
                         attempt=attempt,
                         evaluation=evaluation,
+                        evaluation_id=evaluation_id,
                         view=view,
                         linkage=linkage,
                         learning=learning,
@@ -2931,6 +2956,7 @@ class ConversationCoordinator:
         moment: TeachingMomentRecord,
         attempt: AttemptRecord,
         evaluation,
+        evaluation_id: str,
         view: TeachingTargetView | None,
         linkage: str | None,
         learning: LearningController,
@@ -2944,6 +2970,13 @@ class ConversationCoordinator:
         verified by Learning's own validation face
         (``_opportunity_link_refusal``), which is the only side that may
         read the table.
+
+        P4-0 ①: the durable §17 evaluation id travels with the facts
+        (``evaluation_id``) so Learning's durable proposal can name its
+        source evaluation — the proposal chain is
+        Attempt → Evaluation → proposal PENDING → commit attempt, and the
+        ref the evaluation carries (``tep-{attempt}``) resolves to that
+        durable row even when the commit itself cannot run.
 
         ``linkage`` is the *verified* capability linkage (review F4): the
         caller resolves it through the target provider, so a claim can never
@@ -2980,6 +3013,7 @@ class ConversationCoordinator:
             proposal,
             source_turn_id=cp0.turn_id,
             conversation_id=str(moment.conversation_id),
+            source_evaluation_id=evaluation_id,
             persona_id=(
                 None if moment.persona_id is None else str(moment.persona_id)
             ),

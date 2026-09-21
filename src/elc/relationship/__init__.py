@@ -5,7 +5,9 @@ from elc.relationship.controller import RelationshipController
 from elc.relationship.queries import RelationshipQueries
 from elc.relationship.types import (
     MemoryProvenance,
+    MemorySensitivityClass,
     MemoryStatus,
+    PersistenceAuthorization,
     RelationshipMemoryProposal,
     RelationshipMemoryRecord,
     RelationshipMemoryType,
@@ -14,7 +16,9 @@ from elc.relationship.types import (
 
 __all__ = [
     "MemoryProvenance",
+    "MemorySensitivityClass",
     "MemoryStatus",
+    "PersistenceAuthorization",
     "RelationshipCommands",
     "RelationshipController",
     "RelationshipMemoryProposal",

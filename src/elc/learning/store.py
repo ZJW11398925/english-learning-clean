@@ -51,6 +51,24 @@ CONFLICT instead of returning a stale view wearing the new watermark
 (adjudicated disposition of DEC-…eaaa5a1d.48 F1; deterministic refusal,
 no silent auto-rebuild).
 
+Phase 4 P4-0 carryover (TASK-OPI-5ba74efc-….84 ①; DEC-…5ba74efc.68 C1):
+the teaching evidence leg gained the durable-pending shape RA §21:616-621
+asks for. ``commit_teaching_evidence`` now runs the chain
+
+    Attempt durable → Evaluation durable → proposal PENDING durable
+    (own short transaction) → commit attempt
+
+and the three outcomes are all durable facts: COMMITTED (the commit
+landed), REJECTED (Learning's validation refused it — the AnalysisArtifact
+precedent of migration 0004), PENDING (the commit could not run: the
+proposal waits, the attempt's evidence is not lost, and the turn keeps its
+normal persona — RA §21 "durable proposal pending / normal persona / no
+risky automatic remediation"). The retry face
+(``retry_pending_teaching_evidence``) is explicit and host/recovery-driven;
+it is deliberately NOT auto-wired in this slice. The table is Learning's
+own (migration 0009) and is **not** a projection_job row: Learning
+evidence is canonical input, not a rebuildable CP4 projection.
+
 Default column values for claims committed through the Phase 0 protocol
 face (``EvidenceGroupRecord`` / ``EvidenceClaimView`` carry fewer fields
 than the DATA_MODEL §6 column set; the fill values below are
@@ -104,9 +122,15 @@ from elc.learning.teaching_evidence import (
     claims_for_teaching_evidence,
 )
 from elc.learning.types import (
+    AttemptOutcome,
+    ErrorAttribution,
     EvidenceClaimView,
     EvidenceGroupRecord,
+    EvidenceModality,
+    EvidencePolarity,
+    EvidenceQualifier,
     EvidenceStatus,
+    ExposureLevel,
     FreshnessView,
     LearnerCoverage,
     LearnerDimensionState,
@@ -114,6 +138,8 @@ from elc.learning.types import (
     LearnerProjection,
     LearnerTargetStateRecord,
     LearningSnapshot,
+    PerformanceType,
+    SupportLevel,
 )
 from elc.learning.validation import negative_evidence_refusal
 from elc.platform.db.epoch import RuntimeEpochFence, StaleEpochError
@@ -140,11 +166,17 @@ from elc.platform.types import (
 
 __all__ = [
     "LOCAL_V1_DEFAULT_USER_SCOPE",
+    "TEACHING_EVIDENCE_GROUP_PREFIX",
+    "TEACHING_EVIDENCE_PROPOSAL_PREFIX",
+    "TEACHING_EVIDENCE_PROPOSAL_STATUSES",
     "AnalysisArtifactRecord",
     "ClaimRecord",
     "GroupRecord",
     "SqliteLearningStore",
     "StaleStoreEpochError",
+    "TeachingEvidenceProposalRecord",
+    "teaching_evidence_group_id",
+    "teaching_evidence_proposal_id",
 ]
 
 T = TypeVar("T")
@@ -153,6 +185,35 @@ T = TypeVar("T")
 #: the watermark and commit rows are keyed by a user scope; Local V1 has
 #: exactly one user, so the store default is a single fixed scope.
 LOCAL_V1_DEFAULT_USER_SCOPE = "user-local-v1"
+
+#: The two deterministic id namespaces of one teaching attempt (P4-0 ①,
+#: "双命名空间对账"): the durable *proposal* — Learning's pending commit
+#: backlog, named ``tep-{attempt_id}`` and written by the teaching side into
+#: §17 ``evidence_proposal_refs`` — and the *evidence group* the proposal
+#: commits into, ``eg-teaching-{attempt_id}`` (the pre-P4-0 id, kept: a
+#: committed group's identity does not change). Both derive from the attempt
+#: id, so any re-entry re-derives the same physical keys; the teaching
+#: package spells the proposal prefix itself (the AST pin forbids an import
+#: in either direction) and tests/phase4 reconciles the two spellings.
+TEACHING_EVIDENCE_PROPOSAL_PREFIX = "tep-"
+TEACHING_EVIDENCE_GROUP_PREFIX = "eg-teaching-"
+
+#: ``teaching_evidence_proposal.status`` vocabulary (migration 0009). The
+#: same three-word shape the AnalysisArtifact precedent uses
+#: (PRODUCED → COMMITTED / REJECTED), with PENDING naming the durable
+#: pre-commit state RA §21 requires.
+TEACHING_EVIDENCE_PROPOSAL_STATUSES = ("PENDING", "COMMITTED", "REJECTED")
+
+
+def teaching_evidence_proposal_id(attempt_id: str) -> str:
+    """The deterministic proposal id of one attempt (see the prefixes)."""
+    return f"{TEACHING_EVIDENCE_PROPOSAL_PREFIX}{attempt_id}"
+
+
+def teaching_evidence_group_id(attempt_id: str) -> str:
+    """The deterministic evidence-group id of one attempt (see the
+    prefixes): the committed group stays isomorphic to its proposal."""
+    return f"{TEACHING_EVIDENCE_GROUP_PREFIX}{attempt_id}"
 
 #: DATA_MODEL §6 claim outcome vocabulary is the four-value §6 list;
 #: the Phase 0 protocol type reuses the STATE_MACHINES §5 five-value
@@ -309,6 +370,35 @@ class ClaimRecord:
     attempt_id: str | None
     claim_role: str | None
     created_at: str
+
+
+@dataclass(frozen=True)
+class TeachingEvidenceProposalRecord:
+    """One durable ``teaching_evidence_proposal`` row (migration 0009).
+
+    The provenance JSON column is decoded into its five named fields
+    (``target_type`` / ``target_id`` / ``evaluator_id`` /
+    ``evaluator_version`` / ``payload_hash``) so a caller never has to
+    parse the document itself; ``payload`` stays the canonical JSON text
+    (the claim views plus their commit context) because it is the exact
+    bytes the commit is replayed from.
+    """
+
+    proposal_id: str
+    source_attempt_id: str
+    source_evaluation_id: str
+    moment_id: str
+    target_type: str
+    target_id: str
+    evaluator_id: str
+    evaluator_version: str
+    payload_hash: str
+    payload: str
+    status: str
+    attempt_count: int
+    created_at: str
+    updated_at: str
+    committed_at: str | None
 
 
 class SqliteLearningStore:
@@ -1003,42 +1093,295 @@ class SqliteLearningStore:
         *,
         source_turn_id: TurnId,
         conversation_id: str,
+        source_evaluation_id: str,
         persona_id: str | None = None,
     ) -> Result[EvidenceCommitId]:
-        """CP1 for one teaching attempt: convert the teaching-side facts
-        into §6 claims and commit them through the same kernel as any other
-        evidence (elc.learning.teaching_evidence owns the conversion; §5
-        capability-positive / resource-neutral fold included).
+        """CP1 for one teaching attempt, in the RA §21 durable-pending shape
+        (P4-0 ①; DEC-…5ba74efc.68 C1).
+
+        Two short transactions, in this order and for this reason:
+
+        1. ``record_teaching_evidence_proposal`` — the proposal becomes
+           durable PENDING *before* the commit is attempted, so a crash or
+           an unavailable Learning store can no longer swallow it (RA §21
+           "durable proposal pending": the Attempt/Evaluation/refs are
+           already durable, and now so is the evidence they produced);
+        2. ``commit_teaching_evidence_proposal`` — the commit itself. On
+           success the row flips COMMITTED; on Learning's validation
+           refusal it flips REJECTED; on anything else it stays PENDING with
+           the attempt counted, and the caller's teaching turn continues
+           with its normal persona (never blocked by this leg).
 
         The group is deterministic on the attempt (``eg-teaching-{attempt}``
         and §25's ``moment_id + attempt_id + target_id + claim_role +
-        evaluator_version`` commit key), so a re-entry after a crash
-        replays the durable commit instead of double-writing.
+        evaluator_version`` commit key), so a re-entry — or a retry of the
+        durable proposal — replays the durable commit instead of
+        double-writing.
 
-        A conversion refusal (an unknown vocabulary word) returns Learning's
-        REJECT decision with nothing written — the partial-evidence / no-
-        claim residue case is impossible because the whole unit rolls back.
+        A conversion refusal (an unknown vocabulary word in the teaching
+        facts) still returns Learning's REJECT decision with nothing
+        written: there is no valid proposal to persist, and the evaluation
+        row's ref — a forward reference by construction — simply has no
+        proposal to point at (the pre-P4-0 semantics, preserved).
+        """
+
+        recorded = self.record_teaching_evidence_proposal(
+            proposal,
+            source_evaluation_id=source_evaluation_id,
+            source_turn_id=source_turn_id,
+            conversation_id=conversation_id,
+            persona_id=persona_id,
+        )
+        if isinstance(recorded, Err):
+            return recorded
+        return self.commit_teaching_evidence_proposal(recorded.value.proposal_id)
+
+    def record_teaching_evidence_proposal(
+        self,
+        proposal: TeachingEvidenceSource,
+        *,
+        source_evaluation_id: str,
+        source_turn_id: TurnId,
+        conversation_id: str,
+        persona_id: str | None = None,
+    ) -> Result[TeachingEvidenceProposalRecord]:
+        """Step 1 of the RA §21 chain: one durable PENDING proposal row, in
+        its own short transaction (migration 0009).
+
+        The payload is Learning's own conversion of the teaching facts
+        (``claims_for_teaching_evidence`` — the §5 capability-positive /
+        resource-neutral fold included) plus the commit context the later
+        commit needs (group id, source turn, conversation, persona), so the
+        durable row is self-contained: a retry after the process died needs
+        no live teaching object and no cross-domain read.
+
+        Idempotent on the deterministic proposal id (``tep-{attempt_id}``):
+        a re-entry that re-derives the same payload replays the durable row
+        and writes nothing; a *different* payload under a stable proposal id
+        is refused (CONFLICT) — content under a stable id is immutable, the
+        ``commit_learning_evidence`` precedent.
         """
 
         claims = claims_for_teaching_evidence(proposal)
         if isinstance(claims, Err):
             return claims
-        group = EvidenceGroupRecord(
-            evidence_group_id=EvidenceGroupId(
-                f"eg-teaching-{proposal.attempt_id}"
-            ),
-            moment_id=MomentId(proposal.moment_id),
-            attempt_id=AttemptId(proposal.attempt_id),
-            target_id=TargetId(proposal.target_id),
-            evaluator_version=EvaluatorVersion(proposal.evaluator_version),
+        proposal_id = teaching_evidence_proposal_id(proposal.attempt_id)
+        payload = _teaching_evidence_payload(
+            attempt_id=proposal.attempt_id,
             claims=claims.value,
-        )
-        return self.commit_evidence_group(
-            group,
+            evaluator_id=proposal.evaluator_id,
+            evaluator_version=proposal.evaluator_version,
+            target_id=proposal.target_id,
             source_turn_id=source_turn_id,
             conversation_id=conversation_id,
             persona_id=persona_id,
-            evaluator_id=proposal.evaluator_id,
+        )
+        provenance = json.dumps(
+            {
+                "target_type": proposal.target_type,
+                "target_id": proposal.target_id,
+                "evaluator_id": proposal.evaluator_id,
+                "evaluator_version": proposal.evaluator_version,
+                "payload_hash": hashlib.sha256(
+                    payload.encode("utf-8")
+                ).hexdigest(),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        try:
+            with short_transaction(self._conn):
+                self._require_current_epoch()
+                existing = self._proposal_row(proposal_id)
+                if existing is not None:
+                    if str(existing[5]) != payload:
+                        return _err(
+                            DomainErrorCode.CONFLICT,
+                            f"proposal {proposal_id} is already durable with"
+                            " a different payload — content under a stable"
+                            " proposal id is immutable",
+                        )
+                    return Ok(self._proposal_record(existing))
+                now = _now()
+                self._conn.execute(
+                    "INSERT INTO teaching_evidence_proposal ("
+                    " proposal_id, source_attempt_id, source_evaluation_id,"
+                    " moment_id, provenance, payload, status, attempt_count,"
+                    " created_at, updated_at, committed_at"
+                    ") VALUES (?, ?, ?, ?, ?, ?, 'PENDING', 0, ?, ?, NULL)",
+                    (
+                        proposal_id,
+                        proposal.attempt_id,
+                        source_evaluation_id,
+                        proposal.moment_id,
+                        provenance,
+                        payload,
+                        now,
+                        now,
+                    ),
+                )
+                recorded = self._proposal_row(proposal_id)
+                assert recorded is not None  # the insert above
+                return Ok(self._proposal_record(recorded))
+        except sqlite3.IntegrityError as exc:
+            # e.g. an unknown attempt / evaluation / moment id (the FKs).
+            return _err(DomainErrorCode.CONFLICT, str(exc))
+
+    def commit_teaching_evidence_proposal(
+        self, proposal_id: str
+    ) -> Result[EvidenceCommitId]:
+        """Step 2 of the RA §21 chain: commit one proposal from its durable
+        payload — idempotently.
+
+        - PENDING: the payload is parsed back into claims and committed
+          through the same kernel as any other evidence
+          (``commit_evidence_group``: validation → group + claims →
+          watermark). Learning's *validation* refusal (VALIDATION_FAILED:
+          vocabulary, the §6 negative-evidence rule, the LOR association)
+          flips the row REJECTED — a deterministic verdict is durable, not
+          retried forever. Any other failure (CONFLICT / a sqlite error, an
+          unavailable dependency) leaves the row PENDING with the attempt
+          counted: RA §21 "no risky automatic remediation".
+        - COMMITTED: idempotent replay — the durable EvidenceCommitId comes
+          back and nothing is written. A second commit attempt can therefore
+          never double-count evidence or move the watermark twice.
+        - REJECTED: refused; a rejected proposal is never re-committed
+          (a new attempt is a new attempt — DOMAIN_MODEL §18).
+        """
+
+        row = self._proposal_row(proposal_id)
+        if row is None:
+            return _err(
+                DomainErrorCode.NOT_FOUND,
+                f"teaching evidence proposal not found: {proposal_id}",
+            )
+        status = str(row[6])
+        context = _teaching_evidence_commit_context(row)
+        if status == "COMMITTED":
+            replay = self._commit_row_by_group(
+                EvidenceGroupId(context.evidence_group_id)
+            )
+            if replay is None:
+                return _err(
+                    DomainErrorCode.CONFLICT,
+                    f"proposal {proposal_id} is COMMITTED but has no"
+                    " evidence commit",
+                )
+            return Ok(EvidenceCommitId(str(replay[0])))
+        if status == "REJECTED":
+            return _err(
+                DomainErrorCode.CONFLICT,
+                f"proposal {proposal_id} was REJECTED by Learning; a"
+                " rejected proposal is never re-committed (DOMAIN_MODEL"
+                " §18)",
+            )
+
+        committed = self.commit_evidence_group(
+            _teaching_evidence_group(row, context),
+            source_turn_id=TurnId(context.source_turn_id),
+            conversation_id=context.conversation_id,
+            persona_id=context.persona_id,
+            evaluator_id=context.evaluator_id,
+        )
+        if isinstance(committed, Ok):
+            self._settle_proposal(proposal_id, "COMMITTED")
+            return committed
+        if committed.error.code is DomainErrorCode.VALIDATION_FAILED:
+            self._settle_proposal(proposal_id, "REJECTED")
+        else:
+            self._settle_proposal(proposal_id, "PENDING")
+        return committed
+
+    def retry_pending_teaching_evidence(
+        self,
+    ) -> Result[tuple[tuple[str, EvidenceCommitId], ...]]:
+        """The explicit retry face (RA §21: pending proposals are retried
+        deliberately, never by a background loop — "no risky automatic
+        remediation", and Local V1 has no TTL/heartbeat scheduler).
+
+        Walks the durable PENDING backlog in (created_at, proposal_id)
+        order and attempts each commit through
+        ``commit_teaching_evidence_proposal``. Idempotent: a proposal that
+        already committed is no longer PENDING and is not revisited; a
+        proposal that still cannot commit stays PENDING (or flips REJECTED)
+        and is reported by its own durable row rather than by an exception.
+
+        Returns the ``(proposal_id, evidence_commit_id)`` pairs this call
+        committed; the deferred remainder is readable through
+        ``get_teaching_evidence_proposal``. Not auto-wired in P4-0: the
+        caller is the host / the later recovery line.
+        """
+
+        rows = self._conn.execute(
+            "SELECT proposal_id FROM teaching_evidence_proposal"
+            " WHERE status = 'PENDING' ORDER BY created_at, proposal_id"
+        ).fetchall()
+        committed: list[tuple[str, EvidenceCommitId]] = []
+        for row in rows:
+            proposal_id = str(row[0])
+            outcome = self.commit_teaching_evidence_proposal(proposal_id)
+            if isinstance(outcome, Ok):
+                committed.append((proposal_id, outcome.value))
+        return Ok(tuple(committed))
+
+    def get_teaching_evidence_proposal(
+        self, proposal_id: str
+    ) -> Result[TeachingEvidenceProposalRecord | None]:
+        """Read one durable proposal row (None = never recorded)."""
+
+        row = self._proposal_row(proposal_id)
+        return Ok(None if row is None else self._proposal_record(row))
+
+    def _settle_proposal(self, proposal_id: str, status: str) -> None:
+        """Count one commit attempt and record its verdict, in one short
+        transaction — only while the row is still PENDING, so a lost race
+        never rewrites another writer's verdict. COMMITTED stamps
+        ``committed_at``; PENDING deliberately leaves it NULL (that is what
+        makes "pending" auditable rather than inferred)."""
+
+        with short_transaction(self._conn):
+            self._require_current_epoch()
+            now = _now()
+            self._conn.execute(
+                "UPDATE teaching_evidence_proposal SET status = ?,"
+                " attempt_count = attempt_count + 1, updated_at = ?,"
+                " committed_at = CASE WHEN ? = 'COMMITTED' THEN ?"
+                " ELSE committed_at END"
+                " WHERE proposal_id = ? AND status = 'PENDING'",
+                (status, now, status, now, proposal_id),
+            )
+
+    def _proposal_row(self, proposal_id: str) -> Sequence[object] | None:
+        """The proposal row as a positional tuple (the store's rows are
+        tuples — no row_factory), column order pinned by the SELECT below."""
+
+        return self._conn.execute(
+            "SELECT proposal_id, source_attempt_id, source_evaluation_id,"
+            " moment_id, provenance, payload, status, attempt_count,"
+            " created_at, updated_at, committed_at"
+            " FROM teaching_evidence_proposal WHERE proposal_id = ?",
+            (proposal_id,),
+        ).fetchone()
+
+    @staticmethod
+    def _proposal_record(row: Sequence[object]) -> TeachingEvidenceProposalRecord:
+        provenance: dict[str, object] = json.loads(str(row[4]))
+        return TeachingEvidenceProposalRecord(
+            proposal_id=str(row[0]),
+            source_attempt_id=str(row[1]),
+            source_evaluation_id=str(row[2]),
+            moment_id=str(row[3]),
+            target_type=str(provenance["target_type"]),
+            target_id=str(provenance["target_id"]),
+            evaluator_id=str(provenance["evaluator_id"]),
+            evaluator_version=str(provenance["evaluator_version"]),
+            payload_hash=str(provenance["payload_hash"]),
+            payload=str(row[5]),
+            status=str(row[6]),
+            attempt_count=int(cast(int, row[7])),
+            created_at=str(row[8]),
+            updated_at=str(row[9]),
+            committed_at=None if row[10] is None else str(row[10]),
         )
 
     # -- opportunity / expression-need write faces --------------------------
@@ -1824,6 +2167,182 @@ def _group_modality(group: EvidenceGroupRecord) -> str:
     if group.claims:
         return group.claims[0].evidence_modality.value
     return "TEXT_PRODUCTION"
+
+
+# -- P4-0 ①: the durable teaching-evidence proposal payload -----------------
+
+
+@dataclass(frozen=True)
+class _TeachingEvidenceCommitContext:
+    """The commit context a durable proposal carries (payload ``commit``).
+
+    Everything ``commit_evidence_group`` needs beyond the claims: the
+    deterministic group id, the turn/conversation the evidence belongs to,
+    the persona (when the moment had one) and the evaluator provenance.
+    Keeping it in the payload is what makes the durable row self-contained
+    — a retry after the process died reads no teaching-owned table.
+    """
+
+    evidence_group_id: str
+    source_turn_id: str
+    conversation_id: str
+    persona_id: str | None
+    evaluator_id: str
+
+
+def _claim_document(claim: EvidenceClaimView) -> dict[str, object]:
+    """One claim as canonical JSON data (enum words, never enum objects)."""
+
+    return {
+        "accuracy": claim.accuracy,
+        "claim_role": claim.claim_role,
+        "error_attribution": claim.error_attribution.value,
+        "evidence_claim_id": claim.evidence_claim_id,
+        "evidence_modality": claim.evidence_modality.value,
+        "evaluator_confidence": claim.evaluator_confidence,
+        "exposure": claim.exposure.value,
+        "opportunity_id": (
+            None if claim.opportunity_id is None else str(claim.opportunity_id)
+        ),
+        "outcome": claim.outcome.value,
+        "performance_type": claim.performance_type.value,
+        "polarity": claim.polarity.value,
+        "pragmatic_fit": claim.pragmatic_fit,
+        "provenance": claim.provenance,
+        "qualifiers": [qualifier.value for qualifier in claim.qualifiers],
+        "scope": claim.scope,
+        "status": claim.status.value,
+        "support": claim.support.value,
+        "target_id": claim.target_id,
+    }
+
+
+def _claim_from_document(document: Mapping[str, object]) -> EvidenceClaimView:
+    """Rebuild one claim view from its payload document (the exact inverse
+    of :func:`_claim_document`; an unknown word raises ValueError, which the
+    caller surfaces as a refusal — never a silent default)."""
+
+    qualifiers = cast(Sequence[object], document["qualifiers"])
+    accuracy = document["accuracy"]
+    pragmatic_fit = document["pragmatic_fit"]
+    opportunity_id = document["opportunity_id"]
+    target_id = document["target_id"]
+    return EvidenceClaimView(
+        evidence_claim_id=str(document["evidence_claim_id"]),
+        claim_role=str(document["claim_role"]),
+        scope=str(document["scope"]),
+        performance_type=PerformanceType(str(document["performance_type"])),
+        evidence_modality=EvidenceModality(str(document["evidence_modality"])),
+        qualifiers=tuple(
+            EvidenceQualifier(str(qualifier)) for qualifier in qualifiers
+        ),
+        polarity=EvidencePolarity(str(document["polarity"])),
+        outcome=AttemptOutcome(str(document["outcome"])),
+        support=SupportLevel(str(document["support"])),
+        exposure=ExposureLevel(str(document["exposure"])),
+        evaluator_confidence=float(
+            cast(float, document["evaluator_confidence"])
+        ),
+        error_attribution=ErrorAttribution(str(document["error_attribution"])),
+        accuracy=None if accuracy is None else float(cast(float, accuracy)),
+        pragmatic_fit=(
+            None if pragmatic_fit is None else float(cast(float, pragmatic_fit))
+        ),
+        status=EvidenceStatus(str(document["status"])),
+        provenance=str(document["provenance"]),
+        opportunity_id=(
+            None
+            if opportunity_id is None
+            else LearningOpportunityId(str(opportunity_id))
+        ),
+        target_id=None if target_id is None else str(target_id),
+    )
+
+
+def _teaching_evidence_payload(
+    *,
+    attempt_id: str,
+    claims: tuple[EvidenceClaimView, ...],
+    evaluator_id: str,
+    evaluator_version: str,
+    target_id: str,
+    source_turn_id: TurnId,
+    conversation_id: str,
+    persona_id: str | None,
+) -> str:
+    """The durable payload of one teaching-evidence proposal: the claim
+    views Learning converted the attempt into, plus their commit context.
+
+    Canonical JSON (sorted keys, fixed separators) so the same facts always
+    produce the same payload — and therefore the same ``payload_hash``,
+    which is what makes an idempotent replay checkable.
+    """
+
+    return json.dumps(
+        {
+            "attempt_id": attempt_id,
+            "claims": [_claim_document(claim) for claim in claims],
+            "commit": {
+                "conversation_id": conversation_id,
+                "evaluator_id": evaluator_id,
+                "evaluator_version": evaluator_version,
+                "evidence_group_id": teaching_evidence_group_id(attempt_id),
+                "persona_id": persona_id,
+                "source_turn_id": str(source_turn_id),
+                "target_id": target_id,
+            },
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _teaching_evidence_document(payload: str) -> dict[str, object]:
+    document: dict[str, object] = json.loads(payload)
+    return document
+
+
+def _teaching_evidence_commit_context(
+    row: Sequence[object],
+) -> _TeachingEvidenceCommitContext:
+    """The commit context of one durable proposal row (column order pinned
+    by ``_proposal_row``: moment_id=3, payload=5)."""
+
+    commit = cast(
+        Mapping[str, object],
+        _teaching_evidence_document(str(row[5]))["commit"],
+    )
+    persona_id = commit["persona_id"]
+    return _TeachingEvidenceCommitContext(
+        evidence_group_id=str(commit["evidence_group_id"]),
+        source_turn_id=str(commit["source_turn_id"]),
+        conversation_id=str(commit["conversation_id"]),
+        persona_id=None if persona_id is None else str(persona_id),
+        evaluator_id=str(commit["evaluator_id"]),
+    )
+
+
+def _teaching_evidence_group(
+    row: Sequence[object],
+    context: _TeachingEvidenceCommitContext,
+) -> EvidenceGroupRecord:
+    """Rebuild the §6 group a durable proposal commits into — from the
+    payload alone (no teaching-side object, no cross-domain read)."""
+
+    document = _teaching_evidence_document(str(row[5]))
+    commit = cast(Mapping[str, object], document["commit"])
+    claims = cast(Sequence[object], document["claims"])
+    return EvidenceGroupRecord(
+        evidence_group_id=EvidenceGroupId(context.evidence_group_id),
+        moment_id=MomentId(str(row[3])),
+        attempt_id=AttemptId(str(row[1])),
+        target_id=TargetId(str(commit["target_id"])),
+        evaluator_version=EvaluatorVersion(str(commit["evaluator_version"])),
+        claims=tuple(
+            _claim_from_document(cast(Mapping[str, object], item))
+            for item in claims
+        ),
+    )
 
 
 def _parse_proposal(structured_proposal: str) -> dict[str, object]:
