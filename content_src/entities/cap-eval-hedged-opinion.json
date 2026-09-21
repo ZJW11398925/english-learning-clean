@@ -1,0 +1,46 @@
+{
+  "entity": {
+    "entity_id": "cap-eval-hedged-opinion",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "CAPABILITY",
+    "target_mode": "CAPABILITY_PRACTICE",
+    "learning_intent": "DEVELOP",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Give an opinion with a hedge, not as a fact.",
+      "Hedge first, then state the opinion.",
+      "Fill in: I think it ___ be too late."
+    ],
+    "reveal_form": "I think it might be too late.",
+    "canonical_forms": [
+      "I think it might be too late."
+    ],
+    "alternative_realizations": [
+      "It could be too late, I think."
+    ],
+    "required_slots": [
+      [
+        "late"
+      ],
+      [
+        "think",
+        "might",
+        "could"
+      ]
+    ]
+  }
+}

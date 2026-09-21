@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-colloc-make-a-decision",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "COLLOCATION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "REVIEW",
+    "learning_intent": "CONSOLIDATE",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Name the collocation for choosing a course of action.",
+      "The verb is not 'do' and not 'take'.",
+      "Fill in: We have to ___ a decision today."
+    ],
+    "reveal_form": "We have to make a decision today.",
+    "canonical_forms": [
+      "We have to make a decision today."
+    ],
+    "alternative_realizations": [
+      "We have to take a decision today."
+    ],
+    "required_slots": [
+      [
+        "decision"
+      ],
+      [
+        "make",
+        "take"
+      ]
+    ]
+  }
+}

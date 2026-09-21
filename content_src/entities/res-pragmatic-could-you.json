@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-could-you",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "CONSOLIDATE",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Ask for help with a modal, not with 'give me'.",
+      "Start with 'Could you' — not 'Can you please'.",
+      "Fill in: Could you ___ me the file?"
+    ],
+    "reveal_form": "Could you send me the file?",
+    "canonical_forms": [
+      "Could you send me the file?"
+    ],
+    "alternative_realizations": [
+      "Would you send me the file?"
+    ],
+    "required_slots": [
+      [
+        "file"
+      ],
+      [
+        "could",
+        "would"
+      ]
+    ]
+  }
+}

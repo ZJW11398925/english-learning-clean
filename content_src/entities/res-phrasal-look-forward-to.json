@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-phrasal-look-forward-to",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PHRASAL_VERB",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Use the phrasal verb for anticipating something pleasant.",
+      "The particle is not 'for' and not 'at'.",
+      "Fill in: I look ___ ___ seeing you."
+    ],
+    "reveal_form": "I look forward to seeing you.",
+    "canonical_forms": [
+      "I look forward to seeing you."
+    ],
+    "alternative_realizations": [
+      "I'm looking forward to seeing you."
+    ],
+    "required_slots": [
+      [
+        "forward"
+      ],
+      [
+        "seeing"
+      ]
+    ]
+  }
+}

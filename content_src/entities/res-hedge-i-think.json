@@ -1,0 +1,47 @@
+{
+  "entity": {
+    "entity_id": "res-hedge-i-think",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Hedge the claim so it does not sound like a fact.",
+      "Use a short phrase before the statement, not after it.",
+      "Start with the two words: I ___ it is going to rain."
+    ],
+    "reveal_form": "I think it is going to rain.",
+    "canonical_forms": [
+      "I think it is going to rain."
+    ],
+    "alternative_realizations": [
+      "It might rain.",
+      "I'd say it will rain."
+    ],
+    "required_slots": [
+      [
+        "rain"
+      ],
+      [
+        "think",
+        "guess",
+        "reckon"
+      ]
+    ]
+  }
+}

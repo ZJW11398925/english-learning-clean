@@ -1,0 +1,46 @@
+{
+  "entity": {
+    "entity_id": "res-softener-kind-of",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "FUNCTIONAL_EXPRESSION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "DEVELOP",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Soften the statement: it should not sound absolute.",
+      "Add a softener directly before the adjective.",
+      "Fill in: The ending is ___ sad."
+    ],
+    "reveal_form": "The ending is kind of sad.",
+    "canonical_forms": [
+      "The ending is kind of sad."
+    ],
+    "alternative_realizations": [
+      "The ending is a bit sad."
+    ],
+    "required_slots": [
+      [
+        "ending"
+      ],
+      [
+        "kind",
+        "sort",
+        "bit"
+      ]
+    ]
+  }
+}

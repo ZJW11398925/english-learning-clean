@@ -1,0 +1,41 @@
+{
+  "entity": {
+    "entity_id": "cap-ref-ask-clarification",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "CAPABILITY",
+    "target_mode": "CAPABILITY_PRACTICE",
+    "learning_intent": "DEVELOP",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Ask the speaker to clarify without repeating them badly.",
+      "Use a wh-question frame with 'mean'.",
+      "Fill in: What do you ___ by that?"
+    ],
+    "reveal_form": "What do you mean by that?",
+    "canonical_forms": [
+      "What do you mean by that?"
+    ],
+    "alternative_realizations": [
+      "Sorry, what does that mean?"
+    ],
+    "required_slots": [
+      [
+        "mean"
+      ]
+    ]
+  }
+}

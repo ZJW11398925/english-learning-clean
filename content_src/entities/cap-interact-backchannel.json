@@ -1,0 +1,41 @@
+{
+  "entity": {
+    "entity_id": "cap-interact-backchannel",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "FUNCTIONAL_EXPRESSION",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "CAPABILITY",
+    "target_mode": "CAPABILITY_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Show you are listening without taking the turn.",
+      "One short phrase is enough.",
+      "Fill in: ___, I see."
+    ],
+    "reveal_form": "Right, I see.",
+    "canonical_forms": [
+      "Right, I see."
+    ],
+    "alternative_realizations": [
+      "Uh-huh, I see."
+    ],
+    "required_slots": [
+      [
+        "see"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-discourse-by-the-way",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "DISCOURSE_MARKER",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Signal that you are adding a side remark.",
+      "It is a three-word discourse marker.",
+      "Fill in: ___ ___ ___, did you book the room?"
+    ],
+    "reveal_form": "By the way, did you book the room?",
+    "canonical_forms": [
+      "By the way, did you book the room?"
+    ],
+    "alternative_realizations": [
+      "Incidentally, did you book the room?"
+    ],
+    "required_slots": [
+      [
+        "way"
+      ],
+      [
+        "book",
+        "room"
+      ]
+    ]
+  }
+}

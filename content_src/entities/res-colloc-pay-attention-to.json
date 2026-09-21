@@ -1,0 +1,42 @@
+{
+  "entity": {
+    "entity_id": "res-colloc-pay-attention-to",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "COLLOCATION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Name the collocation for focusing on something.",
+      "The verb is not 'take' or 'make' here.",
+      "Fill in: You should ___ attention to the stress."
+    ],
+    "reveal_form": "You should pay attention to the stress.",
+    "canonical_forms": [
+      "You should pay attention to the stress."
+    ],
+    "alternative_realizations": [],
+    "required_slots": [
+      [
+        "attention"
+      ],
+      [
+        "pay"
+      ]
+    ]
+  }
+}

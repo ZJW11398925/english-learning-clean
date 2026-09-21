@@ -1,0 +1,87 @@
+{
+  "format": "elc.curriculum_links",
+  "format_version": 1,
+  "links": [
+    {
+      "resource_id": "res-hedge-i-think",
+      "node_id": "cap-eval-hedged-opinion",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-hedge-i-think's capability_linkage as cap-eval-hedged-opinion."
+    },
+    {
+      "resource_id": "res-softener-kind-of",
+      "node_id": "cap-stance-soften-disagreement",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-softener-kind-of's capability_linkage as cap-stance-soften-disagreement."
+    },
+    {
+      "resource_id": "res-colloc-pay-attention-to",
+      "node_id": "cap-ref-ask-clarification",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-colloc-pay-attention-to's capability_linkage as cap-ref-ask-clarification."
+    },
+    {
+      "resource_id": "res-frame-id-like-to",
+      "node_id": "cap-interact-backchannel",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-frame-id-like-to's capability_linkage as cap-interact-backchannel."
+    },
+    {
+      "resource_id": "res-discourse-by-the-way",
+      "node_id": "cap-disc-topic-shift",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-discourse-by-the-way's capability_linkage as cap-disc-topic-shift."
+    },
+    {
+      "resource_id": "res-phrasal-look-forward-to",
+      "node_id": "cap-interact-backchannel",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-phrasal-look-forward-to's capability_linkage as cap-interact-backchannel."
+    },
+    {
+      "resource_id": "res-pragmatic-could-you",
+      "node_id": "cap-ref-ask-clarification",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-pragmatic-could-you's capability_linkage as cap-ref-ask-clarification."
+    },
+    {
+      "resource_id": "res-idiom-break-the-ice",
+      "node_id": "cap-disc-topic-shift",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-idiom-break-the-ice's capability_linkage as cap-disc-topic-shift."
+    },
+    {
+      "resource_id": "res-colloc-make-a-decision",
+      "node_id": "cap-eval-hedged-opinion",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-colloc-make-a-decision's capability_linkage as cap-eval-hedged-opinion."
+    }
+  ]
+}

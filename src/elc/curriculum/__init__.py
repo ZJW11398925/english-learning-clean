@@ -14,6 +14,8 @@ from elc.curriculum.types import (
     CurriculumEdgeRecord,
     CurriculumEdgeType,
     CurriculumGraphRecord,
+    CurriculumLinkRecord,
+    CurriculumLinkRelation,
     PrerequisiteStrength,
 )
 
@@ -26,6 +28,8 @@ __all__ = [
     "CurriculumEdgeRecord",
     "CurriculumEdgeType",
     "CurriculumGraphRecord",
+    "CurriculumLinkRecord",
+    "CurriculumLinkRelation",
     "CurriculumQueries",
     "PrerequisiteStrength",
 ]

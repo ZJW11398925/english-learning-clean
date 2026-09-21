@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "cap-stance-soften-disagreement",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "FUNCTIONAL_EXPRESSION",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "CAPABILITY",
+    "target_mode": "CAPABILITY_PRACTICE",
+    "learning_intent": "DEVELOP",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Soften the disagreement so it stays polite.",
+      "Start with 'I see your point, but ...'.",
+      "Fill in: I see your ___, but I'm not sure."
+    ],
+    "reveal_form": "I see your point, but I'm not sure.",
+    "canonical_forms": [
+      "I see your point, but I'm not sure."
+    ],
+    "alternative_realizations": [
+      "I take your point, but I'm not sure."
+    ],
+    "required_slots": [
+      [
+        "point"
+      ],
+      [
+        "sure"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "format": "elc.curriculum_src",
+  "format_version": 1,
+  "curriculum_version": "curriculum-v1",
+  "mapping_rules": "README.md",
+  "capabilities": [
+    "capabilities/cap-disc-topic-shift.json",
+    "capabilities/cap-eval-hedged-opinion.json",
+    "capabilities/cap-interact-backchannel.json",
+    "capabilities/cap-ref-ask-clarification.json",
+    "capabilities/cap-stance-soften-disagreement.json"
+  ],
+  "links": "links.json",
+  "prerequisites": "prerequisites.json"
+}

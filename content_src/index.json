@@ -1,0 +1,23 @@
+{
+  "format": "elc.content_src",
+  "format_version": 1,
+  "content_version": "content-v1",
+  "language": "en",
+  "mapping_rules": "README.md",
+  "entities": [
+    "entities/cap-disc-topic-shift.json",
+    "entities/cap-eval-hedged-opinion.json",
+    "entities/cap-interact-backchannel.json",
+    "entities/cap-ref-ask-clarification.json",
+    "entities/cap-stance-soften-disagreement.json",
+    "entities/res-colloc-make-a-decision.json",
+    "entities/res-colloc-pay-attention-to.json",
+    "entities/res-discourse-by-the-way.json",
+    "entities/res-frame-id-like-to.json",
+    "entities/res-hedge-i-think.json",
+    "entities/res-idiom-break-the-ice.json",
+    "entities/res-phrasal-look-forward-to.json",
+    "entities/res-pragmatic-could-you.json",
+    "entities/res-softener-kind-of.json"
+  ]
+}

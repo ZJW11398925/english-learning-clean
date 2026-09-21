@@ -8,6 +8,11 @@ content.db is a READ-ONLY, versioned build artifact (docs/DATA_MODEL.md §2);
 the runtime consumes TeachingUnit aggregate DTOs — never a canonical
 mega-table (docs/DATA_MODEL.md §24.13). V1: targets without R4 (or a formal
 detector certification) never enter the automatic error-triggered path.
+
+P5-0 adds the §24.1 entity column list and the §24.4/§24.5/§24.11/§11
+vocabularies the authoring source (`content_src/*`, `curriculum/*`) is
+validated against at build time (elc.content.build). The build rejects a
+value outside a canonical word list; it never normalizes or skips.
 """
 
 from __future__ import annotations
@@ -16,6 +21,65 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from elc.platform.types import ContentId, ContentVersion, ResourceId, TargetId
+
+#: docs/DATA_MODEL.md §24.1 ContentEntity — the seven columns, in order.
+#: elc.content.queries.ContentResourceView carries exactly these fields.
+CONTENT_ENTITY_COLUMNS = (
+    "entity_id",
+    "entity_type",
+    "language",
+    "lifecycle_status",
+    "entity_revision",
+    "created_in_version",
+    "updated_in_version",
+)
+
+#: docs/DATA_MODEL.md §24.11 lifecycle vocabulary. The canonical text lists
+#: two slash rows ("SENSE_RESOLVED / STRUCTURED", "DEPRECATED / REPLACED"):
+#: each name on either side of the slash is a legal value, so they are
+#: enumerated here as separate accepted spellings rather than invented
+#: compounds.
+LIFECYCLE_STATUSES = (
+    "RAW_IMPORTED",
+    "NORMALIZED",
+    "SENSE_RESOLVED",
+    "STRUCTURED",
+    "ENRICHED",
+    "CURRICULUM_MAPPED",
+    "PEDAGOGICALLY_ANNOTATED",
+    "REVIEW_REQUIRED",
+    "CANONICAL_APPROVED",
+    "DEPRECATED",
+    "REPLACED",
+)
+
+#: docs/DOMAIN_MODEL.md §6 — the two claim target scopes. The Teaching Gate
+#: port (elc.teaching.targets.TARGET_TYPES) pins the same two values for the
+#: consumer side; this copy lets the content build validate its own source
+#: without depending on a consumer domain.
+TARGET_TYPES = ("RESOURCE", "CAPABILITY")
+
+#: docs/DOMAIN_MODEL.md §11 target modes (the same values
+#: elc.planner.types.TargetMode pins for the planner side).
+TARGET_MODES = (
+    "RESOURCE_PRACTICE",
+    "CAPABILITY_PRACTICE",
+    "PROBE",
+    "REVIEW",
+    "TRANSFER",
+)
+
+#: docs/DOMAIN_MODEL.md §11 learning intents (the same values
+#: elc.planner.types.LearningIntent pins for the planner side).
+LEARNING_INTENTS = (
+    "ESTABLISH",
+    "DEVELOP",
+    "WITHDRAW_SUPPORT",
+    "CONSOLIDATE",
+    "PROBE",
+    "TRANSFER",
+    "EXPAND_REPERTOIRE",
+)
 
 
 class ContentType(StrEnum):
@@ -40,6 +104,35 @@ class ExpressionSubtype(StrEnum):
     FUNCTIONAL_EXPRESSION = "FUNCTIONAL_EXPRESSION"
     PRAGMATIC_FORMULA = "PRAGMATIC_FORMULA"
     SENTENCE_FRAME = "SENTENCE_FRAME"
+
+
+class ExpressionFixedness(StrEnum):
+    """docs/DATA_MODEL.md §24.4 fixedness."""
+
+    FIXED = "FIXED"
+    SEMI_FIXED = "SEMI_FIXED"
+    SLOT_BASED = "SLOT_BASED"
+
+
+class RecognitionPolicy(StrEnum):
+    """docs/DATA_MODEL.md §24.4 ExpressionVariant / RecognitionPattern
+    policies. "Recognition proposes a match；不等于 mastery.\""""
+
+    EXACT = "EXACT"
+    LEMMA_SEQUENCE = "LEMMA_SEQUENCE"
+    SLOT_PATTERN = "SLOT_PATTERN"
+    MODEL_ASSISTED = "MODEL_ASSISTED"
+
+
+class ExampleLinkRole(StrEnum):
+    """docs/DATA_MODEL.md §24.5 ExampleLink roles. The migrated corpus maps
+    ``canonical_forms`` onto PRIMARY_TARGET and
+    ``alternative_realizations`` onto SUPPORTING."""
+
+    PRIMARY_TARGET = "PRIMARY_TARGET"
+    SUPPORTING = "SUPPORTING"
+    CONTRAST = "CONTRAST"
+    ERROR_INSTANCE = "ERROR_INSTANCE"
 
 
 class ReadinessLevel(StrEnum):

@@ -11,7 +11,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from elc.platform.types import CapabilityId, CurriculumNodeId, CurriculumVersion
+from elc.platform.types import (
+    CapabilityId,
+    CurriculumNodeId,
+    CurriculumVersion,
+    ResourceId,
+)
 
 
 class CapabilityFamily(StrEnum):
@@ -55,6 +60,39 @@ class PrerequisiteStrength(StrEnum):
     HARD = "HARD"
     SOFT = "SOFT"
     SCAFFOLDABLE = "SCAFFOLDABLE"
+
+
+class CurriculumLinkRelation(StrEnum):
+    """docs/DATA_MODEL.md §24.7 / §13 CurriculumLink relations."""
+
+    REALIZES = "REALIZES"
+    SUPPORTS = "SUPPORTS"
+    EXEMPLIFIES = "EXEMPLIFIES"
+    CONTRASTS = "CONTRASTS"
+    REQUIRES = "REQUIRES"
+
+
+@dataclass(frozen=True)
+class CurriculumLinkRecord:
+    """One CurriculumLink row — the seven docs/DATA_MODEL.md §24.7 columns,
+    word for word (the same shape as §13's runtime view).
+
+    `CurriculumLink != EvidenceProjectionRule` (docs/DATA_MODEL.md §13
+    D-INV-006): a link says which curriculum node a resource realizes or
+    supports; it is never a rule for projecting evidence.
+
+    `strength` carries no canonical value vocabulary for links (§7's
+    HARD/SOFT/SCAFFOLDABLE belongs to prerequisite edges), so a source that
+    has no authored strength leaves it None instead of inventing one.
+    """
+
+    resource_id: ResourceId
+    node_id: CurriculumNodeId
+    relation: CurriculumLinkRelation
+    strength: str | None
+    primary_flag: bool
+    editorial_status: str
+    rationale: str
 
 
 @dataclass(frozen=True)

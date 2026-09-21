@@ -1,0 +1,169 @@
+# content_src/ — Content authoring source of truth（P5-0 seed）
+
+作者源（docs/DATA_MODEL.md §24 "Content authoring source of truth: `content_src/*`
+`curriculum/*`"）。`content.db` 是 `src/elc/content/build.py` 从本目录与
+`../curriculum/` **确定性生成**的 runtime artifact，**不手改**。
+
+## 数据来源声明（P5-0 迁移口径）
+
+本目录不是新创作的内容，而是把仓内唯一已验证语料
+`tests/phase3/target_fixtures.py`（P3-1A/P3-1B 的 14 个 validated target：
+`VALIDATED_TARGET_FIXTURES` + 其 `TEACHING_CONTENT`）**逐条迁移**而来
+（IMPLEMENTATION_PLAN §6 "先迁移工具链与 seed，不继续盲目扩到100"）。迁移 ≠
+删除：`tests/phase3/target_fixtures.py` 原件与其 Phase 3 消费者一字未动。
+
+探索期仓 `D:\测试1` 对 `OQ-021` / `content_toolchain` / `content_src` / `*.db`
+的全仓深搜零命中（P5-0 四查实证），故 §6 提到的旧工具链在仓内不存在可用副本；
+本目录即 P5-0 的替代 seed 路线，内容量停留在 14 个 target（不扩到 100）。
+
+## 文件布局
+
+```text
+content_src/
+  index.json                 # 索引：content_version + 实体文档清单（无 glob 兜底）
+  entities/<entity_id>.json  # 每个 validated target 一份（共 14）
+  README.md                  # 本文件 = 映射规则索引文档
+```
+
+## 映射规则（显式声明；不发明列名）
+
+### R1 — 每个 target 一条 ContentEntity（§24.1 七列逐字）
+
+14 个 target 每个对应**恰好一个** `entities/<target_id>.json`，`entity_id` =
+target id 原文（`res-*` 9 个、`cap-*` 5 个；无派生、无哈希重命名）。文档内
+`entity` 块**恰好**是 §24.1 的七列，顺序与拼写逐字：
+
+```text
+entity_id / entity_type / language / lifecycle_status /
+entity_revision / created_in_version / updated_in_version
+```
+
+- `entity_type` 只取 §24.1 六词表（LEXICAL_ENTRY / FORM / SENSE / EXPRESSION /
+  CONSTRUCTION / EXAMPLE）。本语料全部是 **EXPRESSION**：14 个 target 的可教学内容
+  都是多词表达（collocation / phrasal verb / idiom / discourse marker / sentence
+  frame / pragmatic formula / functional expression）。
+- `language` = `en`（语料为英语，与索引 `language` 一致）。
+- `lifecycle_status` 取 §24.11 词表，本语料全部 `CANONICAL_APPROVED`：这些实体来自
+  P3-1A/P3-1B 已验收语料（`content_status=VALID`，非 model-generated candidate——
+  §24.11 "Model-generated candidate 默认不是 CANONICAL_APPROVED" 的反面）。
+- `entity_revision` 为整数修订计数，本 seed 全为 `1`；`created_in_version` /
+  `updated_in_version` = 本发布 `content_version`（见 `index.json`）。
+
+### R2 — 表达子类型映射（§24.4）
+
+`expression` 块**恰好**三个字段，值域全部来自 §24.4：
+
+```text
+expression_type      # §24.4 八个 first-class type
+fixedness            # §24.4 FIXED | SEMI_FIXED | SLOT_BASED
+recognition_policy   # §24.4 EXACT | LEMMA_SEQUENCE | SLOT_PATTERN | MODEL_ASSISTED
+```
+
+作者规则（规则清单在此逐条写明；实体文档只落值、不逐字段解释；build 逐条校验
+词表成员，不校验语义）：
+
+- `expression_type` 按该 target 的语言学性质取 §24.4 八词之一（如 idiom →
+  IDIOM、phrasal verb → PHRASAL_VERB、collocation → COLLOCATION、discourse
+  marker → DISCOURSE_MARKER、frame → SENTENCE_FRAME、politeness/hedge formula →
+  PRAGMATIC_FORMULA、function word 类 → FUNCTIONAL_EXPRESSION）；
+- `fixedness`：整体固定 → FIXED；词形可变但搭配固定 → SEMI_FIXED；含开放槽位 →
+  SLOT_BASED；
+- `recognition_policy`：固定 lemma 序列可识别 → LEMMA_SEQUENCE；需要槽位填充
+  才算识别 → SLOT_PATTERN。§24.4 "Recognition proposes a match；不等于 mastery"
+  ——该字段不承载任何掌握度语义。
+
+### R3 — target 默认值（§11 + §24.14）
+
+`target` 块**恰好**四字段，迁移自 fixture 的 `TeachingTargetView`：
+
+```text
+target_type         # RESOURCE | CAPABILITY（DOMAIN_MODEL §6 两族）
+target_mode         # DOMAIN_MODEL §11 五词表
+learning_intent     # DOMAIN_MODEL §11 七词表
+evidence_modality   # DATA_MODEL §24.14 V1 两词表
+```
+
+fixture 的 `target_status` / `content_status`（`VALID`）是解析期的**有效性判定**
+（`elc.teaching.targets` 端口语义），不是内容数据，故不落库：`content_status=VALID`
+映射为实体已存在于本 release 且 `lifecycle_status` 为 live 值（CANONICAL_APPROVED），
+`target_status=VALID` 映射为该解析结论本身。这是本迁移**唯一**未逐字落库的
+fixture 字段（逐项见 §"fixture 字段 → 落库位置"）。
+
+### R4 — 教学内容载荷（P3-1B 形状，字段名逐字）
+
+`teaching_content` 块**恰好**五字段，字段名逐字取自
+`elc.teaching.targets.TeachingTargetView`（P3-1B 已验收形状，canonical §24 未定义
+ladder/answer-key 表，故按 P3 形状迁移，不另起列名）：
+
+```text
+hint_ladder              # 有序提示阶梯（semantic → structural → partial form）
+reveal_form              # 揭示用 canonical form（build 强制 ∈ canonical_forms）
+canonical_forms          # 答案键：可作为正确实现的形式，逐字
+alternative_realizations # 同一 target 的其他合法实现（§5 ALTERNATIVE_SUCCESS）
+required_slots           # PARTIAL 判定需覆盖的 token 组
+```
+
+落库形态：`canonical_forms` → `content_example` 行（role = §24.5 ExampleLink
+角色 `PRIMARY_TARGET`），`alternative_realizations` → `content_example` 行（role
+= §24.5 `SUPPORTING`）——表名取 §24.5 的 Example 概念，**不叫** `content_form`
+（§24.2 的 `Form` 是另一个 canonical 概念：written/normalized/form_type/
+morph_features）；`hint_ladder` → `content_hint_rung`（ordinal 保序）；
+`required_slots` → `content_slot`（group_ordinal + token_ordinal 保序）；
+`reveal_form` → `content_teaching.reveal_form`。
+
+### R5 — capability linkage / prerequisite（curriculum 面，§24.7 / §7）
+
+capability linkage **不进 content_src**，进 `../curriculum/links.json`：
+resource → capability node 的 `CurriculumLink`（§24.7 七列逐字：resource_id /
+node_id / relation / strength / primary_flag / editorial_status / rationale）。
+9 条 REALIZES 链接 = 9 个 RESOURCE target 的 fixture `capability_linkage` 逐条迁移。
+
+`strength` 在 canonical 中**只有 prerequisite 边**给了词表（§7
+HARD/SOFT/SCAFFOLDABLE）；§24.7 未给 CurriculumLink 的 strength 值域，故本语料
+一律写 `null`（不发明词表），build 允许 `null` 或 §7 三词。前置边
+（`../curriculum/prerequisites.json`）本语料为空集：P3-1B 语料未声明任何
+prerequisite，**不替作者发明**。
+
+CAPABILITY target（`cap-*` 5 个）的迁移规则：`entities/cap-*.json` 是该 capability
+的 canonical realization 表达（同 id）；`curriculum/capabilities/cap-*.json` 是
+capability registry 节点（同 id，两个 id 空间）。节点 ↔ realization 由 id 同一性
+对应（§24.5 的"通过 CurriculumLink 连接"约束的是**不同**实体；此处两者是同一
+target 的两个域视图，故不造自环链接行）。
+
+### fixture 字段 → 落库位置（14 × 逐字段）
+
+| fixture 字段 | 落库位置 |
+| --- | --- |
+| `target_type` | `content_target.target_type` + （CAPABILITY 时）`curriculum_capability` 行 |
+| `target_id` | `content_entity.entity_id`（逐字） |
+| `target_status` | 不落库（解析期有效性判定；映射见 R3） |
+| `content_status` | 不落库（同上） |
+| `target_mode` | `content_target.target_mode` |
+| `learning_intent` | `content_target.learning_intent` |
+| `evidence_modality` | `content_target.evidence_modality` |
+| `hint_ladder` | `content_hint_rung`（ordinal 0..n-1） |
+| `reveal_form` | `content_teaching.reveal_form` |
+| `canonical_forms` | `content_example`（role=PRIMARY_TARGET） |
+| `alternative_realizations` | `content_example`（role=SUPPORTING） |
+| `required_slots` | `content_slot`（group/token ordinal） |
+| `capability_linkage` | `curriculum_link`（relation=REALIZES, primary_flag=1） |
+
+## 确定性规则
+
+- 构建顺序：实体/能力/链接一律按 id 排序后写入（`entity_id` / `capability_id` /
+  `(resource_id, node_id, relation)`），与文件系统遍历顺序、索引清单顺序无关；
+- **无墙钟入内容**：内容不含任何时间戳/构建时间（§26.1 的 `updated_at` 在
+  content.db 中**有意不写**——它会让同源重建不字节一致；版本由
+  `content_version` / `curriculum_version` 表达）；
+- 源缺失、清单不一致（索引列出但文件不存在 / 目录里存在但未入索引）、词表越界、
+  引用悬空（link 指向不存在的 resource/node）**一律拒绝构建**（`BuildError`），
+  不静默跳过。
+
+## 重建
+
+```bash
+PYTHONPATH=src python -m elc.content.build --out build/content.db
+```
+
+ADR：`content.db` 是生成物（`.gitignore` 已含 `*.db`），由 CI/本地按需重建；
+本目录与 `../curriculum/` 是版本控制内的唯一作者源。

@@ -1,0 +1,41 @@
+{
+  "entity": {
+    "entity_id": "cap-disc-topic-shift",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "DISCOURSE_MARKER",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "CAPABILITY",
+    "target_mode": "CAPABILITY_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Move the conversation to a new topic explicitly.",
+      "Use a short signpost, then the new topic.",
+      "Fill in: Speaking of which, ___ the meeting?"
+    ],
+    "reveal_form": "Speaking of which, how was the meeting?",
+    "canonical_forms": [
+      "Speaking of which, how was the meeting?"
+    ],
+    "alternative_realizations": [
+      "On that note, how was the meeting?"
+    ],
+    "required_slots": [
+      [
+        "meeting"
+      ]
+    ]
+  }
+}
