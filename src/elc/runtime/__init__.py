@@ -32,12 +32,27 @@ from elc.runtime.lease import (
     LeaseGuard,
     StaleCoordinatorEpoch,
 )
+from elc.runtime.projections import (
+    PROJECTION_TYPE_RELATIONSHIP,
+    SUPPORTED_PROJECTION_TYPES,
+    CP4ProjectionRuntime,
+    ProjectionExecutor,
+    ProjectionJobStore,
+    ProjectionJobView,
+    ProjectionRunResult,
+    ProjectionTurnSource,
+    base_version_for,
+    projection_id_for,
+    turn_slice_hash,
+)
 from elc.runtime.queries import RuntimeQueries
 from elc.runtime.recovery import (
     RECOVERY_KIND_LOCK,
     RECOVERY_KIND_TURN,
     TEACHING_LOCK_RECOVERY_ACTION,
+    DanglingEvidenceRef,
     StartupRecoveryScanner,
+    TeachingEvidenceRefSource,
     TeachingLockRecoverySource,
     TurnRecordRecoverySource,
     recovery_disposition,
@@ -72,10 +87,14 @@ _CONTROLLER_EXPORTS = (
 
 __all__ = [
     "AssistantDelivery",
+    "CP4ProjectionRuntime",
+    "DanglingEvidenceRef",
     "GENERATION_ACTION_TRANSITIONS",
+    "PROJECTION_TYPE_RELATIONSHIP",
     "RECOVERY_KIND_LOCK",
     "RECOVERY_KIND_TURN",
     "RECOVERY_REARM_STATUS",
+    "SUPPORTED_PROJECTION_TYPES",
     "TERMINAL_TURN_STATUSES",
     "ConversationCoordinator",
     "ConversationCoordinatorLease",
@@ -89,8 +108,13 @@ __all__ = [
     "InputEnvelope",
     "InterruptRequest",
     "LeaseGuard",
+    "ProjectionExecutor",
     "ProjectionJobRecord",
     "ProjectionJobState",
+    "ProjectionJobStore",
+    "ProjectionJobView",
+    "ProjectionRunResult",
+    "ProjectionTurnSource",
     "ProviderAttemptRecord",
     "RecoveryAction",
     "RuntimeCommands",
@@ -100,6 +124,7 @@ __all__ = [
     "StartupRecoveryScanner",
     "StaleCoordinatorEpoch",
     "TEACHING_LOCK_RECOVERY_ACTION",
+    "TeachingEvidenceRefSource",
     "TeachingLockRecoverySource",
     "TurnCompletion",
     "TurnRecordData",
@@ -107,10 +132,13 @@ __all__ = [
     "TurnRecoveryClosure",
     "TurnStatus",
     "ValidatorResultRecord",
+    "base_version_for",
     "claim_rearm",
+    "projection_id_for",
     "recovery_disposition",
     "terminal_refusal",
     "transition_refusal",
+    "turn_slice_hash",
 ]
 
 

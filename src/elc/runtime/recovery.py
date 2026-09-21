@@ -40,10 +40,23 @@ its own injected ports, scans once, and then applies what a new epoch may
 apply (the lock sweep, plus the turn-level reconciliation of the delivery
 residue that sweep just unsealed). This module stays the read half; the
 coordinator stays the only writer.
+
+P4-2 (DEC-OPI-5ba74efc-….96 F1): the same read-half bargain covers one more
+startup read — the refs↔proposal reconciliation. §17's
+``AttemptEvaluationRecord.evidence_proposal_refs`` names the durable
+learning-side proposal an evaluation produced; a ref whose proposal row does
+not exist is a durable trace pointing nowhere (the P4-0 ① durable-pending
+chain removed the *write* hazard, and this scan names the residue a crash
+between the two writes would have left). The read is
+:class:`TeachingEvidenceRefSource` — the teaching side names what it
+recorded, and the existence check itself runs on the coordinator over
+Learning's own authority face (the teaching package may not import
+``elc.learning``), never by re-deriving a ref string here.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 from elc.platform.types import (
@@ -66,7 +79,9 @@ __all__ = [
     "RECOVERY_KIND_LOCK",
     "RECOVERY_KIND_TURN",
     "TEACHING_LOCK_RECOVERY_ACTION",
+    "DanglingEvidenceRef",
     "StartupRecoveryScanner",
+    "TeachingEvidenceRefSource",
     "TeachingLockRecoverySource",
     "TurnRecordRecoverySource",
     "recovery_disposition",
@@ -114,6 +129,40 @@ class TeachingLockRecoverySource(Protocol):
     def orphan_teaching_lock_moments(
         self, current_epoch: RuntimeEpoch
     ) -> tuple[str, ...]:
+        ...
+
+
+@dataclass(frozen=True)
+class DanglingEvidenceRef:
+    """One §17 ``evidence_proposal_refs`` entry whose durable proposal row
+    does not exist (P4-2, DEC-OPI-5ba74efc-….96 F1).
+
+    ``evaluation_id`` is the AttemptEvaluationRecord that recorded the ref
+    and ``ref`` is the ref text exactly as the row carries it — never
+    re-derived, never normalized: the point of the scan is to report the
+    durable trace as it stands.
+    """
+
+    evaluation_id: str
+    ref: str
+
+
+@runtime_checkable
+class TeachingEvidenceRefSource(Protocol):
+    """Durable read face for the refs↔proposal reconciliation (implemented
+    by the teaching store / its controller face — the runtime package stays
+    SQL-free, Gate item 2).
+
+    Returns ``(attempt_evaluation_id, evidence_proposal_refs)`` per durable
+    evaluation row, in deterministic order. The face only *names* what the
+    teaching side recorded; resolving each ref against Learning's proposal
+    table is the coordinator's job (the two packages never import each
+    other — BF-05's allow/deny lists, and the P4-G1 AST pin).
+    """
+
+    def evidence_proposal_refs(
+        self,
+    ) -> Result[tuple[tuple[str, tuple[str, ...]], ...]]:
         ...
 
 

@@ -13,7 +13,9 @@ So every face is exercised from both sides of the pair:
   memory space;
 - the Recorder handed B's summary cannot even name A's memory (the supersede
   pointer is refused without disclosure), and the write face refuses a
-  cross-persona supersede with AUTHORITY_VIOLATION rather than following it.
+  cross-persona supersede with exactly the refusal a never-existed id gets —
+  same code, same message, no existence disclosed (DEC-…5ba74efc.115 F3;
+  BF-05 §29).
 """
 
 from __future__ import annotations
@@ -183,21 +185,25 @@ def test_the_recorder_cannot_reach_another_personas_memory(
     assert accepted.proposals[0].supersedes_memory_id == memory_id
 
 
-def test_a_cross_persona_supersede_is_refused_by_the_write_face(
+def test_a_cross_persona_supersede_is_indistinguishable_from_a_missing_target(
     store: SqliteConversationStore,
     recorder: RelationshipRecorder,
     relationship_controller: RelationshipController,
     db: sqlite3.Connection,
 ) -> None:
-    """Even a hand-assembled cross-persona pointer is refused with
-    AUTHORITY_VIOLATION, and the other persona's row is untouched."""
+    """DEC-…5ba74efc.115 F3 / BF-05 §29: the write face reads the supersede
+    target *inside* the writing scope, so another persona's row is not
+    "refused as foreign" — it is not there at all. The two probes below come
+    back with the same code and the same message, word for word, and the
+    other persona's row is untouched."""
 
     memory_id = _write_for_persona_a(store, recorder, relationship_controller)
     conversation = open_conversation_for(store, "conv-iso-c", PERSONA_B)
     b_turn = speak(store, conversation, "cm-1", "I live in Hamburg.")
     before = memory_rows(db)
 
-    refused = relationship_controller.propose_memory(
+    # Probe 1: the pointer names Persona A's row (it exists — elsewhere).
+    cross_scope = relationship_controller.propose_memory(
         memory_proposal(
             "The user lives in Hamburg.",
             persona_id=PERSONA_B,
@@ -205,10 +211,26 @@ def test_a_cross_persona_supersede_is_refused_by_the_write_face(
             supersedes_memory_id=memory_id,
         )
     )
-    assert isinstance(refused, Err)
-    assert refused.error.code is DomainErrorCode.AUTHORITY_VIOLATION
-    assert "never crosses personas" in refused.error.message
-    # The refusal echoes the id the caller supplied and no content of the
-    # other persona's memory (§29).
-    assert "Berlin" not in refused.error.message
+    # Probe 2: the pointer names a row that never existed at all.
+    never_existed = relationship_controller.propose_memory(
+        memory_proposal(
+            "The user lives in Hamburg.",
+            persona_id=PERSONA_B,
+            source_turn_id=TurnId(b_turn),
+            supersedes_memory_id=RelationshipMemoryId("rm-never-existed"),
+        )
+    )
+
+    assert isinstance(cross_scope, Err)
+    assert isinstance(never_existed, Err)
+    # One refusal, word for word: the caller cannot tell the two apart, so the
+    # refusal never discloses that another persona's row is there.
+    assert cross_scope.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert cross_scope.error.code is never_existed.error.code
+    assert cross_scope.error.message == never_existed.error.message
+    assert cross_scope.error.message == "supersede target not found"
+    # The refusal never echoes the other persona's content (§29).
+    assert "Berlin" not in cross_scope.error.message
+    # Zero writes on either probe: the other persona's row is exactly as it
+    # was.
     assert memory_rows(db) == before

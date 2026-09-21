@@ -104,9 +104,10 @@ class RelationshipController:
         the BF-05 gate, and the store's conflict/authority faces.
 
         Error codes: a refusal is VALIDATION_FAILED (the write is not legal in
-        this form — including the gate's DENY), a cross-persona supersede
-        target is AUTHORITY_VIOLATION, and an id clash with a different
-        payload is CONFLICT.
+        this form — including the gate's DENY, and including a supersede
+        target this Persona×User pair cannot see: a cross-persona pointer is
+        reported exactly like a never-existed id, DEC-…5ba74efc.115 F3 /
+        BF-05 §29), and an id clash with a different payload is CONFLICT.
         """
 
         violation = validate_proposal(proposal)

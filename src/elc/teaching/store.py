@@ -1330,6 +1330,37 @@ class SqliteTeachingStore:
 
     # -- reads --------------------------------------------------------------
 
+    def evidence_proposal_refs(
+        self,
+    ) -> Result[tuple[tuple[str, tuple[str, ...]], ...]]:
+        """Every §17 ``evidence_proposal_refs`` row, in durable order (P4-2).
+
+        The refs↔proposal reconciliation read (DEC-…5ba74efc.96 F1): the
+        teaching side *names* which evidence proposal each evaluation
+        recorded, and the runtime checks those names against Learning's
+        durable proposal table — the teaching package may not import
+        ``elc.learning``, so the existence check stays on the runtime side
+        (the same split as every other teaching↔learning seam).
+
+        Read-only and complete: every evaluation row is returned with the
+        refs exactly as the row carries them — never re-derived, never
+        filtered by a prefix (a ref whose shape nobody recognizes is still a
+        ref that has to resolve), and an evaluation with no refs (ABSTAIN)
+        is returned with an empty tuple rather than hidden.
+        """
+
+        rows = self._conn.execute(
+            "SELECT attempt_evaluation_id, evidence_proposal_refs"
+            " FROM attempt_evaluation_record"
+            " ORDER BY created_at, attempt_evaluation_id",
+        ).fetchall()
+        return Ok(
+            tuple(
+                (str(row[0]), _array_from_document(str(row[1])))
+                for row in rows
+            )
+        )
+
     def get_active_moment(
         self, conversation_id: ConversationId
     ) -> Result[TeachingMomentRecord | None]:

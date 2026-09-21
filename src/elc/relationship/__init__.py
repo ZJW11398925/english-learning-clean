@@ -2,6 +2,10 @@
 
 from elc.relationship.commands import RelationshipCommands
 from elc.relationship.controller import RelationshipController
+from elc.relationship.projection import (
+    RelationshipCandidateProvider,
+    RelationshipProjectionExecutor,
+)
 from elc.relationship.queries import RelationshipQueries
 from elc.relationship.recorder import (
     RELATIONSHIP_RECORDER_ID,
@@ -55,6 +59,7 @@ __all__ = [
     "MemoryStatus",
     "PersistenceAuthorization",
     "PersistenceDecision",
+    "RelationshipCandidateProvider",
     "RelationshipCommands",
     "RelationshipController",
     "RelationshipMemoryCandidate",
@@ -63,6 +68,7 @@ __all__ = [
     "RelationshipMemoryRefusal",
     "RelationshipMemorySummaryEntry",
     "RelationshipMemoryType",
+    "RelationshipProjectionExecutor",
     "RelationshipQueries",
     "RelationshipRecorder",
     "RelationshipRecorderKey",

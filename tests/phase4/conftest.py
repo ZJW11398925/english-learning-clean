@@ -28,6 +28,7 @@ from elc.persona import ScriptedPersonaProvider
 from elc.platform.db import connection, epoch, migrations
 from elc.platform.db.decision_cycle_store import SqliteDecisionCycleStore
 from elc.platform.db.epoch import RuntimeEpochFence
+from elc.platform.db.projection_store import SqliteProjectionStore
 from elc.platform.types import (
     ActionId,
     AssistantTurnId,
@@ -37,7 +38,9 @@ from elc.platform.types import (
     MessageSequence,
     Ok,
     PersonaId,
+    ProjectionJobId,
     RelationshipMemoryId,
+    Result,
     TurnId,
     TurnSequence,
     UserId,
@@ -52,6 +55,7 @@ from elc.relationship import (
     RelationshipMemoryCandidate,
     RelationshipMemoryProposal,
     RelationshipMemoryType,
+    RelationshipProjectionExecutor,
     RelationshipRecorder,
     RelationshipRecorderKey,
     RelationshipRecorderOutcome,
@@ -59,6 +63,7 @@ from elc.relationship import (
 )
 from elc.relationship.store import SqliteRelationshipStore
 from elc.runtime.controller import ConversationCoordinator, TeachingReplyRequest
+from elc.runtime.projections import CP4ProjectionRuntime
 from elc.runtime.types import InputEnvelope
 from elc.teaching.controller import TeachingController
 from elc.teaching.envelope import (
@@ -514,3 +519,138 @@ def memory_rows(db: sqlite3.Connection) -> list[tuple[object, ...]]:
         " FROM relationship_memory"
         " ORDER BY created_at, relationship_memory_id"
     ).fetchall()
+
+
+# -- P4-2: the CP4 projection world ----------------------------------------
+
+
+class ScriptedCandidates:
+    """A MODEL_PROPOSAL source a test scripts up front (P4-2).
+
+    The provider face the Relationship executor consumes: it answers every
+    turn with the same declared assertions, exactly like a v0 assembly whose
+    provider produced them. Mutable on purpose — a test fills it before
+    driving the turn that should project.
+    """
+
+    def __init__(
+        self, candidates: tuple[RelationshipMemoryCandidate, ...] = ()
+    ) -> None:
+        self.candidates = candidates
+
+    def candidates_for(
+        self, turn: CanonicalTurnSlice
+    ) -> Result[tuple[RelationshipMemoryCandidate, ...]]:
+        del turn
+        return Ok(self.candidates)
+
+
+@pytest.fixture()
+def projection_store(
+    db: sqlite3.Connection, fence: RuntimeEpochFence
+) -> SqliteProjectionStore:
+    """The durable CP4 work queue over migration 0002's projection_job."""
+
+    return SqliteProjectionStore(db, fence)
+
+
+@pytest.fixture()
+def scripted_candidates() -> ScriptedCandidates:
+    return ScriptedCandidates()
+
+
+@pytest.fixture()
+def relationship_projection(
+    store: SqliteConversationStore,
+    relationship_controller: RelationshipController,
+    projection_store: SqliteProjectionStore,
+    scripted_candidates: ScriptedCandidates,
+) -> RelationshipProjectionExecutor:
+    """The live RELATIONSHIP executor: the real recorder (over the durable
+    command-turn classifier), the real controller, the real conversation
+    store as the turn source, and a scripted candidate provider.
+
+    The unused ``projection_store`` dependency is declared on purpose: it
+    keeps the fixture graph honest about which world this executor is built
+    for (the store is injected into the runtime below, not into the
+    executor — an executor never writes the queue itself).
+    """
+
+    del projection_store
+    return RelationshipProjectionExecutor(
+        recorder=RelationshipRecorder(store),
+        controller=relationship_controller,
+        conversation=store,
+        user_id=REL_USER,
+        candidates=scripted_candidates,
+    )
+
+
+@pytest.fixture()
+def projection_runtime(
+    projection_store: SqliteProjectionStore,
+    store: SqliteConversationStore,
+    relationship_projection: RelationshipProjectionExecutor,
+) -> CP4ProjectionRuntime:
+    """The CP4 runtime over the real durable queue and turn source."""
+
+    return CP4ProjectionRuntime(
+        store=projection_store,
+        executors=(relationship_projection,),
+        turns=store,
+    )
+
+
+@pytest.fixture()
+def projecting_coordinator(
+    store: SqliteConversationStore,
+    generation_store: AssemblyGenerationStore,
+    fence: RuntimeEpochFence,
+    learning: SqliteLearningStore,
+    decision_cycle_store: SqliteDecisionCycleStore,
+    teaching_controller: TeachingController,
+    target_provider: TeachingTargetProvider,
+    conversation: ConvId,
+    projection_runtime: CP4ProjectionRuntime,
+) -> ConversationCoordinator:
+    """The P3-1A/P3-1B assembly *plus* the CP4 port: every turn that ends Ok
+    runs its post-turn projections after the guard is released."""
+
+    del conversation
+    return make_teaching_coordinator(
+        store,
+        generation_store,
+        make_lease(fence),
+        ScriptedPersonaProvider(),
+        learning,
+        decision_cycle_store,
+        teaching_controller,
+        target_provider,
+        projections=projection_runtime,
+    )
+
+
+def projection_job_rows(db: sqlite3.Connection) -> list[tuple[object, ...]]:
+    """Every durable projection_job row, in durable order."""
+
+    return db.execute(
+        "SELECT projection_id, projection_type, source_turn_id,"
+        " source_turn_slice_hash, base_domain_version, status,"
+        " attempt_count, created_at, updated_at"
+        " FROM projection_job"
+        " ORDER BY created_at, projection_id"
+    ).fetchall()
+
+
+def projection_job_row(
+    db: sqlite3.Connection, projection_id: ProjectionJobId
+) -> tuple[object, ...]:
+    row = db.execute(
+        "SELECT projection_id, projection_type, source_turn_id,"
+        " source_turn_slice_hash, base_domain_version, status,"
+        " attempt_count, created_at, updated_at"
+        " FROM projection_job WHERE projection_id = ?",
+        (str(projection_id),),
+    ).fetchone()
+    assert row is not None, f"projection job not durable: {projection_id}"
+    return tuple(row)

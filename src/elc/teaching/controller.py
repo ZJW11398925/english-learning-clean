@@ -356,6 +356,22 @@ class TeachingController:
 
         return self._store.get_attempt_evaluation(attempt_id)
 
+    def evidence_proposal_refs(
+        self,
+    ) -> Result[tuple[tuple[str, tuple[str, ...]], ...]]:
+        """Every evaluation's §17 ``evidence_proposal_refs``, in durable
+        order (P4-2; DEC-…5ba74efc.96 F1).
+
+        A pure delegation to the domain store — the authority face owns no
+        reconciliation policy: the runtime checks each ref against Learning's
+        own proposal read and reports the dangling ones. Satisfies the
+        runtime package's ``TeachingEvidenceRefSource`` protocol, so the
+        startup line can ask for the refs without the runtime touching SQL
+        (Gate item 2) and without the teaching package importing Learning.
+        """
+
+        return self._store.evidence_proposal_refs()
+
     def issue_ephemeral_directive(
         self,
         moment_id: MomentId,

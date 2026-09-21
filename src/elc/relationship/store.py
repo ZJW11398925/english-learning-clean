@@ -27,10 +27,13 @@ for facts; §2 short atomic commits):
 
 Fencing: every write checks the store epoch against the newest durable epoch
 before anything is written (the teaching-store precedent; a stale store is a
-programming error and raises). Cross-scope reads do not exist: every read is
-scoped to one (persona_id, user_id) pair, and a supersede pointer that names
-another persona's row is refused with AUTHORITY_VIOLATION rather than
-followed (DOMAIN_MODEL §17 "Relationship 不跨 Persona 泄漏"; BF-05 §29).
+programming error and raises). Cross-scope reads do not exist: every read —
+including the supersede target lookup — is scoped to one (persona_id,
+user_id) pair, so a supersede pointer that names another persona's row is
+not "refused as foreign": it is simply not found, with the *same* refusal a
+never-existed id gets (DOMAIN_MODEL §17 "Relationship 不跨 Persona 泄漏";
+BF-05 §29: another persona's memory is never visible, not even its
+existence).
 
 All SQL is a fixed literal with bound parameters — no identifier assembly,
 no runtime value in any statement text. JSON columns follow migration 0009's
@@ -185,25 +188,30 @@ class SqliteRelationshipStore:
         A declared update never silently becomes an append and never silently
         disappears: every refusal below is returned as an Err, and the caller
         branches on the value instead of assuming it ran.
+
+        The target lookup is *scoped to the write's own Persona×User pair*
+        (DEC-…5ba74efc.115 F3, BF-05 §29): a pointer into another persona's
+        row is not read, not echoed and not distinguished from a pointer to
+        an id that never existed — both come back as the one "supersede
+        target not found" refusal, word for word, with no id echoed back (the
+        caller supplied the id; echoing it would add nothing and keeping it
+        out is what makes the two refusals *one* refusal). That is the
+        narrowest face the §29 non-disclosure rule can have: a cross-persona
+        probe learns nothing, not even that the row is there.
         """
 
         target_id = record.supersedes_memory_id
         assert target_id is not None  # caller checked
-        target = self._memory_by_id(target_id)
+        scoped = self.get_scoped_memory(
+            record.persona_id, record.user_id, target_id
+        )
+        if isinstance(scoped, Err):
+            return scoped
+        target = scoped.value
         if target is None:
             return _err(
                 DomainErrorCode.VALIDATION_FAILED,
-                f"supersede target not found: {target_id}",
-            )
-        if (
-            target.persona_id != record.persona_id
-            or target.user_id != record.user_id
-        ):
-            return _err(
-                DomainErrorCode.AUTHORITY_VIOLATION,
-                f"memory {target_id} belongs to another Persona×User pair; a"
-                " relationship write never crosses personas (DOMAIN_MODEL §17;"
-                " BF-05 §29)",
+                "supersede target not found",
             )
         if target.memory_type is not record.memory_type:
             return _err(

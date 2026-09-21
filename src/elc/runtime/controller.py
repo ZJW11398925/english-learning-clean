@@ -86,9 +86,16 @@ from elc.runtime.decision_cycles import (
 )
 from elc.runtime.generation import GenerationActionStore
 from elc.runtime.lease import ConversationCoordinatorLease
+from elc.runtime.projections import (
+    CP4ProjectionRuntime,
+    ProjectionJobView,
+    ProjectionRunResult,
+)
 from elc.runtime.recovery import (
     RECOVERY_KIND_TURN,
+    DanglingEvidenceRef,
     StartupRecoveryScanner,
+    TeachingEvidenceRefSource,
     TurnRecordRecoverySource,
 )
 from elc.runtime.types import (
@@ -385,11 +392,40 @@ class StartupRecoveryOutcome:
     delivery turns that sweep unsealed and this pass reconciled to a
     terminal state (review F7). Every field is durable-fact derived: no
     item appears here that is not also visible through the store reads.
+
+    P4-2 adds the three recovery lines as *defaulted* fields — every
+    existing construction (positional and keyword) and every equality
+    assertion over the first three fields keeps its exact meaning:
+
+    - ``projection_jobs`` / ``projection_runs`` — the CP4 sweep: the
+      crash-gap jobs ``ensure_missing_jobs`` repaired (deterministic ids)
+      and what the subsequent ``run_pending`` passes did with them;
+    - ``reopened_projections`` — the RUNNING rows of a dead process that
+      ``recover_stale_running`` put back on the retry edge *before* that
+      sweep (a claim that never reported is residue, not live work — see the
+      runtime face for the liveness argument);
+    - ``committed_evidence_proposals`` — the durable PENDING teaching
+      evidence proposals the explicit retry face landed (DEC-…96 F2);
+    - ``dangling_evidence_refs`` — the §17 evaluation refs with no durable
+      proposal row (DEC-…96 F1);
+    - the three ``*_unavailable`` flags say that an optional recovery line
+      could not run at all (an ``Err`` or a raised exception): startup
+      completed without it, and the empty tuples above mean "not read",
+      never "nothing there". The durable rows stay exactly as they were —
+      a pending proposal is still pending, a fenced job still unfinished.
     """
 
     plan: tuple[RecoveryAction, ...]
     recovered_moments: tuple[str, ...]
     closed_turns: tuple[TurnRecoveryClosure, ...]
+    projection_jobs: tuple[ProjectionJobId, ...] = ()
+    projection_runs: tuple[ProjectionRunResult, ...] = ()
+    projection_recovery_unavailable: bool = False
+    committed_evidence_proposals: tuple[str, ...] = ()
+    teaching_evidence_retry_unavailable: bool = False
+    dangling_evidence_refs: tuple[DanglingEvidenceRef, ...] = ()
+    evidence_ref_scan_unavailable: bool = False
+    reopened_projections: tuple[ProjectionJobId, ...] = ()
 
 
 class RuntimeOrchestrator:
@@ -463,25 +499,38 @@ class RuntimeOrchestrator:
     def enqueue_projection(
         self, job: ProjectionJobRecord
     ) -> Result[ProjectionJobId]:
-        """CP4 projection enqueue — deliberately unimplemented until P4-2.
+        """CP4 projection enqueue — this facade stays a pointer (P4-0's nail).
 
-        P4-0 ④ fixes the *contract* (elc.runtime.types module docstring:
-        deterministic projection_id, idempotent enqueue, the §22.1
+        The contract lives in the elc.runtime.types module docstring
+        (deterministic projection_id, idempotent enqueue, the §22.1
         PENDING → RUNNING → COMMITTED / FAILED_RETRYABLE → REJECTED states,
         source_turn_slice_hash + base_domain_version revalidation on retry,
         no ConversationCoordinatorLease held, a failure that neither rolls
         back the transcript nor re-sends the assistant nor blocks the next
         turn, and ``ensure_projection_job`` re-creating a crash-gap job from
-        its deterministic id). The runtime that executes it — the
-        post-guard execution, the retry loop and the ensure face — is P4-2;
-        this face stays a raise so no caller can mistake the contract for an
-        implementation.
+        its deterministic id) — and since P4-2 it is *implemented* by
+
+            elc.runtime.projections.CP4ProjectionRuntime
+
+        over the durable queue
+        ``elc.platform.db.projection_store.SqliteProjectionStore`` (migration
+        0002's ``projection_job`` table). This parameterless skeleton entry
+        stays a raise on purpose: it is the P4-0 pin that no caller may
+        mistake the contract for an implementation, and everything a caller
+        would have to decide — which store, which executors, which turn
+        source — is an assembly-face concern the injected runtime owns, not
+        something this facade could answer.
+
+        (The message keeps naming P4-2 because the contract pin asserts that
+        word; the real entry point is the projection runtime above.)
         """
 
         raise NotImplementedError(
-            "CP4 projection runtime is P4-2: P4-0 lands the durable table"
-            " (migration 0002), the §22.1 states and the contracts only"
-            " (elc.runtime.types module docstring)"
+            "CP4 projection enqueue is the injected CP4ProjectionRuntime"
+            " (elc.runtime.projections) over"
+            " elc.platform.db.projection_store.SqliteProjectionStore; this"
+            " facade is the P4-0 pin, never the entry point (P4-2 delivered"
+            " the runtime and its post-turn / startup wiring)"
         )
 
     def startup_recovery(self) -> Result[tuple[RecoveryAction, ...]]:
@@ -553,6 +602,24 @@ class ConversationCoordinator:
     sweep unseals (review F6/F7). The reply path's ``DELIVERING`` slot is
     reached before the live-moment guard and adopts a foreign-epoch turn
     only once its leg is actually finishable (review F7).
+
+    Phase 4 P4-2 (TASK-…9 B): the optional ``projections`` port
+    (elc.runtime.projections.CP4ProjectionRuntime) turns the same coordinator
+    into the CP4 post-turn projection entry point —
+
+    - ``begin_turn`` / ``respond_to_teaching`` run their whole guard body in
+      private ``*_guarded`` halves and call
+      :meth:`_run_post_turn_projections` *after* the guard is released
+      (RA §19: a projection never continues to occupy the
+      ConversationCoordinatorLease);
+    - a projection failure is never the turn's failure (R-INV-010): the
+      Ok result of the turn travels back unchanged and the failure lives in
+      the durable job row (PENDING / FAILED_RETRYABLE), which the next turn
+      or the startup sweep picks up;
+    - ``run_startup_recovery`` gains the CP4 sweep and the two durable-
+      backlog lines (DEC-…96 F1/F2) as defaulted outcome fields, so every
+      assembly without the port keeps its exact plan shape and every
+      existing construction/equality assertion over the plan stays true.
     """
 
     def __init__(
@@ -568,6 +635,7 @@ class ConversationCoordinator:
         learning_controller: LearningController | None = None,
         teaching: TeachingController | None = None,
         targets: TeachingTargetProvider | None = None,
+        projections: CP4ProjectionRuntime | None = None,
     ) -> None:
         self._lease = lease
         self._commands = conversation_commands
@@ -580,13 +648,32 @@ class ConversationCoordinator:
         self._learning_controller = learning_controller
         self._teaching = teaching
         self._targets = targets
+        self._projections = projections
 
     # -- minimum turn loop ---------------------------------------------------
 
     def begin_turn(self, command: CommitUserTurn) -> Result[TurnCompletion]:
         """One full turn: guard → CP0 → generation → buffered validated
         delivery → terminalization. Idempotent on client_message_id
-        (duplicate input replays the original turn's terminal result)."""
+        (duplicate input replays the original turn's terminal result).
+
+        P4-2: the guarded half lives in :meth:`_begin_turn_guarded` and the
+        CP4 post-turn projection runs *after* that guard is released — the
+        projection must never extend the conversation's one-coordinator
+        window (RA §19/§24.1), and its failure must never change this
+        result (R-INV-010).
+        """
+
+        result = self._begin_turn_guarded(command)
+        self._run_post_turn_projections(command.conversation_id, result)
+        return result
+
+    def _begin_turn_guarded(
+        self, command: CommitUserTurn
+    ) -> Result[TurnCompletion]:
+        """The guard-holding half of ``begin_turn``: CP0 → learning leg →
+        DecisionCycle → generation → buffered validated delivery →
+        terminalization, exactly as P1/P2/P3 pinned it."""
 
         with self._lease.hold(command.conversation_id):
             cp0_result = self._commands.commit_user_turn(command)
@@ -816,6 +903,45 @@ class ConversationCoordinator:
                 outcome=TurnOutcome.REPLIED_FULL,
             )
             return self.finalize_delivery(delivery, state_version)
+
+    # -- CP4 post-turn projections (P4-2) -----------------------------------
+
+    def _run_post_turn_projections(
+        self,
+        conversation_id: ConversationId,
+        result: Result[TurnCompletion] | Result[TeachingReplyTurnResult],
+    ) -> None:
+        """Run the CP4 projections for one finished turn — outside the guard.
+
+        Called by ``begin_turn`` / ``respond_to_teaching`` *after* their
+        guard-holding halves returned, so the projection never occupies the
+        conversation's one-coordinator window (RA §19 "不继续占用
+        ConversationCoordinatorLease"; §24.1 "CP4 projection 在 coordinator
+        guard release 后执行").
+
+        Failure semantics (R-INV-010; RA §19/§21): a projection failure never
+        rolls back the transcript, never re-sends the assistant message and
+        never blocks the next turn — so a projection ``Err``, or any
+        exception escaping it, is dropped here and the turn's own result is
+        returned untouched. The durable job row is the trace: PENDING /
+        FAILED_RETRYABLE stays claimable by the next turn's
+        ``run_after_turn`` or by the startup sweep (§22 "pending
+        projections").
+
+        An ``Err`` turn result is skipped entirely: a turn that did not
+        finish canonically has nothing new to project (a failed turn has no
+        canonical slice), and enqueueing for it would contradict RA §19
+        "默认在 canonical turn 后运行". No projections port means the
+        coordinator behaves exactly as before P4-2.
+        """
+
+        projections = self._projections
+        if projections is None or isinstance(result, Err):
+            return
+        try:
+            projections.run_after_turn(conversation_id, result.value.turn_id)
+        except Exception:  # noqa: BLE001 — never travel into the turn
+            return
 
     # -- buffered validated delivery (RUNTIME §13) ---------------------------
 
@@ -1152,6 +1278,29 @@ class ConversationCoordinator:
            moment"), and the epoch fence forbids this epoch from advancing
            its action — while every later scan keeps naming it.
 
+        P4-2 adds three more lines, each owned by an optional port and each
+        invisible when that port is absent (the plan itself never changes —
+        §22's plan vocabulary is turns and locks):
+
+        4. **the CP4 sweep** (:meth:`_recover_projections`) — the stale
+           RUNNING residue of the dead process is re-opened, the crash-gap
+           jobs are re-created from their deterministic ids, and the
+           conversations holding either kind of work get one run; startup
+           holds no coordinator guard (RA §24.1);
+        5. **the durable pending evidence backlog** (:meth:`_retry_pending_evidence`)
+           — the explicit retry face of RA §21's "durable proposal pending"
+           (DEC-…96 F2);
+        6. **the refs↔proposal reconciliation** (:meth:`_reconcile_evidence_refs`)
+           — every §17 evaluation ref is checked against Learning's own
+           proposal read, and the ones pointing nowhere are reported
+           (DEC-…96 F1).
+
+        Lines 4-6 are deliberately failure-tolerant: an ``Err`` or a raised
+        exception marks the line unavailable in the outcome and startup still
+        completes — a projection backlog or a stuck proposal is durable work
+        that the next turn (or the next startup) can still take up, so none
+        of them may keep the process from starting.
+
         Deliberately read-then-write in that order, and deliberately not
         called from the constructor: a host calls it once after the
         startup fence is adopted (the same place ``open_runtime_epoch``
@@ -1191,13 +1340,221 @@ class ConversationCoordinator:
         closed = self._close_residual_turns(plan)
         if isinstance(closed, Err):
             return closed
+        (
+            reopened_projections,
+            projection_jobs,
+            projection_runs,
+            projections_unavailable,
+        ) = self._recover_projections()
+        committed_evidence, evidence_retry_unavailable = (
+            self._retry_pending_evidence()
+        )
+        dangling_refs, ref_scan_unavailable = self._reconcile_evidence_refs()
         return Ok(
             StartupRecoveryOutcome(
                 plan=plan,
                 recovered_moments=recovered,
                 closed_turns=closed.value,
+                projection_jobs=projection_jobs,
+                projection_runs=projection_runs,
+                projection_recovery_unavailable=projections_unavailable,
+                committed_evidence_proposals=committed_evidence,
+                teaching_evidence_retry_unavailable=evidence_retry_unavailable,
+                dangling_evidence_refs=dangling_refs,
+                evidence_ref_scan_unavailable=ref_scan_unavailable,
+                reopened_projections=reopened_projections,
             )
         )
+
+    # -- P4-2: the durable-backlog recovery lines ----------------------------
+
+    def _recover_projections(
+        self,
+    ) -> tuple[
+        tuple[ProjectionJobId, ...],
+        tuple[ProjectionJobId, ...],
+        tuple[ProjectionRunResult, ...],
+        bool,
+    ]:
+        """The CP4 startup sweep, in three ordered steps.
+
+        1. **re-open the stale RUNNING residue** (``recover_stale_running``)
+           — a job claimed by the dead process and never reported back is not
+           unfinished-by-choice work, and leaving it RUNNING would strand that
+           turn's projection forever (RUNTIME §22's scan covers *pending*
+           work; §24.1 makes the new epoch the recovery owner). This runs
+           first, so the re-opened rows are already on the retry edge when
+           step 3 looks at the queue;
+        2. **repair the crash gaps** (``ensure_missing_jobs``): the COMPLETED
+           turns whose job row is missing get theirs back under the
+           deterministic id, and nothing is re-derived from a message log. A
+           job id is a *hash*, so the conversation a repaired job belongs to
+           is read back through the job's source turn (job → turn →
+           conversation);
+        3. **drain the queue** (``run_pending``) once per affected
+           conversation, where "affected" is the union of three sets: the
+           conversations of the repaired jobs, of the re-opened jobs, and of
+           **every unfinished job in the registry**
+           (``unfinished_projections``). The third set is what makes the
+           sweep a drain rather than a repair: a PENDING row left by a crash
+           between its enqueue and its run — or a FAILED_RETRYABLE row no
+           turn ever came back for — sits in a conversation the first two
+           sets would never name, and the user may never return to it.
+
+        Startup holds no coordinator guard (RA §24.1 "CP4 projection 在
+        coordinator guard release 后执行").
+
+        Both failure shapes are trapped: an ``Err`` and a raised exception
+        mark the line unavailable and let startup finish — the durable rows
+        are untouched either way (a still-pending job stays claimable by the
+        next turn's ``run_after_turn``), so a projection problem must not be
+        able to stop the process from starting (the F2 rule, applied to the
+        same line).
+        """
+
+        projections = self._projections
+        if projections is None:
+            return ((), (), (), False)
+        try:
+            reopened = projections.recover_stale_running()
+            if isinstance(reopened, Err):
+                return ((), (), (), True)
+            ensured = projections.ensure_missing_jobs()
+            if isinstance(ensured, Err):
+                return (reopened.value, (), (), True)
+            registry = projections.unfinished_projections()
+            if isinstance(registry, Err):
+                return (reopened.value, ensured.value, (), True)
+            runs: list[ProjectionRunResult] = []
+            unavailable = False
+            for conversation_id in self._projection_conversations(
+                projections,
+                ensured.value + reopened.value,
+                views=registry.value,
+            ):
+                outcome = projections.run_pending(conversation_id)
+                if isinstance(outcome, Ok):
+                    runs.extend(outcome.value)
+                else:
+                    unavailable = True
+            return (
+                reopened.value,
+                ensured.value,
+                tuple(runs),
+                unavailable,
+            )
+        except Exception:  # noqa: BLE001 — startup must still complete
+            return ((), (), (), True)
+
+    def _projection_conversations(
+        self,
+        projections: CP4ProjectionRuntime,
+        job_ids: tuple[ProjectionJobId, ...],
+        *,
+        views: tuple[ProjectionJobView, ...] = (),
+    ) -> tuple[ConversationId, ...]:
+        """The distinct conversations the given work belongs to, in the order
+        the sources named it (job → source turn → conversation).
+
+        Two sources of work are accepted: job ids (whose views are read back
+        — a job id is a hash) and already-read views (the registry drain,
+        which has them in hand). A job whose turn cannot be read is skipped
+        rather than guessed at.
+        """
+
+        turns: list[TurnId] = [view.source_turn_id for view in views]
+        for job_id in job_ids:
+            view = projections.job_view(job_id)
+            if isinstance(view, Err) or view.value is None:
+                continue
+            turns.append(view.value.source_turn_id)
+        conversations: list[ConversationId] = []
+        for turn_id in turns:
+            record = self._commands.get_turn_record(turn_id)
+            if isinstance(record, Err) or record.value is None:
+                continue
+            conversation_id = ConversationId(record.value.conversation_id)
+            if conversation_id not in conversations:
+                conversations.append(conversation_id)
+        return tuple(conversations)
+
+    def _retry_pending_evidence(self) -> tuple[tuple[str, ...], bool]:
+        """The durable pending teaching-evidence backlog, landed at startup
+        (DEC-…5ba74efc.96 F2; RA §21 "durable proposal pending").
+
+        The teaching chain writes the §17 proposal PENDING *before* it
+        attempts the commit, so a proposal left behind by a crash (or by an
+        unavailable Learning store) is exactly the residue a new epoch may
+        land: the retry face replays the commit from the durable payload and
+        Learning decides again. Idempotent — committed proposals are not
+        revisited (P4-0 ①).
+
+        A failure here must not blow up startup: both an ``Err`` and a raised
+        exception mark the line unavailable and leave every durable row
+        exactly where it was (still PENDING, still auditable, still
+        retryable).
+        """
+
+        learning = self._learning_controller
+        if learning is None:
+            return ((), False)
+        try:
+            retried = learning.retry_pending_teaching_evidence()
+        except Exception:  # noqa: BLE001 — startup must still complete
+            return ((), True)
+        if isinstance(retried, Err):
+            return ((), True)
+        return (
+            tuple(proposal_id for proposal_id, _ in retried.value),
+            False,
+        )
+
+    def _reconcile_evidence_refs(
+        self,
+    ) -> tuple[tuple[DanglingEvidenceRef, ...], bool]:
+        """The refs↔proposal reconciliation scan (DEC-…5ba74efc.96 F1).
+
+        Every §17 ``evidence_proposal_refs`` entry a durable evaluation
+        recorded is checked against Learning's *own* read face — every ref
+        unconditionally, whatever its shape: the authority is the durable
+        proposal row, never the teaching side's naming convention (a
+        re-derived or prefix-filtered check would be exactly the kind of
+        invented rule the F1 review asked to avoid). A ref with no row is
+        reported as :class:`DanglingEvidenceRef`: a durable trace that points
+        nowhere, named instead of hidden.
+
+        An unreadable row is *not* reported as dangling — the scan line marks
+        itself unavailable instead of guessing (an ``Err`` from either read,
+        or a raised exception, leaves the verdict empty).
+        """
+
+        teaching = self._teaching
+        learning = self._learning_controller
+        if teaching is None or learning is None:
+            return ((), False)
+        if not isinstance(teaching, TeachingEvidenceRefSource):
+            # An assembly without the scan face has nothing to reconcile —
+            # declared, not silently skipped (the protocol is the seam).
+            return ((), False)
+        try:
+            scanned = teaching.evidence_proposal_refs()
+            if isinstance(scanned, Err):
+                return ((), True)
+            dangling: list[DanglingEvidenceRef] = []
+            for evaluation_id, refs in scanned.value:
+                for ref in refs:
+                    proposal = learning.get_teaching_evidence_proposal(ref)
+                    if isinstance(proposal, Err):
+                        return ((), True)
+                    if proposal.value is None:
+                        dangling.append(
+                            DanglingEvidenceRef(
+                                evaluation_id=evaluation_id, ref=ref
+                            )
+                        )
+            return (tuple(dangling), False)
+        except Exception:  # noqa: BLE001 — startup must still complete
+            return ((), True)
 
     def _close_residual_turns(
         self, plan: tuple[RecoveryAction, ...]
@@ -1921,7 +2278,21 @@ class ConversationCoordinator:
         client_message_id) replays the durable steps: attempt / evaluation /
         opportunity / evidence ids are deterministic on the turn and the
         moment, and every moment move is a state_version CAS.
+
+        P4-2: as with ``begin_turn``, the guard lives in
+        :meth:`_respond_to_teaching_guarded` and the CP4 post-turn
+        projection runs after it is released (RA §19/§24.1; R-INV-010).
         """
+
+        result = self._respond_to_teaching_guarded(request)
+        self._run_post_turn_projections(request.conversation_id, result)
+        return result
+
+    def _respond_to_teaching_guarded(
+        self, request: TeachingReplyRequest
+    ) -> Result[TeachingReplyTurnResult]:
+        """The guard-holding half of ``respond_to_teaching`` (P3-1B's §4
+        order, unchanged)."""
 
         ports = self._teaching_ports()
         if isinstance(ports, Err):

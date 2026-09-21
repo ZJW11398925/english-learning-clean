@@ -36,6 +36,7 @@ from elc.platform.types import (
 )
 from elc.platform.types import ConversationId as ConvId
 from elc.runtime import ConversationCoordinator, ConversationCoordinatorLease
+from elc.runtime.projections import CP4ProjectionRuntime
 from elc.runtime.types import InputEnvelope
 from elc.teaching.controller import TeachingController
 from elc.teaching.store import SqliteTeachingStore
@@ -137,10 +138,17 @@ def make_teaching_coordinator(
     decision_cycles: SqliteDecisionCycleStore,
     teaching: TeachingController,
     targets: TeachingTargetProvider,
+    projections: CP4ProjectionRuntime | None = None,
 ) -> ConversationCoordinator:
     """The P3-1A assembly: all four teaching-path ports injected
     (decision cycles + learning controller + teaching controller + target
-    provider) so ``request_teaching`` is live."""
+    provider) so ``request_teaching`` is live.
+
+    P4-2 adds one optional pass-through port: ``projections`` (the CP4
+    post-turn projection runtime). The default ``None`` keeps every existing
+    assembly byte-identical — this helper's other callers are pinned by the
+    P3 tests and never knew the port existed.
+    """
 
     decision_cycles_port = (
         generation_store.decision_cycles
@@ -165,6 +173,7 @@ def make_teaching_coordinator(
         learning_controller=LearningController(learning),
         teaching=teaching,
         targets=targets,
+        projections=projections,
     )
 
 
