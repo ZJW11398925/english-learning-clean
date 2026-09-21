@@ -34,6 +34,8 @@ from elc.runtime.lease import (
 )
 from elc.runtime.queries import RuntimeQueries
 from elc.runtime.recovery import (
+    RECOVERY_KIND_LOCK,
+    RECOVERY_KIND_TURN,
     TEACHING_LOCK_RECOVERY_ACTION,
     StartupRecoveryScanner,
     TeachingLockRecoverySource,
@@ -63,12 +65,16 @@ _CONTROLLER_EXPORTS = (
     "AssistantDelivery",
     "ConversationCoordinator",
     "RuntimeOrchestrator",
+    "StartupRecoveryOutcome",
     "TeachingTurnResult",
+    "TurnRecoveryClosure",
 )
 
 __all__ = [
     "AssistantDelivery",
     "GENERATION_ACTION_TRANSITIONS",
+    "RECOVERY_KIND_LOCK",
+    "RECOVERY_KIND_TURN",
     "RECOVERY_REARM_STATUS",
     "TERMINAL_TURN_STATUSES",
     "ConversationCoordinator",
@@ -90,6 +96,7 @@ __all__ = [
     "RuntimeCommands",
     "RuntimeOrchestrator",
     "RuntimeQueries",
+    "StartupRecoveryOutcome",
     "StartupRecoveryScanner",
     "StaleCoordinatorEpoch",
     "TEACHING_LOCK_RECOVERY_ACTION",
@@ -97,6 +104,7 @@ __all__ = [
     "TurnCompletion",
     "TurnRecordData",
     "TurnRecordRecoverySource",
+    "TurnRecoveryClosure",
     "TurnStatus",
     "ValidatorResultRecord",
     "claim_rearm",

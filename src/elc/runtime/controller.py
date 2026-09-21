@@ -86,6 +86,11 @@ from elc.runtime.decision_cycles import (
 )
 from elc.runtime.generation import GenerationActionStore
 from elc.runtime.lease import ConversationCoordinatorLease
+from elc.runtime.recovery import (
+    RECOVERY_KIND_TURN,
+    StartupRecoveryScanner,
+    TurnRecordRecoverySource,
+)
 from elc.runtime.types import (
     TERMINAL_TURN_STATUSES,
     DecisionCycleRecord,
@@ -351,6 +356,42 @@ class TeachingTurnResult:
     outcome: str | None
 
 
+@dataclass(frozen=True)
+class TurnRecoveryClosure:
+    """One residual delivery turn the startup recovery brought to a
+    terminal state (P3-3 review F7).
+
+    ``outcome`` is the honest TurnOutcome read from the canonical
+    transcript (REPLIED_FULL when the assistant turn exists — RA §23 "the
+    canonicalized assistant turn is the truth" — else NO_ASSISTANT_OUTPUT).
+    ``action_status`` is the *fenced residue*: the old-epoch generation
+    action the new epoch may not advance, recorded here so the trace says
+    which delivery leg was abandoned rather than pretending it finished.
+    """
+
+    turn_id: TurnId
+    moment_id: str
+    outcome: str
+    action_status: str
+
+
+@dataclass(frozen=True)
+class StartupRecoveryOutcome:
+    """The result of one startup recovery pass (P3-3 review F6).
+
+    ``plan`` is the pure read the scan produced (RUNTIME §22/§24.1);
+    ``recovered_moments`` are the orphan TeachingLockLease moments the
+    sweep actually released (the apply face), and ``closed_turns`` are the
+    delivery turns that sweep unsealed and this pass reconciled to a
+    terminal state (review F7). Every field is durable-fact derived: no
+    item appears here that is not also visible through the store reads.
+    """
+
+    plan: tuple[RecoveryAction, ...]
+    recovered_moments: tuple[str, ...]
+    closed_turns: tuple[TurnRecoveryClosure, ...]
+
+
 class RuntimeOrchestrator:
     """Sequencing, retry, recovery — owns no canonical truth.
 
@@ -486,6 +527,13 @@ class ConversationCoordinator:
     when it is present. Every other assembly (P1, P2, P3-0) keeps the
     exact behavior its tests pin — the same optional-injection discipline
     as ``learning`` / ``character_package`` above.
+
+    Phase 3 P3-3 (TASK-…47 ②): ``run_startup_recovery`` is the startup
+    *entry* that wires the §22 scan to its apply faces — the orphan-lock
+    sweep, plus the turn-level reconciliation of the delivery residue that
+    sweep unseals (review F6/F7). The reply path's ``DELIVERING`` slot is
+    reached before the live-moment guard and adopts a foreign-epoch turn
+    only once its leg is actually finishable (review F7).
     """
 
     def __init__(
@@ -1058,6 +1106,162 @@ class ConversationCoordinator:
                 )
             )
         return teaching.recover_orphan_locks()
+
+    def run_startup_recovery(self) -> Result[StartupRecoveryOutcome]:
+        """The startup path: scan the old-epoch residue once, then apply
+        what a new epoch may apply (review F6).
+
+        RUNTIME §22 makes the startup scan the entry point for old-epoch
+        nonterminal work, §24.1 gives each checkpoint its disposition, and
+        §24 makes the new epoch the recovery owner. This method is that
+        wiring, in one call:
+
+        1. **scan** — ``StartupRecoveryScanner`` (a pure read, §22
+           idempotent) over this coordinator's own injected ports: the
+           conversation store for old-epoch nonterminal TurnRecords and
+           the teaching controller for orphan TeachingLockLease rows.
+           Nothing is written here;
+        2. **apply the lock sweep** — ``recover_orphan_teaching`` releases
+           exactly that residue (STATE_MACHINES §9), closing each orphan
+           moment with ``SYSTEM_RECOVERY_ABORT`` and unsealing its
+           conversation;
+        3. **reconcile the delivery residue** (review F7) — the teaching
+           turns that sweep unsealed are brought to a terminal state from
+           the canonical transcript (:meth:`_close_residual_turns`).
+           Without this step such a turn is nonterminal forever: after the
+           moment closed, the reply path refuses it ("no active teaching
+           moment"), and the epoch fence forbids this epoch from advancing
+           its action — while every later scan keeps naming it.
+
+        Deliberately read-then-write in that order, and deliberately not
+        called from the constructor: a host calls it once after the
+        startup fence is adopted (the same place ``open_runtime_epoch``
+        runs). An assembly without the teaching port keeps its P1/P2 plan
+        shape (TURN items only) and closes nothing — there is no teaching
+        action in that world to leave residue.
+        """
+
+        source = (
+            self._commands
+            if isinstance(self._commands, TurnRecordRecoverySource)
+            else None
+        )
+        if source is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=(
+                        "startup recovery needs a TurnRecordRecoverySource"
+                        " (the conversation store's recoverable-turn read)"
+                    ),
+                )
+            )
+        scanner = StartupRecoveryScanner(source, self._lease, self._teaching)
+        plan_result = scanner.scan()
+        if isinstance(plan_result, Err):
+            return plan_result
+        plan = plan_result.value
+
+        recovered: tuple[str, ...] = ()
+        if self._teaching is not None:
+            swept = self.recover_orphan_teaching()
+            if isinstance(swept, Err):
+                return swept
+            recovered = swept.value
+
+        closed = self._close_residual_turns(plan)
+        if isinstance(closed, Err):
+            return closed
+        return Ok(
+            StartupRecoveryOutcome(
+                plan=plan,
+                recovered_moments=recovered,
+                closed_turns=closed.value,
+            )
+        )
+
+    def _close_residual_turns(
+        self, plan: tuple[RecoveryAction, ...]
+    ) -> Result[tuple[TurnRecoveryClosure, ...]]:
+        """Terminal-state reconciliation for the deadline-less residue
+        (review F7).
+
+        The residue has exactly this durable shape, and each clause is a
+        fact read back from the store (never from the scan's snapshot):
+
+        - the turn is one of the old-epoch nonterminal turns the plan
+          named, and it is still nonterminal;
+        - its generation action belongs to a teaching moment
+          (``action.moment_id`` set) — every other turn keeps the §23
+          re-entry semantics and is left alone;
+        - that moment is ``CLOSED``: the episode is over, so nothing will
+          ever deliver the pending teaching action — the "crash around
+          CP3" leg can neither be replayed (RA §23 forbids blindly
+          replaying an uncertain delivery) nor advanced (the epoch fence).
+
+        The outcome is read from the canonical transcript, not invented:
+        ``REPLIED_FULL`` when the assistant turn exists (RA §23: the
+        canonicalized assistant turn IS the truth), else
+        ``NO_ASSISTANT_OUTPUT``. The turn is adopted into the current epoch
+        first (RUNTIME §24 restart ownership; ``terminalize_turn`` is
+        CAS-guarded and refuses a foreign epoch), and the fenced action is
+        left exactly where it stopped — recorded in the closure, never
+        advanced by an epoch that does not own it.
+        """
+
+        teaching = self._teaching
+        if teaching is None:
+            return Ok(())
+        epoch = self._lease.epoch
+        closures: list[TurnRecoveryClosure] = []
+        for item in plan:
+            if item.kind != RECOVERY_KIND_TURN:
+                continue
+            turn_id = TurnId(item.id)
+            record_result = self._commands.get_turn_record(turn_id)
+            if isinstance(record_result, Err):
+                return record_result
+            record = record_result.value
+            if record is None or record.status in TERMINAL_TURN_STATUSES:
+                continue
+            action_result = self._generation.get_action_for_turn(turn_id)
+            if isinstance(action_result, Err):
+                return action_result
+            action = action_result.value
+            if action is None or action.moment_id is None:
+                continue
+            moment_result = teaching.get_moment(MomentId(action.moment_id))
+            if isinstance(moment_result, Err):
+                return moment_result
+            moment = moment_result.value
+            if moment is None or moment.lifecycle_state is not MomentState.CLOSED:
+                continue
+            slice_result = self._queries.get_canonical_turn_slice(turn_id)
+            if isinstance(slice_result, Err):
+                return slice_result
+            slice_ = slice_result.value
+            assistant = None if slice_ is None else slice_.assistant_turn
+            if epoch is not None and record.owner_epoch != epoch:
+                adopted = self._commands.claim_turn_for_recovery(turn_id)
+                if isinstance(adopted, Err):
+                    return adopted
+            outcome = (
+                TurnOutcome.REPLIED_FULL
+                if assistant is not None
+                else TurnOutcome.NO_ASSISTANT_OUTPUT
+            )
+            terminal = self._commands.terminalize_turn(turn_id, outcome)
+            if isinstance(terminal, Err):
+                return terminal
+            closures.append(
+                TurnRecoveryClosure(
+                    turn_id=turn_id,
+                    moment_id=str(moment.moment_id),
+                    outcome=outcome.value,
+                    action_status=action.status.value,
+                )
+            )
+        return Ok(tuple(closures))
 
     def _run_open_gate(
         self,
@@ -1735,7 +1939,11 @@ class ConversationCoordinator:
             if turn is None:
                 return _missing(f"turn record not found: {cp0.turn_id}")
             epoch = self._lease.epoch
-            if epoch is not None and turn.owner_epoch != epoch:
+            if (
+                epoch is not None
+                and turn.owner_epoch != epoch
+                and turn.status is not TurnStatus.DELIVERING
+            ):
                 claimed = self._commands.claim_turn_for_recovery(cp0.turn_id)
                 if isinstance(claimed, Err):
                     return claimed
@@ -1754,6 +1962,29 @@ class ConversationCoordinator:
             if refusal is not None:
                 return Err(refusal)
 
+            if turn.status is TurnStatus.DELIVERING:
+                # P3-2 carry-over ② (DEC-…5ba74efc.20): the delivery was in
+                # flight when the process died. RA §23 "crash around CP3 →
+                # the canonicalized assistant turn is the truth" — the
+                # re-entry finishes the leg from the durable record instead
+                # of refusing the turn forever (a DELIVERING reply turn used
+                # to be a permanent dead end for itself, with its moment left
+                # live at DECIDING_NEXT_ACTION holding the lock).
+                #
+                # P3-3 review F7: this slot is reconciled *before* the live
+                # moment is required, and the turn is adopted into the
+                # current epoch only when the leg is actually finishable (see
+                # ``_reconcile_delivering_reply``). Two residues disappear:
+                # a DELIVERING turn whose moment already closed used to be
+                # refused by the moment guard ("no active teaching moment"),
+                # and a turn the epoch fence refuses used to be *adopted*
+                # first — which hid the residue from the startup scan
+                # (``owner_epoch != current``) without giving anyone the
+                # right to finish it.
+                return self._reconcile_delivering_reply(
+                    turn=turn, teaching=teaching, targets=targets
+                )
+
             moment_result = teaching.get_active_moment(request.conversation_id)
             if isinstance(moment_result, Err):
                 return moment_result
@@ -1769,18 +2000,6 @@ class ConversationCoordinator:
                     f" {moment.moment_id} is {moment.lifecycle_state.value};"
                     " a reply enters through AWAITING_USER (re-entry resumes"
                     " along EVALUATING → DECIDING_NEXT_ACTION)"
-                )
-
-            if turn.status is TurnStatus.DELIVERING:
-                # P3-2 carry-over ② (DEC-…5ba74efc.20): the delivery was in
-                # flight when the process died. RA §23 "crash around CP3 →
-                # the canonicalized assistant turn is the truth" — the
-                # re-entry finishes the leg from the durable record instead
-                # of refusing the turn forever (a DELIVERING reply turn used
-                # to be a permanent dead end for itself, with its moment left
-                # live at DECIDING_NEXT_ACTION holding the lock).
-                return self._reconcile_delivering_reply(
-                    turn=turn, teaching=teaching, targets=targets
                 )
 
             state_version = turn.state_version
@@ -3118,6 +3337,19 @@ class ConversationCoordinator:
 
         Either way the turn stops being stuck at DELIVERING and the moment
         can never sit live-but-undecidable because a crash ate its reply.
+
+        P3-3 review F7 (two corrections to that reconciliation):
+
+        - the caller no longer adopts a foreign-epoch DELIVERING turn before
+          this method runs, so the epoch-fence refusal below leaves the
+          residue *visible* to the startup scan (``owner_epoch !=
+          current``) instead of silently re-owning a turn this epoch may
+          not finish. The adoption happens here, and only once the leg is
+          actually finishable (:meth:`_adopt_turn_for_recovery`);
+        - the caller reaches this method before requiring a live moment, so
+          a DELIVERING turn whose moment already closed (the ordinary shape
+          after a successful startup sweep) is reconciled from the record
+          instead of being refused by the moment guard forever.
         """
 
         slice_result = self._queries.get_canonical_turn_slice(turn.turn_id)
@@ -3156,8 +3388,11 @@ class ConversationCoordinator:
                 if isinstance(failed, Err):
                     return failed
 
+        adopted = self._adopt_turn_for_recovery(turn)
+        if isinstance(adopted, Err):
+            return adopted
         terminal = self._commands.terminalize_turn(
-            turn.turn_id,
+            adopted.value.turn_id,
             (
                 TurnOutcome.REPLIED_FULL
                 if assistant is not None
@@ -3181,6 +3416,25 @@ class ConversationCoordinator:
             if isinstance(reconciled, Err):
                 return reconciled
         return self._replay_teaching_reply(terminal.value, teaching)
+
+    def _adopt_turn_for_recovery(
+        self, turn: TurnRecordData
+    ) -> Result[TurnRecordData]:
+        """Adopt one turn into the current epoch when it is foreign.
+
+        RUNTIME §24 restart ownership + SM §17.1 rule 3: the recovery owner
+        finishes old work. ``terminalize_turn`` is CAS-guarded and refuses a
+        foreign epoch, so the adoption is the precondition of finishing the
+        leg — deliberately *late* (review F7): only a leg this epoch may
+        actually finish adopts its turn, because adopting a turn the epoch
+        fence then refuses would take the residue out of the scan's view
+        without giving anyone the right to close it.
+        """
+
+        epoch = self._lease.epoch
+        if epoch is None or turn.owner_epoch == epoch:
+            return Ok(turn)
+        return self._commands.claim_turn_for_recovery(turn.turn_id)
 
     def _abort_lost_delivery(
         self, turn: TurnRecordData, teaching: TeachingController

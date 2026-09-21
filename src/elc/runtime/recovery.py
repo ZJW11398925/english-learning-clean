@@ -33,6 +33,13 @@ coordinator's), so the plan and the sweep can never disagree about which
 lock is residue. A lock owned by the *current* epoch is a real
 mutual-exclusion fact and is deliberately not part of the plan
 (STATE_MACHINES §9/§24.1: epoch-based liveness, never TTL/heartbeat).
+
+P3-3 review F6 (DEC-OPI-5ba74efc-….43): the plan now has a startup *entry*
+— ``ConversationCoordinator.run_startup_recovery`` builds this scanner from
+its own injected ports, scans once, and then applies what a new epoch may
+apply (the lock sweep, plus the turn-level reconciliation of the delivery
+residue that sweep just unsealed). This module stays the read half; the
+coordinator stays the only writer.
 """
 
 from __future__ import annotations
@@ -56,12 +63,22 @@ from elc.runtime.types import (
 )
 
 __all__ = [
+    "RECOVERY_KIND_LOCK",
+    "RECOVERY_KIND_TURN",
     "TEACHING_LOCK_RECOVERY_ACTION",
     "StartupRecoveryScanner",
     "TeachingLockRecoverySource",
     "TurnRecordRecoverySource",
     "recovery_disposition",
 ]
+
+#: The two plan-item kinds the scan produces (``RecoveryAction.kind``).
+#: ``TURN`` names one old-epoch nonterminal TurnRecord; ``LOCK`` names one
+#: orphan TeachingLockLease. Named here because the *apply* face
+#: (``ConversationCoordinator.run_startup_recovery``) reads the same
+#: vocabulary the scan writes — one definition, two faces.
+RECOVERY_KIND_TURN = "TURN"
+RECOVERY_KIND_LOCK = "LOCK"
 
 #: The recovery action word of the TeachingLockLease sweep (P3-2 carry-over
 #: ①): the orphan lock named by the scan is released — and with it its
@@ -106,6 +123,19 @@ def recovery_disposition(status: TurnStatus) -> str:
     P1A only ever produces CP0-committed turns (USER_COMMITTED); the other
     mappings exist so the scan speaks the full §24.1 vocabulary as soon as
     later phases advance TurnRecords past CP0.
+
+    Review F3 (DEC-…5ba74efc.43, P3-3 carry-over): ``DELIVERING`` is the
+    CP3-uncertain slot — the action was dispatched and the process died
+    before the delivery leg was canonicalized, which is exactly §24.1's
+    "CP3 uncertain → CONSERVATIVE_DELIVERY_RECONCILIATION" (RA §23: "若
+    delivery uncertain，保守 canonicalize，不盲目重放"). The P1A
+    placeholder mapped it together with ``GENERATING`` onto
+    ``RESUME_ACTION_BY_STABLE_ACTION_ID``; that is the CP2 rule (the
+    action is stable and still undelivered) and it is what the coordinator
+    does for a ``GENERATING`` turn. A ``DELIVERING`` turn gets the
+    conservative reconciliation instead: the durable transcript decides
+    whether the message went out, and the leg is completed from that
+    record — never re-dispatched onto a user who may already have seen it.
     """
     if status in TERMINAL_TURN_STATUSES:
         raise ValueError(f"terminal status {status} is not recoverable work")
@@ -118,7 +148,7 @@ def recovery_disposition(status: TurnStatus) -> str:
         return "RESUME_ANALYSIS"  # CP0 committed → resume at analysis (§23)
     if status == TurnStatus.DECIDING:
         return "RESUME_DECISION"  # CP1 done, decision pending
-    if status in (TurnStatus.GENERATING, TurnStatus.DELIVERING):
+    if status == TurnStatus.GENERATING:
         return "RESUME_ACTION_BY_STABLE_ACTION_ID"  # CP2 done
     return "CONSERVATIVE_DELIVERY_RECONCILIATION"  # CP3 uncertain
 
@@ -162,7 +192,7 @@ class StartupRecoveryScanner:
         records = self._source.recoverable_turn_records(epoch)
         actions = [
             RecoveryAction(
-                kind="TURN",
+                kind=RECOVERY_KIND_TURN,
                 id=record.turn_id,
                 action=recovery_disposition(record.status),
             )
@@ -174,7 +204,7 @@ class StartupRecoveryScanner:
             # turn work first, then the lock residue it may unseal.
             actions.extend(
                 RecoveryAction(
-                    kind="LOCK",
+                    kind=RECOVERY_KIND_LOCK,
                     id=moment_id,
                     action=TEACHING_LOCK_RECOVERY_ACTION,
                 )
