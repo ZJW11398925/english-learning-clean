@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "elc"
 version = "0.1.0"
-description = "english-learning-clean V1 runtime — Phase 0-3 complete (conversation/persona/learning/teaching kernels), Phase 4 in progress"
+description = "english-learning-clean V1 runtime — Phase 0-4 complete (conversation/persona/learning/teaching + relationship/episode projection kernels), Phase 5 in progress"
 requires-python = ">=3.12"
 dependencies = []
 
