@@ -76,6 +76,7 @@ __all__ = [
     "SqliteConversationStore",
     "StaleStoreEpochError",
     "TEACHING_REQUEST_PAYLOAD_MARKER",
+    "TEACHING_RESPONSE_PAYLOAD_MARKER",
 ]
 
 T = TypeVar("T")
@@ -89,6 +90,13 @@ T = TypeVar("T")
 #: payload; a test pins this marker against the builder so the two cannot
 #: drift.
 TEACHING_REQUEST_PAYLOAD_MARKER = '"type":"TEACHING_REQUEST"'
+
+#: Canonical payload discriminator of a teaching *reply* command turn
+#: (elc.teaching.envelope.teaching_response_payload, P3-1B): the user's
+#: answer to an active moment is likewise typed — it carries an envelope,
+#: not an utterance — so it is excluded from the ConversationWindow for the
+#: same reason and never reaches the persona as an empty user line.
+TEACHING_RESPONSE_PAYLOAD_MARKER = '"type":"TEACHING_RESPONSE"'
 
 
 class StaleStoreEpochError(StaleEpochError):
@@ -671,7 +679,10 @@ class SqliteConversationStore:
         user said, so it must never reach the persona as an utterance
         (the transcript itself keeps it: ``get_canonical_turn_slice`` is
         unchanged). The filter is the canonical payload discriminator plus
-        the empty raw content, both bound as parameters.
+        the empty raw content, both bound as parameters. P3-1B adds the
+        teaching *reply* turn (TEACHING_RESPONSE) to the same filter: the
+        user's answer to a moment is a typed envelope too, and an empty
+        user line would otherwise be read as an utterance.
         """
 
         rows = self._conn.execute(
@@ -683,10 +694,12 @@ class SqliteConversationStore:
             " JOIN input_envelope e ON e.input_id = u.input_id"
             " WHERE u.conversation_id = ?"
             "  AND NOT (u.raw_content = '' AND e.raw_payload LIKE ?)"
+            "  AND NOT (u.raw_content = '' AND e.raw_payload LIKE ?)"
             " ORDER BY u.turn_sequence DESC LIMIT ?",
             (
                 conversation_id,
                 f"%{TEACHING_REQUEST_PAYLOAD_MARKER}%",
+                f"%{TEACHING_RESPONSE_PAYLOAD_MARKER}%",
                 max_turns,
             ),
         ).fetchall()
@@ -708,6 +721,30 @@ class SqliteConversationStore:
                 slices=tuple(slices),
             )
         )
+
+    def is_command_payload_turn(self, turn_id: TurnId) -> Result[bool]:
+        """True when the turn is a command turn (empty utterance + a typed
+        TEACHING_REQUEST / TEACHING_RESPONSE payload).
+
+        Phase 3 P3-1B (review F9): the recovery path must not run a teaching
+        turn through the normal persona loop — the turn says nothing, and
+        answering it as an utterance would fabricate a reply to silence.
+        Both markers are bound parameters; the empty-content condition keeps
+        the check identical to the ConversationWindow filter.
+        """
+
+        row = self._conn.execute(
+            "SELECT 1 FROM user_turn u"
+            " JOIN input_envelope e ON e.input_id = u.input_id"
+            " WHERE u.turn_id = ? AND u.raw_content = ''"
+            "  AND (e.raw_payload LIKE ? OR e.raw_payload LIKE ?)",
+            (
+                turn_id,
+                f"%{TEACHING_REQUEST_PAYLOAD_MARKER}%",
+                f"%{TEACHING_RESPONSE_PAYLOAD_MARKER}%",
+            ),
+        ).fetchone()
+        return Ok(row is not None)
 
     def get_sequence_positions(
         self, conversation_id: ConversationId

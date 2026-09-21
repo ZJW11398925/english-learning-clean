@@ -181,15 +181,17 @@ def test_migration_and_schema_version(db: sqlite3.Connection) -> None:
         "0004_learning_evidence",
         "0005_learner_target_state",
         # 0006_decision_cycle joins in Phase 3 P3-0 (TASK-…55 ④);
-        # 0007_teaching_lineage in Phase 3 P3-1A (TASK-…2babb21e.17 ①).
+        # 0007_teaching_lineage in Phase 3 P3-1A (TASK-…2babb21e.17 ①);
+        # 0008_attempt_records in Phase 3 P3-1B (TASK-…2babb21e.2 ①).
         "0006_decision_cycle",
         "0007_teaching_lineage",
+        "0008_attempt_records",
     ]
     assert (
         db.execute(
             "SELECT value FROM schema_meta WHERE key = 'schema_version'"
         ).fetchone()[0]
-        == "7"
+        == "8"
     )
 
 

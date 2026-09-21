@@ -54,3 +54,16 @@ class ConversationQueries(Protocol):
         self, conversation_id: ConversationId
     ) -> Result[SequencePositions]:
         ...
+
+    def is_command_payload_turn(self, turn_id: TurnId) -> Result[bool]:
+        """True for a *command* turn: an empty utterance whose meaning
+        travels through a typed InputEnvelope payload (TEACHING_REQUEST /
+        TEACHING_RESPONSE).
+
+        Phase 3 P3-1B (review F9): the recovery path must never run a
+        teaching turn through the normal persona loop — an empty utterance
+        would be answered as if the user had said nothing. This read is the
+        durable truth of "this turn is a command", so the orchestrator can
+        refuse to mis-handle it (the SQL stays in the conversation domain).
+        """
+        ...

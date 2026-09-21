@@ -8,6 +8,7 @@ Runtime-specific records, DOMAIN_MODEL §16).
 """
 
 from elc.persona.commands import (
+    PROMPT_SECTION_ORDER,
     PersonaCommands,
     PromptCompiler,
 )
@@ -29,12 +30,15 @@ from elc.persona.runtime import (
 )
 from elc.persona.types import (
     DEFAULT_FORBIDDEN_CLAIMS,
+    TEACHING_PROMPT_KEY_ORDER,
+    TEACHING_PROMPT_SECTION_VERSION,
     CharacterPackageRecord,
     CompiledPrompt,
     GenerationContext,
     GenerationContract,
     PromptCompilationRequest,
     ProviderOutput,
+    TeachingPromptView,
     ValidatorDecision,
     ValidatorResult,
     sample_character_package,
@@ -47,6 +51,8 @@ from elc.persona.validator import (
 __all__ = [
     "DEFAULT_FORBIDDEN_CLAIMS",
     "DEFAULT_MAX_PROVIDER_ATTEMPTS",
+    "TEACHING_PROMPT_KEY_ORDER",
+    "TEACHING_PROMPT_SECTION_VERSION",
     "VALIDATOR_VERSION",
     "BufferedReply",
     "CharacterPackageRecord",
@@ -59,11 +65,13 @@ __all__ = [
     "PersonaProvider",
     "PersonaQueries",
     "PersonaRuntime",
+    "PROMPT_SECTION_ORDER",
     "PromptCompiler",
     "PromptCompilationRequest",
     "ProviderOutput",
     "ResponseValidator",
     "ScriptedPersonaProvider",
+    "TeachingPromptView",
     "ValidatorDecision",
     "ValidatorResult",
     "action_intent_for_turn",

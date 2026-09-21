@@ -199,6 +199,88 @@ class GenerationContext:
     ephemeral_teaching_directive: object | None = None
 
 
+#: Version of the ``[teaching]`` section template (Phase 3 P3-1B, TASK-…2.2
+#: ⑨). The prompt is a canonical artifact: changing the key set, the order
+#: or the separators of this section is a NEW version, and the version is
+#: rendered inside the section so a stored prompt says which template
+#: produced it.
+TEACHING_PROMPT_SECTION_VERSION = "teaching-prompt-v1"
+
+#: The ``[teaching]`` section's key order, pinned here and enforced by the
+#: compiler — byte-determinism (same view → same bytes) depends on it.
+TEACHING_PROMPT_KEY_ORDER = (
+    "prompt_version",
+    "action_type",
+    "moment_id",
+    "focus_target_type",
+    "focus_target_id",
+    "presentation_phase",
+    "support_level",
+    "attempt_index",
+    "hint",
+    "reveal",
+    "explanation",
+    "closure",
+    "completion_outcome",
+    "abort_reason",
+)
+
+
+@dataclass(frozen=True)
+class TeachingPromptView:
+    """The narrow teaching view the PromptCompiler is allowed to render
+    (Phase 3 P3-1B ⑨; docs/DOMAIN_MODEL.md §14: the Teaching Planner
+    produces the directive, Persona Runtime owns the final prompt).
+
+    Deliberately persona-owned: Teaching must not import this package and
+    this package must not import ``elc.teaching`` (the two-way AST pin), so
+    the compiler renders from a view type it owns and the orchestrator
+    projects the teaching directive onto it. Every field is a primitive —
+    the view carries no attempt content, no ladder internals and no
+    learner state (D-INV-002: no persona identity is created here).
+
+    Absent optional fields render as the empty string, so the section's
+    line count and key order never depend on which fields are set.
+    """
+
+    action_type: str
+    presentation_phase: str = ""
+    support_level: str = ""
+    moment_id: str = ""
+    focus_target_type: str = ""
+    focus_target_id: str = ""
+    attempt_index: int = 0
+    hint: str | None = None
+    reveal: str | None = None
+    explanation: str | None = None
+    closure: str | None = None
+    completion_outcome: str | None = None
+    abort_reason: str | None = None
+    prompt_version: str = TEACHING_PROMPT_SECTION_VERSION
+
+    def as_prompt_fields(self) -> tuple[tuple[str, str], ...]:
+        """The canonical (key, value) pairs in :data:`TEACHING_PROMPT_KEY_ORDER`
+        order — the deterministic source of the ``[teaching]`` section."""
+
+        values = {
+            "prompt_version": self.prompt_version,
+            "action_type": self.action_type,
+            "moment_id": self.moment_id,
+            "focus_target_type": self.focus_target_type,
+            "focus_target_id": self.focus_target_id,
+            "presentation_phase": self.presentation_phase,
+            "support_level": self.support_level,
+            "attempt_index": str(self.attempt_index),
+            "hint": self.hint or "",
+            "reveal": self.reveal or "",
+            "explanation": self.explanation or "",
+            "closure": self.closure or "",
+            "completion_outcome": self.completion_outcome or "",
+            "abort_reason": self.abort_reason or "",
+        }
+        return tuple((key, values[key]) for key in TEACHING_PROMPT_KEY_ORDER)
+
+
 class ValidatorDecision(StrEnum):
     """docs/STATE_MACHINES.md §15 Response Validator output, word for word."""
 

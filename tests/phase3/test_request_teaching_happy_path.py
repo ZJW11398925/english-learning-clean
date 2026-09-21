@@ -9,7 +9,8 @@ The whole P3-1A slice, end to end:
     → Gate USER_INITIATED OPEN → ALLOW
     → CP2 → TeachingMoment(OPENING) + active_teaching_lock
       + GenerationActionIntent(TEACHING_OPEN, PREPARED)
-    → stop point (the opening delivery is P3-1B; no turn_outcome yet)
+    → the opening delivery through the P1 pipeline (P3-1B)
+    → TeachingMoment(AWAITING_USER) + turn_outcome = REPLIED_FULL
 
 Boundaries pinned here:
 
@@ -34,7 +35,7 @@ from elc.persona import ScriptedPersonaProvider
 from elc.platform.db.epoch import RuntimeEpochFence
 from elc.platform.types import ClientMessageId, Ok
 from elc.runtime.controller import ConversationCoordinator
-from elc.runtime.types import TurnStatus
+from elc.runtime.types import GenerationActionStatus, TurnStatus
 from elc.teaching.request import (
     TeachingRequest,
     parse_teaching_request_payload,
@@ -129,11 +130,15 @@ def test_request_teaching_happy_path_opens_the_moment(
     assert opened.gate_decision == "ALLOW"
     assert opened.moment_id is not None
     assert opened.action_id is not None
-    assert opened.moment_state is MomentState.OPENING
-    assert opened.action_status is not None
-    assert opened.action_status.value == "PREPARED"
-    assert opened.turn_status is TurnStatus.DECIDING
-    assert opened.outcome is None  # no delivery yet (P3-1B owns it)
+    # P3-1B completes the P3-1A stop point: the planned TEACHING_OPEN action
+    # is dispatched through the P1 pipeline, so the command turn reaches its
+    # real user-visible outcome (STATE_MACHINES §10: the outcome belongs to
+    # the delivery) and the moment reaches AWAITING_USER — SM §1's "opening
+    # delivery confirmed/estimated → AWAITING_USER".
+    assert opened.moment_state is MomentState.AWAITING_USER
+    assert opened.action_status is GenerationActionStatus.TERMINAL
+    assert opened.turn_status is TurnStatus.COMPLETED
+    assert opened.outcome == "REPLIED_FULL"
     assert opened.decision_cycle_id is not None
 
     assert _counts(db) == {
@@ -151,7 +156,10 @@ def test_request_teaching_happy_path_opens_the_moment(
     assert moment.value.target_mode == "RESOURCE_PRACTICE"
     assert moment.value.learning_intent == "ESTABLISH"
     assert moment.value.evidence_modality.value == "TEXT_PRODUCTION"
-    assert moment.value.support_level.value == "NONE"
+    # The opening prompt shows context only, so the ladder's support level is
+    # CONTEXT_ONLY once it was really delivered (the CP2 row is written with
+    # NONE because nothing had been shown yet at that instant).
+    assert moment.value.support_level.value == "CONTEXT_ONLY"
     assert moment.value.attempt_index == 0
     assert moment.value.opened_at is not None
 

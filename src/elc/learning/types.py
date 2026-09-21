@@ -21,6 +21,7 @@ from elc.platform.types import (
     EvaluatorVersion,
     EvidenceGroupId,
     EvidenceModality,
+    LearningOpportunityId,
     LearningSnapshotId,
     MomentId,
     TargetId,
@@ -159,6 +160,17 @@ class EvidenceClaimView:
     pragmatic_fit: float | None  # [0,1] quality input (BF-01 §27)
     status: EvidenceStatus
     provenance: str  # source refs (turn/moment/persona), BF-01A provenance
+    # Phase 3 P3-1B (teaching flow): the two §6 columns the Phase 0 view
+    # could not carry. ``opportunity_id`` is the genuine
+    # LearningOpportunityRecord the claim is an observation of (the §6
+    # negative-evidence rule's first leg); ``target_id`` is the claim's own
+    # target when it differs from the group's (the capability-linkage claim
+    # of an alternative realization points at the CAPABILITY, not at the
+    # RESOURCE the moment was about). ``None`` keeps every pre-P3-1B
+    # claim's behavior byte-identical: opportunity_id stays NULL and the
+    # claim targets the group's target.
+    opportunity_id: LearningOpportunityId | None = None
+    target_id: str | None = None
 
 
 @dataclass(frozen=True)

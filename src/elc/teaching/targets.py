@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 from elc.platform.types import Result
+from elc.teaching.evaluator import AttemptAnswerKey
 
 __all__ = [
     "CONTENT_STATUSES",
@@ -52,12 +53,32 @@ TARGET_TYPES = ("RESOURCE", "CAPABILITY")
 
 @dataclass(frozen=True)
 class TeachingTargetView:
-    """One resolved target as the Gate and CP2 need it — deliberately
-    narrow: validity facts plus the canonical defaults a TeachingMoment
-    stamps (DOMAIN_MODEL §11 target_mode / learning_intent; DATA_MODEL
-    §24.14 V1 evidence modality). It carries no learner state, no
-    priority and no teaching text (DOMAIN_MODEL §15: the Gate is not a
-    second Planner)."""
+    """One resolved target as the Gate, the ladder, the evaluator and CP2
+    need it — a *validity + teaching content* view.
+
+    The validity facts plus the canonical defaults a TeachingMoment stamps
+    (DOMAIN_MODEL §11 target_mode / learning_intent; DATA_MODEL §24.14 V1
+    evidence modality). It carries no learner state, no priority and no
+    priority signal (DOMAIN_MODEL §15: the Gate is not a second Planner).
+
+    Phase 3 P3-1B adds the target's *teaching content* — the P3-1A field
+    note above said Phase 5 brings these; the slice needs them earlier
+    because the ladder and evaluator v0 are fixture-driven by design
+    (TASK-…2.2 ④⑤: "canonical form / alternative realization whitelist /
+    required slots / hint ladder / reveal form / capability linkage"):
+
+    - ``hint_ladder`` — the ordered hint rungs (semantic → structural →
+      partial form) the presentation ladder walks; the provider never
+      picks a stage, it reports the target's validated rungs;
+    - ``reveal_form`` — the canonical full form shown by a reveal;
+    - ``canonical_forms`` / ``alternative_realizations`` /
+      ``required_slots`` — the attempt answer key (elc.teaching.evaluator);
+    - ``capability_linkage`` — the CAPABILITY this RESOURCE realizes
+      (docs/DATA_MODEL.md §13 REALIZES/SUPPORTS links); it is what lets
+      Learning map an alternative realization onto a capability claim.
+
+    All six default to the empty/absent value, so a Phase 5 provider that
+    only knows validity facts keeps working unchanged."""
 
     target_type: str
     target_id: str
@@ -66,6 +87,22 @@ class TeachingTargetView:
     target_mode: str
     learning_intent: str
     evidence_modality: str
+    hint_ladder: tuple[str, ...] = ()
+    reveal_form: str | None = None
+    canonical_forms: tuple[str, ...] = ()
+    alternative_realizations: tuple[str, ...] = ()
+    required_slots: tuple[tuple[str, ...], ...] = ()
+    capability_linkage: str | None = None
+
+    def answer_key(self) -> AttemptAnswerKey:
+        """The evaluator's view of this target (the evaluator module owns
+        the key type; this method only projects the three fields)."""
+
+        return AttemptAnswerKey(
+            canonical_forms=self.canonical_forms,
+            alternative_realizations=self.alternative_realizations,
+            required_slots=self.required_slots,
+        )
 
 
 @runtime_checkable

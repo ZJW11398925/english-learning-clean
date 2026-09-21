@@ -98,6 +98,11 @@ from elc.learning.estimator import (
     TargetStateEstimate,
     estimate_target_state,
 )
+from elc.learning.teaching_evidence import (
+    CAPABILITY_LINKAGE_CLAIM_ROLE,
+    TeachingEvidenceSource,
+    claims_for_teaching_evidence,
+)
 from elc.learning.types import (
     EvidenceClaimView,
     EvidenceGroupRecord,
@@ -545,7 +550,9 @@ class SqliteLearningStore:
                 # leaves the unit empty (the Err return commits an empty
                 # transaction — no residue; the P1 store precedent).
                 for claim in group.claims:
-                    refusal = self._claim_refusal(claim, group.target_id)
+                    refusal = self._claim_refusal(
+                        claim, group.target_id, group
+                    )
                     if refusal is not None:
                         return Err(refusal)
 
@@ -988,6 +995,52 @@ class SqliteLearningStore:
             )
         )
 
+    # -- teaching evidence (P3-1B) ------------------------------------------
+
+    def commit_teaching_evidence(
+        self,
+        proposal: TeachingEvidenceSource,
+        *,
+        source_turn_id: TurnId,
+        conversation_id: str,
+        persona_id: str | None = None,
+    ) -> Result[EvidenceCommitId]:
+        """CP1 for one teaching attempt: convert the teaching-side facts
+        into §6 claims and commit them through the same kernel as any other
+        evidence (elc.learning.teaching_evidence owns the conversion; §5
+        capability-positive / resource-neutral fold included).
+
+        The group is deterministic on the attempt (``eg-teaching-{attempt}``
+        and §25's ``moment_id + attempt_id + target_id + claim_role +
+        evaluator_version`` commit key), so a re-entry after a crash
+        replays the durable commit instead of double-writing.
+
+        A conversion refusal (an unknown vocabulary word) returns Learning's
+        REJECT decision with nothing written — the partial-evidence / no-
+        claim residue case is impossible because the whole unit rolls back.
+        """
+
+        claims = claims_for_teaching_evidence(proposal)
+        if isinstance(claims, Err):
+            return claims
+        group = EvidenceGroupRecord(
+            evidence_group_id=EvidenceGroupId(
+                f"eg-teaching-{proposal.attempt_id}"
+            ),
+            moment_id=MomentId(proposal.moment_id),
+            attempt_id=AttemptId(proposal.attempt_id),
+            target_id=TargetId(proposal.target_id),
+            evaluator_version=EvaluatorVersion(proposal.evaluator_version),
+            claims=claims.value,
+        )
+        return self.commit_evidence_group(
+            group,
+            source_turn_id=source_turn_id,
+            conversation_id=conversation_id,
+            persona_id=persona_id,
+            evaluator_id=proposal.evaluator_id,
+        )
+
     # -- opportunity / expression-need write faces --------------------------
 
     def record_opportunity(
@@ -1140,6 +1193,7 @@ class SqliteLearningStore:
                 )
                 if refusal is not None:
                     return Err(refusal)
+
                 self._insert_claim(
                     claim=replacement,
                     group=EvidenceGroupRecord(
@@ -1337,11 +1391,23 @@ class SqliteLearningStore:
         return int(row[0])
 
     def _claim_refusal(
-        self, claim: EvidenceClaimView, target_id: TargetId
+        self,
+        claim: EvidenceClaimView,
+        target_id: TargetId,
+        group: EvidenceGroupRecord | None = None,
     ) -> DomainError | None:
         """Pure-side validation + the §6 negative-evidence gate for one
         proposed claim. The durable opportunity lookup happens here (the
-        gate's decision point is Learning's validation face)."""
+        gate's decision point is Learning's validation face).
+
+        P3-1B addition — LOR semantic association (TASK-…2.2 ③): a claim
+        that names an ``opportunity_id`` is checked against the durable
+        LearningOpportunityRecord it points at: the record must exist, its
+        ``target_type`` / ``target_id`` must be the claim's own target, and
+        its ``teaching_moment_id`` provenance must be the claim's moment.
+        An unlinked claim (no opportunity_id) keeps the pre-P3-1B behavior
+        exactly. Teaching never validates this itself — Learning owns the
+        LOR and is the only side that may read it (the AST pin)."""
 
         if claim.status is not EvidenceStatus.ACTIVE:
             return DomainError(
@@ -1369,15 +1435,96 @@ class SqliteLearningStore:
                     f" {claim.evaluator_confidence})"
                 ),
             )
+        claim_target = (
+            str(target_id) if claim.target_id is None else claim.target_id
+        )
+        if claim.opportunity_id is not None:
+            refusal = self._opportunity_link_refusal(claim, claim_target, group)
+            if refusal is not None:
+                return refusal
         has_opportunity = (
             self._conn.execute(
                 "SELECT 1 FROM learning_opportunity_record"
                 " WHERE target_type = ? AND target_id = ? LIMIT 1",
-                (claim.scope, target_id),
+                (claim.scope, claim_target),
             ).fetchone()
             is not None
         )
         return negative_evidence_refusal(claim, has_opportunity)
+
+    def _opportunity_link_refusal(
+        self,
+        claim: EvidenceClaimView,
+        claim_target: str,
+        group: EvidenceGroupRecord | None,
+    ) -> DomainError | None:
+        """The LOR semantic association of one claim (see _claim_refusal).
+
+        Three facts are checked:
+
+        - the opportunity exists (a claim may not invent provenance);
+        - its ``teaching_moment_id`` agrees with the claim's moment (the
+          teaching-flow provenance rule of DEC-…2babb21e.5);
+        - its target agrees with the claim's target — for the claim that
+          speaks about the opportunity's own target. The one deliberate
+          relaxation is the CAPABILITY_LINKAGE claim of an alternative
+          realization (STATE_MACHINES §5 Resource Practice): it speaks about
+          the CAPABILITY that the opportunity's RESOURCE realizes, so it is
+          linked to the same opportunity while carrying a different target;
+          requiring target equality there would forbid exactly the mapping
+          §5 mandates. The relaxation is narrow — a linkage claim must still
+          be a CAPABILITY claim and must still carry the same moment.
+        """
+
+        row = self._conn.execute(
+            "SELECT target_type, target_id, teaching_moment_id"
+            " FROM learning_opportunity_record WHERE learning_opportunity_id = ?",
+            (claim.opportunity_id,),
+        ).fetchone()
+        if row is None:
+            return DomainError(
+                code=DomainErrorCode.VALIDATION_FAILED,
+                message=(
+                    "claim names opportunity"
+                    f" {claim.opportunity_id} but no LearningOpportunityRecord"
+                    " exists for it (DATA_MODEL §7)"
+                ),
+            )
+        capability_linkage = claim.claim_role == CAPABILITY_LINKAGE_CLAIM_ROLE
+        if capability_linkage:
+            if claim.scope != "CAPABILITY":
+                return DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        "the capability-linkage claim of opportunity"
+                        f" {claim.opportunity_id} must speak about a"
+                        f" CAPABILITY, got scope={claim.scope!r}"
+                    ),
+                )
+        elif str(row[0]) != claim.scope or str(row[1]) != claim_target:
+            return DomainError(
+                code=DomainErrorCode.VALIDATION_FAILED,
+                message=(
+                    "the linked LearningOpportunityRecord targets"
+                    f" {row[0]}/{row[1]} but the claim targets"
+                    f" {claim.scope}/{claim_target} — a claim and its"
+                    " opportunity must be about the same target"
+                    " (DATA_MODEL §6/§7)"
+                ),
+            )
+        if group is not None and group.moment_id is not None:
+            if str(row[2] or "") != str(group.moment_id):
+                return DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        "the linked LearningOpportunityRecord carries"
+                        f" teaching_moment_id={row[2]!r} but the claim's"
+                        f" moment is {group.moment_id} — teaching-claim"
+                        " provenance must agree (DEC-…2babb21e.5 LOR"
+                        " semantic association)"
+                    ),
+                )
+        return None
 
     def _insert_claim(
         self,
@@ -1418,9 +1565,18 @@ class SqliteLearningStore:
             (
                 row_id,
                 group.evidence_group_id,
-                None,  # opportunity link: Phase 0 view carries none
+                # P3-1B: an unlinked claim keeps NULL (Phase 0 view);
+                # a teaching claim names its durable LearningOpportunity.
+                (
+                    None
+                    if claim.opportunity_id is None
+                    else str(claim.opportunity_id)
+                ),
                 claim.scope,
-                group.target_id,
+                # P3-1B: a claim may target its own id (the capability-
+                # linkage claim points at the CAPABILITY, not at the
+                # RESOURCE the group is about).
+                group.target_id if claim.target_id is None else claim.target_id,
                 claim.performance_type.value,
                 claim.polarity.value,
                 claim.outcome.value,

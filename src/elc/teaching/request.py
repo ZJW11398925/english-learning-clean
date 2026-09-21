@@ -106,12 +106,16 @@ def parse_teaching_request_payload(payload: str) -> dict[str, str]:
 
 
 def intent_scope_for_request(request: TeachingRequest) -> str:
-    """BF-03 §11 scope for a user-initiated OPEN: an explicit focus target
-    is a TARGETED_LEARNING_REQUEST (a bare learning request would be
-    LEARNING_REQUEST)."""
+    """BF-03 §11 scope for a user-initiated OPEN.
 
-    return (
-        "TARGETED_LEARNING_REQUEST"
-        if request.focus_target_id
-        else "LEARNING_REQUEST"
-    )
+    ``TeachingRequest.focus_target_id`` is a required ``TargetId``, so a
+    user-initiated request in this slice always names a focus target and is
+    therefore a TARGETED_LEARNING_REQUEST. (The unreachable
+    "bare LEARNING_REQUEST" branch this function used to carry was removed
+    under review F10: a branch no value can reach is not a behavior, it is
+    dead code — the scope for a hypothetical target-less request is a
+    Phase 5 decision about the command shape, not an else-clause here.)
+    """
+
+    del request  # the scope is a property of the command shape
+    return "TARGETED_LEARNING_REQUEST"

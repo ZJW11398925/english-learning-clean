@@ -18,11 +18,25 @@ from elc.persona.types import (
     CharacterPackageRecord,
     CompiledPrompt,
     PromptCompilationRequest,
+    TeachingPromptView,
 )
 from elc.platform.types import (
     CharacterPackageId,
     Ok,
     Result,
+)
+
+#: The fixed section order of the compiled prompt (Phase 3 P3-1B ⑨ pins
+#: it): persona → contract → history → teaching → channel. Byte-
+#: determinism of the compiled prompt depends on this order, so it lives
+#: here as a declared constant and is asserted by test rather than being
+#: implied by the sequence of appends below.
+PROMPT_SECTION_ORDER = (
+    "persona",
+    "contract",
+    "history",
+    "teaching",
+    "channel",
 )
 
 
@@ -136,8 +150,11 @@ class PromptCompiler:
             sections.append("[history]\n" + "\n".join(lines))
 
         if context is not None and context.ephemeral_teaching_directive is not None:
-            directive = str(context.ephemeral_teaching_directive)
-            sections.append(f"[directive]\n{directive}")
+            sections.append(
+                _rendered_teaching_section(
+                    context.ephemeral_teaching_directive
+                )
+            )
 
         sections.append(f"[channel]\n{request.interaction_channel.value}")
         prompt_text = "\n\n".join(sections)
@@ -148,3 +165,23 @@ class PromptCompiler:
                 generation_contract=contract_id,
             )
         )
+
+
+def _rendered_teaching_section(directive: object) -> str:
+    """Render the teaching section of the prompt — PromptCompiler-owned.
+
+    Phase 3 P3-1B ⑨: Teaching produces a directive, Persona Runtime owns
+    the prompt. The canonical directive projection is
+    :class:`TeachingPromptView`; it renders as the ``[teaching]`` section
+    with the keys of :data:`TEACHING_PROMPT_KEY_ORDER` in that exact order
+    and ``key: value`` lines, so the same view always yields the same
+    bytes. Any other object keeps the pre-P3-1B ``[directive]`` rendering
+    (no silent drop of a caller's directive).
+    """
+
+    if isinstance(directive, TeachingPromptView):
+        lines = "\n".join(
+            f"{key}: {value}" for key, value in directive.as_prompt_fields()
+        )
+        return "[teaching]\n" + lines
+    return f"[directive]\n{str(directive)}"

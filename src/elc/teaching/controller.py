@@ -35,20 +35,36 @@ own the eventual protocol reshape, exactly as they own
 from __future__ import annotations
 
 from elc.platform.types import (
+    ActionId,
     AttemptEvaluationId,
     AttemptId,
     ConversationId,
     DecisionCycleId,
+    DomainError,
+    DomainErrorCode,
     Err,
     MomentId,
     Ok,
     Result,
+    TargetId,
+    UserTurnId,
 )
-from elc.teaching.gate import GateVerdict, UserInitiatedOpenFacts
 from elc.teaching.gate import (
-    decide_user_initiated_open as decide_open_facts,
+    ContinuationFacts,
+    GateVerdict,
+    UserInitiatedOpenFacts,
 )
-from elc.teaching.store import CP2OpenRequest, SqliteTeachingStore
+from elc.teaching.gate import decide_user_initiated_open as decide_open_facts
+from elc.teaching.gate import (
+    decide_user_requested_continuation as decide_continuation_facts,
+)
+from elc.teaching.ladder import ladder_step
+from elc.teaching.limits import TeachingLoad
+from elc.teaching.store import (
+    CP2OpenRequest,
+    MomentTransition,
+    SqliteTeachingStore,
+)
 from elc.teaching.types import (
     AttemptEvaluationRecord,
     AttemptRecord,
@@ -56,11 +72,19 @@ from elc.teaching.types import (
     GateDecisionId,
     GateDecisionRecord,
     GateExecutionStatusRecord,
-    MomentState,
     TeachingMomentRecord,
 )
 
 __all__ = ["TeachingController"]
+
+#: delivery kind → §20 action_type (the five teaching action types).
+_ACTION_BY_DELIVERY = {
+    "OPENING": "TEACHING_OPEN",
+    "HINT": "TEACHING_HINT",
+    "RETRY": "TEACHING_HINT",
+    "REVEAL": "TEACHING_REVEAL",
+    "EXPLANATION": "TEACHING_EXPLANATION",
+}
 
 
 class TeachingController:
@@ -95,6 +119,17 @@ class TeachingController:
         short transaction; never a Moment / Lock / Action."""
 
         return self._store.record_gate_denial(status, decision)
+
+    def record_gate_allow(
+        self,
+        status: GateExecutionStatusRecord,
+        decision: GateDecisionRecord,
+    ) -> Result[GateDecisionId]:
+        """ALLOW of a *continuation*: GateExecutionStatus(SUCCEEDED) +
+        GateDecision(ALLOW), one short transaction (the P3-1B authorization
+        trace). An opening ALLOW stays the CP2 five-fact unit."""
+
+        return self._store.record_gate_allow(status, decision)
 
     def record_gate_degraded(
         self, status: GateExecutionStatusRecord
@@ -173,8 +208,9 @@ class TeachingController:
         raise NotImplementedError(
             "the frozen Phase 0 shape carries no critical fact bundle;"
             " use decide_user_initiated_open(UserInitiatedOpenFacts)"
-            " (P3-1A) — the generic continuation/automatic shape is"
-            " P3-1B / Phase 8"
+            " (P3-1A) / decide_user_requested_continuation("
+            "ContinuationFacts) (P3-1B); the generic automatic shape is"
+            " Phase 8"
         )
 
     def open_teaching_moment(
@@ -186,20 +222,183 @@ class TeachingController:
             "CP2OpenRequest) (P3-1A)"
         )
 
+    # -- P3-1B authority faces ----------------------------------------------
+
+    def decide_user_requested_continuation(
+        self, facts: ContinuationFacts
+    ) -> GateVerdict:
+        """The Gate's USER_REQUESTED_CONTINUE profile (BF-03 v1.1
+        continuation branch; ACTIVE_MOMENT authorization, §8 hard caps
+        included). Pure — the caller persists / acts on the verdict."""
+
+        return decide_continuation_facts(facts)
+
     def record_attempt(self, attempt: AttemptRecord) -> Result[AttemptId]:
-        raise NotImplementedError("P3-1B: attempt recording")
+        """One durable AttemptRecord + the moment's attempt counter."""
+
+        return self._store.record_attempt(attempt)
 
     def record_attempt_evaluation(
         self, evaluation: AttemptEvaluationRecord
     ) -> Result[AttemptEvaluationId]:
-        raise NotImplementedError("P3-1B: attempt evaluation")
+        """One durable AttemptEvaluationRecord (§17: durable before the
+        next irreversible teaching action)."""
+
+        return self._store.record_attempt_evaluation(evaluation)
+
+    def transition_moment(
+        self,
+        moment_id: MomentId,
+        transition: MomentTransition,
+        expected_state_version: int,
+    ) -> Result[TeachingMomentRecord]:
+        """One CAS-guarded moment advance (ladder / lifecycle / closure)."""
+
+        return self._store.transition_moment(
+            moment_id, transition, expected_state_version
+        )
 
     def terminalize_moment(
-        self, moment_id: MomentId, outcome: str
-    ) -> Result[MomentState]:
-        raise NotImplementedError("P3-1B: terminalization + lock release")
+        self,
+        moment_id: MomentId,
+        *,
+        completion_outcome: str | None = None,
+        abort_reason: str | None = None,
+    ) -> Result[TeachingMomentRecord]:
+        """TEACHING_TERMINAL + TeachingLockLease release, one short
+        transaction (STATE_MACHINES §9; DATA_MODEL §18)."""
+
+        return self._store.terminalize_moment(
+            moment_id,
+            completion_outcome=completion_outcome,
+            abort_reason=abort_reason,
+        )
+
+    def count_attempts(self, moment_id: MomentId) -> int:
+        return self._store.count_attempts(moment_id)
+
+    def count_delivered_teaching_turns(self, moment_id: MomentId) -> int:
+        """The §8 teaching-turn count: delivered TEACHING_OPEN / HINT /
+        REVEAL / EXPLANATION actions of the moment."""
+
+        return self._store.count_delivered_teaching_turns(moment_id)
+
+    def count_delivered_slot_actions(
+        self, moment_id: MomentId, slot: str
+    ) -> int:
+        """Delivered actions of one ladder slot (P3-1B crash reconciliation):
+        how many hint / retry / reveal / explanation messages really went
+        out, so a rung can be rebuilt from durable facts."""
+
+        return self._store.count_delivered_slot_actions(moment_id, slot)
+
+    def teaching_load(self, moment_id: MomentId) -> TeachingLoad:
+        """Both §8 counts as one value (the continuation gate's input)."""
+
+        return TeachingLoad(
+            attempt_count=self._store.count_attempts(moment_id),
+            teaching_turn_count=self._store.count_delivered_teaching_turns(
+                moment_id
+            ),
+        )
+
+    def get_attempts(
+        self, moment_id: MomentId
+    ) -> Result[tuple[AttemptRecord, ...]]:
+        return self._store.get_attempts(moment_id)
+
+    def get_attempt_for_turn(
+        self, moment_id: MomentId, user_turn_id: UserTurnId
+    ) -> Result[AttemptRecord | None]:
+        """The attempt one user turn already contributed to one moment
+        (None = not recorded yet). The (moment, user turn) pair is the
+        attempt's idempotency key (review F3), so a re-entry reads the
+        durable attempt instead of deriving a new index."""
+
+        return self._store.get_attempt_for_turn(moment_id, user_turn_id)
+
+    def recover_orphan_locks(self) -> Result[tuple[str, ...]]:
+        """Startup recovery for the TeachingLockLease (STATE_MACHINES §9).
+
+        The store's durable representation is the ``active_teaching_lock``
+        row; a lock whose owning turn belongs to an older ``runtime_epoch``
+        is residue from a dead process, so it is released (and its moment
+        closed with ``SYSTEM_RECOVERY_ABORT``) in one short transaction.
+        Local V1 deliberately has no TTL/heartbeat — the epoch is the
+        liveness fact (§9/§24.1).
+        """
+
+        return self._store.recover_orphan_teaching_locks(
+            self._store.current_epoch
+        )
+
+    def get_attempt_evaluation(
+        self, attempt_id: AttemptId
+    ) -> Result[AttemptEvaluationRecord | None]:
+        """The durable evaluation of one attempt (None = not evaluated yet
+        — the crash-between-attempt-and-evaluation state, which the
+        re-entry path finishes)."""
+
+        return self._store.get_attempt_evaluation(attempt_id)
 
     def issue_ephemeral_directive(
-        self, moment_id: MomentId
+        self,
+        moment_id: MomentId,
+        *,
+        action_id: ActionId | None = None,
+        delivery_kind: str = "OPENING",
+        text: str | None = None,
+        hint_ladder: tuple[str, ...] = (),
+        reveal_form: str | None = None,
     ) -> Result[EphemeralTeachingDirective]:
-        raise NotImplementedError("P3-1B: Teaching Planner directive")
+        """Teaching Planner: the moment's current ladder position as a
+        directive for Persona Runtime.
+
+        The directive is derived from the *durable* moment (its focus
+        target, phase, support and attempt counter) and the target
+        fixture's rungs — never from the provider, which only ever receives
+        the finished phase/support (TASK-…2.2 ⑤ "provider 不自定阶段")."""
+
+        moment_result = self._store.get_moment(moment_id)
+        if isinstance(moment_result, Err):
+            return moment_result
+        moment = moment_result.value
+        if moment is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=f"moment not found: {moment_id}",
+                )
+            )
+        step = ladder_step(
+            current_phase=moment.presentation_phase.value,
+            current_support=moment.support_level.value,
+            hint_ladder=hint_ladder,
+            reveal_form=reveal_form,
+            delivery_kind=delivery_kind,
+        )
+        hint_text = step.text if step.delivery_kind == "HINT" else None
+        reveal_text = step.text if step.delivery_kind == "REVEAL" else None
+        explanation_text = (
+            step.text if step.delivery_kind == "EXPLANATION" else None
+        )
+        return Ok(
+            EphemeralTeachingDirective(
+                moment_id=moment.moment_id,
+                action_id=(
+                    action_id if action_id is not None else ActionId("")
+                ),
+                focus_target_id=TargetId(moment.focus_target.target_id),
+                hint=hint_text,
+                focus_target_type=moment.focus_target.target_type,
+                action_type=_ACTION_BY_DELIVERY.get(
+                    step.delivery_kind, "TEACHING_HINT"
+                ),
+                presentation_phase=step.presentation_phase,
+                support_level=step.support_level,
+                attempt_index=moment.attempt_index,
+                teaching_text=text if text is not None else step.text,
+                reveal_text=reveal_text,
+                explanation_text=explanation_text,
+            )
+        )

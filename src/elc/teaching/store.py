@@ -53,6 +53,8 @@ from elc.platform.db.epoch import RuntimeEpochFence, StaleEpochError
 from elc.platform.db.tx import short_transaction
 from elc.platform.types import (
     ActionId,
+    AttemptEvaluationId,
+    AttemptId,
     ConversationId,
     DecisionCycleId,
     DomainError,
@@ -67,6 +69,7 @@ from elc.platform.types import (
     Result,
     RuntimeEpoch,
     TurnId,
+    UserTurnId,
 )
 from elc.runtime.types import (
     GenerationActionIntentRecord,
@@ -74,7 +77,15 @@ from elc.runtime.types import (
     GenerationActionType,
 )
 from elc.teaching.types import (
+    ABORT_REASONS,
+    ATTEMPT_OUTCOMES,
+    COMPLETION_OUTCOMES,
+    AbortReason,
+    AnswerExposureState,
+    AttemptEvaluationRecord,
+    AttemptRecord,
     AuthorizationBasis,
+    ExposureEstimateCertainty,
     GateDecisionContext,
     GateDecisionRecord,
     GateDecisionValue,
@@ -88,8 +99,15 @@ from elc.teaching.types import (
     TeachingTargetRef,
 )
 
+#: The canonical §5 / §6 / §7 word lists the store validates against (the
+#: migration CHECKs are the durable enforcement of the same sets).
+_ATTEMPT_OUTCOMES = ATTEMPT_OUTCOMES
+_COMPLETION_OUTCOMES = COMPLETION_OUTCOMES
+_ABORT_REASONS = ABORT_REASONS
+
 __all__ = [
     "CP2OpenRequest",
+    "MomentTransition",
     "SqliteTeachingStore",
     "StaleStoreEpochError",
 ]
@@ -122,6 +140,38 @@ class CP2OpenRequest:
     moment: TeachingMomentRecord
     action: GenerationActionIntentRecord
     owner_epoch: int
+
+
+@dataclass(frozen=True)
+class MomentTransition:
+    """One CAS-guarded TeachingMoment advance (P3-1B).
+
+    Every field is optional: a transition names only what it changes
+    (``None`` = leave the column alone), so the ladder and the lifecycle
+    move independently inside one short transaction. ``expected_state_
+    version`` is the §20 compare-and-swap guard: a stale writer is refused
+    instead of silently overwriting a newer state.
+    """
+
+    lifecycle_state: MomentState | None = None
+    presentation_phase: PresentationPhase | None = None
+    support_level: TeachingSupportLevel | None = None
+    attempt_index: int | None = None
+    completion_outcome: str | None = None
+    abort_reason: str | None = None
+    teaching_terminal_at: str | None = None
+    closed_at: str | None = None
+    opened_at: str | None = None
+
+
+#: The generation action types that count as one delivered teaching turn
+#: (TASK-…2.2 ⑦; the tuple mirrors elc.teaching.limits).
+_TEACHING_TURN_ACTION_TYPES = (
+    "TEACHING_OPEN",
+    "TEACHING_HINT",
+    "TEACHING_REVEAL",
+    "TEACHING_EXPLANATION",
+)
 
 
 def _target_document(target: TeachingTargetRef) -> str:
@@ -344,7 +394,13 @@ class SqliteTeachingStore:
         decision: GateDecisionRecord,
     ) -> Result[GateDecisionId]:
         """DENY: GateExecutionStatus(SUCCEEDED) + GateDecision(DENY), one
-        short transaction; no Moment / Lock / Action (STATE_MACHINES §2)."""
+        short transaction; no Moment / Lock / Action (STATE_MACHINES §2).
+
+        Idempotent on the fact ids (review F1): a same-turn re-entry that
+        already recorded this decision gets the durable row back instead of
+        a PRIMARY KEY conflict — the durable fact is canonical, and a
+        re-entry never rewrites a Gate outcome.
+        """
 
         if decision.decision != GateDecisionValue.DENY:
             return _err(
@@ -359,6 +415,78 @@ class SqliteTeachingStore:
         try:
             with short_transaction(self._conn):
                 self._require_current_epoch()
+                if self._gate_fact_recorded(
+                    status.gate_execution_status_id,
+                    decision.gate_decision_id,
+                ):
+                    return Ok(decision.gate_decision_id)
+                created_at = _now()
+                self._insert_execution_status(status, created_at, moment_id=None)
+                self._conn.execute(
+                    "INSERT INTO gate_decision ("
+                    " gate_decision_id, decision_cycle_id, candidate_id,"
+                    " context, decision, reason_codes, policy_version,"
+                    " created_at"
+                    ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        decision.gate_decision_id,
+                        decision.decision_cycle_id,
+                        decision.candidate_id,
+                        decision.context.value,
+                        decision.decision.value,
+                        _array_document(decision.reason_codes),
+                        decision.policy_version,
+                        created_at,
+                    ),
+                )
+                return Ok(decision.gate_decision_id)
+        except sqlite3.IntegrityError as exc:
+            return _err(DomainErrorCode.CONFLICT, str(exc))
+
+    def record_gate_allow(
+        self,
+        status: GateExecutionStatusRecord,
+        decision: GateDecisionRecord,
+    ) -> Result[GateDecisionId]:
+        """ALLOW: GateExecutionStatus(SUCCEEDED) + GateDecision(ALLOW), one
+        short transaction.
+
+        The continuation authorization trace writes this pair: a
+        USER_REQUESTED_CONTINUE that the Gate authorized must be as durable
+        as a denial, or a re-entry could not tell "allowed and not yet
+        executed" from "never decided". An OPEN ALLOW is *not* this face —
+        it is the CP2 five-fact unit (elc.teaching.store.
+        open_teaching_moment), because an opening authorization is never
+        held without its Moment.
+
+        Idempotent on the fact ids, like the DENY face (review F1): the
+        continuation facts are deterministic per turn, so a second call
+        replays the durable pair.
+        """
+
+        if decision.decision != GateDecisionValue.ALLOW:
+            return _err(
+                DomainErrorCode.VALIDATION_FAILED,
+                "record_gate_allow carries an ALLOW decision",
+            )
+        if decision.reason_codes:
+            return _err(
+                DomainErrorCode.VALIDATION_FAILED,
+                "an ALLOW carries no DENY reason codes",
+            )
+        if status.status is not GateExecutionStatusValue.SUCCEEDED:
+            return _err(
+                DomainErrorCode.VALIDATION_FAILED,
+                "an ALLOW carries GateExecutionStatus(SUCCEEDED)",
+            )
+        try:
+            with short_transaction(self._conn):
+                self._require_current_epoch()
+                if self._gate_fact_recorded(
+                    status.gate_execution_status_id,
+                    decision.gate_decision_id,
+                ):
+                    return Ok(decision.gate_decision_id)
                 created_at = _now()
                 self._insert_execution_status(status, created_at, moment_id=None)
                 self._conn.execute(
@@ -385,7 +513,11 @@ class SqliteTeachingStore:
     def record_gate_degraded(
         self, status: GateExecutionStatusRecord
     ) -> Result[str]:
-        """DEGRADED: one fact, no GateDecision (docs/DATA_MODEL.md §14.1)."""
+        """DEGRADED: one fact, no GateDecision (docs/DATA_MODEL.md §14.1).
+
+        Idempotent on the fact id (review F1): the execution-status row is
+        the whole trace of the degradation, so a re-entry replays it.
+        """
 
         if status.status != GateExecutionStatusValue.DEGRADED:
             return _err(
@@ -401,10 +533,590 @@ class SqliteTeachingStore:
         try:
             with short_transaction(self._conn):
                 self._require_current_epoch()
+                if self._gate_fact_recorded(
+                    status.gate_execution_status_id, None
+                ):
+                    return Ok(status.gate_execution_status_id)
                 self._insert_execution_status(status, _now(), moment_id=None)
                 return Ok(status.gate_execution_status_id)
         except sqlite3.IntegrityError as exc:
             return _err(DomainErrorCode.CONFLICT, str(exc))
+
+    def _gate_fact_recorded(
+        self,
+        status_id: str,
+        decision_id: GateDecisionId | None,
+    ) -> bool:
+        """True when the durable Gate facts of one decision already exist.
+
+        The caller holds the transaction; the check is the replay guard of
+        the three record_gate_* faces (review F1). A status row alone is
+        the DEGRADED shape; a (status, decision) pair is the SUCCEEDED one.
+        """
+
+        existing_status = self._conn.execute(
+            "SELECT 1 FROM gate_execution_status"
+            " WHERE gate_execution_status_id = ?",
+            (status_id,),
+        ).fetchone()
+        if existing_status is None:
+            return False
+        if decision_id is not None:
+            existing_decision = self._conn.execute(
+                "SELECT 1 FROM gate_decision WHERE gate_decision_id = ?",
+                (decision_id,),
+            ).fetchone()
+            return existing_decision is not None
+        return True
+
+    # -- P3-1B: attempts, evaluations, lifecycle ----------------------------
+
+    def record_attempt(self, attempt: AttemptRecord) -> Result[AttemptId]:
+        """One durable AttemptRecord (DATA_MODEL §17) plus the moment's
+        attempt counter, in ONE short transaction.
+
+        The moment must be in its EVALUATING slot (STATE_MACHINES §1:
+        AWAITING_USER → TeachingResponseEnvelope → optional attempt →
+        EVALUATING) — a terminal / closed moment has no attempts, and an
+        attempt recorded outside the evaluating slot would be an out-of-order
+        write. ``attempt_index`` is validated against the moment's durable
+        counter (UNIQUE(moment_id, attempt_index) is the §25 identity).
+
+        Idempotency (review F3): the identity of an attempt is *(moment, user
+        turn)* — one user turn contributes at most one attempt to a moment.
+        Both the attempt id and that pair are checked before the insert, so a
+        re-entry after a crash between the attempt and its evaluation returns
+        the durable attempt instead of recording a second one (which would
+        both inflate the §8 attempt budget and leave the first evaluation's
+        ``evidence_proposal_refs`` pointing at a different attempt).
+        """
+
+        try:
+            with short_transaction(self._conn):
+                self._require_current_epoch()
+                existing = self._conn.execute(
+                    "SELECT attempt_id, attempt_index FROM attempt_record"
+                    " WHERE attempt_id = ? OR (moment_id = ? AND"
+                    " user_turn_id = ?) ORDER BY attempt_index",
+                    (
+                        attempt.attempt_id,
+                        attempt.moment_id,
+                        attempt.user_turn_id,
+                    ),
+                ).fetchone()
+                if existing is not None:
+                    # Replay: the durable attempt is canonical. A re-entry
+                    # that re-derived a *different* attempt id (because the
+                    # moment's counter had already moved) is deliberately
+                    # NOT adopted here — the durable row wins.
+                    return Ok(AttemptId(str(existing[0])))
+                moment = self._moment_row(MomentId(attempt.moment_id))
+                if moment is None:
+                    return _err(
+                        DomainErrorCode.NOT_FOUND,
+                        f"moment not found: {attempt.moment_id}",
+                    )
+                state = MomentState(str(moment[19]))
+                if state is not MomentState.EVALUATING:
+                    return _err(
+                        DomainErrorCode.VALIDATION_FAILED,
+                        "an attempt is recorded in the moment's EVALUATING"
+                        f" slot (STATE_MACHINES §1); moment {attempt.moment_id}"
+                        f" is {state.value}",
+                    )
+                recorded = int(moment[21])
+                if attempt.attempt_index != recorded + 1:
+                    return _err(
+                        DomainErrorCode.CONFLICT,
+                        "attempt_index must continue the moment's counter"
+                        f" ({recorded} → {recorded + 1}); got"
+                        f" {attempt.attempt_index}",
+                    )
+                created_at = attempt.created_at or _now()
+                self._conn.execute(
+                    "INSERT INTO attempt_record ("
+                    " attempt_id, moment_id, attempt_index, user_turn_id,"
+                    " support_level_before_attempt, answer_exposure_state,"
+                    " exposure_estimate_id, support_attribution_certainty,"
+                    " support_attribution_basis, created_at"
+                    ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        attempt.attempt_id,
+                        attempt.moment_id,
+                        attempt.attempt_index,
+                        attempt.user_turn_id,
+                        attempt.support_level_before_attempt.value,
+                        attempt.answer_exposure_state.value,
+                        attempt.exposure_estimate_id,
+                        attempt.support_attribution_certainty.value,
+                        attempt.support_attribution_basis,
+                        created_at,
+                    ),
+                )
+                self._conn.execute(
+                    "UPDATE teaching_moment"
+                    " SET attempt_index = ?, state_version = state_version + 1"
+                    " WHERE moment_id = ? AND state_version = ?",
+                    (attempt.attempt_index, attempt.moment_id, int(moment[25])),
+                )
+                return Ok(attempt.attempt_id)
+        except sqlite3.IntegrityError as exc:
+            return _err(DomainErrorCode.CONFLICT, str(exc))
+
+    def record_attempt_evaluation(
+        self, evaluation: AttemptEvaluationRecord
+    ) -> Result[AttemptEvaluationId]:
+        """One durable AttemptEvaluationRecord (DATA_MODEL §17).
+
+        §17's normative write-order rule — "必须在下一不可逆教学动作前
+        durable" — is enforced by *ordering* (the coordinator writes this
+        before it creates the next teaching action) and by the schema: the
+        row's FK to attempt_record means an evaluation can never exist
+        without its attempt, and UNIQUE(attempt_id) means a second
+        evaluation of the same attempt is refused rather than silently
+        appended. A replay of the same evaluation id returns Ok.
+        """
+
+        if evaluation.outcome not in _ATTEMPT_OUTCOMES:
+            return _err(
+                DomainErrorCode.VALIDATION_FAILED,
+                "outcome must be one of the STATE_MACHINES §5 five values"
+                f" (got {evaluation.outcome!r})",
+            )
+        if not 0.0 <= evaluation.confidence <= 1.0:
+            return _err(
+                DomainErrorCode.VALIDATION_FAILED,
+                "confidence must be within [0, 1] (got"
+                f" {evaluation.confidence})",
+            )
+        try:
+            with short_transaction(self._conn):
+                self._require_current_epoch()
+                existing = self._conn.execute(
+                    "SELECT attempt_evaluation_id"
+                    " FROM attempt_evaluation_record"
+                    " WHERE attempt_evaluation_id = ?",
+                    (evaluation.attempt_evaluation_id,),
+                ).fetchone()
+                if existing is not None:
+                    return Ok(evaluation.attempt_evaluation_id)
+                self._conn.execute(
+                    "INSERT INTO attempt_evaluation_record ("
+                    " attempt_evaluation_id, moment_id, attempt_id,"
+                    " evaluator_id, evaluator_version, outcome, confidence,"
+                    " evidence_proposal_refs, created_at"
+                    ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        evaluation.attempt_evaluation_id,
+                        evaluation.moment_id,
+                        evaluation.attempt_id,
+                        evaluation.evaluator_id,
+                        evaluation.evaluator_version,
+                        evaluation.outcome,
+                        evaluation.confidence,
+                        _array_document(evaluation.evidence_proposal_refs),
+                        evaluation.created_at or _now(),
+                    ),
+                )
+                return Ok(evaluation.attempt_evaluation_id)
+        except sqlite3.IntegrityError as exc:
+            return _err(DomainErrorCode.CONFLICT, str(exc))
+
+    def transition_moment(
+        self,
+        moment_id: MomentId,
+        transition: MomentTransition,
+        expected_state_version: int,
+    ) -> Result[TeachingMomentRecord]:
+        """One CAS-guarded moment advance (STATE_MACHINES §20).
+
+        Only the named columns move; ``state_version`` always advances.
+        CLOSED is final — a closed moment is never reopened by a later
+        caller (SM §2 "Closed 不允许 reopen"; the refusal is here, at the
+        durable boundary, not only in the caller)."""
+
+        try:
+            with short_transaction(self._conn):
+                self._require_current_epoch()
+                row = self._moment_row(moment_id)
+                if row is None:
+                    return _err(
+                        DomainErrorCode.NOT_FOUND,
+                        f"moment not found: {moment_id}",
+                    )
+                current = int(row[25])
+                if current != expected_state_version:
+                    return _err(
+                        DomainErrorCode.CONFLICT,
+                        "moment state_version is"
+                        f" {current}, expected {expected_state_version}",
+                    )
+                if MomentState(str(row[19])) is MomentState.CLOSED:
+                    return _err(
+                        DomainErrorCode.CONFLICT,
+                        f"moment {moment_id} is CLOSED — closed moments are"
+                        " never reopened (STATE_MACHINES §2)",
+                    )
+                assignments: list[str] = []
+                values: list[object] = []
+                for column, value in (
+                    (
+                        "lifecycle_state",
+                        None
+                        if transition.lifecycle_state is None
+                        else transition.lifecycle_state.value,
+                    ),
+                    (
+                        "presentation_phase",
+                        None
+                        if transition.presentation_phase is None
+                        else transition.presentation_phase.value,
+                    ),
+                    (
+                        "support_level",
+                        None
+                        if transition.support_level is None
+                        else transition.support_level.value,
+                    ),
+                    ("attempt_index", transition.attempt_index),
+                    ("completion_outcome", transition.completion_outcome),
+                    ("abort_reason", transition.abort_reason),
+                    ("teaching_terminal_at", transition.teaching_terminal_at),
+                    ("closed_at", transition.closed_at),
+                    ("opened_at", transition.opened_at),
+                ):
+                    if value is None:
+                        continue
+                    assignments.append(f"{column} = ?")
+                    values.append(value)
+                assignments.append("state_version = state_version + 1")
+                values.extend([moment_id, expected_state_version])
+                self._conn.execute(
+                    "UPDATE teaching_moment SET "
+                    + ", ".join(assignments)
+                    + " WHERE moment_id = ? AND state_version = ?",
+                    tuple(values),
+                )
+                updated = self._moment_row(moment_id)
+                assert updated is not None  # the CAS above kept the row
+                return Ok(self._moment_record(updated))
+        except sqlite3.IntegrityError as exc:
+            # e.g. the completion_outcome / abort_reason CHECK vocabularies
+            return _err(DomainErrorCode.VALIDATION_FAILED, str(exc))
+
+    def terminalize_moment(
+        self,
+        moment_id: MomentId,
+        *,
+        completion_outcome: str | None = None,
+        abort_reason: str | None = None,
+    ) -> Result[TeachingMomentRecord]:
+        """TEACHING_TERMINAL — and the TeachingLockLease release — in ONE
+        short transaction (STATE_MACHINES §1/§9; DATA_MODEL §18: "TEACHING_
+        TERMINAL 与 lock release 同短事务提交").
+
+        Exactly one closure is written, and it must match the state the
+        moment is in: COMPLETING closes with a §6 outcome, ABORTING closes
+        with a §7 reason (SM §1 "finalize teaching outcome"). The lock row
+        is deleted in the same unit, so "moment terminal, lock still held"
+        is unreachable.
+        """
+
+        if (completion_outcome is None) == (abort_reason is None):
+            return _err(
+                DomainErrorCode.VALIDATION_FAILED,
+                "a terminal moment carries exactly one closure: a"
+                " completion_outcome (COMPLETING) or an abort_reason"
+                " (ABORTING)",
+            )
+        if (
+            completion_outcome is not None
+            and completion_outcome not in _COMPLETION_OUTCOMES
+        ):
+            return _err(
+                DomainErrorCode.VALIDATION_FAILED,
+                f"{completion_outcome!r} is not a STATE_MACHINES §6"
+                " completion outcome",
+            )
+        if abort_reason is not None and abort_reason not in _ABORT_REASONS:
+            return _err(
+                DomainErrorCode.VALIDATION_FAILED,
+                f"{abort_reason!r} is not a STATE_MACHINES §7 abort reason",
+            )
+        try:
+            with short_transaction(self._conn):
+                self._require_current_epoch()
+                row = self._moment_row(moment_id)
+                if row is None:
+                    return _err(
+                        DomainErrorCode.NOT_FOUND,
+                        f"moment not found: {moment_id}",
+                    )
+                state = MomentState(str(row[19]))
+                if state is MomentState.TEACHING_TERMINAL:
+                    # Replay: the durable terminal row is canonical.
+                    return Ok(self._moment_record(row))
+                expected = (
+                    MomentState.COMPLETING
+                    if completion_outcome is not None
+                    else MomentState.ABORTING
+                )
+                if state is not expected:
+                    return _err(
+                        DomainErrorCode.CONFLICT,
+                        f"moment {moment_id} is {state.value}; it can only"
+                        f" terminalize from {expected.value}",
+                    )
+                now = _now()
+                self._conn.execute(
+                    "UPDATE teaching_moment SET lifecycle_state = ?,"
+                    " completion_outcome = ?, abort_reason = ?,"
+                    " teaching_terminal_at = ?,"
+                    " state_version = state_version + 1"
+                    " WHERE moment_id = ? AND state_version = ?",
+                    (
+                        MomentState.TEACHING_TERMINAL.value,
+                        completion_outcome,
+                        abort_reason,
+                        now,
+                        moment_id,
+                        int(row[25]),
+                    ),
+                )
+                self._conn.execute(
+                    "DELETE FROM active_teaching_lock WHERE moment_id = ?",
+                    (moment_id,),
+                )
+                updated = self._moment_row(moment_id)
+                assert updated is not None
+                return Ok(self._moment_record(updated))
+        except sqlite3.IntegrityError as exc:
+            return _err(DomainErrorCode.VALIDATION_FAILED, str(exc))
+
+    def lock_moment_id(
+        self, conversation_id: ConversationId
+    ) -> Result[MomentId | None]:
+        """The lock row as an Ok (the controller's ``observed_lock_state``
+        reads it through this face; the raw query stays in the store)."""
+
+        return self.get_lock_moment_id(conversation_id)
+
+    def recover_orphan_teaching_locks(
+        self, current_epoch: RuntimeEpoch
+    ) -> Result[tuple[str, ...]]:
+        """Startup recovery: release the locks of moments owned by an older
+        runtime epoch (STATE_MACHINES §9 "startup recovery 通过 durable
+        Moment state + runtime_epoch revalidate/release orphan lock";
+        RUNTIME §22).
+
+        A lock is *orphan* when the turn that owns its moment belongs to a
+        runtime epoch other than the current one: the process that held the
+        conversation's one-focus guarantee is gone, so its lock is not a
+        mutual-exclusion fact any more — it is residue. Each orphan is
+        closed in ONE short transaction: the moment becomes
+        ABORTING → TEACHING_TERMINAL → CLOSED with the §7
+        ``SYSTEM_RECOVERY_ABORT`` reason (no RESUMING delivery: the owning
+        process died, so there is no conversation to return to — RA §23
+        "resume 可 retry 或由下个 turn 自然恢复"), and the lock row is
+        deleted, which is what unseals the conversation for a new request.
+
+        Returns the recovered moment ids (empty when there is no orphan).
+        """
+
+        rows = self._conn.execute(
+            "SELECT l.moment_id, l.state_version,"
+            " m.lifecycle_state, m.state_version"
+            " FROM active_teaching_lock l"
+            " JOIN teaching_moment m ON m.moment_id = l.moment_id"
+            " JOIN decision_cycle d ON d.decision_cycle_id ="
+            "      m.decision_cycle_id"
+            " JOIN turn_record t ON t.turn_id = d.turn_id"
+            " WHERE t.owner_epoch != ?"
+            " ORDER BY m.created_at, l.moment_id",
+            (current_epoch,),
+        ).fetchall()
+        if not rows:
+            return Ok(())
+        recovered: list[str] = []
+        try:
+            with short_transaction(self._conn):
+                self._require_current_epoch()
+                now = _now()
+                for moment_id, lock_version, _state, moment_version in rows:
+                    self._conn.execute(
+                        "UPDATE teaching_moment SET lifecycle_state = ?,"
+                        " abort_reason = ?, teaching_terminal_at = ?,"
+                        " closed_at = ?, state_version = state_version + 1"
+                        " WHERE moment_id = ? AND state_version = ?",
+                        (
+                            MomentState.CLOSED.value,
+                            AbortReason.SYSTEM_RECOVERY_ABORT.value,
+                            now,
+                            now,
+                            moment_id,
+                            int(moment_version),
+                        ),
+                    )
+                    self._conn.execute(
+                        "DELETE FROM active_teaching_lock"
+                        " WHERE moment_id = ? AND state_version = ?",
+                        (moment_id, int(lock_version)),
+                    )
+                    recovered.append(str(moment_id))
+                return Ok(tuple(recovered))
+        except sqlite3.IntegrityError as exc:
+            return _err(DomainErrorCode.CONFLICT, str(exc))
+
+    # -- P3-1B reads ---------------------------------------------------------
+
+    def count_attempts(self, moment_id: MomentId) -> int:
+        """The durable AttemptRecord count of one moment (the §8 attempt
+        count; UNIQUE(moment_id, attempt_index) makes it exact)."""
+
+        row = self._conn.execute(
+            "SELECT COUNT(*) FROM attempt_record WHERE moment_id = ?",
+            (moment_id,),
+        ).fetchone()
+        return 0 if row is None else int(row[0])
+
+    def count_delivered_teaching_turns(self, moment_id: MomentId) -> int:
+        """Delivered teaching turns of one moment (TASK-…2.2 ⑦): the
+        TEACHING_OPEN / TEACHING_HINT / TEACHING_REVEAL / TEACHING_
+        EXPLANATION actions that actually reached the transcript. An action
+        whose delivery failed has no assistant_turn row and does not count.
+        """
+
+        placeholders = ", ".join("?" for _ in _TEACHING_TURN_ACTION_TYPES)
+        row = self._conn.execute(
+            "SELECT COUNT(DISTINCT a.action_id)"
+            " FROM generation_action_intent a"
+            " JOIN assistant_turn t ON t.action_id = a.action_id"
+            " WHERE a.moment_id = ? AND a.action_type IN ("
+            + placeholders
+            + ")",
+            (moment_id, *_TEACHING_TURN_ACTION_TYPES),
+        ).fetchone()
+        return 0 if row is None else int(row[0])
+
+    def get_attempts(
+        self, moment_id: MomentId
+    ) -> Result[tuple[AttemptRecord, ...]]:
+        rows = self._conn.execute(
+            "SELECT attempt_id, moment_id, attempt_index, user_turn_id,"
+            " support_level_before_attempt, answer_exposure_state,"
+            " exposure_estimate_id, support_attribution_certainty,"
+            " support_attribution_basis, created_at"
+            " FROM attempt_record WHERE moment_id = ?"
+            " ORDER BY attempt_index",
+            (moment_id,),
+        ).fetchall()
+        return Ok(
+            tuple(
+                AttemptRecord(
+                    attempt_id=AttemptId(str(row[0])),
+                    moment_id=MomentId(str(row[1])),
+                    attempt_index=int(row[2]),
+                    user_turn_id=UserTurnId(str(row[3])),
+                    support_level_before_attempt=TeachingSupportLevel(
+                        str(row[4])
+                    ),
+                    answer_exposure_state=AnswerExposureState(str(row[5])),
+                    exposure_estimate_id=_optional(row[6]),
+                    support_attribution_certainty=ExposureEstimateCertainty(
+                        str(row[7])
+                    ),
+                    support_attribution_basis=str(row[8]),
+                    created_at=_optional(row[9]),
+                )
+                for row in rows
+            )
+        )
+
+    def count_delivered_slot_actions(
+        self, moment_id: MomentId, slot: str
+    ) -> int:
+        """Delivered teaching actions of one moment in one ladder slot.
+
+        ``slot`` is the action id's role suffix (``hint`` / ``retry`` /
+        ``reveal`` / ``explanation`` / ``resume``): the crash reconciliation
+        rebuilds the ladder rung from how many *hint* deliveries really
+        happened, which is durable fact (the assistant turn exists) rather
+        than an intention. The suffix travels as a bound parameter — it is a
+        value, never assembled SQL.
+        """
+
+        row = self._conn.execute(
+            "SELECT COUNT(DISTINCT a.action_id)"
+            " FROM generation_action_intent a"
+            " JOIN assistant_turn t ON t.action_id = a.action_id"
+            " WHERE a.moment_id = ? AND a.action_id LIKE ?",
+            (moment_id, f"%-{slot}"),
+        ).fetchone()
+        return 0 if row is None else int(row[0])
+
+    def get_attempt_for_turn(
+        self, moment_id: MomentId, user_turn_id: UserTurnId
+    ) -> Result[AttemptRecord | None]:
+        """The durable attempt one user turn contributed to one moment.
+
+        The (moment, user turn) pair is the attempt's idempotency key
+        (review F3): a re-entry reads the attempt it already recorded
+        instead of deriving a new index — the read face the coordinator uses
+        before it assembles a second AttemptRecord.
+        """
+
+        row = self._conn.execute(
+            "SELECT attempt_id, moment_id, attempt_index, user_turn_id,"
+            " support_level_before_attempt, answer_exposure_state,"
+            " exposure_estimate_id, support_attribution_certainty,"
+            " support_attribution_basis, created_at"
+            " FROM attempt_record WHERE moment_id = ? AND user_turn_id = ?",
+            (moment_id, user_turn_id),
+        ).fetchone()
+        if row is None:
+            return Ok(None)
+        return Ok(
+            AttemptRecord(
+                attempt_id=AttemptId(str(row[0])),
+                moment_id=MomentId(str(row[1])),
+                attempt_index=int(row[2]),
+                user_turn_id=UserTurnId(str(row[3])),
+                support_level_before_attempt=TeachingSupportLevel(str(row[4])),
+                answer_exposure_state=AnswerExposureState(str(row[5])),
+                exposure_estimate_id=_optional(row[6]),
+                support_attribution_certainty=ExposureEstimateCertainty(
+                    str(row[7])
+                ),
+                support_attribution_basis=str(row[8]),
+                created_at=_optional(row[9]),
+            )
+        )
+
+    def get_attempt_evaluation(
+        self, attempt_id: AttemptId
+    ) -> Result[AttemptEvaluationRecord | None]:
+        row = self._conn.execute(
+            "SELECT attempt_evaluation_id, moment_id, attempt_id,"
+            " evaluator_id, evaluator_version, outcome, confidence,"
+            " evidence_proposal_refs, created_at"
+            " FROM attempt_evaluation_record WHERE attempt_id = ?",
+            (attempt_id,),
+        ).fetchone()
+        if row is None:
+            return Ok(None)
+        return Ok(
+            AttemptEvaluationRecord(
+                attempt_evaluation_id=AttemptEvaluationId(str(row[0])),
+                moment_id=MomentId(str(row[1])),
+                attempt_id=AttemptId(str(row[2])),
+                evaluator_id=str(row[3]),
+                evaluator_version=str(row[4]),
+                outcome=str(row[5]),
+                confidence=float(row[6]),
+                evidence_proposal_refs=_array_from_document(str(row[7])),
+                created_at=_optional(row[8]),
+            )
+        )
 
     # -- reads --------------------------------------------------------------
 

@@ -8,7 +8,7 @@ P3-0's ``decision_cycle`` table test, carried forward to P3-1A:
   snapshot/version columns accept NULL after 0007 (the legacy export
   requires the honest all-NULL bindings — the migration header carries the
   full rationale);
-- schema_version is 7 and 0007 is the newest migration;
+- schema_version is 8 (0008_attempt_records is the newest migration);
 - the decision_cycle / gate / moment write faces belong to their owning
   adapters only (AST-based scan, P3-0 review F3 — a substring scan is
   defeatable by multi-line SQL literals).
@@ -184,11 +184,14 @@ def test_migration_list_and_schema_version(db: sqlite3.Connection) -> None:
         "0005_learner_target_state",
         "0006_decision_cycle",
         "0007_teaching_lineage",
+        # 0008_attempt_records joins in Phase 3 P3-1B (TASK-…2babb21e.2 ①):
+        # the attempt / evaluation tables plus the F8 vocabularies.
+        "0008_attempt_records",
     ]
     version = db.execute(
         "SELECT value FROM schema_meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert version is not None and version[0] == "7"
+    assert version is not None and version[0] == "8"
 
 
 def test_snapshot_columns_accept_null_for_legacy_cycles(
@@ -305,11 +308,11 @@ def test_write_faces_belong_to_the_owning_adapters_only() -> None:
     )
 
 
-def test_migrations_directory_0007_is_newest() -> None:
-    """0007 is the newest migration; nothing ahead of the P3-1A slice
+def test_migrations_directory_0008_is_newest() -> None:
+    """0008 is the newest migration; nothing ahead of the P3-1B slice
     smuggles schema (the migration runner is filename-ordered)."""
 
     names = sorted(
         path.name for path in (REPO_ROOT / "migrations").glob("*.sql")
     )
-    assert names[-1] == "0007_teaching_lineage.sql"
+    assert names[-1] == "0008_attempt_records.sql"

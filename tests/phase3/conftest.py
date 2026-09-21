@@ -1,6 +1,6 @@
 """Shared fixtures for the Phase 3 P3-0 tests (entry gates).
 
-Each test gets a fresh in-memory app.db (migrations through 0006), an
+Each test gets a fresh in-memory app.db (migrations through 0008), an
 opened runtime epoch, and the learning / conversation / generation stores
 bound to that epoch. Claim/group builders are reused from
 tests/phase2/conftest.py, which stays their owner.

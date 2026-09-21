@@ -91,6 +91,8 @@ from dataclasses import dataclass, replace
 from elc.teaching.targets import CONTENT_STATUSES, TARGET_STATUSES
 
 __all__ = [
+    "CONTINUATION_ACTIONS",
+    "CONTINUATION_REASON_CODES",
     "DENY_PRECEDENCE",
     "GATE_CONTEXTS",
     "GATE_POLICY_VERSION",
@@ -98,13 +100,18 @@ __all__ = [
     "OPEN_ACTIONS",
     "SAFETY_PRIVACY_NO_SOURCE",
     "TARGET_SUPPRESSED_NO_SOURCE",
+    "USER_INITIATED_CONTINUATION_INTENTS",
+    "USER_INITIATED_OPEN_INTENTS",
     "USER_INITIATED_OPEN_REASON_CODES",
     "USER_INTENT_SCOPES",
+    "ContinuationFacts",
     "EnvFactsNoSource",
     "GateInputError",
     "GateVerdict",
     "UserInitiatedOpenFacts",
     "decide_user_initiated_open",
+    "decide_user_requested_continuation",
+    "with_lock_state",
 ]
 
 #: BF-03 gate contexts (docs/DATA_MODEL.md §14.1 ``context`` vocabulary).
@@ -427,3 +434,244 @@ def with_lock_state(
     fact the caller reads from the durable lock row before deciding."""
 
     return replace(facts, lock_state=lock_state)
+
+
+# ---------------------------------------------------------------------------
+# USER_REQUESTED_CONTINUE — the continuation profile (Phase 3 P3-1B).
+# ---------------------------------------------------------------------------
+
+#: The proposed actions a continuation may carry (the frozen reference's
+#: ACTIONS minus OPENING, plus the closing feedback move).
+CONTINUATION_ACTIONS = ("HINT", "RETRY", "EXPLANATION", "REVEAL", "TERMINAL_FEEDBACK")
+
+#: The one user-intent scope a continuation is authorized by (BF-03 §11
+#: continuation branch: ``ui != ACTIVE_TEACHING_CONTINUATION`` blocks).
+USER_INITIATED_CONTINUATION_INTENTS = ("ACTIVE_TEACHING_CONTINUATION",)
+
+#: The DENY codes the USER_REQUESTED_CONTINUE profile can emit, in
+#: precedence order. HARD_ATTEMPT_LIMIT / HARD_TEACHING_TURN_LIMIT are the
+#: two hard-flow-protection codes the frozen reference evaluates exactly
+#: here (§8 "user-requested continue 不绕过 hard cap").
+CONTINUATION_REASON_CODES = tuple(
+    code
+    for code in DENY_PRECEDENCE
+    if code
+    in {
+        "SAFETY_PRIVACY_BLOCK",
+        "ACTION_CANCELLED",
+        "ACTION_SUPERSEDED",
+        "AUTHORIZATION_INVALID",
+        "TARGET_INVALID",
+        "CONTENT_INVALID",
+        "TARGET_SUPPRESSED",
+        "USER_INTENT_BLOCK",
+        "TEACHING_LOCK_CONFLICT",
+        "TEACHING_LOCK_INVALID",
+        "MOMENT_NOT_CONTINUABLE",
+        "HARD_ATTEMPT_LIMIT",
+        "HARD_TEACHING_TURN_LIMIT",
+    }
+)
+
+#: The matchable moment lifecycle state of a continuation (the frozen
+#: reference's ``moment_state == "DECIDING_NEXT_ACTION"`` check).
+CONTINUATION_MOMENT_STATE = "DECIDING_NEXT_ACTION"
+
+
+@dataclass(frozen=True)
+class ContinuationFacts:
+    """One USER_REQUESTED_CONTINUE fact bundle (BF-03 v1.1 continuation
+    branch, ``authorization_basis = ACTIVE_MOMENT``, TASK-…2.2 ⑥⑦).
+
+    Identity/context fields first, then the critical facts whose
+    UNKNOWN-ness degrades the Gate, exactly like the OPEN bundle. The four
+    continuation-only fields carry the frozen reference's own facts:
+
+    - ``moment_state`` — the live moment's lifecycle state (a continuation
+      only exists while the moment is DECIDING_NEXT_ACTION);
+    - ``hard_attempt_limit_exhausted`` / ``hard_teaching_turn_limit_exhausted``
+      — the §8 hard caps, computed from the durable counts
+      (elc.teaching.limits.TeachingLoad);
+    - ``terminalizing_action`` / ``retry_like_action`` — the proposed
+      move's class, which is what turns a hard cap into a DENY instead of
+      a blanket stop (the §8 exemption).
+    """
+
+    moment_id: str
+    decision_cycle_id: str | None = None
+    candidate_id: str = ""
+    proposed_action: str = "HINT"
+    gate_context: str = "USER_REQUESTED_CONTINUE"
+    authorization_path: str = "USER_INITIATED"
+    authorization_basis: str = "ACTIVE_MOMENT"
+    user_intent_scope: str = "ACTIVE_TEACHING_CONTINUATION"
+    continuation_requested: bool = True
+
+    authorization_status: str = "VALID"
+    subject_status: str = "ACTIVE"
+    target_status: str = "VALID"
+    content_status: str = "VALID"
+    lock_state: str = "OWNED_BY_THIS_MOMENT"
+    moment_state: str = CONTINUATION_MOMENT_STATE
+    learning_snapshot_status: str = "VALID"
+    gate_state_status: str = "COMPLETE"
+    safety_privacy_status: str = SAFETY_PRIVACY_NO_SOURCE
+    target_suppressed: bool = TARGET_SUPPRESSED_NO_SOURCE
+
+    hard_attempt_limit_exhausted: bool = False
+    hard_teaching_turn_limit_exhausted: bool = False
+
+
+def _validate_continuation(facts: ContinuationFacts) -> None:
+    _check(
+        facts.gate_context == "USER_REQUESTED_CONTINUE",
+        "this profile decides the USER_REQUESTED_CONTINUE context only"
+        " (AUTO_CONTINUE is Phase 8)",
+    )
+    _check(
+        facts.proposed_action in CONTINUATION_ACTIONS,
+        f"invalid continuation action: {facts.proposed_action}",
+    )
+    _check(
+        facts.authorization_path == "USER_INITIATED",
+        "a user-requested continuation is a user-initiated path",
+    )
+    _check(
+        facts.authorization_basis == "ACTIVE_MOMENT",
+        "continuation requires ACTIVE_MOMENT authorization basis (BF-03"
+        " §3 cross-layer v1.1)",
+    )
+    _check(bool(facts.moment_id), "continuation requires moment_id")
+    _check(
+        facts.continuation_requested,
+        "USER_REQUESTED_CONTINUE requires continuation_requested",
+    )
+    _check(
+        facts.user_intent_scope in USER_INTENT_SCOPES,
+        f"invalid user_intent_scope: {facts.user_intent_scope}",
+    )
+    for name, value, allowed in (
+        (
+            "authorization_status",
+            facts.authorization_status,
+            _AUTHORIZATION_STATUSES,
+        ),
+        ("subject_status", facts.subject_status, _SUBJECT_STATUSES),
+        ("target_status", facts.target_status, TARGET_STATUSES),
+        ("content_status", facts.content_status, CONTENT_STATUSES),
+        (
+            "safety_privacy_status",
+            facts.safety_privacy_status,
+            _SAFETY_PRIVACY_STATUSES,
+        ),
+        ("lock_state", facts.lock_state, _LOCK_STATES),
+        (
+            "learning_snapshot_status",
+            facts.learning_snapshot_status,
+            _SNAPSHOT_STATUSES,
+        ),
+        ("gate_state_status", facts.gate_state_status, _GATE_STATE_STATUSES),
+    ):
+        _check(value in allowed, f"invalid {name}: {value}")
+
+
+def _continuation_unknown(facts: ContinuationFacts) -> tuple[str, ...]:
+    """Critical-state completeness for the continuation profile.
+
+    Same six critical facts as the OPEN profile: a continuation is
+    authorized by the ACTIVE_MOMENT lineage, so the Learning snapshot is
+    NOT one of its critical facts (STATE_MACHINES §12.1: an active moment
+    committing new Attempt Evidence moves the watermark without
+    invalidating its own continuation). The snapshot fact therefore never
+    degrades a continuation.
+    """
+
+    unknown: list[str] = []
+    if facts.authorization_status == "UNKNOWN":
+        unknown.append("AUTHORIZATION_STATUS")
+    if facts.target_status == "UNKNOWN":
+        unknown.append("TARGET_VALIDITY")
+    if facts.content_status == "UNKNOWN":
+        unknown.append("CONTENT_VALIDITY")
+    if facts.lock_state == "UNKNOWN":
+        unknown.append("LOCK_STATE")
+    if facts.safety_privacy_status == "UNKNOWN":
+        unknown.append("SAFETY_PRIVACY_STATUS")
+    if facts.subject_status == "UNKNOWN":
+        unknown.append("SUBJECT_STATUS")
+    if facts.gate_state_status == "INCOMPLETE":
+        unknown.append("GATE_STATE")
+    return tuple(sorted(set(unknown)))
+
+
+def decide_user_requested_continuation(facts: ContinuationFacts) -> GateVerdict:
+    """Decide one USER_REQUESTED_CONTINUE (BF-03 v1.1 continuation branch,
+    behavioral_baselines/gate/teaching_gate_reference_v1_1.py lines
+    154-184, reproduced for the user-requested path).
+
+    Order (frozen): contract validation → critical-state completeness →
+    the applicable check families in BF-03 decision order → deny
+    precedence ordering → ALLOW. The two §8 hard-cap rules fire exactly as
+    the reference has them: HARD_ATTEMPT_LIMIT on retry-like moves,
+    HARD_TEACHING_TURN_LIMIT on non-terminalizing moves.
+    """
+
+    _validate_continuation(facts)
+
+    unknown = _continuation_unknown(facts)
+    if unknown:
+        return GateVerdict(
+            execution_status="DEGRADED",
+            decision=None,
+            primary_reason=None,
+            reasons=(),
+            missing_or_unknown=unknown,
+        )
+
+    reasons: list[str] = []
+    if facts.safety_privacy_status == "BLOCK":
+        reasons.append("SAFETY_PRIVACY_BLOCK")
+    if facts.subject_status == "CANCELLED":
+        reasons.append("ACTION_CANCELLED")
+    if facts.subject_status == "SUPERSEDED":
+        reasons.append("ACTION_SUPERSEDED")
+    if facts.authorization_status == "INVALIDATED":
+        reasons.append("AUTHORIZATION_INVALID")
+    if facts.target_status in {"INVALID", "DEPRECATED", "MISSING"}:
+        reasons.append("TARGET_INVALID")
+    if facts.content_status == "INVALID":
+        reasons.append("CONTENT_INVALID")
+    if facts.target_suppressed:
+        reasons.append("TARGET_SUPPRESSED")
+    if facts.user_intent_scope not in USER_INITIATED_CONTINUATION_INTENTS:
+        reasons.append("USER_INTENT_BLOCK")
+    if facts.lock_state == "OWNED_BY_OTHER":
+        reasons.append("TEACHING_LOCK_CONFLICT")
+    elif facts.lock_state != "OWNED_BY_THIS_MOMENT":
+        reasons.append("TEACHING_LOCK_INVALID")
+    if facts.moment_state != CONTINUATION_MOMENT_STATE:
+        reasons.append("MOMENT_NOT_CONTINUABLE")
+
+    retry_like = facts.proposed_action in {"RETRY", "HINT"}
+    terminalizing = facts.proposed_action in {"REVEAL", "TERMINAL_FEEDBACK"}
+    if facts.hard_attempt_limit_exhausted and retry_like:
+        reasons.append("HARD_ATTEMPT_LIMIT")
+    if facts.hard_teaching_turn_limit_exhausted and not terminalizing:
+        reasons.append("HARD_TEACHING_TURN_LIMIT")
+
+    ordered = tuple(reason for reason in DENY_PRECEDENCE if reason in set(reasons))
+    if ordered:
+        return GateVerdict(
+            execution_status="SUCCEEDED",
+            decision="DENY",
+            primary_reason=ordered[0],
+            reasons=ordered,
+            missing_or_unknown=(),
+        )
+    return GateVerdict(
+        execution_status="SUCCEEDED",
+        decision="ALLOW",
+        primary_reason=None,
+        reasons=(),
+        missing_or_unknown=(),
+    )

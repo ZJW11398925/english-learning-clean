@@ -269,7 +269,14 @@ def test_0002_active_decision_cycle_comment_is_current() -> None:
 
 def test_src_teaching_never_writes_the_transcript_tables() -> None:
     """Epoch-fence support pin: the teaching package writes only its own
-    tables (the turn/transcript stay behind the conversation store)."""
+    tables (the turn/transcript stay behind the conversation store).
+
+    Phase 3 P3-1B widens the teaching store's own write set by the two
+    attempt tables (DATA_MODEL §17 — AttemptRecord / AttemptEvaluationRecord
+    are Teaching-domain facts), so the pin names them explicitly: the point
+    of the pin is that the *transcript* stays untouched, and a widening
+    write set has to be a deliberate, reviewed edit here.
+    """
 
     from tests.phase3.sql_write_scan import write_targets
 
@@ -280,9 +287,12 @@ def test_src_teaching_never_writes_the_transcript_tables() -> None:
         "teaching_moment",
         "generation_action_intent",
         "active_teaching_lock",
+        "attempt_record",
+        "attempt_evaluation_record",
     }
     assert not any(table.startswith("turn_record") for table in writes)
     assert "user_turn" not in writes
+    assert "assistant_turn" not in writes
 
 
 def test_evidence_group_record_fixture_shape_is_intact() -> None:

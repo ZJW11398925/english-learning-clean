@@ -38,6 +38,7 @@ helpers.
 from __future__ import annotations
 
 from elc.learning.store import SqliteLearningStore
+from elc.learning.teaching_evidence import TeachingEvidenceSource
 from elc.learning.types import (
     EvidenceGroupRecord,
     FreshnessView,
@@ -154,6 +155,33 @@ class LearningController:
             alternative_realizations_allowed=alternative_realizations_allowed,
             teaching_moment_id=teaching_moment_id,
             learning_opportunity_id=learning_opportunity_id,
+        )
+
+    # -- Phase 3 P3-1B: the teaching evidence face ---------------------------
+
+    def commit_teaching_evidence(
+        self,
+        proposal: TeachingEvidenceSource,
+        *,
+        source_turn_id: TurnId,
+        conversation_id: str,
+        persona_id: str | None = None,
+    ) -> Result[EvidenceCommitId]:
+        """CP1 for one teaching attempt (TASK-…2.2 ③④).
+
+        The proposal is the teaching-side record
+        (``elc.teaching.evidence.TeachingEvidenceProposal``), consumed
+        structurally: Learning owns the §5 → §6 conversion — including the
+        capability-positive / resource-neutral mapping of an
+        ALTERNATIVE_SUCCESS — and the durable LOR association checks. The
+        caller (the orchestrator) hands the facts over; Learning decides.
+        """
+
+        return self._store.commit_teaching_evidence(
+            proposal,
+            source_turn_id=source_turn_id,
+            conversation_id=conversation_id,
+            persona_id=persona_id,
         )
 
     def rebuild_learner_state(

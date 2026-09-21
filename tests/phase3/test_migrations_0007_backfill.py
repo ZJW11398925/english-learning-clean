@@ -20,7 +20,10 @@ is exactly how the migration meets a real app.db:
 
 The pre/post split is built by copying migration files into ``tmp_path``:
 ``apply_migrations`` is filename-ordered and idempotent per directory, so
-the test can seed data between the two stages.
+the test can seed data between the two stages. Phase 3 P3-1B's 0008 is a
+*post* stage too (it rebuilds ``teaching_moment``'s children and needs the
+0007 tables), so the split is "everything up to and including 0006" vs
+"0007 and everything after it".
 """
 
 from __future__ import annotations
@@ -45,7 +48,7 @@ def staged_dirs(tmp_path: Path) -> tuple[Path, Path]:
     pre.mkdir()
     post.mkdir()
     for path in sorted(MIGRATIONS_DIR.glob("*.sql")):
-        target = post if path.name == PRE_0007 else pre
+        target = post if path.name >= PRE_0007 else pre
         shutil.copy(path, target / path.name)
     return pre, post
 
@@ -175,7 +178,9 @@ def test_backfill_is_deterministic_and_preserves_history(
         )
     }
     assert not {name for name in tables if name.endswith(("_v7", "_backup"))}
-    assert migrations.schema_version(conn) == "7"
+    # The post stage runs every migration from 0007 on, so the version after
+    # it is the newest one (P3-1B's 0008).
+    assert migrations.schema_version(conn) == "8"
     conn.close()
 
 
