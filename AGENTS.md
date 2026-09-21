@@ -8,12 +8,13 @@
 
 - **workspace_id**：`ws-7585bd9c-f6ec-4c73-be14-d2e635a37033`（**schema 5**；旧工作区 `ws-db58afd2-…` 已随旧仓归档，别用）
 - **续接顺序**：①读本文件 → ②`design_status` 刷基 → ③`design_get` `DEC-OPI-2babb21e-bc72-47a2-9382-e773c92211d2.5`（**P3-1 开工基线**：grilling 两轮 20 问全量裁定，两项核心裁定=USER_INITIATED Gate specialization/Legacy DecisionCycle backfill）→ ④`git log --oneline` → ⑤开工前读 `docs/IMPLEMENTATION_PLAN.md` §9（Teaching Detail Block）与 §1.5（normative 顺序），再按派单协议铸任务书（四查+VAL+TASK 同铸；P3-1B 任务书必带 DEC-…2babb21e.34 的 F5+F9/F8/F10 清单）
-- **当前状态**（2026-09-21 第八会话末）：**Phase 3 进行中，P3-1A+P3-1B COMPLETE**（rev 53，sync REBUILD+CHECK 零告警）——P3-1A `148f96f`（`VR-…2babb21e.25` PASS）+评审处置 `DEC-…2babb21e.34`；P3-1B `f763d55`（`VR-…5ba74efc.13` PASS）：0008 两表+F8 词表 CHECK/envelope 五步+十一词/attempt 编排链（opportunity_id 恒链+LOR 语义+attempt (moment,user_turn) 幂等键）/evaluator v0 五值（ALTERNATIVE_SUCCESS 保留到 Evaluation 层，Learning 才折叠 capability positive+resource neutral）/ladder 双单调+绝对梯级对账/八操作+SWITCH_TARGET 同 turn cycle+1/limits v0 2/3/3/5+hard cap 收尾豁免/TERMINAL+lock 同事务→RESUMING→PERSONA_RESUME（只传六键）→CLOSED/[teaching] prompt 节（PromptCompiler 独占 byte-determinism）/五型 action P1 全管线/教学 turn 终态化/F5 DEGRADED 崩溃续接（durable lineage）/F9 词典咬合/F10 导出面。独立评审 10 findings 处置 `DEC-…5ba74efc.20`（**F1-F3 MAJOR 崩溃重入幂等族全修**：continuation Gate 幂等回放+相位交付解耦/opening 崩溃重派发同 action_id+孤儿锁 epoch 恢复入口/attempt 幂等键；F4 linkage 存在性校验；F5/F6 顺序见证+payload round-trip；**P3-2 必带三项留痕**：孤儿锁恢复入口挂启动扫描接线（属装配/宿主面）、DELIVERING 槽 reply 重入、continuation Gate 跨 turn 冲突防护）。A 刀 fixture 声明失真留痕（148f96f 实无六字段，B 刀补齐——教训：VAL 验收组字段集断言须显式钉测试）。Bash 直写违规第四次（执行者自做 sha256 零差返工，修复刀零违规）。**下一步 = P3-2**（OQ-024A 16+ 状态压力：TeachingMoment/Attempt 状态机 executable scenario fixtures，OQ-024A 本体定位=开工四查必答（旧仓未检索到独立本体文件，不可考时以 canonical SM §1-§9 自铸留痕）；验收=VAL-…2babb21e.11；必带 `DEC-…5ba74efc.20` 三项留痕）→ P3-3（全链验收 before≠after 可追溯，VAL-….13）
+- **当前状态**（2026-09-21 第八会话末）：**Phase 3 进行中，P3-1A+P3-1B+P3-2 COMPLETE**（rev 55，sync REBUILD+CHECK 零告警）——P3-1A `148f96f`+P3-1B `f763d55`（教学链全实装）+P3-2 `e17af89`（`VR-…5ba74efc.38` PASS）：OQ-024A 自铸案例集 32 case（本体不可考裁定，快照式真断言，§1 逐边+非法转换六项+§6/§7 词表分区完备+cycle 链+continuation+attempt 链顺序）+三项留痕落地（孤儿锁挂启动扫描（计划点名+纯读+活锁不误收）/DELIVERING 槽重入（已落补完/未落 DELIVERY_FAILURE 收尾/跨 epoch fence）/跨 turn 冲突防护）+§1 尾链两臂守卫（TERMINAL→{RESUMING,CLOSED}+CLOSED 只从尾链来源）。评审 8 findings 处置 `DEC-…5ba74efc.43`（F1/F2 canonical 边界修正+F4/F5 已做；**P3-3 必带**：F3 recovery_disposition DELIVERING 映射修正、F6 启动扫描装配接线+装配测试、F7 跨 epoch turn 残余对账；F8 尾环收敛）。**下一步 = P3-3**（Phase 3 全链验收：真实 CharacterPackage→target→TeachingMoment→user attempt→Evidence→LearnerState before/after 端到端场景——before≠after 差异逐条可追溯 canonical Evidence/LOR lineage；moment 直接改 mastery 反例钉（拒）；full reveal 后无 independent 误记；CLOSED 不 reopen；学习腿失败不拖垮聊天；若需 minimal content 供给面（IP §17-08）另前置小刀；验收=VAL-…2babb21e.13；必带 DEC-…43 三项留痕）→ Phase 3 收口（PHASE 3 COMPLETE 决策）→ Phase 4（Relationship+Episode projection，基线 §1.5 次序）
 - **对象索引**（全 id 可直接 design_get；新增 OPI 前缀 `2babb21e-bc72-47a2-9382-e773c92211d2`，Phase 3 系列全在此；旧系列 OPI 前缀 `eaaa5a1d-7ac7-4746-bcdf-c02bc9147492`）：
-  - `DEC-…2babb21e.5` **P3-1 开工基线**（grilling 20 问全量；两核心裁定+CP2 五事实+两时点+request_teaching+evaluator 五值+limits+provider port——P3-1B 任务书的第一设计权威）
-  - `DEC-…2babb21e.34` P3-1A 评审处置（10 findings；F5+F9/F8/F10 打包 P3-1B 必带；F7 口径；违规执法留痕）
-  - `DEC-…5ba74efc.20` **P3-1B 评审处置**（F1-F3 MAJOR 崩溃重入幂等族全修；P3-2 必带三项留痕：孤儿锁扫描接线/DELIVERING 槽重入/跨 turn 冲突防护；A 刀 fixture 失真留痕；半成品来源留痕；违规第四次）——OPI 前缀 `5ba74efc-9f26-483b-a7de-c833834275a4`（P3-1B 起任务对象在此）
-  - `TASK-…5ba74efc.2`/`VR-…5ba74efc.13` P3-1B 任务书+盖章（PASS）
+  - `DEC-…2babb21e.5` **P3-1 开工基线**（grilling 20 问全量；两核心裁定+CP2 五事实+两时点+request_teaching+evaluator 五值+limits+provider port）
+  - `DEC-…5ba74efc.43` **P3-2 评审处置**（F1/F2 canonical 边界修正+F4/F5 已做；P3-3 必带：F3 recovery_disposition 映射/F6 启动扫描装配接线/F7 跨 epoch turn 残余）
+  - `DEC-…5ba74efc.20` P3-1B 评审处置（F1-F3 MAJOR 崩溃重入幂等族全修；A 刀 fixture 失真留痕；违规第四次）
+  - `DEC-…2babb21e.34` P3-1A 评审处置（F7 字面量白名单 join 口径；违规执法留痕）
+  - `TASK-…5ba74efc.2/.24`+`VR-…5ba74efc.13/.38` P3-1B/P3-2 任务书+盖章（PASS）
   - `VAL-…2babb21e.7/.9/.11/.13` P3-1A/P3-1B/P3-2/P3-3 四验收；`PLAN-…2babb21e.15` Phase 3 母计划；`TASK-…2babb21e.17` P3-1A 任务书；`VR-…2babb21e.25` P3-1A 盖章（PASS）
   - `DEC-…eaaa5a1d.58` P3-0 评审处置（六顺带已随 P3-1A 全清；transition/terminalize store 级 fence 悬题 P3+ 复审）
   - `DEC-…eaaa5a1d.51` **外部评审采纳**（Phase 3 GO+六门+P3-0/1/2/3 分解+四修正+metadata 授权）
@@ -42,10 +43,10 @@
 ## 工程事实与红线（本仓特有）
 
 - **远程**：github.com/ZJW11398925/english-learning-clean（public）；**CI 四门**：ruff → mypy → compileall → pytest（push+PR，Ubuntu，0 skipped 为准）
-- **测试**：`python -m pytest`（当前 467/0/0）；静态：ruff + mypy（96 文件）；migrations 到 0008（schema_version 8）；GenerationAction 权威在 runtime（DM §16）；DecisionCycle 权威在 Runtime（`DEC-…2babb21e.5`：DecisionCycleStore port，physical adapter 共址 platform/db）；TeachingMoment/Attempt 全链已实装（P3-1A 开链+P3-1B 教学链闭，`DEC-…2babb21e.5`）
+- **测试**：`python -m pytest`（当前 507/0/0）；静态：ruff + mypy（96 文件）；migrations 到 0008（schema_version 8）；GenerationAction 权威在 runtime（DM §16）；DecisionCycle 权威在 Runtime（`DEC-…2babb21e.5`）；TeachingMoment/Attempt 全链+OQ-024A 状态压力已实装（P3-1A/1B/2，`DEC-…2babb21e.5`）
 - **Mimosa 安全钩子**：Bash 直写源码/配置被拦——**.py/.sql/.yml/.toml 一律 Write/Edit 工具落盘**（P1B 执行者曾一次 Bash 直写 .py 未被钩子拦但违反明令，已在 `DEC-…d7937fd7.12` 训诫留痕——总控与执行者均不得再犯）；SQL 一律参数绑定或全字面量（标识符用白名单全字面量），禁任何拼接
 - **基线冻结**：`behavioral_baselines/` 的 .py 一字节不改（例外须按 `DEC-…d5b616bf.3` 范式：显式决策+最小改动+manifest 重钉）；六 canonical 文档只许 `DECISION_REGISTER.md` 的版本条目
-- **不做**（纪律）：未到位次的域逻辑/域表提前实现（位次见基线 §1.5：Phase 3=用户发起 TeachingMoment **已完整实装**（P3-1A 开链+P3-1B 教学链闭）；P3-2=OQ-024A 状态压力面待开工；其余域仍禁）；Redis/Kafka/分布式锁/TTL/heartbeat（Local V1 §24.1 永禁）；自动教学/Planner SELECT（Phase 8 才开）；`decision_cycle_id` 收紧已随 0007 兑现（`DEC-…091f35c3.7` 裁定 b 闭环）
+- **不做**（纪律）：未到位次的域逻辑/域表提前实现（位次见基线 §1.5：Phase 3=用户发起 TeachingMoment 已实装+状态压力已过（P3-1A/1B/2）；P3-3=全链验收待开工；其余域仍禁）；Redis/Kafka/分布式锁/TTL/heartbeat（Local V1 §24.1 永禁）；自动教学/Planner SELECT（Phase 8 才开）；`decision_cycle_id` 收紧已随 0007 兑现（`DEC-…091f35c3.7` 裁定 b 闭环）
 - docs/run_post_bf_regression.py 的 ROOT 自相矛盾是原件冻结缺陷，永久不可修——repo-native 七套件是长期替代；勿再尝试修它
 - Windows：core.autocrlf 与 blob 有字节差，哈希校验须 CRLF 归一；建议后续加 .gitattributes（勿扰动冻结文件行尾）
 
