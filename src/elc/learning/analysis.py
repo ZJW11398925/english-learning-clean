@@ -1,4 +1,5 @@
-"""Deterministic LEARNING_EVIDENCE analysis producer (Phase 2 P2A).
+"""Deterministic LEARNING_EVIDENCE analysis producer (Phase 2 P2A; P5-2
+extension).
 
 Adjudicated DEC-…eaaa5a1d.26 b: Phase 2's analysis producer is
 deterministic — zero model calls, zero randomness, zero wall-clock reads.
@@ -9,6 +10,17 @@ only ("不是 Domain truth") and docs/DOMAIN_MODEL.md §18 leaves the
 VALIDATE / COMMIT / REJECT / ABSTAIN decision to the Learning domain face
 (elc.learning.store). The real-LLM analysis phases arrive later; this
 module is the durable core's deterministic stand-in.
+
+P5-2 adds one optional input fact: a **target observation** the chat leg
+resolved deterministically (elc.learning.target_resolution). When the
+caller supplies one, the proposal document additionally records *which*
+target, *which* form and *which* rule (`"target"` — the four keys of
+elc.learning.target_resolution.resolution_document); when it does not, the
+document is byte-identical to the Phase 2 shape, so every P2 assembly and
+its pinned payloads are unchanged. The document stays *facts only*: the
+conversion into a §6 claim is Learning's (elc.learning.silent_claim, applied
+at the CP1 commit) — the teaching-evidence pattern, where the source reports
+the facts and Learning decides what they are worth as evidence.
 
 Determinism contract (tested in tests/phase2):
 - ids are content-derived hashes (docs/DATA_MODEL.md §1.2 stable opaque
@@ -29,6 +41,10 @@ from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 from elc.conversation.types import CanonicalTurnSlice
+from elc.learning.target_resolution import (
+    ResolvedTarget,
+    resolution_document,
+)
 from elc.platform.types import (
     AnalysisId,
     EvidenceGroupId,
@@ -119,27 +135,39 @@ class LearningEvidenceProposal:
 
 def produce_learning_evidence_proposal(
     turn: CanonicalTurnSlice,
+    *,
+    resolution: ResolvedTarget | None = None,
 ) -> LearningEvidenceProposal:
     """Extract the turn's observable-behavior descriptor.
 
-    The extraction is deliberately conservative: Phase 2 P2A has no
-    curriculum/target system (Phase 5+) and no model, so the proposal
-    asserts only what the canonical turn itself carries — the utterance
-    hash, its length, the TEXT_PRODUCTION modality (V1 typed chat,
-    DATA_MODEL §24.14), and whether an observable behavior exists at all
-    (non-blank utterance). Target-bearing claims are a later producer's
-    job; committing a proposal is Learning's decision, not the
-    producer's (DOMAIN_MODEL §18).
+    The extraction is deliberately conservative: no curriculum/target
+    *judgement* happens here and no model is involved (Phase 5 P5-2 supplies
+    the one optional target fact — a deterministic extraction the chat leg
+    resolved through the supply read face, elc.learning.silent_evidence), so
+    the proposal asserts only what the canonical turn itself carries — the
+    utterance hash, its length, the TEXT_PRODUCTION modality (V1 typed chat,
+    DATA_MODEL §24.14), whether an observable behavior exists at all
+    (non-blank utterance), and, when the caller hands one over, the resolved
+    target observation. Target-*bearing* claims are a later producer's job;
+    committing a proposal is Learning's decision, not the producer's
+    (DOMAIN_MODEL §18).
+
+    ``resolution=None`` (the default, and every Phase 2 caller) produces the
+    exact Phase 2 document — no ``"target"`` key, byte-identical payload.
     """
 
     text = turn.user_turn.raw_content
-    proposal = {
+    proposal: dict[str, object] = {
         "analysis_type": ANALYSIS_TYPE_LEARNING_EVIDENCE,
         "evidence_modality": "TEXT_PRODUCTION",
         "observable": bool(text.strip()),
         "utterance_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
         "utterance_length": len(text),
     }
+    if resolution is not None:
+        # Facts only: which target, which form, which rule (P5-2). The claim
+        # conversion is Learning's at commit time (elc.learning.silent_claim).
+        proposal["target"] = resolution_document(resolution)
     return LearningEvidenceProposal(
         analysis_id=deterministic_analysis_id(turn.turn_id),
         turn_id=turn.turn_id,
@@ -163,10 +191,20 @@ class LearningTurnAnalysis(Protocol):
     SQL-free (Gate item 2)."""
 
     def record_learning_analysis(
-        self, turn: CanonicalTurnSlice
+        self,
+        turn: CanonicalTurnSlice,
+        *,
+        resolution: ResolvedTarget | None = None,
     ) -> Result[LearningEvidenceProposal]:
         """RA §4 step 3: deterministic producer → durable PRODUCED
-        artifact; idempotent per (turn, analysis_type, producer)."""
+        artifact; idempotent per (turn, analysis_type, producer).
+
+        ``resolution`` is the P5-2 optional target observation (RA §21: a
+        caller that could not resolve one passes ``None`` — the target-less
+        Phase 2 proposal). The durable row wins on re-entry: an artifact
+        that already exists is replayed as recorded, so a re-run can never
+        swap the observed facts under a stable analysis id.
+        """
         ...
 
     def commit_learning_evidence(

@@ -116,6 +116,16 @@ from elc.learning.estimator import (
     TargetStateEstimate,
     estimate_target_state,
 )
+from elc.learning.silent_claim import (
+    SILENT_EVIDENCE_EVALUATOR_ID,
+    SILENT_EVIDENCE_EVALUATOR_VERSION,
+    SILENT_EVIDENCE_MODALITY,
+    claim_for_silent_observation,
+)
+from elc.learning.target_resolution import (
+    ResolvedTarget,
+    resolution_from_document,
+)
 from elc.learning.teaching_evidence import (
     CAPABILITY_LINKAGE_CLAIM_ROLE,
     TeachingEvidenceSource,
@@ -434,14 +444,27 @@ class SqliteLearningStore:
     # -- LearningTurnAnalysis (RA §4 steps 3-4) ----------------------------
 
     def record_learning_analysis(
-        self, turn: CanonicalTurnSlice
+        self,
+        turn: CanonicalTurnSlice,
+        *,
+        resolution: ResolvedTarget | None = None,
     ) -> Result[LearningEvidenceProposal]:
         """RA §4 step 3: deterministic producer → durable PRODUCED
         artifact. Idempotent: the (turn_id, analysis_type, producer_id)
         unique key replays the durable row (crash after CP0 re-enters
-        analysis without double-producing, RA §23)."""
+        analysis without double-producing, RA §23).
 
-        proposal = produce_learning_evidence_proposal(turn)
+        P5-2: ``resolution`` is the chat leg's optional target observation
+        (elc.learning.target_resolution), recorded as one more fact inside
+        the proposal document — facts only, the §6 claim is Learning's
+        conversion at commit time (elc.learning.silent_claim). A durable
+        artifact that already exists is replayed as recorded, so a re-run
+        can never swap the observed facts under a stable analysis id.
+        """
+
+        proposal = produce_learning_evidence_proposal(
+            turn, resolution=resolution
+        )
         try:
             with short_transaction(self._conn):
                 self._require_current_epoch()
@@ -489,6 +512,15 @@ class SqliteLearningStore:
         REJECTED (the artifact flip rides the same transaction); a
         proposal whose utterance no longer matches the canonical turn is
         a validation failure (proposal/turn binding).
+
+        P5-2: a proposal whose durable document carries a target
+        observation commits that observation's §6 claim into the same
+        group — one observable behavior, one group (DATA_MODEL §6), which
+        is also what the group's (turn, modality) unique key requires. The
+        claim is built from the durable document and validated through the
+        ordinary claim face (``_claim_refusal``: ACTIVE, vocabularies,
+        the §6 negative-evidence gate) before anything is written; a
+        refused claim flips the artifact REJECTED like any other refusal.
         """
 
         try:
@@ -540,6 +572,29 @@ class SqliteLearningStore:
                         (proposal.analysis_id,),
                     )
                     return Err(refusal)
+                # P5-2: a proposal that carries a target observation commits
+                # its own §6 claim with the group (one observable behavior,
+                # one group — DATA_MODEL §6). The claim is built from the
+                # DURABLE document, never from the handed-in proposal, so the
+                # recorded facts are the facts that landed.
+                claim, claim_refusal = _silent_claim_for_proposal(parsed, turn)
+                if claim_refusal is not None:
+                    self._conn.execute(
+                        "UPDATE analysis_artifact SET status = 'REJECTED'"
+                        " WHERE analysis_id = ?",
+                        (proposal.analysis_id,),
+                    )
+                    return Err(claim_refusal)
+                if claim is not None:
+                    claim_target = TargetId(str(claim.target_id))
+                    refusal = self._claim_refusal(claim, claim_target)
+                    if refusal is not None:
+                        self._conn.execute(
+                            "UPDATE analysis_artifact SET status = 'REJECTED'"
+                            " WHERE analysis_id = ?",
+                            (proposal.analysis_id,),
+                        )
+                        return Err(refusal)
 
                 modality = str(parsed["evidence_modality"])
                 group_id = deterministic_evidence_group_id(
@@ -571,6 +626,30 @@ class SqliteLearningStore:
                         _now(),
                     ),
                 )
+                if claim is not None:
+                    # The silent observation's own claim (P5-2). The group
+                    # record mirrors the row just inserted: no moment, no
+                    # attempt, the silent evaluator identity; the claim id is
+                    # the view's deterministic id (ecl-silent-{turn}).
+                    self._insert_claim(
+                        claim=claim,
+                        group=EvidenceGroupRecord(
+                            evidence_group_id=group_id,
+                            moment_id=None,
+                            attempt_id=None,
+                            target_id=TargetId(str(claim.target_id)),
+                            evaluator_version=EvaluatorVersion(
+                                SILENT_EVIDENCE_EVALUATOR_VERSION
+                            ),
+                            claims=(claim,),
+                        ),
+                        source_turn_id=turn.turn_id,
+                        conversation_id=turn.conversation_id,
+                        persona_id=persona_id,
+                        evaluator_id=SILENT_EVIDENCE_EVALUATOR_ID,
+                        supersedes_claim_id=None,
+                        claim_id=EvidenceClaimId(str(claim.evidence_claim_id)),
+                    )
                 watermark = self._bump_watermark()
                 commit_id = EvidenceCommitId(
                     deterministic_evidence_commit_id(group_id)
@@ -2378,6 +2457,51 @@ def _proposal_refusal(
             ),
         )
     return None
+
+
+def _silent_claim_for_proposal(
+    parsed: dict[str, object], turn: CanonicalTurnSlice
+) -> tuple[EvidenceClaimView | None, DomainError | None]:
+    """The target claim a durable proposal carries, if any (P5-2).
+
+    The producer records the *facts* of a resolved observation (which
+    target, which form, which rule); the conversion into the §6 claim is
+    Learning's, applied here from the **durable document** — the
+    teaching-evidence pattern (facts in, Learning decides what they are
+    worth). ``(None, None)`` for the Phase 2 target-less proposal; an
+    unreadable target document is Learning's REJECT (a refusal, never a
+    silent skip).
+    """
+
+    target = parsed.get("target")
+    if target is None:
+        return None, None
+    if not isinstance(target, Mapping):
+        return None, DomainError(
+            code=DomainErrorCode.VALIDATION_FAILED,
+            message=(
+                "proposal target is not a document — REJECTED"
+                " (DOMAIN_MODEL §18)"
+            ),
+        )
+    try:
+        resolution = resolution_from_document(target)
+        claim = claim_for_silent_observation(
+            turn_id=str(turn.turn_id),
+            resolution=resolution,
+            evidence_modality=str(
+                parsed.get("evidence_modality", SILENT_EVIDENCE_MODALITY)
+            ),
+        )
+    except (KeyError, ValueError) as exc:
+        return None, DomainError(
+            code=DomainErrorCode.VALIDATION_FAILED,
+            message=(
+                "proposal target is not readable as a resolution document:"
+                f" {exc!r} — REJECTED (DOMAIN_MODEL §18)"
+            ),
+        )
+    return claim, None
 
 
 def _stable_digest(*parts: str) -> str:

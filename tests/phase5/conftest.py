@@ -20,6 +20,13 @@ deliberate choices:
   不得用 `_seed()` 或 fixture 目标供给构造 before");
 - `make_lease` is four lines and is re-declared for the same reason — a
   one-line import would drag the fixture provider back into the graph.
+
+P5-2 adds the natural-conversation side of the same world: the
+`ContentBackedTargetSupply` / `ContentBackedSilentTargets` pair (the supply
+read face and the chat-leg resolver source) and the optional
+`silent_evidence` keyword of `production_coordinator`. Both default to "not
+wired", so every P5-1 assembly and its pinned behavior are exactly what they
+were before.
 """
 
 from __future__ import annotations
@@ -39,6 +46,11 @@ from elc.conversation import CommitUserTurn, SqliteConversationStore
 from elc.curriculum.provider import ContentBackedTeachingTargetProvider
 from elc.curriculum.store import CurriculumContentStore
 from elc.learning.controller import LearningController
+from elc.learning.silent_evidence import (
+    ContentBackedSilentTargets,
+    ContentBackedTargetSupply,
+    SilentEvidenceSource,
+)
 from elc.learning.store import SqliteLearningStore
 from elc.persona import (
     PersonaRuntime,
@@ -82,6 +94,7 @@ REQUESTED_AT = "2026-09-21T10:00:00+00:00"
 USER = UserId("user-p5-1")
 
 __all__ = [
+    "CANDIDATE_UNIQUE_FORM",
     "CONTENT_SRC_DIR",
     "CONV",
     "CURRICULUM_DIR",
@@ -92,6 +105,7 @@ __all__ = [
     "artifact_with_lifecycle",
     "attempt",
     "build_variant_artifact",
+    "candidate_entity_edit",
     "canonical_blocks",
     "canonical_lines",
     "clone_entity",
@@ -191,6 +205,35 @@ def artifact_with_lifecycle(tmp_path: Path, statuses: dict[str, str]) -> Path:
     return build_variant_artifact(tmp_path, edit)
 
 
+#: The canonical form of the P5-2 candidate probe entity: unique in the
+#: corpus (nothing else's form, alternative or slot group matches it), so a
+#: resolution on it can only be the candidate's.
+CANDIDATE_UNIQUE_FORM = "I think it is going to snow."
+
+
+def candidate_entity_edit(lifecycle: str):
+    """One corpus edit for the P5-2 supply probes: a clone of the hedge
+    entity under a candidate lifecycle whose canonical form is unique.
+
+    The canonical corpus is left untouched (the clone's form matches no
+    other entity), so "did it resolve?" answers exactly "was the candidate
+    in supply?".
+    """
+
+    def edit(documents: dict, index: dict) -> None:
+        clone = clone_entity(
+            documents, "res-hedge-i-think", "res-candidate-not-approved"
+        )
+        clone["entity"]["lifecycle_status"] = lifecycle
+        clone["teaching_content"]["canonical_forms"] = [CANDIDATE_UNIQUE_FORM]
+        clone["teaching_content"]["reveal_form"] = CANDIDATE_UNIQUE_FORM
+        clone["teaching_content"]["alternative_realizations"] = []
+        clone["teaching_content"]["required_slots"] = [["snow"]]
+        index["entities"].append("entities/res-candidate-not-approved.json")
+
+    return edit
+
+
 @pytest.fixture()
 def store(built_content_db: Path) -> Iterator[ContentStore]:
     opened = ContentStore(built_content_db)
@@ -233,6 +276,28 @@ def db() -> Iterator[sqlite3.Connection]:
     migrations.apply_migrations(conn)
     yield conn
     conn.close()
+
+
+@pytest.fixture()
+def silent_supply(built_content_db: Path) -> Iterator[ContentBackedTargetSupply]:
+    """The P5-2 supply read face over the session's built content.db."""
+
+    supply = ContentBackedTargetSupply(built_content_db)
+    yield supply
+    supply.close()
+
+
+@pytest.fixture()
+def silent_targets(
+    silent_supply: ContentBackedTargetSupply,
+) -> ContentBackedSilentTargets:
+    """The P5-2 chat-leg source over the session's built content.db.
+
+    Resolution only — the commit and the rebuild are the learning chain's
+    (the coordinator drives them through its own learning ports).
+    """
+
+    return ContentBackedSilentTargets(silent_supply)
 
 
 @pytest.fixture()
@@ -311,6 +376,7 @@ def production_coordinator(
     targets: TeachingTargetProvider,
     *,
     provider: ScriptedPersonaProvider | None = None,
+    silent_evidence: SilentEvidenceSource | None = None,
 ) -> ConversationCoordinator:
     """The live assembly whose target supply is the production provider.
 
@@ -318,6 +384,11 @@ def production_coordinator(
     cycles, teaching, and the content.db-backed target provider); the persona
     provider is a scripted stand-in for a model, which is the one thing a
     repo-native test cannot have.
+
+    ``silent_evidence`` is the P5-2 optional port, defaulted to ``None`` so
+    every P5-1 assembly (and its pinned behavior) stays exactly what it was;
+    the P5-2 suites pass the real
+    :class:`elc.learning.silent_evidence.ContentBackedSilentTargets`.
     """
 
     persona = PersonaRuntime(
@@ -339,6 +410,7 @@ def production_coordinator(
         learning_controller=LearningController(learning),
         teaching=teaching_controller,
         targets=targets,
+        silent_evidence=silent_evidence,
     )
 
 

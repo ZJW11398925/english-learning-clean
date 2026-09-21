@@ -38,11 +38,13 @@ from elc.conversation.commands import CommitUserTurn, ConversationCommands
 from elc.conversation.queries import ConversationQueries
 from elc.conversation.types import (
     AssistantTurnRecord,
+    CanonicalTurnSlice,
     Cp0Commit,
     DeliveryState,
     TurnOutcome,
 )
 from elc.learning.analysis import LearningTurnAnalysis
+from elc.learning.silent_claim import SILENT_EVIDENCE_MODALITY
 from elc.persona.runtime import PersonaRuntime, action_intent_for_turn
 from elc.persona.types import (
     CharacterPackageRecord,
@@ -189,7 +191,10 @@ if TYPE_CHECKING:
     # and importing the concrete controllers here would deepen the runtime
     # package's import graph for no runtime benefit (the P1/P2 assemblies
     # inject the store ports).
+    from elc.learning.analysis import LearningEvidenceProposal
     from elc.learning.controller import LearningController
+    from elc.learning.silent_evidence import SilentEvidenceSource
+    from elc.learning.target_resolution import ResolvedTarget
     from elc.learning.types import LearningSnapshot
     from elc.teaching.controller import TeachingController
 
@@ -652,6 +657,28 @@ class ConversationCoordinator:
       ``None`` and the compiled prompt is exactly what it was — the same
       optional-injection discipline as ``learning`` / ``character_package`` /
       ``projections`` above.
+
+    Phase 5 P5-2 (TASK-OPI-4d516e4f-….55 ②): one more optional port,
+    ``silent_evidence`` (elc.learning.silent_evidence.SilentEvidenceSource),
+    gives the chat leg its target-specific half —
+
+    - on every normal persona turn, before the durable LEARNING_EVIDENCE
+      proposal is recorded, the turn is offered to the port once: a §24.5
+      form of a supply-eligible target occurring in the utterance is
+      resolved, and the observation rides the durable proposal document into
+      the same CP1 commit — one silent, target-specific Performance Evidence
+      claim (no TeachingMoment, no Gate, no Planner choice: P-INV-009's
+      natural-conversation product state);
+    - the leg is best-effort in the RA §21 shape: a miss, a broken supply, an
+      exception out of the port, an open teaching window on the same target
+      (F-2: a full exposure must not produce independent evidence for the
+      current Moment's target), a refused commit and a failed rebuild all
+      mean "no claim this turn", and the turn proceeds to the normal persona
+      reply unchanged;
+    - ``silent_evidence=None`` (the default, and every assembly before this
+      slice) keeps the P1/P2/P3/P4 behavior byte-identical: nothing is asked,
+      nothing is written, and the chat leg's durable trace is exactly the P2A
+      one.
     """
 
     def __init__(
@@ -669,6 +696,7 @@ class ConversationCoordinator:
         targets: TeachingTargetProvider | None = None,
         projections: CP4ProjectionRuntime | None = None,
         persona_views: PersonaViewSource | None = None,
+        silent_evidence: SilentEvidenceSource | None = None,
     ) -> None:
         self._lease = lease
         self._commands = conversation_commands
@@ -683,6 +711,7 @@ class ConversationCoordinator:
         self._targets = targets
         self._projections = projections
         self._persona_views = persona_views
+        self._silent_evidence = silent_evidence
 
     # -- minimum turn loop ---------------------------------------------------
 
@@ -4486,7 +4515,18 @@ class ConversationCoordinator:
             return  # ditto — unreachable after CP0 in the same call
         learning = self._learning
         assert learning is not None  # caller holds the Phase 2 assembly
-        artifact = learning.record_learning_analysis(slice_)
+        # P5-2: the target observation, when one exists, is part of what the
+        # proposal says about this turn — one observable behavior, one
+        # group (DATA_MODEL §6). It is resolved before the record call and
+        # rides the durable document; a miss/broken supply is None, and an
+        # observation inside an open teaching window of the same target is
+        # dropped (see _observed_target_is_under_teaching).
+        resolution = self._resolve_silent_target(slice_)
+        if resolution is not None and self._observed_target_is_under_teaching(
+            conversation_id, resolution
+        ):
+            resolution = None
+        artifact = self._record_learning_analysis(learning, slice_, resolution)
         if isinstance(artifact, Err):
             return  # pending: nothing durable yet, turn continues
         persona_id = self._persona_id(conversation_id)
@@ -4494,9 +4534,111 @@ class ConversationCoordinator:
         # RA §21 degraded outcomes above; the durable artifact state
         # (REJECTED vs PRODUCED) is Learning's audit trail, not a branch
         # for the coordinator.
-        learning.commit_learning_evidence(
+        committed = learning.commit_learning_evidence(
             artifact.value, slice_, str(persona_id)
         )
+        if resolution is not None and isinstance(committed, Ok):
+            # P5-2: the observation is durable — materialize its §11
+            # projection (best-effort; see _rebuild_silent_target).
+            self._rebuild_silent_target(resolution)
+
+    def _resolve_silent_target(
+        self, turn: CanonicalTurnSlice
+    ) -> ResolvedTarget | None:
+        """P5-2: one best-effort target observation of a chat turn.
+
+        The port's whole contract is "an answer or None" (RA §21: a broken
+        supply degrades to NO_TARGET, never to a blocked conversation), and
+        an exception out of a broken implementation is caught here and means
+        the same thing — the ``_persona_views_for`` precedent.
+        """
+
+        if self._silent_evidence is None:
+            return None
+        try:
+            return self._silent_evidence.resolve_turn(turn)
+        except Exception:
+            return None
+
+    def _observed_target_is_under_teaching(
+        self, conversation_id: ConversationId, resolution: ResolvedTarget
+    ) -> bool:
+        """P5-2 (F-2): is this target inside an open teaching window?
+
+        docs/DOMAIN_MODEL.md §6 (the sentences next to the negative-evidence
+        rule): a full answer exposure cannot produce *independent* evidence
+        for the current Moment's target. So while the conversation's durable
+        teaching lock points at a moment about this same target, a free-chat
+        occurrence of its form must not be labelled SPONTANEOUS / no-support
+        — the observation is skipped (a missing claim is recoverable, a
+        mislabelled independent claim is not). The rule is target-scoped: an
+        open moment about another target leaves this target's observation
+        alone.
+
+        Fail-closed on a teaching port that refuses or raises ("cannot prove
+        the window is free" ⇒ skip). A *missing* port means the assembly
+        cannot open a moment at all (``request_teaching`` requires it), so
+        the window is provably free and the observation proceeds.
+        """
+
+        teaching = self._teaching
+        if teaching is None:
+            return False
+        try:
+            active = teaching.get_active_moment(conversation_id)
+        except Exception:
+            return True
+        if isinstance(active, Err):
+            return True
+        moment = active.value
+        if moment is None:
+            return False
+        focus = moment.focus_target
+        return (
+            str(focus.target_type) == resolution.target_type
+            and str(focus.target_id) == resolution.target_id
+        )
+
+    @staticmethod
+    def _record_learning_analysis(
+        learning: LearningTurnAnalysis,
+        turn: CanonicalTurnSlice,
+        resolution: ResolvedTarget | None,
+    ) -> Result[LearningEvidenceProposal]:
+        """RA §4 step 3 through the Phase 2 port shape.
+
+        The Phase 2 call is exactly ``record_learning_analysis(turn)``; the
+        P5-2 observation is a keyword extension reached only when a resolver
+        actually answered, so every pre-P5-2 assembly — and its
+        fault-injection double — keeps its call shape unchanged.
+        """
+
+        if resolution is None:
+            return learning.record_learning_analysis(turn)
+        return learning.record_learning_analysis(turn, resolution=resolution)
+
+    def _rebuild_silent_target(self, resolution: ResolvedTarget) -> None:
+        """P5-2: materialize the observed target's §11 projection.
+
+        Best-effort (RA §21): without a learning-controller port there is
+        nobody to ask; a refusal or an exception leaves the claim durable and
+        the projection lagging — the staleness repair
+        (LearningController.stale_projection_targets) rebuilds it on the next
+        snapshot read, and the claim is never rolled back for a projection
+        miss. The rebuild key is the observation's modality (V1 typed chat
+        observes TEXT_PRODUCTION only, DATA_MODEL §24.14).
+        """
+
+        controller = self._learning_controller
+        if controller is None:
+            return
+        try:
+            controller.rebuild_learner_state(
+                TargetId(resolution.target_id),
+                EvidenceModality(SILENT_EVIDENCE_MODALITY),
+            )
+        except Exception:
+            return
 
     def _replay_terminal(self, turn: TurnRecordData) -> Result[TurnCompletion]:
         slice_result = self._queries.get_canonical_turn_slice(turn.turn_id)
