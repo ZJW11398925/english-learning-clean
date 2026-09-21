@@ -185,18 +185,23 @@ def test_migration_and_schema_version(db: sqlite3.Connection) -> None:
         # 0008_attempt_records in Phase 3 P3-1B (TASK-…2babb21e.2 ①);
         # 0009_relationship_contracts in Phase 4 P4-0 (TASK-…5ba74efc.84 ①③);
         # 0010_episode_and_user_config in Phase 4 P4-3 (TASK-OPI-4d516e4f.19
-        # ⑥ — the episode projection + user_profile / disclosure_policy).
+        # ⑥ — the episode projection + user_profile / disclosure_policy);
+        # 0011_goal_policy_focus in Phase 6 P6-0 (TASK-OPI-a68fd9eb.48 ③ —
+        # the §5.1 goal_portfolio / teaching_policy / session_focus rows).
         "0006_decision_cycle",
         "0007_teaching_lineage",
         "0008_attempt_records",
         "0009_relationship_contracts",
         "0010_episode_and_user_config",
+        "0011_goal_policy_focus",
     ]
+    # The stamp is the newest migration's (this pin read "10" while
+    # 0010_episode_and_user_config was the head).
     assert (
         db.execute(
             "SELECT value FROM schema_meta WHERE key = 'schema_version'"
         ).fetchone()[0]
-        == "10"
+        == "11"
     )
 
 

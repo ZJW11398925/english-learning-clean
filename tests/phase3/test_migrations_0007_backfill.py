@@ -179,8 +179,9 @@ def test_backfill_is_deterministic_and_preserves_history(
     }
     assert not {name for name in tables if name.endswith(("_v7", "_backup"))}
     # The post stage runs every migration from 0007 on, so the version after
-    # it is the newest one (P4-3's 0010_episode_and_user_config).
-    assert migrations.schema_version(conn) == "10"
+    # it is the newest one (P6-0's 0011_goal_policy_focus: this pin read 10
+    # while P4-3's 0010_episode_and_user_config was the head).
+    assert migrations.schema_version(conn) == "11"
     conn.close()
 
 

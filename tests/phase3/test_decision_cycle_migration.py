@@ -8,9 +8,9 @@ P3-0's ``decision_cycle`` table test, carried forward to P3-1A:
   snapshot/version columns accept NULL after 0007 (the legacy export
   requires the honest all-NULL bindings — the migration header carries the
   full rationale);
-- schema_version is 10 (0010_episode_and_user_config is the newest
-  migration; it read 9 while 0009_relationship_contracts was the newest,
-  and 8 while 0008_attempt_records was);
+- schema_version is 11 (0011_goal_policy_focus is the newest migration; it
+  read 10 while 0010_episode_and_user_config was the newest, 9 while
+  0009_relationship_contracts was, and 8 while 0008_attempt_records was);
 - the decision_cycle / gate / moment write faces belong to their owning
   adapters only (AST-based scan, P3-0 review F3 — a substring scan is
   defeatable by multi-line SQL literals).
@@ -189,15 +189,19 @@ def test_migration_list_and_schema_version(db: sqlite3.Connection) -> None:
         # 0008_attempt_records joins in Phase 3 P3-1B (TASK-…2babb21e.2 ①):
         # the attempt / evaluation tables plus the F8 vocabularies;
         # 0009_relationship_contracts in Phase 4 P4-0 (TASK-…5ba74efc.84 ①③);
-        # 0010_episode_and_user_config in Phase 4 P4-3 (TASK-OPI-4d516e4f.19 ⑥).
+        # 0010_episode_and_user_config in Phase 4 P4-3 (TASK-OPI-4d516e4f.19 ⑥);
+        # 0011_goal_policy_focus in Phase 6 P6-0 (TASK-OPI-a68fd9eb.48 ③).
         "0008_attempt_records",
         "0009_relationship_contracts",
         "0010_episode_and_user_config",
+        "0011_goal_policy_focus",
     ]
     version = db.execute(
         "SELECT value FROM schema_meta WHERE key = 'schema_version'"
     ).fetchone()
-    assert version is not None and version[0] == "10"
+    # The stamp is the newest migration's (this pin read "10" while 0010 was
+    # the head).
+    assert version is not None and version[0] == "11"
 
 
 def test_snapshot_columns_accept_null_for_legacy_cycles(
@@ -314,14 +318,15 @@ def test_write_faces_belong_to_the_owning_adapters_only() -> None:
     )
 
 
-def test_migrations_directory_0010_is_newest() -> None:
-    """0010 is the newest migration; nothing ahead of the P4-3 slice
+def test_migrations_directory_0011_is_newest() -> None:
+    """0011 is the newest migration; nothing ahead of the P6-0 slice
     smuggles schema (the migration runner is filename-ordered). The pin
     moves with each slice's newest migration — it read 0008 while P3-1B was
-    the head, then 0009 while P4-0/P4-1/P4-2 were, and 0010 with P4-3 (the
-    slice that added the episode projection and the profile rows)."""
+    the head, then 0009 while P4-0/P4-1/P4-2 were, 0010 with P4-3 (the slice
+    that added the episode projection and the profile rows), and 0011 with
+    P6-0 (the slice that added the goal / policy / focus rows)."""
 
     names = sorted(
         path.name for path in (REPO_ROOT / "migrations").glob("*.sql")
     )
-    assert names[-1] == "0010_episode_and_user_config.sql"
+    assert names[-1] == "0011_goal_policy_focus.sql"

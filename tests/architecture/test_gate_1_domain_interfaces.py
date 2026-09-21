@@ -109,9 +109,11 @@ def test_domain_controller_is_empty_skeleton(package: str) -> None:
         # as the User Configuration/Profile authority face — the §18.1
         # sensitive-persistence gate is in the controller, the pure
         # disclosure ladder is elc.user_config.disclosure, the durable rows
-        # and all SQL live in elc.user_config.store, and the three Phase 6
-        # faces (goal portfolio / teaching policy / session focus) still
-        # raise NotImplementedError with a phase pointer.
+        # and all SQL live in elc.user_config.store. P6-0
+        # (TASK-OPI-a68fd9eb-….48 ④) graduated the three faces that used to
+        # raise a phase pointer (goal portfolio / teaching policy / session
+        # focus), so no method of this controller carries the Phase 0 red
+        # line any more; the Scheduler views stay for the later cuts.
         "user_config": {"UserConfigController"},
     }
     allowed = infra_allowlist.get(package, set())

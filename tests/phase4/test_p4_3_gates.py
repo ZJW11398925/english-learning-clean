@@ -5,7 +5,9 @@ Three families, one file:
 - **Gate item 1** (docs/IMPLEMENTATION_PLAN.md §2 "每个 Domain 有 own
   command/query interfaces"): ``UserConfigController`` graduated — the
   authorization is the ``phase1_class_allowlist`` entry, and the graduation
-  is real (the Phase-6 faces still raise; the P4-3 faces do not);
+  is real (the P4-3 faces do not raise, and P6-0 landed the three faces that
+  raised a phase pointer; the behaviour of all six lives in tests/phase4 and
+  tests/phase6);
 - **Gate item 5** ("Goal/Policy/Profile … 均有 owner/schema"): the registry
   still names this context as the owner of the profile and disclosure
   schemas, and the schema types are the ones this slice rewrote;
@@ -91,7 +93,12 @@ def test_the_graduated_faces_do_not_raise() -> None:
         assert "NotImplementedError" not in source, name
 
 
-def test_the_phase_six_faces_still_raise() -> None:
+def test_the_phase_six_faces_graduated() -> None:
+    """P4-3 pinned the three faces as unimplemented skeletons; P6-0
+    (TASK-OPI-a68fd9eb-….48 ④) landed them, so the pin now reads the other
+    way: no phase pointer survives on this controller, and each face
+    delegates to the store (the behaviour is pinned in tests/phase6)."""
+
     import inspect
 
     for name in (
@@ -100,8 +107,8 @@ def test_the_phase_six_faces_still_raise() -> None:
         "set_session_focus",
     ):
         source = inspect.getsource(getattr(UserConfigController, name))
-        assert "NotImplementedError" in source, name
-        assert "Phase 6" in source, name
+        assert "NotImplementedError" not in source, name
+        assert "self._store" in source, name
 
 
 def test_the_command_and_query_interfaces_still_exist() -> None:

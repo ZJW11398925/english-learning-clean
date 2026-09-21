@@ -165,15 +165,15 @@ def test_0008_creates_the_two_tables_with_the_canonical_column_sets(
 ) -> None:
     migrations.apply_migrations(db)
     assert "0008_attempt_records" in migrations.applied_migrations(db)
-    # P4-3 semantic sync: the version stamp is the newest migration's, and
-    # 0010_episode_and_user_config is now the head (this pin read "9" while
-    # P4-0's 0009 was).
-    assert migrations.schema_version(db) == "10"
+    # P6-0 semantic sync: the version stamp is the newest migration's, and
+    # 0011_goal_policy_focus is now the head (this pin read "10" while
+    # P4-3's 0010 was, and "9" while P4-0's 0009 was).
+    assert migrations.schema_version(db) == "11"
     assert (
         db.execute(
             "SELECT value FROM schema_meta WHERE key = 'runtime_schema_version'"
         ).fetchone()[0]
-        == "10"
+        == "11"
     )
     assert _columns(db, "attempt_record") == list(ATTEMPT_COLUMNS)
     assert _columns(db, "attempt_evaluation_record") == list(EVALUATION_COLUMNS)
@@ -188,9 +188,9 @@ def test_0008_enforces_the_canonical_vocabularies(
     assert migrations.schema_version(conn) == "7"
     _seed_pre_0008_data(conn)
     migrations.apply_migrations(conn, post)
-    # P4-3 semantic sync: the post stage applies every migration from 0008
-    # on, so the stamp is the newest one (0010), not P4-0's 9.
-    assert migrations.schema_version(conn) == "10"
+    # P6-0 semantic sync: the post stage applies every migration from 0008
+    # on, so the stamp is the newest one (0011), not P4-3's 10.
+    assert migrations.schema_version(conn) == "11"
 
     # §5 five outcomes, word for word.
     assert ATTEMPT_OUTCOMES == (

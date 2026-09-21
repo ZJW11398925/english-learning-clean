@@ -24,8 +24,6 @@ from __future__ import annotations
 
 import sqlite3
 
-import pytest
-
 from elc.platform.types import Ok, UserId
 from elc.relationship.types import MemorySensitivityClass
 from elc.user_config import (
@@ -465,41 +463,78 @@ def test_the_full_profile_still_reads_back_for_the_authority_face(
     assert full.value.profile_facts[0].text == "the user lives in Berlin"
 
 
-# -- ② the Phase 6 faces stay skeletons -------------------------------------
+# -- ② the Phase 6 faces graduated in P6-0 ----------------------------------
 
 
-def test_the_phase_six_faces_still_raise_with_a_pointer(
+def test_the_phase_six_faces_are_wired_to_the_real_store(
     user_config_controller: UserConfigController,
+    conversation,
 ) -> None:
-    from elc.platform.types import GoalVersion, PolicyVersion
+    """P4-3 pinned "no pretend Phase 6": the three faces raised
+    NotImplementedError with a phase pointer.
+
+    P6-0 (TASK-OPI-a68fd9eb-….48 ④) landed them, so this pin says what is
+    true now: each face delegates to elc.user_config.store and answers with
+    the durable state — no face raises, and the three reads answer from the
+    same rows. The write semantics themselves (version discipline, the
+    append-first focus identity, the four invariants) are pinned in
+    tests/phase6.
+    """
+
+    import inspect
+
+    from elc.platform.types import GoalVersion, Ok, PolicyVersion
     from elc.user_config.types import (
         LearningGoalPortfolio,
         SessionFocus,
+        TeachingFrequency,
         TeachingPolicyProfile,
     )
 
-    for call in (
-        lambda: user_config_controller.upsert_goal_portfolio(
-            LearningGoalPortfolio(
-                user_id=REL_USER,
-                goal_version=GoalVersion("gv-1"),
-                goals=(),
-            )
-        ),
-        lambda: user_config_controller.upsert_teaching_policy(
-            TeachingPolicyProfile(
-                user_id=REL_USER,
-                policy_version=PolicyVersion("pv-1"),
-                teaching_frequency="BALANCED",
-                automatic_teaching_enabled=False,
-            )
-        ),
-        lambda: user_config_controller.set_session_focus(
-            SessionFocus(
-                user_id=REL_USER, focus_goal_ids=(), weight_override={}
-            )
-        ),
+    portfolio_written = user_config_controller.upsert_goal_portfolio(
+        LearningGoalPortfolio(
+            goal_portfolio_id=REL_USER,
+            goal_version=GoalVersion("gv-1"),
+        )
+    )
+    assert isinstance(portfolio_written, Ok), portfolio_written
+    assert portfolio_written.value == GoalVersion("gv-1")
+
+    policy_written = user_config_controller.upsert_teaching_policy(
+        TeachingPolicyProfile(
+            teaching_policy_profile_id=REL_USER,
+            policy_version=PolicyVersion("pv-1"),
+            teaching_frequency=TeachingFrequency.BALANCED,
+        )
+    )
+    assert isinstance(policy_written, Ok), policy_written
+    assert policy_written.value == PolicyVersion("pv-1")
+
+    focus_written = user_config_controller.set_session_focus(
+        SessionFocus(
+            session_focus_id="sf-1",
+            conversation_id=conversation,
+            base_goal_portfolio_version=GoalVersion("gv-1"),
+        )
+    )
+    assert isinstance(focus_written, Ok), focus_written
+    assert focus_written.value.session_focus_id == "sf-1"
+
+    read_portfolio = user_config_controller.get_goal_portfolio(REL_USER)
+    assert isinstance(read_portfolio, Ok) and read_portfolio.value is not None
+    assert read_portfolio.value.goal_version == "gv-1"
+    read_policy = user_config_controller.get_teaching_policy(REL_USER)
+    assert isinstance(read_policy, Ok) and read_policy.value is not None
+    assert read_policy.value.policy_version == "pv-1"
+    read_focus = user_config_controller.get_session_focus("sf-1")
+    assert isinstance(read_focus, Ok) and read_focus.value is not None
+    assert read_focus.value == focus_written.value
+
+    for name in (
+        "upsert_goal_portfolio",
+        "upsert_teaching_policy",
+        "set_session_focus",
     ):
-        with pytest.raises(NotImplementedError) as raised:
-            call()
-        assert "Phase 6" in str(raised.value)
+        assert "NotImplementedError" not in inspect.getsource(
+            getattr(UserConfigController, name)
+        ), name

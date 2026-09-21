@@ -31,11 +31,18 @@ class UserConfigQueries(Protocol):
     def get_goal_portfolio(
         self, user_id: UserId
     ) -> Result[LearningGoalPortfolio | None]:
+        """The user's long-term portfolio (P6-0; ``None`` = never written).
+
+        Keyed by the user's own id — the Local V1 convention §5.1's missing
+        owner column forces (``goal_portfolio_id`` is the user's id; the
+        ``user_profile_id`` precedent).
+        """
         ...
 
     def get_teaching_policy(
         self, user_id: UserId
     ) -> Result[TeachingPolicyProfile | None]:
+        """The user's teaching policy (P6-0; same keying convention)."""
         ...
 
     def get_disclosure_policy(
@@ -44,6 +51,13 @@ class UserConfigQueries(Protocol):
         ...
 
     def get_session_focus(
-        self, user_id: UserId
+        self, session_focus_id: str
     ) -> Result[SessionFocus | None]:
+        """One focus by its own identity (P6-0).
+
+        The Phase 0 placeholder spelled this parameter ``user_id``; §5.1's
+        SessionFocus has no user leg (it names a conversation), so the read
+        is keyed by ``session_focus_id`` — the object's own key — and the
+        parameter is spelled to match the face it mirrors.
+        """
         ...

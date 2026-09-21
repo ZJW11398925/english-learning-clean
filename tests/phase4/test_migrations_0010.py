@@ -128,12 +128,15 @@ def test_0010_creates_the_three_tables_with_the_canonical_column_sets(
     db: sqlite3.Connection,
 ) -> None:
     assert "0010_episode_and_user_config" in migrations.applied_migrations(db)
-    assert migrations.schema_version(db) == "10"
+    # P6-0 semantic sync: the stamp is the newest migration's, and
+    # 0011_goal_policy_focus is now the head (this pin read "10" while 0010
+    # was).
+    assert migrations.schema_version(db) == "11"
     assert (
         db.execute(
             "SELECT value FROM schema_meta WHERE key = 'runtime_schema_version'"
         ).fetchone()[0]
-        == "10"
+        == "11"
     )
     # Column order is the canonical order (§5.3 / §5.1), word for word.
     assert _columns(db, "episode") == list(EPISODE_COLUMNS)
@@ -213,7 +216,10 @@ def test_0010_leaves_the_existing_lineage_untouched(
     assert migrations.schema_version(conn) == "9"
     _seed_pre_0010_lineage(conn)
     migrations.apply_migrations(conn, post)
-    assert migrations.schema_version(conn) == "10"
+    # P6-0 semantic sync: the post stage applies every migration from 0010
+    # on (0011_goal_policy_focus included), so the stamp is the newest
+    # one — 11, not P4-3's 10.
+    assert migrations.schema_version(conn) == "11"
 
     assert conn.execute(
         "SELECT relationship_memory_id, canonical_content, status"
@@ -237,16 +243,16 @@ def test_0010_leaves_the_existing_lineage_untouched(
 
 
 def test_the_earlier_migrations_are_untouched() -> None:
-    """0001–0009 are byte-identical: this slice adds one file and edits
-    none."""
+    """0001–0010 are byte-identical: P6-0 adds one file (0011) and edits
+    none of them."""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert names[-1] == PRE_0010
-    assert len(names) == 10
+    assert names[-1] == "0011_goal_policy_focus.sql"
+    assert len(names) == 11
     # Every earlier file keeps its own name (a rename would be a different
     # migration as far as the runner and the schema_migrations table are
     # concerned).
-    assert names[:9] == [
+    assert names[:10] == [
         "0001_bootstrap.sql",
         "0002_conversation_core.sql",
         "0003_generation_provider.sql",
@@ -256,6 +262,7 @@ def test_the_earlier_migrations_are_untouched() -> None:
         "0007_teaching_lineage.sql",
         "0008_attempt_records.sql",
         "0009_relationship_contracts.sql",
+        "0010_episode_and_user_config.sql",
     ]
 
 
