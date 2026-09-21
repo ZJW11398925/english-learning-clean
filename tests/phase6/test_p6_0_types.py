@@ -281,9 +281,60 @@ def test_teaching_frequency_is_declared_as_an_implementation_word_list() -> None
     )
 
 
+def _string_literal_container(node: ast.expr) -> bool:
+    """True for a tuple / list / set / dict literal whose elements are all
+    string constants (a dict is read through its keys *and* its values)."""
+
+    if isinstance(node, (ast.Tuple, ast.List, ast.Set)):
+        elements: list[ast.expr | None] = list(node.elts)
+    elif isinstance(node, ast.Dict):
+        elements = [*node.keys, *node.values]
+    else:
+        return False
+    return bool(elements) and all(
+        isinstance(element, ast.Constant) and isinstance(element.value, str)
+        for element in elements
+        if element is not None
+    )
+
+
+def _module_level_word_lists(tree: ast.Module) -> list[str]:
+    """Every module-level ALL_CAPS name bound to a string-literal container:
+    the shape a declared vocabulary takes besides a ``StrEnum`` subclass."""
+
+    names: list[str] = []
+    for node in tree.body:
+        targets: list[str] = []
+        value: ast.expr | None = None
+        if isinstance(node, ast.Assign):
+            targets = [
+                target.id
+                for target in node.targets
+                if isinstance(target, ast.Name)
+            ]
+            value = node.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(
+            node.target, ast.Name
+        ):
+            targets = [node.target.id]
+            value = node.value
+        if value is not None and _string_literal_container(value):
+            names.extend(name for name in targets if name.isupper())
+    return sorted(names)
+
+
 def test_the_types_module_invents_no_further_vocabulary() -> None:
     """The only word lists this module declares are the two Phase 0 enums;
-    no new enum, and no second modality vocabulary, arrives with P6-0."""
+    no new enum, no module-level ALL_CAPS constant of string literals, and
+    no second modality vocabulary, arrives with P6-0.
+
+    A vocabulary can take two shapes in this module's source, so the pin
+    scans both: a ``StrEnum`` subclass (Phase 0's form) and a module-level
+    ALL_CAPS name bound to a string-literal tuple / list / set / dict —
+    ``POLICY_MODES = ("PREVIEW_V0", "SOCRATIC")`` is a word list just as
+    much as an enum is, and it fails here rather than becoming the de-facto
+    vocabulary of the unpinned columns.
+    """
 
     tree = ast.parse(TYPES_MODULE.read_text(encoding="utf-8"))
     enums = [
@@ -297,6 +348,7 @@ def test_the_types_module_invents_no_further_vocabulary() -> None:
     ]
     assert sorted(enums) == ["DisclosureLevel", "TeachingFrequency"]
     assert not [name for name in enums if "Modality" in name]
+    assert _module_level_word_lists(tree) == []
     for enum_type in (TeachingFrequency, DisclosureLevel):
         assert issubclass(enum_type, StrEnum)
     assert tuple(DisclosureLevel.__members__) == ("MINIMAL", "FUNCTIONAL", "RICH")

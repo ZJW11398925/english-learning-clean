@@ -531,21 +531,17 @@ def test_the_store_writes_the_five_configuration_tables_and_nothing_else() -> No
 
 
 def test_the_durable_writes_leave_no_shadow_rows(
-    db: sqlite3.Connection, user_config_store: SqliteUserConfigStore
+    db: sqlite3.Connection,
+    user_config_store: SqliteUserConfigStore,
+    conversation,
 ) -> None:
     """One row per object, written once and replaced in place: the append
     convention belongs to *facts* (§1.3), not to a versioned configuration
     row — the durable table is the current state, and the old version is
-    gone by design (the stamp is the history)."""
+    gone by design (the stamp is the history). The conversation the focus
+    hangs off is the conftest fixture's (opened through the shipped store),
+    never a hand-written row."""
 
-    conversation_id = "conv-p6-0"
-    db.execute(
-        "INSERT INTO conversation (conversation_id, persona_id, scene_id,"
-        " created_at, status, next_turn_sequence, next_message_sequence)"
-        " VALUES (?, NULL, NULL, 'now', 'ACTIVE', 1, 1)",
-        (conversation_id,),
-    )
-    db.commit()
     assert isinstance(
         user_config_store.upsert_goal_portfolio(portfolio(goal("g-1"))), Ok
     )
@@ -565,7 +561,10 @@ def test_the_durable_writes_leave_no_shadow_rows(
         Ok,
     )
     assert isinstance(
-        user_config_store.set_session_focus(session_focus("sf-1")), Ok
+        user_config_store.set_session_focus(
+            session_focus("sf-1", conversation=conversation)
+        ),
+        Ok,
     )
     for table in ("goal_portfolio", "teaching_policy", "session_focus"):
         assert db.execute(f"SELECT COUNT(*) FROM {table}").fetchone() == (1,)
