@@ -2472,12 +2472,24 @@ def _silent_claim_for_proposal(
     The producer records the *facts* of a resolved observation (which
     target, which form, which rule); this function rebuilds the
     TargetMatchObservation from **the durable document plus the canonical
-    turn** and applies the admission set before any claim exists
-    (elc.learning.target_match) — so a document that reaches the kernel from
-    anywhere else (hand-edited, stale, fabricated) cannot mint a claim a
-    whole-sentence form-class RESOURCE match would not have minted. The
-    conversion itself stays Learning's (the teaching-evidence pattern: facts
-    in, Learning decides what they are worth).
+    turn** and re-runs admission **rules 1-3** before any claim exists
+    (elc.learning.target_match.admitted_for_evidence) — so a document that
+    reaches the kernel from anywhere else (hand-edited, stale, fabricated)
+    cannot mint a claim a whole-sentence form-class RESOURCE match would not
+    have minted. The conversion itself stays Learning's (the
+    teaching-evidence pattern: facts in, Learning decides what they are
+    worth).
+
+    **What this layer does and does not re-check (declared).** The re-check
+    here is exactly the rebuild + rules 1-3: rules 4 (no open TeachingMoment
+    for the target) and 5 (readable supply) are **live-leg guards** and are
+    not applied at this layer, which holds neither the teaching nor the
+    supply port. ``target_type`` is likewise read as a **document-declared
+    fact**: the kernel takes the rebuilt observation's ``RESOURCE`` at its
+    word and performs no type-identity or supply-identity check here — the
+    supply gate is the read face
+    (elc.learning.silent_evidence.ContentBackedTargetSupply), not the kernel
+    (the teaching-provider division of labour).
 
     ``(None, None)`` in three cases, all observation-only (zero claim, zero
     LearnerState change): the Phase 2 target-less proposal, an unreadable

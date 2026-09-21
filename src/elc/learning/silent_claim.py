@@ -144,9 +144,15 @@ def claim_for_silent_observation(
     (an unknown ``evidence_modality`` word raises ``ValueError`` — the caller
     surfaces it as a refusal, never a silent default).
 
-    The caller must already have applied the full admission set
-    (elc.learning.target_match.admitted_for_evidence plus the live moment and
-    supply guards); this function is the conversion, not the gate.
+    The caller must already have applied admission **rules 1-3** — a
+    ``RESOURCE`` target, a form-class hit, a whole-sentence span
+    (elc.learning.target_match.admitted_for_evidence) — so the input here is
+    an observation the caller has already judged against those three rules.
+    Rules 4 (no open TeachingMoment for the target) and 5 (a readable
+    supply) are **live-leg guards**: they need the teaching and the supply
+    port, so neither this pure function nor the commit-side caller
+    (elc.learning.store._silent_claim_for_proposal, which re-applies rules
+    1-3 only) re-checks them. This function is the conversion, not the gate.
     """
 
     return EvidenceClaimView(
