@@ -18,6 +18,21 @@ TurnRecords only. The scan is a pure durable read — invoking it twice yields
 the same plan, and committed UserTurns are never re-created. The read
 itself is executed by the durable conversation store (Gate item 2 keeps
 this package SQL-free) behind :class:`TurnRecordRecoverySource`.
+
+P3-2 carry-over (DEC-OPI-5ba74efc-….20 ①): the scan also *names* the
+TeachingLockLease residue of a dead runtime epoch. Before this, an orphan
+teaching lock was only reachable through an explicit
+``ConversationCoordinator.recover_orphan_teaching()`` call that no startup
+path made, so a conversation whose teaching process died stayed sealed
+until something happened to call the apply face. The scanner now reports
+one :data:`TEACHING_LOCK_RECOVERY_ACTION` item per orphan lock (kind
+``LOCK``, id = the moment id) through the optional
+:class:`TeachingLockRecoverySource` port — the same pure-read bargain as
+the TurnRecord list (STARTS nothing, writes nothing; the apply face is the
+coordinator's), so the plan and the sweep can never disagree about which
+lock is residue. A lock owned by the *current* epoch is a real
+mutual-exclusion fact and is deliberately not part of the plan
+(STATE_MACHINES §9/§24.1: epoch-based liveness, never TTL/heartbeat).
 """
 
 from __future__ import annotations
@@ -41,10 +56,18 @@ from elc.runtime.types import (
 )
 
 __all__ = [
+    "TEACHING_LOCK_RECOVERY_ACTION",
     "StartupRecoveryScanner",
+    "TeachingLockRecoverySource",
     "TurnRecordRecoverySource",
     "recovery_disposition",
 ]
+
+#: The recovery action word of the TeachingLockLease sweep (P3-2 carry-over
+#: ①): the orphan lock named by the scan is released — and with it its
+#: moment closed with ``SYSTEM_RECOVERY_ABORT`` — by
+#: ``ConversationCoordinator.recover_orphan_teaching`` (STATE_MACHINES §9).
+TEACHING_LOCK_RECOVERY_ACTION = "RELEASE_ORPHAN_TEACHING_LOCK"
 
 
 @runtime_checkable
@@ -55,6 +78,25 @@ class TurnRecordRecoverySource(Protocol):
     def recoverable_turn_records(
         self, current_epoch: RuntimeEpoch
     ) -> tuple[TurnRecordData, ...]:
+        ...
+
+
+@runtime_checkable
+class TeachingLockRecoverySource(Protocol):
+    """Durable read face for the teaching-lock scan (implemented by the
+    Teaching domain store / its controller face — the runtime package
+    stays SQL-free, Gate item 2).
+
+    Returns the moment ids whose ``active_teaching_lock`` row is owned by
+    a turn of an *older* runtime epoch: residue of a dead process, never a
+    live mutual-exclusion fact (STATE_MACHINES §9 "startup recovery 通过
+    durable Moment state + runtime_epoch revalidate/release orphan lock";
+    §24.1: no TTL/heartbeat in Local V1).
+    """
+
+    def orphan_teaching_lock_moments(
+        self, current_epoch: RuntimeEpoch
+    ) -> tuple[str, ...]:
         ...
 
 
@@ -87,18 +129,25 @@ class StartupRecoveryScanner:
     The scan never rewrites anything: repeated ``scan()`` calls are
     idempotent, and already-committed CP0 UserTurns are only *referenced*,
     never replayed (§22; VAL ④).
+
+    P3-2 carry-over ①: with a ``teaching_locks`` source the plan also names
+    one ``LOCK`` item per orphan TeachingLockLease (see the module
+    docstring). The teaching source is optional so every P1/P2 assembly
+    keeps the exact plan shape its tests pin.
     """
 
     def __init__(
         self,
         source: TurnRecordRecoverySource,
         lease: ConversationCoordinatorLease,
+        teaching_locks: TeachingLockRecoverySource | None = None,
     ) -> None:
         self._source = source
         self._lease = lease
+        self._teaching_locks = teaching_locks
 
     def scan(self) -> Result[tuple[RecoveryAction, ...]]:
-        """Return the recovery plan for old-epoch nonterminal turns."""
+        """Return the recovery plan for old-epoch nonterminal work."""
         epoch = self._lease.epoch
         if epoch is None:
             return Err(
@@ -111,7 +160,7 @@ class StartupRecoveryScanner:
                 )
             )
         records = self._source.recoverable_turn_records(epoch)
-        actions = tuple(
+        actions = [
             RecoveryAction(
                 kind="TURN",
                 id=record.turn_id,
@@ -119,5 +168,18 @@ class StartupRecoveryScanner:
             )
             for record in records
             if record.status not in TERMINAL_TURN_STATUSES
-        )
-        return Ok(actions)
+        ]
+        if self._teaching_locks is not None:
+            # Deterministic order (the source returns the durable ORDER BY):
+            # turn work first, then the lock residue it may unseal.
+            actions.extend(
+                RecoveryAction(
+                    kind="LOCK",
+                    id=moment_id,
+                    action=TEACHING_LOCK_RECOVERY_ACTION,
+                )
+                for moment_id in self._teaching_locks.orphan_teaching_lock_moments(
+                    epoch
+                )
+            )
+        return Ok(tuple(actions))

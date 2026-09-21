@@ -46,6 +46,7 @@ from elc.platform.types import (
     MomentId,
     Ok,
     Result,
+    RuntimeEpoch,
     TargetId,
     UserTurnId,
 )
@@ -331,6 +332,20 @@ class TeachingController:
         return self._store.recover_orphan_teaching_locks(
             self._store.current_epoch
         )
+
+    def orphan_teaching_lock_moments(
+        self, current_epoch: RuntimeEpoch
+    ) -> tuple[str, ...]:
+        """The startup scan's teaching-lock read face (P3-2 carry-over ①).
+
+        Satisfies the runtime package's ``TeachingLockRecoverySource``
+        protocol, so ``StartupRecoveryScanner`` can name the orphan locks
+        of a dead epoch in its plan (the runtime package itself stays
+        SQL-free) and the coordinator's ``recover_orphan_teaching`` is the
+        one apply face for exactly the ids the scan reported.
+        """
+
+        return self._store.orphan_teaching_lock_moments(current_epoch)
 
     def get_attempt_evaluation(
         self, attempt_id: AttemptId

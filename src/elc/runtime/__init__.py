@@ -34,7 +34,9 @@ from elc.runtime.lease import (
 )
 from elc.runtime.queries import RuntimeQueries
 from elc.runtime.recovery import (
+    TEACHING_LOCK_RECOVERY_ACTION,
     StartupRecoveryScanner,
+    TeachingLockRecoverySource,
     TurnRecordRecoverySource,
     recovery_disposition,
 )
@@ -90,6 +92,8 @@ __all__ = [
     "RuntimeQueries",
     "StartupRecoveryScanner",
     "StaleCoordinatorEpoch",
+    "TEACHING_LOCK_RECOVERY_ACTION",
+    "TeachingLockRecoverySource",
     "TurnCompletion",
     "TurnRecordData",
     "TurnRecordRecoverySource",

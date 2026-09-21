@@ -174,6 +174,54 @@ _TEACHING_TURN_ACTION_TYPES = (
 )
 
 
+def _terminal_tail_refusal(
+    state: MomentState, target: MomentState
+) -> str | None:
+    """The SM §1 tail rule at the durable boundary (None = allowed).
+
+    STATE_MACHINES.md §1 lines 49-58 spell the tail out as two arms:
+
+        COMPLETING / ABORTING → finalize teaching outcome → TEACHING_TERMINAL
+        TEACHING_TERMINAL     → release TeachingLockLease
+            ├─ resume needed → RESUMING
+            └─ no resume ────→ CLOSED
+        RESUMING              → delivered / failed → CLOSED
+
+    so a terminal moment may legitimately move to RESUMING (the resume arm)
+    *or* straight to CLOSED (the no-resume arm), and a RESUMING moment only
+    closes. Any other target would resurrect an episode whose lock is
+    already released; and CLOSED itself is only reached along that tail —
+    closing a live moment from AWAITING_USER / EVALUATING / DECIDING would
+    produce exactly the "terminal moment still holding its lock" state the
+    coordinator declares unreachable (elc.runtime.controller).
+    """
+
+    if state is MomentState.TEACHING_TERMINAL and target not in (
+        MomentState.RESUMING,
+        MomentState.CLOSED,
+    ):
+        return (
+            "a TEACHING_TERMINAL moment only resumes or closes"
+            f" (STATE_MACHINES §1); {target.value} would resurrect a"
+            " finished episode"
+        )
+    if state is MomentState.RESUMING and target is not MomentState.CLOSED:
+        return (
+            "a RESUMING moment only closes (STATE_MACHINES §1);"
+            f" {target.value} would resurrect a finished episode"
+        )
+    if target is MomentState.CLOSED and state not in (
+        MomentState.RESUMING,
+        MomentState.TEACHING_TERMINAL,
+    ):
+        return (
+            "CLOSED is reached from TEACHING_TERMINAL or RESUMING only"
+            f" (STATE_MACHINES §1); closing a {state.value} moment would"
+            " leave the TeachingLockLease held by a closed episode"
+        )
+    return None
+
+
 def _target_document(target: TeachingTargetRef) -> str:
     return json.dumps(
         target.as_document(), sort_keys=True, separators=(",", ":")
@@ -733,7 +781,17 @@ class SqliteTeachingStore:
         Only the named columns move; ``state_version`` always advances.
         CLOSED is final — a closed moment is never reopened by a later
         caller (SM §2 "Closed 不允许 reopen"; the refusal is here, at the
-        durable boundary, not only in the caller)."""
+        durable boundary, not only in the caller).
+
+        P3-2 (SM §1 graph at the durable boundary, the CLOSED precedent):
+        the *post-terminal tail* is one-way too. From TEACHING_TERMINAL the
+        legal targets are RESUMING (the resume arm) and CLOSED (the
+        no-resume arm); from RESUMING the only legal target is CLOSED; and
+        CLOSED is only reachable along that tail — closing a live moment
+        directly would leave a closed episode still holding its
+        TeachingLockLease. A ladder-only move (no lifecycle target) stays
+        free — it does not touch the lifecycle column at all.
+        """
 
         try:
             with short_transaction(self._conn):
@@ -751,12 +809,18 @@ class SqliteTeachingStore:
                         "moment state_version is"
                         f" {current}, expected {expected_state_version}",
                     )
-                if MomentState(str(row[19])) is MomentState.CLOSED:
+                state = MomentState(str(row[19]))
+                if state is MomentState.CLOSED:
                     return _err(
                         DomainErrorCode.CONFLICT,
                         f"moment {moment_id} is CLOSED — closed moments are"
                         " never reopened (STATE_MACHINES §2)",
                     )
+                target = transition.lifecycle_state
+                if target is not None:
+                    tail_error = _terminal_tail_refusal(state, target)
+                    if tail_error is not None:
+                        return _err(DomainErrorCode.CONFLICT, tail_error)
                 assignments: list[str] = []
                 values: list[object] = []
                 for column, value in (
@@ -923,18 +987,7 @@ class SqliteTeachingStore:
         Returns the recovered moment ids (empty when there is no orphan).
         """
 
-        rows = self._conn.execute(
-            "SELECT l.moment_id, l.state_version,"
-            " m.lifecycle_state, m.state_version"
-            " FROM active_teaching_lock l"
-            " JOIN teaching_moment m ON m.moment_id = l.moment_id"
-            " JOIN decision_cycle d ON d.decision_cycle_id ="
-            "      m.decision_cycle_id"
-            " JOIN turn_record t ON t.turn_id = d.turn_id"
-            " WHERE t.owner_epoch != ?"
-            " ORDER BY m.created_at, l.moment_id",
-            (current_epoch,),
-        ).fetchall()
+        rows = self._orphan_lock_rows(current_epoch)
         if not rows:
             return Ok(())
         recovered: list[str] = []
@@ -966,6 +1019,40 @@ class SqliteTeachingStore:
                 return Ok(tuple(recovered))
         except sqlite3.IntegrityError as exc:
             return _err(DomainErrorCode.CONFLICT, str(exc))
+
+    def orphan_teaching_lock_moments(
+        self, current_epoch: RuntimeEpoch
+    ) -> tuple[str, ...]:
+        """The orphan-lock read face (P3-2 carry-over ①): the moment ids
+        whose lock is residue of an older runtime epoch, in durable order.
+
+        The pure-read half of :meth:`recover_orphan_teaching_locks` — one
+        shared query, so the startup scan and the sweep can never disagree
+        about which lock is residue. Writes nothing (the plan is the read;
+        the coordinator's apply face is the write).
+        """
+
+        return tuple(
+            str(row[0]) for row in self._orphan_lock_rows(current_epoch)
+        )
+
+    def _orphan_lock_rows(
+        self, current_epoch: RuntimeEpoch
+    ) -> list[sqlite3.Row]:
+        """The durable rows of the orphan-lock JOIN (see the two faces)."""
+
+        return self._conn.execute(
+            "SELECT l.moment_id, l.state_version,"
+            " m.lifecycle_state, m.state_version"
+            " FROM active_teaching_lock l"
+            " JOIN teaching_moment m ON m.moment_id = l.moment_id"
+            " JOIN decision_cycle d ON d.decision_cycle_id ="
+            "      m.decision_cycle_id"
+            " JOIN turn_record t ON t.turn_id = d.turn_id"
+            " WHERE t.owner_epoch != ?"
+            " ORDER BY m.created_at, l.moment_id",
+            (current_epoch,),
+        ).fetchall()
 
     # -- P3-1B reads ---------------------------------------------------------
 

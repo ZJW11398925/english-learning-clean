@@ -1771,6 +1771,18 @@ class ConversationCoordinator:
                     " along EVALUATING → DECIDING_NEXT_ACTION)"
                 )
 
+            if turn.status is TurnStatus.DELIVERING:
+                # P3-2 carry-over ② (DEC-…5ba74efc.20): the delivery was in
+                # flight when the process died. RA §23 "crash around CP3 →
+                # the canonicalized assistant turn is the truth" — the
+                # re-entry finishes the leg from the durable record instead
+                # of refusing the turn forever (a DELIVERING reply turn used
+                # to be a permanent dead end for itself, with its moment left
+                # live at DECIDING_NEXT_ACTION holding the lock).
+                return self._reconcile_delivering_reply(
+                    turn=turn, teaching=teaching, targets=targets
+                )
+
             state_version = turn.state_version
             if turn.status == TurnStatus.USER_COMMITTED:
                 advanced = self._commands.transition_turn(
@@ -3076,6 +3088,146 @@ class ConversationCoordinator:
                 state_version=terminal.value.state_version,
             )
         )
+
+    def _reconcile_delivering_reply(
+        self,
+        *,
+        turn: TurnRecordData,
+        teaching: TeachingController,
+        targets: TeachingTargetProvider,
+    ) -> Result[TeachingReplyTurnResult]:
+        """Finish a reply turn whose delivery was in flight at the crash.
+
+        RUNTIME §24.1 maps a CP3-uncertain turn to
+        CONSERVATIVE_DELIVERY_RECONCILIATION, and RA §23 has the rule the
+        opening path already follows: "crash around CP3 → the canonicalized
+        assistant turn is the truth". Two durable shapes are possible, and
+        each has exactly one honest move:
+
+        - the assistant turn *was* canonicalized (the message really went
+          out): the delivery leg is completed from the record — the action
+          leaves DELIVERING, the turn terminalizes REPLIED_FULL, and the
+          ladder is reconciled from the delivered action (STATE_MACHINES
+          §3). Nothing is re-generated and nothing is re-sent;
+        - no assistant turn exists (the message never reached the user):
+          the action terminalizes undelivered, the turn terminalizes
+          NO_ASSISTANT_OUTPUT, and the episode aborts with the §7
+          DELIVERY_FAILURE word and releases its lock — the
+          ``_abort_opening`` move for a delivery that just failed (no
+          resume message: a second message would only fail too).
+
+        Either way the turn stops being stuck at DELIVERING and the moment
+        can never sit live-but-undecidable because a crash ate its reply.
+        """
+
+        slice_result = self._queries.get_canonical_turn_slice(turn.turn_id)
+        if isinstance(slice_result, Err):
+            return slice_result
+        slice_ = slice_result.value
+        assistant = slice_.assistant_turn if slice_ is not None else None
+
+        action_result = self._generation.get_action_for_turn(turn.turn_id)
+        if isinstance(action_result, Err):
+            return action_result
+        action = action_result.value
+        if (
+            action is not None
+            and action.status is not GenerationActionStatus.TERMINAL
+        ):
+            epoch = self._lease.epoch
+            if epoch is not None and action.owner_epoch != epoch:
+                # The fence is the honest answer: a new epoch may not
+                # advance an old-epoch action. The epoch-based teaching-lock
+                # sweep (recover_orphan_teaching) is the sanctioned route.
+                return _conflict(
+                    f"the delivery action of turn {turn.turn_id} belongs to"
+                    f" runtime epoch {action.owner_epoch}; current epoch"
+                    f" {epoch} must not advance it — use the orphan-lock"
+                    " recovery sweep"
+                )
+            if assistant is not None:
+                completed = self._persona.complete_delivery(action.action_id)
+                if isinstance(completed, Err):
+                    return completed
+            else:
+                failed = self._persona.terminalize_failure(
+                    action.action_id, action.status
+                )
+                if isinstance(failed, Err):
+                    return failed
+
+        terminal = self._commands.terminalize_turn(
+            turn.turn_id,
+            (
+                TurnOutcome.REPLIED_FULL
+                if assistant is not None
+                else TurnOutcome.NO_ASSISTANT_OUTPUT
+            ),
+        )
+        if isinstance(terminal, Err):
+            return terminal
+
+        if assistant is None:
+            # Nothing was delivered, so the ladder must not move and the
+            # episode must not stay live: the abort runs first (the moment
+            # is still in its deciding slot).
+            aborted = self._abort_lost_delivery(turn, teaching)
+            if isinstance(aborted, Err):
+                return aborted
+        else:
+            reconciled = self._reconcile_moment_ladder(
+                turn_id=turn.turn_id, teaching=teaching, targets=targets
+            )
+            if isinstance(reconciled, Err):
+                return reconciled
+        return self._replay_teaching_reply(terminal.value, teaching)
+
+    def _abort_lost_delivery(
+        self, turn: TurnRecordData, teaching: TeachingController
+    ) -> Result[TeachingMomentRecord | None]:
+        """Abort the episode of a delivery that never reached the user.
+
+        The §7 DELIVERY_FAILURE walk (ABORTING → TEACHING_TERMINAL, lock
+        released in the same transaction → RESUMING → CLOSED), with no
+        resume message — the ``_abort_opening`` posture: the delivery just
+        failed, so a second message would only fail too. A moment that is
+        already terminal/closed (or gone) is not touched.
+        """
+
+        active = teaching.get_active_moment(ConversationId(turn.conversation_id))
+        if isinstance(active, Err):
+            return active
+        moment = active.value
+        if moment is None or moment.lifecycle_state in (
+            MomentState.TEACHING_TERMINAL,
+            MomentState.CLOSED,
+        ):
+            return Ok(moment)
+        plan = NextAction(
+            moment_state=MomentState.ABORTING,
+            delivery_kind=None,
+            closure=AbortReason.DELIVERY_FAILURE.value,
+            completion_outcome=None,
+            abort_reason=AbortReason.DELIVERY_FAILURE.value,
+            terminalizing=True,
+        )
+        closed = self._terminalize_moment(moment, plan, teaching)
+        if isinstance(closed, Err):
+            return closed
+        current = closed.value
+        for state in (MomentState.RESUMING, MomentState.CLOSED):
+            stepped = teaching.transition_moment(
+                current.moment_id,
+                MomentTransition(
+                    lifecycle_state=state,
+                    closed_at=None if state is MomentState.RESUMING else _now(),
+                ),
+                current.state_version,
+            )
+            if isinstance(stepped, Err):
+                return stepped
+            current = stepped.value
+        return Ok(current)
 
     def _reconcile_moment_ladder(
         self,
