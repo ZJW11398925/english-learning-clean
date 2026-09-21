@@ -18,6 +18,11 @@ round). The write faces that fill the new columns are P4-1. The privacy
 vocabulary follows
 behavioral_baselines/security/security_privacy_policy_v1.json (BF-05,
 read-only baseline) and docs/DOMAIN_MODEL.md §18.1.
+
+P4-1 (TASK-OPI-5ba74efc-….100): the write faces landed, so the proposal
+carries the fields they must assemble (provenance refs, supersede intent,
+recorder version, BF-05 sensitivity pair), and the same-persona summary the
+Recorder consumes is typed here. No durable column changed.
 """
 
 from __future__ import annotations
@@ -163,6 +168,16 @@ class RelationshipMemoryProposal:
     it. The field name is deliberately left as the recorder's own here —
     canonical names the *row*, and the row's type is
     :class:`RelationshipMemoryRecord`.
+
+    P4-1 fills the write-facing fields (all defaulted, so the Phase 0
+    construction shape stays callable): the provenance the Recorder
+    assembled from the turn slice it read, the supersede intent, the
+    Recorder's own version (docs/DATA_MODEL.md §1.4 "version every derived
+    model" — the durable column is NOT NULL, so a proposal without a version
+    is refused rather than written as an empty string, review F6), and the
+    BF-05 sensitivity/authorization pair the gate decides on. The
+    *validation* rules over these fields live in
+    elc.relationship.validation; none of them is enforced by this dataclass.
     """
 
     persona_id: PersonaId
@@ -171,6 +186,26 @@ class RelationshipMemoryProposal:
     provenance: MemoryProvenance
     content: str
     source_turn_id: TurnId | None
+    #: §23 ``source_turn_ids[]`` — assembled by the Recorder from the one
+    #: CanonicalTurnSlice it read (the Recorder is the only face that sees
+    #: the slice; the write face never re-derives provenance).
+    source_turn_ids: tuple[TurnId, ...] = ()
+    #: BF-05 §17 "Provenance 是删除的前提": the durable ids the memory was
+    #: read from. Every ref resolves inside the slice's own canonical ids.
+    provenance_refs: tuple[str, ...] = ()
+    #: §23 ``confidence?`` — None for a user statement, a score for a
+    #: validated inference (§5 "Important distinction").
+    confidence: float | None = None
+    #: Declared update semantics: this memory corrects that one (append-first
+    #: — the old row becomes SUPERSEDED, it is never rewritten or deleted,
+    #: docs/DATA_MODEL.md §1.3). Never inferred by the write face.
+    supersedes_memory_id: RelationshipMemoryId | None = None
+    #: The Recorder that proposed this memory (§1.4); must be filled.
+    recorder_version: str = ""
+    sensitivity_class: MemorySensitivityClass = MemorySensitivityClass.PERSONAL
+    persistence_authorization: PersistenceAuthorization = (
+        PersistenceAuthorization.VALIDATED_DOMAIN_WRITE
+    )
 
 
 @dataclass(frozen=True)
@@ -180,3 +215,56 @@ class RelationshipView:
     persona_id: PersonaId
     user_id: UserId
     active_memories: tuple[RelationshipMemoryRecord, ...]
+
+
+@dataclass(frozen=True)
+class RelationshipMemorySummaryEntry:
+    """One line of a same-persona memory summary.
+
+    Deliberately narrower than the record: the summary is what a *proposal
+    component* and (P4-3) the prompt compiler are allowed to see, and it
+    carries no scope-external field — the pair (persona_id, user_id) lives
+    on the enclosing :class:`SamePersonaExistingRelationshipSummary`.
+    """
+
+    relationship_memory_id: RelationshipMemoryId
+    memory_type: RelationshipMemoryType
+    provenance: MemoryProvenance
+    canonical_content: str
+    status: MemoryStatus
+    confidence: float | None = None
+
+
+@dataclass(frozen=True)
+class SamePersonaExistingRelationshipSummary:
+    """BF-05 ``provider_actions.RELATIONSHIP_PROPOSAL``, word for word.
+
+    The Recorder's second (and last) allow-listed input: what *this* Persona
+    already remembers about *this* User — never another persona's rows
+    (DOMAIN_MODEL §17 "Relationship 不跨 Persona 泄漏"; BF-05 §29). The
+    summary also carries the scope the Recorder binds its proposals to: a
+    CanonicalTurnSlice knows its conversation but not its Persona×User pair,
+    so the pair travels with the summary the caller assembled for that turn.
+    """
+
+    persona_id: PersonaId
+    user_id: UserId
+    memories: tuple[RelationshipMemorySummaryEntry, ...] = ()
+
+    @property
+    def active(self) -> tuple[RelationshipMemorySummaryEntry, ...]:
+        return tuple(
+            entry for entry in self.memories if entry.status is MemoryStatus.ACTIVE
+        )
+
+    def find(
+        self, memory_id: RelationshipMemoryId
+    ) -> RelationshipMemorySummaryEntry | None:
+        """The entry with that id, or None — including when the id belongs to
+        another persona: this summary never sees those rows, so the lookup
+        cannot disclose that they exist (§29: no leak, not even existence)."""
+
+        for entry in self.memories:
+            if entry.relationship_memory_id == memory_id:
+                return entry
+        return None

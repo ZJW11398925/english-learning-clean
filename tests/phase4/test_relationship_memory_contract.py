@@ -18,9 +18,8 @@ will have to satisfy:
 from __future__ import annotations
 
 import dataclasses
+import inspect
 import sqlite3
-
-import pytest
 
 from elc.platform.db import migrations
 from elc.platform.types import PersonaId, RelationshipMemoryId, UserId
@@ -30,7 +29,6 @@ from elc.relationship.types import (
     MemorySensitivityClass,
     MemoryStatus,
     PersistenceAuthorization,
-    RelationshipMemoryProposal,
     RelationshipMemoryRecord,
     RelationshipMemoryType,
 )
@@ -207,24 +205,26 @@ def test_the_scope_key_is_the_persona_user_pair(db: sqlite3.Connection) -> None:
     assert info["relationship_memory_id"][1] == 1
 
 
-def test_the_recorder_write_face_is_still_unimplemented() -> None:
-    """No pretend P4-1: the Recorder/validate/supersede faces still refuse to
-    run, and the P4-G1 gate skeleton (tests/phase4/test_p4_g1_recorder_gate)
-    is what P4-1 must satisfy when it lands."""
+def test_the_write_face_landed_and_the_frozen_shapes_are_pointers() -> None:
+    """P4-0 pinned "no pretend P4-1": every face raised NotImplementedError.
 
-    controller = RelationshipController()
-    with pytest.raises(NotImplementedError):
-        controller.propose_memory(
-            RelationshipMemoryProposal(
-                persona_id=PersonaId("persona-1"),
-                user_id=UserId("user-1"),
-                memory_type=RelationshipMemoryType.USER_STATED_FACT,
-                provenance=MemoryProvenance.USER_STATED_FACT,
-                # The proposal carries the recorder's candidate text; the
-                # canonical row names it canonical_content (§23).
-                content="I work as a nurse.",
-                source_turn_id=None,
-            )
-        )
-    with pytest.raises(NotImplementedError):
-        controller.get_memory(RelationshipMemoryId("rm-1"))
+    P4-1 landed the §5 write face, so this pin says what is true now: the
+    authority face is real (its behaviour is pinned in
+    tests/phase4/test_p4_1_recorder.py / _write_chain.py / _sensitivity_gate.py
+    / _isolation.py), while the two frozen Phase 0 shapes that cannot carry a
+    complete write — ``supersede_memory`` (no recorder identity: the row's
+    ``recorder_version`` is NOT NULL) and ``get_memory`` (no Persona×User leg:
+    §17 forbids an unscoped read) — still refuse with a pointer. The durable
+    column contract above is untouched by the landing.
+    """
+
+    assert "NotImplementedError" not in inspect.getsource(
+        RelationshipController.propose_memory
+    )
+    for frozen in (
+        RelationshipController.supersede_memory,
+        RelationshipController.get_memory,
+    ):
+        source = inspect.getsource(frozen)
+        assert "NotImplementedError" in source
+        assert "P4-1" in source

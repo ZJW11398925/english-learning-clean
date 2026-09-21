@@ -15,7 +15,13 @@ from typing import Iterator
 
 import pytest
 
-from elc.conversation import CommitUserTurn, SqliteConversationStore
+from elc.conversation import (
+    AssistantTurnRecord,
+    CanonicalTurnSlice,
+    CommitUserTurn,
+    DeliveryState,
+    SqliteConversationStore,
+)
 from elc.learning.controller import LearningController
 from elc.learning.store import SqliteLearningStore
 from elc.persona import ScriptedPersonaProvider
@@ -23,13 +29,35 @@ from elc.platform.db import connection, epoch, migrations
 from elc.platform.db.decision_cycle_store import SqliteDecisionCycleStore
 from elc.platform.db.epoch import RuntimeEpochFence
 from elc.platform.types import (
+    ActionId,
+    AssistantTurnId,
     ClientMessageId,
     InputId,
     InteractionChannel,
+    MessageSequence,
     Ok,
+    PersonaId,
+    RelationshipMemoryId,
+    TurnId,
+    TurnSequence,
     UserId,
 )
 from elc.platform.types import ConversationId as ConvId
+from elc.relationship import (
+    RELATIONSHIP_RECORDER_VERSION,
+    MemoryProvenance,
+    MemorySensitivityClass,
+    PersistenceAuthorization,
+    RelationshipController,
+    RelationshipMemoryCandidate,
+    RelationshipMemoryProposal,
+    RelationshipMemoryType,
+    RelationshipRecorder,
+    RelationshipRecorderKey,
+    RelationshipRecorderOutcome,
+    SamePersonaExistingRelationshipSummary,
+)
+from elc.relationship.store import SqliteRelationshipStore
 from elc.runtime.controller import ConversationCoordinator, TeachingReplyRequest
 from elc.runtime.types import InputEnvelope
 from elc.teaching.controller import TeachingController
@@ -241,3 +269,248 @@ def commit_chat_turn(
     )
     assert isinstance(result, Ok), result
     return result.value
+
+
+# -- P4-1: the Relationship durable core -----------------------------------
+
+#: Two personas over one user: the isolation pair of VAL-…72 ③.
+PERSONA_A = PersonaId("persona-a")
+PERSONA_B = PersonaId("persona-b")
+REL_USER = UserId("user-1")
+
+
+@pytest.fixture()
+def relationship_store(
+    db: sqlite3.Connection, fence: RuntimeEpochFence
+) -> SqliteRelationshipStore:
+    return SqliteRelationshipStore(db, fence)
+
+
+@pytest.fixture()
+def relationship_controller(
+    relationship_store: SqliteRelationshipStore,
+) -> RelationshipController:
+    return RelationshipController(relationship_store)
+
+
+@pytest.fixture()
+def recorder(store: SqliteConversationStore) -> RelationshipRecorder:
+    """The P4-1 Recorder over the real conversation store: the store *is* the
+    durable command-turn classifier (the P4-G1 seam)."""
+
+    return RelationshipRecorder(store)
+
+
+def open_conversation_for(
+    store: SqliteConversationStore,
+    conversation_id: str,
+    persona_id: PersonaId | None,
+) -> ConvId:
+    """One conversation row owned by one persona (or by none)."""
+
+    result = store.open_conversation(
+        ConvId(conversation_id),
+        user_id=REL_USER,
+        persona_id=persona_id,
+        scene_id=None,
+    )
+    assert isinstance(result, Ok), result
+    return result.value
+
+
+def speak(
+    store: SqliteConversationStore,
+    conversation_id: ConvId,
+    client_message_id: str,
+    text: str,
+) -> TurnId:
+    """One CP0 user turn (the transcript's user leg)."""
+
+    result = store.commit_user_turn(
+        CommitUserTurn(
+            conversation_id=conversation_id,
+            envelope=InputEnvelope(
+                input_id=InputId(f"in-{client_message_id}"),
+                client_message_id=ClientMessageId(client_message_id),
+                conversation_id=str(conversation_id),
+                persona_id=None,
+                scene_id=None,
+                interaction_channel=InteractionChannel.TEXT,
+                raw_payload=f"raw-{client_message_id}",
+                received_at=REQUESTED_AT,
+            ),
+            raw_content=text,
+            runtime_version=RUNTIME_VERSION,
+        )
+    )
+    assert isinstance(result, Ok), result
+    return result.value.turn_id
+
+
+def deliver_reply(
+    store: SqliteConversationStore,
+    turn_id: TurnId,
+    conversation_id: ConvId,
+    content: str,
+    *,
+    assistant_turn_id: str = "at-1",
+    delivery_state: DeliveryState = DeliveryState.SENT_COMPLETE,
+) -> AssistantTurnId:
+    """Canonicalize one delivered assistant turn.
+
+    Only delivered output enters the transcript (DOMAIN_MODEL §3 key rule),
+    so this is what makes a turn's assistant side canonical at all.
+    """
+
+    result = store.canonicalize_assistant_turn(
+        AssistantTurnRecord(
+            assistant_turn_id=AssistantTurnId(assistant_turn_id),
+            turn_id=turn_id,
+            conversation_id=conversation_id,
+            turn_sequence=TurnSequence(0),
+            message_sequence=MessageSequence(0),
+            action_id=ActionId(f"act-{assistant_turn_id}"),
+            content=content,
+            delivery_state=delivery_state,
+            delivery_certainty="SERVER_SENT_UNCONFIRMED",
+        )
+    )
+    assert isinstance(result, Ok), result
+    return result.value
+
+
+def turn_slice(store: SqliteConversationStore, turn_id: TurnId) -> CanonicalTurnSlice:
+    result = store.get_canonical_turn_slice(turn_id)
+    assert isinstance(result, Ok), result
+    assert result.value is not None, f"turn not found: {turn_id}"
+    return result.value
+
+
+def newest_command_turn_slice(
+    store: SqliteConversationStore,
+    db: sqlite3.Connection,
+    conversation_id: ConvId,
+) -> CanonicalTurnSlice:
+    """The newest command turn of a conversation, read through the durable
+    classifier rather than by guessing at the payload text."""
+
+    rows = db.execute(
+        "SELECT turn_id FROM user_turn WHERE conversation_id = ?"
+        " ORDER BY turn_sequence DESC",
+        (str(conversation_id),),
+    ).fetchall()
+    for (turn_id,) in rows:
+        classified = store.is_command_payload_turn(TurnId(str(turn_id)))
+        assert isinstance(classified, Ok), classified
+        if classified.value:
+            return turn_slice(store, TurnId(str(turn_id)))
+    raise AssertionError("no command turn found in this conversation")
+
+
+def memory_candidate(
+    content: str,
+    *,
+    memory_type: RelationshipMemoryType = (
+        RelationshipMemoryType.USER_STATED_FACT
+    ),
+    provenance: MemoryProvenance = MemoryProvenance.USER_STATED_FACT,
+    cited: tuple[str, ...] = (),
+    supersedes: RelationshipMemoryId | None = None,
+    sensitivity_class: MemorySensitivityClass = (
+        MemorySensitivityClass.PERSONAL
+    ),
+    persistence_authorization: PersistenceAuthorization = (
+        PersistenceAuthorization.VALIDATED_DOMAIN_WRITE
+    ),
+    confidence: float | None = None,
+) -> RelationshipMemoryCandidate:
+    """One declared candidate assertion (the recorder's MODEL_PROPOSAL face)."""
+
+    return RelationshipMemoryCandidate(
+        memory_type=memory_type,
+        provenance=provenance,
+        content=content,
+        sensitivity_class=sensitivity_class,
+        persistence_authorization=persistence_authorization,
+        confidence=confidence,
+        supersedes_memory_id=supersedes,
+        cited_message_ids=cited,
+    )
+
+
+def record_turn(
+    recorder: RelationshipRecorder,
+    slice_: CanonicalTurnSlice,
+    summary: SamePersonaExistingRelationshipSummary,
+    *candidates: RelationshipMemoryCandidate,
+) -> RelationshipRecorderOutcome:
+    return recorder.record_turn(
+        turn=slice_,
+        existing=summary,
+        key=RelationshipRecorderKey(candidates=tuple(candidates)),
+    )
+
+
+def memory_proposal(
+    content: str,
+    *,
+    source_turn_id: TurnId | None,
+    persona_id: PersonaId = PERSONA_A,
+    user_id: UserId = REL_USER,
+    memory_type: RelationshipMemoryType = (
+        RelationshipMemoryType.USER_STATED_FACT
+    ),
+    provenance: MemoryProvenance = MemoryProvenance.USER_STATED_FACT,
+    provenance_refs: tuple[str, ...] | None = None,
+    recorder_version: str = RELATIONSHIP_RECORDER_VERSION,
+    confidence: float | None = None,
+    supersedes_memory_id: RelationshipMemoryId | None = None,
+    sensitivity_class: MemorySensitivityClass = (
+        MemorySensitivityClass.PERSONAL
+    ),
+    persistence_authorization: PersistenceAuthorization = (
+        PersistenceAuthorization.VALIDATED_DOMAIN_WRITE
+    ),
+) -> RelationshipMemoryProposal:
+    """One hand-assembled proposal (the controller's input face).
+
+    ``provenance_refs`` defaults to the source turn's id — the shape a real
+    Recorder produces (elc.relationship.recorder assembles the refs from the
+    slice it read).
+    """
+
+    if provenance_refs is None:
+        provenance_refs = (
+            () if source_turn_id is None else (str(source_turn_id),)
+        )
+    return RelationshipMemoryProposal(
+        persona_id=persona_id,
+        user_id=user_id,
+        memory_type=memory_type,
+        provenance=provenance,
+        content=content,
+        source_turn_id=source_turn_id,
+        source_turn_ids=(
+            () if source_turn_id is None else (source_turn_id,)
+        ),
+        provenance_refs=provenance_refs,
+        confidence=confidence,
+        supersedes_memory_id=supersedes_memory_id,
+        recorder_version=recorder_version,
+        sensitivity_class=sensitivity_class,
+        persistence_authorization=persistence_authorization,
+    )
+
+
+def memory_rows(db: sqlite3.Connection) -> list[tuple[object, ...]]:
+    """Every durable relationship_memory row, in durable order."""
+
+    return db.execute(
+        "SELECT relationship_memory_id, persona_id, user_id, memory_type,"
+        " provenance, canonical_content, source_turn_id, status,"
+        " source_turn_ids, provenance_refs, confidence,"
+        " supersedes_memory_id, recorder_version, validator_version,"
+        " sensitivity_class, persistence_authorization"
+        " FROM relationship_memory"
+        " ORDER BY created_at, relationship_memory_id"
+    ).fetchall()

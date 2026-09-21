@@ -97,6 +97,14 @@ def test_domain_controller_is_empty_skeleton(package: str) -> None:
         # (record_attempt / terminalize_moment / …) still raise
         # NotImplementedError with a phase pointer.
         "teaching": {"TeachingController"},
+        # P4-1 (TASK-OPI-5ba74efc-….100 ②③④⑤): RelationshipController
+        # graduated as the Relationship authority face — validate/dedupe and
+        # the BF-05 gate are pure modules (elc.relationship.validation /
+        # .sensitivity), the durable rows and all SQL live in
+        # elc.relationship.store, and the two frozen Phase 0 shapes that
+        # cannot carry a complete write (supersede_memory / get_memory) still
+        # raise NotImplementedError with a pointer.
+        "relationship": {"RelationshipController"},
     }
     allowed = infra_allowlist.get(package, set())
     skipped_classes = phase1_class_allowlist.get(package, set())

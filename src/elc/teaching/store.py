@@ -293,8 +293,22 @@ class SqliteTeachingStore:
             )
 
     def _owning_epoch_refusal(self, moment_id: MomentId) -> DomainError | None:
-        """The owner-lineage fence of the two normal mutation faces (P4-0 ②;
+        """The owner-lineage fence of the two normal *lifecycle* mutation
+        faces — ``transition_moment`` / ``terminalize_moment`` (P4-0 ②;
         DEC-…5ba74efc.68 C2).
+
+        Fence scope (P4-1, review F4 disposition DEC-…5ba74efc.96): "the two
+        normal mutation faces" means exactly that lifecycle pair. The two
+        attempt-recording faces (``record_attempt`` /
+        ``record_attempt_evaluation``) are store-epoch fenced *only* — a
+        foreign-epoch moment's attempt rows are writable. The review ratified
+        that as acceptable: the normal chain cannot reach it (a live epoch
+        never opens a moment for a dead epoch's turn), the impact is bounded
+        to the attempt counter and ``state_version``, and the residue is still
+        collected by the recovery sweep below. P4-1 takes the documented
+        qualifier rather than adding the fence: fencing the attempt faces
+        changes the teaching write path's behaviour, which is a
+        teaching-slice decision, not a relationship-slice one.
 
         The store-epoch fence answers "is this store still the newest
         process?" and raises, because a stale store is a programming error.
@@ -713,6 +727,11 @@ class SqliteTeachingStore:
         the durable attempt instead of recording a second one (which would
         both inflate the §8 attempt budget and leave the first evaluation's
         ``evidence_proposal_refs`` pointing at a different attempt).
+
+        Fencing (P4-1 review F4): this face is *store-epoch* fenced only, not
+        owner-lineage fenced — a foreign-epoch moment's attempt rows are
+        writable; see :meth:`_owning_epoch_refusal` for the ratified reasoning
+        and the recovery sweep that collects the residue.
         """
 
         try:
@@ -799,6 +818,10 @@ class SqliteTeachingStore:
         without its attempt, and UNIQUE(attempt_id) means a second
         evaluation of the same attempt is refused rather than silently
         appended. A replay of the same evaluation id returns Ok.
+
+        Fencing (P4-1 review F4): like ``record_attempt``, this face is
+        *store-epoch* fenced only, not owner-lineage fenced — see
+        :meth:`_owning_epoch_refusal` for the ratified reasoning.
         """
 
         if evaluation.outcome not in _ATTEMPT_OUTCOMES:
@@ -1079,10 +1102,12 @@ class SqliteTeachingStore:
 
         P4-0 ②: this sweep is — with ``claim_turn_for_recovery`` — one of the
         two sanctioned exits for foreign-epoch residue, and therefore the
-        *only* face that mutates a moment its own epoch fence would refuse
-        (it writes the rows directly, under the store-epoch fence, precisely
-        because the owner-lineage fence of the normal faces exists to route
-        the residue here).
+        *only lifecycle* face that mutates a moment its own epoch fence would
+        refuse (it writes the rows directly, under the store-epoch fence,
+        precisely because the owner-lineage fence of the normal faces exists
+        to route the residue here). The two attempt-recording faces are not
+        owner-lineage fenced at all (P4-1 review F4; see
+        :meth:`_owning_epoch_refusal`).
         """
 
         rows = self._orphan_lock_rows(current_epoch)
