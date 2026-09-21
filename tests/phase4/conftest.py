@@ -11,7 +11,7 @@ and a second copy would drift.
 from __future__ import annotations
 
 import sqlite3
-from typing import Iterator
+from typing import Any, Iterator
 
 import pytest
 
@@ -34,6 +34,9 @@ from elc.platform.types import (
     ActionId,
     AssistantTurnId,
     ClientMessageId,
+    DomainError,
+    DomainErrorCode,
+    Err,
     InputId,
     InteractionChannel,
     MessageSequence,
@@ -935,3 +938,182 @@ def projection_job_row(
     ).fetchone()
     assert row is not None, f"projection job not durable: {projection_id}"
     return tuple(row)
+
+
+# -- P4-4: the full-chain probes and the fault-injection seams --------------
+#
+# The P4-4 suites (test_p4_4_full_chain / test_p4_4_stress) drive the *real*
+# assembly, so their fault injection has to happen at a seam the real chain
+# already has — never by replacing the chain. There are exactly three such
+# seams, and they live here once (the ``ScriptedCandidates`` precedent: a
+# helper several phase-4 files share belongs to the conftest).
+
+
+class ProbeExecutor:
+    """A real executor plus the two probe capabilities P4-4 needs.
+
+    Every face delegates to the wrapped executor, so a probe without a
+    configured fault *is* the real chain. Two knobs:
+
+    - ``observe(lease, conn, conversation)`` records the guard and the open
+      transaction *from inside* ``project`` (the RA §19/§24.1 pin, taken on
+      the full chain);
+    - ``failure`` — a ``DomainError`` returned instead of delegating. The
+      refusal travels the executor face (``project()``), which is exactly
+      where a real executor's ``Err`` comes from (a refusing candidate
+      provider, a store write refusal), so the runtime's code mapping
+      (retryable vs deterministic) is exercised for real.
+    """
+
+    def __init__(self, inner: ProjectionExecutor) -> None:
+        self._inner = inner
+        self.failure: DomainError | None = None
+        self.calls = 0
+        self.lease_held: bool | None = None
+        self.in_transaction: bool | None = None
+        self._observer: tuple[Any, Any, ConvId] | None = None
+
+    @property
+    def projection_type(self) -> str:
+        return self._inner.projection_type
+
+    def observe(self, lease: Any, conn: Any, conversation: ConvId) -> None:
+        self._observer = (lease, conn, conversation)
+
+    def base_version(self, turn: TurnRecordData) -> Result[str]:
+        return self._inner.base_version(turn)
+
+    def project(self, view: ProjectionJobView) -> Result[str]:
+        self.calls += 1
+        if self._observer is not None:
+            lease, conn, conversation = self._observer
+            self.lease_held = lease.is_held(conversation)
+            self.in_transaction = bool(conn.in_transaction)
+        if self.failure is not None:
+            return Err(self.failure)
+        return self._inner.project(view)
+
+    def fail_with(self, code: DomainErrorCode, message: str) -> None:
+        self.failure = DomainError(code=code, message=message)
+
+
+class PerConversationCandidates:
+    """A MODEL_PROPOSAL source that answers per conversation.
+
+    ``ScriptedCandidates`` answers every turn identically, which cannot
+    express the isolation suites' requirement (each persona's memory must
+    carry marker text of its own). This provider keys its answer by the
+    turn's conversation, through the same real executor.
+    """
+
+    def __init__(self, by_conversation: dict[str, str]) -> None:
+        self.by_conversation = by_conversation
+        self.calls = 0
+
+    def candidates_for(self, turn) -> Result[tuple[Any, ...]]:
+        self.calls += 1
+        content = self.by_conversation.get(str(turn.conversation_id))
+        if content is None:
+            return Ok(())
+        return Ok((memory_candidate(content),))
+
+
+class RefusingCandidates:
+    """A candidate provider with a switchable refusal and a payload.
+
+    ``failure`` set ⇒ every read is ``Err`` (the transient provider failure
+    the retry rules are about). ``heal()`` clears it and answers
+    ``content`` — the retry's positive control, so the landed memory is a
+    real assertion rather than an empty projection.
+    """
+
+    def __init__(
+        self,
+        content: str = "healed after the retry",
+        code: DomainErrorCode = DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+        message: str = "candidate provider offline (injected)",
+    ) -> None:
+        self.content = content
+        self.failure: DomainError | None = DomainError(code=code, message=message)
+        self.calls = 0
+
+    def candidates_for(self, turn) -> Result[tuple[Any, ...]]:
+        del turn
+        self.calls += 1
+        if self.failure is not None:
+            return Err(self.failure)
+        return Ok((memory_candidate(self.content),))
+
+    def heal(self) -> None:
+        self.failure = None
+
+
+class FlakyClassifier:
+    """The durable command-turn classifier with a switchable read failure.
+
+    ``RelationshipRecorder`` takes its classifier as a port; wrapping the
+    real store's face is how a *classifier* read failure is injected without
+    touching the recorder (whose fail-closed rule is P4-1 behavior and stays
+    pinned by the P4-1 tests).
+    """
+
+    def __init__(self, inner: Any) -> None:
+        self._inner = inner
+        self.failure: DomainError | None = None
+        self.calls = 0
+
+    def is_command_payload_turn(self, turn_id: TurnId) -> Result[bool]:
+        self.calls += 1
+        if self.failure is not None:
+            return Err(self.failure)
+        return self._inner.is_command_payload_turn(turn_id)
+
+    def fail_with(self, code: DomainErrorCode, message: str) -> None:
+        self.failure = DomainError(code=code, message=message)
+
+    def heal(self) -> None:
+        self.failure = None
+
+
+def runtime_with_probes(
+    projection_store: SqliteProjectionStore,
+    turns: SqliteConversationStore,
+    *executors: ProjectionExecutor,
+) -> tuple[CP4ProjectionRuntime, tuple[ProbeExecutor, ...]]:
+    """A CP4 runtime over probe-wrapped copies of the given executors.
+
+    The executors must already cover ``SUPPORTED_PROJECTION_TYPES`` (the
+    runtime refuses an incomplete set at construction — P4-3 review LOW-2),
+    and the returned tuple answers them in the same order.
+    """
+
+    probes = tuple(ProbeExecutor(executor) for executor in executors)
+    runtime = CP4ProjectionRuntime(
+        store=projection_store, executors=probes, turns=turns
+    )
+    return runtime, probes
+
+
+def relationship_projection_with(
+    store: SqliteConversationStore,
+    controller: RelationshipController,
+    candidates: Any,
+    *,
+    classifier: Any | None = None,
+) -> RelationshipProjectionExecutor:
+    """The ``relationship_projection`` fixture's executor with chosen seams.
+
+    The fixture is the happy path (the real store as classifier,
+    ``ScriptedCandidates`` as the proposal source); the P4-4 suites need the
+    same executor with a *different* provider (per-conversation text, a
+    refusal, an empty answer) or a flaky classifier — parameters of the two
+    seams the executor already declares, never a second assembly.
+    """
+
+    return RelationshipProjectionExecutor(
+        recorder=RelationshipRecorder(classifier if classifier is not None else store),
+        controller=controller,
+        conversation=store,
+        user_id=REL_USER,
+        candidates=candidates,
+    )

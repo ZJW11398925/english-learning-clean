@@ -28,8 +28,12 @@ BF-05 §29).
 Failure semantics: every face returns a ``Result``; nothing raises. The
 runtime maps an ``Err`` by its code — VALIDATION_FAILED /
 AUTHORITY_VIOLATION / CONFLICT reject the job deterministically, anything
-else (``DEPENDENCY_UNAVAILABLE`` from a candidate provider, for instance)
-leaves it retryable (elc.runtime.projections owns that mapping).
+else leaves it retryable (elc.runtime.projections owns that mapping). Two
+producers of a retryable ``Err`` live here: a candidate provider whose read
+is down, and the Recorder's fail-closed classifier refusal — the latter is a
+failed *read* of durable state, never a memory verdict, so it must not be
+committed as an empty projection (see
+:meth:`RelationshipProjectionExecutor.project`).
 
 Package constraints hold here as everywhere in ``elc.relationship``: no
 import of ``elc.learning`` / ``elc.teaching`` / ``elc.persona``, and no
@@ -61,6 +65,7 @@ from elc.relationship.episode import (
 )
 from elc.relationship.episode_store import SqliteEpisodeStore
 from elc.relationship.recorder import (
+    REFUSAL_CLASSIFIER_UNAVAILABLE,
     RelationshipMemoryCandidate,
     RelationshipRecorder,
     RelationshipRecorderKey,
@@ -175,6 +180,17 @@ class RelationshipProjectionExecutor:
         projection (DOMAIN_MODEL §5: a projection failure never rolls the
         conversation back), and a recorder refusal is likewise part of the
         outcome the Recorder reports.
+
+        One refusal is *not* counted: the classifier-unavailable one. The
+        Recorder fails closed there (an unclassifiable turn produces no
+        proposal at all — P4-1), but that is a failed **read** of the durable
+        classifier, not a verdict about a memory. Reporting it as an empty
+        success would commit the job under its deterministic id while a later,
+        working assembly replays that row as finished work forever — the turn
+        would be projected by nobody, permanently. It is returned as a
+        dependency-grade ``Err``, which the runtime leaves retryable
+        (DATA_MODEL §22.1); the retry recomputes the same slice hash and lands
+        whatever the read could not see.
         """
 
         slice_result = self._conversation.get_canonical_turn_slice(
@@ -224,6 +240,33 @@ class RelationshipProjectionExecutor:
             existing=existing,
             key=RelationshipRecorderKey(candidates=candidates),
         )
+        unreadable = [
+            refusal
+            for refusal in outcome.refusals
+            if refusal.reason == REFUSAL_CLASSIFIER_UNAVAILABLE
+        ]
+        if unreadable:
+            # The Recorder failed closed (zero proposals); see the docstring
+            # above for why that must not be committed as an empty success.
+            # DEPENDENCY_UNAVAILABLE is deliberately *not* one of the
+            # deterministic codes, so the runtime keeps the job retryable.
+            # The premise this branch reads — "the word implies proposals
+            # == ()", i.e. the retry can never hide a proposal — is the
+            # recorder's own early-return arm (elc.relationship.recorder
+            # ``record_turn``), pinned beside it by
+            # tests/phase4/test_p4_1_recorder.py
+            # ::test_the_classifier_refusal_implies_zero_proposals.
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=(
+                        "the command-turn classification could not be read"
+                        f" ({unreadable[0].detail}); the Recorder failed"
+                        " closed (no proposal at all), so this job stays"
+                        " retryable instead of committing an empty projection"
+                    ),
+                )
+            )
         committed = 0
         refused = 0
         for proposal in outcome.proposals:

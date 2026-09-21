@@ -353,6 +353,45 @@ def test_the_recorder_fails_closed_when_the_classifier_cannot_answer(
     assert db.execute("SELECT COUNT(*) FROM relationship_memory").fetchone()[0] == 0
 
 
+def test_the_classifier_refusal_implies_zero_proposals(
+    store: SqliteConversationStore,
+) -> None:
+    """The premise the CP4 retry rule reads (P4-4 review F-P44-2).
+
+    ``RelationshipProjectionExecutor`` turns the
+    ``COMMAND_TURN_CLASSIFICATION_UNAVAILABLE`` refusal into a retryable
+    ``Err``, and that rule rests on an implication: the word can only appear
+    in an outcome that proposes *nothing* — so leaving the job retryable can
+    never hide a proposal that was made anyway. The implication is the
+    classifier arm's own doing (it returns before any candidate is judged,
+    one refusal per candidate); it is pinned here, beside that arm, instead
+    of being left implicit at its consumer.
+    """
+
+    conversation = open_conversation_for(store, "conv-rel-6b", PERSONA_A)
+    turn_id = speak(store, conversation, "cm-1", "I love rainy days.")
+    slice_ = turn_slice(store, turn_id)
+
+    recorder = RelationshipRecorder(_BrokenClassifier())
+    outcome = recorder.record_turn(
+        turn=slice_,
+        existing=_summary(),
+        key=RelationshipRecorderKey(
+            candidates=(
+                memory_candidate("The user loves rainy days."),
+                memory_candidate("The user keeps a rain journal."),
+            )
+        ),
+    )
+    assert outcome.proposals == ()
+    assert {item.reason for item in outcome.refusals} == {
+        "COMMAND_TURN_CLASSIFICATION_UNAVAILABLE"
+    }
+    # One refusal per candidate: nothing was judged and nothing was proposed,
+    # so no proposal can hide behind the retryable refusal.
+    assert len(outcome.refusals) == 2
+
+
 def test_the_recorder_is_deterministic_and_writes_nothing(
     store: SqliteConversationStore, recorder: RelationshipRecorder
 ) -> None:

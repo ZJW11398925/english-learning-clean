@@ -3634,7 +3634,7 @@ class ConversationCoordinator:
         canonicalize → terminal. Nothing here bypasses the pipeline: the
         teaching text reaches the user exactly like any other generation
         output, and the provider only ever receives the finished phase /
-        support (ŌĆ£provider 不自定阶段ŌĆØ).
+        support ("provider 不自定阶段").
 
         The action ids are deterministic on (turn, slot), so a re-entry
         re-dispatches the same action instead of minting a second one
