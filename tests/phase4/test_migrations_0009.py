@@ -14,7 +14,9 @@ P4-1 / P4-2), so what is pinned here is exactly that:
   evaluation and moment it was produced from;
 - applying 0009 on top of a database that already carries a full teaching
   lineage changes none of it (the migration touches only its own tables);
-- schema_version / runtime_schema_version move to 9.
+- the schema version stamp is the tree's newest (P4-3 sync: 0010 is the head,
+  so the post stage — which runs 0009 *and* everything after it — ends at
+  10; while 0009 was the newest this pin read 9).
 """
 
 from __future__ import annotations
@@ -248,12 +250,15 @@ def test_0009_creates_the_two_tables_with_the_documented_column_sets(
 ) -> None:
     migrations.apply_migrations(db)
     assert "0009_relationship_contracts" in migrations.applied_migrations(db)
-    assert migrations.schema_version(db) == "9"
+    # P4-3 semantic sync: the stamp is the newest migration's, and
+    # 0010_episode_and_user_config is now the head (this pin read "9" while
+    # 0009 was).
+    assert migrations.schema_version(db) == "10"
     assert (
         db.execute(
             "SELECT value FROM schema_meta WHERE key = 'runtime_schema_version'"
         ).fetchone()[0]
-        == "9"
+        == "10"
     )
     assert _columns(db, "teaching_evidence_proposal") == list(PROPOSAL_COLUMNS)
     assert _columns(db, "relationship_memory") == list(MEMORY_COLUMNS)
@@ -275,7 +280,9 @@ def test_0009_enforces_the_proposal_and_memory_vocabularies(
     assert migrations.schema_version(conn) == "8"
     _seed_pre_0009_lineage(conn)
     migrations.apply_migrations(conn, post)
-    assert migrations.schema_version(conn) == "9"
+    # P4-3 semantic sync: the post stage applies every migration from 0009
+    # on (0010_episode_and_user_config included), so the stamp is 10.
+    assert migrations.schema_version(conn) == "10"
 
     # -- RA §21 proposal status: exactly three words (and a real row to
     # move through them — the FK-bound proposal of the seeded lineage).

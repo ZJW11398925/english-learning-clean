@@ -25,6 +25,7 @@ from elc.conversation import (
 from elc.learning.controller import LearningController
 from elc.learning.store import SqliteLearningStore
 from elc.persona import ScriptedPersonaProvider
+from elc.persona.types import CompiledPrompt
 from elc.platform.db import connection, epoch, migrations
 from elc.platform.db.decision_cycle_store import SqliteDecisionCycleStore
 from elc.platform.db.epoch import RuntimeEpochFence
@@ -48,6 +49,7 @@ from elc.platform.types import (
 from elc.platform.types import ConversationId as ConvId
 from elc.relationship import (
     RELATIONSHIP_RECORDER_VERSION,
+    EpisodeProjectionExecutor,
     MemoryProvenance,
     MemorySensitivityClass,
     PersistenceAuthorization,
@@ -61,10 +63,17 @@ from elc.relationship import (
     RelationshipRecorderOutcome,
     SamePersonaExistingRelationshipSummary,
 )
+from elc.relationship.episode_store import SqliteEpisodeStore
 from elc.relationship.store import SqliteRelationshipStore
 from elc.runtime.controller import ConversationCoordinator, TeachingReplyRequest
-from elc.runtime.projections import CP4ProjectionRuntime
-from elc.runtime.types import InputEnvelope
+from elc.runtime.persona_views import ControllerPersonaViews
+from elc.runtime.projections import (
+    SUPPORTED_PROJECTION_TYPES,
+    CP4ProjectionRuntime,
+    ProjectionExecutor,
+    ProjectionJobView,
+)
+from elc.runtime.types import InputEnvelope, TurnRecordData
 from elc.teaching.controller import TeachingController
 from elc.teaching.envelope import (
     AttemptPayload,
@@ -74,6 +83,15 @@ from elc.teaching.envelope import (
 from elc.teaching.request import TeachingRequest
 from elc.teaching.store import SqliteTeachingStore
 from elc.teaching.targets import TeachingTargetProvider
+from elc.user_config import (
+    DisclosureLevel,
+    DisclosurePolicy,
+    DisclosureRule,
+    ProfileFact,
+    SqliteUserConfigStore,
+    UserConfigController,
+    UserProfile,
+)
 from tests.conftest import AssemblyGenerationStore
 from tests.phase3.conftest import make_lease, make_teaching_coordinator
 from tests.phase3.target_fixtures import FixtureTeachingTargetProvider
@@ -586,17 +604,93 @@ def relationship_projection(
     )
 
 
+class NoopProjectionExecutor:
+    """An executor that always commits — the filler for supported types a
+    single-type probe does not care about.
+
+    P4-3 (review LOW-2): ``CP4ProjectionRuntime`` refuses an incomplete
+    executor set at construction, because the ensure face enqueues one job
+    per supported type and a missing executor would reject those jobs
+    *terminally*. A probe that scripts one type therefore has to supply
+    something for the other; this is the something — it never fails, never
+    observes and never counts anything a test asserts on.
+    """
+
+    def __init__(self, projection_type: str, detail: str = "noop") -> None:
+        self.projection_type = projection_type
+        self.detail = detail
+        self.calls = 0
+
+    def base_version(self, turn: TurnRecordData) -> Result[str]:
+        del turn
+        return Ok(f"bv-{self.projection_type}")
+
+    def project(self, view: ProjectionJobView) -> Result[str]:
+        del view
+        self.calls += 1
+        return Ok(self.detail)
+
+
+def complete_executors(
+    *executors: ProjectionExecutor,
+) -> tuple[ProjectionExecutor, ...]:
+    """The given executors plus a no-op filler for every supported type they
+    do not cover (P4-3: a complete set is now a construction requirement)."""
+
+    present = {executor.projection_type for executor in executors}
+    fillers = tuple(
+        NoopProjectionExecutor(type_word)
+        for type_word in SUPPORTED_PROJECTION_TYPES
+        if type_word not in present
+    )
+    return (*executors, *fillers)
+
+
+@pytest.fixture()
+def episode_store(
+    db: sqlite3.Connection, fence: RuntimeEpochFence
+) -> SqliteEpisodeStore:
+    """The durable episode projection rows (migration 0010)."""
+
+    return SqliteEpisodeStore(db, fence)
+
+
+@pytest.fixture()
+def episode_projection(
+    store: SqliteConversationStore,
+    episode_store: SqliteEpisodeStore,
+    relationship_controller: RelationshipController,
+) -> EpisodeProjectionExecutor:
+    """The live EPISODE executor (P4-3 ①): the real episode store, the real
+    relationship read face and the real conversation store."""
+
+    return EpisodeProjectionExecutor(
+        store=episode_store,
+        controller=relationship_controller,
+        conversation=store,
+        user_id=REL_USER,
+    )
+
+
 @pytest.fixture()
 def projection_runtime(
     projection_store: SqliteProjectionStore,
     store: SqliteConversationStore,
     relationship_projection: RelationshipProjectionExecutor,
+    episode_projection: EpisodeProjectionExecutor,
 ) -> CP4ProjectionRuntime:
-    """The CP4 runtime over the real durable queue and turn source."""
+    """The CP4 runtime over the real durable queue and turn source.
+
+    P4-3: one executor per entry of ``SUPPORTED_PROJECTION_TYPES`` — the
+    runtime enqueues and dispatches a job per supported type, so an assembly
+    that registered only the RELATIONSHIP executor would reject every
+    EPISODE job as unsupported (an incomplete assembly, not a legitimate
+    one).
+    """
 
     return CP4ProjectionRuntime(
         store=projection_store,
-        executors=(relationship_projection,),
+        executors=(relationship_projection, episode_projection),
         turns=store,
     )
 
@@ -614,7 +708,8 @@ def projecting_coordinator(
     projection_runtime: CP4ProjectionRuntime,
 ) -> ConversationCoordinator:
     """The P3-1A/P3-1B assembly *plus* the CP4 port: every turn that ends Ok
-    runs its post-turn projections after the guard is released."""
+    runs its post-turn projections (one per supported type, P4-3) after the
+    guard is released."""
 
     del conversation
     return make_teaching_coordinator(
@@ -628,6 +723,192 @@ def projecting_coordinator(
         target_provider,
         projections=projection_runtime,
     )
+
+
+# -- P4-3: Episode / disclosure / persona views -----------------------------
+
+
+@pytest.fixture()
+def user_config_store(
+    db: sqlite3.Connection, fence: RuntimeEpochFence
+) -> SqliteUserConfigStore:
+    """The durable profile / disclosure rows (migration 0010)."""
+
+    return SqliteUserConfigStore(db, fence)
+
+
+@pytest.fixture()
+def user_config_controller(
+    user_config_store: SqliteUserConfigStore,
+) -> UserConfigController:
+    return UserConfigController(user_config_store)
+
+
+@pytest.fixture()
+def persona_views(
+    relationship_controller: RelationshipController,
+    episode_store: SqliteEpisodeStore,
+    user_config_controller: UserConfigController,
+) -> ControllerPersonaViews:
+    """The domain composition the coordinator asks for its §11 views."""
+
+    return ControllerPersonaViews(
+        relationship=relationship_controller,
+        episodes=episode_store,
+        user_config=user_config_controller,
+        user_id=REL_USER,
+    )
+
+
+class RecordingProvider(ScriptedPersonaProvider):
+    """Scripted provider that keeps every compiled prompt it was handed
+    (the tests/phase3 provider, owned here too so the P4-3 E2E can read the
+    prompt the live coordinator actually compiled)."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.prompts: list[CompiledPrompt] = []
+
+    def call(self, prompt: CompiledPrompt):
+        self.prompts.append(prompt)
+        return super().call(prompt)
+
+    @property
+    def prompt_texts(self) -> list[str]:
+        return [prompt.prompt_text for prompt in self.prompts]
+
+
+def make_viewing_coordinator(
+    store: SqliteConversationStore,
+    generation_store: AssemblyGenerationStore,
+    fence: RuntimeEpochFence,
+    learning: SqliteLearningStore,
+    decision_cycle_store: SqliteDecisionCycleStore,
+    teaching_controller: TeachingController,
+    target_provider: TeachingTargetProvider,
+    provider: ScriptedPersonaProvider,
+    *,
+    projections: CP4ProjectionRuntime | None = None,
+    persona_views: ControllerPersonaViews | None = None,
+) -> ConversationCoordinator:
+    """The P3-1A assembly with a chosen provider plus the two P4 ports.
+
+    The provider is a parameter (not a fixture) because the E2E pins what the
+    *compiled prompt* contained, which means reading the prompt the live
+    pipeline handed to the provider.
+    """
+
+    return make_teaching_coordinator(
+        store,
+        generation_store,
+        make_lease(fence),
+        provider,
+        learning,
+        decision_cycle_store,
+        teaching_controller,
+        target_provider,
+        projections=projections,
+        persona_views=persona_views,
+    )
+
+
+def episode_rows(db: sqlite3.Connection) -> list[tuple[object, ...]]:
+    """Every durable episode row, in conversation order."""
+
+    return db.execute(
+        "SELECT episode_id, conversation_id, version,"
+        " source_turn_sequence_start, source_turn_sequence_end, summary,"
+        " open_threads, recent_events, status, updated_at"
+        " FROM episode ORDER BY conversation_id"
+    ).fetchall()
+
+
+def episode_row(
+    db: sqlite3.Connection, conversation_id: ConvId
+) -> tuple[object, ...]:
+    row = db.execute(
+        "SELECT episode_id, conversation_id, version,"
+        " source_turn_sequence_start, source_turn_sequence_end, summary,"
+        " open_threads, recent_events, status, updated_at"
+        " FROM episode WHERE conversation_id = ?",
+        (str(conversation_id),),
+    ).fetchone()
+    assert row is not None, f"episode not durable for {conversation_id}"
+    return tuple(row)
+
+
+def profile_row(db: sqlite3.Connection, user_id: UserId) -> tuple[object, ...]:
+    row = db.execute(
+        "SELECT user_profile_id, revision, profile_facts, preferences,"
+        " settings, updated_at FROM user_profile WHERE user_profile_id = ?",
+        (str(user_id),),
+    ).fetchone()
+    assert row is not None, f"user profile not durable for {user_id}"
+    return tuple(row)
+
+
+def policy_row(db: sqlite3.Connection, user_id: UserId) -> tuple[object, ...]:
+    row = db.execute(
+        "SELECT disclosure_policy_id, revision, rules, updated_at"
+        " FROM disclosure_policy WHERE disclosure_policy_id = ?",
+        (str(user_id),),
+    ).fetchone()
+    assert row is not None, f"disclosure policy not durable for {user_id}"
+    return tuple(row)
+
+
+def record_projection(conversation) -> None:
+    """Consume the projection result of one teaching reply (keeps the driver
+    above honest about what a reply returns)."""
+
+    del conversation
+
+
+def profile(
+    *facts: ProfileFact,
+    revision: str = "rev-1",
+    preferences: tuple[str, ...] = (),
+    settings: tuple[str, ...] = (),
+    user_id: UserId = REL_USER,
+) -> UserProfile:
+    """One profile with the given facts (the write face's input)."""
+
+    return UserProfile(
+        user_profile_id=user_id,
+        revision=revision,
+        profile_facts=facts,
+        preferences=preferences,
+        settings=settings,
+    )
+
+
+def fact(
+    text: str,
+    sensitivity: MemorySensitivityClass = MemorySensitivityClass.PERSONAL,
+) -> ProfileFact:
+    return ProfileFact(text=text, sensitivity=sensitivity)
+
+
+def policy(
+    *rules: DisclosureRule,
+    revision: str = "pol-1",
+    user_id: UserId = REL_USER,
+) -> DisclosurePolicy:
+    """One disclosure policy keyed by its user (the Local V1 convention)."""
+
+    return DisclosurePolicy(
+        disclosure_policy_id=str(user_id),
+        revision=revision,
+        rules=rules,
+    )
+
+
+def rule(
+    level: DisclosureLevel, persona_id: PersonaId | None = None
+) -> DisclosureRule:
+    """One disclosure rule; ``persona_id=None`` is the default rule."""
+
+    return DisclosureRule(persona_id=persona_id, disclosure_level=level)
 
 
 def projection_job_rows(db: sqlite3.Connection) -> list[tuple[object, ...]]:

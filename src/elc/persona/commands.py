@@ -19,6 +19,9 @@ from elc.persona.types import (
     CompiledPrompt,
     PromptCompilationRequest,
     TeachingPromptView,
+    episode_prompt_fields,
+    profile_prompt_fields,
+    relationship_prompt_fields,
 )
 from elc.platform.types import (
     CharacterPackageId,
@@ -26,15 +29,33 @@ from elc.platform.types import (
     Result,
 )
 
-#: The fixed section order of the compiled prompt (Phase 3 P3-1B ⑨ pins
-#: it): persona → contract → history → teaching → channel. Byte-
-#: determinism of the compiled prompt depends on this order, so it lives
+#: The fixed section order of the compiled prompt (Phase 3 P3-1B ⑨ pinned
+#: it; Phase 4 P4-3 ④ extends it with the three §11 views the persona
+#: consumes — docs/RUNTIME_ARCHITECTURE.md §11 lists CharacterPackage,
+#: RelationshipView, EpisodeView, WorldLoreView, DisclosedUserProfile,
+#: ConversationWindow among the GenerationContext members):
+#:
+#:     persona → profile → contract → history → relationship → episode →
+#:     teaching → channel
+#:
+#: The new sections sit where they do for stated reasons, not by accident:
+#: ``profile`` immediately after ``persona`` (both are "who is talking to
+#: whom"); ``relationship``/``episode`` after ``history`` (they are the
+#: distilled form of what history shows in full, so the model reads the
+#: transcript first and the continuity summary after it); ``teaching`` stays
+#: last-but-one because it is the ephemeral directive of *this* turn.
+#: Byte-determinism of the compiled prompt depends on this order, so it lives
 #: here as a declared constant and is asserted by test rather than being
-#: implied by the sequence of appends below.
+#: implied by the sequence of appends below. A section is only emitted when
+#: its view is present, so every pre-P4-3 assembly compiles byte-identical
+#: prompts (pinned by the P1/P3 suites).
 PROMPT_SECTION_ORDER = (
     "persona",
+    "profile",
     "contract",
     "history",
+    "relationship",
+    "episode",
     "teaching",
     "channel",
 )
@@ -79,6 +100,20 @@ class PromptCompiler:
     (status / updated_at) deliberately stays OUT of the prompt: it is not
     character content, and rendering a clock stamp would break
     byte-determinism.
+
+    P4-3 (TASK-OPI-4d516e4f-….19 ④): three §11 views join the prompt —
+    [profile] (the DisclosedUserProfile the disclosure decision produced:
+    facts / level / persona), [relationship] (the RelationshipView's ACTIVE
+    memories, in the view's own order) and [episode] (the EpisodeView's
+    content columns). Each section is versioned and renders its version key
+    first, exactly like [teaching]. Scope isolation is structural, not
+    defensive: the compiler renders what the views hold, and the views are
+    scope-bound reads (one Persona×User pair, one disclosure grant), so
+    Persona A's material cannot appear in Persona B's prompt — there is no
+    cross-persona object in the request to render. The compiler still
+    resolves no secrets and creates no teaching directive (D-INV-002;
+    RUNTIME §24.3 "PromptCompiler … 只能消费 action-specific disclosure
+    view").
     """
 
     def compile(self, request: PromptCompilationRequest) -> Result[CompiledPrompt]:
@@ -119,6 +154,13 @@ class PromptCompiler:
                 "language_policy: default"
             )
 
+        if context is not None and context.disclosed_user_profile is not None:
+            sections.append(
+                _section("profile", profile_prompt_fields(
+                    context.disclosed_user_profile
+                ))
+            )
+
         if contract is not None:
             disclosures = "; ".join(contract.allowed_disclosures)
             max_length = (
@@ -149,6 +191,18 @@ class PromptCompiler:
                     lines.append(f"#{seq} assistant: {assistant_text}")
             sections.append("[history]\n" + "\n".join(lines))
 
+        if context is not None and context.relationship_view is not None:
+            sections.append(
+                _section("relationship", relationship_prompt_fields(
+                    context.relationship_view
+                ))
+            )
+
+        if context is not None and context.episode_view is not None:
+            sections.append(
+                _section("episode", episode_prompt_fields(context.episode_view))
+            )
+
         if context is not None and context.ephemeral_teaching_directive is not None:
             sections.append(
                 _rendered_teaching_section(
@@ -165,6 +219,18 @@ class PromptCompiler:
                 generation_contract=contract_id,
             )
         )
+
+
+def _section(name: str, fields: tuple[tuple[str, str], ...]) -> str:
+    """One P4-3 section: ``[name]`` plus its ``key: value`` lines.
+
+    The shape is the ``[teaching]`` one — a fixed key order, one line per
+    key, values already rendered to text — so a section's line count and key
+    order never depend on which optional values are set.
+    """
+
+    lines = "\n".join(f"{key}: {value}" for key, value in fields)
+    return f"[{name}]\n{lines}"
 
 
 def _rendered_teaching_section(directive: object) -> str:

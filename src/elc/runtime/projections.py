@@ -77,6 +77,7 @@ if TYPE_CHECKING:
     from elc.relationship.types import SamePersonaExistingRelationshipSummary
 
 __all__ = [
+    "PROJECTION_TYPE_EPISODE",
     "PROJECTION_TYPE_RELATIONSHIP",
     "SLICE_FIELD_SEPARATOR",
     "SUPPORTED_PROJECTION_TYPES",
@@ -92,16 +93,28 @@ __all__ = [
 ]
 
 #: The §22.1 ``projection_type`` of the Relationship projection
-#: (DOMAIN_MODEL §5; the P4-0 contract's one live type). The vocabulary is
+#: (DOMAIN_MODEL §5; the P4-0 contract's first live type). The vocabulary is
 #: open by design — a new projection type joins by adding its executor and
 #: extending :data:`SUPPORTED_PROJECTION_TYPES`, never by widening this
 #: string.
 PROJECTION_TYPE_RELATIONSHIP = "RELATIONSHIP"
 
-#: The projection types this runtime enqueues and executes. A job whose type
+#: The §22.1 ``projection_type`` of the Episode projection
+#: (DATA_MODEL §5.3; RA §19 lists Relationship and Episode as the two CP4
+#: projections of the Phase 4 block). Added by P4-3 — this is the
+#: "adding a second type revisits the return shape by design" case the P4-2
+#: single-type ensure face recorded (it is ``ensure_projection_jobs`` now).
+PROJECTION_TYPE_EPISODE = "EPISODE"
+
+#: The projection types this runtime enqueues and executes, in the order a
+#: multi-type face reports them (P4-3: the tuple is now the *set* the ensure
+#: face walks, so its order is an interface, not a detail). A job whose type
 #: is not here cannot be claimed by any executor, so :meth:`run_pending`
 #: rejects it deterministically instead of leaving it pending forever.
-SUPPORTED_PROJECTION_TYPES: tuple[str, ...] = (PROJECTION_TYPE_RELATIONSHIP,)
+SUPPORTED_PROJECTION_TYPES: tuple[str, ...] = (
+    PROJECTION_TYPE_RELATIONSHIP,
+    PROJECTION_TYPE_EPISODE,
+)
 
 #: Digest encoding: canonical fields join with US (ASCII 0x1f, the repo's
 #: unit-separator convention) so no field boundary can be forged by content.
@@ -528,6 +541,31 @@ class CP4ProjectionRuntime:
     layer (Gate item 2). The class holds no coordinator guard and takes none:
     the caller releases the guard *before* calling in (RA §19/§24.1), which
     the guard-pin test in tests/phase4 asserts from inside an executor.
+
+    **Invariant — the executor set is exactly the supported set** (P4-3,
+    review LOW-2; all three shapes are refuse-at-construction, each naming
+    the type word it objects to):
+
+    1. every entry of :data:`SUPPORTED_PROJECTION_TYPES` has an executor —
+       a *missing* one would have its jobs rejected *terminally*, because the
+       ensure face enqueues one job per supported type whatever the executors
+       are: the deterministic ids would be spent, and a later, correct
+       assembly's ensure would replay them as the same REJECTED rows instead
+       of reviving the work;
+    2. no type has *two* — otherwise "which one runs" is an accident of
+       declaration order, and the answer would differ between a fresh
+       assembly and a reordered one;
+    3. no executor serves a type outside the supported set — such an
+       executor is never enqueued for (no job of that type is ever minted),
+       while it *would* silently widen dispatch to any foreign row that
+       happens to carry that type word.
+
+    The refusal is a construction-time ``ValueError`` rather than a
+    ``Result``: an assembly defect is not a per-job outcome, and every
+    ``Result`` this class returns means "about a job". Failing before any row
+    exists is the only refusal that leaves the queue recoverable, and raising
+    on a programming error is the repo-wide convention (a stale epoch also
+    raises).
     """
 
     def __init__(
@@ -538,19 +576,23 @@ class CP4ProjectionRuntime:
         turns: ProjectionTurnSource,
     ) -> None:
         self._store = store
-        #: One executor per projection type; the first declaration of a type
-        #: wins (an assembly declares each type exactly once).
         self._executors = tuple(executors)
+        _require_complete_executor_set(self._executors)
         self._turns = turns
-        #: The jobs *this process* claimed (process-local, never durable —
-        #: see ``recover_stale_running``: a fresh instance starts empty, which
-        #: is exactly what makes cross-process residue recoverable while a
-        #: live in-process run is never touched).
+        #: The jobs *this process* claimed and has not settled yet
+        #: (process-local, never durable — see ``recover_stale_running``: a
+        #: fresh instance starts empty, which is exactly what makes
+        #: cross-process residue recoverable while a live in-process run is
+        #: never touched). Entries leave the set through ``_settle`` the
+        #: moment a run reports its outcome, so the set tracks live work
+        #: rather than every job the process ever claimed (F-5).
         self._claimed_here: set[ProjectionJobId] = set()
 
     # -- ensure (the enqueue face) -----------------------------------------
 
-    def ensure_projection_job(self, turn_id: TurnId) -> Result[ProjectionJobId]:
+    def ensure_projection_jobs(
+        self, turn_id: TurnId
+    ) -> Result[tuple[ProjectionJobId, ...]]:
         """Ensure the turn's CP4 jobs exist — the crash-gap repair face.
 
         Reads the durable TurnRecord and the canonical slice, and enqueues
@@ -564,47 +606,54 @@ class CP4ProjectionRuntime:
         Enqueueing is idempotent through the store, so calling this twice for
         the same turn leaves exactly one row per type.
 
-        Returns the id of the first supported type's job; with one supported
-        type that is the turn's only CP4 job (adding a second type revisits
-        this return shape by design, not by accident).
+        **P4-3 signature change** (the revisit the P4-2 single-type shape
+        recorded): the return is a *tuple*, one id per supported type, in
+        :data:`SUPPORTED_PROJECTION_TYPES` order — the same order the durable
+        write below walks. A caller that only wants one type's job must say
+        which (``jobs[0]`` is RELATIONSHIP today, which is exactly the
+        coupling this face no longer hides). With one type the tuple had one
+        element; with two it has two, and every caller has to decide what it
+        means to hold "the job" of a multi-type turn.
         """
 
-        ensured = self._ensure_for_turn(turn_id)
-        if isinstance(ensured, Err):
-            return ensured
-        return Ok(ensured.value[0])
+        return self._ensure_for_turn(turn_id)
 
     def ensure_missing_jobs(self) -> Result[tuple[ProjectionJobId, ...]]:
         """Repair every crash gap: COMPLETED turns with no job of a
         supported type get theirs, in deterministic order.
 
         The scan is the durable anti-join (``turns_missing_projection``), one
-        pass per supported type; the ids it returns are deduplicated in first
-        -seen order so a turn missing two types is repaired once. Nothing is
-        re-derived from a message log (P4-0 ④ crash-gap: the deterministic id
-        is what makes this possible).
+        pass per supported type. **The repair is per ``(type, turn)`` pair**,
+        not per turn: the pass for a type enqueues exactly that type's
+        missing ids for the turns the anti-join named, so a turn that already
+        has its RELATIONSHIP row but lost its EPISODE row gets the EPISODE row
+        back and nothing else is touched. That granularity is what the
+        crash-gap rule means once a turn owns more than one job: the *hole*
+        is per pair, and repairing it must not re-enqueue a sibling row whose
+        payload has since diverged — that row is not a gap, it is the queue's
+        own business, and :meth:`run_pending` decides its fate
+        (P4-3; pinned by test).
+
+        Nothing is re-derived from a message log (P4-0 ④ crash-gap: the
+        deterministic id is what makes this possible).
         """
 
-        missing: list[TurnId] = []
-        seen: set[TurnId] = set()
+        ensured: list[ProjectionJobId] = []
         for projection_type in SUPPORTED_PROJECTION_TYPES:
             found = self._store.turns_missing_projection(projection_type)
             if isinstance(found, Err):
                 return found
             for turn_id in found.value:
-                if turn_id not in seen:
-                    seen.add(turn_id)
-                    missing.append(turn_id)
-        ensured: list[ProjectionJobId] = []
-        for turn_id in missing:
-            jobs = self._ensure_for_turn(turn_id)
-            if isinstance(jobs, Err):
-                return jobs
-            ensured.extend(jobs.value)
+                jobs = self._ensure_for_turn(turn_id, (projection_type,))
+                if isinstance(jobs, Err):
+                    return jobs
+                ensured.extend(jobs.value)
         return Ok(tuple(ensured))
 
     def _ensure_for_turn(
-        self, turn_id: TurnId
+        self,
+        turn_id: TurnId,
+        projection_types: tuple[str, ...] = SUPPORTED_PROJECTION_TYPES,
     ) -> Result[tuple[ProjectionJobId, ...]]:
         record_result = self._turns.get_turn_record(turn_id)
         if isinstance(record_result, Err):
@@ -629,7 +678,7 @@ class CP4ProjectionRuntime:
             )
         source_hash = turn_slice_hash(slice_)
         ids: list[ProjectionJobId] = []
-        for projection_type in SUPPORTED_PROJECTION_TYPES:
+        for projection_type in projection_types:
             job = ProjectionJobRecord(
                 projection_job_id=projection_id_for(projection_type, turn_id),
                 conversation_id=str(record.conversation_id),
@@ -700,7 +749,7 @@ class CP4ProjectionRuntime:
 
         try:
             failure: DomainError | None = None
-            ensured = self.ensure_projection_job(turn_id)
+            ensured = self.ensure_projection_jobs(turn_id)
             if isinstance(ensured, Err) and (
                 ensured.error.code is not DomainErrorCode.VALIDATION_FAILED
             ):
@@ -773,6 +822,10 @@ class CP4ProjectionRuntime:
           are live work, and the set is process-local, so a restart (an empty
           set) still collects the previous process's residue, while a caller
           who invokes this face mid-process cannot have a live run stolen.
+          A job whose run reported (COMMITTED / FAILED_RETRYABLE / REJECTED)
+          has already left the set (``_settle``, F-5), so "in the set" means
+          "claimed here and still running" — which is exactly the question
+          this scan asks.
 
         Re-opening is not a replay: it only moves the row onto the ordinary
         retry edge, so the next :meth:`run_pending` still revalidates the
@@ -866,6 +919,11 @@ class CP4ProjectionRuntime:
             )
             if isinstance(completed, Err):
                 return completed
+            # F-5 (DEC-OPI-4d516e4f.13 revisit item three): the run reported,
+            # so this process no longer owns the claim — forgetting it here is
+            # what keeps the set bounded by the *live* runs instead of by
+            # every job the process ever touched.
+            self._settle(running.projection_job_id)
             return Ok(
                 ProjectionRunResult(
                     projection_job_id=completed.value.projection_job_id,
@@ -882,6 +940,7 @@ class CP4ProjectionRuntime:
         failed = self._store.fail_projection(running.projection_job_id)
         if isinstance(failed, Err):
             return failed
+        self._settle(running.projection_job_id)
         return Ok(
             ProjectionRunResult(
                 projection_job_id=failed.value.projection_job_id,
@@ -899,6 +958,8 @@ class CP4ProjectionRuntime:
         )
         if isinstance(rejected, Err):
             return rejected
+        # F-5: a rejected job is finished work, so the claim is settled too.
+        self._settle(view.projection_job_id)
         return Ok(
             ProjectionRunResult(
                 projection_job_id=rejected.value.projection_job_id,
@@ -908,11 +969,88 @@ class CP4ProjectionRuntime:
             )
         )
 
+    def _settle(self, projection_id: ProjectionJobId) -> None:
+        """Forget a claim this process finished (§F-5).
+
+        Called on every path where the run *reported* an outcome to the
+        durable row — committed, failed-retryable, rejected. A run that
+        raised (or whose store call failed) does **not** settle: nothing was
+        reported, so the RUNNING row is still this process's live work and
+        ``recover_stale_running`` must keep treating it that way. Discarding
+        an id that is not there is a no-op, so the face is safe from every
+        caller.
+        """
+
+        self._claimed_here.discard(projection_id)
+
     def _executor_for(self, projection_type: str) -> ProjectionExecutor | None:
         for executor in self._executors:
             if executor.projection_type == projection_type:
                 return executor
         return None
+
+
+def _require_complete_executor_set(
+    executors: tuple[ProjectionExecutor, ...],
+) -> None:
+    """Enforce the class invariant: the executor set *is* the supported set.
+
+    The rule, in one place, with all three shapes the invariant has (the
+    class docstring states them as the contract; this function is the only
+    place that decides them):
+
+    - **missing** — a supported type with no executor;
+    - **duplicated** — a type with two, which would make "which one runs" an
+      accident of declaration order;
+    - **unsupported** — an executor for a type outside
+      :data:`SUPPORTED_PROJECTION_TYPES`, which is never enqueued for while
+      it would widen dispatch to any foreign row carrying that type word.
+
+    Each is a ``ValueError`` naming the type word (and, for the first two,
+    the supported set), because the message has to be enough to fix the
+    assembly without reading this function.
+
+    Deliberately *not* a ``Result``: every face of this class returns one, so
+    a refusal that travels as a value would be indistinguishable from a
+    per-job outcome — and this one is not about a job. It is about the
+    process, before it touches the queue at all.
+    """
+
+    by_type: dict[str, int] = {}
+    for executor in executors:
+        by_type[executor.projection_type] = (
+            by_type.get(executor.projection_type, 0) + 1
+        )
+    duplicates = sorted(
+        type_word for type_word, count in by_type.items() if count > 1
+    )
+    if duplicates:
+        raise ValueError(
+            "CP4ProjectionRuntime takes exactly one executor per projection"
+            f" type; duplicated: {duplicates!r}"
+        )
+    missing = [
+        type_word
+        for type_word in SUPPORTED_PROJECTION_TYPES
+        if type_word not in by_type
+    ]
+    if missing:
+        raise ValueError(
+            "CP4ProjectionRuntime needs an executor for every supported"
+            f" projection type; missing: {missing!r}"
+            f" (SUPPORTED_PROJECTION_TYPES={SUPPORTED_PROJECTION_TYPES!r})"
+        )
+    unknown = sorted(
+        type_word
+        for type_word in by_type
+        if type_word not in SUPPORTED_PROJECTION_TYPES
+    )
+    if unknown:
+        raise ValueError(
+            "CP4ProjectionRuntime received executors for unsupported"
+            f" projection types: {unknown!r}"
+            f" (SUPPORTED_PROJECTION_TYPES={SUPPORTED_PROJECTION_TYPES!r})"
+        )
 
 
 _E = TypeVar("_E")

@@ -39,9 +39,11 @@ executes them is P4-2, and nothing in this slice pretends otherwise):
   blocks the next turn (§19/§21 "turn still succeeds / projection
   retry/rebuild").
 - **crash-gap** — a job that was lost between the turn's commit points is
-  not re-derived from a message log: ``ensure_projection_job`` re-creates
-  it from the same deterministic id (the P4-2 face), which is exactly what
-  the stable-id rule buys.
+  not re-derived from a message log: ``ensure_projection_jobs`` re-creates
+  it from the same deterministic id (the P4-2 face; P4-3 widened it to one
+  job per supported type — the crash-gap rule is per ``(projection_type,
+  turn)`` pair, so a turn missing both types is repaired for both), which
+  is exactly what the stable-id rule buys.
 
 Not in this package's contract: teaching-evidence proposals. Learning's
 durable pending proposal (migration 0009, ``teaching_evidence_proposal``)

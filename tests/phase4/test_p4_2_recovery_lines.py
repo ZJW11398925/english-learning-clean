@@ -41,6 +41,7 @@ from elc.runtime.controller import (
     StartupRecoveryOutcome,
 )
 from elc.runtime.projections import (
+    PROJECTION_TYPE_EPISODE,
     PROJECTION_TYPE_RELATIONSHIP,
     CP4ProjectionRuntime,
     projection_id_for,
@@ -58,6 +59,21 @@ from .conftest import (
     reply_ok,
 )
 from .conftest import attempt as make_attempt
+
+
+def _runs_of(
+    runs, projection_type: str = PROJECTION_TYPE_RELATIONSHIP
+) -> list:
+    """The run results of one projection type (P4-3 semantic sync).
+
+    The startup drain runs every unfinished job of the conversations it
+    visited, and there is now one job per supported type; these pins are
+    about the RELATIONSHIP job they have always named, so they select by
+    type instead of by position (``pending_projections`` orders by
+    ``created_at, projection_id``, which fixes no order between types).
+    """
+
+    return [item for item in runs if item.projection_type == projection_type]
 
 
 def _proposal_status(db: sqlite3.Connection, proposal_id: str) -> str:
@@ -270,23 +286,28 @@ def test_the_startup_sweep_repairs_a_crash_gap_and_runs_it(
         conversation=conversation,
     )
     job_id = projection_id_for(PROJECTION_TYPE_RELATIONSHIP, turn.turn_id)
+    episode_job_id = projection_id_for(PROJECTION_TYPE_EPISODE, turn.turn_id)
     assert projection_job_row(db, job_id)[5] == "COMMITTED"
 
-    # The crash simulation: the row was never written.
+    # The crash simulation: neither of the turn's rows was ever written
+    # (P4-3: a turn owns one job per supported type, and the gap is per row).
     db.execute(
-        "DELETE FROM projection_job WHERE projection_id = ?", (str(job_id),)
+        "DELETE FROM projection_job WHERE source_turn_id = ?",
+        (str(turn.turn_id),),
     )
     db.commit()  # close the implicit tx before the store's own unit
     assert projection_job_rows(db) == []
 
     outcome = projecting_coordinator.run_startup_recovery()
     assert isinstance(outcome, Ok), outcome
-    assert outcome.value.projection_jobs == (job_id,)
+    # Both gaps are repaired from their own deterministic ids, in
+    # SUPPORTED_PROJECTION_TYPES order.
+    assert outcome.value.projection_jobs == (job_id, episode_job_id)
     assert outcome.value.projection_recovery_unavailable is False
-    assert [item.status.value for item in outcome.value.projection_runs] == [
-        "COMMITTED"
-    ]
-    assert outcome.value.projection_runs[0].projection_job_id == job_id
+    assert [item.status.value for item in _runs_of(
+        outcome.value.projection_runs
+    )] == ["COMMITTED"]
+    assert _runs_of(outcome.value.projection_runs)[0].projection_job_id == job_id
     assert projection_job_row(db, job_id)[5] == "COMMITTED"
     # Idempotent: the next pass has nothing left to repair.
     again = projecting_coordinator.run_startup_recovery()
@@ -354,9 +375,11 @@ def test_a_stale_running_job_is_reopened_and_committed(
     turn = commit_chat_turn(
         coordinator, "cm-stale", "I live in Berlin.", 1, conversation=conversation
     )
-    ensured = projection_runtime.ensure_projection_job(turn.turn_id)
+    ensured = projection_runtime.ensure_projection_jobs(turn.turn_id)
     assert isinstance(ensured, Ok)
-    job_id = ensured.value
+    # P4-3 semantic sync: the ensure face returns one id per supported type,
+    # RELATIONSHIP first — the job this pin has always claimed.
+    job_id = ensured.value[0]
     claimed = projection_store.claim_projection(job_id, base_version="rv-crashed")
     assert isinstance(claimed, Ok)
     assert claimed.value.status is ProjectionJobState.RUNNING
@@ -366,9 +389,9 @@ def test_a_stale_running_job_is_reopened_and_committed(
     assert isinstance(outcome, Ok), outcome
     assert outcome.value.projection_recovery_unavailable is False
     assert outcome.value.reopened_projections == (job_id,)
-    assert [item.status.value for item in outcome.value.projection_runs] == [
-        "COMMITTED"
-    ]
+    assert [item.status.value for item in _runs_of(
+        outcome.value.projection_runs
+    )] == ["COMMITTED"]
     row = projection_job_row(db, job_id)
     assert row[5] == "COMMITTED"
     assert row[6] == 2  # the re-opened row was claimed a second time
@@ -395,9 +418,9 @@ def test_the_reopen_scan_is_idempotent(
         coordinator, "cm-stale-twice", "I live in Berlin.", 1,
         conversation=conversation,
     )
-    asserted = projection_runtime.ensure_projection_job(turn.turn_id)
+    asserted = projection_runtime.ensure_projection_jobs(turn.turn_id)
     assert isinstance(asserted, Ok)
-    job_id = asserted.value
+    job_id = asserted.value[0]  # RELATIONSHIP, the supported-type order
     assert isinstance(
         projection_store.claim_projection(job_id, base_version="rv-crashed"), Ok
     )
@@ -446,9 +469,13 @@ def test_the_reopen_scan_touches_nothing_but_running_rows(
         ("running", running_turn),
         ("committed", committed_turn),
     ):
-        ensured = projection_runtime.ensure_projection_job(turn.turn_id)
+        ensured = projection_runtime.ensure_projection_jobs(turn.turn_id)
         assert isinstance(ensured, Ok)
-        jobs[name] = ensured.value
+        # The RELATIONSHIP job of each turn (SUPPORTED_PROJECTION_TYPES
+        # order); the EPISODE jobs of the same turns are left PENDING, which
+        # is exactly the "claimable work is not residue" case this pin is
+        # about, one type over.
+        jobs[name] = ensured.value[0]
     assert isinstance(
         projection_store.claim_projection(
             jobs["running"], base_version="rv-crashed"
@@ -513,10 +540,10 @@ def test_a_reopened_job_still_passes_the_slice_hash_revalidation(
     outcome = projecting_coordinator.run_startup_recovery()
     assert isinstance(outcome, Ok), outcome
     assert outcome.value.reopened_projections == (job_id,)
-    assert [item.status.value for item in outcome.value.projection_runs] == [
-        "REJECTED"
-    ]
-    assert outcome.value.projection_runs[0].detail == (
+    assert [item.status.value for item in _runs_of(
+        outcome.value.projection_runs
+    )] == ["REJECTED"]
+    assert _runs_of(outcome.value.projection_runs)[0].detail == (
         "source_turn_slice_hash changed"
     )
     row = projection_job_row(db, job_id)
@@ -545,9 +572,11 @@ def test_startup_drains_a_registry_only_pending_row(
         coordinator, "cm-registry", "I live in Berlin.", 1,
         conversation=conversation,
     )
-    ensured = projection_runtime.ensure_projection_job(turn.turn_id)
+    ensured = projection_runtime.ensure_projection_jobs(turn.turn_id)
     assert isinstance(ensured, Ok)
-    job_id = ensured.value
+    # P4-3 semantic sync: one id per supported type (RELATIONSHIP first);
+    # both rows are PENDING and the drain below finishes both.
+    job_id = ensured.value[0]
     assert projection_job_row(db, job_id)[5] == "PENDING"
     assert projection_job_row(db, job_id)[6] == 0
 
@@ -556,10 +585,10 @@ def test_startup_drains_a_registry_only_pending_row(
     assert outcome.value.projection_recovery_unavailable is False
     assert outcome.value.projection_jobs == ()  # nothing was missing
     assert outcome.value.reopened_projections == ()  # nothing was RUNNING
-    assert [item.status.value for item in outcome.value.projection_runs] == [
-        "COMMITTED"
-    ]
-    assert outcome.value.projection_runs[0].projection_job_id == job_id
+    assert [item.status.value for item in _runs_of(
+        outcome.value.projection_runs
+    )] == ["COMMITTED"]
+    assert _runs_of(outcome.value.projection_runs)[0].projection_job_id == job_id
     assert projection_job_row(db, job_id)[5] == "COMMITTED"
     assert projection_job_row(db, job_id)[6] == 1
 
@@ -580,9 +609,9 @@ def test_startup_drains_a_registry_only_failed_retryable_row(
         coordinator, "cm-registry-retry", "I live in Berlin.", 1,
         conversation=conversation,
     )
-    ensured = projection_runtime.ensure_projection_job(turn.turn_id)
+    ensured = projection_runtime.ensure_projection_jobs(turn.turn_id)
     assert isinstance(ensured, Ok)
-    job_id = ensured.value
+    job_id = ensured.value[0]  # RELATIONSHIP, the supported-type order
     assert isinstance(
         projection_store.claim_projection(job_id, base_version="rv-1"), Ok
     )
@@ -591,9 +620,9 @@ def test_startup_drains_a_registry_only_failed_retryable_row(
 
     outcome = projecting_coordinator.run_startup_recovery()
     assert isinstance(outcome, Ok), outcome
-    assert [item.status.value for item in outcome.value.projection_runs] == [
-        "COMMITTED"
-    ]
+    assert [item.status.value for item in _runs_of(
+        outcome.value.projection_runs
+    )] == ["COMMITTED"]
     assert projection_job_row(db, job_id)[5] == "COMMITTED"
     assert projection_job_row(db, job_id)[6] == 2
 
@@ -615,9 +644,12 @@ def test_the_post_turn_path_stays_conversation_scoped(
     turn_a = commit_chat_turn(
         coordinator, "cm-scope-a", "I live in Berlin.", 1, conversation=conv_a
     )
-    ensured = projection_runtime.ensure_projection_job(turn_a.turn_id)
+    ensured = projection_runtime.ensure_projection_jobs(turn_a.turn_id)
     assert isinstance(ensured, Ok)
-    job_a = ensured.value
+    # The RELATIONSHIP job of A; its EPISODE job is PENDING too and stays
+    # that way, which is the same "registered work is not run by B's turn"
+    # fact one type over.
+    job_a = ensured.value[0]
     assert projection_job_row(db, job_a)[5] == "PENDING"
     del projection_store
 

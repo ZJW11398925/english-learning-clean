@@ -28,7 +28,10 @@ from elc.platform.types import (
     InteractionChannel,
     PersonaId,
 )
+from elc.relationship.episode import EpisodeView
+from elc.relationship.types import RelationshipView
 from elc.runtime.types import GenerationActionType
+from elc.user_config.types import DisclosedUserProfile
 
 
 @dataclass(frozen=True)
@@ -185,13 +188,32 @@ class GenerationContext:
     """docs/RUNTIME_ARCHITECTURE.md §11 GenerationContext — the structured
     views Persona Runtime consumes (DOMAIN_MODEL §4). The orchestrator only
     hands over views/references; it never assembles prompt text
-    (D-INV-012)."""
+    (D-INV-012).
+
+    P4-3 (TASK-OPI-4d516e4f-….19 ④): the three Phase-4 views are typed now.
+    ``relationship_view`` / ``episode_view`` / ``disclosed_user_profile``
+    were ``object | None`` placeholders while the owning domains had no such
+    types; both types exist (elc.relationship.types.RelationshipView,
+    elc.relationship.episode.EpisodeView,
+    elc.user_config.types.DisclosedUserProfile), so the compiler renders a
+    *declared* shape instead of duck-typing whatever arrives. The remaining
+    ``object | None`` fields are the ones whose domains have not landed
+    their views yet (WorldLoreView), kept as they were — this slice types
+    what it renders, not what it cannot name.
+
+    Import direction: this module imports the view *types* from the domains
+    that own them, which is exactly how §11 works — Persona Runtime consumes
+    these views and owns none of them (DOMAIN_MODEL §4 "Persona Runtime
+    consumes"). The pin that still holds and is re-asserted by test: persona
+    never imports ``elc.teaching`` / ``elc.learning`` (D-INV-002), and the
+    two-way teaching pin stays exactly as it was.
+    """
 
     character_package: CharacterPackageRecord | None
-    relationship_view: object | None
-    episode_view: object | None
+    relationship_view: RelationshipView | None
+    episode_view: EpisodeView | None
     world_lore_view: object | None
-    disclosed_user_profile: object | None
+    disclosed_user_profile: DisclosedUserProfile | None
     conversation_window: object | None
     language_policy: str
     generation_policy: str
@@ -224,6 +246,114 @@ TEACHING_PROMPT_KEY_ORDER = (
     "completion_outcome",
     "abort_reason",
 )
+
+
+#: Version of the ``[profile]`` section template (Phase 4 P4-3,
+#: TASK-OPI-4d516e4f-….19 ④). The prompt is a canonical artifact: changing
+#: the key set, the order or the separators of this section is a NEW version,
+#: and the version is rendered inside the section so a stored prompt says
+#: which template produced it (the P3-1B ``[teaching]`` precedent).
+PROFILE_PROMPT_SECTION_VERSION = "profile-prompt-v1"
+
+#: Version of the ``[relationship]`` section template (P4-3).
+RELATIONSHIP_PROMPT_SECTION_VERSION = "relationship-prompt-v1"
+
+#: Version of the ``[episode]`` section template (P4-3).
+EPISODE_PROMPT_SECTION_VERSION = "episode-prompt-v1"
+
+#: The key order of each P4-3 section, pinned here and enforced by the
+#: compiler — byte-determinism (same view → same bytes) depends on it.
+#: Absent optional values render as the empty string, and lists join with
+#: "; ", so a section's line count and key order never depend on the data.
+PROFILE_PROMPT_KEY_ORDER = (
+    "prompt_version",
+    "persona_id",
+    "disclosure_level",
+    "disclosed_facts",
+)
+RELATIONSHIP_PROMPT_KEY_ORDER = (
+    "prompt_version",
+    "persona_id",
+    "user_id",
+    "memories",
+)
+EPISODE_PROMPT_KEY_ORDER = (
+    "prompt_version",
+    "episode_id",
+    "version",
+    "status",
+    "summary",
+    "open_threads",
+    "recent_events",
+)
+
+
+def profile_prompt_fields(
+    view: DisclosedUserProfile,
+) -> tuple[tuple[str, str], ...]:
+    """The ``[profile]`` section as canonical (key, value) pairs.
+
+    Only what the disclosure decision authorized is rendered:
+    ``DisclosedUserProfile`` is the one user-profile shape a persona may
+    consume (docs/DOMAIN_MODEL.md §5.1 Rules), so the compiler cannot render
+    a fact the persona was not granted — there is no fuller view in the
+    request to render from.
+    """
+
+    values = {
+        "prompt_version": PROFILE_PROMPT_SECTION_VERSION,
+        "persona_id": str(view.persona_id),
+        "disclosure_level": view.disclosure_level.value,
+        "disclosed_facts": "; ".join(view.disclosed_facts),
+    }
+    return tuple((key, values[key]) for key in PROFILE_PROMPT_KEY_ORDER)
+
+
+def relationship_prompt_fields(
+    view: RelationshipView,
+) -> tuple[tuple[str, str], ...]:
+    """The ``[relationship]`` section as canonical (key, value) pairs.
+
+    The memories are the view's ACTIVE rows **in the view's own order** (the
+    store's durable order — DOMAIN_MODEL §5 unit Persona × User; §17
+    "Relationship 不跨 Persona 泄漏", which the scope-bound read already
+    guarantees: another persona's memory is not in this object). Order is
+    therefore content: the section renders what the view holds, in the order
+    it holds it, and never re-sorts.
+    """
+
+    memories = "; ".join(
+        f"{entry.memory_type.value}: {entry.canonical_content}"
+        for entry in view.active_memories
+    )
+    values = {
+        "prompt_version": RELATIONSHIP_PROMPT_SECTION_VERSION,
+        "persona_id": str(view.persona_id),
+        "user_id": str(view.user_id),
+        "memories": memories,
+    }
+    return tuple((key, values[key]) for key in RELATIONSHIP_PROMPT_KEY_ORDER)
+
+
+def episode_prompt_fields(view: EpisodeView) -> tuple[tuple[str, str], ...]:
+    """The ``[episode]`` section as canonical (key, value) pairs.
+
+    The content columns only — ``EpisodeView`` has no ``updated_at`` by
+    construction, so lifecycle metadata cannot reach the prompt even by
+    accident (the P3-0 rule: a clock stamp in the prompt would break
+    byte-determinism and put durable bookkeeping in front of the model).
+    """
+
+    values = {
+        "prompt_version": EPISODE_PROMPT_SECTION_VERSION,
+        "episode_id": str(view.episode_id),
+        "version": view.version,
+        "status": view.status.value,
+        "summary": view.summary,
+        "open_threads": "; ".join(view.open_threads),
+        "recent_events": "; ".join(view.recent_events),
+    }
+    return tuple((key, values[key]) for key in EPISODE_PROMPT_KEY_ORDER)
 
 
 @dataclass(frozen=True)

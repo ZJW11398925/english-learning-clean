@@ -13,9 +13,9 @@ The rebuild also has to preserve history: ``teaching_moment``'s children
 refilled inside the migration runner's single transaction.
 
 The pre/post split is "everything before 0008" vs "0008 and everything
-after it" (the 0007 test's filename-order rule), so the later migration
-0009_relationship_contracts rides the post stage and the version pins below
-name the newest migration of the tree.
+after it" (the 0007 test's filename-order rule), so the later migrations
+(0009_relationship_contracts, 0010_episode_and_user_config) ride the post
+stage and the version pins below name the newest migration of the tree.
 """
 
 from __future__ import annotations
@@ -165,12 +165,15 @@ def test_0008_creates_the_two_tables_with_the_canonical_column_sets(
 ) -> None:
     migrations.apply_migrations(db)
     assert "0008_attempt_records" in migrations.applied_migrations(db)
-    assert migrations.schema_version(db) == "9"
+    # P4-3 semantic sync: the version stamp is the newest migration's, and
+    # 0010_episode_and_user_config is now the head (this pin read "9" while
+    # P4-0's 0009 was).
+    assert migrations.schema_version(db) == "10"
     assert (
         db.execute(
             "SELECT value FROM schema_meta WHERE key = 'runtime_schema_version'"
         ).fetchone()[0]
-        == "9"
+        == "10"
     )
     assert _columns(db, "attempt_record") == list(ATTEMPT_COLUMNS)
     assert _columns(db, "attempt_evaluation_record") == list(EVALUATION_COLUMNS)
@@ -185,7 +188,9 @@ def test_0008_enforces_the_canonical_vocabularies(
     assert migrations.schema_version(conn) == "7"
     _seed_pre_0008_data(conn)
     migrations.apply_migrations(conn, post)
-    assert migrations.schema_version(conn) == "9"
+    # P4-3 semantic sync: the post stage applies every migration from 0008
+    # on, so the stamp is the newest one (0010), not P4-0's 9.
+    assert migrations.schema_version(conn) == "10"
 
     # §5 five outcomes, word for word.
     assert ATTEMPT_OUTCOMES == (

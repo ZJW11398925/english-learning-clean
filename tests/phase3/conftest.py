@@ -36,6 +36,7 @@ from elc.platform.types import (
 )
 from elc.platform.types import ConversationId as ConvId
 from elc.runtime import ConversationCoordinator, ConversationCoordinatorLease
+from elc.runtime.persona_views import PersonaViewSource
 from elc.runtime.projections import CP4ProjectionRuntime
 from elc.runtime.types import InputEnvelope
 from elc.teaching.controller import TeachingController
@@ -139,6 +140,7 @@ def make_teaching_coordinator(
     teaching: TeachingController,
     targets: TeachingTargetProvider,
     projections: CP4ProjectionRuntime | None = None,
+    persona_views: PersonaViewSource | None = None,
 ) -> ConversationCoordinator:
     """The P3-1A assembly: all four teaching-path ports injected
     (decision cycles + learning controller + teaching controller + target
@@ -148,6 +150,11 @@ def make_teaching_coordinator(
     post-turn projection runtime). The default ``None`` keeps every existing
     assembly byte-identical — this helper's other callers are pinned by the
     P3 tests and never knew the port existed.
+
+    P4-3 adds a second optional pass-through port on the same terms:
+    ``persona_views`` (the §11 view source the GenerationContext is filled
+    from). Default ``None`` ⇒ the three views stay ``None`` and every
+    pre-P4-3 assembly compiles the same prompt bytes it always did.
     """
 
     decision_cycles_port = (
@@ -174,6 +181,7 @@ def make_teaching_coordinator(
         teaching=teaching,
         targets=targets,
         projections=projections,
+        persona_views=persona_views,
     )
 
 

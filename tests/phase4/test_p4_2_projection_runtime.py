@@ -47,10 +47,13 @@ from elc.platform.types import (
 )
 from elc.runtime.controller import ConversationCoordinator
 from elc.runtime.projections import (
+    PROJECTION_TYPE_EPISODE,
     PROJECTION_TYPE_RELATIONSHIP,
+    SUPPORTED_PROJECTION_TYPES,
     CP4ProjectionRuntime,
     ProjectionExecutor,
     ProjectionJobView,
+    ProjectionRunResult,
     ProjectionTurnSource,
     base_version_for,
     projection_id_for,
@@ -70,7 +73,9 @@ from .conftest import (
     CONV,
     PERSONA_A,
     REL_USER,
+    NoopProjectionExecutor,
     commit_chat_turn,
+    complete_executors,
     deliver_reply,
     memory_proposal,
     open_conversation_for,
@@ -153,7 +158,36 @@ def _runtime(
     turns: ProjectionTurnSource,
     *executors: ProjectionExecutor,
 ) -> CP4ProjectionRuntime:
-    return CP4ProjectionRuntime(store=store, executors=executors, turns=turns)
+    """A runtime over the given executors, completed with a no-op per
+    supported type they do not cover.
+
+    P4-3 (review LOW-2) semantic sync: a complete executor set is now a
+    construction requirement, so a probe that scripts one type must supply
+    the other. The fillers never fail and are never asserted on, so every
+    scenario below (and every ``_runs_of`` selection) keeps its meaning.
+    """
+
+    return CP4ProjectionRuntime(
+        store=store, executors=complete_executors(*executors), turns=turns
+    )
+
+
+def _runs_of(
+    runs: Result[tuple[ProjectionRunResult, ...]],
+    projection_type: str = PROJECTION_TYPE_RELATIONSHIP,
+) -> list[ProjectionRunResult]:
+    """The run results of one projection type (P4-3 semantic sync).
+
+    The ensure face now enqueues one job per entry of
+    ``SUPPORTED_PROJECTION_TYPES``, so a run reports both types. These pins
+    are about the RELATIONSHIP executor (the scripted probe below serves
+    that type), and selecting by type keeps each assertion about what it was
+    about — the queue orders by ``created_at, projection_id``, which puts no
+    fixed order on the types.
+    """
+
+    assert isinstance(runs, Ok), runs
+    return [item for item in runs.value if item.projection_type == projection_type]
 
 
 def _assistant_rows(db: sqlite3.Connection) -> list[tuple[object, ...]]:
@@ -284,6 +318,74 @@ def test_the_real_stores_satisfy_the_runtime_ports(
     assert projection_runtime is not None
 
 
+def test_the_runtime_refuses_an_incomplete_executor_set(
+    store: SqliteConversationStore,
+    projection_store: SqliteProjectionStore,
+) -> None:
+    """P4-3 (review LOW-2): the ensure face enqueues one job per supported
+    type whatever the executors are, so a missing executor would have its
+    jobs rejected *terminally* — the deterministic ids spent, and a later
+    correct assembly replaying them as the same REJECTED rows. The refusal is
+    therefore construction-time, and it names what is missing."""
+
+    with pytest.raises(ValueError) as raised:
+        CP4ProjectionRuntime(
+            store=projection_store,
+            executors=(_ScriptedExecutor(),),  # RELATIONSHIP only
+            turns=store,
+        )
+    message = str(raised.value)
+    assert "missing" in message
+    for type_word in SUPPORTED_PROJECTION_TYPES:
+        if type_word != PROJECTION_TYPE_RELATIONSHIP:
+            assert type_word in message
+    # The other direction: an assembly with one executor is incomplete only
+    # if a supported type is unserved — the complete set constructs fine
+    # (the fixture at the top of this file is the positive control).
+    assert isinstance(
+        _runtime(projection_store, store, _ScriptedExecutor()),
+        CP4ProjectionRuntime,
+    )
+
+
+def test_the_runtime_refuses_a_duplicated_executor(
+    store: SqliteConversationStore,
+    projection_store: SqliteProjectionStore,
+) -> None:
+    """Two executors for one type would make "which one runs" an accident of
+    declaration order — refused, with the type word named."""
+
+    with pytest.raises(ValueError) as raised:
+        CP4ProjectionRuntime(
+            store=projection_store,
+            executors=(_ScriptedExecutor(), _ScriptedExecutor()),
+            turns=store,
+        )
+    message = str(raised.value)
+    assert "duplicated" in message
+    assert PROJECTION_TYPE_RELATIONSHIP in message
+
+
+def test_the_runtime_refuses_an_executor_for_an_unsupported_type(
+    store: SqliteConversationStore,
+    projection_store: SqliteProjectionStore,
+) -> None:
+    """The rule's other edge (P4-3): an executor for a type the runtime does
+    not support would never be enqueued for — and would silently widen the
+    dispatch surface to any foreign row that happens to carry that type
+    word. Refused rather than carried."""
+
+    with pytest.raises(ValueError) as raised:
+        CP4ProjectionRuntime(
+            store=projection_store,
+            executors=complete_executors(NoopProjectionExecutor("PLANNING_LEDGER")),
+            turns=store,
+        )
+    message = str(raised.value)
+    assert "unsupported" in message
+    assert "PLANNING_LEDGER" in message
+
+
 @pytest.mark.parametrize(
     "state",
     [
@@ -320,9 +422,13 @@ def test_the_real_enqueue_path_still_writes_pending_rows(
     and the durable queue's own PENDING records) is untouched."""
 
     turn = commit_chat_turn(coordinator, "cm-born", "I live in Berlin.", 1)
-    ensured = projection_runtime.ensure_projection_job(turn.turn_id)
+    ensured = projection_runtime.ensure_projection_jobs(turn.turn_id)
+    # P4-3 semantic sync: the ensure face returns one id per supported type,
+    # in SUPPORTED_PROJECTION_TYPES order — index 0 is RELATIONSHIP (the
+    # older of the two, and the one this pin has always been about).
     assert isinstance(ensured, Ok)
-    assert projection_job_row(db, ensured.value)[5] == "PENDING"
+    assert len(ensured.value) == len(SUPPORTED_PROJECTION_TYPES)
+    assert projection_job_row(db, ensured.value[0])[5] == "PENDING"
     assert isinstance(projection_store.enqueue_projection(_job()), Ok)
     assert projection_job_row(db, JOB)[5] == "PENDING"
 
@@ -499,14 +605,13 @@ def test_run_after_turn_commits_the_current_slice(
     turn = commit_chat_turn(coordinator, "cm-commit", "I live in Berlin.", 1)
 
     runs = runtime.run_after_turn(CONV, turn.turn_id)
-    assert isinstance(runs, Ok), runs
-    assert [item.status.value for item in runs.value] == ["COMMITTED"]
-    assert runs.value[0].projection_job_id == projection_id_for(
+    assert [item.status.value for item in _runs_of(runs)] == ["COMMITTED"]
+    assert _runs_of(runs)[0].projection_job_id == projection_id_for(
         PROJECTION_TYPE_RELATIONSHIP, turn.turn_id
     )
-    assert runs.value[0].detail == "committed: probe"
+    assert _runs_of(runs)[0].detail == "committed: probe"
     assert executor.calls == 1
-    row = projection_job_row(db, runs.value[0].projection_job_id)
+    row = projection_job_row(db, _runs_of(runs)[0].projection_job_id)
     assert row[4] == "rv-current"  # the base this run recomputed
     assert row[5] == "COMMITTED"
     assert row[6] == 1
@@ -526,10 +631,9 @@ def test_a_transient_failure_leaves_the_job_retryable_and_a_retry_lands_it(
         code=DomainErrorCode.DEPENDENCY_UNAVAILABLE, message="store offline"
     )
     runs = runtime.run_after_turn(CONV, turn.turn_id)
-    assert isinstance(runs, Ok)
-    assert [item.status.value for item in runs.value] == ["FAILED_RETRYABLE"]
-    assert runs.value[0].detail.startswith("retryable:")
-    job_id = runs.value[0].projection_job_id
+    assert [item.status.value for item in _runs_of(runs)] == ["FAILED_RETRYABLE"]
+    assert _runs_of(runs)[0].detail.startswith("retryable:")
+    job_id = _runs_of(runs)[0].projection_job_id
     assert projection_job_row(db, job_id)[5] == "FAILED_RETRYABLE"
 
     # The retry recomputes the base — a moved base updates the durable
@@ -537,8 +641,7 @@ def test_a_transient_failure_leaves_the_job_retryable_and_a_retry_lands_it(
     executor.failure = None
     executor.base = "rv-2"
     retried = runtime.run_after_turn(CONV, turn.turn_id)
-    assert isinstance(retried, Ok)
-    assert [item.status.value for item in retried.value] == ["COMMITTED"]
+    assert [item.status.value for item in _runs_of(retried)] == ["COMMITTED"]
     row = projection_job_row(db, job_id)
     assert row[4] == "rv-2"
     assert row[5] == "COMMITTED"
@@ -561,9 +664,8 @@ def test_a_deterministic_executor_refusal_rejects_the_job(
     turn = commit_chat_turn(coordinator, "cm-deterministic", "I live in Berlin.", 1)
 
     runs = runtime.run_after_turn(CONV, turn.turn_id)
-    assert isinstance(runs, Ok)
-    assert [item.status.value for item in runs.value] == ["REJECTED"]
-    assert runs.value[0].detail == "deterministic refusal: scope refused"
+    assert [item.status.value for item in _runs_of(runs)] == ["REJECTED"]
+    assert _runs_of(runs)[0].detail == "deterministic refusal: scope refused"
     job_id = projection_id_for(PROJECTION_TYPE_RELATIONSHIP, turn.turn_id)
     assert projection_job_row(db, job_id)[5] == "REJECTED"
 
@@ -574,15 +676,23 @@ def test_an_unsupported_type_is_rejected_not_retried_forever(
     projection_store: SqliteProjectionStore,
     coordinator: ConversationCoordinator,
 ) -> None:
+    """P4-3 semantic sync: the foreign type word was ``EPISODE`` while that
+    type had no executor here; it is supported now (and every supported type
+    must have an executor, review LOW-2), so the pin names a type the runtime
+    genuinely does not implement — ``PLANNING_LEDGER``, one of the CP4
+    families RA §CP4 lists and this slice has not built. The rule under test
+    is unchanged: a foreign row is rejected deterministically, never retried
+    forever."""
+
     runtime = _runtime(projection_store, store, _ScriptedExecutor())
     turn = commit_chat_turn(coordinator, "cm-unsupported", "I live in Berlin.", 1)
-    foreign = ProjectionJobId("pj-episode")
+    foreign = ProjectionJobId("pj-foreign")
     assert isinstance(
         projection_store.enqueue_projection(
             _job(
                 job_id=foreign,
                 turn_id=turn.turn_id,
-                projection_type="EPISODE",
+                projection_type="PLANNING_LEDGER",
                 source_version=turn_slice_hash(turn_slice(store, turn.turn_id)),
             )
         ),
@@ -590,8 +700,9 @@ def test_an_unsupported_type_is_rejected_not_retried_forever(
     )
     runs = runtime.run_pending(CONV)
     assert isinstance(runs, Ok), runs
-    assert [item.status.value for item in runs.value] == ["REJECTED"]
-    assert "unsupported projection_type" in runs.value[0].detail
+    rejected = [item for item in runs.value if item.projection_job_id == foreign]
+    assert [item.status.value for item in rejected] == ["REJECTED"]
+    assert "unsupported projection_type" in rejected[0].detail
     assert projection_job_row(db, foreign)[5] == "REJECTED"
 
 
@@ -603,7 +714,10 @@ def test_ensure_refuses_a_turn_that_never_completed(
 ) -> None:
     del conversation
     turn_id = speak(store, CONV, "cm-nonterminal", "I live in Berlin.")
-    refused = projection_runtime.ensure_projection_job(turn_id)
+    # P4-3 semantic sync: the ensure face is plural now (one id per supported
+    # type); this pin is about the refusal itself, which happens before any
+    # type is walked.
+    refused = projection_runtime.ensure_projection_jobs(turn_id)
     assert isinstance(refused, Err)
     assert refused.error.code is DomainErrorCode.VALIDATION_FAILED
     assert "COMPLETED" in refused.error.message
@@ -802,6 +916,45 @@ def test_a_run_this_process_claimed_is_not_stale_residue(
     assert projection_job_row(db, job_id)[6] == 1
 
 
+def test_a_settled_run_leaves_the_live_claim_set(
+    db: sqlite3.Connection,
+    store: SqliteConversationStore,
+    projection_store: SqliteProjectionStore,
+    coordinator: ConversationCoordinator,
+) -> None:
+    """F-5's third face (P4-3, DEC-OPI-4d516e4f.13 revisit item three): the
+    claim set tracks *live* work, not every job the process ever touched.
+
+    A run that **reported** an outcome — committed, failed-retryable,
+    rejected — leaves the set, so it cannot grow without bound over a long
+    process; a run that *raised* does not, which is what keeps the live-run
+    protection of the two tests around this one exactly as it was.
+    """
+
+    executor = _ScriptedExecutor()
+    runtime = _runtime(projection_store, store, executor)
+
+    turn = commit_chat_turn(coordinator, "cm-settle", "I live in Berlin.", 1)
+    runtime.run_after_turn(CONV, turn.turn_id)
+    assert runtime._claimed_here == set()
+
+    # A rejected run settles too (the deterministic-refusal edge).
+    executor.failure = DomainError(
+        code=DomainErrorCode.VALIDATION_FAILED, message="scope refused"
+    )
+    second = commit_chat_turn(coordinator, "cm-settle-2", "I read.", 2)
+    runtime.run_after_turn(CONV, second.turn_id)
+    assert runtime._claimed_here == set()
+
+    # The raising case does NOT settle: that job is still this process's
+    # live RUNNING row (the property the F-5 scan relies on).
+    executor.failure = None
+    executor.explode = True
+    third = commit_chat_turn(coordinator, "cm-settle-3", "I keep a garden.", 3)
+    assert isinstance(runtime.run_after_turn(CONV, third.turn_id), Err)
+    assert len(runtime._claimed_here) == 1
+
+
 def test_a_restarted_runtime_still_collects_the_previous_residue(
     db: sqlite3.Connection,
     store: SqliteConversationStore,
@@ -827,8 +980,11 @@ def test_a_restarted_runtime_still_collects_the_previous_residue(
     assert projection_job_row(db, job_id)[5] == "FAILED_RETRYABLE"
 
     runs = restarted.run_after_turn(CONV, turn.turn_id)
-    assert isinstance(runs, Ok), runs
-    assert [item.status.value for item in runs.value] == ["COMMITTED"]
+    # P4-3 semantic sync: only the RELATIONSHIP job has a scripted executor
+    # in this assembly, so the run reports it COMMITTED and the EPISODE job
+    # (no executor registered here) REJECTED as unsupported — the pin below
+    # is the RELATIONSHIP half it has always been about.
+    assert [item.status.value for item in _runs_of(runs)] == ["COMMITTED"]
     assert projection_job_row(db, job_id)[6] == 2
 
 
@@ -842,11 +998,16 @@ def test_a_crash_gap_is_repaired_from_the_deterministic_id(
     coordinator: ConversationCoordinator,
 ) -> None:
     """The turn completed and its job row is not there (the crash
-    simulation): ``ensure_projection_job`` recreates exactly that row,
+    simulation): ``ensure_projection_jobs`` recreates exactly that row,
     idempotently, and the job then runs to COMMITTED.
 
-    The conversation carries a persona, so the real RELATIONSHIP executor can
-    compute its base and actually commit.
+    The conversation carries a persona, so the real executors can compute
+    their bases and actually commit.
+
+    P4-3 semantic sync: the repair is per ``(projection_type, turn)`` pair
+    now, so one call restores both types' rows (this pin keeps reading the
+    RELATIONSHIP row it has always been about, and the row counts move with
+    the supported-type count).
     """
 
     conversation = open_conversation_for(store, "conv-gap-persona", PERSONA_A)
@@ -858,10 +1019,11 @@ def test_a_crash_gap_is_repaired_from_the_deterministic_id(
     absent = projection_runtime.job_view(job_id)
     assert isinstance(absent, Ok) and absent.value is None
 
-    ensured = projection_runtime.ensure_projection_job(turn.turn_id)
+    ensured = projection_runtime.ensure_projection_jobs(turn.turn_id)
     assert isinstance(ensured, Ok)
-    assert ensured.value == job_id
-    assert len(projection_job_rows(db)) == 1
+    assert ensured.value[0] == job_id
+    assert len(ensured.value) == len(SUPPORTED_PROJECTION_TYPES)
+    assert len(projection_job_rows(db)) == len(SUPPORTED_PROJECTION_TYPES)
     assert projection_job_row(db, job_id)[5] == "PENDING"
     # The repaired row is the *current* slice's job: its recorded hash is
     # the live slice's digest, so the next run will not reject it.
@@ -869,15 +1031,14 @@ def test_a_crash_gap_is_repaired_from_the_deterministic_id(
         turn_slice(store, turn.turn_id)
     )
 
-    # Repeating the repair is a replay: still one row, untouched.
-    again = projection_runtime.ensure_projection_job(turn.turn_id)
-    assert isinstance(again, Ok) and again.value == job_id
-    assert len(projection_job_rows(db)) == 1
+    # Repeating the repair is a replay: the same rows, untouched.
+    again = projection_runtime.ensure_projection_jobs(turn.turn_id)
+    assert isinstance(again, Ok) and again.value[0] == job_id
+    assert len(projection_job_rows(db)) == len(SUPPORTED_PROJECTION_TYPES)
     assert projection_job_row(db, job_id)[6] == 0
 
     runs = projection_runtime.run_after_turn(conversation, turn.turn_id)
-    assert isinstance(runs, Ok), runs
-    assert [item.status.value for item in runs.value] == ["COMMITTED"]
+    assert [item.status.value for item in _runs_of(runs)] == ["COMMITTED"]
     assert projection_job_row(db, job_id)[5] == "COMMITTED"
     assert projection_job_row(db, job_id)[6] == 1
 
@@ -889,18 +1050,25 @@ def test_the_missing_job_scan_finds_exactly_the_gap(
 ) -> None:
     first = commit_chat_turn(coordinator, "cm-scan-1", "I live in Berlin.", 1)
     second = commit_chat_turn(coordinator, "cm-scan-2", "I read every evening.", 2)
-    # Turn 1 gets its job; turn 2 stays a crash gap.
-    assert isinstance(projection_runtime.ensure_projection_job(first.turn_id), Ok)
+    # Turn 1 gets its jobs; turn 2 stays a crash gap.
+    assert isinstance(
+        projection_runtime.ensure_projection_jobs(first.turn_id), Ok
+    )
 
     missing = projection_runtime.ensure_missing_jobs()
     assert isinstance(missing, Ok)
+    # P4-3 semantic sync: the scan walks one supported type at a time and the
+    # per-turn repair returns that turn's ids in SUPPORTED_PROJECTION_TYPES
+    # order, so a turn missing both types reports both — RELATIONSHIP first,
+    # EPISODE second. Same gap, same deterministic ids, two rows.
     assert missing.value == (
         projection_id_for(PROJECTION_TYPE_RELATIONSHIP, second.turn_id),
+        projection_id_for(PROJECTION_TYPE_EPISODE, second.turn_id),
     )
     # The scan is idempotent: the second pass has nothing left to repair.
     empty = projection_runtime.ensure_missing_jobs()
     assert isinstance(empty, Ok) and empty.value == ()
-    assert len(projection_job_rows(db)) == 2
+    assert len(projection_job_rows(db)) == 2 * len(SUPPORTED_PROJECTION_TYPES)
 
 
 def test_a_conflicting_payload_on_the_deterministic_id_is_a_conflict(
@@ -929,7 +1097,7 @@ def test_a_conflicting_payload_on_the_deterministic_id_is_a_conflict(
         ),
         Ok,
     )
-    refused = projection_runtime.ensure_projection_job(turn.turn_id)
+    refused = projection_runtime.ensure_projection_jobs(turn.turn_id)
     assert isinstance(refused, Err)
     assert refused.error.code is DomainErrorCode.CONFLICT
 

@@ -42,7 +42,10 @@ CONTRACT_MARKERS = (
     "ConversationCoordinatorLease",
     "never rolls back the transcript",
     "never blocks the next turn",
-    "ensure_projection_job",
+    # P4-3 semantic sync: the clause is unchanged (the crash-gap repair
+    # face); its name moved to the plural because the face now ensures one
+    # job per supported type instead of the single RELATIONSHIP job.
+    "ensure_projection_jobs",
 )
 
 

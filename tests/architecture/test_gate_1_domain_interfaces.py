@@ -105,6 +105,14 @@ def test_domain_controller_is_empty_skeleton(package: str) -> None:
         # cannot carry a complete write (supersede_memory / get_memory) still
         # raise NotImplementedError with a pointer.
         "relationship": {"RelationshipController"},
+        # P4-3 (TASK-OPI-4d516e4f-….19 ③④): UserConfigController graduated
+        # as the User Configuration/Profile authority face — the §18.1
+        # sensitive-persistence gate is in the controller, the pure
+        # disclosure ladder is elc.user_config.disclosure, the durable rows
+        # and all SQL live in elc.user_config.store, and the three Phase 6
+        # faces (goal portfolio / teaching policy / session focus) still
+        # raise NotImplementedError with a phase pointer.
+        "user_config": {"UserConfigController"},
     }
     allowed = infra_allowlist.get(package, set())
     skipped_classes = phase1_class_allowlist.get(package, set())

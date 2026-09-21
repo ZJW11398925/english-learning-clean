@@ -29,6 +29,7 @@ from elc.relationship import (
 )
 from elc.runtime.controller import ConversationCoordinator, TeachingReplyRequest
 from elc.runtime.projections import (
+    PROJECTION_TYPE_EPISODE,
     PROJECTION_TYPE_RELATIONSHIP,
     CP4ProjectionRuntime,
     base_version_for,
@@ -47,6 +48,7 @@ from .conftest import (
     REQUESTED_AT,
     ScriptedCandidates,
     commit_chat_turn,
+    complete_executors,
     memory_candidate,
     memory_rows,
     open_conversation_for,
@@ -78,7 +80,13 @@ def _project(
     user_id=REL_USER,
 ) -> CP4ProjectionRuntime:
     """The runtime over one RELATIONSHIP executor built from the given
-    pieces (the test states the controller it means to probe)."""
+    pieces (the test states the controller it means to probe).
+
+    P4-3 (review LOW-2) semantic sync: the runtime refuses an incomplete
+    executor set at construction, so the other supported type gets a no-op
+    filler — the probes below are about the RELATIONSHIP executor, and every
+    assertion selects its results by type.
+    """
 
     executor = RelationshipProjectionExecutor(
         recorder=RelationshipRecorder(store),
@@ -88,8 +96,29 @@ def _project(
         candidates=ScriptedCandidates(candidates),
     )
     return CP4ProjectionRuntime(
-        store=projection_store, executors=(executor,), turns=store
+        store=projection_store,
+        executors=complete_executors(executor),
+        turns=store,
     )
+
+
+def _runs_of(
+    runs, projection_type: str = PROJECTION_TYPE_RELATIONSHIP
+) -> list:
+    """The run results of one projection type (P4-3 semantic sync).
+
+    The runtime now enqueues one job per entry of ``SUPPORTED_PROJECTION_
+    TYPES``, and these pins are about the RELATIONSHIP executor: the
+    single-executor assemblies below therefore also report the EPISODE job
+    (as an unsupported-type rejection — no executor claims it). Selecting by
+    type keeps every assertion about what it was about, instead of about
+    which job the queue happened to order first (the queue orders by
+    ``created_at, projection_id``, which does not put the types in a fixed
+    order).
+    """
+
+    assert isinstance(runs, Ok), runs
+    return [item for item in runs.value if item.projection_type == projection_type]
 
 
 def _open_and_reply(
@@ -246,9 +275,23 @@ def test_a_command_turn_projects_no_memory(
     # what keeps those projections memory-free is the Recorder's durable
     # command-turn classification, not a narrower scan.
     rows = projection_job_rows(db)
-    assert len(rows) == 1
-    assert rows[0][2] == str(replied.turn_id)
-    assert rows[0][5] == "COMMITTED"
+    # P4-3 semantic sync: the post-turn line enqueues one job per supported
+    # type, so the reply turn now owns two rows — the RELATIONSHIP job this
+    # assertion has always been about, and the EPISODE job of the same turn.
+    # The command-turn red line that keeps them memory-free is unchanged (the
+    # Recorder's durable classifier for the relationship side).
+    assert len(rows) == 2
+    assert {row[2] for row in rows} == {str(replied.turn_id)}
+    # The episode half refuses here, deterministically: this conversation's
+    # only canonical slices are the two command turns, and the conversation
+    # window excludes command turns (they are not utterances), so the episode
+    # has an empty window and elc.relationship.episode refuses it rather than
+    # writing a row derived from nothing. That refusal is REJECTED, not
+    # retried — the window will not grow any utterances by being asked again.
+    assert {row[1]: row[5] for row in rows} == {
+        PROJECTION_TYPE_RELATIONSHIP: "COMMITTED",
+        PROJECTION_TYPE_EPISODE: "REJECTED",
+    }
     assert str(opened.moment_id) != ""
     assert replied.evidence_commit_id is not None  # the reply itself was real
 
@@ -274,9 +317,8 @@ def test_the_run_detail_counts_the_recorder_refusals(
         candidates=(memory_candidate("The user lives in Berlin."),),
     )
     runs = runtime.run_after_turn(conversation, replied.turn_id)
-    assert isinstance(runs, Ok), runs
-    assert [item.status.value for item in runs.value] == ["COMMITTED"]
-    detail = runs.value[0].detail
+    assert [item.status.value for item in _runs_of(runs)] == ["COMMITTED"]
+    detail = _runs_of(runs)[0].detail
     assert detail == (
         "committed: proposals=0 committed=0 controller_refusals=0"
         " recorder_refusals=1"
@@ -291,8 +333,7 @@ def test_the_run_detail_counts_the_recorder_refusals(
         conversation=conversation,
     )
     accepted = runtime.run_after_turn(conversation, chat.turn_id)
-    assert isinstance(accepted, Ok), accepted
-    assert accepted.value[0].detail == (
+    assert _runs_of(accepted)[0].detail == (
         "committed: proposals=1 committed=1 controller_refusals=0"
         " recorder_refusals=0"
     )
@@ -333,9 +374,8 @@ def test_a_conversation_without_a_persona_is_refused_at_the_base(
     )
     turn = commit_chat_turn(coordinator, "cm-proj-nopersona", "I live in Berlin.", 1)
     runs = runtime.run_after_turn(CONV, turn.turn_id)
-    assert isinstance(runs, Ok), runs
-    assert [item.status.value for item in runs.value] == ["REJECTED"]
-    assert "has no persona" in runs.value[0].detail
+    assert [item.status.value for item in _runs_of(runs)] == ["REJECTED"]
+    assert "has no persona" in _runs_of(runs)[0].detail
     job_id = projection_id_for(PROJECTION_TYPE_RELATIONSHIP, turn.turn_id)
     assert projection_job_row(db, job_id)[5] == "REJECTED"
     assert projection_job_row(db, job_id)[6] == 0  # never claimed
@@ -367,10 +407,10 @@ def test_a_mis_assembled_summary_is_refused_with_zero_writes(
         candidates=(memory_candidate("The user lives in Berlin."),),
     )
     runs = runtime.run_after_turn(conversation, turn.turn_id)
-    assert isinstance(runs, Ok), runs
-    assert [item.status.value for item in runs.value] == ["REJECTED"]
-    assert "scope mismatch" in runs.value[0].detail
-    assert str(PERSONA_B) in runs.value[0].detail
+    rejected = _runs_of(runs)
+    assert [item.status.value for item in rejected] == ["REJECTED"]
+    assert "scope mismatch" in rejected[0].detail
+    assert str(PERSONA_B) in rejected[0].detail
     job_id = projection_id_for(PROJECTION_TYPE_RELATIONSHIP, turn.turn_id)
     assert projection_job_row(db, job_id)[5] == "REJECTED"
     assert memory_rows(db) == []

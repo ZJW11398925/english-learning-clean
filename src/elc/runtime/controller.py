@@ -32,7 +32,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Callable, TypeVar
 
 from elc.conversation.commands import CommitUserTurn, ConversationCommands
 from elc.conversation.queries import ConversationQueries
@@ -79,13 +79,17 @@ from elc.platform.types import (
     TargetId,
     TurnId,
     TurnSequence,
+    UserId,
 )
+from elc.relationship.episode import EpisodeView
+from elc.relationship.types import RelationshipView
 from elc.runtime.decision_cycles import (
     DecisionCycleBindings,
     DecisionCycleStore,
 )
 from elc.runtime.generation import GenerationActionStore
 from elc.runtime.lease import ConversationCoordinatorLease
+from elc.runtime.persona_views import PersonaViewSource
 from elc.runtime.projections import (
     CP4ProjectionRuntime,
     ProjectionJobView,
@@ -178,6 +182,7 @@ from elc.teaching.types import (
     TeachingSupportLevel,
     TeachingTargetRef,
 )
+from elc.user_config.types import DisclosedUserProfile
 
 if TYPE_CHECKING:
     # Annotations only: the coordinator calls the injected authority faces,
@@ -194,6 +199,13 @@ SERVER_SENT_UNCONFIRMED = "SERVER_SENT_UNCONFIRMED"
 
 #: Conversation window size handed to Persona Runtime (RUNTIME §11
 #: ConversationWindow view).
+#:
+#: The Episode projection reads the same window and declares the same number
+#: again as ``elc.relationship.episode.EPISODE_WINDOW_MAX_TURNS`` (that
+#: module carries the mirror of this note). The duplication is deliberate:
+#: P4-G1 forbids ``elc.relationship`` importing ``elc.runtime``, so neither
+#: constant can reference the other, and a test
+#: (tests/phase4/test_p4_3_gates.py) holds the equality instead.
 CONVERSATION_WINDOW_MAX_TURNS = 20
 
 #: GenerationContract id of the CP2 first teaching action (§20
@@ -507,8 +519,9 @@ class RuntimeOrchestrator:
         source_turn_slice_hash + base_domain_version revalidation on retry,
         no ConversationCoordinatorLease held, a failure that neither rolls
         back the transcript nor re-sends the assistant nor blocks the next
-        turn, and ``ensure_projection_job`` re-creating a crash-gap job from
-        its deterministic id) — and since P4-2 it is *implemented* by
+        turn, and ``ensure_projection_jobs`` re-creating a crash-gap job per
+        (type, turn) pair from its deterministic id) — and since P4-2 it is
+        *implemented* by
 
             elc.runtime.projections.CP4ProjectionRuntime
 
@@ -620,6 +633,25 @@ class ConversationCoordinator:
       backlog lines (DEC-…96 F1/F2) as defaulted outcome fields, so every
       assembly without the port keeps its exact plan shape and every
       existing construction/equality assertion over the plan stays true.
+
+    Phase 4 P4-3 (TASK-OPI-4d516e4f-….19 ⑤): one more optional port,
+    ``persona_views`` (elc.runtime.persona_views.PersonaViewSource), lets the
+    same coordinator fill the three §11 views of a GenerationContext —
+
+    - ``begin_turn`` and ``respond_to_teaching`` ask it for the persona's
+      RelationshipView, the conversation's EpisodeView and the user's
+      DisclosedUserProfile, and pass whatever comes back into the
+      PromptCompiler request (D-INV-012: the orchestrator only hands over
+      views, never prompt text);
+    - every read is best-effort: a refusal or an exception becomes ``None``
+      for that view and the turn proceeds (RA §21 "Learning commit
+      unavailable … normal persona"; §19 "turn still succeeds"). A missing
+      view costs the prompt a section, never the user a reply;
+    - ``persona_views=None`` (the default, and every assembly before this
+      slice) keeps the P1/P2/P3 behavior byte-identical: the three views stay
+      ``None`` and the compiled prompt is exactly what it was — the same
+      optional-injection discipline as ``learning`` / ``character_package`` /
+      ``projections`` above.
     """
 
     def __init__(
@@ -636,6 +668,7 @@ class ConversationCoordinator:
         teaching: TeachingController | None = None,
         targets: TeachingTargetProvider | None = None,
         projections: CP4ProjectionRuntime | None = None,
+        persona_views: PersonaViewSource | None = None,
     ) -> None:
         self._lease = lease
         self._commands = conversation_commands
@@ -649,6 +682,7 @@ class ConversationCoordinator:
         self._teaching = teaching
         self._targets = targets
         self._projections = projections
+        self._persona_views = persona_views
 
     # -- minimum turn loop ---------------------------------------------------
 
@@ -842,12 +876,17 @@ class ConversationCoordinator:
             )
             persona_id = self._persona_id(command.conversation_id)
             contract = self._contract(persona_id)
+            (
+                relationship_view,
+                episode_view,
+                disclosed_profile,
+            ) = self._persona_views_for(command.conversation_id, persona_id)
             context = GenerationContext(
                 character_package=self._character_package,
-                relationship_view=None,
-                episode_view=None,
+                relationship_view=relationship_view,
+                episode_view=episode_view,
                 world_lore_view=None,
-                disclosed_user_profile=None,
+                disclosed_user_profile=disclosed_profile,
                 conversation_window=window,
                 language_policy="default",
                 generation_policy="default",
@@ -903,6 +942,91 @@ class ConversationCoordinator:
                 outcome=TurnOutcome.REPLIED_FULL,
             )
             return self.finalize_delivery(delivery, state_version)
+
+    # -- the persona-facing views (P4-3) ------------------------------------
+
+    def _persona_views_for(
+        self, conversation_id: ConversationId, persona_id: PersonaId
+    ) -> tuple[
+        RelationshipView | None, EpisodeView | None, DisclosedUserProfile | None
+    ]:
+        """Best-effort read of the three §11 views of one turn (P4-3).
+
+        Returns ``(relationship_view, episode_view, disclosed_user_profile)``
+        for the GenerationContext. Every leg is *optional* and every failure
+        is "no view":
+
+        - no ``persona_views`` port (every assembly before P4-3, and every
+          assembly that does not wire one) → three ``None``s, so the compiled
+          prompt is byte-identical to what it was before this slice;
+        - an ``Err`` from any leg → ``None`` for that leg;
+        - an exception escaping any leg (a broken store, a programming error
+          beyond the port's own contract) → ``None`` for that leg;
+        - an exception escaping the port's own ``user_id`` property → three
+          ``None``s (no leg can be asked without a user, so the whole read
+          degrades together — the turn still finishes).
+
+        The reason is RA §21's degradation rule, stated for both Phase-4
+        projections: a Relationship/Episode read failure must not block the
+        turn ("Learning commit unavailable … normal persona"; §19 "turn still
+        succeeds / projection retry/rebuild"). A missing view costs the
+        prompt a section; a raised exception would cost the user their reply.
+        The ``user_id`` leg is inside the guard for exactly that reason: it
+        is a *read* like any other, it happens after the transcript is
+        already durable, and an unguarded property read that raises would
+        have travelled out of ``begin_turn`` — the one thing this method
+        exists to prevent (review LOW-1).
+
+        The user leg comes from the port itself (``persona_views.user_id``):
+        a ConversationRecord carries no ``user_id`` (DATA_MODEL §3), so the
+        assembly owns that fact and the orchestrator only passes it back
+        through — see elc.runtime.persona_views for the full reasoning.
+        """
+
+        views = self._persona_views
+        if views is None:
+            return None, None, None
+        # ``_user_or_none`` wraps the property read in the same guard as the
+        # three legs: without a user there is no leg to ask, so a failure
+        # here degrades the whole set rather than escaping the method.
+        user_id = self._user_or_none(views)
+        if user_id is None:
+            return None, None, None
+        relationship = self._view_or_none(
+            lambda: views.relationship_view(persona_id, user_id)
+        )
+        episode = self._view_or_none(
+            lambda: views.episode_view(conversation_id)
+        )
+        profile = self._view_or_none(
+            lambda: views.disclosed_user_profile(user_id, persona_id)
+        )
+        return relationship, episode, profile
+
+    @staticmethod
+    def _user_or_none(views: PersonaViewSource) -> UserId | None:
+        """The port's own user scope, read under the best-effort guard.
+
+        ``Ok(None)`` has no equivalent here — this is a property, not a
+        ``Result`` — so the only two outcomes are the id and ``None``
+        (unreadable, for any reason).
+        """
+
+        try:
+            return views.user_id
+        except Exception:  # noqa: BLE001 — a read never fails the turn
+            return None
+
+    @staticmethod
+    def _view_or_none(read: Callable[[], Result[_ViewT]]) -> _ViewT | None:
+        """One best-effort view read: ``Ok(value)`` → value, everything else
+        → ``None`` (including anything raised outside the port's contract)."""
+
+        try:
+            outcome = read()
+        except Exception:  # noqa: BLE001 — a read never fails the turn
+            return None
+        return outcome.value if isinstance(outcome, Ok) else None
 
     # -- CP4 post-turn projections (P4-2) -----------------------------------
 
@@ -3580,12 +3704,17 @@ class ConversationCoordinator:
         window = (
             context_result.value if isinstance(context_result, Ok) else None
         )
+        (
+            relationship_view,
+            episode_view,
+            disclosed_profile,
+        ) = self._persona_views_for(conversation_id, persona_id)
         context = GenerationContext(
             character_package=self._character_package,
-            relationship_view=None,
-            episode_view=None,
+            relationship_view=relationship_view,
+            episode_view=episode_view,
             world_lore_view=None,
-            disclosed_user_profile=None,
+            disclosed_user_profile=disclosed_profile,
             conversation_window=window,
             language_policy="default",
             generation_policy="default",
@@ -4413,6 +4542,11 @@ class ConversationCoordinator:
 
 
 _E = TypeVar("_E")
+
+#: The value channel of one persona-view read (P4-3): the three §11 views
+#: have three different types, so the best-effort helper is generic over
+#: whichever one it is handed.
+_ViewT = TypeVar("_ViewT")
 
 
 def _missing(message: str) -> Err[_E]:

@@ -32,7 +32,15 @@ from elc.runtime.lease import (
     LeaseGuard,
     StaleCoordinatorEpoch,
 )
+from elc.runtime.persona_views import (
+    ControllerPersonaViews,
+    DisclosedProfileSource,
+    EpisodeViewSource,
+    PersonaViewSource,
+    RelationshipViewSource,
+)
 from elc.runtime.projections import (
+    PROJECTION_TYPE_EPISODE,
     PROJECTION_TYPE_RELATIONSHIP,
     SUPPORTED_PROJECTION_TYPES,
     CP4ProjectionRuntime,
@@ -88,12 +96,18 @@ _CONTROLLER_EXPORTS = (
 __all__ = [
     "AssistantDelivery",
     "CP4ProjectionRuntime",
+    "ControllerPersonaViews",
     "DanglingEvidenceRef",
+    "DisclosedProfileSource",
+    "EpisodeViewSource",
     "GENERATION_ACTION_TRANSITIONS",
+    "PROJECTION_TYPE_EPISODE",
     "PROJECTION_TYPE_RELATIONSHIP",
+    "PersonaViewSource",
     "RECOVERY_KIND_LOCK",
     "RECOVERY_KIND_TURN",
     "RECOVERY_REARM_STATUS",
+    "RelationshipViewSource",
     "SUPPORTED_PROJECTION_TYPES",
     "TERMINAL_TURN_STATUSES",
     "ConversationCoordinator",

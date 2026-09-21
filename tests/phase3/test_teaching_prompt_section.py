@@ -145,10 +145,19 @@ def test_the_rendered_section_follows_the_pinned_key_order() -> None:
     again = compiler.compile(request)
     assert isinstance(again, Ok)
     assert again.value.prompt_text == compiled.value.prompt_text
+    # P4-3 semantic sync (TASK-OPI-4d516e4f.19 ④): the order this test pins
+    # is the same declared constant it always pinned — P4-3 inserted the
+    # three §11 views Persona Runtime consumes (profile / relationship /
+    # episode) at their stated positions. The teaching section keeps its
+    # place relative to persona/contract/history/channel; only the three new
+    # sections are added. Nothing was removed.
     assert PROMPT_SECTION_ORDER == (
         "persona",
+        "profile",
         "contract",
         "history",
+        "relationship",
+        "episode",
         "teaching",
         "channel",
     )
