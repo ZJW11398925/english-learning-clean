@@ -57,11 +57,25 @@ from elc.platform.types import (
     Result,
 )
 
-__all__ = ["ContentStore", "ContentStoreError", "open_read_only"]
+__all__ = [
+    "CAPABILITY_CREDIT_EDITORIAL_STATUS",
+    "ContentStore",
+    "ContentStoreError",
+    "open_read_only",
+]
 
 #: docs/DATA_MODEL.md §26.1 metadata keys carried by the artifact.
 _CONTENT_VERSION_KEY = "content_version"
 _CURRICULUM_VERSION_KEY = "curriculum_version"
+
+#: The §24.11 ``editorial_status`` a §24.7 CurriculumLink must carry before it
+#: may become a *capability credit* (P5-R). A link the author's review has not
+#: approved is a curriculum *mapping*, not a claim about the learner's
+#: capability: the chat/teaching chain credits ``ALTERNATIVE_SUCCESS`` to the
+#: capability a link names, so an unapproved link would mint
+#: CAPABILITY / POSITIVE learner evidence out of a test-corpus convenience
+#: mapping. One constant, used by the one read that feeds that credit path.
+CAPABILITY_CREDIT_EDITORIAL_STATUS = "CANONICAL_APPROVED"
 
 
 class ContentStoreError(RuntimeError):
@@ -341,10 +355,29 @@ class ContentStore:
         return tuple(tuple(group) for group in groups)
 
     def _primary_realization_node(self, entity_id: str) -> str | None:
+        """The primary REALIZES node this entity's teaching payload may
+        credit — **only when the §24.7 link is author-approved** (P5-R).
+
+        The returned id is what the teaching chain turns into a
+        CAPABILITY/POSITIVE claim on an ``ALTERNATIVE_SUCCESS`` attempt
+        (elc.learning.teaching_evidence §5 fold), so the read is gated on
+        :data:`CAPABILITY_CREDIT_EDITORIAL_STATUS`: **an unapproved link never
+        enters capability credit**. A ``CURRICULUM_MAPPED`` (or otherwise
+        unapproved) row stays fully readable through
+        :meth:`curriculum_links_of` — excluded from credit, never deleted —
+        and this method answers ``None`` for it, exactly as it does for an
+        entity with no link at all.
+        """
+
         rows = self._conn.execute(
             "SELECT node_id FROM curriculum_link WHERE resource_id = ? "
-            "AND relation = ? AND primary_flag = 1 ORDER BY node_id",
-            (entity_id, str(CurriculumLinkRelation.REALIZES)),
+            "AND relation = ? AND primary_flag = 1 AND editorial_status = ? "
+            "ORDER BY node_id",
+            (
+                entity_id,
+                str(CurriculumLinkRelation.REALIZES),
+                CAPABILITY_CREDIT_EDITORIAL_STATUS,
+            ),
         ).fetchall()
         if len(rows) > 1:
             # The build refuses this source; a stored copy that has it is not a

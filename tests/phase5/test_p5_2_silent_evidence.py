@@ -49,6 +49,7 @@ from elc.learning.silent_claim import (
     SILENT_EVIDENCE_EVALUATOR_VERSION,
     SILENT_EVIDENCE_MODALITY,
     SILENT_OBSERVATION_CLAIM_ROLE,
+    USE_JUDGMENT_CONFIDENCE,
 )
 from elc.learning.silent_evidence import ContentBackedTargetSupply
 from elc.learning.store import SqliteLearningStore
@@ -354,7 +355,11 @@ def test_the_commit_lands_the_claim_in_the_turns_own_group(
     assert claim["spontaneity"] == "SPONTANEOUS"
     assert claim["evaluator_id"] == SILENT_EVIDENCE_EVALUATOR_ID
     assert claim["evaluator_version"] == SILENT_EVIDENCE_EVALUATOR_VERSION
-    assert claim["evaluator_confidence"] == 1.0
+    # P5-R: the claim carries a use-judgement (0.60) — above the estimator's
+    # §10 state-mass floor, below its §17 strong-retrieval floor — never the
+    # matcher's certainty (1.0, which stays on the observation).
+    assert claim["evaluator_confidence"] == USE_JUDGMENT_CONFIDENCE
+    assert claim["evaluator_confidence"] != 1.0
     assert claim["error_attribution"] == "UNKNOWN"
     assert claim["evidence_modality"] == SILENT_EVIDENCE_MODALITY
     assert claim["source_turn_id"] == str(turn.turn_id)
@@ -415,6 +420,15 @@ def test_the_rebuild_moves_the_state(
     conversation: ConversationId,
     silent_supply: ContentBackedTargetSupply,
 ) -> None:
+    """The projection moves on the admitted claim — at P5-R's judgement
+    confidence, which is above the §10 floor but below §17's strong-retrieval
+    floor, so only the dimensions whose per-dimension mass clears the §14
+    effective-mass threshold (0.55) get an estimate: spontaneous and
+    independent production do (1.00 × 0.60), recognition (0.90 × 0.60 = 0.54)
+    and guided production (0.80 × 0.60 = 0.48) stay UNKNOWN — one rule-based
+    observation is not enough mass to estimate them, which is the point of
+    the confidence change."""
+
     turn = _turn_slice(conversation_store, conversation, "cm-p52-state", HEDGE_FORM)
     assert _state(db, HEDGE) is None, "the before state is the leg's"
     _, committed = _commit_slice(
@@ -429,10 +443,14 @@ def test_the_rebuild_moves_the_state(
     state = _state(db, HEDGE)
     assert state is not None
     dimensions = state["dimensions"]
+    print(
+        "[p5-r] dimensions after one 0.60 claim -> "
+        f"{ {name: dim['estimate'] for name, dim in dimensions.items()} }"
+    )
     assert dimensions["spontaneous_production"]["estimate"] not in (None, 0.0)
     assert dimensions["independent_production"]["estimate"] not in (None, 0.0)
-    assert dimensions["recognition"]["estimate"] not in (None, 0.0)
-    assert dimensions["guided_production"]["estimate"] not in (None, 0.0)
+    assert dimensions["recognition"]["estimate"] is None
+    assert dimensions["guided_production"]["estimate"] is None
     assert state["coverage"]["evidence_groups"] == 1
     row = db.execute(
         "SELECT evidence_watermark FROM learner_target_state"
@@ -597,17 +615,19 @@ def test_the_kernel_trusts_the_document_and_never_checks_supply(
     learning: SqliteLearningStore,
 ) -> None:
     """The boundary is where the doc says it is: a resolution document
-    naming an id the corpus does not carry still commits (the read face is
-    the supply gate, not the kernel — the teaching-provider division of
-    labour). This pin fails the day the kernel starts validating supply,
-    which is a contract change, not a silent tightening."""
+    naming an id the corpus does not carry still commits, as long as the
+    *admission set* admits it (P5-R, whole-sentence form-class RESOURCE) —
+    the read face is the supply gate, not the kernel (the teaching-provider
+    division of labour). This pin fails the day the kernel starts validating
+    supply, which is a contract change, not a silent tightening."""
 
-    turn = _turn_slice(conversation_store, conversation, "cm-p52-trust", HEDGE_FORM)
+    utterance = "a form no corpus carries"
+    turn = _turn_slice(conversation_store, conversation, "cm-p52-trust", utterance)
     fabricated = ResolvedTarget(
         target_type="RESOURCE",
         target_id="res-not-in-any-supply",
-        matched_form="a form no corpus carries",
-        matched_via=MatchVia.REQUIRED_SLOTS,
+        matched_form=utterance,
+        matched_via=MatchVia.CANONICAL_FORM,
     )
     artifact, committed = _commit_slice(learning, turn, fabricated)
     assert isinstance(committed, Ok), committed
@@ -618,13 +638,40 @@ def test_the_kernel_trusts_the_document_and_never_checks_supply(
     assert "res-not-in-any-supply" in artifact.structured_proposal
 
 
+def test_the_kernel_refuses_a_document_admission_would_not_admit(
+    db: sqlite3.Connection,
+    conversation_store: Any,
+    conversation: ConversationId,
+    learning: SqliteLearningStore,
+) -> None:
+    """The other half of the boundary (P5-R): the kernel does not trust the
+    document's *match facts* either. A document that records a slot-only
+    match — the class the live gate refuses — commits with zero claims."""
+
+    turn = _turn_slice(
+        conversation_store, conversation, "cm-p52-trust-slots", HEDGE_FORM
+    )
+    slot_only = ResolvedTarget(
+        target_type="RESOURCE",
+        target_id=HEDGE,
+        matched_form="rain guess",
+        matched_via=MatchVia.REQUIRED_SLOTS,
+    )
+    artifact, committed = _commit_slice(learning, turn, slot_only)
+    assert isinstance(committed, Ok), committed
+    assert _claims(db) == ()
+    assert "rain guess" in artifact.structured_proposal
+
+
 # ---------------------------------------------------------------------------
 # ⑤ estimator consistency: the same facts move the state the same way
 # ---------------------------------------------------------------------------
 
 
 def _control_claim(target_id: str) -> EvidenceClaimView:
-    """The silent claim's facts, dressed as an ordinary kernel claim."""
+    """The silent claim's facts, dressed as an ordinary kernel claim (P5-R:
+    including the 0.60 confidence — the comparison is "same facts, same
+    movement", so the facts must actually be the same)."""
 
     return EvidenceClaimView(
         evidence_claim_id=f"ecl-control-{target_id}",
@@ -637,7 +684,7 @@ def _control_claim(target_id: str) -> EvidenceClaimView:
         outcome=AttemptOutcome.SUCCESS,
         support=SupportLevel.NONE,
         exposure=ExposureLevel.NONE,
-        evaluator_confidence=1.0,
+        evaluator_confidence=USE_JUDGMENT_CONFIDENCE,
         error_attribution=ErrorAttribution.UNKNOWN,
         accuracy=None,
         pragmatic_fit=None,

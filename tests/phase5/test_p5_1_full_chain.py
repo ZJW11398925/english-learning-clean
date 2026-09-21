@@ -20,8 +20,10 @@ Five things are established, each in its own scenario:
   default changed) changes what the chain opens — the fixture corpus is not
   behind this;
 - the state really moves, and what it moves *on* is the artifact's data: the
-  second cycle's alternative realization is credited to the CAPABILITY the
-  provider read out of the linked CurriculumLink;
+  second cycle's alternative realization is **not** credited to a capability
+  (P5-R: the artifact's §24.7 link is ``CURRICULUM_MAPPED``, and only an
+  approved mapping reaches the credit face) — the resource carries the §5
+  NEUTRAL claim and the capability's state never appears;
 - an unusable artifact degrades the Gate (UNKNOWN → DEGRADED, no synthetic
   DENY), while an unknown or wrong-kind target denies deterministically;
 - a §24.11 candidate — excluded from supply — reaches the Gate as its own
@@ -347,7 +349,7 @@ def test_the_chain_follows_the_artifact_not_a_fixture(
 # ---------------------------------------------------------------------------
 
 
-def test_two_cycles_move_the_state_and_credit_the_artifact_capability(
+def test_two_cycles_move_the_state_without_crediting_an_unreviewed_link(
     db: sqlite3.Connection,
     conversation,
     conversation_store,
@@ -358,9 +360,11 @@ def test_two_cycles_move_the_state_and_credit_the_artifact_capability(
     teaching_controller,
     production_provider,
 ) -> None:
-    """No seeded before state: cycle 1 is what creates it. Cycle 2's
-    alternative realization is credited to the CAPABILITY the provider read
-    out of the CurriculumLink — content.db data, deciding a real outcome."""
+    """No seeded before state: cycle 1 is what creates it. P5-R (D1): the
+    artifact's §24.7 link is CURRICULUM_MAPPED, so cycle 2's alternative
+    realization is **not** credited to a capability — the resource gets the
+    one honest NEUTRAL claim and the capability's state never appears. The
+    gate is the artifact's own editorial status, exercised end to end."""
 
     del conversation
     coordinator = production_coordinator(
@@ -376,8 +380,10 @@ def test_two_cycles_move_the_state_and_credit_the_artifact_capability(
     commit_chat_turn(coordinator, "cm-p51-move-chat", "Hello there.", 1)
 
     view = _provider_view(production_provider, FOCUS)
-    capability = view.capability_linkage
-    assert capability is not None, "the artifact declares no REALIZES link"
+    assert view.capability_linkage is None, (
+        "an unapproved §24.7 link must not reach the credit face (P5-R)"
+    )
+    capability = "cap-eval-hedged-opinion"
 
     # -- cycle 1: the canonical realization --------------------------------
     assert _state(db, FOCUS) is None
@@ -413,6 +419,7 @@ def test_two_cycles_move_the_state_and_credit_the_artifact_capability(
     before_claims = _claim_ids(db)
     before_resource = _state(db, FOCUS)
     before_capability = _state(db, capability)
+    assert before_capability is None, "the capability has no state before cycle 2"
     second = open_moment(coordinator, "cm-p51-move-open-2", FOCUS)
     assert second.gate_decision == "ALLOW"
     assert second.moment_id != first.moment_id, "a closed moment never reopens"
@@ -429,39 +436,29 @@ def test_two_cycles_move_the_state_and_credit_the_artifact_capability(
         "[e2e] cycle 2 claims -> "
         f"{[(c['target_id'], c['outcome'], c['polarity']) for c in second_claims]}"
     )
-    assert credited == {FOCUS, capability}, "the §5 fold credits both targets"
-    capability_claim = next(
-        claim for claim in second_claims if str(claim["target_id"]) == capability
-    )
-    resource_claim = next(
-        claim for claim in second_claims if str(claim["target_id"]) == FOCUS
-    )
-    assert capability_claim["outcome"] == "SUCCESS"
-    assert capability_claim["polarity"] == "POSITIVE"
-    assert capability_claim["target_type"] == "CAPABILITY"
+    # P5-R: the alternative realization credits no capability, and the
+    # resource it bypassed gets exactly the §5 NEUTRAL/not-demonstrated claim.
+    assert credited == {FOCUS}
+    resource_claim = second_claims[0]
     assert resource_claim["outcome"] == "ABSTAIN"
     assert resource_claim["polarity"] == "NEUTRAL"
+    assert resource_claim["target_type"] == "RESOURCE"
     assert {str(claim["teaching_moment_id"]) for claim in second_claims} == {
         str(second.moment_id)
     }
 
-    # The capability moves; the resource's dimensions deliberately do not
-    # (STATE_MACHINES §5/§6: the alternative realization is credited to the
-    # capability, and the resource is not claimed as demonstrated).
-    after_capability = _state(db, capability)
-    assert after_capability is not None
-    if before_capability is None:
-        # Cycle 1 was a plain RESOURCE success: it never touched the
-        # capability, so this is the capability's first state at all.
-        assert after_capability["coverage"]["evidence_groups"] >= 1
-    else:
-        before_flat = _flat(before_capability)
-        changed = {
-            path
-            for path, value in _flat(after_capability).items()
-            if before_flat.get(path) != value
-        }
-        assert any(path.startswith("dimensions.") for path in changed), changed
+    # The capability: no claim ever, no state ever (even after an explicit
+    # rebuild — an empty claim set writes nothing).
+    assert _state(db, capability) is None
+    assert (
+        db.execute(
+            "SELECT COUNT(*) FROM evidence_claim WHERE target_id = ?",
+            (capability,),
+        ).fetchone()
+        == (0,)
+    )
+    # The resource's own projection: no dimension moves (the claim is
+    # NEUTRAL), and coverage/watermark still record the attempt.
     after_resource = _state(db, FOCUS)
     assert after_resource is not None
     assert after_resource["dimensions"] == before_resource["dimensions"]

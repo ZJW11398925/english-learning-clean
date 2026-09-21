@@ -8,8 +8,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CANONICAL_APPROVED",
-      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-hedge-i-think's capability_linkage as cap-eval-hedged-opinion."
+      "editorial_status": "CURRICULUM_MAPPED",
+      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-eval-hedged-opinion). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
     },
     {
       "resource_id": "res-softener-kind-of",
@@ -17,8 +17,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CANONICAL_APPROVED",
-      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-softener-kind-of's capability_linkage as cap-stance-soften-disagreement."
+      "editorial_status": "CURRICULUM_MAPPED",
+      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-stance-soften-disagreement). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
     },
     {
       "resource_id": "res-colloc-pay-attention-to",
@@ -26,8 +26,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CANONICAL_APPROVED",
-      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-colloc-pay-attention-to's capability_linkage as cap-ref-ask-clarification."
+      "editorial_status": "CURRICULUM_MAPPED",
+      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-ref-ask-clarification). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
     },
     {
       "resource_id": "res-frame-id-like-to",
@@ -35,8 +35,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CANONICAL_APPROVED",
-      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-frame-id-like-to's capability_linkage as cap-interact-backchannel."
+      "editorial_status": "CURRICULUM_MAPPED",
+      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-interact-backchannel). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
     },
     {
       "resource_id": "res-discourse-by-the-way",
@@ -44,8 +44,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CANONICAL_APPROVED",
-      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-discourse-by-the-way's capability_linkage as cap-disc-topic-shift."
+      "editorial_status": "CURRICULUM_MAPPED",
+      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-disc-topic-shift). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
     },
     {
       "resource_id": "res-phrasal-look-forward-to",
@@ -53,8 +53,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CANONICAL_APPROVED",
-      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-phrasal-look-forward-to's capability_linkage as cap-interact-backchannel."
+      "editorial_status": "CURRICULUM_MAPPED",
+      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-interact-backchannel). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
     },
     {
       "resource_id": "res-pragmatic-could-you",
@@ -62,8 +62,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CANONICAL_APPROVED",
-      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-pragmatic-could-you's capability_linkage as cap-ref-ask-clarification."
+      "editorial_status": "CURRICULUM_MAPPED",
+      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-ref-ask-clarification). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
     },
     {
       "resource_id": "res-idiom-break-the-ice",
@@ -71,8 +71,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CANONICAL_APPROVED",
-      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-idiom-break-the-ice's capability_linkage as cap-disc-topic-shift."
+      "editorial_status": "CURRICULUM_MAPPED",
+      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-disc-topic-shift). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
     },
     {
       "resource_id": "res-colloc-make-a-decision",
@@ -80,8 +80,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CANONICAL_APPROVED",
-      "rationale": "P3-1A/P3-1B validated corpus: the fixture declares res-colloc-make-a-decision's capability_linkage as cap-eval-hedged-opinion."
+      "editorial_status": "CURRICULUM_MAPPED",
+      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-eval-hedged-opinion). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
     }
   ]
 }

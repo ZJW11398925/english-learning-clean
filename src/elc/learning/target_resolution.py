@@ -14,10 +14,11 @@ or :data:`NO_TARGET`.
 readiness threshold (docs/PRODUCT_CONTRACT.md §8.1: R0/R1 targets do not
 enter the automatic Teaching Frontier) constrains the **Planner automatic
 teaching face**. It does not constrain the **evidence-forming face**: this
-slice may form silent evidence on an R1 target (the whole corpus stops at R1,
-so no target would be reachable otherwise), and it must not — and does not —
-open any automatic teaching choice (that stays Phase 8). Nothing in this
-module reads or judges readiness.
+slice may form silent evidence on a target the ladder reports below the
+Planner threshold (P5-R corrected the reading — the corpus reaches no level
+at all, so no target would be reachable otherwise), and it must not — and
+does not — open any automatic teaching choice (that stays Phase 8). Nothing
+in this module reads or judges readiness.
 
 **Extraction rules, in the fixed priority order** (canonical form >
 alternative realization > required slots):
@@ -89,6 +90,7 @@ __all__ = [
     "SLOTS_MIN_GROUPS",
     "TargetResolution",
     "TargetSupplyFacts",
+    "located_span",
     "normalize_form",
     "resolution_document",
     "resolution_from_document",
@@ -240,27 +242,59 @@ def _is_word_char(character: str) -> bool:
     return character.isalnum() or character == "_"
 
 
-def _bounded_occurrence(text: str, core: str) -> bool:
-    """Does ``core`` occur in ``text`` as a whole-word span?
+def _bounded_index(text: str, core: str) -> int | None:
+    """The index where ``core`` occurs in ``text`` as a whole-word span.
 
     The span's neighbours must not be word characters, which is what keeps
     ``rain`` from matching inside ``rainy`` while still letting a form sit in
     the middle of a longer sentence ("well, i think it is going to rain
     today"). ``core`` is already normalized and has no edge punctuation, so
     the authored form's trailing period neither blocks nor is required.
+    ``None`` when the form does not occur.
     """
 
     start = 0
     while True:
         index = text.find(core, start)
         if index < 0:
-            return False
+            return None
         end = index + len(core)
         left_ok = index == 0 or not _is_word_char(text[index - 1])
         right_ok = end == len(text) or not _is_word_char(text[end])
         if left_ok and right_ok:
-            return True
+            return index
         start = index + 1
+
+
+def _bounded_occurrence(text: str, core: str) -> bool:
+    """Does ``core`` occur in ``text`` as a whole-word span?"""
+
+    return _bounded_index(text, core) is not None
+
+
+def located_span(utterance: str, resolution: ResolvedTarget) -> str:
+    """Where in ``utterance`` the resolution's form sits (P5-R).
+
+    The span is expressed in the resolver's own comparison coordinates — the
+    utterance casefolded with whitespace collapsed (``_normalize_utterance``,
+    the text the search actually ran on), so it is deterministic and needs no
+    second normalization. A form that does not occur as a bounded span
+    answers ``""`` ("not located"): a resolution document that names a form
+    the turn does not contain fails the P5-R admission rather than being
+    trusted. The slot class has no single contiguous span, so it answers the
+    covered-token render (``matched_form``) — informational only, because the
+    admission set never lets a slot match become evidence
+    (elc.learning.target_match).
+    """
+
+    if resolution.matched_via is MatchVia.REQUIRED_SLOTS:
+        return resolution.matched_form
+    text = _normalize_utterance(utterance)
+    core = normalize_form(resolution.matched_form)
+    if not core:
+        return ""
+    index = _bounded_index(text, core)
+    return "" if index is None else text[index : index + len(core)]
 
 
 def resolve_target(

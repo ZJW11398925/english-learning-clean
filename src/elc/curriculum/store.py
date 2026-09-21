@@ -70,7 +70,6 @@ from elc.content.store import ContentStore, ContentStoreError
 from elc.content.types import (
     ARTIFACT_CONTENT_ORIGIN,
     ContentOrigin,
-    ContentType,
     ExampleLinkRole,
     supply_eligible,
 )
@@ -125,15 +124,17 @@ UNREAD_FACT_EVIDENCE: Mapping[str, str] = {
     ),
     "negative_fixtures": "negative fixtures for the detection rules",
     "false_positive_boundaries": "declared false-positive boundaries",
-    # The two keys that are *entity-type scoped*: this corpus satisfies the
-    # first (all 14 entities are EXPRESSION) and cannot satisfy the second.
-    "lexical_resolution": (
-        "POS / sense / basic definition / forms rows (§24.2 Form / §24.3"
-        " Sense) — required for any entity_type other than EXPRESSION"
-    ),
+    # The five keys no V1 table can carry (P5-R strict reading): §8.1 R0's
+    # third item and §8.1 R1's four named things. They are *required* facts
+    # (elc.curriculum.readiness.LEVEL_ADDED_FACTS), so their absence is the
+    # reported block, not an exemption.
     "assessment_membership": (
         "a §24.8 AssessmentMembership row (the R0 sentence's third item)"
     ),
+    "pos": "a §24.2 LexicalEntry part-of-speech row",
+    "sense": "a §24.3 Sense row",
+    "basic_definition": "a basic definition for the sense (§24.2/§24.3)",
+    "forms": "§24.2 Form rows (the inflected/realized forms of the entry)",
 }
 
 
@@ -319,17 +320,16 @@ class CurriculumContentStore:
 
         Present facts are read; absent facts stay absent (the dataclass
         default), each one named in :data:`UNREAD_FACT_EVIDENCE` — no fact is
-        defaulted to True, and no §24.4 recognition-policy label is promoted
-        into an R4 detection fact.
+        defaulted to True, no fact is derived from another fact's presence
+        (P5-R removed the ``entity_type == EXPRESSION ⇒ lexical_resolution``
+        equivalence), and no §24.4 recognition-policy label is promoted into
+        an R4 detection fact.
         """
 
         resource = self.get_resource(entity_id)
         if isinstance(resource, Err):
             return resource
-        expression = self.get_expression(entity_id)
         teaching = self.get_teaching_content(entity_id)
-        if isinstance(expression, Err):
-            return expression
         if isinstance(teaching, Err):
             return teaching
         links = self.curriculum_links_of(ResourceId(entity_id))
@@ -349,24 +349,28 @@ class CurriculumContentStore:
                 # the §24.5 PRIMARY_TARGET example is the canonical surface.
                 entity_row=True,
                 canonical_form=bool(canonical.value),
-                # R0's third item (§24.8 AssessmentMembership) is read here as
-                # an explicit absence — no V1 table carries it, and no level
-                # requires it (elc.curriculum.readiness
-                # DECLARED_ABSENT_FACT_KEYS). A strict three-item reading of
-                # R0 would leave this corpus with no level at all; that is an
-                # interpretation of this implementation, declared, not hidden.
+                # R0's third item (§24.8 AssessmentMembership) is read as an
+                # explicit absence — no V1 table carries it, and under the
+                # P5-R strict conjunction it is REQUIRED by R0
+                # (elc.curriculum.readiness). A corpus without assessment
+                # membership therefore reaches no level at all; that is the
+                # honest fail-closed report, declared rather than hidden.
                 assessment_membership=False,
-                # R1: the §24.4 expression payload — and only for an entity
-                # whose §24.1 entity_type is EXPRESSION, which is the type the
-                # reading is declared for. Any other entity type would need
-                # POS/sense/definition/forms rows this artifact does not carry,
-                # so it reads R0 (F-1 guard).
-                lexical_resolution=(
-                    resource.value.entity_type
-                    == str(ContentType.EXPRESSION)
-                ),
+                # R1 is the four §8.1-named things, each read from its own
+                # §24.2 LexicalEntry / Form / Sense evidence — and no such
+                # table exists in this artifact, so all four read absent. The
+                # removed alternative (an entity_type check standing in for a
+                # lexical resolution) is recorded in the readiness module's
+                # docstring as the reading P5-R retracted.
+                pos=False,
+                sense=False,
+                basic_definition=False,
+                forms=False,
                 # R2: §24.7 CurriculumLink — and only an approved mapping, the
-                # same discipline the supply gate keeps.
+                # same discipline the supply gate keeps. The seed corpus's
+                # nine links are CURRICULUM_MAPPED (P3-corpus-derived, no
+                # curriculum-semantic review), so this fact is False for
+                # every target today.
                 curriculum_link=any(
                     link.editorial_status == "CANONICAL_APPROVED"
                     for link in links.value

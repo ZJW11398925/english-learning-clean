@@ -23,6 +23,7 @@ import pytest
 from elc.content.build import CONTENT_SRC_DIR
 from elc.content.store import ContentStore
 from elc.content.types import ContentType, ExampleLinkRole
+from elc.platform.types import Ok, ResourceId
 from tests.phase3.target_fixtures import TEACHING_CONTENT, VALIDATED_TARGET_FIXTURES
 
 FIXTURE_BY_TARGET = {view.target_id: view for view in VALIDATED_TARGET_FIXTURES}
@@ -94,7 +95,15 @@ def test_target_defaults_match_the_fixture_verbatim(
 def test_teaching_payload_matches_the_fixture_verbatim(
     store: ContentStore, target_id: str
 ) -> None:
-    """No silent drop: every P3-1B field, value for value, in authored order."""
+    """No silent drop: every P3-1B field, value for value, in authored order.
+
+    P5-R exception, in one field: ``capability_linkage`` is the *credit face*
+    and the §24.7 link is ``CURRICULUM_MAPPED`` (not author-approved), so the
+    view reads ``None`` where the fixture declared a linkage. The fixture's
+    value is not lost — it is the link row's ``node_id``, asserted below for
+    the resources, which is what keeps "the payload is unchanged" a checked
+    statement rather than a hope.
+    """
 
     fixture = FIXTURE_BY_TARGET[target_id]
     view = store.get_teaching_content(target_id).value
@@ -103,7 +112,17 @@ def test_teaching_payload_matches_the_fixture_verbatim(
     assert view.canonical_forms == fixture.canonical_forms
     assert view.alternative_realizations == fixture.alternative_realizations
     assert view.required_slots == fixture.required_slots
-    assert view.capability_linkage == fixture.capability_linkage
+    if fixture.capability_linkage is None:
+        assert view.capability_linkage is None
+    else:
+        assert view.capability_linkage is None, (
+            "P5-R: an unapproved §24.7 link must not reach the credit face"
+        )
+        links = store.curriculum_links_of(ResourceId(target_id))
+        assert isinstance(links, Ok), links
+        assert [str(link.node_id) for link in links.value] == [
+            fixture.capability_linkage
+        ]
 
 
 @pytest.mark.parametrize("target_id", TARGET_IDS)
@@ -229,6 +248,8 @@ def test_migration_ledger_is_complete_for_all_fourteen(
         expression = store.get_expression(target_id).value
         target = store.get_target(target_id).value
         teaching = store.get_teaching_content(target_id).value
+        links = store.curriculum_links_of(target_id)
+        assert isinstance(links, Ok), links
         ledger.append(
             {
                 "target_id": target_id,
@@ -244,6 +265,10 @@ def test_migration_ledger_is_complete_for_all_fourteen(
                 "alts": str(len(teaching.alternative_realizations)),
                 "slots": str(len(teaching.required_slots)),
                 "linkage": str(teaching.capability_linkage),
+                "link_status": ",".join(
+                    sorted({str(link.editorial_status) for link in links.value})
+                )
+                or "none",
             }
         )
     for row in ledger:
@@ -251,7 +276,7 @@ def test_migration_ledger_is_complete_for_all_fourteen(
             "[migration] {target_id} | fixture={fixture_type} -> entity_id="
             "{entity_id} type={entity_type} lifecycle={lifecycle} expr={expression} "
             "mode={mode} intent={intent} | ladder={ladder} forms={forms} alts={alts} "
-            "slots={slots} linkage={linkage}".format(**row)
+            "slots={slots} linkage={linkage} link_status={link_status}".format(**row)
         )
         assert row["entity_id"] == row["target_id"]
         assert row["entity_type"] == "EXPRESSION"
@@ -259,10 +284,14 @@ def test_migration_ledger_is_complete_for_all_fourteen(
         assert int(row["ladder"]) == 3
         assert int(row["forms"]) >= 1
         assert int(row["slots"]) >= 1
+        # P5-R: the credit face reads None for every target (the seed links
+        # are CURRICULUM_MAPPED, and the capability nodes carry no link row
+        # of their own) while the row itself is readable and says so.
+        assert row["linkage"] == "None"
         if row["fixture_type"] == "RESOURCE":
-            assert row["linkage"] != "None"
+            assert row["link_status"] == "CURRICULUM_MAPPED"
         else:
-            assert row["linkage"] == "None"
+            assert row["link_status"] == "none"
     assert len(ledger) == 14
 
 

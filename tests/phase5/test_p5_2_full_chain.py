@@ -10,8 +10,9 @@ seeded "before" state:
 
 Five things are established, each in its own scenario:
 
-- the observation is silent: one natural turn on a §24.5 form lands one
-  claim on its target and moves the learner state, with **no TeachingMoment,
+- the observation is silent: one natural turn on a §24.5 form — the whole
+  utterance, which is the admitted class (P5-R) — lands one claim on its
+  target and moves the learner state, with **no TeachingMoment,
   Gate decision or Planner choice anywhere** — and the turn still gets its
   normal persona reply;
 - the before state is produced by the chain (zero claims / zero state rows
@@ -61,7 +62,13 @@ from tests.phase5.conftest import (
 
 FOCUS = "res-hedge-i-think"
 CANONICAL_ANSWER = "I think it is going to rain."
-SILENT_UTTERANCE = "Well, I think it is going to rain tomorrow."
+#: P5-R: the admitted class is the **whole-utterance** form-class RESOURCE
+#: match, so the chat turn that lands a claim is the form itself (the learner
+#: really produced the target, not a sentence containing it).
+SILENT_UTTERANCE = "I think it is going to rain."
+#: The same form inside a longer sentence: a real match the admission set
+#: refuses (observation-only — zero claim, zero state).
+EMBEDDED_UTTERANCE = "Well, I think it is going to rain tomorrow."
 MISS_UTTERANCE = "I like this cafe."
 MODALITY = "TEXT_PRODUCTION"
 
@@ -184,7 +191,18 @@ def test_a_natural_turn_lands_one_silent_claim_and_moves_the_state(
     dimensions = state["dimensions"]
     print(f"[e2e] spontaneous estimate -> {dimensions['spontaneous_production']}")
     assert dimensions["spontaneous_production"]["estimate"] not in (None, 0.0)
-    assert dimensions["recognition"]["estimate"] not in (None, 0.0)
+    assert dimensions["independent_production"]["estimate"] not in (None, 0.0)
+    # P5-R: the claim carries a use-judgement (0.60), so the dimensions whose
+    # per-dimension mass stays under §14's 0.55 effective-mass floor read
+    # UNKNOWN — one rule-based observation is not enough to estimate
+    # recognition (0.90 × 0.60) or guided production (0.80 × 0.60).
+    print(
+        "[e2e] recognition/guided estimates -> "
+        f"{dimensions['recognition']['estimate']}/"
+        f"{dimensions['guided_production']['estimate']}"
+    )
+    assert dimensions["recognition"]["estimate"] is None
+    assert dimensions["guided_production"]["estimate"] is None
     assert state["coverage"]["evidence_groups"] == 1
 
     # Silent means silent: no moment, no gate, no lock, no attempt, no
@@ -303,6 +321,14 @@ def test_a_miss_leaves_the_evidence_empty(
         "I want to see that movie.",
         "What do you mean?",
         "The meeting starts at nine.",
+        # P5-R's counterexamples, on the shipped chain: the form occurs, so
+        # the matcher answers — and the admission set refuses the sentence
+        # (embedded span; the others are pinned unit-level in
+        # tests/phase5/test_p5_r_silent_admission.py).
+        EMBEDDED_UTTERANCE,
+        f"The phrase '{CANONICAL_ANSWER}' is in my textbook.",
+        f"Don't say '{CANONICAL_ANSWER}'",
+        "Right, I see.",
     )
     for index, utterance in enumerate(misses, start=1):
         completion = commit_chat_turn(

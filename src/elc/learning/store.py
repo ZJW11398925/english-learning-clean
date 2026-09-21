@@ -122,6 +122,10 @@ from elc.learning.silent_claim import (
     SILENT_EVIDENCE_MODALITY,
     claim_for_silent_observation,
 )
+from elc.learning.target_match import (
+    admitted_for_evidence,
+    observe_target_match,
+)
 from elc.learning.target_resolution import (
     ResolvedTarget,
     resolution_from_document,
@@ -2462,15 +2466,23 @@ def _proposal_refusal(
 def _silent_claim_for_proposal(
     parsed: dict[str, object], turn: CanonicalTurnSlice
 ) -> tuple[EvidenceClaimView | None, DomainError | None]:
-    """The target claim a durable proposal carries, if any (P5-2).
+    """The target claim a durable proposal carries, if any (P5-2; admission
+    gate added by P5-R).
 
     The producer records the *facts* of a resolved observation (which
-    target, which form, which rule); the conversion into the §6 claim is
-    Learning's, applied here from the **durable document** — the
-    teaching-evidence pattern (facts in, Learning decides what they are
-    worth). ``(None, None)`` for the Phase 2 target-less proposal; an
-    unreadable target document is Learning's REJECT (a refusal, never a
-    silent skip).
+    target, which form, which rule); this function rebuilds the
+    TargetMatchObservation from **the durable document plus the canonical
+    turn** and applies the admission set before any claim exists
+    (elc.learning.target_match) — so a document that reaches the kernel from
+    anywhere else (hand-edited, stale, fabricated) cannot mint a claim a
+    whole-sentence form-class RESOURCE match would not have minted. The
+    conversion itself stays Learning's (the teaching-evidence pattern: facts
+    in, Learning decides what they are worth).
+
+    ``(None, None)`` in three cases, all observation-only (zero claim, zero
+    LearnerState change): the Phase 2 target-less proposal, an unreadable
+    target document (REJECT — a refusal, never a silent skip), and a match
+    that fails admission.
     """
 
     target = parsed.get("target")
@@ -2486,19 +2498,37 @@ def _silent_claim_for_proposal(
         )
     try:
         resolution = resolution_from_document(target)
-        claim = claim_for_silent_observation(
-            turn_id=str(turn.turn_id),
-            resolution=resolution,
-            evidence_modality=str(
-                parsed.get("evidence_modality", SILENT_EVIDENCE_MODALITY)
-            ),
-        )
     except (KeyError, ValueError) as exc:
         return None, DomainError(
             code=DomainErrorCode.VALIDATION_FAILED,
             message=(
                 "proposal target is not readable as a resolution document:"
                 f" {exc!r} — REJECTED (DOMAIN_MODEL §18)"
+            ),
+        )
+    observation = observe_target_match(
+        turn_id=str(turn.turn_id),
+        utterance=turn.user_turn.raw_content,
+        resolution=resolution,
+    )
+    if not admitted_for_evidence(observation, turn.user_turn.raw_content):
+        # Observation-only: the durable document recorded a match that is
+        # not evidence (embedded span, slot-only, CAPABILITY, …). Nothing is
+        # refused — the turn is simply not a claim, the Phase 2 shape.
+        return None, None
+    try:
+        claim = claim_for_silent_observation(
+            observation,
+            evidence_modality=str(
+                parsed.get("evidence_modality", SILENT_EVIDENCE_MODALITY)
+            ),
+        )
+    except ValueError as exc:
+        return None, DomainError(
+            code=DomainErrorCode.VALIDATION_FAILED,
+            message=(
+                "proposal evidence_modality is outside the canonical"
+                f" vocabulary: {exc!r} — REJECTED (DOMAIN_MODEL §18)"
             ),
         )
     return claim, None

@@ -53,7 +53,13 @@ editorial_status / rationale
   canonical 未固定节点侧基数，故同一 node 可被多个 resource 声明）；
 - `strength` 一律 `null`：§24.7 未给链接 strength 值域（§7 的三词只属于
   prerequisite 边），不发明；
-- `editorial_status` 复用 §24.11 词表本 seed 值 `CANONICAL_APPROVED`。
+- `editorial_status` ∈ §24.11 词表；本 seed 的 9 行是 `CURRICULUM_MAPPED`：
+  映射依据仅为 P3-1A/P3-1B 测试语料设计（fixture 的 `capability_linkage`），
+  **未经课程语义审核**，因此在 capability 功能定义存在且作者审核通过前
+  **不得计入 capability 证据**（P5-R；读面门见
+  `elc.content.store.CAPABILITY_CREDIT_EDITORIAL_STATUS`——
+  未审 link 在 `get_teaching_content().capability_linkage` 读作 `None`，
+  但仍是可读的 link 行）。
 
 ### C3 — Prerequisite 边（DOMAIN_MODEL §7）
 

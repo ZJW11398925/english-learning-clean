@@ -88,7 +88,12 @@ class ContentTeachingView:
 
     ``capability_linkage`` is the resource's primary REALIZES node id (the
     Phase 3 fixture's ``capability_linkage``), read from the curriculum link
-    table — it is never a second copy of the same fact.
+    table — it is never a second copy of the same fact. P5-R: the link must
+    carry the approved §24.11 ``editorial_status``
+    (elc.content.store.CAPABILITY_CREDIT_EDITORIAL_STATUS) before it becomes
+    a linkage here, because this field is what the teaching chain credits on
+    an ``ALTERNATIVE_SUCCESS`` attempt; an unapproved mapping reads ``None``
+    and stays readable as a link row.
     """
 
     entity_id: str

@@ -25,15 +25,17 @@ free conversation; it did not teach, prompt or interrupt.
 readiness threshold (docs/PRODUCT_CONTRACT.md §8.1 R0/R1 ⇒ not in the
 automatic Teaching Frontier) constrains the **Planner automatic teaching
 face**. It does not constrain the **evidence-forming face** — this slice is
-allowed to form silent evidence on an R1 target (the corpus stops at R1, so
-no target would be reachable otherwise), and it must not, and does not, open
-any automatic teaching selection (that stays Phase 8). Precisely: this
-module's import graph reaches elc.curriculum.readiness (through
+allowed to form silent evidence on a target the ladder reports below the
+Planner threshold (P5-R corrected that reading: the corpus reaches no level
+at all, so no target would be reachable otherwise), and it must not, and does
+not, open any automatic teaching selection (that stays Phase 8). Precisely:
+this module's import graph reaches elc.curriculum.readiness (through
 elc.curriculum.store), and it **never calls a readiness judgment** — no
 readiness value is read, judged or used as a filter anywhere on this path.
 
-**False-positive boundary (declared).** What this face can match is bounded
-by the resolver's rules, and the weakest of them is named:
+**False-positive boundary (declared, and now behind an admission layer).**
+What this face can match is bounded by the resolver's rules, and the weakest
+of them is named:
 :func:`elc.learning.target_resolution.slots_can_discriminate` — a slot key
 that is a single one-token group ("see", "mean", "meeting") is a bare word
 check and never drives a resolution; a key needs ≥2 groups or a multi-token
@@ -41,14 +43,24 @@ group to engage the slot path at all. That is the first declared input to the
 §8.1 R4 detection-policy / false-positive-boundary ladder, not a measured
 false-positive rate: a rate needs the detection policy and its fixtures.
 
+P5-R adds the *evidence* boundary on top of the *match* boundary: this face
+still answers with a resolution, but only a match that passes the admission
+set (elc.learning.target_match — whole-sentence form-class RESOURCE, no open
+teaching window, readable supply) becomes a claim. Everything else stays an
+observation with zero claim and zero LearnerState change, which is where the
+quoted / paraphrased / negated / meta-linguistic classes the matcher cannot
+tell apart from use are stopped.
+
 **Trust boundary.** The resolution this face hands over is *assumed* to come
 from a supply read face of this module's own shape
 (:class:`ContentBackedSilentTargets` over :class:`ContentBackedTargetSupply`);
 the learning side that consumes it does not re-check supply and never reads
-content.db (the claim conversion in elc.learning.silent_claim is pure, and
-the store commits what the durable document says). A caller that fabricates a
-resolution document can make the kernel commit a claim the corpus does not
-support — the read face, not the kernel, is the supply gate (the same
+content.db. What the learning side *does* re-check is the P5-R admission set:
+the claim conversion (elc.learning.silent_claim) is pure, and the store
+rebuilds the observation from the durable document and the canonical turn
+before minting anything, so a fabricated document can no longer mint a claim
+the admission rules would not have admitted. It can still name a target
+outside supply — the read face, not the kernel, is the supply gate (the same
 division of labour as the teaching provider).
 
 **Supply gate and degradation (RA §21).**

@@ -225,13 +225,15 @@ def test_probe_4_candidates_are_excluded_and_origins_are_preserved(
         assert len(store.entity_ids().value) == 16
 
         for entity_id in (CANDIDATE, RETIRED):
-            # excluded, not deleted: still readable, still R1-ready, still
+            # excluded, not deleted: still readable, still no readiness
+            # level (P5-R strict reading — the whole corpus reads None), still
             # canonical origin
             assert isinstance(store.get_resource(entity_id), Ok)
             assert supply.content_origin(entity_id).value is ContentOrigin.CANONICAL
             assert supply.is_supply_eligible(entity_id).value is False
             assessment = supply.readiness(entity_id)
-            assert assessment.value.level == "R1_LEXICALLY_RESOLVED"
+            assert assessment.value.level is None
+            assert assessment.value.missing_keys == ("assessment_membership",)
         print(
             "[probe 4] origin of every artifact row -> "
             f"{ARTIFACT_CONTENT_ORIGIN} (declared set: {CONTENT_ORIGINS},"

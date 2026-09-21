@@ -45,6 +45,11 @@ from elc.conversation.types import (
 )
 from elc.learning.analysis import LearningTurnAnalysis
 from elc.learning.silent_claim import SILENT_EVIDENCE_MODALITY
+from elc.learning.target_match import (
+    TargetMatchObservation,
+    admitted_for_evidence,
+    observe_target_match,
+)
 from elc.persona.runtime import PersonaRuntime, action_intent_for_turn
 from elc.persona.types import (
     CharacterPackageRecord,
@@ -4517,15 +4522,27 @@ class ConversationCoordinator:
         assert learning is not None  # caller holds the Phase 2 assembly
         # P5-2: the target observation, when one exists, is part of what the
         # proposal says about this turn — one observable behavior, one
-        # group (DATA_MODEL §6). It is resolved before the record call and
-        # rides the durable document; a miss/broken supply is None, and an
-        # observation inside an open teaching window of the same target is
-        # dropped (see _observed_target_is_under_teaching).
+        # group (DATA_MODEL §6). P5-R makes the gate two-layered: the
+        # matcher's answer becomes a TargetMatchObservation first, and only
+        # an *admitted* observation may become evidence. Everything else is
+        # observation-only — zero claim, zero LearnerState change, the turn
+        # untouched (elc.learning.target_match, the V1 admission set: a
+        # whole-sentence form-class RESOURCE match, no open teaching window
+        # for that target, a readable supply; a miss or a broken supply is
+        # still a dropped observation, never a blocked conversation).
         resolution = self._resolve_silent_target(slice_)
-        if resolution is not None and self._observed_target_is_under_teaching(
-            conversation_id, resolution
-        ):
-            resolution = None
+        if resolution is not None:
+            observation = observe_target_match(
+                turn_id=str(slice_.turn_id),
+                utterance=slice_.user_turn.raw_content,
+                resolution=resolution,
+            )
+            if not admitted_for_evidence(
+                observation, slice_.user_turn.raw_content
+            ) or self._observed_target_is_under_teaching(
+                conversation_id, observation
+            ):
+                resolution = None
         artifact = self._record_learning_analysis(learning, slice_, resolution)
         if isinstance(artifact, Err):
             return  # pending: nothing durable yet, turn continues
@@ -4561,9 +4578,12 @@ class ConversationCoordinator:
             return None
 
     def _observed_target_is_under_teaching(
-        self, conversation_id: ConversationId, resolution: ResolvedTarget
+        self,
+        conversation_id: ConversationId,
+        observation: TargetMatchObservation,
     ) -> bool:
-        """P5-2 (F-2): is this target inside an open teaching window?
+        """P5-2 (F-2), P5-R rule 4: is this target inside an open teaching
+        window?
 
         docs/DOMAIN_MODEL.md §6 (the sentences next to the negative-evidence
         rule): a full answer exposure cannot produce *independent* evidence
@@ -4595,8 +4615,8 @@ class ConversationCoordinator:
             return False
         focus = moment.focus_target
         return (
-            str(focus.target_type) == resolution.target_type
-            and str(focus.target_id) == resolution.target_id
+            str(focus.target_type) == observation.target_type
+            and str(focus.target_id) == observation.target_id
         )
 
     @staticmethod
