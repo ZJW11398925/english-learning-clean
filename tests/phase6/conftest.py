@@ -1,13 +1,15 @@
 """Shared fixtures for the Phase 6 tests (P6-0: the §5.1 goal / policy /
-session-focus objects, their durable rows and their authority faces).
+session-focus objects; P6-1: the §5.2 schedule / review-event objects — their
+durable rows and their authority faces).
 
 Two deliberate choices, both following the Phase 5 conftest:
 
-- **the app.db is a real one** — migrations through v11, an opened runtime
-  epoch, and the conversation / learning / teaching / user-config stores over
-  the same connection. Nothing is hand-seeded and no ``_seed``-style helper
-  exists here: the world a P6-0 test asserts on is built by the shipped
-  chain (migrations → stores → the coordinator) or not at all;
+- **the app.db is a real one** — migrations through v12, an opened runtime
+  epoch, and the conversation / learning / teaching / user-config / scheduler
+  stores over the same connection. Nothing is hand-seeded and no
+  ``_seed``-style helper exists here: the world a P6-0/P6-1 test asserts on is
+  built by the shipped chain (migrations → stores → the coordinator) or not at
+  all;
 - **the learning rows come from the real supply** — the content.db built
   from this repository's authoring trees, consumed through
   ``ContentBackedTeachingTargetProvider`` and ``ContentBackedSilentTargets``.
@@ -15,10 +17,15 @@ Two deliberate choices, both following the Phase 5 conftest:
   kept here and pinned by test).
 
 The canonical-document readers are re-declared rather than imported from
-tests/phase5/conftest: they are this suite's own extraction pins (§5.1's
-column blocks are read out of the document at test time, not typed twice),
-and phase 6 is meant to keep its assertions independent of another phase's
-fixture module.
+tests/phase5/conftest: they are this suite's own extraction pins (§5.1's /
+§5.2's column blocks are read out of the document at test time, not typed
+twice), and phase 6 is meant to keep its assertions independent of another
+phase's fixture module.
+
+The two §5.2 keys the scheduler fixtures carry (``TARGET_ID`` /
+``MODALITY``) name a real RESOURCE of this repository's content corpus
+(``res-hedge-i-think``, content_src/index.json), so a schedule row written in
+a test points at a target the shipped supply also knows.
 """
 
 from __future__ import annotations
@@ -51,19 +58,32 @@ from elc.platform.db.decision_cycle_store import SqliteDecisionCycleStore
 from elc.platform.db.epoch import RuntimeEpochFence
 from elc.platform.types import (
     ClientMessageId,
+    EvidenceGroupId,
+    EvidenceModality,
     GoalId,
     GoalModality,
     GoalVersion,
     InputId,
     InteractionChannel,
+    MomentId,
     Ok,
     PolicyVersion,
+    ScheduleVersion,
     TargetId,
+    TurnId,
     UserId,
 )
 from elc.platform.types import ConversationId as ConvId
 from elc.runtime import ConversationCoordinator, ConversationCoordinatorLease
 from elc.runtime.types import InputEnvelope
+from elc.scheduler.controller import SchedulerController
+from elc.scheduler.store import SqliteSchedulerStore
+from elc.scheduler.types import (
+    ReviewEvent,
+    ReviewState,
+    ScheduleItem,
+    SpacingStage,
+)
 from elc.teaching.controller import TeachingController
 from elc.teaching.store import SqliteTeachingStore
 from elc.teaching.targets import TeachingTargetProvider
@@ -92,20 +112,40 @@ REQUESTED_AT = "2026-09-22T09:00:00+00:00"
 #: rows to compare against.
 SILENT_UTTERANCE = "I think it is going to rain."
 
+#: The P6-1 world: one §5.2 modality key over the corpus target above.
+TARGET_TYPE = "RESOURCE"
+CAPABILITY_TARGET_TYPE = "CAPABILITY"
+TARGET_ID = TargetId("res-hedge-i-think")
+CAPABILITY_TARGET_ID = TargetId("cap-ref-ask-clarification")
+MODALITY = EvidenceModality.TEXT_PRODUCTION
+OTHER_MODALITY = EvidenceModality.TEXT_COMPREHENSION
+SCHEDULE_VERSION = ScheduleVersion("sv-1")
+WATERMARK = "wm-1"
+
 __all__ = [
+    "CAPABILITY_TARGET_ID",
+    "CAPABILITY_TARGET_TYPE",
     "CONV",
     "DOCS_ROOT",
+    "MODALITY",
+    "OTHER_MODALITY",
     "OTHER_USER",
     "REQUESTED_AT",
     "RUNTIME_VERSION",
+    "SCHEDULE_VERSION",
     "SILENT_UTTERANCE",
+    "TARGET_ID",
+    "TARGET_TYPE",
     "USER",
+    "WATERMARK",
     "canonical_blocks",
     "canonical_lines",
     "commit_chat_turn",
     "goal",
     "make_lease",
     "portfolio",
+    "review_event",
+    "schedule_item",
     "session_focus",
     "teaching_policy",
 ]
@@ -147,6 +187,22 @@ def user_config_controller(
     user_config_store: SqliteUserConfigStore,
 ) -> UserConfigController:
     return UserConfigController(user_config_store)
+
+
+@pytest.fixture()
+def scheduler_store(
+    db: sqlite3.Connection, fence: RuntimeEpochFence
+) -> SqliteSchedulerStore:
+    """The durable schedule / review-event rows (migration 0012)."""
+
+    return SqliteSchedulerStore(db, fence)
+
+
+@pytest.fixture()
+def scheduler_controller(
+    scheduler_store: SqliteSchedulerStore,
+) -> SchedulerController:
+    return SchedulerController(scheduler_store)
 
 
 @pytest.fixture()
@@ -355,6 +411,70 @@ def session_focus(
         manual_focus_target=None if target is None else TargetId(target),
         starts_at=starts_at,
         expires_at=expires_at,
+    )
+
+
+def schedule_item(
+    item_id: str = "si-1",
+    *,
+    target_type: str = TARGET_TYPE,
+    target_id: TargetId = TARGET_ID,
+    modality: EvidenceModality = MODALITY,
+    review_state: ReviewState = ReviewState.UPCOMING,
+    urgency: float | None = None,
+    window_start: str | None = None,
+    window_end: str | None = None,
+    stage: SpacingStage | None = None,
+    watermark: str = WATERMARK,
+    version: str = "sv-1",
+    updated_at: str = "",
+) -> ScheduleItem:
+    """One §5.2 ScheduleItem with the caller's content (the write face's
+    input). Every optional column defaults to ``None`` = not configured, and
+    the store stamps ``updated_at`` — a caller's value is ignored by design.
+    """
+
+    return ScheduleItem(
+        schedule_item_id=item_id,
+        target_type=target_type,
+        target_id=target_id,
+        evidence_modality=modality,
+        review_state=review_state,
+        review_urgency=urgency,
+        next_review_window_start=window_start,
+        next_review_window_end=window_end,
+        spacing_stage=stage,
+        source_learning_watermark=watermark,
+        version=ScheduleVersion(version),
+        updated_at=updated_at,
+    )
+
+
+def review_event(
+    event_id: str = "re-1",
+    *,
+    schedule_item_id: str = "si-1",
+    event_type: str = "RECALL_ATTEMPT",
+    engaged: bool = True,
+    moment: str | None = None,
+    turn: str | None = None,
+    evidence_group: str | None = None,
+    created_at: str = "",
+) -> ReviewEvent:
+    """One §5.2 ReviewEvent; ``event_type`` is a raw string on purpose (the
+    canonical set pins no vocabulary for it — elc/scheduler/types.py)."""
+
+    return ReviewEvent(
+        review_event_id=event_id,
+        schedule_item_id=schedule_item_id,
+        teaching_moment_id=None if moment is None else MomentId(moment),
+        source_turn_id=None if turn is None else TurnId(turn),
+        event_type=event_type,
+        engaged=engaged,
+        evidence_group_id=(
+            None if evidence_group is None else EvidenceGroupId(evidence_group)
+        ),
+        created_at=created_at,
     )
 
 
