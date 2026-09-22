@@ -670,6 +670,10 @@ class TargetLeg(StrEnum):
     The words are this cut's (the ``TeachingFrequency`` precedent: §9 pins no
     vocabulary for the *reading* of its two optional columns), and migration
     0013 is untouched by them — they name a derived reading, not a column.
+
+    Revisit: a write face starts refusing the half-declared shape, canonical
+    §9 gains a rule relating the two target columns, or the pair becomes one
+    object — any of the three re-opens these three words.
     """
 
     NOT_TARGET_LIMITED = "NOT_TARGET_LIMITED"

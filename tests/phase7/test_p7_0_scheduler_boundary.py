@@ -8,8 +8,12 @@ BF-02 §5 (lines 128–166):
   ``evidence_modality`` is not a §5.2 word came back as ``Ok(None)`` from the
   by-key read (a silent "never written") and as a bare ``ValueError`` from the
   list read, so one durable row had two answers depending on which face was
-  asked. The pins below drive every dirty shape through both faces and assert
-  one ``Err(DomainError)`` shape;
+  asked. The P7-0 disposition added the second shape the first probe missed: a
+  **key** column holding a non-TEXT value (``target_type`` / ``target_id`` as
+  a BLOB) was still answered ``Ok(None)`` by the by-key face and ``Ok(False)``
+  by ``is_review_due``, while the list faces refused over the same row. The
+  pins below drive every dirty shape through both faces and assert one
+  ``Err(DomainError)`` shape;
 - **a row's currency is a judgement, not a number.** ``schedule_currency``
   compares the recorded ``source_learning_watermark`` with the current
   Learning watermark and answers CURRENT / STALE / no-row, and there is no
@@ -44,12 +48,20 @@ from .conftest import (
     source_text,
 )
 
-#: The four columns P7-0 names, each with a value the §5.2 set cannot describe.
+#: The six columns P7-0 names, each with a value the §5.2 set cannot describe.
+#: The last two are the **key** columns, and their dirt is a non-TEXT storage
+#: class: the row still *spells* the key asked about — which is what the
+#: by-key probe's ``CAST(… AS TEXT)`` match reaches — while the lookup's own
+#: ``=`` steps over it. That is the F1 shape: before the probe was widened the
+#: by-key face answered ``Ok(None)`` and ``is_review_due`` ``Ok(False)`` over
+#: such a row while the list faces refused it.
 DIRTY_VALUES = {
     "review_state": "LEARNING",
     "spacing_stage": "STAGE_9",
     "evidence_modality": "SINGING",
     "review_urgency": "not-a-number",
+    "target_type": b"RESOURCE",
+    "target_id": b"res-hedge-i-think",
 }
 
 _ITEM_COLUMNS = (
@@ -69,11 +81,13 @@ def _write_dirty_row(
 ) -> None:
     """Put one §5.2 row on disk and then break one column of it.
 
-    The CHECK constraints 0012 declares for ``evidence_modality`` /
-    ``review_state`` are real, so the dirt is injected the only way a durable
-    row can carry it: ``PRAGMA ignore_check_constraints`` — the same route a
-    corrupt row would take into a database, and the route the pre-fix probe
-    used.
+    The CHECK constraints 0012 declares (``target_type`` /
+    ``evidence_modality`` / ``review_state``) are real, so the dirt is injected
+    the only way a durable row can carry it: ``PRAGMA
+    ignore_check_constraints`` — the same route a corrupt row would take into a
+    database, and the route the pre-fix probe used. A non-TEXT value needs no
+    such route (SQLite stores a BLOB in a TEXT column as a BLOB), which is why
+    the ``target_id`` shape below is written the same way as the rest.
     """
 
     base = {

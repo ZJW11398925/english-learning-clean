@@ -68,6 +68,12 @@ class ScheduleCurrency(StrEnum):
     third word for "no row": that is the absence of a row, answered by the
     read face's ``Ok(None)``, and folding it in here would let a caller report
     "stale" for a target the Scheduler simply has not scheduled yet.
+
+    Revisit: a canonical clause gives ``source_learning_watermark`` a form of
+    its own to compare (a number, a timestamp, a per-target watermark) rather
+    than the decimal spelling R6 declared, or a consumer appears that needs a
+    third word here (e.g. "the row predates the watermark's configuration") —
+    either one re-opens this two-word comparison.
     """
 
     CURRENT = "CURRENT"

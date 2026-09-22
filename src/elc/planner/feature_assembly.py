@@ -97,6 +97,16 @@ __all__ = [
 ]
 
 #: Stamps the two versioned readings of this module (module docstring).
+#: ``FEATURE_ASSEMBLY_MODEL_VERSION`` is a **module-level declaration only**:
+#: it does not travel on :class:`FeatureAuthority`, whose one version field is
+#: ``policy_mapping_version``. The mapping is the reading a consumer of the
+#: *record* has to be able to date — it can move a profile word the record
+#: carries — while the assembly's own readings are declared here and pinned by
+#: this module's suite. Nothing persists or diffs an assembly record yet (this
+#: cut writes no table, and the Planner kernel is a later cut), so the stamp
+#: has no addressee on the wire until one does; the cut that persists records,
+#: or that runs BF-02 §21's decision diff review over them, adds the field to
+#: the record rather than this cut guessing at a shape it has not met.
 FEATURE_ASSEMBLY_MODEL_VERSION = "fa1"
 POLICY_PROFILE_MAPPING_VERSION = "tp2bf02-v1"
 
@@ -124,6 +134,11 @@ class SnapshotStatus(StrEnum):
     Learning evidence watermark; ``INVALID`` = it is absent, the current
     watermark is unknown, or the snapshot's ``evidence_watermark`` is an older
     one (BF-02 §5's "stale LearningSnapshot → 假装仍有效" is this word).
+
+    Revisit: a snapshot that carries its own validity (a ``computed_at``, a
+    per-target watermark) appears, or canonical text says what else makes one
+    stale — today the leg is ``evidence_watermark`` equality against the
+    current watermark and nothing else.
     """
 
     VALID = "VALID"
@@ -160,6 +175,11 @@ class AuthorityName(StrEnum):
     :func:`assemble_feature_authority` checks its inputs in), so two
     assemblies of one world produce byte-identical records and a reader can
     match ``missing_authorities[i]`` with ``reasons[i]`` by position.
+
+    Revisit: canonical text names the list's entries (BF-02 §5 pins the field
+    and not its words), or an authority joins or leaves the assembly — either
+    one re-opens the seven words *and* the emission order, which is part of
+    this declaration.
     """
 
     LEARNING_SNAPSHOT = "LEARNING_SNAPSHOT"
@@ -237,14 +257,18 @@ TEACHING_FREQUENCY_TO_PROFILE: Mapping[TeachingFrequency, ProfileMapping] = {
         profile=PlannerProfile.LOUNGE,
         automatic_teaching_enabled=False,
         basis=(
-            "OFF is 'no teaching', and the only BF-03 §13 switch that stops"
-            " automatic teaching is its own: automatic_teaching_enabled ="
-            " false blocks automatic OPEN and AUTO_CONTINUE while leaving"
-            " USER_INITIATED OPEN / USER_REQUESTED_CONTINUE alone (BF-03"
-            " lines 394–409). The *profile* still has to answer, because a"
-            " user-initiated request is ranked through it — so a policy that"
-            " asked for no teaching at all is assembled at BF-02's least"
-            " intervening profile (LOUNGE, §13's +0 row)."
+            "declared judgement on a quoted switch: OFF is 'no teaching', and"
+            " the only BF-03 §13 switch that stops automatic teaching is its"
+            " own: automatic_teaching_enabled = false blocks automatic OPEN"
+            " and AUTO_CONTINUE while leaving USER_INITIATED OPEN /"
+            " USER_REQUESTED_CONTINUE alone (BF-03 lines 394–409). The"
+            " *profile* still has to answer, because a user-initiated request"
+            " is ranked through it — so a policy that asked for no teaching at"
+            " all is assembled at BF-02's least intervening profile (LOUNGE,"
+            " §13's +0 row). No document pins the pairing: LOUNGE is the"
+            " zero-intervention end of BF-02's scale and OFF is the"
+            " zero-teaching end of §5.1's, which is the only way two ends can"
+            " line up."
         ),
         revisit=(
             "a canonical column carries the automatic-teaching switch itself"
@@ -383,6 +407,12 @@ def schedule_urgency_of(
     The returned number, when there is one, is a *reference* value: BF-02 §6's
     bands are calibratable (§21), which is why
     :data:`FEATURE_ASSEMBLY_MODEL_VERSION` stamps the reading.
+
+    Revisit: a calibration lands (BF-02 §21: ``planner_profile_version++``
+    with the full benchmark regression and a decision diff review) and moves a
+    band, or the Scheduler starts writing ``review_urgency`` on every row it
+    computes — the stored-column precedence and the fallback band's
+    reachability are then re-read rather than assumed.
     """
 
     if authority is not ScheduleAuthority.CURRENT:

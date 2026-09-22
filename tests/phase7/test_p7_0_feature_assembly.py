@@ -180,15 +180,16 @@ def test_the_mapping_covers_every_declared_frequency_word() -> None:
 def test_every_pair_carries_a_basis_and_the_judged_ones_a_revisit() -> None:
     """The honesty requirement: a pair either quotes where its justification
     comes from or registers itself as a judgement with the condition that
-    re-opens it — and the three pairs that are not a quotation say which kind
-    they are."""
+    re-opens it — and every row's basis names the *pairing* as the declared
+    judgement it is. The label is required of all four pairs, not of the two
+    the first cut sampled (P7-0's disposition: OFF's basis quotes its BF-03
+    switch and now says so about the pairing the same way the other three do).
+    """
 
     for frequency, mapping in TEACHING_FREQUENCY_TO_PROFILE.items():
         assert mapping.basis.strip(), frequency
         assert mapping.revisit.strip(), frequency
-    assert "declared judgement" in (
-        TEACHING_FREQUENCY_TO_PROFILE[TeachingFrequency.BALANCED].basis
-    )
+        assert "declared judgement" in mapping.basis, frequency
     assert "implementation-declared" in (
         TEACHING_FREQUENCY_TO_PROFILE[TeachingFrequency.BALANCED].basis
     )

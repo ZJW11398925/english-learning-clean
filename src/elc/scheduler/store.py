@@ -71,7 +71,8 @@ deliberate:
 - the **by-key** read (``get_schedule_item``) refuses to answer "never
   written" while a row of the same ``(target_type, target_id)`` cannot be
   decoded: the modality key is what the row is looked up by, and a row whose
-  stored modality is not a legal word would otherwise be invisible to that
+  stored modality — or whose ``target_type`` / ``target_id`` column — is not
+  the text the §5.2 column set describes would otherwise be invisible to that
   lookup while the list read refuses over it — the same dirty row would then
   have two answers, which is the p6-2 F-2 registration's whole complaint;
 - nothing is repaired: the read reports the field it could not decode, and
@@ -696,14 +697,20 @@ class SqliteSchedulerStore:
         **A key miss is probed before it is answered.** When no row carries
         the key, the rows of the same ``(target_type, target_id)`` are decoded
         once: if one of them cannot be decoded — a stored
-        ``evidence_modality`` outside the V1 pair is the case this exists for
-        — the read refuses with that row's ``VALIDATION_FAILED`` instead of
-        answering "never written". The row *is* that target's schedule row
-        (the modality key is its key, and the key column drifted), and the
-        list read refuses over the same row: without the probe the same dirty
-        row would have two answers depending on which face was asked (the
-        module docstring's rule). A sibling row that decodes is not the key
-        asked about, so it is ignored and the miss stays a miss.
+        ``evidence_modality`` outside the V1 pair, or a key column holding
+        something other than TEXT, are the cases this exists for — the read
+        refuses with that row's ``VALIDATION_FAILED`` instead of answering
+        "never written". The row *is* that target's schedule row (the modality
+        key is its key, and the column drifted), and the list read refuses
+        over the same row: without the probe the same dirty row would have two
+        answers depending on which face was asked (the module docstring's
+        rule). The probe addresses the target by the **text spelling** of both
+        key columns (:meth:`_refuse_undecodable_sibling`), so a row whose
+        ``target_type`` / ``target_id`` is not TEXT is reached as well — the
+        lookup's own equality steps over such a row, so without that the miss
+        would be the divergence this probe exists to remove. A sibling row
+        that decodes is not the key asked about, so it is ignored and the miss
+        stays a miss.
         """
 
         found = self._item_row_for_key(
@@ -723,6 +730,19 @@ class SqliteSchedulerStore:
         One fixed statement, the same twelve columns in 0012's order, and the
         first row that does not decode decides the answer. ``Ok(None)`` when
         every sibling decodes: the key really was never written.
+
+        **The rows are addressed by the text spelling of both key columns, not
+        by their storage class.** The row this probe exists for is precisely a
+        row whose key columns are not the TEXT §5.2 declares, so the lookup's
+        own comparison (``target_type = ? AND target_id = ?``) would step over
+        it and the miss would be answered ``Ok(None)`` while the list read
+        refuses over the same row — one durable row, two answers, which is the
+        shape this probe removes (P7-0 F1). ``CAST(… AS TEXT)`` compares what
+        the row *spells*: for a TEXT column the cast is the column itself, so
+        every legal row matches exactly as before (0012 declares BINARY
+        collation, and the cast comparison is BINARY too), while a BLOB /
+        INTEGER / REAL key column casts to the text the key would have had and
+        is reached, refused, and named.
         """
 
         rows = self._conn.execute(
@@ -730,7 +750,9 @@ class SqliteSchedulerStore:
             " evidence_modality, review_state, review_urgency,"
             " next_review_window_start, next_review_window_end,"
             " spacing_stage, source_learning_watermark, version, updated_at"
-            " FROM schedule_item WHERE target_type = ? AND target_id = ?",
+            " FROM schedule_item"
+            " WHERE CAST(target_type AS TEXT) = ?"
+            " AND CAST(target_id AS TEXT) = ?",
             (target_type, str(target_id)),
         ).fetchall()
         for row in rows:

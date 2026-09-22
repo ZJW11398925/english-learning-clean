@@ -418,6 +418,15 @@ class SchedulerController:
         ``DEPENDENCY_UNAVAILABLE`` — the Scheduler will not invent a watermark
         to compare against, the same refusal
         :meth:`recompute_schedule_item` gives (one constructor, one rule).
+
+        **The port is checked before the row, on purpose.** A controller built
+        without a Learning face refuses with ``DEPENDENCY_UNAVAILABLE`` even
+        for a key that holds no row: the missing collaborator is a fact about
+        this object, not about the key, and answering ``Ok(None)`` first would
+        report "nothing scheduled" for a question this face was never able to
+        ask. :meth:`recompute_schedule_item` applies the same order (its first
+        refusal is that same missing face), so both faces of the handshake
+        give one rule rather than one rule per method.
         """
 
         if self._learning is None:

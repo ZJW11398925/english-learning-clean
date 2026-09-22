@@ -269,6 +269,12 @@ def parse_instant(text: str, *, field: str) -> Result[datetime]:
     - **naive**: no UTC offset. The policy will not assume a zone for a caller
       (module docstring: the same "no invented reading" rule the rest of this
       cut follows).
+
+    Revisit: canonical text pins a timestamp form (or a default zone) for the
+    window columns §5.2 declares TEXT, or another domain's instant reading
+    appears that this one must agree with — the three refusals above are this
+    cut's reading of a column canonical leaves open, and
+    ``elc.user_config.store``'s ``_parse_instant`` restates it.
     """
 
     if not text:
