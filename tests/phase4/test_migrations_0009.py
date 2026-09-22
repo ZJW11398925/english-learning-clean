@@ -28,7 +28,7 @@ from pathlib import Path
 import pytest
 
 from elc.platform.db import connection, migrations
-from tests.conftest import REPO_ROOT
+from tests.conftest import REPO_ROOT, SCHEMA_HEAD_VERSION
 
 MIGRATIONS_DIR = REPO_ROOT / "migrations"
 PRE_0009 = "0009_relationship_contracts.sql"
@@ -250,16 +250,16 @@ def test_0009_creates_the_two_tables_with_the_documented_column_sets(
 ) -> None:
     migrations.apply_migrations(db)
     assert "0009_relationship_contracts" in migrations.applied_migrations(db)
-    # P6-1 semantic sync: the stamp is the newest migration's, and
-    # 0012_schedule_review is now the head (this pin read "11" with P6-0's
-    # 0011_goal_policy_focus, "10" while 0010_episode_and_user_config was,
-    # and "9" while 0009 was).
-    assert migrations.schema_version(db) == "12"
+    # P6-1/P6-3 semantic sync: the stamp is the newest migration's, and
+    # 0013_planner_constraint is now the head (this pin read "12" with
+    # P6-1's 0012_schedule_review, "11" with P6-0's 0011_goal_policy_focus,
+    # "10" while 0010_episode_and_user_config was, and "9" while 0009 was).
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION
     assert (
         db.execute(
             "SELECT value FROM schema_meta WHERE key = 'runtime_schema_version'"
         ).fetchone()[0]
-        == "12"
+        == SCHEMA_HEAD_VERSION
     )
     assert _columns(db, "teaching_evidence_proposal") == list(PROPOSAL_COLUMNS)
     assert _columns(db, "relationship_memory") == list(MEMORY_COLUMNS)
@@ -281,10 +281,11 @@ def test_0009_enforces_the_proposal_and_memory_vocabularies(
     assert migrations.schema_version(conn) == "8"
     _seed_pre_0009_lineage(conn)
     migrations.apply_migrations(conn, post)
-    # P6-1 semantic sync: the post stage applies every migration from 0009
-    # on (0010_episode_and_user_config, 0011_goal_policy_focus and
-    # 0012_schedule_review included), so the stamp is 12.
-    assert migrations.schema_version(conn) == "12"
+    # P6-1/P6-3 semantic sync: the post stage applies every migration from
+    # 0009 on (0010_episode_and_user_config, 0011_goal_policy_focus,
+    # 0012_schedule_review and 0013_planner_constraint included), so the
+    # stamp is 13.
+    assert migrations.schema_version(conn) == SCHEMA_HEAD_VERSION
 
     # -- RA §21 proposal status: exactly three words (and a real row to
     # move through them — the FK-bound proposal of the seeded lineage).

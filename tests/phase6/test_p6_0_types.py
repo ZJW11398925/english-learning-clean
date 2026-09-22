@@ -39,6 +39,8 @@ from elc.user_config.types import (
     DisclosureLevel,
     LearningGoal,
     LearningGoalPortfolio,
+    PlannerConstraintScope,
+    PlannerConstraintType,
     SessionFocus,
     TeachingFrequency,
     TeachingPolicyProfile,
@@ -324,16 +326,22 @@ def _module_level_word_lists(tree: ast.Module) -> list[str]:
 
 
 def test_the_types_module_invents_no_further_vocabulary() -> None:
-    """The only word lists this module declares are the two Phase 0 enums;
-    no new enum, no module-level ALL_CAPS constant of string literals, and
-    no second modality vocabulary, arrives with P6-0.
+    """The vocabulary this module declares is enumerated here, in both of the
+    shapes a word list can take in its source: a ``StrEnum`` subclass (Phase
+    0's form) and a module-level ALL_CAPS name bound to a string-literal tuple
+    / list / set / dict — ``POLICY_MODES = ("PREVIEW_V0", "SOCRATIC")`` is a
+    word list just as much as an enum is, and a *new* one fails here rather
+    than becoming the de-facto vocabulary of an unpinned column.
 
-    A vocabulary can take two shapes in this module's source, so the pin
-    scans both: a ``StrEnum`` subclass (Phase 0's form) and a module-level
-    ALL_CAPS name bound to a string-literal tuple / list / set / dict —
-    ``POLICY_MODES = ("PREVIEW_V0", "SOCRATIC")`` is a word list just as
-    much as an enum is, and it fails here rather than becoming the de-facto
-    vocabulary of the unpinned columns.
+    The four names that are listed are the module's whole vocabulary, and the
+    distinction between them is the point: :class:`TeachingFrequency` is an
+    **implementation declaration** (which is why migration 0011 puts no CHECK
+    on its column) and :class:`DisclosureLevel` is this package's disclosure
+    ladder, while P6-3's :class:`PlannerConstraintType` /
+    :class:`PlannerConstraintScope` and their module-level restatements are
+    **§9's own words**, enforced by migration 0013's CHECK and extracted from
+    the document by tests/phase6/test_p6_3_types.py. A fifth name — of either
+    shape — is the case this pin exists for.
     """
 
     tree = ast.parse(TYPES_MODULE.read_text(encoding="utf-8"))
@@ -346,10 +354,23 @@ def test_the_types_module_invents_no_further_vocabulary() -> None:
             for base in node.bases
         )
     ]
-    assert sorted(enums) == ["DisclosureLevel", "TeachingFrequency"]
+    assert sorted(enums) == [
+        "DisclosureLevel",
+        "PlannerConstraintScope",
+        "PlannerConstraintType",
+        "TeachingFrequency",
+    ]
     assert not [name for name in enums if "Modality" in name]
-    assert _module_level_word_lists(tree) == []
-    for enum_type in (TeachingFrequency, DisclosureLevel):
+    assert _module_level_word_lists(tree) == [
+        "PLANNER_CONSTRAINT_SCOPES",
+        "PLANNER_CONSTRAINT_TYPES",
+    ]
+    for enum_type in (
+        TeachingFrequency,
+        DisclosureLevel,
+        PlannerConstraintScope,
+        PlannerConstraintType,
+    ):
         assert issubclass(enum_type, StrEnum)
     assert tuple(DisclosureLevel.__members__) == ("MINIMAL", "FUNCTIONAL", "RICH")
 

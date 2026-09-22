@@ -35,7 +35,7 @@ from pathlib import Path
 import pytest
 
 from elc.platform.db import connection, migrations
-from tests.conftest import REPO_ROOT
+from tests.conftest import REPO_ROOT, SCHEMA_HEAD_VERSION
 
 MIGRATIONS_DIR = REPO_ROOT / "migrations"
 PRE_0007 = "0007_teaching_lineage.sql"
@@ -179,10 +179,11 @@ def test_backfill_is_deterministic_and_preserves_history(
     }
     assert not {name for name in tables if name.endswith(("_v7", "_backup"))}
     # The post stage runs every migration from 0007 on, so the version after
-    # it is the newest one (P6-1's 0012_schedule_review: this pin read 11
-    # with P6-0's 0011_goal_policy_focus, and 10 while P4-3's
-    # 0010_episode_and_user_config was the head).
-    assert migrations.schema_version(conn) == "12"
+    # it is the newest one (P6-3's 0013_planner_constraint: this pin read 12
+    # with P6-1's 0012_schedule_review, 11 with P6-0's
+    # 0011_goal_policy_focus, and 10 while P4-3's 0010_episode_and_user_config
+    # was the head).
+    assert migrations.schema_version(conn) == SCHEMA_HEAD_VERSION
     conn.close()
 
 

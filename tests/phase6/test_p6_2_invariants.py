@@ -46,7 +46,13 @@ from elc.scheduler.spacing import (
     urgency_of,
 )
 from elc.scheduler.types import ReviewState
-from tests.conftest import REPO_ROOT, SRC_ROOT
+from tests.conftest import (
+    MIGRATION_IDS,
+    REPO_ROOT,
+    SCHEMA_HEAD_FILE,
+    SCHEMA_HEAD_VERSION,
+    SRC_ROOT,
+)
 from tests.phase3.sql_write_scan import write_targets, write_targets_from_source
 
 SCHEDULER_SRC = SRC_ROOT / "scheduler"
@@ -413,30 +419,41 @@ def test_the_freshness_view_field_set_is_unchanged() -> None:
 # -- the migration boundary ---------------------------------------------------
 
 
-def test_this_cut_adds_no_migration() -> None:
-    """R1: no table, no column, no new file. The head is 0012, the lineage is
-    contiguous, and the head's bytes did not move."""
+def test_this_cut_added_no_migration() -> None:
+    """P6-2's R1, restated for the world P6-3 made: *this* cut added no table,
+    no column and no new file. 0012 is where P6-2 left the head, its bytes did
+    not move, nothing was smuggled between it and the next slice's file, and
+    the lineage is still contiguous. (The pin read ``names[-1] == FROZEN_HEAD``
+    while 0012 was the head; 0013_planner_constraint is P6-3's file, and this
+    one asserts what remains true of P6-2 rather than being deleted.)"""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert names[-1] == FROZEN_HEAD
+    assert FROZEN_HEAD in names
+    assert names[names.index(FROZEN_HEAD) + 1] == SCHEMA_HEAD_FILE
     assert [name[:4] for name in names] == [
-        f"{index:04d}" for index in range(1, 13)
+        f"{index:04d}" for index in range(1, len(MIGRATION_IDS) + 1)
     ]
     assert _digest(MIGRATIONS_DIR / FROZEN_HEAD) == FROZEN_HEAD_DIGEST
 
 
-def test_the_schema_head_is_still_twelve() -> None:
+def test_the_schema_head_is_still_thirteen() -> None:
+    """The stamp the shared constant declares is the one a fresh database
+    carries (this pin read "12" through P6-2; P6-3's 0013 moved it)."""
+
     conn = connection.connect(":memory:")
     try:
         migrations.apply_migrations(conn)
-        assert migrations.schema_version(conn) == "12"
+        assert migrations.schema_version(conn) == SCHEMA_HEAD_VERSION
         stamps = dict(
             conn.execute(
                 "SELECT key, value FROM schema_meta WHERE key IN"
                 " ('schema_version', 'runtime_schema_version')"
             ).fetchall()
         )
-        assert stamps == {"schema_version": "12", "runtime_schema_version": "12"}
+        assert stamps == {
+            "schema_version": SCHEMA_HEAD_VERSION,
+            "runtime_schema_version": SCHEMA_HEAD_VERSION,
+        }
     finally:
         conn.close()
 

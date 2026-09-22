@@ -8,10 +8,11 @@ P3-0's ``decision_cycle`` table test, carried forward to P3-1A:
   snapshot/version columns accept NULL after 0007 (the legacy export
   requires the honest all-NULL bindings — the migration header carries the
   full rationale);
-- schema_version is 12 (0012_schedule_review is the newest migration; it
-  read 11 while 0011_goal_policy_focus was the newest, 10 while
-  0010_episode_and_user_config was, 9 while 0009_relationship_contracts was,
-  and 8 while 0008_attempt_records was);
+- schema_version is 13 (0013_planner_constraint is the newest migration; it
+  read 12 while 0012_schedule_review was the newest, 11 while
+  0011_goal_policy_focus was, 10 while 0010_episode_and_user_config was, 9
+  while 0009_relationship_contracts was, and 8 while 0008_attempt_records
+  was);
 - the decision_cycle / gate / moment write faces belong to their owning
   adapters only (AST-based scan, P3-0 review F3 — a substring scan is
   defeatable by multi-line SQL literals).
@@ -24,7 +25,13 @@ import sqlite3
 import pytest
 
 from elc.platform.db import connection, migrations
-from tests.conftest import REPO_ROOT, SRC_ROOT
+from tests.conftest import (
+    MIGRATION_IDS,
+    REPO_ROOT,
+    SCHEMA_HEAD_FILE,
+    SCHEMA_HEAD_VERSION,
+    SRC_ROOT,
+)
 from tests.phase3.sql_write_scan import write_targets
 
 # DATA_MODEL §4:165-192 verbatim column list (the thirteen §4 columns
@@ -179,33 +186,22 @@ def test_migration_list_and_schema_version(db: sqlite3.Connection) -> None:
     rows = db.execute(
         "SELECT migration_id FROM schema_migrations ORDER BY migration_id"
     ).fetchall()
-    assert [row[0] for row in rows] == [
-        "0001_bootstrap",
-        "0002_conversation_core",
-        "0003_generation_provider",
-        "0004_learning_evidence",
-        "0005_learner_target_state",
-        "0006_decision_cycle",
-        "0007_teaching_lineage",
-        # 0008_attempt_records joins in Phase 3 P3-1B (TASK-…2babb21e.2 ①):
-        # the attempt / evaluation tables plus the F8 vocabularies;
-        # 0009_relationship_contracts in Phase 4 P4-0 (TASK-…5ba74efc.84 ①③);
-        # 0010_episode_and_user_config in Phase 4 P4-3 (TASK-OPI-4d516e4f.19 ⑥);
-        # 0011_goal_policy_focus in Phase 6 P6-0 (TASK-OPI-a68fd9eb.48 ③);
-        # 0012_schedule_review in Phase 6 P6-1 (TASK-OPI-6259f6fd.12 ②① — the
-        # §5.2 schedule_item / review_event rows).
-        "0008_attempt_records",
-        "0009_relationship_contracts",
-        "0010_episode_and_user_config",
-        "0011_goal_policy_focus",
-        "0012_schedule_review",
-    ]
+    # 0008_attempt_records joins in Phase 3 P3-1B (TASK-…2babb21e.2 ①): the
+    # attempt / evaluation tables plus the F8 vocabularies;
+    # 0009_relationship_contracts in Phase 4 P4-0 (TASK-…5ba74efc.84 ①③);
+    # 0010_episode_and_user_config in Phase 4 P4-3 (TASK-OPI-4d516e4f.19 ⑥);
+    # 0011_goal_policy_focus in Phase 6 P6-0 (TASK-OPI-a68fd9eb.48 ③);
+    # 0012_schedule_review in Phase 6 P6-1 (TASK-OPI-6259f6fd.12 ②① — the
+    # §5.2 schedule_item / review_event rows); 0013_planner_constraint in
+    # Phase 6 P6-3 (TASK-OPI-5a0be06d.20 ③ — the §9 constraint row).
+    # The ids are declared once in tests.conftest.
+    assert [row[0] for row in rows] == list(MIGRATION_IDS)
     version = db.execute(
         "SELECT value FROM schema_meta WHERE key = 'schema_version'"
     ).fetchone()
     # The stamp is the newest migration's (this pin read "10" while 0010 was
     # the head, "11" with P6-0's 0011).
-    assert version is not None and version[0] == "12"
+    assert version is not None and version[0] == SCHEMA_HEAD_VERSION
 
 
 def test_snapshot_columns_accept_null_for_legacy_cycles(
@@ -322,16 +318,17 @@ def test_write_faces_belong_to_the_owning_adapters_only() -> None:
     )
 
 
-def test_migrations_directory_0012_is_newest() -> None:
-    """0012 is the newest migration; nothing ahead of the P6-1 slice
+def test_migrations_directory_0013_is_newest() -> None:
+    """0013 is the newest migration; nothing ahead of the P6-3 slice
     smuggles schema (the migration runner is filename-ordered). The pin
     moves with each slice's newest migration — it read 0008 while P3-1B was
     the head, then 0009 while P4-0/P4-1/P4-2 were, 0010 with P4-3 (the slice
     that added the episode projection and the profile rows), 0011 with P6-0
-    (the goal / policy / focus rows), and 0012 with P6-1 (the §5.2
-    schedule_item / review_event rows)."""
+    (the goal / policy / focus rows), 0012 with P6-1 (the §5.2
+    schedule_item / review_event rows), and 0013 with P6-3 (the §9
+    planner_constraint row)."""
 
     names = sorted(
         path.name for path in (REPO_ROOT / "migrations").glob("*.sql")
     )
-    assert names[-1] == "0012_schedule_review.sql"
+    assert names[-1] == SCHEMA_HEAD_FILE

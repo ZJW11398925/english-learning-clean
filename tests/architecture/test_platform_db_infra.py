@@ -3,6 +3,13 @@
 Not part of the §2 Gate list, but pins the §17-02 deliverables: idempotent
 migrations with a version table, short-transaction discipline, and the
 runtime_epoch restart fence.
+
+This file additionally pins the three migration-lineage constants every
+suite's version pin reads (``tests.conftest``): the declared id list is the
+real ``migrations/`` directory, the declared head is that directory's last
+entry, and applying the chain stamps the declared version. Without that pin a
+constant could drift from the tree it claims to describe and every pin using
+it would keep passing.
 """
 
 from __future__ import annotations
@@ -12,6 +19,12 @@ import sqlite3
 import pytest
 
 from elc.platform.db import connection, epoch, migrations, tx
+from tests.conftest import (
+    MIGRATION_IDS,
+    REPO_ROOT,
+    SCHEMA_HEAD_FILE,
+    SCHEMA_HEAD_VERSION,
+)
 
 
 @pytest.fixture()
@@ -19,6 +32,23 @@ def db() -> sqlite3.Connection:
     conn = connection.connect(":memory:")
     yield conn
     conn.close()
+
+
+def test_the_migration_lineage_constants_are_the_real_ones() -> None:
+    """The shared constants describe this repository, not themselves.
+
+    Three facts, each checked against the tree rather than against the
+    constants: the ids are exactly the ``migrations/*.sql`` stems (in order),
+    ``SCHEMA_HEAD_FILE`` is that directory's last entry, and
+    ``SCHEMA_HEAD_VERSION`` is the two-digit number the head's own file name
+    starts with. A new migration that is not registered here fails this test
+    -- which is what keeps the dozen version pins above honest.
+    """
+
+    names = sorted(path.name for path in (REPO_ROOT / "migrations").glob("*.sql"))
+    assert [name.removesuffix(".sql") for name in names] == list(MIGRATION_IDS)
+    assert names[-1] == SCHEMA_HEAD_FILE
+    assert SCHEMA_HEAD_FILE[:4] == f"{int(SCHEMA_HEAD_VERSION):04d}"
 
 
 def test_migrations_apply_idempotently(db: sqlite3.Connection) -> None:
@@ -44,44 +74,23 @@ def test_migrations_apply_idempotently(db: sqlite3.Connection) -> None:
     # — the §5.1 goal_portfolio / teaching_policy / session_focus rows).
     # 0012_schedule_review joins in Phase 6 P6-1 (TASK-OPI-6259f6fd-….12 ②①
     # — the §5.2 schedule_item / review_event rows).
+    # 0013_planner_constraint joins in Phase 6 P6-3 (TASK-OPI-5a0be06d-….20 ③
+    # — the §9 planner_constraint row).
+    # The ids live in tests.conftest so the per-phase version pins share one
+    # declaration (and test_the_migration_lineage_constants_are_the_real_ones
+    # holds it against the directory).
     # DATA_MODEL §26.1: migrations bump schema_version explicitly.
-    assert applied == [
-        "0001_bootstrap",
-        "0002_conversation_core",
-        "0003_generation_provider",
-        "0004_learning_evidence",
-        "0005_learner_target_state",
-        "0006_decision_cycle",
-        "0007_teaching_lineage",
-        "0008_attempt_records",
-        "0009_relationship_contracts",
-        "0010_episode_and_user_config",
-        "0011_goal_policy_focus",
-        "0012_schedule_review",
-    ]
+    assert applied == list(MIGRATION_IDS)
     # Second run is a no-op.
     assert migrations.apply_migrations(db) == []
     rows = db.execute(
         "SELECT migration_id FROM schema_migrations ORDER BY migration_id"
     ).fetchall()
-    assert [row[0] for row in rows] == [
-        "0001_bootstrap",
-        "0002_conversation_core",
-        "0003_generation_provider",
-        "0004_learning_evidence",
-        "0005_learner_target_state",
-        "0006_decision_cycle",
-        "0007_teaching_lineage",
-        "0008_attempt_records",
-        "0009_relationship_contracts",
-        "0010_episode_and_user_config",
-        "0011_goal_policy_focus",
-        "0012_schedule_review",
-    ]
+    assert [row[0] for row in rows] == list(MIGRATION_IDS)
     # The stamp is the newest migration's (this pin read "10" while 0010 was
     # the head, "11" with P6-0's 0011_goal_policy_focus; P6-1 added
-    # 0012_schedule_review).
-    assert migrations.schema_version(db) == "12"
+    # 0012_schedule_review, P6-3 the 0013_planner_constraint above).
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION
 
 
 def test_runtime_epoch_fence_restarts_and_stales(db: sqlite3.Connection) -> None:

@@ -128,6 +128,26 @@ convention: §5.1 gives it ``conversation_id`` directly, and its
 disclosure_level / disclosed_facts): it is a per-consumer *view*, produced
 by :mod:`elc.user_config.disclosure` from a profile plus a policy, and it
 is never a durable row.
+
+P6-3 (TASK-OPI-5a0be06d-….20 ③.2): docs/DATA_MODEL.md **§9**
+TeachingPreference / PlannerConstraint lands here as
+:class:`PlannerConstraint` — nine columns in §9's order, the four
+``constraint_type`` words and the three ``scope`` words verbatim. **The
+placement is a derived judgement, not a quoted one**: §5.1's Owns list for this
+bounded context does *not* name PlannerConstraint, so no canonical sentence
+puts the object here. What decides it is §9's own shape (a typed *preference*
+carrying a ``created_from_turn_id?`` provenance leg and three user-level
+scopes), DOMAIN_MODEL §18.1's TRUSTED_AUTHORITY (a typed user setting is the
+user's own statement), and the fact that the durable row belongs beside the
+other user configuration rows. A canonical revision that assigns the object
+elsewhere moves this module's placement with it.
+
+**This object is durable truth, not an applied effect.** P6-3 lands the row and
+its five faces; it does **not** wire the constraint into anything — no Planner
+reads it, no Gate consults it, and nothing here turns a user's sentence into a
+constraint (that extraction face is Phase 8's). The suppression a row will one
+day cause is a *consumer's* reading of this truth, decided in the consumer's
+cut.
 """
 
 from __future__ import annotations
@@ -144,6 +164,7 @@ from elc.platform.types import (
     PersonaId,
     PolicyVersion,
     TargetId,
+    TurnId,
     UserId,
 )
 from elc.relationship.types import MemorySensitivityClass
@@ -177,6 +198,71 @@ class DisclosureLevel(StrEnum):
     MINIMAL = "MINIMAL"
     FUNCTIONAL = "FUNCTIONAL"
     RICH = "RICH"
+
+
+#: docs/DATA_MODEL.md §9's ``constraint_type`` list, word for word — the four
+#: Types words the canonical block pins. Declared at module level (and
+#: restated by :class:`PlannerConstraintType` below) so a pin can compare the
+#: canonical block text with this constant *and* with the enum's members
+#: rather than trusting a single spelling: the P6-0 review finding (F-2) asked
+#: for exactly this second shape, because a word list can hide in a module
+#: constant as easily as in an enum.
+PLANNER_CONSTRAINT_TYPES: tuple[str, ...] = (
+    "DO_NOT_AUTO_TEACH",
+    "SUPPRESS_REVIEW",
+    "JUST_CHAT",
+    "MANUAL_FOCUS",
+)
+
+#: docs/DATA_MODEL.md §9's ``scope`` list ("Scope 例如"), word for word — the
+#: three words, in the block's own order. Same second-shape rule as
+#: :data:`PLANNER_CONSTRAINT_TYPES`.
+PLANNER_CONSTRAINT_SCOPES: tuple[str, ...] = (
+    "THIS_SESSION",
+    "UNTIL_DATE",
+    "UNTIL_USER_REENABLES",
+)
+
+
+class PlannerConstraintType(StrEnum):
+    """What a user constraint forbids (or forces) — §9's four Types words.
+
+    The canonical block (docs/DATA_MODEL.md §9, line 603 onward) pins exactly
+    :data:`PLANNER_CONSTRAINT_TYPES`, so migration 0013 enforces them with a
+    CHECK (a pinned vocabulary may be frozen in the schema — the 0010
+    ``episode.status`` precedent; an unpinned one may not).
+
+    **This enum carries no behaviour.** It does not say what suppression
+    happens, which face applies it or when it lapses: nothing in this cut
+    consumes a constraint at all. A consumer that must branch on one of these
+    words (Phase 7's ``PlannerConstraintView``, Phase 8's
+    ``TARGET_SUPPRESSED``) reads the value and owns the reading.
+    """
+
+    DO_NOT_AUTO_TEACH = "DO_NOT_AUTO_TEACH"
+    SUPPRESS_REVIEW = "SUPPRESS_REVIEW"
+    JUST_CHAT = "JUST_CHAT"
+    MANUAL_FOCUS = "MANUAL_FOCUS"
+
+
+class PlannerConstraintScope(StrEnum):
+    """How long a user constraint lasts — §9's three Scope words.
+
+    :data:`PLANNER_CONSTRAINT_SCOPES`, verbatim; enforced by migration 0013's
+    CHECK for the same reason as :class:`PlannerConstraintType`.
+
+    **The three words are carried; none of them is interpreted here.** In
+    particular ``THIS_SESSION`` names a session, and §9 gives the object no
+    conversation column — so which session is current is a *consumer's*
+    question (elc/user_config/store.py registers that state of affairs, and
+    the cut that wires the first consumer answers it). ``UNTIL_DATE`` reads
+    its end from ``expires_at``; ``UNTIL_USER_REENABLES`` is the open-ended
+    one, whose end is the user's own act (the ``active`` transfer face, R6).
+    """
+
+    THIS_SESSION = "THIS_SESSION"
+    UNTIL_DATE = "UNTIL_DATE"
+    UNTIL_USER_REENABLES = "UNTIL_USER_REENABLES"
 
 
 @dataclass(frozen=True)
@@ -425,3 +511,86 @@ class SessionFocus:
     manual_focus_target: TargetId | None = None
     starts_at: str = ""
     expires_at: str | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
+class PlannerConstraint:
+    """docs/DATA_MODEL.md §9 TeachingPreference / PlannerConstraint — nine
+    columns, word for word, in §9's order.
+
+    One durable user constraint: "don't teach this automatically", "don't make
+    me review this", "I just want to chat", "focus on this manually". The four
+    ``constraint_type`` words and the three ``scope`` words are §9's, verbatim
+    (:data:`PLANNER_CONSTRAINT_TYPES` / :data:`PLANNER_CONSTRAINT_SCOPES` and
+    the two enums beside them); migration 0013 enforces both in the schema
+    because canonical text pins them.
+
+    **Ownership is a derived judgement (R1).** §5.1's Owns list does not name
+    this object, so its placement in this package is this cut's reading —
+    stated with its reasons in this module's docstring and in migration 0013's
+    header, and registered as such rather than quoted.
+
+    **No version column, and therefore no in-place rewrite (R6).** §9 gives
+    this object no ``version`` / ``revision`` stamp, so ``constraint_id`` is a
+    one-shot identity: a write that would change the content of an existing id
+    is refused (``CONFLICT``) rather than silently rewriting a row nothing
+    could version (the :class:`SessionFocus` precedent, and docs/DATA_MODEL.md
+    §1.3's append-first reading — a different constraint is a different
+    ``constraint_id``). The **one** exception is :attr:`active`, and it is
+    reachable only through its own transfer face
+    (``set_planner_constraint_active``): BF-03 makes re-enabling a constraint
+    the User Constraint layer's act — "Gate 不偷偷修改用户约束" — so the
+    content-write face refuses an ``active`` that differs from the durable row
+    instead of carrying the flag through. Without that exception
+    ``UNTIL_USER_REENABLES`` could never be ended. The refusal rules live in
+    :mod:`elc.user_config.store`, stated once there.
+
+    **Scope is carried, never interpreted (R7).** ``scope`` travels verbatim
+    and no read face this cut lands branches on it; in particular
+    ``THIS_SESSION`` names a session and §9 gives the object **no conversation
+    column**, so "which session is current?" is a consumer's question — the
+    store registers that fact where the read faces are declared. **Revisit
+    condition**: the first consumer that must honour ``THIS_SESSION`` either
+    reads the session from context it already holds (and this object stays as
+    it is) or needs a session leg the canonical block does not carry — the
+    latter is a canonical revision, not an implementation choice.
+
+    ``starts_at`` / ``expires_at`` are ISO-8601 **instants carrying a UTC
+    offset** when a caller declares them: the active-window read faces compare
+    them as instants (never as byte order — the opposite of p6-1's replay rule
+    for an immutable fact, and the same reading :mod:`elc.scheduler.spacing`
+    declares for its window), and an empty, unparseable or naive timestamp is
+    refused rather than assumed to be UTC. ``expires_at is None`` = no end
+    declared (an open-ended constraint). ``starts_at`` is the caller's
+    declaration; no store clock writes it (this row has no store-stamped column
+    at all).
+
+    ``target_type`` is a bare ``str``: §9 names the column, migration 0013
+    enforces the two canonical words (RESOURCE / CAPABILITY), and the platform
+    declares no ``TargetType`` type to use here — the
+    :class:`elc.scheduler.types.ScheduleItem` precedent, with the same
+    evidence. ``target_id`` does have a platform type and uses it
+    (``TargetId``); ``created_from_turn_id`` is a ``TurnId``. The two target
+    columns are ``None`` together for a constraint that is **not
+    target-limited**, and ``target_type is None`` with a present ``target_id``
+    (or the reverse) is a shape this object does not call illegal: §9 pins no
+    such rule, and inventing one here would be a rule the canonical set does
+    not make — the read faces match on the pair they are given, verbatim.
+
+    The fields are keyword-only because §9 declares two optional columns
+    (``target_type?`` / ``target_id?``) *before* the required
+    ``constraint_type`` — a defaulted field cannot precede a required one in a
+    positional dataclass, and keeping both the canonical column order (pinned
+    by test) and the "not configured" ``None`` defaults is worth more than
+    positional construction (the :class:`TeachingPolicyProfile` precedent).
+    """
+
+    constraint_id: str
+    target_type: str | None = None
+    target_id: TargetId | None = None
+    constraint_type: PlannerConstraintType
+    scope: PlannerConstraintScope
+    starts_at: str
+    expires_at: str | None = None
+    created_from_turn_id: TurnId | None = None
+    active: bool

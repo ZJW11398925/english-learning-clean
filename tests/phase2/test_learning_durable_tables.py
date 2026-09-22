@@ -18,6 +18,7 @@ import sqlite3
 import pytest
 
 from elc.platform.db import connection, migrations
+from tests.conftest import MIGRATION_IDS, SCHEMA_HEAD_VERSION
 
 
 @pytest.fixture()
@@ -174,37 +175,27 @@ def test_migration_and_schema_version(db: sqlite3.Connection) -> None:
     rows = db.execute(
         "SELECT migration_id FROM schema_migrations ORDER BY migration_id"
     ).fetchall()
-    assert [row[0] for row in rows] == [
-        "0001_bootstrap",
-        "0002_conversation_core",
-        "0003_generation_provider",
-        "0004_learning_evidence",
-        "0005_learner_target_state",
-        # 0006_decision_cycle joins in Phase 3 P3-0 (TASK-…55 ④);
-        # 0007_teaching_lineage in Phase 3 P3-1A (TASK-…2babb21e.17 ①);
-        # 0008_attempt_records in Phase 3 P3-1B (TASK-…2babb21e.2 ①);
-        # 0009_relationship_contracts in Phase 4 P4-0 (TASK-…5ba74efc.84 ①③);
-        # 0010_episode_and_user_config in Phase 4 P4-3 (TASK-OPI-4d516e4f.19
-        # ⑥ — the episode projection + user_profile / disclosure_policy);
-        # 0011_goal_policy_focus in Phase 6 P6-0 (TASK-OPI-a68fd9eb.48 ③ —
-        # the §5.1 goal_portfolio / teaching_policy / session_focus rows);
-        # 0012_schedule_review in Phase 6 P6-1 (TASK-OPI-6259f6fd.12 ②① —
-        # the §5.2 schedule_item / review_event rows).
-        "0006_decision_cycle",
-        "0007_teaching_lineage",
-        "0008_attempt_records",
-        "0009_relationship_contracts",
-        "0010_episode_and_user_config",
-        "0011_goal_policy_focus",
-        "0012_schedule_review",
-    ]
+    assert [row[0] for row in rows] == list(MIGRATION_IDS)
+    # 0006_decision_cycle joins in Phase 3 P3-0 (TASK-…55 ④);
+    # 0007_teaching_lineage in Phase 3 P3-1A (TASK-…2babb21e.17 ①);
+    # 0008_attempt_records in Phase 3 P3-1B (TASK-…2babb21e.2 ①);
+    # 0009_relationship_contracts in Phase 4 P4-0 (TASK-…5ba74efc.84 ①③);
+    # 0010_episode_and_user_config in Phase 4 P4-3 (TASK-OPI-4d516e4f.19 ⑥ —
+    # the episode projection + user_profile / disclosure_policy);
+    # 0011_goal_policy_focus in Phase 6 P6-0 (TASK-OPI-a68fd9eb.48 ③ — the
+    # §5.1 goal_portfolio / teaching_policy / session_focus rows);
+    # 0012_schedule_review in Phase 6 P6-1 (TASK-OPI-6259f6fd.12 ②① — the
+    # §5.2 schedule_item / review_event rows); 0013_planner_constraint in
+    # Phase 6 P6-3 (TASK-OPI-5a0be06d.20 ③ — the §9 planner_constraint row).
+    # The ids are declared once in tests.conftest (and pinned against the real
+    # migrations directory by tests/architecture).
     # The stamp is the newest migration's (this pin read "10" while
     # 0010_episode_and_user_config was the head, "11" with P6-0's 0011).
     assert (
         db.execute(
             "SELECT value FROM schema_meta WHERE key = 'schema_version'"
         ).fetchone()[0]
-        == "12"
+        == SCHEMA_HEAD_VERSION
     )
 
 

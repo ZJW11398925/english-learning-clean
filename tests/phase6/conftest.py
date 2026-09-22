@@ -1,6 +1,6 @@
 """Shared fixtures for the Phase 6 tests (P6-0: the §5.1 goal / policy /
 session-focus objects; P6-1: the §5.2 schedule / review-event objects — their
-durable rows and their authority faces).
+durable rows and their authority faces; P6-3: the §9 PlannerConstraint row).
 
 Two deliberate choices, both following the Phase 5 conftest:
 
@@ -92,6 +92,9 @@ from elc.user_config.store import SqliteUserConfigStore
 from elc.user_config.types import (
     LearningGoal,
     LearningGoalPortfolio,
+    PlannerConstraint,
+    PlannerConstraintScope,
+    PlannerConstraintType,
     SessionFocus,
     TeachingFrequency,
     TeachingPolicyProfile,
@@ -122,9 +125,21 @@ OTHER_MODALITY = EvidenceModality.TEXT_COMPREHENSION
 SCHEDULE_VERSION = ScheduleVersion("sv-1")
 WATERMARK = "wm-1"
 
+#: The P6-3 world: one §9 constraint window and the instant the read faces ask
+#: about. The three instants are deliberately spaced a day apart so an
+#: inclusive boundary and an exclusive one cannot answer alike.
+CONSTRAINT_ID = "pc-1"
+CONSTRAINT_START = "2026-09-22T09:00:00+00:00"
+CONSTRAINT_END = "2026-09-24T09:00:00+00:00"
+AS_OF = "2026-09-23T09:00:00+00:00"
+
 __all__ = [
+    "AS_OF",
     "CAPABILITY_TARGET_ID",
     "CAPABILITY_TARGET_TYPE",
+    "CONSTRAINT_END",
+    "CONSTRAINT_ID",
+    "CONSTRAINT_START",
     "CONV",
     "DOCS_ROOT",
     "MODALITY",
@@ -145,6 +160,7 @@ __all__ = [
     "goal",
     "learning_controller",
     "make_lease",
+    "planner_constraint",
     "portfolio",
     "review_event",
     "schedule_item",
@@ -501,6 +517,46 @@ def review_event(
             None if evidence_group is None else EvidenceGroupId(evidence_group)
         ),
         created_at=created_at,
+    )
+
+
+def planner_constraint(
+    constraint_id: str = CONSTRAINT_ID,
+    *,
+    constraint_type: PlannerConstraintType = (
+        PlannerConstraintType.DO_NOT_AUTO_TEACH
+    ),
+    scope: PlannerConstraintScope = PlannerConstraintScope.UNTIL_DATE,
+    target_type: str | None = None,
+    target_id: TargetId | None = None,
+    starts_at: str = CONSTRAINT_START,
+    expires_at: str | None = CONSTRAINT_END,
+    created_from_turn: str | None = None,
+    active: bool = True,
+) -> PlannerConstraint:
+    """One §9 PlannerConstraint (P6-3) with the caller's content.
+
+    The defaults are a *closed* constraint over the fixed window
+    ``CONSTRAINT_START`` → ``CONSTRAINT_END`` (``AS_OF`` sits strictly inside
+    it), with no target leg and no originating turn — the shape a caller
+    writes when it is stating a plain "别自动教" for the whole session. Every
+    optional column is ``None`` by default, and a caller that wants a specific
+    instant passes it: this builder never reads a clock (the durable row has
+    no store-stamped column either).
+    """
+
+    return PlannerConstraint(
+        constraint_id=constraint_id,
+        target_type=target_type,
+        target_id=target_id,
+        constraint_type=constraint_type,
+        scope=scope,
+        starts_at=starts_at,
+        expires_at=expires_at,
+        created_from_turn_id=(
+            None if created_from_turn is None else TurnId(created_from_turn)
+        ),
+        active=active,
     )
 
 

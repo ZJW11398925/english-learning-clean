@@ -25,7 +25,12 @@ from pathlib import Path
 import pytest
 
 from elc.platform.db import connection, migrations
-from tests.conftest import REPO_ROOT
+from tests.conftest import (
+    MIGRATION_IDS,
+    REPO_ROOT,
+    SCHEMA_HEAD_FILE,
+    SCHEMA_HEAD_VERSION,
+)
 
 MIGRATIONS_DIR = REPO_ROOT / "migrations"
 PRE_0010 = "0010_episode_and_user_config.sql"
@@ -128,15 +133,16 @@ def test_0010_creates_the_three_tables_with_the_canonical_column_sets(
     db: sqlite3.Connection,
 ) -> None:
     assert "0010_episode_and_user_config" in migrations.applied_migrations(db)
-    # P6-1 semantic sync: the stamp is the newest migration's, and
-    # 0012_schedule_review is now the head (this pin read "11" with P6-0's
-    # 0011_goal_policy_focus and "10" while 0010 was).
-    assert migrations.schema_version(db) == "12"
+    # P6-1/P6-3 semantic sync: the stamp is the newest migration's, and
+    # 0013_planner_constraint is now the head (this pin read "12" with
+    # P6-1's 0012_schedule_review, "11" with P6-0's 0011_goal_policy_focus
+    # and "10" while 0010 was).
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION
     assert (
         db.execute(
             "SELECT value FROM schema_meta WHERE key = 'runtime_schema_version'"
         ).fetchone()[0]
-        == "12"
+        == SCHEMA_HEAD_VERSION
     )
     # Column order is the canonical order (§5.3 / §5.1), word for word.
     assert _columns(db, "episode") == list(EPISODE_COLUMNS)
@@ -216,10 +222,11 @@ def test_0010_leaves_the_existing_lineage_untouched(
     assert migrations.schema_version(conn) == "9"
     _seed_pre_0010_lineage(conn)
     migrations.apply_migrations(conn, post)
-    # P6-1 semantic sync: the post stage applies every migration from 0010
-    # on (0011_goal_policy_focus and 0012_schedule_review included), so the
-    # stamp is the newest one — 12, not P6-0's 11 nor P4-3's 10.
-    assert migrations.schema_version(conn) == "12"
+    # P6-1/P6-3 semantic sync: the post stage applies every migration from
+    # 0010 on (0011_goal_policy_focus, 0012_schedule_review and
+    # 0013_planner_constraint included), so the stamp is the newest one —
+    # 13, not P6-1's 12, P6-0's 11 nor P4-3's 10.
+    assert migrations.schema_version(conn) == SCHEMA_HEAD_VERSION
 
     assert conn.execute(
         "SELECT relationship_memory_id, canonical_content, status"
@@ -243,12 +250,12 @@ def test_0010_leaves_the_existing_lineage_untouched(
 
 
 def test_the_earlier_migrations_are_untouched() -> None:
-    """0001–0011 are byte-identical: P6-1 adds one file (0012) and edits
-    none of them (P6-0 added 0011 the same way)."""
+    """0001–0012 are byte-identical: P6-3 adds one file (0013) and edits
+    none of them (P6-1 added 0012 and P6-0 added 0011 the same way)."""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert names[-1] == "0012_schedule_review.sql"
-    assert len(names) == 12
+    assert names[-1] == SCHEMA_HEAD_FILE
+    assert len(names) == len(MIGRATION_IDS)
     # Every earlier file keeps its own name (a rename would be a different
     # migration as far as the runner and the schema_migrations table are
     # concerned).

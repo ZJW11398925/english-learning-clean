@@ -25,6 +25,16 @@ object had none of. Nothing else about P6-0's faces changed: the id-keyed
 :meth:`get_session_focus` still answers the way it did, and the write faces
 are untouched.
 
+Phase 6 P6-3 (TASK-OPI-5a0be06d-….20 ③.4): §9's PlannerConstraint gets the
+five faces the durable row needs — two writes
+(:meth:`record_planner_constraint`, :meth:`set_planner_constraint_active`) and
+three reads (:meth:`get_planner_constraint`, :meth:`active_constraints`,
+:meth:`active_constraints_for_target`). Like the P6-0 faces, they add **no**
+rule of their own: every refusal, the append-first identity and the
+instant-window reading are the store's, stated once there. **Nothing consumes
+a constraint yet**: no Planner reads these rows, no Gate consults them, and no
+face turns a user's sentence into one (Phase 8's extraction face).
+
 Six faces, the same three layers:
 
 - **the sensitive-persistence gate** (§18.1 "高敏感 Profile/Relationship
@@ -71,6 +81,7 @@ from elc.platform.types import (
     PersonaId,
     PolicyVersion,
     Result,
+    TargetId,
     UserId,
 )
 from elc.user_config.disclosure import decide_disclosure
@@ -79,6 +90,7 @@ from elc.user_config.types import (
     DisclosedUserProfile,
     DisclosurePolicy,
     LearningGoalPortfolio,
+    PlannerConstraint,
     SessionFocus,
     TeachingPolicyProfile,
     UserProfile,
@@ -282,3 +294,85 @@ class UserConfigController:
         """
 
         return self._store.get_session_focus_for_conversation(conversation_id)
+
+    # -- the constraint faces (Phase 6 P6-3) --------------------------------
+
+    def record_planner_constraint(
+        self, constraint: PlannerConstraint
+    ) -> Result[PlannerConstraint]:
+        """Commit one user constraint (§9; the P6-3 content write).
+
+        The durable row comes back. Everything that can refuse it is the
+        store's and is stated there: the append-first identity (§9 carries no
+        version column, so the same id with different content is refused
+        rather than rewritten — a different constraint is a different id), the
+        ``NOT_FOUND`` for a ``created_from_turn_id`` that names no durable
+        turn, and the ``VALIDATION_FAILED`` for a ``target_type`` outside §9's
+        two words.
+
+        **``active`` is content on this face**: an inbound constraint whose
+        flag differs from the durable row is refused like any other
+        difference. The flag moves through :meth:`set_planner_constraint_active`
+        and nowhere else (R6 — the store's docstring carries the BF-03 reason).
+        """
+
+        return self._store.record_planner_constraint(constraint)
+
+    def set_planner_constraint_active(
+        self, constraint_id: str, active: bool
+    ) -> Result[PlannerConstraint]:
+        """Move the one movable column of a constraint (R6; the P6-3 face).
+
+        BF-03 makes re-enabling (or clearing) a user constraint the User
+        Constraint layer's act — "Gate 不偷偷修改用户约束" — which is why this
+        face exists at all: without it ``UNTIL_USER_REENABLES`` could never
+        end. It writes ``active`` and nothing else, a ``constraint_id`` with no
+        durable row is ``NOT_FOUND``, and transferring the current value is an
+        idempotent replay. The rules are the store's.
+        """
+
+        return self._store.set_planner_constraint_active(constraint_id, active)
+
+    def get_planner_constraint(
+        self, constraint_id: str
+    ) -> Result[PlannerConstraint | None]:
+        """One constraint by its own identity (``None`` = never written).
+
+        The raw durable row, ``active`` included, with no window judgement:
+        "is it in force at this instant?" is what the two active reads answer.
+        """
+
+        return self._store.get_planner_constraint(constraint_id)
+
+    def active_constraints(
+        self, as_of: str
+    ) -> Result[tuple[PlannerConstraint, ...]]:
+        """Every constraint in force at ``as_of`` (ordered by id).
+
+        **Derived reading** (R7): ``active`` ∧ ``starts_at <= as_of`` ∧
+        (``expires_at`` is NULL ∨ ``as_of <= expires_at``), both boundaries
+        inclusive, compared as **instants** (ISO-8601 with a UTC offset; an
+        empty, unparseable or naive ``as_of`` is ``VALIDATION_FAILED``, never
+        assumed to be UTC). ``scope`` is carried and **not** interpreted — in
+        particular ``THIS_SESSION`` names a session the canonical object has no
+        column for, so which session is current stays the consumer's question
+        (Phase 7's view). The full statement is on the store method.
+        """
+
+        return self._store.active_constraints(as_of)
+
+    def active_constraints_for_target(
+        self, target_type: str, target_id: TargetId, as_of: str
+    ) -> Result[tuple[PlannerConstraint, ...]]:
+        """The constraints in force for one target at ``as_of`` (R7).
+
+        The same reading as :meth:`active_constraints` plus the target leg: a
+        row with a NULL target leg is not target-limited and applies to every
+        target, a row whose two legs match the arguments verbatim applies to
+        this one, and a half-declared target leg applies to none. Ordering,
+        boundaries and refusals are the store's, identical to the read above.
+        """
+
+        return self._store.active_constraints_for_target(
+            target_type, target_id, as_of
+        )

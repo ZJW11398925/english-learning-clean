@@ -510,10 +510,11 @@ def test_a_stale_store_refuses_every_p6_0_write(
         assert db.execute(f"SELECT COUNT(*) FROM {table}").fetchone() == (0,)
 
 
-def test_the_store_writes_the_five_configuration_tables_and_nothing_else() -> None:
+def test_the_store_writes_the_six_configuration_tables_and_nothing_else() -> None:
     """The durable face of this context cannot reach learning truth: an AST
-    scan over the store's own statement literals finds exactly the five
-    configuration tables (invariant ③'s structural half)."""
+    scan over the store's own statement literals finds exactly the six
+    configuration tables (invariant ③'s structural half — P6-3 added
+    ``planner_constraint``, §9's constraint row, beside the five)."""
 
     targets = write_targets(SRC_ROOT / "user_config" / "store.py")
     assert targets == {
@@ -522,6 +523,7 @@ def test_the_store_writes_the_five_configuration_tables_and_nothing_else() -> No
         "goal_portfolio",
         "teaching_policy",
         "session_focus",
+        "planner_constraint",
     }
     assert not {
         name

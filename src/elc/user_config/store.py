@@ -1,5 +1,5 @@
 """SQLite durable store for User Configuration / Profile (Phase 4 P4-3,
-extended by Phase 6 P6-0).
+extended by Phase 6 P6-0 and P6-3).
 
 The bounded context owns UserProfile / DisclosurePolicy / LearningGoalPortfolio
 / TeachingPolicyProfile / SessionFocus truth (docs/DOMAIN_MODEL.md §5.1), so
@@ -7,7 +7,7 @@ its durable executor lives in the domain package — the conversation /
 learning / teaching / relationship store precedent. The authority face is
 elc.user_config.controller; the pure disclosure decision is
 elc.user_config.disclosure; every byte that reaches the disk is here, in the
-five tables migrations 0010 and 0011 create.
+six tables migrations 0010, 0011 and 0013 create.
 
 **Versioned objects (P6-0, migration 0011).** goal_portfolio and
 teaching_policy follow the discipline the two P4-3 tables already ship:
@@ -49,6 +49,49 @@ Fencing: every write checks the store epoch against the newest durable epoch
 before anything is written (the teaching / relationship store precedent; a
 stale store is a programming error and raises).
 
+**PlannerConstraint — the user's own constraint, with one movable column
+(P6-3, migration 0013).** docs/DATA_MODEL.md §9's object, placed in this
+package as a derived judgement (the reasons are in elc/user_config/types.py;
+§5.1's Owns list does not name it). Two rules govern its rows, and both are
+declared here:
+
+- **content is append-first, like SessionFocus.** §9 carries no ``version`` /
+  ``revision`` column, so there is no stamp to move: the same
+  ``constraint_id`` with the same content is an idempotent replay, and the
+  same id with *different* content is a ``CONFLICT`` rather than a rewrite
+  (docs/DATA_MODEL.md §1.3/§1.4). **This holds for every column including
+  ``active``**: an inbound constraint whose ``active`` differs from the
+  durable row is refused too, so the content-write face cannot carry a flag
+  change through it;
+- **``active`` has its own transfer face** — :meth:`set_planner_constraint_
+  active`, and it is the only place the flag moves. The reason is BF-03's
+  rule that re-enabling a constraint is the User Constraint layer's act
+  ("Gate 不偷偷修改用户约束"): a suppression the user can only *enter* would make
+  ``UNTIL_USER_REENABLES`` unendable. The transfer writes the one column and
+  touches no other, and re-transferring the current value writes nothing at
+  all (the idempotent-replay rule, applied to the flag).
+
+**The active-window read faces compare instants, not bytes (P6-3).**
+:meth:`SqliteUserConfigStore.active_constraints` and its target-scoped sibling
+answer "which constraints are in force at ``as_of``": ``active`` ∧
+``starts_at <= as_of`` ∧ (``expires_at`` is NULL ∨ ``as_of <= expires_at``).
+The comparison is ``datetime``-based, because the question is temporal —
+the deliberate opposite of p6-1's byte-order rule for ``created_at``'s
+immutable replay, which asks "is this the same durable fact?" rather than "has
+the moment arrived?" (the same split :mod:`elc.scheduler.spacing` declares for
+its own window). ``starts_at`` / ``expires_at`` / ``as_of`` are ISO-8601
+instants carrying a UTC offset, and an empty, unparseable or naive one is
+refused with ``VALIDATION_FAILED`` rather than assumed to be UTC.
+
+**``scope`` is carried, never interpreted (P6-3).** No read face here branches
+on it, and none can: §9's ``THIS_SESSION`` names a session and the object has
+**no conversation column** anywhere in the canonical block, so "which session
+is current?" is a question this table cannot answer and this module does not
+guess at. The three words travel verbatim and the first consumer that must
+honour one (Phase 7's ``PlannerConstraintView``) owns that reading. Revisit
+condition: a consumer that needs a session leg the canonical block does not
+carry is a canonical revision, not an implementation choice.
+
 Keying convention (Local V1, declared rather than assumed): §5.1 pins
 ``user_profile_id``, ``disclosure_policy_id``, ``goal_portfolio_id`` and
 ``teaching_policy_profile_id`` but **no owner column** linking any of them
@@ -88,7 +131,7 @@ import json
 import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Mapping, TypeVar
+from typing import Callable, Mapping, TypeVar
 
 from elc.platform.db.epoch import RuntimeEpochFence, StaleEpochError
 from elc.platform.db.tx import short_transaction
@@ -105,6 +148,7 @@ from elc.platform.types import (
     PolicyVersion,
     Result,
     TargetId,
+    TurnId,
     UserId,
 )
 from elc.relationship.types import MemorySensitivityClass
@@ -114,6 +158,9 @@ from elc.user_config.types import (
     DisclosureRule,
     LearningGoal,
     LearningGoalPortfolio,
+    PlannerConstraint,
+    PlannerConstraintScope,
+    PlannerConstraintType,
     ProfileFact,
     SessionFocus,
     TeachingFrequency,
@@ -124,6 +171,12 @@ from elc.user_config.types import (
 __all__ = ["StaleStoreEpochError", "SqliteUserConfigStore"]
 
 T = TypeVar("T")
+
+#: §9's two ``target_type`` words — the vocabulary 0004/0005/0012 already
+#: enforce and migration 0013 restates on this table. Declared here as the
+#: write face's pre-check so a bad value comes back as this domain's
+#: ``VALIDATION_FAILED`` rather than as a bare sqlite CHECK failure.
+_TARGET_TYPES = ("RESOURCE", "CAPABILITY")
 
 
 class StaleStoreEpochError(StaleEpochError):
@@ -250,6 +303,128 @@ def _weights_from_document(document: str) -> dict[GoalModality, float]:
     return {
         GoalModality(str(key)): float(value) for key, value in loaded.items()
     }
+
+
+def _parse_instant(text: str, *, field: str) -> Result[datetime]:
+    """One ISO-8601 timestamp of this store's inputs, as an instant (P6-3).
+
+    ``field`` names the column in the message, so a refusal says which input
+    was unusable (the row's id travels beside it, never inside it). The three
+    refusals are ``VALIDATION_FAILED`` and are worded here — an exception's own
+    text never travels (this file's one-vocabulary rule):
+
+    - empty: an instant that was never written cannot be compared;
+    - unparseable: not ISO-8601 in any spelling ``datetime`` accepts;
+    - **naive**: no UTC offset. This store will not assume a zone for a
+      caller, exactly as :func:`elc.scheduler.spacing.parse_instant` refuses
+      to for the Scheduler's window.
+
+    The same three refusals are declared by that function, and this is a
+    second declaration rather than an import: this package imports no other
+    domain (the scheduler's own rule, which p6-1/p6-2 kept), so the reading is
+    restated here and pinned by this suite's own tests rather than borrowed
+    across a package boundary.
+    """
+
+    if not text:
+        return _err(
+            DomainErrorCode.VALIDATION_FAILED,
+            f"{field} is empty; an instant must be an ISO-8601 timestamp"
+            " carrying a UTC offset",
+        )
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return _err(
+            DomainErrorCode.VALIDATION_FAILED,
+            f"{field} {text!r} is not an ISO-8601 timestamp",
+        )
+    if parsed.tzinfo is None:
+        return _err(
+            DomainErrorCode.VALIDATION_FAILED,
+            f"{field} {text!r} carries no UTC offset; this store will not"
+            " assume a zone (write the offset, e.g. +00:00)",
+        )
+    return Ok(parsed)
+
+
+def _constraint_from_row(row: tuple[object, ...]) -> PlannerConstraint:
+    """One ``planner_constraint`` row (the 0013 column order) decoded.
+
+    One decode point, five readers: the content write face's replay check, the
+    ``active`` transfer, and the three read faces.
+    """
+
+    return PlannerConstraint(
+        constraint_id=str(row[0]),
+        target_type=None if row[1] is None else str(row[1]),
+        target_id=None if row[2] is None else TargetId(str(row[2])),
+        constraint_type=PlannerConstraintType(str(row[3])),
+        scope=PlannerConstraintScope(str(row[4])),
+        starts_at=str(row[5]),
+        expires_at=None if row[6] is None else str(row[6]),
+        created_from_turn_id=(
+            None if row[7] is None else TurnId(str(row[7]))
+        ),
+        active=bool(row[8]),
+    )
+
+
+def _same_constraint(
+    durable: PlannerConstraint, incoming: PlannerConstraint
+) -> bool:
+    """Whether the durable row already holds exactly this content.
+
+    Every one of the nine §9 columns is compared, ``active`` included: a
+    constraint has no version stamp, so the only way a caller can declare
+    "this is the constraint I already wrote" is to hand back the same content
+    — and a differing ``active`` is a flag change, which belongs to
+    :meth:`SqliteUserConfigStore.set_planner_constraint_active` rather than to
+    the content-write face (the R6 exception, stated in :mod:`elc.user_config`
+    types and in the module docstring).
+    """
+
+    return (
+        durable.target_type == incoming.target_type
+        and durable.target_id == incoming.target_id
+        and durable.constraint_type == incoming.constraint_type
+        and durable.scope == incoming.scope
+        and durable.starts_at == incoming.starts_at
+        and durable.expires_at == incoming.expires_at
+        and durable.created_from_turn_id == incoming.created_from_turn_id
+        and durable.active == incoming.active
+    )
+
+
+def _matches_target(
+    constraint: PlannerConstraint, target_type: str, target_id: TargetId
+) -> bool:
+    """Whether a constraint speaks about this ``(target_type, target_id)``.
+
+    Two ways to match, and a half-null row matches neither (the R7 reading):
+
+    - **the target leg is NULL** — ``target_type is None`` **and**
+      ``target_id is None`` — which is what "非目标限定" means: a constraint
+      about teaching/review/chat in general, not about one target. Such a row
+      is in force for every target;
+    - **both legs match verbatim** — ``target_type`` equal as text and
+      ``target_id`` equal as text.
+
+    A row carrying one leg and not the other is not called illegal by this
+    store (:class:`elc.user_config.types.PlannerConstraint` says why: §9 pins
+    no such rule), but it is *not target-limited either*, so it matches no
+    target and is returned by no target-scoped read. It stays visible through
+    :meth:`SqliteUserConfigStore.get_planner_constraint`, where no matching is
+    involved.
+    """
+
+    if constraint.target_type is None and constraint.target_id is None:
+        return True
+    return (
+        constraint.target_type == target_type
+        and constraint.target_id is not None
+        and str(constraint.target_id) == str(target_id)
+    )
 
 
 class SqliteUserConfigStore:
@@ -514,6 +689,195 @@ class SqliteUserConfigStore:
                 )
         except sqlite3.IntegrityError as exc:
             return _err(DomainErrorCode.CONFLICT, str(exc))
+
+    def record_planner_constraint(
+        self, constraint: PlannerConstraint
+    ) -> Result[PlannerConstraint]:
+        """One durable user constraint (§9; P6-3).
+
+        Append-first, because §9 gives this object no version stamp: the same
+        ``constraint_id`` with the same content is an idempotent replay
+        (returns the durable row, writes nothing), and the same id with
+        different content is refused (``CONFLICT``) rather than rewritten — a
+        different constraint is a different id.
+
+        **``active`` is content here.** An inbound constraint whose ``active``
+        differs from the durable row is refused exactly like any other
+        difference: the flag moves through
+        :meth:`set_planner_constraint_active` and nowhere else (R6; the
+        module docstring carries the reason).
+
+        Two refusals are pre-checked so no raw sqlite text can reach a
+        ``DomainError`` message (the p6-1 F-2 rule):
+
+        - ``created_from_turn_id`` naming a turn that is not a durable
+          ``turn_record`` row is ``NOT_FOUND`` — the foreign key 0013 declares
+          is the reason the row cannot exist, and the probe is what turns
+          "sqlite refused to insert" into this domain's vocabulary;
+        - a ``target_type`` outside §9's two words (RESOURCE / CAPABILITY) is
+          ``VALIDATION_FAILED``. The migration's CHECK is the mechanism; this
+          is the same rule said in the caller's vocabulary.
+        """
+
+        rejection = self._constraint_rejection(constraint)
+        if rejection is not None:
+            return rejection
+        try:
+            with short_transaction(self._conn):
+                self._require_current_epoch()
+                existing = self._constraint_row(constraint.constraint_id)
+                if existing is not None:
+                    if _same_constraint(existing, constraint):
+                        return Ok(existing)
+                    return _err(
+                        DomainErrorCode.CONFLICT,
+                        f"planner constraint {constraint.constraint_id} already"
+                        " exists with different content; mint a new"
+                        " constraint_id for a new constraint (§9 pins no"
+                        " version column to rewrite the row under —"
+                        " docs/DATA_MODEL.md §1.3/§1.4), and move `active`"
+                        " only through set_planner_constraint_active",
+                    )
+                self._insert_constraint(constraint)
+                return Ok(
+                    PlannerConstraint(
+                        constraint_id=constraint.constraint_id,
+                        target_type=constraint.target_type,
+                        target_id=constraint.target_id,
+                        constraint_type=constraint.constraint_type,
+                        scope=constraint.scope,
+                        starts_at=constraint.starts_at,
+                        expires_at=constraint.expires_at,
+                        created_from_turn_id=constraint.created_from_turn_id,
+                        active=constraint.active,
+                    )
+                )
+        except sqlite3.IntegrityError:
+            return _err(
+                DomainErrorCode.CONFLICT,
+                f"planner constraint {constraint.constraint_id} was refused by"
+                " a durable rule (0013's CHECK vocabularies, or the id taken"
+                " between the replay check and the insert); nothing was"
+                " written",
+            )
+
+    def set_planner_constraint_active(
+        self, constraint_id: str, active: bool
+    ) -> Result[PlannerConstraint]:
+        """Move the one movable column of a constraint (R6; P6-3).
+
+        ``active`` is the exception §9's missing version column forces, and it
+        is the only thing this face may change: every other column of the row
+        is written back byte for byte, so a caller cannot smuggle a content
+        edit through the flag's transfer. The BF-03 reason is in the module
+        docstring: re-enabling (or clearing a suppression) is the User
+        Constraint layer's act — "Gate 不偷偷修改用户约束" — and without this
+        face ``UNTIL_USER_REENABLES`` could never end.
+
+        A ``constraint_id`` with no durable row is ``NOT_FOUND``; transferring
+        the value the row already carries is an idempotent replay (returns the
+        durable row, writes nothing).
+        """
+
+        try:
+            with short_transaction(self._conn):
+                self._require_current_epoch()
+                existing = self._constraint_row(constraint_id)
+                if existing is None:
+                    return _err(
+                        DomainErrorCode.NOT_FOUND,
+                        f"planner constraint {constraint_id} has no durable"
+                        " row; a constraint's flag can only be transferred on"
+                        " a constraint that exists",
+                    )
+                if existing.active == active:
+                    return Ok(existing)
+                self._conn.execute(
+                    "UPDATE planner_constraint SET active = ?"
+                    " WHERE constraint_id = ?",
+                    (1 if active else 0, constraint_id),
+                )
+                return Ok(
+                    PlannerConstraint(
+                        constraint_id=existing.constraint_id,
+                        target_type=existing.target_type,
+                        target_id=existing.target_id,
+                        constraint_type=existing.constraint_type,
+                        scope=existing.scope,
+                        starts_at=existing.starts_at,
+                        expires_at=existing.expires_at,
+                        created_from_turn_id=existing.created_from_turn_id,
+                        active=active,
+                    )
+                )
+        except sqlite3.IntegrityError:
+            return _err(
+                DomainErrorCode.CONFLICT,
+                f"planner constraint {constraint_id} was refused by 0013's"
+                " active CHECK (the column is 0 or 1 and nothing else);"
+                " nothing was written",
+            )
+
+    def _constraint_rejection(
+        self, constraint: PlannerConstraint
+    ) -> Err[PlannerConstraint] | None:
+        """The two pre-checks the content write face owes (§9; P6-3).
+
+        ``None`` = the row may be written. Both refusals name the field and
+        the reason in this domain's words; neither carries sqlite's text.
+        """
+
+        turn_id = constraint.created_from_turn_id
+        if turn_id is not None:
+            row = self._conn.execute(
+                "SELECT 1 FROM turn_record WHERE turn_id = ?", (str(turn_id),)
+            ).fetchone()
+            if row is None:
+                return _err(
+                    DomainErrorCode.NOT_FOUND,
+                    f"turn {turn_id} is not a durable turn record; a constraint"
+                    " created from a turn must name one that exists"
+                    " (docs/DATA_MODEL.md §9 created_from_turn_id?)",
+                )
+        target_type = constraint.target_type
+        if target_type is not None and target_type not in _TARGET_TYPES:
+            return _err(
+                DomainErrorCode.VALIDATION_FAILED,
+                f"target_type {target_type!r} is not one of 0013's two words"
+                f" ({', '.join(_TARGET_TYPES)}); a target-type'd constraint"
+                " names one of them (docs/DATA_MODEL.md §9 target_type?)",
+            )
+        return None
+
+    def _insert_constraint(self, constraint: PlannerConstraint) -> None:
+        # No clock column on this row: §9's PlannerConstraint carries only the
+        # caller's window (starts_at / expires_at) and the caller's flag, so
+        # there is nothing for this store to stamp.
+        self._conn.execute(
+            "INSERT INTO planner_constraint ("
+            " constraint_id, target_type, target_id, constraint_type, scope,"
+            " starts_at, expires_at, created_from_turn_id, active"
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                constraint.constraint_id,
+                constraint.target_type,
+                (
+                    None
+                    if constraint.target_id is None
+                    else str(constraint.target_id)
+                ),
+                constraint.constraint_type.value,
+                constraint.scope.value,
+                constraint.starts_at,
+                constraint.expires_at,
+                (
+                    None
+                    if constraint.created_from_turn_id is None
+                    else str(constraint.created_from_turn_id)
+                ),
+                1 if constraint.active else 0,
+            ),
+        )
 
     def _insert_profile(self, profile: UserProfile, *, now: str) -> None:
         self._conn.execute(
@@ -802,6 +1166,135 @@ class SqliteUserConfigStore:
             )
         )
 
+    # -- the constraint reads (Phase 6 P6-3) --------------------------------
+
+    def get_planner_constraint(
+        self, constraint_id: str
+    ) -> Result[PlannerConstraint | None]:
+        """One constraint row by its own identity (``None`` = never written).
+
+        No window judgement and no clock: this is the raw row, exactly as the
+        content write face left it (``active`` included). A caller that wants
+        "in force at *this* instant" asks one of the two active reads.
+        """
+
+        return Ok(self._constraint_row(constraint_id))
+
+    def active_constraints(
+        self, as_of: str
+    ) -> Result[tuple[PlannerConstraint, ...]]:
+        """Every constraint in force at ``as_of``, ordered by ``constraint_id``.
+
+        The reading (R7), and each leg of it is deliberate:
+
+        - ``active`` must be true — a row the user turned off is not in force,
+          whatever its window says;
+        - ``starts_at <= as_of`` — the window opens at its start instant
+          **inclusive** (the scheduler's boundary rule: ``as_of ==
+          starts_at`` is the instant the constraint takes effect);
+        - ``expires_at`` is NULL (no end declared — an open-ended constraint)
+          **or** ``as_of <= expires_at`` (the window closes at its end
+          instant, inclusive);
+        - the comparison is **instant** order, not byte order: two spellings
+          of one instant compare equal, and two offsets of the same moment do
+          not decide the answer by their text. This is the deliberate opposite
+          of p6-1's byte-order rule for an immutable fact's replay, and the
+          same split :mod:`elc.scheduler.spacing` declares for its window;
+        - the order is ``constraint_id`` ascending, byte order (code-point
+          order) rather than ``ORDER BY``, so it is collation-independent by
+          construction (p6-1's ``get_session_focus_for_conversation``
+          precedent for the same choice).
+
+        ``as_of`` is the caller's instant. An empty, unparseable or naive one
+        is ``VALIDATION_FAILED`` (never assumed to be UTC), and so is an
+        unreadable ``starts_at`` / ``expires_at`` on a row the read would have
+        to compare: the refusal names the row and the field rather than
+        silently dropping the constraint or triaging it as inactive. A row
+        already filtered out as inactive is never parsed, so a disabled row's
+        timestamps cannot break a read.
+        """
+
+        parsed = _parse_instant(as_of, field="as_of")
+        if isinstance(parsed, Err):
+            return parsed
+        return self._active_constraints(
+            lambda constraint: True, parsed.value
+        )
+
+    def active_constraints_for_target(
+        self, target_type: str, target_id: TargetId, as_of: str
+    ) -> Result[tuple[PlannerConstraint, ...]]:
+        """The constraints in force for one target at ``as_of`` (R7; P6-3).
+
+        The same reading as :meth:`active_constraints` with one leg added: a
+        constraint is in the answer when it is in force **and** it speaks
+        about this target — either because its target leg is NULL (it is not
+        target-limited and therefore applies to every target) or because both
+        of its legs match the arguments verbatim (:func:`_matches_target`
+        carries the rule, including what a half-declared target leg does).
+        Ordering, boundaries, instant comparison and the refusal vocabulary
+        are exactly as in :meth:`active_constraints`.
+        """
+
+        parsed = _parse_instant(as_of, field="as_of")
+        if isinstance(parsed, Err):
+            return parsed
+        return self._active_constraints(
+            lambda constraint: _matches_target(
+                constraint, target_type, target_id
+            ),
+            parsed.value,
+        )
+
+    def _active_constraints(
+        self,
+        matches: Callable[[PlannerConstraint], bool],
+        as_of: datetime,
+    ) -> Result[tuple[PlannerConstraint, ...]]:
+        """The one implementation of both active reads.
+
+        The SQL narrows to ``active = 1`` (the one leg a statement can decide
+        without a timestamp format), and every temporal leg is decided here as
+        instants — a row is selected exactly when it is active, its window
+        contains ``as_of``, and ``matches`` accepts it.
+        """
+
+        rows = self._conn.execute(
+            "SELECT constraint_id, target_type, target_id, constraint_type,"
+            " scope, starts_at, expires_at, created_from_turn_id, active"
+            " FROM planner_constraint WHERE active = 1"
+        ).fetchall()
+        in_force: list[PlannerConstraint] = []
+        for row in rows:
+            constraint = _constraint_from_row(tuple(row))
+            if not matches(constraint):
+                continue
+            opens = _parse_instant(
+                constraint.starts_at,
+                field=(
+                    f"starts_at of planner constraint"
+                    f" {constraint.constraint_id}"
+                ),
+            )
+            if isinstance(opens, Err):
+                return opens
+            if as_of < opens.value:
+                continue
+            if constraint.expires_at is not None:
+                closes = _parse_instant(
+                    constraint.expires_at,
+                    field=(
+                        f"expires_at of planner constraint"
+                        f" {constraint.constraint_id}"
+                    ),
+                )
+                if isinstance(closes, Err):
+                    return closes
+                if as_of > closes.value:
+                    continue
+            in_force.append(constraint)
+        return Ok(tuple(sorted(in_force, key=lambda c: c.constraint_id)))
+
     # -- internals ---------------------------------------------------------
 
     def _profile_row(self, user_id: UserId) -> _StoredProfile | None:
@@ -896,6 +1389,19 @@ class SqliteUserConfigStore:
         if row is None:
             return None
         return _focus_from_row(tuple(row))
+
+    def _constraint_row(self, constraint_id: str) -> PlannerConstraint | None:
+        """One durable constraint row, decoded (``None`` = never written)."""
+
+        row = self._conn.execute(
+            "SELECT constraint_id, target_type, target_id, constraint_type,"
+            " scope, starts_at, expires_at, created_from_turn_id, active"
+            " FROM planner_constraint WHERE constraint_id = ?",
+            (constraint_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return _constraint_from_row(tuple(row))
 
 
 @dataclass(frozen=True)

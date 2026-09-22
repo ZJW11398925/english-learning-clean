@@ -32,7 +32,12 @@ from pathlib import Path
 import pytest
 
 from elc.platform.db import connection, migrations
-from tests.conftest import REPO_ROOT, SRC_ROOT
+from tests.conftest import (
+    MIGRATION_IDS,
+    REPO_ROOT,
+    SCHEMA_HEAD_VERSION,
+    SRC_ROOT,
+)
 from tests.phase3.sql_write_scan import write_targets
 
 MIGRATIONS_DIR = REPO_ROOT / "migrations"
@@ -144,7 +149,7 @@ def test_0011_is_present_and_not_the_head() -> None:
     assert PRE_0011 in names
     assert names[names.index(PRE_0011) + 1] == "0012_schedule_review.sql"
     assert [name[:4] for name in names] == [
-        f"{index:04d}" for index in range(1, 13)
+        f"{index:04d}" for index in range(1, len(MIGRATION_IDS) + 1)
     ]
 
 
@@ -164,20 +169,24 @@ def test_the_three_tables_land_empty(db: sqlite3.Connection) -> None:
         assert row is not None and int(row[0]) == 0
 
 
-def test_schema_version_moves_to_twelve(db: sqlite3.Connection) -> None:
+def test_schema_version_moves_to_thirteen(db: sqlite3.Connection) -> None:
     """The stamp is the newest migration's — this pin read "11" while 0011
-    was the head and now reads "12" with P6-1's 0012_schedule_review (the
-    same 1:1 move every version pin in this repository makes; the name moved
-    with the value so the test still says what it asserts)."""
+    was the head, then "12" with P6-1's 0012_schedule_review, and now "13"
+    with P6-3's 0013_planner_constraint (the same 1:1 move every version pin
+    in this repository makes; the name moved with the value so the test still
+    says what it asserts)."""
 
-    assert migrations.schema_version(db) == "12"
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"
             " ('schema_version', 'runtime_schema_version')"
         ).fetchall()
     )
-    assert stamps == {"schema_version": "12", "runtime_schema_version": "12"}
+    assert stamps == {
+        "schema_version": SCHEMA_HEAD_VERSION,
+        "runtime_schema_version": SCHEMA_HEAD_VERSION,
+    }
 
 
 def test_the_earlier_migrations_are_untouched() -> None:
@@ -325,7 +334,7 @@ def test_the_migration_is_idempotent_on_a_current_database(
     db: sqlite3.Connection,
 ) -> None:
     assert migrations.apply_migrations(db) == []
-    assert migrations.schema_version(db) == "12"
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION
 
 
 def test_0011_leaves_a_full_pre_0011_lineage_untouched(
@@ -354,7 +363,7 @@ def test_0011_leaves_a_full_pre_0011_lineage_untouched(
     )
     conn.commit()
     migrations.apply_migrations(conn, post)
-    assert migrations.schema_version(conn) == "12"
+    assert migrations.schema_version(conn) == SCHEMA_HEAD_VERSION
 
     assert conn.execute(
         "SELECT conversation_id, status FROM conversation"

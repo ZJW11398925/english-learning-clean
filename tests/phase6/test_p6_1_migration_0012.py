@@ -35,7 +35,12 @@ from pathlib import Path
 import pytest
 
 from elc.platform.db import connection, migrations
-from tests.conftest import REPO_ROOT, SRC_ROOT
+from tests.conftest import (
+    MIGRATION_IDS,
+    REPO_ROOT,
+    SCHEMA_HEAD_VERSION,
+    SRC_ROOT,
+)
 from tests.phase3.sql_write_scan import write_targets
 
 from .conftest import canonical_lines
@@ -178,14 +183,19 @@ def _digest(path: Path) -> str:
 # -- ① the tables and their column sets --------------------------------------
 
 
-def test_0012_is_the_newest_migration() -> None:
-    """This slice's head; nothing ahead of P6-1 smuggles schema (the runner
-    is filename-ordered)."""
+def test_0012_is_present_and_not_the_head() -> None:
+    """The claim that outlives P6-1's headship: 0012 is in the lineage and
+    0013 — the migration P6-3 added — is immediately behind it, so the runner
+    is still filename-ordered and 0012's effect is still in the chain. (The
+    pin read ``names[-1] == 0012`` while P6-1 was the head; the head
+    assertion now lives with the newest slice, and this one asserts what
+    remains true of 0012 rather than being deleted.)"""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert names[-1] == PRE_0012
+    assert PRE_0012 in names
+    assert names[names.index(PRE_0012) + 1] == "0013_planner_constraint.sql"
     assert [name[:4] for name in names] == [
-        f"{index:04d}" for index in range(1, 13)
+        f"{index:04d}" for index in range(1, len(MIGRATION_IDS) + 1)
     ]
 
 
@@ -212,15 +222,22 @@ def test_the_two_tables_land_empty(db: sqlite3.Connection) -> None:
         assert row is not None and int(row[0]) == 0
 
 
-def test_schema_version_moves_to_twelve(db: sqlite3.Connection) -> None:
-    assert migrations.schema_version(db) == "12"
+def test_schema_version_moves_to_thirteen(db: sqlite3.Connection) -> None:
+    """This pin read "12" while 0012 was the head and now reads the newest
+    migration's stamp ("13" with P6-3's 0013_planner_constraint); the name
+    moved with the value so the test still says what it asserts."""
+
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"
             " ('schema_version', 'runtime_schema_version')"
         ).fetchall()
     )
-    assert stamps == {"schema_version": "12", "runtime_schema_version": "12"}
+    assert stamps == {
+        "schema_version": SCHEMA_HEAD_VERSION,
+        "runtime_schema_version": SCHEMA_HEAD_VERSION,
+    }
 
 
 def test_the_earlier_migrations_are_byte_identical() -> None:
@@ -385,7 +402,7 @@ def test_the_migration_is_idempotent_on_a_current_database(
     db: sqlite3.Connection,
 ) -> None:
     assert migrations.apply_migrations(db) == []
-    assert migrations.schema_version(db) == "12"
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION
 
 
 def test_0012_leaves_a_full_pre_0012_lineage_untouched(
@@ -414,7 +431,7 @@ def test_0012_leaves_a_full_pre_0012_lineage_untouched(
     )
     conn.commit()
     migrations.apply_migrations(conn, post)
-    assert migrations.schema_version(conn) == "12"
+    assert migrations.schema_version(conn) == SCHEMA_HEAD_VERSION
 
     assert conn.execute(
         "SELECT conversation_id, status FROM conversation"

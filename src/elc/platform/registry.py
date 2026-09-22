@@ -28,6 +28,7 @@ from elc.teaching.types import GateDecisionRecord, TeachingMomentRecord
 from elc.user_config.types import (
     DisclosurePolicy,
     LearningGoalPortfolio,
+    PlannerConstraint,
     SessionFocus,
     TeachingPolicyProfile,
     UserProfile,
@@ -83,6 +84,19 @@ CANONICAL_OBJECTS: Mapping[str, CanonicalObject] = {
     ),
     "session_focus": CanonicalObject(
         "SessionFocus", OWNER_USER_CONFIG, SessionFocus
+    ),
+    # docs/DATA_MODEL.md §9's TeachingPreference / PlannerConstraint (P6-3;
+    # TASK-OPI-5a0be06d-….20 ③.5). The placement is a **derived judgement**:
+    # §5.1's Owns list for User Configuration/Profile does not name this
+    # object, so the registry entry is this cut's reading rather than a quoted
+    # one — §9's shape (a typed preference with three user-level scopes and a
+    # ``created_from_turn_id?`` provenance leg) plus DOMAIN_MODEL §18.1's
+    # TRUSTED_AUTHORITY ("typed user settings" are the user's own statement)
+    # put it here. No ``version_field``: §9 pins no version column on this
+    # object at all, so a binding would claim a canonical spelling that does
+    # not exist (the ScheduleItem entry's rule).
+    "planner_constraint": CanonicalObject(
+        "PlannerConstraint", OWNER_USER_CONFIG, PlannerConstraint
     ),
     # -- Scheduler-owned review truth (docs/DOMAIN_MODEL.md §9; the two §5.2
     # objects land with P6-1 — TASK-OPI-6259f6fd-….12).
