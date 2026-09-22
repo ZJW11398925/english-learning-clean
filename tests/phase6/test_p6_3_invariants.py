@@ -225,6 +225,19 @@ def test_the_object_is_mentioned_by_the_placement_and_two_pre_existing_modules(
     present at all. Nothing there branches on a constraint, applies a
     suppression, or writes a row; a Planner that acted on a constraint would
     be the consumer R11 forbids, and that file is not one.
+
+    **P7-2 adds the first consumer**, and it is the one R11's red line
+    anticipated (*"a further file would be a consumer nobody reviewed"* — this
+    cut is that review): ``planner/candidates.py`` reads the §9 view for the two
+    readings the supply side owns. ``scope.py`` resolves §12's
+    ``UserIntentScope`` from the user's own ``JUST_CHAT`` / ``MANUAL_FOCUS``
+    rows (a *read*: the word it answers with is the scope constraint, and the
+    kernel's step 4 applies it), and ``candidates.py`` **marks** a candidate
+    under ``DO_NOT_AUTO_TEACH`` / ``SUPPRESS_REVIEW`` — a mark, never a drop:
+    the candidate still reaches the kernel, whose step 4 names ``SUPPRESSED`` in
+    the trace. Nothing here writes a row, reads ``active`` itself (the store's
+    in-force read already decided that) or re-decides §9's window; both
+    docstrings say so, and tests/phase7 holds them to it.
     """
 
     mentioning = sorted(
@@ -236,7 +249,9 @@ def test_the_object_is_mentioned_by_the_placement_and_two_pre_existing_modules(
     assert mentioning == [
         "deletion/store.py",
         "deletion/types.py",
+        "planner/candidates.py",
         "planner/feature_assembly.py",
+        "planner/scope.py",
         "planner/types.py",
         "platform/registry.py",
         "teaching/gate.py",

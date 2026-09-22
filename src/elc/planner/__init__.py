@@ -15,12 +15,54 @@ planning-context validity → hard eligibility → policy utility →
 coverage-starvation safeguard → per-candidate activation → explicit-request
 priority → Pareto prune → near-tie deterministic tie-break → SELECT /
 NO_TARGET), over P7-0's record, with a trace that answers "what would have been
-selected, and why". It generates no candidates, keeps no ledger, writes
-nothing, and is **not** shadow mode: :class:`PlannerService` is still the
-Phase 0 skeleton, and the wiring from a ``PlanningRequest`` (context assembly +
-Track A/B candidates) and the shadow-mode run are later cuts' work items.
+selected, and why".
+
+P7-2 (TASK-OPI-fc9d8ca7-….13) adds the **supply side** the kernel consumes:
+:mod:`elc.planner.candidates` (§6's Track A / Track B generators, both lanes
+ending in the one :class:`~elc.planner.kernel.CandidateProposal`),
+:mod:`elc.planner.scope` (§12's ``UserIntentScope`` resolution plus §13's
+``ConversationPriorityView``) and :mod:`elc.planner.supply` (the §8.1 content
+readiness gate and BF-02 §11's prerequisite resolver). The pipeline from a
+:class:`~elc.planner.types.PlanningRequest` and the shadow-mode run are still
+later cuts' work items, and :class:`PlannerService` remains the Phase 0
+skeleton.
 """
 
+from elc.planner.candidates import (
+    ABSENT_READINGS,
+    BANDLESS_FACTORS,
+    CANDIDATE_SOURCES,
+    COMMON_FACES,
+    FACTOR_BAND_VALUES,
+    OBSERVATION_FIELD,
+    REFUSAL_GATES,
+    SCAFFOLD_BANDS,
+    SOURCE_AUTHORITY,
+    SOURCE_READINGS,
+    SOURCE_TRACK,
+    TRACK_A_SOURCES,
+    TRACK_B_SOURCES,
+    UNLANDED_AUTHORITIES,
+    CandidateAuthority,
+    CandidateSupply,
+    CandidateSupplyError,
+    CandidateSupplyInputs,
+    OpportunityObservation,
+    ReviewRowPort,
+    ReviewViewPort,
+    SchedulePort,
+    SourceGap,
+    SourceReading,
+    SupplyTargetPort,
+    TargetRefusal,
+    TargetRowPort,
+    TargetSupplyPort,
+    TrackASource,
+    TrackBSource,
+    generate_candidates,
+    generate_track_a,
+    generate_track_b,
+)
 from elc.planner.commands import PlannerCommands
 from elc.planner.controller import PlannerService
 from elc.planner.feature_assembly import (
@@ -90,6 +132,33 @@ from elc.planner.kernel import (
     runtime_decision_outcome_of,
 )
 from elc.planner.queries import PlannerQueries
+from elc.planner.scope import (
+    FLOW_PRIORITY_WORDS,
+    FLOW_TO_INTERRUPTION_COST_BAND,
+    INTERACTION_PHASE_WORDS,
+    REACHABLE_SCOPE_WORDS,
+    UNPRODUCED_SCOPE_WORDS,
+    ConversationPriorityView,
+    FlowPriority,
+    InteractionPhase,
+    RequestedTarget,
+    ScopeResolution,
+    interruption_cost_band_of,
+    resolve_user_intent_scope,
+)
+from elc.planner.supply import (
+    APPROVED_LINK_EDITORIAL_STATUS,
+    CONFIRMED_GAP_FLAG,
+    INSUFFICIENT_EVIDENCE_FLAG,
+    REALIZES_RELATION,
+    LearnerStatePort,
+    PrerequisiteOutcome,
+    PrerequisitePort,
+    ReadinessOutcome,
+    ReadinessPort,
+    prerequisite_state_of,
+    readiness_of_target,
+)
 from elc.planner.types import (
     InitiativeClass,
     LearningIntent,
@@ -106,13 +175,34 @@ from elc.planner.types import (
 )
 
 __all__ = [
+    "ABSENT_READINGS",
+    "APPROVED_LINK_EDITORIAL_STATUS",
     "AUTHORITY_ASSEMBLED_FACTORS",
+    "BANDLESS_FACTORS",
     "BENEFIT_FACTORS",
     "BENEFIT_WEIGHTS",
+    "CANDIDATE_SOURCES",
+    "COMMON_FACES",
+    "CONFIRMED_GAP_FLAG",
     "COST_FACTORS",
     "COST_WEIGHTS",
+    "FACTOR_BAND_VALUES",
     "FEATURE_ASSEMBLY_MODEL_VERSION",
+    "FLOW_PRIORITY_WORDS",
+    "FLOW_TO_INTERRUPTION_COST_BAND",
+    "INSUFFICIENT_EVIDENCE_FLAG",
+    "INTERACTION_PHASE_WORDS",
     "KERNEL_STEP_ORDER",
+    "OBSERVATION_FIELD",
+    "REACHABLE_SCOPE_WORDS",
+    "REALIZES_RELATION",
+    "REFUSAL_GATES",
+    "SCAFFOLD_BANDS",
+    "SOURCE_AUTHORITY",
+    "SOURCE_READINGS",
+    "SOURCE_TRACK",
+    "TRACK_A_SOURCES",
+    "TRACK_B_SOURCES",
     "PLANNER_KERNEL_MODEL_VERSION",
     "PLANNER_PROFILE_VERSION",
     "POLICY_PROFILES",
@@ -124,14 +214,42 @@ __all__ = [
     "ActivationPath",
     "AuthorityName",
     "BenefitFactor",
+    "CandidateAuthority",
     "CandidateProposal",
+    "CandidateSupply",
+    "CandidateSupplyError",
+    "CandidateSupplyInputs",
     "CandidateTrace",
     "CanonicalCandidate",
     "ContextTrace",
+    "ConversationPriorityView",
     "CostFactor",
     "CoverageServiceState",
     "DegradedReason",
     "ExclusionReason",
+    "FlowPriority",
+    "InteractionPhase",
+    "LearnerStatePort",
+    "OpportunityObservation",
+    "PrerequisiteOutcome",
+    "PrerequisitePort",
+    "ReadinessOutcome",
+    "ReadinessPort",
+    "RequestedTarget",
+    "ReviewRowPort",
+    "ReviewViewPort",
+    "SchedulePort",
+    "ScopeResolution",
+    "SourceGap",
+    "SourceReading",
+    "SupplyTargetPort",
+    "TargetRefusal",
+    "TargetRowPort",
+    "TargetSupplyPort",
+    "TrackASource",
+    "TrackBSource",
+    "UNLANDED_AUTHORITIES",
+    "UNPRODUCED_SCOPE_WORDS",
     "FactorAssembly",
     "FactorGap",
     "FactorReading",
@@ -177,9 +295,16 @@ __all__ = [
     "assemble_feature_authority",
     "canonicalize_proposals",
     "execution_status_of",
+    "generate_candidates",
+    "generate_track_a",
+    "generate_track_b",
     "goal_relevance_of",
+    "interruption_cost_band_of",
     "plan",
+    "prerequisite_state_of",
     "profile_mapping_of",
+    "readiness_of_target",
+    "resolve_user_intent_scope",
     "runtime_decision_outcome_of",
     "schedule_authority_of",
     "schedule_urgency_of",
