@@ -19,7 +19,7 @@ from elc.platform.types import Err, Ok, TargetId, UserTurnId
 from tests.phase2.conftest import commit_ok
 
 
-def test_store_satisfies_the_frozen_protocol_faces(
+def test_the_frozen_protocol_faces_are_answered_by_the_authority_face(
     learning: SqliteLearningStore,
 ) -> None:
     """The Phase 0 protocol signatures stay callable (Gate 1 face).
@@ -38,6 +38,10 @@ def test_store_satisfies_the_frozen_protocol_faces(
     from elc.learning.controller import LearningController
     from elc.learning.queries import LearningQueries
 
+    # The refusal below is a *consequence* of R6 (the watermark rose to the
+    # query face), not a design goal: the read face that answers the protocol
+    # whole is the authority face, and the store keeps its own spelling of the
+    # sequence read for its own use.
     assert not isinstance(learning, LearningQueries)
     assert isinstance(LearningController(learning), LearningQueries)
     assert callable(learning.get_evidence_watermark)

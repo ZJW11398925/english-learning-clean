@@ -282,9 +282,20 @@ class ScheduleView:
       bucket would hand the Planner a review debt the Scheduler never
       declared;
     - inside a bucket the order is ``(next_review_window_start,
-      schedule_item_id)`` ascending — deterministic, so two reads of the same
-      world answer byte-identically instead of in whatever order the rows
-      happened to arrive.
+      schedule_item_id)`` **ascending on the stored spelling** of the window
+      column, not on the instant it spells: the key is the column's text as the
+      durable row holds it, exactly the convention the store's history read
+      uses for ``created_at`` (p6-1's F-3 byte-order note). The two orders
+      differ only for rows whose windows are written with different UTC offsets
+      — and they are *meant* to: membership is a question about instants,
+      ordering is a question about rows, and a deterministic answer to the
+      second is a property of the stored values (the tie-break on
+      ``schedule_item_id`` makes it total, since two rows may legitimately
+      share a window). Reading the order as an instant order is a Phase 7
+      Planner-assembly decision and is **not** what this view declares;
+    - the order is deterministic either way: two reads of one world answer
+      byte-identically instead of in whatever order the rows happened to
+      arrive.
     """
 
     schedule_version: ScheduleVersion

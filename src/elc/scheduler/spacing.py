@@ -40,7 +40,7 @@ every row version, :data:`INTERVAL_DAYS` is the expand-spacing ladder
 "spacing history" and names no numbers; BF-02's Planner reference profile pins
 numbers for the *Planner's* factor bands, not for a review ladder.
 **Revisit condition**: calibration is the Phase 11 content-calibration face's
-(IP §7 / §11; the same face that owns the corpus's pedagogical profiles), and a
+(IP §7 / §13; the same face that owns the corpus's pedagogical profiles), and a
 calibration cut replaces :data:`INTERVAL_DAYS` / :data:`GRACE_DAYS` **with a new
 :data:`SCHEDULER_MODEL_VERSION`** — the constants and the stamp move together,
 because a row version that kept its stamp across a changed ladder would claim

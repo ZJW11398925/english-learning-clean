@@ -307,6 +307,63 @@ def test_the_bucket_order_is_by_window_first(
     ]
 
 
+def test_the_bucket_order_is_the_stored_spelling_not_the_instant(
+    scheduler_controller: SchedulerController,
+    scheduler_store: SqliteSchedulerStore,
+) -> None:
+    """The declared order, pinned on the case where the two readings differ.
+
+    The window of ``si-a`` opens at ``2026-09-30T10:00:00+09:00`` — the
+    **earlier instant** (``01:00Z``) — and ``si-b``'s at
+    ``2026-09-30T05:00:00+00:00`` (``05:00Z``, later). Ordering by instant
+    would answer ``[si-a, si-b]`` and ordering by row id would answer the same;
+    the view answers ``[si-b, si-a]``, because a bucket is ordered by the
+    **stored spelling** of ``next_review_window_start`` (``+00:00`` <
+    ``+09:00`` as text). That is deliberate and consistent with p6-1's F-3
+    byte-order convention for durable columns — it is *not* an instant order,
+    and reading it as one is a Phase 7 Planner-assembly decision (registered as
+    a revisit), not a change this view may make.
+
+    Both rows are ``UPCOMING`` at ``AS_OF`` (the bucket membership decision is
+    an instant comparison, as :func:`elc.scheduler.spacing.state_at` is), so
+    the assertion isolates the *order* rule from the *membership* rule.
+    """
+
+    seed(
+        scheduler_store,
+        windowed(
+            "si-a",
+            ("2026-09-30T10:00:00+09:00", "2026-10-03T10:00:00+09:00"),
+            target="res-a",
+            state=ReviewState.UPCOMING,
+            urgency=0.25,
+        ),
+        windowed(
+            "si-b",
+            ("2026-09-30T05:00:00+00:00", "2026-10-03T05:00:00+00:00"),
+            target="res-b",
+            state=ReviewState.UPCOMING,
+            urgency=0.25,
+        ),
+    )
+    view = scheduler_controller.get_schedule_view(AS_OF)
+    assert isinstance(view, Ok)
+    returned = [row.schedule_item_id for row in view.value.upcoming]
+    # The two readings differ on this input: instant order and id order both
+    # say [si-a, si-b]; the stored spelling says [si-b, si-a].
+    assert instant("2026-09-30T10:00:00+09:00") < instant(
+        "2026-09-30T05:00:00+00:00"
+    )
+    assert returned == ["si-b", "si-a"]
+    assert returned == sorted(
+        returned,
+        key=lambda name: {
+            "si-a": "2026-09-30T10:00:00+09:00",
+            "si-b": "2026-09-30T05:00:00+00:00",
+        }[name],
+    )
+
+
 def test_the_view_reads_the_durable_rows_not_a_parameter(
     due_controller: SchedulerController,
     learning_controller,

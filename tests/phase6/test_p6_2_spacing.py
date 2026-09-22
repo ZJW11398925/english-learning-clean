@@ -140,13 +140,16 @@ def test_the_ladder_expands_strictly() -> None:
 def test_the_module_docstring_declares_what_it_owns_and_what_it_avoids() -> None:
     """A policy a consumer cannot read is a rule nobody can check: the module
     says which decision it holds, that the canonical documents pin no
-    algorithm, where calibration lives, and that it opens no connection, reads
-    no clock and writes nothing."""
+    algorithm, where calibration lives (with the *right* section — the Phase 11
+    content-calibration detail block is IP §13, not §11, which is Phase 10's
+    Runtime Recovery), and that it opens no connection, reads no clock and
+    writes nothing."""
 
     docstring = spacing.__doc__ or ""
     for phrase in (
         "R3",
         "Phase 11",
+        "§13",
         "zero SQL, zero clock, zero I/O",
         "calibration",
         "revisit condition",
