@@ -59,7 +59,11 @@ whose ``teaching_policy_profile_id`` is that user's id. A second table or an
 added column would exceed the canonical column set (§2 non-goals
 notwithstanding, the *set* is canonical), so the linking rule lives here, in
 one place, and the controller names it too. ``SessionFocus`` needs no such
-convention: §5.1 gives it ``conversation_id`` and it is read by its own id.
+convention: §5.1 gives it ``conversation_id`` and it is read by its own id —
+plus, since P6-1's F-7, by conversation
+(:meth:`SqliteUserConfigStore.get_session_focus_for_conversation`, where the
+"which focus is current" reading is declared and its clock-free, deterministic
+nature is stated).
 
 The two time columns a caller owns — ``effective_from`` (portfolio /
 policy) and ``starts_at`` / ``expires_at`` (focus) — are carried **verbatim**:
@@ -743,6 +747,51 @@ class SqliteUserConfigStore:
 
         return Ok(self._focus_row(session_focus_id))
 
+    def get_session_focus_for_conversation(
+        self, conversation_id: ConversationId
+    ) -> Result[SessionFocus | None]:
+        """The conversation's current focus (``None`` = none written).
+
+        **F-7 (P6-1): the per-conversation read face §5.1's object had no
+        route to.** ``get_session_focus`` answers by the focus's own id, which
+        is what a caller that already knows the id wants; a consumer holding a
+        *conversation* (the Planner/Persona view a later cut wires) has no id
+        to ask with, and §5.1 gives the object no unique index to lean on —
+        several focuses for one conversation over time are the append-first
+        history migration 0011 deliberately keeps.
+
+        The reading this slice declares, and why:
+
+        - the row with the **largest ``starts_at``** is the conversation's
+          current focus — that is the only ordering §5.1 supplies;
+        - a tie is broken by the **largest ``session_focus_id``**
+          (lexicographic), so the answer never depends on row insertion order
+          or on a query plan;
+        - the comparison is done here in Python rather than by ``ORDER BY`` so
+          it is byte-wise lexicographic by construction, independent of any
+          database collation (there is one comparison rule, and this is it);
+        - **``expires_at`` is not consulted**: whether a window is still
+          *valid* is the consumer's question, answered by the consumer's
+          clock. This read introduces no clock judgement at all, which also
+          makes two calls answer identically.
+        """
+
+        rows = self._conn.execute(
+            "SELECT session_focus_id, conversation_id,"
+            " base_goal_portfolio_version, temporary_goal_weights,"
+            " manual_focus_target, starts_at, expires_at"
+            " FROM session_focus WHERE conversation_id = ?",
+            (str(conversation_id),),
+        ).fetchall()
+        if not rows:
+            return Ok(None)
+        return Ok(
+            max(
+                (_focus_from_row(tuple(row)) for row in rows),
+                key=lambda focus: (focus.starts_at, focus.session_focus_id),
+            )
+        )
+
     # -- internals ---------------------------------------------------------
 
     def _profile_row(self, user_id: UserId) -> _StoredProfile | None:
@@ -836,17 +885,7 @@ class SqliteUserConfigStore:
         ).fetchone()
         if row is None:
             return None
-        return SessionFocus(
-            session_focus_id=str(row[0]),
-            conversation_id=ConversationId(str(row[1])),
-            base_goal_portfolio_version=GoalVersion(str(row[2])),
-            temporary_goal_weights=_weights_from_document(str(row[3])),
-            manual_focus_target=(
-                None if row[4] is None else TargetId(str(row[4]))
-            ),
-            starts_at=str(row[5]),
-            expires_at=None if row[6] is None else str(row[6]),
-        )
+        return _focus_from_row(tuple(row))
 
 
 @dataclass(frozen=True)
@@ -921,6 +960,26 @@ def _same_teaching_policy(
         and durable.practice_density == incoming.practice_density
         and durable.persona_freedom == incoming.persona_freedom
         and durable.effective_from == incoming.effective_from
+    )
+
+
+def _focus_from_row(row: tuple[object, ...]) -> SessionFocus:
+    """One ``session_focus`` row (the 0011 column order) decoded.
+
+    One decode point, two readers: ``get_session_focus`` (by the focus's own
+    id) and ``get_session_focus_for_conversation`` (by conversation, F-7).
+    """
+
+    return SessionFocus(
+        session_focus_id=str(row[0]),
+        conversation_id=ConversationId(str(row[1])),
+        base_goal_portfolio_version=GoalVersion(str(row[2])),
+        temporary_goal_weights=_weights_from_document(str(row[3])),
+        manual_focus_target=(
+            None if row[4] is None else TargetId(str(row[4]))
+        ),
+        starts_at=str(row[5]),
+        expires_at=None if row[6] is None else str(row[6]),
     )
 
 

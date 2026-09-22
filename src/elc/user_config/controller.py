@@ -19,6 +19,12 @@ profile/disclosure methods, their gate and the disclosure ladder are the
 same source they were, and the persona-facing port still carries only
 ``DisclosedUserProfile``.
 
+Phase 6 P6-1 (TASK-OPI-6259f6fd-….12 ②⑥, F-7): one incremental read lands —
+:meth:`get_session_focus_for_conversation`, the per-conversation route §5.1's
+object had none of. Nothing else about P6-0's faces changed: the id-keyed
+:meth:`get_session_focus` still answers the way it did, and the write faces
+are untouched.
+
 Six faces, the same three layers:
 
 - **the sensitive-persistence gate** (§18.1 "高敏感 Profile/Relationship
@@ -56,6 +62,7 @@ convention).
 from __future__ import annotations
 
 from elc.platform.types import (
+    ConversationId,
     DomainError,
     DomainErrorCode,
     Err,
@@ -256,3 +263,22 @@ class UserConfigController:
         """
 
         return self._store.get_session_focus(session_focus_id)
+
+    def get_session_focus_for_conversation(
+        self, conversation_id: ConversationId
+    ) -> Result[SessionFocus | None]:
+        """The conversation's current focus (P6-1, F-7; ``None`` = none).
+
+        The read a consumer holding a *conversation* needs: §5.1 makes the
+        focus reachable only by its own id, and several focuses for one
+        conversation over time are the append-first history migration 0011
+        keeps. The current one is the row with the largest ``starts_at``,
+        ties broken by the largest ``session_focus_id`` (lexicographic), with
+        **no** ``expires_at`` filter and **no** clock comparison — a derived
+        reading, declared in full (with its reasons) on the store method.
+
+        Pure delegation, like the rest of this face: the ordering rule and the
+        decode live in :mod:`elc.user_config.store`, one layer down.
+        """
+
+        return self._store.get_session_focus_for_conversation(conversation_id)

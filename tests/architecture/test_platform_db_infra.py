@@ -42,6 +42,8 @@ def test_migrations_apply_idempotently(db: sqlite3.Connection) -> None:
     # disclosure_policy rows).
     # 0011_goal_policy_focus joins in Phase 6 P6-0 (TASK-OPI-a68fd9eb-….48 ③
     # — the §5.1 goal_portfolio / teaching_policy / session_focus rows).
+    # 0012_schedule_review joins in Phase 6 P6-1 (TASK-OPI-6259f6fd-….12 ②①
+    # — the §5.2 schedule_item / review_event rows).
     # DATA_MODEL §26.1: migrations bump schema_version explicitly.
     assert applied == [
         "0001_bootstrap",
@@ -55,6 +57,7 @@ def test_migrations_apply_idempotently(db: sqlite3.Connection) -> None:
         "0009_relationship_contracts",
         "0010_episode_and_user_config",
         "0011_goal_policy_focus",
+        "0012_schedule_review",
     ]
     # Second run is a no-op.
     assert migrations.apply_migrations(db) == []
@@ -73,10 +76,12 @@ def test_migrations_apply_idempotently(db: sqlite3.Connection) -> None:
         "0009_relationship_contracts",
         "0010_episode_and_user_config",
         "0011_goal_policy_focus",
+        "0012_schedule_review",
     ]
     # The stamp is the newest migration's (this pin read "10" while 0010 was
-    # the head; P6-0 added 0011_goal_policy_focus).
-    assert migrations.schema_version(db) == "11"
+    # the head, "11" with P6-0's 0011_goal_policy_focus; P6-1 added
+    # 0012_schedule_review).
+    assert migrations.schema_version(db) == "12"
 
 
 def test_runtime_epoch_fence_restarts_and_stales(db: sqlite3.Connection) -> None:

@@ -128,15 +128,15 @@ def test_0010_creates_the_three_tables_with_the_canonical_column_sets(
     db: sqlite3.Connection,
 ) -> None:
     assert "0010_episode_and_user_config" in migrations.applied_migrations(db)
-    # P6-0 semantic sync: the stamp is the newest migration's, and
-    # 0011_goal_policy_focus is now the head (this pin read "10" while 0010
-    # was).
-    assert migrations.schema_version(db) == "11"
+    # P6-1 semantic sync: the stamp is the newest migration's, and
+    # 0012_schedule_review is now the head (this pin read "11" with P6-0's
+    # 0011_goal_policy_focus and "10" while 0010 was).
+    assert migrations.schema_version(db) == "12"
     assert (
         db.execute(
             "SELECT value FROM schema_meta WHERE key = 'runtime_schema_version'"
         ).fetchone()[0]
-        == "11"
+        == "12"
     )
     # Column order is the canonical order (§5.3 / §5.1), word for word.
     assert _columns(db, "episode") == list(EPISODE_COLUMNS)
@@ -216,10 +216,10 @@ def test_0010_leaves_the_existing_lineage_untouched(
     assert migrations.schema_version(conn) == "9"
     _seed_pre_0010_lineage(conn)
     migrations.apply_migrations(conn, post)
-    # P6-0 semantic sync: the post stage applies every migration from 0010
-    # on (0011_goal_policy_focus included), so the stamp is the newest
-    # one — 11, not P4-3's 10.
-    assert migrations.schema_version(conn) == "11"
+    # P6-1 semantic sync: the post stage applies every migration from 0010
+    # on (0011_goal_policy_focus and 0012_schedule_review included), so the
+    # stamp is the newest one — 12, not P6-0's 11 nor P4-3's 10.
+    assert migrations.schema_version(conn) == "12"
 
     assert conn.execute(
         "SELECT relationship_memory_id, canonical_content, status"
@@ -243,12 +243,12 @@ def test_0010_leaves_the_existing_lineage_untouched(
 
 
 def test_the_earlier_migrations_are_untouched() -> None:
-    """0001–0010 are byte-identical: P6-0 adds one file (0011) and edits
-    none of them."""
+    """0001–0011 are byte-identical: P6-1 adds one file (0012) and edits
+    none of them (P6-0 added 0011 the same way)."""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert names[-1] == "0011_goal_policy_focus.sql"
-    assert len(names) == 11
+    assert names[-1] == "0012_schedule_review.sql"
+    assert len(names) == 12
     # Every earlier file keeps its own name (a rename would be a different
     # migration as far as the runner and the schema_migrations table are
     # concerned).
@@ -264,6 +264,7 @@ def test_the_earlier_migrations_are_untouched() -> None:
         "0009_relationship_contracts.sql",
         "0010_episode_and_user_config.sql",
     ]
+    assert names[10] == "0011_goal_policy_focus.sql"
 
 
 def test_0010_is_idempotent(db: sqlite3.Connection) -> None:

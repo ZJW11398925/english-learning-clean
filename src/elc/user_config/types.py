@@ -312,7 +312,14 @@ class LearningGoalPortfolio:
 
     ``effective_from`` is **the caller's** declaration of when this portfolio
     takes effect — ISO-8601, carried verbatim; the store never invents one
-    (only ``updated_at`` is the store's own clock). The mutable-container
+    (only ``updated_at`` is the store's own clock). **F-4 (P6-1 registration):
+    the empty string ``""`` is the sentinel for "not configured"** — it is
+    what a caller that did not declare an effective date leaves here, and it
+    is a value, not an absence of one: no consumer may read ``""`` as a
+    timestamp, and none may substitute a clock value for it. §5.1 pins no
+    nullable ``effective_from``, so the sentinel is carried in the column's
+    own type (``str``) rather than by making the column ``None``-able, and
+    migration 0011 is untouched by this registration. The mutable-container
     types are the implementation-defined form of §5.1's ``goals[]`` /
     ``modality_weights`` / ``assessment_targets[]`` /
     ``register_style_goals[]`` (DATA_MODEL §27): tuples for the lists, a
@@ -350,6 +357,14 @@ class TeachingPolicyProfile:
     configured) with zero runtime interpretation — this slice invents no
     vocabulary and no default for them (§5.1 pins no value range; a consumer
     that needs semantics needs a decision first).
+
+    ``effective_from`` is the caller's declaration (never the store's clock),
+    with the **same F-4 sentinel the portfolio carries**: the empty string
+    ``""`` means "not configured". It is a value the column holds, not a
+    second nullability convention — §5.1 pins no nullable ``effective_from``,
+    so the sign is spelled in the column's own type rather than by changing
+    the type, and a consumer that reads ``""`` as a timestamp is reading a
+    sentinel as data.
 
     The fields are keyword-only on purpose: §5.1 declares ``mode`` *before*
     ``teaching_frequency``, and the eight unpinned columns carry ``None``

@@ -23,7 +23,7 @@ from elc.persona.types import CharacterPackageRecord
 from elc.planner.types import PlannerDecision
 from elc.relationship.types import RelationshipMemoryRecord
 from elc.runtime.types import ProjectionJobRecord, ValidatorResultRecord
-from elc.scheduler.types import ReviewStateRecord, ScheduleView
+from elc.scheduler.types import ReviewEvent, ScheduleItem, ScheduleView
 from elc.teaching.types import GateDecisionRecord, TeachingMomentRecord
 from elc.user_config.types import (
     DisclosurePolicy,
@@ -84,13 +84,25 @@ CANONICAL_OBJECTS: Mapping[str, CanonicalObject] = {
     "session_focus": CanonicalObject(
         "SessionFocus", OWNER_USER_CONFIG, SessionFocus
     ),
-    # -- Scheduler-owned review truth (docs/DOMAIN_MODEL.md §9).
+    # -- Scheduler-owned review truth (docs/DOMAIN_MODEL.md §9; the two §5.2
+    # objects land with P6-1 — TASK-OPI-6259f6fd-….12).
     "schedule_view": CanonicalObject(
         "ScheduleView", OWNER_SCHEDULER, ScheduleView,
         version_field="schedule_version",
     ),
-    "review_state": CanonicalObject(
-        "ReviewStateRecord", OWNER_SCHEDULER, ReviewStateRecord
+    # The Phase 0 key was ``review_state`` → ``ReviewStateRecord``; §5.2's
+    # object is ScheduleItem (the skeleton's five-word state vocabulary and
+    # its record type are gone, not renamed — elc/scheduler/types.py).
+    # ``version_field`` stays None on purpose: §5.2 spells the column bare
+    # ``version`` on ScheduleItem, so binding the qualified
+    # ``schedule_version`` here would claim a canonical spelling the document
+    # does not use (the ScheduleView entry above binds it, because §5.2's
+    # *view* block does spell ``schedule_version``).
+    "schedule_item": CanonicalObject(
+        "ScheduleItem", OWNER_SCHEDULER, ScheduleItem
+    ),
+    "review_event": CanonicalObject(
+        "ReviewEvent", OWNER_SCHEDULER, ReviewEvent
     ),
     # -- Teaching Gate authorization truth (docs/DOMAIN_MODEL.md §14;
     # docs/DATA_MODEL.md §14.1).

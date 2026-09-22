@@ -16,8 +16,11 @@ What is pinned here is exactly what the migration claims:
   repo-wide convention for a canonical object that names a conversation) and
   the *unique* index 0010 put on the episode's conversation is deliberately
   **not** repeated here;
-- schema_version / runtime_schema_version move to 11, and 0001–0010 are
-  byte-identical to what they were.
+- schema_version / runtime_schema_version moved to 11 with this slice, and
+  0001–0010 are byte-identical to what they were. (P6-1 later added
+  0012_schedule_review, so the *current* head is 0012 — the assertions below
+  are about 0011's own effect and its place in the lineage, and the head pin
+  moved to tests/phase6/test_p6_1_migration_0012.py.)
 """
 
 from __future__ import annotations
@@ -128,14 +131,20 @@ def _table_sql(db: sqlite3.Connection, table: str) -> str:
 # -- ① the tables and their column sets --------------------------------------
 
 
-def test_0011_is_the_newest_migration() -> None:
-    """This slice's head; nothing ahead of P6-0 smuggles schema (the runner
-    is filename-ordered)."""
+def test_0011_is_present_and_not_the_head() -> None:
+    """This slice's own claim, restated for the world P6-1 made: 0011 is in
+    the lineage and 0012 — the migration P6-1 added — is immediately behind
+    it, so the runner is still filename-ordered and 0011's effect is still in
+    the chain. (The pin read ``names[-1] == 0011`` while P6-0 was the head;
+    the head assertion now lives in tests/phase6/test_p6_1_migration_0012.py,
+    and this one asserts what remains true of 0011 rather than being
+    deleted.)"""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert names[-1] == PRE_0011
+    assert PRE_0011 in names
+    assert names[names.index(PRE_0011) + 1] == "0012_schedule_review.sql"
     assert [name[:4] for name in names] == [
-        f"{index:04d}" for index in range(1, 12)
+        f"{index:04d}" for index in range(1, 13)
     ]
 
 
@@ -155,15 +164,20 @@ def test_the_three_tables_land_empty(db: sqlite3.Connection) -> None:
         assert row is not None and int(row[0]) == 0
 
 
-def test_schema_version_moves_to_eleven(db: sqlite3.Connection) -> None:
-    assert migrations.schema_version(db) == "11"
+def test_schema_version_moves_to_twelve(db: sqlite3.Connection) -> None:
+    """The stamp is the newest migration's — this pin read "11" while 0011
+    was the head and now reads "12" with P6-1's 0012_schedule_review (the
+    same 1:1 move every version pin in this repository makes; the name moved
+    with the value so the test still says what it asserts)."""
+
+    assert migrations.schema_version(db) == "12"
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"
             " ('schema_version', 'runtime_schema_version')"
         ).fetchall()
     )
-    assert stamps == {"schema_version": "11", "runtime_schema_version": "11"}
+    assert stamps == {"schema_version": "12", "runtime_schema_version": "12"}
 
 
 def test_the_earlier_migrations_are_untouched() -> None:
@@ -311,7 +325,7 @@ def test_the_migration_is_idempotent_on_a_current_database(
     db: sqlite3.Connection,
 ) -> None:
     assert migrations.apply_migrations(db) == []
-    assert migrations.schema_version(db) == "11"
+    assert migrations.schema_version(db) == "12"
 
 
 def test_0011_leaves_a_full_pre_0011_lineage_untouched(
@@ -340,7 +354,7 @@ def test_0011_leaves_a_full_pre_0011_lineage_untouched(
     )
     conn.commit()
     migrations.apply_migrations(conn, post)
-    assert migrations.schema_version(conn) == "11"
+    assert migrations.schema_version(conn) == "12"
 
     assert conn.execute(
         "SELECT conversation_id, status FROM conversation"

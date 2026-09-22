@@ -115,6 +115,16 @@ def test_domain_controller_is_empty_skeleton(package: str) -> None:
         # focus), so no method of this controller carries the Phase 0 red
         # line any more; the Scheduler views stay for the later cuts.
         "user_config": {"UserConfigController"},
+        # P6-1 (TASK-OPI-6259f6fd-….12 ②④; VAL-OPI-6259f6fd-….10): the
+        # SchedulerController graduated as the Scheduler authority face for
+        # §5.2's ScheduleItem / ReviewEvent — pure delegation to
+        # SqliteSchedulerStore (the durable rows and all SQL live there,
+        # migration 0012). Two declarations deliberately still raise, each
+        # with a **P6-2 pointer** rather than the Phase 0 red line:
+        # get_schedule_view (DOMAIN_MODEL §10 — the Planner's input view) and
+        # is_review_due (D-INV-009 — the due decision), both owned by the
+        # due/overdue cut.
+        "scheduler": {"SchedulerController"},
     }
     allowed = infra_allowlist.get(package, set())
     skipped_classes = phase1_class_allowlist.get(package, set())

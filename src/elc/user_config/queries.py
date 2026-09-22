@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from elc.platform.types import PersonaId, Result, UserId
+from elc.platform.types import ConversationId, PersonaId, Result, UserId
 from elc.user_config.types import (
     DisclosedUserProfile,
     DisclosurePolicy,
@@ -59,5 +59,20 @@ class UserConfigQueries(Protocol):
         SessionFocus has no user leg (it names a conversation), so the read
         is keyed by ``session_focus_id`` — the object's own key — and the
         parameter is spelled to match the face it mirrors.
+        """
+        ...
+
+    def get_session_focus_for_conversation(
+        self, conversation_id: ConversationId
+    ) -> Result[SessionFocus | None]:
+        """The conversation's current focus (P6-1, F-7; ``None`` = none).
+
+        §5.1 leaves the object reachable only by its own id, which a consumer
+        holding a conversation cannot use; this read answers by conversation
+        instead. **Derived reading**: the current focus is the one with the
+        largest ``starts_at``, ties broken by the largest
+        ``session_focus_id`` (lexicographic), with **no** ``expires_at``
+        filter and **no** clock comparison — whether a window is still valid
+        is the consumer's call. The full statement is on the store method.
         """
         ...
