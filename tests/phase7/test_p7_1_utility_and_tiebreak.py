@@ -18,8 +18,12 @@ substitute for utility (§16).
 
 The tie-break tests are arithmetic on purpose: a candidate has to clear §14's
 activation threshold *before* any tie-break runs, so each pair below is built
-to be activated and to sit inside BF-02 §15's window, with the numbers written
-into the test that depends on them.
+to be activated and to survive §15's prune (Pareto-incomparable, or in two
+dominance classes), with the numbers written into the test that depends on
+them. Most of those pairs are also inside the near-tie window and two are
+deliberately outside it: §16's closing line — "tie-break 仍然只是 near-tie
+规则，不代替 utility" — can only be pinned from beyond the window, and a pair
+that a dominance rule removed says nothing about the window at all.
 """
 
 from __future__ import annotations
@@ -43,8 +47,10 @@ from elc.planner.kernel import (
     SCAFFOLD_MIN_SUPPORT_COST,
     TIE_BREAK_ORDER,
     TIE_EPSILON,
+    AuthorityName,
     BenefitFactor,
     CoverageServiceState,
+    FactorSource,
     NoTargetReason,
     PlannerInputError,
     PrerequisiteState,
@@ -628,22 +634,35 @@ def test_dominance_is_read_inside_one_class_only() -> None:
 
 # -- ⑥ §16's tie-break --------------------------------------------------------
 #
-# Every pair below is activated (utility ≥ 0.195) and inside §15's window, so
-# the tie-break actually runs; the arithmetic is written into the comment of
-# each test, because a pair that drifts out of the window tests the utility
-# instead.
+# Every pair below is activated (utility ≥ 0.195) and still standing after
+# §15's prune, so both candidates reach §16; the arithmetic is written into the
+# comment of each test. All but two of the pairs also sit inside the near-tie
+# window (equal utilities, or a gap narrower than ``TIE_EPSILON``); the two
+# outside it are the pins for the window itself — inside it §16's key decides,
+# outside it the larger utility wins whatever the key says.
 
 
 def test_the_tie_break_is_only_for_a_near_tie() -> None:
     """§16's closing line: the tie-break "不代替 utility" — outside the window
-    the higher utility wins even against a better tie key."""
+    the higher utility wins although the other candidate carries the better
+    §16 key (``request_aligned`` and ``user_initiated``, criteria 1 and 2).
 
-    # winner 0.36 (BASE_BENEFIT), keyed 0.21: both activated, 0.15 apart.
+    The pair is Pareto-incomparable on purpose — the keyed candidate trades
+    both factors the winner leads on for ``communicative_impact`` — because a
+    dominated candidate leaves at §15 before the window is ever read, and then
+    ``in_tie_set is False`` would hold for the wrong reason.
+    """
+
+    # winner 0.36 (BASE_BENEFIT + schedule_urgency 0.75); keyed
+    # 0.17 × 0.6 + 0.13 × 0.6 + 0.08 × 0.5 + 0.08 × 0.75 = 0.28: both
+    # activated, 0.08 apart — more than the 0.015 window.
     winner = proposal("plain", benefit=BASE_BENEFIT)
     keyed = proposal(
         "keyed",
         canonical_key="keyed",
-        benefit=benefit_vector(learning_need=0.6, context_fit=0.6),
+        benefit=benefit_vector(
+            learning_need=0.6, context_fit=0.6, communicative_impact=0.5
+        ),
         user_initiated=True,
         request_aligned=True,
     )
@@ -651,8 +670,42 @@ def test_the_tie_break_is_only_for_a_near_tie() -> None:
     rows = _rows_by_id(result)
     assert rows["keyed"].activated is True
     assert rows["plain"].utility - rows["keyed"].utility > TIE_EPSILON
+    assert rows["plain"].dominated_by == ()
+    assert rows["keyed"].dominated_by == ()
     assert rows["keyed"].in_tie_set is False
     assert result.trace.selected_candidate_id == "plain"
+
+
+def test_a_better_tie_key_does_not_outbid_a_utility_gap() -> None:
+    """The same rule, read off the reason trace's own words: two
+    Pareto-incomparable candidates more than ``TIE_EPSILON`` apart, the *lower*
+    utility one carrying the better §16 key (criteria 1 and 2 again), and the
+    recorded tie set holds the winner alone — a kernel that let the key decide
+    outside the window would have to record a different tie set before it could
+    select the other candidate.
+    """
+
+    # 0.17 + 0.13 + 0.08 × 0.75 = 0.36 against
+    # 0.17 × 0.3 + 0.13 × 0.3 + 0.08 × 1.0 + 0.08 × 0.75 = 0.23.
+    winner = proposal("plain", benefit=BASE_BENEFIT)
+    keyed = proposal(
+        "keyed",
+        canonical_key="keyed",
+        benefit=benefit_vector(
+            learning_need=0.3, context_fit=0.3, personal_relevance=1.0
+        ),
+        user_initiated=True,
+        request_aligned=True,
+    )
+    result = plan(kernel_input((winner, keyed)))
+    rows = _rows_by_id(result)
+    assert rows["plain"].utility - rows["keyed"].utility > TIE_EPSILON
+    assert rows["plain"].dominated_by == ()
+    assert rows["keyed"].dominated_by == ()
+    assert rows["keyed"].in_tie_set is False
+    assert result.trace.selected_candidate_id == "plain"
+    text = "\n".join(result.outcome.evaluation.reason_trace)
+    assert "tie set [plain] within epsilon=" in text
 
 
 def test_inside_the_window_the_tie_key_decides() -> None:
@@ -1062,9 +1115,23 @@ def test_the_losers_readings_are_readable_too() -> None:
     assert rows["runner_up"].benefit_score is not None
     assert len(rows["runner_up"].benefit) == len(BENEFIT_FACTORS)
     assert len(rows["runner_up"].cost) == len(COST_FACTORS)
-    for reading in rows["runner_up"].benefit:
-        assert reading.value >= 0.0
-        assert reading.source.value in ("AUTHORITY", "DECLARED")
+    # Per factor, not per loop: the two factors P7-0's legs own say where their
+    # numbers came from, and every other reading says it was declared. A
+    # "some source in the enum" assertion over the whole vector holds for any
+    # value the enum could take and pins nothing.
+    by_factor = {
+        reading.factor: reading for reading in rows["runner_up"].benefit
+    }
+    schedule = by_factor[BenefitFactor.SCHEDULE_URGENCY]
+    assert schedule.value == 0.75
+    assert schedule.source is FactorSource.AUTHORITY
+    assert schedule.authority is AuthorityName.SCHEDULE
+    goal = by_factor[BenefitFactor.GOAL_RELEVANCE]
+    assert goal.source is FactorSource.DECLARED
+    assert goal.authority is None
+    for reading in rows["runner_up"].cost:
+        assert reading.source is FactorSource.DECLARED
+        assert reading.authority is None
     assert rows["excluded"].excluded is not None
     assert result.trace.decision is PlannerDecisionOutcome.SELECT
     assert result.trace.selected_candidate_id == "chosen"

@@ -91,12 +91,18 @@ overrides them, and never turns an unreadable authority into a number:
   an authority answer, and which did a generator supply?".
 
 **Declared judgements.** Each of the following is this cut's reading rather
-than a quotation, and each carries the condition that re-opens it:
+than a quotation, and each carries the condition that re-opens it. Entries 8
+to 14 register rather than decide: 8–10 spell the canonicalization contract's
+reachable shapes, three of which BF-02's frozen 43-case suite answers
+differently; 11 narrows §20's input contract by asking a §5.2 row to spell a
+declared ``schedule_urgency``; 12–14 name known gaps and inherited drifts a
+later cut owns. A registration changes no behaviour:
 
 1. **the step names.** :class:`KernelStep`'s values are §10.1's eleven lines
    with the ``→`` list marker removed and nothing else changed, so a
    reordering of the canonical block fails a test instead of shipping
-   silently;
+   silently. Revisit: §10.1's block is edited — a step added, renamed,
+   reordered or dropped — or a second canonical document states the order;
 2. **the candidate-level gap is DEGRADED.** BF-02 §5 states the degradation
    rule for the *context*; this cut closes it for the *candidate*: a factor
    whose authority cannot answer is a gap, and a gap is
@@ -110,10 +116,14 @@ than a quotation, and each carries the condition that re-opens it:
    时相加或取 max" / "origin count != utility bonus"). Two proposals sharing a
    canonical_key that declare different factor vectors are therefore an input
    contract error: merging them would be the addition §4 forbids, and picking
-   one silently would make the decision depend on proposal arrival order;
+   one silently would make the decision depend on proposal arrival order.
+   Revisit: §4 says what to do with two vectors under one key, or the generator
+   contract changes so a key cannot arrive twice;
 4. **the stable id of a merged candidate.** §16 item 8 says "stable
    candidate_id"; a merge leaves several, so the spelling is the
-   lexicographically smallest of them — the deterministic choice;
+   lexicographically smallest of them — the deterministic choice. Revisit: §16
+   names a different spelling for the surviving id, or canonical text says
+   which arrival's id is the stable one;
 5. **the readiness floor precedence.** §10's four rows are not stated to be
    ordered; they are read as PROBE before user-initiated before
    ``CURRENT_USER_ERROR`` before general, so a probe of an explicitly
@@ -122,10 +132,109 @@ than a quotation, and each carries the condition that re-opens it:
    vocabulary; :class:`CoverageServiceState` and :class:`PrerequisiteState`
    are BF-02's (no canonical document lists either), and
    :class:`ReadinessLevel` is ``elc.curriculum.readiness.READINESS_LEVELS``
-   itself rather than a second spelling of the same five levels;
+   itself rather than a second spelling of the same five levels. Revisit: a
+   canonical document lists the coverage-service or prerequisite vocabulary
+   (§24.14 names those columns and not their words), or the readiness ladder is
+   re-spelled;
 7. **the ids this cut mints.** ``pe-<decision_cycle_id>`` /
    ``pd-<decision_cycle_id>``: content-addressed, so two runs of one cycle
-   agree and no clock is read. Revisit: a durable store assigns the ids.
+   agree and no clock is read. Revisit: a durable store assigns the ids;
+8. **a duplicate identity inside one ``canonical_key`` merges rather than
+   raises.** §4's last line makes a duplicate ``canonical_key`` an input
+   contract error, and §4's merge is a merge of *proposals*: two arrivals that
+   describe one candidate — the same five identity fields and one factor
+   vector — become one canonical candidate, duplicate ``candidate_id`` values
+   included (the trace then shows the repeated id in ``merged_from``). What
+   raises is the shape the merge cannot resolve: two arrivals of one key that
+   disagree. BF-02's frozen suite spells the two merge shapes as
+   ``error: true`` (S04's ``d1``/``d2`` and S42's ``x`` twice), so this is a
+   **registered divergence**, and the shadow-mode cut that reproduces the 43
+   cases has to model it explicitly instead of tuning it away. Revisit: §4 says
+   which of the two shapes raises, or the reproduction lands and one of the two
+   readings is retired;
+9. **step 2's contract validation precedes step 3's context verdict.** A
+   malformed vector raises even when the context is INCOMPLETE and the run
+   would have degraded anyway, because §20's completeness is a contract over
+   the *input* and the proposals are walked before the context is adjudicated.
+   BF-02's suite reads the same input as ``DEGRADED`` (S20's own ``expected``),
+   so this is a **registered divergence** too. Revisit: the reproduction lands
+   and the order is settled explicitly (a context verdict read before step 2's
+   validation is the other reachable reading);
+10. **which input shapes raise at all.** The canonicalization step's list is
+    closed and short: a proposal with no ``canonical_key``, one key whose
+    proposals disagree about an identity field, one key carrying two factor
+    vectors, and two keys whose canonical candidates would share a
+    ``candidate_id`` (the cross-key collision §16's eighth criterion would
+    otherwise settle arbitrarily). Nothing else *about a proposal* raises here:
+    a lane, a scope word, a readiness, a suppression and a severity are read as
+    facts and answered with an exclusion or a number, while §9's contradictory
+    scope and §11/§20's other contract checks are quoted from those sections
+    rather than read here. Revisit: canonical text enumerates the input
+    contract errors (§4's is one sentence), or a generator reaches the kernel
+    with a shape this list has no answer for;
+11. **a declared ``schedule_urgency`` must be spelled by a §5.2 row.** P7-0's
+    :func:`~elc.planner.feature_assembly.schedule_urgency_of` owns the number,
+    so a declared reading is accepted only when the candidate's row answers the
+    same one, a disagreeing pair is an input contract error, and a leg that
+    answers nothing (no row, or a schedule authority that is not ``CURRENT``)
+    is a gap. That is a **narrowing of BF-02 §20's frozen input contract**: the
+    reference suite supplies complete vectors and no §5.2 rows at all, so it
+    never exercises the check. Revisit: canonical text says whether the factor
+    vector is an *input* to the assembly or its *output* (§20 lists it among
+    the frozen inputs, while §5's missing-Scheduler rule reads it as the
+    assembly's own product);
+12. **the evaluation record's shape is not §14's column set.** docs/
+    DATA_MODEL.md §14 lists ``frontier_candidate_ids[]``, ``factor_trace`` and
+    a ``created_at`` for the evaluation record; this kernel emits
+    :class:`~elc.planner.types.PlannerEvaluation` as the type module carries it
+    (``ranked_candidates`` as records rather than ids, ``reason_trace`` as
+    lines, ``policy_version`` under that name, no clock), and §14's
+    ``RuntimeDecisionOutcome`` has **no record implementation anywhere in this
+    repository** — :func:`runtime_decision_outcome_of` answers the *value*
+    BF-02 §5 pins and nothing more. Inherited, not introduced: the drift is the
+    type module's. Revisit: the cut that persists these records (the
+    PlanningLedger cut, or the shadow-mode run) lands §14's columns, and the
+    shape is then read from the document rather than from this module;
+13. **a target the Scheduler never scheduled is a gap, not the reference
+    band's ``0.0``.** BF-02 §6 gives ``NOT_SCHEDULED`` the legal band ``0.0``
+    (:data:`~elc.planner.feature_assembly.SCHEDULE_URGENCY_BANDS`), but the
+    three-bucket §10 view the assembly reads does not carry ``NOT_SCHEDULED``
+    rows (P6-2 keeps them out of ``due_items`` / ``overdue_items`` /
+    ``upcoming``), so a caller that resolves the row through that view finds
+    none, and this kernel answers a gap where the band has a number. The gap is
+    the honest reading — "asked and answered NOT_SCHEDULED" is not "never
+    asked" — and it is registered as a **known gap**: the cut that next touches
+    the Scheduler's views or P7-0's assembly has to make the two
+    distinguishable (a fourth bucket, a direct §5.2 lookup, or an assembly that
+    says which of the two it saw). Revisit: that cut lands (the trigger is by
+    construction: ``elc/scheduler``'s views or ``elc/planner/
+    feature_assembly``), or canonical text says a NOT_SCHEDULED target's factor
+    is unknown rather than ``0.0``;
+14. **five registered readings with no behaviour of their own.** (a) a context
+    whose ``planner_profile`` is ``None`` degrades as
+    ``FEATURE_ASSEMBLY_INCOMPLETE`` — P7-0 leaves the profile ``None`` exactly
+    when it could not map the policy, so there is no BF-02 profile to price
+    with. Revisit: P7-0's mapping table gains the word that was missing.
+    (b) §13's condition is restated as ``coverage_service_bonus > 0.0`` rather
+    than by naming profiles: a profile whose reference bonus is ``0`` cannot
+    carry the safeguard whichever profile it is, and a profile that gains a
+    bonus gains the safeguard with it. Revisit: §13 names the profiles instead
+    of their numbers. (c) ``ranked_candidates``'s ordering (utility descending,
+    then §16's key, then the stable id) is not among the numbered judgements:
+    it is the ranking the decision used, and §20 fixes no order for the record.
+    Revisit: §14 or §20 fixes the record's order. (d) a row's currency is a
+    property of the §10 **view**
+    (:func:`~elc.planner.feature_assembly.schedule_authority_of`), so a caller
+    who hands this kernel a §5.2 row the view does not carry gets that row's
+    number without a currency check of its own — the kernel does not re-read
+    the Scheduler's store. Revisit: the caller hands rows that carry their own
+    currency, or the assembly reports per-row currency. (e) the §4 merge
+    compares factor vectors with a missing name read as ``0.0``
+    (:func:`_vector_of`), which is the *comparison* and never a score: a
+    proposal that omits a factor still fails §20's completeness check when it
+    is assembled, so no number is silently invented. Revisit: the merge's
+    comparison gets a contract of its own, or the completeness check moves
+    before the merge.
 
 **Versioning.** :data:`PLANNER_KERNEL_MODEL_VERSION` stamps this module's own
 readings and :data:`PLANNER_PROFILE_VERSION` is the frozen reference profile's
@@ -1038,7 +1147,14 @@ _Vector = tuple[tuple[str, float], ...]
 def _vector_of(
     proposal: CandidateProposal,
 ) -> tuple[_Vector, _Vector]:
-    """A hashable, order-free view of one proposal's declared factor vector."""
+    """A hashable, order-free view of one proposal's declared factor vector.
+
+    A name the proposal does not carry is read as ``0.0`` here — this is the
+    **comparison** that decides whether two arrivals of one key agree, never a
+    score (judgement 14e): a proposal that omits a factor still fails §20's
+    completeness check when its vector is assembled, so the tolerance cannot
+    turn a missing number into a used one.
+    """
 
     return (
         tuple((f.value, proposal.benefit.get(f, 0.0)) for f in BENEFIT_FACTORS),
@@ -1226,7 +1342,18 @@ def _checked_reading(
 def _schedule_leg(
     candidate: CanonicalCandidate, authority: FeatureAuthority | None
 ) -> tuple[float | None, FactorGap | None]:
-    """``schedule_urgency`` from the Scheduler's own answer (P7-0)."""
+    """``schedule_urgency`` from the Scheduler's own answer (P7-0).
+
+    Three outcomes, and judgement 11 names the reading behind them: the leg
+    answers, a declared number contradicts it and the input contract is broken,
+    or the leg answers nothing and the factor is a gap. The gap covers two
+    facts this kernel cannot tell apart today — a row it holds but whose
+    authority is not ``CURRENT``, and a target the Scheduler holds no row for,
+    including the ``NOT_SCHEDULED`` rows the §10 view does not carry
+    (judgement 13) — and the row's own currency is the *view's* property, so a
+    caller who hands a row the view does not hold gets its number unchecked
+    (judgement 14d).
+    """
 
     declared = candidate.benefit[BenefitFactor.SCHEDULE_URGENCY]
     if authority is None:
@@ -1562,9 +1689,11 @@ def _context_verdict(
     The context half is P7-0's verdict, quoted and never re-derived: an absent
     context is ``UNAVAILABLE``, an incomplete assembly is ``DEGRADED`` /
     ``FEATURE_ASSEMBLY_INCOMPLETE``, an invalid snapshot is ``DEGRADED`` /
-    ``SNAPSHOT_INVALID``. The candidate half is this cut's closure: a factor
-    with no authority answer degrades the run instead of being scored as a
-    ``0``.
+    ``SNAPSHOT_INVALID``, and a context that names no profile degrades as
+    ``FEATURE_ASSEMBLY_INCOMPLETE`` again (judgement 14a — P7-0 leaves the
+    profile ``None`` exactly when it could not map the policy). The candidate
+    half is this cut's closure: a factor with no authority answer degrades the
+    run instead of being scored as a ``0``.
 
     ``FAILED`` is deliberately unreachable — like
     :func:`elc.planner.feature_assembly.execution_status_of`, this kernel has
@@ -1744,7 +1873,9 @@ def _score(
     both sums folded in §10.1's factor order so no mapping-insertion order can
     reach the result. The bonus is §13's two-layer safeguard: a CRITICAL
     coverage-service state, a natural break available, and a profile that
-    carries a bonus at all (LOUNGE's reference row is ``+0``).
+    carries a bonus at all (LOUNGE's reference row is ``+0``; judgement 14b
+    reads that third condition as ``coverage_service_bonus > 0.0`` rather than
+    as a list of profiles).
     """
 
     benefit = sum(
@@ -1928,8 +2059,9 @@ def _evaluation(
     """The canonical evaluation record: ranked candidates and the reason trace.
 
     ``ranked_candidates`` holds every eligible candidate in the ranking the
-    kernel used — utility descending, then §16's key, then the stable id — and
-    ``()`` on a degraded run, where nothing was scored. The id is
+    kernel used — utility descending, then §16's key, then the stable id
+    (judgement 14c: the decision's own ranking, with no order fixed for the
+    record) — and ``()`` on a degraded run, where nothing was scored. The id is
     content-addressed from the decision cycle: no clock, and two runs of one
     cycle agree.
     """

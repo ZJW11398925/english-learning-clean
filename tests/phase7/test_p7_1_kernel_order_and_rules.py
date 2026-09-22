@@ -21,6 +21,7 @@ satisfies neither.
 
 from __future__ import annotations
 
+import ast
 import re
 from dataclasses import replace
 
@@ -858,12 +859,59 @@ def test_the_just_chat_contradiction_is_an_upstream_contract_error() -> None:
 # -- ⑦ the module says what it is -------------------------------------------
 
 
+#: The first line of one entry of the module's judgement list.
+_JUDGEMENT_LINE = re.compile(r"^\d+\. ")
+
+
+def _declared_judgements() -> tuple[str, ...]:
+    """Every numbered entry of the module's "Declared judgements" list, with
+    the prose that belongs to it and nothing else.
+
+    The list is read as prose, so an entry ends where the next one begins or
+    where a paragraph returns to the margin — which is what makes "each
+    judgement carries its own revisit" checkable per entry rather than as one
+    substring of the module.
+    """
+
+    docstring = ast.get_docstring(
+        ast.parse(source_text("src/elc/planner/kernel.py"))
+    )
+    assert docstring is not None
+    entries: list[list[str]] = []
+    current: list[str] | None = None
+    for line in docstring.splitlines():
+        if _JUDGEMENT_LINE.match(line):
+            current = [line]
+            entries.append(current)
+        elif current is not None:
+            if line and not line[0].isspace():
+                current = None
+            else:
+                current.append(line)
+    return tuple("\n".join(entry) for entry in entries)
+
+
 def test_the_module_quotes_section_10_1_and_registers_its_judgements() -> None:
     source = source_text("src/elc/planner/kernel.py")
     for line in canonical_lines(DOMAIN_MODEL, SECTION_10_1, 0):
         assert line.removeprefix("→ ") in source, line
     assert "Declared judgements" in source
-    assert "Revisit:" in source
+
+
+def test_every_declared_judgement_carries_its_own_revisit() -> None:
+    """The module's own claim — "each carries the condition that re-opens it" —
+    read one entry at a time, and **per entry**: a whole-file "the word
+    ``Revisit:`` appears somewhere" check cannot fail, and an entry without a
+    revisit is exactly the thing the claim forbids.
+
+    The floor is the fourteen entries this cut registers; an entry may be added
+    with a revisit, and none may be added without one.
+    """
+
+    judgements = _declared_judgements()
+    assert len(judgements) >= 14
+    for judgement in judgements:
+        assert "Revisit:" in judgement, judgement
 
 
 def test_the_module_claims_no_shadow_mode_and_the_service_stays_a_skeleton() -> None:
@@ -876,3 +924,153 @@ def test_the_module_claims_no_shadow_mode_and_the_service_stays_a_skeleton() -> 
     service = source_text("src/elc/planner/controller.py")
     assert "NotImplementedError" in service
     assert "shadow mode" in service
+
+
+# -- ⑧ the canonicalization contract's registered readings -------------------
+#
+# Three shapes BF-02's frozen 43-case suite answers differently from this
+# kernel. They are registered in the module's judgements 8–10 rather than
+# decided — and the pins below hold the implementation to the reading it
+# registered, so the shadow-mode cut that reproduces the suite meets a recorded
+# difference and not a silent one. Each pin carries the note that reproduction
+# needs: **p7-4, reproducing the frozen 43 cases, has to model this divergence
+# explicitly.**
+
+
+def test_a_same_key_duplicate_identity_merges_instead_of_raising() -> None:
+    """S04's and S42's shape: one ``canonical_key`` carried by two proposals
+    that describe the same candidate — same five identity fields, one vector.
+    §4's last line makes a duplicate ``canonical_key`` an input contract error,
+    and BF-02's suite spells both of these as ``error: true``; this kernel reads
+    §4's *merge* as the answer, so the two arrivals become one canonical
+    candidate and the trace shows the ids it came from (the repeated id
+    included).
+
+    p7-4, reproducing the frozen 43 cases, has to model this divergence
+    explicitly (S04: ``d1``/``d2``; S42: ``x`` twice).
+    """
+
+    distinct_ids = plan(
+        kernel_input(
+            (
+                proposal("d1", canonical_key="same"),
+                proposal("d2", canonical_key="same"),
+            )
+        )
+    )
+    (row,) = distinct_ids.trace.candidates
+    assert row.candidate_id == "d1"
+    assert row.merged_from == ("d1", "d2")
+    assert distinct_ids.trace.selected_candidate_id == "d1"
+
+    one_id_twice = plan(
+        kernel_input(
+            (
+                proposal("x", canonical_key="x"),
+                proposal("x", canonical_key="x"),
+            )
+        )
+    )
+    (row,) = one_id_twice.trace.candidates
+    assert row.candidate_id == "x"
+    assert row.merged_from == ("x", "x")
+    assert one_id_twice.trace.selected_candidate_id == "x"
+
+
+def test_a_malformed_vector_is_refused_before_the_context_verdict() -> None:
+    """S20's shape: a vector that omits a factor **and** an INCOMPLETE context.
+    §20's completeness is a contract over the input, and step 2 walks the
+    proposals before step 3 reads the context, so the caller hears the contract
+    error even where the run would have degraded anyway. The same context with
+    a complete vector is ``DEGRADED``, which is what makes this an ordering
+    fact rather than a missing degradation rule.
+
+    p7-4, reproducing the frozen 43 cases, has to model this divergence
+    explicitly (S20's own ``expected`` is ``error: false`` with
+    ``custom: "DEGRADED"``).
+    """
+
+    declared = dict(proposal("x").benefit)
+    del declared[BenefitFactor.SCHEDULE_URGENCY]
+    short = replace(proposal("x"), benefit=declared)
+    incomplete = _incomplete_context()
+
+    with pytest.raises(PlannerInputError) as raised:
+        plan(kernel_input((short,), context=incomplete))
+    assert "schedule_urgency" in str(raised.value)
+    assert "not declared" in str(raised.value)
+
+    degraded = plan(kernel_input((proposal("x"),), context=incomplete))
+    assert degraded.outcome.execution_status.status is (
+        PlannerExecutionStatusValue.DEGRADED
+    )
+    assert degraded.outcome.execution_status.error_code == (
+        DegradedReason.FEATURE_ASSEMBLY_INCOMPLETE.value
+    )
+
+
+def test_the_canonicalization_contract_raises_for_four_shapes_only() -> None:
+    """The registered reading (judgement 10): a proposal with no key, one key
+    with conflicting identity fields, one key with two vectors, and one id
+    under two keys — and, crucially, **not** the fourth shape a reader might
+    expect on the list, two proposals of one key that agree about everything
+    (that is §4's merge, the pin above).
+
+    p7-4, reproducing the frozen 43 cases, has to model this divergence
+    explicitly: S04 and S42 are the suite's two ``error: true`` cases this
+    kernel reads as merges.
+    """
+
+    with pytest.raises(PlannerInputError) as no_key:
+        plan(kernel_input((proposal("c1", canonical_key=""),)))
+    assert "canonical_key" in str(no_key.value)
+
+    with pytest.raises(PlannerInputError) as identity:
+        plan(
+            kernel_input(
+                (
+                    proposal("a", canonical_key="same"),
+                    proposal(
+                        "b",
+                        canonical_key="same",
+                        learning_intent=LearningIntent.CONSOLIDATE,
+                    ),
+                )
+            )
+        )
+    assert "conflicting proposal identity field" in str(identity.value)
+
+    with pytest.raises(PlannerInputError) as vectors:
+        plan(
+            kernel_input(
+                (
+                    proposal(
+                        "one",
+                        canonical_key="one",
+                        benefit=benefit_vector(learning_need=0.5),
+                    ),
+                    proposal(
+                        "two",
+                        canonical_key="one",
+                        benefit=benefit_vector(learning_need=0.9),
+                    ),
+                )
+            )
+        )
+    assert "factor vector" in str(vectors.value)
+
+    with pytest.raises(PlannerInputError) as shared_id:
+        plan(
+            kernel_input(
+                (
+                    proposal("same-id", canonical_key="k1"),
+                    proposal("same-id", canonical_key="k2"),
+                )
+            )
+        )
+    assert "share a candidate_id" in str(shared_id.value)
+
+    agreed = plan(
+        kernel_input((proposal("k"), proposal("k", canonical_key="k")))
+    )
+    assert len(agreed.trace.candidates) == 1
