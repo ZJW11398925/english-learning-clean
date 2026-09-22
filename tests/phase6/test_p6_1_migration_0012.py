@@ -20,8 +20,10 @@ What is pinned here is exactly what the migration claims:
   unique index on ``schedule_item_id`` (append-first, §1.3);
 - schema_version / runtime_schema_version move to 12, 0001–0011 are
   byte-identical (per-file SHA-256, CRLF-normalized — the repo's Windows
-  convention), and the two tables are written by one module only
-  (elc.scheduler.store).
+  convention), and the two tables are written by one *creating* module only
+  (elc.scheduler.store — Gate 2's elc.deletion.store removes them and never
+  creates or rewrites one; the pin near the end of this file holds the two
+  faces apart).
 """
 
 from __future__ import annotations

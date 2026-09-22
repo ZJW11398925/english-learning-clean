@@ -16,7 +16,10 @@ What is pinned here is exactly what the migration claims:
   already carries a full pre-0013 lineage changes none of it, and 0001–0012
   are byte-identical (per-file SHA-256, CRLF-normalized — the repo's Windows
   convention);
-- the table is written by one module only (elc.user_config.store).
+- the table is written by one *creating* module only (elc.user_config.store —
+  Gate 2's elc.deletion.store clears one provenance leg and never creates or
+  rewrites the row; the pin near the end of this file holds the two faces
+  apart).
 """
 
 from __future__ import annotations

@@ -8,7 +8,10 @@ What is pinned here is exactly what the migration claims:
   spelling elc/user_config/types.py declares);
 - the migration is DDL only: it creates no row, and applying it on a database
   that already carries a full pre-0011 lineage changes none of it;
-- the three tables are written by one module only — elc.user_config.store —
+- the three tables are written by one *creating* module only —
+  elc.user_config.store (Gate 2's elc.deletion.store removes these rows and
+  never creates or rewrites one; the pin near the end of this file holds the
+  two faces apart) —
   and the eight unpinned policy columns carry no vocabulary at all (no CHECK:
   §5.1 pins no value range, and freezing an implementation word list into a
   canonical column is not this slice's to do);
