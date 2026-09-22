@@ -18,6 +18,7 @@ from typing import Mapping
 from elc.content.types import TeachingUnit
 from elc.conversation.types import ConversationRecord
 from elc.curriculum.types import CurriculumGraphRecord
+from elc.deletion.types import TombstoneRecord
 from elc.learning.types import EvidenceGroupRecord, LearnerTargetStateRecord
 from elc.persona.types import CharacterPackageRecord
 from elc.planner.types import PlannerDecision
@@ -49,6 +50,7 @@ OWNER_TEACHING = "teaching"
 OWNER_RUNTIME = "runtime"
 OWNER_CONTENT = "content"
 OWNER_WORLD_LORE = "world_lore"
+OWNER_DELETION = "deletion"
 
 
 @dataclass(frozen=True)
@@ -170,5 +172,18 @@ CANONICAL_OBJECTS: Mapping[str, CanonicalObject] = {
     "teaching_unit": CanonicalObject(
         "TeachingUnit", OWNER_CONTENT, TeachingUnit,
         version_field="content_version",
+    ),
+    # -- The BF-05 deletion ledger (Gate 2; docs/DATA_MODEL.md §24.14's
+    # "Security / Deletion Records" and SECURITY_PRIVACY_DELETION_CONTRACT
+    # §24). The object is the tombstone row migration 0014 creates, and its
+    # owner is the deletion bounded context that writes it. No
+    # ``version_field``: §24 spells ``scope_version``, which is not one of the
+    # canonical VERSION_FIELDS spellings (it versions a deletion policy, not
+    # a schema/model), so binding it would claim a canonical spelling that
+    # does not exist (the ScheduleItem entry's rule). The registry entry is a
+    # **derived placement**: §24 names no owning context, and this cut places
+    # the ledger with the scope walk that fills it.
+    "deletion_tombstone": CanonicalObject(
+        "TombstoneRecord", OWNER_DELETION, TombstoneRecord
     ),
 }

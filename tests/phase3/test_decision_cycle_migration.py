@@ -8,8 +8,9 @@ P3-0's ``decision_cycle`` table test, carried forward to P3-1A:
   snapshot/version columns accept NULL after 0007 (the legacy export
   requires the honest all-NULL bindings — the migration header carries the
   full rationale);
-- schema_version is 13 (0013_planner_constraint is the newest migration; it
-  read 12 while 0012_schedule_review was the newest, 11 while
+- schema_version is 14 (0014_deletion_tombstone is the newest migration; it
+  read 13 while 0013_planner_constraint was the newest, 12 while
+  0012_schedule_review was, 11 while
   0011_goal_policy_focus was, 10 while 0010_episode_and_user_config was, 9
   while 0009_relationship_contracts was, and 8 while 0008_attempt_records
   was);
@@ -122,6 +123,16 @@ P3_1A_WRITE_OWNERS: dict[str, set[str]] = {
         "gate_execution_status",
         "teaching_moment",
     },
+    # Gate 2's removal face: a conversation's deletion removes the cycle / gate
+    # / moment rows it owns (BF-05 §19's chain). The compensating assertion in
+    # test_write_faces_belong_to_the_owning_adapters_only holds it to
+    # removals only — it may not create or rewrite one of these rows.
+    "deletion/store.py": {
+        "decision_cycle",
+        "gate_decision",
+        "gate_execution_status",
+        "teaching_moment",
+    },
 }
 
 
@@ -193,14 +204,16 @@ def test_migration_list_and_schema_version(db: sqlite3.Connection) -> None:
     # 0011_goal_policy_focus in Phase 6 P6-0 (TASK-OPI-a68fd9eb.48 ③);
     # 0012_schedule_review in Phase 6 P6-1 (TASK-OPI-6259f6fd.12 ②① — the
     # §5.2 schedule_item / review_event rows); 0013_planner_constraint in
-    # Phase 6 P6-3 (TASK-OPI-5a0be06d.20 ③ — the §9 constraint row).
+    # Phase 6 P6-3 (TASK-OPI-5a0be06d.20 ③ — the §9 constraint row);
+    # 0014_deletion_tombstone in Gate 2 (TASK-OPI-b99560d4.19 ① — the BF-05
+    # §24 deletion ledger).
     # The ids are declared once in tests.conftest.
     assert [row[0] for row in rows] == list(MIGRATION_IDS)
     version = db.execute(
         "SELECT value FROM schema_meta WHERE key = 'schema_version'"
     ).fetchone()
     # The stamp is the newest migration's (this pin read "10" while 0010 was
-    # the head, "11" with P6-0's 0011).
+    # the head, "11" with P6-0's 0011, "13" with P6-3's 0013).
     assert version is not None and version[0] == SCHEMA_HEAD_VERSION
 
 
@@ -290,7 +303,14 @@ def test_write_faces_belong_to_the_owning_adapters_only() -> None:
     / moment tables are written only by the Runtime-owned DecisionCycle
     adapter and the Teaching domain store — the multi-line-literal-proof
     replacement for P3-0's substring scan (that fence is retired: P3-1A is
-    exactly the slice that lands the write faces)."""
+    exactly the slice that lands the write faces).
+
+    Gate 2 added one allow-listed entry (``deletion/store.py``), and the
+    allowance is narrowed rather than granted wholesale: that module is a
+    *removal* face, so it must carry DELETEs for these tables and neither an
+    INSERT nor an UPDATE against them. The check runs here because this pin
+    owns the table set.
+    """
 
     p3_1a_tables = {
         "decision_cycle",
@@ -307,6 +327,14 @@ def test_write_faces_belong_to_the_owning_adapters_only() -> None:
             offenders.append(f"{relative} writes {table}")
     assert not offenders, offenders
 
+    deletion_source = (SRC_ROOT / "deletion" / "store.py").read_text(
+        encoding="utf-8"
+    )
+    for table in p3_1a_tables:
+        assert f"DELETE FROM {table}" in deletion_source, table
+        assert f"INSERT INTO {table}" not in deletion_source, table
+        assert f"UPDATE {table}" not in deletion_source, table
+
     # Non-vacuous: the owning adapters really do write their tables (a
     # broken fold would otherwise pass silently).
     assert write_targets(SRC_ROOT / "platform" / "db" / "decision_cycle_store.py") >= {
@@ -318,15 +346,16 @@ def test_write_faces_belong_to_the_owning_adapters_only() -> None:
     )
 
 
-def test_migrations_directory_0013_is_newest() -> None:
-    """0013 is the newest migration; nothing ahead of the P6-3 slice
+def test_migrations_directory_0014_is_newest() -> None:
+    """0014 is the newest migration; nothing ahead of the Gate 2 slice
     smuggles schema (the migration runner is filename-ordered). The pin
     moves with each slice's newest migration — it read 0008 while P3-1B was
     the head, then 0009 while P4-0/P4-1/P4-2 were, 0010 with P4-3 (the slice
     that added the episode projection and the profile rows), 0011 with P6-0
     (the goal / policy / focus rows), 0012 with P6-1 (the §5.2
-    schedule_item / review_event rows), and 0013 with P6-3 (the §9
-    planner_constraint row)."""
+    schedule_item / review_event rows), 0013 with P6-3 (the §9
+    planner_constraint row), and 0014 with Gate 2 (the BF-05 §24
+    deletion ledger)."""
 
     names = sorted(
         path.name for path in (REPO_ROOT / "migrations").glob("*.sql")

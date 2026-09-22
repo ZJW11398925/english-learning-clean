@@ -201,8 +201,15 @@ def test_the_object_is_mentioned_by_the_placement_and_two_pre_existing_modules(
     files that mention it are the placement (six user_config modules plus the
     registry) and the two mentions that predate this cut — the Phase 0
     ``PlannerDecision.planner_constraint_view`` field and the Gate's comment
-    naming §9 as the future suppression source. A seventh file would be a
-    consumer nobody reviewed."""
+    naming §9 as the future suppression source. A further file would be a
+    consumer nobody reviewed.
+
+    Gate 2 added ``deletion/store.py``, and it is **not** a consumer: it is
+    the module that clears the constraint's ``created_from_turn_id`` leg when
+    the turn it names is deleted (§19). The compensation below holds that
+    apart — the deletion face names the table and touches one provenance
+    column, never the user's setting or its ``active`` flag.
+    """
 
     mentioning = sorted(
         path.relative_to(SRC_ROOT).as_posix()
@@ -211,6 +218,8 @@ def test_the_object_is_mentioned_by_the_placement_and_two_pre_existing_modules(
         or "PlannerConstraint" in path.read_text(encoding="utf-8")
     )
     assert mentioning == [
+        "deletion/store.py",
+        "deletion/types.py",
         "planner/types.py",
         "platform/registry.py",
         "teaching/gate.py",
@@ -221,6 +230,26 @@ def test_the_object_is_mentioned_by_the_placement_and_two_pre_existing_modules(
         "user_config/store.py",
         "user_config/types.py",
     ]
+
+    # Prose may name the object; only *statements* are constrained, and there
+    # are exactly three of them: the surface select, the row delete, and the
+    # one provenance-leg clear. Anything else — an insert, a second update, a
+    # read of ``active`` — would be the unreviewed consumer R11 forbids.
+    deletion_source = (SRC_ROOT / "deletion" / "store.py").read_text(
+        encoding="utf-8"
+    )
+    assert "SELECT rowid, constraint_id FROM planner_constraint" in (
+        deletion_source
+    )
+    assert "DELETE FROM planner_constraint" in deletion_source
+    assert "INSERT INTO planner_constraint" not in deletion_source
+    assert deletion_source.count("UPDATE planner_constraint") == 1
+    assert (
+        "UPDATE planner_constraint SET created_from_turn_id = NULL"
+        in deletion_source
+    )
+    for column in ("active", "constraint_type", "scope", "starts_at"):
+        assert f"SET {column}" not in deletion_source, column
 
 
 def test_the_gate_is_still_not_wired_to_a_constraint() -> None:

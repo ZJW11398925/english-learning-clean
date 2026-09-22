@@ -189,7 +189,9 @@ def test_0012_is_present_and_not_the_head() -> None:
     is still filename-ordered and 0012's effect is still in the chain. (The
     pin read ``names[-1] == 0012`` while P6-1 was the head; the head
     assertion now lives with the newest slice, and this one asserts what
-    remains true of 0012 rather than being deleted.)"""
+    remains true of 0012 rather than being deleted. The successor is spelled
+    as a literal on purpose: this claim is about 0012 and the file that
+    follows *it*, which stayed true when Gate 2's 0014 landed.)"""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
     assert PRE_0012 in names
@@ -222,10 +224,11 @@ def test_the_two_tables_land_empty(db: sqlite3.Connection) -> None:
         assert row is not None and int(row[0]) == 0
 
 
-def test_schema_version_moves_to_thirteen(db: sqlite3.Connection) -> None:
-    """This pin read "12" while 0012 was the head and now reads the newest
-    migration's stamp ("13" with P6-3's 0013_planner_constraint); the name
-    moved with the value so the test still says what it asserts."""
+def test_schema_version_moves_to_fourteen(db: sqlite3.Connection) -> None:
+    """This pin read "12" while 0012 was the head, then "13" with P6-3's
+    0013_planner_constraint, and now reads the newest migration's stamp
+    ("14" with Gate 2's 0014_deletion_tombstone); the name moved with the
+    value so the test still says what it asserts."""
 
     assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION
     stamps = dict(
@@ -253,18 +256,33 @@ def test_the_earlier_migrations_are_byte_identical() -> None:
 
 
 def test_only_the_scheduler_store_writes_the_two_tables() -> None:
-    """Authority is structural: the §5.2 durable rows have exactly one writer
-    in the source tree (the AST write-target scan the P3/P4 architecture pins
-    use), and it writes nothing else."""
+    """Authority is structural: the §5.2 durable rows have exactly one
+    *creating* writer in the source tree (the AST write-target scan the P3/P4
+    architecture pins use), and it writes nothing else.
+
+    Gate 2 widened the answer by one module, compensated rather than relaxed:
+    ``elc.deletion.store`` deletes a target's schedule rows and a
+    conversation's review events (§19/§20/§23) and must never create or
+    rewrite one.
+    """
 
     writers: dict[str, set[str]] = {}
     for path in sorted(SRC_ROOT.rglob("*.py")):
         targets = write_targets(path) & set(CANONICAL_BLOCKS)
         if targets:
             writers[path.relative_to(SRC_ROOT).as_posix()] = targets
-    assert writers == {
-        "scheduler/store.py": set(CANONICAL_BLOCKS),
+    assert set(writers) == {
+        "deletion/store.py",
+        "scheduler/store.py",
     }
+    assert writers["scheduler/store.py"] == set(CANONICAL_BLOCKS)
+    assert writers["deletion/store.py"] == set(CANONICAL_BLOCKS)
+
+    source = (SRC_ROOT / "deletion" / "store.py").read_text(encoding="utf-8")
+    for table in CANONICAL_BLOCKS:
+        assert f"DELETE FROM {table}" in source, table
+        assert f"INSERT INTO {table}" not in source, table
+        assert f"UPDATE {table}" not in source, table
 
 
 # -- ② what the schema deliberately does (and does not) say ------------------

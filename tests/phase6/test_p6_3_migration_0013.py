@@ -161,17 +161,26 @@ def _digest(path: Path) -> str:
 # -- ① the table and its column set ------------------------------------------
 
 
-def test_0013_is_the_newest_migration() -> None:
-    """This slice's head; nothing ahead of P6-3 smuggles schema (the runner is
-    filename-ordered). The claim reads the shared constants, which
-    tests/architecture/test_platform_db_infra.py holds against the real
+def test_0013_is_present_and_not_the_head() -> None:
+    """The claim that outlives P6-3's headship: 0013 is in the lineage and
+    0014 — the migration Gate 2 added — is immediately behind it, so the
+    runner is still filename-ordered and 0013's effect is still in the chain.
+    (The pin read ``names[-1] == SCHEMA_HEAD_FILE == PRE_0013`` while P6-3 was
+    the head; the head assertion now lives with the newest slice, and this one
+    asserts what remains true of 0013 rather than being deleted. The successor
+    is a **literal** — INFO-2's rule, the same choice P6-1 and P6-2 made.)
+
+    The lineage is still contiguous, and the shared constants are still the
+    ones tests/architecture/test_platform_db_infra.py holds against the real
     directory."""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert names[-1] == SCHEMA_HEAD_FILE == PRE_0013
+    assert PRE_0013 in names
+    assert names[names.index(PRE_0013) + 1] == "0014_deletion_tombstone.sql"
     assert [name[:4] for name in names] == [
         f"{index:04d}" for index in range(1, len(MIGRATION_IDS) + 1)
     ]
+    assert SCHEMA_HEAD_FILE == "0014_deletion_tombstone.sql"
 
 
 def test_the_table_exists_with_the_canonical_column_set(
@@ -196,7 +205,11 @@ def test_the_table_lands_empty(db: sqlite3.Connection) -> None:
     )
 
 
-def test_schema_version_moves_to_thirteen(db: sqlite3.Connection) -> None:
+def test_schema_version_moves_to_fourteen(db: sqlite3.Connection) -> None:
+    """This pin read "13" while 0013 was the head and now reads the newest
+    migration's stamp ("14" with Gate 2's 0014_deletion_tombstone); the name
+    moved with the value so the test still says what it asserts."""
+
     assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION
     stamps = dict(
         db.execute(
@@ -223,16 +236,35 @@ def test_the_earlier_migrations_are_byte_identical() -> None:
 
 
 def test_only_the_user_config_store_writes_the_table() -> None:
-    """Authority is structural: the §9 durable row has exactly one writer in
-    the source tree (the AST write-target scan the P3/P4 architecture pins
-    use), and it is this context's own store."""
+    """Authority is structural: the §9 durable row has exactly one *creating*
+    writer in the source tree (the AST write-target scan the P3/P4
+    architecture pins use), and it is this context's own store.
+
+    Gate 2 added one more module, and the two faces are asserted apart rather
+    than merged: ``elc.deletion.store`` may **clear a provenance leg** (§19
+    removes the turn a constraint was written from, and §9 spells
+    ``created_from_turn_id?`` nullable for exactly that), and it must never
+    create a constraint, rewrite its content, or touch its ``active`` flag.
+    """
 
     writers: dict[str, set[str]] = {}
     for path in sorted(SRC_ROOT.rglob("*.py")):
         targets = write_targets(path) & {"planner_constraint"}
         if targets:
             writers[path.relative_to(SRC_ROOT).as_posix()] = targets
-    assert writers == {"user_config/store.py": {"planner_constraint"}}
+    assert set(writers) == {"deletion/store.py", "user_config/store.py"}
+
+    source = (SRC_ROOT / "deletion" / "store.py").read_text(encoding="utf-8")
+    assert "DELETE FROM planner_constraint" in source
+    assert "INSERT INTO planner_constraint" not in source
+    assert source.count("UPDATE planner_constraint") == 1
+    assert (
+        "UPDATE planner_constraint SET created_from_turn_id = NULL" in source
+    )
+    # The one update moves a provenance pointer, never the user's setting.
+    for column in ("active", "constraint_type", "scope", "starts_at"):
+        assert f"SET {column}" not in source, column
+        assert f"{column} =" not in source.split("UPDATE planner_constraint")[1]
 
 
 # -- ② what the schema deliberately does (and does not) say ------------------

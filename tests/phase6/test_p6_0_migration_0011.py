@@ -18,9 +18,10 @@ What is pinned here is exactly what the migration claims:
   **not** repeated here;
 - schema_version / runtime_schema_version moved to 11 with this slice, and
   0001–0010 are byte-identical to what they were. (P6-1 later added
-  0012_schedule_review, so the *current* head is 0012 — the assertions below
-  are about 0011's own effect and its place in the lineage, and the head pin
-  moved to tests/phase6/test_p6_1_migration_0012.py.)
+  0012_schedule_review, P6-3 0013_planner_constraint and Gate 2
+  0014_deletion_tombstone, so the *current* head is 0014 — the assertions
+  below are about 0011's own effect and its place in the lineage, and the head
+  pin moved to tests/phase6/test_p6_1_migration_0012.py.)
 """
 
 from __future__ import annotations
@@ -169,12 +170,13 @@ def test_the_three_tables_land_empty(db: sqlite3.Connection) -> None:
         assert row is not None and int(row[0]) == 0
 
 
-def test_schema_version_moves_to_thirteen(db: sqlite3.Connection) -> None:
+def test_schema_version_moves_to_fourteen(db: sqlite3.Connection) -> None:
     """The stamp is the newest migration's — this pin read "11" while 0011
-    was the head, then "12" with P6-1's 0012_schedule_review, and now "13"
-    with P6-3's 0013_planner_constraint (the same 1:1 move every version pin
-    in this repository makes; the name moved with the value so the test still
-    says what it asserts)."""
+    was the head, then "12" with P6-1's 0012_schedule_review, "13" with P6-3's
+    0013_planner_constraint, and now "14" with Gate 2's
+    0014_deletion_tombstone (the same 1:1 move every version pin in this
+    repository makes; the name moved with the value so the test still says
+    what it asserts)."""
 
     assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION
     stamps = dict(
@@ -387,15 +389,32 @@ def test_0011_leaves_a_full_pre_0011_lineage_untouched(
 
 
 def test_only_the_user_config_store_writes_the_three_tables() -> None:
-    """Authority is structural: the P6-0 durable rows have exactly one writer
-    in the source tree (the AST write-target scan the P3/P4 architecture pins
-    use), and it writes nothing else."""
+    """Authority is structural: the P6-0 durable rows have exactly one
+    *creating* writer in the source tree (the AST write-target scan the
+    P3/P4 architecture pins use), and it writes nothing else.
+
+    Gate 2 widened the scan's answer by one module, and the widening is
+    compensated rather than relaxed: ``elc.deletion.store`` removes these rows
+    (a conversation's closure, an ALL_USER_DATA sweep) and must never create
+    or rewrite one. The deletion face is therefore asserted to carry DELETEs
+    and no INSERT/UPDATE against them — a deletion store that started minting
+    user-config rows would fail here.
+    """
 
     writers: dict[str, set[str]] = {}
     for path in sorted(SRC_ROOT.rglob("*.py")):
         targets = write_targets(path) & set(TABLE_COLUMNS)
         if targets:
             writers[path.relative_to(SRC_ROOT).as_posix()] = targets
-    assert writers == {
-        "user_config/store.py": set(TABLE_COLUMNS),
+    assert set(writers) == {
+        "deletion/store.py",
+        "user_config/store.py",
     }
+    assert writers["user_config/store.py"] == set(TABLE_COLUMNS)
+    assert writers["deletion/store.py"] == set(TABLE_COLUMNS)
+
+    source = (SRC_ROOT / "deletion" / "store.py").read_text(encoding="utf-8")
+    for table in TABLE_COLUMNS:
+        assert f"DELETE FROM {table}" in source, table
+        assert f"INSERT INTO {table}" not in source, table
+        assert f"UPDATE {table}" not in source, table

@@ -133,10 +133,10 @@ def test_0010_creates_the_three_tables_with_the_canonical_column_sets(
     db: sqlite3.Connection,
 ) -> None:
     assert "0010_episode_and_user_config" in migrations.applied_migrations(db)
-    # P6-1/P6-3 semantic sync: the stamp is the newest migration's, and
-    # 0013_planner_constraint is now the head (this pin read "12" with
-    # P6-1's 0012_schedule_review, "11" with P6-0's 0011_goal_policy_focus
-    # and "10" while 0010 was).
+    # P6-1/P6-3/Gate-2 semantic sync: the stamp is the newest migration's, and
+    # 0014_deletion_tombstone is now the head (this pin read "13" with
+    # P6-3's 0013_planner_constraint, "12" with P6-1's 0012_schedule_review,
+    # "11" with P6-0's 0011_goal_policy_focus and "10" while 0010 was).
     assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION
     assert (
         db.execute(
@@ -222,10 +222,11 @@ def test_0010_leaves_the_existing_lineage_untouched(
     assert migrations.schema_version(conn) == "9"
     _seed_pre_0010_lineage(conn)
     migrations.apply_migrations(conn, post)
-    # P6-1/P6-3 semantic sync: the post stage applies every migration from
-    # 0010 on (0011_goal_policy_focus, 0012_schedule_review and
-    # 0013_planner_constraint included), so the stamp is the newest one —
-    # 13, not P6-1's 12, P6-0's 11 nor P4-3's 10.
+    # P6-1/P6-3/Gate-2 semantic sync: the post stage applies every migration
+    # from 0010 on (0011_goal_policy_focus, 0012_schedule_review,
+    # 0013_planner_constraint and 0014_deletion_tombstone included), so the
+    # stamp is the newest one — 14, not P6-3's 13, P6-1's 12, P6-0's 11 nor
+    # P4-3's 10.
     assert migrations.schema_version(conn) == SCHEMA_HEAD_VERSION
 
     assert conn.execute(
@@ -250,8 +251,8 @@ def test_0010_leaves_the_existing_lineage_untouched(
 
 
 def test_the_earlier_migrations_are_untouched() -> None:
-    """0001–0012 are byte-identical: P6-3 adds one file (0013) and edits
-    none of them (P6-1 added 0012 and P6-0 added 0011 the same way)."""
+    """0001–0013 are byte-identical: Gate 2 adds one file (0014) and edits
+    none of them (P6-3 added 0013, P6-1 0012 and P6-0 0011 the same way)."""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
     assert names[-1] == SCHEMA_HEAD_FILE

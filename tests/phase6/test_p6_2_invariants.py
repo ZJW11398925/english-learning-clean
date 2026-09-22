@@ -432,6 +432,10 @@ def test_this_cut_added_no_migration() -> None:
     false at the next migration and force an edit to a pin that has nothing to
     do with it (the same choice tests/phase6/test_p6_1_migration_0012.py
     makes, and the opposite of the *head* pins where the constant is correct).
+
+    Gate 2 is where that prediction was cashed: 0014_deletion_tombstone
+    landed, and this pin needed **no edit** — which is the whole point of
+    spelling the successor literally.
     """
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
@@ -443,9 +447,11 @@ def test_this_cut_added_no_migration() -> None:
     assert _digest(MIGRATIONS_DIR / FROZEN_HEAD) == FROZEN_HEAD_DIGEST
 
 
-def test_the_schema_head_is_still_thirteen() -> None:
+def test_the_schema_head_is_fourteen() -> None:
     """The stamp the shared constant declares is the one a fresh database
-    carries (this pin read "12" through P6-2; P6-3's 0013 moved it)."""
+    carries (this pin read "12" through P6-2; P6-3's 0013 moved it to "13"
+    and Gate 2's 0014 to "14" — the name moves with the value so the test
+    still says what it asserts)."""
 
     conn = connection.connect(":memory:")
     try:

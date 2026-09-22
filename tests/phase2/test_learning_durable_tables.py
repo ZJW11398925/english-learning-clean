@@ -186,11 +186,14 @@ def test_migration_and_schema_version(db: sqlite3.Connection) -> None:
     # §5.1 goal_portfolio / teaching_policy / session_focus rows);
     # 0012_schedule_review in Phase 6 P6-1 (TASK-OPI-6259f6fd.12 ②① — the
     # §5.2 schedule_item / review_event rows); 0013_planner_constraint in
-    # Phase 6 P6-3 (TASK-OPI-5a0be06d.20 ③ — the §9 planner_constraint row).
+    # Phase 6 P6-3 (TASK-OPI-5a0be06d.20 ③ — the §9 planner_constraint row);
+    # 0014_deletion_tombstone in Gate 2 (TASK-OPI-b99560d4.19 ① — the BF-05
+    # §24 deletion ledger).
     # The ids are declared once in tests.conftest (and pinned against the real
     # migrations directory by tests/architecture).
     # The stamp is the newest migration's (this pin read "10" while
-    # 0010_episode_and_user_config was the head, "11" with P6-0's 0011).
+    # 0010_episode_and_user_config was the head, "11" with P6-0's 0011, "13"
+    # with P6-3's 0013).
     assert (
         db.execute(
             "SELECT value FROM schema_meta WHERE key = 'schema_version'"

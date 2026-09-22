@@ -75,7 +75,9 @@ def test_migrations_apply_idempotently(db: sqlite3.Connection) -> None:
     # 0012_schedule_review joins in Phase 6 P6-1 (TASK-OPI-6259f6fd-….12 ②①
     # — the §5.2 schedule_item / review_event rows).
     # 0013_planner_constraint joins in Phase 6 P6-3 (TASK-OPI-5a0be06d-….20 ③
-    # — the §9 planner_constraint row).
+    # — the §9 planner_constraint row);
+    # 0014_deletion_tombstone joins in Gate 2 (TASK-OPI-b99560d4-….19 ① —
+    # the BF-05 §24 deletion ledger; IP §16 DoD #25).
     # The ids live in tests.conftest so the per-phase version pins share one
     # declaration (and test_the_migration_lineage_constants_are_the_real_ones
     # holds it against the directory).
@@ -89,7 +91,8 @@ def test_migrations_apply_idempotently(db: sqlite3.Connection) -> None:
     assert [row[0] for row in rows] == list(MIGRATION_IDS)
     # The stamp is the newest migration's (this pin read "10" while 0010 was
     # the head, "11" with P6-0's 0011_goal_policy_focus; P6-1 added
-    # 0012_schedule_review, P6-3 the 0013_planner_constraint above).
+    # 0012_schedule_review, P6-3 the 0013_planner_constraint above, Gate 2
+    # the 0014_deletion_tombstone).
     assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION
 
 

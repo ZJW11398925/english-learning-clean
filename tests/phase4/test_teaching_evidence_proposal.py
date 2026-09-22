@@ -416,7 +416,13 @@ def test_the_proposal_is_learning_owned_and_never_a_projection_job(
 ) -> None:
     """The ownership red line (TASK-…84 红线): the durable proposal is a
     Learning-domain table written by the Learning store only — Learning
-    evidence is canonical input, not a rebuildable CP4 projection."""
+    evidence is canonical input, not a rebuildable CP4 projection.
+
+    Gate 2 added ``deletion/store.py`` to the set of modules whose text names
+    this table, and the two faces are asserted apart rather than merged: the
+    deletion face may *remove* proposals (a conversation's closure, an
+    ALL_LEARNING_HISTORY sweep) and must never insert or update one.
+    """
 
     open_moment(coordinator, "cm-p4-own-open")
     reply_ok(coordinator, make_attempt(CANONICAL_ANSWER), "cm-p4-own")
@@ -441,7 +447,14 @@ def test_the_proposal_is_learning_owned_and_never_a_projection_job(
                     writers.add(
                         str(path.relative_to(SRC_ROOT)).replace("\\", "/")
                     )
-    assert writers == {"learning/store.py"}, writers
+    assert writers == {"deletion/store.py", "learning/store.py"}, writers
+
+    deletion_source = (SRC_ROOT / "deletion" / "store.py").read_text(
+        encoding="utf-8"
+    )
+    assert "DELETE FROM teaching_evidence_proposal" in deletion_source
+    assert "INSERT INTO teaching_evidence_proposal" not in deletion_source
+    assert "UPDATE teaching_evidence_proposal" not in deletion_source
 
 
 def test_the_refs_of_an_abstain_carry_no_proposal(
