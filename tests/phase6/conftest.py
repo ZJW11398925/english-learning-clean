@@ -141,7 +141,9 @@ __all__ = [
     "canonical_blocks",
     "canonical_lines",
     "commit_chat_turn",
+    "due_controller",
     "goal",
+    "learning_controller",
     "make_lease",
     "portfolio",
     "review_event",
@@ -203,6 +205,30 @@ def scheduler_controller(
     scheduler_store: SqliteSchedulerStore,
 ) -> SchedulerController:
     return SchedulerController(scheduler_store)
+
+
+@pytest.fixture()
+def learning_controller(
+    learning: SqliteLearningStore,
+) -> LearningController:
+    """The real Learning authority face (P6-2's read input, DOMAIN_MODEL §9)."""
+
+    return LearningController(learning)
+
+
+@pytest.fixture()
+def due_controller(
+    scheduler_store: SqliteSchedulerStore,
+    learning_controller: LearningController,
+) -> SchedulerController:
+    """The Scheduler face wired to the real Learning reads (P6-2).
+
+    The same durable store the P6-1 fixtures use, plus the one optional port a
+    recomputation needs: the freshness/watermark read face, handed over
+    structurally because the scheduler package imports no other domain.
+    """
+
+    return SchedulerController(scheduler_store, learning=learning_controller)
 
 
 @pytest.fixture()

@@ -25,12 +25,22 @@ def test_store_satisfies_the_frozen_protocol_faces(
     """The Phase 0 protocol signatures stay callable (Gate 1 face).
     P2B (TASK-…44) implemented the projection faces — the four former
     NotImplementedError pins were revised to real-callable reads (the
-    P2A boundary note they carried is superseded)."""
+    P2A boundary note they carried is superseded).
+
+    P6-2 (R6) added ``get_learning_watermark`` to the query protocol — a 1:1
+    increment over this store's own sequence read, exposed on the authority
+    face — so the store is no longer the object that answers the *whole* read
+    protocol, while it keeps every read the protocol's other members name. The
+    claim is restated rather than dropped: the store's own spelling is still
+    here, and it is what the protocol method returns."""
 
     assert isinstance(learning, LearningCommands)
+    from elc.learning.controller import LearningController
     from elc.learning.queries import LearningQueries
 
-    assert isinstance(learning, LearningQueries)
+    assert not isinstance(learning, LearningQueries)
+    assert isinstance(LearningController(learning), LearningQueries)
+    assert callable(learning.get_evidence_watermark)
     from elc.learning.analysis import LearningTurnAnalysis
 
     assert isinstance(learning, LearningTurnAnalysis)

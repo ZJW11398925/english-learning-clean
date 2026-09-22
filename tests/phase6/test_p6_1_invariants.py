@@ -104,7 +104,15 @@ def test_the_scheduler_package_imports_no_other_domain() -> None:
     """The durable core is platform + its own types: it reads no Learning
     store, no curriculum provider and no teaching port — the freshness input
     arrives as a watermark column, not as a dependency (DOMAIN_MODEL §9
-    Reads)."""
+    Reads).
+
+    P6-2 added the pure policy's two standard-library dependencies
+    (``hashlib`` for the content-addressed row version, ``json`` for its
+    canonical serialization) to the allow-list. The claim is unchanged — no
+    *domain* import exists, and the Learning reads reach this package as a
+    structural port rather than a dependency (elc.scheduler.spacing.
+    LearningReadPort) — and the list stays a whitelist, so a third-party or
+    cross-domain import still fails this pin."""
 
     allowed = (
         "elc.platform",
@@ -112,6 +120,8 @@ def test_the_scheduler_package_imports_no_other_domain() -> None:
         "dataclasses",
         "datetime",
         "enum",
+        "hashlib",
+        "json",
         "sqlite3",
         "typing",
         "__future__",
@@ -216,11 +226,12 @@ def test_the_watermark_is_carried_and_never_interpreted(
         assert read.value.source_learning_watermark == watermark
 
 
-def test_no_spacing_transition_is_implemented(
+def test_the_store_walks_no_spacing_ladder(
     db: sqlite3.Connection, scheduler_store: SqliteSchedulerStore
 ) -> None:
-    """The ladder is p6-2's: this slice stores the stage it is given and never
-    walks one — a silent stage stays silent, and no mapping table exists."""
+    """The ladder lives in ``elc.scheduler.spacing`` (P6-2); the *store* still
+    walks none — it stores the stage it is given and never derives one, a
+    silent stage stays silent, and no mapping table exists here."""
 
     assert isinstance(scheduler_store.upsert_schedule_item(schedule_item()), Ok)
     read = scheduler_store.get_schedule_item(TARGET_TYPE, TARGET_ID, MODALITY)

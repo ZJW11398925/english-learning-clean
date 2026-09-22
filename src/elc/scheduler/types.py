@@ -32,11 +32,13 @@ carries it). The one surviving implementation-declared word list,
 :class:`SpacingStage`, says so in its own docstring and is not given a
 schema CHECK anywhere (migration 0012's header).
 
-**Decision scope.** This module (and P6-1's whole slice) carries review
-*truth*, not review *policy*: the due/overdue decision, the ScheduleView
-production and the spacing ladder are p6-2's, and
-:class:`SchedulerController` keeps those two declarations raising with a P6-2
-pointer rather than inventing a reading here.
+**Decision scope.** This module — and P6-1's slice of the domain — carries
+review *truth*: the objects and their durable rows. The review *policy* (how a
+due decision is computed, how the ladder advances, how a view is produced) is
+P6-2's and lives in :mod:`elc.scheduler.spacing`, a pure module with no store
+and no clock; :class:`SchedulerController` composes the two by reading the
+durable rows and asking the policy. The objects here stay interpretation-free:
+they carry whatever the Scheduler computed, and P6-2 is what computes it.
 """
 
 from __future__ import annotations
@@ -99,11 +101,13 @@ class SpacingStage(StrEnum):
 
     **This slice implements no transition and no ladder policy.** Nothing here
     advances a stage: the ladder's rules (what moves a target from one stage
-    to the next) are not in §5.2 and are p6-2's spacing-history work.
-    **Revisit condition**: the p6-2 spacing-history cut either keeps this list
-    as it is (and says so where the transitions live) or replaces it with the
-    vocabulary that cut declares — the *list* and the *transitions* are decided
-    together, and neither may move alone.
+    to the next) are not in §5.2 and live in :mod:`elc.scheduler.spacing`.
+    **Revisit condition (P6-2's answer): the cut kept this list as it is** —
+    ``spacing.stage_from_history`` counts the row's own engaged events and
+    clamps into ``SPACING_STAGES``, whose order is exactly this enum's
+    declaration order, and it says so where the transitions live. A cut that
+    replaces the *words* must move the ladder with them: the list and the
+    transitions are still decided together, and neither may move alone.
     """
 
     STAGE_0 = "STAGE_0"
@@ -145,6 +149,15 @@ class ScheduleItem:
     **not** allowed to implement. A consumer that wants a number derives it;
     nothing here stores one it did not receive.
 
+    **P6-2 fills it, and R4 is the reading.** What a row *written by the
+    Scheduler* now carries is derived: :func:`elc.scheduler.spacing.urgency_of`
+    answers with the state's anchor, and ``recompute_schedule_item`` writes it
+    — so a scheduled row's urgency has a value while a caller-written row still
+    carries whatever it declared (``None`` = not configured). No interpolation
+    and no scaling: one state, one anchor. The Phase 7 sentences above stay
+    true of the *Planner's* use of the number (assembling BF-02 §6's benefit
+    factor inside a PlanningContext), which is not this column's meaning.
+
     **R8 — ``version`` keeps §5.2's bare spelling.** §5.1's three objects had
     their ``version`` qualified (``goal_version`` / ``policy_version``)
     because three objects in one canonical family shared the bare name and the
@@ -169,10 +182,15 @@ class ScheduleItem:
 
     ``source_learning_watermark`` is the durable form of DOMAIN_MODEL §9's
     read input ("Learning freshness / last strong retrieval / stability
-    evidence"): carried **verbatim** as an opaque string — this slice neither
-    parses it nor advances it, and what it means for a due computation is
-    p6-2's. ``updated_at`` is the store's own clock: a constructed item leaves
-    it empty and the durable writer stamps it.
+    evidence"). **R6 gives it its meaning**: it is the Learning evidence
+    watermark the row was computed from, carried as a **decimal string**
+    (``str(get_learning_watermark())``), so a consumer recognises a stale row
+    by ``item.source_learning_watermark != str(current watermark)`` — that
+    comparison is the consumer's (BF-02 §5's stale-snapshot check is a
+    Planner-side reading), and the durable layer neither parses nor compares
+    it. A caller-written row still carries whatever string it declared: the
+    column is opaque where it is stored. ``updated_at`` is the store's own
+    clock: a constructed item leaves it empty and the durable writer stamps it.
     """
 
     schedule_item_id: str
@@ -213,10 +231,13 @@ class ReviewEvent:
     pins no value range, and neither ``behavioral_baselines/`` nor the
     canonical documents declare a single word for it (grepped, not assumed).
     It is therefore a raw ``str``, NOT NULL, with no CHECK in the schema, no
-    branch-on-value anywhere in this slice, and no module constant here. The
-    first consumer that *must* branch on a value is p6-2's review-history
-    read, so the word list is p6-2's to declare — if this module declared one
-    now, a test could pass over a vocabulary the canonical set never approved.
+    branch-on-value anywhere in this slice, and no module constant here.
+    **The p6-2 due policy did not claim it either**: the ladder and the window
+    read ``engaged`` (§5.2's typed column) and ``created_at`` (recency) and
+    give ``event_type`` no meaning at all — so the word list is still
+    unclaimed, and it belongs to the flow that records *what a review did*
+    (the review-outcome path, Phase 8). A constant declared here now would let
+    a test pass over a vocabulary the canonical set never approved.
 
     ``engaged`` is the canonical boolean column (migration 0012 stores it as
     ``INTEGER CHECK (engaged IN (0, 1))``, the ``attempt_observed``
@@ -239,23 +260,35 @@ class ReviewEvent:
 class ScheduleView:
     """Planner input authority (docs/DOMAIN_MODEL.md §10).
 
-    **Shape only in this slice.** The view is what the Planner consumes, and
-    §10 makes it the Planner's *input* authority while DOMAIN_MODEL §9 keeps
-    due/overdue on the Scheduler's side; producing this view is therefore not
-    P6-1's work. What lands here is the shape the Phase 0 interface already
-    declared — a ``schedule_version`` plus the item buckets — with the buckets
-    carrying :class:`ScheduleItem` rows now that the skeleton's
-    ``ReviewStateRecord`` is gone (the due/overdue decision it would need is
-    exactly what P6-2 owns).
+    P6-1 declared the shape; **P6-2 produces it**
+    (``SchedulerController.get_schedule_view``), and the fields below are what
+    a production answers with:
 
-    **Production is P6-2** (VALIDATION/TASK-OPI-6259f6fd-….12 scope statement;
-    the §10 Planner input is filled by the due/overdue cut). Nothing in this
-    slice constructs one: the controller's ``get_schedule_view`` still raises a
-    ``NotImplementedError`` carrying the P6-2 pointer, and these buckets are
-    never filled with an invented membership.
+    - ``schedule_version`` is the model stamp the buckets were classified by —
+      :data:`elc.scheduler.spacing.SCHEDULER_MODEL_VERSION`, not a row's
+      content-addressed ``ScheduleItem.version`` (one view holds many rows and
+      therefore many row versions, so the view must say *which policy read
+      them*);
+    - ``as_of`` is the instant the classification was made at, carried so the
+      Planner can tell a stale view from a fresh one without re-deriving it
+      (the field is this cut's declaration: §5.2 has no ScheduleView block, and
+      the spelling follows §5.2's own view block, whose ``SessionBudgetView``
+      does carry ``as_of``);
+    - the three buckets are the states the Planner acts on — ``due_items`` for
+      ``DUE``, ``overdue_items`` for ``OVERDUE``, ``upcoming`` for
+      ``UPCOMING`` — and **``NOT_SCHEDULED`` rows appear in none of them**.
+      That is the one membership rule worth stating: a target with no review
+      obligation is not "upcoming", it is unscheduled, and putting it in a
+      bucket would hand the Planner a review debt the Scheduler never
+      declared;
+    - inside a bucket the order is ``(next_review_window_start,
+      schedule_item_id)`` ascending — deterministic, so two reads of the same
+      world answer byte-identically instead of in whatever order the rows
+      happened to arrive.
     """
 
     schedule_version: ScheduleVersion
+    as_of: str
     due_items: tuple[ScheduleItem, ...] = ()
     overdue_items: tuple[ScheduleItem, ...] = ()
     upcoming: tuple[ScheduleItem, ...] = ()

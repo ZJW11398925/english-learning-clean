@@ -24,15 +24,17 @@ declared so no consumer has to guess): the controller exposes the Phase 0
 protocol quartet (``commit_evidence_group`` / ``record_self_report`` /
 ``rebuild_learner_state`` / ``record_opportunity``) plus the read faces
 (``get_learner_target_state`` / ``get_learning_snapshot`` /
-``get_freshness``) and the P3-1A coordination extension
-``stale_projection_targets``. The following store methods are deliberately
-NOT exposed yet — a consumer needing them must go to the store directly
-and that is a known, named gap, not an oversight: ``supersede_claim`` /
+``get_freshness`` / ``get_learning_watermark``) and the P3-1A coordination
+extension ``stale_projection_targets``. The following store methods are
+deliberately NOT exposed yet — a consumer needing them must go to the store
+directly and that is a known, named gap, not an oversight: ``supersede_claim`` /
 ``invalidate_claim`` (STATE_MACHINES §18 correction faces: their Phase 3+
-consumer is the explicit re-evaluation path), ``get_evidence_watermark``
-(the raw sequence number: consumers that need freshness semantics use
-``get_freshness`` / the snapshot), and the store's internal analysis
-helpers.
+consumer is the explicit re-evaluation path), the store's internal analysis
+helpers, and the raw sequence read's *store spelling*
+``get_evidence_watermark`` — P6-2 R6 did not expose that name; it added
+``get_learning_watermark`` to the query protocol as a 1:1 increment, so the
+number now reaches a consumer (the Scheduler's schedule rows) through the
+protocol face while the store keeps its own spelling for its own use.
 """
 
 from __future__ import annotations
@@ -254,6 +256,22 @@ class LearningController:
         """The only thing Learning owes the Scheduler (D-INV-009)."""
 
         return self._store.get_freshness(target_id)
+
+    def get_learning_watermark(self) -> Result[int]:
+        """The Learning evidence watermark, as the protocol face names it
+        (P6-2 R6).
+
+        A **1:1 increment** over the store's existing sequence read:
+        ``SqliteLearningStore.get_evidence_watermark`` returns the bare int and
+        the protocol shape returns it in a ``Result``, so a consumer of the
+        authority face never reaches into the kernel for the number and the
+        store keeps its one spelling. The value is what a §5.2 schedule row's
+        ``source_learning_watermark`` column is written from (as a decimal
+        string), which is what makes a stale row detectable without a second
+        read face.
+        """
+
+        return Ok(self._store.get_evidence_watermark())
 
     # -- Phase 3 extension (declared; not part of the Phase 0 protocols) -----
 

@@ -76,7 +76,10 @@ decision, fills no window, advances no spacing stage, and gives no meaning to
 ``review_urgency`` (carried verbatim, ``None`` = not configured) or to
 ``source_learning_watermark`` (carried verbatim, opaque). Those readings —
 DOMAIN_MODEL §9's due decision, §10's ScheduleView, and the spacing ladder —
-belong to p6-2; this slice is the durable core they will read. It also
+are :mod:`elc.scheduler.spacing`'s (the pure policy) and
+:mod:`elc.scheduler.controller`'s (the composition), which read the rows this
+store holds: it stores what it is handed and returns what it stored, so the
+decision has exactly one home and the durable layer has none. It also
 declares no vocabulary for ``event_type`` (§5.2 pins none; see
 :class:`elc.scheduler.types.ReviewEvent`).
 
@@ -530,6 +533,29 @@ class SqliteSchedulerStore:
             (schedule_item_id,),
         ).fetchall()
         return Ok(tuple(_event_from_row(row) for row in rows))
+
+    def list_schedule_items(self) -> Result[tuple[ScheduleItem, ...]]:
+        """Every current schedule row, in durable order (``schedule_item_id``).
+
+        The read the §10 view is built from, and nothing more than that: the
+        rows come back exactly as stored, in an order that is a property of the
+        rows (the id), so two reads of one world answer identically. No state,
+        window or stage is computed or filtered here — the classification is
+        :mod:`elc.scheduler.spacing`'s, and a store that filtered by it would be
+        a second home for the due decision (D-INV-009).
+
+        An empty table answers the empty tuple: "no target has been scheduled
+        yet" is a state of the world, not a failure.
+        """
+
+        rows = self._conn.execute(
+            "SELECT schedule_item_id, target_type, target_id,"
+            " evidence_modality, review_state, review_urgency,"
+            " next_review_window_start, next_review_window_end,"
+            " spacing_stage, source_learning_watermark, version, updated_at"
+            " FROM schedule_item ORDER BY schedule_item_id"
+        ).fetchall()
+        return Ok(tuple(_item_from_row(row) for row in rows))
 
     # -- internals ---------------------------------------------------------
 

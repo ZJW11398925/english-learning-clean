@@ -44,6 +44,10 @@ COLD_START_PACKAGES = (
     "elc.scheduler.store",
     "elc.scheduler.controller",
     "elc.scheduler.types",
+    # P6-2's pure policy: a domain module that imported the package back would
+    # break a cold ``import elc.scheduler.spacing`` while the ordered test
+    # session never noticed (the P4-3 lesson).
+    "elc.scheduler.spacing",
     "elc.platform.registry",
     "elc.user_config",
     "elc.learning",

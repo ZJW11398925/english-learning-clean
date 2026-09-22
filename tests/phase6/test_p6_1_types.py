@@ -495,18 +495,41 @@ def test_the_event_is_append_first_in_its_docstring() -> None:
         assert phrase in docstring, phrase
 
 
-def test_the_view_keeps_its_shape_and_defers_production_to_p6_2() -> None:
+def test_the_view_carries_the_production_shape_and_its_membership_rule() -> None:
+    """P6-1 declared the shape; P6-2 produces it. What is pinned here is what a
+    production answers with: the model stamp, the instant it was classified at,
+    the three state buckets (each a tuple of ``ScheduleItem`` defaulting to
+    empty), and the two sentences a consumer needs — ``NOT_SCHEDULED`` is in no
+    bucket, and each bucket is ordered by ``(next_review_window_start,
+    schedule_item_id)``."""
+
     hints = get_type_hints(ScheduleView)
     assert hints["schedule_version"] is ScheduleVersion
+    assert hints["as_of"] is str
+    field_names = [field.name for field in dataclasses.fields(ScheduleView)]
+    assert field_names == [
+        "schedule_version",
+        "as_of",
+        "due_items",
+        "overdue_items",
+        "upcoming",
+    ]
+    assert dataclasses.fields(ScheduleView)[field_names.index("as_of")].default \
+        is dataclasses.MISSING
     for bucket in ("due_items", "overdue_items", "upcoming"):
         assert hints[bucket] == tuple[ScheduleItem, ...], bucket
         assert dataclasses.fields(ScheduleView)[
-            [field.name for field in dataclasses.fields(ScheduleView)].index(
-                bucket
-            )
+            field_names.index(bucket)
         ].default == ()
     docstring = ScheduleView.__doc__ or ""
-    assert "P6-2" in docstring and "shape only" in docstring.lower()
+    for phrase in (
+        "NOT_SCHEDULED",
+        "none of them",
+        "next_review_window_start",
+        "schedule_item_id",
+        "P6-2",
+    ):
+        assert phrase in docstring, phrase
 
 
 def test_the_registry_carries_the_two_objects_and_the_view() -> None:

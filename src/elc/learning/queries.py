@@ -36,3 +36,17 @@ class LearningQueries(Protocol):
     def get_freshness(self, target_id: TargetId) -> Result[FreshnessView]:
         """The only thing Learning owes the Scheduler (D-INV-009)."""
         ...
+
+    def get_learning_watermark(self) -> Result[int]:
+        """The current Learning evidence watermark (a sequence number).
+
+        The second thing Learning owes the Scheduler, and the one a §5.2
+        ``source_learning_watermark`` column is written from: a schedule row
+        records the watermark it was computed at, so a consumer recognises a
+        stale row by ``item.source_learning_watermark != str(watermark)``
+        (BF-02 §5's stale-snapshot check, P6-2 R6). This face is a 1:1
+        increment over the store's existing sequence read — the same number,
+        named as what it is to a consumer rather than as an implementation
+        detail of the evidence kernel.
+        """
+        ...
