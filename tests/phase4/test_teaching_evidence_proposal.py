@@ -61,6 +61,7 @@ from elc.teaching.flow import TEACHING_EVIDENCE_PROPOSAL_PREFIX as TEACHING_SIDE
 from elc.teaching.flow import evidence_proposal_refs_for
 from elc.teaching.types import AttemptOutcome
 from tests.conftest import SRC_ROOT
+from tests.phase3.sql_write_scan import write_statements
 
 from .conftest import (
     CANONICAL_ANSWER,
@@ -421,7 +422,9 @@ def test_the_proposal_is_learning_owned_and_never_a_projection_job(
     Gate 2 added ``deletion/store.py`` to the set of modules whose text names
     this table, and the two faces are asserted apart rather than merged: the
     deletion face may *remove* proposals (a conversation's closure, an
-    ALL_LEARNING_HISTORY sweep) and must never insert or update one.
+    ALL_LEARNING_HISTORY sweep) and must never insert or update one — read as
+    a statement class off the AST (``write_statements``), not by substring
+    (Gate 2 review F5).
     """
 
     open_moment(coordinator, "cm-p4-own-open")
@@ -449,12 +452,8 @@ def test_the_proposal_is_learning_owned_and_never_a_projection_job(
                     )
     assert writers == {"deletion/store.py", "learning/store.py"}, writers
 
-    deletion_source = (SRC_ROOT / "deletion" / "store.py").read_text(
-        encoding="utf-8"
-    )
-    assert "DELETE FROM teaching_evidence_proposal" in deletion_source
-    assert "INSERT INTO teaching_evidence_proposal" not in deletion_source
-    assert "UPDATE teaching_evidence_proposal" not in deletion_source
+    statements = write_statements(SRC_ROOT / "deletion" / "store.py")
+    assert statements.get("teaching_evidence_proposal") == ("DELETE",)
 
 
 def test_the_refs_of_an_abstain_carry_no_proposal(

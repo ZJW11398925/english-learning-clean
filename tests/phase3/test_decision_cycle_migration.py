@@ -33,7 +33,7 @@ from tests.conftest import (
     SCHEMA_HEAD_VERSION,
     SRC_ROOT,
 )
-from tests.phase3.sql_write_scan import write_targets
+from tests.phase3.sql_write_scan import write_statements, write_targets
 
 # DATA_MODEL §4:165-192 verbatim column list (the thirteen §4 columns
 # plus created_at; relationship_view_version / planner_decision_id /
@@ -309,7 +309,10 @@ def test_write_faces_belong_to_the_owning_adapters_only() -> None:
     allowance is narrowed rather than granted wholesale: that module is a
     *removal* face, so it must carry DELETEs for these tables and neither an
     INSERT nor an UPDATE against them. The check runs here because this pin
-    owns the table set.
+    owns the table set, and it is the **statement-class** scan
+    (``write_statements``, the verb-aware sibling of ``write_targets``):
+    ``("DELETE",)`` per table, read off the AST rather than by substring
+    (Gate 2 review F5).
     """
 
     p3_1a_tables = {
@@ -327,13 +330,9 @@ def test_write_faces_belong_to_the_owning_adapters_only() -> None:
             offenders.append(f"{relative} writes {table}")
     assert not offenders, offenders
 
-    deletion_source = (SRC_ROOT / "deletion" / "store.py").read_text(
-        encoding="utf-8"
-    )
+    statements = write_statements(SRC_ROOT / "deletion" / "store.py")
     for table in p3_1a_tables:
-        assert f"DELETE FROM {table}" in deletion_source, table
-        assert f"INSERT INTO {table}" not in deletion_source, table
-        assert f"UPDATE {table}" not in deletion_source, table
+        assert statements.get(table) == ("DELETE",), table
 
     # Non-vacuous: the owning adapters really do write their tables (a
     # broken fold would otherwise pass silently).

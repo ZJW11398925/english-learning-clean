@@ -41,6 +41,7 @@ from elc.user_config import store as store_module
 from elc.user_config.store import SqliteUserConfigStore
 from elc.user_config.types import PLANNER_CONSTRAINT_SCOPES
 from tests.conftest import REPO_ROOT, SRC_ROOT
+from tests.phase3.sql_write_scan import write_statements
 
 from .conftest import CONSTRAINT_ID, planner_constraint
 
@@ -234,16 +235,18 @@ def test_the_object_is_mentioned_by_the_placement_and_two_pre_existing_modules(
     # Prose may name the object; only *statements* are constrained, and there
     # are exactly three of them: the surface select, the row delete, and the
     # one provenance-leg clear. Anything else — an insert, a second update, a
-    # read of ``active`` — would be the unreviewed consumer R11 forbids.
+    # read of ``active`` — would be the unreviewed consumer R11 forbids. The
+    # write classes are read off the AST (``write_statements``) rather than by
+    # substring, so a folded statement or a second update elsewhere in the
+    # module cannot hide from ``count`` (Gate 2 review F5).
+    statements = write_statements(SRC_ROOT / "deletion" / "store.py")
+    assert statements.get("planner_constraint") == ("DELETE", "UPDATE")
     deletion_source = (SRC_ROOT / "deletion" / "store.py").read_text(
         encoding="utf-8"
     )
     assert "SELECT rowid, constraint_id FROM planner_constraint" in (
         deletion_source
     )
-    assert "DELETE FROM planner_constraint" in deletion_source
-    assert "INSERT INTO planner_constraint" not in deletion_source
-    assert deletion_source.count("UPDATE planner_constraint") == 1
     assert (
         "UPDATE planner_constraint SET created_from_turn_id = NULL"
         in deletion_source

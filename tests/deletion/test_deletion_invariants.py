@@ -370,7 +370,18 @@ def test_sec_026_learning_deletion_leaves_the_pair_alone(
 def test_sec_027_relationship_deletion_leaves_learning_alone(
     db: sqlite3.Connection, world, deletion_controller
 ) -> None:
+    """Both Learning halves are compared against what they held *before*.
+
+    The target-state half read ``_count(…) == _count(…)`` — a self-comparison
+    that can never fail — until the Gate 2 review caught it (F1). It is now
+    the same before/after shape as the evidence half, with a non-vacuity leg
+    so a world that stopped producing materialized state fails here instead of
+    making the equality trivially true.
+    """
+
     before = _count(db, "evidence_claim")
+    before_state = _count(db, "learner_target_state")
+    assert before_state >= 1, "the silent chain materialized target state"
     result = deletion_controller.execute(
         DeletionRequest(
             scope=DeletionScope.RELATIONSHIP_PAIR, persona_id=PERSONA
@@ -378,9 +389,7 @@ def test_sec_027_relationship_deletion_leaves_learning_alone(
     )
     assert isinstance(result, Ok), result
     assert _count(db, "evidence_claim") == before
-    assert _count(db, "learner_target_state") == _count(
-        db, "learner_target_state"
-    )
+    assert _count(db, "learner_target_state") == before_state
 
 
 # -- SEC-028 -----------------------------------------------------------------

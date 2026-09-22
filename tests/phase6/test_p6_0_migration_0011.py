@@ -42,7 +42,7 @@ from tests.conftest import (
     SCHEMA_HEAD_VERSION,
     SRC_ROOT,
 )
-from tests.phase3.sql_write_scan import write_targets
+from tests.phase3.sql_write_scan import write_statements, write_targets
 
 MIGRATIONS_DIR = REPO_ROOT / "migrations"
 PRE_0011 = "0011_goal_policy_focus.sql"
@@ -399,9 +399,10 @@ def test_only_the_user_config_store_writes_the_three_tables() -> None:
     Gate 2 widened the scan's answer by one module, and the widening is
     compensated rather than relaxed: ``elc.deletion.store`` removes these rows
     (a conversation's closure, an ALL_USER_DATA sweep) and must never create
-    or rewrite one. The deletion face is therefore asserted to carry DELETEs
-    and no INSERT/UPDATE against them — a deletion store that started minting
-    user-config rows would fail here.
+    or rewrite one. The deletion face is therefore asserted to carry exactly
+    the statement class ``("DELETE",)`` for each table, read off the AST
+    (``write_statements``) rather than by substring, so a folded statement
+    and a minting deletion store are both caught here (Gate 2 review F5).
     """
 
     writers: dict[str, set[str]] = {}
@@ -416,8 +417,6 @@ def test_only_the_user_config_store_writes_the_three_tables() -> None:
     assert writers["user_config/store.py"] == set(TABLE_COLUMNS)
     assert writers["deletion/store.py"] == set(TABLE_COLUMNS)
 
-    source = (SRC_ROOT / "deletion" / "store.py").read_text(encoding="utf-8")
+    statements = write_statements(SRC_ROOT / "deletion" / "store.py")
     for table in TABLE_COLUMNS:
-        assert f"DELETE FROM {table}" in source, table
-        assert f"INSERT INTO {table}" not in source, table
-        assert f"UPDATE {table}" not in source, table
+        assert statements.get(table) == ("DELETE",), table

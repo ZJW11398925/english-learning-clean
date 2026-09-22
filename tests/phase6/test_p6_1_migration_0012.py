@@ -43,7 +43,7 @@ from tests.conftest import (
     SCHEMA_HEAD_VERSION,
     SRC_ROOT,
 )
-from tests.phase3.sql_write_scan import write_targets
+from tests.phase3.sql_write_scan import write_statements, write_targets
 
 from .conftest import canonical_lines
 
@@ -265,7 +265,9 @@ def test_only_the_scheduler_store_writes_the_two_tables() -> None:
     Gate 2 widened the answer by one module, compensated rather than relaxed:
     ``elc.deletion.store`` deletes a target's schedule rows and a
     conversation's review events (§19/§20/§23) and must never create or
-    rewrite one.
+    rewrite one — asserted as the statement class ``("DELETE",)`` read off the
+    AST (``write_statements``, the verb-aware sibling of the table scan; Gate
+    2 review F5).
     """
 
     writers: dict[str, set[str]] = {}
@@ -280,11 +282,9 @@ def test_only_the_scheduler_store_writes_the_two_tables() -> None:
     assert writers["scheduler/store.py"] == set(CANONICAL_BLOCKS)
     assert writers["deletion/store.py"] == set(CANONICAL_BLOCKS)
 
-    source = (SRC_ROOT / "deletion" / "store.py").read_text(encoding="utf-8")
+    statements = write_statements(SRC_ROOT / "deletion" / "store.py")
     for table in CANONICAL_BLOCKS:
-        assert f"DELETE FROM {table}" in source, table
-        assert f"INSERT INTO {table}" not in source, table
-        assert f"UPDATE {table}" not in source, table
+        assert statements.get(table) == ("DELETE",), table
 
 
 # -- ② what the schema deliberately does (and does not) say ------------------

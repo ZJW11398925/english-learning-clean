@@ -40,7 +40,7 @@ from tests.conftest import (
     SCHEMA_HEAD_VERSION,
     SRC_ROOT,
 )
-from tests.phase3.sql_write_scan import write_targets
+from tests.phase3.sql_write_scan import write_statements, write_targets
 
 from .conftest import canonical_lines
 
@@ -248,6 +248,11 @@ def test_only_the_user_config_store_writes_the_table() -> None:
     removes the turn a constraint was written from, and §9 spells
     ``created_from_turn_id?`` nullable for exactly that), and it must never
     create a constraint, rewrite its content, or touch its ``active`` flag.
+    That is the one exception in the deletion face's statement classes, so it
+    is **listed** rather than allowed wholesale: ``write_statements`` must
+    report exactly ``("DELETE", "UPDATE")`` for this table — one delete, one
+    update, no insert — and the update's shape is pinned below (Gate 2 review
+    F5).
     """
 
     writers: dict[str, set[str]] = {}
@@ -257,9 +262,10 @@ def test_only_the_user_config_store_writes_the_table() -> None:
             writers[path.relative_to(SRC_ROOT).as_posix()] = targets
     assert set(writers) == {"deletion/store.py", "user_config/store.py"}
 
+    statements = write_statements(SRC_ROOT / "deletion" / "store.py")
+    assert statements.get("planner_constraint") == ("DELETE", "UPDATE")
+
     source = (SRC_ROOT / "deletion" / "store.py").read_text(encoding="utf-8")
-    assert "DELETE FROM planner_constraint" in source
-    assert "INSERT INTO planner_constraint" not in source
     assert source.count("UPDATE planner_constraint") == 1
     assert (
         "UPDATE planner_constraint SET created_from_turn_id = NULL" in source

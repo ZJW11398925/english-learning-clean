@@ -18,11 +18,23 @@ import json
 import sqlite3
 from pathlib import Path
 
+import pytest
+
 from elc.deletion.types import (
+    SCOPE_SWEPT_TABLES,
     DeletionRequest,
     DeletionScope,
 )
-from elc.platform.types import Ok
+from elc.platform.types import GoalModality, GoalVersion, Ok, PolicyVersion
+from elc.user_config.types import (
+    DisclosureLevel,
+    DisclosurePolicy,
+    DisclosureRule,
+    LearningGoalPortfolio,
+    SessionFocus,
+    TeachingFrequency,
+    TeachingPolicyProfile,
+)
 from tests.deletion.conftest import (
     CONV,
     CONV_OTHER,
@@ -31,6 +43,7 @@ from tests.deletion.conftest import (
     PERSONA,
     PERSONA_OTHER,
     TARGET_ID,
+    USER,
     World,
     _digest,
 )
@@ -151,6 +164,44 @@ def test_conversation_deletion_leaves_the_sibling_conversations_alone(
         (world.constraint_id,),
     ).fetchone()
     assert row is not None and row[0] is None
+
+
+def test_conversation_deletion_leaves_the_profile_columns_byte_identical(
+    db: sqlite3.Connection, world: World, deletion_controller
+) -> None:
+    """§19's profile leg, pinned as the registered gap it is (F2).
+
+    §19 asks for the "Profile fact solely derived from C" to be deleted along
+    provenance. ``user_profile`` carries no per-fact provenance column (§5.1
+    freezes the column set, §17's ask included), so this scope cannot decide
+    *solely derived* for a fact and touches no profile row — which is exactly
+    why the negative is worth pinning: a later cut that starts rewriting
+    profile rows on a conversation deletion would fail here and would have to
+    arrive with a decision behind it (the same reading as
+    ``elc/deletion/__init__.py``'s registration of the gap). The four content
+    columns are compared row-wise and byte-for-byte; the row's identity and
+    its §1.4 stamp are covered by the configuration-table probe below, which
+    compares the whole row.
+    """
+
+    before = db.execute(
+        "SELECT revision, profile_facts, preferences, settings"
+        " FROM user_profile"
+    ).fetchall()
+    assert before, "the world carries a profile row"
+
+    result = deletion_controller.execute(
+        DeletionRequest(
+            scope=DeletionScope.CONVERSATION, conversation_id=CONV
+        )
+    )
+    assert isinstance(result, Ok), result
+
+    after = db.execute(
+        "SELECT revision, profile_facts, preferences, settings"
+        " FROM user_profile"
+    ).fetchall()
+    assert after == before
 
 
 def test_conversation_deletion_invalidates_but_keeps_the_schedule_row(
@@ -456,3 +507,205 @@ def test_all_user_data_never_touches_the_global_content_db(
     )
     assert isinstance(result, Ok), result
     assert _digest(built_content_db) == world.content_digest
+
+
+# ---------------------------------------------------------------------------
+# §5.1 configuration — a scope leaves every table it does not name untouched
+# ---------------------------------------------------------------------------
+#
+# The "declaration face vs execution face" pin (review F3 / mutation m7): the
+# surfaces *declare* which tables a scope may reach, and the probes above
+# assert the rows the cases name. What none of them asserted is the other
+# half — that a scope's execution does not reach for a §5.1 configuration
+# table its declaration never names. A stray ``DELETE FROM user_profile``
+# inside the conversation walk was invisible to this suite (zero RED), which
+# is what this section closes.
+#
+# The map below is the *whole* truth, one entry per scope, so a scope whose
+# surface grows one of these tables fails the structural pin instead of
+# quietly shrinking the behavioural probe's coverage. Four of the five tables
+# are user-level (§5.1 pins no owner column; Local V1 keys them by the user's
+# own id). ``session_focus`` is keyed to a conversation — §5.1 spells its
+# ``conversation_id`` NOT NULL and a foreign key to ``conversation`` — which
+# is why the CONVERSATION scope, and only that scope, reaches for the focus
+# rows of the conversations it removes.
+
+CONFIGURATION_TABLES: tuple[str, ...] = (
+    "user_profile",
+    "disclosure_policy",
+    "goal_portfolio",
+    "teaching_policy",
+    "session_focus",
+)
+
+CONFIGURATION_TABLES_TOUCHED: dict[DeletionScope, tuple[str, ...]] = {
+    DeletionScope.CONVERSATION: ("session_focus",),
+    DeletionScope.LEARNING_TARGET: (),
+    DeletionScope.ALL_LEARNING_HISTORY: (),
+    DeletionScope.RELATIONSHIP_PAIR: (),
+    DeletionScope.PROFILE_FIELD: ("user_profile",),
+    DeletionScope.PERSONA_PACKAGE: (),
+    DeletionScope.ALL_USER_DATA: CONFIGURATION_TABLES,
+}
+
+
+def _configuration_rows(
+    db: sqlite3.Connection,
+) -> dict[str, list[tuple[object, ...]]]:
+    """Every row of every configuration table, whole-row and in rowid order.
+
+    Whole-row on purpose: a scope that rewrote one column of one of these
+    rows (a stamp, a leg) would slip past a row count, and this probe is the
+    one that has to see it.
+    """
+
+    return {
+        table: [
+            tuple(row)
+            for row in db.execute(f"SELECT * FROM {table} ORDER BY rowid")
+        ]
+        for table in CONFIGURATION_TABLES
+    }
+
+
+def _write_configuration(user_config_store) -> None:
+    """One live row per configuration table, through the shipped write faces.
+
+    Not a seed helper: these are the §5.1 write faces themselves, and they are
+    here because the world fixture carries only a profile — a probe that
+    compared three empty tables against three empty tables would be as blind
+    as the assertion it replaces.
+    """
+
+    focus_inputs = (
+        ("sf-main", CONV),
+        ("sf-other", CONV_OTHER),
+    )
+    for focus_id, conversation in focus_inputs:
+        written = user_config_store.set_session_focus(
+            SessionFocus(
+                session_focus_id=focus_id,
+                conversation_id=conversation,
+                base_goal_portfolio_version=GoalVersion("gv-1"),
+                temporary_goal_weights={GoalModality.SPEAKING: 1.0},
+                manual_focus_target=None,
+                starts_at="2026-09-22T09:00:00+00:00",
+                expires_at=None,
+            )
+        )
+        assert isinstance(written, Ok), written
+
+    policy = user_config_store.set_disclosure_policy(
+        DisclosurePolicy(
+            disclosure_policy_id=str(USER),
+            revision="pol-1",
+            rules=(
+                DisclosureRule(
+                    persona_id=None,
+                    disclosure_level=DisclosureLevel.FUNCTIONAL,
+                ),
+            ),
+        )
+    )
+    assert isinstance(policy, Ok), policy
+
+    portfolio = user_config_store.upsert_goal_portfolio(
+        LearningGoalPortfolio(
+            goal_portfolio_id=USER,
+            goal_version=GoalVersion("gv-1"),
+            assessment_targets=("ielts-speaking",),
+            register_style_goals=("workplace-formal",),
+            effective_from="2026-09-22T00:00:00+00:00",
+        )
+    )
+    assert isinstance(portfolio, Ok), portfolio
+
+    teaching = user_config_store.upsert_teaching_policy(
+        TeachingPolicyProfile(
+            teaching_policy_profile_id=USER,
+            policy_version=PolicyVersion("pv-1"),
+            teaching_frequency=TeachingFrequency.BALANCED,
+        )
+    )
+    assert isinstance(teaching, Ok), teaching
+
+
+def _configuration_request(scope: DeletionScope) -> DeletionRequest:
+    """The key-carrying request for each scope this section deletes under."""
+
+    if scope is DeletionScope.CONVERSATION:
+        return DeletionRequest(scope=scope, conversation_id=CONV)
+    if scope is DeletionScope.LEARNING_TARGET:
+        return DeletionRequest(scope=scope, target_id=TARGET_ID)
+    if scope is DeletionScope.RELATIONSHIP_PAIR:
+        return DeletionRequest(scope=scope, persona_id=PERSONA)
+    raise AssertionError(f"{scope} is not a scope this probe covers")
+
+
+@pytest.mark.parametrize("scope", sorted(DeletionScope, key=lambda s: s.value))
+def test_the_configuration_tables_a_scope_names_are_the_declared_ones(
+    scope: DeletionScope,
+) -> None:
+    """The map above is the whole truth, held against the two declarations.
+
+    A scope that started naming one of these tables (or stopped naming one it
+    names today) fails here, so the behavioural probe's "untouched" set can
+    never widen by accident — the exclusion is declared, not inferred from
+    whatever the implementation happens to do.
+    """
+
+    assert set(CONFIGURATION_TABLES_TOUCHED) == set(DeletionScope)
+    named = set(CONFIGURATION_TABLES) & set(SCOPE_SWEPT_TABLES[scope])
+    assert named == set(CONFIGURATION_TABLES_TOUCHED[scope]), scope.value
+
+
+@pytest.mark.parametrize(
+    "scope",
+    (
+        DeletionScope.CONVERSATION,
+        DeletionScope.LEARNING_TARGET,
+        DeletionScope.RELATIONSHIP_PAIR,
+    ),
+)
+def test_a_scope_leaves_the_configuration_tables_it_does_not_name(
+    scope: DeletionScope,
+    db: sqlite3.Connection,
+    world: World,
+    user_config_store,
+    deletion_controller,
+) -> None:
+    """Rows and content, not just counts: the negative half of every surface.
+
+    Each scope is probed over the same five live rows; what it must leave
+    behind is compared **whole-row** before and after, and the non-vacuity leg
+    (every table it must leave holds a row) is what makes the comparison
+    able to fail — a table that was empty before and after proves nothing.
+    """
+
+    _write_configuration(user_config_store)
+    before = _configuration_rows(db)
+    untouched = tuple(
+        table
+        for table in CONFIGURATION_TABLES
+        if table not in CONFIGURATION_TABLES_TOUCHED[scope]
+    )
+    assert all(before[table] for table in untouched), untouched
+
+    result = deletion_controller.execute(_configuration_request(scope))
+    assert isinstance(result, Ok), result
+
+    after = _configuration_rows(db)
+    for table in untouched:
+        assert after[table] == before[table], table
+    for table in CONFIGURATION_TABLES_TOUCHED[scope]:
+        assert after[table] != before[table], table
+
+    if scope is DeletionScope.CONVERSATION:
+        # The one table this scope does name is named for exactly its own
+        # conversation: the sibling's focus row is not the deletion's to take
+        # (the same counter-example the sibling probes hold for turns and
+        # memories).
+        remaining = db.execute(
+            "SELECT conversation_id FROM session_focus ORDER BY rowid"
+        ).fetchall()
+        assert [str(row[0]) for row in remaining] == [str(CONV_OTHER)]

@@ -813,6 +813,12 @@ class SqliteDeletionStore:
             values=turn_ids,
             run=run,
         )
+        # §27's receipt leaves whole with the conversation it belongs to. In
+        # V1 the durable ``provider_attempt`` row *is* the receipt's non-body
+        # audit state, and this cut keeps no separate marker beside it; the
+        # disclosure it records was counted by ``_classify_actions`` before
+        # the row goes, and nothing about the remote copy is claimed
+        # (``_classify_actions``' docstring carries the registration).
         self._remove_in(
             table="provider_attempt",
             column="action_id",
@@ -1167,6 +1173,18 @@ class SqliteDeletionStore:
         turn/cycle/moment foreign keys are ``NO ACTION`` against rows this
         scope removes — a structural fact of migrations 0002/0007/0008, not a
         choice this cut made.
+
+        **Registered trade-off (Gate 2 review F4).** §27 allows a receipt to
+        drop its content refs while keeping the non-body audit state "直到对应
+        诊断/用户数据删除范围要求移除". This cut keeps **no separate non-body
+        marker**: the ``provider_attempt`` row is the receipt, and a user-data
+        deletion that reaches its conversation removes it whole — the "until
+        the user-data deletion scope requires removal" half of §27, read as
+        the user's deletion being that scope. Nothing is lost from the count
+        (the disclosure was tallied here first), and nothing about the remote
+        copy is asserted either way (§26; the two honest answers live in
+        ``plan_external_deletion``). The removal itself is in
+        ``_conversation``, at the ``provider_attempt`` step.
         """
 
         if not action_ids:

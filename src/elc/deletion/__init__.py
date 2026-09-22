@@ -34,7 +34,24 @@ What this package does **not** claim (registered, not glossed):
 - ``user_profile`` has no per-fact provenance column (§17 asks for one, §5.1
   freezes the column set), so the benchmark's PROFILE_FIELD scope is
   fail-closed: the whole ``profile_facts`` set is removed rather than
-  guessing which entry the caller named.
+  guessing which entry the caller named;
+- the same frozen column set is why §19's "并沿 provenance 删除 … Profile
+  fact solely derived from C" is **not reachable under CONVERSATION**: with
+  no source ids on a profile fact there is no way to decide that a fact is
+  *solely* derived from the conversation being removed, and this scope
+  therefore touches no ``user_profile`` row at all (the CONVERSATION probes
+  pin the four content columns byte-for-byte). Benchmark S41's
+  ``must_delete: ["profile_city"]`` is consequently **not satisfiable under
+  CONVERSATION** in V1 — the field is removable under its own scope, where
+  S44's PROFILE_FIELD clears the whole ``profile_facts`` set (scope-level
+  fail-closed **over**-deletion, not per-field precision). Registered as a
+  known gap; its trigger is ``user_profile`` gaining a provenance leg, or a
+  canonical revision assigning the derivation elsewhere;
+- the benchmark's ``PLANNING_LEDGER_ENTRY`` (``ledger1`` in S41/S43/S48's
+  ``must_delete`` / ``must_tombstone``) has no table in app.db — the planning
+  ledger is a Phase 7 object — so those cases' ledger legs are answered by
+  registration here rather than by a durable row, the same footing as the
+  index / embedding clause above.
 """
 
 from elc.deletion.commands import DeletionCommands

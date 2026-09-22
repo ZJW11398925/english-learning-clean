@@ -386,3 +386,27 @@ def test_the_controller_carries_no_sql() -> None:
     assert write_targets(SRC_ROOT / "deletion" / "controller.py") == set()
     assert write_targets(SRC_ROOT / "deletion" / "plan.py") == set()
     assert write_targets(SRC_ROOT / "deletion" / "types.py") == set()
+
+
+def test_the_statement_scan_and_the_table_scan_agree_on_the_store() -> None:
+    """The two readers of one fold see the same table set (Gate 2 review F5).
+
+    ``write_statements`` anchors a statement at the start of its literal —
+    which is what keeps prose from being read as one — while ``write_targets``
+    matches anywhere in a folded literal. The only difference they may show on
+    this module is the artifact the anchor exists for: the module docstring's
+    "the ordinary create/update verbs stay with …" sentence, whose
+    ``update verbs`` reads as an ``UPDATE`` on a table called ``verbs``. Every
+    other divergence — a statement the anchored reader cannot see — fails
+    here, so swapping the compensation assertions onto the verb-aware reader
+    cannot have narrowed what they cover.
+    """
+
+    from tests.conftest import SRC_ROOT
+    from tests.phase3.sql_write_scan import write_statements, write_targets
+
+    store = SRC_ROOT / "deletion" / "store.py"
+    statements = set(write_statements(store))
+    targets = write_targets(store)
+    assert statements <= targets
+    assert targets - statements == {"verbs"}
