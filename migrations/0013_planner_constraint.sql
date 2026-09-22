@@ -13,7 +13,7 @@
 -- Authority map (canonical first; every column below is verbatim from the
 -- cited set, and this migration adds no column of its own):
 --   docs/DATA_MODEL.md §9     TeachingPreference / PlannerConstraint
---                             (lines 586–607) — constraint_id / target_type? /
+--                             (lines 586–615) — constraint_id / target_type? /
 --                             target_id? / constraint_type / scope /
 --                             starts_at / expires_at? / created_from_turn_id?
 --                             / active (nine columns, in this order); the
@@ -21,12 +21,23 @@
 --                             SUPPRESS_REVIEW / JUST_CHAT / MANUAL_FOCUS
 --                             (four words); and its Scope list — THIS_SESSION
 --                             / UNTIL_DATE / UNTIL_USER_REENABLES (three).
---                             Both vocabularies are canonical text pinned by
---                             §9, so both are enforced by the schema below
---                             (the 0010 ``episode.status`` precedent for a
---                             pinned vocabulary; an unpinned one may not be
---                             frozen there — see the 0012 header for that
---                             half of the rule).
+--                             The two vocabularies do **not** hold the same
+--                             canonical position, and this header says so
+--                             rather than flattening them: §9 introduces its
+--                             Types list as a list (``Types：``), so the four
+--                             words are canonical text pinned by §9 and the
+--                             schema below freezes them (the 0010
+--                             ``episode.status`` precedent for a pinned
+--                             vocabulary; an unpinned one may not be frozen
+--                             there — see the 0012 header for that half of the
+--                             rule). §9 introduces its Scope list as an
+--                             **example** (``Scope 例如``), so the three words
+--                             below are taken **verbatim from that example**
+--                             while **closing** the set is this migration's
+--                             schema choice, not a canonical claim: a fourth
+--                             scope word is a change to this file's CHECK
+--                             (the canonical text itself would still be
+--                             satisfied by it).
 --   docs/DOMAIN_MODEL.md §18.1 TRUSTED_AUTHORITY: a typed user setting is the
 --                             user's own statement. The constraint row is
 --                             that setting's durable form, which is why its
@@ -71,14 +82,16 @@
 --                           revision, not an implementation choice.
 --   scope                   TEXT NOT NULL CHECK — §9's three Scope words,
 --                           verbatim (§9 writes "Scope 例如", which is why the
---                           header says the three words are carried exactly
---                           as given rather than treated as an open set this
---                           cut may extend). THIS_SESSION's conversation
---                           binding has no column anywhere in §9 — the
---                           vocabulary is carried, and how a consumer decides
---                           which session is current is **not** decided
---                           here (elc/user_config/store.py registers the
---                           reading).
+--                           header distinguishes the two lists: the three
+--                           words are carried exactly as the document's
+--                           *example* gives them, and closing the set is this
+--                           migration's choice — a fourth word is a change to
+--                           this CHECK, not to a canonical list). THIS_SESSION
+--                           's conversation binding has no column anywhere in
+--                           §9 — the vocabulary is carried, and how a consumer
+--                           decides which session is current is **not**
+--                           decided here (elc/user_config/store.py registers
+--                           the reading).
 --   starts_at               TEXT NOT NULL — §9. ISO-8601 when the caller
 --                           declares it; the caller's declaration, never this
 --                           store's clock. §9 pins no format and this

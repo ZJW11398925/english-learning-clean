@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import dataclasses
 from enum import StrEnum
+from pathlib import Path
 
 import pytest
 
@@ -384,3 +385,31 @@ def test_the_type_enum_docstring_says_it_carries_no_behaviour() -> None:
     assert "carries no behaviour" in docstring
     assert "CHECK" in docstring
     assert "TARGET_SUPPRESSED" in docstring
+
+
+def test_the_scope_closing_is_not_presented_as_canonical() -> None:
+    """L-1: §9 writes ``Scope 例如``, so the three words are the document's
+    *example* while **closing** the set is this cut's schema choice.
+
+    The Scope docstring must keep the distinction (and say what extending it
+    costs), and the constant's own comment must keep the ``例如`` reading in
+    front of a reader of the module — the two places a future edit could
+    quietly re-promote the closure to canonical text.
+    """
+
+    docstring = _flat(PlannerConstraintScope.__doc__ or "")
+    for phrase in (
+        "from §9's example block",
+        "does not hold the canonical position the Types list holds",
+        "closing** the set is this cut's schema choice",
+        "a fourth scope word extends migration 0013's CHECK",
+    ):
+        assert phrase in docstring, phrase
+    source = _flat(
+        Path(user_config_types.__file__).read_text(encoding="utf-8")
+    )
+    assert "Scope 例如" in source
+    assert "PLANNER_CONSTRAINT_SCOPES" in source
+    # The Types list keeps the canonical contrast it really has (a pinned
+    # list), so the pair reads as a distinction rather than one blanket rule.
+    assert "pins exactly" in _flat(PlannerConstraintType.__doc__ or "")

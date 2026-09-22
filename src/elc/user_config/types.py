@@ -230,7 +230,11 @@ class PlannerConstraintType(StrEnum):
     The canonical block (docs/DATA_MODEL.md §9, line 603 onward) pins exactly
     :data:`PLANNER_CONSTRAINT_TYPES`, so migration 0013 enforces them with a
     CHECK (a pinned vocabulary may be frozen in the schema — the 0010
-    ``episode.status`` precedent; an unpinned one may not).
+    ``episode.status`` precedent; an unpinned one may not). The Scope list
+    beside it is a **different case** — §9 offers that one as an example, so
+    freezing it is a schema choice rather than a canonical claim; the
+    distinction is spelled out on :class:`PlannerConstraintScope` and in the
+    migration header.
 
     **This enum carries no behaviour.** It does not say what suppression
     happens, which face applies it or when it lapses: nothing in this cut
@@ -248,8 +252,18 @@ class PlannerConstraintType(StrEnum):
 class PlannerConstraintScope(StrEnum):
     """How long a user constraint lasts — §9's three Scope words.
 
-    :data:`PLANNER_CONSTRAINT_SCOPES`, verbatim; enforced by migration 0013's
-    CHECK for the same reason as :class:`PlannerConstraintType`.
+    :data:`PLANNER_CONSTRAINT_SCOPES`, verbatim **from §9's example block**,
+    and enforced by migration 0013's CHECK.
+
+    **This list does not hold the canonical position the Types list holds.**
+    §9 introduces its Types block as a list (``Types：``) but its Scope block
+    as an example (``Scope 例如``), so the three words below are taken word for
+    word from the document's *example* while **closing** the set is this cut's
+    schema choice rather than a canonical claim: a fourth scope word extends
+    migration 0013's CHECK, and the canonical text would still be satisfied by
+    it (the full statement, with the same distinction, is in that migration's
+    header). Reading the closure as canonical would be a claim §9 does not
+    make.
 
     **The three words are carried; none of them is interpreted here.** In
     particular ``THIS_SESSION`` names a session, and §9 gives the object no

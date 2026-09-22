@@ -717,6 +717,25 @@ class SqliteUserConfigStore:
         - a ``target_type`` outside §9's two words (RESOURCE / CAPABILITY) is
           ``VALIDATION_FAILED``. The migration's CHECK is the mechanism; this
           is the same rule said in the caller's vocabulary.
+
+        **This face does not parse the window (L-2, stated because the two
+        faces are deliberately asymmetrical).** ``starts_at`` / ``expires_at``
+        are carried **verbatim**: §9 pins no timestamp format, so the write
+        side stores whatever string it is handed — including an unusable one —
+        exactly as the canonical column set allows (the same reading
+        ``starts_at`` carries in the column note above). The ISO-8601 /
+        UTC-offset rule is enforced **when the window is read**, by
+        :meth:`active_constraints` and its target-scoped sibling, because that
+        is where an instant has to be compared. The consequence is honest but
+        sharp, so it is written here rather than discovered: a row written
+        with an unreadable window makes those two *reads* refuse
+        (``VALIDATION_FAILED``, naming the row and the field) until it is out
+        of the question — and the **recovery path is the flag's own face**:
+        :meth:`set_planner_constraint_active` with ``active=False`` disables
+        the row, the reads stop having to compare its window, and they answer
+        again. Validating the window *here* instead would be a rule §9 does not
+        make (a format the canonical set never pins), so it is deliberately
+        not done.
         """
 
         rejection = self._constraint_rejection(constraint)

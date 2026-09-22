@@ -810,6 +810,48 @@ def test_a_disabled_row_with_an_unreadable_window_breaks_no_read(
     assert _ids(user_config_store.active_constraints(AS_OF)) == [CONSTRAINT_ID]
 
 
+def test_the_flag_transfer_is_the_recovery_path_for_an_unreadable_window(
+    user_config_store: SqliteUserConfigStore,
+) -> None:
+    """L-2's asymmetry and its exit, end to end.
+
+    The write face carries the window **verbatim** (§9 pins no format), so a
+    row whose ``starts_at`` cannot be read makes the two active reads refuse —
+    that is where the format is checked. Disabling the row through its own
+    transfer face is what clears it: the reads no longer have to compare a
+    window the statement has already excluded, and they answer again. The
+    sequence is pinned rather than argued, because "the store let me write
+    something that breaks the reads" is exactly the kind of claim a reader
+    should not have to take on trust.
+    """
+
+    assert isinstance(
+        user_config_store.record_planner_constraint(
+            planner_constraint("pc-junk", starts_at="not-a-time")
+        ),
+        Ok,
+    )
+    refused = user_config_store.active_constraints(AS_OF)
+    assert isinstance(refused, Err), refused
+    assert refused.error.code is DomainErrorCode.VALIDATION_FAILED
+    assert "pc-junk" in refused.error.message
+    targets_refused = user_config_store.active_constraints_for_target(
+        TARGET_TYPE, TARGET_ID, AS_OF
+    )
+    assert isinstance(targets_refused, Err), targets_refused
+    assert targets_refused.error.code is DomainErrorCode.VALIDATION_FAILED
+
+    cleared = user_config_store.set_planner_constraint_active("pc-junk", False)
+    assert isinstance(cleared, Ok), cleared
+    assert user_config_store.active_constraints(AS_OF) == Ok(())
+    assert (
+        user_config_store.active_constraints_for_target(
+            TARGET_TYPE, TARGET_ID, AS_OF
+        )
+        == Ok(())
+    )
+
+
 #: The three unusable ``as_of`` values a caller can hand in.
 BAD_AS_OF = ("", "yesterday", "2026-09-23T09:00:00")
 

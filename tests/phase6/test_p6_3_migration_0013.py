@@ -559,7 +559,10 @@ def test_the_migration_header_names_its_authority_and_its_derivations() -> None:
     flat = _header_text(source)
     for phrase in (
         "docs/DATA_MODEL.md §9",
-        "586–607",
+        # INFO-1: the cited range covers the Scope block too (586 is the
+        # heading, 615 the last line of its fenced list) — the earlier
+        # "586–607" pointed at the column and Types blocks alone.
+        "586–615",
         "DO_NOT_AUTO_TEACH",
         "UNTIL_USER_REENABLES",
         "Ownership (R1)",
@@ -571,6 +574,30 @@ def test_the_migration_header_names_its_authority_and_its_derivations() -> None:
         "schema_version', '13",
     ):
         assert phrase in flat, phrase
+
+
+def test_the_migration_header_keeps_the_scope_closure_a_cut_choice() -> None:
+    """L-1: §9 writes ``Scope 例如``, so the three Scope words are the
+    document's *example* while **closing** the set is this migration's schema
+    choice — not a canonical claim, and the price of extending it is a change
+    to this file's CHECK.
+
+    The pin is two-sided on purpose: the accurate sentences must be there, and
+    the flattened sentence that used to call both vocabularies "canonical text
+    pinned by §9" must never come back. A future edit that re-flattens the
+    distinction (or deletes the extension sentence) fails here rather than
+    quietly re-advertising a claim §9 does not make.
+    """
+
+    source = (MIGRATIONS_DIR / PRE_0013).read_text(encoding="utf-8")
+    flat = _header_text(source)
+    for phrase in (
+        "Scope 例如",
+        "the set is this migration's schema choice, not a canonical claim",
+        "a fourth scope word is a change to this file's CHECK",
+    ):
+        assert phrase in flat, phrase
+    assert "Both vocabularies are canonical text pinned by" not in flat
 
 
 def test_the_migration_header_says_what_it_does_not_decide() -> None:

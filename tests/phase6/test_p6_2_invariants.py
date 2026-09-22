@@ -49,7 +49,6 @@ from elc.scheduler.types import ReviewState
 from tests.conftest import (
     MIGRATION_IDS,
     REPO_ROOT,
-    SCHEMA_HEAD_FILE,
     SCHEMA_HEAD_VERSION,
     SRC_ROOT,
 )
@@ -425,11 +424,19 @@ def test_this_cut_added_no_migration() -> None:
     not move, nothing was smuggled between it and the next slice's file, and
     the lineage is still contiguous. (The pin read ``names[-1] == FROZEN_HEAD``
     while 0012 was the head; 0013_planner_constraint is P6-3's file, and this
-    one asserts what remains true of P6-2 rather than being deleted.)"""
+    one asserts what remains true of P6-2 rather than being deleted.)
+
+    The successor is spelled as a **literal** on purpose (INFO-2): this claim
+    is about 0012 and the file that follows it, which will still be true after
+    a 0014 lands — a ``SCHEMA_HEAD_FILE`` reference here would silently become
+    false at the next migration and force an edit to a pin that has nothing to
+    do with it (the same choice tests/phase6/test_p6_1_migration_0012.py
+    makes, and the opposite of the *head* pins where the constant is correct).
+    """
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
     assert FROZEN_HEAD in names
-    assert names[names.index(FROZEN_HEAD) + 1] == SCHEMA_HEAD_FILE
+    assert names[names.index(FROZEN_HEAD) + 1] == "0013_planner_constraint.sql"
     assert [name[:4] for name in names] == [
         f"{index:04d}" for index in range(1, len(MIGRATION_IDS) + 1)
     ]
