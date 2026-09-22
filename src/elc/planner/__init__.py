@@ -7,9 +7,18 @@ canonically defined in elc.platform.types and re-exported here.
 P7-0 (TASK-OPI-b99560d4-….36 ③) adds :mod:`elc.planner.feature_assembly` — the
 authority boundary BF-02 §5 states (``feature_assembly_status`` /
 ``snapshot_status`` / ``missing_authorities[]``, and the rule that an
-incomplete assembly is DEGRADED carrying no decision). The decision kernel is
-not here: :class:`PlannerService` is still the Phase 0 skeleton, and the
-assembly answers *what the Planner may assume*, never what it decides.
+incomplete assembly is DEGRADED carrying no decision).
+
+P7-1 (TASK-OPI-fc9d8ca7-….4) adds :mod:`elc.planner.kernel` — §10.1's eleven
+steps as executable code (canonicalize → authoritative feature assembly →
+planning-context validity → hard eligibility → policy utility →
+coverage-starvation safeguard → per-candidate activation → explicit-request
+priority → Pareto prune → near-tie deterministic tie-break → SELECT /
+NO_TARGET), over P7-0's record, with a trace that answers "what would have been
+selected, and why". It generates no candidates, keeps no ledger, writes
+nothing, and is **not** shadow mode: :class:`PlannerService` is still the
+Phase 0 skeleton, and the wiring from a ``PlanningRequest`` (context assembly +
+Track A/B candidates) and the shadow-mode run are later cuts' work items.
 """
 
 from elc.planner.commands import PlannerCommands
@@ -38,6 +47,48 @@ from elc.planner.feature_assembly import (
     schedule_authority_of,
     schedule_urgency_of,
 )
+from elc.planner.kernel import (
+    AUTHORITY_ASSEMBLED_FACTORS,
+    BENEFIT_FACTORS,
+    BENEFIT_WEIGHTS,
+    COST_FACTORS,
+    COST_WEIGHTS,
+    KERNEL_STEP_ORDER,
+    PLANNER_KERNEL_MODEL_VERSION,
+    PLANNER_PROFILE_VERSION,
+    POLICY_PROFILES,
+    TIE_BREAK_ORDER,
+    TIE_EPSILON,
+    ActivationPath,
+    BenefitFactor,
+    CandidateProposal,
+    CandidateTrace,
+    CanonicalCandidate,
+    ContextTrace,
+    CostFactor,
+    CoverageServiceState,
+    DegradedReason,
+    ExclusionReason,
+    FactorAssembly,
+    FactorGap,
+    FactorReading,
+    FactorSource,
+    GoalRelation,
+    KernelResult,
+    KernelStep,
+    NoTargetReason,
+    PlannerInputError,
+    PlannerTrace,
+    PlanningInput,
+    PolicyProfileParameters,
+    PrerequisiteState,
+    ReadinessLevel,
+    TieBreakCriterion,
+    assemble_candidate_factors,
+    canonicalize_proposals,
+    plan,
+    runtime_decision_outcome_of,
+)
 from elc.planner.queries import PlannerQueries
 from elc.planner.types import (
     InitiativeClass,
@@ -55,29 +106,64 @@ from elc.planner.types import (
 )
 
 __all__ = [
+    "AUTHORITY_ASSEMBLED_FACTORS",
+    "BENEFIT_FACTORS",
+    "BENEFIT_WEIGHTS",
+    "COST_FACTORS",
+    "COST_WEIGHTS",
     "FEATURE_ASSEMBLY_MODEL_VERSION",
+    "KERNEL_STEP_ORDER",
+    "PLANNER_KERNEL_MODEL_VERSION",
+    "PLANNER_PROFILE_VERSION",
+    "POLICY_PROFILES",
     "POLICY_PROFILE_MAPPING_VERSION",
     "SCHEDULE_URGENCY_BANDS",
     "TEACHING_FREQUENCY_TO_PROFILE",
+    "TIE_BREAK_ORDER",
+    "TIE_EPSILON",
+    "ActivationPath",
     "AuthorityName",
+    "BenefitFactor",
+    "CandidateProposal",
+    "CandidateTrace",
+    "CanonicalCandidate",
+    "ContextTrace",
+    "CostFactor",
+    "CoverageServiceState",
+    "DegradedReason",
+    "ExclusionReason",
+    "FactorAssembly",
+    "FactorGap",
+    "FactorReading",
+    "FactorSource",
     "FeatureAssemblyStatus",
     "FeatureAuthority",
     "GoalPortfolioPort",
+    "GoalRelation",
     "InitiativeClass",
+    "KernelResult",
+    "KernelStep",
     "LearningIntent",
     "LearningSnapshotPort",
+    "NoTargetReason",
     "PlannerCommands",
     "PlannerDecision",
     "PlannerDecisionOutcome",
     "PlannerEvaluation",
     "PlannerExecutionStatusRecord",
     "PlannerExecutionStatusValue",
+    "PlannerInputError",
     "PlannerProfile",
     "PlannerQueries",
     "PlannerService",
+    "PlannerTrace",
+    "PlanningInput",
     "PlanningOutcome",
     "PlanningRequest",
+    "PolicyProfileParameters",
+    "PrerequisiteState",
     "ProfileMapping",
+    "ReadinessLevel",
     "ScheduleAuthority",
     "ScheduleRowPort",
     "ScheduleViewPort",
@@ -85,11 +171,16 @@ __all__ = [
     "TargetCandidate",
     "TargetMode",
     "TeachingPolicyPort",
+    "TieBreakCriterion",
     "UserIntentScope",
+    "assemble_candidate_factors",
     "assemble_feature_authority",
+    "canonicalize_proposals",
     "execution_status_of",
     "goal_relevance_of",
+    "plan",
     "profile_mapping_of",
+    "runtime_decision_outcome_of",
     "schedule_authority_of",
     "schedule_urgency_of",
 ]

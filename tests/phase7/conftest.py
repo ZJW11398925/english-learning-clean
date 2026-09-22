@@ -16,9 +16,10 @@ phase on).
 from __future__ import annotations
 
 import sqlite3
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Mapping, Sequence
 
 import pytest
 
@@ -28,12 +29,29 @@ from elc.conversation import SqliteConversationStore
 from elc.curriculum.store import CurriculumContentStore
 from elc.learning.controller import LearningController
 from elc.learning.store import SqliteLearningStore
+from elc.learning.types import LearningSnapshot, LearningSnapshotId
+from elc.planner.feature_assembly import FeatureAuthority, assemble_feature_authority
+from elc.planner.kernel import (
+    BENEFIT_FACTORS,
+    COST_FACTORS,
+    BenefitFactor,
+    CandidateProposal,
+    CostFactor,
+    PlanningInput,
+)
+from elc.planner.types import (
+    InitiativeClass,
+    LearningIntent,
+    TargetMode,
+    UserIntentScope,
+)
 from elc.platform.db import connection, epoch, migrations
 from elc.platform.db.epoch import RuntimeEpochFence
 from elc.platform.types import (
     ConversationId as ConvId,
 )
 from elc.platform.types import (
+    DecisionCycleId,
     EvidenceModality,
     GoalId,
     GoalModality,
@@ -50,6 +68,7 @@ from elc.scheduler.types import (
     ReviewEvent,
     ReviewState,
     ScheduleItem,
+    ScheduleView,
     SpacingStage,
 )
 from elc.user_config.controller import UserConfigController
@@ -95,6 +114,13 @@ DAY_ONE_PLUS = "2026-09-22T09:05:00+00:00"
 
 CONSTRAINT_ID = "pc-p7-0"
 
+#: The Learning watermark the P7-1 kernel suite assembles its complete
+#: contexts at, and the spelling every §5.2 row it builds carries — one
+#: watermark, so the schedule authority reads CURRENT unless a test makes it
+#: stale on purpose.
+WATERMARK = 3
+WATERMARK_SPELLING = "3"
+
 __all__ = [
     "BASELINES",
     "CONSTRAINT_ID",
@@ -112,18 +138,29 @@ __all__ = [
     "TARGET_ID",
     "TARGET_TYPE",
     "USER",
+    "WATERMARK",
+    "WATERMARK_SPELLING",
+    "baseline_lines",
+    "benefit_vector",
     "canonical_lines",
+    "complete_context",
     "constraint",
     "content_supply",
     "conversations",
+    "cost_vector",
     "db",
     "document_text",
     "fence",
     "focus",
     "instant",
+    "kernel_input",
+    "kernel_row",
     "learning_controller",
+    "learning_snapshot",
     "portfolio",
+    "proposal",
     "review_event",
+    "rowless_proposal",
     "schedule_item",
     "scheduler_controller",
     "scheduler_store",
@@ -380,23 +417,211 @@ def instant(text: str) -> datetime:
 
 
 # ---------------------------------------------------------------------------
+# The P7-1 kernel's inputs
+# ---------------------------------------------------------------------------
+#
+# The kernel's input contract is BF-02's frozen one: a canonical candidate set
+# carrying **complete normalized factor vectors** (§20), plus §5's
+# PlanningContext. These builders spell a complete vector first and let a test
+# override a single factor, so a test that means to move one number cannot
+# accidentally leave another one missing — and the two §5.2 shapes (a row that
+# answers, and no row at all) are two named builders rather than a sentinel.
+
+#: Every factor at zero, overridden by name (``learning_need=1.0``).
+def benefit_vector(**overrides: float) -> dict[BenefitFactor, float]:
+    vector = {factor: 0.0 for factor in BENEFIT_FACTORS}
+    for name, value in overrides.items():
+        vector[BenefitFactor(name)] = value
+    return vector
+
+
+def cost_vector(**overrides: float) -> dict[CostFactor, float]:
+    vector = {factor: 0.0 for factor in COST_FACTORS}
+    for name, value in overrides.items():
+        vector[CostFactor(name)] = value
+    return vector
+
+
+#: The vector the builders declare by default: learning_need at HIGH and
+#: context_fit at DIRECT, which is 0.17 × 0.75 + 0.13 × 1.0 = 0.2575 under
+#: BALANCED — above §14's 0.195 threshold, so the default proposal is one a
+#: successful run can actually select. A test that wants a candidate below the
+#: threshold passes its own vector rather than mutating this one.
+DEFAULT_BENEFIT: Mapping[BenefitFactor, float] = benefit_vector(
+    learning_need=0.75, context_fit=1.0
+)
+
+
+def kernel_row(
+    item_id: str = "si-p7-1",
+    *,
+    state: ReviewState = ReviewState.DUE,
+    urgency: float | None = 0.75,
+    watermark: str = WATERMARK_SPELLING,
+) -> ScheduleItem:
+    """The §5.2 row a candidate names — the leg ``schedule_urgency`` reads."""
+
+    return schedule_item(
+        item_id,
+        review_state=state,
+        urgency=urgency,
+        watermark=watermark,
+    )
+
+
+def learning_snapshot(watermark: int = WATERMARK) -> LearningSnapshot:
+    """One §12 snapshot; the assembly reads its ``evidence_watermark``."""
+
+    return LearningSnapshot(
+        learning_snapshot_id=LearningSnapshotId("ls-p7-1"),
+        user_scope_id=str(USER),
+        as_of=DAY_TWO,
+        estimator_version="est-v1",
+        evidence_watermark=watermark,
+        targets=(),
+    )
+
+
+def schedule_view(*rows: ScheduleItem) -> ScheduleView:
+    """A §10 view holding the rows a test built (due bucket by default)."""
+
+    return ScheduleView(
+        schedule_version="sd1",
+        as_of=DAY_TWO,
+        due_items=tuple(rows),
+        overdue_items=(),
+        upcoming=(),
+    )
+
+
+def complete_context(**overrides: object) -> FeatureAuthority:
+    """P7-0's record with every BF-02 §5 leg present and usable.
+
+    Assembled by the real :func:`elc.planner.feature_assembly.
+    assemble_feature_authority` over the real view shapes, so a caller gets
+    ``COMPLETE`` / ``VALID`` and the BALANCED profile — and an override that
+    makes one leg unusable goes through the same function P7-0's own suite
+    exercises.
+    """
+
+    bag: dict[str, object] = {
+        "learning_snapshot": learning_snapshot(),
+        "current_learning_watermark": WATERMARK,
+        "schedule_view": schedule_view(kernel_row()),
+        "teaching_policy": teaching_policy(),
+        "goal_portfolio": portfolio(assessment_targets=()),
+        "curriculum_readiness": {str(TARGET_ID): "R3_TEACHING_READY"},
+        "constraint_view_present": True,
+    }
+    bag.update(overrides)
+    return assemble_feature_authority(**bag)  # type: ignore[arg-type]
+
+
+def proposal(
+    candidate_id: str = "c-p7-1",
+    *,
+    canonical_key: str | None = None,
+    benefit: Mapping[BenefitFactor, float] | None = None,
+    cost: Mapping[CostFactor, float] | None = None,
+    schedule_urgency: float = 0.75,
+    schedule_row: ScheduleItem | None = None,
+    **fields: object,
+) -> CandidateProposal:
+    """One proposal whose ``schedule_urgency`` a §5.2 row spells.
+
+    The declared reading and the row agree by construction (both take
+    ``schedule_urgency``), which is the shape the kernel accepts; a test that
+    wants the two to disagree passes ``schedule_row`` explicitly, and one that
+    wants the Scheduler-never-asked case uses :func:`rowless_proposal`. A
+    keyword in ``fields`` replaces the default of the same name, so a test can
+    move one identity field without restating the rest.
+    """
+
+    vector = dict(benefit if benefit is not None else DEFAULT_BENEFIT)
+    vector[BenefitFactor.SCHEDULE_URGENCY] = schedule_urgency
+    defaults: dict[str, object] = {
+        "canonical_key": candidate_id if canonical_key is None else canonical_key,
+        "focus_target": str(TARGET_ID),
+        "target_mode": TargetMode.RESOURCE_PRACTICE,
+        "learning_intent": LearningIntent.DEVELOP,
+        "evidence_modality": MODALITY,
+        "opportunity_binding_class": "ob-p7-1",
+        "initiative_class": InitiativeClass.REACTIVE,
+        "benefit": vector,
+        "cost": dict(cost if cost is not None else cost_vector()),
+        "schedule_row": (
+            kernel_row(urgency=schedule_urgency)
+            if schedule_row is None
+            else schedule_row
+        ),
+    }
+    defaults.update(fields)
+    return CandidateProposal(candidate_id=candidate_id, **defaults)  # type: ignore[arg-type]
+
+
+def rowless_proposal(
+    candidate_id: str = "c-p7-1", **fields: object
+) -> CandidateProposal:
+    """The same proposal with **no** §5.2 row: the Scheduler was never asked.
+
+    A different shape rather than a sentinel — P7-0 reads this one as UNKNOWN
+    ("a target with no row is a target the Scheduler was never asked about"),
+    and it is the reachable candidate-level gap under a COMPLETE context.
+    """
+
+    return replace(
+        proposal(candidate_id, **fields),  # type: ignore[arg-type]
+        schedule_row=None,
+    )
+
+
+#: Marks "no context at all" in :func:`kernel_input` (``None`` is a value
+#: there: a caller who could not assemble a context hands the kernel None).
+_NO_CONTEXT: object = object()
+
+
+def kernel_input(
+    proposals: Sequence[CandidateProposal] = (),
+    *,
+    context: object = _NO_CONTEXT,
+    scope: UserIntentScope = UserIntentScope.OPEN,
+    cycle: str = "dc-p7-1",
+) -> PlanningInput:
+    """One kernel input: the proposals, a context, and the scope word.
+
+    The context defaults to :func:`complete_context` — the *inputs* are
+    synthetic here, exactly as BF-02 §20's frozen contract describes them, and
+    the faces that produce them are the later cuts' work.
+    """
+
+    return PlanningInput(
+        decision_cycle_id=DecisionCycleId(cycle),
+        planning_context=(
+            complete_context() if context is _NO_CONTEXT else context  # type: ignore[arg-type]
+        ),
+        user_intent_scope=scope,
+        proposals=tuple(proposals),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Canonical-document reader (re-declared: this suite's own extraction pins)
 # ---------------------------------------------------------------------------
 
 _FENCE = "```"
 
 
-def canonical_lines(doc: str, heading: str, block: int = 0) -> tuple[str, ...]:
-    """The ``block``-th fenced block after ``heading`` in ``docs/<doc>``."""
+def _fenced_blocks(text: str, heading: str) -> list[tuple[str, ...]]:
+    """Every fenced block after ``heading``, blank lines dropped."""
 
-    lines = (DOCS_ROOT / doc).read_text(encoding="utf-8").splitlines()
+    lines = text.splitlines()
     level = len(heading) - len(heading.lstrip("#"))
     start = None
     for index, line in enumerate(lines):
         if line.strip() == heading:
             start = index + 1
             break
-    assert start is not None, f"heading {heading!r} not found in {doc}"
+    assert start is not None, f"heading {heading!r} not found"
     blocks: list[tuple[str, ...]] = []
     index = start
     while index < len(lines):
@@ -415,6 +640,27 @@ def canonical_lines(doc: str, heading: str, block: int = 0) -> tuple[str, ...]:
             if body:
                 blocks.append(tuple(body))
         index += 1
+    assert blocks, f"{heading!r}: no fenced block"
+    return blocks
+
+
+def canonical_lines(doc: str, heading: str, block: int = 0) -> tuple[str, ...]:
+    """The ``block``-th fenced block after ``heading`` in ``docs/<doc>``."""
+
+    blocks = _fenced_blocks(
+        (DOCS_ROOT / doc).read_text(encoding="utf-8"), heading
+    )
+    assert len(blocks) > block, f"{doc} {heading!r}: block {block} missing"
+    return blocks[block]
+
+
+def baseline_lines(doc: str, heading: str, block: int = 0) -> tuple[str, ...]:
+    """The same, for a file under ``behavioral_baselines/`` — BF-02's own
+    numbered sections are where the numbers and the tie-break order live."""
+
+    blocks = _fenced_blocks(
+        (BASELINES / doc).read_text(encoding="utf-8"), heading
+    )
     assert len(blocks) > block, f"{doc} {heading!r}: block {block} missing"
     return blocks[block]
 
