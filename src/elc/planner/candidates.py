@@ -126,6 +126,28 @@ built — P7-0 registers the same absence on its own leg), and ``COVERAGE_DEBT``
    contradiction is refused by the kernel when a caller routes around that
    resolver.
 
+**One order this cut does not decide, and registers instead.** docs/
+STATE_MACHINES.md §19's "Planner Flow State" walks the same flow as
+DOMAIN_MODEL §10.1 with one extra step::
+
+    → hard eligibility (scope/prereq/readiness/modality/suppression)
+    → ActiveLearningFrontier
+    → Policy Utility
+
+§10.1's block — the one P7-1 made executable, step for step — has no
+``ActiveLearningFrontier`` line at all, so the two canonical documents put the
+frontier in different places relative to policy utility. This cut is the step
+*before* both versions of the divergence (it hands candidates to
+canonicalization) and it depends on neither reading: no proposal here is
+ordered, pruned or filtered by a frontier, and the generator's emission order is
+§6's source order rather than a frontier's. The difference is therefore
+**registered, not resolved**: the step belongs to p7-3 (the cut that owns
+``ActiveLearningFrontier`` and ``PlanningLedger``), and its placement decides
+whether an eligibility-excluded candidate still consumes frontier coverage —
+which is exactly the judgement a frontier cut has to make and no cut has
+made yet. Revisit: p7-3 lands the frontier and states its position, or a
+canonical revision brings §19 and §10.1 into line.
+
 **What this module is not.** It does not rank, score, prune or select (the
 kernel does); it does not write anything (no store, no clock, no randomness —
 the same input always produces the same proposals, in the same order); it does

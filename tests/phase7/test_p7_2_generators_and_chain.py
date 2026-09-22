@@ -1177,6 +1177,41 @@ def test_the_package_exposes_the_supply_side_and_the_service_stays_a_skeleton(
         planner.PlannerService().plan(request)
 
 
+def test_the_two_canonical_orders_differ_and_the_difference_is_registered() -> None:
+    """§19 inserts ``ActiveLearningFrontier`` between hard eligibility and
+    Policy Utility; §10.1 — the order P7-1 made executable — has no such line.
+    This cut supplies the step before both and depends on neither reading, so
+    the divergence is registered for p7-3 rather than decided here (the
+    kernel's own suite pins §10.1's order, and this file does not touch it)."""
+
+    state_machine = list(
+        canonical_lines("STATE_MACHINES.md", "## 19. Planner Flow State")
+    )
+    kernel_order = list(
+        canonical_lines(
+            "DOMAIN_MODEL.md",
+            "## 10.1 Planner Decision Kernel — Behavioral Baseline V1",
+        )
+    )
+    frontier = [
+        index
+        for index, line in enumerate(state_machine)
+        if "ActiveLearningFrontier" in line
+    ]
+    assert len(frontier) == 1, state_machine
+    (at,) = frontier
+    assert "hard eligibility" in state_machine[at - 1]
+    assert state_machine[at + 1] == "→ Policy Utility"
+    assert not any("ActiveLearningFrontier" in line for line in kernel_order)
+    assert "hard eligibility" in " ".join(kernel_order)
+    assert "policy utility" in " ".join(kernel_order)
+
+    prose = " ".join((module.__doc__ or "").split())
+    assert "ActiveLearningFrontier" in prose
+    assert "registered, not resolved" in prose
+    assert "p7-3" in prose
+
+
 def test_the_module_claims_no_shadow_mode_and_registers_its_readings() -> None:
     prose = " ".join((module.__doc__ or "").split())
     assert "shadow mode" in prose
