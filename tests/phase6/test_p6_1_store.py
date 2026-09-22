@@ -75,6 +75,14 @@ EVENT_COLUMNS = (
     "created_at",
 )
 
+#: The conftest builder spells the three optional links differently from the
+#: §5.2 columns; the ghost-link pin needs both spellings.
+_BUILDER_FIELDS = {
+    "teaching_moment_id": "moment",
+    "source_turn_id": "turn",
+    "evidence_group_id": "evidence_group",
+}
+
 
 def _item_row(db: sqlite3.Connection, item_id: str) -> tuple[object, ...]:
     row = db.execute(
@@ -494,6 +502,115 @@ def test_the_store_writes_the_two_tables_and_nothing_else() -> None:
 # -- the review event --------------------------------------------------------
 
 
+def test_a_silent_created_at_replays_idempotently(
+    db: sqlite3.Connection, scheduler_store: SqliteSchedulerStore
+) -> None:
+    """The review counter-example, pinned: a caller that declared no time gets
+    the store's, and **retrying the same silent write replays** — the
+    undeclared ``created_at`` is a wildcard on replay, exactly as
+    ``updated_at`` is for ScheduleItem (P6-1 review fix 1)."""
+
+    assert isinstance(scheduler_store.upsert_schedule_item(schedule_item()), Ok)
+    first = scheduler_store.record_review_event(review_event("re-1"))
+    assert isinstance(first, Ok), first
+    assert first.value.created_at != ""
+    before = _event_row(db, "re-1")
+
+    again = scheduler_store.record_review_event(review_event("re-1"))
+    assert isinstance(again, Ok), again
+    assert again.value == first.value
+    assert again.value.created_at == first.value.created_at
+    assert _event_row(db, "re-1") == before  # zero writes
+    assert db.execute("SELECT COUNT(*) FROM review_event").fetchone() == (1,)
+    # ... and a third time, because "retry" is what the face is for.
+    assert scheduler_store.record_review_event(review_event("re-1")).value == (
+        first.value
+    )
+
+
+def test_a_silent_created_at_still_refuses_different_content(
+    db: sqlite3.Connection, scheduler_store: SqliteSchedulerStore
+) -> None:
+    """The wildcard covers the undeclared *time* and nothing else: another
+    field that differs is still different content."""
+
+    assert isinstance(scheduler_store.upsert_schedule_item(schedule_item()), Ok)
+    assert isinstance(
+        scheduler_store.record_review_event(review_event("re-1")), Ok
+    )
+    # A second schedule row, so the differing-content case can vary the
+    # parent key (a valid one — the refusal under test is the content one).
+    assert isinstance(
+        scheduler_store.upsert_schedule_item(
+            schedule_item("si-2", modality=OTHER_MODALITY)
+        ),
+        Ok,
+    )
+    before = _event_row(db, "re-1")
+    for other in (
+        review_event("re-1", engaged=False),
+        review_event("re-1", event_type="OTHER"),
+        review_event("re-1", schedule_item_id="si-2"),
+    ):
+        refused = scheduler_store.record_review_event(other)
+        assert not isinstance(refused, Ok)
+        assert refused.error.code.value == "CONFLICT"
+    assert _event_row(db, "re-1") == before
+    assert db.execute("SELECT COUNT(*) FROM review_event").fetchone() == (1,)
+
+
+def test_a_retry_declaring_the_durable_time_replays(
+    db: sqlite3.Connection, scheduler_store: SqliteSchedulerStore
+) -> None:
+    """A declared time is content: declaring exactly the time the durable row
+    carries is the same fact, so it replays (the retry that reads the row
+    back and resends what it found)."""
+
+    assert isinstance(scheduler_store.upsert_schedule_item(schedule_item()), Ok)
+    silent = scheduler_store.record_review_event(review_event("re-1"))
+    assert isinstance(silent, Ok), silent
+    declared = scheduler_store.record_review_event(
+        review_event("re-1", created_at=silent.value.created_at)
+    )
+    assert isinstance(declared, Ok), declared
+    assert declared.value == silent.value
+    assert db.execute("SELECT COUNT(*) FROM review_event").fetchone() == (1,)
+
+
+def test_a_retry_declaring_another_time_is_refused(
+    db: sqlite3.Connection, scheduler_store: SqliteSchedulerStore
+) -> None:
+    """... and declaring a *different* time is a different fact: refused, with
+    the durable time untouched (never silently restamped)."""
+
+    assert isinstance(scheduler_store.upsert_schedule_item(schedule_item()), Ok)
+    silent = scheduler_store.record_review_event(review_event("re-1"))
+    assert isinstance(silent, Ok), silent
+    before = _event_row(db, "re-1")
+    refused = scheduler_store.record_review_event(
+        review_event("re-1", created_at="2026-01-01T00:00:00+00:00")
+    )
+    assert not isinstance(refused, Ok)
+    assert refused.error.code.value == "CONFLICT"
+    assert _event_row(db, "re-1") == before
+    assert _event_row(db, "re-1")[7] == silent.value.created_at
+
+
+def test_the_wildcard_rule_is_written_down() -> None:
+    """The rule is a reading, so it is stated where the write is (the module
+    docstring for the model, the face's own docstring for the caller)."""
+
+    import elc.scheduler.store as store_module
+
+    module_doc = store_module.__doc__ or ""
+    assert "undeclared ``created_at`` is a wildcard" in module_doc
+    face_doc = SqliteSchedulerStore.record_review_event.__doc__ or ""
+    for phrase in ("wildcard", "verbatim", "declared"):
+        assert phrase in face_doc, phrase
+    helper_doc = store_module._same_declared_time.__doc__ or ""
+    assert "wildcard" in helper_doc
+
+
 def test_a_new_event_inserts_and_reads_back_field_for_field(
     db: sqlite3.Connection, scheduler_store: SqliteSchedulerStore
 ) -> None:
@@ -681,6 +798,133 @@ def test_several_events_for_one_row_coexist_in_a_deterministic_order(
         "re-b",
     ]
     assert db.execute("SELECT COUNT(*) FROM review_event").fetchone() == (3,)
+
+
+@pytest.mark.parametrize(
+    "field, ghost",
+    [
+        ("teaching_moment_id", "m-ghost"),
+        ("source_turn_id", "t-ghost"),
+        ("evidence_group_id", "eg-ghost"),
+    ],
+)
+def test_a_ghost_optional_link_is_not_found(
+    db: sqlite3.Connection,
+    scheduler_store: SqliteSchedulerStore,
+    field: str,
+    ghost: str,
+) -> None:
+    """Every one of §5.2's four foreign keys gets the same treatment (P6-1
+    review fix 2): a missing parent row is this domain's ``NOT_FOUND``, and
+    the message says so in our words — never the database's."""
+
+    assert isinstance(scheduler_store.upsert_schedule_item(schedule_item()), Ok)
+    refused = scheduler_store.record_review_event(
+        review_event("re-1", **{_BUILDER_FIELDS[field]: ghost})
+    )
+    assert not isinstance(refused, Ok)
+    assert refused.error.code.value == "NOT_FOUND"
+    assert field in refused.error.message
+    assert ghost in refused.error.message
+    assert "FOREIGN KEY" not in refused.error.message
+    assert db.execute("SELECT COUNT(*) FROM review_event").fetchone() == (0,)
+
+
+def test_the_four_probes_are_the_four_foreign_keys() -> None:
+    """One fixed probe per key, selected by field name — no identifier ever
+    reaches a statement's text (the repo-wide SQL discipline), and the probe
+    set is exactly §5.2's four references."""
+
+    from elc.scheduler import store as store_module
+
+    probes = store_module._FOREIGN_KEY_PROBES
+    assert set(probes) == {
+        "schedule_item_id",
+        "teaching_moment_id",
+        "source_turn_id",
+        "evidence_group_id",
+    }
+    for field, statement in probes.items():
+        assert statement.startswith("SELECT 1 FROM "), field
+        assert statement.endswith(" = ?"), field
+        assert "{" not in statement and "%" not in statement, field
+        assert statement.count("?") == 1, field
+    assert store_module._FOREIGN_KEY_PROBES["schedule_item_id"] == (
+        "SELECT 1 FROM schedule_item WHERE schedule_item_id = ?"
+    )
+    assert store_module._FOREIGN_KEY_PROBES["teaching_moment_id"] == (
+        "SELECT 1 FROM teaching_moment WHERE moment_id = ?"
+    )
+
+
+def test_a_check_violation_is_reported_in_this_domains_words(
+    db: sqlite3.Connection, scheduler_store: SqliteSchedulerStore
+) -> None:
+    """The one refusal a caller can still reach through the schema — a CHECK
+    (§5.2's vocabularies) — is a ``CONFLICT`` whose message names the rule
+    family and never quotes the database."""
+
+    refused = scheduler_store.upsert_schedule_item(
+        schedule_item("si-bad", target_type="CONVERSATION")
+    )
+    assert not isinstance(refused, Ok)
+    assert refused.error.code.value == "CONFLICT"
+    assert "CHECK" in refused.error.message
+    assert "sqlite" not in refused.error.message.lower()
+    assert "constraint failed" not in refused.error.message
+    assert db.execute("SELECT COUNT(*) FROM schedule_item").fetchone() == (0,)
+
+
+def test_no_refusal_message_quotes_the_database(
+    db: sqlite3.Connection, scheduler_store: SqliteSchedulerStore
+) -> None:
+    """One error vocabulary per call (module docstring): every refusal this
+    store can answer with is read, and none of them carries sqlite phrasing."""
+
+    assert isinstance(scheduler_store.upsert_schedule_item(schedule_item()), Ok)
+    assert isinstance(scheduler_store.record_review_event(review_event()), Ok)
+    refusals = [
+        scheduler_store.record_review_event(
+            review_event("re-ghost-item", schedule_item_id="si-ghost")
+        ),
+        scheduler_store.record_review_event(
+            review_event("re-ghost-moment", moment="m-ghost")
+        ),
+        scheduler_store.record_review_event(
+            review_event("re-ghost-turn", turn="t-ghost")
+        ),
+        scheduler_store.record_review_event(
+            review_event("re-ghost-group", evidence_group="eg-ghost")
+        ),
+        scheduler_store.record_review_event(
+            review_event("re-1", engaged=False)
+        ),
+        scheduler_store.upsert_schedule_item(schedule_item(review_state=ReviewState.DUE)),
+        scheduler_store.upsert_schedule_item(
+            schedule_item("si-bad", target_type="CONVERSATION")
+        ),
+        scheduler_store.record_review_event(
+            review_event("re-1", created_at="2026-01-01T00:00:00+00:00")
+        ),
+    ]
+    for refusal in refusals:
+        assert not isinstance(refusal, Ok), refusal
+    for refusal in refusals:
+        message = refusal.error.message.lower()
+        for phrase in (
+            "constraint failed",
+            "foreign key constraint",
+            "unique constraint",
+            "check constraint",
+            "sqlite",
+            "sqlite3",
+        ):
+            assert phrase not in message, (phrase, refusal.error.message)
+    # The scan is not vacuous: the refusals are real and carry our codes.
+    assert {refusal.error.code.value for refusal in refusals} == {
+        "NOT_FOUND",
+        "CONFLICT",
+    }
 
 
 def test_the_schema_refuses_an_event_without_its_schedule_row(

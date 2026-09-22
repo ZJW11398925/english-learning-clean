@@ -34,6 +34,13 @@ so:
 
 - the identity is ``review_event_id``; the same id with the same content is
   an idempotent replay (returns the durable row, writes nothing);
+- **an undeclared ``created_at`` is a wildcard on replay** — the caller that
+  said nothing about when the event happened cannot disagree with the durable
+  row's store-stamped time, so a retry of the same silent content replays
+  (the ScheduleItem/``updated_at`` symmetry: a store-stamped column never
+  answers a content question). A **declared** time is content and must match
+  the durable value verbatim; a different declared time is a different fact
+  and is refused;
 - the same id with *different* content is a ``CONFLICT`` — **not** an update.
   There is no stamp a caller could move to declare "this is the same event,
   corrected", so rewriting the row in place would be the silent content change
@@ -42,6 +49,14 @@ so:
   ``review_event_id``), which is also what §5.2's missing unique index on
   ``schedule_item_id`` invites: several events for one row over time are the
   history.
+
+**One error vocabulary per call.** Every refusal a caller can receive is a
+``DomainError`` in this module's own words: an unknown parent row is
+``NOT_FOUND`` (checked up front, one probe per foreign key the event names),
+a stamped/deduplicated refusal is ``CONFLICT``. The database's own message
+text is never handed back — a ``CHECK``/``UNIQUE`` refusal is classified and
+reported as one of those families, so nothing a caller reads is quotable
+sqlite phrasing.
 
 Fencing: every write checks the store epoch against the newest durable epoch
 before anything is written (the teaching / relationship / user_config store
@@ -73,7 +88,7 @@ from __future__ import annotations
 
 import sqlite3
 from datetime import UTC, datetime
-from typing import TypeVar
+from typing import Mapping, TypeVar
 
 from elc.platform.db.epoch import RuntimeEpochFence, StaleEpochError
 from elc.platform.db.tx import short_transaction
@@ -105,6 +120,29 @@ T = TypeVar("T")
 SCHEDULE_ITEM_TABLE = "schedule_item"
 REVIEW_EVENT_TABLE = "review_event"
 
+#: The four foreign keys §5.2's ReviewEvent carries, each with the **fixed**
+#: existence probe this store runs before the insert: one literal statement
+#: per key, selected by field name — never assembled, so no identifier ever
+#: reaches any statement text (the repo-wide SQL discipline). The probes are
+#: what turns "sqlite refused to insert" into this domain's ``NOT_FOUND``.
+_FOREIGN_KEY_PROBES: Mapping[str, str] = {
+    "schedule_item_id": (
+        "SELECT 1 FROM schedule_item WHERE schedule_item_id = ?"
+    ),
+    "teaching_moment_id": (
+        "SELECT 1 FROM teaching_moment WHERE moment_id = ?"
+    ),
+    "source_turn_id": "SELECT 1 FROM turn_record WHERE turn_id = ?",
+    "evidence_group_id": (
+        "SELECT 1 FROM evidence_group WHERE evidence_group_id = ?"
+    ),
+}
+
+#: The durable constraint families a caller can hit once the foreign keys are
+#: pre-checked, in the order they are looked for in sqlite's text. The names
+#: are this module's (they are what the refusal means), not the database's.
+_CONSTRAINT_FAMILIES = ("FOREIGN KEY", "UNIQUE", "CHECK", "NOT NULL")
+
 
 class StaleSchedulerStoreError(StaleEpochError):
     """This store's epoch is no longer the newest durable epoch."""
@@ -116,6 +154,25 @@ def _now() -> str:
 
 def _err(code: DomainErrorCode, message: str) -> Err[T]:
     return Err(DomainError(code=code, message=message))
+
+
+def _constraint_family(exc: sqlite3.IntegrityError) -> str:
+    """Which durable rule refused the write, in this module's words.
+
+    sqlite's message is **read**, never re-emitted: a ``DomainError.message``
+    is this domain's vocabulary, so what a caller gets is the family the
+    caller can act on. Once the foreign keys are pre-checked, a refusal here
+    is a ``CHECK`` or a ``UNIQUE`` rule (§5.2's vocabularies, or an id taken
+    between the probe and the insert); ``FOREIGN KEY`` stays in the list
+    because that race — a parent row removed after the probe — is the one way
+    it can still happen.
+    """
+
+    text = str(exc)
+    for family in _CONSTRAINT_FAMILIES:
+        if family in text:
+            return family
+    return "UNKNOWN"
 
 
 def _item_columns(item: ScheduleItem) -> tuple[object, ...]:
@@ -300,7 +357,12 @@ class SqliteSchedulerStore:
                     )
                 )
         except sqlite3.IntegrityError as exc:
-            return _err(DomainErrorCode.CONFLICT, str(exc))
+            return _err(
+                DomainErrorCode.CONFLICT,
+                f"schedule item {item.schedule_item_id} was refused by a"
+                f" durable {_constraint_family(exc)} rule; nothing was written"
+                " (docs/DATA_MODEL.md §5.2)",
+            )
 
     def record_review_event(self, event: ReviewEvent) -> Result[ReviewEvent]:
         """One durable review event; append-first (§1.3, module docstring).
@@ -310,11 +372,27 @@ class SqliteSchedulerStore:
         store's clock fills it otherwise — the store never overrides a
         declared time, and never invents one a caller gave.
 
-        The ``schedule_item_id`` FK is checked explicitly before the insert,
-        so an event naming a schedule row that does not exist comes back as
-        ``NOT_FOUND`` instead of a raw sqlite integrity error. Nothing else is
-        related: §5.2 pins no constraint tying the event's own identifiers to
-        the schedule row's key, so none is enforced (types module docstring).
+        **Replay and the undeclared time.** The idempotent-replay question is
+        asked first (the crash-retry face), and it treats an undeclared
+        ``created_at`` (``""``) as a **wildcard**: a caller that declared no
+        time cannot disagree with the store-stamped one the durable row
+        carries, so retrying the same silent content replays instead of
+        failing (the ScheduleItem/``updated_at`` symmetry — a store-stamped
+        column never answers a content question). A **declared** time is
+        content: it must equal the durable value verbatim to replay, and a
+        different declared time is a different fact (``CONFLICT``), never
+        silently restamped.
+
+        **The four foreign keys are pre-checked**, not left to the insert:
+        ``schedule_item_id`` and each non-``None`` ``teaching_moment_id`` /
+        ``source_turn_id`` / ``evidence_group_id`` gets one fixed existence
+        probe, and a missing parent row comes back as ``NOT_FOUND`` — a
+        caller never sees sqlite's own text (module docstring: one error
+        vocabulary per call). What remains for the ``IntegrityError`` catch is
+        a ``CHECK``/``UNIQUE`` refusal, reported as ``CONFLICT`` with the
+        family named and no database phrasing. Nothing else is related: §5.2
+        pins no constraint tying the event's own identifiers to the schedule
+        row's key, so none is enforced (types module docstring).
         """
 
         try:
@@ -331,13 +409,9 @@ class SqliteSchedulerStore:
                         " is never rewritten — append a new review_event_id"
                         " (docs/DATA_MODEL.md §1.3)",
                     )
-                if self._item_row(event.schedule_item_id) is None:
-                    return _err(
-                        DomainErrorCode.NOT_FOUND,
-                        f"review event {event.review_event_id} names schedule"
-                        f" item {event.schedule_item_id}, which does not"
-                        " exist (docs/DATA_MODEL.md §5.2 ReviewEvent)",
-                    )
+                missing = self._missing_parent(event)
+                if missing is not None:
+                    return missing
                 created_at = event.created_at or _now()
                 self._conn.execute(
                     "INSERT INTO review_event ("
@@ -375,7 +449,44 @@ class SqliteSchedulerStore:
                     )
                 )
         except sqlite3.IntegrityError as exc:
-            return _err(DomainErrorCode.CONFLICT, str(exc))
+            return _err(
+                DomainErrorCode.CONFLICT,
+                f"review event {event.review_event_id} was refused by a"
+                f" durable {_constraint_family(exc)} rule; nothing was written"
+                " (docs/DATA_MODEL.md §5.2)",
+            )
+
+    def _missing_parent(self, event: ReviewEvent) -> Err[ReviewEvent] | None:
+        """The first foreign key of ``event`` that names no existing row.
+
+        One fixed probe per key (``_FOREIGN_KEY_PROBES``), ``None`` skipped —
+        a column §5.2 spells with ``?`` and the caller left empty is not a
+        reference at all. The check is what makes the refusal this domain's
+        ``NOT_FOUND`` rather than the insert's integrity error; it runs after
+        the idempotent-replay question, so a retry that already succeeded
+        still answers with the durable row.
+        """
+
+        for field in (
+            "schedule_item_id",
+            "teaching_moment_id",
+            "source_turn_id",
+            "evidence_group_id",
+        ):
+            value = getattr(event, field)
+            if value is None:
+                continue
+            probe = self._conn.execute(
+                _FOREIGN_KEY_PROBES[field], (str(value),)
+            ).fetchone()
+            if probe is None:
+                return _err(
+                    DomainErrorCode.NOT_FOUND,
+                    f"review event {event.review_event_id} names {field}"
+                    f" {value}, which does not exist"
+                    " (docs/DATA_MODEL.md §5.2 ReviewEvent)",
+                )
+        return None
 
     # -- reads -------------------------------------------------------------
 
@@ -522,10 +633,11 @@ def _same_event(durable: ReviewEvent, incoming: ReviewEvent) -> bool:
     """Whether the durable row already holds exactly this content.
 
     ``review_event_id`` is the identity (the row was read by it) and is not
-    compared; ``created_at`` **is** compared, because the caller declares it
-    when it has one (§5.2's column; the 0007 precedent) — the same id with a
-    different declared time is a different fact, and it is refused rather than
-    silently rewritten.
+    compared. ``created_at`` is compared through
+    :func:`_same_declared_time`: an undeclared time is a replay wildcard, a
+    declared one must match verbatim — a declared time is content (§5.2's
+    column; the 0007 precedent), so the same id with a *different* declared
+    time is a different fact and is refused rather than silently restamped.
     """
 
     return (
@@ -535,5 +647,21 @@ def _same_event(durable: ReviewEvent, incoming: ReviewEvent) -> bool:
         and durable.event_type == incoming.event_type
         and durable.engaged == incoming.engaged
         and durable.evidence_group_id == incoming.evidence_group_id
-        and durable.created_at == incoming.created_at
+        and _same_declared_time(durable, incoming)
     )
+
+
+def _same_declared_time(durable: ReviewEvent, incoming: ReviewEvent) -> bool:
+    """The ``created_at`` leg of the content question.
+
+    Undeclared (``""``) is a **wildcard**: the caller declared no time, so it
+    cannot be in conflict with the store-stamped value the durable row holds —
+    which is what makes a retry of the same silent write a replay instead of a
+    refusal (ScheduleItem's ``updated_at`` gets the same treatment: a column
+    the store stamped never decides a content question). Declared is content:
+    it must equal the durable value verbatim.
+    """
+
+    if incoming.created_at == "":
+        return True
+    return durable.created_at == incoming.created_at

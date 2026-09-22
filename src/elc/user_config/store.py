@@ -770,6 +770,16 @@ class SqliteUserConfigStore:
         - the comparison is done here in Python rather than by ``ORDER BY`` so
           it is byte-wise lexicographic by construction, independent of any
           database collation (there is one comparison rule, and this is it);
+        - **the ordering is byte order (code-point order), not instant
+          order** — a derived judgement, because §5.1 pins no timestamp
+          format for ``starts_at`` and this slice mints none. Two offsets
+          therefore compare as text: ``2026-09-22T12:00:00+08:00`` sorts
+          *after* ``2026-09-22T05:00:00+00:00`` even though the first instant
+          (04:00Z) is earlier than the second (05:00Z). That is the reading
+          this store declares, and a consumer that needs instant order parses
+          the timestamps itself; changing *this* to instant order is a
+          decision to take explicitly (a pinned test asserts the byte-order
+          winner), not a silent repair;
         - **``expires_at`` is not consulted**: whether a window is still
           *valid* is the consumer's question, answered by the consumer's
           clock. This read introduces no clock judgement at all, which also

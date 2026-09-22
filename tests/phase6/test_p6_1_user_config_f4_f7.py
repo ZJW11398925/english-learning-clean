@@ -23,6 +23,7 @@ import dataclasses
 import inspect
 import re
 import textwrap
+from datetime import datetime
 from typing import get_type_hints
 
 import pytest
@@ -211,6 +212,62 @@ def test_an_expired_window_is_not_filtered_out(
     assert isinstance(read, Ok) and read.value is not None
     assert read.value.session_focus_id == "sf-expired"
     assert read.value.expires_at == "2026-09-22T12:30:00+00:00"
+
+
+def test_the_read_is_byte_ordered_not_instant_ordered(
+    user_config_store: SqliteUserConfigStore,
+    conversation,
+) -> None:
+    """The boundary is **byte order**, and this pair is where the two rules
+    disagree — so a future switch to instant order cannot happen silently
+    (P6-1 review fix 3).
+
+    ``2026-09-22T12:00:00+08:00`` is the *later* text and the *earlier*
+    instant (04:00Z), while ``2026-09-22T05:00:00+00:00`` is the earlier text
+    and the later instant (05:00Z). §5.1 pins no timestamp format, so this
+    slice declares byte order — a derived judgement, stated on the store
+    method — and this test pins the winner it implies.
+    """
+
+    del conversation
+    offset_text = "2026-09-22T12:00:00+08:00"
+    utc_text = "2026-09-22T05:00:00+00:00"
+    # The two orderings really do disagree (the pin is not vacuous):
+    assert max((offset_text, utc_text)) == offset_text
+    assert max(
+        (offset_text, utc_text), key=datetime.fromisoformat
+    ) == utc_text
+    for focus_id, starts_at in (("sf-offset", offset_text), ("sf-utc", utc_text)):
+        assert isinstance(
+            user_config_store.set_session_focus(
+                session_focus(focus_id, starts_at=starts_at)
+            ),
+            Ok,
+        )
+    read = user_config_store.get_session_focus_for_conversation(CONV)
+    assert isinstance(read, Ok) and read.value is not None
+    assert read.value.session_focus_id == "sf-offset"
+    assert read.value.starts_at == offset_text
+
+
+def test_the_store_docstring_declares_the_byte_order_boundary() -> None:
+    """The reading is written where the comparison happens: byte/code-point
+    order, not instant order, with the concrete example and the note that a
+    change is a decision (a pinned test asserts it)."""
+
+    doc = " ".join(
+        (
+            SqliteUserConfigStore.get_session_focus_for_conversation.__doc__
+            or ""
+        ).split()
+    )
+    for phrase in (
+        "byte order (code-point order), not instant order",
+        "derived judgement",
+        "2026-09-22T12:00:00+08:00",
+        "pinned test",
+    ):
+        assert phrase in doc, phrase
 
 
 def test_a_conversation_with_no_focus_answers_none(
