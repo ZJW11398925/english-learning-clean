@@ -69,6 +69,7 @@ from elc.platform.types import (
     ScheduleVersion,
     TargetId,
 )
+from elc.scheduler.authority import ScheduleCurrency, currency_of
 from elc.scheduler.spacing import (
     SCHEDULER_MODEL_VERSION,
     LearningReadPort,
@@ -83,7 +84,7 @@ from elc.scheduler.types import (
     ScheduleView,
 )
 
-__all__ = ["SchedulerController", "schedule_item_id_for"]
+__all__ = ["ScheduleCurrency", "SchedulerController", "schedule_item_id_for"]
 
 #: The field separator the repo's derived-id convention uses (P4-1's
 #: ``memory_id_for``, P4-2's ``projection_id_for``): ASCII 0x1f, chosen so it
@@ -387,6 +388,61 @@ class SchedulerController:
         return Ok(
             state.value is ReviewState.DUE or state.value is ReviewState.OVERDUE
         )
+
+    # -- the authority handshake (P7-0) -------------------------------------
+
+    def schedule_currency(
+        self,
+        target_type: str,
+        target_id: TargetId,
+        evidence_modality: EvidenceModality,
+    ) -> Result[ScheduleCurrency | None]:
+        """Whether this target's row was computed at the current Learning
+        watermark (``None`` = no row written for this modality key).
+
+        The two reads DOMAIN_MODEL §9 asks for, composed: the durable §5.2 row
+        (the recorded ``source_learning_watermark``) and the Learning face's
+        current evidence watermark. The comparison itself is
+        :func:`elc.scheduler.authority.currency_of`, a pure function, so the
+        Planner's assembly reaches the same answer by the same rule.
+
+        ``Ok(None)`` is "the Scheduler has no row for this key", and it is
+        **not** BF-02 §5's missing-Scheduler case: that case is about a
+        consumer holding no schedule authority at all (no view, no rows), and
+        a target nothing has been scheduled for is a state the §10 view
+        reports as empty buckets. ``STALE`` is the third answer, and it says
+        only what :mod:`elc.scheduler.authority` says: the row describes an
+        earlier evidence set.
+
+        Without the Learning read face this answers
+        ``DEPENDENCY_UNAVAILABLE`` — the Scheduler will not invent a watermark
+        to compare against, the same refusal
+        :meth:`recompute_schedule_item` gives (one constructor, one rule).
+        """
+
+        if self._learning is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=(
+                        "schedule_currency needs the Learning watermark read"
+                        " face (DOMAIN_MODEL §9 Reads): this controller was"
+                        " constructed without one, and the Scheduler will not"
+                        " invent a watermark to compare a row against"
+                    ),
+                )
+            )
+        current = self._store.get_schedule_item(
+            target_type, target_id, evidence_modality
+        )
+        if isinstance(current, Err):
+            return current
+        if current.value is None:
+            return Ok(None)
+        watermark = self._learning.get_learning_watermark()
+        if isinstance(watermark, Err):
+            return watermark
+        return Ok(currency_of(current.value, watermark.value))
 
 
 def _in_window_order(

@@ -111,7 +111,8 @@ def test_the_controller_implements_every_declared_face(
     controller: UserConfigController,
 ) -> None:
     """The five new faces plus the eleven the earlier cuts landed — no face a
-    protocol declares is missing, and none was renamed away."""
+    protocol declares is missing, and none was renamed away. P7-0's two
+    consumer views are additive (no earlier face changed shape)."""
 
     declared = {
         name
@@ -139,6 +140,9 @@ def test_the_controller_implements_every_declared_face(
         "get_planner_constraint",
         "active_constraints",
         "active_constraints_for_target",
+        # P7-0
+        "get_effective_session_focus",
+        "get_planner_constraint_view",
     }
 
 

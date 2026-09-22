@@ -31,8 +31,11 @@ block does not carry may not survive the rewrite of the object that carries
 it (the P4-3 precedent above, and the P4-0 lesson: canonical outranks an
 earlier implementation spelling).
 
-Canonical column sets, in §5.1's order (the objects below carry them
-verbatim):
+Canonical column sets, in §5.1's order (the objects below carry them verbatim
+apart from the one **declared alias** the next section states — §5.1 spells the
+version column ``version`` and these dataclasses spell it
+``goal_version`` / ``policy_version``, which is a reading and is labelled as
+one, not a word-for-word claim):
 
 - ``LearningGoalPortfolio`` — goal_portfolio_id / version / goals[] /
   modality_weights / assessment_targets[] / register_style_goals[] /
@@ -70,13 +73,35 @@ rather than taste:
 
 A bare ``version`` is therefore *not distinguishable* under the existing
 binding mechanism: the same field name would mean a different type on each
-of the three objects that carries it. **Known limitation** of this reading:
-§5.1's object block says ``version``, and this module says so instead.
+of the three objects that carries it. **The qualified spelling is an *alias***
+— this implementation's field name for §5.1's column, bound by
+``VERSION_FIELDS`` and the registry's ``version_field`` — and it is **not** a
+claim that this field spells the canonical column verbatim: §5.1's block says
+``version``, and no sentence in this repository may say the two are
+word-for-word equal (the P7-0 recognition; the phase-6 pins that used to carry
+that phrasing now say this instead). What *is* quoted verbatim is where the
+alias's words come from — the canonical documents use the qualified spellings
+themselves. docs/DATA_MODEL.md's DecisionCycle block (lines 175–177) lists
+
+    goal_version
+    schedule_version
+    policy_version
+
+and docs/STATE_MACHINES.md's per-cycle block (lines 330–332) lists the same
+three; the qualified name is therefore canonical vocabulary, and the alias is
+this implementation's binding of it rather than the invention of a word the
+document does not contain.
+
+**Known limitation** of this reading: §5.1's object block says ``version``, and
+this module says so instead of pretending the column sets are identical
+word-for-word.
 **Revisit condition**: if the canonical documents are revised to pin a bare
 ``version`` on these objects (or to spell the qualified name inside the
 §5.1 blocks themselves), re-adjudicate the naming here *together with*
 ``VERSION_FIELDS`` and the registry's ``version_field`` bindings — the
-three move as one, and no one of them may move alone.
+three move as one, and no one of them may move alone. That revision is not
+this repository's to make: §5.1's block is a canonical document, and a cut
+that only reads it (this one) states the question instead of editing it.
 
 **Declared element shapes** (§5.1 pins the *names* of the list/map
 elements, not their shape; docs/DATA_MODEL.md §27 leaves the physical form
@@ -148,6 +173,15 @@ reads it, no Gate consults it, and nothing here turns a user's sentence into a
 constraint (that extraction face is Phase 8's). The suppression a row will one
 day cause is a *consumer's* reading of this truth, decided in the consumer's
 cut.
+
+P7-0 (TASK-OPI-b99560d4-….36 ①④): three consumer-side shapes land beside the
+durable objects — :class:`TargetLeg`, :class:`PlannerConstraintEntry` /
+:class:`PlannerConstraintView` and :class:`EffectiveSessionFocusView`. They
+are **views**: no column is added, no row is written, and the two readings
+that were left open are frozen where the reading happens
+(:mod:`elc.user_config.constraints` for the constraint half, and the store's
+window read for the focus half). The durable faces P6-0/P6-3 landed are
+untouched by them.
 """
 
 from __future__ import annotations
@@ -589,7 +623,13 @@ class PlannerConstraint:
     target-limited**, and ``target_type is None`` with a present ``target_id``
     (or the reverse) is a shape this object does not call illegal: §9 pins no
     such rule, and inventing one here would be a rule the canonical set does
-    not make — the read faces match on the pair they are given, verbatim.
+    not make — the read faces match on the pair they are given, verbatim. The
+    **consumer-side view** reads that shape separately and says so:
+    :class:`PlannerConstraintEntry` carries it as
+    :class:`TargetLeg.HALF_DECLARED`, and
+    :func:`elc.user_config.constraints.applies_to` widens it rather than
+    dropping it (the reading, with its reason and revisit condition, is in
+    that module).
 
     The fields are keyword-only because §9 declares two optional columns
     (``target_type?`` / ``target_id?``) *before* the required
@@ -608,3 +648,124 @@ class PlannerConstraint:
     expires_at: str | None = None
     created_from_turn_id: TurnId | None = None
     active: bool
+
+
+class TargetLeg(StrEnum):
+    """How a §9 constraint's two target columns read (P7-0).
+
+    §9 spells ``target_type?`` and ``target_id?`` and pins **no** relation
+    between them, so three shapes are reachable and each is named here rather
+    than left to a caller's ``is None`` test:
+
+    - ``NOT_TARGET_LIMITED`` — both columns NULL: the constraint speaks about
+      teaching/review/chat in general, not about one target;
+    - ``TARGET_LIMITED`` — both columns present: it speaks about that one
+      target (both legs compared verbatim as text, the modality-key
+      convention's spelling rule);
+    - ``HALF_DECLARED`` — exactly one column present. §9 calls this shape
+      neither legal nor illegal, and **the reading of it is frozen in**
+      :func:`elc.user_config.constraints.applies_to` rather than here: this
+      enum only says which shape a row has.
+
+    The words are this cut's (the ``TeachingFrequency`` precedent: §9 pins no
+    vocabulary for the *reading* of its two optional columns), and migration
+    0013 is untouched by them — they name a derived reading, not a column.
+    """
+
+    NOT_TARGET_LIMITED = "NOT_TARGET_LIMITED"
+    TARGET_LIMITED = "TARGET_LIMITED"
+    HALF_DECLARED = "HALF_DECLARED"
+
+
+@dataclass(frozen=True)
+class PlannerConstraintEntry:
+    """One §9 constraint, normalized for a consumer (P7-0).
+
+    The same nine columns :class:`PlannerConstraint` carries — nothing is
+    added and nothing is dropped — plus :attr:`target_leg`, which is the
+    *shape* of the target pair spelled as one word. ``starts_at`` /
+    ``expires_at`` stay exactly as the durable row spells them: the window
+    judgement ("is it in force at this instant") has already been made by the
+    read that produced the view (``active_constraints``), so re-parsing here
+    would be a second clock question with the same answer.
+    """
+
+    constraint_id: str
+    constraint_type: PlannerConstraintType
+    scope: PlannerConstraintScope
+    target_leg: TargetLeg
+    target_type: str | None
+    target_id: TargetId | None
+    starts_at: str
+    expires_at: str | None
+    active: bool
+
+
+@dataclass(frozen=True)
+class PlannerConstraintView:
+    """The constraints in force for one conversation, as a consumer reads
+    them (P7-0).
+
+    Built by :func:`elc.user_config.constraints.build_view` from the rows
+    ``active_constraints(as_of)`` answered — so **the view is never a second
+    source of window truth**: what is in force is the store's reading, and what
+    this view adds is the session binding and the per-entry target shape.
+
+    ``bound_conversation_id`` is §9's missing session leg, supplied by the
+    caller: the canonical object carries **no** conversation column, so
+    ``THIS_SESSION`` cannot be resolved from a row, and a view that did not
+    carry the binding would let a consumer honour ``THIS_SESSION`` against
+    nothing. Carrying it as a field means the binding travels with the reading
+    instead of living in the consumer's head (the P6-3 registration said the
+    first consumer that must honour the scope answers it; this is where the
+    answer is written down).
+    """
+
+    as_of: str
+    bound_conversation_id: ConversationId
+    entries: tuple[PlannerConstraintEntry, ...]
+
+
+@dataclass(frozen=True)
+class EffectiveSessionFocusView:
+    """The conversation's focus **in force at one instant** (P7-0).
+
+    The store's :meth:`~elc.user_config.store.SqliteUserConfigStore.
+    get_session_focus_for_conversation` answers "which focus is current" by
+    **byte order** on ``starts_at`` and deliberately consults no clock (its
+    docstring carries the reading and its p6-1 pin); this view is the
+    *consumer-side overlay* §5.1's ``expires_at?`` needs and it changes
+    nothing about that read:
+
+    - the window is a real **instant** window — ``starts_at`` and
+      ``expires_at`` are parsed as ISO-8601 instants (a naive or unparseable
+      one refuses the read rather than being assumed), and a focus is in force
+      when ``starts_at <= as_of <= expires_at`` with both boundaries inclusive
+      (the constraint read's rule and the scheduler's window rule, one package
+      over);
+    - ``expires_at is None`` = an open-ended focus, not an invalid one;
+    - when several focuses of one conversation are in force at ``as_of`` — the
+      append-first history migration 0011 keeps makes that reachable — the
+      winner is the **newest started** one (instant order), ties broken by the
+      largest ``session_focus_id`` (byte order). The tie-break is deliberately
+      the store read's own so the two agree whenever the byte-order winner is
+      also in force, and the fields below are the row's, carried verbatim;
+    - ``base_goal_portfolio_version`` travels on the view because §5.1 puts it
+      on the object: it names the portfolio version this focus was derived
+      from, so a consumer compares it with the portfolio's current
+      ``goal_version`` itself (this view takes no portfolio argument and
+      judges nothing about the comparison).
+
+    ``as_of`` is the instant the view was built at, carried on the view (the
+    ``ScheduleView.as_of`` precedent) so a consumer can tell how old the
+    reading is without re-deriving it.
+    """
+
+    session_focus_id: str
+    conversation_id: ConversationId
+    base_goal_portfolio_version: GoalVersion
+    temporary_goal_weights: Mapping[GoalModality, float]
+    manual_focus_target: TargetId | None
+    starts_at: str
+    expires_at: str | None
+    as_of: str

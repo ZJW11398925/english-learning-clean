@@ -210,6 +210,21 @@ def test_the_object_is_mentioned_by_the_placement_and_two_pre_existing_modules(
     the turn it names is deleted (§19). The compensation below holds that
     apart — the deletion face names the table and touches one provenance
     column, never the user's setting or its ``active`` flag.
+
+    P7-0 added ``user_config/constraints.py``: the *normalization* module of
+    the reading this cut freezes. It takes the rows ``active_constraints``
+    already selected, spells the shape of the two target columns, and applies
+    nothing — no SQL, no clock, no branch that acts on a constraint (its
+    docstring says so and tests/phase7 holds it to that). It belongs to the
+    placement's own package, which is why it is named here rather than treated
+    as a consumer.
+
+    The same cut added ``planner/feature_assembly.py``, and it is the
+    boundary's own module: it **names** the view type (a caller hands it the
+    in-force rows) and reads one thing from it — whether the authority is
+    present at all. Nothing there branches on a constraint, applies a
+    suppression, or writes a row; a Planner that acted on a constraint would
+    be the consumer R11 forbids, and that file is not one.
     """
 
     mentioning = sorted(
@@ -221,11 +236,13 @@ def test_the_object_is_mentioned_by_the_placement_and_two_pre_existing_modules(
     assert mentioning == [
         "deletion/store.py",
         "deletion/types.py",
+        "planner/feature_assembly.py",
         "planner/types.py",
         "platform/registry.py",
         "teaching/gate.py",
         "user_config/__init__.py",
         "user_config/commands.py",
+        "user_config/constraints.py",
         "user_config/controller.py",
         "user_config/queries.py",
         "user_config/store.py",

@@ -1185,6 +1185,88 @@ class SqliteUserConfigStore:
             )
         )
 
+    def effective_session_focus(
+        self, conversation_id: ConversationId, as_of: str
+    ) -> Result[SessionFocus | None]:
+        """The conversation's focus **in force at** ``as_of`` (P7-0).
+
+        The second focus read beside :meth:`get_session_focus_for_conversation`,
+        and the two answer different questions on purpose. That one answers
+        "which focus is current" by **byte order** on ``starts_at`` and consults
+        no clock (its docstring carries the reading, and a pinned test holds the
+        byte-order winner); this one answers "which focus governs the
+        conversation at this instant", so it parses the stamps and applies
+        §5.1's ``expires_at?``:
+
+        - ``starts_at <= as_of`` — the window opens at its start instant,
+          inclusive (the constraint read's boundary rule, one object over);
+        - ``expires_at`` is NULL (an open-ended focus) **or**
+          ``as_of <= expires_at`` — inclusive at the closing end too;
+        - the comparison is **instant** order, not byte order: two spellings of
+          one instant compare equal, and two offsets of one moment do not decide
+          the answer by their text. That is the deliberate opposite of the
+          byte-order read above, exactly as :meth:`active_constraints` is the
+          opposite of p6-1's replay rule — membership asks about instants,
+          while "which row is current" is a question about rows;
+        - several focuses in force at once (the append-first history migration
+          0011 keeps makes that reachable) → the **newest started** one wins,
+          ties broken by the largest ``session_focus_id`` (byte order). The
+          tie-break is the byte-order read's own, so whenever the byte-order
+          winner is also in force the two reads agree; the instant comparison is
+          what can differ, and only for rows written with different offsets.
+
+        ``as_of`` and every ``starts_at`` / ``expires_at`` the read must compare
+        are parsed: an empty, unparseable or naive one is ``VALIDATION_FAILED``
+        naming the field and the row, never assumed to be UTC and never silently
+        skipped — a focus the read could not place in time is not a focus it may
+        drop from the answer. A row already excluded by ``starts_at > as_of``
+        still has its start parsed (that is how it was excluded); its
+        ``expires_at`` is not parsed, so a closed focus whose end is unreadable
+        cannot break a read that already ruled it out.
+
+        ``Ok(None)`` = no focus is in force: "none was ever written" and "every
+        written one is outside its window" are the same answer here, and a
+        caller that must tell them apart has
+        :meth:`get_session_focus_for_conversation`.
+        """
+
+        parsed_as_of = _parse_instant(as_of, field="as_of")
+        if isinstance(parsed_as_of, Err):
+            return parsed_as_of
+        rows = self._conn.execute(
+            "SELECT session_focus_id, conversation_id,"
+            " base_goal_portfolio_version, temporary_goal_weights,"
+            " manual_focus_target, starts_at, expires_at"
+            " FROM session_focus WHERE conversation_id = ?",
+            (str(conversation_id),),
+        ).fetchall()
+        winner: tuple[datetime, str, SessionFocus] | None = None
+        for row in rows:
+            focus = _focus_from_row(tuple(row))
+            start = _parse_instant(
+                focus.starts_at,
+                field=f"session focus {focus.session_focus_id} starts_at",
+            )
+            if isinstance(start, Err):
+                return start
+            if start.value > parsed_as_of.value:
+                continue
+            if focus.expires_at is not None:
+                end = _parse_instant(
+                    focus.expires_at,
+                    field=f"session focus {focus.session_focus_id} expires_at",
+                )
+                if isinstance(end, Err):
+                    return end
+                if parsed_as_of.value > end.value:
+                    continue
+            if winner is None or (start.value, focus.session_focus_id) > (
+                winner[0],
+                winner[1],
+            ):
+                winner = (start.value, focus.session_focus_id, focus)
+        return Ok(None if winner is None else winner[2])
+
     # -- the constraint reads (Phase 6 P6-3) --------------------------------
 
     def get_planner_constraint(

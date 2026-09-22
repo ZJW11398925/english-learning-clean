@@ -90,11 +90,26 @@ def _canonical_columns(heading: str) -> list[str]:
     return columns
 
 
-# -- ① the column sets, word for word ---------------------------------------
+# -- ① the column sets, under the declared version alias ---------------------
 
 
 @pytest.mark.parametrize("heading", sorted(VERSION_SPELLINGS))
-def test_the_column_set_is_the_canonical_block_word_for_word(heading) -> None:
+def test_the_column_set_is_the_canonical_block_with_the_declared_alias(
+    heading,
+) -> None:
+    """The field list equals §5.1's block **with the declared version alias
+    applied** — P7-0's re-wording of this pin's claim, which used to say
+    "word for word".
+
+    There is one translated line and it is named: §5.1 spells ``version`` and
+    this implementation spells ``goal_version`` / ``policy_version``, a
+    binding the platform registry needs (the alias reading is in
+    elc/user_config/types.py). Everything else is the canonical block's own
+    text, and the translation itself is asserted separately below — so the
+    claim this file makes is "the canonical block, under one declared alias",
+    never "identical to it".
+    """
+
     schema = {
         "### LearningGoalPortfolio": LearningGoalPortfolio,
         "### TeachingPolicyProfile": TeachingPolicyProfile,
@@ -111,12 +126,10 @@ def test_the_three_column_counts_are_the_canonical_ones() -> None:
 
 
 def test_the_canonical_blocks_spell_a_bare_version() -> None:
-    """The drift the module docstring acknowledges, pinned as a fact.
-
-    §5.1's own blocks say ``version``; the qualified spellings this
-    implementation uses are therefore a *declared* reading, which is exactly
-    why the limitation is written down where the spelling is.
-    """
+    """The alias's *reason*, pinned as a fact: §5.1's own blocks say
+    ``version``, so the qualified spelling is a declared reading and the
+    module writes the limitation down where the spelling is (P7-0: it also
+    says, in as many words, that the two are **not** to be called equal)."""
 
     for heading in ("### LearningGoalPortfolio", "### TeachingPolicyProfile"):
         block = canonical_lines("DATA_MODEL.md", heading, 0)
@@ -333,15 +346,18 @@ def test_the_types_module_invents_no_further_vocabulary() -> None:
     word list just as much as an enum is, and a *new* one fails here rather
     than becoming the de-facto vocabulary of an unpinned column.
 
-    The four names that are listed are the module's whole vocabulary, and the
-    distinction between them is the point: :class:`TeachingFrequency` is an
+    The listed names are the module's whole vocabulary, and the distinction
+    between them is the point: :class:`TeachingFrequency` is an
     **implementation declaration** (which is why migration 0011 puts no CHECK
     on its column) and :class:`DisclosureLevel` is this package's disclosure
     ladder, while P6-3's :class:`PlannerConstraintType` /
     :class:`PlannerConstraintScope` and their module-level restatements are
     **§9's own words**, enforced by migration 0013's CHECK and extracted from
-    the document by tests/phase6/test_p6_3_types.py. A fifth name — of either
-    shape — is the case this pin exists for.
+    the document by tests/phase6/test_p6_3_types.py. P7-0 adds
+    :class:`TargetLeg` — also an implementation declaration (§9 pins no
+    vocabulary for the *reading* of its two optional target columns), and it
+    names a shape of a pair, never a column. A further name — of either shape
+    — is the case this pin exists for.
     """
 
     tree = ast.parse(TYPES_MODULE.read_text(encoding="utf-8"))
@@ -358,6 +374,7 @@ def test_the_types_module_invents_no_further_vocabulary() -> None:
         "DisclosureLevel",
         "PlannerConstraintScope",
         "PlannerConstraintType",
+        "TargetLeg",
         "TeachingFrequency",
     ]
     assert not [name for name in enums if "Modality" in name]
@@ -381,7 +398,11 @@ def test_the_types_module_invents_no_further_vocabulary() -> None:
 def test_the_qualified_version_names_are_bound_by_the_platform_registry() -> None:
     """Why the qualified spelling: the registry binds a version *type* by
     field name, and three canonical objects would otherwise share the bare
-    name ``version`` with three different types."""
+    name ``version`` with three different types. **That binding is what makes
+    the spelling an alias** (P7-0's word): the field name stands in for §5.1's
+    column because the platform has no other way to bind the type, and the
+    module docstring says so instead of claiming the two spellings are
+    identical."""
 
     assert CANONICAL_OBJECTS["goal_portfolio"].schema is LearningGoalPortfolio
     assert CANONICAL_OBJECTS["goal_portfolio"].version_field == "goal_version"
@@ -396,9 +417,12 @@ def test_the_qualified_version_names_are_bound_by_the_platform_registry() -> Non
     assert PLATFORM_VERSION_FIELDS["policy_version"] is PolicyVersion
 
 
-def test_the_module_docstring_records_the_limitation_and_the_revisit() -> None:
-    """D2: the rationale is written where the spelling is, and it names the
-    limitation (§5.1 says ``version``) and the condition that re-opens it."""
+def test_the_module_docstring_records_the_alias_the_limitation_and_the_revisit(
+) -> None:
+    """D2, as P7-0 re-worded it: the rationale is written where the spelling
+    is, it names the *alias* (with the canonical lines the alias's words come
+    from) and the limitation (§5.1 says ``version``), and it names the
+    condition that re-opens it."""
 
     docstring = user_config_types.__doc__ or ""
     for phrase in (
@@ -408,6 +432,10 @@ def test_the_module_docstring_records_the_limitation_and_the_revisit() -> None:
         "elc.platform.registry",
         "Known limitation",
         "Revisit condition",
+        "*alias*",
+        "word-for-word equal",
+        "lines 175–177",
+        "lines 330–332",
     ):
         assert phrase in docstring, phrase
 

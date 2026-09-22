@@ -13,7 +13,11 @@ Reads of §5.2's two objects, plus the two decisions P6-2 landed:
 - :meth:`SchedulerQueries.is_review_due` — the due question, answered here and
   only here (D-INV-009 "Scheduler 决定 review due；Learning 只提供
   freshness"). It reads the durable row's window through the same pure
-  function the recomputation uses, so the two faces can never disagree.
+  function the recomputation uses, so the two faces can never disagree;
+- :meth:`SchedulerQueries.schedule_currency` — the P7-0 handshake: whether a
+  target's current row was computed at the current Learning evidence
+  watermark (``CURRENT`` / ``STALE`` / no row). The reading is BF-02 §5's
+  stale-authority rule, which the Planner's feature assembly applies.
 
 ``get_schedule_view`` replaced a Phase 0 ``scope`` parameter rather than
 honouring it: §5.2's ScheduleItem carries **no owner and no scope column**, so
@@ -27,6 +31,7 @@ from __future__ import annotations
 from typing import Protocol, runtime_checkable
 
 from elc.platform.types import EvidenceModality, Result, TargetId
+from elc.scheduler.authority import ScheduleCurrency
 from elc.scheduler.types import ReviewEvent, ScheduleItem, ScheduleView
 
 
@@ -73,5 +78,20 @@ class SchedulerQueries(Protocol):
         be found without the evidence modality its key carries. A row that was
         never written, and a row with no window, both answer ``False`` — no
         window is not a due window.
+        """
+        ...
+
+    def schedule_currency(
+        self,
+        target_type: str,
+        target_id: TargetId,
+        evidence_modality: EvidenceModality,
+    ) -> Result[ScheduleCurrency | None]:
+        """Whether this target's current row is CURRENT or STALE (P7-0).
+
+        The handshake a consumer compares a schedule row against the Learning
+        evidence watermark with (BF-02 §5's stale-authority rule reads it).
+        ``None`` = no row for this modality key — the Scheduler has nothing to
+        say about this target, which is neither CURRENT nor STALE.
         """
         ...

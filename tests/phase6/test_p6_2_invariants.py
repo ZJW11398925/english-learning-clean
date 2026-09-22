@@ -40,6 +40,7 @@ from elc.scheduler.spacing import (
     URGENCY_ANCHORS,
     FreshnessPort,
     LearningReadPort,
+    ReviewEventRole,
     next_window,
     plan_schedule_item,
     state_at,
@@ -74,10 +75,16 @@ FROZEN_HEAD_DIGEST = (
     "e0e18264bfd0d5da9adf7e1896bb34e233a92591af91b9eba837c1b67830aba1"
 )
 
-#: The modules the scheduler package consists of after this cut: P6-1's five
-#: plus the policy. A seventh would be a face nobody reviewed.
+#: The modules the scheduler package consists of: P6-1's five plus the policy.
+#: P7-0 added ``authority.py`` — the watermark handshake (``CURRENT`` /
+#: ``STALE``) a consumer compares a row against the current Learning evidence
+#: with — which is a *primitive*, not a second policy file: it reads one §5.2
+#: column and answers one of two words, while the reading that acts on it
+#: (BF-02 §5's degradation) lives in elc.planner.feature_assembly. A further
+#: module would be a face nobody reviewed.
 SCHEDULER_MODULES = (
     "__init__.py",
+    "authority.py",
     "commands.py",
     "controller.py",
     "queries.py",
@@ -150,7 +157,9 @@ def test_the_policy_carries_no_sql() -> None:
 def test_the_policy_opens_no_connection_and_imports_no_database() -> None:
     """The import set is the whole story: two standard-library helpers for the
     content-addressed version, the clock *type* (never the clock), typing, and
-    the platform/domain types it returns."""
+    the platform/domain types it returns. P7-0 added ``enum`` for the
+    event-role freeze table (:class:`ReviewEventRole` — one word per way an
+    event can enter the ladder, declared where the ladder is)."""
 
     imported: set[str] = set()
     for node in ast.walk(ast.parse(SPACING_SOURCE)):
@@ -161,6 +170,7 @@ def test_the_policy_opens_no_connection_and_imports_no_database() -> None:
     assert imported == {
         "__future__",
         "datetime",
+        "enum",
         "hashlib",
         "json",
         "typing",
@@ -235,10 +245,17 @@ def test_the_learning_read_port_is_two_methods_wide() -> None:
     assert declared == {"get_freshness", "get_learning_watermark"}
 
 
-def test_the_policy_declares_no_third_status() -> None:
-    """The four §5.2 states are the vocabulary; this module adds no word of its
-    own (a fifth state would be a review lifecycle the canonical block does not
-    contain)."""
+def test_the_policy_declares_no_third_review_state() -> None:
+    """The four §5.2 states are the vocabulary; this module adds no *state* of
+    its own (a fifth state would be a review lifecycle the canonical block does
+    not contain).
+
+    P7-0 added one enum to this file, so the structural half of the pin is now
+    an exact list plus a disjointness proof rather than "no enum at all":
+    :class:`ReviewEventRole` names the four ways an event can enter the ladder
+    (``engaged`` × ``created_at``), and every one of its words is asserted
+    disjoint from the §5.2 states — the claim the original scan was making.
+    """
 
     enums = [
         node.name
@@ -249,7 +266,15 @@ def test_the_policy_declares_no_third_status() -> None:
             for base in node.bases
         )
     ]
-    assert enums == []
+    assert enums == ["ReviewEventRole"]
+    assert set(ReviewEventRole.__members__) == {
+        "ANCHOR_AND_ADVANCE",
+        "ANCHOR_ONLY",
+        "ADVANCE_ONLY",
+        "HISTORY_ONLY",
+    }
+    assert set(ReviewEventRole.__members__) & set(ReviewState.__members__) == set()
+    assert not [word for word in ReviewEventRole if word in set(ReviewState)]
     assert set(URGENCY_ANCHORS) == set(ReviewState)
     assert len(URGENCY_ANCHORS) == 4
 
@@ -370,8 +395,9 @@ def test_the_scheduler_package_still_carries_no_lease_or_ttl() -> None:
 
 
 def test_the_scheduler_package_is_the_expected_set_of_modules() -> None:
-    """One new module; no second policy file, no helper module that would move
-    the decision somewhere a reviewer is not looking."""
+    """The module set is the reviewed one (P7-0's ``authority.py`` included);
+    no second policy file, no helper module that would move the decision
+    somewhere a reviewer is not looking."""
 
     assert tuple(sorted(path.name for path in SCHEDULER_SRC.glob("*.py"))) == (
         SCHEDULER_MODULES

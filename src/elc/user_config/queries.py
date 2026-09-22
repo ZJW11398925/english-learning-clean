@@ -13,6 +13,14 @@ the constraint truth's read side:
   plus the target leg (a NULL target leg is not target-limited and applies to
   every target).
 
+P7-0 adds the two consumer views a Planner reads:
+:meth:`UserConfigQueries.get_effective_session_focus` (the focus in force at an
+instant — real instants, ``expires_at`` honoured, beside the byte-order read
+that stays exactly as it was) and
+:meth:`UserConfigQueries.get_planner_constraint_view` (the in-force rows
+normalized, with the half-declared target leg and the ``THIS_SESSION`` binding
+frozen in :mod:`elc.user_config.constraints` — by argument, never by a column).
+
 ``scope`` is carried by all three and interpreted by none: §9's
 ``THIS_SESSION`` names a session the canonical object has **no column for**,
 so which session is current is the consumer's question, and the first consumer
@@ -35,8 +43,10 @@ from elc.platform.types import (
 from elc.user_config.types import (
     DisclosedUserProfile,
     DisclosurePolicy,
+    EffectiveSessionFocusView,
     LearningGoalPortfolio,
     PlannerConstraint,
+    PlannerConstraintView,
     SessionFocus,
     TeachingPolicyProfile,
     UserProfile,
@@ -139,5 +149,33 @@ class UserConfigQueries(Protocol):
         legs matching verbatim means it applies to this one, and a
         half-declared leg applies to none. The full statement is on the store
         method.
+        """
+        ...
+
+    def get_effective_session_focus(
+        self, conversation_id: ConversationId, as_of: str
+    ) -> Result[EffectiveSessionFocusView | None]:
+        """The conversation's focus in force at ``as_of`` (P7-0).
+
+        The instant-window overlay beside the byte-order read: ``starts_at <=
+        as_of <= expires_at`` (both inclusive, ``None`` = open-ended), the
+        newest started focus winning a tie, and an unparseable stamp refused
+        rather than skipped. ``None`` = no focus governs this conversation at
+        this instant. The byte-order read
+        (:meth:`get_session_focus_for_conversation`) is unchanged.
+        """
+        ...
+
+    def get_planner_constraint_view(
+        self, as_of: str, bound_conversation_id: ConversationId
+    ) -> Result[PlannerConstraintView]:
+        """The constraints in force at ``as_of``, normalized (P7-0).
+
+        The rows are :meth:`active_constraints`' (the store's window reading);
+        the view adds the per-entry target shape and carries the conversation
+        ``THIS_SESSION`` binds to — §9 gives the object no conversation column,
+        so the binding is the caller's argument, never a stored leg. The
+        half-declared target leg's reading is frozen in
+        :mod:`elc.user_config.constraints`.
         """
         ...

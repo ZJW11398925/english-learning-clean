@@ -61,6 +61,12 @@ DUE_DECISION_FACES = (
     "get_schedule_view",
     "is_review_due",
 )
+#: The face P7-0 added: the watermark handshake (``CURRENT`` / ``STALE``) a
+#: consumer compares a schedule row against the current Learning evidence
+#: with. Two authority reads composed by the pure rule in
+#: ``elc.scheduler.authority`` — neither one-call delegation nor the due
+#: decision.
+P7_0_FACES = ("schedule_currency",)
 REMOVED_FACES = ("record_review_outcome", "suspend_review", "get_review_state")
 
 
@@ -86,10 +92,14 @@ def test_the_implemented_faces_raise_nothing() -> None:
 def test_no_face_raises_any_more() -> None:
     """The graduation is exhaustive, not partial: every public method is
     implemented — P6-2 filled the last three (the due decision's write, the
-    §10 view and the due question) and left no pointer behind."""
+    §10 view and the due question) and left no pointer behind, and P7-0's
+    handshake face is implemented too, so the face set is still exactly the
+    declared one."""
 
     methods = _public_methods()
-    assert sorted(methods) == sorted(IMPLEMENTED_FACES + DUE_DECISION_FACES)
+    assert sorted(methods) == sorted(
+        IMPLEMENTED_FACES + DUE_DECISION_FACES + P7_0_FACES
+    )
     raising = {
         name
         for name in methods
@@ -308,7 +318,7 @@ def test_the_commands_protocol_declares_the_three_writes() -> None:
     }
 
 
-def test_the_queries_protocol_declares_the_four_reads() -> None:
+def test_the_queries_protocol_declares_the_five_reads() -> None:
     declared = {
         name
         for name, member in vars(SchedulerQueries).items()
@@ -319,6 +329,7 @@ def test_the_queries_protocol_declares_the_four_reads() -> None:
         "list_review_events",
         "get_schedule_view",
         "is_review_due",
+        "schedule_currency",
     }
 
 
@@ -389,7 +400,9 @@ def test_the_package_exports_are_complete() -> None:
     includes the spacing policy's declarations — what a row's version, window
     and urgency *mean* is exactly what a consumer reading a schedule row needs
     (the constants it was written from), plus the ports a caller wiring the
-    controller must satisfy."""
+    controller must satisfy. P7-0 adds the handshake's two names
+    (``ScheduleCurrency`` / ``currency_of``) and the ladder's event-role table
+    (``ReviewEventRole`` / ``role_of``)."""
 
     expected = {
         "FreshnessPort",
@@ -399,10 +412,12 @@ def test_the_package_exports_are_complete() -> None:
         "REVIEW_EVENT_TABLE",
         "REVIEW_STATES",
         "ReviewEvent",
+        "ReviewEventRole",
         "ReviewState",
         "SCHEDULER_MODEL_VERSION",
         "SCHEDULE_ITEM_TABLE",
         "SPACING_STAGES",
+        "ScheduleCurrency",
         "ScheduleItem",
         "ScheduleView",
         "SchedulerCommands",
@@ -413,8 +428,10 @@ def test_the_package_exports_are_complete() -> None:
         "StaleSchedulerStoreError",
         "URGENCY_ANCHORS",
         "anchor_of",
+        "currency_of",
         "next_window",
         "plan_schedule_item",
+        "role_of",
         "row_version",
         "schedule_item_id_for",
         "stage_from_history",

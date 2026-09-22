@@ -35,6 +35,15 @@ instant-window reading are the store's, stated once there. **Nothing consumes
 a constraint yet**: no Planner reads these rows, no Gate consults them, and no
 face turns a user's sentence into one (Phase 8's extraction face).
 
+P7-0 (TASK-OPI-b99560d4-….36 ①④): two **consumer views** land —
+:meth:`get_effective_session_focus` (the conversation's focus in force at an
+instant, ``expires_at`` honoured, instants parsed) and
+:meth:`get_planner_constraint_view` (the in-force rows normalized, the
+half-declared target leg and the ``THIS_SESSION`` binding frozen in
+:mod:`elc.user_config.constraints`). Neither adds a column, writes a row or
+changes an existing face: the byte-order focus read and the three constraint
+reads answer exactly what they answered before.
+
 Six faces, the same three layers:
 
 - **the sensitive-persistence gate** (§18.1 "高敏感 Profile/Relationship
@@ -84,13 +93,16 @@ from elc.platform.types import (
     TargetId,
     UserId,
 )
+from elc.user_config.constraints import build_view
 from elc.user_config.disclosure import decide_disclosure
 from elc.user_config.store import SqliteUserConfigStore
 from elc.user_config.types import (
     DisclosedUserProfile,
     DisclosurePolicy,
+    EffectiveSessionFocusView,
     LearningGoalPortfolio,
     PlannerConstraint,
+    PlannerConstraintView,
     SessionFocus,
     TeachingPolicyProfile,
     UserProfile,
@@ -294,6 +306,74 @@ class UserConfigController:
         """
 
         return self._store.get_session_focus_for_conversation(conversation_id)
+
+    # -- the consumer views (Phase 7 P7-0) ----------------------------------
+
+    def get_effective_session_focus(
+        self, conversation_id: ConversationId, as_of: str
+    ) -> Result[EffectiveSessionFocusView | None]:
+        """The conversation's focus in force at ``as_of`` (P7-0; ``None`` = none).
+
+        The consumer-side overlay §5.1's ``expires_at?`` needs: real instants,
+        inclusive boundaries, and ``None`` for "nothing governs this
+        conversation at this instant". **The byte-order read this package
+        already shipped is untouched** — :meth:`get_session_focus_for_conversation`
+        still answers by ``(starts_at, session_focus_id)`` byte order with no
+        clock, and its pinned test still holds; a consumer that needs the
+        byte-order winner asks that face. The window reading, its boundaries and
+        the winner rule live in :mod:`elc.user_config.store` (one statement of
+        the rule), and this face only states the view's shape: the row's seven
+        columns plus the ``as_of`` the reading was made at.
+        """
+
+        effective = self._store.effective_session_focus(
+            conversation_id, as_of
+        )
+        if isinstance(effective, Err):
+            return effective
+        if effective.value is None:
+            return Ok(None)
+        focus = effective.value
+        return Ok(
+            EffectiveSessionFocusView(
+                session_focus_id=focus.session_focus_id,
+                conversation_id=focus.conversation_id,
+                base_goal_portfolio_version=(
+                    focus.base_goal_portfolio_version
+                ),
+                temporary_goal_weights=focus.temporary_goal_weights,
+                manual_focus_target=focus.manual_focus_target,
+                starts_at=focus.starts_at,
+                expires_at=focus.expires_at,
+                as_of=as_of,
+            )
+        )
+
+    def get_planner_constraint_view(
+        self, as_of: str, bound_conversation_id: ConversationId
+    ) -> Result[PlannerConstraintView]:
+        """The constraints in force at ``as_of``, as a consumer reads them (P7-0).
+
+        Two steps, each with one home: the rows are the store's reading
+        (``active_constraints`` — ``active`` ∧ the instant window, boundaries
+        inclusive, unreadable stamps refused), and their normalization plus the
+        two frozen readings (the half-declared target leg, the ``THIS_SESSION``
+        binding) are :func:`elc.user_config.constraints.build_view`'s, a pure
+        module. Nothing here branches on a constraint and nothing applies one:
+        the suppression a row will one day cause is the consumer's — this is the
+        *shape* handed over, not a decision (the P6-3 statement stands).
+        """
+
+        rows = self._store.active_constraints(as_of)
+        if isinstance(rows, Err):
+            return rows
+        return Ok(
+            build_view(
+                rows.value,
+                as_of=as_of,
+                bound_conversation_id=bound_conversation_id,
+            )
+        )
 
     # -- the constraint faces (Phase 6 P6-3) --------------------------------
 

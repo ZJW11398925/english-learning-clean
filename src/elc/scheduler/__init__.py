@@ -14,9 +14,12 @@ part of this package raises a phase pointer any more. The policy's constants
 (:data:`SCHEDULER_MODEL_VERSION` / :data:`INTERVAL_DAYS` / :data:`GRACE_DAYS` /
 :data:`URGENCY_ANCHORS`) are exported because they are what a row's version and
 urgency *mean*: a consumer reading a schedule row needs the same declarations
-the writer used.
+the writer used. P7-0 adds :mod:`elc.scheduler.authority` — the watermark
+handshake (``CURRENT`` / ``STALE``) a consumer compares a row against the
+current Learning evidence with.
 """
 
+from elc.scheduler.authority import ScheduleCurrency, currency_of
 from elc.scheduler.commands import SchedulerCommands
 from elc.scheduler.controller import SchedulerController, schedule_item_id_for
 from elc.scheduler.queries import SchedulerQueries
@@ -28,9 +31,11 @@ from elc.scheduler.spacing import (
     URGENCY_ANCHORS,
     FreshnessPort,
     LearningReadPort,
+    ReviewEventRole,
     anchor_of,
     next_window,
     plan_schedule_item,
+    role_of,
     row_version,
     stage_from_history,
     state_at,
@@ -59,10 +64,12 @@ __all__ = [
     "REVIEW_EVENT_TABLE",
     "REVIEW_STATES",
     "ReviewEvent",
+    "ReviewEventRole",
     "ReviewState",
     "SCHEDULER_MODEL_VERSION",
     "SCHEDULE_ITEM_TABLE",
     "SPACING_STAGES",
+    "ScheduleCurrency",
     "ScheduleItem",
     "ScheduleView",
     "SchedulerCommands",
@@ -73,8 +80,10 @@ __all__ = [
     "StaleSchedulerStoreError",
     "URGENCY_ANCHORS",
     "anchor_of",
+    "currency_of",
     "next_window",
     "plan_schedule_item",
+    "role_of",
     "row_version",
     "schedule_item_id_for",
     "stage_from_history",

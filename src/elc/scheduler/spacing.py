@@ -84,6 +84,7 @@ from __future__ import annotations
 import hashlib
 import json
 from datetime import datetime, timedelta
+from enum import StrEnum
 from typing import Any, Mapping, Protocol, Sequence, TypeVar
 
 from elc.platform.types import (
@@ -111,10 +112,12 @@ __all__ = [
     "URGENCY_ANCHORS",
     "FreshnessPort",
     "LearningReadPort",
+    "ReviewEventRole",
     "anchor_of",
     "next_window",
     "parse_instant",
     "plan_schedule_item",
+    "role_of",
     "row_version",
     "stage_from_history",
     "state_at",
@@ -304,6 +307,89 @@ def stage_from_history(events: Sequence[ReviewEvent]) -> SpacingStage:
 
     engaged = sum(1 for event in events if event.engaged)
     return SPACING_STAGES[min(engaged, len(SPACING_STAGES) - 1)]
+
+
+class ReviewEventRole(StrEnum):
+    """What one :class:`~elc.scheduler.types.ReviewEvent` does to a row.
+
+    **The P7-0 freeze table.** Two §5.2 columns decide everything this ladder
+    reads about an event — ``engaged`` and ``created_at`` — and every
+    combination of them is one of four roles:
+
+    ==========  ==============  =====================  ========  =======
+    ``engaged`` ``created_at``  role                   anchors   advances
+    ==========  ==============  =====================  ========  =======
+    True        non-empty       ANCHOR_AND_ADVANCE     yes       yes
+    False       non-empty       ANCHOR_ONLY            yes       no
+    True        empty           ADVANCE_ONLY           no        yes
+    False       empty           HISTORY_ONLY           no        no
+    ==========  ==============  =====================  ========  =======
+
+    Read the rows as the two answers
+    :func:`~elc.scheduler.spacing.anchor_of` and
+    :func:`~elc.scheduler.spacing.stage_from_history` give:
+
+    - **anchors** — the event's ``created_at`` is a candidate for "when did we
+      last touch this row" (the newest candidate wins). Engagement is *not*
+      asked: a review that did not engage still happened, and the window a
+      silent review opens is the same window (``anchor_of``'s own docstring);
+    - **advances** — the event counts toward the ladder position (``+1``, the
+      count clamped to the top). A silent event does **not** advance: the
+      ladder is a count of *engaged* reviews;
+    - **empty ``created_at``** is not a value but an unwritten timestamp: the
+      store stamps that column on the way in (0007's ``created_at or _now()``
+      precedent), so an empty one is a row that has not reached the database.
+      It anchors nothing (``anchor_of`` skips it) while it still counts if it
+      is engaged — which is why ``ADVANCE_ONLY`` exists as a shape rather
+      than being folded into another row: the pure policy is reachable with
+      hand-built event lists, and this table has to say what it does with
+      one.
+
+    **A failed review has no column of its own.** §5.2 gives the event no
+    outcome column and pins no vocabulary for ``event_type``, so nothing here
+    branches on that string — a producer that wants to record "the review
+    happened and did not engage" says ``engaged=False`` (the ``ANCHOR_ONLY``
+    row above), and there is no other way to say it. This is the frozen
+    reading the next cut must build on, and it is frozen *here*, in the
+    ladder's own module: **the first ReviewEvent producer (the review-outcome
+    flow) must cite this table before it writes an event** — the words it puts
+    in ``event_type`` will not be read back, and the two columns it *must* get
+    right are the two this table keys on.
+
+    **The four role words are this cut's declaration** (no canonical block
+    names them): what is canonical is the pair of columns they are derived
+    from, plus the two answers :func:`anchor_of` and
+    :func:`stage_from_history` give. A cut that changes what an event does
+    changes this table with it.
+    """
+
+    ANCHOR_AND_ADVANCE = "ANCHOR_AND_ADVANCE"
+    ANCHOR_ONLY = "ANCHOR_ONLY"
+    ADVANCE_ONLY = "ADVANCE_ONLY"
+    HISTORY_ONLY = "HISTORY_ONLY"
+
+
+def role_of(event: ReviewEvent) -> ReviewEventRole:
+    """One event's role in the ladder (the freeze table on :class:`ReviewEventRole`).
+
+    Derived from the same two fields :func:`anchor_of` and
+    :func:`stage_from_history` read, in the same reading, so the table cannot
+    drift from the policy it describes: a change to either function that
+    changed what an event does would have to change this function too (the
+    phase-7 pin drives one event of each role through all three).
+    """
+
+    if event.engaged:
+        return (
+            ReviewEventRole.ANCHOR_AND_ADVANCE
+            if event.created_at
+            else ReviewEventRole.ADVANCE_ONLY
+        )
+    return (
+        ReviewEventRole.ANCHOR_ONLY
+        if event.created_at
+        else ReviewEventRole.HISTORY_ONLY
+    )
 
 
 def _newest_instant(
