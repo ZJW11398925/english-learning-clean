@@ -27,7 +27,7 @@ readiness gate and BF-02 §11's prerequisite resolver). The pipeline from a
 later cuts' work items, and :class:`PlannerService` remains the Phase 0
 skeleton.
 
-P7-3 (TASK-OPI-44647873-….20) adds the two objects §19 and DATA_MODEL §14/§13
+P7-3 (TASK-OPI-44647873-….20) adds the two objects §19 and DATA_MODEL §14
 name: :mod:`elc.planner.frontier` — the ``ActiveLearningFrontier``, which is
 hard eligibility's survivor set read as a frontier (its position is §19's, its
 members are the candidates step 4 kept, and the kernel fills
