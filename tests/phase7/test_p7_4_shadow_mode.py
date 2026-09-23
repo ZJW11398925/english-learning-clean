@@ -526,7 +526,10 @@ def test_two_runs_agree_and_leave_no_module_level_state() -> None:
     assert first == second
     assert first.would_have_selected == "c-p7-4"
     assert containers() == before
-    assert SHADOW_MODE_MODEL_VERSION == "sh1"
+    # Moved by the p8-2 disposal (was "sh1"): P8-2 moved one of the stamped
+    # readings (``natural_break_available`` left this module's declaration for
+    # §13's view), and the constant's own rule is that it moves with them.
+    assert SHADOW_MODE_MODEL_VERSION == "sh2"
 
 
 # -- ③ the two faces beside it ------------------------------------------------

@@ -33,7 +33,13 @@ produced by ``TeachingController.get_session_budget_view``. The entry, its
 wording and every frontier predicate stay exactly as P7-3 wrote them — whether
 ``cognitive feasibility`` may now be assembled is a BF-02 semantics question
 for its own cut, not a side effect of this one, so this paragraph registers the
-fact and leaves the entry to the cut that answers it.
+fact and leaves the entry to the cut that answers it. One sibling sentence
+went stale with the same landing and is registered here rather than edited:
+``elc.planner.frontier``'s **module prose** beside that entry says BF-03 §17's
+runtime session state "no cut produces", and P8-2 is the cut that landed the
+view reading it — so that prose is expired too, and it stays with the entry
+for the cut that touches ``frontier.py`` (registered here so it is found, not
+forgotten).
 
 **One session is one conversation** (declared reading). §5.2's view block
 carries ``conversation_id`` and no session key, so Local V1 reads a session as
@@ -92,10 +98,11 @@ columns and no formulas):
   needs the counts over a different horizon — the constant and its reading
   move together;
 - ``fatigue_signal`` ← ``None``. No canonical document defines the signal and
-  no landed consumer reads it (the Gate's automatic profiles read the two
-  counts, not a signal), so this cut states none. Revisit: canonical defines a
-  fatigue vocabulary (or a producer derives one) — the field's type admits the
-  word, and this line is where it would be read;
+  no landed consumer reads it — no Gate profile reads these counts today, and
+  ``planner.ledger``'s same-named field is P7-3's own record, not this view's
+  — so this cut states none. Revisit: canonical defines a fatigue vocabulary
+  (or a producer derives one) — the field's type admits the word, and this
+  line is where it would be read;
 - ``as_of`` ← the caller's instant, carried verbatim — the instant the
   classification was made at (the ``ScheduleView.as_of`` precedent: a view is
   reproducible, so two consumers asking about the same instant see the same
@@ -118,8 +125,10 @@ unparseable window.
 **The instant ruler is restated, not imported.** :func:`_parse_instant`
 declares the same three refusals as :func:`elc.scheduler.spacing.parse_instant`
 — and, third of its line, ``elc.user_config.store``'s private copy — for the
-same reason those two restate each other: this package imports no other
-domain. The three declarations are pinned to agree by test; **Revisit**: the
+same reason those two restate each other: this module imports no other domain
+(the ruler is restated rather than imported from ``elc.scheduler.spacing``).
+The Scheduler's declaration and this one are pinned to agree by test; the
+``user_config.store`` copy carries no such cross-module pin. **Revisit**: the
 ruler moves to the shared kernel (``elc.platform``), at which point all three
 copies are replaced by the one.
 """
@@ -213,7 +222,7 @@ class SessionBudgetPolicyPort(Protocol):
 
     Satisfied structurally by :class:`elc.user_config.types.
     TeachingPolicyProfile` (its ``policy_version`` is a ``PolicyVersion``, which
-    is the declared type's subtype) — this package imports no other domain.
+    is the declared type's subtype) — this module imports no other domain.
     """
 
     policy_version: PolicyVersion | None

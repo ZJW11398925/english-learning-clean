@@ -37,6 +37,7 @@ from elc.conversation.types import CommitUserTurn
 from elc.planner.frontier import MISSING_FRONTIER_AUTHORITIES
 from elc.planner.types import PlanningRequest
 from elc.platform.db.epoch import RuntimeEpochFence
+from elc.platform.registry import CANONICAL_OBJECTS, OWNER_TEACHING
 from elc.platform.types import (
     ActionId,
     ClientMessageId,
@@ -376,6 +377,34 @@ def test_an_empty_history_answers_the_honest_zero_view() -> None:
     assert view.fatigue_signal is None
     assert view.policy_version is None
     assert view.as_of == _at(0)
+
+
+def test_a_busy_session_still_invents_no_fatigue_signal() -> None:
+    """``fatigue_signal`` is absent as a claim about the *field*, not about a
+    quiet conversation: six automatic openings — past any threshold a "tired
+    user" heuristic might read a usage count against — still answer ``None``,
+    while the facts the view does derive stay exactly what the rows say.
+
+    The mutation this pins (the p8-2 review's m12): a producer that turns
+    ``automatic_teaching_used`` into a word once it passes some threshold.
+    The empty-history case above covers ``None`` only where the count is
+    zero, so it folds silently. Here the count is 6."""
+
+    view = _view(
+        [
+            _record(moment_id=f"tm-busy-{index}", opened_at=_at(index))
+            for index in range(6)
+        ],
+        as_of=_at(10),
+    )
+    assert view.automatic_teaching_used == 6
+    assert view.fatigue_signal is None
+    # The derived facts a busy session does state are unaffected: the newest
+    # opening (at +5) leaves the declared cooldown running, and nothing was
+    # closed, so both recency counts are real zeros.
+    assert view.cooldown_remaining == COOLDOWN_WINDOW_SECONDS - 5 * 60
+    assert view.recent_skips == 0
+    assert view.recent_rejections == 0
 
 
 def test_the_view_counts_only_its_own_conversations_rows() -> None:
@@ -1194,6 +1223,19 @@ def test_no_migration_carries_the_view() -> None:
         for path in sorted((REPO_ROOT / "migrations").glob("*.sql"))
     ).lower()
     assert "session_budget" not in schema
+
+
+def test_the_view_is_registered_with_an_owner_and_the_views_version() -> None:
+    """A derived view is still a canonical object, and the disposal's F3
+    registers it beside its ``schedule_view`` sibling rather than leaving it
+    unregistered: teaching-owned, and bound to the one version column §5.2's
+    view block itself spells (``policy_version``)."""
+
+    entry = CANONICAL_OBJECTS["session_budget_view"]
+    assert entry.name == "SessionBudgetView"
+    assert entry.owner == OWNER_TEACHING
+    assert entry.schema is SessionBudgetView
+    assert entry.version_field == "policy_version"
 
 
 def test_the_planner_request_gained_no_field() -> None:

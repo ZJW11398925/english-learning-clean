@@ -675,9 +675,10 @@ def test_the_suite_registers_its_readings_with_a_revisit_each() -> None:
 
 def test_the_suites_own_version_stamp_is_pinned() -> None:
     """The versioning paragraph's claim, pinned the way its four siblings'
-    stamps are (``fa1`` / ``pk1`` / ``pl1`` / ``sh1``): the module says the
-    stamp moves with its readings, so its present value is asserted rather
-    than left to be inherited by a reader's eyes alone."""
+    stamps are (``fa1`` / ``pk1`` / ``pl1`` / ``sh2`` — the shadow stamp moved
+    from ``sh1`` in the p8-2 disposal): the module says the stamp moves with
+    its readings, so its present value is asserted rather than left to be
+    inherited by a reader's eyes alone."""
 
     assert STRESS_SUITE_MODEL_VERSION == "bf02-suite-1"
 

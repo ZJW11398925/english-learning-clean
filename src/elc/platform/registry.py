@@ -29,7 +29,11 @@ from elc.platform.types import (
 from elc.relationship.types import RelationshipMemoryRecord
 from elc.runtime.types import ProjectionJobRecord, ValidatorResultRecord
 from elc.scheduler.types import ReviewEvent, ScheduleItem, ScheduleView
-from elc.teaching.types import GateDecisionRecord, TeachingMomentRecord
+from elc.teaching.types import (
+    GateDecisionRecord,
+    SessionBudgetView,
+    TeachingMomentRecord,
+)
 from elc.user_config.types import (
     DisclosurePolicy,
     LearningGoalPortfolio,
@@ -123,6 +127,26 @@ CANONICAL_OBJECTS: Mapping[str, CanonicalObject] = {
     ),
     "review_event": CanonicalObject(
         "ReviewEvent", OWNER_SCHEDULER, ReviewEvent
+    ),
+    # -- The session budget, docs/DATA_MODEL.md §5.2's *second* derived view
+    # and the ``schedule_view`` entry's sister (P8-2; the disposal's F3
+    # registered it beside its sibling rather than leaving it unregistered).
+    # Both are views a document labels ``Derived view`` rather than
+    # rows, both are owned by the domain that derives them, and both bind the
+    # version column the view block itself spells: §5.2's view block carries
+    # ``policy_version`` — one of the canonical VERSION_FIELDS spellings —
+    # exactly as ScheduleView carries ``schedule_version``, so binding it
+    # claims nothing the document does not spell (the ScheduleItem entry's
+    # rule; unlike that entry, this one is a *view* whose block spells the
+    # qualified name). The view's two authorities are DOMAIN_MODEL §13's —
+    # ``TeachingPolicyProfile`` + Runtime Session State — and its production
+    # face is ``elc.teaching.controller.TeachingController.
+    # get_session_budget_view`` over the derivation
+    # ``elc.teaching.budget.session_budget_view_of`` (zero migrations: no
+    # table carries it, so this entry is the only registration it needs).
+    "session_budget_view": CanonicalObject(
+        "SessionBudgetView", OWNER_TEACHING, SessionBudgetView,
+        version_field="policy_version",
     ),
     # -- Teaching Gate authorization truth (docs/DOMAIN_MODEL.md §14;
     # docs/DATA_MODEL.md §14.1).

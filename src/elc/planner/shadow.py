@@ -81,8 +81,9 @@ quotation, and each names the condition that re-opens it:
    fields are named here and **not read** either, as one group so that "the
    view travels in the request" cannot be mistaken for "the run read it":
    ``context_opportunity_set`` (no producer in this repository builds one),
-   ``session_budget_view`` (BF-03 §17's runtime session state is a Phase 8
-   input) and ``planning_ledger`` (V1 has no ledger table — ``NO_TABLE_V1``,
+   ``session_budget_view`` (this run derives no control fact from it — the
+   runtime unit does that, and the view itself landed in P8-2) and
+   ``planning_ledger`` (V1 has no ledger table — ``NO_TABLE_V1``,
    the same reason the durable trace read refuses). The fourth,
    ``conversation_priority_view``, is read for **exactly one field** —
    ``natural_break_available``, BF-02 §5's context field, which canonical
@@ -90,9 +91,9 @@ quotation, and each names the condition that re-opens it:
    ``flow_priority`` / ``interaction_phase`` stay the Gate's, and this
    module's whole boundary is that nothing here calls one. Revisit: the §10
    context assembly (the orchestrator's side of the chain) lands and fixes
-   where the proposals travel, or one of the three named fields reaches its
-   landing — Phase 8's session budget, a V1 ledger table, or a producer for
-   the opportunity set;
+   where the proposals travel, or one of the named fields becomes an input of
+   this run — a V1 ledger table, a producer for the opportunity set, or
+   ``request.session_budget_view`` reaching the run's authority assembly;
 2. **one fact the request does not carry is declared, and one is now read
    from its canonical home.** The current Learning watermark
    (:func:`elc.learning.queries.get_learning_watermark` is the face that
@@ -149,10 +150,10 @@ readings (the seam in judgement 1 above all); it moves with them, and a
 calibration of BF-02's numbers moves
 :data:`~elc.planner.kernel.PLANNER_PROFILE_VERSION` instead. P8-2 moved one of
 the stamped readings (``natural_break_available`` left this module's
-declaration for §13's view — judgements 1 and 2) while the value stayed
-``sh1``; the reason is spelled beside the constant, so the two facts a reader
-needs — what changed and why the stamp did not — are stated rather than left
-to a diff.
+declaration for §13's view — judgements 1 and 2) and the stamp moved with it:
+``sh2`` is the value, because the constant's own rule is that it moves with
+the readings it stamps. The two facts a reader needs — what changed and why
+the stamp moved — are stated beside the constant rather than left to a diff.
 """
 
 from __future__ import annotations
@@ -196,11 +197,11 @@ __all__ = [
 #: the supply seam, the declared fact and the readiness scope. **P8-2 moved one
 #: of those readings** — ``natural_break_available`` is no longer this module's
 #: declaration but §13's view's (judgement 1's fourth field, judgement 2) — and
-#: the stamp value deliberately **stays** ``sh1``: tests/phase7 pins the present
-#: value and this cut may not edit that suite, so the two readings share one
-#: stamp here rather than silently differ. The cut that moves that pin bumps
-#: this stamp with it.
-SHADOW_MODE_MODEL_VERSION = "sh1"
+#: **the stamp moved with it to ``sh2``**: this constant's own rule is that it
+#: moves with the readings it stamps, so the reading and the number do not
+#: silently differ. tests/phase7's value pin was moved in the same cut, and the
+#: comment beside that pin says why.
+SHADOW_MODE_MODEL_VERSION = "sh2"
 
 
 class _ConversationPriorityPort(Protocol):

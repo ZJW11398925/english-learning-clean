@@ -604,13 +604,18 @@ def test_the_shadow_module_reads_the_field_from_the_requests_view() -> None:
     assert "**one fact the request does not carry is declared" in source
 
 
-def test_the_registered_divergence_is_recorded_beside_the_stamp() -> None:
-    """The stamp's value stayed ``sh1`` while one of the stamped readings
-    moved; the reason is stated in the comment the constant carries, not left
-    to a diff (the receipt registers the phase-7 pin that holds the value)."""
+def test_the_moved_stamp_is_recorded_beside_the_stamp() -> None:
+    """P8-2 moved one of the stamped readings and the stamp moved with it
+    (the p8-2 disposal's ruling, ``sh2``): the reason is stated in the
+    comment the constant carries, not left to a diff, and it names the
+    phase-7 pin that was moved in the same cut (registered in the receipt).
+
+    The claim this test pins did not weaken with the value — the stamp and
+    the readings still do not silently differ; only which way they agreed
+    changed (``sh1`` pinned the divergence, ``sh2`` records the move)."""
 
     lines = source_text(SHADOW_MODULE).splitlines()
-    constant = 'SHADOW_MODE_MODEL_VERSION = "sh1"'
+    constant = 'SHADOW_MODE_MODEL_VERSION = "sh2"'
     index = next(
         position
         for position, line in enumerate(lines)
@@ -628,9 +633,9 @@ def test_the_registered_divergence_is_recorded_beside_the_stamp() -> None:
         for line in reversed(block_lines)
     )
     assert "P8-2" in block
-    assert "stays" in block
+    assert "moved with it" in block
+    assert "sh2" in block
     assert "tests/phase7" in block
-    assert "bumps this stamp" in block
 
 
 # -- the frozen replays the move must not disturb ---------------------------

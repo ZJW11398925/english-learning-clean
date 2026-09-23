@@ -912,12 +912,15 @@ def decide_user_requested_continuation(facts: ContinuationFacts) -> GateVerdict:
 #    ConversationPriorityView.flow_priority == "PROTECTED" (the same view
 #    P7-2 assembled). This module does not read that view: the derivation
 #    belongs to whoever assembles the turn's facts. Revisit: the cut that
-#    wires the automatic path into a turn (p8-2 / p8-4), which must either
+#    wires the automatic path into a turn (p8-4), which must either
 #    pass the derived fact or name why it cannot.
 # 3. ``automatic_session_budget_exhausted`` / ``hard_cooldown_active`` ←
 #    the SessionBudgetView (docs/DOMAIN_MODEL.md §13: TeachingPolicyProfile
-#    + Runtime Session State). No SessionBudgetView exists in this cut.
-#    Revisit: p8-2.
+#    + Runtime Session State). P8-2 landed that view and its production face
+#    (``TeachingController.get_session_budget_view``); this profile still
+#    consumes the **injected** control facts and derives nothing itself.
+#    Revisit: the wiring cut (p8-4 / p8-5) decides who assembles the fact
+#    inside a turn — there is no caller today.
 # 4. ``moment_consent_class`` (``AUTO_OPENED`` / ``USER_AUTHORIZED``) is
 #    the frozen reference's own word for *how the active moment came to
 #    be*; it is not a column of docs/DATA_MODEL.md §15. Until canonical or
