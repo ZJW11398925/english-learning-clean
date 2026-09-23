@@ -24,6 +24,7 @@ from __future__ import annotations
 import dataclasses
 import hashlib
 import importlib.util
+import inspect
 import json
 import sys
 from dataclasses import replace
@@ -31,6 +32,7 @@ from typing import Any
 
 import pytest
 
+from elc.teaching import gate as gate_module
 from elc.teaching.gate import (
     DENY_PRECEDENCE,
     GATE_POLICY_VERSION,
@@ -38,8 +40,10 @@ from elc.teaching.gate import (
     SAFETY_PRIVACY_NO_SOURCE,
     TARGET_SUPPRESSED_NO_SOURCE,
     USER_INITIATED_OPEN_REASON_CODES,
+    AutomaticOpenFacts,
     GateInputError,
     UserInitiatedOpenFacts,
+    decide_automatic_open,
     decide_user_initiated_open,
 )
 from tests.conftest import BASELINES, DOCS_ROOT
@@ -147,9 +151,42 @@ def test_missing_or_unknown_fact_keys_are_the_eight_words() -> None:
     )
 
 
+def _object_lines_with(source: str, token: str) -> list[str]:
+    """The non-comment, non-docstring lines of one object's source that
+    carry ``token`` (P8-1's narrowing of the whole-module scan below).
+
+    Same lexical convention the original module-level scan used (a line
+    whose stripped form starts with ``#`` or a quote is prose), applied to
+    the source of **one object** instead of the whole file — so the pin
+    follows the *object* it is about rather than every neighbouring object.
+    """
+
+    return [
+        line
+        for line in source.splitlines()
+        if line.strip()
+        and not line.strip().startswith(("#", '"', "'"))
+        and token in line
+    ]
+
+
 def test_no_planner_decision_is_conceived() -> None:
-    """The profile has no planner field and never fabricates a
-    PlannerDecision (mother decision core ruling ①)."""
+    """The user-initiated profile never fabricates a PlannerDecision
+    (mother decision core ruling ①), and the automatic profile **takes**
+    the planner's answer as an input instead.
+
+    **Why this pin was narrowed (P8-1).** The original version scanned the
+    whole module's code text for the planner-decision word. That was
+    equivalent while the module held only the two user-initiated profiles;
+    P8-1 added the AUTOMATIC branch, whose bundle must *carry* the planner
+    facts it consumes (a PlannerDecision is an input there, not an
+    invention) — so a whole-module scan would now fail for the opposite of
+    the property it protects. The pin is narrowed to the two user-initiated
+    objects (``inspect.getsource``, so a renamed object fails loudly) and
+    **strengthened** by adding the automatic half as an explicit assertion:
+    the automatic bundle has the planner fact fields, and its decider
+    refuses a run that did not select instead of minting a SELECT.
+    """
 
     field_names = {field.name for field in dataclasses.fields(
         UserInitiatedOpenFacts
@@ -158,18 +195,56 @@ def test_no_planner_decision_is_conceived() -> None:
     source = (DOCS_ROOT.parent / "src" / "elc" / "teaching" / "gate.py").read_text(
         encoding="utf-8"
     )
-    # The module never reaches for the planner package, and no code line
-    # constructs or asserts a planner decision (docstrings may *name* the
-    # forbidden object while explaining that it is not fabricated).
+    # The module never reaches for the planner package (unchanged).
     assert "elc.planner" not in source
-    code_lines = [
-        line
-        for line in source.splitlines()
-        if line.strip() and not line.strip().startswith(("#", '"', "'"))
-    ]
-    assert not [
-        line for line in code_lines if "planner_decision" in line.lower()
-    ]
+    # The user-initiated profile and its decider still construct, assert
+    # and speak no planner decision — docstrings may *name* the forbidden
+    # object while explaining that it is not fabricated, which is why this
+    # is the same lexical scan as before, now per object.
+    for user_initiated_object in (
+        UserInitiatedOpenFacts,
+        decide_user_initiated_open,
+    ):
+        offenders = _object_lines_with(
+            inspect.getsource(user_initiated_object), "planner_decision"
+        )
+        assert not offenders, (user_initiated_object.__name__, offenders)
+
+    # The automatic profile consumes the planner facts as its inputs …
+    automatic_fields = {
+        field.name for field in dataclasses.fields(AutomaticOpenFacts)
+    }
+    assert {"planner_execution_status", "planner_decision"} <= automatic_fields
+    # The §14 decision column's own name for the selection is readable off
+    # the bundle (a read-only alias of candidate_id).
+    assert AutomaticOpenFacts(
+        decision_cycle_id="dcy-alias", candidate_id="cand-alias"
+    ).selected_candidate_id == "cand-alias"
+    decision_source = inspect.getsource(decide_automatic_open)
+    assert any(
+        line.strip().startswith("facts.planner_decision")
+        for line in _object_lines_with(
+            inspect.getsource(gate_module._check_planner_authorized_open),
+            "planner_decision",
+        )
+    )
+    # … reached from the automatic validator (so the check is not dead code).
+    assert "_check_planner_authorized_open" in inspect.getsource(
+        gate_module._validate_automatic_open
+    )
+    # The decision word is read off the required facts object; it is never
+    # a literal this profile carries around.
+    assert "SELECT" not in decision_source, decision_source[:200]
+    # … and it never becomes the planner: a run that did not select is a
+    # contract error, not a decision this profile invents.
+    with pytest.raises(GateInputError):
+        decide_automatic_open(
+            AutomaticOpenFacts(
+                decision_cycle_id="dcy-no-select",
+                candidate_id="cand-kept",
+                planner_decision="NO_TARGET",
+            )
+        )
 
 
 # ---------------------------------------------------------------------------

@@ -51,8 +51,20 @@ USER_INITIATED OPEN (mother decision DEC-OPI-2babb21e-….5 core ruling ①):
 - Automatic-only controls are deliberately absent from this profile:
   auto-teach preference, automatic opening budget / cooldown and
   conversation-flow protection all guard *unsolicited* interruption and
-  are bypassed by a user-initiated request in BF-03 v1.1 (§12/§13/§16/§17);
-  the AUTOMATIC branch of the Gate is Phase 8 and stays unimplemented.
+  are bypassed by a user-initiated request in BF-03 v1.1 (§12/§13/§16/§17).
+
+The AUTOMATIC branch of the Gate is **implemented** (Phase 8 P8-1) as two
+more profiles of this same pure module:
+:class:`AutomaticOpenFacts` / :func:`decide_automatic_open` (the
+planner-authorized OPEN: the planner facts are *inputs* the caller read off
+the durable run — this profile never re-decides the selection and never
+fabricates a PlannerDecision) and :class:`AutoContinuationFacts` /
+:func:`decide_auto_continuation` (the unsolicited mid-moment continuation,
+which is the one path the auto-teach preference and flow protection still
+guard when the moment itself was auto-opened). Both reproduce the frozen
+reference's automatic branch word for word; the two USER_INITIATED
+profiles above are untouched by that addition (their fact sets, defaults
+and refusals are unchanged).
 
 NO_SOURCE facts (P3-1A, docstring-flagged, never fabricated):
 
@@ -62,22 +74,30 @@ NO_SOURCE facts (P3-1A, docstring-flagged, never fabricated):
   :data:`SAFETY_PRIVACY_NO_SOURCE` documents that this is "no authority
   said BLOCK", not "an authority said it is safe". Datasource wiring lands
   with the authority (later slice).
-- suppression: TeachingPreference / PlannerConstraint (docs/DATA_MODEL.md
-  §9) are Phase 6/7 tables that do not exist yet, so
-  :data:`TARGET_SUPPRESSED_NO_SOURCE` = False with the same honest
-  NO_SOURCE meaning.
+- suppression: the §9 objects (TeachingPreference / PlannerConstraint,
+  docs/DATA_MODEL.md §9) are **durable since migration 0013** (P6-0 for
+  the preference rows, P6-3 for the constraint rows) — the tables exist.
+  What this module still does not have is a durable read face to hand it
+  an *applied* suppression fact at this call site, so
+  :data:`TARGET_SUPPRESSED_NO_SOURCE` = False keeps the same honest
+  NO_SOURCE meaning: "no authority said suppressed", not "an authority
+  said it is teachable". The constraint's consumption is the Planner's
+  (P7-2 marks a candidate; the Gate's own fact stays declared).
 
 Both are deterministic (never UNKNOWN) precisely because an absent source
 must not degrade a user's explicit request; the trace stays truthful via
 this docstring and the constants.
 
-Critical-state completeness: the eight fact keys of this slice —
+Critical-state completeness: the eight fact keys of the opening profiles —
 LEARNING_SNAPSHOT, AUTHORIZATION_STATUS, TARGET_VALIDITY,
 CONTENT_VALIDITY, LOCK_STATE, SAFETY_PRIVACY_STATUS, SUBJECT_STATUS,
 GATE_STATE (docs/DATA_MODEL.md §14.1 ``missing_or_unknown[]``). Any
 UNKNOWN fact yields ``GateExecutionStatus=DEGRADED`` with no GateDecision.
 ``missing_or_unknown`` is emitted in the frozen reference's deterministic
-(sorted) order.
+(sorted) order. The continuation profiles carry the same facts **minus
+the learning snapshot** (seven keys, the BF-03 v1.1 cross-layer repair:
+an active moment's own new Evidence does not invalidate its
+continuation).
 
 Contract errors (BF-03 §21) raise :class:`GateInputError`: calling the
 Gate with an invalid context/action/enum is a program error, not a
@@ -87,10 +107,15 @@ decision — it is never DENY and never DEGRADED.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from typing import Protocol
 
 from elc.teaching.targets import CONTENT_STATUSES, TARGET_STATUSES
 
 __all__ = [
+    "AUTOMATIC_OPEN_FACT_KEYS",
+    "AUTOMATIC_OPEN_REASON_CODES",
+    "AUTO_CONTINUATION_FACT_KEYS",
+    "AUTO_CONTINUATION_REASON_CODES",
     "CONTINUATION_ACTIONS",
     "CONTINUATION_REASON_CODES",
     "DENY_PRECEDENCE",
@@ -104,11 +129,15 @@ __all__ = [
     "USER_INITIATED_OPEN_INTENTS",
     "USER_INITIATED_OPEN_REASON_CODES",
     "USER_INTENT_SCOPES",
+    "AutoContinuationFacts",
+    "AutomaticOpenFacts",
     "ContinuationFacts",
     "EnvFactsNoSource",
     "GateInputError",
     "GateVerdict",
     "UserInitiatedOpenFacts",
+    "decide_auto_continuation",
+    "decide_automatic_open",
     "decide_user_initiated_open",
     "decide_user_requested_continuation",
     "with_lock_state",
@@ -288,35 +317,105 @@ class GateVerdict:
         return self.decision == "ALLOW"
 
 
+class _CarriedFacts(Protocol):
+    """The typed face of "a fact bundle of this module": the fields the four
+    profiles share, which is what the shared validators below may touch.
+
+    A structural Protocol with read-only members (every bundle is a frozen
+    dataclass) rather than a base class: the two original bundles are
+    frozen against their Phase 3 tests (a base class would change their MRO
+    and their field order), and the two automatic bundles need no shared
+    state — only shared *checks*.
+    """
+
+    @property
+    def proposed_action(self) -> str: ...
+    @property
+    def authorization_basis(self) -> str: ...
+    @property
+    def authorization_status(self) -> str: ...
+    @property
+    def subject_status(self) -> str: ...
+    @property
+    def target_status(self) -> str: ...
+    @property
+    def content_status(self) -> str: ...
+    @property
+    def lock_state(self) -> str: ...
+    @property
+    def learning_snapshot_status(self) -> str: ...
+    @property
+    def gate_state_status(self) -> str: ...
+    @property
+    def safety_privacy_status(self) -> str: ...
+
+
+class _OpeningCarriedFacts(_CarriedFacts, Protocol):
+    """A bundle the opening contract applies to: the shared facts plus the
+    two identity fields the two OPEN profiles carry identically.
+
+    ``decision_cycle_id``/``candidate_id`` are the §15 names; the automatic
+    bundle exposes ``selected_candidate_id`` as the §14 decision column's
+    spelling of the same selection (checked by
+    :class:`_PlannerAuthorizedOpeningFacts`).
+    """
+
+    @property
+    def decision_cycle_id(self) -> str: ...
+    @property
+    def candidate_id(self) -> str: ...
+
+
+class _PlannerAuthorizedOpeningFacts(_OpeningCarriedFacts, Protocol):
+    """An **AUTOMATIC** opening's bundle: the planner half of the contract
+    is a *fact the caller read from the durable run*, so the planner fields
+    are part of the type — and, with them, the *absence* of an existing
+    moment (``moment_id`` is ``None``: an opening starts one) and the
+    ``user_initiated`` flag that must be false on this path.
+
+    The USER_INITIATED bundle does not match this Protocol — which is
+    exactly the Phase 3 specialization, now expressed in the type system
+    rather than only in a docstring (that bundle carries neither planner
+    field nor the flag: its authorization path *is* the request).
+    """
+
+    @property
+    def moment_id(self) -> str | None: ...
+    @property
+    def selected_candidate_id(self) -> str: ...
+    @property
+    def user_initiated(self) -> bool: ...
+    @property
+    def planner_execution_status(self) -> str: ...
+    @property
+    def planner_decision(self) -> str: ...
+
+
+class _ContinuationCarriedFacts(_CarriedFacts, Protocol):
+    """A bundle the continuation contract applies to: the shared facts plus
+    the one field the continuation lifecycle check reads (its own
+    ``moment_state``)."""
+
+    @property
+    def moment_state(self) -> str: ...
+
+
 def _check(condition: bool, message: str) -> None:
     if not condition:
         raise GateInputError(message)
 
 
-def _validate(facts: UserInitiatedOpenFacts) -> None:
-    _check(facts.gate_context in GATE_CONTEXTS, "invalid gate_context")
-    _check(
-        facts.proposed_action in OPEN_ACTIONS,
-        "USER_INITIATED OPEN requires the OPENING action",
-    )
-    _check(
-        facts.authorization_path == "USER_INITIATED",
-        "this profile decides USER_INITIATED authorization paths only",
-    )
-    _check(
-        facts.authorization_basis == "DECISION_CYCLE",
-        "OPEN requires DECISION_CYCLE authorization basis (BF-03 §3)",
-    )
-    _check(
-        facts.gate_context == "OPEN",
-        "this profile decides the OPEN context only (continuation is P3-1B)",
-    )
-    _check(bool(facts.decision_cycle_id), "OPEN requires a decision cycle")
-    _check(bool(facts.candidate_id), "OPEN requires a selected candidate")
-    _check(
-        facts.user_intent_scope in USER_INTENT_SCOPES,
-        f"invalid user_intent_scope: {facts.user_intent_scope}",
-    )
+def _check_fact_values(facts: _CarriedFacts) -> None:
+    """The five critical facts every profile carries, plus the gate-state
+    status and the learning-snapshot status an opening carries.
+
+    The allowed sets are the frozen BF-03 v1.1 reference's own sets, and the
+    order is the order the reference checks them in — shared by all four
+    profiles so one spelling of "invalid lock_state" cannot drift from
+    another (P8-1 hoisted this loop out of the two original validators; the
+    messages and the refusals are unchanged).
+    """
+
     for name, value, allowed in (
         (
             "authorization_status",
@@ -342,6 +441,103 @@ def _validate(facts: UserInitiatedOpenFacts) -> None:
         _check(value in allowed, f"invalid {name}: {value}")
 
 
+def _check_opening_facts(facts: _OpeningCarriedFacts) -> None:
+    """The BF-03 v1.1 opening contract both OPEN profiles share: the
+    DECISION_CYCLE basis, the OPENING action, and a non-empty decision
+    cycle and selected candidate.
+
+    The two profiles differ in exactly the checks they perform themselves:
+    the authorization path's word, the user-intent scope their path
+    requires, the ``user_initiated`` flag that agrees with the path, and —
+    for the automatic path only — the planner half of the contract
+    (:func:`_check_planner_authorized_open`).
+    """
+
+    _check(
+        facts.authorization_basis == "DECISION_CYCLE",
+        "OPEN requires DECISION_CYCLE authorization basis (BF-03 §3)",
+    )
+    _check(facts.proposed_action == "OPENING", "OPEN requires the OPENING action")
+    _check(bool(facts.decision_cycle_id), "OPEN requires a decision cycle")
+    _check(bool(facts.candidate_id), "OPEN requires a selected candidate")
+
+
+def _check_planner_authorized_open(
+    facts: _PlannerAuthorizedOpeningFacts,
+) -> None:
+    """The automatic opening's planner half: the run the caller read
+    succeeded and **selected**, the selection is non-empty, and no moment
+    exists yet (an opening starts one — the frozen reference's
+    ``moment_id is None`` check).
+
+    The user-initiated bundle never sees these checks: it has no planner
+    fields to check and its own validator carries the path's requirements.
+    """
+
+    _check(
+        facts.planner_execution_status == "SUCCEEDED",
+        "OPEN requires successful Planner execution",
+    )
+    _check(
+        facts.planner_decision == "SELECT",
+        "OPEN requires Planner SELECT",
+    )
+    _check(
+        bool(facts.selected_candidate_id),
+        "OPEN requires selected candidate",
+    )
+    _check(
+        facts.moment_id is None,
+        "OPEN must not have existing moment_id",
+    )
+    _check(
+        not facts.user_initiated,
+        "automatic OPEN cannot be user_initiated",
+    )
+
+
+def _opening_unknown_facts(facts: _CarriedFacts) -> tuple[str, ...]:
+    """Critical-state completeness of the opening profiles, keyed by the
+    §14.1 fact keys in a fixed order; callers sort the result exactly like
+    the frozen reference's ``sorted(set(unknown))``."""
+
+    return tuple(
+        key
+        for key, status in (
+            ("LEARNING_SNAPSHOT", facts.learning_snapshot_status),
+            ("AUTHORIZATION_STATUS", facts.authorization_status),
+            ("TARGET_VALIDITY", facts.target_status),
+            ("CONTENT_VALIDITY", facts.content_status),
+            ("LOCK_STATE", facts.lock_state),
+            ("SAFETY_PRIVACY_STATUS", facts.safety_privacy_status),
+            ("SUBJECT_STATUS", facts.subject_status),
+        )
+        if status == "UNKNOWN"
+    ) + ("GATE_STATE",) * (1 if facts.gate_state_status == "INCOMPLETE" else 0)
+
+
+def _validate(facts: UserInitiatedOpenFacts) -> None:
+    _check(facts.gate_context in GATE_CONTEXTS, "invalid gate_context")
+    _check(
+        facts.proposed_action in OPEN_ACTIONS,
+        "USER_INITIATED OPEN requires the OPENING action",
+    )
+    _check(
+        facts.authorization_path == "USER_INITIATED",
+        "this profile decides USER_INITIATED authorization paths only",
+    )
+    _check(
+        facts.gate_context == "OPEN",
+        "this profile decides the OPEN context only (continuation is P3-1B)",
+    )
+    _check(
+        facts.user_intent_scope in USER_INTENT_SCOPES,
+        f"invalid user_intent_scope: {facts.user_intent_scope}",
+    )
+    _check_opening_facts(facts)
+    _check_fact_values(facts)
+
+
 def _critical_unknown(facts: UserInitiatedOpenFacts) -> tuple[str, ...]:
     """Critical-state completeness, mapped to the §14.1 fact keys.
 
@@ -349,24 +545,7 @@ def _critical_unknown(facts: UserInitiatedOpenFacts) -> tuple[str, ...]:
     ``sorted(set(unknown))``.
     """
 
-    unknown: list[str] = []
-    if facts.learning_snapshot_status == "UNKNOWN":
-        unknown.append("LEARNING_SNAPSHOT")
-    if facts.authorization_status == "UNKNOWN":
-        unknown.append("AUTHORIZATION_STATUS")
-    if facts.target_status == "UNKNOWN":
-        unknown.append("TARGET_VALIDITY")
-    if facts.content_status == "UNKNOWN":
-        unknown.append("CONTENT_VALIDITY")
-    if facts.lock_state == "UNKNOWN":
-        unknown.append("LOCK_STATE")
-    if facts.safety_privacy_status == "UNKNOWN":
-        unknown.append("SAFETY_PRIVACY_STATUS")
-    if facts.subject_status == "UNKNOWN":
-        unknown.append("SUBJECT_STATUS")
-    if facts.gate_state_status == "INCOMPLETE":
-        unknown.append("GATE_STATE")
-    return tuple(sorted(set(unknown)))
+    return tuple(sorted(set(_opening_unknown_facts(facts))))
 
 
 def decide_user_initiated_open(facts: UserInitiatedOpenFacts) -> GateVerdict:
@@ -550,29 +729,28 @@ def _validate_continuation(facts: ContinuationFacts) -> None:
         facts.user_intent_scope in USER_INTENT_SCOPES,
         f"invalid user_intent_scope: {facts.user_intent_scope}",
     )
-    for name, value, allowed in (
-        (
-            "authorization_status",
-            facts.authorization_status,
-            _AUTHORIZATION_STATUSES,
-        ),
-        ("subject_status", facts.subject_status, _SUBJECT_STATUSES),
-        ("target_status", facts.target_status, TARGET_STATUSES),
-        ("content_status", facts.content_status, CONTENT_STATUSES),
-        (
-            "safety_privacy_status",
-            facts.safety_privacy_status,
-            _SAFETY_PRIVACY_STATUSES,
-        ),
-        ("lock_state", facts.lock_state, _LOCK_STATES),
-        (
-            "learning_snapshot_status",
-            facts.learning_snapshot_status,
-            _SNAPSHOT_STATUSES,
-        ),
-        ("gate_state_status", facts.gate_state_status, _GATE_STATE_STATUSES),
-    ):
-        _check(value in allowed, f"invalid {name}: {value}")
+    _check_fact_values(facts)
+
+
+def _continuation_unknown_facts(
+    facts: _ContinuationCarriedFacts,
+) -> tuple[str, ...]:
+    """Critical-state completeness of the continuation profiles, keyed by
+    the §14.1 fact keys (the same seven as the opening profiles minus
+    LEARNING_SNAPSHOT — the BF-03 v1.1 cross-layer repair)."""
+
+    return tuple(
+        key
+        for key, status in (
+            ("AUTHORIZATION_STATUS", facts.authorization_status),
+            ("TARGET_VALIDITY", facts.target_status),
+            ("CONTENT_VALIDITY", facts.content_status),
+            ("LOCK_STATE", facts.lock_state),
+            ("SAFETY_PRIVACY_STATUS", facts.safety_privacy_status),
+            ("SUBJECT_STATUS", facts.subject_status),
+        )
+        if status == "UNKNOWN"
+    ) + ("GATE_STATE",) * (1 if facts.gate_state_status == "INCOMPLETE" else 0)
 
 
 def _continuation_unknown(facts: ContinuationFacts) -> tuple[str, ...]:
@@ -586,22 +764,7 @@ def _continuation_unknown(facts: ContinuationFacts) -> tuple[str, ...]:
     degrades a continuation.
     """
 
-    unknown: list[str] = []
-    if facts.authorization_status == "UNKNOWN":
-        unknown.append("AUTHORIZATION_STATUS")
-    if facts.target_status == "UNKNOWN":
-        unknown.append("TARGET_VALIDITY")
-    if facts.content_status == "UNKNOWN":
-        unknown.append("CONTENT_VALIDITY")
-    if facts.lock_state == "UNKNOWN":
-        unknown.append("LOCK_STATE")
-    if facts.safety_privacy_status == "UNKNOWN":
-        unknown.append("SAFETY_PRIVACY_STATUS")
-    if facts.subject_status == "UNKNOWN":
-        unknown.append("SUBJECT_STATUS")
-    if facts.gate_state_status == "INCOMPLETE":
-        unknown.append("GATE_STATE")
-    return tuple(sorted(set(unknown)))
+    return tuple(sorted(set(_continuation_unknown_facts(facts))))
 
 
 def decide_user_requested_continuation(facts: ContinuationFacts) -> GateVerdict:
@@ -654,6 +817,515 @@ def decide_user_requested_continuation(facts: ContinuationFacts) -> GateVerdict:
 
     retry_like = facts.proposed_action in {"RETRY", "HINT"}
     terminalizing = facts.proposed_action in {"REVEAL", "TERMINAL_FEEDBACK"}
+    if facts.hard_attempt_limit_exhausted and retry_like:
+        reasons.append("HARD_ATTEMPT_LIMIT")
+    if facts.hard_teaching_turn_limit_exhausted and not terminalizing:
+        reasons.append("HARD_TEACHING_TURN_LIMIT")
+
+    ordered = tuple(reason for reason in DENY_PRECEDENCE if reason in set(reasons))
+    if ordered:
+        return GateVerdict(
+            execution_status="SUCCEEDED",
+            decision="DENY",
+            primary_reason=ordered[0],
+            reasons=ordered,
+            missing_or_unknown=(),
+        )
+    return GateVerdict(
+        execution_status="SUCCEEDED",
+        decision="ALLOW",
+        primary_reason=None,
+        reasons=(),
+        missing_or_unknown=(),
+    )
+
+
+# ---------------------------------------------------------------------------
+# The AUTOMATIC branch — Phase 8 P8-1 (BF-03 v1.1 automatic profiles).
+# ---------------------------------------------------------------------------
+#
+# Two profiles, one per automatic gate context:
+#
+# - AUTOMATIC OPEN: the Planner already judged worth-teaching (SUCCEEDED +
+#   SELECT) and the Runtime asks the Gate whether the *unsolicited*
+#   interruption may execute now. The planner facts therefore arrive as
+#   fields of the fact bundle — they are this profile's **input**, read off
+#   the durable run (docs/DATA_MODEL.md §14) — and the profile refuses a
+#   bundle that does not carry them rather than inventing a selection.
+# - AUTO_CONTINUE: the runtime advances an *auto-opened* active moment
+#   without the user having asked. This is the one continuation the
+#   auto-teach preference and the conversation-flow protection still guard
+#   (BF-03 §12/§16/§17); a continuation the user requested is
+#   USER_INITIATED and keeps its own profile above, unaffected.
+#
+# Both reproduce behavioral_baselines/gate/teaching_gate_reference_v1_1.py
+# (the frozen oracle, never imported) word for word, including the two
+# asymmetries the reference carries on purpose: the automatic controls
+# block only *new* automatic openings (budget / cooldown: BF-03 §16/§17 —
+# neither blocks a continuation), and the flow protection fires on
+# ``(OPEN ∧ AUTOMATIC) or AUTO_CONTINUE`` while a USER_REQUESTED_CONTINUE
+# bypasses it (BF-03 §12: an explicit request is not an interruption).
+#
+# Control facts are **caller-declared**, with their authorities registered
+# below (the same posture the frozen reference has: it consumes the facts
+# and never asks where they come from). Declared authorities and their
+# revisit conditions:
+#
+# 1. ``automatic_teaching_enabled`` ← the product mode (Balanced /
+#    Study-first / Lounge, docs/PRODUCT_CONTRACT.md §5) crossed with the
+#    rollout stage (docs/IMPLEMENTATION_PLAN.md §12). This repository has
+#    **no durable authority for the setting today** (docs/DATA_MODEL.md
+#    §5.1's TeachingPolicyProfile does not carry the column), so the fact
+#    is the caller's declaration — a caller that has no setting to point
+#    at must say so. Revisit: p8-5 (rollout gate) lands the durable
+#    authority and this fact's reader.
+# 2. ``hard_protected_flow`` ← docs/DOMAIN_MODEL.md §13's
+#    ConversationPriorityView.flow_priority == "PROTECTED" (the same view
+#    P7-2 assembled). This module does not read that view: the derivation
+#    belongs to whoever assembles the turn's facts. Revisit: the cut that
+#    wires the automatic path into a turn (p8-2 / p8-4), which must either
+#    pass the derived fact or name why it cannot.
+# 3. ``automatic_session_budget_exhausted`` / ``hard_cooldown_active`` ←
+#    the SessionBudgetView (docs/DOMAIN_MODEL.md §13: TeachingPolicyProfile
+#    + Runtime Session State). No SessionBudgetView exists in this cut.
+#    Revisit: p8-2.
+# 4. ``moment_consent_class`` (``AUTO_OPENED`` / ``USER_AUTHORIZED``) is
+#    the frozen reference's own word for *how the active moment came to
+#    be*; it is not a column of docs/DATA_MODEL.md §15. Until canonical or
+#    a later cut gives it a durable carrier, this profile takes a declared
+#    ``moment_consent_class`` field whose value a caller derives from the
+#    moment's §15 ``source``: ``AUTOMATIC`` ⟹ ``AUTO_OPENED``, anything
+#    else (USER_INITIATED / MANUAL_FOCUS / SCHEDULED_STUDY) ⟹
+#    ``USER_AUTHORIZED`` — :func:`moment_consent_class_of` spells that
+#    reading once, here, so the derivation is not re-invented per caller.
+#    Revisit: canonical names the carrier, or a cut gives the word a
+#    durable column.
+
+#: The §14.1 fact keys an **AUTOMATIC OPEN** reports as
+#: ``missing_or_unknown`` — deliberately the same eight as the
+#: USER_INITIATED OPEN profile (same context, same execution facts, plus
+#: the repo-native LEARNING_SNAPSHOT the phase-3 profile registered).
+AUTOMATIC_OPEN_FACT_KEYS = (
+    "LEARNING_SNAPSHOT",
+    "AUTHORIZATION_STATUS",
+    "TARGET_VALIDITY",
+    "CONTENT_VALIDITY",
+    "LOCK_STATE",
+    "SAFETY_PRIVACY_STATUS",
+    "SUBJECT_STATUS",
+    "GATE_STATE",
+)
+
+#: The §14.1 fact keys an **AUTO_CONTINUE** reports — the seven of the
+#: continuation profiles (no LEARNING_SNAPSHOT: BF-03 v1.1's cross-layer
+#: repair says an active moment's own new Evidence must not invalidate its
+#: continuation; the frozen reference's ``_critical_unknown`` checks the
+#: same six facts plus the gate state).
+AUTO_CONTINUATION_FACT_KEYS = (
+    "AUTHORIZATION_STATUS",
+    "TARGET_VALIDITY",
+    "CONTENT_VALIDITY",
+    "LOCK_STATE",
+    "SAFETY_PRIVACY_STATUS",
+    "SUBJECT_STATUS",
+    "GATE_STATE",
+)
+
+#: The DENY codes the AUTOMATIC OPEN profile can emit, in precedence order.
+#: AUTO_TEACH_DISABLED / HARD_PROTECTED_FLOW /
+#: AUTO_SESSION_BUDGET_EXHAUSTED / HARD_COOLDOWN_ACTIVE are the four
+#: automatic-only controls this path does *not* bypass; the two hard
+#: attempt/turn caps and the two continuation lifecycle codes belong to the
+#: continuation contexts (they stay vocabulary-only here, like the
+#: USER_INITIATED OPEN profile's counterparts).
+AUTOMATIC_OPEN_REASON_CODES = tuple(
+    code
+    for code in DENY_PRECEDENCE
+    if code
+    in {
+        "SAFETY_PRIVACY_BLOCK",
+        "ACTION_CANCELLED",
+        "ACTION_SUPERSEDED",
+        "AUTHORIZATION_INVALID",
+        "TARGET_INVALID",
+        "CONTENT_INVALID",
+        "TARGET_SUPPRESSED",
+        "USER_INTENT_BLOCK",
+        "AUTO_TEACH_DISABLED",
+        "TEACHING_LOCK_CONFLICT",
+        "HARD_PROTECTED_FLOW",
+        "AUTO_SESSION_BUDGET_EXHAUSTED",
+        "HARD_COOLDOWN_ACTIVE",
+    }
+)
+
+#: The DENY codes the AUTO_CONTINUE profile can emit, in precedence order.
+#: AUTO_TEACH_DISABLED fires only for an ``AUTO_OPENED`` moment (a
+#: user-authorized episode keeps going: BF-03 §17), HARD_PROTECTED_FLOW
+#: fires here too (§12), and the two hard caps are the §8 continuation
+#: rules. AUTO_SESSION_BUDGET_EXHAUSTED / HARD_COOLDOWN_ACTIVE are absent
+#: on purpose: the frozen reference evaluates them for new openings only.
+AUTO_CONTINUATION_REASON_CODES = tuple(
+    code
+    for code in DENY_PRECEDENCE
+    if code
+    in {
+        "SAFETY_PRIVACY_BLOCK",
+        "ACTION_CANCELLED",
+        "ACTION_SUPERSEDED",
+        "AUTHORIZATION_INVALID",
+        "TARGET_INVALID",
+        "CONTENT_INVALID",
+        "TARGET_SUPPRESSED",
+        "USER_INTENT_BLOCK",
+        "AUTO_TEACH_DISABLED",
+        "TEACHING_LOCK_CONFLICT",
+        "TEACHING_LOCK_INVALID",
+        "MOMENT_NOT_CONTINUABLE",
+        "HARD_PROTECTED_FLOW",
+        "HARD_ATTEMPT_LIMIT",
+        "HARD_TEACHING_TURN_LIMIT",
+    }
+)
+
+#: BF-03's moment-consent words (see declared authority 4 above).
+_MOMENT_CONSENT_CLASSES = ("AUTO_OPENED", "USER_AUTHORIZED")
+
+#: docs/DATA_MODEL.md §15 source vocabulary, as the consent derivation
+#: reads it (declared authority 4). Re-declared as data rather than
+#: imported from elc.teaching.types: this module's only import is the
+#: target-status vocabulary, and the §15 set is what the derivation's
+#: refusal has to spell.
+_MOMENT_SOURCES = ("AUTOMATIC", "USER_INITIATED", "MANUAL_FOCUS", "SCHEDULED_STUDY")
+
+
+def moment_consent_class_of(moment_source: str) -> str:
+    """The declared reading of BF-03's ``moment_consent_class`` off the
+    moment's §15 ``source`` (declared authority 4 in the section header).
+
+    ``AUTOMATIC`` ⟹ ``AUTO_OPENED``; every other source word — an episode
+    the user started, opened from a manual focus or as scheduled study —
+    ⟹ ``USER_AUTHORIZED``. An unknown source word is a contract error, not
+    a guess: the caller passes a §15 vocabulary word.
+    """
+
+    _check(
+        moment_source in _MOMENT_SOURCES,
+        f"invalid moment source: {moment_source}",
+    )
+    return "AUTO_OPENED" if moment_source == "AUTOMATIC" else "USER_AUTHORIZED"
+
+
+@dataclass(frozen=True)
+class AutomaticOpenFacts:
+    """One AUTOMATIC OPEN fact bundle (BF-03 v1.1, ``authorization_path =
+    AUTOMATIC``, ``user_initiated = False``).
+
+    Identity/context fields first; then the **planner facts this profile
+    consumes as inputs** (never re-derived: the run that produced them is
+    durable, docs/DATA_MODEL.md §14); then the critical facts whose
+    UNKNOWN-ness degrades the Gate; then the controls an automatic opening
+    (and only an automatic opening) must pass.
+
+    ``candidate_id`` is the Planner's selected candidate under §15's name
+    (``selected_candidate_id`` is the §14 decision column's name for the
+    same value — exposed below as a read-only alias so a caller holding the
+    durable decision does not have to translate).
+
+    Defaults describe the healthy path, exactly like the two original
+    bundles. The controls default to the value that *permits* the action
+    (``automatic_teaching_enabled=True``, ``hard_protected_flow=False``,
+    ``automatic_session_budget_exhausted=False``,
+    ``hard_cooldown_active=False``), which is the frozen reference's own
+    default set — the default is a declared healthy environment, not a
+    claim about the product mode (declared authorities 1–3 above).
+    """
+
+    decision_cycle_id: str
+    candidate_id: str
+    planner_execution_status: str = "SUCCEEDED"
+    planner_decision: str = "SELECT"
+    proposed_action: str = "OPENING"
+    gate_context: str = "OPEN"
+    authorization_path: str = "AUTOMATIC"
+    authorization_basis: str = "DECISION_CYCLE"
+    user_intent_scope: str = "OPEN"
+    user_initiated: bool = False
+    moment_id: str | None = None
+
+    authorization_status: str = "VALID"
+    subject_status: str = "ACTIVE"
+    target_status: str = "VALID"
+    content_status: str = "VALID"
+    lock_state: str = "NONE"
+    learning_snapshot_status: str = "VALID"
+    gate_state_status: str = "COMPLETE"
+    safety_privacy_status: str = SAFETY_PRIVACY_NO_SOURCE
+    target_suppressed: bool = TARGET_SUPPRESSED_NO_SOURCE
+
+    automatic_teaching_enabled: bool = True
+    hard_protected_flow: bool = False
+    automatic_session_budget_exhausted: bool = False
+    hard_cooldown_active: bool = False
+
+    @property
+    def selected_candidate_id(self) -> str:
+        """The §14 decision column's name for :attr:`candidate_id`."""
+
+        return self.candidate_id
+
+
+@dataclass(frozen=True)
+class AutoContinuationFacts:
+    """One AUTO_CONTINUE fact bundle (BF-03 v1.1 continuation branch,
+    ``authorization_basis = ACTIVE_MOMENT``, ``user_initiated = False``).
+
+    Same continuation shape as :class:`ContinuationFacts` (the seven
+    critical facts; the moment's lifecycle state; the two §8 hard caps and
+    the move class that decides whether a cap blocks), plus the two facts
+    that only the automatic continuation carries:
+
+    - ``moment_consent_class`` — how the active moment came to be (see
+      :func:`moment_consent_class_of`; an ``AUTO_OPENED`` moment stops when
+      the auto-teach setting is off, a ``USER_AUTHORIZED`` one keeps
+      going);
+    - ``continuation_requested`` — which **must be false**: an automatic
+      continuation cannot claim the user asked (the frozen reference's
+      "AUTO_CONTINUE cannot claim continuation_requested", a contract
+      error, not a DENY);
+    - ``terminalizing_action`` — the reference's own fact for a move whose
+      class is terminalizing although its ``proposed_action`` word is not
+      (the §8 exemption: a reveal/feedback move is never blocked by the
+      teaching-turn cap). The word class is not restated from it: a
+      ``REVEAL`` / ``TERMINAL_FEEDBACK`` action is terminalizing on its
+      own, and this flag can only add to that.
+    """
+
+    moment_id: str
+    decision_cycle_id: str | None = None
+    candidate_id: str = ""
+    proposed_action: str = "HINT"
+    gate_context: str = "AUTO_CONTINUE"
+    authorization_path: str = "AUTOMATIC"
+    authorization_basis: str = "ACTIVE_MOMENT"
+    user_intent_scope: str = "ACTIVE_TEACHING_CONTINUATION"
+    continuation_requested: bool = False
+    moment_consent_class: str = "AUTO_OPENED"
+    user_initiated: bool = False
+
+    authorization_status: str = "VALID"
+    subject_status: str = "ACTIVE"
+    target_status: str = "VALID"
+    content_status: str = "VALID"
+    lock_state: str = "OWNED_BY_THIS_MOMENT"
+    moment_state: str = CONTINUATION_MOMENT_STATE
+    learning_snapshot_status: str = "VALID"
+    gate_state_status: str = "COMPLETE"
+    safety_privacy_status: str = SAFETY_PRIVACY_NO_SOURCE
+    target_suppressed: bool = TARGET_SUPPRESSED_NO_SOURCE
+
+    hard_attempt_limit_exhausted: bool = False
+    hard_teaching_turn_limit_exhausted: bool = False
+    terminalizing_action: bool = False
+
+    automatic_teaching_enabled: bool = True
+    hard_protected_flow: bool = False
+
+
+def _validate_automatic_open(facts: AutomaticOpenFacts) -> None:
+    _check(facts.gate_context in GATE_CONTEXTS, "invalid gate_context")
+    _check(
+        facts.gate_context == "OPEN",
+        "this profile decides the OPEN context only"
+        " (continuation is decide_auto_continuation)",
+    )
+    _check(
+        facts.proposed_action in OPEN_ACTIONS,
+        f"invalid OPENING action: {facts.proposed_action}",
+    )
+    _check(
+        facts.authorization_path == "AUTOMATIC",
+        "this profile decides AUTOMATIC authorization paths only",
+    )
+    _check(
+        facts.user_intent_scope in USER_INTENT_SCOPES,
+        f"invalid user_intent_scope: {facts.user_intent_scope}",
+    )
+    _check_opening_facts(facts)
+    _check_planner_authorized_open(facts)
+    _check_fact_values(facts)
+
+
+def decide_automatic_open(facts: AutomaticOpenFacts) -> GateVerdict:
+    """Decide one AUTOMATIC OPEN (BF-03 v1.1 automatic branch; the frozen
+    reference's decision order word for word).
+
+    Order (frozen): contract validation → critical-state completeness → the
+    check families in decision order → deny precedence ordering → ALLOW.
+    The user-intent scope of this path must be ``OPEN`` (the Planner judged
+    worth-teaching on its own; any other scope means the latest intent is
+    no longer "let the runtime choose" — BF-03 §11), and the three
+    automatic-only controls (auto-teach preference, session budget,
+    cooldown) plus the flow protection fire exactly where the reference
+    has them.
+    """
+
+    _validate_automatic_open(facts)
+
+    unknown = tuple(sorted(set(_opening_unknown_facts(facts))))
+    if unknown:
+        return GateVerdict(
+            execution_status="DEGRADED",
+            decision=None,
+            primary_reason=None,
+            reasons=(),
+            missing_or_unknown=unknown,
+        )
+
+    reasons: list[str] = []
+    if facts.safety_privacy_status == "BLOCK":
+        reasons.append("SAFETY_PRIVACY_BLOCK")
+    if facts.subject_status == "CANCELLED":
+        reasons.append("ACTION_CANCELLED")
+    if facts.subject_status == "SUPERSEDED":
+        reasons.append("ACTION_SUPERSEDED")
+    if facts.authorization_status == "INVALIDATED":
+        reasons.append("AUTHORIZATION_INVALID")
+    if facts.target_status in {"INVALID", "DEPRECATED", "MISSING"}:
+        reasons.append("TARGET_INVALID")
+    if facts.content_status == "INVALID":
+        reasons.append("CONTENT_INVALID")
+    if facts.target_suppressed:
+        reasons.append("TARGET_SUPPRESSED")
+    if facts.user_intent_scope != "OPEN":
+        reasons.append("USER_INTENT_BLOCK")
+    if not facts.automatic_teaching_enabled:
+        reasons.append("AUTO_TEACH_DISABLED")
+    if facts.lock_state in {"OWNED_BY_OTHER", "OWNED_BY_THIS_MOMENT"}:
+        reasons.append("TEACHING_LOCK_CONFLICT")
+    if facts.hard_protected_flow:
+        reasons.append("HARD_PROTECTED_FLOW")
+    if facts.automatic_session_budget_exhausted:
+        reasons.append("AUTO_SESSION_BUDGET_EXHAUSTED")
+    if facts.hard_cooldown_active:
+        reasons.append("HARD_COOLDOWN_ACTIVE")
+
+    ordered = tuple(reason for reason in DENY_PRECEDENCE if reason in set(reasons))
+    if ordered:
+        return GateVerdict(
+            execution_status="SUCCEEDED",
+            decision="DENY",
+            primary_reason=ordered[0],
+            reasons=ordered,
+            missing_or_unknown=(),
+        )
+    return GateVerdict(
+        execution_status="SUCCEEDED",
+        decision="ALLOW",
+        primary_reason=None,
+        reasons=(),
+        missing_or_unknown=(),
+    )
+
+
+def _validate_auto_continuation(facts: AutoContinuationFacts) -> None:
+    _check(facts.gate_context in GATE_CONTEXTS, "invalid gate_context")
+    _check(
+        facts.gate_context == "AUTO_CONTINUE",
+        "this profile decides the AUTO_CONTINUE context only (a"
+        " user-requested continuation is decide_user_requested_continuation)",
+    )
+    _check(
+        facts.proposed_action in CONTINUATION_ACTIONS,
+        f"invalid continuation action: {facts.proposed_action}",
+    )
+    _check(
+        facts.authorization_path == "AUTOMATIC",
+        "this profile decides AUTOMATIC authorization paths only",
+    )
+    _check(
+        facts.authorization_basis == "ACTIVE_MOMENT",
+        "continuation requires ACTIVE_MOMENT authorization basis (BF-03"
+        " §3 cross-layer v1.1)",
+    )
+    _check(bool(facts.moment_id), "continuation requires moment_id")
+    _check(
+        not facts.continuation_requested,
+        "AUTO_CONTINUE cannot claim continuation_requested (an automatic"
+        " continuation was not asked for)",
+    )
+    _check(
+        facts.moment_consent_class in _MOMENT_CONSENT_CLASSES,
+        f"invalid moment_consent_class: {facts.moment_consent_class}",
+    )
+    _check(
+        facts.user_intent_scope in USER_INTENT_SCOPES,
+        f"invalid user_intent_scope: {facts.user_intent_scope}",
+    )
+    _check_fact_values(facts)
+
+
+def decide_auto_continuation(facts: AutoContinuationFacts) -> GateVerdict:
+    """Decide one AUTO_CONTINUE (BF-03 v1.1 automatic branch, the frozen
+    reference's continuation logic for ``gate_context == "AUTO_CONTINUE"``,
+    word for word).
+
+    A lock that is not this moment's is a DENY (CONFLICT for another
+    holder, LOCK_INVALID otherwise), a moment that is not
+    DECIDING_NEXT_ACTION is MOMENT_NOT_CONTINUABLE, the flow protection and
+    the two §8 hard caps fire as the reference has them, and the auto-teach
+    preference blocks only an ``AUTO_OPENED`` moment — a user-authorized
+    episode is not the setting's to stop.
+    """
+
+    _validate_auto_continuation(facts)
+
+    unknown = tuple(sorted(set(_continuation_unknown_facts(facts))))
+    if unknown:
+        return GateVerdict(
+            execution_status="DEGRADED",
+            decision=None,
+            primary_reason=None,
+            reasons=(),
+            missing_or_unknown=unknown,
+        )
+
+    reasons: list[str] = []
+    if facts.safety_privacy_status == "BLOCK":
+        reasons.append("SAFETY_PRIVACY_BLOCK")
+    if facts.subject_status == "CANCELLED":
+        reasons.append("ACTION_CANCELLED")
+    if facts.subject_status == "SUPERSEDED":
+        reasons.append("ACTION_SUPERSEDED")
+    if facts.authorization_status == "INVALIDATED":
+        reasons.append("AUTHORIZATION_INVALID")
+    if facts.target_status in {"INVALID", "DEPRECATED", "MISSING"}:
+        reasons.append("TARGET_INVALID")
+    if facts.content_status == "INVALID":
+        reasons.append("CONTENT_INVALID")
+    if facts.target_suppressed:
+        reasons.append("TARGET_SUPPRESSED")
+    if facts.user_intent_scope != "ACTIVE_TEACHING_CONTINUATION":
+        reasons.append("USER_INTENT_BLOCK")
+    if (
+        facts.moment_consent_class == "AUTO_OPENED"
+        and not facts.automatic_teaching_enabled
+    ):
+        reasons.append("AUTO_TEACH_DISABLED")
+    if facts.lock_state == "OWNED_BY_OTHER":
+        reasons.append("TEACHING_LOCK_CONFLICT")
+    elif facts.lock_state != "OWNED_BY_THIS_MOMENT":
+        reasons.append("TEACHING_LOCK_INVALID")
+    if facts.moment_state != CONTINUATION_MOMENT_STATE:
+        reasons.append("MOMENT_NOT_CONTINUABLE")
+    if facts.hard_protected_flow:
+        reasons.append("HARD_PROTECTED_FLOW")
+
+    retry_like = facts.proposed_action in {"RETRY", "HINT"}
+    terminalizing = (
+        facts.proposed_action in {"REVEAL", "TERMINAL_FEEDBACK"}
+        or facts.terminalizing_action
+    )
     if facts.hard_attempt_limit_exhausted and retry_like:
         reasons.append("HARD_ATTEMPT_LIMIT")
     if facts.hard_teaching_turn_limit_exhausted and not terminalizing:
