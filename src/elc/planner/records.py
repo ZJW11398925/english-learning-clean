@@ -45,6 +45,12 @@ not :class:`~elc.planner.types.PlannerEvaluation`, and why
 ``PlannerService.get_planner_evaluation`` (whose declared answer *is* the
 object shape) is still refused — see that method's docstring.
 
+``factor_trace`` is this map's one physical reading: §14 spells it without
+brackets while the value is a sequence, so the column carries the same
+deterministic JSON array document as the three bracketed columns. That is
+registered as judgement 9 below, and migration 0015's header states the same
+decision.
+
 ---------------------------------------------------------------------------
 **Declared judgements.** Each entry is this cut's reading rather than a
 quotation, and each names the condition that re-opens it.
@@ -78,10 +84,23 @@ quotation, and each names the condition that re-opens it.
    legitimately wants to re-record a status (an execution that failed after a
    SUCCEEDED commit) — that becomes a transfer face of its own, not a
    silent update.
-4. **``reason_codes`` is the caller's vocabulary.** §14 spells the column and
-   the two outcome words; it pins no reason vocabulary, so this module mints
-   none and the store writes what the caller declares (``()`` is the honest
-   empty value). Revisit: canonical text (or BF-03) names reason words.
+4. **``reason_codes`` is the caller's vocabulary — and a replay leaves the
+   durable row's reasons where they are.** §14 spells the column and the two
+   outcome words; it pins no reason vocabulary, so this module mints none and
+   the store writes what the caller declares (``()`` is the honest empty
+   value). The replay path is **asymmetric on purpose**, and the asymmetry is
+   registered here rather than left as an accident: a re-entry's status word
+   and its ``error_code`` are compared against the durable row and a
+   difference is refused (judgement 3), while ``reason_codes`` is neither
+   compared nor stored — the durable row keeps the reasons of the submission
+   that committed it. The leniency is the crash-window contract's: a re-entry
+   must be able to reach the durable records with whatever reasons it holds on
+   hand (free text about why the turn went as it did, not part of the unit's
+   identity), where a differing ``error_code`` names a *different execution
+   outcome* and is therefore a contradiction. Revisit: a cut asks for the
+   reasons to be compared (or carried over) too — a stricter replay contract —
+   or canonical text (or BF-03) names reason words and the column joins
+   identity.
 5. **The reverse reference stays plain data.** ``decision_cycle.
    planner_decision_id`` is written by this port's adapter and by nothing
    else, as an ``UPDATE`` only (never an INSERT or a DELETE); it carries no
@@ -113,6 +132,18 @@ quotation, and each names the condition that re-opens it.
    the answer here) is a later cut's work item; until then the face is
    exercised by its own suite and by any caller that holds a cycle and an
    outcome. Revisit: the orchestrator lands and fixes this port's call site.
+9. **``factor_trace`` lands as a JSON array although §14 spells it without
+   brackets.** §14's three list columns carry ``[]`` in their names and this
+   one does not, so the element shape (docs/DATA_MODEL.md §14) and the
+   physical form (§27: the column type and the JSON encoding are the
+   implementation's) were this cut's to pick together — and it picks the same
+   deterministic JSON array document the three bracketed columns carry (one
+   encoding, reused from elc/teaching/store.py's ``_array_document``) rather
+   than a second spelling, because an array of lines is what the value is.
+   Migration 0015's header states the same decision, and the column map above
+   carries the pointer. Revisit: canonical rewrites the column's spelling or
+   shape (``factor_trace[]``, or a form that is not an array of lines) and the
+   durable rows' encoding has to follow.
 """
 
 from __future__ import annotations

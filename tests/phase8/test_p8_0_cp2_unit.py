@@ -76,6 +76,24 @@ def _select_run(cycle, **overrides):
     )
 
 
+def _durable_rows(db: sqlite3.Connection):
+    """Every durable row a replay must leave exactly as it found it: the four
+    §14 tables verbatim, plus ``decision_cycle``'s back-reference column."""
+
+    tables = {
+        table: [tuple(row) for row in db.execute(f"SELECT * FROM {table}")]
+        for table in PLANNER_TABLES
+    }
+    pointers = [
+        tuple(row)
+        for row in db.execute(
+            "SELECT decision_cycle_id, planner_decision_id FROM decision_cycle"
+            " ORDER BY decision_cycle_id"
+        )
+    ]
+    return tables, pointers
+
+
 # -- ② one transaction -------------------------------------------------------
 
 
@@ -363,6 +381,48 @@ def test_a_second_submission_of_one_cycle_writes_nothing(
     )
 
 
+def test_a_replay_with_different_reason_codes_is_answered_and_writes_nothing(
+    db: sqlite3.Connection, cycle, planner_store
+) -> None:
+    """``reason_codes`` is the caller's vocabulary and the replay path leaves
+    the durable row's reasons alone: a re-entry with different ones is ``Ok``
+    with every row where it was. The asymmetry with ``error_code`` — which is
+    compared and refused — is registered in ``elc/planner/records.py``
+    judgement 4, and this is the pin that holds the registered behaviour."""
+
+    shadow = _select_run(cycle)
+    written = planner_store.record_planner_cycle(
+        turn_id=cycle.turn_id,
+        outcome=shadow.outcome,
+        reason_codes=("COMMITTED_FIRST",),
+    )
+    assert isinstance(written, Ok), written
+    before_rows, before_pointers = _durable_rows(db)
+
+    replayed = planner_store.record_planner_cycle(
+        turn_id=cycle.turn_id,
+        outcome=shadow.outcome,
+        reason_codes=("SECOND", "DIFFERENT"),
+    )
+    assert isinstance(replayed, Ok), replayed
+    assert replayed.value == written.value
+    assert table_counts(db, *PLANNER_TABLES) == dict.fromkeys(
+        PLANNER_TABLES, 1
+    )
+    after_rows, after_pointers = _durable_rows(db)
+    assert after_rows == before_rows
+    assert after_pointers == before_pointers
+    row = db.execute(
+        "SELECT reason_codes FROM runtime_decision_outcome WHERE turn_id = ?",
+        (cycle.turn_id,),
+    ).fetchone()
+    assert row == ('["COMMITTED_FIRST"]',)
+    assert replayed.value.runtime_decision_outcome is not None
+    assert replayed.value.runtime_decision_outcome.reason_codes == (
+        "COMMITTED_FIRST",
+    )
+
+
 def test_a_replay_that_differs_in_the_evaluation_or_decision_is_refused(
     db: sqlite3.Connection, cycle, planner_store
 ) -> None:
@@ -410,6 +470,93 @@ def test_a_replay_that_differs_in_the_evaluation_or_decision_is_refused(
     assert isinstance(durable, Ok) and durable.value is not None
     assert durable.value == good.decision
     assert durable.value.no_target_reason is None
+
+
+def test_a_replay_that_changes_the_status_word_is_refused(
+    db: sqlite3.Connection, cycle, planner_store
+) -> None:
+    """The status arm's **word** half, which no other test reaches: a cycle
+    that committed ``SUCCEEDED`` does not accept a ``DEGRADED`` re-submission,
+    and it is the status comparison that refuses it — the submitted evaluation
+    is the durable one verbatim, and the message names the status arm rather
+    than the decision arm beside it (both would refuse a decision-less
+    submission, so the message is what tells the two apart)."""
+
+    shadow = _select_run(cycle)
+    good = shadow.outcome
+    assert isinstance(
+        planner_store.record_planner_cycle(
+            turn_id=cycle.turn_id, outcome=good
+        ),
+        Ok,
+    )
+    before_counts = table_counts(db, *PLANNER_TABLES)
+    before_rows, before_pointers = _durable_rows(db)
+
+    degraded = PlanningOutcome(  # the one difference is the status block
+        evaluation=good.evaluation,
+        execution_status=PlannerExecutionStatusRecord(
+            decision_cycle_id=cycle.decision_cycle_id,
+            status=PlannerExecutionStatusValue.DEGRADED,
+            error_code="LATER_FAILURE",
+        ),
+        decision=None,
+    )
+    result = planner_store.record_planner_cycle(
+        turn_id=cycle.turn_id, outcome=degraded
+    )
+    assert isinstance(result, Err), result
+    assert result.error.code is DomainErrorCode.CONFLICT
+    assert "already durable with status SUCCEEDED" in result.error.message
+    assert "the submitted status DEGRADED" in result.error.message
+    assert "a different decision" not in result.error.message
+    assert table_counts(db, *PLANNER_TABLES) == before_counts
+    after_rows, after_pointers = _durable_rows(db)
+    assert after_rows == before_rows
+    assert after_pointers == before_pointers
+
+
+def test_a_replay_that_changes_the_error_code_is_refused(
+    db: sqlite3.Connection, cycle, planner_store
+) -> None:
+    """The status arm's ``error_code`` half: the same status word with a
+    different code is a different execution outcome, and the durable rows are
+    not overwritten. It is the one difference **only** the status comparison
+    can see — the words match, and a degraded unit carries no decision to
+    compare against (``_replay``'s status arm; judgement 3 in
+    elc/planner/records.py)."""
+
+    from dataclasses import replace
+
+    degraded = failed_outcome(
+        cycle.decision_cycle_id, PlannerExecutionStatusValue.UNAVAILABLE
+    )
+    assert isinstance(
+        planner_store.record_planner_cycle(
+            turn_id=cycle.turn_id, outcome=degraded
+        ),
+        Ok,
+    )
+    before_counts = table_counts(db, *PLANNER_TABLES)
+    before_rows, before_pointers = _durable_rows(db)
+
+    altered = replace(
+        degraded,
+        execution_status=replace(
+            degraded.execution_status, error_code="A_DIFFERENT_CODE"
+        ),
+    )
+    result = planner_store.record_planner_cycle(
+        turn_id=cycle.turn_id, outcome=altered
+    )
+    assert isinstance(result, Err), result
+    assert result.error.code is DomainErrorCode.CONFLICT
+    assert "(error_code 'STORE_UNREADABLE')" in result.error.message
+    assert "(error_code 'A_DIFFERENT_CODE')" in result.error.message
+    assert table_counts(db, *PLANNER_TABLES) == before_counts
+    after_rows, after_pointers = _durable_rows(db)
+    assert after_rows == before_rows
+    assert after_pointers == before_pointers
 
 
 def test_the_minted_ids_are_the_kernels_deterministic_ones(

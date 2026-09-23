@@ -22,6 +22,10 @@ from elc.deletion.types import TombstoneRecord
 from elc.learning.types import EvidenceGroupRecord, LearnerTargetStateRecord
 from elc.persona.types import CharacterPackageRecord
 from elc.planner.types import PlannerDecision
+from elc.platform.types import (
+    PlannerEvaluationRecord,
+    PlannerExecutionStatusRecord,
+)
 from elc.relationship.types import RelationshipMemoryRecord
 from elc.runtime.types import ProjectionJobRecord, ValidatorResultRecord
 from elc.scheduler.types import ReviewEvent, ScheduleItem, ScheduleView
@@ -157,9 +161,42 @@ CANONICAL_OBJECTS: Mapping[str, CanonicalObject] = {
         "CurriculumGraphRecord", OWNER_CURRICULUM, CurriculumGraphRecord,
         version_field="curriculum_version",
     ),
+    # -- Planner two-layer results (docs/DOMAIN_MODEL.md §10 "Output": layer 1
+    # is the PlannerEvaluation at line 550, layer 2 the PlannerDecision).
+    # ``planner_decision`` is Phase 0's entry; P8-0 registered the two §14
+    # planner records it made durable (TASK-OPI-64c88704-….7 ①) beside it.
     "planner_decision": CanonicalObject(
         "PlannerDecision", OWNER_PLANNER, PlannerDecision
     ),
+    # Layer 1's **durable row** (docs/DATA_MODEL.md §14's first block,
+    # migration 0015): the id-shaped counterpart of the kernel's computed
+    # ``elc.planner.types.PlannerEvaluation``. Only ``planner_version`` is
+    # bound: §14 spells ``policy_profile_version`` beside it, and that name is
+    # **not** one of the canonical VERSION_FIELDS — binding it would claim a
+    # version spelling the vocabulary does not carry (the ScheduleItem
+    # entry's rule), so that column is carried by the record type instead.
+    "planner_evaluation": CanonicalObject(
+        "PlannerEvaluationRecord",
+        OWNER_PLANNER,
+        PlannerEvaluationRecord,
+        version_field="planner_version",
+    ),
+    # §14's execution-status row. Its owner is **Runtime**, not the Planner
+    # that writes it: docs/DOMAIN_MODEL.md line 559 — "它由 Runtime 的
+    # `PlannerExecutionStatus` 表达" — the placement this registry already
+    # gives validator_result and projection_job. No ``version_field``: §14
+    # pins no version column on this record.
+    "planner_execution_status": CanonicalObject(
+        "PlannerExecutionStatusRecord",
+        OWNER_RUNTIME,
+        PlannerExecutionStatusRecord,
+    ),
+    # §14's RuntimeDecisionOutcome is deliberately **not** registered here: it
+    # is a runtime coordination record — the decision_cycle /
+    # gate_execution_status family, which this registry has never carried —
+    # and canonical text names it in docs/DATA_MODEL.md §14 and
+    # docs/RUNTIME_ARCHITECTURE.md §4 step 9A only; no docs/DOMAIN_MODEL.md
+    # object list names it, so there is no owner/schema row to mirror.
     "teaching_moment": CanonicalObject(
         "TeachingMomentRecord", OWNER_TEACHING, TeachingMomentRecord
     ),

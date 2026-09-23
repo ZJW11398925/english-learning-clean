@@ -183,8 +183,8 @@ later cut owns. A registration changes no behaviour:
     vector is an *input* to the assembly or its *output* (§20 lists it among
     the frozen inputs, while §5's missing-Scheduler rule reads it as the
     assembly's own product);
-12. **the evaluation record's shape is not §14's column set — and one column
-    of it has since landed.** docs/DATA_MODEL.md §14 lists
+12. **the evaluation record's shape is not §14's column set — and most of it
+    has since landed.** docs/DATA_MODEL.md §14 lists
     ``frontier_candidate_ids[]``, ``factor_trace`` and a ``created_at`` for the
     evaluation record; this kernel emits
     :class:`~elc.planner.types.PlannerEvaluation` as the type module carries it
@@ -192,15 +192,26 @@ later cut owns. A registration changes no behaviour:
     lines, ``policy_version`` under that name, no clock). p7-3 appended
     ``frontier_candidate_ids`` — §14's first column — filled from step 4's
     survivors through :mod:`elc.planner.frontier`, so that one column is now
-    read from the document; ``factor_trace`` and ``created_at`` are still not
-    (the trace's lines are this module's spelling, and no clock is read). §14's
-    ``RuntimeDecisionOutcome`` has **no record implementation anywhere in this
-    repository** — :func:`runtime_decision_outcome_of` answers the *value*
-    BF-02 §5 pins and nothing more. Inherited, not introduced: the drift is the
-    type module's. Revisit: the cut that persists these records (the
-    shadow-mode run, or the cut that lands the PlanningLedger's table) lands
-    the remaining §14 columns, and the shape is then read from the document
-    rather than from this module;
+    read from the document. **Superseded in part (P8-0).** This entry's claim
+    that §14's ``RuntimeDecisionOutcome`` had no record implementation
+    anywhere in this repository, and the inherited-drift sentence beside it,
+    are no longer true: P8-0 landed
+    :class:`~elc.platform.types.RuntimeDecisionOutcome` and
+    :class:`~elc.platform.types.PlannerEvaluationRecord` in
+    ``src/elc/platform/types.py``, the four §14 tables in
+    ``migrations/0015_planner_records.sql``, and the **one** column map
+    between this box's computed record and the durable rows in
+    :mod:`elc.planner.records`. So the durable shape is read from the
+    document now; what stays here is this module's in-memory spelling of the
+    evaluation (``reason_trace`` as lines, ``policy_version`` under that
+    name, no clock read), which the durable face **maps** rather than
+    documents. :func:`runtime_decision_outcome_of` still answers BF-02 §5's
+    *value* and nothing more, and the durable record is where that value
+    becomes a row. Revisit: canonical rewrites one of these columns or the
+    ``RuntimeDecisionOutcome`` record's spelling and the mapping in
+    :mod:`elc.planner.records` has to follow, or a cut gives the kernel's
+    ``PlannerEvaluation`` §14's names directly (the record reshaped rather
+    than mapped);
 13. **a target the Scheduler never scheduled is a gap, not the reference
     band's ``0.0``.** BF-02 §6 gives ``NOT_SCHEDULED`` the legal band ``0.0``
     (:data:`~elc.planner.feature_assembly.SCHEDULE_URGENCY_BANDS`), but the

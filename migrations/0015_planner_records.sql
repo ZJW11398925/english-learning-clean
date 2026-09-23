@@ -112,12 +112,20 @@
 --     none, while the value it carries is a sequence (the evaluation's
 --     trace), which is what a JSON array is. See elc/planner/records.py for
 --     the canonical-column ↔ implementation-field map, which lives in
---     exactly one place.
+--     exactly one place. Revisit: canonical rewrites ``factor_trace``'s
+--     spelling or shape (``factor_trace[]``, or a form that is not an array
+--     of lines) and the durable rows' encoding has to follow (the reading is
+--     registered in elc/planner/records.py judgement 9).
 --   * **Nullability.** ``selected_candidate_id?`` / ``no_target_reason?`` /
 --     ``error_code?`` / ``decision_cycle_id?`` (the RuntimeDecisionOutcome
 --     one) are the columns §14 marks optional, and they are nullable here.
 --     Nothing else is: every other column of the four blocks is written
---     ``NOT NULL`` because §14 lists it without a ``?``. The
+--     ``NOT NULL`` because §14 lists it without a ``?`` — **keys excepted**.
+--     The four primary keys are bare ``TEXT PRIMARY KEY``, the 0010–0015
+--     convention: a SQLite rowid table reports ``notnull=0`` for a
+--     ``TEXT PRIMARY KEY`` column whatever the DDL says, so a ``NOT NULL``
+--     beside a key would be both redundant and unreadable through
+--     ``PRAGMA table_info`` (a key's nullability is the key's business). The
 --     SELECT/NO_TARGET complementarity (a SELECT names a candidate; a
 --     NO_TARGET names a reason) is a property of §14's decision vocabulary
 --     and is enforced by the write face — a CHECK here would have to spell
@@ -140,9 +148,14 @@
 --     schema itself to refuse a dangling pointer, the question is re-opened
 --     (registered in elc/platform/db/planner_store.py).
 --   * **created_at.** All four tables carry it as TEXT, stamped by the
---     store at the instant the unit commits (the sibling adapters' clock
---     convention: the record types in elc.platform.types carry no clock;
---     the durable row does).
+--     store at the instant the unit commits — the sibling adapters' clock
+--     convention: the durable row carries the stamp, and the in-memory
+--     records follow it **unevenly**, which is registered rather than
+--     smoothed over. The three records minted before this cut carry no
+--     clock; ``PlannerEvaluationRecord``, the row-shaped record this cut
+--     mints for §14's first block, **does** carry ``created_at`` (the
+--     exception is registered in elc/platform/types.py and in
+--     elc/planner/records.py's judgement 6).
 -- ---------------------------------------------------------------------------
 -- 1. planner_evaluation — §14 lines 832–843
 CREATE TABLE IF NOT EXISTS planner_evaluation (

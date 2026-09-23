@@ -243,7 +243,7 @@ def test_the_back_reference_read_answers_the_three_shapes(
 
 
 def test_the_list_columns_are_the_deterministic_array_documents(
-    db: sqlite3.Connection, cycle, planner_store
+    db: sqlite3.Connection, fence, cycle, planner_store
 ) -> None:
     """The JSON shape is ``elc/teaching/store.py``'s ``_array_document``,
     reused: ``json.dumps(list, sort_keys=True, separators=(",", ":"))``.
@@ -271,6 +271,55 @@ def test_the_list_columns_are_the_deterministic_array_documents(
         (cycle.turn_id,),
     ).fetchone()
     assert outcome_row == ("[]",)
+
+    # A one-member document cannot tell the compact spelling from the default
+    # one — ``json.dumps(["c-p8-0"])`` is the same bytes either way — so the
+    # encoding is pinned again on **two-member** documents, on all four list
+    # columns. (A second cycle on the same turn: re-submitting the first would
+    # be a refused replay, and _write_select cannot carry reason_codes.)
+    opened = open_cycle(
+        db,
+        fence,
+        decision_cycle_id=DecisionCycleId("dc-p8-0-two"),
+        turn_id=cycle.turn_id,
+        expected_turn_state_version=cycle.state_version,
+    )
+    shadow = run_shadow(
+        request_of(decision_cycle_id=opened.decision_cycle_id),
+        supply=supply_of(proposal("c-a"), proposal("c-b")),
+        current_learning_watermark=WATERMARK,
+    )
+    assert shadow.would_have_selected == "c-a"
+    second = planner_store.record_planner_cycle(
+        turn_id=opened.turn_id,
+        outcome=shadow.outcome,
+        reason_codes=("REASON_A", "REASON_B"),
+    )
+    assert isinstance(second, Ok), second
+    compact_ids = json.dumps(
+        ["c-a", "c-b"], sort_keys=True, separators=(",", ":")
+    )
+    compact_reasons = json.dumps(
+        ["REASON_A", "REASON_B"], sort_keys=True, separators=(",", ":")
+    )
+    row = db.execute(
+        "SELECT frontier_candidate_ids, ranked_candidate_ids, factor_trace"
+        " FROM planner_evaluation WHERE planner_evaluation_id = ?",
+        (second.value.evaluation.planner_evaluation_id,),
+    ).fetchone()
+    assert row is not None
+    assert row[0] == compact_ids
+    assert row[1] == compact_ids
+    assert row[2] == json.dumps(
+        list(second.value.evaluation.factor_trace),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    outcome_row = db.execute(
+        "SELECT reason_codes FROM runtime_decision_outcome WHERE turn_id = ?",
+        (opened.turn_id,),
+    ).fetchone()
+    assert outcome_row == (compact_reasons,)
 
 
 def test_the_reads_do_not_write(db: sqlite3.Connection, cycle, planner_store) -> None:
