@@ -36,7 +36,17 @@ stand, and it is §19's:
   their eleven positions (P7-1's suite pins them against the canonical block
   character for character), and no step is inserted anywhere. What §19's line
   names is not a twelfth *step* but the set §10.1's fourth step has already
-  produced, and a set is not a position in a pipeline;
+  produced, and a set is not a position in a pipeline. **Registered:** this
+  position is argued on the *set's identity* (members = step 4's survivors), not
+  on where a frontier value is materialized — the implementation builds it
+  inside ``kernel._evaluation``, at the end of the flow, and every consumer
+  today reads it off the evaluation record, which is an observation difference
+  of nothing because the frontier filters nothing and decides nothing. Revisit:
+  a consumer needs to read the frontier **before** Policy Utility runs (a step
+  5/6 reading of the member set, a trace field that has to be filled mid-flow,
+  or a second record carrying the set) — then the set's identity and its
+  materialization point have to be reconciled, and that reconciliation is a cut
+  of its own rather than a move of the value;
 - **members: the candidates hard eligibility did not exclude.** That is the
   whole reading — "经过 eligibility … 后形成 Frontier" — and it is why this cut
   does **not** filter anything: the frontier is a *view of the survivor set*,
@@ -423,13 +433,21 @@ class ExcludedCandidate:
 class ActiveLearningFrontier:
     """The eligible set: the step-4 survivors, and the exclusions beside them.
 
-    Two halves, both complete: ``members`` are the candidates that passed hard
-    eligibility, ``excluded`` are the ones it removed. The invariant that makes
-    the frontier a *view* rather than a second filter is checked at
-    construction — an id may not appear on both sides — and the coverage of the
-    canonical set (every candidate on one side or the other) is what
-    :func:`frontier_of` walks, so a caller cannot build a frontier that quietly
-    dropped a candidate.
+    ``members`` are the candidates that passed hard eligibility, ``excluded``
+    are the ones it removed. **What this constructor guarantees is that the two
+    halves are disjoint** — an id may not appear on both sides, checked here and
+    refused with ``ValueError`` — and disjointness is exactly the invariant that
+    makes the frontier a *view* rather than a second filter.
+
+    **Coverage is :func:`frontier_of`'s property, not this constructor's.** That
+    ``members`` and ``excluded`` together hold every canonical candidate the run
+    was given is established by that walk over the candidate set (which is also
+    where a stray exclusion id is refused), not by ``__post_init__``: a frontier
+    built by hand is accepted here even when it names only part of a candidate
+    set, so a frontier that dropped a candidate quietly is a frontier that did
+    not come through :func:`frontier_of`. Disjointness is the only claim this
+    class makes on its own; coverage is the walk's, and the walk is where a
+    consumer who needs it must get its frontier from.
     """
 
     members: tuple[FrontierMemberEntry, ...]

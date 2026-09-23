@@ -3,7 +3,7 @@
 Three canonical documents describe this object, and this module is all three
 made executable without a table:
 
-docs/DATA_MODEL.md §13's column set, verbatim (it opens with its own rule)::
+docs/DATA_MODEL.md §14's column set, verbatim (it opens with its own rule)::
 
     ### PlanningLedger
 
@@ -288,7 +288,12 @@ class EventEffect(StrEnum):
 #:   withholding part of the teaching — that is what the two words mean — so
 #:   the obligation is **not** served by them. The alternative reading (any
 #:   delivery serves) is registered as a revisit: it would let a debt be repaid
-#:   by a hint, and §13's safeguard exists to surface what has not been taught;
+#:   by a hint, and §13's safeguard exists to surface what has not been taught.
+#:   Revisit: a canonical document states the two presentation words' coverage
+#:   effect (RA §20's own rules, or a document saying a hint/reveal *serves* an
+#:   obligation), or a sixth event word arrives carrying a serving effect —
+#:   then this row's effect moves, and the debts a hint and a reveal repay move
+#:   with it;
 #: - ``user_skip`` → :attr:`EventEffect.NEITHER`: a skip is a rejection, not a
 #:   delivery and not engagement. §20's five words carry no engagement word at
 #:   all, which is why :func:`engage` takes that fact as an argument rather
@@ -338,7 +343,7 @@ class PauseReason(StrEnum):
 class ObligationScope(StrEnum):
     """The key space ``scope_type`` + ``target_or_family_id`` addresses.
 
-    Declared, not quoted: §13's column pair names *that* there is a scope type
+    Declared, not quoted: §14's column pair names *that* there is a scope type
     and a scoped id, and its optional ``goal_id`` names a third key space — the
     three words are this cut's spelling of exactly those three (a target, a
     target family, a goal). No canonical document lists ``scope_type``'s
@@ -418,10 +423,15 @@ def _unavailable_in_current_runtime() -> DirectObligationRule:
     )
 
 
-#: The declared range of ``debt_value`` (§13 names the column and no range; a
+#: The declared range of ``debt_value`` (§14 names the column and no range; a
 #: four-rung service ladder needs one). Inclusive on both ends, and the two
 #: accrual/repayment entries below refuse a value outside it rather than
 #: clamping silently.
+#:
+#: Revisit: a canonical document or a calibrated profile gives ``debt_value`` a
+#: scale of its own (a column-level range, a percentage, or a debt unit) — then
+#: the range, the ladder's rungs and the two repayment rates move in one change,
+#: because a rung read against two scales is two ladders.
 LEDGER_VALUE_RANGE = (0.0, 1.0)
 
 #: The rate a serving act retires, and the rate an engagement act retires.
@@ -436,7 +446,7 @@ DEBT_REPAID_PER_ENGAGEMENT = 1.0
 
 @dataclass(frozen=True)
 class CoverageObligation:
-    """One ``coverage_obligations[]`` entry — §13's eleven fields, by name.
+    """One ``coverage_obligations[]`` entry — §14's eleven fields, by name.
 
     The four optional fields are spelled ``X | None`` with ``None`` as "the
     column is absent", which is the same reading P6-0 gave §5.1's optional
@@ -603,8 +613,14 @@ def engage(obligation: CoverageObligation, *, at: str) -> CoverageObligation:
     arrives from the authority that observes the user engaging with the served
     target (a Learning-side Attempt is the shape Phase 3 landed; reading one
     is a later cut's wiring), and this function is where such a fact stamps the
-    obligation. §13's ``last_engaged_at`` column exists for it; nothing in
+    obligation. §14's ``last_engaged_at`` column exists for it; nothing in
     Phase 7 writes it.
+
+    Revisit: a canonical document adds an engagement word to the ledger's event
+    vocabulary (then engagement is read off the log like the other effects and
+    this entry point is re-cut around that word), or the observing authority's
+    shape changes (a fact that is not a Learning-side Attempt), or the
+    repayment rate is calibrated (then the amount this stamps is re-read).
     """
 
     _instant(at, "at")
@@ -754,7 +770,7 @@ def overexposure_band_of(count: int) -> str:
 
 @dataclass(frozen=True)
 class LedgerWindow:
-    """One window, as §13's ``overexposure_window`` column needs it.
+    """One window, as §14's ``overexposure_window`` column needs it.
 
     Half-open ``(start, end]``, declared: a look-back window's start instant
     belongs to the window before it, while a presentation at ``end`` (the
@@ -763,6 +779,14 @@ class LedgerWindow:
     ``elc.scheduler.spacing`` compares the same column family — because two
     spellings of one instant are two different strings and only the instant can
     answer "when". A naive timestamp is refused rather than assumed to be UTC.
+
+    Revisit: a canonical document fixes the window's inclusivity (a closed
+    ``[start, end]``, or a ``start`` that counts inside its own window), or the
+    bounds start arriving from a durable row whose spelling is normalized by
+    its writer (then the string-vs-instant argument is re-asked for *this* row),
+    or the Scheduler's own window convention for the same column family changes
+    under ``elc.scheduler.spacing`` — then this reading, which follows it, is
+    re-read beside it.
     """
 
     start: str
@@ -787,9 +811,9 @@ class LedgerEventRecord:
 
 @dataclass(frozen=True)
 class TargetLedgerRow:
-    """One ``target/family`` row of §13's column set.
+    """One ``target/family`` row of §14's column set.
 
-    The row's **fact** is its event log (``events``), and the columns §13 names
+    The row's **fact** is its event log (``events``), and the columns §14 names
     that are functions of it are derived properties
     (:attr:`last_selected_at` / :attr:`last_presented_at` /
     :attr:`teaching_exposure_counts` / :attr:`recent_skips`) — one fact, one
@@ -834,21 +858,21 @@ class TargetLedgerRow:
 
     @property
     def last_selected_at(self) -> str | None:
-        """§13's column: when this key was last *selected* (not presented)."""
+        """§14's column: when this key was last *selected* (not presented)."""
 
         stamps = self._events_of((LedgerEvent.CANDIDATE_SELECTED,))
         return None if not stamps else _latest(stamps)
 
     @property
     def last_presented_at(self) -> str | None:
-        """§13's column: when this key was last presented to the user."""
+        """§14's column: when this key was last presented to the user."""
 
         stamps = self._events_of(EXPOSURE_EVENTS)
         return None if not stamps else _latest(stamps)
 
     @property
     def teaching_exposure_counts(self) -> int:
-        """§13's column, read off the log's ``teaching_presented`` events."""
+        """§14's column, read off the log's ``teaching_presented`` events."""
 
         return sum(
             1
@@ -858,7 +882,7 @@ class TargetLedgerRow:
 
     @property
     def recent_skips(self) -> int:
-        """§13's ``recent_skips/rejections`` column, off the log's skips.
+        """§14's ``recent_skips/rejections`` column, off the log's skips.
 
         Carried and read by nothing in this cut: BF-02 §6's ``user_resistance``
         ladder has no mapping from a skip count in any asset (its words are
@@ -912,6 +936,12 @@ def overexposure_of(
     for this target — answers the neutral band: an empty book records no
     exposure, which is an answer the exposure authority *can* give (module
     docstring, fail-closed).
+
+    Revisit: a canonical document reads the absent row the other way (fail
+    closed on *unknown* exposure rather than on "nothing recorded"), or the
+    exposure authority moves off the ledger row (a projection that knows more
+    than the book) — then "no row" stops being this module's own answer and the
+    band for it is re-decided.
     """
 
     window = (
@@ -976,13 +1006,13 @@ class LedgerReadings:
 
 @dataclass(frozen=True)
 class PlanningLedger:
-    """The ledger as a read-only view — §13's columns, and no store.
+    """The ledger as a read-only view — §14's columns, and no store.
 
     A caller assembles one from the durable facts it holds (module docstring:
     ``NO_TABLE_V1``); the ledger itself is pure, deterministic and
     clock-free — every method that needs "now" takes the cycle's instant.
 
-    ``rows`` is keyed by §13's ``target/family`` key, ``obligations`` is the
+    ``rows`` is keyed by §14's ``target/family`` key, ``obligations`` is the
     ``coverage_obligations[]`` list, and ``coverage_debt_rollups`` /
     ``recent_target_families`` / ``version`` are the three row-independent
     columns, carried as the document names them (the rollups are a *projection*
@@ -1069,6 +1099,14 @@ class PlanningLedger:
         governs, and ties break on ``obligation_key`` so the choice is a
         function of the data rather than of the tuple's order. ``None`` means
         the target has no live obligation.
+
+        Revisit: a canonical document states which obligation governs a target
+        (then the sentence replaces this reading), ``debt_value`` is given a
+        unit that makes two obligations' debts comparable by a stated rule
+        other than largest-first, a family/goal → targets read face lands (then
+        a non-TARGET-scoped obligation could govern), or a window rule says a
+        debt outside its own window does not govern — each of those replaces
+        exactly one clause of this reading.
         """
 
         live = [

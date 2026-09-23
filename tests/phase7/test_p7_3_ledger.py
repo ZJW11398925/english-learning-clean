@@ -257,7 +257,7 @@ def test_engagement_comes_as_a_fact_because_no_event_word_carries_it() -> None:
 
 
 def test_the_obligation_fields_are_the_canonical_sub_block() -> None:
-    """§13's eleven field lines, in the document's order, with the ``?`` marks
+    """§14's eleven field lines, in the document's order, with the ``?`` marks
     read as optional columns — under the section's own opening rule, which is
     prose before the block and is quoted by the module that implements it."""
 
@@ -286,7 +286,7 @@ def test_the_obligation_fields_are_the_canonical_sub_block() -> None:
 
 
 def test_the_row_columns_are_the_canonical_block_read_off_one_log() -> None:
-    """Every row-level column §13 names exists as a *read face*, and the four
+    """Every row-level column §14 names exists as a *read face*, and the four
     that are functions of the event log are read from it."""
 
     block = list(canonical_lines(DATA_MODEL, "### PlanningLedger"))

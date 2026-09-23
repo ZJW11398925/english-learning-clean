@@ -531,3 +531,75 @@ def test_judgement_twelve_records_the_column_as_landed() -> None:
     assert "p7-3 appended" in docstring
     assert "frontier_candidate_ids" in docstring
     assert "elc.planner.frontier" in docstring
+
+
+# ---------------------------------------------------------------------------
+# ④ the two halves: coverage is the walk's, disjointness is the class's
+# ---------------------------------------------------------------------------
+
+
+def test_frontier_of_covers_every_candidate_it_was_given() -> None:
+    """The true contract of the two halves, checked on the walk that
+    establishes it: for any candidate set the survivors and the exclusions are
+    disjoint and together hold exactly that set — including the two degenerate
+    inputs (nothing excluded, everything excluded), where a dropped candidate
+    would leave no trace in either id tuple."""
+
+    cases = (
+        ((), {}),
+        ((proposal("c-a"),), {}),
+        ((proposal("c-a"),), {"c-a": ExclusionReason.EXPIRED.value}),
+        (
+            (
+                proposal("c-a"),
+                proposal("c-b", canonical_key="c-b", suppressed=True),
+                proposal("c-c", canonical_key="c-c", expired=True),
+            ),
+            {
+                "c-b": ExclusionReason.SUPPRESSED.value,
+                "c-c": ExclusionReason.EXPIRED.value,
+            },
+        ),
+    )
+    for specs, exclusions in cases:
+        candidates = canonicalize_proposals(specs)
+        frontier = frontier_of(candidates, exclusions)
+        full = {candidate.candidate_id for candidate in candidates}
+        assert set(frontier.candidate_ids) | set(
+            frontier.excluded_ids
+        ) == full
+        assert not set(frontier.candidate_ids) & set(frontier.excluded_ids)
+        assert len(frontier.candidate_ids) + len(frontier.excluded_ids) == len(
+            full
+        )
+
+
+def test_the_class_guarantees_disjointness_and_not_coverage() -> None:
+    """The other half of the contract, as the class's own: a hand-built
+    frontier is accepted with no members and with a single member even though
+    neither covers the candidate set it would have come from — ``__post_init__``
+    holds no candidate set to compare the halves against, so coverage is
+    ``frontier_of``'s property and never this constructor's — while an id that
+    appears on both sides is still refused here."""
+
+    entry = FrontierMemberEntry(
+        candidate_id="c-a",
+        focus_target="res-hedge-i-think",
+        origins=("EXPRESSION_NEED",),
+        members=(FrontierMember.PERSONAL_EXPRESSION_NEEDS,),
+        unmapped_origins=(),
+    )
+    empty = ActiveLearningFrontier(members=(), excluded=())
+    assert empty.candidate_ids == ()
+    assert empty.excluded_ids == ()
+    partial = ActiveLearningFrontier(members=(entry,), excluded=())
+    assert partial.candidate_ids == ("c-a",)
+    assert partial.excluded_ids == ()
+    with pytest.raises(ValueError) as raised:
+        ActiveLearningFrontier(
+            members=(entry,),
+            excluded=(
+                ExcludedCandidate(candidate_id="c-a", exclusion="EXPIRED"),
+            ),
+        )
+    assert "both a frontier member and excluded" in str(raised.value)
