@@ -77,9 +77,20 @@ quotation, and each names the condition that re-opens it:
    ``curriculum_candidate_view`` is deliberately **not** read as a supply: its
    landed record (:class:`elc.curriculum.types.CurriculumCandidateView`) is a
    curriculum-side node view — an *input* to the generators — and reading one
-   record two ways would make two shapes mean one thing. Revisit: the §10
-   context assembly (the orchestrator's side of the chain) lands and fixes
-   where the proposals travel;
+   record two ways would make two shapes mean one thing. Four further request
+   fields are named here and **not read** either, as one group so that "the
+   view travels in the request" cannot be mistaken for "the run read it":
+   ``context_opportunity_set`` (no producer in this repository builds one),
+   ``session_budget_view`` (BF-03 §17's runtime session state is a Phase 8
+   input), ``conversation_priority_view`` (its consumer is the Gate — §13's
+   view expresses the protection level and authorizes nothing — and this
+   module's whole boundary is that nothing here calls one) and
+   ``planning_ledger`` (V1 has no ledger table — ``NO_TABLE_V1``, the same
+   reason the durable trace read refuses). Revisit: the §10 context assembly
+   (the orchestrator's side of the chain) lands and fixes where the proposals
+   travel, or one of the four named fields reaches its landing — Phase 8's
+   session budget, a V1 ledger table, the Gate's read of the conversation
+   priority, or a producer for the opportunity set;
 2. **two facts the request does not carry are declared, not invented.** The
    current Learning watermark (:func:`elc.learning.queries.get_learning_watermark`
    is the face that answers it) and ``natural_break_available`` (BF-02 §5 lists

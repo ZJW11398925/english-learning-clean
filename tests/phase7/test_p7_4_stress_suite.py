@@ -30,6 +30,7 @@ import hashlib
 import json
 import re
 from dataclasses import replace
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -38,6 +39,7 @@ from elc.planner import kernel, stress_suite
 from elc.planner.kernel import PlannerInputError, plan
 from elc.planner.stress_suite import (
     CASE_CUSTOM_WORDS,
+    STRESS_SUITE_MODEL_VERSION,
     CaseKind,
     degraded_reason_of,
     load_cases,
@@ -238,6 +240,83 @@ def test_a_tampered_expectation_is_a_divergence() -> None:
     degraded_but_decided = json.loads(json.dumps(case_of("S05_AUTH_UNAVAILABLE")))
     degraded_but_decided["expected"]["custom"] = "EQUAL_UTILITY"
     assert not verdict_of(degraded_but_decided).passed
+
+    # The fourth direction, and the one the three above cannot make: a **non**
+    # error case relabelled ``error: true``. The ``error`` arm is the single
+    # branch that answers without reading the run, so its fail-closed side is
+    # that "an error was expected" is satisfied only by a refusal — a case this
+    # chain answered with a decision is a DIVERGENCE, never a pass.
+    error_but_decided = json.loads(
+        json.dumps(case_of("S12_COVERAGE_STARVATION"))
+    )
+    error_but_decided["expected"]["error"] = True
+    verdict = verdict_of(error_but_decided)
+    assert not verdict.passed
+    assert verdict.verdict_word == "DIVERGENCE"
+    assert verdict.kind is CaseKind.SELECT
+    assert verdict.evidence == "SELECT debt"
+
+
+def test_a_relabelled_error_in_a_file_turns_the_cli_total_red(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The same direction at the file level, which is where the failure mode
+    lives: one *passing* case relabelled ``error: true`` in a copy of the
+    frozen file. The CLI must answer a DIVERGENCE line for it and exit
+    non-zero — never the false "43/43 PASS" + exit 0 a loosened ``error`` arm
+    would print for the tampered copy."""
+
+    flipped = json.loads(json.dumps(cases()))
+    relabelled = next(
+        case for case in flipped if case["id"] == "S12_COVERAGE_STARVATION"
+    )
+    relabelled["expected"]["error"] = True
+    path = tmp_path / "error_flipped_cases.json"
+    path.write_text(json.dumps(flipped), encoding="utf-8")
+
+    assert stress_suite.main(["--cases", str(path)]) == 1
+    lines = capsys.readouterr().out.splitlines()
+    assert len(lines) == 44
+    assert lines[-1] == "BF-02 stress: 42/43 PASS"
+    (line,) = [line for line in lines if line.startswith("S12_")]
+    assert line.endswith("DIVERGENCE")
+    assert "error: true" in line
+    assert "SELECT debt" in line
+
+
+def test_a_malformed_case_is_answered_per_case_not_with_a_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The refusal arm's width, at the file level. A case whose ``target_mode``
+    is not a word of the vocabulary is a caller's data: :func:`run_input`'s
+    arm has to answer it as a ``REFUSED`` record — with its own ``CaseRefusal``
+    — so the CLI prints a table with one DIVERGENCE line and exits non-zero,
+    rather than dying on an uncaught ``ValueError`` with no table at all."""
+
+    malformed = json.loads(json.dumps(cases()))
+    broken = next(
+        case for case in malformed if case["id"] == "S12_COVERAGE_STARVATION"
+    )
+    broken["input"]["candidates"][0]["target_mode"] = "BOGUS"
+
+    run = run_input(broken["input"])
+    assert run.kind is CaseKind.REFUSED
+    assert run.decision is None
+    assert run.refusal is not None
+    assert run.refusal.error_type == "ValueError"
+    assert "BOGUS" in run.refusal.message
+    assert not verdict_of(broken).passed
+
+    path = tmp_path / "malformed_cases.json"
+    path.write_text(json.dumps(malformed), encoding="utf-8")
+
+    assert stress_suite.main(["--cases", str(path)]) == 1
+    lines = capsys.readouterr().out.splitlines()
+    assert len(lines) == 44
+    assert lines[-1] == "BF-02 stress: 42/43 PASS"
+    (line,) = [line for line in lines if line.startswith("S12_")]
+    assert line.endswith("DIVERGENCE")
+    assert "REFUSED ValueError" in line
 
 
 # ---------------------------------------------------------------------------
@@ -592,6 +671,15 @@ def test_the_suite_registers_its_readings_with_a_revisit_each() -> None:
     assert len(judgements) >= 10
     for judgement in judgements:
         assert "Revisit:" in judgement, judgement[:120]
+
+
+def test_the_suites_own_version_stamp_is_pinned() -> None:
+    """The versioning paragraph's claim, pinned the way its four siblings'
+    stamps are (``fa1`` / ``pk1`` / ``pl1`` / ``sh1``): the module says the
+    stamp moves with its readings, so its present value is asserted rather
+    than left to be inherited by a reader's eyes alone."""
+
+    assert STRESS_SUITE_MODEL_VERSION == "bf02-suite-1"
 
 
 def test_the_not_scheduled_gap_is_not_exercised_by_this_suite() -> None:

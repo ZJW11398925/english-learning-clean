@@ -401,6 +401,15 @@ def test_a_real_shadow_run_pulls_in_no_dispatch_module() -> None:
     )
     assert proc.returncode == 0, proc.stderr
     assert "COLD-SHADOW c-cold" in proc.stdout
+    # The constant's *content* is the pin, not only its use: emptied or
+    # widened, the offender scan above would stay silent, so the four prefixes
+    # a shadow run may not pull in are asserted here as the list itself.
+    assert DISPATCH_PREFIXES == (
+        "elc.teaching",
+        "elc.runtime",
+        "elc.platform.db",
+        "sqlite3",
+    )
 
 
 def _table_counts(conn: sqlite3.Connection) -> dict[str, int]:

@@ -643,15 +643,22 @@ def run_input(case_input: Mapping[str, Any], *, reverse: bool = False) -> CaseRu
 
     Every contract breach is captured as a :class:`CaseRun` of kind
     ``REFUSED`` — the reference's ``except Exception`` arm, kept as a record so
-    the refusal can be examined by name (judgement 8). The precheck runs before
-    the candidates are adapted, which is the reference's own order and the
-    reason S20 answers ``DEGRADED`` rather than a vector-contract error
-    (judgement 3).
+    the refusal can be examined by name (judgement 8). The arm is narrowed to
+    the two families a caller's **bad case file** raises here: this module's
+    own :class:`~elc.planner.kernel.PlannerInputError` (itself a
+    ``ValueError``) plus the ``ValueError`` / ``KeyError`` a malformed
+    vocabulary word or a missing field raises while a case is adapted — so a
+    case spelling ``target_mode: "BOGUS"`` is answered with a per-case
+    DIVERGENCE line rather than a traceback, while a genuine programming error
+    still surfaces as one (the reference's bare ``Exception`` would have
+    swallowed it). The precheck runs before the candidates are adapted, which
+    is the reference's own order and the reason S20 answers ``DEGRADED`` rather
+    than a vector-contract error (judgement 3).
     """
 
     try:
         return _run_checked(case_input, reverse=reverse)
-    except PlannerInputError as refusal:
+    except (PlannerInputError, ValueError, KeyError) as refusal:
         return CaseRun(
             kind=CaseKind.REFUSED,
             selected=None,

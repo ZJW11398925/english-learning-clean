@@ -125,14 +125,17 @@ def test_domain_controller_is_empty_skeleton(package: str) -> None:
         # is_review_due (D-INV-009 — the due decision), both owned by the
         # due/overdue cut.
         "scheduler": {"SchedulerController"},
-        # P7-4 (TASK-OPI-44647873-….33 ①): PlannerService graduates for one
-        # method only — run_shadow, IMPLEMENTATION_PLAN §8's shadow mode:
-        # pure delegation to elc.planner.shadow (P7-0's assembly + P7-1's
-        # kernel; no store, no clock, no dispatch, no truth), whose suite
-        # pins that a run leaves a real app.db untouched. The dispatch entry
-        # (plan) and the durable trace read (get_planner_evaluation) still
-        # raise NotImplementedError with their reasons, and tests/phase7
-        # pins both refusals.
+        # P7-4 (TASK-OPI-44647873-….33 ①): PlannerService enters the
+        # allowlist. The gate exempts the **class** (a name in
+        # skipped_classes is skipped whole, so this entry is not "one method
+        # graduated"); which of the class's methods really answer and which
+        # still refuse is pinned behaviourally in tests/phase7 instead:
+        # run_shadow answers — IMPLEMENTATION_PLAN §8's shadow mode, pure
+        # delegation to elc.planner.shadow (P7-0's assembly + P7-1's kernel;
+        # no store, no clock, no dispatch, no truth; a run leaves a real
+        # app.db untouched) — while the dispatch entry (plan) and the durable
+        # trace read (get_planner_evaluation) still raise NotImplementedError
+        # with their reasons. Same mechanism as the five entries above.
         "planner": {"PlannerService"},
     }
     allowed = infra_allowlist.get(package, set())
