@@ -16,6 +16,12 @@ redefined from the Phase 0 seven-field stub to the full docs/DATA_MODEL.md
 GateExecutionStatus records to the full §14.1 sets, and the presentation
 vocabularies (STATE_MACHINES §3) are pinned here. The Gate profile itself
 lives in elc.teaching.gate; the durable CP2 executor in elc.teaching.store.
+
+Phase 8 P8-2 adds :class:`SessionBudgetView` — docs/DATA_MODEL.md §5.2's
+``Derived view`` (ten columns, no table, no migration) — whose derivation is
+:mod:`elc.teaching.budget` and whose production face is
+``TeachingController.get_session_budget_view``. It is a Planner input
+(docs/DOMAIN_MODEL.md §10/§13), not Learning State.
 """
 
 from __future__ import annotations
@@ -60,6 +66,7 @@ __all__ = [
     "MomentState",
     "PresentationPhase",
     "ResumeDirective",
+    "SessionBudgetView",
     "TeachingMomentRecord",
     "TeachingSupportLevel",
     "TeachingTargetRef",
@@ -368,6 +375,64 @@ class AttemptEvaluationRecord:
     confidence: float
     evidence_proposal_refs: tuple[str, ...] = ()
     created_at: str | None = None
+
+
+@dataclass(frozen=True)
+class SessionBudgetView:
+    """docs/DATA_MODEL.md §5.2 ``SessionBudgetView`` — the ten columns, verbatim.
+
+    §5.2 labels the block ``Derived view``: no table carries it and none may
+    (P8-2 landed it with **zero migrations**). It is derived — in
+    docs/DOMAIN_MODEL.md §13's words —
+
+        `SessionBudgetView` 由 `TeachingPolicyProfile` + `Runtime Session State`
+        共同派生
+
+    from the conversation's durable ``teaching_moment`` rows, the §5.1
+    ``TeachingPolicyProfile`` row and the two implementation-declared windows
+    of :mod:`elc.teaching.budget` (the derivation's home and the place each
+    field's basis + revisit condition is stated). §13's closing sentence is
+    this object's scope: "它是 Planner input，不是 Learning State" (§10 lists
+    it among the Planner's input authorities).
+
+    The ten fields, in §5.2's own order, with the one thing each means here:
+
+    - ``conversation_id`` — the view's key. Local V1 reading: **one session is
+      one conversation**, so this view *is* that session's budget;
+    - ``policy_version`` — the version of the policy row the view read, or
+      ``None`` when no policy is configured: the view must say *which policy
+      read them* (the ``ScheduleView.schedule_version`` precedent), and
+      ``None`` invents none;
+    - ``automatic_teaching_used`` — how many ``source='AUTOMATIC'`` moments
+      this conversation's durable history holds;
+    - ``automatic_teaching_remaining`` / ``probe_budget_remaining`` — §5.1
+      pins **no budget vocabulary** (``interruption_budget`` is a raw
+      ``str | None``), so both are ``None``: **not 0** — a number this
+      repository cannot read is not a number it may state;
+    - ``cooldown_remaining`` — seconds left of the declared hard-opening
+      cooldown (BF-03 §17), ``0.0`` when none is running;
+    - ``recent_skips`` / ``recent_rejections`` — the conversation's §7
+      ``USER_SKIP`` / ``USER_REJECTED_TARGET`` closures inside the declared
+      "recent" window;
+    - ``fatigue_signal`` — ``None``: no canonical vocabulary exists and no
+      consumer reads it, so none is invented;
+    - ``as_of`` — the instant the caller classified at (an argument, never a
+      clock read, the ``ScheduleView.as_of`` precedent).
+
+    Read-only by construction and by the production face
+    (``TeachingController.get_session_budget_view`` is a pure read).
+    """
+
+    conversation_id: ConversationId
+    policy_version: PolicyVersion | None
+    automatic_teaching_used: int
+    automatic_teaching_remaining: int | None
+    probe_budget_remaining: int | None
+    cooldown_remaining: float
+    recent_skips: int
+    recent_rejections: int
+    fatigue_signal: str | None
+    as_of: str
 
 
 @dataclass(frozen=True)

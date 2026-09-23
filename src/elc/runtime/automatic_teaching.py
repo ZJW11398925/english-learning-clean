@@ -51,9 +51,15 @@ What this unit does **not** do (each registered with the cut that owns it):
   Gate's DEGRADED answer is reachable. The **lock** fact is *not* declared:
   it is read from the durable ``active_teaching_lock`` row through
   :meth:`TeachingOpenAuthority.observed_lock_state` (BF-03 §14's own fact).
-  The views that will derive the controls (``SessionBudgetView``,
-  ``ConversationPriorityView``) are **p8-2**; the durable home of the
-  auto-teach setting is **p8-5**.
+  The two views that carry the controls now **both exist** — §5.2's
+  ``SessionBudgetView`` (P8-2, produced by
+  ``TeachingController.get_session_budget_view``) and §13's
+  ``ConversationPriorityView`` (P7-2's shape, no producer yet) — and their
+  three controls are derived by :mod:`elc.runtime.automatic_controls`, which
+  :meth:`TeachingControlFacts.derived` calls; a caller may still declare the
+  record by hand, and the durable home of the auto-teach setting is
+  **p8-5**. What is still p8-4 is the *wiring*: no turn assembles these facts
+  yet, so a caller derives (or declares) them.
 - it does not own the continuation. ``AUTO_CONTINUE`` is P8-1's *decision*
   profile (``elc.teaching.gate.decide_auto_continuation``), but the
   mid-moment automatic continuation flow (next-action branch, delivery,
@@ -117,6 +123,7 @@ from elc.platform.types import (
     Result,
     TurnId,
 )
+from elc.runtime.automatic_controls import automatic_controls_of
 from elc.runtime.decision_cycles import DecisionCycleRecord
 from elc.teaching.gate import (
     GATE_POLICY_VERSION,
@@ -136,10 +143,12 @@ from elc.teaching.types import (
     MomentSource,
     MomentState,
     PresentationPhase,
+    SessionBudgetView,
     TeachingMomentRecord,
 )
 
 if TYPE_CHECKING:
+    from elc.planner.scope import ConversationPriorityView
     from elc.runtime.types import GenerationActionIntentRecord
     from elc.teaching.store import CP2OpenRequest
 
@@ -201,11 +210,12 @@ class TeachingControlFacts:
     ``automatic_teaching_enabled`` ← product mode × rollout stage (no
     durable home of its own read face in this cut — p8-5; the Planner
     already derives the same value from the §5.1 policy, and the wiring cuts
-    must pass *that* value); ``hard_protected_flow`` ←
-    ``ConversationPriorityView.flow_priority == "PROTECTED"``
-    (docs/DOMAIN_MODEL.md §13, derived by the caller — p8-2/p8-4);
+    must pass *that* value); the other three ← the two views P8-2 landed —
+    ``hard_protected_flow`` ← ``ConversationPriorityView.flow_priority ==
+    "PROTECTED"`` (docs/DOMAIN_MODEL.md §13) and
     ``automatic_session_budget_exhausted`` / ``hard_cooldown_active`` ←
-    ``SessionBudgetView`` (p8-2).
+    ``SessionBudgetView`` (docs/DATA_MODEL.md §5.2) — through
+    :mod:`elc.runtime.automatic_controls`, which :meth:`derived` calls.
 
     The remaining fields are the Gate's critical environment facts. They are
     declared here, with the healthy path as the default, for the same reason
@@ -216,7 +226,12 @@ class TeachingControlFacts:
     (:meth:`TeachingOpenAuthority.observed_lock_state`).
 
     A wrong declaration is a wrong *input*, and this unit does not try to
-    repair one: it passes every declared value to the Gate verbatim.
+    repair one: it passes every declared value to the Gate verbatim. The
+    caller's override shape is unchanged and stays the primary one — a caller
+    that holds the facts declares them here; a caller that holds the two views
+    asks :meth:`derived` for the three and then adjusts with
+    ``dataclasses.replace`` if it knows better (both are declarations, and the
+    Gate cannot tell them apart).
     """
 
     automatic_teaching_enabled: bool = True
@@ -232,6 +247,45 @@ class TeachingControlFacts:
     gate_state_status: str = "COMPLETE"
     safety_privacy_status: str = SAFETY_PRIVACY_NO_SOURCE
     target_suppressed: bool = TARGET_SUPPRESSED_NO_SOURCE
+
+    @classmethod
+    def derived(
+        cls,
+        *,
+        session_budget_view: SessionBudgetView | None,
+        conversation_priority_view: ConversationPriorityView | None,
+    ) -> "TeachingControlFacts":
+        """The three view-derived controls; every other fact at its healthy
+        default.
+
+        The derivation is :func:`elc.runtime.automatic_controls.
+        automatic_controls_of` — one mapping, stated there with its authorities
+        (BF-03 §12/§16/§17, DOMAIN_MODEL §13) and its fail-open reading for an
+        absent view, so a caller never re-invents it. ``None`` is a legitimate
+        argument for either view: this method derives what the caller holds and
+        claims nothing about what it does not (a session view that could not be
+        read is the caller's ``Err`` to handle, not this method's to guess).
+
+        ``automatic_teaching_enabled`` is deliberately **not** derived here: its
+        authority is the product mode crossed with the rollout stage (p8-5),
+        and the Planner's own assembled value is what a wiring cut must pass
+        (the class docstring). A caller that must override a derived control —
+        a test pinning one control at a time, or a caller that knows the fact
+        from elsewhere — replaces it on the returned record:
+        ``replace(TeachingControlFacts.derived(...), hard_protected_flow=True)``.
+        """
+
+        controls = automatic_controls_of(
+            session_budget_view=session_budget_view,
+            conversation_priority_view=conversation_priority_view,
+        )
+        return cls(
+            automatic_session_budget_exhausted=(
+                controls.automatic_session_budget_exhausted
+            ),
+            hard_cooldown_active=controls.hard_cooldown_active,
+            hard_protected_flow=controls.hard_protected_flow,
+        )
 
 
 @dataclass(frozen=True)

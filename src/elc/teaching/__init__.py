@@ -18,8 +18,23 @@ presentation ladder (elc.teaching.ladder), the §8 limits
 (elc.teaching.flow). Review F10 syncs this package face with those modules:
 a public module no __all__ names is a face a consumer cannot find, and a
 package whose __all__ lags its own surface silently hides the slice.
+
+Phase 8 P8-2 adds the session-budget derivation: docs/DATA_MODEL.md §5.2's
+``Derived view`` is :class:`~elc.teaching.types.SessionBudgetView`, its
+derivation is elc.teaching.budget (the two ports a caller wires included) and
+its production face is ``TeachingController.get_session_budget_view`` — so
+the module and the names it exists for are exported here with everything
+else (the F10 rule).
 """
 
+from elc.teaching.budget import (
+    COOLDOWN_WINDOW_SECONDS,
+    RECENT_TEACHING_WINDOW_SECONDS,
+    SessionBudgetPolicyPort,
+    SessionBudgetPolicySource,
+    automatic_probe_moments_used,
+    session_budget_view_of,
+)
 from elc.teaching.commands import TeachingCommands
 from elc.teaching.controller import TeachingController
 from elc.teaching.envelope import (
@@ -154,6 +169,7 @@ from elc.teaching.types import (
     MomentState,
     PresentationPhase,
     ResumeDirective,
+    SessionBudgetView,
     TeachingMomentRecord,
     TeachingSupportLevel,
     TeachingTargetRef,
@@ -181,6 +197,7 @@ __all__ = [
     "CONTINUATION_ACTIONS",
     "CONTINUATION_REASON_CODES",
     "CONTROL_INTENTS",
+    "COOLDOWN_WINDOW_SECONDS",
     "CP2OpenRequest",
     "CompletionOutcome",
     "ContinuationFacts",
@@ -215,10 +232,14 @@ __all__ = [
     "NextAction",
     "POST_REVEAL_PHASES",
     "PresentationPhase",
+    "RECENT_TEACHING_WINDOW_SECONDS",
     "RETRY_LIKE_DELIVERY_KINDS",
     "ResumeDirective",
     "SOFT_ATTEMPT_LIMIT",
     "SOFT_TEACHING_TURN_LIMIT",
+    "SessionBudgetPolicyPort",
+    "SessionBudgetPolicySource",
+    "SessionBudgetView",
     "SqliteTeachingStore",
     "StaleStoreEpochError",
     "TARGET_UNRESOLVED_BASIS",
@@ -244,6 +265,7 @@ __all__ = [
     "UserInitiatedOpenFacts",
     "answer_key_for",
     "attempt_record_for",
+    "automatic_probe_moments_used",
     "build_evidence_proposal",
     "closing_outcome_for",
     "closing_reason_for_gate_denial",
@@ -269,6 +291,7 @@ __all__ = [
     "parse_teaching_response_payload",
     "performance_type_for",
     "phase_rank",
+    "session_budget_view_of",
     "support_rank",
     "teaching_request_payload",
     "teaching_response_payload",

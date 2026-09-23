@@ -48,7 +48,6 @@ class PlannerService:
         *,
         supply: CandidateSupply | None = None,
         current_learning_watermark: int | None = None,
-        natural_break_available: bool = False,
     ) -> ShadowRun:
         """P7-4's shadow run, forwarded to :mod:`elc.planner.shadow`.
 
@@ -58,13 +57,19 @@ class PlannerService:
         assembly → the kernel) and the record are the module's, and this method
         exists so a caller reaches the shadow face through the Planner's own
         service rather than through a module import.
+
+        The signature is the shadow module's, parameter for parameter: since
+        P8-2 ``natural_break_available`` is not one of them (its canonical home
+        is the request's §13 view, read by
+        :func:`elc.planner.shadow._natural_break_available_of`), and a
+        forwarding face that kept a parameter the target no longer takes would
+        be a wider promise than the run keeps.
         """
 
         return run_shadow(
             request,
             supply=supply,
             current_learning_watermark=current_learning_watermark,
-            natural_break_available=natural_break_available,
         )
 
     def plan(self, request: PlanningRequest) -> Result[PlanningOutcome]:

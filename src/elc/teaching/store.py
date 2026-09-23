@@ -118,6 +118,30 @@ _ATTEMPT_OUTCOMES = ATTEMPT_OUTCOMES
 _COMPLETION_OUTCOMES = COMPLETION_OUTCOMES
 _ABORT_REASONS = ABORT_REASONS
 
+#: The §15 column list every moment read selects, in the exact order
+#: :meth:`SqliteTeachingStore._moment_record` unpacks it: moment_id,
+#: conversation_id, persona_id, source, decision_cycle_id, candidate_id,
+#: gate_decision_id, focus_target, supporting_targets, target_mode,
+#: learning_intent, evidence_modality, evidence_goal,
+#: preferred_support_ceiling, learning_snapshot_id, evidence_watermark,
+#: curriculum_version, content_version, policy_version, lifecycle_state,
+#: presentation_phase, attempt_index, support_level, completion_outcome,
+#: abort_reason, state_version, created_at, opened_at, teaching_terminal_at,
+#: closed_at. **One spelling**: the single-row read and the per-conversation
+#: list read (P8-2) share it, so a second SELECT cannot silently rotate the
+#: columns out from under the unpacker.
+_MOMENT_COLUMNS = (
+    "moment_id, conversation_id, persona_id, source,"
+    " decision_cycle_id, candidate_id, gate_decision_id,"
+    " focus_target, supporting_targets, target_mode, learning_intent,"
+    " evidence_modality, evidence_goal, preferred_support_ceiling,"
+    " learning_snapshot_id, evidence_watermark, curriculum_version,"
+    " content_version, policy_version, lifecycle_state,"
+    " presentation_phase, attempt_index, support_level,"
+    " completion_outcome, abort_reason, state_version, created_at,"
+    " opened_at, teaching_terminal_at, closed_at"
+)
+
 __all__ = [
     "CP2OpenRequest",
     "MomentTransition",
@@ -1382,6 +1406,31 @@ class SqliteTeachingStore:
         row = self._moment_row(moment_id)
         return Ok(None if row is None else self._moment_record(row))
 
+    def list_moments_for_conversation(
+        self, conversation_id: ConversationId
+    ) -> Result[tuple[TeachingMomentRecord, ...]]:
+        """Every moment of one conversation, in the durable order
+        ``(created_at, moment_id)`` — the per-conversation history read
+        (P8-2).
+
+        The order is the store's own durable order, the one
+        ``get_gate_decisions`` and the orphan-lock read already use: the
+        stored ``created_at`` byte order, tie-broken by the id, so two reads
+        of one world answer in the same sequence whatever the query plan
+        does. It is **not** an instant order — a caller classifying by time
+        parses the instants itself (``elc.teaching.budget`` does, and says
+        why). ``Ok(())`` means the conversation has no teaching history yet,
+        which is the ordinary state of a fresh conversation, not an error.
+        """
+
+        rows = self._conn.execute(
+            "SELECT " + _MOMENT_COLUMNS + " FROM teaching_moment"
+            " WHERE conversation_id = ?"
+            " ORDER BY created_at, moment_id",
+            (conversation_id,),
+        ).fetchall()
+        return Ok(tuple(self._moment_record(row) for row in rows))
+
     def get_lock_moment_id(
         self, conversation_id: ConversationId
     ) -> Result[MomentId | None]:
@@ -1546,25 +1595,9 @@ class SqliteTeachingStore:
         )
 
     def _moment_row(self, moment_id: MomentId) -> sqlite3.Row | None:
-        # Column order: moment_id, conversation_id, persona_id, source,
-        # decision_cycle_id, candidate_id, gate_decision_id, focus_target,
-        # supporting_targets, target_mode, learning_intent, evidence_modality,
-        # evidence_goal, preferred_support_ceiling, learning_snapshot_id,
-        # evidence_watermark, curriculum_version, content_version,
-        # policy_version, lifecycle_state, presentation_phase, attempt_index,
-        # support_level, completion_outcome, abort_reason, state_version,
-        # created_at, opened_at, teaching_terminal_at, closed_at.
         return self._conn.execute(
-            "SELECT moment_id, conversation_id, persona_id, source,"
-            " decision_cycle_id, candidate_id, gate_decision_id,"
-            " focus_target, supporting_targets, target_mode, learning_intent,"
-            " evidence_modality, evidence_goal, preferred_support_ceiling,"
-            " learning_snapshot_id, evidence_watermark, curriculum_version,"
-            " content_version, policy_version, lifecycle_state,"
-            " presentation_phase, attempt_index, support_level,"
-            " completion_outcome, abort_reason, state_version, created_at,"
-            " opened_at, teaching_terminal_at, closed_at"
-            " FROM teaching_moment WHERE moment_id = ?",
+            "SELECT " + _MOMENT_COLUMNS + " FROM teaching_moment"
+            " WHERE moment_id = ?",
             (moment_id,),
         ).fetchone()
 

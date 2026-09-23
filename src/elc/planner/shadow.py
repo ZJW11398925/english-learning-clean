@@ -77,31 +77,41 @@ quotation, and each names the condition that re-opens it:
    ``curriculum_candidate_view`` is deliberately **not** read as a supply: its
    landed record (:class:`elc.curriculum.types.CurriculumCandidateView`) is a
    curriculum-side node view — an *input* to the generators — and reading one
-   record two ways would make two shapes mean one thing. Four further request
+   record two ways would make two shapes mean one thing. Three further request
    fields are named here and **not read** either, as one group so that "the
    view travels in the request" cannot be mistaken for "the run read it":
    ``context_opportunity_set`` (no producer in this repository builds one),
    ``session_budget_view`` (BF-03 §17's runtime session state is a Phase 8
-   input), ``conversation_priority_view`` (its consumer is the Gate — §13's
-   view expresses the protection level and authorizes nothing — and this
-   module's whole boundary is that nothing here calls one) and
-   ``planning_ledger`` (V1 has no ledger table — ``NO_TABLE_V1``, the same
-   reason the durable trace read refuses). Revisit: the §10 context assembly
-   (the orchestrator's side of the chain) lands and fixes where the proposals
-   travel, or one of the four named fields reaches its landing — Phase 8's
-   session budget, a V1 ledger table, the Gate's read of the conversation
-   priority, or a producer for the opportunity set;
-2. **two facts the request does not carry are declared, not invented.** The
-   current Learning watermark (:func:`elc.learning.queries.get_learning_watermark`
-   is the face that answers it) and ``natural_break_available`` (BF-02 §5 lists
-   it in the PlanningContext; nothing in this repository derives it) arrive as
-   keyword arguments, and a caller who hands neither gets the **fail-closed**
-   reading: ``current_learning_watermark=None`` cannot show a snapshot current,
-   so P7-0's leg answers ``snapshot_status=INVALID`` and the run degrades, while
-   ``natural_break_available=False`` merely leaves §13's starvation bonus
-   unavailable (P7-0's own default, and "a value, not a missing authority").
-   Revisit: the orchestrator that holds both facts lands, or canonical text
-   names where ``natural_break_available`` comes from;
+   input) and ``planning_ledger`` (V1 has no ledger table — ``NO_TABLE_V1``,
+   the same reason the durable trace read refuses). The fourth,
+   ``conversation_priority_view``, is read for **exactly one field** —
+   ``natural_break_available``, BF-02 §5's context field, which canonical
+   text now names a source for (judgement 2) — and for nothing else: §13's
+   ``flow_priority`` / ``interaction_phase`` stay the Gate's, and this
+   module's whole boundary is that nothing here calls one. Revisit: the §10
+   context assembly (the orchestrator's side of the chain) lands and fixes
+   where the proposals travel, or one of the three named fields reaches its
+   landing — Phase 8's session budget, a V1 ledger table, or a producer for
+   the opportunity set;
+2. **one fact the request does not carry is declared, and one is now read
+   from its canonical home.** The current Learning watermark
+   (:func:`elc.learning.queries.get_learning_watermark` is the face that
+   answers it) arrives as a keyword argument, and a caller who hands none
+   gets the **fail-closed** reading: ``current_learning_watermark=None``
+   cannot show a snapshot current, so P7-0's leg answers
+   ``snapshot_status=INVALID`` and the run degrades.
+   ``natural_break_available`` is **no longer a keyword argument**: canonical
+   text names its home — docs/DOMAIN_MODEL.md §13's
+   :class:`~elc.planner.scope.ConversationPriorityView`, whose field carries
+   exactly BF-02 §5's name — so the value is derived from
+   ``request.conversation_priority_view`` by
+   :func:`_natural_break_available_of`, and a request with **no** §13 view
+   gets ``False`` (fail-closed: "no view" cannot show a natural break, the
+   reading P7-0's default declares — "a value, not a missing authority").
+   Revisit: the §13 view gains a producer that answers it from the
+   conversation's own state (RA §4 step 3's conversation leg), at which
+   point the request's view is the field's *reading* rather than also its
+   declaration;
 3. **the readiness leg reads ``candidate_readiness``, not the full mapping.**
    P7-2 states the two readings and what each one means ("the full ``readiness``
    mapping ... makes the assembly INCOMPLETE whenever any read target is
@@ -137,13 +147,18 @@ quotation, and each names the condition that re-opens it:
 **Versioning.** :data:`SHADOW_MODE_MODEL_VERSION` stamps this module's own
 readings (the seam in judgement 1 above all); it moves with them, and a
 calibration of BF-02's numbers moves
-:data:`~elc.planner.kernel.PLANNER_PROFILE_VERSION` instead.
+:data:`~elc.planner.kernel.PLANNER_PROFILE_VERSION` instead. P8-2 moved one of
+the stamped readings (``natural_break_available`` left this module's
+declaration for §13's view — judgements 1 and 2) while the value stayed
+``sh1``; the reason is spelled beside the constant, so the two facts a reader
+needs — what changed and why the stamp did not — are stated rather than left
+to a diff.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 from elc.planner.feature_assembly import (
     GoalPortfolioPort,
@@ -178,8 +193,33 @@ __all__ = [
 ]
 
 #: Stamps this module's own readings (module docstring, "Declared judgements"):
-#: the supply seam, the two declared facts and the readiness scope.
+#: the supply seam, the declared fact and the readiness scope. **P8-2 moved one
+#: of those readings** — ``natural_break_available`` is no longer this module's
+#: declaration but §13's view's (judgement 1's fourth field, judgement 2) — and
+#: the stamp value deliberately **stays** ``sh1``: tests/phase7 pins the present
+#: value and this cut may not edit that suite, so the two readings share one
+#: stamp here rather than silently differ. The cut that moves that pin bumps
+#: this stamp with it.
 SHADOW_MODE_MODEL_VERSION = "sh1"
+
+
+class _ConversationPriorityPort(Protocol):
+    """docs/DOMAIN_MODEL.md §13's view, narrowed to the one field this module
+    reads.
+
+    A local protocol rather than an import of
+    :class:`elc.planner.scope.ConversationPriorityView`, and for a mechanical
+    reason worth writing down: the module's import set is pinned exactly
+    (``tests/phase7/test_p7_4_shadow_mode.py``'s ``SHADOW_IMPORTS``), so a new
+    module import would be a pin change this cut may not make — while the
+    structure is not lost, because "the one field any code here can read" is
+    what the protocol names (the ``FreshnessPort`` rule: fields the module may
+    not consume are not declared). ``PlanningRequest`` types the field as
+    ``object | None``, so :func:`_natural_break_available_of` casts to this
+    port and reads exactly ``natural_break_available``.
+    """
+
+    natural_break_available: bool
 
 
 @dataclass(frozen=True)
@@ -216,20 +256,47 @@ class ShadowRun:
     trace: PlannerTrace
 
 
+def _natural_break_available_of(request: PlanningRequest) -> bool:
+    """BF-02 §5's ``natural_break_available``, from its canonical home.
+
+    docs/DOMAIN_MODEL.md §13's :class:`~elc.planner.scope.
+    ConversationPriorityView` carries the field under BF-02 §5's own name, so
+    the view the request already holds *is* the authority — this module no
+    longer takes a hand-passed boolean (judgement 2). "§13's view expresses
+    the protection level and authorizes nothing": reading this one field
+    delegates no authorization, and the Gate keeps that (§12's ``PROTECTED``
+    leg is the Gate's own read of ``flow_priority``, not this one).
+
+    A request with **no** view answers ``False`` — the fail-closed reading:
+    a natural break one cannot see is not one the run may claim (P7-0's own
+    default, and "a value, not a missing authority"). Revisit: the §13 view
+    gains a producer (RA §4 step 3's conversation leg) that answers it from
+    the conversation's own state.
+    """
+
+    view = cast(
+        "_ConversationPriorityPort | None", request.conversation_priority_view
+    )
+    return view is not None and view.natural_break_available
+
+
 def run_shadow(
     request: PlanningRequest,
     *,
     supply: CandidateSupply | None = None,
     current_learning_watermark: int | None = None,
-    natural_break_available: bool = False,
 ) -> ShadowRun:
     """Run the Planner over one cycle's views and record the answer (§8).
 
     The chain is the module docstring's, in order: the request's views (plus
-    the two declared facts and the supply, judgements 1–5) → P7-0's
+    the declared fact and the supply, judgements 1–5) → P7-0's
     :func:`~elc.planner.feature_assembly.assemble_feature_authority` → the
     kernel's eleven steps → this record. Nothing else runs: no teaching, no
     Gate, no store, no clock.
+
+    ``natural_break_available`` is **not** a parameter any more (P8-2,
+    judgement 2): it is read from ``request.conversation_priority_view`` by
+    :func:`_natural_break_available_of`, the canonical home §13 names for it.
 
     ``PlannerInputError`` propagates exactly as the kernel raises it — a
     violated input contract is the caller's data, so a run that never started
@@ -250,7 +317,7 @@ def run_shadow(
             None if supply is None else supply.candidate_readiness
         ),
         constraint_view_present=request.planner_constraint_view is not None,
-        natural_break_available=natural_break_available,
+        natural_break_available=_natural_break_available_of(request),
     )
     proposals = () if supply is None else tuple(supply.proposals)
     result: KernelResult = plan(

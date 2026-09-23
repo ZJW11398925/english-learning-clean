@@ -30,6 +30,19 @@ the real entry point. The continuation / automatic paths (P3-1B, Phase 8)
 own the eventual protocol reshape, exactly as they own
 ``record_attempt`` / ``record_attempt_evaluation`` /
 ``terminalize_moment`` / ``issue_ephemeral_directive``.
+
+Phase 8 P8-2 adds the session-budget read: :meth:`get_session_budget_view`
+produces docs/DATA_MODEL.md §5.2's ``Derived view`` for one conversation at
+one instant (a **pure read** — :mod:`elc.teaching.budget` carries the
+derivation, the store carries the rows) and
+:meth:`count_automatic_probe_moments` the probe-usage count the view's
+``probe_budget_remaining`` cannot subtract without a policy vocabulary. Both
+are the ``SchedulerController.get_schedule_view`` shape: the domain that owns
+the rows produces the view a consumer reads. The policy leg arrives through
+an injected narrow port (the store carries no policy row), and a controller
+constructed without one **refuses** the view instead of answering with a
+policy leg it never read — the ``SchedulerController`` /
+``LearningReadPort`` posture.
 """
 
 from __future__ import annotations
@@ -49,6 +62,11 @@ from elc.platform.types import (
     RuntimeEpoch,
     TargetId,
     UserTurnId,
+)
+from elc.teaching.budget import (
+    SessionBudgetPolicySource,
+    automatic_probe_moments_used,
+    session_budget_view_of,
 )
 from elc.teaching.gate import (
     ContinuationFacts,
@@ -73,6 +91,7 @@ from elc.teaching.types import (
     GateDecisionId,
     GateDecisionRecord,
     GateExecutionStatusRecord,
+    SessionBudgetView,
     TeachingMomentRecord,
 )
 
@@ -91,8 +110,26 @@ _ACTION_BY_DELIVERY = {
 class TeachingController:
     """Owns TeachingMoment lifecycle + Gate authority over SqliteTeachingStore."""
 
-    def __init__(self, store: SqliteTeachingStore) -> None:
+    def __init__(
+        self,
+        store: SqliteTeachingStore,
+        *,
+        policy: SessionBudgetPolicySource | None = None,
+    ) -> None:
+        """The durable teaching store, plus the optional policy leg.
+
+        ``policy`` is the §5.1 half of the session-budget view's derivation
+        (docs/DOMAIN_MODEL.md §13: ``TeachingPolicyProfile`` + Runtime Session
+        State). It is optional exactly as the Scheduler's Learning port is: a
+        controller that never produces a budget view needs none, and
+        :meth:`get_session_budget_view` **refuses** without it rather than
+        answering ``policy_version=None`` for a row it never read — "no policy
+        is configured" and "no policy read face was wired" are different facts
+        and the view may not conflate them.
+        """
+
         self._store = store
+        self._policy = policy
 
     # -- P3-1A authority faces ---------------------------------------------
 
@@ -196,6 +233,89 @@ class TeachingController:
         (DEGRADED traces included)."""
 
         return self._store.get_gate_execution_statuses(decision_cycle_id)
+
+    # -- the session budget read (P8-2, docs/DATA_MODEL.md §5.2) ------------
+
+    def get_session_budget_view(
+        self, conversation_id: ConversationId, as_of: str
+    ) -> Result[SessionBudgetView]:
+        """The conversation's §5.2 session budget at ``as_of`` — a pure read.
+
+        The two authorities docs/DOMAIN_MODEL.md §13 names, read and composed
+        once: the conversation's durable ``teaching_moment`` history (Runtime
+        Session State's durable half) through the store, and the §5.1 policy
+        row through the injected :class:`~elc.teaching.budget.
+        SessionBudgetPolicySource`. The derivation itself is
+        :func:`elc.teaching.budget.session_budget_view_of` — every field's
+        reading, every declared window and every refusal is stated there, and
+        nothing is recomputed here.
+
+        ``as_of`` is an argument rather than a clock read for the
+        ``ScheduleView`` reason: a view is reproducible, so two consumers
+        asking about the same instant see the same picture and a test can pin
+        it. Nothing is written (the rows are read, the view is derived) and no
+        table carries the result — §5.2 labels the block ``Derived view``.
+
+        Three refusals, each with its own reason:
+
+        - no policy port was injected ⇒ ``DEPENDENCY_UNAVAILABLE`` (see
+          :meth:`__init__`): the view will not report
+          ``policy_version=None`` for a policy it never read;
+        - the policy read itself failed ⇒ that ``Err``, verbatim;
+        - an unusable instant in the rows or in ``as_of`` ⇒ the derivation's
+          ``VALIDATION_FAILED`` (never a dropped row — the budget must not be
+          understated).
+        """
+
+        if self._policy is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=(
+                        "get_session_budget_view needs the TeachingPolicyProfile"
+                        " read face (docs/DOMAIN_MODEL.md §13: the view is"
+                        " derived from the policy profile + Runtime Session"
+                        " State): this controller was constructed without a"
+                        " policy source, and the view will not report a policy"
+                        " version it never read"
+                    ),
+                )
+            )
+        policy = self._policy.get_teaching_policy(self._policy.user_id)
+        if isinstance(policy, Err):
+            return policy
+        moments = self._store.list_moments_for_conversation(conversation_id)
+        if isinstance(moments, Err):
+            return moments
+        return session_budget_view_of(
+            conversation_id=conversation_id,
+            as_of=as_of,
+            policy=policy.value,
+            moments=moments.value,
+        )
+
+    def count_automatic_probe_moments(
+        self, conversation_id: ConversationId
+    ) -> Result[int]:
+        """The conversation's automatic §11 ``PROBE`` openings — the *usage*
+        leg of §5.2's ``probe_budget_remaining``.
+
+        The view's ``probe_budget_remaining`` is ``None`` because §5.1 pins no
+        budget vocabulary to subtract from, not because the usage is unknown;
+        this face makes the usage readable on its own (the derivation is
+        :func:`elc.teaching.budget.automatic_probe_moments_used`, over the
+        same durable rows the view reads). Closed and live moments both count,
+        the way ``automatic_teaching_used`` counts the view's own history.
+        """
+
+        moments = self._store.list_moments_for_conversation(conversation_id)
+        if isinstance(moments, Err):
+            return moments
+        return Ok(
+            automatic_probe_moments_used(
+                conversation_id=conversation_id, moments=moments.value
+            )
+        )
 
     # -- frozen Phase 0 protocol shapes (pointers, not logic) ---------------
 
