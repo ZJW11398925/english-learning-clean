@@ -53,14 +53,16 @@ factor bands** (``planner_reference_profile_v1_1.json``'s
   no zero band, and ``curriculum_value``'s lowest band is ``MINOR``), plus the
   two literal zeros for the two factors the asset gives no band at all —
   ``goal_relevance`` (no mapping is landed, P7-0's own registration) and
-  ``coverage_debt`` (no PlanningLedger is landed; p7-3 owns it). A literal is
-  refused for any *other* factor, so "the number came from a band" is
+  ``coverage_debt`` (nothing said how much debt a target carries *for a call
+  that hands in no ledger*; P7-3 landed the ledger, and the ledger leg below
+  reads the obligation's own number whenever a caller hands one in). A literal
+  is refused for any *other* factor, so "the number came from a band" is
   checkable rather than promised.
 
 **Which sources can answer today, and which are registered absent.** §6's
 vocabulary is complete below — fourteen rows, fourteen source words — but a
 source answers only when the authority it reads exists, and this repository
-lands four of them:
+lands five of them:
 
 =================================  ==========================================
 answers today                      reads
@@ -69,9 +71,16 @@ answers today                      reads
 ``UNKNOWN_PROBE``                  the §11 learner state (never observed)
 ``CONFIRMED_GAP``                  BF-01 §25's ``CONFIRMED_GAP`` flag
 ``SUPPORT_WITHDRAWAL``             BF-01 §25's ``SUPPORT_DEPENDENT`` flag
+``COVERAGE_DEBT``                  the caller's ``PlanningLedger`` view
 =================================  ==========================================
 
-The other ten are **registered, not approximated**. Five Track A sources and
+The last row answers **only when the call hands a ledger in**: P7-3 landed the
+PlanningLedger (`elc.planner.ledger`) as the caller's own view, and a call that
+hands in none gets the same registered gap it always got — the gap text for that
+authority is deliberately unchanged, because it is the honest description of a
+call with no ledger in hand.
+
+The other nine are **registered, not approximated**. Five Track A sources and
 one Track B source need a *turn-scoped* observation the repository does not
 produce: RUNTIME_ARCHITECTURE §4 step 3 lists the durable artifacts the
 conversation leg should write (a "Teaching opportunity proposal", the
@@ -80,15 +89,15 @@ so a caller may hand an observation in
 (:class:`TurnOpportunityObservation` — the shape this cut declares *because* the
 artifact has none) and the sources answer; production hands nothing in, the
 generator invents nothing, and each affected source emits a
-:class:`SourceGap` naming its missing producer. The remaining four are
-registered against the authority that would have to land first:
-``TRANSFER_EXPANSION`` (D-INV-010 gives the Planner the transfer decision, but
-nothing answers "transfer where" — no transfer policy, and V1's modality pair
-has none), ``CORE_COVERAGE`` (§7 gives Curriculum a *core tier*; the registry's
-four columns carry none and the corpus declares none), ``GOAL_SPECIFIC_TARGET``
-(the Goal/Assessment pack mapping IMPLEMENTATION_PLAN §7 line 340 lists is not
-built — P7-0 registers the same absence on its own leg), and ``COVERAGE_DEBT``
-(the PlanningLedger is p7-3's work item).
+:class:`SourceGap` naming its missing producer. The remaining three wait for an
+authority nobody has landed: ``TRANSFER_EXPANSION`` (D-INV-010 gives the Planner
+the transfer decision, but nothing answers "transfer where" — no transfer
+policy, and V1's modality pair has none), ``CORE_COVERAGE`` (§7 gives Curriculum
+a *core tier*; the registry's four columns carry none and the corpus declares
+none), and ``GOAL_SPECIFIC_TARGET`` (the Goal/Assessment pack mapping
+IMPLEMENTATION_PLAN §7 line 340 lists is not built — P7-0 registers the same
+absence on its own leg). ``COVERAGE_DEBT`` was the fourth until P7-3 landed the
+ledger; what it waits for now is a caller who hands one in.
 
 **Three calls this module makes, each registered where it is made:**
 
@@ -126,6 +135,36 @@ built — P7-0 registers the same absence on its own leg), and ``COVERAGE_DEBT``
    contradiction is refused by the kernel when a caller routes around that
    resolver.
 
+**The ledger leg (P7-3), and the three readings it moves.** A call may hand in
+a :class:`~elc.planner.ledger.PlanningLedger` view — P7-3 landed it as the
+caller's own read-only view (`NO_TABLE_V1`: no exposure writer exists until
+Phase 8 presents a Moment). Exactly three readings change, and nothing else
+does:
+
+- ``overexposure`` — **every** candidate's cost factor reads its target's band
+  off the ledger's window count, because the factor is a fact about the *target*
+  (how often it has been shown) rather than about the source that proposed it.
+  The band word is the ledger's and the number stays in
+  :data:`FACTOR_BAND_VALUES`; a call with no ledger keeps the neutral ``NONE``;
+- ``coverage_debt`` — the ``COVERAGE_DEBT`` source's own number, read from the
+  governing obligation's ``debt_value`` (the ledger declares the column to live
+  in ``[0, 1]``). The row's declared literal ``1.0`` is what the frozen golden
+  prices a full obligation at and is the *no-ledger* reading; other sources keep
+  the absent literal ``0.0``, because a candidate that is not proposing coverage
+  service is not claiming a debt;
+- ``coverage_service_state`` — the same obligation's ladder position
+  (:func:`~elc.planner.ledger.coverage_service_state_of`), which is what BF-02
+  §13's safeguard reads. Only the ledger-reading source carries a state other
+  than ``NONE``: the state is the *obligation's*, and a review or a probe of the
+  same target is not proposing the coverage service.
+
+Two consequences worth stating rather than leaving to a reader: the ledger
+**never** filters here (its ``serviceable_targets`` is a list of targets a
+coverage-debt candidate may be built for, and every one of them still travels
+through the kernel's step 4 like any other candidate), and a paused obligation
+proposes nothing at all — it must not accrue impossible debt (BF-06 §14), so
+there is no debt for a cycle to pay.
+
 **One order this cut does not decide, and registers instead.** docs/
 STATE_MACHINES.md §19's "Planner Flow State" walks the same flow as
 DOMAIN_MODEL §10.1 with one extra step::
@@ -141,12 +180,16 @@ frontier in different places relative to policy utility. This cut is the step
 canonicalization) and it depends on neither reading: no proposal here is
 ordered, pruned or filtered by a frontier, and the generator's emission order is
 §6's source order rather than a frontier's. The difference is therefore
-**registered, not resolved**: the step belongs to p7-3 (the cut that owns
-``ActiveLearningFrontier`` and ``PlanningLedger``), and its placement decides
-whether an eligibility-excluded candidate still consumes frontier coverage —
-which is exactly the judgement a frontier cut has to make and no cut has
-made yet. Revisit: p7-3 lands the frontier and states its position, or a
-canonical revision brings §19 and §10.1 into line.
+**registered, not resolved** *by this cut*: the step belongs to p7-3 (the cut
+that owns ``ActiveLearningFrontier`` and ``PlanningLedger``), and its placement
+decides whether an eligibility-excluded candidate still consumes frontier
+coverage — which is exactly the judgement a frontier cut has to make. **P7-3 has
+since made it**, and this paragraph is kept as the registration it was: the
+frontier stands where §19 puts it, its members are step 4's survivors (an
+excluded candidate is not a member), §10.1's eleven steps are untouched, and
+:mod:`elc.planner.frontier` states the reading while the kernel fills
+``PlannerEvaluation.frontier_candidate_ids`` from it. Revisit: a canonical
+revision brings §19 and §10.1 into line.
 
 **The fields beside the priced vector, and where their values come from.**
 Only the vector is priced; every other field a proposal carries is a read of a
@@ -167,11 +210,13 @@ landed row or a declared word, and this paragraph is the registry:
   runs; ``runtime_generated_ready`` false because this generator produces no
   runtime-generated content; ``task_aligned`` / ``critical_repair`` false
   because no task binding and no critical-repair seat is published;
-  ``goal_relation=NONE`` / ``coverage_service_state=NONE`` per §24.14's
-  vocabulary with the two unlanded authorities P7-1's input contract already
-  names (the goal pack mapping; the PlanningLedger p7-3 owns). A cut that lands
-  any of those authorities reads the word here instead of keeping the literal,
-  because the kernel's hard rules do read these booleans.
+  ``goal_relation=NONE`` per §24.14's vocabulary with the one authority P7-1's
+  input contract still names (the goal pack mapping), and
+  ``coverage_service_state`` is ``NONE`` unless the ``COVERAGE_DEBT`` source
+  reads it off the ledger — the authority landed, so the word here is the
+  ledger's answer for the one source that proposes coverage service (the ledger
+  leg above). A cut that lands the goal mapping reads that word here instead of
+  keeping the literal, because the kernel's hard rules do read these words.
 - one flag is read **two ways** in this repository, and both readings fail
   closed with only §11's word differing: ``INSUFFICIENT_EVIDENCE`` is "no state
   to judge" to the probe condition (:func:`_has_no_state` — a target a probe
@@ -184,8 +229,10 @@ landed row or a declared word, and this paragraph is the registry:
 **What this module is not.** It does not rank, score, prune or select (the
 kernel does); it does not write anything (no store, no clock, no randomness —
 the same input always produces the same proposals, in the same order); it does
-not own a ledger (``coverage_service_state`` is read, never computed — p7-3's
-cut), and it claims nothing about shadow mode, the Gate or automatic teaching.
+not own a ledger (``coverage_debt`` / ``overexposure`` /
+``coverage_service_state`` are **read** off the caller's
+:class:`~elc.planner.ledger.PlanningLedger` view, never computed here), and it
+claims nothing about shadow mode, the Gate or automatic teaching.
 """
 
 from __future__ import annotations
@@ -211,6 +258,7 @@ from elc.planner.kernel import (
     ReadinessLevel,
     ScheduleAuthority,
 )
+from elc.planner.ledger import LedgerReadings, PlanningLedger
 from elc.planner.scope import (
     ConversationPriorityView,
     ScopeResolution,
@@ -960,13 +1008,18 @@ SOURCE_READINGS: Mapping[str, SourceReading] = {
             " the one §13's starvation safeguard exists to surface at a natural"
             " break — prices curriculum_value at CORE and coverage_debt at 1.0"
             " (the factor has no band in the reference asset, which is why the"
-            " literal is legal here and only here). The source still gaps: p7-3"
-            " owns the ledger that would say how much debt a target carries and"
-            " coverage_service_state is read, never computed"
+            " literal is legal here and only here). That literal is the reading"
+            " of a call that hands in **no** ledger; a call that hands one in"
+            " reads the obligation's own debt_value instead (elc.planner."
+            "ledger), and coverage_service_state is read from the same"
+            " obligation — never computed here"
         ),
         revisit=(
-            "p7-3 lands the PlanningLedger and CoverageDebt → this source runs"
-            " and the row is re-read against the ledger's own numbers"
+            "read: p7-3 landed the PlanningLedger and CoverageDebt, so this"
+            " source runs whenever a caller hands a ledger view in and the row's"
+            " literal 1.0 is now only the no-ledger reading. Revisit: a"
+            " calibrated debt scale lands (the ledger declares [0, 1]), or"
+            " GS20/S12 are retired"
         ),
     ),
 }
@@ -1124,6 +1177,14 @@ class CandidateSupplyInputs:
     candidate because nobody could be asked". ``as_of`` is the DecisionCycle's
     instant (the one a §10 view would be classified at and the one the review
     decision is asked about); it is deliberately not read off a clock.
+
+    ``ledger`` is P7-3's leg and it is **appended** to the surface this cut
+    landed, so every construction that existed before it keeps its meaning and
+    a call that hands in none behaves exactly as it did (module docstring, "the
+    ledger leg"). What it turns on is the ``PLANNING_LEDGER`` authority: the
+    ``COVERAGE_DEBT`` source runs, and three readings
+    (``overexposure`` / ``coverage_debt`` / ``coverage_service_state``) come
+    from the ledger instead of from the absent literals.
     """
 
     as_of: str
@@ -1136,6 +1197,7 @@ class CandidateSupplyInputs:
     constraints: PlannerConstraintView | None = None
     priority: ConversationPriorityView | None = None
     observation: OpportunityObservation | None = None
+    ledger: PlanningLedger | None = None
 
 
 @dataclass(frozen=True)
@@ -1274,6 +1336,12 @@ class _TargetContext:
     level" never gets a context (that is the refusal), so the type carries the
     fact that the candidate's ``content_readiness`` field can always be filled
     with a real ladder word.
+
+    ``ledger`` is the same read once per target, and it is ``None`` exactly when
+    the call handed in no ledger at all — so "the ledger says nothing about this
+    target" (a :class:`LedgerReadings` with ``obligation=None``) and "there is
+    no ledger" stay two different facts. Both keep the absent literals, but only
+    the second is the no-ledger reading the module's docstring registers.
     """
 
     target_type: str
@@ -1287,6 +1355,7 @@ class _TargetContext:
     flags: tuple[str, ...]
     auto_suppressed: bool
     review_suppressed: bool
+    ledger: LedgerReadings | None = None
 
 
 def _resolve(factor: str, value: str | float) -> float:
@@ -1322,11 +1391,15 @@ def _declared_vector(
 ) -> tuple[dict[BenefitFactor, float], dict[CostFactor, float]]:
     """The complete declared vector BF-02 §20 requires.
 
-    Three layers, in order: the neutral reading, the source's own bands, and the
-    two legs that are *facts about this candidate* rather than readings —
-    ``schedule_urgency`` (the §5.2 row's own answer, through P7-0's conversion)
-    and the scaffold floors when the prerequisite outcome is one BF-02 §11
-    prices.
+    Four layers, in order: the neutral reading, the source's own bands, the
+    ledger leg when the call handed a ledger in, and the two legs that are
+    *facts about this candidate* rather than readings — ``schedule_urgency``
+    (the §5.2 row's own answer, through P7-0's conversion) and the scaffold
+    floors when the prerequisite outcome is one BF-02 §11 prices. The ledger
+    sits before the schedule leg because the two move different factors and the
+    order between them is therefore immaterial; it sits after the source's own
+    bands because a ledger reading **replaces** a declared one (module
+    docstring, "the ledger leg").
     """
 
     benefit: dict[BenefitFactor, float] = {}
@@ -1343,6 +1416,25 @@ def _declared_vector(
             cost_factor.value,
             reading.cost.get(cost_factor, ABSENT_READINGS[cost_factor.value]),
         )
+
+    if ctx.ledger is not None:
+        # every candidate reads its target's own exposure, whatever proposed it
+        cost[CostFactor.OVEREXPOSURE] = _resolve(
+            CostFactor.OVEREXPOSURE.value, ctx.ledger.overexposure.band
+        )
+        if reading.source == "COVERAGE_DEBT":
+            obligation = ctx.ledger.obligation
+            if obligation is None:
+                raise CandidateSupplyError(
+                    f"{ctx.target_id}: a COVERAGE_DEBT candidate exists only"
+                    " for an obligation the ledger carries, and this target has"
+                    " none — the source's target list and the ledger's"
+                    " obligations are the same fact, so this is a caller's"
+                    " ledger disagreeing with itself"
+                )
+            benefit[BenefitFactor.COVERAGE_DEBT] = _resolve(
+                BenefitFactor.COVERAGE_DEBT.value, obligation.debt_value
+            )
 
     schedule = schedule_urgency_of(ctx.schedule_row, ScheduleAuthority.CURRENT)
     if schedule is None:
@@ -1505,6 +1597,10 @@ def _gap_for(
             " is no request to serve — and a request inferred from the text"
             " would be a second authority",
         ),
+        CandidateAuthority.PLANNING_LEDGER: (
+            inputs.ledger is None,
+            UNLANDED_AUTHORITIES[CandidateAuthority.PLANNING_LEDGER],
+        ),
     }
     for authority in COMMON_FACES:
         missing, reason = absent[authority]
@@ -1513,10 +1609,14 @@ def _gap_for(
     face = SOURCE_AUTHORITY[source]
     if face is None:
         return None
-    unlanded = UNLANDED_AUTHORITIES.get(face)
-    if unlanded is not None:
-        return SourceGap(source=source, authority=face, reason=unlanded)
-    missing, reason = absent[face]
+    if face in absent:
+        missing, reason = absent[face]
+    else:
+        # a source whose authority has no face anywhere: it gaps on every call,
+        # whatever the caller holds (TRANSFER_POLICY / CORE_TIER /
+        # GOAL_PACK_MAPPING — PLANNING_LEDGER reads its own entry above, because
+        # p7-3 landed the ledger as a view a caller can hold)
+        missing, reason = True, UNLANDED_AUTHORITIES[face]
     if missing:
         return SourceGap(source=source, authority=face, reason=reason)
     return None
@@ -1657,6 +1757,11 @@ def _context_for(
         flags=flags,
         auto_suppressed=auto_suppressed,
         review_suppressed=review_suppressed,
+        ledger=(
+            None
+            if inputs.ledger is None
+            else inputs.ledger.readings_for(target_id, as_of=inputs.as_of)
+        ),
     )
 
 
@@ -1670,15 +1775,17 @@ def _wanted(
 
     A source's condition is read from the faces it declared: the Scheduler's
     own due answer for a review, the estimator's flags for a gap, an absence of
-    state for a probe, and the observation / constraint view for the rest. Two
-    kinds of source answer here, and the difference decides what the caller's
-    ``OUTSIDE_SUPPLY`` refusal can ever see: the observation-backed sources
-    (``OBSERVATION_FIELD``) and ``MANUAL_USER_REQUEST`` name ids straight from
-    the turn's declared observation and the §9 request view, so an id the
-    supply does not carry is still returned and the caller records an
-    ``OUTSIDE_SUPPLY`` refusal rather than dropping it silently — while the
-    four context-derived sources (a due row, a flag, no state) answer by
-    sweeping the contexts and therefore never name an id the supply lacks.
+    state for a probe, the ledger's own obligations for a coverage debt, and the
+    observation / constraint view for the rest. Two kinds of source answer here,
+    and the difference decides what the caller's ``OUTSIDE_SUPPLY`` refusal can
+    ever see: the observation-backed sources (``OBSERVATION_FIELD``),
+    ``MANUAL_USER_REQUEST`` and ``COVERAGE_DEBT`` name ids straight from the
+    turn's declared observation, the §9 request view and the ledger's
+    obligations, so an id the supply does not carry is still returned and the
+    caller records an ``OUTSIDE_SUPPLY`` refusal rather than dropping it
+    silently — while the four context-derived sources (a due row, a flag, no
+    state) answer by sweeping the contexts and therefore never name an id the
+    supply lacks.
     """
 
     if source in OBSERVATION_FIELD:
@@ -1718,6 +1825,9 @@ def _wanted(
             for ctx in contexts.values()
             if _has_no_state(ctx, inputs)
         )
+    if source == "COVERAGE_DEBT":
+        assert inputs.ledger is not None
+        return inputs.ledger.serviceable_targets()
     return ()
 
 
@@ -1809,6 +1919,11 @@ def _build(
     canonical_key = _canonical_key(
         source, ctx.target_id, mode, ctx.modality, intent
     )
+    coverage_service_state = CoverageServiceState.NONE
+    if source == "COVERAGE_DEBT" and ctx.ledger is not None:
+        # only the ledger-reading source carries a service state: the state is
+        # the *obligation's*, and nothing else here proposes coverage service
+        coverage_service_state = ctx.ledger.service_state
     return CandidateProposal(
         candidate_id=_candidate_id(source, canonical_key),
         canonical_key=canonical_key,
@@ -1827,7 +1942,7 @@ def _build(
         content_readiness=ctx.level,
         prerequisite_state=ctx.prerequisites.state,
         prerequisite_scaffoldable=scaffolded,
-        coverage_service_state=CoverageServiceState.NONE,
+        coverage_service_state=coverage_service_state,
         modality_available=True,
         expired=False,
         deprecated=False,

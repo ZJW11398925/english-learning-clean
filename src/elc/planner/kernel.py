@@ -183,18 +183,24 @@ later cut owns. A registration changes no behaviour:
     vector is an *input* to the assembly or its *output* (§20 lists it among
     the frozen inputs, while §5's missing-Scheduler rule reads it as the
     assembly's own product);
-12. **the evaluation record's shape is not §14's column set.** docs/
-    DATA_MODEL.md §14 lists ``frontier_candidate_ids[]``, ``factor_trace`` and
-    a ``created_at`` for the evaluation record; this kernel emits
+12. **the evaluation record's shape is not §14's column set — and one column
+    of it has since landed.** docs/DATA_MODEL.md §14 lists
+    ``frontier_candidate_ids[]``, ``factor_trace`` and a ``created_at`` for the
+    evaluation record; this kernel emits
     :class:`~elc.planner.types.PlannerEvaluation` as the type module carries it
     (``ranked_candidates`` as records rather than ids, ``reason_trace`` as
-    lines, ``policy_version`` under that name, no clock), and §14's
+    lines, ``policy_version`` under that name, no clock). p7-3 appended
+    ``frontier_candidate_ids`` — §14's first column — filled from step 4's
+    survivors through :mod:`elc.planner.frontier`, so that one column is now
+    read from the document; ``factor_trace`` and ``created_at`` are still not
+    (the trace's lines are this module's spelling, and no clock is read). §14's
     ``RuntimeDecisionOutcome`` has **no record implementation anywhere in this
     repository** — :func:`runtime_decision_outcome_of` answers the *value*
     BF-02 §5 pins and nothing more. Inherited, not introduced: the drift is the
     type module's. Revisit: the cut that persists these records (the
-    PlanningLedger cut, or the shadow-mode run) lands §14's columns, and the
-    shape is then read from the document rather than from this module;
+    shadow-mode run, or the cut that lands the PlanningLedger's table) lands
+    the remaining §14 columns, and the shape is then read from the document
+    rather than from this module;
 13. **a target the Scheduler never scheduled is a gap, not the reference
     band's ``0.0``.** BF-02 §6 gives ``NOT_SCHEDULED`` the legal band ``0.0``
     (:data:`~elc.planner.feature_assembly.SCHEDULE_URGENCY_BANDS`), but the
@@ -265,6 +271,7 @@ from elc.planner.feature_assembly import (
     goal_relevance_of,
     schedule_urgency_of,
 )
+from elc.planner.frontier import frontier_of
 from elc.planner.types import (
     InitiativeClass,
     LearningIntent,
@@ -2064,8 +2071,20 @@ def _evaluation(
     record) — and ``()`` on a degraded run, where nothing was scored. The id is
     content-addressed from the decision cycle: no clock, and two runs of one
     cycle agree.
+
+    ``frontier_candidate_ids`` is the run's
+    :class:`~elc.planner.frontier.ActiveLearningFrontier`, built here from the
+    very set step 4 kept — so the column §14 names and the frontier's own
+    definition (survivors are members, exclusions are not) are one fact rather
+    than two that could drift. P7-1 left this column to p7-3 and judgement 12
+    said so; the frontier's own module states the order reading that makes it
+    step 4's set and no twelfth step.
     """
 
+    frontier = frontier_of(
+        candidates,
+        {cid: reason.value for cid, reason in exclusions.items()},
+    )
     ranked = sorted(
         (
             candidate
@@ -2099,6 +2118,7 @@ def _evaluation(
             for candidate in ranked
         ),
         reason_trace=reason_trace,
+        frontier_candidate_ids=frontier.candidate_ids,
     )
 
 
@@ -2155,6 +2175,10 @@ def _undecided(
     prevent. The record is still built through :class:`PlanningOutcome`, so
     the coupling "a degraded status carries no PlannerDecision" is enforced by
     the type rather than by this function's discipline.
+
+    ``frontier_candidate_ids`` is ``()`` here and that is the honest value
+    rather than an empty frontier: step 4 never ran, so no set survived it
+    (``elc.planner.frontier`` reads a frontier as the fourth step's answer).
     """
 
     reasons: list[str] = [
@@ -2187,6 +2211,7 @@ def _undecided(
         policy_version=PolicyVersion(PLANNER_PROFILE_VERSION),
         ranked_candidates=(),
         reason_trace=tuple(reasons),
+        frontier_candidate_ids=(),
     )
     return KernelResult(
         outcome=PlanningOutcome(

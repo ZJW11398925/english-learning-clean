@@ -90,7 +90,16 @@ class TargetCandidate:
 
 @dataclass(frozen=True)
 class PlannerEvaluation:
-    """Layer 1: ranked TargetCandidateSet + factor/reason trace."""
+    """Layer 1: ranked TargetCandidateSet + factor/reason trace.
+
+    ``frontier_candidate_ids`` is docs/DATA_MODEL.md §14's ``frontier_candidate_ids[]``
+    column — the members of the run's ``ActiveLearningFrontier``
+    (:mod:`elc.planner.frontier`), which is the set hard eligibility did not
+    exclude. It is **appended and defaulted** (P7-3) so every construction that
+    existed before it keeps its meaning, and ``()`` is the honest value for a
+    run that never reached the fourth step (a degraded or unavailable one)
+    rather than an empty frontier.
+    """
 
     planner_evaluation_id: PlannerEvaluationId
     decision_cycle_id: DecisionCycleId
@@ -98,6 +107,7 @@ class PlannerEvaluation:
     policy_version: PolicyVersion
     ranked_candidates: tuple[TargetCandidate, ...]
     reason_trace: tuple[str, ...]
+    frontier_candidate_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
