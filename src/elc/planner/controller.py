@@ -18,9 +18,17 @@ invented record:
   later cut's work item, so it keeps the skeleton's refusal while the shadow
   face beside it runs;
 - :meth:`PlannerService.get_planner_evaluation` is the durable trace read, and
-  the store it needs does not exist: P7-3's PlanningLedger is deliberately
-  table-less (``NO_TABLE_V1``, :mod:`elc.planner.ledger`). A service that
-  answered would have to invent the row it claims to have read.
+  since P8-0 the store behind it exists: migration 0015's
+  ``planner_evaluation`` table is written by the CP2 unit
+  (``elc.platform.db.planner_store``, reached through
+  :class:`~elc.planner.records.PlannerRecordStore`), whose
+  ``get_planner_evaluation`` reads the row back. What this method declares,
+  though, is a :class:`~elc.planner.types.PlanningOutcome` — the *object*
+  shape, whose evaluation carries ``ranked_candidates`` as
+  :class:`~elc.planner.types.TargetCandidate` records — and §14's durable row
+  stores ``ranked_candidate_ids``, ids only. No read on the store can answer
+  that promise, and a service that answered would have to invent the objects
+  it claims to have read.
 """
 
 from __future__ import annotations
@@ -73,8 +81,14 @@ class PlannerService:
     ) -> Result[PlanningOutcome | None]:
         raise NotImplementedError(
             "the kernel answers an evaluation for one cycle"
-            " (elc.planner.kernel.plan) and P7-4 records shadow runs, but a"
-            " durable trace read needs a store: P7-3's PlanningLedger is"
-            " deliberately table-less (NO_TABLE_V1), so there is no row this"
-            " face could read"
+            " (elc.planner.kernel.plan), P7-4 records shadow runs, and P8-0"
+            " landed the durable store — migration 0015's planner_evaluation"
+            " table, written and read by elc.platform.db.planner_store behind"
+            " the elc.planner.records port — but this face declares a"
+            " PlanningOutcome, whose evaluation carries ranked_candidates as"
+            " TargetCandidate records, while the durable row holds"
+            " ranked_candidate_ids (ids only), so no store read can answer"
+            " what this method promises; the cut that decides this face's"
+            " envelope (the orchestrator that reads a cycle's decision back)"
+            " wires it"
         )

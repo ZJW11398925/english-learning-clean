@@ -133,6 +133,15 @@ P3_1A_WRITE_OWNERS: dict[str, set[str]] = {
         "gate_execution_status",
         "teaching_moment",
     },
+    # P8-0's CP2 unit (migration 0015's four §14 planner tables) writes the
+    # cycle's back-reference ``decision_cycle.planner_decision_id`` in the
+    # same short transaction that lands the decision row. The allowance is
+    # narrowed the same way Gate 2's is: that module is an **update-only**
+    # face for this table (it never creates or removes a cycle), and the
+    # compensating assertion below, which reads the flat statement classes
+    # for the deletion face, leaves it to its own pin in tests/phase8 (the
+    # UPDATE is the module's only statement against decision_cycle).
+    "platform/db/planner_store.py": {"decision_cycle"},
 }
 
 
@@ -354,7 +363,10 @@ def test_migrations_directory_0014_is_newest() -> None:
     (the goal / policy / focus rows), 0012 with P6-1 (the §5.2
     schedule_item / review_event rows), 0013 with P6-3 (the §9
     planner_constraint row), and 0014 with Gate 2 (the BF-05 §24
-    deletion ledger)."""
+    deletion ledger); the assertion below reads ``SCHEMA_HEAD_FILE``, so it
+    followed to 0015 with P8-0 (the §14 planner records) without a body
+    change — the name above is the only stale part and the next cut that
+    touches this file may rename it."""
 
     names = sorted(
         path.name for path in (REPO_ROOT / "migrations").glob("*.sql")

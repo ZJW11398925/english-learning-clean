@@ -193,6 +193,10 @@ SWEPT_TABLES: tuple[str, ...] = (
     "teaching_moment",
     "user_turn",
     "gate_decision",
+    "planner_decision",
+    "planner_evaluation",
+    "planner_execution_status",
+    "runtime_decision_outcome",
     "decision_cycle",
     "turn_record",
     "input_envelope",
@@ -233,7 +237,10 @@ GLOBAL_CONTENT_TABLES: tuple[str, ...] = ()
 
 #: §19's conversation closure: the conversation's own chain plus the rows
 #: solely derived from its turns. Everything here is reached through the
-#: conversation's turn ids, its moments or its evidence groups.
+#: conversation's turn ids, its moments or its evidence groups. Since P8-0
+#: that includes the four §14 planner records: they hang off the
+#: conversation's own decision cycles and turns (and their foreign keys make
+#: "delete the cycle, keep its decision" a refusal, not a choice).
 #:
 #: Listed children-first (the same property :data:`SWEPT_TABLES` carries), so
 #: the declaration is also a legal order for the rows it names — a pin holds
@@ -264,6 +271,10 @@ CONVERSATION_SWEPT_TABLES: tuple[str, ...] = (
     "teaching_moment",
     "user_turn",
     "gate_decision",
+    "planner_decision",
+    "planner_evaluation",
+    "planner_execution_status",
+    "runtime_decision_outcome",
     "decision_cycle",
     "turn_record",
     "input_envelope",
@@ -283,8 +294,10 @@ LEARNING_TARGET_SWEPT_TABLES: tuple[str, ...] = (
 )
 
 #: §20 ALL_LEARNING_HISTORY: the learning side entire, plus the teaching
-#: attempts and decision cycles that exist to produce it. Deliberately not
-#: here: conversation / transcript, relationship, profile, goals and the
+#: attempts and decision cycles that exist to produce it — and, since P8-0,
+#: the four §14 planner records that hang off those cycles and turns.
+#: Deliberately not here: conversation / transcript, relationship, profile,
+#: goals and the
 #: user's own settings (planner constraints, policy, focus) — §20 keeps
 #: "conversation / relationship / profile / goals", and §18.1's
 #: TRUSTED_AUTHORITY makes a typed user setting the user's own statement
@@ -319,6 +332,10 @@ LEARNING_HISTORY_SWEPT_TABLES: tuple[str, ...] = (
     "attempt_record",
     "teaching_moment",
     "gate_decision",
+    "planner_decision",
+    "planner_evaluation",
+    "planner_execution_status",
+    "runtime_decision_outcome",
     "decision_cycle",
 )
 

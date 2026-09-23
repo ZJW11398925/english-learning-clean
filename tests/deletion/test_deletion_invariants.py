@@ -345,7 +345,9 @@ def test_sec_025_all_user_data_keeps_the_schema_and_the_ledger(
     )
     assert isinstance(result, Ok), result
     assert _count(db, "schema_meta") >= 2
-    assert _count(db, "schema_migrations") == 14
+    # 15 = the applied lineage through P8-0's 0015_planner_records (the head
+    # count; the pin moved 14 → 15 with that migration).
+    assert _count(db, "schema_migrations") == 15
     assert _count(db, "runtime_epoch") == 1
     assert _count(db, "deletion_tombstone") > 0
 

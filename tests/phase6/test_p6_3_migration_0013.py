@@ -170,8 +170,9 @@ def test_0013_is_present_and_not_the_head() -> None:
     runner is still filename-ordered and 0013's effect is still in the chain.
     (The pin read ``names[-1] == SCHEMA_HEAD_FILE == PRE_0013`` while P6-3 was
     the head; the head assertion now lives with the newest slice, and this one
-    asserts what remains true of 0013 rather than being deleted. The successor
-    is a **literal** — INFO-2's rule, the same choice P6-1 and P6-2 made.)
+    asserts what remains true of 0013 rather than being deleted — since P8-0
+    the head literal below is 0015, and the 0013→0014 successor pin keeps its
+    own literal untouched.)
 
     The lineage is still contiguous, and the shared constants are still the
     ones tests/architecture/test_platform_db_infra.py holds against the real
@@ -183,7 +184,7 @@ def test_0013_is_present_and_not_the_head() -> None:
     assert [name[:4] for name in names] == [
         f"{index:04d}" for index in range(1, len(MIGRATION_IDS) + 1)
     ]
-    assert SCHEMA_HEAD_FILE == "0014_deletion_tombstone.sql"
+    assert SCHEMA_HEAD_FILE == "0015_planner_records.sql"
 
 
 def test_the_table_exists_with_the_canonical_column_set(

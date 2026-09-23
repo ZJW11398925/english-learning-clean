@@ -71,18 +71,23 @@ def _columns(db: sqlite3.Connection, table: str) -> list[str]:
     return [str(row[1]) for row in db.execute(f"PRAGMA table_info({table})")]
 
 
-def test_0014_is_the_newest_migration() -> None:
-    """This slice's head; nothing ahead of Gate 2 smuggles schema.
+def test_0014_is_present_and_not_the_head() -> None:
+    """0014 is in the chain and its successor is the next slice.
+
+    The pin read ``names[-1] == SCHEMA_HEAD_FILE == PRE_0014`` while Gate 2
+    was the head; P8-0 landed 0015, so the head assertion now lives with the
+    newest slice and this one asserts what remains true of 0014 rather than
+    being deleted. The successor is a **literal** — INFO-2's rule, the same
+    choice P6-1/P6-3 made.
 
     The claim reads the shared constants, which
     tests/architecture/test_platform_db_infra.py holds against the real
     directory.
     """
 
-    from tests.conftest import SCHEMA_HEAD_FILE
-
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert names[-1] == SCHEMA_HEAD_FILE == PRE_0014
+    assert PRE_0014 in names
+    assert names[names.index(PRE_0014) + 1] == "0015_planner_records.sql"
     assert [name[:4] for name in names] == [
         f"{index:04d}" for index in range(1, len(MIGRATION_IDS) + 1)
     ]

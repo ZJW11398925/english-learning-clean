@@ -255,3 +255,65 @@ class RuntimeDecisionOutcomeValue(StrEnum):
 
     NORMAL = "NORMAL"
     DEGRADED_NO_AUTOMATIC_TEACHING = "DEGRADED_NO_AUTOMATIC_TEACHING"
+
+
+@dataclass(frozen=True)
+class PlannerEvaluationRecord:
+    """docs/DATA_MODEL.md §14 PlannerEvaluation — the **durable row's** shape.
+
+    Phase 8 P8-0. The id-shaped counterpart of
+    :class:`elc.planner.types.PlannerEvaluation`, which is what the kernel
+    answers with: that record carries ``ranked_candidates`` as
+    :class:`~elc.planner.types.TargetCandidate` objects and its own
+    ``policy_version`` spelling, while §14's table stores candidate **ids**
+    (``ranked_candidate_ids[]``) and ``policy_profile_version``. Both sides
+    are canonical — §14 is the durable shape and the kernel's record is the
+    computed one — so the map between them lives in exactly one place
+    (elc.planner.records documents it; elc.platform.db.planner_store
+    performs it) and neither record is renamed after the other.
+
+    ``frontier_candidate_ids`` / ``ranked_candidate_ids`` / ``factor_trace``
+    are the three TEXT columns §14 spells with bracket/trace shapes; the
+    store encodes them as deterministic JSON arrays (the elc/teaching/store.py
+    ``_array_document`` precedent). ``created_at`` is the store's own stamp;
+    this record is minted **for the row** in P8-0 and carries it (the
+    ``DecisionCycleRecord`` precedent), while the two older §14 records keep
+    their own field sets and
+    :class:`RuntimeDecisionOutcome` follows the sibling-adapter convention
+    above — all three asymmetries are registered in elc.planner.records.
+    """
+
+    planner_evaluation_id: PlannerEvaluationId
+    decision_cycle_id: DecisionCycleId
+    frontier_candidate_ids: tuple[str, ...]
+    ranked_candidate_ids: tuple[str, ...]
+    factor_trace: tuple[str, ...]
+    planner_version: PlannerVersion
+    policy_profile_version: PolicyVersion
+    created_at: str
+
+
+@dataclass(frozen=True)
+class RuntimeDecisionOutcome:
+    """docs/DATA_MODEL.md §14 RuntimeDecisionOutcome — the durable record.
+
+    Phase 8 P8-0. ``turn_id`` is the key (§14 gives this block no independent
+    id, and RUNTIME_ARCHITECTURE §4 step 9A defines the outcome at the turn
+    level); ``decision_cycle_id`` is optional because §14 spells it ``?`` —
+    ``None`` is the honest shape of a turn whose outcome was recorded without
+    a cycle. ``reason_codes`` is the bracketed list column and carries the
+    caller's own words: §14 pins the *outcome* vocabulary (two words) and
+    pins none for the reasons, so this record mints none either.
+
+    The four fields are the block's non-clock columns, and ``created_at`` —
+    which §14 also lists — is the **store's** stamp, not a record field (the
+    convention the sibling adapters follow: the in-memory record carries no
+    clock). The name is §14's; the enum is spelled
+    ``RuntimeDecisionOutcomeValue`` so the two are visibly distinct — the
+    same split :class:`PlannerExecutionStatusRecord` carries.
+    """
+
+    turn_id: TurnId
+    decision_cycle_id: DecisionCycleId | None
+    outcome: RuntimeDecisionOutcomeValue
+    reason_codes: tuple[str, ...]

@@ -50,6 +50,17 @@ repository, so the 43 cases are the executable substitute. The dispatch entry
 :meth:`PlannerService.plan` and the durable trace read
 :meth:`PlannerService.get_planner_evaluation` still refuse, for the reasons
 their docstrings state.
+
+P8-0 (TASK-OPI-64c88704-….7) adds :mod:`elc.planner.records` — CP2's durable
+half (docs/RUNTIME_ARCHITECTURE.md §6): the SQL-free
+:class:`~elc.planner.records.PlannerRecordStore` port over the four §14
+tables migration 0015 lands, the record one commit returns, and the single
+column map between §14's durable names and the kernel's field names. The
+adapter that carries the SQL is
+``elc.platform.db.planner_store.SqlitePlannerRecordStore``. The dispatch
+entry and the durable trace read still refuse — the trace read's reason is
+now the shape of what it declares, not a missing store (its docstring says
+so).
 """
 
 from elc.planner.candidates import (
@@ -208,6 +219,7 @@ from elc.planner.ledger import (
     serve,
 )
 from elc.planner.queries import PlannerQueries
+from elc.planner.records import PlannerCycleRecords, PlannerRecordStore
 from elc.planner.scope import (
     FLOW_PRIORITY_WORDS,
     FLOW_TO_INTERRUPTION_COST_BAND,
@@ -384,6 +396,7 @@ __all__ = [
     "LearningSnapshotPort",
     "NoTargetReason",
     "PlannerCommands",
+    "PlannerCycleRecords",
     "PlannerDecision",
     "PlannerDecisionOutcome",
     "PlannerEvaluation",
@@ -392,6 +405,7 @@ __all__ = [
     "PlannerInputError",
     "PlannerProfile",
     "PlannerQueries",
+    "PlannerRecordStore",
     "PlannerService",
     "PlannerTrace",
     "PlanningInput",

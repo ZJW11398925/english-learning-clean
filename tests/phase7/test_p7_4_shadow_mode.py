@@ -535,7 +535,13 @@ def test_two_runs_agree_and_leave_no_module_level_state() -> None:
 def test_the_service_forwards_the_shadow_run_and_refuses_the_unwired_faces() -> None:
     """Forwarding is the controller's whole job here; the dispatch entry and
     the durable trace read refuse with their reason, not with an invented
-    record."""
+    record.
+
+    P8-0 changed the trace read's *reason*, not its refusal: the §14 store
+    now exists (migration 0015's ``planner_evaluation`` table, read through
+    ``elc.platform.db.planner_store``), so the pin below holds the message to
+    the new carrier — the table the read would go through — instead of the
+    retired ``NO_TABLE_V1`` sentence."""
 
     request = request_of()
     supply = supply_of(proposal("c-p7-4"))
@@ -552,18 +558,20 @@ def test_the_service_forwards_the_shadow_run_and_refuses_the_unwired_faces() -> 
 
     with pytest.raises(NotImplementedError) as trace_read:
         service.get_planner_evaluation(PlannerEvaluationId("pe-p7-4"))
-    assert "NO_TABLE_V1" in str(trace_read.value)
+    assert "planner_evaluation" in str(trace_read.value)
     assert "store" in str(trace_read.value)
 
 
 def test_the_service_module_quotes_its_two_refusals() -> None:
     """The controller says which faces are unwired and why — the scope claim
-    its docstring makes, read off the module rather than trusted."""
+    its docstring makes, read off the module rather than trusted. Since P8-0
+    the durable trace read's sentence names the store it would read
+    (``planner_evaluation``), not the retired ``NO_TABLE_V1`` claim."""
 
     source = source_text(CONTROLLER_MODULE)
     assert "shadow mode" in source
     assert "NotImplementedError" in source
-    assert "NO_TABLE_V1" in source
+    assert "planner_evaluation" in source
     assert "run_shadow" in source
 
 

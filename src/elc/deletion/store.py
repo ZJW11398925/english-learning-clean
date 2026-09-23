@@ -150,6 +150,15 @@ _SURFACE_SELECT: Mapping[str, str] = {
         " FROM learning_opportunity_record"
     ),
     "planner_constraint": "SELECT rowid, constraint_id FROM planner_constraint",
+    "planner_decision": (
+        "SELECT rowid, planner_decision_id FROM planner_decision"
+    ),
+    "planner_evaluation": (
+        "SELECT rowid, planner_evaluation_id FROM planner_evaluation"
+    ),
+    "planner_execution_status": (
+        "SELECT rowid, decision_cycle_id FROM planner_execution_status"
+    ),
     "projection_job": "SELECT rowid, projection_id FROM projection_job",
     "provider_attempt": (
         "SELECT rowid, provider_attempt_id FROM provider_attempt"
@@ -158,6 +167,9 @@ _SURFACE_SELECT: Mapping[str, str] = {
         "SELECT rowid, relationship_memory_id FROM relationship_memory"
     ),
     "review_event": "SELECT rowid, review_event_id FROM review_event",
+    "runtime_decision_outcome": (
+        "SELECT rowid, turn_id FROM runtime_decision_outcome"
+    ),
     "schedule_item": "SELECT rowid, schedule_item_id FROM schedule_item",
     "session_focus": "SELECT rowid, session_focus_id FROM session_focus",
     "teaching_evidence_proposal": (
@@ -207,10 +219,18 @@ _DELETE_BY_ROWID: Mapping[str, str] = {
         "DELETE FROM learning_opportunity_record WHERE rowid IN ("
     ),
     "planner_constraint": "DELETE FROM planner_constraint WHERE rowid IN (",
+    "planner_decision": "DELETE FROM planner_decision WHERE rowid IN (",
+    "planner_evaluation": "DELETE FROM planner_evaluation WHERE rowid IN (",
+    "planner_execution_status": (
+        "DELETE FROM planner_execution_status WHERE rowid IN ("
+    ),
     "projection_job": "DELETE FROM projection_job WHERE rowid IN (",
     "provider_attempt": "DELETE FROM provider_attempt WHERE rowid IN (",
     "relationship_memory": "DELETE FROM relationship_memory WHERE rowid IN (",
     "review_event": "DELETE FROM review_event WHERE rowid IN (",
+    "runtime_decision_outcome": (
+        "DELETE FROM runtime_decision_outcome WHERE rowid IN ("
+    ),
     "schedule_item": "DELETE FROM schedule_item WHERE rowid IN (",
     "session_focus": "DELETE FROM session_focus WHERE rowid IN (",
     "teaching_evidence_proposal": (
@@ -883,6 +903,34 @@ class SqliteDeletionStore:
             table="user_turn",
             predicate="conversation_id = ?",
             params=(cid,),
+            run=run,
+        )
+        # P8-0's §14 planner records: the conversation's own cycles' decision
+        # trail (and the turn-level outcome row). Children first — a decision
+        # names its evaluation, and all four name the cycle or the turn that
+        # is removed right below them.
+        self._remove_in(
+            table="planner_decision",
+            column="decision_cycle_id",
+            values=cycle_ids,
+            run=run,
+        )
+        self._remove_in(
+            table="planner_evaluation",
+            column="decision_cycle_id",
+            values=cycle_ids,
+            run=run,
+        )
+        self._remove_in(
+            table="planner_execution_status",
+            column="decision_cycle_id",
+            values=cycle_ids,
+            run=run,
+        )
+        self._remove_in(
+            table="runtime_decision_outcome",
+            column="turn_id",
+            values=turn_ids,
             run=run,
         )
         self._remove_in(
