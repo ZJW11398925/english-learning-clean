@@ -1032,6 +1032,66 @@ def test_a_declared_scaffold_carries_the_floors_the_kernel_checks(
     assert row.excluded is None
 
 
+def test_a_hard_unjudged_edge_travels_beside_the_scaffold_to_the_kernel(
+    wired_world: World,
+) -> None:
+    """BF-02 §11's second shape, end to end: the merged case (a ``HARD`` edge
+    nobody can judge *and* an unmet ``SCAFFOLDABLE`` edge) reaches the kernel
+    as ``UNKNOWN`` + ``prerequisite_scaffoldable``, keeps the two scaffold
+    floors, and is not excluded by the UNKNOWN rule — the scaffold bypasses it
+    whether the word is ``UNKNOWN`` or ``READY_WITH_SCAFFOLD``, which is what
+    makes the two shapes one behaviour and two words."""
+
+    from elc.curriculum.types import PrerequisiteStrength
+
+    from .test_p7_2_supply_gates import DeclaredGraph, edge
+
+    graph = DeclaredGraph(
+        capabilities=(FOCUS_TARGET,),
+        edges=(
+            edge("cap-hard", FOCUS_TARGET, PrerequisiteStrength.HARD),
+            edge(
+                "cap-disc-topic-shift",
+                FOCUS_TARGET,
+                PrerequisiteStrength.SCAFFOLDABLE,
+            ),
+        ),
+    )
+    levels = DeclaredLevels(
+        wired_world.supply, {FOCUS_TARGET: DECLARED_LEVEL_FACTS}
+    )
+    supply = generate_candidates(
+        CandidateSupplyInputs(
+            as_of=AS_OF,
+            targets=wired_world.targets,
+            target_rows=wired_world.supply,
+            readiness=levels,
+            prerequisites=graph,
+            learner_state=wired_world.learning,
+            schedule=wired_world.scheduler,
+            constraints=wired_world.constraint_view(),
+            priority=None,
+            observation=None,
+        )
+    )
+    manual = supply.proposals_of("MANUAL_USER_REQUEST")[0]
+    assert manual.prerequisite_state is PrerequisiteState.UNKNOWN
+    assert manual.prerequisite_scaffoldable is True
+    assert manual.cost[CostFactor.SUPPORT_COST] >= SCAFFOLD_MIN_SUPPORT_COST
+    assert manual.cost[CostFactor.COGNITIVE_LOAD] >= SCAFFOLD_MIN_COGNITIVE_LOAD
+    result = plan(
+        module_planning_input(
+            supply, wired_world.authority(supply.candidate_readiness)
+        )
+    )
+    row = [
+        entry
+        for entry in result.trace.candidates
+        if entry.candidate_id == manual.candidate_id
+    ][0]
+    assert row.excluded is None
+
+
 def test_the_corpus_world_refuses_before_the_schedule_gate_reads(
     wired_world: World,
 ) -> None:

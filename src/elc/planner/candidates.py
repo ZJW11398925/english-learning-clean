@@ -148,6 +148,39 @@ which is exactly the judgement a frontier cut has to make and no cut has
 made yet. Revisit: p7-3 lands the frontier and states its position, or a
 canonical revision brings §19 and §10.1 into line.
 
+**The fields beside the priced vector, and where their values come from.**
+Only the vector is priced; every other field a proposal carries is a read of a
+landed row or a declared word, and this paragraph is the registry:
+
+- **identity** is the §11 row's own (``target_mode`` / ``learning_intent`` /
+  ``evidence_modality``), plus this module's ``opportunity_binding_class``
+  (the source word, registered above) and the §5.2 row carried as
+  ``schedule_row`` because the Scheduler owns it; the two supply gates'
+  answers travel as ``content_readiness`` / ``prerequisite_state`` /
+  ``prerequisite_scaffoldable``;
+- **eligibility** is declared, and each declaration is a consequence of a gate
+  or of a registered absence rather than a guess: ``modality_available=True``
+  because a §11 row outside V1's modality pair is refused before a proposal
+  exists (the ``MODALITY`` gate); ``expired`` / ``deprecated`` false because no
+  authority reads out an expired opportunity, and the shipped supply face's
+  §24.11 filter keeps retired entities out of the target set before this module
+  runs; ``runtime_generated_ready`` false because this generator produces no
+  runtime-generated content; ``task_aligned`` / ``critical_repair`` false
+  because no task binding and no critical-repair seat is published;
+  ``goal_relation=NONE`` / ``coverage_service_state=NONE`` per §24.14's
+  vocabulary with the two unlanded authorities P7-1's input contract already
+  names (the goal pack mapping; the PlanningLedger p7-3 owns). A cut that lands
+  any of those authorities reads the word here instead of keeping the literal,
+  because the kernel's hard rules do read these booleans.
+- one flag is read **two ways** in this repository, and both readings fail
+  closed with only §11's word differing: ``INSUFFICIENT_EVIDENCE`` is "no state
+  to judge" to the probe condition (:func:`_has_no_state` — a target a probe
+  may resolve) and "proven unmet" to the prerequisite resolver
+  (:func:`elc.planner.supply.prerequisite_state_of` — a ``HARD`` edge carrying
+  it is ``BLOCKED``). Neither reading lets the flag mean *satisfied*, and the
+  kernel excludes both words (``PREREQUISITE_UNKNOWN_UNRESOLVED`` is bypassed
+  only for a probe or a scaffold).
+
 **What this module is not.** It does not rank, score, prune or select (the
 kernel does); it does not write anything (no store, no clock, no randomness —
 the same input always produces the same proposals, in the same order); it does
@@ -673,10 +706,11 @@ SOURCE_READINGS: Mapping[str, SourceReading] = {
             " '显式 user learning request … 不使用 automatic interruption"
             " threshold'). The session binding is §9's own scope vocabulary"
             " (THIS_SESSION / UNTIL_DATE / UNTIL_USER_REENABLES — a manual"
-            " focus is not a one-turn event), and every manual candidate the"
-            " golden scenarios price carries a HIGH interruption cost"
-            " (GS05/GS08–GS12): the flow is the user's, which BF-02 §17 keeps a"
-            " cost rather than an exclusion"
+            " focus is not a one-turn event), and the golden scenarios price"
+            " manual candidates at two different numbers rather than one band"
+            " — GS05/GS08 at .8 and GS09–GS12 at .0 — so the HIGH band is this"
+            " cut's declaration and not a quotation. The flow is the user's,"
+            " which BF-02 §17 keeps a cost rather than an exclusion"
         ),
         revisit=(
             "§9 gains a priority column, or a turn-scoped request producer"
@@ -733,9 +767,11 @@ SOURCE_READINGS: Mapping[str, SourceReading] = {
             " confidence ≥ .65 — behind it), and the factor band it moves is"
             " the ladder's own CONFIRMED_GAP word, so the number is the flag"
             " the estimator already published rather than a second judgement."
-            " GS03/GS04/GS06 pair CONFIRMED_GAP with DEVELOP and price"
-            " learning_need at the top band; the gap does not expire this"
-            " turn, which is why its expiry is PERSISTENT"
+            " GS03/GS06 pair CONFIRMED_GAP with DEVELOP and price"
+            " learning_need at the ladder's own top band (1.0); GS04 carries"
+            " the same origin beside SUPPORT_WITHDRAWAL and prices .8, which"
+            " sits between the HIGH band (.75) and that top band. The gap does"
+            " not expire this turn, which is why its expiry is PERSISTENT"
         ),
         revisit=(
             "the estimator's flags are re-laddered (BF-01 §25 is the frozen"
@@ -844,9 +880,11 @@ SOURCE_READINGS: Mapping[str, SourceReading] = {
             "quoted and declared: the source reads BF-01 §25's SUPPORT_DEPENDENT"
             " flag, and §11's own intent word for it is WITHDRAW_SUPPORT"
             " (allowed for both practice modes). GS04 pairs the two and prices"
-            " learning_need at HIGH (.8). The *withdrawal* is where the cost"
-            " sits — the attempt is the user's to make — so support_cost takes"
-            " the MEDIUM band rather than the absent NONE"
+            " learning_need at .8 — the golden's own number, above the HIGH"
+            " band (.75) and below the ladder's top (1.0), so no band word is"
+            " quoted here. The *withdrawal* is where the cost sits — the"
+            " attempt is the user's to make — so support_cost takes the MEDIUM"
+            " band rather than the absent NONE"
         ),
         revisit=(
             "a cut prices the withdrawal attempt (how much support is being"
@@ -1033,21 +1071,24 @@ class ReviewRowPort(Protocol):
 
 
 class ReviewViewPort(Protocol):
-    """The §10 view, as far as this module reads it: the three buckets.
+    """The §10 view, as far as this module reads it: the two due buckets.
 
     The buckets are the Scheduler's **own** due classification
     (:meth:`elc.scheduler.controller.SchedulerController.get_schedule_view`,
     produced by P6-2 with the same ruler ``is_review_due`` uses), which is why
     the review source reads membership instead of re-deciding due-ness: D-INV-009
     keeps the decision on the Scheduler's side, and the view *is* that side's
-    answer. ``schedule_version`` and ``as_of`` are not declared — the context
+    answer. Only ``due_items`` / ``overdue_items`` are declared: a review
+    candidate exists when the Scheduler says due or overdue, and the view's
+    third bucket (``upcoming``) is P7-0's urgency leg rather than this source's
+    condition, so naming it would declare a read this module does not make.
+    ``schedule_version`` and ``as_of`` are not declared either — the context
     record is what dates this cycle (P7-0's ``schedule_authority`` leg), and a
     port that named them would invite a second reading of staleness.
     """
 
     due_items: Sequence[ReviewRowPort]
     overdue_items: Sequence[ReviewRowPort]
-    upcoming: Sequence[ReviewRowPort]
 
 
 class SchedulePort(Protocol):
@@ -1363,6 +1404,12 @@ def _canonical_key(
     Revisit: canonical text gives ``opportunity_binding_class`` a vocabulary (the
     frozen golden scenarios spell a constant ``CURRENT``), or a later cut needs
     cross-source merging — then the two sources' rows must produce one vector.
+    GS22's merge is the acceptance any such cut has to reproduce, and a cut that
+    re-asks for it (p7-4's shadow mode is the next candidate, its acceptance
+    naming the canonicalization scenarios) must make the two sources' *readings*
+    agree first: while ``COVERAGE_DEBT`` and ``CURRENT_EXPRESSION_NEED`` price
+    one target differently, a second proposal for that key is the factor-vector
+    conflict the kernel refuses, not a merge.
     """
 
     return "|".join(
@@ -1623,9 +1670,15 @@ def _wanted(
 
     A source's condition is read from the faces it declared: the Scheduler's
     own due answer for a review, the estimator's flags for a gap, an absence of
-    state for a probe, and the observation / constraint view for the rest. Ids
-    that no context answered are still returned, so the caller can record an
-    ``OUTSIDE_SUPPLY`` refusal rather than dropping them silently.
+    state for a probe, and the observation / constraint view for the rest. Two
+    kinds of source answer here, and the difference decides what the caller's
+    ``OUTSIDE_SUPPLY`` refusal can ever see: the observation-backed sources
+    (``OBSERVATION_FIELD``) and ``MANUAL_USER_REQUEST`` name ids straight from
+    the turn's declared observation and the §9 request view, so an id the
+    supply does not carry is still returned and the caller records an
+    ``OUTSIDE_SUPPLY`` refusal rather than dropping it silently — while the
+    four context-derived sources (a due row, a flag, no state) answer by
+    sweeping the contexts and therefore never name an id the supply lacks.
     """
 
     if source in OBSERVATION_FIELD:

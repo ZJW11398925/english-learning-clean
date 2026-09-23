@@ -148,6 +148,35 @@ class DeclaredGraph:
         )
 
 
+class RealFaceGraph(DeclaredGraph):
+    """The same declared graph, answered the way the *shipped* face answers it.
+
+    :meth:`elc.curriculum.store.CurriculumContentStore.prerequisites_of` runs
+    ``WHERE from_node = ? OR to_node = ?`` and filters no ``edge_type``, so an
+    edge whose ``from_node`` is the node (the node is someone else's
+    prerequisite) and an edge of §7's other ten types both arrive in the same
+    tuple as the node's own declared prerequisites. :class:`DeclaredGraph`
+    answers one-directionally (in-edges only) and so cannot show that face's
+    semantics — which is exactly how a resolver assumption of "in-edges only"
+    can survive a suite that only ever declares in-edges.
+    """
+
+    def prerequisites_of(
+        self, node_id: CurriculumNodeId
+    ) -> Result[tuple[CurriculumEdgeRecord, ...]]:
+        failure = self._error()
+        if failure is not None:
+            return failure
+        return Ok(
+            tuple(
+                edge
+                for edge in self._edges
+                if str(edge.from_node) == str(node_id)
+                or str(edge.to_node) == str(node_id)
+            )
+        )
+
+
 class DeclaredStates:
     """A §11 learner state handed in through the resolver's own port shape."""
 
@@ -508,6 +537,132 @@ def test_the_fold_over_the_graph_s_strengths(
     )
     assert outcome.state.value == expected
     assert outcome.scaffoldable is scaffoldable
+
+
+# -- the face's real semantics: out-edges and other edge types (F1's probe) --
+
+
+def test_an_out_edge_is_not_the_node_s_own_prerequisite() -> None:
+    """``cap-b`` is ``cap-c``'s declared prerequisite and has none of its own.
+
+    The shipped face returns the out-edge ``cap-b → cap-c`` when ``cap-b`` is
+    asked about (``from_node = ? OR to_node = ?``), so a resolver that judged
+    every edge the face returned would judge ``cap-b`` against its own state —
+    UNKNOWN, since nothing was ever observed — for a node whose declared
+    prerequisite set is empty. The read answer is READY.
+    """
+
+    graph = RealFaceGraph(
+        capabilities=("cap-b", "cap-c"),
+        edges=(edge("cap-b", "cap-c"),),
+    )
+    outcome = prerequisite_state_of(
+        "CAPABILITY",
+        "cap-b",
+        MODALITY,
+        prerequisites=graph,
+        learner_state=DeclaredStates({}),
+    )
+    assert outcome.state is PrerequisiteState.READY
+    assert outcome.nodes == ("cap-b",)
+    assert "no prerequisite edge" in " ".join(outcome.reasons)
+    assert "not this node's own prerequisites" in " ".join(outcome.reasons)
+
+
+def test_the_same_face_s_in_edge_still_blocks_on_the_prerequisite_s_flag() -> None:
+    """The other half of the probe: reading the edge ``cap-b → cap-c`` from
+    ``cap-c`` is reading a real prerequisite, and ``cap-b``'s own
+    ``CONFIRMED_GAP`` is what decides — the flag on the prerequisite node
+    itself, never a conclusion drawn from *its* prerequisites."""
+
+    graph = RealFaceGraph(
+        capabilities=("cap-b", "cap-c"),
+        edges=(edge("cap-b", "cap-c"),),
+    )
+    outcome = prerequisite_state_of(
+        "CAPABILITY",
+        "cap-c",
+        MODALITY,
+        prerequisites=graph,
+        learner_state=DeclaredStates(
+            {
+                ("cap-b", str(MODALITY)): learner_record(
+                    "cap-b", flags=(CONFIRMED_GAP_FLAG,)
+                )
+            }
+        ),
+    )
+    assert outcome.state is PrerequisiteState.BLOCKED
+    assert outcome.scaffoldable is False
+
+
+def test_an_edge_of_another_type_is_not_a_prerequisite() -> None:
+    """The face filters no ``edge_type`` and §7's table carries eleven words:
+    only ``PREREQUISITE_FOR`` declares a prerequisite, so a ``SUPPORTS`` edge
+    into the node is dropped like an out-edge rather than judged as a
+    requirement the graph never declared."""
+
+    graph = RealFaceGraph(
+        capabilities=("cap-x", "cap-c"),
+        edges=(
+            CurriculumEdgeRecord(
+                from_node=CurriculumNodeId("cap-x"),
+                to_node=CurriculumNodeId("cap-c"),
+                edge_type=CurriculumEdgeType.SUPPORTS,
+                prerequisite_strength=PrerequisiteStrength.HARD,
+            ),
+        ),
+    )
+    outcome = prerequisite_state_of(
+        "CAPABILITY",
+        "cap-c",
+        MODALITY,
+        prerequisites=graph,
+        learner_state=DeclaredStates({}),
+    )
+    assert outcome.state is PrerequisiteState.READY
+    assert "not this node's own prerequisites" in " ".join(outcome.reasons)
+
+
+def test_a_hard_unjudged_edge_under_a_scaffold_keeps_its_unknown_word() -> None:
+    """BF-02 §11's two scaffold shapes, and the merged one in particular: a
+    ``HARD`` edge nobody can judge *and* an unmet ``SCAFFOLDABLE`` edge reads
+    ``UNKNOWN`` with ``scaffoldable=True`` — the pair the kernel prices and
+    admits exactly as it does ``READY_WITH_SCAFFOLD`` — never a
+    ``READY_WITH_SCAFFOLD`` that folds the HARD edge's "not judged" state away
+    from the word."""
+
+    graph = DeclaredGraph(
+        capabilities=(NODE,),
+        edges=(
+            edge("cap-hard", NODE),
+            edge("cap-scaffold", NODE, PrerequisiteStrength.SCAFFOLDABLE),
+        ),
+    )
+    outcome = prerequisite_state_of(
+        "CAPABILITY",
+        NODE,
+        MODALITY,
+        prerequisites=graph,
+        learner_state=DeclaredStates({}),
+    )
+    assert outcome.state is PrerequisiteState.UNKNOWN
+    assert outcome.scaffoldable is True
+
+    # §11's first word still names the single shape it names
+    scaffold_only = DeclaredGraph(
+        capabilities=(NODE,),
+        edges=(edge("cap-scaffold", NODE, PrerequisiteStrength.SCAFFOLDABLE),),
+    )
+    single = prerequisite_state_of(
+        "CAPABILITY",
+        NODE,
+        MODALITY,
+        prerequisites=scaffold_only,
+        learner_state=DeclaredStates({}),
+    )
+    assert single.state is PrerequisiteState.READY_WITH_SCAFFOLD
+    assert single.scaffoldable is True
 
 
 def test_the_two_flags_are_the_estimator_s_own_words() -> None:

@@ -51,17 +51,49 @@ the graph and the registry, and the repository serves two different reads:
   registered), or canonical text says what a target outside the approved graph
   requires.
 
+**Which edges are this node's.** The §7 graph face is served by
+:meth:`elc.curriculum.store.CurriculumContentStore.prerequisites_of`, and its
+query is ``WHERE from_node = ? OR to_node = ?`` with no ``edge_type`` filter —
+so the tuple it returns holds three kinds of edge: the node's own incoming
+``PREREQUISITE_FOR`` edges (the declared prerequisites), outgoing edges where
+the node is the *from* side (the node is someone else's prerequisite), and
+edges of §7's other ten types. Only the first kind says what this node
+requires, so this cut filters to it before judging anything
+(:func:`_is_a_prerequisite_of`). Judging an out-edge would read the node's own
+state as a verdict about itself — a false ``BLOCKED``/``UNKNOWN`` word for a
+target that simply has no declared prerequisite — and judging a ``SUPPORTS``
+edge would read §7's other relations as requirements the graph never declared.
+Today's ``curriculum/prerequisites.json`` (``{"edges": []}``) keeps both
+shapes unexercised rather than correct. The filter narrows the set the face
+answers with, and the reading is registered: a face that answers in-edges only
+(the content domain's own narrowing) or canonical text that gives another edge
+type prerequisite force re-opens it.
+
 **What "met" means, and why only one word decides it.** BF-02 §11 pins the
 scaffold contract and no mastery rule, so this cut reads the one word the
 estimator already publishes: BF-01 §25's ``CONFIRMED_GAP`` flag (with §26's own
 reference thresholds behind it) and BF-01 §25's ``INSUFFICIENT_EVIDENCE`` — "the
 evidence does not support a state" — which is *not* evidence that the
-prerequisite is met either. A prerequisite node is therefore **proven** when its
-§11 state exists and carries neither flag. A prerequisite that is not proven is
-unmet for a ``HARD`` edge (``BLOCKED`` when a state exists and names the gap, and
-``UNKNOWN`` when there is no state at all — "we cannot tell" is not "we know it
-is wrong") and scaffoldable for a ``SCAFFOLDABLE`` edge
-(``READY_WITH_SCAFFOLD``). ``SOFT`` is carried and priced by nothing: BF-02 §11's
+prerequisite is met either. That flag is read **two ways** in this repository,
+and both readings fail closed with only §11's word differing: here it is read
+as *proven unmet* (a ``HARD`` edge carrying it is ``BLOCKED``), while
+:mod:`elc.planner.candidates`' probe condition reads it as "no state to judge"
+(``UNKNOWN``'s family, "a probe may resolve this") — registered in that
+module's section on the fields beside the priced vector. A prerequisite node is
+therefore **proven** when its §11 state exists and carries neither flag. A
+prerequisite that is not proven is unmet for a ``HARD`` edge (``BLOCKED`` when a
+state exists and names the gap, and ``UNKNOWN`` when there is no state at all —
+"we cannot tell" is not "we know it is wrong") and scaffoldable for a
+``SCAFFOLDABLE`` edge (``READY_WITH_SCAFFOLD``). BF-02 §11 lists **two** shapes
+that must carry scaffold cost (``READY_WITH_SCAFFOLD`` *or* ``UNKNOWN`` +
+``prerequisite_scaffoldable``), and the fold below keeps both visible: when a
+``HARD`` edge is unjudged *and* a ``SCAFFOLDABLE`` edge is unmet, the answer is
+``UNKNOWN`` with ``scaffoldable=True`` rather than ``READY_WITH_SCAFFOLD``, so
+the HARD edge's "not judged" state does not disappear from the word. The
+difference is the trace's, not the behaviour's: the kernel's hard rules admit
+the ``UNKNOWN`` + scaffoldable pair exactly as they admit
+``READY_WITH_SCAFFOLD`` (same exclusion outcome) and its scaffold floor reads
+the pair identically. ``SOFT`` is carried and priced by nothing: BF-02 §11's
 four words have no cell for it, and a soft prerequisite cannot hard-exclude —
 registered, with the revisit "canonical text gives SOFT a behaviour".
 """
@@ -75,6 +107,7 @@ from elc.curriculum.readiness import ReadinessAssessment
 from elc.curriculum.types import (
     CapabilityNodeRecord,
     CurriculumEdgeRecord,
+    CurriculumEdgeType,
     CurriculumLinkRecord,
     PrerequisiteStrength,
 )
@@ -142,7 +175,10 @@ class PrerequisitePort(Protocol):
 
     Satisfied structurally by :class:`elc.curriculum.store.CurriculumContentStore`
     (the P5-1 read face): the registry for a capability node, the §24.7 links
-    for a resource's node, and the §7 prerequisite edges for a node.
+    for a resource's node, and the §7 prerequisite edges for a node. The edge
+    read is **not** an in-edge-only read on the shipped face (``from_node = ?
+    OR to_node = ?``, no ``edge_type`` filter), so this resolver filters what it
+    judges rather than assuming the face did — see the module docstring.
     """
 
     def get_capability(
@@ -417,6 +453,23 @@ def _flags_of(state: object) -> tuple[str, ...]:
     return tuple(str(flag) for flag in flags)
 
 
+def _is_a_prerequisite_of(edge: CurriculumEdgeRecord, node: str) -> bool:
+    """Whether one edge the §7 face returned is *this node's* prerequisite.
+
+    The shipped face answers ``WHERE from_node = ? OR to_node = ?`` and filters
+    no ``edge_type`` (see the module docstring), so an edge the node is the
+    *from* side of — the node is someone else's prerequisite — arrives in the
+    same tuple as the node's own declared prerequisites, and so does an edge of
+    any of §7's other ten types. Only an incoming ``PREREQUISITE_FOR`` edge
+    declares what this node requires, and this predicate is that test.
+    """
+
+    return (
+        edge.edge_type is CurriculumEdgeType.PREREQUISITE_FOR
+        and str(edge.to_node) == node
+    )
+
+
 def prerequisite_state_of(
     target_type: str,
     target_id: str,
@@ -427,13 +480,18 @@ def prerequisite_state_of(
 ) -> PrerequisiteOutcome:
     """BF-02 §11's four-word answer for one target.
 
-    The fold, in one place: a ``HARD`` edge that is not proven blocks
-    (``BLOCKED`` when the evidence says so, ``UNKNOWN`` when nothing can be
-    judged); an unproven ``SCAFFOLDABLE`` edge makes the candidate
-    ``READY_WITH_SCAFFOLD`` — the state BF-02 §11 prices; a ``SOFT`` edge
-    changes nothing (registered); and when the graph declares no edge for any
-    of the target's nodes, the answer is ``READY`` — "this node has no declared
-    prerequisite" is a read, not a default.
+    The fold, in one place: only the target node's own incoming
+    ``PREREQUISITE_FOR`` edges are judged (:func:`_is_a_prerequisite_of` — the
+    face answers out-edges and other edge types too); a ``HARD`` edge that is
+    not proven blocks (``BLOCKED`` when the evidence says so, ``UNKNOWN`` when
+    nothing can be judged); an unproven ``SCAFFOLDABLE`` edge makes the
+    candidate ``READY_WITH_SCAFFOLD`` — the state BF-02 §11 prices, unless a
+    ``HARD`` edge is *also* unjudged, in which case the answer keeps that word
+    as ``UNKNOWN`` with ``scaffoldable=True`` (§11's second shape, module
+    docstring); a ``SOFT`` edge changes nothing (registered); and when the
+    graph declares no edge for any of the target's nodes, the answer is
+    ``READY`` — "this node has no declared prerequisite" is a read, not a
+    default.
     """
 
     if prerequisites is None:
@@ -473,12 +531,16 @@ def prerequisite_state_of(
                     f" ({edges.error.code.value})",
                 ),
             )
+        skipped = 0
         for edge in edges.value:
+            if not _is_a_prerequisite_of(edge, node):
+                skipped += 1
+                continue
             edge_count += 1
             strength = _strength_of(edge)
             if strength is PrerequisiteStrength.SOFT:
                 reasons.append(
-                    f"{node}: a SOFT edge to {edge.to_node} is carried and"
+                    f"{node}: a SOFT edge from {edge.from_node} is carried and"
                     " priced by nothing (BF-02 §11's four words have no cell"
                     " for it)"
                 )
@@ -494,6 +556,13 @@ def prerequisite_state_of(
                 blocked = True
             else:
                 unknown = True
+        if skipped:
+            reasons.append(
+                f"{node}: {skipped} edge(s) the §7 face returned are not this"
+                " node's own prerequisites (an out-edge — the node is someone"
+                " else's prerequisite — or one of §7's other edge types) and"
+                " were not judged"
+            )
 
     if edge_count == 0:
         reasons.append(
@@ -511,6 +580,17 @@ def prerequisite_state_of(
         return PrerequisiteOutcome(
             state=PrerequisiteState.BLOCKED,
             scaffoldable=False,
+            nodes=nodes,
+            reasons=tuple(reasons),
+        )
+    if scaffold and unknown:
+        # BF-02 §11's second shape: the HARD edge nobody could judge keeps its
+        # word, and the scaffold is carried beside it (the kernel's exclusion
+        # rule and scaffold floor read this pair exactly like
+        # READY_WITH_SCAFFOLD).
+        return PrerequisiteOutcome(
+            state=PrerequisiteState.UNKNOWN,
+            scaffoldable=True,
             nodes=nodes,
             reasons=tuple(reasons),
         )
