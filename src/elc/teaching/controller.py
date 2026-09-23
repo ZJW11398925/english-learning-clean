@@ -210,8 +210,9 @@ class TeachingController:
             "the frozen Phase 0 shape carries no critical fact bundle;"
             " use decide_user_initiated_open(UserInitiatedOpenFacts)"
             " (P3-1A) / decide_user_requested_continuation("
-            "ContinuationFacts) (P3-1B); the generic automatic shape is"
-            " Phase 8"
+            "ContinuationFacts) (P3-1B); the automatic contexts are decided"
+            " by decide_automatic_open / decide_auto_continuation (P8-1,"
+            " elc.teaching.gate)"
         )
 
     def open_teaching_moment(

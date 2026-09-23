@@ -19,6 +19,18 @@ teaching, so the turn is an ordinary one). A Gate DEGRADED answer is
 persisted as a status row and **no** GateDecision — critical state unknown
 is never laundered into a synthetic DENY (docs/DATA_MODEL.md §14.1).
 
+A cycle's Gate trace is written **once**. Before the Gate is asked, the
+unit reads the cycle's own durable trace; when one exists, the unit
+**replays** it and neither asks the Gate again nor writes a second fact —
+a re-entry whose freshly computed verdict would differ (the control facts
+moved, a read changed) must never *answer* with something the durable
+world contradicts, and must never try to persist a second, contradictory
+authorization. :func:`_durable_gate_replay` names the three durable shapes,
+the torn-trace refusal, and the one field a replay leaves ``None``
+(``action_id``: this unit's declared teaching surface has no action read,
+so the canonical first action is read through the generation store's own
+replay face, ``GenerationStore.get_action_for_turn``).
+
 What this unit does **not** do (each registered with the cut that owns it):
 
 - it does not run the Planner. The caller owns the assembly and the kernel
@@ -31,9 +43,17 @@ What this unit does **not** do (each registered with the cut that owns it):
   the session budget / cooldown facts and the flow protection arrive as
   :class:`TeachingControlFacts`, declared by the caller — the same
   caller-declared posture :mod:`elc.teaching.gate`'s automatic profiles
-  document (their declared authorities 1–3). The views that will derive
-  them (``SessionBudgetView``, ``ConversationPriorityView``) are **p8-2**;
-  the durable home of the auto-teach setting is **p8-5**.
+  document (their declared authorities 1–3). The Gate's remaining critical
+  facts (``authorization_status``, ``subject_status``, ``target_status``,
+  ``content_status``, ``learning_snapshot_status``, ``gate_state_status``,
+  ``safety_privacy_status``, ``target_suppressed``) are declared on the same
+  record with their healthy defaults, so an UNKNOWN can be expressed and the
+  Gate's DEGRADED answer is reachable. The **lock** fact is *not* declared:
+  it is read from the durable ``active_teaching_lock`` row through
+  :meth:`TeachingOpenAuthority.observed_lock_state` (BF-03 §14's own fact).
+  The views that will derive the controls (``SessionBudgetView``,
+  ``ConversationPriorityView``) are **p8-2**; the durable home of the
+  auto-teach setting is **p8-5**.
 - it does not own the continuation. ``AUTO_CONTINUE`` is P8-1's *decision*
   profile (``elc.teaching.gate.decide_auto_continuation``), but the
   mid-moment automatic continuation flow (next-action branch, delivery,
@@ -60,9 +80,11 @@ Facts the caller must already hold (declared reads, no second authority):
 The returned moment id and first-action id are **derived from the turn**
 (:func:`automatic_moment_id` / :func:`automatic_action_id`), the way the
 user-initiated path derives its own (``tm-{turn_id}`` / ``ga-{turn_id}-…``),
-so a re-entry that reaches CP2 with a differing action id replays the
-durable ``(moment, action)`` pair instead of writing a second one
-(``elc.teaching.store.open_teaching_moment``'s replay branch).
+so the durable rows recognize a re-derivation. A re-entry does not get that
+far any more — it replays the cycle's durable Gate trace before the Gate is
+asked — but the store's own replay branch
+(``elc.teaching.store.open_teaching_moment``) remains the second line of
+defence behind this unit.
 
 The first action's generation contract is **not** re-invented here:
 :data:`TEACHING_OPEN_CONTRACT_ID` is the same ``"gc-teaching-open"`` value
@@ -81,6 +103,7 @@ from elc.planner.records import PlannerCycleRecords
 from elc.platform.types import (
     ActionId,
     ConversationId,
+    DecisionCycleId,
     DomainError,
     DomainErrorCode,
     Err,
@@ -97,6 +120,8 @@ from elc.platform.types import (
 from elc.runtime.decision_cycles import DecisionCycleRecord
 from elc.teaching.gate import (
     GATE_POLICY_VERSION,
+    SAFETY_PRIVACY_NO_SOURCE,
+    TARGET_SUPPRESSED_NO_SOURCE,
     AutomaticOpenFacts,
     GateVerdict,
     decide_automatic_open,
@@ -169,24 +194,44 @@ def automatic_gate_execution_status_id(turn_id: TurnId) -> str:
 
 @dataclass(frozen=True)
 class TeachingControlFacts:
-    """The *declared* control facts of one automatic opening (P8-1).
+    """The *declared* facts of one automatic opening (P8-1).
 
-    Each field is the caller's declaration, with the authority registered in
-    :mod:`elc.teaching.gate`'s automatic section: ``automatic_teaching_enabled``
-    ← product mode × rollout stage (no durable home in this cut — p8-5);
-    ``hard_protected_flow`` ← ``ConversationPriorityView.flow_priority ==
-    "PROTECTED"`` (docs/DOMAIN_MODEL.md §13, derived by the caller — p8-2/p8-4);
+    The four controls, each with the authority registered in
+    :mod:`elc.teaching.gate`'s automatic section:
+    ``automatic_teaching_enabled`` ← product mode × rollout stage (no
+    durable home of its own read face in this cut — p8-5; the Planner
+    already derives the same value from the §5.1 policy, and the wiring cuts
+    must pass *that* value); ``hard_protected_flow`` ←
+    ``ConversationPriorityView.flow_priority == "PROTECTED"``
+    (docs/DOMAIN_MODEL.md §13, derived by the caller — p8-2/p8-4);
     ``automatic_session_budget_exhausted`` / ``hard_cooldown_active`` ←
     ``SessionBudgetView`` (p8-2).
 
+    The remaining fields are the Gate's critical environment facts. They are
+    declared here, with the healthy path as the default, for the same reason
+    the four controls are: this cut has no durable read face for them, and a
+    hard-coded healthy value would make one of the Gate's answers (DEGRADED)
+    unreachable. ``lock_state`` is deliberately **absent** — the unit reads
+    that fact from the durable ``active_teaching_lock`` row instead
+    (:meth:`TeachingOpenAuthority.observed_lock_state`).
+
     A wrong declaration is a wrong *input*, and this unit does not try to
-    repair one: it passes the four values to the Gate verbatim.
+    repair one: it passes every declared value to the Gate verbatim.
     """
 
     automatic_teaching_enabled: bool = True
     hard_protected_flow: bool = False
     automatic_session_budget_exhausted: bool = False
     hard_cooldown_active: bool = False
+
+    authorization_status: str = "VALID"
+    subject_status: str = "ACTIVE"
+    target_status: str = "VALID"
+    content_status: str = "VALID"
+    learning_snapshot_status: str = "VALID"
+    gate_state_status: str = "COMPLETE"
+    safety_privacy_status: str = SAFETY_PRIVACY_NO_SOURCE
+    target_suppressed: bool = TARGET_SUPPRESSED_NO_SOURCE
 
 
 @dataclass(frozen=True)
@@ -220,6 +265,14 @@ class AutomaticTeachingResult:
     ``planner_records`` is P8-0's durable answer (never ``None``: the
     Planner half commits before the Gate is asked, so every return carries
     it).
+
+    On a **replay** (the cycle's Gate trace already exists, see
+    :func:`_durable_gate_replay`) ``action_id`` is ``None``: this unit's
+    declared teaching surface has no action read, so it reports the durable
+    moment and refuses to invent the derived action id — the caller reads
+    the canonical first action through
+    ``GenerationStore.get_action_for_turn`` (the coordinator's own replay
+    read). Every other path returns the derived id, as before.
     """
 
     gate_verdict: GateVerdict | None
@@ -252,12 +305,16 @@ class PlannerDecisionRecordStore(Protocol):
 class TeachingOpenAuthority(Protocol):
     """The teaching half of CP2 — structurally
     :class:`elc.teaching.controller.TeachingController`, narrowed to the
-    three commit faces and the action-intent builder this unit calls.
+    three commit faces, the three durable Gate reads the replay uses, and
+    the lock read.
 
     The first action is built by the module-level
     :func:`elc.teaching.store.cp2_action_intent` (a plain helper, like the
-    user-initiated coordinator's CP2 path uses it), so the Protocol only
-    needs the three commits.
+    user-initiated coordinator's CP2 path uses it), so the commit side needs
+    only the three faces. The read side is the durable truth the unit must
+    consult before it asks the Gate (F1's repair) and the BF-03 §14 lock
+    fact (F4's repair); both have been on the controller since P3-1A/P3-1B,
+    so this Protocol grew no face the durable world did not already have.
     """
 
     def commit_cp2_open(self, request: object) -> Result[MomentId]: ...
@@ -268,6 +325,21 @@ class TeachingOpenAuthority(Protocol):
     ) -> Result[GateDecisionId]: ...
     def record_gate_degraded(
         self, status: GateExecutionStatusRecord
+    ) -> Result[str]: ...
+
+    def get_gate_execution_statuses(
+        self, decision_cycle_id: DecisionCycleId
+    ) -> Result[tuple[GateExecutionStatusRecord, ...]]: ...
+    def get_gate_decisions(
+        self, decision_cycle_id: DecisionCycleId
+    ) -> Result[tuple[GateDecisionRecord, ...]]: ...
+    def get_moment_for_cycle(
+        self, decision_cycle_id: DecisionCycleId
+    ) -> Result[TeachingMomentRecord | None]: ...
+    def observed_lock_state(
+        self,
+        conversation_id: ConversationId,
+        moment_id: MomentId | None = None,
     ) -> Result[str]: ...
 
 
@@ -327,13 +399,19 @@ def decide_automatic_teaching(
     planner_store: PlannerDecisionRecordStore,
     teaching: TeachingOpenAuthority,
 ) -> Result[AutomaticTeachingResult]:
-    """One automatic decision: Planner records first, then the Gate, then
-    the CP2 open (RA §4 9A–10B, §6).
+    """One automatic decision: Planner records first, then the cycle's
+    durable Gate trace if it has one, then the Gate, then the CP2 open
+    (RA §4 9A–10B, §6).
 
     ``outcome`` is the kernel's own answer
     (:class:`elc.planner.types.PlanningOutcome`; typed as ``object`` here
     because this module uses three of its fields and the stores' own
     signatures are the authority on its shape).
+
+    A cycle the Gate already decided is not decided again: the durable trace
+    is replayed (:func:`_durable_gate_replay`), so a re-entry answers with
+    the durable verdict and writes nothing, whatever the fresh facts would
+    have produced.
     """
 
     # 1. The Planner half of CP2 goes durable first (P8-0's port) — this is
@@ -369,8 +447,24 @@ def decide_automatic_teaching(
 
     candidate_id = str(decision.selected_candidate_id)
 
-    # 3. The Gate's AUTOMATIC OPEN profile (pure; the Planner facts are the
-    #    inputs just read back from the durable rows).
+    # 3. The cycle's own Gate trace, if it exists, is the answer (F1's
+    #    repair): a re-entry replays the durable facts instead of re-deciding
+    #    them, so the result can never contradict the durable world and no
+    #    second contradictory fact is ever written.
+    replay = _durable_gate_replay(turn, records, teaching)
+    if replay is not None:
+        return replay
+
+    # 4. The lock fact is BF-03 §14's, read from the durable
+    #    ``active_teaching_lock`` row (never declared, never hard-coded):
+    #    any existing lock denies an OPEN.
+    lock = teaching.observed_lock_state(turn.conversation_id)
+    if isinstance(lock, Err):
+        return lock
+
+    # 5. The Gate's AUTOMATIC OPEN profile (pure; the Planner facts are the
+    #    inputs just read back from the durable rows, the critical facts are
+    #    the caller's declarations).
     verdict = decide_automatic_open(
         AutomaticOpenFacts(
             decision_cycle_id=str(execution_status.decision_cycle_id),
@@ -378,6 +472,15 @@ def decide_automatic_teaching(
             planner_execution_status=execution_status.status.value,
             planner_decision=decision.decision.value,
             user_intent_scope="OPEN",
+            lock_state=lock.value,
+            authorization_status=controls.authorization_status,
+            subject_status=controls.subject_status,
+            target_status=controls.target_status,
+            content_status=controls.content_status,
+            learning_snapshot_status=controls.learning_snapshot_status,
+            gate_state_status=controls.gate_state_status,
+            safety_privacy_status=controls.safety_privacy_status,
+            target_suppressed=controls.target_suppressed,
             automatic_teaching_enabled=controls.automatic_teaching_enabled,
             hard_protected_flow=controls.hard_protected_flow,
             automatic_session_budget_exhausted=(
@@ -395,7 +498,10 @@ def decide_automatic_teaching(
         moment_id=None,  # an OPEN binds the DecisionCycle, not a moment
         gate_context=GateDecisionContext.OPEN,
         authorization_basis=AuthorizationBasis.DECISION_CYCLE,
-        authorization_status="VALID",
+        # The §14.1 status row carries the fact's own value, exactly as the
+        # user-initiated coordinator's OPEN does (elc/runtime/controller.py:
+        # ``authorization_status=facts.authorization_status``).
+        authorization_status=controls.authorization_status,
         status=(
             GateExecutionStatusValue.SUCCEEDED
             if verdict.execution_status == "SUCCEEDED"
@@ -404,7 +510,7 @@ def decide_automatic_teaching(
         missing_or_unknown=verdict.missing_or_unknown,
     )
 
-    # 4. DEGRADED: one status row, no GateDecision (docs/DATA_MODEL.md
+    # 6. DEGRADED: one status row, no GateDecision (docs/DATA_MODEL.md
     #    §14.1) — and no moment.
     if verdict.decision is None:
         persisted = teaching.record_gate_degraded(status_record)
@@ -420,7 +526,7 @@ def decide_automatic_teaching(
             )
         )
 
-    # 5. DENY: two facts (status + decision), never a Moment / lock / action.
+    # 7. DENY: two facts (status + decision), never a Moment / lock / action.
     if verdict.decision == "DENY":
         denial = teaching.record_gate_denial(
             status_record,
@@ -446,7 +552,7 @@ def decide_automatic_teaching(
             )
         )
 
-    # 6. ALLOW: the CP2 five-fact atomic open. The three derived fields are
+    # 8. ALLOW: the CP2 five-fact atomic open. The three derived fields are
     #    set here (not trusted from the template — refused above), the
     #    bindings come from the durable cycle, and the first action is the
     #    shared opening contract.
@@ -502,6 +608,121 @@ def decide_automatic_teaching(
             action_id=action_id,
             planner_records=records,
             normal_persona_generation=False,
+        )
+    )
+
+
+def _durable_gate_replay(
+    turn: AutomaticTeachingTurn,
+    records: PlannerCycleRecords,
+    teaching: TeachingOpenAuthority,
+) -> Result[AutomaticTeachingResult] | None:
+    """The cycle's own Gate trace, when one already exists.
+
+    A cycle's Gate facts are written once and are canonical: a re-entry
+    whose freshly computed verdict would differ — the control facts moved,
+    a read changed — replays the durable trace instead of answering with
+    something the durable world contradicts, and never attempts a second,
+    contradicting write. ``None`` means the cycle has no OPEN trace yet and
+    the ordinary flow runs.
+
+    The three durable shapes, and what each replays as:
+
+    - a ``GateDecision`` row (ALLOW or DENY) with its status row: the
+      decision's own ``policy_version``, its ordered ``reason_codes`` for a
+      DENY (``primary_reason`` is the first of them), and — for an ALLOW —
+      the moment the cycle opened (the CP2 unit wrote the pair in one
+      transaction, so an ALLOW the *unit* wrote always has one);
+    - a lone ``GateExecutionStatus(DEGRADED)``: the degradation's
+      ``missing_or_unknown`` keys, ``decision=None``, no moment;
+    - a lone ``GateExecutionStatus(SUCCEEDED)``: a **torn** trace no writer
+      in this repository can produce (CP2 and both record faces write a
+      SUCCEEDED status together with its decision, in one short
+      transaction). It is refused rather than repaired — asking the Gate
+      again would insert a second, contradictory fact, and there is no
+      decision to replay.
+
+    ``action_id`` is deliberately ``None`` on a replay: the declared
+    teaching surface has no action read, and the derived id would claim a
+    row the durable world may not hold. The caller reads the canonical
+    first action through the generation store's own replay face
+    (``GenerationStore.get_action_for_turn``, ``elc/runtime/generation.py``),
+    which is exactly what the coordinator's replay path does.
+
+    Revisit: the cut that gives this unit an action read (or wires the
+    automatic path into a turn, p8-4) replaces the ``None`` with the
+    durable first-action id and updates this docstring.
+    """
+
+    cycle_id = turn.cycle.decision_cycle_id
+    statuses = teaching.get_gate_execution_statuses(cycle_id)
+    if isinstance(statuses, Err):
+        return statuses
+    decisions = teaching.get_gate_decisions(cycle_id)
+    if isinstance(decisions, Err):
+        return decisions
+
+    open_decisions = tuple(
+        decision
+        for decision in decisions.value
+        if decision.context is GateDecisionContext.OPEN
+    )
+    if open_decisions:
+        decision = open_decisions[-1]
+        reasons = tuple(decision.reason_codes)
+        moment_id: MomentId | None = None
+        if decision.decision is GateDecisionValue.ALLOW:
+            moment = teaching.get_moment_for_cycle(cycle_id)
+            if isinstance(moment, Err):
+                return moment
+            if moment.value is not None:
+                moment_id = moment.value.moment_id
+        return Ok(
+            AutomaticTeachingResult(
+                gate_verdict=GateVerdict(
+                    execution_status="SUCCEEDED",
+                    decision=decision.decision.value,
+                    primary_reason=reasons[0] if reasons else None,
+                    reasons=reasons,
+                    missing_or_unknown=(),
+                    policy_version=decision.policy_version,
+                ),
+                moment_id=moment_id,
+                action_id=None,
+                planner_records=records,
+                normal_persona_generation=moment_id is None,
+            )
+        )
+
+    open_statuses = tuple(
+        status
+        for status in statuses.value
+        if status.gate_context is GateDecisionContext.OPEN
+    )
+    if not open_statuses:
+        return None
+    status = open_statuses[-1]
+    if status.status is GateExecutionStatusValue.SUCCEEDED:
+        return _refusal(
+            DomainErrorCode.CONFLICT,
+            "the durable Gate trace of decision cycle"
+            f" {cycle_id} is torn: a SUCCEEDED execution status without its"
+            " GateDecision; the unit neither asks the Gate again nor invents"
+            " the decision that was never written",
+        )
+    return Ok(
+        AutomaticTeachingResult(
+            gate_verdict=GateVerdict(
+                execution_status="DEGRADED",
+                decision=None,
+                primary_reason=None,
+                reasons=(),
+                missing_or_unknown=tuple(status.missing_or_unknown),
+            ),
+            moment_id=None,
+            action_id=None,
+            planner_records=records,
+            normal_persona_generation=True,
         )
     )
 

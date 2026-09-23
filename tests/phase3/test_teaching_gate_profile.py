@@ -247,6 +247,45 @@ def test_no_planner_decision_is_conceived() -> None:
         )
 
 
+def test_every_planner_decision_line_lives_in_a_declared_automatic_face() -> None:
+    """The complement of the narrowing above, closed (P8-1 review F7).
+
+    The narrowed pin scans two user-initiated objects; the whole-module
+    invariant it replaced is no longer true, and the review showed the gap
+    that left: a *new* module-level object carrying the planner-decision
+    word stays green. This pin scans the whole module the same lexical way
+    and requires every hit to fall inside one of the three declared
+    automatic homes — the bundle's field, the Protocol that names it, and
+    the check that reads it. ``inspect`` line ranges (not name matching) are
+    what make a moved or renamed object fail loudly.
+    """
+
+    allowed = (
+        AutomaticOpenFacts,
+        gate_module._PlannerAuthorizedOpeningFacts,
+        gate_module._check_planner_authorized_open,
+    )
+    windows: list[range] = []
+    for obj in allowed:
+        source_lines, start = inspect.getsourcelines(obj)
+        windows.append(range(start, start + len(source_lines)))
+    module_source = (
+        DOCS_ROOT.parent / "src" / "elc" / "teaching" / "gate.py"
+    ).read_text(encoding="utf-8")
+    offenders = [
+        (number, line)
+        for number, line in enumerate(module_source.splitlines(), start=1)
+        if _object_lines_with(line, "planner_decision")
+        and not any(number in window for window in windows)
+    ]
+    assert not offenders, offenders
+    # … and the allow-list is not vacuous: each home really carries the word.
+    for obj in allowed:
+        assert _object_lines_with(
+            inspect.getsource(obj), "planner_decision"
+        ), obj.__name__
+
+
 # ---------------------------------------------------------------------------
 # 2. behaviour
 # ---------------------------------------------------------------------------

@@ -323,10 +323,15 @@ def test_all_sixty_cases_agree_with_the_frozen_reference(gate: Any) -> None:
 
     assert _pairs()  # the census above is the completeness argument
     mismatches: list[str] = []
+    #: Every case the loop actually replayed — asserted after the loop, so a
+    #: case that is silently skipped (the review's m10b mutation) fails here
+    #: instead of shrinking the judgement quietly.
+    replayed: list[str] = []
     for case in _benchmark_cases():
         request = _upgrade_request(case["request"])
         pair = (request["gate_context"], request["authorization_path"])
         decider = _DISPATCH[pair]
+        replayed.append(case["id"])
         if case["expected"]["error"]:
             # The error trio is asserted as contract errors by its own test
             # below; here they must raise on both sides and nothing else.
@@ -409,6 +414,11 @@ def test_all_sixty_cases_agree_with_the_frozen_reference(gate: Any) -> None:
                 f" {theirs['decision']['primary_reason']!r}"
             )
     assert not mismatches, mismatches
+    # Every case was judged: the loop cannot shrink silently. The ids are
+    # compared as a set against the benchmark's own, so a duplicate or a
+    # skip fails here rather than reducing the count below the frozen sixty.
+    assert len(replayed) == EXPECTED_BENCHMARK_CASES
+    assert set(replayed) == {case["id"] for case in _benchmark_cases()}
 
 
 def test_error_cases_are_contract_errors_on_the_repo_native_profiles(

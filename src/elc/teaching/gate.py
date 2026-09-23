@@ -239,8 +239,9 @@ GATE_POLICY_VERSION = "bf-03-gate-v1.1"
 SAFETY_PRIVACY_NO_SOURCE = "ALLOW"
 
 #: NO_SOURCE suppression fact (see module docstring): TeachingPreference /
-#: PlannerConstraint are Phase 6/7 tables; no durable suppression source
-#: exists in P3-1A, and an absent source never blocks a user's request.
+#: PlannerConstraint are **durable since migration 0013** (the tables
+#: exist); what is absent at this call site is a durable *read* of an
+#: applied suppression, and an absent source never blocks a user's request.
 TARGET_SUPPRESSED_NO_SOURCE = False
 
 #: allowed value sets of the critical facts (BF-03 v1.1 reference sets).
@@ -412,8 +413,21 @@ def _check_fact_values(facts: _CarriedFacts) -> None:
     The allowed sets are the frozen BF-03 v1.1 reference's own sets, and the
     order is the order the reference checks them in — shared by all four
     profiles so one spelling of "invalid lock_state" cannot drift from
-    another (P8-1 hoisted this loop out of the two original validators; the
-    messages and the refusals are unchanged).
+    another.
+
+    P8-1 hoisted this loop out of the two original validators. What that
+    preserved and what it did not: the **refusal class and the decision face
+    are unchanged** (the same :class:`GateInputError`; every profile's verdict
+    is byte-for-byte what it was — re-checked against the pre-cut revision on
+    the clean, multi-blocker and DEGRADED bundles), but which contract error a
+    **multi-fault** input reports first can differ, because the two original
+    validators interleaved these checks differently. The P8-1 review found 23
+    such combinations among 231 two-fault pairs; an independent re-run over
+    this profile's 15 single-fault candidates (the pre-cut file loaded beside
+    the current one) finds 4 of 105 pairs whose first-reported message flips —
+    e.g. an empty ``decision_cycle_id`` plus a bad ``user_intent_scope``: the
+    cycle error used to win, the scope error does now. Nothing pinned those
+    messages, and a single-fault input reports the same error as before.
     """
 
     for name, value, allowed in (
@@ -705,7 +719,7 @@ def _validate_continuation(facts: ContinuationFacts) -> None:
     _check(
         facts.gate_context == "USER_REQUESTED_CONTINUE",
         "this profile decides the USER_REQUESTED_CONTINUE context only"
-        " (AUTO_CONTINUE is Phase 8)",
+        " (AUTO_CONTINUE is decide_auto_continuation)",
     )
     _check(
         facts.proposed_action in CONTINUATION_ACTIONS,
@@ -873,12 +887,27 @@ def decide_user_requested_continuation(facts: ContinuationFacts) -> GateVerdict:
 #
 # 1. ``automatic_teaching_enabled`` ← the product mode (Balanced /
 #    Study-first / Lounge, docs/PRODUCT_CONTRACT.md §5) crossed with the
-#    rollout stage (docs/IMPLEMENTATION_PLAN.md §12). This repository has
-#    **no durable authority for the setting today** (docs/DATA_MODEL.md
-#    §5.1's TeachingPolicyProfile does not carry the column), so the fact
-#    is the caller's declaration — a caller that has no setting to point
-#    at must say so. Revisit: p8-5 (rollout gate) lands the durable
-#    authority and this fact's reader.
+#    rollout stage (docs/IMPLEMENTATION_PLAN.md §12). The repository **does**
+#    derive this fact today, and the derivation is named here so a wiring cut
+#    cannot miss it: the Planner's §5.1 assembly maps the durable
+#    ``teaching_frequency`` column onto BF-02's three profiles and carries
+#    the switch with it —
+#    ``planner/feature_assembly.py:254``'s
+#    ``TEACHING_FREQUENCY_TO_PROFILE`` (``OFF`` ⇒
+#    ``automatic_teaching_enabled=False``), read through the
+#    ``TeachingPolicyPort`` of ``planner/feature_assembly.py:768`` (satisfied
+#    structurally by the durable §5.1 row ``TeachingPolicyProfile``,
+#    migration 0011), copied into the ``FeatureAuthority`` at
+#    ``planner/feature_assembly.py:717`` and traced by
+#    ``planner/kernel.py:1779``. What this module does not have is a read
+#    face at its own call site, so the fact stays the caller's declaration —
+#    and the wiring cuts (p8-4 / p8-5) **must pass the Planner's assembled
+#    value**, or a user whose durable policy turned automatic teaching off
+#    could still be taught automatically. The LOUNGE profile only raises the
+#    activation threshold (BF-02 §13's +0 row); it is **not** a substitute
+#    for the ``AUTO_TEACH_DISABLED`` DENY. Revisit: p8-5 (rollout gate)
+#    lands the durable read face for this fact's caller; p8-4 passes the
+#    Planner's value.
 # 2. ``hard_protected_flow`` ← docs/DOMAIN_MODEL.md §13's
 #    ConversationPriorityView.flow_priority == "PROTECTED" (the same view
 #    P7-2 assembled). This module does not read that view: the derivation

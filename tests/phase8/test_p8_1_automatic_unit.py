@@ -16,10 +16,17 @@ What is asserted, in the order the unit performs it:
    readable off the durable rows;
 4. DENY writes two facts and no Moment / lock / action; DEGRADED writes one
    status row and **no** GateDecision;
-5. a replay re-derives the same ids and the durable store recognizes them;
+5. a replay re-derives the same ids and the durable store recognizes them —
+   and, since P8-1's disposal cut, a cycle that already has a Gate trace is
+   **replayed** rather than re-decided (both directions: a durable ALLOW
+   survives controls that now deny, a durable DENY survives controls that
+   now allow, and neither asks the Gate);
 6. the moment template's derived fields are refused, not silently
    overwritten;
-7. the module is SQL-free and imports cold.
+7. the lock fact is the durable ``active_teaching_lock`` row's, and the
+   declared critical facts make the Gate's DEGRADED answer reachable (its
+   one-row trace is durable, and a torn trace is refused);
+8. the module is SQL-free and imports cold.
 """
 
 from __future__ import annotations
@@ -46,6 +53,7 @@ from elc.runtime.automatic_teaching import (
     TeachingControlFacts,
     automatic_action_id,
     automatic_gate_decision_id,
+    automatic_gate_execution_status_id,
     automatic_moment_id,
     decide_automatic_teaching,
 )
@@ -121,14 +129,6 @@ def _moment_template(turn_id, *, overrides: dict | None = None):
 
         base = replace(base, **overrides)
     return base
-
-
-def _select_run(cycle, **overrides):
-    return run_shadow(
-        request_of(decision_cycle_id=cycle.decision_cycle_id, **overrides),
-        supply=supply_of(proposal("cand-p8-1")),
-        current_learning_watermark=WATERMARK,
-    )
 
 
 #: The current test's durable connection + fence, so the builders below can
@@ -240,7 +240,9 @@ def test_allow_opens_the_moment_and_leaves_five_durable_facts(
     assert moment[1] == "AUTOMATIC"
     assert moment[2] == "OPENING"
     assert moment[3] == "INITIAL_PROMPT"
-    assert moment[4] == str(result.gate_verdict and "cand-p8-1")
+    assert result.gate_verdict is not None
+    assert result.gate_verdict.decision == "ALLOW"
+    assert moment[4] == "cand-p8-1"
     assert moment[5] == str(cycle.decision_cycle_id)
     assert moment[6] == str(automatic_gate_decision_id(cycle.turn_id))
     assert moment[7] == 1
@@ -357,6 +359,19 @@ def test_a_denied_open_writes_only_the_two_gate_facts(
     }
     row = db.execute("SELECT decision, reason_codes FROM gate_decision").fetchone()
     assert row == ("DENY", '["AUTO_TEACH_DISABLED"]')
+    # The Planner half is durable on the DENY arm too (P8-0's four §14 rows;
+    # the review's m7 mutation: without this the DENY arm never asserted it).
+    assert table_counts(
+        db, "planner_evaluation", "planner_decision", "planner_execution_status"
+    ) == {
+        "planner_evaluation": 1,
+        "planner_decision": 1,
+        "planner_execution_status": 1,
+    }
+    assert result.planner_records.decision is not None
+    assert planner_store.get_planner_decision_for_cycle(
+        cycle.decision_cycle_id
+    ).value is not None
 
 
 def test_a_degraded_run_writes_one_status_row_and_no_decision(
@@ -433,6 +448,222 @@ def test_a_planner_record_failure_stops_before_the_gate(
     )
 
 
+# -- the durable lock fact and the declared critical facts (F4) --------------
+
+
+def test_a_foreign_lock_in_the_conversation_denies_the_automatic_open(
+    db: sqlite3.Connection,
+    fence,
+    cycle,
+    other_turn,
+    planner_store,
+    teaching_controller,
+) -> None:
+    """F4(i): the lock fact is BF-03 §14's — the durable
+    ``active_teaching_lock`` row's — not a hard-coded ``NONE``.
+
+    The world is built the honest way: a second turn in the same conversation
+    gets its own cycle and its own automatic opening (the only face that
+    takes the lock), and *then* the first cycle's turn is decided — it must
+    see ``OWNED_BY_OTHER`` and deny, with zero teaching rows of its own."""
+
+    from elc.conversation import SqliteConversationStore
+    from tests.phase8.conftest import open_cycle
+
+    turn_read = SqliteConversationStore(db, fence).get_turn_record(other_turn)
+    assert isinstance(turn_read, Ok) and turn_read.value is not None
+    other = open_cycle(
+        db,
+        fence,
+        decision_cycle_id=DecisionCycleId("dc-p8-1-lock"),
+        turn_id=other_turn,
+        expected_turn_state_version=turn_read.value.state_version,
+    )
+    opened = _decide(other, store=planner_store, teaching=teaching_controller)
+    assert isinstance(opened, Ok), opened
+    assert opened.value.moment_id is not None  # … and CONV is now locked
+
+    decided = _decide(cycle, store=planner_store, teaching=teaching_controller)
+    assert isinstance(decided, Ok), decided
+    result = decided.value
+    assert result.gate_verdict is not None
+    assert result.gate_verdict.decision == "DENY"
+    assert result.gate_verdict.primary_reason == "TEACHING_LOCK_CONFLICT"
+    assert result.gate_verdict.reasons == ("TEACHING_LOCK_CONFLICT",)
+    assert result.moment_id is None
+    assert result.normal_persona_generation is True
+    # Zero rows of its own: the cycle's only gate fact is the DENY, and the
+    # conversation's one moment / lock / action are the *other* turn's.
+    assert table_counts(db, "teaching_moment", "active_teaching_lock",
+                        "generation_action_intent") == {
+        "teaching_moment": 1,
+        "active_teaching_lock": 1,
+        "generation_action_intent": 1,
+    }
+    mine = db.execute(
+        "SELECT COUNT(*) FROM teaching_moment WHERE decision_cycle_id = ?",
+        (str(cycle.decision_cycle_id),),
+    ).fetchone()
+    assert mine == (0,)
+    row = db.execute(
+        "SELECT decision FROM gate_decision WHERE decision_cycle_id = ?",
+        (str(cycle.decision_cycle_id),),
+    ).fetchone()
+    assert row == ("DENY",)
+
+
+def test_a_degraded_gate_answer_is_reachable_and_durable(
+    db: sqlite3.Connection, cycle, planner_store, teaching_controller
+) -> None:
+    """F4(ii): with the critical facts on the caller's record, ``UNKNOWN`` is
+    expressible — so the Gate's DEGRADED answer (unreachable while every
+    critical fact was hard-coded healthy: the review's m11 mutation deleted
+    its write and the suite stayed green) has an asserting test.
+
+    The durable trace is one status row and **no** GateDecision; the
+    re-entry direction is its own test below."""
+
+    decided = _decide(
+        cycle,
+        controls=TeachingControlFacts(gate_state_status="INCOMPLETE"),
+        store=planner_store,
+        teaching=teaching_controller,
+    )
+    assert isinstance(decided, Ok), decided
+    result = decided.value
+    assert result.gate_verdict is not None
+    assert result.gate_verdict.execution_status == "DEGRADED"
+    assert result.gate_verdict.decision is None
+    assert result.gate_verdict.missing_or_unknown == ("GATE_STATE",)
+    assert result.moment_id is None
+    assert result.action_id is None
+    assert result.normal_persona_generation is True
+    assert table_counts(db, *TEACHING_TABLES) == {
+        "gate_execution_status": 1,
+        "gate_decision": 0,
+        "teaching_moment": 0,
+        "active_teaching_lock": 0,
+        "generation_action_intent": 0,
+    }
+    row = db.execute(
+        "SELECT status, missing_or_unknown FROM gate_execution_status"
+    ).fetchone()
+    assert row == ("DEGRADED", '["GATE_STATE"]')
+
+
+def test_a_durable_degraded_status_is_replayed_when_the_facts_recover(
+    db: sqlite3.Connection, cycle, planner_store, teaching_controller, monkeypatch
+) -> None:
+    """F1's rule applied to the third durable shape: after a DEGRADED
+    answer, a re-entry whose facts are healthy again replays the durable
+    degradation — it neither re-decides (which would insert a second status
+    row and hit the store's bare unique-constraint CONFLICT, F12) nor
+    launders the missing decision into an ALLOW."""
+
+    import elc.runtime.automatic_teaching as unit
+
+    first = _decide(
+        cycle,
+        controls=TeachingControlFacts(gate_state_status="INCOMPLETE"),
+        store=planner_store,
+        teaching=teaching_controller,
+    )
+    assert isinstance(first, Ok), first
+
+    monkeypatch.setattr(
+        unit, "decide_automatic_open", _forbid("decide_automatic_open")
+    )
+    monkeypatch.setattr(
+        teaching_controller,
+        "record_gate_degraded",
+        _forbid("record_gate_degraded"),
+    )
+    replay = _decide(cycle, store=planner_store, teaching=teaching_controller)
+    assert isinstance(replay, Ok), replay
+    replayed = replay.value
+    assert replayed.gate_verdict is not None
+    assert replayed.gate_verdict.execution_status == "DEGRADED"
+    assert replayed.gate_verdict.decision is None
+    assert replayed.gate_verdict.missing_or_unknown == ("GATE_STATE",)
+    assert replayed.moment_id is None
+    assert replayed.normal_persona_generation is True
+    assert table_counts(db, *TEACHING_TABLES) == {
+        "gate_execution_status": 1,
+        "gate_decision": 0,
+        "teaching_moment": 0,
+        "active_teaching_lock": 0,
+        "generation_action_intent": 0,
+    }
+
+
+def test_the_declared_authorization_fact_reaches_the_durable_status_row(
+    db: sqlite3.Connection, cycle, planner_store, teaching_controller
+) -> None:
+    """The declared critical facts are passed to the Gate **and** written to
+    the §14.1 status row — the user-initiated path's own reading
+    (``authorization_status=facts.authorization_status`` in
+    ``elc.runtime.controller``). A durable row must never claim ``VALID``
+    for a fact the caller declared unknown, or the trace would lie about
+    the very fact whose unknown-ness degraded it."""
+
+    decided = _decide(
+        cycle,
+        controls=TeachingControlFacts(authorization_status="UNKNOWN"),
+        store=planner_store,
+        teaching=teaching_controller,
+    )
+    assert isinstance(decided, Ok), decided
+    result = decided.value
+    assert result.gate_verdict is not None
+    assert result.gate_verdict.execution_status == "DEGRADED"
+    assert result.gate_verdict.missing_or_unknown == ("AUTHORIZATION_STATUS",)
+    row = db.execute(
+        "SELECT status, authorization_status, missing_or_unknown FROM"
+        " gate_execution_status"
+    ).fetchone()
+    assert row == ("DEGRADED", "UNKNOWN", '["AUTHORIZATION_STATUS"]')
+    assert table_counts(db, "gate_decision") == {"gate_decision": 0}
+
+
+def test_a_torn_succeeded_status_is_refused_not_repaired(
+    db: sqlite3.Connection, cycle, planner_store, teaching_controller
+) -> None:
+    """The third durable shape: a ``SUCCEEDED`` status row with no
+    GateDecision.
+
+    No face in this repository writes that — CP2 and both record faces write
+    a SUCCEEDED status together with its decision, in one short transaction —
+    so the row is written here directly, the way
+    ``tests/phase8/test_p8_0_reads.py`` pins a read shape its world cannot
+    otherwise establish. The unit must neither ask the Gate again (which
+    would insert a second, contradictory fact) nor invent the missing
+    decision: it refuses and writes nothing."""
+
+    db.execute(
+        "INSERT INTO gate_execution_status ("
+        " gate_execution_status_id, decision_cycle_id, moment_id,"
+        " gate_context, authorization_basis, authorization_status, status,"
+        " missing_or_unknown, created_at"
+        ") VALUES (?, ?, NULL, 'OPEN', 'DECISION_CYCLE', 'VALID',"
+        " 'SUCCEEDED', '[]', 'now')",
+        (
+            automatic_gate_execution_status_id(cycle.turn_id),
+            str(cycle.decision_cycle_id),
+        ),
+    )
+    db.commit()  # the row is durable state, not a pending transaction
+    decided = _decide(cycle, store=planner_store, teaching=teaching_controller)
+    assert isinstance(decided, Err), decided
+    assert "torn" in decided.error.message
+    assert table_counts(db, *TEACHING_TABLES) == {
+        "gate_execution_status": 1,
+        "gate_decision": 0,
+        "teaching_moment": 0,
+        "active_teaching_lock": 0,
+        "generation_action_intent": 0,
+    }
+
+
 # -- replay ------------------------------------------------------------------
 
 
@@ -440,19 +671,28 @@ def test_a_second_call_on_the_same_cycle_does_not_overwrite_the_moment(
     db: sqlite3.Connection, cycle, planner_store, teaching_controller
 ) -> None:
     """A literal re-entry of one cycle: the Planner half replays (P8-0's
-    judgement 2), the Gate's verdict is re-decided from the facts the unit
-    re-declares, and the CP2 unit answers with the **durable** moment rather
-    than writing a second one — the durable ``(moment, first action)`` pair
-    is canonical (the store's own replay branch)."""
+    judgement 2), the cycle's Gate trace is replayed **without asking the
+    Gate again** (F1's repair), and the answer names the durable moment
+    rather than a second one — the durable ``(moment, first action)`` pair
+    is canonical.
+
+    ``action_id`` is ``None`` on this path: a replay reports no action id,
+    because this unit's declared teaching surface has no action read (the
+    durable action is read through ``GenerationStore.get_action_for_turn``,
+    the coordinator's own replay face). The first call still derives and
+    returns the id it wrote."""
 
     first = _decide(cycle, store=planner_store, teaching=teaching_controller)
     assert isinstance(first, Ok)
+    assert first.value.action_id == automatic_action_id(cycle.turn_id)
     second = _decide(cycle, store=planner_store, teaching=teaching_controller)
     assert isinstance(second, Ok), second
     result = second.value
     assert result.moment_id == automatic_moment_id(cycle.turn_id)
     assert result.moment_id == first.value.moment_id
-    assert result.action_id == first.value.action_id
+    assert result.gate_verdict is not None
+    assert result.gate_verdict.decision == "ALLOW"
+    assert result.action_id is None
     assert result.normal_persona_generation is False
     assert table_counts(
         db, "teaching_moment", "active_teaching_lock"
@@ -463,6 +703,128 @@ def test_a_second_call_on_the_same_cycle_does_not_overwrite_the_moment(
         "teaching_moment": 1,
         "active_teaching_lock": 1,
         "generation_action_intent": 1,
+    }
+
+
+def _forbid(name: str):
+    """A stand-in that fails the test the moment it is called."""
+
+    def _refuse(*args, **kwargs):
+        raise AssertionError(f"{name} was called on a replay")
+
+    return _refuse
+
+
+def test_a_durable_allow_is_replayed_even_when_the_new_controls_deny(
+    db: sqlite3.Connection, cycle, planner_store, teaching_controller, monkeypatch
+) -> None:
+    """F1's first direction: after a durable ALLOW, a re-entry whose fresh
+    facts say DENY answers with the durable ALLOW — the moment stays, zero
+    new rows, and the Gate is never asked (the stub asserts that, not the
+    row counts)."""
+
+    import elc.runtime.automatic_teaching as unit
+
+    first = _decide(cycle, store=planner_store, teaching=teaching_controller)
+    assert isinstance(first, Ok) and first.value.moment_id is not None
+
+    monkeypatch.setattr(
+        unit, "decide_automatic_open", _forbid("decide_automatic_open")
+    )
+    monkeypatch.setattr(
+        teaching_controller, "commit_cp2_open", _forbid("commit_cp2_open")
+    )
+    monkeypatch.setattr(
+        teaching_controller, "record_gate_denial", _forbid("record_gate_denial")
+    )
+    monkeypatch.setattr(
+        teaching_controller,
+        "record_gate_degraded",
+        _forbid("record_gate_degraded"),
+    )
+
+    second = _decide(
+        cycle,
+        controls=TeachingControlFacts(automatic_teaching_enabled=False),
+        store=planner_store,
+        teaching=teaching_controller,
+    )
+    assert isinstance(second, Ok), second
+    result = second.value
+    assert result.gate_verdict is not None
+    assert result.gate_verdict.decision == "ALLOW"
+    assert result.gate_verdict.reasons == ()
+    assert result.moment_id == first.value.moment_id
+    assert result.normal_persona_generation is False
+    # Zero new rows: every teaching table holds exactly the first call's one.
+    assert table_counts(db, *TEACHING_TABLES) == dict.fromkeys(
+        TEACHING_TABLES, 1
+    )
+    stored = db.execute(
+        "SELECT decision FROM gate_decision"
+    ).fetchone()
+    assert stored == ("ALLOW",)  # the durable fact, untouched
+
+
+def test_a_durable_deny_is_replayed_instead_of_conflicting(
+    db: sqlite3.Connection, cycle, planner_store, teaching_controller, monkeypatch
+) -> None:
+    """F1's second direction: after a durable DENY, a re-entry whose fresh
+    facts say ALLOW answers with the durable DENY, writes nothing, and does
+    **not** reach the CP2 unit's unique-constraint path (the store's bare
+    ``UNIQUE constraint failed: gate_execution_status...`` CONFLICT, F12) —
+    the commit faces and the Gate are stubbed to fail if called."""
+
+    import elc.runtime.automatic_teaching as unit
+
+    first = _decide(
+        cycle,
+        controls=TeachingControlFacts(automatic_teaching_enabled=False),
+        store=planner_store,
+        teaching=teaching_controller,
+    )
+    assert isinstance(first, Ok), first
+    assert first.value.gate_verdict is not None
+    assert first.value.gate_verdict.decision == "DENY"
+
+    monkeypatch.setattr(
+        unit, "decide_automatic_open", _forbid("decide_automatic_open")
+    )
+    monkeypatch.setattr(
+        teaching_controller, "commit_cp2_open", _forbid("commit_cp2_open")
+    )
+    monkeypatch.setattr(
+        teaching_controller, "record_gate_denial", _forbid("record_gate_denial")
+    )
+    monkeypatch.setattr(
+        teaching_controller,
+        "record_gate_degraded",
+        _forbid("record_gate_degraded"),
+    )
+
+    # The healthy defaults would compute ALLOW if the unit re-decided.
+    second = _decide(cycle, store=planner_store, teaching=teaching_controller)
+    assert isinstance(second, Ok), second
+    result = second.value
+    assert result.gate_verdict is not None
+    assert result.gate_verdict.decision == "DENY"
+    assert result.gate_verdict.primary_reason == "AUTO_TEACH_DISABLED"
+    assert result.gate_verdict.reasons == ("AUTO_TEACH_DISABLED",)
+    assert result.moment_id is None
+    assert result.action_id is None
+    assert result.normal_persona_generation is True
+    assert table_counts(
+        db, "gate_execution_status", "gate_decision"
+    ) == {"gate_execution_status": 1, "gate_decision": 1}
+    assert table_counts(
+        db,
+        "teaching_moment",
+        "active_teaching_lock",
+        "generation_action_intent",
+    ) == {
+        "teaching_moment": 0,
+        "active_teaching_lock": 0,
+        "generation_action_intent": 0,
     }
 
 
