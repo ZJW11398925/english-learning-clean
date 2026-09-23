@@ -23,9 +23,9 @@ ending in the one :class:`~elc.planner.kernel.CandidateProposal`),
 :mod:`elc.planner.scope` (§12's ``UserIntentScope`` resolution plus §13's
 ``ConversationPriorityView``) and :mod:`elc.planner.supply` (the §8.1 content
 readiness gate and BF-02 §11's prerequisite resolver). The pipeline from a
-:class:`~elc.planner.types.PlanningRequest` and the shadow-mode run are still
-later cuts' work items, and :class:`PlannerService` remains the Phase 0
-skeleton.
+:class:`~elc.planner.types.PlanningRequest` is still a later cut's work item —
+its shadow-run half landed in P7-4 (below), its dispatch half has not — and
+:class:`PlannerService` remains a skeleton for the dispatch entry.
 
 P7-3 (TASK-OPI-44647873-….20) adds the two objects §19 and DATA_MODEL §14
 name: :mod:`elc.planner.frontier` — the ``ActiveLearningFrontier``, which is
@@ -35,8 +35,21 @@ members are the candidates step 4 kept, and the kernel fills
 :mod:`elc.planner.ledger` — the ``PlanningLedger`` as a caller-assembled
 read-only view (``NO_TABLE_V1``: no exposure writer exists until Phase 8), the
 five §20 event words, the coverage-obligation columns, the BF-06 §14 pause rule
-and the declared service/overexposure ladders. Shadow mode itself is still
-p7-4's.
+and the declared service/overexposure ladders.
+
+P7-4 (TASK-OPI-44647873-….33) adds :mod:`elc.planner.shadow` — IMPLEMENTATION_PLAN
+§8's shadow mode: the Planner runs over a
+:class:`~elc.planner.types.PlanningRequest`'s views (through P7-0's assembly and
+P7-1's kernel) and answers a :class:`~elc.planner.shadow.ShadowRun` recording
+what it *would have* selected and why, while nothing is dispatched, no
+``TeachingMoment`` is built and no store is written; and
+:mod:`elc.planner.stress_suite` — the in-repo replay of BF-02's frozen 43-case
+stress suite, whose adapter boundary models the three divergences P7-1
+registered. §8's Acceptance line (``OQ-023A``) has no carrier in either
+repository, so the 43 cases are the executable substitute. The dispatch entry
+:meth:`PlannerService.plan` and the durable trace read
+:meth:`PlannerService.get_planner_evaluation` still refuse, for the reasons
+their docstrings state.
 """
 
 from elc.planner.candidates import (
@@ -208,6 +221,11 @@ from elc.planner.scope import (
     ScopeResolution,
     interruption_cost_band_of,
     resolve_user_intent_scope,
+)
+from elc.planner.shadow import (
+    SHADOW_MODE_MODEL_VERSION,
+    ShadowRun,
+    run_shadow,
 )
 from elc.planner.supply import (
     APPROVED_LINK_EDITORIAL_STATUS,
@@ -386,7 +404,9 @@ __all__ = [
     "ScheduleAuthority",
     "ScheduleRowPort",
     "ScheduleViewPort",
+    "ShadowRun",
     "SnapshotStatus",
+    "SHADOW_MODE_MODEL_VERSION",
     "TargetCandidate",
     "TargetMode",
     "TeachingPolicyPort",
@@ -415,6 +435,7 @@ __all__ = [
     "profile_mapping_of",
     "readiness_of_target",
     "resolve_user_intent_scope",
+    "run_shadow",
     "runtime_decision_outcome_of",
     "schedule_authority_of",
     "schedule_urgency_of",

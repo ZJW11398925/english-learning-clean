@@ -238,6 +238,14 @@ def test_the_object_is_mentioned_by_the_placement_and_two_pre_existing_modules(
     the trace. Nothing here writes a row, reads ``active`` itself (the store's
     in-force read already decided that) or re-decides §9's window; both
     docstrings say so, and tests/phase7 holds them to it.
+
+    P7-4 adds ``planner/shadow.py``, and it is the *same* reading one layer up:
+    §8's shadow run asks P7-0's assembly whether the authority is present at all
+    (``request.planner_constraint_view is not None``) and hands that fact to
+    ``assemble_feature_authority``. No branch on a constraint, no suppression
+    applied, no row written — and no store at all (the module imports no SQL
+    face, and tests/phase7 pins that a shadow run leaves a real app.db
+    untouched).
     """
 
     mentioning = sorted(
@@ -252,6 +260,7 @@ def test_the_object_is_mentioned_by_the_placement_and_two_pre_existing_modules(
         "planner/candidates.py",
         "planner/feature_assembly.py",
         "planner/scope.py",
+        "planner/shadow.py",
         "planner/types.py",
         "platform/registry.py",
         "teaching/gate.py",
