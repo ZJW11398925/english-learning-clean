@@ -1789,9 +1789,11 @@ class ConversationCoordinator:
           enters the transcript, DOMAIN_MODEL §3);
         - a release whose **durable** prefix is empty is the same shape (the
           record is the boundary authority and it holds nothing), so it too
-          writes no AssistantTurn row while the row stays ``SENT_PARTIAL`` —
-          registered rather than smoothed: "the send began and its record was
-          lost" has no honest transcript;
+          writes no AssistantTurn row; the row itself is **advanced**
+          ``SENDING`` → ``SENT_PARTIAL`` by the terminal write, with its
+          prefix and its sequence still empty — registered rather than
+          smoothed: "the send began and its record was lost" has no honest
+          transcript;
         - an opening write the record face **refuses** stops the delivery
           before the first release (nothing was sent, nothing is claimed) —
           that is a different fact from a face that is not wired, which is
@@ -1807,7 +1809,15 @@ class ConversationCoordinator:
           unfrozen (``terminal_at`` unset) while the transcript still carries
           the run's word — the divergence is registered in the reason, not
           hidden (RA §23: a delivery that cannot be reconciled conservatively
-          is reported, not replayed).
+          is reported, not replayed);
+        - an exception **across** the transport boundary is not a refusal
+          value: the run value is lost with it, so the caller rebuilds the
+          conservative one (nothing this reconstruction claims) and reports
+          it; the record face is then the only authority left for what was
+          sent, and the reason names the durable prefix as that face holds it
+          instead of claiming the durable half away. The reconstructed run can
+          itself be refused by the row (it would move the row backwards): the
+          row then stays exactly as the face holds it, unfrozen.
 
         Ordering (emit → record), the guard's rule set and version, the
         empty-chunk reading and the step budget are the driver's declared
@@ -1904,6 +1914,11 @@ class ConversationCoordinator:
                 on_chunk=_record_chunk,
             )
         except Exception as exc:  # noqa: BLE001 — the transport boundary
+            # The exception escaped the driver before it could report its own
+            # run value, so this reconstruction is the conservative one (no
+            # release is claimed). The *record* face is untouched by that: the
+            # durable prefix is whatever it holds, and the reason says so
+            # rather than claiming the durable half away.
             run = StreamRun(
                 state=DeliveryState.FAILED.value,
                 sent_prefix="",
@@ -1911,8 +1926,9 @@ class ConversationCoordinator:
                 chunks=0,
                 last_chunk_seq=0,
                 failure_reason=(
-                    f"the stream boundary raised: {exc} (nothing this run"
-                    " released can be proven)"
+                    f"the stream boundary raised: {exc} (the run value was"
+                    " lost at the transport boundary; the durable prefix is"
+                    " left as the record face holds it)"
                 ),
             )
 
@@ -5628,6 +5644,17 @@ class ConversationCoordinator:
         return PersonaId("persona-default")
 
     def _contract(self, persona_id: PersonaId) -> GenerationContract:
+        """The ordinary persona reply's contract.
+
+        ``response_mode`` declares the delivery this action really goes
+        through, read off the one mode table (``elc.runtime.guarded_stream``)
+        rather than kept as a second copy of it — the field is rendered into
+        the provider prompt's ``[contract]`` block, so a stale value would tell
+        every provider the wrong thing about the run. The teaching contracts
+        (``_deliver_teaching_action``) are built at their own site and stay
+        ``BUFFERED_VALIDATED``.
+        """
+
         return GenerationContract(
             generation_contract_id="gc-normal-persona-reply",
             action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
@@ -5635,6 +5662,9 @@ class ConversationCoordinator:
             allowed_disclosures=(),
             language_policy="default",
             style_constraints=(),
+            response_mode=delivery_mode_of(
+                GenerationActionType.NORMAL_PERSONA_REPLY
+            ).value,
         )
 
 

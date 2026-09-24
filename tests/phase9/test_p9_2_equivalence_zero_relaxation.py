@@ -24,7 +24,13 @@ Three claims, each checkable in the shipped tree:
   face's two literals (``SENT_COMPLETE`` / ``SERVER_SENT_UNCONFIRMED``) and the
   absence of any ``finalize_delivery`` call inside the new face are pinned
   against the source, so "zero relaxation" is a fact about this tree rather
-  than a promise in a report.
+  than a promise in a report;
+- **the contract's own delivery word is read on both arms**: the ordinary
+  reply's ``GenerationContract`` declares ``GUARDED_STREAM`` and the teaching
+  leg's declares ``BUFFERED_VALIDATED`` — both taken from the provider prompt
+  the run was actually handed (the field is rendered and persisted nowhere
+  else), so the single carrier the table feeds and the one the teaching site
+  still builds are pinned against drifting apart one-sidedly.
 """
 
 from __future__ import annotations
@@ -50,6 +56,7 @@ from elc.persona import (
 )
 from elc.persona.runtime import action_intent_for_turn
 from elc.persona.types import (
+    CompiledPrompt,
     GenerationContext,
     PromptCompilationRequest,
     ProviderOutput,
@@ -86,6 +93,7 @@ from tests.phase8.conftest import RECEIVED_AT
 from tests.phase9.test_p9_2_stream_turn import (
     REPLY,
     StreamWorld,
+    begin_turn_ok,
     count,
     stream_world,
 )
@@ -570,6 +578,119 @@ def test_the_streamed_completions_two_fields_are_the_declared_ones() -> None:
     assert "delivery_failure_reason" in fields
     assert fields["delivery_state"].default is None
     assert fields["delivery_failure_reason"].default is None
+
+
+# -- ⑤ the contract's delivery word, on both arms -------------------------------
+
+
+class PromptRecordingProvider:
+    """The scripted provider with a log of the prompts it was handed.
+
+    ``response_mode`` is rendered into the prompt's ``[contract]`` block and
+    stored nowhere else, so the provider call is the one place the value the
+    run actually declared can be read — and reading it there is what makes
+    this a pin on behaviour rather than on the source text.
+    """
+
+    def __init__(
+        self, script: tuple[ProviderOutput, ...] | None = None
+    ) -> None:
+        self._inner = ScriptedPersonaProvider(script=script)
+        self.prompts: list[str] = []
+
+    @property
+    def call_count(self) -> int:
+        return self._inner.call_count
+
+    def call(self, prompt: CompiledPrompt) -> ProviderOutput:
+        self.prompts.append(prompt.prompt_text)
+        return self._inner.call(prompt)
+
+
+def _contract_fields(prompt_text: str) -> dict[str, str]:
+    """The ``[contract]`` block's key/value lines, as the provider read them."""
+
+    for block in prompt_text.split("\n\n"):
+        if block.startswith("[contract]\n"):
+            return dict(line.split(": ", 1) for line in block.splitlines()[1:])
+    raise AssertionError(f"no [contract] block in the prompt:\n{prompt_text}")
+
+
+def test_the_ordinary_contract_declares_the_streaming_mode(
+    world: StreamWorld,
+) -> None:
+    """The ordinary reply's contract must name the delivery its run really
+    performs — the provider is told ``GUARDED_STREAM``, and it is the word the
+    mode table gives this action type (read off that one lookup, not a second
+    copy of it). Before the fix the field kept the dataclass default and every
+    ordinary prompt declared ``BUFFERED_VALIDATED``."""
+
+    provider = PromptRecordingProvider(script=(ProviderOutput(text=REPLY),))
+    coordinator = ConversationCoordinator(
+        lease=_lease_of(world),
+        conversation_commands=world.store,
+        conversation_queries=world.store,
+        persona=PersonaRuntime(
+            actions=world.generation,
+            provider=provider,
+            compiler=PromptCompiler(),
+            validator=ResponseValidator(),
+            max_provider_attempts=3,
+        ),
+        generation_actions=world.generation,
+        decision_cycles=world.generation.decision_cycles,
+    )
+    completion = begin_turn_ok(coordinator, "cmid-p9-2-mode-normal")
+
+    assert completion.delivery_state == "SENT_COMPLETE"  # the stream ran
+    assert len(provider.prompts) == 1
+    fields = _contract_fields(provider.prompts[0])
+    assert fields["action_type"] == "NORMAL_PERSONA_REPLY"
+    assert fields["response_mode"] == "GUARDED_STREAM"
+    assert fields["response_mode"] == (
+        delivery_mode_of(GenerationActionType.NORMAL_PERSONA_REPLY).value
+    )
+
+
+def test_the_teaching_contract_keeps_the_buffered_mode(db, p8world) -> None:
+    """The other arm, so the two carriers cannot drift apart one-sidedly: the
+    teaching leg's contract (built at its own site) still declares
+    ``BUFFERED_VALIDATED`` — the mode its delivery really goes through, and
+    the word the table gives the action type the automatic open dispatches."""
+
+    provider = PromptRecordingProvider()
+    coordinator = ConversationCoordinator(
+        lease=p8world.lease,
+        conversation_commands=p8world.store,
+        conversation_queries=p8world.store,
+        persona=PersonaRuntime(
+            actions=p8world.generation,
+            provider=provider,
+            compiler=PromptCompiler(),
+            validator=ResponseValidator(),
+            max_provider_attempts=3,
+        ),
+        generation_actions=p8world.generation,
+        decision_cycles=p8world.generation.decision_cycles,
+        learning_controller=p8world.learning,
+        teaching=p8world.teaching,
+        targets=p8world.targets,
+        automatic_teaching=p8_4_world.wiring(
+            p8world, supply=p8_4_world.acceptance_supply()
+        ),
+    )
+    result = coordinator.begin_turn(
+        p8_4_world.command("cmid-p9-2-mode-teaching")
+    )
+    assert isinstance(result, Ok), result
+
+    assert len(provider.prompts) == 1
+    fields = _contract_fields(provider.prompts[0])
+    assert fields["action_type"] == "TEACHING_OPEN"
+    assert fields["response_mode"] == "BUFFERED_VALIDATED"
+    assert fields["response_mode"] == (
+        delivery_mode_of(GenerationActionType.TEACHING_OPEN).value
+    )
 
 
 def _method(tree: ast.Module, name: str) -> ast.FunctionDef:

@@ -22,6 +22,13 @@ What only a real chain can show, and what each test is for:
 - a delivery that could not be delivered writes **no** assistant_turn row and
   fails the turn ``FAILED_USER_VISIBLE`` (undelivered provider output never
   enters the transcript);
+- the two edges where the run value and the record disagree are pinned rather
+  than smoothed: a first chunk the record refuses (released, yet the durable
+  prefix is empty) writes no transcript row while its §22 row is still frozen
+  at ``SENT_PARTIAL`` — empty prefix, sequence zero — and an exception raised
+  *across* the transport boundary leaves the row exactly as the record face
+  holds it (never rewritten backwards, never claimed away), with the reason
+  naming that durable half;
 - the two faces §22 tells apart are the only ones written: zero
   ``client_render_ack`` rows (the main turn does not wait for an ACK, RA §6),
   zero ``exposure_estimate`` rows (P9-4's face) and zero §21.1 rows (this cut
@@ -212,10 +219,16 @@ def begin_turn_ok(
 @dataclass
 class ScriptedSource:
     """The stream a test scripts: the steps, and (optionally) the *n*-th
-    release refused so a broken client boundary can be driven."""
+    release refused so a broken client boundary can be driven.
+
+    ``refuse_emit_at`` is the boundary answering ``Err`` (a value the driver
+    reports itself); ``raise_emit_at`` is the boundary **raising** — the shape
+    where the exception leaves the driver and the caller must reconstruct the
+    run value (the *second* call, so the run has a durable half by then)."""
 
     steps: tuple[StreamStep, ...]
     refuse_emit_at: int | None = None
+    raise_emit_at: int | None = None
 
     def __post_init__(self) -> None:
         self._index = 0
@@ -231,6 +244,11 @@ class ScriptedSource:
 
     def emit(self, text: str) -> Result[None]:
         self._emit_calls += 1
+        if (
+            self.raise_emit_at is not None
+            and self._emit_calls == self.raise_emit_at
+        ):
+            raise RuntimeError("the client boundary died mid-release")
         if (
             self.refuse_emit_at is not None
             and self._emit_calls == self.refuse_emit_at
@@ -624,6 +642,69 @@ def test_a_transport_that_refuses_a_chunk_delivers_what_it_kept(
     assert "the client boundary is gone" in completion.delivery_failure_reason
 
 
+def test_a_boundary_that_raises_leaves_the_row_as_the_record_face_holds_it(
+    world: StreamWorld,
+) -> None:
+    """An exception *across* the transport boundary, one release in — the other
+    half of "the record is the boundary authority".
+
+    ``emit`` raising is not ``emit`` answering ``Err``: the exception leaves
+    the driver, so the run value is lost and the caller rebuilds the
+    conservative one (``FAILED``, nothing claimed). The record face is then
+    the only authority for what was sent, and it already holds the first
+    chunk: the reconstructed terminal write would move the row backwards
+    (prefix ``kept`` → ``""``, sequence ``1`` → ``0``), so it is **refused**
+    and the row stays exactly as that face holds it — ``SENT_PARTIAL`` with
+    the released prefix and its sequence, **never frozen**. The reason must
+    admit that durable half (it is the one readable fact left) instead of
+    claiming nothing can be proven; the transcript stays empty and the turn
+    fails ``FAILED_USER_VISIBLE``."""
+
+    kept, lost = pieces(REPLY, 3)[:2]
+    spy = RecordingStore(world.deliveries)
+    source = ScriptedSource(
+        steps=(StreamStep.chunk(kept), StreamStep.chunk(lost)),
+        raise_emit_at=2,  # the first release landed; the second raised
+    )
+    completion = begin_turn_ok(
+        coordinator_(world, transport=SourceFactory(source), records=spy),
+        "cmid-p9-2-boundary-raise",
+    )
+    turn_id = str(completion.turn_id)
+    action_id = action_of(world, turn_id)
+
+    # the last submission the face ever saw is the reconstructed FAILED — no
+    # later SENT_PARTIAL write follows it
+    assert [(row.state, row.sent_prefix) for row in spy.submitted] == [
+        ("SENDING", ""),
+        ("SENT_PARTIAL", kept),
+        ("FAILED", ""),
+    ]
+    assert spy.submitted[-1].terminal_at is not None
+    assert source.emitted == [kept]
+
+    state, prefix, sequence, _, terminal_at = second_connection_row(
+        world, action_id
+    )
+    assert (state, prefix, sequence) == ("SENT_PARTIAL", kept, 1)
+    assert terminal_at is None  # the row was never frozen
+
+    reason = completion.delivery_failure_reason
+    assert reason is not None
+    assert "the stream boundary raised" in reason
+    assert "durable prefix" in reason
+    assert "can be proven" not in reason
+
+    canonical = slice_of(world, turn_id)
+    assert canonical.assistant_turn is None
+    assert canonical.outcome is not None
+    assert canonical.outcome.value == "FAILED_USER_VISIBLE"
+    assert completion.turn_status is TurnStatus.FAILED_FINAL
+    assert completion.delivery_state == "FAILED"
+    assert completion.reply_text is None
+    assert count(world.db, "assistant_turn") == 0
+
+
 def test_a_run_that_released_nothing_writes_no_assistant_turn(
     world: StreamWorld,
 ) -> None:
@@ -728,6 +809,64 @@ def test_a_refused_chunk_record_stops_the_stream_at_the_durable_prefix(
     assert completion.delivery_state == "SENT_PARTIAL"
     assert completion.delivery_failure_reason is not None
     assert "record refused the chunk" in completion.delivery_failure_reason
+
+
+def test_a_first_chunk_the_record_refuses_leaves_an_empty_partial_row(
+    world: StreamWorld,
+) -> None:
+    """The fourth shape, registered rather than smoothed: the first chunk *was*
+    released (the boundary received it) but the record face refused its write,
+    so the durable prefix is empty *while* the run released a chunk — a
+    different fact from a run that released nothing, and the one shape §17's
+    boundary leaves with no honest transcript.
+
+    The three submissions tell the story: the opening ``SENDING``, the refused
+    advance for the released chunk (prefix and sequence as sent), and the
+    terminal write that **freezes the row at ``SENT_PARTIAL``** with the empty
+    durable prefix and sequence zero. Nothing enters the transcript, and the
+    turn fails ``FAILED_USER_VISIBLE`` (``FAILED_FINAL``) with the reason
+    readable."""
+
+    first, second = pieces(REPLY, 3)[:2]
+    spy = RecordingStore(world.deliveries, refuse_at=2)  # 1 opening, 2 chunk-1
+    source = ScriptedSource(
+        steps=(StreamStep.chunk(first), StreamStep.chunk(second))
+    )
+    completion = begin_turn_ok(
+        coordinator_(world, transport=SourceFactory(source), records=spy),
+        "cmid-p9-2-first-chunk-refused",
+    )
+    turn_id = str(completion.turn_id)
+    action_id = action_of(world, turn_id)
+
+    assert [
+        (row.state, row.sent_prefix, row.last_chunk_seq, row.terminal_at is None)
+        for row in spy.submitted
+    ] == [
+        ("SENDING", "", 0, True),
+        ("SENT_PARTIAL", first, 1, True),  # the released chunk, refused
+        ("SENT_PARTIAL", "", 0, False),  # the freeze, on the empty durable half
+    ]
+    assert source.emitted == [first]  # the chunk left for the client
+
+    state, prefix, sequence, _, terminal_at = second_connection_row(
+        world, action_id
+    )
+    assert (state, prefix, sequence) == ("SENT_PARTIAL", "", 0)
+    assert terminal_at is not None  # frozen, not left open
+
+    canonical = slice_of(world, turn_id)
+    assert canonical.assistant_turn is None
+    assert canonical.outcome is not None
+    assert canonical.outcome.value == "FAILED_USER_VISIBLE"
+
+    assert completion.turn_status is TurnStatus.FAILED_FINAL
+    assert completion.assistant_turn_id is None
+    assert completion.reply_text is None
+    assert completion.delivery_state == "SENT_PARTIAL"
+    assert completion.delivery_failure_reason is not None
+    assert "record refused the chunk" in completion.delivery_failure_reason
+    assert count(world.db, "assistant_turn") == 0
 
 
 def test_an_ordinary_turn_without_the_record_face_still_streams_and_writes_no_row(
