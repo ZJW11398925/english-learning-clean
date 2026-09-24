@@ -322,7 +322,13 @@ def test_the_deleter_is_the_module_that_deletes_them() -> None:
         REPO_ROOT / "src" / "elc" / "platform" / "db" / "delivery_store.py"
     )
     assert appender["server_delivery_record"] == ("INSERT", "UPDATE")
-    for table in TABLES[1:]:
+    # P9-4 moved one more row: the exposure estimate is no longer append-only.
+    # Its refinement face (``refine_exposure_estimate``) is the one statement
+    # that moves an already-durable estimate, and it moves exactly two columns
+    # upward (certainty / confirmed_exposure) — the port's judgement 11, whose
+    # own suite pins the refusal arms. The other three tables stay append-only.
+    assert appender["exposure_estimate"] == ("INSERT", "UPDATE")
+    for table in TABLES[3:]:
         assert appender[table] == ("INSERT",), table
 
 

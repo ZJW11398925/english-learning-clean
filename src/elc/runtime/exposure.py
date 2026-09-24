@@ -48,6 +48,15 @@ re-offering branch is unreachable through the ordinary loop today), and a
 *first* delivery is safe to write because a second row can only appear under a
 second id, which only this module mints.
 
+**P9-4 added the third writer, and its shape is the same rule read forward.**
+The delivery reconciliation
+(``elc.runtime.controller._ensure_exposure_once``) writes an event a cut-short
+leg owed, and it must not re-attempt one that is already durable — so it asks
+:meth:`LedgerExposureWriter.has_ledger_event` for the deterministic id first
+and appends only when the id is absent. That is why "exactly once" is checkable
+rather than promised: the id is this module's (:func:`exposure_event_id`) and
+the presence question is a read, not a second write.
+
 **The failure posture.** A read or write that returns ``Err`` never changes the
 delivery's own outcome (R-INV-010's shape: a derived record's failure is not the
 transcript's) — and it is never silent either: the caller receives the ``Err``
@@ -144,17 +153,26 @@ def skip_event_id(moment_id: MomentId) -> str:
 
 
 class LedgerExposureWriter(Protocol):
-    """The two reads and the one write this module needs.
+    """The three reads and the one write this module needs.
 
     Structurally ``elc.planner.ledger_store.SqliteLedgerStore`` — declared here
     rather than imported for the reason P8-1's ports are declared at their own
     boundary: this module's dependency stays visible, and the runtime package
     never pulls the ledger store's SQL machinery into its import graph. The
-    three shapes are that store's, method for method; the two row types are the
+    four shapes are that store's, method for method; the two row types are the
     pure core's (:mod:`elc.planner.ledger`, SQL-free by construction), so naming
     them costs nothing, while ``record_ledger_event``'s answer stays
     ``Result[object]`` — its row record lives beside the SQL, and naming it here
     would import that module.
+
+    ``has_ledger_event`` (P9-4) is the third read: the *id*-level presence
+    question the reconciliation needs to keep "exactly one presentation event"
+    true. The two row-level reads cannot answer it — the core's
+    :class:`~elc.planner.ledger.TargetLedgerRow` carries events without their
+    durable ids (its log is append-only and does not collapse a repeat), so
+    "is the event this action owes already durable?" has to be asked by id.
+    Answering a bare ``bool`` keeps the row type out of this module exactly as
+    ``record_ledger_event`` does.
     """
 
     def get_ledger_row(
@@ -164,6 +182,8 @@ class LedgerExposureWriter(Protocol):
     def list_obligations(
         self, *, target_or_family_id: str | None = None
     ) -> Result[tuple[CoverageObligation, ...]]: ...
+
+    def has_ledger_event(self, event_id: str) -> Result[bool]: ...
 
     def record_ledger_event(
         self,

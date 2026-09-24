@@ -16,7 +16,9 @@ states, and the pure driver that releases chunks one at a time — each one
 through the guard, before it is released. The server-side tracking (the §22
 ``ServerDeliveryRecord``) is the caller's face (``elc.runtime.controller``
 holds it, ``elc.platform.db.delivery_store`` writes it), and the ACK / late
-callback halves are later cuts' (P9-3/P9-4).
+callback halves landed with P9-3 (the late-callback guard) and P9-4
+(``ConversationCoordinator.accept_render_ack`` plus the §22 estimate it
+refines).
 
 The module holds **no clock** (``docs/RUNTIME_ARCHITECTURE.md`` instants are the
 caller's: every instant column of a delivery record arrives on the record, the

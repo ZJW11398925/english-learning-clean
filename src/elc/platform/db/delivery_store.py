@@ -32,7 +32,9 @@ A submission that differs is handled by the face's own rule:
 * the four append faces (``client_render_ack``, ``validator_result``,
   ``pre_delivery_guard_result``, the initial exposure estimate) are
   ``CONFLICT`` — an appended fact is never rewritten, and the estimate is
-  written once (judgement 7; refinement is P9-4's explicit face).
+  written once (judgement 7; refinement is ``refine_exposure_estimate``'s
+  explicit face since P9-4, and it is the one write here that *moves* a row:
+  two columns may rise, the delivered level may not move — judgement 11);
 
 **Two refusal vocabularies, on purpose.** §22's word columns have no schema
 CHECK (the words are STATE_MACHINES §13's), so this adapter calls the port's
@@ -85,6 +87,7 @@ from elc.runtime.delivery_records import (
     exposure_word_refusal,
     state_word_refusal,
 )
+from elc.runtime.exposure_reconciliation import refinement_refusal
 
 __all__ = ["SqliteDeliveryRecordStore", "StaleDeliveryRecordStoreError"]
 
@@ -101,6 +104,27 @@ def _err(code: DomainErrorCode, message: str) -> Err[T]:
 
 def _conflict(message: str) -> Err[T]:
     return _err(DomainErrorCode.CONFLICT, message)
+
+
+def _estimate_words_refusal(estimate: ExposureEstimate) -> DomainError | None:
+    """The four word columns of one §22 estimate, refused before the write
+    opens — the port's judgement 2/3 vocabularies (the schema spells none of
+    §22's words), asked by both estimate faces so the two cannot drift."""
+
+    for column, word in (
+        ("certainty", estimate.certainty),
+        ("exposure_level", estimate.exposure_level),
+        ("max_possible_exposure", estimate.max_possible_exposure),
+        ("confirmed_exposure", estimate.confirmed_exposure),
+    ):
+        refusal = (
+            certainty_word_refusal(word)
+            if column == "certainty"
+            else exposure_word_refusal(column, word)
+        )
+        if refusal is not None:
+            return refusal
+    return None
 
 
 def _array_document(values: tuple[str, ...]) -> str:
@@ -488,19 +512,9 @@ class SqliteDeliveryRecordStore:
         it is the same estimate. A differing submission is ``CONFLICT`` — the
         estimate is written once (the port's judgement 7)."""
 
-        for column, word in (
-            ("certainty", estimate.certainty),
-            ("exposure_level", estimate.exposure_level),
-            ("max_possible_exposure", estimate.max_possible_exposure),
-            ("confirmed_exposure", estimate.confirmed_exposure),
-        ):
-            refusal = (
-                certainty_word_refusal(word)
-                if column == "certainty"
-                else exposure_word_refusal(column, word)
-            )
-            if refusal is not None:
-                return Err(refusal)
+        refusal = _estimate_words_refusal(estimate)
+        if refusal is not None:
+            return Err(refusal)
         try:
             with short_transaction(self._conn):
                 self._require_current_epoch()
@@ -511,8 +525,8 @@ class SqliteDeliveryRecordStore:
                     return _conflict(
                         f"exposure estimate of action {estimate.action_id} is"
                         " already durable with different content; the initial"
-                        " estimate is written once (refinement is a later"
-                        " cut's explicit face)"
+                        " estimate is written once (refinement is"
+                        " refine_exposure_estimate's face)"
                     )
                 self._conn.execute(
                     "INSERT INTO exposure_estimate ("
@@ -530,6 +544,58 @@ class SqliteDeliveryRecordStore:
                     ),
                 )
                 return Ok(estimate)
+        except sqlite3.IntegrityError as exc:
+            return _err(DomainErrorCode.CONFLICT, str(exc))
+
+    def refine_exposure_estimate(
+        self, estimate: ExposureEstimate
+    ) -> Result[ExposureEstimate]:
+        """One acknowledgment-refined §22 estimate (P9-4's face).
+
+        The row the initial write landed is the one this face moves, and the
+        legal move is the port's ``refinement_refusal`` (only ``certainty`` /
+        ``confirmed_exposure`` may rise, the action may not be renamed): a
+        submission equal to the durable row is a replay (nothing is written, so
+        a repeated acknowledgment costs no write), a legal refinement replaces
+        the row, and an unknown action is ``NOT_FOUND`` — this face refines
+        CP3a's row, it never mints one.
+        """
+
+        refusal = _estimate_words_refusal(estimate)
+        if refusal is not None:
+            return Err(refusal)
+        try:
+            with short_transaction(self._conn):
+                self._require_current_epoch()
+                durable = self._read_estimate(estimate.action_id)
+                if durable is None:
+                    return _err(
+                        DomainErrorCode.NOT_FOUND,
+                        f"no exposure estimate is durable for action"
+                        f" {estimate.action_id}; a refinement moves the"
+                        " CP3a row and this face mints none (an"
+                        " acknowledgment for a delivery with no estimate"
+                        " refines nothing)",
+                    )
+                if durable == estimate:
+                    return Ok(durable)
+                illegal = refinement_refusal(durable, estimate)
+                if illegal is not None:
+                    return Err(illegal)
+                self._conn.execute(
+                    "UPDATE exposure_estimate SET certainty = ?,"
+                    " confirmed_exposure = ?, derivation_reason = ?"
+                    " WHERE action_id = ?",
+                    (
+                        estimate.certainty,
+                        estimate.confirmed_exposure,
+                        estimate.derivation_reason,
+                        estimate.action_id,
+                    ),
+                )
+                written = self._read_estimate(estimate.action_id)
+                assert written is not None  # the unit wrote it above
+                return Ok(written)
         except sqlite3.IntegrityError as exc:
             return _err(DomainErrorCode.CONFLICT, str(exc))
 

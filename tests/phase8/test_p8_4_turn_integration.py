@@ -21,9 +21,10 @@ chain writes:
   the Moment as its provenance;
 - **the crash windows (RA §23)**: a CP2 that was committed and a delivery that
   never happened is re-dispatched on the *same* action id (one assistant turn,
-  one Gate decision, one event); a CP3 crash leaves a ``DELIVERING`` turn the
-  ordinary loop refuses — **registered** in that test, with the reason
-  decision F's terminal-replay clause is unreachable through ``begin_turn``;
+  one Gate decision, one event); a CP3 crash leaves a ``DELIVERING`` turn whose
+  re-entry **reconciles** it — P9-4 landed the repair this file registered
+  (``test_a_cp3_crash_is_reconciled_and_re_sends_nothing``), so the exposure
+  event is written once and nothing is re-sent;
 - **the leg's own read-back** (the "continue the same ``action_id``" evidence):
   a generation face that answers no action, or fails the read, refuses the leg
   and the turn still lands as an ordinary reply — with the CP2 half durable and
@@ -685,34 +686,32 @@ def test_a_read_back_that_fails_degrades_before_the_ordinary_path_adopts(
     ).fetchone() == ("SUCCEEDED", None)
 
 
-def test_a_cp3_crash_is_refused_and_re_sends_nothing(
+def test_a_cp3_crash_is_reconciled_and_re_sends_nothing(
     db: sqlite3.Connection, p8world
 ) -> None:
     """Crash **after CP3** (the assistant turn is canonical, the action is
     TERMINAL, the turn never terminalized): the durable state is ``DELIVERING``
-    and the ordinary loop refuses a same-epoch re-entry from it —
-    ``turn re-entry from status DELIVERING is outside the Phase 1 loop`` — so
-    nothing is re-sent and nothing is recorded twice (one assistant turn, no
-    exposure event: the leg never returned).
+    and the re-entry now **reconciles** it — P9-4 landed exactly the repair this
+    test's registry named as the trigger.
 
-    **Registered, not fixed** (a finding of this cut): decision F's "action 已
-    TERMINAL ⇒ 既有 ``_replay_action_delivery``" is not reachable through
-    ``begin_turn`` today — the terminal branch of ``_deliver_teaching_action``
-    cannot be *entered* for a turn the loop refuses to re-enter, and the
-    reply-path reconciliation (``_reconcile_delivering_reply``) belongs to the
-    teaching reply loop. Widening this is a ``DELIVERING`` reconciliation for
-    the ordinary loop, which the opt-in boundary deliberately does not change
-    (the uninjected loop must stay byte-identical). The state is not lost: the
-    transcript is canonical and no writer mints a second message.
+    What the cut changed, and what it deliberately did not:
 
-    **The missing record has a name.** This is the cut's *CP3 exposure
-    undercount*: a presentation really reached the user (the assistant turn is
-    canonical) while no §20 event exists for it, because the write happens
-    after the delivery leg returns and the leg was cut short. It is registered
-    rather than repaired, and its trigger is a ``DELIVERING`` reconciliation for
-    the ordinary loop — the same repair ``_reconcile_delivering_reply`` performs
-    for the teaching reply loop — which must then also decide whether the
-    reconciled delivery counts as presented and write the event it owes."""
+    - the same-epoch re-entry no longer refuses with ``turn re-entry from status
+      DELIVERING is outside the Phase 1 loop``. The delivery's own facts decide:
+      the assistant turn is canonical (the message really went out), so the turn
+      terminalizes ``REPLIED_FULL`` and the §20 event the cut-short leg owed is
+      written **once** — the CP3 exposure undercount is closed, and the record
+      is the delivery's own word for the action's slot (``teaching_presented``
+      for an opening). Nothing is re-sent (one assistant turn) and the Gate is
+      not re-run (one ``gate_decision``);
+    - the reconciliation lands **no** rung and no opening state: the Moment is
+      still ``OPENING`` with its lock held, because the CP2-half landing
+      (``OPENING → AWAITING_USER``) is the delivery leg's own caller's move —
+      registered in ``_reconcile_delivering_turn``'s docstring, and the residue
+      the recovery faces own;
+    - a third call with the same ``client_message_id`` is a plain replay of the
+      durable terminal result: no new assistant turn, no second event, no
+      second terminalization (the reconciliation is idempotent by construction)."""
 
     commands = FailingCommands(p8world.store)
     first = begin_turn(
@@ -731,19 +730,47 @@ def test_a_cp3_crash_is_refused_and_re_sends_nothing(
         "DELIVERING",
     )
     # The exposure write happens *after* the delivery leg returns, and the leg
-    # was cut short by the refusal: nothing was recorded.
+    # was cut short by the refusal: nothing was recorded — the gap this repair
+    # exists for.
     assert count_events(db) == 0
 
     second = begin_turn(
         build_coordinator(p8world, automatic=automatic(p8world)), "cm-replay"
     )
-    assert isinstance(second, Err), second
-    assert "DELIVERING" in second.error.message
+    assert isinstance(second, Ok), second
+    completion = second.value
+    assert completion.outcome == "REPLIED_FULL"
+    assert completion.ledger_event == "teaching_presented"
+    assert completion.ledger_failure is None
+    # the reply the reconciliation answers with is the durable transcript's own
+    # content, byte for byte (never a re-generated or re-sent one)
+    transcript = db.execute("SELECT content FROM assistant_turn").fetchone()
+    assert transcript is not None
+    assert completion.reply_text == transcript[0]
+    assert TURN_TEXT in completion.reply_text
+    # exactly one of everything: no second message, no second Gate run, and the
+    # §20 event the cut-short leg owed is now durable exactly once
     assert db.execute("SELECT COUNT(*) FROM assistant_turn").fetchone()[0] == 1
-    assert count_events(db) == 0
+    assert count_events(db) == 1
     assert db.execute(
         "SELECT COUNT(*) FROM gate_decision"
     ).fetchone()[0] == 1
+    assert db.execute(
+        "SELECT status, turn_outcome FROM turn_record"
+    ).fetchone() == ("COMPLETED", "REPLIED_FULL")
+    # no rung landed, and the CP2 half is exactly where the crash left it
+    assert db.execute(
+        "SELECT lifecycle_state FROM teaching_moment"
+    ).fetchone() == ("OPENING",)
+
+    third = begin_turn(
+        build_coordinator(p8world, automatic=automatic(p8world)), "cm-replay"
+    )
+    assert isinstance(third, Ok), third
+    assert third.value.turn_id == completion.turn_id
+    assert third.value.ledger_event is None  # this call wrote nothing
+    assert db.execute("SELECT COUNT(*) FROM assistant_turn").fetchone()[0] == 1
+    assert count_events(db) == 1
 
 
 def test_one_replay_of_the_delivery_is_not_a_second_fact(

@@ -166,16 +166,18 @@ quotation, and each names the condition that re-opens it.
    submission with different content is ``CONFLICT`` rather than an in-place
    move, because if the estimate may be rewritten the record stops being what
    the evidence was attributed from (RA §14's conservative rule reads *this*
-   row). Refinement is registered, not built: P9-4 owns the reconciliation face
-   and it will be a supersede-shaped write, not a silent move of this row.
+   row). Refinement is **registered as a face, and that face is judgement 11's**
+   (P9-4 landed it): this method keeps its "initial" name because it writes the
+   CP3a row, and an acknowledgment moves that row only through
+   :meth:`DeliveryRecordStore.refine_exposure_estimate`, which refuses every
+   column move the derivation did not make.
    ``attempt_record.exposure_estimate_id`` (migration 0008, §17's '?', plain
    data with no foreign key) is the one column that names this record from
    outside, and this cut registers that the identity it carries **is the
    action_id** — the estimate's key — rather than changing 0008's column.
-   Revisit: P9-4 lands refinement (then this method keeps its "initial" name
-   and the refinement face is named beside it), or a writer actually fills
-   ``attempt_record.exposure_estimate_id`` (then that write's reader is the
-   place the identity reading becomes load-bearing).
+   Revisit: a writer actually fills ``attempt_record.exposure_estimate_id``
+   (then that write's reader is the place the identity reading becomes
+   load-bearing).
 8. **``sent_prefix``'s empty string is the "nothing sent" spelling.** §22 gives
    the column no null, RA §17 makes the sent boundary the record's durable
    fact, and the empty string is a prefix of every string — which is exactly
@@ -202,12 +204,37 @@ quotation, and each names the condition that re-opens it.
    ``validator_result`` entry or the ``ValidatorResultRecord`` shape — the two
    types have to be reconciled in that one place, and this note is where the
    reconciliation starts from.
-10. **No shipped writer calls this port yet.** RA §6 CP3a's delivery path is
-    the writer, and it lands with the stream (P9-2) and the exposure
-    reconciliation (P9-4); until then this face is exercised by its own suite
-    and by any caller that holds the rows. The port therefore also makes no
-    claim about *when* a row is written — only about what a written row means.
-    Revisit: the P9-2 writer lands and fixes this port's call sites.
+10. **The writers landed, and the port's claim is unchanged.** When this face
+    was declared it had no shipped caller, and it made no claim about *when* a
+    row is written — only about what a written row means. The call sites have
+    since arrived: P9-2's streamed face writes the ``ServerDeliveryRecord``
+    (``elc.runtime.controller.finalize_streamed_delivery``) and P9-3's guard
+    writes the §21.1 rows, while P9-4's exposure reconciliation writes the two
+    §22 rows this port's two remaining writes serve
+    (``record_initial_exposure_estimate`` at CP3a on both delivery faces, and
+    :meth:`DeliveryRecordStore.refine_exposure_estimate` from the
+    acknowledgment entry). Nothing above moves: the port still describes what a
+    written row means, and the *when* stays each writer's declared ordering.
+    Revisit: a row of this port gains a second writer (then the two orderings
+    have to be reconciled where they meet, not here).
+11. **The refinement face moves two columns upward and nothing else.**
+    ``exposure_estimate`` is keyed by action (judgement 6), so the
+    acknowledgment's refinement is a move of *this* row rather than a second
+    row — and it is legal exactly when it only raises ``certainty`` /
+    ``confirmed_exposure``, which
+    ``elc.runtime.exposure_reconciliation.refinement_refusal`` states in one
+    place that both faces read. The sent level
+    (``exposure_level`` / ``max_possible_exposure``) is the derivation's and
+    this face refuses to move it in either direction: an acknowledgment
+    changes what is *known*, never what was sent (RA §14's conservative rule
+    reads the level as the ceiling). A submission already equal to the durable
+    row is a replay (judgement 4's posture, and the idempotence a repeated
+    acknowledgment needs); an unknown action is ``NOT_FOUND`` — refinement has
+    no initial row to refine, and this face never invents one. Revisit: a cut
+    finds an acknowledgment that must lower a column (then the estimate stops
+    being monotone and this judgement is the one to reopen), or canonical
+    gives the estimate a version column (then the supersede gets its own
+    identity instead of the row's).
 """
 
 from __future__ import annotations
@@ -572,7 +599,25 @@ class DeliveryRecordStore(Protocol):
         """Persist the §6 CP3a initial ExposureEstimate for one action.
 
         Written once (judgement 7): a second submission with different content
-        is ``CONFLICT``; refinement is P9-4's explicit face.
+        is ``CONFLICT``; refinement is
+        :meth:`refine_exposure_estimate`'s explicit face (judgement 11).
+        """
+        ...
+
+    def refine_exposure_estimate(
+        self, estimate: ExposureEstimate
+    ) -> Result[ExposureEstimate]:
+        """Move one action's §22 estimate to an acknowledgment-refined row.
+
+        P9-4's face, and the "supersede-shaped write, not a silent move" of
+        judgement 7: the submitted row is the refined estimate the caller
+        derived with ``elc.runtime.exposure_reconciliation.refine_with_ack``
+        (this face checks the move, it does not perform the refinement), and
+        only two columns may rise — ``certainty`` / ``confirmed_exposure``
+        (judgement 11). A submission identical to the durable row is a replay;
+        a legal refinement replaces the row; an illegal one is
+        ``VALIDATION_FAILED``; an action with no estimate is ``NOT_FOUND``
+        (this face refines the CP3a row, it never mints one).
         """
         ...
 

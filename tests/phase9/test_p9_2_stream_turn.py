@@ -508,35 +508,42 @@ def test_the_default_transport_lands_one_chunk_and_the_whole_reply(
     assert completion.delivery_state == "SENT_COMPLETE"
 
 
-def test_a_healthy_streamed_turn_writes_no_ack_or_estimate_row_and_one_valid_guard_row(
+def test_a_healthy_streamed_turn_writes_one_estimate_row_and_no_ack_row(
     world: StreamWorld,
 ) -> None:
-    """RA §6 and this cut's reach — and the one truth P9-3 moved.
+    """RA §6 and this cut's reach — and the two truths P9-3/P9-4 moved.
 
-    The main turn does not wait for a ``ClientRenderAck`` (no row), the exposure
-    estimate is P9-4's face (no row), and the ``validator_result`` rows belong
-    to the validator's own attempt face (still no row here). The §21.1
-    ``pre_delivery_guard_result`` row is a **different** case: P9-2 wrote none
-    because no face ran §15's check, and §21.1's guard writer landed with P9-3
-    — so a healthy streamed turn now carries exactly one ``VALID`` row, and the
-    assertion is stronger than "no row" was: the row names the action, carries
-    no reason code (all seven facts were read and none held), and spells a
-    non-empty lineage version (P9-3's disposition left this face alone; a
-    reader who wants the guard's own suite reads
-    ``test_p9_3_pre_delivery_guard.py``)."""
+    The main turn does not wait for a ``ClientRenderAck`` (no row), the
+    ``validator_result`` rows belong to the validator's own attempt face (still
+    no row here). Two tables moved after P9-2 wrote this test: the §21.1
+    ``pre_delivery_guard_result`` row (P9-3 landed the guard's writer, so a
+    healthy streamed turn carries exactly one ``VALID`` row — it names the
+    action, carries no reason code, and spells a non-empty lineage version) and
+    the §22 ``exposure_estimate`` row (P9-4 landed CP3a's estimate on both
+    delivery faces: the streamed turn now writes **one** row, and its columns
+    are the derivation's — ``SENT_COMPLETE`` with the whole text as the durable
+    prefix is ``FULL`` / ``FULL`` with nothing an acknowledgment has confirmed
+    yet)."""
 
     completion = begin_turn_ok(coordinator_(world), "cmid-p9-2-clean")
 
-    for table in (
-        "client_render_ack",
-        "exposure_estimate",
-        "validator_result",
-    ):
+    for table in ("client_render_ack", "validator_result"):
         assert count(world.db, table) == 0, table
     assert count(world.db, "server_delivery_record") == 1
     assert count(world.db, "assistant_turn") == 1
+    assert count(world.db, "exposure_estimate") == 1
 
     action_id = action_of(world, str(completion.turn_id))
+    estimate = world.deliveries.get_exposure_estimate(action_id)
+    assert isinstance(estimate, Ok), estimate
+    assert estimate.value is not None
+    assert estimate.value.action_id == action_id
+    assert estimate.value.certainty == "SERVER_SENT_UNCONFIRMED"
+    assert estimate.value.exposure_level == "FULL"
+    assert estimate.value.max_possible_exposure == "FULL"
+    assert estimate.value.confirmed_exposure == "NONE"
+    assert "no render ack" in estimate.value.derivation_reason
+
     rows = world.deliveries.list_pre_delivery_guard_results(action_id)
     assert isinstance(rows, Ok), rows
     assert len(rows.value) == 1

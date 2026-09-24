@@ -780,6 +780,23 @@ class SqliteLedgerStore:
         except _DirtyRowError as exc:
             return self._dirty("planning_ledger_event", ledger_key, exc)
 
+    def has_ledger_event(self, event_id: str) -> Result[bool]:
+        """Whether one event id is durable (P9-4's id-level presence read).
+
+        The write face's identity is the event id and its content includes the
+        instant, so "has this fact already been appended?" cannot be asked of
+        the row-level reads: the core's event stream does not carry ids, and a
+        second attempt at the same id is refused rather than replayed. The one
+        caller that needs the question — the exposure reconciliation's
+        "exactly one presentation event" rule — asks it here, by id, before it
+        would append a duplicate. A row that cannot be *decoded* still answers
+        ``True``: the id's presence is a durable fact on its own, and this read
+        is not the row decoder.
+        """
+
+        row = self._conn.execute(_SELECT_EVENT, (event_id,)).fetchone()
+        return Ok(row is not None)
+
     def get_obligation(
         self, obligation_key: str
     ) -> Result[CoverageObligation | None]:

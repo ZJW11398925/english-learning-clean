@@ -109,7 +109,9 @@ from elc.runtime.decision_cycles import (
     DecisionCycleStore,
 )
 from elc.runtime.delivery_records import (
+    ClientRenderAck,
     DeliveryRecordStore,
+    ExposureEstimate,
     PreDeliveryGuardResult,
     ServerDeliveryRecord,
 )
@@ -119,6 +121,11 @@ from elc.runtime.exposure import (
     record_exposure,
     record_skip,
     skip_event_id,
+)
+from elc.runtime.exposure_reconciliation import (
+    DeliveryExposureFacts,
+    exposure_estimate_of,
+    refine_with_ack,
 )
 from elc.runtime.generation import GenerationActionStore
 from elc.runtime.guarded_stream import (
@@ -318,6 +325,47 @@ TEACHING_REPLY_PATH = (
 #: the full form (the frozen reference's terminalizing REVEAL).
 CLOSING_FEEDBACK_DELIVERY = "REVEAL"
 
+#: action-id slot → the delivery kind the dispatch named (P9-4). The four
+#: teaching dispatchers spell a slot as the action id's suffix
+#: (``ga-<turn_id>-<slot>``: ``teaching-open`` / :data:`AUTOMATIC_OPEN_SLOT` /
+#: ``hint`` / ``retry`` / ``reveal`` / ``explanation`` / ``resume``), and the
+#: slot is the only durable carrier of *which* kind was dispatched — a retry
+#: and a hint share one action type (``TEACHING_ACTION_BY_DELIVERY``), and §20
+#: carries a word for the second and none for the first, so the reconciliation
+#: that reads an action back cannot take the word from its type. A slot outside
+#: this table is a kind the reconciliation does not claim to know: it records
+#: no event rather than guessing one.
+DELIVERY_KIND_BY_SLOT = {
+    "teaching-open": "OPENING",
+    "automatic-open": "OPENING",
+    "hint": "HINT",
+    "retry": "RETRY",
+    "reveal": "REVEAL",
+    "explanation": "EXPLANATION",
+    "resume": "RESUME",
+}
+
+
+def delivery_kind_of_action(action_id: ActionId) -> str | None:
+    """The delivery kind an action id's slot names, or ``None`` when the slot
+    is not one of the dispatched ones (see :data:`DELIVERY_KIND_BY_SLOT`).
+
+    The longest matching suffix wins, so a slot that ends with another slot's
+    text still resolves to itself; nothing here mints or parses any other part
+    of the id (the id is opaque data, DATA_MODEL §1.2).
+    """
+
+    spelled = str(action_id)
+    matches = [
+        (slot, kind)
+        for slot, kind in DELIVERY_KIND_BY_SLOT.items()
+        if spelled.endswith(f"-{slot}")
+    ]
+    if not matches:
+        return None
+    matches.sort(key=lambda item: len(item[0]), reverse=True)
+    return matches[0][1]
+
 
 @dataclass(frozen=True)
 class TeachingReplyRequest:
@@ -503,6 +551,52 @@ class TurnRecoveryClosure:
 
 
 @dataclass(frozen=True)
+class TurnReconciliation:
+    """One CP3-under-recorded delivery the reconciliation finished (P9-4 D①).
+
+    ``outcome`` is the word the durable facts decided (§22's terminal state and
+    the prefix the row holds; the transcript's own word when it exists and no
+    row does). ``repaired_transcript`` says whether this reconciliation wrote
+    the assistant turn a crash ate — the durable prefix canonicalized
+    **verbatim** as ``SENT_PARTIAL``, never the buffered text. ``exposure_event``
+    is the §20 word the repair found or appended (``None`` when the delivery
+    was no teaching presentation, or when its kind has no §20 word) and
+    ``wrote_exposure`` says which of the two happened. ``failure_reason``
+    carries the readable reason when a bookkeeping write of the repair did not
+    happen (the delivery itself is unchanged — R-INV-010's shape).
+    """
+
+    turn_id: TurnId
+    outcome: str
+    repaired_transcript: bool
+    exposure_event: str | None
+    wrote_exposure: bool
+    failure_reason: str | None = None
+
+
+@dataclass(frozen=True)
+class RenderAckReceipt:
+    """What one §22 ``ClientRenderAck`` entry did (P9-4 C).
+
+    ``ack`` is the durable row the entry wrote or replayed; ``estimate`` is the
+    action's estimate **after** the refinement (``None`` when the action has
+    none — this entry never mints one, reading 7 of
+    ``elc.runtime.exposure_reconciliation``); ``refined`` says whether the
+    estimate moved; ``note`` carries the readable reason when the refinement
+    did not happen for a reason of its own (no estimate row, or a refused
+    refinement write). The acknowledgment's own write is the entry's answer, so
+    a refinement that failed is a note rather than an ``Err`` (R-INV-010's
+    shape), and no field here moves the transcript: ``delivery_certainty``
+    belongs to canonicalization and this entry writes no transcript row.
+    """
+
+    ack: ClientRenderAck
+    estimate: ExposureEstimate | None
+    refined: bool
+    note: str | None = None
+
+
+@dataclass(frozen=True)
 class StartupRecoveryOutcome:
     """The result of one startup recovery pass (P3-3 review F6).
 
@@ -533,6 +627,19 @@ class StartupRecoveryOutcome:
       completed without it, and the empty tuples above mean "not read",
       never "nothing there". The durable rows stay exactly as they were —
       a pending proposal is still pending, a fenced job still unfinished.
+
+    P9-4 adds the two delivery-reconciliation lines, both defaulted for the
+    same reason the CP4 fields are:
+
+    - ``reconciled_turns`` — the CP3-under-recorded residues the new line
+      finished from the durable facts (the §22 row, the transcript, and the
+      §20 event the repair owed); a turn the plan named but this line could not
+      finish stays visible in the plan, exactly as the other lines' residue
+      does;
+    - ``aborted_openings`` — the moments stopped at ``OPENING`` whose opening
+      delivery never happened, closed through the §7 abort face with
+      ``DELIVERY_FAILURE`` and unlocked, before the orphan-lock sweep would
+      have closed them as generic recovery residue.
     """
 
     plan: tuple[RecoveryAction, ...]
@@ -546,6 +653,8 @@ class StartupRecoveryOutcome:
     dangling_evidence_refs: tuple[DanglingEvidenceRef, ...] = ()
     evidence_ref_scan_unavailable: bool = False
     reopened_projections: tuple[ProjectionJobId, ...] = ()
+    reconciled_turns: tuple[TurnReconciliation, ...] = ()
+    aborted_openings: tuple[str, ...] = ()
 
 
 class RuntimeOrchestrator:
@@ -1290,6 +1399,19 @@ class ConversationCoordinator:
                     " (STATE_MACHINES §1)"
                 )
 
+            if turn.status is TurnStatus.DELIVERING:
+                # P9-4 D①: the CP3 under-record. The delivery leg finished (the
+                # action is TERMINAL) and the crash ate the turn's
+                # terminalization, so this re-entry used to answer a bare
+                # ``CONFLICT`` — an answer that left a real reply with a
+                # nonterminal turn and (for a teaching action) no §20 event.
+                # The reconciliation finishes it from the durable facts and is
+                # idempotent, so a second re-entry writes nothing.
+                reconciled_turn = self._reconcile_delivering_turn(turn)
+                if isinstance(reconciled_turn, Err):
+                    return reconciled_turn
+                return Ok(reconciled_turn.value[0])
+
             state_version = turn.state_version
             if self._learning is not None:
                 # RA §4 steps 2-4 canonical order: CP0 → durable
@@ -1932,6 +2054,480 @@ class ConversationCoordinator:
             return (None, written.error.message)
         return (LedgerEvent.USER_SKIP.value, None)
 
+    # -- the §22 exposure estimate and its acknowledgment (P9-4) -------------
+
+    def _write_initial_estimate(
+        self,
+        *,
+        action_id: ActionId,
+        facts: DeliveryExposureFacts,
+        note: str | None,
+    ) -> tuple[ExposureEstimate | None, str | None]:
+        """§6 CP3a's initial ExposureEstimate, through the injected §22 face.
+
+        One call site per delivery face (the streamed one after the row froze,
+        the buffered one after the leg is durable), so the derivation is written
+        once and the two faces cannot drift about the table
+        ``elc.runtime.exposure_reconciliation`` states. The port's absence is
+        registered, not simulated: no face ⇒ no row and no note (the assembly
+        every suite before P9-1 builds). The delivery's own outcome is never
+        changed — a derivation that raises, or a refused write, is joined onto
+        the caller's note channel (R-INV-010's shape: a derived record's
+        failure is not the transcript's), and the returned estimate is ``None``
+        in exactly those cases.
+
+        **No §20 event is written here** (R4's one-way rule): this helper holds
+        no ledger writer and names none — the exposure log's writes are the
+        delivery leg's own (``_with_exposure``) and the reconciliation's, and a
+        test pins this method's import-and-call surface so the estimate path
+        cannot start appending presentations.
+        """
+
+        face = self._delivery_records
+        if face is None:
+            return (None, note)
+        try:
+            estimate = exposure_estimate_of(action_id=action_id, facts=facts)
+            written = face.record_initial_exposure_estimate(estimate)
+        except Exception as exc:  # noqa: BLE001 — a broken face never blocks
+            return (
+                None,
+                _joined_note(
+                    note,
+                    "the initial exposure estimate could not be derived:"
+                    f" {exc!r}",
+                ),
+            )
+        if isinstance(written, Err):
+            return (
+                None,
+                _joined_note(
+                    note,
+                    "the initial exposure estimate could not be written:"
+                    f" {written.error.message}",
+                ),
+            )
+        return (written.value, note)
+
+    def accept_render_ack(self, ack: ClientRenderAck) -> Result[RenderAckReceipt]:
+        """One asynchronous §§6/14 ``ClientRenderAck``: the row, and the refinement.
+
+        Shared by both delivery faces — §22's acknowledgment names an *action*
+        and this entry never asks which kind of delivery that action was, which
+        is what makes it the ordinary and the teaching face's one entry. It
+        takes **no coordinator guard**: "主 Turn 不等待 ClientRenderAck" (RA §6)
+        is the reason the ACK is asynchronous in the first place, and an entry
+        that queued behind a live delivery would put the wait back. Two writes,
+        in this order:
+
+        1. the §22 row itself (``append_client_render_ack``: same content
+           replays, different content is ``CONFLICT``) — this is the entry's
+           answer, and a refused write is the entry's ``Err`` because the
+           acknowledgment is the caller's own act;
+        2. the refinement — the action's estimate is read and
+           ``refine_with_ack`` moves it **upward only**, then the refined row
+           goes through ``refine_exposure_estimate`` (P9-4's face; a repeated
+           acknowledgment is a replay, an illegal move is refused).
+
+        Registered readings, each on its own condition:
+
+        - **no estimate row**: the refinement is skipped and the receipt's note
+          says so. The estimate is CP3a's record and this entry never mints one
+          — "不得凭空造 FULL" taken literally, and the conservative direction
+          the other way would be worse (a fabricated ``NONE`` row would claim
+          the delivery *derived* one);
+        - **the refinement's failures never fail the entry**: a read that
+          answers ``Err``, a refused refinement write, or a refining function
+          that raises are all notes on an ``Ok`` receipt — the acknowledgment
+          itself is durable, and reportability is this entry's whole contract
+          (R-INV-010's shape);
+        - **no mastery, no evidence, no attempt, no transcript**: this method
+          writes the two §22 rows and nothing else, and the transcript's
+          ``delivery_certainty`` is not a column it can reach (RA §14: a late
+          ACK is a certainty refinement *of the estimate*, and V1 does not
+          upgrade committed evidence — the re-evaluation path is canonical's
+          to declare).
+
+        Revisit: a real delivery channel produces acknowledgments (then the
+        entry gains the transport that feeds it — the mapping needs no change),
+        or canonical gives the ACK a rejection vocabulary (then an
+        out-of-order or contradictory acknowledgment stops being a no-op).
+        """
+
+        face = self._delivery_records
+        if face is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=(
+                        "a render acknowledgment needs the §22 record face;"
+                        " no delivery_records port is wired into this"
+                        " coordinator"
+                    ),
+                )
+            )
+        appended = face.append_client_render_ack(ack)
+        if isinstance(appended, Err):
+            return appended
+        try:
+            current = face.get_exposure_estimate(ack.action_id)
+            if isinstance(current, Err):
+                return Ok(
+                    RenderAckReceipt(
+                        ack=appended.value,
+                        estimate=None,
+                        refined=False,
+                        note=(
+                            "the exposure estimate could not be read:"
+                            f" {current.error.message}"
+                        ),
+                    )
+                )
+            estimate = current.value
+            if estimate is None:
+                return Ok(
+                    RenderAckReceipt(
+                        ack=appended.value,
+                        estimate=None,
+                        refined=False,
+                        note=(
+                            f"action {ack.action_id} has no exposure estimate;"
+                            " an acknowledgment refines the CP3a row and this"
+                            " entry never mints one"
+                        ),
+                    )
+                )
+            refined = refine_with_ack(estimate, ack=appended.value)
+            if refined == estimate:
+                return Ok(
+                    RenderAckReceipt(
+                        ack=appended.value, estimate=estimate, refined=False
+                    )
+                )
+            written = face.refine_exposure_estimate(refined)
+        except Exception as exc:  # noqa: BLE001 — a broken face never blocks
+            return Ok(
+                RenderAckReceipt(
+                    ack=appended.value,
+                    estimate=None,
+                    refined=False,
+                    note=f"the exposure refinement raised {exc!r}",
+                )
+            )
+        if isinstance(written, Err):
+            return Ok(
+                RenderAckReceipt(
+                    ack=appended.value,
+                    estimate=None,
+                    refined=False,
+                    note=(
+                        "the exposure estimate could not be refined:"
+                        f" {written.error.message}"
+                    ),
+                )
+            )
+        return Ok(
+            RenderAckReceipt(
+                ack=appended.value, estimate=written.value, refined=True
+            )
+        )
+
+    def _ensure_exposure_once(
+        self, *, action: GenerationActionIntentRecord, presented: bool
+    ) -> tuple[str | None, bool, str | None]:
+        """The §20 event of one delivery, **exactly once**, for the repair face.
+
+        ``presented`` is the durable transcript's answer to "did this delivery
+        put text in front of the user" (the canonicalized assistant turn
+        exists). Only a presentation owes a §20 event, and only when the
+        delivery's kind has a word: a retry, an explanation or a resume carries
+        none (§20's five words do not name them — the same reading
+        ``elc.runtime.exposure`` registers), an action whose slot is not one of
+        the dispatched ones (:func:`delivery_kind_of_action`) is not claimed,
+        and an action with no moment is not a teaching presentation at all.
+
+        The idempotence is the point (R5's "恰好一次"): the event id is
+        deterministic (:func:`exposure_event_id`), so this helper asks the
+        writer whether that id is already durable and appends **only** when it
+        is absent. A live path's write stamps a fresh instant, and this face
+        must not re-attempt one — a second attempt would be a ``CONFLICT`` on a
+        fact that is already durable, which is a worse answer than "it is
+        there". Returns ``(the word, wrote it now, the failure reason)``: the
+        word is the §20 word the log holds (found or written), the flag
+        distinguishes the two, and the reason is set when a write the repair
+        owed did not happen.
+        """
+
+        if not presented:
+            return (None, False, None)
+        writer = None if self._automatic is None else self._automatic.ledger
+        if writer is None:
+            return (None, False, None)
+        kind = delivery_kind_of_action(action.action_id)
+        if kind is None:
+            return (None, False, None)
+        try:
+            event = ledger_event_of(kind)
+            if event is None or action.moment_id is None:
+                return (None, False, None)
+            moment = self._teaching.get_moment(MomentId(action.moment_id))  # type: ignore[union-attr]
+            if isinstance(moment, Err):
+                return (None, False, moment.error.message)
+            if moment.value is None:
+                return (
+                    None,
+                    False,
+                    f"the §20 event of action {action.action_id} names moment"
+                    f" {action.moment_id}, which is not durable",
+                )
+            focus = moment.value.focus_target
+        except Exception as exc:  # noqa: BLE001 — a broken writer never blocks
+            return (None, False, f"the exposure reconciliation raised {exc!r}")
+        event_id = exposure_event_id(action.action_id)
+        try:
+            existing = writer.has_ledger_event(event_id)
+            if isinstance(existing, Err):
+                return (None, False, existing.error.message)
+            if existing.value:
+                return (event.value, False, None)
+            written = record_exposure(
+                writer=writer,
+                event_id=event_id,
+                event=event,
+                target_key=str(focus.target_id),
+                moment_id=moment.value.moment_id,
+                at=_now(),
+            )
+        except Exception as exc:  # noqa: BLE001 — a broken writer never blocks
+            return (None, False, f"the exposure write raised {exc!r}")
+        if isinstance(written, Err):
+            return (None, False, written.error.message)
+        return (event.value, True, None)
+
+    def _reconcile_delivering_turn(
+        self, turn: TurnRecordData
+    ) -> Result[tuple[TurnCompletion, TurnReconciliation]]:
+        """Finish a CP3-under-recorded delivery from its durable facts (P9-4 D①).
+
+        The residue this method owns is exact: the generation action reached
+        ``TERMINAL`` (the delivery leg finished) while the turn was never
+        terminalized, so the turn sits at ``DELIVERING``. P8-4's suite named
+        this repair as the trigger of its registered gap — "a ``DELIVERING``
+        reconciliation for the ordinary loop ... which must then also decide
+        whether the reconciled delivery counts as presented and write the event
+        it owes" — and two faces call it: the ordinary loop's re-entry (a
+        duplicate input whose turn is still at ``DELIVERING``, which used to be
+        refused with a bare ``CONFLICT``) and the startup recovery's new line.
+
+        The move is "read the durable facts, finish the turn with the word they
+        entail" — never a replay of the delivery:
+
+        - **a non-terminal action is refused**, not reconciled: the delivery
+          never finished, and this face may no more finish another leg's send
+          than the pre-cut ``CONFLICT`` could. The refusal keeps the old words
+          (``outside the Phase 1 loop``) and adds the durable reason, so a
+          caller can tell "the delivery is still in flight" from "this is not
+          that loop";
+        - **the outcome is the durable facts'** (§1-D's table): a
+          ``SENT_COMPLETE`` row is ``REPLIED_FULL``, a ``SENT_PARTIAL`` or
+          ``FAILED`` row carrying a prefix is ``REPLIED_PARTIAL``, a
+          ``CANCELLED`` row with a prefix is ``CANCELLED_BY_USER`` — the same
+          word the live cancellation terminalized with — and **no row or an
+          empty prefix is ``NO_ASSISTANT_OUTPUT``**, checked first: nothing
+          reached the user and the transcript cannot carry a reply that never
+          happened (registered: the live streamed failure's own word would be
+          ``FAILED_USER_VISIBLE``, and this face takes the transcript's instead
+          because a crash left no record of *which* failure it was — a
+          cancellation, a refused send and a refused opening are one shape
+          here). When a transcript row already exists its ``delivery_state``
+          word decides (RA §23: the canonicalized assistant turn is the truth),
+          which keeps the registered P9-2 divergences between the two faces
+          from being re-decided by a second reader;
+        - **a durable prefix with no transcript is canonicalized verbatim** as
+          ``SENT_PARTIAL``: the boundary reached the client, the run's own word
+          is not claimed back, and neither is the buffered text (§17). The
+          row's ``SENT_COMPLETE`` is deliberately not copied into the
+          transcript — a reconstructed delivery's word is the conservative one;
+        - **the §20 event is written exactly once** (:meth:`_ensure_exposure_once`):
+          a presentation the user really saw owes one, the deterministic id is
+          what makes absence checkable, and an event already durable is left
+          untouched. A failed ledger write becomes a note, never a failed turn;
+        - **the estimate is CP3a's record, so under-record reaches it too**: it
+          is written when the §22 row exists and no estimate does — the
+          derivation reads exactly the row this method just read (its own word
+          and its own prefix; no second length exists here, which is the
+          registered ``full_text_length=None`` arm). A delivery with no row has
+          no facts for one and gets none;
+        - **no rung, no landing, no lock**: the teaching ladder's landing is
+          ``_reconcile_moment_ladder``'s face (P3-3) and an opening's
+          ``OPENING → AWAITING_USER`` move belongs to the delivery leg's own
+          caller; this method terminalizes the turn and records what the
+          delivery owes. A moment left mid-episode by this repair is visible
+          residue (its own faces and the startup sweep own it), never a rung
+          moved from here. Registered; revisit: a cut needs the landing from a
+          face that reaches neither teaching entry.
+
+        Idempotent by construction, which is what lets both faces call it: the
+        transcript exists after the first pass, the event id is durable, the
+        estimate is identical, and the turn is terminal — a second call answers
+        from the durable rows and writes nothing (the flags on the returned
+        record are all false for a turn that was already terminal).
+        """
+
+        if turn.status in TERMINAL_TURN_STATUSES:
+            replayed = self._replay_terminal(turn)
+            if isinstance(replayed, Err):
+                return replayed
+            return Ok(
+                (
+                    replayed.value,
+                    TurnReconciliation(
+                        turn_id=turn.turn_id,
+                        outcome=replayed.value.outcome or "",
+                        repaired_transcript=False,
+                        exposure_event=None,
+                        wrote_exposure=False,
+                    ),
+                )
+            )
+        action_result = self._generation.get_action_for_turn(turn.turn_id)
+        if isinstance(action_result, Err):
+            return action_result
+        action = action_result.value
+        if action is None or action.status is not GenerationActionStatus.TERMINAL:
+            status = "missing" if action is None else action.status.value
+            return _conflict(
+                f"turn re-entry from status {turn.status.value} is outside the"
+                " Phase 1 loop: the action of this turn is"
+                f" {status}, so its delivery has not finished — only its own"
+                " leg or the recovery owner may finish it"
+            )
+
+        # The leg is finishable, so adopting the turn is the precondition of
+        # finishing it (RUNTIME §24 restart ownership; the same late adoption
+        # ``_close_residual_turns`` performs): ``canonicalize_assistant_turn``
+        # and ``terminalize_turn`` both refuse a foreign-epoch turn, and the
+        # ordinary loop's re-entry has already adopted its own. A refused claim
+        # is returned untouched — the residue stays visible to the startup scan
+        # rather than being owned without the right to close it.
+        epoch = self._lease.epoch
+        if epoch is not None and turn.owner_epoch != epoch:
+            claimed = self._commands.claim_turn_for_recovery(turn.turn_id)
+            if isinstance(claimed, Err):
+                return claimed
+            turn = claimed.value
+
+        slice_result = self._queries.get_canonical_turn_slice(turn.turn_id)
+        if isinstance(slice_result, Err):
+            return slice_result
+        slice_ = slice_result.value
+        if slice_ is None:
+            return _missing(f"canonical turn slice not found: {turn.turn_id}")
+        assistant = slice_.assistant_turn
+        row: ServerDeliveryRecord | None = None
+        if self._delivery_records is not None:
+            row_result = self._delivery_records.get_server_delivery_record(
+                action.action_id
+            )
+            if isinstance(row_result, Err):
+                return row_result
+            row = row_result.value
+        prefix = "" if row is None else row.sent_prefix
+        note: str | None = None
+        repaired = False
+        existing_word: str | None = (
+            None if assistant is None else assistant.delivery_state.value
+        )
+        assistant_word: str | None = existing_word
+        transcript_text: str | None = None
+        assistant_id: AssistantTurnId | None = None
+        if assistant is None and prefix != "":
+            canonical = self._commands.canonicalize_assistant_turn(
+                AssistantTurnRecord(
+                    assistant_turn_id=AssistantTurnId(action.assistant_turn_id),
+                    turn_id=turn.turn_id,
+                    conversation_id=ConversationId(turn.conversation_id),
+                    turn_sequence=turn.turn_sequence,
+                    message_sequence=slice_.user_turn.message_sequence,
+                    action_id=action.action_id,
+                    content=prefix,
+                    delivery_state=DeliveryState.SENT_PARTIAL,
+                    delivery_certainty=SERVER_SENT_UNCONFIRMED,
+                )
+            )
+            if isinstance(canonical, Err):
+                return canonical
+            repaired = True
+            assistant_word = DeliveryState.SENT_PARTIAL.value
+            transcript_text = prefix
+            assistant_id = AssistantTurnId(action.assistant_turn_id)
+        elif assistant is not None:
+            transcript_text = assistant.content
+            assistant_id = assistant.assistant_turn_id
+
+        outcome = _reconciled_turn_outcome(
+            prefix=prefix,
+            row_state=None if row is None else row.state,
+            assistant_state=existing_word,
+        )
+        exposure_word, wrote_exposure, exposure_failure = (
+            self._ensure_exposure_once(
+                action=action, presented=assistant_word is not None
+            )
+        )
+        note = exposure_failure
+
+        if row is not None and self._delivery_records is not None:
+            current = self._delivery_records.get_exposure_estimate(
+                action.action_id
+            )
+            if isinstance(current, Err):
+                note = _joined_note(
+                    note,
+                    "the exposure estimate could not be read:"
+                    f" {current.error.message}",
+                )
+            elif current.value is None:
+                _estimate, note = self._write_initial_estimate(
+                    action_id=action.action_id,
+                    facts=DeliveryExposureFacts(
+                        terminal_state=row.state,
+                        sent_prefix=row.sent_prefix,
+                        send_attempted=True,
+                    ),
+                    note=note,
+                )
+
+        terminal = self._commands.terminalize_turn(turn.turn_id, outcome)
+        if isinstance(terminal, Err):
+            return terminal
+        return Ok(
+            (
+                TurnCompletion(
+                    turn_id=turn.turn_id,
+                    action_id=action.action_id,
+                    assistant_turn_id=assistant_id,
+                    turn_status=terminal.value.status,
+                    action_status=GenerationActionStatus.TERMINAL,
+                    outcome=outcome.value,
+                    reply_text=transcript_text,
+                    failure_reason=None,
+                    state_version=terminal.value.state_version,
+                    ledger_event=exposure_word,
+                    ledger_failure=note,
+                    delivery_state=None if row is None else row.state,
+                ),
+                TurnReconciliation(
+                    turn_id=turn.turn_id,
+                    outcome=outcome.value,
+                    repaired_transcript=repaired,
+                    exposure_event=exposure_word,
+                    wrote_exposure=wrote_exposure,
+                    failure_reason=note,
+                ),
+            )
+        )
+
     # -- the persona-facing views (P4-3) ------------------------------------
 
     def _persona_views_for(
@@ -2126,6 +2722,20 @@ class ConversationCoordinator:
         if isinstance(completed, Err):
             return completed
 
+        # §6 CP3a's "initial ExposureEstimate", after the delivery leg is
+        # durable (canonicalize → complete) and before the turn terminalizes:
+        # the buffered face's facts are "validated whole, delivered whole", so
+        # the estimate is the caller's declared word with the text as its
+        # boundary (P9-4 B②). A refused write never changes the delivery — the
+        # reason rides the completion's own note channel.
+        _estimate, estimate_note = self._write_initial_estimate(
+            action_id=delivery.action_id,
+            facts=DeliveryExposureFacts.buffered(
+                text=delivery.text, state=delivery.delivery_state
+            ),
+            note=None,
+        )
+
         terminal = self._commands.terminalize_turn(
             delivery.turn_id, delivery.outcome
         )
@@ -2142,6 +2752,7 @@ class ConversationCoordinator:
                 reply_text=delivery.text,
                 failure_reason=None,
                 state_version=terminal.value.state_version,
+                delivery_failure_reason=estimate_note,
             )
         )
 
@@ -2167,9 +2778,13 @@ class ConversationCoordinator:
           canonicalized), so a partial delivery can never carry an unsent
           tail;
         - ``delivery_certainty`` stays ``SERVER_SENT_UNCONFIRMED``: the main
-          turn does not wait for a ``ClientRenderAck`` (RA §6) and this cut
-          writes no ACK row (P9-4 owns the exposure reconciliation, P9-3 the
-          cancellation face);
+          turn does not wait for a ``ClientRenderAck`` (RA §6), this face
+          writes no ACK row, and the acknowledgment is P9-4's asynchronous
+          entry (``accept_render_ack``) refining the estimate beside it — the
+          transcript's certainty is never moved by a late acknowledgment.
+          P9-4 also landed the §22 initial estimate this face now writes after
+          the row froze (``_write_initial_estimate``, B①); the cancellation
+          face is P9-3's;
         - ``SENT_COMPLETE`` → ``REPLIED_FULL``; ``SENT_PARTIAL`` →
           ``REPLIED_PARTIAL``; a run that released nothing is ``FAILED``: no
           AssistantTurn row, the action goes TERMINAL undelivered, the turn
@@ -2396,6 +3011,23 @@ class ConversationCoordinator:
                     if reason is None
                     else f"{reason}; {frozen_reason}"
                 )
+
+        # §6 CP3a's "initial ExposureEstimate", after the §22 row froze and
+        # before the transcript is canonicalized: the streamed face's facts are
+        # the run's terminal word, the **durable** prefix and the validated
+        # text the derivation compares that prefix against (P9-4 B①). A
+        # refused write never changes the delivery — its reason is joined into
+        # the delivery's own note channel.
+        _estimate, estimate_note = self._write_initial_estimate(
+            action_id=delivery.action_id,
+            facts=DeliveryExposureFacts.streamed(
+                terminal_state=run.state,
+                sent_prefix=run.durable_prefix,
+                validated_text=delivery.text,
+            ),
+            note=reason,
+        )
+        reason = estimate_note
 
         if run.durable_prefix == "":
             return self._stream_without_content(
@@ -2968,9 +3600,16 @@ class ConversationCoordinator:
         the transcript still spells ``SENT_PARTIAL``. The reading is deliberate
         (§17 makes the sent boundary, not the completion, the transcript's
         word; the two columns belong to two faces) and no test pins that race
-        window today. Revisit: P9-4's exposure reconciliation is the first
-        consumer of the §22 row — if it must tell "complete but cancelled"
-        apart from "cut short", that distinction has to become durable then.
+        window today. The Revisit this paragraph carried ("P9-4's exposure
+        reconciliation is the first consumer of the §22 row — if it must tell
+        'complete but cancelled' apart from 'cut short', that distinction has
+        to become durable then") **resolved when P9-4 landed**: the
+        reconciliation reads the row's word for the *estimate's* level (a
+        ``CANCELLED`` row is composed with whatever prefix it kept) and takes
+        the turn outcome from §4's own table with the cancellation clause
+        first, so it never needs the distinction this registration offered to
+        make durable. Revisit: a consumer appears that does need it (then this
+        paragraph is where that cut starts).
         """
 
         terminal_at = _now()
@@ -3347,6 +3986,15 @@ class ConversationCoordinator:
         that the next turn (or the next startup) can still take up, so none
         of them may keep the process from starting.
 
+        P9-4 inserts two delivery-reconciliation lines around step 2 — the
+        undelivered-opening close ahead of the sweep (so §7's own word for an
+        opening that was never presented speaks, and the sweep then finds no
+        lock for it), the CP3-under-recorded turn finish after it and before the
+        turn-level closure (so the delivery's own facts, the §20 event it owes
+        included, decide the turn before the transcript-only closure would).
+        Both are failure-tolerant in the same way lines 4-6 are, and both leave
+        the residue in the plan when they cannot finish it.
+
         Deliberately read-then-write in that order, and deliberately not
         called from the constructor: a host calls it once after the
         startup fence is adopted (the same place ``open_runtime_epoch``
@@ -3376,12 +4024,24 @@ class ConversationCoordinator:
             return plan_result
         plan = plan_result.value
 
+        # P9-4's two lines bracket the sweep, and both placements are
+        # load-bearing (each line's docstring): the undelivered-opening close
+        # runs *before* it, so §7's own word for "the opening was never
+        # presented" speaks instead of the generic recovery word, while the
+        # CP3-under-recorded delivery is finished *after* it and before the
+        # turn-level closure — the moment's own residue is settled first, and
+        # the delivery's facts (the §20 event it owes included) still decide the
+        # turn before the transcript-only closure would.
+        aborted_openings = self.abort_undelivered_openings()
+
         recovered: tuple[str, ...] = ()
         if self._teaching is not None:
             swept = self.recover_orphan_teaching()
             if isinstance(swept, Err):
                 return swept
             recovered = swept.value
+
+        reconciled_turns = self.reconcile_delivering_residue(plan)
 
         closed = self._close_residual_turns(plan)
         if isinstance(closed, Err):
@@ -3409,6 +4069,8 @@ class ConversationCoordinator:
                 dangling_evidence_refs=dangling_refs,
                 evidence_ref_scan_unavailable=ref_scan_unavailable,
                 reopened_projections=reopened_projections,
+                reconciled_turns=reconciled_turns,
+                aborted_openings=aborted_openings,
             )
         )
 
@@ -3684,6 +4346,181 @@ class ConversationCoordinator:
                 )
             )
         return Ok(tuple(closures))
+
+    def reconcile_delivering_residue(
+        self, plan: tuple[RecoveryAction, ...]
+    ) -> tuple[TurnReconciliation, ...]:
+        """P9-4 D① at the startup face: finish the CP3-under-recorded residue.
+
+        The line walks the plan's TURN items (the scan's own read of the
+        old-epoch nonterminal turns — no second scan, no second vocabulary) and
+        hands each one whose action already reached ``TERMINAL`` to
+        :meth:`_reconcile_delivering_turn`, so the residue is finished by the
+        delivery's own facts rather than by the generic paths: the transcript
+        the crash ate is canonicalized from the durable prefix, the §20 event
+        the delivery owes is written **exactly once**, and the turn takes the
+        outcome those facts entail.
+
+        Written to run **before** the orphan-lock sweep and before
+        :meth:`_close_residual_turns`, and the order is load-bearing: a
+        delivered teaching action whose moment is still ``OPENING`` (the CP3
+        shape) would otherwise be closed by ``_close_residual_turns`` as a
+        transcript-only reconciliation — a correct *turn* outcome that leaves
+        the §20 event unwritten, which is precisely the gap P8-4 registered.
+
+        Failure-tolerant on purpose (the CP4 lines' posture): a turn this line
+        cannot finish stays in the plan, visible to the next pass and to the
+        faces that own it, and startup still completes. Only actual
+        reconciliations are returned — a turn already terminal, an action still
+        in flight, or a read that failed are not events of this line.
+        """
+
+        reconciled: list[TurnReconciliation] = []
+        for item in plan:
+            if item.kind != RECOVERY_KIND_TURN:
+                continue
+            turn_id = TurnId(item.id)
+            try:
+                record_result = self._commands.get_turn_record(turn_id)
+            except Exception:  # noqa: BLE001 — a broken read leaves residue visible
+                continue
+            if isinstance(record_result, Err):
+                continue
+            record = record_result.value
+            if record is None or record.status in TERMINAL_TURN_STATUSES:
+                continue
+            try:
+                action_result = self._generation.get_action_for_turn(turn_id)
+            except Exception:  # noqa: BLE001 — a broken read leaves residue visible
+                continue
+            if isinstance(action_result, Err):
+                continue
+            action = action_result.value
+            if action is None or action.status is not GenerationActionStatus.TERMINAL:
+                continue
+            try:
+                result = self._reconcile_delivering_turn(record)
+            except Exception:  # noqa: BLE001 — a broken write leaves residue visible
+                continue
+            if isinstance(result, Ok):
+                reconciled.append(result.value[1])
+        return tuple(reconciled)
+
+    def abort_undelivered_openings(self) -> tuple[str, ...]:
+        """P9-4 D② at the startup face: the openings that never delivered.
+
+        The residue is exact: the moment stopped at ``OPENING`` (the CP2 slot
+        SM §9 commits, together with its lock) while no opening delivery ever
+        reached the user. Two durable shapes fall in it — the crash between CP2
+        and the delivery, and the degraded leg P8-4 registered (the CP2 half
+        stayed ``OPENING`` while the turn was answered by the ordinary persona
+        reply, so the transcript names a *different* action). Both are one fact
+        where it matters: the authorized opening was never presented, so §7's
+        word for it is ``DELIVERY_FAILURE`` — the word :meth:`_abort_opening`
+        already carries for the live faces (a refused or failed opening
+        delivery) — and the episode closes with it instead of waiting to be
+        swept as generic recovery residue.
+
+        Ordering and ownership, both deliberate:
+
+        - the line runs **before** :meth:`recover_orphan_teaching`: the sweep
+          is the older, generic face ("that process is gone, close the
+          orphan"), it would close these moments as ``SYSTEM_RECOVERY_ABORT``
+          in one row write — a valid close, but one that cannot say *why*.
+          Running first lets the §7 walk speak, and the sweep then finds no
+          lock for them (``terminalize_moment`` releases it in the same
+          transaction);
+        - the moments visited are the **orphan-lock read's** (the same query
+          the plan and the sweep use, so no face can disagree about which locks
+          are residue). A moment already past ``OPENING`` is left to the sweep
+          with its own word — its opening delivered, and "the process died" is
+          then the honest reason;
+        - the owning turn is **claimed** first when the epoch differs
+          (``claim_turn_for_recovery`` — the owner-lineage fence's second
+          sanctioned exit, RUNTIME §24's restart ownership): the two normal
+          lifecycle faces refuse a foreign-epoch moment on purpose, so the
+          claim is what makes this epoch the rightful writer, exactly as
+          :meth:`_close_residual_turns` adopts the turns it finishes. A refused
+          claim leaves the moment untouched — the sweep still owns it, and the
+          next pass still names it;
+        - **an opening that really was delivered is not touched**: the
+          transcript's assistant turn names the action it delivered, and when
+          that is the moment's own opening action the episode's live landing is
+          all that is missing — not this line's to write (the ladder and the
+          ``OPENING → AWAITING_USER`` move belong to the delivery leg).
+
+        **No estimate and no §20 event** (the task's explicit clause, and the
+        derivation's own reading): nothing was sent, so there is no delivery
+        for CP3a's record to describe and no presentation for §20 to name.
+
+        Registered (narrow): an aborted claim whose *abort* then fails leaves
+        the moment still ``OPENING`` while its turn now reads as this epoch's —
+        so the sweep's orphan criterion no longer names that lock, and the
+        residue stays sealed until a face that does not go through the
+        orphan JOIN owns it. Registered rather than repaired because the same
+        late-adoption posture ``_close_residual_turns`` takes has exactly this
+        property, and the alternative (an un-claim face) does not exist.
+        Revisit: a cut gives recovery a durable disposition column (the
+        pending-interrupt precedent), or a failing ``_abort_opening`` is shown
+        to be reachable without a broken store.
+        """
+
+        teaching = self._teaching
+        epoch = self._lease.epoch
+        if teaching is None or epoch is None:
+            return ()
+        orphaned = teaching.orphan_teaching_lock_moments(epoch)
+        aborted: list[str] = []
+        for moment_id in orphaned:
+            try:
+                moment_result = teaching.get_moment(MomentId(moment_id))
+                if isinstance(moment_result, Err) or moment_result.value is None:
+                    continue
+                moment = moment_result.value
+                if moment.lifecycle_state is not MomentState.OPENING:
+                    continue
+                if self._decision_cycles is None:
+                    continue
+                cycle_result = self._decision_cycles.get_decision_cycle(
+                    moment.decision_cycle_id
+                )
+                if isinstance(cycle_result, Err) or cycle_result.value is None:
+                    continue
+                turn_id = cycle_result.value.turn_id
+                turn_result = self._commands.get_turn_record(turn_id)
+                if isinstance(turn_result, Err) or turn_result.value is None:
+                    continue
+                turn = turn_result.value
+                action_result = self._generation.get_action_for_turn(turn_id)
+                action = (
+                    None
+                    if isinstance(action_result, Err)
+                    else action_result.value
+                )
+                slice_result = self._queries.get_canonical_turn_slice(turn_id)
+                assistant = (
+                    None
+                    if isinstance(slice_result, Err)
+                    or slice_result.value is None
+                    else slice_result.value.assistant_turn
+                )
+                if assistant is not None and (
+                    action is None or assistant.action_id == action.action_id
+                ):
+                    continue  # the opening itself was delivered
+                if turn.owner_epoch != epoch:
+                    adopted = self._commands.claim_turn_for_recovery(turn_id)
+                    if isinstance(adopted, Err):
+                        continue
+                closed = self._abort_opening(
+                    teaching, moment, AbortReason.DELIVERY_FAILURE.value
+                )
+            except Exception:  # noqa: BLE001 — a broken face leaves residue visible
+                continue
+            if isinstance(closed, Err):
+                continue
+            aborted.append(moment_id)
+        return tuple(aborted)
 
     def _run_open_gate(
         self,
@@ -5816,8 +6653,16 @@ class ConversationCoordinator:
             turn_status=completion.value.turn_status,
             state_version=completion.value.state_version,
         )
-        if guard_note is not None:
-            delivered = replace(delivered, ledger_failure=guard_note)
+        # The refused-write notes of this delivery, in the order they happened:
+        # the §21.1 guard row's, then the §22 initial estimate's (P9-4 B② — the
+        # buffered face writes it after the leg is durable, and its failure is
+        # this delivery's bookkeeping fact like any other).
+        note = guard_note
+        estimate_note = completion.value.delivery_failure_reason
+        if estimate_note is not None:
+            note = _joined_note(note, estimate_note)
+        if note is not None:
+            delivered = replace(delivered, ledger_failure=note)
         return Ok(
             self._with_exposure(
                 delivered,
@@ -6831,6 +7676,47 @@ def _joined_note(existing: str | None, note: str) -> str:
 
     return note if existing is None else f"{existing}; {note}"
 
+
+def _reconciled_turn_outcome(
+    *, prefix: str, row_state: str | None, assistant_state: str | None
+) -> TurnOutcome:
+    """§1-D's outcome for one CP3-under-recorded delivery (P9-4 D①).
+
+    The durable facts, in this order — the order *is* the reading, and
+    ``_reconcile_delivering_turn``'s docstring carries each clause's argument:
+
+    1. **nothing sent and no transcript** (an empty prefix, or no §22 row at
+       all) ⇒ ``NO_ASSISTANT_OUTPUT``: nothing reached the user, so the
+       transcript cannot carry a reply — and the word is the transcript's own
+       ("there is no assistant output"), not the live streamed failure's
+       ``FAILED_USER_VISIBLE``, which would claim a user-visible failure the
+       crash left no record of;
+    2. **a cancelled row with a durable prefix** ⇒ ``CANCELLED_BY_USER``: the
+       word the live cancellation terminalized with (§1-C②), so a repaired
+       cancellation and a completed one agree;
+    3. otherwise the **transcript's own word** decides when a transcript
+       already existed (``SENT_COMPLETE`` ⇒ ``REPLIED_FULL``, anything else ⇒
+       ``REPLIED_PARTIAL``): RA §23's "the canonicalized assistant turn is the
+       truth" is what keeps the two delivery faces' registered divergences
+       (P9-2's refused-freeze shape, P9-3's cancelled-row shape) from being
+       re-decided here. ``assistant_state`` is the transcript's word *before*
+       this repair, so a transcript the repair itself rebuilt (spelled
+       ``SENT_PARTIAL`` by rule) does not decide the turn;
+    4. with no transcript of its own, the **row's word** decides the same way —
+       a ``SENT_COMPLETE`` row that this repair canonicalizes is a full reply,
+       a partial one is a partial reply (the transcript row itself still spells
+       ``SENT_PARTIAL``: what is *reconstructed* is conservative, what the row
+       says the run did is not re-judged).
+    """
+
+    if prefix == "" and assistant_state is None:
+        return TurnOutcome.NO_ASSISTANT_OUTPUT
+    if row_state == DeliveryState.CANCELLED.value and prefix != "":
+        return TurnOutcome.CANCELLED_BY_USER
+    word = assistant_state if assistant_state is not None else row_state
+    if word == DeliveryState.SENT_COMPLETE.value:
+        return TurnOutcome.REPLIED_FULL
+    return TurnOutcome.REPLIED_PARTIAL
 
 def _guard_invalidation_outcome(
     verdict: PreDeliveryGuardVerdict,
