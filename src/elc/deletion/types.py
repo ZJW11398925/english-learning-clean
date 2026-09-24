@@ -304,9 +304,13 @@ LEARNING_TARGET_SWEPT_TABLES: tuple[str, ...] = (
     "review_event",
     "schedule_item",
     # The ledger half, in the global order (log → row → obligations; SWEPT_
-    # TABLES holds the same three in the same relative order). The store scopes
-    # the rows by the declared key face, so a *family* row that happens to spell
-    # this target's id is not swept by the target's deletion.
+    # TABLES holds the same three in the same relative order). Two retention
+    # columns, each read on its own object: a *row* is kept or swept by the
+    # declared key face (``ledger_key_type`` — a TARGET_FAMILY row that happens
+    # to spell this target's id is not swept by the target's deletion), while an
+    # *obligation* is kept or swept by ``coverage_obligation.scope_type`` (a
+    # GOAL-scoped obligation naming this target survives too). So "family rows
+    # are protected" is not "everything under that spelling is protected".
     "planning_ledger_event",
     "planning_ledger",
     "coverage_obligation",

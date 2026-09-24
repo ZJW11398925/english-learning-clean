@@ -1216,10 +1216,15 @@ def test_no_migration_carries_the_view() -> None:
     migration mentions the view.
 
     P8-3 moved the head to 0016_planning_ledger (the PlanningLedger's tables,
-    not this view), so the three head constants are read from the shared
-    declarations rather than from the 0015 literals this pin used to carry —
-    the *claim* (this cut adds no table for the view) is unchanged, and the
-    schema scan below is what holds it."""
+    not this view), and this pin carries that head as **literals reconciled
+    against the shared declarations**: the left-hand sides are
+    ``tests.conftest``'s ``MIGRATION_IDS`` / ``SCHEMA_HEAD_FILE`` /
+    ``SCHEMA_HEAD_VERSION`` (which
+    ``tests/architecture/test_platform_db_infra.py`` pins against the real
+    ``migrations/`` directory), and the right-hand sides are the literals this
+    cut left behind — so a drift in either half is RED rather than a rubber
+    stamp. The *claim* (this cut adds no table for the view) is unchanged, and
+    the schema scan below is what holds it."""
 
     assert MIGRATION_IDS[-1] == "0016_planning_ledger"
     assert SCHEMA_HEAD_FILE == "0016_planning_ledger.sql"

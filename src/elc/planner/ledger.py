@@ -1083,11 +1083,14 @@ class LedgerReadings:
 
 @dataclass(frozen=True)
 class PlanningLedger:
-    """The ledger as a read-only view — §14's columns, and no store.
+    """The ledger as a read-only view — §14's columns, with no store here.
 
-    A caller assembles one from the durable facts it holds (module docstring:
-    ``NO_TABLE_V1``); the ledger itself is pure, deterministic and
-    clock-free — every method that needs "now" takes the cycle's instant.
+    The pure half of the ledger: this class carries no SQL, no clock and no
+    I/O, and it is the shape ``elc.planner.ledger_store`` writes and reads back
+    (``PLANNING_LEDGER_STORAGE is DURABLE_TABLES_V1``; the store's own
+    docstring registers the missing producer). The ledger itself is pure,
+    deterministic and clock-free — every method that needs "now" takes the
+    cycle's instant.
 
     ``rows`` is keyed by §14's ``target/family`` key, ``obligations`` is the
     ``coverage_obligations[]`` list, and ``coverage_debt_rollups`` /
@@ -1113,10 +1116,12 @@ class PlanningLedger:
     ) -> PlanningLedger:
         """This ledger with one event appended to one row's log.
 
-        The only write this module has, and it writes nothing durable: a new
-        :class:`PlanningLedger` comes back and the caller decides what to do
-        with it (``NO_TABLE_V1``). A key with no row yet gets one, because a
-        first presentation is exactly how a row begins to exist.
+        The only write this module has, and it writes nothing durable by
+        itself: a new :class:`PlanningLedger` comes back and the caller decides
+        what to do with it — ``elc.planner.ledger_store`` is the durable half
+        of exactly that decision (``DURABLE_TABLES_V1``). A key with no row yet
+        gets one, because a first presentation is exactly how a row begins to
+        exist.
         """
 
         existing = self.rows.get(target_key) or TargetLedgerRow(

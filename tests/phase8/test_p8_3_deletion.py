@@ -48,7 +48,7 @@ from elc.planner.ledger_store import (
     SqliteLedgerStore,
 )
 from elc.platform.types import Ok
-from tests.conftest import REPO_ROOT
+from tests.conftest import REPO_ROOT, SRC_ROOT
 
 LEDGER_TABLES = (
     "planning_ledger_event",
@@ -232,6 +232,27 @@ def test_the_deleter_is_the_only_module_that_names_the_tables_with_a_delete() ->
     assert deleter["planning_ledger"] == ("DELETE",)
     assert deleter["planning_ledger_event"] == ("DELETE",)
     assert deleter["coverage_obligation"] == ("DELETE",)
+
+
+def test_the_package_registration_no_longer_denies_the_table() -> None:
+    """The package's own "what this does **not** claim" bullet moved with the
+    tables (p8-3 disposal F1): the S43/S46/S48 ledger legs are real rows now,
+    and the one leg still answered by registration is S41's CONVERSATION
+    clause — the sentence the walks below and
+    ``test_a_conversation_deletion_does_not_reach_the_ledger`` execute."""
+
+    text = " ".join(
+        (SRC_ROOT / "deletion" / "__init__.py")
+        .read_text(encoding="utf-8")
+        .split()
+    )
+    assert "has no table in app.db" not in text
+    assert "PLANNING_LEDGER_ENTRY" in text
+    assert "``ledger1``" in text
+    assert "S41 is the one leg still answered by registration" in text
+    for case_id in ("S41", "S43", "S46", "S48"):
+        assert case_id in text, case_id
+    assert "no row-level carrier" in text
 
 
 def test_the_store_sources_are_the_three_tables() -> None:

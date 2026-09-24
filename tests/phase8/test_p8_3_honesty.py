@@ -104,6 +104,34 @@ def test_the_core_module_says_the_table_landed_and_keeps_its_arguments() -> None
     assert "SELECT != exposure" in text
 
 
+def test_the_core_view_names_the_durable_half_instead_of_the_retired_word() -> None:
+    """The two prose references that still pointed at ``NO_TABLE_V1`` as a live
+    fact (p8-3 disposal F2) now name the current one: this class carries no
+    store, and the durable half is ``elc.planner.ledger_store`` under
+    ``DURABLE_TABLES_V1``. Read off the AST, so it is the docstrings that are
+    checked and not some other copy of the words."""
+
+    tree = ast.parse(_source(LEDGER_MODULE))
+    ledger_class = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ClassDef) and node.name == "PlanningLedger"
+    )
+    record_event = next(
+        node
+        for node in ledger_class.body
+        if isinstance(node, ast.FunctionDef) and node.name == "record_event"
+    )
+    for owner, doc in (
+        ("PlanningLedger", ast.get_docstring(ledger_class) or ""),
+        ("record_event", ast.get_docstring(record_event) or ""),
+    ):
+        assert doc, owner
+        assert "NO_TABLE_V1" not in doc, owner
+        assert "ledger_store" in doc, owner
+        assert "DURABLE_TABLES_V1" in doc, owner
+
+
 def test_the_store_module_registers_the_missing_producer() -> None:
     text = " ".join(_source(STORE_MODULE).split())
     assert "No producer, registered rather than implied" in text

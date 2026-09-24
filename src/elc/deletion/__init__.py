@@ -47,11 +47,21 @@ What this package does **not** claim (registered, not glossed):
   fail-closed **over**-deletion, not per-field precision). Registered as a
   known gap; its trigger is ``user_profile`` gaining a provenance leg, or a
   canonical revision assigning the derivation elsewhere;
-- the benchmark's ``PLANNING_LEDGER_ENTRY`` (``ledger1`` in S41/S43/S48's
-  ``must_delete`` / ``must_tombstone``) has no table in app.db — the planning
-  ledger is a Phase 7 object — so those cases' ledger legs are answered by
-  registration here rather than by a durable row, the same footing as the
-  index / embedding clause above.
+- the benchmark's ``PLANNING_LEDGER_ENTRY`` (``ledger1``) is a durable object
+  since P8-3, not a registered gap: migration 0016's three tables sit in
+  ``LEARNING_TARGET``'s and ``LEARNING_HISTORY``'s walks and in the global
+  ``SWEPT_TABLES`` list ``ALL_USER_DATA`` sweeps (``ALL_USER_DATA_SWEPT_TABLES
+  is SWEPT_TABLES``), so S43's and S46's ``must_delete`` legs and S48's
+  ``must_tombstone`` leg are answered by real rows — the walk removes them and
+  the removal is tombstoned like any other swept entity. **S41 is the one leg
+  still answered by registration**: its ``must_delete`` asks a CONVERSATION
+  deletion for ``ledger1``, and §19's "Planning history solely derived from
+  deleted Evidence" has no row-level carrier here — a ledger row carries no
+  conversation column and aggregates across conversations — so the scope does
+  not name these tables. Registered as a known gap; its trigger is a row-level
+  provenance leg on the ledger's rows, or a canonical revision assigning the
+  derivation elsewhere. Same footing as the index / embedding clause above: a
+  rule this repository can state and cannot yet execute.
 """
 
 from elc.deletion.commands import DeletionCommands
