@@ -552,6 +552,53 @@ def test_a_row_with_no_log_cannot_be_appended_to(
     assert "no event" in refused.error.message
 
 
+def test_a_row_keeps_the_key_face_it_was_written_with(
+    db: sqlite3.Connection, store: SqliteLedgerStore
+) -> None:
+    """§14's key is ``target/family``: an append does not re-label a row."""
+
+    assert isinstance(
+        append(store, LedgerEvent.TEACHING_PRESENTED, event_id="ev-1"), Ok
+    )
+    refused = append(
+        store,
+        LedgerEvent.HINT_PRESENTED,
+        event_id="ev-2",
+        at=LATER,
+        base=store.get_ledger_row(KEY).value,
+        key_type=LedgerKeyType.TARGET_FAMILY,
+    )
+    assert isinstance(refused, Err)
+    assert refused.error.code.value == "CONFLICT"
+    assert "face is part of the key" in refused.error.message
+    assert _count(db, "planning_ledger_event") == 1
+    assert (
+        store.get_ledger_projection(KEY).value.ledger_key_type
+        is LedgerKeyType.TARGET
+    )
+
+
+def test_a_replay_carries_no_obligation_change(
+    db: sqlite3.Connection, store: SqliteLedgerStore
+) -> None:
+    """A replay is the same unit: the obligations it carries are the ones the
+    durable state already holds, and a debt that moved for another reason has
+    its own face."""
+
+    first = append(store, LedgerEvent.TEACHING_PRESENTED, event_id="ev-1")
+    assert isinstance(first, Ok), first
+    replayed = append(
+        store,
+        LedgerEvent.TEACHING_PRESENTED,
+        event_id="ev-1",
+        obligations=(obligation(debt=0.1),),
+    )
+    assert isinstance(replayed, Ok), replayed
+    assert _count(db, "coverage_obligation") == 0
+    assert isinstance(store.upsert_obligation(obligation(debt=0.1)), Ok)
+    assert store.get_obligation("ob-1").value.debt_value == 0.1
+
+
 # -- ④ the reads -------------------------------------------------------------
 
 

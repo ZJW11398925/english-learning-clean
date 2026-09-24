@@ -508,7 +508,18 @@ class SqliteLedgerStore:
 
         Replay: an ``event_id`` the log already carries with the same content
         returns the durable row and writes nothing; a different content under
-        the same id is ``CONFLICT`` (module docstring).
+        the same id is ``CONFLICT`` (module docstring). ``obligations`` is not
+        an exception to that: a replay is the same unit, so the values it
+        carries are the ones the durable state already holds — and an
+        obligation that moved for some *other* reason has its own face
+        (:meth:`upsert_obligation`), not a second event id.
+
+        **The key face is part of the key.** A row that already exists keeps
+        the face it was written with: an append that offers the other one is
+        refused with ``CONFLICT`` rather than re-labelled, because §14's key is
+        ``target/family`` and an event is about a row, not a re-keying of it.
+        (A row that does not exist yet is written with the face the first event
+        declares — that *is* the row's creation.)
 
         **The row handed in must be this key's durable log plus this event.**
         A `log` that carries less (or other) history than the durable one
@@ -553,6 +564,21 @@ class SqliteLedgerStore:
                 durable_log = self.list_ledger_events(row.target_key)
                 if isinstance(durable_log, Err):
                     return durable_log
+                stored = self.get_ledger_projection(row.target_key)
+                if isinstance(stored, Err):
+                    return stored
+                if (
+                    stored.value is not None
+                    and stored.value.ledger_key_type is not key_type
+                ):
+                    return _err(
+                        DomainErrorCode.CONFLICT,
+                        f"ledger row {row.target_key!r} is written with key"
+                        f" face {stored.value.ledger_key_type.value} while this"
+                        f" event declares {key_type.value}; §14's key is"
+                        " ``target/family`` — a face is part of the key and an"
+                        " append does not move it",
+                    )
                 # A multiset, not a sequence: the durable read orders by
                 # ``(as_of, event_id)`` while a row's log is in append order,
                 # and both are legal (an event may be appended out of instant
