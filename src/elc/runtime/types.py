@@ -316,6 +316,18 @@ class TurnCompletion:
     stay ``None`` on an ordinary persona turn (nothing to present) and whenever
     no ledger writer was injected; ``elc.runtime.controller.
     TeachingActionDelivery`` states the two fields' meaning.
+
+    ``delivery_state`` / ``delivery_failure_reason`` are the P9-2 streamed
+    delivery's own two (RUNTIME §13 GUARDED_STREAM): the §13 terminal word the
+    delivery froze at, and the readable reason when the delivery did not reach
+    ``SENT_COMPLETE`` (a stopped source, a refused chunk, a refused transport,
+    a refused record write) — ``None`` when nothing went wrong. They stay
+    ``None`` on every ``BUFFERED_VALIDATED`` finalization (§13's other mode
+    declares its word on the request, and this cut changes no line of that
+    path). ``reply_text`` is the **prefix actually sent** on a streamed
+    delivery, so the two fields and the text never contradict each other: a
+    partial delivery reports ``SENT_PARTIAL`` with its reason beside the exact
+    prefix the client received.
     """
 
     turn_id: TurnId
@@ -329,3 +341,5 @@ class TurnCompletion:
     state_version: int
     ledger_event: str | None = None
     ledger_failure: str | None = None
+    delivery_state: str | None = None
+    delivery_failure_reason: str | None = None

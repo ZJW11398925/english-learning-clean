@@ -107,6 +107,10 @@ from elc.runtime.decision_cycles import (
     DecisionCycleBindings,
     DecisionCycleStore,
 )
+from elc.runtime.delivery_records import (
+    DeliveryRecordStore,
+    ServerDeliveryRecord,
+)
 from elc.runtime.exposure import (
     exposure_event_id,
     ledger_event_of,
@@ -115,6 +119,14 @@ from elc.runtime.exposure import (
     skip_event_id,
 )
 from elc.runtime.generation import GenerationActionStore
+from elc.runtime.guarded_stream import (
+    DeliveryMode,
+    StreamRun,
+    StreamTransportFactory,
+    delivery_mode_of,
+    local_single_chunk_transport,
+    run_guarded_stream,
+)
 from elc.runtime.lease import ConversationCoordinatorLease
 from elc.runtime.persona_views import PersonaViewSource
 from elc.runtime.projections import (
@@ -388,6 +400,30 @@ class AssistantDelivery:
     message_sequence: MessageSequence
     delivery_state: DeliveryState
     outcome: TurnOutcome
+
+
+@dataclass(frozen=True)
+class StreamedDelivery:
+    """One GUARDED_STREAM delivery request (RUNTIME §13, P9-2): the validated
+    buffer plus the contract the chunk guard judges the accumulation against.
+
+    The delivery-state/outcome pair of the buffered request is **not** a field
+    here: a streamed delivery's terminal word and outcome are what the run
+    actually did (the durable prefix decides), so they are produced by
+    :meth:`ConversationCoordinator.finalize_streamed_delivery` rather than
+    declared by the caller. ``contract`` is the action's own generation
+    contract — the guard's rule set is §12's validator over it, never a second
+    declaration.
+    """
+
+    conversation_id: ConversationId
+    turn_id: TurnId
+    action_id: ActionId
+    assistant_turn_id: str
+    text: str
+    turn_sequence: TurnSequence
+    message_sequence: MessageSequence
+    contract: GenerationContract | None = None
 
 
 @dataclass(frozen=True)
@@ -752,6 +788,34 @@ class ConversationCoordinator:
       with the Moment as its provenance (migration 0017), and a user skip
       appends ``user_skip`` — once per delivery, through the one delivery leg,
       and never when no ledger writer was injected.
+
+    Phase 9 P9-2: two more optional injections land §13's **other** delivery
+    mode — ``GUARDED_STREAM`` — for ordinary persona chat, and both are
+    defaulted so every assembly that does not pass them keeps its exact
+    behaviour:
+
+    - ``delivery_records`` (``elc.runtime.delivery_records.DeliveryRecordStore``)
+      is the §22 record face the streamed delivery writes its
+      ``ServerDeliveryRecord`` through: the row opens at ``SENDING``, advances
+      per accepted chunk, and freezes at the run's §13 terminal word. When it is
+      ``None`` the streamed delivery still happens — the transcript, the
+      delivery state, the certainty and the turn/action statuses are
+      unchanged — and no §22 row is written: the port's absence is registered,
+      never simulated (the same discipline the §20 ledger writer follows just
+      above);
+    - ``stream_transport`` (``elc.runtime.guarded_stream.StreamTransportFactory``)
+      is the client boundary the chunks are released to. Its default is V1's
+      in-process placeholder (``local_single_chunk_transport``: the validated
+      text leaves as **one** chunk and ``emit`` writes into an in-process
+      buffer — V1 has no client render face, ``DEC-…d7937fd7.12``), which is
+      why an ordinary turn through this face is field-for-field the buffered
+      one.
+
+    ``finalize_delivery`` (the ``BUFFERED_VALIDATED`` face) is untouched by
+    that cut and stays the teaching legs' delivery: §13's default table sends
+    every teaching action type and ``PERSONA_RESUME`` through it, and only
+    ``NORMAL_PERSONA_REPLY`` through the stream
+    (``elc.runtime.guarded_stream.delivery_mode_of``).
     """
 
     def __init__(
@@ -771,6 +835,8 @@ class ConversationCoordinator:
         persona_views: PersonaViewSource | None = None,
         silent_evidence: SilentEvidenceSource | None = None,
         automatic_teaching: AutomaticTurnWiring | None = None,
+        delivery_records: DeliveryRecordStore | None = None,
+        stream_transport: StreamTransportFactory | None = None,
     ) -> None:
         self._lease = lease
         self._commands = conversation_commands
@@ -787,6 +853,8 @@ class ConversationCoordinator:
         self._persona_views = persona_views
         self._silent_evidence = silent_evidence
         self._automatic = automatic_teaching
+        self._delivery_records = delivery_records
+        self._stream_transport = stream_transport
 
     # -- minimum turn loop ---------------------------------------------------
 
@@ -1075,6 +1143,26 @@ class ConversationCoordinator:
                 )
 
             reply = generation.buffered_reply
+            if (
+                delivery_mode_of(intent.action_type)
+                is DeliveryMode.GUARDED_STREAM
+            ):
+                # RUNTIME §13's default table: ordinary persona chat streams
+                # (each chunk guarded before it is released), every teaching
+                # action type is delivered buffered-validated.
+                return self.finalize_streamed_delivery(
+                    StreamedDelivery(
+                        conversation_id=command.conversation_id,
+                        turn_id=cp0.turn_id,
+                        action_id=reply.action_id,
+                        assistant_turn_id=reply.assistant_turn_id,
+                        text=reply.text,
+                        turn_sequence=cp0.turn_sequence,
+                        message_sequence=cp0.message_sequence,
+                        contract=contract,
+                    ),
+                    state_version,
+                )
             delivery = AssistantDelivery(
                 conversation_id=command.conversation_id,
                 turn_id=cp0.turn_id,
@@ -1666,6 +1754,307 @@ class ConversationCoordinator:
                 reply_text=delivery.text,
                 failure_reason=None,
                 state_version=terminal.value.state_version,
+            )
+        )
+
+    # -- guarded stream delivery (RUNTIME §13 GUARDED_STREAM, P9-2) ----------
+
+    def finalize_streamed_delivery(
+        self, delivery: StreamedDelivery, turn_state_version: int
+    ) -> Result[TurnCompletion]:
+        """GUARDED_STREAM finalization: action READY_TO_DELIVER → DELIVERING →
+        the §22 row opens at ``SENDING`` → the chunks go through the guard and
+        are released one at a time (each accepted chunk is emitted, then
+        advanced to ``SENT_PARTIAL``) → the row freezes at the run's §13
+        terminal word → the canonical AssistantTurn is written from the
+        **durable** prefix → action TERMINAL → turn terminalization.
+
+        The rules this method adds to the driver's (``elc.runtime.
+        guarded_stream`` states the guard, the release-then-record order, the
+        empty-chunk reading and the step budget) are the durable ones:
+
+        - the transcript's ``content`` is the durable ``sent_prefix``
+          **verbatim** — never the buffered text, never a byte the record did
+          not confirm (§17: the sent/confirmed boundary is what is
+          canonicalized), so a partial delivery can never carry an unsent
+          tail;
+        - ``delivery_certainty`` stays ``SERVER_SENT_UNCONFIRMED``: the main
+          turn does not wait for a ``ClientRenderAck`` (RA §6) and this cut
+          writes no ACK row (P9-4 owns the exposure reconciliation, P9-3 the
+          cancellation face);
+        - ``SENT_COMPLETE`` → ``REPLIED_FULL``; ``SENT_PARTIAL`` →
+          ``REPLIED_PARTIAL``; a run that released nothing is ``FAILED``: no
+          AssistantTurn row, the action goes TERMINAL undelivered, the turn
+          fails ``FAILED_USER_VISIBLE`` (undelivered provider output never
+          enters the transcript, DOMAIN_MODEL §3);
+        - a release whose **durable** prefix is empty is the same shape (the
+          record is the boundary authority and it holds nothing), so it too
+          writes no AssistantTurn row while the row stays ``SENT_PARTIAL`` —
+          registered rather than smoothed: "the send began and its record was
+          lost" has no honest transcript;
+        - an opening write the record face **refuses** stops the delivery
+          before the first release (nothing was sent, nothing is claimed) —
+          that is a different fact from a face that is not wired, which is
+          registered as absence and writes no row at all;
+        - a failure *after* the prefix was durably recorded (a stopped source,
+          a refused transport, a later refused record write) still delivers
+          the prefix: ``SENT_PARTIAL`` / ``REPLIED_PARTIAL`` with the readable
+          reason in ``delivery_failure_reason`` — the turn's own
+          ``failure_reason`` stays ``None`` because the turn did produce its
+          reply, and the two fields never contradict ``reply_text`` (the
+          prefix actually sent);
+        - a terminal row write the record face refuses leaves the row
+          unfrozen (``terminal_at`` unset) while the transcript still carries
+          the run's word — the divergence is registered in the reason, not
+          hidden (RA §23: a delivery that cannot be reconciled conservatively
+          is reported, not replayed).
+
+        Ordering (emit → record), the guard's rule set and version, the
+        empty-chunk reading and the step budget are the driver's declared
+        readings; the instants come from this class's one clock (``_now``) and
+        §21.1 rows are written by no face here. ``turn_state_version`` is
+        accepted for symmetry with :meth:`finalize_delivery` (the durable turn
+        row's own ``state_version`` is the CAS both faces use).
+        """
+
+        action_result = self._generation.get_action(delivery.action_id)
+        if isinstance(action_result, Err):
+            return action_result
+        action = action_result.value
+        if action is None:
+            return _missing("generation action not found for streamed delivery")
+        if action.status == GenerationActionStatus.READY_TO_DELIVER:
+            begun = self._persona.begin_delivery(delivery.action_id)
+            if isinstance(begun, Err):
+                return begun
+        elif action.status != GenerationActionStatus.DELIVERING:
+            return _conflict(
+                "streamed delivery from action status"
+                f" {action.status.value} is outside the Phase 1 loop"
+            )
+
+        turn_result = self._commands.get_turn_record(delivery.turn_id)
+        if isinstance(turn_result, Err):
+            return turn_result
+        turn = turn_result.value
+        if turn is None:
+            return _missing(f"turn record not found: {delivery.turn_id}")
+        if turn.status == TurnStatus.GENERATING:
+            advanced = self._commands.transition_turn(
+                delivery.turn_id,
+                turn.state_version,
+                TurnStatus.DELIVERING,
+            )
+            if isinstance(advanced, Err):
+                return advanced
+            turn = advanced.value
+
+        started_at = _now()
+        record_face = self._delivery_records
+        if record_face is not None:
+            opened = record_face.record_server_delivery(
+                self._delivery_row(
+                    delivery,
+                    state=DeliveryState.SENDING,
+                    sent_prefix="",
+                    last_chunk_seq=0,
+                    started_at=started_at,
+                    terminal_at=None,
+                )
+            )
+            if isinstance(opened, Err):
+                return self._stream_without_content(
+                    delivery,
+                    state=DeliveryState.FAILED.value,
+                    reason=(
+                        "the delivery record could not be opened:"
+                        f" {opened.error.message}"
+                    ),
+                )
+
+        def _record_chunk(prefix: str, sequence: int) -> Result[None]:
+            if record_face is None:
+                return Ok(None)
+            written = record_face.record_server_delivery(
+                self._delivery_row(
+                    delivery,
+                    state=DeliveryState.SENT_PARTIAL,
+                    sent_prefix=prefix,
+                    last_chunk_seq=sequence,
+                    started_at=started_at,
+                    terminal_at=None,
+                )
+            )
+            if isinstance(written, Err):
+                return Err(written.error)
+            return Ok(None)
+
+        factory = (
+            local_single_chunk_transport
+            if self._stream_transport is None
+            else self._stream_transport
+        )
+        try:
+            transport = factory(
+                validated_text=delivery.text, action_id=delivery.action_id
+            )
+            run = run_guarded_stream(
+                transport=transport,
+                contract=delivery.contract,
+                on_chunk=_record_chunk,
+            )
+        except Exception as exc:  # noqa: BLE001 — the transport boundary
+            run = StreamRun(
+                state=DeliveryState.FAILED.value,
+                sent_prefix="",
+                durable_prefix="",
+                chunks=0,
+                last_chunk_seq=0,
+                failure_reason=(
+                    f"the stream boundary raised: {exc} (nothing this run"
+                    " released can be proven)"
+                ),
+            )
+
+        reason = run.failure_reason
+        if reason is None and run.stop_reason is not None:
+            # The source's own words (verbatim, the driver's reading 6) are the
+            # reason a partial delivery stopped short — carried into the
+            # delivery-failure field rather than left in the run value.
+            reason = f"the source stopped early: {run.stop_reason}"
+        terminal_at = _now()
+        if record_face is not None:
+            frozen = record_face.record_server_delivery(
+                self._delivery_row(
+                    delivery,
+                    state=DeliveryState(run.state),
+                    sent_prefix=run.durable_prefix,
+                    last_chunk_seq=run.last_chunk_seq,
+                    started_at=started_at,
+                    terminal_at=terminal_at,
+                )
+            )
+            if isinstance(frozen, Err):
+                frozen_reason = (
+                    "the delivery record could not be frozen:"
+                    f" {frozen.error.message}"
+                )
+                reason = (
+                    frozen_reason
+                    if reason is None
+                    else f"{reason}; {frozen_reason}"
+                )
+
+        if run.durable_prefix == "":
+            return self._stream_without_content(
+                delivery,
+                state=run.state,
+                reason=(
+                    reason
+                    or "the run released no chunk this delivery could record"
+                ),
+            )
+
+        record = AssistantTurnRecord(
+            assistant_turn_id=AssistantTurnId(delivery.assistant_turn_id),
+            turn_id=delivery.turn_id,
+            conversation_id=delivery.conversation_id,
+            turn_sequence=delivery.turn_sequence,
+            message_sequence=delivery.message_sequence,
+            action_id=delivery.action_id,
+            content=run.durable_prefix,
+            delivery_state=DeliveryState(run.state),
+            delivery_certainty=SERVER_SENT_UNCONFIRMED,
+        )
+        canonical = self._commands.canonicalize_assistant_turn(record)
+        if isinstance(canonical, Err):
+            return canonical
+
+        completed = self._persona.complete_delivery(delivery.action_id)
+        if isinstance(completed, Err):
+            return completed
+
+        outcome = (
+            TurnOutcome.REPLIED_FULL
+            if run.state == DeliveryState.SENT_COMPLETE.value
+            else TurnOutcome.REPLIED_PARTIAL
+        )
+        terminal = self._commands.terminalize_turn(delivery.turn_id, outcome)
+        if isinstance(terminal, Err):
+            return terminal
+        return Ok(
+            TurnCompletion(
+                turn_id=delivery.turn_id,
+                action_id=delivery.action_id,
+                assistant_turn_id=delivery.assistant_turn_id,
+                turn_status=terminal.value.status,
+                action_status=GenerationActionStatus.TERMINAL,
+                outcome=outcome.value,
+                reply_text=run.durable_prefix,
+                failure_reason=None,
+                state_version=terminal.value.state_version,
+                delivery_state=run.state,
+                delivery_failure_reason=reason,
+            )
+        )
+
+    def _delivery_row(
+        self,
+        delivery: StreamedDelivery,
+        *,
+        state: DeliveryState,
+        sent_prefix: str,
+        last_chunk_seq: int,
+        started_at: str,
+        terminal_at: str | None,
+    ) -> ServerDeliveryRecord:
+        """One §22 row submission for this delivery (the four instants-free
+        columns are the delivery's own; the instants are the caller's, the
+        p9-1 no-clock rule)."""
+
+        return ServerDeliveryRecord(
+            action_id=delivery.action_id,
+            assistant_turn_id=AssistantTurnId(delivery.assistant_turn_id),
+            state=state.value,
+            sent_prefix=sent_prefix,
+            last_chunk_seq=last_chunk_seq,
+            started_at=started_at,
+            terminal_at=terminal_at,
+        )
+
+    def _stream_without_content(
+        self, delivery: StreamedDelivery, *, state: str, reason: str
+    ) -> Result[TurnCompletion]:
+        """End a streamed delivery that has **nothing durable to canonicalize**:
+        the action goes TERMINAL undelivered and the turn fails
+        ``FAILED_USER_VISIBLE``, so undelivered provider output never enters
+        the transcript (DOMAIN_MODEL §3). The reason travels in both
+        ``failure_reason`` (the turn failed) and ``delivery_failure_reason``
+        (why the delivery did)."""
+
+        failed = self._persona.terminalize_failure(
+            delivery.action_id, GenerationActionStatus.DELIVERING
+        )
+        if isinstance(failed, Err):
+            return failed
+        terminal = self._commands.terminalize_turn(
+            delivery.turn_id, TurnOutcome.FAILED_USER_VISIBLE
+        )
+        if isinstance(terminal, Err):
+            return terminal
+        return Ok(
+            TurnCompletion(
+                turn_id=delivery.turn_id,
+                action_id=delivery.action_id,
+                assistant_turn_id=None,
+                turn_status=terminal.value.status,
+                action_status=GenerationActionStatus.TERMINAL,
+                outcome=TurnOutcome.FAILED_USER_VISIBLE.value,
+                reply_text=None,
+                failure_reason=reason,
+                state_version=terminal.value.state_version,
+                delivery_state=state,
+                delivery_failure_reason=reason,
             )
         )
 
