@@ -30,7 +30,7 @@ UserTurn is never replayed and a whole turn is never retried.
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Callable, TypeVar
 
@@ -58,6 +58,7 @@ from elc.persona.types import (
     PromptCompilationRequest,
     TeachingPromptView,
 )
+from elc.planner.ledger import LedgerEvent
 from elc.platform.sync import KeyedMutex
 from elc.platform.types import (
     ActionId,
@@ -90,9 +91,28 @@ from elc.platform.types import (
 )
 from elc.relationship.episode import EpisodeView
 from elc.relationship.types import RelationshipView
+from elc.runtime.automatic_teaching import (
+    AutomaticTeachingResult,
+    automatic_action_id,
+)
+from elc.runtime.automatic_turn import (
+    AUTOMATIC_OPEN_SLOT,
+    AutomaticTurnPlan,
+    AutomaticTurnWiring,
+    assemble_automatic_turn,
+    decide_automatic_turn,
+    record_leg_failure,
+)
 from elc.runtime.decision_cycles import (
     DecisionCycleBindings,
     DecisionCycleStore,
+)
+from elc.runtime.exposure import (
+    exposure_event_id,
+    ledger_event_of,
+    record_exposure,
+    record_skip,
+    skip_event_id,
 )
 from elc.runtime.generation import GenerationActionStore
 from elc.runtime.lease import ConversationCoordinatorLease
@@ -289,7 +309,17 @@ class TeachingReplyRequest:
 
 @dataclass(frozen=True)
 class TeachingActionDelivery:
-    """One delivered (or failed) teaching action of a teaching turn."""
+    """One delivered (or failed) teaching action of a teaching turn.
+
+    ``ledger_event`` / ``ledger_failure`` are the §20 exposure write's outcome
+    (P8-4): the word recorded (``teaching_presented`` / ``hint_presented`` /
+    ``reveal_presented`` / ``user_skip``) when one was, and the readable reason
+    when a word existed but the write did not happen. Both stay ``None`` when
+    there was nothing to write — §20 has no word for the kind (a retry, an
+    explanation, a resume), or no ledger writer was injected — and a failure
+    never changes this record's own outcome: the delivery already happened, and
+    the exposure record is derived state (R-INV-010's shape).
+    """
 
     action_id: ActionId
     assistant_turn_id: str | None
@@ -297,6 +327,8 @@ class TeachingActionDelivery:
     outcome: str
     turn_status: TurnStatus
     state_version: int
+    ledger_event: str | None = None
+    ledger_failure: str | None = None
 
 
 @dataclass(frozen=True)
@@ -308,7 +340,9 @@ class TeachingReplyTurnResult:
     nonterminal on a re-entry that has durable work left), never a summary
     of internal progress. ``closure`` is the §6 completion outcome or §7
     abort reason the moment closed with (None while the moment is still
-    live).
+    live). ``ledger_event`` / ``ledger_failure`` are the §20 exposure write's
+    outcome, carried here so the reply path's reader sees it too (the
+    ``TeachingActionDelivery`` docstring states the two fields' meaning).
     """
 
     turn_id: TurnId
@@ -331,6 +365,8 @@ class TeachingReplyTurnResult:
     turn_status: TurnStatus
     outcome: str | None
     reply_text: str | None
+    ledger_event: str | None = None
+    ledger_failure: str | None = None
 
 
 def _now() -> str:
@@ -684,6 +720,38 @@ class ConversationCoordinator:
       slice) keeps the P1/P2/P3/P4 behavior byte-identical: nothing is asked,
       nothing is written, and the chat leg's durable trace is exactly the P2A
       one.
+
+    Phase 8 P8-4: one more optional port — ``automatic_teaching``
+    (:class:`elc.runtime.automatic_turn.AutomaticTurnWiring`) — lands the
+    ordinary turn's **automatic teaching leg**, and it is one bundle rather
+    than a port per face because the leg is one chain (the §4 steps 3→8 read
+    pass, the Planner run, P8-1's decision unit and the delivery):
+
+    - **``None`` (the default, and every assembly before this slice) keeps the
+      turn byte-identical**: the leg is not assembled, the cycle keeps its
+      all-``None`` bindings, and no planner / Gate / ledger row is written. The
+      opt-in boundary is this constructor argument, and nothing about the
+      delivery, delivery-failure or replay paths changes for an assembly that
+      does not pass one;
+    - when it is injected, the leg runs **inside** the ordinary turn, in RA §4's
+      order: the read pass and the Planner run happen before the ``DecisionCycle``
+      row is written (so the row carries the bindings they read), the decision
+      unit runs after it (Planner half durable → Gate → CP2), and an ALLOW's
+      opening is delivered through the *same* teaching delivery leg the
+      user-initiated path uses — ``EphemeralTeachingDirective`` → prompt →
+      provider → validator → BUFFERED_VALIDATED → canonicalization — with the
+      moment reaching ``AWAITING_USER`` only after a real delivery;
+    - every failure degrades to the ordinary conversation turn (RA §21) and is
+      never silent: a leg that could not assemble is recorded as §4 step 9A's
+      degraded planner shape with its reason in the evaluation's trace
+      (``elc.runtime.automatic_turn.record_leg_failure``), and a delivery that
+      returned no message aborts the moment with the §7 ``DELIVERY_FAILURE``
+      word exactly as the user-initiated opening does;
+    - the same leg is what **writes §20's exposure events**
+      (``elc.runtime.exposure``): a delivered presentation appends its event
+      with the Moment as its provenance (migration 0017), and a user skip
+      appends ``user_skip`` — once per delivery, through the one delivery leg,
+      and never when no ledger writer was injected.
     """
 
     def __init__(
@@ -702,6 +770,7 @@ class ConversationCoordinator:
         projections: CP4ProjectionRuntime | None = None,
         persona_views: PersonaViewSource | None = None,
         silent_evidence: SilentEvidenceSource | None = None,
+        automatic_teaching: AutomaticTurnWiring | None = None,
     ) -> None:
         self._lease = lease
         self._commands = conversation_commands
@@ -717,6 +786,7 @@ class ConversationCoordinator:
         self._projections = projections
         self._persona_views = persona_views
         self._silent_evidence = silent_evidence
+        self._automatic = automatic_teaching
 
     # -- minimum turn loop ---------------------------------------------------
 
@@ -848,6 +918,15 @@ class ConversationCoordinator:
             # source", never a fabricated version). Re-entry with an
             # existing cycle replays the durable row (deterministic id, no
             # second write, no extra state_version bump).
+            #
+            # P8-4: with the automatic leg wired, the cycle's bindings are
+            # stamped from what that leg's read pass actually read (an
+            # injected wiring is the only path that has such sources; the
+            # read pass runs first because the row is the only place they
+            # can be recorded, and it writes nothing). The leg itself — the
+            # Planner half, the Gate and CP2 — runs *after* the row exists
+            # (RA §4 steps 5→8), which is why an assembly failure is
+            # recorded against the cycle below rather than before it.
             if self._decision_cycles is None:
                 return Err(
                     DomainError(
@@ -859,10 +938,25 @@ class ConversationCoordinator:
                         ),
                     )
                 )
+            plan_result = (
+                None
+                if self._automatic is None
+                else assemble_automatic_turn(
+                    wiring=self._automatic,
+                    conversation_id=command.conversation_id,
+                    decision_cycle_id=self._cycle_id(cp0.turn_id, ""),
+                    as_of=command.envelope.received_at,
+                    supply=self._automatic.candidate_supply,
+                )
+            )
             cycle_result = self._decision_cycles.record_decision_cycle(
                 decision_cycle_id=self._cycle_id(cp0.turn_id, ""),
                 turn_id=cp0.turn_id,
-                bindings=DecisionCycleBindings(),
+                bindings=(
+                    DecisionCycleBindings()
+                    if not isinstance(plan_result, Ok)
+                    else plan_result.value.bindings
+                ),
                 expected_turn_state_version=state_version,
             )
             if isinstance(cycle_result, Err):
@@ -872,6 +966,23 @@ class ConversationCoordinator:
             if isinstance(version_result, Err):
                 return version_result
             state_version = version_result.value
+
+            if isinstance(plan_result, Err):
+                # The leg could not assemble: the ordinary turn proceeds (RA
+                # §21) and the reason is durable rather than silent (RA §4 step
+                # 9A's degraded planner shape, written against the cycle above).
+                self._record_automatic_leg_failure(
+                    turn_id=cp0.turn_id,
+                    decision_cycle_id=active_cycle.decision_cycle_id,
+                    reason=plan_result.error.message,
+                )
+            elif isinstance(plan_result, Ok):
+                automatic = self._run_automatic_leg(
+                    command=command, cp0=cp0, cycle=active_cycle,
+                    plan=plan_result.value,
+                )
+                if automatic is not None:
+                    return automatic
 
             existing_result = self._generation.get_action_for_turn(cp0.turn_id)
             if isinstance(existing_result, Err):
@@ -976,6 +1087,381 @@ class ConversationCoordinator:
                 outcome=TurnOutcome.REPLIED_FULL,
             )
             return self.finalize_delivery(delivery, state_version)
+
+    # -- the automatic teaching leg (P8-4) -----------------------------------
+
+    def _run_automatic_leg(
+        self,
+        *,
+        command: CommitUserTurn,
+        cp0: Cp0Commit,
+        cycle: DecisionCycleRecord,
+        plan: AutomaticTurnPlan,
+    ) -> Result[TurnCompletion] | None:
+        """RA §4 steps 9A–10B for one ordinary turn: decide, then deliver.
+
+        ``None`` means "this turn is an ordinary one" — the run did not select,
+        the Gate denied, the Gate degraded, or the leg failed (in which case the
+        reason is durable; see :meth:`_record_automatic_leg_failure`). A returned
+        ``Result`` is an automatic opening that really reached the user: the
+        delivery leg owns the transcript, and the moment lands at
+        ``AWAITING_USER`` only after a real delivery.
+
+        Two identity reads happen here, and both are the crash window's
+        (RA §23 "crash after CP2 → 继续同 ``action_id``"): P8-1's unit re-derives
+        the same ids on a re-entry and replays its durable Gate trace instead of
+        re-deciding, and the **durable first action of the turn** is read back
+        through ``GenerationStore.get_action_for_turn`` as the evidence for
+        "continue the same action" — the unit deliberately reports
+        ``action_id=None`` on a replay, so the action is read from the row the
+        CP2 unit wrote and must be this turn's automatic opening. A missing or
+        foreign first action is a state no writer produces, and the leg degrades
+        rather than inventing one.
+        """
+
+        wiring = self._automatic
+        assert wiring is not None  # the caller checks the wiring is injected
+        if self._teaching is None:
+            # The moment an ALLOW opens is committed through the wiring's
+            # teaching face and *landed* through this coordinator's own teaching
+            # controller (the one the delivery ladder, the lock release and the
+            # terminal transitions belong to). An assembly that wires the second
+            # without the first cannot complete the leg, and refusing here — before
+            # the unit runs — is what keeps a CP2 that can never be delivered from
+            # existing at all (RA §21: no half-open teaching).
+            self._record_automatic_leg_failure(
+                turn_id=cp0.turn_id,
+                decision_cycle_id=cycle.decision_cycle_id,
+                reason=(
+                    "the automatic leg needs the coordinator's teaching"
+                    " controller to land the moment CP2 would open; none was"
+                    " injected"
+                ),
+            )
+            return None
+        try:
+            decided = decide_automatic_turn(
+                wiring=wiring,
+                plan=plan,
+                turn_id=cp0.turn_id,
+                conversation_id=command.conversation_id,
+                persona_id=self._persona_id(command.conversation_id),
+                cycle=cycle,
+                owner_epoch=(
+                    self._lease.epoch if self._lease.epoch is not None else 1
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001 — a broken leg never blocks a turn
+            self._record_automatic_leg_failure(
+                turn_id=cp0.turn_id,
+                decision_cycle_id=cycle.decision_cycle_id,
+                reason=f"the automatic decision raised {exc!r}",
+            )
+            return None
+        if isinstance(decided, Err):
+            self._record_automatic_leg_failure(
+                turn_id=cp0.turn_id,
+                decision_cycle_id=cycle.decision_cycle_id,
+                reason=decided.error.message,
+            )
+            return None
+        result = decided.value
+        if result.moment_id is None or result.normal_persona_generation:
+            # RA §4 9A/9B/10A (and a DEGRADED Gate): nothing was authorized, so
+            # the ordinary persona generation owns the rest of this turn.
+            return None
+        first = self._generation.get_action_for_turn(cp0.turn_id)
+        if isinstance(first, Err):
+            self._record_automatic_leg_failure(
+                turn_id=cp0.turn_id,
+                decision_cycle_id=cycle.decision_cycle_id,
+                reason=first.error.message,
+            )
+            return None
+        action = first.value
+        expected = automatic_action_id(cp0.turn_id)
+        if action is None or str(action.action_id) != str(expected):
+            self._record_automatic_leg_failure(
+                turn_id=cp0.turn_id,
+                decision_cycle_id=cycle.decision_cycle_id,
+                reason=(
+                    "the automatic opening's first action was not found on the"
+                    " turn (read back"
+                    f" {None if action is None else action.action_id!r},"
+                    f" expected {expected!r}); the authorized moment cannot be"
+                    " delivered without the action CP2 planned"
+                ),
+            )
+            return None
+        return self._finish_automatic_open(
+            command=command, cp0=cp0, cycle=cycle, result=result
+        )
+
+    def _record_automatic_leg_failure(
+        self,
+        *,
+        turn_id: TurnId,
+        decision_cycle_id: DecisionCycleId,
+        reason: str,
+    ) -> None:
+        """Make one failed automatic leg durable, never silent (RA §4 9A).
+
+        The record is P8-0's own unit (``runtime_decision_outcome`` =
+        ``DEGRADED_NO_AUTOMATIC_TEACHING``, a ``DEGRADED`` status with **no**
+        synthetic decision and the reason in the evaluation's trace); its shape
+        and its consequences are stated on
+        :func:`elc.runtime.automatic_turn.record_leg_failure`.
+
+        Best-effort by construction (RA §21: the teaching leg never blocks a
+        turn): the write's own failure is dropped here, because a turn whose
+        leg failed and whose trace cannot be written is still a turn that must
+        produce a reply. What is *not* dropped is the failure itself — it is
+        this call's whole purpose — and the honest residue of the two failures
+        together is registered on the module function above.
+        """
+
+        wiring = self._automatic
+        if wiring is None:
+            return
+        try:
+            record_leg_failure(
+                wiring=wiring,
+                turn_id=turn_id,
+                decision_cycle_id=decision_cycle_id,
+                reason=reason,
+            )
+        except Exception:  # noqa: BLE001 — never travel into the turn
+            return
+
+    def _finish_automatic_open(
+        self,
+        *,
+        command: CommitUserTurn,
+        cp0: Cp0Commit,
+        cycle: DecisionCycleRecord,
+        result: AutomaticTeachingResult,
+    ) -> Result[TurnCompletion]:
+        """Deliver the authorized opening, then land the open state.
+
+        The delivery leg is the *same* one the user-initiated opening uses
+        (:meth:`_deliver_teaching_action`: BUFFERED_VALIDATED → the §14 action
+        machine → Validator → canonicalization → TERMINAL), addressed by the
+        slot the CP2 unit spelled (``automatic-open``), so a re-entry
+        re-dispatches the same durable action rather than minting a second one.
+
+        The landing is :meth:`_finish_teaching_open`'s, with the same two
+        outcomes: a real delivery moves the moment ``OPENING`` →
+        ``AWAITING_USER`` with the opening phase / support and its ``opened_at``,
+        and a delivery that produced no message aborts the episode with the §7
+        ``DELIVERY_FAILURE`` word and releases its lock (RA §21 "teaching state
+        failure → no-open teaching"): the turn then carries no assistant content,
+        exactly as the user-initiated path leaves it, and the *next* turn is an
+        ordinary one.
+        """
+
+        teaching = self._teaching
+        assert teaching is not None  # _run_automatic_leg checked before CP2
+        moment_id = result.moment_id
+        assert moment_id is not None  # the caller checked the opening exists
+        fresh = teaching.get_moment(moment_id)
+        if isinstance(fresh, Err):
+            return fresh
+        if fresh.value is None:
+            return _missing(f"moment not found after CP2: {moment_id}")
+        moment = fresh.value
+        delivery = self._deliver_teaching_action(
+            turn_id=cp0.turn_id,
+            conversation_id=command.conversation_id,
+            turn_sequence=cp0.turn_sequence,
+            message_sequence=cp0.message_sequence,
+            moment=moment,
+            action_type=GenerationActionType.TEACHING_OPEN,
+            slot=AUTOMATIC_OPEN_SLOT,
+            delivery_kind="OPENING",
+            prompt_view=TeachingPromptView(
+                action_type=GenerationActionType.TEACHING_OPEN.value,
+                presentation_phase=PresentationPhase.INITIAL_PROMPT.value,
+                support_level=TeachingSupportLevel.CONTEXT_ONLY.value,
+                moment_id=str(moment_id),
+                focus_target_type=str(moment.focus_target.target_type),
+                focus_target_id=str(moment.focus_target.target_id),
+            ),
+        )
+        if isinstance(delivery, Err):
+            return delivery
+        delivered = delivery.value
+        if delivered.outcome != TurnOutcome.REPLIED_FULL.value:
+            aborted = self._abort_opening(
+                teaching, moment, AbortReason.DELIVERY_FAILURE.value
+            )
+            if isinstance(aborted, Err):
+                return aborted
+            return Ok(self._automatic_completion(cp0.turn_id, delivered))
+        if moment.lifecycle_state is MomentState.OPENING:
+            moved = teaching.transition_moment(
+                moment_id,
+                MomentTransition(
+                    lifecycle_state=MomentState.AWAITING_USER,
+                    presentation_phase=PresentationPhase.INITIAL_PROMPT,
+                    support_level=TeachingSupportLevel.CONTEXT_ONLY,
+                    opened_at=_now(),
+                ),
+                moment.state_version,
+            )
+            if isinstance(moved, Err):
+                return moved
+        return Ok(self._automatic_completion(cp0.turn_id, delivered))
+
+    @staticmethod
+    def _automatic_completion(
+        turn_id: TurnId, delivered: TeachingActionDelivery
+    ) -> TurnCompletion:
+        """The turn-level result of one automatic opening delivery.
+
+        The same shape :meth:`finalize_delivery` answers for an ordinary turn —
+        the delivery owns the outcome — plus the §20 exposure write's two
+        fields, which the delivery leg recorded.
+        """
+
+        return TurnCompletion(
+            turn_id=turn_id,
+            action_id=delivered.action_id,
+            assistant_turn_id=delivered.assistant_turn_id,
+            turn_status=delivered.turn_status,
+            action_status=GenerationActionStatus.TERMINAL,
+            outcome=delivered.outcome,
+            reply_text=delivered.text,
+            failure_reason=None,
+            state_version=delivered.state_version,
+            ledger_event=delivered.ledger_event,
+            ledger_failure=delivered.ledger_failure,
+        )
+
+    # -- the §20 exposure record (P8-4) --------------------------------------
+
+    def _exposed(
+        self,
+        delivered: Result[TeachingActionDelivery],
+        *,
+        moment: TeachingMomentRecord,
+        delivery_kind: str,
+    ) -> Result[TeachingActionDelivery]:
+        """The delivery half of the exposure rule: an ``Err`` stays one, a
+        delivery that produced **no message** records nothing (nothing was
+        presented), and a complete delivery goes through the one write point
+        (:meth:`_with_exposure`)."""
+
+        if isinstance(delivered, Err):
+            return delivered
+        if delivered.value.outcome != TurnOutcome.REPLIED_FULL.value:
+            return delivered
+        return Ok(
+            self._with_exposure(
+                delivered.value, moment=moment, delivery_kind=delivery_kind
+            )
+        )
+
+    def _with_exposure(
+        self,
+        delivered: TeachingActionDelivery,
+        *,
+        moment: TeachingMomentRecord,
+        delivery_kind: str,
+    ) -> TeachingActionDelivery:
+        """One §20 event for one delivered teaching action (RA §20).
+
+        The write happens **once per delivery**, at this one point — after a
+        message really reached the user (the assistant turn is canonical; a
+        failed delivery presents nothing and records nothing). The event id
+        derives from the action, so a second attempt would re-offer *the same
+        fact* rather than mint a second one; the store's replay rule, however,
+        compares the instant as content, and this write stamps a fresh one — so
+        such an attempt is refused as ``CONFLICT`` (reported on
+        ``ledger_failure``), not silently replayed. No live path makes that
+        attempt: a duplicate input replays the durable terminal result
+        (:meth:`_replay_terminal`) and never re-enters the delivery leg, and
+        the one branch that would re-offer the write
+        (:meth:`_deliver_teaching_action`'s terminal branch) is not reachable
+        through the ordinary loop today — both facts are registered in
+        ``elc.runtime.exposure`` rather than relied on.
+
+        The word is the delivery kind's: an opening is ``teaching_presented``, a
+        hint ``hint_presented``, a reveal ``reveal_presented``; §20 carries no
+        word for a retry, an explanation or a resume, and this leg registers that
+        rather than inventing one. The Moment is the event's provenance
+        (migration 0017's column), and the target key is the moment's focus
+        target **as spelled** (the core's own key convention).
+
+        R-INV-010's shape: a read or write that fails never changes the delivery
+        (the transcript already happened) and is never silent either — the reason
+        travels on the returned record's ``ledger_failure``. "Fails" includes a
+        writer that raises rather than answering an ``Err`` (the same three
+        failure shapes ``elc.runtime.automatic_turn._read`` recognizes for a
+        port): catching it here is what keeps a broken ledger out of the turn.
+        """
+
+        wiring = self._automatic
+        writer = None if wiring is None else wiring.ledger
+        if writer is None:
+            return delivered
+        try:
+            event = ledger_event_of(delivery_kind)
+            if event is None:
+                return delivered
+            written = record_exposure(
+                writer=writer,
+                event_id=exposure_event_id(delivered.action_id),
+                event=event,
+                target_key=str(moment.focus_target.target_id),
+                moment_id=moment.moment_id,
+                at=_now(),
+            )
+        except ValueError as exc:
+            return replace(delivered, ledger_failure=str(exc))
+        except Exception as exc:  # noqa: BLE001 — a broken writer never blocks
+            return replace(
+                delivered,
+                ledger_failure=f"the exposure write raised {exc!r}",
+            )
+        if isinstance(written, Err):
+            return replace(delivered, ledger_failure=written.error.message)
+        return replace(delivered, ledger_event=event.value)
+
+    def _record_skip_exposure(
+        self, moment: TeachingMomentRecord
+    ) -> tuple[str | None, str | None]:
+        """One §20 ``user_skip`` for the moment a user left (§7's abort).
+
+        The same unit as :meth:`_with_exposure`, entered from the abort rather
+        than from a delivery: nothing was presented, and §20's fifth word is
+        exactly that rejection. The returned pair is ``(the word, the failure
+        reason)`` — the abort itself is never blocked or changed by this (§7's
+        closure is the moment's, the record is the ledger's).
+
+        Only ``USER_SKIP`` reaches here. §7's other two user-leaving reasons —
+        ``USER_REJECTED_TARGET`` / ``USER_TOPIC_SHIFT`` — carry no §20 word
+        either (the same registration ``elc.runtime.exposure`` makes for the
+        delivery kinds §20 does not name), and the caller asks for this write
+        only when the user *skipped*.
+        """
+
+        wiring = self._automatic
+        writer = None if wiring is None else wiring.ledger
+        if writer is None:
+            return (None, None)
+        try:
+            written = record_skip(
+                writer=writer,
+                event_id=skip_event_id(moment.moment_id),
+                target_key=str(moment.focus_target.target_id),
+                moment_id=moment.moment_id,
+                at=_now(),
+            )
+        except Exception as exc:  # noqa: BLE001 — a broken writer never blocks
+            return (None, f"the exposure write raised {exc!r}")
+        if isinstance(written, Err):
+            return (None, written.error.message)
+        return (LedgerEvent.USER_SKIP.value, None)
 
     # -- the persona-facing views (P4-3) ------------------------------------
 
@@ -2205,6 +2691,7 @@ class ConversationCoordinator:
             moment=moment,
             action_type=GenerationActionType.TEACHING_OPEN,
             slot="teaching-open",
+            delivery_kind="OPENING",
             prompt_view=TeachingPromptView(
                 action_type=GenerationActionType.TEACHING_OPEN.value,
                 presentation_phase=PresentationPhase.INITIAL_PROMPT.value,
@@ -3066,6 +3553,7 @@ class ConversationCoordinator:
             moment=moment,
             action_type=GenerationActionType(action_type),
             slot=step.delivery_kind.lower(),
+            delivery_kind=step.delivery_kind,
             prompt_view=self._directive_prompt_view(
                 EphemeralTeachingDirective(
                     moment_id=moment.moment_id,
@@ -3147,6 +3635,8 @@ class ConversationCoordinator:
                 turn_status=delivered.turn_status,
                 outcome=delivered.outcome,
                 reply_text=delivered.text,
+                ledger_event=delivered.ledger_event,
+                ledger_failure=delivered.ledger_failure,
             )
         )
 
@@ -3313,6 +3803,7 @@ class ConversationCoordinator:
                 moment=current,
                 action_type=GenerationActionType.PERSONA_RESUME,
                 slot="resume",
+                delivery_kind="RESUME",
                 prompt_view=resume_view,
             )
             if isinstance(delivery, Err):
@@ -3340,6 +3831,20 @@ class ConversationCoordinator:
         else:
             turn_status = delivered.turn_status
             outcome = delivered.outcome
+
+        # §20's one non-presentation word this leg can write (RA §20): the user
+        # *skipped* — §7's USER_SKIP abort, which is the only abort reason §20
+        # names. The write is keyed on the closed moment (its id makes a
+        # re-entry a replay), it never changes the closure above, and the other
+        # two user-leaving reasons (``USER_REJECTED_TARGET`` /
+        # ``USER_TOPIC_SHIFT``) are registered rather than mapped — §20 carries
+        # no word for them. The resume delivery itself carries none either: its
+        # kind is one of §20's unmapped ones (``elc.runtime.exposure``).
+        ledger_event, ledger_failure = (
+            self._record_skip_exposure(current)
+            if plan.abort_reason == AbortReason.USER_SKIP.value
+            else (None, None)
+        )
 
         return Ok(
             TeachingReplyTurnResult(
@@ -3375,6 +3880,8 @@ class ConversationCoordinator:
                 turn_status=turn_status,
                 outcome=outcome,
                 reply_text=None if delivered is None else delivered.text,
+                ledger_event=ledger_event,
+                ledger_failure=ledger_failure,
             )
         )
 
@@ -3659,6 +4166,7 @@ class ConversationCoordinator:
         moment: TeachingMomentRecord,
         action_type: GenerationActionType,
         slot: str,
+        delivery_kind: str,
         prompt_view: TeachingPromptView,
     ) -> Result[TeachingActionDelivery]:
         """Dispatch one teaching action through the P1 pipeline and deliver it.
@@ -3673,6 +4181,14 @@ class ConversationCoordinator:
         The action ids are deterministic on (turn, slot), so a re-entry
         re-dispatches the same action instead of minting a second one
         (RA §23 "继续同 action_id").
+
+        ``delivery_kind`` is §20's own vocabulary for what this delivery
+        presented (the caller's kind word — ``OPENING`` / ``HINT`` / ``REVEAL``
+        / ``RETRY`` / ``EXPLANATION`` / ``RESUME``, the same words
+        ``TEACHING_ACTION_BY_DELIVERY`` keys on), and it is what the one
+        exposure write maps to a §20 word: a real delivery appends its event
+        (:meth:`_with_exposure`), a failed one presents nothing and appends
+        nothing, and a kind §20 carries no word for records nothing by name.
         """
 
         persona_id = self._persona_id(conversation_id)
@@ -3697,8 +4213,22 @@ class ConversationCoordinator:
             # Re-entry after the delivery itself finished: the durable
             # transcript is the answer, and a terminal action is never
             # re-dispatched (R-INV-007; RA §23 "crash around CP3" — the
-            # canonicalized assistant turn is the truth).
-            return self._replay_action_delivery(turn_id, existing.action_id)
+            # canonicalized assistant turn is the truth). The exposure write is
+            # *attempted* here too (a real delivery happened). That attempt is
+            # not a store-level no-op: the event's content carries the instant,
+            # this path stamps a fresh one, and the store refuses a differing
+            # content under an existing id — the refusal rides
+            # ``ledger_failure`` (``CONFLICT``) and the log keeps its one row
+            # either way (``elc.runtime.exposure``). This branch is not
+            # reachable through the ordinary loop today: a same-epoch re-entry
+            # from ``DELIVERING`` is refused before the leg runs, so a turn
+            # whose action is already terminal never arrives here (the CP3
+            # crash case in this cut's suite registers that).
+            return self._exposed(
+                self._replay_action_delivery(turn_id, existing.action_id),
+                moment=moment,
+                delivery_kind=delivery_kind,
+            )
         intent = (
             existing
             if existing is not None and existing.action_id.endswith(slot)
@@ -3800,13 +4330,17 @@ class ConversationCoordinator:
         if isinstance(completion, Err):
             return completion
         return Ok(
-            TeachingActionDelivery(
-                action_id=reply.action_id,
-                assistant_turn_id=reply.assistant_turn_id,
-                text=reply.text,
-                outcome=TurnOutcome.REPLIED_FULL.value,
-                turn_status=completion.value.turn_status,
-                state_version=completion.value.state_version,
+            self._with_exposure(
+                TeachingActionDelivery(
+                    action_id=reply.action_id,
+                    assistant_turn_id=reply.assistant_turn_id,
+                    text=reply.text,
+                    outcome=TurnOutcome.REPLIED_FULL.value,
+                    turn_status=completion.value.turn_status,
+                    state_version=completion.value.state_version,
+                ),
+                moment=moment,
+                delivery_kind=delivery_kind,
             )
         )
 
@@ -4661,6 +5195,18 @@ class ConversationCoordinator:
             return
 
     def _replay_terminal(self, turn: TurnRecordData) -> Result[TurnCompletion]:
+        """Answer a duplicate input from the durable transcript.
+
+        Read-only: the canonical assistant turn and the turn's own status are
+        the answer, and nothing is written. The returned completion's two
+        ledger fields are therefore ``None``, and that is *this call's* fact —
+        "no exposure event was written here", **not** "no exposure happened":
+        a teaching delivery recorded its own §20 event when it ran (the event
+        is derivable from the action and lives in the log), and whether one
+        exists is a read of ``planning_ledger_event``, never the absence of a
+        field on a replayed result.
+        """
+
         slice_result = self._queries.get_canonical_turn_slice(turn.turn_id)
         if isinstance(slice_result, Err):
             return slice_result

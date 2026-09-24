@@ -308,7 +308,15 @@ class RecoveryAction:
 class TurnCompletion:
     """Terminal result of one full turn through the minimum pipeline
     (IMPLEMENTATION_PLAN §3: UserTurn durable → Persona Runtime →
-    Validator → Delivery → AssistantTurn)."""
+    Validator → Delivery → AssistantTurn).
+
+    ``ledger_event`` / ``ledger_failure`` are the §20 exposure write's outcome
+    on a turn that delivered a teaching action (P8-4) — the word recorded, and
+    the readable reason when a word existed but the write did not happen. Both
+    stay ``None`` on an ordinary persona turn (nothing to present) and whenever
+    no ledger writer was injected; ``elc.runtime.controller.
+    TeachingActionDelivery`` states the two fields' meaning.
+    """
 
     turn_id: TurnId
     action_id: ActionId
@@ -319,3 +327,5 @@ class TurnCompletion:
     reply_text: str | None
     failure_reason: str | None
     state_version: int
+    ledger_event: str | None = None
+    ledger_failure: str | None = None

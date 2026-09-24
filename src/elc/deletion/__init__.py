@@ -58,10 +58,33 @@ What this package does **not** claim (registered, not glossed):
   deletion for ``ledger1``, and §19's "Planning history solely derived from
   deleted Evidence" has no row-level carrier here — a ledger row carries no
   conversation column and aggregates across conversations — so the scope does
-  not name these tables. Registered as a known gap; its trigger is a row-level
-  provenance leg on the ledger's rows, or a canonical revision assigning the
-  derivation elsewhere. Same footing as the index / embedding clause above: a
-  rule this repository can state and cannot yet execute.
+  not remove these tables. P8-4 adds the one ledger leg that *is* this scope's,
+  and it is a clearing rather than a removal: migration 0017's ``moment_id``
+  names the §15 Moment a presentation came from ("the ref column and the
+  conversation leg land together", 0016's Revisit clause), and a conversation's
+  deletion drops the references its own removed Moments can no longer resolve
+  (``_clear_ledger_provenance_legs`` — the §27 "drop the content ref, keep the
+  non-body state" move the ``planner_constraint`` leg makes one column over). A
+  provenance reference is not a derivation claim, which is why the rows stay:
+  the event is not this conversation's to delete. Registered as a known gap;
+  its trigger is a canonical revision assigning that derivation — then the leg
+  becomes a removal and the ownership question moves with it. Same footing as
+  the index / embedding clause above: a rule this repository can state and
+  cannot yet execute.
+- **one same-family missed row is registered rather than repaired** (P8-4's
+  disposal cut): ``review_event`` carries a nullable FK to ``teaching_moment``
+  (0012), and the CONVERSATION walk sweeps that table by ``source_turn_id`` and
+  ``evidence_group_id`` only — a row whose *Moment* leg is set while both of
+  those are ``NULL`` is therefore not swept, and removing the Moment it names
+  refuses the whole walk with ``deletion refused by a durable constraint
+  (FOREIGN KEY)`` (``Err(CONFLICT)``; measured on the shipped chain, pinned in
+  tests/phase8/test_p8_4_deletion_provenance.py). No shipped writer produces
+  that shape today — ``SchedulerController.record_review_event`` has no caller
+  in ``src/`` — so it is latent, and the semantic question the repair must
+  settle first (remove the event *with* its Moment, or clear its reference the
+  way the ledger's ``moment_id`` leg is cleared) belongs to the cut that lands
+  the review-outcome path: that cut adds the leg, in the same shape and in the
+  same place as the two ``review_event`` sweeps beside it.
 """
 
 from elc.deletion.commands import DeletionCommands

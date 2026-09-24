@@ -132,12 +132,21 @@ def test_the_core_view_names_the_durable_half_instead_of_the_retired_word() -> N
         assert "DURABLE_TABLES_V1" in doc, owner
 
 
-def test_the_store_module_registers_the_missing_producer() -> None:
+def test_the_store_module_registers_the_landed_producer() -> None:
+    """The registration moved with the fact (P8-4): the store no longer says
+    "no producer" — the teaching-delivery point is its caller, and the module
+    names both that caller and the provenance column that came with it. The one
+    sentence that stays is §20's reason a *selection* still cannot write this
+    log ("SELECT != exposure"): the producer is a presentation, not a
+    selection."""
+
     text = " ".join(_source(STORE_MODULE).split())
-    assert "No producer, registered rather than implied" in text
-    assert "p8-4" in text
+    assert "No producer, registered rather than implied" not in text
+    assert "shipped caller count is zero" not in text
+    assert "P8-4 landed the caller" in text
+    assert "elc.runtime.controller" in text
+    assert "moment_id" in text
     assert "SELECT != exposure" in text
-    assert "shipped caller count is zero" in text
 
 
 def test_the_ledger_is_registered_with_an_owner_and_no_invented_version() -> None:

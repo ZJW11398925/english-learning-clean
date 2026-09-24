@@ -111,14 +111,22 @@ def _flat_and_indented() -> tuple[tuple[str, ...], tuple[str, ...]]:
 # -- ① the lineage -----------------------------------------------------------
 
 
-def test_0016_is_the_head_and_0015s_successor() -> None:
+def test_0016_is_0017s_predecessor_and_0015s_successor() -> None:
+    """0016 is in the chain, 0015 is immediately behind it and **0017 is
+    immediately ahead of it** — the head assertion moved with P8-4's migration
+    (the pin read ``names[-1] == HEAD_0016`` while 0016 was the head), and the
+    successor is a **literal**: a ``SCHEMA_HEAD_FILE`` reference here would
+    silently become false at the next migration."""
+
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert names[-1] == SCHEMA_HEAD_FILE == HEAD_0016
+    assert HEAD_0016 in names
+    assert names[names.index(HEAD_0016) + 1] == "0017_ledger_event_provenance.sql"
     assert names[names.index("0015_planner_records.sql") + 1] == HEAD_0016
+    assert names[-1] == SCHEMA_HEAD_FILE
     assert [name[:4] for name in names] == [
         f"{index:04d}" for index in range(1, len(MIGRATION_IDS) + 1)
     ]
-    assert MIGRATION_IDS[-1] == "0016_planning_ledger"
+    assert MIGRATION_IDS[-1] == "0017_ledger_event_provenance"
 
 
 def test_the_pre_0016_lineage_did_not_move() -> None:
@@ -140,7 +148,7 @@ def test_applying_the_chain_is_idempotent(db: sqlite3.Connection) -> None:
 
 
 def test_the_stamps_move_to_the_shared_head(db: sqlite3.Connection) -> None:
-    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "16"
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "17"
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"
@@ -278,12 +286,16 @@ def test_the_obligation_columns_are_the_canonical_sub_block(
     assert _columns(db, "coverage_obligation") == expected
 
 
-def test_the_four_question_columns_are_the_nullable_ones(
+def test_the_question_columns_and_the_provenance_column_are_the_nullable_ones(
     db: sqlite3.Connection,
 ) -> None:
     """§14 marks four obligation fields ``?``; every other column of the three
     tables is NOT NULL (keys excepted — a ``TEXT PRIMARY KEY`` reports
-    ``notnull=0`` whatever the DDL says)."""
+    ``notnull=0`` whatever the DDL says) — plus one column that arrived after
+    0016 and is nullable for its own reason: **0017's
+    ``planning_ledger_event.moment_id``** (the BF-05 CONVERSATION walk clears
+    the reference, so the column has to be able to be NULL; migration 0017's
+    header). It is a fifth nullable column, not a change to §14's four."""
 
     _, indented = _flat_and_indented()
     optional = {
@@ -322,21 +334,26 @@ def test_the_four_question_columns_are_the_nullable_ones(
                     else 1
                 )
             else:
-                expected = 1
+                # 0017's provenance column: NULL exactly while no reference is
+                # resolvable (the BF-05 CONVERSATION walk's clearing).
+                expected = 0 if column == "moment_id" else 1
             assert flag == expected, (table, column)
 
 
-def test_the_event_log_is_four_columns_with_the_five_words(
+def test_the_event_log_is_five_columns_with_the_five_words(
     db: sqlite3.Connection,
 ) -> None:
     """RA §20's block is the CHECK, character for character — and the words are
-    the core's own event vocabulary, in the document's order."""
+    the core's own event vocabulary, in the document's order. The fifth column
+    is 0017's provenance leg, added by its own ALTER (the four §20 columns are
+    still this table's whole §20 set)."""
 
     assert _columns(db, "planning_ledger_event") == [
         "event_id",
         "ledger_key",
         "event",
         "as_of",
+        "moment_id",
     ]
     ddl = _table_sql(db, "planning_ledger_event")
     words = ", ".join(f"'{event.value}'" for event in LEDGER_EVENTS)

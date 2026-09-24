@@ -35,31 +35,32 @@ What this unit does **not** do (each registered with the cut that owns it):
 
 - it does not run the Planner. The caller owns the assembly and the kernel
   run (P7-0/P7-1/P7-4); this unit starts from the answer.
-- it does not wire itself into a turn. Nothing in ``elc.runtime.controller``
-  calls it yet: connecting the ordinary turn's planner → gate → moment flow
-  to ``EphemeralTeachingDirective`` / prompt / delivery is **p8-4** (the
-  same-turn integration). Until then this face is exercised by its suite.
+- it does not wire itself into a turn. **P8-4 landed that wiring** — the
+  coordinator's automatic leg (:mod:`elc.runtime.automatic_turn` for the
+  assembly, ``elc.runtime.controller`` for the ordinary turn) calls this unit
+  through :func:`decide_automatic_teaching` — and the unit stayed where it
+  was: it still takes a caller-assembled ``outcome``, the caller's controls and
+  the caller's §15 template, and it still knows nothing about turns, delivery
+  or the transcript. The opt-in boundary is the coordinator's
+  (``ConversationCoordinator``'s optional wiring bundle): an assembly that
+  injects nothing behaves exactly as it did before P8-4.
 - it does not assemble the control facts. ``automatic_teaching_enabled``,
   the session budget / cooldown facts and the flow protection arrive as
   :class:`TeachingControlFacts`, declared by the caller — the same
   caller-declared posture :mod:`elc.teaching.gate`'s automatic profiles
-  document (their declared authorities 1–3). The Gate's remaining critical
-  facts (``authorization_status``, ``subject_status``, ``target_status``,
+  document (their declared authorities 1–3). P8-4's wiring derives the three
+  view-borne controls (``TeachingControlFacts.derived`` over §5.2's
+  ``SessionBudgetView`` and §13's ``ConversationPriorityView``) and passes the
+  *Planner-assembled* auto-teach value (F2's ruling); a caller may still
+  declare the record by hand, and the durable home of the auto-teach setting
+  is **p8-5**. The Gate's remaining critical facts
+  (``authorization_status``, ``subject_status``, ``target_status``,
   ``content_status``, ``learning_snapshot_status``, ``gate_state_status``,
   ``safety_privacy_status``, ``target_suppressed``) are declared on the same
   record with their healthy defaults, so an UNKNOWN can be expressed and the
   Gate's DEGRADED answer is reachable. The **lock** fact is *not* declared:
   it is read from the durable ``active_teaching_lock`` row through
   :meth:`TeachingOpenAuthority.observed_lock_state` (BF-03 §14's own fact).
-  The two views that carry the controls now **both exist** — §5.2's
-  ``SessionBudgetView`` (P8-2, produced by
-  ``TeachingController.get_session_budget_view``) and §13's
-  ``ConversationPriorityView`` (P7-2's shape, no producer yet) — and their
-  three controls are derived by :mod:`elc.runtime.automatic_controls`, which
-  :meth:`TeachingControlFacts.derived` calls; a caller may still declare the
-  record by hand, and the durable home of the auto-teach setting is
-  **p8-5**. What is still p8-4 is the *wiring*: no turn assembles these facts
-  yet, so a caller derives (or declares) them.
 - it does not own the continuation. ``AUTO_CONTINUE`` is P8-1's *decision*
   profile (``elc.teaching.gate.decide_auto_continuation``), but the
   mid-moment automatic continuation flow (next-action branch, delivery,
@@ -73,12 +74,15 @@ Facts the caller must already hold (declared reads, no second authority):
   §15's moment columns copy. This unit does not re-read them.
 - ``moment`` — the §15 shape of the moment to open, with its teaching
   content fields filled from the resolved target view (``focus_target``,
-  ``target_mode``, ``learning_intent``, ``evidence_modality``). The three
-  fields an opening derives are **not** the caller's to choose, and a
-  template that supplies them is refused rather than silently overwritten:
-  ``source`` (always ``MomentSource.AUTOMATIC``), ``lifecycle_state``
-  (``OPENING``), ``presentation_phase`` (``INITIAL_PROMPT``). The two
-  identity columns derive from ``turn`` (:func:`automatic_moment_id`).
+  ``target_mode``, ``learning_intent``, ``evidence_modality``), or ``None``
+  when the caller's run selected nothing (P8-4 made the field optional; the
+  ALLOW path refuses a missing template rather than describing a moment the
+  selection never named). The three fields an opening derives are **not** the
+  caller's to choose, and a template that supplies them is refused rather than
+  silently overwritten: ``source`` (always ``MomentSource.AUTOMATIC``),
+  ``lifecycle_state`` (``OPENING``), ``presentation_phase``
+  (``INITIAL_PROMPT``). The two identity columns derive from ``turn``
+  (:func:`automatic_moment_id`).
 - ``conversation_id`` / ``persona_id`` — the turn's conversation and the
   persona answering it (the coordinator reads both today;
   ``ConversationCoordinator._conversation_persona`` is that read).
@@ -292,18 +296,24 @@ class TeachingControlFacts:
 class AutomaticTeachingTurn:
     """The turn-level facts of one automatic decision.
 
-    ``moment`` is the §15 template of the moment an ALLOW would open (see
-    the module docstring for the fields that derive and the fields that must
-    not be pre-set); ``persona_id`` is the persona answering the turn;
-    ``owner_epoch`` is the runtime epoch the CP2 unit's rows are fenced by
-    (the coordinator passes its lease epoch the same way).
+    ``moment`` is the §15 template of the moment an ALLOW would open (see the
+    module docstring for the fields that derive and the fields that must not be
+    pre-set) — or ``None``, which is the honest shape of a caller whose Planner
+    run selected nothing: there is no moment to describe, and describing one
+    anyway would be a target the selection never named. The template is only
+    ever *read* on the ALLOW path, where its absence is refused (P8-4 made the
+    field optional for exactly that caller; every pre-P8-4 caller passes one).
+
+    ``persona_id`` is the persona answering the turn; ``owner_epoch`` is the
+    runtime epoch the CP2 unit's rows are fenced by (the coordinator passes its
+    lease epoch the same way).
     """
 
     turn_id: TurnId
     conversation_id: ConversationId
     persona_id: PersonaId | None
     cycle: DecisionCycleRecord
-    moment: TeachingMomentRecord
+    moment: TeachingMomentRecord | None
     owner_epoch: int
 
 
@@ -410,34 +420,45 @@ def _moment_template_refusal(
     A silently overwritten template would make the caller's ``source``
     look honoured while the row says ``AUTOMATIC`` — so the refusal names
     the field instead (the durable row's truth wins only when the caller
-    asked for it).
+    asked for it). A template that is absent altogether is refused too:
+    an ALLOW is the authorization of *one* moment, and one cannot be
+    authorized without being described.
     """
 
+    moment = turn.moment
+    if moment is None:
+        return _refusal(
+            DomainErrorCode.VALIDATION_FAILED,
+            "this ALLOW has no §15 template to open: the moment an automatic"
+            " opening authorizes must be described by the caller (P8-4's"
+            " wiring builds it from the selected candidate, and passes None"
+            " only for a run that selected nothing — such a run cannot ALLOW)",
+        )
     expected = {
         "source": MomentSource.AUTOMATIC,
         "lifecycle_state": MomentState.OPENING,
         "presentation_phase": PresentationPhase.INITIAL_PROMPT,
     }
     for field_name, value in expected.items():
-        supplied = getattr(turn.moment, field_name, None)
+        supplied = getattr(moment, field_name, None)
         if supplied is not None and supplied != value:
             return _refusal(
                 DomainErrorCode.VALIDATION_FAILED,
                 f"the automatic opening derives {field_name}={value}; the"
                 f" template supplied {supplied}",
             )
-    if str(turn.moment.moment_id) != str(automatic_moment_id(turn.turn_id)):
+    if str(moment.moment_id) != str(automatic_moment_id(turn.turn_id)):
         return _refusal(
             DomainErrorCode.VALIDATION_FAILED,
             "the moment id derives from the turn (automatic_moment_id); the"
-            f" template supplied {turn.moment.moment_id}",
+            f" template supplied {moment.moment_id}",
         )
-    if str(turn.moment.conversation_id) != str(turn.conversation_id):
+    if str(moment.conversation_id) != str(turn.conversation_id):
         return _refusal(
             DomainErrorCode.VALIDATION_FAILED,
             "the moment must belong to the turn's conversation",
         )
-    if turn.moment.persona_id != turn.persona_id:
+    if moment.persona_id != turn.persona_id:
         return _refusal(
             DomainErrorCode.VALIDATION_FAILED,
             "the moment's persona is the turn's persona",
@@ -452,6 +473,7 @@ def decide_automatic_teaching(
     controls: TeachingControlFacts,
     planner_store: PlannerDecisionRecordStore,
     teaching: TeachingOpenAuthority,
+    user_intent_scope: str = "OPEN",
 ) -> Result[AutomaticTeachingResult]:
     """One automatic decision: Planner records first, then the cycle's
     durable Gate trace if it has one, then the Gate, then the CP2 open
@@ -461,6 +483,15 @@ def decide_automatic_teaching(
     (:class:`elc.planner.types.PlanningOutcome`; typed as ``object`` here
     because this module uses three of its fields and the stores' own
     signatures are the authority on its shape).
+
+    ``user_intent_scope`` is §12's word for the cycle — **the caller's**, read
+    from the one resolver (``elc.planner.scope.resolve_user_intent_scope``) the
+    same way the Planner's own request is, so the Gate's latest-intent
+    revalidation judges the word the run ran under. P8-1 declared this fact as
+    a literal ``"OPEN"`` (the profile's own default); P8-4's wiring passes the
+    resolved word, which is what makes BF-03 §11's ``USER_INTENT_BLOCK``
+    reachable in production (a ``JUST_CHAT`` turn must not be auto-opened). The
+    default keeps every pre-P8-4 caller behaving exactly as before.
 
     A cycle the Gate already decided is not decided again: the durable trace
     is replayed (:func:`_durable_gate_replay`), so a re-entry answers with
@@ -525,7 +556,7 @@ def decide_automatic_teaching(
             candidate_id=candidate_id,
             planner_execution_status=execution_status.status.value,
             planner_decision=decision.decision.value,
-            user_intent_scope="OPEN",
+            user_intent_scope=user_intent_scope,
             lock_state=lock.value,
             authorization_status=controls.authorization_status,
             subject_status=controls.subject_status,
@@ -613,12 +644,14 @@ def decide_automatic_teaching(
     refusal = _moment_template_refusal(turn)
     if refusal is not None:
         return refusal
+    template = turn.moment
+    assert template is not None  # the refusal above named a missing template
 
     moment_id = automatic_moment_id(turn.turn_id)
     action_id = automatic_action_id(turn.turn_id)
     gate_decision_id = automatic_gate_decision_id(turn.turn_id)
     moment = replace(
-        turn.moment,
+        template,
         moment_id=moment_id,
         source=MomentSource.AUTOMATIC,
         decision_cycle_id=turn.cycle.decision_cycle_id,
@@ -703,9 +736,14 @@ def _durable_gate_replay(
     (``GenerationStore.get_action_for_turn``, ``elc/runtime/generation.py``),
     which is exactly what the coordinator's replay path does.
 
-    Revisit: the cut that gives this unit an action read (or wires the
-    automatic path into a turn, p8-4) replaces the ``None`` with the
-    durable first-action id and updates this docstring.
+    Revisit: the cut that gives this unit an action read replaces the ``None``
+    with the durable first-action id and updates this docstring. **(P8-4: the
+    wiring landed and the ``None`` stayed — this unit's declared surface is
+    unchanged. What the wiring does instead is exactly what this docstring
+    says a caller must: the coordinator's automatic leg reads the canonical
+    first action through ``GenerationStore.get_action_for_turn`` and continues
+    *that* action (``ga-{turn}-automatic-open``), so "which action" is read
+    from the durable row rather than derived a second time here.)
     """
 
     cycle_id = turn.cycle.decision_cycle_id

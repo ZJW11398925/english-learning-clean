@@ -288,6 +288,17 @@ CONVERSATION_SWEPT_TABLES: tuple[str, ...] = (
     "turn_record",
     "input_envelope",
     "conversation",
+    # P8-4's provenance leg (migration 0017). This scope **clears a reference,
+    # it does not remove a row**: §19's clause has no row-level carrier for the
+    # ledger — the two scopes that remove ledger history are LEARNING_TARGET
+    # and ALL_LEARNING_HISTORY (BF-05 lines 747/87) — so what this scope owes is
+    # the dangling-ref drop §27 names ("drop the content ref, keep the non-body
+    # state"), the same move the planner_constraint leg makes one column over.
+    # The table is named here because the walk *writes* it; listing it last
+    # keeps this surface a subsequence of SWEPT_TABLES (the pin in
+    # tests/deletion/test_deletion_surfaces.py), and the ledger's own rows sit
+    # at that tuple's end for the same reason.
+    "planning_ledger_event",
 )
 
 #: §20 LEARNING_TARGET: the named target's evidence, its materialized state,

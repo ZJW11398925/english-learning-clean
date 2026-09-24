@@ -70,16 +70,24 @@ truth). :meth:`read_ledger` therefore answers the core's own defaults for
 ``coverage_debt_rollups`` (``{}``) and ``recent_target_families`` (``()``), and
 the cut that first *reads* a rollup out of the durable ledger lands its home.
 
-**No producer, registered rather than implied.** Nothing in ``src/`` calls this
-store yet: the delivery path that *presents* a Moment — p8-4's — is what makes
-``teaching_presented`` (and the two lighter presentations) happen, and §20's
-"SELECT != exposure" is the reason a selection cannot write this log instead.
-The shipped caller count is zero today, which is a fact a test checks rather
-than a sentence a reader is asked to trust.
+**The producer, and the one provenance column.** P8-4 landed the caller this
+store was waiting for: the teaching-delivery point in
+``elc.runtime.controller`` records the §20 exposure event through
+:meth:`SqliteLedgerStore.record_ledger_event` when a teaching action was really
+delivered, and nothing else in ``src/`` writes this log (a selection still
+cannot: §20's "SELECT != exposure" is why the event is a *presentation* word).
+That caller is where migration 0017's ``moment_id`` column comes from — the
+Moment a presentation belongs to — and the delivery path passes it as
+:meth:`SqliteLedgerStore.record_ledger_event`'s ``moment_id`` argument. The
+column is provenance only: it is not an input of any projection, so the core's
+"the row is the log's projection" invariant is untouched by it (migration
+0017's header), and this store's replay rule treats it as part of the content
+(all four values, see below).
 
 All SQL is a fixed literal with bound parameters — no identifier assembly, and
-no statement names ``planning_ledger_event`` with an ``UPDATE`` or a
-``DELETE`` (the log is append-only; its removal is the BF-05 walk's).
+no statement here removes or rewrites a logged fact: this module carries one
+``INSERT`` per table and the two upserts. The log's removal is the BF-05
+walk's; the one statement that clears a provenance reference is there too.
 """
 
 from __future__ import annotations
@@ -160,18 +168,29 @@ def _constraint_family(exc: sqlite3.IntegrityError) -> str:
 
 @dataclass(frozen=True)
 class LedgerEventRow:
-    """One appended fact: §20's word, its key and its instant.
+    """One appended fact: §20's word, its key and its instant, plus the
+    Moment it came from.
 
     ``event_id`` is the durable identity (migration 0016's header: §20 names
     none, and the identity cannot be the content because the core's log does
     not collapse a repeat). ``as_of`` is the core's ``LedgerEventRecord.at``
     under the durable column name.
+
+    ``moment_id`` is migration 0017's provenance column — the §15 Moment the
+    presentation belongs to, written by the delivery path that presented it
+    (p8-4) and by no one else. It is ``None`` for an event no Moment produced
+    (a skip the caller reports with no moment it can name, or a row written
+    before the column existed) and after the BF-05 CONVERSATION walk has
+    cleared a deleted conversation's references: the log keeps the fact, the
+    reference it can no longer resolve goes (the §27 "drop the content ref,
+    keep the non-body state" precedent).
     """
 
     event_id: str
     ledger_key: str
     event: LedgerEvent
     as_of: str
+    moment_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -327,6 +346,7 @@ def _event_from_row(row: Sequence[object]) -> LedgerEventRow:
         ledger_key=_text(row[1], "ledger_key"),
         event=_event_word(row[2]),
         as_of=_text(row[3], "as_of"),
+        moment_id=_optional_text(row[4], "moment_id"),
     )
 
 
@@ -352,12 +372,18 @@ def _obligation_from_row(row: Sequence[object]) -> CoverageObligation:
 
 
 def _same_event(
-    durable: LedgerEventRow, *, event: LedgerEvent, key: str, as_of: str
+    durable: LedgerEventRow,
+    *,
+    event: LedgerEvent,
+    key: str,
+    as_of: str,
+    moment_id: str | None,
 ) -> bool:
     return (
         durable.event is event
         and durable.ledger_key == key
         and durable.as_of == as_of
+        and durable.moment_id == moment_id
     )
 
 
@@ -382,13 +408,13 @@ _SELECT_PROJECTIONS = (
 )
 
 _SELECT_EVENTS = (
-    "SELECT event_id, ledger_key, event, as_of FROM planning_ledger_event"
-    " WHERE ledger_key = ? ORDER BY as_of, event_id"
+    "SELECT event_id, ledger_key, event, as_of, moment_id"
+    " FROM planning_ledger_event WHERE ledger_key = ? ORDER BY as_of, event_id"
 )
 
 _SELECT_EVENT = (
-    "SELECT event_id, ledger_key, event, as_of FROM planning_ledger_event"
-    " WHERE event_id = ?"
+    "SELECT event_id, ledger_key, event, as_of, moment_id"
+    " FROM planning_ledger_event WHERE event_id = ?"
 )
 
 _SELECT_OBLIGATION = (
@@ -430,8 +456,8 @@ _INSERT_PROJECTION = (
 )
 
 _INSERT_EVENT = (
-    "INSERT INTO planning_ledger_event (event_id, ledger_key, event, as_of)"
-    " VALUES (?, ?, ?, ?)"
+    "INSERT INTO planning_ledger_event (event_id, ledger_key, event, as_of,"
+    " moment_id) VALUES (?, ?, ?, ?, ?)"
 )
 
 _INSERT_OBLIGATION = (
@@ -489,6 +515,7 @@ class SqliteLedgerStore:
         row: TargetLedgerRow,
         key_type: LedgerKeyType = LedgerKeyType.TARGET,
         obligations: Sequence[CoverageObligation] = (),
+        moment_id: str | None = None,
     ) -> Result[LedgerEventRow]:
         """One §20 event appended, and the current projection it leaves.
 
@@ -505,6 +532,18 @@ class SqliteLedgerStore:
         transaction (the obligation is current state — the log is the history).
         An obligation that no event produces has its own face:
         :meth:`upsert_obligation`.
+
+        ``moment_id`` is migration 0017's provenance leg — the §15 Moment the
+        presentation belongs to, passed by the delivery path that presented it
+        (p8-4) and ``None`` for an event no Moment produced. It is **part of
+        the event's content for the replay rule** (module docstring): the same
+        ``event_id`` may be re-offered for the same key, word and instant, and
+        a differing Moment is a different fact under one id — which is a
+        ``CONFLICT``, exactly like a differing instant. (The reason to compare
+        it rather than ignore it: the id's whole job is to say "this is the
+        same delivery", and two presentations of one key at one instant from
+        two different Moments are two facts; the caller mints a second id for
+        the second one.)
 
         Replay: an ``event_id`` the log already carries with the same content
         returns the durable row and writes nothing; a different content under
@@ -553,6 +592,7 @@ class SqliteLedgerStore:
                         event=event,
                         key=row.target_key,
                         as_of=as_of,
+                        moment_id=moment_id,
                     ):
                         return Ok(durable.value)
                     return _err(
@@ -604,7 +644,7 @@ class SqliteLedgerStore:
                 self._write_projection(row, key_type=key_type)
                 self._conn.execute(
                     _INSERT_EVENT,
-                    (event_id, row.target_key, event.value, as_of),
+                    (event_id, row.target_key, event.value, as_of, moment_id),
                 )
                 for obligation in obligations:
                     self._write_obligation(obligation)
@@ -614,6 +654,7 @@ class SqliteLedgerStore:
                         ledger_key=row.target_key,
                         event=event,
                         as_of=as_of,
+                        moment_id=moment_id,
                     )
                 )
         except sqlite3.IntegrityError as exc:

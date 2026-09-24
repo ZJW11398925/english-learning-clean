@@ -179,6 +179,10 @@ from elc.planner.kernel import (
     plan,
     runtime_decision_outcome_of,
 )
+from elc.planner.scope import (
+    ConversationPriorityView,
+    natural_break_available_of,
+)
 from elc.planner.types import PlanningOutcome, PlanningRequest
 from elc.platform.types import (
     DecisionCycleId,
@@ -204,7 +208,11 @@ __all__ = [
 #: **the stamp moved with it to ``sh2``**: this constant's own rule is that it
 #: moves with the readings it stamps, so the reading and the number do not
 #: silently differ. tests/phase7's value pin was moved in the same cut, and the
-#: comment beside that pin says why.
+#: comment beside that pin says why. **P8-4 did not move it again**: that cut
+#: relocated the *reading* of §13's field to ``elc.planner.scope``
+#: (:func:`~elc.planner.scope.natural_break_available_of`) so the shadow run and
+#: the automatic turn share one answer, but it changed no semantics — what this
+#: run reads, and what the value means, are exactly what ``sh2`` stamped.
 SHADOW_MODE_MODEL_VERSION = "sh2"
 
 
@@ -212,16 +220,21 @@ class _ConversationPriorityPort(Protocol):
     """docs/DOMAIN_MODEL.md §13's view, narrowed to the one field this module
     reads.
 
-    A local protocol rather than an import of
-    :class:`elc.planner.scope.ConversationPriorityView`, and for a mechanical
-    reason worth writing down: the module's import set is pinned exactly
-    (``tests/phase7/test_p7_4_shadow_mode.py``'s ``SHADOW_IMPORTS``), so a new
-    module import would be a pin change this cut may not make — while the
-    structure is not lost, because "the one field any code here can read" is
-    what the protocol names (the ``FreshnessPort`` rule: fields the module may
-    not consume are not declared). ``PlanningRequest`` types the field as
-    ``object | None``, so :func:`_natural_break_available_of` casts to this
-    port and reads exactly ``natural_break_available``.
+    A local protocol rather than reading the view's type directly, and for a
+    mechanical reason worth writing down: this module's *behaviour* is what the
+    boundary is about — nothing here calls the view's ``flow_priority`` /
+    ``interaction_phase``, which stay the Gate's — and "the one field any code
+    here can read" is what the protocol names (the ``FreshnessPort`` rule:
+    fields the module may not consume are not declared). ``PlanningRequest``
+    types the field as ``object | None``, so :func:`_natural_break_available_of`
+    casts to this port and reads exactly ``natural_break_available`` before
+    handing it to the shared reader.
+
+    (P8-4 note: this protocol is no longer what keeps ``elc.planner.scope`` out
+    of the module's import set — the shared reading of §13's field is imported
+    from there now, and the import-set pin gained that one name in the same
+    cut. The protocol stays because the *read* it narrows did not move: this
+    module still reads one field and delegates the answer.)
     """
 
     natural_break_available: bool
@@ -272,17 +285,24 @@ def _natural_break_available_of(request: PlanningRequest) -> bool:
     delegates no authorization, and the Gate keeps that (§12's ``PROTECTED``
     leg is the Gate's own read of ``flow_priority``, not this one).
 
+    The reading itself is :func:`elc.planner.scope.natural_break_available_of`
+    — one function, so the shadow run and P8-4's automatic turn (which builds
+    the same view for every ordinary turn) cannot drift; this helper is only
+    the request→view adapter, and it reads exactly one field of the view.
+
     A request with **no** view answers ``False`` — the fail-closed reading:
     a natural break one cannot see is not one the run may claim (P7-0's own
-    default, and "a value, not a missing authority"). Revisit: the §13 view
-    gains a producer (RA §4 step 3's conversation leg) that answers it from
-    the conversation's own state.
+    default, and "a value, not a missing authority"); the shared reader owns
+    that sentence. Revisit: the §13 view's producer moves, or a caller appears
+    that must read this without a request.
     """
 
     view = cast(
         "_ConversationPriorityPort | None", request.conversation_priority_view
     )
-    return view is not None and view.natural_break_available
+    return natural_break_available_of(
+        cast("ConversationPriorityView | None", view)
+    )
 
 
 def run_shadow(

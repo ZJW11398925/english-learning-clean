@@ -1,0 +1,76 @@
+-- 0017_ledger_event_provenance.sql — Phase 8 P8-4: the exposure event's
+-- provenance column (TASK-OPI-92170eff-….3 §2-H).
+--
+-- One column lands here, and nothing else. This migration is a single ALTER
+-- TABLE ADD COLUMN — no backfill, no rebuild, no table is created and no row
+-- is touched. Its writer lands in the same change:
+-- elc.runtime.controller's teaching-delivery point records the §20 exposure
+-- event through elc.planner.ledger_store, and that record now carries the
+-- Moment the presentation belongs to.
+--
+-- It **fulfils migration 0016's own Revisit clause**, quoted verbatim from
+-- that file's "No reference columns on the event log" paragraph:
+--
+--     Revisit: the delivery path (p8-4) records the Moment a presentation
+--     belongs to, or §19's "Review / Planning history solely derived from
+--     deleted Evidence" is given a row-level carrier — then the ref column
+--     and the conversation leg land together.
+--
+-- Both halves land in this one change: the column below, and the CONVERSATION
+-- leg in the BF-05 walk (elc/deletion/types.py names planning_ledger_event in
+-- CONVERSATION_SWEPT_TABLES, and elc/deletion/store.py carries the one
+-- statement that clears the reference).
+--
+-- Why the column is **nullable and carries no foreign key** — 0016's argument,
+-- restated because it is the reason this ALTER is shaped this way:
+--
+--   * an FK to teaching_moment would break the CONVERSATION walk. That scope
+--     removes the conversation's moments and *keeps* this log (the two scopes
+--     that remove ledger rows are LEARNING_TARGET and ALL_LEARNING_HISTORY,
+--     BF-05 lines 747/87); a reference to a removed moment would make the
+--     sweep die on a foreign key, which is exactly what 0016's Revisit clause
+--     forbade ("the ref column and the conversation leg land together");
+--   * the leg that lands with it is therefore a **clearing**, not a removal:
+--     UPDATE … SET moment_id = NULL for the deleted conversation's moment ids
+--     (elc/deletion/store.py, the §27 "drop the content ref, keep the non-body
+--     state" precedent of the planner_constraint leg). No FK means the
+--     clearing cannot be refused, and no row of this log is ever removed by
+--     that scope — which is what keeps "one fact, one source" true below.
+--
+-- The **"row = the log's projection" invariant is not affected**. The new
+-- column is not an input of any projection: the core's log record is still
+-- exactly (event, at) — ``elc/planner/ledger.py`` carries no moment id and
+-- this change does not touch it — and the store's projection columns
+-- (last_selected_at / last_presented_at / teaching_exposure_counts /
+-- recent_skips) remain pure functions of that log. A moment id is *evidence
+-- about where an event came from*, not a fact the projection is computed from;
+-- a durable log whose moment ids were cleared still projects to the identical
+-- row, which is why the clearing can never make ``get_ledger_row``'s
+-- projection-vs-log check refuse.
+--
+-- 0001–0016 are byte-identical: the statements below touch only
+-- planning_ledger_event's column list and the two stamps.
+--
+-- Authority map (canonical first; the column's name is the implementer's, the
+-- shape is §15's — the column holds a ``moment_id`` and §15 spells it exactly
+-- that way):
+--   docs/DATA_MODEL.md §15   TeachingMoment's ``moment_id`` — the value this
+--                            column carries, first line of the block.
+--   docs/RUNTIME_ARCHITECTURE.md §20
+--                            the five event words the log holds; the
+--                            provenance leg is what makes "which presentation
+--                            was this" answerable rather than inferred.
+--   docs/DATA_MODEL.md §1.3  append-first: the column is written with the
+--                            event it belongs to and is never moved by this
+--                            log's own writers; the one statement that clears
+--                            it is the deletion walk's (BF-05 §27).
+--   docs/DATA_MODEL.md §27   the physical form is the implementation's.
+--   docs/DATA_MODEL.md §26.1 migrations bump schema_version explicitly.
+ALTER TABLE planning_ledger_event ADD COLUMN moment_id TEXT;
+
+-- DATA_MODEL §26.1: 数据库迁移必须显式更新版本.
+INSERT INTO schema_meta (key, value) VALUES ('schema_version', '17')
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+
+INSERT INTO schema_meta (key, value) VALUES ('runtime_schema_version', '17')
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value;

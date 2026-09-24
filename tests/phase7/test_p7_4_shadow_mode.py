@@ -88,12 +88,20 @@ _NUMBERED = re.compile(r"^\d+\. ")
 
 #: Shadow mode's own import set — declared, and asserted by equality: a later
 #: cut that needs one more face has to say so here rather than widen it quietly.
+#: **P8-4 added ``elc.planner.scope``**, and it is the pure reading face: the
+#: run's one §13 field is now read through
+#: ``elc.planner.scope.natural_break_available_of`` so the shadow run and the
+#: ordinary turn's automatic leg share one answer (the local protocol that used
+#: to keep the module out stays; it narrows the *read*, not the import). No
+#: dispatch face was added — the set below still holds none of
+#: ``DISPATCH_PREFIXES``.
 SHADOW_IMPORTS = {
     "__future__",
     "dataclasses",
     "elc.planner.candidates",
     "elc.planner.feature_assembly",
     "elc.planner.kernel",
+    "elc.planner.scope",
     "elc.planner.types",
     "elc.platform.types",
     "typing",

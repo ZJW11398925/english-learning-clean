@@ -966,14 +966,44 @@ def test_the_module_is_sql_free_and_imports_cold() -> None:
     assert "COLD-AUTOMATIC" in proc.stdout
 
 
-def test_the_unit_is_not_wired_into_the_coordinator_yet() -> None:
-    """The boundary P8-1 declares: the ordinary turn's planner → gate →
+def test_the_unit_is_wired_into_the_coordinator_behind_the_opt_in() -> None:
+    """The boundary P8-4 moved, restated: the ordinary turn's planner → gate →
     moment connection (and the ``EphemeralTeachingDirective`` / prompt /
-    delivery legs) is p8-4's. The coordinator must not import this module
-    until that cut lands."""
+    delivery legs) **is** this unit's caller now — ``elc.runtime.controller``
+    imports it and assembles the leg — and the import is not what makes it run.
+    The opt-in is the constructor argument: ``automatic_teaching`` defaults to
+    ``None``, and the assembly is reached only through the injected wiring
+    (``self._automatic``), so an assembly that does not pass one keeps the
+    pre-P8-4 turn byte-identical.
+
+    (This pin read ``"automatic_teaching" not in controller_source`` while the
+    wiring was p8-4's to land. It is inverted rather than deleted: the old
+    claim would now be false, and the new one — "wired, and inert until
+    injected" — is the boundary that has to stay checkable. The behavioural
+    half lives in tests/phase8/test_p8_4_turn_integration.py: an uninjected
+    coordinator writes no planner / Gate / ledger row and answers with the
+    ordinary persona reply.)"""
+
+    import inspect
+
+    from elc.runtime.controller import ConversationCoordinator
 
     controller_source = (
         REPO_ROOT / "src" / "elc" / "runtime" / "controller.py"
     ).read_text(encoding="utf-8")
-    assert "automatic_teaching" not in controller_source
-    assert "decide_automatic_teaching" not in controller_source
+    assert "automatic_teaching" in controller_source
+    assert "elc.runtime.automatic_teaching import" in controller_source
+    assert "AutomaticTeachingResult" in controller_source
+    assert "assemble_automatic_turn(" in controller_source
+    parameter = inspect.signature(
+        ConversationCoordinator.__init__
+    ).parameters["automatic_teaching"]
+    assert parameter.default is None
+    assert "self._automatic = automatic_teaching" in controller_source
+    # The leg is reached through the wiring and nothing else: the assembly's own
+    # call site is guarded by the ``None`` check.
+    normalized = " ".join(controller_source.split())
+    assert (
+        "None if self._automatic is None else assemble_automatic_turn("
+        in normalized
+    )

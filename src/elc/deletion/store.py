@@ -674,7 +674,15 @@ class SqliteDeletionStore:
     # -- §19 conversation --------------------------------------------------
 
     def _conversation(self, conversation_id: str, run: _Run) -> None:
-        """§19, in foreign-key order."""
+        """§19, in foreign-key order.
+
+        The two ``review_event`` sweeps below are keyed on ``source_turn_id``
+        and ``evidence_group_id``; a row bound to one of this conversation's
+        Moments and to neither of those is unreachable from here and trips the
+        moment FK instead — the same-family missed row registered in this
+        package's docstring, not repaired here (the removal-vs-clearing
+        question belongs to the cut that lands the review-outcome path).
+        """
 
         cid = conversation_id
         persona_row = self._conn.execute(
@@ -833,6 +841,22 @@ class SqliteDeletionStore:
             values=moment_ids,
             run=run,
         )
+        # P8-4's repair of a pre-existing hole, found by driving a real
+        # ordinary turn through this walk: an **OPEN** status row binds the
+        # *DecisionCycle*, not a moment (``ConversationCoordinator.
+        # _gate_status_record`` says so, and the automatic unit repeats it —
+        # ``moment_id=None``), so the sweep above misses it and the FK from
+        # this table to ``decision_cycle`` refuses the cycle's own removal — a
+        # conversation that ever opened teaching could not be deleted at all.
+        # The cycle-keyed sweep is the same move one column over, and it runs
+        # in the same place (before the cycle row, which is all the FK order
+        # needs; deleting this child first can never violate anything).
+        self._remove_in(
+            table="gate_execution_status",
+            column="decision_cycle_id",
+            values=cycle_ids,
+            run=run,
+        )
         self._remove(
             table="interrupt_request",
             predicate="conversation_id = ?",
@@ -846,6 +870,11 @@ class SqliteDeletionStore:
             run=run,
         )
         self._clear_constraint_legs(turn_ids, run)
+        # P8-4's provenance leg (migration 0017): the moments removed with this
+        # conversation are the ones a ledger event may point at, and the events
+        # themselves stay (the ledger is not this scope's to remove — see
+        # ``_clear_ledger_provenance_legs``).
+        self._clear_ledger_provenance_legs(moment_ids, run)
         self._remove_in(
             table="projection_job",
             column="source_turn_id",
@@ -1289,6 +1318,51 @@ class SqliteDeletionStore:
             + _placeholders(len(turn_ids))
             + ")",
             turn_ids,
+        )
+        run.cleared_provenance_legs += cursor.rowcount
+
+    def _clear_ledger_provenance_legs(
+        self, moment_ids: Sequence[str], run: _Run
+    ) -> None:
+        """A presentation outlives its Moment; the reference to it does not.
+
+        Migration 0017 added ``planning_ledger_event.moment_id`` — the §15
+        Moment a §20 presentation belongs to — and 0016's own Revisit clause
+        named the pair this method is the second half of: "then the ref column
+        and the conversation leg land together". Three arguments say the
+        CONVERSATION leg is a **clearing and not a removal**, and each is
+        checkable:
+
+        - §27 / the ``planner_constraint`` leg above is the precedent: the
+          reference to a thing this scope removes is dropped while the
+          non-body state stays ("drop the content ref, keep the non-body
+          state"). A moment is deleted here; a ledger event is not a moment.
+        - the BF-05 contract lists "PlanningLedger user history" under
+          ``LEARNING_PRIVATE`` (line 87) and "related PlanningLedger history"
+          under the LEARNING_TARGET scope (line 747) — conversation scope does
+          **not** list the ledger, so removing its rows here would delete
+          learning history this scope was never given (SEC-026's shape: a
+          scope deletes what it names and nothing else).
+        - the log is the fact its row projects from (``get_ledger_row`` holds
+          the two against each other). An event removed per conversation would
+          make a standing row's projection disagree with its log with no way
+          to reconcile them; a cleared reference leaves both true.
+
+        The column is nullable for exactly this case, and the count rides the
+        existing §27 tally (``cleared_provenance_legs``) beside the constraint
+        leg's rows — one column, one meaning: a reference that could no longer
+        be resolved was dropped. Revisit: canonical text states that a
+        conversation's deletion removes the planning history derived from it —
+        then this leg becomes a removal and the ownership question moves with
+        it.
+        """
+
+        if not moment_ids:
+            return
+        cursor = self._conn.execute(
+            "UPDATE planning_ledger_event SET moment_id = NULL"
+            " WHERE moment_id IN (" + _placeholders(len(moment_ids)) + ")",
+            moment_ids,
         )
         run.cleared_provenance_legs += cursor.rowcount
 

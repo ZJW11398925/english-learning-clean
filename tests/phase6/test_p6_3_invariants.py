@@ -246,6 +246,17 @@ def test_the_object_is_mentioned_by_the_placement_and_two_pre_existing_modules(
     applied, no row written — and no store at all (the module imports no SQL
     face, and tests/phase7 pins that a shadow run leaves a real app.db
     untouched).
+
+    P8-4 adds two files, and neither is a consumer either.
+    ``runtime/automatic_turn.py`` is the same read one layer further out: the
+    ordinary turn's automatic leg reads §9's in-force rows
+    (``get_planner_constraint_view``) and hands them — the view, unchanged — to
+    the Planner's request, exactly as the shadow run does; it branches on no
+    constraint, applies no suppression and writes no row.
+    ``deletion/__init__.py`` names the object only in prose: the §27 "drop the
+    content ref, keep the non-body state" precedent is quoted there as the
+    argument for P8-4's own provenance leg, which touches
+    ``planning_ledger_event.moment_id`` and not this table.
     """
 
     mentioning = sorted(
@@ -255,6 +266,7 @@ def test_the_object_is_mentioned_by_the_placement_and_two_pre_existing_modules(
         or "PlannerConstraint" in path.read_text(encoding="utf-8")
     )
     assert mentioning == [
+        "deletion/__init__.py",
         "deletion/store.py",
         "deletion/types.py",
         "planner/candidates.py",
@@ -263,6 +275,7 @@ def test_the_object_is_mentioned_by_the_placement_and_two_pre_existing_modules(
         "planner/shadow.py",
         "planner/types.py",
         "platform/registry.py",
+        "runtime/automatic_turn.py",
         "teaching/gate.py",
         "user_config/__init__.py",
         "user_config/commands.py",

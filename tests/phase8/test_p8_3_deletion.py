@@ -216,7 +216,13 @@ def test_the_statement_maps_carry_one_select_and_one_delete_per_table() -> None:
 
 def test_the_deleter_is_the_only_module_that_names_the_tables_with_a_delete() -> None:
     """One home for removals, and none for rewrites: the store that appends
-    events carries no UPDATE and no DELETE statement."""
+    events carries no UPDATE and no DELETE statement.
+
+    The one writer that is not a removal is P8-4's CONVERSATION leg on the
+    event log: ``UPDATE … SET moment_id = NULL`` clears a provenance reference
+    (migration 0017's column) without touching a row or a logged fact — which
+    is why ``planning_ledger_event`` is the one pair of statements here and
+    ``ledger_store.py`` (the appender) still carries ``INSERT`` alone."""
 
     from tests.phase3.sql_write_scan import write_statements
 
@@ -230,7 +236,7 @@ def test_the_deleter_is_the_only_module_that_names_the_tables_with_a_delete() ->
         REPO_ROOT / "src" / "elc" / "deletion" / "store.py"
     )
     assert deleter["planning_ledger"] == ("DELETE",)
-    assert deleter["planning_ledger_event"] == ("DELETE",)
+    assert deleter["planning_ledger_event"] == ("DELETE", "UPDATE")
     assert deleter["coverage_obligation"] == ("DELETE",)
 
 

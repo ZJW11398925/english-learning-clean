@@ -93,6 +93,7 @@ __all__ = [
     "ScopeResolution",
     "UNPRODUCED_SCOPE_WORDS",
     "interruption_cost_band_of",
+    "natural_break_available_of",
     "resolve_user_intent_scope",
 ]
 
@@ -146,10 +147,15 @@ class ConversationPriorityView:
     §13's coverage-starvation safeguard reads, so a caller that assembled a
     context from this view passed the same fact through both faces.
 
-    **No producer is landed here** (RA §4 step 3's ``ConversationPriorityView``
-    artifact is the conversation leg's work item): this cut lands the *shape*,
-    the two vocabularies and the one reading below, so the cut that produces
-    the view has a contract to fill rather than a word list to invent.
+    **The producer landed in P8-4** (RA §4 step 3's conversation leg): this cut
+    landed the *shape*, the two vocabularies and the two readings below, and the
+    cut that wires the ordinary turn derives an instance from the conversation's
+    own durable state — ``elc.runtime.automatic_turn.
+    conversation_priority_view_of`` (a live teaching lock/moment reads TEACHING
+    + PROTECTED + no natural break; otherwise OPEN + NORMAL + a break). That
+    derivation is deliberately **not** here: this module is the consumption face
+    ("what a reader may read off §13's view"), and the producer has to read the
+    durable world, which no module here does.
     """
 
     flow_priority: FlowPriority
@@ -189,6 +195,38 @@ def interruption_cost_band_of(
     if view is None:
         return None
     return FLOW_TO_INTERRUPTION_COST_BAND[view.flow_priority]
+
+
+def natural_break_available_of(
+    view: ConversationPriorityView | None,
+) -> bool:
+    """BF-02 §5's ``natural_break_available``, read off §13's view — the one
+    reading every caller shares (P8-4).
+
+    docs/DOMAIN_MODEL.md §13's :class:`ConversationPriorityView` carries the
+    field under BF-02 §5's own name, so the view *is* the authority and this
+    function only reads it. It lives here, beside
+    :func:`interruption_cost_band_of`, because this module owns §13's shape and
+    its two readings — and it exists because two callers now need the same
+    answer: the shadow run's context assembly (P7-4's :func:`elc.planner.shadow.
+    run_shadow`, where P8-2 moved the value's *source* from a keyword argument
+    to the request's view) and P8-4's automatic turn, which builds that view on
+    every ordinary turn. One function is what keeps the two from drifting:
+    "§13's view expresses the protection level and authorizes nothing" — reading
+    this one field delegates no authorization, and the Gate keeps that (§12's
+    ``PROTECTED`` leg is the Gate's own read of ``flow_priority``, not this
+    one).
+
+    A ``None`` view answers ``False`` — the **fail-closed** reading: a natural
+    break one cannot see is not one the run may claim (P7-0's own default, and
+    "a value, not a missing authority"). That sentence is the whole of the
+    semantics, and it did not change when the reading moved here.
+
+    Revisit: canonical text puts the fact somewhere other than §13's view, or a
+    caller appears that must read it without holding a view.
+    """
+
+    return view is not None and view.natural_break_available
 
 
 # -- §12: the constraint view the resolver reads -----------------------------
