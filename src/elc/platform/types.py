@@ -273,12 +273,20 @@ class PlannerEvaluationRecord:
     performs it) and neither record is renamed after the other.
 
     ``frontier_candidate_ids`` / ``ranked_candidate_ids`` / ``factor_trace``
-    are the three TEXT columns §14 spells with bracket/trace shapes; the
-    store encodes them as deterministic JSON arrays (the elc/teaching/store.py
-    ``_array_document`` precedent). ``created_at`` is the store's own stamp;
-    this record is minted **for the row** in P8-0 and carries it (the
-    ``DecisionCycleRecord`` precedent), while the two older §14 records keep
-    their own field sets and
+    are the three TEXT columns §14 spells with bracket/trace shapes. The two
+    id columns are deterministic JSON arrays (the elc/teaching/store.py
+    ``_array_document`` precedent) and stay so; ``factor_trace`` is the one
+    column **P9-0** moved off that encoding — it carries the versioned
+    :class:`FactorTraceDocument` the planner's trace is serialized to, and
+    this record's field is that document (see that type, and
+    ``elc/planner/trace_document.py`` for the one encoder/decoder). The field
+    keeps a second arm for the **legacy** encoding a row written before P9-0
+    carries: a bare JSON array of the run's prose reasons, which the decoder
+    answers as the tuple of lines it always was (the ``version`` key's
+    absence is the discriminant, registered in elc.planner.records judgement
+    9). ``created_at`` is the store's own stamp; this record is minted **for
+    the row** in P8-0 and carries it (the ``DecisionCycleRecord`` precedent),
+    while the two older §14 records keep their own field sets and
     :class:`RuntimeDecisionOutcome` follows the sibling-adapter convention
     above — all three asymmetries are registered in elc.planner.records.
     """
@@ -287,10 +295,125 @@ class PlannerEvaluationRecord:
     decision_cycle_id: DecisionCycleId
     frontier_candidate_ids: tuple[str, ...]
     ranked_candidate_ids: tuple[str, ...]
-    factor_trace: tuple[str, ...]
+    factor_trace: FactorTraceDocument | tuple[str, ...]
     planner_version: PlannerVersion
     policy_profile_version: PolicyVersion
     created_at: str
+
+
+# ---------------------------------------------------------------------------
+# The §14 ``factor_trace`` document (Phase 9 P9-0)
+# ---------------------------------------------------------------------------
+#
+# The **shape** of the decoded column lives here, beside the record that
+# carries it, for a structural reason: ``elc/platform/types.py`` is the
+# shared kernel's leaf (it imports nothing from ``elc.*``), so the record's
+# field can be typed with this document without a planner → platform → planner
+# import cycle. The **encoder / decoder** — the single point where the
+# document is turned into bytes and back — lives in
+# ``elc.planner.trace_document`` (the §14 section is Planner Data, and that
+# module is where the kernel's own trace types are known).
+
+
+@dataclass(frozen=True)
+class FactorReadingDocument:
+    """One factor's number and where it came from, as the document carries it.
+
+    The decoded counterpart of the kernel's ``FactorReading``
+    (``elc.planner.kernel``): ``factor`` / ``source`` / ``authority`` are the
+    words the kernel's enums spell (recorded as their string values — the
+    document is durable text and does not depend on an enum's identity), and
+    ``authority`` is non-``None`` exactly when the number was read from a
+    P7-0 authority.
+    """
+
+    factor: str
+    value: float
+    source: str
+    authority: str | None
+
+
+@dataclass(frozen=True)
+class FactorGapDocument:
+    """One factor no authority could answer, as the document carries it.
+
+    The decoded counterpart of the kernel's ``FactorGap``: a candidate with a
+    non-empty ``gaps`` tuple is not scored at all (BF-02 §5 forbids answering
+    an unreadable authority with ``0``), so the gap is why a run degrades.
+    """
+
+    factor: str
+    authority: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class CandidateTraceDocument:
+    """One candidate's trace, field for field with the kernel's
+    ``CandidateTrace``.
+
+    **Every** field of the kernel's record is here, not a subset: the P9-0
+    finding was that the durable column carried the run's prose and none of
+    this, so the document is complete by construction — a reader can
+    reconstruct what the kernel looked at per candidate (the readings it was
+    scored from, the two partial sums, the coverage-service adjustment, the
+    utility, the activation verdict and the dominance/tie facts) without
+    re-running anything. An excluded candidate carries its exclusion reason
+    and ``None`` scores, exactly as the kernel carries it (hard exclusion is
+    not a penalty).
+    """
+
+    candidate_id: str
+    canonical_key: str
+    merged_from: tuple[str, ...]
+    initiative_class: str
+    request_priority: int
+    coverage_service_state: str
+    benefit: tuple[FactorReadingDocument, ...]
+    cost: tuple[FactorReadingDocument, ...]
+    gaps: tuple[FactorGapDocument, ...]
+    excluded: str | None
+    benefit_score: float | None
+    cost_score: float | None
+    coverage_service_bonus: float | None
+    utility: float | None
+    activation_path: str | None
+    activation_threshold: float | None
+    activated: bool | None
+    dominated_by: tuple[str, ...]
+    in_tie_set: bool
+    selected: bool
+
+
+@dataclass(frozen=True)
+class FactorTraceDocument:
+    """The decoded §14 ``factor_trace`` column: a versioned, structured trace.
+
+    Four keys, and each answers one question a reader of the durable row
+    asks:
+
+    - ``version`` — which template produced the document. It is also the
+      **discriminant** between this encoding and the legacy one a row
+      written before P9-0 carries (a bare JSON array of prose lines, no
+      ``version`` key); ``elc.planner.trace_document`` owns both words;
+    - ``provenance`` — whether the candidates below are the kernel's own
+      trace or the row states that no trace was recorded for the cycle. The
+      distinction is not cosmetic: a caller may record a cycle without
+      holding a ``PlannerTrace`` (a leg that could not run records its own
+      degraded shape), and "the run looked at nothing" must not be readable
+      as "nobody wrote down what it looked at" — nor the reverse;
+    - ``reasons`` — the run's prose ``reason_trace``, verbatim and in its own
+      order. P9-0 **split** the two: the column is no longer the prose array
+      it used to be, and the prose now travels as one named part of the
+      structured document instead of *being* the column's content;
+    - ``candidates`` — the per-candidate trace tuples, canonicalized (see
+      the encoder's own rules).
+    """
+
+    version: str
+    provenance: str
+    reasons: tuple[str, ...]
+    candidates: tuple[CandidateTraceDocument, ...]
 
 
 @dataclass(frozen=True)

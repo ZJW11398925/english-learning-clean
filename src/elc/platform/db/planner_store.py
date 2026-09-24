@@ -64,8 +64,13 @@ import sqlite3
 from datetime import UTC, datetime
 from typing import TypeVar
 
-from elc.planner.kernel import runtime_decision_outcome_of
+from elc.planner.kernel import PlannerTrace, runtime_decision_outcome_of
 from elc.planner.records import PlannerCycleRecords
+from elc.planner.trace_document import (
+    decode_factor_trace,
+    factor_trace_document,
+    factor_trace_of,
+)
 from elc.planner.types import PlannerEvaluation, PlanningOutcome
 from elc.platform.db.epoch import RuntimeEpochFence, StaleEpochError
 from elc.platform.db.tx import short_transaction
@@ -74,6 +79,7 @@ from elc.platform.types import (
     DomainError,
     DomainErrorCode,
     Err,
+    FactorTraceDocument,
     Ok,
     PlannerDecision,
     PlannerDecisionId,
@@ -174,17 +180,43 @@ _OUTCOME_COLUMNS = (
 
 def _evaluation_record(row: sqlite3.Row) -> PlannerEvaluationRecord:
     """Decode one §14 row (default tuple rows; positional order is
-    ``_EVALUATION_COLUMNS``, the literal every SELECT here uses)."""
+    ``_EVALUATION_COLUMNS``, the literal every SELECT here uses).
+
+    ``factor_trace`` is decoded by the document's own reader
+    (``elc.planner.trace_document.decode_factor_trace``): a versioned object
+    becomes the structured document, and the legacy bare array a row written
+    before P9-0 carries becomes the tuple of prose lines it always was.
+    """
 
     return PlannerEvaluationRecord(
         planner_evaluation_id=PlannerEvaluationId(str(row[0])),
         decision_cycle_id=DecisionCycleId(str(row[1])),
         frontier_candidate_ids=_array_from_document(row[2]),
         ranked_candidate_ids=_array_from_document(row[3]),
-        factor_trace=_array_from_document(row[4]),
+        factor_trace=decode_factor_trace(row[4]),
         planner_version=PlannerVersion(str(row[5])),
         policy_profile_version=PolicyVersion(str(row[6])),
         created_at=str(row[7]),
+    )
+
+
+def _trace_document_of(
+    evaluation: PlannerEvaluation, trace: PlannerTrace | None
+) -> FactorTraceDocument:
+    """The evaluation's ``factor_trace``, as this unit writes it.
+
+    One builder for both the INSERT and the replay comparison, so the bytes a
+    write lands and the bytes a re-entry is compared against cannot be built
+    by two different readings: the document's ``candidates`` are the trace's
+    own (empty when the caller held none), its ``reasons`` are the
+    evaluation's ``reason_trace``, and its ``provenance`` word says which of
+    the two cases this is (``elc/planner/records.py`` judgements 9 and 10).
+    """
+
+    return factor_trace_of(
+        reasons=evaluation.reason_trace,
+        candidates=() if trace is None else trace.candidates,
+        traced=trace is not None,
     )
 
 
@@ -300,6 +332,7 @@ class SqlitePlannerRecordStore:
         turn_id: TurnId,
         outcome: PlanningOutcome,
         reason_codes: tuple[str, ...] = (),
+        trace: PlannerTrace | None = None,
     ) -> Result[PlannerCycleRecords]:
         """One short transaction: the cycle's §14 rows and the back-reference.
 
@@ -307,6 +340,13 @@ class SqlitePlannerRecordStore:
         land together or not at all. A cycle that already carries a status
         row is replayed, not re-decided; a same-turn newer cycle moves the
         turn's ``runtime_decision_outcome`` row.
+
+        ``trace`` is the same run's kernel trace (``ShadowRun.trace``) and it
+        is what the evaluation's ``factor_trace`` document is built from
+        (:func:`_trace_document_of`): with it, the durable column carries the
+        per-candidate trace; without it, the document says so in its
+        ``provenance`` word instead of claiming an empty run
+        (``elc/planner/records.py`` judgements 9 and 10).
         """
 
         refusal = _record_refusal(outcome)
@@ -346,6 +386,7 @@ class SqlitePlannerRecordStore:
                         cycle_id=cycle_id,
                         turn_id=turn_id,
                         outcome=outcome,
+                        trace=trace,
                         durable_status=durable,
                     )
                 created_at = _now()
@@ -372,7 +413,9 @@ class SqlitePlannerRecordStore:
                         cycle_id,
                         _array_document(evaluation.frontier_candidate_ids),
                         _array_document(_ranked_candidate_ids(evaluation)),
-                        _array_document(evaluation.reason_trace),
+                        factor_trace_document(
+                            _trace_document_of(evaluation, trace)
+                        ),
                         evaluation.planner_version,
                         evaluation.policy_version,
                         created_at,
@@ -443,16 +486,28 @@ class SqlitePlannerRecordStore:
         cycle_id: DecisionCycleId,
         turn_id: TurnId,
         outcome: PlanningOutcome,
+        trace: PlannerTrace | None,
         durable_status: sqlite3.Row,
     ) -> Result[PlannerCycleRecords]:
         """The durable records for a cycle that already carries a status row.
 
         A re-entry is a replay only if it *is* the same unit: the status word
-        with its error code, the evaluation's five derived values and the
-        decision (id, word, selected candidate, reason, evaluation link) must
-        agree with the durable rows. A difference is a refusal — returning
-        the durable records for a submission that contradicts them would make
-        every subsequent read a guess (elc/planner/records.py, judgement 3).
+        with its error code, the evaluation's five derived values — the two
+        id lists, the ``factor_trace`` **document** (P9-0: the candidates, the
+        prose and the provenance word are compared together, which is the
+        same agreement the bare prose used to carry plus the candidate trace
+        beside it), and the two version words — and the decision (id, word,
+        selected candidate, reason, evaluation link) must agree with the
+        durable rows. A difference is a refusal — returning the durable
+        records for a submission that contradicts them would make every
+        subsequent read a guess (elc/planner/records.py, judgement 3).
+
+        A durable row written before P9-0 carries the legacy prose array, so
+        a post-cut re-entry of *that* cycle compares a document against lines
+        and is refused: a decoder cannot vouch that a structured submission
+        and a pre-cut row are the same unit, and guessing would be the one
+        thing this path exists to prevent (judgement 9's revisit names the
+        migration that would re-encode such rows).
 
         Nothing is written on this path, which is what makes RA §23's two
         Planner-side crash windows hold: a re-entry cannot produce a second
@@ -476,7 +531,7 @@ class SqlitePlannerRecordStore:
         submitted = (
             evaluation.frontier_candidate_ids,
             _ranked_candidate_ids(evaluation),
-            evaluation.reason_trace,
+            _trace_document_of(evaluation, trace),
             str(evaluation.planner_version),
             str(evaluation.policy_version),
         )

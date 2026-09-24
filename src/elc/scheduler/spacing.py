@@ -367,6 +367,23 @@ class ReviewEventRole(StrEnum):
     from, plus the two answers :func:`anchor_of` and
     :func:`stage_from_history` give. A cut that changes what an event does
     changes this table with it.
+
+    **A failed review's window, referred rather than decided (P9-0).** The
+    ``ANCHOR_ONLY`` row above has a consequence worth stating where the row
+    is: a review that happened and did **not** engage still anchors, so it
+    opens a fresh window and the next due date moves one full spacing
+    interval further out — a failure earns the same delay an engagement
+    does, and repeated failures never shorten the loop. The alternative
+    reading (a failure anchors nothing, so the row stays as due as it was
+    and the flow can retry sooner) is equally faithful to §5.2, which gives
+    the event no outcome column to decide it with. **This cut changes
+    nothing** — the freeze table and every assertion about it stand — and
+    refers the question: the trigger is the first real ReviewEvent producer
+    (the review-outcome flow, whose writer contract
+    :mod:`elc.scheduler.review_record` declares), and changing the reading
+    must go through a version entry in ``docs/DECISION_REGISTER.md``, the
+    same route this docstring's last sentence implies. ``review_record``'s
+    own docstring holds the two arms' full consequence analysis.
     """
 
     ANCHOR_AND_ADVANCE = "ANCHOR_AND_ADVANCE"

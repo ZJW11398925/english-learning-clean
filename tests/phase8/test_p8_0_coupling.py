@@ -24,11 +24,16 @@ import sqlite3
 import pytest
 
 from elc.planner.shadow import run_shadow
+from elc.planner.trace_document import (
+    FACTOR_TRACE_PROVENANCE_NONE,
+    FACTOR_TRACE_VERSION,
+)
 from elc.planner.types import PlannerExecutionStatusValue
 from elc.platform.types import (
     DecisionCycleId,
     DomainErrorCode,
     Err,
+    FactorTraceDocument,
     Ok,
     RuntimeDecisionOutcomeValue,
 )
@@ -152,7 +157,20 @@ def test_a_real_select_run_lands_the_four_records(
     assert records.decision.no_target_reason is None
     assert records.evaluation.ranked_candidate_ids == ("c-p8-0",)
     assert records.evaluation.frontier_candidate_ids == ("c-p8-0",)
-    assert records.evaluation.factor_trace == shadow.why
+    # P9-0 moved this column from the bare prose array to the versioned
+    # document (elc/planner/records.py judgement 9). The old assertion —
+    # ``factor_trace == shadow.why`` — pinned "the column *is* the prose";
+    # this one pins "the column is the structured document whose ``reasons``
+    # are the prose", which is the same claim about the prose plus the
+    # provenance word and the candidates array beside it. This call passes no
+    # trace, so the honest document says NOT_RECORDED (P9-0's own suite drives
+    # the traced case: tests/phase9/test_p9_0_factor_trace_document.py).
+    document = records.evaluation.factor_trace
+    assert isinstance(document, FactorTraceDocument)
+    assert document.version == FACTOR_TRACE_VERSION
+    assert document.provenance == FACTOR_TRACE_PROVENANCE_NONE
+    assert document.reasons == shadow.why
+    assert document.candidates == ()
     assert records.runtime_decision_outcome is not None
     assert records.runtime_decision_outcome.outcome is (
         RuntimeDecisionOutcomeValue.NORMAL

@@ -3,21 +3,28 @@
 Every read answers ``Ok(None)`` for an unknown id (the
 ``SqliteDecisionCycleStore`` precedent: an absent row is a fact, not an
 error), every record's fields come back exactly as they went in, and the
-three TEXT list columns are checked **at the byte level** against the
-deterministic JSON document ``elc/teaching/store.py``'s ``_array_document``
-produces — one encoding, reused.
+TEXT list columns are checked **at the byte level**: the two id columns
+against the deterministic JSON document ``elc/teaching/store.py``'s
+``_array_document`` produces — one encoding, reused — and ``factor_trace``
+against the versioned document P9-0 moved it to (its own test spells the
+payload's keys and the per-candidate field set a second time, so the pin is
+not the encoder asserting itself).
 """
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import sqlite3
 
 import pytest
 
+from elc.planner.kernel import CandidateTrace
 from elc.planner.shadow import run_shadow
+from elc.planner.trace_document import factor_trace_document
 from elc.platform.types import (
     DecisionCycleId,
+    FactorTraceDocument,
     Ok,
     PlannerDecisionId,
     PlannerEvaluationId,
@@ -245,9 +252,22 @@ def test_the_back_reference_read_answers_the_three_shapes(
 def test_the_list_columns_are_the_deterministic_array_documents(
     db: sqlite3.Connection, fence, cycle, planner_store
 ) -> None:
-    """The JSON shape is ``elc/teaching/store.py``'s ``_array_document``,
-    reused: ``json.dumps(list, sort_keys=True, separators=(",", ":"))``.
-    Asserted at the byte level, on the rows themselves."""
+    """The JSON shape of the two **id** columns is ``elc/teaching/store.py``'s
+    ``_array_document``, reused: ``json.dumps(list, sort_keys=True,
+    separators=(",", ":"))`` — asserted at the byte level, on the rows
+    themselves.
+
+    P9-0 moved the third column this test used to pin beside them: the
+    ``factor_trace`` bytes are no longer the array of lines (the old
+    assertion) but the versioned document. Its storage shape is stated
+    independently of ``elc.planner.trace_document`` at the **JSON** layer —
+    the four-key object below is hand-written for the untraced row, and the
+    traced row's payload is read back with ``json.loads`` and compared
+    against the kernel's own field set — while the byte-level arms compare
+    the row against the encoder's own bytes
+    (``row[2] == factor_trace_document(…)``): the encoder is the thing whose
+    determinism those arms witness, not a second spelling of the document.
+    """
 
     records = _write_select(cycle, planner_store, "c-p8-0")
     row = db.execute(
@@ -261,11 +281,15 @@ def test_the_list_columns_are_the_deterministic_array_documents(
     )
     assert row[0] == expected_frontier
     assert row[1] == expected_frontier
-    assert row[2] == json.dumps(
-        list(records.evaluation.factor_trace),
-        sort_keys=True,
-        separators=(",", ":"),
-    )
+    document = records.evaluation.factor_trace
+    assert isinstance(document, FactorTraceDocument)
+    assert row[2] == factor_trace_document(document)
+    assert json.loads(row[2]) == {
+        "version": "ft1",
+        "provenance": "NOT_RECORDED",
+        "reasons": list(document.reasons),
+        "candidates": [],
+    }
     outcome_row = db.execute(
         "SELECT reason_codes FROM runtime_decision_outcome WHERE turn_id = ?",
         (cycle.turn_id,),
@@ -274,9 +298,9 @@ def test_the_list_columns_are_the_deterministic_array_documents(
 
     # A one-member document cannot tell the compact spelling from the default
     # one — ``json.dumps(["c-p8-0"])`` is the same bytes either way — so the
-    # encoding is pinned again on **two-member** documents, on all four list
-    # columns. (A second cycle on the same turn: re-submitting the first would
-    # be a refused replay, and _write_select cannot carry reason_codes.)
+    # id columns' encoding is pinned again on **two-member** documents. (A
+    # second cycle on the same turn: re-submitting the first would be a
+    # refused replay, and _write_select cannot carry reason_codes.)
     opened = open_cycle(
         db,
         fence,
@@ -294,6 +318,7 @@ def test_the_list_columns_are_the_deterministic_array_documents(
         turn_id=opened.turn_id,
         outcome=shadow.outcome,
         reason_codes=("REASON_A", "REASON_B"),
+        trace=shadow.trace,
     )
     assert isinstance(second, Ok), second
     compact_ids = json.dumps(
@@ -310,11 +335,29 @@ def test_the_list_columns_are_the_deterministic_array_documents(
     assert row is not None
     assert row[0] == compact_ids
     assert row[1] == compact_ids
-    assert row[2] == json.dumps(
-        list(second.value.evaluation.factor_trace),
-        sort_keys=True,
-        separators=(",", ":"),
+    traced = second.value.evaluation.factor_trace
+    assert isinstance(traced, FactorTraceDocument)
+    # The row is the encoder's own bytes, and the payload says what the
+    # column carries at the JSON level: the four keys, the run's prose, and —
+    # per candidate — exactly the kernel's own field set (the completeness
+    # claim of P9-0's document, checked against `dataclasses.fields`).
+    assert row[2] == factor_trace_document(traced)
+    payload = json.loads(row[2])
+    assert set(payload) == {"version", "provenance", "reasons", "candidates"}
+    assert payload["version"] == "ft1"
+    assert payload["provenance"] == "KERNEL_TRACE"
+    assert payload["reasons"] == list(traced.reasons)
+    assert [c["candidate_id"] for c in payload["candidates"]] == ["c-a", "c-b"]
+    for candidate in payload["candidates"]:
+        assert set(candidate) == {
+            field.name for field in dataclasses.fields(CandidateTrace)
+        }
+    selected = next(
+        c for c in payload["candidates"] if c["candidate_id"] == "c-a"
     )
+    assert selected["selected"] is True
+    assert selected["utility"] is not None
+    assert selected["benefit"] and selected["cost"]
     outcome_row = db.execute(
         "SELECT reason_codes FROM runtime_decision_outcome WHERE turn_id = ?",
         (opened.turn_id,),

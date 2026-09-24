@@ -362,7 +362,10 @@ class PlannerDecisionRecordStore(Protocol):
     Declared here rather than imported so the unit's dependency is visible
     at its own boundary (the ``elc.runtime.projections`` ``ProjectionJobStore``
     precedent); ``elc.platform.db.planner_store.SqlitePlannerRecordStore``
-    satisfies it.
+    satisfies it. P9-0 widened the narrowing by one keyword — ``trace``, the
+    run's kernel trace, typed ``object`` like ``outcome`` (this module uses
+    none of its fields and the store's own signature is the authority on the
+    shape) — because the durable ``factor_trace`` document is built from it.
     """
 
     def record_planner_cycle(
@@ -371,6 +374,7 @@ class PlannerDecisionRecordStore(Protocol):
         turn_id: TurnId,
         outcome: object,
         reason_codes: tuple[str, ...] = (),
+        trace: object | None = None,
     ) -> Result[PlannerCycleRecords]: ...
 
 
@@ -482,6 +486,7 @@ def decide_automatic_teaching(
     planner_store: PlannerDecisionRecordStore,
     teaching: TeachingOpenAuthority,
     user_intent_scope: str = "OPEN",
+    trace: object | None = None,
 ) -> Result[AutomaticTeachingResult]:
     """One automatic decision: Planner records first, then the cycle's
     durable Gate trace if it has one, then the Gate, then the CP2 open
@@ -490,7 +495,12 @@ def decide_automatic_teaching(
     ``outcome`` is the kernel's own answer
     (:class:`elc.planner.types.PlanningOutcome`; typed as ``object`` here
     because this module uses three of its fields and the stores' own
-    signatures are the authority on its shape).
+    signatures are the authority on its shape). ``trace`` is the *same run's*
+    :class:`~elc.planner.kernel.PlannerTrace` (``ShadowRun.trace``), forwarded
+    to the Planner half so the durable ``factor_trace`` document carries the
+    per-candidate trace (P9-0; the keyword's default keeps every pre-P9-0
+    caller recording exactly the shape it recorded before — a document whose
+    ``provenance`` says ``NOT_RECORDED``).
 
     ``user_intent_scope`` is §12's word for the cycle — **the caller's**, read
     from the one resolver (``elc.planner.scope.resolve_user_intent_scope``) the
@@ -511,7 +521,7 @@ def decide_automatic_teaching(
     #    what makes the automatic path crash-honest: a failure here returns
     #    before the Gate is ever asked.
     recorded = planner_store.record_planner_cycle(
-        turn_id=turn.turn_id, outcome=outcome
+        turn_id=turn.turn_id, outcome=outcome, trace=trace
     )
     if not isinstance(recorded, Ok):
         return recorded

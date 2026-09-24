@@ -981,8 +981,10 @@ def decide_automatic_turn(
     """Hand one plan to P8-1's unit: Planner records → Gate → CP2.
 
     The unit owns the order and every refusal; this function only supplies what
-    it declares: the plan's outcome, the plan's controls, the turn's identifiers
-    and the §15 template (``None`` when the run selected nothing — such a run is
+    it declares: the plan's outcome, the plan's controls, the turn's identifiers,
+    the run's own kernel trace (``plan.run.trace`` — P9-0: it is what the
+    durable ``factor_trace`` document's ``candidates`` are built from) and the
+    §15 template (``None`` when the run selected nothing — such a run is
     decided before any template is read, and an ALLOW without one is refused by
     the unit rather than guessed here).
     """
@@ -1014,6 +1016,7 @@ def decide_automatic_turn(
         planner_store=wiring.planner_store,
         teaching=wiring.teaching,
         user_intent_scope=plan.scope.scope.value,
+        trace=plan.run.trace,
     )
 
 

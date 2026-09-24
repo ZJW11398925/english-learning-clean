@@ -50,10 +50,16 @@ PLANNER_TABLES = (
 
 #: The port's declared import set, asserted by equality: a later cut that
 #: needs one more face has to say so here rather than widen it quietly (the
-#: ``SHADOW_IMPORTS`` pin's shape).
+#: ``SHADOW_IMPORTS`` pin's shape). **P9-0 said so**: the port's write face
+#: gained the optional ``trace`` keyword (the kernel's own ``PlannerTrace``,
+#: which is what the durable ``factor_trace`` document's candidates are built
+#: from), so ``elc.planner.kernel`` joins the set. It is the *planner's* own
+#: module — still no db/teaching/runtime face and no SQL — which is the claim
+#: this pin exists to hold.
 PORT_IMPORTS = {
     "__future__",
     "dataclasses",
+    "elc.planner.kernel",
     "elc.planner.types",
     "elc.platform.types",
     "typing",

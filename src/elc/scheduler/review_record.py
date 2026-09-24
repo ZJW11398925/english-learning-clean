@@ -87,6 +87,86 @@ frozen there, and it keys on the same two columns), and the agreement is by
 construction — both read ``engaged``. Nothing in this module is wired into the
 due decision, the Gate or the Planner; it is the vocabulary and the outcome a
 recorder or a reporter needs, declared once, with the revisit conditions above.
+
+**The writer contract (P9-0: declared here, written nowhere yet).** The first
+real ``ReviewEvent`` writer — the review-outcome flow that records what a
+review did — is a later cut's work item; this section is the contract it must
+meet, stated where the vocabulary it uses is stated (``spacing.py``'s freeze
+table says the same thing from the ladder's side: "the first ReviewEvent
+producer must cite this table before it writes an event"). A writer that does
+not meet it is not a writer of this vocabulary:
+
+- **Inputs.** §5.2's eight columns, and nothing else:
+  ``review_event_id`` / ``schedule_item_id`` / ``teaching_moment_id?`` /
+  ``source_turn_id?`` / ``event_type`` / ``engaged`` / ``evidence_group_id?``
+  / ``created_at``. ``event_type`` is one of the four words above (the schema
+  still carries none of them, so the writer is where the word becomes
+  durable); the three optional references are ``None`` when the act names
+  none; ``created_at`` may be left undeclared (``""``) and the store stamps
+  it — the 0007 ``teaching_moment`` precedent, which the durable writer
+  documents.
+- **What must be validated before the row lands.** The schedule item — and
+  every non-``None`` reference — must exist: a missing parent is the domain's
+  ``NOT_FOUND`` naming the column, never the insert's integrity error (the
+  durable writer's ``_missing_parent`` does exactly this). ``engaged`` must
+  be the outcome's spine, which is the one semantic obligation the columns
+  carry: a review that failed is ``engaged=False`` and there is no fifth word
+  or second column for it (above). And the event is **append-first**: an id
+  that already exists is either an identical replay, which returns the
+  durable row, or a contradiction, which is refused — a recorded review is a
+  fact and is never rewritten (docs/DATA_MODEL.md §1.3).
+- **When the timestamp is immutable.** The replay question is asked first and
+  it treats an undeclared ``created_at`` as a **wildcard**: a caller that
+  declared no time cannot disagree with the store-stamped one the durable row
+  carries, so retrying the same silent content replays. A **declared** time is
+  content: it must equal the durable value verbatim to replay, and a
+  different declared time is a different fact, refused rather than
+  silently restamped (the p6-1 F-1 reading, which the durable writer carries
+  for both ``schedule_item`` and ``review_event``).
+- **Where it writes.** One short transaction under the owner-epoch fence, in
+  the durable writer's own unit (``elc.scheduler.store``), which is the only
+  module in the tree that writes §5.2's two tables. The review-outcome flow
+  never writes a row itself and never opens a transaction of its own: it
+  hands the record to that face.
+- **What a refusal leaves behind.** Nothing. ``NOT_FOUND`` (a missing parent,
+  named), ``CONFLICT`` (an append-first contradiction, or a CHECK/UNIQUE
+  refusal reported with the constraint family named and no database phrasing),
+  and — on an identical replay — the durable row, written by nobody's second
+  attempt.
+
+**The anchor question, referred rather than decided (P9-0).** §5.2's two
+columns put a *failed* review in the ladder's ``ANCHOR_ONLY`` row
+(``spacing.py``, the P7-0 freeze table): it advances nothing, and its
+``created_at`` **is** an anchor. That is the reading in force — this cut
+changes none of it, and every assertion about it stands — and it has a
+consequence the first real writer must not discover by accident, so it is
+written down here and referred for a decision with its two arms spelled out:
+
+- **as read today (``ANCHOR_ONLY``):** the anchor is "when did we last touch
+  this row", asked of *all* events, so a review that happened and did not
+  engage opens a fresh window and the next due date moves one full spacing
+  interval further out. A user who fails a review therefore sees the target
+  again only after the interval — the failure earns the same delay as an
+  engagement, and repeated failures never shorten the loop;
+- **the alternative (a failure anchors nothing):** the anchor stays at the
+  newest *engaged* review (or the last strong retrieval), so a failed review
+  leaves the window where it was and the row is due again at once — the flow
+  can retry sooner, at the cost of a due list that can hold a target
+  indefinitely.
+
+Which reading is right is a judgement about what a failure should mean for
+review pressure — "we last touched this row" versus "we last *engaged* this
+row" — and the columns do not decide it on their own: §5.2 gives the event no
+outcome column, and both readings are faithful to the words it does give.
+**This cut refers the question and changes nothing**: the current reading is
+frozen in ``spacing.py``'s table, the two arms above are its consequence
+analysis, and the trigger for deciding it is the first real writer — a
+schedule behaviour should be decided *before* rows exist that embody it, not
+after. Changing it must go through a version entry in
+``docs/DECISION_REGISTER.md`` (the freeze table is cited by name there), and
+it changes the table with the policy: ``spacing.py``'s own rule — "a cut that
+changes what an event does changes this table with it" — is the same
+condition, stated from the other side.
 """
 
 from __future__ import annotations

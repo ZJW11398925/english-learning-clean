@@ -235,6 +235,13 @@ def _facts_of(request: dict) -> object:
         hard_teaching_turn_limit_exhausted=request.get(
             "hard_teaching_turn_limit_exhausted", False
         ),
+        # P9-0 (p8-1's carryover F11): the frozen reference reads this field
+        # in *both* continuation contexts, so the replay reads it here too —
+        # until this cut the harness dropped it for this profile and the two
+        # sides could only agree because every benchmark case in this context
+        # carries ``False``. Passing it keeps the two sides reading the same
+        # field set (and the eleven cases stay green: their value is False).
+        terminalizing_action=request.get("terminalizing_action", False),
     )
 
 

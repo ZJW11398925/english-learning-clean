@@ -29,7 +29,12 @@ The column map (§14 ↔ implementation) — stated once, here
 ``frontier_candidate_ids[]`` ``PlannerEvaluation.frontier_candidate_ids``
 ``ranked_candidate_ids[]``   ``PlannerEvaluation.ranked_candidates`` —
                              the candidate ids, in the record's order
-``factor_trace``             ``PlannerEvaluation.reason_trace``
+``factor_trace``             the versioned document built from
+                             ``PlannerTrace.candidates`` (the kernel's
+                             per-candidate trace) with the evaluation's
+                             ``reason_trace`` under its ``reasons`` key —
+                             ``elc.planner.trace_document`` is the one
+                             encoder/decoder
 ``planner_version``          ``PlannerEvaluation.planner_version``
 ``policy_profile_version``   ``PlannerEvaluation.policy_version``
 ``created_at``               stamped by the store (no record field)
@@ -45,11 +50,12 @@ not :class:`~elc.planner.types.PlannerEvaluation`, and why
 ``PlannerService.get_planner_evaluation`` (whose declared answer *is* the
 object shape) is still refused — see that method's docstring.
 
-``factor_trace`` is this map's one physical reading: §14 spells it without
-brackets while the value is a sequence, so the column carries the same
-deterministic JSON array document as the three bracketed columns. That is
-registered as judgement 9 below, and migration 0015's header states the same
-decision.
+``factor_trace`` is this map's one physical reading, and P9-0 **moved it**:
+§14 spells the column without brackets while the value is a sequence of lines
+(P8-0's reading), and this cut reads it as the structured document instead —
+see judgement 9, which is also where the legacy encoding and its discriminant
+are registered.
+
 
 ---------------------------------------------------------------------------
 **Declared judgements.** Each entry is this cut's reading rather than a
@@ -132,18 +138,58 @@ quotation, and each names the condition that re-opens it.
    the answer here) is a later cut's work item; until then the face is
    exercised by its own suite and by any caller that holds a cycle and an
    outcome. Revisit: the orchestrator lands and fixes this port's call site.
-9. **``factor_trace`` lands as a JSON array although §14 spells it without
-   brackets.** §14's three list columns carry ``[]`` in their names and this
-   one does not, so the element shape (docs/DATA_MODEL.md §14) and the
-   physical form (§27: the column type and the JSON encoding are the
-   implementation's) were this cut's to pick together — and it picks the same
-   deterministic JSON array document the three bracketed columns carry (one
-   encoding, reused from elc/teaching/store.py's ``_array_document``) rather
-   than a second spelling, because an array of lines is what the value is.
-   Migration 0015's header states the same decision, and the column map above
-   carries the pointer. Revisit: canonical rewrites the column's spelling or
-   shape (``factor_trace[]``, or a form that is not an array of lines) and the
-   durable rows' encoding has to follow.
+9. **``factor_trace`` is a versioned structured document, and the legacy
+   array is read as what it was.** §14 spells the column without brackets and
+   pins no shape, so P8-0 read it as the same deterministic JSON array the
+   bracketed columns carry — the run's prose ``reason_trace``, lines only.
+   P9-0 moves the column: it now carries
+   :class:`~elc.platform.types.FactorTraceDocument`, the versioned object
+   ``elc.planner.trace_document`` encodes and decodes, whose ``candidates``
+   array holds **every** field of the kernel's ``CandidateTrace`` (the
+   readings, the gaps, the partial sums, the coverage-service adjustment, the
+   utility, the activation verdict, the dominance/tie facts) and whose
+   ``reasons`` key holds the prose the column used to *be*. The split is
+   stated rather than implied: ``PlannerEvaluation.reason_trace`` is still
+   the prose decision reason (its content and every reader of it are
+   unchanged), and it is no longer the column's whole content. Two more keys
+   carry the rest of the reading: ``version`` (the ``ft1`` word, also the
+   discriminant below) and ``provenance`` (``KERNEL_TRACE`` when the writer
+   held the kernel's trace, ``NOT_RECORDED`` when it did not — a leg that
+   could not run records a degraded shape of its own). **A row written
+   before this cut** carries the legacy bare array; the decoder answers it
+   as the tuple of lines it always was, and the discriminant is exactly the
+   ``version`` key's absence (no heuristic on the array's contents) — the
+   same rule the legacy arm's reader needs, and the one the tests pin.
+   ``_replay`` compares the decoded document (candidates, prose and
+   provenance together), so the agreement check keeps its old arm and gains
+   the new ones: a re-entry whose prose differs is still a ``CONFLICT``, and
+   a re-entry whose candidate trace differs is one too. Revisit: canonical
+   text gives the prose a column of its own (then the ``reasons`` key retires
+   and this map gains a second row), a canonical revision pins the column's
+   shape (``factor_trace[]``, or a form that is not this document), or a
+   shipped deployment needs a legacy row re-encoded (then the migration that
+   rewrites old rows is named, and this decoder's legacy arm retires with
+   it). **The frozen header's sentence is now historical.** The 0015
+   migration's header (``migrations/0015_planner_records.sql``) still says, in
+   the present tense, that ``factor_trace`` "is written in that same array
+   form" — that statement is superseded from this cut on (the column carries
+   the versioned structured document above), it stays in the frozen migration
+   as history, and the Revisit the header itself names ("a form that is not an
+   array of lines") is the one this cut triggered. The map above, not the
+   header, is the current spelling.
+10. **The trace rides an optional port keyword, and its absence is a stated
+   fact.** ``record_planner_cycle`` takes ``trace`` — the kernel's own
+   :class:`~elc.planner.kernel.PlannerTrace`, the object a shadow run carries
+   as ``ShadowRun.trace`` — as a keyword with the honest default ``None``: a
+   caller that holds no trace (the leg-failure path, whose run never
+   happened) records one all the same, and the difference is the
+   ``provenance`` word inside the document rather than a second method or a
+   required argument. The port's semantics do not move: one CP2 unit, the
+   same replay rule, the same refusal vocabulary — the keyword only decides
+   what the evaluation's document says about its candidates. Revisit: a
+   caller appears that must be *refused* when it holds no trace (then ``None``
+   becomes invalid for it and the refusal gets a code), or the trace becomes
+   a field of ``PlanningOutcome`` (then the keyword retires into the record).
 """
 
 from __future__ import annotations
@@ -151,6 +197,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
+from elc.planner.kernel import PlannerTrace
 from elc.planner.types import PlanningOutcome
 from elc.platform.types import (
     DecisionCycleId,
@@ -214,6 +261,7 @@ class PlannerRecordStore(Protocol):
         turn_id: TurnId,
         outcome: PlanningOutcome,
         reason_codes: tuple[str, ...] = (),
+        trace: PlannerTrace | None = None,
     ) -> Result[PlannerCycleRecords]:
         """Persist one cycle's §14 records in one short transaction.
 
@@ -222,6 +270,15 @@ class PlannerRecordStore(Protocol):
         ``outcome.execution_status.decision_cycle_id`` and ``turn_id`` is the
         turn that cycle belongs to. ``reason_codes`` travels to
         ``runtime_decision_outcome.reason_codes`` (judgement 4).
+
+        ``trace`` is the same run's :class:`~elc.planner.kernel.PlannerTrace`
+        (``ShadowRun.trace``), and it is what makes the durable
+        ``factor_trace`` a *trace*: the column carries the versioned document
+        ``elc.planner.trace_document`` builds from ``trace.candidates`` plus
+        ``outcome.evaluation.reason_trace``. A caller that holds no trace
+        (the leg-failure path, whose run never happened) passes none, and the
+        document then says so in its ``provenance`` word rather than claiming
+        an empty run (judgement 10).
         """
         ...
 

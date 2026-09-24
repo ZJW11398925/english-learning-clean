@@ -685,9 +685,26 @@ class ContinuationFacts:
     - ``hard_attempt_limit_exhausted`` / ``hard_teaching_turn_limit_exhausted``
       — the §8 hard caps, computed from the durable counts
       (elc.teaching.limits.TeachingLoad);
-    - ``terminalizing_action`` / ``retry_like_action`` — the proposed
-      move's class, which is what turns a hard cap into a DENY instead of
-      a blanket stop (the §8 exemption).
+    - ``terminalizing_action`` — the reference's own fact for a move whose
+      class is terminalizing although its ``proposed_action`` word is not
+      (the §8 exemption: a reveal/feedback move is never blocked by the
+      teaching-turn cap). The word class is not restated from it: a
+      ``REVEAL`` / ``TERMINAL_FEEDBACK`` action is terminalizing on its own,
+      and this flag can only add to that — the same field, in the same place
+      with the same semantics, as :class:`AutoContinuationFacts` carries it.
+      **P9-0 added it here**: the frozen reference reads the flag in *both*
+      continuation contexts (its ``terminalizing`` line is not branched on
+      ``gate_context``), so until this cut the reference's §8 exemption was
+      unreachable on this profile (p8-1's carryover F11) — the 60-case
+      benchmark's eleven ``USER_REQUESTED_CONTINUE`` cases all carry ``False``,
+      which is why the gap could not be seen by re-playing it. The
+      retry-like half of the classification is **not** a field: the
+      reference derives it from the action word (``proposed_action in {RETRY,
+      HINT}``), and so does this profile. Revisit: the reference's own
+      reading changes (a new §8 exemption, or a terminalizing action the word
+      class names), or canonical text gives the move class a durable carrier
+      of its own — then this field moves with it rather than being derived
+      twice.
     """
 
     moment_id: str
@@ -713,6 +730,7 @@ class ContinuationFacts:
 
     hard_attempt_limit_exhausted: bool = False
     hard_teaching_turn_limit_exhausted: bool = False
+    terminalizing_action: bool = False
 
 
 def _validate_continuation(facts: ContinuationFacts) -> None:
@@ -830,7 +848,10 @@ def decide_user_requested_continuation(facts: ContinuationFacts) -> GateVerdict:
         reasons.append("MOMENT_NOT_CONTINUABLE")
 
     retry_like = facts.proposed_action in {"RETRY", "HINT"}
-    terminalizing = facts.proposed_action in {"REVEAL", "TERMINAL_FEEDBACK"}
+    terminalizing = (
+        facts.proposed_action in {"REVEAL", "TERMINAL_FEEDBACK"}
+        or facts.terminalizing_action
+    )
     if facts.hard_attempt_limit_exhausted and retry_like:
         reasons.append("HARD_ATTEMPT_LIMIT")
     if facts.hard_teaching_turn_limit_exhausted and not terminalizing:
