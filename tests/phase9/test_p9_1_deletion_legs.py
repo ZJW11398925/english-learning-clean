@@ -256,7 +256,13 @@ def test_the_five_tables_are_not_in_the_narrower_scopes() -> None:
             assert table not in surface, table
 
 
-def test_the_retained_set_is_unchanged_and_the_sweep_grew_by_five() -> None:
+def test_the_retained_set_is_unchanged_and_every_delivery_table_is_swept() -> None:
+    """Membership, not a count: ``SWEPT_TABLES`` grows with every cut that
+    lands an app.db table, so no literal total is pinned — what is asserted is
+    that each of the five delivery tables is on the removal side and on
+    neither of the other two sets (the children-first order is the sibling
+    test's)."""
+
     assert set(RETAINED_TABLES) == {
         "deletion_tombstone",
         "runtime_epoch",
@@ -479,11 +485,13 @@ def test_the_profile_field_scope_leaves_the_delivery_rows_alone(
         )
     )
     # The S44 scope is fail-closed in V1 (registered in the package's own
-    # notes): whether it refuses or clears facts, the delivery tables are not
-    # part of its surface.
-    if isinstance(result, Ok):
-        for tally in result.value.tallies:
-            assert tally.table not in TABLES, tally.table
-    else:
-        assert result.error.code is not None
+    # notes), and it closes by clearing the whole fact set rather than by
+    # refusing the call: on this world the well-formed request **succeeds**
+    # and removes nothing (no ``user_profile`` row exists; measured, not
+    # guessed), and the scope's only refusal — ``VALIDATION_FAILED`` — needs
+    # a field-less request. So the verdict is pinned instead of described, and
+    # the delivery tables are not part of its surface either way.
+    assert isinstance(result, Ok), result
+    for tally in result.value.tallies:
+        assert tally.table not in TABLES, tally.table
     assert _counts(db, *TABLES) == dict.fromkeys(TABLES, 1)

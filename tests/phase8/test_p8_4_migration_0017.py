@@ -8,8 +8,10 @@ What is pinned here is what the migration claims:
 - the column is the fifth one, ``TEXT``, **nullable**, with no default and no
   foreign key — and adding it moved nothing else about the table (the four
   §20 columns keep their own shapes, the CHECK keeps its five words);
-- the two stamps move to ``17``, applying the chain is idempotent, and the
-  previous head is immediately behind 0017 in filename order;
+- the two stamps move with the shared head (``18`` as of P9-1's 0018; the
+  suite asserts the shared constant, not a literal), applying the chain is
+  idempotent, and the previous head is immediately behind 0017 in filename
+  order;
 - ``0001–0016`` are byte-identical (per-file SHA-256, CRLF-normalized).
   0015's digest and 0013–0014's are the ones the earlier cuts recorded
   (``tests.phase8.test_p8_3_migration_0016.PRE_0016_DIGESTS`` /
