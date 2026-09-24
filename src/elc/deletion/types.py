@@ -201,6 +201,15 @@ SWEPT_TABLES: tuple[str, ...] = (
     "turn_record",
     "input_envelope",
     "conversation",
+    # P8-3's PlanningLedger (migration 0016). Appended, and children first
+    # inside the group: the event log references the per-key row, the
+    # obligations reference nothing (they are debts, not a row's children —
+    # migration 0016's header states the argument), so the order is
+    # log → row → obligations. The three are leaves of every other table's
+    # graph, which is why they can sit at the end of the sweep.
+    "planning_ledger_event",
+    "planning_ledger",
+    "coverage_obligation",
 )
 
 #: The subset ALL_USER_DATA walks — §23's "all user canonical records / all
@@ -282,15 +291,25 @@ CONVERSATION_SWEPT_TABLES: tuple[str, ...] = (
 )
 
 #: §20 LEARNING_TARGET: the named target's evidence, its materialized state,
-#: its review events, its schedule rows and its self-reports. Deliberately
-#: **not** here: every conversation/turn table (the transcript survives) and
-#: every relationship table.
+#: its review events, its schedule rows and its self-reports — plus, since
+#: P8-3, the ledger history the contract names for exactly this scope
+#: ("related PlanningLedger history", line 747): the target's event log, its
+#: per-key row and its TARGET-scoped obligations. Deliberately **not** here:
+#: every conversation/turn table (the transcript survives) and every
+#: relationship table.
 LEARNING_TARGET_SWEPT_TABLES: tuple[str, ...] = (
     "evidence_claim",
     "learner_self_report",
     "learner_target_state",
     "review_event",
     "schedule_item",
+    # The ledger half, in the global order (log → row → obligations; SWEPT_
+    # TABLES holds the same three in the same relative order). The store scopes
+    # the rows by the declared key face, so a *family* row that happens to spell
+    # this target's id is not swept by the target's deletion.
+    "planning_ledger_event",
+    "planning_ledger",
+    "coverage_obligation",
 )
 
 #: §20 ALL_LEARNING_HISTORY: the learning side entire, plus the teaching
@@ -337,6 +356,12 @@ LEARNING_HISTORY_SWEPT_TABLES: tuple[str, ...] = (
     "planner_execution_status",
     "runtime_decision_outcome",
     "decision_cycle",
+    # P8-3 — the contract's LEARNING_PRIVATE list names "PlanningLedger user
+    # history" (line 87), so this walk carries all three of migration 0016's
+    # tables; they are the last group because nothing references them.
+    "planning_ledger_event",
+    "planning_ledger",
+    "coverage_obligation",
 )
 
 #: §21 RELATIONSHIP_PAIR: the pair's memories, plus the CP4 job row that

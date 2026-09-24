@@ -115,18 +115,23 @@ def _parents(db: sqlite3.Connection, table: str) -> list[tuple[str, str, str]]:
 # -- ① the lineage -----------------------------------------------------------
 
 
-def test_0015_is_the_head_and_0014s_successor() -> None:
-    """This slice's head, registered in the shared constants (which
+def test_0015_is_registered_and_0014s_successor() -> None:
+    """This slice's lineage, registered in the shared constants (which
     tests/architecture/test_platform_db_infra.py holds against the real
-    directory), and the literal successor relation to 0014."""
+    directory), and the literal successor relation to 0014.
+
+    P8-3 moved the *head* off 0015 (0016_planning_ledger), so the two
+    assertions that named 0015 the newest migration now read the shared
+    constants instead of a literal; the successor relation to 0014 is
+    unchanged and is still pinned literally."""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert names[-1] == SCHEMA_HEAD_FILE == PRE_0015
+    assert names[-1] == SCHEMA_HEAD_FILE
     assert names[names.index("0014_deletion_tombstone.sql") + 1] == PRE_0015
     assert [name[:4] for name in names] == [
         f"{index:04d}" for index in range(1, len(MIGRATION_IDS) + 1)
     ]
-    assert MIGRATION_IDS[-1] == "0015_planner_records"
+    assert "0015_planner_records" in MIGRATION_IDS
 
 
 def test_the_pre_0015_lineage_did_not_move() -> None:
@@ -155,8 +160,12 @@ def test_applying_the_chain_is_idempotent(db: sqlite3.Connection) -> None:
     assert "0015_planner_records" in migrations.applied_migrations(db)
 
 
-def test_schema_version_moves_to_fifteen(db: sqlite3.Connection) -> None:
-    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "15"
+def test_schema_version_moves_to_the_head(db: sqlite3.Connection) -> None:
+    """The stamp is the head's — the shared constant, which the infra pin
+    holds against the newest file (P8-3: the head literal moved to 0016)."""
+
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION
+    assert SCHEMA_HEAD_VERSION == SCHEMA_HEAD_FILE[:4].lstrip("0")
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"

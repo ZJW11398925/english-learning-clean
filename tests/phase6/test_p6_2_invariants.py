@@ -80,14 +80,21 @@ FROZEN_HEAD_DIGEST = (
 #: ``STALE``) a consumer compares a row against the current Learning evidence
 #: with — which is a *primitive*, not a second policy file: it reads one §5.2
 #: column and answers one of two words, while the reading that acts on it
-#: (BF-02 §5's degradation) lives in elc.planner.feature_assembly. A further
-#: module would be a face nobody reviewed.
+#: (BF-02 §5's degradation) lives in elc.planner.feature_assembly. P8-3 added
+#: ``review_record.py`` — §5.2's ``event_type`` words and the success /
+#: failure / unknown reading of a recorded review — which is a *vocabulary and
+#: a read*, not a decision: it declares four words and one function of
+#: ``engaged`` / ``evidence_group_id``, nothing in the due policy or the Gate
+#: calls it, and the modules this pin exists to keep away from the decision
+#: (a second policy file, a helper that hides one) are what it still refuses.
+#: A further module would be a face nobody reviewed.
 SCHEDULER_MODULES = (
     "__init__.py",
     "authority.py",
     "commands.py",
     "controller.py",
     "queries.py",
+    "review_record.py",
     "spacing.py",
     "store.py",
     "types.py",

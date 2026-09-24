@@ -137,8 +137,9 @@ ledger; what it waits for now is a caller who hands one in.
 
 **The ledger leg (P7-3), and the three readings it moves.** A call may hand in
 a :class:`~elc.planner.ledger.PlanningLedger` view — P7-3 landed it as the
-caller's own read-only view (`NO_TABLE_V1`: no exposure writer exists until
-Phase 8 presents a Moment). Exactly three readings change, and nothing else
+caller's own read-only view (`NO_TABLE_V1` then; P8-3 gave it durable tables
+behind ``elc.planner.ledger_store``, while the producer that would *present* a
+Moment is still p8-4's). Exactly three readings change, and nothing else
 does:
 
 - ``overexposure`` — **every** candidate's cost factor reads its target's band
@@ -460,8 +461,11 @@ UNLANDED_AUTHORITIES: Mapping[CandidateAuthority, str] = {
         " target"
     ),
     CandidateAuthority.PLANNING_LEDGER: (
-        "no PlanningLedger: the coverage-debt ledger is p7-3's work item, so"
-        " nothing can say which coverage debt this cycle should pay"
+        "no PlanningLedger view for this call: the ledger is durable since"
+        " P8-3 (migration 0016's three tables behind elc.planner.ledger_store),"
+        " but this caller handed in no view of it — and no shipped producer"
+        " writes exposure or accrual facts yet (the delivery path is p8-4's),"
+        " so nothing has assembled one either"
     ),
 }
 

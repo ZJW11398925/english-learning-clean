@@ -4,8 +4,10 @@ Everything here is a real read: app.db with the migrations applied, the shipped
 content.db, the Scheduler's own due decision, the §9 constraint view, the §8.1
 ladder (with P7-2's one-declared-input convention for the level this corpus
 cannot answer) and the kernel. The ledger is the caller's view — that is the
-whole carrier (``NO_TABLE_V1``) — and the one thing these tests add to the world
-is that view.
+whole carrier of P7-3 — a caller-assembled view, ``NO_TABLE_V1`` then; P8-3
+gave the ledger durable tables behind ``elc.planner.ledger_store``, and this
+suite still hands the kernel a view rather than a store) — and the one thing
+these tests add to the world is that view.
 
 Two facts are the point:
 

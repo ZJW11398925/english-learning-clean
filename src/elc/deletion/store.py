@@ -78,6 +78,7 @@ from elc.deletion.types import (
     TargetKey,
     TombstoneRecord,
 )
+from elc.planner.ledger import LedgerKeyType, ObligationScope
 from elc.platform.db.epoch import RuntimeEpochFence, StaleEpochError
 from elc.platform.db.tx import short_transaction
 from elc.platform.types import (
@@ -182,6 +183,17 @@ _SURFACE_SELECT: Mapping[str, str] = {
     "turn_record": "SELECT rowid, turn_id FROM turn_record",
     "user_profile": "SELECT rowid, user_profile_id FROM user_profile",
     "user_turn": "SELECT rowid, user_turn_id FROM user_turn",
+    # P8-3's PlanningLedger (migration 0016): the log's identity is its event
+    # id, the row's is its key, an obligation's its own key.
+    "coverage_obligation": (
+        "SELECT rowid, obligation_key FROM coverage_obligation"
+    ),
+    "planning_ledger": (
+        "SELECT rowid, ledger_key FROM planning_ledger"
+    ),
+    "planning_ledger_event": (
+        "SELECT rowid, event_id FROM planning_ledger_event"
+    ),
 }
 
 #: table → the delete head. An ``IN (…)`` run of bound rowids is appended;
@@ -241,6 +253,13 @@ _DELETE_BY_ROWID: Mapping[str, str] = {
     "turn_record": "DELETE FROM turn_record WHERE rowid IN (",
     "user_profile": "DELETE FROM user_profile WHERE rowid IN (",
     "user_turn": "DELETE FROM user_turn WHERE rowid IN (",
+    "coverage_obligation": (
+        "DELETE FROM coverage_obligation WHERE rowid IN ("
+    ),
+    "planning_ledger": "DELETE FROM planning_ledger WHERE rowid IN (",
+    "planning_ledger_event": (
+        "DELETE FROM planning_ledger_event WHERE rowid IN ("
+    ),
 }
 
 if set(_SURFACE_SELECT) != set(SWEPT_TABLES) or set(_DELETE_BY_ROWID) != set(
@@ -1329,6 +1348,37 @@ class SqliteDeletionStore:
             table="learner_target_state",
             predicate="target_id = ?" + suffix,
             params=(target_id, *extra),
+            run=run,
+        )
+        # -- the ledger half (P8-3). §20's LEARNING_TARGET list names "related
+        # PlanningLedger history", and the three rows a target owns are
+        # exact: its TARGET-keyed ledger row, that row's event log, and its
+        # TARGET-scoped obligations. The key face is read, not assumed, so a
+        # *family* row whose id spells this target's is left standing (the
+        # contract's scope is the target, not every string that looks like it);
+        # the log is reached through the keys the row read returned, because
+        # the log has no key-face column of its own.
+        ledger_keys = self._column(
+            "SELECT ledger_key FROM planning_ledger WHERE ledger_key_type = ?"
+            " AND ledger_key = ?",
+            (LedgerKeyType.TARGET.value, target_id),
+        )
+        self._remove_in(
+            table="planning_ledger_event",
+            column="ledger_key",
+            values=ledger_keys,
+            run=run,
+        )
+        self._remove(
+            table="planning_ledger",
+            predicate="ledger_key_type = ? AND ledger_key = ?",
+            params=(LedgerKeyType.TARGET.value, target_id),
+            run=run,
+        )
+        self._remove(
+            table="coverage_obligation",
+            predicate="scope_type = ? AND target_or_family_id = ?",
+            params=(ObligationScope.TARGET.value, target_id),
             run=run,
         )
 

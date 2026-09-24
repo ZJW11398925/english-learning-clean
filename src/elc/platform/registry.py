@@ -21,6 +21,7 @@ from elc.curriculum.types import CurriculumGraphRecord
 from elc.deletion.types import TombstoneRecord
 from elc.learning.types import EvidenceGroupRecord, LearnerTargetStateRecord
 from elc.persona.types import CharacterPackageRecord
+from elc.planner.ledger import PlanningLedger
 from elc.planner.types import PlannerDecision
 from elc.platform.types import (
     PlannerEvaluationRecord,
@@ -214,6 +215,19 @@ CANONICAL_OBJECTS: Mapping[str, CanonicalObject] = {
         "PlannerExecutionStatusRecord",
         OWNER_RUNTIME,
         PlannerExecutionStatusRecord,
+    ),
+    # §14's ledger, durable since P8-3 (migration 0016's three tables behind
+    # ``elc.planner.ledger_store``). The entry's schema is the **object §14
+    # names** — ``PlanningLedger``, the same reading the two view entries use
+    # (``schedule_view`` → ``ScheduleView``) — rather than a row type: §14's
+    # block is one object whose per-key rows, obligations and event log are
+    # its parts, and the durable tables are that object's storage rather than
+    # a second object. No ``version_field``: §14 spells the column bare
+    # ``version``, so binding a qualified spelling would claim one the
+    # document does not use (the ``schedule_item`` entry's rule — bare
+    # ``version`` is not one of the canonical VERSION_FIELDS).
+    "planning_ledger": CanonicalObject(
+        "PlanningLedger", OWNER_PLANNER, PlanningLedger
     ),
     # §14's RuntimeDecisionOutcome is deliberately **not** registered here: it
     # is a runtime coordination record — the decision_cycle /

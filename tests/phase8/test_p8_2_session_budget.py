@@ -1213,11 +1213,17 @@ def test_the_real_policy_read_face_has_the_ports_shape() -> None:
 
 def test_no_migration_carries_the_view() -> None:
     """§5.2 labels the block ``Derived view``: the head is where it was and no
-    migration mentions the view."""
+    migration mentions the view.
 
-    assert MIGRATION_IDS[-1] == "0015_planner_records"
-    assert SCHEMA_HEAD_FILE == "0015_planner_records.sql"
-    assert SCHEMA_HEAD_VERSION == "15"
+    P8-3 moved the head to 0016_planning_ledger (the PlanningLedger's tables,
+    not this view), so the three head constants are read from the shared
+    declarations rather than from the 0015 literals this pin used to carry —
+    the *claim* (this cut adds no table for the view) is unchanged, and the
+    schema scan below is what holds it."""
+
+    assert MIGRATION_IDS[-1] == "0016_planning_ledger"
+    assert SCHEMA_HEAD_FILE == "0016_planning_ledger.sql"
+    assert SCHEMA_HEAD_VERSION == "16"
     schema = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted((REPO_ROOT / "migrations").glob("*.sql"))

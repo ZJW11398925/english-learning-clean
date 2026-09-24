@@ -83,8 +83,12 @@ quotation, and each names the condition that re-opens it:
    ``context_opportunity_set`` (no producer in this repository builds one),
    ``session_budget_view`` (this run derives no control fact from it — the
    runtime unit does that, and the view itself landed in P8-2) and
-   ``planning_ledger`` (V1 has no ledger table — ``NO_TABLE_V1``,
-   the same reason the durable trace read refuses). The fourth,
+   ``planning_ledger`` (a run derives the three ledger readings from the
+   supply side it is given; the request's field is not a second input. P8-3
+   gave the ledger durable tables — migration 0016 behind
+   ``elc.planner.ledger_store`` — and *this* run still reads none of them:
+   building a view out of the store is the caller's act, and no shipped face
+   does it yet). The fourth,
    ``conversation_priority_view``, is read for **exactly one field** —
    ``natural_break_available``, BF-02 §5's context field, which canonical
    text now names a source for (judgement 2) — and for nothing else: §13's

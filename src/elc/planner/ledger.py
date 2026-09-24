@@ -70,35 +70,51 @@ loads the pinned reference from its own file and compares every answer — the
 same "transcribe, then pin" pattern ``elc.learning.estimator`` and
 ``elc.teaching.gate`` use.
 
-**No table in V1, registered rather than assumed.** ``PLANNING_LEDGER_STORAGE``
-is ``NO_TABLE_V1`` and the reason is a chain of landed facts, not an omission:
+**The table landed (P8-3), and the reasoning that held it back is kept.**
+``PLANNING_LEDGER_STORAGE`` used to be ``NO_TABLE_V1`` for a chain of landed
+facts rather than an omission, and those facts are the record of *why* the
+table arrives with the company it needs:
 
 - ``SELECT != exposure`` (RA §20). Phase 7 *selects*; nothing *presents* a
   teaching episode until Phase 8 wires the Gate and the Moment, so there is no
   writer of ``teaching_presented`` (or of the two lighter presentations) to
   write a durable exposure row from. A table whose only writer does not exist
-  is a table that can only hold invented data;
+  is a table that can only hold invented data — and that is still true today:
+  P8-3 lands the table and its **store faces** (``elc.planner.ledger_store``),
+  not a producer. The delivery path that presents a Moment is p8-4's, so the
+  durable ledger's honest state right now is "the shape and the writer exist,
+  the producer does not" (the store's module docstring carries the same line,
+  and the count of shipped callers is a checked fact, not prose);
 - the ledger is a **projection** in the canonical reading anyway: RA §6 lists
   "PlanningLedger actual exposure/outcome" among CP4's rebuildable projections
   and DATA_MODEL §26 lists "some PlanningLedger rollups" beside them, with the
   document's own rule that a rebuildable projection is never the only source of
   truth. The durable sources are the conversation's turns, the review events
-  and the teaching moments — the ledger is what a projection reads *off* them;
-- a durable user-history table would owe a deletion leg the day it exists:
+  and the teaching moments — the ledger is what a projection reads *off* them.
+  That is why migration 0016 does **not** materialize the two rollup-shaped
+  columns (``coverage_debt_rollups`` / ``recent_target_families``): they stay
+  read-side, and the per-key rows, the obligations and the event log are what
+  the three tables hold;
+- a durable user-history table owes a deletion leg the day it exists:
   ``behavioral_baselines/security/SECURITY_PRIVACY_DELETION_CONTRACT_v1.0.md``
   lists "PlanningLedger user history" under ``LEARNING_PRIVATE`` and "related
   PlanningLedger history" under the ``LEARNING_TARGET`` scope — the BF-05
   invariant the deletion cut landed is "delete the history the scope names",
   and a new user-history table with no statement in that walk would break it
-  the moment it was written.
+  the moment it was written. P8-3 lands all three tables **and** their
+  statements in both walks (``LEARNING_TARGET_SWEPT_TABLES`` /
+  ``LEARNING_HISTORY_SWEPT_TABLES``, and one SELECT plus one DELETE literal per
+  table) in the same change — the condition
+  :data:`PLANNING_LEDGER_STORAGE_REVISIT` named before this cut.
 
-So this cut lands the **pure core** — the five event words, the two original
-rules as behaviour, the obligation's eleven fields, and the view types the
-column set names — and registers the storage decision with its revisit
-condition (:data:`PLANNING_LEDGER_STORAGE_REVISIT`): the cut that lands an
-exposure writer (Phase 8's teaching wiring) or the first cut that persists a
-shadow-mode selection lands the table **and** its deletion-face statements in
-the same change.
+**Still the pure core.** What this module carries is unchanged: the five event
+words, the two original rules as behaviour, the obligation's eleven fields, the
+three declared ladders and the view types the column set names. Storage is a
+separate module (``elc.planner.ledger_store``): the durable unit is "one §20
+event appended and the current projection it leaves", committed in one short
+transaction, and the store derives nothing — it persists what
+:meth:`TargetLedgerRow.record` / :func:`apply_ledger_event` / :func:`accrue`
+already answered.
 
 **Three numbers the canonical documents do not carry, and how each is
 declared.** Every one is a module constant with a basis and a revisit, none is
@@ -158,6 +174,7 @@ __all__ = [
     "EVENT_EFFECTS",
     "EXPOSURE_EVENTS",
     "LEDGER_EVENTS",
+    "LEDGER_KEY_TYPES",
     "LEDGER_VALUE_RANGE",
     "OVEREXPOSURE_RUNGS",
     "OVEREXPOSURE_WINDOW_DAYS",
@@ -173,6 +190,7 @@ __all__ = [
     "LedgerEvent",
     "LedgerEventRecord",
     "LedgerInputError",
+    "LedgerKeyType",
     "LedgerReadings",
     "LedgerStorage",
     "LedgerWindow",
@@ -216,22 +234,52 @@ class LedgerStorage(StrEnum):
     ``NO_TABLE_V1`` = the ledger is a read-only view a caller assembles from
     the durable facts it already holds (module docstring: no exposure writer
     exists yet, and a user-history table without a deletion leg would break the
-    source-aware deletion invariant). Revisit: the writer or the first durable
-    shadow selection lands — then the word moves with the table.
+    source-aware deletion invariant). It is **kept** as a member after the flip
+    — the word describes a state this repository really had, and a probe that
+    deletes a word a reader may still find in a trace or a log is a second way
+    to lose the history.
+
+    ``DURABLE_TABLES_V1`` = the ledger has durable tables of its own (migration
+    0016: ``planning_ledger`` / ``coverage_obligation`` /
+    ``planning_ledger_event``, reached through ``elc.planner.ledger_store``),
+    and every one of them is in the BF-05 deletion walk of the same change.
+    The producer of exposure events is still absent (module docstring) — this
+    word says where the ledger *lives*, not who writes it. Revisit: the tables
+    are replaced or a second carrier (a projection cache, an export) becomes
+    the ledger's home — then the word moves with it.
     """
 
     NO_TABLE_V1 = "NO_TABLE_V1"
+    DURABLE_TABLES_V1 = "DURABLE_TABLES_V1"
 
 
-PLANNING_LEDGER_STORAGE: LedgerStorage = LedgerStorage.NO_TABLE_V1
+PLANNING_LEDGER_STORAGE: LedgerStorage = LedgerStorage.DURABLE_TABLES_V1
 
 #: The condition that re-opens the storage decision (module docstring).
+#:
+#: The condition this constant carried **before P8-3** — "an exposure writer
+#: lands (Phase 8's teaching wiring presents a Moment, or a cut persists a
+#: shadow-mode selection) ⇒ land the table in the same change *and* its
+#: statements in the BF-05 deletion walk" — is **satisfied**: P8-3 landed
+#: 0016's three tables and both deletion legs in the same change
+#: (``LEARNING_TARGET_SWEPT_TABLES`` for the contract's "related
+#: PlanningLedger history", ``LEARNING_HISTORY_SWEPT_TABLES`` for
+#: "PlanningLedger user history", and one SELECT plus one DELETE literal per
+#: table in ``elc/deletion/store.py``). What re-opens the *new* decision is
+#: named here, so the word stays checkable rather than becoming prose.
 PLANNING_LEDGER_STORAGE_REVISIT = (
-    "an exposure writer lands (Phase 8's teaching wiring presents a Moment, or"
-    " a cut persists a shadow-mode selection) ⇒ land the table in the same"
-    " change *and* its statements in the BF-05 deletion walk"
-    " (SECURITY_PRIVACY_DELETION_CONTRACT's LEARNING_PRIVATE /"
-    " LEARNING_TARGET scopes name PlanningLedger user history today)"
+    "the durable ledger landed in Phase 8 (P8-3: migration 0016's three"
+    " tables behind elc.planner.ledger_store, with both BF-05 deletion legs"
+    " — LEARNING_TARGET and LEARNING_HISTORY — and the per-table statements"
+    " landed in the same change, the condition this constant named before the"
+    " cut) ⇒ the storage word moves with the table, and the next re-opening is"
+    " named: a second carrier becomes the ledger's home (a materialized rollup"
+    " projection, an export, a rebuilt cache), or the delivery path (p8-4)"
+    " needs the ledger's tables to carry something §14 does not name (a"
+    " presentation's Moment reference, a conversation provenance leg) — then"
+    " the carrier, its deletion walk and this word all move in one change"
+    " (the scopes SECURITY_PRIVACY_DELETION_CONTRACT names for PlanningLedger"
+    " user history: LEARNING_PRIVATE's and the LEARNING_TARGET scope's)"
 )
 
 
@@ -338,6 +386,35 @@ class PauseReason(StrEnum):
     """
 
     UNAVAILABLE_IN_CURRENT_RUNTIME = "UNAVAILABLE_IN_CURRENT_RUNTIME"
+
+
+class LedgerKeyType(StrEnum):
+    """Which key face a ``target/family`` row's key belongs to (§14's key line).
+
+    §14 spells the row's key ``target/family``, so the column set's first line
+    names **two** key faces and no canonical document lists a vocabulary for
+    them — this is this cut's spelling of exactly the two, and it exists
+    because the durable row needs to say which face its key is: a family row
+    whose id happens to spell a target's must not be swept by that target's
+    deletion (``elc/deletion/store.py`` reads this word for the
+    ``LEARNING_TARGET`` walk), and a reader that wants only target-keyed rows
+    can say so without matching on id strings.
+
+    The core's own key is a single string (``TargetLedgerRow.target_key``,
+    ``PlanningLedger.rows``): the two faces are one key space with a label
+    rather than two namespaces, and migration 0016's single ``ledger_key``
+    column is that shape — a composite durable key would let one id exist
+    twice and fold onto one core key. Revisit: canonical text lists the key
+    faces (or a third one — a goal-keyed ledger row), or a face is retired.
+    """
+
+    TARGET = "TARGET"
+    TARGET_FAMILY = "TARGET_FAMILY"
+
+
+#: §14's two key faces, in the document's order (it spells them
+#: ``target/family``), for a reader that wants to walk them.
+LEDGER_KEY_TYPES: tuple[LedgerKeyType, ...] = tuple(LedgerKeyType)
 
 
 class ObligationScope(StrEnum):

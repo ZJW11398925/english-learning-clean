@@ -16,7 +16,10 @@ part of this package raises a phase pointer any more. The policy's constants
 urgency *mean*: a consumer reading a schedule row needs the same declarations
 the writer used. P7-0 adds :mod:`elc.scheduler.authority` — the watermark
 handshake (``CURRENT`` / ``STALE``) a consumer compares a row against the
-current Learning evidence with.
+current Learning evidence with. P8-3 adds :mod:`elc.scheduler.review_record` —
+§5.2's ``event_type`` words (declared, not frozen into the schema) and the
+success / failure / unknown reading of a recorded review, off ``engaged`` and
+``evidence_group_id`` alone.
 """
 
 from elc.scheduler.authority import ScheduleCurrency, currency_of

@@ -492,9 +492,10 @@ def test_all_user_data_keeps_the_infrastructure_and_the_ledger(
             " WHERE key LIKE '%schema_version%'"
         ).fetchall()
     ) == stamps_before
-    # 15 = the applied lineage through P8-0's 0015_planner_records (the head
-    # count; the pin moved 14 → 15 with that migration).
-    assert _count(db, "schema_migrations") == 15
+    # 16 = the applied lineage through P8-3's 0016_planning_ledger (the head
+    # count; the pin moved 14 → 15 with P8-0's 0015_planner_records, and
+    # 15 → 16 with this migration).
+    assert _count(db, "schema_migrations") == 16
     assert _count(db, "runtime_epoch") == 1
     assert _count(db, "deletion_tombstone") > 0
 

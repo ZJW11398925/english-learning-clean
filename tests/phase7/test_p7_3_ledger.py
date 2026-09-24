@@ -5,7 +5,10 @@ obligation's eleven columns and the three declared ladders/rates. Each part is
 pinned against the document or the frozen asset it comes from, and the three
 numbers **no** document carries are pinned as *declared* — with a probe that
 shows the asset really does not carry them, so "declared" is a checked claim
-rather than an excuse.
+rather than an excuse. The **carrier word** moved in P8-3 (``NO_TABLE_V1`` →
+``DURABLE_TABLES_V1``, with migration 0016's tables behind
+``elc.planner.ledger_store``); this module's purity, which these tests pin, did
+not move.
 """
 
 from __future__ import annotations
@@ -803,12 +806,16 @@ def test_recording_an_event_is_a_new_ledger_and_opens_a_row() -> None:
 
 
 # ---------------------------------------------------------------------------
-# ② the carrier: no table, and what that costs
+# ② the carrier word, and the table the module itself still does not carry
+#    (P8-3 flipped the word to DURABLE_TABLES_V1 and put the tables behind
+#    elc.planner.ledger_store; this core module is still SQL-free, and this
+#    test is what holds that split)
 # ---------------------------------------------------------------------------
 
 
-def test_the_ledger_declares_no_table_and_says_why() -> None:
-    assert PLANNING_LEDGER_STORAGE is LedgerStorage.NO_TABLE_V1
+def test_the_ledger_module_carries_no_table_and_the_word_says_where_it_lives() -> None:
+    assert PLANNING_LEDGER_STORAGE is LedgerStorage.DURABLE_TABLES_V1
+    assert LedgerStorage.NO_TABLE_V1.value == "NO_TABLE_V1"
     assert "Phase 8" in PLANNING_LEDGER_STORAGE_REVISIT
     assert "deletion" in PLANNING_LEDGER_STORAGE_REVISIT
     text = source_text("src/elc/planner/ledger.py")

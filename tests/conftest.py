@@ -44,12 +44,13 @@ MIGRATION_IDS: tuple[str, ...] = (
     "0013_planner_constraint",
     "0014_deletion_tombstone",
     "0015_planner_records",
+    "0016_planning_ledger",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0015_planner_records.sql"
-SCHEMA_HEAD_VERSION = "15"
+SCHEMA_HEAD_FILE = "0016_planning_ledger.sql"
+SCHEMA_HEAD_VERSION = "16"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

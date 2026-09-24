@@ -32,10 +32,11 @@ name: :mod:`elc.planner.frontier` — the ``ActiveLearningFrontier``, which is
 hard eligibility's survivor set read as a frontier (its position is §19's, its
 members are the candidates step 4 kept, and the kernel fills
 ``PlannerEvaluation.frontier_candidate_ids`` from it) — and
-:mod:`elc.planner.ledger` — the ``PlanningLedger`` as a caller-assembled
-read-only view (``NO_TABLE_V1``: no exposure writer exists until Phase 8), the
-five §20 event words, the coverage-obligation columns, the BF-06 §14 pause rule
-and the declared service/overexposure ladders.
+:mod:`elc.planner.ledger` — the ``PlanningLedger``'s column set, the five §20
+event words, the coverage-obligation columns, the BF-06 §14 pause rule and the
+declared service/overexposure ladders. It landed as a caller-assembled
+read-only view (``NO_TABLE_V1``: no exposure writer existed then); P8-3 (below)
+gave it durable tables without changing a line of this core.
 
 P7-4 (TASK-OPI-44647873-….33) adds :mod:`elc.planner.shadow` — IMPLEMENTATION_PLAN
 §8's shadow mode: the Planner runs over a
@@ -61,6 +62,18 @@ adapter that carries the SQL is
 entry and the durable trace read still refuse — the trace read's reason is
 now the shape of what it declares, not a missing store (its docstring says
 so).
+
+P8-3 (TASK-OPI-6d40862d-….9) adds :mod:`elc.planner.ledger_store` — the
+PlanningLedger's durable half: migration 0016's ``planning_ledger`` /
+``coverage_obligation`` / ``planning_ledger_event`` rows behind
+``SqliteLedgerStore``, whose unit is one §20 event appended **and** the current
+projection it leaves, committed in one short transaction under the owner-epoch
+fence. The store is where the SQL lives (it is not re-exported here, the
+``elc.platform.db.planner_store`` precedent) and it derives nothing: it
+persists what the pure core answered. Both BF-05 deletion legs land in the same
+change. No producer of presentation events exists yet — that is p8-4's
+delivery path — so the durable ledger's shipped caller count is zero and the
+store's docstring says so.
 """
 
 from elc.planner.candidates import (
@@ -186,6 +199,7 @@ from elc.planner.ledger import (
     EVENT_EFFECTS,
     EXPOSURE_EVENTS,
     LEDGER_EVENTS,
+    LEDGER_KEY_TYPES,
     LEDGER_VALUE_RANGE,
     OVEREXPOSURE_RUNGS,
     OVEREXPOSURE_WINDOW_DAYS,
@@ -201,6 +215,7 @@ from elc.planner.ledger import (
     LedgerEvent,
     LedgerEventRecord,
     LedgerInputError,
+    LedgerKeyType,
     LedgerReadings,
     LedgerStorage,
     LedgerWindow,
@@ -300,10 +315,12 @@ __all__ = [
     "INTERACTION_PHASE_WORDS",
     "KERNEL_STEP_ORDER",
     "LEDGER_EVENTS",
+    "LEDGER_KEY_TYPES",
     "LEDGER_VALUE_RANGE",
     "LedgerEvent",
     "LedgerEventRecord",
     "LedgerInputError",
+    "LedgerKeyType",
     "LedgerReadings",
     "LedgerStorage",
     "LedgerWindow",
