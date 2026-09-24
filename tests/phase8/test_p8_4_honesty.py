@@ -64,8 +64,9 @@ EXPOSURE_IMPORTS = {
 }
 
 #: ``elc.runtime.automatic_turn``'s import set. It names the planner's faces,
-#: the runtime unit and the exposure port; it names no store, no controller and
-#: no SQL module — the wiring's objects arrive as values.
+#: the runtime unit, the exposure port and (since P8-5) the rollout stage's
+#: face; it names no store, no controller and no SQL module — the wiring's
+#: objects arrive as values.
 AUTOMATIC_TURN_IMPORTS = {
     "__future__",
     "dataclasses",
@@ -81,6 +82,7 @@ AUTOMATIC_TURN_IMPORTS = {
     "elc.runtime.automatic_teaching",
     "elc.runtime.decision_cycles",
     "elc.runtime.exposure",
+    "elc.teaching.rollout",
     "elc.teaching.types",
     "elc.user_config.types",
     "typing",
@@ -183,25 +185,89 @@ def test_the_coordinator_carries_no_sql_statement() -> None:
     assert "sqlite3" not in _imports(CONTROLLER_MODULE)
 
 
+def _wiring_names(tree: ast.Module) -> set[str]:
+    """Every module-level name that denotes ``AutomaticTurnWiring`` (the F5
+    review's alias-aware step, kept and widened by the p8-5 disposal: a local
+    constructor reached through an alias is still a construction, whichever
+    spelling produced the alias).
+
+    Three alias forms resolve, all module-level: an ``assign`` whose value is
+    the bare name already in the set, an ``assign`` whose value is an
+    *attribute* of that name (``module.AutomaticTurnWiring``), and an
+    ``ImportFrom`` that renames the class (``from … import
+    AutomaticTurnWiring as _Alias``). What remains beyond a name-based scan is
+    registered on the test below."""
+
+    names = {"AutomaticTurnWiring"}
+    for node in tree.body:
+        if isinstance(node, ast.ImportFrom):
+            names.update(
+                alias.asname or alias.name
+                for alias in node.names
+                if alias.name == "AutomaticTurnWiring"
+            )
+            continue
+        value: ast.expr | None = None
+        targets: list[ast.expr] = []
+        if isinstance(node, ast.Assign):
+            value = node.value
+            targets = list(node.targets)
+        elif isinstance(node, ast.AnnAssign) and node.value is not None:
+            value = node.value
+            targets = [node.target]
+        if isinstance(value, ast.Name):
+            bound = value.id in names
+        elif isinstance(value, ast.Attribute):
+            bound = value.attr in names
+        else:
+            bound = False
+        if bound:
+            for target in targets:
+                if isinstance(target, ast.Name):
+                    names.add(target.id)
+    return names
+
+
 def test_nothing_in_src_constructs_the_wiring() -> None:
     """The opt-in is the caller's: no shipped module builds an
     ``AutomaticTurnWiring`` (the controller only *takes* one), so a production
     assembly that never passes it keeps the pre-P8-4 behaviour by construction.
 
-    Registered limit (review F5): this is a substring scan, so an alias
-    (``Wiring = AutomaticTurnWiring``) or a ``**kwargs`` splat that reaches the
-    constructor under another spelling would pass it. The review confirmed the
-    *fact* with an alias-aware AST scan; converting this pin to the AST form is
-    the fix, and its trigger is the first cut that edits ``automatic_turn.py``'s
-    wiring declaration for another reason (then the scan and the AST check
-    land together)."""
+    Review F5's registered limit is discharged here: the pin is the **AST
+    form** (it walks every ``Call`` and resolves the callee name against the
+    module-level aliases of the class), and its trigger — "the first cut that
+    edits ``automatic_turn.py``'s wiring declaration for another reason" —
+    fired in P8-5, which added the ``rollout_stage`` field. The p8-5 disposal
+    (LOW-1) widened the alias resolution from bare-name assignments to the
+    three module-level forms ``_wiring_names`` documents, after the review's
+    M13/M14 mutations showed the two alias spellings
+    (``from … import AutomaticTurnWiring as _Alias`` and
+    ``_Alias = module.AutomaticTurnWiring``) were 0-RED.
+
+    Registered limits, all kept rather than dropped: a ``**kwargs`` splat that
+    reaches the constructor under another spelling, a name produced at runtime
+    (``getattr`` / ``globals()``), and an alias built *inside* a function body
+    are still beyond a name-based scan over the module body."""
 
     callers = []
     for path in sorted(SRC_ROOT.rglob("*.py")):
         if path.name == "automatic_turn.py":
             continue
-        if "AutomaticTurnWiring(" in path.read_text(encoding="utf-8"):
-            callers.append(path.relative_to(SRC_ROOT).as_posix())
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        names = _wiring_names(tree)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                func = node.func
+                called = (
+                    func.id
+                    if isinstance(func, ast.Name)
+                    else func.attr
+                    if isinstance(func, ast.Attribute)
+                    else None
+                )
+                if called in names:
+                    callers.append(path.relative_to(SRC_ROOT).as_posix())
+                    break
     assert callers == []
 
 
@@ -222,6 +288,10 @@ def test_the_wiring_bundle_requires_only_the_two_faces_the_unit_needs() -> None:
         "session_budget",
         "user_id",
         "candidate_supply",
+        # P8-5: the one optional field that is not a face — the process-level
+        # rollout declaration. Its default is the fail-closed one (no stage),
+        # and tests/phase8/test_p8_5_rollout_gate.py pins what that means.
+        "rollout_stage",
     ):
         assert fields[optional] is None, optional
 

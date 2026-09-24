@@ -76,6 +76,7 @@ from elc.scheduler.types import (
     SpacingStage,
 )
 from elc.teaching.controller import TeachingController
+from elc.teaching.rollout import RolloutStage
 from elc.teaching.store import SqliteTeachingStore
 from elc.user_config.controller import UserConfigController
 from elc.user_config.store import SqliteUserConfigStore
@@ -350,6 +351,7 @@ def wiring(
     user_config: bool = True,
     curriculum: bool = True,
     user_id: bool = True,
+    rollout_stage: RolloutStage | None = RolloutStage.STUDY_FIRST,
 ) -> AutomaticTurnWiring:
     """The coordinator's optional wiring bundle over the real faces.
 
@@ -357,6 +359,13 @@ def wiring(
     generators run over the ports); the ``*`` flags let a test withhold one
     authority and watch the assembly report it as a missing leg instead of a
     number.
+
+    ``rollout_stage`` defaults to ``Study-first`` — the first stage P8-5's
+    rollout gate lets automatic teaching run at, declared here because an
+    ALLOW chain needs an open stage (``elc.teaching.rollout``). A test that
+    wants the fail-closed default passes ``rollout_stage=None``; that the
+    default *without* a declaration refuses is pinned in
+    ``tests/phase8/test_p8_5_rollout_gate.py``.
     """
 
     return AutomaticTurnWiring(
@@ -371,6 +380,7 @@ def wiring(
         session_budget=world.teaching,
         user_id=USER if user_id else None,
         candidate_supply=supply,
+        rollout_stage=rollout_stage,
     )
 
 

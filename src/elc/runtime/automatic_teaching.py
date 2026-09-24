@@ -51,9 +51,10 @@ What this unit does **not** do (each registered with the cut that owns it):
   document (their declared authorities 1–3). P8-4's wiring derives the three
   view-borne controls (``TeachingControlFacts.derived`` over §5.2's
   ``SessionBudgetView`` and §13's ``ConversationPriorityView``) and passes the
-  *Planner-assembled* auto-teach value (F2's ruling); a caller may still
-  declare the record by hand, and the durable home of the auto-teach setting
-  is **p8-5**. The Gate's remaining critical facts
+  *Planner-assembled* auto-teach value (F2's ruling) composed with the
+  process-level rollout stage P8-5 landed (``elc.teaching.rollout``; an
+  undeclared stage refuses); a caller may still
+  declare the record by hand. The Gate's remaining critical facts
   (``authorization_status``, ``subject_status``, ``target_status``,
   ``content_status``, ``learning_snapshot_status``, ``gate_state_status``,
   ``safety_privacy_status``, ``target_suppressed``) are declared on the same
@@ -211,10 +212,14 @@ class TeachingControlFacts:
 
     The four controls, each with the authority registered in
     :mod:`elc.teaching.gate`'s automatic section:
-    ``automatic_teaching_enabled`` ← product mode × rollout stage (no
-    durable home of its own read face in this cut — p8-5; the Planner
-    already derives the same value from the §5.1 policy, and the wiring cuts
-    must pass *that* value); the other three ← the two views P8-2 landed —
+    ``automatic_teaching_enabled`` ← product mode × rollout stage (both legs
+    now have read faces — the Planner already derives the mode leg from the
+    §5.1 policy, and **p8-5 landed the stage face**:
+    :class:`elc.teaching.rollout.RolloutStage` /
+    ``automatic_teaching_enabled_of``, a process-level declaration; the wiring
+    cuts pass the Planner's value *and* the declared stage, which is what
+    ``elc.runtime.automatic_turn`` composes); the other three ← the two views
+    P8-2 landed —
     ``hard_protected_flow`` ← ``ConversationPriorityView.flow_priority ==
     "PROTECTED"`` (docs/DOMAIN_MODEL.md §13) and
     ``automatic_session_budget_exhausted`` / ``hard_cooldown_active`` ←
@@ -271,9 +276,12 @@ class TeachingControlFacts:
         read is the caller's ``Err`` to handle, not this method's to guess).
 
         ``automatic_teaching_enabled`` is deliberately **not** derived here: its
-        authority is the product mode crossed with the rollout stage (p8-5),
-        and the Planner's own assembled value is what a wiring cut must pass
-        (the class docstring). A caller that must override a derived control —
+        authority is the product mode crossed with the rollout stage (both
+        legs' read faces are landed — ``elc.teaching.rollout`` for the stage
+        (p8-5), the Planner's §5.1 assembly for the mode), and what a wiring cut
+        must pass is the Planner's assembled value composed with the declared
+        stage (the class docstring; ``elc.runtime.automatic_turn`` does exactly
+        that). A caller that must override a derived control —
         a test pinning one control at a time, or a caller that knows the fact
         from elsewhere — replaces it on the returned record:
         ``replace(TeachingControlFacts.derived(...), hard_protected_flow=True)``.

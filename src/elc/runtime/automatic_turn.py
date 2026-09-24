@@ -42,12 +42,20 @@ inventing a single number. A **read** that fails is the same case: an ``Err``
 :attr:`AutomaticTurnPlan.notes`; the run then degrades on its own, and its
 durable trace carries the same gaps as BF-02 §5's ``missing_authorities``.
 
-**``automatic_teaching_enabled`` is the Planner's own answer.** P8-1's disposal
-F2 ruled that the wiring cut "must pass the value the Planner assembled"; here
-that is literally ``run.trace.context.automatic_teaching_enabled`` — the flag
-BF-02 §5's authority assembly derived from the §5.1 policy — read off the run
-the cycle just made, never hand-declared and never read a second time from the
-policy row. The other three controls are derived from the two views by
+**``automatic_teaching_enabled`` is the Planner's own answer times the
+rollout stage.** P8-1's disposal F2 ruled that the wiring cut "must pass the
+value the Planner assembled"; here that is literally
+``run.trace.context.automatic_teaching_enabled`` — the flag BF-02 §5's
+authority assembly derived from the §5.1 policy — read off the run the cycle
+just made, never hand-declared and never read a second time from the policy
+row. P8-5's rollout gate adds the **second leg** the Gate's own registration
+always named (``elc/teaching/gate.py``: the switch is "the product mode …
+crossed with the rollout stage"): the wiring carries the process-level
+``rollout_stage`` declaration, and the composed fact is the Planner's value
+**and** :func:`elc.teaching.rollout.stage_allows_automatic` — which is
+``False`` for an undeclared stage, so an assembly nobody declared a stage for
+teaches nothing automatically (fail-closed). The other three controls are
+derived from the two views by
 :meth:`~elc.runtime.automatic_teaching.TeachingControlFacts.derived`, which
 calls :func:`elc.runtime.automatic_controls.automatic_controls_of`.
 
@@ -181,6 +189,7 @@ from elc.runtime.automatic_teaching import (
 )
 from elc.runtime.decision_cycles import DecisionCycleBindings, DecisionCycleRecord
 from elc.runtime.exposure import LedgerExposureWriter
+from elc.teaching.rollout import RolloutStage, stage_allows_automatic
 from elc.teaching.types import (
     EvidenceModality,
     MomentSource,
@@ -360,6 +369,15 @@ class AutomaticTurnWiring:
     the run then answers ``INCOMPLETE`` / ``DEGRADED`` on its own authority
     (nothing declared, nothing invented), which is the same verdict the shipped
     corpus produces today for a different reason.
+
+    ``rollout_stage`` is the one field that is not a *face*: it is the
+    process-level rollout declaration P8-5 formalizes
+    (docs/IMPLEMENTATION_PLAN.md §12's four stages,
+    :class:`elc.teaching.rollout.RolloutStage`), and it is ``None`` by default
+    — an undeclared stage refuses automatic teaching rather than assuming the
+    most permissive one (``elc.teaching.rollout.stage_allows_automatic``). A
+    caller that means to run the automatic leg declares the stage its rollout
+    is at; a caller that does not is in the state the shipped product is in.
     """
 
     planner_store: PlannerDecisionRecordStore
@@ -373,6 +391,7 @@ class AutomaticTurnWiring:
     session_budget: SessionBudgetFace | None = None
     user_id: object | None = None
     candidate_supply: CandidateSupply | None = None
+    rollout_stage: RolloutStage | None = None
 
 
 # -- §4 step 3: the conversation leg -----------------------------------------
@@ -646,8 +665,15 @@ def assemble_automatic_turn(
             ),
             conversation_priority_view=priority_view,
         ),
-        # P8-1 disposal F2: the wiring passes the value the Planner assembled.
-        automatic_teaching_enabled=run.trace.context.automatic_teaching_enabled,
+        # P8-1 disposal F2: the wiring passes the value the Planner assembled —
+        # and P8-5 composes it with the stage leg the Gate's registration names
+        # (mode × rollout stage). The Planner's value is the mode leg's answer
+        # read once (TEACHING_FREQUENCY_TO_PROFILE through the §5.1 row); the
+        # stage leg is the wiring's declaration, fail-closed when absent.
+        automatic_teaching_enabled=(
+            run.trace.context.automatic_teaching_enabled
+            and stage_allows_automatic(wiring.rollout_stage)
+        ),
     )
     return Ok(
         AutomaticTurnPlan(

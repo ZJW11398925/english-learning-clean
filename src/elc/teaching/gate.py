@@ -899,15 +899,21 @@ def decide_user_requested_continuation(facts: ContinuationFacts) -> GateVerdict:
 #    structurally by the durable §5.1 row ``TeachingPolicyProfile``,
 #    migration 0011), copied into the ``FeatureAuthority`` at
 #    ``planner/feature_assembly.py:717`` and traced by
-#    ``planner/kernel.py:1779``. What this module does not have is a read
-#    face at its own call site, so the fact stays the caller's declaration —
-#    and the wiring cuts (p8-4 / p8-5) **must pass the Planner's assembled
-#    value**, or a user whose durable policy turned automatic teaching off
-#    could still be taught automatically. The LOUNGE profile only raises the
+#    ``planner/kernel.py:1779``. This module still has no read face at its
+#    own call site — the fact stays the caller's declaration — and both legs
+#    of that declaration now have landed read faces: **p8-4 passes the
+#    Planner's assembled value** (so a user whose durable policy turned
+#    automatic teaching off cannot still be taught automatically), and
+#    **p8-5 landed the stage face** the mode is crossed with
+#    (``elc.teaching.rollout``: ``RolloutStage`` — the process-level
+#    declaration, whose undeclared value refuses — and its
+#    ``automatic_teaching_enabled_of``, the *composed* read face that crosses
+#    that stage with the mode leg above). ``elc.runtime.automatic_turn``
+#    composes the two for the automatic leg. The LOUNGE profile only raises the
 #    activation threshold (BF-02 §13's +0 row); it is **not** a substitute
-#    for the ``AUTO_TEACH_DISABLED`` DENY. Revisit: p8-5 (rollout gate)
-#    lands the durable read face for this fact's caller; p8-4 passes the
-#    Planner's value.
+#    for the ``AUTO_TEACH_DISABLED`` DENY. Revisit: the fact gets a durable
+#    column of its own (a §5.1 revision), or a third leg lands and the
+#    authority sentence above grows with it.
 # 2. ``hard_protected_flow`` ← docs/DOMAIN_MODEL.md §13's
 #    ConversationPriorityView.flow_priority == "PROTECTED" (the same view
 #    P7-2 assembled). This module does not read that view: the derivation
@@ -919,8 +925,9 @@ def decide_user_requested_continuation(facts: ContinuationFacts) -> GateVerdict:
 #    + Runtime Session State). P8-2 landed that view and its production face
 #    (``TeachingController.get_session_budget_view``); this profile still
 #    consumes the **injected** control facts and derives nothing itself.
-#    Revisit: the wiring cut (p8-4 / p8-5) decides who assembles the fact
-#    inside a turn — there is no caller today.
+#    Revisit: the assembly inside a turn changes hands — today
+#    ``elc.runtime.automatic_turn.assemble_automatic_turn`` is the caller
+#    (``TeachingControlFacts.derived`` over the two views, p8-4).
 # 4. ``moment_consent_class`` (``AUTO_OPENED`` / ``USER_AUTHORIZED``) is
 #    the frozen reference's own word for *how the active moment came to
 #    be*; it is not a column of docs/DATA_MODEL.md §15. Until canonical or
