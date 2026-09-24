@@ -152,7 +152,14 @@ def entries_of_type(
 
     A read, not a policy: nothing here decides what a ``DO_NOT_AUTO_TEACH``
     entry *does* — the cut that applies a suppression is the one that has to
-    say so (and none is wired yet, the P6-3 statement this does not change).
+    say so. P9-3 is the first cut that branches on one, and it says so where the
+    branch is (``elc.runtime.pre_delivery_guard``'s carrier table and its two
+    §9 reads): §15's ``JUST_CHAT hard switch`` and ``new target suppression``
+    are facts about entries of these two types, so the PreDeliveryGuard reads
+    the view through this function — the same read ``elc.planner.scope`` uses —
+    and can only stop a delivery that was about to be sent. The P6-3 statement
+    this module made ("no effect is applied here") is unchanged: the decision
+    lives with the consumer, and this function still applies nothing.
     """
 
     return tuple(

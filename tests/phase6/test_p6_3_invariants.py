@@ -257,6 +257,28 @@ def test_the_object_is_mentioned_by_the_placement_and_two_pre_existing_modules(
     content ref, keep the non-body state" precedent is quoted there as the
     argument for P8-4's own provenance leg, which touches
     ``planning_ledger_event.moment_id`` and not this table.
+
+    P9-3 adds two files, and it is the first cut that **branches** on a
+    constraint — so this paragraph is that review, in the place R11 asked for
+    it. ``runtime/pre_delivery_guard.py`` declares the §15 conditions and the
+    §9 reads they need (``PlannerConstraintSource``'s two methods, named in its
+    own docstring); ``runtime/controller.py`` assembles §15's seven facts for
+    the streamed delivery, and two of them are exactly §9's words:
+    ``JUST_CHAT hard switch`` is true when the §9 view carries a ``JUST_CHAT``
+    entry (the same ``entries_of_type`` read ``planner/scope.py`` uses, so the
+    guard and the Planner cannot disagree about the switch), and
+    ``new target suppression`` is true when ``active_constraints_for_target``
+    carries a ``SUPPRESS_REVIEW`` entry for the delivering action's target.
+
+    What that consumer is **not** is as load-bearing as what it is: it writes
+    no row of this table (the two files carry no statement at all — the guard
+    reads through the §9 view and the in-force read, so it never consults
+    ``active`` or a window itself), it decides nothing about teaching — the
+    verdict is §15's two words and it can only stop a delivery that was about
+    to be sent — and it does not touch the Planner's own marking
+    (``planner/candidates.py``'s ``SUPPRESSED`` trace, unchanged). §15's list
+    names both conditions as hard invalidations, so this is the consumption the
+    canonical text asks for rather than one a cut invented.
     """
 
     mentioning = sorted(
@@ -276,6 +298,8 @@ def test_the_object_is_mentioned_by_the_placement_and_two_pre_existing_modules(
         "planner/types.py",
         "platform/registry.py",
         "runtime/automatic_turn.py",
+        "runtime/controller.py",
+        "runtime/pre_delivery_guard.py",
         "teaching/gate.py",
         "user_config/__init__.py",
         "user_config/commands.py",

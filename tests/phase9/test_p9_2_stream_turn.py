@@ -511,21 +511,42 @@ def test_the_default_transport_lands_one_chunk_and_the_whole_reply(
 def test_a_healthy_streamed_turn_writes_no_ack_estimate_or_guard_row(
     world: StreamWorld,
 ) -> None:
-    """RA §6 and this cut's reach: the main turn does not wait for a
-    ``ClientRenderAck`` (no row), the exposure estimate is P9-4's face (no row),
-    and the §21.1 records belong to the faces that own those checks (no row)."""
+    """RA §6 and this cut's reach — and the one truth P9-3 moved.
 
-    begin_turn_ok(coordinator_(world), "cmid-p9-2-clean")
+    The main turn does not wait for a ``ClientRenderAck`` (no row), the exposure
+    estimate is P9-4's face (no row), and the ``validator_result`` rows belong
+    to the validator's own attempt face (still no row here). The §21.1
+    ``pre_delivery_guard_result`` row is a **different** case: P9-2 wrote none
+    because no face ran §15's check, and §21.1's guard writer landed with P9-3
+    — so a healthy streamed turn now carries exactly one ``VALID`` row, and the
+    assertion is stronger than "no row" was: the row names the action, carries
+    no reason code (all seven facts were read and none held), and spells a
+    non-empty lineage version. The name keeps P9-2's shape on purpose (this is
+    that cut's test, with its truth updated); a reader who wants the guard's own
+    suite reads ``test_p9_3_pre_delivery_guard.py``."""
+
+    completion = begin_turn_ok(coordinator_(world), "cmid-p9-2-clean")
 
     for table in (
         "client_render_ack",
         "exposure_estimate",
         "validator_result",
-        "pre_delivery_guard_result",
     ):
         assert count(world.db, table) == 0, table
     assert count(world.db, "server_delivery_record") == 1
     assert count(world.db, "assistant_turn") == 1
+
+    action_id = action_of(world, str(completion.turn_id))
+    rows = world.deliveries.list_pre_delivery_guard_results(action_id)
+    assert isinstance(rows, Ok), rows
+    assert len(rows.value) == 1
+    guard = rows.value[0]
+    assert guard.action_id == action_id
+    assert (guard.decision, guard.reason_codes) == ("VALID", ())
+    assert guard.checked_lineage_version, (
+        "the §21.1 row must carry the lineage it was checked against"
+    )
+    assert guard.created_at
 
 
 # -- ② the stops ---------------------------------------------------------------

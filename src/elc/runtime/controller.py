@@ -39,6 +39,7 @@ from elc.conversation.queries import ConversationQueries
 from elc.conversation.types import (
     AssistantTurnRecord,
     CanonicalTurnSlice,
+    ConversationStatus,
     Cp0Commit,
     DeliveryState,
     TurnOutcome,
@@ -109,6 +110,7 @@ from elc.runtime.decision_cycles import (
 )
 from elc.runtime.delivery_records import (
     DeliveryRecordStore,
+    PreDeliveryGuardResult,
     ServerDeliveryRecord,
 )
 from elc.runtime.exposure import (
@@ -127,8 +129,22 @@ from elc.runtime.guarded_stream import (
     local_single_chunk_transport,
     run_guarded_stream,
 )
+from elc.runtime.interrupt_transport import (
+    INTERRUPT_STOP_REASON,
+    InterruptAwareTransport,
+)
 from elc.runtime.lease import ConversationCoordinatorLease
 from elc.runtime.persona_views import PersonaViewSource
+from elc.runtime.pre_delivery_guard import (
+    GuardCondition,
+    PlannerConstraintSource,
+    PreDeliveryDecision,
+    PreDeliveryGuardFacts,
+    PreDeliveryGuardVerdict,
+    checked_lineage_version_of,
+    guard_result_id_of,
+    guard_verdict,
+)
 from elc.runtime.projections import (
     CP4ProjectionRuntime,
     ProjectionJobView,
@@ -221,7 +237,11 @@ from elc.teaching.types import (
     TeachingSupportLevel,
     TeachingTargetRef,
 )
-from elc.user_config.types import DisclosedUserProfile
+from elc.user_config.constraints import entries_of_type
+from elc.user_config.types import (
+    DisclosedUserProfile,
+    PlannerConstraintType,
+)
 
 if TYPE_CHECKING:
     # Annotations only: the coordinator calls the injected authority faces,
@@ -553,7 +573,23 @@ class RuntimeOrchestrator:
         raise NotImplementedError("use ConversationCoordinator.begin_turn")
 
     def request_interrupt(self, interrupt: InterruptRequest) -> Result[InputId]:
-        raise NotImplementedError("Phase 9: guarded barge-in handoff")
+        """The P4-0 pin, fulfilled by the coordinator (P9-3).
+
+        RA §17.1 needs one durable entry that works *outside* the coordinator
+        guard, and the guard holder's own face is where the durable store is
+        (this façade holds no ports — see the class docstring: there is
+        deliberately no second live entry point). So P9-3 landed the barge-in
+        handoff on :meth:`ConversationCoordinator.request_interrupt` and this
+        skeleton entry names it, exactly as ``ingest_input`` names
+        ``begin_turn`` above. Revisit: the façade gains an injected command
+        port (then this entry delegates instead of pointing).
+        """
+
+        raise NotImplementedError(
+            "use ConversationCoordinator.request_interrupt — the §17.1"
+            " guarded barge-in handoff (durable outside the guard) landed"
+            " with P9-3 on the coordinator"
+        )
 
     def begin_turn(self, command: CommitUserTurn) -> Result[TurnCompletion]:
         raise NotImplementedError("use ConversationCoordinator.begin_turn")
@@ -816,6 +852,35 @@ class ConversationCoordinator:
     every teaching action type and ``PERSONA_RESUME`` through it, and only
     ``NORMAL_PERSONA_REPLY`` through the stream
     (``elc.runtime.guarded_stream.delivery_mode_of``).
+
+    Phase 9 P9-3: the **barge-in handoff** (RA §17.1 / §18) lands on this class,
+    and it adds one optional injection:
+
+    - ``constraint_views`` (``elc.runtime.pre_delivery_guard.
+      PlannerConstraintSource``) is the §9 authority the PreDeliveryGuard's two
+      constraint legs read (a ``JUST_CHAT`` hard switch and a target
+      suppression). ``None`` — the default, and every assembly before this
+      slice — makes those two facts **unchecked** rather than ``False``: the
+      guard records ``UNCHECKED_*`` in its §21.1 row and never invalidates on a
+      fact nobody could read. Every other assembly keeps its exact behaviour.
+
+    The handoff itself is three faces, and the split is what makes it work
+    while the old worker still holds the guard:
+
+    - :meth:`request_interrupt` is the entry that needs **no** guard: it writes
+      the durable ``interrupt_request`` row (§17.1 rules 1–2) and never waits
+      for the old worker, so a new input can ask to interrupt at any moment;
+    - :meth:`_reconcile_pending_interrupt` runs *after* this turn's guard was
+      acquired and *before* anything is generated: whatever the conversation is
+      still waiting to have cancelled is cancelled by the only actor §17.1 rule
+      3 allows — the guard holder — and only then does the new turn proceed
+      (§17.1 rule 5: no user-visible output before the handoff);
+    - the delivery itself runs §15's **PreDeliveryGuard** before the first
+      release (§4 steps 13 → 14 → 15): an invalidated delivery is not sent, its
+      §22 row freezes ``CANCELLED``, no ``assistant_turn`` row is written and
+      the turn terminalizes by §1-C's mapping. The stream is also wrapped in
+      :class:`InterruptAwareTransport`, so a barge-in that arrives *during* the
+      stream stops it before the next release.
     """
 
     def __init__(
@@ -837,6 +902,7 @@ class ConversationCoordinator:
         automatic_teaching: AutomaticTurnWiring | None = None,
         delivery_records: DeliveryRecordStore | None = None,
         stream_transport: StreamTransportFactory | None = None,
+        constraint_views: PlannerConstraintSource | None = None,
     ) -> None:
         self._lease = lease
         self._commands = conversation_commands
@@ -855,6 +921,272 @@ class ConversationCoordinator:
         self._automatic = automatic_teaching
         self._delivery_records = delivery_records
         self._stream_transport = stream_transport
+        self._constraint_views = constraint_views
+
+    # -- the §17.1 barge-in handoff (P9-3) -----------------------------------
+
+    def request_interrupt(self, interrupt: InterruptRequest) -> Result[InputId]:
+        """Make one barge-in request durable **outside** the coordinator guard.
+
+        RA §17.1 rules 1-2 and §18's first move. The whole point of this entry
+        is what it does *not* do: it takes no keyed mutex and waits for no
+        worker, so a new input can ask to interrupt while the old worker still
+        holds the conversation's guard (that is the sentence
+        ``elc.runtime.lease`` has carried since P1 and this cut turns into
+        behaviour). The cancellation itself is not performed here — §17.1 rule
+        3 names the guard holder or recovery owner as the only actor allowed to
+        cancel, canonicalize the old partial output and terminalize the old
+        turn, and this entry may run while that actor is mid-stream.
+
+        Two rows, in this order, and the order is a decision:
+
+        1. the ``interrupt_request`` row (the act — keyed by the interrupting
+           input's own id, ``input_id``, per migration 0002);
+        2. the ``input_envelope`` row (the §17.1 rule 1 queue entry).
+
+        A crash between them therefore leaves the *request* durable and only
+        the queue entry missing — the opposite order would leave an input
+        nobody asked about. Both writes go through the conversation domain's
+        own command face (this package stays SQL-free), each one its own short
+        transaction, and a re-submission of the same ``input_id`` writes
+        nothing: the interrupt row's primary key answers ``CONFLICT``, which
+        this entry reads as "the request is already durable" and returns the id
+        (R-INV-012's stable identity — the second call also repairs a queue
+        entry a crash may have eaten).
+
+        Two readings this entry adds, because the ``InterruptRequest`` shape
+        carries neither field: the queue entry's ``raw_payload`` is the
+        request's own ``reason`` verbatim (the request is all this face knows
+        about the interrupting input, and inventing text would be worse), and
+        its ``interaction_channel`` is ``TEXT`` (V1's only channel,
+        ``DEC-…d7937fd7.12``). Revisit: a cut carries the new input's real
+        payload/channel through this entry (then both readings retire), or
+        §17.1's queue entry becomes a different record.
+        """
+
+        requested = self._commands.request_interrupt(interrupt)
+        if isinstance(requested, Err) and (
+            requested.error.code is not DomainErrorCode.CONFLICT
+        ):
+            return requested
+        queued = self._commands.ingest_input(
+            InputEnvelope(
+                input_id=interrupt.input_id,
+                client_message_id=None,
+                conversation_id=interrupt.conversation_id,
+                persona_id=None,
+                scene_id=None,
+                interaction_channel=InteractionChannel.TEXT,
+                raw_payload=interrupt.reason,
+                received_at=_now(),
+            )
+        )
+        if isinstance(queued, Err) and (
+            queued.error.code is not DomainErrorCode.CONFLICT
+        ):
+            return queued
+        return Ok(interrupt.input_id)
+
+    def _reconcile_pending_interrupt(
+        self, conversation_id: ConversationId
+    ) -> Result[tuple[str, ...]]:
+        """§17.1 rules 3-5: cancel what is still pending, then hand off.
+
+        Runs inside the guard, after it was acquired and before this turn
+        generates anything, so rule 5 ("handoff 前 new turn 不得产生
+        user-visible assistant output") holds by construction: whatever the
+        conversation is still waiting to see cancelled is cancelled first, and
+        only then does the new turn start.
+
+        The requests are read from the conversation domain's own read face (one
+        spelling of "pending", the store method's docstring carries why), oldest
+        first, and each is answered conservatively (§18's order):
+
+        - an action leg cancels the delivery the action owns — the durable
+          prefix is canonicalized as ``SENT_PARTIAL``, the action goes
+          ``TERMINAL``, the turn ends ``CANCELLED_BY_USER``;
+        - a turn leg with no action ends the turn the same way, with no
+          assistant row (nothing was delivered);
+        - **a row of another runtime epoch is skipped**, not refused: the
+          current epoch may not advance it (DATA_MODEL §19's fence, and the
+          store answers ``AUTHORITY_VIOLATION`` if asked), and the request
+          stays *pending* — which is the honest visibility, because the
+          recovery owner is the actor §17.1 rule 3 leaves for it. Telling the
+          user's next turn to fail because an old epoch's residue is waiting
+          would be the wrong trade (RA §21: degradation, not blockage);
+        - a request whose named rows are already terminal is answered by
+          skipping it: the cancellation it asked for has happened.
+
+        Returns the cancelled action/turn ids, oldest request first — the
+        authoritative record of each cancellation is its own durable rows (the
+        §22 row's ``CANCELLED``, the transcript row, the turn status), and this
+        turn's completion deliberately carries none of them: the new turn did
+        not do anything to *itself*. Revisit: a cut gives the interrupt a
+        durable disposition column of its own (then "skipped" stops being
+        inferred from a still-pending row).
+        """
+
+        pending = self._queries.list_pending_interrupts_for_conversation(
+            conversation_id
+        )
+        if isinstance(pending, Err):
+            return pending
+        cancelled: list[str] = []
+        for request in pending.value:
+            action_id = request.active_action_id
+            if action_id is not None:
+                cancelled_action = self._cancel_interrupted_action(action_id)
+                if isinstance(cancelled_action, Err):
+                    return cancelled_action
+                if cancelled_action.value is not None:
+                    cancelled.append(cancelled_action.value)
+            turn_id = request.active_turn_id
+            if turn_id is not None:
+                cancelled_turn = self._cancel_interrupted_turn(turn_id)
+                if isinstance(cancelled_turn, Err):
+                    return cancelled_turn
+                if cancelled_turn.value is not None:
+                    cancelled.append(cancelled_turn.value)
+        return Ok(tuple(cancelled))
+
+    def _cancel_interrupted_action(
+        self, action_id: ActionId
+    ) -> Result[str | None]:
+        """Conservatively cancel one interrupted action's delivery (§18).
+
+        ``Ok(None)`` means "nothing to do": the action does not exist, is
+        already ``TERMINAL`` (the cancellation happened), or belongs to another
+        runtime epoch (skipped, see the reconciler's docstring). Otherwise the
+        action is brought to §18's terminal shape:
+
+        - the §22 row freezes ``CANCELLED`` with its ``sent_prefix`` and
+          ``last_chunk_seq`` **kept** (§17: the sent boundary is irreversible —
+          no replay, no truncation of what was really sent), when the record
+          face is wired and the row had not frozen yet;
+        - with a durable prefix: the assistant turn is canonicalized from that
+          prefix **verbatim** and spells ``SENT_PARTIAL`` (§1-C②; ``SENT_PARTIAL``
+          is the transcript's word for an interrupted delivery even when the row
+          was already frozen with another word — registered, because the two
+          columns belong to two faces: §17 makes the row the sent boundary and
+          this rule makes the transcript the turn's own view of it);
+        - with no durable prefix: no assistant row at all and the action
+          terminalizes undelivered — undelivered provider output never enters
+          the transcript (DOMAIN_MODEL §3);
+        - either way the turn ends ``CANCELLED_BY_USER`` (the §10 mapping
+          ``terminalize_turn`` performs), and the turn is only touched while it
+          is nonterminal.
+
+        Revisit: a cut reconciles a frozen row with a nonterminal action through
+        P3-3's recovery face (then that pair has an owner and this note moves
+        there).
+        """
+
+        fetched = self._generation.get_action(action_id)
+        if isinstance(fetched, Err):
+            return fetched
+        action = fetched.value
+        if action is None:
+            return Ok(None)
+        if action.status == GenerationActionStatus.TERMINAL:
+            return Ok(None)
+        epoch = self._lease.epoch
+        if epoch is not None and action.owner_epoch != epoch:
+            return Ok(None)
+
+        durable_prefix = ""
+        if self._delivery_records is not None:
+            row_result = self._delivery_records.get_server_delivery_record(
+                action_id
+            )
+            if isinstance(row_result, Err):
+                return row_result
+            row = row_result.value
+            if row is not None:
+                durable_prefix = row.sent_prefix
+                if row.terminal_at is None:
+                    frozen = self._delivery_records.record_server_delivery(
+                        ServerDeliveryRecord(
+                            action_id=row.action_id,
+                            assistant_turn_id=row.assistant_turn_id,
+                            state=DeliveryState.CANCELLED.value,
+                            sent_prefix=row.sent_prefix,
+                            last_chunk_seq=row.last_chunk_seq,
+                            started_at=row.started_at,
+                            terminal_at=_now(),
+                        )
+                    )
+                    if isinstance(frozen, Err):
+                        return frozen
+
+        if durable_prefix == "":
+            failed = self._persona.terminalize_failure(
+                action_id, action.status
+            )
+            if isinstance(failed, Err):
+                return failed
+        else:
+            slice_result = self._queries.get_canonical_turn_slice(action.turn_id)
+            if isinstance(slice_result, Err):
+                return slice_result
+            slice_ = slice_result.value
+            if slice_ is None:
+                return _missing(
+                    f"canonical turn slice not found: {action.turn_id}"
+                )
+            user_turn = slice_.user_turn
+            canonical = self._commands.canonicalize_assistant_turn(
+                AssistantTurnRecord(
+                    assistant_turn_id=AssistantTurnId(action.assistant_turn_id),
+                    turn_id=action.turn_id,
+                    conversation_id=user_turn.conversation_id,
+                    turn_sequence=user_turn.turn_sequence,
+                    message_sequence=user_turn.message_sequence,
+                    action_id=action_id,
+                    content=durable_prefix,
+                    delivery_state=DeliveryState.SENT_PARTIAL,
+                    delivery_certainty=SERVER_SENT_UNCONFIRMED,
+                )
+            )
+            if isinstance(canonical, Err):
+                return canonical
+            completed = self._persona.complete_delivery(action_id)
+            if isinstance(completed, Err):
+                return completed
+
+        cancelled_turn = self._cancel_interrupted_turn(action.turn_id)
+        if isinstance(cancelled_turn, Err):
+            return cancelled_turn
+        return Ok(str(action_id))
+
+    def _cancel_interrupted_turn(self, turn_id: TurnId) -> Result[str | None]:
+        """End one interrupted turn ``CANCELLED_BY_USER`` (§18's last steps).
+
+        ``Ok(None)`` for a turn that is already terminal, that does not exist,
+        or that belongs to another runtime epoch (skipped, see the reconciler).
+        A turn with no delivery to speak of — the shape a request names when
+        the old worker died before it produced anything — ends the same way the
+        interrupted delivery's turn does: it is one outcome, and §10's mapping
+        (``CANCELLED_BY_USER`` → ``TurnStatus.CANCELLED_BY_USER``) is the
+        store's.
+        """
+
+        fetched = self._commands.get_turn_record(turn_id)
+        if isinstance(fetched, Err):
+            return fetched
+        turn = fetched.value
+        if turn is None:
+            return Ok(None)
+        if turn.status in TERMINAL_TURN_STATUSES:
+            return Ok(None)
+        epoch = self._lease.epoch
+        if epoch is not None and turn.owner_epoch != epoch:
+            return Ok(None)
+        terminal = self._commands.terminalize_turn(
+            turn_id, TurnOutcome.CANCELLED_BY_USER
+        )
+        if isinstance(terminal, Err):
+            return terminal
+        return Ok(str(turn_id))
 
     # -- minimum turn loop ---------------------------------------------------
 
@@ -882,6 +1214,18 @@ class ConversationCoordinator:
         terminalization, exactly as P1/P2/P3 pinned it."""
 
         with self._lease.hold(command.conversation_id):
+            # RA §17.1 rules 3-5 (P9-3): the guard holder is the only actor
+            # allowed to cancel what an interrupt still names, and doing it
+            # here — before CP0 and before anything is generated — is what
+            # makes "no user-visible output before the handoff" structural
+            # rather than a promise. The cancelled ids are durable facts of
+            # their own turns (this turn's completion says nothing about
+            # them); only a failure to *reconcile* stops this turn.
+            reconciled = self._reconcile_pending_interrupt(
+                command.conversation_id
+            )
+            if isinstance(reconciled, Err):
+                return reconciled
             cp0_result = self._commands.commit_user_turn(command)
             if isinstance(cp0_result, Err):
                 return cp0_result
@@ -1882,6 +2226,33 @@ class ConversationCoordinator:
                     ),
                 )
 
+        # RA §4 steps 13 → 14 → 15, in this cut's scope: the guard runs once,
+        # before the first release, and *after* the §22 row opened (so an
+        # invalidated delivery freezes ``CANCELLED`` with an empty prefix
+        # rather than leaving no record of a delivery that was asked for and
+        # refused). Every verdict writes its §21.1 row — VALID included (§1-D);
+        # a refused row write is registered in the delivery's reason and never
+        # silently dropped.
+        verdict = guard_verdict(
+            self._pre_delivery_guard_facts(
+                action=action, turn=turn, conversation_id=delivery.conversation_id
+            )
+        )
+        guard_note: str | None = None
+        recorded = self._record_guard_result(action=action, turn=turn, verdict=verdict)
+        if isinstance(recorded, Err):
+            guard_note = (
+                "the §21.1 pre-delivery guard row could not be written:"
+                f" {recorded.error.message}"
+            )
+        if verdict.decision == PreDeliveryDecision.INVALIDATE_ACTION.value:
+            return self._invalidate_streamed_delivery(
+                delivery,
+                verdict=verdict,
+                reason=self._guard_invalidation_reason(verdict, guard_note),
+                started_at=started_at,
+            )
+
         def _record_chunk(prefix: str, sequence: int) -> Result[None]:
             if record_face is None:
                 return Ok(None)
@@ -1905,8 +2276,13 @@ class ConversationCoordinator:
             else self._stream_transport
         )
         try:
-            transport = factory(
-                validated_text=delivery.text, action_id=delivery.action_id
+            # §17.1 rule 2 / §18: a barge-in is checked before every step, so
+            # the stream stops before the next release rather than after it.
+            transport = InterruptAwareTransport(
+                factory(
+                    validated_text=delivery.text, action_id=delivery.action_id
+                ),
+                pending=lambda: self._delivery_interrupted(delivery.action_id),
             )
             run = run_guarded_stream(
                 transport=transport,
@@ -1933,6 +2309,22 @@ class ConversationCoordinator:
             )
 
         reason = run.failure_reason
+        if run.stop_reason == INTERRUPT_STOP_REASON:
+            # A durable barge-in stopped this stream (§17.1 rule 2 / §18). The
+            # run's own shape is ``STOPPED("interrupt")`` — a stop like any
+            # other to the driver, whose reading 6 keeps the reason data — and
+            # the words this face adds are §1-C②'s: the §22 row freezes
+            # ``CANCELLED``, the durable prefix is canonicalized as
+            # ``SENT_PARTIAL``, and the turn ends ``CANCELLED_BY_USER``
+            # whether or not anything was released.
+            return self._cancel_streamed_delivery(
+                delivery,
+                outcome=TurnOutcome.CANCELLED_BY_USER,
+                reason=self._interrupt_cancellation_reason(run, guard_note),
+                durable_prefix=run.durable_prefix,
+                last_chunk_seq=run.last_chunk_seq,
+                started_at=started_at,
+            )
         if reason is None and run.stop_reason is not None:
             # The source's own words (verbatim, the driver's reading 6) are the
             # reason a partial delivery stopped short — carried into the
@@ -2070,6 +2462,446 @@ class ConversationCoordinator:
                 failure_reason=reason,
                 state_version=terminal.value.state_version,
                 delivery_state=state,
+                delivery_failure_reason=reason,
+            )
+        )
+
+    # -- the PreDeliveryGuard's facts, row and two cancellations (P9-3) -----
+
+    def _delivery_interrupted(self, action_id: ActionId) -> bool:
+        """§17.1: is this delivery still wanted? The stream asks before each step.
+
+        The question is asked of the durable request face — a *pending*
+        ``interrupt_request`` naming this action means the user asked for this
+        delivery to stop and no actor has answered it yet. False on any read
+        failure: the conservative direction for the stream is to keep sending
+        (the interrupt stays durable and the reconciler will act on it), and
+        the alternative — treating an unreadable audit row as a cancellation —
+        would cancel deliveries on a broken read.
+        """
+
+        pending = self._queries.list_pending_interrupts_for_action(action_id)
+        if isinstance(pending, Err):
+            return False
+        return bool(pending.value)
+
+    def _pre_delivery_guard_facts(
+        self,
+        *,
+        action: GenerationActionIntentRecord,
+        turn: TurnRecordData,
+        conversation_id: ConversationId,
+    ) -> PreDeliveryGuardFacts:
+        """Assemble §15's seven facts from the durable reads this class holds.
+
+        One leg per condition, and the module's carrier table (its docstring)
+        is the same list read from the other side:
+
+        - ``conversation_inactive`` — the conversation row's status; an
+          unreadable row is ``None`` (unknown), never ``False``;
+        - ``action_cancelled`` — a pending interrupt naming this action (the
+          same read the stream wrapper asks);
+        - ``action_superseded`` — this turn is not the conversation's latest
+          ``turn_sequence`` (``next_turn_sequence - 1``); the read itself
+          answers ``None`` when the counters cannot be read;
+        - ``teaching_lock_invalid`` / ``new_target_suppressed`` /
+          ``just_chat_hard_switch`` — `False` for an action carrying no
+          ``moment_id``, because an ordinary persona reply delivers no
+          teaching content and there is nothing for these three to be true
+          about (§15's conditions are about a teaching delivery); for a
+          teaching action they are read from the teaching controller and the
+          §9 constraint view, and each answers ``None`` when its authority is
+          not wired or its read fails;
+        - ``lineage_mismatch`` — the action's ``decision_cycle_id`` against the
+          turn's ``active_decision_cycle_id``; ``None`` when either side
+          carries no cycle, because "no lineage declared" is not a mismatch
+          (the Phase-1 assembly's actions have a NULL cycle and the check
+          cannot be run against one). Revisit: migration 0007's nullable
+          lineage is tightened, then the ``None`` arm becomes unreachable.
+
+        Nothing here scores, re-plans or re-reads a Planner utility (§15's own
+        sentence); every value is a fact some authority already holds.
+        """
+
+        conversation_result = self._queries.get_conversation(conversation_id)
+        if isinstance(conversation_result, Err):
+            conversation_inactive: bool | None = None
+        else:
+            conversation = conversation_result.value
+            conversation_inactive = (
+                None
+                if conversation is None
+                else conversation.status is ConversationStatus.CLOSED
+            )
+
+        pending = self._queries.list_pending_interrupts_for_action(
+            action.action_id
+        )
+        action_cancelled: bool | None = (
+            None if isinstance(pending, Err) else bool(pending.value)
+        )
+
+        positions = self._queries.get_sequence_positions(conversation_id)
+        if isinstance(positions, Err):
+            action_superseded: bool | None = None
+        else:
+            latest_sequence = (
+                int(positions.value.next_turn_sequence) - 1
+            )
+            action_superseded = int(turn.turn_sequence) < latest_sequence
+
+        if action.action_type is GenerationActionType.NORMAL_PERSONA_REPLY:
+            # §15's three teaching conditions are **not applicable** to an
+            # ordinary persona reply — there is no lock question, no target and
+            # no teaching content a JUST_CHAT switch could invalidate — and the
+            # answer for each is ``False``: a definite "this delivery is not
+            # the kind of thing the condition speaks about". The action *type*
+            # is what makes that call (§3's carrier wording is "教学动作" /
+            # "普通 reply", and the teaching types are §20's other five).
+            teaching_lock_invalid: bool | None = False
+            new_target_suppressed: bool | None = False
+            just_chat_hard_switch: bool | None = False
+        else:
+            teaching_lock_invalid = self._teaching_lock_state_of(
+                conversation_id, action.moment_id
+            )
+            target = self._teaching_target_of(action.moment_id)
+            just_chat_hard_switch = self._just_chat_switch_of(conversation_id)
+            if target is None:
+                # The target could not be read, so the suppression question
+                # has no subject: unchecked, not "not suppressed".
+                new_target_suppressed = None
+            else:
+                target_type, target_id = target
+                new_target_suppressed = self._target_suppression_of(
+                    target_type, target_id
+                )
+
+        action_cycle = action.decision_cycle_id
+        turn_cycle = turn.active_decision_cycle_id
+        if action_cycle is None or turn_cycle is None:
+            lineage_mismatch: bool | None = None
+        else:
+            lineage_mismatch = str(action_cycle) != str(turn_cycle)
+
+        return PreDeliveryGuardFacts(
+            conversation_inactive=conversation_inactive,
+            action_cancelled=action_cancelled,
+            action_superseded=action_superseded,
+            teaching_lock_invalid=teaching_lock_invalid,
+            new_target_suppressed=new_target_suppressed,
+            just_chat_hard_switch=just_chat_hard_switch,
+            lineage_mismatch=lineage_mismatch,
+        )
+
+    def _teaching_lock_state_of(
+        self, conversation_id: ConversationId, moment_id: str | None
+    ) -> bool | None:
+        """§15's ``TeachingLock invalid`` for one teaching action.
+
+        ``True`` when the lock is absent or held by another moment (including
+        the action that names no moment at all — §3's carrier for the condition
+        is "a teaching action without a lock row, or a lock whose moment is not
+        the action's", and a lock held by *any* moment is not this action's),
+        ``False`` when this moment holds it; ``None`` when no teaching
+        authority is wired or the lock read fails (an unread lock is not "held
+        by this moment", and saying so would invalidate deliveries on a broken
+        read).
+        """
+
+        if self._teaching is None:
+            return None
+        moment = None if moment_id is None else MomentId(str(moment_id))
+        state = self._teaching.observed_lock_state(conversation_id, moment)
+        if isinstance(state, Err):
+            return None
+        return state.value != "OWNED_BY_THIS_MOMENT"
+
+    def _teaching_target_of(
+        self, moment_id: str | None
+    ) -> tuple[str, TargetId] | None:
+        """The moment's focus target, or ``None`` when it cannot be read.
+
+        ``None`` covers every absence — no teaching authority is wired, the
+        action names no moment, no moment row exists for the id, the read fails
+        — because they all mean the same thing for §15's suppression leg:
+        there is no target to ask about, so the answer is ``None`` (unchecked)
+        rather than ``False`` ("nothing is suppressed"). The ordinary-reply arm
+        does not come through here at all: an action that is not a teaching
+        delivery is answered ``False`` by the caller, which is the definite
+        "this delivery has no target".
+        """
+
+        if self._teaching is None or moment_id is None:
+            return None
+        moment = self._teaching.get_moment(MomentId(str(moment_id)))
+        if isinstance(moment, Err):
+            return None
+        record = moment.value
+        if record is None:
+            return None
+        focus = record.focus_target
+        return (focus.target_type, TargetId(str(focus.target_id)))
+
+    def _target_suppression_of(
+        self, target_type: str, target_id: TargetId
+    ) -> bool | None:
+        """§15's ``new target suppression``: a ``SUPPRESS_REVIEW`` row in force.
+
+        The §9 read is the target-filtered one P6-3 landed
+        (``active_constraints_for_target``); ``None`` when no constraint
+        authority is wired or the read fails.
+        """
+
+        if self._constraint_views is None:
+            return None
+        rows = self._constraint_views.active_constraints_for_target(
+            target_type, target_id, _now()
+        )
+        if isinstance(rows, Err):
+            return None
+        return any(
+            str(constraint.constraint_type)
+            == PlannerConstraintType.SUPPRESS_REVIEW.value
+            for constraint in rows.value
+        )
+
+    def _just_chat_switch_of(self, conversation_id: ConversationId) -> bool | None:
+        """§15's ``JUST_CHAT hard switch``: a ``JUST_CHAT`` row in force.
+
+        Read through the same §9 view the Planner's scope reader uses
+        (``elc.planner.scope`` — the words are that module's reading), so the
+        guard and the Planner cannot disagree about whether the switch is on.
+        ``None`` when no constraint authority is wired or the read fails.
+        """
+
+        if self._constraint_views is None:
+            return None
+        view = self._constraint_views.get_planner_constraint_view(
+            _now(), conversation_id
+        )
+        if isinstance(view, Err):
+            return None
+        return bool(
+            entries_of_type(view.value, PlannerConstraintType.JUST_CHAT)
+        )
+
+    def _record_guard_result(
+        self,
+        *,
+        action: GenerationActionIntentRecord,
+        turn: TurnRecordData,
+        verdict: PreDeliveryGuardVerdict,
+    ) -> Result[PreDeliveryGuardResult] | None:
+        """Write the §21.1 row for one guard decision — VALID included.
+
+        One row per action (``guard_result_id_of``), keyed by the action so a
+        re-check of the same delivery re-submits the same identity. ``None``
+        means no record face is wired at all — a different fact from a wired
+        face that refuses the write (which comes back as an ``Err`` the caller
+        registers in the delivery's reason): the port's absence is registered,
+        never simulated (the §22/§20 writer discipline this package follows
+        everywhere). The lineage version is the action's cycle and the turn's
+        ``state_version`` (the module's reading 5).
+        """
+
+        if self._delivery_records is None:
+            return None
+        return self._delivery_records.append_pre_delivery_guard_result(
+            PreDeliveryGuardResult(
+                pre_delivery_guard_result_id=guard_result_id_of(action.action_id),
+                action_id=action.action_id,
+                decision=verdict.decision,
+                reason_codes=verdict.reason_codes,
+                checked_lineage_version=checked_lineage_version_of(
+                    decision_cycle_id=(
+                        None
+                        if action.decision_cycle_id is None
+                        else str(action.decision_cycle_id)
+                    ),
+                    turn_state_version=turn.state_version,
+                ),
+                created_at=_now(),
+            )
+        )
+
+    def _guard_invalidation_reason(
+        self, verdict: PreDeliveryGuardVerdict, guard_note: str | None
+    ) -> str:
+        """The delivery's own reason for a guard invalidation (never silent)."""
+
+        reason = (
+            "the PreDeliveryGuard invalidated this delivery before the first"
+            " release: " + ", ".join(verdict.invalidating_conditions)
+        )
+        unchecked = verdict.unchecked_conditions
+        if unchecked:
+            reason = (
+                f"{reason}; unchecked: " + ", ".join(unchecked)
+            )
+        return reason if guard_note is None else f"{reason}; {guard_note}"
+
+    def _interrupt_cancellation_reason(
+        self, run: StreamRun, guard_note: str | None
+    ) -> str:
+        """The delivery's own reason for an interrupt-driven cancellation."""
+
+        reason = (
+            "the user's interrupt request stopped this delivery"
+            f" (released chunks: {run.chunks}; durable prefix:"
+            f" {len(run.durable_prefix)} character(s))"
+        )
+        return reason if guard_note is None else f"{reason}; {guard_note}"
+
+    def _invalidate_streamed_delivery(
+        self,
+        delivery: StreamedDelivery,
+        *,
+        verdict: PreDeliveryGuardVerdict,
+        reason: str,
+        started_at: str,
+    ) -> Result[TurnCompletion]:
+        """§1-C③: a guard-invalidated delivery is not sent at all.
+
+        The §22 row opened at ``SENDING`` freezes ``CANCELLED`` with an empty
+        prefix and sequence zero (§1-C②'s word, reached with nothing released),
+        no ``assistant_turn`` row is written (undelivered provider output never
+        enters the transcript, DOMAIN_MODEL §3), and the turn's outcome is
+        §1-C③'s: ``CANCELLED_BY_USER`` when the guard's own invalidating
+        conditions include a cancellation or a supersession — the user asked
+        for this turn to stop — and ``NO_ASSISTANT_OUTPUT`` for the other five,
+        which are hard invalidations with no user act behind them. When both
+        kinds hold, the cancellation word wins: the outcome a user sees for
+        their own cancelled turn is theirs.
+        """
+
+        cancellation_words = {
+            GuardCondition.ACTION_CANCELLED.value,
+            GuardCondition.ACTION_SUPERSEDED.value,
+        }
+        outcome = (
+            TurnOutcome.CANCELLED_BY_USER
+            if cancellation_words
+            & set(verdict.invalidating_conditions)
+            else TurnOutcome.NO_ASSISTANT_OUTPUT
+        )
+        return self._cancel_streamed_delivery(
+            delivery,
+            outcome=outcome,
+            reason=reason,
+            durable_prefix="",
+            last_chunk_seq=0,
+            started_at=started_at,
+        )
+
+    def _cancel_streamed_delivery(
+        self,
+        delivery: StreamedDelivery,
+        *,
+        outcome: TurnOutcome,
+        reason: str,
+        durable_prefix: str,
+        last_chunk_seq: int,
+        started_at: str,
+    ) -> Result[TurnCompletion]:
+        """End a streamed delivery that was cancelled (§18 / §1-C).
+
+        Shared by the two cancellation faces — a barge-in that stopped the
+        stream and a guard invalidation that refused it before the first
+        release — because §1-C gives them one shape: the §22 row freezes
+        ``CANCELLED`` with its durable prefix **kept** (§17: the sent boundary
+        is irreversible), the durable prefix (when there is one) is
+        canonicalized verbatim as ``SENT_PARTIAL``, and an empty prefix writes
+        no transcript row at all.
+
+        ``outcome`` is the turn's own word for the empty-prefix arm. The
+        prefixed arm is always ``CANCELLED_BY_USER`` (§1-C②: an interrupted
+        delivery that had sent something is a turn the user cut short), so a
+        caller with a prefix does not get to choose a different outcome — and
+        neither arm ever reports ``REPLIED_*``: a cancellation is not a
+        completed reply, whatever reached the client.
+        """
+
+        terminal_at = _now()
+        if self._delivery_records is not None:
+            frozen = self._delivery_records.record_server_delivery(
+                self._delivery_row(
+                    delivery,
+                    state=DeliveryState.CANCELLED,
+                    sent_prefix=durable_prefix,
+                    last_chunk_seq=last_chunk_seq,
+                    started_at=started_at,
+                    terminal_at=terminal_at,
+                )
+            )
+            if isinstance(frozen, Err):
+                reason = (
+                    f"{reason}; the delivery record could not be frozen:"
+                    f" {frozen.error.message}"
+                )
+
+        if durable_prefix == "":
+            failed = self._persona.terminalize_failure(
+                delivery.action_id, GenerationActionStatus.DELIVERING
+            )
+            if isinstance(failed, Err):
+                return failed
+            terminal = self._commands.terminalize_turn(
+                delivery.turn_id, outcome
+            )
+            if isinstance(terminal, Err):
+                return terminal
+            return Ok(
+                TurnCompletion(
+                    turn_id=delivery.turn_id,
+                    action_id=delivery.action_id,
+                    assistant_turn_id=None,
+                    turn_status=terminal.value.status,
+                    action_status=GenerationActionStatus.TERMINAL,
+                    outcome=outcome.value,
+                    reply_text=None,
+                    failure_reason=None,
+                    state_version=terminal.value.state_version,
+                    delivery_state=DeliveryState.CANCELLED.value,
+                    delivery_failure_reason=reason,
+                )
+            )
+
+        canonical = self._commands.canonicalize_assistant_turn(
+            AssistantTurnRecord(
+                assistant_turn_id=AssistantTurnId(delivery.assistant_turn_id),
+                turn_id=delivery.turn_id,
+                conversation_id=delivery.conversation_id,
+                turn_sequence=delivery.turn_sequence,
+                message_sequence=delivery.message_sequence,
+                action_id=delivery.action_id,
+                content=durable_prefix,
+                delivery_state=DeliveryState.SENT_PARTIAL,
+                delivery_certainty=SERVER_SENT_UNCONFIRMED,
+            )
+        )
+        if isinstance(canonical, Err):
+            return canonical
+        completed = self._persona.complete_delivery(delivery.action_id)
+        if isinstance(completed, Err):
+            return completed
+        terminal = self._commands.terminalize_turn(
+            delivery.turn_id, TurnOutcome.CANCELLED_BY_USER
+        )
+        if isinstance(terminal, Err):
+            return terminal
+        return Ok(
+            TurnCompletion(
+                turn_id=delivery.turn_id,
+                action_id=delivery.action_id,
+                assistant_turn_id=delivery.assistant_turn_id,
+                turn_status=terminal.value.status,
+                action_status=GenerationActionStatus.TERMINAL,
+                outcome=TurnOutcome.CANCELLED_BY_USER.value,
+                reply_text=durable_prefix,
+                failure_reason=None,
+                state_version=terminal.value.state_version,
+                delivery_state=DeliveryState.CANCELLED.value,
                 delivery_failure_reason=reason,
             )
         )

@@ -39,6 +39,7 @@ from elc.conversation.types import (
     ConversationStatus,
     DeliveryState,
     InteractionChannel,
+    InterruptRequestRecord,
     TurnOutcome,
     UserTurnRecord,
 )
@@ -66,6 +67,7 @@ from elc.platform.types import (
 )
 from elc.runtime.types import (
     TERMINAL_TURN_STATUSES,
+    GenerationActionStatus,
     InputEnvelope,
     InterruptRequest,
     TurnRecordData,
@@ -97,6 +99,39 @@ TEACHING_REQUEST_PAYLOAD_MARKER = '"type":"TEACHING_REQUEST"'
 #: not an utterance — so it is excluded from the ConversationWindow for the
 #: same reason and never reaches the persona as an empty user line.
 TEACHING_RESPONSE_PAYLOAD_MARKER = '"type":"TEACHING_RESPONSE"'
+
+#: §17.1's "pending" predicate, spelled once (P9-3). A request is pending while
+#: the leg it names is still nonterminal; the two legs are read from the rows
+#: that own them — ``turn_record`` (this domain) and ``generation_action_intent``
+#: (the runtime's §20 record) — because terminality is a property of those
+#: rows, not of the request. The words are *bound parameters* taken from the
+#: vocabulary's own enums (``TERMINAL_TURN_STATUSES`` /
+#: ``GenerationActionStatus.TERMINAL``), so the predicate cannot drift from the
+#: state machines and no status word is typed twice. The placeholder list is the
+#: only generated text (``elc.teaching.store``'s ``count_delivered_teaching_turns``
+#: precedent) and it is generated from that same constant.
+_TERMINAL_TURN_STATUS_WORDS: tuple[str, ...] = tuple(
+    sorted(status.value for status in TERMINAL_TURN_STATUSES)
+)
+_TERMINAL_ACTION_STATUS_WORD = GenerationActionStatus.TERMINAL.value
+
+_PENDING_INTERRUPT_SELECT = (
+    "SELECT i.input_id, i.conversation_id, i.active_turn_id,"
+    " i.active_action_id, i.reason, i.created_at"
+    " FROM interrupt_request i"
+    " LEFT JOIN turn_record t ON t.turn_id = i.active_turn_id"
+    " LEFT JOIN generation_action_intent a ON a.action_id = i.active_action_id"
+)
+
+_PENDING_INTERRUPT_PREDICATE = (
+    " AND ((i.active_turn_id IS NOT NULL AND t.status IS NOT NULL"
+    "   AND t.status NOT IN ("
+    + ", ".join("?" for _ in _TERMINAL_TURN_STATUS_WORDS)
+    + "))"
+    "  OR (i.active_action_id IS NOT NULL AND a.status IS NOT NULL"
+    "   AND a.status != ?))"
+    " ORDER BY i.created_at, i.input_id"
+)
 
 
 class StaleStoreEpochError(StaleEpochError):
@@ -745,6 +780,87 @@ class SqliteConversationStore:
             ),
         ).fetchone()
         return Ok(row is not None)
+
+    # -- the §17.1 interrupt reads (P9-3) -----------------------------------
+
+    def list_pending_interrupts_for_action(
+        self, action_id: ActionId
+    ) -> Result[tuple[InterruptRequestRecord, ...]]:
+        """RA §17.1 requests naming this action that are still pending.
+
+        Empty means "no request is waiting on this action" — either none was
+        ever made or every one of them has been answered (the action reached
+        TERMINAL, so the cancellation happened). A request whose action row
+        does not exist is **not** pending: there is nothing live to cancel, and
+        calling it pending would have a reconciler chase a ghost. The request
+        rows themselves stay exactly as they were (§17.1's audit trail).
+        """
+
+        return self._pending_interrupts("i.active_action_id = ?", (action_id,))
+
+    def list_pending_interrupts_for_turn(
+        self, turn_id: TurnId
+    ) -> Result[tuple[InterruptRequestRecord, ...]]:
+        """RA §17.1 requests naming this turn that are still pending.
+
+        The turn leg of the same predicate: pending while the named TurnRecord
+        is nonterminal. A request that names both legs is pending while
+        *either* is live, so the two reads can both answer a row.
+        """
+
+        return self._pending_interrupts("i.active_turn_id = ?", (turn_id,))
+
+    def list_pending_interrupts_for_conversation(
+        self, conversation_id: ConversationId
+    ) -> Result[tuple[InterruptRequestRecord, ...]]:
+        """Every pending request of one conversation, oldest request first.
+
+        What the guard holder asks (RA §17.1 rule 3) before it produces
+        anything: what is this conversation still waiting to see cancelled.
+        Ordered by ``created_at`` then ``input_id``, so a reconciler that must
+        act on several rows acts in the order the user asked.
+        """
+
+        return self._pending_interrupts(
+            "i.conversation_id = ?", (conversation_id,)
+        )
+
+    def _pending_interrupts(
+        self, selector: str, params: tuple[object, ...]
+    ) -> Result[tuple[InterruptRequestRecord, ...]]:
+        """The one implementation of the three pending reads.
+
+        ``selector`` is one of the three literal fragments above, never
+        caller-supplied data; the predicate's own words ride as bound
+        parameters (the module constants). A read that cannot fail is still a
+        ``Result`` here — every conversation query answers that way, so a
+        caller composes reads without a second error convention.
+        """
+
+        rows = self._conn.execute(
+            _PENDING_INTERRUPT_SELECT
+            + " WHERE "
+            + selector
+            + _PENDING_INTERRUPT_PREDICATE,
+            (*params, *_TERMINAL_TURN_STATUS_WORDS, _TERMINAL_ACTION_STATUS_WORD),
+        ).fetchall()
+        return Ok(
+            tuple(
+                InterruptRequestRecord(
+                    input_id=InputId(str(row[0])),
+                    conversation_id=str(row[1]),
+                    active_turn_id=(
+                        None if row[2] is None else TurnId(str(row[2]))
+                    ),
+                    active_action_id=(
+                        None if row[3] is None else ActionId(str(row[3]))
+                    ),
+                    reason=str(row[4]),
+                    created_at=str(row[5]),
+                )
+                for row in rows
+            )
+        )
 
     def get_sequence_positions(
         self, conversation_id: ConversationId

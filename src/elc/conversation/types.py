@@ -140,6 +140,32 @@ class CanonicalTurnSlice:
 
 
 @dataclass(frozen=True)
+class InterruptRequestRecord:
+    """docs/RUNTIME_ARCHITECTURE.md §17.1 ``interrupt_request`` — the read shape.
+
+    One barge-in request as the conversation domain holds it: the durable row
+    migration 0002 created (``input_id`` PK / ``conversation_id`` /
+    ``active_turn_id?`` / ``active_action_id?`` / ``reason`` / ``created_at``).
+    The *write* shape is ``elc.runtime.types.InterruptRequest`` (the runtime's
+    command face, which is the only face that mints one — RA §17.1 rules 1–2)
+    and it carries no instant because the store stamps the row; this shape is
+    what a read answers back, instant included.
+
+    The row is an **audit record**: §17.1 rule 2 makes the request durable the
+    moment it is made and nothing in V1 removes it (deletion is the deletion
+    contract's face, not this one), so "was this delivery interrupted?" is
+    answerable after the fact and not only while the interrupt is fresh.
+    """
+
+    input_id: InputId
+    conversation_id: str
+    active_turn_id: TurnId | None
+    active_action_id: ActionId | None
+    reason: str
+    created_at: str
+
+
+@dataclass(frozen=True)
 class CommitUserTurn:
     """One CP0 write unit (docs/RUNTIME_ARCHITECTURE.md §6 CP0).
 
