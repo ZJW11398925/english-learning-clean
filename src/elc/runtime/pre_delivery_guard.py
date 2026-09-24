@@ -85,15 +85,21 @@ quotation, and each names the condition that re-opens it.
    ``created_at``. Revisit: a cut needs the guard to re-read a fact after the
    write (then the verdict is not one value any more and this reading is the
    one to re-open).
-7. **The guard is on the streamed ordinary reply, and the buffered face is
-   registered as not yet wired.** RA §13 puts ordinary persona chat on
-   ``GUARDED_STREAM`` and every teaching action on ``BUFFERED_VALIDATED``; this
-   cut lands the guard on the streamed path (before the first release) and
-   registers that the buffered path does **not** run it yet, rather than
-   claiming a coverage it does not have. The facts and the verdict are
-   face-independent, so the buffered wire lands without touching this module.
-   Revisit: a cut wires the buffered delivery leg (then the two faces share
-   this verdict and only the caller differs).
+7. **The guard is on both delivery faces.** RA §13 puts ordinary persona chat
+   on ``GUARDED_STREAM`` and every teaching action on ``BUFFERED_VALIDATED``;
+   P9-3 landed the guard on the streamed path (before the first release), and
+   its disposition (review MEDIUM-1) wired the **buffered teaching delivery
+   leg** too — at the one dispatch site every teaching delivery passes through
+   (``ConversationCoordinator._deliver_teaching_action``: the user-initiated
+   opening, a continuation, the resume and the automatic opening) — so the two
+   faces share this verdict and only the caller differs. That wiring is what
+   made §15's three teaching legs (lock / target suppression / JUST_CHAT)
+   reachable at all: before it, no teaching delivery ever asked the guard. A
+   guard-invalidated buffered teaching delivery is not sent: its action
+   terminalizes undelivered, no ``assistant_turn`` row is written, and the
+   turn takes §1-C③'s two-word mapping through the same helper the streamed
+   face reads (``elc.runtime.controller._guard_invalidation_outcome``).
+   Revisit: canonical gives the guard a third face, or a per-face rule set.
 
 ---------------------------------------------------------------------------
 **The seven facts and their V1 carriers** (the assembly that fills them lives
@@ -111,19 +117,42 @@ condition                         V1 carrier
                                   latest ``turn_sequence``
 ``TEACHING_LOCK_INVALID``         a teaching action without an
                                   ``active_teaching_lock`` row, or a lock held
-                                  by another moment
+                                  by another moment — except the episode's own
+                                  ``PERSONA_RESUME`` closing move, delivered
+                                  after the terminal transition released the
+                                  lock (SM §1), which answers ``False``
 ``NEW_TARGET_SUPPRESSED``         a ``SUPPRESS_REVIEW`` constraint in force for
                                   the action's target
 ``JUST_CHAT_HARD_SWITCH``         a ``JUST_CHAT`` constraint in force while a
                                   teaching action is delivering
-``LINEAGE_MISMATCH``              the action's ``decision_cycle_id`` is not its
-                                  turn's ``active_decision_cycle_id``
+``LINEAGE_MISMATCH``              the action's ``decision_cycle_id`` is not the
+                                  lineage that binds it: an ordinary action's
+                                  turn cycle, a teaching action's episode
+                                  (moment) cycle
 ================================  ==========================================
 
 Three of them are "not applicable" rather than "unknown" for an ordinary
 persona reply (there is no TeachingLock question, no target and no teaching
 content to suppress), and their carrier is ``False`` — a definite answer — not
 ``None``. That distinction is the whole reason the facts are tri-state.
+
+One fact's comparison partner is face-dependent since P9-3's disposition:
+``LINEAGE_MISMATCH`` compares an ordinary action's cycle against its host
+turn's, and a teaching action's against its own episode's (the moment's
+``decision_cycle_id`` — ``STATE_MACHINES §17``'s ACTIVE_MOMENT authorization
+lineage). The host-turn comparison is wrong for a teaching continuation
+because the reply turn opens its own DecisionCycle for the attempt it decided,
+so the two would never match — a structural false alarm, not a stale action
+(the calling assembly, ``elc.runtime.controller._pre_delivery_guard_facts``,
+carries the full reading). Revisit: canonical pins one comparison for both
+faces.
+
+One carrier's answer is narrowed for the same reason: the lock condition is
+read for a delivery that claims to be inside a live episode, and the episode's
+``PERSONA_RESUME`` closing move is delivered after the moment terminalized and
+released its lock (SM §1) — reading the released lock as "invalid" would
+refuse every resume, so that one action answers ``False``. The reservation is
+on the calling assembly's reading, not a fourth answer here.
 """
 
 from __future__ import annotations
@@ -157,6 +186,14 @@ class GuardCondition(StrEnum):
     <PreDeliveryGuardVerdict.reason_codes>` come out in, so two runs over the
     same facts produce the same tuple (R-INV-012) and a row diff reads as a
     sentence rather than a set.
+
+    Registered (P9-3 disposition, review INFO-2): this is the *reading* order,
+    not §15's listing order — canonical lists the cancellation / supersession
+    pair in the other sequence, and the difference becomes visible in a row
+    whose codes carry both. Registered rather than re-ordered: the tuple is
+    read as reasons (never positionally against the document) and a stable
+    order is what R-INV-012's replay needs. Revisit: a consumer diffs the
+    tuple against §15's listing positionally.
     """
 
     CONVERSATION_INACTIVE = "CONVERSATION_INACTIVE"

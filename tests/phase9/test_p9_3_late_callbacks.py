@@ -532,12 +532,15 @@ def test_the_teaching_lock_leg_answers_none_without_a_face_and_reads_the_lock(
     the port wired the answer is the lock read's own (a lock held by *another*
     moment, or none at all, is True; §3's carrier for this condition).
 
-    Registered gap, with its trigger: the **False** arm of this leg at the
-    assembly level (``OWNED_BY_THIS_MOMENT``) needs a durable lock row and a
-    real TeachingMoment, i.e. the full teaching chain; the pure suite covers the
-    verdict for all three answers, and the arm lands with the first test that
-    opens a real moment on this path. Revisit: a teaching-chain fixture arrives
-    that does not violate the P5-1 red line.
+    The **False** arm of this leg at the assembly level
+    (``OWNED_BY_THIS_MOMENT``) is not here: it needs a durable lock row and a
+    real TeachingMoment, i.e. the full teaching chain. That chain landed with
+    P9-3's disposition — the real-corpus world opens a real moment and delivers
+    its opening (``test_p9_3_teaching_guard.py``), and its guard rows are
+    ``VALID`` with the teaching legs read, which is only possible if this leg
+    answered ``False`` (a ``True`` would have invalidated the delivery and
+    spelled the condition among the row's codes). The pure suite above covers
+    the verdict for all three answers.
     """
 
     turn, action_id = teaching_action(world, "cmid-p9-3-lock")

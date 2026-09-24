@@ -508,7 +508,7 @@ def test_the_default_transport_lands_one_chunk_and_the_whole_reply(
     assert completion.delivery_state == "SENT_COMPLETE"
 
 
-def test_a_healthy_streamed_turn_writes_no_ack_estimate_or_guard_row(
+def test_a_healthy_streamed_turn_writes_no_ack_or_estimate_row_and_one_valid_guard_row(
     world: StreamWorld,
 ) -> None:
     """RA §6 and this cut's reach — and the one truth P9-3 moved.
@@ -521,9 +521,9 @@ def test_a_healthy_streamed_turn_writes_no_ack_estimate_or_guard_row(
     — so a healthy streamed turn now carries exactly one ``VALID`` row, and the
     assertion is stronger than "no row" was: the row names the action, carries
     no reason code (all seven facts were read and none held), and spells a
-    non-empty lineage version. The name keeps P9-2's shape on purpose (this is
-    that cut's test, with its truth updated); a reader who wants the guard's own
-    suite reads ``test_p9_3_pre_delivery_guard.py``."""
+    non-empty lineage version (P9-3's disposition left this face alone; a
+    reader who wants the guard's own suite reads
+    ``test_p9_3_pre_delivery_guard.py``)."""
 
     completion = begin_turn_ok(coordinator_(world), "cmid-p9-2-clean")
 

@@ -236,9 +236,10 @@ def test_the_decision_vocabulary_is_the_two_words_the_schema_freezes() -> None:
 
 
 def test_every_verdict_spells_one_of_the_two_words() -> None:
-    """A sweep over the fact space's corners (4 782 969 combinations is the
-    whole space; the corners are what can break a decision rule): the decision
-    is always one of the two words and the codes never contain a bare
+    """A sweep over 27 of the fact space's corners (the whole space is
+    3**7 = 2187 readings; the exhaustive sweep is
+    ``test_the_decision_is_invalidate_if_and_only_if_some_fact_is_true``): the
+    decision is always one of the two words and the codes never contain a bare
     decision word."""
 
     words = {member.value for member in PreDeliveryDecision}
@@ -266,10 +267,15 @@ def test_every_verdict_spells_one_of_the_two_words() -> None:
 
 def test_the_guard_row_id_is_keyed_by_the_action_and_stable() -> None:
     """One check per action: the same action spells the same id (the §23
-    re-entry re-submits the same identity), and two actions never collide."""
+    re-entry re-submits the same identity), two actions never collide, and the
+    spelling itself is pinned as a literal — a cut that appended a suffix (an
+    attempt counter, say) would keep "stable and distinct" true while breaking
+    the identity the §21.1 row's replay depends on."""
 
     assert guard_result_id_of("ga-a") == guard_result_id_of("ga-a")
     assert guard_result_id_of("ga-a") != guard_result_id_of("ga-b")
+    assert guard_result_id_of("ga-a") == "pdg-ga-a"
+    assert guard_result_id_of("ga-b") == "pdg-ga-b"
     assert guard_result_id_of("ga-a").startswith("pdg-")
     assert "ga-a" in guard_result_id_of("ga-a")
 
@@ -446,10 +452,19 @@ def test_the_module_reads_no_database_and_no_clock() -> None:
 
 
 def test_the_module_declares_which_face_is_wired_and_which_is_not() -> None:
-    """Reading 7 registered rather than implied: the streamed path is wired and
-    the buffered face is named as not yet wired, in the module's own words."""
+    """Reading 7 registered rather than implied — and, since P9-3's disposition,
+    registered as **both** faces: the streamed path was wired by P9-3 and the
+    buffered teaching leg by its disposition (review MEDIUM-1), at the one
+    dispatch site every teaching delivery passes through. The module's own
+    words are the assertion (a cut that un-wires a face has to change them)."""
 
     text = " ".join(guard_source().split())
-    assert "the buffered path does **not** run it yet" in text
     assert "GUARDED_STREAM" in text
     assert "BUFFERED_VALIDATED" in text
+    assert "buffered teaching delivery" in text
+    assert "_deliver_teaching_action" in text
+    assert "_guard_invalidation_outcome" in text
+    assert "does **not** run it yet" not in text, (
+        "the pre-disposition reading 7 said the buffered face was unwired;"
+        " that sentence is false in the shipped tree"
+    )

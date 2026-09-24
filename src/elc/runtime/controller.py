@@ -343,14 +343,20 @@ class TeachingReplyRequest:
 class TeachingActionDelivery:
     """One delivered (or failed) teaching action of a teaching turn.
 
-    ``ledger_event`` / ``ledger_failure`` are the §20 exposure write's outcome
-    (P8-4): the word recorded (``teaching_presented`` / ``hint_presented`` /
-    ``reveal_presented`` / ``user_skip``) when one was, and the readable reason
-    when a word existed but the write did not happen. Both stay ``None`` when
-    there was nothing to write — §20 has no word for the kind (a retry, an
-    explanation, a resume), or no ledger writer was injected — and a failure
-    never changes this record's own outcome: the delivery already happened, and
-    the exposure record is derived state (R-INV-010's shape).
+    ``ledger_event`` / ``ledger_failure`` are the delivery face's bookkeeping
+    outcome: the §20 exposure word recorded (``teaching_presented`` /
+    ``hint_presented`` / ``reveal_presented`` / ``user_skip``) when one was,
+    and the readable reason when a write that belonged to this delivery did
+    not happen. Both stay ``None`` when there was nothing to write — §20 has
+    no word for the kind (a retry, an explanation, a resume), or no ledger
+    writer was injected — and a failure never changes this record's own
+    outcome: the delivery already happened (or was refused, P9-3's
+    invalidation arm), and the record is derived state (R-INV-010's shape).
+    Since P9-3's disposition the failure channel also carries the §21.1
+    pre-delivery guard row's write failure (``_deliver_teaching_action``
+    records it there when the guard row could not be written); the two notes
+    are **joined**, never overwritten, so a reader sees every failed write of
+    this delivery in the order they happened.
     """
 
     action_id: ActionId
@@ -847,11 +853,12 @@ class ConversationCoordinator:
       why an ordinary turn through this face is field-for-field the buffered
       one.
 
-    ``finalize_delivery`` (the ``BUFFERED_VALIDATED`` face) is untouched by
-    that cut and stays the teaching legs' delivery: §13's default table sends
-    every teaching action type and ``PERSONA_RESUME`` through it, and only
-    ``NORMAL_PERSONA_REPLY`` through the stream
-    (``elc.runtime.guarded_stream.delivery_mode_of``).
+    ``finalize_delivery`` (the ``BUFFERED_VALIDATED`` face) stays the teaching
+    legs' delivery — §13's default table sends every teaching action type and
+    ``PERSONA_RESUME`` through it, and only ``NORMAL_PERSONA_REPLY`` through
+    the stream (``elc.runtime.guarded_stream.delivery_mode_of``) — and its own
+    sequence (canonicalize → complete → terminalize) is unchanged by every cut
+    after P9-2.
 
     Phase 9 P9-3: the **barge-in handoff** (RA §17.1 / §18) lands on this class,
     and it adds one optional injection:
@@ -870,15 +877,25 @@ class ConversationCoordinator:
     - :meth:`request_interrupt` is the entry that needs **no** guard: it writes
       the durable ``interrupt_request`` row (§17.1 rules 1–2) and never waits
       for the old worker, so a new input can ask to interrupt at any moment;
-    - :meth:`_reconcile_pending_interrupt` runs *after* this turn's guard was
-      acquired and *before* anything is generated: whatever the conversation is
-      still waiting to have cancelled is cancelled by the only actor §17.1 rule
-      3 allows — the guard holder — and only then does the new turn proceed
-      (§17.1 rule 5: no user-visible output before the handoff);
+    - :meth:`_reconcile_pending_interrupt` runs *after* a guard was acquired and
+      *before* anything is generated: whatever the conversation is still
+      waiting to have cancelled is cancelled by the only actor §17.1 rule 3
+      allows — the guard holder — and only then does the new work proceed
+      (§17.1 rule 5: no user-visible output before the handoff). It has
+      **three** owners — ``begin_turn``, ``request_teaching`` and
+      ``respond_to_teaching`` — because all three hold the conversation's guard
+      and all three can find a pending barge-in: leaving the teaching entries
+      out would mean a user's "stop that" could not stop teaching
+      (P9-3 disposition, review MEDIUM-1);
     - the delivery itself runs §15's **PreDeliveryGuard** before the first
-      release (§4 steps 13 → 14 → 15): an invalidated delivery is not sent, its
-      §22 row freezes ``CANCELLED``, no ``assistant_turn`` row is written and
-      the turn terminalizes by §1-C's mapping. The stream is also wrapped in
+      release (§4 steps 13 → 14 → 15), on **both** delivery faces: the streamed
+      ordinary reply (its §22 row freezes ``CANCELLED``, no ``assistant_turn``
+      row is written and the turn terminalizes by §1-C's mapping) and the
+      buffered teaching delivery at its one dispatch site
+      (:meth:`_deliver_teaching_action` — the same verdict, the same §21.1 row,
+      the same two-word mapping, no §22 row because the buffered face has
+      none); an invalidated teaching opening/continuation then aborts through
+      the episode's existing failure move. The stream is also wrapped in
       :class:`InterruptAwareTransport`, so a barge-in that arrives *during* the
       stream stops it before the next release.
     """
@@ -992,11 +1009,16 @@ class ConversationCoordinator:
     ) -> Result[tuple[str, ...]]:
         """§17.1 rules 3-5: cancel what is still pending, then hand off.
 
-        Runs inside the guard, after it was acquired and before this turn
-        generates anything, so rule 5 ("handoff 前 new turn 不得产生
-        user-visible assistant output") holds by construction: whatever the
-        conversation is still waiting to see cancelled is cancelled first, and
-        only then does the new turn start.
+        Runs inside the guard, after it was acquired and before anything is
+        generated, so rule 5 ("handoff 前 new turn 不得产生 user-visible
+        assistant output") holds by construction: whatever the conversation is
+        still waiting to see cancelled is cancelled first, and only then does
+        the new work start. **Three entries own this call** — ``begin_turn``,
+        ``request_teaching`` and ``respond_to_teaching`` — because all three
+        hold the conversation's one guard and (since P9-3's disposition) the
+        teaching entries must be able to answer a pending barge-in too; before
+        that fix a teaching action or turn named by an ``interrupt_request``
+        had no cancellation owner on the teaching paths at all.
 
         The requests are read from the conversation domain's own read face (one
         spelling of "pending", the store method's docstring carries why), oldest
@@ -1830,6 +1852,10 @@ class ConversationCoordinator:
         writer that raises rather than answering an ``Err`` (the same three
         failure shapes ``elc.runtime.automatic_turn._read`` recognizes for a
         port): catching it here is what keeps a broken ledger out of the turn.
+        The note is **appended** to whatever ``ledger_failure`` already carried:
+        the §21.1 guard row's own write failure may sit there (P9-3 disposition,
+        ``_deliver_teaching_action``), and a second failure must not hide the
+        first — both are facts about this one delivery.
         """
 
         wiring = self._automatic
@@ -1849,14 +1875,25 @@ class ConversationCoordinator:
                 at=_now(),
             )
         except ValueError as exc:
-            return replace(delivered, ledger_failure=str(exc))
+            return replace(
+                delivered,
+                ledger_failure=_joined_note(delivered.ledger_failure, str(exc)),
+            )
         except Exception as exc:  # noqa: BLE001 — a broken writer never blocks
             return replace(
                 delivered,
-                ledger_failure=f"the exposure write raised {exc!r}",
+                ledger_failure=_joined_note(
+                    delivered.ledger_failure,
+                    f"the exposure write raised {exc!r}",
+                ),
             )
         if isinstance(written, Err):
-            return replace(delivered, ledger_failure=written.error.message)
+            return replace(
+                delivered,
+                ledger_failure=_joined_note(
+                    delivered.ledger_failure, written.error.message
+                ),
+            )
         return replace(delivered, ledger_event=event.value)
 
     def _record_skip_exposure(
@@ -2029,7 +2066,14 @@ class ConversationCoordinator:
         SENT_* delivery state) → action TERMINAL → turn terminalization.
 
         Works under the coordinator guard; the caller holds it (begin_turn
-        does; tests may hold it explicitly for partial deliveries)."""
+        does; tests may hold it explicitly for partial deliveries).
+
+        P9-3 disposition: the *teaching* legs reach this method through
+        :meth:`_deliver_teaching_action`, which now runs §15's
+        PreDeliveryGuard (and writes its §21.1 row) **before** calling here —
+        an invalidated teaching delivery never reaches this sequence at all.
+        The sequence itself is unchanged: canonicalize → complete →
+        terminalize, in that order, for every delivery that is sent."""
 
         action_result = self._generation.get_action(delivery.action_id)
         if isinstance(action_result, Err):
@@ -2478,6 +2522,14 @@ class ConversationCoordinator:
         (the interrupt stays durable and the reconciler will act on it), and
         the alternative — treating an unreadable audit row as a cancellation —
         would cancel deliveries on a broken read.
+
+        Registered (P9-3 disposition, review INFO-5): the read-failure arm is
+        untestable through the public faces — a request face that answers
+        ``Err`` while the stream still runs is not a state any harness builds
+        without a stub, and the direction it takes is the right one anyway
+        (keep sending; the row stays durable and the reconciler owns it).
+        Registered rather than forced into a test. Revisit: a cut gives this
+        read a degrading port (then the arm has a real carrier and a test).
         """
 
         pending = self._queries.list_pending_interrupts_for_action(action_id)
@@ -2511,13 +2563,29 @@ class ConversationCoordinator:
           about (§15's conditions are about a teaching delivery); for a
           teaching action they are read from the teaching controller and the
           §9 constraint view, and each answers ``None`` when its authority is
-          not wired or its read fails;
+          not wired or its read fails. One teaching action is the exception to
+          the lock leg alone: ``PERSONA_RESUME`` is delivered *after* its
+          episode terminalized and released the lock (SM §1), so the lock
+          question has no subject for it and the answer is ``False`` —
+          otherwise every resume would be invalidated (the disposition's
+          finding, review MEDIUM-1);
         - ``lineage_mismatch`` — the action's ``decision_cycle_id`` against the
-          turn's ``active_decision_cycle_id``; ``None`` when either side
-          carries no cycle, because "no lineage declared" is not a mismatch
-          (the Phase-1 assembly's actions have a NULL cycle and the check
-          cannot be run against one). Revisit: migration 0007's nullable
-          lineage is tightened, then the ``None`` arm becomes unreachable.
+          lineage that actually binds it: for an **ordinary** action that is
+          the turn's ``active_decision_cycle_id``, and for a **teaching**
+          action (one carrying a moment) it is the episode's own cycle — the
+          moment's ``decision_cycle_id`` — because a continuation's lineage is
+          the ACTIVE_MOMENT authorization lineage (STATE_MACHINES §17 /
+          BF-04), not the host turn's: a reply turn opens its own
+          DecisionCycle for the attempt it decided (RA §4), so the
+          host-turn comparison would flag every teaching continuation as
+          mismatched (the disposition's finding, review MEDIUM-1). ``None``
+          when the applicable side carries no cycle, because "no lineage
+          declared" is not a mismatch (the Phase-1 assembly's actions have a
+          NULL cycle and the check cannot be run against one), and for a
+          teaching action whose moment cannot be read (no authority, no row, a
+          failed read). Revisit: migration 0007's nullable lineage is
+          tightened, then the ordinary arm's ``None`` becomes unreachable;
+          canonical pins what "lineage" compares for a teaching action.
 
         Nothing here scores, re-plans or re-reads a Planner utility (§15's own
         sentence); every value is a fact some authority already holds.
@@ -2562,9 +2630,22 @@ class ConversationCoordinator:
             new_target_suppressed: bool | None = False
             just_chat_hard_switch: bool | None = False
         else:
-            teaching_lock_invalid = self._teaching_lock_state_of(
-                conversation_id, action.moment_id
-            )
+            if action.action_type is GenerationActionType.PERSONA_RESUME:
+                # SM §1's closing move: the episode terminalizes —
+                # ``terminalize_moment`` releases the TeachingLockLease in the
+                # same short transaction (DATA_MODEL §18) — *before* the moment
+                # enters RESUMING and its farewell is delivered, so at delivery
+                # time the lock question no longer has a subject. Reading the
+                # released lock as "invalid" would refuse **every** resume
+                # (the disposition's finding, review MEDIUM-1); the condition
+                # speaks about a *live* teaching delivery, and this one is the
+                # episode's exit, exactly like the ordinary reply's three legs
+                # it joins here.
+                teaching_lock_invalid = False
+            else:
+                teaching_lock_invalid = self._teaching_lock_state_of(
+                    conversation_id, action.moment_id
+                )
             target = self._teaching_target_of(action.moment_id)
             just_chat_hard_switch = self._just_chat_switch_of(conversation_id)
             if target is None:
@@ -2578,11 +2659,33 @@ class ConversationCoordinator:
                 )
 
         action_cycle = action.decision_cycle_id
-        turn_cycle = turn.active_decision_cycle_id
-        if action_cycle is None or turn_cycle is None:
-            lineage_mismatch: bool | None = None
+        if action.moment_id is not None:
+            # A **teaching** action's lineage is its episode's, not its host
+            # turn's (STATE_MACHINES §17 / BF-04: "Continuation 由
+            # ACTIVE_MOMENT authorization lineage 约束"). The host turn opens
+            # its own DecisionCycle for the attempt/evaluation it decided (a
+            # reply turn does exactly that, RA §4), while the teaching action
+            # is planned against the moment's cycle — so comparing the action's
+            # cycle against the host turn's would flag **every** teaching
+            # continuation as mismatched, a structural false alarm rather than
+            # a stale action. The comparison this condition makes for a
+            # teaching action is against its own episode: an action whose
+            # moment declares a different cycle than the action carries is the
+            # mismatch that matters. An unreadable moment (no teaching
+            # authority, no row, a failed read) answers ``None`` — unchecked,
+            # never ``False`` — the same tri-state discipline every leg here
+            # follows.
+            moment_cycle = self._cycle_of_moment(action.moment_id)
+            if action_cycle is None or moment_cycle is None:
+                lineage_mismatch: bool | None = None
+            else:
+                lineage_mismatch = str(action_cycle) != str(moment_cycle)
         else:
-            lineage_mismatch = str(action_cycle) != str(turn_cycle)
+            turn_cycle = turn.active_decision_cycle_id
+            if action_cycle is None or turn_cycle is None:
+                lineage_mismatch = None
+            else:
+                lineage_mismatch = str(action_cycle) != str(turn_cycle)
 
         return PreDeliveryGuardFacts(
             conversation_inactive=conversation_inactive,
@@ -2607,6 +2710,14 @@ class ConversationCoordinator:
         authority is wired or the lock read fails (an unread lock is not "held
         by this moment", and saying so would invalidate deliveries on a broken
         read).
+
+        The ``PERSONA_RESUME`` case does **not** come through here: the episode
+        terminalizes — and ``terminalize_moment`` releases its lock in the same
+        short transaction — before the moment enters RESUMING (SM §1), so at
+        delivery time the question has no subject and the caller answers it
+        ``False`` (the disposition's finding, review MEDIUM-1). An upper-case
+        lock is therefore only ever read for a delivery that claims to be
+        inside a live episode.
         """
 
         if self._teaching is None:
@@ -2642,6 +2753,27 @@ class ConversationCoordinator:
             return None
         focus = record.focus_target
         return (focus.target_type, TargetId(str(focus.target_id)))
+
+    def _cycle_of_moment(self, moment_id: str | None) -> DecisionCycleId | None:
+        """The DecisionCycle one moment's episode was opened in, or ``None``.
+
+        ``None`` covers every absence — no teaching authority is wired, the
+        action names no moment, no moment row exists for the id, the read
+        fails — because §15's lineage leg treats all of them the same way: the
+        episode's own lineage cannot be read, so the answer is ``None``
+        (unchecked) rather than ``False`` ("nothing is mismatched"). The
+        reading this serves is on :meth:`_pre_delivery_guard_facts`.
+        """
+
+        if self._teaching is None or moment_id is None:
+            return None
+        moment = self._teaching.get_moment(MomentId(str(moment_id)))
+        if isinstance(moment, Err):
+            return None
+        record = moment.value
+        if record is None:
+            return None
+        return record.decision_cycle_id
 
     def _target_suppression_of(
         self, target_type: str, target_id: TargetId
@@ -2703,6 +2835,15 @@ class ConversationCoordinator:
         never simulated (the §22/§20 writer discipline this package follows
         everywhere). The lineage version is the action's cycle and the turn's
         ``state_version`` (the module's reading 5).
+
+        Registered (P9-3 disposition, review INFO-3): a second check of the
+        same action whose facts **moved** writes different content under the
+        same id, and the p9-1 store refuses that as ``CONFLICT`` — which both
+        delivery faces register in their own record's reason rather than
+        rewriting the row or dropping the refusal. Today no live path makes
+        that attempt (a re-entry reaching the guard re-reads a delivery that
+        was never sent; a sent one never re-enters), so the arm is registered,
+        not exercised. Revisit: a cut re-runs the guard after the row exists.
         """
 
         if self._delivery_records is None:
@@ -2775,19 +2916,9 @@ class ConversationCoordinator:
         their own cancelled turn is theirs.
         """
 
-        cancellation_words = {
-            GuardCondition.ACTION_CANCELLED.value,
-            GuardCondition.ACTION_SUPERSEDED.value,
-        }
-        outcome = (
-            TurnOutcome.CANCELLED_BY_USER
-            if cancellation_words
-            & set(verdict.invalidating_conditions)
-            else TurnOutcome.NO_ASSISTANT_OUTPUT
-        )
         return self._cancel_streamed_delivery(
             delivery,
-            outcome=outcome,
+            outcome=_guard_invalidation_outcome(verdict),
             reason=reason,
             durable_prefix="",
             last_chunk_seq=0,
@@ -2820,6 +2951,26 @@ class ConversationCoordinator:
         caller with a prefix does not get to choose a different outcome — and
         neither arm ever reports ``REPLIED_*``: a cancellation is not a
         completed reply, whatever reached the client.
+
+        Registered (P9-3 disposition, review INFO-4): the prefixed arm's
+        "always ``CANCELLED_BY_USER``" is a **vacuous** invariant — it holds
+        because both callers happen to pass that value, not because this
+        method checks it, and a third caller passing another outcome with a
+        non-empty prefix would be accepted. Registered rather than enforced
+        because no such caller exists and a second check would duplicate the
+        mapping §1-C already fixes. Revisit: a third caller appears — then the
+        arm's outcome is either asserted here or the parameter is dropped.
+
+        Registered (P9-3 disposition, review INFO-1): when a barge-in lands in
+        the same window as the stream's last chunk — every chunk released, the
+        terminal freeze not yet written, this cancellation reading the run —
+        the whole text is durable yet the row still freezes ``CANCELLED`` and
+        the transcript still spells ``SENT_PARTIAL``. The reading is deliberate
+        (§17 makes the sent boundary, not the completion, the transcript's
+        word; the two columns belong to two faces) and no test pins that race
+        window today. Revisit: P9-4's exposure reconciliation is the first
+        consumer of the §22 row — if it must tell "complete but cancelled"
+        apart from "cut short", that distinction has to become durable then.
         """
 
         terminal_at = _now()
@@ -2998,6 +3149,20 @@ class ConversationCoordinator:
             )
 
         with self._lease.hold(request.conversation_id):
+            # RA §17.1 rules 3-5 (P9-3 disposition, review MEDIUM-1): a
+            # teaching entry is a guard holder too, so it runs the *same*
+            # reconciler `_begin_turn_guarded` runs, in the same position —
+            # after the guard, before CP0 and before anything is generated.
+            # Without it a pending barge-in naming a teaching action or turn
+            # had no cancellation owner on this path at all, and the user's
+            # "stop that" could not stop teaching. Revisit: canonical gives
+            # the teaching entries their own cancellation rules (then this
+            # call site and the persona one are told apart).
+            reconciled = self._reconcile_pending_interrupt(
+                request.conversation_id
+            )
+            if isinstance(reconciled, Err):
+                return reconciled
             cp0_result = self._commands.commit_user_turn(
                 CommitUserTurn(
                     conversation_id=request.conversation_id,
@@ -4182,6 +4347,20 @@ class ConversationCoordinator:
         decision_cycles, learning, teaching, targets = ports.value
 
         with self._lease.hold(request.conversation_id):
+            # RA §17.1 rules 3-5 (P9-3 disposition, review MEDIUM-1): the
+            # reply entry is a guard holder too and reconciles what the
+            # conversation is still waiting to see cancelled before its own
+            # CP0 — the same call, in the same position, as
+            # `_begin_turn_guarded` and `request_teaching` (one reconciler,
+            # three owners; the reasons live on
+            # :meth:`_reconcile_pending_interrupt`). The name avoids the
+            # `reconciled` the terminal-turn branch below uses for the moment
+            # ladder.
+            interrupt_reconciled = self._reconcile_pending_interrupt(
+                request.conversation_id
+            )
+            if isinstance(interrupt_reconciled, Err):
+                return interrupt_reconciled
             cp0_result = self._commands.commit_user_turn(
                 CommitUserTurn(
                     conversation_id=request.conversation_id,
@@ -5426,6 +5605,21 @@ class ConversationCoordinator:
         exposure write maps to a §20 word: a real delivery appends its event
         (:meth:`_with_exposure`), a failed one presents nothing and appends
         nothing, and a kind §20 carries no word for records nothing by name.
+
+        P9-3 disposition (review MEDIUM-1): this method is also the buffered
+        face's **guard site**. It is the one dispatch point every teaching
+        delivery passes through — the user-initiated opening
+        (:meth:`_finish_teaching_open`), a continuation
+        (:meth:`_deliver_continuation`), the resume (:meth:`_resume_and_close`)
+        and the automatic opening (:meth:`_finish_automatic_open`) — so running
+        §15's check here, after the action was validated and before
+        :meth:`finalize_delivery` releases anything, is what makes the three
+        teaching legs (lock / target suppression / JUST_CHAT) reachable at all
+        and what lets a pending barge-in stop a teaching delivery. The verdict
+        writes its §21.1 row (VALID included) and an ``INVALIDATE_ACTION``
+        ends the delivery through :meth:`_invalidate_teaching_delivery`;
+        the episode's response to that refusal is its caller's, through the
+        existing abort faces, never a new word.
         """
 
         persona_id = self._persona_id(conversation_id)
@@ -5550,6 +5744,54 @@ class ConversationCoordinator:
                 )
             )
         reply = generation.buffered_reply
+        # RA §4 steps 13 → 14 → 15 on the buffered face (P9-3 disposition,
+        # review MEDIUM-1): §15's guard runs once, before any user-visible
+        # content is released, and this is the one site every teaching
+        # delivery passes through — the user-initiated opening, the
+        # continuation, the resume and the automatic opening. Before this
+        # call site existed the three teaching legs (lock / target /
+        # JUST_CHAT) were structurally unreachable: no teaching delivery
+        # ever asked the guard, so a hard invalidation could not stop one.
+        # Every verdict writes its §21.1 row — VALID included (§1-D); a
+        # refused row write never blocks the delivery and is never silent:
+        # the reason rides the returned record's ``ledger_failure``.
+        guard_action_result = self._generation.get_action(reply.action_id)
+        if isinstance(guard_action_result, Err):
+            return guard_action_result
+        guard_action = guard_action_result.value
+        if guard_action is None:
+            return _missing(
+                f"generation action not found for delivery: {reply.action_id}"
+            )
+        guard_turn_result = self._commands.get_turn_record(turn_id)
+        if isinstance(guard_turn_result, Err):
+            return guard_turn_result
+        guard_turn = guard_turn_result.value
+        if guard_turn is None:
+            return _missing(f"turn record not found: {turn_id}")
+        verdict = guard_verdict(
+            self._pre_delivery_guard_facts(
+                action=guard_action,
+                turn=guard_turn,
+                conversation_id=conversation_id,
+            )
+        )
+        guard_note: str | None = None
+        recorded = self._record_guard_result(
+            action=guard_action, turn=guard_turn, verdict=verdict
+        )
+        if isinstance(recorded, Err):
+            guard_note = (
+                "the §21.1 pre-delivery guard row could not be written:"
+                f" {recorded.error.message}"
+            )
+        if verdict.decision == PreDeliveryDecision.INVALIDATE_ACTION.value:
+            return self._invalidate_teaching_delivery(
+                action=guard_action,
+                turn=guard_turn,
+                verdict=verdict,
+                guard_note=guard_note,
+            )
         completion = self.finalize_delivery(
             AssistantDelivery(
                 conversation_id=conversation_id,
@@ -5566,20 +5808,79 @@ class ConversationCoordinator:
         )
         if isinstance(completion, Err):
             return completion
+        delivered = TeachingActionDelivery(
+            action_id=reply.action_id,
+            assistant_turn_id=reply.assistant_turn_id,
+            text=reply.text,
+            outcome=TurnOutcome.REPLIED_FULL.value,
+            turn_status=completion.value.turn_status,
+            state_version=completion.value.state_version,
+        )
+        if guard_note is not None:
+            delivered = replace(delivered, ledger_failure=guard_note)
         return Ok(
             self._with_exposure(
-                TeachingActionDelivery(
-                    action_id=reply.action_id,
-                    assistant_turn_id=reply.assistant_turn_id,
-                    text=reply.text,
-                    outcome=TurnOutcome.REPLIED_FULL.value,
-                    turn_status=completion.value.turn_status,
-                    state_version=completion.value.state_version,
-                ),
+                delivered,
                 moment=moment,
                 delivery_kind=delivery_kind,
             )
         )
+
+    def _invalidate_teaching_delivery(
+        self,
+        *,
+        action: GenerationActionIntentRecord,
+        turn: TurnRecordData,
+        verdict: PreDeliveryGuardVerdict,
+        guard_note: str | None,
+    ) -> Result[TeachingActionDelivery]:
+        """§1-C③ on the buffered face: a guard-invalidated teaching delivery is
+        not sent at all (P9-3 disposition, review MEDIUM-1).
+
+        The action terminalizes **undelivered** — the §14 machine's generic
+        ``<nonterminal> → TERMINAL`` rule (``elc.runtime.generation.
+        transition_refusal``); undelivered provider output never enters the
+        transcript (DOMAIN_MODEL §3), so no ``assistant_turn`` row is written
+        here and the canonicalization of :meth:`finalize_delivery` is never
+        reached. The turn takes §1-C③'s outcome through
+        :func:`_guard_invalidation_outcome` — the *same* mapping the streamed
+        face uses, so the two faces cannot drift about the two words
+        (``CANCELLED_BY_USER`` for a cancellation/supersession, the user's own
+        act; ``NO_ASSISTANT_OUTPUT`` for the five hard invalidations with no
+        user act behind them).
+
+        The episode's own response to the refusal is its caller's and reuses
+        the existing faces unchanged: an opening aborts through
+        :meth:`_finish_teaching_open` (§7 ``DELIVERY_FAILURE``, the same move
+        a failed opening delivery makes), a continuation through
+        :meth:`_deliver_continuation` (:meth:`_abort_and_resume`), and a
+        resume closes its episode as it always does
+        (:meth:`_resume_and_close`) — all three keyed on the outcome this
+        record carries, never on a new word. A resume whose delivery was
+        invalidated therefore still closes, which is the same durable shape
+        a missing resume produces.
+        """
+
+        failed = self._persona.terminalize_failure(
+            action.action_id, action.status
+        )
+        if isinstance(failed, Err):
+            return failed
+        outcome = _guard_invalidation_outcome(verdict)
+        terminal = self._commands.terminalize_turn(turn.turn_id, outcome)
+        if isinstance(terminal, Err):
+            return terminal
+        record = TeachingActionDelivery(
+            action_id=action.action_id,
+            assistant_turn_id=None,
+            text=None,
+            outcome=outcome.value,
+            turn_status=terminal.value.status,
+            state_version=terminal.value.state_version,
+        )
+        if guard_note is not None:
+            record = replace(record, ledger_failure=guard_note)
+        return Ok(record)
 
     def _replay_action_delivery(
         self, turn_id: TurnId, action_id: ActionId
@@ -6514,3 +6815,45 @@ def _missing(message: str) -> Err[_E]:
 
 def _conflict(message: str) -> Err[_E]:
     return Err(DomainError(code=DomainErrorCode.CONFLICT, message=message))
+
+
+def _joined_note(existing: str | None, note: str) -> str:
+    """One bookkeeping-failure note appended to whatever the record already
+    carried.
+
+    ``ledger_failure`` is the delivery record's one channel for "a durable
+    bookkeeping write of this delivery failed" (P9-3 disposition): the §21.1
+    guard row's write failure may already be on it when the §20 exposure write
+    fails too, and the second failure must not hide the first — both are facts
+    about this one delivery, and a reader that sees only the last one would
+    mis-count them.
+    """
+
+    return note if existing is None else f"{existing}; {note}"
+
+
+def _guard_invalidation_outcome(
+    verdict: PreDeliveryGuardVerdict,
+) -> TurnOutcome:
+    """§1-C③'s outcome for one guard-invalidated delivery — one mapping, both
+    delivery faces (P9-3 disposition).
+
+    ``CANCELLED_BY_USER`` when the guard's own invalidating conditions include
+    a cancellation or a supersession — the user asked for this delivery to
+    stop — and ``NO_ASSISTANT_OUTPUT`` for the other five hard invalidations,
+    which have no user act behind them. When both kinds hold the cancellation
+    word wins: the outcome a user sees for their own cancelled turn is theirs.
+    The streamed face read this mapping inline; the buffered teaching face
+    (``_invalidate_teaching_delivery``) reads it through this function, so the
+    two faces cannot drift about the two words.
+    """
+
+    cancellation_words = {
+        GuardCondition.ACTION_CANCELLED.value,
+        GuardCondition.ACTION_SUPERSEDED.value,
+    }
+    return (
+        TurnOutcome.CANCELLED_BY_USER
+        if cancellation_words & set(verdict.invalidating_conditions)
+        else TurnOutcome.NO_ASSISTANT_OUTPUT
+    )
