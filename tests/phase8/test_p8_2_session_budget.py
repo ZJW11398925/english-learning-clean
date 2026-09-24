@@ -1216,20 +1216,21 @@ def test_no_migration_carries_the_view() -> None:
     migration mentions the view.
 
     P8-3 moved the head to 0016_planning_ledger (the PlanningLedger's tables,
-    not this view) and P8-4 to 0017_ledger_event_provenance (one column on that
-    log, still not this view), and this pin carries that head as **literals
-    reconciled against the shared declarations**: the left-hand sides are
-    ``tests.conftest``'s ``MIGRATION_IDS`` / ``SCHEMA_HEAD_FILE`` /
-    ``SCHEMA_HEAD_VERSION`` (which
+    not this view), P8-4 to 0017_ledger_event_provenance (one column on that
+    log, still not this view) and P9-1 to 0018_delivery_records (the §22 /
+    §21.1 delivery tables, still not this view), and this pin carries that
+    head as **literals reconciled against the shared declarations**: the
+    left-hand sides are ``tests.conftest``'s ``MIGRATION_IDS`` /
+    ``SCHEMA_HEAD_FILE`` / ``SCHEMA_HEAD_VERSION`` (which
     ``tests/architecture/test_platform_db_infra.py`` pins against the real
     ``migrations/`` directory), and the right-hand sides are the literals this
     cut left behind — so a drift in either half is RED rather than a rubber
     stamp. The *claim* (this cut adds no table for the view) is unchanged, and
     the schema scan below is what holds it."""
 
-    assert MIGRATION_IDS[-1] == "0017_ledger_event_provenance"
-    assert SCHEMA_HEAD_FILE == "0017_ledger_event_provenance.sql"
-    assert SCHEMA_HEAD_VERSION == "17"
+    assert MIGRATION_IDS[-1] == "0018_delivery_records"
+    assert SCHEMA_HEAD_FILE == "0018_delivery_records.sql"
+    assert SCHEMA_HEAD_VERSION == "18"
     schema = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted((REPO_ROOT / "migrations").glob("*.sql"))

@@ -194,6 +194,26 @@ _SURFACE_SELECT: Mapping[str, str] = {
     "planning_ledger_event": (
         "SELECT rowid, event_id FROM planning_ledger_event"
     ),
+    # P9-1's five delivery records (migration 0018). A delivery fact's
+    # identity is the action it is about; an ACK's is the action **and the
+    # chunk** it reports (an action has one ACK per chunk, so the pair is what
+    # one tombstone stands for); the two §21.1 rows carry their own ids.
+    "client_render_ack": (
+        "SELECT rowid, action_id, rendered_chunk_seq FROM client_render_ack"
+    ),
+    "exposure_estimate": (
+        "SELECT rowid, action_id FROM exposure_estimate"
+    ),
+    "pre_delivery_guard_result": (
+        "SELECT rowid, pre_delivery_guard_result_id"
+        " FROM pre_delivery_guard_result"
+    ),
+    "server_delivery_record": (
+        "SELECT rowid, action_id FROM server_delivery_record"
+    ),
+    "validator_result": (
+        "SELECT rowid, validator_result_id FROM validator_result"
+    ),
 }
 
 #: table → the delete head. An ``IN (…)`` run of bound rowids is appended;
@@ -259,6 +279,22 @@ _DELETE_BY_ROWID: Mapping[str, str] = {
     "planning_ledger": "DELETE FROM planning_ledger WHERE rowid IN (",
     "planning_ledger_event": (
         "DELETE FROM planning_ledger_event WHERE rowid IN ("
+    ),
+    # P9-1's five delivery records (migration 0018); one literal per table.
+    "client_render_ack": (
+        "DELETE FROM client_render_ack WHERE rowid IN ("
+    ),
+    "exposure_estimate": (
+        "DELETE FROM exposure_estimate WHERE rowid IN ("
+    ),
+    "pre_delivery_guard_result": (
+        "DELETE FROM pre_delivery_guard_result WHERE rowid IN ("
+    ),
+    "server_delivery_record": (
+        "DELETE FROM server_delivery_record WHERE rowid IN ("
+    ),
+    "validator_result": (
+        "DELETE FROM validator_result WHERE rowid IN ("
     ),
 }
 
@@ -921,6 +957,43 @@ class SqliteDeletionStore:
             table="attempt_evaluation_record",
             column="moment_id",
             values=moment_ids,
+            run=run,
+        )
+        # P9-1's five delivery records (migration 0018). Keyed on the action
+        # ids collected above — the same set of actions this walk removes two
+        # steps below: each delivery row carries a foreign key to its action,
+        # so one left behind would refuse the action row's own removal. No
+        # clearing leg is owed (the column outside these tables that names one
+        # of them, ``attempt_record.exposure_estimate_id``, is plain data and
+        # its table is removed here too).
+        self._remove_in(
+            table="server_delivery_record",
+            column="action_id",
+            values=action_ids,
+            run=run,
+        )
+        self._remove_in(
+            table="client_render_ack",
+            column="action_id",
+            values=action_ids,
+            run=run,
+        )
+        self._remove_in(
+            table="exposure_estimate",
+            column="action_id",
+            values=action_ids,
+            run=run,
+        )
+        self._remove_in(
+            table="validator_result",
+            column="action_id",
+            values=action_ids,
+            run=run,
+        )
+        self._remove_in(
+            table="pre_delivery_guard_result",
+            column="action_id",
+            values=action_ids,
             run=run,
         )
         self._remove_in(

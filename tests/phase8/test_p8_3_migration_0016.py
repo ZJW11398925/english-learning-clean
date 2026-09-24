@@ -126,7 +126,7 @@ def test_0016_is_0017s_predecessor_and_0015s_successor() -> None:
     assert [name[:4] for name in names] == [
         f"{index:04d}" for index in range(1, len(MIGRATION_IDS) + 1)
     ]
-    assert MIGRATION_IDS[-1] == "0017_ledger_event_provenance"
+    assert MIGRATION_IDS[-1] == "0018_delivery_records"
 
 
 def test_the_pre_0016_lineage_did_not_move() -> None:
@@ -148,7 +148,7 @@ def test_applying_the_chain_is_idempotent(db: sqlite3.Connection) -> None:
 
 
 def test_the_stamps_move_to_the_shared_head(db: sqlite3.Connection) -> None:
-    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "17"
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "18"
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"

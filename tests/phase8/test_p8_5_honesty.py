@@ -582,11 +582,14 @@ def test_the_new_test_world_declares_its_probe_sql() -> None:
 
 
 def test_the_rollout_module_is_the_only_new_src_file() -> None:
-    """This cut adds one src module and no migration: the head stays at 0017
-    and no new SQL file exists for it."""
+    """This cut adds one src module and no migration of its own: 0017 is in
+    the chain and no SQL file was added for the rollout gate. The pin keeps
+    the membership claim and no position claim — later migrations move the
+    head (P9-1's 0018_delivery_records is one), and "this cut added no
+    migration" is a fact about what 0017's file set contains."""
 
     migrations = sorted(
         path.name for path in (REPO_ROOT / "migrations").glob("*.sql")
     )
-    assert migrations[-1] == "0017_ledger_event_provenance.sql"
+    assert "0017_ledger_event_provenance.sql" in migrations
     assert (SRC_ROOT / "teaching" / "rollout.py").exists()

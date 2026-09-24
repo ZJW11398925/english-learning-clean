@@ -186,6 +186,17 @@ SWEPT_TABLES: tuple[str, ...] = (
     "analysis_artifact",
     "attempt_evaluation_record",
     "evidence_group",
+    # P9-1's five delivery records (migration 0018). Every one of them is a
+    # child of ``generation_action_intent`` — five ``action_id`` foreign keys,
+    # migration 0018's header carries the argument — so they are placed
+    # immediately ahead of the action row they are about: "delete the action,
+    # keep its delivery fact" would be a foreign-key refusal, and the order
+    # here is the order this walk removes rows in.
+    "server_delivery_record",
+    "client_render_ack",
+    "exposure_estimate",
+    "validator_result",
+    "pre_delivery_guard_result",
     "generation_action_intent",
     "learning_opportunity_record",
     "schedule_item",
@@ -274,6 +285,18 @@ CONVERSATION_SWEPT_TABLES: tuple[str, ...] = (
     "analysis_artifact",
     "attempt_evaluation_record",
     "evidence_group",
+    # P9-1's five delivery records, in the global order (children first, ahead
+    # of ``generation_action_intent``): §19 removes the conversation's turns
+    # and cycles, and every delivery row hangs off an action of those turns —
+    # so the rows go with them rather than tripping the action row's own
+    # removal. No clearing leg is owed: the one outside column that names a
+    # delivery row (``attempt_record.exposure_estimate_id``, 0008) is plain
+    # data and its table is removed in this same walk.
+    "server_delivery_record",
+    "client_render_ack",
+    "exposure_estimate",
+    "validator_result",
+    "pre_delivery_guard_result",
     "generation_action_intent",
     "learning_opportunity_record",
     "attempt_record",
@@ -360,6 +383,18 @@ LEARNING_HISTORY_SWEPT_TABLES: tuple[str, ...] = (
     "analysis_artifact",
     "attempt_evaluation_record",
     "evidence_group",
+    # P9-1's five delivery records, in the global order (children first, ahead
+    # of ``generation_action_intent``): §20 removes the teaching attempts and
+    # decision cycles that exist to produce the learning history, and each
+    # delivery row hangs off one of those actions — so this walk carries them
+    # whole (they are the delivery *facts*, not a kind of learning state the
+    # scope could keep). No clearing leg is owed; the column outside these
+    # tables that names one of them is removed in this same walk.
+    "server_delivery_record",
+    "client_render_ack",
+    "exposure_estimate",
+    "validator_result",
+    "pre_delivery_guard_result",
     "generation_action_intent",
     "learning_opportunity_record",
     "schedule_item",
