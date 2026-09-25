@@ -77,6 +77,17 @@ _CURRICULUM_VERSION_KEY = "curriculum_version"
 #: capability a link names, so an unapproved link would mint
 #: CAPABILITY / POSITIVE learner evidence out of a test-corpus convenience
 #: mapping. One constant, used by the one read that feeds that credit path.
+#:
+#: C1 disposition note (approval kept): the one ``CANONICAL_APPROVED`` row
+#: this gate admits (``res-colloc-make-a-decision`` →
+#: ``cap-eval-hedged-opinion``) was approved by the C1 editorial review with
+#: stated limits — no capability-semantics audit was possible (the capability
+#: has no functional definition in this repository), and this admission is
+#: what lets that target's ``ALTERNATIVE_SUCCESS`` mint CAPABILITY/POSITIVE
+#: evidence (a known, accepted behavior change, bounded by the real rollout
+#: HOLD). curriculum/README.md C2 carries the full coverage/limits wording;
+#: Revisit when the capability's functional definition lands (live risk
+#: ``R-C1-credit``).
 CAPABILITY_CREDIT_EDITORIAL_STATUS = "CANONICAL_APPROVED"
 
 

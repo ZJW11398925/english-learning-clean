@@ -68,9 +68,13 @@ overlay、register/usage-modality/context 等 Planner 所需信息"
 R3 TEACHING_READY — "已具备 reviewed explanation/note、可用 example policy、
 必要 contrast/usage，以及需要时的 TypicalError"
 
-- ``reviewed_explanation`` — a reviewed explanation/note for the target (a
-  §24.3 ContentText row in role ``teaching_note`` — the §24.3 role list is
-  where "explanation / note" has a canonical word).
+- ``reviewed_explanation`` — a reviewed explanation/note for the target: a
+  §24.3 ContentText row in role ``teaching_note`` (the §24.3 role list is
+  where "explanation / note" has a canonical word) **and** the entity's
+  §24.11 ``lifecycle_status`` is ``CANONICAL_APPROVED`` — the C1 disposition
+  reads "reviewed" through the same editorial word the approved
+  curriculum_link carries, because §24 puts no reviewed marker on the note
+  itself (Revisit: one lands, the read moves to it).
 - ``example_policy`` — a usable example policy (which examples to present,
   when) — *not* the target's example inventory: §24.5 ExampleLink rows are
   the examples themselves (already an R0/R1 fact).

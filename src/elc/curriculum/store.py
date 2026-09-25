@@ -107,8 +107,9 @@ _T = TypeVar("_T")
 #: artifact carries, with the evidence that would have to exist for the fact
 #: to become readable. **Empty since C1**: the thirteen evidence tables
 #: (elc.content.build.SCHEMA_STATEMENTS, 11 → 24) carry every §8.1 fact key,
-#: so :meth:`CurriculumContentStore.readiness_facts` reads all nineteen and
-#: has nothing left to declare absent.
+#: so :meth:`CurriculumContentStore.readiness_facts` reads the eighteen
+#: row-backed keys and proves ``entity_row`` from the entity's own §24.1 row,
+#: and has nothing left to declare absent.
 #:
 #: The mechanism is kept, not deleted: a fact added to §8.1 without a table
 #: belongs here again, and the artifact's table set is exactly
@@ -118,6 +119,12 @@ _T = TypeVar("_T")
 #: with no carrier at all) is preserved in
 #: elc.curriculum.readiness.DECLARED_ABSENT_FACT_KEYS' own history and in
 #: tests/phase5/test_p5_r_readiness_fail_closed.py.
+#:
+#: Registration guard (C1 disposition, F10): the per-entry loop that used to
+#: pin this mapping's shape went silent when the set emptied, so it lives on
+#: as a test over whatever is registered here — every entry must carry a
+#: non-empty evidence description and a key the ladder actually declares
+#: (tests/phase5/test_c1_evidence_face.py).
 UNREAD_FACT_EVIDENCE: Mapping[str, str] = {}
 
 
@@ -301,13 +308,16 @@ class CurriculumContentStore:
     def readiness_facts(self, entity_id: str) -> Result[ReadinessFacts]:
         """Assemble the §8.1 fact bundle of one target from the artifact.
 
-        C1 (Phase 11): every one of the nineteen §8.1 fact keys is **read**
-        from a table of the artifact. No fact is hardcoded False, no fact is
-        derived from another fact's presence (P5-R removed the
-        ``entity_type == EXPRESSION ⇒ lexical_resolution`` equivalence), and
+        C1 (Phase 11): every §8.1 fact key is **read**, none hardcoded False.
+        Eighteen of the nineteen keys are read from a table of the artifact
+        (no fact is derived from another fact's presence — P5-R removed the
+        ``entity_type == EXPRESSION ⇒ lexical_resolution`` equivalence, and
         no §24.4 recognition-policy label is promoted into an R4 detection
-        fact. The nine keys below that read a *row count* are sourced from the
-        thirteen evidence tables C1 adds to the build
+        fact); the nineteenth, ``entity_row``, is the one literal ``True`` in
+        the assembly and is *proven* rather than read: reaching this point
+        means the preceding :meth:`get_resource` succeeded, so the §24.1 row
+        exists. The eighteen table-backed keys read a *row count* sourced
+        from the thirteen evidence tables C1 adds to the build
         (:meth:`elc.content.store.ContentStore.evidence_counts` names the
         table and the column test behind each count); the remaining keys read
         the tables the earlier cuts already carried.
@@ -373,12 +383,23 @@ class CurriculumContentStore:
                 pedagogical_profile=evidence.pedagogical_profiles >= 1,
                 goal_pack_overlay=evidence.pack_overlays >= 1,
                 resource_labels=evidence.resource_labels >= 1,
-                # R3: a reviewed explanation/note (§24.3 role =
-                # teaching_note), a usable example policy (§8.1's policy, not
-                # the §24.5 example inventory — those rows are already an
-                # R0/R1 fact), and "必要 contrast/usage": a §24.5 CONTRAST
-                # row **or** the usage face of a §24.7 ResourceLabel.
-                reviewed_explanation=evidence.teaching_notes >= 1,
+                # R3: a reviewed explanation/note, a usable example policy
+                # (§8.1's policy, not the §24.5 example inventory — those
+                # rows are already an R0/R1 fact), and "必要 contrast/usage":
+                # a §24.5 CONTRAST row **or** the usage face of a §24.7
+                # ResourceLabel.
+                #
+                # "reviewed" has no dedicated §24 marker today; the C1
+                # disposition reads it through the entity's own §24.11
+                # editorial discipline: a `teaching_note` row exists **and**
+                # the entity's lifecycle_status is "CANONICAL_APPROVED" (the
+                # same editorial word the approved curriculum_link carries).
+                # Revisit: if §24 gains a reviewed marker on the note itself,
+                # the read moves to it.
+                reviewed_explanation=(
+                    evidence.teaching_notes >= 1
+                    and resource.value.lifecycle_status == "CANONICAL_APPROVED"
+                ),
                 example_policy=evidence.example_policies >= 1,
                 contrast_or_usage=(
                     bool(contrasts.value)

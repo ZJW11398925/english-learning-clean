@@ -8,7 +8,8 @@ observation may be ("提高 threshold / policy cost", "而不是修改 Learning
 truth"). docs/RUNTIME_ARCHITECTURE.md's automatic path (P8-0..P8-4) is the
 thing being rolled out, and BF-02 §10's four content floors are what decides
 whether it *can* be: every teaching mode names a minimum §8.1 readiness, and
-the shipped corpus reports no level for any of its fourteen targets.
+the shipped corpus's answer is one target at R4 (C1's evidence face) with the
+other thirteen reading no level — their sources state no evidence.
 
 This module is the executable half of that block, and it is deliberately
 **read-only**: it declares a process-level stage, checks BF-02 §10 against a
@@ -68,8 +69,8 @@ is GO (:attr:`RolloutGateReport.verdict`). That conjunction is this cut's
 **registered reading** of the task book's rule ("both automatic rows 0 ⇒
 overall HOLD"): the book's condition is implied, and the conjunction is the
 strict, fail-closed form of it — a rollout cannot enter a stage whose *preceding*
-row is empty either. Both readings agree on the shipped corpus (all four rows
-are 0, so the answer is HOLD under either).
+row is empty either. Both readings agree on the shipped corpus (C1's one R4
+target makes every row GO, so the answer is GO under either).
 
 **What would turn a row GO is also executable**: each row carries
 ``required_facts`` — the cumulative §8.1 fact keys
@@ -99,10 +100,17 @@ EvidenceClaim count) do not exist. The port is where those shapes are
 registered; no production object satisfies it yet, and this module says so
 rather than pretending otherwise (see the port's docstring for the Revisit).
 
-**⑤ The HOLD.** On the shipped corpus every row is 0 (all fourteen targets
-read ``level=None``), so :func:`corpus_rollout_gate` answers HOLD with the four
-blocking rows named — the same fact R5's rollout HOLD is founded on, now
-executable. :data:`GATE_OPENING_CONDITIONS` and :data:`BACKOFF_MEANS` are the
+**⑤ The HOLD, and where it is held now.** The content gate moved under C1's
+evidence face: on the shipped corpus every row reads 1 usable target (the one
+R4 target; the other thirteen read ``level=None``) and
+:func:`corpus_rollout_gate` answers **GO** — so the content gate no longer
+holds the rollout. The rollout is **still HOLD**, carried by the two gates
+this module sits beside: the stage leg (no stage is declared, and
+:func:`stage_allows_automatic` refuses an undeclared stage) and the
+Calibration100 volume gate (14 resources < 100, CORE_A 0 < 30, CORE_C 0 < 2).
+What R5 founded the HOLD on — a corpus no target could serve — was C1's to
+change; opening the rollout remains the separate adjudication. :data:
+`GATE_OPENING_CONDITIONS` and :data:`BACKOFF_MEANS` are the
 two condition lists: what opens a row (the ladder's keys, or the report's own
 GO), and what a rollout may do when an observation is bad (IP §12: raise the
 threshold / policy cost — and this cut only *names* those levers: BF-02
@@ -123,8 +131,10 @@ describes: the Planner's assembled value **and** the wiring's declared stage.
 - it does not calibrate :data:`elc.teaching.budget.COOLDOWN_WINDOW_SECONDS` /
   ``RECENT_TEACHING_WINDOW_SECONDS``. Those constants' Revisit names p8-5 as a
   possible calibrator, and this cut declines: calibration is BF-03 §21-class
-  work (a measurement over real usage), and there is no real usage — the
-  rollout is HOLD because zero targets are usable. Registered in the receipt
+  work (a measurement over real usage), and there is no real usage to measure —
+  the rollout is still HOLD, held by the undeclared stage leg and the
+  Calibration100 volume gate, no longer by the content gate (C1's corpus
+  answers it GO). Registered in the receipt
   and in ``tests/phase8/test_p8_5_honesty.py``;
 - it does not open any stage. Nothing here mutates anything, and the shipped
   corpus's answer is HOLD, so a source text that claimed a stage was open would
@@ -407,7 +417,9 @@ def gate_row_verdict(usable_targets: int) -> RolloutVerdict:
 
     GO iff at least one target reaches the row's floor. There is no partial
     credit, no "almost ready", and no other input: a row that no target can
-    serve is HOLD, which is what the shipped corpus answers for all four rows.
+    serve is HOLD — which, since C1's evidence face, is the answer **no** row
+    gives over the shipped corpus (its one R4 target serves all four; before
+    C1 it served none).
     """
 
     return RolloutVerdict.GO if usable_targets > 0 else RolloutVerdict.HOLD
@@ -469,7 +481,8 @@ class RolloutGateReport:
     ``automatic_verdict`` is the same rule over the two automatic rows alone,
     so a reader can see the task book's condition separately from the
     conjunction. ``targets_considered`` / ``targets_without_level`` count the
-    table the report was made over (the shipped corpus answers 14 and 14);
+    table the report was made over (the shipped corpus answers 14 and 13 —
+    C1's one leveled target leaves thirteen without a level);
     ``unknown_levels`` names any level word the ladder does not carry (empty
     for every answer the ladder itself produces).
     """

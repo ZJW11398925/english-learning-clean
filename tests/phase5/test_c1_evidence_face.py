@@ -3,28 +3,44 @@
 docs/DATA_MODEL.md §24 (Normative) + PRODUCT_CONTRACT.md §8.1. Thirteen new
 tables (elc.content.build.SCHEMA_STATEMENTS, 11 → 24), a strict
 ``content_src/evidence/<entity_id>.json`` authoring tree, and a read face
-(elc.curriculum.store.readiness_facts) that reads all nineteen §8.1 fact
-keys from the artifact instead of declaring them absent. What this file
-pins, in order:
+(elc.curriculum.store.readiness_facts) that reads the eighteen row-backed
+§8.1 fact keys from the artifact and proves ``entity_row`` from the entity's
+own §24.1 row (the preceding ``get_resource`` success) instead of declaring
+any of them absent. What this file pins, in order:
 
 - the thirteen tables exist with exactly the declared columns and primary
   keys, and every FK points at content_entity(entity_id);
 - the build stays deterministic: two builds from one source are
-  byte-identical, and a rebuild over an existing file is a replay;
+  byte-identical, a rebuild over an existing file is a replay, and two
+  *subprocess* builds under different ``PYTHONHASHSEED`` values hash equal
+  (C1 disposition F4 — hash randomization must not reach the bytes);
 - the corpus table reads 1 × R4_DETECTION_READY (res-colloc-make-a-decision,
-  the one target whose source states all nineteen facts) + 13 × None;
+  the one target whose source states every evidence-backed fact) + 13 × None;
 - every §8.1 fact key has a dedicated per-fact pin, both directions (present
-  for the evidenced target, absent for an evidence-less one);
+  for the evidenced target, absent for an evidence-less one), and the
+  content_text role reads are load-bearing: the artifact's per-role row
+  counts and texts are pinned, and the store's role predicates are pinned
+  against a variant where the counts differ (C1 disposition F5);
 - the strict loader refuses, never degrades: unknown text role, unknown
-  fixture kind, duplicate primary key, unknown block key, an unlisted or
-  dangling evidence document — each is a BuildError with no artifact;
+  fixture kind, duplicate primary key, unknown block key (outer *and*
+  inner — C1 disposition F3), an empty array block (C1 disposition F3),
+  an unlisted or dangling evidence document — each is a BuildError with no
+  artifact;
 - the conditional TypicalError fact ("以及需要时") is a source declaration:
   declared need without rows reports the gap (the ladder's answer, not a
   build refusal), an untriggered need satisfies the key, and a declared
   satisfied need keeps the target's level;
 - the R4 evidence is checkable by construction: every detection rule's
   ordinal carries a fixture, every fixture states a non-empty expected
-  reading, and both kinds are the declared vocabulary.
+  reading, and both kinds are the declared vocabulary;
+- the artifact declares the bumped ``content_db_version`` (C1 disposition
+  F6: the constant is "2" and the artifact agrees);
+- ``reviewed_explanation`` is the C1 disposition's declared reading: a
+  teaching_note row **and** the entity's §24.11 lifecycle_status being
+  ``CANONICAL_APPROVED`` — a variant whose entity is not approved flips the
+  fact while the row count stays (C1 disposition F7c);
+- ``UNREAD_FACT_EVIDENCE``'s entries — whatever is registered there, today
+  none — stay well-formed (C1 disposition F10's restored guard).
 
 The canonical authoring trees are never edited to make a test convenient:
 every variant lives in a pytest tmp copy built through the real build step.
@@ -32,15 +48,20 @@ every variant lives in a pytest tmp copy built through the real build step.
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import shutil
 import sqlite3
+import subprocess
+import sys
 from pathlib import Path
 from typing import Callable
 
 import pytest
 
 from elc.content.build import (
+    CONTENT_DB_VERSION,
     CONTENT_SRC_DIR,
     CURRICULUM_DIR,
     SCHEMA_STATEMENTS,
@@ -49,8 +70,9 @@ from elc.content.build import (
 )
 from elc.content.store import ContentStore
 from elc.curriculum.readiness import READINESS_FACT_KEYS
-from elc.curriculum.store import CurriculumContentStore
+from elc.curriculum.store import UNREAD_FACT_EVIDENCE, CurriculumContentStore
 from elc.platform.types import Ok
+from tests.conftest import REPO_ROOT
 
 #: The one C1-evidenced target, and one evidence-less sibling.
 R4_TARGET = "res-colloc-make-a-decision"
@@ -281,6 +303,40 @@ def test_two_builds_are_byte_identical_and_a_rebuild_is_a_replay(
     assert first.read_bytes() == second.read_bytes()
 
 
+def test_two_subprocess_builds_with_different_hash_seeds_hash_equal(
+    tmp_path: Path,
+) -> None:
+    """Cross-process determinism (C1 disposition F4): no ``hash()``
+    randomization may reach the artifact's bytes. Two fresh interpreters with
+    different ``PYTHONHASHSEED`` values build from the same source and the
+    two artifacts hash equal."""
+
+    script = (
+        "import sys;"
+        "from elc.content.build import build_content_db;"
+        "build_content_db(sys.argv[1])"
+    )
+    src = str(REPO_ROOT / "src")
+    digests: list[str] = []
+    for seed in ("0", "12345"):
+        output = tmp_path / f"seed-{seed}.db"
+        env = dict(os.environ)
+        env["PYTHONPATH"] = (
+            src + os.pathsep + env["PYTHONPATH"]
+            if env.get("PYTHONPATH")
+            else src
+        )
+        env["PYTHONHASHSEED"] = seed
+        subprocess.run(
+            [sys.executable, "-c", script, str(output)],
+            check=True,
+            env=env,
+            timeout=120,
+        )
+        digests.append(hashlib.sha256(output.read_bytes()).hexdigest())
+    assert digests[0] == digests[1]
+
+
 # ---------------------------------------------------------------------------
 # ③ the corpus table and the per-fact pins
 # ---------------------------------------------------------------------------
@@ -311,7 +367,8 @@ def test_every_fact_key_is_present_for_the_r4_target(
     built_content_db: Path, key: str
 ) -> None:
     """Per-fact pin, present side: the evidenced target satisfies all
-    nineteen §8.1 fact keys, each read from its own table."""
+    nineteen §8.1 fact keys (eighteen read from their own tables;
+    ``entity_row`` proven by the preceding ``get_resource`` success)."""
 
     store = ContentStore(built_content_db)
     try:
@@ -423,6 +480,69 @@ def test_an_unknown_evidence_block_is_refused(tmp_path: Path) -> None:
     with pytest.raises(BuildError) as raised:
         _build_edited(tmp_path, _edit_evidence(break_block))
     assert "mystery_block" in str(raised.value)
+
+
+def test_an_unknown_key_inside_a_block_is_refused(tmp_path: Path) -> None:
+    """The strict reader's inner half (C1 disposition F3): ``_exact_keys``
+    guards not only the document's block set but every block's key set, so a
+    key neither §24 nor the declared reading names is refused, never ignored.
+    Legal counterpart first: the canonical document — the same document
+    without the invented key — builds."""
+
+    legal = _build_edited(tmp_path / "legal", lambda content_src: None)
+    assert legal.is_file()
+
+    def invent_entry_key(document: dict) -> None:
+        document["lexical_entry"]["paradigm"] = "make-decision VERB"
+
+    with pytest.raises(BuildError) as raised:
+        _build_edited(tmp_path / "entry", _edit_evidence(invent_entry_key))
+    assert "paradigm" in str(raised.value)
+
+    def invent_row_key(document: dict) -> None:
+        document["texts"][0]["bogus"] = "x"
+
+    with pytest.raises(BuildError) as raised:
+        _build_edited(tmp_path / "row", _edit_evidence(invent_row_key))
+    assert "bogus" in str(raised.value)
+
+
+def test_an_empty_array_block_is_refused(tmp_path: Path) -> None:
+    """An empty JSON array is never a stated fact (C1 disposition F3;
+    content_src/README.md "空 JSON 数组 ⇒ BuildError"): "no rows" is stated
+    by *omitting* the block. Legal counterpart first: the same document with
+    the block omitted builds, and the omission reaches the read face as
+    absence — the sense fact reads False and the table carries no rows."""
+
+    def drop_senses(document: dict) -> None:
+        del document["senses"]
+
+    legal_artifact = _build_edited(tmp_path / "legal", _edit_evidence(drop_senses))
+    conn = sqlite3.connect(str(legal_artifact))
+    try:
+        sense_rows = conn.execute(
+            "SELECT COUNT(*) FROM content_sense "
+            "WHERE entity_id = ?",
+            (R4_TARGET,),
+        ).fetchone()[0]
+    finally:
+        conn.close()
+    assert sense_rows == 0
+    store = ContentStore(legal_artifact)
+    try:
+        supply = CurriculumContentStore(store)
+        facts = supply.readiness_facts(R4_TARGET)
+        assert isinstance(facts, Ok), facts
+    finally:
+        store.close()
+    assert facts.value.sense is False
+
+    def empty_senses(document: dict) -> None:
+        document["senses"] = []
+
+    with pytest.raises(BuildError) as raised:
+        _build_edited(tmp_path / "empty", _edit_evidence(empty_senses))
+    assert "senses" in str(raised.value)
 
 
 def test_an_unlisted_evidence_document_is_refused(tmp_path: Path) -> None:
@@ -618,3 +738,195 @@ def test_every_rule_carries_a_fixture_and_every_fixture_an_expected_reading(
         assert expected in ("NO_MATCH", "NO_MATCH_BOUNDARY"), expected
     kinds = {row[1] for row in fixtures}
     assert kinds == {"NEGATIVE", "FALSE_POSITIVE_BOUNDARY"}
+
+
+# ---------------------------------------------------------------------------
+# ⑦ the C1 disposition pins (F5 role reads, F6 version, F7c reviewed, F10)
+# ---------------------------------------------------------------------------
+
+
+def test_the_r4_target_s_text_rows_are_pinned_per_role(
+    built_content_db: Path,
+) -> None:
+    """C1 disposition F5: role reads are load-bearing. The artifact's
+    ``content_text`` rows are pinned per role — row count **and** content —
+    so a read that swapped the role word moves both."""
+    conn = sqlite3.connect(str(built_content_db))
+    try:
+        rows = conn.execute(
+            "SELECT role, ordinal, language, text FROM content_text "
+            "WHERE entity_id = ? ORDER BY role, ordinal",
+            (R4_TARGET,),
+        ).fetchall()
+    finally:
+        conn.close()
+    by_role: dict[str, list[tuple[int, str, str]]] = {}
+    for role, ordinal, language, text in rows:
+        by_role.setdefault(str(role), []).append(
+            (int(ordinal), str(language), str(text))
+        )
+    assert {
+        role: len(role_rows) for role, role_rows in sorted(by_role.items())
+    } == {
+        "definition": 1,
+        "teaching_note": 1,
+        "translation": 1,
+        "usage": 1,
+    }
+    # The content half: the roles carry different sentences from the source,
+    # so a swapped role predicate reads the wrong text, not just the wrong
+    # count.
+    assert by_role["definition"][0][2].startswith(
+        "To choose one course of action"
+    )
+    assert by_role["usage"][0][2].startswith(
+        "Used when the choice carries some weight"
+    )
+    assert by_role["teaching_note"][0][2].startswith("The light verb is make")
+    assert by_role["translation"][0][:2] == (0, "zh")
+
+
+def test_the_store_s_role_predicates_count_their_own_role(
+    built_content_db: Path,
+    tmp_path: Path,
+) -> None:
+    """C1 disposition F5, store half: the ``definitions`` /
+    ``teaching_notes`` predicates count *their* role's rows. On the canonical
+    artifact both roles answer 1 — indistinguishable by count — so the pin
+    builds a variant whose source adds a second ``usage`` row: the store's
+    ``definitions`` must stay 1 there (a predicate reading the wrong role
+    would answer 2)."""
+
+    store = ContentStore(built_content_db)
+    try:
+        canonical = store.evidence_counts(R4_TARGET)
+        assert isinstance(canonical, Ok), canonical
+    finally:
+        store.close()
+    assert canonical.value.definitions == 1
+    assert canonical.value.teaching_notes == 1
+
+    def add_second_usage(document: dict) -> None:
+        usage_rows = [
+            row for row in document["texts"] if row["role"] == "usage"
+        ]
+        extra = dict(usage_rows[0])
+        extra["ordinal"] = 1
+        document["texts"].append(extra)
+
+    artifact = _build_edited(tmp_path, _edit_evidence(add_second_usage))
+    conn = sqlite3.connect(str(artifact))
+    try:
+        usage_count = conn.execute(
+            "SELECT COUNT(*) FROM content_text "
+            "WHERE entity_id = ? AND role = 'usage'",
+            (R4_TARGET,),
+        ).fetchone()[0]
+    finally:
+        conn.close()
+    assert usage_count == 2
+    store = ContentStore(artifact)
+    try:
+        counts = store.evidence_counts(R4_TARGET)
+        assert isinstance(counts, Ok), counts
+    finally:
+        store.close()
+    assert counts.value.definitions == 1
+    assert counts.value.teaching_notes == 1
+
+
+def test_an_evidence_less_target_reads_zero_rows_per_role(
+    built_content_db: Path,
+) -> None:
+    """C1 disposition F5, zero side: an evidence-less target answers 0 rows
+    in every role, through both the artifact and the store's counts."""
+    conn = sqlite3.connect(str(built_content_db))
+    try:
+        rows = conn.execute(
+            "SELECT role, COUNT(*) FROM content_text "
+            "WHERE entity_id = ? GROUP BY role",
+            (NO_EVIDENCE_TARGET,),
+        ).fetchall()
+    finally:
+        conn.close()
+    assert rows == []
+    store = ContentStore(built_content_db)
+    try:
+        counts = store.evidence_counts(NO_EVIDENCE_TARGET)
+        assert isinstance(counts, Ok), counts
+    finally:
+        store.close()
+    assert counts.value.definitions == 0
+    assert counts.value.teaching_notes == 0
+
+
+def test_the_artifact_declares_the_bumped_content_db_version(
+    built_content_db: Path,
+) -> None:
+    """C1 disposition F6: the schema generation moved with the table set
+    (11 → 24); docs/DATA_MODEL.md §26.1 requires the version to be updated
+    explicitly, never guessed from the schema."""
+    assert CONTENT_DB_VERSION == "2"
+    conn = sqlite3.connect(str(built_content_db))
+    try:
+        row = conn.execute(
+            "SELECT value FROM content_meta WHERE key = 'content_db_version'"
+        ).fetchone()
+    finally:
+        conn.close()
+    assert row is not None
+    assert row[0] == CONTENT_DB_VERSION == "2"
+
+
+def test_reviewed_explanation_requires_the_approved_lifecycle(
+    tmp_path: Path,
+) -> None:
+    """C1 disposition F7c: "reviewed" is read through the entity's §24.11
+    editorial discipline — a ``teaching_note`` row **and** the entity's
+    ``lifecycle_status`` being ``CANONICAL_APPROVED`` (the same editorial
+    word the approved curriculum_link carries; no dedicated §24 marker on
+    the note). A variant whose entity is not approved flips the fact while
+    the note row stays, and the R3 set no longer completes (level falls to
+    R2)."""
+
+    def demote_entity(content_src: Path) -> None:
+        path = content_src / "entities" / f"{R4_TARGET}.json"
+        document = json.loads(path.read_text(encoding="utf-8"))
+        document["entity"]["lifecycle_status"] = "PEDAGOGICALLY_ANNOTATED"
+        path.write_text(
+            json.dumps(document, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+
+    artifact = _build_edited(tmp_path, demote_entity)
+    store = ContentStore(artifact)
+    try:
+        supply = CurriculumContentStore(store)
+        facts = supply.readiness_facts(R4_TARGET)
+        assert isinstance(facts, Ok), facts
+        assessment = supply.readiness(R4_TARGET)
+        assert isinstance(assessment, Ok), assessment
+        counts = store.evidence_counts(R4_TARGET)
+        assert isinstance(counts, Ok), counts
+    finally:
+        store.close()
+    # The note row is still there; the fact is still False.
+    assert counts.value.teaching_notes == 1
+    assert facts.value.reviewed_explanation is False
+    assert assessment.value.level == "R2_PLANNER_READY"
+
+
+def test_unread_fact_evidence_entries_stay_well_formed() -> None:
+    """C1 disposition F10: the loop that used to pin
+    ``UNREAD_FACT_EVIDENCE``'s entry shape went silent when C1 emptied the
+    set, so the shape requirement lives on here — whatever is registered
+    later must carry a non-empty evidence description and a key the ladder
+    actually declares (today the mapping is empty and the loop runs zero
+    times; it is the guard, not a no-op claim)."""
+
+    for key, evidence in UNREAD_FACT_EVIDENCE.items():
+        assert evidence.strip(), (
+            f"UNREAD_FACT_EVIDENCE[{key!r}] needs a non-empty evidence"
+            " description"
+        )
+        assert key in READINESS_FACT_KEYS, key

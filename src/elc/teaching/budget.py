@@ -177,8 +177,10 @@ __all__ = [
 #: :data:`RECENT_TEACHING_WINDOW_SECONDS` stays independent of it: they answer
 #: different questions). P8-5's rollout gate **declined** the clause this
 #: Revisit used to name it for: a calibration is a measurement over real
-#: usage, that cut found none (the rollout is HOLD over the shipped corpus),
-#: and ``elc.teaching.rollout`` registers the decline. The clause therefore
+#: usage, and there is none to measure — the rollout is still HOLD, held by
+#: the undeclared stage leg and the Calibration100 volume gate, not by the
+#: content gate (C1's corpus answers it GO) — and ``elc.teaching.rollout``
+#: registers the decline. The clause therefore
 #: stays open for the cut that has the usage to spend.
 COOLDOWN_WINDOW_SECONDS: float = 1800.0
 

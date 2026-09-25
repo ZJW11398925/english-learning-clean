@@ -49,9 +49,12 @@ one says so where it is made:
   Scheduler's own;
 - **the readiness and goal-mapping legs** of ``missing_authorities``: the
   Planner needs a target's content level and the goal/assessment pack mapping
-  (IMPLEMENTATION_PLAN §7 line 340), and neither is landed — this corpus
-  reports no level for any target and ``assessment_targets`` has no consumer —
-  so the honest production answer today is INCOMPLETE (see
+  (IMPLEMENTATION_PLAN §7 line 340). The readiness face is landed and C1's
+  evidence face backs it — the corpus answers one R4 target with thirteen
+  targets still level-less, so the readiness leg fires for any candidate
+  naming one of those thirteen — while the goal/assessment pack mapping is
+  not landed (``assessment_targets`` has no consumer). A caller that cannot
+  read one of these gets INCOMPLETE, never a number (see
   :func:`assemble_feature_authority`).
 
 **Versioning.** :data:`POLICY_PROFILE_MAPPING_VERSION` stamps the policy →
@@ -570,13 +573,16 @@ def assemble_feature_authority(
     not this record's — nothing here derives it, and defaulting it to
     ``False`` is a value, not a missing authority.
 
-    **Today's answer, honestly.** With this repository's shipped supply every
-    leg of the table fires except the schedule one: no Planner assembles a
-    PlanningContext yet, the corpus reports no content level for any target,
-    and the goal/assessment mapping does not exist. A caller that wires the
-    real faces therefore gets ``INCOMPLETE`` — which is the point: BF-02 §5's
-    DEGRADED is the correct production verdict until the gaps are closed, and
-    a synthetic ``0`` would hide it.
+    **Today's answer, honestly.** The shipped corpus no longer reads
+    ``level=None`` across the board: C1's evidence face gives one target an
+    R4 level and leaves thirteen level-less, and the goal/assessment mapping
+    still does not exist (``assessment_targets`` has no consumer). So the
+    readiness leg fires for any candidate naming one of the thirteen (and
+    whenever the readiness face is absent), and the goal-mapping leg fires
+    whenever a portfolio names ``assessment_targets``. A caller that withholds
+    an authority gets ``INCOMPLETE`` — which is the point: BF-02 §5's
+    DEGRADED is the correct verdict until the gaps are closed, and a
+    synthetic ``0`` would hide it.
     """
 
     missing: list[AuthorityName] = []

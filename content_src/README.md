@@ -28,11 +28,14 @@ content_src/
 
 ## evidence 块映射规则（C1，Phase 11）
 
-`evidence/<entity_id>.json` 是 §8.1 readiness 证据的作者源（19 键的读面 =
-`elc.curriculum.store.readiness_facts`；纯判定 =
+`evidence/<entity_id>.json` 是 §8.1 readiness 证据的作者源（读面 =
+`elc.curriculum.store.readiness_facts`：18 键逐表读 +
+`entity_row` 由前置 `get_resource` 成功证明存在；纯判定 =
 `elc.curriculum.readiness`）。文件名即实体 id（不重复写；build 拒绝悬空文档）。
 由 `index.json` 的 `evidence` 键逐条声明——**无 glob 兜底**，目录里存在但未入
-索引的文档一律 `BuildError`；`[]` 是合法状态（本语料不声明任何证据）。
+索引的文档一律 `BuildError`；该键是**必需键**（缺键被拒，这是 C1 处置的
+有意收紧——"无证据"必须显式写 `[]`，不存在"键缺席 = 键省略"的第二种
+拼法）。
 
 块规则：
 
@@ -48,9 +51,9 @@ content_src/
 | 块 | 表 | 列 |
 | --- | --- | --- |
 | `assessment_membership` | `content_assessment_membership` | assessment_id / membership_status / source（§24.8 未给字段表 ⇒ 声明读法） |
-| `lexical_entry` | `content_lexical_entry` | lemma / pos（§24.2 两列逐字） |
+| `lexical_entry` | `content_lexical_entry` | lemma / pos（§24.2 两列逐字；**声明读法（C1 处置）**：§24.2 的第三个区分项 morphological paradigm **未建列**——语义单位的词形变化由 §24.2 Form 行（`content_form`，R1 `forms` 证据）承载，不在 entry 行上；Revisit = 首个需要在 entry 本身携带 paradigm 字段的源） |
 | `senses` | `content_sense` | sense_id / ordinal（§24.3 未给字段表 ⇒ 声明读法） |
-| `texts` | `content_text` | sense_id(可空) / language / role / ordinal / text（role ∈ §24.3 六词表） |
+| `texts` | `content_text` | sense_id(可空) / language / role / ordinal / text（role ∈ §24.3 六词表；**声明读法（C1 处置）**：主键 `(entity_id, role, ordinal)` **不含 language**——单语言语料的最小列集，第二语言在同 (role, ordinal) 上会撞主键；Revisit = 首个多语言源出现时扩主键） |
 | `forms` | `content_form` | form_id / written / normalized / form_type / morph_features(可空) / pronunciation(可空)（§24.2 五列 + form_id） |
 | `pedagogical_profile` | `content_pedagogical_profile` | §24.7 十一列逐字（default_target_mode 校 §11 词表、editorial_status 校 §24.11 词表） |
 | `pack_overlays` | `content_pack_overlay` | pack_id / weight / rationale（§24.8 未给字段表 ⇒ 声明读法） |
@@ -65,7 +68,10 @@ content_src/
 R4 可测性规则（本仓现役语料的自约束，build 不校验语义、只校验词表）：每条
 detection rule 的 ordinal 应有同 ordinal 的 fixture 兜底；fixture 的 `expected`
 非空且与 `text` 语义一致；不使用模型自报置信（§8.1 "V1 不把'模型自称高置信'
-自动视为 R4 等价认证"）。
+自动视为 R4 等价认证"）。**登记（C1 处置，F8）**：R4 的「可测试」在本语料中是
+**结构性**的——policy/rules/fixtures 落库为 TEXT + 声明的 `expected` 串，仓内
+**没有执行者**（`NO_MATCH` / `NO_MATCH_BOUNDARY` 只活在本语料策略散文与测试
+字面量里）；本登记不声称任何 detector 已存在。
 
 ## 映射规则（显式声明；不发明列名）
 
@@ -206,6 +212,9 @@ target 的两个域视图，故不造自环链接行）。
 ```bash
 PYTHONPATH=src python -m elc.content.build --out build/content.db
 ```
+
+产物元数据：`content_meta.content_db_version = "2"`（docs/DATA_MODEL.md §26.1；
+C1 把表集 11 → 24，C1 处置据此显式 bump，禁止依赖代码猜 schema）。
 
 ADR：`content.db` 是生成物（`.gitignore` 已含 `*.db`），由 CI/本地按需重建；
 本目录与 `../curriculum/` 是版本控制内的唯一作者源。

@@ -517,7 +517,9 @@ def test_every_readiness_fact_key_has_a_carrier_table_in_the_artifact(
         "pedagogical_profile": ("content_pedagogical_profile",),
         "goal_pack_overlay": ("content_pack_overlay",),
         "resource_labels": ("content_resource_label",),
-        "reviewed_explanation": ("content_text",),
+        # C1 disposition F7c: the fact reads the note row *and* the entity's
+        # §24.11 lifecycle_status (content_entity), so both carriers are named.
+        "reviewed_explanation": ("content_text", "content_entity"),
         "example_policy": ("content_example_policy",),
         "contrast_or_usage": ("content_example", "content_resource_label"),
         "typical_error_when_needed": ("content_typical_error", "content_meta"),

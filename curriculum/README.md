@@ -55,14 +55,28 @@ editorial_status / rationale
   prerequisite 边），不发明；
 - `editorial_status` ∈ §24.11 词表；**C1 后的状态**：9 行中 8 行仍为
   `CURRICULUM_MAPPED`，`res-colloc-make-a-decision` 一行由 C1（Phase 11）
-  编辑评审改为 `CANONICAL_APPROVED`。`CURRICULUM_MAPPED` 行的依据仅为
-  P3-1A/P3-1B 测试语料设计（fixture 的 `capability_linkage`），**未经课程
-  语义审核**，在 capability 功能定义存在且作者审核通过前**不得计入
-  capability 证据**（P5-R；读面门见
-  `elc.content.store.CAPABILITY_CREDIT_EDITORIAL_STATUS`——未审 link 在
-  `get_teaching_content().capability_linkage` 读作 `None`，但仍是可读的
-  link 行；被批准的 link 则读出其 node——门读的就是 link 自身的
+  编辑评审改为 `CANONICAL_APPROVED`。P5-R 的规则对**未批准**行不变：
+  `CURRICULUM_MAPPED` 行的依据仅为 P3-1A/P3-1B 测试语料设计（fixture 的
+  `capability_linkage`），**未经课程语义审核**，不得计入 capability 证据
+  （读面门见 `elc.content.store.CAPABILITY_CREDIT_EDITORIAL_STATUS`——未审
+  link 在 `get_teaching_content().capability_linkage` 读作 `None`，但仍是
+  可读的 link 行；被批准的 link 则读出其 node——门读的就是 link 自身的
   editorial_status，门本身从未改动）。
+
+  **已批准那一行的口径（C1 处置定谳：批准保留）**——① 该批准**覆盖**：
+  此行的 provenance（P3-1A/P3-1B fixture 声明，未改）、该 target 的证据文档
+  （`../content_src/evidence/res-colloc-make-a-decision.json`），以及「此批准
+  使 §8.1 R2 的 `curriculum_link` 事实可读」；② 该批准**不覆盖**：
+  `cap-eval-hedged-opinion` 在本仓无功能定义，capability 语义审计**未做**；
+  其余 8 行维持 `CURRICULUM_MAPPED`；③ **credit 的限度**：
+  `CAPABILITY_CREDIT_EDITORIAL_STATUS` 门据此行放行，故该 target 的
+  `ALTERNATIVE_SUCCESS` 可铸 CAPABILITY/POSITIVE 学习者证据——**这是行为
+  变更，已知并接受**，其影响面受真实 rollout HOLD（无真实教学运行）限制；
+  ④ **Revisit**：capability 功能定义落地时重审该批准。活风险登记
+  `R-C1-credit`（*一个未经能力语义审计的 link 批准现可铸学习者能力证据*；
+  owner = 用户/总控；影响面 = 仅该 target 的 `ALTERNATIVE_SUCCESS` 路径；
+  Revisit = 功能定义落地 / 首次真实教学运行前**必须**重审），台账见
+  `AGENTS.md` 的 C1 处置条目。
 
 #### link 状态变更记录（C1）
 

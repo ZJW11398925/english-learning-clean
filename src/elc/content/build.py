@@ -27,8 +27,10 @@ appended to the eleven above (`SCHEMA_STATEMENTS`, 11 → 24) plus the
 `content_src/evidence/<entity_id>.json` authoring tree, declared by the index
 like `entities` (no glob fallback, unlisted documents refused). Every §8.1
 fact key the ladder reads now has a table that carries it, so
-`elc.curriculum.store.readiness_facts` reads all nineteen keys instead of
-declaring them absent. Where docs/DATA_MODEL.md §24 names a concept without
+`elc.curriculum.store.readiness_facts` reads the eighteen row-backed keys
+from these tables and proves ``entity_row`` by the entity's own §24.1 row
+(the preceding ``get_resource`` success), instead of declaring any of them
+absent. Where docs/DATA_MODEL.md §24 names a concept without
 giving a field table, the column choice is a **declared reading** written
 into the table's comment below (and into `content_src/README.md`) with a
 Revisit — it never claims the canonical text lists those columns. The one
@@ -103,8 +105,11 @@ CURRICULUM_DIR = REPO_ROOT / "curriculum"
 DEFAULT_OUTPUT = REPO_ROOT / "build" / "content.db"
 
 #: docs/DATA_MODEL.md §26.1 `content_db_version` — the artifact's own schema
-#: generation, owned by this module's DDL below.
-CONTENT_DB_VERSION = "1"
+#: generation, owned by this module's DDL below. Bumped ``"1"`` → ``"2"`` by
+#: the C1 disposition: C1 grew the table set 11 → 24 (``SCHEMA_STATEMENTS``),
+#: and §26.1 requires the version to move explicitly, never guessed from the
+#: schema ("数据库迁移必须显式更新版本，禁止依赖代码猜 schema").
+CONTENT_DB_VERSION = "2"
 
 #: The authoring-source formats this build reads. A document that declares a
 #: different `format` / `format_version` is refused: the build may only read a
@@ -476,6 +481,12 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
     ")",
     # §24.2 LexicalEntry: "以 lemma/POS/morphological paradigm 区分" — the two
     # named fields; POS is the source's own string (no §24 word list).
+    # Declared reading (C1 disposition): §24.2 names a **third** differentiator
+    # (morphological paradigm) and this table builds no column for it — the
+    # entry's paradigmatic shape is carried by its §24.2 Form rows
+    # (`content_form`, the R1 `forms` evidence), not by the entry row.
+    # Revisit: the first source that needs a paradigm field on the entry
+    # itself adds the column (and bumps CONTENT_DB_VERSION).
     "CREATE TABLE content_lexical_entry ("
     "entity_id TEXT PRIMARY KEY REFERENCES content_entity(entity_id),"
     "lemma TEXT NOT NULL,"
@@ -493,7 +504,11 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
     # §24.3 ContentText. `role` is the §24.3 six-word list verbatim; the text
     # may hang off a sense (nullable) and carries its own language (a
     # translation is a text in another language, so the index language is
-    # not imposed here).
+    # not imposed here). Declared reading (C1 disposition): the PRIMARY KEY
+    # is (entity_id, role, ordinal) and does **not** carry `language` — the
+    # minimal column set for a single-language corpus; a second language on
+    # the same (role, ordinal) would collide on the PK. Revisit: the first
+    # multi-language source widens the PK (and bumps CONTENT_DB_VERSION).
     "CREATE TABLE content_text ("
     "entity_id TEXT NOT NULL REFERENCES content_entity(entity_id),"
     "sense_id TEXT,"

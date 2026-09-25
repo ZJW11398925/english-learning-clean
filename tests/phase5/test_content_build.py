@@ -116,6 +116,13 @@ def test_source_index_order_does_not_change_the_artifact(tmp_path: Path) -> None
 def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
     """Deterministic order: file-system and index order cannot leak in.
 
+    The read is ``ORDER BY rowid`` — insertion order — because a bare
+    ``SELECT entity_id`` is answered from the PRIMARY KEY's covering index
+    and comes back sorted whatever the write order was (C1 disposition F4:
+    the rowid form is the one a reversed or set-ordered write cannot hide
+    from). The id-order assertions keep the semantic half: insertion order
+    *is* id order.
+
     C1: ``content_meta`` carries the three version keys **plus** the
     declared-reading TypicalError-need key for the one entity whose source
     states it (elc.content.types.typical_error_required_key) — so the meta
@@ -127,11 +134,15 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
     try:
         entities = [
             row[0]
-            for row in conn.execute("SELECT entity_id FROM content_entity")
+            for row in conn.execute(
+                "SELECT entity_id FROM content_entity ORDER BY rowid"
+            )
         ]
         capabilities = [
             row[0]
-            for row in conn.execute("SELECT capability_id FROM curriculum_capability")
+            for row in conn.execute(
+                "SELECT capability_id FROM curriculum_capability ORDER BY rowid"
+            )
         ]
         meta = [
             (row[0], row[1])
