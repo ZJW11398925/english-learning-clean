@@ -171,6 +171,20 @@ class EvidenceClaimView:
     # claim targets the group's target.
     opportunity_id: LearningOpportunityId | None = None
     target_id: str | None = None
+    #: P9-R3 provenance pointer: the §22 ``exposure_estimate`` row this
+    #: claim's exposure is attributed to, carried as that delivery's
+    #: ``action_id`` (migration 0018 keys the estimate by ``action_id``; no
+    #: second id is minted). It is **not** the ``exposure`` field above:
+    #: ``exposure`` is the answer-exposure ladder's fact (WHAT was shown —
+    #: FULL = the target's answer form was fully exposed), while this id says
+    #: *which delivery* the attribution points at (HOW CERTAINLY it reached —
+    #: that estimate's own ``exposure_level`` FULL means the whole message
+    #: reached the client). Same word, two facts. Declared last with a
+    #: default so every existing construction site (silent evidence, the
+    #: analysis path, fixtures) keeps its meaning and writes NULL;
+    #: ``None`` is the honest "not attributed" value for a producer that
+    #: holds no §22 fact.
+    exposure_estimate_id: str | None = None
 
 
 @dataclass(frozen=True)

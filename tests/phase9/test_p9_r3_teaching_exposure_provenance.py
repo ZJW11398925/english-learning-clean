@@ -22,14 +22,13 @@ exposure)``), run through the public ``estimate_target_state`` face over the
 durable claim row, so "the exposure value reaches the assist" is an exact
 reading rather than a claim that the chain returned something.
 
-One boundary is pinned as a **registered gap**, not as fixed behaviour:
-``evidence_claim.exposure_estimate_id`` is written as a literal ``None`` by
-``elc.learning.store``'s claim insert (``EvidenceClaimView`` carries no such
-field), and ``src/elc/learning`` is outside this cut's path set. The
-provenance therefore reaches the *teaching* proposal — pinned below through
-a recorder over the real commit — and stops at the Learning boundary; the
-claim-side pin records today's truth so the learning-side cut that lights the
-column cannot land silently.
+The same-named column reaches all the way into the Evidence chain: this cut
+also lights ``evidence_claim.exposure_estimate_id`` (migration 0004's column,
+a literal ``None`` before) — ``EvidenceClaimView`` carries the pointer, the
+learning claim insert writes it, and the proposal payload's claim document
+survives the round trip the commit rebuilds from. The non-teaching producers
+keep the column NULL, and the silent-evidence arm below proves it on the real
+``P5-2`` chain rather than by saying so.
 """
 
 from __future__ import annotations
@@ -47,6 +46,12 @@ from elc.learning.estimator import (
     EstimatorClaimView,
     estimate_target_state,
 )
+from elc.learning.silent_claim import (
+    SILENT_EVIDENCE_EVALUATOR_ID,
+    SILENT_OBSERVATION_CLAIM_ROLE,
+)
+from elc.learning.silent_evidence import ContentBackedSilentTargets
+from elc.learning.store import SqliteLearningStore
 from elc.persona import (
     PersonaRuntime,
     PromptCompiler,
@@ -86,6 +91,9 @@ from tests.phase8.p8_4_world import (
 )
 from tests.phase8.p8_4_world import (
     begin_turn_ok as p8_begin_turn_ok,
+)
+from tests.phase8.p8_4_world import (
+    command as p8_command,
 )
 from tests.phase8.p8_4_world import (
     world as p8_world,
@@ -169,9 +177,23 @@ class RefusingEstimateStore:
 
 
 def coord_for(
-    p8: World, *, learning: object | None = None, records: object = REAL_FACE
+    p8: World,
+    *,
+    learning: object | None = None,
+    records: object = REAL_FACE,
+    automatic: bool = True,
+    silent: bool = False,
+    learning_store: object | None = None,
 ) -> ConversationCoordinator:
-    """The P8-4 assembly with the §22 face wired (the P9-3/P9-4 shape)."""
+    """The P8-4 assembly with the §22 face wired (the P9-3/P9-4 shape).
+
+    ``automatic=False`` drops the automatic-teaching wiring (the silent arm
+    needs a turn that is not inside an open teaching window — P5-R's
+    rule 4 would otherwise drop the observation); ``silent=True`` wires the
+    real target supply so the ordinary-turn learning leg resolves one;
+    ``learning_store`` is the ``LearningTurnAnalysis`` port the P5-2 leg
+    calls (the world's own builder wires no CP1 leg at all).
+    """
 
     runtime = PersonaRuntime(
         actions=p8.generation,
@@ -190,12 +212,18 @@ def coord_for(
         conversation_queries=p8.store,
         persona=runtime,
         generation_actions=p8.generation,
+        learning=learning_store,  # type: ignore[arg-type]
         decision_cycles=p8.generation.decision_cycles,
         learning_controller=p8.learning if learning is None else learning,  # type: ignore[arg-type]
         teaching=p8.teaching,
         targets=p8.targets,
-        automatic_teaching=wiring(p8, supply=acceptance_supply()),
+        automatic_teaching=(
+            wiring(p8, supply=acceptance_supply()) if automatic else None
+        ),
         delivery_records=face,  # type: ignore[arg-type]
+        silent_evidence=(
+            ContentBackedSilentTargets(p8.real_supply) if silent else None
+        ),
     )
 
 
@@ -453,36 +481,75 @@ def test_the_same_provenance_travels_into_the_evidence_proposal(
         SERVER_SENT_UNCONFIRMED.value
     )
 
+    # ...and the durable payload's claim document carries it too: the commit
+    # path rebuilds its claims from this document, so a key left out here
+    # would be dropped before the row is written (see the claim-side test
+    # below for the row itself).
+    documents = proposal_payload(fw)["claims"]
+    assert documents[0]["exposure_estimate_id"] == opening_id  # type: ignore[index]
 
-def test_the_learning_side_claim_column_stays_null_and_the_gap_is_registered(
+
+def test_the_claim_row_carries_the_same_provenance_as_the_attempt(
     tmp_path: Path,
 ) -> None:
-    """**Registered gap (this cut's 异议/登记).** The durable
-    ``evidence_claim.exposure_estimate_id`` column is written as a literal
-    ``None`` by ``elc.learning.store``'s claim insert — ``EvidenceClaimView``
-    carries no such field, and the whole ``src/elc/learning`` package is
-    outside this cut's path set (``VAL-OPI-9dba34fb-…14``). The provenance
-    therefore reaches the teaching proposal and stops at the Learning
-    boundary; this pin records today's truth so the learning-side cut that
-    lights the column must delete this assertion and extend the chain
-    instead. Revisit: the first cut that touches the teaching-claim insert or
-    ``EvidenceClaimView``.
+    """The Evidence chain's own copy, over the real chain (this cut lights
+    migration 0004's ``evidence_claim.exposure_estimate_id`` column, which the
+    claim insert wrote as a literal ``None`` before).
 
-    The proposal payload is checked too: Learning's own conversion
-    (``_claim_document``) carries no such key, so there is no hidden second
-    route into the claim row either.
+    The value is read back through a **second connection** and equals the
+    attempt row's own id and the opening action's ``action_id`` — one
+    attribution, two records. The claim row is also the proof that the
+    document round trip works: the commit path rebuilds its claims from the
+    durable proposal payload (``_claim_document`` → ``_claim_from_document``),
+    so a non-NULL column means the key survived that round trip.
     """
 
     fw = build_world(tmp_path / "world")
-    open_then_attempt(fw, tag="claim-gap")
+    open_then_attempt(fw, tag="claim-row")
 
+    moment_id = str(moment_row(fw)[0])
+    opening_id = str(actions_of(fw, moment_id)[0][0])
     claim = focus_claim(fw)
-    assert attempt_row(fw)[4] is not None  # the attempt side is live...
-    assert claim[9] is None  # ...and the claim side is the registered gap
-    documents = proposal_payload(fw)["claims"]
-    assert documents and all(
-        "exposure_estimate_id" not in document for document in documents  # type: ignore[operator]
+
+    assert claim[9] == opening_id, claim
+    assert attempt_row(fw)[4] == claim[9]
+    assert claim[2] == "RESOURCE"  # this is the moment's focus claim
+    assert claim[8] == "NONE"  # the answer-exposure side is untouched
+
+
+def test_a_silent_evidence_claim_keeps_the_column_null(tmp_path: Path) -> None:
+    """The non-teaching producers are unchanged: the real P5-2 silent chain
+    (an ordinary natural-chat turn whose utterance resolves to a target, a
+    claim committed by the analysis face) writes a claim whose
+    ``exposure_estimate_id`` is NULL — the field's own default, because that
+    producer holds no §22 fact. The column therefore distinguishes
+    "attributed to a delivery" from "not attributed", which a literal ``None``
+    insert could not."""
+
+    fw = build_world(tmp_path / "world")
+    coordinator = coord_for(
+        fw.p8,
+        automatic=False,
+        silent=True,
+        learning_store=SqliteLearningStore(fw.p8.db, fw.p8.fence),
     )
+    result = coordinator.begin_turn(p8_command("cmid-p9r3-silent", text=CANONICAL))
+    assert isinstance(result, Ok), result
+
+    claims = rows(
+        fw.path,
+        "SELECT evidence_claim_id, claim_role, evaluator_id,"
+        " exposure_estimate_id FROM evidence_claim",
+    )
+    assert len(claims) == 1, claims
+    assert claims[0][1] == SILENT_OBSERVATION_CLAIM_ROLE
+    assert claims[0][2] == SILENT_EVIDENCE_EVALUATOR_ID
+    assert claims[0][3] is None
+    # The NULL is a per-claim fact, not an empty world: the ordinary chat
+    # turn's own streamed delivery did write a §22 estimate row, and the
+    # silent claim simply is not attributed to it (nor to anything else).
+    assert rows(fw.path, "SELECT action_id FROM exposure_estimate") != []
+    assert rows(fw.path, "SELECT attempt_id FROM attempt_record") == []
 
 
 # ---------------------------------------------------------------------------

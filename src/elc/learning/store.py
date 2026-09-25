@@ -2014,7 +2014,12 @@ class SqliteLearningStore:
                 "SPONTANEOUS",  # default fill (BF-01 v1.1 vocabulary)
                 claim.support.value,
                 claim.exposure.value,
-                None,
+                # P9-R3: the §22 delivery pointer the claim's exposure is
+                # attributed to (the teaching path's action_id; NULL for every
+                # producer that holds no §22 fact — the column was a literal
+                # None before, which made "not attributed" unrepresentable
+                # from the teaching path).
+                claim.exposure_estimate_id,
                 0.0,
                 "UNSPECIFIED",
                 claim.accuracy,
@@ -2274,7 +2279,17 @@ class _TeachingEvidenceCommitContext:
 
 
 def _claim_document(claim: EvidenceClaimView) -> dict[str, object]:
-    """One claim as canonical JSON data (enum words, never enum objects)."""
+    """One claim as canonical JSON data (enum words, never enum objects).
+
+    P9-R3 adds ``exposure_estimate_id``: the claim's §22 provenance pointer
+    has to survive the payload round-trip, because the commit path rebuilds
+    its claims **from the durable document** (``_claim_from_document``, the
+    inverse below) — a key left out here would be dropped before the row is
+    written, and the ``evidence_claim.exposure_estimate_id`` column would
+    stay NULL for every producer. The key is additive: every existing key's
+    value is untouched, and the inverse reads it tolerantly so a payload
+    written before this cut still parses (absent ⇒ ``None``).
+    """
 
     return {
         "accuracy": claim.accuracy,
@@ -2284,6 +2299,7 @@ def _claim_document(claim: EvidenceClaimView) -> dict[str, object]:
         "evidence_modality": claim.evidence_modality.value,
         "evaluator_confidence": claim.evaluator_confidence,
         "exposure": claim.exposure.value,
+        "exposure_estimate_id": claim.exposure_estimate_id,
         "opportunity_id": (
             None if claim.opportunity_id is None else str(claim.opportunity_id)
         ),
@@ -2303,13 +2319,20 @@ def _claim_document(claim: EvidenceClaimView) -> dict[str, object]:
 def _claim_from_document(document: Mapping[str, object]) -> EvidenceClaimView:
     """Rebuild one claim view from its payload document (the exact inverse
     of :func:`_claim_document`; an unknown word raises ValueError, which the
-    caller surfaces as a refusal — never a silent default)."""
+    caller surfaces as a refusal — never a silent default).
+
+    P9-R3's ``exposure_estimate_id`` is read tolerantly (``.get``): a payload
+    written before the key existed is still a legal document and rebuilds to
+    the field's own ``None`` — the durable shape evolves by addition, never
+    by refusing an older row.
+    """
 
     qualifiers = cast(Sequence[object], document["qualifiers"])
     accuracy = document["accuracy"]
     pragmatic_fit = document["pragmatic_fit"]
     opportunity_id = document["opportunity_id"]
     target_id = document["target_id"]
+    exposure_estimate_id = document.get("exposure_estimate_id")
     return EvidenceClaimView(
         evidence_claim_id=str(document["evidence_claim_id"]),
         claim_role=str(document["claim_role"]),
@@ -2339,6 +2362,11 @@ def _claim_from_document(document: Mapping[str, object]) -> EvidenceClaimView:
             else LearningOpportunityId(str(opportunity_id))
         ),
         target_id=None if target_id is None else str(target_id),
+        exposure_estimate_id=(
+            None
+            if exposure_estimate_id is None
+            else str(exposure_estimate_id)
+        ),
     )
 
 

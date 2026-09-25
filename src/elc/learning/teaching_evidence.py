@@ -208,6 +208,11 @@ def _claim(
             else LearningOpportunityId(source.opportunity_id)
         ),
         target_id=target_id,
+        # P9-R3: the teaching-side delivery pointer travels with the claim —
+        # a review's R3 seam is "the attempt AND the claim name no estimate".
+        # Non-teaching producers never reach this factory, so their claims
+        # keep the field's own None.
+        exposure_estimate_id=source.exposure_estimate_id,
     )
 
 
