@@ -6263,14 +6263,32 @@ class ConversationCoordinator:
         """The §22 estimate this attempt's exposure is attributed to (P9-R3).
 
         The id is the **action_id of the latest teaching delivery of this
-        moment** that has a durable ``exposure_estimate`` row — the action is
-        the estimate's identity (migration 0018 makes ``action_id`` its
-        primary key, and P9-1 registers ``exposure_estimate_id`` as "the
-        action whose estimate this is"; no second id is minted). "Latest" is
-        the caller's reading of the port's zero-interpretation order: the
-        final element of ``list_actions_for_moment`` — a moment's actions
-        are appended over its life (opening, then hints/retries/reveals), and
-        the delivery this attempt followed is the last one.
+        moment at the instant the value is resolved** that has a durable
+        ``exposure_estimate`` row — the action is the estimate's identity
+        (migration 0018 makes ``action_id`` its primary key, and P9-1
+        registers ``exposure_estimate_id`` as "the action whose estimate this
+        is"; no second id is minted). "Latest" is the caller's reading of the
+        port's zero-interpretation order: the final element of
+        ``list_actions_for_moment`` — a moment's actions are appended over its
+        life (opening, then hints/retries/reveals).
+
+        The resolution is **the moment's state at the call, not a property of
+        the attempt row** (review finding 4's narrowing): on a first write the
+        call happens before the turn's own next delivery, so the last action
+        is the delivery the attempt followed; a *re-entry* of the same turn
+        resolves whatever is latest by then — the same turn may already have
+        delivered a hint, in which case this helper would answer the hint
+        while the durable attempt still names the earlier action. That
+        divergence reaches no record today: a re-entry with a durable attempt
+        does not re-record the attempt row, and the evidence leg's replay is
+        refused before this value is used (``record_opportunity``'s
+        deterministic id is already taken / the proposal payload under its
+        stable id is immutable), so the fresh value is dropped with the
+        degraded leg. Revisit: ``record_opportunity``'s replay semantics
+        change to an idempotent ``Ok`` (or the evidence leg gains a second
+        writer) — then the re-entry path carries a *fresh* resolution and this
+        reading has to decide between the attempt's own delivery and the
+        moment's latest action.
 
         Every other shape answers ``None`` — the port is absent (no §22 face,
         so no row can be confirmed), the moment has no action, the latest

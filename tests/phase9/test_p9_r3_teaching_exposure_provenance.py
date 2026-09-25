@@ -176,6 +176,50 @@ class RefusingEstimateStore:
         return getattr(self._inner, name)
 
 
+class LegacyPayloadLearning:
+    """The real Learning controller, with the durable proposal's payload
+    rewritten to the **pre-P9-R3 shape** between the record and the commit
+    (review finding 1's shape: the document an ``app.db`` written before this
+    cut carries, without ``exposure_estimate_id``).
+
+    The chain is otherwise the shipped one: the real record face writes the
+    proposal, the row's payload is replaced by a document that never had the
+    key (canonical JSON, same keys minus one), and the real commit face then
+    rebuilds its claims from **that** row — which is exactly the inverse read
+    under test.
+    """
+
+    def __init__(self, inner: object, store: object, conn: sqlite3.Connection):
+        self._inner = inner
+        self._store = store
+        self._conn = conn
+        self.legacy_payloads: list[str] = []
+
+    def commit_teaching_evidence(self, proposal: object, **kwargs: object):
+        recorded = self._store.record_teaching_evidence_proposal(  # type: ignore[attr-defined]
+            proposal, **kwargs
+        )
+        if isinstance(recorded, Err):
+            return recorded
+        document = json.loads(recorded.value.payload)
+        for claim_document in document["claims"]:
+            claim_document.pop("exposure_estimate_id", None)
+        legacy = json.dumps(document, sort_keys=True, separators=(",", ":"))
+        self.legacy_payloads.append(legacy)
+        self._conn.execute(
+            "UPDATE teaching_evidence_proposal SET payload = ?"
+            " WHERE proposal_id = ?",
+            (legacy, recorded.value.proposal_id),
+        )
+        self._conn.commit()
+        return self._store.commit_teaching_evidence_proposal(  # type: ignore[attr-defined]
+            recorded.value.proposal_id
+        )
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._inner, name)
+
+
 def coord_for(
     p8: World,
     *,
@@ -552,6 +596,42 @@ def test_a_silent_evidence_claim_keeps_the_column_null(tmp_path: Path) -> None:
     assert rows(fw.path, "SELECT attempt_id FROM attempt_record") == []
 
 
+def test_a_payload_without_the_key_still_commits_and_reads_null(
+    tmp_path: Path,
+) -> None:
+    """The inverse's tolerant read (review finding 1): an ``app.db`` written
+    **before** this cut carries a proposal payload whose claim documents have
+    no ``exposure_estimate_id`` key. The real chain must still commit from
+    that durable row — the key's absence is a legal older document, never a
+    refusal — and the claim it writes records NULL (the field's own default),
+    while every other fact of the document round-trips.
+
+    ``LegacyPayloadLearning`` does the one thing the test needs: it lets the
+    shipped record face write the proposal, replaces the row's payload with
+    the same canonical document minus the key, and hands the commit to the
+    real face — so the rebuild under test is the shipped
+    ``_claim_from_document``, not a double.
+    """
+
+    fw = build_world(tmp_path / "world")
+    store = SqliteLearningStore(fw.p8.db, fw.p8.fence)
+    legacy = LegacyPayloadLearning(fw.p8.learning, store, fw.p8.db)
+    coordinator = coord_for(fw.p8, learning=legacy)
+
+    p8_begin_turn_ok(coordinator, "cmid-legacy-open")
+    assert isinstance(attempt_reply(coordinator, "cmid-legacy-attempt"), Ok)
+
+    assert len(legacy.legacy_payloads) == 1
+    assert "exposure_estimate_id" not in legacy.legacy_payloads[0]
+    assert rows(fw.path, "SELECT status FROM teaching_evidence_proposal") == [
+        ("COMMITTED",)
+    ]
+    claim = focus_claim(fw)
+    assert claim[9] is None, claim
+    assert claim[4] == "INDEPENDENT_PRODUCTION"  # the document round-tripped
+    assert attempt_row(fw)[4] is not None  # the attempt side is unaffected
+
+
 # ---------------------------------------------------------------------------
 # ② the two FULLs — a delivery fact and a ladder fact
 # ---------------------------------------------------------------------------
@@ -849,6 +929,63 @@ def test_the_read_face_answers_the_empty_tuple_for_an_unknown_moment(
     result = fw.p8.generation.list_actions_for_moment("tm-does-not-exist")
     assert isinstance(result, Ok), result
     assert result.value == ()
+
+
+def test_the_read_face_breaks_created_at_ties_by_action_id(
+    tmp_path: Path,
+) -> None:
+    """The declared order's **second half is real** (review finding 2): two
+    rows of one moment that share ``created_at`` come back in ``action_id``
+    order, not in the order they were inserted.
+
+    The tie rows are inserted ``zz`` first and ``aa`` second (the reverse of
+    the declared key) at one shared instant earlier than the chain's own
+    actions, so a read that ordered by ``created_at`` alone would return them
+    in rowid order and fail the assertion below; the shipped SQL is the only
+    thing that produces ``aa`` before ``zz``.
+    """
+
+    fw = build_world(tmp_path / "world")
+    open_then_attempt(fw, tag="tie")
+    moment_id = str(moment_row(fw)[0])
+    source = rows(
+        fw.path,
+        "SELECT turn_id, decision_cycle_id, owner_epoch FROM"
+        " generation_action_intent ORDER BY created_at, action_id",
+    )[0]
+    same_instant = "2026-09-24T08:00:00+00:00"
+    for action_id in ("ga-tie-zz", "ga-tie-aa"):
+        fw.db.execute(
+            "INSERT INTO generation_action_intent ("
+            " action_id, turn_id, decision_cycle_id, moment_id,"
+            " assistant_turn_id, action_type, generation_contract_id,"
+            " status, attempt_count, owner_epoch, created_at"
+            ") VALUES (?, ?, ?, ?, ?, 'TEACHING_HINT', 'gc-teaching-hint',"
+            " 'TERMINAL', 0, ?, ?)",
+            (
+                action_id,
+                str(source[0]),
+                str(source[1]),
+                moment_id,
+                f"aturn-{action_id}",
+                int(source[2]),
+                same_instant,
+            ),
+        )
+    fw.db.commit()
+
+    result = fw.p8.generation.list_actions_for_moment(moment_id)
+    assert isinstance(result, Ok), result
+    returned = [str(action.action_id) for action in result.value]
+
+    assert len(returned) == 4, returned
+    assert returned[:2] == ["ga-tie-aa", "ga-tie-zz"], returned
+    chain_ids = [
+        str(row[0])
+        for row in actions_of(fw, moment_id)
+        if not str(row[0]).startswith("ga-tie-")
+    ]
+    assert returned[2:] == chain_ids
 
 
 def test_the_provenance_names_the_delivery_the_attempt_followed_not_the_latest_now(

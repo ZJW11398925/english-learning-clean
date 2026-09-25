@@ -185,8 +185,15 @@ The clauses that are readings rather than quotable rules:
    server's own release fact. The refusal is the conservative reading (an
    acknowledgment is not evidence about an unreleased half — reading 10's
    injection, and this cut has no consumer of the column), and the tension is
-   registered rather than smoothed; P9-R3, which first reads these columns,
-   has to decide whether §13's sentence narrows or this reading does.
+   registered rather than smoothed. **P9-R3 read these columns and decided**
+   (review finding 2's truth value): §13's sentence narrows at the *claim*
+   boundary — an attempt's ``support_attribution_certainty`` stays
+   ``SERVER_SENT_UNCONFIRMED`` even when this estimate's ``certainty`` has
+   risen to ``CONFIRMED_RENDERED``, so this reading's refusal stands and a
+   raised estimate certainty remains a fact about the delivery record, never
+   a licence to lift the evidence attributed from it. The decision, its
+   reason (V1 has no real client; reading 7's level rule) and its Revisit are
+   stated on ``elc.teaching.flow.SERVER_SENT_UNCONFIRMED``.
 8. **``rendered_text_hash`` is carried, never compared.** No face in this cut
    computes a hash of the durable prefix, so the coverage question is decided
    by ``final_rendered`` alone; the hash stays the acknowledgment's own

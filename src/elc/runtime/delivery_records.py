@@ -175,9 +175,15 @@ quotation, and each names the condition that re-opens it.
    data with no foreign key) is the one column that names this record from
    outside, and this cut registers that the identity it carries **is the
    action_id** — the estimate's key — rather than changing 0008's column.
-   Revisit: a writer actually fills ``attempt_record.exposure_estimate_id``
-   (then that write's reader is the place the identity reading becomes
-   load-bearing).
+   **The writer this reading was waiting for has since landed (P9-R3)**: the
+   teaching reply path fills the column with the delivering action's
+   ``action_id`` (``elc.runtime.controller._teaching_exposure_estimate_id``)
+   and the same cut carries it on into the evidence claim, so the identity
+   reading is load-bearing on the teaching chain and the Revisit that stood
+   here ("a writer actually fills it") is closed. No writer is claimed for
+   the other arms of §17's '?': a producer that holds no §22 fact (the
+   silent-evidence and analysis claims) keeps NULL by the view field's own
+   ``None``.
 8. **``sent_prefix``'s empty string is the "nothing sent" spelling.** §22 gives
    the column no null, RA §17 makes the sent boundary the record's durable
    fact, and the empty string is a prefix of every string — which is exactly
