@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "elc"
 version = "0.1.0"
-description = "english-learning-clean V1 runtime — Phase 0-5 complete (conversation/persona/learning/teaching + relationship/episode projection + curriculum/content integration kernels), Phase 6 in progress"
+description = "english-learning-clean V1 runtime kernel — Phases 0-10 complete (conversation/persona/learning/teaching/relationship/user_config/scheduler/curriculum/content/planner/automatic-teaching/delivery-exposure/recovery); the real automatic-teaching rollout is held by its own gate (content readiness), and the end-user surface is not built yet"
 requires-python = ">=3.12"
 dependencies = []
 

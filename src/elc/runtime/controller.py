@@ -660,12 +660,14 @@ class StartupRecoveryOutcome:
 class RuntimeOrchestrator:
     """Sequencing, retry, recovery — owns no canonical truth.
 
-    Phase 0 twelve-domain skeleton kept for later phases. The single
-    working orchestrator facade of Phase 1 is :class:`ConversationCoordinator`
-    (below): every method here either points there or names the phase that
-    will implement it — there is deliberately no second live entry point.
-    tests/architecture Gate 1 (phase1_class_allowlist) pins exactly this
-    split: only ConversationCoordinator graduated from the skeleton.
+    Phase 0 twelve-domain skeleton, kept deliberately (tests/architecture
+    Gate 1 pins the split). The single working orchestrator facade of Phase 1
+    is :class:`ConversationCoordinator` (below): every method here either
+    points there or refuses because its face is a Phase 0 red-line skeleton —
+    there is deliberately no second live entry point. Gate 1
+    (phase1_class_allowlist) pins exactly this split: only
+    ConversationCoordinator graduated from the skeleton; the per-package live
+    faces are listed in ``tests/architecture/test_surface_census.py``.
     """
 
     def __init__(self) -> None:
