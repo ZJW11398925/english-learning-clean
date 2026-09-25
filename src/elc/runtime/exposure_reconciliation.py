@@ -67,17 +67,23 @@ with the durable one, so ``max`` equals ``level`` in all of them. The two arms
 where the released half is ahead of the record — the repair P9-R2 lands, reading
 11 — are:
 
-=====================  ================  =====  =====
-durable prefix         released prefix   level  max
-=====================  ================  =====  =====
-short of validated     covers validated  PART.  FULL
-empty                  non-empty         NONE   PART.
-=====================  ================  =====  =====
+=====================  ==================  =====  =====
+durable prefix         released prefix     level  max
+=====================  ==================  =====  =====
+short of validated     covers validated    PART.  FULL
+empty                  covers validated    NONE   FULL
+empty                  non-empty, short    NONE   PART.
+=====================  ==================  =====  =====
 
-In both, ``max`` is the higher of the two readings while ``exposure_level``
-does not move: the record still says what it says, and §14's "confirmed
-exposure where available, otherwise max-possible-exposure" reads a ceiling that
-cannot understate what the client may hold.
+(Review finding 1: the released level is decided by the released length alone —
+reading 11 — so an empty durable boundary with a released one that covers the
+validated text is ``NONE`` / ``FULL``, not ``NONE`` / ``PARTIAL``; the table
+said the latter until the P9-R2 disposition.)
+
+In all of them, ``max`` is the higher of the two readings while
+``exposure_level`` does not move: the record still says what it says, and §14's
+"confirmed exposure where available, otherwise max-possible-exposure" reads a
+ceiling that cannot understate what the client may hold.
 
 The clauses that are readings rather than quotable rules:
 
@@ -149,7 +155,12 @@ The clauses that are readings rather than quotable rules:
    conservative direction). The level a final acknowledgment confirms up to is
    the row's ``max_possible_exposure``; after reading 11 that column is the
    ceiling of what may have been released, which is what "everything the server
-   sent" means once the record is known to lag the release.
+   sent" means once the record is known to lag the release. (Review finding 6:
+   that the target is the ceiling rather than the level is this cut's reading —
+   neither DM §22's column list nor §13's block nor RA §14 states a
+   ``confirmed_exposure ≤ exposure_level`` ordering, and the raised row's target
+   equals §14's own no-acknowledgment fallback, so the evidence side sees one
+   value either way. Revisit: canonical states the ordering.)
    ``exposure_level`` and ``max_possible_exposure``
    never move: an acknowledgment changes what is *known*, never what was
    sent. Revisit: a cut shows an acknowledgment that can lower a column (then
@@ -166,7 +177,16 @@ The clauses that are readings rather than quotable rules:
    durable one is the record's own word about a send. Revisit: canonical
    requires an acknowledgment to be recorded as a contradiction of the delivery
    record (then that record is the place), or makes an acknowledgment evidence
-   about the released half (then this reading reopens).
+   about the released half (then this reading reopens). **One existing sentence
+   is already a candidate for that reopening** (review finding 2): STATE_MACHINES
+   §13's "有 ACK：提高 ``ExposureEstimate`` certainty" is unconditional, while
+   this reading refuses to raise ``certainty`` on the ``NONE``-level arm even
+   when the released half is non-empty and the acknowledgment agrees with the
+   server's own release fact. The refusal is the conservative reading (an
+   acknowledgment is not evidence about an unreleased half — reading 10's
+   injection, and this cut has no consumer of the column), and the tension is
+   registered rather than smoothed; P9-R3, which first reads these columns,
+   has to decide whether §13's sentence narrows or this reading does.
 8. **``rendered_text_hash`` is carried, never compared.** No face in this cut
    computes a hash of the durable prefix, so the coverage question is decided
    by ``final_rendered`` alone; the hash stays the acknowledgment's own
@@ -212,7 +232,13 @@ The clauses that are readings rather than quotable rules:
     released length ("the client boundary may hold more than the record shows
     (released 2 of 4 chars)"), placed **before** the no-acknowledgment tail so
     reading 5's tail swap keeps it: a refined row whose ceiling sits above its
-    level still explains itself. Revisit: canonical gives the released boundary
+    level still explains itself. **The repair's reach is in-process** (review
+    finding 3): the released half is a caller's fact and not a durable column,
+    so a face that reads the row alone — the startup recovery line above all —
+    falls back to the durable level, and a crash between the release and the
+    record still lands on the pre-repair reading after recovery. That limit is
+    this cut's, not a future wish: the Revisit below is what closes it.
+    Revisit: canonical gives the released boundary
     a durable column of its own (then this half stops being a caller's fact and
     becomes a row's).
 """
@@ -339,8 +365,11 @@ class DeliveryExposureFacts:
     alone — and the ceiling falls back to the durable level. ``""`` is a
     concrete fact (the boundary released nothing), and it is not the same fact
     as ``None`` even though the two agree on the row: a fallback and a
-    known-empty boundary both read conservatively, and this module states
-    which one it was rather than letting a reader guess.
+    known-empty boundary both read conservatively, and the **facts** state
+    which one it was rather than letting a reader guess. (That stating is the
+    facts object's, not the row's — review finding 4: the durable row does not
+    carry the distinction, and ``derivation_reason`` is byte-identical for the
+    two.)
     """
 
     terminal_state: str | None
