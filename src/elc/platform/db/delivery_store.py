@@ -658,6 +658,35 @@ class SqliteDeliveryRecordStore:
     ) -> Result[ServerDeliveryRecord | None]:
         return Ok(self._read_server_delivery(action_id))
 
+    def unterminal_delivery_records(
+        self, current_epoch: RuntimeEpoch
+    ) -> tuple[str, ...]:
+        """The unterminated old-epoch send read face (P10-0,
+        ``DeliveryRecordRecoverySource``; RUNTIME §22's recovery list).
+
+        Residue criterion, word for word from the port:
+        ``server_delivery_record.terminal_at IS NULL`` AND the owning action
+        carries an older epoch — reached through
+        ``server_delivery_record.action_id`` → ``generation_action_intent``,
+        the only owner_epoch projection a §22 row has (the row itself carries
+        no epoch column). Rows returned are *action ids*, §22's key.
+
+        A row with ``terminal_at`` set is frozen (the four advance
+        invariants' last clause) and a *current*-epoch send is live work, so
+        neither is residue. Reads only, in durable order; the apply face
+        (never blindly resend — the conservative reconciliation) is the
+        coordinator's.
+        """
+
+        rows = self._conn.execute(
+            "SELECT r.action_id FROM server_delivery_record r"
+            " JOIN generation_action_intent g ON g.action_id = r.action_id"
+            " WHERE g.owner_epoch != ? AND r.terminal_at IS NULL"
+            " ORDER BY r.started_at, r.action_id",
+            (current_epoch,),
+        ).fetchall()
+        return tuple(str(row[0]) for row in rows)
+
     def get_exposure_estimate(
         self, action_id: ActionId
     ) -> Result[ExposureEstimate | None]:

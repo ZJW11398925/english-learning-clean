@@ -299,7 +299,7 @@ class RecoveryAction:
     CP2→RESUME_ACTION_BY_STABLE_ACTION_ID, CP3 uncertain→
     CONSERVATIVE_DELIVERY_RECONCILIATION)."""
 
-    kind: str  # TURN | PROJECTION | LOCK | TEACHING
+    kind: str  # TURN | ACTION | MOMENT | ANALYSIS | DELIVERY | LOCK
     id: str
     action: str
 

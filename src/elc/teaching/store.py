@@ -1201,6 +1201,38 @@ class SqliteTeachingStore:
             (current_epoch,),
         ).fetchall()
 
+    def orphan_moment_ids(
+        self, current_epoch: RuntimeEpoch
+    ) -> tuple[str, ...]:
+        """The old-epoch nonterminal moment read face (P10-0,
+        ``TeachingMomentRecoverySource``; IP §11's TeachingMoment class).
+
+        Residue criterion, word for word from the port: the moment's
+        ``lifecycle_state`` is neither ``TEACHING_TERMINAL`` nor ``CLOSED``
+        **and** its owning turn — reached through ``teaching_moment`` →
+        ``decision_cycle`` → ``turn_record``, the same owner_epoch projection
+        the orphan-lock read uses (P10-0 D; a lease has no durable row) —
+        carries an older epoch. Stated on the moment, not on the lock, on
+        purpose: a moment whose lock is already gone is exactly the residue
+        the LOCK read cannot see, and a moment that still holds one is named
+        by both reads (two durable facts, two apply faces).
+
+        Reads only, in durable order; nothing here writes and nothing here
+        decides what to do with the residue.
+        """
+
+        rows = self._conn.execute(
+            "SELECT m.moment_id FROM teaching_moment m"
+            " JOIN decision_cycle d ON d.decision_cycle_id ="
+            "      m.decision_cycle_id"
+            " JOIN turn_record t ON t.turn_id = d.turn_id"
+            " WHERE t.owner_epoch != ?"
+            " AND m.lifecycle_state NOT IN ('TEACHING_TERMINAL','CLOSED')"
+            " ORDER BY m.created_at, m.moment_id",
+            (current_epoch,),
+        ).fetchall()
+        return tuple(str(row[0]) for row in rows)
+
     # -- P3-1B reads ---------------------------------------------------------
 
     def count_attempts(self, moment_id: MomentId) -> int:

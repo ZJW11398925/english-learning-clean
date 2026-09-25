@@ -367,6 +367,27 @@ class SqliteGenerationStore:
         ).fetchall()
         return tuple(self._record(row) for row in rows)
 
+    def orphan_generation_actions(
+        self, current_epoch: RuntimeEpoch
+    ) -> tuple[str, ...]:
+        """The recovery scan's action-id read face (P10-0,
+        ``GenerationActionRecoverySource``; IP §11's GenerationActionIntent
+        class).
+
+        One query, two faces: this is the record-returning
+        :meth:`recoverable_generation_actions` projected to the ids the
+        startup plan carries, so the plan and any future apply face can never
+        disagree about which action is residue. Residue criterion (the port's
+        own words): ``owner_epoch != current`` AND ``status != 'TERMINAL'`` —
+        a *current*-epoch row is live work and a TERMINAL one is over. Reads
+        only; the apply face is the coordinator's (RUNTIME §22/§24.1).
+        """
+
+        return tuple(
+            str(record.action_id)
+            for record in self.recoverable_generation_actions(current_epoch)
+        )
+
     # -- internals -----------------------------------------------------------
 
     def _action_row(self, action_id: ActionId) -> sqlite3.Row | None:

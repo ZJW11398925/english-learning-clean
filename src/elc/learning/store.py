@@ -173,6 +173,7 @@ from elc.platform.types import (
     MomentId,
     Ok,
     Result,
+    RuntimeEpoch,
     TargetId,
     TurnId,
     UserTurnId,
@@ -1714,6 +1715,34 @@ class SqliteLearningStore:
             DETERMINISTIC_ANALYSIS_PRODUCER_ID,
         )
         return Ok(None if row is None else self._artifact_record(row))
+
+    def pending_analysis_artifacts(
+        self, current_epoch: RuntimeEpoch
+    ) -> tuple[str, ...]:
+        """The pending old-epoch analysis read face (P10-0,
+        ``AnalysisArtifactRecoverySource``; IP §11's pending AnalysisArtifact
+        class).
+
+        Residue criterion, word for word from the port: ``status IN
+        ('PRODUCED', 'COMMIT_PENDING')`` AND the artifact's turn carries an
+        older epoch (the ``analysis_artifact.turn_id`` → ``turn_record``
+        owner_epoch projection — every §22/§24.1 owner_epoch projection is a
+        turn's). ``COMMITTED`` / ``REJECTED`` / ``SUPERSEDED`` are over and a
+        *current*-epoch row is live work, so neither is residue.
+
+        Reads only, in durable order; the apply face (the turn's own entry
+        re-entry replaying the leg idempotently) is the coordinator's.
+        """
+
+        rows = self._conn.execute(
+            "SELECT a.analysis_id FROM analysis_artifact a"
+            " JOIN turn_record t ON t.turn_id = a.turn_id"
+            " WHERE t.owner_epoch != ?"
+            " AND a.status IN ('PRODUCED','COMMIT_PENDING')"
+            " ORDER BY a.created_at, a.analysis_id",
+            (current_epoch,),
+        ).fetchall()
+        return tuple(str(row[0]) for row in rows)
 
     def get_evidence_group(
         self, evidence_group_id: EvidenceGroupId
