@@ -86,8 +86,10 @@ method names are the stable part.
       ``request_teaching`` / ``respond_to_teaching``
       where: controller.py:3878-3885 and :5303-5310 (replay/repair of the
       frozen cycle); ``begin_turn`` refuses such a turn instead
-      (controller.py:1394-1400 for a command payload, :1461-1465 for the
-      status)
+      (controller.py:1394-1400 for a command payload, :1449-1453 on the
+      learning-assembled status arm and :1461-1465 on the learning-less arm —
+      review finding 1: both status arms refuse, and the learning-assembled
+      one is the arm a standard assembly actually reaches)
 
     word: RESUME_ACTION_BY_STABLE_ACTION_ID
       executor: 入口重入 (entry re-entry) — ``begin_turn``'s claim branch
@@ -118,6 +120,10 @@ produces today (a whole-repo read, p10-0):
     word: RECEIVED
       writer: 无 (kept in the §10 vocabulary; ``recovery_disposition`` maps
       it to ``RESUME_ANALYSIS``, the CP0 slot)
+      entry: 无 either (review finding 2: the disclosure is symmetric with
+      ``FAILED_RECOVERABLE``'s — the ``begin_turn`` re-entry takes
+      USER_COMMITTED / ANALYZING / GENERATING, so the CP0 slot admits this
+      word no more than it admits ``FAILED_RECOVERABLE``)
       Revisit: a writer appears
 
     word: DELIVERY_TERMINAL
@@ -282,7 +288,11 @@ class GenerationActionRecoverySource(Protocol):
     module docstring's executor table gives the anchor. **Not scanning it**:
     the row is invisible to the startup plan, so nothing names the work a
     crash left half-dispatched; the only path that ever picks it up is the
-    user re-sending the same client_message_id.
+    user re-sending the same client_message_id. **Caveat** (review finding
+    3): this criterion carries no turn-terminal predicate, so a residue whose
+    owning turn has already terminalized is still named even though the
+    declared executor refuses exactly that turn — the plan item is a durable
+    fact about the action row, never a promise that re-entry will take it.
     """
 
     def orphan_generation_actions(
@@ -344,7 +354,10 @@ class AnalysisArtifactRecoverySource(Protocol):
     analysis 继续"; executor table). **Not scanning it**: the pending row is
     never named as old-epoch work, so a plan cannot say which analysis an
     interrupted epoch left behind; the leg only runs again if the turn is
-    re-entered.
+    re-entered. **Caveat** (review finding 3): like the action scan, this
+    criterion carries no turn-terminal predicate — a pending artifact whose
+    turn already terminalized is still named, and the declared executor
+    refuses that turn; the item is a fact about the artifact row.
     """
 
     def pending_analysis_artifacts(
