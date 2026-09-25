@@ -35,6 +35,7 @@ from elc.persona.openai_provider import (
     REASON_TIMEOUT,
     REASON_TRANSPORT_ERROR,
     OpenAICompatibleProvider,
+    insecure_http_destination,
 )
 from elc.persona.types import CompiledPrompt, ProviderOutput
 from elc.platform.secrets import EnvSecretSource, FileSecretSource
@@ -286,7 +287,9 @@ def test_the_real_egress_path_is_executed_and_its_properties_hold(
 
 def test_the_redirect_handler_refuses_every_3xx_urllib_would_follow() -> None:
     """EXT-P1-01: the handler urllib consults raises instead of answering a new
-    request — for every code urllib itself follows for a POST."""
+    request — for the codes urllib itself follows in answer to a POST
+    (301/302/303) and for the ones it already refuses (307/308; prep-1R review
+    F3: the earlier docstring said urllib followed all five for a POST)."""
 
     request = urllib.request.Request(
         "https://offline.invalid/v1/chat/completions",
@@ -373,6 +376,84 @@ def test_loopback_plaintext_needs_no_opt_in() -> None:
         output = provider_over(post, base_url=base_url).call(compiled())
         assert (output.text, output.error) == (REPLY_TEXT, None), base_url
         assert post.call_count == 1, base_url
+
+
+def test_the_loopback_test_reads_addresses_not_name_spellings() -> None:
+    """prep-1R review F1/F6: "this machine" is decided by the address parser.
+
+    The version this replaces tested ``host.startswith("127.")``, so a
+    registrable *name* that merely begins with a loopback address
+    (``127.0.0.1.evil.example``) slipped through the guard and took the key out
+    of the machine in the clear. Only ``localhost`` (exact) and loopback
+    **address literals** count now — and the refused vectors below are the pins
+    the earlier cut lacked (its one ``127.`` vector was an address either way).
+    """
+
+    refused = (
+        "http://127.0.0.1.evil.example/v1",
+        "http://127.evil.example/v1",
+        "http://localhost.evil.example/v1",
+        "http://127.0.0.1.evil.example:8080/v1",
+        "http://128.0.0.1/v1",  # off the loopback block, spelled as an address
+    )
+    for base_url in refused:
+        assert insecure_http_destination(base_url) is True, base_url
+        post = RecordingPost(payload=completion())
+        output = provider_over(post, base_url=base_url).call(compiled())
+        assert (output.text, output.error) == (None, REASON_CLEARTEXT_HTTP), base_url
+        assert post.call_count == 0, base_url
+
+    allowed = (
+        "http://localhost/v1",
+        "http://127.0.0.1:11434/v1",
+        "http://127.255.255.254/v1",  # still 127.0.0.0/8, read as an address
+        "http://[::1]:11434/v1",
+        "http://[0:0:0:0:0:0:0:1]/v1",  # the same ::1, long spelling
+    )
+    for base_url in allowed:
+        assert insecure_http_destination(base_url) is False, base_url
+        post = RecordingPost(payload=completion())
+        output = provider_over(post, base_url=base_url).call(compiled())
+        assert (output.text, output.error) == (REPLY_TEXT, None), base_url
+        assert post.call_count == 1, base_url
+
+
+def test_an_unparseable_target_is_refused_rather_than_raising() -> None:
+    """prep-1R review F2: the policy probe must not be a new raise.
+
+    ``urllib.parse.urlsplit("http://[::1")`` raises ``ValueError``; the parent
+    commit answered such a target ``transport-error`` from the real path, and a
+    policy check that let the parse error escape would be a contract regression
+    (``failure is a value``) as well as a CLI traceback. Fail closed: an
+    unparseable target is refused like a plaintext off-machine one.
+    """
+
+    assert insecure_http_destination("http://[::1") is True
+    post = RecordingPost(payload=completion())
+    secrets = _CountingSecret()
+    provider = OpenAICompatibleProvider(
+        config(base_url="http://[::1"), secrets, transport=post
+    )
+    output = provider.call(compiled())  # must not raise
+    assert (output.text, output.error) == (None, REASON_CLEARTEXT_HTTP)
+    assert post.call_count == 0
+    assert secrets.resolved == 0
+
+
+def test_a_malformed_2xx_payload_is_a_value_not_a_raise() -> None:
+    """prep-1R review F2 (second half): the ceiling re-check must not raise on
+    a transport that hands over the wrong shape.
+
+    ``(500, None)`` is answered with its status, ``(200, None)`` with a
+    transport failure — the parent commit's "failure is a value" for exactly
+    these inputs, which the first version of the re-check broke with a
+    ``TypeError``.
+    """
+
+    for status, expected in ((500, "http-500"), (200, REASON_TRANSPORT_ERROR)):
+        post = RecordingPost(status=status, payload=None)  # type: ignore[arg-type]
+        output = provider_over(post).call(compiled())
+        assert (output.text, output.error) == (None, expected), status
 
 
 def test_https_may_name_any_host() -> None:

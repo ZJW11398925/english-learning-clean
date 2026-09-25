@@ -31,6 +31,56 @@ def run(argv: list[str], **kwargs: object) -> tuple[int, str, str]:
     return code, out.getvalue(), err.getvalue()
 
 
+def _call_surface(tree: ast.AST) -> tuple[set[str], set[str], set[str]]:
+    """``(bare calls, dotted calls, attribute names)`` of one syntax tree.
+
+    ``_opener()`` lands in *bare calls*, ``urllib.request.build_opener(...)`` in
+    *dotted calls*, and ``_opener().open(...)`` contributes ``"open"`` to
+    *attribute names* — enough to pin the egress posture structurally, without
+    letting prose satisfy or break the pin (prep-1R review F4).
+    """
+
+    bare: set[str] = set()
+    dotted: set[str] = set()
+    attrs: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Name):
+            bare.add(func.id)
+            continue
+        if not isinstance(func, ast.Attribute):
+            continue
+        attrs.add(func.attr)
+        parts = [func.attr]
+        root: ast.expr = func.value
+        while isinstance(root, ast.Attribute):
+            parts.append(root.attr)
+            root = root.value
+        if isinstance(root, ast.Name):
+            parts.append(root.id)
+        dotted.add(".".join(reversed(parts)))
+    return bare, dotted, attrs
+
+
+def _build_opener_takes_no_redirects(tree: ast.AST) -> bool:
+    """Does some ``...build_opener(<no-redirects handler>)`` call exist?
+    (Any spelling of the handler name; the handler class itself is pinned by
+    the adapter's own tests.)"""
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if not (isinstance(func, ast.Attribute) and func.attr == "build_opener"):
+            continue
+        for argument in node.args:
+            if isinstance(argument, ast.Name) and argument.id == "_NoRedirects":
+                return True
+    return False
+
+
 def test_usage_errors_are_human_and_non_zero(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -168,21 +218,22 @@ def test_the_only_egress_point_and_no_server() -> None:
 
     assert forbidden == set()
     # Negative control, symbol level: the one module that may reach the network
-    # imports urllib.request and really calls the opener it built — removing
-    # either the import or the call turns this red.
+    # imports urllib.request, builds its own opener and calls it — asserted over
+    # the **syntax tree**, so a mention of any of these names in prose neither
+    # satisfies nor breaks the pin (prep-1R review F4: the first version's
+    # substring checks made a docstring sentence able to turn this red).
     assert urllib_request_importers == {"persona/openai_provider.py"}
-    adapter_text = (SRC_ROOT / "persona" / "openai_provider.py").read_text(
-        encoding="utf-8"
+    adapter_tree = ast.parse(
+        (SRC_ROOT / "persona" / "openai_provider.py").read_text(encoding="utf-8")
     )
-    assert "_opener().open(" in adapter_text
-    assert "urllib.request.urlopen(" not in adapter_text
-    # prep-1R: the egress posture is structural too — the module builds its own
-    # redirect-refusing opener (never the process-wide one) and marks the
-    # Authorization header unredirected. Mentions in prose are fine; the call
-    # forms are what these two assert.
-    assert "build_opener(_NoRedirects)" in adapter_text
-    assert "install_opener(" not in adapter_text
-    assert "add_unredirected_header(" in adapter_text
+    bare_calls, dotted_calls, attribute_names = _call_surface(adapter_tree)
+    assert "_opener" in bare_calls  # the module's own opener factory is used
+    assert "open" in attribute_names  # ...as an opener call, not a global one
+    assert "urlopen" not in attribute_names  # never urllib.request.urlopen(...)
+    assert "install_opener" not in attribute_names  # never the process-wide one
+    assert "add_unredirected_header" in attribute_names
+    assert "urllib.request.build_opener" in dotted_calls
+    assert _build_opener_takes_no_redirects(adapter_tree)
 
 
 def test_a_plaintext_base_url_off_this_machine_is_refused_with_a_sentence(
@@ -207,6 +258,35 @@ def test_a_plaintext_base_url_off_this_machine_is_refused_with_a_sentence(
         stdin=io.StringIO(""),
     )
     assert code == 2
+    assert "--allow-insecure-http" in err
+    assert not (tmp_path / "app.db").exists()
+
+
+def test_a_malformed_base_url_is_a_sentence_not_a_traceback(
+    tmp_path: Path,
+) -> None:
+    """prep-1R review F2, the operator's half: ``urlsplit`` refuses
+    ``http://[::1``, and the pre-check must answer the way it answers every
+    other refused destination — a sentence and exit 2 — rather than letting a
+    ``ValueError`` traceback out of ``main`` (the first version did exactly
+    that)."""
+
+    code, _, err = run(
+        [
+            "chat",
+            "--app-db",
+            str(tmp_path / "app.db"),
+            "--base-url",
+            "http://[::1",
+            "--model",
+            "offline-model",
+            "--api-key-env",
+            "PREP1_UNSET_KEY_VAR",
+        ],
+        stdin=io.StringIO(""),
+    )
+    assert code == 2
+    assert "Traceback" not in err
     assert "--allow-insecure-http" in err
     assert not (tmp_path / "app.db").exists()
 

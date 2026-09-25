@@ -55,6 +55,7 @@ The call runs outside any DB transaction (RA §24.1; R-INV-004):
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import urllib.error
 import urllib.parse
@@ -103,9 +104,10 @@ REASON_RESPONSE_TOO_LARGE = "response-too-large"
 #: completion, not a file transfer.
 MAX_PROVIDER_RESPONSE_BYTES = 4 * 1024 * 1024
 
-#: Plaintext ``http://`` is accepted on these host names; the ``127.`` prefix
-#: test in :func:`insecure_http_destination` covers the rest of 127.0.0.0/8.
-_LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+#: Plaintext ``http://`` is accepted on this host name; every loopback
+#: **address literal** (``127.0.0.0/8``, ``::1`` and its long spellings) is
+#: recognized by :func:`_is_local_host` through the address parser instead.
+_LOOPBACK_HOSTS = frozenset({"localhost"})
 
 #: The §11 OpenAI-compatible request path, appended to ``base_url``.
 CHAT_COMPLETIONS_PATH = "/chat/completions"
@@ -121,19 +123,45 @@ def insecure_http_destination(base_url: str) -> bool:
     """Is ``base_url`` plaintext ``http://`` **off this machine**? (EXT-P1-02)
 
     ``https`` is never insecure; ``http`` is acceptable exactly on this machine
-    (``localhost`` / ``127.0.0.0/8`` / ``::1``) and nowhere else — the host is
+    (``localhost`` or a loopback **address**) and nowhere else — the host is
     read lowercased and without its port by :func:`urllib.parse.urlsplit`, so a
     userinfo prefix cannot disguise a foreign host. The provider reads this one
     predicate for its ``cleartext-http`` value and the CLI reads it for the
     sentence naming ``--allow-insecure-http``: the two faces cannot disagree
     about what "off this machine" means.
+
+    Two fail-closed readings (prep-1R review F1/F2): "this machine" is decided
+    by the address parser, never by a name's spelling — a resolvable name that
+    merely *starts* with a loopback address (``127.0.0.1.evil.example``) is off
+    this machine — and a target the URL parser refuses outright
+    (``http://[::1``) is treated the same way rather than raising.
     """
 
-    parts = urllib.parse.urlsplit(base_url)
+    try:
+        parts = urllib.parse.urlsplit(base_url)
+    except ValueError:
+        return True
     if parts.scheme.lower() != "http":
         return False
-    host = parts.hostname or ""
-    return host not in _LOOPBACK_HOSTS and not host.startswith("127.")
+    return not _is_local_host(parts.hostname or "")
+
+
+def _is_local_host(host: str) -> bool:
+    """``localhost`` or a loopback **address literal** — never a DNS name.
+
+    ``127.0.0.1.evil.example`` and ``127.evil.example`` are names, not
+    addresses: only the address parser can tell, so no string prefix is used
+    here (prep-1R review F1 — the spelling test this replaces let a
+    registrable name through the guard).
+    """
+
+    lowered = host.lower()
+    if lowered in _LOOPBACK_HOSTS:
+        return True
+    try:
+        return ipaddress.ip_address(lowered).is_loopback
+    except ValueError:
+        return False
 
 
 class HttpPost(Protocol):
@@ -144,8 +172,10 @@ class HttpPost(Protocol):
     ``timeout`` reason, any other exception becomes ``transport-error``. The
     default is :func:`_urllib_post` (redirect-refusing, header-splitting and
     read-bounded); tests inject a recording callable. The ceiling is re-checked
-    once more on whatever a transport returns, so an injected callable cannot
-    hand the adapter an unbounded body either.
+    once more on whatever a transport returns, so an oversized 2xx answer is
+    refused as a value even when an injected callable hands it over — the read
+    bound itself belongs to the real transport (prep-1R review INFO-2: the
+    re-check is a value-level refusal, not a memory bound for injected ones).
     """
 
     def __call__(
@@ -238,12 +268,23 @@ class OpenAICompatibleProvider:
             return ProviderOutput(text=None, error=REASON_TIMEOUT)
         except Exception:  # noqa: BLE001 — the transport boundary: values, not raises
             return ProviderOutput(text=None, error=REASON_TRANSPORT_ERROR)
+        if not 200 <= int(status) < 300:
+            # The status word comes first: the real transport never reads a
+            # non-2xx body, so an oversized one cannot arrive here as a shape the
+            # ceiling applies to (prep-1R review INFO-1 — the order says which
+            # fact wins, and `http-<status>` wins).
+            return ProviderOutput(text=None, error=http_reason(status))
+        if not isinstance(payload, (bytes, bytearray)):
+            # A 2xx answer that is not bytes at all violates the transport
+            # contract; answered as a transport failure rather than raising
+            # (prep-1R review F2 — the ceiling check used to raise TypeError on
+            # exactly this input).
+            return ProviderOutput(text=None, error=REASON_TRANSPORT_ERROR)
         if len(payload) > MAX_PROVIDER_RESPONSE_BYTES:
             # The real transport stops reading at the ceiling; restated here so
-            # an injected transport cannot feed the adapter an unbounded body.
+            # an injected transport cannot hand the adapter an oversized body as
+            # a value (the read bound itself belongs to the real transport).
             return ProviderOutput(text=None, error=REASON_RESPONSE_TOO_LARGE)
-        if not 200 <= int(status) < 300:
-            return ProviderOutput(text=None, error=http_reason(status))
         output = _parse_success(payload)
         if output.text is not None and key in output.text:
             # A hostile 2xx that echoes the Authorization header would smuggle
@@ -315,13 +356,16 @@ class _ResponseTooLarge(Exception):
 class _NoRedirects(urllib.request.HTTPRedirectHandler):
     """A redirect handler that refuses to follow: every 3xx is an error.
 
-    urllib's default follows 301/302/303/307/308 for a POST and re-sends the
+    urllib's default follows 301/302/303 in answer to a POST (and, for
+    ``GET``/``HEAD``, 307/308 too — a POST answering 307/308 already refuses
+    inside ``HTTPRedirectHandler`` itself; prep-1R review F3) and re-sends the
     request — ``Authorization`` header included — to whatever host the answer's
     ``Location`` names. A BYOK key must never be replayed to a destination this
     adapter did not choose (EXT-P1-01), so the redirect becomes an
     :class:`urllib.error.HTTPError` here, which :func:`_urllib_post` turns into
     the ordinary ``(status, b"")`` shape the adapter reports as
-    ``http-<status>``.
+    ``http-<status>``. This handler is a superset of urllib's own posture: it
+    refuses the codes urllib would have followed *and* the ones it would not.
     """
 
     def redirect_request(
