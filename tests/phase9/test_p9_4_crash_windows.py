@@ -654,6 +654,55 @@ def test_the_repair_leaves_a_durable_exposure_event_alone(
     assert _turn(crash_world.db, turn_id) == ("COMPLETED", "REPLIED_FULL")
 
 
+def test_a_teaching_residue_that_presented_nothing_owes_no_exposure_event(
+    crash_world: CrashWorld,
+) -> None:
+    """The §20 predicate's neglected arm (review F3): the event follows a
+    **presentation**, and a teaching action whose transcript is absent is not
+    one — the repair writes nothing.
+
+    The world is forced, and the test says so: no shipped writer leaves a
+    teaching action ``TERMINAL`` with its transcript gone (the teaching leg is
+    ``BUFFERED_VALIDATED``, so it canonicalizes before ``complete_delivery``),
+    and this face holds no §22 row either. The shape is exactly the one the
+    predicate is defined over — a teaching kind, a durable moment, an empty
+    prefix and no transcript — so this pins the predicate
+    (``_ensure_exposure_once(presented=…)``) where the neighboring tests pin
+    its producers: the delivered opening owes ``teaching_presented``, this one
+    owes none, and the two together are what makes the flag load-bearing.
+    """
+
+    turn_id, _action_id, _moment_id = _crash_after_cp3(crash_world)
+    assert count_events(crash_world.db) == 0
+    assert crash_world.db.execute(
+        "SELECT COUNT(*) FROM server_delivery_record"
+    ).fetchone()[0] == 0  # the buffered face keeps no §22 row (empty prefix)
+    # the forced world: the transcript the §20 rule keys on is gone
+    crash_world.db.execute(
+        "DELETE FROM assistant_turn WHERE turn_id = ?", (turn_id,)
+    )
+    crash_world.db.commit()
+
+    result = teaching_coordinator(crash_world).begin_turn(
+        _command("cmid-p9-4-cp3")
+    )
+    assert isinstance(result, Ok), result
+    reconciled = result.value
+    assert reconciled.turn_id == turn_id
+    assert reconciled.outcome == "NO_ASSISTANT_OUTPUT"
+    assert reconciled.reply_text is None
+    assert reconciled.ledger_event is None
+    assert reconciled.ledger_failure is None
+    assert _turn(crash_world.db, turn_id) == (
+        "COMPLETED",
+        "NO_ASSISTANT_OUTPUT",
+    )
+    assert crash_world.db.execute(
+        "SELECT COUNT(*) FROM assistant_turn"
+    ).fetchone()[0] == 0
+    assert count_events(crash_world.db) == 0  # no presentation, no §20 event
+
+
 # -- ② the CP2 OPENING residue ------------------------------------------------
 
 

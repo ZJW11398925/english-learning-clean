@@ -326,8 +326,11 @@ def test_the_deleter_is_the_module_that_deletes_them() -> None:
     # Its refinement face (``refine_exposure_estimate``) is the one statement
     # that moves an already-durable estimate, and it moves exactly two columns
     # upward (certainty / confirmed_exposure) — the port's judgement 11, whose
-    # own suite pins the refusal arms. The other three tables stay append-only.
+    # own suite pins the refusal arms. The other three tables stay append-only,
+    # and each of the three has its own pin: the acknowledgment below, and the
+    # two the loop covers.
     assert appender["exposure_estimate"] == ("INSERT", "UPDATE")
+    assert appender["client_render_ack"] == ("INSERT",)
     for table in TABLES[3:]:
         assert appender[table] == ("INSERT",), table
 

@@ -319,12 +319,20 @@ class TurnCompletion:
 
     ``delivery_state`` / ``delivery_failure_reason`` are the P9-2 streamed
     delivery's own two (RUNTIME §13 GUARDED_STREAM): the §13 terminal word the
-    delivery froze at, and the readable reason when the delivery did not reach
-    ``SENT_COMPLETE`` (a stopped source, a refused chunk, a refused transport,
-    a refused record write) — ``None`` when nothing went wrong. They stay
-    ``None`` on every ``BUFFERED_VALIDATED`` finalization (§13's other mode
-    declares its word on the request, and this cut changes no line of that
-    path). ``reply_text`` is the **prefix actually sent** on a streamed
+    delivery froze at, and the delivery side's note of any non-fatal but
+    visible secondary failure — the delivery did not reach ``SENT_COMPLETE``
+    (a stopped source, a refused chunk, a refused transport, a refused record
+    write, and, on the streamed face, the §21.1 guard row's own refused write
+    joined onto the invalidation reason), **or** it did reach it and a write
+    beside it was refused (P9-4's §22 initial estimate: a ``SENT_COMPLETE``
+    delivery that ends ``REPLIED_FULL`` can still carry the note — both
+    delivery faces join it here, and the buffered teaching leg reads it back
+    off this field). ``None`` when nothing went wrong; §20's ledger write and
+    the buffered face's §21.1 note keep ``ledger_failure`` as their own
+    channel. ``delivery_failure_reason`` stays ``None`` on every
+    ``BUFFERED_VALIDATED`` finalization whose estimate write succeeded (§13's
+    other mode declares its word on the request, and this cut changes no line
+    of that path). ``reply_text`` is the **prefix actually sent** on a streamed
     delivery, so the two fields and the text never contradict each other: a
     partial delivery reports ``SENT_PARTIAL`` with its reason beside the exact
     prefix the client received.

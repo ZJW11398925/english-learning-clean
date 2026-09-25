@@ -46,13 +46,16 @@ here: no acknowledgment has arrived when the row is first written).
 ``SENT_COMPLETE``* non-empty  PART.  PART.  NONE   ``SERVER_SENT_UNCONFIRMED``
 ``SENT_PARTIAL``   non-empty  PART.  PART.  NONE   ``SERVER_SENT_UNCONFIRMED``
 ``CANCELLED``      non-empty  PART.  PART.  NONE   ``SERVER_SENT_UNCONFIRMED``
-``FAILED``         any        NONE   NONE   NONE   ``SERVER_SENT_UNCONFIRMED``
+``FAILED``         non-empty  PART.  PART.  NONE   ``SERVER_SENT_UNCONFIRMED``
+``FAILED``         empty      NONE   NONE   NONE   ``SERVER_SENT_UNCONFIRMED``
 no row             —          NONE   NONE   NONE   ``UNKNOWN``
 any (row)          empty      NONE   NONE   NONE   ``SERVER_SENT_UNCONFIRMED``
 ===============  =========  =====  =====  =====  ==========
 
 ``*`` the prefix is shorter than a validated length the caller *does* hold
-(reading 1). Every row's ``certainty`` is
+(reading 1). ``FAILED`` is spelled out in both prefix shapes because reading 3
+is about it: its empty arm is the general empty row's rule, stated again where
+that reading names it. Every row's ``certainty`` is
 :data:`~elc.teaching.types.ExposureEstimateCertainty`'s word and every level is
 :data:`~elc.teaching.types.AnswerExposureState`'s; ``conf.`` is
 ``confirmed_exposure``.
@@ -74,16 +77,29 @@ The clauses that are readings rather than quotable rules:
    transcript is canonicalized from, and this derivation follows the same
    boundary — a word with nothing behind it is not exposure. This is the row
    P9-2 registered ("the send began and its record was lost") and it lands as
-   ``NONE`` rather than as a smoothing of the word. Revisit: canonical gives
-   that shape a state word of its own.
-3. **``FAILED`` is ``NONE`` even when a prefix is durable.** The two shipped
-   writers cannot produce that pair (the driver answers ``FAILED`` only when
-   nothing was released, and a reconstructed failure that contradicts the
-   durable prefix is refused by the record face) — so the arm is registered,
-   not exercised, and it takes ``PARTIAL``: a boundary the record holds is
-   text the client received, whatever word the run lost. Revisit: a writer
-   produces the pair (then the word and the boundary need reconciling at that
-   writer, not here).
+   ``NONE`` rather than as a smoothing of the word. The empty arm is checked
+   **first**, so ``CANCELLED`` with nothing released reads like any other empty
+   word — and the *turn outcome* of that shape is the one place two shipped
+   faces are registered as diverging: the live barge-in arms
+   (``elc.runtime.controller.finalize_streamed_delivery``'s interrupt stop,
+   and the guard-invalidated faces reading ``_guard_invalidation_outcome``)
+   keep ``CANCELLED_BY_USER`` for a cancellation the user's own act caused
+   (their act is the fact, prefix or none), while the crash repair's
+   empty-first rule (``_reconciled_turn_outcome``) answers
+   ``NO_ASSISTANT_OUTPUT`` (the crash left no record of *which* stop it was,
+   and the repair invents no user act). This module reads the boundary only —
+   ``NONE`` under either reading. Revisit: canonical gives that shape a state
+   word of its own.
+3. **``FAILED`` with a non-empty prefix is ``PARTIAL``; its ``NONE`` needs the
+   empty arm.** The two shipped writers cannot produce the pair "``FAILED``
+   with a durable prefix" (the driver answers ``FAILED`` only when nothing was
+   released, and a reconstructed failure that contradicts the durable prefix is
+   refused by the record face) — so that arm is registered, not exercised, and
+   it takes ``PARTIAL``: a boundary the record holds is text the client
+   received, whatever word the run lost. ``FAILED`` with an empty prefix takes
+   ``NONE`` the same way every other empty word does (reading 2's first-ness,
+   not a rule of its own). Revisit: a writer produces the prefixed pair (then
+   the word and the boundary need reconciling at that writer, not here).
 4. **``send_attempted`` is the only thing that separates the two certainty
    words at derivation time.** ``SERVER_SENT_UNCONFIRMED`` is what the server
    knows when it *did* try to send (a row exists and the send began);
