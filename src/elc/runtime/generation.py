@@ -215,6 +215,21 @@ class GenerationActionStore(Protocol):
     ) -> Result[GenerationActionIntentRecord | None]:
         ...
 
+    def list_actions_for_moment(
+        self, moment_id: str
+    ) -> Result[tuple[GenerationActionIntentRecord, ...]]:
+        """Every action one moment owns, in ``(created_at, action_id)`` order.
+
+        A **zero-interpretation** read (P9-R3): the tuple is the moment's
+        whole action set — no ``action_type`` filter, no "most recent"
+        selection, and no read of any exposure estimate. A caller that needs
+        "the action this fact belongs to" takes the final element; a caller
+        that needs one kind filters itself. An unknown moment answers an
+        empty tuple, never an error — an absent row is a fact, the same
+        posture ``get_action`` / ``get_action_for_turn`` take with ``None``.
+        """
+        ...
+
     def claim_action_for_recovery(
         self, action_id: ActionId
     ) -> Result[GenerationActionIntentRecord]:

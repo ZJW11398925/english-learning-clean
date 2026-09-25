@@ -327,7 +327,15 @@ def evidence_answer_exposure(
 
     A full form already shown keeps the moment at FULL exposure no matter
     what the attempt's recorded state says — the conservative direction
-    (§13 "不确定时使用 conservative upper-bound support attribution")."""
+    (§13 "不确定时使用 conservative upper-bound support attribution").
+
+    ``FULL`` here means **the target's answer form was completely exposed**
+    (WHAT was shown). It is not the §22 ``ExposureEstimate.exposure_level``'s
+    ``FULL``, which means *the whole delivery message reached the client*
+    (HOW CERTAINLY it reached) — the same name on two different facts, and
+    this function reads only the ladder's side (P9-R3; see
+    ``elc.teaching.flow.attempt_record_for``).
+    """
 
     if answer_exposure_state == AnswerExposureState.FULL.value:
         return AnswerExposureState.FULL

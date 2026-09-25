@@ -114,6 +114,19 @@ ATTEMPT_TARGET_EXPLICITNESS = "EXPLICIT_TARGET"
 #: server-side without a ClientRenderAck yet, so the honest value is
 #: ``SERVER_SENT_UNCONFIRMED`` (STATE_MACHINES §13) — never
 #: ``CONFIRMED_RENDERED`` before an ACK exists.
+#:
+#: **Deliberately not linked to the §22 estimate (P9-R3).** An attempt's
+#: ``exposure_estimate_id`` names the delivery its exposure is attributed to,
+#: and that estimate's ``certainty`` column can already read
+#: ``CONFIRMED_RENDERED`` (a client render acknowledgment refined it). This
+#: column still stays ``SERVER_SENT_UNCONFIRMED``: V1 has no real client, so a
+#: rendered acknowledgment is a transport-side event the runtime neither
+#: produced nor consumes for attribution, and R2's reading 7 refuses to raise
+#: certainty on a ``NONE`` exposure level — lifting this column from an
+#: estimate would claim more certainty than the level the attempt was
+#: attributed under, putting the word above the fact it describes. Revisit: a
+#: real client / production ACK feed lands (then the raise is a decision this
+#: constant's owners make, with the level rule stated alongside it).
 SERVER_SENT_UNCONFIRMED = ExposureEstimateCertainty.SERVER_SENT_UNCONFIRMED
 
 
@@ -139,6 +152,31 @@ def attempt_record_for(
     the conservative §13 direction: once the full form is on screen (or the
     ladder has reached FULL_FORM_SHOWN) the attempt is at least
     FULL-exposed, no matter what a weaker claim would say.
+
+    **Two same-named exposure words, and they are different facts (P9-R3).**
+
+    - ``answer_exposure_state`` is **WHAT was shown**: the answer-exposure
+      ladder's product (``answer_exposure_default`` below), whose ``FULL``
+      means *the target's answer form has been completely exposed* inside
+      this moment (a reveal happened, or the ladder reached FULL_FORM_SHOWN);
+    - ``exposure_estimate_id`` is **HOW CERTAINLY it reached**, and it is
+      provenance only: the id of the §22 ``exposure_estimate`` row — the
+      delivered teaching action's ``action_id`` — whose own
+      ``exposure_level``'s ``FULL`` means *the whole message reached the
+      client*, an entirely different claim.
+
+    Delivery FULL never raises answer exposure: an attempt made after a whole
+    teaching message was delivered but before any reveal is ``NONE`` on this
+    column (the delivery being certain says nothing about the answer having
+    been shown), and an attempt after a reveal is ``FULL`` whether or not the
+    delivery's estimate row exists. ``exposure_estimate_id`` is ``None``
+    whenever the caller cannot name the delivery (no §22 face, no delivered
+    action with an estimate) — ``None`` is the honest "not attributed" fact,
+    never an inference.
+
+    ``support_attribution_certainty`` is the module constant
+    ``SERVER_SENT_UNCONFIRMED`` and is **not** linked to the estimate (see
+    that constant's own note for the reason and the Revisit).
     """
 
     return AttemptRecord(

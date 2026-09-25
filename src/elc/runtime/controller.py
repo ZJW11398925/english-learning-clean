@@ -5355,6 +5355,14 @@ class ConversationCoordinator:
                 if isinstance(evaluating, Err):
                     return evaluating
                 moment = evaluating.value
+                # P9-R3: the exposure provenance is resolved once, here,
+                # before anything durable is written, and the same value
+                # travels to the attempt row and to the evidence proposal —
+                # so the two records can never attribute one attempt to two
+                # different deliveries. None is a legal value (no §22 face,
+                # no delivered action with an estimate); see
+                # _teaching_exposure_estimate_id.
+                exposure_estimate_id = self._teaching_exposure_estimate_id(moment)
                 # Review F3: the (moment, user turn) pair is the attempt's
                 # identity. A re-entry reads the durable attempt it already
                 # recorded — deriving a fresh index from the moment's counter
@@ -5375,6 +5383,7 @@ class ConversationCoordinator:
                         attempt_id=f"at-{cp0.turn_id}-{index}",
                         user_turn_id=str(cp0.user_turn_id),
                         attempt_index=index,
+                        exposure_estimate_id=exposure_estimate_id,
                     )
                     recorded_attempt = teaching.record_attempt(attempt)
                     if isinstance(recorded_attempt, Err):
@@ -5449,6 +5458,7 @@ class ConversationCoordinator:
                         view=view,
                         linkage=linkage,
                         learning=learning,
+                        exposure_estimate_id=exposure_estimate_id,
                     )
 
             deciding = self._advance_reply_path(moment, 2, teaching)
@@ -6247,6 +6257,62 @@ class ConversationCoordinator:
             return recorded_decision
         return Ok(verdict)
 
+    def _teaching_exposure_estimate_id(
+        self, moment: TeachingMomentRecord
+    ) -> str | None:
+        """The §22 estimate this attempt's exposure is attributed to (P9-R3).
+
+        The id is the **action_id of the latest teaching delivery of this
+        moment** that has a durable ``exposure_estimate`` row — the action is
+        the estimate's identity (migration 0018 makes ``action_id`` its
+        primary key, and P9-1 registers ``exposure_estimate_id`` as "the
+        action whose estimate this is"; no second id is minted). "Latest" is
+        the caller's reading of the port's zero-interpretation order: the
+        final element of ``list_actions_for_moment`` — a moment's actions
+        are appended over its life (opening, then hints/retries/reveals), and
+        the delivery this attempt followed is the last one.
+
+        Every other shape answers ``None`` — the port is absent (no §22 face,
+        so no row can be confirmed), the moment has no action, the latest
+        action has no estimate row, or any read refuses/raises. That is
+        deliberately conservative and deliberately silent: an attempt is
+        never blocked, and no note channel is joined (the reason rides the
+        absence itself — ``attempt_record.exposure_estimate_id`` is nullable
+        and ``None`` is the honest "this attempt has no attributed §22
+        estimate" fact, ``SERVER_SENT_UNCONFIRMED``'s own posture for the
+        certainty column).
+
+        The value carries **provenance only**: it says *which delivery's*
+        estimate the attempt is attributed to. It does not raise
+        ``answer_exposure_state`` (that is the ladder's, WHAT was shown), it
+        does not raise ``support_attribution_certainty`` (that stays
+        ``SERVER_SENT_UNCONFIRMED`` — see ``elc.teaching.flow``), and the
+        estimate's own ``exposure_level`` (delivery FULL = the whole message
+        reached the client) is a different fact from the attempt's answer
+        exposure (FULL = the target's answer form was fully shown). The two
+        same-named words never cross.
+        """
+
+        if self._delivery_records is None:
+            return None
+        try:
+            actions = self._generation.list_actions_for_moment(moment.moment_id)
+            if isinstance(actions, Err):
+                return None
+            if not actions.value:
+                return None
+            latest = actions.value[-1]
+            estimate = self._delivery_records.get_exposure_estimate(
+                latest.action_id
+            )
+        except Exception:  # noqa: BLE001 — a provenance read never blocks
+            return None
+        if isinstance(estimate, Err):
+            return None
+        if estimate.value is None:
+            return None
+        return str(latest.action_id)
+
     def _commit_attempt_evidence(
         self,
         *,
@@ -6258,6 +6324,7 @@ class ConversationCoordinator:
         view: TeachingTargetView | None,
         linkage: str | None,
         learning: LearningController,
+        exposure_estimate_id: str | None = None,
     ) -> tuple[str | None, str | None]:
         """LOR → evidence proposal → Learning commit (DEC-…2babb21e.5 Q4).
 
@@ -6279,6 +6346,13 @@ class ConversationCoordinator:
         ``linkage`` is the *verified* capability linkage (review F4): the
         caller resolves it through the target provider, so a claim can never
         be recorded against an undeclared capability id.
+
+        P9-R3: ``exposure_estimate_id`` is the §22 estimate this attempt's
+        exposure is attributed to (the latest delivered teaching action of
+        the moment, or ``None``) — the same value the attempt row carries, so
+        the proposal can never name a different delivery than the attempt
+        does. It travels as provenance only (see
+        :meth:`_teaching_exposure_estimate_id`).
         """
 
         opportunity = learning.record_opportunity(
@@ -6304,6 +6378,7 @@ class ConversationCoordinator:
             target_view=view,
             opportunity_id=opportunity_id,
             capability_linkage=linkage,
+            exposure_estimate_id=exposure_estimate_id,
         )
         if proposal is None:
             return (opportunity_id, None)

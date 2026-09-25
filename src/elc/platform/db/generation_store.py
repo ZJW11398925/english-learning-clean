@@ -301,6 +301,27 @@ class SqliteGenerationStore:
         ).fetchone()
         return Ok(None if row is None else self._record(row))
 
+    def list_actions_for_moment(
+        self, moment_id: str
+    ) -> Result[tuple[GenerationActionIntentRecord, ...]]:
+        """Every action of one moment in ``(created_at, action_id)`` order.
+
+        The zero-interpretation read P9-R3 adds (see the port's docstring):
+        same column list and same ordering key as ``get_action_for_turn``
+        with the ``LIMIT 1`` dropped — no filter beyond the moment link, and
+        an unknown moment answers the empty tuple.
+        """
+
+        rows = self._conn.execute(
+            "SELECT action_id, turn_id, decision_cycle_id, moment_id,"
+            " assistant_turn_id, action_type, generation_contract_id,"
+            " status, attempt_count, owner_epoch, created_at"
+            " FROM generation_action_intent WHERE moment_id = ?"
+            " ORDER BY created_at, action_id",
+            (moment_id,),
+        ).fetchall()
+        return Ok(tuple(self._record(row) for row in rows))
+
     def attempts_for(
         self, action_id: ActionId
     ) -> Result[tuple[ProviderAttemptRecord, ...]]:
