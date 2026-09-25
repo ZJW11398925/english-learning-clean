@@ -1578,7 +1578,10 @@ def test_idempotent_second_startup_plans_nothing_and_writes_nothing(
     自己那几项接走之后，六类扫描**为空**——残件全部到达可解释处，没有一件留下。
 
     (i) 适用：turn 行数与内容跨两次 pass 不变（不重放已提交 user turn）。
-    (ii) 适用：evidence group 恰 1、analysis 恰 1（不重复）。
+    (ii) 适用：evidence group **恰 1**（直接绝对值断言）；analysis 的「恰 1」在本体只有
+    全表计数不变（不变性）在托——其绝对值断言在类 9（同一 fixture 断到 COMMITTED）；
+    **收窄**（评审 F1）：本类 (ii) 的主张到「group 绝对值 + analysis 无新增」为止，
+    Revisit = 本类需要独立给 analysis 绝对值时补断言。
     (iii) 适用——本类的主场：第一次 pass 具名全部；终局后扫描空。
     (iv) N/A：无投递（§22 行由类 9 的入口臂负责，见其 DELIVERY 段）。
     """
