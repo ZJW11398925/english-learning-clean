@@ -935,7 +935,10 @@ def test_promise_7_a_presented_teaching_action_owes_exactly_one_exposure_event(
     assert count_rows(db, "planning_ledger_event") == 1
     events = all_rows(db, "planning_ledger_event")
     assert len(events[0]) == 5  # 0016's four columns + 0017's provenance
-    assert events[0][0] == exposure_event_id(action_id)
+    # the id is the **deterministic spelling**, asserted as a literal, not only
+    # through the function that mints it (mutation M4 in receipt ⑨)
+    assert exposure_event_id(action_id) == f"ev-{action_id}"
+    assert events[0][0] == f"ev-{action_id}"
     assert events[0][2] == "teaching_presented"
 
     moment_id, focus_document = db.execute(
@@ -1210,7 +1213,9 @@ def test_promise_9_duplicate_reconciliation_writes_no_duplicate(
     assert first.value.ledger_failure is None
     assert count_events(world_.db) == 1
     event = all_rows(world_.db, "planning_ledger_event")
-    assert event[0][0] == exposure_event_id(action_id)
+    # the deterministic spelling, as a literal (mutation M4 in receipt ⑨)
+    assert exposure_event_id(action_id) == f"ev-{action_id}"
+    assert event[0][0] == f"ev-{action_id}"
     assert event[0][2] == "teaching_presented"
     assert event[0][4] == moment_id
     assert _turn(world_.db, turn_id) == ("COMPLETED", "REPLIED_FULL")

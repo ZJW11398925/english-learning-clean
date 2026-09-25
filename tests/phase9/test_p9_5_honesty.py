@@ -151,6 +151,19 @@ UNTESTABLE_TODAY: dict[str, tuple[str, str]] = {
         "a cut that walks a live moment from ``AWAITING_USER`` through a hint"
         " or a reveal (the writer is already total over the three kinds).",
     ),
+    "the sent-level comparison through a delivery face": (
+        "the estimate's ``SENT_COMPLETE``-with-a-short-durable-prefix arm is"
+        " not reachable through the shipped delivery faces: a run that released"
+        " less than the validated text freezes ``SENT_PARTIAL`` or ``FAILED``,"
+        " so the comparison inside ``DeliveryExposureFacts.covers_the_whole_"
+        " text`` is exercised only by direct construction — P9-4's derivation"
+        " table owns it. Receipt ⑨'s first mutation run is the evidence:"
+        " short-circuiting that comparison survives this file and turns two of"
+        " P9-4's tests red.",
+        "a delivery face that can freeze ``SENT_COMPLETE`` while its durable"
+        " prefix is shorter than the validated text (then promise 1 gains the"
+        " arm).",
+    ),
 }
 
 #: Every spelling of a skipped test the package is scanned for. Built from
