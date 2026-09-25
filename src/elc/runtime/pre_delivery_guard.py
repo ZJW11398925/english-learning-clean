@@ -68,10 +68,19 @@ quotation, and each names the condition that re-opens it.
        ``INVALIDATE_ACTION`` (``state_machines §16``, repeated inline by
        ``DATA_MODEL §21.1``) — and migration 0018 carries them as a CHECK
        (``CHECK (decision IN ('VALID', 'INVALIDATE_ACTION'))``). There is
-       **no DEGRADED here** — contrast the Gate, whose RA §21 verdict does
-       carry ``DEGRADED`` (P8-1); §15 has no such word — so a third answer is
-       neither spellable nor storable, and an unread fact must not borrow
-       ``INVALIDATE_ACTION``'s.
+       **no DEGRADED here**, and the contrast with the Gate is about a
+       **separate status column** rather than a shared word: the Gate carries
+       its "critical fact unknown" case in ``GateExecutionStatus = DEGRADED``
+       with ``GateDecision = null`` — "不得伪造 DENY" (`RA §24.2`;
+       ``DATA_MODEL §14.1``'s ``status`` block; §21's Gate subsection says only
+       "no automatic teaching / normal persona") — while its *decision* stays
+       the two words ``ALLOW`` / ``DENY``. The guard's §21.1 row has **no such
+       column**: its whole vocabulary is the two decision words, so a third
+       answer is neither spellable nor storable here, and an unread fact must
+       not borrow ``INVALIDATE_ACTION``'s. (Disposition F1, P10-3: an earlier
+       sentence of this ruling attributed ``DEGRADED`` to "the Gate's RA §21
+       verdict"; that is not what canonical says, and it has been corrected
+       here.)
    (c) the two places canonical does speak about uncertainty send it
        elsewhere: §16's retry model and §17's partial delivery put
        "uncertain" on the conservative-canonicalization side (never a

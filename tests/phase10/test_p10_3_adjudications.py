@@ -21,9 +21,19 @@ condition and a load-bearing pin:
 
 Both directions were pre-decided by the Phase 10 opening DEC's R6 and land
 here. Both are readings, never claimed as canonical text: the two declaration
-pins assert the rulings' own words (conclusion, reasons, reopen conditions,
-attribution) so a later cut that wants to move them has to change the module's
-own text — and the behaviour pins assert what the shipped code then does.
+pins assert the rulings' own words — each reason's leading phrase, the reopen
+conditions, the attribution and the retirement of the old claim — so a later cut
+that wants to move a ruling has to edit the module's own text (deleting any one
+reason paragraph turns them red; the P10-3 disposition added the per-reason
+phrases after the review showed a whole reason could be dropped silently while
+the block's other phrases stayed satisfied).
+
+**Capability boundary (registered, not to be over-read).** These are
+phrase-existence pins over the module's own text: they force a mover to touch
+the module's words, and they notice a dropped reason — they do **not** prove the
+reasons are the right ones (that argument lives with canonical and with review,
+not here), and they are not a proof that the module and this file agree on
+meaning. The behaviour pins assert what the shipped code then does.
 
 The harness facts this file leans on:
 
@@ -261,6 +271,15 @@ def test_the_unchecked_ruling_is_in_the_modules_own_words() -> None:
     assert "Reopen conditions (this adjudication)" in flat
     assert "adds an eighth" in flat  # reopen 1: an eighth §15 condition
     assert "real client lands" in flat.lower()  # reopen 2
+    # each reason's leading phrase, so a reason paragraph deleted whole is
+    # noticed (disposition F2: the review dropped (c) silently while every
+    # phrase above stayed satisfied elsewhere in the file)
+    assert "(a) §15's seven hard-invalidation conditions" in flat
+    assert "(b) the decision vocabulary is exactly" in flat
+    assert "(c) the two places canonical does speak about uncertainty" in flat
+    # ... and the corrected Gate contrast (disposition F1) is what is pinned:
+    # the Gate's DEGRADED is a separate status column, never this row's word
+    assert "separate status column" in flat
 
 
 # -- ② the controller declaration: a failed read keeps sending ----------------
@@ -284,6 +303,15 @@ def test_the_interrupt_read_failure_ruling_retires_its_old_claim() -> None:
     assert "user control is formally ruled to outrank availability" in flat
     assert "real client lands" in flat.lower()
     assert "ConversationQueries" in flat
+    # each reason's leading phrase (disposition F2: the review dropped (a) and
+    # (b) together and this pin stayed green, because the two reasons' words
+    # appear again in the block's other paragraphs)
+    assert "(a) the user's STOP is a" in flat
+    assert "(b) §17.1 rule 3 names the only actor" in flat
+    assert "(c) nothing is lost by keeping on" in flat
+    # the retired claim is quoted as it was, and its falsity is stated
+    assert "recorded this read-failure arm as unreachable" in flat
+    assert "That claim is false in the shipped tree" in flat
     # the retired wording is gone and its replacement is marked
     assert "untestable" not in flat
     assert "Superseded (P10-3)" in flat
@@ -433,6 +461,13 @@ def test_a_failed_interrupt_read_keeps_the_stream_sending_and_is_recorded_unchec
     the driver took: four asks (three chunks and the step that answered END)
     plus the guard's own read — the count is what proves the read was asked
     *during* the stream, not only once by the guard.
+
+    Registered (disposition F3, the "or delete" half): this world carries no
+    interrupt row at all, so the count asserts that a failed read **fabricates**
+    nothing. That it also deletes nothing is a construction fact rather than an
+    observation — the ``Err`` arm reads and returns without writing (it is four
+    lines) — so it is recorded here instead of being dressed up as a second
+    assertion over an empty table.
     """
 
     world = stream_file_world
@@ -469,7 +504,7 @@ def test_a_failed_interrupt_read_keeps_the_stream_sending_and_is_recorded_unchec
     assert canonical.assistant_turn is not None
     assert canonical.assistant_turn.content == REPLY
     assert count(world.db, "interrupt_request") == 0, (
-        "a failed read must not fabricate (or delete) an interrupt request"
+        "a failed read must not fabricate an interrupt request"
     )
 
     # (iii) the same bad read on the guard face: recorded, not invalidating
