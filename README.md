@@ -10,7 +10,7 @@ Canonical Implementation Baseline V1（2026-09-20）。规范优先级：`docs/`
 
 第一条学习垂直切片现状（`DEC-OPI-5ba74efc-….65/.68`）：**Teaching-driven learning vertical slice COMPLETE**（explicit user TeachingMoment → target-specific Attempt Evidence → LearnerState，含 before≠after 可追溯与全链验收）；**natural-conversation target-specific silent Evidence 已随 Phase 5 交付、并经 P5-R 按 canonical 收窄**（自然 Persona 对话 → 确定性 target resolution：**仅 RESOURCE 目标、仅整句形式的 canonical/alternative 命中**才铸 target-specific Performance Evidence → Estimator → LearnerState；CAPABILITY 命中、仅 slot 命中、嵌入跨度/引用/转述/元语言一律**只记匹配观察、不产生证据**；无 TeachingMoment/Gate/Planner 介入，供给降级不阻聊天）。实现 PR 必须能指出自己遵循/修改哪一条 contract。
 
-**实现现状（2026-09-25）**：**Phase 0–10 全部 COMPLETE（工程）**——Phase 8 = Planner→Gate→自动教学链 + rollout 门槛检查器（判 `HOLD`）；Phase 9 = Delivery / Exposure Hardening（含 P9-R 三件高/中危修复后重签 PASS）；**Phase 10 = Runtime Recovery**（五刀：scan 面补齐 / 25 类失败场景套件 A+B / 两个待裁题正式裁决 / D1 fence 修复 + F4 收口 + 相位级映射表）。读数：**3608 passed / 0 failed / 0 skipped**（phase3 280 / phase6 666 / phase7 420 / phase8 667 / phase9 511 / phase10 65 / deletion 120）、ruff clean、mypy **154 文件 0 error**、compileall 0；迁移 head **`0018_delivery_records`（v18）**。**真实 automatic-teaching rollout 仍 HOLD**（开闸前置 = SessionBudget 三分 + 内容补课，与 Phase 9/10 无关）；具体交接与对象索引见 `AGENTS.md`。
+**实现现状（2026-09-25）**：**Phase 0–10 全部 COMPLETE（工程）** + **prep-1 落成**（真 provider 适配 + secret 缝 + 首个 composition root + 最小 CLI）——Phase 8 = Planner→Gate→自动教学链 + rollout 门槛检查器（判 `HOLD`）；Phase 9 = Delivery / Exposure Hardening（含 P9-R 三件高/中危修复后重签 PASS）；**Phase 10 = Runtime Recovery**（五刀：scan 面补齐 / 25 类失败场景套件 A+B / 两个待裁题正式裁决 / D1 fence 修复 + F4 收口 + 相位级映射表）。读数：**3631 passed / 0 failed / 0 skipped**（phase3 280 / phase6 666 / phase7 420 / phase8 667 / phase9 511 / phase10 65 / deletion 120 / architecture 75 / host 15）、ruff clean、mypy **159 文件 0 error**、compileall 0；迁移 head **`0018_delivery_records`（v18）**。**真实 automatic-teaching rollout 仍 HOLD**（开闸前置 = SessionBudget 三分 + 内容补课，与 Phase 9/10 无关）；具体交接与对象索引见 `AGENTS.md`。
 
 ## 最小 CLI（prep-1）：一个真进程里聊一句
 
@@ -25,5 +25,6 @@ PYTHONPATH=src python -m elc chat \
 ```
 
 - 启动即跑一次 startup recovery（RA §22 / §24.1），随后每读一行 = 一条 `CommitUserTurn` → `coordinator.begin_turn`；`:quit` 或 EOF 退出并关连接。
-- 密钥在 **send-time resolve**（RA §24.3）：app.db 只存 `secret_ref`，密钥不进 prompt、不进 durable、不进日志、不进错误串；`--api-key-env` 与 `--secrets-file` 互斥。
+- 密钥在 **send-time resolve**（RA §24.3）：只进 `Authorization` 头——不进 **PromptCompiler / durable GenerationAction / 普通日志 / portable export**（canonical 四词逐字）；`--api-key-env` 与 `--secrets-file` 互斥，密钥永不作为参数出现。provider 若在 **2xx** 回复里回显密钥，该回复按 `key-echo` **值**拒收（既不进 transcript 也不落 app.db；钉在 `tests/host/test_key_leak.py`）。
+- 操作者卫生（不要求改代码）：`--secrets-file` 指向的仓外 JSON 由操作者自行设权限（本仓只读它，不检查 group/world 可读）；**错路径 / 错 `--secret-ref` 与「未设密钥」在 CLI 上是同一个 `missing-secret` 事实**（该缝所有失败都答 `None`）。
 - 参数缺失 / 互斥 ⇒ 人话错误 + 退出码 **2**；app.db 打不开 ⇒ 退出码 **1**。**真实 automatic-teaching rollout 仍 HOLD**（开闸由 IP §12 的门槛检查与用户裁决决定，本 CLI 不改变它）。

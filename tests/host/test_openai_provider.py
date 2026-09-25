@@ -9,20 +9,24 @@ a reason code or an exception message.
 
 from __future__ import annotations
 
+import io
 import json
+import urllib.error
 from pathlib import Path
 
 import pytest
 
+from elc.persona import openai_provider as adapter
 from elc.persona.openai_provider import (
     REASON_BAD_JSON,
     REASON_BAD_SHAPE,
+    REASON_KEY_ECHO,
     REASON_MISSING_SECRET,
     REASON_TIMEOUT,
     REASON_TRANSPORT_ERROR,
     OpenAICompatibleProvider,
 )
-from elc.persona.types import CompiledPrompt
+from elc.persona.types import CompiledPrompt, ProviderOutput
 from elc.platform.secrets import EnvSecretSource, FileSecretSource
 from elc.platform.types import PersonaId
 from tests.host.support import (
@@ -153,3 +157,97 @@ def test_secret_sources_answer_none_for_every_missing_shape(
     assert EnvSecretSource(var="PREP1_TEST_KEY").resolve(FIXED_SECRET_REF) is None
     monkeypatch.delenv("PREP1_TEST_KEY", raising=False)
     assert EnvSecretSource(var="PREP1_TEST_KEY").resolve(FIXED_SECRET_REF) is None
+
+
+# -- the real egress function itself (prep-1 review F1) ----------------------
+
+
+class _FakeResponse:
+    """The context-manager shape ``urlopen`` answers with, no socket."""
+
+    def __init__(self, status: int, body: bytes) -> None:
+        self.status = status
+        self._body = body
+
+    def read(self) -> bytes:
+        return self._body
+
+    def __enter__(self) -> "_FakeResponse":
+        return self
+
+    def __exit__(self, *exc: object) -> bool:
+        return False
+
+
+def test_the_real_egress_function_is_executed_and_its_two_properties_hold(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """F1: ``_urllib_post`` is the repository's only real network function, so
+    the two properties its docstring promises are pinned **against that
+    function**, with ``urllib.request.urlopen`` monkeypatched (no socket).
+
+    Three facts, in this order: the patched ``urlopen`` really is the path the
+    adapter takes (negative control: the key arrives in the ``Authorization``
+    header of the request it receives); a non-2xx answer's body is **never
+    read**; and a ``URLError`` whose reason is a timeout is normalized to
+    ``TimeoutError`` (which the adapter answers as ``timeout``).
+    """
+
+    seen: list[object] = []
+    read_calls: list[int] = []
+
+    class _SpyBody(io.BytesIO):
+        """A real file-like whose ``read`` records that it was ever called."""
+
+        def read(self, *args: object, **kwargs: object) -> bytes:
+            read_calls.append(1)
+            return super().read(*args, **kwargs)  # type: ignore[arg-type]
+
+    def ok(request: object, timeout: float | None = None) -> _FakeResponse:
+        seen.append(request)
+        return _FakeResponse(200, completion())
+
+    provider = OpenAICompatibleProvider(config(), FixedSecret(), transport=None)
+    monkeypatch.setattr(adapter.urllib.request, "urlopen", ok)
+    assert provider.call(compiled()) == ProviderOutput(text=REPLY_TEXT, error=None)
+    # Negative control: the real path builds a Request carrying the key once.
+    assert len(seen) == 1
+    request_headers = dict(seen[0].headers)  # type: ignore[attr-defined]
+    assert request_headers["Authorization"] == f"Bearer {SENTINEL_KEY}"
+
+    def rejected(request: object, timeout: float | None = None) -> _FakeResponse:
+        raise urllib.error.HTTPError(
+            "http://offline.invalid/v1/chat/completions",
+            401,
+            "Unauthorized",
+            {},
+            _SpyBody(f"denied: Bearer {SENTINEL_KEY}".encode()),
+        )
+
+    monkeypatch.setattr(adapter.urllib.request, "urlopen", rejected)
+    output = provider.call(compiled())
+    assert (output.text, output.error) == (None, "http-401")
+    assert read_calls == []  # the rejected body never became a string here
+    assert SENTINEL_KEY not in (output.error or "")
+
+    def timing_out(request: object, timeout: float | None = None) -> _FakeResponse:
+        raise urllib.error.URLError(TimeoutError("timed out"))
+
+    monkeypatch.setattr(adapter.urllib.request, "urlopen", timing_out)
+    assert provider.call(compiled()).error == REASON_TIMEOUT
+
+
+def test_a_2xx_reply_that_echoes_the_key_is_refused_as_a_value() -> None:
+    """prep-1 review F3: the key can only appear in a reply by being leaked
+    (it never enters the prompt), so an echoing 2xx is answered as a value."""
+
+    post = RecordingPost(
+        payload=json.dumps(
+            {"choices": [{"message": {"content": f"you said Bearer {SENTINEL_KEY}"}}]}
+        ).encode()
+    )
+    output = provider_over(post).call(compiled())
+    assert (output.text, output.error) == (None, REASON_KEY_ECHO)
+    assert SENTINEL_KEY not in (output.error or "")
+    # The refusal is about the reply, not the request: the key travelled once.
+    assert post.authorization == f"Bearer {SENTINEL_KEY}"

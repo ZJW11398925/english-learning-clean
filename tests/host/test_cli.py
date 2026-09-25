@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from elc.cli import main
+from elc.host import Host
 from elc.persona.provider import ScriptedPersonaProvider
 from elc.persona.types import ProviderOutput
 from elc.platform.db import connection
@@ -61,6 +62,18 @@ def test_a_scripted_turn_prints_the_reply_and_quit_exits_zero(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv("PREP1_UNSET_KEY_VAR", raising=False)
+    # F4: the REPL's first move is one startup recovery — pinned so deleting
+    # that call turns this red (a recovery that never runs cannot be observed
+    # in the output otherwise).
+    recovery_calls: list[object] = []
+    real_recovery = Host.startup_recovery
+
+    def recording_recovery(self: Host) -> object:
+        recovery_calls.append(self.epoch)
+        return real_recovery(self)
+
+    monkeypatch.setattr(Host, "startup_recovery", recording_recovery)
+
     db_path = tmp_path / "app.db"
     provider = ScriptedPersonaProvider(script=(ProviderOutput(text=CLI_REPLY),))
     code, out, err = run(
@@ -81,6 +94,7 @@ def test_a_scripted_turn_prints_the_reply_and_quit_exits_zero(
         provider=provider,
     )
     assert (code, err) == (0, "")
+    assert recovery_calls == [1]  # exactly one, before the first turn
     lines = out.splitlines()
     assert lines[0].startswith("elc chat · conversation=cli-test · epoch=1")
     assert lines[1] == CLI_REPLY
@@ -96,13 +110,36 @@ def test_a_scripted_turn_prints_the_reply_and_quit_exits_zero(
 
 
 def test_the_only_egress_point_and_no_server() -> None:
-    """R5/R6 as a source scan: no socket/server machinery anywhere in ``src``,
-    and exactly one module reaches for ``urllib`` — the adapter whose single
-    ``_urllib_post`` is the whole network surface."""
+    """R5/R6 as a source scan: no network client or server machinery anywhere in
+    ``src``, and exactly one module reaches for ``urllib.request`` — the adapter
+    whose single ``_urllib_post`` is the whole network surface.
+
+    The net is wide on purpose (prep-1 review F2): third-party HTTP clients
+    belong in the forbidden set next to ``socket``/``http``, and the negative
+    control is *symbol*-level — the adapter is required to import
+    ``urllib.request`` **and** to call ``urlopen`` — so deleting the real egress
+    implementation cannot leave this pin green.
+    """
 
     forbidden: set[str] = set()
-    urllib_importers: set[str] = set()
-    network_roots = {"socket", "http", "socketserver", "asyncio", "ssl"}
+    urllib_request_importers: set[str] = set()
+    network_roots = {
+        "socket",
+        "http",
+        "socketserver",
+        "asyncio",
+        "ssl",
+        "requests",
+        "httpx",
+        "urllib3",
+        "aiohttp",
+        "ftplib",
+        "smtplib",
+        "imaplib",
+        "poplib",
+        "telnetlib",
+        "xmlrpc",
+    }
     for path in sorted(SRC_ROOT.rglob("*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         rel = path.relative_to(SRC_ROOT).as_posix()
@@ -115,12 +152,17 @@ def test_the_only_egress_point_and_no_server() -> None:
                 continue
             for name in names:
                 root_name = name.split(".")[0]
-                if root_name == "urllib":
-                    urllib_importers.add(rel)
+                if name == "urllib.request":
+                    urllib_request_importers.add(rel)
                 if root_name in network_roots:
                     forbidden.add(f"{rel}: {name}")
 
     assert forbidden == set()
-    # Negative control: the pin would also fail if the adapter stopped using
-    # urllib — the egress point is asserted to exist, not just to be alone.
-    assert urllib_importers == {"persona/openai_provider.py"}
+    # Negative control, symbol level: the one module that may reach the network
+    # imports urllib.request and really calls urlopen — removing either the
+    # import or the call turns this red.
+    assert urllib_request_importers == {"persona/openai_provider.py"}
+    adapter_text = (SRC_ROOT / "persona" / "openai_provider.py").read_text(
+        encoding="utf-8"
+    )
+    assert "urllib.request.urlopen(" in adapter_text

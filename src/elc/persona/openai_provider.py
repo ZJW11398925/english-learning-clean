@@ -15,12 +15,22 @@ contract the Phase 1 scripted provider keeps. Three properties are deliberate:
   of the one request this module builds; never the URL, the body, a return
   value or a reason code;
 - reason codes are short and body-free (``http-<status>`` / ``bad-json`` /
-  ``bad-shape`` / ``timeout`` / ``missing-secret`` / ``transport-error``): a
-  non-2xx body is dropped by the transport without ever becoming a string, so
-  a provider that echoes the request cannot smuggle the key into a value;
+  ``bad-shape`` / ``timeout`` / ``missing-secret`` / ``transport-error`` /
+  ``key-echo``): a non-2xx body is dropped by the transport without ever
+  becoming a string, and a 2xx reply that *does* carry the key back is
+  refused as a ``key-echo`` value — so no reply this adapter answers with can
+  carry the key into the transcript or the durable delivery record
+  (RA §24.3's durable shapes);
 - one egress point — :func:`_urllib_post` is the whole of this process's
   network surface (standard library only; ``dependencies = []`` untouched) and
   it is injectable, which is what makes this repository's tests offline.
+
+Two boundaries this adapter does not paper over (prep-1 review F6/F7): the
+``"failure is a value"`` promise holds for everything the transport can
+report, not for a malformed ``status`` an injected transport might return
+(``int(status)`` would raise; the real transport always answers an int), and
+``KeyboardInterrupt`` / ``SystemExit`` deliberately escape — an operator
+interrupt is not a provider failure.
 
 The call runs outside any DB transaction (RA §24.1; R-INV-004):
 ``PersonaRuntime`` owns that ordering and this adapter touches no store.
@@ -44,6 +54,7 @@ __all__ = [
     "OpenAICompatibleProvider",
     "REASON_BAD_JSON",
     "REASON_BAD_SHAPE",
+    "REASON_KEY_ECHO",
     "REASON_MISSING_SECRET",
     "REASON_TIMEOUT",
     "REASON_TRANSPORT_ERROR",
@@ -56,6 +67,9 @@ REASON_TIMEOUT = "timeout"
 REASON_TRANSPORT_ERROR = "transport-error"
 REASON_BAD_JSON = "bad-json"
 REASON_BAD_SHAPE = "bad-shape"
+#: A 2xx answer whose text carries the resolved key back (prep-1 review F3):
+#: refuse the reply rather than let the key reach the transcript.
+REASON_KEY_ECHO = "key-echo"
 
 #: The §11 OpenAI-compatible request path, appended to ``base_url``.
 CHAT_COMPLETIONS_PATH = "/chat/completions"
@@ -126,7 +140,10 @@ class OpenAICompatibleProvider:
         """Resolve the key (here, at send time), POST once, answer a value.
 
         A secret source that raises is treated exactly like a missing key: no
-        key, no call.
+        key, no call. A 2xx reply carrying the key back is refused
+        (:data:`REASON_KEY_ECHO`) — the one way the key could otherwise enter
+        the transcript and the durable delivery record, which RA §24.3 keeps it
+        out of.
         """
 
         key = self._resolve_key()
@@ -149,7 +166,13 @@ class OpenAICompatibleProvider:
             return ProviderOutput(text=None, error=REASON_TRANSPORT_ERROR)
         if not 200 <= int(status) < 300:
             return ProviderOutput(text=None, error=http_reason(status))
-        return _parse_success(payload)
+        output = _parse_success(payload)
+        if output.text is not None and key in output.text:
+            # A hostile 2xx that echoes the Authorization header would smuggle
+            # the key into the reply. The key never enters the prompt, so a
+            # reply can only carry it by leaking it — refuse the whole text.
+            return ProviderOutput(text=None, error=REASON_KEY_ECHO)
+        return output
 
     # -- internals -----------------------------------------------------------
 
@@ -213,6 +236,11 @@ def _urllib_post(
     this process. A timeout reported through ``URLError.reason`` is normalized
     to ``TimeoutError`` so the adapter's ``timeout`` reason means the same
     thing for the real transport as for an injected one.
+
+    Both properties are pinned executably against *this* function, with
+    ``urllib.request.urlopen`` monkeypatched (no socket;
+    ``tests/host/test_openai_provider.py``, prep-1 review F1) — so this
+    docstring cannot drift away from the code it describes.
     """
 
     request = urllib.request.Request(

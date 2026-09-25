@@ -9,7 +9,8 @@ deterministic fake with exactly the two §3-relevant behaviours:
 
 The script advances one entry per call and repeats its final entry, so a
 retry loop is fully predictable in tests. The adapter contract itself (the
-``PersonaProvider`` protocol) is the seam a real transport fills later —
+``PersonaProvider`` protocol) is the seam the real BYOK transport fills since
+prep-1 (:class:`elc.persona.openai_provider.OpenAICompatibleProvider`);
 external calls must always run outside any DB transaction
 (docs/RUNTIME_ARCHITECTURE.md §24.1; R-INV-004).
 """

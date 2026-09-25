@@ -21,6 +21,13 @@ Deliberate limits, each a contract rather than an omission:
   does *not* abort the loop — the provider contract answers a value, so a
   failed turn reports its reason and the next line is read normally.
 
+One user-visible consequence of the secret seam's value contract, said out
+loud (prep-1 review F8): a wrong ``--secrets-file`` path, a JSON file without
+the requested ``--secret-ref`` and a genuinely unset key are *one* fact to this
+CLI — each is ``None`` at the seam, so each prints ``[FAILED_FINAL]
+missing-secret``. The message says what the adapter knows, not where the
+config went wrong.
+
 ``provider=`` is the one injection point: it exists so ``tests/host`` can drive
 an offline process, and the process entry (``elc.__main__``) never passes it.
 """

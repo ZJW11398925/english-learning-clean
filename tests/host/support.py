@@ -4,9 +4,11 @@ Every provider call in this suite goes through an injected ``HttpPost`` (the
 seam ``elc.persona.openai_provider`` documents and keeps as the repository's
 single egress point), and every model answer is a scripted
 ``ScriptedPersonaProvider`` entry. Nothing in ``tests/host`` imports ``socket``,
-``urllib`` or ``http``; the offline claim is executable in
-``test_cli.py::test_the_only_egress_point_and_no_server`` (a source scan) and
-restated here for the reader.
+``urllib`` or ``http``, and the executable source scan
+(``test_cli.py::test_the_only_egress_point_and_no_server``) covers ``src/elc``
+— the tree that holds the egress point this suite must keep out of its own
+call paths (prep-1 review F2b: the scan's scope is ``src``, not this
+directory).
 """
 
 from __future__ import annotations

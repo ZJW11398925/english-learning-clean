@@ -26,6 +26,17 @@ coordinator's client boundary (``None`` keeps V1's in-process single-chunk
 default) and ``character_package`` reaches the ordinary turn's
 GenerationContext (``None`` keeps the P1 assembly).
 
+What this host does **not** assemble, named rather than left implied (prep-1
+review F5): no teaching / learning / planner / scheduler / deletion /
+user_config / curriculum / projection / silent-evidence port is built, so the
+coordinator's optional params for those domains stay ``None``. The consequence
+is visible, not hidden: without the teaching port the startup plan carries
+TURN items only and closes nothing (the coordinator's
+``run_startup_recovery`` docstring states that shape), and the automatic
+teaching leg has no wiring at all. ``open_host`` is the production entry point
+for the ordinary turn this cut makes real; an assembly that wants those legs
+must inject them (the same shape the phase suites use).
+
 ``secrets`` is held, never read: the V1 secret seam belongs to the provider
 (RA §24.3 — resolve at send time), and the key never enters app.db, this module
 or any log. It is kept here so the process has one place that knows which
