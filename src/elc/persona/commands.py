@@ -52,9 +52,12 @@ found).** The first cut framed the eight prose columns and left the rest of
 the card row rendering raw, so the section could still be punched through
 from ``lore_refs``, ``generation_policy``, ``character_package_id`` or
 ``persona_id`` (each forgives a header; measured, all four did). The fix is
-by *provenance*, not by how system-like a value looks: every value whose
-source is not one of this module's own literals is treated as untrusted
-input. Concretely — ``generation_policy`` and ``lore_refs`` are card-row
+by *provenance*, not by how system-like a value looks: the card row's columns
+are treated as untrusted text whatever they spell, and every value the
+persona section interpolates from outside this module — the card's columns,
+the two ids, the request's language policy, the contract's word lists — is
+handled so that it cannot write the section's structure. Concretely —
+``generation_policy`` and ``lore_refs`` are card-row
 text like the prose columns, so they render **inside the frame** (keys
 unchanged, in the §5.1 column order); the id / revision / policy lines and
 the contract's two word lists **keep the section carrier with escaped
@@ -88,15 +91,19 @@ The frame's mechanisms are structural rather than advisory:
   that scans for marker substrings anywhere rather than at line starts is
   not the reader this frame is written for.
 - **the narrower rows are escaped too** (P9-R1 disposal) — a value that
-  keeps the section carrier (the persona id / revision / language-policy
-  rows, the contract's two word lists) is still not this module's own text,
-  so it goes through the same :func:`_escaped_untrusted_text`. Escaping is
+  keeps the section carrier (the persona id / language-policy rows, the
+  contract's two word lists) is still not this module's own text, so it
+  goes through the same :func:`_escaped_untrusted_text`. Escaping is
   the identity on the ids and policy words those rows carry, so their
   rendering is byte-identical for every legitimate value, while a value that
   carried a line break cannot start a line even though it renders outside a
   frame. The section carrier is a claim about *where* a value renders, never
-  a licence to interpolate it raw — and the escape is the only check that
-  costs nothing when the source turns out to be trustworthy after all.
+  a licence to interpolate a card-row or request-supplied string raw — and
+  the escape is the only check that costs nothing when the source turns out
+  to be trustworthy after all. The scope is deliberate: the *other* sections'
+  section-carrier rows carry system-built ids, enums and version words (the
+  contract's four values are registered below), and this cut neither escapes
+  them nor claims they are safe.
 
 The trusted sections' rendering is untouched: a request with no untrusted
 views compiles byte-identically to the pre-P9-0 prompt, and the trusted
@@ -143,9 +150,10 @@ Declared readings (this cut's, each with the condition that re-opens it):
    field, recorded in :data:`PROMPT_FIELD_TRUST`: the id/revision/
    language-policy/contract rows keep the section carrier, the card-row
    values (eight prose columns plus ``generation_policy`` and ``lore_refs``)
-   render inside the frame, and *every* value whose source is not this
-   module's own literal is escaped whether it carries the frame or the
-   section. Revisit: a future section is fed by user- or model-produced
+   render inside the frame, and every value this cut classes as foreign text
+   — the framed card values and the id / language-policy / contract rows —
+   is escaped whether it carries the frame or the section. Revisit: a future
+   section is fed by user- or model-produced
    durable text — it joins :data:`UNTRUSTED_PROMPT_SECTIONS`, and the frame
    travels with it.
 3. **The escaping is structural, not semantic.** A value containing the
@@ -338,11 +346,16 @@ UNTRUSTED_ESCAPES: tuple[tuple[str, str], ...] = (
 #: line can never be the one a section scanner reads as structure.
 #:
 #: A carrier says *where a value renders*, never that the compiler trusts it
-#: blindly: every value whose source is not one of this module's own literals
-#: is escaped before it is interpolated, section-carrier rows included
-#: (module docstring, the disposal's (b)/(c) half). A legitimate id or policy
-#: word renders unchanged — the escape is the identity on those vocabularies —
-#: while a value carrying a line break cannot start a line.
+#: blindly: the values the disposal names — the persona block's id /
+#: language-policy / contract rows, whose sources are the card row and the
+#: request — are escaped before they are interpolated, section carrier
+#: included (module docstring, the disposal's (b)/(c) half). A legitimate id
+#: or policy word renders unchanged — the escape is the identity on those
+#: vocabularies — while a value carrying a line break cannot start a line.
+#: The other sections' section-carrier rows interpolate view values too, but
+#: the ones they carry are ids, enums and version words the system built
+#: (the contract's four values are the registered exception, module docstring
+#: INFO-3); this cut does not escape them and does not claim they are safe.
 TRUST_CARRIER_SECTION = "section"
 TRUST_CARRIER_FRAME = "frame"
 
@@ -361,10 +374,14 @@ TRUST_CARRIER_FRAME = "frame"
 #:   ``("persona", "language_policy", …)`` is the value interpolated at that
 #:   position, which is ``GenerationContext.language_policy``, the request's
 #:   (INFO-1, module docstring); and
-#: * every value whose source is not this module's own literal is escaped
-#:   before interpolation, whether it is framed or a section line — the
-#:   ``section`` rows keep the ``key: value`` shape with a value that cannot
-#:   carry a line break (the disposal's (b)/(c) half).
+#: * every value this cut classes as foreign text — the framed card values
+#:   and the persona block's id / language-policy / contract rows — is
+#:   escaped before interpolation, whether it is framed or a section line:
+#:   the ``section`` rows keep the ``key: value`` shape with a value that
+#:   cannot carry a line break (the disposal's (b)/(c) half). The other
+#:   sections' ``section`` rows carry system-built ids / enums / version
+#:   words today and are not escaped by this cut (INFO-3 registers the
+#:   contract's four values).
 #:
 #: The table is the *declaration*; the P9-R1 suite asserts it against the real
 #: rendering (every section value appears as a literal line of its section
