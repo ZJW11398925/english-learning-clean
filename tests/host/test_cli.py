@@ -39,7 +39,7 @@ def test_usage_errors_are_human_and_non_zero(
         "--app-db",
         str(tmp_path / "app.db"),
         "--base-url",
-        "http://offline.invalid/v1",
+        "https://offline.invalid/v1",
         "--model",
         "offline-model",
     ]
@@ -82,7 +82,7 @@ def test_a_scripted_turn_prints_the_reply_and_quit_exits_zero(
             "--app-db",
             str(db_path),
             "--base-url",
-            "http://offline.invalid/v1",
+            "https://offline.invalid/v1",
             "--model",
             "offline-model",
             "--api-key-env",
@@ -110,15 +110,24 @@ def test_a_scripted_turn_prints_the_reply_and_quit_exits_zero(
 
 
 def test_the_only_egress_point_and_no_server() -> None:
-    """R5/R6 as a source scan: no network client or server machinery anywhere in
-    ``src``, and exactly one module reaches for ``urllib.request`` — the adapter
-    whose single ``_urllib_post`` is the whole network surface.
+    """R5/R6 as a **structural** source scan: no network client or server
+    machinery anywhere in ``src``, exactly one module reaches for
+    ``urllib.request`` — the adapter whose single ``_urllib_post`` is the whole
+    network surface — and that module still contains the call that leaves the
+    process.
 
     The net is wide on purpose (prep-1 review F2): third-party HTTP clients
     belong in the forbidden set next to ``socket``/``http``, and the negative
     control is *symbol*-level — the adapter is required to import
-    ``urllib.request`` **and** to call ``urlopen`` — so deleting the real egress
-    implementation cannot leave this pin green.
+    ``urllib.request`` **and** to keep its own egress call — so deleting the
+    real egress implementation cannot leave this pin green.
+
+    This is a structural guard over the import and attribute surface, not a
+    sandbox: a module that reached the network through ``subprocess``,
+    ``ctypes`` or a socket assembled dynamically from strings (``getattr`` /
+    ``importlib`` / ``__import__``) would not be caught here. ``src`` is the
+    scan's whole scope by design — ``tests/`` may build ``Request`` objects
+    (the redirect pins do) and this pin claims nothing about them (prep-1R).
     """
 
     forbidden: set[str] = set()
@@ -159,10 +168,77 @@ def test_the_only_egress_point_and_no_server() -> None:
 
     assert forbidden == set()
     # Negative control, symbol level: the one module that may reach the network
-    # imports urllib.request and really calls urlopen — removing either the
-    # import or the call turns this red.
+    # imports urllib.request and really calls the opener it built — removing
+    # either the import or the call turns this red.
     assert urllib_request_importers == {"persona/openai_provider.py"}
     adapter_text = (SRC_ROOT / "persona" / "openai_provider.py").read_text(
         encoding="utf-8"
     )
-    assert "urllib.request.urlopen(" in adapter_text
+    assert "_opener().open(" in adapter_text
+    assert "urllib.request.urlopen(" not in adapter_text
+    # prep-1R: the egress posture is structural too — the module builds its own
+    # redirect-refusing opener (never the process-wide one) and marks the
+    # Authorization header unredirected. Mentions in prose are fine; the call
+    # forms are what these two assert.
+    assert "build_opener(_NoRedirects)" in adapter_text
+    assert "install_opener(" not in adapter_text
+    assert "add_unredirected_header(" in adapter_text
+
+
+def test_a_plaintext_base_url_off_this_machine_is_refused_with_a_sentence(
+    tmp_path: Path,
+) -> None:
+    """prep-1R (EXT-P1-02) as the operator feels it: exit code 2, a sentence
+    naming the way out, and **no host opened** — the refusal precedes the
+    app.db, so a refused destination costs nothing."""
+
+    code, _, err = run(
+        [
+            "chat",
+            "--app-db",
+            str(tmp_path / "app.db"),
+            "--base-url",
+            "http://evil.example/v1",
+            "--model",
+            "offline-model",
+            "--api-key-env",
+            "PREP1_UNSET_KEY_VAR",
+        ],
+        stdin=io.StringIO(""),
+    )
+    assert code == 2
+    assert "--allow-insecure-http" in err
+    assert not (tmp_path / "app.db").exists()
+
+
+def test_the_opt_in_and_loopback_plaintext_both_reach_the_host(
+    tmp_path: Path,
+) -> None:
+    """``--allow-insecure-http`` is exactly what the pre-check asks for, and
+    loopback never needs it: both open a host and exit 0 at EOF. No turn is
+    committed, so the provider is never called and no request is made."""
+
+    vectors = (
+        ("http://evil.example/v1", ["--allow-insecure-http"]),
+        ("http://127.0.0.1:11434/v1", []),
+    )
+    for index, (base_url, extra) in enumerate(vectors):
+        code, out, err = run(
+            [
+                "chat",
+                "--app-db",
+                str(tmp_path / f"app-{index}.db"),
+                "--base-url",
+                base_url,
+                "--model",
+                "offline-model",
+                "--api-key-env",
+                "PREP1_UNSET_KEY_VAR",
+                "--conversation",
+                "cli-http",
+            ]
+            + extra,
+            stdin=io.StringIO(""),
+        )
+        assert (code, err) == (0, ""), (base_url, code, err)
+        assert out.startswith("elc chat · conversation=cli-http"), base_url

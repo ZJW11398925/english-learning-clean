@@ -1,10 +1,12 @@
-"""Offline helpers for the prep-1 suite — no socket, no urlopen, no http.
+"""Offline helpers for the prep-1 suite — no socket, and no request sent.
 
 Every provider call in this suite goes through an injected ``HttpPost`` (the
 seam ``elc.persona.openai_provider`` documents and keeps as the repository's
 single egress point), and every model answer is a scripted
-``ScriptedPersonaProvider`` entry. Nothing in ``tests/host`` imports ``socket``,
-``urllib`` or ``http``, and the executable source scan
+``ScriptedPersonaProvider`` entry. The suite imports ``urllib.request`` /
+``urllib.error`` only to build ``Request`` objects and to script the refusals
+the redirect pins are about — with the opener stubbed, no socket is ever opened
+(prep-1R). The executable source scan
 (``test_cli.py::test_the_only_egress_point_and_no_server``) covers ``src/elc``
 — the tree that holds the egress point this suite must keep out of its own
 call paths (prep-1 review F2b: the scan's scope is ``src``, not this
@@ -30,6 +32,7 @@ __all__ = [
     "RecordingPost",
     "app_db_bytes",
     "completion",
+    "completion_of_size",
     "config",
     "db_text_cells",
 ]
@@ -98,11 +101,31 @@ def completion(text: str = REPLY_TEXT) -> bytes:
     return json.dumps({"choices": [{"message": {"content": text}}]}).encode("utf-8")
 
 
+def completion_of_size(size: int) -> bytes:
+    """A valid 2xx body whose encoded length is exactly ``size`` bytes.
+
+    The ceiling pins need a body that is *just* under / over the limit and
+    still parses: the content is padding, so ``size`` decides the length.
+    """
+
+    head = b'{"choices":[{"message":{"content":"'
+    tail = b'"}}]}'
+    padding = size - len(head) - len(tail)
+    assert padding >= 0, size
+    return head + b"x" * padding + tail
+
+
 def config(**overrides: object) -> OpenAICompatibleConfig:
-    """The offline coordinates: an un-routable host and a model name."""
+    """The offline coordinates: an un-routable host and a model name.
+
+    ``https`` (not the ``http`` this factory used before prep-1R): the
+    plaintext policy refuses a non-loopback ``http://`` host before the key is
+    resolved, and this factory is the coordinates every happy-path vector in
+    the suite uses.
+    """
 
     fields: dict[str, object] = {
-        "base_url": "http://offline.invalid/v1",
+        "base_url": "https://offline.invalid/v1",
         "model": "offline-model",
         "secret_ref": FIXED_SECRET_REF,
     }

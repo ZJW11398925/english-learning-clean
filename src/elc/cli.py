@@ -1,8 +1,9 @@
 """The minimum CLI (prep-1): one process, one conversation, no HTTP server.
 
 ``python -m elc chat --app-db … --base-url … --model … [--api-key-env VAR |
---secrets-file PATH]`` opens the real host (``elc.host``), runs the startup
-recovery once, then reads lines: one line is one ``CommitUserTurn`` through
+--secrets-file PATH] [--allow-insecure-http]`` opens the real host
+(``elc.host``), runs the startup recovery once, then reads lines: one line is
+one ``CommitUserTurn`` through
 ``ConversationCoordinator.begin_turn``, and the reply — or the honest failure —
 is printed. ``:quit`` or EOF exits and closes the connection.
 
@@ -20,6 +21,12 @@ Deliberate limits, each a contract rather than an omission:
   neither returns 2, an un-openable app.db returns 1. A lost model connection
   does *not* abort the loop — the provider contract answers a value, so a
   failed turn reports its reason and the next line is read normally.
+- **plaintext is refused off this machine.** A non-loopback ``http://``
+  base-url answers exit code 2 and a sentence naming ``--allow-insecure-http``;
+  loopback (``localhost`` / ``127.0.0.0/8`` / ``::1``) needs no flag, and
+  ``https://`` is never questioned. The flag is never implied — the adapter
+  behind this CLI reads the same predicate and would otherwise answer the turn
+  with the ``cleartext-http`` value (EXT-P1-02).
 
 One user-visible consequence of the secret seam's value contract, said out
 loud (prep-1 review F8): a wrong ``--secrets-file`` path, a JSON file without
@@ -47,6 +54,7 @@ from elc.host import Host, open_host
 from elc.persona.openai_provider import (
     OpenAICompatibleConfig,
     OpenAICompatibleProvider,
+    insecure_http_destination,
 )
 from elc.persona.provider import PersonaProvider
 from elc.platform.db.migrations import MigrationError
@@ -82,6 +90,12 @@ _KEY_SOURCE_HINT = (
     " (the BYOK key source; the key itself is never an argument)"
 )
 
+_INSECURE_HTTP_HINT = (
+    "elc chat: --base-url is plaintext http:// off this machine, so the key"
+    " would travel in the clear; pass --allow-insecure-http to allow it"
+    " explicitly (loopback http:// needs no flag)"
+)
+
 
 def main(
     argv: Sequence[str] | None = None,
@@ -104,6 +118,12 @@ def main(
     if (args.api_key_env is None) == (args.secrets_file is None):
         print(_KEY_SOURCE_HINT, file=err)
         return 2
+    if not args.allow_insecure_http and insecure_http_destination(args.base_url):
+        # Before any host is opened and before any key is resolved: the rule the
+        # adapter answers as a ``cleartext-http`` value, said as a sentence that
+        # names the way out (EXT-P1-02).
+        print(_INSECURE_HTTP_HINT, file=err)
+        return 2
     secrets = _secret_source(args)
     if provider is None:
         provider = OpenAICompatibleProvider(
@@ -112,6 +132,7 @@ def main(
                 model=args.model,
                 secret_ref=SecretRef(args.secret_ref),
                 timeout_seconds=args.timeout,
+                allow_insecure_http=args.allow_insecure_http,
             ),
             secrets,
         )
@@ -232,6 +253,14 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--base-url", required=True, help="OpenAI-compatible base URL (PC §11)"
+    )
+    parser.add_argument(
+        "--allow-insecure-http",
+        action="store_true",
+        help=(
+            "explicitly allow a plaintext http:// base-url off this machine;"
+            " loopback http:// needs no flag and the default refuses the rest"
+        ),
     )
     parser.add_argument("--model", required=True, help="model name to request")
     key_source = parser.add_mutually_exclusive_group()

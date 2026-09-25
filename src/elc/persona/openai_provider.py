@@ -16,14 +16,31 @@ contract the Phase 1 scripted provider keeps. Three properties are deliberate:
   value or a reason code;
 - reason codes are short and body-free (``http-<status>`` / ``bad-json`` /
   ``bad-shape`` / ``timeout`` / ``missing-secret`` / ``transport-error`` /
-  ``key-echo``): a non-2xx body is dropped by the transport without ever
-  becoming a string, and a 2xx reply that *does* carry the key back is
-  refused as a ``key-echo`` value — so no reply this adapter answers with can
-  carry the key into the transcript or the durable delivery record
-  (RA §24.3's durable shapes);
+  ``key-echo`` / ``cleartext-http`` / ``response-too-large``): a non-2xx body is
+  dropped by the transport without ever becoming a string, and a 2xx reply that
+  *does* carry the key back is refused as a ``key-echo`` value — so no reply
+  this adapter answers with can carry the key into the transcript or the durable
+  delivery record (RA §24.3's durable shapes);
 - one egress point — :func:`_urllib_post` is the whole of this process's
   network surface (standard library only; ``dependencies = []`` untouched) and
   it is injectable, which is what makes this repository's tests offline.
+
+Three destinations this adapter refuses to travel to (external review
+EXT-P1-01/02/05), each a value rather than a raise:
+
+- **nowhere via redirect.** The egress opener replaces urllib's redirect
+  handler with one that raises (:class:`_NoRedirects`), so a 301/302/303/307/308
+  answer cannot re-send this request — and the key — to a host a ``Location``
+  names; it becomes the ordinary ``http-<status>`` value. ``Authorization`` is
+  also added as an *unredirected* header (the one kind urllib never copies on a
+  redirect): defence in depth, not the primary guard;
+- **nowhere in clear but this machine.** Plaintext ``http://`` is accepted on
+  loopback hosts only and refused off them as ``cleartext-http`` **before the
+  key is resolved**, unless the caller opts in through
+  :attr:`OpenAICompatibleConfig.allow_insecure_http`;
+- **no unbounded reply.** One answer is read up to
+  :data:`MAX_PROVIDER_RESPONSE_BYTES` and no further; a longer one is
+  ``response-too-large``, with none of its bytes entering a value.
 
 Two boundaries this adapter does not paper over (prep-1 review F6/F7): the
 ``"failure is a value"`` promise holds for everything the transport can
@@ -40,25 +57,31 @@ from __future__ import annotations
 
 import json
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from typing import Mapping, Protocol
+from email.message import Message
+from typing import IO, Mapping, Protocol
 
 from elc.persona.types import CompiledPrompt, ProviderOutput
 from elc.platform.secrets import SecretSource
 from elc.platform.types import SecretRef
 
 __all__ = [
+    "MAX_PROVIDER_RESPONSE_BYTES",
     "HttpPost",
     "OpenAICompatibleConfig",
     "OpenAICompatibleProvider",
     "REASON_BAD_JSON",
     "REASON_BAD_SHAPE",
+    "REASON_CLEARTEXT_HTTP",
     "REASON_KEY_ECHO",
     "REASON_MISSING_SECRET",
+    "REASON_RESPONSE_TOO_LARGE",
     "REASON_TIMEOUT",
     "REASON_TRANSPORT_ERROR",
     "http_reason",
+    "insecure_http_destination",
 ]
 
 #: The failure vocabulary: short, stable, free of any response content.
@@ -70,6 +93,19 @@ REASON_BAD_SHAPE = "bad-shape"
 #: A 2xx answer whose text carries the resolved key back (prep-1 review F3):
 #: refuse the reply rather than let the key reach the transcript.
 REASON_KEY_ECHO = "key-echo"
+#: A plaintext ``http://`` destination off this machine: refused before the key
+#: is even resolved (external review EXT-P1-02).
+REASON_CLEARTEXT_HTTP = "cleartext-http"
+#: A single reply longer than :data:`MAX_PROVIDER_RESPONSE_BYTES` (EXT-P1-05).
+REASON_RESPONSE_TOO_LARGE = "response-too-large"
+
+#: The most bytes of one reply this adapter will hold (4 MiB): a chat
+#: completion, not a file transfer.
+MAX_PROVIDER_RESPONSE_BYTES = 4 * 1024 * 1024
+
+#: Plaintext ``http://`` is accepted on these host names; the ``127.`` prefix
+#: test in :func:`insecure_http_destination` covers the rest of 127.0.0.0/8.
+_LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 #: The §11 OpenAI-compatible request path, appended to ``base_url``.
 CHAT_COMPLETIONS_PATH = "/chat/completions"
@@ -81,13 +117,35 @@ def http_reason(status: int) -> str:
     return f"http-{int(status)}"
 
 
+def insecure_http_destination(base_url: str) -> bool:
+    """Is ``base_url`` plaintext ``http://`` **off this machine**? (EXT-P1-02)
+
+    ``https`` is never insecure; ``http`` is acceptable exactly on this machine
+    (``localhost`` / ``127.0.0.0/8`` / ``::1``) and nowhere else — the host is
+    read lowercased and without its port by :func:`urllib.parse.urlsplit`, so a
+    userinfo prefix cannot disguise a foreign host. The provider reads this one
+    predicate for its ``cleartext-http`` value and the CLI reads it for the
+    sentence naming ``--allow-insecure-http``: the two faces cannot disagree
+    about what "off this machine" means.
+    """
+
+    parts = urllib.parse.urlsplit(base_url)
+    if parts.scheme.lower() != "http":
+        return False
+    host = parts.hostname or ""
+    return host not in _LOOPBACK_HOSTS and not host.startswith("127.")
+
+
 class HttpPost(Protocol):
     """One HTTP POST → ``(status, body_bytes)``.
 
     Raising is the transport's way of saying "no answer at all": a
     ``TimeoutError`` (or ``socket.timeout``, its 3.10+ identity) becomes the
     ``timeout`` reason, any other exception becomes ``transport-error``. The
-    default is :func:`_urllib_post`; tests inject a recording callable.
+    default is :func:`_urllib_post` (redirect-refusing, header-splitting and
+    read-bounded); tests inject a recording callable. The ceiling is re-checked
+    once more on whatever a transport returns, so an injected callable cannot
+    hand the adapter an unbounded body either.
     """
 
     def __call__(
@@ -103,6 +161,11 @@ class OpenAICompatibleConfig:
     :class:`~elc.platform.secrets.SecretSource` resolves at send time. The key
     is never a field of this record, so it cannot be logged, serialized or
     compared into a durable shape by accident.
+
+    ``allow_insecure_http`` is the operator's explicit yes to a plaintext
+    ``http://`` destination off this machine (a gateway behind TLS termination,
+    a private network). It defaults to ``False``, so the default answer to
+    "send this key in the clear?" is no.
     """
 
     base_url: str
@@ -110,6 +173,7 @@ class OpenAICompatibleConfig:
     secret_ref: SecretRef
     timeout_seconds: float = 30.0
     temperature: float | None = None
+    allow_insecure_http: bool = False
 
     def endpoint(self) -> str:
         """``{base_url}/chat/completions`` (trailing slashes tolerated)."""
@@ -137,15 +201,23 @@ class OpenAICompatibleProvider:
         self._post: HttpPost = transport if transport is not None else _urllib_post
 
     def call(self, prompt: CompiledPrompt) -> ProviderOutput:
-        """Resolve the key (here, at send time), POST once, answer a value.
+        """Check the destination, resolve the key, POST once, answer a value.
 
-        A secret source that raises is treated exactly like a missing key: no
-        key, no call. A 2xx reply carrying the key back is refused
-        (:data:`REASON_KEY_ECHO`) — the one way the key could otherwise enter
-        the transcript and the durable delivery record, which RA §24.3 keeps it
-        out of.
+        The order is the contract: a destination this adapter refuses (plaintext
+        ``http://`` off this machine, :data:`REASON_CLEARTEXT_HTTP`) is answered
+        **before the key is resolved** — a refusal costs no secret access and,
+        of course, no request. A secret source that raises is treated exactly
+        like a missing key: no key, no call. A 2xx reply carrying the key back
+        is refused (:data:`REASON_KEY_ECHO`) — the one way the key could
+        otherwise enter the transcript and the durable delivery record, which RA
+        §24.3 keeps it out of. A reply past :data:`MAX_PROVIDER_RESPONSE_BYTES`
+        is refused as a value too (:data:`REASON_RESPONSE_TOO_LARGE`).
         """
 
+        if not self._config.allow_insecure_http and insecure_http_destination(
+            self._config.base_url
+        ):
+            return ProviderOutput(text=None, error=REASON_CLEARTEXT_HTTP)
         key = self._resolve_key()
         if key is None:
             return ProviderOutput(text=None, error=REASON_MISSING_SECRET)
@@ -160,10 +232,16 @@ class OpenAICompatibleProvider:
                 self._request_body(prompt),
                 self._config.timeout_seconds,
             )
+        except _ResponseTooLarge:
+            return ProviderOutput(text=None, error=REASON_RESPONSE_TOO_LARGE)
         except TimeoutError:
             return ProviderOutput(text=None, error=REASON_TIMEOUT)
         except Exception:  # noqa: BLE001 — the transport boundary: values, not raises
             return ProviderOutput(text=None, error=REASON_TRANSPORT_ERROR)
+        if len(payload) > MAX_PROVIDER_RESPONSE_BYTES:
+            # The real transport stops reading at the ceiling; restated here so
+            # an injected transport cannot feed the adapter an unbounded body.
+            return ProviderOutput(text=None, error=REASON_RESPONSE_TOO_LARGE)
         if not 200 <= int(status) < 300:
             return ProviderOutput(text=None, error=http_reason(status))
         output = _parse_success(payload)
@@ -226,29 +304,100 @@ def _content_of(document: object) -> str | None:
     return content if isinstance(content, str) else None
 
 
+class _ResponseTooLarge(Exception):
+    """Raised by :func:`_urllib_post` past the read ceiling — never a value.
+
+    Module-private on purpose: raised and caught in this module, and it carries
+    the fact only — no byte of the refused body travels with it.
+    """
+
+
+class _NoRedirects(urllib.request.HTTPRedirectHandler):
+    """A redirect handler that refuses to follow: every 3xx is an error.
+
+    urllib's default follows 301/302/303/307/308 for a POST and re-sends the
+    request — ``Authorization`` header included — to whatever host the answer's
+    ``Location`` names. A BYOK key must never be replayed to a destination this
+    adapter did not choose (EXT-P1-01), so the redirect becomes an
+    :class:`urllib.error.HTTPError` here, which :func:`_urllib_post` turns into
+    the ordinary ``(status, b"")`` shape the adapter reports as
+    ``http-<status>``.
+    """
+
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: IO[bytes],
+        code: int,
+        msg: str,
+        headers: Message,
+        newurl: str,
+    ) -> urllib.request.Request | None:
+        raise urllib.error.HTTPError(req.full_url, code, msg, headers, fp)
+
+
+#: The module's own opener, built lazily on first use. Deliberately **not**
+#: ``urllib.request.install_opener``: replacing the process-wide default opener
+#: is not this adapter's business, and global state a library installs is
+#: global state another caller inherits.
+_opener_cache: urllib.request.OpenerDirector | None = None
+
+
+def _opener() -> urllib.request.OpenerDirector:
+    """``build_opener(_NoRedirects)``, built once — and never installed.
+
+    ``build_opener`` drops urllib's own redirect handler because the one passed
+    subclasses it, so every request this module sends goes through
+    :class:`_NoRedirects`.
+    """
+
+    global _opener_cache
+    if _opener_cache is None:
+        _opener_cache = urllib.request.build_opener(_NoRedirects)
+    return _opener_cache
+
+
 def _urllib_post(
     url: str, headers: Mapping[str, str], body: bytes, timeout: float
 ) -> tuple[int, bytes]:
     """The process's only real egress point (standard library ``urllib``).
 
-    A non-2xx answer returns ``(status, b"")``: the error body is deliberately
-    **not read**, so no response text of a rejected request becomes a string in
-    this process. A timeout reported through ``URLError.reason`` is normalized
-    to ``TimeoutError`` so the adapter's ``timeout`` reason means the same
-    thing for the real transport as for an injected one.
+    Three properties hold here, each pinned executably against *this* function
+    (no socket; ``tests/host/test_openai_provider.py`` — prep-1 review F1 and
+    this cut's redirect/ceiling pins) so this docstring cannot drift from the
+    code it describes:
 
-    Both properties are pinned executably against *this* function, with
-    ``urllib.request.urlopen`` monkeypatched (no socket;
-    ``tests/host/test_openai_provider.py``, prep-1 review F1) — so this
-    docstring cannot drift away from the code it describes.
+    - the request goes through the module's own opener (:func:`_opener`), whose
+      handler refuses every redirect: a 301/302/303/307/308 answer is an
+      :class:`urllib.error.HTTPError` here, never a second request to the
+      ``Location``'s host with this key attached (EXT-P1-01);
+    - ``Authorization`` travels as an **unredirected** header — the header kind
+      urllib's redirect machinery never copies — while the rest travel as
+      ordinary headers;
+    - a non-2xx answer returns ``(status, b"")``: the error body is deliberately
+      **not read**, so no response text of a rejected request becomes a string
+      in this process; a 2xx body is read at most
+      :data:`MAX_PROVIDER_RESPONSE_BYTES` + 1 bytes (enough to detect overshoot)
+      and a longer answer raises :class:`_ResponseTooLarge` without any of its
+      bytes entering a value (EXT-P1-05).
+
+    A timeout reported through ``URLError.reason`` is normalized to
+    ``TimeoutError`` so the adapter's ``timeout`` reason means the same thing
+    for the real transport as for an injected one.
     """
 
-    request = urllib.request.Request(
-        url, data=body, headers=dict(headers), method="POST"
-    )
+    request = urllib.request.Request(url, data=body, method="POST")
+    for name, value in headers.items():
+        if name.lower() == "authorization":
+            request.add_unredirected_header(name, value)
+        else:
+            request.add_header(name, value)
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            return int(response.status), response.read()
+        with _opener().open(request, timeout=timeout) as response:
+            payload = response.read(MAX_PROVIDER_RESPONSE_BYTES + 1)
+            if len(payload) > MAX_PROVIDER_RESPONSE_BYTES:
+                raise _ResponseTooLarge
+            return int(response.status), payload
     except urllib.error.HTTPError as exc:
         return int(exc.code), b""
     except urllib.error.URLError as exc:
