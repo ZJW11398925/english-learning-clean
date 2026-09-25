@@ -201,7 +201,10 @@ the condition that re-opens it):**
   the same reason a per-field reader must.
 - **INFO-3 — the contract's four values have no untrusted writer today.**
   ``style_constraints`` / ``forbidden_claims`` / ``allowed_disclosures`` /
-  ``max_length`` are hard-coded at their construction sites; two of them are
+  ``max_length`` are fixed where the contract is built (empty tuples at both
+  construction sites, ``elc.runtime.controller``'s teaching and normal-reply
+  arms, with ``forbidden_claims`` falling back to the dataclass's
+  ``DEFAULT_FORBIDDEN_CLAIMS`` constant); two of them are
   escaped anyway (they render in this module's ``[persona]`` section, the
   disposal's (c) half), and ``allowed_disclosures`` / ``max_length`` are not
   — they render in ``[contract]``, which this cut does not frame. This
