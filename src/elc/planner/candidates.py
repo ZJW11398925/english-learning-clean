@@ -462,10 +462,10 @@ UNLANDED_AUTHORITIES: Mapping[CandidateAuthority, str] = {
     ),
     CandidateAuthority.PLANNING_LEDGER: (
         "no PlanningLedger view for this call: the ledger is durable since"
-        " P8-3 (migration 0016's three tables behind elc.planner.ledger_store),"
-        " but this caller handed in no view of it — and no shipped producer"
-        " writes exposure or accrual facts yet (the delivery path is p8-4's),"
-        " so nothing has assembled one either"
+        " P8-3 (migration 0016's three tables behind elc.planner.ledger_store)"
+        " and its exposure producer landed with p8-4 (elc.runtime.exposure, at"
+        " the delivery point) — but this caller handed in no view of it, so"
+        " nothing has assembled one for the candidate side"
     ),
 }
 

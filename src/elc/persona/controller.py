@@ -3,7 +3,9 @@
 conversation split; the controller stays a skeleton until its
 VALIDATE/COMMIT/REJECT/ABSTAIN decision face lands). See
 ``tests/architecture/test_surface_census.py`` for ``elc.persona``'s row
-(``elc.persona.runtime:PersonaRuntime`` + ``elc.persona.store``)."""
+(``elc.persona.runtime:PersonaRuntime``; durable store: **none** —
+``CharacterPackageRecord`` is host-injected, see that file's registration
+R1)."""
 
 from __future__ import annotations
 

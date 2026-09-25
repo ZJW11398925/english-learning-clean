@@ -1,10 +1,10 @@
 """现役面普查（prep-0）—— 14 个顶层包的真实现面在哪，以及哪些类是有制度依据的空骨架。
 
 本文件回答外评指出的那类问题（“interface archaeology”：新读者无法判断哪个类是
-production、哪个只是契约骨架）。它不是逐类贴标签（`src/elc` 共 **520** 个公开类 /
-130 文件 —— 逐类贴标签是不可维护的漂移面），而是**以包为行**的一跳索引：每行给出
-该包的现役面（读者应当用的类/模块）、它自己的 durable store（若有），以及本包内
-**非现役**的骨架类。
+production、哪个只是契约骨架）。它不是逐类贴标签（`src/elc` 共 **520** 个公开类，
+分布在 **130** 个定义了类的文件里 —— 全 154 个 `.py` —— 逐类贴标签是不可维护的漂移
+面），而是**以包为行**的一跳索引：每行给出该包的现役面（读者应当用的类/模块）、它自己
+的 durable store（若有），以及本包内**非现役**的骨架类。
 
 **四类词（legend）**
 
@@ -23,10 +23,15 @@ production、哪个只是契约骨架）。它不是逐类贴标签（`src/elc` 
 
 **能力边界（不得越读）**：本表保证的是**包级一跳可达 + 骨架/非现役可核**——即
 (1) 每个顶层包恰一行；(2) 表里的符号真的 import 得到、骨架真的属于本行包；
-(3) **AST 派生**的骨架集合 ⊆ 声明的骨架集合（新骨架会被抓住）；
-(4) 声明的现役面**不是**骨架；(5) 骨架的两种形状（``ALL_RAISE`` / ``KEPT``）双向可核。
+(3) **AST 派生**的骨架集合（规则：每个 public 方法都只 raise ``NotImplementedError``
+——**半实现**的新类不在此列，见 R8）⊆ 声明的骨架集合；
+(4) 声明的现役面**不是**骨架（模块形态的路径被跳过，见 R10）；
+(5) 骨架的两种形状（``ALL_RAISE`` / ``KEPT``）双向可核（``KEPT`` 只证「不只 raise」，
+见 R9）；(6) 五个骨架模块的横幅里出现的 ``elc.*`` 符号引用**必须 import 得到**（钉 8
+——本刀的首末两版都在这里各栽过一次，见处置 F1/F2）。
 它**不**保证：每个类的语义分类、端口与实现的一一对应、或「表与所有代码一致」——那
-后半属于 review 与 canonical 原文。也不保证散文的真值（见下一条登记）。
+后半属于 review 与 canonical 原文。也不保证横幅散文的真值（钉 8 只管符号可 import
+一层），更不保证散文真值（见下一条登记）。
 
 **登记（本表的已知限度）**
 
@@ -46,7 +51,18 @@ production、哪个只是契约骨架）。它不是逐类贴标签（`src/elc` 
   R6 逐类分类（520 个公开类）**不做**，理由见模块首段。
   R7 本文件由 **prep-0**（``DEC-OPI-8f27d1de-…25``）**显式授权**新增：它破了一次
      「``tests/architecture/`` 冻结面零改动」的字面 —— 只**新增**此一件，**不改**该目录
-     任何既有文件。散文真值不归本表管：它只保证上述五条。
+     任何既有文件。散文真值不归本表管：它只保证上述六条。
+  R8 钉 3 的 **AST 派生**只覆盖「每个 public 方法都只 raise」这一形状：**半实现**的新
+     类、无 public 方法的类、嵌套类、抛别种异常类的类都**不派生** ⇒ 它们不被钉 3 抓住
+     （prep-0 处置 F4 收窄了本表的措辞，并把本条写成登记）。
+  R9 ``KEPT`` 的白名单方法只被证成「**不只 raise**」，不证「做了实事」——体是 ``...``
+     或 ``pass`` 的方法也过钉 5（prep-0 处置 F5）。
+  R10 ``live_face`` / ``store`` 的「不得是骨架」检查**跳过模块形态**（路径里没有 ``:``
+     时无法定位类），且每行只装一个面。``platform`` 行（``elc.platform.db``）是这两条
+     限度的最大承受者：该包的真常用面还有 ``registry`` / ``sync`` / ``types``。
+  R11 ``content.db`` 是**生成物**：读写面分离（读 ``elc.content.store:ContentStore``，
+     写 ``elc.content.build``），所以 content 行两列同指**读面**，不是图例意义上「SQL
+     实装面」的完整画面。
 """
 
 from __future__ import annotations
@@ -89,7 +105,7 @@ class Row:
     skeletons: tuple[Skeleton, ...] = field(default=())
 
 
-SURFACE: tuple[Row, ...] = (
+SURFACE_CENSUS: tuple[Row, ...] = (
     Row(
         "content",
         live_face="elc.content.store:ContentStore",
@@ -228,7 +244,7 @@ def _derived_skeletons() -> dict[str, set[str]]:
     """package → the classes the AST rule calls skeletons (the baseline)."""
 
     derived: dict[str, set[str]] = {}
-    for row in SURFACE:
+    for row in SURFACE_CENSUS:
         names: set[str] = set()
         for name, node in _class_nodes_in(row.package).items():
             methods = _public_methods(node)
@@ -260,6 +276,34 @@ def _class_in_package(package: str, name: str) -> ast.ClassDef | None:
     return _class_nodes_in(package).get(name)
 
 
+#: The five skeleton modules whose banners carry the one-hop pointer this cut
+#: rewrote. Pin 8 reads *their* text (the census table cannot see prose).
+SKELETON_MODULES = tuple(f"src/elc/{pkg}/controller.py" for pkg in (
+    "content",
+    "conversation",
+    "curriculum",
+    "persona",
+    "world_lore",
+))
+
+#: ``elc.<dotted>`` or ``elc.<dotted>:<Class>`` — the spellings the banners use.
+_SYMBOL_RE = (
+    r"elc(?:\.[A-Za-z_][A-Za-z0-9_]*)+(?::[A-Za-z_][A-Za-z0-9_]*)?"
+)
+
+
+def _import_dotted(token: str) -> object:
+    """Import a token written the way the banners write it: a dotted path whose
+    last component may be a class (``a.b.C``), or ``module:Class``."""
+
+    if ":" in token:
+        return _import_symbol(token)
+    module_name, _, last = token.rpartition(".")
+    if last[:1].isupper():  # a class spelled as the last dotted component
+        return getattr(importlib.import_module(module_name), last)
+    return importlib.import_module(token)
+
+
 # -- pins --------------------------------------------------------------------
 
 
@@ -267,7 +311,7 @@ def test_the_table_covers_exactly_the_packages_on_disk() -> None:
     """One row per top-level package under ``src/elc``, both directions: a new
     package cannot appear without a row, and a row cannot outlive its package."""
 
-    declared = [row.package for row in SURFACE]
+    declared = [row.package for row in SURFACE_CENSUS]
     assert len(declared) == len(set(declared)), "duplicate package rows"
     assert set(declared) == _packages_on_disk()
 
@@ -276,7 +320,7 @@ def test_every_declared_symbol_imports_and_belongs_to_its_row() -> None:
     """Every declared face/store/points_to imports, and every skeleton class is
     really defined inside its own package (a spelling mistake cannot hide)."""
 
-    for row in SURFACE:
+    for row in SURFACE_CENSUS:
         for path in (row.live_face, row.store):
             if path is not None:
                 assert _import_symbol(path) is not None, (row.package, path)
@@ -295,7 +339,7 @@ def test_every_derived_skeleton_is_declared() -> None:
     skeleton — turns this red until the table moves."""
 
     derived = _derived_skeletons()
-    for row in SURFACE:
+    for row in SURFACE_CENSUS:
         declared = {skeleton.name for skeleton in row.skeletons}
         assert derived[row.package] <= declared, (
             f"undeclared skeleton(s) in {row.package}:"
@@ -308,9 +352,9 @@ def test_no_declared_live_face_is_a_skeleton() -> None:
     ``store`` / ``points_to`` may be a declared skeleton of its package (nor one
     the AST rule derives)."""
 
-    declared = {row.package: {s.name for s in row.skeletons} for row in SURFACE}
+    declared = {row.package: {s.name for s in row.skeletons} for row in SURFACE_CENSUS}
     derived = _derived_skeletons()
-    for row in SURFACE:
+    for row in SURFACE_CENSUS:
         paths = [row.live_face, row.store]
         paths.extend(skeleton.points_to for skeleton in row.skeletons)
         for path in paths:
@@ -332,7 +376,7 @@ def test_every_skeleton_shape_is_true_in_both_directions() -> None:
     both ways: every non-exempt public method only raises, and every exempt one
     does not."""
 
-    for row in SURFACE:
+    for row in SURFACE_CENSUS:
         for skeleton in row.skeletons:
             node = _class_in_package(row.package, skeleton.name)
             assert node is not None, skeleton.name
@@ -367,7 +411,7 @@ def test_each_row_declares_exactly_one_of_live_face_or_reason() -> None:
     """A row either names the live face or says why there is none — never both,
     never neither (an empty cell is how a claim silently disappears)."""
 
-    for row in SURFACE:
+    for row in SURFACE_CENSUS:
         declared = [row.live_face is not None, row.no_live_face_because is not None]
         assert sum(declared) == 1, row.package
         if row.no_live_face_because is not None:
@@ -399,3 +443,25 @@ def test_the_legend_and_its_registrations_are_in_this_modules_own_words() -> Non
     assert "能力边界" in flat
     assert "不" in flat and "语义分类" in flat
     assert "prep-0" in flat and "DEC-OPI-8f27d1de-…25" in flat
+
+
+def test_every_symbol_the_skeleton_banners_name_really_imports() -> None:
+    """Pin 8 (prep-0 处置 F1/F2): the five skeleton banners are the *other*
+    copy of the live-face claim, and the census table cannot see prose — this
+    cut's first version put a non-existent class (``SqliteContentStore``) and a
+    non-existent module (``elc.persona.store``) in them while the table was
+    right. So: every ``elc.*`` reference a skeleton banner spells must import.
+
+    Capability boundary: this checks importability, not truth (a banner may
+    still point at a real-but-wrong face); it exists so a *broken* pointer
+    cannot ship inside the text whose whole job is "use this face".
+    """
+
+    import re
+
+    for rel in SKELETON_MODULES:
+        text = (SRC_ROOT.parent.parent / rel).read_text(encoding="utf-8")
+        tokens = sorted(set(re.findall(_SYMBOL_RE, text)))
+        assert tokens, f"{rel} names no elc.* symbol at all"
+        for token in tokens:
+            assert _import_dotted(token) is not None, f"{rel}: {token}"

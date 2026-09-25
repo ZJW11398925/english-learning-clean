@@ -5,8 +5,8 @@ pending implementation.
 below to raise ``NotImplementedError`` (the Phase 0 red line). The work this
 package actually runs through lives elsewhere: see
 ``tests/architecture/test_surface_census.py`` for ``elc.content``'s row of the
-live-face census (``elc.content.store:SqliteContentStore``, with the
-deterministic build face in ``elc.content.build``). Revisit: the decision face
+live-face census (``elc.content.store:ContentStore``, with the deterministic
+build face in ``elc.content.build``). Revisit: the decision face
 (VALIDATE / COMMIT / REJECT / ABSTAIN) lands here — then this banner's claim
 moves into the census table.
 """

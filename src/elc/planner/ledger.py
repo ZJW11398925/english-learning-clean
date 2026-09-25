@@ -76,15 +76,18 @@ facts rather than an omission, and those facts are the record of *why* the
 table arrives with the company it needs:
 
 - ``SELECT != exposure`` (RA §20). Phase 7 *selects*; nothing *presents* a
-  teaching episode until Phase 8 wires the Gate and the Moment, so there is no
-  writer of ``teaching_presented`` (or of the two lighter presentations) to
-  write a durable exposure row from. A table whose only writer does not exist
-  is a table that can only hold invented data — and that is still true today:
-  P8-3 lands the table and its **store faces** (``elc.planner.ledger_store``),
-  not a producer. The delivery path that presents a Moment is p8-4's, so the
-  durable ledger's honest state right now is "the shape and the writer exist,
-  the producer does not" (the store's module docstring carries the same line,
-  and the count of shipped callers is a checked fact, not prose);
+  teaching episode until Phase 8 wires the Gate and the Moment, so when this
+  table was held back there was no writer of ``teaching_presented`` (or of the
+  two lighter presentations) to write a durable exposure row from — a table
+  whose only writer does not exist can only hold invented data. That is why
+  P8-3 landed the table and its **store faces** (``elc.planner.ledger_store``)
+  with the producer still absent, and why **P8-4** had to land that producer
+  before the log could fill: the delivery point presents the Moment, and
+  ``elc.runtime.exposure`` is the one place that turns "a teaching action was
+  really delivered" into the §20 word. The ledger's honest state **since
+  P8-4** is therefore "the shape, the writer and the producer exist" (the
+  store's module docstring carries the same line, and the count of shipped
+  callers is a checked fact, not prose);
 - the ledger is a **projection** in the canonical reading anyway: RA §6 lists
   "PlanningLedger actual exposure/outcome" among CP4's rebuildable projections
   and DATA_MODEL §26 lists "some PlanningLedger rollups" beside them, with the
