@@ -1123,14 +1123,16 @@ def test_epoch_race_turn_canonicalize_is_fenced_and_unpolluted(world: World) -> 
     不留在打开状态；新 epoch 自己 `claim_turn_for_recovery` + canonicalize 落到**唯一
     一行**、再重放同一内容仍返回同一行。
 
-    **已登记的第二臂（不是本类主场的反例，而是同一竞争的另一半）**：同一 store 的
-    `terminalize_turn` / `transition_turn` 是**更弱的箍**——它们只比 row 的
-    owner_epoch 与 store 自持的 epoch，从不查「全库最新 epoch」；该事实写在
-    conversation/store.py:470-477 的 docstring 里（P3-0 review F2 的更正自认，
-    "whether those two units gain a store-level fence is an open P3+ question"）。
-    本刀据实把这一臂断言为 **as-found** 并登记 Revisit：某个切面给这两个 unit 加
-    store 级 fence 时，这条断言必须随之改写（任务书本类句写的是 canonicalize/
-    terminalize 都被拒；canonicalize 成立，terminalize 不成立——据实驳回）。
+    **第二臂（P10-4 已改写为拒绝形态；原 as-found 断言与本段自带 Revisit 已兑现）**：
+    同一竞争的另一半是**同一个 store** 的 `terminalize_turn` / `transition_turn`。
+    它们自 P10-4 起与 `canonicalize_assistant_turn` **同保**——在各自的写事务内、首次
+    读行之前先过 store 级最新-epoch 检查（conversation/store.py 的
+    `_require_current_epoch`；两箍分工与重开条件见该文件的归因段与
+    DEC-OPI-8f27d1de-…9）。所以陈旧 store 对这两个 unit 也 `raise StaleEpochError`
+    （fence 在校验 ownership 之前）、**零写入**、事务不留在打开状态；新 epoch 先
+    `claim_turn_for_recovery` 再用同一三 unit 收口，是本类下半段的正面证据。
+    本刀据实把该臂断言为**拒绝形态**（原文「更弱的箍 / open P3+ question」的读法已
+    随修复撤回）；Revisit = 已兑现（P10-4，见本仓该刀提交）。
 
     (i) 适用：陈旧内容永不进 transcript（两种 arm 后 assistant_turn 恰一行）。
     (ii) 适用：本类无 analysis leg，断言 0 组。
@@ -1172,19 +1174,32 @@ def test_epoch_race_turn_canonicalize_is_fenced_and_unpolluted(world: World) -> 
         )
     assert _counts(db, "assistant_turn") == {"assistant_turn": 1}
 
-    # arm B, as-found: the weaker fence (the registration cited above)
-    transitioned = world.store.transition_turn(
-        TurnId(turn_two), 1, TurnStatus.GENERATING
+    # arm B, P10-4: the same store-level fence now covers both sibling units —
+    # a stale store is refused before the ownership read, with zero writes and
+    # no open transaction (the three-unit parity the docstring above states).
+    turn_two_before = _turn_row(db, turn_two)
+    with pytest.raises(StaleEpochError):
+        world.store.transition_turn(TurnId(turn_two), 1, TurnStatus.GENERATING)
+    with pytest.raises(StaleEpochError):
+        world.store.terminalize_turn(TurnId(turn_two), TurnOutcome.REPLIED_FULL)
+    assert db.in_transaction is False
+    assert _turn_row(db, turn_two) == turn_two_before
+    assert _counts(db, "assistant_turn") == {"assistant_turn": 1}  # no content
+
+    # ... and the residue is still recoverable through the sanctioned route:
+    # the new epoch claims the turn, then the same two units close it.
+    adopted = new.store.claim_turn_for_recovery(TurnId(turn_two))
+    assert isinstance(adopted, Ok), adopted
+    advanced = new.store.transition_turn(
+        TurnId(turn_two), _turn_row(db, turn_two)[3], TurnStatus.GENERATING
     )
-    assert isinstance(transitioned, Ok), transitioned
-    terminal = world.store.terminalize_turn(
+    assert isinstance(advanced, Ok), advanced
+    terminal = new.store.terminalize_turn(
         TurnId(turn_two), TurnOutcome.REPLIED_FULL
     )
     assert isinstance(terminal, Ok), terminal
     assert _turn_row(db, turn_two)[:2] == ("COMPLETED", "REPLIED_FULL")
     assert _counts(db, "assistant_turn") == {"assistant_turn": 1}  # no content
-    adopted = new.store.claim_turn_for_recovery(TurnId(turn_two))
-    assert isinstance(adopted, Ok), adopted  # already terminal ⇒ unchanged
     assert _counts(db, "evidence_group") == {"evidence_group": 0}
 
 

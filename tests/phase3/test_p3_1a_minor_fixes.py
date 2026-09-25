@@ -94,8 +94,14 @@ def test_f2_canonicalize_docstring_drops_the_false_paradigm_claim() -> None:
     )
     assert "withdrawn" in doc  # the false wording is retracted in place
     assert "combined" in doc  # the store-level + ownership fence together
-    assert "weaker" in doc  # transition_turn / terminalize_turn attribution
-    assert "open P3+" in doc  # the question is named, not silently closed
+    # P10-4 (DEC-OPI-8f27d1de-…9): the sibling units are no longer "weaker" —
+    # they carry the same store-level fence — and the interim "open P3+
+    # question" is answered, not left open. The pin moves with the docstring it
+    # names (the rewrite is mandated by that decision; no refusal is relaxed:
+    # nothing here asserts behaviour, and the two surviving phrases stay).
+    assert "both braces" in doc  # 三 unit 同保的正面陈述
+    assert "open P3+" not in doc  # the question is answered, not silently kept
+    assert "Reopen condition" in doc  # ... and its reversal is named
 
 
 # ---------------------------------------------------------------------------

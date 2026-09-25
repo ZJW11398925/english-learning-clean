@@ -406,6 +406,7 @@ class SqliteConversationStore:
                 "terminal status requires terminalize_turn",
             )
         with short_transaction(self._conn):
+            self._require_current_epoch()
             row = self._turn_row(turn_id)
             if row is None:
                 return _err(
@@ -467,14 +468,28 @@ class SqliteConversationStore:
         writes — the transcript is never polluted by stale-epoch content
         (DATA_MODEL §19; RUNTIME_ARCHITECTURE §24).
 
-        Attribution note (P3-0 review F2, DEC-…eaaa5a1d.58): this unit's
-        fence is the *combined* one — store-level epoch check AND turn
-        ownership check. ``transition_turn`` / ``terminalize_turn`` are
-        weaker: they compare the turn's owner_epoch against the store
-        fence but never consult the newest durable epoch themselves. The
-        earlier "same paradigm" wording was wrong and is withdrawn;
-        whether those two units gain a store-level fence is an open P3+
-        question, not something this method changes.
+        Attribution note (P3-0 review F2, DEC-…eaaa5a1d.58; decided in P10-4,
+        DEC-OPI-8f27d1de-…9): this unit's fence is the *combined* one — the
+        two braces divide the work. Store-level
+        (``_require_current_epoch``) asks whether this instance's adopted
+        epoch is still the newest ``runtime_epoch`` row in app.db;
+        ownership asks whether the row belongs to that epoch (a new epoch
+        that wants old work claims it first — ``claim_turn_for_recovery``,
+        RUNTIME §24 / SM §17.1 rule 3). ``transition_turn`` and
+        ``terminalize_turn`` carry the same store-level check at the head of
+        their write transaction since P10-4, so all three units now share
+        both braces. The earlier "same paradigm" wording was wrong and stays
+        withdrawn; the interim reading — those two units never consult the
+        newest durable epoch themselves, so whether they should was left open —
+        is answered by that repair, and the answer is the same store-level check
+        the other unit carries. Consequence of the check order, per unit: a
+        *stale* store
+        raises the StaleEpochError family before the ownership read, so a
+        stale store's call on a foreign-epoch row is refused as stale rather
+        than answered AUTHORITY_VIOLATION — both refuse before anything
+        writes. Reopen condition: canonical re-declares these two units as
+        ownership-only fences (DATA_MODEL §19 / RUNTIME_ARCHITECTURE §24 read
+        as "a live store may advance work it owns from any epoch").
         """
         if turn.delivery_state not in CANONICAL_DELIVERY_STATES:
             return _err(
@@ -578,6 +593,7 @@ class SqliteConversationStore:
         else:
             status = TurnStatus.COMPLETED
         with short_transaction(self._conn):
+            self._require_current_epoch()
             row = self._turn_row(turn_id)
             if row is None:
                 return _err(

@@ -1,7 +1,9 @@
 """VAL ⑤ — canonicalize_assistant_turn is epoch-fenced (P3-0 ⑤,
 DEC-…d7937fd7.19 F4 disposition after two deferrals).
 
-Pins (transition_turn / terminalize_turn paradigm):
+Pins (P10-4: all three coordination units now carry both braces — the
+"canonicalize alone has the store-level fence" paradigm this line used to
+name is withdrawn, DEC-OPI-8f27d1de-…9):
 - a store whose adopted epoch is no longer the newest runtime epoch is
   fenced BEFORE anything writes: canonicalization raises the
   StaleEpochError family and the transcript stays unpolluted;
