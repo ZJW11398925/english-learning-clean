@@ -26,22 +26,25 @@ R0 INDEXED — "source / assessment membership / canonical form 可定位"
   *not* carried by V1 — declared, not assumed).
 - ``canonical_form`` — a §24.5 ExampleLink row in role ``PRIMARY_TARGET``.
 - ``assessment_membership`` — the R0 sentence's **third** item (§24.8
-  AssessmentMembership). No V1 table carries it
-  (:data:`DECLARED_ABSENT_FACT_KEYS`), and P5-R adopts the **strict
-  conjunction reading**: all three named things are required, so a corpus
-  without assessment membership reaches no level at all. The alternative
-  (∨ / optional-third-item) reading is *recorded but not adopted* — taking a
-  named requirement of the level as optional is what made the previous
-  reading of this ladder unreportable, and the honest fail-closed answer is
-  preferred over a level the artifact does not support.
+  AssessmentMembership). P5-R adopted the **strict conjunction reading**: all
+  three named things are required, so a corpus without assessment membership
+  reaches no level at all. The alternative (∨ / optional-third-item) reading
+  is *recorded but not adopted* — taking a named requirement of the level as
+  optional is what made the previous reading of this ladder unreportable, and
+  the honest fail-closed answer is preferred over a level the artifact does
+  not support. C1 gave the fact a table
+  (``content_assessment_membership``); it was a declared-absent key before
+  that, and reading it absent *was* the strict conjunction in action.
 
 R1 LEXICALLY_RESOLVED — "POS / sense / basic definition / forms 已可追溯"
 
 - four **separate** facts, one per named thing (the slash row is a
   conjunction, like §8.1 R2/R4 — the slash-lists section below):
   ``pos``, ``sense``, ``basic_definition`` and ``forms``. Each is read
-  independently from its own §24.2 LexicalEntry / Form / Sense evidence;
-  no V1 table carries any of them, so all four read absent for this corpus.
+  independently from its own §24.2 LexicalEntry / Form / Sense evidence (and,
+  for the definition, a §24.3 ContentText row in role ``definition``) — one
+  fact per table, none derived from another. Until C1 no table carried any of
+  them and all four read absent; that is why the corpus read no level then.
 
   The previous implementation reported one composite ``lexical_resolution``
   fact satisfied by ``entity_type == EXPRESSION``. P5-R removes that
@@ -65,7 +68,9 @@ overlay、register/usage-modality/context 等 Planner 所需信息"
 R3 TEACHING_READY — "已具备 reviewed explanation/note、可用 example policy、
 必要 contrast/usage，以及需要时的 TypicalError"
 
-- ``reviewed_explanation`` — a reviewed explanation/note for the target.
+- ``reviewed_explanation`` — a reviewed explanation/note for the target (a
+  §24.3 ContentText row in role ``teaching_note`` — the §24.3 role list is
+  where "explanation / note" has a canonical word).
 - ``example_policy`` — a usable example policy (which examples to present,
   when) — *not* the target's example inventory: §24.5 ExampleLink rows are
   the examples themselves (already an R0/R1 fact).
@@ -73,7 +78,12 @@ R3 TEACHING_READY — "已具备 reviewed explanation/note、可用 example poli
   a §24.7 ResourceLabel.
 - ``typical_error_when_needed`` — §24.9 TypicalError, required only when a
   source declares the need (:attr:`ReadinessFacts.typical_error_required`),
-  so "以及需要时" is an explicit condition rather than a silent skip.
+  so "以及需要时" is an explicit condition rather than a silent skip. The
+  *need* is a source declaration and is carried by the artifact itself
+  (a declared-reading ``content_meta`` key,
+  elc.content.types.typical_error_required_key) rather than inferred from the
+  rows' presence: a source that declares the need before the error is written
+  is built, and the ladder reports the gap.
 
 R4 DETECTION_READY — "在 R3 基础上具备 detection policy / recognition rules /
 negative fixtures / false-positive boundaries，可支持高置信 automatic
@@ -93,10 +103,16 @@ error-triggered teaching"
 one whose cumulative key set is fully satisfied; when *no* level's set is
 (R0 included), ``level`` is ``None`` — §8.1 has no "below R0" level, so no
 word is minted for that state (a ``INDEXED_ONLY``-style label would be a new
-canonical vocabulary word, which this module may not create). For this
-corpus the answer is exactly that: 14 of 14 targets read ``None``, blocked at
-R0 by ``assessment_membership`` and at R1 by the four lexical facts — the
-truthful report, not a regression to be papered over by a friendlier reading.
+canonical vocabulary word, which this module may not create). That is not a
+hypothetical: before C1 every §8.1 fact whose evidence had no table read
+absent, so 14 of 14 corpus targets read ``None``, blocked at R0 by
+``assessment_membership`` and at R1 by the four lexical facts — the truthful
+report, not a regression to be papered over by a friendlier reading. C1 built
+the evidence face (thirteen tables, elc.content.build) and the corpus moved:
+one target whose source states all nineteen facts reads
+``R4_DETECTION_READY``, the other thirteen still read ``None`` because their
+sources state no evidence — the same report, now driven by the artifact
+instead of by the missing tables.
 
 Two things this ladder deliberately does not do (stated so their absence is a
 decision rather than an omission):
@@ -163,9 +179,11 @@ READINESS_LEVELS = tuple(str(level) for level in ReadinessLevel)
 #: The §8.1 fact keys this judgement reads, in level order (R0 → R4). A key is
 #: a *testable property of the artifact*, never a model claim, and every key
 #: is required by exactly one level (the strict reading; no fact sits outside
-#: the ladder). Keys whose evidence no V1 table carries are listed all the
-#: same — their absence is reported per target, see
-#: :data:`DECLARED_ABSENT_FACT_KEYS`.
+#: the ladder). Before C1 five of them (R0's third item and R1's four) had no
+#: evidence table at all and were listed here all the same, so their absence
+#: was reported per target rather than exempted; C1 gave every key a table and
+#: :data:`DECLARED_ABSENT_FACT_KEYS` is empty — the list itself is unchanged,
+#: because it is the *ladder*, not a statement about the artifact.
 READINESS_FACT_KEYS = (
     "entity_row",
     "canonical_form",
@@ -188,15 +206,22 @@ READINESS_FACT_KEYS = (
     "false_positive_boundaries",
 )
 
-#: §8.1 facts whose evidence **no V1 artifact state can carry** — no §24.8
-#: AssessmentMembership table, no §24.2 LexicalEntry/Form/Sense rows. They are
-#: not exemptions: under the strict reading adopted here they are required
-#: facts like every other key (``LEVEL_ADDED_FACTS`` requires them), so their
-#: absence is exactly what the ladder reports as the blocking evidence. Naming
-#: them keeps "the corpus reaches no level" a declared consequence rather than
-#: a silent default (elc.curriculum.store.UNREAD_FACT_EVIDENCE carries the
-#: missing-evidence sentence for each).
-DECLARED_ABSENT_FACT_KEYS = ("assessment_membership",)
+#: §8.1 facts whose evidence **no artifact state can carry**. **Empty since
+#: C1 (Phase 11)**: the thirteen readiness-evidence tables of
+#: elc.content.build (11 → 24) carry the evidence for every one of the
+#: nineteen keys, so the ladder reads all of them and has nothing left to
+#: declare absent. The mechanism is kept rather than deleted — a §8.1 fact
+#: whose evidence has no table is registered here again (with its missing-
+#: evidence sentence in elc.curriculum.store.UNREAD_FACT_EVIDENCE), so "this
+#: fact cannot be read" stays a declaration instead of a silent False.
+#:
+#: History (kept, because it is what P5-R ruled and why the strict reading
+#: exists): until C1 this tuple was ``("assessment_membership",)`` — R0's
+#: third named thing — and four R1 keys (pos / sense / basic_definition /
+#: forms) had no carrier either, which is exactly why the whole corpus read
+#: no level: "the corpus reaches no level" was a report about the artifact,
+#: never a defect of the ladder.
+DECLARED_ABSENT_FACT_KEYS: tuple[str, ...] = ()
 
 #: What each level *adds* to the keys below it (§8.1, cited per level in the
 #: module docstring). The union of these tuples is exactly
@@ -276,14 +301,20 @@ class ReadinessFacts:
     Every field defaults to False: a fact the artifact does not carry is
     absent, never assumed present — and no field is derived from another
     (``forms`` is not "has examples", ``sense`` is not "is an expression").
-    ``typical_error_required`` is the one field a *source* (not the artifact)
-    sets: it declares that this target needs a TypicalError, which turns
-    ``typical_error`` into a required fact. No V1 source declares it, so the
-    corpus reads ``False`` — reported here rather than silently skipped.
+    ``typical_error_required`` is the one field a *source* sets: it declares
+    that this target needs a TypicalError, which turns ``typical_error`` into a
+    required fact. The artifact carries that declaration durably (a
+    declared-reading ``content_meta`` key read by
+    :meth:`elc.content.store.ContentStore.typical_error_required`), so the
+    field is read like every other one: a source that declares nothing has not
+    triggered §8.1's condition, and a source that declares the need without
+    having written the error makes the key unsatisfied — reported here rather
+    than silently skipped.
 
     The four R1 fields are the four things §8.1 R1 names (POS / sense /
     basic definition / forms), one field each, read from their own §24.2
-    LexicalEntry / Form / Sense evidence.
+    LexicalEntry / Form / Sense evidence (and a §24.3 text row in role
+    ``definition`` for the basic definition).
     """
 
     target_id: str

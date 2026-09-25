@@ -202,8 +202,9 @@ def test_the_level_to_fact_key_table_is_cumulative_and_complete() -> None:
         ]
     # P5-R, strict reading: every declared fact key is *required* by exactly
     # one level — none sits outside the ladder as a silent exemption, and the
-    # declared-absent keys are required like any other (that is what makes
-    # the corpus's "no level at all" a report rather than a default).
+    # declared-absent keys are required like any other (P5-R history: that is
+    # what made the corpus's then-"no level at all" a report rather than a
+    # default; since C1 the mapping is empty and the report is artifact-driven).
     assert set(flattened) == set(READINESS_FACT_KEYS)
     assert set(DECLARED_ABSENT_FACT_KEYS) <= set(flattened)
 
@@ -212,12 +213,17 @@ def test_the_slash_list_operationalization_is_the_declared_one() -> None:
     """F-3, restated by P5-R: every separately named concept is one required
     fact — R1's four (POS / sense / basic definition / forms), R2's four,
     R4's four — and R0's third named item is required too (the strict
-    conjunction; DECLARED_ABSENT no longer means "exempt")."""
+    conjunction). C1 (Phase 11) emptied DECLARED_ABSENT_FACT_KEYS: every
+    §8.1 fact key now has an evidence table, so nothing is exempt *and*
+    nothing is unread — the strictness is unchanged, its carrier is not."""
 
     assert len(LEVEL_ADDED_FACTS["R1_LEXICALLY_RESOLVED"]) == 4
     assert len(LEVEL_ADDED_FACTS["R2_PLANNER_READY"]) == 4
     assert len(LEVEL_ADDED_FACTS["R4_DETECTION_READY"]) == 4
-    assert DECLARED_ABSENT_FACT_KEYS == ("assessment_membership",)
+    # 旧真值 → 新真值（C1）: ("assessment_membership",) → () — the key's
+    # evidence table exists now (content_assessment_membership), so the
+    # declared-absent mechanism has nothing left to declare.
+    assert DECLARED_ABSENT_FACT_KEYS == ()
     assert "assessment_membership" in required_fact_keys("R0_INDEXED")
     assert "assessment_membership" in READINESS_FACT_KEYS
     # The two spellings of a fold row are one value each (the P5-0 precedent):
@@ -471,20 +477,23 @@ def test_the_assessment_answers_which_keys_support_which_level() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_the_artifact_carries_no_table_for_the_unread_facts(
+def test_every_readiness_fact_key_has_a_carrier_table_in_the_artifact(
     built_content_db: Path,
 ) -> None:
-    """The absent facts are absent because the artifact has no such table.
+    """The positive successor of the deleted name-word scan (旧真值: 11
+    tables, no §8.1 fact table, facts read absent by construction; 新真值
+    C1: 24 tables, every §8.1 fact key's evidence carried).
 
-    Pinning the artifact's table set is what makes the readiness assembly's
-    False defaults a *declared* gap rather than a hardcoded one: a build that
-    adds a table carrying one of these facts fails here first.
+    The artifact's table set is exactly ``SCHEMA_STATEMENTS``, and every
+    §8.1 fact key this module reads names the table(s) that carry it — so a
+    build that drops a carrier fails here first, and "this fact cannot be
+    read" can never come back as a silent default.
     """
 
     declared = tuple(
         statement.split("(", 1)[0].split()[-1] for statement in SCHEMA_STATEMENTS
     )
-    assert len(declared) == 11
+    assert len(declared) == 24
     conn = open_read_only(built_content_db)
     try:
         rows = conn.execute(
@@ -494,29 +503,43 @@ def test_the_artifact_carries_no_table_for_the_unread_facts(
         conn.close()
     artifact_tables = tuple(str(row[0]) for row in rows)
     assert artifact_tables == tuple(sorted(declared))
-    for table in artifact_tables:
-        for word in (
-            "pedagogical",
-            "label",
-            "overlay",
-            "explanation",
-            "typical_error",
-            "detection",
-            "fixture",
-        ):
-            assert word not in table, (
-                f"artifact table {table!r} may carry a §8.1 fact this module"
-                " reads as absent — revisit readiness_facts"
-            )
+    # One carrier (or carrier pair) per §8.1 fact key, spelled out — the
+    # same mapping readiness_facts reads through evidence_counts().
+    carriers: dict[str, tuple[str, ...]] = {
+        "entity_row": ("content_entity",),
+        "canonical_form": ("content_example",),
+        "assessment_membership": ("content_assessment_membership",),
+        "pos": ("content_lexical_entry",),
+        "sense": ("content_sense",),
+        "basic_definition": ("content_text",),
+        "forms": ("content_form",),
+        "curriculum_link": ("curriculum_link",),
+        "pedagogical_profile": ("content_pedagogical_profile",),
+        "goal_pack_overlay": ("content_pack_overlay",),
+        "resource_labels": ("content_resource_label",),
+        "reviewed_explanation": ("content_text",),
+        "example_policy": ("content_example_policy",),
+        "contrast_or_usage": ("content_example", "content_resource_label"),
+        "typical_error_when_needed": ("content_typical_error", "content_meta"),
+        "detection_policy": ("content_detection_policy",),
+        "recognition_rules": ("content_detection_rule",),
+        "negative_fixtures": ("content_detection_fixture",),
+        "false_positive_boundaries": ("content_detection_fixture",),
+    }
+    assert set(carriers) == set(READINESS_FACT_KEYS)
+    for key, tables in carriers.items():
+        for table in tables:
+            assert table in artifact_tables, (key, table)
 
 
 def test_corpus_readiness_table_is_computed_and_printed(
     built_content_db: Path,
 ) -> None:
-    """P5-R truth: the corpus reaches **no level**. §8.1 R0 requires the three
-    named things and the artifact carries no assessment membership; R1's four
-    lexical facts are absent too. The table prints the blocking keys so the
-    reading is checkable rather than asserted."""
+    """P5-R truth, now driven by the artifact instead of by missing tables
+    (C1): thirteen targets state no evidence and read no level, blocked at
+    R0 by ``assessment_membership``; the one target whose source states all
+    nineteen facts reads ``R4_DETECTION_READY``. The table prints the
+    blocking keys so the reading is checkable rather than asserted."""
 
     table = _corpus_table(built_content_db)
 
@@ -525,43 +548,54 @@ def test_corpus_readiness_table_is_computed_and_printed(
         print(f"[readiness] {target_id:32} {level!s:22} {missing}")
 
     assert len(table) == 14
-    for target_id, level, missing in table:
+    levels = {(target, missing): level for target, level, missing in table}
+    # 旧真值 → 新真值（C1）: 14×None → 1×R4_DETECTION_READY + 13×None.
+    assert (
+        levels[("res-colloc-make-a-decision", ())] == "R4_DETECTION_READY"
+    )
+    for (target_id, missing), level in levels.items():
+        if target_id == "res-colloc-make-a-decision":
+            continue
         assert level is None, (target_id, level)
         assert missing == ("assessment_membership",), (target_id, missing)
 
 
-def test_no_corpus_target_is_detection_ready(built_content_db: Path) -> None:
-    """不虚报: the corpus carries no detection fixtures, so no target reads R4."""
-
-    for assessment in _corpus_assessments(built_content_db):
-        assert assessment.level != "R4_DETECTION_READY", assessment.target_id
-        r4 = assessment.judgement("R4_DETECTION_READY")
-        assert r4.reached is False
-        # R4 is cumulative: the four detection facts *and* everything below
-        # them are reported missing for every corpus target.
-        assert set(R4_FACTS) <= set(r4.missing_keys)
-
-
-def test_the_corpus_missing_keys_are_exactly_the_unread_fact_evidence(
+def test_exactly_one_corpus_target_is_detection_ready(
     built_content_db: Path,
 ) -> None:
-    """Every key this corpus never satisfies has a named piece of missing
-    evidence — the mapping is exhaustive, so "we did not read it" cannot hide
-    behind "we did not need it".
+    """不虚报, both directions (旧真值: none; 新真值 C1: exactly the one
+    target whose source states all nineteen §8.1 facts): the other thirteen
+    carry no detection evidence and no level, and the one that does reads
+    R4 with its judgement fully reached."""
 
-    Three keys are missing for this corpus yet deliberately *not* counted as
-    "never satisfied by design" here, and the equation below says why:
-    ``typical_error`` is the raw §24.9 fact behind the conditional level key
-    ``typical_error_when_needed`` (satisfied by a declared-absent need), and
-    ``contrast_or_usage`` is read from §24.5 CONTRAST rows — a readable read
-    path this corpus happens to carry no row for. ``lexical_resolution`` no
-    longer exists at all: P5-R replaced it with §8.1 R1's four named facts,
-    which are in the mapping like every other unread key. ``curriculum_link``
-    is the one key that moved *into* the never-satisfied set in P5-R (the seed
-    links are CURRICULUM_MAPPED, so no row is an approved mapping) while
-    staying out of the unread mapping — the evidence is readable, it is the
-    status that is not an approval.
-    """
+    r4_targets: list[str] = []
+    for assessment in _corpus_assessments(built_content_db):
+        if assessment.level == "R4_DETECTION_READY":
+            r4_targets.append(assessment.target_id)
+            assert assessment.detection_ready is True
+            r4 = assessment.judgement("R4_DETECTION_READY")
+            assert r4.reached is True
+            assert r4.missing_keys == ()
+            continue
+        r4 = assessment.judgement("R4_DETECTION_READY")
+        assert r4.reached is False, assessment.target_id
+        # R4 is cumulative: the four detection facts *and* everything below
+        # them are reported missing for every target that does not reach it.
+        assert set(R4_FACTS) <= set(r4.missing_keys)
+    assert r4_targets == ["res-colloc-make-a-decision"]
+
+
+def test_the_never_present_keys_are_a_source_property_and_the_unread_mapping_is_empty(
+    built_content_db: Path,
+) -> None:
+    """Old truth (P5-R): the keys the corpus never satisfied were exactly the
+    ones with named missing evidence — "we did not read it" could not hide.
+    New truth (C1): **every** §8.1 fact key is readable (the declared-absent
+    mapping is empty), so what the corpus never satisfies is a property of
+    the *sources*, not of the read face: thirteen targets state no evidence
+    at all, and their missing-key union is every key except the conditional
+    TypicalError one — which no source triggers, so it is satisfied by the
+    declared absence of a need on all fourteen."""
 
     store = ContentStore(built_content_db)
     try:
@@ -574,23 +608,27 @@ def test_the_corpus_missing_keys_are_exactly_the_unread_fact_evidence(
                 never_present |= set(judgement.missing_keys)
     finally:
         store.close()
-    not_level_required = {"typical_error"}
-    assert never_present == (
-        set(UNREAD_FACT_EVIDENCE) - not_level_required
-        | {"curriculum_link", "contrast_or_usage"}
-    )
-    for key, evidence in UNREAD_FACT_EVIDENCE.items():
-        # `typical_error` is the raw §24.9 fact; the level key derived from it
-        # is `typical_error_when_needed`.
-        assert key in READINESS_FACT_KEYS or key == "typical_error"
-        assert evidence
-    assert "typical_error_when_needed" not in UNREAD_FACT_EVIDENCE
-    assert "curriculum_link" not in UNREAD_FACT_EVIDENCE
-    assert "contrast_or_usage" not in UNREAD_FACT_EVIDENCE
-    # The five structurally unread keys (P5-R): R0's third item and R1's four.
-    assert "assessment_membership" in UNREAD_FACT_EVIDENCE
-    for facet in R1_FACETS:
-        assert facet in UNREAD_FACT_EVIDENCE
+    # 旧真值 → 新真值（C1）: the equation against UNREAD_FACT_EVIDENCE plus
+    # {curriculum_link, contrast_or_usage} collapses — the mapping is empty
+    # and every key's evidence is readable — into this source-side equation.
+    # Three keys are satisfied for every target today and so absent from the
+    # union: ``entity_row`` (every artifact row exists), ``canonical_form``
+    # (every target carries its §24.5 PRIMARY_TARGET row, the P3-1B
+    # migration), and the conditional ``typical_error_when_needed`` (no
+    # source triggers the need, so the declared absence satisfies it).
+    assert never_present == set(READINESS_FACT_KEYS) - {
+        "entity_row",
+        "canonical_form",
+        "typical_error_when_needed",
+    }
+    # The declared-absent mechanism itself: empty, kept, and still honest.
+    assert UNREAD_FACT_EVIDENCE == {}
+    assert DECLARED_ABSENT_FACT_KEYS == ()
+    # ...and the conditional key is satisfied for every target today, which
+    # is why it alone is absent from the union.
+    for assessment in assessments.value:
+        judgement = assessment.judgement("R4_DETECTION_READY")
+        assert "typical_error_when_needed" not in judgement.missing_keys
 
 
 def test_every_artifact_entity_is_an_expression(built_content_db: Path) -> None:
@@ -656,10 +694,14 @@ def test_a_non_expression_entity_reads_the_same_no_level(tmp_path: Path) -> None
 
 
 def test_assessment_membership_is_required_and_absent(built_content_db: Path) -> None:
-    """F-2, restated by P5-R: R0's third item is read, reported, **and
-    required** — the strict conjunction. The strict reading is declared in
-    the module rather than silently applied or silently skipped; the ∨
-    reading is recorded there as the option that was not adopted."""
+    """F-2, restated by P5-R and re-homed by C1: R0's third item is read,
+    reported, **and required** — the strict conjunction. The strict reading
+    is declared in the module rather than silently applied or silently
+    skipped; the ∨ reading is recorded there as the option that was not
+    adopted. C1 gave the fact a table, so what is absent for this target is
+    the *source's* membership row, never the reader's reach (旧真值: the key
+    sat in UNREAD_FACT_EVIDENCE; 新真值: the mapping is empty and the count
+    reads 0 from its own table)."""
 
     store = ContentStore(built_content_db)
     try:
@@ -668,6 +710,8 @@ def test_assessment_membership_is_required_and_absent(built_content_db: Path) ->
         assert isinstance(facts, Ok), facts
         assessment = supply.readiness(FOCUS)
         assert isinstance(assessment, Ok), assessment
+        counts = store.evidence_counts(FOCUS)
+        assert isinstance(counts, Ok), counts
     finally:
         store.close()
     print(
@@ -677,29 +721,36 @@ def test_assessment_membership_is_required_and_absent(built_content_db: Path) ->
         " declared_absent=" + str(DECLARED_ABSENT_FACT_KEYS)
     )
     assert facts.value.assessment_membership is False
+    assert counts.value.assessment_memberships == 0
     assert "assessment_membership" in READINESS_FACT_KEYS
     assert "assessment_membership" in assessment.value.judgement(
         "R0_INDEXED"
     ).required_keys
     assert assessment.value.level is None
     assert assessment.value.missing_keys == ("assessment_membership",)
-    assert "assessment_membership" in UNREAD_FACT_EVIDENCE
+    # C1: the fact is readable now — the absence is this source's, not the
+    # read face's — so the declared-absent mapping no longer names it.
+    assert "assessment_membership" not in UNREAD_FACT_EVIDENCE
+    assert UNREAD_FACT_EVIDENCE == {}
 
 
-def test_no_corpus_target_carries_an_approved_curriculum_link(
+def test_exactly_one_corpus_link_is_approved_and_it_satisfies_the_r2_fact(
     built_content_db: Path,
 ) -> None:
-    """The corpus read one level down: the 9 RESOURCE targets carry a §24.7
-    CurriculumLink row, and every row is ``CURRICULUM_MAPPED`` (P5-R) — so
-    the R2 ``curriculum_link`` fact is False for all 14 targets, and the 5
-    CAPABILITY nodes have no link row of their own (curriculum/README.md C1 —
-    no self-link is invented)."""
+    """The corpus read one level down, now at C1's truth (旧真值: every link
+    was ``CURRICULUM_MAPPED`` and the R2 fact was False for all 14; 新真值:
+    exactly one link — res-colloc-make-a-decision's, approved by the C1
+    editorial review — satisfies the R2 ``curriculum_link`` fact, while the
+    other eight linked targets stay ``CURRICULUM_MAPPED`` and unsatisfied,
+    and the 5 CAPABILITY nodes still have no link row of their own
+    (curriculum/README.md C1 — no self-link is invented))."""
 
     store = ContentStore(built_content_db)
     try:
         supply = CurriculumContentStore(store)
         linked: list[str] = []
         with_fact: list[str] = []
+        approved: list[str] = []
         for entity_id in store.entity_ids().value:
             facts = supply.readiness_facts(entity_id)
             assert isinstance(facts, Ok), facts
@@ -710,16 +761,25 @@ def test_no_corpus_target_carries_an_approved_curriculum_link(
             assert isinstance(links, Ok), links
             if links.value:
                 linked.append(entity_id)
-                assert all(
-                    link.editorial_status == "CURRICULUM_MAPPED"
+                if any(
+                    link.editorial_status == "CANONICAL_APPROVED"
                     for link in links.value
-                ), entity_id
+                ):
+                    approved.append(entity_id)
+                else:
+                    assert all(
+                        link.editorial_status == "CURRICULUM_MAPPED"
+                        for link in links.value
+                    ), entity_id
         assert len(store.entity_ids().value) - len(linked) == 5
     finally:
         store.close()
     assert len(linked) == 9
     assert all(entity_id.startswith("res-") for entity_id in linked)
-    assert with_fact == [], "no unapproved mapping may satisfy the R2 fact"
+    # The R2 fact and the approved status coincide on exactly one target:
+    # no unapproved mapping satisfies it, and the approved one does.
+    assert approved == ["res-colloc-make-a-decision"]
+    assert with_fact == approved
 
 
 def test_an_approved_curriculum_link_is_an_r2_fact(tmp_path: Path) -> None:

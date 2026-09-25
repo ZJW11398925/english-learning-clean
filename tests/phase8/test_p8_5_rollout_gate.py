@@ -192,36 +192,107 @@ def test_off_refuses_at_every_stage() -> None:
 # -- ② the content gate ------------------------------------------------------
 
 
-def test_the_real_corpus_answers_hold_on_all_four_rows(p8world: World) -> None:
-    """The measured answer this cut's HOLD is founded on (the receipt's own
-    output): every row 0, four blocking rows, 14 targets all without a level."""
+def test_the_real_corpus_answers_go_on_all_four_rows_and_the_rollout_stays_held(
+    p8world: World,
+) -> None:
+    """The measured answer at C1's truth, as a two-layer statement (旧真值:
+    every row 0, four HOLD rows, 14 targets all without a level; 新真值: the
+    one C1-authored R4 target makes every row GO — BF-02 §10's "at least one
+    target" is met on all four floors — **and the rollout is still held**):
+    layer one is the content gate's GO; layer two is the stage leg, which no
+    shipped caller declares — ``stage_allows_automatic`` answers False for
+    the undeclared stage and for the fail-closed default, and the two-leg
+    composition refuses with any frequency word — plus the Calibration100
+    volume gate (docs/IMPLEMENTATION_PLAN.md §12's 100/30/2), which the
+    corpus's own counts show unmet. Content capable ≠ rollout open."""
 
     report = corpus_rollout_gate(p8world.curriculum)
     assert isinstance(report, Ok), report
     gate = report.value
+    # Layer one: the content gate's four rows all read GO on one usable
+    # target — 旧真值 was ("PROBE", 0) … ("automatic CURRENT_USER_ERROR", 0).
     assert [(row.row_word, row.usable_targets) for row in gate.rows] == [
-        ("PROBE", 0),
-        ("user-initiated teaching", 0),
-        ("automatic general/review", 0),
-        ("automatic CURRENT_USER_ERROR", 0),
+        ("PROBE", 1),
+        ("user-initiated teaching", 1),
+        ("automatic general/review", 1),
+        ("automatic CURRENT_USER_ERROR", 1),
     ]
-    assert all(row.verdict is RolloutVerdict.HOLD for row in gate.rows)
-    assert gate.verdict is RolloutVerdict.HOLD
-    assert gate.automatic_verdict is RolloutVerdict.HOLD
+    assert all(row.verdict is RolloutVerdict.GO for row in gate.rows)
+    assert gate.verdict is RolloutVerdict.GO
+    assert gate.automatic_verdict is RolloutVerdict.GO
     assert gate.targets_considered == 14
-    assert gate.targets_without_level == 14
+    assert gate.targets_without_level == 13
     assert gate.unknown_levels == ()
     assert gate.summary() == (
-        "PROBE: required R2_PLANNER_READY, usable targets 0 → HOLD",
-        "user-initiated teaching: required R3_TEACHING_READY, usable targets 0"
-        " → HOLD",
-        "automatic general/review: required R3_TEACHING_READY, usable targets 0"
-        " → HOLD",
+        "PROBE: required R2_PLANNER_READY, usable targets 1 → GO",
+        "user-initiated teaching: required R3_TEACHING_READY, usable targets 1"
+        " → GO",
+        "automatic general/review: required R3_TEACHING_READY, usable targets 1"
+        " → GO",
         "automatic CURRENT_USER_ERROR: required R4_DETECTION_READY, usable"
-        " targets 0 → HOLD",
-        "targets: 14 considered, 14 without a level",
-        "verdict: HOLD (automatic rows: HOLD)",
-    ) + tuple(f"blocked: {row.line()}" for row in gate.rows)
+        " targets 1 → GO",
+        "targets: 14 considered, 13 without a level",
+        "verdict: GO (automatic rows: GO)",
+    )
+    # No row blocks, so the report's blocked tail is empty (旧真值: four
+    # "blocked: …" lines, one per HOLD row).
+    assert gate.blocking_rows == ()
+    # Layer two: the rollout stays held. No shipped caller declares a stage,
+    # the fail-closed default refuses, the composed two-leg switch refuses
+    # with any §5.1 frequency word, and the Calibration100 volume gate is
+    # unmet on the artifact's own counts.
+    assert stage_allows_automatic(None) is False
+    assert stage_allows_automatic(DEFAULT_ROLLOUT_STAGE) is False
+    for frequency in (None, *TeachingFrequency):
+        assert (
+            automatic_teaching_enabled_of(
+                stage=None, teaching_frequency=frequency
+            )
+            is False
+        )
+    _calibration100_gate_is_unmet_and_readable()
+
+
+def _calibration100_gate_is_unmet_and_readable() -> None:
+    """docs/IMPLEMENTATION_PLAN.md §12's Calibration100 gates (100/30/2),
+    read against the built artifact's own counts: 14 resources (< 100), and
+    no capability in the CORE_A / CORE_C families at all. The numbers live
+    in the frozen document and are read from it, so the gate's terms cannot
+    drift from what this test asserts about them."""
+
+    import re
+    import sqlite3
+    import tempfile
+
+    from elc.content.build import build_content_db
+
+    plan_text = (
+        Path(__file__).resolve().parents[2] / "docs" / "IMPLEMENTATION_PLAN.md"
+    ).read_text(encoding="utf-8")
+    gates = {
+        name: int(re.search(rf"{re.escape(name)} >= (\d+)", plan_text).group(1))
+        for name in ("resource_count", "CORE_A", "CORE_C")
+    }
+    assert gates == {"resource_count": 100, "CORE_A": 30, "CORE_C": 2}
+
+    path = Path(tempfile.mkdtemp()) / "content.db"
+    build_content_db(path)
+    conn = sqlite3.connect(str(path))
+    try:
+        resources = conn.execute(
+            "SELECT COUNT(*) FROM content_entity"
+        ).fetchone()[0]
+        families = dict(
+            conn.execute(
+                "SELECT family, COUNT(*) FROM curriculum_capability "
+                "GROUP BY family"
+            ).fetchall()
+        )
+    finally:
+        conn.close()
+    assert resources < gates["resource_count"]
+    assert families.get("CORE_A", 0) < gates["CORE_A"]
+    assert families.get("CORE_C", 0) < gates["CORE_C"]
 
 
 def test_the_row_words_and_floors_are_bf_02_section_10() -> None:

@@ -5,9 +5,10 @@ gates over the real faces and handed to the **existing**
 :func:`elc.planner.kernel.plan` with no adapter, no re-scoring and no second
 canonicalization. Two worlds are read, and the first is the honest one:
 
-- the shipped corpus (no level for any target) refuses every target at the §8.1
-  gate and the run degrades with ``FEATURE_ASSEMBLY_INCOMPLETE`` — not a
-  ``NO_TARGET``;
+- the shipped corpus (P5-R truth: no level for any target; C1 truth: 1×R4 +
+  13×None) still refuses every target — thirteen at the §8.1 gate and the
+  one graded target at SCHEDULE_ROW — and the run degrades with
+  ``FEATURE_ASSEMBLY_INCOMPLETE`` — not a ``NO_TARGET``;
 - a world with **one declared input** (the content-side facts the §8.1 ladder
   reads — the same "one declared input" convention P7-1's own suite uses for the
   level it could not read) makes candidates exist, and the kernel decides.
@@ -596,18 +597,28 @@ def wired_world(world: World) -> World:
 def test_the_shipped_corpus_refuses_every_target_and_the_run_degrades(
     wired_world: World,
 ) -> None:
-    """The honest chain: real supply, real rows, real ladder — and no candidate
-    exists, because §8.1 reports no level for any shipped target. The context
-    built from the *same read* is INCOMPLETE, and the kernel degrades instead of
-    inventing a decision."""
+    """The honest chain: real supply, real rows, real ladder — and no
+    candidate exists. At C1's truth the refusals split by gate (旧真值: all
+    14 refused at CONTENT_READINESS; 新真值: thirteen ungraded targets are
+    still refused there, and the one R4-graded target is refused later, at
+    SCHEDULE_ROW, because the Scheduler holds no §5.2 row for it) — every
+    target is still refused, and the context built from the *same read* is
+    INCOMPLETE, so the kernel degrades instead of inventing a decision."""
 
     supply = generate_candidates(wired_world.inputs())
     assert supply.proposals == ()
-    assert {refusal.gate for refusal in supply.refusals} == {
-        "CONTENT_READINESS"
-    }
+    gates = {refusal.gate for refusal in supply.refusals}
+    assert gates == {"CONTENT_READINESS", "SCHEDULE_ROW"}
     assert len(supply.refusals) == 14
-    assert set(supply.readiness.values()) == {None}
+    by_gate: dict[str, list[str]] = {}
+    for refusal in supply.refusals:
+        by_gate.setdefault(refusal.gate, []).append(refusal.target_id)
+    assert len(by_gate["CONTENT_READINESS"]) == 13
+    assert by_gate["SCHEDULE_ROW"] == ["res-colloc-make-a-decision"]
+    assert supply.readiness["res-colloc-make-a-decision"] == (
+        "R4_DETECTION_READY"
+    )
+    assert sum(1 for level in supply.readiness.values() if level is None) == 13
 
     authority = wired_world.authority(supply.readiness)
     assert authority.complete is False
@@ -1092,17 +1103,23 @@ def test_a_hard_unjudged_edge_travels_beside_the_scaffold_to_the_kernel(
     assert row.excluded is None
 
 
-def test_the_corpus_world_refuses_before_the_schedule_gate_reads(
+def test_the_refusal_names_the_most_upstream_failing_gate(
     wired_world: World,
 ) -> None:
-    """Order of refusals: the §8.1 gate answers before the §5.2 row is read, so
-    an ungraded target reports CONTENT_READINESS rather than SCHEDULE_ROW — the
-    more upstream fact wins, which is what makes a refusal readable."""
+    """Order of refusals, at C1's truth (旧真值: the §8.1 gate answered
+    before the §5.2 row was read, so every refusal reported
+    CONTENT_READINESS; 新真值: a graded target passes that gate and its
+    refusal comes from the later one). The discipline is per-target and
+    unchanged: a refusal names the most upstream failing check — never a
+    later gate for an ungraded target, and never CONTENT_READINESS for a
+    graded one."""
 
     supply = generate_candidates(wired_world.inputs())
-    assert all(
-        refusal.gate == "CONTENT_READINESS" for refusal in supply.refusals
-    )
+    for refusal in supply.refusals:
+        if supply.readiness[refusal.target_id] is None:
+            assert refusal.gate == "CONTENT_READINESS", refusal
+        else:
+            assert refusal.gate != "CONTENT_READINESS", refusal
 
 
 def test_determinism_and_order() -> None:

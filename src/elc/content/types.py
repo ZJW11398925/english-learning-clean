@@ -107,6 +107,49 @@ SUPPLY_LIFECYCLE_STATUS = "CANONICAL_APPROVED"
 #: "no such target" (elc.curriculum.provider).
 RETIRED_LIFECYCLE_STATUSES = ("DEPRECATED", "REPLACED")
 
+#: docs/DATA_MODEL.md §24.3 ContentText roles — the six words, verbatim. A
+#: text row carries one of them; a role outside the set is refused by the
+#: build (reject, never normalize).
+CONTENT_TEXT_ROLES = (
+    "gloss",
+    "definition",
+    "translation",
+    "usage",
+    "teaching_note",
+    "disambiguation",
+)
+
+#: docs/DATA_MODEL.md §24.10 R4 — "R4 必须包含可测试 detection
+#: policy/fixtures/false-positive boundary". A detection fixture is either a
+#: **negative** example (the detector must not fire on it) or a declared
+#: **false-positive boundary** (the example sits exactly on the edge the
+#: boundary names). §24.10 names the two concepts and gives no word list, so
+#: the two words are C1's declared reading of that split (Revisit = a
+#: canonical fixture vocabulary); the build refuses any other value.
+DETECTION_FIXTURE_KINDS = ("NEGATIVE", "FALSE_POSITIVE_BOUNDARY")
+
+#: docs/DATA_MODEL.md §24.9 TypicalError — a *source-level declaration* that
+#: this target needs a TypicalError, which §8.1 R3 turns into the conditional
+#: fact "以及需要时的 TypicalError". No §24 table carries a per-entity source
+#: declaration (§24.6's ContentSource/SourceSnapshot/Assertion trio is the
+#: canonical home and is NOT carried by V1), so it is recorded as a
+#: `content_meta` key: **declared reading**, Revisit = when §24.6 lands,
+#: migrate this key into the assertion carrier it describes. The declaration
+#: is durable on purpose — a source may declare the need before the authoring
+#: has written the error, and §8.1 readiness is a *report* of that gap, never
+#: a build-time refusal of it.
+TYPICAL_ERROR_REQUIRED_KEY_PREFIX = "typical_error_required:"
+
+
+def typical_error_required_key(entity_id: str) -> str:
+    """The ``content_meta`` key carrying one entity's TypicalError need.
+
+    One function, used by the writer (elc.content.build) and the reader
+    (elc.content.store), so the key format cannot drift between them.
+    """
+
+    return f"{TYPICAL_ERROR_REQUIRED_KEY_PREFIX}{entity_id}"
+
 
 def supply_eligible(lifecycle_status: str) -> bool:
     """May an entity with this §24.11 ``lifecycle_status`` enter

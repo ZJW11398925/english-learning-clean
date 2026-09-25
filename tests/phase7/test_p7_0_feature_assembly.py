@@ -476,12 +476,14 @@ def test_degraded_carries_no_decision() -> None:
         )
 
 
-def test_the_shipped_supply_reports_no_content_level_for_any_target(
+def test_the_shipped_supply_grades_one_target_and_leaves_thirteen_ungraded(
     content_supply,
 ) -> None:
-    """The corpus-side fact the assembly turns into an INCOMPLETE verdict: the
-    real content.db, read through the real curriculum face, grades no target
-    (the P5-R fail-closed ladder, unchanged by this cut)."""
+    """The corpus-side fact the assembly turns into an INCOMPLETE verdict,
+    at C1's truth (旧真值: the real content.db graded no target; 新真值: it
+    grades exactly one — res-colloc-make-a-decision at R4 — and leaves
+    thirteen ungraded, so the assembly stays INCOMPLETE because ungraded
+    candidates the caller holds still exist)."""
 
     ids = content_supply.supply_entity_ids()
     assert isinstance(ids, Ok)
@@ -491,7 +493,11 @@ def test_the_shipped_supply_reports_no_content_level_for_any_target(
         facts = content_supply.readiness_facts(str(entity_id))
         assert isinstance(facts, Ok), entity_id
         levels[str(entity_id)] = judge_readiness(facts.value).level
-    assert set(levels.values()) == {None}
+    # 旧真值 → 新真值（C1）: {None} → {None, "R4_DETECTION_READY"} with
+    # exactly one graded target.
+    assert levels["res-colloc-make-a-decision"] == "R4_DETECTION_READY"
+    ungraded = {target for target, level in levels.items() if level is None}
+    assert len(ungraded) == 13
     authority = _full_bag(curriculum_readiness=levels)
     assert authority.status is FeatureAssemblyStatus.INCOMPLETE
     assert AuthorityName.CURRICULUM_READINESS in authority.missing_authorities

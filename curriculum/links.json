@@ -80,8 +80,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CURRICULUM_MAPPED",
-      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-eval-hedged-opinion). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Approved by the C1 (Phase 11) editorial review during the readiness-evidence authoring of res-colloc-make-a-decision. What that review covered: the row's provenance (declared by the P3-1A/P3-1B fixture, unchanged), the target's evidence document (content_src/evidence/res-colloc-make-a-decision.json, authored and reviewed in C1), and that this approval is what makes §8.1 R2's curriculum_link fact readable for the target. What it did NOT cover, stated so the approval is not read as more than it is: cap-eval-hedged-opinion has no functional definition in this repository, so no capability-semantics audit of the mapping was possible; the other eight rows stay CURRICULUM_MAPPED, and the nine mappings' curriculum semantics remain as unreviewed as curriculum/README.md C2 records. Revisit when the capability definitions land."
     }
   ]
 }

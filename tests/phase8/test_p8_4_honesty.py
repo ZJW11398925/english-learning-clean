@@ -392,10 +392,15 @@ def test_the_controls_record_still_allows_a_hand_declared_value() -> None:
     assert "derived" in dir(TeachingControlFacts)
 
 
-def test_the_corpus_still_cannot_answer_a_usable_level(tmp_path: Path) -> None:
-    """BF-02 §10's thresholds need a level; the shipped corpus reports none —
-    which is the **rollout HOLD** (no automatic/open target is reachable), and
-    it is a read of the real artifact, not a promise."""
+def test_an_evidence_less_target_still_cannot_answer_a_usable_level(
+    tmp_path: Path,
+) -> None:
+    """BF-02 §10's thresholds need a level; an evidence-less target still
+    reads none (P5-R truth: the whole shipped corpus did — which *was* the
+    rollout HOLD; C1 truth: one target reads R4 and the content gate answers
+    GO, while the rollout stays held by the undeclared stage leg, pinned in
+    test_p8_5's suites). The pinned fact here is the per-target one, read
+    from the real artifact, not a promise."""
 
     from elc.content.store import ContentStore
 

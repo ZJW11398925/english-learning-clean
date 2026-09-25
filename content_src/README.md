@@ -20,10 +20,52 @@
 
 ```text
 content_src/
-  index.json                 # 索引：content_version + 实体文档清单（无 glob 兜底）
+  index.json                 # 索引：content_version + 实体文档清单 + 证据文档清单（无 glob 兜底）
   entities/<entity_id>.json  # 每个 validated target 一份（共 14）
+  evidence/<entity_id>.json  # C1：每个声明了 readiness 证据的 target 一份（可空集）
   README.md                  # 本文件 = 映射规则索引文档
 ```
+
+## evidence 块映射规则（C1，Phase 11）
+
+`evidence/<entity_id>.json` 是 §8.1 readiness 证据的作者源（19 键的读面 =
+`elc.curriculum.store.readiness_facts`；纯判定 =
+`elc.curriculum.readiness`）。文件名即实体 id（不重复写；build 拒绝悬空文档）。
+由 `index.json` 的 `evidence` 键逐条声明——**无 glob 兜底**，目录里存在但未入
+索引的文档一律 `BuildError`；`[]` 是合法状态（本语料不声明任何证据）。
+
+块规则：
+
+- **每个块可选**：文档只声明该源携带的证据，未声明的块不落行（读面把缺席读成
+  缺席，绝不读成"默认满足"）。
+- **每块严格读**：未知块键 / 缺键或未知键 / 未知词表词 / 负 ordinal / 重复
+  主键 / 空 JSON 数组（要表达"无行"就**省略**该块）一律 `BuildError`。
+- **声明读法**：§24 给了字段表的列逐字照抄；§24 只命名概念未给字段表的表，列
+  是声明读法（build.py 的表注释逐表写明 + Revisit），不冒充 canonical。
+
+逐块列名（与 13 张证据表一一对应；`entity_id` 由文件名承载，文档不重复）：
+
+| 块 | 表 | 列 |
+| --- | --- | --- |
+| `assessment_membership` | `content_assessment_membership` | assessment_id / membership_status / source（§24.8 未给字段表 ⇒ 声明读法） |
+| `lexical_entry` | `content_lexical_entry` | lemma / pos（§24.2 两列逐字） |
+| `senses` | `content_sense` | sense_id / ordinal（§24.3 未给字段表 ⇒ 声明读法） |
+| `texts` | `content_text` | sense_id(可空) / language / role / ordinal / text（role ∈ §24.3 六词表） |
+| `forms` | `content_form` | form_id / written / normalized / form_type / morph_features(可空) / pronunciation(可空)（§24.2 五列 + form_id） |
+| `pedagogical_profile` | `content_pedagogical_profile` | §24.7 十一列逐字（default_target_mode 校 §11 词表、editorial_status 校 §24.11 词表） |
+| `pack_overlays` | `content_pack_overlay` | pack_id / weight / rationale（§24.8 未给字段表 ⇒ 声明读法） |
+| `resource_labels` | `content_resource_label` | ordinal + §24.7 七列（register / usage_modality / genre / context / style / domain / variety，均可空） |
+| `example_policy` | `content_example_policy` | policy_version / policy（§24 未给字段表 ⇒ 声明读法） |
+| `typical_error_required` | `content_meta`（键 `typical_error_required:<entity_id>`） | 布尔：源级声明"该 target 需要 TypicalError"（§24.6 未落地 ⇒ 声明读法，Revisit = 迁回 §24.6 assertion 载体） |
+| `typical_errors` | `content_typical_error` | ordinal / learner_l1(可空) / error_type / error_pattern / corrected_pattern / explanation / severity / detection_policy（§24.9 七列 + ordinal） |
+| `detection_policy` | `content_detection_policy` | policy_version / policy（§24.10 未给字段表 ⇒ 声明读法） |
+| `detection_rules` | `content_detection_rule` | ordinal / rule |
+| `detection_fixtures` | `content_detection_fixture` | ordinal / kind（`NEGATIVE` \| `FALSE_POSITIVE_BOUNDARY`，声明读法）/ text / expected |
+
+R4 可测性规则（本仓现役语料的自约束，build 不校验语义、只校验词表）：每条
+detection rule 的 ordinal 应有同 ordinal 的 fixture 兜底；fixture 的 `expected`
+非空且与 `text` 语义一致；不使用模型自报置信（§8.1 "V1 不把'模型自称高置信'
+自动视为 R4 等价认证"）。
 
 ## 映射规则（显式声明；不发明列名）
 

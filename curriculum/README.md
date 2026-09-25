@@ -53,13 +53,23 @@ editorial_status / rationale
   canonical 未固定节点侧基数，故同一 node 可被多个 resource 声明）；
 - `strength` 一律 `null`：§24.7 未给链接 strength 值域（§7 的三词只属于
   prerequisite 边），不发明；
-- `editorial_status` ∈ §24.11 词表；本 seed 的 9 行是 `CURRICULUM_MAPPED`：
-  映射依据仅为 P3-1A/P3-1B 测试语料设计（fixture 的 `capability_linkage`），
-  **未经课程语义审核**，因此在 capability 功能定义存在且作者审核通过前
-  **不得计入 capability 证据**（P5-R；读面门见
-  `elc.content.store.CAPABILITY_CREDIT_EDITORIAL_STATUS`——
-  未审 link 在 `get_teaching_content().capability_linkage` 读作 `None`，
-  但仍是可读的 link 行）。
+- `editorial_status` ∈ §24.11 词表；**C1 后的状态**：9 行中 8 行仍为
+  `CURRICULUM_MAPPED`，`res-colloc-make-a-decision` 一行由 C1（Phase 11）
+  编辑评审改为 `CANONICAL_APPROVED`。`CURRICULUM_MAPPED` 行的依据仅为
+  P3-1A/P3-1B 测试语料设计（fixture 的 `capability_linkage`），**未经课程
+  语义审核**，在 capability 功能定义存在且作者审核通过前**不得计入
+  capability 证据**（P5-R；读面门见
+  `elc.content.store.CAPABILITY_CREDIT_EDITORIAL_STATUS`——未审 link 在
+  `get_teaching_content().capability_linkage` 读作 `None`，但仍是可读的
+  link 行；被批准的 link 则读出其 node——门读的就是 link 自身的
+  editorial_status，门本身从未改动）。
+
+#### link 状态变更记录（C1）
+
+| 变更 | 行 | 理由与范围 |
+| --- | --- | --- |
+| `CURRICULUM_MAPPED` → `CANONICAL_APPROVED` | `res-colloc-make-a-decision` → `cap-eval-hedged-opinion` | C1 编辑评审在为该 target 编写 readiness 证据（`../content_src/evidence/res-colloc-make-a-decision.json`）时一并作出：批准**只**覆盖该行的来源事实（P3-1A/P3-1B fixture 声明，未改）、该 target 的证据文档本身、以及"此批准使 §8.1 R2 的 curriculum_link 事实可读"这一句。**未覆盖**（rationale 原文写明）：`cap-eval-hedged-opinion` 在本仓无功能定义，故无法做 capability 语义审计；其余 8 行维持 `CURRICULUM_MAPPED`；9 条映射的课程语义仍如 C2 所记未审。Revisit = capability 功能定义落地时。 |
+| 其余 8 行 | 未动 | 维持 P5-R 原判（映射 ≠ 证据，理由句原文不变）。 |
 
 ### C3 — Prerequisite 边（DOMAIN_MODEL §7）
 

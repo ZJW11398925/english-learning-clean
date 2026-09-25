@@ -3,19 +3,22 @@ carries.
 
 The blocker this file closes (external review, TASK-OPI-a68fd9eb-…22 /
 DEC-OPI-a68fd9eb-…15): §8.1 R1 requires "POS / sense / basic definition /
-forms 已可追溯", the corpus carries none of the four, and the implementation
+forms 已可追溯", the corpus carried none of the four, and the implementation
 reported R1 anyway by reading ``entity_type == EXPRESSION`` as "lexically
 resolved" — a canonical-drift in the direction of a *friendlier* answer.
 R0's third named thing (assessment membership) was likewise excluded from
 R0's requirements.
 
-The corrected reading, pinned here:
+The corrected reading, pinned here (written at P5-R's truth; C1 narrowed
+the corpus claim to its current shape, and each line says which):
 
 - R0 requires all three named things (strict conjunction); R1 requires the
   four named things, each read from its own evidence and from nothing else;
 - the entity-type equivalence is gone from the code, not just from the prose;
-- the corpus therefore reads **no level at all** (``level is None``) for all
-  14 targets — the honest report;
+- the corpus read **no level at all** (``level is None``) for all 14 targets
+  at P5-R's truth — the honest report; since C1 the thirteen evidence-less
+  targets still read exactly that, and the one C1-evidenced target reads
+  R4_DETECTION_READY (same ladder, same strictness, artifact-driven);
 - no level word is invented for "below R0";
 - the ∨ reading of R0 is recorded in the module as the alternative that was
   not adopted.
@@ -126,9 +129,12 @@ def test_the_r0_line_names_the_three_things_and_all_three_are_required() -> None
         "assessment_membership",
     )
     assert "assessment_membership" in required_fact_keys("R0_INDEXED")
-    assert DECLARED_ABSENT_FACT_KEYS == ("assessment_membership",)
+    # 旧真值 → 新真值（C1）: the key was the declared-absent one; the
+    # thirteen evidence tables made it readable, so the mechanism is empty
+    # while the requirement is unchanged.
+    assert DECLARED_ABSENT_FACT_KEYS == ()
     print(
-        "[p5-r] R0 requires the declared-absent third item -> "
+        "[p5-r] R0 requires the third item (now table-read) -> "
         f"{required_fact_keys('R0_INDEXED')}"
     )
 
@@ -235,11 +241,20 @@ def test_no_single_fact_can_stand_in_for_a_lexical_resolution() -> None:
 
 
 # ---------------------------------------------------------------------------
-# ③ the corpus: no level at all, and the block is named
+# ③ the corpus: the artifact's answer (P5-R: no level at all; C1: 1×R4 +
+# 13×None), and the block is named
 # ---------------------------------------------------------------------------
 
 
-def test_the_corpus_reads_no_level_for_all_fourteen(built_content_db: Path) -> None:
+def test_thirteen_targets_read_no_level_and_one_reads_r4(
+    built_content_db: Path,
+) -> None:
+    """Old truth: all fourteen read no level, blocked at R0 by
+    ``assessment_membership``. New truth (C1): the thirteen targets whose
+    sources state no evidence read exactly that, and the one target whose
+    source states all nineteen facts reads ``R4_DETECTION_READY`` — the same
+    fail-closed ladder, now driven by the artifact."""
+
     assessments = _corpus_assessments(built_content_db)
     print("\n[p5-r] target -> level -> keys blocking the next level")
     for assessment in assessments:
@@ -249,6 +264,11 @@ def test_the_corpus_reads_no_level_for_all_fourteen(built_content_db: Path) -> N
         )
     assert len(assessments) == 14
     for assessment in assessments:
+        if assessment.target_id == "res-colloc-make-a-decision":
+            assert assessment.level == "R4_DETECTION_READY"
+            assert assessment.next_level is None
+            assert assessment.missing_keys == ()
+            continue
         assert assessment.level is None, assessment.target_id
         assert assessment.next_level == "R0_INDEXED"
         assert assessment.missing_keys == ("assessment_membership",)

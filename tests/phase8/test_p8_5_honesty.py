@@ -427,27 +427,52 @@ def test_the_module_is_not_re_exported_by_the_package() -> None:
 
 
 def test_the_shipped_corpus_denies_any_open_claim(tmp_path: Path) -> None:
-    """The pin the task book asks for: a source text claiming the rollout is
-    open is contradicted by the checker's own answer over the shipped
-    corpus — so "阶段已就绪" is a claim this repository cannot make."""
+    """The pin the task book asks for, at C1's truth — as a two-layer
+    statement (旧真值: the checker answered HOLD on every row, so the
+    capable claim failed at the content gate itself; 新真值: the content
+    gate answers **GO** on all four rows, because one C1-authored target
+    reaches R4, and the capable corpus *still* produces no opening claim):
+    the rollout switch composes the stage leg with the content gate, no
+    stage is declared anywhere in the shipped product, so
+    ``automatic_teaching_enabled`` is False for every §5.1 frequency word.
+    "语料 capable" and "rollout 已开闸" stay two different claims, and
+    "阶段已就绪" remains a claim this repository cannot make."""
 
     from elc.content.build import build_content_db
     from elc.content.store import ContentStore
     from elc.curriculum.store import CurriculumContentStore
     from elc.platform.types import Ok
-    from elc.teaching.rollout import RolloutVerdict, corpus_rollout_gate
+    from elc.teaching.rollout import (
+        RolloutVerdict,
+        automatic_teaching_enabled_of,
+        corpus_rollout_gate,
+        stage_allows_automatic,
+    )
+    from elc.user_config.types import TeachingFrequency
 
     path = tmp_path / "content.db"
     build_content_db(path)
     report = corpus_rollout_gate(CurriculumContentStore(ContentStore(path)))
     assert isinstance(report, Ok), report
-    assert report.value.verdict is RolloutVerdict.HOLD
-    assert report.value.automatic_verdict is RolloutVerdict.HOLD
+    # Layer one: content capable — every row GO on the one R4 target.
+    assert report.value.verdict is RolloutVerdict.GO
+    assert report.value.automatic_verdict is RolloutVerdict.GO
     assert all(
-        row.usable_targets == 0
+        row.usable_targets == 1 and row.verdict is RolloutVerdict.GO
         for row in report.value.rows
         if row.automatic
     )
+    # Layer two: no open claim — the stage leg is undeclared and refuses,
+    # so the composed switch denies automatic teaching regardless of the
+    # corpus's capability or the user's §5.1 frequency word.
+    assert stage_allows_automatic(None) is False
+    for frequency in (None, *TeachingFrequency):
+        assert (
+            automatic_teaching_enabled_of(
+                stage=None, teaching_frequency=frequency
+            )
+            is False
+        )
 
 
 def test_the_module_exposes_no_opening_api() -> None:

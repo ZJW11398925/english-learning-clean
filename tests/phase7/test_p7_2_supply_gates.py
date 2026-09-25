@@ -314,21 +314,30 @@ def test_an_unreadable_ladder_is_no_level_and_carries_the_failure(
     assert "DEPENDENCY_UNAVAILABLE" in outcome.reasons[0]
 
 
-def test_the_shipped_corpus_reports_no_level_for_every_target(
+def test_the_shipped_corpus_levels_are_thirteen_none_and_one_r4(
     content_supply,
 ) -> None:
-    """The real ladder over the real corpus: no level, blocked at R0 by
-    ``assessment_membership`` — the P5-R strict reading, read here rather than
-    assumed (P5's own note that no V1 table carries that fact)."""
+    """The real ladder over the real corpus, at C1's truth (旧真值: every
+    target read no level, blocked at R0 by ``assessment_membership`` — the
+    P5-R strict reading; 新真值: the thirteen evidence-less targets still
+    read exactly that, and the one target whose source states all nineteen
+    facts reads R4_DETECTION_READY with no blocking key)."""
 
     ids = content_supply.supply_entity_ids()
     assert isinstance(ids, Ok)
     assert len(ids.value) == 14
+    r4: list[str] = []
     for entity_id in ids.value:
         outcome = readiness_of_target(str(entity_id), content_supply)
+        if outcome.level is ReadinessLevel.R4_DETECTION_READY:
+            r4.append(str(entity_id))
+            assert outcome.usable is True
+            assert outcome.blocking_keys == ()
+            continue
         assert outcome.level is None, entity_id
         assert outcome.blocking_keys == ("assessment_membership",), entity_id
         assert "blocked at R0_INDEXED" in outcome.reasons[0]
+    assert r4 == ["res-colloc-make-a-decision"]
 
 
 def test_a_declared_artifact_fact_set_reaches_the_ladder_s_own_level(

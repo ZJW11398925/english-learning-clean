@@ -26,6 +26,7 @@ those are p5-1.
 from __future__ import annotations
 
 import sqlite3
+from dataclasses import dataclass
 from pathlib import Path
 
 from elc.content.queries import (
@@ -34,7 +35,7 @@ from elc.content.queries import (
     ContentTargetView,
     ContentTeachingView,
 )
-from elc.content.types import ExampleLinkRole
+from elc.content.types import ExampleLinkRole, typical_error_required_key
 from elc.curriculum.types import (
     CapabilityFamily,
     CapabilityNodeRecord,
@@ -59,6 +60,7 @@ from elc.platform.types import (
 
 __all__ = [
     "CAPABILITY_CREDIT_EDITORIAL_STATUS",
+    "ContentEvidenceCounts",
     "ContentStore",
     "ContentStoreError",
     "open_read_only",
@@ -113,7 +115,75 @@ _REQUIRED_TABLES = (
     "curriculum_capability",
     "curriculum_link",
     "curriculum_prerequisite",
+    # C1's §8.1 evidence face (elc.content.build.SCHEMA_STATEMENTS, 11 → 24).
+    # Required, not optional: an artifact built before this face would answer
+    # every readiness fact with "absent" — a silent skip of the whole ladder
+    # — so a stale artifact is refused at open instead ("not a content.db the
+    # runtime may read a partial answer out of").
+    "content_assessment_membership",
+    "content_lexical_entry",
+    "content_sense",
+    "content_text",
+    "content_form",
+    "content_pedagogical_profile",
+    "content_pack_overlay",
+    "content_resource_label",
+    "content_example_policy",
+    "content_typical_error",
+    "content_detection_policy",
+    "content_detection_rule",
+    "content_detection_fixture",
 )
+
+
+@dataclass(frozen=True)
+class ContentEvidenceCounts:
+    """How much §8.1 evidence one entity carries, one count per table/word.
+
+    docs/PRODUCT_CONTRACT.md §8.1's ladder asks *whether* a fact's evidence
+    exists, so this read face answers presence rather than row contents: one
+    ``COUNT(*)`` per evidence kind, no joins, no second interpretation of the
+    rows. A ``0`` is "the artifact carries no such row" — it is never "could
+    not read": an unreadable artifact raises out of the store and the caller
+    maps it to ``DEPENDENCY_UNAVAILABLE`` (elc.curriculum.store._read), so
+    absence and unreadability stay distinguishable.
+
+    The three fields whose *value* §8.1 names carry the value test rather than
+    a bare row count, and say so:
+
+    - ``lexical_entries`` — §24.2's Lemma/POS row. The build refuses an empty
+      ``pos`` (``build._string``), so one row *is* "POS is present";
+    - ``definitions`` / ``teaching_notes`` — §24.3 text rows in the two roles
+      §8.1's R1/R3 sentences name (``definition`` / ``teaching_note``);
+    - ``labelled_usage_modalities`` — §24.7 ResourceLabel rows that state a
+      ``usage_modality``, which is the usage face §8.1 R3's "contrast/usage"
+      reads (a label row with the facet NULL is a legal row and does not
+      count here).
+    """
+
+    assessment_memberships: int
+    lexical_entries: int
+    senses: int
+    definitions: int
+    forms: int
+    pedagogical_profiles: int
+    pack_overlays: int
+    resource_labels: int
+    labelled_usage_modalities: int
+    example_policies: int
+    teaching_notes: int
+    typical_errors: int
+    detection_policies: int
+    detection_rules: int
+    negative_fixtures: int
+    false_positive_boundaries: int
+
+
+def _count_one(conn: sqlite3.Connection, statement: str, entity_id: str) -> int:
+    row = conn.execute(statement, (entity_id,)).fetchone()
+    if row is None:  # pragma: no cover - COUNT(*) always answers one row
+        raise ContentStoreError(f"count query returned no row: {statement}")
+    return int(row[0])
 
 
 def _not_found(kind: str, identifier: str) -> Err[object]:
@@ -386,6 +456,157 @@ class ContentStore:
                 f"{entity_id!r} declares more than one primary REALIZES link"
             )
         return None if not rows else str(rows[0][0])
+
+    # -- the §8.1 readiness evidence face (C1) ------------------------------
+
+    def evidence_counts(self, entity_id: str) -> Result[ContentEvidenceCounts]:
+        """The §8.1 evidence this entity carries (C1).
+
+        An unknown entity id is NOT_FOUND — readiness is judged for declared
+        entities, and "not in the registry" is never reported as "no
+        evidence". A known entity with no evidence document answers zeros.
+        """
+
+        if not self._exists(
+            "SELECT 1 FROM content_entity WHERE entity_id = ?", entity_id
+        ):
+            return _not_found("content entity", entity_id)
+        conn = self._conn
+        return Ok(
+            ContentEvidenceCounts(
+                assessment_memberships=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_assessment_membership "
+                    "WHERE entity_id = ?",
+                    entity_id,
+                ),
+                lexical_entries=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_lexical_entry "
+                    "WHERE entity_id = ?",
+                    entity_id,
+                ),
+                senses=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_sense WHERE entity_id = ?",
+                    entity_id,
+                ),
+                definitions=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_text WHERE entity_id = ? "
+                    "AND role = 'definition'",
+                    entity_id,
+                ),
+                forms=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_form WHERE entity_id = ?",
+                    entity_id,
+                ),
+                pedagogical_profiles=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_pedagogical_profile "
+                    "WHERE entity_id = ?",
+                    entity_id,
+                ),
+                pack_overlays=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_pack_overlay "
+                    "WHERE entity_id = ?",
+                    entity_id,
+                ),
+                resource_labels=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_resource_label "
+                    "WHERE entity_id = ?",
+                    entity_id,
+                ),
+                labelled_usage_modalities=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_resource_label "
+                    "WHERE entity_id = ? "
+                    "AND usage_modality IS NOT NULL AND usage_modality <> ''",
+                    entity_id,
+                ),
+                example_policies=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_example_policy "
+                    "WHERE entity_id = ?",
+                    entity_id,
+                ),
+                teaching_notes=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_text WHERE entity_id = ? "
+                    "AND role = 'teaching_note'",
+                    entity_id,
+                ),
+                typical_errors=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_typical_error "
+                    "WHERE entity_id = ?",
+                    entity_id,
+                ),
+                detection_policies=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_detection_policy "
+                    "WHERE entity_id = ?",
+                    entity_id,
+                ),
+                detection_rules=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_detection_rule "
+                    "WHERE entity_id = ?",
+                    entity_id,
+                ),
+                negative_fixtures=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_detection_fixture "
+                    "WHERE entity_id = ? AND kind = 'NEGATIVE'",
+                    entity_id,
+                ),
+                false_positive_boundaries=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_detection_fixture "
+                    "WHERE entity_id = ? AND kind = 'FALSE_POSITIVE_BOUNDARY'",
+                    entity_id,
+                ),
+            )
+        )
+
+    def typical_error_required(self, entity_id: str) -> Result[bool]:
+        """Did the source declare that this entity needs a §24.9 TypicalError?
+
+        This is §8.1 R3's "以及需要时" condition: the *need* is an authoring
+        declaration, so it is carried as a declared-reading ``content_meta``
+        key (:func:`elc.content.types.typical_error_required_key`) written by
+        the build from the source's own words — a source that declares the
+        need before the error is written is built, and the ladder reports the
+        gap (readiness is a report, never a build-time refusal).
+
+        **Absent means False**: a source that declares nothing has not
+        triggered §8.1's condition, which is what the ladder's
+        ``ReadinessFacts.typical_error_required`` default reads. The key is
+        per entity and carries no FK, so the entity is checked here the way
+        every other read checks it (an undeclared id is NOT_FOUND, never a
+        silent False), and a value the build cannot write is refused rather
+        than guessed.
+        """
+
+        if not self._exists(
+            "SELECT 1 FROM content_entity WHERE entity_id = ?", entity_id
+        ):
+            return _not_found("content entity", entity_id)
+        key = typical_error_required_key(entity_id)
+        stored = self._meta(key)
+        if isinstance(stored, Err):
+            return Ok(False)
+        if stored.value == "true":
+            return Ok(True)
+        if stored.value == "false":
+            return Ok(False)
+        raise ContentStoreError(
+            f"content_meta[{key!r}] carries {stored.value!r}; the build writes"
+            " only 'true' or 'false'"
+        )
 
     # -- curriculum registry face ------------------------------------------
 

@@ -216,12 +216,17 @@ def test_the_shipped_corpus_is_still_unreachable_with_a_ledger(
     world: World,
 ) -> None:
     """A ledger does not make the corpus teachable: the same 14 targets are
-    refused at the §8.1 gate, and the debt source has nothing to propose
-    because no candidate target exists."""
+    still refused (旧真值: all at the §8.1 gate; 新真值 C1: thirteen there
+    and the one R4-graded target at SCHEDULE_ROW, since this world holds no
+    §5.2 row for it), and the debt source has nothing to propose because no
+    candidate target exists."""
 
     supply = generate_candidates(inputs_for(world, world.supply, ledger()))
     assert supply.proposals == ()
-    assert {refusal.gate for refusal in supply.refusals} == {"CONTENT_READINESS"}
+    assert {refusal.gate for refusal in supply.refusals} == {
+        "CONTENT_READINESS",
+        "SCHEDULE_ROW",
+    }
     assert len(supply.refusals) == 14
     assert "COVERAGE_DEBT" not in {gap.source for gap in supply.gaps}
 

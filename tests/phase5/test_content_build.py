@@ -114,7 +114,14 @@ def test_source_index_order_does_not_change_the_artifact(tmp_path: Path) -> None
 
 
 def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
-    """Deterministic order: file-system and index order cannot leak in."""
+    """Deterministic order: file-system and index order cannot leak in.
+
+    C1: ``content_meta`` carries the three version keys **plus** the
+    declared-reading TypicalError-need key for the one entity whose source
+    states it (elc.content.types.typical_error_required_key) — so the meta
+    table's row set is a function of the source, still sorted, still
+    deterministic.
+    """
 
     conn = sqlite3.connect(str(built_content_db))
     try:
@@ -138,6 +145,14 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
         ("content_db_version", build_module.CONTENT_DB_VERSION),
         ("content_version", "content-v1"),
         ("curriculum_version", "curriculum-v1"),
+        # C1: the source's own declaration that this target needs a §24.9
+        # TypicalError, carried durably and read back by the readiness face.
+        (
+            build_module.typical_error_required_key(
+                "res-colloc-make-a-decision"
+            ),
+            "true",
+        ),
     ]
 
 

@@ -1,0 +1,197 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C1 authoring declaration (2026-09-25): this target is placed in the V1 placement bank's C1 collocation set by the authoring review. Declared by the authoring source; no external assessment export exists in this repository."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "make a decision",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "make-a-decision.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "make-a-decision.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To choose one course of action from the options available, presented as a settled act rather than as ongoing deliberation."
+    },
+    {
+      "sense_id": "make-a-decision.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "Used when the choice carries some weight (a hire, a purchase, a plan). Light everyday choices normally take decide or choose instead: decide what to eat, not make a decision about what to eat."
+    },
+    {
+      "sense_id": "make-a-decision.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The light verb is make, never do: do a decision is the classic L1-influenced slip. take a decision is the British variant and is accepted (see the SUPPORTING example). The noun also needs a determiner: make decision is not English."
+    },
+    {
+      "sense_id": "make-a-decision.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "作出决定；定夺（做出选择并当作已决之事）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "make-a-decision.base",
+      "written": "make a decision",
+      "normalized": "make a decision",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "make-a-decision.third-person-singular",
+      "written": "makes a decision",
+      "normalized": "make a decision",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "make-a-decision.past",
+      "written": "made a decision",
+      "normalized": "make a decision",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "REVIEW",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C1 authoring judgement (V1 carries no calibration data): the collocation is frequent and productive, so core/receptive/productive value are HIGH and the explanation cost is LOW, while productive difficulty stays MEDIUM because both authored errors (the light verb and the missing determiner) are productive slips. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The collocation belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Frequent in workplace talk about plans and hires, so it carries most of the weight in the workplace pack; the shortfall records that the pack's own review has not yet placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "DECISION_MAKING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "DECISION_MAKING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical form first; a SUPPORTING or CONTRAST form only after the learner has attempted the canonical form twice without producing it. Never present a bare collocation as an example, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "LIGHT_VERB_CHOICE",
+      "error_pattern": "do a decision (do/does/did/done/doing + determiner + decision)",
+      "corrected_pattern": "make a decision",
+      "explanation": "Chinese 做决定 takes the light verb 做 ('do'), so L1 transfer selects do where English selects make for this collocation.",
+      "severity": "HIGH",
+      "detection_policy": "Match a form of do standing two or three tokens before the noun decision, with only a determiner or an adjective between them, in a clause where decision is the verb's direct object."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "ARTICLE_OMISSION",
+      "error_pattern": "make decision (make/makes/made/making immediately followed by decision)",
+      "corrected_pattern": "make a decision",
+      "explanation": "The count noun decision needs a determiner in this collocation; leaving it out is a general article error and is not specific to any L1, which is why learner_l1 is null.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match make or one of its forms immediately followed by decision, with no determiner and no adjective between them."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: a decision-taking verb slot within three tokens of the noun decision. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the shape looks present but decision is not the collocation's object)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "DO_VERB_BEFORE_DECISION: match when a form of do (do, does, did, done, doing) stands two or three tokens before the noun decision with only a determiner or an adjective between them, and the clause makes decision the direct object of that verb."
+    },
+    {
+      "ordinal": 1,
+      "rule": "MISSING_DETERMINER: match when make or one of its forms (make, makes, made, making) is immediately followed by decision, with no determiner and no adjective between them."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_VERB_IN_THE_SLOT: do not match when the slot before decision is filled by make, take or reach, with or without a determiner between: these are the accepted realizations (take a decision is the British variant, reach a decision is the deliberative variant)."
+    },
+    {
+      "ordinal": 3,
+      "rule": "DECISION_AS_NOUN_MODIFIER: do not match when decision modifies a following noun (decision log, decision meeting, decision model): there the word is a modifier inside a compound, not the object of a collocation, so no verb-slot rule may fire."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "We decided to make a decision about the venue after lunch.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "They will make a decision on Friday.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "We should reach a decision by Friday.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Do the decision log first, please.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

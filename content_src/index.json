@@ -19,5 +19,8 @@
     "entities/res-phrasal-look-forward-to.json",
     "entities/res-pragmatic-could-you.json",
     "entities/res-softener-kind-of.json"
+  ],
+  "evidence": [
+    "evidence/res-colloc-make-a-decision.json"
   ]
 }

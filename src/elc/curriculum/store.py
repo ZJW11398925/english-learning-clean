@@ -103,39 +103,22 @@ __all__ = [
 
 _T = TypeVar("_T")
 
-#: docs/PRODUCT_CONTRACT.md §8.1 fact keys whose evidence **no table of the
-#: P5-0 artifact carries**, with the evidence that would have to exist for the
-#: fact to become readable. The mapping answers "why is this fact absent?" — it
-#: is not an invented column list: the artifact's table set is exactly
-#: elc.content.build.SCHEMA_STATEMENTS (pinned by
-#: tests/phase5/test_p5_1_readiness.py), so a build that adds such a table
-#: fails that pin first and this mapping is revisited.
-UNREAD_FACT_EVIDENCE: Mapping[str, str] = {
-    "pedagogical_profile": "a §24.7 PedagogicalProfile row",
-    "goal_pack_overlay": "a §24.8 PackOverlay (goal/pack overlay) row",
-    "resource_labels": "a §24.7 ResourceLabel row (register/usage-modality)",
-    "reviewed_explanation": "a reviewed explanation/note for the target",
-    "example_policy": "an example policy (which examples to present, when)",
-    "typical_error": "a §24.9 TypicalError row",
-    "detection_policy": "a testable §24.9 detection_policy with fixtures",
-    "recognition_rules": (
-        "detection-grade recognition rules (§24.4's recognition_policy is"
-        " the R1 lexical payload, not this)"
-    ),
-    "negative_fixtures": "negative fixtures for the detection rules",
-    "false_positive_boundaries": "declared false-positive boundaries",
-    # The five keys no V1 table can carry (P5-R strict reading): §8.1 R0's
-    # third item and §8.1 R1's four named things. They are *required* facts
-    # (elc.curriculum.readiness.LEVEL_ADDED_FACTS), so their absence is the
-    # reported block, not an exemption.
-    "assessment_membership": (
-        "a §24.8 AssessmentMembership row (the R0 sentence's third item)"
-    ),
-    "pos": "a §24.2 LexicalEntry part-of-speech row",
-    "sense": "a §24.3 Sense row",
-    "basic_definition": "a basic definition for the sense (§24.2/§24.3)",
-    "forms": "§24.2 Form rows (the inflected/realized forms of the entry)",
-}
+#: docs/PRODUCT_CONTRACT.md §8.1 fact keys whose evidence no table of the
+#: artifact carries, with the evidence that would have to exist for the fact
+#: to become readable. **Empty since C1**: the thirteen evidence tables
+#: (elc.content.build.SCHEMA_STATEMENTS, 11 → 24) carry every §8.1 fact key,
+#: so :meth:`CurriculumContentStore.readiness_facts` reads all nineteen and
+#: has nothing left to declare absent.
+#:
+#: The mechanism is kept, not deleted: a fact added to §8.1 without a table
+#: belongs here again, and the artifact's table set is exactly
+#: `SCHEMA_STATEMENTS` (pinned by tests/phase5/test_p5_1_readiness.py), so a
+#: build that removes one of those tables fails that pin first. The P5-R /
+#: P5-0 history this mapping recorded (four §8.1 R1 keys and R0's third item
+#: with no carrier at all) is preserved in
+#: elc.curriculum.readiness.DECLARED_ABSENT_FACT_KEYS' own history and in
+#: tests/phase5/test_p5_r_readiness_fail_closed.py.
+UNREAD_FACT_EVIDENCE: Mapping[str, str] = {}
 
 
 def _unavailable(message: str) -> Err[object]:
@@ -318,12 +301,20 @@ class CurriculumContentStore:
     def readiness_facts(self, entity_id: str) -> Result[ReadinessFacts]:
         """Assemble the §8.1 fact bundle of one target from the artifact.
 
-        Present facts are read; absent facts stay absent (the dataclass
-        default), each one named in :data:`UNREAD_FACT_EVIDENCE` — no fact is
-        defaulted to True, no fact is derived from another fact's presence
-        (P5-R removed the ``entity_type == EXPRESSION ⇒ lexical_resolution``
-        equivalence), and no §24.4 recognition-policy label is promoted into
-        an R4 detection fact.
+        C1 (Phase 11): every one of the nineteen §8.1 fact keys is **read**
+        from a table of the artifact. No fact is hardcoded False, no fact is
+        derived from another fact's presence (P5-R removed the
+        ``entity_type == EXPRESSION ⇒ lexical_resolution`` equivalence), and
+        no §24.4 recognition-policy label is promoted into an R4 detection
+        fact. The nine keys below that read a *row count* are sourced from the
+        thirteen evidence tables C1 adds to the build
+        (:meth:`elc.content.store.ContentStore.evidence_counts` names the
+        table and the column test behind each count); the remaining keys read
+        the tables the earlier cuts already carried.
+
+        Absence is read as absence: a target whose source states no evidence
+        answers ``False`` per key, which is the artifact's answer, not a
+        default the code supplies.
         """
 
         resource = self.get_resource(entity_id)
@@ -341,53 +332,72 @@ class CurriculumContentStore:
         canonical = self.get_examples(entity_id, ExampleLinkRole.PRIMARY_TARGET)
         if isinstance(canonical, Err):
             return canonical
+        counts = self._store.evidence_counts(entity_id)
+        if isinstance(counts, Err):
+            return counts
+        error_need = self._store.typical_error_required(entity_id)
+        if isinstance(error_need, Err):
+            return error_need
+        evidence = counts.value
 
         return Ok(
             ReadinessFacts(
                 target_id=entity_id,
                 # R0: the §24.1 row is the source trace this artifact carries;
-                # the §24.5 PRIMARY_TARGET example is the canonical surface.
+                # the §24.5 PRIMARY_TARGET example is the canonical surface;
+                # assessment membership is its own §24.8 table (C1). All three
+                # named things are read (the P5-R strict conjunction), so a
+                # target whose source states no membership still reaches no
+                # level — reported, never exempted.
                 entity_row=True,
                 canonical_form=bool(canonical.value),
-                # R0's third item (§24.8 AssessmentMembership) is read as an
-                # explicit absence — no V1 table carries it, and under the
-                # P5-R strict conjunction it is REQUIRED by R0
-                # (elc.curriculum.readiness). A corpus without assessment
-                # membership therefore reaches no level at all; that is the
-                # honest fail-closed report, declared rather than hidden.
-                assessment_membership=False,
-                # R1 is the four §8.1-named things, each read from its own
-                # §24.2 LexicalEntry / Form / Sense evidence — and no such
-                # table exists in this artifact, so all four read absent. The
-                # removed alternative (an entity_type check standing in for a
-                # lexical resolution) is recorded in the readiness module's
-                # docstring as the reading P5-R retracted.
-                pos=False,
-                sense=False,
-                basic_definition=False,
-                forms=False,
+                assessment_membership=evidence.assessment_memberships >= 1,
+                # R1: the four §8.1-named things, each read from its own
+                # §24.2 LexicalEntry / §24.3 Sense / §24.3 ContentText(role =
+                # definition) / §24.2 Form evidence. `lexical_entries >= 1` is
+                # exactly "POS is present": the build refuses an empty `pos`.
+                pos=evidence.lexical_entries >= 1,
+                sense=evidence.senses >= 1,
+                basic_definition=evidence.definitions >= 1,
+                forms=evidence.forms >= 1,
                 # R2: §24.7 CurriculumLink — and only an approved mapping, the
-                # same discipline the supply gate keeps. The seed corpus's
-                # nine links are CURRICULUM_MAPPED (P3-corpus-derived, no
-                # curriculum-semantic review), so this fact is False for
-                # every target today.
+                # same discipline the supply gate keeps. A CURRICULUM_MAPPED
+                # row stays readable through curriculum_links_of and does not
+                # satisfy this fact.
                 curriculum_link=any(
                     link.editorial_status == "CANONICAL_APPROVED"
                     for link in links.value
                 ),
-                # R3: a §24.5 CONTRAST example or the usage face of a §24.7
-                # ResourceLabel (the label rows do not exist, so today this is
-                # exactly "the target has a declared contrast").
-                contrast_or_usage=bool(contrasts.value),
-                # R3's "usable example policy" is not the example inventory
-                # (those rows are already R0/R1 facts) — see
-                # UNREAD_FACT_EVIDENCE. The example inventory itself is
-                # present for every target of this corpus and stays readable
-                # through get_teaching_content.
-                #
-                # R2/R3/R4 facts the artifact carries no table for, plus
-                # typical_error_required (a source-side declaration no V1
-                # source makes), keep their False defaults.
+                # R2's remaining three: §24.7 PedagogicalProfile, §24.8
+                # PackOverlay and §24.7 ResourceLabel rows.
+                pedagogical_profile=evidence.pedagogical_profiles >= 1,
+                goal_pack_overlay=evidence.pack_overlays >= 1,
+                resource_labels=evidence.resource_labels >= 1,
+                # R3: a reviewed explanation/note (§24.3 role =
+                # teaching_note), a usable example policy (§8.1's policy, not
+                # the §24.5 example inventory — those rows are already an
+                # R0/R1 fact), and "必要 contrast/usage": a §24.5 CONTRAST
+                # row **or** the usage face of a §24.7 ResourceLabel.
+                reviewed_explanation=evidence.teaching_notes >= 1,
+                example_policy=evidence.example_policies >= 1,
+                contrast_or_usage=(
+                    bool(contrasts.value)
+                    or evidence.labelled_usage_modalities >= 1
+                ),
+                # §8.1 R3's "以及需要时的 TypicalError": the *need* is the
+                # source's declaration (read from the artifact's own key, not
+                # from a code default), the row set is §24.9's.
+                typical_error=evidence.typical_errors >= 1,
+                typical_error_required=error_need.value,
+                # R4: §24.10's "可测试 detection policy/fixtures/
+                # false-positive boundary" — four separate facts, each read
+                # from its own table (policy / rules / the two fixture kinds).
+                detection_policy=evidence.detection_policies >= 1,
+                recognition_rules=evidence.detection_rules >= 1,
+                negative_fixtures=evidence.negative_fixtures >= 1,
+                false_positive_boundaries=(
+                    evidence.false_positive_boundaries >= 1
+                ),
             )
         )
 

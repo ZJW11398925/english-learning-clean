@@ -156,7 +156,7 @@ def _table_counts(conn: sqlite3.Connection) -> dict[str, int]:
 # -- ① today's honest answer on the shipped supply ---------------------------
 
 
-def test_the_real_chain_degrades_because_the_corpus_grades_nothing(
+def test_the_real_chain_degrades_while_thirteen_targets_stay_ungraded(
     db: sqlite3.Connection,
     learning_controller: LearningController,
     user_config_store: SqliteUserConfigStore,
@@ -164,10 +164,12 @@ def test_the_real_chain_degrades_because_the_corpus_grades_nothing(
     scheduler_store: SqliteSchedulerStore,
     content_supply,
 ) -> None:
-    """Real durable rows, real read faces, the real corpus — and a Planner that
-    may not proceed. The one gap left is the content level the corpus does not
-    report, and the kernel degrades instead of inventing a number or a
-    NO_TARGET."""
+    """Real durable rows, real read faces, the real corpus — and a Planner
+    that may not proceed. The gap narrowed with C1 (旧真值: the corpus graded
+    nothing — 14 ungraded candidates; 新真值: it grades one target R4 and
+    leaves thirteen ungraded), but the kernel's answer is the same: it
+    degrades instead of inventing a number or a NO_TARGET, because an
+    ungraded candidate's eligibility cannot be judged."""
 
     policy, goals, watermark, view = _real_world(
         user_config_store,
@@ -185,7 +187,8 @@ def test_the_real_chain_degrades_because_the_corpus_grades_nothing(
         facts = content_supply.readiness_facts(str(entity_id))
         assert isinstance(facts, Ok)
         levels[str(entity_id)] = judge_readiness(facts.value).level
-    assert set(levels.values()) == {None}
+    assert levels["res-colloc-make-a-decision"] == "R4_DETECTION_READY"
+    assert sum(1 for level in levels.values() if level is None) == 13
 
     authority = assemble_feature_authority(
         learning_snapshot=learning_snapshot(watermark),
@@ -218,7 +221,9 @@ def test_the_real_chain_degrades_because_the_corpus_grades_nothing(
     assert result.trace.context.schedule_authority is not None
     reasons = "\n".join(result.trace.context.reasons)
     assert "no content level is reachable" in reasons
-    assert "14 candidate(s)" in reasons
+    # 旧真值: "14 candidate(s)" → 新真值 (C1): the one graded target leaves
+    # the note's count at the thirteen still-ungraded candidates.
+    assert "13 candidate(s)" in reasons
     assert AuthorityName.CURRICULUM_READINESS in (
         result.trace.context.missing_authorities
     )
