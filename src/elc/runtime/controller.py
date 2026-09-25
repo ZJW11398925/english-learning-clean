@@ -3164,13 +3164,54 @@ class ConversationCoordinator:
         the alternative — treating an unreadable audit row as a cancellation —
         would cancel deliveries on a broken read.
 
-        Registered (P9-3 disposition, review INFO-5): the read-failure arm is
-        untestable through the public faces — a request face that answers
-        ``Err`` while the stream still runs is not a state any harness builds
-        without a stub, and the direction it takes is the right one anyway
-        (keep sending; the row stays durable and the reconciler owns it).
-        Registered rather than forced into a test. Revisit: a cut gives this
-        read a degrading port (then the arm has a real carrier and a test).
+        **Adjudicated (P10-3; Phase 10 opening DEC R6) — a failed read keeps
+        sending, and this is a reading, not canonical text.** The second of the
+        two long-pending questions is decided here: a read failure ⇒ ``False``
+        ⇒ the stream continues. Three reasons:
+
+        (a) the user's STOP is a **durable request**, not a transient signal:
+            §17.1 rules 1-2 make the ``InterruptRequest`` (and its queue entry)
+            durable *outside* the lease, and a read that fails deletes nothing
+            — the request the user made still exists, so a failed read is not
+            evidence that nothing was asked.
+        (b) §17.1 rule 3 names the only actor allowed to cancel, supersede and
+            terminalize: the current lease holder or the recovery owner. A
+            failed read is not that actor and this method is not that move —
+            reading ``Err`` as "cancelled" would let a broken read perform a
+            cancellation rule 3 reserves for the guard holder, on the strength
+            of an absence of information.
+        (c) nothing is lost by keeping on: the reconciler
+            (:meth:`_reconcile_pending_interrupt`) answers every still-pending
+            request at the next entry's handoff, so the old turn is still named
+            for cancellation by the actor rule 3 leaves for it, and §17's rule
+            for uncertainty is conservative canonicalization plus "never retry
+            the whole Turn" — not "unknown ⇒ stop".
+
+        The observable consequence is honest and narrow: while the read is
+        broken, a *pending* STOP may not stop this stream — the delivery can
+        finish (``SENT_COMPLETE``, turn ``COMPLETED``) and the §21.1 row still
+        records the under-coverage as ``UNCHECKED_ACTION_CANCELLED``. One bad
+        read, two faces, and neither of them cancels: the guard records that it
+        could not check, the stream keeps sending. That trade — availability of
+        an already-validated delivery over a read failure — is the ruling, not
+        an accident.
+
+        **Reopen conditions (this adjudication).** (1) user control is formally
+        ruled to outrank availability ("an unreadable STOP must fail closed"
+        becomes canonical), or (2) a real client lands whose contract requires
+        that direction. Until one of them holds, this direction stands.
+
+        **Superseded (P10-3).** The P9-3 registration (review INFO-5) recorded
+        this read-failure arm as unreachable through the public faces and
+        registered it rather than testing it. That claim is false in the
+        shipped tree: ``ConversationQueries`` is a constructor port
+        (``elc.conversation.queries`` / this class's ``conversation_queries``),
+        so a wrapper that answers ``Err`` for
+        ``list_pending_interrupts_for_action`` while delegating every other
+        read is a legal public-face harness. Since this cut the arm is covered
+        by ``tests/phase10/test_p10_3_adjudications.py``:
+        ``test_a_failed_interrupt_read_keeps_the_stream_sending_and_is_recorded_unchecked``,
+        which drives the real streamed chain through such a wrapper.
         """
 
         pending = self._queries.list_pending_interrupts_for_action(action_id)

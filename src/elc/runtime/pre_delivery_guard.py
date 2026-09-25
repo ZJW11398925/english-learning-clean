@@ -39,9 +39,10 @@ quotation, and each names the condition that re-opens it.
    gives the facts a tri-state of its own, or a fact gains a carrier that can
    never be absent (then that field's ``None`` becomes unreachable and the
    field narrows).
-2. **An unchecked condition is recorded, never silent.** §15 does not say what
-   to do with a fact nobody could read; this cut answers "record it and do not
-   invalidate": the reason codes carry ``UNCHECKED_<condition>`` and
+2. **An unchecked condition is recorded, never silent — and it never
+   invalidates.** §15 does not say what to do with a fact nobody could read;
+   this cut answers "record it and do not invalidate": the reason codes carry
+   ``UNCHECKED_<condition>`` and
    :attr:`PreDeliveryGuardVerdict.unchecked_conditions` names them, so a
    reader of the durable row can tell a clean ``VALID`` from an under-covered
    one. Invalidation on an unread fact would block deliveries on a missing
@@ -49,6 +50,46 @@ quotation, and each names the condition that re-opens it.
    that did not hand the face over); silence would hide it. Revisit: canonical
    declares the fail-closed direction for a missing authorization read, or a
    cut wires the carrier everywhere (then the codes stop appearing).
+
+   **Adjudicated (P10-3; Phase 10 opening DEC R6) — fail-open is the ruling,
+   and it is a reading, not canonical text.** What was half-registered above
+   is now decided: **a fact nobody could read never invalidates.** The verdict
+   stays ``VALID``, its codes spell ``UNCHECKED_<condition>`` for every unread
+   fact, and the under-covered check stays observable in the §21.1 row — a
+   reader can always tell "clean" from "not looked at". Three reasons, the
+   first two being canonical's own shape rather than this cut's preference:
+
+   (a) §15's seven hard-invalidation conditions are a **封闭列表** (a closed
+       list), and the guard's whole mandate is one sentence — "只检查 hard
+       invalidation … 不重新跑 Planner utility". None of the seven is "the
+       read failed", so invalidating on an unread fact would be an **eighth
+       condition**: invented here, and true of no member of the list.
+   (b) the decision vocabulary is exactly **two words** — ``VALID`` /
+       ``INVALIDATE_ACTION`` (``state_machines §16``, repeated inline by
+       ``DATA_MODEL §21.1``) — and migration 0018 carries them as a CHECK
+       (``CHECK (decision IN ('VALID', 'INVALIDATE_ACTION'))``). There is
+       **no DEGRADED here** — contrast the Gate, whose RA §21 verdict does
+       carry ``DEGRADED`` (P8-1); §15 has no such word — so a third answer is
+       neither spellable nor storable, and an unread fact must not borrow
+       ``INVALIDATE_ACTION``'s.
+   (c) the two places canonical does speak about uncertainty send it
+       elsewhere: §16's retry model and §17's partial delivery put
+       "uncertain" on the conservative-canonicalization side (never a
+       whole-turn retry, no automatic replay), and §17.1 rule 3 hands
+       cancel / supersede / terminalize to the current lease holder or the
+       recovery owner. A missing authorization read is a wiring fact whose
+       owner is the assembly that did not hand the face over — a different
+       failure with a different owner, recorded rather than converted into a
+       delivery decision.
+
+   **Reopen conditions (this adjudication).** (1) canonical adds an eighth
+   hard-invalidation condition to §15, or adds a word like ``DEGRADED`` /
+   ``UNVERIFIED`` to the decision vocabulary — then migration 0018's CHECK
+   moves with it and this ruling is re-taken. (2) A real client lands and
+   "cannot verify ⇒ do not deliver" becomes the required conservative
+   direction (today the only client boundary is the in-process one, and the
+   conservative direction for an unread fact is to keep the delivery
+   *observable*, not to block it on an absence of information).
 3. **The decision vocabulary is §21.1's two words.** ``VALID`` /
    ``INVALIDATE_ACTION`` and no third word. A cancelled or superseded
    delivery's own word is expressed where it belongs — the §22 row's §13
@@ -307,7 +348,8 @@ def guard_verdict(facts: PreDeliveryGuardFacts) -> PreDeliveryGuardVerdict:
     - **no** fact ``True`` → ``VALID`` (whatever the ``False``/``None`` mix
       is), with ``UNCHECKED_<condition>`` for each ``None``;
     - ``None`` never invalidates: an unread fact is recorded, not guessed
-      (reading 2).
+      (reading 2, adjudicated in P10-3 — the fail-open ruling and its reopen
+      conditions are spelled out there).
 
     The codes come out in :class:`GuardCondition` order — the invalidating
     names and the unchecked names interleaved by condition, not grouped — so
