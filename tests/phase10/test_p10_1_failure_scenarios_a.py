@@ -37,10 +37,12 @@ CP2 ⇒ RESUME_ACTION_BY_STABLE_ACTION_ID、CP3 ⇒ CONSERVATIVE_DELIVERY_RECONC
 四条口径不变量（任务书 §2 末）逐类**适用者断言、不适用者写明理由**；各测试
 docstring 末行按此表逐类作答，N/A 的理由也写在那里：
 
-    (i) 不重放已提交 user turn：适用 1/2/3/4/5/9/10；(ii) 不重复 Evidence：适用
-    1/2/5/9/10，3/6/7/8/11/12 以「命令 turn 无 analysis artifact ⇒ 断言 0」的形态
-    适用，4/13 无 leg；(iii) 不丢 work：13 类全适用；(iv) 保守方向（不盲发）：适用
-    6/8/9/10/11/12，其余窗口里根本没有发生过投递。
+    (i) 不重放已提交 user turn：适用 1/2/3/4/5/8/9/10（8 以 durable 形态：transcript
+    逐字守恒 + 复用同一 turn_id）；(ii) 不重复 Evidence：适用 1/2/5/8/9/10（8/9/10 以
+    group 绝对计数守恒），3/6/7/11/12 以「这些窗口里没有 analysis leg 落盘 ⇒ 断言
+    analysis_artifact 计数为 0」的形态覆盖，4/13 无 leg；(iii) 不丢 work：13 类全适用；
+    (iv) 保守方向（不盲发）：适用 6/8/9/10/11/12，其余窗口中不存在「可能已送出」的
+    未决投递（7 的投递在崩前已完成 ⇒ 没有东西可再发）。
 
 世界与构造（R2）：真库世界 + 真写入面 + 新 epoch 扫描，**零 `_seed()` 零 fixture
 供给**。两类世界：`tests/phase3/conftest.py` 的 app.db 世界（`World.restart` 在同一
@@ -749,8 +751,10 @@ def test_cp2_crash_moment_opening_is_closed_by_the_delivery_failure_walk(
     that was never presented — releasing the lock and writing **no** estimate
     and **no** §20 event.
 
-    (i) N/A：本窗口不重入任何 user turn（recovery 改为 adopt），以行数钉死没人
-    重放。(ii) 适用（零形状）：命令 turn 不产 analysis artifact，断言为 0。
+    (i) N/A：本窗口不重入任何 user turn（recovery 改为 adopt），以两次 recovery 之间
+    的行数守恒钉「不重入」（**收窄**：该形态对第一次 recovery 内部的重放不敏感——绝对
+    计数的形态由类 3/9/10 承担；Revisit = 本窗口出现真实重入臂时改补绝对值）。(ii)
+    适用（零形状）：命令 turn 不产 analysis artifact，断言为 0。
     (iii) 适用：moment 以自有词关闭、turn 经 turn-level closure 到 COMPLETED。
     (iv) 适用：投递从未发生，断言没有任何投递侧行被发明出来。
     """
@@ -967,9 +971,10 @@ def test_cp3_under_record_reconciles_the_unfrozen_delivery_without_resending(
     resend**: the transport factory the new epoch holds is never asked, and the
     row and transcript are byte-identical afterwards.
 
-    (i) 适用（durable 形态）：transcript 不被重写、不新增 turn 行。(ii) N/A 且已
-    留痕：普通流式 turn 在投递前已提交 analysis，group 计数断言不动。(iii) 适用：
-    COMPLETED / REPLIED_PARTIAL，且行自己说明原因。(iv) 适用——本类的主场。
+    (i) 适用（durable 形态）：transcript 逐字守恒 + 复用同一 turn_id（**收窄**：行数
+    的绝对值未单独断言，绝对计数形态由类 3/9/10 承担）。(ii) N/A 且已留痕：普通流式
+    turn 在投递前已提交 analysis，group 计数断言不动。(iii) 适用：COMPLETED /
+    REPLIED_PARTIAL，且行自己说明原因。(iv) 适用——本类的主场。
     """
 
     world = stream_world(tmp_path)
