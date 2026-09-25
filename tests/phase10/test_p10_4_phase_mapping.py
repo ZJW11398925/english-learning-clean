@@ -366,7 +366,9 @@ def test_the_phase_table_walks_all_twenty_five_classes_once_each() -> None:
             answers = b_half.INVARIANTS[row.tag]
             heads = tuple(_head_word(answer) for answer in answers)
             assert row.invariants == heads, row.tag
-        assert row.invariants and len(row.invariants) == 4, row.tag
+        # P10-4 处置 F-INFO-2：原先此处还有一条 `assert row.invariants and
+        # len(row.invariants) == 4`——那对 `tuple[str, str, str, str]` 字段恒真，
+        # 已删；承重的是下面这条（取值域）与上面的现读比对。
         assert all(word in {"适用", "N/A"} for word in row.invariants), row.tag
         if row.scan_class is None:
             assert row.scan_note, row.tag

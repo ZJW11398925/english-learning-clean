@@ -19,13 +19,18 @@
 (ii) **正控**：current-epoch store 的同一三 unit 皆成（同一世界的正面半边）；
 (iii) **桥接**：`claim_turn_for_recovery` 之后，新 epoch 的三 unit 皆成 —— 证修复**不
     阻碍恢复路径**（恢复纪律是「先 claim 再动」：`_close_residual_turns` 在
-    `record.owner_epoch != epoch` 时先 claim，controller.py:4340-4346）；
+    `record.owner_epoch != epoch` 时先 claim，controller.py:4378-4379；P10-4 处置
+    F-LOW-2 校正了那条原先落在该方法 docstring 散文里的近似区间）；
 (iv) **跨连接**：第二条连接 `epoch.open_runtime_epoch` 开新 epoch 后，第一条连接的
     旧 store 三 unit 皆拒 —— fence 读的是**全库**最新 epoch，不是本实例的记忆；
 (v) **错误码矩阵四格**（口径钉）：(current×own) ⇒ `Ok`；(current×foreign) ⇒
     `AUTHORITY_VIOLATION`（**不变**）；(stale×own) ⇒ `StaleEpochError`（新）；
     (stale×foreign) ⇒ 从 `AUTHORITY_VIOLATION` **变为** `StaleEpochError`（fence 在
     ownership 之前）—— 两格拒绝的结论都不放松，只是理由码更早、更准。
+    四格之外还有**两格被前置**（P10-4 处置 F-LOW-3 点名）：陈旧 store 上「不存在的
+    行」原答 `Err NOT_FOUND`、「已终态的行」原答 `Err VALIDATION_FAILED`，现在两者都
+    先抛 `StaleEpochError` 家族—— 同样只是「理由码更早」，没有任何一格从「拒」变成
+    「放行」。
 
 纪律：真库真面（真 store / 真 `user_turn` / 真 `turn_record`），零 `_seed()` 零
 fixture 供给，外壳零处（本文件不需要外壳）；构造走 A 半的 `_commit_chat_turn`
@@ -278,6 +283,10 @@ def test_the_error_code_matrix_has_four_cells(
     (stale×foreign) `StaleEpochError`（**原为 `AUTHORITY_VIOLATION`**：fence 在
     ownership 之前，两格都是「拒」，只是理由码更早）。
 
+    四格之外的两格（陈旧 store 上的「不存在的行」与「已终态的行」）由同文件的
+    `test_a_stale_store_raises_before_this_units_own_answers` 钉住（含
+    current-epoch 的正控）—— 见模块 docstring 的 F-LOW-3 点名。
+
     四格在同一个世界里都能构出：epoch 1 提交一个 turn；epoch 2 开（epoch 1 的 store
     变陈旧）；epoch 2 的 store claim 该 turn（owner → 2）⇒ 此时 epoch 1 的 store 面对
     的正是「陈旧 × 外来」，而 epoch 2 的 store 面对「当前 × 自己」。
@@ -335,3 +344,50 @@ def test_the_error_code_matrix_has_four_cells(
 
     # ... and neither refused call left a transaction open
     assert db.in_transaction is False
+
+
+# (vi) the two preempted cells outside the four -------------------------------
+
+
+def test_a_stale_store_raises_before_this_units_own_answers(
+    db: sqlite3.Connection,
+    store: SqliteConversationStore,
+    conversation: ConversationId,
+) -> None:
+    """(vi) 处置 F-LOW-3：陈旧 store 上**被前置**的两格 —— 「不存在的行」原答
+    `NOT_FOUND`、「已终态的行」原答 `VALIDATION_FAILED`，现在两者都先抛
+    `StaleEpochError`。评审（p10-4 的独立评审 LOW-3）把这两格从四格之外点了出来，
+    本钉把它们变成可执行事实，并把「current-epoch 的 store 对同样两个输入仍答原答案」
+    作为正控 —— 被前置的只有「陈旧」这一维，不是把这两个答案整体改掉。
+    """
+
+    del conversation  # requested for its side effect (the conversation row)
+    turn_id = _commit_chat_turn(store, "cm-p10-4-d1-preempted")
+    terminalized = store.terminalize_turn(
+        TurnId(turn_id), TurnOutcome.NO_ASSISTANT_OUTPUT
+    )
+    assert isinstance(terminalized, Ok), terminalized
+    before = _turn_snapshot(db, turn_id)
+    missing = TurnId("turn-does-not-exist")
+
+    # control: the current-epoch store still answers its own words
+    not_found = store.transition_turn(missing, 1, TurnStatus.GENERATING)
+    assert isinstance(not_found, Err), not_found
+    assert not_found.error.code is DomainErrorCode.NOT_FOUND
+    wrong_state = store.transition_turn(
+        TurnId(turn_id), before[3], TurnStatus.GENERATING
+    )
+    assert isinstance(wrong_state, Err), wrong_state
+    assert wrong_state.error.code is DomainErrorCode.VALIDATION_FAILED
+
+    epoch.open_runtime_epoch(db)  # the store in hand is stale from here on
+
+    with pytest.raises(StaleEpochError):
+        store.transition_turn(missing, 1, TurnStatus.GENERATING)
+    with pytest.raises(StaleEpochError):
+        store.transition_turn(TurnId(turn_id), before[3], TurnStatus.GENERATING)
+    with pytest.raises(StaleEpochError):
+        store.terminalize_turn(TurnId(turn_id), TurnOutcome.REPLIED_FULL)
+
+    assert db.in_transaction is False
+    assert _turn_snapshot(db, turn_id) == before

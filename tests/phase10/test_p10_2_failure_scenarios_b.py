@@ -1118,8 +1118,9 @@ def test_epoch_race_turn_canonicalize_is_fenced_and_unpolluted(world: World) -> 
     TurnRecord）.
 
     旧 worker 在**新 epoch 已开**之后写 transcript：`canonicalize_assistant_turn`
-    在写之前 `raise` `StaleStoreEpochError`（conversation/store.py:488 的
-    `_require_current_epoch`；P3-0 已为此立过测试），transcript 一个字节不动，且事务
+    在写之前 `raise` `StaleStoreEpochError`（`conversation/store.py` 的
+    `_require_current_epoch`；P3-0 已为此立过测试；P10-4 处置 F-LOW-1 删去了那条会随
+    docstring 增长而漂移的行号引用 —— 名字才是钉），transcript 一个字节不动，且事务
     不留在打开状态；新 epoch 自己 `claim_turn_for_recovery` + canonicalize 落到**唯一
     一行**、再重放同一内容仍返回同一行。
 

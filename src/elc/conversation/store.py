@@ -399,7 +399,19 @@ class SqliteConversationStore:
     ) -> Result[TurnRecordData]:
         """TurnRecord coordination transition under state_version CAS
         (STATE_MACHINES §20). Terminal coordination states are immutable;
-        terminalization goes through ``terminalize_turn``."""
+        terminalization goes through ``terminalize_turn``.
+
+        Fencing (P10-4, DEC-OPI-8f27d1de-…9): a *stale* store — this
+        instance's adopted epoch is no longer the newest ``runtime_epoch``
+        row — is refused with the StaleEpochError family at the head of the
+        write transaction, before anything is read or written (the check
+        ``canonicalize_assistant_turn`` has carried since P3-0 and
+        ``terminalize_turn`` carries too; the division of labour is that
+        method's attribution note). Being first, it also precedes this
+        method's own answers: on a stale store a missing row and a terminal
+        row raise stale rather than answering ``NOT_FOUND`` /
+        ``VALIDATION_FAILED``. Reopen: canonical re-declares this unit as an
+        ownership-only fence."""
         if new_status in TERMINAL_TURN_STATUSES:
             return _err(
                 DomainErrorCode.VALIDATION_FAILED,
@@ -585,7 +597,14 @@ class SqliteConversationStore:
         keeps its coordination state; FAILED_USER_VISIBLE ends FAILED_FINAL;
         the replied/no-output outcomes end COMPLETED
         (DELIVERY_TERMINAL → POSTPROCESSING/COMPLETED).
-        """
+
+        Fencing (P10-4, DEC-OPI-8f27d1de-…9): like ``transition_turn`` (its
+        docstring states the shape) this unit now refuses a *stale* store
+        with the StaleEpochError family at the head of the write transaction,
+        before anything is read or written — the check it shares with
+        ``canonicalize_assistant_turn`` and ``transition_turn`` since this
+        cut. Reopen: canonical re-declares this unit as an ownership-only
+        fence."""
         if outcome == TurnOutcome.CANCELLED_BY_USER:
             status = TurnStatus.CANCELLED_BY_USER
         elif outcome == TurnOutcome.FAILED_USER_VISIBLE:
