@@ -6,9 +6,13 @@ shipped stores — no ``_seed``-shaped helper, no fixture target provider:
 - **the initial estimate is written by the delivery itself** and is readable by
   a **second connection** (the P9-2 discipline: the writing connection's view is
   never the evidence). The streamed face's estimate is derived from the frozen
-  §22 row, so a partial run records ``PARTIAL`` — and the negative half is
-  asserted too (no column may claim ``FULL`` for a prefix that shorter than the
-  validated text);
+  §22 row (its word and durable prefix, plus the released half the run holds —
+  reading 11), so a partial run records ``PARTIAL`` — and the negative half is
+  asserted too (no column may claim ``FULL`` for a prefix shorter than the
+  validated text **while the released half agrees with it**; the stopped source
+  below releases every chunk it records, and a released prefix *ahead* of the
+  record raises only the ``max_possible_exposure`` ceiling, which P9-R2's own
+  suite owns);
 - **the buffered (teaching) face writes its own estimate and no §22 row** — the
   registered split (a buffered delivery is atomic: it declares its word and its
   whole text, and the §22 row is the streamed face's record);
@@ -211,9 +215,11 @@ def test_a_partial_stream_records_a_partial_estimate_and_never_full(
     world: StreamWorld,
 ) -> None:
     """The negative half of the conservative rule: the durable prefix is
-    shorter than the validated text, so no column of the estimate may say
-    ``FULL`` — §14's "宁可低估，不高估" as a durable fact rather than a
-    promise."""
+    shorter than the validated text and the released half agrees with it (the
+    source stopped while the record kept up), so no column of the estimate may
+    say ``FULL`` — §14's "宁可低估，不高估" as a durable fact rather than a
+    promise. (A released prefix *ahead* of the record is the other reading:
+    the ceiling rises, the level does not — P9-R2's suite.)"""
 
     kept = pieces(REPLY, 3)[0]
     source = ScriptedSource(

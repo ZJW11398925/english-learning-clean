@@ -159,7 +159,11 @@ UNTESTABLE_TODAY: dict[str, tuple[str, str]] = {
         " text`` is exercised only by direct construction — P9-4's derivation"
         " table owns it. Receipt ⑨'s first mutation run is the evidence:"
         " short-circuiting that comparison survives this file and turns two of"
-        " P9-4's tests red.",
+        " P9-4's tests red. (P9-R2 added a *sibling* comparison that the"
+        " streamed face does exercise live — the released boundary against the"
+        " validated length, reading 11 of the same module — and it moves only"
+        " the ceiling column; the durable half's comparison named here is still"
+        " direct-construction-only.)",
         "a delivery face that can freeze ``SENT_COMPLETE`` while its durable"
         " prefix is shorter than the validated text (then promise 1 gains the"
         " arm).",

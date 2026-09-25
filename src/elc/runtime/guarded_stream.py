@@ -61,10 +61,15 @@ package's Gate item 2 posture against a store that *is* the driver's argument.
    bytes go to the client boundary first (:meth:`StreamTransport.emit`) and are
    entered into the caller's record face second (``on_chunk``). A crash between
    the two therefore leaves the durable prefix *behind* what the boundary
-   received — the conservative direction: the record under-reports what was
-   sent, and the transcript (which is canonicalized from the durable prefix,
-   §17's "canonicalize 已发送/确认边界") never claims text the record did not
-   confirm. The opposite order would let a crash record bytes that never
+   received — the conservative direction **for the transcript and for the sent
+   level**: the record under-reports what was sent, and the transcript (which
+   is canonicalized from the durable prefix, §17's "canonicalize 已发送/确认边界")
+   never claims text the record did not confirm. It is not conservative for the
+   §22 estimate's ceiling, which is why that derivation reads this same released
+   half as the ceiling's second half (P9-R2;
+   ``elc.runtime.exposure_reconciliation`` reading 11): an under-reported
+   *possible* exposure is the direction that over-credits the user's
+   independence. The opposite order would let a crash record bytes that never
    reached the client — a claim the runtime cannot take back. Revisit: a
    transport whose ``emit`` is itself durable (then the two steps are one).
 5. **An empty chunk is guarded like any other.** The rule set's own

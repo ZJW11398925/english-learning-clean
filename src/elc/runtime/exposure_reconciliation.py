@@ -33,9 +33,11 @@ appends a §20 presentation event and never opens a teaching path.
 re-open condition is beside it)
 ---------------------------------------------------------------------------
 
-The input is :class:`DeliveryExposureFacts`. ``exposure_level`` and
-``max_possible_exposure`` are the **sent** level — what the server can prove
-it put on the wire, which is the ceiling §14's conservative rule uses — and
+The input is :class:`DeliveryExposureFacts`. ``exposure_level`` is the **sent**
+level — what the server can prove it put on the wire — and
+``max_possible_exposure`` is the ceiling §14's conservative rule uses: the
+higher of that level and the **released** level (reading 11 — what the client
+boundary received, which a stopped run leaves ahead of its record).
 ``confirmed_exposure`` is what an acknowledgment later confirms (``NONE``
 here: no acknowledgment has arrived when the row is first written).
 
@@ -60,6 +62,23 @@ that reading names it. Every row's ``certainty`` is
 :data:`~elc.teaching.types.AnswerExposureState`'s; ``conf.`` is
 ``confirmed_exposure``.
 
+Every row above is a shape whose released half is not held (``None``) or agrees
+with the durable one, so ``max`` equals ``level`` in all of them. The two arms
+where the released half is ahead of the record — the repair P9-R2 lands, reading
+11 — are:
+
+=====================  ================  =====  =====
+durable prefix         released prefix   level  max
+=====================  ================  =====  =====
+short of validated     covers validated  PART.  FULL
+empty                  non-empty         NONE   PART.
+=====================  ================  =====  =====
+
+In both, ``max`` is the higher of the two readings while ``exposure_level``
+does not move: the record still says what it says, and §14's "confirmed
+exposure where available, otherwise max-possible-exposure" reads a ceiling that
+cannot understate what the client may hold.
+
 The clauses that are readings rather than quotable rules:
 
 1. **"Short of the validated text" is a real arm, and it is why the length is
@@ -75,7 +94,10 @@ The clauses that are readings rather than quotable rules:
 2. **An empty prefix is ``NONE`` whatever the word says.** The row's state
    word describes the run; §17 makes the *sent boundary* the durable fact the
    transcript is canonicalized from, and this derivation follows the same
-   boundary — a word with nothing behind it is not exposure. This is the row
+   boundary — a word with nothing behind it is not exposure. That is the
+   **level**; the ceiling may still sit above it when the released half is
+   ahead of the record (reading 11: nothing durable is not the same fact as
+   nothing released). This is the row
    P9-2 registered ("the send began and its record was lost") and it lands as
    ``NONE`` rather than as a smoothing of the word. The empty arm is checked
    **first**, so ``CANCELLED`` with nothing released reads like any other empty
@@ -124,17 +146,27 @@ The clauses that are readings rather than quotable rules:
    available": the client saying it rendered the final chunk of the stream is
    what confirms everything the server sent, and anything less confirms only
    that *some* rendering happened (so the level stays where it was — the
-   conservative direction). ``exposure_level`` and ``max_possible_exposure``
+   conservative direction). The level a final acknowledgment confirms up to is
+   the row's ``max_possible_exposure``; after reading 11 that column is the
+   ceiling of what may have been released, which is what "everything the server
+   sent" means once the record is known to lag the release.
+   ``exposure_level`` and ``max_possible_exposure``
    never move: an acknowledgment changes what is *known*, never what was
    sent. Revisit: a cut shows an acknowledgment that can lower a column (then
    the ladder is the wrong shape and this reading is the one to reopen).
-7. **An acknowledgment against a ``NONE`` estimate raises nothing.** The
+7. **An acknowledgment against a ``NONE`` *level* raises nothing.** The
    durable record says nothing was sent, so there is no rendering for an
    acknowledgment to confirm — a client claiming otherwise is either broken or
    replaying another action's event, and "confirm" is not a word the server may
    take from it. The function returns the estimate unchanged (no column moves
-   down either). Revisit: canonical requires an acknowledgment to be recorded
-   as a contradiction of the delivery record (then that record is the place).
+   down either). The criterion is ``exposure_level``, not the ceiling (P9-R2's
+   truth update): a raised ``max_possible_exposure`` is a *possible* exposure,
+   never a confirmable one, so reading 11's repair mints no object for an
+   acknowledgment to move — the two columns read different facts, and only the
+   durable one is the record's own word about a send. Revisit: canonical
+   requires an acknowledgment to be recorded as a contradiction of the delivery
+   record (then that record is the place), or makes an acknowledgment evidence
+   about the released half (then this reading reopens).
 8. **``rendered_text_hash`` is carried, never compared.** No face in this cut
    computes a hash of the durable prefix, so the coverage question is decided
    by ``final_rendered`` alone; the hash stays the acknowledgment's own
@@ -156,6 +188,33 @@ The clauses that are readings rather than quotable rules:
     mapping above is exercised by its own suite, and the certainty words stay
     honest about which of them a real client has actually earned. Revisit: a
     delivery channel with a real client lands an acknowledgment.
+11. **The released boundary is the ceiling's second half, and it does not read
+    the state word.** §17 has two boundaries and this cut's facts carry both:
+    ``sent_prefix`` is what the record confirmed, ``released_prefix`` is what
+    the client boundary received. They differ exactly when a run stopped
+    between the release and the record (a refused write, a crash) — the
+    ``StreamRun`` that reports them says so in its own docstring. The run's
+    word describes how the *run* ended, not what left the server: a
+    ``SENT_PARTIAL`` that released every chunk put the whole text in the
+    client's hands, so the released level is decided by the released length
+    alone (at or above the validated length, or no length held at all —
+    reading 1's own comparison) and **never** by ``terminal_state``. ``None``
+    means the caller does not hold that half (the buffered face's atomic
+    delivery, or a recovery face reading the row alone) and the ceiling falls
+    back to the durable level. ``""`` is a concrete fact — the boundary
+    released nothing — and it is a different fact from ``None`` even though the
+    two agree on the row, deliberately: a fallback and a known-empty boundary
+    are both read conservatively, and stating which one it was is the caller's
+    half of the honesty. The ceiling is ``max(exposure_level, released level)``
+    and only that column moves (R4: ``exposure_level``, ``certainty`` and
+    ``confirmed_exposure`` are the durable reading's). When the ceiling is
+    raised, ``derivation_reason`` gains one deterministic fragment naming the
+    released length ("the client boundary may hold more than the record shows
+    (released 2 of 4 chars)"), placed **before** the no-acknowledgment tail so
+    reading 5's tail swap keeps it: a refined row whose ceiling sits above its
+    level still explains itself. Revisit: canonical gives the released boundary
+    a durable column of its own (then this half stops being a caller's fact and
+    becomes a row's).
 """
 
 from __future__ import annotations
@@ -216,6 +275,11 @@ DELIVERY_STATES_WITH_AN_ESTIMATE: tuple[str, ...] = (
 #: (reading 5).
 _NO_ACK = "; no render ack"
 
+#: The one fragment a raised ceiling adds, before the tail (reading 11).
+_RELEASED_BEYOND_RECORD = (
+    "; the client boundary may hold more than the record shows"
+)
+
 #: The two acknowledgment markers (the derivation's tail and the refinement's
 #: own tail, in the order :func:`_base_reason` looks for them).
 _ACK_MARKERS = (_NO_ACK, "; render ack")
@@ -266,12 +330,24 @@ class DeliveryExposureFacts:
     to compare against — the buffered face's atomic delivery, or a recovery
     face that reads the row alone — and then the state word is taken at its
     own word (reading 1).
+
+    ``released_prefix`` is §17's **other** boundary and the ceiling's second
+    half (reading 11): the text the client boundary received, which a run that
+    stopped between the release and the record leaves ahead of
+    ``sent_prefix``. ``None`` means the caller does **not hold** that half —
+    the buffered face's atomic delivery, or a recovery face reading the row
+    alone — and the ceiling falls back to the durable level. ``""`` is a
+    concrete fact (the boundary released nothing), and it is not the same fact
+    as ``None`` even though the two agree on the row: a fallback and a
+    known-empty boundary both read conservatively, and this module states
+    which one it was rather than letting a reader guess.
     """
 
     terminal_state: str | None
     sent_prefix: str
     send_attempted: bool
     full_text_length: int | None = None
+    released_prefix: str | None = None
 
     @classmethod
     def streamed(
@@ -280,15 +356,28 @@ class DeliveryExposureFacts:
         terminal_state: str,
         sent_prefix: str,
         validated_text: str,
+        released_prefix: str,
     ) -> DeliveryExposureFacts:
-        """The streamed face's facts: the run's word, the durable boundary, and
-        the validated text whose length the derivation can compare against."""
+        """The streamed face's facts: the run's word, **both** §17 boundaries
+        and the validated text whose length the derivation compares them
+        against.
+
+        ``released_prefix`` is keyword-only and required here, unlike the
+        dataclass field: this is the one caller that holds the released half
+        (``StreamRun`` carries both by construction, since they differ exactly
+        when a run stopped between the release and the record), and a
+        streamed call that could not name it would be asking for reading 11's
+        conservative fallback to be taken silently. A caller that reads a row
+        alone is not this face; it constructs the facts directly and says
+        ``released_prefix=None``.
+        """
 
         return cls(
             terminal_state=terminal_state,
             sent_prefix=sent_prefix,
             send_attempted=True,
             full_text_length=len(validated_text),
+            released_prefix=released_prefix,
         )
 
     @classmethod
@@ -341,8 +430,51 @@ def _sent_level(facts: DeliveryExposureFacts) -> str:
     return partial
 
 
-def _reason(facts: DeliveryExposureFacts, level: str) -> str:
-    """The deterministic derivation text (reading 5)."""
+def _released_level(facts: DeliveryExposureFacts) -> str:
+    """The level the **released** boundary may hold — reading 11's ceiling half.
+
+    ``None`` (the caller does not hold the half) and ``""`` (the boundary
+    released nothing) both fall back to the durable level, which is reading
+    11's conservative direction. Otherwise the comparison is against the
+    validated length alone — and **not** against ``terminal_state``: the word
+    describes how the run ended, while the question here is what the client
+    boundary received, which a stopped run can leave ahead of its record.
+    """
+
+    released = facts.released_prefix
+    if released is None or released == "":
+        return _sent_level(facts)
+    length = facts.full_text_length
+    if length is None or len(released) >= length:
+        return AnswerExposureState.FULL.value
+    return AnswerExposureState.PARTIAL.value
+
+
+def _released_beyond_record(facts: DeliveryExposureFacts) -> str:
+    """The one fragment a raised ceiling adds (reading 11).
+
+    Deterministic in the released length, and placed before :data:`_NO_ACK` by
+    :func:`_reason` so reading 5's tail swap keeps it.
+    """
+
+    released = len(facts.released_prefix or "")
+    length = facts.full_text_length
+    detail = (
+        f"released {released} chars"
+        if length is None
+        else f"released {released} of {length} chars"
+    )
+    return f"{_RELEASED_BEYOND_RECORD} ({detail})"
+
+
+def _reason(facts: DeliveryExposureFacts, level: str, ceiling: str) -> str:
+    """The deterministic derivation text (reading 5).
+
+    ``ceiling`` only decides whether reading 11's fragment is present; the
+    level's own bytes are unchanged when it is not, so a row whose released
+    half is not held (or agrees) keeps the exact text this module has always
+    written.
+    """
 
     full = AnswerExposureState.FULL.value
     if facts.sent_length == 0:
@@ -362,7 +494,8 @@ def _reason(facts: DeliveryExposureFacts, level: str) -> str:
         DeliveryState.FAILED.value: "; the delivery failed",
         None: "; no server delivery record",
     }.get(facts.terminal_state, "; the delivery did not complete")
-    return f"{sent}{clause}{_NO_ACK}"
+    beyond = "" if ceiling == level else _released_beyond_record(facts)
+    return f"{sent}{clause}{beyond}{_NO_ACK}"
 
 
 def exposure_estimate_of(
@@ -372,9 +505,12 @@ def exposure_estimate_of(
 
     ``action_id`` is the caller's: §22's block carries it and this function
     mints no identity. The five value columns are the table in this module's
-    docstring; a word outside §13's terminal four raises, because the estimate
-    is the record of a *frozen* delivery and a caller asking about an open row
-    is asking the wrong question (see the constant's docstring).
+    docstring; ``max_possible_exposure`` is that table's ``max`` — the higher
+    of the durable level and reading 11's released level, so the ceiling never
+    understates what the client boundary may hold. A word outside §13's
+    terminal four raises, because the estimate is the record of a *frozen*
+    delivery and a caller asking about an open row is asking the wrong question
+    (see the constant's docstring).
     """
 
     state = facts.terminal_state
@@ -385,6 +521,9 @@ def exposure_estimate_of(
             " the §22 estimate is CP3a's record of a delivery that ended"
         )
     level = _sent_level(facts)
+    # reading 11: the same one-way helper the acknowledgment ladder uses, so a
+    # released half behind the record can never lower the ceiling either.
+    ceiling = _higher(level, _released_level(facts), EXPOSURE_LEVEL_LADDER)
     return ExposureEstimate(
         action_id=action_id,
         certainty=(
@@ -393,9 +532,9 @@ def exposure_estimate_of(
             else ExposureEstimateCertainty.UNKNOWN.value
         ),
         exposure_level=level,
-        max_possible_exposure=level,
+        max_possible_exposure=ceiling,
         confirmed_exposure=AnswerExposureState.NONE.value,
-        derivation_reason=_reason(facts, level),
+        derivation_reason=_reason(facts, level, ceiling),
     )
 
 
@@ -434,8 +573,11 @@ def refine_with_ack(
     acknowledgment leaves the row byte-identical (the port's replay rule then
     needs no second write). ``max_possible_exposure`` / ``exposure_level``
     never move, ``certainty`` rises to at least ``CONFIRMED_RENDERED``, and
-    ``confirmed_exposure`` reaches the sent level only for the final
-    acknowledgment — the coverage reading 6 states.
+    ``confirmed_exposure`` reaches the ceiling (``max_possible_exposure`` —
+    after reading 11 the highest level that may have been released) only for
+    the final acknowledgment, the coverage reading 6 states. Reading 7's
+    criterion is the **level** column: a raised ceiling is a possible
+    exposure, not a confirmable one.
     """
 
     if ack.action_id != estimate.action_id:
@@ -444,7 +586,7 @@ def refine_with_ack(
             f" is {estimate.action_id}; a refinement applies to the delivery"
             " it acknowledges"
         )
-    if exposure_rank(estimate.max_possible_exposure) == 0:
+    if exposure_rank(estimate.exposure_level) == 0:
         return estimate  # reading 7: nothing was sent, so nothing is confirmable
     certainty = _higher(
         estimate.certainty,

@@ -3014,16 +3014,25 @@ class ConversationCoordinator:
 
         # §6 CP3a's "initial ExposureEstimate", after the §22 row froze and
         # before the transcript is canonicalized: the streamed face's facts are
-        # the run's terminal word, the **durable** prefix and the validated
-        # text the derivation compares that prefix against (P9-4 B①). A
-        # refused write never changes the delivery — its reason is joined into
-        # the delivery's own note channel.
+        # the run's terminal word, **both** §17 boundaries and the validated
+        # text the derivation compares them against (P9-4 B①, P9-R2 B①). The
+        # durable prefix is what the record confirmed; ``run.sent_prefix`` is
+        # what the client boundary received, and it is the *upper* half — a run
+        # that stopped between the release and the record (a refused chunk
+        # write, a crash window) leaves it ahead, so the estimate's ceiling
+        # cannot understate what the user may hold (RA §14's conservative
+        # direction). The transcript stays the durable prefix's (below,
+        # verbatim): the estimate describes what may have reached the client,
+        # the transcript records what the record proves. A refused write never
+        # changes the delivery — its reason is joined into the delivery's own
+        # note channel.
         _estimate, estimate_note = self._write_initial_estimate(
             action_id=delivery.action_id,
             facts=DeliveryExposureFacts.streamed(
                 terminal_state=run.state,
                 sent_prefix=run.durable_prefix,
                 validated_text=delivery.text,
+                released_prefix=run.sent_prefix,
             ),
             note=reason,
         )

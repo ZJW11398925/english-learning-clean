@@ -227,7 +227,9 @@ quotation, and each names the condition that re-opens it.
     (``exposure_level`` / ``max_possible_exposure``) is the derivation's and
     this face refuses to move it in either direction: an acknowledgment
     changes what is *known*, never what was sent (RA §14's conservative rule
-    reads the level as the ceiling). A submission already equal to the durable
+    reads the ceiling column, ``max_possible_exposure`` — P9-R2 lets the
+    released boundary raise it, and this face still refuses to move it). A
+    submission already equal to the durable
     row is a replay (judgement 4's posture, and the idempotence a repeated
     acknowledgment needs); an unknown action is ``NOT_FOUND`` — refinement has
     no initial row to refine, and this face never invents one. Revisit: a cut

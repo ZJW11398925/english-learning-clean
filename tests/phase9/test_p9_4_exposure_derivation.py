@@ -72,6 +72,7 @@ def _estimate(
     sent_prefix: str,
     attempted: bool = True,
     full_text_length: int | None = None,
+    released: str | None = None,
 ) -> ExposureEstimate:
     return exposure_estimate_of(
         action_id=ACTION,
@@ -80,6 +81,7 @@ def _estimate(
             sent_prefix=sent_prefix,
             send_attempted=attempted,
             full_text_length=full_text_length,
+            released_prefix=released,
         ),
     )
 
@@ -232,6 +234,235 @@ def test_a_failed_row_with_a_prefix_is_partial() -> None:
     estimate = _estimate(terminal_state=FAILED, sent_prefix="abcd")
     assert estimate.exposure_level == "PARTIAL"
     assert estimate.max_possible_exposure == "PARTIAL"
+
+
+# -- ①b the released boundary, the ceiling's second half (P9-R2) ---------------
+
+
+def test_the_released_half_is_the_ceilings_second_half() -> None:
+    """Reading 11's arms, one assertion each: ``released_prefix`` is §17's
+    *other* boundary (what the client boundary received, which a run that
+    stopped between the release and the record leaves ahead of the durable
+    prefix), and the ceiling is the higher of the two readings. The rows where
+    the half is not held (``None``) and where it is held empty (``""``) both
+    fall back to the durable level — a fallback and a known-empty boundary read
+    the same row on purpose, and the field still says which fact it was."""
+
+    # (a) the durable boundary covers the validated text and the released half
+    #     agrees: nothing to raise, and the bytes are the ones this module has
+    #     always written
+    agrees = _estimate(
+        terminal_state=SENT,
+        sent_prefix="abcdefghij",
+        full_text_length=10,
+        released="abcdefghij",
+    )
+    assert (agrees.exposure_level, agrees.max_possible_exposure) == (
+        "FULL",
+        "FULL",
+    )
+    assert agrees.derivation_reason == "sent 10 of 10 chars; no render ack"
+
+    # (b) the durable prefix is short and the released half covers the whole
+    #     text: the level is the record's (PARTIAL), the ceiling is the
+    #     release's (FULL) — through the streamed constructor as well, which is
+    #     the face that holds both halves
+    ahead = _estimate(
+        terminal_state=PARTIAL,
+        sent_prefix="abcd",
+        full_text_length=10,
+        released="abcdefghij",
+    )
+    assert (ahead.exposure_level, ahead.max_possible_exposure) == (
+        "PARTIAL",
+        "FULL",
+    )
+    assert ahead.confirmed_exposure == "NONE"
+    assert ahead.derivation_reason == (
+        "sent 4 of 10 chars; partial send; the client boundary may hold more"
+        " than the record shows (released 10 of 10 chars); no render ack"
+    )
+    streamed = exposure_estimate_of(
+        action_id=ACTION,
+        facts=DeliveryExposureFacts.streamed(
+            terminal_state=PARTIAL,
+            sent_prefix="abcd",
+            validated_text="abcdefghij",
+            released_prefix="abcdefghij",
+        ),
+    )
+    assert _columns(streamed) == _columns(ahead)
+    assert streamed.derivation_reason == ahead.derivation_reason
+
+    # (c) nothing durable, something released: the level stays the empty
+    #     boundary's NONE and the ceiling is the released half's PARTIAL
+    nothing_durable = _estimate(
+        terminal_state=PARTIAL,
+        sent_prefix="",
+        full_text_length=10,
+        released="abcd",
+    )
+    assert (nothing_durable.exposure_level, nothing_durable.max_possible_exposure) == (
+        "NONE",
+        "PARTIAL",
+    )
+    assert nothing_durable.confirmed_exposure == "NONE"
+    assert "may hold more" in nothing_durable.derivation_reason
+    assert nothing_durable.derivation_reason.startswith("nothing was sent")
+
+    # (d) the caller does not hold the released half: the ceiling falls back to
+    #     the durable level, and a released half *behind* the record cannot
+    #     lower the ceiling either
+    unheld = _estimate(
+        terminal_state=PARTIAL, sent_prefix="abcd", full_text_length=10
+    )
+    assert unheld.max_possible_exposure == unheld.exposure_level == "PARTIAL"
+    assert "may hold more" not in unheld.derivation_reason
+    behind = _estimate(
+        terminal_state=PARTIAL,
+        sent_prefix="abcd",
+        full_text_length=10,
+        released="ab",
+    )
+    assert behind.max_possible_exposure == behind.exposure_level == "PARTIAL"
+    assert behind.derivation_reason == unheld.derivation_reason
+
+    # (e) the half is held and empty: the same row as the fallback, a different
+    #     fact (the facts carry which one it was)
+    held_empty = _estimate(
+        terminal_state=PARTIAL,
+        sent_prefix="abcd",
+        full_text_length=10,
+        released="",
+    )
+    assert held_empty.max_possible_exposure == held_empty.exposure_level == "PARTIAL"
+    assert held_empty == unheld  # one row for two facts, deliberately
+    assert DeliveryExposureFacts(
+        terminal_state=PARTIAL,
+        sent_prefix="abcd",
+        send_attempted=True,
+        full_text_length=10,
+        released_prefix="",
+    ) != DeliveryExposureFacts(
+        terminal_state=PARTIAL,
+        sent_prefix="abcd",
+        send_attempted=True,
+        full_text_length=10,
+        released_prefix=None,
+    )
+
+
+@pytest.mark.parametrize("state", [SENT, PARTIAL, FAILED, CANCELLED])
+def test_the_released_level_does_not_read_the_state_word(state: str) -> None:
+    """Reading 11: the word describes how the *run* ended, while the released
+    height is a fact about the client boundary — so a row that released the
+    whole text carries the whole-text ceiling whatever word it froze with, and
+    the three durable columns are exactly what they are without the half (R4:
+    the released boundary moves the ceiling and nothing else)."""
+
+    estimate = _estimate(
+        terminal_state=state,
+        sent_prefix="abcd",
+        full_text_length=10,
+        released="abcdefghij",
+    )
+    baseline = _estimate(
+        terminal_state=state, sent_prefix="abcd", full_text_length=10
+    )
+    assert estimate.max_possible_exposure == "FULL"
+    assert estimate.exposure_level == baseline.exposure_level
+    assert estimate.certainty == baseline.certainty
+    assert estimate.confirmed_exposure == baseline.confirmed_exposure
+
+
+def test_the_ceiling_is_never_below_the_level_across_the_table() -> None:
+    """The invariant every arm leans on, walked over the declared table crossed
+    with five released shapes (not held, held empty, behind, short of the
+    validated text, covering it): ``max_possible_exposure`` is never below
+    ``exposure_level``; a half that is not held or held empty leaves the
+    ceiling at the level; a half that covers the validated text makes it
+    ``FULL``; and a half in between can only reach ``PARTIAL`` (never higher
+    than the level it finds, except out of ``NONE``)."""
+
+    for state in (SENT, PARTIAL, FAILED, CANCELLED, None):
+        for prefix in ("", "abcd", "abcdefghij"):
+            if state is None and prefix != "":
+                continue  # the no-row shape holds no durable prefix
+            for released in (None, "", "ab", "abcd", "abcdefghij"):
+                estimate = _estimate(
+                    terminal_state=state,
+                    sent_prefix=prefix,
+                    full_text_length=10,
+                    released=released,
+                )
+                assert exposure_rank(estimate.max_possible_exposure) >= (
+                    exposure_rank(estimate.exposure_level)
+                ), (state, prefix, released)
+                if released is None or released == "":
+                    assert estimate.max_possible_exposure == (
+                        estimate.exposure_level
+                    ), (state, prefix, released)
+                elif len(released) < 10:
+                    # a released half short of the validated text: it lifts the
+                    # ceiling out of NONE to PARTIAL and is otherwise behind the
+                    # record's own reading (it can neither raise nor lower it)
+                    if estimate.exposure_level == "NONE":
+                        assert estimate.max_possible_exposure == "PARTIAL", (
+                            state,
+                            prefix,
+                            released,
+                        )
+                    else:
+                        assert estimate.max_possible_exposure == (
+                            estimate.exposure_level
+                        ), (state, prefix, released)
+                else:
+                    assert estimate.max_possible_exposure == "FULL", (
+                        state,
+                        prefix,
+                        released,
+                    )
+
+
+def test_a_raised_ceiling_survives_the_acknowledgment_tail_swap() -> None:
+    """Readings 5 and 11 together: the fragment is placed **before** the
+    no-acknowledgment tail, so reading 5's tail swap keeps it — a refined row
+    whose ceiling sits above its level still explains itself, and a final
+    acknowledgment confirms the ceiling it was derived with."""
+
+    raised = _estimate(
+        terminal_state=PARTIAL,
+        sent_prefix="abcd",
+        full_text_length=10,
+        released="abcdefghij",
+    )
+    refined = refine_with_ack(raised, ack=FINAL_ACK)
+    assert refined.certainty == "CONFIRMED_RENDERED"
+    assert refined.confirmed_exposure == "FULL"  # the ceiling, confirmed
+    assert refined.exposure_level == "PARTIAL"  # the record's word, unmoved
+    assert refined.max_possible_exposure == "FULL"
+    assert refined.derivation_reason.startswith(
+        "sent 4 of 10 chars; partial send; the client boundary may hold more"
+        " than the record shows (released 10 of 10 chars)"
+    )
+    assert "render ack for chunk 3 (final)" in refined.derivation_reason
+    assert "no render ack" not in refined.derivation_reason
+
+
+def test_an_ack_against_a_raised_ceiling_with_nothing_durable_is_a_no_op() -> None:
+    """Reading 7's truth update (P9-R2): the criterion is ``exposure_level``
+    and not the ceiling, because a ceiling raised by the released half is a
+    *possible* exposure rather than a confirmable one — the row comes back as
+    it is, certainty included."""
+
+    nothing_durable = _estimate(
+        terminal_state=PARTIAL,
+        sent_prefix="",
+        full_text_length=10,
+        released="abcd",
+    )
+    assert nothing_durable.max_possible_exposure == "PARTIAL"
+    assert refine_with_ack(nothing_durable, ack=FINAL_ACK) is nothing_durable
 
 
 def test_the_reason_text_is_deterministic_and_names_the_boundary() -> None:

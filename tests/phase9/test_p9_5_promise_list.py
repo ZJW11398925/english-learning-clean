@@ -472,7 +472,10 @@ def test_promise_2_without_an_ack_the_certainty_stays_server_sent_unconfirmed(
     (read through a second connection); and the ``exposure_estimate`` row
     carries both halves RA §14's rule reads — ``confirmed_exposure = NONE``
     (nothing was confirmed, so the support must fall back) and
-    ``max_possible_exposure`` = the level the durable boundary proves. The last
+    ``max_possible_exposure`` = the ceiling the derivation reads: the durable
+    level, or the released boundary's level when that is higher (reading 11 of
+    ``exposure_reconciliation``; this healthy turn releases and records
+    everything, so the two agree). The last
     lines are the control that keeps the pin from being vacuous: the same
     column moves the moment one real acknowledgment arrives. Two transports
     (V1's one-chunk default and a three-chunk source), so the pin is about the
