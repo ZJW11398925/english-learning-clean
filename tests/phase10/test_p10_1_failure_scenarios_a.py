@@ -1260,7 +1260,7 @@ def test_terminal_teaching_then_reply_is_refused_without_reopening(
 
     A healthy episode ran to its own end (opening → reply → CLOSED with a §6
     completion outcome), and a **late** reply arrives. It is refused — "no
-    active teaching moment" (controller.py:5303-5310) — and the moment stays
+    active teaching moment" (controller.py:5289-5292) — and the moment stays
     exactly as it closed: no reopen, no new moment, no second lock.
 
     (i) N/A 且已写明理由：迟到的答复按定义就是**新** turn（它的 CP0 先落、拒绝在
