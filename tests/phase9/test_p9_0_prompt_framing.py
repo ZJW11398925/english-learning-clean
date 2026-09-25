@@ -6,7 +6,11 @@ and the system persisted: ``[profile]`` (disclosed facts), ``[relationship]``
 (remembered memories), ``[episode]`` (summary / open threads / recent events)
 and ``[history]`` (the turns themselves). Since a section is a *line* whose
 first character is ``[``, untrusted text that could reach a line start could
-impersonate one.
+impersonate one. P9-R1 extends the set with ``[persona]``'s eight free-text
+columns (BF-05 ``UNTRUSTED_CONTENT`` lists ``persona card text``; SEC-008):
+this module's requests carry no CharacterPackage, so the section here is the
+package-free fallback and the persona vectors live in
+``test_p9_r1_persona_trust.py``.
 
 What this module pins, as the ruling's three asks:
 
@@ -18,9 +22,12 @@ What this module pins, as the ruling's three asks:
    ``[...]``-shaped lines are exactly the sections that were compiled, in the
    declared order, and a vector cannot add one;
 3. **the eight sections keep their order and identifiability** — the same
-   header list with and without vectors, and the trusted sections
-   (``[persona]`` / ``[contract]`` / ``[teaching]`` / ``[channel]``) are
-   byte-identical to what they render when no untrusted view is present.
+   header list with and without vectors, and the sections these requests do
+   not frame are byte-identical to what they render when no untrusted view is
+   present. P9-R1 changed the classification of ``[persona]`` (its eight
+   free-text columns are untrusted card text and render inside a frame when a
+   package is present), so the persona assertions below are made in the
+   package-free shape — see ``test_p9_r1_persona_trust.py``.
 
 Plus the mechanics that make those claims true rather than lucky: the escape
 table and its totality (no escaped value carries a line break), the length
@@ -255,7 +262,14 @@ def _framed_request(vector: dict[str, str] | None = None) -> PromptCompilationRe
 
 
 def test_the_framed_sections_and_the_version_word_are_declared() -> None:
+    """P9-R1 changed the classification: ``persona`` joins the untrusted set
+    (BF-05 ``UNTRUSTED_CONTENT`` lists ``persona card text``; SEC-008). The
+    section's key lines stay the system's own and its eight free-text columns
+    render inside the frame — pinned in
+    ``test_p9_r1_persona_trust.py``."""
+
     assert UNTRUSTED_PROMPT_SECTIONS == (
+        "persona",
         "profile",
         "history",
         "relationship",
@@ -445,16 +459,27 @@ def test_an_empty_untrusted_view_still_renders_its_frame() -> None:
 # -- ④ the trusted half is untouched -----------------------------------------
 
 
-def test_the_trusted_sections_are_byte_unchanged() -> None:
-    """Persona / contract / teaching / channel do not move: the same request
-    compiled with and without the untrusted views renders the same bytes for
-    every trusted section (and no frames appear when no untrusted view is
-    present)."""
+def test_the_unframed_sections_are_byte_unchanged() -> None:
+    """Contract / channel do not move: the same request compiled with and
+    without the untrusted views renders the same bytes for them (and no
+    frames appear when no untrusted view is present).
+
+    P9-R1 changed the classification of ``[persona]``: its eight free-text
+    columns are untrusted card text and render inside a frame — but only
+    when a CharacterPackage is present, and these requests carry none. The
+    section here is therefore the package-free fallback (id + language
+    policy, no free text), asserted in that shape instead of as a trusted
+    section; the package-bearing shape is pinned by
+    ``test_p9_r1_persona_trust.py``."""
 
     bare = _compile(_request())
     framed = _compile(_framed_request())
-    for name in ("persona", "contract", "channel"):
+    for name in ("contract", "channel"):
         assert _section(bare, name) == _section(framed, name)
+    assert _section(bare, "persona") == (
+        f"[persona]\npersona_id: {PERSONA}\nlanguage_policy: default"
+    )
+    assert _section(bare, "persona") == _section(framed, "persona")
     assert UNTRUSTED_SECTION_BEGIN not in bare
     assert UNTRUSTED_SECTION_END not in bare
     assert not _markers(bare)

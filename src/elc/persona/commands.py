@@ -10,16 +10,38 @@ Runtime-specific records (docs/DOMAIN_MODEL.md §16), so their durable face
 and §14 state-machine authority are runtime-owned, not persona-owned.
 
 **P9-0 (门三): the untrusted sections are framed, and their content cannot
-make a frame.** Four of the compiled sections carry text the *user or a model
-produced and the system persisted* — ``[profile]``'s disclosed facts,
-``[relationship]``'s remembered memories, ``[episode]``'s summary and
-threads, and ``[history]``'s turns — while the other four (``[persona]``'s
-CharacterPackage, ``[contract]``, ``[teaching]``'s directive, ``[channel]``)
-are the system's own. A section is a *line* whose first character is ``[``
-and whose last is ``]``, so untrusted text that could reach a line start
-could impersonate a section — the classic prompt-injection shape this cut
-closes, on the boundary the P9-0 ruling names (门三, the untrusted
-prompt-framing gate).
+make a frame; P9-R1 adds the persona card's free text to that set.** Five of
+the compiled sections carry text the *user or a model produced and the
+system persisted* — ``[profile]``'s disclosed facts, ``[relationship]``'s
+remembered memories, ``[episode]``'s summary and threads, ``[history]``'s
+turns, and the eight free-text columns of ``[persona]``'s CharacterPackage
+(identity / personality / background / speech_style / values / boundaries /
+opening / scenario) — while the other three (``[contract]``, ``[teaching]``'s
+directive, ``[channel]``) are the system's own. A section is a *line* whose
+first character is ``[`` and whose last is ``]``, so untrusted text that
+could reach a line start could impersonate a section — the classic
+prompt-injection shape this cut closes, on the boundary the P9-0 ruling names
+(门三, the untrusted prompt-framing gate).
+
+**P9-R1 (the persona card joins the untrusted set).** BF-05
+``behavioral_baselines/security/SECURITY_PRIVACY_DELETION_CONTRACT_v1.0.md``
+lists ``persona card text`` outright in its ``UNTRUSTED_CONTENT`` block
+(§ "UNTRUSTED_CONTENT", :142-153: user free text / persona card text /
+lore·world text / provider·model output / retrieved memory text / external
+content candidate — "文本本身没有 Authority"), and ``SEC-008`` (:1030)
+reads "Persona/Lore text cannot modify system security policy." Before this
+cut the eight free-text columns rendered inline and unframed, so a card whose
+``identity`` or ``boundaries`` carried a newline plus a ``[contract]``- or
+``[teaching]``-shaped line could *forge a section* (the review's two
+vectors). Canonical data *ownership* is not trusted instruction *authority*:
+the Persona Domain owning the package row says whose truth it is, not that
+its free text may write prompt structure. The fix therefore splits the
+section: the id/revision/policy keys stay the system's own ``[persona]``
+lines, and the eight free-text columns render inside the ``persona`` frame
+whose marker carries the section name as the block's owner (the payload has
+no second ``[persona]`` header — a header there would make the section head
+appear twice, and P9-0's scanner properties rely on one head per section).
+Per-field classification lives in :data:`PROMPT_FIELD_TRUST`.
 
 Two mechanisms, both structural rather than advisory:
 
@@ -66,17 +88,25 @@ Declared readings (this cut's, each with the condition that re-opens it):
    for the values themselves to be JSON-encoded, or the section templates
    are re-declared — then the P4-3 pins are rewritten with this module, on
    purpose.
-2. **The four untrusted sections are exactly the ones whose content the user
+2. **The five untrusted sections are exactly the ones whose content the user
    or a model produced and the system persisted.** ``[history]`` is included
    although the ruling's enumeration names the three §11 views: turn text is
    the same shape of input (a user turn's ``raw_content`` reaches the prompt
    verbatim) and leaving it unframed would be a boundary drawn around the
-   least-trusted text. ``[persona]``/``[contract]``/``[teaching]``/
-   ``[channel]`` are system-authored (the CharacterPackage is the persona's
-   own content, the directive is built by the teaching flow from validated
-   targets), and the ruling names them trusted. Revisit: a future section is
-   fed by user- or model-produced durable text — it joins
-   :data:`UNTRUSTED_PROMPT_SECTIONS`, and the frame travels with it.
+   least-trusted text. ``[persona]`` joins them in P9-R1: BF-05's
+   ``UNTRUSTED_CONTENT`` block lists ``persona card text`` outright, the
+   eight free-text columns are the card's editable prose rather than a
+   controlled vocabulary, and ``SEC-008`` forbids persona/lore text from
+   modifying system policy — a card line that can start a line can do
+   exactly that to the prompt's structure. ``[contract]``/``[teaching]``/
+   ``[channel]`` stay the system's own (the contract is configuration, the
+   directive is built by the teaching flow from validated targets, the
+   channel is an enum). Within ``[persona]`` the classification is per
+   field, recorded in :data:`PROMPT_FIELD_TRUST`: the id/revision/policy
+   lines remain the section's, and only the eight card-prose columns render
+   inside the frame. Revisit: a future section is fed by user- or
+   model-produced durable text — it joins :data:`UNTRUSTED_PROMPT_SECTIONS`,
+   and the frame travels with it.
 3. **The escaping is structural, not semantic.** A value containing the
    two-character sequence ``\\n`` is indistinguishable after escaping from
    one containing a real newline: the transform's promise is "no line
@@ -94,6 +124,19 @@ Declared readings (this cut's, each with the condition that re-opens it):
    contents. Revisit: the marker's shape changes (then the version word
    moves), or a reader needs a different quantity (e.g. the count of
    *escaped* characters rather than the block's length).
+5. **``lore/world text`` has no carrier in this compiler yet — which is why
+   it is not framed here.** BF-05's ``UNTRUSTED_CONTENT`` block lists
+   ``lore/world text`` alongside ``persona card text``, but ``WorldLoreView``
+   is not one of :data:`PROMPT_SECTION_ORDER`'s sections and
+   :meth:`PromptCompiler.compile` never reads
+   ``GenerationContext.world_lore_view`` — no lore text can reach the prompt
+   today, so this cut neither frames it nor claims to have fixed that half.
+   The ``lore_refs`` line of ``[persona]`` is the system's *reference* list
+   (opaque ids), not lore prose. Revisit: the first cut that gives a lore
+   section a carrier on this compiler — that section joins
+   :data:`UNTRUSTED_PROMPT_SECTIONS` and renders inside the frame, per BF-05
+   and ``SEC-008``. P9-R1 registered this so the fix is not misread as
+   covering the lore half.
 """
 
 from __future__ import annotations
@@ -104,6 +147,8 @@ from typing import Protocol, runtime_checkable
 from elc.persona.types import (
     CharacterPackageRecord,
     CompiledPrompt,
+    GenerationContext,
+    GenerationContract,
     PromptCompilationRequest,
     TeachingPromptView,
     episode_prompt_fields,
@@ -147,12 +192,17 @@ PROMPT_SECTION_ORDER = (
     "channel",
 )
 
-#: P9-0 (门三): the sections whose content the user or a model produced and
-#: the system persisted — every one of them is rendered inside the trust
-#: frame below (module docstring, reading 2). Membership is by *provenance*,
-#: not by position: a section joins this tuple when its text stops being the
-#: system's own.
+#: P9-0 (门三) / P9-R1: the sections whose content the user or a model
+#: produced and the system persisted — every one of them is rendered inside
+#: the trust frame below (module docstring, reading 2). Membership is by
+#: *provenance*, not by position: a section joins this tuple when its text
+#: stops being the system's own. P9-R1 adds ``persona``: BF-05's
+#: ``UNTRUSTED_CONTENT`` block lists ``persona card text``, and ``SEC-008``
+#: forbids persona text from modifying system policy. The section keeps its
+#: system-owned id/revision/policy lines and frames its eight free-text
+#: columns (:data:`PROMPT_FIELD_TRUST`).
 UNTRUSTED_PROMPT_SECTIONS = (
+    "persona",
     "profile",
     "history",
     "relationship",
@@ -187,6 +237,106 @@ UNTRUSTED_ESCAPES: tuple[tuple[str, str], ...] = (
     ("\x85", "\\x85"),
     ("\u2028", "\\u2028"),
     ("\u2029", "\\u2029"),
+)
+
+#: P9-R1: the two carriers a compiled value can have — the ``carrier`` column
+#: of :data:`PROMPT_FIELD_TRUST`.
+#:
+#: ``TRUST_CARRIER_SECTION`` — the value is a system-authored line of its
+#: ``[section]`` block, rendered literally in the template's ``key: value``
+#: shape. ``TRUST_CARRIER_FRAME`` — the value is free text and renders only
+#: inside its section's trust frame, escaped and marker-delimited. A value
+#: with the frame carrier is by construction not the system's own, so its
+#: line can never be the one a section scanner reads as structure.
+TRUST_CARRIER_SECTION = "section"
+TRUST_CARRIER_FRAME = "frame"
+
+#: P9-R1: the per-field trust classification of every value the compiler can
+#: put into the prompt — ``(section, field, trust, carrier)`` rows, in render
+#: order within each section.
+#:
+#: ``trust`` is ``"trusted"`` when the value is the system's own (an id, a
+#: revision, an enum, a policy word, a version word, a validated-content
+#: directive) and ``"untrusted"`` when BF-05 ``UNTRUSTED_CONTENT`` covers the
+#: source it comes from (user free text, persona card text, provider output,
+#: remembered memory text). ``carrier`` is :data:`TRUST_CARRIER_SECTION` or
+#: :data:`TRUST_CARRIER_FRAME`. The table is the *declaration*; the P9-R1
+#: suite asserts it against the real rendering (every trusted value appears
+#: as a literal line of its section, every untrusted value only inside its
+#: frame). ``[history]`` has one value row because the whole section is turn
+#: text — the ``#N user:`` / ``#N assistant:`` prefixes are the system's
+#: skeleton, not values.
+PROMPT_FIELD_TRUST: tuple[tuple[str, str, str, str], ...] = (
+    # persona — CharacterPackage §5.1: ids/revision/policy words are the
+    # system's own; the eight prose columns are persona card text (BF-05
+    # UNTRUSTED_CONTENT lists "persona card text").
+    ("persona", "character_package_id", "trusted", TRUST_CARRIER_SECTION),
+    ("persona", "persona_id", "trusted", TRUST_CARRIER_SECTION),
+    ("persona", "revision", "trusted", TRUST_CARRIER_SECTION),
+    ("persona", "generation_policy", "trusted", TRUST_CARRIER_SECTION),
+    ("persona", "lore_refs", "trusted", TRUST_CARRIER_SECTION),
+    ("persona", "language_policy", "trusted", TRUST_CARRIER_SECTION),
+    ("persona", "style_constraints", "trusted", TRUST_CARRIER_SECTION),
+    ("persona", "forbidden_claims", "trusted", TRUST_CARRIER_SECTION),
+    ("persona", "identity", "untrusted", TRUST_CARRIER_FRAME),
+    ("persona", "personality", "untrusted", TRUST_CARRIER_FRAME),
+    ("persona", "background", "untrusted", TRUST_CARRIER_FRAME),
+    ("persona", "speech_style", "untrusted", TRUST_CARRIER_FRAME),
+    ("persona", "values", "untrusted", TRUST_CARRIER_FRAME),
+    ("persona", "boundaries", "untrusted", TRUST_CARRIER_FRAME),
+    ("persona", "opening", "untrusted", TRUST_CARRIER_FRAME),
+    ("persona", "scenario", "untrusted", TRUST_CARRIER_FRAME),
+    # profile — the disclosure view: ids/level are the system's, the
+    # disclosed facts are user free text.
+    ("profile", "prompt_version", "trusted", TRUST_CARRIER_SECTION),
+    ("profile", "persona_id", "trusted", TRUST_CARRIER_SECTION),
+    ("profile", "disclosure_level", "trusted", TRUST_CARRIER_SECTION),
+    ("profile", "disclosed_facts", "untrusted", TRUST_CARRIER_FRAME),
+    # history — the turns themselves (BF-05 "user free text").
+    ("history", "turn_text", "untrusted", TRUST_CARRIER_FRAME),
+    # relationship — the memory rows: ids are the system's, the remembered
+    # content is untrusted text (BF-05 "retrieved memory text").
+    ("relationship", "prompt_version", "trusted", TRUST_CARRIER_SECTION),
+    ("relationship", "persona_id", "trusted", TRUST_CARRIER_SECTION),
+    ("relationship", "user_id", "trusted", TRUST_CARRIER_SECTION),
+    ("relationship", "memories", "untrusted", TRUST_CARRIER_FRAME),
+    # episode — the conversation's digest: ids/version/status are the
+    # system's, the prose columns are generated summary text.
+    ("episode", "prompt_version", "trusted", TRUST_CARRIER_SECTION),
+    ("episode", "episode_id", "trusted", TRUST_CARRIER_SECTION),
+    ("episode", "version", "trusted", TRUST_CARRIER_SECTION),
+    ("episode", "status", "trusted", TRUST_CARRIER_SECTION),
+    ("episode", "summary", "untrusted", TRUST_CARRIER_FRAME),
+    ("episode", "open_threads", "untrusted", TRUST_CARRIER_FRAME),
+    ("episode", "recent_events", "untrusted", TRUST_CARRIER_FRAME),
+    # contract — configuration, all the system's own.
+    ("contract", "generation_contract_id", "trusted", TRUST_CARRIER_SECTION),
+    ("contract", "action_type", "trusted", TRUST_CARRIER_SECTION),
+    ("contract", "response_mode", "trusted", TRUST_CARRIER_SECTION),
+    ("contract", "allowed_disclosures", "trusted", TRUST_CARRIER_SECTION),
+    ("contract", "max_length", "trusted", TRUST_CARRIER_SECTION),
+    # teaching — the ephemeral directive, built by the teaching flow from
+    # validated curriculum targets, rendered from the persona-owned
+    # TeachingPromptView (P9-0's ruling; the two-way AST pin keeps this
+    # module from importing elc.teaching). Revisit: a cut that fills hint /
+    # reveal / explanation from provider output rather than validated
+    # content re-opens these rows — model output is UNTRUSTED_CONTENT.
+    ("teaching", "prompt_version", "trusted", TRUST_CARRIER_SECTION),
+    ("teaching", "action_type", "trusted", TRUST_CARRIER_SECTION),
+    ("teaching", "moment_id", "trusted", TRUST_CARRIER_SECTION),
+    ("teaching", "focus_target_type", "trusted", TRUST_CARRIER_SECTION),
+    ("teaching", "focus_target_id", "trusted", TRUST_CARRIER_SECTION),
+    ("teaching", "presentation_phase", "trusted", TRUST_CARRIER_SECTION),
+    ("teaching", "support_level", "trusted", TRUST_CARRIER_SECTION),
+    ("teaching", "attempt_index", "trusted", TRUST_CARRIER_SECTION),
+    ("teaching", "hint", "trusted", TRUST_CARRIER_SECTION),
+    ("teaching", "reveal", "trusted", TRUST_CARRIER_SECTION),
+    ("teaching", "explanation", "trusted", TRUST_CARRIER_SECTION),
+    ("teaching", "closure", "trusted", TRUST_CARRIER_SECTION),
+    ("teaching", "completion_outcome", "trusted", TRUST_CARRIER_SECTION),
+    ("teaching", "abort_reason", "trusted", TRUST_CARRIER_SECTION),
+    # channel — the interaction channel enum.
+    ("channel", "interaction_channel", "trusted", TRUST_CARRIER_SECTION),
 )
 
 
@@ -230,6 +380,15 @@ class PromptCompiler:
     character content, and rendering a clock stamp would break
     byte-determinism.
 
+    P9-R1 (TASK-OPI-e26b27a7-….47): the [persona] section is split by
+    provenance. The id/revision/policy lines stay the section's own, and the
+    eight free-text columns render inside the ``persona`` frame (the section
+    joins :data:`UNTRUSTED_PROMPT_SECTIONS`), because BF-05
+    ``UNTRUSTED_CONTENT`` lists ``persona card text`` and ``SEC-008``
+    forbids persona text from modifying system policy. Package fields still
+    really enter the prompt — a different package still yields a different
+    prompt, now from inside the frame for the prose columns.
+
     P4-3 (TASK-OPI-4d516e4f-….19 ④): three §11 views join the prompt —
     [profile] (the DisclosedUserProfile the disclosure decision produced:
     facts / level / persona), [relationship] (the RelationshipView's ACTIVE
@@ -255,27 +414,13 @@ class PromptCompiler:
 
         if context is not None and context.character_package is not None:
             package = context.character_package
-            lore_refs = "; ".join(package.lore_refs)
-            style = "; ".join(contract.style_constraints) if contract else ""
-            forbidden = "; ".join(contract.forbidden_claims) if contract else ""
             sections.append(
-                "[persona]\n"
-                f"character_package_id: {package.character_package_id}\n"
-                f"persona_id: {package.persona_id}\n"
-                f"revision: {package.revision}\n"
-                f"identity: {package.identity}\n"
-                f"personality: {package.personality}\n"
-                f"background: {package.background}\n"
-                f"speech_style: {package.speech_style}\n"
-                f"values: {package.values}\n"
-                f"boundaries: {package.boundaries}\n"
-                f"opening: {package.opening}\n"
-                f"scenario: {package.scenario}\n"
-                f"generation_policy: {package.generation_policy}\n"
-                f"lore_refs: {lore_refs}\n"
-                f"language_policy: {context.language_policy}\n"
-                f"style_constraints: {style}\n"
-                f"forbidden_claims: {forbidden}"
+                _persona_system_section(package, context, contract)
+            )
+            sections.append(
+                _framed_untrusted_block(
+                    "persona", _persona_card_text_block(package)
+                )
             )
         else:
             sections.append(
@@ -360,6 +505,68 @@ class PromptCompiler:
                 generation_contract=contract_id,
             )
         )
+
+
+def _persona_system_section(
+    package: CharacterPackageRecord,
+    context: GenerationContext,
+    contract: GenerationContract | None,
+) -> str:
+    """The ``[persona]`` section's system-owned lines (P9-R1).
+
+    These are the :data:`TRUST_CARRIER_SECTION` rows of the persona block in
+    :data:`PROMPT_FIELD_TRUST` — the package id/revision/policy keys plus the
+    contract's style/forbidden words. The section is theirs: the eight
+    free-text columns are *not* rendered here (they carry the card's prose
+    and render inside the ``persona`` frame, :func:`_persona_card_text_block`),
+    and every line that does render here is byte-identical to what the
+    pre-P9-R1 section rendered, in the same relative order.
+    """
+
+    lore_refs = "; ".join(package.lore_refs)
+    style = "; ".join(contract.style_constraints) if contract else ""
+    forbidden = "; ".join(contract.forbidden_claims) if contract else ""
+    return (
+        "[persona]\n"
+        f"character_package_id: {package.character_package_id}\n"
+        f"persona_id: {package.persona_id}\n"
+        f"revision: {package.revision}\n"
+        f"generation_policy: {package.generation_policy}\n"
+        f"lore_refs: {lore_refs}\n"
+        f"language_policy: {context.language_policy}\n"
+        f"style_constraints: {style}\n"
+        f"forbidden_claims: {forbidden}"
+    )
+
+
+def _persona_card_text_block(package: CharacterPackageRecord) -> str:
+    """The persona card's eight free-text columns, as a frame payload (P9-R1).
+
+    Rendered as ``key: value`` lines in the card's own column order, with no
+    section header of their own — the frame marker's ``section`` field names
+    the owner. A ``[persona]`` header here would make the section head appear
+    twice, and P9-0's scanner properties (one head per section; a head's
+    position is its section's position) rely on one head per section.
+    Escaping and the marker pair are the shared mechanism, not a second one:
+    every value goes through :func:`_escaped_untrusted_text` (exactly what
+    :func:`_framed_untrusted_section` does per field), the frame is around
+    the resulting block (:func:`_framed_untrusted_block`), and the marker
+    carries :data:`UNTRUSTED_FRAMING_VERSION` plus the payload's character
+    count.
+    """
+
+    return "\n".join(
+        (
+            f"identity: {_escaped_untrusted_text(package.identity)}",
+            f"personality: {_escaped_untrusted_text(package.personality)}",
+            f"background: {_escaped_untrusted_text(package.background)}",
+            f"speech_style: {_escaped_untrusted_text(package.speech_style)}",
+            f"values: {_escaped_untrusted_text(package.values)}",
+            f"boundaries: {_escaped_untrusted_text(package.boundaries)}",
+            f"opening: {_escaped_untrusted_text(package.opening)}",
+            f"scenario: {_escaped_untrusted_text(package.scenario)}",
+        )
+    )
 
 
 def _section(name: str, fields: tuple[tuple[str, str], ...]) -> str:
