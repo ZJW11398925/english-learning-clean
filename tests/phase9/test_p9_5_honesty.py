@@ -394,7 +394,13 @@ def test_the_three_new_files_are_this_cuts_and_are_all_tests() -> None:
 def test_no_source_file_carries_this_cuts_name() -> None:
     """A tests-only cut: neither ``src/`` nor ``migrations/`` gained a file
     whose name carries the p9-5 tag (the P8-5 shape for "no source was
-    touched", checkable without a VCS)."""
+    touched", checkable without a VCS).
+
+    This pin is a **name-face proxy** (review FINDING-2): the real warrant for
+    "tests and only tests" is ``git diff`` over the cut's commits, which the
+    receipt carries; an edit to a *pre-existing* source file would pass this
+    in-tree scan.
+    """
 
     tagged = [
         str(path.relative_to(REPO_ROOT))

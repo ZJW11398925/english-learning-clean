@@ -89,11 +89,11 @@ class ChainWindow:
 
     ``take(boundary)`` reads the tables a delivery chain writes — the
     transcript, the turn rows, the §22 row, the estimate, the §21.1 guard rows,
-    the §20 log, the moment and its lock, the gate decisions — at the instant
-    *before* the named command runs. The point is to assert rows that the final
-    state no longer shows (a turn that was ``GENERATING``, a moment that was
-    ``OPENING``, a transcript that did not exist yet) without predicting them
-    from the code.
+    the §20 log, the moment and its lock, the gate decisions (*and* the decision
+    word itself) — at the instant *before* the named command runs. The point is
+    to assert rows that the final state no longer shows (a turn that was
+    ``GENERATING``, a moment that was ``OPENING``, a transcript that did not
+    exist yet) without predicting them from the code.
     """
 
     def __init__(self, db: sqlite3.Connection) -> None:
@@ -130,6 +130,9 @@ class ChainWindow:
             ),
             "locks": count_rows(self.db, "active_teaching_lock"),
             "gate_decisions": count_rows(self.db, "gate_decision"),
+            "gate_decision_words": rows_of(
+                self.db, "SELECT decision FROM gate_decision ORDER BY rowid"
+            ),
             "acks": count_rows(self.db, "client_render_ack"),
         }
 
@@ -376,8 +379,9 @@ def test_the_buffered_teaching_chain_step_by_step(
        shows no moment, no lock, no gate decision, no transcript and no §20
        event (the automatic leg has not run yet);
     2. **CP2** — the planner half plus the §14 five teaching facts are durable
-       and the moment is ``OPENING`` with its lock held (the window at
-       canonicalization reads them);
+       and the moment is ``OPENING`` with its lock held, and the window at
+       canonicalization reads the gate decision's own word — ``ALLOW``, not
+       only its row count (the one the chain hinges on);
     3. **the buffered delivery** — the whole validated text, delivered whole:
        the transcript is the delivered text verbatim, ``SENT_COMPLETE`` with
        ``SERVER_SENT_UNCONFIRMED``, and **§22's row stays empty** (a buffered
@@ -410,6 +414,7 @@ def test_the_buffered_teaching_chain_step_by_step(
     assert at_cp0["moment"] == []
     assert at_cp0["locks"] == 0
     assert at_cp0["gate_decisions"] == 0
+    assert at_cp0["gate_decision_words"] == []
     assert at_cp0["events"] == ()
     assert at_cp0["delivery"] == []
     assert at_cp0["estimate"] == ()
@@ -419,6 +424,9 @@ def test_the_buffered_teaching_chain_step_by_step(
     #    planner half is durable — and the delivery has not happened yet
     at_cp3 = window.at("canonicalize_assistant_turn")
     assert at_cp3["gate_decisions"] == 1
+    # the decision's own word, read from its row (promise 7's "real ALLOW
+    # chain" here is a fact about this word, not an inference from the moment)
+    assert at_cp3["gate_decision_words"] == [("ALLOW",)]
     assert at_cp3["locks"] == 1
     assert [
         row[1] for row in at_cp3["moment"]  # type: ignore[union-attr]
@@ -435,6 +443,7 @@ def test_the_buffered_teaching_chain_step_by_step(
     assert at_terminal["estimate"] != ()
     assert at_terminal["events"] == ()
     assert at_terminal["delivery"] == []
+    assert at_terminal["gate_decision_words"] == [("ALLOW",)]
 
     # 3'. the transcript is the delivered text, verbatim, on the buffered word
     assert completion.reply_text is not None and completion.reply_text != ""

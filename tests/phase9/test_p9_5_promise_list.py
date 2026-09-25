@@ -1167,8 +1167,11 @@ def test_promise_9_duplicate_reconciliation_writes_no_duplicate(
     zero). The loop's re-entry writes it **once**; a **second** re-entry over
     the same finished turn appends nothing at all; and the startup line in a
     new epoch finds no turn left to name. The event row's id is asserted at
-    every pass, so "no duplicate" is a statement about the deterministic id the
-    store replays against rather than about a count alone.
+    every pass — as the row's own column, asserted against the literal, on the
+    first one, and as the same literal ``ev-<action_id>`` in a keyed
+    ``COUNT(*)`` on each replay after it — so "no duplicate" is a statement
+    about the deterministic id the store replays against rather than about a
+    count alone.
     """
 
     from tests.phase9.test_p9_4_crash_windows import (
@@ -1237,6 +1240,13 @@ def test_promise_9_duplicate_reconciliation_writes_no_duplicate(
     assert again.value.ledger_event is None
     assert table_counts(world_.db) == counts_after_first
     assert count_events(world_.db) == 1
+    # looked up by the same literal key, not only counted: exactly one row,
+    # so the second pass checks the deterministic spelling too
+    assert rows_of(
+        world_.db,
+        "SELECT COUNT(*) FROM planning_ledger_event WHERE event_id = ?",
+        (f"ev-{action_id}",),
+    ) == [(1,)]
 
     # the startup line in a new epoch: the turn is already reconciled, so the
     # only residue left is the delivered opening's own lock — the sweep's, not
@@ -1249,6 +1259,13 @@ def test_promise_9_duplicate_reconciliation_writes_no_duplicate(
     assert _moment_state(world_) == ("CLOSED", "SYSTEM_RECOVERY_ABORT")
     assert count_rows(world_.db, "active_teaching_lock") == 0
     assert count_rows(world_.db, "planning_ledger_event") == 1
+    # the startup pass names no turn and touches no §20 event — and the one
+    # event the loop's first pass wrote is still there under its literal key
+    assert rows_of(
+        world_.db,
+        "SELECT COUNT(*) FROM planning_ledger_event WHERE event_id = ?",
+        (f"ev-{action_id}",),
+    ) == [(1,)]
     counts_after_startup = table_counts(world_.db)
 
     # the duplicate pass has an empty plan and writes nothing at all
@@ -1259,6 +1276,11 @@ def test_promise_9_duplicate_reconciliation_writes_no_duplicate(
     assert second.value.plan == ()
     assert table_counts(world_.db) == counts_after_startup
     assert count_rows(world_.db, "planning_ledger_event") == 1
+    assert rows_of(
+        world_.db,
+        "SELECT COUNT(*) FROM planning_ledger_event WHERE event_id = ?",
+        (f"ev-{action_id}",),
+    ) == [(1,)]
     assert count_rows(world_.db, "assistant_turn") == 1
     assert count_rows(world_.db, "exposure_estimate") == 1
     assert count_rows(world_.db, "client_render_ack") == 0
