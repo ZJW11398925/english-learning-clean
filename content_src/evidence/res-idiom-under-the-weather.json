@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's idiom set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "under the weather",
+    "pos": "ADJ"
+  },
+  "senses": [
+    {
+      "sense_id": "under-the-weather.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "under-the-weather.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Feeling slightly ill, or less well than usual."
+    },
+    {
+      "sense_id": "under-the-weather.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The idiom follows be or feel, usually with a degree word before it, and its subject is a person: I'm feeling a bit under the weather today, she felt under the weather all week. The three words are fixed and carry the definite article. It reports a mild, temporary state — a serious illness is named, not dressed in this phrase — and it is never used of weather itself or of things."
+    },
+    {
+      "sense_id": "under-the-weather.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The 不舒服 translation is right, and the trap is the literal reading: the words contain weather, so a learner can produce a sentence about real weather and a reader can misparse it as one. Teaching the two restrictions — the subject is a person, and the phrase follows be or feel — is what keeps the idiom out of weather talk. The classic false-positive sentence is a literal noun phrase like 'under the weather conditions ...', where the same words do physical work."
+    },
+    {
+      "sense_id": "under-the-weather.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "be under the weather = feel slightly ill (I'm a bit under the weather today). be sick names illness in general and can mean vomiting, be ill is the neutral British choice, and be unwell is formal — none of them carries this idiom's gentle understatement. Used with weather as a literal noun (under the weather conditions), the words are a spatial preposition with a noun, not this idiom."
+    },
+    {
+      "sense_id": "under-the-weather.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "身体不太舒服（有点小病，精神不佳）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "under-the-weather.base",
+      "written": "under the weather",
+      "normalized": "under the weather",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the idiom is very common in casual conversation, so receptive value is HIGH and receptive difficulty is LOW, but a mild-illness phrase is not a communicative need, so core and productive value are MEDIUM. Productive difficulty is MEDIUM because the literal weather reading competes with the idiom, and explanation cost is LOW because the subject restriction is one line. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.7",
+      "rationale": "The idiom belongs to the general fluency pack's casual-conversation set, so it carries most of its weight in that pack; the shortfall records that it is a colouring phrase rather than a core unit."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.3",
+      "rationale": "Saying you are slightly unwell without a medical report is useful at work (I'm a bit under the weather today), so it carries some weight in the workplace pack; the shortfall records that the register is casual and the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Keep the subject a person and the phrase after be or feel in every model, and keep the literal weather-conditions sentence clearly marked as the boundary case, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "ARTICLE_OMISSION",
+      "error_pattern": "under + weather (no article between under and weather)",
+      "corrected_pattern": "under the weather",
+      "explanation": "The fixed phrase carries the definite article, and it is dropped because the words feel like a prepositional adverbial with an abstract noun. English fixes it: under the weather. The repair is the article, not the preposition.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when under is directly followed by weather with no article between them, in a sentence whose unit is the idiom."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "MISSING_AUXILIARY",
+      "error_pattern": "personal subject + under the weather (no form of be or feel between them)",
+      "corrected_pattern": "be | feel + under the weather",
+      "explanation": "The idiom is a complement and needs its verb, and the learner drops be or feel, producing I under the weather today. English requires the verb: I am under the weather. The repair is the linking verb.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a personal pronoun stands directly before under the weather with no form of be or feel between them."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the preposition, the article and the verb that carries the phrase. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words are there but weather is a literal noun after a spatial preposition, so the idiom is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "ARTICLE_OMISSION: match when under is directly followed by weather, because the fixed phrase carries the definite article."
+    },
+    {
+      "ordinal": 1,
+      "rule": "MISSING_AUXILIARY: match when a personal subject stands directly before under the weather with no be or feel, because the idiom is a complement and needs its linking verb."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when be or feel carries the phrase, with or without a degree word (I'm feeling a bit under the weather today, she felt under the weather all week): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "LITERAL_WEATHER: do not match when weather is a literal noun and under is a spatial preposition (under the weather conditions, sheltered under the weather side of the house), because the idiom is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "I'm feeling a bit under the weather today.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "She felt under the weather all week.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "He's been a little under the weather since Monday.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Under the weather conditions we had, the flight was cancelled.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

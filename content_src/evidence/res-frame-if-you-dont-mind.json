@@ -1,0 +1,196 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's sentence-frame set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "if you don't mind",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "if-you-dont-mind.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "if-you-dont-mind.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used to add a polite check to a request or to what you are doing."
+    },
+    {
+      "sense_id": "if-you-dont-mind.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The frame is if you don't mind, and it works in two positions: after a statement or request as a softener (I'll take this one, if you don't mind) and before it as an opener (If you don't mind, I'll open the window). mind is negative here and means 'be bothered', and the frame is completed by a clause, not by an infinitive. The question forms of the same verb are separate frames: Do you mind if I ...? asks for permission and Would you mind + -ing asks the other person to act."
+    },
+    {
+      "sense_id": "if-you-dont-mind.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The lesson is mind's negative shape: the frame says if you don't mind because mind means 'be bothered', so the positive if you mind would mean the opposite. The classic slip is the infinitive (if you don't mind to wait), produced by translating the polite formula as a request, and the repair is the -ing form or the bare frame. Once the negative shape is in place, the two positions — opening and trailing — need no further teaching."
+    },
+    {
+      "sense_id": "if-you-dont-mind.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "if you don't mind = a polite check on a request or an action of your own (I'll close the door, if you don't mind). Would you mind + -ing asks the other person to do something (Would you mind closing the door?). Do you mind if I ...? asks permission for yourself (Do you mind if I sit here?). All three keep mind negative, and none takes a to-infinitive."
+    },
+    {
+      "sense_id": "if-you-dont-mind.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "如果你不介意的话（礼貌地征求意见或提出请求）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "if-you-dont-mind.base",
+      "written": "if you don't mind",
+      "normalized": "if you don't mind",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "if-you-dont-mind.uncontracted",
+      "written": "if you do not mind",
+      "normalized": "if you do not mind",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the frame is frequent in polite talk, so receptive value is HIGH and receptive difficulty is LOW, but politeness can be carried by other formulas, so core and productive value are MEDIUM. Productive difficulty is MEDIUM because the negative mind and the complement shape both have to be produced, and explanation cost is MEDIUM because the three mind frames have to be kept apart. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "The frame belongs to the general fluency pack's politeness set (high-frequency formulas of everyday interaction), so it carries nearly full weight in that pack; the shortfall records that the register is polite rather than neutral."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.6",
+      "rationale": "Softening a request or a small liberty is constant at work (I'll move this to Thursday, if you don't mind), so it carries more than half its weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the frame in both positions (trailing and opening) with the comma in place, and keep Do you mind if ...? clearly marked as the permission frame, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "INFINITIVE_AFTER_MIND",
+      "error_pattern": "if you don't mind + to + base verb",
+      "corrected_pattern": "if you don't mind (+ -ing form, or a full clause)",
+      "explanation": "The polite formula is treated as a verb of wanting and a to-infinitive is attached to it, producing if you don't mind to wait. mind does not take that complement here: the frame is completed by a clause, or by an -ing form when the speaker names the action. The repair is the complement shape.",
+      "severity": "HIGH",
+      "detection_policy": "Match when if you don't mind is directly followed by to and a base verb."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "MISSING_NEGATIVE",
+      "error_pattern": "if you mind",
+      "corrected_pattern": "if you don't mind",
+      "explanation": "mind here means 'be bothered', so the frame is negative by construction: if you don't mind. Dropping the negative turns the politeness into its opposite, and the repair is the negative itself.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when if you is directly followed by mind in a sentence whose frame is the politeness formula."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the frame's words, its negative and the shape of what follows. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (mind is there in its question frame, so the if-frame is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "INFINITIVE_AFTER_MIND: match when if you don't mind is directly followed by to and a base verb, because the frame is completed by a clause or an -ing form."
+    },
+    {
+      "ordinal": 1,
+      "rule": "MISSING_NEGATIVE: match when if you is directly followed by mind, because mind in this frame is negative (if you don't mind)."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame carries its negative in either position, contracted or not (I'll take this one, if you don't mind / If you don't mind, I'll open the window / I'll wait here, if you do not mind): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_QUESTION_FRAMES: do not match when mind is used in the permission or request question (Do you mind if I open the window? / Would you mind closing the door?) or in another sense (mind the step), because if you don't mind is not the frame in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "I'll take this one, if you don't mind.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "If you don't mind, I'll open the window.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "I'll wait here, if you do not mind.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Do you mind if I open the window?",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

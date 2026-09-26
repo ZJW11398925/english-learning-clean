@@ -1,0 +1,196 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's idiom set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "hit the nail on the head",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "hit-the-nail-on-the-head.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "hit-the-nail-on-the-head.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To describe a situation, a cause or a point exactly right."
+    },
+    {
+      "sense_id": "hit-the-nail-on-the-head.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The idiom is fixed: hit the nail on the head, with the definite article and on as the preposition. It comments on a person or a statement that gets something exactly right, and it usually closes or follows the point it praises (you hit the nail on the head with that answer). The verb hit is invariable in form (hit, hit, hit). It is not a description of physical work: the whole phrase is the judgement, and the literal image stays in the background."
+    },
+    {
+      "sense_id": "hit-the-nail-on-the-head.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The 一针见血 translation maps cleanly, so the learner needs no semantic repair; the work is in the wording, where in replaces on (the nail in the head) and the article is dropped (hit nail on the head). The literal boundary is worth one line: a sentence about a hammer and a nail uses the same words with a physical meaning, and the idiom only works as a comment on accuracy — which is exactly what the boundary fixture tests."
+    },
+    {
+      "sense_id": "hit-the-nail-on-the-head.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "hit the nail on the head = be exactly right about the point or the cause (you hit the nail on the head with that answer). be right is the plain statement; get the point means understand the main idea, which is weaker and about the listener rather than the description. A literal sentence about carpentry (he hit the nail with a hammer) uses the words without the idiom."
+    },
+    {
+      "sense_id": "hit-the-nail-on-the-head.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "一针见血；说到点子上（把原因或要点说得完全正确）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "hit-the-nail-on-the-head.base",
+      "written": "hit the nail on the head",
+      "normalized": "hit the nail on the head",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "hit-the-nail-on-the-head.third-person-singular",
+      "written": "hits the nail on the head",
+      "normalized": "hit the nail on the head",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the idiom is frequent in commentary and discussion, so receptive value is HIGH and receptive difficulty is LOW, but it is a colouring phrase rather than a need, so core and productive value are MEDIUM. Explanation cost is LOW because the meaning translates directly and only the wording needs repair; transfer value is LOW because idioms do not extend to other units. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.7",
+      "rationale": "The idiom belongs to the general fluency pack's commentary set (evaluative fixed phrases), so it carries most of its weight in that pack; the shortfall records that it is a colouring phrase rather than a core unit."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.2",
+      "rationale": "It appears in workplace talk when a colleague's diagnosis is exactly right, so it carries a little weight in the workplace pack; the shortfall records that the register is general and the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the fixed wording whole (the, on) and keep the literal carpentry sentence clearly marked as the boundary case, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_CHOICE",
+      "error_pattern": "nail + in | into + the head",
+      "corrected_pattern": "nail + on + the head",
+      "explanation": "The physical image invites in or into (a nail goes into wood), and the learner transfers it to the idiom. The fixed phrase uses on: hit the nail on the head. The repair is the preposition inside the fixed wording.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of hit is followed by nail then in or into then the head, in a sentence whose unit is the idiom."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "ARTICLE_OMISSION",
+      "error_pattern": "hit | hits + nail on the head (no article before nail)",
+      "corrected_pattern": "hit the nail on the head",
+      "explanation": "The idiom carries the definite article, and the learner drops it the way abstract phrases often allow. English fixes it: hit the nail on the head. The repair is the article, not the word order.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of hit is directly followed by the noun nail with no article between them."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb, the article, the noun and the preposition. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the words are there but the sentence is about physical work, so the idiom is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PREPOSITION_CHOICE: match when nail is followed by in or into then the head, because the fixed phrase uses on."
+    },
+    {
+      "ordinal": 1,
+      "rule": "ARTICLE_OMISSION: match when a form of hit is directly followed by nail, because the idiom carries the definite article."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the fixed wording is complete (hit the nail on the head, hits the nail on the head): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "LITERAL_CARPENTRY: do not match when the sentence is about physical work — a hammer, a nail and a surface — because the idiom is not being used there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "You hit the nail on the head with that answer.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "She hits the nail on the head in her summary.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "He hit the nail on the head when he blamed the delays.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "He hit the nail with a heavy hammer.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

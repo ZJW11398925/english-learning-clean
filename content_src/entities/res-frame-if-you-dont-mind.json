@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-frame-if-you-dont-mind",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "SENTENCE_FRAME",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Add a polite check to what you are doing or asking.",
+      "The frame can close a statement or open a request, and mind is negative there.",
+      "Start with the words: I'll take this one, if you don't ___."
+    ],
+    "reveal_form": "I'll take this one, if you don't mind.",
+    "canonical_forms": [
+      "I'll take this one, if you don't mind."
+    ],
+    "alternative_realizations": [
+      "If you don't mind, I'll open the window."
+    ],
+    "required_slots": [
+      [
+        "mind"
+      ],
+      [
+        "if"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-idiom-hit-the-nail-on-the-head",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "IDIOM",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that someone described the point exactly right.",
+      "The whole phrase is fixed: hit the nail on the head.",
+      "Start with the words: You hit the nail on the ___ with that answer."
+    ],
+    "reveal_form": "You hit the nail on the head with that answer.",
+    "canonical_forms": [
+      "You hit the nail on the head with that answer."
+    ],
+    "alternative_realizations": [
+      "She hit the nail on the head in her summary."
+    ],
+    "required_slots": [
+      [
+        "nail"
+      ],
+      [
+        "hit"
+      ]
+    ]
+  }
+}

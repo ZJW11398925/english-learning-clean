@@ -1,0 +1,196 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's sentence-frame set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "let's say",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "lets-say.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "lets-say.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used to introduce an example or a hypothetical case before reasoning about it."
+    },
+    {
+      "sense_id": "lets-say.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The frame is let's say + a complete clause: Let's say you get the job. What then? It sets up an imagined case, so what follows it is usually a question or a conclusion that depends on the case. The apostrophe belongs to the frame (let us say is the full form), and the clause after say has its own subject and verb — not a noun phrase and not an infinitive."
+    },
+    {
+      "sense_id": "lets-say.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "比如说 works with a noun, and the frame does not, so the productive slip is the fragment after say: an infinitive (let's say to get the job) or a bare noun phrase where a clause is needed. The apostrophe is the second small repair (lets say), because the frame is a spelling of let us. Teaching the complete-clause requirement with one worked case and one conclusion covers the frame; the full form let us say is reception."
+    },
+    {
+      "sense_id": "lets-say.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "let's say you get the job = suppose you get the job, setting up a case to reason about. say on its own introduces an example inside a sentence (take, say, the first option). for example and such as introduce real examples rather than imagined cases. The imperative let's say of a meeting (let's say goodbye) uses the same words with a different job: there the saying itself is the action."
+    },
+    {
+      "sense_id": "lets-say.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "比如说；假设（先设定一个例子或假定情况，再展开讨论）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "lets-say.base",
+      "written": "let's say",
+      "normalized": "let's say",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "lets-say.uncontracted",
+      "written": "let us say",
+      "normalized": "let us say",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the frame is common in planning talk and explanation, so receptive value is HIGH and receptive difficulty is LOW, but a case can also be set up without it, so core and productive value are MEDIUM. Productive difficulty is MEDIUM because the complete clause after say has to be produced, and explanation cost is LOW because that requirement is the whole lesson. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "The frame belongs to the general fluency pack's reasoning-and-explaining set, so it carries nearly full weight in that pack; the shortfall records that the same move has other carriers (suppose, imagine) the pack's own review has not placed."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.5",
+      "rationale": "Setting up a case in a meeting is ordinary workplace reasoning (let's say the client says no — what then?), so it carries half its weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "DECISION_MAKING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "DECISION_MAKING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show a complete case clause after say, keep the full form let us say clearly marked as the formal twin, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "INFINITIVE_AFTER_SAY",
+      "error_pattern": "let's say + to + base verb",
+      "corrected_pattern": "let's say + complete clause",
+      "explanation": "比如说什么 is followed by a noun or a verb phrase in the learner's first language, and the infinitive is carried over (let's say to get the job). The frame takes a complete clause instead: let's say you get the job. The repair is the clause.",
+      "severity": "HIGH",
+      "detection_policy": "Match when let's say is directly followed by to and a base verb."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "APOSTROPHE_OMISSION",
+      "error_pattern": "lets say",
+      "corrected_pattern": "let's say",
+      "explanation": "The frame is a spelling of let us, and the apostrophe is dropped (lets say). The repair is the apostrophe, not the word order.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when lets is directly followed by say with no apostrophe, in a sentence whose frame is the hypothetical opener."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the frame's words, its apostrophe and the shape of what follows. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words are there but the imperative reading says something aloud, so the hypothetical frame is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "INFINITIVE_AFTER_SAY: match when let's say is directly followed by to and a base verb, because the frame takes a complete clause."
+    },
+    {
+      "ordinal": 1,
+      "rule": "APOSTROPHE_OMISSION: match when lets say appears with no apostrophe, because the frame is the spelling of let us."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame carries a complete case clause, contracted or not (Let's say you get the job / Let us say the meeting is moved): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_IMPERATIVE_SENSE: do not match when say is the action being performed (Let's say goodbye to the guests), because the hypothetical frame is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Let's say you get the job. What then?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Let's say the train is late. What do we do?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Let us say the meeting is moved. What changes?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Let's say goodbye to the guests before we leave.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

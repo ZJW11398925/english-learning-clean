@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-colloc-keep-in-mind",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "COLLOCATION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Ask someone to remember a fact and act on it.",
+      "Use keep before in mind; what must be remembered comes after the phrase or before it as a pronoun.",
+      "Start with the words: Keep it ___ mind that the office closes at six."
+    ],
+    "reveal_form": "Keep in mind that the office closes at six.",
+    "canonical_forms": [
+      "Keep in mind that the office closes at six."
+    ],
+    "alternative_realizations": [
+      "Bear in mind that the office closes at six."
+    ],
+    "required_slots": [
+      [
+        "mind"
+      ],
+      [
+        "keep",
+        "bear"
+      ]
+    ]
+  }
+}

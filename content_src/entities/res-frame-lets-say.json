@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-frame-lets-say",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "SENTENCE_FRAME",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Set up an example or a hypothetical case before you reason about it.",
+      "Use let's say plus a full clause, as if you were offering a case to consider.",
+      "Start with the words: Let's say you ___ the job. What then?"
+    ],
+    "reveal_form": "Let's say you get the job. What then?",
+    "canonical_forms": [
+      "Let's say you get the job. What then?"
+    ],
+    "alternative_realizations": [
+      "Let's say the train is late. What do we do?"
+    ],
+    "required_slots": [
+      [
+        "say"
+      ],
+      [
+        "let"
+      ]
+    ]
+  }
+}

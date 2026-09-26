@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's collocation set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "draw attention to",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "draw-attention-to.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "draw-attention-to.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To make people notice something, especially a problem or a fact they should act on."
+    },
+    {
+      "sense_id": "draw-attention-to.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The frame is draw attention to + noun: draw attention to the delays, drew attention to a gap in the data, drawing attention to the cost. The verb is draw (or the more formal call and attract), and the preposition is to, never on. The subject is the person or text that makes others notice; the thing noticed follows to. A reflexive object is possible (draw attention to yourself) and keeps the same frame."
+    },
+    {
+      "sense_id": "draw-attention-to.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The lesson is the contrast with pay attention to: pay is 'give your attention to something', draw is 'make other people give theirs'. The 引起注意 translation invites raise or cause, and raise attention to is not English — raise pairs with awareness (raise awareness of a problem), so the repair is the verb draw with its preposition. The second repair is that preposition: attention takes to, and on is the transfer from languages that use a locative there."
+    },
+    {
+      "sense_id": "draw-attention-to.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "draw attention to X = make people notice X (the report draws attention to the delays). pay attention to X = watch or listen to X carefully (pay attention to the road). attract attention = get noticed yourself, with no to-phrase (she attracts attention wherever she goes). The two attention collocations point in opposite directions: one gives attention, the other collects it."
+    },
+    {
+      "sense_id": "draw-attention-to.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "引起注意；让人注意到（某事，尤指问题）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "draw-attention-to.base",
+      "written": "draw attention to",
+      "normalized": "draw attention to",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "draw-attention-to.third-person-singular",
+      "written": "draws attention to",
+      "normalized": "draw attention to",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "draw-attention-to.past",
+      "written": "drew attention to",
+      "normalized": "draw attention to",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "draw-attention-to.present-participle",
+      "written": "drawing attention to",
+      "normalized": "draw attention to",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the frame appears constantly in reports, presentations and discussion, so core and receptive value are HIGH and receptive difficulty is LOW. Productive value is MEDIUM because the verb and the preposition both compete with a translation (raise, on), and productive difficulty is MEDIUM for the same reason; explanation cost is LOW because the lesson is one contrast with pay attention to. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The collocation belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "Flagging a problem so that others act on it is a core workplace move (the review draws attention to the delays), so it carries nearly full weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the to-phrase with the thing noticed in place and keep pay attention to clearly marked as the other direction, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "VERB_FOR_DRAW",
+      "error_pattern": "raise | cause | rise + attention to",
+      "corrected_pattern": "draw + attention to (raise awareness of)",
+      "explanation": "引起 is carried over as raise or cause, so raise attention to is produced. English draws attention to something and raises awareness of it; the verb and its partner noun are fixed pairs, so the repair is the verb (draw) — or, if the learner keeps raise, the noun (awareness, with of).",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of raise, cause or rise stands directly before attention to in a clause whose frame is the draw-attention-to unit."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_ON",
+      "error_pattern": "draw | draws | drew | drawing + attention on",
+      "corrected_pattern": "draw + attention to",
+      "explanation": "Many languages mark the target of noticing with a locative, and the learner carries it over as on. The English frame fixes to: draw attention to the delays. The repair is the preposition inside the fixed frame.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of draw is followed by attention on in a clause whose frame is the draw-attention-to unit."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb, the noun and the preposition. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (attention is there but the verb or the direction is the other collocation, so the draw frame is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "VERB_FOR_DRAW: match when a form of raise, cause or rise stands directly before attention to, because English draws attention to something."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PREPOSITION_ON: match when a form of draw is followed by attention on, because the frame fixes the preposition to."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when a form of draw (or the near-synonyms call and attract) carries attention to with the thing noticed after to (draws attention to the delays, drew attention to a gap, calls attention to the new rules): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_OTHER_DIRECTION: do not match when the verb is pay (pay attention to the road) or when attention stands alone without a to-phrase (she wanted attention), because making other people notice is not what is happening there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "The report draws attention to the delays.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "She drew attention to a gap in the data.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "The article calls attention to the new rules.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Pay attention to the road while you drive.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

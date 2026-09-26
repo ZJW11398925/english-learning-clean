@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-phrasal-turn-out",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PHRASAL_VERB",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say how something ended up, after it became known.",
+      "Use it turned out + that; the outcome follows in a full clause.",
+      "Start with the words: It turned ___ that the train was cancelled."
+    ],
+    "reveal_form": "It turned out that the train was cancelled.",
+    "canonical_forms": [
+      "It turned out that the train was cancelled."
+    ],
+    "alternative_realizations": [
+      "It turns out that the train was cancelled."
+    ],
+    "required_slots": [
+      [
+        "out"
+      ],
+      [
+        "turn"
+      ]
+    ]
+  }
+}

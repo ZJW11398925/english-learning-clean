@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-colloc-draw-attention-to",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "COLLOCATION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that a report or a speaker made people notice a problem.",
+      "Use draw before attention to; the thing noticed comes after to.",
+      "Start with the words: The report draws ___ to the delays."
+    ],
+    "reveal_form": "The report draws attention to the delays.",
+    "canonical_forms": [
+      "The report draws attention to the delays."
+    ],
+    "alternative_realizations": [
+      "The report drew attention to the delays."
+    ],
+    "required_slots": [
+      [
+        "attention"
+      ],
+      [
+        "draw"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-colloc-have-an-effect-on",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "COLLOCATION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that one thing changed how another thing turned out.",
+      "Use have an effect on; the thing changed comes after on.",
+      "Start with the words: The weather had an ___ on our plans."
+    ],
+    "reveal_form": "The weather had an effect on our plans.",
+    "canonical_forms": [
+      "The weather had an effect on our plans."
+    ],
+    "alternative_realizations": [
+      "The weather has an effect on our plans."
+    ],
+    "required_slots": [
+      [
+        "effect"
+      ],
+      [
+        "have"
+      ]
+    ]
+  }
+}

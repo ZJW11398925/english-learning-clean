@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's phrasal-verb set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "carry on",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "carry-on.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "carry-on.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To continue doing something that was already going on."
+    },
+    {
+      "sense_id": "carry-on.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The pattern is carry on (+ with + noun) or carry on + -ing form: carry on with your work, carried on working, carry on as before. When the activity is named as a noun, with names it (carry on with the discussion); when it is named as a verb, the -ing form follows directly. In the transitive sense the unit is separable, so a pronoun object goes between verb and particle: they carried it on. British English also uses carry on as an exclamation meaning 'continue'."
+    },
+    {
+      "sense_id": "carry-on.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "继续 is usually learned as continue, and carry on is its everyday spoken variant, so the lesson is the frame rather than the meaning: with + noun, or the -ing form with nothing between. Two slips are worth naming: the to-infinitive carried over from continue to do (carry on to work), and a pronoun object placed after the particle (carry on it) — the separable order that looks natural until it is contrasted with carry it on."
+    },
+    {
+      "sense_id": "carry-on.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "carry on with the work = keep doing it (everyday, more British). continue is the neutral verb in both registers (continue with the work / continue working). keep on carries the same meaning with an -ing complement (keep on working). carry out = perform a task (carry out a survey), carry away = take (get carried away = lose control of yourself) — different particles, different units."
+    },
+    {
+      "sense_id": "carry-on.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "继续（不停地做同一件事）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "carry-on.base",
+      "written": "carry on",
+      "normalized": "carry on",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "carry-on.third-person-singular",
+      "written": "carries on",
+      "normalized": "carry on",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "carry-on.past",
+      "written": "carried on",
+      "normalized": "carry on",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "carry-on.present-participle",
+      "written": "carrying on",
+      "normalized": "carry on",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the phrasal verb is very frequent in spoken everyday English, so core and receptive value are HIGH and receptive difficulty is LOW. Productive value is MEDIUM because continue competes with it and the complement frame has two shapes, and productive difficulty is MEDIUM for the same reason; explanation cost is LOW because one frame with two complements covers it. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The phrasal verb belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.6",
+      "rationale": "Carrying on with a task after an interruption is ordinary workplace talk (let's carry on with the agenda), so it carries more than half its weight in the workplace pack; the shortfall records that the register is general and the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "TASK_FOCUS",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "TASK_FOCUS",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show both complement shapes (carry on with your work / carry on working) with the -ing form in place, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "INFINITIVE_AFTER_ON",
+      "error_pattern": "carry | carries | carried | carrying + on + to + base verb",
+      "corrected_pattern": "carry on + -ing form",
+      "explanation": "continue takes a to-infinitive (continue to work), and the learner transfers that complement to carry on, producing carry on to work. This unit takes the -ing form when the activity is a verb: carry on working. The repair is the complement form.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of carry is followed by on then to and a base verb, in a clause whose unit is carry on."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PRONOUN_AFTER_PARTICLE",
+      "error_pattern": "carry | carries | carried | carrying + on + pronoun object (it, them, this, that)",
+      "corrected_pattern": "carry + pronoun object + on",
+      "explanation": "In the transitive sense (carry on a tradition) the unit is separable, and the pronoun object belongs between verb and particle: they carried it on. Placing it after the particle treats on as a preposition that owns the object. The repair is the order.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a pronoun object (it, them, this, that) stands directly after the particle on in a clause whose unit is carry on."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb, the particle and the shape of the complement. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (carry is there but the particle belongs to another unit, so carry on is not the unit in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "INFINITIVE_AFTER_ON: match when on is followed by to and a base verb, because this unit takes the -ing form for an activity named as a verb."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PRONOUN_AFTER_PARTICLE: match when a pronoun object (it, them, this, that) stands directly after the particle on, because the separable unit takes its pronoun object between verb and particle."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when on carries the with-phrase, an -ing form, or a pronoun object in the middle (carried on with her work, carried on working, they carried it on): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "OTHER_PARTICLES_AND_SENSES: do not match when the particle belongs to another unit (carry out a survey, get carried away) or when carry has its basic sense of holding something (carry the bag), because carry on is not the unit in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "She carried on with her work.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "They carried it on after the war.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "She carried on working until midnight.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "He carried out the plan carefully.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

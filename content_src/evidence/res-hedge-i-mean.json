@@ -1,0 +1,196 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's pragmatic-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "I mean",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "i-mean.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "i-mean.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used to repair, sharpen or clarify what you have just said."
+    },
+    {
+      "sense_id": "i-mean.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The marker stands before the repaired words, often in the middle of a turn: It's not bad. I mean, it's just different. It can also introduce the explanation of what was meant without a correction (I mean, we could always ask someone else). When it works as a marker it takes no object of its own — the words it explains follow as a new clause, usually after a comma. The verb stays in the simple present: I mean, never I am meaning."
+    },
+    {
+      "sense_id": "i-mean.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "mean is learned early as a verb with an object (What does this word mean?), and the marker looks like the same verb with its object missing, which is why learners try to complete it. Teaching it as its own unit — comma, repaired clause, no object — is the lesson, and the mid-turn position is what makes it worth learning: the repair lands after the listener has already heard the first version. The 我是说 translation maps onto the marker directly, so no semantic repair is needed."
+    },
+    {
+      "sense_id": "i-mean.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "I mean = here is what I really meant (it's just different — I mean, it's not what we need). What I'm saying is restates a point for the listener; I mean repairs the speaker's own wording. sorry apologizes, and repair is not apology. When mean is the ordinary verb it takes an object or a question form (What do you mean by that? I didn't mean that), and the marker does not."
+    },
+    {
+      "sense_id": "i-mean.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "我是说（用来修正、澄清刚说过的话）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "i-mean.base",
+      "written": "I mean",
+      "normalized": "i mean",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "i-mean.past",
+      "written": "I meant",
+      "normalized": "i meant",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the marker is one of the most frequent two-word units in spoken English, so core and receptive value are HIGH and receptive difficulty is LOW. Productive value is MEDIUM because the marker competes with the ordinary verb the learner already knows, and productive difficulty is MEDIUM for the same reason; explanation cost is LOW because the unit's shape (comma-plus-clause, no object) is the whole lesson. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The marker belongs to the general fluency pack (high-frequency spoken units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.4",
+      "rationale": "Repairing your own wording is ordinary in meetings (I mean, the second option), so it carries some weight in the workplace pack; the shortfall records that the register is conversational and the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the marker with its comma and a complete repaired clause, keep the ordinary verb (What do you mean by that?) clearly marked as the boundary case, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "WRONG_FINITE_VERB",
+      "error_pattern": "I + means",
+      "corrected_pattern": "I mean",
+      "explanation": "The subject is I, so the verb stays in its base form: I mean. The -s of the third-person singular is attached by habit, and the repair is the verb form itself.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the subject I is directly followed by means in a sentence whose unit is the repair marker."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PROGRESSIVE_FOR_SIMPLE",
+      "error_pattern": "I am | I'm + meaning",
+      "corrected_pattern": "I mean",
+      "explanation": "The speaker is repairing wording in the moment, so the progressive is produced: I'm meaning. The marker is a simple-present finite verb and does not take the progressive. The repair is the verb form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of be stands between I and meaning in a sentence whose unit is the repair marker."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the subject, the verb form and the shape of what follows. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (mean is there but it is the ordinary verb with its question and object, so the marker is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "WRONG_FINITE_VERB: match when I is directly followed by means, because the subject I takes the base form of the verb."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PROGRESSIVE_FOR_SIMPLE: match when be stands between I and meaning, because the marker is a simple-present form and does not take the progressive."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the marker stands with its comma and its repaired clause (It's not bad. I mean, it's just different / I mean, we could always ask someone else): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_ORDINARY_VERB: do not match when mean is the ordinary verb with an object or a question form (What do you mean by that? I didn't mean that), because the repair marker is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "It's not bad. I mean, it's just different.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "I mean, we could always ask someone else.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "I meant the other one, not this one.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "What do you mean by that?",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

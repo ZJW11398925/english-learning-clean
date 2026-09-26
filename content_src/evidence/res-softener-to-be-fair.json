@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's softener set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "to be fair",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "to-be-fair.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "to-be-fair.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used to add the other side of a judgement, or to make a criticism less harsh."
+    },
+    {
+      "sense_id": "to-be-fair.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The marker opens its sentence, usually with a comma (To be fair, the first version was worse), or closes it (the first version was worse, to be fair). It adds a balancing consideration to a judgement that has just been made, so it needs a judgement to balance. The three words are fixed, the marker takes no subject of its own, and fair here is not the ordinary adjective of justice."
+    },
+    {
+      "sense_id": "to-be-fair.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "公平地说 maps onto the marker, and the productive work is the form and the position: the calque fairly speaking (from the 地说 pattern) and the fronted being fair both appear before the learner has met the fixed phrase. Teaching it as the twin of to be honest keeps the pair clear — to be honest admits the speaker's own view, to be fair adds the other side's — and the comma rule covers the position."
+    },
+    {
+      "sense_id": "to-be-fair.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "To be fair, the first version was worse = here is the other side of the judgement (balancing). to be honest admits the speaker's own view rather than the other side's (to be honest, I don't like the design). in fairness is the more formal twin of this marker. The ordinary adjective and noun uses (a fair decision, the fairness of the process) describe a quality rather than adding a consideration, and are not the marker."
+    },
+    {
+      "sense_id": "to-be-fair.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "公平地说；说句公道话（补上另一面，或让批评不那么重）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "to-be-fair.base",
+      "written": "to be fair",
+      "normalized": "to be fair",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the marker is frequent in discussion, so receptive value is HIGH and receptive difficulty is LOW, but a balancing comment can also be made without it, so core and productive value are MEDIUM. Productive difficulty is MEDIUM because the calque and the participle slip both compete with the fixed phrase; explanation cost is LOW because the pair with to be honest carries the whole lesson. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "The marker belongs to the general fluency pack's stance-and-concession set, so it carries most of its weight in that pack; the shortfall records that the same move has other carriers the pack's own review has not placed."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.6",
+      "rationale": "Adding the other side before a judgement is a common workplace move (to be fair, the first draft was worse), so it carries more than half its weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the marker in its opening position with the comma and keep the to be honest twin clearly marked as the speaker-side marker, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "CALQUED_COMMENT_FORM",
+      "error_pattern": "fairly | fair + speaking (as the comment marker before a clause)",
+      "corrected_pattern": "to be fair",
+      "explanation": "公平地说 is built from an adverb and 说, and the pattern is carried over as fairly speaking. English fixes the marker as a to-infinitive comment: to be fair. The repair is the whole form, not the adverb.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when fairly speaking or fair speaking stands as the comment marker before a clause."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PARTICIPLE_FORM",
+      "error_pattern": "being fair (as a fronted comment marker)",
+      "corrected_pattern": "to be fair",
+      "explanation": "The participle is used as the fronted comment marker (being fair, the first version was worse), formed by analogy with other -ing openers. The English marker is the to-infinitive form. The repair is the form of the marker, not its position.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when being fair stands at the front of a clause as a comment marker."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words of the marker and its position. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (fair is the ordinary adjective inside the clause, so the marker is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "CALQUED_COMMENT_FORM: match when fairly speaking or fair speaking stands as the comment marker before a clause, because the English marker is the fixed to-infinitive form."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PARTICIPLE_FORM: match when being fair stands at the front of a clause as a comment marker, because the marker is to be fair."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the marker stands complete at the front or the end of its sentence (To be fair, the first version was worse / the first version was worse, to be fair): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "FAIR_INSIDE_THE_CLAUSE: do not match when fair is the ordinary adjective or noun inside the clause (a fair decision, the rules are fair, the fairness of the process), because the marker is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "To be fair, the first version was worse.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "The first version was worse, to be fair.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "To be fair, they warned us about the delay.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The rules are fair to everyone.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

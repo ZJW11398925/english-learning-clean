@@ -6,9 +6,10 @@ The cut's core, in four groups:
   fail-closed default, and the mode leg read from the one table that carries
   it — never a second source);
 - **the content gate** (BF-02 §10's four floors over a readiness table: the
-  shipped corpus answers all-zero, and a *legal* §8.1 assessment built through
-  the ladder's own ``judge_readiness`` turns rows GO — the two directions of
-  the same executable condition);
+  shipped corpus answers GO on all four rows (the C1–C3 evidence face grades
+  forty-six RESOURCE targets at R4), and a *legal* §8.1 assessment built
+  through the ladder's own ``judge_readiness`` turns rows GO — the two
+  directions of the same executable condition);
 - **the registered reading** (the overall verdict is the conjunction over all
   four rows, which implies the task book's "both automatic rows 0 ⇒ HOLD" and
   is strictly stronger; a target at R3 alone is the case that separates them);
@@ -195,45 +196,46 @@ def test_off_refuses_at_every_stage() -> None:
 def test_the_real_corpus_answers_go_on_all_four_rows_and_the_rollout_stays_held(
     p8world: World,
 ) -> None:
-    """The measured answer at C2-b's truth, as a two-layer statement (旧真值:
+    """The measured answer at C3-a's truth, as a two-layer statement (旧真值:
     every row 0, four HOLD rows, 14 targets all without a level; C1: the one
-    authored R4 target made every row GO; C2-a: nine usable targets; 新真值
-    C2-b: the twenty-eight RESOURCE targets reach R4, so every row reads
-    twenty-eight usable targets — BF-02 §10's "at least one target" is met on
-    all four floors — **and the rollout is still held**): layer one is the
-    content gate's GO; layer two is the stage leg, which no shipped caller
-    declares — ``stage_allows_automatic`` answers False for the undeclared
-    stage and for the fail-closed default, and the two-leg composition refuses
-    with any frequency word — plus the Calibration100 volume gate
-    (docs/IMPLEMENTATION_PLAN.md §13's 100/30/2), which the corpus's own
-    counts show unmet. Content capable ≠ rollout open."""
+    authored R4 target made every row GO; C2-a: nine usable targets; C2-b:
+    twenty-eight; 新真值 C3-a: the forty-six RESOURCE targets reach R4, so
+    every row reads forty-six usable targets — BF-02 §10's "at least one
+    target" is met on all four floors — **and the rollout is still held**):
+    layer one is the content gate's GO; layer two is the stage leg, which no
+    shipped caller declares — ``stage_allows_automatic`` answers False for the
+    undeclared stage and for the fail-closed default, and the two-leg
+    composition refuses with any frequency word — plus the Calibration100
+    volume gate (docs/IMPLEMENTATION_PLAN.md §13's 100/30/2), under which the
+    volume floor alone is unmet while the two CORE cells are met under the
+    declared reading. Content capable ≠ rollout open."""
 
     report = corpus_rollout_gate(p8world.curriculum)
     assert isinstance(report, Ok), report
     gate = report.value
-    # Layer one: the content gate's four rows all read GO on twenty-eight
-    # usable targets — 旧真值 was ("PROBE", 0) … ("automatic CURRENT_USER_ERROR", 0).
+    # Layer one: the content gate's four rows all read GO on forty-six usable
+    # targets — 旧真值 was ("PROBE", 0) … ("automatic CURRENT_USER_ERROR", 0).
     assert [(row.row_word, row.usable_targets) for row in gate.rows] == [
-        ("PROBE", 28),
-        ("user-initiated teaching", 28),
-        ("automatic general/review", 28),
-        ("automatic CURRENT_USER_ERROR", 28),
+        ("PROBE", 46),
+        ("user-initiated teaching", 46),
+        ("automatic general/review", 46),
+        ("automatic CURRENT_USER_ERROR", 46),
     ]
     assert all(row.verdict is RolloutVerdict.GO for row in gate.rows)
     assert gate.verdict is RolloutVerdict.GO
     assert gate.automatic_verdict is RolloutVerdict.GO
-    assert gate.targets_considered == 33
+    assert gate.targets_considered == 51
     assert gate.targets_without_level == 5
     assert gate.unknown_levels == ()
     assert gate.summary() == (
-        "PROBE: required R2_PLANNER_READY, usable targets 28 → GO",
-        "user-initiated teaching: required R3_TEACHING_READY, usable targets 28"
+        "PROBE: required R2_PLANNER_READY, usable targets 46 → GO",
+        "user-initiated teaching: required R3_TEACHING_READY, usable targets 46"
         " → GO",
-        "automatic general/review: required R3_TEACHING_READY, usable targets 28"
+        "automatic general/review: required R3_TEACHING_READY, usable targets 46"
         " → GO",
         "automatic CURRENT_USER_ERROR: required R4_DETECTION_READY, usable"
-        " targets 28 → GO",
-        "targets: 33 considered, 5 without a level",
+        " targets 46 → GO",
+        "targets: 51 considered, 5 without a level",
         "verdict: GO (automatic rows: GO)",
     )
     # No row blocks, so the report's blocked tail is empty (旧真值: four
@@ -252,16 +254,19 @@ def test_the_real_corpus_answers_go_on_all_four_rows_and_the_rollout_stays_held(
             )
             is False
         )
-    _calibration100_gate_is_unmet_and_readable()
+    _calibration100_floors_are_readable()
 
 
-def _calibration100_gate_is_unmet_and_readable() -> None:
-    """docs/IMPLEMENTATION_PLAN.md §13's Calibration100 gates (100/30/2),
-    read against the built artifact's own counts: 28 resources (< 100, and
-    exactly IP §13's starting number — the first rung of "28 → 100", not a
-    pass), and no capability in the CORE_A / CORE_C families at all. The
-    numbers live in the frozen document and are read from it, so the gate's
-    terms cannot drift from what this test asserts about them."""
+def _calibration100_floors_are_readable() -> None:
+    """docs/IMPLEMENTATION_PLAN.md §13's Calibration100 floors (100/30/2),
+    read against the built artifact's own counts at C3-a's truth: the volume
+    floor is unmet (46 resources < 100), while CORE_A (32 >= 30) and CORE_C
+    (14 >= 2) are met under the **声明读法 + Revisit（用户 2026-09-26 裁决）**
+    — R3_TEACHING_READY or R4_DETECTION_READY crossed with
+    ``content_pedagogical_profile.core_utility`` HIGH / {MEDIUM, LOW}. The
+    numbers live in the frozen document and are read from it, and the three
+    floors are asserted one per line so they can never be folded into one
+    "gate passed" sentence."""
 
     import re
     import sqlite3
@@ -282,20 +287,37 @@ def _calibration100_gate_is_unmet_and_readable() -> None:
     build_content_db(path)
     conn = sqlite3.connect(str(path))
     try:
-        resources = conn.execute(
-            "SELECT COUNT(*) FROM content_entity"
-        ).fetchone()[0]
-        families = dict(
-            conn.execute(
-                "SELECT family, COUNT(*) FROM curriculum_capability "
-                "GROUP BY family"
+        resources = conn.execute("SELECT COUNT(*) FROM content_entity").fetchone()[0]
+        utilities = {
+            str(entity_id): str(band)
+            for entity_id, band in conn.execute(
+                "SELECT entity_id, core_utility FROM content_pedagogical_profile"
             ).fetchall()
-        )
+        }
     finally:
         conn.close()
-    assert resources < gates["resource_count"]
-    assert families.get("CORE_A", 0) < gates["CORE_A"]
-    assert families.get("CORE_C", 0) < gates["CORE_C"]
+    from elc.content.store import ContentStore
+    from elc.curriculum.store import CurriculumContentStore
+
+    store = ContentStore(path)
+    try:
+        supply = CurriculumContentStore(store)
+        assessments = supply.readiness_by_target()
+        assert isinstance(assessments, Ok), assessments
+        levels = {a.target_id: a.level for a in assessments.value}
+    finally:
+        store.close()
+    banded = [
+        target_id
+        for target_id, level in levels.items()
+        if target_id.startswith("res-")
+        and level in ("R3_TEACHING_READY", "R4_DETECTION_READY")
+    ]
+    core_a = [t for t in banded if utilities.get(t) == "HIGH"]
+    core_c = [t for t in banded if utilities.get(t) in ("MEDIUM", "LOW")]
+    assert resources < gates["resource_count"]  # volume floor unmet
+    assert len(core_a) >= gates["CORE_A"]  # CORE_A met
+    assert len(core_c) >= gates["CORE_C"]  # CORE_C met
 
 
 def test_the_row_words_and_floors_are_bf_02_section_10() -> None:

@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's phrasal-verb set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "give up",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "give-up.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "give-up.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To stop doing something, or to stop trying to do it."
+    },
+    {
+      "sense_id": "give-up.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The pattern is give up + noun or -ing form: give up smoking, gave up the plan, give up trying. It is a separable phrasal verb, so a full noun phrase may follow the particle or stand before it (give up the idea / give the idea up), but a pronoun object is only allowed between the verb and the particle: give it up, never give up it. The complement after up is the activity stopped, and it takes -ing when it is a verb."
+    },
+    {
+      "sense_id": "give-up.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The meaning maps cleanly onto 放弃, so the lesson is the order: learners who have learned look it up still write give up it, because up is read as a preposition that owns what follows. The pronoun test — put it in the middle — is what separates separable phrasal verbs from prepositional units, so this target is worth teaching as the model of the class. The second repair is the complement form: the activity stopped takes -ing (gave up trying), not a to-infinitive."
+    },
+    {
+      "sense_id": "give-up.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "give up = stop doing or stop trying (he gave up smoking). quit means the same and is more formal in writing; stop needs the -ing form too but keeps the activity as a separate event (he stopped smoking). give in = stop resisting someone else's demand (they gave in), give out = stop working or hand things out, give away = let something go for nothing — different particles, different units."
+    },
+    {
+      "sense_id": "give-up.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "放弃；戒掉（停止做某事或不再尝试）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "give-up.base",
+      "written": "give up",
+      "normalized": "give up",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "give-up.third-person-singular",
+      "written": "gives up",
+      "normalized": "give up",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "give-up.past",
+      "written": "gave up",
+      "normalized": "give up",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "give-up.present-participle",
+      "written": "giving up",
+      "normalized": "give up",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the phrasal verb is among the most frequent in English talk, so core, receptive and productive value are HIGH and receptive difficulty is LOW. Productive difficulty is MEDIUM because the pronoun order has to be produced correctly, and explanation cost is LOW because one ordering rule plus one complement rule covers both repairs. Transfer value is HIGH: the separable class it models (look it up, turn it off, write it down) is large. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The phrasal verb belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.4",
+      "rationale": "Giving up a plan or a request is ordinary workplace talk (we gave up the first approach), so it carries some weight in the workplace pack; the shortfall records that the register is general rather than workplace-specific and the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the object in its place (gave up smoking, give it up) and keep the pronoun order visually distinct from the noun order, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PRONOUN_AFTER_PARTICLE",
+      "error_pattern": "give | gives | gave | giving + up + pronoun object (it, them, this, that)",
+      "corrected_pattern": "give + pronoun object + up",
+      "explanation": "up is read as a preposition that owns what follows, so the pronoun is placed after it: give up it. This is a separable phrasal verb, and a pronoun object must stand between the verb and the particle: give it up. The repair is the order, and the same test applies to the whole separable class.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a pronoun object (it, them, this, that) stands directly after the particle up in a clause whose unit is give up."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "INFINITIVE_COMPLEMENT",
+      "error_pattern": "give | gives | gave | giving + up + to + base verb",
+      "corrected_pattern": "give up + -ing form",
+      "explanation": "The activity stopped is a gerund complement, and the learner uses the to-infinitive instead, producing give up to smoke. The repair is the complement form: gave up smoking, gave up trying.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of give is followed by up then to and a base verb, in a clause whose unit is give up."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb, the particle and the shape of the object or complement. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (give is there but the particle is another one, so give up is not the unit in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PRONOUN_AFTER_PARTICLE: match when a pronoun object (it, them, this, that) stands directly after up, because a separable phrasal verb takes its pronoun object between verb and particle."
+    },
+    {
+      "ordinal": 1,
+      "rule": "INFINITIVE_COMPLEMENT: match when up is followed by to and a base verb, because the activity stopped takes the -ing form (gave up trying)."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when up carries a noun or -ing complement, or when a pronoun object stands in the middle (gave up smoking, gave up the plan, give it up): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "OTHER_PARTICLES_AND_THE_BASE_VERB: do not match when the particle is not up (give in, give out, give away) or when give carries its basic sense of handing something over (give someone the book), because give up is not the unit in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "He gave up smoking last year.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "She gave up trying to explain.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "I don't want to give up the plan.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "In the end they gave in.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

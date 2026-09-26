@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-discourse-having-said-that",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "DISCOURSE_MARKER",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Acknowledge what was just said, then add a contrasting point.",
+      "The whole phrase is fixed and comes first in its sentence.",
+      "Start with the words: The plan is cheap. ___ said that, it will take months."
+    ],
+    "reveal_form": "The plan is cheap. Having said that, it will take months.",
+    "canonical_forms": [
+      "The plan is cheap. Having said that, it will take months."
+    ],
+    "alternative_realizations": [
+      "Having said that, the plan is still the best one we have."
+    ],
+    "required_slots": [
+      [
+        "said"
+      ],
+      [
+        "having"
+      ]
+    ]
+  }
+}

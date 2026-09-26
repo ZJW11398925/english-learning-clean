@@ -15,18 +15,19 @@
 探索期仓 `D:\测试1` 对 `OQ-021` / `content_toolchain` / `content_src` / `*.db`
 的全仓深搜零命中（P5-0 四查实证），故 §6 提到的旧工具链在仓内不存在可用副本；
 本目录即 P5-0 的替代 seed 路线。**旧真值（P5-0）：内容量停留在 14 个 target
-（不扩到 100）；新真值（C1/C2-a/C2-b，Phase 11 内容程序）**：作者源在证据面建成
-之后按 §13「优先使用内容填补真实运行时测试需要」逐刀补齐，现为 **33 个实体
-（28 个 res + 5 个 cap）**——到了 IP §13 的 28 起点，**离 100 还有 72**，且
-Calibration100 三门全未过（登记见下）。
+（不扩到 100）；新真值（C1/C2-a/C2-b/C3-a，Phase 11 内容程序）**：作者源在证据面
+建成之后按 §13「优先使用内容填补真实运行时测试需要」逐刀补齐，现为 **51 个实体
+（46 个 res + 5 个 cap）**——**离 100 还有 54**；Calibration100 的体量门（100）
+仍未过，CORE_A（32/30）与 CORE_C（14/2）按**声明读法**达到（登记与读数见
+`../README.md` 与 `../curriculum/README.md` 的 C3-a 段）。
 
 ## 文件布局
 
 ```text
 content_src/
   index.json                 # 索引：content_version + 实体文档清单 + 证据文档清单（无 glob 兜底）
-  entities/<entity_id>.json  # 每个 target 一份（共 33 = 5 个 cap-* + 28 个 res-*；其中 19 个由 C2-b 编写）
-  evidence/<entity_id>.json  # C1：每个声明了 readiness 证据的 target 一份（可空集；现为 28 份，与 res-* 一一对应）
+  entities/<entity_id>.json  # 每个 target 一份（共 51 = 5 个 cap-* + 46 个 res-*；其中 19 个由 C2-b、18 个由 C3-a 编写）
+  evidence/<entity_id>.json  # C1：每个声明了 readiness 证据的 target 一份（可空集；现为 46 份，与 res-* 一一对应）
   README.md                  # 本文件 = 映射规则索引文档
 ```
 
@@ -95,11 +96,27 @@ target **不写** evidence（开工裁决 ③：cap 侧的 None 是构造性的�
 `res-discourse-*` 2 / `res-frame-*` 2 / `res-hedge-*` 2 / `res-softener-a-bit`
 1 / `res-pragmatic-*` 2），每个实体一份 entity 文档 + 一份 19 键 evidence 文档，
 并各配一条 §24.7 link（见 `../curriculum/README.md` C2-b 段）。语料规模：
-**33 实体 / 28 份 evidence / 28 条 link**；现役真产物上 =
+**33 实体 / 28 份 evidence / 28 条 link**；C2-b 结束时真产物上 =
 **28×R4_DETECTION_READY + 5×None**，`resource_count`（`res-*` 实体）= **28**。
 **这不是 Calibration100 的通过**：IP §13 的「28 → 100 resource calibration」
-把 28 记作**起点第一档**，三门（`resource_count ≥ 100` / `CORE_A ≥ 30` /
-`CORE_C ≥ 2`）在现役读数下**全未过**（28/100、0/30、0/2）。
+把 28 记作**起点第一档**，三门中的体量门（`resource_count ≥ 100`）在 C2-b 结束时
+未过（28/100），CORE_A / CORE_C 当时的家族计数读法为 0/30、0/2（该读法已被
+C3-a 取代，见下条登记）。
+
+**登记（C3-a，十八份新 evidence 文档与读法落地）**：C3-a（Phase 11 第四段）
+新增 18 个 **res** 实体（`res-colloc-*` 5 / `res-phrasal-*` 3 / `res-idiom-*` 2 /
+`res-discourse-*` 2 / `res-frame-*` 2 / `res-hedge-*` 2 / `res-softener-to-be-fair`
+1 / `res-pragmatic-could-i-ask` 1），每个实体一份 entity 文档 + 一份 19 键
+evidence 文档，并各配一条 §24.7 link。语料规模：
+**51 实体 / 46 份 evidence / 46 条 link**；真产物上 =
+**46×R4_DETECTION_READY + 5×None**，`resource_count` = **46**。C3-a 同时把
+CORE_A / CORE_C 从 `curriculum_capability.family` 计数改为**声明读法**
+（用户 2026-09-26 裁决）：level ∈ {R3, R4} 的 res 实体按
+`content_pedagogical_profile.core_utility` 分档（HIGH → CORE_A，MEDIUM/LOW →
+CORE_C）；现读数 **CORE_A 32/30 达到、CORE_C 14/2 达到、体量门 46/100 未过**
+（三门分开断言，见 `tests/phase5/test_c3a_readface_and_expansion.py`；Revisit =
+canonical Calibration100 定义落地时）。**这不是 Calibration100 的通过**：体量门
+仍未过，真实 rollout 仍 HOLD（零开闸声称）。
 
 **登记（C2-b，19 个新实体的来源口径）**：这 19 个实体**不是** P3-1A/P3-1B
 fixture 的迁移（那 14 个 target 的迁移见下），而是 C2-b 这一刀按 §24.1/§24.2/
@@ -112,7 +129,7 @@ fixture 的迁移（那 14 个 target 的迁移见下），而是 C2-b 这一刀
 
 ### R1 — 每个 target 一条 ContentEntity（§24.1 七列逐字）
 
-33 个 target（P3-1A/P3-1B 迁移的 14 个 + C2-b 编写的 19 个）每个对应**恰好一个**
+51 个 target（P3-1A/P3-1B 迁移的 14 个 + C2-b 编写的 19 个 + C3-a 编写的 18 个）每个对应**恰好一个**
 `entities/<target_id>.json`，`entity_id` = target id 原文（`res-*` 28 个、`cap-*`
 5 个；无派生、无哈希重命名）。文档内
 `entity` 块**恰好**是 §24.1 的七列，顺序与拼写逐字：
@@ -201,8 +218,9 @@ capability linkage **不进 content_src**，进 `../curriculum/links.json`：
 resource → capability node 的 `CurriculumLink`（§24.7 七列逐字：resource_id /
 node_id / relation / strength / primary_flag / editorial_status / rationale）。
 9 条 REALIZES 链接 = 9 个 RESOURCE target 的 fixture `capability_linkage` 逐条迁移；
-C2-b 另写 19 条（6 条 REALIZES + 13 条 SUPPORTS）给 19 个新实体，其语义与
-credit 面限度见 `../curriculum/README.md` 的 C2-b 段——**node_id 只取现役 5 个
+C2-b 另写 19 条（6 条 REALIZES + 13 条 SUPPORTS）给 19 个新实体，C3-a 再写 18 条
+（3 条 REALIZES + 15 条 SUPPORTS）给 18 个新实体，其语义与
+credit 面限度见 `../curriculum/README.md` 的 C2-b / C3-a 段——**node_id 只取现役 5 个
 cap-* 节点**（build 的引用完整性要求 `node_id` 必须是已声明的 capability，
 `content_src/README.md` 与 `elc.content.build._check_references` 同一条）。
 

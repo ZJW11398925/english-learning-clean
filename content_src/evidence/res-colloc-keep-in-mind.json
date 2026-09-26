@@ -1,0 +1,204 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's collocation set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "keep in mind",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "keep-in-mind.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "keep-in-mind.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To remember a fact or a consideration and let it influence what you do."
+    },
+    {
+      "sense_id": "keep-in-mind.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The pattern is keep + object + in mind, or keep in mind + a that-clause: keep it in mind, keep in mind that the office closes at six. The verb is keep, or the more formal bear; the object is the thing remembered, and when the object is a pronoun it stands between keep and in mind. In mind is a fixed prepositional phrase here, not a particle: nothing can be moved out of it (keep in it mind is not English), but the object of keep comes before it."
+    },
+    {
+      "sense_id": "keep-in-mind.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Two repairs make this target worth its own lesson. The 记住 translation invites make, so make in mind appears before the learner has ever seen the phrase written; and once in mind is read as one unit, the learner moves the object to the end, as simple phrasal verbs allow (look it up -> keep in mind it). Teaching the two object positions explicitly — keep it in mind, keep in mind that ... — covers both errors, and the formal variant bear in mind can be added in reception without asking for it in production."
+    },
+    {
+      "sense_id": "keep-in-mind.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "keep in mind asks someone to hold a fact for later and act with it in view (keep in mind that the office closes at six). remember reports memory without the 'let it guide you' force, and bear in mind is the same phrase in a more formal register. When mind is a verb it means 'be bothered by' (do you mind if I open the window? I don't mind), and when it is a noun in another fixed phrase it names the faculty (make up your mind, change your mind) — neither is this collocation."
+    },
+    {
+      "sense_id": "keep-in-mind.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "记住；把…放在心上（把某个事实记着，并在行动时考虑进去）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "keep-in-mind.base",
+      "written": "keep in mind",
+      "normalized": "keep in mind",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "keep-in-mind.third-person-singular",
+      "written": "keeps in mind",
+      "normalized": "keep in mind",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "keep-in-mind.past",
+      "written": "kept in mind",
+      "normalized": "keep in mind",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the phrase is frequent in instructions, meetings and mail, so core and receptive value are HIGH and receptive difficulty is LOW. Productive value is MEDIUM because the two object positions have to be produced correctly and the 记住 translation competes with it (make in mind), and productive difficulty is MEDIUM for the same reason; explanation cost is LOW because both repairs are short ordering rules with a near-formal variant to show. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The collocation belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "It is a standard way of flagging a constraint in workplace talk and mail (keep in mind that the deadline moved), so it carries most of its weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the object in its place (keep it in mind, keep in mind that the office closes at six) and keep the formal bear variant clearly marked as reception, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "MAKE_FOR_KEEP",
+      "error_pattern": "make | makes | made + in mind (with no other verb carrying the phrase)",
+      "corrected_pattern": "keep | bear + in mind",
+      "explanation": "记住 is glossed with make, so the learner builds make in mind before meeting the phrase in English. keep in mind is a fixed collocation whose verb is not interchangeable: make in mind is not an English phrase at all, and the repair is the verb itself, not the order.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of make (make, makes, made) stands directly before in mind in a clause whose phrase is the keep-in-mind unit — that is, with no other verb before in mind that could carry it."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "OBJECT_AFTER_PHRASE",
+      "error_pattern": "keep | keeps | kept + in mind + pronoun object (it, them, this, that)",
+      "corrected_pattern": "keep + pronoun object + in mind",
+      "explanation": "Simple phrasal verbs put a pronoun object before the particle (look it up), and the learner extends that order to this phrase, producing keep in mind it. In mind is a fixed prepositional phrase here, so the object belongs between keep and in mind: keep it in mind.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a pronoun object (it, them, this, that) stands directly after the completed phrase keep ... in mind, in a clause where the pronoun is the object of keep and not the start of a new clause."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb, the fixed phrase and the position of the object. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the words are there but the unit is not in use — mind as a verb, or the noun in another fixed phrase)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "MAKE_FOR_KEEP: match when a form of make (make, makes, made) stands directly before in mind, because the verb this collocation is built on is keep (or the formal bear)."
+    },
+    {
+      "ordinal": 1,
+      "rule": "OBJECT_AFTER_PHRASE: match when a pronoun object (it, them, this, that) stands directly after keep ... in mind, because the object belongs between keep and in mind: keep it in mind."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when a form of keep or bear stands before in mind with the object in place or a that-clause after the phrase (keep it in mind, keep in mind that the office closes at six, bear in mind that ...): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "MIND_OUTSIDE_THE_UNIT: do not match when mind is a verb (do you mind if I open the window?, I don't mind) or the noun of another fixed phrase (make up your mind, change your mind), because keep or bear in mind is not the phrase in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Keep in mind that the office closes at six.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Keep it in mind when you plan the week.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Bear in mind that the office closes at six.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Do you mind if I open the window?",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

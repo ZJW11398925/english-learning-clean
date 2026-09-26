@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-could-i-ask",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Ask politely for permission to put a question.",
+      "Use could (not can or do) at the front of the formula.",
+      "Start with the words: ___ I ask you a question?"
+    ],
+    "reveal_form": "Could I ask you a question?",
+    "canonical_forms": [
+      "Could I ask you a question?"
+    ],
+    "alternative_realizations": [
+      "Could I ask what the deadline is?"
+    ],
+    "required_slots": [
+      [
+        "ask"
+      ],
+      [
+        "could"
+      ]
+    ]
+  }
+}

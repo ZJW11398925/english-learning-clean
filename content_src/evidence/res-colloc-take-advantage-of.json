@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's collocation set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "take advantage of",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "take-advantage-of.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "take-advantage-of.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To use a good chance or a good situation so that you get what you want from it."
+    },
+    {
+      "sense_id": "take-advantage-of.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The pattern is take + advantage + of + noun or -ing form: take advantage of the quiet morning, take advantage of the offer, take advantage of being early. The verb is take, never make, and of cannot be dropped (take advantage the offer is not English). The noun advantage carries no article in this collocation, unlike the ordinary noun (the advantages of the plan), and the object pronoun follows of: take advantage of it."
+    },
+    {
+      "sense_id": "take-advantage-of.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The 利用 translation invites make, and make advantage of is the error this target exists to head off; the second error is the article, because advantage is a countable noun in its ordinary life and learners add one automatically (take an advantage of). Teaching the fixed three-word frame with its bare noun — take advantage of + thing — repairs both at once. When the same words take a person as their object, the meaning turns negative (take advantage of someone = exploit them), so the object type decides the reading."
+    },
+    {
+      "sense_id": "take-advantage-of.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "take advantage of the situation = use it (neutral). take advantage of a person = treat them unfairly for your own benefit (negative). make use of is the neutral near-synonym for the first sense; exploit covers the second. The ordinary noun keeps its article and its plural: one advantage of the plan, the advantages of the plan — a benefit of the plan, not the collocation."
+    },
+    {
+      "sense_id": "take-advantage-of.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "利用（好好利用某个机会或条件）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "take-advantage-of.base",
+      "written": "take advantage of",
+      "normalized": "take advantage of",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "take-advantage-of.third-person-singular",
+      "written": "takes advantage of",
+      "normalized": "take advantage of",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "take-advantage-of.past",
+      "written": "took advantage of",
+      "normalized": "take advantage of",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "take-advantage-of.present-participle",
+      "written": "taking advantage of",
+      "normalized": "take advantage of",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the collocation is frequent in both talk and writing, so core, receptive and productive value are HIGH and receptive difficulty is LOW. Productive difficulty is MEDIUM because the verb and the bare noun both compete with a direct translation (make, an), and explanation cost is MEDIUM for the same reason — two rules, each with a near-miss worth showing. Transfer value is HIGH: the take + bare-noun + preposition frame transfers to take care of, take part in and take notice of, and the negative person-object reading is a separate transferable fact. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The collocation belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "It is standard in workplace talk about opportunities and timing (we took advantage of the quiet week), so it carries nearly full weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the frame with the thing used in place (take advantage of the quiet morning) and keep the person-object reading (take advantage of someone) clearly marked as the negative sense, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "MAKE_FOR_TAKE",
+      "error_pattern": "make | makes | made + advantage of",
+      "corrected_pattern": "take + advantage of",
+      "explanation": "利用 is glossed with make, so the verb is translated rather than learned, and make advantage of is produced. The collocation is built on take; the verb is not interchangeable, and the repair is the verb itself.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of make (make, makes, made) stands directly before advantage of in a clause whose frame is the take-advantage-of unit."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "ARTICLE_INTRUSION",
+      "error_pattern": "take | takes | took + a | an | the + advantage of",
+      "corrected_pattern": "take + advantage of",
+      "explanation": "advantage is a countable noun in its ordinary life (one advantage of the plan), so an article is added by habit, producing take an advantage of. In this collocation the noun is bare: take advantage of the offer. The repair is the bare noun inside the fixed frame.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when an article (a, an, the) stands between a form of take and advantage in the take ... advantage of frame."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb and the shape of the noun phrase inside the frame. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (take and advantage of are there but the words are the ordinary noun phrase 'a benefit of', so the collocation is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "MAKE_FOR_TAKE: match when a form of make stands directly before advantage of, because the collocation is built on take."
+    },
+    {
+      "ordinal": 1,
+      "rule": "ARTICLE_INTRUSION: match when an article (a, an, the) stands between a form of take and advantage, because the noun is bare inside this collocation (take advantage of, not take an advantage of)."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when a form of take stands directly before advantage of with the thing used after of (take advantage of the quiet morning, took advantage of the offer, take advantage of being early): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "ADVANTAGE_AS_ORDINARY_NOUN: do not match when advantage names 'a benefit of' with its article and plural (one advantage of the plan, the advantages of the plan), because that noun phrase is not the collocation."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "We took advantage of the quiet morning.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "She takes advantage of every free hour.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "It is easy to take advantage of a free afternoon.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "One advantage of the plan is its low cost.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

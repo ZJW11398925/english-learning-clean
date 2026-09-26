@@ -23,10 +23,12 @@ in order:
   (``CAPABILITY_CREDIT_EDITORIAL_STATUS``), the thirteen whose approved row is
   a ``SUPPORTS`` row read ``None`` while their row stays readable, and the
   five CAPABILITY entities still read ``None`` — the same read, more rows;
-- the volume gate's reading sentence: twenty-eight usable R4 targets against
-  IP §13's Calibration100 floor of 100 — the number moved, the verdict
-  (unmet) did not, and no opening claim is made here. IP §13's own first rung
-  (28 resources) *is* met and is asserted separately from the three floors.
+- the volume gate's reading sentence: forty-six usable R4 targets against
+  IP §13's Calibration100 floor of 100 — the number moved (C3-a: 28 → 46), the
+  volume verdict (unmet) did not, while the two CORE cells now read through
+  the **declared reading** and are met; no opening claim is made here. IP
+  §13's own first rung (28 resources) stays met and is asserted separately
+  from the three floors.
 
 The canonical authoring trees are never edited: every variant lives in a
 pytest tmp copy built through the real build step.
@@ -91,9 +93,40 @@ C2B_TARGETS = (
     "res-softener-a-bit",
 )
 
-#: The twenty-eight RESOURCE targets, in id order (C1's, C2-a's eight and
-#: C2-b's nineteen).
-RES_TARGETS = ("res-colloc-make-a-decision", *C2A_TARGETS, *C2B_TARGETS)
+#: The eighteen targets C3-a authored as entities, evidence documents and
+#: links. Listed here because this file's artifact-wide scans (detection
+#: pairing, index order, the calibration reading) read the whole corpus, which
+#: C3-a took from 33 entities to 51 — the per-target pins above stay scoped to
+#: their own cuts.
+C3A_TARGETS = (
+    "res-colloc-come-to-a-conclusion",
+    "res-colloc-draw-attention-to",
+    "res-colloc-have-an-effect-on",
+    "res-colloc-keep-in-mind",
+    "res-colloc-take-advantage-of",
+    "res-discourse-having-said-that",
+    "res-discourse-in-fact",
+    "res-frame-if-you-dont-mind",
+    "res-frame-lets-say",
+    "res-hedge-i-mean",
+    "res-hedge-sort-of",
+    "res-idiom-hit-the-nail-on-the-head",
+    "res-idiom-under-the-weather",
+    "res-phrasal-carry-on",
+    "res-phrasal-give-up",
+    "res-phrasal-turn-out",
+    "res-pragmatic-could-i-ask",
+    "res-softener-to-be-fair",
+)
+
+#: The forty-six RESOURCE targets, in id order (C1's, C2-a's eight, C2-b's
+#: nineteen and C3-a's eighteen).
+RES_TARGETS = (
+    "res-colloc-make-a-decision",
+    *C2A_TARGETS,
+    *C2B_TARGETS,
+    *C3A_TARGETS,
+)
 
 #: The fifteen targets whose approved §24.7 link is a REALIZES row and
 #: therefore credits a capability node on the credit face (C2-a's nine plus
@@ -116,10 +149,22 @@ CREDIT_TARGETS = (
     "res-softener-kind-of",
 )
 
+#: The three C3-a rows whose approved §24.7 link is REALIZES (the cut's own
+#: credit-bearing half; the other fifteen C3-a rows are SUPPORTS).
+C3A_CREDIT_TARGETS = (
+    "res-discourse-having-said-that",
+    "res-hedge-sort-of",
+    "res-softener-to-be-fair",
+)
+
 #: The thirteen targets whose single approved §24.7 row is a SUPPORTS row:
 #: §8.1 R2-readable, credit-safe (the read filters relation = REALIZES).
+#: Scoped to the pre-C3-a corpus: the C3-a additions are held to the same
+#: discipline by C3A_CREDIT_TARGETS and the file's own credit test.
 SUPPORT_ONLY_TARGETS = tuple(
-    target for target in RES_TARGETS if target not in CREDIT_TARGETS
+    target
+    for target in RES_TARGETS
+    if target not in CREDIT_TARGETS and target not in C3A_TARGETS
 )
 
 CAP_TARGETS = (
@@ -301,8 +346,9 @@ def test_every_authored_documents_detection_evidence_is_paired(
     """§24.10's "可测试" read as the corpus's own self-constraint: every rule
     ordinal carries a fixture at the same ordinal, both declared fixture kinds
     are present, and every ``expected`` value is one of the two declared
-    readings — checked document by document, so an unpaired rule in any of the
-    nine fails here rather than only for C1's target."""
+    readings — checked document by document over the whole corpus (C1's target
+    and every cut's documents since), so an unpaired rule anywhere fails here
+    rather than only for C1's target."""
 
     conn = sqlite3.connect(str(built_content_db))
     try:
@@ -357,13 +403,14 @@ def test_every_authored_documents_detection_evidence_is_paired(
 def test_the_credit_face_reads_the_fifteen_approved_realizes_nodes(
     built_content_db: Path,
 ) -> None:
-    """The behavior change, stated as a read — now in two halves. With all
-    twenty-eight §24.7 rows approved, **fifteen** RESOURCE targets (C2-a's
-    nine plus C2-b's six REALIZES rows) carry the node their link names in
-    their teaching payload (this is what an ``ALTERNATIVE_SUCCESS`` attempt
-    can credit), the provider view agrees; the **thirteen** targets whose
-    single approved row is a ``SUPPORTS`` row read ``None`` on the credit
-    face while their row stays fully readable — the credit-safe direction
+    """The behavior change, stated as a read — now in three groups. With all
+    forty-six §24.7 rows approved, **fifteen** RESOURCE targets (C2-a's
+    nine plus C2-b's six REALIZES rows) and **three** C3-a targets carry the
+    node their link names in their teaching payload (this is what an
+    ``ALTERNATIVE_SUCCESS`` attempt can credit), the provider view agrees; the
+    targets whose single approved row is a ``SUPPORTS`` row — the thirteen of
+    the earlier cuts and the fifteen of C3-a — read ``None`` on the credit
+    face while their row stays fully readable, the credit-safe direction
     C2-b introduced; and the five CAPABILITY entities — no link row of their
     own — still read ``None``."""
 
@@ -379,7 +426,7 @@ def test_the_credit_face_reads_the_fifteen_approved_realizes_nodes(
             assert relation in ("REALIZES", "SUPPORTS"), target_id
             teaching = supply.get_teaching_content(target_id)
             assert isinstance(teaching, Ok), teaching
-            if target_id in CREDIT_TARGETS:
+            if target_id in CREDIT_TARGETS or target_id in C3A_CREDIT_TARGETS:
                 assert relation == "REALIZES", target_id
                 assert teaching.value.capability_linkage == node, target_id
             else:
@@ -393,6 +440,7 @@ def test_the_credit_face_reads_the_fifteen_approved_realizes_nodes(
         store.close()
 
     assert len(CREDIT_TARGETS) == 15
+    assert len(C3A_CREDIT_TARGETS) == 3
     assert len(SUPPORT_ONLY_TARGETS) == 13
 
     provider = ContentBackedTeachingTargetProvider(built_content_db)
@@ -414,9 +462,9 @@ def test_the_credit_face_reads_the_fifteen_approved_realizes_nodes(
 # ---------------------------------------------------------------------------
 
 
-def test_the_index_lists_the_twenty_eight_evidence_documents_in_entity_order() -> None:
+def test_the_index_lists_the_forty_six_evidence_documents_in_entity_order() -> None:
     """The source-side half of "the corpus states evidence for every RESOURCE
-    target": the index's ``evidence`` list names exactly the twenty-eight
+    target": the index's ``evidence`` list names exactly the forty-six
     documents, in the same order the ``entities`` list carries them
     (content_src/README.md "文件布局"), and the CAPABILITY entities are absent
     from it by decision (their ``None`` level is constructive)."""
@@ -431,27 +479,33 @@ def test_the_index_lists_the_twenty_eight_evidence_documents_in_entity_order() -
         if entry.startswith("entities/res-")
     ]
     assert index["evidence"] == expected
-    assert len(expected) == 28
+    assert len(expected) == 46
     for listed in index["evidence"]:
         assert (CONTENT_SRC_DIR / listed).is_file(), listed
-    assert len(entities) == 33
+    assert len(entities) == 51
     # The order rule, stated positively: both lists are plain id order, which
     # is what "the same order as the entities list" means here.
     assert entities == sorted(entities)
     assert index["evidence"] == sorted(index["evidence"])
 
 
-def test_the_calibration100_reading_moves_and_the_verdict_does_not(
-    built_content_db: Path,
-) -> None:
-    """The numbers the rollout HOLD rests on, read from both sides: the
-    artifact now answers twenty-eight detection-ready resource targets out of
-    thirty-three entities (旧真值: one of fourteen; C2-a: nine of fourteen),
-    while the floors IP §13 states are 100 / 30 / 2 — so every one of them is
-    still unmet and nothing here is an opening claim. IP §13's own starting
-    number is 28, and the RESOURCE count now *is* 28: that is the first rung
-    of "28 → 100", not a Calibration100 pass, and the two readings are
-    asserted separately so the two spellings cannot drift apart."""
+def test_the_calibration100_readings_at_c3a_truth(built_content_db: Path) -> None:
+    """The numbers the rollout HOLD rests on, read from both sides at C3-a's
+    truth.
+
+    The two CORE cells are read under the **声明读法 + Revisit（用户
+    2026-09-26 裁决）**: CORE_A / CORE_C are counts over the ``res-*`` entities
+    whose level is R3_TEACHING_READY or R4_DETECTION_READY, split by
+    ``content_pedagogical_profile.core_utility`` (HIGH versus MEDIUM/LOW) —
+    not the capability-``family`` counts this file read until C3-a, which
+    could never move when resources were authored. The artifact now answers
+    forty-six detection-ready resource targets out of fifty-one entities,
+    CORE_A = 32 (floor 30, met), CORE_C = 14 (floor 2, met) and
+    ``resource_count`` = 46 < 100 (unmet) — three separate readings, never one
+    "gate passed" sentence (旧真值: one of fourteen; C2-a: nine of fourteen
+    with both CORE cells 0). IP §13's own starting number is 28: the
+    RESOURCE count passed it long ago, and that is the first rung of
+    "28 → 100", not a Calibration100 pass."""
 
     plan_text = (
         Path(__file__).resolve().parents[2] / "docs" / "IMPLEMENTATION_PLAN.md"
@@ -469,42 +523,49 @@ def test_the_calibration100_reading_moves_and_the_verdict_does_not(
         supply = CurriculumContentStore(store)
         table = supply.readiness_by_target()
         assert isinstance(table, Ok), table
-        ready = [
-            assessment.target_id
-            for assessment in table.value
-            if assessment.level == "R4_DETECTION_READY"
-        ]
+        levels = {a.target_id: a.level for a in table.value}
     finally:
         store.close()
+    ready = [
+        target_id
+        for target_id, level in levels.items()
+        if level == "R4_DETECTION_READY"
+    ]
     conn = sqlite3.connect(str(built_content_db))
     try:
         resources = [
-            row[0]
+            str(row[0])
             for row in conn.execute(
                 "SELECT entity_id FROM content_entity ORDER BY entity_id"
             )
         ]
-        families = dict(
-            conn.execute(
-                "SELECT family, COUNT(*) FROM curriculum_capability GROUP BY family"
+        utilities = {
+            str(entity_id): str(band)
+            for entity_id, band in conn.execute(
+                "SELECT entity_id, core_utility FROM content_pedagogical_profile"
             ).fetchall()
-        )
+        }
     finally:
         conn.close()
-    res_rows = [
-        entity_id for entity_id in resources if str(entity_id).startswith("res-")
+    res_rows = [entity_id for entity_id in resources if entity_id.startswith("res-")]
+    banded = [
+        target_id
+        for target_id in res_rows
+        if levels[target_id] in ("R3_TEACHING_READY", "R4_DETECTION_READY")
     ]
-    assert len(ready) == 28
+    core_a = [t for t in banded if utilities.get(t) == "HIGH"]
+    core_c = [t for t in banded if utilities.get(t) in ("MEDIUM", "LOW")]
+    assert len(ready) == 46
     assert sorted(ready) == res_rows
-    assert len(res_rows) == 28  # the IP §13 first rung: 28 resources
-    assert len(resources) == 33
+    assert len(res_rows) == 46  # the IP §13 first rung: 28 — long passed
+    assert len(resources) == 51
     print(
-        f"[c2b] calibration reading -> {len(ready)}/{gates['resource_count']} "
-        f"resources ({len(ready)} R4 of {len(resources)} entities;"
+        f"[c3a] calibration readings -> CORE_A {len(core_a)}/{gates['CORE_A']}"
+        f" (met), CORE_C {len(core_c)}/{gates['CORE_C']} (met),"
+        f" resource_count {len(res_rows)}/{gates['resource_count']} (unmet;"
         f" IP §13 first rung = 28)"
     )
-    assert len(ready) >= 28  # the first rung, met
-    assert len(ready) < gates["resource_count"]
+    assert len(core_a) >= gates["CORE_A"]
+    assert len(core_c) >= gates["CORE_C"]
     assert len(res_rows) < gates["resource_count"]
-    assert families.get("CORE_A", 0) < gates["CORE_A"]
-    assert families.get("CORE_C", 0) < gates["CORE_C"]
+    assert len(ready) >= 28  # the first rung, met

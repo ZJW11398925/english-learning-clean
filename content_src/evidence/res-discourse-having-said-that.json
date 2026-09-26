@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's discourse-marker set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "having said that",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "having-said-that.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "having-said-that.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used to acknowledge what was just said and then add a point that qualifies or contrasts with it."
+    },
+    {
+      "sense_id": "having-said-that.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The marker opens its sentence, normally right after the point it acknowledges: The plan is cheap. Having said that, it will take months. The participle is fixed (having said, never having saying), that refers back to the previous statement, and a comma follows the marker. It performs a two-step move — concede, then qualify — so it needs something in front of it to acknowledge, and the point after it is the one the speaker cares about."
+    },
+    {
+      "sense_id": "having-said-that.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "话虽如此 maps onto the concession move cleanly, so the learner needs the form, not the meaning: the perfect participle (having said) is substituted by the base or -ing form (having say that, having saying that), and the contrast conjunction is often added after the marker (having said that, but ...), the 虽然…但是 pattern carried over. Teaching the marker with its comma and without a following but covers both, and the short twin that said gives the same move without the participle."
+    },
+    {
+      "sense_id": "having-said-that.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "having said that = I accept the previous point, and here is a qualification (the plan is cheap; having said that, it will take months). that said is the shorter twin with the same force, and even so leans more strongly to contrast. however simply contrasts without acknowledging anything, and although builds the concession inside one sentence — having said that keeps the two steps apart, which is what makes it useful in speech."
+    },
+    {
+      "sense_id": "having-said-that.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "话虽如此；尽管如此（先承认前面说的，再补一个限制）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "having-said-that.base",
+      "written": "having said that",
+      "normalized": "having said that",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "MEDIUM",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the marker is common in discussion, so receptive value is HIGH, but the concessive move is one a learner can also make without it, so core and productive value are MEDIUM. Both difficulties are MEDIUM: the perfect participle has to be produced, and the temptation to add but after the marker is strong. Explanation cost is LOW because the twin form and the comma rule are one line each. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "The marker belongs to the general fluency pack's discourse set (the concession-and-qualification move), so it carries nearly full weight in that pack; the shortfall records that there is a twin form the pack's own review has not placed."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.6",
+      "rationale": "Qualifying an agreed point before raising a caveat is a standard meeting move (having said that, the timeline is tight), so it carries more than half its weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the marker with its comma and no following conjunction, and keep the short twin that said clearly marked as the same move, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "REDUNDANT_CONJUNCTION",
+      "error_pattern": "having said that , but",
+      "corrected_pattern": "having said that, (no conjunction)",
+      "explanation": "虽然…但是 pairs the concessive marker with a conjunction, and the learner carries the pattern into English: having said that, but the plan is still slow. The English marker already performs the concession, so the contrast follows with no conjunction. The repair is the removal of but.",
+      "severity": "HIGH",
+      "detection_policy": "Match when having said that is directly followed by a comma and then but or however."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PARTICIPLE_FORM",
+      "error_pattern": "having + say | saying + that",
+      "corrected_pattern": "having + said + that",
+      "explanation": "The marker is a perfect participle and the participle is fixed: having said. The base or -ing form is substituted because the perfect participle is rarely produced in speech. The repair is the participle, not the word order.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when having is followed by say or saying then that."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the participle form and the words that follow the marker. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words are there but that belongs to the following noun, so the marker is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "REDUNDANT_CONJUNCTION: match when having said that is followed by a comma then but or however, because the marker already concedes and no conjunction follows it."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PARTICIPLE_FORM: match when having is followed by say or saying then that, because the perfect participle is fixed: having said."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the marker is complete at the start of its sentence (Having said that, it will take months / That said, the plan is still the best one we have): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THAT_OF_THE_FOLLOWING_NOUN: do not match when having said that introduces its own object (having said that sentence out loud), because that is a determiner there and the marker is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "The plan is cheap. Having said that, it will take months.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Having said that, the plan is still the best one we have.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "That said, the plan is still the best one we have.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Having said that sentence out loud, he paused.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

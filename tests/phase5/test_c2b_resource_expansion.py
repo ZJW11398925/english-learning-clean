@@ -4,11 +4,18 @@ The cut: nineteen authored entities (each with an entity document, a
 nineteen-key §8.1 evidence document and one §24.7 link) land in the canonical
 authoring tree, taking the corpus from 9 × R4_DETECTION_READY to **28 × R4 +
 5 × None** and `resource_count` (`res-*` entities) to **28** — IP §13's own
-starting number, i.e. the first rung of "28 → 100 resource calibration", not a
-Calibration100 pass (100/30/2 all stay unmet). The credit face widens from 9
-to 15 because six of the nineteen rows are REALIZES; the other thirteen are
-SUPPORTS rows, which satisfy §8.1 R2's `curriculum_link` fact and mint
-nothing.
+starting number, i.e. the first rung of "28 → 100 resource calibration". The
+credit face widens from 9 to 15 because six of the nineteen rows are REALIZES;
+the other thirteen are SUPPORTS rows, which satisfy §8.1 R2's
+`curriculum_link` fact and mint nothing.
+
+C3-a (the next cut) took the corpus further — **46 × R4 + 5 × None**,
+`resource_count` 46, credit face 18 — so the corpus-wide readings in this file
+are re-pinned to that truth: the volume floor is still unmet (46 < 100), while
+CORE_A and CORE_C are met under the **declared reading** implemented and
+pinned in `tests/phase5/test_c3a_readface_and_expansion.py` (R3+ level ×
+`core_utility` band; 用户 2026-09-26 裁决, Revisit when the canonical
+definition lands). The cut's own per-target pins are unchanged.
 
 What this file pins, in order:
 
@@ -105,9 +112,11 @@ C2B_SUPPORT_TARGETS = tuple(
 FIXTURE_KINDS = ("NEGATIVE", "FALSE_POSITIVE_BOUNDARY")
 EXPECTED_READINGS = ("NO_MATCH", "NO_MATCH_BOUNDARY")
 
-#: 旧真值 → 新真值: the credit face before and after this cut.
-CREDIT_FACE_BEFORE = 9
-CREDIT_FACE_AFTER = 15
+#: 旧真值 → 新真值: the credit face before and after this cut (C3-a moved it
+#: 15 → 18; the constants here are re-pinned to C3-a's truth so the same
+#: three-way count keeps holding).
+CREDIT_FACE_BEFORE = 15
+CREDIT_FACE_AFTER = 18
 
 _PLAN = Path(__file__).resolve().parents[2] / "docs" / "IMPLEMENTATION_PLAN.md"
 
@@ -173,13 +182,13 @@ def test_each_c2b_target_carries_all_nineteen_keys_and_reads_r4(
     assert assessment.value.detection_ready is True, target_id
 
 
-def test_the_corpus_table_is_twenty_eight_r4_and_five_none(
+def test_the_corpus_table_is_forty_six_r4_and_five_none(
     built_content_db: Path,
 ) -> None:
-    """The whole table, read once: the twenty-eight ``res-*`` targets read
-    R4, the five ``cap-*`` entities read None, and every one of the nineteen
-    new ids is in the R4 half (the per-target pin above is the positive
-    direction; this one is the completeness direction)."""
+    """The whole table, read once (C3-a truth): the forty-six ``res-*``
+    targets read R4, the five ``cap-*`` entities read None, and every one of
+    the nineteen new ids is in the R4 half (the per-target pin above is the
+    positive direction; this one is the completeness direction)."""
 
     store = ContentStore(built_content_db)
     try:
@@ -189,11 +198,11 @@ def test_the_corpus_table_is_twenty_eight_r4_and_five_none(
     finally:
         store.close()
     table = {a.target_id: a.level for a in assessments.value}
-    assert len(table) == 33
+    assert len(table) == 51
     r4 = sorted(t for t, level in table.items() if level == "R4_DETECTION_READY")
     none = sorted(t for t, level in table.items() if level is None)
     assert all(target in r4 for target in C2B_TARGETS)
-    assert len(r4) == 28
+    assert len(r4) == 46
     assert none == [
         "cap-disc-topic-shift",
         "cap-eval-hedged-opinion",
@@ -212,16 +221,20 @@ def test_the_corpus_table_is_twenty_eight_r4_and_five_none(
 # ---------------------------------------------------------------------------
 
 
-def test_the_first_rung_is_met_and_the_three_floors_are_not(
+def test_the_first_rung_and_the_three_floors_read_at_c3a_truth(
     built_content_db: Path,
 ) -> None:
-    """IP §13's "28 → 100 resource calibration" read as two separate facts:
-    the corpus's RESOURCE count is **28**, which is the starting number the
-    frozen plan text names (so the first rung is met), and the Calibration100
-    floors are 100 / 30 / 2, so the corpus is still below every one of them
-    (28 < 100, CORE_A 0 < 30, CORE_C 0 < 2). This test deliberately asserts
-    both directions: a cut that reached 100, or that claimed IP §13's start
-    as a gate pass, would fail here."""
+    """IP §13's "28 → 100 resource calibration" and the three Calibration100
+    floors, read as separate facts at C3-a's truth.
+
+    The corpus's RESOURCE count is **46**, so IP §13's starting number (28) is
+    long passed — that is the first rung, not a gate. Of the three floors,
+    ``resource_count`` = 46 < 100 is still unmet while CORE_A (32 >= 30) and
+    CORE_C (14 >= 2) are met under the **声明读法 + Revisit（用户 2026-09-26
+    裁决）**: R3_TEACHING_READY or R4_DETECTION_READY crossed with
+    ``content_pedagogical_profile.core_utility`` HIGH / {MEDIUM, LOW}. Each
+    floor is asserted on its own line; a cut that reached 100, or that folded
+    the three into one "gate passed" sentence, would fail here."""
 
     plan_text = _PLAN.read_text(encoding="utf-8")
     assert "28 → 100 resource calibration" in plan_text
@@ -240,27 +253,43 @@ def test_the_first_rung_is_met_and_the_three_floors_are_not(
                 "SELECT entity_id FROM content_entity ORDER BY entity_id"
             )
         ]
-        families = dict(
-            conn.execute(
-                "SELECT family, COUNT(*) FROM curriculum_capability GROUP BY family"
+        utilities = {
+            str(entity_id): str(band)
+            for entity_id, band in conn.execute(
+                "SELECT entity_id, core_utility FROM content_pedagogical_profile"
             ).fetchall()
-        )
+        }
     finally:
         conn.close()
+    store = ContentStore(built_content_db)
+    try:
+        supply = CurriculumContentStore(store)
+        table = supply.readiness_by_target()
+        assert isinstance(table, Ok), table
+        levels = {a.target_id: a.level for a in table.value}
+    finally:
+        store.close()
     resources = [eid for eid in entity_ids if eid.startswith("res-")]
-    assert len(resources) == 28  # IP §13's start: the first rung
-    assert len(resources) >= 28
-    assert len(resources) < gates["resource_count"]  # 100/30/2 all unmet
-    assert len(entity_ids) == 33
-    assert families.get("CORE_A", 0) < gates["CORE_A"]
-    assert families.get("CORE_C", 0) < gates["CORE_C"]
+    banded = [
+        eid
+        for eid in resources
+        if levels[eid] in ("R3_TEACHING_READY", "R4_DETECTION_READY")
+    ]
+    core_a = [t for t in banded if utilities.get(t) == "HIGH"]
+    core_c = [t for t in banded if utilities.get(t) in ("MEDIUM", "LOW")]
+    assert len(resources) == 46
+    assert len(resources) >= 28  # IP §13's start: the first rung, passed
+    assert len(entity_ids) == 51
     print(
-        f"[c2b] first rung met: resource_count = {len(resources)} (IP §13 start"
-        f" = 28); Calibration100 floors still unmet:"
-        f" {len(resources)}/{gates['resource_count']},"
-        f" CORE_A {families.get('CORE_A', 0)}/{gates['CORE_A']},"
-        f" CORE_C {families.get('CORE_C', 0)}/{gates['CORE_C']}"
+        f"[c3a] first rung passed: resource_count = {len(resources)} (IP §13"
+        f" start = 28); floors: resource_count"
+        f" {len(resources)}/{gates['resource_count']} unmet,"
+        f" CORE_A {len(core_a)}/{gates['CORE_A']} met,"
+        f" CORE_C {len(core_c)}/{gates['CORE_C']} met"
     )
+    assert len(resources) < gates["resource_count"]  # volume floor unmet
+    assert len(core_a) >= gates["CORE_A"]  # CORE_A met
+    assert len(core_c) >= gates["CORE_C"]  # CORE_C met
 
 
 def test_no_opening_claim_is_made_by_this_cut() -> None:
@@ -289,22 +318,22 @@ def test_the_credit_face_delta_equals_the_new_realizes_rows(
     built_content_db: Path,
 ) -> None:
     """The behaviour change, counted three ways so it cannot drift: the
-    links document carries 28 rows of which 15 are REALIZES (9 + k, k = 6);
-    the credit face answers a node for exactly 15 entities; and the six C2-b
-    ids that credit are the six named ones, each reading the node its own row
-    names."""
+    links document carries 46 rows of which 18 are REALIZES (15 + k, k = 3 —
+    the C3-a increment); the credit face answers a node for exactly 18
+    entities; and the six C2-b ids that credit are the six named ones, each
+    reading the node its own row names."""
 
     document = json.loads(
         (CURRICULUM_DIR / "links.json").read_text(encoding="utf-8")
     )
     rows = document["links"]
-    assert len(rows) == 28
+    assert len(rows) == 46
     realizes = {
         str(row["resource_id"]): str(row["node_id"])
         for row in rows
         if row["relation"] == "REALIZES"
     }
-    assert len(realizes) == CREDIT_FACE_AFTER == CREDIT_FACE_BEFORE + 6
+    assert len(realizes) == CREDIT_FACE_AFTER == CREDIT_FACE_BEFORE + 3
     assert set(C2B_CREDIT_TARGETS) <= set(realizes)
 
     store = ContentStore(built_content_db)
@@ -369,8 +398,8 @@ def test_the_index_lists_the_nineteen_new_documents_in_both_lists(
     index = json.loads((CONTENT_SRC_DIR / "index.json").read_text(encoding="utf-8"))
     entities = [str(entry) for entry in index["entities"]]
     evidence = [str(entry) for entry in index["evidence"]]
-    assert len(entities) == 33
-    assert len(evidence) == 28
+    assert len(entities) == 51
+    assert len(evidence) == 46
     assert entities == sorted(entities)
     assert evidence == sorted(evidence)
     for target_id in C2B_TARGETS:

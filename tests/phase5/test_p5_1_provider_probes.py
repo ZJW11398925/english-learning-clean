@@ -218,11 +218,11 @@ def test_probe_4_candidates_are_excluded_and_origins_are_preserved(
         assert isinstance(eligible, Ok), eligible
         eligible_ids = tuple(str(entity_id) for entity_id in eligible.value)
         print(f"[probe 4] supply_entity_ids ({len(eligible_ids)}) -> {eligible_ids}")
-        assert len(eligible_ids) == 33
+        assert len(eligible_ids) == 51
         assert CANDIDATE not in eligible_ids
         assert RETIRED not in eligible_ids
         assert isinstance(store.entity_ids().value, tuple)
-        assert len(store.entity_ids().value) == 35
+        assert len(store.entity_ids().value) == 53
 
         for entity_id in (CANDIDATE, RETIRED):
             # excluded, not deleted: still readable, still no readiness

@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-colloc-take-advantage-of",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "COLLOCATION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that someone used a good chance that came their way.",
+      "Use take, not make, before advantage of.",
+      "Start with the words: We took ___ of the quiet morning."
+    ],
+    "reveal_form": "We took advantage of the quiet morning.",
+    "canonical_forms": [
+      "We took advantage of the quiet morning."
+    ],
+    "alternative_realizations": [
+      "She takes advantage of every free hour."
+    ],
+    "required_slots": [
+      [
+        "advantage"
+      ],
+      [
+        "take"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's softener set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "sort of",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "sort-of.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "sort-of.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used before a word to make what it says less exact or less forceful."
+    },
+    {
+      "sense_id": "sort-of.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The phrase stands directly before the word it weakens: sort of sad, sort of knew, sort of a problem. It is the informal twin of kind of and works the same way. When an article stands in front of it and a noun follows, the reading changes from hedge to classifier: a sort of tent means 'a kind of tent', not a tent that is somewhat tent-like. The hedge takes no comma before the word it weakens and no article before sort."
+    },
+    {
+      "sense_id": "sort-of.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The 有点 translation maps onto the hedge, so the two repairs are positional: the article must stay away when a modifier follows (sort of sad, not a sort of sad), and the article must be there when a singular countable noun is classified (a sort of tent, not sort of tent). The two directions look contradictory and are the same rule seen from both sides, which is why this target is taught as one lesson with the classifier boundary. The hedge is informal; somewhat does the same work in careful writing."
+    },
+    {
+      "sense_id": "sort-of.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "It's sort of sad = it is sad in an inexact way (hedge, no article). It's a sort of tent = it is a kind of tent (classification, with the article). kind of is the same hedge with the same boundary; a kind of is the classifier. somewhat and rather are the written caretakers of the hedge. The hedge can also trail a sentence in speech (it's sad, sort of), and that trailing use is the same unit."
+    },
+    {
+      "sense_id": "sort-of.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "有点；算是（让后面的话不那么绝对）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "sort-of.base",
+      "written": "sort of",
+      "normalized": "sort of",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the hedge is extremely frequent in informal speech, so core and receptive value are HIGH and receptive difficulty is LOW. Productive value is MEDIUM because the article moves in opposite directions for the hedge and the classifier, and productive difficulty is MEDIUM for the same reason; explanation cost is LOW because the pair of rules is one position rule seen twice. RESOURCE_PRACTICE follows the entity's own declared learning_intent DEVELOP. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The softener belongs to the general fluency pack (high-frequency spoken units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.3",
+      "rationale": "It appears in relaxed workplace talk when a claim is being made less absolute, so it carries some weight in the workplace pack; the shortfall records that the register is casual and the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the hedge without an article and the classifier with one, keeping the two shapes visibly apart, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "ARTICLE_INTRUSION",
+      "error_pattern": "a sort of + adjective | adverb | verb",
+      "corrected_pattern": "sort of + adjective | adverb | verb",
+      "explanation": "An article is added in front of the hedge, producing a sort of sad. The hedge takes no article before an adjective, an adverb or a verb; the article belongs to the classifier reading (a sort of tent). The repair is the article's absence.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when an article stands directly before sort of and a modifier (adjective, adverb or verb) follows it."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "CLASSIFIER_ARTICLE_MISSING",
+      "error_pattern": "sort of + singular countable noun (no determiner in front of the noun)",
+      "corrected_pattern": "a sort of + singular countable noun",
+      "explanation": "In the classifier reading the phrase introduces a category, and the noun is singular and countable, so the article is required: a sort of tent. Without it the phrase reads as an incomplete hedge. The repair is the article the classifier needs.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when sort of stands directly in front of a singular countable noun with no article between the phrase and the noun, in a sentence whose reading is classification."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the article before the phrase and the shape of the word after it. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the article and noun put the classifier reading in place, so the hedge is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "ARTICLE_BEFORE_SOFTENER: match when an article stands directly before sort of and a modifier follows, because the hedge takes no article."
+    },
+    {
+      "ordinal": 1,
+      "rule": "CLASSIFIER_WITHOUT_AN_ARTICLE: match when sort of stands directly in front of a singular countable noun with no article before sort, in a classifying reading, because the classifier requires a sort of + noun."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the hedge stands with no article before a modifier, or trails the clause (the ending is sort of sad, I sort of knew, it's sad, sort of): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_CLASSIFIER_READING: do not match when an article stands before sort and a noun follows (a sort of tent, a sort of chair), because category membership rather than hedging is meant there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "The ending is sort of sad.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "I sort of knew the answer.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "It's cold, sort of.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The robin is a sort of bird.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

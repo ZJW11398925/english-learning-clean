@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-discourse-in-fact",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "DISCOURSE_MARKER",
+    "fixedness": "FIXED",
+    "recognition_policy": "EXACT"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Correct an impression by stating what is really true.",
+      "Use the two words in fact, not in the fact.",
+      "Start with the words: It was, ___ fact, the cheapest option."
+    ],
+    "reveal_form": "It was, in fact, the cheapest option.",
+    "canonical_forms": [
+      "It was, in fact, the cheapest option."
+    ],
+    "alternative_realizations": [
+      "In fact, it was the cheapest option."
+    ],
+    "required_slots": [
+      [
+        "fact"
+      ],
+      [
+        "in"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's discourse-marker set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "in fact",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "in-fact.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "in-fact.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used to state what is really true, usually to correct or sharpen what was just said."
+    },
+    {
+      "sense_id": "in-fact.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The marker usually opens its sentence (In fact, it was the cheapest option) or stands between commas after the verb (it was, in fact, the cheapest option). It adds a fact that confirms, sharpens or corrects the previous statement, so it needs something to stand against. The two words are fixed — in fact, never in the fact — and the noun fact stays singular. It is not a contrastive connector: the information it adds goes the same way as what came before, or straightens it out."
+    },
+    {
+      "sense_id": "in-fact.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "事实 invites the definite article to leak into the marker, and in the fact is the repair this target teaches; the bare two-word form is the whole lesson. The second thing worth one line is the force: in fact confirms or corrects rather than opposes, so it cannot do the job of however. Its spoken twin actually carries the same meaning and adds surprise, which is why the disambiguation keeps them side by side."
+    },
+    {
+      "sense_id": "in-fact.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "in fact = really, and here is the fact (In fact, it was the cheapest option). actually means the same in speech and often carries surprise (it's actually quite good). as a matter of fact is the longer, slightly more formal twin. however introduces a contrast, and in fact does not: an opposing point takes however, while a confirming or correcting fact takes in fact. When fact is an ordinary noun (a rise in fact checking, the fact that it was cheap), the marker is not in use."
+    },
+    {
+      "sense_id": "in-fact.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "事实上；其实（用来说明真实情况，常带纠正或加强）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "in-fact.base",
+      "written": "in fact",
+      "normalized": "in fact",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the marker is one of the most frequent sentence adverbs in talk and writing, so core, receptive and productive value are HIGH and both difficulties are LOW — the only repairs are the article and the force, each a one-line point. Transfer value is MEDIUM because the same correction-and-confirmation move appears in other markers (actually, as a matter of fact), but the wording itself is fixed. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The marker belongs to the general fluency pack (high-frequency discourse markers), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Correcting a wrong impression with a fact is a daily workplace move (in fact, the file was never sent), so it carries most of its weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the bare two-word marker in both positions (sentence-initial and between commas) and keep the however contrast clearly marked as the other connector, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "ARTICLE_INTRUSION",
+      "error_pattern": "in + a | an | the + fact",
+      "corrected_pattern": "in fact",
+      "explanation": "fact is a countable noun in its ordinary life, so an article is added by habit and the marker becomes in the fact. The two-word marker is bare, and the repair is the article's absence, not the preposition.",
+      "severity": "HIGH",
+      "detection_policy": "Match when in is followed by an article then fact, in a clause where the marker rather than the noun phrase was meant."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the preposition, the article and the noun. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words are there but fact is a noun modifier, so the marker is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "ARTICLE_INTRUSION: match when in is followed by an article then fact, because the marker is the bare two-word form."
+    },
+    {
+      "ordinal": 1,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the marker stands bare in either position (In fact, it was the cheapest option / it was, in fact, the cheapest option): those are the accepted realizations."
+    },
+    {
+      "ordinal": 2,
+      "rule": "FACT_AS_A_NOUN: do not match when fact is an ordinary noun with its article or as a modifier of the next noun (the fact that it was cheap, a rise in fact checking), because the marker is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "It was, in fact, the cheapest option.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "In fact, it was the cheapest option.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The report notes a rise in fact checking.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

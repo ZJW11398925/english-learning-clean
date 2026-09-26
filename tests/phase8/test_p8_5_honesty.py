@@ -427,12 +427,13 @@ def test_the_module_is_not_re_exported_by_the_package() -> None:
 
 
 def test_the_shipped_corpus_denies_any_open_claim(tmp_path: Path) -> None:
-    """The pin the task book asks for, at C2-b's truth — as a two-layer
+    """The pin the task book asks for, at C3-a's truth — as a two-layer
     statement (旧真值: the checker answered HOLD on every row, so the
     capable claim failed at the content gate itself; C1: one authored target
     reached R4 and every row answered GO; C2-a: nine RESOURCE targets reached
-    R4; 新真值 C2-b: twenty-eight RESOURCE targets reach R4, so all four rows
-    read twenty-eight usable targets and the content gate answers **GO** — and
+    R4; C2-b: twenty-eight; 新真值 C3-a: forty-six RESOURCE targets reach R4,
+    so all four rows
+    read forty-six usable targets and the content gate answers **GO** — and
     the capable corpus *still* produces no opening claim): the rollout switch
     composes the stage leg with the content gate, no stage is declared anywhere
     in the shipped product, so ``automatic_teaching_enabled`` is False for
@@ -456,11 +457,11 @@ def test_the_shipped_corpus_denies_any_open_claim(tmp_path: Path) -> None:
     build_content_db(path)
     report = corpus_rollout_gate(CurriculumContentStore(ContentStore(path)))
     assert isinstance(report, Ok), report
-    # Layer one: content capable — every row GO on the twenty-eight R4 targets.
+    # Layer one: content capable — every row GO on the forty-six R4 targets.
     assert report.value.verdict is RolloutVerdict.GO
     assert report.value.automatic_verdict is RolloutVerdict.GO
     assert all(
-        row.usable_targets == 28 and row.verdict is RolloutVerdict.GO
+        row.usable_targets == 46 and row.verdict is RolloutVerdict.GO
         for row in report.value.rows
         if row.automatic
     )

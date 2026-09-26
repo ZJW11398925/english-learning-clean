@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's pragmatic-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "could I ask",
+    "pos": "AUX"
+  },
+  "senses": [
+    {
+      "sense_id": "could-i-ask.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "could-i-ask.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used to ask politely for permission to put a question."
+    },
+    {
+      "sense_id": "could-i-ask.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The frame is Could I ask (you) + a question or a noun clause: Could I ask you a question? Could I ask what the deadline is? Could is the polite modal of the frame, and ask keeps the person asked as its indirect object, with no preposition. The frame asks for the floor rather than the information itself, so the question it announces usually follows — in the same sentence or after the answer — and an embedded question keeps statement word order after ask."
+    },
+    {
+      "sense_id": "could-i-ask.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "我能问一下 invites Can I ask, and could is the politeness the frame exists for; the second repair is the embedded question, which keeps statement order after ask (Could I ask what the deadline is?, not What is the deadline?). Teaching the frame as an opener with one embedded question covers both, and the boundary is the direct question without the frame, where no permission is being asked."
+    },
+    {
+      "sense_id": "could-i-ask.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Could I ask you a question? = permission to ask. Can I ask ...? is the same request with less politeness; May I ask ...? is more formal, and Do you mind if I ask ...? is a longer softer frame. The frame announces a question; when the question stands directly without it (What's the deadline?), the frame is not in use. When ask means 'request an action' it takes a to-infinitive (I asked to leave early) and no question follows."
+    },
+    {
+      "sense_id": "could-i-ask.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "我能问一下吗（礼貌地请求提问）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "could-i-ask.base",
+      "written": "Could I ask",
+      "normalized": "could i ask",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "LOW",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the frame is easy to receive and pleasant to produce, so receptive value is HIGH and receptive difficulty is LOW, but questions can be put without it in every setting, so core utility is LOW and productive value is MEDIUM. Productive difficulty is MEDIUM because the polite modal and the embedded question order must both be produced, and explanation cost is MEDIUM because the three permission frames have to be kept apart. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.6",
+      "rationale": "The frame belongs to the general fluency pack's politeness set, so it carries more than half its weight in that pack; the shortfall records that the same move has shorter carriers the pack's own review has not placed."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Asking permission to raise a question is a standard workplace courtesy (could I ask about the timeline?), so it carries most of its weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the frame with ask's indirect object and, in the embedded variant, statement word order after ask, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "EMBEDDED_QUESTION_ORDER",
+      "error_pattern": "Could I ask + what | where | when | who + is | are + subject (question order after ask)",
+      "corrected_pattern": "Could I ask + statement order in the embedded clause",
+      "explanation": "The question word keeps the order of a direct question (Could I ask what is the deadline?), because the embedded clause is treated as a question. After ask the reported question takes statement order: what the deadline is. The repair is the order inside the embedded clause.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when Could I ask is followed by a question word and then is or are before the subject of that clause."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_INTRUSION",
+      "error_pattern": "ask + to + personal pronoun (to me, to you, to him, to her, to us, to them) in the ask-frame",
+      "corrected_pattern": "ask + personal pronoun",
+      "explanation": "The person asked is ask's indirect object and takes no preposition in this frame: Could I ask you a question? The preposition is added by transfer from verbs that do take it (say to, explain to). The repair is the preposition's absence.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of ask is directly followed by to and a personal pronoun in the permission frame."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the modal, the object and the word order after ask. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (ask is there in its request-an-action sense with the direct question standing alone, so the permission frame is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "EMBEDDED_QUESTION_ORDER: match when Could I ask is followed by a question word then is or are before the subject, because the embedded clause keeps statement order."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PREPOSITION_INTRUSION: match when a form of ask is directly followed by to and a personal pronoun, because the person asked is the indirect object and takes no preposition."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame carries its indirect object and its question, direct or embedded (Could I ask you a question? / Could I ask what the deadline is? / Could I ask you something about the schedule?): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_REQUEST_SENSE_AND_DIRECT_QUESTIONS: do not match when ask means 'request an action' with a to-infinitive (I asked to leave early) or when the direct question stands without the frame (What's the deadline?), because the permission frame is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Could I ask you a question?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Could I ask what the deadline is?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Could I ask you something about the schedule?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "I asked to leave early.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

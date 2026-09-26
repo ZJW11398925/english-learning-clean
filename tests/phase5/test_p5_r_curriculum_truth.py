@@ -10,20 +10,21 @@ through the teaching leg's §5 ``ALTERNATIVE_SUCCESS`` fold
 (elc.content.store._primary_realization_node → elc.runtime.controller.
 _verified_capability_linkage → elc.learning.teaching_evidence).
 
-What is pinned here, in order (written at P5-R's truth; C1, C2-a and C2-b each
-moved the corpus forward, and each group states both):
+What is pinned here, in order (written at P5-R's truth; C1, C2-a, C2-b and
+C3-a each moved the corpus forward, and each group states both):
 
 - the rows are honest: all nine seed rows were ``CURRICULUM_MAPPED`` at P5-R;
   C1's editorial review approved one, C2-a's approved the other eight while
-  authoring their readiness evidence, and C2-b authored and approved nineteen
-  more while authoring its entities — so today all twenty-eight rows are
-  ``CANONICAL_APPROVED``, each with a rationale that names the approval, what
-  it covered and what it did not (curriculum/links.json). The seed rows'
-  mapping fields (`relation`, `strength`, `primary_flag`, the two ids) are
-  untouched by the approvals; the C2-b rows declare their own relation, and
-  the 13 ``SUPPORTS`` rows carry ``primary_flag = false`` because the primary
-  flag marks the primary **REALIZES** link (the only thing the build's
-  at-most-one check counts);
+  authoring their readiness evidence, C2-b authored and approved nineteen
+  more while authoring its entities, and C3-a authored and approved eighteen
+  more — so today all forty-six rows are ``CANONICAL_APPROVED``, each with a
+  rationale that names the approval, what it covered and what it did not
+  (curriculum/links.json). The seed rows' mapping fields (`relation`,
+  `strength`, `primary_flag`, the two ids) are untouched by the approvals;
+  the C2-b and C3-a rows declare their own relation, and the 28 ``SUPPORTS``
+  rows carry ``primary_flag = false`` because the primary flag marks the
+  primary **REALIZES** link (the only thing the build's at-most-one check
+  counts);
 - the credit read is gated by status *and* by relation: a *demoted* link keeps
   its row readable and answers ``None`` on the credit face — the canonical
   corpus now carries only approved rows, so the off-state is built as a
@@ -91,6 +92,28 @@ C2A_APPROVED = (
     "res-softener-kind-of",
 )
 
+#: The eighteen rows C3-a authored and approved while authoring its entities.
+C3A_APPROVED = (
+    "res-colloc-come-to-a-conclusion",
+    "res-colloc-draw-attention-to",
+    "res-colloc-have-an-effect-on",
+    "res-colloc-keep-in-mind",
+    "res-colloc-take-advantage-of",
+    "res-discourse-having-said-that",
+    "res-discourse-in-fact",
+    "res-frame-if-you-dont-mind",
+    "res-frame-lets-say",
+    "res-hedge-i-mean",
+    "res-hedge-sort-of",
+    "res-idiom-hit-the-nail-on-the-head",
+    "res-idiom-under-the-weather",
+    "res-phrasal-carry-on",
+    "res-phrasal-give-up",
+    "res-phrasal-turn-out",
+    "res-pragmatic-could-i-ask",
+    "res-softener-to-be-fair",
+)
+
 _CLAIM_COLUMNS = (
     "evidence_claim_id",
     "target_type",
@@ -147,17 +170,17 @@ def _capability_rows(db: sqlite3.Connection) -> tuple[tuple[object, ...], ...]:
 def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> None:
     """Old truth (P5-R): all nine rows were *mapped*, none *approved*. C1
     approved one row; C2-a approved the other eight while authoring their
-    targets' readiness evidence; C2-b authored and approved nineteen more,
-    so today all twenty-eight rows are ``CANONICAL_APPROVED`` — and the
-    mapping-describing fields of the nine migrated rows (relation, strength,
-    primary_flag, and the two ids) are exactly what the approvals were
-    forbidden to touch, asserted row by row from the source document. The
-    nineteen C2-b rows are held to the same field discipline: a ``REALIZES``
+    targets' readiness evidence; C2-b authored and approved nineteen more and
+    C3-a eighteen, so today all forty-six rows are ``CANONICAL_APPROVED`` —
+    and the mapping-describing fields of the nine migrated rows (relation,
+    strength, primary_flag, and the two ids) are exactly what the approvals
+    were forbidden to touch, asserted row by row from the source document. The
+    C2-b and C3-a rows are held to the same field discipline: a ``REALIZES``
     row carries ``primary_flag = true``, a ``SUPPORTS`` row ``false``, and
     ``strength`` is null everywhere (no vocabulary is invented)."""
 
     links = _links_document()["links"]
-    assert len(links) == 28
+    assert len(links) == 46
     realizes = 0
     supports = 0
     for row in links:
@@ -173,7 +196,7 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
         else:
             supports += 1
             assert row["primary_flag"] is False, row
-    assert (realizes, supports) == (15, 13)
+    assert (realizes, supports) == (18, 28)
     print(
         "[p5-r] corpus links -> "
         f"{sorted({row['editorial_status'] for row in links})}"
@@ -182,12 +205,13 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
     )
 
 
-@pytest.mark.parametrize("index", range(28))
+@pytest.mark.parametrize("index", range(46))
 def test_every_rationale_states_its_basis_and_its_limit(index: int) -> None:
     """Every rationale must carry its basis **and** its limit, and each one
     names its own row. The basis differs by cut (C1 for the first row, C2-a
     for the eight it approved, C2-b for the nineteen it authored and
-    approved), and the limits are stated in each row's own words: what the
+    approved, C3-a for the eighteen it authored and approved), and the limits
+    are stated in each row's own words: what the
     review did not cover (no capability-semantics audit, because the
     capability has no functional definition here), the Revisit, and — for the
     credit-bearing REALIZES rows — the live risk ``R-C1-credit``. A SUPPORTS
@@ -208,6 +232,11 @@ def test_every_rationale_states_its_basis_and_its_limit(index: int) -> None:
         assert "Approved by the C1 (Phase 11) editorial review" in rationale
     elif resource_id in C2A_APPROVED:
         assert "Approved by the C2-a (Phase 11) editorial review" in rationale
+    elif resource_id in C3A_APPROVED:
+        assert "C3-a (Phase 11) editorial review" in rationale, resource_id
+        # The eighteen rows this cut authored carry their own provenance
+        # limit: unlike the migrated nine, no authoring fixture declares them.
+        assert "fixture" in rationale, resource_id
     else:
         assert "C2-b (Phase 11) editorial review" in rationale, resource_id
         # The nineteen rows this cut authored carry their own provenance
@@ -242,7 +271,7 @@ def test_the_entity_lifecycle_is_the_authors_and_was_not_touched(
             assert resource.value.lifecycle_status == "CANONICAL_APPROVED"
         eligible = supply.supply_entity_ids()
         assert isinstance(eligible, Ok), eligible
-        assert len(eligible.value) == 33
+        assert len(eligible.value) == 51
     finally:
         store.close()
 
@@ -297,11 +326,12 @@ def test_only_the_approved_realizes_link_credits_a_capability(
     """The gate applies by status **and by relation**, not by row count
     (旧真值: all nine linked resources read ``None`` on the credit face; C1:
     one approved row credited its node; C2-a: all nine approved rows credited;
-    新真值 C2-b: twenty-eight rows are approved, and exactly the fifteen
-    ``REALIZES`` rows credit — the thirteen approved ``SUPPORTS`` rows satisfy
-    §8.1 R2's ``curriculum_link`` fact and mint nothing, because the read
-    filters ``relation = REALIZES``). The count is what still distinguishes
-    this from "every entity credits": the five CAPABILITY entities carry no
+    C2-b: twenty-eight rows approved, fifteen crediting; 新真值 C3-a:
+    forty-six rows are approved, and exactly the eighteen ``REALIZES`` rows
+    credit — the twenty-eight approved ``SUPPORTS`` rows satisfy §8.1 R2's
+    ``curriculum_link`` fact and mint nothing, because the read filters
+    ``relation = REALIZES``). The count is what still distinguishes this from
+    "every entity credits": the five CAPABILITY entities carry no
     link row at all and read ``None``. The unapproved direction is pinned
     against a demoted variant in test_the_gate_is_a_gate_not_a_deletion
     below."""
@@ -334,9 +364,9 @@ def test_only_the_approved_realizes_link_credits_a_capability(
                 supports_only += 1
                 assert relations == {"SUPPORTS"}, entity_id
                 assert teaching.value.capability_linkage is None, entity_id
-        assert linked == 28
-        assert credited == 15
-        assert supports_only == 13
+        assert linked == 46
+        assert credited == 18
+        assert supports_only == 28
     finally:
         store.close()
     print(

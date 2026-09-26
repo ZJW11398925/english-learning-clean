@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-hedge-i-mean",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Repair or sharpen what you just said, before going on.",
+      "Put the two words in the middle of the turn, not only at the start.",
+      "Start with the words: It's not bad. I ___, it's just different."
+    ],
+    "reveal_form": "It's not bad. I mean, it's just different.",
+    "canonical_forms": [
+      "It's not bad. I mean, it's just different."
+    ],
+    "alternative_realizations": [
+      "I mean, we could always ask someone else."
+    ],
+    "required_slots": [
+      [
+        "mean"
+      ],
+      [
+        "i"
+      ]
+    ]
+  }
+}

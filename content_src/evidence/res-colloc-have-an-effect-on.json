@@ -1,0 +1,204 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's collocation set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "have an effect on",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "have-an-effect-on.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "have-an-effect-on.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To change something or to influence how it develops."
+    },
+    {
+      "sense_id": "have-an-effect-on.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The frame is have + an effect + on + noun: have an effect on our plans, had a big effect on the result. The verb is have, never make or give; the noun is countable and takes an article, and any adjective stands between the article and effect (a big effect, a real effect). The preposition is on. The frame keeps its shape when the noun is swapped for a near-synonym: have an impact on, have an influence on."
+    },
+    {
+      "sense_id": "have-an-effect-on.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "影响 maps onto several English words, and this target is where two of them first meet: affect is the verb (the weather affected our plans) and effect is the noun (the weather had an effect on our plans). The productive errors are the verb have being replaced by make and the article being dropped, both invited by the 产生影响 translation. Teaching the noun frame together with its one-verb twin covers the spelling pair and the frame in one lesson."
+    },
+    {
+      "sense_id": "have-an-effect-on.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "have an effect on X = change or influence X (the weather had an effect on our plans). affect X does the same job with one verb and no preposition. have an impact on and have an influence on are the frame's near-synonyms, used when the change is meant to sound stronger or more deliberate. An effect can also be a result in general (the effects of the policy) or a film trick (special effects) — neither is this frame."
+    },
+    {
+      "sense_id": "have-an-effect-on.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "对…有影响（改变或影响某事的发展）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "have-an-effect-on.base",
+      "written": "have an effect on",
+      "normalized": "have an effect on",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "have-an-effect-on.third-person-singular",
+      "written": "has an effect on",
+      "normalized": "have an effect on",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "have-an-effect-on.past",
+      "written": "had an effect on",
+      "normalized": "have an effect on",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the frame is frequent in discussion, reports and everyday reasoning about causes, so core and receptive value are HIGH and receptive difficulty is LOW. Productive value is MEDIUM because the verb, the article and the effect/affect spelling all compete with a direct translation, and productive difficulty is MEDIUM for the same reason; explanation cost is MEDIUM because the useful lesson pairs the noun frame with its one-verb twin. Transfer value is HIGH: swapping the noun keeps the frame (have an impact on, have an influence on), and the frame teaches the light-verb pattern that carries many nouns. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The collocation belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Assessing what changed a result is common in workplace talk (the delay had an effect on the schedule), so it carries most of its weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "DECISION_MAKING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "DECISION_MAKING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the article and the on-phrase in place and keep the affect variant clearly marked as the other shape, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "MAKE_FOR_HAVE",
+      "error_pattern": "make | makes | made + a | an | the + effect on",
+      "corrected_pattern": "have + an effect on",
+      "explanation": "产生影响 is built with a light verb, and the learner carries it over as make, producing make an effect on. English builds this noun with have; the repair is the verb, not the article or the preposition.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of make stands directly before an article plus effect on in a clause whose frame is the have-an-effect-on unit."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "ARTICLE_OMISSION",
+      "error_pattern": "have | has | had + effect on",
+      "corrected_pattern": "have + an effect on",
+      "explanation": "The noun is countable in this frame (one effect, several effects), and the article is dropped because the phrase feels abstract. English requires an article: have an effect on, had a real effect on. The repair is the article inside the frame.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of have is followed by effect on with no article and no adjective between have and effect."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb, the article and the noun. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (effect is there but the one-verb twin affect is in use, so the have ... on frame is not)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "MAKE_FOR_HAVE: match when a form of make stands directly before an article plus effect on, because English builds this noun with have."
+    },
+    {
+      "ordinal": 1,
+      "rule": "ARTICLE_OMISSION: match when a form of have is followed by effect on with no article, because the noun is countable in this frame and requires one."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when a form of have carries an article (with or without an adjective) and the on-phrase (had an effect on our plans, have a big effect on the result): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "AFFECT_AND_THE_ORDINARY_NOUN: do not match when the one-verb twin affect is used (the weather affected our plans) or when effect names a result without the have ... on frame (the effects of the policy), because the noun frame is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "The weather had an effect on our plans.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "The new rules have an effect on everyone.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "It had a big effect on the result.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The new rules affect everyone.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

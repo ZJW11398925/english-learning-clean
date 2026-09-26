@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-idiom-under-the-weather",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "IDIOM",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that someone feels slightly ill.",
+      "The idiom is fixed after be or feel: under the weather.",
+      "Start with the words: I'm feeling a bit under the ___ today."
+    ],
+    "reveal_form": "I'm feeling a bit under the weather today.",
+    "canonical_forms": [
+      "I'm feeling a bit under the weather today."
+    ],
+    "alternative_realizations": [
+      "She felt under the weather all week."
+    ],
+    "required_slots": [
+      [
+        "weather"
+      ],
+      [
+        "under"
+      ]
+    ]
+  }
+}

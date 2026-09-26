@@ -1,0 +1,204 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's phrasal-verb set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "turn out",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "turn-out.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "turn-out.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To be discovered to be something, or to end in a particular way, after the event."
+    },
+    {
+      "sense_id": "turn-out.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The pattern is it turned out + that-clause, or a subject + turned out + to be / adjective: it turned out that the train was cancelled, the plan turned out well, she turned out to be right. The it in the that-frame is a placeholder, not a person, and it cannot be left out. The phrase reports a discovery made later than the event, so the reporting verb normally stands in a past or present form."
+    },
+    {
+      "sense_id": "turn-out.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "原来 and 结果 both invite a phrase-opener translation, and learners reach for the unit without its placeholder subject (Turned out that ...). Teaching it inside the two complete frames — it turned out that ..., something turned out to be ... — gives the subject a home and fixes the word order. The evidential force is worth one line: the speaker is reporting news obtained later, which is why the that-clause carries the actual information."
+    },
+    {
+      "sense_id": "turn-out.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "it turned out that X = X became known later (it turned out that the train was cancelled). result in X = cause X (the delay resulted in a missed flight), the opposite direction of information. turn up = arrive, often unexpectedly (she turned up at nine). Other senses of turn out: to switch a light off (turn out the light) and, as a noun, the number of people who come to an event (a big turn-out)."
+    },
+    {
+      "sense_id": "turn-out.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "结果是；原来（后来才知道某事是这样）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "turn-out.base",
+      "written": "turn out",
+      "normalized": "turn out",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "turn-out.third-person-singular",
+      "written": "turns out",
+      "normalized": "turn out",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "turn-out.past",
+      "written": "turned out",
+      "normalized": "turn out",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-a authoring judgement (V1 carries no calibration data): the phrase is constant in storytelling about how things ended up, so core and receptive value are HIGH and receptive difficulty is LOW. Productive value is MEDIUM because the placeholder subject and the that-frame have to be produced together, and productive difficulty is MEDIUM for the same reason; explanation cost is LOW because the two complete frames carry the lesson. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The phrasal verb belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.5",
+      "rationale": "Reporting how something turned out is ordinary in workplace recounting (it turned out the file was never sent), so it carries half its weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the placeholder it and the that-clause together, and keep the arrival sense (turn up) clearly marked as the other unit, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "SUBJECT_OMISSION",
+      "error_pattern": "turn | turns | turned + out + that-clause (no subject before the verb)",
+      "corrected_pattern": "it + turned out + that-clause",
+      "explanation": "The phrase is used as an opener without its placeholder subject, producing Turned out that the train was cancelled. English needs the dummy it in this frame, and the repair is the subject, not the order of the clause that follows.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a sentence begins with a form of turn out followed by that and a full clause, with no subject before the verb."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "THIRD_PERSON_SINGULAR_MISSING",
+      "error_pattern": "it + turn out (no -s on the verb in a present-tense report)",
+      "corrected_pattern": "it turns out",
+      "explanation": "The placeholder it is third-person singular, so the present-tense form takes -s: it turns out that ... . Without it, the frame loses the agreement the subject requires.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when it stands directly before turn out in a present-tense report, with no -s on the verb."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the subject position, the verb form and the shape of the clause that follows. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (turn and out are there but the light-switch sense is in use, not the discovery frame)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "SUBJECT_OMISSION: match when a clause opens with a form of turn out followed by that, with no placeholder subject before the verb, because the discovery frame requires it."
+    },
+    {
+      "ordinal": 1,
+      "rule": "THIRD_PERSON_SINGULAR_MISSING: match when it stands directly before turn out with no -s, because the placeholder is third-person singular (it turns out)."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame is complete — placeholder it with the that-clause, or a subject with the to-be / adjective complement (it turned out that the train was cancelled, it turns out that the shop is closed, the plan turned out well): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "OTHER_SENSES: do not match when turn out means to switch off a light or to come to an event, or when turn-out is the noun (turn out the light, a big turn-out), because the discovery frame is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "It turned out that the train was cancelled.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "It turns out that the shop is closed on Sundays.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "The plan turned out well in the end.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Please turn out the light before you leave.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}
