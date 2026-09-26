@@ -207,6 +207,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "The doctor explained the progress of the illness.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "She is doing real progress with her driving lessons this month.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "The renovation made a progress once the new crew arrived.",
+      "expected": "MATCH"
     }
   ]
 }

@@ -191,6 +191,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "The priest gave the family a blessing.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Losing that job was a disguised blessing — I finally started my own studio.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "The delay turned out to be blessing in disguise for our budget.",
+      "expected": "MATCH"
     }
   ]
 }

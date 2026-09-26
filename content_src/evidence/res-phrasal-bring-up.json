@@ -207,6 +207,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "She was brought up by her grandparents.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "I did not want to bring up about the raise in front of the whole team.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "If the delay gets worse, we should bring up it with the supplier directly.",
+      "expected": "MATCH"
     }
   ]
 }

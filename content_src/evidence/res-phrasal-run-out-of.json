@@ -199,6 +199,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "She ran out of the room.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "We ran out coffee again — can you grab some on your way in?",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "The printer ran ink out of in the middle of the big job.",
+      "expected": "MATCH"
     }
   ]
 }

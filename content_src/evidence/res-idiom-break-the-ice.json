@@ -215,6 +215,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "The workers cut the ice on the pond before the ferry could move.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "He told a terrible joke to break ice at the start of the workshop.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "She cut the ice by asking everyone about their weekend plans.",
+      "expected": "MATCH"
     }
   ]
 }

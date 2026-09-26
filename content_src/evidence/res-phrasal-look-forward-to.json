@@ -207,6 +207,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "She looked forward to see the harbour lights.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "I look forward to hear from you about the internship.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "We look them forward to visiting us in the spring break.",
+      "expected": "MATCH"
     }
   ]
 }

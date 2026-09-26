@@ -1,7 +1,8 @@
 """C1 (Phase 11) — the §8.1 readiness evidence face, pinned as built.
 
 docs/DATA_MODEL.md §24 (Normative) + PRODUCT_CONTRACT.md §8.1. Thirteen new
-tables (elc.content.build.SCHEMA_STATEMENTS, 11 → 24), a strict
+tables (elc.content.build.SCHEMA_STATEMENTS, 11 → 24, grown to 25 by
+C3-R2's ``content_provenance``), a strict
 ``content_src/evidence/<entity_id>.json`` authoring tree, and a read face
 (elc.curriculum.store.readiness_facts) that reads the eighteen row-backed
 §8.1 fact keys from the artifact and proves ``entity_row`` from the entity's
@@ -286,16 +287,16 @@ def test_every_evidence_table_fk_points_at_content_entity(
     ], table
 
 
-def test_the_artifact_has_exactly_the_declared_twenty_four_tables(
+def test_the_artifact_has_exactly_the_declared_tables(
     built_content_db: Path,
 ) -> None:
-    """The artifact's table set is SCHEMA_STATEMENTS (11 + 13 = 24), nothing
-    more, nothing less."""
+    """The artifact's table set is SCHEMA_STATEMENTS (11 + 13 = 24, grown
+    to 25 by C3-R2's ``content_provenance``), nothing more, nothing less."""
 
     declared = tuple(
         statement.split("(", 1)[0].split()[-1] for statement in SCHEMA_STATEMENTS
     )
-    assert len(declared) == 24
+    assert len(declared) == 25
     conn = sqlite3.connect(str(built_content_db))
     try:
         rows = conn.execute(
@@ -782,7 +783,8 @@ def test_every_rule_carries_a_fixture_and_every_fixture_an_expected_reading(
     """§24.10: "R4 必须包含可测试 detection policy/fixtures/false-positive
     boundary". Testable means paired: every rule's ordinal carries a fixture
     that bounds it, every fixture states a non-empty expected reading, and
-    both fixture kinds are the declared two-word vocabulary."""
+    the fixture kinds are the declared three-word vocabulary (C3-R2 added
+    POSITIVE_ERROR)."""
 
     conn = sqlite3.connect(str(built_content_db))
     try:
@@ -806,16 +808,20 @@ def test_every_rule_carries_a_fixture_and_every_fixture_an_expected_reading(
     rule_ordinals = [row[0] for row in rules]
     fixture_ordinals = [row[0] for row in fixtures]
     assert rule_ordinals == sorted(rule_ordinals)
-    # Every rule ordinal is bounded by a fixture at the same ordinal, and
-    # the kinds are exactly the declared vocabulary.
-    assert set(rule_ordinals) == set(fixture_ordinals)
+    # Every rule ordinal is bounded by a fixture at the same ordinal, the
+    # kinds are exactly the declared vocabulary, and the positive-error rows
+    # (C3-R2) are the only fixtures beyond the rule ordinals.
+    positive_ordinals = [row[0] for row in fixtures if row[1] == "POSITIVE_ERROR"]
+    assert set(rule_ordinals) | set(positive_ordinals) == set(fixture_ordinals)
+    if positive_ordinals:
+        assert min(positive_ordinals) > max(rule_ordinals)
     for _, kind, text, expected in fixtures:
-        assert kind in ("NEGATIVE", "FALSE_POSITIVE_BOUNDARY"), kind
+        assert kind in ("NEGATIVE", "FALSE_POSITIVE_BOUNDARY", "POSITIVE_ERROR"), kind
         assert text
         assert expected
-        assert expected in ("NO_MATCH", "NO_MATCH_BOUNDARY"), expected
+        assert expected in ("NO_MATCH", "NO_MATCH_BOUNDARY", "MATCH"), expected
     kinds = {row[1] for row in fixtures}
-    assert kinds == {"NEGATIVE", "FALSE_POSITIVE_BOUNDARY"}
+    assert kinds == {"NEGATIVE", "FALSE_POSITIVE_BOUNDARY", "POSITIVE_ERROR"}
 
 
 # ---------------------------------------------------------------------------
@@ -941,13 +947,14 @@ def test_an_evidence_less_target_reads_zero_rows_per_role(
 def test_the_artifact_declares_the_bumped_content_db_version(
     built_content_db: Path,
 ) -> None:
-    """C1 disposition F6, moved again by C3-R1: the schema generation is
-    explicit (docs/DATA_MODEL.md §26.1 requires the version to be updated
-    explicitly, never guessed from the schema). C1 moved "1" → "2" with the
-    table set (11 → 24); C3-R1 moves "2" → "3" with a column
-    (``curriculum_link.mapping_class``), so a reader can tell the two
-    artifact generations apart even though the table set is unchanged."""
-    assert CONTENT_DB_VERSION == "3"
+    """C1 disposition F6, moved again by C3-R1 and C3-R2: the schema
+    generation is explicit (docs/DATA_MODEL.md §26.1 requires the version to
+    be updated explicitly, never guessed from the schema). C1 moved "1" →
+    "2" with the table set (11 → 24); C3-R1 moved "2" → "3" with a column
+    (``curriculum_link.mapping_class``); C3-R2 moves "3" → "4" with the
+    ``content_provenance`` table (24 → 25), so a reader can always tell the
+    artifact generations apart."""
+    assert CONTENT_DB_VERSION == "4"
     conn = sqlite3.connect(str(built_content_db))
     try:
         row = conn.execute(
@@ -956,7 +963,7 @@ def test_the_artifact_declares_the_bumped_content_db_version(
     finally:
         conn.close()
     assert row is not None
-    assert row[0] == CONTENT_DB_VERSION == "3"
+    assert row[0] == CONTENT_DB_VERSION == "4"
 
 
 def test_reviewed_explanation_requires_the_approved_lifecycle(

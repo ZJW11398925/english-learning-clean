@@ -207,6 +207,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "She played a role in the school play.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Luck definitely played role in how fast their channel grew.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Her former advisor played a role getting the paper published so quickly.",
+      "expected": "MATCH"
     }
   ]
 }

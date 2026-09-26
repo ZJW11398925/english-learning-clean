@@ -207,6 +207,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "Guess my age.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "It I guess will rain tomorrow, so bring the big umbrella.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "I'm guess the deadline is next Friday, but nobody confirmed it.",
+      "expected": "MATCH"
     }
   ]
 }

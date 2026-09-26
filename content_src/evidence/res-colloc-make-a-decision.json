@@ -192,6 +192,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "Do the decision log first, please.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "The manager still has not done a decision about my holiday request.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "We need to make decision before the client call tomorrow morning.",
+      "expected": "MATCH"
     }
   ]
 }

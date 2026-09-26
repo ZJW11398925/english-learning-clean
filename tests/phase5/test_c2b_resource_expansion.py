@@ -110,8 +110,8 @@ C2B_SUPPORT_TARGETS = tuple(
     target for target in C2B_TARGETS if target not in C2B_CREDIT_TARGETS
 )
 
-FIXTURE_KINDS = ("NEGATIVE", "FALSE_POSITIVE_BOUNDARY")
-EXPECTED_READINGS = ("NO_MATCH", "NO_MATCH_BOUNDARY")
+FIXTURE_KINDS = ("NEGATIVE", "FALSE_POSITIVE_BOUNDARY", "POSITIVE_ERROR")
+EXPECTED_READINGS = ("NO_MATCH", "NO_MATCH_BOUNDARY", "MATCH")
 
 #: 旧真值 → 新真值: the credit face before and after the C3-b scope's own
 #: rows (C3-a moved it 15 → 18 and C3-b 18 → 21). C3-R1's capability
@@ -512,10 +512,23 @@ def test_every_new_evidence_document_pairs_its_rules_and_fixtures() -> None:
             )
         )
         rules = sorted(int(row["ordinal"]) for row in document["detection_rules"])
-        fixtures = sorted(
-            int(row["ordinal"]) for row in document["detection_fixtures"]
+        bounded = sorted(
+            int(row["ordinal"])
+            for row in document["detection_fixtures"]
+            if row["kind"] != "POSITIVE_ERROR"
         )
-        assert rules == fixtures == list(range(len(rules))), target_id
+        positives = sorted(
+            int(row["ordinal"])
+            for row in document["detection_fixtures"]
+            if row["kind"] == "POSITIVE_ERROR"
+        )
+        # C3-R2 truth update: the rule-bounded fixtures keep the dense
+        # 0..n-1 ordinals, and the positive-error rows append contiguously
+        # after them (the positive rows are the only extras).
+        assert rules == bounded == list(range(len(rules))), target_id
+        assert positives == list(
+            range(len(rules), len(rules) + len(positives))
+        ), target_id
         assert len(rules) >= 2, target_id
         kinds = {str(row["kind"]) for row in document["detection_fixtures"]}
         assert kinds == set(FIXTURE_KINDS), (target_id, kinds)

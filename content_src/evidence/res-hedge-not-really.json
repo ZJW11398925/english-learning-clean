@@ -183,6 +183,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "I don't really like coffee.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Was the trip expensive? Not real, we used points for the flights.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Do you like the new layout? Not.",
+      "expected": "MATCH"
     }
   ]
 }

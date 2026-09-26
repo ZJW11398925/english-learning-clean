@@ -199,6 +199,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "She has a good sense of direction.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "The plan make sense only if we cut the marketing budget first.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "His explanation made a sense, but I still have two questions.",
+      "expected": "MATCH"
     }
   ]
 }

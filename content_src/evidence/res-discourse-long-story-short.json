@@ -191,6 +191,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "It was a long story, short and funny.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "To make long story short, we missed the last train and took an expensive taxi.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Long story short, the keys in my other bag the whole time.",
+      "expected": "MATCH"
     }
   ]
 }

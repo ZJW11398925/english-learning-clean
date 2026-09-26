@@ -183,6 +183,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "Under the weather conditions we had, the flight was cancelled.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "I stayed home because I was feeling under weather all morning.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "My son under the weather since Sunday, so we skipped the trip.",
+      "expected": "MATCH"
     }
   ]
 }

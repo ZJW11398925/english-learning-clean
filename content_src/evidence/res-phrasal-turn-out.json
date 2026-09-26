@@ -199,6 +199,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "Please turn out the light before you leave.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Turned out that the parcel had been sitting next door all week.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "It turn out the tickets were for the following day, not that one.",
+      "expected": "MATCH"
     }
   ]
 }

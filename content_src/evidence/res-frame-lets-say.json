@@ -191,6 +191,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "Let's say goodbye to the guests before we leave.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Let's say to start with ten users and grow the plan from there.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Lets say the flight gets delayed again — what is the backup?",
+      "expected": "MATCH"
     }
   ]
 }

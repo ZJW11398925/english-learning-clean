@@ -183,6 +183,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "The thing on the table is mine.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Thing is, we already paid the deposit on the venue.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "The thing is because my visa expires in March, not because of the money.",
+      "expected": "MATCH"
     }
   ]
 }

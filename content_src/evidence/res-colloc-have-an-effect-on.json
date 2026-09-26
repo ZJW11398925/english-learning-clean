@@ -199,6 +199,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "The new rules affect everyone.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Cutting the subsidy will make a big effect on family budgets this winter.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "The new timetable has effect on the early buses only.",
+      "expected": "MATCH"
     }
   ]
 }

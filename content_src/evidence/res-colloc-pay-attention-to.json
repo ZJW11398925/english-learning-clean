@@ -200,6 +200,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "I paid the bill and turned my attention to the report.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "You should pay more attention on your pronunciation during the presentation.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Please pay attention the road signs when you drive in the mountains.",
+      "expected": "MATCH"
     }
   ]
 }

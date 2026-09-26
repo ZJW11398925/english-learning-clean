@@ -183,6 +183,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "Having said that sentence out loud, he paused.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "The pay is not great. Having said that, but the team is the best I have worked with.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Having saying that, I still prefer the first design over the revision.",
+      "expected": "MATCH"
     }
   ]
 }

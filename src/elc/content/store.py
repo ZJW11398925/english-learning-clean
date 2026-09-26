@@ -163,6 +163,10 @@ _REQUIRED_TABLES = (
     "content_detection_policy",
     "content_detection_rule",
     "content_detection_fixture",
+    # C3-R2's derived provenance face (elc.content.build, 24 → 25 tables).
+    # Required like the rest: an artifact without it would answer every
+    # provenance read with "no rows" — a silent skip of the whole dimension.
+    "content_provenance",
 )
 
 
@@ -207,6 +211,11 @@ class ContentEvidenceCounts:
     detection_rules: int
     negative_fixtures: int
     false_positive_boundaries: int
+    #: C3-R2: the positive-error rows (kind = ``POSITIVE_ERROR``, the
+    #: learner-error productions whose declared expected reading is MATCH).
+    #: A report field like its two siblings — the §8.1 ladder reads none of
+    #: it.
+    positive_errors: int
 
 
 def _count_one(conn: sqlite3.Connection, statement: str, entity_id: str) -> int:
@@ -635,6 +644,12 @@ class ContentStore:
                     "WHERE entity_id = ? AND kind = 'FALSE_POSITIVE_BOUNDARY'",
                     entity_id,
                 ),
+                positive_errors=_count_one(
+                    conn,
+                    "SELECT COUNT(*) FROM content_detection_fixture "
+                    "WHERE entity_id = ? AND kind = 'POSITIVE_ERROR'",
+                    entity_id,
+                ),
             )
         )
 
@@ -673,6 +688,31 @@ class ContentStore:
             f"content_meta[{key!r}] carries {stored.value!r}; the build writes"
             " only 'true' or 'false'"
         )
+
+    def provenance_levels(self) -> Result[tuple[tuple[str, str], ...]]:
+        """The derived provenance level of every documented entity (C3-R2).
+
+        Answers the ``content_provenance`` rows verbatim —
+        ``(entity_id, provenance_level)`` pairs in the build's sorted-entity-id
+        order — because the level is **derived from structure**, never
+        self-declared: ``AUTHOR_DECLARED`` is the baseline of an entity with
+        an authoring evidence document, ``EDITOR_REVIEWED`` means a record in
+        `content_src/audits/` approves the entity
+        (:data:`elc.content.types.PROVENANCE_LEVELS` carries the full four-word
+        vocabulary and the reachability conditions of the two stronger words,
+        which no derivation produces today).
+
+        An entity with no row (an undocumented capability) has **no
+        provenance claim** — it is absent from the answer rather than
+        reported at any level, and this read is a report face only: the §8.1
+        readiness ladder reads none of it.
+        """
+
+        rows = self._conn.execute(
+            "SELECT entity_id, provenance_level FROM content_provenance "
+            "ORDER BY entity_id"
+        ).fetchall()
+        return Ok(tuple((str(row[0]), str(row[1])) for row in rows))
 
     # -- curriculum registry face ------------------------------------------
 

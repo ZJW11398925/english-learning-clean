@@ -191,6 +191,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "Would you mind if I opened the window?",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Would you mind to close the window? The draft is freezing me.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Would you mind open the door for me? My hands are full.",
+      "expected": "MATCH"
     }
   ]
 }

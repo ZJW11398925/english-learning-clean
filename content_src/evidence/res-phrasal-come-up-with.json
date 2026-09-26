@@ -199,6 +199,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "Your name came up in the meeting.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Marketing came up three names for the new drink before lunch.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "He came the idea up with somewhere over the Atlantic, apparently.",
+      "expected": "MATCH"
     }
   ]
 }

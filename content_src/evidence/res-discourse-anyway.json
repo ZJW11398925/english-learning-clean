@@ -173,6 +173,12 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "Is there any way to fix this?",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Any way, as I was saying before the phone rang, the course starts in October.",
+      "expected": "MATCH"
     }
   ]
 }

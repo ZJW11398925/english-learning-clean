@@ -191,6 +191,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "He hit the nail with a heavy hammer.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "You hit the nail in the head — the budget, not the design, is the problem.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "The reviewer hit nail on the head about our pricing being too low.",
+      "expected": "MATCH"
     }
   ]
 }

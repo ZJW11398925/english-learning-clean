@@ -183,6 +183,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "The two photos are on the same page.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Let's make sure legal and finance are in the same page before we file.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "The two teams are finally on same page about the launch date.",
+      "expected": "MATCH"
     }
   ]
 }

@@ -199,6 +199,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "The conclusion of the report is two pages long.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "We argued for two hours but the board could not make a conclusion on the merger.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "The talks came to conclusion late last night, with no statement for the press.",
+      "expected": "MATCH"
     }
   ]
 }

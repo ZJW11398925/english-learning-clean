@@ -183,6 +183,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "Sorry about the noise.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Sorry to interrupting the meeting — your taxi has been outside for ten minutes.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Sorry for interrupt, but may I add one point about the budget?",
+      "expected": "MATCH"
     }
   ]
 }

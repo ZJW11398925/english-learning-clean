@@ -71,6 +71,32 @@ C3-R1 (Phase 11) adds two authoring faces and one link column:
   docs/DATA_MODEL.md §24.7 lists seven columns and no such column: this is a
   declared reading (Revisit registered with the decision) and it is why
   `CONTENT_DB_VERSION` moves again.
+
+C3-R2 (Phase 11) closes the external review's HIGH-2 at the specification
+layer and stands up the provenance dimension:
+
+- **POSITIVE_ERROR fixtures** — `DETECTION_FIXTURE_KINDS` grows a third word
+  (``POSITIVE_ERROR``, a real learner-error production the declared rules
+  must fire on, ``expected = MATCH``), and the kind↔expected pairing the
+  tests pinned over the corpus becomes a **source contract**
+  (:data:`elc.content.types.DETECTION_FIXTURE_EXPECTED_BY_KIND`; a fixture
+  row whose ``expected`` disagrees with its own ``kind`` is refused). Every
+  entity that declares a typical error must carry at least one
+  POSITIVE_ERROR fixture **per declared error_type** (structure only — the
+  build never judges the English); a detector stub that answers NO_MATCH to
+  everything can no longer pass a full fixture set.
+- **provenance, derived structurally** — `content_src/audits/*.json` is
+  scanned (absent or empty directory ⇒ nothing); each record is read
+  strictly (``audit_id`` / ``performed_by`` / ``basis`` /
+  ``approved_entities``, plus optional format keys) and its entity
+  references must resolve. An entity's level is ``EDITOR_REVIEWED`` when at
+  least one audit approves it and ``AUTHOR_DECLARED`` otherwise (the
+  baseline for every documented entity). The two stronger words
+  (:data:`elc.content.types.PROVENANCE_LEVELS`) are vocabulary members only
+  — no derivation produces them today (no detector executor, no real-run
+  data; their reachability conditions are written on the constant). Levels
+  land in the new ``content_provenance`` table and never touch the §8.1
+  ladder; `CONTENT_DB_VERSION` moves to ``"4"`` for the new table.
 """
 
 from __future__ import annotations
@@ -87,9 +113,11 @@ from typing import Any, Callable, Mapping, Sequence, TypeVar
 from elc.content.types import (
     CONTENT_ENTITY_COLUMNS,
     CONTENT_TEXT_ROLES,
+    DETECTION_FIXTURE_EXPECTED_BY_KIND,
     DETECTION_FIXTURE_KINDS,
     LEARNING_INTENTS,
     LIFECYCLE_STATUSES,
+    PROVENANCE_LEVELS,
     TARGET_MODES,
     TARGET_TYPES,
     ContentType,
@@ -110,6 +138,7 @@ from elc.platform.types import EvidenceModality
 _T = TypeVar("_T")
 
 __all__ = [
+    "AUDITS_DIRNAME",
     "CONTENT_DB_VERSION",
     "CONTENT_SRC_DIR",
     "COVERAGE_PLACEMENT_CLASS",
@@ -117,6 +146,7 @@ __all__ = [
     "CURRICULUM_MAPPING_CLASS",
     "DEFAULT_OUTPUT",
     "MAPPING_CLASSES",
+    "AuditRecord",
     "BuildError",
     "BuildReport",
     "ContentSource",
@@ -147,8 +177,10 @@ DEFAULT_OUTPUT = REPO_ROOT / "build" / "content.db"
 #: ``curriculum_link`` gains the ``mapping_class`` column, i.e. the artifact's
 #: shape moves even though no table appears or disappears — a reader keyed to
 #: the shape (elc.content.store, elc.curriculum.store) must be able to tell
-#: the two generations apart.
-CONTENT_DB_VERSION = "3"
+#: the two generations apart. Bumped ``"3"`` → ``"4"`` by C3-R2: the table
+#: set grows again (``content_provenance``, 24 → 25), carrying the
+#: structurally derived provenance level of every documented entity.
+CONTENT_DB_VERSION = "4"
 
 #: The authoring-source formats this build reads. A document that declares a
 #: different `format` / `format_version` is refused: the build may only read a
@@ -712,6 +744,20 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
     "expected TEXT NOT NULL,"
     "PRIMARY KEY (entity_id, ordinal)"
     ")",
+    # -- C3-R2: the structurally derived provenance face --------------------
+    # One row per documented entity (the §8.1 evidence document's entity —
+    # elc.content.build._provenance_rows), carrying the level the structure
+    # derives: AUTHOR_DECLARED for the bare evidence baseline,
+    # EDITOR_REVIEWED once an audit record in content_src/audits/ approves
+    # the entity. The two stronger words of elc.content.types.
+    # PROVENANCE_LEVELS are derivable today by nothing, so no CHECK is
+    # invented for them here — the word list lives on the constant and the
+    # derivation is the only writer. This is an independent dimension: the
+    # §8.1 readiness ladder reads none of it.
+    "CREATE TABLE content_provenance ("
+    "entity_id TEXT PRIMARY KEY REFERENCES content_entity(entity_id),"
+    "provenance_level TEXT NOT NULL"
+    ")",
 )
 
 
@@ -824,6 +870,9 @@ class ContentSource:
     links: tuple[LinkRow, ...]
     prerequisites: tuple[PrerequisiteRow, ...]
     evidence: tuple[EvidenceDoc, ...] = ()
+    #: C3-R2: the provenance audit records, in file-name order. Empty for a
+    #: corpus with no (or an empty) `content_src/audits/` directory.
+    audits: tuple[AuditRecord, ...] = ()
 
     def entity_ids(self) -> tuple[str, ...]:
         return tuple(entity.entity_id for entity in self.entities)
@@ -1722,6 +1771,34 @@ def _evidence_from_document(
         f"{where}.detection_fixtures",
         "content_detection_fixture (ordinal)",
     )
+    # C3-R2: a fixture is a checkable pair — the kind decides the expected
+    # reading (elc.content.types.DETECTION_FIXTURE_EXPECTED_BY_KIND), so a
+    # row whose ``expected`` disagrees with its own ``kind`` is refused. This
+    # is the pairing tests/phase5 pinned over the corpus (the c2-a review F4
+    # rule), now a source contract that covers the pre-existing rows too.
+    for row in detection_fixtures:
+        legal = DETECTION_FIXTURE_EXPECTED_BY_KIND[row.kind]
+        if row.expected != legal:
+            raise BuildError(
+                f"{where}.detection_fixtures[{row.ordinal}]: kind "
+                f"{row.kind!r} expects {legal!r}, got {row.expected!r}"
+            )
+    # C3-R2: every declared error_type must be instantiated by at least one
+    # POSITIVE_ERROR fixture — a structure check only, never a judgement of
+    # the English. Without a positive row per declared type a detector stub
+    # answering NO_MATCH to everything would still pass the whole fixture
+    # set, which is exactly the gap the third kind closes. The fixture row
+    # carries no error_type column, so the check is the per-entity positive
+    # row count against the distinct declared types (the corpus authors one
+    # positive row per type).
+    error_types = {row.error_type for row in typical_errors}
+    positives = [row for row in detection_fixtures if row.kind == "POSITIVE_ERROR"]
+    if len(positives) < len(error_types):
+        raise BuildError(
+            f"{where}.detection_fixtures: {len(error_types)} declared "
+            "error_type(s) need at least one POSITIVE_ERROR fixture each; "
+            f"the document declares {len(positives)}"
+        )
 
     return EvidenceDoc(
         entity_id=entity_id,
@@ -1740,6 +1817,104 @@ def _evidence_from_document(
         detection_rules=detection_rules,
         detection_fixtures=detection_fixtures,
     )
+
+
+# ---------------------------------------------------------------------------
+# C3-R2: the provenance audit records (content_src/audits/*.json)
+# ---------------------------------------------------------------------------
+
+#: The directory scanned for provenance audit records. Unlike the entity and
+#: evidence trees the audits are **not** declared by the index: the directory
+#: is scanned in file-name order, and an absent or empty directory is the
+#: legal "no audits yet" state (every entity then stays at its
+#: AUTHOR_DECLARED baseline). A non-``*.json`` file in the directory is not
+#: a document the build reads, so it is not accounted for.
+AUDITS_DIRNAME = "audits"
+
+#: The strict key set of one audit record — the minimum a provenance claim
+#: must state: which review it is (``audit_id``), who performed it
+#: (``performed_by``), against what standard (``basis``), and which entities
+#: it approves (``approved_entities``). ``format`` / ``format_version`` are
+#: optional source-format declarations (validated when present, like every
+#: other authoring document).
+_AUDIT_KEYS = ("audit_id", "performed_by", "basis", "approved_entities")
+_AUDIT_OPTIONAL_KEYS = ("format", "format_version")
+
+
+@dataclass(frozen=True)
+class AuditRecord:
+    """One provenance audit record (`content_src/audits/<name>.json`, C3-R2).
+
+    A record is a **third-party fact**, which is the whole point of the
+    provenance dimension: an entity's level rises above AUTHOR_DECLARED only
+    when a record outside the entity's own evidence document names it. The
+    record states its own basis honestly (which review, by whom, against
+    what); the build validates shape and references, never the review's
+    judgement.
+    """
+
+    audit_id: str
+    performed_by: str
+    basis: str
+    approved_entities: tuple[str, ...]
+
+
+def _audits_from_directory(
+    audits_dir: Path, entity_ids: frozenset[str]
+) -> tuple[AuditRecord, ...]:
+    """Scan `content_src/audits/*.json` in file-name order (C3-R2).
+
+    An absent or empty directory answers no records — the legal "nothing has
+    been audited yet" state, not an error. Every record that does exist is
+    read strictly: unknown keys, missing keys, empty strings, a dangling
+    entity reference in ``approved_entities`` or a repeated ``audit_id`` all
+    raise :class:`BuildError`. Two records approving the same entity are
+    fine (an entity is EDITOR_REVIEWED if **any** record approves it); two
+    records with the same ``audit_id`` are not (the id is the record's
+    identity, and a duplicate would make "which review was this?"
+    ambiguous).
+    """
+
+    if not audits_dir.is_dir():
+        return ()
+    records: list[AuditRecord] = []
+    seen_ids: set[str] = set()
+    for path in sorted(audits_dir.glob("*.json")):
+        where = str(path)
+        document = _mapping(_read_json(path), where)
+        _exact_keys(document, _AUDIT_KEYS, where, optional=_AUDIT_OPTIONAL_KEYS)
+        if "format" in document:
+            _format_declaration(document, CONTENT_SRC_FORMAT, where)
+        elif "format_version" in document:
+            raise BuildError(
+                f"{where}: format_version without format (the declaration is "
+                "one block, not two loose keys)"
+            )
+        audit_id = _string(document, "audit_id", where)
+        if audit_id in seen_ids:
+            raise BuildError(
+                f"{where}: duplicate audit_id {audit_id!r} — the id is the "
+                "record's identity and is already claimed by an earlier "
+                "record"
+            )
+        seen_ids.add(audit_id)
+        approved = _string_list(document, "approved_entities", where)
+        for entity_id in approved:
+            if entity_id not in entity_ids:
+                raise BuildError(
+                    f"{where}: approved_entities names {entity_id!r}, which "
+                    "is not a declared content entity (a provenance approval "
+                    "may not dangle)"
+                )
+        records.append(
+            AuditRecord(
+                audit_id=audit_id,
+                performed_by=_string(document, "performed_by", where),
+                basis=_string(document, "basis", where),
+                approved_entities=tuple(approved),
+            )
+        )
+    return tuple(records)
 
 
 # ---------------------------------------------------------------------------
@@ -1838,6 +2013,13 @@ def load_source(
             f"{content_src_dir}: two evidence documents declare the same entity"
         )
 
+    # C3-R2: the provenance audit records. Scanned, not index-declared: the
+    # directory's absence is the legal "nothing audited yet" state.
+    audits = _audits_from_directory(
+        content_src_dir / AUDITS_DIRNAME,
+        frozenset(entity.entity_id for entity in entities),
+    )
+
     curriculum_index_path = curriculum_dir / "index.json"
     curriculum_index = _mapping(
         _read_json(curriculum_index_path), str(curriculum_index_path)
@@ -1921,9 +2103,52 @@ def load_source(
         links=links,
         prerequisites=prerequisites,
         evidence=evidence,
+        audits=audits,
     )
     _check_references(source, links_path, prerequisites_path)
     return source
+
+
+#: The two provenance words the build's derivation can produce today, taken
+#: from the vocabulary by position (the derivation may never invent a word).
+_BASELINE_PROVENANCE = PROVENANCE_LEVELS[0]
+_REVIEWED_PROVENANCE = PROVENANCE_LEVELS[1]
+
+
+def _provenance_rows(source: ContentSource) -> tuple[tuple[str, str], ...]:
+    """C3-R2: derive one provenance level per **documented** entity.
+
+    The derivation is structural, never self-declared: the authoring source
+    states no level anywhere. Baseline — an entity with an authoring evidence
+    document is ``AUTHOR_DECLARED`` (the author states the facts, nothing has
+    checked them). One step up — an entity named in ``approved_entities`` of
+    at least one audit record is ``EDITOR_REVIEWED`` (the record is a
+    third-party fact, so an author cannot promote their own work). No
+    derivation produces ``EXECUTABLY_VERIFIED`` or
+    ``EMPIRICALLY_CALIBRATED`` today: no detector executor exists to pass
+    the fixtures (the N21 registration) and no real teaching run exists to
+    calibrate against (rollout HOLD) — the words stay reachable-only, with
+    their conditions written on
+    :data:`elc.content.types.PROVENANCE_LEVELS`.
+
+    Only documented entities get a row: a capability with no evidence
+    document makes no provenance claim for the table to carry, and the
+    ``entity_id`` primary key keeps one row per entity.
+    """
+
+    documented = sorted(document.entity_id for document in source.evidence)
+    approved = {
+        entity_id
+        for record in source.audits
+        for entity_id in record.approved_entities
+    }
+    return tuple(
+        (
+            entity_id,
+            _REVIEWED_PROVENANCE if entity_id in approved else _BASELINE_PROVENANCE,
+        )
+        for entity_id in documented
+    )
 
 
 def _check_references(
@@ -2397,6 +2622,13 @@ def _write_evidence_rows(
             for document in evidence
             if document.typical_error_required is not None
         ),
+    )
+    # C3-R2: the derived provenance rows (one per documented entity, in the
+    # derivation's sorted-entity-id order — deterministic by construction).
+    conn.executemany(
+        "INSERT INTO content_provenance (entity_id, provenance_level) "
+        "VALUES (?, ?)",
+        _provenance_rows(source),
     )
 
 

@@ -173,6 +173,12 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "She is honest about her mistakes.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Honestly speaking, the soup needs more salt than the recipe says.",
+      "expected": "MATCH"
     }
   ]
 }

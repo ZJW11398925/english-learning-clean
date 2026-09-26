@@ -191,6 +191,18 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "Do you mind if I open the window?",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "If you don't mind to wait a moment, I will check whether we have the size.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "If you mind, I would rather sit by the window than in the middle.",
+      "expected": "MATCH"
     }
   ]
 }

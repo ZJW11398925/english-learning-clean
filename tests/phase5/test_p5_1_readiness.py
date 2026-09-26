@@ -601,7 +601,8 @@ def test_every_readiness_fact_key_has_a_carrier_table_in_the_artifact(
 ) -> None:
     """The positive successor of the deleted name-word scan (旧真值: 11
     tables, no §8.1 fact table, facts read absent by construction; 新真值
-    C1: 24 tables, every §8.1 fact key's evidence carried).
+    C1: 24 tables, every §8.1 fact key's evidence carried; C3-R2: 25 tables,
+    with ``content_provenance`` beside them).
 
     The artifact's table set is exactly ``SCHEMA_STATEMENTS``, and every
     §8.1 fact key this module reads names the table(s) that carry it — so a
@@ -612,7 +613,7 @@ def test_every_readiness_fact_key_has_a_carrier_table_in_the_artifact(
     declared = tuple(
         statement.split("(", 1)[0].split()[-1] for statement in SCHEMA_STATEMENTS
     )
-    assert len(declared) == 24
+    assert len(declared) == 25
     conn = open_read_only(built_content_db)
     try:
         rows = conn.execute(

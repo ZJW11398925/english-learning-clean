@@ -28,6 +28,7 @@ content_src/
   index.json                 # 索引：content_version + 实体文档清单 + 证据文档清单（无 glob 兜底）
   entities/<entity_id>.json  # 每个 target 一份（共 69 = 5 个 cap-* + 64 个 res-*；其中 19 个由 C2-b、18 个由 C3-a、18 个由 C3-b 编写）
   evidence/<entity_id>.json  # C1：每个声明了 readiness 证据的 target 一份（可空集；现为 64 份，与 res-* 一一对应）
+  audits/*.json              # C3-R2：provenance 审计记录（目录缺席/空 = 合法"尚无审计"状态；本刀交付时为空，真记录由处置刀按评审抽审结果落地）
   README.md                  # 本文件 = 映射规则索引文档
 ```
 
@@ -68,7 +69,7 @@ content_src/
 | `typical_errors` | `content_typical_error` | ordinal / learner_l1(可空) / error_type / error_pattern / corrected_pattern / explanation / severity / detection_policy（§24.9 七列 + ordinal） |
 | `detection_policy` | `content_detection_policy` | policy_version / policy（§24.10 未给字段表 ⇒ 声明读法） |
 | `detection_rules` | `content_detection_rule` | ordinal / rule |
-| `detection_fixtures` | `content_detection_fixture` | ordinal / kind（`NEGATIVE` \| `FALSE_POSITIVE_BOUNDARY`，声明读法）/ text / expected |
+| `detection_fixtures` | `content_detection_fixture` | ordinal / kind（`NEGATIVE` \| `FALSE_POSITIVE_BOUNDARY` \| `POSITIVE_ERROR`，声明读法；C3-R2 起三词）/ text / expected（**C3-R2 起非自由串**：由 kind 决定——`NEGATIVE→NO_MATCH` / `FALSE_POSITIVE_BOUNDARY→NO_MATCH_BOUNDARY` / `POSITIVE_ERROR→MATCH`（`elc.content.types.DETECTION_FIXTURE_EXPECTED_BY_KIND`），错配 ⇒ `BuildError`，既含存量 255 行也含新行） |
 
 R4 可测性规则（本仓现役语料的自约束，build 不校验语义、只校验词表）：每条
 detection rule 的 ordinal 应有同 ordinal 的 fixture 兜底；fixture 的 `expected`
@@ -77,6 +78,38 @@ detection rule 的 ordinal 应有同 ordinal 的 fixture 兜底；fixture 的 `e
 **结构性**的——policy/rules/fixtures 落库为 TEXT + 声明的 `expected` 串，仓内
 **没有执行者**（`NO_MATCH` / `NO_MATCH_BOUNDARY` 只活在本语料策略散文与测试
 字面量里）；本登记不声称任何 detector 已存在。
+
+**登记（C3-R2，POSITIVE_ERROR 正例面）**：外评 HIGH-2 的规格层修复——修复前，
+一个恒返 `NO_MATCH` 的假 detector 能通过全部（当时仅两词的）fixtures；修复后，
+每份 evidence 文档的**每条 typical_error（按 error_type）**必须有 ≥1 条
+`POSITIVE_ERROR` 行（kind=`POSITIVE_ERROR`、expected=`MATCH`、text 为**真实
+学习者错误风格**的自然英语产出、实例化该条声明的 error_pattern），build 在
+装载期做**逐实体逐 error_type 的覆盖校验**（正例行数 < 声明 error_type 数 ⇒
+`BuildError`——只校结构，语言真实性由评审抽审判断）。现役语料 = **124 条正例**
+（60 实体 × 2 错误型 + 4 单错误型实体 `res-discourse-anyway` /
+`res-discourse-in-fact` / `res-discourse-to-be-honest` / `res-phrasal-figure-out`
+各 1），fixtures 总数 255 → **379**；新行一律 append 在既有 ordinal 之后
+（既有 255 行的 ordinal/text/expected 零改动）。正例行 **不声称 detector 已
+可执行**（N21 延续）——它们闭合的是「恒 NO_MATCH 假 detector 可过全部
+fixtures」这个**规格层**漏洞：tests 侧的存在性/逻辑断言钉证明恒 NO_MATCH 桩
+在全集上失败 ≥124、恒 MATCH 桩失败 255。
+
+**登记（C3-R2，provenance 四级维度）**：`content_src/audits/*.json` 是
+provenance 审计记录的作者源（**目录扫描装载，不进 index**；文件名排序确定性；
+目录缺席/空 = 合法"尚无审计"状态，全部实体留在 AUTHOR_DECLARED 基线）。记录
+strict keys 最小集 `{audit_id, performed_by, basis, approved_entities}`（可选
+`format`/`format_version` 声明）；缺键 / 未知键 / 空 `approved_entities` 之外的
+悬空实体 id / 重复 `audit_id` 一律 `BuildError`。等级**由结构派生、绝不自我
+声明**（`elc.content.build._provenance_rows`，词表 `elc.content.types.
+PROVENANCE_LEVELS`）：有 authoring evidence ⇒ `AUTHOR_DECLARED`（64 基线）∧
+被 ≥1 条记录的 `approved_entities` 点名 ⇒ `EDITOR_REVIEWED`（今日最高可达级）；
+`EXECUTABLY_VERIFIED` / `EMPIRICALLY_CALIBRATED` 词表已立但**今日无派生逻辑
+产生**（可达条件分别 = detector 执行器落地并通过全部三词 fixtures（N21）/
+真实教学运行数据出现（rollout HOLD）；Revisit = 各自条件落地时）。等级落
+content.db 新表 `content_provenance`（第 25 张表；`CONTENT_DB_VERSION`
+"3" → "4"），只作报告面，**不进 §8.1 阶梯**（`READINESS_FACT_KEYS` 零新键，
+readiness 真值与三门读数零改动）。本刀交付时 audits 目录**为空**——真记录由
+处置刀按评审抽审结果落地（评审只读纪律不变）。
 
 **登记（C2-a，`resource_labels` 的值域）**：`register` 的取值来自 canonical
 词表（PRODUCT_CONTRACT §4.6 CASUAL / NEUTRAL / POLITE / …）；其余六列
@@ -304,9 +337,10 @@ target 的两个域视图，故不造自环链接行）。
 PYTHONPATH=src python -m elc.content.build --out build/content.db
 ```
 
-产物元数据：`content_meta.content_db_version = "3"`（docs/DATA_MODEL.md §26.1；
+产物元数据：`content_meta.content_db_version = "4"`（docs/DATA_MODEL.md §26.1；
 C1 把表集 11 → 24，C3-R1 给 `curriculum_link` 加 `mapping_class` 列（表集不变、
-行形状变化），均据此显式 bump，禁止依赖代码猜 schema）。
+行形状变化），C3-R2 加 `content_provenance` 表（24 → 25），均据此显式 bump，
+禁止依赖代码猜 schema）。
 
 ADR：`content.db` 是生成物（`.gitignore` 已含 `*.db`），由 CI/本地按需重建；
 本目录与 `../curriculum/` 是版本控制内的唯一作者源。

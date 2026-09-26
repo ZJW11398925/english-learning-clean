@@ -163,6 +163,12 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "The report notes a rise in fact checking.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 3,
+      "kind": "POSITIVE_ERROR",
+      "text": "The test was easy. In a fact, I finished it twenty minutes early.",
+      "expected": "MATCH"
     }
   ]
 }

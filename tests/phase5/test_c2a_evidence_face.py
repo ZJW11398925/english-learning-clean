@@ -228,8 +228,8 @@ CAP_TARGETS = (
     "cap-stance-soften-disagreement",
 )
 
-FIXTURE_KINDS = ("NEGATIVE", "FALSE_POSITIVE_BOUNDARY")
-EXPECTED_READINGS = ("NO_MATCH", "NO_MATCH_BOUNDARY")
+FIXTURE_KINDS = ("NEGATIVE", "FALSE_POSITIVE_BOUNDARY", "POSITIVE_ERROR")
+EXPECTED_READINGS = ("NO_MATCH", "NO_MATCH_BOUNDARY", "MATCH")
 
 
 def _evidence_variant(
@@ -387,11 +387,21 @@ def test_a_declared_error_need_without_rows_drops_the_target_to_r2(
 
 def test_dropping_the_fixtures_keeps_r3_and_loses_r4(tmp_path: Path) -> None:
     """R4's four facts are read separately and cumulative: without the
-    fixture rows the target keeps the teaching rungs and loses both fixture
-    keys — and the two surviving R4 keys are not enough to hold the level."""
+    rule-bounded fixture rows the target keeps the teaching rungs and loses
+    both fixture keys — and the two surviving R4 keys are not enough to hold
+    the level."""
 
     def drop(document: dict) -> None:
-        del document["detection_fixtures"]
+        # C3-R2 truth update: the build now refuses a documented error with
+        # no positive row per declared error type, so "delete the whole
+        # block" is no longer an authorable state. The variant drops the two
+        # rule-bounded kinds and keeps the positive rows — a legal source
+        # that zeroes exactly the two R4 keys the assertions name.
+        document["detection_fixtures"] = [
+            row
+            for row in document["detection_fixtures"]
+            if row["kind"] == "POSITIVE_ERROR"
+        ]
 
     artifact = _evidence_variant(tmp_path, "res-softener-kind-of", drop)
     level, missing = _level_and_missing(artifact, "res-softener-kind-of")
@@ -408,11 +418,11 @@ def test_every_authored_documents_detection_evidence_is_paired(
     built_content_db: Path,
 ) -> None:
     """§24.10's "可测试" read as the corpus's own self-constraint: every rule
-    ordinal carries a fixture at the same ordinal, both declared fixture kinds
-    are present, and every ``expected`` value is one of the two declared
-    readings — checked document by document over the whole corpus (C1's target
-    and every cut's documents since), so an unpaired rule anywhere fails here
-    rather than only for C1's target."""
+    ordinal carries a fixture at the same ordinal, all three declared fixture
+    kinds are present, and every ``expected`` value is one of the three
+    declared readings — checked document by document over the whole corpus
+    (C1's target and every cut's documents since), so an unpaired rule
+    anywhere fails here rather than only for C1's target."""
 
     conn = sqlite3.connect(str(built_content_db))
     try:
@@ -436,26 +446,40 @@ def test_every_authored_documents_detection_evidence_is_paired(
     for entity_id, ordinal in rules:
         rule_ordinals.setdefault(str(entity_id), []).append(int(ordinal))
     fixture_ordinals: dict[str, list[int]] = {}
+    positive_ordinals: dict[str, list[int]] = {}
     kinds: dict[str, set[str]] = {}
     for entity_id, ordinal, kind, text, expected in fixtures:
         assert text, (entity_id, ordinal)
         assert str(expected) in EXPECTED_READINGS, (entity_id, expected)
         assert str(kind) in FIXTURE_KINDS, (entity_id, kind)
-        # the pair, not just each side: a NEGATIVE fixture reads NO_MATCH and
-        # a FALSE_POSITIVE_BOUNDARY fixture reads NO_MATCH_BOUNDARY (c2-a
-        # review F4 — kind and expected are two spellings of one reading).
+        # the pair, not just each side: a NEGATIVE fixture reads NO_MATCH, a
+        # FALSE_POSITIVE_BOUNDARY fixture reads NO_MATCH_BOUNDARY (c2-a
+        # review F4 — kind and expected are two spellings of one reading),
+        # and a POSITIVE_ERROR fixture reads MATCH (C3-R2 — the pairing is
+        # now a build-level source contract as well).
         assert (str(kind), str(expected)) in (
             ("NEGATIVE", "NO_MATCH"),
             ("FALSE_POSITIVE_BOUNDARY", "NO_MATCH_BOUNDARY"),
+            ("POSITIVE_ERROR", "MATCH"),
         ), (entity_id, ordinal, kind, expected)
+        if str(kind) == "POSITIVE_ERROR":
+            positive_ordinals.setdefault(str(entity_id), []).append(
+                int(ordinal)
+            )
         fixture_ordinals.setdefault(str(entity_id), []).append(int(ordinal))
         kinds.setdefault(str(entity_id), set()).add(str(kind))
     assert sorted(rule_ordinals) == sorted(RES_TARGETS)
     assert sorted(policies) == sorted(RES_TARGETS)
     for target_id in RES_TARGETS:
-        assert set(rule_ordinals[target_id]) == set(
-            fixture_ordinals[target_id]
-        ), target_id
+        # C3-R2 truth update: the fixtures are exactly the rule-bounded rows
+        # plus the appended positive-error rows — nothing else.
+        assert (
+            set(rule_ordinals[target_id]) | set(positive_ordinals[target_id])
+        ) == set(fixture_ordinals[target_id]), target_id
+        if positive_ordinals[target_id]:
+            assert min(positive_ordinals[target_id]) > max(
+                rule_ordinals[target_id]
+            ), target_id
         assert kinds[target_id] == set(FIXTURE_KINDS), target_id
 
 

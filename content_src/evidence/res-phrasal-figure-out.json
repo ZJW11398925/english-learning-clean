@@ -197,6 +197,12 @@
       "kind": "FALSE_POSITIVE_BOUNDARY",
       "text": "The figures are out of date.",
       "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "I could not figure out it from the manual alone, to be honest.",
+      "expected": "MATCH"
     }
   ]
 }

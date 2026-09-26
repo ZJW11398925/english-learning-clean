@@ -19,6 +19,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from types import MappingProxyType
+from typing import Mapping
 
 from elc.platform.types import ContentId, ContentVersion, ResourceId, TargetId
 
@@ -120,13 +122,66 @@ CONTENT_TEXT_ROLES = (
 )
 
 #: docs/DATA_MODEL.md §24.10 R4 — "R4 必须包含可测试 detection
-#: policy/fixtures/false-positive boundary". A detection fixture is either a
-#: **negative** example (the detector must not fire on it) or a declared
-#: **false-positive boundary** (the example sits exactly on the edge the
-#: boundary names). §24.10 names the two concepts and gives no word list, so
-#: the two words are C1's declared reading of that split (Revisit = a
-#: canonical fixture vocabulary); the build refuses any other value.
-DETECTION_FIXTURE_KINDS = ("NEGATIVE", "FALSE_POSITIVE_BOUNDARY")
+#: policy/fixtures/false-positive boundary". A detection fixture is one of
+#: three declared things: a **negative** example (the detector must not fire
+#: on it), a declared **false-positive boundary** (the example sits exactly
+#: on the edge the boundary names), or — since C3-R2 — a **positive error**
+#: example (a real learner-error production that, per the declared
+#: detection rules, must fire on this target; ``expected = MATCH``). The
+#: third word is C3-R2's declared reading (the external review's HIGH-2: a
+#: detector stub answering ``NO_MATCH`` to everything could pass a
+#: negative-only fixture set), and §24.10 still names no word list, so all
+#: three words are the declared reading of that section (Revisit = a
+#: canonical fixture vocabulary, or a canonical fourth member); the build
+#: refuses any other value.
+DETECTION_FIXTURE_KINDS = ("NEGATIVE", "FALSE_POSITIVE_BOUNDARY", "POSITIVE_ERROR")
+
+#: The declared pairing of fixture kind → expected reading (C3-R2): a fixture
+#: is a checkable **pair**, not a sentence, so the expected side is not a free
+#: string — the kind decides it, and the build refuses a row whose
+#: ``expected`` disagrees with its own ``kind`` (the same rule tests/phase5
+#: already pinned over the corpus is hereby a source contract). The readings
+#: are the strategy prose's own words (``NO_MATCH`` / ``NO_MATCH_BOUNDARY``
+#: were C1's declared readings of the two original kinds; ``MATCH`` is
+#: C3-R2's for the positive word).
+DETECTION_FIXTURE_EXPECTED_BY_KIND: Mapping[str, str] = MappingProxyType(
+    {
+        "NEGATIVE": "NO_MATCH",
+        "FALSE_POSITIVE_BOUNDARY": "NO_MATCH_BOUNDARY",
+        "POSITIVE_ERROR": "MATCH",
+    }
+)
+
+#: The four content-provenance levels (C3-R2), strongest last. Provenance is
+#: an **independent dimension**: it never enters the §8.1 readiness ladder
+#: (elc.curriculum.readiness's ``READINESS_FACT_KEYS`` gains no key from it),
+#: it answers "how was this evidence checked?", not "is this evidence
+#: present?". The level is **derived from structure**, never self-declared by
+#: the authoring source (elc.content.build derives it):
+#:
+#: - ``AUTHOR_DECLARED`` — the entity carries an authoring evidence document
+#:   (`content_src/evidence/<id>.json`): the author states the facts, and the
+#:   build refuses nothing about their content. This is the baseline every
+#:   documented entity starts at (all 64 documented resources today).
+#: - ``EDITOR_REVIEWED`` — an audit record in `content_src/audits/` lists the
+#:   entity in its ``approved_entities``. The record is a third-party fact
+#:   (``performed_by`` / ``basis``), so an author cannot promote their own
+#:   work. Today's highest reachable level.
+#: - ``EXECUTABLY_VERIFIED`` — **not produced today**: no detector executor
+#:   exists in the repository (the N21 registration — "R4's testability is
+#:   structural"), so nothing can pass all three fixture kinds. Reachable
+#:   when a detector executor runs the fixtures against the declared
+#:   expected readings; Revisit = that landing.
+#: - ``EMPIRICALLY_CALIBRATED`` — **not produced today**: no real teaching
+#:   run exists (rollout HOLD), so no response data can calibrate a target.
+#:   Reachable when real-run calibration data exists; Revisit = same
+#:   condition as Calibration100.
+PROVENANCE_LEVELS = (
+    "AUTHOR_DECLARED",
+    "EDITOR_REVIEWED",
+    "EXECUTABLY_VERIFIED",
+    "EMPIRICALLY_CALIBRATED",
+)
 
 #: docs/DATA_MODEL.md §24.9 TypicalError — a *source-level declaration* that
 #: this target needs a TypicalError, which §8.1 R3 turns into the conditional
