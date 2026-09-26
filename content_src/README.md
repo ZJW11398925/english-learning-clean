@@ -28,7 +28,7 @@ content_src/
   index.json                 # 索引：content_version + 实体文档清单 + 证据文档清单（无 glob 兜底）
   entities/<entity_id>.json  # 每个 target 一份（共 87 = 5 个 cap-* + 82 个 res-*；其中 19 个由 C2-b、18 个由 C3-a、18 个由 C3-b、18 个由 C3-c 编写）
   evidence/<entity_id>.json  # C1：每个声明了 readiness 证据的 target 一份（可空集；现为 82 份，与 res-* 一一对应）
-  audits/*.json              # C3-R2：provenance 审计记录（目录缺席/空 = 合法"尚无审计"状态；现含处置刀落地的 c3r2-stratified-audit.json，批准 15 实体）
+  audits/*.json              # provenance 审计记录（目录缺席/空 = 合法"尚无审计"状态；现含 c3r2 与 c3c 两条处置刀记录，共批准 30 实体）
   README.md                  # 本文件 = 映射规则索引文档
 ```
 
@@ -110,13 +110,14 @@ PROVENANCE_LEVELS`）：有 authoring evidence ⇒ `AUTHOR_DECLARED`（基线）
 content.db 新表 `content_provenance`（第 25 张表；`CONTENT_DB_VERSION`
 "3" → "4"），只作报告面，**不进 §8.1 阶梯**（`READINESS_FACT_KEYS` 零新键，
 readiness 真值与三门读数零改动）。交付刀时 audits 目录为空（基线 = 64 ×
-`AUTHOR_DECLARED`）；**C3-R2 处置刀已按评审抽审落地首条记录
-`c3r2-stratified-audit.json`**（16 条分层抽审中 15 条两面 PASS 的实体入列；
-`res-softener-if-anything` 因其既有 detection_rules 的内部张力宁严不入列，
-登记 Revisit）——现读 = **67 × `AUTHOR_DECLARED` + 15 × `EDITOR_REVIEWED`**
-+ 0 × 后两级（评审只读纪律不变，记录由总控处置刀落盘；**C3-c 的 18 个新实体
-零 audit 记录**——provenance 由结构派生自动 AUTHOR_DECLARED，无需任何手工
-动作，该刀的钉逐条验证了这一点）。
+`AUTHOR_DECLARED`）；**C3-R2 处置刀落地首条记录 `c3r2-stratified-audit.json`**
+（16 条分层抽审中 15 条两面 PASS 的实体入列）；**C3-c 处置刀落地第二条记录
+`c3c-stratified-audit.json`**（新模板首跑的分层抽审：14 个抽样新实体 +
+`res-softener-if-anything`——其 LOW-2 规则张力已由 C3-c 收口、复审两面
+PASS、入列前提成立；4 个未入正式样本的新实体宁严不入列）——现读 =
+**52 × `AUTHOR_DECLARED` + 30 × `EDITOR_REVIEWED`** + 0 × 后两级
+（评审只读纪律不变，记录由总控处置刀落盘；新实体 provenance 由结构派生
+自动 AUTHOR_DECLARED，升级只经 audit 记录）。
 
 **登记（C2-a，`resource_labels` 的值域）**：`register` 的取值来自 canonical
 词表（PRODUCT_CONTRACT §4.6 CASUAL / NEUTRAL / POLITE / …）；其余六列
@@ -190,8 +191,10 @@ resolver 先按 canonical 形式做整句命中、再按 alternative（一条替
 对应 capability functional_definition 的 counts_as / does_not_count 具体条目**
 判定（全 18 条为 CURRICULUM_MAPPING ∧ REALIZES——选题即按五份功能定义的
 counts_as 定向预写；credit 面 15 → 33，活风险 `R-C1-credit` 登记面随之扩为
-33，Revisit 不变）；③ provenance 由结构派生自动生效（18 新实体全
-AUTHOR_DECLARED，`content_src/audits/` 零改动、零新记录）。CORE_A / CORE_C
+33，Revisit 不变）；③ provenance 由结构派生自动生效（C3-c 交付刀时 18 新实体
+全 AUTHOR_DECLARED、`content_src/audits/` 零改动零新记录；处置刀的
+`c3c-stratified-audit.json` 后升其中 14 个抽样新实体 + 复审通过的
+if-anything）。CORE_A / CORE_C
 沿用**声明读法**（用户 2026-09-26 裁决）：现读数 **CORE_A 24/30 未达、
 CORE_C 10/2 达到、体量门 82/100 未过**（三门分开断言，见
 `tests/phase5/test_c3c_template_expansion.py`；Revisit =

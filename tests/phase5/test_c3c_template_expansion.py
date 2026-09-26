@@ -183,9 +183,36 @@ PRIOR_CREDIT = {
     "res-softener-to-be-fair": "cap-stance-soften-disagreement",
 }
 
-#: The provenance audit record C3-R2's disposition landed (the only audit
-#: record in the tree; this cut writes none).
+#: The provenance audit record C3-R2's disposition landed (the first audit
+#: record in the tree; the delivery cut wrote none).
 AUDIT_PATH = CONTENT_SRC_DIR / "audits" / "c3r2-stratified-audit.json"
+
+#: The second audit record — this cut's disposition landing the review's
+#: stratified audit of the new-template first run.
+AUDIT2_PATH = CONTENT_SRC_DIR / "audits" / "c3c-stratified-audit.json"
+
+#: The fifteen entities that review passed on both faces: fourteen of this
+#: cut's eighteen (the four unsampled — that-makes-sense,
+#: could-you-say-that-again, got-it, with-all-due-respect — are deliberately
+#: withheld, strict over lenient) plus res-softener-if-anything, re-audited
+#: once its LOW-2 detection-rules reconciliation had landed.
+C3C_AUDITED_PASS = (
+    "res-discourse-moving-on",
+    "res-discourse-on-another-note",
+    "res-discourse-speaking-of-which",
+    "res-discourse-to-get-back-to-the-point",
+    "res-hedge-as-far-as-i-know",
+    "res-hedge-if-im-not-mistaken",
+    "res-hedge-it-seems-to-me",
+    "res-pragmatic-are-you-saying",
+    "res-pragmatic-fair-enough",
+    "res-pragmatic-i-see",
+    "res-pragmatic-i-see-your-point-but",
+    "res-pragmatic-let-me-make-sure",
+    "res-pragmatic-up-to-a-point",
+    "res-pragmatic-what-do-you-mean",
+    "res-softener-if-anything",
+)
 
 #: The declared CORE reading's level set and band partition (C3-a's
 #: adjudication, still the reading here).
@@ -609,13 +636,14 @@ def test_the_four_content_gate_rows_answer_go_over_the_new_table(
 # ---------------------------------------------------------------------------
 
 
-def test_provenance_reads_67_author_and_the_15_editor_rows_unchanged(
+def test_provenance_reads_52_author_and_the_30_editor_rows(
     built_content_db: Path,
 ) -> None:
-    """The provenance read over the widened artifact: 82 rows — one per
-    evidence document — of which 15 are EDITOR_REVIEWED (exactly the
-    entities C3-R2's audit record approves) and 67 are AUTHOR_DECLARED
-    (49 + this cut's 18)."""
+    """The provenance read over the widened artifact after the disposition
+    cut landed the review's audit record: 82 rows — one per evidence
+    document — of which 30 are EDITOR_REVIEWED (the C3-R2 record's fifteen
+    plus the C3-c record's fifteen, each record's approved list exactly its
+    own slice) and 52 are AUTHOR_DECLARED."""
 
     store = ContentStore(built_content_db)
     try:
@@ -631,11 +659,15 @@ def test_provenance_reads_67_author_and_the_15_editor_rows_unchanged(
     author = sorted(
         e for e, lvl in levels.items() if lvl == "AUTHOR_DECLARED"
     )
-    assert len(editor) == 15
-    assert len(author) == 67
-    audit = json.loads(AUDIT_PATH.read_text(encoding="utf-8"))
-    assert sorted(audit["approved_entities"]) == editor
-    assert set(C3C_TARGETS) <= set(author)
+    assert len(editor) == 30
+    assert len(author) == 52
+    audit1 = json.loads(AUDIT_PATH.read_text(encoding="utf-8"))
+    audit2 = json.loads(AUDIT2_PATH.read_text(encoding="utf-8"))
+    approved1 = set(audit1["approved_entities"])
+    approved2 = set(audit2["approved_entities"])
+    assert approved1 | approved2 == set(editor)
+    assert approved1 & approved2 == set()
+    assert approved2 == set(C3C_AUDITED_PASS)
     higher = [
         (e, lvl)
         for e, lvl in levels.items()
@@ -644,14 +676,17 @@ def test_provenance_reads_67_author_and_the_15_editor_rows_unchanged(
     assert higher == []
 
 
-def test_the_eighteen_new_entities_are_author_declared_and_unaudited(
+def test_the_four_unsampled_new_entities_stay_author_declared_and_unaudited(
     built_content_db: Path,
 ) -> None:
-    """The new-template provenance obligation, positively pinned: every new
-    entity reads AUTHOR_DECLARED, and no audit record in the tree names any
-    of them — provenance was not promoted by hand because structure alone
-    decides it (the audits directory is scanned by the build; this cut wrote
-    nothing there)."""
+    """The new-template provenance obligation, as it stands after the
+    disposition cut: the four new entities the review's stratified audit
+    deliberately left out of its formal sample still read AUTHOR_DECLARED
+    and are named by no audit record — while the fourteen sampled new
+    entities plus res-softener-if-anything rose to EDITOR_REVIEWED through
+    the disposition-cut record alone (provenance is never promoted by hand;
+    structure decides it, and the audits directory is scanned by the
+    build)."""
 
     store = ContentStore(built_content_db)
     try:
@@ -660,13 +695,20 @@ def test_the_eighteen_new_entities_are_author_declared_and_unaudited(
     finally:
         store.close()
     levels = dict(rows.value)
-    for target in C3C_TARGETS:
+    unsampled = set(C3C_TARGETS) - set(C3C_AUDITED_PASS)
+    assert len(unsampled) == 4
+    for target in unsampled:
         assert levels[target] == "AUTHOR_DECLARED", target
+    for target in C3C_AUDITED_PASS:
+        assert levels[target] == "EDITOR_REVIEWED", target
     audit_files = sorted((CONTENT_SRC_DIR / "audits").glob("*.json"))
-    assert [p.name for p in audit_files] == ["c3r2-stratified-audit.json"]
-    audit = json.loads(AUDIT_PATH.read_text(encoding="utf-8"))
-    named = set(audit["approved_entities"]) & set(C3C_TARGETS)
-    assert named == set()
+    assert [p.name for p in audit_files] == [
+        "c3c-stratified-audit.json",
+        "c3r2-stratified-audit.json",
+    ]
+    for path in (AUDIT_PATH, AUDIT2_PATH):
+        audit = json.loads(path.read_text(encoding="utf-8"))
+        assert set(audit["approved_entities"]) & unsampled == set()
 
 
 def test_provenance_stays_an_independent_dimension_outside_the_ladder(
@@ -691,7 +733,7 @@ def test_provenance_stays_an_independent_dimension_outside_the_ladder(
         store.close()
     audited = {e for e, lvl in rows.value if lvl == "EDITOR_REVIEWED"}
     assert all(entity.startswith("res-") for entity in audited)
-    assert len(audited) == 15
+    assert len(audited) == 30
 
 
 # ---------------------------------------------------------------------------

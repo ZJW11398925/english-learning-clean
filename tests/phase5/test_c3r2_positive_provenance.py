@@ -32,11 +32,12 @@ What this cut did, and what this file pins:
   and the truth table, the three Calibration100 gates and the four content
   rows all read exactly as they did at C3-R1.
 
-The repository's own `content_src/audits/` carries one record since the
-disposition cut (`c3r2-stratified-audit.json`, the fifteen entities the
-review's stratified audit passed on both faces), so the canonical corpus
-reads 49 × AUTHOR_DECLARED + 15 × EDITOR_REVIEWED; the audit variants below
-build from pytest tmp copies, never from the canonical tree.
+The repository's own `content_src/audits/` carries two records — this cut's
+disposition landed `c3r2-stratified-audit.json` (fifteen entities) and the
+C3-c disposition later added `c3c-stratified-audit.json` (fifteen more) — so
+the canonical corpus reads 52 × AUTHOR_DECLARED + 30 × EDITOR_REVIEWED; the
+audit variants below build from pytest tmp copies, never from the canonical
+tree.
 """
 
 from __future__ import annotations
@@ -549,15 +550,18 @@ def test_an_always_match_stub_fails_every_negative_row(
 # ---------------------------------------------------------------------------
 
 
-def test_the_repository_audit_record_raises_fifteen_entities(
+def test_the_repository_audit_records_raise_thirty_entities(
     built_content_db: Path,
 ) -> None:
-    """The repository's own audit record (landed by the disposition cut from
-    the review's stratified audit) promotes exactly the fifteen entities that
-    passed both audit faces; the other sixty-seven documented entities stay at
-    the AUTHOR_DECLARED baseline (49 + C3-c's eighteen, none of them audited),
-    no capability row exists at all, and no
-    row reaches the two words no derivation produces."""
+    """The repository's own audit records: C3-R2's record (landed by its
+    disposition cut) still approves exactly its fifteen entities — every one
+    of them EDITOR_REVIEWED — and C3-c's disposition-cut record added
+    fifteen more (fourteen sampled new entities plus the re-audited
+    res-softener-if-anything), so the derived EDITOR_REVIEWED set is the
+    union of the two records' approved lists (thirty), the other fifty-two
+    documented entities stay at the AUTHOR_DECLARED baseline, no capability
+    row exists at all, and no row reaches the two words no derivation
+    produces."""
 
     levels = _provenance(built_content_db)
     assert len(levels) == 82
@@ -566,8 +570,22 @@ def test_the_repository_audit_record_raises_fifteen_entities(
         entity_id for entity_id, level in levels.items()
         if level == "EDITOR_REVIEWED"
     }
-    assert reviewed == set(AUDITED_PASS_ENTITIES)
-    assert sum(1 for level in levels.values() if level == "AUTHOR_DECLARED") == 67
+    audit_paths = sorted(
+        (CONTENT_SRC_DIR / "audits").glob("*.json")
+    )
+    assert [p.name for p in audit_paths] == [
+        "c3c-stratified-audit.json",
+        "c3r2-stratified-audit.json",
+    ]
+    approved: set[str] = set()
+    for path in audit_paths:
+        approved |= set(
+            json.loads(path.read_text(encoding="utf-8"))["approved_entities"]
+        )
+    assert set(AUDITED_PASS_ENTITIES) <= reviewed
+    assert reviewed == approved
+    assert len(reviewed) == 30
+    assert sum(1 for level in levels.values() if level == "AUTHOR_DECLARED") == 52
     assert not (set(levels.values()) & set(UNREACHABLE_LEVELS))
     # The read face and the table agree (one read, already checked above).
     conn = sqlite3.connect(str(built_content_db))

@@ -1,0 +1,24 @@
+{
+  "format": "elc.content_src",
+  "format_version": 1,
+  "audit_id": "c3c-stratified-audit",
+  "performed_by": "C3-c independent reviewer (new-context executor-pro, read-only)",
+  "basis": "Stratified audit of the C3-c new-template first run, under the R9 protocol of DEC-OPI-643b9639-42ef-4711-bb72-1fb81daf6e58.3 as applied to TASK-OPI-643b9639-42ef-4711-bb72-1fb81daf6e58.15's review phase: 14 of the 18 new entities sampled across the five capability groups (at least two each: topic-shift 4, hedged-opinion 3, backchannel 2, ask-clarification 3, soften-disagreement 2) plus res-softener-if-anything re-audited after its LOW-2 detection-rules reconciliation (the C3-R2 withholding precondition is gone: the repaired exemplar carries a preceding statement, so rule 1 and rule 2 no longer demand match and no-match on the same surface, and both positive rows stay covered) plus three legacy controls (one old MAPPING, two old PLACEMENT). All 18 audited entities PASS both faces: the content-linguistics face (typical_errors genuine; every POSITIVE_ERROR row instantiates a declared error_pattern in genuine learner-error English such that a reasonable implementation of the declared detection_rules matches it; boundary rows honest) and the mapping_class face (REALIZES + CURRICULUM_MAPPING follows the capability functional_definition's counts_as_realization/does_not_count entry by entry). The four unsampled new entities (res-pragmatic-that-makes-sense, res-pragmatic-could-you-say-that-again, res-pragmatic-got-it, res-pragmatic-with-all-due-respect) were read and showed no defect on either face but were deliberately left out of the formal sample (strict-over-lenient) and are therefore NOT approved here. Landed by the C3-c disposition cut from the reviewer's verdict table; the reviewer itself stayed read-only.",
+  "approved_entities": [
+    "res-discourse-moving-on",
+    "res-discourse-on-another-note",
+    "res-discourse-speaking-of-which",
+    "res-discourse-to-get-back-to-the-point",
+    "res-hedge-as-far-as-i-know",
+    "res-hedge-if-im-not-mistaken",
+    "res-hedge-it-seems-to-me",
+    "res-pragmatic-are-you-saying",
+    "res-pragmatic-fair-enough",
+    "res-pragmatic-i-see",
+    "res-pragmatic-i-see-your-point-but",
+    "res-pragmatic-let-me-make-sure",
+    "res-pragmatic-up-to-a-point",
+    "res-pragmatic-what-do-you-mean",
+    "res-softener-if-anything"
+  ]
+}
