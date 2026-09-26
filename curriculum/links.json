@@ -8,8 +8,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CURRICULUM_MAPPED",
-      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-eval-hedged-opinion). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Approved by the C2-a (Phase 11) editorial review during the readiness-evidence authoring of res-hedge-i-think. What that review covered: the row's provenance (declared by the P3-1A/P3-1B fixture, unchanged), the target's evidence document (content_src/evidence/res-hedge-i-think.json, authored and reviewed in C2-a), and that this approval is what makes §8.1 R2's curriculum_link fact readable for the target. What it did NOT cover, stated so the approval is not read as more than it is: cap-eval-hedged-opinion has no functional definition in this repository, so no capability-semantics audit of the mapping was possible and this approval is no capability certification — whether res-hedge-i-think really realizes that capability stays as unreviewed as curriculum/README.md C2 records. With the approval in place the target's ALTERNATIVE_SUCCESS path can mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit, bounded by the real rollout HOLD). Revisit when the capability definitions land."
     },
     {
       "resource_id": "res-softener-kind-of",
@@ -17,8 +17,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CURRICULUM_MAPPED",
-      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-stance-soften-disagreement). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Approved by the C2-a (Phase 11) editorial review during the readiness-evidence authoring of res-softener-kind-of. What that review covered: the row's provenance (declared by the P3-1A/P3-1B fixture, unchanged), the target's evidence document (content_src/evidence/res-softener-kind-of.json, authored and reviewed in C2-a), and that this approval is what makes §8.1 R2's curriculum_link fact readable for the target. What it did NOT cover, stated so the approval is not read as more than it is: cap-stance-soften-disagreement has no functional definition in this repository, so no capability-semantics audit of the mapping was possible and this approval is no capability certification — whether res-softener-kind-of really realizes that capability stays as unreviewed as curriculum/README.md C2 records. With the approval in place the target's ALTERNATIVE_SUCCESS path can mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit, bounded by the real rollout HOLD). Revisit when the capability definitions land."
     },
     {
       "resource_id": "res-colloc-pay-attention-to",
@@ -26,8 +26,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CURRICULUM_MAPPED",
-      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-ref-ask-clarification). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Approved by the C2-a (Phase 11) editorial review during the readiness-evidence authoring of res-colloc-pay-attention-to. What that review covered: the row's provenance (declared by the P3-1A/P3-1B fixture, unchanged), the target's evidence document (content_src/evidence/res-colloc-pay-attention-to.json, authored and reviewed in C2-a), and that this approval is what makes §8.1 R2's curriculum_link fact readable for the target. What it did NOT cover, stated so the approval is not read as more than it is: cap-ref-ask-clarification has no functional definition in this repository, so no capability-semantics audit of the mapping was possible and this approval is no capability certification — whether res-colloc-pay-attention-to really realizes that capability stays as unreviewed as curriculum/README.md C2 records. With the approval in place the target's ALTERNATIVE_SUCCESS path can mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit, bounded by the real rollout HOLD). Revisit when the capability definitions land."
     },
     {
       "resource_id": "res-frame-id-like-to",
@@ -35,8 +35,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CURRICULUM_MAPPED",
-      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-interact-backchannel). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Approved by the C2-a (Phase 11) editorial review during the readiness-evidence authoring of res-frame-id-like-to. What that review covered: the row's provenance (declared by the P3-1A/P3-1B fixture, unchanged), the target's evidence document (content_src/evidence/res-frame-id-like-to.json, authored and reviewed in C2-a), and that this approval is what makes §8.1 R2's curriculum_link fact readable for the target. What it did NOT cover, stated so the approval is not read as more than it is: cap-interact-backchannel has no functional definition in this repository, so no capability-semantics audit of the mapping was possible and this approval is no capability certification — whether res-frame-id-like-to really realizes that capability stays as unreviewed as curriculum/README.md C2 records. With the approval in place the target's ALTERNATIVE_SUCCESS path can mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit, bounded by the real rollout HOLD). Revisit when the capability definitions land."
     },
     {
       "resource_id": "res-discourse-by-the-way",
@@ -44,8 +44,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CURRICULUM_MAPPED",
-      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-disc-topic-shift). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Approved by the C2-a (Phase 11) editorial review during the readiness-evidence authoring of res-discourse-by-the-way. What that review covered: the row's provenance (declared by the P3-1A/P3-1B fixture, unchanged), the target's evidence document (content_src/evidence/res-discourse-by-the-way.json, authored and reviewed in C2-a), and that this approval is what makes §8.1 R2's curriculum_link fact readable for the target. What it did NOT cover, stated so the approval is not read as more than it is: cap-disc-topic-shift has no functional definition in this repository, so no capability-semantics audit of the mapping was possible and this approval is no capability certification — whether res-discourse-by-the-way really realizes that capability stays as unreviewed as curriculum/README.md C2 records. With the approval in place the target's ALTERNATIVE_SUCCESS path can mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit, bounded by the real rollout HOLD). Revisit when the capability definitions land."
     },
     {
       "resource_id": "res-phrasal-look-forward-to",
@@ -53,8 +53,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CURRICULUM_MAPPED",
-      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-interact-backchannel). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Approved by the C2-a (Phase 11) editorial review during the readiness-evidence authoring of res-phrasal-look-forward-to. What that review covered: the row's provenance (declared by the P3-1A/P3-1B fixture, unchanged), the target's evidence document (content_src/evidence/res-phrasal-look-forward-to.json, authored and reviewed in C2-a), and that this approval is what makes §8.1 R2's curriculum_link fact readable for the target. What it did NOT cover, stated so the approval is not read as more than it is: cap-interact-backchannel has no functional definition in this repository, so no capability-semantics audit of the mapping was possible and this approval is no capability certification — whether res-phrasal-look-forward-to really realizes that capability stays as unreviewed as curriculum/README.md C2 records. With the approval in place the target's ALTERNATIVE_SUCCESS path can mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit, bounded by the real rollout HOLD). Revisit when the capability definitions land."
     },
     {
       "resource_id": "res-pragmatic-could-you",
@@ -62,8 +62,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CURRICULUM_MAPPED",
-      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-ref-ask-clarification). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Approved by the C2-a (Phase 11) editorial review during the readiness-evidence authoring of res-pragmatic-could-you. What that review covered: the row's provenance (declared by the P3-1A/P3-1B fixture, unchanged), the target's evidence document (content_src/evidence/res-pragmatic-could-you.json, authored and reviewed in C2-a), and that this approval is what makes §8.1 R2's curriculum_link fact readable for the target. What it did NOT cover, stated so the approval is not read as more than it is: cap-ref-ask-clarification has no functional definition in this repository, so no capability-semantics audit of the mapping was possible and this approval is no capability certification — whether res-pragmatic-could-you really realizes that capability stays as unreviewed as curriculum/README.md C2 records. With the approval in place the target's ALTERNATIVE_SUCCESS path can mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit, bounded by the real rollout HOLD). Revisit when the capability definitions land."
     },
     {
       "resource_id": "res-idiom-break-the-ice",
@@ -71,8 +71,8 @@
       "relation": "REALIZES",
       "strength": null,
       "primary_flag": true,
-      "editorial_status": "CURRICULUM_MAPPED",
-      "rationale": "Derived from the P3-1A/P3-1B test-corpus design only (the fixture declares this resource's capability_linkage as cap-disc-topic-shift). The mapping has had no curriculum-semantic review and must not count as capability evidence until the capability's functional definition exists and an author review approves this link."
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Approved by the C2-a (Phase 11) editorial review during the readiness-evidence authoring of res-idiom-break-the-ice. What that review covered: the row's provenance (declared by the P3-1A/P3-1B fixture, unchanged), the target's evidence document (content_src/evidence/res-idiom-break-the-ice.json, authored and reviewed in C2-a), and that this approval is what makes §8.1 R2's curriculum_link fact readable for the target. What it did NOT cover, stated so the approval is not read as more than it is: cap-disc-topic-shift has no functional definition in this repository, so no capability-semantics audit of the mapping was possible and this approval is no capability certification — whether res-idiom-break-the-ice really realizes that capability stays as unreviewed as curriculum/README.md C2 records. With the approval in place the target's ALTERNATIVE_SUCCESS path can mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit, bounded by the real rollout HOLD). Revisit when the capability definitions land."
     },
     {
       "resource_id": "res-colloc-make-a-decision",
@@ -81,7 +81,7 @@
       "strength": null,
       "primary_flag": true,
       "editorial_status": "CANONICAL_APPROVED",
-      "rationale": "Approved by the C1 (Phase 11) editorial review during the readiness-evidence authoring of res-colloc-make-a-decision. What that review covered: the row's provenance (declared by the P3-1A/P3-1B fixture, unchanged), the target's evidence document (content_src/evidence/res-colloc-make-a-decision.json, authored and reviewed in C1), and that this approval is what makes §8.1 R2's curriculum_link fact readable for the target. What it did NOT cover, stated so the approval is not read as more than it is: cap-eval-hedged-opinion has no functional definition in this repository, so no capability-semantics audit of the mapping was possible; the other eight rows stay CURRICULUM_MAPPED, and the nine mappings' curriculum semantics remain as unreviewed as curriculum/README.md C2 records. Revisit when the capability definitions land."
+      "rationale": "Approved by the C1 (Phase 11) editorial review during the readiness-evidence authoring of res-colloc-make-a-decision. What that review covered: the row's provenance (declared by the P3-1A/P3-1B fixture, unchanged), the target's evidence document (content_src/evidence/res-colloc-make-a-decision.json, authored and reviewed in C1), and that this approval is what makes §8.1 R2's curriculum_link fact readable for the target. What it did NOT cover, stated so the approval is not read as more than it is: cap-eval-hedged-opinion has no functional definition in this repository, so no capability-semantics audit of the mapping was possible and this approval is no capability certification — whether res-colloc-make-a-decision really realizes that capability stays as unreviewed as curriculum/README.md C2 records. With the approval in place the target's ALTERNATIVE_SUCCESS path can mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit, bounded by the real rollout HOLD). When C1 wrote this rationale the other eight rows were CURRICULUM_MAPPED; C2-a approved them with the same basis and the same limits stated. Revisit when the capability definitions land."
     }
   ]
 }

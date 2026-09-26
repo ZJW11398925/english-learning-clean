@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's phrasal-verb set by the authoring review. Declared by the authoring source; no external assessment export exists in this repository."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "look forward to",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "look-forward-to.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "look-forward-to.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To feel pleased about something that is going to happen, and to think about it with pleasure while you wait for it."
+    },
+    {
+      "sense_id": "look-forward-to.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The particle is forward and the to that follows it is a preposition, so what comes next is a noun phrase or an -ing form: look forward to seeing you, look forward to the weekend. An object pronoun stands after to (looking forward to it), because forward to is one unit. The phrase is not a neutral 'expect': the speaker has to be pleased about what is coming, which is why an unwelcome prospect takes a different verb."
+    },
+    {
+      "sense_id": "look-forward-to.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The to in this phrase is not the infinitive marker: it is the preposition that belongs to forward to, so the verb after it takes -ing (look forward to meeting, not look forward to meet). Because the unit is fixed, nothing can be squeezed between look and forward — the pronoun object goes after the preposition, which is the opposite of what simple phrasal verbs do with pronouns (look it up)."
+    },
+    {
+      "sense_id": "look-forward-to.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "look forward to expects something welcome (I look forward to the trip). expect and be due to only say that something is coming, and wait for says nothing about how you feel, so an exam or a bill takes those rather than this phrase. The literal words can also appear without the phrasal verb: to look forward can mean to look ahead, and to then introduces a purpose (she looked forward to see the harbour)."
+    },
+    {
+      "sense_id": "look-forward-to.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "盼望；期待（对将要发生的事感到高兴，盼着它到来）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "look-forward-to.base",
+      "written": "look forward to",
+      "normalized": "look forward to",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "look-forward-to.third-person-singular",
+      "written": "looks forward to",
+      "normalized": "look forward to",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "look-forward-to.past",
+      "written": "looked forward to",
+      "normalized": "look forward to",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "look-forward-to.present-participle",
+      "written": "looking forward to",
+      "normalized": "look forward to",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-a authoring judgement (V1 carries no calibration data): the phrase is frequent in both talk and mail, so core, receptive and productive value are HIGH and receptive difficulty is LOW; productive difficulty is MEDIUM because the preposition is read as the infinitive marker and therefore takes the wrong verb form in production, and the explanation cost is MEDIUM for the same reason — the to has to be re-analysed before the form can be produced reliably. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The phrasal verb belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "It is a standard closing in workplace correspondence (I look forward to hearing from you, we look forward to the review), so it carries nearly full weight in the workplace pack; the shortfall records that the pack's own review has not yet placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "CORRESPONDENCE",
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the complement in its correct form (-ing or a noun phrase) so the model never carries the wrong verb form, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "INFINITIVE_AFTER_PREPOSITION",
+      "error_pattern": "look | looks | looked | looking forward to + verb in its base form",
+      "corrected_pattern": "look forward to + verb in -ing form",
+      "explanation": "The most practised meaning of to in a learner's English is the infinitive marker, so the word is read as that marker here too and a base verb follows it. The re-analysis — this to is a preposition, so the complement is a noun or an -ing form — is what the correction teaches, and it is an over-generalization of an English pattern rather than a transfer from one L1.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of look forward to is followed by a verb in its base form, in a clause where that verb is the complement of the preposition."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PARTICLE_OBJECT_ORDER",
+      "error_pattern": "look | looking + object pronoun (it, them, him, her, me, us) + forward to",
+      "corrected_pattern": "look forward to + object pronoun",
+      "explanation": "Simple phrasal verbs do put a pronoun object before the particle (look it up), and learners extend that pattern to this unit, where forward to is fixed and the pronoun belongs after the preposition. The slip is an order error on a fixed sequence, not a different sense of the verb.",
+      "severity": "LOW",
+      "detection_policy": "Match when an object pronoun stands between a form of look and the word forward, in a sentence where forward to is meant as the phrasal verb."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb form, the particle, the preposition and the words around them. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words are there but forward is the direction adverb and to introduces a purpose, so the phrasal verb is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "INFINITIVE_AFTER_PREPOSITION: match when a form of look forward to (look, looks, looked, looking) is followed by a verb in its base form, because the to of this unit is a preposition and takes an -ing complement or a noun phrase."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PRONOUN_BETWEEN_VERB_AND_PARTICLE: match when an object pronoun (it, them, him, her, me, us) stands between a form of look and the word forward, because forward to is one unit and the pronoun object follows the preposition."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the complement is an -ing form or a noun phrase (look forward to seeing you, looking forward to the weekend), including the pronoun after to (looking forward to it): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "LITERAL_FORWARD: do not match when forward is the direction adverb of look (to look ahead) and to introduces a purpose clause (she looked forward to see the harbour), because the phrasal verb is not being used there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "I look forward to seeing you.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "I'm really looking forward to it.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "We look forward to the weekend.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "She looked forward to see the harbour lights.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's sentence-frame set by the authoring review. Declared by the authoring source; no external assessment export exists in this repository."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "would like to",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "id-like-to.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "id-like-to.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A polite frame for saying what you want: the wish is presented as a preference (like, carried by the modal would) rather than as a need or a demand, which is what makes it usable for requests to people you do not want to press."
+    },
+    {
+      "sense_id": "id-like-to.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The frame is subject + 'd + like + to + verb: I'd like to join the group. The contracted 'd is the ordinary form in speech and in most writing; I would like to is equally grammatical and is used for emphasis or in formal writing. The complement verb is a bare infinitive after to, and with a noun complement no to appears at all: I'd like a coffee."
+    },
+    {
+      "sense_id": "id-like-to.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Two things hold the frame together: the 'd is would (not had), and the verb that follows carries to. Watch the contrast with the plain preference verb: I like joining group activities says what you generally enjoy, while I'd like to join says what you want now. The to belongs to the frame, so dropping it (I'd like join) and putting an -ing form after it (I'd like to joining) are both outside the form."
+    },
+    {
+      "sense_id": "id-like-to.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "I'd like to + verb = a polite wish or request about now. I like + -ing / I like to + verb = a general preference, with no wanting-at-this-moment reading. Same verb, different construction, and the modal is what separates them."
+    },
+    {
+      "sense_id": "id-like-to.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "我想……；我希望……（礼貌地表达愿望或提出请求的框架）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "id-like-to.base",
+      "written": "I'd like to",
+      "normalized": "would like to",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-a authoring judgement (V1 carries no calibration data): the frame is a workhorse of polite requests, so core, receptive and productive value are HIGH and transfer value is HIGH; the explanation cost is MEDIUM because the frame has to be separated from the plain preference verb, and productive difficulty is MEDIUM because both authored slips are omissions of frame material. RESOURCE_PRACTICE follows the entity's own declared learning_intent DEVELOP. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The frame belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "Polite requests of exactly this shape fill workplace mail and meetings (I'd like to ask about the timeline), so it carries nearly full weight in the workplace pack; the shortfall records that the pack's own review has not yet placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Never present the frame as a fragment with the subject or the complement verb missing, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "INFINITIVE_MARKER_MISSING",
+      "error_pattern": "I'd | I would + like + verb in its base form (no to between like and the verb)",
+      "corrected_pattern": "I'd like to + verb",
+      "explanation": "Chinese 我想 + verb puts the two verbs next to each other with nothing between them (我想加入), and English has no marker at that point in the L1, so the frame's to is the piece that goes missing in production.",
+      "severity": "HIGH",
+      "detection_policy": "Match when the frame (subject + 'd or would + like) is followed directly by a verb in its base form, with no to between the modal-liked verb and that verb."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "GERUND_AFTER_TO",
+      "error_pattern": "I'd like to + verb in -ing form",
+      "corrected_pattern": "I'd like to + verb in its base form",
+      "explanation": "Learners who have drilled the preference pattern like + -ing carry the -ing form over into the polite frame, where the complement of to is the bare infinitive. The slip is an over-generalization of an English pattern, not a transfer from one L1.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when would like to is followed by a verb in its -ing form, in a clause where that verb is the frame's complement."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the frame's subject, the modal-liked verb and the word immediately after like. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the shape looks present but the complement is not a verb, so no infinitive marker is missing)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "MISSING_INFINITIVE_MARKER: match when the frame (I, you, he, she, we or they followed by 'd or would and then like) is followed directly by a verb in its base form, with no to between like and that verb."
+    },
+    {
+      "ordinal": 1,
+      "rule": "GERUND_AFTER_TO: match when would like to (contracted or not) is followed by a verb in its -ing form."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame is followed by to and a base verb in either the contracted or the uncontracted spelling (I'd like to join / I would like to join): both are the accepted realizations of this frame."
+    },
+    {
+      "ordinal": 3,
+      "rule": "NOMINAL_COMPLEMENT: do not match when the frame's complement is a noun phrase (I'd like a coffee, I'd like two tickets), because no verb follows and so no infinitive marker can be missing."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "I'd like to join the group.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "We would like to join the group.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "She'd like to join the group next week.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "I'd like a coffee, please.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

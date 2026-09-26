@@ -73,6 +73,19 @@ detection rule 的 ordinal 应有同 ordinal 的 fixture 兜底；fixture 的 `e
 **没有执行者**（`NO_MATCH` / `NO_MATCH_BOUNDARY` 只活在本语料策略散文与测试
 字面量里）；本登记不声称任何 detector 已存在。
 
+**登记（C2-a，`resource_labels` 的值域）**：`register` 的取值来自 canonical
+词表（PRODUCT_CONTRACT §4.6 CASUAL / NEUTRAL / POLITE / …）；其余六列
+（`usage_modality` / `genre` / `context` / `style` / `domain` / `variety`）
+canonical 未给值域，故其值一律是**声明读法**（C1 起用的 `WRITTEN_AND_SPOKEN` /
+`PLAIN` / `GENERAL` / `EN-US` / `EN-GB` 与 C2-a 逐 target 的 `context` 词同属
+这一列，不冒充 §24.7 的固定词表）。Revisit = §24.7 给出值域时。
+
+**登记（C2-a，九份 evidence 文档的分布）**：C1 编写 1 份
+（`res-colloc-make-a-decision.json`），C2-a 编写其余 8 份；5 个 `cap-*`
+target **不写** evidence（开工裁决 ③：cap 侧的 None 是构造性的——无 resource
+侧 link、词法面语义拉伸），因此现役真产物上 = 9×R4_DETECTION_READY +
+5×None。
+
 ## 映射规则（显式声明；不发明列名）
 
 ### R1 — 每个 target 一条 ContentEntity（§24.1 七列逐字）

@@ -21,6 +21,14 @@
     "entities/res-softener-kind-of.json"
   ],
   "evidence": [
-    "evidence/res-colloc-make-a-decision.json"
+    "evidence/res-colloc-make-a-decision.json",
+    "evidence/res-colloc-pay-attention-to.json",
+    "evidence/res-discourse-by-the-way.json",
+    "evidence/res-frame-id-like-to.json",
+    "evidence/res-hedge-i-think.json",
+    "evidence/res-idiom-break-the-ice.json",
+    "evidence/res-phrasal-look-forward-to.json",
+    "evidence/res-pragmatic-could-you.json",
+    "evidence/res-softener-kind-of.json"
   ]
 }

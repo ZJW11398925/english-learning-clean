@@ -97,15 +97,19 @@ def test_teaching_payload_matches_the_fixture_verbatim(
 ) -> None:
     """No silent drop: every P3-1B field, value for value, in authored order.
 
-    The credit face has one exemption, now narrowed to its true size: a
-    §24.7 link the review **approved** credits its node (that is what
+    The credit face reads a §24.7 link the review **approved** (that is what
     ``CAPABILITY_CREDIT_EDITORIAL_STATUS`` reads — P5-R's gate, unchanged).
-    P5-R landed with all nine links unapproved, so the exception then covered
-    every resource; C1 approved exactly one (res-colloc-make-a-decision,
-    curriculum/links.json), so today the exception covers exactly that one
-    target, and the other eight still read ``None``. The fixture's value is
-    in either case the link row's ``node_id``, asserted below, which is what
-    keeps "the payload is unchanged" a checked statement rather than a hope.
+    P5-R landed with all nine links unapproved, C1 approved exactly one
+    (res-colloc-make-a-decision) and C2-a approved the other eight while
+    authoring their readiness evidence, so today every RESOURCE target's link
+    is approved and its node reads through; a CAPABILITY entity carries no
+    link row of its own and reads ``None``. The fixture's value is in either
+    case the link row's ``node_id``, asserted below, which is what keeps "the
+    payload is unchanged" a checked statement rather than a hope. The
+    unapproved case — "a candidate mapping credits nothing" — is pinned
+    against a demoted variant in
+    tests/phase5/test_p5_r_curriculum_truth.py (the gate's own test), because
+    the canonical corpus no longer carries an unapproved row.
     """
 
     fixture = FIXTURE_BY_TARGET[target_id]
@@ -117,22 +121,21 @@ def test_teaching_payload_matches_the_fixture_verbatim(
     assert view.required_slots == fixture.required_slots
     if fixture.capability_linkage is None:
         assert view.capability_linkage is None
-    elif target_id == "res-colloc-make-a-decision":
-        # C1: the one link the editorial review approved. The credit face
-        # reads the node — an approved mapping is exactly what the gate
+    else:
+        # C1/C2-a: the §24.7 link the editorial review approved. The credit
+        # face reads the node — an approved mapping is exactly what the gate
         # admits — and the node is the fixture's declared linkage.
         assert view.capability_linkage == fixture.capability_linkage, (
-            "C1: the approved §24.7 link credits its node on the credit face"
-        )
-    else:
-        assert view.capability_linkage is None, (
-            "P5-R: an unapproved §24.7 link must not reach the credit face"
+            "the approved §24.7 link credits its node on the credit face"
         )
         links = store.curriculum_links_of(ResourceId(target_id))
         assert isinstance(links, Ok), links
         assert [str(link.node_id) for link in links.value] == [
             fixture.capability_linkage
         ]
+        assert {str(link.editorial_status) for link in links.value} == {
+            "CANONICAL_APPROVED"
+        }
 
 
 @pytest.mark.parametrize("target_id", TARGET_IDS)
@@ -294,20 +297,18 @@ def test_migration_ledger_is_complete_for_all_fourteen(
         assert int(row["ladder"]) == 3
         assert int(row["forms"]) >= 1
         assert int(row["slots"]) >= 1
-        # P5-R's gate, read at C1's truth: eight resources' credit faces
-        # still read None (their links stay CURRICULUM_MAPPED, and the
-        # capability nodes carry no link row of their own); the one target
-        # whose link the C1 review approved credits its node while the row
-        # itself stays readable and says so.
-        if row["target_id"] == "res-colloc-make-a-decision":
-            assert row["linkage"] == "cap-eval-hedged-opinion"
+        # P5-R's gate, read at C2-a's truth: every RESOURCE target's §24.7
+        # link was approved (C1 approved one, C2-a the other eight) while the
+        # row itself stays readable and says so; the CAPABILITY entities carry
+        # no link row of their own, so their credit face reads None.
+        if row["fixture_type"] == "RESOURCE":
+            expected_node = FIXTURE_BY_TARGET[row["target_id"]].capability_linkage
+            assert expected_node is not None, row["target_id"]
+            assert row["linkage"] == expected_node
             assert row["link_status"] == "CANONICAL_APPROVED"
         else:
             assert row["linkage"] == "None"
-            if row["fixture_type"] == "RESOURCE":
-                assert row["link_status"] == "CURRICULUM_MAPPED"
-            else:
-                assert row["link_status"] == "none"
+            assert row["link_status"] == "none"
     assert len(ledger) == 14
 
 

@@ -14,8 +14,10 @@ any of them absent. What this file pins, in order:
   byte-identical, a rebuild over an existing file is a replay, and two
   *subprocess* builds under different ``PYTHONHASHSEED`` values hash equal
   (C1 disposition F4 — hash randomization must not reach the bytes);
-- the corpus table reads 1 × R4_DETECTION_READY (res-colloc-make-a-decision,
-  the one target whose source states every evidence-backed fact) + 13 × None;
+- the corpus table reads 9 × R4_DETECTION_READY (the nine RESOURCE targets
+  whose sources state every evidence-backed fact; C1 authored one of them,
+  C2-a the other eight) + 5 × None (the five CAPABILITY entities, whose
+  sources state no readiness evidence at all);
 - every §8.1 fact key has a dedicated per-fact pin, both directions (present
   for the evidenced target, absent for an evidence-less one), and the
   content_text role reads are load-bearing: the artifact's per-role row
@@ -74,9 +76,13 @@ from elc.curriculum.store import UNREAD_FACT_EVIDENCE, CurriculumContentStore
 from elc.platform.types import Ok
 from tests.conftest import REPO_ROOT
 
-#: The one C1-evidenced target, and one evidence-less sibling.
+#: The C1-authored R4 target, and one entity whose source states no evidence.
+#: Since C2-a every RESOURCE target states evidence, so the evidence-less
+#: class is the five CAPABILITY entities (they carry no `evidence/` document
+#: and no §24.7 link row of their own) — the same absence, one entity type
+#: over, and the reason the per-key zero pins below read 0 rather than "".
 R4_TARGET = "res-colloc-make-a-decision"
-NO_EVIDENCE_TARGET = "res-hedge-i-think"
+NO_EVIDENCE_TARGET = "cap-disc-topic-shift"
 
 #: The thirteen evidence tables, transcribed independently of
 #: ``SCHEMA_STATEMENTS`` (a second hand-typed copy is the point: a schema
@@ -342,12 +348,13 @@ def test_two_subprocess_builds_with_different_hash_seeds_hash_equal(
 # ---------------------------------------------------------------------------
 
 
-def test_readiness_by_target_is_one_r4_and_thirteen_none(
+def test_readiness_by_target_is_nine_r4_and_five_none(
     built_content_db: Path,
 ) -> None:
-    """The corpus table on the real artifact: the one evidenced target reads
-    R4_DETECTION_READY; the thirteen evidence-less targets read None (no
-    level is invented for them — §8.1 has no word below R0)."""
+    """The corpus table on the real artifact: every RESOURCE target reads
+    R4_DETECTION_READY (C1 authored one evidence document, C2-a the other
+    eight), and the five CAPABILITY entities read None — no level is invented
+    for them, §8.1 has no word below R0, and their sources state no evidence."""
 
     store = ContentStore(built_content_db)
     try:
@@ -358,8 +365,14 @@ def test_readiness_by_target_is_one_r4_and_thirteen_none(
         store.close()
     table = {a.target_id: a.level for a in assessments.value}
     assert len(table) == 14
-    assert table[R4_TARGET] == "R4_DETECTION_READY"
-    assert sum(1 for level in table.values() if level is None) == 13
+    res_targets = sorted(t for t in table if t.startswith("res-"))
+    cap_targets = sorted(t for t in table if t.startswith("cap-"))
+    assert len(res_targets) == 9 and len(cap_targets) == 5
+    for target_id in res_targets:
+        assert table[target_id] == "R4_DETECTION_READY", target_id
+    for target_id in cap_targets:
+        assert table[target_id] is None, target_id
+    assert sum(1 for level in table.values() if level is None) == 5
 
 
 @pytest.mark.parametrize("key", READINESS_FACT_KEYS)
@@ -580,12 +593,15 @@ def test_a_dangling_evidence_document_is_refused(tmp_path: Path) -> None:
 def test_an_empty_evidence_list_is_a_legal_source(tmp_path: Path) -> None:
     """"This corpus states no readiness evidence" is a buildable state (the
     index's ``evidence`` key allows ``[]``), and the artifact then carries no
-    evidence rows: every target reads None."""
+    evidence rows: every target reads None. Since C2-a the corpus lists nine
+    evidence documents, so the variant unlists and removes all nine — the
+    empty-list state is a property of the *source index*, not of one file."""
 
     def empty_evidence(content_src: Path) -> None:
-        (content_src / "evidence" / f"{R4_TARGET}.json").unlink()
         index_path = content_src / "index.json"
         index = json.loads(index_path.read_text(encoding="utf-8"))
+        for listed in index["evidence"]:
+            (content_src / listed).unlink()
         index["evidence"] = []
         index_path.write_text(
             json.dumps(index, indent=2) + "\n", encoding="utf-8"

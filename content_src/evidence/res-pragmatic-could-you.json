@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's request-formula set by the authoring review. Declared by the authoring source; no external assessment export exists in this repository."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "Could you",
+    "pos": "AUX"
+  },
+  "senses": [
+    {
+      "sense_id": "could-you.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "could-you.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A conventionally indirect request: the speaker asks the hearer to do something by asking about the hearer's ability or willingness, so the act is presented as something the hearer may do rather than as an order."
+    },
+    {
+      "sense_id": "could-you.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The formula is could + you + a verb in its base form: Could you send me the file? Would you does the same work, Can you is the ordinary informal version, and moving between them changes how tentative the request sounds rather than what it asks for. please goes at the end (Could you send me the file, please?) and leaves the verb untouched. The form the request replaces is the bare imperative: Send me the file."
+    },
+    {
+      "sense_id": "could-you.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Two slips sit right after the modal, and both come from how it is read. A to is inserted because the infinitive marker is what usually follows a verb in a learner's grammar (Could you to send). A past-tense form is used because could looks like a past (Could you sent). The modal takes the bare verb in both cases, and the politeness is carried by the question itself, so nothing else has to be added to make the request polite."
+    },
+    {
+      "sense_id": "could-you.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Could you + base verb is a request: the hearer is being asked to act. Could you have + participle is not a request at all — it asks whether something was possible in the past (Could you have sent it yesterday?). Would you like + noun or -ing is an offer rather than a request. The three look alike in their first two words and do different jobs."
+    },
+    {
+      "sense_id": "could-you.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "你能……吗？；可以请你……吗？（用提问的形式礼貌地请对方做事）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "could-you.base",
+      "written": "Could you",
+      "normalized": "could you",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "REVIEW",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-a authoring judgement (V1 carries no calibration data): the formula is one of the first request patterns a learner meets and one of the most used, so core, receptive and productive value are HIGH and transfer value is HIGH; the explanation cost is MEDIUM because the politeness scale from Can you to Could you is a register matter, and productive difficulty is MEDIUM because the two authored slips sit immediately after the modal. REVIEW follows the entity's own declared learning_intent CONSOLIDATE. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The formula belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "Requests of this shape are how work is passed between colleagues in mail and in meetings (Could you take the client call?), so it carries nearly full weight in the workplace pack; the shortfall records that the pack's own review has not yet placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical request first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Never present the formula as a bare two-word fragment without what is being asked for, and never present the past-possibility question (Could you have sent it?) as a model of this target."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "MODAL_WITH_TO",
+      "error_pattern": "could | would + you + to + verb in its base form",
+      "corrected_pattern": "Could you + verb in its base form",
+      "explanation": "The infinitive marker is what usually follows a verb in a learner's grammar, so to is inserted after the modal even though a modal takes the bare verb. It is an over-generalization of an English pattern and not tied to one L1.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when could or would is followed by you and then immediately by to and a base verb, in a clause where no other word governs that to."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PAST_FORM_AFTER_MODAL",
+      "error_pattern": "could | would + you + verb in its past-tense form",
+      "corrected_pattern": "Could you + verb in its base form",
+      "explanation": "could is read as a past-tense form, so the verb that follows it is over-marked for past as well. The modal is invariable as far as the next verb is concerned, so the base form is what belongs there.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when could or would is followed by you and then by a verb in its past-tense form, with no have between the modal and that verb."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the modal, the subject, and the word that follows the subject. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the shape looks present but the word after you belongs to another construction — a to governed by how, or a perfect with have)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "TO_AFTER_MODAL: match when could or would is followed by you and then immediately by to and a base verb, in a clause where no other word governs that to (as how and want do in how to send, want to send)."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PAST_FORM_AFTER_MODAL: match when could or would is followed by you and then by a verb in its past-tense form, with no have between the modal and that verb."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the modal is followed by you and a base verb, in either the could or the would spelling and with or without please (Could you send me the file? / Would you send me the file, please?): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "PERFECT_AFTER_MODAL: do not match when have stands between the modal and the verb (Could you have sent it yesterday?), because that question asks about past possibility and is not a request."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Could you tell me how to send the file?",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Could you send me the file?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Would you send me the file, please?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Could you have sent it yesterday?",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

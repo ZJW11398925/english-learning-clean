@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's discourse-marker set by the authoring review. Declared by the authoring source; no external assessment export exists in this repository."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "by the way",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "by-the-way.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "by-the-way.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A marker that introduces a remark the speaker adds on the side of what is being discussed: the remark is offered without changing the main topic, and the speaker then returns to it."
+    },
+    {
+      "sense_id": "by-the-way.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "It normally opens the sentence and is set off by a comma: By the way, did you book the room? It can also fall inside a sentence between commas (I booked the room, by the way, on Friday), where it is more of an afterthought. It is a conversational marker: it suits talk and informal writing, and in a report or a formal letter the aside is usually introduced differently (Incidentally, ...)."
+    },
+    {
+      "sense_id": "by-the-way.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The three words are fixed: by + the + way, and the noun keeps its definite article. The slot is what learners fill by feel, which produces on the way and in the way — real phrases, different meanings, and the reason this target ships with a meaning boundary rather than only a form rule."
+    },
+    {
+      "sense_id": "by-the-way.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "by the way introduces an aside. on the way means 'during the journey' (I met her on the way home). in the way means 'blocking the space or the route' (Your bag is in the way). Only by the way has the aside function, and only the aside function takes the comma."
+    },
+    {
+      "sense_id": "by-the-way.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "顺便说一下；对了（引入一个附带的话题，随后仍回到原来的话题）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "by-the-way.base",
+      "written": "by the way",
+      "normalized": "by the way",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-a authoring judgement (V1 carries no calibration data): the marker is frequent and its placement is easy to notice, so receptive value is HIGH and receptive difficulty LOW; productive value is MEDIUM because a learner can manage the same move with incidentally or a plain question, and the explanation cost is MEDIUM because the aside function has to be separated from the locative and obstruction phrases that share its three words. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The marker belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.5",
+      "rationale": "It occurs in meetings and in the closing asides of informal mail, which is why it carries half weight in the workplace pack; the shortfall records both the conversational register and that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Never present the marker as a bare three-word string detached from its sentence, and never present the locative or obstruction sentences (on the way home, in the way) as models of this target."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PHRASE_CONFUSION",
+      "error_pattern": "on|in|at the way + comma + clause (the phrase opening a sentence to introduce a side remark)",
+      "corrected_pattern": "By the way, ...",
+      "explanation": "The aside marker and the locative/obstruction phrases are built from the same three words, so the preposition slot is filled from the phrase the learner already knows. The aside function itself belongs only to by the way, which is why the error is a phrase confusion and not specific to one L1.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when on, in or at fills the first slot of the three-word phrase in the aside position (opening a clause and followed by a comma and a clause), in a sentence that carries no journey or obstruction reading."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PUNCTUATION_OMISSION",
+      "error_pattern": "By the way + subject (the marker running straight into the clause it introduces)",
+      "corrected_pattern": "By the way, + clause",
+      "explanation": "The marker stands outside the clause it introduces, so the comma is what shows that boundary in writing; learners who treat it as an ordinary adverbial run the two together. The slip is conventional rather than grammatical, which is why it is rated LOW.",
+      "severity": "LOW",
+      "detection_policy": "Match when the marker opens a sentence and is followed directly by the clause's subject or by an auxiliary, with no comma between them."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the three-word phrase, its position in the sentence and the punctuation that follows it. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the shape looks present but the phrase carries the locative or obstruction meaning instead of the aside one)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "WRONG_PREPOSITION_IN_THE_ASIDE_SLOT: match when on, in or at fills the first slot of the three-word phrase and the phrase opens a clause to introduce a side remark (followed by a comma and a clause, with no journey or obstruction reading)."
+    },
+    {
+      "ordinal": 1,
+      "rule": "MARKER_WITHOUT_COMMA: match when by the way opens a sentence and the clause it introduces follows immediately, with no comma between the marker and the clause."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the aside is introduced by another accepted marker (Incidentally, Speaking of which) or when by the way is correctly set off by a comma in either position (By the way, ... / ..., by the way, ...): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "LOCATIVE_OR_OBSTRUCTION_READING: do not match when the same words carry their other meanings — on the way (during a journey) or in the way (blocking the space or the route) — because no aside is being introduced there, however the surface words read."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "I met her on the way home.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "By the way, did you book the room?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Incidentally, did you book the room?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Your bag is in the way.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

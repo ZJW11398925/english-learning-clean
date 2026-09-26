@@ -1,0 +1,205 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's collocation set by the authoring review. Declared by the authoring source; no external assessment export exists in this repository."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "pay attention to",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "pay-attention-to.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "pay-attention-to.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To direct your noticing and your effort towards something, so that you register it and can act on it; the thing attended to is treated as mattering for what you are doing."
+    },
+    {
+      "sense_id": "pay-attention-to.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The noun attention is uncountable in this collocation (pay attention to the traffic, pay no attention to the noise): it takes no article and no plural, and an intensifier or a determiner slots in between the verb and the noun. The thing attended to is the object of the preposition to, so a noun phrase, a pronoun or a wh-clause follows to, never the bare noun phrase directly after attention."
+    },
+    {
+      "sense_id": "pay-attention-to.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Both slots are fixed: the light verb is pay (take or give do not fill it) and the preposition is to. That leaves two productive slips for this collocation: the preposition is chosen by feel (pay attention on/about something) and the preposition is dropped altogether (pay attention something). Other verbs do collocate with the same noun (draw attention to, attract attention to), but they are different collocations, not variants of this one."
+    },
+    {
+      "sense_id": "pay-attention-to.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "注意；留意（把注意力投向某事，并把它当作要紧的事对待）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "pay-attention-to.base",
+      "written": "pay attention to",
+      "normalized": "pay attention to",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "pay-attention-to.third-person-singular",
+      "written": "pays attention to",
+      "normalized": "pay attention to",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "pay-attention-to.past",
+      "written": "paid attention to",
+      "normalized": "pay attention to",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "pay-attention-to.present-participle",
+      "written": "paying attention to",
+      "normalized": "pay attention to",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-a authoring judgement (V1 carries no calibration data): the collocation is extremely frequent and its meaning is transparent, so receptive value and transfer value are HIGH and the explanation cost is LOW; productive difficulty stays MEDIUM because the two authored slips (preposition choice, dropped preposition) appear in production, not in comprehension. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The collocation belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Frequent in workplace talk (pay attention to the deadline, to the numbers): it carries most of the weight in the workplace pack, and the shortfall records that the pack's own review has not yet placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "TASK_FOCUS",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "TASK_FOCUS",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Never present a bare collocation (pay attention to) as an example, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "PREPOSITION_CHOICE",
+      "error_pattern": "pay/pays/paid/paying + (determiner | possessive | adjective) + attention + on|about|at|for|with|in",
+      "corrected_pattern": "pay attention to",
+      "explanation": "Chinese 注意 takes its object directly (注意安全), and the topic marker 对 has no single English reflex, so the preposition is not transferred from the L1 but guessed: learners reach for on or about where the collocation fixes to.",
+      "severity": "HIGH",
+      "detection_policy": "Match a form of pay followed by attention and then by a preposition other than to within the same clause, allowing a determiner, a possessive or an adjective between the verb and the noun."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": "zh",
+      "error_type": "PREPOSITION_OMISSION",
+      "error_pattern": "pay/pays/paid/paying + (determiner | adjective) + attention + noun phrase (no preposition between them)",
+      "corrected_pattern": "pay attention to + noun phrase",
+      "explanation": "Chinese 注意 takes the thing attended to as a direct object, so the English preposition is left out when the noun phrase follows attention immediately.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match a form of pay followed by attention and then immediately by a noun phrase or a pronoun, with no preposition between them, in a clause where that noun phrase is the thing attended to."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: a form of pay, the noun attention and the words around them. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the shape looks present but pay is not the collocation's verb or attention is not its object)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PREPOSITION_SLOT_WRONG: match when a form of pay (pay, pays, paid, paying) is followed by the noun attention and then by a preposition other than to (on, about, at, for, with, in) inside one clause, with only a determiner, a possessive or an adjective between the verb and the noun."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PREPOSITION_MISSING: match when a form of pay is followed by attention and then immediately by a noun phrase or a pronoun, with no preposition between them, in a clause where that phrase is the thing attended to."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the preposition slot is filled by to, and do not match when the noun slot carries an intensifier or a determiner (pay close attention to the road signs, pay no attention to the noise): those are the accepted realizations of this collocation."
+    },
+    {
+      "ordinal": 3,
+      "rule": "PAY_WITHOUT_ATTENTION_AS_ITS_OBJECT: do not match when pay stands in another clause than attention, or when pay's own complement is a payment (pay the bill, pay for the tickets), because the collocation requires attention to be the direct object of pay."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "You should pay attention to the stress.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "She pays attention to the details that matter.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Please pay close attention to the road signs.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "I paid the bill and turned my attention to the report.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

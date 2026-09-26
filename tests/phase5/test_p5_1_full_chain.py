@@ -21,9 +21,10 @@ Five things are established, each in its own scenario:
   behind this;
 - the state really moves, and what it moves *on* is the artifact's data: the
   second cycle's alternative realization is **not** credited to a capability
-  (P5-R: the artifact's §24.7 link is ``CURRICULUM_MAPPED``, and only an
-  approved mapping reaches the credit face) — the resource carries the §5
-  NEUTRAL claim and the capability's state never appears;
+  while the §24.7 link is only a candidate mapping (C2-a: every corpus row is
+  approved, so the unapproved world is a variant with that one status
+  demoted) — the resource carries the §5 NEUTRAL claim and the capability's
+  state never appears;
 - an unusable artifact degrades the Gate (UNKNOWN → DEGRADED, no synthetic
   DENY), while an unknown or wrong-kind target denies deterministically;
 - a §24.11 candidate — excluded from supply — reaches the Gate as its own
@@ -349,8 +350,35 @@ def test_the_chain_follows_the_artifact_not_a_fixture(
 # ---------------------------------------------------------------------------
 
 
+@pytest.fixture
+def demoted_production_provider(tmp_path: Path):
+    """The shipped provider, over a variant artifact whose FOCUS row is a
+    *candidate* mapping again.
+
+    C1 approved one §24.7 link and C2-a the other eight, so the canonical
+    corpus no longer carries an unapproved row — the off-state has to be
+    built for the chain to exercise it. Only the editorial_status differs
+    from the shipped source; every other byte of the variant comes from the
+    same authoring tree the other scenarios read.
+    """
+
+    def demote(documents: dict, _index: dict) -> None:
+        for row in documents["links.json"]["links"]:
+            if row["resource_id"] == FOCUS:
+                assert row["editorial_status"] == "CANONICAL_APPROVED"
+                row["editorial_status"] = "CURRICULUM_MAPPED"
+
+    artifact = build_variant_artifact(tmp_path, curriculum_edit=demote)
+    provider = ContentBackedTeachingTargetProvider(artifact)
+    try:
+        yield provider
+    finally:
+        provider.close()
+
+
 def test_two_cycles_move_the_state_without_crediting_an_unreviewed_link(
     db: sqlite3.Connection,
+    built_content_db: Path,
     conversation,
     conversation_store,
     generation_store,
@@ -358,15 +386,31 @@ def test_two_cycles_move_the_state_without_crediting_an_unreviewed_link(
     learning,
     decision_cycle_store,
     teaching_controller,
-    production_provider,
+    demoted_production_provider,
 ) -> None:
-    """No seeded before state: cycle 1 is what creates it. P5-R (D1): the
-    artifact's §24.7 link is CURRICULUM_MAPPED, so cycle 2's alternative
-    realization is **not** credited to a capability — the resource gets the
-    one honest NEUTRAL claim and the capability's state never appears. The
-    gate is the artifact's own editorial status, exercised end to end."""
+    """No seeded before state: cycle 1 is what creates it. P5-R (D1): a §24.7
+    link that is only a candidate mapping credits nothing, so cycle 2's
+    alternative realization is **not** credited to a capability — the
+    resource gets the one honest NEUTRAL claim and the capability's state
+    never appears. The gate is the artifact's own editorial status, exercised
+    end to end. Since C2-a every corpus row is approved, the unapproved row
+    is built as a variant (``demoted_production_provider``); the canonical
+    artifact is read alongside it, so the demotion is the only difference
+    between the two worlds."""
 
     del conversation
+    canonical_store = ContentStore(built_content_db)
+    try:
+        canonical_links = canonical_store.curriculum_links_of(FOCUS)
+        assert isinstance(canonical_links, Ok), canonical_links
+        assert [
+            str(link.editorial_status) for link in canonical_links.value
+        ] == ["CANONICAL_APPROVED"], (
+            "the canonical corpus's row is approved; the variant demotes it"
+        )
+    finally:
+        canonical_store.close()
+
     coordinator = production_coordinator(
         conversation_store,
         generation_store,
@@ -374,12 +418,12 @@ def test_two_cycles_move_the_state_without_crediting_an_unreviewed_link(
         learning,
         decision_cycle_store,
         teaching_controller,
-        production_provider,
+        demoted_production_provider,
     )
     learning_controller = LearningController(learning)
     commit_chat_turn(coordinator, "cm-p51-move-chat", "Hello there.", 1)
 
-    view = _provider_view(production_provider, FOCUS)
+    view = _provider_view(demoted_production_provider, FOCUS)
     assert view.capability_linkage is None, (
         "an unapproved §24.7 link must not reach the credit face (P5-R)"
     )

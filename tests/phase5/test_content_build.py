@@ -124,10 +124,13 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
     *is* id order.
 
     C1: ``content_meta`` carries the three version keys **plus** the
-    declared-reading TypicalError-need key for the one entity whose source
-    states it (elc.content.types.typical_error_required_key) — so the meta
-    table's row set is a function of the source, still sorted, still
-    deterministic.
+    declared-reading TypicalError-need key for an entity whose source states
+    it (elc.content.types.typical_error_required_key). C2-a authored the
+    other eight RESOURCE targets' evidence documents, each declaring the
+    same need, so nine such keys stand beside the three version keys — and
+    the nine ids are written out here rather than read back from the
+    artifact, so a source that loses one fails here instead of quietly
+    shrinking the expected list.
     """
 
     conn = sqlite3.connect(str(built_content_db))
@@ -152,18 +155,28 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
         conn.close()
     assert entities == sorted(entities)
     assert capabilities == sorted(capabilities)
+    # C1 (one) and C2-a (eight): the sources' own declarations that these
+    # targets need a §24.9 TypicalError, carried durably and read back by the
+    # readiness face.
+    typical_error_need_keys = [
+        (build_module.typical_error_required_key(entity_id), "true")
+        for entity_id in (
+            "res-colloc-make-a-decision",
+            "res-colloc-pay-attention-to",
+            "res-discourse-by-the-way",
+            "res-frame-id-like-to",
+            "res-hedge-i-think",
+            "res-idiom-break-the-ice",
+            "res-phrasal-look-forward-to",
+            "res-pragmatic-could-you",
+            "res-softener-kind-of",
+        )
+    ]
     assert meta == [
         ("content_db_version", build_module.CONTENT_DB_VERSION),
         ("content_version", "content-v1"),
         ("curriculum_version", "curriculum-v1"),
-        # C1: the source's own declaration that this target needs a §24.9
-        # TypicalError, carried durably and read back by the readiness face.
-        (
-            build_module.typical_error_required_key(
-                "res-colloc-make-a-decision"
-            ),
-            "true",
-        ),
+        *typical_error_need_keys,
     ]
 
 

@@ -9,16 +9,17 @@ resolved" — a canonical-drift in the direction of a *friendlier* answer.
 R0's third named thing (assessment membership) was likewise excluded from
 R0's requirements.
 
-The corrected reading, pinned here (written at P5-R's truth; C1 narrowed
-the corpus claim to its current shape, and each line says which):
+The corrected reading, pinned here (written at P5-R's truth; C1 and C2-a
+narrowed the corpus claim to its current shape, and each line says which):
 
 - R0 requires all three named things (strict conjunction); R1 requires the
   four named things, each read from its own evidence and from nothing else;
 - the entity-type equivalence is gone from the code, not just from the prose;
 - the corpus read **no level at all** (``level is None``) for all 14 targets
-  at P5-R's truth — the honest report; since C1 the thirteen evidence-less
-  targets still read exactly that, and the one C1-evidenced target reads
-  R4_DETECTION_READY (same ladder, same strictness, artifact-driven);
+  at P5-R's truth — the honest report; since C1 and C2-a the five
+  evidence-less CAPABILITY entities still read exactly that, and the nine
+  RESOURCE targets read R4_DETECTION_READY (same ladder, same strictness,
+  artifact-driven);
 - no level word is invented for "below R0";
 - the ∨ reading of R0 is recorded in the module as the alternative that was
   not adopted.
@@ -54,6 +55,11 @@ from tests.conftest import SRC_ROOT
 from tests.phase5.conftest import DOCS_ROOT, build_variant_artifact
 
 FOCUS = "res-hedge-i-think"
+
+#: An entity whose source states no readiness evidence: since C2-a every
+#: RESOURCE target states evidence, so the no-level specimen is a CAPABILITY
+#: entity (no `evidence/` document, no §24.7 link row of its own).
+NO_EVIDENCE_ENTITY = "cap-disc-topic-shift"
 R1_FACETS = ("pos", "sense", "basic_definition", "forms")
 HEADING_8_1 = "## 8.1 Content Readiness（Normative）"
 
@@ -242,18 +248,19 @@ def test_no_single_fact_can_stand_in_for_a_lexical_resolution() -> None:
 
 # ---------------------------------------------------------------------------
 # ③ the corpus: the artifact's answer (P5-R: no level at all; C1: 1×R4 +
-# 13×None), and the block is named
+# 13×None; C2-a: 9×R4 + 5×None), and the block is named
 # ---------------------------------------------------------------------------
 
 
-def test_thirteen_targets_read_no_level_and_one_reads_r4(
+def test_five_targets_read_no_level_and_nine_read_r4(
     built_content_db: Path,
 ) -> None:
     """Old truth: all fourteen read no level, blocked at R0 by
-    ``assessment_membership``. New truth (C1): the thirteen targets whose
-    sources state no evidence read exactly that, and the one target whose
-    source states all nineteen facts reads ``R4_DETECTION_READY`` — the same
-    fail-closed ladder, now driven by the artifact."""
+    ``assessment_membership``. New truth (C1 one target, C2-a the other
+    eight): the five CAPABILITY entities whose sources state no evidence read
+    exactly that, and the nine RESOURCE targets whose sources state all
+    nineteen facts read ``R4_DETECTION_READY`` — the same fail-closed ladder,
+    now driven by the artifact."""
 
     assessments = _corpus_assessments(built_content_db)
     print("\n[p5-r] target -> level -> keys blocking the next level")
@@ -263,9 +270,11 @@ def test_thirteen_targets_read_no_level_and_one_reads_r4(
             f" {assessment.missing_keys}"
         )
     assert len(assessments) == 14
+    leveled: list[str] = []
     for assessment in assessments:
-        if assessment.target_id == "res-colloc-make-a-decision":
-            assert assessment.level == "R4_DETECTION_READY"
+        if assessment.target_id.startswith("res-"):
+            leveled.append(assessment.target_id)
+            assert assessment.level == "R4_DETECTION_READY", assessment.target_id
             assert assessment.next_level is None
             assert assessment.missing_keys == ()
             continue
@@ -277,6 +286,7 @@ def test_thirteen_targets_read_no_level_and_one_reads_r4(
         assert set(R1_FACETS) <= set(r1.missing_keys)
         # Cumulative reporting: the R0 blocker is still standing in R1's set.
         assert "assessment_membership" in r1.missing_keys
+    assert len(leveled) == 9
 
 
 def test_the_lexical_resolution_equivalence_is_gone_from_the_code() -> None:
@@ -305,19 +315,24 @@ def test_the_lexical_resolution_equivalence_is_gone_from_the_code() -> None:
 def test_a_non_expression_entity_reads_the_same_no_level(tmp_path: Path) -> None:
     """The old F-1 counterexample, now trivially satisfied: flipping
     ``entity_type`` changes nothing at all, because entity type is not a
-    readiness fact any more."""
+    readiness fact any more. The specimen is a CAPABILITY entity — since
+    C2-a every RESOURCE target states evidence, so a no-level row only exists
+    on the capability side — and the variant proves the read path still runs
+    on a non-EXPRESSION artifact row."""
 
     def edit(documents: dict, index: dict) -> None:
         del index
-        documents[f"entities/{FOCUS}.json"]["entity"]["entity_type"] = "SENSE"
+        documents[f"entities/{NO_EVIDENCE_ENTITY}.json"]["entity"][
+            "entity_type"
+        ] = "SENSE"
 
     artifact = build_variant_artifact(tmp_path, edit)
     store = ContentStore(artifact)
     try:
         supply = CurriculumContentStore(store)
-        facts = supply.readiness_facts(FOCUS)
+        facts = supply.readiness_facts(NO_EVIDENCE_ENTITY)
         assert isinstance(facts, Ok), facts
-        assessment = supply.readiness(FOCUS)
+        assessment = supply.readiness(NO_EVIDENCE_ENTITY)
         assert isinstance(assessment, Ok), assessment
     finally:
         store.close()

@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's softener set by the authoring review. Declared by the authoring source; no external assessment export exists in this repository."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "kind of",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "kind-of.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "kind-of.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A hedge placed just before the word it modifies to soften it: the description is offered as approximately right rather than exact, so the speaker does not commit to its full strength."
+    },
+    {
+      "sense_id": "kind-of.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "As a softener it stands immediately before an adjective, an adverb or a verb and takes no article: the ending is kind of sad, the numbers are kind of high, I kind of like it. In speech the spelling is often reduced to kinda, and sort of does the same work. The article changes the construction altogether: a kind of + noun classifies (a kind of bird), and that is the classifier, not the softener."
+    },
+    {
+      "sense_id": "kind-of.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The same three words do two jobs and the article is what divides them. With a kind of, a noun follows and something is classified; with kind of, a modifier follows and a description is softened. So a kind of sad belongs to neither pattern — the classifier's article has been put in front of an adjective. The mirror slip goes the other way: the classifying article is dropped (this is kind of bird), which leaves the words reading as a softener with a noun after it, and a softener cannot take a bare noun."
+    },
+    {
+      "sense_id": "kind-of.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Softener: the ending is kind of sad (the description is weakened). Classifier: the robin is a kind of bird (a category is named). Plural classifier: there are many kinds of birds here. Only the first is this target; the other two are the same words with a different sense and a different shape."
+    },
+    {
+      "sense_id": "kind-of.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "有点儿；有点；算是（放在形容词、副词或动词前，把说法讲得不那么绝对）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "kind-of.base",
+      "written": "kind of",
+      "normalized": "kind of",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-a authoring judgement (V1 carries no calibration data): the softener is everywhere in speech, which is what makes receptive value HIGH, while productive value is MEDIUM because a bit and quite cover much of the same ground for a learner; the explanation cost and the production difficulty are both MEDIUM for the same reason — the homograph with the classifier has to be separated before the form can be used with confidence. RESOURCE_PRACTICE follows the entity's own declared learning_intent DEVELOP. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The softener belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.5",
+      "rationale": "Hedged assessments of this shape are ordinary in meetings and in comments on a draft (the numbers are kind of high), so it carries half weight in the workplace pack; the shortfall records both the casual register and that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Never present the classifier sentence (a kind of bird) as a model of this target, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "ARTICLE_INTRUSION",
+      "error_pattern": "a kind of + adjective | adverb | verb",
+      "corrected_pattern": "kind of + adjective | adverb | verb",
+      "explanation": "The softener and the classifier are built from the same three words, so the article that belongs to the classifier is carried into the softener slot. What is left belongs to neither pattern: the classifier needs a noun after it and the softener takes no article. The slip follows from the homograph, not from one L1.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a kind of is followed by an adjective, an adverb or a verb, in a clause where no noun follows it as the classifier's head."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": "zh",
+      "error_type": "CLASSIFIER_ARTICLE_MISSING",
+      "error_pattern": "kind of + singular countable noun (no determiner in front of the noun)",
+      "corrected_pattern": "a kind of + singular countable noun",
+      "explanation": "Chinese has no article system (这是一种鸟), so the classifying article in a kind of X is dropped; the remaining words then look like the softener followed by a noun, which is not a shape the softener can take.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when kind of (singular, no article in front of kind) is immediately followed by a singular countable noun with no determiner, in a sentence that classifies something."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the article slot in front of kind of, and what kind of word follows it. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the words are there but a noun follows, so the classifier sense is in play and the softener rules do not reach it)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "ARTICLE_BEFORE_SOFTENER: match when a kind of is followed by an adjective, an adverb or a verb, because the article makes the phrase the classifier and the classifier takes a noun as its head."
+    },
+    {
+      "ordinal": 1,
+      "rule": "SOFTENER_BEFORE_A_BARE_NOUN: match when kind of, with no article in front of kind, is immediately followed by a singular countable noun with no determiner, in a sentence that classifies something, because the classifying article is what belongs there."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when kind of precedes a modifier (an adjective, an adverb or a verb) with no article in front of it (kind of sad, kind of high, I kind of like it), and do not match sort of or the informal spelling kinda in that same position: those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "CLASSIFIER_WITH_A_NOUN: do not match when an article stands in front of kind and a noun follows (a kind of bird), or when the plural pattern is used (many kinds of birds), because those are the classifier sense of the same words and not the softener."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "This is a kind of problem that solves itself.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "The ending is kind of sad.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "I kind of like the ending.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The robin is a kind of bird.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

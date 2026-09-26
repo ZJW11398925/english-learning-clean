@@ -62,6 +62,7 @@ from elc.planner.candidates import (
 )
 from elc.planner.feature_assembly import (
     SCHEDULE_URGENCY_BANDS,
+    AuthorityName,
     assemble_feature_authority,
 )
 from elc.planner.kernel import (
@@ -594,34 +595,64 @@ def wired_world(world: World) -> World:
     return world
 
 
-def test_the_shipped_corpus_refuses_every_target_and_the_run_degrades(
+def test_the_shipped_corpus_answers_the_scheduled_row_and_the_run_degrades(
     wired_world: World,
 ) -> None:
-    """The honest chain: real supply, real rows, real ladder — and no
-    candidate exists. At C1's truth the refusals split by gate (旧真值: all
-    14 refused at CONTENT_READINESS; 新真值: thirteen ungraded targets are
-    still refused there, and the one R4-graded target is refused later, at
-    SCHEDULE_ROW, because the Scheduler holds no §5.2 row for it) — every
-    target is still refused, and the context built from the *same read* is
-    INCOMPLETE, so the kernel degrades instead of inventing a decision."""
+    """The honest chain: real supply, real rows, real ladder. At C2-a's truth
+    the world is no longer empty (旧真值: all 14 refused at CONTENT_READINESS;
+    C1: thirteen still refused there and the one R4-graded target refused at
+    SCHEDULE_ROW; 新真值: the five evidence-less CAPABILITY entities are still
+    refused at CONTENT_READINESS, the eight unscheduled RESOURCE targets at
+    SCHEDULE_ROW, and the one RESOURCE target the world schedules — the row
+    target, now R4 — is answered by two real sources). The run still degrades
+    instead of deciding, because the five ungraded entities the caller holds
+    leave the readiness authority incomplete: the kernel carries the two
+    candidates and refuses to invent a decision for them."""
 
     supply = generate_candidates(wired_world.inputs())
-    assert supply.proposals == ()
-    gates = {refusal.gate for refusal in supply.refusals}
-    assert gates == {"CONTENT_READINESS", "SCHEDULE_ROW"}
-    assert len(supply.refusals) == 14
+    assert [
+        (profile.canonical_key, tuple(profile.origins))
+        for profile in supply.proposals
+    ] == [
+        (
+            "res-hedge-i-think|REVIEW|TEXT_PRODUCTION|CONSOLIDATE"
+            "|SCHEDULED_REVIEW",
+            ("SCHEDULED_REVIEW",),
+        ),
+        (
+            "res-hedge-i-think|PROBE|TEXT_PRODUCTION|PROBE|UNKNOWN_PROBE",
+            ("UNKNOWN_PROBE",),
+        ),
+    ]
     by_gate: dict[str, list[str]] = {}
     for refusal in supply.refusals:
         by_gate.setdefault(refusal.gate, []).append(refusal.target_id)
-    assert len(by_gate["CONTENT_READINESS"]) == 13
-    assert by_gate["SCHEDULE_ROW"] == ["res-colloc-make-a-decision"]
-    assert supply.readiness["res-colloc-make-a-decision"] == (
-        "R4_DETECTION_READY"
-    )
-    assert sum(1 for level in supply.readiness.values() if level is None) == 13
+    assert {refusal.gate for refusal in supply.refusals} == {
+        "CONTENT_READINESS",
+        "SCHEDULE_ROW",
+    }
+    assert by_gate["CONTENT_READINESS"] == [
+        "cap-disc-topic-shift",
+        "cap-eval-hedged-opinion",
+        "cap-interact-backchannel",
+        "cap-ref-ask-clarification",
+        "cap-stance-soften-disagreement",
+    ]
+    assert by_gate["SCHEDULE_ROW"] == [
+        "res-colloc-make-a-decision",
+        "res-colloc-pay-attention-to",
+        "res-discourse-by-the-way",
+        "res-frame-id-like-to",
+        "res-idiom-break-the-ice",
+        "res-phrasal-look-forward-to",
+        "res-pragmatic-could-you",
+        "res-softener-kind-of",
+    ]
+    assert supply.readiness["res-hedge-i-think"] == "R4_DETECTION_READY"
 
     authority = wired_world.authority(supply.readiness)
     assert authority.complete is False
+    assert authority.missing_authorities == (AuthorityName.CURRICULUM_READINESS,)
     result = plan(
         module_planning_input(supply, authority)
     )
@@ -632,7 +663,10 @@ def test_the_shipped_corpus_refuses_every_target_and_the_run_degrades(
         DegradedReason.FEATURE_ASSEMBLY_INCOMPLETE.value
     )
     assert result.outcome.decision is None
-    assert result.trace.candidates == ()
+    # The two candidates travel into the trace and no decision is minted: the
+    # degradation is about the ungraded entities, not about an empty supply.
+    assert len(result.trace.candidates) == 2
+    assert result.trace.decision is None
 
 
 def module_planning_input(supply, authority):
@@ -655,7 +689,9 @@ def test_the_sources_that_cannot_answer_name_their_missing_authority(
     face, and which say why they cannot: the five Track A sources wait for a
     turn observation (no producer), the four unlanded ones wait for an
     authority, and MANUAL_USER_REQUEST is not among them because the user's own
-    §9 row is a real one."""
+    §9 row is a real one. C2-a: the world's §5.2 row now names an R4-graded
+    target, so SCHEDULED_REVIEW and UNKNOWN_PROBE answer it — the readiness
+    fact that used to block every row is no longer the blocker here."""
 
     supply = generate_track_a(wired_world.inputs())
     track_a_gaps = {gap.source: gap.authority for gap in supply.gaps}
@@ -673,7 +709,11 @@ def test_the_sources_that_cannot_answer_name_their_missing_authority(
         "GOAL_SPECIFIC_TARGET": CandidateAuthority.GOAL_PACK_MAPPING,
         "COVERAGE_DEBT": CandidateAuthority.PLANNING_LEDGER,
     }
-    assert set(track_b.sources_answered) == set()
+    # The two Track B sources that read the Scheduler's own row answer it.
+    assert set(track_b.sources_answered) == {
+        "SCHEDULED_REVIEW",
+        "UNKNOWN_PROBE",
+    }
 
 
 def test_the_chain_selects_when_the_one_declared_input_is_given(
@@ -745,7 +785,13 @@ def test_the_broad_readiness_read_is_the_coarse_one_and_degrades(
     assert broad.complete is False
     narrow = wired_world.authority(supply.candidate_readiness)
     assert narrow.complete is True
-    assert supply.candidate_readiness == {FOCUS_TARGET: "R3_TEACHING_READY"}
+    # The candidate-scoped subset carries what the candidates themselves read:
+    # the declared level for the focused capability and the artifact's own R4
+    # for the scheduled resource target (C2-a made that one gradable).
+    assert supply.candidate_readiness == {
+        FOCUS_TARGET: "R3_TEACHING_READY",
+        ROW_TARGET: "R4_DETECTION_READY",
+    }
     assert len(supply.readiness) == 14
 
 
@@ -753,14 +799,18 @@ def test_the_scope_constraint_is_what_restricts_the_candidate_set(
     wired_world: World,
 ) -> None:
     """§12's sentence, as behaviour: with the manual focus in force the kernel
-    excludes the review and the probe; take the request away and the same two
-    candidates are eligible (the scope word, not a bonus, did that)."""
+    excludes the focus-only candidate; take the request away and every
+    remaining candidate is eligible (the scope word, not a bonus, did that).
+    C2-a: the world's scheduled resource target is gradable, so the open world
+    now carries four proposals (the capability's schedule and probe rows plus
+    the resource's) instead of two."""
 
     levels = DeclaredLevels(
         wired_world.supply, {FOCUS_TARGET: DECLARED_LEVEL_FACTS}
     )
     with_request = generate_candidates(wired_world.inputs(levels=levels))
     assert with_request.scope.scope is UserIntentScope.TARGETED_LEARNING_REQUEST
+    assert len(with_request.proposals) == 5
 
     without = CandidateSupplyInputs(
         as_of=AS_OF,
@@ -783,7 +833,7 @@ def test_the_scope_constraint_is_what_restricts_the_candidate_set(
         row.candidate_id: row.excluded for row in result.trace.candidates
     }
     assert ExclusionReason.OUTSIDE_TARGETED_SCOPE not in excluded.values()
-    assert len(result.trace.candidates) == len(supply.proposals) == 2
+    assert len(result.trace.candidates) == len(supply.proposals) == 4
     # the same two candidates the request had excluded now reach activation —
     # and neither clears the BALANCED profile's automatic threshold on its own
     # declared readings, which is a decision (NO_TARGET) and not a degradation.

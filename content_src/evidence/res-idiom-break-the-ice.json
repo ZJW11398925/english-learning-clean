@@ -1,0 +1,220 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's idiom set by the authoring review. Declared by the authoring source; no external assessment export exists in this repository."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "break the ice",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "break-the-ice.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "break-the-ice.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To ease the awkwardness between people who have just met, or who have not spoken for a while, usually by saying or doing something light so that talk can start."
+    },
+    {
+      "sense_id": "break-the-ice.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The idiom is about the first exchange in a situation — the joke, the question or the small talk that gets people talking — and it is the awkwardness that is broken, not a person's mood. The verb inflects like any other verb (broke the ice, has broken the ice, breaking the ice) and the noun keeps its definite article every time."
+    },
+    {
+      "sense_id": "break-the-ice.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Both slots are fixed: the verb is break, and the noun slot is the ice with its article. That leaves two productive slips: the article is dropped, and another verb is pulled into the slot because ice attracts its literal collocates (cut, open). The fixedness is also why the literal sentence — ice being broken on a pond or a windscreen — is not this idiom and must not be corrected as if it were."
+    },
+    {
+      "sense_id": "break-the-ice.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Figurative: the joke broke the ice at the meeting (people started talking to each other). Literal: the workers broke the ice on the pond (physical ice, so a ferry could move). Same words, different sense; only the figurative use belongs to this target."
+    },
+    {
+      "sense_id": "break-the-ice.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "打破僵局；活跃气氛（用轻松的话或举动化解刚见面时的尴尬，让交谈开始）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "break-the-ice.base",
+      "written": "break the ice",
+      "normalized": "break the ice",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "break-the-ice.third-person-singular",
+      "written": "breaks the ice",
+      "normalized": "break the ice",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "break-the-ice.past",
+      "written": "broke the ice",
+      "normalized": "break the ice",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "break-the-ice.past-participle",
+      "written": "broken the ice",
+      "normalized": "break the ice",
+      "form_type": "PAST_PARTICIPLE",
+      "morph_features": "aspect=perfect",
+      "pronunciation": null
+    },
+    {
+      "form_id": "break-the-ice.present-participle",
+      "written": "breaking the ice",
+      "normalized": "break the ice",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-a authoring judgement (V1 carries no calibration data): the idiom is very frequent in native speech, which is what makes receptive value HIGH, while its productive value is MEDIUM because the same social move can be made without an idiom; the explanation cost is LOW (the image carries the meaning) but productive difficulty is MEDIUM, since the article and the verb are the two places where the form is revised in production. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The idiom belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.5",
+      "rationale": "It is used about onboarding and team events, where someone breaks the ice for a group, so it carries half weight in the workplace pack; the shortfall records both the social register and that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Never present the literal sentence (ice being broken on a pond) as an example of this target, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "ARTICLE_OMISSION",
+      "error_pattern": "break | breaks | broke | breaking + ice (a form of break immediately followed by ice, with no determiner and no adjective between them)",
+      "corrected_pattern": "break the ice",
+      "explanation": "Chinese has no article system (打破僵局 carries no determiner), so the definite article that the fixed idiom keeps is dropped; the same gap shows up in other fixed phrases.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of break is immediately followed by ice with no determiner and no adjective between them."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "VERB_SUBSTITUTION",
+      "error_pattern": "cut | open + the + ice (another verb filling the idiom's verb slot in a sentence about easing social awkwardness)",
+      "corrected_pattern": "break the ice",
+      "explanation": "The noun ice pulls in the verbs of its literal collocations (cut ice, open the ice), so the fixed verb is replaced in exactly the situation where the idiom is wanted. It is an interference from the noun's literal senses rather than a slip tied to one L1.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when cut or open fills the verb slot of the phrase (cut the ice, open the ice) in a sentence about people easing social awkwardness, since the idiom's verb is break there."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb slot, the article slot and the noun of the phrase. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the words are all present but the sentence is about physical ice, so the idiom's sense is not there)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "MISSING_ARTICLE: match when a form of break (break, breaks, broke, broken, breaking) is immediately followed by ice with no determiner and no adjective between them, in a sentence about easing social awkwardness."
+    },
+    {
+      "ordinal": 1,
+      "rule": "VERB_SUBSTITUTION: match when cut or open fills the verb slot of the phrase with the article present (cut the ice, open the ice) in a sentence about people easing social awkwardness, because the idiom's verb is break."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the verb is break in any of its forms and the article is present (broke the ice, has broken the ice, breaking the ice): those are the accepted realizations of this idiom."
+    },
+    {
+      "ordinal": 3,
+      "rule": "LITERAL_ICE: do not match when the sentence is about physical ice (the ice on a pond, the ice on a windscreen), even when the same verbs and the noun co-occur there, because no social awkwardness is being eased."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "He told a joke to break the ice.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "She broke the ice with a question about the weather.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "He had broken the ice before anyone sat down.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The workers cut the ice on the pond before the ferry could move.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

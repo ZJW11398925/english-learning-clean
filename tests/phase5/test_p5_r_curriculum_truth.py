@@ -10,21 +10,22 @@ through the teaching leg's §5 ``ALTERNATIVE_SUCCESS`` fold
 (elc.content.store._primary_realization_node → elc.runtime.controller.
 _verified_capability_linkage → elc.learning.teaching_evidence).
 
-What is pinned here, in order (written at P5-R's truth; C1 narrowed it to
-its current shape, and each group states both):
+What is pinned here, in order (written at P5-R's truth; C1 and C2-a
+narrowed it to its current shape, and each group states both):
 
-- the seed rows are honest: eight rows stay ``CURRICULUM_MAPPED`` (a §24.11
-  word, not an invented one) with `primary_flag`/`strength` untouched and a
-  rationale that states the P3-test-corpus basis, the missing
-  curriculum-semantic review and the ban on capability evidence; the one row
-  C1's editorial review approved is ``CANONICAL_APPROVED`` with a rationale
-  that states the approval's basis *and* its limits (curriculum/links.json);
-- the credit read is gated by status: an unapproved link keeps its row
-  readable and answers ``None`` on the credit face (content.db read +
-  provider view), and the approved one credits its node — the gate's
-  semantics never moved, the link's editorial status did;
-- the gate is a gate, not a deletion: an approved variant artifact is
-  credited again;
+- the seed rows are honest: all nine rows were ``CURRICULUM_MAPPED`` at
+  P5-R; C1's editorial review approved one and C2-a's approved the other
+  eight while authoring their readiness evidence, so today all nine are
+  ``CANONICAL_APPROVED`` — each with a rationale that names the approval,
+  what it covered and what it did not (curriculum/links.json) — and
+  `primary_flag`/`strength`/`relation` untouched by either approval;
+- the credit read is gated by status: a *demoted* link keeps its row
+  readable and answers ``None`` on the credit face — the canonical corpus
+  now carries only approved rows, so the off-state is built as a variant —
+  and every approved row credits its node. The gate's semantics never moved,
+  the links' editorial status did;
+- the gate is a gate, not a deletion: a demoted variant keeps the row and
+  drops only the credit;
 - end to end: res-colloc-make-a-decision's alternative realization now
   produces the CAPABILITY_LINKAGE POSITIVE/SUCCESS claim the approval
   admits **plus** the unchanged honest NEUTRAL/ABSTAIN claim on the
@@ -124,60 +125,59 @@ def _capability_rows(db: sqlite3.Connection) -> tuple[tuple[object, ...], ...]:
 # ---------------------------------------------------------------------------
 
 
-def test_eight_seed_links_stay_curriculum_mapped_and_the_c1_one_is_approved() -> None:
-    """Old truth (P5-R): all nine rows were *mapped*, none *approved*. New
-    truth (C1): exactly one row — res-colloc-make-a-decision's — was
-    approved by the C1 editorial review (its rationale states the basis and
-    the limits), while the other eight stay ``CURRICULUM_MAPPED`` with the
-    mapping-describing fields untouched."""
+def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> None:
+    """Old truth (P5-R): all nine rows were *mapped*, none *approved*. C1
+    approved one row; C2-a approved the other eight while authoring their
+    targets' readiness evidence, so today every row is
+    ``CANONICAL_APPROVED`` — and the mapping-describing fields (relation,
+    strength, primary_flag, and the two ids) are exactly what the approvals
+    were forbidden to touch, asserted row by row from the source document."""
 
     links = _links_document()["links"]
     assert len(links) == 9
-    approved = [row for row in links if row["resource_id"] == DECISION]
-    assert len(approved) == 1
     for row in links:
+        assert row["editorial_status"] == "CANONICAL_APPROVED", row
         assert row["editorial_status"] in LIFECYCLE_STATUSES, row
         assert row["relation"] == "REALIZES", row
         assert row["primary_flag"] is True, row
         assert row["strength"] is None, row
-        if row is approved[0]:
-            assert row["editorial_status"] == "CANONICAL_APPROVED", row
-        else:
-            assert row["editorial_status"] == "CURRICULUM_MAPPED", row
-            assert row["editorial_status"] != "CANONICAL_APPROVED", row
+        assert str(row["resource_id"]).startswith("res-"), row
+        assert str(row["node_id"]).startswith("cap-"), row
     print(
         "[p5-r] seed links -> "
         f"{sorted({row['editorial_status'] for row in links})}"
-        f" ({len(links)} rows, 1 C1-approved)"
+        f" ({len(links)} rows, all approved)"
     )
 
 
 @pytest.mark.parametrize("index", range(9))
 def test_every_seed_rationale_states_its_basis_and_its_limit(index: int) -> None:
-    """The rationale must carry its basis and its limit, whichever state the
-    row is in: the eight ``CURRICULUM_MAPPED`` rows still carry the P5-R
-    triple (the P3 test-corpus basis, the missing curriculum-semantic
-    review, the ban on capability evidence until an author review approves),
-    and the one row C1 approved carries the approval's basis (the C1
-    editorial review) **and** its limits (what the review did not cover, and
-    the Revisit)."""
+    """Every rationale must carry its basis **and** its limit, and each one
+    names its own row: the approval's basis (the editorial review that made
+    it — C1 for the first row, C2-a for the other eight, since C2-a approved
+    them while authoring their readiness evidence) and its limits (what that
+    review did not cover — no capability-semantics audit, because the
+    capability has no functional definition here — plus the live risk and
+    the Revisit). The P5-R ban on crediting an unapproved row is not carried
+    by prose any more but by the status field: since C2-a no corpus row is
+    unapproved, so this file pins the demoted case against a variant
+    (test_the_gate_is_a_gate_not_a_deletion below)."""
 
     row = _links_document()["links"][index]
     rationale = str(row["rationale"])
     assert str(row["node_id"]) in rationale, rationale
+    assert str(row["resource_id"]) in rationale, rationale
+    assert row["editorial_status"] == "CANONICAL_APPROVED", row
     if row["resource_id"] == DECISION:
-        assert row["editorial_status"] == "CANONICAL_APPROVED", row
         assert "Approved by the C1 (Phase 11) editorial review" in rationale
-        assert "did NOT cover" in rationale, rationale
-        assert "no functional definition" in rationale, rationale
-        assert "the other eight rows stay CURRICULUM_MAPPED" in rationale
-        assert "Revisit" in rationale, rationale
     else:
-        assert row["editorial_status"] == "CURRICULUM_MAPPED", row
-        assert "P3-1A/P3-1B test-corpus design" in rationale, rationale
-        assert "no curriculum-semantic review" in rationale, rationale
-        assert "must not count as capability evidence" in rationale, rationale
-        assert "author review approves this link" in rationale, rationale
+        assert "Approved by the C2-a (Phase 11) editorial review" in rationale
+    assert "did NOT cover" in rationale, rationale
+    assert "no functional definition" in rationale, rationale
+    assert "no capability-semantics audit" in rationale, rationale
+    assert "no capability certification" in rationale, rationale
+    assert "R-C1-credit" in rationale, rationale
+    assert "Revisit" in rationale, rationale
 
 
 def test_the_entity_lifecycle_is_the_authors_and_was_not_touched(
@@ -213,9 +213,9 @@ def test_the_link_row_stays_readable_and_the_credit_face_reads_the_approved_node
     unapproved row stayed readable and the credit face answered ``None``;
     新真值 C1: the same row, now approved, stays readable and the credit
     face answers the node). Unapproved ≠ deleted was never about this one
-    row's status — it is the eight still-``CURRICULUM_MAPPED`` rows and
-    ``test_the_gate_is_a_gate_not_a_deletion``'s variant that keep that
-    discipline pinned."""
+    row's status — it is the demoted variant in
+    ``test_the_gate_is_a_gate_not_a_deletion`` that keeps that discipline
+    pinned now that C2-a approved the remaining eight rows."""
 
     store = ContentStore(built_content_db)
     try:
@@ -247,52 +247,66 @@ def test_the_link_row_stays_readable_and_the_credit_face_reads_the_approved_node
 
 def test_only_the_approved_link_credits_a_capability(built_content_db) -> None:
     """The gate applies by status, not by row count (旧真值: all nine linked
-    resources read ``None`` on the credit face; 新真值 C1: the eight
-    ``CURRICULUM_MAPPED`` rows still do, and the one C1-approved row credits
-    its node — approval is exactly the condition the gate admits)."""
+    resources read ``None`` on the credit face; C1: one approved row credited
+    its node; 新真值 C2-a: all nine rows are approved, so all nine credit —
+    and the *count* is what still distinguishes this from "every entity
+    credits": the five CAPABILITY entities carry no link row at all and read
+    ``None``). The unapproved direction is pinned against a demoted variant
+    in test_the_gate_is_a_gate_not_a_deletion below."""
 
     store = ContentStore(built_content_db)
     try:
         linked = 0
-        uncredited = 0
+        credited = 0
         for entity_id in store.entity_ids().value:
             links = store.curriculum_links_of(entity_id)
             assert isinstance(links, Ok), links
-            if not links.value:
-                continue
-            linked += 1
             teaching = store.get_teaching_content(entity_id)
             assert isinstance(teaching, Ok), teaching
-            if entity_id == DECISION:
-                assert teaching.value.capability_linkage == HEDGED_OPINION
-            else:
+            if not links.value:
                 assert teaching.value.capability_linkage is None, entity_id
-                uncredited += 1
+                continue
+            linked += 1
+            assert teaching.value.capability_linkage is not None, entity_id
+            assert teaching.value.capability_linkage == str(
+                links.value[0].node_id
+            ), entity_id
+            credited += 1
         assert linked == 9
-        assert uncredited == 8
+        assert credited == 9
     finally:
         store.close()
-    print(f"[p5-r] linked resources -> {linked} (uncredited: {uncredited})")
+    print(f"[p5-r] linked resources -> {linked} (credited: {credited})")
 
 
 def test_the_gate_is_a_gate_not_a_deletion(tmp_path) -> None:
-    """An *approved* variant artifact is credited again: the same read, the
-    same code path, only the editorial status differs."""
+    """A *demoted* variant artifact is not credited again: the same read, the
+    same code path, only the editorial status differs (C2-a: the canonical
+    corpus carries no unapproved row, so the off-state has to be built, and
+    building it is what keeps "unapproved ≠ deleted" — the row stays readable
+    while the credit face answers ``None``)."""
 
-    def approve(documents: dict, _index: dict) -> None:
+    def demote(documents: dict, _index: dict) -> None:
         for row in documents["links.json"]["links"]:
-            if row["resource_id"] == DECISION:
-                row["editorial_status"] = "CANONICAL_APPROVED"
+            if row["resource_id"] == "res-hedge-i-think":
+                assert row["editorial_status"] == "CANONICAL_APPROVED"
+                row["editorial_status"] = "CURRICULUM_MAPPED"
 
-    artifact = build_variant_artifact(tmp_path, curriculum_edit=approve)
+    artifact = build_variant_artifact(tmp_path, curriculum_edit=demote)
     store = ContentStore(artifact)
     try:
-        teaching = store.get_teaching_content(DECISION)
-        assert isinstance(teaching, Ok), teaching
-        assert teaching.value.capability_linkage == HEDGED_OPINION
-        other = store.get_teaching_content("res-hedge-i-think")
+        demoted = store.get_teaching_content("res-hedge-i-think")
+        assert isinstance(demoted, Ok), demoted
+        assert demoted.value.capability_linkage is None
+        # The row itself is still there, and still readable as a mapping.
+        links = store.curriculum_links_of("res-hedge-i-think")
+        assert isinstance(links, Ok), links
+        assert len(links.value) == 1
+        assert links.value[0].editorial_status == "CURRICULUM_MAPPED"
+        # An untouched sibling still credits its node.
+        other = store.get_teaching_content(DECISION)
         assert isinstance(other, Ok), other
-        assert other.value.capability_linkage is None
+        assert other.value.capability_linkage == HEDGED_OPINION
     finally:
         store.close()
     assert CAPABILITY_CREDIT_EDITORIAL_STATUS == "CANONICAL_APPROVED"

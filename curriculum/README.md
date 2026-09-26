@@ -53,37 +53,40 @@ editorial_status / rationale
   canonical 未固定节点侧基数，故同一 node 可被多个 resource 声明）；
 - `strength` 一律 `null`：§24.7 未给链接 strength 值域（§7 的三词只属于
   prerequisite 边），不发明；
-- `editorial_status` ∈ §24.11 词表；**C1 后的状态**：9 行中 8 行仍为
-  `CURRICULUM_MAPPED`，`res-colloc-make-a-decision` 一行由 C1（Phase 11）
-  编辑评审改为 `CANONICAL_APPROVED`。P5-R 的规则对**未批准**行不变：
-  `CURRICULUM_MAPPED` 行的依据仅为 P3-1A/P3-1B 测试语料设计（fixture 的
-  `capability_linkage`），**未经课程语义审核**，不得计入 capability 证据
-  （读面门见 `elc.content.store.CAPABILITY_CREDIT_EDITORIAL_STATUS`——未审
-  link 在 `get_teaching_content().capability_linkage` 读作 `None`，但仍是
-  可读的 link 行；被批准的 link 则读出其 node——门读的就是 link 自身的
-  editorial_status，门本身从未改动）。
+- `editorial_status` ∈ §24.11 词表；**C2-a 后的状态**：9 行全部为
+  `CANONICAL_APPROVED` —— C1（Phase 11）编辑评审批准了
+  `res-colloc-make-a-decision` 一行，C2-a 在为其余 8 个 target 编写 readiness
+  证据时逐条批准了其余 8 行（同一体裁的 rationale：批准覆盖什么、不覆盖什么、
+  活风险、Revisit）。P5-R 的规则对**未批准**行不变：行既然只是候选映射
+  （`CURRICULUM_MAPPED`），便不得计入 capability 证据（读面门见
+  `elc.content.store.CAPABILITY_CREDIT_EDITORIAL_STATUS`——未审 link 在
+  `get_teaching_content().capability_linkage` 读作 `None`，但仍是可读的 link
+  行；被批准的 link 则读出其 node——门读的就是 link 自身的 editorial_status，
+  门本身从未改动）。**现役语料自 C2-a 起不再携带未批准行**，故"未批准 ⇒ 不
+  计入"这一方向由 variant 钉住（`tests/phase5/test_p5_r_curriculum_truth.py`
+  的 demoted variant / `test_p5_1_readiness.py` 的同题变体）。
 
-  **已批准那一行的口径（C1 处置定谳：批准保留）**——① 该批准**覆盖**：
-  此行的 provenance（P3-1A/P3-1B fixture 声明，未改）、该 target 的证据文档
-  （`../content_src/evidence/res-colloc-make-a-decision.json`），以及「此批准
-  使 §8.1 R2 的 `curriculum_link` 事实可读」；② 该批准**不覆盖**：
-  `cap-eval-hedged-opinion` 在本仓无功能定义，capability 语义审计**未做**；
-  其余 8 行维持 `CURRICULUM_MAPPED`；③ **credit 的限度**：
-  `CAPABILITY_CREDIT_EDITORIAL_STATUS` 门据此行放行，故该 target 的
-  `ALTERNATIVE_SUCCESS` 可铸 CAPABILITY/POSITIVE 学习者证据——**这是行为
-  变更，已知并接受**，其影响面受真实 rollout HOLD（无真实教学运行）限制；
-  ④ **Revisit**：capability 功能定义落地时重审该批准。活风险登记
-  `R-C1-credit`（*一个未经能力语义审计的 link 批准现可铸学习者能力证据*；
-  owner = 用户/总控；影响面 = 仅该 target 的 `ALTERNATIVE_SUCCESS` 路径；
-  Revisit = 功能定义落地 / 首次真实教学运行前**必须**重审），台账见
-  `AGENTS.md` 的 C1 处置条目。
+  **已批准九行的口径（C1 处置定谳的体裁，C2-a 逐行沿用）**——① 每一条批准
+  **覆盖**：该行的 provenance（P3-1A/P3-1B fixture 声明，未改）、该 target 的
+  证据文档（`../content_src/evidence/<entity_id>.json`，C1 一份 / C2-a 八份），
+  以及「此批准使 §8.1 R2 的 `curriculum_link` 事实可读」；② 每一条批准**不覆盖**：
+  被 link 命名的 capability 在本仓无功能定义，capability 语义审计**未做**，批准
+  不构成能力认证——9 条映射的课程语义仍如 C2 所记未审；③ **credit 的限度**：
+  `CAPABILITY_CREDIT_EDITORIAL_STATUS` 门据此放行，故 9 个 RESOURCE target 的
+  `ALTERNATIVE_SUCCESS` 均可铸 CAPABILITY/POSITIVE 学习者证据——**这是行为
+  变更，C1 时为 1 条、C2-a 后为 9 条，已知并接受**，其影响面受真实 rollout
+  HOLD（无真实教学运行）限制；④ **Revisit**：capability 功能定义落地时重审
+  全部 9 条批准。活风险登记 `R-C1-credit`（*一个未经能力语义审计的 link 批准
+  现可铸学习者能力证据*；owner = 用户/总控；影响面 = 9 个 RESOURCE target 的
+  `ALTERNATIVE_SUCCESS` 路径；Revisit = 功能定义落地 / 首次真实教学运行前
+  **必须**重审），台账见 `AGENTS.md` 的 C1/C2-a 处置条目。
 
-#### link 状态变更记录（C1）
+#### link 状态变更记录（C1 + C2-a）
 
 | 变更 | 行 | 理由与范围 |
 | --- | --- | --- |
-| `CURRICULUM_MAPPED` → `CANONICAL_APPROVED` | `res-colloc-make-a-decision` → `cap-eval-hedged-opinion` | C1 编辑评审在为该 target 编写 readiness 证据（`../content_src/evidence/res-colloc-make-a-decision.json`）时一并作出：批准**只**覆盖该行的来源事实（P3-1A/P3-1B fixture 声明，未改）、该 target 的证据文档本身、以及"此批准使 §8.1 R2 的 curriculum_link 事实可读"这一句。**未覆盖**（rationale 原文写明）：`cap-eval-hedged-opinion` 在本仓无功能定义，故无法做 capability 语义审计；其余 8 行维持 `CURRICULUM_MAPPED`；9 条映射的课程语义仍如 C2 所记未审。Revisit = capability 功能定义落地时。 |
-| 其余 8 行 | 未动 | 维持 P5-R 原判（映射 ≠ 证据，理由句原文不变）。 |
+| `CURRICULUM_MAPPED` → `CANONICAL_APPROVED` | `res-colloc-make-a-decision` → `cap-eval-hedged-opinion` | C1 编辑评审在为该 target 编写 readiness 证据（`../content_src/evidence/res-colloc-make-a-decision.json`）时一并作出：批准**只**覆盖该行的来源事实（P3-1A/P3-1B fixture 声明，未改）、该 target 的证据文档本身、以及"此批准使 §8.1 R2 的 curriculum_link 事实可读"这一句。**未覆盖**（rationale 原文写明）：`cap-eval-hedged-opinion` 在本仓无功能定义，故无法做 capability 语义审计，批准不构成能力认证。Revisit = capability 功能定义落地时。 |
+| `CURRICULUM_MAPPED` → `CANONICAL_APPROVED` | 其余 8 行（`res-hedge-i-think` / `res-softener-kind-of` / `res-colloc-pay-attention-to` / `res-frame-id-like-to` / `res-discourse-by-the-way` / `res-phrasal-look-forward-to` / `res-pragmatic-could-you` / `res-idiom-break-the-ice`） | C2-a（Phase 11）编辑评审在为这些 target 编写 readiness 证据时逐条批准，rationale 体裁与 C1 那条相同（覆盖 / 不覆盖 / credit 限度 / Revisit / 活风险 `R-C1-credit`）。五字段（resource_id / node_id / relation / strength / primary_flag）零改动；9 条映射的课程语义仍未审。 |
 
 ### C3 — Prerequisite 边（DOMAIN_MODEL §7）
 

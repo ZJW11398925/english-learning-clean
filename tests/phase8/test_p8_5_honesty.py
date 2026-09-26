@@ -427,13 +427,14 @@ def test_the_module_is_not_re_exported_by_the_package() -> None:
 
 
 def test_the_shipped_corpus_denies_any_open_claim(tmp_path: Path) -> None:
-    """The pin the task book asks for, at C1's truth — as a two-layer
+    """The pin the task book asks for, at C2-a's truth — as a two-layer
     statement (旧真值: the checker answered HOLD on every row, so the
-    capable claim failed at the content gate itself; 新真值: the content
-    gate answers **GO** on all four rows, because one C1-authored target
-    reaches R4, and the capable corpus *still* produces no opening claim):
-    the rollout switch composes the stage leg with the content gate, no
-    stage is declared anywhere in the shipped product, so
+    capable claim failed at the content gate itself; C1: one authored target
+    reached R4 and every row answered GO; 新真值 C2-a: the nine RESOURCE
+    targets reach R4, so all four rows read nine usable targets and the
+    content gate answers **GO** — and the capable corpus *still* produces no
+    opening claim): the rollout switch composes the stage leg with the
+    content gate, no stage is declared anywhere in the shipped product, so
     ``automatic_teaching_enabled`` is False for every §5.1 frequency word.
     "语料 capable" and "rollout 已开闸" stay two different claims, and
     "阶段已就绪" remains a claim this repository cannot make."""
@@ -454,11 +455,11 @@ def test_the_shipped_corpus_denies_any_open_claim(tmp_path: Path) -> None:
     build_content_db(path)
     report = corpus_rollout_gate(CurriculumContentStore(ContentStore(path)))
     assert isinstance(report, Ok), report
-    # Layer one: content capable — every row GO on the one R4 target.
+    # Layer one: content capable — every row GO on the nine R4 targets.
     assert report.value.verdict is RolloutVerdict.GO
     assert report.value.automatic_verdict is RolloutVerdict.GO
     assert all(
-        row.usable_targets == 1 and row.verdict is RolloutVerdict.GO
+        row.usable_targets == 9 and row.verdict is RolloutVerdict.GO
         for row in report.value.rows
         if row.automatic
     )

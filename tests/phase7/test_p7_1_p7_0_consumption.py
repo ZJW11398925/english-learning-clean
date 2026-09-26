@@ -156,7 +156,7 @@ def _table_counts(conn: sqlite3.Connection) -> dict[str, int]:
 # -- ① today's honest answer on the shipped supply ---------------------------
 
 
-def test_the_real_chain_degrades_while_thirteen_targets_stay_ungraded(
+def test_the_real_chain_degrades_while_the_caps_stay_ungraded(
     db: sqlite3.Connection,
     learning_controller: LearningController,
     user_config_store: SqliteUserConfigStore,
@@ -165,11 +165,12 @@ def test_the_real_chain_degrades_while_thirteen_targets_stay_ungraded(
     content_supply,
 ) -> None:
     """Real durable rows, real read faces, the real corpus — and a Planner
-    that may not proceed. The gap narrowed with C1 (旧真值: the corpus graded
-    nothing — 14 ungraded candidates; 新真值: it grades one target R4 and
-    leaves thirteen ungraded), but the kernel's answer is the same: it
-    degrades instead of inventing a number or a NO_TARGET, because an
-    ungraded candidate's eligibility cannot be judged."""
+    that may not proceed. The gap narrowed with C1 and again with C2-a (旧真值:
+    the corpus graded nothing — 14 ungraded candidates; C1: one target at R4
+    and thirteen ungraded; 新真值: the nine RESOURCE targets are graded and the
+    five evidence-less CAPABILITY entities are not), and the kernel's answer is
+    the same: it degrades instead of inventing a number or a NO_TARGET, because
+    an ungraded candidate's eligibility cannot be judged."""
 
     policy, goals, watermark, view = _real_world(
         user_config_store,
@@ -188,7 +189,7 @@ def test_the_real_chain_degrades_while_thirteen_targets_stay_ungraded(
         assert isinstance(facts, Ok)
         levels[str(entity_id)] = judge_readiness(facts.value).level
     assert levels["res-colloc-make-a-decision"] == "R4_DETECTION_READY"
-    assert sum(1 for level in levels.values() if level is None) == 13
+    assert sum(1 for level in levels.values() if level is None) == 5
 
     authority = assemble_feature_authority(
         learning_snapshot=learning_snapshot(watermark),
@@ -221,9 +222,10 @@ def test_the_real_chain_degrades_while_thirteen_targets_stay_ungraded(
     assert result.trace.context.schedule_authority is not None
     reasons = "\n".join(result.trace.context.reasons)
     assert "no content level is reachable" in reasons
-    # 旧真值: "14 candidate(s)" → 新真值 (C1): the one graded target leaves
-    # the note's count at the thirteen still-ungraded candidates.
-    assert "13 candidate(s)" in reasons
+    # 旧真值: "14 candidate(s)" → C1: "13 candidate(s)" → 新真值 (C2-a): the
+    # nine graded targets leave the note's count at the five still-ungraded
+    # CAPABILITY entities.
+    assert "5 candidate(s)" in reasons
     assert AuthorityName.CURRICULUM_READINESS in (
         result.trace.context.missing_authorities
     )

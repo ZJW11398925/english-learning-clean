@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-a authoring declaration (2026-09-26): this target is placed in the V1 placement bank's hedging-formula set by the authoring review. Declared by the authoring source; no external assessment export exists in this repository."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "I think",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "i-think.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "i-think.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A hedge that marks the statement it carries as the speaker's own belief or opinion rather than as an established fact, which is what leaves the hearer room to disagree without the exchange turning into a contradiction."
+    },
+    {
+      "sense_id": "i-think.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "It usually opens the sentence and the clause that carries the claim runs straight on: I think it is going to rain. Sentence-final use is also current, where it is set off by a comma and reads as an afterthought: It is going to rain, I think. The subject is part of the formula — the hedge is I think, and the complement is a full clause with its own subject and finite verb."
+    },
+    {
+      "sense_id": "i-think.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Two productive slips sit on this short formula. The subject is dropped, because many languages let a speaker leave it out where English requires it. And a comma is put after the hedge, which breaks a clause that has no second half to join: I think it is going to rain. A comma there only works when what follows really is a second independent clause with a connector (I think, therefore I am)."
+    },
+    {
+      "sense_id": "i-think.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "I think + clause hedges a claim about now. I thought + clause reports a belief the speaker held earlier and very often no longer holds (I thought it was going to rain, so I took an umbrella). The past form is not a more polite hedge; it moves the belief in time, so the two must not be corrected into each other."
+    },
+    {
+      "sense_id": "i-think.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "我觉得……；我想……（把自己的说法标为个人看法，给对方留出不同意的余地）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "i-think.base",
+      "written": "I think",
+      "normalized": "I think",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-a authoring judgement (V1 carries no calibration data): the formula is everywhere and its form is short, so receptive and productive difficulty are LOW and the value bands HIGH; the explanation cost is MEDIUM because what has to be taught is not the wording but when the hedge is the right move and how it differs from the past form. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The formula belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Hedged opinions of this shape are ordinary in meetings and in comments on a proposal (I think we should wait), so it carries most of the weight in the workplace pack; the shortfall records that the pack's own review has not yet placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Never present the hedge as a two-word string without the claim it hedges, and never present the past-tense sentence as a model of this target. When a form is shown, show the sentence-initial position first — that is the canonical one."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "SUBJECT_OMISSION",
+      "error_pattern": "think | thought + subject + finite verb (a form of think opening a clause with no I before it, followed by a complement clause)",
+      "corrected_pattern": "I think + clause",
+      "explanation": "Chinese lets the subject be left unexpressed when it is recoverable (我觉得/想可以省作觉得), so the pronoun that English requires in a declarative clause is dropped, and the hedge arrives as a bare verb.",
+      "severity": "HIGH",
+      "detection_policy": "Match when think or thought opens a clause with no subject before it and a complement clause (a subject and a finite verb) follows, which distinguishes the slip from the imperative Think about it."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "COMMA_INTRUSION",
+      "error_pattern": "I think, + declarative clause (a comma between the hedge and the clause it hedges, with no connector after the comma)",
+      "corrected_pattern": "I think + clause (no comma)",
+      "explanation": "The hedge and its complement form one clause, so a comma in between separates two halves that are not two clauses; the slip is punctuation convention rather than grammar, and a comma there is legitimate only when a connector opens a genuine second clause. It is not specific to one L1.",
+      "severity": "LOW",
+      "detection_policy": "Match when I think is followed by a comma and then a declarative clause, in a sentence where no coordinating conjunction or conjunctive adverb follows the comma."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words of the formula, the subject position in front of it and the punctuation after it. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the surface looks like the hedge but the structure is not the hedge — an imperative, or a comma that does mark a clause boundary)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "SUBJECTLESS_HEDGE: match when think or thought opens a clause with no subject in front of it and a complement clause follows (its own subject and finite verb), so the string reads as a hedge whose I has been dropped."
+    },
+    {
+      "ordinal": 1,
+      "rule": "COMMA_AFTER_HEDGE: match when I think is followed by a comma and then a declarative clause, in a sentence where no coordinating conjunction or conjunctive adverb follows that comma."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the hedge carries its subject and runs straight into the clause it hedges, and do not match the sentence-final afterthought position set off by a comma (It is going to rain, I think): both are accepted realizations of this formula."
+    },
+    {
+      "ordinal": 3,
+      "rule": "COMMA_THAT_MARKS_A_CLAUSE_BOUNDARY: do not match when the comma after I think does separate two independent clauses and a connector follows it (I think, therefore I am), because there the comma is doing its ordinary job rather than splitting the hedge from its complement."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Think about it before you answer.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "I think it is going to rain.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "It is going to rain, I think.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "I think, therefore I am.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

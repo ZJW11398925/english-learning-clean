@@ -47,6 +47,13 @@ from tests.phase5.conftest import (
 
 FOCUS = "res-hedge-i-think"
 
+#: An entity whose source states no readiness evidence at all. C1 and C2-a
+#: authored an evidence document for every RESOURCE target, so the
+#: evidence-less class is the five CAPABILITY entities: no `evidence/`
+#: document, no §24.7 link row of their own, hence no level — the honest
+#: specimen for "the artifact carries nothing" that the zero-side pins read.
+NO_EVIDENCE_ENTITY = "cap-disc-topic-shift"
+
 #: The §8.1 facts beyond R1, grouped by the level that adds them.
 R2_FACTS = (
     "curriculum_link",
@@ -538,10 +545,11 @@ def test_corpus_readiness_table_is_computed_and_printed(
     built_content_db: Path,
 ) -> None:
     """P5-R truth, now driven by the artifact instead of by missing tables
-    (C1): thirteen targets state no evidence and read no level, blocked at
-    R0 by ``assessment_membership``; the one target whose source states all
-    nineteen facts reads ``R4_DETECTION_READY``. The table prints the
-    blocking keys so the reading is checkable rather than asserted."""
+    (C1, then C2-a): the five CAPABILITY entities state no evidence and read
+    no level, blocked at R0 by ``assessment_membership``; the nine RESOURCE
+    targets — C1's authored document plus C2-a's eight — state all nineteen
+    facts and read ``R4_DETECTION_READY``. The table prints the blocking keys
+    so the reading is checkable rather than asserted."""
 
     table = _corpus_table(built_content_db)
 
@@ -551,26 +559,30 @@ def test_corpus_readiness_table_is_computed_and_printed(
 
     assert len(table) == 14
     levels = {(target, missing): level for target, level, missing in table}
-    # 旧真值 → 新真值（C1）: 14×None → 1×R4_DETECTION_READY + 13×None.
+    # 旧真值 → 新真值（C1: 1×R4+13×None；C2-a: 9×R4+5×None）.
     assert (
         levels[("res-colloc-make-a-decision", ())] == "R4_DETECTION_READY"
     )
     for (target_id, missing), level in levels.items():
-        if target_id == "res-colloc-make-a-decision":
+        if target_id.startswith("res-"):
+            assert level == "R4_DETECTION_READY", (target_id, level)
+            assert missing == (), (target_id, missing)
             continue
         assert level is None, (target_id, level)
         assert missing == ("assessment_membership",), (target_id, missing)
 
 
-def test_exactly_one_corpus_target_is_detection_ready(
+def test_every_corpus_resource_target_is_detection_ready(
     built_content_db: Path,
 ) -> None:
-    """不虚报, both directions (旧真值: none; 新真值 C1: exactly the one
-    target whose source states all nineteen §8.1 facts): the other thirteen
-    carry no detection evidence and no level, and the one that does reads
-    R4 with its judgement fully reached."""
+    """不虚报, both directions (旧真值: none; C1: exactly one; 新真值 C2-a: the
+    nine RESOURCE targets, each with its own evidence document): every target
+    whose source states all nineteen §8.1 facts reads R4 with its judgement
+    fully reached, and every target whose source states nothing carries no
+    detection evidence, no level, and reports the four R4 facts as missing."""
 
     r4_targets: list[str] = []
+    no_level_targets: list[str] = []
     for assessment in _corpus_assessments(built_content_db):
         if assessment.level == "R4_DETECTION_READY":
             r4_targets.append(assessment.target_id)
@@ -579,12 +591,31 @@ def test_exactly_one_corpus_target_is_detection_ready(
             assert r4.reached is True
             assert r4.missing_keys == ()
             continue
+        no_level_targets.append(assessment.target_id)
+        assert assessment.level is None, assessment.target_id
         r4 = assessment.judgement("R4_DETECTION_READY")
         assert r4.reached is False, assessment.target_id
         # R4 is cumulative: the four detection facts *and* everything below
         # them are reported missing for every target that does not reach it.
         assert set(R4_FACTS) <= set(r4.missing_keys)
-    assert r4_targets == ["res-colloc-make-a-decision"]
+    assert r4_targets == [
+        "res-colloc-make-a-decision",
+        "res-colloc-pay-attention-to",
+        "res-discourse-by-the-way",
+        "res-frame-id-like-to",
+        "res-hedge-i-think",
+        "res-idiom-break-the-ice",
+        "res-phrasal-look-forward-to",
+        "res-pragmatic-could-you",
+        "res-softener-kind-of",
+    ]
+    assert no_level_targets == [
+        "cap-disc-topic-shift",
+        "cap-eval-hedged-opinion",
+        "cap-interact-backchannel",
+        "cap-ref-ask-clarification",
+        "cap-stance-soften-disagreement",
+    ]
 
 
 def test_the_never_present_keys_are_a_source_property_and_the_unread_mapping_is_empty(
@@ -592,12 +623,13 @@ def test_the_never_present_keys_are_a_source_property_and_the_unread_mapping_is_
 ) -> None:
     """Old truth (P5-R): the keys the corpus never satisfied were exactly the
     ones with named missing evidence — "we did not read it" could not hide.
-    New truth (C1): **every** §8.1 fact key is readable (the declared-absent
-    mapping is empty), so what the corpus never satisfies is a property of
-    the *sources*, not of the read face: thirteen targets state no evidence
-    at all, and their missing-key union is every key except the conditional
-    TypicalError one — which no source triggers, so it is satisfied by the
-    declared absence of a need on all fourteen."""
+    New truth (C1, unchanged by C2-a): **every** §8.1 fact key is readable
+    (the declared-absent mapping is empty), so what the corpus never
+    satisfies is a property of the *sources*, not of the read face: the five
+    CAPABILITY entities state no evidence at all, and their missing-key union
+    is every key except the conditional TypicalError one — which no source
+    triggers, so it is satisfied by the declared absence of a need on all
+    fourteen."""
 
     store = ContentStore(built_content_db)
     try:
@@ -657,17 +689,21 @@ def test_a_non_expression_entity_reads_the_same_no_level(tmp_path: Path) -> None
     entity's §24.1 ``entity_type`` to ``SENSE`` changes nothing, because
     entity type is not a readiness fact any more (P5-R removed the
     equivalence). The variant still proves the read path runs on a
-    non-EXPRESSION artifact row."""
+    non-EXPRESSION artifact row — and it is built on a CAPABILITY entity,
+    whose source states no evidence, so the no-level answer is read from the
+    artifact rather than assumed."""
 
     def edit(documents: dict, index: dict) -> None:
         del index
-        documents[f"entities/{FOCUS}.json"]["entity"]["entity_type"] = "SENSE"
+        documents[f"entities/{NO_EVIDENCE_ENTITY}.json"]["entity"][
+            "entity_type"
+        ] = "SENSE"
 
     artifact = build_variant_artifact(tmp_path, edit)
     store = ContentStore(artifact)
     try:
         supply = CurriculumContentStore(store)
-        facts = supply.readiness_facts(FOCUS)
+        facts = supply.readiness_facts(NO_EVIDENCE_ENTITY)
         assert isinstance(facts, Ok), facts
         print(
             "[f1] SENSE entity -> entity_row="
@@ -676,7 +712,7 @@ def test_a_non_expression_entity_reads_the_same_no_level(tmp_path: Path) -> None
             f" basic_definition={facts.value.basic_definition}"
             f" forms={facts.value.forms}"
         )
-        assessment = supply.readiness(FOCUS)
+        assessment = supply.readiness(NO_EVIDENCE_ENTITY)
         assert isinstance(assessment, Ok), assessment
         print(f"[f1] SENSE entity level -> {assessment.value.level}")
         for facet in R1_FACETS:
@@ -687,9 +723,9 @@ def test_a_non_expression_entity_reads_the_same_no_level(tmp_path: Path) -> None
         assert assessment.value.missing_keys == ("assessment_membership",)
         # The entity is still resolvable and still readable: readiness is a
         # report, not an exclusion.
-        assert isinstance(supply.get_resource(FOCUS), Ok)
+        assert isinstance(supply.get_resource(NO_EVIDENCE_ENTITY), Ok)
         # Its siblings are untouched (and read the same no-level answer).
-        sibling = supply.readiness("res-softener-kind-of")
+        sibling = supply.readiness("cap-ref-ask-clarification")
         assert isinstance(sibling, Ok) and sibling.value.level is None
     finally:
         store.close()
@@ -703,16 +739,17 @@ def test_assessment_membership_is_required_and_absent(built_content_db: Path) ->
     adopted. C1 gave the fact a table, so what is absent for this target is
     the *source's* membership row, never the reader's reach (旧真值: the key
     sat in UNREAD_FACT_EVIDENCE; 新真值: the mapping is empty and the count
-    reads 0 from its own table)."""
+    reads 0 from its own table). The specimen is a CAPABILITY entity: since
+    C2-a every RESOURCE target states a membership row."""
 
     store = ContentStore(built_content_db)
     try:
         supply = CurriculumContentStore(store)
-        facts = supply.readiness_facts(FOCUS)
+        facts = supply.readiness_facts(NO_EVIDENCE_ENTITY)
         assert isinstance(facts, Ok), facts
-        assessment = supply.readiness(FOCUS)
+        assessment = supply.readiness(NO_EVIDENCE_ENTITY)
         assert isinstance(assessment, Ok), assessment
-        counts = store.evidence_counts(FOCUS)
+        counts = store.evidence_counts(NO_EVIDENCE_ENTITY)
         assert isinstance(counts, Ok), counts
     finally:
         store.close()
@@ -736,16 +773,19 @@ def test_assessment_membership_is_required_and_absent(built_content_db: Path) ->
     assert UNREAD_FACT_EVIDENCE == {}
 
 
-def test_exactly_one_corpus_link_is_approved_and_it_satisfies_the_r2_fact(
+def test_every_corpus_link_is_approved_and_satisfies_the_r2_fact(
     built_content_db: Path,
 ) -> None:
-    """The corpus read one level down, now at C1's truth (旧真值: every link
-    was ``CURRICULUM_MAPPED`` and the R2 fact was False for all 14; 新真值:
-    exactly one link — res-colloc-make-a-decision's, approved by the C1
-    editorial review — satisfies the R2 ``curriculum_link`` fact, while the
-    other eight linked targets stay ``CURRICULUM_MAPPED`` and unsatisfied,
-    and the 5 CAPABILITY nodes still have no link row of their own
-    (curriculum/README.md C1 — no self-link is invented))."""
+    """The corpus read one level down, now at C2-a's truth (旧真值: every link
+    was ``CURRICULUM_MAPPED`` and the R2 fact was False for all 14; C1: one
+    approved link; 新真值 C2-a: all nine RESOURCE targets' links are approved
+    by editorial review — C1 reviewed one, C2-a the other eight while
+    authoring their readiness evidence — so the R2 ``curriculum_link`` fact is
+    satisfied for exactly the nine linked targets, and the 5 CAPABILITY nodes
+    still have no link row of their own (curriculum/README.md C1 — no
+    self-link is invented). The unapproved direction — a candidate mapping
+    satisfies nothing — is pinned against a demoted variant in
+    test_an_unapproved_curriculum_link_is_not_an_r2_fact below."""
 
     store = ContentStore(built_content_db)
     try:
@@ -763,38 +803,75 @@ def test_exactly_one_corpus_link_is_approved_and_it_satisfies_the_r2_fact(
             assert isinstance(links, Ok), links
             if links.value:
                 linked.append(entity_id)
-                if any(
+                assert all(
                     link.editorial_status == "CANONICAL_APPROVED"
                     for link in links.value
-                ):
-                    approved.append(entity_id)
-                else:
-                    assert all(
-                        link.editorial_status == "CURRICULUM_MAPPED"
-                        for link in links.value
-                    ), entity_id
+                ), entity_id
+                approved.append(entity_id)
         assert len(store.entity_ids().value) - len(linked) == 5
     finally:
         store.close()
     assert len(linked) == 9
     assert all(entity_id.startswith("res-") for entity_id in linked)
-    # The R2 fact and the approved status coincide on exactly one target:
-    # no unapproved mapping satisfies it, and the approved one does.
-    assert approved == ["res-colloc-make-a-decision"]
+    # The R2 fact and the approved status coincide on every linked target:
+    # no unapproved mapping satisfies it, and every approved one does.
+    assert approved == sorted(linked)
     assert with_fact == approved
 
 
-def test_an_approved_curriculum_link_is_an_r2_fact(tmp_path: Path) -> None:
-    """The fact is not dead: an approved §24.7 mapping satisfies it. The
-    canonical corpus carries none (CURRICULUM_MAPPED), hence the variant —
-    and the row stays readable either way (unapproved ≠ deleted)."""
+def test_an_unapproved_curriculum_link_is_not_an_r2_fact(
+    tmp_path: Path,
+) -> None:
+    """The fact is not dead in either direction: it turns on approval and off
+    again when the approval is withdrawn. The corpus carries no unapproved
+    row since C2-a (all nine are approved), so the demotion is built as a
+    variant — and the row stays readable either way (unapproved ≠ deleted).
+    The canonical artifact is read too, so the pair "approved ⇒ True,
+    demoted ⇒ False" holds over two real builds rather than over one."""
 
-    def approve(documents: dict, _index: dict) -> None:
+    def demote(documents: dict, _index: dict) -> None:
         for row in documents["links.json"]["links"]:
+            if row["resource_id"] == FOCUS:
+                assert row["editorial_status"] == "CANONICAL_APPROVED"
+                row["editorial_status"] = "CURRICULUM_MAPPED"
+
+    artifact = build_variant_artifact(tmp_path, curriculum_edit=demote)
+    store = ContentStore(artifact)
+    try:
+        supply = CurriculumContentStore(store)
+        demoted = supply.readiness_facts(FOCUS)
+        assert isinstance(demoted, Ok), demoted
+        assert demoted.value.curriculum_link is False
+        assert demoted.value is not None
+        # The link row itself is still readable, and now says CURRICULUM_MAPPED.
+        links = supply.curriculum_links_of(ResourceId(FOCUS))
+        assert isinstance(links, Ok) and len(links.value) == 1
+        assert links.value[0].editorial_status == "CURRICULUM_MAPPED"
+    finally:
+        store.close()
+
+
+def test_an_approved_curriculum_link_is_an_r2_fact(tmp_path: Path) -> None:
+    """The fact is not dead: an approved §24.7 mapping satisfies it, and
+    nothing else does. The canonical corpus now carries only approved rows
+    (C2-a), so both states are built as variants over one artifact: two rows
+    are demoted first — the fact drops for both — and then one of them is
+    approved again, which turns that target's fact back on while the other
+    stays off. The row stays readable in all three states (unapproved ≠
+    deleted), so the reading is the status, never the row's presence."""
+
+    def demote_two_then_approve_one(
+        documents: dict, _index: dict
+    ) -> None:
+        for row in documents["links.json"]["links"]:
+            if row["resource_id"] in (FOCUS, "res-softener-kind-of"):
+                row["editorial_status"] = "CURRICULUM_MAPPED"
             if row["resource_id"] == FOCUS:
                 row["editorial_status"] = "CANONICAL_APPROVED"
 
-    artifact = build_variant_artifact(tmp_path, curriculum_edit=approve)
+    artifact = build_variant_artifact(
+        tmp_path, curriculum_edit=demote_two_then_approve_one
+    )
     store = ContentStore(artifact)
     try:
         supply = CurriculumContentStore(store)
@@ -805,10 +882,13 @@ def test_an_approved_curriculum_link_is_an_r2_fact(tmp_path: Path) -> None:
         assert changed.value.curriculum_link is True
         assert other.value.curriculum_link is False
         assert other.value is not None
-        # The link row itself is readable in the canonical corpus too.
+        # Both link rows stay readable on the demoted/approved variant.
         links = supply.curriculum_links_of(ResourceId("res-softener-kind-of"))
         assert isinstance(links, Ok) and len(links.value) == 1
         assert links.value[0].editorial_status == "CURRICULUM_MAPPED"
+        approved = supply.curriculum_links_of(ResourceId(FOCUS))
+        assert isinstance(approved, Ok) and len(approved.value) == 1
+        assert approved.value[0].editorial_status == "CANONICAL_APPROVED"
     finally:
         store.close()
 

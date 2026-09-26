@@ -19,8 +19,8 @@ is never imported (the P5-1 red line, held by phases 6/7/8).
   are the kernel's frozen inputs, and the real generators still answer **zero**
   candidates over the corpus (the sources' unlanded authorities — the
   goal-pack mapping and friends — gap on every call; the corpus's own
-  readiness answer is one R4 target plus thirteen level-less targets since
-  C1), so the only
+  readiness answer is nine R4 RESOURCE targets plus five level-less
+  CAPABILITY entities since C2-a), so the only
   honest way to exercise an ALLOW today is the same injection point P8-1's
   suite uses — ``supply_of(proposal(...))``. That supply is a *test* supply and
   every test that passes one says so; a test that passes none runs the real

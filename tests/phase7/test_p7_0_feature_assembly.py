@@ -476,14 +476,15 @@ def test_degraded_carries_no_decision() -> None:
         )
 
 
-def test_the_shipped_supply_grades_one_target_and_leaves_thirteen_ungraded(
+def test_the_shipped_supply_grades_the_resources_and_leaves_the_caps_ungraded(
     content_supply,
 ) -> None:
     """The corpus-side fact the assembly turns into an INCOMPLETE verdict,
-    at C1's truth (旧真值: the real content.db graded no target; 新真值: it
-    grades exactly one — res-colloc-make-a-decision at R4 — and leaves
-    thirteen ungraded, so the assembly stays INCOMPLETE because ungraded
-    candidates the caller holds still exist)."""
+    at C2-a's truth (旧真值: the real content.db graded no target; C1: it
+    graded exactly one — res-colloc-make-a-decision at R4 — and left thirteen
+    ungraded; 新真值: it grades the nine RESOURCE targets and leaves the five
+    CAPABILITY entities ungraded, so the assembly stays INCOMPLETE because
+    ungraded candidates the caller holds still exist)."""
 
     ids = content_supply.supply_entity_ids()
     assert isinstance(ids, Ok)
@@ -493,11 +494,15 @@ def test_the_shipped_supply_grades_one_target_and_leaves_thirteen_ungraded(
         facts = content_supply.readiness_facts(str(entity_id))
         assert isinstance(facts, Ok), entity_id
         levels[str(entity_id)] = judge_readiness(facts.value).level
-    # 旧真值 → 新真值（C1）: {None} → {None, "R4_DETECTION_READY"} with
-    # exactly one graded target.
-    assert levels["res-colloc-make-a-decision"] == "R4_DETECTION_READY"
+    # 旧真值 → C1 → 新真值（C2-a）: {None} → one R4 + thirteen None → nine
+    # graded RESOURCE targets and five ungraded CAPABILITY entities.
+    for entity_id, level in levels.items():
+        if str(entity_id).startswith("res-"):
+            assert level == "R4_DETECTION_READY", entity_id
+            continue
+        assert level is None, entity_id
     ungraded = {target for target, level in levels.items() if level is None}
-    assert len(ungraded) == 13
+    assert len(ungraded) == 5
     authority = _full_bag(curriculum_readiness=levels)
     assert authority.status is FeatureAssemblyStatus.INCOMPLETE
     assert AuthorityName.CURRICULUM_READINESS in authority.missing_authorities

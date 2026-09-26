@@ -314,14 +314,15 @@ def test_an_unreadable_ladder_is_no_level_and_carries_the_failure(
     assert "DEPENDENCY_UNAVAILABLE" in outcome.reasons[0]
 
 
-def test_the_shipped_corpus_levels_are_thirteen_none_and_one_r4(
+def test_the_shipped_corpus_levels_are_five_none_and_nine_r4(
     content_supply,
 ) -> None:
-    """The real ladder over the real corpus, at C1's truth (旧真值: every
+    """The real ladder over the real corpus, at C2-a's truth (旧真值: every
     target read no level, blocked at R0 by ``assessment_membership`` — the
-    P5-R strict reading; 新真值: the thirteen evidence-less targets still
-    read exactly that, and the one target whose source states all nineteen
-    facts reads R4_DETECTION_READY with no blocking key)."""
+    P5-R strict reading; C1: one target reached R4; 新真值 C2-a: the nine
+    RESOURCE targets whose sources state all nineteen facts read
+    R4_DETECTION_READY with no blocking key, and the five evidence-less
+    CAPABILITY entities still read exactly the R0 block)."""
 
     ids = content_supply.supply_entity_ids()
     assert isinstance(ids, Ok)
@@ -337,7 +338,17 @@ def test_the_shipped_corpus_levels_are_thirteen_none_and_one_r4(
         assert outcome.level is None, entity_id
         assert outcome.blocking_keys == ("assessment_membership",), entity_id
         assert "blocked at R0_INDEXED" in outcome.reasons[0]
-    assert r4 == ["res-colloc-make-a-decision"]
+    assert r4 == [
+        "res-colloc-make-a-decision",
+        "res-colloc-pay-attention-to",
+        "res-discourse-by-the-way",
+        "res-frame-id-like-to",
+        "res-hedge-i-think",
+        "res-idiom-break-the-ice",
+        "res-phrasal-look-forward-to",
+        "res-pragmatic-could-you",
+        "res-softener-kind-of",
+    ]
 
 
 def test_a_declared_artifact_fact_set_reaches_the_ladder_s_own_level(
@@ -419,22 +430,45 @@ def test_a_capability_target_is_its_own_node_and_the_corpus_declares_no_edge(
 
 
 def test_a_resource_with_only_unapproved_links_is_unknown(content_supply) -> None:
-    """The registered judgement, on the shipped corpus: the nine resources are
-    mapped ``CURRICULUM_MAPPED``, and a candidate mapping is not a mapping this
-    resolver may act on (P5-R) — so the answer is UNKNOWN, not a READY that
-    would silently pass an unmapped target."""
+    """The registered judgement, seen from both worlds: a candidate mapping is
+    not a mapping this resolver may act on (P5-R), so a resource whose only
+    link is ``CURRICULUM_MAPPED`` answers UNKNOWN — never a READY that would
+    silently pass an unmapped target. Since C2-a the shipped corpus carries no
+    unapproved row (C1 approved one, C2-a the other eight), so the
+    candidate-mapping world is declared through the resolver's own port, and
+    the corpus half asserts the same rule from the other side: the approved
+    row reads READY."""
 
+    declared = DeclaredGraph(
+        capabilities=(NODE,),
+        links=(
+            approved_link(
+                resource_id="res-x",
+                node_id=NODE,
+                status="CURRICULUM_MAPPED",
+            ),
+        ),
+    )
     outcome = prerequisite_state_of(
         "RESOURCE",
-        "res-hedge-i-think",
+        "res-x",
         MODALITY,
-        prerequisites=content_supply,
+        prerequisites=declared,
         learner_state=None,
     )
     assert outcome.state is PrerequisiteState.UNKNOWN
     assert outcome.scaffoldable is False
     assert APPROVED_LINK_EDITORIAL_STATUS in outcome.reasons[0]
     assert "CURRICULUM_MAPPED" in outcome.reasons[0]
+
+    shipped = prerequisite_state_of(
+        "RESOURCE",
+        "res-hedge-i-think",
+        MODALITY,
+        prerequisites=content_supply,
+        learner_state=None,
+    )
+    assert shipped.state is PrerequisiteState.READY
 
 
 def approved_link(

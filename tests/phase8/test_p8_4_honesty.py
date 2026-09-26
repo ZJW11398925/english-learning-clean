@@ -397,16 +397,24 @@ def test_an_evidence_less_target_still_cannot_answer_a_usable_level(
 ) -> None:
     """BF-02 §10's thresholds need a level; an evidence-less target still
     reads none (P5-R truth: the whole shipped corpus did — which *was* the
-    rollout HOLD; C1 truth: one target reads R4 and the content gate answers
-    GO, while the rollout stays held by the undeclared stage leg, pinned in
-    test_p8_5's suites). The pinned fact here is the per-target one, read
-    from the real artifact, not a promise."""
+    rollout HOLD; C1 truth: one target read R4 and the content gate answered
+    GO; C2-a truth: the nine RESOURCE targets read R4 while the five
+    evidence-less CAPABILITY entities read no level, and the rollout stays
+    held by the undeclared stage leg and the volume gate, pinned in test_p8_5's
+    suites). The pinned fact here is the per-target one, read from the real
+    artifact, not a promise — and since C2-a the no-level row only exists on
+    the capability side, so the specimen is one of those."""
 
     from elc.content.store import ContentStore
 
     content = build_content(tmp_path / "content.db")
     real = CurriculumContentStore(ContentStore(content))
-    assessment = real.readiness("res-hedge-i-think")
+    assessment = real.readiness("cap-disc-topic-shift")
     assert assessment.__class__.__name__ == "Ok", assessment
     assert assessment.value.level is None
     assert assessment.value.next_level == "R0_INDEXED"
+    # The contrast that keeps this from being read as "nothing has a level":
+    # a RESOURCE target on the same artifact reads R4.
+    graded = real.readiness("res-hedge-i-think")
+    assert graded.__class__.__name__ == "Ok", graded
+    assert graded.value.level == "R4_DETECTION_READY"
