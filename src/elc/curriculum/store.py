@@ -381,8 +381,8 @@ class CurriculumContentStore:
                 # bookkeeping entry (declared reading; the corpus's five nodes
                 # against sixty-four resources is what makes the distinction
                 # load-bearing). The read itself — one query over the §24.7
-                # ``mapping_class`` column, gated on §24.11 approval, exactly
-                # the discipline the supply gate keeps — lives in
+                # ``mapping_class`` column, gated on the same §24.11 approval
+                # the supply read keeps as its own gate — lives in
                 # :meth:`elc.content.store.ContentStore.
                 # has_approved_curriculum_mapping`. A row that is unapproved
                 # or a placement stays readable through ``curriculum_links_of``

@@ -116,7 +116,7 @@ editorial_status / mapping_class / rationale
   「本映射以本仓 authoring 判断的功能定义为据」而非外部认证；canonical 定义
   落地时仍须复审），台账见 `AGENTS.md` 的 C1/C2-a/C2-b/C3-a/C3-b/C3-R1 处置条目。
 
-#### R2 读法变化（C3-R1，src 行为改动）
+#### R2 读法变化（C3-R1，src 行为改动；**声明读法 + Revisit**——canonical 未定义 CurriculumLink 的 mapping/placement 二分，见 `DEC-OPI-4b549908-…31` revisit ②）
 
 §8.1 R2 的 `curriculum_link` 事实（`elc.curriculum.store.readiness_facts`）在
 C3-R1 前读「≥1 条 approved 行」（不问 relation / mapping 语义——外评 HIGH-1 的
