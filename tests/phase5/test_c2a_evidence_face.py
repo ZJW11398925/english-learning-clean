@@ -17,17 +17,18 @@ in order:
   its own: every rule ordinal carries a fixture at the same ordinal, both
   declared fixture kinds are present, and every ``expected`` value is one of
   the two declared readings;
-- the credit face widened with the approvals, read in both halves at C2-b's
-  truth: the fifteen RESOURCE targets whose approved row is a ``REALIZES``
-  row read the §24.7 node their link names through the one gate
-  (``CAPABILITY_CREDIT_EDITORIAL_STATUS``), the thirteen whose approved row is
-  a ``SUPPORTS`` row read ``None`` while their row stays readable, and the
-  five CAPABILITY entities still read ``None`` — the same read, more rows;
-- the volume gate's reading sentence: sixty-four usable R4 targets against
+- the credit face widened with the approvals, read in both halves at C3-R1's
+  truth: the nine RESOURCE targets of this scope whose approved row is a
+  ``REALIZES`` row read the §24.7 node their link names through the one gate
+  (``CAPABILITY_CREDIT_EDITORIAL_STATUS``), the nineteen whose approved row is
+  a ``SUPPORTS`` row read ``None`` while their row stays readable (six of them
+  are C3-R1 demotions: REALIZES then, no realization found, credit gone), and
+  the five CAPABILITY entities still read ``None`` — the same read, fewer rows;
+- the volume gate's reading sentence: sixteen usable R4 targets against
   IP §13's Calibration100 floor of 100 — the number moved (C3-a: 28 → 46,
-  C3-b: 46 → 64), the volume verdict (unmet) did not, while the two CORE
-  cells now read through the **declared reading** and are met; no opening
-  claim is made here. IP
+  C3-b: 46 → 64, C3-R1: 64 → 16), and at C3-R1 the two CORE cells read 11
+  (unmet) / 5 (met) through the **declared reading**: the semantic
+  fall-back the decision made on purpose. No opening claim is made here. IP
   §13's own first rung (28 resources) stays met and is asserted separately
   from the three floors.
 
@@ -154,25 +155,38 @@ RES_TARGETS = (
     *C3B_TARGETS,
 )
 
-#: The fifteen targets whose approved §24.7 link is a REALIZES row and
-#: therefore credits a capability node on the credit face (C2-a's nine plus
-#: C2-b's six).
+#: The **nine** targets whose approved §24.7 link is a REALIZES row after
+#: C3-R1's capability-semantics re-review and therefore still credits a
+#: capability node on the credit face (C2-a's three surviving REALIZES rows
+#: plus C2-b's six). Before C3-R1 this tuple held fifteen: the six rows in
+#: ``C3R1_DEMOTED_TARGETS`` were REALIZES then, and the re-review found no
+#: realization in them.
 CREDIT_TARGETS = (
-    "res-colloc-make-a-decision",
-    "res-colloc-pay-attention-to",
     "res-discourse-anyway",
     "res-discourse-by-the-way",
     "res-discourse-to-be-honest",
-    "res-frame-id-like-to",
     "res-hedge-i-think",
     "res-hedge-im-not-sure",
     "res-hedge-it-depends",
-    "res-idiom-break-the-ice",
-    "res-phrasal-look-forward-to",
-    "res-pragmatic-could-you",
     "res-pragmatic-thats-a-good-point-but",
     "res-softener-a-bit",
     "res-softener-kind-of",
+)
+
+#: The six rows C3-R1 demoted from REALIZES to SUPPORTS: each names a
+#: coverage placement under the node's functional definition, and a
+#: realization claim must be a mapping claim, so the relation word moved.
+#: Their five other mapping fields are frozen (``primary_flag`` stays true,
+#: recording the authoring claim), their approval is untouched, and the
+#: credit face no longer reads them — the capability credit this cut
+#: withdraws is exactly these six targets.
+C3R1_DEMOTED_TARGETS = (
+    "res-colloc-make-a-decision",
+    "res-colloc-pay-attention-to",
+    "res-frame-id-like-to",
+    "res-idiom-break-the-ice",
+    "res-phrasal-look-forward-to",
+    "res-pragmatic-could-you",
 )
 
 #: The three C3-a rows whose approved §24.7 link is REALIZES (the cut's own
@@ -191,8 +205,10 @@ C3B_CREDIT_TARGETS = (
     "res-pragmatic-no-offense-but",
 )
 
-#: The thirteen targets whose single approved §24.7 row is a SUPPORTS row:
-#: §8.1 R2-readable, credit-safe (the read filters relation = REALIZES).
+#: The nineteen targets whose single approved §24.7 row is a SUPPORTS row
+#: (C2-b's thirteen placements plus the six C2-a rows C3-R1 demoted):
+#: §8.1 R2-readable only where the row is a mapping, and credit-safe either
+#: way (the credit read filters relation = REALIZES).
 #: Scoped to the pre-C3-a corpus: the C3-a and C3-b additions are held to the
 #: same discipline by C3A_CREDIT_TARGETS / C3B_CREDIT_TARGETS and the file's
 #: own credit test.
@@ -264,12 +280,15 @@ def _level_and_missing(
 
 
 @pytest.mark.parametrize("target_id", C2A_TARGETS)
-def test_each_c2a_target_satisfies_all_nineteen_keys_and_reads_r4(
+def test_each_c2a_target_carries_all_nineteen_keys_and_takes_its_rung(
     built_content_db: Path, target_id: str
 ) -> None:
-    """Per target: every §8.1 key present (eighteen read from their own tables,
-    ``entity_row`` proven by the preceding ``get_resource`` success) and the
-    level is the top rung with nothing blocking the next one."""
+    """Per target: every §8.1 key present (eighteen read from their own
+    tables, ``entity_row`` proven by the preceding ``get_resource`` success)
+    and the level entailed by the link's C3-R1 mapping class — R4 where the
+    row is a curriculum mapping, R1 where the re-review placed it. The
+    evidence facts are asserted identically either way, which is the point:
+    C3-R1 moved the link's mapping class, not a row of evidence."""
 
     store = ContentStore(built_content_db)
     try:
@@ -281,11 +300,17 @@ def test_each_c2a_target_satisfies_all_nineteen_keys_and_reads_r4(
     finally:
         store.close()
     for key in READINESS_FACT_KEYS:
+        if key == "curriculum_link":
+            continue
         assert facts.value.present(key) is True, (target_id, key)
-    assert assessment.value.level == "R4_DETECTION_READY", target_id
-    assert assessment.value.next_level is None, target_id
-    assert assessment.value.missing_keys == (), target_id
-    assert assessment.value.detection_ready is True, target_id
+    if facts.value.curriculum_link is True:
+        assert assessment.value.level == "R4_DETECTION_READY", target_id
+        assert assessment.value.next_level is None, target_id
+        assert assessment.value.missing_keys == (), target_id
+        assert assessment.value.detection_ready is True, target_id
+    else:
+        assert assessment.value.level == "R1_LEXICALLY_RESOLVED", target_id
+        assert "curriculum_link" in assessment.value.missing_keys, target_id
 
 
 # ---------------------------------------------------------------------------
@@ -346,14 +371,16 @@ def test_a_declared_error_need_without_rows_drops_the_target_to_r2(
 ) -> None:
     """§8.1 R3's "以及需要时的 TypicalError" is a source declaration: the need
     stays declared while the rows are gone, so the key is unsatisfied and the
-    target stops one rung lower."""
+    target stops one rung lower. The variant runs over a C3-R1 *mapping*
+    target, because R2 is the rung a target with a mapping link and an
+    incomplete R3 set stops at."""
 
     def drop(document: dict) -> None:
         assert document["typical_error_required"] is True
         del document["typical_errors"]
 
-    artifact = _evidence_variant(tmp_path, "res-idiom-break-the-ice", drop)
-    level, missing = _level_and_missing(artifact, "res-idiom-break-the-ice")
+    artifact = _evidence_variant(tmp_path, "res-hedge-i-think", drop)
+    level, missing = _level_and_missing(artifact, "res-hedge-i-think")
     assert level == "R2_PLANNER_READY"
     assert missing == ("typical_error_when_needed",)
 
@@ -440,17 +467,19 @@ def test_every_authored_documents_detection_evidence_is_paired(
 def test_the_credit_face_reads_the_fifteen_approved_realizes_nodes(
     built_content_db: Path,
 ) -> None:
-    """The behavior change, stated as a read — now in four groups. With all
-    sixty-four §24.7 rows approved, **fifteen** RESOURCE targets (C2-a's
-    nine plus C2-b's six REALIZES rows), **three** C3-a targets and **three**
-    C3-b targets carry the node their link names in their teaching payload
-    (this is what an ``ALTERNATIVE_SUCCESS`` attempt can credit), the provider
-    view agrees; the
-    targets whose single approved row is a ``SUPPORTS`` row — the thirteen of
-    the earlier cuts, the fifteen of C3-a and the fifteen of C3-b — read
-    ``None`` on the credit face while their row stays fully readable, the
-    credit-safe direction C2-b introduced; and the five CAPABILITY entities —
-    no link row of their own — still read ``None``."""
+    """The behavior change, stated as a read — at C3-R1's truth. With all
+    sixty-four §24.7 rows approved, **nine** targets of the pre-C3-a corpus
+    (C2-a's three surviving REALIZES rows plus C2-b's six), **three** C3-a
+    targets and **three** C3-b targets carry the node their link names in
+    their teaching payload — fifteen in all, this is what an
+    ``ALTERNATIVE_SUCCESS`` attempt can credit; the
+    targets whose single approved row is a ``SUPPORTS`` row — the eleven of
+    the earlier cuts (the thirteen C2-b placements minus the six C2-a rows
+    C3-R1 demoted, plus those six) — read ``None`` on the credit face while
+    their row stays fully readable, the credit-safe direction C2-b
+    introduced (and the direction C3-R1's demotions moved six more targets
+    into); and the five CAPABILITY entities — no link row of their own —
+    still read ``None``."""
 
     store = ContentStore(built_content_db)
     try:
@@ -474,6 +503,11 @@ def test_the_credit_face_reads_the_fifteen_approved_realizes_nodes(
             else:
                 assert relation == "SUPPORTS", target_id
                 assert teaching.value.capability_linkage is None, target_id
+            if target_id in C3R1_DEMOTED_TARGETS:
+                # Demoted: the row is readable, approved and still carries its
+                # frozen primary_flag, and the credit is gone.
+                assert links.value[0].editorial_status == "CANONICAL_APPROVED"
+                assert links.value[0].primary_flag is True, target_id
         for target_id in CAP_TARGETS:
             teaching = supply.get_teaching_content(target_id)
             assert isinstance(teaching, Ok), teaching
@@ -481,10 +515,13 @@ def test_the_credit_face_reads_the_fifteen_approved_realizes_nodes(
     finally:
         store.close()
 
-    assert len(CREDIT_TARGETS) == 15
+    assert len(CREDIT_TARGETS) == 9
+    assert len(C3R1_DEMOTED_TARGETS) == 6
     assert len(C3A_CREDIT_TARGETS) == 3
     assert len(C3B_CREDIT_TARGETS) == 3
-    assert len(SUPPORT_ONLY_TARGETS) == 13
+    # The pre-C3-a corpus's support-only side: C2-b's thirteen placements plus
+    # the six C2-a rows C3-R1 demoted (the demotion moved credit, not rows).
+    assert len(SUPPORT_ONLY_TARGETS) == 19
 
     provider = ContentBackedTeachingTargetProvider(built_content_db)
     try:
@@ -541,14 +578,17 @@ def test_the_calibration100_readings_at_c3b_truth(built_content_db: Path) -> Non
     whose level is R3_TEACHING_READY or R4_DETECTION_READY, split by
     ``content_pedagogical_profile.core_utility`` (HIGH versus MEDIUM/LOW) —
     not the capability-``family`` counts this file read until C3-a, which
-    could never move when resources were authored. The artifact now answers
-    sixty-four detection-ready resource targets out of sixty-nine entities,
-    CORE_A = 42 (floor 30, met), CORE_C = 22 (floor 2, met) and
-    ``resource_count`` = 64 < 100 (unmet) — three separate readings, never one
-    "gate passed" sentence (旧真值: one of fourteen; C2-a: nine of fourteen
-    with both CORE cells 0). IP §13's own starting number is 28: the
-    RESOURCE count passed it long ago, and that is the first rung of
-    "28 → 100", not a Calibration100 pass."""
+    could never move when resources were authored. At **C3-R1's** truth the
+    artifact answers sixteen detection-ready resource targets out of
+    sixty-nine entities, CORE_A = 11 (floor 30, **unmet** — the fall-back the
+    decision made on purpose, since only a curriculum mapping satisfies §8.1
+    R2), CORE_C = 5 (floor 2, met) and ``resource_count`` = 64 < 100 (unmet)
+    — three separate readings, never one "gate passed" sentence (旧真值: one
+    of fourteen; C2-a: nine of fourteen with both CORE cells 0; C3-b: 42/22
+    with both cells met). IP §13's own starting number is 28: the RESOURCE
+    count passed it long ago, and that is the first rung of "28 → 100", not a
+    Calibration100 pass — at C3-R1 the *detection-ready* count no longer
+    passes it, which is the semantic cost the decision accepted."""
 
     plan_text = (
         Path(__file__).resolve().parents[2] / "docs" / "IMPLEMENTATION_PLAN.md"
@@ -598,17 +638,34 @@ def test_the_calibration100_readings_at_c3b_truth(built_content_db: Path) -> Non
     ]
     core_a = [t for t in banded if utilities.get(t) == "HIGH"]
     core_c = [t for t in banded if utilities.get(t) in ("MEDIUM", "LOW")]
-    assert len(ready) == 64
-    assert sorted(ready) == res_rows
+    assert len(ready) == 16
     assert len(res_rows) == 64  # the IP §13 first rung: 28 — long passed
     assert len(resources) == 69
     print(
-        f"[c3b] calibration readings -> CORE_A {len(core_a)}/{gates['CORE_A']}"
-        f" (met), CORE_C {len(core_c)}/{gates['CORE_C']} (met),"
+        f"[c3r1] calibration readings -> CORE_A {len(core_a)}/{gates['CORE_A']}"
+        f" (unmet), CORE_C {len(core_c)}/{gates['CORE_C']} (met),"
         f" resource_count {len(res_rows)}/{gates['resource_count']} (unmet;"
-        f" IP §13 first rung = 28)"
+        f" IP §13 first rung = 28, detection-ready {len(ready)})"
     )
-    assert len(core_a) >= gates["CORE_A"]
+    # The direction is asserted as it is, not as the earlier cuts read it.
+    assert len(core_a) < gates["CORE_A"]
     assert len(core_c) >= gates["CORE_C"]
     assert len(res_rows) < gates["resource_count"]
-    assert len(ready) >= 28  # the first rung, met
+    # CORE_A is exactly the HIGH-band share of the mapping set: the fall-back
+    # is the link's mapping class, and nothing else moved.
+    assert sorted(ready) == sorted(_mapping_resource_ids(built_content_db))
+    assert len(ready) < 28  # the IP §13 first rung is no longer met
+
+
+def _mapping_resource_ids(artifact: Path) -> tuple[str, ...]:
+    """The resources whose §24.7 row declares CURRICULUM_MAPPING."""
+
+    conn = sqlite3.connect(str(artifact))
+    try:
+        rows = conn.execute(
+            "SELECT resource_id FROM curriculum_link "
+            "WHERE mapping_class = 'CURRICULUM_MAPPING' ORDER BY resource_id"
+        ).fetchall()
+    finally:
+        conn.close()
+    return tuple(str(row[0]) for row in rows)

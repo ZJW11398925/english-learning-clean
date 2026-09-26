@@ -111,6 +111,23 @@ C3B_SUPPORT_TARGETS = tuple(
     target for target in C3B_TARGETS if target not in C3B_REALIZES
 )
 
+#: The C3-b targets whose §24.7 row is a curriculum mapping after C3-R1: this
+#: cut's three REALIZES rows plus `res-hedge-not-really`, the one SUPPORTS row
+#: the capability re-review found to be a genuine mapping (a gentle refusal of
+#: the interlocutor's premise). Only these four reach §8.1 R2; the other
+#: fourteen are coverage placements and stop at R1.
+C3B_MAPPING_TARGETS = (
+    "res-discourse-that-reminds-me",
+    "res-hedge-i-guess",
+    "res-hedge-not-really",
+    "res-pragmatic-no-offense-but",
+)
+
+#: The fourteen C3-b targets whose row is a coverage placement.
+C3B_PLACEMENT_TARGETS = tuple(
+    target for target in C3B_TARGETS if target not in C3B_MAPPING_TARGETS
+)
+
 FIXTURE_KINDS = ("NEGATIVE", "FALSE_POSITIVE_BOUNDARY")
 EXPECTED_READINGS = ("NO_MATCH", "NO_MATCH_BOUNDARY")
 
@@ -232,40 +249,41 @@ def test_core_a_counts_the_high_utility_targets_at_r3_and_above(
 
     声明读法 + Revisit（用户 2026-09-26 裁决）: the plan text fixes the floor
     (CORE_A >= 30) and no definition of what is counted; the level x band
-    reading is the adjudicated one. At C3-b's truth the reading answers 42
-    (C3-a's 32 plus this cut's ten HIGH targets).
+    reading is the adjudicated one. At C3-R1's truth the reading answers 11 —
+    the HIGH-band share of the sixteen curriculum mappings — which is **below
+    the floor**: a placement row satisfies no R2 fact, so this cut's ten HIGH
+    targets count only where C3-R1 left their row a mapping.
     """
 
     levels, utilities = _levels_and_utilities(built_content_db)
     core_a, core_c = _core_counts(built_content_db)
-    assert core_a == 42
-    assert core_a >= 30
-    assert core_a + core_c == 64
+    assert core_a == 11
+    assert core_a < 30  # unmet again (was met at C3-b)
+    assert core_a + core_c == 16
     assert len(C3B_HIGH_TARGETS) == 10
+    kept = [t for t in C3B_HIGH_TARGETS if levels[t] == "R4_DETECTION_READY"]
+    assert kept == [t for t in C3B_HIGH_TARGETS if t in C3B_MAPPING_TARGETS]
     for target in C3B_HIGH_TARGETS:
-        assert levels[target] == "R4_DETECTION_READY", target
         assert utilities[target] == "HIGH", target
 
 
 def test_core_c_counts_the_medium_and_low_utility_targets_at_r3_and_above(
     built_content_db: Path,
 ) -> None:
-    """CORE_C = R3+ level ∧ core_utility MEDIUM/LOW. At C3-b's truth the
-    reading answers 22 (C3-a's 14 plus this cut's eight MEDIUM targets), and
-    the corpus's LOW arm still comes from C3-a's `res-pragmatic-could-i-ask`.
+    """CORE_C = R3+ level ∧ core_utility MEDIUM/LOW. At C3-R1's truth the
+    reading answers 5 (the MEDIUM-band share of the sixteen curriculum
+    mappings), and the corpus's LOW arm still comes from C3-a's
+    `res-pragmatic-could-i-ask`.
 
     声明读法 + Revisit（用户 2026-09-26 裁决），与 CORE_A 同一条读法。
     """
 
     levels, utilities = _levels_and_utilities(built_content_db)
     core_a, core_c = _core_counts(built_content_db)
-    assert core_c == 22
+    assert core_c == 5
     assert core_c >= 2
     assert len(C3B_NON_HIGH_TARGETS) == 8
     assert utilities["res-pragmatic-could-i-ask"] == "LOW"
-    for target in C3B_NON_HIGH_TARGETS:
-        assert levels[target] == "R4_DETECTION_READY", target
-        assert utilities[target] in ("MEDIUM", "LOW"), target
     banded = {t for t in levels if t.startswith("res-")}
     assert len(banded) == 64
     for target in banded:
@@ -277,9 +295,10 @@ def test_the_three_calibration100_floors_read_separately(
 ) -> None:
     """The three floors, each on its own line — the cut's honesty face.
 
-    CORE_A 42 >= 30 (met), CORE_C 22 >= 2 (met), resource_count 64 < 100
-    (unmet): three assertions, three printed readings, and no single
-    "gate passed" sentence. The floor numbers come from the frozen plan text,
+    At C3-R1's truth: CORE_A 11 < 30 (**unmet** — the fall-back the decision
+    made on purpose), CORE_C 5 >= 2 (met), resource_count 64 < 100 (unmet):
+    three assertions with three directions, three printed readings, and no
+    single "gate passed" sentence. The floor numbers come from the frozen plan text,
     not from a second hand-typed copy.
     """
 
@@ -315,11 +334,12 @@ def test_the_three_calibration100_floors_read_separately(
         f" (floor {gates['resource_count']},"
         f" {'met' if len(resources) >= gates['resource_count'] else 'unmet'})"
     )
-    assert core_a >= gates["CORE_A"]  # CORE_A met
+    assert core_a < gates["CORE_A"]  # CORE_A unmet (was met at C3-b)
     assert core_c >= gates["CORE_C"]  # CORE_C met
     assert len(resources) < gates["resource_count"]  # volume floor unmet
     assert len(resources) == 64
     assert len(entity_ids) == 69
+    assert core_a + core_c == 16  # the CORE cells count the mapping set
 
 
 # ---------------------------------------------------------------------------
@@ -333,7 +353,8 @@ def test_each_c3b_target_carries_all_nineteen_keys_and_reads_r4(
 ) -> None:
     """Per target: every §8.1 key present (eighteen read from their own tables,
     ``entity_row`` proven by the preceding ``get_resource`` success) and the
-    level is the top rung with nothing blocking the next one."""
+    level entailed by the link's C3-R1 mapping class — R4 for this cut's four
+    mappings, R1 for its fourteen coverage placements."""
 
     store = ContentStore(built_content_db)
     try:
@@ -345,19 +366,26 @@ def test_each_c3b_target_carries_all_nineteen_keys_and_reads_r4(
     finally:
         store.close()
     for key in READINESS_FACT_KEYS:
+        if key == "curriculum_link":
+            continue
         assert facts.value.present(key) is True, (target_id, key)
-    assert assessment.value.level == "R4_DETECTION_READY", target_id
-    assert assessment.value.next_level is None, target_id
-    assert assessment.value.missing_keys == (), target_id
-    assert assessment.value.detection_ready is True, target_id
+    if target_id in C3B_MAPPING_TARGETS:
+        assert assessment.value.level == "R4_DETECTION_READY", target_id
+        assert assessment.value.next_level is None, target_id
+        assert assessment.value.missing_keys == (), target_id
+        assert assessment.value.detection_ready is True, target_id
+    else:
+        assert assessment.value.level == "R1_LEXICALLY_RESOLVED", target_id
+        assert "curriculum_link" in assessment.value.missing_keys, target_id
 
 
-def test_the_corpus_table_is_sixty_four_r4_and_five_none(
+def test_the_corpus_table_is_sixteen_r4_forty_eight_r1_and_five_none(
     built_content_db: Path,
 ) -> None:
-    """The whole table, read once: every `res-*` target reads R4, the five
-    `cap-*` entities read None, and every one of the eighteen new ids is in
-    the R4 half."""
+    """The whole table, read once at C3-R1's truth: the sixteen `res-*`
+    targets whose §24.7 row is a curriculum mapping read R4, the forty-eight
+    placements read R1_LEXICALLY_RESOLVED, and the five `cap-*` entities read
+    None — this cut's split is four mappings against fourteen placements."""
 
     store = ContentStore(built_content_db)
     try:
@@ -369,13 +397,20 @@ def test_the_corpus_table_is_sixty_four_r4_and_five_none(
     table = {a.target_id: a.level for a in assessments.value}
     assert len(table) == 69
     r4 = sorted(t for t, level in table.items() if level == "R4_DETECTION_READY")
+    r1 = sorted(
+        t for t, level in table.items() if level == "R1_LEXICALLY_RESOLVED"
+    )
     none = sorted(t for t, level in table.items() if level is None)
-    assert all(target in r4 for target in C3B_TARGETS)
-    assert len(r4) == 64
+    assert all(target in r4 for target in C3B_MAPPING_TARGETS)
+    assert all(target in r1 for target in C3B_PLACEMENT_TARGETS)
+    assert len(r4) == 16
+    assert len(r1) == 48
     assert len(none) == 5
     assert all(target.startswith("cap-") for target in none)
     unexpected = [
-        level for level in table.values() if level not in (None, "R4_DETECTION_READY")
+        level
+        for level in table.values()
+        if level not in (None, "R4_DETECTION_READY", "R1_LEXICALLY_RESOLVED")
     ]
     assert unexpected == []
 
@@ -479,10 +514,13 @@ def test_every_c3b_evidence_document_pairs_its_rules_and_fixtures() -> None:
 def test_the_credit_face_widens_by_the_three_new_realizes_rows(
     built_content_db: Path,
 ) -> None:
-    """The links document carries 64 rows of which 21 are REALIZES
-    (18 + the cut's 3) and 43 SUPPORTS; the credit face answers a node for
-    exactly the 21 REALIZES rows, each reading the node its own row names;
-    the fifteen new SUPPORTS rows stay readable and mint nothing."""
+    """The links document carries 64 rows of which 15 are REALIZES after
+    C3-R1's capability re-review (this cut's three among them) and 49
+    SUPPORTS; the credit face answers a node for exactly those 15 rows, each
+    reading the node its own row names; this cut's fifteen SUPPORTS rows stay
+    readable and mint nothing — and their §8.1 R2 fact is False too, except
+    for the one row the re-review found to be a mapping
+    (``res-hedge-not-really``: R2 true, credit still None)."""
 
     document = json.loads(
         (CURRICULUM_DIR / "links.json").read_text(encoding="utf-8")
@@ -494,11 +532,12 @@ def test_the_credit_face_widens_by_the_three_new_realizes_rows(
         for row in rows
         if row["relation"] == "REALIZES"
     }
-    assert len(realizes) == 21
+    assert len(realizes) == 15
     assert set(C3B_REALIZES) <= set(realizes)
     assert realizes["res-hedge-i-guess"] == "cap-eval-hedged-opinion"
     assert realizes["res-discourse-that-reminds-me"] == "cap-disc-topic-shift"
     assert realizes["res-pragmatic-no-offense-but"] == "cap-stance-soften-disagreement"
+    assert "res-hedge-not-really" not in realizes
 
     store = ContentStore(built_content_db)
     try:
@@ -512,10 +551,20 @@ def test_the_credit_face_widens_by_the_three_new_realizes_rows(
             for target_id in C3B_SUPPORT_TARGETS:
                 if str(entity_id) == target_id:
                     assert teaching.value.capability_linkage is None, target_id
+        # The cut's one SUPPORTS mapping row: both facts, on the real artifact.
+        not_really = supply.readiness_facts("res-hedge-not-really")
+        assert isinstance(not_really, Ok), not_really
+        assert not_really.value.curriculum_link is True
+        level = supply.readiness("res-hedge-not-really")
+        assert isinstance(level, Ok), level
+        assert level.value.level == "R4_DETECTION_READY"
+        keep_in_mind = supply.readiness_facts("res-colloc-keep-in-mind")
+        assert isinstance(keep_in_mind, Ok), keep_in_mind
+        assert keep_in_mind.value.curriculum_link is False
     finally:
         store.close()
     assert credited == realizes
-    assert len(credited) == 21
+    assert len(credited) == 15
     assert len(C3B_SUPPORT_TARGETS) == 15
     assert len(C3B_TARGETS) == 18
 
@@ -540,19 +589,20 @@ def test_the_new_links_state_their_basis_and_their_limit() -> None:
         assert row["strength"] is None, target_id
         assert str(row["node_id"]).startswith("cap-"), target_id
         rationale = str(row["rationale"])
-        assert "C3-b (Phase 11) editorial review" in rationale, target_id
-        assert "no capability-semantics audit" in rationale, target_id
+        node = str(row["node_id"])
+        assert f"curriculum/capabilities/{node}.json" in rationale, target_id
+        assert "C3-R1 (Phase 11) capability-semantics re-review" in rationale
         assert "Revisit" in rationale, target_id
+        assert "Row provenance:" in rationale, target_id
         if row["relation"] == "REALIZES":
             assert row["primary_flag"] is True, target_id
-            assert "did NOT cover" in rationale, target_id
-            assert "no capability certification" in rationale, target_id
-            assert "R-C1-credit" in rationale, target_id
+            assert "counts_as_realization" in rationale, target_id
+            assert "credit face" in rationale, target_id
         else:
             assert row["relation"] == "SUPPORTS", target_id
             assert row["primary_flag"] is False, target_id
-            assert "nearest available node" in rationale, target_id
-            assert "mints nothing" in rationale, target_id
+            assert "does_not_count" in rationale, target_id
+            assert "mints nothing" in rationale or "credit" in rationale, target_id
 
 
 # ---------------------------------------------------------------------------
@@ -565,16 +615,17 @@ def test_a_high_utility_target_demoted_to_medium_leaves_core_a(
 ) -> None:
     """The band half of the reading, load-bearing: editing one C3-b evidence
     document's core_utility from HIGH to MEDIUM moves that target from CORE_A
-    to CORE_C (42/22 -> 41/23), so a pin that ignored the band would survive
-    this edit and this one does not."""
+    to CORE_C (11/5 -> 10/6), so a pin that ignored the band would survive this
+    edit and this one does not. The variant runs over a C3-R1 mapping target
+    (a placement row is in neither cell to begin with)."""
 
     def demote(document: dict) -> None:
         assert document["pedagogical_profile"]["core_utility"] == "HIGH"
         document["pedagogical_profile"]["core_utility"] = "MEDIUM"
 
-    artifact = _evidence_variant(tmp_path, "res-phrasal-work-out", demote)
-    assert _level_of(artifact, "res-phrasal-work-out") == "R4_DETECTION_READY"
-    assert _core_counts(artifact) == (41, 23)
+    artifact = _evidence_variant(tmp_path, "res-hedge-not-really", demote)
+    assert _level_of(artifact, "res-hedge-not-really") == "R4_DETECTION_READY"
+    assert _core_counts(artifact) == (10, 6)
 
 
 def test_demoting_a_new_targets_link_below_r3_drops_its_core_a_count(
@@ -583,9 +634,9 @@ def test_demoting_a_new_targets_link_below_r3_drops_its_core_a_count(
     """The level half of the reading, load-bearing: demoting one C3-b HIGH
     target's approved §24.7 link to CURRICULUM_MAPPED costs it the R2 fact and
     the level falls to R1_LEXICALLY_RESOLVED — so it leaves CORE_A although
-    its core_utility is untouched (42/22 -> 41/22). A band-only reading would
-    keep counting it, and the fifteen new SUPPORTS rows would not: their
-    approval is what the demotion removes."""
+    its core_utility is untouched (11/5 -> 10/5). A band-only reading would
+    keep counting it; a placement row's approval is what its demotion
+    removes."""
 
     def demote(documents: dict, _index: dict) -> None:
         for row in documents["links.json"]["links"]:
@@ -597,7 +648,7 @@ def test_demoting_a_new_targets_link_below_r3_drops_its_core_a_count(
     levels, utilities = _levels_and_utilities(artifact)
     assert utilities["res-hedge-i-guess"] == "HIGH"
     assert levels["res-hedge-i-guess"] not in CORE_LEVELS
-    assert _core_counts(artifact) == (41, 22)
+    assert _core_counts(artifact) == (10, 5)
 
 
 # ---------------------------------------------------------------------------

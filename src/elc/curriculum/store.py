@@ -333,9 +333,12 @@ class CurriculumContentStore:
         teaching = self.get_teaching_content(entity_id)
         if isinstance(teaching, Err):
             return teaching
-        links = self.curriculum_links_of(ResourceId(entity_id))
-        if isinstance(links, Err):
-            return links
+        mapping = self._store.has_approved_curriculum_mapping(entity_id)
+        if isinstance(mapping, Err):
+            # Unreachable in practice (an unknown id already answered
+            # NOT_FOUND above); propagated rather than swallowed, so a
+            # failure here can never read as "no mapping".
+            return mapping
         contrasts = self.get_examples(entity_id, ExampleLinkRole.CONTRAST)
         if isinstance(contrasts, Err):
             return contrasts
@@ -370,14 +373,21 @@ class CurriculumContentStore:
                 sense=evidence.senses >= 1,
                 basic_definition=evidence.definitions >= 1,
                 forms=evidence.forms >= 1,
-                # R2: §24.7 CurriculumLink — and only an approved mapping, the
-                # same discipline the supply gate keeps. A CURRICULUM_MAPPED
-                # row stays readable through curriculum_links_of and does not
-                # satisfy this fact.
-                curriculum_link=any(
-                    link.editorial_status == "CANONICAL_APPROVED"
-                    for link in links.value
-                ),
+                # R2: §24.7 CurriculumLink — and since C3-R1 only an approved
+                # **mapping**, not an approved row: a coverage placement
+                # satisfies "there is a link row" while carrying no claim that
+                # the resource has anything to do with the node's capability,
+                # and R2 asks for a curriculum link, not for a nearest-node
+                # bookkeeping entry (declared reading; the corpus's five nodes
+                # against sixty-four resources is what makes the distinction
+                # load-bearing). The read itself — one query over the §24.7
+                # ``mapping_class`` column, gated on §24.11 approval, exactly
+                # the discipline the supply gate keeps — lives in
+                # :meth:`elc.content.store.ContentStore.
+                # has_approved_curriculum_mapping`. A row that is unapproved
+                # or a placement stays readable through ``curriculum_links_of``
+                # and does not satisfy this fact.
+                curriculum_link=mapping.value,
                 # R2's remaining three: §24.7 PedagogicalProfile, §24.8
                 # PackOverlay and §24.7 ResourceLabel rows.
                 pedagogical_profile=evidence.pedagogical_profiles >= 1,

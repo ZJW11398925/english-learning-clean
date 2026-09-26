@@ -2,5 +2,28 @@
   "curriculum_node_id": "cap-stance-soften-disagreement",
   "capability_id": "cap-stance-soften-disagreement",
   "family": "STANCE",
-  "level": 2
+  "level": 2,
+  "functional_definition": {
+    "statement": "Disagreeing, objecting, criticising, refusing or assessing something negatively while taking the interpersonal edge off the move -- so the other person is not simply told they are wrong, or attacked -- by producing a short mitigate unit.",
+    "counts_as_realization": [
+      "the resource's taught production is a mitigate unit attached to, or standing as, a move that positions the other side negatively: a disagreement, an objection, a criticism, a rejection or a negative assessment (\"That's a good point, but we don't have the budget.\");",
+      "uttering the unit lowers the interpersonal force of that move: the other side is given credit before the objection, the assessment is downtoned (\"a bit small\", \"kind of sad\"), the criticism is flagged so that it does not land as an attack (\"No offense, but ...\"), or the refusal is delivered gently (\"Not really -- I don't watch much TV.\");",
+      "the lowering is the unit's own contribution -- remove it and the same disagreement or criticism stands in its unmitigated form;",
+      "the taught ladder teaches the unit as the way to keep the move polite or not absolute (\"Soften the statement: it should not sound absolute.\")."
+    ],
+    "does_not_count": [
+      "expressions whose taught production is a proposition rather than a move between the two speakers (naming an outcome, an effect, or the act of concluding);",
+      "expressions that hedge the speaker's own certainty rather than the force of a negative move (\"I think\", \"I guess\", \"it depends\"): that is the hedged-claim node's face. The two kinds of lowering are told apart by their object -- the interpersonal force of a negative move here, commitment to one's own claim there;",
+      "expressions that recalibrate or sharpen an assessment without softening it (\"if anything\" corrects, and can sharpen as well as soften);",
+      "expressions that merely report the other side's state or agreement (\"on the same page\")."
+    ],
+    "boundary_cases": [
+      "\"Not really -- I don't watch much TV.\" refuses the interlocutor's premise gently: a rejection delivered without a flat no, so it counts. Its §24.7 relation word stays SUPPORTS (the C3-R1 review changes only the mapping class; the row keeps primary_flag = false and mints no capability credit).",
+      "\"If anything, it got worse.\" corrects and can sharpen the assessment rather than softening the move, so it does not count.",
+      "\"To be fair, the first version was worse.\" adds the other side's point before a judgement, so it counts.",
+      "\"That's a good point, but we don't have the budget.\" concedes before objecting, so it counts.",
+      "\"The room is a bit small.\" downtones a negative assessment of the hearer's room rather than a disagreement in the narrow sense; the corpus's own reading (C2-a/C2-b) covers the softened negative assessment, and this definition keeps that arm, so it counts -- a stricter reading that required a disagreement proper would drop it."
+    ],
+    "basis": "Authoring judgement made in this repository (C3-R1), read against the canonical vocabulary that actually exists: docs/DOMAIN_MODEL.md §7's STANCE family name and §8's expression subtypes, plus this capability's own taught face -- the fixture reveal \"I see your point, but I'm not sure.\" whose hint is \"Soften the disagreement so it stays polite\" (tests/phase3/target_fixtures.py). No external psychometric or corpus source is claimed. This definition is the standard the §24.7 links into this node were re-reviewed against (curriculum/README.md, C3-R1); it is a declared reading whose Revisit is registered (a canonical definition would supersede it)."
+  }
 }

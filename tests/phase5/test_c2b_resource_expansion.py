@@ -113,11 +113,16 @@ C2B_SUPPORT_TARGETS = tuple(
 FIXTURE_KINDS = ("NEGATIVE", "FALSE_POSITIVE_BOUNDARY")
 EXPECTED_READINGS = ("NO_MATCH", "NO_MATCH_BOUNDARY")
 
-#: 旧真值 → 新真值: the credit face before and after this cut (C3-a moved it
-#: 15 → 18 and C3-b 18 → 21; the constants here are re-pinned to C3-b's truth
-#: so the same three-way count keeps holding).
-CREDIT_FACE_BEFORE = 15
-CREDIT_FACE_AFTER = 21
+#: 旧真值 → 新真值: the credit face before and after the C3-b scope's own
+#: rows (C3-a moved it 15 → 18 and C3-b 18 → 21). C3-R1's capability
+#: re-review then demoted six REALIZES rows to SUPPORTS — the C1 target and
+#: five of C2-a's eight, all outside this cut's six — so the same scope reads
+#: 3 before the six C2-b rows and 9 after them, and the corpus total is 15.
+CREDIT_FACE_BEFORE = 3
+CREDIT_FACE_AFTER = 9
+
+#: The corpus-wide credit face after C3-R1 (the 15 surviving REALIZES rows).
+CREDIT_FACE_CORPUS = 15
 
 _PLAN = Path(__file__).resolve().parents[2] / "docs" / "IMPLEMENTATION_PLAN.md"
 
@@ -156,15 +161,17 @@ def _stem(entity_id: str) -> str:
 
 
 @pytest.mark.parametrize("target_id", C2B_TARGETS)
-def test_each_c2b_target_carries_all_nineteen_keys_and_reads_r4(
+def test_each_c2b_target_carries_all_nineteen_keys_and_takes_its_rung(
     built_content_db: Path, target_id: str
 ) -> None:
     """Per target: every §8.1 key present (eighteen read from their own
     tables, ``entity_row`` proven by the preceding ``get_resource`` success)
-    and the level is the top rung with nothing blocking the next one. The
-    evidence documents are the cut's own — no authoring fixture backs them —
-    so the claim under test is exactly "this source states all nineteen
-    facts", not "a fixture said so"."""
+    and the level entailed by the link's C3-R1 mapping class — R4 for this
+    cut's six curriculum mappings, R1 for its thirteen coverage placements
+    (the deliberate fall-back: the evidence is identical either way, only the
+    §24.7 row's mapping class differs). The evidence documents are the cut's
+    own — no authoring fixture backs them — so the claim under test is
+    exactly "this source states all nineteen facts", not "a fixture said so"."""
 
     store = ContentStore(built_content_db)
     try:
@@ -176,20 +183,30 @@ def test_each_c2b_target_carries_all_nineteen_keys_and_reads_r4(
     finally:
         store.close()
     for key in READINESS_FACT_KEYS:
+        if key == "curriculum_link":
+            continue
         assert facts.value.present(key) is True, (target_id, key)
-    assert assessment.value.level == "R4_DETECTION_READY", target_id
-    assert assessment.value.next_level is None, target_id
-    assert assessment.value.missing_keys == (), target_id
-    assert assessment.value.detection_ready is True, target_id
+    if target_id in C2B_CREDIT_TARGETS:
+        assert facts.value.curriculum_link is True, target_id
+        assert assessment.value.level == "R4_DETECTION_READY", target_id
+        assert assessment.value.next_level is None, target_id
+        assert assessment.value.missing_keys == (), target_id
+        assert assessment.value.detection_ready is True, target_id
+    else:
+        assert facts.value.curriculum_link is False, target_id
+        assert assessment.value.level == "R1_LEXICALLY_RESOLVED", target_id
+        assert "curriculum_link" in assessment.value.missing_keys, target_id
 
 
-def test_the_corpus_table_is_sixty_four_r4_and_five_none(
+def test_the_corpus_table_is_sixteen_r4_forty_eight_r1_and_five_none(
     built_content_db: Path,
 ) -> None:
-    """The whole table, read once (C3-b truth): the sixty-four ``res-*``
-    targets read R4, the five ``cap-*`` entities read None, and every one of
-    the nineteen new ids is in the R4 half (the per-target pin above is the
-    positive direction; this one is the completeness direction)."""
+    """The whole table, read once (C3-R1 truth): the sixteen ``res-*``
+    targets whose §24.7 row is a curriculum mapping read R4, the other
+    forty-eight read R1_LEXICALLY_RESOLVED (evidence complete, link a
+    coverage placement), the five ``cap-*`` entities read None, and this
+    cut's split is the one the per-target pin above asserts — its six credit
+    rows in the R4 half, its thirteen placement rows in the R1 half."""
 
     store = ContentStore(built_content_db)
     try:
@@ -201,9 +218,14 @@ def test_the_corpus_table_is_sixty_four_r4_and_five_none(
     table = {a.target_id: a.level for a in assessments.value}
     assert len(table) == 69
     r4 = sorted(t for t, level in table.items() if level == "R4_DETECTION_READY")
+    r1 = sorted(
+        t for t, level in table.items() if level == "R1_LEXICALLY_RESOLVED"
+    )
     none = sorted(t for t, level in table.items() if level is None)
-    assert all(target in r4 for target in C2B_TARGETS)
-    assert len(r4) == 64
+    assert all(target in r4 for target in C2B_CREDIT_TARGETS)
+    assert all(target in r1 for target in C2B_SUPPORT_TARGETS)
+    assert len(r4) == 16
+    assert len(r1) == 48
     assert none == [
         "cap-disc-topic-shift",
         "cap-eval-hedged-opinion",
@@ -212,7 +234,9 @@ def test_the_corpus_table_is_sixty_four_r4_and_five_none(
         "cap-stance-soften-disagreement",
     ]
     unexpected = [
-        level for level in table.values() if level not in (None, "R4_DETECTION_READY")
+        level
+        for level in table.values()
+        if level not in (None, "R4_DETECTION_READY", "R1_LEXICALLY_RESOLVED")
     ]
     assert unexpected == []
 
@@ -230,12 +254,15 @@ def test_the_first_rung_and_the_three_floors_read_at_c3b_truth(
 
     The corpus's RESOURCE count is **64**, so IP §13's starting number (28) is
     long passed — that is the first rung, not a gate. Of the three floors,
-    ``resource_count`` = 64 < 100 is still unmet while CORE_A (42 >= 30) and
-    CORE_C (22 >= 2) are met under the **声明读法 + Revisit（用户 2026-09-26
-    裁决）**: R3_TEACHING_READY or R4_DETECTION_READY crossed with
+    ``resource_count`` = 64 < 100 is still unmet, CORE_C (5 >= 2) is met, and
+    **CORE_A (11 >= 30) is unmet again**: at C3-R1 only a curriculum mapping
+    satisfies §8.1 R2, so the R3+ set is the sixteen mapping targets, not all
+    sixty-four — under the **声明读法 + Revisit（用户 2026-09-26 裁决）**:
+    R3_TEACHING_READY or R4_DETECTION_READY crossed with
     ``content_pedagogical_profile.core_utility`` HIGH / {MEDIUM, LOW}. Each
-    floor is asserted on its own line; a cut that reached 100, or that folded
-    the three into one "gate passed" sentence, would fail here."""
+    floor is asserted on its own line, with its own direction; a cut that
+    reached 100, or that folded the three into one "gate passed" sentence,
+    would fail here."""
 
     plan_text = _PLAN.read_text(encoding="utf-8")
     assert "28 → 100 resource calibration" in plan_text
@@ -282,14 +309,16 @@ def test_the_first_rung_and_the_three_floors_read_at_c3b_truth(
     assert len(resources) >= 28  # IP §13's start: the first rung, passed
     assert len(entity_ids) == 69
     print(
-        f"[c3b] first rung passed: resource_count = {len(resources)} (IP §13"
+        f"[c3r1] first rung passed: resource_count = {len(resources)} (IP §13"
         f" start = 28); floors: resource_count"
         f" {len(resources)}/{gates['resource_count']} unmet,"
-        f" CORE_A {len(core_a)}/{gates['CORE_A']} met,"
+        f" CORE_A {len(core_a)}/{gates['CORE_A']} unmet,"
         f" CORE_C {len(core_c)}/{gates['CORE_C']} met"
     )
     assert len(resources) < gates["resource_count"]  # volume floor unmet
-    assert len(core_a) >= gates["CORE_A"]  # CORE_A met
+    # C3-R1: the CORE cells read only the mapping set now, so CORE_A falls
+    # below its floor again — asserted as the direction the truth has.
+    assert len(core_a) < gates["CORE_A"]  # CORE_A unmet (was met at C3-b)
     assert len(core_c) >= gates["CORE_C"]  # CORE_C met
 
 
@@ -319,11 +348,10 @@ def test_the_credit_face_delta_equals_the_new_realizes_rows(
     built_content_db: Path,
 ) -> None:
     """The behaviour change, counted three ways so it cannot drift: the
-    links document carries 64 rows of which 21 are REALIZES (15 + 3 C3-a
-    increments + 3 C3-b increments); the credit face answers a node for
-    exactly 21
-    entities; and the six C2-b ids that credit are the six named ones, each
-    reading the node its own row names."""
+    links document carries 64 rows of which 15 are REALIZES after C3-R1's
+    re-review (this cut's six among them); the credit face answers a node for
+    exactly 15 entities; and the six C2-b ids that credit are the six named
+    ones, each reading the node its own row names."""
 
     document = json.loads(
         (CURRICULUM_DIR / "links.json").read_text(encoding="utf-8")
@@ -335,7 +363,7 @@ def test_the_credit_face_delta_equals_the_new_realizes_rows(
         for row in rows
         if row["relation"] == "REALIZES"
     }
-    assert len(realizes) == CREDIT_FACE_AFTER == CREDIT_FACE_BEFORE + 6
+    assert len(realizes) == CREDIT_FACE_CORPUS == CREDIT_FACE_AFTER + 6
     assert set(C2B_CREDIT_TARGETS) <= set(realizes)
 
     store = ContentStore(built_content_db)
@@ -350,15 +378,18 @@ def test_the_credit_face_delta_equals_the_new_realizes_rows(
     finally:
         store.close()
     assert credited == realizes
-    assert len(credited) == CREDIT_FACE_AFTER
+    assert len(credited) == CREDIT_FACE_CORPUS
+    assert len(C2B_CREDIT_TARGETS) == 6
 
 
 def test_the_approved_supports_rows_credit_nothing(built_content_db: Path) -> None:
-    """The negative pin: an approved ``SUPPORTS`` row satisfies §8.1 R2's
-    ``curriculum_link`` fact and does **not** enter capability credit — the
-    read filters ``relation = REALIZES``. Without this direction the corpus
-    could not distinguish "the approval is what admits a row" from "any
-    approved row credits"."""
+    """The negative pin, in both directions after C3-R1: an approved
+    ``SUPPORTS`` row does **not** enter capability credit (the read filters
+    ``relation = REALIZES``), and — the C3-R1 half — it does not satisfy
+    §8.1 R2 either unless its ``mapping_class`` is ``CURRICULUM_MAPPING``.
+    C3-b's thirteen SUPPORTS rows are coverage placements, so both reads
+    answer no for them; the corpus's one SUPPORTS **mapping** row
+    (``res-hedge-not-really``, C3-b) is pinned by the C3-R1 file."""
 
     store = ContentStore(built_content_db)
     try:
@@ -374,10 +405,14 @@ def test_the_approved_supports_rows_credit_nothing(built_content_db: Path) -> No
             teaching = supply.get_teaching_content(target_id)
             assert isinstance(teaching, Ok), teaching
             assert teaching.value.capability_linkage is None, target_id
-            # R2-readable all the same: the readiness fact is satisfied.
+            # Readable all the same, and the R2 fact is now False: the row is
+            # a placement, not a mapping (C3-R1's declared-reading column).
             facts = supply.readiness_facts(target_id)
             assert isinstance(facts, Ok), facts
-            assert facts.value.curriculum_link is True, target_id
+            assert facts.value.curriculum_link is False, target_id
+            mapping = store.has_approved_curriculum_mapping(target_id)
+            assert isinstance(mapping, Ok), mapping
+            assert mapping.value is False, target_id
         assert len(C2B_SUPPORT_TARGETS) == 13
     finally:
         store.close()

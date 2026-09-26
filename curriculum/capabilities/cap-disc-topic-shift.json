@@ -2,5 +2,27 @@
   "curriculum_node_id": "cap-disc-topic-shift",
   "capability_id": "cap-disc-topic-shift",
   "family": "DISC",
-  "level": 2
+  "level": 2,
+  "functional_definition": {
+    "statement": "Moving the talk from what is currently being said to a different matter -- or back from a digression to the topic -- by producing a short discourse signpost whose utterance performs the move.",
+    "counts_as_realization": [
+      "the resource's taught production is a signpost the speaker says as a move of its own: the reveal shows the signpost plus the new-matter content (\"Anyway, let's get back to the topic.\"), not a clause buried inside a proposition;",
+      "saying it in that position changes what the talk is about -- it leaves a digression and returns to the topic, adds a side matter that was not on the table, or opens a matter the previous turn evoked;",
+      "the change is carried by the signpost itself: the rest of the turn is content about the new matter, and the same content without the signpost would read as continuing the current matter;",
+      "the taught realization has the speaker producing the signpost inside a conversational move (initiating the shift), not reporting that a shift happened."
+    ],
+    "does_not_count": [
+      "content vocabulary (collocations, phrasal verbs, idioms, sentence frames) whose taught production is a proposition about a state of affairs or an activity, including expressions that name talking about something (\"bring up\") or carrying an activity on (\"carry on\", \"give up\");",
+      "discourse markers that organise or comment on the material already on the table without changing what the talk is about (\"in fact\" asserts factuality, \"long story short\" compresses, \"the thing is\" frames the point);",
+      "expressions that manage the social episode rather than the topic (\"break the ice\" eases first-meeting awkwardness);",
+      "expressions of another interactional type that merely sit at the front of a turn (hedges, softeners, requests, frames)."
+    ],
+    "boundary_cases": [
+      "\"By the way, did you book the room?\" adds a side remark about a matter that is not being discussed: a departure-type shift, so it counts -- the new matter replaces the current one even though the speaker may return to it.",
+      "\"That reminds me -- did you ever call the bank?\" shifts associatively, the new matter being evoked by what was just said rather than unrelated: the signpost still moves the talk to a different matter, so it counts.",
+      "\"Speaking of which, how was the meeting?\" (the capability's own face in this repository) works like the associative case: the evoked matter becomes the topic, so it counts.",
+      "\"It was, in fact, the cheapest option.\" corrects an impression about the current matter: the topic does not change, so it does not count."
+    ],
+    "basis": "Authoring judgement made in this repository (C3-R1), read against the canonical vocabulary that actually exists: docs/DOMAIN_MODEL.md §7's DISC family name and §8's expression subtypes, plus this capability's own taught face -- the fixture reveal \"Speaking of which, how was the meeting?\" whose hint is \"Move the conversation to a new topic explicitly\" (tests/phase3/target_fixtures.py). No external psychometric or corpus source is claimed. This definition is the standard the §24.7 links into this node were re-reviewed against (curriculum/README.md, C3-R1); it is a declared reading whose Revisit is registered (a canonical definition would supersede it)."
+  }
 }

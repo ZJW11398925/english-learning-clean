@@ -54,14 +54,16 @@ FOCUS = "res-hedge-i-think"
 #: specimen for "the artifact carries nothing" that the zero-side pins read.
 NO_EVIDENCE_ENTITY = "cap-disc-topic-shift"
 
-#: The sixty-four RESOURCE targets, in id order — the ids whose sources
-#: state all nineteen §8.1 facts and therefore read ``R4_DETECTION_READY``.
-#: 旧真值: 9 (C1 authored one, C2-a eight); C2-b added nineteen with their
-#: evidence documents, C3-a eighteen of its cut and C3-b the last eighteen,
-#: and the list is written out
-#: rather than derived from the artifact, so a source that loses a document
-#: fails here instead of quietly shrinking the expected set.
-R4_TARGETS = (
+#: The sixty-four RESOURCE targets, in id order — every one of them states all
+#: nineteen §8.1 facts in its own evidence document (C1 authored one, C2-a
+#: eight, C2-b nineteen with their entities, C3-a eighteen of its cut and
+#: C3-b the last eighteen), and the list is written out rather than derived
+#: from the artifact, so a source that loses a document fails here instead of
+#: quietly shrinking the expected set. **C3-R1 moved their *level*, not their
+#: evidence**: the sixteen whose §24.7 row is a curriculum mapping read R4,
+#: the other forty-eight are coverage placements and read R1 (their link is
+#: the first missing key). The split is written out in ``MAPPING_TARGETS``.
+RESOURCE_TARGETS = (
     "res-colloc-come-to-a-conclusion",
     "res-colloc-draw-attention-to",
     "res-colloc-have-an-effect-on",
@@ -136,6 +138,32 @@ NO_LEVEL_TARGETS = (
     "cap-interact-backchannel",
     "cap-ref-ask-clarification",
     "cap-stance-soften-disagreement",
+)
+
+#: The sixteen RESOURCE targets whose §24.7 row is a curriculum mapping after
+#: C3-R1 — the R4 half of the corpus, written out rather than derived.
+MAPPING_TARGETS = (
+    "res-discourse-anyway",
+    "res-discourse-by-the-way",
+    "res-discourse-having-said-that",
+    "res-discourse-that-reminds-me",
+    "res-discourse-to-be-honest",
+    "res-hedge-i-guess",
+    "res-hedge-i-think",
+    "res-hedge-im-not-sure",
+    "res-hedge-it-depends",
+    "res-hedge-not-really",
+    "res-hedge-sort-of",
+    "res-pragmatic-no-offense-but",
+    "res-pragmatic-thats-a-good-point-but",
+    "res-softener-a-bit",
+    "res-softener-kind-of",
+    "res-softener-to-be-fair",
+)
+
+#: The other forty-eight: the same evidence, a coverage-placement link.
+PLACEMENT_TARGETS = tuple(
+    target for target in RESOURCE_TARGETS if target not in MAPPING_TARGETS
 )
 
 #: The §8.1 facts beyond R1, grouped by the level that adds them.
@@ -634,8 +662,10 @@ def test_corpus_readiness_table_is_computed_and_printed(
     no evidence and read no level, blocked at R0 by ``assessment_membership``;
     the sixty-four RESOURCE targets — C1's authored document, C2-a's eight,
     C2-b's nineteen, C3-a's eighteen and C3-b's eighteen — state all nineteen
-    facts and read
-    ``R4_DETECTION_READY``. The table prints the blocking keys so the reading
+    facts, and their *level* is then decided by the link's C3-R1 mapping
+    class: sixteen read ``R4_DETECTION_READY`` and the other forty-eight read
+    ``R1_LEXICALLY_RESOLVED`` with ``curriculum_link`` as the first key
+    blocking the next level. The table prints the blocking keys so the reading
     is checkable rather than asserted."""
 
     table = _corpus_table(built_content_db)
@@ -647,19 +677,26 @@ def test_corpus_readiness_table_is_computed_and_printed(
     assert len(table) == 69
     levels = {(target, missing): level for target, level, missing in table}
     # 旧真值 → 新真值（C1: 1×R4+13×None；C2-a: 9×R4+5×None；C2-b:
-    # 28×R4+5×None；C3-a: 46×R4+5×None；C3-b: 64×R4+5×None）.
+    # 28×R4+5×None；C3-a: 46×R4+5×None；C3-b: 64×R4+5×None；C3-R1:
+    # 16×R4 + 48×R1 + 5×None）.
+    assert levels[("res-hedge-i-think", ())] == "R4_DETECTION_READY"
     assert (
-        levels[("res-colloc-make-a-decision", ())] == "R4_DETECTION_READY"
+        levels[("res-colloc-make-a-decision", ("curriculum_link",))]
+        == "R1_LEXICALLY_RESOLVED"
     )
     for (target_id, missing), level in levels.items():
         if target_id.startswith("res-"):
-            assert level == "R4_DETECTION_READY", (target_id, level)
-            assert missing == (), (target_id, missing)
+            if target_id in MAPPING_TARGETS:
+                assert level == "R4_DETECTION_READY", (target_id, level)
+                assert missing == (), (target_id, missing)
+            else:
+                assert level == "R1_LEXICALLY_RESOLVED", (target_id, level)
+                assert missing[0] == "curriculum_link", (target_id, missing)
             continue
         assert level is None, (target_id, level)
         assert missing == ("assessment_membership",), (target_id, missing)
     assert sorted(t for t, _ in levels if t.startswith("res-")) == list(
-        R4_TARGETS
+        RESOURCE_TARGETS
     )
 
 
@@ -667,13 +704,16 @@ def test_every_corpus_resource_target_is_detection_ready(
     built_content_db: Path,
 ) -> None:
     """不虚报, both directions (旧真值: none; C1: exactly one; C2-a: nine; C2-b:
-    twenty-eight; 新真值 C3-b: the sixty-four RESOURCE targets, each with its own
-    evidence document): every target whose source states all nineteen §8.1 facts reads
-    R4 with its judgement fully reached, and every target whose source states
-    nothing carries no detection evidence, no level, and reports the four R4
-    facts as missing."""
+    twenty-eight; C3-b: all sixty-four; 新真值 C3-R1: the sixteen mapping
+    targets — the decision's honest fall-back): every target whose §24.7 row
+    is a curriculum mapping reads
+    R4 with its judgement fully reached, every placement target stops at R1
+    with the link among its missing keys, and every target whose source
+    states nothing carries no detection evidence, no level, and reports the
+    four R4 facts as missing."""
 
     r4_targets: list[str] = []
+    r1_targets: list[str] = []
     no_level_targets: list[str] = []
     for assessment in _corpus_assessments(built_content_db):
         if assessment.level == "R4_DETECTION_READY":
@@ -683,6 +723,21 @@ def test_every_corpus_resource_target_is_detection_ready(
             assert r4.reached is True
             assert r4.missing_keys == ()
             continue
+        if assessment.level == "R1_LEXICALLY_RESOLVED":
+            # The C3-R1 middle band: the evidence is all there, the link is a
+            # coverage placement, and R4 is reported as unreached — never as
+            # "absent evidence". The R4 judgement names every key of the R4
+            # set that the facts satisfy as unreached, and the *level-1*
+            # blocking key is the link itself.
+            r1_targets.append(assessment.target_id)
+            assert assessment.detection_ready is False
+            r4 = assessment.judgement("R4_DETECTION_READY")
+            assert r4.reached is False, assessment.target_id
+            assert "curriculum_link" in assessment.missing_keys, (
+                assessment.target_id
+            )
+            assert set(R4_FACTS) <= set(r4.required_keys)
+            continue
         no_level_targets.append(assessment.target_id)
         assert assessment.level is None, assessment.target_id
         r4 = assessment.judgement("R4_DETECTION_READY")
@@ -690,7 +745,8 @@ def test_every_corpus_resource_target_is_detection_ready(
         # R4 is cumulative: the four detection facts *and* everything below
         # them are reported missing for every target that does not reach it.
         assert set(R4_FACTS) <= set(r4.missing_keys)
-    assert r4_targets == list(R4_TARGETS)
+    assert r4_targets == list(MAPPING_TARGETS)
+    assert r1_targets == list(PLACEMENT_TARGETS)
     assert no_level_targets == list(NO_LEVEL_TARGETS)
 
 
@@ -852,15 +908,18 @@ def test_assessment_membership_is_required_and_absent(built_content_db: Path) ->
 def test_every_corpus_link_is_approved_and_satisfies_the_r2_fact(
     built_content_db: Path,
 ) -> None:
-    """The corpus read one level down, now at C2-a's truth (旧真值: every link
+    """The corpus read one level down, now at C3-R1's truth (旧真值: every link
     was ``CURRICULUM_MAPPED`` and the R2 fact was False for all 14; C1: one
-    approved link; 新真值 C2-a: all nine RESOURCE targets' links are approved
-    by editorial review — C1 reviewed one, C2-a the other eight while
-    authoring their readiness evidence, C2-b the nineteen it authored, C3-a
-    and C3-b the eighteen each — so the
-    R2 ``curriculum_link`` fact is satisfied for exactly the sixty-four
-    linked targets, and the 5 CAPABILITY nodes still have no link row of their
-    own (curriculum/README.md C1 — no self-link is invented). The unapproved
+    approved link; C2-a: all nine RESOURCE targets' links approved by editorial
+    review — C1 reviewed one, C2-a the other eight while authoring their
+    readiness evidence, C2-b the nineteen it authored, C3-a and C3-b the
+    eighteen each; **C3-R1**: the approval is no longer enough — the row must
+    also be a ``CURRICULUM_MAPPING``, and the capability re-review found 48 of
+    the 64 rows coverage placements). So the R2 ``curriculum_link`` fact is
+    satisfied for exactly the sixteen mapping targets, every linked target's
+    row is still approved (approval and mapping are now two separate
+    clauses), and the 5 CAPABILITY nodes still have no link row of their own
+    (curriculum/README.md C1 — no self-link is invented). The unapproved
     direction — a candidate mapping satisfies nothing — is pinned against a
     demoted variant in test_an_unapproved_curriculum_link_is_not_an_r2_fact
     below."""
@@ -891,10 +950,11 @@ def test_every_corpus_link_is_approved_and_satisfies_the_r2_fact(
         store.close()
     assert len(linked) == 64
     assert all(entity_id.startswith("res-") for entity_id in linked)
-    # The R2 fact and the approved status coincide on every linked target:
-    # no unapproved mapping satisfies it, and every approved one does.
+    # Every linked row is approved, and the R2 fact now reads one clause
+    # further: it is satisfied exactly by the mapping rows (C3-R1).
     assert approved == sorted(linked)
-    assert with_fact == approved
+    assert len(with_fact) == 16
+    assert set(with_fact) <= set(approved)
 
 
 def test_an_unapproved_curriculum_link_is_not_an_r2_fact(

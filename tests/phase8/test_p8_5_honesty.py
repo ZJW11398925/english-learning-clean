@@ -427,14 +427,15 @@ def test_the_module_is_not_re_exported_by_the_package() -> None:
 
 
 def test_the_shipped_corpus_denies_any_open_claim(tmp_path: Path) -> None:
-    """The pin the task book asks for, at C3-a's truth — as a two-layer
+    """The pin the task book asks for, at C3-R1's truth — as a two-layer
     statement (旧真值: the checker answered HOLD on every row, so the
     capable claim failed at the content gate itself; C1: one authored target
     reached R4 and every row answered GO; C2-a: nine RESOURCE targets reached
-    R4; C2-b: twenty-eight; C3-a: forty-six; 新真值 C3-b: sixty-four RESOURCE
-    targets reach R4,
+    R4; C2-b: twenty-eight; C3-a: forty-six; C3-b: sixty-four; 新真值 C3-R1:
+    the sixteen RESOURCE targets whose §24.7 row is a curriculum mapping
+    reach R4 — the honest fall-back the re-review made on purpose,
     so all four rows
-    read sixty-four usable targets and the content gate answers **GO** — and
+    read sixteen usable targets and the content gate answers **GO** — and
     the capable corpus *still* produces no opening claim): the rollout switch
     composes the stage leg with the content gate, no stage is declared anywhere
     in the shipped product, so ``automatic_teaching_enabled`` is False for
@@ -458,11 +459,12 @@ def test_the_shipped_corpus_denies_any_open_claim(tmp_path: Path) -> None:
     build_content_db(path)
     report = corpus_rollout_gate(CurriculumContentStore(ContentStore(path)))
     assert isinstance(report, Ok), report
-    # Layer one: content capable — every row GO on the sixty-four R4 targets.
+    # Layer one: content capable — every row GO on the sixteen R4 mapping
+    # targets (C3-R1's fall-back: the R2 fact reads a mapping, not a row).
     assert report.value.verdict is RolloutVerdict.GO
     assert report.value.automatic_verdict is RolloutVerdict.GO
     assert all(
-        row.usable_targets == 64 and row.verdict is RolloutVerdict.GO
+        row.usable_targets == 16 and row.verdict is RolloutVerdict.GO
         for row in report.value.rows
         if row.automatic
     )

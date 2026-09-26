@@ -238,7 +238,12 @@ morph_features）；`hint_ladder` → `content_hint_rung`（ordinal 保序）；
 
 capability linkage **不进 content_src**，进 `../curriculum/links.json`：
 resource → capability node 的 `CurriculumLink`（§24.7 七列逐字：resource_id /
-node_id / relation / strength / primary_flag / editorial_status / rationale）。
+node_id / relation / strength / primary_flag / editorial_status / rationale，
+**C3-R1 起另加第八列 `mapping_class`**——声明读法：canonical §24.7 未定义
+mapping/placement 二分，`CURRICULUM_MAPPING`（真语义映射，满足 node 功能定义的
+`counts_as_realization` 至少一条且不落 `does_not_count`）与
+`COVERAGE_PLACEMENT`（现役 5 节点语料所迫的就近覆盖记账）两词由 build 校验，
+`REALIZES ⇒ CURRICULUM_MAPPING` 为 build 形状规则；Revisit 随 C3-R1 裁决登记）。
 9 条 REALIZES 链接 = 9 个 RESOURCE target 的 fixture `capability_linkage` 逐条迁移；
 C2-b 另写 19 条（6 条 REALIZES + 13 条 SUPPORTS）给 19 个新实体，C3-a 再写 18 条
 （3 条 REALIZES + 15 条 SUPPORTS）给 18 个新实体，C3-b 再写 18 条
@@ -246,6 +251,11 @@ C2-b 另写 19 条（6 条 REALIZES + 13 条 SUPPORTS）给 19 个新实体，C3
 credit 面限度见 `../curriculum/README.md` 的 C2-b / C3-a / C3-b 段——**node_id 只取现役 5 个
 cap-* 节点**（build 的引用完整性要求 `node_id` 必须是已声明的 capability，
 `content_src/README.md` 与 `elc.content.build._check_references` 同一条）。
+**C3-R1 重审**：64 行全部定级 `mapping_class`（16 MAPPING + 48 PLACEMENT），
+6 条旧 REALIZES 降级 SUPPORTS（见 `../curriculum/README.md` 变更记录），
+§8.1 R2 的 `curriculum_link` 事实改读 approved ∧ `CURRICULUM_MAPPING`，
+`CONTENT_DB_VERSION` 据此 bump `"2"` → `"3"`（表集不变、行形状变化——§26.1
+显式 bump，禁止依赖代码猜 schema）。
 
 `strength` 在 canonical 中**只有 prerequisite 边**给了词表（§7
 HARD/SOFT/SCAFFOLDABLE）；§24.7 未给 CurriculumLink 的 strength 值域，故本语料
@@ -275,7 +285,7 @@ target 的两个域视图，故不造自环链接行）。
 | `canonical_forms` | `content_example`（role=PRIMARY_TARGET） |
 | `alternative_realizations` | `content_example`（role=SUPPORTING） |
 | `required_slots` | `content_slot`（group/token ordinal） |
-| `capability_linkage` | `curriculum_link`（relation=REALIZES, primary_flag=1） |
+| `capability_linkage` | `curriculum_link`（fixture 声明为 REALIZES 的 9 行；**C3-R1 重审后其中 6 行降级为 SUPPORTS ∧ COVERAGE_PLACEMENT——行仍在、node 不变、不再铸 credit**，见 `../curriculum/README.md` 变更记录） |
 
 ## 确定性规则
 
@@ -294,8 +304,9 @@ target 的两个域视图，故不造自环链接行）。
 PYTHONPATH=src python -m elc.content.build --out build/content.db
 ```
 
-产物元数据：`content_meta.content_db_version = "2"`（docs/DATA_MODEL.md §26.1；
-C1 把表集 11 → 24，C1 处置据此显式 bump，禁止依赖代码猜 schema）。
+产物元数据：`content_meta.content_db_version = "3"`（docs/DATA_MODEL.md §26.1；
+C1 把表集 11 → 24，C3-R1 给 `curriculum_link` 加 `mapping_class` 列（表集不变、
+行形状变化），均据此显式 bump，禁止依赖代码猜 schema）。
 
 ADR：`content.db` 是生成物（`.gitignore` 已含 `*.db`），由 CI/本地按需重建；
 本目录与 `../curriculum/` 是版本控制内的唯一作者源。

@@ -71,13 +71,47 @@ from tests.phase5.conftest import (
 )
 
 #: The blocker pair: a RESOURCE whose §24.7 link named
-#: ``cap-eval-hedged-opinion`` on the strength of the P3 fixture alone.
+#: ``cap-eval-hedged-opinion`` on the strength of the P3 fixture alone. C3-R1
+#: demoted the row (a collocation names an act, it hedges nothing), so the
+#: chain no longer credits it.
 DECISION = "res-colloc-make-a-decision"
 DECISION_ALTERNATIVE = "We have to take a decision today."
 HEDGED_OPINION = "cap-eval-hedged-opinion"
 MODALITY = "TEXT_PRODUCTION"
 
+#: A RESOURCE whose §24.7 row C3-R1 kept as a curriculum mapping (relation
+#: REALIZES, mapping class CURRICULUM_MAPPING), used by the end-to-end credit
+#: test so the credit path stays proven after the six demotions.
+HEDGE_TARGET = "res-hedge-i-think"
+HEDGE_ALTERNATIVE = "It might rain."
+
 SEED_LINKS = CURRICULUM_DIR / "links.json"
+
+#: The nine P3-1A/P3-1B migrated rows whose linkage the authoring fixture
+#: (tests/phase3/target_fixtures.py) declares — every other row's rationale
+#: says that no fixture declares it.
+FIXTURE_DECLARED = (
+    "res-colloc-make-a-decision",
+    "res-colloc-pay-attention-to",
+    "res-discourse-by-the-way",
+    "res-frame-id-like-to",
+    "res-hedge-i-think",
+    "res-idiom-break-the-ice",
+    "res-phrasal-look-forward-to",
+    "res-pragmatic-could-you",
+    "res-softener-kind-of",
+)
+
+#: The six rows C3-R1 demoted from REALIZES to SUPPORTS (each rationale
+#: discloses it, each frozen primary_flag still records the authoring claim).
+DEMOTED = (
+    "res-colloc-make-a-decision",
+    "res-colloc-pay-attention-to",
+    "res-frame-id-like-to",
+    "res-idiom-break-the-ice",
+    "res-phrasal-look-forward-to",
+    "res-pragmatic-could-you",
+)
 
 #: The eight rows C2-a approved while authoring their readiness evidence
 #: (C1's own row is DECISION above).
@@ -194,19 +228,22 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
     approved one row; C2-a approved the other eight while authoring their
     targets' readiness evidence; C2-b authored and approved nineteen more,
     C3-a eighteen and C3-b the last eighteen, so today all sixty-four rows are
-    ``CANONICAL_APPROVED`` —
-    and the mapping-describing fields of the nine migrated rows (relation,
-    strength, primary_flag, and the two ids) are exactly what the approvals
-    were forbidden to touch, asserted row by row from the source document. The
-    C2-b, C3-a and C3-b rows are held to the same field discipline: a
-    ``REALIZES``
-    row carries ``primary_flag = true``, a ``SUPPORTS`` row ``false``, and
-    ``strength`` is null everywhere (no vocabulary is invented)."""
+    ``CANONICAL_APPROVED``.
+    **C3-R1 then re-read their semantics**: the relation word of six rows
+    moved (REALIZES → SUPPORTS, each row's own rationale disclosing it) while
+    the five mapping fields the approvals were forbidden to touch
+    (``node_id``, ``strength``, ``primary_flag``, ``editorial_status`` and the
+    resource id) are exactly what the re-review was forbidden to touch too.
+    ``primary_flag`` therefore records the *authoring* claim: it stays true on
+    those six rows, and the credit read — which keys on
+    ``relation = REALIZES`` — is what the demotion changes. ``strength`` is
+    null everywhere (no vocabulary is invented)."""
 
     links = _links_document()["links"]
     assert len(links) == 64
     realizes = 0
     supports = 0
+    demoted = 0
     for row in links:
         assert row["editorial_status"] == "CANONICAL_APPROVED", row
         assert row["editorial_status"] in LIFECYCLE_STATUSES, row
@@ -219,8 +256,16 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
             assert row["primary_flag"] is True, row
         else:
             supports += 1
-            assert row["primary_flag"] is False, row
-    assert (realizes, supports) == (21, 43)
+            if row["primary_flag"] is True:
+                # A demoted row: the flag is the frozen authoring claim.
+                demoted += 1
+                assert (
+                    "corrected from REALIZES to SUPPORTS" in str(row["rationale"])
+                ), row
+            else:
+                assert row["primary_flag"] is False, row
+    assert (realizes, supports) == (15, 49)
+    assert demoted == 6
     print(
         "[p5-r] corpus links -> "
         f"{sorted({row['editorial_status'] for row in links})}"
@@ -231,58 +276,56 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
 
 @pytest.mark.parametrize("index", range(64))
 def test_every_rationale_states_its_basis_and_its_limit(index: int) -> None:
-    """Every rationale must carry its basis **and** its limit, and each one
-    names its own row. The basis differs by cut (C1 for the first row, C2-a
-    for the eight it approved, C2-b for the nineteen it authored and
-    approved, C3-a for the eighteen it authored and approved, C3-b for the
-    last eighteen), and the limits
-    are stated in each row's own words: what the
-    review did not cover (no capability-semantics audit, because the
-    capability has no functional definition here), the Revisit, and — for the
-    credit-bearing REALIZES rows — the live risk ``R-C1-credit``. A SUPPORTS
-    row states the same no-audit limit and adds its own credit limit: the
-    credit face reads REALIZES only, so an approved SUPPORTS row mints
-    nothing. The P5-R ban on crediting an unapproved row is not carried by
-    prose any more but by the status field: since C2-a no corpus row is
-    unapproved, so this file pins the demoted case against a variant
+    """Every rationale is written in the C3-R1 review genre: it names the node
+    it points at and that node's functional-definition file, quotes the
+    resource's **own** first taught rung (the row-identity check — it is
+    checkable against the entity source, so a copy-pasted rationale fails),
+    states the mapping class it was judged into, cites the criterion list it
+    was judged by (``counts_as_realization`` for a mapping, ``does_not_count``
+    for a placement), states its credit consequence in its own words, states
+    its provenance (which cut authored the row, and whether an authoring
+    fixture declares the linkage) and registers its Revisit. The six demoted
+    rows additionally disclose the relation change in their own words. The
+    P5-R ban on crediting an unapproved row is not carried by prose any more
+    but by the status field: since C2-a no corpus row is unapproved, so this
+    file pins the demoted case against a variant
     (test_the_gate_is_a_gate_not_a_deletion below)."""
 
     row = _links_document()["links"][index]
     rationale = str(row["rationale"])
-    assert str(row["node_id"]) in rationale, rationale
-    assert str(row["resource_id"]) in rationale, rationale
+    node = str(row["node_id"])
+    assert node in rationale, rationale
+    assert f"curriculum/capabilities/{node}.json" in rationale, rationale
     assert row["editorial_status"] == "CANONICAL_APPROVED", row
-    resource_id = str(row["resource_id"])
-    if resource_id == DECISION:
-        assert "Approved by the C1 (Phase 11) editorial review" in rationale
-    elif resource_id in C2A_APPROVED:
-        assert "Approved by the C2-a (Phase 11) editorial review" in rationale
-    elif resource_id in C3A_APPROVED:
-        assert "C3-a (Phase 11) editorial review" in rationale, resource_id
-        # The eighteen rows this cut authored carry their own provenance
-        # limit: unlike the migrated nine, no authoring fixture declares them.
-        assert "fixture" in rationale, resource_id
-    elif resource_id in C3B_APPROVED:
-        assert "C3-b (Phase 11) editorial review" in rationale, resource_id
-        # The eighteen rows this cut authored carry their own provenance
-        # limit: unlike the migrated nine, no authoring fixture declares them.
-        assert "fixture" in rationale, resource_id
-    else:
-        assert "C2-b (Phase 11) editorial review" in rationale, resource_id
-        # The nineteen rows this cut authored carry their own provenance
-        # limit: unlike the migrated nine, no authoring fixture declares them.
-        assert "fixture" in rationale, resource_id
-    assert "no functional definition" in rationale, rationale
-    assert "no capability-semantics audit" in rationale, rationale
+    assert row["mapping_class"] in rationale, rationale
+    assert "C3-R1 (Phase 11) capability-semantics re-review" in rationale
     assert "Revisit" in rationale, rationale
-    if row["relation"] == "REALIZES":
-        assert "did NOT cover" in rationale, rationale
-        assert "no capability certification" in rationale, rationale
-        assert "R-C1-credit" in rationale, rationale
+    assert "Row provenance:" in rationale, rationale
+    resource_id = str(row["resource_id"])
+    # Provenance: the nine fixture-declared rows say so; the cuts' own rows
+    # say which cut authored them.
+    if resource_id in FIXTURE_DECLARED:
+        assert "authoring fixture" in rationale, resource_id
     else:
-        assert "SUPPORTS" in rationale, rationale
-        assert "credit-safe" in rationale or "mints nothing" in rationale, rationale
-        assert "primary_flag is false" in rationale, rationale
+        assert "no authoring fixture" in rationale, resource_id
+        if resource_id in C3A_APPROVED:
+            assert "C3-a (Phase 11)" in rationale, resource_id
+        elif resource_id in C3B_APPROVED:
+            assert "C3-b (Phase 11)" in rationale, resource_id
+        else:
+            # Every remaining row was authored by C2-b (the C2-a rows are all
+            # fixture-declared; C1's own row is DECISION above).
+            assert "C2-b (Phase 11)" in rationale, resource_id
+    if row["mapping_class"] == "CURRICULUM_MAPPING":
+        assert "counts_as_realization" in rationale, rationale
+    else:
+        assert "does_not_count" in rationale, rationale
+    if row["relation"] == "REALIZES":
+        assert "credit face" in rationale, rationale
+    else:
+        assert "mints nothing" in rationale or "credit" in rationale, rationale
+    if resource_id in DEMOTED:
+        assert "corrected from REALIZES to SUPPORTS" in rationale, resource_id
 
 
 def test_the_entity_lifecycle_is_the_authors_and_was_not_touched(
@@ -316,11 +359,14 @@ def test_the_link_row_stays_readable_and_the_credit_face_reads_the_approved_node
 ) -> None:
     """The gate reads the link's own status, in both directions (旧真值: the
     unapproved row stayed readable and the credit face answered ``None``;
-    新真值 C1: the same row, now approved, stays readable and the credit
-    face answers the node). Unapproved ≠ deleted was never about this one
-    row's status — it is the demoted variant in
-    ``test_the_gate_is_a_gate_not_a_deletion`` that keeps that discipline
-    pinned now that C2-a approved the remaining eight rows."""
+    C1: the same row, now approved, stayed readable and the credit face
+    answered the node; **C3-R1**: the row is still readable and approved, and
+    the credit face now answers ``None`` — the capability re-review found the
+    collocation a coverage placement, so its relation word moved to
+    ``SUPPORTS`` and a realization claim it no longer makes is not
+    credited). Unapproved ≠ deleted was never about this one row's status —
+    it is the demoted variant in ``test_the_gate_is_a_gate_not_a_deletion``
+    that keeps that discipline pinned."""
 
     store = ContentStore(built_content_db)
     try:
@@ -329,10 +375,11 @@ def test_the_link_row_stays_readable_and_the_credit_face_reads_the_approved_node
         assert len(links.value) == 1
         assert links.value[0].editorial_status == "CANONICAL_APPROVED"
         assert links.value[0].node_id == HEDGED_OPINION
+        assert str(links.value[0].relation) == "SUPPORTS"
         assert links.value[0].rationale
         teaching = store.get_teaching_content(DECISION)
         assert isinstance(teaching, Ok), teaching
-        assert teaching.value.capability_linkage == HEDGED_OPINION
+        assert teaching.value.capability_linkage is None
         # Every unaffected field of the payload is untouched by the gate.
         assert teaching.value.canonical_forms
         assert teaching.value.alternative_realizations
@@ -344,7 +391,7 @@ def test_the_link_row_stays_readable_and_the_credit_face_reads_the_approved_node
     try:
         view = provider.resolve("RESOURCE", DECISION)
         assert isinstance(view, Ok), view
-        assert view.value.capability_linkage == HEDGED_OPINION
+        assert view.value.capability_linkage is None
         assert view.value.target_status == "VALID"
     finally:
         provider.close()
@@ -356,15 +403,16 @@ def test_only_the_approved_realizes_link_credits_a_capability(
     """The gate applies by status **and by relation**, not by row count
     (旧真值: all nine linked resources read ``None`` on the credit face; C1:
     one approved row credited its node; C2-a: all nine approved rows credited;
-    C2-b: twenty-eight rows approved, fifteen crediting; 新真值 C3-b:
-    sixty-four rows are approved, and exactly the twenty-one ``REALIZES`` rows
-    credit — the forty-three approved ``SUPPORTS`` rows satisfy §8.1 R2's
-    ``curriculum_link`` fact and mint nothing, because the read filters
-    ``relation = REALIZES``). The count is what still distinguishes this from
-    "every entity credits": the five CAPABILITY entities carry no
-    link row at all and read ``None``. The unapproved direction is pinned
-    against a demoted variant in test_the_gate_is_a_gate_not_a_deletion
-    below."""
+    C2-b: twenty-eight rows approved, fifteen crediting; C3-b: sixty-four rows
+    approved and twenty-one crediting; **新真值 C3-R1**: sixty-four rows are
+    approved and exactly the fifteen ``REALIZES`` rows credit — the six rows
+    the re-review demoted are approved ``SUPPORTS`` rows now, and the other
+    forty-three approved ``SUPPORTS`` rows were placements all along, so none
+    of them credits (the read filters ``relation = REALIZES``). The count is
+    what still distinguishes this from "every entity credits": the five
+    CAPABILITY entities carry no link row at all and read ``None``. The
+    unapproved direction is pinned against a demoted variant in
+    test_the_gate_is_a_gate_not_a_deletion below."""
 
     store = ContentStore(built_content_db)
     try:
@@ -395,8 +443,8 @@ def test_only_the_approved_realizes_link_credits_a_capability(
                 assert relations == {"SUPPORTS"}, entity_id
                 assert teaching.value.capability_linkage is None, entity_id
         assert linked == 64
-        assert credited == 21
-        assert supports_only == 43
+        assert credited == 15
+        assert supports_only == 49
     finally:
         store.close()
     print(
@@ -429,8 +477,9 @@ def test_the_gate_is_a_gate_not_a_deletion(tmp_path) -> None:
         assert isinstance(links, Ok), links
         assert len(links.value) == 1
         assert links.value[0].editorial_status == "CURRICULUM_MAPPED"
-        # An untouched sibling still credits its node.
-        other = store.get_teaching_content(DECISION)
+        # An untouched sibling still credits its node (a surviving REALIZES
+        # row — C3-R1 moved the demoted collocation out of the credit set).
+        other = store.get_teaching_content("res-hedge-i-guess")
         assert isinstance(other, Ok), other
         assert other.value.capability_linkage == HEDGED_OPINION
     finally:
@@ -443,7 +492,7 @@ def test_the_gate_is_a_gate_not_a_deletion(tmp_path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_make_a_decision_alternative_success_credits_the_approved_capability(
+def test_make_a_decision_no_longer_credits_its_reviewed_placement(
     db: sqlite3.Connection,
     conversation,
     conversation_store,
@@ -454,14 +503,16 @@ def test_make_a_decision_alternative_success_credits_the_approved_capability(
     teaching_controller,
     production_provider,
 ) -> None:
-    """The same chain, at C1's truth (旧真值: the attempt produced exactly one
-    honest NEUTRAL claim on the resource and **zero** change on the
-    capability; 新真值: the C1-approved link makes the §5 fold credit it —
-    one CAPABILITY_LINKAGE POSITIVE/SUCCESS claim on
-    cap-eval-hedged-opinion **plus** the unchanged honest NEUTRAL/ABSTAIN
-    claim on the resource, and the capability's durable state now moves with
-    its claim). The gate's semantics are unchanged; what changed is the
-    link's editorial status."""
+    """The blocker pair, end to end, at C3-R1's truth: the attempt still
+    evaluates ALTERNATIVE_SUCCESS (the evaluator is untouched), and the §5
+    fold credits nothing — one honest NEUTRAL/ABSTAIN claim on the resource
+    and **zero** capability movement. The C1 approval admitted this row when
+    approval was the whole gate; C3-R1's capability re-review found the
+    collocation a coverage placement, so the credit the approval once
+    admitted is withdrawn — the same shape as P5-R's 旧真值, reached this time
+    by review rather than by an unapproved row. The credit path itself is
+    still exercised end to end by
+    ``test_a_surviving_mapping_credits_its_capability_end_to_end`` below."""
 
     del conversation
     coordinator = production_coordinator(
@@ -492,28 +543,22 @@ def test_make_a_decision_alternative_success_credits_the_approved_capability(
         for c in claims
     ]
     print(f"[p5-r] alternative-success claims -> {rendered}")
-    assert len(claims) == 2
-    assert rendered == [
-        (HEDGED_OPINION, "CAPABILITY_LINKAGE", "POSITIVE", "SUCCESS"),
-        (DECISION, "FOCUS_TARGET", "NEUTRAL", "ABSTAIN"),
-    ]
+    assert len(claims) == 1
+    assert rendered == [(DECISION, "FOCUS_TARGET", "NEUTRAL", "ABSTAIN")]
 
-    # The capability's durable state now exists once its claim does (the
-    # rebuild is called explicitly so "moved" is the rebuild's answer too,
-    # not just an untouched row).
-    rebuilt = learning_controller.rebuild_learner_state(
+    # No capability claim, so no capability durable state: the rebuild answers
+    # "nothing to project" for the capability and still moves for the resource.
+    learning_controller.rebuild_learner_state(
         TargetId(HEDGED_OPINION), EvidenceModality(MODALITY)
     )
-    assert isinstance(rebuilt, Ok), rebuilt
     assert (
         _count(
             db,
             "SELECT COUNT(*) FROM learner_target_state WHERE target_id = ?",
             (HEDGED_OPINION,),
         )
-        == 1
+        == 0
     )
-    # The resource's own projection (the honest single claim) still moves.
     resource_rebuild = learning_controller.rebuild_learner_state(
         TargetId(DECISION), EvidenceModality(MODALITY)
     )
@@ -528,15 +573,85 @@ def test_make_a_decision_alternative_success_credits_the_approved_capability(
     )
 
 
+def test_a_surviving_mapping_credits_its_capability_end_to_end(
+    db: sqlite3.Connection,
+    conversation,
+    conversation_store,
+    generation_store,
+    fence,
+    learning,
+    decision_cycle_store,
+    teaching_controller,
+    production_provider,
+) -> None:
+    """The credit path, end to end, on a row C3-R1 kept: res-hedge-i-think's
+    alternative realization ('It might rain.') is an ALTERNATIVE_SUCCESS, and
+    the §5 fold credits it — one CAPABILITY_LINKAGE POSITIVE/SUCCESS claim on
+    cap-eval-hedged-opinion plus the unchanged honest NEUTRAL/ABSTAIN claim on
+    the resource, with the capability's durable state moving with its claim.
+    Written after the demotion so "the fall-back withdrew six targets, not the
+    credit mechanism" is a pinned fact rather than a claim."""
+
+    del conversation
+    coordinator = production_coordinator(
+        conversation_store,
+        generation_store,
+        fence,
+        learning,
+        decision_cycle_store,
+        teaching_controller,
+        production_provider,
+    )
+    learning_controller = LearningController(learning)
+    assert _capability_rows(db) == ()
+    assert _count(db, "SELECT COUNT(*) FROM evidence_claim") == 0
+
+    opened = open_moment(coordinator, "cm-c3r1-credit-open", HEDGE_TARGET)
+    assert opened.gate_decision == "ALLOW"
+    assert opened.moment_id is not None
+    reply = reply_ok(
+        coordinator,
+        attempt(HEDGE_ALTERNATIVE),
+        "cm-c3r1-credit-attempt",
+    )
+    assert reply.evaluation_outcome == "ALTERNATIVE_SUCCESS"
+
+    rendered = [
+        (c["target_id"], c["claim_role"], c["polarity"], c["outcome"])
+        for c in _claims(db)
+    ]
+    print(f"[c3r1] alternative-success claims -> {rendered}")
+    assert len(rendered) == 2
+    assert rendered == [
+        (HEDGED_OPINION, "CAPABILITY_LINKAGE", "POSITIVE", "SUCCESS"),
+        (HEDGE_TARGET, "FOCUS_TARGET", "NEUTRAL", "ABSTAIN"),
+    ]
+    rebuild = learning_controller.rebuild_learner_state(
+        TargetId(HEDGED_OPINION), EvidenceModality(MODALITY)
+    )
+    assert isinstance(rebuild, Ok), rebuild
+    assert (
+        _count(
+            db,
+            "SELECT COUNT(*) FROM learner_target_state WHERE target_id = ?",
+            (HEDGED_OPINION,),
+        )
+        == 1
+    )
+
+
 def test_the_payload_is_unchanged_except_the_now_approved_linkage(
     built_content_db,
 ) -> None:
-    """One-field proof for the receipt, at C1's truth: the artifact's teaching
-    payload is byte-for-byte what it was except ``capability_linkage`` — the
-    §24.5 rows, the ladder and the slots are unchanged, so C1's approval (a
-    link-row status edit + the readiness evidence authoring) did not smuggle
-    a content edit in behind the gate (旧真值: the linkage read ``None``;
-    新真值: it reads the node the approved link points at)."""
+    """One-field proof for the receipt, at C3-R1's truth: the artifact's
+    teaching payload is byte-for-byte what it was except ``capability_linkage``
+    — the §24.5 rows, the ladder and the slots are unchanged, so neither C1's
+    approval (a link-row status edit + the readiness evidence authoring) nor
+    C3-R1's demotion (a relation-word edit + the mapping-class column)
+    smuggled a content edit in behind the gate (旧真值: the linkage read
+    ``None``; C1..C3-b: it read the node the approved link pointed at;
+    新真值 C3-R1: ``None`` again, because the row is no longer a
+    realization)."""
 
     store = ContentStore(built_content_db)
     try:
@@ -557,12 +672,13 @@ def test_the_payload_is_unchanged_except_the_now_approved_linkage(
         assert payload.alternative_realizations == (
             "We have to take a decision today.",
         )
-        assert payload.capability_linkage == HEDGED_OPINION
+        assert payload.capability_linkage is None
         links = supply.curriculum_links_of(ResourceId(DECISION))
         assert isinstance(links, Ok), links
         assert [str(link.node_id) for link in links.value] == [HEDGED_OPINION]
         assert [
             str(link.editorial_status) for link in links.value
         ] == ["CANONICAL_APPROVED"]
+        assert [str(link.relation) for link in links.value] == ["SUPPORTS"]
     finally:
         store.close()

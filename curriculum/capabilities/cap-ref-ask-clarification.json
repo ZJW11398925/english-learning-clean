@@ -2,5 +2,26 @@
   "curriculum_node_id": "cap-ref-ask-clarification",
   "capability_id": "cap-ref-ask-clarification",
   "family": "REF",
-  "level": 2
+  "level": 2,
+  "functional_definition": {
+    "statement": "Asking the person one is talking to for the understanding one is missing -- to have them explain, clarify or restate what they said or meant -- instead of guessing at it or supplying the explanation oneself.",
+    "counts_as_realization": [
+      "the resource's taught production is a request addressed to the interlocutor whose object is the other person's words or meaning (the capability's own face in this repository is \"What do you mean by that?\", tests/phase3/target_fixtures.py): an explanation, a clarification or a repetition of what was said;",
+      "the request is the utterance's own point -- the reveal shows the speaker asking -- rather than a report about asking or about understanding;",
+      "the taught ladder puts the speaker in the repair position: something was not understood, the speaker asks the interlocutor about it before going on."
+    ],
+    "does_not_count": [
+      "requests for something other than understanding -- an action or an object (\"Could you send me the file?\", \"take a look at this report\"), permission (\"Could I ask you a question?\"), or help (\"I was just wondering if you could help me.\"): asking for these is not asking for a clarification;",
+      "expressions that supply a clarification or state that something is understandable (\"I mean\", \"What I'm saying is\", \"Your plan makes sense\");",
+      "expressions that name understanding reached by thinking, or that report how something turned out (\"figure out\", \"work out\", \"turn out\");",
+      "content vocabulary about attention (\"pay attention to\"): naming the collocation for focusing on something is not a repair move."
+    ],
+    "boundary_cases": [
+      "\"I was just wondering if you could help me.\" is a hedged request for help, not for a clarification of what was said: the object of the request is an action by the hearer, so it does not count.",
+      "\"Sorry, what does that mean?\" (an alternative realization of the capability's own fixture face) asks for the meaning of the other person's words, so it counts -- no resource of the current corpus is of this shape, which is why this node's links are placements at C3-R1.",
+      "\"Would you mind closing the window?\" asks the hearer to act; the frame is a politeness device, not a repair of understanding.",
+      "\"Could I ask you a question?\" is a pre-request: even the question it asks permission for is not yet a clarification, so it does not count."
+    ],
+    "basis": "Authoring judgement made in this repository (C3-R1), read against the canonical vocabulary that actually exists: docs/DOMAIN_MODEL.md §7's REF family name and §8's expression subtypes, plus this capability's own taught face -- the fixture reveal \"What do you mean by that?\" whose hint is \"Ask the speaker to clarify without repeating them badly\" (tests/phase3/target_fixtures.py). No external psychometric or corpus source is claimed. This definition is the standard the §24.7 links into this node were re-reviewed against (curriculum/README.md, C3-R1); it is a declared reading whose Revisit is registered (a canonical definition would supersede it)."
+  }
 }

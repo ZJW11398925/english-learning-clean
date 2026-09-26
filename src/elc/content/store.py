@@ -60,6 +60,7 @@ from elc.platform.types import (
 
 __all__ = [
     "CAPABILITY_CREDIT_EDITORIAL_STATUS",
+    "CURRICULUM_MAPPING_CLASS",
     "ContentEvidenceCounts",
     "ContentStore",
     "ContentStoreError",
@@ -82,17 +83,31 @@ _CURRICULUM_VERSION_KEY = "curriculum_version"
 #: approved one ``CANONICAL_APPROVED`` row (``res-colloc-make-a-decision`` →
 #: ``cap-eval-hedged-opinion``), C2-a approved the other eight, C2-b
 #: approved nineteen more while authoring their readiness evidence, C3-a
-#: eighteen of its own and C3-b the last eighteen — so this
-#: gate now admits the twenty-one REALIZES rows among those approvals (the
-#: forty-three SUPPORTS rows credit nothing) — each approval carrying the same
-#: stated limits:
-#: no capability-semantics audit was possible (the capabilities have no
-#: functional definition in this repository), and the admission is what lets
-#: those targets' ``ALTERNATIVE_SUCCESS`` mint CAPABILITY/POSITIVE evidence (a
-#: known, accepted behavior change, bounded by the real rollout HOLD).
-#: curriculum/README.md C2 carries the full coverage/limits wording; Revisit
-#: when the capability definitions land (live risk ``R-C1-credit``).
+#: eighteen of its own and C3-b the last eighteen. C3-R1 then re-reviewed
+#: every row against the five capability functional definitions and demoted
+#: six ``REALIZES`` rows to ``SUPPORTS`` (they are coverage placements, not
+#: realizations), so this gate admits the **fifteen** ``REALIZES`` rows that
+#: survived the review — each approval carrying the same
+#: stated limits as before, plus the live risk ``R-C1-credit`` now narrowed to
+#: those fifteen targets. curriculum/README.md carries the full
+#: coverage/limits wording.
 CAPABILITY_CREDIT_EDITORIAL_STATUS = "CANONICAL_APPROVED"
+
+#: The C3-R1 ``mapping_class`` word that separates a real curriculum mapping
+#: from a coverage placement. **Declared reading** — docs/DATA_MODEL.md §24.7
+#: lists seven link columns and no such column — and spelled here rather than
+#: imported from :mod:`elc.content.build`: the runtime read face does not
+#: import the authoring tool into its graph (the P5-0 layering), and a test
+#: pins this word equal to the build's own constant.
+#:
+#: The **reader** that consumes it is the §8.1 R2 ``curriculum_link`` fact
+#: (elc.curriculum.store.readiness_facts): R2 asks for a CurriculumLink, and
+#: this column is what says the link is one. Every other consumer of the §24.7
+#: rows is deliberately left alone by C3-R1 (the credit face keys on
+#: ``REALIZES``, the planner's node resolution on ``REALIZES`` — see
+#: elc.planner.supply's own evidence note), because those readers answer
+#: "which node is this" rather than "is this a mapping".
+CURRICULUM_MAPPING_CLASS = "CURRICULUM_MAPPING"
 
 
 class ContentStoreError(RuntimeError):
@@ -471,6 +486,42 @@ class ContentStore:
                 f"{entity_id!r} declares more than one primary REALIZES link"
             )
         return None if not rows else str(rows[0][0])
+
+    def has_approved_curriculum_mapping(self, entity_id: str) -> Result[bool]:
+        """Whether this entity carries an approved **curriculum mapping**
+        (C3-R1).
+
+        The §8.1 R2 ``curriculum_link`` fact asks for a CurriculumLink. Since
+        C3-R1 the fact is read as "an approved row that is a mapping" rather
+        than "an approved row": the corpus's five curriculum nodes are far
+        fewer than its resources, so most links are coverage *placements* by
+        construction, and a placement is not a curriculum link in the sense
+        R2 needs. The read is one query over the §24.7 ``mapping_class``
+        column (declared reading), gated on the §24.11 ``editorial_status``
+        exactly as every other link consumer is.
+
+        An unknown entity id is NOT_FOUND — the same discipline as
+        :meth:`evidence_counts`, and for the same reason: "not in the
+        registry" is never reported as "has no mapping". A known entity with
+        no link, or with links that are unapproved or placements, answers
+        ``False``; the rows themselves stay readable through
+        :meth:`curriculum_links_of` (excluded ≠ deleted).
+        """
+
+        if not self._exists(
+            "SELECT 1 FROM content_entity WHERE entity_id = ?", entity_id
+        ):
+            return _not_found("content entity", entity_id)
+        rows = self._conn.execute(
+            "SELECT 1 FROM curriculum_link WHERE resource_id = ? "
+            "AND editorial_status = ? AND mapping_class = ? LIMIT 1",
+            (
+                entity_id,
+                CAPABILITY_CREDIT_EDITORIAL_STATUS,
+                CURRICULUM_MAPPING_CLASS,
+            ),
+        ).fetchall()
+        return Ok(bool(rows))
 
     # -- the §8.1 readiness evidence face (C1) ------------------------------
 

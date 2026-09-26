@@ -41,6 +41,36 @@ typical_error_required_key`.
 
 The runtime reads this file only through :mod:`elc.content.store` (read-only
 URI connection); the write face of this module is build-time only.
+
+C3-R1 (Phase 11) adds two authoring faces and one link column:
+
+- **capability functional definitions** — `curriculum/capabilities/<id>.json`
+  may carry an optional ``functional_definition`` block (statement /
+  counts_as_realization / does_not_count / boundary_cases / basis). The block
+  is read **strictly** (unknown key, missing key, empty string or empty list
+  ⇒ BuildError) and carried on :class:`CapabilityDoc`, because it is an
+  *authoring-side* standard: it is what the C3-R1 review of the §24.7 links
+  cites (curriculum/README.md), and the build's own use of it is the rule
+  that a ``CURRICULUM_MAPPING`` row may only name a capability that **has**
+  such a definition — a mapping claim against a capability with no stated
+  standard is refused rather than stored. It is not written into the
+  artifact; no §24 table carries it (declared reading; Revisit: the first
+  runtime consumer that needs the definition adds a table and bumps
+  `CONTENT_DB_VERSION`, the C1 precedent).
+- **`curriculum_link.mapping_class`** — the C3-R1 declared reading that
+  separates a row that is a **curriculum mapping** (``CURRICULUM_MAPPING``:
+  the resource's taught function meets at least one
+  ``counts_as_realization`` entry of the node's functional definition and
+  falls into none of its ``does_not_count`` entries) from a row that is a
+  **coverage placement** (``COVERAGE_PLACEMENT``: the nearest-node choice a
+  corpus of five nodes forces, carrying no claim of semantic mapping). The
+  build enforces two shape rules over it: the value is one of the two words,
+  and ``relation = REALIZES`` implies ``CURRICULUM_MAPPING`` (a realization
+  claim is a mapping claim). Which rows are which is an editorial judgement
+  recorded per row in the row's own ``rationale``; the build never infers it.
+  docs/DATA_MODEL.md §24.7 lists seven columns and no such column: this is a
+  declared reading (Revisit registered with the decision) and it is why
+  `CONTENT_DB_VERSION` moves again.
 """
 
 from __future__ import annotations
@@ -82,12 +112,16 @@ _T = TypeVar("_T")
 __all__ = [
     "CONTENT_DB_VERSION",
     "CONTENT_SRC_DIR",
+    "COVERAGE_PLACEMENT_CLASS",
     "CURRICULUM_DIR",
+    "CURRICULUM_MAPPING_CLASS",
     "DEFAULT_OUTPUT",
+    "MAPPING_CLASSES",
     "BuildError",
     "BuildReport",
     "ContentSource",
     "EvidenceDoc",
+    "FunctionalDefinition",
     "build_content_db",
     "load_source",
     "main",
@@ -108,8 +142,13 @@ DEFAULT_OUTPUT = REPO_ROOT / "build" / "content.db"
 #: generation, owned by this module's DDL below. Bumped ``"1"`` → ``"2"`` by
 #: the C1 disposition: C1 grew the table set 11 → 24 (``SCHEMA_STATEMENTS``),
 #: and §26.1 requires the version to move explicitly, never guessed from the
-#: schema ("数据库迁移必须显式更新版本，禁止依赖代码猜 schema").
-CONTENT_DB_VERSION = "2"
+#: schema ("数据库迁移必须显式更新版本，禁止依赖代码猜 schema"). Bumped
+#: ``"2"`` → ``"3"`` by C3-R1: the table set is unchanged, but
+#: ``curriculum_link`` gains the ``mapping_class`` column, i.e. the artifact's
+#: shape moves even though no table appears or disappears — a reader keyed to
+#: the shape (elc.content.store, elc.curriculum.store) must be able to tell
+#: the two generations apart.
+CONTENT_DB_VERSION = "3"
 
 #: The authoring-source formats this build reads. A document that declares a
 #: different `format` / `format_version` is refused: the build may only read a
@@ -123,6 +162,19 @@ SOURCE_FORMAT_VERSION = 1
 #: §24.7 / §13 link relations accepted by the build (from the canonical
 #: enum, listed here so a bad value names the legal set in the error).
 _LINK_RELATIONS = tuple(CurriculumLinkRelation)
+
+#: The C3-R1 `mapping_class` vocabulary (declared reading, §24.7 carries no
+#: such column). ``CURRICULUM_MAPPING`` — the resource's taught function
+#: meets at least one ``counts_as_realization`` entry of the node's
+#: functional definition and no ``does_not_count`` entry.
+#: ``COVERAGE_PLACEMENT`` — the nearest-node choice a five-node corpus
+#: forces, with no semantic-mapping claim. The read face keeps its own
+#: spelling of ``CURRICULUM_MAPPING`` (elc.content.store) rather than
+#: importing this build module into the runtime read graph; a test pins the
+#: two equal.
+CURRICULUM_MAPPING_CLASS = "CURRICULUM_MAPPING"
+COVERAGE_PLACEMENT_CLASS = "COVERAGE_PLACEMENT"
+MAPPING_CLASSES = (CURRICULUM_MAPPING_CLASS, COVERAGE_PLACEMENT_CLASS)
 
 _ENTITY_KEYS = ("entity", "expression", "target", "teaching_content")
 _ENTITY_BLOCK_KEYS = CONTENT_ENTITY_COLUMNS
@@ -141,6 +193,26 @@ _TEACHING_KEYS = (
     "required_slots",
 )
 _CAPABILITY_KEYS = ("curriculum_node_id", "capability_id", "family", "level")
+
+#: The optional C3-R1 block a capability document may carry. **Optional**:
+#: a capability with no functional definition is a legal registry node (the
+#: five shipped nodes all carry one, because the C3-R1 review needed a stated
+#: standard). Read strictly when present — the five keys below are exactly
+#: the block, every string is non-empty, every list is non-empty and
+#: ``boundary_cases`` names at least two cases, so a half-written standard
+#: cannot pass for a standard.
+_CAPABILITY_DEFINITION_KEY = "functional_definition"
+_FUNCTIONAL_DEFINITION_KEYS = (
+    "statement",
+    "counts_as_realization",
+    "does_not_count",
+    "boundary_cases",
+    "basis",
+)
+
+#: The least number of boundary cases a functional definition must state
+#: (C3-R1: the task's "boundary_cases ≥2").
+_MIN_BOUNDARY_CASES = 2
 _LINK_KEYS = (
     "resource_id",
     "node_id",
@@ -148,6 +220,7 @@ _LINK_KEYS = (
     "strength",
     "primary_flag",
     "editorial_status",
+    "mapping_class",
     "rationale",
 )
 _PREREQUISITE_KEYS = (
@@ -446,6 +519,10 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
     "strength TEXT,"
     "primary_flag INTEGER NOT NULL,"
     "editorial_status TEXT NOT NULL,"
+    # C3-R1's declared-reading column (the two words are validated by the
+    # build, not by a CHECK: the table is generated, and the error must name
+    # the legal set — the build's own vocabulary rule).
+    "mapping_class TEXT NOT NULL,"
     "rationale TEXT NOT NULL,"
     "PRIMARY KEY (resource_id, node_id, relation)"
     ")",
@@ -676,6 +753,25 @@ class EntityDoc:
 
 
 @dataclass(frozen=True)
+class FunctionalDefinition:
+    """One capability's C3-R1 functional definition (an authoring standard).
+
+    Every list is non-empty and ``boundary_cases`` carries at least two
+    cases (the build refuses a thinner block). The definition is the
+    standard the §24.7 links into this node were reviewed against; it states
+    its own basis honestly (this repository's authoring judgement over the
+    canonical family/subtype vocabulary, never an external psychometric
+    source) and it is **not** written into content.db.
+    """
+
+    statement: str
+    counts_as_realization: tuple[str, ...]
+    does_not_count: tuple[str, ...]
+    boundary_cases: tuple[str, ...]
+    basis: str
+
+
+@dataclass(frozen=True)
 class CapabilityDoc:
     """One capability registry node (docs/DOMAIN_MODEL.md §7)."""
 
@@ -683,11 +779,18 @@ class CapabilityDoc:
     capability_id: str
     family: CapabilityFamily
     level: int
+    #: The optional C3-R1 functional definition (absent → ``None``). Carried
+    #: so the build can hold the mapping-vs-placement rule on the link side
+    #: ("a CURRICULUM_MAPPING row names a capability with a definition") and
+    #: so a caller of :func:`load_source` can read the standard that was
+    #: applied, without a table being invented for it.
+    functional_definition: FunctionalDefinition | None = None
 
 
 @dataclass(frozen=True)
 class LinkRow:
-    """One CurriculumLink (docs/DATA_MODEL.md §24.7 seven columns)."""
+    """One CurriculumLink (docs/DATA_MODEL.md §24.7's seven columns plus the
+    C3-R1 declared-reading ``mapping_class`` column)."""
 
     resource_id: str
     node_id: str
@@ -695,6 +798,7 @@ class LinkRow:
     strength: str | None
     primary_flag: bool
     editorial_status: str
+    mapping_class: str
     rationale: str
 
 
@@ -799,16 +903,29 @@ def _mapping(value: Any, where: str) -> Mapping[str, Any]:
 
 
 def _exact_keys(
-    mapping: Mapping[str, Any], expected: Sequence[str], where: str
+    mapping: Mapping[str, Any],
+    expected: Sequence[str],
+    where: str,
+    optional: Sequence[str] = (),
 ) -> None:
-    expected_set = set(expected)
+    """The mapping carries exactly ``expected`` (plus, optionally, ``optional``).
+
+    ``optional`` names keys a document **may** carry — an absent optional key
+    is not a missing key, and the caller reads the value only when it is
+    present. There is deliberately no "ignore extra keys" switch: every key a
+    document states is either declared here or refused, so a typo (or a
+    hand-written key the build does not know) never passes silently.
+    """
+
+    expected_set = set(expected) | set(optional)
     actual = set(mapping)
-    missing = sorted(expected_set - actual)
+    missing = sorted(set(expected) - actual)
     unknown = sorted(actual - expected_set)
     if missing or unknown:
         raise BuildError(
             f"{where}: key mismatch (missing={missing}, unknown={unknown}); "
             f"declared keys are {list(expected)}"
+            + (f" (optional: {list(optional)})" if optional else "")
         )
 
 
@@ -1148,11 +1265,54 @@ def _entity_from_document(path: Path, document: Mapping[str, Any]) -> EntityDoc:
     )
 
 
+def _functional_definition_from_document(
+    mapping: Mapping[str, Any], where: str
+) -> FunctionalDefinition:
+    """C3-R1: read one capability's optional functional-definition block.
+
+    Strict on every key and every list: the block is the standard the link
+    review cites, so a block that states nothing (or states one boundary
+    case, or an empty ``counts_as_realization``) is refused rather than
+    stored as a standard that judges nothing.
+    """
+
+    _exact_keys(mapping, _FUNCTIONAL_DEFINITION_KEYS, where)
+    boundary_cases = _string_list(mapping, "boundary_cases", where)
+    if len(boundary_cases) < _MIN_BOUNDARY_CASES:
+        raise BuildError(
+            f"{where}.boundary_cases: a functional definition states at least"
+            f" {_MIN_BOUNDARY_CASES} boundary cases; got {len(boundary_cases)}"
+        )
+    # An empty list is not "no criteria": a definition that states none judges
+    # nothing, so it is refused rather than stored as a standard. (A block the
+    # source omits entirely is the legal "no definition yet" state.)
+    for key in ("counts_as_realization", "does_not_count"):
+        if not _string_list(mapping, key, where):
+            raise BuildError(
+                f"{where}.{key}: a functional definition states at least one"
+                " entry; an empty list is not a standard"
+            )
+    return FunctionalDefinition(
+        statement=_string(mapping, "statement", where),
+        counts_as_realization=_string_list(
+            mapping, "counts_as_realization", where
+        ),
+        does_not_count=_string_list(mapping, "does_not_count", where),
+        boundary_cases=boundary_cases,
+        basis=_string(mapping, "basis", where),
+    )
+
+
 def _capability_from_document(
     path: Path, document: Mapping[str, Any]
 ) -> CapabilityDoc:
     where = str(path)
-    _exact_keys(document, _CAPABILITY_KEYS, where)
+    _exact_keys(
+        document,
+        _CAPABILITY_KEYS,
+        where,
+        optional=(_CAPABILITY_DEFINITION_KEY,),
+    )
     curriculum_node_id = _string(document, "curriculum_node_id", where)
     capability_id = _string(document, "capability_id", where)
     if path.name != f"{capability_id}.json":
@@ -1177,11 +1337,21 @@ def _capability_from_document(
     level = _integer(document, "level", where)
     if level < 1:
         raise BuildError(f"{where}.level: must be >= 1")
+    definition = None
+    if _CAPABILITY_DEFINITION_KEY in document:
+        definition = _functional_definition_from_document(
+            _mapping(
+                document[_CAPABILITY_DEFINITION_KEY],
+                f"{where}.{_CAPABILITY_DEFINITION_KEY}",
+            ),
+            f"{where}.{_CAPABILITY_DEFINITION_KEY}",
+        )
     return CapabilityDoc(
         curriculum_node_id=curriculum_node_id,
         capability_id=capability_id,
         family=family,
         level=level,
+        functional_definition=definition,
     )
 
 
@@ -1213,6 +1383,15 @@ def _links_from_document(
                 tuple(str(member) for member in PrerequisiteStrength),
                 f"{item_where}.strength",
             )
+        # C3-R1: the declared-reading mapping/placement split. The word is
+        # validated against the vocabulary like every other word; which word
+        # a row carries is the author's judgement, recorded in the row's
+        # ``rationale`` and never inferred here.
+        mapping_class = _vocabulary(
+            _string(row, "mapping_class", item_where),
+            MAPPING_CLASSES,
+            f"{item_where}.mapping_class",
+        )
         rows.append(
             LinkRow(
                 resource_id=_string(row, "resource_id", item_where),
@@ -1225,6 +1404,7 @@ def _links_from_document(
                     LIFECYCLE_STATUSES,
                     f"{item_where}.editorial_status",
                 ),
+                mapping_class=mapping_class,
                 rationale=_string(row, "rationale", item_where),
             )
         )
@@ -1749,10 +1929,33 @@ def load_source(
 def _check_references(
     source: ContentSource, links_path: Path, prerequisites_path: Path
 ) -> None:
-    """Referential integrity: nothing may point outside the declared sets."""
+    """Referential integrity: nothing may point outside the declared sets.
+
+    C3-R1 adds two rules over the declared-reading ``mapping_class`` column —
+    both are *shape* rules, never semantic ones:
+
+    - ``relation = REALIZES`` implies ``CURRICULUM_MAPPING``: a realization
+      claim is a mapping claim, so a row may not say "this resource realizes
+      the node" while declaring itself a coverage placement (the pair would
+      make the artifact read as two contradictory claims);
+    - ``CURRICULUM_MAPPING`` implies the node's capability **has** a
+      functional definition: a mapping is only meaningful against a stated
+      standard, so a mapping row naming a definition-less capability is
+      refused at build time rather than stored as an audit that could not
+      have been performed.
+
+    The reverse directions stay legal on purpose: a placement row may name
+    any declared capability (that is what "nearest available node" means),
+    and a capability may carry a definition with no link at all.
+    """
 
     entity_ids = set(source.entity_ids())
     capability_ids = set(source.capability_ids())
+    defined_capabilities = {
+        capability.capability_id
+        for capability in source.capabilities
+        if capability.functional_definition is not None
+    }
     for link in source.links:
         if link.resource_id not in entity_ids:
             raise BuildError(
@@ -1763,6 +1966,27 @@ def _check_references(
             raise BuildError(
                 f"{links_path}: node_id {link.node_id!r} is not a declared "
                 "capability"
+            )
+        if (
+            link.relation is CurriculumLinkRelation.REALIZES
+            and link.mapping_class != CURRICULUM_MAPPING_CLASS
+        ):
+            raise BuildError(
+                f"{links_path}: {link.resource_id!r} -> {link.node_id!r} "
+                f"declares relation=REALIZES with mapping_class="
+                f"{link.mapping_class!r}; a REALIZES row is a mapping claim "
+                f"(C3-R1: REALIZES implies {CURRICULUM_MAPPING_CLASS})"
+            )
+        if (
+            link.mapping_class == CURRICULUM_MAPPING_CLASS
+            and link.node_id not in defined_capabilities
+        ):
+            raise BuildError(
+                f"{links_path}: {link.resource_id!r} -> {link.node_id!r} "
+                f"claims {CURRICULUM_MAPPING_CLASS}, but "
+                f"{link.node_id!r} carries no functional_definition in "
+                "curriculum/capabilities/ — a mapping cannot be a mapping of "
+                "a capability with no stated standard"
             )
     primaries: dict[str, list[str]] = {}
     for link in source.links:
@@ -1899,8 +2123,8 @@ def _write_rows(conn: sqlite3.Connection, source: ContentSource) -> None:
     conn.executemany(
         "INSERT INTO curriculum_link ("
         "resource_id, node_id, relation, strength, primary_flag, "
-        "editorial_status, rationale"
-        ") VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "editorial_status, mapping_class, rationale"
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (
             (
                 link.resource_id,
@@ -1909,6 +2133,7 @@ def _write_rows(conn: sqlite3.Connection, source: ContentSource) -> None:
                 link.strength,
                 1 if link.primary_flag else 0,
                 link.editorial_status,
+                link.mapping_class,
                 link.rationale,
             )
             for link in source.links

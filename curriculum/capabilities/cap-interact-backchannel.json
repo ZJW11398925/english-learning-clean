@@ -2,5 +2,26 @@
   "curriculum_node_id": "cap-interact-backchannel",
   "capability_id": "cap-interact-backchannel",
   "family": "INTERACT",
-  "level": 2
+  "level": 2,
+  "functional_definition": {
+    "statement": "Showing the person who is speaking that one is following them and that they can go on -- keeping the channel open with a short listener signal instead of taking the turn.",
+    "counts_as_realization": [
+      "the resource's taught production is a listener signal: a short unit the hearer produces while the other person holds the turn (the capability's own face in this repository is \"Right, I see.\", tests/phase3/target_fixtures.py);",
+      "saying it claims neither content nor the turn: it acknowledges what the other person said (receipt) and/or invites them to continue;",
+      "the signal's own taught function is that receipt/attention -- the ladder teaches it as what to say to show you are listening, not as a request, a report or an evaluation."
+    ],
+    "does_not_count": [
+      "speaker moves that bid for the floor or ask something of the hearer (\"Sorry to interrupt\" is a floor bid, \"take a look\" / \"would you mind\" are requests, \"I'd like to\" frames a request) -- a backchannel is the listener's move;",
+      "content vocabulary and idioms whose taught production is a proposition (\"take part in\", \"look forward to\", \"on the same page\", \"raise awareness\", \"draw attention to\");",
+      "expressions that hand the turn or the decision to the other side as a content claim (\"the ball is in your court\") rather than as a receipt signal;",
+      "acknowledgements the speaker makes of their own point (\"what I'm saying is\") or corrections of it (\"I mean\")."
+    ],
+    "boundary_cases": [
+      "\"Sorry to interrupt, but I have a quick question.\" apologises and then takes the floor: it is a speaker's bid, and a backchannel is a listener's move, so it does not count.",
+      "\"I'd like to join the group.\" is a request frame: the taught production has the speaker asking for something rather than showing receipt, so it does not count.",
+      "\"Right, I see.\" (the capability's own face in this repository) is a receipt signal produced while the other person is speaking, so it counts -- no resource of the current corpus is of this shape, which is why this node's links are placements at C3-R1.",
+      "\"I see.\" said after the other person has finished still answers their talk rather than adding to it: the receipt is what makes it a backchannel, not the overlap."
+    ],
+    "basis": "Authoring judgement made in this repository (C3-R1), read against the canonical vocabulary that actually exists: docs/DOMAIN_MODEL.md §7's INTERACT family name and §8's expression subtypes, plus this capability's own taught face -- the fixture reveal \"Right, I see.\" whose hint is \"Show you are listening without taking the turn\" (tests/phase3/target_fixtures.py). No external psychometric or corpus source is claimed. This definition is the standard the §24.7 links into this node were re-reviewed against (curriculum/README.md, C3-R1); it is a declared reading whose Revisit is registered (a canonical definition would supersede it)."
+  }
 }

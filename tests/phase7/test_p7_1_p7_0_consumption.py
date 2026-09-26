@@ -190,7 +190,11 @@ def test_the_real_chain_degrades_while_the_caps_stay_ungraded(
         facts = content_supply.readiness_facts(str(entity_id))
         assert isinstance(facts, Ok)
         levels[str(entity_id)] = judge_readiness(facts.value).level
-    assert levels["res-colloc-make-a-decision"] == "R4_DETECTION_READY"
+    # C3-R1 moved the shipped corpus's grading: the C1 target's collocation
+    # row is a coverage placement now, so it reads R1; a mapping target (e.g.
+    # res-hedge-i-think) still reads R4.
+    assert levels["res-colloc-make-a-decision"] == "R1_LEXICALLY_RESOLVED"
+    assert levels["res-hedge-i-think"] == "R4_DETECTION_READY"
     assert sum(1 for level in levels.values() if level is None) == 5
 
     authority = assemble_feature_authority(

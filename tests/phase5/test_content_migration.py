@@ -30,6 +30,20 @@ FIXTURE_BY_TARGET = {view.target_id: view for view in VALIDATED_TARGET_FIXTURES}
 TARGET_IDS = tuple(FIXTURE_BY_TARGET)
 CONTENT_VERSION = "content-v1"
 
+#: The six of the nine fixture-linked RESOURCE targets whose §24.7 row C3-R1
+#: demoted from REALIZES to SUPPORTS (its capability re-review found no
+#: realization in them; a realization claim must be a mapping claim). Their
+#: rows stay readable and approved, keep the fixture's node_id and their
+#: frozen primary_flag, and no longer credit a capability.
+C3R1_DEMOTED_TARGETS = (
+    "res-colloc-make-a-decision",
+    "res-colloc-pay-attention-to",
+    "res-frame-id-like-to",
+    "res-idiom-break-the-ice",
+    "res-phrasal-look-forward-to",
+    "res-pragmatic-could-you",
+)
+
 
 def _document(entity_id: str) -> dict[str, object]:
     path = CONTENT_SRC_DIR / "entities" / f"{entity_id}.json"
@@ -165,17 +179,23 @@ def test_teaching_payload_matches_the_fixture_verbatim(
 ) -> None:
     """No silent drop: every P3-1B field, value for value, in authored order.
 
-    The credit face reads a §24.7 link the review **approved** (that is what
-    ``CAPABILITY_CREDIT_EDITORIAL_STATUS`` reads — P5-R's gate, unchanged).
-    P5-R landed with all nine links unapproved, C1 approved exactly one
+    The credit face reads a §24.7 link the review **approved** *and* whose
+    ``mapping_class`` is ``CURRICULUM_MAPPING`` (that is what the credit read
+    filters — P5-R's status gate plus C3-R1's mapping class). P5-R landed with
+    all nine links unapproved, C1 approved exactly one
     (res-colloc-make-a-decision) and C2-a approved the other eight while
-    authoring their readiness evidence, so today every RESOURCE target's link
-    is approved and its node reads through; a CAPABILITY entity carries no
-    link row of its own and reads ``None``. The fixture's value is in either
-    case the link row's ``node_id``, asserted below, which is what keeps "the
-    payload is unchanged" a checked statement rather than a hope. The
-    unapproved case — "a candidate mapping credits nothing" — is pinned
-    against a demoted variant in
+    authoring their readiness evidence; C3-R1's capability re-review then
+    found six of those nine rows coverage placements — the collocation, the
+    request frame and the phrasal verb name an act or a wish rather than
+    performing the node's move — and moved them to ``SUPPORTS``, so three of
+    the nine still credit their node
+    (``res-hedge-i-think``, ``res-softener-kind-of``, ``res-discourse-by-the-way``)
+    and six read ``None`` while their row stays readable and approved. A
+    CAPABILITY entity carries no link row of its own and reads ``None``. The
+    fixture's declared linkage is in either case the row's ``node_id``,
+    asserted below, which is what keeps "the payload is unchanged" a checked
+    statement rather than a hope. The unapproved case — "a candidate mapping
+    credits nothing" — is pinned against a demoted variant in
     tests/phase5/test_p5_r_curriculum_truth.py (the gate's own test), because
     the canonical corpus no longer carries an unapproved row.
     """
@@ -189,6 +209,16 @@ def test_teaching_payload_matches_the_fixture_verbatim(
     assert view.required_slots == fixture.required_slots
     if fixture.capability_linkage is None:
         assert view.capability_linkage is None
+    elif target_id in C3R1_DEMOTED_TARGETS:
+        # The row is still there, still approved, still naming the fixture's
+        # node — and no longer a realization, so it credits nothing.
+        assert view.capability_linkage is None
+        links = store.curriculum_links_of(ResourceId(target_id))
+        assert isinstance(links, Ok), links
+        assert len(links.value) == 1
+        assert str(links.value[0].node_id) == fixture.capability_linkage
+        assert str(links.value[0].relation) == "SUPPORTS"
+        assert links.value[0].editorial_status == "CANONICAL_APPROVED"
     else:
         # C1/C2-a: the §24.7 link the editorial review approved. The credit
         # face reads the node — an approved mapping is exactly what the gate
@@ -365,15 +395,19 @@ def test_migration_ledger_is_complete_for_all_fourteen(
         assert int(row["ladder"]) == 3
         assert int(row["forms"]) >= 1
         assert int(row["slots"]) >= 1
-        # P5-R's gate, read at C2-a's truth: every RESOURCE target's §24.7
-        # link was approved (C1 approved one, C2-a the other eight) while the
-        # row itself stays readable and says so; the CAPABILITY entities carry
-        # no link row of their own, so their credit face reads None.
+        # P5-R's gate plus C3-R1's mapping class: every RESOURCE target's
+        # §24.7 row is approved and readable, and the row credits its node
+        # unless C3-R1 demoted it (then the credit face reads None and the
+        # row keeps the fixture's node); the CAPABILITY entities carry no link
+        # row of their own, so their credit face reads None.
         if row["fixture_type"] == "RESOURCE":
             expected_node = FIXTURE_BY_TARGET[row["target_id"]].capability_linkage
             assert expected_node is not None, row["target_id"]
-            assert row["linkage"] == expected_node
             assert row["link_status"] == "CANONICAL_APPROVED"
+            if row["target_id"] in C3R1_DEMOTED_TARGETS:
+                assert row["linkage"] == "None"
+            else:
+                assert row["linkage"] == expected_node
         else:
             assert row["linkage"] == "None"
             assert row["link_status"] == "none"

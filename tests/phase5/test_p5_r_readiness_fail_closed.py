@@ -249,7 +249,7 @@ def test_no_single_fact_can_stand_in_for_a_lexical_resolution() -> None:
 # ---------------------------------------------------------------------------
 # ③ the corpus: the artifact's answer (P5-R: no level at all; C1: 1×R4 +
 # 13×None; C2-a: 9×R4 + 5×None; C2-b: 28×R4 + 5×None; C3-a: 46×R4 + 5×None;
-# C3-b: 64×R4 + 5×None), and the block is named
+# C3-b: 64×R4 + 5×None; C3-R1: 16×R4 + 48×R1 + 5×None), and the block is named
 # ---------------------------------------------------------------------------
 
 
@@ -257,13 +257,16 @@ def test_five_targets_read_no_level_and_sixty_four_read_r4(
     built_content_db: Path,
 ) -> None:
     """Old truth: all fourteen read no level, blocked at R0 by
-    ``assessment_membership``. New truth (C1 one target, C2-a the other
+    ``assessment_membership``. C1 one target, C2-a the other
     eight, C2-b the nineteen it authored as entities, C3-a eighteen of its
-    cut and C3-b the last eighteen): the five CAPABILITY entities whose
-    sources state no evidence
-    read exactly that, and the sixty-four RESOURCE targets whose sources state
-    all nineteen facts read ``R4_DETECTION_READY`` — the same fail-closed
-    ladder, now driven by the artifact."""
+    cut and C3-b the last eighteen — all sixty-four RESOURCE targets state all
+    nineteen facts. **C3-R1** then moved their level without touching their
+    evidence: the sixteen whose §24.7 row is a curriculum mapping read
+    ``R4_DETECTION_READY`` and the other forty-eight read
+    ``R1_LEXICALLY_RESOLVED`` with ``curriculum_link`` as the level-1 blocking
+    key — the same fail-closed ladder, now distinguishing "no mapping" from
+    "no evidence". The five CAPABILITY entities whose sources state no
+    evidence still read no level at all."""
 
     assessments = _corpus_assessments(built_content_db)
     print("\n[p5-r] target -> level -> keys blocking the next level")
@@ -274,12 +277,21 @@ def test_five_targets_read_no_level_and_sixty_four_read_r4(
         )
     assert len(assessments) == 69
     leveled: list[str] = []
+    r4_targets: list[str] = []
+    r1_targets: list[str] = []
     for assessment in assessments:
         if assessment.target_id.startswith("res-"):
             leveled.append(assessment.target_id)
-            assert assessment.level == "R4_DETECTION_READY", assessment.target_id
-            assert assessment.next_level is None
-            assert assessment.missing_keys == ()
+            if assessment.level == "R4_DETECTION_READY":
+                r4_targets.append(assessment.target_id)
+                assert assessment.next_level is None
+                assert assessment.missing_keys == ()
+                continue
+            assert assessment.level == "R1_LEXICALLY_RESOLVED", (
+                assessment.target_id
+            )
+            r1_targets.append(assessment.target_id)
+            assert assessment.missing_keys[0] == "curriculum_link"
             continue
         assert assessment.level is None, assessment.target_id
         assert assessment.next_level == "R0_INDEXED"
@@ -290,6 +302,8 @@ def test_five_targets_read_no_level_and_sixty_four_read_r4(
         # Cumulative reporting: the R0 blocker is still standing in R1's set.
         assert "assessment_membership" in r1.missing_keys
     assert len(leveled) == 64
+    assert len(r4_targets) == 16
+    assert len(r1_targets) == 48
 
 
 def test_the_lexical_resolution_equivalence_is_gone_from_the_code() -> None:

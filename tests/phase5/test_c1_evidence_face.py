@@ -14,12 +14,15 @@ any of them absent. What this file pins, in order:
   byte-identical, a rebuild over an existing file is a replay, and two
   *subprocess* builds under different ``PYTHONHASHSEED`` values hash equal
   (C1 disposition F4 — hash randomization must not reach the bytes);
-- the corpus table reads 64 × R4_DETECTION_READY (the sixty-four RESOURCE
-  targets whose sources state every evidence-backed fact; C1 authored one of
-  them, C2-a the other eight, C2-b the nineteen it authored as entities too,
-  C3-a eighteen of its cut and C3-b the last eighteen)
+- the corpus table reads 16 × R4_DETECTION_READY (the RESOURCE targets whose
+  §24.7 row is a curriculum mapping — C3-R1 re-reviewed the links, and only
+  those rows satisfy §8.1 R2) + 48 × R1_LEXICALLY_RESOLVED (the same targets
+  with every other evidence fact present and a coverage-placement link, so
+  the ladder stops at R1 — the fall-back C3-R1's decision made on purpose)
   + 5 × None (the five CAPABILITY entities, whose sources state no readiness
-  evidence at all);
+  evidence at all). Before C3-R1 this table read 64 × R4 + 5 × None: the
+  count moved because the R2 fact moved, not because any evidence was
+  removed (every evidence pin in this file is unchanged);
 - every §8.1 fact key has a dedicated per-fact pin, both directions (present
   for the evidenced target, absent for an evidence-less one), and the
   content_text role reads are load-bearing: the artifact's per-role row
@@ -78,13 +81,27 @@ from elc.curriculum.store import UNREAD_FACT_EVIDENCE, CurriculumContentStore
 from elc.platform.types import Ok
 from tests.conftest import REPO_ROOT
 
-#: The C1-authored R4 target, and one entity whose source states no evidence.
+#: The C1-authored target, and one entity whose source states no evidence.
 #: Since C2-a every RESOURCE target states evidence, so the evidence-less
 #: class is the five CAPABILITY entities (they carry no `evidence/` document
 #: and no §24.7 link row of their own) — the same absence, one entity type
 #: over, and the reason the per-key zero pins below read 0 rather than "".
+#:
+#: **C3-R1 moved this target's level, not its evidence**: the capability
+#: re-review found its §24.7 row a coverage placement (a collocation names an
+#: act; it hedges nothing), so §8.1's ``curriculum_link`` fact is now False
+#: for it and it reads R1_LEXICALLY_RESOLVED. Keeping this constant is the
+#: point: every evidence pin below still holds unchanged, because the rows
+#: are all still there and only the link's mapping class moved. Tests whose
+#: subject is the *level* (a ladder step that cannot be observed on a target
+#: already stopped at R1) use ``MAPPING_TARGET`` instead.
 R4_TARGET = "res-colloc-make-a-decision"
 NO_EVIDENCE_TARGET = "cap-disc-topic-shift"
+
+#: A target whose §24.7 row *is* a curriculum mapping after C3-R1, so it
+#: still reads R4_DETECTION_READY and all nineteen §8.1 fact keys are
+#: satisfied for it.
+MAPPING_TARGET = "res-hedge-i-think"
 
 #: The thirteen evidence tables, transcribed independently of
 #: ``SCHEMA_STATEMENTS`` (a second hand-typed copy is the point: a schema
@@ -350,15 +367,17 @@ def test_two_subprocess_builds_with_different_hash_seeds_hash_equal(
 # ---------------------------------------------------------------------------
 
 
-def test_readiness_by_target_is_forty_six_r4_and_five_none(
+def test_readiness_by_target_is_sixteen_r4_forty_eight_r1_and_five_none(
     built_content_db: Path,
 ) -> None:
-    """The corpus table on the real artifact: every RESOURCE target reads
-    R4_DETECTION_READY (C1 authored one evidence document, C2-a the other
-    eight, C2-b the nineteen it also authored as entities, C3-a eighteen of
-    its cut and C3-b the last eighteen), and the five CAPABILITY entities read
-    None — no level is invented for them, §8.1 has no word below R0, and
-    their sources state no evidence."""
+    """The corpus table on the real artifact, at C3-R1's truth: the sixteen
+    RESOURCE targets whose §24.7 row is a curriculum mapping read
+    R4_DETECTION_READY, the other forty-eight RESOURCE targets read
+    R1_LEXICALLY_RESOLVED (their evidence is complete but their link is a
+    coverage placement, so §8.1 R2 is not satisfied and the ladder stops at
+    R1 — this is the *deliberate* fall-back, not a loss of evidence), and the
+    five CAPABILITY entities read None — no level is invented for them, §8.1
+    has no word below R0, and their sources state no evidence."""
 
     store = ContentStore(built_content_db)
     try:
@@ -372,25 +391,47 @@ def test_readiness_by_target_is_forty_six_r4_and_five_none(
     res_targets = sorted(t for t in table if t.startswith("res-"))
     cap_targets = sorted(t for t in table if t.startswith("cap-"))
     assert len(res_targets) == 64 and len(cap_targets) == 5
-    for target_id in res_targets:
-        assert table[target_id] == "R4_DETECTION_READY", target_id
+    r4 = [t for t in res_targets if table[t] == "R4_DETECTION_READY"]
+    r1 = [t for t in res_targets if table[t] == "R1_LEXICALLY_RESOLVED"]
+    assert (len(r4), len(r1)) == (16, 48)
+    # The split is exactly the link's mapping class — the level is read, and
+    # it is the mapping set that carries it (the C3-R1 consistency pin).
+    mapping_rows = set(_mapping_resource_ids(built_content_db))
+    assert set(r4) == mapping_rows
     for target_id in cap_targets:
         assert table[target_id] is None, target_id
     assert sum(1 for level in table.values() if level is None) == 5
 
 
+def _mapping_resource_ids(artifact: Path) -> tuple[str, ...]:
+    """The resources whose §24.7 row declares CURRICULUM_MAPPING."""
+
+    conn = sqlite3.connect(str(artifact))
+    try:
+        rows = conn.execute(
+            "SELECT resource_id FROM curriculum_link "
+            "WHERE mapping_class = 'CURRICULUM_MAPPING' ORDER BY resource_id"
+        ).fetchall()
+    finally:
+        conn.close()
+    return tuple(str(row[0]) for row in rows)
+
+
 @pytest.mark.parametrize("key", READINESS_FACT_KEYS)
-def test_every_fact_key_is_present_for_the_r4_target(
+def test_every_fact_key_is_present_for_a_mapping_target(
     built_content_db: Path, key: str
 ) -> None:
-    """Per-fact pin, present side: the evidenced target satisfies all
-    nineteen §8.1 fact keys (eighteen read from their own tables;
-    ``entity_row`` proven by the preceding ``get_resource`` success)."""
+    """Per-fact pin, present side: a target whose §24.7 row is a curriculum
+    mapping satisfies all nineteen §8.1 fact keys (eighteen read from their
+    own tables; ``entity_row`` proven by the preceding ``get_resource``
+    success). The target is the C3-R1 mapping one — the C1-authored target
+    no longer satisfies ``curriculum_link`` (its row is a placement), which
+    the corpus-table test above pins instead."""
 
     store = ContentStore(built_content_db)
     try:
         supply = CurriculumContentStore(store)
-        facts = supply.readiness_facts(R4_TARGET)
+        facts = supply.readiness_facts(MAPPING_TARGET)
         assert isinstance(facts, Ok), facts
     finally:
         store.close()
@@ -446,11 +487,18 @@ def test_every_fact_key_is_absent_for_an_evidence_less_target(
 # ---------------------------------------------------------------------------
 
 
-def _edit_evidence(text_edit: Callable[[dict], None]) -> Callable[[Path], None]:
-    """An edit closure over the one evidence document."""
+def _edit_evidence(
+    text_edit: Callable[[dict], None], target: str = R4_TARGET
+) -> Callable[[Path], None]:
+    """An edit closure over one target's evidence document.
+
+    Defaults to the C1-authored target (the loader tests below are about
+    that document); the level tests pass ``MAPPING_TARGET`` because a target
+    the ladder already stops at R1 cannot show an R3/R4 step moving.
+    """
 
     def edit(content_src: Path) -> None:
-        path = content_src / "evidence" / f"{R4_TARGET}.json"
+        path = content_src / "evidence" / f"{target}.json"
         document = json.loads(path.read_text(encoding="utf-8"))
         text_edit(document)
         path.write_text(
@@ -641,22 +689,27 @@ def test_an_empty_evidence_list_is_a_legal_source(tmp_path: Path) -> None:
 def test_a_declared_need_without_rows_reports_the_gap(tmp_path: Path) -> None:
     """A source that declares the TypicalError need before writing the error
     is **built** (readiness is a report, never a build-time refusal) and the
-    ladder answers: ``typical_error_when_needed`` unsatisfied, level R2."""
+    ladder answers: ``typical_error_when_needed`` unsatisfied, level R2 — the
+    variant is built over the C3-R1 mapping target, because R2 is where a
+    target with a mapping link but an incomplete R3 set stops."""
 
     def drop_errors(document: dict) -> None:
         del document["typical_errors"]
         # `typical_error_required: true` stays declared.
 
-    artifact = _build_edited(tmp_path, _edit_evidence(drop_errors))
+    artifact = _build_edited(
+        tmp_path, _edit_evidence(drop_errors, MAPPING_TARGET)
+    )
     store = ContentStore(artifact)
     try:
         supply = CurriculumContentStore(store)
-        facts = supply.readiness_facts(R4_TARGET)
+        facts = supply.readiness_facts(MAPPING_TARGET)
         assert isinstance(facts, Ok), facts
-        assessment = supply.readiness(R4_TARGET)
+        assessment = supply.readiness(MAPPING_TARGET)
         assert isinstance(assessment, Ok), assessment
     finally:
         store.close()
+    assert facts.value.curriculum_link is True
     assert facts.value.typical_error is False
     assert facts.value.typical_error_required is True
     assert facts.value.present("typical_error_when_needed") is False
@@ -670,22 +723,27 @@ def test_an_untriggered_need_satisfies_the_conditional_key(
     """No declaration, no rows: the conditional key is satisfied by the
     declared absence of a need (§8.1 "以及需要时" — a condition, not a
     silent skip), so the R3 set completes without any TypicalError row —
-    and the detection face is independent of it, so the level is still R4."""
+    and the detection face is independent of it, so the level is still R4
+    (the variant is built over the C3-R1 mapping target: R4 is reachable
+    only where the §24.7 row is a mapping)."""
 
     def drop_need_and_errors(document: dict) -> None:
         del document["typical_errors"]
         del document["typical_error_required"]
 
-    artifact = _build_edited(tmp_path, _edit_evidence(drop_need_and_errors))
+    artifact = _build_edited(
+        tmp_path, _edit_evidence(drop_need_and_errors, MAPPING_TARGET)
+    )
     store = ContentStore(artifact)
     try:
         supply = CurriculumContentStore(store)
-        facts = supply.readiness_facts(R4_TARGET)
+        facts = supply.readiness_facts(MAPPING_TARGET)
         assert isinstance(facts, Ok), facts
-        assessment = supply.readiness(R4_TARGET)
+        assessment = supply.readiness(MAPPING_TARGET)
         assert isinstance(assessment, Ok), assessment
     finally:
         store.close()
+    assert facts.value.curriculum_link is True
     assert facts.value.typical_error is False
     assert facts.value.typical_error_required is False
     assert facts.value.present("typical_error_when_needed") is True
@@ -883,10 +941,13 @@ def test_an_evidence_less_target_reads_zero_rows_per_role(
 def test_the_artifact_declares_the_bumped_content_db_version(
     built_content_db: Path,
 ) -> None:
-    """C1 disposition F6: the schema generation moved with the table set
-    (11 → 24); docs/DATA_MODEL.md §26.1 requires the version to be updated
-    explicitly, never guessed from the schema."""
-    assert CONTENT_DB_VERSION == "2"
+    """C1 disposition F6, moved again by C3-R1: the schema generation is
+    explicit (docs/DATA_MODEL.md §26.1 requires the version to be updated
+    explicitly, never guessed from the schema). C1 moved "1" → "2" with the
+    table set (11 → 24); C3-R1 moves "2" → "3" with a column
+    (``curriculum_link.mapping_class``), so a reader can tell the two
+    artifact generations apart even though the table set is unchanged."""
+    assert CONTENT_DB_VERSION == "3"
     conn = sqlite3.connect(str(built_content_db))
     try:
         row = conn.execute(
@@ -895,7 +956,7 @@ def test_the_artifact_declares_the_bumped_content_db_version(
     finally:
         conn.close()
     assert row is not None
-    assert row[0] == CONTENT_DB_VERSION == "2"
+    assert row[0] == CONTENT_DB_VERSION == "3"
 
 
 def test_reviewed_explanation_requires_the_approved_lifecycle(
@@ -907,10 +968,12 @@ def test_reviewed_explanation_requires_the_approved_lifecycle(
     word the approved curriculum_link carries; no dedicated §24 marker on
     the note). A variant whose entity is not approved flips the fact while
     the note row stays, and the R3 set no longer completes (level falls to
-    R2)."""
+    R2 — the variant is built over the C3-R1 mapping target, since a target
+    whose link is a placement would stop at R1 before the R3 step could be
+    observed)."""
 
     def demote_entity(content_src: Path) -> None:
-        path = content_src / "entities" / f"{R4_TARGET}.json"
+        path = content_src / "entities" / f"{MAPPING_TARGET}.json"
         document = json.loads(path.read_text(encoding="utf-8"))
         document["entity"]["lifecycle_status"] = "PEDAGOGICALLY_ANNOTATED"
         path.write_text(
@@ -922,16 +985,17 @@ def test_reviewed_explanation_requires_the_approved_lifecycle(
     store = ContentStore(artifact)
     try:
         supply = CurriculumContentStore(store)
-        facts = supply.readiness_facts(R4_TARGET)
+        facts = supply.readiness_facts(MAPPING_TARGET)
         assert isinstance(facts, Ok), facts
-        assessment = supply.readiness(R4_TARGET)
+        assessment = supply.readiness(MAPPING_TARGET)
         assert isinstance(assessment, Ok), assessment
-        counts = store.evidence_counts(R4_TARGET)
+        counts = store.evidence_counts(MAPPING_TARGET)
         assert isinstance(counts, Ok), counts
     finally:
         store.close()
     # The note row is still there; the fact is still False.
     assert counts.value.teaching_notes == 1
+    assert facts.value.curriculum_link is True
     assert facts.value.reviewed_explanation is False
     assert assessment.value.level == "R2_PLANNER_READY"
 

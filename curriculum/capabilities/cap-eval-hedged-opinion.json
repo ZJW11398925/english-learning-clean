@@ -2,5 +2,28 @@
   "curriculum_node_id": "cap-eval-hedged-opinion",
   "capability_id": "cap-eval-hedged-opinion",
   "family": "EVAL",
-  "level": 2
+  "level": 2,
+  "functional_definition": {
+    "statement": "Putting forward one's own evaluation, judgement, forecast or answer while marking it as less than fully asserted -- as a personal take, a guess, or something that may still turn out otherwise -- instead of stating it as a fact.",
+    "counts_as_realization": [
+      "the resource's taught production is a hedge unit: a short fixed or semi-fixed expression (pragmatic formula, adverbial hedge, sentence-initial or parenthetical marker) whose own taught function is to lower how strongly the speaker's words land;",
+      "in the taught realization the hedge attaches to a claim or answer of the speaker's own -- an evaluation, judgement, forecast or reply (\"I think it is going to rain.\", \"It depends on the weather.\") -- and the lowering is the hedge's contribution: the claim is presented as uncertain, as the speaker's personal scope, or as resting on something not yet settled;",
+      "the taught ladder contrasts the hedged form with the unhedged one (\"Hedge the claim so it does not sound like a fact.\"), so the same claim without the hedge would stand as a bare assertion;",
+      "the hedge's object is the claim itself, never the hearer's behaviour: it is not a request, a directive, or a move of the talk's topic."
+    ],
+    "does_not_count": [
+      "expressions whose taught production is a proposition -- naming or describing an act, a state of affairs, or an outcome -- rather than a hedged claim of the speaker's (\"make a decision\", \"come to a conclusion\", \"play a role\", \"have an effect on\", \"hit the nail on the head\", \"a blessing in disguise\");",
+      "frames that set up a hypothesis or a case to reason about (\"let's say\"): a supposition is not a hedge on a claim the speaker is making;",
+      "directives about what the hearer should remember or attend to (\"keep in mind\");",
+      "expressions whose lowering serves a different act in the taught production -- a marker that softens a negative move realizes the softening node, a marker that moves the topic realizes the topic node. The two kinds of lowering are told apart by their object: commitment to one's own claim here, the interpersonal force of a negative move there."
+    ],
+    "boundary_cases": [
+      "\"I'm not sure whether the shop is open.\" holds back the answer the speaker gives rather than an evaluation: the answer is the speaker's own claim, so it counts -- the capability covers the speaker's own take whether it is an opinion, a judgement, a forecast or a reply.",
+      "\"To be honest, I don't like the design.\" lowers nothing about the facts; it presents the following claim as the speaker's own frank opinion, which is the personal-scope arm of counts_as_realization 2, so it counts.",
+      "\"I think it might be too late.\" (the capability's own face in this repository) hedges first and then makes the claim, so it counts.",
+      "\"Let's say you get the job. What then?\" sets up a case for the two speakers to reason about rather than hedging a claim of the speaker's: no claim of the speaker's is being lowered, so it does not count.",
+      "\"It was, in fact, the cheapest option.\" strengthens the claim instead of lowering it, so it does not count."
+    ],
+    "basis": "Authoring judgement made in this repository (C3-R1), read against the canonical vocabulary that actually exists: docs/DOMAIN_MODEL.md §7's EVAL family name and §8's expression subtypes, plus this capability's own taught face -- the fixture reveal \"I think it might be too late.\" whose hint is \"Give an opinion with a hedge, not as a fact\" (tests/phase3/target_fixtures.py). No external psychometric or corpus source is claimed. This definition is the standard the §24.7 links into this node were re-reviewed against (curriculum/README.md, C3-R1); it is a declared reading whose Revisit is registered (a canonical definition would supersede it)."
+  }
 }
