@@ -23,8 +23,8 @@ on"):
   **not usable**: the generator refuses to emit it, and the caller's context
   assembly reports ``CURRICULUM_READINESS`` missing (P7-0's own leg). Nothing
   here substitutes ``R3`` for "unknown" — the ladder still answers ``None``
-  for the thirteen targets whose sources state no evidence (C1's answer for
-  them; its one R4 target reads through unchanged);
+  for the five capability targets whose sources state no evidence (C2-a's
+  answer for them; its nine R4 resource targets read through unchanged);
 - a prerequisite that cannot be *judged* is not a prerequisite that is
   *satisfied*. BF-02 §11's ``UNKNOWN`` is the word for "not judged", the kernel
   hard-excludes ``UNKNOWN`` unless the candidate is a probe or carries a

@@ -148,7 +148,7 @@
     },
     {
       "ordinal": 1,
-      "rule": "SOFTENER_BEFORE_A_BARE_NOUN: match when kind of, with no article in front of kind, is immediately followed by a singular countable noun with no determiner, in a sentence that classifies something, because the classifying article is what belongs there."
+      "rule": "SOFTENER_BEFORE_A_BARE_NOUN: match when kind of, with no article in front of kind, is immediately followed by a singular countable noun with no determiner, in a declarative sentence that classifies something, because the classifying article is what belongs there — a wh-question such as What kind of bird is that? names the class being asked for and is not the softener, so the rule does not reach it."
     },
     {
       "ordinal": 2,

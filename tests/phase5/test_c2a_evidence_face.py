@@ -275,6 +275,13 @@ def test_every_authored_documents_detection_evidence_is_paired(
         assert text, (entity_id, ordinal)
         assert str(expected) in EXPECTED_READINGS, (entity_id, expected)
         assert str(kind) in FIXTURE_KINDS, (entity_id, kind)
+        # the pair, not just each side: a NEGATIVE fixture reads NO_MATCH and
+        # a FALSE_POSITIVE_BOUNDARY fixture reads NO_MATCH_BOUNDARY (c2-a
+        # review F4 — kind and expected are two spellings of one reading).
+        assert (str(kind), str(expected)) in (
+            ("NEGATIVE", "NO_MATCH"),
+            ("FALSE_POSITIVE_BOUNDARY", "NO_MATCH_BOUNDARY"),
+        ), (entity_id, ordinal, kind, expected)
         fixture_ordinals.setdefault(str(entity_id), []).append(int(ordinal))
         kinds.setdefault(str(entity_id), set()).add(str(kind))
     assert sorted(rule_ordinals) == sorted(RES_TARGETS)
@@ -360,10 +367,12 @@ def test_the_calibration100_reading_moves_and_the_verdict_does_not(
     built_content_db: Path,
 ) -> None:
     """The numbers the rollout HOLD rests on, read from both sides: the
-    artifact now answers nine detection-ready targets and fourteen resources
-    (旧真值: one and fourteen), while the floors IP §12 states are 100 / 30 / 2
-    — so every one of them is still unmet and nothing here is an opening
-    claim."""
+    artifact now answers nine detection-ready resource targets out of fourteen
+    entities (旧真值: one of fourteen), while the floors IP §12 states are
+    100 / 30 / 2 — so every one of them is still unmet and nothing here is an
+    opening claim. The resource_count floor is read against the resource
+    count (nine), not the entity count (fourteen); both are stated so the
+    two spellings cannot drift apart."""
 
     plan_text = (
         Path(__file__).resolve().parents[2] / "docs" / "IMPLEMENTATION_PLAN.md"
@@ -398,7 +407,10 @@ def test_the_calibration100_reading_moves_and_the_verdict_does_not(
         conn.close()
     assert len(ready) == 9
     assert resources == 14
-    print(f"[c2-a] calibration reading -> {len(ready)}/{resources} resources")
+    print(
+        f"[c2-a] calibration reading -> {len(ready)}/{gates['resource_count']} "
+        f"resources ({len(ready)} R4 of {resources} entities)"
+    )
     assert len(ready) < gates["resource_count"]
     assert resources < gates["resource_count"]
     assert families.get("CORE_A", 0) < gates["CORE_A"]
