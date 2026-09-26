@@ -106,7 +106,8 @@ _T = TypeVar("_T")
 #: docs/PRODUCT_CONTRACT.md §8.1 fact keys whose evidence no table of the
 #: artifact carries, with the evidence that would have to exist for the fact
 #: to become readable. **Empty since C1**: the thirteen evidence tables
-#: (elc.content.build.SCHEMA_STATEMENTS, 11 → 24) carry every §8.1 fact key,
+#: (elc.content.build.SCHEMA_STATEMENTS, 11 → 25, C3-R2's content_provenance
+#: being the twenty-fifth) carry every §8.1 fact key,
 #: so :meth:`CurriculumContentStore.readiness_facts` reads the eighteen
 #: row-backed keys and proves ``entity_row`` from the entity's own §24.1 row,
 #: and has nothing left to declare absent.

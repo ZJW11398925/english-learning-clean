@@ -1,0 +1,24 @@
+{
+  "format": "elc.content_src",
+  "format_version": 1,
+  "audit_id": "c3r2-stratified-audit",
+  "performed_by": "C3-R2 independent reviewer (new-context executor-pro, read-only)",
+  "basis": "Stratified audit under DEC-OPI-643b9639-42ef-4711-bb72-1fb81daf6e58.3 R9: 16 entities drawn across strata (6 CURRICULUM_MAPPING-side, 10 COVERAGE_PLACEMENT-side; 8 families covered; 6 context-guard entities; 6 C1-era originals). Each entity was judged on two faces: the content-linguistics face (typical_errors genuine for the declared learner population; every POSITIVE_ERROR row instantiates a declared error_pattern in genuine learner-error English such that a reasonable implementation of the declared detection_rules matches it; NEGATIVE/FALSE_POSITIVE_BOUNDARY rows honest) and the mapping_class face (the link row's CURRICULUM_MAPPING/COVERAGE_PLACEMENT follows the capability functional_definition's counts_as_realization/does_not_count). 15 of 16 audited entities PASS both faces. res-softener-if-anything is withheld (its pre-existing detection_rules carry an internal tension between rule 1 and rule 2's third exemplar, registered for reconciliation) and may be approved by a later audit once that tension is resolved. Landed by the C3-R2 disposition cut from the reviewer's verdict table; the reviewer itself stayed read-only.",
+  "approved_entities": [
+    "res-colloc-keep-in-mind",
+    "res-colloc-make-a-decision",
+    "res-colloc-pay-attention-to",
+    "res-discourse-anyway",
+    "res-discourse-to-be-honest",
+    "res-frame-just-wondering",
+    "res-frame-what-im-saying-is",
+    "res-hedge-i-guess",
+    "res-hedge-i-think",
+    "res-idiom-break-the-ice",
+    "res-phrasal-figure-out",
+    "res-phrasal-turn-out",
+    "res-pragmatic-could-you",
+    "res-pragmatic-no-offense-but",
+    "res-softener-kind-of"
+  ]
+}

@@ -113,9 +113,12 @@ absent, so 14 of 14 corpus targets read ``None``, blocked at R0 by
 ``assessment_membership`` and at R1 by the four lexical facts — the truthful
 report, not a regression to be papered over by a friendlier reading. C1 built
 the evidence face (thirteen tables, elc.content.build) and the corpus moved:
-after the C2 and C3 authoring cuts the sixty-four resource targets whose
-sources state all nineteen
-facts read ``R4_DETECTION_READY``, the five capability targets still read
+after the C2 and C3 authoring cuts sixty-four resource targets read
+``R4_DETECTION_READY``, until C3-R1's mapping re-adjudication returned the
+forty-eight placement resources to ``R1_LEXICALLY_RESOLVED`` (their
+``curriculum_link`` fact reads false under the approved ∧
+``CURRICULUM_MAPPING`` reading) and left sixteen at ``R4_DETECTION_READY``;
+the five capability targets still read
 ``None`` because their sources state no evidence — the same report, now
 driven by the artifact instead of by the missing tables.
 
@@ -213,7 +216,8 @@ READINESS_FACT_KEYS = (
 
 #: §8.1 facts whose evidence **no artifact state can carry**. **Empty since
 #: C1 (Phase 11)**: the thirteen readiness-evidence tables of
-#: elc.content.build (11 → 24) carry the evidence for every one of the
+#: elc.content.build (11 → 25, C3-R2's content_provenance being the
+#: twenty-fifth) carry the evidence for every one of the
 #: nineteen keys, so the ladder reads all of them and has nothing left to
 #: declare absent. The mechanism is kept rather than deleted — a §8.1 fact
 #: whose evidence has no table is registered here again (with its missing-

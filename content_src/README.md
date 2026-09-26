@@ -28,7 +28,7 @@ content_src/
   index.json                 # 索引：content_version + 实体文档清单 + 证据文档清单（无 glob 兜底）
   entities/<entity_id>.json  # 每个 target 一份（共 69 = 5 个 cap-* + 64 个 res-*；其中 19 个由 C2-b、18 个由 C3-a、18 个由 C3-b 编写）
   evidence/<entity_id>.json  # C1：每个声明了 readiness 证据的 target 一份（可空集；现为 64 份，与 res-* 一一对应）
-  audits/*.json              # C3-R2：provenance 审计记录（目录缺席/空 = 合法"尚无审计"状态；本刀交付时为空，真记录由处置刀按评审抽审结果落地）
+  audits/*.json              # C3-R2：provenance 审计记录（目录缺席/空 = 合法"尚无审计"状态；现含处置刀落地的 c3r2-stratified-audit.json，批准 15 实体）
   README.md                  # 本文件 = 映射规则索引文档
 ```
 
@@ -101,15 +101,19 @@ strict keys 最小集 `{audit_id, performed_by, basis, approved_entities}`（可
 `format`/`format_version` 声明）；缺键 / 未知键 / 空 `approved_entities` 之外的
 悬空实体 id / 重复 `audit_id` 一律 `BuildError`。等级**由结构派生、绝不自我
 声明**（`elc.content.build._provenance_rows`，词表 `elc.content.types.
-PROVENANCE_LEVELS`）：有 authoring evidence ⇒ `AUTHOR_DECLARED`（64 基线）∧
+PROVENANCE_LEVELS`）：有 authoring evidence ⇒ `AUTHOR_DECLARED`（基线）∧
 被 ≥1 条记录的 `approved_entities` 点名 ⇒ `EDITOR_REVIEWED`（今日最高可达级）；
 `EXECUTABLY_VERIFIED` / `EMPIRICALLY_CALIBRATED` 词表已立但**今日无派生逻辑
 产生**（可达条件分别 = detector 执行器落地并通过全部三词 fixtures（N21）/
 真实教学运行数据出现（rollout HOLD）；Revisit = 各自条件落地时）。等级落
 content.db 新表 `content_provenance`（第 25 张表；`CONTENT_DB_VERSION`
 "3" → "4"），只作报告面，**不进 §8.1 阶梯**（`READINESS_FACT_KEYS` 零新键，
-readiness 真值与三门读数零改动）。本刀交付时 audits 目录**为空**——真记录由
-处置刀按评审抽审结果落地（评审只读纪律不变）。
+readiness 真值与三门读数零改动）。交付刀时 audits 目录为空（基线 = 64 ×
+`AUTHOR_DECLARED`）；**C3-R2 处置刀已按评审抽审落地首条记录
+`c3r2-stratified-audit.json`**（16 条分层抽审中 15 条两面 PASS 的实体入列；
+`res-softener-if-anything` 因其既有 detection_rules 的内部张力宁严不入列，
+登记 Revisit）——现读 = **49 × `AUTHOR_DECLARED` + 15 × `EDITOR_REVIEWED`**
++ 0 × 后两级（评审只读纪律不变，记录由总控处置刀落盘）。
 
 **登记（C2-a，`resource_labels` 的值域）**：`register` 的取值来自 canonical
 词表（PRODUCT_CONTRACT §4.6 CASUAL / NEUTRAL / POLITE / …）；其余六列

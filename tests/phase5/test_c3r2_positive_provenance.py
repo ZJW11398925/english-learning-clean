@@ -32,9 +32,11 @@ What this cut did, and what this file pins:
   and the truth table, the three Calibration100 gates and the four content
   rows all read exactly as they did at C3-R1.
 
-The repository's own `content_src/audits/` stays empty (the disposition cut
-lands real records after the review); the audit variants below build from
-pytest tmp copies, never from the canonical tree.
+The repository's own `content_src/audits/` carries one record since the
+disposition cut (`c3r2-stratified-audit.json`, the fifteen entities the
+review's stratified audit passed on both faces), so the canonical corpus
+reads 49 × AUTHOR_DECLARED + 15 × EDITOR_REVIEWED; the audit variants below
+build from pytest tmp copies, never from the canonical tree.
 """
 
 from __future__ import annotations
@@ -93,7 +95,27 @@ SINGLE_ERROR_TARGETS = (
 #: The provenance words no derivation produces today.
 UNREACHABLE_LEVELS = ("EXECUTABLY_VERIFIED", "EMPIRICALLY_CALIBRATED")
 
-_PLAN = Path(__file__).resolve().parents[2] / "docs" / "IMPLEMENTATION_PLAN.md"
+#: The fifteen entities the review's stratified audit passed on both faces
+#: (16 audited; res-softener-if-anything withheld pending its detection-rules
+#: reconciliation) — the disposition cut's audit record approves exactly these,
+#: and the record's own list must equal this set.
+AUDITED_PASS_ENTITIES = (
+    "res-colloc-keep-in-mind",
+    "res-colloc-make-a-decision",
+    "res-colloc-pay-attention-to",
+    "res-discourse-anyway",
+    "res-discourse-to-be-honest",
+    "res-frame-just-wondering",
+    "res-frame-what-im-saying-is",
+    "res-hedge-i-guess",
+    "res-hedge-i-think",
+    "res-idiom-break-the-ice",
+    "res-phrasal-figure-out",
+    "res-phrasal-turn-out",
+    "res-pragmatic-could-you",
+    "res-pragmatic-no-offense-but",
+    "res-softener-kind-of",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -125,11 +147,18 @@ def _evidence_variant(
 
 
 def _audits_variant(tmp_path: Path, records: list[dict]) -> Path:
-    """A tmp copy whose `content_src/audits/` carries these records."""
+    """A tmp copy whose `content_src/audits/` carries exactly these records.
+
+    The canonical audits directory is *replaced*, not copied: the variant's
+    audit state is these records alone, so the assertions below stay about
+    the record under test and not about whatever the repository's own
+    audit history happens to carry."""
 
     content_src = tmp_path / "content_src"
     curriculum = tmp_path / "curriculum"
-    shutil.copytree(CONTENT_SRC_DIR, content_src)
+    shutil.copytree(
+        CONTENT_SRC_DIR, content_src, ignore=shutil.ignore_patterns(AUDITS_DIRNAME)
+    )
     shutil.copytree(CURRICULUM_DIR, curriculum)
     audits = content_src / AUDITS_DIRNAME
     audits.mkdir()
@@ -497,7 +526,7 @@ def test_an_always_no_match_stub_fails_every_positive_row(
     positive_failures = sum(
         1
         for _e, _o, _k, _t, expected in _fixtures(built_content_db)
-        if expected == "MATCH" and expected != "NO_MATCH"
+        if expected == "MATCH"
     )
     assert positive_failures == 124
     print(f"[c3r2] always-NO_MATCH stub fails {failures} rows (>= 124)")
@@ -520,17 +549,25 @@ def test_an_always_match_stub_fails_every_negative_row(
 # ---------------------------------------------------------------------------
 
 
-def test_without_audits_every_documented_entity_is_author_declared(
+def test_the_repository_audit_record_raises_fifteen_entities(
     built_content_db: Path,
 ) -> None:
-    """The repository ships no audit records (the disposition cut lands the
-    real ones): all 64 documented entities sit at the AUTHOR_DECLARED
-    baseline, and no capability row exists at all."""
+    """The repository's own audit record (landed by the disposition cut from
+    the review's stratified audit) promotes exactly the fifteen entities that
+    passed both audit faces; the other forty-nine documented entities stay at
+    the AUTHOR_DECLARED baseline, no capability row exists at all, and no
+    row reaches the two words no derivation produces."""
 
     levels = _provenance(built_content_db)
     assert len(levels) == 64
     assert all(entity_id.startswith("res-") for entity_id in levels)
-    assert set(levels.values()) == {"AUTHOR_DECLARED"}
+    reviewed = {
+        entity_id for entity_id, level in levels.items()
+        if level == "EDITOR_REVIEWED"
+    }
+    assert reviewed == set(AUDITED_PASS_ENTITIES)
+    assert sum(1 for level in levels.values() if level == "AUTHOR_DECLARED") == 49
+    assert not (set(levels.values()) & set(UNREACHABLE_LEVELS))
     # The read face and the table agree (one read, already checked above).
     conn = sqlite3.connect(str(built_content_db))
     try:
@@ -891,7 +928,9 @@ def test_cross_process_determinism_with_three_hash_seeds(
 
     content_src = tmp_path / "content_src"
     curriculum = tmp_path / "curriculum"
-    shutil.copytree(CONTENT_SRC_DIR, content_src)
+    shutil.copytree(
+        CONTENT_SRC_DIR, content_src, ignore=shutil.ignore_patterns(AUDITS_DIRNAME)
+    )
     shutil.copytree(CURRICULUM_DIR, curriculum)
     audits = content_src / AUDITS_DIRNAME
     audits.mkdir()
