@@ -431,7 +431,8 @@ def test_the_shipped_corpus_denies_any_open_claim(tmp_path: Path) -> None:
     statement (旧真值: the checker answered HOLD on every row, so the
     capable claim failed at the content gate itself; C1: one authored target
     reached R4 and every row answered GO; C2-a: nine RESOURCE targets reached
-    R4; C2-b: twenty-eight; 新真值 C3-a: forty-six RESOURCE targets reach R4,
+    R4; C2-b: twenty-eight; C3-a: forty-six; 新真值 C3-b: sixty-four RESOURCE
+    targets reach R4,
     so all four rows
     read sixty-four usable targets and the content gate answers **GO** — and
     the capable corpus *still* produces no opening claim): the rollout switch

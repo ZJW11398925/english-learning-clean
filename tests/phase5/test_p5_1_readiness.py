@@ -666,9 +666,9 @@ def test_corpus_readiness_table_is_computed_and_printed(
 def test_every_corpus_resource_target_is_detection_ready(
     built_content_db: Path,
 ) -> None:
-    """不虚报, both directions (旧真值: none; C1: exactly one; C2-a: nine; 新真值
-    C2-b: the twenty-eight RESOURCE targets, each with its own evidence
-    document): every target whose source states all nineteen §8.1 facts reads
+    """不虚报, both directions (旧真值: none; C1: exactly one; C2-a: nine; C2-b:
+    twenty-eight; 新真值 C3-b: the sixty-four RESOURCE targets, each with its own
+    evidence document): every target whose source states all nineteen §8.1 facts reads
     R4 with its judgement fully reached, and every target whose source states
     nothing carries no detection evidence, no level, and reports the four R4
     facts as missing."""
@@ -856,8 +856,9 @@ def test_every_corpus_link_is_approved_and_satisfies_the_r2_fact(
     was ``CURRICULUM_MAPPED`` and the R2 fact was False for all 14; C1: one
     approved link; 新真值 C2-a: all nine RESOURCE targets' links are approved
     by editorial review — C1 reviewed one, C2-a the other eight while
-    authoring their readiness evidence, C2-b the nineteen it authored — so the
-    R2 ``curriculum_link`` fact is satisfied for exactly the twenty-eight
+    authoring their readiness evidence, C2-b the nineteen it authored, C3-a
+    and C3-b the eighteen each — so the
+    R2 ``curriculum_link`` fact is satisfied for exactly the sixty-four
     linked targets, and the 5 CAPABILITY nodes still have no link row of their
     own (curriculum/README.md C1 — no self-link is invented). The unapproved
     direction — a candidate mapping satisfies nothing — is pinned against a
@@ -901,7 +902,7 @@ def test_an_unapproved_curriculum_link_is_not_an_r2_fact(
 ) -> None:
     """The fact is not dead in either direction: it turns on approval and off
     again when the approval is withdrawn. The corpus carries no unapproved
-    row since C2-a (all twenty-eight are approved), so the demotion is built
+    row since C2-a (all sixty-four are approved), so the demotion is built
     as a variant — and the row stays readable either way (unapproved ≠
     deleted). The canonical artifact is read too, so the pair "approved ⇒
     True, demoted ⇒ False" holds over two real builds rather than over one."""

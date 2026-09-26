@@ -216,8 +216,8 @@ def test_the_shipped_corpus_is_still_unreachable_with_a_ledger(
     world: World,
 ) -> None:
     """A ledger does not make the corpus teachable: the same targets are
-    still refused (旧真值: all fourteen at the §8.1 gate; 新真值 C3-a: the five
-    evidence-less CAPABILITY entities there and the forty-six R4-graded
+    still refused (旧真值: all fourteen at the §8.1 gate; 新真值 C3-b: the five
+    evidence-less CAPABILITY entities there and the sixty-four R4-graded
     RESOURCE targets at SCHEDULE_ROW, since this world holds no §5.2 row for
     any of them), and the debt source has nothing to propose because no
     candidate target exists."""

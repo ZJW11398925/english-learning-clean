@@ -7,7 +7,7 @@ The cut's core, in four groups:
   it — never a second source);
 - **the content gate** (BF-02 §10's four floors over a readiness table: the
   shipped corpus answers GO on all four rows (the C1–C3 evidence face grades
-  forty-six RESOURCE targets at R4), and a *legal* §8.1 assessment built
+  sixty-four RESOURCE targets at R4), and a *legal* §8.1 assessment built
   through the ladder's own ``judge_readiness`` turns rows GO — the two
   directions of the same executable condition);
 - **the registered reading** (the overall verdict is the conjunction over all
@@ -199,8 +199,9 @@ def test_the_real_corpus_answers_go_on_all_four_rows_and_the_rollout_stays_held(
     """The measured answer at C3-a's truth, as a two-layer statement (旧真值:
     every row 0, four HOLD rows, 14 targets all without a level; C1: the one
     authored R4 target made every row GO; C2-a: nine usable targets; C2-b:
-    twenty-eight; 新真值 C3-a: the forty-six RESOURCE targets reach R4, so
-    every row reads forty-six usable targets — BF-02 §10's "at least one
+    twenty-eight; C3-a: forty-six; 新真值 C3-b: the sixty-four RESOURCE targets
+    reach R4, so
+    every row reads sixty-four usable targets — BF-02 §10's "at least one
     target" is met on all four floors — **and the rollout is still held**):
     layer one is the content gate's GO; layer two is the stage leg, which no
     shipped caller declares — ``stage_allows_automatic`` answers False for the

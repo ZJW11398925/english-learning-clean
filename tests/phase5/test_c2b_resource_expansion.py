@@ -183,10 +183,10 @@ def test_each_c2b_target_carries_all_nineteen_keys_and_reads_r4(
     assert assessment.value.detection_ready is True, target_id
 
 
-def test_the_corpus_table_is_forty_six_r4_and_five_none(
+def test_the_corpus_table_is_sixty_four_r4_and_five_none(
     built_content_db: Path,
 ) -> None:
-    """The whole table, read once (C3-a truth): the forty-six ``res-*``
+    """The whole table, read once (C3-b truth): the sixty-four ``res-*``
     targets read R4, the five ``cap-*`` entities read None, and every one of
     the nineteen new ids is in the R4 half (the per-target pin above is the
     positive direction; this one is the completeness direction)."""

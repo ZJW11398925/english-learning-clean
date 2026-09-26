@@ -172,7 +172,7 @@
     },
     {
       "ordinal": 1,
-      "rule": "VERB_FORM_OF_GUESS: match when I'm or I am stands directly before the base verb guess, because the hedge is the plain present-tense verb and the progressive is a different claim."
+      "rule": "VERB_FORM_OF_GUESS: match when I'm or I am stands directly before the base verb guess, or when the participle guessing stands without its be (I guessing), because the hedge is the plain present-tense verb and the progressive is a different claim."
     },
     {
       "ordinal": 2,

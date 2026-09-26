@@ -137,12 +137,12 @@
     {
       "ordinal": 1,
       "learner_l1": null,
-      "error_type": "TENSE_OF_THE_FRAME",
-      "error_pattern": "I am just wondering if ... , I just wonder if ...",
+      "error_type": "SHAPE_OF_THE_FRAME",
+      "error_pattern": "I am just wonder if ... | I just wondering if ... (a mismatched verb group: be takes the -ing form, and the -ing form needs its be)",
       "corrected_pattern": "I was just wondering if ...",
-      "explanation": "The fixed past tense is what makes the request distant and light; the present tense puts the question into the moment and sounds more pressing, which is the opposite of what the frame is for. Learners choose the present because they believe the past would be untrue; the correction is to read the tense as politeness rather than as time.",
+      "explanation": "The frame's verb group has two well-formed shapes — was + just + wondering, and the plain present (I just wonder, rare but grammatical). What is not well-formed is mixing them: be followed by the base form (I am just wonder) or the participle without its be (I just wondering) breaks the verb group itself. The present progressive I am just wondering if you could help is natural English and is not this error; the past form is taught because it carries the distance the frame is for.",
       "severity": "MEDIUM",
-      "detection_policy": "Match when the frame's verb is not the past form was (I am just wondering, I just wonder) in a sentence where a gentle request is meant."
+      "detection_policy": "Match when the frame carries a mismatched verb group — be followed by the base form (I am just wonder) or the participle without its be (I just wondering) — in a sentence where a gentle request is meant. The well-formed present progressive (I am just wondering ...) does not match (rule 2 carries it)."
     }
   ],
   "detection_policy": {
@@ -156,11 +156,11 @@
     },
     {
       "ordinal": 1,
-      "rule": "TENSE_OF_THE_FRAME: match when the frame appears with a non-past verb (I am just wondering, I just wonder) in a sentence where a gentle request is meant, because the past form carries the politeness."
+      "rule": "SHAPE_OF_THE_FRAME: match when the frame carries a mismatched verb group — be followed by the base form (I am just wonder) or the participle without its be (I just wondering) — in a sentence where a gentle request is meant, because the verb group itself is what breaks."
     },
     {
       "ordinal": 2,
-      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame runs with was, just wondering and a statement-order clause with could or would (I was just wondering if you could help me, I was just wondering whether you have time, I was just wondering if you'd mind), because those are the accepted realizations."
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame runs with was, just wondering and a statement-order clause with could or would (I was just wondering if you could help me, I was just wondering whether you have time, I was just wondering if you'd mind), and do not match the well-formed present progressive (I am just wondering if you could help), because those are the accepted realizations."
     },
     {
       "ordinal": 3,

@@ -17,11 +17,11 @@ C3-a each moved the corpus forward, and each group states both):
   C1's editorial review approved one, C2-a's approved the other eight while
   authoring their readiness evidence, C2-b authored and approved nineteen
   more while authoring its entities, and C3-a authored and approved eighteen
-  more — so today all forty-six rows are ``CANONICAL_APPROVED``, each with a
+  more — so today all sixty-four rows are ``CANONICAL_APPROVED``, each with a
   rationale that names the approval, what it covered and what it did not
   (curriculum/links.json). The seed rows' mapping fields (`relation`,
   `strength`, `primary_flag`, the two ids) are untouched by the approvals;
-  the C2-b and C3-a rows declare their own relation, and the 28 ``SUPPORTS``
+  the C2-b and C3-a rows declare their own relation, and the 43 ``SUPPORTS``
   rows carry ``primary_flag = false`` because the primary flag marks the
   primary **REALIZES** link (the only thing the build's at-most-one check
   counts);

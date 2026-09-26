@@ -130,7 +130,7 @@
       "ordinal": 1,
       "learner_l1": null,
       "error_type": "NOUN_FORM_OF_OFFENSE",
-      "error_pattern": "no offense taken is fine, but no offends | no offensed | no offense means (verb or plural)",
+      "error_pattern": "no offends | no offensed | no offense means (a verb form or a plural stands in place of the uncountable noun; the reply phrase no offense taken is fine and is not one of these shapes)",
       "corrected_pattern": "no offense (the uncountable noun of the fixed phrase)",
       "explanation": "Offense in this phrase is an uncountable noun, so it takes no article and no plural, and the phrase has no verb of its own; learners re-form it by analogy with verb phrases they know. The correction is the fixed shape, kept whole because the phrase is learnt as a block.",
       "severity": "LOW",

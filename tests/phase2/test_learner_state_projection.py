@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from datetime import datetime, timedelta, timezone
 
 from elc.learning.estimator import ESTIMATOR_PROFILE_ID
 from elc.learning.store import SqliteLearningStore
@@ -396,11 +397,16 @@ def test_get_freshness_tracks_strong_retrieval_and_bands(
     assert view.value.freshness_band == "UNKNOWN"
 
     # Backdate a spontaneous success and rebuild: FRESH → AGING → STALE
-    # as read time moves (BF-01 §22; D-INV-009 — freshness only).
+    # as read time moves (BF-01 §22; D-INV-009 — freshness only). The
+    # instants are relative to the wall clock (an absolute date would flip
+    # this suite to AGING the moment it crosses the 7-day FRESH edge).
+    fresh_at = (
+        datetime.now(timezone.utc) - timedelta(hours=1)
+    ).isoformat()
     db.execute(
         "UPDATE evidence_claim SET performance_type ="
         " 'SPONTANEOUS_PRODUCTION', elicitation_type = 'NATURAL',"
-        " created_at = '2026-09-19T10:00:00+00:00'"
+        f" created_at = '{fresh_at}'"
         " WHERE evidence_group_id = 'eg-fresh'"
     )
     db.commit()
@@ -416,8 +422,11 @@ def test_get_freshness_tracks_strong_retrieval_and_bands(
     assert view.value.freshness_band == "FRESH"
     assert view.value.stability_band in {"FRAGILE", "FRESH"}
 
+    stale_at = (
+        datetime.now(timezone.utc) - timedelta(days=60)
+    ).isoformat()
     db.execute(
-        "UPDATE evidence_claim SET created_at = '2026-08-01T10:00:00+00:00'"
+        f"UPDATE evidence_claim SET created_at = '{stale_at}'"
         " WHERE evidence_group_id = 'eg-fresh'"
     )
     db.commit()
