@@ -82,8 +82,8 @@ _CURRICULUM_VERSION_KEY = "curriculum_version"
 #: approved one ``CANONICAL_APPROVED`` row (``res-colloc-make-a-decision`` →
 #: ``cap-eval-hedged-opinion``), C2-a approved the other eight, and C2-b
 #: approved nineteen more while authoring their readiness evidence — so this
-#: gate now admits the fifteen REALIZES rows among those approvals (the
-#: thirteen SUPPORTS rows credit nothing) — each approval carrying the same
+#: gate now admits the eighteen REALIZES rows among those approvals (the
+#: twenty-eight SUPPORTS rows credit nothing) — each approval carrying the same
 #: stated limits:
 #: no capability-semantics audit was possible (the capabilities have no
 #: functional definition in this repository), and the admission is what lets

@@ -146,11 +146,11 @@
       "ordinal": 1,
       "learner_l1": null,
       "error_type": "ARTICLE_OMISSION",
-      "error_pattern": "come | comes | came | reach | reaches | reached + to conclusion",
+      "error_pattern": "come | comes | came + to conclusion | reach | reaches | reached + (to) conclusion (no article in front of conclusion)",
       "corrected_pattern": "come to a conclusion (or reach a conclusion)",
-      "explanation": "conclusion is countable in this frame, and the article is dropped because the noun feels abstract. English requires a: come to a conclusion. The repair is the article inside the fixed frame, not the verb.",
+      "explanation": "conclusion is countable in this frame, and the article is dropped because the noun feels abstract. English requires a: come to a conclusion. The repair is the article inside the fixed frame, not the verb — and with reach the to is optional, so reach conclusion with neither article nor to is the same slip.",
       "severity": "MEDIUM",
-      "detection_policy": "Match when a form of come or reach is followed by to conclusion with no article between to and conclusion."
+      "detection_policy": "Match when a form of come is followed by to conclusion with no article between to and conclusion, or when a form of reach is followed directly by conclusion with no article and no to."
     }
   ],
   "detection_policy": {
@@ -164,7 +164,7 @@
     },
     {
       "ordinal": 1,
-      "rule": "ARTICLE_OMISSION: match when come ... to or reach ... to is followed by conclusion with no article, because the noun is countable in this frame and requires a."
+      "rule": "ARTICLE_OMISSION: match when come ... to is followed by conclusion with no article, or when reach is followed directly by conclusion with neither article nor to (reach takes no to), because the noun is countable in this frame and requires a."
     },
     {
       "ordinal": 2,

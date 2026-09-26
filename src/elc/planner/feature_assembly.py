@@ -50,7 +50,7 @@ one says so where it is made:
 - **the readiness and goal-mapping legs** of ``missing_authorities``: the
   Planner needs a target's content level and the goal/assessment pack mapping
   (IMPLEMENTATION_PLAN §7 line 340). The readiness face is landed and C2's
-  evidence documents back it — the corpus answers twenty-eight R4 resource
+  evidence documents back it — the corpus answers forty-six R4 resource
   targets with five capability targets still level-less, so the readiness leg
   fires for any candidate naming one of those five — while the
   goal/assessment pack mapping is
@@ -576,7 +576,7 @@ def assemble_feature_authority(
 
     **Today's answer, honestly.** The shipped corpus no longer reads
     ``level=None`` across the board: C2's evidence documents give the
-    twenty-eight resource targets an R4 level and leave five capability
+    forty-six resource targets an R4 level and leave five capability
     targets level-less, and the goal/assessment mapping still does not exist
     (``assessment_targets`` has no consumer). So the readiness leg fires for
     any candidate naming one of the five (and

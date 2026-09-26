@@ -134,11 +134,11 @@
   "typical_errors": [
     {
       "ordinal": 0,
-      "learner_l1": "zh",
+      "learner_l1": null,
       "error_type": "MAKE_FOR_KEEP",
       "error_pattern": "make | makes | made + in mind (with no other verb carrying the phrase)",
       "corrected_pattern": "keep | bear + in mind",
-      "explanation": "记住 is glossed with make, so the learner builds make in mind before meeting the phrase in English. keep in mind is a fixed collocation whose verb is not interchangeable: make in mind is not an English phrase at all, and the repair is the verb itself, not the order.",
+      "explanation": "The phrase collides with make up your mind, the other high-frequency mind phrase a learner meets first, so its make crosses over into this slot. keep in mind is a fixed collocation whose verb is not interchangeable: make in mind is not an English phrase at all, and the repair is the verb itself, not the order.",
       "severity": "HIGH",
       "detection_policy": "Match when a form of make (make, makes, made) stands directly before in mind in a clause whose phrase is the keep-in-mind unit — that is, with no other verb before in mind that could carry it."
     },
