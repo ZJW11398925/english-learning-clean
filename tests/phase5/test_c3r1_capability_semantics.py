@@ -81,16 +81,34 @@ MAPPING_TARGETS = (
     "res-discourse-anyway",
     "res-discourse-by-the-way",
     "res-discourse-having-said-that",
+    "res-discourse-moving-on",
+    "res-discourse-on-another-note",
+    "res-discourse-speaking-of-which",
     "res-discourse-that-reminds-me",
     "res-discourse-to-be-honest",
+    "res-discourse-to-get-back-to-the-point",
+    "res-hedge-as-far-as-i-know",
     "res-hedge-i-guess",
     "res-hedge-i-think",
+    "res-hedge-if-im-not-mistaken",
     "res-hedge-im-not-sure",
     "res-hedge-it-depends",
+    "res-hedge-it-seems-to-me",
     "res-hedge-not-really",
     "res-hedge-sort-of",
+    "res-pragmatic-are-you-saying",
+    "res-pragmatic-could-you-say-that-again",
+    "res-pragmatic-fair-enough",
+    "res-pragmatic-got-it",
+    "res-pragmatic-i-see",
+    "res-pragmatic-i-see-your-point-but",
+    "res-pragmatic-let-me-make-sure",
     "res-pragmatic-no-offense-but",
+    "res-pragmatic-that-makes-sense",
     "res-pragmatic-thats-a-good-point-but",
+    "res-pragmatic-up-to-a-point",
+    "res-pragmatic-what-do-you-mean",
+    "res-pragmatic-with-all-due-respect",
     "res-softener-a-bit",
     "res-softener-kind-of",
     "res-softener-to-be-fair",
@@ -99,6 +117,29 @@ MAPPING_TARGETS = (
 #: The fifteen REALIZES rows that survived the re-review (the credit face).
 REALIZES_TARGETS = tuple(
     target for target in MAPPING_TARGETS if target != "res-hedge-not-really"
+)
+
+#: The eighteen rows the C3-c cut authored (Phase 11): their rationales name
+#: their own cut in the provenance line instead of the C3-R1 re-review.
+C3C_AUTHORED = (
+    "res-discourse-moving-on",
+    "res-discourse-on-another-note",
+    "res-discourse-speaking-of-which",
+    "res-discourse-to-get-back-to-the-point",
+    "res-hedge-as-far-as-i-know",
+    "res-hedge-if-im-not-mistaken",
+    "res-hedge-it-seems-to-me",
+    "res-pragmatic-are-you-saying",
+    "res-pragmatic-could-you-say-that-again",
+    "res-pragmatic-fair-enough",
+    "res-pragmatic-got-it",
+    "res-pragmatic-i-see",
+    "res-pragmatic-i-see-your-point-but",
+    "res-pragmatic-let-me-make-sure",
+    "res-pragmatic-that-makes-sense",
+    "res-pragmatic-up-to-a-point",
+    "res-pragmatic-what-do-you-mean",
+    "res-pragmatic-with-all-due-respect",
 )
 
 #: The six rows the re-review demoted to SUPPORTS (they were REALIZES before
@@ -282,11 +323,12 @@ def test_the_definitions_are_operational() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_the_corpus_review_splits_sixteen_mappings_and_forty_eight_placements() -> None:
-    """m + p = 64, and the split is written out rather than counted twice."""
+def test_the_corpus_review_splits_34_mappings_and_48_placements() -> None:
+    """m + p = 82, and the split is written out rather than counted twice
+    (C3-R1's 16 + 48; C3-c's eighteen authored rows are all mappings)."""
 
     rows = _link_rows()
-    assert len(rows) == 64
+    assert len(rows) == 82
     mapping = sorted(
         target
         for target, row in rows.items()
@@ -298,9 +340,9 @@ def test_the_corpus_review_splits_sixteen_mappings_and_forty_eight_placements() 
         if row["mapping_class"] == "COVERAGE_PLACEMENT"
     )
     assert mapping == sorted(MAPPING_TARGETS)
-    assert len(mapping) == 16
+    assert len(mapping) == 34
     assert len(placement) == 48
-    assert len(mapping) + len(placement) == 64
+    assert len(mapping) + len(placement) == 82
 
 
 def test_realizes_implies_curriculum_mapping() -> None:
@@ -316,7 +358,7 @@ def test_realizes_implies_curriculum_mapping() -> None:
         target for target, row in rows.items() if row["relation"] == "REALIZES"
     )
     assert realizes == sorted(REALIZES_TARGETS)
-    assert len(realizes) == 15
+    assert len(realizes) == 33
 
 
 def test_the_six_demotions_are_disclosed_row_by_row() -> None:
@@ -351,13 +393,15 @@ def test_the_migrated_rows_are_unchanged_against_the_fixture_declaration() -> No
 
 
 def test_every_rationale_is_written_in_the_review_genre() -> None:
-    """All 64 rationales: they name the node they point at and that node's
+    """All 82 rationales: they name the node they point at and that node's
     definition file, quote the resource's **own** first taught rung (the
     row-identity check that replaced "names its own row" — it is checkable
     against the entity source, so a copy-pasted rationale fails), state the
     class word, cite the criterion list they were judged by, state their
     credit consequence in their own words, state their provenance, and
-    register their Revisit."""
+    register their Revisit. The eighteen C3-c rows carry their own cut's
+    authoring label instead of the C3-R1 re-review label — the genre is the
+    same, the provenance line names the cut that wrote the row."""
 
     rows = _link_rows()
     entities = _entity_documents()
@@ -367,7 +411,13 @@ def test_every_rationale_is_written_in_the_review_genre() -> None:
         assert node in rationale, target
         assert f"curriculum/capabilities/{node}.json" in rationale, target
         assert row["mapping_class"] in rationale, target
-        assert "C3-R1 (Phase 11) capability-semantics re-review" in rationale, target
+        if target in C3C_AUTHORED:
+            assert "C3-c (Phase 11)" in rationale, target
+        else:
+            assert (
+                "C3-R1 (Phase 11) capability-semantics re-review"
+                in rationale
+            ), target
         assert "Revisit" in rationale, target
         assert "Row provenance:" in rationale, target
         rung = entities[target]["teaching_content"]["hint_ladder"][0]
@@ -501,7 +551,7 @@ def test_flipping_one_mapping_to_a_placement_flips_that_target(tmp_path: Path) -
     )
     assert _facts(artifact, "res-hedge-not-really").curriculum_link is False
     assert _levels(artifact)["res-hedge-not-really"] == "R1_LEXICALLY_RESOLVED"
-    assert len(_mapping_resource_ids(artifact)) == 15
+    assert len(_mapping_resource_ids(artifact)) == 33
 
 
 # ---------------------------------------------------------------------------
@@ -510,20 +560,21 @@ def test_flipping_one_mapping_to_a_placement_flips_that_target(tmp_path: Path) -
 
 
 def test_the_truth_table_is_m_r4_and_the_rest_at_r1(built_content_db: Path) -> None:
-    """M × R4 + (64 − M) × R1 + 5 × None, with M = 16 stated as the mapping
-    count — the consistency the decision asked to be pinned."""
+    """M × R4 + (82 − M) × R1 + 5 × None, with M = 34 stated as the mapping
+    count (C3-R1's 16 + C3-c's 18) — the consistency the decision asked to be
+    pinned."""
 
     levels = _levels(built_content_db)
-    assert len(levels) == 69
+    assert len(levels) == 87
     r4 = sorted(t for t, level in levels.items() if level == "R4_DETECTION_READY")
     r1 = sorted(
         t for t, level in levels.items() if level == "R1_LEXICALLY_RESOLVED"
     )
     none = sorted(t for t, level in levels.items() if level is None)
     assert r4 == sorted(MAPPING_TARGETS)
-    assert len(r4) == 16 == len(_mapping_resource_ids(built_content_db))
+    assert len(r4) == 34 == len(_mapping_resource_ids(built_content_db))
     assert len(r1) == 48
-    assert len(r1) + len(r4) == 64
+    assert len(r1) + len(r4) == 82
     assert none == sorted(CAP_ENTITIES)
     # Every resource is in exactly one of the two bands: nothing new appears.
     assert sorted(r4 + r1) == sorted(

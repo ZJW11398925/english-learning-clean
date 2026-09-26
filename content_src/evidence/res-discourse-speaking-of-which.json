@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's discourse-marker set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "speaking of which",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "speaking-of-which.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "speaking-of-which.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A marker used to move to a subject that what was just said has reminded the speaker of, so the reminded-of thing becomes the new topic."
+    },
+    {
+      "sense_id": "speaking-of-which.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The phrase stands at the front of the sentence, set off by a comma: Speaking of which, how was the meeting? The which points back at whatever the last speaker mentioned, so the phrase needs that mention in front of it — it cannot open a conversation. In speech it follows directly on the mention, and the comma is the small step aside the voice takes."
+    },
+    {
+      "sense_id": "speaking-of-which.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The fixed word is which: learners replace it with it or a noun (speaking of it, speaking of the meeting can pass as a variant only when the noun is really spelled out), and the replacement which learners reach for breaks the phrase. The comma is the second half of the form. The phrase is also the honest way to change the subject to something the last speaker evoked — teaching it as unrelated-topic language would be wrong, because the association is the point."
+    },
+    {
+      "sense_id": "speaking-of-which.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Speaking of which opens the subject the last mention evoked; that reminds me announces the reminder as the speaker's own reaction; by the way adds a remark with no tie to what was said; on another note opens a subject deliberately cut off from the current one. Speaking of the meeting, how did it go? is the spelled-out variant where the noun replaces which."
+    },
+    {
+      "sense_id": "speaking-of-which.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "说到这个；正说着这个就想起来了（由对方刚提到的事引出新话题，放句首并用逗号隔开）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "speaking-of-which.base",
+      "written": "speaking of which",
+      "normalized": "speaking of which",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the phrase is a very frequent associative topic-shift in conversation, so receptive value, productive value and naturalness are HIGH and core utility is HIGH — moving to the topic the last speaker evoked is a move every conversation needs. Productive difficulty is MEDIUM because the fixed which and the comma are what production has to get right. Transfer value is LOW: one fixed phrase. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The marker belongs to the general fluency pack (the phrases that move a conversation along), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Following an association to a work matter (speaking of which, the Hamburg account) is ordinary meeting language, so it carries substantial weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the mention the which points back at in the example setup, and never present a pronoun-swapped or comma-less sentence as a model of the marker or an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PRONOUN_SUBSTITUTION",
+      "error_pattern": "speaking of it, + clause (the fixed which replaced by it or by an unattached noun)",
+      "corrected_pattern": "speaking of which, + clause",
+      "explanation": "The phrase stores which as its fixed point back at the last mention, and learners swap in the ordinary pronoun because their own language does not keep a relative word inside a frozen phrase; the result is not the formula English uses.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when speaking of it or speaking of this stands in the fronted marker position followed by a comma, in a sentence where no noun phrase has been spelled out after of."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "MISSING_COMMA",
+      "error_pattern": "speaking of which + clause (the marker welded to the clause it opens, with no comma)",
+      "corrected_pattern": "speaking of which, + clause",
+      "explanation": "The marker and its clause are separate units, so the missing comma welds a fronted phrase onto a clause that never closes the intonation step; the slip is punctuation convention rather than grammar, and it is not specific to one L1.",
+      "severity": "LOW",
+      "detection_policy": "Match when the marker is followed directly by a clause with no comma between them."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words after speaking of and the punctuation after the phrase. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (speaking names a person doing the talking, so the marker is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PRONOUN_SUBSTITUTION: match when speaking of it or speaking of this stands in the fronted marker position, because the frozen phrase keeps which as its pointer."
+    },
+    {
+      "ordinal": 1,
+      "rule": "MISSING_COMMA: match when speaking of which runs straight into a clause with no comma after it, because the marker is a fronted phrase and takes its own step aside."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the phrase stands at the front of the sentence with its comma (speaking of which, ...) or with a spelled-out noun in its natural order (speaking of the meeting, how did it go?): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_SPEAKING_PERSON: do not match when the words describe a person who is talking (the minister speaking of which projects to cut was interrupted) or a gerund clause with its own object and no marker comma (speaking of which projects to fund), because the marker is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Speaking of which, how was the meeting?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Speaking of the meeting, how did it go?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "The trip went well, and speaking of which, did you ever call the bank?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The minister speaking of which projects to cut was interrupted twice.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Speaking of it, how was the meeting with the new supplier?",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Speaking of which how was the meeting with the new supplier?",
+      "expected": "MATCH"
+    }
+  ]
+}

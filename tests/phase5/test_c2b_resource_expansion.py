@@ -121,8 +121,33 @@ EXPECTED_READINGS = ("NO_MATCH", "NO_MATCH_BOUNDARY", "MATCH")
 CREDIT_FACE_BEFORE = 3
 CREDIT_FACE_AFTER = 9
 
-#: The corpus-wide credit face after C3-R1 (the 15 surviving REALIZES rows).
-CREDIT_FACE_CORPUS = 15
+#: The eighteen rows C3-c authored (Phase 11): every row of that cut is a
+#: REALIZES + CURRICULUM_MAPPING row, so its face delta is the whole cut.
+C3C_FACE_DELTA = (
+    "res-discourse-moving-on",
+    "res-discourse-on-another-note",
+    "res-discourse-speaking-of-which",
+    "res-discourse-to-get-back-to-the-point",
+    "res-hedge-as-far-as-i-know",
+    "res-hedge-if-im-not-mistaken",
+    "res-hedge-it-seems-to-me",
+    "res-pragmatic-are-you-saying",
+    "res-pragmatic-could-you-say-that-again",
+    "res-pragmatic-fair-enough",
+    "res-pragmatic-got-it",
+    "res-pragmatic-i-see",
+    "res-pragmatic-i-see-your-point-but",
+    "res-pragmatic-let-me-make-sure",
+    "res-pragmatic-that-makes-sense",
+    "res-pragmatic-up-to-a-point",
+    "res-pragmatic-what-do-you-mean",
+    "res-pragmatic-with-all-due-respect",
+)
+
+#: The corpus-wide credit face after C3-R1 plus the C3-c cut's eighteen
+#: REALIZES rows (the 15 surviving rows + 18 = 33; the intermediate readings
+#: C3-a 18 and C3-b 21 are recorded above).
+CREDIT_FACE_CORPUS = 33
 
 _PLAN = Path(__file__).resolve().parents[2] / "docs" / "IMPLEMENTATION_PLAN.md"
 
@@ -201,7 +226,8 @@ def test_each_c2b_target_carries_all_nineteen_keys_and_takes_its_rung(
 def test_the_corpus_table_is_sixteen_r4_forty_eight_r1_and_five_none(
     built_content_db: Path,
 ) -> None:
-    """The whole table, read once (C3-R1 truth): the sixteen ``res-*``
+    """The whole table, read once (C3-R1 truth + C3-c's widening): the
+    thirty-four ``res-*``
     targets whose §24.7 row is a curriculum mapping read R4, the other
     forty-eight read R1_LEXICALLY_RESOLVED (evidence complete, link a
     coverage placement), the five ``cap-*`` entities read None, and this
@@ -216,7 +242,7 @@ def test_the_corpus_table_is_sixteen_r4_forty_eight_r1_and_five_none(
     finally:
         store.close()
     table = {a.target_id: a.level for a in assessments.value}
-    assert len(table) == 69
+    assert len(table) == 87
     r4 = sorted(t for t, level in table.items() if level == "R4_DETECTION_READY")
     r1 = sorted(
         t for t, level in table.items() if level == "R1_LEXICALLY_RESOLVED"
@@ -224,7 +250,7 @@ def test_the_corpus_table_is_sixteen_r4_forty_eight_r1_and_five_none(
     none = sorted(t for t, level in table.items() if level is None)
     assert all(target in r4 for target in C2B_CREDIT_TARGETS)
     assert all(target in r1 for target in C2B_SUPPORT_TARGETS)
-    assert len(r4) == 16
+    assert len(r4) == 34
     assert len(r1) == 48
     assert none == [
         "cap-disc-topic-shift",
@@ -250,14 +276,14 @@ def test_the_first_rung_and_the_three_floors_read_at_c3b_truth(
     built_content_db: Path,
 ) -> None:
     """IP §13's "28 → 100 resource calibration" and the three Calibration100
-    floors, read as separate facts at C3-b's truth.
+    floors, read as separate facts at C3-c's truth.
 
-    The corpus's RESOURCE count is **64**, so IP §13's starting number (28) is
+    The corpus's RESOURCE count is **82**, so IP §13's starting number (28) is
     long passed — that is the first rung, not a gate. Of the three floors,
-    ``resource_count`` = 64 < 100 is still unmet, CORE_C (5 >= 2) is met, and
-    **CORE_A (11 >= 30) is unmet again**: at C3-R1 only a curriculum mapping
-    satisfies §8.1 R2, so the R3+ set is the sixteen mapping targets, not all
-    sixty-four — under the **声明读法 + Revisit（用户 2026-09-26 裁决）**:
+    ``resource_count`` = 82 < 100 is still unmet, CORE_C (10 >= 2) is met, and
+    **CORE_A (24 >= 30) is unmet**: at C3-R1 only a curriculum mapping
+    satisfies §8.1 R2, so the R3+ set is the thirty-four mapping targets, not
+    all eighty-two — under the **声明读法 + Revisit（用户 2026-09-26 裁决）**:
     R3_TEACHING_READY or R4_DETECTION_READY crossed with
     ``content_pedagogical_profile.core_utility`` HIGH / {MEDIUM, LOW}. Each
     floor is asserted on its own line, with its own direction; a cut that
@@ -305,9 +331,9 @@ def test_the_first_rung_and_the_three_floors_read_at_c3b_truth(
     ]
     core_a = [t for t in banded if utilities.get(t) == "HIGH"]
     core_c = [t for t in banded if utilities.get(t) in ("MEDIUM", "LOW")]
-    assert len(resources) == 64
+    assert len(resources) == 82
     assert len(resources) >= 28  # IP §13's start: the first rung, passed
-    assert len(entity_ids) == 69
+    assert len(entity_ids) == 87
     print(
         f"[c3r1] first rung passed: resource_count = {len(resources)} (IP §13"
         f" start = 28); floors: resource_count"
@@ -318,7 +344,7 @@ def test_the_first_rung_and_the_three_floors_read_at_c3b_truth(
     assert len(resources) < gates["resource_count"]  # volume floor unmet
     # C3-R1: the CORE cells read only the mapping set now, so CORE_A falls
     # below its floor again — asserted as the direction the truth has.
-    assert len(core_a) < gates["CORE_A"]  # CORE_A unmet (was met at C3-b)
+    assert len(core_a) < gates["CORE_A"]  # CORE_A unmet (24 of 30)
     assert len(core_c) >= gates["CORE_C"]  # CORE_C met
 
 
@@ -348,23 +374,29 @@ def test_the_credit_face_delta_equals_the_new_realizes_rows(
     built_content_db: Path,
 ) -> None:
     """The behaviour change, counted three ways so it cannot drift: the
-    links document carries 64 rows of which 15 are REALIZES after C3-R1's
-    re-review (this cut's six among them); the credit face answers a node for
-    exactly 15 entities; and the six C2-b ids that credit are the six named
+    links document carries 82 rows of which 33 are REALIZES after C3-R1's
+    re-review plus C3-c's eighteen rows; the credit face answers a node for
+    exactly 33 entities; and the six C2-b ids that credit are the six named
     ones, each reading the node its own row names."""
 
     document = json.loads(
         (CURRICULUM_DIR / "links.json").read_text(encoding="utf-8")
     )
     rows = document["links"]
-    assert len(rows) == 64
+    assert len(rows) == 82
     realizes = {
         str(row["resource_id"]): str(row["node_id"])
         for row in rows
         if row["relation"] == "REALIZES"
     }
-    assert len(realizes) == CREDIT_FACE_CORPUS == CREDIT_FACE_AFTER + 6
+    assert (
+        len(realizes)
+        == CREDIT_FACE_CORPUS
+        == CREDIT_FACE_AFTER + 6 + len(C3C_FACE_DELTA)
+    )
+    assert len(C3C_FACE_DELTA) == 18
     assert set(C2B_CREDIT_TARGETS) <= set(realizes)
+    assert set(C3C_FACE_DELTA) <= set(realizes)
 
     store = ContentStore(built_content_db)
     try:
@@ -427,7 +459,8 @@ def test_the_index_lists_the_nineteen_new_documents_in_both_lists(
     built_content_db: Path,
 ) -> None:
     """The index grew in both lists and in the same order rule: entity
-    documents 14 → 33 → 69 (C3-b), evidence documents 9 → 28 → 64, both plain
+    documents 14 → 33 → 69 → 87 (C3-c), evidence documents 9 → 28 → 64 → 82,
+    both plain
     id order, and the
     nineteen new ids appear in each list exactly once (a document present on
     disk but unlisted is a BuildError, so the listing is also what makes the
@@ -436,8 +469,8 @@ def test_the_index_lists_the_nineteen_new_documents_in_both_lists(
     index = json.loads((CONTENT_SRC_DIR / "index.json").read_text(encoding="utf-8"))
     entities = [str(entry) for entry in index["entities"]]
     evidence = [str(entry) for entry in index["evidence"]]
-    assert len(entities) == 69
-    assert len(evidence) == 64
+    assert len(entities) == 87
+    assert len(evidence) == 82
     assert entities == sorted(entities)
     assert evidence == sorted(evidence)
     for target_id in C2B_TARGETS:

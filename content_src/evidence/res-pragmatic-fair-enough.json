@@ -1,0 +1,193 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's receipt-signal set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "fair enough",
+    "pos": "ADJ"
+  },
+  "senses": [
+    {
+      "sense_id": "fair-enough.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "fair-enough.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A backchannel: the receipt a listener gives to accept that what the other person said is reasonable, acknowledging the point without claiming the floor or conceding everything."
+    },
+    {
+      "sense_id": "fair-enough.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The two words stand as a turn of their own, often followed by a dash and the speaker's adjusted position: Fair enough — let's split the difference. They are produced after the other person's reasoning, with the adjective fair in front of enough and no verb. The receipt accepts that the reasoning stands (their price argument is fair) while leaving the speaker free to add their own terms afterwards — that follow-on is what keeps the move a receipt rather than a surrender."
+    },
+    {
+      "sense_id": "fair-enough.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The form is fixed and inverted against the ordinary adjective phrase (enough follows the adjective here, as it does in sure enough and odd enough), so learners who reorder it (enough fair) or adverbialize it (fairly enough) produce a form English does not store. As a free adjective phrase about a price or a decision (the price is fair enough) the words keep their literal work and are no longer the receipt — the boundary the fixtures hold."
+    },
+    {
+      "sense_id": "fair-enough.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "好吧；有道理（接受对方说法合理的接收信号，但保留自己继续谈条件的余地）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "fair-enough.base",
+      "written": "fair enough",
+      "normalized": "fair enough",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the receipt is very frequent in negotiation-tinged everyday talk, so receptive value and naturalness are HIGH and core utility is HIGH; productive value is HIGH because accepting a point while keeping one's position is a core adult move. Productive difficulty is LOW: two fixed words. Explanation cost is MEDIUM because what has to be taught is the listening move and the inversion against the ordinary adjective phrase. Transfer value is LOW: one fixed pair. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The receipt belongs to the general fluency pack (the signals that keep a conversation going), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Accepting a colleague's point before stating one's own terms (fair enough — let's split the difference) is ordinary workplace language, so it carries substantial weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical receipt first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the receipt as the fixed two-word turn with the follow-on position after a dash or comma, never present the reordered or adverbialized form as a model of the receipt, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "WORD_ORDER_SLIP",
+      "error_pattern": "enough fair (the pair reordered against the stored frame)",
+      "corrected_pattern": "fair enough",
+      "explanation": "The receipt stores the adjective before enough, inverting the ordinary adjective-phrase order, and learners restore what looks like the regular order because their own language places the degree word first; enough fair is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the receipt turn opens with enough fair followed by a dash, a comma or a follow-on clause."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "ADVERB_FORM_SLIP",
+      "error_pattern": "fairly enough (the adverb form standing where the fixed adjective frame belongs)",
+      "corrected_pattern": "fair enough",
+      "explanation": "The receipt is stored with the bare adjective, and learners adverbialize it because the sense feels like a judgement about degree; fairly enough is not the stored frame.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the receipt turn opens with fairly enough followed by a dash, a comma or a follow-on clause."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the order and the form of the two words in the receipt turn. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the two words are the literal adjective phrase about a price or a judgement, so the receipt is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "ORDER_SLIP: match when the receipt turn opens with enough fair, because the stored frame puts the adjective first."
+    },
+    {
+      "ordinal": 1,
+      "rule": "ADVERB_SLIP: match when the receipt turn opens with fairly enough, because the stored frame keeps the bare adjective."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame stands whole as the receipt (fair enough — let's split the difference; fair enough, we'll do it your way), including with a right or an okay in front: those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_LITERAL_ADJECTIVE_PHRASE: do not match when the two words are the adjective phrase of their own clause with a copula (the price is fair enough for a used bike; his excuse seemed fair enough), because the receipt is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Fair enough — let's split the difference.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Fair enough, we'll do it your way this time.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Right, fair enough — I hadn't thought about the delivery costs.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The price is fair enough for a used bike with a new chain.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Enough fair — let's split the difference and finish this today.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Fairly enough, we'll do it your way this time.",
+      "expected": "MATCH"
+    }
+  ]
+}

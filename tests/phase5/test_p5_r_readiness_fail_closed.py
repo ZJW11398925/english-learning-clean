@@ -253,16 +253,18 @@ def test_no_single_fact_can_stand_in_for_a_lexical_resolution() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_five_targets_read_no_level_and_sixty_four_read_r4(
+def test_five_targets_read_no_level_and_the_rest_split_by_the_mapping(
     built_content_db: Path,
 ) -> None:
     """Old truth: all fourteen read no level, blocked at R0 by
     ``assessment_membership``. C1 one target, C2-a the other
     eight, C2-b the nineteen it authored as entities, C3-a eighteen of its
-    cut and C3-b the last eighteen — all sixty-four RESOURCE targets state all
+    cut, C3-b the last eighteen and C3-c the eighteen it authored against the
+    functional definitions — all eighty-two RESOURCE targets state all
     nineteen facts. **C3-R1** then moved their level without touching their
-    evidence: the sixteen whose §24.7 row is a curriculum mapping read
-    ``R4_DETECTION_READY`` and the other forty-eight read
+    evidence: the mappings read
+    ``R4_DETECTION_READY`` (C3-R1's sixteen; C3-c's eighteen joined them, so
+    thirty-four) and the other forty-eight read
     ``R1_LEXICALLY_RESOLVED`` with ``curriculum_link`` as the level-1 blocking
     key — the same fail-closed ladder, now distinguishing "no mapping" from
     "no evidence". The five CAPABILITY entities whose sources state no
@@ -275,7 +277,7 @@ def test_five_targets_read_no_level_and_sixty_four_read_r4(
             f"[p5-r] {assessment.target_id:32} {assessment.level!s:22}"
             f" {assessment.missing_keys}"
         )
-    assert len(assessments) == 69
+    assert len(assessments) == 87
     leveled: list[str] = []
     r4_targets: list[str] = []
     r1_targets: list[str] = []
@@ -301,8 +303,8 @@ def test_five_targets_read_no_level_and_sixty_four_read_r4(
         assert set(R1_FACETS) <= set(r1.missing_keys)
         # Cumulative reporting: the R0 blocker is still standing in R1's set.
         assert "assessment_membership" in r1.missing_keys
-    assert len(leveled) == 64
-    assert len(r4_targets) == 16
+    assert len(leveled) == 82
+    assert len(r4_targets) == 34
     assert len(r1_targets) == 48
 
 

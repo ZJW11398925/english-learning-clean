@@ -170,6 +170,29 @@ C3B_APPROVED = (
     "res-softener-if-anything",
 )
 
+#: The eighteen rows C3-c authored and adjudicated against the capability
+#: functional definitions (every row of the cut is a REALIZES mapping).
+C3C_APPROVED = (
+    "res-discourse-moving-on",
+    "res-discourse-on-another-note",
+    "res-discourse-speaking-of-which",
+    "res-discourse-to-get-back-to-the-point",
+    "res-hedge-as-far-as-i-know",
+    "res-hedge-if-im-not-mistaken",
+    "res-hedge-it-seems-to-me",
+    "res-pragmatic-are-you-saying",
+    "res-pragmatic-could-you-say-that-again",
+    "res-pragmatic-fair-enough",
+    "res-pragmatic-got-it",
+    "res-pragmatic-i-see",
+    "res-pragmatic-i-see-your-point-but",
+    "res-pragmatic-let-me-make-sure",
+    "res-pragmatic-that-makes-sense",
+    "res-pragmatic-up-to-a-point",
+    "res-pragmatic-what-do-you-mean",
+    "res-pragmatic-with-all-due-respect",
+)
+
 _CLAIM_COLUMNS = (
     "evidence_claim_id",
     "target_type",
@@ -227,11 +250,12 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
     """Old truth (P5-R): all nine rows were *mapped*, none *approved*. C1
     approved one row; C2-a approved the other eight while authoring their
     targets' readiness evidence; C2-b authored and approved nineteen more,
-    C3-a eighteen and C3-b the last eighteen, so today all sixty-four rows are
+    C3-a eighteen, C3-b the last eighteen and C3-c the eighteen it adjudicated
+    against the functional definitions, so today all eighty-two rows are
     ``CANONICAL_APPROVED``.
-    **C3-R1 then re-read their semantics**: the relation word of six rows
-    moved (REALIZES → SUPPORTS, each row's own rationale disclosing it) while
-    the five mapping fields the approvals were forbidden to touch
+    **C3-R1 then re-read the pre-existing semantics**: the relation word of
+    six rows moved (REALIZES → SUPPORTS, each row's own rationale disclosing
+    it) while the five mapping fields the approvals were forbidden to touch
     (``node_id``, ``strength``, ``primary_flag``, ``editorial_status`` and the
     resource id) are exactly what the re-review was forbidden to touch too.
     ``primary_flag`` therefore records the *authoring* claim: it stays true on
@@ -240,7 +264,7 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
     null everywhere (no vocabulary is invented)."""
 
     links = _links_document()["links"]
-    assert len(links) == 64
+    assert len(links) == 82
     realizes = 0
     supports = 0
     demoted = 0
@@ -264,7 +288,7 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
                 ), row
             else:
                 assert row["primary_flag"] is False, row
-    assert (realizes, supports) == (15, 49)
+    assert (realizes, supports) == (33, 49)
     assert demoted == 6
     print(
         "[p5-r] corpus links -> "
@@ -274,7 +298,7 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
     )
 
 
-@pytest.mark.parametrize("index", range(64))
+@pytest.mark.parametrize("index", range(82))
 def test_every_rationale_states_its_basis_and_its_limit(index: int) -> None:
     """Every rationale is written in the C3-R1 review genre: it names the node
     it points at and that node's functional-definition file, quotes the
@@ -298,7 +322,12 @@ def test_every_rationale_states_its_basis_and_its_limit(index: int) -> None:
     assert f"curriculum/capabilities/{node}.json" in rationale, rationale
     assert row["editorial_status"] == "CANONICAL_APPROVED", row
     assert row["mapping_class"] in rationale, rationale
-    assert "C3-R1 (Phase 11) capability-semantics re-review" in rationale
+    if str(row["resource_id"]) in C3C_APPROVED:
+        # The C3-c rows carry their own cut's authoring label: the genre is
+        # the same adjudication genre, the provenance line names the cut.
+        assert "C3-c (Phase 11)" in rationale, rationale
+    else:
+        assert "C3-R1 (Phase 11) capability-semantics re-review" in rationale
     assert "Revisit" in rationale, rationale
     assert "Row provenance:" in rationale, rationale
     resource_id = str(row["resource_id"])
@@ -312,6 +341,8 @@ def test_every_rationale_states_its_basis_and_its_limit(index: int) -> None:
             assert "C3-a (Phase 11)" in rationale, resource_id
         elif resource_id in C3B_APPROVED:
             assert "C3-b (Phase 11)" in rationale, resource_id
+        elif resource_id in C3C_APPROVED:
+            assert "C3-c (Phase 11)" in rationale, resource_id
         else:
             # Every remaining row was authored by C2-b (the C2-a rows are all
             # fixture-declared; C1's own row is DECISION above).
@@ -344,7 +375,7 @@ def test_the_entity_lifecycle_is_the_authors_and_was_not_touched(
             assert resource.value.lifecycle_status == "CANONICAL_APPROVED"
         eligible = supply.supply_entity_ids()
         assert isinstance(eligible, Ok), eligible
-        assert len(eligible.value) == 69
+        assert len(eligible.value) == 87
     finally:
         store.close()
 
@@ -404,11 +435,12 @@ def test_only_the_approved_realizes_link_credits_a_capability(
     (旧真值: all nine linked resources read ``None`` on the credit face; C1:
     one approved row credited its node; C2-a: all nine approved rows credited;
     C2-b: twenty-eight rows approved, fifteen crediting; C3-b: sixty-four rows
-    approved and twenty-one crediting; **新真值 C3-R1**: sixty-four rows are
-    approved and exactly the fifteen ``REALIZES`` rows credit — the six rows
-    the re-review demoted are approved ``SUPPORTS`` rows now, and the other
-    forty-three approved ``SUPPORTS`` rows were placements all along, so none
-    of them credits (the read filters ``relation = REALIZES``). The count is
+    approved and twenty-one crediting; C3-R1: sixty-four rows approved and
+    exactly the fifteen ``REALIZES`` rows crediting; **新真值 C3-c**:
+    eighty-two rows are approved and the thirty-three ``REALIZES`` rows
+    credit — C3-c's eighteen adjudicated rows joined the fifteen, and the
+    forty-nine approved ``SUPPORTS`` rows still credit nothing (the read
+    filters ``relation = REALIZES``). The count is
     what still distinguishes this from "every entity credits": the five
     CAPABILITY entities carry no link row at all and read ``None``. The
     unapproved direction is pinned against a demoted variant in
@@ -442,8 +474,8 @@ def test_only_the_approved_realizes_link_credits_a_capability(
                 supports_only += 1
                 assert relations == {"SUPPORTS"}, entity_id
                 assert teaching.value.capability_linkage is None, entity_id
-        assert linked == 64
-        assert credited == 15
+        assert linked == 82
+        assert credited == 33
         assert supports_only == 49
     finally:
         store.close()

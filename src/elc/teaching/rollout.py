@@ -8,11 +8,12 @@ observation may be ("提高 threshold / policy cost", "而不是修改 Learning
 truth"). docs/RUNTIME_ARCHITECTURE.md's automatic path (P8-0..P8-4) is the
 thing being rolled out, and BF-02 §10's four content floors are what decides
 whether it *can* be: every teaching mode names a minimum §8.1 readiness, and
-the shipped corpus's answer is sixteen RESOURCE targets at R4 (C1's
-evidence face authored one, the C2 cuts the other twenty-seven, C3-a eighteen
-of its own and the C3-b cut
-the last eighteen — sixty-four reached R4 until C3-R1's mapping
-re-adjudication returned the forty-eight placement resources to R1) with the
+the shipped corpus's answer is thirty-four RESOURCE targets at R4 (C1's
+evidence face authored one, the C2 cuts twenty-seven more, C3-a and C3-b
+eighteen each — sixty-four had reached R4 by C3-b until C3-R1's mapping
+re-adjudication returned the forty-eight placement resources to R1, and the
+C3-c cut's eighteen resources authored against the capability definitions
+rebuilt the R4 side) with the
 five CAPABILITY entities reading no level —
 their sources state no evidence.
 
@@ -75,7 +76,7 @@ is GO (:attr:`RolloutGateReport.verdict`). That conjunction is this cut's
 overall HOLD"): the book's condition is implied, and the conjunction is the
 strict, fail-closed form of it — a rollout cannot enter a stage whose *preceding*
 row is empty either. Both readings agree on the shipped corpus (the
-sixteen R4 RESOURCE targets make every row GO, so the answer is GO under
+thirty-four R4 RESOURCE targets make every row GO, so the answer is GO under
 either).
 
 **What would turn a row GO is also executable**: each row carries
@@ -108,16 +109,17 @@ rather than pretending otherwise (see the port's docstring for the Revisit).
 
 **⑤ The HOLD, and where it is held now.** The content gate moved under C1's
 evidence face and widened through the C2 and C3 cuts: on the shipped corpus
-every row reads 64 usable targets (sixteen at R4 and forty-eight at R1 —
-C3-R1's mapping re-adjudication is what split them; the five CAPABILITY
+every row reads 82 usable targets (thirty-four at R4 and forty-eight at R1 —
+C3-R1's re-adjudication split them and the C3-c authored mappings widened the
+R4 side; the five CAPABILITY
 entities read ``level=None``) and
 :func:`corpus_rollout_gate` answers **GO** — so the content gate no longer
 holds the rollout. The rollout is **still HOLD**, carried by the two gates
 this module sits beside: the stage leg (no stage is declared, and
 :func:`stage_allows_automatic` refuses an undeclared stage) and the
-Calibration100 volume gate, whose three floors now read 64 resources < 100
-(unmet), CORE_A 11 < 30 (unmet since C3-R1's mapping re-adjudication) and
-CORE_C 5 >= 2 (met). The two CORE counts
+Calibration100 volume gate, whose three floors now read 82 resources < 100
+(unmet), CORE_A 24 < 30 (unmet since C3-R1's mapping re-adjudication) and
+CORE_C 10 >= 2 (met). The two CORE counts
 are the **declared reading** adopted by the user's adjudication
 (2026-09-26) — level in {R3_TEACHING_READY, R4_DETECTION_READY} crossed
 with ``core_utility`` HIGH / {MEDIUM, LOW} — rather than a canonical rule;
@@ -434,7 +436,7 @@ def gate_row_verdict(usable_targets: int) -> RolloutVerdict:
     credit, no "almost ready", and no other input: a row that no target can
     serve is HOLD — which, since C1's evidence face and the C2/C3 cuts'
     documents, is the answer **no** row gives over the shipped corpus (its
-    sixteen R4 RESOURCE targets serve all four; before C1 none did).
+    thirty-four R4 RESOURCE targets serve all four; before C1 none did).
     """
 
     return RolloutVerdict.GO if usable_targets > 0 else RolloutVerdict.HOLD
@@ -496,7 +498,7 @@ class RolloutGateReport:
     ``automatic_verdict`` is the same rule over the two automatic rows alone,
     so a reader can see the task book's condition separately from the
     conjunction. ``targets_considered`` / ``targets_without_level`` count the
-    table the report was made over (the shipped corpus answers 69 and 5 —
+    table the report was made over (the shipped corpus answers 87 and 5 —
     the C1/C2/C3 evidence face leaves the five CAPABILITY entities without a
     level);
     ``unknown_levels`` names any level word the ladder does not carry (empty

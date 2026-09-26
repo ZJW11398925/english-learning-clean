@@ -641,6 +641,186 @@
       "editorial_status": "CANONICAL_APPROVED",
       "mapping_class": "CURRICULUM_MAPPING",
       "rationale": "Reviewed by the C3-R1 (Phase 11) capability-semantics re-review against the functional definition of cap-stance-soften-disagreement (curriculum/capabilities/cap-stance-soften-disagreement.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Warn the listener that a criticism is coming.') meets counts_as_realization 1, 2 and 3: the formula is attached to the criticism the speaker is delivering, it flags the criticism so that it does not land as an attack, and removing it leaves the same criticism unmitigated. No does_not_count entry applies. Relation kept REALIZES and primary_flag true, so this row still feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit, now narrowed to the fifteen surviving rows). Row provenance: authored and approved by C3-b (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-discourse-on-another-note",
+      "node_id": "cap-disc-topic-shift",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-disc-topic-shift (curriculum/capabilities/cap-disc-topic-shift.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Add a new subject that has nothing to do with what you were talking about.') meets counts_as_realization 1, 2 and 3: the phrase is a signpost the speaker says as a move of its own at the front of the turn, the move adds a side matter that was not on the table and replaces the current one, and the change is carried by the signpost -- the clause after the comma is content about the new matter (boundary case 1 records this departure type). No does_not_count entry applies: the phrase is not content vocabulary, it does not merely comment on the material already on the table, it manages the topic rather than the social episode, and it is not another interactional type. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut, and the Revisit stays as registered -- capability functional definitions are declared readings, and a canonical definition supersedes this one). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-discourse-speaking-of-which",
+      "node_id": "cap-disc-topic-shift",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-disc-topic-shift (curriculum/capabilities/cap-disc-topic-shift.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Move to a subject the last thing you said just reminded you of.') meets counts_as_realization 1, 2 and 3, and boundary case 3 records the type verbatim: the phrase is said as a move of its own, the evoked matter becomes the topic, and the signpost itself carries the change while the rest of the turn is content about the new matter. No does_not_count entry applies: the phrase is not content vocabulary, does not comment on the current material, manages the topic rather than the social episode, and is not another interactional type. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-discourse-moving-on",
+      "node_id": "cap-disc-topic-shift",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-disc-topic-shift (curriculum/capabilities/cap-disc-topic-shift.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Close the current subject and start the next one.') meets counts_as_realization 1, 2 and 3: the gerund signpost is said as a move of its own at the front of the turn, the move leaves the current matter and opens the next, and the change is carried by the signpost -- the clause after the comma names the next matter the same content would not reach without it. No does_not_count entry applies: the phrase is not content vocabulary, does not comment on the current material, manages the topic rather than the social episode, and is not another interactional type. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-discourse-to-get-back-to-the-point",
+      "node_id": "cap-disc-topic-shift",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-disc-topic-shift (curriculum/capabilities/cap-disc-topic-shift.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Leave the digression and return to what you were really talking about.') meets counts_as_realization 1, 2 and 3: the phrase is a signpost said as a move of its own, the move leaves a digression and puts the talk back on the speaker's own matter, and the change is carried by the signpost -- the clause after the comma restates that matter, as the resource's reveal does. No does_not_count entry applies: the phrase is not content vocabulary, does not comment on the current material, manages the topic rather than the social episode, and is not another interactional type. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-hedge-it-seems-to-me",
+      "node_id": "cap-eval-hedged-opinion",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-eval-hedged-opinion (curriculum/capabilities/cap-eval-hedged-opinion.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Give your judgement as a personal impression, not as a fact.') meets counts_as_realization 1, 2 and 3: the formula is a short fixed hedge unit, it attaches to a judgement of the speaker's own through the personal-scope arm (boundary case 2), and the taught ladder itself contrasts the hedged form with the unhedged one. No does_not_count entry applies: the production is not a proposition about an act, not a hypothesis frame, not a directive, and what it lowers is the speaker's own claim rather than a negative move aimed at the hearer (the hedge node's object per does_not_count 4's own division). Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-hedge-as-far-as-i-know",
+      "node_id": "cap-eval-hedged-opinion",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-eval-hedged-opinion (curriculum/capabilities/cap-eval-hedged-opinion.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say what you believe is true while marking that your information may be out of date.') meets counts_as_realization 1 and 2: a fixed formula whose own function is to lower the assertability of the claim the speaker gives, and the lowering is of the counts_as_realization 2 arm that names a claim presented as resting on something not yet settled -- here the speaker's own incomplete information. No does_not_count entry applies: the formula is the speaker's own statement, not a proposition about an act, not a hypothesis frame (it hedges rather than sets up a case), not a directive, and the claim is the speaker's own rather than a negative move. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-hedge-if-im-not-mistaken",
+      "node_id": "cap-eval-hedged-opinion",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-eval-hedged-opinion (curriculum/capabilities/cap-eval-hedged-opinion.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Remind someone of a fact you are fairly, but not completely, sure of.') meets counts_as_realization 1 and 2: a fixed formula whose own function lowers how strongly the speaker's words land, and the lowered thing is the speaker's own reply -- boundary case 1 records that the node covers a reply, a judgement or a forecast of the speaker's, not only an opinion proper, and this formula is the remembered-fact member of that family. No does_not_count entry applies: the hedge's object is the speaker's own claim, and the unit is not a proposition, a hypothesis frame or a directive. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: if the capability were confined to opinions proper, this row would move to COVERAGE_PLACEMENT; a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-pragmatic-i-see",
+      "node_id": "cap-interact-backchannel",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-interact-backchannel (curriculum/capabilities/cap-interact-backchannel.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Show the person speaking that you are following them, without taking the turn.') meets counts_as_realization 1, 2 and 3, and counts_as_realization 1 plus boundary cases 3 and 4 name this shape: the receipt is a short listener signal produced while the other person holds the floor, it claims neither content nor the turn, and its taught function is that receipt (the capability's own fixture face is 'Right, I see.'). No does_not_count entry applies: the receipt is the listener's move, not a floor bid, not content vocabulary, not a hand-over of the decision, and not an acknowledgement the speaker makes of their own point. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-pragmatic-that-makes-sense",
+      "node_id": "cap-interact-backchannel",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-interact-backchannel (curriculum/capabilities/cap-interact-backchannel.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Tell the person speaking that their explanation is clear to you.') meets counts_as_realization 1, 2 and 3: the receipt is a short unit the hearer produces while the other person holds the floor, it acknowledges what the other person said (the receipt arm of counts_as_realization 2 -- boundary case 4's principle, that answering their talk rather than adding to it is what makes the receipt) and invites them to continue, and its taught function is that receipt and not an evaluation of the world. No does_not_count entry applies: the receipt is the listener's move, not a floor bid, not content vocabulary, not a decision hand-over, and not a self-acknowledgement. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-pragmatic-fair-enough",
+      "node_id": "cap-interact-backchannel",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-interact-backchannel (curriculum/capabilities/cap-interact-backchannel.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Accept that what the other person said is reasonable, without taking the turn.') meets counts_as_realization 1, 2 and 3: the receipt is a short listener unit produced while the other holds the floor, it acknowledges their point and invites them to continue, and its taught function is that receipt -- the follow-on terms after the dash keep the floor with the other side, which is what separates the receipt from a counter-move. No does_not_count entry applies: the receipt is the listener's move, not a floor bid or a request, not content vocabulary, not a decision hand-over, and not a self-acknowledgement. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-pragmatic-got-it",
+      "node_id": "cap-interact-backchannel",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-interact-backchannel (curriculum/capabilities/cap-interact-backchannel.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Show the person speaking that you have received their instruction or explanation.') meets counts_as_realization 1, 2 and 3: the receipt is a short unit the hearer produces while the other holds the floor, it acknowledges what was said and keeps the channel open, and its taught function is that receipt -- the action the receipt confirms belongs to the other person's instruction, not to the listener's own claim. No does_not_count entry applies: the receipt is the listener's move, not a floor bid or a request, not content vocabulary, not a decision hand-over, and not a self-acknowledgement. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-pragmatic-what-do-you-mean",
+      "node_id": "cap-ref-ask-clarification",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-ref-ask-clarification (curriculum/capabilities/cap-ref-ask-clarification.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Ask the other person to explain what their words were meant to say.') meets counts_as_realization 1, 2 and 3, and counts_as_realization 1 names this shape verbatim: the request is addressed to the interlocutor and its object is the other person's words or meaning (the capability's own fixture face is 'What do you mean by that?'), the question itself is the move rather than a report about asking, and the taught ladder puts the speaker in the repair position of asking before going on. No does_not_count entry applies: the request asks for understanding, not for an action, a permission or help; it does not supply the clarification itself; and it names no act of thinking through. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-pragmatic-are-you-saying",
+      "node_id": "cap-ref-ask-clarification",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-ref-ask-clarification (curriculum/capabilities/cap-ref-ask-clarification.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Check that you have understood the other person by restating their point as a question.') meets counts_as_realization 1, 2 and 3: the request is addressed to the interlocutor and its object is what the other person said or meant -- the restated clause after the question is the speaker's version of their words, handed back for a correction -- the question itself is the move, and the taught ladder puts the speaker in the repair position. No does_not_count entry applies: the request asks for understanding, not for an action, permission or help, and it supplies no clarification of its own. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-pragmatic-could-you-say-that-again",
+      "node_id": "cap-ref-ask-clarification",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-ref-ask-clarification (curriculum/capabilities/cap-ref-ask-clarification.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Ask the other person to repeat words you did not catch.') meets counts_as_realization 1, 2 and 3, and counts_as_realization 1 names the arm verbatim: the request's object is 'a repetition of what was said' -- the request is addressed to the interlocutor, the asking is the move itself, and the taught ladder puts the speaker in the repair position after words were missed. No does_not_count entry applies: the request asks for a repetition of the other's words, not for an action, permission or help, and it supplies no clarification itself. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-pragmatic-let-me-make-sure",
+      "node_id": "cap-ref-ask-clarification",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-ref-ask-clarification (curriculum/capabilities/cap-ref-ask-clarification.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Restate what the other person said and have them confirm your understanding.') meets counts_as_realization 1, 2 and 3: the frame is a request addressed to the interlocutor whose object is the other person's words -- the restatement after the frame is the speaker's version of those words and the confirmation is asked of the other person -- the frame's whole point is the asking rather than a report about it, and the taught ladder puts the speaker in the repair position of checking before going on. No does_not_count entry applies: the frame asks for understanding, not for an action, permission or help (its own fixtures hold the physical-check boundary), and it supplies no clarification of its own. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-pragmatic-i-see-your-point-but",
+      "node_id": "cap-stance-soften-disagreement",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-stance-soften-disagreement (curriculum/capabilities/cap-stance-soften-disagreement.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Accept part of what the other person said, then give your objection.') meets counts_as_realization 1, 2 and 3, and boundary case 4 records the type: the formula is attached to the objection the speaker is delivering, it lowers that objection's force by giving the other side credit first, and the lowering is the formula's own contribution -- remove it and the objection stands unmitigated. No does_not_count entry applies: the production is a move between the two speakers, and what is lowered is the interpersonal force of the objection, not the speaker's own certainty (the hedge node's object). Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-pragmatic-with-all-due-respect",
+      "node_id": "cap-stance-soften-disagreement",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-stance-soften-disagreement (curriculum/capabilities/cap-stance-soften-disagreement.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Warn the listener that you are about to disagree with them.') meets counts_as_realization 1, 2 and 3: the phrase is attached to the criticism the speaker is delivering, it flags that criticism so that it does not land as an attack (counts_as_realization 2 names this arm verbatim), and removing it leaves the same criticism unmitigated. No does_not_count entry applies: the phrase is a move between the two speakers and not a proposition, and what it lowers is the interpersonal force of the criticism, not the speaker's own certainty. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-pragmatic-up-to-a-point",
+      "node_id": "cap-stance-soften-disagreement",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Authored and adjudicated by C3-c (Phase 11) against the functional definition of cap-stance-soften-disagreement (curriculum/capabilities/cap-stance-soften-disagreement.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Agree with part of what the other person said, and hold the rest back.') meets counts_as_realization 1, 2 and 3: the phrase can stand as the move itself -- a partial agreement that declines the other side's full claim -- and it lowers that move's interpersonal force by delivering the refusal of full agreement as a limit rather than a flat no; the withheld objection that follows the dash or but is the move the phrase is attached to, and removing the phrase leaves the disagreement unmitigated. No does_not_count entry applies: the phrase is a move between the two speakers and not a proposition, and it lowers the force of a negative move rather than the speaker's own certainty. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifteen to thirty-three rows with this cut). Row provenance: authored and approved by C3-c (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
     }
   ]
 }

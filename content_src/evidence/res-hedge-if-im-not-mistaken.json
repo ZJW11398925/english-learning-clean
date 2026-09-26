@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's hedging-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "if I'm not mistaken",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "if-im-not-mistaken.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "if-im-not-mistaken.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A hedge that states a fact the speaker is fairly, but not completely, sure of — usually from memory — while marking that the speaker accepts being corrected."
+    },
+    {
+      "sense_id": "if-im-not-mistaken.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The formula stands at the front of the sentence, set off by a comma: If I'm not mistaken, the meeting was moved to Thursday. The words are fixed — the conditional if, the contracted I'm, the not, and the plain form mistaken — and the remembered fact follows as a full clause. In speech the comma is the beat of consulting memory; the formula can also close a turn as an afterthought (The meeting was moved to Thursday, if I'm not mistaken)."
+    },
+    {
+      "sense_id": "if-im-not-mistaken.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The form is the drill: the formula is stored with I'm not mistaken, and learners produce if I don't mistake or if I'm not mistake because their own language builds the sense with an active verb. The polarity is part of the formula too — if I'm mistaken (without not) is a genuine conditional about being wrong and is a different sentence. The comma matters as it does for every fronted formula; without it the memory beat disappears and the sentence runs on."
+    },
+    {
+      "sense_id": "if-im-not-mistaken.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "If I'm not mistaken flags a remembered fact; as far as I know limits a claim to the speaker's information; I think hedges an opinion. If I'm mistaken is the plain conditional (a real possibility of being wrong) and is not the hedge. Correct me if I'm wrong is the challenger's variant — it invites correction more pointedly than this formula, which merely leaves the door open."
+    },
+    {
+      "sense_id": "if-im-not-mistaken.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "如果我没记错的话（说一件自己比较确定但不敢打包票的事，多半凭记忆，并留出被纠正的余地）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "if-im-not-mistaken.base",
+      "written": "if I'm not mistaken",
+      "normalized": "if i'm not mistaken",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the formula is easy to meet in conversation and drama, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because a learner can flag uncertainty with shorter hedges (I think, as far as I know) and this formula is the longer, politer member of the family. Productive difficulty is MEDIUM because the stored form (I'm not mistaken) is what production has to get right; explanation cost is LOW because one contrast with the plain conditional carries the teaching. Transfer value is LOW: one fixed phrase. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "A frequent memory hedge of spoken argument and storytelling, so it carries high weight in the general fluency pack's coverage accounting; the shortfall records that it belongs to one register of talk rather than to general use."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Recalling a decision or a date in front of colleagues (if I'm not mistaken, the meeting was moved) is ordinary workplace language, so the unit has a real workplace use; the reduced weight records that it is the politer, less frequent member of the hedge family."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the formula whole, with the contraction I'm, the not and the plain mistaken, and never present the plain conditional (if I'm mistaken) as a model of the hedge or an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "FORM_SLIP",
+      "error_pattern": "if I don't mistake | if I'm not mistake (the stored participle frame rebuilt around an active verb or a bare adjective)",
+      "corrected_pattern": "if I'm not mistaken",
+      "explanation": "The formula stores a passive participle after I'm not, and learners rebuild the sense with an active verb or drop the participle ending because their own language expresses the idea with an active form; neither rebuild is the stored English phrase.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the conditional frame contains don't mistake or not mistake with no -en ending, in a sentence where the hedge is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "MISSING_COMMA",
+      "error_pattern": "if I'm not mistaken + clause (the formula welded to the clause it opens, with no comma)",
+      "corrected_pattern": "if I'm not mistaken, + clause",
+      "explanation": "The formula and its clause are separate units, so the missing comma welds a fronted hedge onto a clause that never closes the memory beat; the slip is punctuation convention rather than grammar, and it is not specific to one L1.",
+      "severity": "LOW",
+      "detection_policy": "Match when the formula is followed directly by a clause with no comma between them."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words of the formula, the polarity inside it and the punctuation after it. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words are the plain conditional about being wrong, so the hedge is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "FORM_SLIP: match when the conditional frame carries don't mistake or not mistake with no -en ending, because the stored phrase is if I'm not mistaken."
+    },
+    {
+      "ordinal": 1,
+      "rule": "MISSING_COMMA: match when if I'm not mistaken runs straight into a clause with no comma after it, because the hedge is a fronted formula and takes its own beat."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the formula stands whole at the front of the sentence with its comma (if I'm not mistaken, the meeting was moved) or closes the turn as an afterthought (..., if I'm not mistaken): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_PLAIN_CONDITIONAL: do not match when the if-clause carries positive polarity (if I'm mistaken, I apologize), because there the words are a genuine conditional about being wrong and the hedge is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "If I'm not mistaken, the meeting was moved to Thursday.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "The meeting was moved to Thursday, if I'm not mistaken.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "If I'm not mistaken, you were at the same school as my cousin.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "If I'm mistaken about the date, I apologize — tell me the right one.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "If I don't mistake, the meeting was moved to Thursday.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "If I'm not mistaken the meeting was moved to Thursday.",
+      "expected": "MATCH"
+    }
+  ]
+}

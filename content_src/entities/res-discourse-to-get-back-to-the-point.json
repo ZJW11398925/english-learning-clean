@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-discourse-to-get-back-to-the-point",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "DISCOURSE_MARKER",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Leave the digression and return to what you were really talking about.",
+      "Use the phrase at the front of the sentence, before the comma.",
+      "Start with the words: ___, we need a decision today."
+    ],
+    "reveal_form": "To get back to the point, we need a decision today.",
+    "canonical_forms": [
+      "To get back to the point, we need a decision today."
+    ],
+    "alternative_realizations": [
+      "Getting back to the point, we need a decision today."
+    ],
+    "required_slots": [
+      [
+        "point"
+      ],
+      [
+        "decision"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's clarification-request set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "are you saying",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "are-you-saying.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "are-you-saying.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A clarification request: the checking question a listener asks to confirm their restatement of what the other person said, addressed to the interlocutor for a yes-or-no or a correction."
+    },
+    {
+      "sense_id": "are-you-saying.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The question stands after the words it checks, with the listener's version of the message after it: Are you saying that we should cancel the order? It is built with be + the -ing form (are you saying, not do you say and not are you say), often softened with so in front (so are you saying the order is cancelled?). The question hands the floor back: the other person confirms or corrects the restatement before the talk goes on."
+    },
+    {
+      "sense_id": "are-you-saying.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The be-auxiliary is the first slip: learners drop it (you saying that ...?) or keep it and shed the -ing (are you say that ...?), both because their own language marks this check differently. The question also needs its object clause — are you saying? left bare reads as indignation (how dare you say that) rather than a comprehension check, which is a real boundary the teaching should name."
+    },
+    {
+      "sense_id": "are-you-saying.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Are you saying (that) ...? checks a restatement of the other person's meaning; do you mean ...? asks the same question with mean; what do you mean? asks for an explanation instead of confirming a guess. Are you saying anything at the meeting? asks about the future event of their speaking and is a plain information question, not the check."
+    },
+    {
+      "sense_id": "are-you-saying.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "你是说……吗？（复述对方的话请对方确认或纠正，把话轮交回给对方）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "are-you-saying.base",
+      "written": "are you saying",
+      "normalized": "are you saying",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the check is common in repair-heavy conversation, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because the plainer do you mean / what do you mean cover most of the work and this check adds the restatement move, which is a narrower slice. Productive difficulty is LOW: three fixed words plus a clause. Transfer value is MEDIUM: the be + -ing check frame transfers to are you telling me / are you suggesting. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "The check belongs to the general fluency pack (the phrases that repair a conversation), so it carries high weight in that pack's coverage accounting; the shortfall records that it is the narrower member of the repair family."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Confirming a restatement before acting on it (are you saying the order is cancelled?) is ordinary workplace language, so the unit has a real workplace use; the reduced weight records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical question first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the question with its be-auxiliary, its -ing form and the restated clause after it, never present the auxiliary-dropped or -ing-dropped form as a model of the check, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "AUXILIARY_DROP",
+      "error_pattern": "you saying that + clause (the be-auxiliary dropped from the check)",
+      "corrected_pattern": "are you saying that + clause",
+      "explanation": "The check is built with be + the -ing form, and learners drop the auxiliary because their own language asks the check without one; you saying that reads as a fragment with a question mark attached.",
+      "severity": "HIGH",
+      "detection_policy": "Match when you saying opens a question with no be in front of it and a that-clause or an object follows."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "VERB_FORM_SLIP",
+      "error_pattern": "are you say that + clause (the bare form standing where the -ing form belongs)",
+      "corrected_pattern": "are you saying that + clause",
+      "explanation": "The check keeps be + -ing, and learners keep the auxiliary but shed the -ing because the bare form feels like the plain present; are you say is not a stored English pattern.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the check carries are you say or are you said followed by a clause."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the auxiliary slot in front of you and the form of the verb after it. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (saying is the ordinary verb about speaking at an event, so the check is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "AUXILIARY_DROP: match when you saying opens a question with no be in front of it, because the check is built with be + -ing."
+    },
+    {
+      "ordinal": 1,
+      "rule": "VERB_FORM_SLIP: match when the check carries are you say or are you said before its clause, because the frame keeps the -ing form."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the check stands whole (are you saying that we should cancel the order?; so are you saying the order is cancelled?): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_EVENT_READING: do not match when saying is the ordinary verb about speaking on an occasion (are you saying anything at the meeting tomorrow?), because there the words ask about a future event and the check is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Are you saying that we should cancel the order?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "So are you saying the order is cancelled either way?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Wait — are you saying the client changed the delivery address again?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Are you saying anything at the meeting tomorrow, or is it just the director?",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "You saying that we should cancel the order before the invoice arrives?",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Are you say that the delivery comes on Saturday now?",
+      "expected": "MATCH"
+    }
+  ]
+}

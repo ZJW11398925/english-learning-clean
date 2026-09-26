@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-are-you-saying",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Check that you have understood the other person by restating their point as a question.",
+      "Use the question with your version of what they said after it.",
+      "Start with the words: ___ that we should cancel the order?"
+    ],
+    "reveal_form": "Are you saying that we should cancel the order?",
+    "canonical_forms": [
+      "Are you saying that we should cancel the order?"
+    ],
+    "alternative_realizations": [
+      "So are you saying the order is cancelled?"
+    ],
+    "required_slots": [
+      [
+        "saying"
+      ],
+      [
+        "cancel"
+      ]
+    ]
+  }
+}

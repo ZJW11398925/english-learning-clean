@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's mitigation-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "with all due respect",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "with-all-due-respect.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "with-all-due-respect.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A mitigate unit that flags the disagreement or criticism a speaker is about to deliver, marking it as offered respectfully so that it does not land as an attack."
+    },
+    {
+      "sense_id": "with-all-due-respect.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The phrase stands at the front of the sentence, set off by a comma, and the criticism follows as a full clause: With all due respect, I think the numbers are wrong. The words are fixed — with, all, due and the singular respect. The flag promises a disagreement, so a sentence that reports someone's courteous behaviour (he treated her with all due respect) is the literal courtesy phrase and a different thing; the pragmatic work lives in the turn-opening position."
+    },
+    {
+      "sense_id": "with-all-due-respect.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The preposition and the number are the drill: the formula is with all due respect, and learners produce in all due respect or with all due respects because their own language marks the frame differently; neither rebuild is the stored English phrase. The teaching must also name the irony — said sharply, the flag can heighten the disagreement — so the polite delivery (falling tone, no pause after the comma) is part of the form."
+    },
+    {
+      "sense_id": "with-all-due-respect.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "With all due respect flags a criticism the speaker is delivering; with respect to and in respect of are the formal preposition phrases meaning concerning and are not the flag; no offense, but is the informal sibling with a blunter warning. I see your point, but concedes first instead of warning first, and that's a good point, but does the conceding in the same family."
+    },
+    {
+      "sense_id": "with-all-due-respect.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "恕我直言；冒昧地说（先声明尊重，再提出反对或批评，让批评不像攻击）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "with-all-due-respect.base",
+      "written": "with all due respect",
+      "normalized": "with all due respect",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the flag is easy to meet in film, news and workplace talk, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because the flag belongs to formal disagreement with a superior or a stranger, a narrower register than the concede-then-object family, whose members cover most everyday softening. Productive difficulty is MEDIUM because the fixed preposition and singular number are what production has to get right, and the delivery (polite tone) has to be learned with the words. Transfer value is LOW: one fixed phrase. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "A frequent flag of formal disagreement in drama and news, so it carries high weight in the general fluency pack's coverage accounting; the shortfall records that it belongs to one register of talk rather than to general use."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Disagreeing with a senior colleague in a meeting (with all due respect, the numbers are wrong) is real workplace language, so the unit has a real workplace use; the reduced weight records that it serves the formal register only."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "FORMAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "FORMAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the flag at the front of the sentence with its comma and with the criticism following as a full clause, never present the literal courtesy sentence as a model of the flag, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_SLIP",
+      "error_pattern": "in all due respect, + clause (the preposition in where the formula says with)",
+      "corrected_pattern": "with all due respect, + clause",
+      "explanation": "The formula fixes with, and learners reach for in because their own language marks the manner frame with a locative preposition; in all due respect is not the stored English phrase.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the flag stands at the front of a clause as in all due respect followed by a comma."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "NUMBER_SLIP",
+      "error_pattern": "with all due respects (the plural standing where the formula's singular belongs)",
+      "corrected_pattern": "with all due respect",
+      "explanation": "The formula stores the singular abstract noun, and learners pluralize it because the quantifier all suggests a countable reading; with all due respects is not a stored English phrase.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the flag carries due respects with the plural -s."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the preposition and the number inside the flag. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the words are the literal courtesy phrase about someone's behaviour, so the flag is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PREPOSITION_SLIP: match when the flag stands as in all due respect, because the stored phrase is with all due respect."
+    },
+    {
+      "ordinal": 1,
+      "rule": "NUMBER_SLIP: match when the flag carries due respects, because the stored noun is the singular respect."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the flag stands whole at the front of the sentence with its comma and the criticism following (with all due respect, I think the numbers are wrong; with all due respect, that is not what the report says): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_COURTESY_REPORT: do not match when the phrase reports someone's behaviour inside its own clause (he treated her with all due respect), because there the words are the literal courtesy phrase and the flag is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "With all due respect, I think the numbers are wrong.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "With all due respect, that is not what the report says.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Sir, with all due respect, the client asked for the older design.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The ambassador treated her hosts with all due respect throughout the visit.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "In all due respect, I think the numbers are wrong.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "With all due respects, that is not what the report says.",
+      "expected": "MATCH"
+    }
+  ]
+}

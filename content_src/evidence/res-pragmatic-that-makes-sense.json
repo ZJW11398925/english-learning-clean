@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's receipt-signal set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "that makes sense",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "that-makes-sense.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "that-makes-sense.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A backchannel: the receipt a listener gives to show that the explanation just heard is clear and coherent, acknowledging what the other person said without claiming the floor."
+    },
+    {
+      "sense_id": "that-makes-sense.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The three words stand as a turn of their own, often with a dash or comma and a restatement of what is now clear: That makes sense — so we start in May. They are produced after a step of the other person's explanation, with the demonstrative that pointing at what was said, makes in the third-person singular, and sense in the singular: that makes sense, not those makes sense and not that make sense. The receipt can be strengthened with to me (that makes sense to me) without changing its work."
+    },
+    {
+      "sense_id": "that-makes-sense.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The agreement inside the fixed frame is the drill: makes carries the -s because its subject is that, and learners drop the -s (that make sense) or pluralize the wrong half (those makes sense) because their own language agrees differently or not at all. The receipt evaluates the explanation, not the world: it answers someone's talk, and said about a plan nobody proposed it stops being this formula."
+    },
+    {
+      "sense_id": "that-makes-sense.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "That makes sense as a receipt answers the other person's explanation; make sense of is the different construction that means explain or interpret (the report makes sense of the data) and is not the receipt. It doesn't make sense rejects rather than receipts. I see and got it are sibling receipts — plainer and more settled respectively — and fair enough receipts the other person's reasoning rather than their explanation."
+    },
+    {
+      "sense_id": "that-makes-sense.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "有道理；这就说得通了（听者对对方解释的接收信号：表示听明白了，不抢话轮）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "that-makes-sense.base",
+      "written": "that makes sense",
+      "normalized": "that makes sense",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the receipt is extremely frequent in explanation-driven talk, so receptive value and naturalness are HIGH and core utility is HIGH; productive value is HIGH because acknowledging an explanation is a move every adult conversation needs. Productive difficulty is LOW: three fixed words. Explanation cost is MEDIUM because what has to be taught is the listening move and the frame's agreement, not the vocabulary. Transfer value is MEDIUM: the make-sense frame transfers to it makes sense (that) and the negative. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The receipt belongs to the general fluency pack (the signals that keep a conversation going), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Receiving an explanation of a plan or a process (that makes sense — so we start in May) is ordinary workplace language, so it carries substantial weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical receipt first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the receipt with the singular frame (that makes sense) answering someone's explanation, never present the agreement-broken frame as a model of the receipt, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "SUBJECT_VERB_AGREEMENT",
+      "error_pattern": "that make sense (the frame's -s dropped from makes)",
+      "corrected_pattern": "that makes sense",
+      "explanation": "The frame's verb agrees with the singular demonstrative subject that, and learners drop the -s because their own language agrees differently or not at all; the receipt arrives as a form English does not store.",
+      "severity": "HIGH",
+      "detection_policy": "Match when the receipt frame contains that make sense with a bare make, in a turn where no plural subject precedes the verb."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PRONOUN_NUMBER_SLIP",
+      "error_pattern": "those makes sense (the plural demonstrative standing where the frame's singular that belongs)",
+      "corrected_pattern": "that makes sense",
+      "explanation": "The frame is stored with the singular that pointing at the explanation just heard, and learners reach for those because they feel the mass of what was said as plural; those makes sense is not the stored frame.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the receipt frame opens with those followed by makes sense."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the demonstrative, the verb form and the noun inside the receipt frame. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (make sense of is the interpret construction, so the receipt is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "AGREEMENT_SLIP: match when the receipt frame contains that make sense with a bare make, because the frame's subject is singular and the verb carries -s."
+    },
+    {
+      "ordinal": 1,
+      "rule": "DEMONSTRATIVE_SLIP: match when the receipt frame opens with those makes sense, because the stored frame points with the singular that."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame stands whole as a receipt (that makes sense — so we start in May; that makes sense to me), including its negative (that doesn't make sense): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_INTERPRET_CONSTRUCTION: do not match when the frame runs make sense of (the report makes sense of the data), because there the words mean explain or interpret and the receipt is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "That makes sense — so we start in May.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "That makes sense to me, thanks for walking me through it.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "That doesn't make sense — why would the invoice come first?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Her report makes sense of the conflicting survey data.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "That make sense — so we start in May, right?",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Those makes sense, thanks for the explanation.",
+      "expected": "MATCH"
+    }
+  ]
+}

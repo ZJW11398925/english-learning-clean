@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's hedging-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "as far as I know",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "as-far-as-i-know.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "as-far-as-i-know.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A hedge that limits a statement to what the speaker's information supports, marking that the speaker's knowledge may be incomplete or out of date."
+    },
+    {
+      "sense_id": "as-far-as-i-know.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The formula stands at the front of the sentence, set off by a comma: As far as I know, the shop is still open. It can also drop inside the clause, set off by commas on both sides (The shop, as far as I know, is still open). The words are fixed — the two as's, far and the pronoun-verb pair I know — and the claim follows as a full clause. In speech the comma is the small reservation the voice holds."
+    },
+    {
+      "sense_id": "as-far-as-i-know.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The first as is the slip: learners cut it (as far I know) or swap the frame for as long as (as long as I know), which is a different conjunction talking about duration. The pronoun is the second slip — the formula is anchored to I (as far as we know widens the anchor honestly, but the anchor must be stated). The hedge does not weaken the claim's content, only its warrant: teaching it as 'maybe' would be wrong, because the speaker is committing to the claim as far as their information goes."
+    },
+    {
+      "sense_id": "as-far-as-i-know.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "As far as I know marks the speaker's own knowledge as the limit; I think marks the claim as the speaker's opinion; if I'm not mistaken flags a fact the speaker is fairly but not completely sure of. To my knowledge is the formal variant. As far as + a place or an extent (she walked as far as the gate) is the literal distance reading and has nothing to do with the hedge; as long as is the duration or condition conjunction and is never this hedge."
+    },
+    {
+      "sense_id": "as-far-as-i-know.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "据我所知（把说法限定在自己掌握的信息范围内，言外之意是信息可能不全或过时）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "as-far-as-i-know.base",
+      "written": "as far as I know",
+      "normalized": "as far as I know",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the formula is one of the most frequent knowledge-hedges in conversation, so receptive value and naturalness are HIGH and core utility is HIGH; productive value is HIGH because answering from incomplete information is an everyday adult move. Productive difficulty is LOW: the words are fixed and short. Transfer value is MEDIUM: the as-far-as frame transfers to as far as I can tell and to my knowledge. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The formula belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Answering status questions from incomplete information (as far as I know, the report went out) is ordinary workplace language, so it carries most of the weight in the workplace pack; the shortfall records that the pack's own review has not yet placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the formula whole, with both as's and with the anchor pronoun I, and never present the shortened or swapped-conjunction sentence as a model of the hedge or an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "CONJUNCTION_CONFUSION",
+      "error_pattern": "as long as I know, + clause (the duration conjunction standing where the knowledge hedge belongs)",
+      "corrected_pattern": "as far as I know, + clause",
+      "explanation": "The two frames share their shape, and learners store one template for both; as long as talks about duration or condition, so the hedge arrives as a different sentence than the speaker meant.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when as long as I know stands at the front of a clause followed by a comma, in a sentence where no duration or condition reading survives."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "CONJUNCTION_DROP",
+      "error_pattern": "as far I know, + clause (the first as dropped from the frame)",
+      "corrected_pattern": "as far as I know, + clause",
+      "explanation": "The frame needs both as's, and learners cut the first because their own language compares with a single word; as far I know is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the string as far I know appears with no second as between far and I."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words of the frame, the conjunction in front of far and the second as before the anchor. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (as far as is the literal extent phrase about distance or degree, so the hedge is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "CONJUNCTION_CONFUSION: match when as long as I know stands in the fronted hedge position, because the knowledge hedge is as far as I know."
+    },
+    {
+      "ordinal": 1,
+      "rule": "CONJUNCTION_DROP: match when as far I know appears with no second as before the anchor, because the frame carries both as's."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame stands whole at the front of the sentence with its comma (as far as I know, the shop is still open), or set inside the clause between two commas, or widened honestly to as far as we know: those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_DISTANCE_READING: do not match when as far as is the extent phrase of its own clause (she walked as far as the gate; as far as value for money goes, it wins), because the knowledge hedge is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "As far as I know, the shop is still open.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "The shop, as far as I know, is still open.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "As far as we know, no order went out this week.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "She walked as far as the gate before the rain started.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "As long as I know, the shop is still open on Saturdays.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "As far I know the meeting is still on for Friday.",
+      "expected": "MATCH"
+    }
+  ]
+}

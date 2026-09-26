@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-discourse-moving-on",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "DISCOURSE_MARKER",
+    "fixedness": "FIXED",
+    "recognition_policy": "EXACT"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Close the current subject and start the next one.",
+      "Use the two words at the front of the sentence, before the comma.",
+      "Start with the words: ___, let's look at the timeline."
+    ],
+    "reveal_form": "Moving on, let's look at the timeline.",
+    "canonical_forms": [
+      "Moving on, let's look at the timeline."
+    ],
+    "alternative_realizations": [
+      "Moving on to the next item, let's look at the timeline."
+    ],
+    "required_slots": [
+      [
+        "moving"
+      ],
+      [
+        "timeline"
+      ]
+    ]
+  }
+}

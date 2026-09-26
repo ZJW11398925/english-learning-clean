@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's clarification-request set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "what do you mean",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "what-do-you-mean.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "what-do-you-mean.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A clarification request: the question a listener asks to have the other person explain the words or meaning that were not understood, addressed to the interlocutor rather than answered alone."
+    },
+    {
+      "sense_id": "what-do-you-mean.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The question stands right after the words that were not understood: What do you mean by that? It is built with do-support (what do you mean, not what you mean) and can name the puzzling word with by (what do you mean by restructuring?) or echo the claim with a comma (what do you mean, the contract is void?). The question's whole point is the other person's answer: it hands the floor back for an explanation rather than guessing at the meaning."
+    },
+    {
+      "sense_id": "what-do-you-mean.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Do-support is the drill: the question needs do (what do you mean), and learners drop it because their own language builds wh-questions without an auxiliary. The second slip is the trailing object — what do you mean that? bolts a demonstrative onto mean, which takes no such object; the echo use needs a comma (what do you mean, the contract is void?) and the by-phrase needs its noun (what do you mean by that?)."
+    },
+    {
+      "sense_id": "what-do-you-mean.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "What do you mean asks for the other person's meaning; what do you mean to do asks about their intention and is a different question; do you mean ...? asks for a yes-or-no confirmation of a guessed meaning rather than an explanation. Why do you mean that? is not current English. Sorry, what does that mean? is the sibling request pointed at a word or phrase instead of the speaker's intended sense."
+    },
+    {
+      "sense_id": "what-do-you-mean.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "你是什么意思？（请对方解释自己没听懂的言下之意，把话轮交回给对方）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "what-do-you-mean.base",
+      "written": "what do you mean",
+      "normalized": "what do you mean",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "LOW",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the question is the standard clarification move of the language, so receptive value and naturalness are HIGH and core utility is HIGH; productive value is HIGH because asking instead of guessing is a repair move every conversation needs. Productive difficulty is LOW: five fixed words. Transfer value is HIGH: the do-support question pattern transfers across the wh-family. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The question belongs to the general fluency pack (the phrases that repair a conversation), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Asking a colleague or a client to explain a term or an instruction (what do you mean by restructuring?) is core workplace language, so the unit carries most of the workplace pack's weight; the reduced weight records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical question first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the question with its do and with its by-phrase or comma-echo complete, never present the auxiliary-dropped or object-bolted form as a model of the question, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "AUXILIARY_DROP",
+      "error_pattern": "what you mean? (the do-support auxiliary dropped from the question)",
+      "corrected_pattern": "what do you mean?",
+      "explanation": "English builds wh-questions with do-support, and learners drop the auxiliary because their own language questions in place without one; what you mean is a statement word order with a question mark attached.",
+      "severity": "HIGH",
+      "detection_policy": "Match when the string what you mean stands as a question with no do and no subject-auxiliary inversion, followed by a question mark or a by-phrase."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "OBJECT_SLIP",
+      "error_pattern": "what do you mean that? (a demonstrative bolted onto mean where no object belongs)",
+      "corrected_pattern": "what do you mean? / what do you mean by that?",
+      "explanation": "Mean in this question takes no direct object — the thing asked about arrives in a by-phrase or an echo — and learners bolt the demonstrative on because their own language objects the question word; the result is not a stored English pattern.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the question carries mean that or mean this with no comma and no by, in a sentence where the question mark closes the string."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the auxiliary slot of the question and what follows mean. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (mean to is the intention reading, so the clarification request is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "AUXILIARY_DROP: match when the question runs what you mean with no do and no inversion, because English builds this question with do-support."
+    },
+    {
+      "ordinal": 1,
+      "rule": "OBJECT_SLIP: match when the question carries mean that or mean this with no comma and no by, because mean takes its object in a by-phrase or an echo."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the question stands whole (what do you mean by that?; what do you mean, the contract is void?), including with a sorry in front: those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_INTENTION_READING: do not match when the question runs mean to + an infinitive (what do you mean to do about it?), because there the words ask about intention and the clarification request is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "What do you mean by that?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "What do you mean, the contract is void?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Sorry, what do you mean by restructuring the whole team?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "What do you mean to do about the cancelled order?",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "What you mean by that? The deadline is still Monday, no?",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "What do you mean that? I thought the contract was signed.",
+      "expected": "MATCH"
+    }
+  ]
+}

@@ -86,8 +86,12 @@ RESOURCE_TARGETS = (
     "res-discourse-having-said-that",
     "res-discourse-in-fact",
     "res-discourse-long-story-short",
+    "res-discourse-moving-on",
+    "res-discourse-on-another-note",
+    "res-discourse-speaking-of-which",
     "res-discourse-that-reminds-me",
     "res-discourse-to-be-honest",
+    "res-discourse-to-get-back-to-the-point",
     "res-frame-id-like-to",
     "res-frame-if-you-dont-mind",
     "res-frame-just-wondering",
@@ -95,11 +99,14 @@ RESOURCE_TARGETS = (
     "res-frame-the-thing-is",
     "res-frame-what-im-saying-is",
     "res-frame-would-you-mind",
+    "res-hedge-as-far-as-i-know",
     "res-hedge-i-guess",
     "res-hedge-i-mean",
     "res-hedge-i-think",
+    "res-hedge-if-im-not-mistaken",
     "res-hedge-im-not-sure",
     "res-hedge-it-depends",
+    "res-hedge-it-seems-to-me",
     "res-hedge-not-really",
     "res-hedge-sort-of",
     "res-idiom-a-blessing-in-disguise",
@@ -119,11 +126,22 @@ RESOURCE_TARGETS = (
     "res-phrasal-run-out-of",
     "res-phrasal-turn-out",
     "res-phrasal-work-out",
+    "res-pragmatic-are-you-saying",
     "res-pragmatic-could-i-ask",
     "res-pragmatic-could-you",
+    "res-pragmatic-could-you-say-that-again",
+    "res-pragmatic-fair-enough",
+    "res-pragmatic-got-it",
+    "res-pragmatic-i-see",
+    "res-pragmatic-i-see-your-point-but",
+    "res-pragmatic-let-me-make-sure",
     "res-pragmatic-no-offense-but",
     "res-pragmatic-sorry-to-interrupt",
+    "res-pragmatic-that-makes-sense",
     "res-pragmatic-thats-a-good-point-but",
+    "res-pragmatic-up-to-a-point",
+    "res-pragmatic-what-do-you-mean",
+    "res-pragmatic-with-all-due-respect",
     "res-softener-a-bit",
     "res-softener-if-anything",
     "res-softener-kind-of",
@@ -146,16 +164,34 @@ MAPPING_TARGETS = (
     "res-discourse-anyway",
     "res-discourse-by-the-way",
     "res-discourse-having-said-that",
+    "res-discourse-moving-on",
+    "res-discourse-on-another-note",
+    "res-discourse-speaking-of-which",
     "res-discourse-that-reminds-me",
     "res-discourse-to-be-honest",
+    "res-discourse-to-get-back-to-the-point",
+    "res-hedge-as-far-as-i-know",
     "res-hedge-i-guess",
     "res-hedge-i-think",
+    "res-hedge-if-im-not-mistaken",
     "res-hedge-im-not-sure",
     "res-hedge-it-depends",
+    "res-hedge-it-seems-to-me",
     "res-hedge-not-really",
     "res-hedge-sort-of",
+    "res-pragmatic-are-you-saying",
+    "res-pragmatic-could-you-say-that-again",
+    "res-pragmatic-fair-enough",
+    "res-pragmatic-got-it",
+    "res-pragmatic-i-see",
+    "res-pragmatic-i-see-your-point-but",
+    "res-pragmatic-let-me-make-sure",
     "res-pragmatic-no-offense-but",
+    "res-pragmatic-that-makes-sense",
     "res-pragmatic-thats-a-good-point-but",
+    "res-pragmatic-up-to-a-point",
+    "res-pragmatic-what-do-you-mean",
+    "res-pragmatic-with-all-due-respect",
     "res-softener-a-bit",
     "res-softener-kind-of",
     "res-softener-to-be-fair",
@@ -658,13 +694,15 @@ def test_corpus_readiness_table_is_computed_and_printed(
     built_content_db: Path,
 ) -> None:
     """P5-R truth, now driven by the artifact instead of by missing tables
-    (C1, then C2-a, then C2-b, then C3-a, then C3-b): the five CAPABILITY
+    (C1, then C2-a, then C2-b, then C3-a, then C3-b, then C3-c): the five CAPABILITY
     entities state
     no evidence and read no level, blocked at R0 by ``assessment_membership``;
-    the sixty-four RESOURCE targets — C1's authored document, C2-a's eight,
-    C2-b's nineteen, C3-a's eighteen and C3-b's eighteen — state all nineteen
+    the eighty-two RESOURCE targets — C1's authored document, C2-a's eight,
+    C2-b's nineteen, C3-a's eighteen, C3-b's eighteen and C3-c's eighteen —
+    state all nineteen
     facts, and their *level* is then decided by the link's C3-R1 mapping
-    class: sixteen read ``R4_DETECTION_READY`` and the other forty-eight read
+    class: thirty-four read ``R4_DETECTION_READY`` (C3-R1's sixteen plus
+    C3-c's eighteen) and the other forty-eight read
     ``R1_LEXICALLY_RESOLVED`` with ``curriculum_link`` as the first key
     blocking the next level. The table prints the blocking keys so the reading
     is checkable rather than asserted."""
@@ -675,11 +713,11 @@ def test_corpus_readiness_table_is_computed_and_printed(
     for target_id, level, missing in table:
         print(f"[readiness] {target_id:32} {level!s:22} {missing}")
 
-    assert len(table) == 69
+    assert len(table) == 87
     levels = {(target, missing): level for target, level, missing in table}
     # 旧真值 → 新真值（C1: 1×R4+13×None；C2-a: 9×R4+5×None；C2-b:
     # 28×R4+5×None；C3-a: 46×R4+5×None；C3-b: 64×R4+5×None；C3-R1:
-    # 16×R4 + 48×R1 + 5×None）.
+    # 16×R4 + 48×R1 + 5×None；C3-c: 34×R4 + 48×R1 + 5×None）.
     assert levels[("res-hedge-i-think", ())] == "R4_DETECTION_READY"
     assert (
         levels[("res-colloc-make-a-decision", ("curriculum_link",))]
@@ -800,7 +838,7 @@ def test_the_never_present_keys_are_a_source_property_and_the_unread_mapping_is_
 
 def test_every_artifact_entity_is_an_expression(built_content_db: Path) -> None:
     """A corpus-shape fact that no longer carries an R1 reading (P5-R): all
-    51 entities are EXPRESSION, and that is *not* why any target read R1 —
+    87 entities are EXPRESSION, and that is *not* why any target read R1 —
     entity type is not a readiness fact at all (see
     test_a_non_expression_entity_reads_the_same_no_level)."""
 
@@ -814,7 +852,7 @@ def test_every_artifact_entity_is_an_expression(built_content_db: Path) -> None:
         store.close()
     print(f"[f1] artifact entity types -> {sorted(set(types.values()))} ({len(types)})")
     assert set(types.values()) == {"EXPRESSION"}
-    assert len(types) == 69
+    assert len(types) == 87
 
 
 def test_a_non_expression_entity_reads_the_same_no_level(tmp_path: Path) -> None:
@@ -909,15 +947,17 @@ def test_assessment_membership_is_required_and_absent(built_content_db: Path) ->
 def test_every_corpus_link_is_approved_and_satisfies_the_r2_fact(
     built_content_db: Path,
 ) -> None:
-    """The corpus read one level down, now at C3-R1's truth (旧真值: every link
+    """The corpus read one level down, now at C3-c's truth (旧真值: every link
     was ``CURRICULUM_MAPPED`` and the R2 fact was False for all 14; C1: one
     approved link; C2-a: all nine RESOURCE targets' links approved by editorial
     review — C1 reviewed one, C2-a the other eight while authoring their
-    readiness evidence, C2-b the nineteen it authored, C3-a and C3-b the
+    readiness evidence, C2-b the nineteen it authored, C3-a, C3-b and C3-c the
     eighteen each; **C3-R1**: the approval is no longer enough — the row must
     also be a ``CURRICULUM_MAPPING``, and the capability re-review found 48 of
-    the 64 rows coverage placements). So the R2 ``curriculum_link`` fact is
-    satisfied for exactly the sixteen mapping targets, every linked target's
+    the 64 then-rows coverage placements; **C3-c** authored eighteen rows
+    against the functional definitions, all of them mappings). So the R2
+    ``curriculum_link`` fact is
+    satisfied for exactly the thirty-four mapping targets, every linked target's
     row is still approved (approval and mapping are now two separate
     clauses), and the 5 CAPABILITY nodes still have no link row of their own
     (curriculum/README.md C1 — no self-link is invented). The unapproved
@@ -949,12 +989,12 @@ def test_every_corpus_link_is_approved_and_satisfies_the_r2_fact(
         assert len(store.entity_ids().value) - len(linked) == 5
     finally:
         store.close()
-    assert len(linked) == 64
+    assert len(linked) == 82
     assert all(entity_id.startswith("res-") for entity_id in linked)
     # Every linked row is approved, and the R2 fact now reads one clause
     # further: it is satisfied exactly by the mapping rows (C3-R1).
     assert approved == sorted(linked)
-    assert len(with_fact) == 16
+    assert len(with_fact) == 34
     assert set(with_fact) <= set(approved)
 
 

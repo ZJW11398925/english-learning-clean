@@ -63,7 +63,7 @@ def test_rebuild_same_path_is_byte_identical(tmp_path: Path) -> None:
     second = build_content_db(output)
     digest_second = hashlib.sha256(output.read_bytes()).hexdigest()
     assert digest_first == digest_second
-    assert first.entity_count == second.entity_count == 69
+    assert first.entity_count == second.entity_count == 87
     assert list(tmp_path.iterdir()) == [output]  # no leftover .tmp sibling
 
 
@@ -84,15 +84,15 @@ def test_two_builds_have_the_same_id_set_and_bytes(tmp_path: Path) -> None:
 
 
 def test_build_report_counts(tmp_path: Path) -> None:
-    """The report counts what was written (C3-b truth): 69 entities (5
-    CAPABILITY + 64 RESOURCE), 5 capabilities, 64 links (21 REALIZES + 43
-    SUPPORTS), 64 evidence documents."""
+    """The report counts what was written (C3-c truth): 87 entities (5
+    CAPABILITY + 82 RESOURCE), 5 capabilities, 82 links (33 REALIZES + 49
+    SUPPORTS), 82 evidence documents."""
 
     report = build_content_db(tmp_path / "content.db")
-    assert report.entity_count == 69
+    assert report.entity_count == 87
     assert report.capability_count == 5
-    assert report.link_count == 64
-    assert report.evidence_count == 64
+    assert report.link_count == 82
+    assert report.evidence_count == 82
     assert report.prerequisite_count == 0
     assert report.content_version == "content-v1"
     assert report.curriculum_version == "curriculum-v1"
@@ -158,8 +158,8 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
         conn.close()
     assert entities == sorted(entities)
     assert capabilities == sorted(capabilities)
-    # C1 (one), C2-a (eight), C2-b (nineteen), C3-a (eighteen) and C3-b
-    # (eighteen): the
+    # C1 (one), C2-a (eight), C2-b (nineteen), C3-a (eighteen), C3-b
+    # (eighteen) and C3-c (eighteen): the
     # sources' own declarations that these targets need a §24.9 TypicalError,
     # carried durably and read back by the readiness face.
     typical_error_need_keys = [
@@ -187,8 +187,12 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
             "res-discourse-having-said-that",
             "res-discourse-in-fact",
             "res-discourse-long-story-short",
+            "res-discourse-moving-on",
+            "res-discourse-on-another-note",
+            "res-discourse-speaking-of-which",
             "res-discourse-that-reminds-me",
             "res-discourse-to-be-honest",
+            "res-discourse-to-get-back-to-the-point",
             "res-frame-id-like-to",
             "res-frame-if-you-dont-mind",
             "res-frame-just-wondering",
@@ -196,11 +200,14 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
             "res-frame-the-thing-is",
             "res-frame-what-im-saying-is",
             "res-frame-would-you-mind",
+            "res-hedge-as-far-as-i-know",
             "res-hedge-i-guess",
             "res-hedge-i-mean",
             "res-hedge-i-think",
+            "res-hedge-if-im-not-mistaken",
             "res-hedge-im-not-sure",
             "res-hedge-it-depends",
+            "res-hedge-it-seems-to-me",
             "res-hedge-not-really",
             "res-hedge-sort-of",
             "res-idiom-a-blessing-in-disguise",
@@ -220,11 +227,22 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
             "res-phrasal-run-out-of",
             "res-phrasal-turn-out",
             "res-phrasal-work-out",
+            "res-pragmatic-are-you-saying",
             "res-pragmatic-could-i-ask",
             "res-pragmatic-could-you",
+            "res-pragmatic-could-you-say-that-again",
+            "res-pragmatic-fair-enough",
+            "res-pragmatic-got-it",
+            "res-pragmatic-i-see",
+            "res-pragmatic-i-see-your-point-but",
+            "res-pragmatic-let-me-make-sure",
             "res-pragmatic-no-offense-but",
             "res-pragmatic-sorry-to-interrupt",
+            "res-pragmatic-that-makes-sense",
             "res-pragmatic-thats-a-good-point-but",
+            "res-pragmatic-up-to-a-point",
+            "res-pragmatic-what-do-you-mean",
+            "res-pragmatic-with-all-due-respect",
             "res-softener-a-bit",
             "res-softener-if-anything",
             "res-softener-kind-of",
@@ -512,9 +530,9 @@ def test_cli_builds_and_reports(
     exit_code = main(["--out", str(output)])
     assert exit_code == 0
     captured = capsys.readouterr().out
-    assert "entities=69" in captured
+    assert "entities=87" in captured
     assert "capabilities=5" in captured
-    assert "links=64" in captured
+    assert "links=82" in captured
     assert output.is_file()
 
 

@@ -1,0 +1,193 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's mitigation-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "up to a point",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "up-to-a-point.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "up-to-a-point.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A mitigate unit that grants partial agreement and withholds the rest, so the speaker's disagreement arrives as a limit rather than a flat no."
+    },
+    {
+      "sense_id": "up-to-a-point.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The phrase answers a claim or opens a qualified turn: Up to a point, yes — but the second half worries me. It is built with up to + the article a + the singular point, and the withheld objection follows after the dash or the but (I agree, up to a point.). Said alone (up to a point.) it answers with the limit and leaves the other person to ask what the reservation is. In speech the phrase carries a small fall in the voice on point, which is the limit doing its work."
+    },
+    {
+      "sense_id": "up-to-a-point.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The article is the drill: the phrase is up to a point, and learners produce up to point because their own language has no article to place; the stored form carries the measure word a. The preposition is the second slip — until a point swaps in the time conjunction and reads oddly. The phrase also has a literal extent reading (the water rose up to a point just below the window), which keeps its own clause and is not the mitigator; the pragmatic work lives in the answer position."
+    },
+    {
+      "sense_id": "up-to-a-point.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "在某种程度上；部分同意（先同意一部分、保留其余意见，让反对听起来不那么生硬）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "up-to-a-point.base",
+      "written": "up to a point",
+      "normalized": "up to a point",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the phrase is common in discussion and interview talk, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because partial agreement can also be delivered with a plain partly or with the concede-then-but family, and this phrase adds the answer-position move, a narrower slice. Productive difficulty is MEDIUM because the article and the answer position are what production has to get right. Transfer value is LOW: one fixed phrase. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "A frequent qualified-agreement phrase of discussion and interview talk, so it carries high weight in the general fluency pack's coverage accounting; the shortfall records that it belongs to one register of talk rather than to general use."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Granting partial agreement before raising the reservation (up to a point, yes — but the second half worries me) is ordinary workplace language, so the unit has a real workplace use; the reduced weight records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the phrase in the answer position with the article a and the reservation that follows it, never present the article-dropped or until-swapped form as a model of the phrase, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "ARTICLE_DROP",
+      "error_pattern": "up to point (the article a dropped from the stored phrase)",
+      "corrected_pattern": "up to a point",
+      "explanation": "The phrase stores the article as its measure word, and learners drop it because their own language has no article to place; up to point is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the phrase reads up to point with no article in the answer position of a turn."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_SLIP",
+      "error_pattern": "until a point (the time conjunction standing where the stored preposition belongs)",
+      "corrected_pattern": "up to a point",
+      "explanation": "The phrase fixes up to, and learners swap in until because the limit feels temporal; until a point is not the stored form and reads as a cut-off time.",
+      "severity": "LOW",
+      "detection_policy": "Match when the answer position carries until a point followed by a comma, a dash or a but-clause."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the article inside the phrase and the preposition in front of it. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the words are the literal extent phrase of their own clause, so the mitigator is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "ARTICLE_DROP: match when the answer position carries up to point with no article, because the stored phrase carries a point."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PREPOSITION_SLIP: match when the answer position carries until a point, because the stored phrase fixes up to."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the phrase stands whole in the answer position (up to a point, yes — but the second half worries me; I agree, up to a point.), including the bare answer up to a point.: those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_EXTENT_READING: do not match when the phrase is the literal extent of its own clause (the water rose up to a point just below the window), because the mitigator is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Up to a point, yes — but the second half worries me.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "I agree, up to a point.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Up to a point. What did the second survey show?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The water rose up to a point just below the window sill.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Up to point, yes, but the second half of the plan worries me.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "I agree until a point, but the second half of the plan worries me.",
+      "expected": "MATCH"
+    }
+  ]
+}

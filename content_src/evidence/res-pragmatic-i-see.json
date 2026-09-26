@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's receipt-signal set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "I see",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "i-see.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "i-see.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A backchannel: the short receipt a listener gives to show the person speaking that they are being followed, claiming neither the floor nor any content of their own."
+    },
+    {
+      "sense_id": "i-see.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The two words stand as a turn of their own or as a token inside a longer receipt (Right, I see. Go on.). They are produced while the other person holds the floor or just after a step of their explanation, with present tense and no object: I see, not I am seeing and not I saw. An invitation to continue often follows (Please go on), which is the receipt doing its job of keeping the channel open."
+    },
+    {
+      "sense_id": "i-see.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The tense is the slip: see here is stative, so the progressive I am seeing changes the meaning (dating someone, or hallucinating) and the past I saw turns the receipt into a report about something seen earlier. Both arrive because many languages allow or require the progressive or the perfect where English keeps the plain present. The receipt claims no floor: the moment the speaker starts adding their own content, the move is no longer this formula."
+    },
+    {
+      "sense_id": "i-see.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "I see as a receipt answers the other person's talk; I see as part of Oh, I see what you mean adds an understanding claim and is a fuller move. You see is the speaker's explanatory device on their own turn, never the listener's receipt. Got it and that makes sense are sibling receipts with a more settled or more evaluated flavour; I'm seeing is the progressive with its own unrelated meanings."
+    },
+    {
+      "sense_id": "i-see.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "我明白了；原来如此（听者随口的接收信号：表示听懂了、请对方继续，不抢话轮）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "i-see.base",
+      "written": "I see",
+      "normalized": "i see",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the receipt is one of the most frequent listener signals in the language, so receptive value and naturalness are HIGH and core utility is HIGH; productive value is HIGH because keeping the channel open while listening is a move every conversation needs. Productive difficulty is LOW: two fixed words. Explanation cost is MEDIUM because what has to be taught is the listening move and the stative tense, not the wording. Transfer value is MEDIUM: the receipt frame transfers to the sibling signals. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The receipt belongs to the general fluency pack (the signals that keep a conversation going), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Showing a colleague or a client that instructions are landing (right, I see, go on) is ordinary workplace language, so it carries substantial weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical receipt first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the receipt in the plain present with no object and with the floor staying with the other speaker, never present the progressive or past sentence as a model of the receipt, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PROGRESSIVE_FORM",
+      "error_pattern": "I am seeing (the progressive standing where the stative receipt's plain present belongs)",
+      "corrected_pattern": "I see",
+      "explanation": "See in its understand sense is stative, so English keeps the plain present; the progressive arrives from languages that allow the aspect there, and it changes the meaning instead of receipting the talk.",
+      "severity": "HIGH",
+      "detection_policy": "Match when the receipt token is produced as I am seeing or I'm seeing followed by a comma or a receipt continuation, in a turn where no arrangement or perception meaning survives."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "TENSE_SLIP",
+      "error_pattern": "I saw (the past standing where the receipt's plain present belongs)",
+      "corrected_pattern": "I see",
+      "explanation": "The receipt answers present talk, and learners backshift it because their own language marks completed understanding with a past or perfect; the past form turns the receipt into a report about something seen earlier.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when I saw stands as a receipt token followed by a comma or an invitation to continue, in a turn where no earlier event is being reported."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb's form in front of a receipt continuation. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (see is the ordinary verb of perception with its own object or event, so the receipt is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PROGRESSIVE_RECEIPT: match when the receipt token is produced in the progressive (I am seeing / I'm seeing) before a comma or a receipt continuation, because the receipt keeps the plain present."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PAST_RECEIPT: match when the receipt token is produced in the past (I saw) before a comma or an invitation to continue, because the receipt keeps the plain present."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the receipt stands in the plain present (I see. / Right, I see. Go on.), including after a right or okay: those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_PERCEPTION_READING: do not match when see carries its own object or event (I saw him at the station; I am seeing the dentist on Tuesday), because the receipt is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Right, I see. Please go on.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "I see — so the deadline is Friday, not Monday.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Okay, I see what you mean now.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "I saw him at the station this morning.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "I am seeing, please go on with the story.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "I saw, please continue with what happened next.",
+      "expected": "MATCH"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-hedge-it-seems-to-me",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Give your judgement as a personal impression, not as a fact.",
+      "Use the phrase at the front, before the clause that carries your view.",
+      "Start with the words: ___ that the plan is too risky."
+    ],
+    "reveal_form": "It seems to me that the plan is too risky.",
+    "canonical_forms": [
+      "It seems to me that the plan is too risky."
+    ],
+    "alternative_realizations": [
+      "It seems to me the plan is too risky."
+    ],
+    "required_slots": [
+      [
+        "risky"
+      ],
+      [
+        "seems"
+      ]
+    ]
+  }
+}

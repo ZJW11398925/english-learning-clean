@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-hedge-if-im-not-mistaken",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Remind someone of a fact you are fairly, but not completely, sure of.",
+      "Use the phrase at the front of the sentence, before the comma.",
+      "Start with the words: ___, the meeting was moved to Thursday."
+    ],
+    "reveal_form": "If I'm not mistaken, the meeting was moved to Thursday.",
+    "canonical_forms": [
+      "If I'm not mistaken, the meeting was moved to Thursday."
+    ],
+    "alternative_realizations": [
+      "If I'm not mistaken, you were at the same school as my cousin."
+    ],
+    "required_slots": [
+      [
+        "thursday"
+      ],
+      [
+        "mistaken"
+      ]
+    ]
+  }
+}

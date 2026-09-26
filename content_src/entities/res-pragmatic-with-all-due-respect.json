@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-with-all-due-respect",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Warn the listener that you are about to disagree with them.",
+      "Use the phrase at the front of the sentence, before the comma.",
+      "Start with the words: ___, I think the numbers are wrong."
+    ],
+    "reveal_form": "With all due respect, I think the numbers are wrong.",
+    "canonical_forms": [
+      "With all due respect, I think the numbers are wrong."
+    ],
+    "alternative_realizations": [
+      "With all due respect, that is not what the report says."
+    ],
+    "required_slots": [
+      [
+        "respect"
+      ],
+      [
+        "wrong"
+      ]
+    ]
+  }
+}

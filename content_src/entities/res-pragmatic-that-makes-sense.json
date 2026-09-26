@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-that-makes-sense",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Tell the person speaking that their explanation is clear to you.",
+      "Say the three words as a receipt for what they said, and let them continue.",
+      "Start with the words: ___ — so we start in May."
+    ],
+    "reveal_form": "That makes sense — so we start in May.",
+    "canonical_forms": [
+      "That makes sense — so we start in May."
+    ],
+    "alternative_realizations": [
+      "That makes sense to me."
+    ],
+    "required_slots": [
+      [
+        "sense"
+      ],
+      [
+        "makes"
+      ]
+    ]
+  }
+}

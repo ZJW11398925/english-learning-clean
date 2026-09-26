@@ -1,0 +1,193 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's mitigation-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "I see your point, but",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "i-see-your-point-but.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "i-see-your-point-but.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A mitigate unit that concedes part of what the other person said before delivering the speaker's objection, so the disagreement does not land as a flat rejection."
+    },
+    {
+      "sense_id": "i-see-your-point-but.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The formula opens the turn and the objection follows the but: I see your point, but we don't have the budget. The concession arm is fixed (I see your point), the comma is the beat of granting it, and what follows but is the speaker's own objection as a full clause — the formula without the objection arm is not this move. The variant that's a good point, but does the same work with a different concession."
+    },
+    {
+      "sense_id": "i-see-your-point-but.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The possessive is the first slip: the formula stores your point, and learners produce I see you point because the two words sound alike in fast speech and their own language marks possession differently. The connector is the second: the concession needs the adversative but — an and in that slot delivers the objection as an addition and the soften disappears. The formula is also two-faced: said without the but-clause, I see your point is a plain receipt, which is why the fixtures hold the objection arm."
+    },
+    {
+      "sense_id": "i-see-your-point-but.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "我明白你的意思，不过……（先肯定对方、再提出反对，让反对听起来不那么生硬）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "i-see-your-point-but.base",
+      "written": "I see your point, but",
+      "normalized": "i see your point, but",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): concede-then-object is the core polite-disagreement move of the language, so receptive value and naturalness are HIGH and core utility is HIGH; productive value is HIGH because objecting without attacking is a move adult work and daily life demand. Productive difficulty is LOW: the frame is short and its slots are obvious. Explanation cost is MEDIUM because what has to be taught is the two-arm structure, not the wording. Transfer value is HIGH: the concede-then-but frame transfers across the disagreement family. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The formula belongs to the general fluency pack (the phrases that keep a disagreement polite), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Conceding before objecting in a meeting (I see your point, but the budget) is core workplace language, so the unit carries most of the workplace pack's weight; the reduced weight records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show both arms — the concession with its comma and the objection after but — never present the bare concession as a model of this formula, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "POSSESSIVE_DROP",
+      "error_pattern": "I see you point, but + clause (the possessive your reduced to you in the concession arm)",
+      "corrected_pattern": "I see your point, but + clause",
+      "explanation": "The concession arm stores the possessive your, and learners reduce it to you because the two words sound alike in fast speech and their own language marks possession without a distinct possessive pronoun; I see you point is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the concession arm reads see you point with no possessive in front of point."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "CONNECTOR_CHOICE",
+      "error_pattern": "I see your point, and + objection (the additive connector standing in the adversative slot)",
+      "corrected_pattern": "I see your point, but + objection",
+      "explanation": "The soften lives in the adversative but: the concession has to pivot against the objection for the move to stay polite, and learners reach for and because the two clauses are being added one after another; with and, the objection lands as one more item instead of a softened opposition.",
+      "severity": "LOW",
+      "detection_policy": "Match when the concession arm is followed by and and then a clause that contradicts the conceded point, with no but anywhere in the sentence."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the possessive inside the concession arm and the connector in the pivot slot. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the concession stands without its objection arm, so the soften move is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "POSSESSIVE_DROP: match when the concession arm reads see you point with no possessive, because the stored arm is your point."
+    },
+    {
+      "ordinal": 1,
+      "rule": "CONNECTOR_CHOICE: match when the concession arm pivots on and into a contradicting clause with no but in the sentence, because the soften lives in the adversative."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when both arms stand whole (I see your point, but we don't have the budget; I see your point, but the timeline doesn't work), including the that's-a-good-point variant: those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_PLAIN_RECEIPT: do not match when the concession stands without its objection arm (I see your point. — full stop), because there the words are a plain backchannel receipt and the soften move is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "I see your point, but we don't have the budget.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "I see your point, but the timeline doesn't work for the launch.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "That's a good point, but we don't have the budget this quarter.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "I see your point about the schedule, and I'll confirm the dates tomorrow.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "I see you point, but we don't have the budget for both venues.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "I see your point, and it is still too expensive for us this year.",
+      "expected": "MATCH"
+    }
+  ]
+}

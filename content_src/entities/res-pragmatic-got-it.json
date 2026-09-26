@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-got-it",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Show the person speaking that you have received their instruction or explanation.",
+      "Say the two words as a receipt, then do or confirm what was asked.",
+      "Start with the words: ___. I'll send the file tonight."
+    ],
+    "reveal_form": "Got it. I'll send the file tonight.",
+    "canonical_forms": [
+      "Got it. I'll send the file tonight."
+    ],
+    "alternative_realizations": [
+      "Got it, thanks — I'll send the file tonight."
+    ],
+    "required_slots": [
+      [
+        "got"
+      ],
+      [
+        "send"
+      ]
+    ]
+  }
+}

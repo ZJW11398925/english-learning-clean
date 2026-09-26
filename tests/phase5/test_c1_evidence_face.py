@@ -368,12 +368,13 @@ def test_two_subprocess_builds_with_different_hash_seeds_hash_equal(
 # ---------------------------------------------------------------------------
 
 
-def test_readiness_by_target_is_sixteen_r4_forty_eight_r1_and_five_none(
+def test_readiness_by_target_is_34_r4_forty_eight_r1_and_five_none(
     built_content_db: Path,
 ) -> None:
-    """The corpus table on the real artifact, at C3-R1's truth: the sixteen
-    RESOURCE targets whose §24.7 row is a curriculum mapping read
-    R4_DETECTION_READY, the other forty-eight RESOURCE targets read
+    """The corpus table on the real artifact, at C3-c's truth: the
+    thirty-four RESOURCE targets whose §24.7 row is a curriculum mapping read
+    R4_DETECTION_READY (C3-R1's sixteen plus C3-c's eighteen authored
+    mappings), the other forty-eight RESOURCE targets read
     R1_LEXICALLY_RESOLVED (their evidence is complete but their link is a
     coverage placement, so §8.1 R2 is not satisfied and the ladder stops at
     R1 — this is the *deliberate* fall-back, not a loss of evidence), and the
@@ -388,13 +389,13 @@ def test_readiness_by_target_is_sixteen_r4_forty_eight_r1_and_five_none(
     finally:
         store.close()
     table = {a.target_id: a.level for a in assessments.value}
-    assert len(table) == 69
+    assert len(table) == 87
     res_targets = sorted(t for t in table if t.startswith("res-"))
     cap_targets = sorted(t for t in table if t.startswith("cap-"))
-    assert len(res_targets) == 64 and len(cap_targets) == 5
+    assert len(res_targets) == 82 and len(cap_targets) == 5
     r4 = [t for t in res_targets if table[t] == "R4_DETECTION_READY"]
     r1 = [t for t in res_targets if table[t] == "R1_LEXICALLY_RESOLVED"]
-    assert (len(r4), len(r1)) == (16, 48)
+    assert (len(r4), len(r1)) == (34, 48)
     # The split is exactly the link's mapping class — the level is read, and
     # it is the mapping set that carries it (the C3-R1 consistency pin).
     mapping_rows = set(_mapping_resource_ids(built_content_db))

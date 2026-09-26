@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's hedging-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "it seems to me",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "it-seems-to-me.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "it-seems-to-me.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A hedge that presents the judgement it carries as the speaker's personal impression rather than as an established fact, leaving the hearer room to see it differently."
+    },
+    {
+      "sense_id": "it-seems-to-me.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The formula opens the sentence and the clause that carries the view runs straight on: It seems to me that the plan is too risky. The that may be dropped in speech (It seems to me the plan is too risky), and the personal arm can be left visible or not (It seems that the plan is risky states the impression without the me, and reads cooler). The expletive it and the preposition phrase to me are both part of the formula — the hedge is the whole frame, and what follows is a full clause with its own finite verb."
+    },
+    {
+      "sense_id": "it-seems-to-me.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Two productive slips sit on this frame. The expletive it is dropped, because many languages mark the impersonal differently and the sentence arrives as Seems that ... The preposition is the second slip: learners reach for for me (a word-for-word rendering of their own for-phrase), and for me after seem is not the hedge's form. A comma between the formula and its clause is a third, milder slip: the frame and its clause are one sentence, and a comma there only works when a real second clause with a connector follows."
+    },
+    {
+      "sense_id": "it-seems-to-me.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "It seems to me hedges the speaker's own judgement; I think hedges it in two plain words; it seems that ... hedges without the personal arm. It seems to be broken reports an appearance and carries no view at all — the following words are an infinitive, not a clause. For me as a free adverbial (For me, the plan is too risky) is current English but a different shape: a bare personal frame, not this hedge."
+    },
+    {
+      "sense_id": "it-seems-to-me.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "在我看来；我觉得（把自己的判断说成个人印象而不是事实，给对方留出不同意的余地）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "it-seems-to-me.base",
+      "written": "it seems to me",
+      "normalized": "it seems to me",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the formula is everywhere in discussion and disagreement, so receptive value and naturalness are HIGH and core utility is HIGH; productive value is HIGH because giving a personal judgement politely is a move adult learners must make weekly. Productive difficulty is MEDIUM because the expletive it and the preposition are what production has to get right. Transfer value is HIGH: the frame's seem + to-phrase pattern transfers to it seems that, it seemed and the polite-conclusion family. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The formula belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Framed personal judgements are ordinary in meetings and comments on a proposal (it seems to me the plan is too risky), so it carries most of the weight in the workplace pack; the shortfall records that the pack's own review has not yet placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the formula with its expletive it and its to me in front of a full clause, never present the dropped-it or for-me sentence as a model of the hedge, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "SUBJECT_DROP",
+      "error_pattern": "seems that | seems like + clause (the expletive it dropped from the front of the hedge)",
+      "corrected_pattern": "it seems that + clause",
+      "explanation": "The hedge is a frame with a dummy subject, and many languages mark the impersonal differently, so the it is dropped and the hedge arrives as a bare verb; a declarative clause in English needs the subject in front of seems.",
+      "severity": "HIGH",
+      "detection_policy": "Match when seems that or seems like opens a clause with no subject in front of it and a full clause follows, which distinguishes the slip from the noun phrase that seems like nonsense."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_SLIP",
+      "error_pattern": "it seems for me that + clause (the preposition for where the formula says to)",
+      "corrected_pattern": "it seems to me that + clause",
+      "explanation": "The formula fixes to me, and learners reach for for me because their own language renders the personal frame with a for- or dative phrase; for me after seem is not the hedge's form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the hedge frame contains seems for me followed by a clause."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words of the frame, the subject position in front of seems and the preposition inside it. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (seem is the ordinary verb of appearance with an infinitive, so the hedge frame is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "SUBJECTLESS_HEDGE: match when seems that or seems like opens a clause with no subject in front of it and a full clause follows, so the string reads as the hedge whose it has been dropped."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PREPOSITION_SLIP: match when the frame runs seems for me before a clause, because the stored formula carries to me."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the formula carries its it and runs into the clause it hedges (it seems to me that the plan is too risky; it seems to me the plan is too risky), including the cooler personal-less form it seems that ...: those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_APPEARANCE_READING: do not match when seem is the ordinary verb of appearance with an infinitive or a noun phrase and no view is being given (it seems to be broken; that seems like nonsense), because the hedge frame is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "It seems to me that the plan is too risky.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "It seems that the plan is too risky.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "It seems to me the plan is too risky to survive the review.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "It seems to be broken again.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Seems that the plan is too risky for the budget we have.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "It seems for me that the plan is too risky.",
+      "expected": "MATCH"
+    }
+  ]
+}

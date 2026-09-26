@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-up-to-a-point",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Agree with part of what the other person said, and hold the rest back.",
+      "Say the phrase where a flat yes would be too strong.",
+      "Start with the words: ___, yes — but the second half worries me."
+    ],
+    "reveal_form": "Up to a point, yes — but the second half worries me.",
+    "canonical_forms": [
+      "Up to a point, yes — but the second half worries me."
+    ],
+    "alternative_realizations": [
+      "I agree, up to a point."
+    ],
+    "required_slots": [
+      [
+        "point"
+      ],
+      [
+        "agree"
+      ]
+    ]
+  }
+}

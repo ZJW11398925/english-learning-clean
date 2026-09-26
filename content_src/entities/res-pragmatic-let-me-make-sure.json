@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-let-me-make-sure",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Restate what the other person said and have them confirm your understanding.",
+      "Use the phrase before your restatement, then let them confirm or correct it.",
+      "Start with the words: ___ I've got this right — the deadline is Friday."
+    ],
+    "reveal_form": "Let me make sure I've got this right — the deadline is Friday.",
+    "canonical_forms": [
+      "Let me make sure I've got this right — the deadline is Friday."
+    ],
+    "alternative_realizations": [
+      "Let me make sure I understand: we start in May."
+    ],
+    "required_slots": [
+      [
+        "sure"
+      ],
+      [
+        "deadline"
+      ]
+    ]
+  }
+}

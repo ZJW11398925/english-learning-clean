@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-hedge-as-far-as-i-know",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say what you believe is true while marking that your information may be out of date.",
+      "Use the phrase at the front of the sentence, before the comma.",
+      "Start with the words: ___, the shop is still open."
+    ],
+    "reveal_form": "As far as I know, the shop is still open.",
+    "canonical_forms": [
+      "As far as I know, the shop is still open."
+    ],
+    "alternative_realizations": [
+      "As far as I know, the meeting is still on for Friday."
+    ],
+    "required_slots": [
+      [
+        "open"
+      ],
+      [
+        "know"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,193 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's receipt-signal set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "got it",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "got-it.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "got-it.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A backchannel: the settled receipt a listener gives to show that an instruction or explanation has been received, acknowledging the other person's words without claiming the floor."
+    },
+    {
+      "sense_id": "got-it.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The two words stand as a turn of their own, often followed by the action or confirmation they receipt: Got it. I'll send the file tonight. The form is the past participle got with the object it and no subject — the I is understood — and it answers what was just said, not the world. The plain present I get it is the sibling receipt with a more contested flavour (I get it, you don't have to explain again), which is why the past form is the polite default for instructions."
+    },
+    {
+      "sense_id": "got-it.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The form is the drill: the receipt is got it, and learners produce the base form (get it) because their own language receipts with an imperative-shaped token, or rebuild the sentence with a copula (I am got it) because their grammar wants a verb of being in front of a past form. Get it as a receipt reads as an instruction to someone else; I am got it is not English. The literal verb use (she got it from her mother; he got it wrong) keeps its own object and grammar and is not the receipt."
+    },
+    {
+      "sense_id": "got-it.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "收到；明白了（对指令或说明的接收信号，表示记下了、会照办，不抢话轮）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "got-it.base",
+      "written": "got it",
+      "normalized": "got it",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the receipt is the standard answer to an instruction in work and daily talk, so receptive value and naturalness are HIGH and core utility is HIGH; productive value is HIGH because confirming an instruction is a move every adult learner needs daily. Productive difficulty is LOW: two fixed words. Explanation cost is MEDIUM because what has to be taught is the receipt move and the stored form, not the vocabulary. Transfer value is LOW: one fixed pair. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The receipt belongs to the general fluency pack (the signals that keep a conversation going), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Confirming instructions from a colleague or a client (got it — I'll send the file tonight) is core workplace language, so the unit carries most of the workplace pack's weight; the reduced weight records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical receipt first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the receipt as the fixed pair with the understood subject and the follow-on action, never present the base-form or copula-built sentence as a model of the receipt, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "FORM_SLIP",
+      "error_pattern": "get it (the base form standing where the receipt's past form belongs)",
+      "corrected_pattern": "got it",
+      "explanation": "The receipt is stored in the past form with the understood subject, and learners produce the base form because their own language receipts with an imperative-shaped token; at the front of a turn get it reads as an instruction to someone else.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the base form get it stands as a receipt token at the front of a turn followed by a promise or a confirmation clause."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "AUXILIARY_INTRUSION",
+      "error_pattern": "I am got it | I was got it (a copula built in front of the receipt's past form)",
+      "corrected_pattern": "got it / I've got it",
+      "explanation": "The receipt needs no verb of being, and learners build one because their own grammar marks possession or completion with a copula plus a past form; I am got it is not English.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of be stands directly in front of got it with no intervening have."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb's form in the receipt token and what stands in front of it. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (got is the literal verb of receiving with its own object and grammar, so the receipt is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "BASE_FORM_RECEIPT: match when the base form get it stands as the receipt token at the front of a turn, because the receipt keeps the past form."
+    },
+    {
+      "ordinal": 1,
+      "rule": "COPULA_INTRUSION: match when a form of be stands directly in front of got it (I am got it / I was got it), because the receipt builds no copula."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the receipt stands whole (got it — I'll send the file tonight; got it, thanks), including the plain-present sibling I get it and the have form I've got it: those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_LITERAL_RECEIVING: do not match when got carries its own subject, object and grammar (she got it from her mother; he got it wrong twice), because the receipt is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Got it. I'll send the file tonight.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Got it, thanks — see you at the meeting on Friday.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "I get it, you don't have to explain it again.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "She got it from her mother, the habit of writing everything down.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Get it, I will send the file tonight.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "I am got it, I will send the file tonight.",
+      "expected": "MATCH"
+    }
+  ]
+}

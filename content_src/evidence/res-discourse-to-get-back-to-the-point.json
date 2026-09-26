@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's discourse-marker set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "get back to the point",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "to-get-back-to-the-point.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "to-get-back-to-the-point.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A marker used to leave a digression behind and return to the matter the speaker was making, announcing the return rather than the matter itself."
+    },
+    {
+      "sense_id": "to-get-back-to-the-point.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The phrase stands at the front of the sentence, set off by a comma: To get back to the point, we need a decision today. The participle variant getting back to the point does the same work in the same position. The point is the speaker's own main matter, so the clause after the comma states it. In speech the phrase follows the digression directly, and the comma is the turn back."
+    },
+    {
+      "sense_id": "to-get-back-to-the-point.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The prepositions are the drill: back to the point, never back on the point, and the article is part of the formula (the point, not point). The full infinitive to get ... is the citation form; learners who drop it produce an imperative (Get back to the point!), which reads as telling someone off rather than steering themselves back. A comma after the phrase keeps the digression closed before the main matter is restated."
+    },
+    {
+      "sense_id": "to-get-back-to-the-point.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "To get back to the point returns to the speaker's own main matter; anyway does the same job in one word, and moving on closes the digression in order to start the next subject instead. Back to the point is the short variant. The literal reading of get back to (return to a place, a person or a stage: he got back to the point where he had started) is ordinary English that has nothing to do with the marker."
+    },
+    {
+      "sense_id": "to-get-back-to-the-point.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "回到正题；言归正传（离开题、回到自己本要说的事，放句首并用逗号隔开）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "to-get-back-to-the-point.base",
+      "written": "to get back to the point",
+      "normalized": "to get back to the point",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): returning to the main matter after a digression is one of the most frequent steering moves in adult talk, so receptive value, productive value and naturalness are HIGH and core utility is HIGH. Productive difficulty is MEDIUM because the prepositions, the article and the comma are what production has to get right, and the frame's get back to transfers to other talk about returning (to work, to the email). Transfer value is MEDIUM for that reason. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The marker belongs to the general fluency pack (the phrases that hold a conversation together), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Bringing a meeting back from a digression (to get back to the point, the deadline) is core meeting language, so the unit carries most of the workplace pack's weight; the reduced weight records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the phrase at the front of the sentence with its comma and with the full preposition-and-article string back to the point, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_SLIP",
+      "error_pattern": "get back on the point (the preposition on where the formula says to)",
+      "corrected_pattern": "get back to the point",
+      "explanation": "The formula fixes back to, and learners reach for on because their own language uses a static locative for returning to a topic; the result is not the form English stores.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when back on the point stands inside the marker phrase at the front of a clause, in a position where the signpost is meant and no physical point or surface is named."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "ARTICLE_DROP",
+      "error_pattern": "get back to point (the formula's the dropped before point)",
+      "corrected_pattern": "get back to the point",
+      "explanation": "The article is part of the stored phrase, and learners drop it where their own language has no article; to get back to point reads as a broken idiom rather than the marker.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the marker phrase contains to point with no the in front of it."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words of the phrase, the preposition after back and the article before point. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (get back to is the literal verb phrase about returning to a stage or a place, so the marker is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PREPOSITION_SLIP: match when the marker phrase contains back on the point, because the stored phrase is back to the point."
+    },
+    {
+      "ordinal": 1,
+      "rule": "ARTICLE_DROP: match when the marker phrase contains to point with no article, because the stored phrase carries the point."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the phrase stands at the front of the sentence with its comma (to get back to the point, we need a decision today) or in the participle variant (getting back to the point, ...), including the short form back to the point: those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_LITERAL_RETURN: do not match when get back to carries its own destination or stage (he got back to the point where he had started; she got back to the office by noon), because the marker is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "To get back to the point, we need a decision today.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Getting back to the point, the deadline has not moved.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Back to the point — has anyone finished the budget review?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "He got back to the point where he had started and began again.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "To get back on the point, we need a decision today about the venue.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "So, to get back to point, the deadline has not moved.",
+      "expected": "MATCH"
+    }
+  ]
+}

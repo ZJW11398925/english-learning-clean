@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's clarification-request set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "could you say that again",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "could-you-say-that-again.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "could-you-say-that-again.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A clarification request: the polite question a listener asks to have the other person repeat words that were not caught, addressed to the interlocutor for a repetition."
+    },
+    {
+      "sense_id": "could-you-say-that-again.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The question stands right after the words that were missed: Could you say that again, please? It is built with could + the base form (could you say, not could you to say), with the object that and the adverb again, and please is the natural closer. The object narrows honestly when only part was missed (could you say that last part again?). The sibling verb repeat needs no that: could you repeat that? is current, and could you repeat again? is not — repeat already says again."
+    },
+    {
+      "sense_id": "could-you-say-that-again.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The double-marking slip is the drill: learners append again to repeat (could you repeat again?) or drop the object from say (could you say again?) because their own language builds the request with one word; English splits the work — say needs its object that, repeat carries again inside itself. Could is also the politeness choice: can you say that again is fine among friends, and the teaching should present could as the form that travels everywhere."
+    },
+    {
+      "sense_id": "could-you-say-that-again.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Could you say that again asks for a repetition of the other person's words; could you say that again and I'll leave is a conditional threat built on the same words and not a request; could you repeat that? is the sibling request with repeat. Say that again! as an exclamation is delight or challenge, not the polite request this formula is."
+    },
+    {
+      "sense_id": "could-you-say-that-again.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "您能再说一遍吗？（请对方重复自己没听清的话，礼貌地把话轮交回给对方）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "could-you-say-that-again.base",
+      "written": "could you say that again",
+      "normalized": "could you say that again",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "LOW",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the request is the essential repair move when words are missed, so receptive value and naturalness are HIGH and core utility is HIGH; productive value is HIGH because asking for a repetition is a move every conversation with a non-native speaker needs. Productive difficulty is LOW: six fixed words. Transfer value is HIGH: the could-you request frame transfers across the polite-request family. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The request belongs to the general fluency pack (the phrases that repair a conversation), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Asking a client or a colleague to repeat a name, a number or an instruction (could you say that again, please?) is core workplace language, so the unit carries most of the workplace pack's weight; the reduced weight records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical question first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the question with could, the base form say, its object that and again — and never present the doubled again or the object-dropped form as a model of the request; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "REDUNDANT_AGAIN",
+      "error_pattern": "could you repeat again? (again appended to a verb that already means say it again)",
+      "corrected_pattern": "could you repeat that? / could you say that again?",
+      "explanation": "Repeat already contains the again, and learners double the marking because their own language builds the request with one verb plus a second- time word; could you repeat again is not a stored English request.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the request contains repeat again with no say in the same clause."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "OBJECT_DROP",
+      "error_pattern": "could you say again? (the object that dropped from the request)",
+      "corrected_pattern": "could you say that again?",
+      "explanation": "Say needs its object, and learners drop that because their own language builds the request with a single objectless verb; could you say again leaves the verb without the thing to repeat.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the request runs say again with no object between the verb and again."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb of the request, its object slot and the second-time word. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words are a conditional threat, so the request is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "REDUNDANT_AGAIN: match when the request contains repeat again, because repeat already carries the second-time meaning."
+    },
+    {
+      "ordinal": 1,
+      "rule": "OBJECT_DROP: match when the request runs say again with no object between the verb and again, because say needs its that."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the request stands whole (could you say that again, please?; sorry — could you say that last part again?), including the repeat sibling could you repeat that?: those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_CONDITIONAL_THREAT: do not match when the same words open a conditional with a consequence (say that again and I'll leave), because there the words are not a polite request."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Could you say that again, please?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Sorry — could you say that last part again?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Could you repeat that? I didn't catch the account number.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Say that again and I'll leave the room.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Could you repeat again? I didn't hear the date of the delivery.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Could you say again, please? The line broke up for a second.",
+      "expected": "MATCH"
+    }
+  ]
+}

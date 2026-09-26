@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's discourse-marker set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "on another note",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "on-another-note.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "on-another-note.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A marker used to open a new subject that has nothing to do with the one just being discussed, without pretending the two are connected."
+    },
+    {
+      "sense_id": "on-another-note.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The phrase stands at the front of the sentence, set off by a comma: On another note, has anyone heard from the supplier? It follows whatever was being said, and the new subject it opens does not continue that talk — it replaces it. The variant on a different note means the same thing in the same position. In speech the phrase is preceded by a small pause, which is what the comma writes."
+    },
+    {
+      "sense_id": "on-another-note.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The preposition is the whole difficulty: the phrase is on another note, and learners reach for in because their own language says in another register. The comma is the second half of the form — without it the marker welds itself onto the clause it opens and the reader hears one long run-on. The word note here is the musical or memo metaphor (a new item on the agenda), not a physical piece of paper, which is why a sentence about literally writing on paper is not a use of the marker."
+    },
+    {
+      "sense_id": "on-another-note.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "On another note opens an unrelated subject; by the way adds a side remark while the current matter stays live, and moving on closes the current subject without the lightness this marker carries. On a different note is the same marker with a different adjective. On the note of is not current English. The noun-phrase reading (writing on a note, a banknote) is ordinary English that has nothing to do with the marker."
+    },
+    {
+      "sense_id": "on-another-note.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "另外说一句；换个话题（结束当前话题、开启一件不相干的新事，放在句首并用逗号隔开）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "on-another-note.base",
+      "written": "on another note",
+      "normalized": "on another note",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the marker is a frequent conversation-management phrase in meetings and calls, so receptive value and naturalness are HIGH and core utility is HIGH — changing the subject politely is a move every adult learner needs. Productive value is MEDIUM because a learner can change the subject without the marker, and productive difficulty is MEDIUM because the preposition and the comma are what production has to get right. Transfer value is LOW: one fixed phrase. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The marker belongs to the general fluency pack (the phrases that hold a conversation together), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Changing the subject in a meeting or a call (on another note, about the Hamburg order) is ordinary workplace language, so it carries substantial weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the marker at the front of the sentence with its comma, and never present the preposition slip or a sentence about writing on paper as a model of the marker or an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_SLIP",
+      "error_pattern": "in another note, + clause (the preposition in where the marker says on)",
+      "corrected_pattern": "on another note, + clause",
+      "explanation": "Many languages open a change of register with a preposition that maps to in, so the fixed phrase arrives with the wrong preposition and the marker is no longer the form English uses.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when in another note stands at the front of a clause followed by a comma, in a position where the discourse marker is meant, and no clause contains a literal note being written on."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "MISSING_COMMA",
+      "error_pattern": "on another note + clause (the marker welded to the clause it opens, with no comma)",
+      "corrected_pattern": "on another note, + clause",
+      "explanation": "The marker and its clause are separate units, so the missing comma welds a fronted phrase onto a clause that never closes the intonation break; the slip is punctuation convention rather than grammar, and it is not specific to one L1.",
+      "severity": "LOW",
+      "detection_policy": "Match when the marker is followed directly by a clause with no comma between them, in a sentence where no question mark closes the marker's own parenthetical."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words of the marker, the preposition in front of another note, and the punctuation after the phrase. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the words are the literal noun phrase about paper, so the marker is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PREPOSITION_SLIP: match when in another note stands in the fronted marker position, because the fixed phrase is on another note."
+    },
+    {
+      "ordinal": 1,
+      "rule": "MISSING_COMMA: match when on another note runs straight into a clause with no comma after it, because the marker is a fronted phrase and takes its own pause."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the marker stands at the front of the sentence with its comma (on another note, ... / on a different note, ...), including after a semicolon that closes the previous clause: those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_LITERAL_NOTE: do not match when another note is a physical piece of paper carrying its own grammatical role (wrote something on another note), because the marker is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "On another note, has anyone heard from the supplier?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Let's close the minutes; on another note, the venue is booked for June.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "On a different note, the venue is booked for June.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "He scribbled a reminder on another note and pinned it to the board.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "In another note, has anyone heard from the supplier in Hamburg?",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "On another note I wanted to ask about the invoice for August.",
+      "expected": "MATCH"
+    }
+  ]
+}

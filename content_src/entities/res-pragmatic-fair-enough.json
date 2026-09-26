@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-fair-enough",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Accept that what the other person said is reasonable, without taking the turn.",
+      "Say the two words as a receipt, and let them continue or move on.",
+      "Start with the words: ___ — let's split the difference."
+    ],
+    "reveal_form": "Fair enough — let's split the difference.",
+    "canonical_forms": [
+      "Fair enough — let's split the difference."
+    ],
+    "alternative_realizations": [
+      "Fair enough, we'll do it your way this time."
+    ],
+    "required_slots": [
+      [
+        "fair"
+      ],
+      [
+        "enough"
+      ]
+    ]
+  }
+}

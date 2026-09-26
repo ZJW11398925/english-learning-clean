@@ -162,7 +162,7 @@ DETECTION_FIXTURE_EXPECTED_BY_KIND: Mapping[str, str] = MappingProxyType(
 #: - ``AUTHOR_DECLARED`` — the entity carries an authoring evidence document
 #:   (`content_src/evidence/<id>.json`): the author states the facts, and the
 #:   build refuses nothing about their content. This is the baseline every
-#:   documented entity starts at (all 64 documented resources today).
+#:   documented entity starts at (all 82 documented resources today).
 #: - ``EDITOR_REVIEWED`` — an audit record in `content_src/audits/` lists the
 #:   entity in its ``approved_entities``. The record is a third-party fact
 #:   (``performed_by`` / ``basis``), so an author cannot promote their own

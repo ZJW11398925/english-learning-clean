@@ -196,50 +196,52 @@ def test_off_refuses_at_every_stage() -> None:
 def test_the_real_corpus_answers_go_on_all_four_rows_and_the_rollout_stays_held(
     p8world: World,
 ) -> None:
-    """The measured answer at C3-R1's truth, as a two-layer statement (旧真值:
+    """The measured answer at C3-c's truth, as a two-layer statement (旧真值:
     every row 0, four HOLD rows, 14 targets all without a level; C1: the one
     authored R4 target made every row GO; C2-a: nine usable targets; C2-b:
-    twenty-eight; C3-a: forty-six; C3-b: sixty-four; 新真值 C3-R1: the sixteen
-    RESOURCE targets whose §24.7 row is a curriculum mapping reach R4 (the
-    re-review's deliberate fall-back), so
-    every row reads sixteen usable targets — BF-02 §10's "at least one
+    twenty-eight; C3-a: forty-six; C3-b: sixty-four; C3-R1: the sixteen
+    RESOURCE targets whose §24.7 row is a curriculum mapping reached R4 (the
+    re-review's deliberate fall-back); 新真值 C3-c: the cut's eighteen
+    resources authored against the functional definitions are mappings by
+    their own rows, so
+    every row reads thirty-four usable targets — BF-02 §10's "at least one
     target" is met on all four floors — **and the rollout is still held**):
     layer one is the content gate's GO; layer two is the stage leg, which no
     shipped caller declares — ``stage_allows_automatic`` answers False for the
     undeclared stage and for the fail-closed default, and the two-leg
     composition refuses with any frequency word — plus the Calibration100
     volume gate (docs/IMPLEMENTATION_PLAN.md §13's 100/30/2), under which the
-    volume floor is unmet and CORE_A falls below its floor again at C3-R1's
+    volume floor is unmet and CORE_A stays below its floor at C3-c's
     truth while CORE_C stays met under the declared reading. Content capable
     ≠ rollout open."""
 
     report = corpus_rollout_gate(p8world.curriculum)
     assert isinstance(report, Ok), report
     gate = report.value
-    # Layer one: the content gate's four rows all read GO on sixteen usable
+    # Layer one: the content gate's four rows all read GO on thirty-four usable
     # targets — 旧真值 was ("PROBE", 0) … ("automatic CURRENT_USER_ERROR", 0),
-    # C3-b was 64 per row.
+    # C3-b was 64 per row, C3-R1 was 16 per row.
     assert [(row.row_word, row.usable_targets) for row in gate.rows] == [
-        ("PROBE", 16),
-        ("user-initiated teaching", 16),
-        ("automatic general/review", 16),
-        ("automatic CURRENT_USER_ERROR", 16),
+        ("PROBE", 34),
+        ("user-initiated teaching", 34),
+        ("automatic general/review", 34),
+        ("automatic CURRENT_USER_ERROR", 34),
     ]
     assert all(row.verdict is RolloutVerdict.GO for row in gate.rows)
     assert gate.verdict is RolloutVerdict.GO
     assert gate.automatic_verdict is RolloutVerdict.GO
-    assert gate.targets_considered == 69
+    assert gate.targets_considered == 87
     assert gate.targets_without_level == 5
     assert gate.unknown_levels == ()
     assert gate.summary() == (
-        "PROBE: required R2_PLANNER_READY, usable targets 16 → GO",
-        "user-initiated teaching: required R3_TEACHING_READY, usable targets 16"
+        "PROBE: required R2_PLANNER_READY, usable targets 34 → GO",
+        "user-initiated teaching: required R3_TEACHING_READY, usable targets 34"
         " → GO",
-        "automatic general/review: required R3_TEACHING_READY, usable targets 16"
+        "automatic general/review: required R3_TEACHING_READY, usable targets 34"
         " → GO",
         "automatic CURRENT_USER_ERROR: required R4_DETECTION_READY, usable"
-        " targets 16 → GO",
-        "targets: 69 considered, 5 without a level",
+        " targets 34 → GO",
+        "targets: 87 considered, 5 without a level",
         "verdict: GO (automatic rows: GO)",
     )
     # No row blocks, so the report's blocked tail is empty (旧真值: four
@@ -263,11 +265,11 @@ def test_the_real_corpus_answers_go_on_all_four_rows_and_the_rollout_stays_held(
 
 def _calibration100_floors_are_readable() -> None:
     """docs/IMPLEMENTATION_PLAN.md §13's Calibration100 floors (100/30/2),
-    read against the built artifact's own counts at C3-R1's truth: the volume
-    floor is unmet (64 resources < 100), CORE_A falls below its floor again
-    (the R3+ set is the sixteen mapping targets after the re-review, so
-    CORE_A 11 < 30 — the fall-back the decision made on purpose) while CORE_C
-    (5 >= 2) stays met under the **声明读法 + Revisit（用户 2026-09-26 裁决）**
+    read against the built artifact's own counts at C3-c's truth: the volume
+    floor is unmet (82 resources < 100), CORE_A stays below its floor
+    (the R3+ set is the thirty-four mapping targets, of which 24 carry a HIGH
+    band, so CORE_A 24 < 30) while CORE_C
+    (10 >= 2) stays met under the **声明读法 + Revisit（用户 2026-09-26 裁决）**
     — R3_TEACHING_READY or R4_DETECTION_READY crossed with
     ``content_pedagogical_profile.core_utility`` HIGH / {MEDIUM, LOW}. The
     numbers live in the frozen document and are read from it, and the three
@@ -322,7 +324,7 @@ def _calibration100_floors_are_readable() -> None:
     core_a = [t for t in banded if utilities.get(t) == "HIGH"]
     core_c = [t for t in banded if utilities.get(t) in ("MEDIUM", "LOW")]
     assert resources < gates["resource_count"]  # volume floor unmet
-    assert len(core_a) < gates["CORE_A"]  # CORE_A unmet again (C3-R1 fall-back)
+    assert len(core_a) < gates["CORE_A"]  # CORE_A unmet (24 of 30)
     assert len(core_c) >= gates["CORE_C"]  # CORE_C met
 
 

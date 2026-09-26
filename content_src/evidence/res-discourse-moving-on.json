@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's discourse-marker set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "moving on",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "moving-on.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "moving-on.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A marker used to close the subject just dealt with and start the next one, announcing the step rather than the new content itself."
+    },
+    {
+      "sense_id": "moving-on.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The two words stand at the front of the sentence, set off by a comma: Moving on, let's look at the timeline. The extended form moving on to + the next item is equally current: Moving on to the next item, let's look at the timeline. In meetings the phrase does the agenda's work out loud; the clause after the comma names the next matter. In speech the comma is the beat of closing one page and turning to the next."
+    },
+    {
+      "sense_id": "moving-on.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The marker is a gerund used as a fixed signpost, so the -ing is part of the formula: the base form move on at the front of a turn reads as an order (Move on! = go away / stop wasting time) or as a description, not as the marker. The comma matters for the same reason — without it, moving on attaches itself to the next words and the sentence becomes a garden-path description (Moving on the next topic ...)."
+    },
+    {
+      "sense_id": "moving-on.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Moving on closes the current subject and opens the next; to get back to the point returns to the subject the digression left, and anyway does that job in one word. Let's move on is the full-clause variant of the same move and is equally current. The literal verb use (the discussion kept moving on, we kept moving on the project) is ordinary English that has nothing to do with the marker."
+    },
+    {
+      "sense_id": "moving-on.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "接下来；说下一项（宣布结束当前话题、进入下一项，放句首并用逗号隔开）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "moving-on.base",
+      "written": "moving on",
+      "normalized": "moving on",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the signpost is the standard way a meeting closes an item, so receptive value and naturalness are HIGH and core utility is HIGH. Productive value is MEDIUM because a learner can name the next item without the signpost, and productive difficulty is MEDIUM because the gerund form and the comma are what production has to get right. Transfer value is LOW: two fixed words. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The marker belongs to the general fluency pack (the phrases that steer a conversation), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Closing an agenda item out loud (moving on, the timeline) is core meeting language, so the unit carries most of the workplace pack's weight; the reduced weight records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the gerund marker with its comma at the front of the sentence, never present the base-form imperative as a model of the marker, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "FORM_SLIP",
+      "error_pattern": "move on, + clause (the base form standing where the fixed gerund signpost belongs)",
+      "corrected_pattern": "moving on, + clause",
+      "explanation": "The signpost is a gerund used as a fixed marker, and learners restore the base form because their own language marks this move with an infinitive or an imperative; at the front of a turn the base form reads as an order, not as the signpost.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when move on stands at the front of a turn followed by a comma and a let's or a first-person-plural proposal clause, in a position where the signpost is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "MISSING_COMMA",
+      "error_pattern": "moving on + noun phrase (the marker welded to the words that follow, with no comma)",
+      "corrected_pattern": "moving on, + clause (or moving on to + the next item)",
+      "explanation": "The signpost and its clause are separate units, so the missing comma makes the reader hear a verb phrase that swallows its object (moving on the next topic), which is not what the writer meant; the slip is punctuation convention rather than grammar.",
+      "severity": "LOW",
+      "detection_policy": "Match when moving on is followed directly by a determiner or a noun with no comma and no to, in a sentence where no literal progress meaning survives."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the form of the two words, what follows them and the punctuation between. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the two words are the literal verb phrase about progress, so the marker is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "FORM_SLIP: match when the base form move on stands in the fronted signpost position before a proposal clause, because the marker is the gerund moving on."
+    },
+    {
+      "ordinal": 1,
+      "rule": "MISSING_COMMA: match when moving on runs straight into a determiner or noun with no comma and no to, because the signpost takes its own pause before the next item is named."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the gerund stands at the front of the sentence with its comma (moving on, let's look at the timeline) or in the extended form with to (moving on to the next item), including the full-clause variant let's move on: those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_LITERAL_VERB_PHRASE: do not match when the two words are the verb phrase of their own clause and carry their own grammatical role (the discussion kept moving on; we kept moving on the project), because the marker is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Moving on, let's look at the timeline.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Moving on to the next item, let's look at the timeline.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Let's move on to the timeline.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The discussion kept moving on without reaching a decision.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Move on, let's look at the timeline for the launch.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Moving on the next topic is the budget for October.",
+      "expected": "MATCH"
+    }
+  ]
+}

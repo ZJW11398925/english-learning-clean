@@ -1,0 +1,193 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-c authoring declaration (2026-09-27): this target is placed in the V1 placement bank's clarification-request set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "let me make sure",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "let-me-make-sure.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "let-me-make-sure.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A clarification request: the frame a listener uses to restate what they understood and have the other person confirm or correct it, addressed to the interlocutor before the talk goes on."
+    },
+    {
+      "sense_id": "let-me-make-sure.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The frame opens the turn and the restatement follows it: Let me make sure I've got this right — the deadline is Friday. It is built with let + the object me + the base form (let me make sure, never let me to make sure and never let me making sure), and what follows is the restated understanding as a full clause. The variant let me make sure I understand does the same work; the frame can also close a check in email (let me make sure I have this right before I send the reply)."
+    },
+    {
+      "sense_id": "let-me-make-sure.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The form after let is the drill: causative let takes the bare infinitive, so the frame is let me make sure, and learners build let me to make sure or let me making sure because their own language marks purpose or aspect inside the complement. The frame also names its own check as being about understanding — a literal use about physical things (let me make sure the door is locked) is ordinary English but a different move, which is the boundary the fixtures hold."
+    },
+    {
+      "sense_id": "let-me-make-sure.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "我确认一下（复述自己理解的内容请对方确认，确认的对象是对方的说明而不是某件东西）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "let-me-make-sure.base",
+      "written": "let me make sure",
+      "normalized": "let me make sure",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-c authoring judgement (V1 carries no calibration data): the frame is common in careful conversation and email, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because the plainer what do you mean covers most repair work and this frame adds the confirm-my-restatement move, a narrower slice. Productive difficulty is MEDIUM because the causative let + bare-infinitive form is what production has to get right. Transfer value is MEDIUM: the let me + verb frame transfers across the self-directive family. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "The frame belongs to the general fluency pack (the phrases that repair a conversation), so it carries high weight in that pack's coverage accounting; the shortfall records that it is the narrower member of the repair family."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Restating an instruction before acting on it (let me make sure I've got this right — the deadline is Friday) is ordinary workplace language, so the unit has a real workplace use; the reduced weight records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the frame with let + me + the bare infinitive and the restated clause after it, never present the to-infinitive or gerund complement as a model of the frame, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "INFINITIVE_MARKER_SLIP",
+      "error_pattern": "let me to make sure (the to-infinitive built where the causative let takes the bare form)",
+      "corrected_pattern": "let me make sure",
+      "explanation": "Causative let takes the bare infinitive, and learners insert to because their own language marks the complement verb with an infinitive marker; let me to make sure is not a stored English pattern.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the frame carries let me to + a verb form, in a sentence where the check is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "GERUND_SLIP",
+      "error_pattern": "let me making sure (the -ing form built where the bare infinitive belongs)",
+      "corrected_pattern": "let me make sure",
+      "explanation": "The causative complement is the bare form, and learners build the -ing because their own language marks the ongoing check with a progressive shape; let me making sure is not a stored English pattern.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the frame carries let me + an -ing form with no preposition between them."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the complement slot between let me and sure. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the check names a physical thing, so the clarification move is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "INFINITIVE_MARKER_SLIP: match when the frame carries let me to make sure, because causative let takes the bare infinitive."
+    },
+    {
+      "ordinal": 1,
+      "rule": "GERUND_SLIP: match when the frame carries let me making sure with no preposition, because the complement is the bare form."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame stands whole before its restatement (let me make sure I've got this right — the deadline is Friday; let me make sure I understand: we start in May): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_PHYSICAL_CHECK: do not match when sure is followed by a physical object clause (let me make sure the door is locked; let me make sure of the address), because there the words are a literal check and the clarification move is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Let me make sure I've got this right — the deadline is Friday.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Let me make sure I understand: we start in May, not April.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Let me just make sure I have this right before I send the reply.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Let me make sure the door is locked before we leave.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Let me to make sure I've got this right — the deadline is Friday.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Let me making sure I understand the plan for the launch.",
+      "expected": "MATCH"
+    }
+  ]
+}

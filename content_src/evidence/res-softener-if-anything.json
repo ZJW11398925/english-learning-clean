@@ -152,7 +152,7 @@
     },
     {
       "ordinal": 2,
-      "rule": "ACCEPTED_REALIZATIONS: do not match when the marker runs whole after a statement, with its comma and either direction of correction (the weather didn't improve; if anything, it got worse; it isn't cheap — if anything, it costs more than the other; if anything, it's a little early), because those are the accepted realizations."
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the marker runs whole after a statement, with its comma and either direction of correction (the weather didn't improve; if anything, it got worse; it isn't cheap — if anything, it costs more than the other; we aren't late; if anything, we're a little early), because those are the accepted realizations."
     },
     {
       "ordinal": 3,
