@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-hedge-i-guess",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Give your opinion without claiming to be certain.",
+      "Use I guess before the clause, or after it with a comma: ..., I guess.",
+      "Start with the words: I ___ we should leave soon."
+    ],
+    "reveal_form": "I guess we should leave soon.",
+    "canonical_forms": [
+      "I guess we should leave soon."
+    ],
+    "alternative_realizations": [
+      "It's going to rain, I guess."
+    ],
+    "required_slots": [
+      [
+        "guess"
+      ],
+      [
+        "leave",
+        "rain"
+      ]
+    ]
+  }
+}

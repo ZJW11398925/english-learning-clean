@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-discourse-that-reminds-me",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "DISCOURSE_MARKER",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Announce that something has just given you a new thing to talk about.",
+      "Start the marker with that and keep reminds me together; the thing recalled follows of.",
+      "Start with the words: That ___ me — did you ever call the bank?"
+    ],
+    "reveal_form": "That reminds me — did you ever call the bank?",
+    "canonical_forms": [
+      "That reminds me — did you ever call the bank?"
+    ],
+    "alternative_realizations": [
+      "That reminds me of something I meant to ask you."
+    ],
+    "required_slots": [
+      [
+        "reminds"
+      ],
+      [
+        "bank",
+        "ask"
+      ]
+    ]
+  }
+}

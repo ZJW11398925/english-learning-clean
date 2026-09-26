@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's phrasal-verb set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "bring up",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "bring-up.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "bring-up.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To start talking about a subject, or to mention it so that other people can discuss it."
+    },
+    {
+      "sense_id": "bring-up.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The unit is bring + up, and it is separable: the subject may follow the particle (bring up the money question) or stand between the verb and the particle (bring it up). A pronoun object must stand between them — bring it up, never bring up it. What is raised is a noun phrase or a clause: bring up an interesting point, bring up the fact that nobody was told. The tense and person move on bring (brings, brought, bringing) while up stays put. The unit suits meetings and discussions, where a subject is put on the table for others."
+    },
+    {
+      "sense_id": "bring-up.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The order rule is the one this corpus teaches across separable phrasal verbs: noun either side, pronoun in the middle. The second repair belongs to the preposition: the subject is the direct object of bring up, so nothing stands between up and the subject — bringing up about the budget is the slip to expect, because the learner's mental model of mentioning takes about (talk about, speak about). The third is a sense boundary to name once: bring up a child means to raise a child, which is a different unit that happens to use the same words."
+    },
+    {
+      "sense_id": "bring-up.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Bring up is about putting a subject into the conversation, usually on purpose. Mention is thinner: it says the subject was said, not that it was offered for discussion. Raise takes an issue or a point as its object in the same sense (raise the question of pay) and is more formal. Come up is the other direction: a subject comes up when nobody planned to talk about it. Bring up a child is a separate unit again, meaning to care for a child until adulthood."
+    },
+    {
+      "sense_id": "bring-up.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "提出（议题）；提起（把某个话题放到对话里；可分离，代词放中间 bring it up；注意 bring up a child 是另一义）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "bring-up.base",
+      "written": "bring up",
+      "normalized": "bring up",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "bring-up.third-person-singular",
+      "written": "brings up",
+      "normalized": "bring up",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "bring-up.past",
+      "written": "brought up",
+      "normalized": "bring up",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "bring-up.present-participle",
+      "written": "bringing up",
+      "normalized": "bring up",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): raising a subject is one of the moves an adult makes most often in meetings and discussions, so core utility, receptive value and productive value are HIGH and receptive difficulty is LOW; productive difficulty is MEDIUM because the separable order and the no-preposition complement both have to be produced correctly while the speaker is thinking about the subject. Explanation cost is MEDIUM for the same two repairs. Transfer value is HIGH: the middle-position pronoun rule it teaches carries to give up, put off and work out. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "A high-frequency phrasal verb of discussion, so it carries full weight in the general fluency pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Bringing a subject up in a meeting is a standing workplace move (I'd like to bring up one more point), so the unit carries full weight in the workplace pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the subject as the direct object with no preposition after up, and show the object's position as correct for its kind; keep the child-raising sense, if it appears at all, in a CONTRAST role; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_AFTER_PARTICLE",
+      "error_pattern": "bring | brings | brought | bringing + up + about + noun phrase",
+      "corrected_pattern": "bring up + the subject (no preposition)",
+      "explanation": "The subject raised is the direct object of bring up, so no preposition stands between the particle and the subject. The about arrives from the learner's model of mentioning and speaking (talk about it, speak about it), and the correction is to hold bring up as a verb plus object, with the topic slot already filled by that object.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of bring is followed by up and then by about before a noun phrase, in a sentence where raising a subject is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PRONOUN_AFTER_PARTICLE",
+      "error_pattern": "bring | brings | brought | bringing + up + object pronoun (it, them, him, her, me, us)",
+      "corrected_pattern": "bring | brings | brought + object pronoun + up (bring it up)",
+      "explanation": "A pronoun object must stand between the verb and the particle of a separable phrasal verb; the learner's word order puts it after the whole unit. The correction is a position rule rather than a meaning repair, and it is shared with give up, put off and work out.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of bring is followed by up and then by an object pronoun, in a sentence where raising a subject is meant."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb form, the particle, the object and any preposition between them. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words carry the child-raising sense, so this unit is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PREPOSITION_AFTER_PARTICLE: match when a form of bring is followed by up and then by about before a noun phrase, because the subject raised is the direct object and takes no preposition."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PRONOUN_AFTER_PARTICLE: match when a form of bring is followed by up and then by an object pronoun, because a pronoun object must stand between the verb and the particle."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the subject stands as the direct object in the correct position for its kind (brought up an interesting point, bring it up at the meeting, she is bringing up the budget again), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "CHILD_RAISING_READING: do not match when bring up takes a child or an animal as its object, meaning to care for someone until adulthood (she was brought up by her grandparents), because raising a subject is not meant there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "She brought up an interesting point at the meeting.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "I'll bring it up with her tomorrow.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "He was bringing up the budget again.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "She was brought up by her grandparents.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

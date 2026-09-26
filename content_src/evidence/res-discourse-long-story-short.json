@@ -1,0 +1,196 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's discourse-marker set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "long story short",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "long-story-short.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "long-story-short.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used to say that the speaker will skip the details and give only the result."
+    },
+    {
+      "sense_id": "long-story-short.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The marker stands at the front of an utterance and is set off by a comma: Long story short, we missed the train. Its fuller form opens with to make (To make a long story short, ...) and its four-word form is the version conversation uses. The words inside are fixed in order and take no article and no verb of their own in the short form; the clause that follows is a complete statement, not a clause fragment. It often closes a report or opens an apology for skipping detail."
+    },
+    {
+      "sense_id": "long-story-short.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The unit is fixed, so the whole job is form: the order (long story short), the missing words that must not be filled in (the short form has no to make and no a), and the comma that separates the marker from the statement it introduces. Learners who meet only the full form often rebuild it as to make long story short or in short story, so both forms are worth showing side by side and the boundary — the words without their marker function — is worth one example. The marker says nothing about how long the story was; it says the speaker is skipping it."
+    },
+    {
+      "sense_id": "long-story-short.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Long story short announces a summary and keeps the sequence (there was a story, here is its end). In short and in a nutshell also announce compression but say nothing about a story, and belong to more formal registers. To cut a long story short is the same image with cut, and it is the British variant of the fuller form. Anyway moves on from a topic rather than summarizing it, and the short version of anything, if it needs no marker, needs no move at all."
+    },
+    {
+      "sense_id": "long-story-short.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "长话短说；总之（跳过细节只说结果；短形式不带 to make，后接完整句子并用逗号隔开）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "long-story-short.base",
+      "written": "Long story short",
+      "normalized": "long story short",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "long-story-short.full",
+      "written": "To make a long story short",
+      "normalized": "long story short",
+      "form_type": "INFINITIVE",
+      "morph_features": "verb_form=infinitive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): the marker is very frequent in conversational storytelling and easy to receive, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because a learner can tell the same story without it, and other compressing markers cover the same ground. Productive difficulty is MEDIUM because the short form has missing words that are easy to fill in wrongly, and explanation cost is MEDIUM for the same reason. Transfer value is LOW: the marker is a fixed unit with no pattern to move elsewhere. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "A high-frequency marker of conversational storytelling, so it carries full weight in the general fluency pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Colleagues do summarize an incident this way in meetings and updates (long story short, we lost the day), so the unit carries high weight in the workplace pack; the shortfall records that it belongs mainly to informal reporting."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the marker with its comma and with a complete clause after it, and show the fuller to make form, when it appears at all, as a SUPPORTING realization of the same unit; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "REBUILT_FIXED_FORM",
+      "error_pattern": "to make long story short | to make a long short story | for long story short",
+      "corrected_pattern": "to make a long story short, or long story short",
+      "explanation": "The full form carries an article and a fixed noun pair, and the short form carries neither; learners who have heard only one of them rebuild the other from memory and drop or move a piece. The correction is to store the unit in both of its shapes, because neither is derivable from the other by rule.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the marker's words appear in a rebuilt order or with a piece missing (to make long story short, a long short story, for long story short), in a sentence where a summary is being announced."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "MARKER_WITHOUT_A_CLAUSE",
+      "error_pattern": "Long story short + a noun phrase or a fragment",
+      "corrected_pattern": "Long story short, + a complete clause",
+      "explanation": "The marker introduces a statement, so what follows has to be able to stand alone; learners transfer the noun-phrase habit from the neighbouring corpus of short phrases and attach a fragment. The correction is a frame check rather than a form change: after the comma there should be a subject and a verb.",
+      "severity": "LOW",
+      "detection_policy": "Match when long story short is followed by a fragment with no finite verb, in a sentence where a summary is being announced."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the marker's words, their order and what follows the comma. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words describe a story and its length, so the marker is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "REBUILT_FIXED_FORM: match when the marker's words are rebuilt out of order or with a piece missing (to make long story short, a long short story, for long story short), because both shapes of the unit are fixed and neither is derivable."
+    },
+    {
+      "ordinal": 1,
+      "rule": "MARKER_WITHOUT_A_CLAUSE: match when long story short, or its full form, is followed by a fragment with no finite verb, because the marker introduces a complete statement."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the marker runs in either accepted shape with its comma and a complete clause (long story short, we missed the train; to make a long story short, they sold the flat; long story short, no one came), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "STORY_AND_LENGTH_IN_OTHER_READINGS: do not match when the words describe a story and its length rather than announcing a summary (it was a long story, short and funny), because the marker is not being used there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Long story short, we missed the train.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Long story short, nobody came.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "To make a long story short, they sold the flat.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "It was a long story, short and funny.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

@@ -213,29 +213,29 @@ def test_the_real_corpus_answers_go_on_all_four_rows_and_the_rollout_stays_held(
     report = corpus_rollout_gate(p8world.curriculum)
     assert isinstance(report, Ok), report
     gate = report.value
-    # Layer one: the content gate's four rows all read GO on forty-six usable
+    # Layer one: the content gate's four rows all read GO on sixty-four usable
     # targets — 旧真值 was ("PROBE", 0) … ("automatic CURRENT_USER_ERROR", 0).
     assert [(row.row_word, row.usable_targets) for row in gate.rows] == [
-        ("PROBE", 46),
-        ("user-initiated teaching", 46),
-        ("automatic general/review", 46),
-        ("automatic CURRENT_USER_ERROR", 46),
+        ("PROBE", 64),
+        ("user-initiated teaching", 64),
+        ("automatic general/review", 64),
+        ("automatic CURRENT_USER_ERROR", 64),
     ]
     assert all(row.verdict is RolloutVerdict.GO for row in gate.rows)
     assert gate.verdict is RolloutVerdict.GO
     assert gate.automatic_verdict is RolloutVerdict.GO
-    assert gate.targets_considered == 51
+    assert gate.targets_considered == 69
     assert gate.targets_without_level == 5
     assert gate.unknown_levels == ()
     assert gate.summary() == (
-        "PROBE: required R2_PLANNER_READY, usable targets 46 → GO",
-        "user-initiated teaching: required R3_TEACHING_READY, usable targets 46"
+        "PROBE: required R2_PLANNER_READY, usable targets 64 → GO",
+        "user-initiated teaching: required R3_TEACHING_READY, usable targets 64"
         " → GO",
-        "automatic general/review: required R3_TEACHING_READY, usable targets 46"
+        "automatic general/review: required R3_TEACHING_READY, usable targets 64"
         " → GO",
         "automatic CURRENT_USER_ERROR: required R4_DETECTION_READY, usable"
-        " targets 46 → GO",
-        "targets: 51 considered, 5 without a level",
+        " targets 64 → GO",
+        "targets: 69 considered, 5 without a level",
         "verdict: GO (automatic rows: GO)",
     )
     # No row blocks, so the report's blocked tail is empty (旧真值: four
@@ -259,9 +259,9 @@ def test_the_real_corpus_answers_go_on_all_four_rows_and_the_rollout_stays_held(
 
 def _calibration100_floors_are_readable() -> None:
     """docs/IMPLEMENTATION_PLAN.md §13's Calibration100 floors (100/30/2),
-    read against the built artifact's own counts at C3-a's truth: the volume
-    floor is unmet (46 resources < 100), while CORE_A (32 >= 30) and CORE_C
-    (14 >= 2) are met under the **声明读法 + Revisit（用户 2026-09-26 裁决）**
+    read against the built artifact's own counts at C3-b's truth: the volume
+    floor is unmet (64 resources < 100), while CORE_A (42 >= 30) and CORE_C
+    (22 >= 2) are met under the **声明读法 + Revisit（用户 2026-09-26 裁决）**
     — R3_TEACHING_READY or R4_DETECTION_READY crossed with
     ``content_pedagogical_profile.core_utility`` HIGH / {MEDIUM, LOW}. The
     numbers live in the frozen document and are read from it, and the three

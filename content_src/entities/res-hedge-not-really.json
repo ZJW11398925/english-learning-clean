@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-hedge-not-really",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "DEVELOP",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Answer a question with a gentle no.",
+      "Keep not and really together at the front of the answer; the soft answer does not add no before not.",
+      "Start with the words: ___ really — I don't watch much TV."
+    ],
+    "reveal_form": "Not really — I don't watch much TV.",
+    "canonical_forms": [
+      "Not really — I don't watch much TV."
+    ],
+    "alternative_realizations": [
+      "No, not really."
+    ],
+    "required_slots": [
+      [
+        "really"
+      ],
+      [
+        "tv"
+      ]
+    ]
+  }
+}

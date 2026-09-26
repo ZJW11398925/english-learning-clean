@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-phrasal-work-out",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PHRASAL_VERB",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that someone found the answer to a problem after thinking about it.",
+      "Use work plus out, and put a pronoun object between them: work it out.",
+      "Start with the words: We finally worked ___ why the machine stopped."
+    ],
+    "reveal_form": "We finally worked out why the machine stopped.",
+    "canonical_forms": [
+      "We finally worked out why the machine stopped."
+    ],
+    "alternative_realizations": [
+      "I need to work out how to open this file."
+    ],
+    "required_slots": [
+      [
+        "out"
+      ],
+      [
+        "machine",
+        "file"
+      ]
+    ]
+  }
+}

@@ -60,7 +60,7 @@ def test_facts_cover_exactly_the_supply_eligible_entities(
     eligible = silent_supply._supply_result().value.supply_entity_ids()
     assert isinstance(eligible, Ok), eligible
     assert _supply_ids(silent_supply) == {str(i) for i in eligible.value}
-    assert len(eligible.value) == 51
+    assert len(eligible.value) == 69
 
 
 def test_facts_carry_the_authored_payload_verbatim(

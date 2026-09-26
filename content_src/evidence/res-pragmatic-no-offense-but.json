@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's pragmatic-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "no offense",
+    "pos": "NOUN"
+  },
+  "senses": [
+    {
+      "sense_id": "no-offense-but.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "no-offense-but.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used before a criticism to tell the listener that the remark is not meant as a personal attack."
+    },
+    {
+      "sense_id": "no-offense-but.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The formula is No offense, followed by a comma and but, then the criticism itself: No offense, but your design needs more work. The noun takes no article (no offense, never no an offense, and not no offends), and the but is part of the move, so the two halves are joined by a comma rather than by a full stop. What follows but is a complete clause. The formula can open a turn or stand after the listener's own contribution, and it is used for criticism of a thing or an idea rather than of a person's character."
+    },
+    {
+      "sense_id": "no-offense-but.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The unit is a two-part move, so the drill is the whole shape: the warning first, the criticism second, with the comma and but holding them together. Two form slips are worth naming. The first is dropping the but (No offense, your design needs work), which turns the warning into a bare announcement and loses the half that carries the criticism. The second is treating offense as a count noun or as a verb (no offends, no offensed) because the word is usually met inside this fixed phrase. The tone is a further point: the formula softens the delivery, not the content, and it fails when the criticism itself is personal."
+    },
+    {
+      "sense_id": "no-offense-but.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "No offense, but warns the listener before a criticism. Don't take this the wrong way does the same work at greater length and sounds more anxious. I don't mean to be rude, but is the fuller version and belongs to more formal talk. That's a good point, but concedes something first and then objects — the two moves differ in what comes before the but. With all due respect is the formal and often ironic relative. Where no offense stands alone as a response (No offense taken), nothing is being criticised and the warning reading is absent."
+    },
+    {
+      "sense_id": "no-offense-but.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "无意冒犯；不是针对你（在批评前先打招呼；No offense 后接逗号和 but，再讲批评的内容）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "no-offense-but.base",
+      "written": "No offense, but",
+      "normalized": "no offense, but",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): the formula is instantly recognisable and heard constantly, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because producing it well requires judging whether the criticism can be softened at all, and many speakers avoid it in writing. Productive difficulty is MEDIUM because the two-part shape and its comma plus but have to be produced together, and explanation cost is MEDIUM for the same reason plus the tone boundary. Transfer value is MEDIUM: the warning-then-criticism shape recurs in the corpus's concession-then-objection formula, which shares the but. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "A high-frequency pragmatic formula of everyday argument, so it carries full weight in the general fluency pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Giving a criticism at work is a standing need and this is the formula that opens it (no offense, but the draft needs work), so the unit carries full weight in the workplace pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "INTERACTION",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show both halves of the move with the comma and but between them, and keep the criticism attached to a thing or an idea rather than to a person's character; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "MISSING_CONJUNCTION",
+      "error_pattern": "no offense, + the criticism, with no but between them (also no offense. Your design ...)",
+      "corrected_pattern": "no offense, but + the criticism",
+      "explanation": "The move has two halves and the but is what joins the warning to the criticism; without it the warning hangs and the criticism reads as a separate remark, which loses the softening the speaker intended. Learners drop it because the first half feels complete; the correction is to produce the pair as one utterance.",
+      "severity": "HIGH",
+      "detection_policy": "Match when no offense opens an utterance and the criticism that follows is joined to it by a comma or a full stop alone, with no but between the two halves."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "NOUN_FORM_OF_OFFENSE",
+      "error_pattern": "no offense taken is fine, but no offends | no offensed | no offense means (verb or plural)",
+      "corrected_pattern": "no offense (the uncountable noun of the fixed phrase)",
+      "explanation": "Offense in this phrase is an uncountable noun, so it takes no article and no plural, and the phrase has no verb of its own; learners re-form it by analogy with verb phrases they know. The correction is the fixed shape, kept whole because the phrase is learnt as a block.",
+      "severity": "LOW",
+      "detection_policy": "Match when a verb form or a plural appears in place of the noun offense inside the phrase, in a sentence where the warning is meant."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the formula's words, their joiners and their order. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words report that nobody was offended, so the warning is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "MISSING_CONJUNCTION: match when no offense opens an utterance and the criticism that follows is joined to it by a comma or a full stop alone, because but is the conjunction of the move."
+    },
+    {
+      "ordinal": 1,
+      "rule": "NOUN_FORM_OF_OFFENSE: match when a verb form or a plural stands in place of the noun offense inside the phrase (no offends, no offensed), because the word is the uncountable noun of a fixed block."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the move runs whole with its comma and but and a complete critical clause (No offense, but your design needs more work; No offense, but I think we should start again; No offense, but that figure looks wrong), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "NO_OFFENSE_TAKEN_READING: do not match when the same words report that nobody was offended or answer an apology (No offense taken; none taken), because the warning use is absent there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "No offense, but your design needs more work.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "No offense, but I think we should start again.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "No offense, but that figure looks wrong.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "No offense taken, honestly.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

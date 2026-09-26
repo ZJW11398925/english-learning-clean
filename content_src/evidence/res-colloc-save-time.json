@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's collocation set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "save time",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "save-time.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "save-time.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To keep time free, or to spend less time than another way would, by choosing a quicker method."
+    },
+    {
+      "sense_id": "save-time.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "Save takes time as its object: save time, save an hour, save us a lot of time (the person who gains the time is the indirect object). Time is uncountable here, so no article goes before it. How the time is kept free is named with by + -ing (save time by booking online) or with the subject being the quicker thing (taking the train saves time). The tense and person move on save alone; the noun never changes."
+    },
+    {
+      "sense_id": "save-time.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The unit is teachable in one move: save + time, with the amount in front when there is one (save an hour, save two days) and no article when there is not. The second repair is the purpose clause — what the saved time is used for is not a to-infinitive attached to save ('save time to do something' is the structure learners import); English names the method with by + -ing, or makes the quicker method the subject. Drill both together: the noun stays fixed, save carries the tense, and by + -ing carries the method."
+    },
+    {
+      "sense_id": "save-time.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Save time means the method costs less time. Waste time is its opposite (the method costs time for nothing). Spend time names using time without judging the amount. Buy time is different again: it means delaying something in order to get more room to act, so a person buys time before a decision but saves time by taking the train."
+    },
+    {
+      "sense_id": "save-time.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "节省时间；省时间（用更快的方式让时间空出来或花得更少；time 不可数，不说 win time）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "save-time.base",
+      "written": "save time",
+      "normalized": "save time",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "save-time.third-person-singular",
+      "written": "saves time",
+      "normalized": "save time",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "save-time.past",
+      "written": "saved time",
+      "normalized": "save time",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "save-time.present-participle",
+      "written": "saving time",
+      "normalized": "save time",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): choosing the quicker way is a topic of everyday planning talk, so core utility, receptive value and productive value are HIGH and receptive difficulty is LOW. Productive difficulty is MEDIUM because the verb comes from a set that does not translate one-to-one (win / gain / earn all pull at it) and because the method clause has to be produced as by + -ing; explanation cost is MEDIUM for the same two reasons. Transfer value is MEDIUM: save + uncountable noun recurs (save money, save space, save energy), which makes the pattern worth moving across. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "A high-frequency verb-noun collocation of everyday planning talk, so it carries full weight in the general fluency pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "Efficiency talk is standing workplace small talk (this saves us time, we save an hour that way), so the unit carries nearly full weight in the workplace pack; the shortfall records that the pack's own review has not yet placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show time as the bare uncountable noun it is — no article — and show the method, when the sentence needs one, as by + -ing or as the subject; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "CALQUED_VERB_CHOICE",
+      "error_pattern": "win | wins | won | winning + time",
+      "corrected_pattern": "save | saves | saved | saving + time",
+      "explanation": "Chinese 赢得时间 invites win as the translation of 赢得, but English win does not take time in this sense: what is won is a race, a prize or an argument, while time is saved. The correction is a verb choice inside a fixed collocation, and it is worth teaching with the opposite pair (win a prize / save time) so the two objects stay apart.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of win (win, wins, won, winning) stands directly before time as the verb of the phrase, in a sentence where keeping time free is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PURPOSE_CLAUSE_AFTER_SAVE",
+      "error_pattern": "save | saves | saved + time + to + verb in its base form",
+      "corrected_pattern": "save time by + verb in -ing form (or make the quicker method the subject)",
+      "explanation": "The purpose the learner wants to express belongs to the whole choice, not to save: what save takes is the thing kept (time), and the method is an adverbial. The to-infinitive is the shape that carries purpose in many other frames, so it is imported here; the correction teaches by + -ing as the way English names the method.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of save is followed by time and then by to and a base verb, in a sentence where a method for keeping time free is being named."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb form, the noun and the words around them. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words carry another reading of time, so the collocation is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "CALQUED_VERB_CHOICE: match when a form of win stands directly before time as the verb of the phrase, because the collocation is save time and win takes prizes, races and arguments rather than time."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PURPOSE_CLAUSE_AFTER_SAVE: match when a form of save is followed by time and then by to with a base verb, because the method belongs in a by + -ing phrase rather than in a to-infinitive attached to save."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when a form of save takes time with its amounts and its by + -ing method (we saved an hour by taking the train, she saves time by planning ahead, it saves us time), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "TIME_IN_OTHER_READINGS: do not match when time is not the uncountable noun of the collocation — a countable time meaning an occasion (we had a good time), or time as measured clock time in a phrase about keeping it (the time is 6:30) — because save time is not being used there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Taking the train saves us a lot of time.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "We saved time by booking online.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "She saves time by planning ahead.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "We had a good time at the party.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

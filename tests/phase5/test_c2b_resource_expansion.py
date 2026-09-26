@@ -9,9 +9,10 @@ credit face widens from 9 to 15 because six of the nineteen rows are REALIZES;
 the other thirteen are SUPPORTS rows, which satisfy §8.1 R2's
 `curriculum_link` fact and mint nothing.
 
-C3-a (the next cut) took the corpus further — **46 × R4 + 5 × None**,
-`resource_count` 46, credit face 18 — so the corpus-wide readings in this file
-are re-pinned to that truth: the volume floor is still unmet (46 < 100), while
+C3-a and C3-b (the next cuts) took the corpus further — **64 × R4 + 5 ×
+None**, `resource_count` 64, credit face 21 — so the corpus-wide readings in
+this file
+are re-pinned to that truth: the volume floor is still unmet (64 < 100), while
 CORE_A and CORE_C are met under the **declared reading** implemented and
 pinned in `tests/phase5/test_c3a_readface_and_expansion.py` (R3+ level ×
 `core_utility` band; 用户 2026-09-26 裁决, Revisit when the canonical
@@ -113,10 +114,10 @@ FIXTURE_KINDS = ("NEGATIVE", "FALSE_POSITIVE_BOUNDARY")
 EXPECTED_READINGS = ("NO_MATCH", "NO_MATCH_BOUNDARY")
 
 #: 旧真值 → 新真值: the credit face before and after this cut (C3-a moved it
-#: 15 → 18; the constants here are re-pinned to C3-a's truth so the same
-#: three-way count keeps holding).
+#: 15 → 18 and C3-b 18 → 21; the constants here are re-pinned to C3-b's truth
+#: so the same three-way count keeps holding).
 CREDIT_FACE_BEFORE = 15
-CREDIT_FACE_AFTER = 18
+CREDIT_FACE_AFTER = 21
 
 _PLAN = Path(__file__).resolve().parents[2] / "docs" / "IMPLEMENTATION_PLAN.md"
 
@@ -198,11 +199,11 @@ def test_the_corpus_table_is_forty_six_r4_and_five_none(
     finally:
         store.close()
     table = {a.target_id: a.level for a in assessments.value}
-    assert len(table) == 51
+    assert len(table) == 69
     r4 = sorted(t for t, level in table.items() if level == "R4_DETECTION_READY")
     none = sorted(t for t, level in table.items() if level is None)
     assert all(target in r4 for target in C2B_TARGETS)
-    assert len(r4) == 46
+    assert len(r4) == 64
     assert none == [
         "cap-disc-topic-shift",
         "cap-eval-hedged-opinion",
@@ -221,16 +222,16 @@ def test_the_corpus_table_is_forty_six_r4_and_five_none(
 # ---------------------------------------------------------------------------
 
 
-def test_the_first_rung_and_the_three_floors_read_at_c3a_truth(
+def test_the_first_rung_and_the_three_floors_read_at_c3b_truth(
     built_content_db: Path,
 ) -> None:
     """IP §13's "28 → 100 resource calibration" and the three Calibration100
-    floors, read as separate facts at C3-a's truth.
+    floors, read as separate facts at C3-b's truth.
 
-    The corpus's RESOURCE count is **46**, so IP §13's starting number (28) is
+    The corpus's RESOURCE count is **64**, so IP §13's starting number (28) is
     long passed — that is the first rung, not a gate. Of the three floors,
-    ``resource_count`` = 46 < 100 is still unmet while CORE_A (32 >= 30) and
-    CORE_C (14 >= 2) are met under the **声明读法 + Revisit（用户 2026-09-26
+    ``resource_count`` = 64 < 100 is still unmet while CORE_A (42 >= 30) and
+    CORE_C (22 >= 2) are met under the **声明读法 + Revisit（用户 2026-09-26
     裁决）**: R3_TEACHING_READY or R4_DETECTION_READY crossed with
     ``content_pedagogical_profile.core_utility`` HIGH / {MEDIUM, LOW}. Each
     floor is asserted on its own line; a cut that reached 100, or that folded
@@ -277,11 +278,11 @@ def test_the_first_rung_and_the_three_floors_read_at_c3a_truth(
     ]
     core_a = [t for t in banded if utilities.get(t) == "HIGH"]
     core_c = [t for t in banded if utilities.get(t) in ("MEDIUM", "LOW")]
-    assert len(resources) == 46
+    assert len(resources) == 64
     assert len(resources) >= 28  # IP §13's start: the first rung, passed
-    assert len(entity_ids) == 51
+    assert len(entity_ids) == 69
     print(
-        f"[c3a] first rung passed: resource_count = {len(resources)} (IP §13"
+        f"[c3b] first rung passed: resource_count = {len(resources)} (IP §13"
         f" start = 28); floors: resource_count"
         f" {len(resources)}/{gates['resource_count']} unmet,"
         f" CORE_A {len(core_a)}/{gates['CORE_A']} met,"
@@ -318,8 +319,9 @@ def test_the_credit_face_delta_equals_the_new_realizes_rows(
     built_content_db: Path,
 ) -> None:
     """The behaviour change, counted three ways so it cannot drift: the
-    links document carries 46 rows of which 18 are REALIZES (15 + k, k = 3 —
-    the C3-a increment); the credit face answers a node for exactly 18
+    links document carries 64 rows of which 21 are REALIZES (15 + 3 C3-a
+    increments + 3 C3-b increments); the credit face answers a node for
+    exactly 21
     entities; and the six C2-b ids that credit are the six named ones, each
     reading the node its own row names."""
 
@@ -327,13 +329,13 @@ def test_the_credit_face_delta_equals_the_new_realizes_rows(
         (CURRICULUM_DIR / "links.json").read_text(encoding="utf-8")
     )
     rows = document["links"]
-    assert len(rows) == 46
+    assert len(rows) == 64
     realizes = {
         str(row["resource_id"]): str(row["node_id"])
         for row in rows
         if row["relation"] == "REALIZES"
     }
-    assert len(realizes) == CREDIT_FACE_AFTER == CREDIT_FACE_BEFORE + 3
+    assert len(realizes) == CREDIT_FACE_AFTER == CREDIT_FACE_BEFORE + 6
     assert set(C2B_CREDIT_TARGETS) <= set(realizes)
 
     store = ContentStore(built_content_db)
@@ -390,7 +392,8 @@ def test_the_index_lists_the_nineteen_new_documents_in_both_lists(
     built_content_db: Path,
 ) -> None:
     """The index grew in both lists and in the same order rule: entity
-    documents 14 → 33, evidence documents 9 → 28, both plain id order, and the
+    documents 14 → 33 → 69 (C3-b), evidence documents 9 → 28 → 64, both plain
+    id order, and the
     nineteen new ids appear in each list exactly once (a document present on
     disk but unlisted is a BuildError, so the listing is also what makes the
     build succeed)."""
@@ -398,8 +401,8 @@ def test_the_index_lists_the_nineteen_new_documents_in_both_lists(
     index = json.loads((CONTENT_SRC_DIR / "index.json").read_text(encoding="utf-8"))
     entities = [str(entry) for entry in index["entities"]]
     evidence = [str(entry) for entry in index["evidence"]]
-    assert len(entities) == 51
-    assert len(evidence) == 46
+    assert len(entities) == 69
+    assert len(evidence) == 64
     assert entities == sorted(entities)
     assert evidence == sorted(evidence)
     for target_id in C2B_TARGETS:

@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's collocation set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "make an effort",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "make-an-effort.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "make-an-effort.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To try hard to do something, especially when doing it takes energy or is not what you would do naturally."
+    },
+    {
+      "sense_id": "make-an-effort.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "Effort is countable in this collocation, so it keeps an article or a determiner: make an effort, make a real effort, make every effort, make no effort at all. What is aimed at follows to + base verb (make an effort to arrive on time) or with + noun (make an effort with your handwriting). The tense and person move on make; the noun phrase stays. The collocation often appears with should, have to or please, because it is used both to ask for effort and to report it."
+    },
+    {
+      "sense_id": "make-an-effort.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The verb is the first repair: this noun takes make, not do, although learners' general verb for activities is do, and 做 covers both (which is why make an effort and do your homework can feel like the same construction). The second repair is the article: effort is countable here, so make an effort and make a big effort are the shapes, and make effort on its own is the omission to watch for. The third is the complement: the aim goes in a to-infinitive, not in a clause or a gerund, so the drill can hold the noun phrase still and move only the aim."
+    },
+    {
+      "sense_id": "make-an-effort.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Make an effort is about the trying itself and can be said before or after the result. Try is the plain verb and takes the aim directly (try to call me). Make an attempt is closer to a single try at something with a name (an attempt at the record). Do your best says that the person gave everything they had, which make an effort does not claim; and put in the effort is the informal phrase for the work behind a result."
+    },
+    {
+      "sense_id": "make-an-effort.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "努力；尽力（去做需要花力气或不太自然的事；动词用 make，effort 可数带冠词，后接 to do）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "make-an-effort.base",
+      "written": "make an effort",
+      "normalized": "make an effort",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "make-an-effort.third-person-singular",
+      "written": "makes an effort",
+      "normalized": "make an effort",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "make-an-effort.past",
+      "written": "made an effort",
+      "normalized": "make an effort",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "make-an-effort.present-participle",
+      "written": "making an effort",
+      "normalized": "make an effort",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): asking for and reporting effort is part of everyday work and study talk, so core utility, receptive value and productive value are HIGH and receptive difficulty is LOW; productive difficulty is MEDIUM because the make verb and the countable article both have to be right while the speaker is concentrating on the aim. Explanation cost is MEDIUM for the same pair of repairs. Transfer value is MEDIUM: the make + singular countable noun pattern recurs (make a decision, make a start) but the effort/attempt noun set is learned one item at a time. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "A high-frequency collocation for asking and reporting effort, so it carries full weight in the general fluency pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "Effort is a constant subject of workplace feedback (we made a real effort, please make an effort with the deadlines), so the unit carries nearly full weight in the workplace pack; the shortfall records that the pack's own review has not yet placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "TASK_FOCUS",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "TASK_FOCUS",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the countable noun with its article (an effort, a real effort) and the aim as a to-infinitive, so the model never carries a bare make effort or a gerund; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "DO_FOR_MAKE",
+      "error_pattern": "do | does | did | doing + (an) effort",
+      "corrected_pattern": "make | makes | made | making + (an) effort",
+      "explanation": "做 covers both do and make, so the general verb do becomes the default and the pair make an effort is lost. The correction is the pairing itself — the same make as in make a decision and make a start — and it is best taught inside the phrase rather than as a rule about English verbs.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of do (do, does, did, doing, done) stands directly before an effort or effort as the verb of the phrase, in a sentence where trying hard is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "ARTICLE_OMISSION",
+      "error_pattern": "make | makes | made | making + effort (singular, no determiner)",
+      "corrected_pattern": "make an effort (or a determiner: a real effort, every effort, no effort)",
+      "explanation": "Effort is countable in this collocation, so the singular needs a determiner; learners drop it because neighbouring expressions in their own language have no article and because effort feels like a mass noun. The correction is the countable shape, kept inside the unit so the article is never produced separately.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of make stands directly before the bare singular effort with no determiner between them, in a sentence where the collocation is meant."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb form, the determiner and the noun. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same noun carries another reading, so the collocation is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "DO_FOR_MAKE: match when a form of do stands directly before (an) effort as the verb of the phrase, because the collocation is make an effort."
+    },
+    {
+      "ordinal": 1,
+      "rule": "ARTICLE_OMISSION: match when a form of make stands directly before the bare singular effort with no a, an, every, no or other determiner between them, because the noun is countable in this collocation and needs a determiner."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when make is followed by effort with its determiners and its aim (made a real effort to finish on time, make every effort to reply, she makes no effort with her spelling), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "EFFORT_IN_OTHER_READINGS: do not match when effort appears without this verb — a bare noun phrase (a lot of effort went into it), in the fixed phrases take effort / be worth the effort, or as a plural count of attempts (his early efforts were ignored) — because make an effort is not being used there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "You should make an effort to speak English every day.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "She made a real effort to finish on time.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "He makes every effort to reply quickly.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "A lot of effort went into the design.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's softener set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "if anything",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "if-anything.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "if-anything.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used to correct or adjust what was just said, usually by putting the claim slightly differently and often more strongly."
+    },
+    {
+      "sense_id": "if-anything.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The marker stands at the front of the correcting clause, set off by a comma: The weather didn't improve; if anything, it got worse. It follows a statement whose force it adjusts — usually a negative or a modest claim — and the correction can go either way: the marker often sharpens the point (if anything, it got worse) but it can also soften it (if anything, it's a little early). No verb of its own is added and nothing is inserted inside the two words. In writing the clause before it often ends with a semicolon or a full stop; in speech it follows a short pause."
+    },
+    {
+      "sense_id": "if-anything.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The marker presupposes a statement in front of it, so the drill should always pair two clauses, and the pattern to notice is the negative or modest first half (not cheap, didn't improve, isn't lazy) with the corrected version after. The direction of the correction is not fixed, and teaching it as 'makes it stronger' would be wrong: what it does is reject the flat agreement the first half invites and replace it with a better-calibrated claim. The one form slip is splitting the pair or adding a verb (if anything is, if it anything), which is why the two words are drilled as a unit with its comma."
+    },
+    {
+      "sense_id": "if-anything.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "If anything corrects or recalibrates the clause before it. In fact corrects a fact and often contradicts an assumption the listener holds. Actually is the conversational alternative with the same corrective work but a wider range of uses. On the contrary rejects the previous claim outright, which is stronger than this marker's adjustment. At least names the good part of a bad situation, and if anything else is a different construction meaning any other thing, which is the boundary this unit must not be read across."
+    },
+    {
+      "sense_id": "if-anything.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "要说的话（其实）；反而（修正前一句的分量，常把话说得更准或更强；两词连用，后面用逗号引出修正后的说法）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "if-anything.base",
+      "written": "if anything",
+      "normalized": "if anything",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): the marker is easy to receive in argument and commentary, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because a speaker can correct a claim without it and the marker belongs to argumentative talk rather than to every exchange. Productive difficulty is MEDIUM because the direction of the correction is not fixed and the marker needs a statement in front of it; explanation cost is MEDIUM for the same reason. Transfer value is LOW: the marker is a fixed pair whose meaning does not move to other words. RESOURCE_PRACTICE follows the entity's own declared learning_intent DEVELOP. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "A frequent marker of spoken argument and commentary, so it carries high weight in the general fluency pack's coverage accounting; the shortfall records that it belongs to one register of talk rather than to general use."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Adjusting a colleague's claim is normal in workplace discussion (if anything, the risk is higher), so the unit has a real workplace use; the reduced weight records that the marker is more common in argument than in routine talk."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the statement the marker adjusts in front of it, and show both directions of the correction across the attempt (sharpening and softening), so the model never suggests the marker always strengthens; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "SPLIT_FIXED_PAIR",
+      "error_pattern": "if anything is | if it anything | if anything that + correction",
+      "corrected_pattern": "if anything, + the correcting clause",
+      "explanation": "The marker is a fixed pair with nothing inside it; learners split it or add a verb because they read if as the ordinary conditional and expect a clause to follow it. The correction is the stored pair with its comma, and the strongest cue is the pause in speech or the semicolon in writing in front of it.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a is, it or that stands between if and anything, or directly after anything before the correcting clause, in a sentence where the marker is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "MARKER_WITHOUT_A_STATEMENT",
+      "error_pattern": "if anything, + a claim standing alone as the opening of a turn",
+      "corrected_pattern": "a statement first, then if anything + the correction",
+      "explanation": "The marker adjusts what was just said, so it needs a statement in front of it; starting a turn with it leaves the adjustment hanging with nothing to correct. Learners begin with the marker because they have stored it as a sentence opener, and the correction is to move the adjusted claim in front of it.",
+      "severity": "LOW",
+      "detection_policy": "Match when the marker opens a turn as its first words with no preceding statement in the same or the previous clause."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the marker's two words, what stands between them and what stands in front of them. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words mean any other thing, so the marker is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "SPLIT_FIXED_PAIR: match when a verb form, it or that stands inside or directly after if anything before the correcting clause, because the marker is a fixed pair with nothing inserted."
+    },
+    {
+      "ordinal": 1,
+      "rule": "MARKER_WITHOUT_A_STATEMENT: match when the marker opens a turn with no statement in front of it to correct, because the marker adjusts a claim rather than introducing one."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the marker runs whole after a statement, with its comma and either direction of correction (the weather didn't improve; if anything, it got worse; it isn't cheap — if anything, it costs more than the other; if anything, it's a little early), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "ANY_OTHER_THING_READING: do not match when the same words mean any other thing or any amount (if anything happens, call me; if anything goes wrong, we stop), because the marker is not being used there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "The weather didn't improve; if anything, it got worse.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "He isn't lazy — if anything, he works too hard.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "It isn't cheap; if anything, it's a little expensive.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "If anything goes wrong, call me.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

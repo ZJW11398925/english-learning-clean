@@ -49,7 +49,7 @@ def test_store_connection_is_the_same_read_only_artifact(
     """The store holds a read-only connection (white-box probe)."""
 
     conn = store._conn  # noqa: SLF001 - the probe must use the real connection
-    assert conn.execute("SELECT COUNT(*) FROM content_entity").fetchone() == (51,)
+    assert conn.execute("SELECT COUNT(*) FROM content_entity").fetchone() == (69,)
     with pytest.raises(sqlite3.OperationalError, match="readonly"):
         conn.execute("INSERT INTO content_meta (key, value) VALUES ('probe', 'x')")
     assert built_content_db.stat().st_size > 0

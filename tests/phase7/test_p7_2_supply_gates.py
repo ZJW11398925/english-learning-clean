@@ -314,20 +314,20 @@ def test_an_unreadable_ladder_is_no_level_and_carries_the_failure(
     assert "DEPENDENCY_UNAVAILABLE" in outcome.reasons[0]
 
 
-def test_the_shipped_corpus_levels_are_five_none_and_forty_six_r4(
+def test_the_shipped_corpus_levels_are_five_none_and_sixty_four_r4(
     content_supply,
 ) -> None:
-    """The real ladder over the real corpus, at C3-a's truth (旧真值: every
+    """The real ladder over the real corpus, at C3-b's truth (旧真值: every
     target read no level, blocked at R0 by ``assessment_membership`` — the
     P5-R strict reading; C1: one target reached R4; C2-a: nine; C2-b:
-    twenty-eight; 新真值 C3-a: the forty-six RESOURCE targets whose sources
+    twenty-eight; 新真值 C3-b: the sixty-four RESOURCE targets whose sources
     state all nineteen facts read R4_DETECTION_READY with no blocking key,
     and the five evidence-less CAPABILITY entities still read exactly the R0
     block)."""
 
     ids = content_supply.supply_entity_ids()
     assert isinstance(ids, Ok)
-    assert len(ids.value) == 51
+    assert len(ids.value) == 69
     r4: list[str] = []
     for entity_id in ids.value:
         outcome = readiness_of_target(str(entity_id), content_supply)
@@ -346,44 +346,62 @@ def test_the_shipped_corpus_levels_are_five_none_and_forty_six_r4(
         "res-colloc-heavy-rain",
         "res-colloc-keep-in-mind",
         "res-colloc-make-a-decision",
+        "res-colloc-make-an-effort",
+        "res-colloc-make-progress",
         "res-colloc-make-sense",
         "res-colloc-meet-a-deadline",
         "res-colloc-pay-attention-to",
         "res-colloc-play-a-role",
+        "res-colloc-raise-awareness",
+        "res-colloc-save-time",
+        "res-colloc-take-a-look",
         "res-colloc-take-advantage-of",
         "res-colloc-take-part-in",
         "res-discourse-anyway",
         "res-discourse-by-the-way",
         "res-discourse-having-said-that",
         "res-discourse-in-fact",
+        "res-discourse-long-story-short",
+        "res-discourse-that-reminds-me",
         "res-discourse-to-be-honest",
         "res-frame-id-like-to",
         "res-frame-if-you-dont-mind",
+        "res-frame-just-wondering",
         "res-frame-lets-say",
+        "res-frame-the-thing-is",
         "res-frame-what-im-saying-is",
         "res-frame-would-you-mind",
+        "res-hedge-i-guess",
         "res-hedge-i-mean",
         "res-hedge-i-think",
         "res-hedge-im-not-sure",
         "res-hedge-it-depends",
+        "res-hedge-not-really",
         "res-hedge-sort-of",
+        "res-idiom-a-blessing-in-disguise",
         "res-idiom-break-the-ice",
         "res-idiom-hit-the-nail-on-the-head",
         "res-idiom-on-the-same-page",
         "res-idiom-piece-of-cake",
+        "res-idiom-the-ball-is-in-your-court",
         "res-idiom-under-the-weather",
+        "res-phrasal-bring-up",
         "res-phrasal-carry-on",
         "res-phrasal-come-up-with",
         "res-phrasal-figure-out",
         "res-phrasal-give-up",
         "res-phrasal-look-forward-to",
+        "res-phrasal-put-off",
         "res-phrasal-run-out-of",
         "res-phrasal-turn-out",
+        "res-phrasal-work-out",
         "res-pragmatic-could-i-ask",
         "res-pragmatic-could-you",
+        "res-pragmatic-no-offense-but",
         "res-pragmatic-sorry-to-interrupt",
         "res-pragmatic-thats-a-good-point-but",
         "res-softener-a-bit",
+        "res-softener-if-anything",
         "res-softener-kind-of",
         "res-softener-to-be-fair",
     ]

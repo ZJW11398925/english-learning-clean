@@ -290,7 +290,7 @@ def test_the_canonical_corpus_is_fully_eligible(built_content_db: Path) -> None:
         store.close()
     assert isinstance(eligible, Ok), eligible
     assert tuple(str(entity_id) for entity_id in eligible.value) == ids
-    assert len(ids) == 51
+    assert len(ids) == 69
 
 
 def test_a_read_failure_is_an_err_never_a_raise(

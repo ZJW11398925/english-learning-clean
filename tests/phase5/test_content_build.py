@@ -63,7 +63,7 @@ def test_rebuild_same_path_is_byte_identical(tmp_path: Path) -> None:
     second = build_content_db(output)
     digest_second = hashlib.sha256(output.read_bytes()).hexdigest()
     assert digest_first == digest_second
-    assert first.entity_count == second.entity_count == 51
+    assert first.entity_count == second.entity_count == 69
     assert list(tmp_path.iterdir()) == [output]  # no leftover .tmp sibling
 
 
@@ -84,15 +84,15 @@ def test_two_builds_have_the_same_id_set_and_bytes(tmp_path: Path) -> None:
 
 
 def test_build_report_counts(tmp_path: Path) -> None:
-    """The report counts what was written (C3-a truth): 51 entities (5
-    CAPABILITY + 46 RESOURCE), 5 capabilities, 46 links (18 REALIZES + 28
-    SUPPORTS), 46 evidence documents."""
+    """The report counts what was written (C3-b truth): 69 entities (5
+    CAPABILITY + 64 RESOURCE), 5 capabilities, 64 links (21 REALIZES + 43
+    SUPPORTS), 64 evidence documents."""
 
     report = build_content_db(tmp_path / "content.db")
-    assert report.entity_count == 51
+    assert report.entity_count == 69
     assert report.capability_count == 5
-    assert report.link_count == 46
-    assert report.evidence_count == 46
+    assert report.link_count == 64
+    assert report.evidence_count == 64
     assert report.prerequisite_count == 0
     assert report.content_version == "content-v1"
     assert report.curriculum_version == "curriculum-v1"
@@ -158,7 +158,8 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
         conn.close()
     assert entities == sorted(entities)
     assert capabilities == sorted(capabilities)
-    # C1 (one), C2-a (eight), C2-b (nineteen) and C3-a (eighteen): the
+    # C1 (one), C2-a (eight), C2-b (nineteen), C3-a (eighteen) and C3-b
+    # (eighteen): the
     # sources' own declarations that these targets need a §24.9 TypicalError,
     # carried durably and read back by the readiness face.
     typical_error_need_keys = [
@@ -170,44 +171,62 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
             "res-colloc-heavy-rain",
             "res-colloc-keep-in-mind",
             "res-colloc-make-a-decision",
+            "res-colloc-make-an-effort",
+            "res-colloc-make-progress",
             "res-colloc-make-sense",
             "res-colloc-meet-a-deadline",
             "res-colloc-pay-attention-to",
             "res-colloc-play-a-role",
+            "res-colloc-raise-awareness",
+            "res-colloc-save-time",
+            "res-colloc-take-a-look",
             "res-colloc-take-advantage-of",
             "res-colloc-take-part-in",
             "res-discourse-anyway",
             "res-discourse-by-the-way",
             "res-discourse-having-said-that",
             "res-discourse-in-fact",
+            "res-discourse-long-story-short",
+            "res-discourse-that-reminds-me",
             "res-discourse-to-be-honest",
             "res-frame-id-like-to",
             "res-frame-if-you-dont-mind",
+            "res-frame-just-wondering",
             "res-frame-lets-say",
+            "res-frame-the-thing-is",
             "res-frame-what-im-saying-is",
             "res-frame-would-you-mind",
+            "res-hedge-i-guess",
             "res-hedge-i-mean",
             "res-hedge-i-think",
             "res-hedge-im-not-sure",
             "res-hedge-it-depends",
+            "res-hedge-not-really",
             "res-hedge-sort-of",
+            "res-idiom-a-blessing-in-disguise",
             "res-idiom-break-the-ice",
             "res-idiom-hit-the-nail-on-the-head",
             "res-idiom-on-the-same-page",
             "res-idiom-piece-of-cake",
+            "res-idiom-the-ball-is-in-your-court",
             "res-idiom-under-the-weather",
+            "res-phrasal-bring-up",
             "res-phrasal-carry-on",
             "res-phrasal-come-up-with",
             "res-phrasal-figure-out",
             "res-phrasal-give-up",
             "res-phrasal-look-forward-to",
+            "res-phrasal-put-off",
             "res-phrasal-run-out-of",
             "res-phrasal-turn-out",
+            "res-phrasal-work-out",
             "res-pragmatic-could-i-ask",
             "res-pragmatic-could-you",
+            "res-pragmatic-no-offense-but",
             "res-pragmatic-sorry-to-interrupt",
             "res-pragmatic-thats-a-good-point-but",
             "res-softener-a-bit",
+            "res-softener-if-anything",
             "res-softener-kind-of",
             "res-softener-to-be-fair",
         )
@@ -493,9 +512,9 @@ def test_cli_builds_and_reports(
     exit_code = main(["--out", str(output)])
     assert exit_code == 0
     captured = capsys.readouterr().out
-    assert "entities=51" in captured
+    assert "entities=69" in captured
     assert "capabilities=5" in captured
-    assert "links=46" in captured
+    assert "links=64" in captured
     assert output.is_file()
 
 

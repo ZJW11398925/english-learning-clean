@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-colloc-save-time",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "COLLOCATION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that a choice keeps time free for something else.",
+      "Use save with the noun time; time is uncountable here, so no article goes before it.",
+      "Start with the words: Taking the train ___ us a lot of time."
+    ],
+    "reveal_form": "Taking the train saves us a lot of time.",
+    "canonical_forms": [
+      "Taking the train saves us a lot of time."
+    ],
+    "alternative_realizations": [
+      "We saved time by booking online."
+    ],
+    "required_slots": [
+      [
+        "time"
+      ],
+      [
+        "train",
+        "booking"
+      ]
+    ]
+  }
+}

@@ -24,7 +24,7 @@ on"):
   assembly reports ``CURRICULUM_READINESS`` missing (P7-0's own leg). Nothing
   here substitutes ``R3`` for "unknown" — the ladder still answers ``None``
   for the five capability targets whose sources state no evidence (C2's
-  answer for them; its forty-six R4 resource targets read through
+  answer for them; its sixty-four R4 resource targets read through
   unchanged);
 - a prerequisite that cannot be *judged* is not a prerequisite that is
   *satisfied*. BF-02 §11's ``UNKNOWN`` is the word for "not judged", the kernel
@@ -46,8 +46,9 @@ the graph and the registry, and the repository serves two different reads:
   — because acting on an unapproved mapping to *find* prerequisites is still
   acting on it. A resource with no approved link has no readable curriculum
   standing, and its answer is ``UNKNOWN`` (**registered judgement**, not a
-  quotation): the shipped corpus maps forty-six resources, every link
-  approved (C2's editorial review; before it, C1's single approval was the
+  quotation): the shipped corpus maps sixty-four resources, every link
+  approved (the C2/C3 editorial reviews; before them, C1's single approval was
+  the
   one exception in a ``CURRICULUM_MAPPED`` corpus), so the ``UNKNOWN``
   answer has no reachable case on this corpus today — it remains the
   fail-closed reading for any future unapproved row.

@@ -1,0 +1,196 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's idiom set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "the ball is in your court",
+    "pos": "NOUN"
+  },
+  "senses": [
+    {
+      "sense_id": "the-ball-is-in-your-court.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "the-ball-is-in-your-court.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used to say that the next move or decision now belongs to the other person, so the speaker is waiting for them."
+    },
+    {
+      "sense_id": "the-ball-is-in-your-court.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The idiom is fixed: the ball is in someone's court. The possessive comes before court (your, their, his, her) and names the person whose move it is, so the pronoun has to be changed to fit the addressee: the ball is in your court when you are waiting for them, the ball is in their court when they are waiting for you. The tense stays present (was in your court for a past turn), and time adverbs sit at the end (the ball is in their court now). Nothing is inserted inside the idiom."
+    },
+    {
+      "sense_id": "the-ball-is-in-your-court.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The single repair is the possessive, and it is a meaning repair rather than a form one: whichever pronoun stands before court is the person who must act next, so a learner who keeps your while talking about someone else says the opposite of what they mean. The image is worth teaching once — a ball on a tennis court only moves when someone hits it, and the idiom says whose side it is sitting on — because the metaphor is what makes the possessive memorable. The idiom is spoken and written, and it usually closes a request or a handover."
+    },
+    {
+      "sense_id": "the-ball-is-in-your-court.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "The ball is in your court hands the next move to someone and is neutral in tone. It's up to you says the choice belongs to the listener, with no sense of a sequence or of the speaker waiting. Your turn is about a turn in a game or a queue, not about a decision. Over to you is the broadcasting phrase for handing over, and it is used in meetings in the same handover sense as this idiom but without the waiting."
+    },
+    {
+      "sense_id": "the-ball-is-in-your-court.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "该你行动了；球在你那边（下一步或决定轮到对方；court 前的物主代词决定是谁该动）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "the-ball-is-in-your-court.base",
+      "written": "the ball is in your court",
+      "normalized": "the ball is in your court",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "the-ball-is-in-your-court.past",
+      "written": "the ball was in their court",
+      "normalized": "the ball is in your court",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): the idiom is instantly recognisable to anyone who reads business and sports talk, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because it belongs to handling a negotiation or a handover rather than to every conversation. Productive difficulty is MEDIUM because the possessive carries the whole meaning and has to be switched for the addressee; explanation cost is MEDIUM for the same reason plus the metaphor. Transfer value is LOW: the idiom is a self-contained image with no pattern to move elsewhere. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "A frequent idiom of everyday negotiation and handover, so it carries nearly full weight in the general fluency pack's coverage accounting; the shortfall records that the idiom belongs to one kind of exchange rather than to general talk."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Waiting for the other side's move is a standing situation in workplace dealings (we've sent the offer, so the ball is in their court), so the unit carries full weight in the workplace pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "DECISION_MAKING",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "DECISION_MAKING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the possessive that matches the sentence's meaning (your when the listener must act, their or his when someone else must), and keep the idiom in one unbroken run from the to court; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "CALQUED_IDIOM",
+      "error_pattern": "the ball is on | in your side (also your hand, your hands)",
+      "corrected_pattern": "the ball is in your court",
+      "explanation": "Chinese 球在你那边 invites side as the translation of 那边, and hand is chosen because many idioms of responsibility use it (in your hands). English fixes this idiom to the tennis image with court as the only noun that can end it; the correction is to store the idiom whole rather than to translate its second half.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the ball is followed by a be form and an on-phrase or a side/hand phrase where the court idiom is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "POSSESSIVE_MISMATCH",
+      "error_pattern": "the ball is in the court of + person (also the ball is in your court when a third person must act)",
+      "corrected_pattern": "the ball is in their court, with the possessive before court",
+      "explanation": "The idiom carries the person as a possessive on court, so a long of-phrase or a leftover your reverses or blurs whose move it is. The slip comes from the idiom being produced as a fixed string without its possessor being re-chosen for the sentence at hand, and the correction is to decide who must act before the idiom is spoken.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the court idiom is used with an of-phrase instead of a possessive, or with a possessive that names a different person from the one whose move the sentence is about."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words of the idiom and the possessive on court. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words carry a real tennis or a literal-side reading, so the idiom is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "CALQUED_IDIOM: match when the ball is with a be form is followed by an on-phrase, a side phrase or a hands phrase instead of in someone's court, because the idiom is fixed to the tennis image."
+    },
+    {
+      "ordinal": 1,
+      "rule": "POSSESSIVE_MISMATCH: match when the court idiom is produced with an of-phrase (the court of the client) or with a possessive that names someone other than the person whose move the sentence describes."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the idiom runs whole with a possessive that fits the meaning and its time adverb (the ball is in your court now, the ball is in their court until Friday, the ball was in our court then), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "COURT_IN_OTHER_READINGS: do not match when the same words describe a ball on a real tennis court, or a court in its legal sense, because the idiom's handover meaning is not present there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "I've sent them the offer, so the ball is in their court now.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "The ball is in your court, so we're waiting for your answer.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "After the review, the ball was in our court again.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The ball is on the court, near the net.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

@@ -17,9 +17,13 @@ What this cut did, and what this file pins:
   **46 × R4_DETECTION_READY + 5 × None**, `resource_count` = 46, links 46
   (18 REALIZES + 28 SUPPORTS), evidence documents 46. CORE_A reads 32
   (22 + the cut's 10 HIGH targets) and CORE_C reads 14 (6 + its 7 MEDIUM and
-  1 LOW targets).
+  1 LOW targets). **C3-b (Phase 11) moved the corpus after this cut**: 69
+  entities / 64 RESOURCE targets, 64 × R4 + 5 × None, links 64 (21 REALIZES
+  and 43 SUPPORTS), evidence documents 64, CORE_A 42 / CORE_C 22 — so this
+  file's artifact-wide readings are re-pinned to that truth (the per-target
+  pins above stay scoped to C3-a's own eighteen).
 - **the three floors are pinned apart** — CORE_A >= 30 met, CORE_C >= 2 met,
-  `resource_count` 46 < 100 still unmet — and never as one combined
+  `resource_count` 64 < 100 still unmet — and never as one combined
   "gate passed/failed" sentence. No rollout opening is claimed.
 - **the eighteen new targets** are pinned per target (nineteen fact keys, R4,
   source-side pairing of rules and fixtures, the entity/evidence pair
@@ -241,14 +245,15 @@ def test_core_a_counts_the_high_utility_targets_at_r3_and_above(
     (CORE_A >= 30) and no definition of what is counted; the level x band
     reading is the adjudicated one, implemented here and in the three migrated
     pins. Revisit when the canonical Calibration100 definition lands. At
-    C3-a's truth the reading answers 32.
+    C3-b's truth the reading answers 42 (C3-a's 32 plus C3-b's ten HIGH
+    targets).
     """
 
     levels, utilities = _levels_and_utilities(built_content_db)
     core_a, core_c = _core_counts(built_content_db)
-    assert core_a == 32
+    assert core_a == 42
     assert core_a >= 30
-    assert core_a + core_c == 46
+    assert core_a + core_c == 64
     assert len(C3A_HIGH_TARGETS) == 10
     for target in C3A_HIGH_TARGETS:
         assert levels[target] == "R4_DETECTION_READY", target
@@ -262,12 +267,13 @@ def test_core_c_counts_the_medium_and_low_utility_targets_at_r3_and_above(
     exercised: `res-pragmatic-could-i-ask` is the corpus's first LOW band.
 
     声明读法 + Revisit（用户 2026-09-26 裁决），与 CORE_A 同一条读法。At
-    C3-a's truth the reading answers 14.
+    C3-b's truth the reading answers 22 (C3-a's 14 plus C3-b's eight MEDIUM
+    targets).
     """
 
     levels, utilities = _levels_and_utilities(built_content_db)
     core_a, core_c = _core_counts(built_content_db)
-    assert core_c == 14
+    assert core_c == 22
     assert core_c >= 2
     assert len(C3A_NON_HIGH_TARGETS) == 8
     assert utilities["res-pragmatic-could-i-ask"] == "LOW"
@@ -276,7 +282,7 @@ def test_core_c_counts_the_medium_and_low_utility_targets_at_r3_and_above(
         assert utilities[target] in ("MEDIUM", "LOW"), target
     # Every banded target at R3+ is in exactly one cell.
     banded = {t for t in levels if t.startswith("res-")}
-    assert len(banded) == 46
+    assert len(banded) == 64
     for target in banded:
         assert utilities[target] in UTILITY_BANDS, target
 
@@ -286,7 +292,7 @@ def test_a_high_utility_target_demoted_to_medium_leaves_core_a(
 ) -> None:
     """The band half of the reading, load-bearing: editing one evidence
     document's core_utility from HIGH to MEDIUM moves that target from CORE_A
-    to CORE_C (32/14 -> 31/15), so a pin that ignored the band would survive
+    to CORE_C (42/22 -> 41/23), so a pin that ignored the band would survive
     this edit and this one does not."""
 
     def demote(document: dict) -> None:
@@ -295,7 +301,7 @@ def test_a_high_utility_target_demoted_to_medium_leaves_core_a(
 
     artifact = _evidence_variant(tmp_path, "res-phrasal-give-up", demote)
     assert _level_of(artifact, "res-phrasal-give-up") == "R4_DETECTION_READY"
-    assert _core_counts(artifact) == (31, 15)
+    assert _core_counts(artifact) == (41, 23)
 
 
 def test_demoting_a_high_targets_link_below_r3_drops_its_core_a_count(
@@ -304,7 +310,7 @@ def test_demoting_a_high_targets_link_below_r3_drops_its_core_a_count(
     """The level half of the reading, load-bearing: demoting one HIGH
     target's approved §24.7 link to CURRICULUM_MAPPED costs it the R2 fact and
     the level falls to R1_LEXICALLY_RESOLVED — so it leaves CORE_A although
-    its core_utility is untouched (32/14 -> 31/14). A band-only reading would
+    its core_utility is untouched (42/22 -> 41/22). A band-only reading would
     keep counting it."""
 
     def demote(documents: dict, _index: dict) -> None:
@@ -317,7 +323,7 @@ def test_demoting_a_high_targets_link_below_r3_drops_its_core_a_count(
     levels, utilities = _levels_and_utilities(artifact)
     assert utilities["res-discourse-in-fact"] == "HIGH"
     assert levels["res-discourse-in-fact"] not in CORE_LEVELS
-    assert _core_counts(artifact) == (31, 14)
+    assert _core_counts(artifact) == (41, 22)
 
 
 def test_the_three_calibration100_floors_read_separately(
@@ -325,7 +331,7 @@ def test_the_three_calibration100_floors_read_separately(
 ) -> None:
     """The three floors, each on its own line — the cut's honesty face.
 
-    CORE_A 32 >= 30 (met), CORE_C 14 >= 2 (met), resource_count 46 < 100
+    CORE_A 42 >= 30 (met), CORE_C 22 >= 2 (met), resource_count 64 < 100
     (unmet): three assertions, three printed readings, and no single
     "gate passed" sentence. The floor numbers come from the frozen plan text,
     not from a second hand-typed copy.
@@ -351,23 +357,23 @@ def test_the_three_calibration100_floors_read_separately(
     resources = [eid for eid in entity_ids if eid.startswith("res-")]
     core_a, core_c = _core_counts(built_content_db)
     print(
-        f"[c3a] CORE_A = {core_a} (floor {gates['CORE_A']},"
+        f"[c3b] CORE_A = {core_a} (floor {gates['CORE_A']},"
         f" {'met' if core_a >= gates['CORE_A'] else 'unmet'})"
     )
     print(
-        f"[c3a] CORE_C = {core_c} (floor {gates['CORE_C']},"
+        f"[c3b] CORE_C = {core_c} (floor {gates['CORE_C']},"
         f" {'met' if core_c >= gates['CORE_C'] else 'unmet'})"
     )
     print(
-        f"[c3a] resource_count = {len(resources)}"
+        f"[c3b] resource_count = {len(resources)}"
         f" (floor {gates['resource_count']},"
         f" {'met' if len(resources) >= gates['resource_count'] else 'unmet'})"
     )
     assert core_a >= gates["CORE_A"]  # CORE_A met
     assert core_c >= gates["CORE_C"]  # CORE_C met
     assert len(resources) < gates["resource_count"]  # volume floor unmet
-    assert len(resources) == 46
-    assert len(entity_ids) == 51
+    assert len(resources) == 64
+    assert len(entity_ids) == 69
 
 
 # ---------------------------------------------------------------------------
@@ -400,12 +406,12 @@ def test_each_c3a_target_carries_all_nineteen_keys_and_reads_r4(
     assert assessment.value.detection_ready is True, target_id
 
 
-def test_the_corpus_table_is_forty_six_r4_and_five_none(
+def test_the_corpus_table_is_sixty_four_r4_and_five_none(
     built_content_db: Path,
 ) -> None:
     """The whole table, read once: every `res-*` target reads R4, the five
     `cap-*` entities read None, and every one of the eighteen new ids is in
-    the R4 half."""
+    the R4 half (C3-a's and C3-b's alike)."""
 
     store = ContentStore(built_content_db)
     try:
@@ -415,11 +421,11 @@ def test_the_corpus_table_is_forty_six_r4_and_five_none(
     finally:
         store.close()
     table = {a.target_id: a.level for a in assessments.value}
-    assert len(table) == 51
+    assert len(table) == 69
     r4 = sorted(t for t, level in table.items() if level == "R4_DETECTION_READY")
     none = sorted(t for t, level in table.items() if level is None)
     assert all(target in r4 for target in C3A_TARGETS)
-    assert len(r4) == 46
+    assert len(r4) == 64
     assert len(none) == 5
     assert all(target.startswith("cap-") for target in none)
     unexpected = [
@@ -521,22 +527,23 @@ def test_every_c3a_evidence_document_pairs_its_rules_and_fixtures() -> None:
 def test_the_credit_face_widens_by_the_three_new_realizes_rows(
     built_content_db: Path,
 ) -> None:
-    """The links document carries 46 rows of which 18 are REALIZES
-    (15 + the cut's 3) and 28 SUPPORTS; the credit face answers a node for
-    exactly the 18 REALIZES rows, each reading the node its own row names;
-    the fifteen new SUPPORTS rows stay readable and mint nothing."""
+    """The links document carries 64 rows of which 21 are REALIZES
+    (18 through C3-a, plus C3-b's 3) and 43 SUPPORTS; the credit face answers
+    a node for exactly the 21 REALIZES rows, each reading the node its own row
+    names; the fifteen new SUPPORTS rows of this cut stay readable and mint
+    nothing (C3-b's fifteen are held to the same discipline by its own file)."""
 
     document = json.loads(
         (CURRICULUM_DIR / "links.json").read_text(encoding="utf-8")
     )
     rows = document["links"]
-    assert len(rows) == 46
+    assert len(rows) == 64
     realizes = {
         str(row["resource_id"]): str(row["node_id"])
         for row in rows
         if row["relation"] == "REALIZES"
     }
-    assert len(realizes) == 18
+    assert len(realizes) == 21
     assert set(C3A_REALIZES) <= set(realizes)
     assert realizes["res-hedge-sort-of"] == "cap-stance-soften-disagreement"
     assert realizes["res-softener-to-be-fair"] == "cap-stance-soften-disagreement"
@@ -559,7 +566,7 @@ def test_the_credit_face_widens_by_the_three_new_realizes_rows(
     finally:
         store.close()
     assert credited == realizes
-    assert len(credited) == 18
+    assert len(credited) == 21
     assert len(C3A_SUPPORT_TARGETS) == 15
     assert len(C3A_TARGETS) == 18
 
@@ -600,16 +607,16 @@ def test_the_new_links_state_their_basis_and_their_limit() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_the_index_lists_fifty_one_entities_and_forty_six_evidence_documents() -> None:
-    """The index grew in both lists: entity documents 33 → 51, evidence
-    documents 28 → 46, both plain id order, and the eighteen new ids appear in
-    each list exactly once."""
+def test_the_index_lists_sixty_nine_and_sixty_four_documents() -> None:
+    """The index grew in both lists: entity documents 33 → 51 → 69 (C3-b),
+    evidence documents 28 → 46 → 64, both plain id order, and the eighteen new
+    ids appear in each list exactly once."""
 
     index = json.loads((CONTENT_SRC_DIR / "index.json").read_text(encoding="utf-8"))
     entities = [str(entry) for entry in index["entities"]]
     evidence = [str(entry) for entry in index["evidence"]]
-    assert len(entities) == 51
-    assert len(evidence) == 46
+    assert len(entities) == 69
+    assert len(evidence) == 64
     assert entities == sorted(entities)
     assert evidence == sorted(evidence)
     for target_id in C3A_TARGETS:
@@ -647,7 +654,7 @@ def test_an_unknown_block_in_a_new_evidence_document_is_refused(
 
 
 def test_two_builds_of_the_grown_source_are_byte_equal(tmp_path: Path) -> None:
-    """Determinism re-checked after the corpus passed 46: two builds of the
+    """Determinism re-checked after the corpus passed 64: two builds of the
     same source produce the same bytes."""
 
     first = tmp_path / "a.db"
@@ -658,9 +665,9 @@ def test_two_builds_of_the_grown_source_are_byte_equal(tmp_path: Path) -> None:
         second.read_bytes()
     ).hexdigest()
     report = build_content_db(tmp_path / "c.db")
-    assert report.entity_count == 51
-    assert report.evidence_count == 46
-    assert report.link_count == 46
+    assert report.entity_count == 69
+    assert report.evidence_count == 64
+    assert report.link_count == 64
     assert report.capability_count == 5
 
 

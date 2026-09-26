@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's pragmatic-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "I guess",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "i-guess.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "i-guess.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used to give an opinion or a judgement without claiming to be certain about it."
+    },
+    {
+      "sense_id": "i-guess.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The hedge is I guess, and it stands at the front of the clause it weakens (I guess we should leave soon) or, set off by a comma, after it (it's going to rain, I guess). The verb carries no auxiliary and does not change for the person (I guess, they guess, she guesses); the clause it hedges keeps its own tense and word order and needs no that, though that is possible. In its trailing position the hedge belongs to the end of the clause and takes the falling intonation of a weak opinion rather than the rise of a question."
+    },
+    {
+      "sense_id": "i-guess.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Two positions are legal, and the one to avoid is the middle: the hedge stands either in front of the clause or after it, never between the subject and its verb. The second repair is the shape of guess itself: it is a plain present-tense verb (I guess), not the progressive (I'm guessing) and not a participle, so I'm guess does not exist. Compared with I think, this hedge claims less — I think states an opinion the speaker holds, I guess marks a judgement the speaker is not sure of — which is why it fits predictions, preferences and answers the speaker does not have strong feelings about."
+    },
+    {
+      "sense_id": "i-guess.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "I guess hedges an opinion the speaker is giving. I suppose is close and slightly more formal, and it suits assumptions about how things work. I think claims more confidence and is the neutral opener for opinions. Maybe and perhaps hedge the content instead of the speaker's stance. I'd say offers a formulation. In its other sense, guess means to answer without knowing (guess my age), which is a real verb with no hedge, and that is the boundary this unit must not be read across."
+    },
+    {
+      "sense_id": "i-guess.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "我猜；我想（给出不太确定的看法；放在句首或句尾，不放在主语和动词之间；比 I think 更不确定）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "i-guess.base",
+      "written": "I guess",
+      "normalized": "I guess",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "i-guess.third-person-singular",
+      "written": "she guesses",
+      "normalized": "I guess",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "i-guess.past",
+      "written": "I guessed",
+      "normalized": "I guess",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "i-guess.present-participle",
+      "written": "I'm guessing",
+      "normalized": "I guess",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): hedging an opinion is constant in conversation, so core utility, receptive value and productive value are HIGH and receptive difficulty is LOW. Productive difficulty is MEDIUM because two positions are legal and the middle one is not, and because the verb's form has to stay simple; explanation cost is MEDIUM for the same two points plus the I guess / I think contrast, which is where the unit's value lies. Transfer value is MEDIUM: the front-or-end hedge position recurs across this corpus's hedges (I think, I suppose, I'd say), so one unit teaches the placement habit for several. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "A top-frequency opinion hedge of conversational English, so it carries full weight in the general fluency pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Prefacing a judgement with I guess is normal in low-stakes workplace talk (I guess we could try), so the unit carries high weight in the workplace pack; the shortfall records that workplace opinions often prefer a more definite hedge."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the hedge in both legal positions across the attempt — in front of the clause and, with its comma, after it — so the model never carries a hedge wedged between subject and verb; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "HEDGE_PLACEMENT",
+      "error_pattern": "subject + I guess + verb (it I guess will rain, we I guess should go)",
+      "corrected_pattern": "I guess + clause, or clause + , I guess",
+      "explanation": "The hedge takes one of two positions — in front of the clause it weakens or at the end of it — and never the middle, where it would break the subject from its verb. Learners place it mid-clause because they read it as an adverb of the clause; the correction is to choose an edge, and the trailing position is the easier one to hear.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the hedge stands between a subject and its finite verb inside the clause it weakens, in a sentence where an opinion is being hedged."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "VERB_FORM_OF_GUESS",
+      "error_pattern": "I'm guess | I am guess | I guessing + clause",
+      "corrected_pattern": "I guess + clause (or I'm guessing + clause for an opinion still forming)",
+      "explanation": "The hedged opinion is a plain present-tense verb, so guess takes no auxiliary of its own; the progressive would mean the speaker is still working the opinion out, which is a different claim. Learners blend the two shapes and produce I'm guess, which is not a form English has.",
+      "severity": "LOW",
+      "detection_policy": "Match when I'm or I am stands directly before the base verb guess, in a sentence where an opinion is being hedged."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the hedge's words, its position and the verb's form. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the verb names answering without knowing, so no opinion is being hedged)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "HEDGE_PLACEMENT: match when I guess stands between the subject and the finite verb of the clause it weakens, because the hedge takes only the front or the end position."
+    },
+    {
+      "ordinal": 1,
+      "rule": "VERB_FORM_OF_GUESS: match when I'm or I am stands directly before the base verb guess, because the hedge is the plain present-tense verb and the progressive is a different claim."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the hedge stands in front of its clause or trails it with a comma (I guess we should leave soon, it's going to rain, I guess, she guesses the shop is shut), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "GUESS_AS_ANSWERING_WITHOUT_KNOWING: do not match when guess means to give an answer without knowing (guess my age, I guessed the answer wrong), because no opinion is being hedged there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "I guess we should leave soon.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "It's going to rain, I guess.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "She guesses the shop is already shut.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Guess my age.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

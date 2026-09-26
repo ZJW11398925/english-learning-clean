@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's collocation set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "raise awareness",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "raise-awareness.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "raise-awareness.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To make people notice an issue or understand it better, so that more of them know about it."
+    },
+    {
+      "sense_id": "raise-awareness.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "Raise takes awareness as its object and the issue follows of: raise awareness of mental health, raise awareness of the risks. Awareness is uncountable here, so it takes no article. The people whose awareness is raised can be named with among or in (raise awareness among young people), and the means with by or through. The verb keeps its normal forms (raises, raised, raising) while the noun stays fixed. The collocation belongs to campaigns, charities, schools and public talk rather than to private conversation."
+    },
+    {
+      "sense_id": "raise-awareness.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The first repair is the verb pair rise / raise, which English keeps apart and most learner languages do not: raise takes an object (you raise awareness, raise money, raise a question) while rise takes none (prices rise). Since the collocation always has an object, raise is the form, and the pair can be drilled against each other. The second repair is the complement: the issue is named with of, and the noun awareness never takes an article, so a raised awareness is a different (and much less usual) thing than raising awareness."
+    },
+    {
+      "sense_id": "raise-awareness.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Raise awareness of an issue is about making more people know it. Draw attention to something is about pointing at one thing now, often in a conversation. Publicize and promote say that information is spread on purpose, with no claim about understanding. Sensitize is the technical word for making people careful about an issue and belongs to policy writing rather than to general talk."
+    },
+    {
+      "sense_id": "raise-awareness.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "提高意识/认识（让更多人注意并了解某个议题；动词用及物的 raise，后接 of）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "raise-awareness.base",
+      "written": "raise awareness",
+      "normalized": "raise awareness",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "raise-awareness.third-person-singular",
+      "written": "raises awareness",
+      "normalized": "raise awareness",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "raise-awareness.past",
+      "written": "raised awareness",
+      "normalized": "raise awareness",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "raise-awareness.present-participle",
+      "written": "raising awareness",
+      "normalized": "raise awareness",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): the collocation is easy to receive — it is a fixture of news and campaign language — and useful to produce in talking about social issues, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because most everyday conversations never need it, which is also why the productive difficulty worth teaching is concentrated in the rise/raise pair. Explanation cost is MEDIUM for that pair plus the of complement. Transfer value is MEDIUM: raise + non-count object repeats (raise money, raise concern), so the transitivity lesson travels. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "A frequent public-issue collocation that adults meet in news and campaigns, so it carries high but not full weight in the general fluency pack's coverage accounting: everyday conversation needs it less often than the pack's core items."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.6",
+      "rationale": "Organizations do raise awareness of policies and risks, so the unit has a real workplace use; the reduced weight records that the collocation belongs more to public than to internal talk."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show raise with an object and awareness with no article, followed by of and the issue, and keep a rise example, if one is shown at all, in a CONTRAST role with an unmistakable no-object reading; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "RISE_FOR_RAISE",
+      "error_pattern": "rise | rises | rose | rising + awareness (of)",
+      "corrected_pattern": "raise | raises | raised | raising + awareness (of)",
+      "explanation": "Rise and raise are a transitivity pair: rise is intransitive (something rises by itself) and raise takes an object. The collocation always has an object — awareness — so raise is the form; the slip comes from the two verbs being one verb in most learner languages, and the correction is best taught as the pair rather than as a single item.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of rise stands directly before awareness as the verb of the phrase, in a sentence where making people notice an issue is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_CHOICE",
+      "error_pattern": "raise | raises | raised | raising + awareness + on | about + the issue",
+      "corrected_pattern": "raise awareness of + the issue",
+      "explanation": "The complement of awareness in this collocation is of, and it names the issue rather than the audience. About and on carry the topic relation in many neighbouring phrases (a talk about, a report on), which is where the slip comes from; telling the three apart is easier when the audience slot (among / in) is held separate from the issue slot (of).",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of raise is followed by awareness and then by on or about before the issue, in a sentence where the collocation is meant."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb form, the noun and the preposition that follows. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same verb or noun carries another reading, so the collocation is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "RISE_FOR_RAISE: match when a form of rise (rise, rises, rose, rising) stands directly before awareness as the verb of the phrase, because the collocation has an object and therefore takes the transitive raise."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PREPOSITION_CHOICE: match when a form of raise is followed by awareness and then by on or about before the issue, because the issue is named with of in this collocation."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when raise carries awareness with of and the issue, with the audience in among or in, and with its adverbs (the campaign raised awareness of the risks, it raises awareness among parents, the film did a lot to raise awareness), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "RAISE_AND_AWARENESS_IN_OTHER_READINGS: do not match when the verb is raise without this object — raise money, raise a question, raise a child — or when rise stands with no object at all (prices rose again), because raise awareness is not being used there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "The campaign aims to raise awareness of mental health.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "The film raised awareness of the problem.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "It raises awareness among parents.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Prices rose again in March.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

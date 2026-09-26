@@ -415,6 +415,168 @@
       "primary_flag": false,
       "editorial_status": "CANONICAL_APPROVED",
       "rationale": "Authored and approved by the C3-a (Phase 11) editorial review together with the readiness evidence of res-pragmatic-could-i-ask. What this row says: the formula is the asking move itself, used to borrow the floor for a question, so the resource supports cap-ref-ask-clarification — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: the formula asks for permission to ask rather than for a clarification, so the placement is the nearest available node rather than a semantic match; cap-ref-ask-clarification has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-colloc-make-progress",
+      "node_id": "cap-disc-topic-shift",
+      "relation": "SUPPORTS",
+      "strength": null,
+      "primary_flag": false,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Authored and approved by the C3-b (Phase 11) editorial review together with the readiness evidence of res-colloc-make-progress. What this row says: the resource is progress vocabulary used in the talk the DISC node's family covers, so it supports cap-disc-topic-shift — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: this collocation carries no interpersonal or stance function at all, so the placement is the nearest available node rather than a semantic match; cap-disc-topic-shift has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-colloc-save-time",
+      "node_id": "cap-disc-topic-shift",
+      "relation": "SUPPORTS",
+      "strength": null,
+      "primary_flag": false,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Authored and approved by the C3-b (Phase 11) editorial review together with the readiness evidence of res-colloc-save-time. What this row says: the resource is efficiency vocabulary used in the talk the DISC node's family covers, so it supports cap-disc-topic-shift — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: this collocation carries no interpersonal or stance function at all, so the placement is the nearest available node rather than a semantic match; cap-disc-topic-shift has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-colloc-take-a-look",
+      "node_id": "cap-interact-backchannel",
+      "relation": "SUPPORTS",
+      "strength": null,
+      "primary_flag": false,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Authored and approved by the C3-b (Phase 11) editorial review together with the readiness evidence of res-colloc-take-a-look. What this row says: inviting someone to turn their eyes to something is a bid for shared attention, so the resource supports cap-interact-backchannel — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: a backchannel is a listener's signal and this collocation is a speaker's request for attention, so the placement is the nearest available node rather than a semantic match; cap-interact-backchannel has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-colloc-raise-awareness",
+      "node_id": "cap-interact-backchannel",
+      "relation": "SUPPORTS",
+      "strength": null,
+      "primary_flag": false,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Authored and approved by the C3-b (Phase 11) editorial review together with the readiness evidence of res-colloc-raise-awareness. What this row says: making other people notice an issue aims at their attention, which is an interactional move, so the resource supports cap-interact-backchannel — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: the node names a listener's signal and this collocation directs a wider audience's attention to an issue, so the placement is the nearest available node rather than a semantic match; cap-interact-backchannel has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-colloc-make-an-effort",
+      "node_id": "cap-disc-topic-shift",
+      "relation": "SUPPORTS",
+      "strength": null,
+      "primary_flag": false,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Authored and approved by the C3-b (Phase 11) editorial review together with the readiness evidence of res-colloc-make-an-effort. What this row says: the resource is effort vocabulary used in the talk the DISC node's family covers, so it supports cap-disc-topic-shift — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: this collocation carries no interpersonal or stance function at all, so the placement is the nearest available node rather than a semantic match; cap-disc-topic-shift has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-phrasal-work-out",
+      "node_id": "cap-ref-ask-clarification",
+      "relation": "SUPPORTS",
+      "strength": null,
+      "primary_flag": false,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Authored and approved by the C3-b (Phase 11) editorial review together with the readiness evidence of res-phrasal-work-out. What this row says: working something out is the understanding side of talk, so the resource supports cap-ref-ask-clarification — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: the node names asking for clarification and this phrasal verb names finding the answer, so the placement is the nearest available node rather than a semantic match; cap-ref-ask-clarification has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-phrasal-bring-up",
+      "node_id": "cap-disc-topic-shift",
+      "relation": "SUPPORTS",
+      "strength": null,
+      "primary_flag": false,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Authored and approved by the C3-b (Phase 11) editorial review together with the readiness evidence of res-phrasal-bring-up. What this row says: raising a subject for discussion belongs to the topic side of talk, which is the talk the DISC node's family covers, so it supports cap-disc-topic-shift — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: the node names shifting the topic and this phrasal verb names starting to talk about one, so the placement is the nearest available node rather than a semantic match — the resource introduces a subject rather than moving the talk away from another, and the choice between the two is stated here rather than left to the relation word; cap-disc-topic-shift has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-phrasal-put-off",
+      "node_id": "cap-disc-topic-shift",
+      "relation": "SUPPORTS",
+      "strength": null,
+      "primary_flag": false,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Authored and approved by the C3-b (Phase 11) editorial review together with the readiness evidence of res-phrasal-put-off. What this row says: the resource is everyday planning vocabulary used in the talk the DISC node's family covers, so it supports cap-disc-topic-shift — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: this phrasal verb carries no interpersonal or stance function at all, so the placement is the nearest available node rather than a semantic match; cap-disc-topic-shift has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-idiom-the-ball-is-in-your-court",
+      "node_id": "cap-interact-backchannel",
+      "relation": "SUPPORTS",
+      "strength": null,
+      "primary_flag": false,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Authored and approved by the C3-b (Phase 11) editorial review together with the readiness evidence of res-idiom-the-ball-is-in-your-court. What this row says: handing the next move to the other person is an interactional move about the exchange, so the resource supports cap-interact-backchannel — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: the node names a listener's signal and this idiom hands over the turn and the decision, so the placement is the nearest available node rather than a semantic match; cap-interact-backchannel has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-idiom-a-blessing-in-disguise",
+      "node_id": "cap-eval-hedged-opinion",
+      "relation": "SUPPORTS",
+      "strength": null,
+      "primary_flag": false,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Authored and approved by the C3-b (Phase 11) editorial review together with the readiness evidence of res-idiom-a-blessing-in-disguise. What this row says: the idiom judges how an event turned out, which is the evaluative side of talk, so the resource supports cap-eval-hedged-opinion — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: the idiom is a comment on an outcome rather than an evaluation of a state of affairs, so the placement is the nearest available node rather than a semantic match; cap-eval-hedged-opinion has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-discourse-that-reminds-me",
+      "node_id": "cap-disc-topic-shift",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Approved by the C3-b (Phase 11) editorial review during the readiness-evidence authoring of res-discourse-that-reminds-me. What that review covered: the target's evidence document (content_src/evidence/res-discourse-that-reminds-me.json, authored and reviewed in C3-b) and that this approval is what makes §8.1 R2's curriculum_link fact readable for the target; and the realization claim itself, which is that the marker's own function is to move the talk to a new, associated topic, so the resource realizes cap-disc-topic-shift — which is why the relation word is REALIZES and primary_flag is true. What it did NOT cover, stated so the approval is not read as more than it is: cap-disc-topic-shift has no functional definition in this repository, so no capability-semantics audit of the mapping was possible and this approval is no capability certification — whether res-discourse-that-reminds-me really realizes that capability stays as unreviewed as curriculum/README.md C2 records. Two limits are specific to this cut and are stated rather than left implicit: no authoring fixture declares a linkage for this target, so the row itself is this cut's own mapping decision; and the shift the marker performs is associative — it brings in a topic that something just said has recalled — while the node's name says only that the topic shifts, which is the reviewer's reading of the node's face and not a canonical ruling. With the approval in place the target's ALTERNATIVE_SUCCESS path can mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit, bounded by the real rollout HOLD). Revisit when the capability definitions land."
+    },
+    {
+      "resource_id": "res-discourse-long-story-short",
+      "node_id": "cap-disc-topic-shift",
+      "relation": "SUPPORTS",
+      "strength": null,
+      "primary_flag": false,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Authored and approved by the C3-b (Phase 11) editorial review together with the readiness evidence of res-discourse-long-story-short. What this row says: the marker manages the telling of the talk the DISC node's family covers, so it supports cap-disc-topic-shift — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: the marker compresses a story rather than changing the topic, so the placement is the nearest available node rather than a semantic match; cap-disc-topic-shift has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-frame-just-wondering",
+      "node_id": "cap-ref-ask-clarification",
+      "relation": "SUPPORTS",
+      "strength": null,
+      "primary_flag": false,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Authored and approved by the C3-b (Phase 11) editorial review together with the readiness evidence of res-frame-just-wondering. What this row says: putting a request gently belongs to the asking side of talk, so the resource supports cap-ref-ask-clarification — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: the node names asking for clarification and this frame asks for help or for information, so the placement is the nearest available node rather than a semantic match; cap-ref-ask-clarification has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-frame-the-thing-is",
+      "node_id": "cap-disc-topic-shift",
+      "relation": "SUPPORTS",
+      "strength": null,
+      "primary_flag": false,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Authored and approved by the C3-b (Phase 11) editorial review together with the readiness evidence of res-frame-the-thing-is. What this row says: announcing the point or the obstacle manages the talk the DISC node's family covers, so the resource supports cap-disc-topic-shift — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: the frame frames the point being made rather than changing the topic, so the placement is the nearest available node rather than a semantic match; cap-disc-topic-shift has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-hedge-i-guess",
+      "node_id": "cap-eval-hedged-opinion",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Approved by the C3-b (Phase 11) editorial review during the readiness-evidence authoring of res-hedge-i-guess. What that review covered: the target's evidence document (content_src/evidence/res-hedge-i-guess.json, authored and reviewed in C3-b) and that this approval is what makes §8.1 R2's curriculum_link fact readable for the target; and the realization claim itself, which is that the hedge presents a judgement as a guess rather than as a fact, so the resource realizes cap-eval-hedged-opinion — which is why the relation word is REALIZES and primary_flag is true. What it did NOT cover, stated so the approval is not read as more than it is: cap-eval-hedged-opinion has no functional definition in this repository, so no capability-semantics audit of the mapping was possible and this approval is no capability certification — whether res-hedge-i-guess really realizes that capability stays as unreviewed as curriculum/README.md C2 records. Two limits are specific to this cut and are stated rather than left implicit: no authoring fixture declares a linkage for this target, so the row itself is this cut's own mapping decision; and the unit marks the speaker's lower certainty about a statement rather than hedging an opinion in the evaluative sense, which is looser than the node's name and is stated rather than hidden. With the approval in place the target's ALTERNATIVE_SUCCESS path can mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit, bounded by the real rollout HOLD). Revisit when the capability definitions land."
+    },
+    {
+      "resource_id": "res-hedge-not-really",
+      "node_id": "cap-stance-soften-disagreement",
+      "relation": "SUPPORTS",
+      "strength": null,
+      "primary_flag": false,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Authored and approved by the C3-b (Phase 11) editorial review together with the readiness evidence of res-hedge-not-really. What this row says: the soft answer weakens a negative, so the resource belongs to the stance-softening face of talk, and it supports cap-stance-soften-disagreement — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: the node names softening a disagreement and this formula softens a denial, so the placement is the nearest available node rather than a semantic match; cap-stance-soften-disagreement has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-softener-if-anything",
+      "node_id": "cap-stance-soften-disagreement",
+      "relation": "SUPPORTS",
+      "strength": null,
+      "primary_flag": false,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Authored and approved by the C3-b (Phase 11) editorial review together with the readiness evidence of res-softener-if-anything. What this row says: the marker corrects the force of the claim before it, which is the claim-calibrating face of talk, so the resource supports cap-stance-soften-disagreement — a support relation, not a realization, which is why the relation word is SUPPORTS and primary_flag is false. What it does NOT say, stated so the row is not read as more than it is: the node names softening a disagreement and this marker recalibrates an assessment — it can sharpen the claim as well as soften it — so the placement is the nearest available node rather than a semantic match; cap-stance-soften-disagreement has no functional definition in this repository, so no capability-semantics audit was possible; and no authoring fixture declares any linkage for this target, so the placement is this cut's own decision among the five nodes the V1 registry carries. Credit limit: the credit face reads REALIZES links only, so this approved SUPPORTS row satisfies §8.1 R2's curriculum_link fact and mints nothing — live risk R-C1-credit is not extended by it. Revisit when the capability definitions land or a resource-side node enters the registry."
+    },
+    {
+      "resource_id": "res-pragmatic-no-offense-but",
+      "node_id": "cap-stance-soften-disagreement",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "rationale": "Approved by the C3-b (Phase 11) editorial review during the readiness-evidence authoring of res-pragmatic-no-offense-but. What that review covered: the target's evidence document (content_src/evidence/res-pragmatic-no-offense-but.json, authored and reviewed in C3-b) and that this approval is what makes §8.1 R2's curriculum_link fact readable for the target; and the realization claim itself, which is that the formula exists to keep the criticism it introduces from landing as an attack, so the resource realizes cap-stance-soften-disagreement — which is why the relation word is REALIZES and primary_flag is true. What it did NOT cover, stated so the approval is not read as more than it is: cap-stance-soften-disagreement has no functional definition in this repository, so no capability-semantics audit of the mapping was possible and this approval is no capability certification — whether res-pragmatic-no-offense-but really realizes that capability stays as unreviewed as curriculum/README.md C2 records. Two limits are specific to this cut and are stated rather than left implicit: no authoring fixture declares a linkage for this target, so the row itself is this cut's own mapping decision; and the move softened here is a criticism of a thing or an idea rather than a disagreement in particular, which is looser than the node's name and is stated rather than hidden. With the approval in place the target's ALTERNATIVE_SUCCESS path can mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit, bounded by the real rollout HOLD). Revisit when the capability definitions land."
     }
   ]
 }

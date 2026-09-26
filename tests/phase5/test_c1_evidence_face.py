@@ -14,10 +14,10 @@ any of them absent. What this file pins, in order:
   byte-identical, a rebuild over an existing file is a replay, and two
   *subprocess* builds under different ``PYTHONHASHSEED`` values hash equal
   (C1 disposition F4 — hash randomization must not reach the bytes);
-- the corpus table reads 46 × R4_DETECTION_READY (the forty-six RESOURCE
+- the corpus table reads 64 × R4_DETECTION_READY (the sixty-four RESOURCE
   targets whose sources state every evidence-backed fact; C1 authored one of
   them, C2-a the other eight, C2-b the nineteen it authored as entities too,
-  C3-a the last eighteen)
+  C3-a eighteen of its cut and C3-b the last eighteen)
   + 5 × None (the five CAPABILITY entities, whose sources state no readiness
   evidence at all);
 - every §8.1 fact key has a dedicated per-fact pin, both directions (present
@@ -355,10 +355,10 @@ def test_readiness_by_target_is_forty_six_r4_and_five_none(
 ) -> None:
     """The corpus table on the real artifact: every RESOURCE target reads
     R4_DETECTION_READY (C1 authored one evidence document, C2-a the other
-    eight, C2-b the nineteen it also authored as entities, C3-a the last
-    eighteen), and the five CAPABILITY entities read None — no level is
-    invented for them, §8.1 has no word below R0, and their sources state no
-    evidence."""
+    eight, C2-b the nineteen it also authored as entities, C3-a eighteen of
+    its cut and C3-b the last eighteen), and the five CAPABILITY entities read
+    None — no level is invented for them, §8.1 has no word below R0, and
+    their sources state no evidence."""
 
     store = ContentStore(built_content_db)
     try:
@@ -368,10 +368,10 @@ def test_readiness_by_target_is_forty_six_r4_and_five_none(
     finally:
         store.close()
     table = {a.target_id: a.level for a in assessments.value}
-    assert len(table) == 51
+    assert len(table) == 69
     res_targets = sorted(t for t in table if t.startswith("res-"))
     cap_targets = sorted(t for t in table if t.startswith("cap-"))
-    assert len(res_targets) == 46 and len(cap_targets) == 5
+    assert len(res_targets) == 64 and len(cap_targets) == 5
     for target_id in res_targets:
         assert table[target_id] == "R4_DETECTION_READY", target_id
     for target_id in cap_targets:

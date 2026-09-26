@@ -228,7 +228,7 @@ def test_the_shipped_corpus_is_still_unreachable_with_a_ledger(
         "CONTENT_READINESS",
         "SCHEDULE_ROW",
     }
-    assert len(supply.refusals) == 51
+    assert len(supply.refusals) == 69
     assert "COVERAGE_DEBT" not in {gap.source for gap in supply.gaps}
 
 
@@ -299,7 +299,7 @@ def test_an_exposure_outside_the_window_is_not_counted(
     )
     proposal = debt_proposal(supply)
     assert proposal.cost[CostFactor.OVEREXPOSURE] == 0.0
-    assert len(supply.readiness) == 51  # the world really looked at the corpus
+    assert len(supply.readiness) == 69  # the world really looked at the corpus
 
 
 def test_a_paused_obligation_proposes_nothing_and_moves_no_debt(

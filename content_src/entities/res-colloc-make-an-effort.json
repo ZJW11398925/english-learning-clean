@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-colloc-make-an-effort",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "COLLOCATION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that someone tries hard at something.",
+      "Use make with an effort, and effort to with a base verb after it.",
+      "Start with the words: You should make an ___ to speak English every day."
+    ],
+    "reveal_form": "You should make an effort to speak English every day.",
+    "canonical_forms": [
+      "You should make an effort to speak English every day."
+    ],
+    "alternative_realizations": [
+      "She made a real effort to finish on time."
+    ],
+    "required_slots": [
+      [
+        "effort"
+      ],
+      [
+        "english",
+        "finish"
+      ]
+    ]
+  }
+}

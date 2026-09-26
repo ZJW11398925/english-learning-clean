@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-frame-the-thing-is",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "SENTENCE_FRAME",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Announce the problem or the main point before you explain it.",
+      "Use the thing is with a comma or with that, followed by a full clause.",
+      "Start with the words: The ___ is, we don't have enough time."
+    ],
+    "reveal_form": "The thing is, we don't have enough time.",
+    "canonical_forms": [
+      "The thing is, we don't have enough time."
+    ],
+    "alternative_realizations": [
+      "The thing is that nobody told him."
+    ],
+    "required_slots": [
+      [
+        "thing"
+      ],
+      [
+        "time",
+        "nobody"
+      ]
+    ]
+  }
+}

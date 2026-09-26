@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-colloc-make-progress",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "COLLOCATION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that someone is getting better at something as time passes.",
+      "Use make with the noun progress; progress takes no do and no article.",
+      "Start with the words: She has made a lot of ___ with her English."
+    ],
+    "reveal_form": "She has made a lot of progress with her English this year.",
+    "canonical_forms": [
+      "She has made a lot of progress with her English this year."
+    ],
+    "alternative_realizations": [
+      "We are making progress on the project."
+    ],
+    "required_slots": [
+      [
+        "progress"
+      ],
+      [
+        "english",
+        "project"
+      ]
+    ]
+  }
+}

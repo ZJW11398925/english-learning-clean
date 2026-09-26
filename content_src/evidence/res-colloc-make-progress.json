@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's collocation set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "make progress",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "make-progress.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "make-progress.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To get better at something, or to move further towards a goal, as time passes."
+    },
+    {
+      "sense_id": "make-progress.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The verb of the collocation is make and its noun is progress: make progress, make a lot of progress, make some progress, make no progress. Progress is uncountable, so it takes no a/an and no plural. What is being improved, or which area the goal is in, is named with with, in or on: make progress with my English, make progress in maths, make progress on the report. The tense and person move on make alone (she makes progress, we made progress, they are making progress)."
+    },
+    {
+      "sense_id": "make-progress.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Two repairs carry this unit. The first is the verb: the general verb do, which learners reach for as the default, is the wrong partner — the pair to teach is make + progress (the same make as in make a decision, make an effort). The second is the noun's grammar: progress is uncountable, so a progress and progresss are both impossible, and the quantity goes in front as a lot of / some / much / no. Because the noun never changes, all the tense work sits on make, which makes the unit easy to drill as four verb forms plus one fixed noun."
+    },
+    {
+      "sense_id": "make-progress.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Make progress reports movement towards a goal over time; improve puts the thing that gets better in the subject or object (my English improved, the course improved my writing) and says nothing about a goal or a speed. Make headway means almost the same as make progress but belongs to written and formal registers. Move forward reports only that the next step was taken, so a project can move forward without anyone making progress on the hard part."
+    },
+    {
+      "sense_id": "make-progress.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "取得进步；有进展（在某事上随着时间变好或更接近目标；progress 不可数，动词用 make）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "make-progress.base",
+      "written": "make progress",
+      "normalized": "make progress",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "make-progress.third-person-singular",
+      "written": "makes progress",
+      "normalized": "make progress",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "make-progress.past",
+      "written": "made progress",
+      "normalized": "make progress",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "make-progress.present-participle",
+      "written": "making progress",
+      "normalized": "make progress",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): progress talk is everywhere in study and work, so core utility, receptive value and productive value are HIGH and receptive difficulty is LOW; productive difficulty is MEDIUM because two things must be produced correctly at once (the make verb instead of do, and an uncountable noun with no article), and explanation cost is MEDIUM for the same reason — the learner has to unlearn do as the default verb. Transfer value is MEDIUM: the make + noun pattern recurs (make a decision, make an effort) but the uncountable noun set has to be learned item by item. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "A high-frequency noun-verb collocation of everyday talk about learning and work, so it carries full weight in the general fluency pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "Progress is a standing item in workplace talk (progress on the project, progress with the client), so the unit carries nearly full weight in the workplace pack; the shortfall records that the pack's own review has not yet placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show progress as the uncountable noun it is, with the make verb and a quantity in front (a lot of, some, no) and never with an article, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "DO_FOR_MAKE",
+      "error_pattern": "do | does | did | doing + progress",
+      "corrected_pattern": "make | makes | made | making + progress",
+      "explanation": "Chinese 做 is a general verb that covers both do and make, so a learner reaches for do as the default English verb and produces do progress. The correction teaches the pairing rather than a rule: progress is one of the nouns that takes make, like a decision and an effort, and the pair has to be stored as a unit because the general verb is not the partner.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of do (do, does, did, doing, done) stands directly before progress as the verb of the phrase, in a sentence where improvement over time is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "INDEFINITE_ARTICLE_BEFORE_UNCOUNTABLE",
+      "error_pattern": "a | an + progress",
+      "corrected_pattern": "progress with no article (a lot of progress, some progress, no progress)",
+      "explanation": "Progress is uncountable, so it cannot take the indefinite article, but learners regularize it as a countable noun of the kind that usually does (a decision, an effort — the other make-collocations in this corpus). The slip is an over-generalization of an English pattern rather than a transfer from one L1, which is why no L1 is named.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a or an stands directly before progress in a phrase where make progress is meant."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb form, the article and the nouns around them. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words carry another reading of progress, so the collocation is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "DO_FOR_MAKE: match when a form of do (do, does, did, doing, done) stands directly before progress as the verb of the phrase, because the collocation is make progress and the general verb is not its partner."
+    },
+    {
+      "ordinal": 1,
+      "rule": "INDEFINITE_ARTICLE_BEFORE_PROGRESS: match when a or an stands directly before progress (make a progress, a lot of a progress is impossible in the same phrase), because progress is uncountable and takes no indefinite article."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when a form of make (make, makes, made, making) is followed by progress and its accepted quantifiers (made a lot of progress, making some progress, made no progress, made much progress), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "PROGRESS_IN_OTHER_READINGS: do not match when progress names something other than improvement towards a goal — the course of an illness or a process (the progress of the disease), or forward movement along a route (the march made slow progress through the pass) — because make progress is not being used there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "She has made a lot of progress with her English.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "We are making some progress on the project.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "He made no progress before the exam.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The doctor explained the progress of the illness.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

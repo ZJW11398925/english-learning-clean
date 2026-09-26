@@ -248,19 +248,20 @@ def test_no_single_fact_can_stand_in_for_a_lexical_resolution() -> None:
 
 # ---------------------------------------------------------------------------
 # ③ the corpus: the artifact's answer (P5-R: no level at all; C1: 1×R4 +
-# 13×None; C2-a: 9×R4 + 5×None; C2-b: 28×R4 + 5×None; C3-a: 46×R4 + 5×None),
-# and the block is named
+# 13×None; C2-a: 9×R4 + 5×None; C2-b: 28×R4 + 5×None; C3-a: 46×R4 + 5×None;
+# C3-b: 64×R4 + 5×None), and the block is named
 # ---------------------------------------------------------------------------
 
 
-def test_five_targets_read_no_level_and_forty_six_read_r4(
+def test_five_targets_read_no_level_and_sixty_four_read_r4(
     built_content_db: Path,
 ) -> None:
     """Old truth: all fourteen read no level, blocked at R0 by
     ``assessment_membership``. New truth (C1 one target, C2-a the other
-    eight, C2-b the nineteen it authored as entities, C3-a the last
-    eighteen): the five CAPABILITY entities whose sources state no evidence
-    read exactly that, and the forty-six RESOURCE targets whose sources state
+    eight, C2-b the nineteen it authored as entities, C3-a eighteen of its
+    cut and C3-b the last eighteen): the five CAPABILITY entities whose
+    sources state no evidence
+    read exactly that, and the sixty-four RESOURCE targets whose sources state
     all nineteen facts read ``R4_DETECTION_READY`` — the same fail-closed
     ladder, now driven by the artifact."""
 
@@ -271,7 +272,7 @@ def test_five_targets_read_no_level_and_forty_six_read_r4(
             f"[p5-r] {assessment.target_id:32} {assessment.level!s:22}"
             f" {assessment.missing_keys}"
         )
-    assert len(assessments) == 51
+    assert len(assessments) == 69
     leveled: list[str] = []
     for assessment in assessments:
         if assessment.target_id.startswith("res-"):
@@ -288,7 +289,7 @@ def test_five_targets_read_no_level_and_forty_six_read_r4(
         assert set(R1_FACETS) <= set(r1.missing_keys)
         # Cumulative reporting: the R0 blocker is still standing in R1's set.
         assert "assessment_membership" in r1.missing_keys
-    assert len(leveled) == 46
+    assert len(leveled) == 64
 
 
 def test_the_lexical_resolution_equivalence_is_gone_from_the_code() -> None:

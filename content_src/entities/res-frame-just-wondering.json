@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-frame-just-wondering",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "SENTENCE_FRAME",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Ask for something without putting the other person under pressure.",
+      "Use was with just wondering, and join the request with if.",
+      "Start with the words: I was just ___ if you could help me."
+    ],
+    "reveal_form": "I was just wondering if you could help me.",
+    "canonical_forms": [
+      "I was just wondering if you could help me."
+    ],
+    "alternative_realizations": [
+      "I'm just wondering whether you have time this week."
+    ],
+    "required_slots": [
+      [
+        "wondering"
+      ],
+      [
+        "help",
+        "time"
+      ]
+    ]
+  }
+}

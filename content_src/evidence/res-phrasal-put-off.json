@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's phrasal-verb set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "put off",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "put-off.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "put-off.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To change something to a later time than it was planned for."
+    },
+    {
+      "sense_id": "put-off.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The unit is put + off, and it is separable: the thing moved may follow the particle (put off the meeting) or stand between the verb and the particle (put it off). A pronoun object must stand between them — put it off, never put off it. The later time is named with until or to (put off the meeting until Friday, the match was put off to next week), and the thing moved is usually an event, a decision or a task. The tense and person move on put, which keeps one form in the past (put, not putted)."
+    },
+    {
+      "sense_id": "put-off.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The order rule is the corpus's shared separability rule: noun either side, pronoun in the middle. Two further points belong to this unit. The past form is put, unchanged (we put off the meeting yesterday), which learners mis-form in the other direction as putted. And the complement of the postponed action, when an action is meant rather than an event, is a gerund: put off making a decision, not put off to make a decision — the postponed thing is grammatically the object, so it takes the -ing form."
+    },
+    {
+      "sense_id": "put-off.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Put off about a time is the meaning here: something moves later. Put off with a person as object means to discourage or to make someone dislike the idea (the price put me off) — same words, other sense, and the object is the person or the thing that repels. Postpone and delay are the neutral single verbs; call off is different again, because it cancels the event rather than moving it."
+    },
+    {
+      "sense_id": "put-off.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "推迟；延后（把原定的事改到更晚；可分离，代词放中间 put it off；注意 put sb off 是让人打消念头）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "put-off.base",
+      "written": "put off",
+      "normalized": "put off",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "put-off.third-person-singular",
+      "written": "puts off",
+      "normalized": "put off",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "put-off.past",
+      "written": "put off",
+      "normalized": "put off",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "put-off.present-participle",
+      "written": "putting off",
+      "normalized": "put off",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): the verb is easy to receive and very natural in planning talk, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because postpone-talk is less frequent than the corpus's core items and because the discourage sense of the same words can make production risky. Productive difficulty is MEDIUM for the separable order and the gerund complement, and explanation cost is MEDIUM because the second sense has to be named to keep the two apart. Transfer value is MEDIUM: the separability rule travels, but the gerund complement set is learned item by item. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "A high-frequency phrasal verb of everyday planning, so it carries full weight in the general fluency pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Meetings and deadlines get moved in workplace talk constantly (we had to put it off until Friday), so the unit carries full weight in the workplace pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the object's position as correct for its kind and keep the later time in an until or to phrase; keep the discourage sense, if it appears at all, in a CONTRAST role with an unmistakable person object; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PRONOUN_AFTER_PARTICLE",
+      "error_pattern": "put | puts | putting + off + object pronoun (it, them, him, her, me, us)",
+      "corrected_pattern": "put | puts + object pronoun + off (put it off)",
+      "explanation": "A pronoun object must stand between the verb and the particle of a separable phrasal verb; putting it after the particle is the order the learner's own language suggests. The correction is positional, and it is shared with give up, bring up and work out in this corpus.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of put is followed by off and then by an object pronoun, in a sentence where postponing is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "INFINITIVE_AFTER_PUT_OFF",
+      "error_pattern": "put | puts | put + off + to + verb in its base form",
+      "corrected_pattern": "put off + verb in -ing form",
+      "explanation": "What is postponed is the object of put off, so an action is named with the -ing form rather than with a to-infinitive; the to-infinitive is the shape learners attach when they read the postponed thing as a purpose. The correction keeps the postponed action in the object slot.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of put is followed by off and then by to and a base verb, in a sentence where postponing is meant."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb form, the particle, the object's position and the complement's shape. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words carry the discourage sense, so postponing is not meant)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PRONOUN_AFTER_PARTICLE: match when a form of put is followed by off and then by an object pronoun, because a pronoun object must stand between the verb and the particle."
+    },
+    {
+      "ordinal": 1,
+      "rule": "INFINITIVE_AFTER_PUT_OFF: match when a form of put is followed by off and then by to with a base verb, because the postponed action is the object and takes the -ing form."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the postponed thing is placed correctly for its kind and the later time is in an until or to phrase (put off the meeting until Friday, put it off, don't put off making the call), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "DISCOURAGE_READING: do not match when put off takes a person or a general thing as its object and means to discourage or to repel (the price put me off, don't let that put you off), because postponing is not meant there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "We had to put off the meeting until Friday.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Don't put off making the call.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "She put it off until next week.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The high price put me off.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

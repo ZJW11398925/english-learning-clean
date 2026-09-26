@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-phrasal-put-off",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PHRASAL_VERB",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that something was moved to a later time.",
+      "Use put plus off; with a pronoun the object goes in the middle: put it off.",
+      "Start with the words: We had to put ___ the meeting until Friday."
+    ],
+    "reveal_form": "We had to put off the meeting until Friday.",
+    "canonical_forms": [
+      "We had to put off the meeting until Friday."
+    ],
+    "alternative_realizations": [
+      "Don't put it off any longer."
+    ],
+    "required_slots": [
+      [
+        "off"
+      ],
+      [
+        "meeting",
+        "longer"
+      ]
+    ]
+  }
+}

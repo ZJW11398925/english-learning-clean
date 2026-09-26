@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-no-offense-but",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Warn the listener that a criticism is coming.",
+      "Use No offense followed by a comma and but, then the criticism itself.",
+      "Start with the words: No ___, but your design needs more work."
+    ],
+    "reveal_form": "No offense, but your design needs more work.",
+    "canonical_forms": [
+      "No offense, but your design needs more work."
+    ],
+    "alternative_realizations": [
+      "No offense, but I think we should start again."
+    ],
+    "required_slots": [
+      [
+        "offense"
+      ],
+      [
+        "design",
+        "start"
+      ]
+    ]
+  }
+}

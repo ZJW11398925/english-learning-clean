@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's discourse-marker set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "that reminds me",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "that-reminds-me.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "that-reminds-me.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used to announce that something just said or seen has given the speaker a new, usually related, thing to talk about."
+    },
+    {
+      "sense_id": "that-reminds-me.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The marker opens an utterance: That reminds me — did you ever call the bank? The recalled thing follows of when it is named as a noun phrase (That reminds me of something I meant to ask you), while a new topic the marker introduces follows a dash, a comma or a full stop and needs no of. The verb stays third-person singular with that as its subject (that reminds me, never that remind me), and the marker can be followed by the question it has triggered without any connector between them. It belongs to conversation, where it moves the talk by association."
+    },
+    {
+      "sense_id": "that-reminds-me.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The marker is a package deal: one trigger (that, the thing just said) and one reaction (reminds me) followed either by of + the thing recalled or by a new question or statement. The repair learners need is on the right-hand side — a clause cannot stand directly after of (That reminds me of I need to call the bank), because of takes a noun phrase. The fix is not to add a word but to choose the frame: name the thing (of the bank) or drop the of and start the new utterance (That reminds me — I need to call the bank)."
+    },
+    {
+      "sense_id": "that-reminds-me.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "That reminds me introduces a topic the speaker had forgotten to raise, and the connection is the speaker's. Speaking of which is the next step in the same family: it picks up the topic the other person just named. By the way adds a side remark that need not be connected to anything. It reminds me of is a plain comparison (that song reminds me of school) with no move to a new topic. The marker's job is to shift the talk while keeping it anchored to something just said."
+    },
+    {
+      "sense_id": "that-reminds-me.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "这让我想起……（顺着刚说到的话引入一个新的、相关的话题；后接名词用 of，接新话题就直接接句子）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "that-reminds-me.base",
+      "written": "That reminds me",
+      "normalized": "that reminds me",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): the marker is instantly recognisable in conversation, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because a learner can conduct most conversations without it, and it is one of several devices for the same move. Productive difficulty is MEDIUM because the of-complement and the dash-then-clause frame have to be kept apart, and explanation cost is MEDIUM for that same split. Transfer value is MEDIUM: the marker joins the corpus's other conversational topic-management devices (by the way, speaking of which), which share the same slot at the front of an utterance. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "A frequent conversational marker for bringing a related topic in, so it carries full weight in the general fluency pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.6",
+      "rationale": "The marker is heard in meetings when someone adds a point the discussion triggered, so it has a real workplace use; the reduced weight records that it belongs mainly to informal talk."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show both accepted right-hand sides across the attempt — of plus a noun phrase, or a dash and a new utterance — so the model never carries of in front of a clause; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "CLAUSE_AFTER_OF",
+      "error_pattern": "that reminds me of + a finite clause (that reminds me of I need to call the bank)",
+      "corrected_pattern": "that reminds me of + a noun phrase, or that reminds me + a dash and the new clause",
+      "explanation": "Of is a preposition and takes a noun phrase, so a clause cannot follow it directly; the learner produces the clause because the recalled thing is a fact rather than a thing. The correction is a frame choice rather than a missing word: name the recalled thing as a noun (of the bank) or leave of out and let the new utterance stand on its own.",
+      "severity": "HIGH",
+      "detection_policy": "Match when that reminds me is followed by of and then by a finite clause with its own subject and verb, in a sentence where recalling something is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "AGREEMENT_WITH_THAT",
+      "error_pattern": "that remind me (also that's remind me, that remembering me)",
+      "corrected_pattern": "that reminds me",
+      "explanation": "The subject is that, which is singular, so the verb carries the -s; learners drop it when the marker is stored as a chunk whose ending is not heard clearly, and some re-form the verb from the noun remind. The correction is one form, and the drill is the three words holding together.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when that is immediately followed by a form of remind other than reminds (remind, reminded, reminding) before me, in a sentence where the marker is meant."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the marker's three words and what follows them. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words make a plain comparison rather than a topic move, so the marker is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "CLAUSE_AFTER_OF: match when that reminds me is followed by of and then by a finite clause (its own subject and verb), because of takes a noun phrase rather than a clause."
+    },
+    {
+      "ordinal": 1,
+      "rule": "AGREEMENT_WITH_THAT: match when that is immediately followed by a form of remind other than reminds before me (that remind me, that reminded me, that reminding me), because that is singular and the verb carries the -s."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the marker runs correctly in either of its accepted shapes (that reminds me — did you ever call the bank; that reminds me of something I meant to ask you; and the past form that reminded me of it), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "PLAIN_COMPARISON_READING: do not match when the same words compare two things with no topic being moved (that song reminds me of school, she reminds me of my sister), because the marker's new-topic use is absent there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "That reminds me — did you ever call the bank?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "That reminds me of something I meant to ask you.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "That reminded me of our last trip.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "That song reminds me of school.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

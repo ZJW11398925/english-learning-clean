@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-colloc-take-a-look",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "COLLOCATION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Ask someone to turn their eyes to something for a moment.",
+      "Use the light verb take with a look, and keep at before the thing you look at.",
+      "Start with the words: Can you take a ___ at this report?"
+    ],
+    "reveal_form": "Can you take a look at this report?",
+    "canonical_forms": [
+      "Can you take a look at this report?"
+    ],
+    "alternative_realizations": [
+      "I took a quick look at your email."
+    ],
+    "required_slots": [
+      [
+        "look"
+      ],
+      [
+        "report",
+        "email"
+      ]
+    ]
+  }
+}

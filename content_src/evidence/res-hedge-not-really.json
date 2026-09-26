@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's pragmatic-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "not really",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "not-really.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "not-really.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used to answer with a soft no, or to weaken a negative statement so that it does not sound blunt."
+    },
+    {
+      "sense_id": "not-really.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The pair is not + really, and the two words stay together at the front of the answer: Not really. The answer can be preceded by a plain No, set off by a comma (No, not really), and it can carry a reason after a dash or a comma (Not really — I don't watch much TV). Only really is stressed, and the stress is what makes the answer sound gentle rather than flat. In the middle of a sentence the same two words do different work — they weaken the verb they stand next to (I don't really like it) — which is a separate construction: the answer uses not really on its own, with no auxiliary before not."
+    },
+    {
+      "sense_id": "not-really.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The form slip is a duplicated negation: learners add no in front of the answer (no really) because they read the pair as a negative plus a word, or they drop really and answer with the bare not (not). The pair is one unit and carries its own negation, so not really stands alone. The pronunciation is part of the item: the two words are said as one falling unit with the stress on really, and flattening them sounds like a refusal, which is exactly the tone the answer exists to avoid. The second, softer point is what the answer claims: it declines the strong version of the question and leaves room for a partial yes."
+    },
+    {
+      "sense_id": "not-really.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Not really softens a no and leaves the door a little open. No is the plain refusal. Not exactly corrects a detail rather than declining the whole thing (Do you live here? Not exactly). Not especially weakens a negative answer that still names a degree. Kind of and sort of answer yes with a hedge, which is the other direction, and I don't really think so is a hedged opinion rather than an answer. Where the words stand next to a verb (I don't really watch TV), the construction weakens that verb instead of answering, and the answer use is absent."
+    },
+    {
+      "sense_id": "not-really.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "不太……；也不算吧（软化的否定回答；not 和 really 连用，前面不加 no，重音在 really）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "not-really.base",
+      "written": "Not really",
+      "normalized": "not really",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): softening a no is one of the most frequent conversational needs, so core utility, receptive value and productive value are HIGH and receptive difficulty is LOW. Productive difficulty is MEDIUM because the duplicated-no slip is common and because the answer's tone depends on keeping the two words as one stressed unit; explanation cost is LOW — one form, one position, one tone. Transfer value is MEDIUM: the weakening-with-really pattern recurs across the corpus's negative hedges, though each item keeps its own shape. RESOURCE_PRACTICE follows the entity's own declared learning_intent DEVELOP. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "A top-frequency soft answer of everyday conversation, so it carries full weight in the general fluency pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "The soft no is used in low-stakes workplace exchange (Not really, that's fine), so the unit has a real workplace use; the reduced weight records that workplace answers often need a more explicit version."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the pair as one unbroken unit at the front of the answer, optionally preceded by a comma-separated No, and show the mid-sentence construction (I don't really like it), if it appears at all, in a CONTRAST role so the two uses never blur; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "DOUBLED_NEGATION",
+      "error_pattern": "no really | no, not really (as the whole answer) | not real",
+      "corrected_pattern": "Not really (optionally No, not really)",
+      "explanation": "The pair already carries its negation, so adding no in front of it doubles the negative, and real for really comes from the adjective being used where the adverb belongs. Both slips come from producing the answer word by word rather than as the one unit it is; the correction is the stored pair with its stress.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when no stands directly before really as the whole answer, or when the adjective real replaces really in the answer, in a sentence where a soft no is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "SOFT_ANSWER_WITHOUT_REALLY",
+      "error_pattern": "not + a bare period as the answer (Not.)",
+      "corrected_pattern": "Not really.",
+      "explanation": "The answer is the pair, and the single word not sounds like a flat refusal rather than a softened one, which loses the tone the answer exists for. Learners produce it when they have learned not as the negative particle; the correction is the pair, and the stress on really is part of the fix.",
+      "severity": "LOW",
+      "detection_policy": "Match when not stands alone as the answer to a yes/no question in a context where the soft answer is being taught."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words of the answer and their order. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words weaken a verb inside a sentence, so the answer is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "DOUBLED_NEGATION: match when no stands directly before really as the whole answer, or when the adjective real appears where really belongs, in a sentence where a soft no is meant."
+    },
+    {
+      "ordinal": 1,
+      "rule": "SOFT_ANSWER_WITHOUT_REALLY: match when not stands alone as the answer to a yes/no question, because the unit is the pair not really."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the pair stands whole as the answer, with or without a preceding No and with its optional reason (Not really. / No, not really. / Not really — I don't watch much TV.), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "MID_SENTENCE_WEAKENING: do not match when not and really stand inside a sentence next to a verb and weaken it rather than answering (I don't really like it, she doesn't really know him), because the answer use is absent there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Not really — I don't watch much TV.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "No, not really.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Not really, thanks.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "I don't really like coffee.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

@@ -114,6 +114,28 @@ C3A_APPROVED = (
     "res-softener-to-be-fair",
 )
 
+#: The eighteen rows C3-b authored and approved while authoring its entities.
+C3B_APPROVED = (
+    "res-colloc-make-an-effort",
+    "res-colloc-make-progress",
+    "res-colloc-raise-awareness",
+    "res-colloc-save-time",
+    "res-colloc-take-a-look",
+    "res-discourse-long-story-short",
+    "res-discourse-that-reminds-me",
+    "res-frame-just-wondering",
+    "res-frame-the-thing-is",
+    "res-hedge-i-guess",
+    "res-hedge-not-really",
+    "res-idiom-a-blessing-in-disguise",
+    "res-idiom-the-ball-is-in-your-court",
+    "res-phrasal-bring-up",
+    "res-phrasal-put-off",
+    "res-phrasal-work-out",
+    "res-pragmatic-no-offense-but",
+    "res-softener-if-anything",
+)
+
 _CLAIM_COLUMNS = (
     "evidence_claim_id",
     "target_type",
@@ -170,17 +192,19 @@ def _capability_rows(db: sqlite3.Connection) -> tuple[tuple[object, ...], ...]:
 def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> None:
     """Old truth (P5-R): all nine rows were *mapped*, none *approved*. C1
     approved one row; C2-a approved the other eight while authoring their
-    targets' readiness evidence; C2-b authored and approved nineteen more and
-    C3-a eighteen, so today all forty-six rows are ``CANONICAL_APPROVED`` —
+    targets' readiness evidence; C2-b authored and approved nineteen more,
+    C3-a eighteen and C3-b the last eighteen, so today all sixty-four rows are
+    ``CANONICAL_APPROVED`` —
     and the mapping-describing fields of the nine migrated rows (relation,
     strength, primary_flag, and the two ids) are exactly what the approvals
     were forbidden to touch, asserted row by row from the source document. The
-    C2-b and C3-a rows are held to the same field discipline: a ``REALIZES``
+    C2-b, C3-a and C3-b rows are held to the same field discipline: a
+    ``REALIZES``
     row carries ``primary_flag = true``, a ``SUPPORTS`` row ``false``, and
     ``strength`` is null everywhere (no vocabulary is invented)."""
 
     links = _links_document()["links"]
-    assert len(links) == 46
+    assert len(links) == 64
     realizes = 0
     supports = 0
     for row in links:
@@ -196,7 +220,7 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
         else:
             supports += 1
             assert row["primary_flag"] is False, row
-    assert (realizes, supports) == (18, 28)
+    assert (realizes, supports) == (21, 43)
     print(
         "[p5-r] corpus links -> "
         f"{sorted({row['editorial_status'] for row in links})}"
@@ -205,12 +229,13 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
     )
 
 
-@pytest.mark.parametrize("index", range(46))
+@pytest.mark.parametrize("index", range(64))
 def test_every_rationale_states_its_basis_and_its_limit(index: int) -> None:
     """Every rationale must carry its basis **and** its limit, and each one
     names its own row. The basis differs by cut (C1 for the first row, C2-a
     for the eight it approved, C2-b for the nineteen it authored and
-    approved, C3-a for the eighteen it authored and approved), and the limits
+    approved, C3-a for the eighteen it authored and approved, C3-b for the
+    last eighteen), and the limits
     are stated in each row's own words: what the
     review did not cover (no capability-semantics audit, because the
     capability has no functional definition here), the Revisit, and — for the
@@ -234,6 +259,11 @@ def test_every_rationale_states_its_basis_and_its_limit(index: int) -> None:
         assert "Approved by the C2-a (Phase 11) editorial review" in rationale
     elif resource_id in C3A_APPROVED:
         assert "C3-a (Phase 11) editorial review" in rationale, resource_id
+        # The eighteen rows this cut authored carry their own provenance
+        # limit: unlike the migrated nine, no authoring fixture declares them.
+        assert "fixture" in rationale, resource_id
+    elif resource_id in C3B_APPROVED:
+        assert "C3-b (Phase 11) editorial review" in rationale, resource_id
         # The eighteen rows this cut authored carry their own provenance
         # limit: unlike the migrated nine, no authoring fixture declares them.
         assert "fixture" in rationale, resource_id
@@ -271,7 +301,7 @@ def test_the_entity_lifecycle_is_the_authors_and_was_not_touched(
             assert resource.value.lifecycle_status == "CANONICAL_APPROVED"
         eligible = supply.supply_entity_ids()
         assert isinstance(eligible, Ok), eligible
-        assert len(eligible.value) == 51
+        assert len(eligible.value) == 69
     finally:
         store.close()
 
@@ -326,9 +356,9 @@ def test_only_the_approved_realizes_link_credits_a_capability(
     """The gate applies by status **and by relation**, not by row count
     (旧真值: all nine linked resources read ``None`` on the credit face; C1:
     one approved row credited its node; C2-a: all nine approved rows credited;
-    C2-b: twenty-eight rows approved, fifteen crediting; 新真值 C3-a:
-    forty-six rows are approved, and exactly the eighteen ``REALIZES`` rows
-    credit — the twenty-eight approved ``SUPPORTS`` rows satisfy §8.1 R2's
+    C2-b: twenty-eight rows approved, fifteen crediting; 新真值 C3-b:
+    sixty-four rows are approved, and exactly the twenty-one ``REALIZES`` rows
+    credit — the forty-three approved ``SUPPORTS`` rows satisfy §8.1 R2's
     ``curriculum_link`` fact and mint nothing, because the read filters
     ``relation = REALIZES``). The count is what still distinguishes this from
     "every entity credits": the five CAPABILITY entities carry no
@@ -364,9 +394,9 @@ def test_only_the_approved_realizes_link_credits_a_capability(
                 supports_only += 1
                 assert relations == {"SUPPORTS"}, entity_id
                 assert teaching.value.capability_linkage is None, entity_id
-        assert linked == 46
-        assert credited == 18
-        assert supports_only == 28
+        assert linked == 64
+        assert credited == 21
+        assert supports_only == 43
     finally:
         store.close()
     print(

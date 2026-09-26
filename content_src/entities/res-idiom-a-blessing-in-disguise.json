@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-idiom-a-blessing-in-disguise",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "IDIOM",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that something that looked bad led to something good.",
+      "The idiom is fixed and keeps its article: a blessing in disguise.",
+      "Start with the words: Losing that job turned out to be a blessing in ___."
+    ],
+    "reveal_form": "Losing that job turned out to be a blessing in disguise.",
+    "canonical_forms": [
+      "Losing that job turned out to be a blessing in disguise."
+    ],
+    "alternative_realizations": [
+      "The delay was a blessing in disguise."
+    ],
+    "required_slots": [
+      [
+        "disguise"
+      ],
+      [
+        "job",
+        "delay"
+      ]
+    ]
+  }
+}

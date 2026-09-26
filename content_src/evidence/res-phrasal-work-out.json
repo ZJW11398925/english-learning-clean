@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's phrasal-verb set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "work out",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "work-out.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "work-out.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To find the answer to something, or to understand it, by thinking about it or by calculating."
+    },
+    {
+      "sense_id": "work-out.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The unit is work + out, and it is separable: the object may follow the particle (work out the answer) or stand between the verb and the particle (work it out). A pronoun object must stand between them — work it out, never work out it. What is understood or solved is usually a clause or a noun phrase: work out why the machine stopped, work out the cost, work out how to open it. The tense and person move on work (works, worked, working) while out stays put."
+    },
+    {
+      "sense_id": "work-out.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Two things are taught together: the meaning (find the answer by thinking) and the separable order. The order rule is the same one that carries give up and put off in this corpus: a noun can go either side of the particle, but a pronoun must go in the middle. The second, quieter repair is the word boundary: the verb is two words, work out, while the noun is one word, a workout — and the noun means a training session, not an answer. Writing the verb as one word is the error to watch for in the learner's own text."
+    },
+    {
+      "sense_id": "work-out.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Work out is about reaching an answer by thinking or calculating, and it suits puzzles, sums and reasons. Figure out is very close and slightly more informal in American English. Find out is about learning a fact from outside (find out when the train leaves), not about deriving it. Solve takes a named problem as its object (solve the equation), and calculate names the arithmetic rather than the understanding."
+    },
+    {
+      "sense_id": "work-out.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "想出来；算出来；弄明白（靠思考或计算得出答案；可分离，代词放中间 work it out；名词 workout 是另一回事）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "work-out.base",
+      "written": "work out",
+      "normalized": "work out",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "work-out.third-person-singular",
+      "written": "works out",
+      "normalized": "work out",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "work-out.past",
+      "written": "worked out",
+      "normalized": "work out",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "work-out.present-participle",
+      "written": "working out",
+      "normalized": "work out",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): solving and understanding out loud is constant in study and work talk, so core utility, receptive value and productive value are HIGH and receptive difficulty is LOW. Productive difficulty is MEDIUM because the separable order has to be produced correctly (work it out, not work out it) and because the same words also form the noun workout; explanation cost is MEDIUM for the same two reasons. Transfer value is HIGH: the separable-particle rule it teaches carries directly to give up, put off and bring up in this corpus. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "A top-frequency phrasal verb of thinking and solving, so it carries full weight in the general fluency pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Working out why something failed and what to do about it is a standing workplace task (let's work out the cost, I worked out who owns it), so the unit carries full weight in the workplace pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "TASK_FOCUS",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "TASK_FOCUS",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the object's position as correct for its kind — a noun either side of out, a pronoun only in the middle — and show the noun workout, if it appears at all, in a CONTRAST role; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PRONOUN_AFTER_PARTICLE",
+      "error_pattern": "work | works | worked | working + out + object pronoun (it, them, him, her, me, us)",
+      "corrected_pattern": "work | works | worked + object pronoun + out (work it out)",
+      "explanation": "A pronoun object cannot stand after the particle of a separable phrasal verb; English keeps the pronoun next to its verb, which is the opposite of what the learner's own word order suggests. The correction is a position rule, not a different meaning, and it is the same rule that governs give up and put off.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of work is followed by out and then by an object pronoun (it, them, him, her, me, us), in a sentence where solving or understanding is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "NOUN_VERB_BOUNDARY",
+      "error_pattern": "workout as the verb (I need to workout the answer)",
+      "corrected_pattern": "work out (two words) as the verb; workout (one word) is the noun",
+      "explanation": "The noun workout (a training session) is written as one word, and the verb as two; learners who know the noun from the gym carry the spelling and the single-unit feel onto the verb. The correction separates the two words by class, and keeping the noun's meaning in view makes the split memorable.",
+      "severity": "LOW",
+      "detection_policy": "Match when the single word workout stands where a verb is required, in a sentence about solving or understanding rather than about training."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb form, the particle, the object and its position. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words carry the other sense of work out or the noun workout, so this unit is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PRONOUN_AFTER_PARTICLE: match when a form of work is followed by out and then by an object pronoun, because a pronoun object must stand between the verb and the particle."
+    },
+    {
+      "ordinal": 1,
+      "rule": "NOUN_VERB_BOUNDARY: match when the one-word form workout stands in a verb position in a sentence about solving or understanding, because the verb is the two-word form work out."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the object is placed correctly for its kind (worked out the answer, work it out, working out how to open it), because those are the accepted realizations of the separable order."
+    },
+    {
+      "ordinal": 3,
+      "rule": "WORK_OUT_IN_OTHER_READINGS: do not match when the same words carry another sense — exercise (I work out twice a week), a result that turns out well (it worked out fine), or the noun workout (a good workout) — because solving-by-thinking is not meant there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "We finally worked out why the machine stopped.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "I can't work it out.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "She is working out how to open the file.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "I work out twice a week at the gym.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

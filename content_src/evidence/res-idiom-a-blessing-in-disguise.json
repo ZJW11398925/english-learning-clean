@@ -1,0 +1,196 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's idiom set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "a blessing in disguise",
+    "pos": "NOUN"
+  },
+  "senses": [
+    {
+      "sense_id": "a-blessing-in-disguise.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "a-blessing-in-disguise.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Something that looks like a misfortune when it happens but turns out to bring a good result."
+    },
+    {
+      "sense_id": "a-blessing-in-disguise.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The idiom is a noun phrase and keeps its indefinite article: a blessing in disguise. It is used as a complement (losing that job was a blessing in disguise), as a noun with an adjective in front (a real blessing in disguise), and as the object of turn out to be — the frame that matches its meaning of a later discovery. The word order inside the phrase is fixed (blessing before in disguise), the plural is blessings in disguise, and there is nothing to fill in: the phrase is complete as it stands."
+    },
+    {
+      "sense_id": "a-blessing-in-disguise.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The order inside the phrase is the form to drill: the blessing is what turned out well and the disguise is the bad appearance it wore, so the good word comes first. Learners who reverse the two produce a phrase English does not have, which is why the correction is word order inside a fixed unit rather than a meaning repair. The second, smaller repair is the article: the phrase is countable and singular, so it takes a (or an in the plural-free sense of no article after a determiner), and a bare blessing in disguise is incomplete. The frame turn out to be is worth teaching alongside, because it carries the timing the idiom needs."
+    },
+    {
+      "sense_id": "a-blessing-in-disguise.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "A blessing in disguise is about a bad-looking event with a good outcome, and the discovery comes later. A lucky break is simply good luck, with nothing bad in front of it. A silver lining is the good part inside a bad situation (the silver lining of the delay was more time to plan) — the situation stays bad, which is why the two idioms divide the same ground. It worked out well reports the good result without naming any disguise."
+    },
+    {
+      "sense_id": "a-blessing-in-disguise.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "因祸得福的事；看似坏事的好事（先像灾祸、后来带来好结果；a blessing 在前，in disguise 在后）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "a-blessing-in-disguise.base",
+      "written": "a blessing in disguise",
+      "normalized": "a blessing in disguise",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "a-blessing-in-disguise.plural",
+      "written": "blessings in disguise",
+      "normalized": "a blessing in disguise",
+      "form_type": "PLURAL",
+      "morph_features": "number=plural",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): the idiom is easy to understand and pleasant to hear, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because it comments on a past turn of events rather than carrying everyday information. Productive difficulty is MEDIUM because the internal word order and the article are both easy to blur, and explanation cost is MEDIUM because the two halves of the image (blessing, disguise) have to be told apart. Transfer value is LOW: the idiom is a self-contained image. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "A frequent idiom of everyday reflection on events, so it carries nearly full weight in the general fluency pack's coverage accounting; the shortfall records that the idiom comments on a story rather than carrying one."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "People do describe a failed bid or a lost account this way at work, so the unit has a real workplace use; the reduced weight records that it belongs to reflective rather than functional talk."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the phrase in its fixed order with its article, and show it in a frame that carries the later discovery (turn out to be, in the end) so the model never suggests the good result was known at the start; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "WORD_ORDER_IN_IDIOM",
+      "error_pattern": "a disguise(d) blessing | a blessing disguised | disguised blessing",
+      "corrected_pattern": "a blessing in disguise",
+      "explanation": "The idiom keeps its two halves in a fixed order and joined by in: the blessing is the outcome and the disguise is the appearance it wore. Learners reverse the halves or turn the second into a participle because a disguised blessing feels like a natural noun phrase; the correction is the stored order, and the image explains why the good word comes first.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the blessing and the disguise words appear together in the reversed or participial order, in a sentence where the idiom is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "ARTICLE_OMISSION",
+      "error_pattern": "be + blessing in disguise (singular, no article) or in a disguise",
+      "corrected_pattern": "be + a blessing in disguise",
+      "explanation": "The phrase is a singular countable noun phrase and takes the indefinite article; the article is dropped because the unit is produced as a block and the English article habit is lost inside it. In disguise is also fixed, so a determiner after in is a separate slip on the same unit.",
+      "severity": "LOW",
+      "detection_policy": "Match when blessing in disguise stands as a singular complement with no article before blessing, or when a determiner appears after in."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the two halves of the phrase, their order, and the article. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words carry a literal blessing or disguise reading, so the idiom is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "WORD_ORDER_IN_IDIOM: match when the blessing and disguise halves appear together in the reversed order or with the second half turned into a participle (a disguise blessing, a disguised blessing), because the idiom's order is fixed."
+    },
+    {
+      "ordinal": 1,
+      "rule": "ARTICLE_OMISSION: match when blessing in disguise stands as a singular noun phrase with no article before blessing, or with a determiner between in and disguise, because the phrase keeps a blessing in disguise."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the phrase runs whole with its article and its frame (it turned out to be a blessing in disguise, the delay was a blessing in disguise, one of those blessings in disguise), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "BLESSING_AND_DISGUISE_IN_OTHER_READINGS: do not match when the words carry their literal senses (the priest gave a blessing, he came in disguise), or when a different idiom of the same ground is used (the silver lining), because a blessing in disguise is not being used there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Losing that job turned out to be a blessing in disguise.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "The delay was a blessing in disguise.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Both failures were blessings in disguise.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The priest gave the family a blessing.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

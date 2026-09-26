@@ -54,10 +54,11 @@ FOCUS = "res-hedge-i-think"
 #: specimen for "the artifact carries nothing" that the zero-side pins read.
 NO_EVIDENCE_ENTITY = "cap-disc-topic-shift"
 
-#: The forty-six RESOURCE targets, in id order — the ids whose sources
+#: The sixty-four RESOURCE targets, in id order — the ids whose sources
 #: state all nineteen §8.1 facts and therefore read ``R4_DETECTION_READY``.
 #: 旧真值: 9 (C1 authored one, C2-a eight); C2-b added nineteen with their
-#: evidence documents, C3-a the last eighteen, and the list is written out
+#: evidence documents, C3-a eighteen of its cut and C3-b the last eighteen,
+#: and the list is written out
 #: rather than derived from the artifact, so a source that loses a document
 #: fails here instead of quietly shrinking the expected set.
 R4_TARGETS = (
@@ -67,44 +68,62 @@ R4_TARGETS = (
     "res-colloc-heavy-rain",
     "res-colloc-keep-in-mind",
     "res-colloc-make-a-decision",
+    "res-colloc-make-an-effort",
+    "res-colloc-make-progress",
     "res-colloc-make-sense",
     "res-colloc-meet-a-deadline",
     "res-colloc-pay-attention-to",
     "res-colloc-play-a-role",
+    "res-colloc-raise-awareness",
+    "res-colloc-save-time",
+    "res-colloc-take-a-look",
     "res-colloc-take-advantage-of",
     "res-colloc-take-part-in",
     "res-discourse-anyway",
     "res-discourse-by-the-way",
     "res-discourse-having-said-that",
     "res-discourse-in-fact",
+    "res-discourse-long-story-short",
+    "res-discourse-that-reminds-me",
     "res-discourse-to-be-honest",
     "res-frame-id-like-to",
     "res-frame-if-you-dont-mind",
+    "res-frame-just-wondering",
     "res-frame-lets-say",
+    "res-frame-the-thing-is",
     "res-frame-what-im-saying-is",
     "res-frame-would-you-mind",
+    "res-hedge-i-guess",
     "res-hedge-i-mean",
     "res-hedge-i-think",
     "res-hedge-im-not-sure",
     "res-hedge-it-depends",
+    "res-hedge-not-really",
     "res-hedge-sort-of",
+    "res-idiom-a-blessing-in-disguise",
     "res-idiom-break-the-ice",
     "res-idiom-hit-the-nail-on-the-head",
     "res-idiom-on-the-same-page",
     "res-idiom-piece-of-cake",
+    "res-idiom-the-ball-is-in-your-court",
     "res-idiom-under-the-weather",
+    "res-phrasal-bring-up",
     "res-phrasal-carry-on",
     "res-phrasal-come-up-with",
     "res-phrasal-figure-out",
     "res-phrasal-give-up",
     "res-phrasal-look-forward-to",
+    "res-phrasal-put-off",
     "res-phrasal-run-out-of",
     "res-phrasal-turn-out",
+    "res-phrasal-work-out",
     "res-pragmatic-could-i-ask",
     "res-pragmatic-could-you",
+    "res-pragmatic-no-offense-but",
     "res-pragmatic-sorry-to-interrupt",
     "res-pragmatic-thats-a-good-point-but",
     "res-softener-a-bit",
+    "res-softener-if-anything",
     "res-softener-kind-of",
     "res-softener-to-be-fair",
 )
@@ -610,10 +629,12 @@ def test_corpus_readiness_table_is_computed_and_printed(
     built_content_db: Path,
 ) -> None:
     """P5-R truth, now driven by the artifact instead of by missing tables
-    (C1, then C2-a, then C2-b, then C3-a): the five CAPABILITY entities state
+    (C1, then C2-a, then C2-b, then C3-a, then C3-b): the five CAPABILITY
+    entities state
     no evidence and read no level, blocked at R0 by ``assessment_membership``;
-    the forty-six RESOURCE targets — C1's authored document, C2-a's eight,
-    C2-b's nineteen and C3-a's eighteen — state all nineteen facts and read
+    the sixty-four RESOURCE targets — C1's authored document, C2-a's eight,
+    C2-b's nineteen, C3-a's eighteen and C3-b's eighteen — state all nineteen
+    facts and read
     ``R4_DETECTION_READY``. The table prints the blocking keys so the reading
     is checkable rather than asserted."""
 
@@ -623,10 +644,10 @@ def test_corpus_readiness_table_is_computed_and_printed(
     for target_id, level, missing in table:
         print(f"[readiness] {target_id:32} {level!s:22} {missing}")
 
-    assert len(table) == 51
+    assert len(table) == 69
     levels = {(target, missing): level for target, level, missing in table}
     # 旧真值 → 新真值（C1: 1×R4+13×None；C2-a: 9×R4+5×None；C2-b:
-    # 28×R4+5×None；C3-a: 46×R4+5×None）.
+    # 28×R4+5×None；C3-a: 46×R4+5×None；C3-b: 64×R4+5×None）.
     assert (
         levels[("res-colloc-make-a-decision", ())] == "R4_DETECTION_READY"
     )
@@ -736,7 +757,7 @@ def test_every_artifact_entity_is_an_expression(built_content_db: Path) -> None:
         store.close()
     print(f"[f1] artifact entity types -> {sorted(set(types.values()))} ({len(types)})")
     assert set(types.values()) == {"EXPRESSION"}
-    assert len(types) == 51
+    assert len(types) == 69
 
 
 def test_a_non_expression_entity_reads_the_same_no_level(tmp_path: Path) -> None:
@@ -867,7 +888,7 @@ def test_every_corpus_link_is_approved_and_satisfies_the_r2_fact(
         assert len(store.entity_ids().value) - len(linked) == 5
     finally:
         store.close()
-    assert len(linked) == 46
+    assert len(linked) == 64
     assert all(entity_id.startswith("res-") for entity_id in linked)
     # The R2 fact and the approved status coincide on every linked target:
     # no unapproved mapping satisfies it, and every approved one does.

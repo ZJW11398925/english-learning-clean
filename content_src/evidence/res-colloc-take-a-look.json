@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's collocation set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "take a look",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "take-a-look.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "take-a-look.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To turn your eyes to something and look at it, often briefly, and often because someone has asked you to."
+    },
+    {
+      "sense_id": "take-a-look.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The unit is take a look, and what is looked at follows at: take a look at this report, I took a quick look at your email. The noun keeps its article (a look), and an adjective may sit between the article and the noun (a quick look, a closer look, a good look). The tense and person move on take alone. The unit is the natural way to invite someone's eyes onto something, so it appears both as a request (Can you take a look at ...?) and as a report of a quick reading (I took a look at it this morning)."
+    },
+    {
+      "sense_id": "take-a-look.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The light verb is the whole difficulty: learners reach for make or do because those are the general-purpose verbs they have learned for noun phrases, while this noun goes with take (the same take as in take a break, take a photo, take a walk). The second repair is the preposition: look at something needs at, and after the noun look the at is still required, so look a look at is the shape to drill — three words on the left of at and none missing. Because the article is fixed inside the unit, the drill can hold a look still and move only take and the at-phrase."
+    },
+    {
+      "sense_id": "take-a-look.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Take a look at invites a quick or requested look; look at is the plain verb and carries no invitation; have a look at is the same unit with the other light verb and is more common in British English; watch takes things that move or need attention over time (watch the road, watch a film); and examine or inspect means looking closely in order to judge, which is why they suit a report that must be checked rather than glanced at."
+    },
+    {
+      "sense_id": "take-a-look.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "看一眼；看一下（把目光转向某物，常因别人请你看看；轻动词用 take，后接 at）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "take-a-look.base",
+      "written": "take a look",
+      "normalized": "take a look",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "take-a-look.third-person-singular",
+      "written": "takes a look",
+      "normalized": "take a look",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "take-a-look.past",
+      "written": "took a look",
+      "normalized": "take a look",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "take-a-look.present-participle",
+      "written": "taking a look",
+      "normalized": "take a look",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): asking someone to look at something is a move an adult meets in every working day, so core utility, receptive value and productive value are HIGH and receptive difficulty is LOW. Productive difficulty is MEDIUM because the light verb has to be chosen correctly (take rather than make or do) and because the at must survive after the noun; explanation cost is MEDIUM for the same two repairs. Transfer value is HIGH: the light-verb + noun pattern repeats across take a break, take a photo and take a walk, so one unit buys several. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "A high-frequency light-verb collocation of everyday interaction, so it carries full weight in the general fluency pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Asking a colleague to look at a document is one of the standing requests of workplace talk (Can you take a look at this?), so the unit carries full weight in the workplace pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the unit with its article (a look, or an adjective plus look) and with at before the thing looked at, so the model never carries a missing preposition or a wrong light verb; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "LIGHT_VERB_CHOICE",
+      "error_pattern": "make | makes | made | making + a look (at), or do | did + a look (at)",
+      "corrected_pattern": "take | takes | took | taking + a look (at)",
+      "explanation": "The general verbs make and do are the first reach for a noun phrase a learner does not yet know, and this noun takes neither: it goes with take, as a break and a photo do. The correction teaches the light verb as part of the unit rather than as a separate rule, because there is no general test for which noun takes which light verb.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of make or do stands directly before a look in a phrase where turning one's eyes to something is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "MISSING_PREPOSITION",
+      "error_pattern": "take | takes | took | taking + a look + a noun phrase (no at)",
+      "corrected_pattern": "take a look at + the thing looked at",
+      "explanation": "Look at something needs at, and after the noun look the preposition is still required — the noun does not absorb the verb's preposition. The slip is an omission of a preposition that English keeps, and it is worth drilling as look + at together so the pair survives the change from verb to noun.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of take is followed by a look and then directly by a noun phrase with no at between them, in a sentence where looking at that thing is meant."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the light verb, the article, the noun and the preposition. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words carry the plain verb look or the noun a look in another sense, so the unit is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "LIGHT_VERB_CHOICE: match when a form of make or do stands directly before a look in a phrase where turning one's eyes to something is meant, because this noun takes the light verb take."
+    },
+    {
+      "ordinal": 1,
+      "rule": "MISSING_PREPOSITION: match when a form of take is followed by a look and then by a noun phrase with no at between them, because at is the preposition of look and it survives after the noun."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when take carries a look with its article, its adjectives and its at-phrase (took a quick look at your email, let me take a closer look at the numbers, take a look at this report), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "LOOK_IN_OTHER_READINGS: do not match when a look is not the noun of this unit — the plain verb look (look at the board), the appearance reading (she has a tired look), or have a look in a sentence where the light verb is have and no error is present — because take a look is not being used there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Can you take a look at this report?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "I took a quick look at your email.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "She is taking a closer look at the numbers.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "She has a tired look today.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

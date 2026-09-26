@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-idiom-the-ball-is-in-your-court",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "IDIOM",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that the next move now belongs to the other person.",
+      "The idiom is fixed: the ball is in someone's court, with the possessive before court.",
+      "Start with the words: I've sent them the offer, so the ball is in their ___ now."
+    ],
+    "reveal_form": "I've sent them the offer, so the ball is in their court now.",
+    "canonical_forms": [
+      "I've sent them the offer, so the ball is in their court now."
+    ],
+    "alternative_realizations": [
+      "The ball is in your court, so we're waiting for your answer."
+    ],
+    "required_slots": [
+      [
+        "court"
+      ],
+      [
+        "offer",
+        "answer"
+      ]
+    ]
+  }
+}

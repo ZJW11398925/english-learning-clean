@@ -1,0 +1,196 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's sentence-frame set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "I was just wondering",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "just-wondering.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "just-wondering.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used to put a request or a question gently, so that the other person does not feel pushed to agree."
+    },
+    {
+      "sense_id": "just-wondering.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The frame is I was just wondering + if or whether + a clause in statement order: I was just wondering if you could help me. The past tense is fixed in the frame and does not mean past time — it is the distance that makes the request gentle, which is why the present I am just wondering sounds more pressing. Could and would follow rather than can and will. The clause keeps statement word order (if you could help me, not if could you help me). The frame can also stand alone as a question (I was just wondering ...?) or with a wh-clause (whether you have time this week)."
+    },
+    {
+      "sense_id": "just-wondering.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Two repairs carry the frame. The first is the embedded clause: after if or whether the subject comes before the verb, so could you help me becomes if you could help me — the question's inversion is dropped inside the sentence. The second is the tense: was, not am, because the frame is doing politeness rather than reporting time, and the past form is what makes it light. Both repairs are worth drilling together with the modal (could rather than can), since all three move the same way — away from a direct question."
+    },
+    {
+      "sense_id": "just-wondering.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "I was just wondering is a gentle approach and expects no particular answer. Could you ...? is a direct request with politeness but no hedge. I was wondering whether ... is the same frame with the tentativeness carried by whether rather than by if. I wanted to ask you ... announces the question without the hedge and suits more formal talk. The frame's own boundary is the literal wondering reading — thinking about something with curiosity (I was wondering what that noise was) — where no request is being made."
+    },
+    {
+      "sense_id": "just-wondering.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "我想问一下……（委婉地提出请求或问题，不给人压力；用过去式 was，后接 if/whether 加陈述语序的从句）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "just-wondering.base",
+      "written": "I was just wondering",
+      "normalized": "I was just wondering",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "just-wondering.present",
+      "written": "I'm just wondering",
+      "normalized": "I was just wondering",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=1|number=singular|tense=present",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): asking for something without pressure is a move an adult needs every day, so core utility, receptive value and productive value are HIGH and receptive difficulty is LOW. Productive difficulty is MEDIUM because two shapes must be produced at once — the embedded clause's statement order and the politeness-bearing past tense — and explanation cost is MEDIUM for the same pair: both repairs are structural rather than lexical. Transfer value is HIGH: the embedded clause rule carries to every indirect question (Do you know where he is?), so one frame buys a family. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "A high-frequency politeness frame of everyday requests, so it carries full weight in the general fluency pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Asking a colleague for something is a standing workplace need (I was just wondering if you could take a look), so the frame carries full weight in the workplace pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the clause after if with statement word order and a past-tense frame with could or would, so the model never carries an inverted embedded question or a present-tense frame; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "EMBEDDED_QUESTION_INVERSION",
+      "error_pattern": "I was just wondering if could you | if can you | if are you + the rest",
+      "corrected_pattern": "I was just wondering if you could + base verb (statement order)",
+      "explanation": "Inside a sentence, the if-clause keeps statement order, and the inversion that a direct question has is dropped; learners keep the question shape because they are producing a question in meaning. The correction is one ordering rule, and it is the same rule that governs every indirect question in English.",
+      "severity": "HIGH",
+      "detection_policy": "Match when I was just wondering is followed by if or whether and then by subject-auxiliary inversion (if could you, if can you, whether is it), in a sentence where a gentle request is meant."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "TENSE_OF_THE_FRAME",
+      "error_pattern": "I am just wondering if ... , I just wonder if ...",
+      "corrected_pattern": "I was just wondering if ...",
+      "explanation": "The fixed past tense is what makes the request distant and light; the present tense puts the question into the moment and sounds more pressing, which is the opposite of what the frame is for. Learners choose the present because they believe the past would be untrue; the correction is to read the tense as politeness rather than as time.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the frame's verb is not the past form was (I am just wondering, I just wonder) in a sentence where a gentle request is meant."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the frame's tense and the word order of the clause it introduces. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the literal wondering about something reading, where no request is being made)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "EMBEDDED_QUESTION_INVERSION: match when I was just wondering is followed by if or whether and then by an inverted subject and auxiliary (if could you, if can you, whether is it), because the embedded clause keeps statement order."
+    },
+    {
+      "ordinal": 1,
+      "rule": "TENSE_OF_THE_FRAME: match when the frame appears with a non-past verb (I am just wondering, I just wonder) in a sentence where a gentle request is meant, because the past form carries the politeness."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame runs with was, just wondering and a statement-order clause with could or would (I was just wondering if you could help me, I was just wondering whether you have time, I was just wondering if you'd mind), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "LITERAL_WONDERING_READING: do not match when the same words report real curiosity about something with no request in them (I was wondering what that noise was, we were wondering where everyone had gone), because the polite-request use is absent there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "I was just wondering if you could help me.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "I was just wondering whether you have time this week.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "I was just wondering if you'd mind closing the window.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "I was wondering what that noise was.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

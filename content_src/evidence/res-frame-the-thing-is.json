@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's sentence-frame set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "the thing is",
+    "pos": "NOUN"
+  },
+  "senses": [
+    {
+      "sense_id": "the-thing-is.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "the-thing-is.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Used to announce that what follows is the main point, or the problem that explains the rest of what has been said."
+    },
+    {
+      "sense_id": "the-thing-is.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The frame is the thing is, followed either by a comma and a clause (The thing is, we don't have enough time) or by that and a clause (The thing is that nobody told him). The clause is a complete statement in normal statement order, and the definite article is part of the frame, so the words cannot be shortened to thing is in neutral writing or speech. The frame usually follows the reason a conversation is difficult — it introduces the obstacle or the point the speaker has been circling — and it is often followed by so or but as the speaker moves to what they want."
+    },
+    {
+      "sense_id": "the-thing-is.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The frame is a signpost, so what it needs is a complete clause on its right and its article on its left. The article is the form slip learners make most often (thing is, we have a problem), because the phrase is stored as a chunk and the determiner is swallowed. The second slip is joining the two halves with a conjunction that belongs to a different frame: because and so attach reasons and results to clauses, while this frame simply puts the clause beside the announcement, joined by a comma or by that. Drill the frame with both joiners so neither is produced with a third."
+    },
+    {
+      "sense_id": "the-thing-is.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "The thing is announces the point or the obstacle. The problem is names a problem specifically and is closer to a complaint. The point is introduces the argument the speaker has been building. The truth is signals a confession. What I mean is and what I'm saying is rephrase what was just said rather than announce what is coming. The frame's own boundary is the literal noun phrase — the thing is on the table — where thing names an object and no signpost is being used."
+    },
+    {
+      "sense_id": "the-thing-is.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "问题是；事情是这样的（把要说的重点或难处先点出来；保留冠词 the，后面接完整从句，可用逗号或 that 连接）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "the-thing-is.base",
+      "written": "The thing is",
+      "normalized": "the thing is",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-b authoring judgement (V1 carries no calibration data): announcing the obstacle is one of the most frequent moves in spoken English, so core utility, receptive value and productive value are HIGH and receptive difficulty is LOW. Productive difficulty is MEDIUM because the article is easy to swallow and the joining word has to be chosen from a frame that is not a reason or result conjunction; explanation cost is MEDIUM because the frame's work (announce, then state) has to be described before either slip makes sense. Transfer value is MEDIUM: the announcement-then-clause shape recurs in the truth is and the point is, which this corpus does not yet carry. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "A top-frequency signpost of everyday spoken English, so it carries full weight in the general fluency pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Naming the obstacle is a constant workplace move (the thing is, we don't have the budget), so the frame carries full weight in the workplace pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the frame with its article and with a complete clause joined by a comma or by that, so the model never carries a bare thing is or a because-clause; never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "ARTICLE_OMISSION",
+      "error_pattern": "thing is, ... (also things is, the thing that is)",
+      "corrected_pattern": "the thing is, ...",
+      "explanation": "The frame is a definite noun phrase and keeps its article, which learners drop because the phrase is produced as a single spoken chunk whose first syllable is weak. The correction is one word, and it is worth drilling with the frame's own rhythm (the thing is) so the article is part of the chunk rather than a separate decision.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when thing is stands as the opening frame with no article before thing, in a sentence where the main point is being announced."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": "zh",
+      "error_type": "CALQUED_CONNECTOR",
+      "error_pattern": "the thing is because + a finite clause",
+      "corrected_pattern": "the thing is, + the clause (or the thing is that + the clause)",
+      "explanation": "Chinese 问题是……因为 put the frame and a causal connector together naturally, and learners carry the pattern across, but this frame does not take a conjunction on its right. The correction is the frame's own shape: the announcement is followed by the clause it announces, and the cause, if it needs one, follows inside that clause.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the thing is is directly followed by because or so and a finite clause, in a sentence where the main point is being announced."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the frame's words, its article and what follows it. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words name a real object or a different signpost, so this frame is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "ARTICLE_OMISSION: match when thing is opens an utterance as the frame with no article before thing, because the definite article belongs to the frame."
+    },
+    {
+      "ordinal": 1,
+      "rule": "CALQUED_CONNECTOR: match when the thing is is followed directly by because or so and a clause, because the frame takes the clause it announces with a comma or with that, not with a reason or result conjunction."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame runs with its article and its clause joined by a comma or by that (the thing is, we don't have enough time; the thing is that nobody told him; so the thing is, we need a plan), because those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THING_IN_OTHER_READINGS: do not match when thing names an object or a matter with the same words (the thing is on the table, the best thing is to wait), or when a different signpost is used (the problem is, the point is), because this frame is not being used there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "The thing is, we don't have enough time.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "The thing is that nobody told him.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "So the thing is, we need a plan.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The thing on the table is mine.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}
