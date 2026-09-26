@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's idiom set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "on the same page",
+    "pos": "ADJ"
+  },
+  "senses": [
+    {
+      "sense_id": "on-the-same-page.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "on-the-same-page.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Sharing the same understanding of a situation, so that the people involved agree about what is meant or what will happen."
+    },
+    {
+      "sense_id": "on-the-same-page.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The phrase follows be and takes about for the thing understood: we are on the same page about the plan. The preposition is on and the article is required (on the same page, not in same page). With one other person the plural page stays, because two people are in view: you and I are on the same page. The opposite is not on the same page, and the question are we on the same page? is a standard way to check agreement."
+    },
+    {
+      "sense_id": "on-the-same-page.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The phrase is transparent enough to be read literally, which is the teaching difficulty: the picture is of one page of a book seen by two readers, and the meaning is a shared understanding rather than a shared object. The two form errors follow from translating the preposition and dropping the article (in the same page, on same page), and the repair is simply to keep the phrase whole and fixed."
+    },
+    {
+      "sense_id": "on-the-same-page.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "on the same page about X = agreeing about X (we are on the same page about the plan). Literally, on the same page means that two things are printed on one page (the two photos are on the same page), and in the same page means inside the paper of one page. The idiomatic sense needs a person as the subject and a topic after about; the literal sense has a printed object as its subject."
+    },
+    {
+      "sense_id": "on-the-same-page.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "达成共识；想法一致（对同一件事有相同的理解）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "on-the-same-page.base",
+      "written": "on the same page",
+      "normalized": "on the same page",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "MEDIUM",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "MEDIUM",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the idiom is common in meetings and coordination talk, which keeps the three value bands at MEDIUM, and receptive difficulty is MEDIUM because the literal reading is available and plausible. Explanation cost is MEDIUM (the picture has to be explained), transfer value LOW because the phrase is one fixed unit. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "The idiom belongs to the general fluency pack's figurative set, so it carries substantial weight there; the shortfall records that it is far less frequent than the core units and that the pack's own review has not placed it."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Checking whether everyone shares an understanding is the workplace pack's own subject matter (let's make sure we are on the same page), so it carries full weight in that pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": null,
+      "domain": "WORK",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Never present the literal page example (two photos on the same page) as a model of this target, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "WRONG_PREPOSITION",
+      "error_pattern": "in the same page",
+      "corrected_pattern": "on the same page",
+      "explanation": "The Chinese phrase 在同一页上 is built with a locative that learners render with in, and 'inside a page' is also the literal meaning of in the same page, so the preposition is translated rather than learned. The idiom takes on the same page.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when in stands in front of (the) same page in a clause whose subject is a person or a group and whose topic is understanding."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": "zh",
+      "error_type": "ARTICLE_OMISSION",
+      "error_pattern": "on same page",
+      "corrected_pattern": "on the same page",
+      "explanation": "Chinese has no article system, so the determiner in front of page is dropped and the fixed phrase loses the word that holds it together. The noun is right; the determiner is the missing part.",
+      "severity": "LOW",
+      "detection_policy": "Match when on is followed directly by same page with no determiner between on and same."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the preposition, the determiner slot and the words same page. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words describe printing on one sheet of paper, so the agreement sense is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "WRONG_PREPOSITION: match when in introduces same page in a clause about shared understanding, because this phrase is fixed with on."
+    },
+    {
+      "ordinal": 1,
+      "rule": "ARTICLE_OMISSION: match when same page follows on with no determiner, because this phrase keeps the determiner in front of page."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when on the same page stands with a person as subject and takes about for the topic (we are on the same page about the plan), or in its negative form (they are not on the same page): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "LITERAL_PRINTING_SENSE: do not match when the subject is something printed and the page is the sheet of paper (the two photos are on the same page, the index is on the same page as the map), because the agreement sense is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "We are on the same page about the plan.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "The team is on the same page about the deadline.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "They are not on the same page about the budget.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The two photos are on the same page.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

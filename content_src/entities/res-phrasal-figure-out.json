@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-phrasal-figure-out",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PHRASAL_VERB",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that you could not understand or solve something.",
+      "Use the verb figure with the particle out, and keep the two words that belong to the unit.",
+      "Start with the words: I can't ___ out the answer."
+    ],
+    "reveal_form": "I can't figure out the answer.",
+    "canonical_forms": [
+      "I can't figure out the answer."
+    ],
+    "alternative_realizations": [
+      "I can't figure it out."
+    ],
+    "required_slots": [
+      [
+        "figure"
+      ],
+      [
+        "answer"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,204 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's phrasal-verb set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "run out of",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "run-out-of.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "run-out-of.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To have no more of something, because it has all been used."
+    },
+    {
+      "sense_id": "run-out-of.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The three words stand in order and the thing that is finished follows of: we ran out of time, we are running out of money. What is exhausted goes after the preposition, so the unit never takes it as a direct object (run out time is not English). The verb is irregular (run, ran, running). The subject is normally the person or the place that had the supply, while the thing that ran out follows of; with time, money and patience the subject can also be the supply itself (the money ran out)."
+    },
+    {
+      "sense_id": "run-out-of.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "What is being taught is a three-word unit with a preposition that carries the object. Learners who have run out as 'finish' close the sentence after out and drop of, which leaves a verb with no object; the repair is positional — the thing that is finished is named after of, never directly after run. The same unit covers time, money, patience and stock, so the pattern, not the noun, is what transfers."
+    },
+    {
+      "sense_id": "run-out-of.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "run out of X = use up the supply of X (we ran out of time). run out = come to an end by itself, with no object (the time ran out, the contract ran out). run out of a place = leave it running (she ran out of the room), which is a different unit with a place after out of. Only the first is this target."
+    },
+    {
+      "sense_id": "run-out-of.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "用完；用光（某样东西已经用完，没有剩余了）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "run-out-of.base",
+      "written": "run out of",
+      "normalized": "run out of",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "run-out-of.past",
+      "written": "ran out of",
+      "normalized": "run out of",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "run-out-of.present-participle",
+      "written": "running out of",
+      "normalized": "run out of",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the unit is frequent in study, work and everyday planning, so all three value bands are HIGH and receptive difficulty is LOW; productive difficulty is MEDIUM because the object-bearing preposition is the part that gets dropped, and explanation cost is LOW because one positional rule repairs it. Transfer value is HIGH: the pattern runs out of + supply covers many nouns. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The phrasal verb belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "Running out of time, budget or stock is ordinary project language (we are running out of budget), so it carries nearly full weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show of with the exhausted noun after it, so the model never carries the objectless shape, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "MISSING_PREPOSITION",
+      "error_pattern": "run | runs | ran | running + out + noun phrase (no preposition of)",
+      "corrected_pattern": "run out of + noun phrase",
+      "explanation": "Chinese 用完 takes its object directly (用完时间), so the exhausted thing is placed straight after the verb and the preposition that carries it in English is dropped. The unit is intransitive on its own; of is what gives the noun phrase its place.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of run is followed by out and then directly by a noun phrase, with no of between out and the noun."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "OBJECT_AFTER_OF_MISSING_ALTERNATIVE_ORDER",
+      "error_pattern": "run | ran + noun phrase + out of",
+      "corrected_pattern": "run out of + noun phrase",
+      "explanation": "The parts of the unit are separated and the object is placed where the learner's own word order puts it. English keeps the three words together and the object after them, so the order itself is the error.",
+      "severity": "LOW",
+      "detection_policy": "Match when a noun phrase stands between a form of run and a following out of, in a clause about a supply being finished."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the form of run, the words out and of, and what stands between and after them. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (out of is there with a place after it, so the supply sense is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "MISSING_PREPOSITION: match when out follows a form of run and a noun phrase follows immediately with no of, because the exhausted noun attaches through the preposition."
+    },
+    {
+      "ordinal": 1,
+      "rule": "SPLIT_UNIT: match when a noun phrase stands between a form of run and out of, because the three parts of this unit stay together."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when run, out and of stand together with the exhausted noun after of (we ran out of time, we are running out of money), and do not match the objectless form where the supply is the subject (the money ran out): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "PLACE_AFTER_OUT_OF: do not match when out of introduces a place after a verb of movement (she ran out of the room), because that is a different construction with a place, not a supply."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "We ran out of time.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "We are running out of money.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "The money ran out last week.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "She ran out of the room.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

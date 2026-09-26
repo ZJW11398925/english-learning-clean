@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's sentence-frame set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "what I'm saying is",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "what-im-saying-is.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "what-im-saying-is.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A frame used to restate your own point, usually because the listener has not taken it the way you meant it."
+    },
+    {
+      "sense_id": "what-im-saying-is.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The frame is what I'm saying is, and the point follows as a clause: what I'm saying is (that) we need more time. The that is optional, and dropping it is entirely normal in speech. The pronoun is I and the auxiliary is am contracted to I'm; the whole frame is a subject clause, so the verb that follows it is is, whatever the rest of the sentence does. The related frame what I mean is does the same work when the point was not understood rather than not accepted."
+    },
+    {
+      "sense_id": "what-im-saying-is.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The frame needs its auxiliary, and that is what learners drop: what I saying is, what I say is. Chinese has no be-auxiliary in the progressive (我在说的是), so the am is simply not produced, which leaves a clause English cannot parse. The repair is to treat the frame as one fixed string with its contraction, then to add the point as a plain clause after is."
+    },
+    {
+      "sense_id": "what-im-saying-is.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "What I'm saying is X = my point is X (restating). What I said was X = my earlier words were X (quoting yourself), which uses the past and reports the words rather than the point. What I mean is X is the same frame with a different verb, used when the trouble is understanding rather than agreement."
+    },
+    {
+      "sense_id": "what-im-saying-is.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "我的意思是；我要说的是（把自己的观点重新说清楚）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "what-im-saying-is.base",
+      "written": "what I'm saying is",
+      "normalized": "what I'm saying is",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the frame is common in discussion and easy to recognise, so receptive value is HIGH and receptive difficulty LOW; productive value is MEDIUM because a learner can restate a point without it, and productive difficulty and explanation cost are MEDIUM because the frame's auxiliary and its clause structure are what production has to get right. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "The frame belongs to the general fluency pack's discussion set, so it carries nearly full weight there; the shortfall records that the pack's own review has not placed it."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "Restating a point when it has been misread is ordinary meeting language (what I'm saying is that the cost is the problem), so it carries nearly full weight in the workplace pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the frame with its auxiliary in place, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "MISSING_AUXILIARY",
+      "error_pattern": "what + I + saying | say + is (no auxiliary am between the subject and the verb)",
+      "corrected_pattern": "what I'm saying is",
+      "explanation": "The progressive needs the auxiliary be, and Chinese marks the same meaning without one (我在说的是), so the am is not produced and the frame becomes a clause with a participle and no finite verb.",
+      "severity": "HIGH",
+      "detection_policy": "Match when what I is followed directly by saying or say and then is, with no am or 'm between the subject and the verb."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "WRONG_FINITE_VERB",
+      "error_pattern": "what I'm saying are | were (the frame's is replaced by a plural or past form)",
+      "corrected_pattern": "what I'm saying is",
+      "explanation": "The verb after the frame is attracted to the number or the time of the point that follows (two things, yesterday), while the frame's own clause is the subject and stays singular and present. The slip is agreement by attraction rather than a misreading of the frame.",
+      "severity": "LOW",
+      "detection_policy": "Match when are or were follows the frame what I('m) saying in this clause."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words of the frame, its auxiliary and its finite verb. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words report what was said or describe the act of speaking, so the restating frame is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "MISSING_AUXILIARY: match when the frame appears without am or 'm between I and saying, because the progressive in this frame needs its auxiliary."
+    },
+    {
+      "ordinal": 1,
+      "rule": "WRONG_FINITE_VERB: match when are, were or was follows this frame, because the frame's subject clause takes the singular present is."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame stands complete with its auxiliary and is (what I'm saying is that we need more time, what I'm saying is we need more time, with or without that): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "REPORTING_OR_DESCRIBING: do not match when the words report what was said or describe the act of speaking rather than restating a point (what I said was different, what I'm saying is being recorded), because the restating frame is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "What I'm saying is that we need more time.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "What I'm saying is we need more time.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "What I mean is that the cost is the problem.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "What I said was different.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

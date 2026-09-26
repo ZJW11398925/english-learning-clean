@@ -195,44 +195,45 @@ def test_off_refuses_at_every_stage() -> None:
 def test_the_real_corpus_answers_go_on_all_four_rows_and_the_rollout_stays_held(
     p8world: World,
 ) -> None:
-    """The measured answer at C2-a's truth, as a two-layer statement (旧真值:
+    """The measured answer at C2-b's truth, as a two-layer statement (旧真值:
     every row 0, four HOLD rows, 14 targets all without a level; C1: the one
-    authored R4 target made every row GO; 新真值 C2-a: the nine RESOURCE
-    targets reach R4, so every row reads nine usable targets — BF-02 §10's "at
-    least one target" is met on all four floors — **and the rollout is still
-    held**): layer one is the content gate's GO; layer two is the stage leg,
-    which no shipped caller declares — ``stage_allows_automatic`` answers False
-    for the undeclared stage and for the fail-closed default, and the two-leg
-    composition refuses with any frequency word — plus the Calibration100
-    volume gate (docs/IMPLEMENTATION_PLAN.md §12's 100/30/2), which the
-    corpus's own counts show unmet. Content capable ≠ rollout open."""
+    authored R4 target made every row GO; C2-a: nine usable targets; 新真值
+    C2-b: the twenty-eight RESOURCE targets reach R4, so every row reads
+    twenty-eight usable targets — BF-02 §10's "at least one target" is met on
+    all four floors — **and the rollout is still held**): layer one is the
+    content gate's GO; layer two is the stage leg, which no shipped caller
+    declares — ``stage_allows_automatic`` answers False for the undeclared
+    stage and for the fail-closed default, and the two-leg composition refuses
+    with any frequency word — plus the Calibration100 volume gate
+    (docs/IMPLEMENTATION_PLAN.md §12's 100/30/2), which the corpus's own
+    counts show unmet. Content capable ≠ rollout open."""
 
     report = corpus_rollout_gate(p8world.curriculum)
     assert isinstance(report, Ok), report
     gate = report.value
-    # Layer one: the content gate's four rows all read GO on nine usable
-    # targets — 旧真值 was ("PROBE", 0) … ("automatic CURRENT_USER_ERROR", 0).
+    # Layer one: the content gate's four rows all read GO on twenty-eight
+    # usable targets — 旧真值 was ("PROBE", 0) … ("automatic CURRENT_USER_ERROR", 0).
     assert [(row.row_word, row.usable_targets) for row in gate.rows] == [
-        ("PROBE", 9),
-        ("user-initiated teaching", 9),
-        ("automatic general/review", 9),
-        ("automatic CURRENT_USER_ERROR", 9),
+        ("PROBE", 28),
+        ("user-initiated teaching", 28),
+        ("automatic general/review", 28),
+        ("automatic CURRENT_USER_ERROR", 28),
     ]
     assert all(row.verdict is RolloutVerdict.GO for row in gate.rows)
     assert gate.verdict is RolloutVerdict.GO
     assert gate.automatic_verdict is RolloutVerdict.GO
-    assert gate.targets_considered == 14
+    assert gate.targets_considered == 33
     assert gate.targets_without_level == 5
     assert gate.unknown_levels == ()
     assert gate.summary() == (
-        "PROBE: required R2_PLANNER_READY, usable targets 9 → GO",
-        "user-initiated teaching: required R3_TEACHING_READY, usable targets 9"
+        "PROBE: required R2_PLANNER_READY, usable targets 28 → GO",
+        "user-initiated teaching: required R3_TEACHING_READY, usable targets 28"
         " → GO",
-        "automatic general/review: required R3_TEACHING_READY, usable targets 9"
+        "automatic general/review: required R3_TEACHING_READY, usable targets 28"
         " → GO",
         "automatic CURRENT_USER_ERROR: required R4_DETECTION_READY, usable"
-        " targets 9 → GO",
-        "targets: 14 considered, 5 without a level",
+        " targets 28 → GO",
+        "targets: 33 considered, 5 without a level",
         "verdict: GO (automatic rows: GO)",
     )
     # No row blocks, so the report's blocked tail is empty (旧真值: four
@@ -256,10 +257,11 @@ def test_the_real_corpus_answers_go_on_all_four_rows_and_the_rollout_stays_held(
 
 def _calibration100_gate_is_unmet_and_readable() -> None:
     """docs/IMPLEMENTATION_PLAN.md §12's Calibration100 gates (100/30/2),
-    read against the built artifact's own counts: 14 resources (< 100), and
-    no capability in the CORE_A / CORE_C families at all. The numbers live
-    in the frozen document and are read from it, so the gate's terms cannot
-    drift from what this test asserts about them."""
+    read against the built artifact's own counts: 28 resources (< 100, and
+    exactly IP §13's starting number — the first rung of "28 → 100", not a
+    pass), and no capability in the CORE_A / CORE_C families at all. The
+    numbers live in the frozen document and are read from it, so the gate's
+    terms cannot drift from what this test asserts about them."""
 
     import re
     import sqlite3

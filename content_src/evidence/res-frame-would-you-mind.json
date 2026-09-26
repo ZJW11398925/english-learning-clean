@@ -1,0 +1,196 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's sentence-frame set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "would you mind",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "would-you-mind.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "would-you-mind.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A polite way to ask someone to do something, framed as a question about whether the request would trouble them."
+    },
+    {
+      "sense_id": "would-you-mind.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The frame is would you mind + an -ing form: would you mind closing the window? The action is named by a gerund because mind takes an -ing complement, exactly as enjoy and avoid do. Do you mind does the same job with a smaller amount of distance from the speaker. The answer is the reverse of what learners expect: Not at all or Sure means yes, the request is granted, because the question asks whether the action would trouble the listener."
+    },
+    {
+      "sense_id": "would-you-mind.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Two things go wrong. The complement is produced as a base verb or a to-infinitive, because ask, want and would you like all take those shapes and the frame invites the same pattern: would you mind close, would you mind to close. And the reply is read as a yes/no about willingness in the learner's own language, which reverses the sense of the answer. The repair is to fix the -ing complement first, then the answer convention."
+    },
+    {
+      "sense_id": "would-you-mind.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Would you mind closing the window? asks the listener to close it. Would you mind if I closed the window? asks for permission to close it: the subject of the -ing clause changes and the request changes direction. mind as a noun (keep that in mind) and mind as the verb of objection in a negative statement (I don't mind waiting) are different uses of the same word."
+    },
+    {
+      "sense_id": "would-you-mind.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "你介意……吗？（礼貌地请对方做某事）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "would-you-mind.base",
+      "written": "would you mind",
+      "normalized": "would you mind",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "would-you-mind.do-you-mind",
+      "written": "do you mind",
+      "normalized": "would you mind",
+      "form_type": "BASE",
+      "morph_features": "tense=present",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "MEDIUM",
+    "productive_difficulty": "HIGH",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the frame is frequent in service and workplace talk, so receptive value is HIGH; receptive difficulty is MEDIUM because the reply convention has to be learned, and productive difficulty is HIGH because the -ing complement competes with the to-infinitive of the requests a learner already knows. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "The frame belongs to the general fluency pack's politeness set, so it carries nearly full weight there; the shortfall records that the pack's own review has not placed it."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Asking a colleague for a small action politely is the workplace pack's own subject matter (would you mind sharing the file?), so it carries full weight in that pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": null,
+      "domain": "WORK",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the -ing complement, and show the if-clause variant only as a CONTRAST after the canonical form is secure, never as a model of the same request."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "INFINITIVE_AFTER_MIND",
+      "error_pattern": "mind + to + verb (would you mind to close the window)",
+      "corrected_pattern": "mind + verb in -ing form",
+      "explanation": "Would you like and want both take a to-infinitive, so the same request frame pulls the infinitive in. mind belongs to the group of verbs that take an -ing complement (enjoy, avoid, finish), and the to-infinitive is the shape this frame never takes.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of mind is followed by to and a verb in its base form in this request frame."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": "zh",
+      "error_type": "BARE_VERB_AFTER_MIND",
+      "error_pattern": "mind + verb in its base form (would you mind close the window)",
+      "corrected_pattern": "mind + verb in -ing form",
+      "explanation": "Chinese has no verb inflection (你介意关窗吗), so the action is produced as a bare verb with nothing marking it as the complement of mind. The word order is right; the inflection that English requires on the complement is missing.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of mind is followed directly by a verb in its base form, with no to and no -ing, in this request frame."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the form of mind and the shape of the word that follows it. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (mind is followed by an if-clause or is the noun, so the -ing request frame is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "INFINITIVE_AFTER_MIND: match when a form of mind is followed by to plus a base verb in a request frame, because mind takes an -ing complement and never a to-infinitive."
+    },
+    {
+      "ordinal": 1,
+      "rule": "BARE_VERB_AFTER_MIND: match when a form of mind is followed directly by a base verb with no inflection, because the complement of mind is an -ing form."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when an -ing form follows a form of mind in this frame, with would or do as the opener (would you mind closing the window, do you mind waiting), and do not match the negative statement of the same verb (I don't mind waiting): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "IF_CLAUSE_OR_NOUN_MIND: do not match when mind is followed by an if-clause (would you mind if I opened the window?) or when mind is the noun (keep that in mind, she has a good mind for numbers), because the -ing request frame is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Would you mind closing the window?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Do you mind waiting a few minutes?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "I don't mind waiting.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Would you mind if I opened the window?",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

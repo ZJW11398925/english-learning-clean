@@ -60,10 +60,40 @@ def test_target_id_survives_verbatim(store: ContentStore, target_id: str) -> Non
 
 
 def test_stable_resource_identity_is_the_fixture_id_set(store: ContentStore) -> None:
-    """The rebuilt id set *is* the validated target id set — nothing minted,
-    nothing renamed, nothing dropped."""
+    """The rebuilt id set *contains* the validated target id set — nothing
+    minted, nothing renamed, nothing dropped.
 
-    assert set(store.entity_ids().value) == set(TARGET_IDS)
+    旧真值 (P5-0): the rebuilt id set *was* the fixture id set (14 == 14).
+    新真值 (C2-b): the corpus has grown past the migration — the fourteen
+    fixture ids are all still there, and nineteen further RESOURCE entities
+    were authored by C2-b, so the set is a strict superset (33). The fixture
+    half stays an equality: every fixture id must still resolve.
+    """
+
+    rebuilt = set(store.entity_ids().value)
+    assert set(TARGET_IDS) <= rebuilt
+    assert rebuilt - set(TARGET_IDS) == {
+        "res-colloc-heavy-rain",
+        "res-colloc-make-sense",
+        "res-colloc-meet-a-deadline",
+        "res-colloc-play-a-role",
+        "res-colloc-take-part-in",
+        "res-discourse-anyway",
+        "res-discourse-to-be-honest",
+        "res-frame-what-im-saying-is",
+        "res-frame-would-you-mind",
+        "res-hedge-im-not-sure",
+        "res-hedge-it-depends",
+        "res-idiom-on-the-same-page",
+        "res-idiom-piece-of-cake",
+        "res-phrasal-come-up-with",
+        "res-phrasal-figure-out",
+        "res-phrasal-run-out-of",
+        "res-pragmatic-sorry-to-interrupt",
+        "res-pragmatic-thats-a-good-point-but",
+        "res-softener-a-bit",
+    }
+    assert len(rebuilt) == 33
 
 
 @pytest.mark.parametrize("target_id", TARGET_IDS)
@@ -239,7 +269,7 @@ def test_hint_ladder_ordinals_are_dense_and_ordered(
     per_entity: dict[str, list[int]] = {}
     for entity_id, ordinal in rows:
         per_entity.setdefault(str(entity_id), []).append(int(ordinal))
-    assert len(per_entity) == 14
+    assert len(per_entity) == 33
     for entity_id, ordinals in per_entity.items():
         assert ordinals == list(range(len(ordinals))), entity_id
         assert len(ordinals) == 3
@@ -312,11 +342,26 @@ def test_migration_ledger_is_complete_for_all_fourteen(
     assert len(ledger) == 14
 
 
-def test_corpus_size_is_the_migrated_fourteen_not_a_new_expansion(
+def test_corpus_size_is_the_migrated_fourteen_plus_the_c2b_nineteen(
     store: ContentStore,
 ) -> None:
-    """§6: migrate first, do not expand to 100."""
+    """§6: migrate first, do not expand to 100 — read against the corpus as
+    it stands after the Phase 11 content programme.
 
-    assert len(store.entity_ids().value) == 14
+    旧真值 (P5-0): 14 entities / 5 capabilities, i.e. "the migrated fourteen
+    and nothing else". 新真值 (C2-b): 33 entities / 5 capabilities — the
+    fourteen migrated targets are all still present (the equality above), the
+    nineteen additions are C2-b's authored RESOURCE entities, and the
+    capability registry is untouched at five. The 100 of IP §13 is still not
+    reached, and no Calibration100 gate passes: this test pins the size, and
+    the volume-gate readings live in test_c2b_resource_expansion.py."""
+
+    assert len(store.entity_ids().value) == 33
     assert len(store.capability_ids().value) == 5
+    resources = [
+        entity_id
+        for entity_id in store.entity_ids().value
+        if str(entity_id).startswith("res-")
+    ]
+    assert len(resources) == 28
     assert CONTENT_SRC_DIR.name == "content_src"

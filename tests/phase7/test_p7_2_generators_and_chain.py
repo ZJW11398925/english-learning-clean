@@ -598,16 +598,18 @@ def wired_world(world: World) -> World:
 def test_the_shipped_corpus_answers_the_scheduled_row_and_the_run_degrades(
     wired_world: World,
 ) -> None:
-    """The honest chain: real supply, real rows, real ladder. At C2-a's truth
-    the world is no longer empty (旧真值: all 14 refused at CONTENT_READINESS;
-    C1: thirteen still refused there and the one R4-graded target refused at
-    SCHEDULE_ROW; 新真值: the five evidence-less CAPABILITY entities are still
-    refused at CONTENT_READINESS, the eight unscheduled RESOURCE targets at
-    SCHEDULE_ROW, and the one RESOURCE target the world schedules — the row
-    target, now R4 — is answered by two real sources). The run still degrades
-    instead of deciding, because the five ungraded entities the caller holds
-    leave the readiness authority incomplete: the kernel carries the two
-    candidates and refuses to invent a decision for them."""
+    """The honest chain: real supply, real rows, real ladder. At C2-b's truth
+    the world has grown but the shape of the answer has not changed (旧真值:
+    all 14 refused at CONTENT_READINESS; C1: thirteen still refused there and
+    the one R4-graded target refused at SCHEDULE_ROW; C2-a: the eight
+    unscheduled RESOURCE targets refused at SCHEDULE_ROW; 新真值 C2-b: the five
+    evidence-less CAPABILITY entities are still refused at CONTENT_READINESS,
+    the twenty-seven unscheduled RESOURCE targets at SCHEDULE_ROW, and the one
+    RESOURCE target the world schedules — the row target, R4 — is answered by
+    two real sources). The run still degrades instead of deciding, because the
+    five ungraded entities the caller holds leave the readiness authority
+    incomplete: the kernel carries the two candidates and refuses to invent a
+    decision for them."""
 
     supply = generate_candidates(wired_world.inputs())
     assert [
@@ -639,13 +641,32 @@ def test_the_shipped_corpus_answers_the_scheduled_row_and_the_run_degrades(
         "cap-stance-soften-disagreement",
     ]
     assert by_gate["SCHEDULE_ROW"] == [
+        "res-colloc-heavy-rain",
         "res-colloc-make-a-decision",
+        "res-colloc-make-sense",
+        "res-colloc-meet-a-deadline",
         "res-colloc-pay-attention-to",
+        "res-colloc-play-a-role",
+        "res-colloc-take-part-in",
+        "res-discourse-anyway",
         "res-discourse-by-the-way",
+        "res-discourse-to-be-honest",
         "res-frame-id-like-to",
+        "res-frame-what-im-saying-is",
+        "res-frame-would-you-mind",
+        "res-hedge-im-not-sure",
+        "res-hedge-it-depends",
         "res-idiom-break-the-ice",
+        "res-idiom-on-the-same-page",
+        "res-idiom-piece-of-cake",
+        "res-phrasal-come-up-with",
+        "res-phrasal-figure-out",
         "res-phrasal-look-forward-to",
+        "res-phrasal-run-out-of",
         "res-pragmatic-could-you",
+        "res-pragmatic-sorry-to-interrupt",
+        "res-pragmatic-thats-a-good-point-but",
+        "res-softener-a-bit",
         "res-softener-kind-of",
     ]
     assert supply.readiness["res-hedge-i-think"] == "R4_DETECTION_READY"
@@ -792,7 +813,7 @@ def test_the_broad_readiness_read_is_the_coarse_one_and_degrades(
         FOCUS_TARGET: "R3_TEACHING_READY",
         ROW_TARGET: "R4_DETECTION_READY",
     }
-    assert len(supply.readiness) == 14
+    assert len(supply.readiness) == 33
 
 
 def test_the_scope_constraint_is_what_restricts_the_candidate_set(

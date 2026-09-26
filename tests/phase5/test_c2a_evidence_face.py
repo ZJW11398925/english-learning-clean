@@ -17,13 +17,16 @@ in order:
   its own: every rule ordinal carries a fixture at the same ordinal, both
   declared fixture kinds are present, and every ``expected`` value is one of
   the two declared readings;
-- the credit face widened with the approvals: all nine RESOURCE targets read
-  the §24.7 node their link names through the one gate
-  (``CAPABILITY_CREDIT_EDITORIAL_STATUS``), while the five CAPABILITY
-  entities still read ``None`` — the same read, nine times the rows;
-- the volume gate's reading sentence: nine usable R4 targets against IP §12's
-  Calibration100 floor of 100 — the number moved, the verdict (unmet) did
-  not, and no opening claim is made here.
+- the credit face widened with the approvals, read in both halves at C2-b's
+  truth: the fifteen RESOURCE targets whose approved row is a ``REALIZES``
+  row read the §24.7 node their link names through the one gate
+  (``CAPABILITY_CREDIT_EDITORIAL_STATUS``), the thirteen whose approved row is
+  a ``SUPPORTS`` row read ``None`` while their row stays readable, and the
+  five CAPABILITY entities still read ``None`` — the same read, more rows;
+- the volume gate's reading sentence: twenty-eight usable R4 targets against
+  IP §12's Calibration100 floor of 100 — the number moved, the verdict
+  (unmet) did not, and no opening claim is made here. IP §13's own first rung
+  (28 resources) *is* met and is asserted separately from the three floors.
 
 The canonical authoring trees are never edited: every variant lives in a
 pytest tmp copy built through the real build step.
@@ -52,7 +55,7 @@ from elc.curriculum.store import CurriculumContentStore
 from elc.platform.types import Ok
 
 #: The eight targets C2-a authored evidence for (C1's own target excluded).
-NEW_TARGETS = (
+C2A_TARGETS = (
     "res-colloc-pay-attention-to",
     "res-discourse-by-the-way",
     "res-frame-id-like-to",
@@ -63,8 +66,61 @@ NEW_TARGETS = (
     "res-softener-kind-of",
 )
 
-#: The nine RESOURCE targets (C1's plus the eight above), in id order.
-RES_TARGETS = ("res-colloc-make-a-decision", *NEW_TARGETS)
+#: The nineteen targets C2-b authored as entities *and* as evidence documents
+#: (it also approved their §24.7 links). Listed here so the corpus truth is
+#: written out rather than derived from the artifact.
+C2B_TARGETS = (
+    "res-colloc-heavy-rain",
+    "res-colloc-make-sense",
+    "res-colloc-meet-a-deadline",
+    "res-colloc-play-a-role",
+    "res-colloc-take-part-in",
+    "res-discourse-anyway",
+    "res-discourse-to-be-honest",
+    "res-frame-what-im-saying-is",
+    "res-frame-would-you-mind",
+    "res-hedge-im-not-sure",
+    "res-hedge-it-depends",
+    "res-idiom-on-the-same-page",
+    "res-idiom-piece-of-cake",
+    "res-phrasal-come-up-with",
+    "res-phrasal-figure-out",
+    "res-phrasal-run-out-of",
+    "res-pragmatic-sorry-to-interrupt",
+    "res-pragmatic-thats-a-good-point-but",
+    "res-softener-a-bit",
+)
+
+#: The twenty-eight RESOURCE targets, in id order (C1's, C2-a's eight and
+#: C2-b's nineteen).
+RES_TARGETS = ("res-colloc-make-a-decision", *C2A_TARGETS, *C2B_TARGETS)
+
+#: The fifteen targets whose approved §24.7 link is a REALIZES row and
+#: therefore credits a capability node on the credit face (C2-a's nine plus
+#: C2-b's six).
+CREDIT_TARGETS = (
+    "res-colloc-make-a-decision",
+    "res-colloc-pay-attention-to",
+    "res-discourse-anyway",
+    "res-discourse-by-the-way",
+    "res-discourse-to-be-honest",
+    "res-frame-id-like-to",
+    "res-hedge-i-think",
+    "res-hedge-im-not-sure",
+    "res-hedge-it-depends",
+    "res-idiom-break-the-ice",
+    "res-phrasal-look-forward-to",
+    "res-pragmatic-could-you",
+    "res-pragmatic-thats-a-good-point-but",
+    "res-softener-a-bit",
+    "res-softener-kind-of",
+)
+
+#: The thirteen targets whose single approved §24.7 row is a SUPPORTS row:
+#: §8.1 R2-readable, credit-safe (the read filters relation = REALIZES).
+SUPPORT_ONLY_TARGETS = tuple(
+    target for target in RES_TARGETS if target not in CREDIT_TARGETS
+)
 
 CAP_TARGETS = (
     "cap-disc-topic-shift",
@@ -125,7 +181,7 @@ def _level_and_missing(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("target_id", NEW_TARGETS)
+@pytest.mark.parametrize("target_id", C2A_TARGETS)
 def test_each_c2a_target_satisfies_all_nineteen_keys_and_reads_r4(
     built_content_db: Path, target_id: str
 ) -> None:
@@ -298,14 +354,18 @@ def test_every_authored_documents_detection_evidence_is_paired(
 # ---------------------------------------------------------------------------
 
 
-def test_the_credit_face_reads_the_nine_approved_nodes(
+def test_the_credit_face_reads_the_fifteen_approved_realizes_nodes(
     built_content_db: Path,
 ) -> None:
-    """The behavior change, stated as a read: with all nine §24.7 links
-    approved, every RESOURCE target's teaching payload carries the node its
-    link names (this is what an ``ALTERNATIVE_SUCCESS`` attempt can credit),
-    the provider view agrees, and the five CAPABILITY entities — no link row of
-    their own — still read ``None``."""
+    """The behavior change, stated as a read — now in two halves. With all
+    twenty-eight §24.7 rows approved, **fifteen** RESOURCE targets (C2-a's
+    nine plus C2-b's six REALIZES rows) carry the node their link names in
+    their teaching payload (this is what an ``ALTERNATIVE_SUCCESS`` attempt
+    can credit), the provider view agrees; the **thirteen** targets whose
+    single approved row is a ``SUPPORTS`` row read ``None`` on the credit
+    face while their row stays fully readable — the credit-safe direction
+    C2-b introduced; and the five CAPABILITY entities — no link row of their
+    own — still read ``None``."""
 
     store = ContentStore(built_content_db)
     try:
@@ -315,9 +375,16 @@ def test_the_credit_face_reads_the_nine_approved_nodes(
             assert isinstance(links, Ok), links
             assert len(links.value) == 1, target_id
             node = str(links.value[0].node_id)
+            relation = str(links.value[0].relation)
+            assert relation in ("REALIZES", "SUPPORTS"), target_id
             teaching = supply.get_teaching_content(target_id)
             assert isinstance(teaching, Ok), teaching
-            assert teaching.value.capability_linkage == node, target_id
+            if target_id in CREDIT_TARGETS:
+                assert relation == "REALIZES", target_id
+                assert teaching.value.capability_linkage == node, target_id
+            else:
+                assert relation == "SUPPORTS", target_id
+                assert teaching.value.capability_linkage is None, target_id
         for target_id in CAP_TARGETS:
             teaching = supply.get_teaching_content(target_id)
             assert isinstance(teaching, Ok), teaching
@@ -325,12 +392,19 @@ def test_the_credit_face_reads_the_nine_approved_nodes(
     finally:
         store.close()
 
+    assert len(CREDIT_TARGETS) == 15
+    assert len(SUPPORT_ONLY_TARGETS) == 13
+
     provider = ContentBackedTeachingTargetProvider(built_content_db)
     try:
-        for target_id in RES_TARGETS:
+        for target_id in CREDIT_TARGETS:
             view = provider.resolve("RESOURCE", target_id)
             assert isinstance(view, Ok), view
             assert view.value.capability_linkage is not None, target_id
+        for target_id in SUPPORT_ONLY_TARGETS:
+            view = provider.resolve("RESOURCE", target_id)
+            assert isinstance(view, Ok), view
+            assert view.value.capability_linkage is None, target_id
     finally:
         provider.close()
 
@@ -340,12 +414,12 @@ def test_the_credit_face_reads_the_nine_approved_nodes(
 # ---------------------------------------------------------------------------
 
 
-def test_the_index_lists_the_nine_evidence_documents_in_entity_order() -> None:
+def test_the_index_lists_the_twenty_eight_evidence_documents_in_entity_order() -> None:
     """The source-side half of "the corpus states evidence for every RESOURCE
-    target": the index's ``evidence`` list names exactly those nine documents,
-    in the same order the ``entities`` list carries them (content_src/README.md
-    "文件布局"), and the CAPABILITY entities are absent from it by decision
-    (their ``None`` level is constructive)."""
+    target": the index's ``evidence`` list names exactly the twenty-eight
+    documents, in the same order the ``entities`` list carries them
+    (content_src/README.md "文件布局"), and the CAPABILITY entities are absent
+    from it by decision (their ``None`` level is constructive)."""
 
     index = json.loads(
         (CONTENT_SRC_DIR / "index.json").read_text(encoding="utf-8")
@@ -357,22 +431,27 @@ def test_the_index_lists_the_nine_evidence_documents_in_entity_order() -> None:
         if entry.startswith("entities/res-")
     ]
     assert index["evidence"] == expected
-    assert len(expected) == 9
+    assert len(expected) == 28
     for listed in index["evidence"]:
         assert (CONTENT_SRC_DIR / listed).is_file(), listed
-    assert len(entities) == 14
+    assert len(entities) == 33
+    # The order rule, stated positively: both lists are plain id order, which
+    # is what "the same order as the entities list" means here.
+    assert entities == sorted(entities)
+    assert index["evidence"] == sorted(index["evidence"])
 
 
 def test_the_calibration100_reading_moves_and_the_verdict_does_not(
     built_content_db: Path,
 ) -> None:
     """The numbers the rollout HOLD rests on, read from both sides: the
-    artifact now answers nine detection-ready resource targets out of fourteen
-    entities (旧真值: one of fourteen), while the floors IP §12 states are
-    100 / 30 / 2 — so every one of them is still unmet and nothing here is an
-    opening claim. The resource_count floor is read against the resource
-    count (nine), not the entity count (fourteen); both are stated so the
-    two spellings cannot drift apart."""
+    artifact now answers twenty-eight detection-ready resource targets out of
+    thirty-three entities (旧真值: one of fourteen; C2-a: nine of fourteen),
+    while the floors IP §12 states are 100 / 30 / 2 — so every one of them is
+    still unmet and nothing here is an opening claim. IP §13's own starting
+    number is 28, and the RESOURCE count now *is* 28: that is the first rung
+    of "28 → 100", not a Calibration100 pass, and the two readings are
+    asserted separately so the two spellings cannot drift apart."""
 
     plan_text = (
         Path(__file__).resolve().parents[2] / "docs" / "IMPLEMENTATION_PLAN.md"
@@ -382,6 +461,8 @@ def test_the_calibration100_reading_moves_and_the_verdict_does_not(
         for name in ("resource_count", "CORE_A", "CORE_C")
     }
     assert gates == {"resource_count": 100, "CORE_A": 30, "CORE_C": 2}
+    # IP §13's first rung, read out of the document rather than re-typed.
+    assert re.search(r"28 → 100 resource calibration", plan_text)
 
     store = ContentStore(built_content_db)
     try:
@@ -397,7 +478,12 @@ def test_the_calibration100_reading_moves_and_the_verdict_does_not(
         store.close()
     conn = sqlite3.connect(str(built_content_db))
     try:
-        resources = conn.execute("SELECT COUNT(*) FROM content_entity").fetchone()[0]
+        resources = [
+            row[0]
+            for row in conn.execute(
+                "SELECT entity_id FROM content_entity ORDER BY entity_id"
+            )
+        ]
         families = dict(
             conn.execute(
                 "SELECT family, COUNT(*) FROM curriculum_capability GROUP BY family"
@@ -405,13 +491,20 @@ def test_the_calibration100_reading_moves_and_the_verdict_does_not(
         )
     finally:
         conn.close()
-    assert len(ready) == 9
-    assert resources == 14
+    res_rows = [
+        entity_id for entity_id in resources if str(entity_id).startswith("res-")
+    ]
+    assert len(ready) == 28
+    assert sorted(ready) == res_rows
+    assert len(res_rows) == 28  # the IP §13 first rung: 28 resources
+    assert len(resources) == 33
     print(
-        f"[c2-a] calibration reading -> {len(ready)}/{gates['resource_count']} "
-        f"resources ({len(ready)} R4 of {resources} entities)"
+        f"[c2b] calibration reading -> {len(ready)}/{gates['resource_count']} "
+        f"resources ({len(ready)} R4 of {len(resources)} entities;"
+        f" IP §13 first rung = 28)"
     )
+    assert len(ready) >= 28  # the first rung, met
     assert len(ready) < gates["resource_count"]
-    assert resources < gates["resource_count"]
+    assert len(res_rows) < gates["resource_count"]
     assert families.get("CORE_A", 0) < gates["CORE_A"]
     assert families.get("CORE_C", 0) < gates["CORE_C"]

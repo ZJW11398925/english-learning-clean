@@ -1,0 +1,42 @@
+{
+  "entity": {
+    "entity_id": "res-idiom-on-the-same-page",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "IDIOM",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that two people share the same understanding of a situation.",
+      "Use the phrase on the same page, keeping the preposition on and the article the.",
+      "Start with the words: We are ___ the same page about the plan."
+    ],
+    "reveal_form": "We are on the same page about the plan.",
+    "canonical_forms": [
+      "We are on the same page about the plan."
+    ],
+    "alternative_realizations": [],
+    "required_slots": [
+      [
+        "page"
+      ],
+      [
+        "same"
+      ]
+    ]
+  }
+}

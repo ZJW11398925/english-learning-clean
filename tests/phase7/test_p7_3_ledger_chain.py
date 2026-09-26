@@ -215,10 +215,11 @@ def test_without_a_ledger_the_source_gaps_with_the_same_text(
 def test_the_shipped_corpus_is_still_unreachable_with_a_ledger(
     world: World,
 ) -> None:
-    """A ledger does not make the corpus teachable: the same 14 targets are
-    still refused (旧真值: all at the §8.1 gate; 新真值 C1: thirteen there
-    and the one R4-graded target at SCHEDULE_ROW, since this world holds no
-    §5.2 row for it), and the debt source has nothing to propose because no
+    """A ledger does not make the corpus teachable: the same targets are
+    still refused (旧真值: all fourteen at the §8.1 gate; 新真值 C2-b: the five
+    evidence-less CAPABILITY entities there and the twenty-eight R4-graded
+    RESOURCE targets at SCHEDULE_ROW, since this world holds no §5.2 row for
+    any of them), and the debt source has nothing to propose because no
     candidate target exists."""
 
     supply = generate_candidates(inputs_for(world, world.supply, ledger()))
@@ -227,7 +228,7 @@ def test_the_shipped_corpus_is_still_unreachable_with_a_ledger(
         "CONTENT_READINESS",
         "SCHEDULE_ROW",
     }
-    assert len(supply.refusals) == 14
+    assert len(supply.refusals) == 33
     assert "COVERAGE_DEBT" not in {gap.source for gap in supply.gaps}
 
 
@@ -298,7 +299,7 @@ def test_an_exposure_outside_the_window_is_not_counted(
     )
     proposal = debt_proposal(supply)
     assert proposal.cost[CostFactor.OVEREXPOSURE] == 0.0
-    assert len(supply.readiness) == 14  # the world really looked at the corpus
+    assert len(supply.readiness) == 33  # the world really looked at the corpus
 
 
 def test_a_paused_obligation_proposes_nothing_and_moves_no_debt(

@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's collocation set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "play a role",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "play-a-role.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "play-a-role.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To be one of the things that affect a situation or produce a result."
+    },
+    {
+      "sense_id": "play-a-role.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The verb is play, the object is a role with its article, and what the role is played in follows the preposition in: money played a role in the decision. An adjective can stand between the article and the noun to grade the contribution (a major role, an important role, a small role), and the same pattern takes a part: money played a part in the decision. The article is not optional: a role, not role, and it stays when the adjective is added (an important role)."
+    },
+    {
+      "sense_id": "play-a-role.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The unit is a verb + article + noun + in, and the two slips it attracts pull in opposite directions: the article is dropped because the noun is felt as part of a fixed phrase (play important role), and the preposition is dropped because the noun phrase is felt as the verb's object (play a role the decision). What holds the pattern together is that the role is played in something: the preposition is what names the situation, so without in the sentence has nowhere to put it."
+    },
+    {
+      "sense_id": "play-a-role.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "play a role in X = affect X (trust plays a role in teamwork). play a part in X says the same thing. play a role on stage, in a film or in a game is the actor's sense and takes the stage, the film or the game as its setting: the words are the same and the sense is different. a role can also be a function assigned to someone (her role in the team), which is a noun use with no play at all."
+    },
+    {
+      "sense_id": "play-a-role.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "起作用；发挥作用（是影响某个情况或结果的诸多因素之一）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "play-a-role.base",
+      "written": "play a role",
+      "normalized": "play a role",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "play-a-role.third-person-singular",
+      "written": "plays a role",
+      "normalized": "play a role",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "play-a-role.past",
+      "written": "played a role",
+      "normalized": "play a role",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "play-a-role.present-participle",
+      "written": "playing a role",
+      "normalized": "play a role",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the phrase is common in argument and explanation, so receptive value is HIGH and receptive difficulty LOW. Productive value and difficulty are both MEDIUM because the article and the preposition are each droppable and the actor's sense of the same words is available as a false friend. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The collocation belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Explaining what affected a decision or a result is standard workplace wording (cost played a role in the delay), so it carries substantial weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the article and the preposition in place, and never present the actor's sense (play a role on stage) as a model of this target or an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "ARTICLE_OMISSION",
+      "error_pattern": "play | plays | played + role (no determiner between the verb and the noun)",
+      "corrected_pattern": "play a role / play an important role",
+      "explanation": "Chinese has no article system (发挥作用), so the determiner in front of the singular countable noun is not produced; the adjective-only shape (play important role) is the same slip with an adjective added. The noun is right and the grammatical word that makes it a noun phrase is missing.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of play is followed by role or by an adjective plus role with no determiner in front of the noun, in a clause about affecting a situation."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "MISSING_PREPOSITION",
+      "error_pattern": "play | plays | played + a | the role + noun phrase (no preposition in)",
+      "corrected_pattern": "play a role in + noun phrase",
+      "explanation": "The noun phrase after role is read as the verb's object because play is transitive in its other senses (play chess, play a game). Here the situation is introduced by in and the noun phrase belongs to the preposition, not to play.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a determiner and role follow a form of play and a noun phrase follows role directly, with no in between, in a clause about affecting a situation."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb, the determiner slot in front of role, and the preposition after it. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the words are there but play takes a stage, a game or an instrument, so the contribution sense is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "ARTICLE_OMISSION: match when a form of play is followed by role, or by an adjective plus role, with no determiner, because a singular countable noun needs its determiner in this object position."
+    },
+    {
+      "ordinal": 1,
+      "rule": "MISSING_PREPOSITION: match when the role noun phrase is followed directly by a noun phrase with no in, because the situation the role is played in is introduced by the preposition."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when a determiner and role (or part) follow a form of play and in introduces the situation, with or without an adjective in between (money played a role in the decision, trust plays an important role in teamwork): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "STAGE_OR_GAME_SENSE: do not match when play takes a role in a performance or a game (she played a role in the school play) or when role names an assigned function (her role in the team is to schedule), because the contribution sense is not being used there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Money played a role in the decision.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Trust plays an important role in teamwork.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Money played a part in the decision.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "She played a role in the school play.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-colloc-take-part-in",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "COLLOCATION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that someone joined an activity together with other people.",
+      "Use the verb take and the noun part, then the preposition in and the activity.",
+      "Start with the words: We ___ part in the survey."
+    ],
+    "reveal_form": "We took part in the survey.",
+    "canonical_forms": [
+      "We took part in the survey."
+    ],
+    "alternative_realizations": [
+      "We are taking part in the survey."
+    ],
+    "required_slots": [
+      [
+        "part"
+      ],
+      [
+        "take"
+      ]
+    ]
+  }
+}

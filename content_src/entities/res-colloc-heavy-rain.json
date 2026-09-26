@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-colloc-heavy-rain",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "COLLOCATION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Describe rain that is falling hard and in large amounts.",
+      "Use the adjective heavy in front of the noun rain, with no verb between them.",
+      "Start with the words: We stayed inside because of the ___ rain."
+    ],
+    "reveal_form": "We stayed inside because of the heavy rain.",
+    "canonical_forms": [
+      "We stayed inside because of the heavy rain."
+    ],
+    "alternative_realizations": [
+      "There was heavy rain all night."
+    ],
+    "required_slots": [
+      [
+        "rain"
+      ],
+      [
+        "heavy"
+      ]
+    ]
+  }
+}

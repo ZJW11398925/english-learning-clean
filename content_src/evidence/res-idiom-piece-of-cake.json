@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's idiom set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "piece of cake",
+    "pos": "NOUN"
+  },
+  "senses": [
+    {
+      "sense_id": "piece-of-cake.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "piece-of-cake.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Something very easy to do."
+    },
+    {
+      "sense_id": "piece-of-cake.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The phrase is a noun phrase used after be to describe a task: the test was a piece of cake. The article a is part of the phrase (a piece of cake), the noun piece keeps its singular form, and the thing described stands as the subject: it was a piece of cake. In the plural the phrase is not used to describe one task, so pieces of cake does not carry this meaning."
+    },
+    {
+      "sense_id": "piece-of-cake.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The idiom is figuratively opaque, so it is learned as a unit; what learners get wrong is grammatical rather than figurative. Chinese has no article system, so a piece of cake loses its determiner and becomes piece of cake, which is not a noun phrase English can use after be. The repair is to keep the article attached to piece whenever the phrase is the complement of be."
+    },
+    {
+      "sense_id": "piece-of-cake.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "a piece of cake = something very easy (the test was a piece of cake). a piece of the cake and a piece of the wedding cake name an actual portion of an actual cake, where the article slot is filled by the or by a possessive and the noun is a real object. The figurative sense describes a task, not a physical object, and always allows a piece of cake."
+    },
+    {
+      "sense_id": "piece-of-cake.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "小菜一碟；轻而易举的事"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "piece-of-cake.base",
+      "written": "a piece of cake",
+      "normalized": "piece of cake",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "MEDIUM",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "MEDIUM",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the idiom is well known and frequent in informal talk, which keeps all three value bands at MEDIUM; receptive difficulty is MEDIUM because the meaning cannot be guessed from the parts, and transfer value is LOW because it is one fixed phrase with no productive pattern behind it. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "The idiom belongs to the general fluency pack's figurative set, so it carries nearly full weight there; the shortfall records that the pack's own review has not placed it."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.3",
+      "rationale": "It appears in casual workplace talk about easy tasks, so it carries some weight in the workplace pack; the shortfall records the informal register and that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the article in front of piece, and never present the literal cake example as a model of this target or an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "ARTICLE_OMISSION",
+      "error_pattern": "be + piece of cake (no determiner in front of piece)",
+      "corrected_pattern": "be + a piece of cake",
+      "explanation": "Chinese has no article system (小菜一碟), so the determiner that the singular countable noun piece needs is not produced. The idiom is otherwise intact, which makes the sentence look finished and the missing word easy to overlook.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when piece of cake follows a form of be with no determiner in front of piece, in a clause describing how easy a task is."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PLURALISED_UNIT",
+      "error_pattern": "a piece of cakes | pieces of cakes | piece of cakes",
+      "corrected_pattern": "a piece of cake",
+      "explanation": "The plural is added to cake because the phrase is read as an ordinary partitive (a piece of X) where X can be plural. In this idiom cake is part of a fixed unit and stays singular, so the pluralised form loses the idiom rather than changing the quantity.",
+      "severity": "LOW",
+      "detection_policy": "Match when cake appears in the plural inside the phrase piece of cake, in a clause describing how easy a task is."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the determiner slot in front of piece, the noun cake and its number. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (piece of cake is used of an actual cake, so the idiom is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "ARTICLE_OMISSION: match when piece of cake follows be with no determiner in front of piece, because the article belongs to this fixed phrase."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PLURALISED_UNIT: match when cake is plural inside the phrase, because the noun stays singular in this idiom."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when a piece of cake stands as the complement of be with the task as subject (the test was a piece of cake, it was a piece of cake): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "LITERAL_CAKE: do not match when the phrase names an actual portion of an actual cake (she cut me a piece of cake, there is a piece of cake left), because the idiom is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "The test was a piece of cake.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "The interview was a piece of cake.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "It was a piece of cake to set up.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "She cut me a piece of cake.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

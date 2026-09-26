@@ -372,7 +372,7 @@ def test_every_corpus_canonical_form_resolves_to_its_own_target(
     silent_supply: ContentBackedTargetSupply,
 ) -> None:
     facts = _corpus_facts(silent_supply)
-    assert len(facts) == 14
+    assert len(facts) == 33
     for fact in facts:
         assert fact.canonical_forms, fact.target_id
         for form in fact.canonical_forms:
@@ -393,7 +393,7 @@ def test_every_corpus_alternative_realization_resolves_to_its_own_target(
             resolution = _resolved(form, facts)
             assert resolution.target_id == fact.target_id, (fact, form)
             assert resolution.matched_via is MatchVia.ALTERNATIVE_REALIZATION
-    assert seen == 13, "the corpus's §24.5 SUPPORTING rows"
+    assert seen == 30, "the corpus's §24.5 SUPPORTING rows (C2-a 13 + C2-b 17)"
 
 
 def test_every_discriminating_corpus_slot_key_resolves_to_its_own_target(
@@ -403,7 +403,11 @@ def test_every_discriminating_corpus_slot_key_resolves_to_its_own_target(
     groups, or a multi-token group) still resolves through rule 3 when its
     groups are covered. The three single-token keys are the declared
     exception and are pinned by
-    test_the_corpus_single_token_keys_never_drive_a_slot_match."""
+    test_the_corpus_single_token_keys_never_drive_a_slot_match. The pair
+    below is a count over the corpus, so it moves with the corpus (旧真值
+    C2-a: 11 discriminating of 14; 新真值 C2-b: 30 of 33 — the nineteen new
+    entity documents add nineteen discriminating keys and keep the same three
+    single-token exclusions)."""
 
     facts = _corpus_facts(silent_supply)
     discriminating = 0
@@ -425,7 +429,7 @@ def test_every_discriminating_corpus_slot_key_resolves_to_its_own_target(
         f"[probe] discriminating slot keys -> {discriminating};"
         f" excluded single-token keys -> {excluded}"
     )
-    assert (discriminating, excluded) == (11, 3)
+    assert (discriminating, excluded) == (30, 3)
 
 
 def test_the_corpus_resolves_to_both_kinds(

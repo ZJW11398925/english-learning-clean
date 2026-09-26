@@ -1,0 +1,202 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's phrasal-verb set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "figure out",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "figure-out.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "figure-out.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To work something out by thinking about it, so that you understand it or know what to do."
+    },
+    {
+      "sense_id": "figure-out.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "figure out is a separable phrasal verb: the object may follow the particle (figure out the answer) or stand between the verb and the particle (figure it out). A pronoun object must stand between them — figure it out, never figure out it. The verb is regular (figured out) and the base form follows a modal or do: I can't figure out the answer, I'll figure it out later. The meaning is always mental: the object is a problem, a reason or a way of doing something, and what follows is understanding, not a physical result."
+    },
+    {
+      "sense_id": "figure-out.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Separability is the whole difficulty. English puts a pronoun between the verb and the particle of a separable phrasal verb, which is the opposite of what the phrase looks like when the object is a full noun phrase (figure out the answer, figure it out). Learners who have learned the noun-phrase pattern produce figure out it, which no English speaker says, and the repair is positional rather than semantic: the pronoun moves, the meaning does not."
+    },
+    {
+      "sense_id": "figure-out.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "figure out X = work X out by thinking (I figured out the answer). find out X = learn X from someone or something (I found out the answer from Ana): the second needs an outside source and the first does not. work out has both meanings. find out the answer is not a mistake, and it is not this target either — which is why the two are kept apart rather than merged."
+    },
+    {
+      "sense_id": "figure-out.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "想出；弄明白（通过思考弄清楚某事或找到办法）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "figure-out.base",
+      "written": "figure out",
+      "normalized": "figure out",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "figure-out.third-person-singular",
+      "written": "figures out",
+      "normalized": "figure out",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "figure-out.past",
+      "written": "figured out",
+      "normalized": "figure out",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "figure-out.present-participle",
+      "written": "figuring out",
+      "normalized": "figure out",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the phrasal verb is extremely frequent in speech and writing, so all three value bands are HIGH; productive difficulty is MEDIUM because the pronoun position is an arbitrary-looking rule that has to be learned rather than derived, and explanation cost is MEDIUM for the same reason. Transfer value is HIGH because the same separable pattern holds for a large family of phrasal verbs. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The phrasal verb belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Working something out is ordinary problem-solving language (we need to figure out why the numbers moved), so it carries substantial weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. When a pronoun object is shown at all, show it in the between position (figure it out), so the model never carries the wrong order, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PRONOUN_AFTER_PARTICLE",
+      "error_pattern": "figure | figures | figured | figuring + out + object pronoun (it, them, this, that)",
+      "corrected_pattern": "figure + object pronoun + out",
+      "explanation": "The phrase looks like a verb followed by a preposition, and a preposition keeps its object after it (look at it). figure out is a separable phrasal verb: the particle is not a preposition, and a pronoun object goes between the two parts of the verb. The error is an ordering slip on a pattern that has to be learned as such.",
+      "severity": "HIGH",
+      "detection_policy": "Match when out follows a form of figure and an object pronoun (it, them, this, that, him, her) follows out, in a clause where figure out is the main verb."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb form, the particle out and the position of any pronoun object. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (out follows figure but it is the preposition of a different construction, so the phrasal verb is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PRONOUN_AFTER_PARTICLE: match when an object pronoun follows out after a form of figure, because this separable phrasal verb puts a pronoun object between the verb and the particle."
+    },
+    {
+      "ordinal": 1,
+      "rule": "MISSING_OBJECT: match when a form of figure is followed by out and ends the clause with no object anywhere, in a clause that needs one (I can't figure out), because figure out is transitive and the thing worked out has to be named."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the object follows the particle as a full noun phrase (figure out the answer) or stands between the verb and the particle as a pronoun (figure it out, figured them out): those are the accepted realizations, in both orders."
+    },
+    {
+      "ordinal": 3,
+      "rule": "FIGURE_AS_A_NOUN_OR_OTHER_CONSTRUCTION: do not match when figure is a noun (the figures are wrong) or when out is the particle of an unrelated verb phrase (she figured in the report, cut it out), because the phrasal verb is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "I can't figure out the answer.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "I can't figure it out.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "She figured out the numbers yesterday.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The figures are out of date.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

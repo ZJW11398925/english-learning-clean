@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's pragmatic-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "that's a good point",
+    "pos": "NOUN"
+  },
+  "senses": [
+    {
+      "sense_id": "thats-a-good-point-but.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "thats-a-good-point-but.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A move that accepts part of what the other person said before adding an objection, so that the disagreement is aimed at the argument and not at the person."
+    },
+    {
+      "sense_id": "thats-a-good-point-but.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The move has two halves joined by but: That's a good point, but + the objection. The concession can name the point (that's a good point about the cost) or be left general (that's a good point), and but is what turns the sentence from agreement into disagreement. The second half is a full clause, so the comma before but is followed by subject and verb, not by a noun phrase. Fair point and good point are the same move with fewer words."
+    },
+    {
+      "sense_id": "thats-a-good-point-but.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The move is worth teaching for the interaction, not for the vocabulary: it lets a learner disagree without sounding hostile, which is why the concession is stated first and the objection second. The form error that follows from that shape is the missing conjunction: the two halves are written as two sentences joined by a comma, because the concession feels complete. English needs but (or another conjunction) between them, or a full stop."
+    },
+    {
+      "sense_id": "thats-a-good-point-but.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "That's a good point, but X = concede then object (this target). That's a good point and X continues the agreement, which is a different move. You have a point means the objection is partly accepted without a following but. a point can also be the main idea of an argument (the point is that we have no budget), where no concession is being made."
+    },
+    {
+      "sense_id": "thats-a-good-point-but.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "这个想法不错，但是……（先肯定对方一部分，再提出自己的反对意见）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "thats-a-good-point-but.base",
+      "written": "That's a good point, but",
+      "normalized": "that is a good point",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the move is frequent in discussion, so receptive value and core utility are HIGH and receptive difficulty LOW; productive value is MEDIUM because a learner can disagree with a plain but instead, and productive difficulty is MEDIUM because the concession half has to be produced before the objection. Transfer value is HIGH: the same concede-then-object shape carries over to many workplaces and topics. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The move belongs to the general fluency pack (the phrases that make disagreement possible without friction), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Disagreeing with a colleague or a client without closing the discussion is the workplace pack's own subject matter, so it carries full weight in that pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "INTERACTION",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "INTERACTION",
+      "style": null,
+      "domain": "WORK",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show both halves with the conjunction between them, so the model never carries the concession alone, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "MISSING_CONJUNCTION",
+      "error_pattern": "That's a good point, + clause (the two halves joined by a comma with no conjunction)",
+      "corrected_pattern": "That's a good point, but + clause",
+      "explanation": "The concession is a complete sentence and Chinese can join two clauses with a comma alone (这个想法不错，我们没有预算), so but is not produced. Written English needs a conjunction between two finite clauses, and here the conjunction is also what carries the objection.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the concession half is followed by a comma and a finite clause with no conjunction between them."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": "zh",
+      "error_type": "ARTICLE_OMISSION",
+      "error_pattern": "good point, but + clause (no determiner in front of point)",
+      "corrected_pattern": "a good point, but + clause",
+      "explanation": "Chinese has no article system, so the determiner in front of the singular countable noun point is dropped while the adjective is kept. The phrase is otherwise the right one, which makes the missing word easy to overlook.",
+      "severity": "LOW",
+      "detection_policy": "Match when good point follows a form of be with no determiner in front of the adjective, in a clause that goes on to object."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words of the concession, the punctuation after it and the conjunction that joins the second half. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (point is used of the main idea of an argument rather than as a concession, so this move is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "MISSING_CONJUNCTION: match when the concession half is joined to a following finite clause by a comma alone, because a conjunction belongs between the two halves of this move."
+    },
+    {
+      "ordinal": 1,
+      "rule": "ARTICLE_OMISSION: match when good point follows be with no determiner in front of it, because the concession is the phrase a good point."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the concession stands complete with its determiner and but introduces the objection (that's a good point, but we don't have the budget / that's a fair point, but the timeline is tight), and do not match the shorter same move (good point, but): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "POINT_AS_THE_MAIN_IDEA: do not match when point names the main idea of an argument or a physical point, with no concession being made (the point is that we have no budget, the train stops at this point), because this move is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "That's a good point, but we don't have the budget.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "That's a fair point, but the timeline is tight.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Good point, but let me check the numbers.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The point is that we have no budget.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

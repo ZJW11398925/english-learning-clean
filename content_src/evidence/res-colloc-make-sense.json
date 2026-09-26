@@ -1,0 +1,204 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's collocation set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "make sense",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "make-sense.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "make-sense.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To be reasonable, or to be understandable once you think about it."
+    },
+    {
+      "sense_id": "make-sense.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The verb is make and the object is the bare noun sense: your plan makes sense, that makes sense, it does not make sense. The subject is the thing that is reasonable, never the person who understands it. The past form is made sense and the third-person singular is makes sense, with the -s on make. What is being judged can be added with of: I can't make sense of this report, where the phrase means 'understand it' and takes of plus the thing."
+    },
+    {
+      "sense_id": "make-sense.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Two different mistakes meet here. The -s of the third-person singular is dropped because the verb is felt as part of a fixed phrase (your plan make sense), and a determiner is inserted because sense is a noun (make a sense). Both come from treating the phrase as one word rather than as a verb with an object: make takes the -s on the verb and the bare noun sense after it."
+    },
+    {
+      "sense_id": "make-sense.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "make sense = be reasonable or understandable (the instructions make sense now). make sense of X = manage to understand X (I can't make sense of this report): the two are different shapes and the second takes an object after of. a sense can also be a feeling or a meaning (a sense of humour, the sense of a word), where no make is involved. Sense is never countable in this collocation."
+    },
+    {
+      "sense_id": "make-sense.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "说得通；有道理（听起来合理或能够理解）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "make-sense.base",
+      "written": "make sense",
+      "normalized": "make sense",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "make-sense.third-person-singular",
+      "written": "makes sense",
+      "normalized": "make sense",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "make-sense.past",
+      "written": "made sense",
+      "normalized": "make sense",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the phrase is among the most frequent comment clauses in English, so all three value bands are HIGH and receptive difficulty is LOW. Productive difficulty is MEDIUM because the phrase behaves like a unit in production and therefore loses its inflection, and explanation cost is LOW because the repair is one sentence about the verb. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The collocation belongs to the general fluency pack (the comment clauses a fluent speaker uses constantly), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Judging whether a plan, a figure or a proposal makes sense is ordinary meeting and review language, so it carries substantial weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the verb carrying its -s in the third-person form and keep the bare noun in place, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "THIRD_PERSON_SINGULAR_MISSING",
+      "error_pattern": "plan | idea | proposal | it + make sense (third-person subject with the base form)",
+      "corrected_pattern": "makes sense",
+      "explanation": "Chinese verbs carry no person or number marking (你的计划说得通), so the -s that a third-person singular subject requires is not produced. The phrase is treated as one unvarying unit, and the inflection that belongs to its verb is lost.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a third-person singular subject (a singular noun phrase or it) is followed by make sense with no -s on make."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "ARTICLE_INTRUSION",
+      "error_pattern": "make | makes | made + a | the sense",
+      "corrected_pattern": "make sense",
+      "explanation": "sense is countable in its other senses, so the determiner that a countable noun needs is supplied out of habit. In this collocation sense is a bare noun and a determiner changes the phrase into something English does not say in this meaning.",
+      "severity": "LOW",
+      "detection_policy": "Match when a determiner stands between a form of make and sense in this collocation."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb form of make, the determiner slot in front of sense and the subject that agrees with it. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the words make and sense are there but sense is countable or the phrase is make sense of, so this collocation is not the one in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "THIRD_PERSON_SINGULAR_MISSING: match when a third-person singular subject is followed by make sense with no -s on make, because the -s belongs to the verb of this collocation."
+    },
+    {
+      "ordinal": 1,
+      "rule": "ARTICLE_INTRUSION: match when a determiner stands between a form of make and the bare noun sense, because this collocation takes no article."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when a form of make stands directly with sense as a bare noun, positively or negatively (your plan makes sense, that does not make sense): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "COUNTABLE_SENSE_OR_MAKE_SENSE_OF: do not match when sense is countable with a determiner of its own in another meaning (he has a good sense of direction, that is a sense I had not met) or when the phrase is make sense of X, where the object is the thing understood: neither is this collocation."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Your plan makes sense.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "That did not make sense at first.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "I can't make sense of this report.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "She has a good sense of direction.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's hedge set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "I'm not sure",
+    "pos": "ADJ"
+  },
+  "senses": [
+    {
+      "sense_id": "im-not-sure.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "im-not-sure.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A way of saying that you cannot be certain about something, and so of holding back a definite answer."
+    },
+    {
+      "sense_id": "im-not-sure.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The frame is I'm not sure, and what is uncertain can follow in three shapes: a whether-clause or an if-clause (I'm not sure whether the shop is open), an about-phrase (I'm not sure about the date), or a short answer with nothing after it. The clause keeps statement order — I'm not sure whether the shop is open, never whether is the shop open — because it is a reported question, not a direct one. The register matters: as a bare reply it can sound non-committal, so in a service context a learner often adds the reason or an offer to check."
+    },
+    {
+      "sense_id": "im-not-sure.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Two pieces of grammar meet in one frame, and both are regular sources of error: not is negating a predicate adjective, so it needs the verb be (I'm not sure) and never a supporting do; and the subordinate question is reported, so the interrogative word order of the direct question does not survive into it. Fixing the frame (I'm not sure, then a statement-order clause) repairs both at once."
+    },
+    {
+      "sense_id": "im-not-sure.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "I'm not sure whether X = I cannot be certain about X (this target). I don't know whether X = stronger: no information at all, where I'm not sure leaves room for a guess. I'm not sure about X can also mean the speaker has not decided (I'm not sure about the colour yet). Sure as an answer (Sure!) means agreement and has nothing to do with uncertainty."
+    },
+    {
+      "sense_id": "im-not-sure.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "我不太确定；我说不准（不能给出肯定的答案）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "im-not-sure.base",
+      "written": "I'm not sure",
+      "normalized": "I am not sure",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the frame is everywhere in questions and answers, so receptive value is HIGH and receptive difficulty LOW; productive value is MEDIUM because I don't know covers part of the same ground, and productive difficulty and explanation cost are MEDIUM because the negated be and the reported question order are each a step. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The hedge belongs to the general fluency pack (the phrases a speaker needs to avoid over-claiming), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Saying that something is not certain rather than guessing is standard workplace practice (I'm not sure whether the file was sent), so it carries full weight in that pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the whether-clause in statement order, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "DO_SUPPORT_ON_ADJECTIVE",
+      "error_pattern": "I | you | we + don't | doesn't + sure …",
+      "corrected_pattern": "I'm not sure …",
+      "explanation": "Chinese negates 确定 with a bare 不 (我不确定), and not is felt to attach to the word if it is put in front of it, so a supporting do is supplied. In English not negates the predicate adjective through be: I'm not sure.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of do stands with not in front of sure, or when be and do stand together before sure, in a first- or second-person frame about certainty."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": "zh",
+      "error_type": "EMBEDDED_QUESTION_ORDER",
+      "error_pattern": "not sure + whether | if + auxiliary + subject … (whether is the shop open)",
+      "corrected_pattern": "not sure + whether | if + subject + verb …",
+      "explanation": "The clause after not sure is a reported question, and Chinese keeps the question word order inside it (不确定商店是否开门 is not marked for inversion at all), so the inversion of the direct question is carried into the subordinate clause. English reports the question in statement order.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when whether or if follows a form of not sure and is then followed by an auxiliary or be before its subject, in a clause about certainty."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the negation of the frame and the word order of the clause it introduces. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (sure is used as an affirmative answer or of a person's certainty in another construction, so this frame is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "DO_SUPPORT_ON_ADJECTIVE: match when do-support carries the negation of sure (I don't sure, I don't be sure), because not negates the adjective through be and no do belongs here."
+    },
+    {
+      "ordinal": 1,
+      "rule": "EMBEDDED_QUESTION_ORDER: match when whether or if after not sure is followed by an auxiliary or a form of be placed before its subject, because a reported question takes statement order."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame stands as I'm not sure (or I am not sure) with a statement-order whether/if clause, an about-phrase, or nothing after it (I'm not sure whether the shop is open, I'm not sure about the date, I'm not sure): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "SURE_AS_AN_ANSWER_OR_OF_A_PERSON: do not match when sure is an affirmative answer (Sure, no problem) or when the certainty of a person is described without negation (she is sure about the date, are you sure?), because this frame is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "I'm not sure whether the shop is open.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "I'm not sure about the date.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "She isn't sure if the file was sent.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Sure, no problem.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

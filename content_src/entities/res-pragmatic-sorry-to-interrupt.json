@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-sorry-to-interrupt",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Apologise before you cut into what someone else is saying.",
+      "Use Sorry and then to with the base verb, followed by what you need.",
+      "Start with the words: Sorry to ___, but I have a quick question."
+    ],
+    "reveal_form": "Sorry to interrupt, but I have a quick question.",
+    "canonical_forms": [
+      "Sorry to interrupt, but I have a quick question."
+    ],
+    "alternative_realizations": [
+      "Sorry for interrupting, but I have a quick question."
+    ],
+    "required_slots": [
+      [
+        "interrupt"
+      ],
+      [
+        "question"
+      ]
+    ]
+  }
+}

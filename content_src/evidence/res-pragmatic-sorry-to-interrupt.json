@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's pragmatic-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "sorry to interrupt",
+    "pos": "ADJ"
+  },
+  "senses": [
+    {
+      "sense_id": "sorry-to-interrupt.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "sorry-to-interrupt.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "An apology offered before cutting into what someone else is saying, normally followed by the reason for the interruption."
+    },
+    {
+      "sense_id": "sorry-to-interrupt.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The formula is sorry to + base verb, and the base verb is what marks the apology as being made while the act is happening: sorry to interrupt, sorry to bother you, sorry to stop you. A but and the reason usually follow (sorry to interrupt, but I have a quick question). The related form sorry for + -ing looks back at an act that is already done or is being done (sorry for interrupting you earlier); both are current English, and the choice between them is about the timing of the apology, not about correctness."
+    },
+    {
+      "sense_id": "sorry-to-interrupt.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The two shapes are what learners mix: sorry to + base verb, sorry for + -ing. Mixing them produces sorry to interrupting and sorry for interrupt, and neither is English. The one-sentence rule is that to takes the plain verb and for takes the -ing form, so the form after the preposition decides the shape of the verb."
+    },
+    {
+      "sense_id": "sorry-to-interrupt.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "sorry to interrupt = the apology made as the interruption happens (this target). sorry for interrupting = the apology for the act, normally once it is done. sorry that + clause apologises for a fact rather than for an act (sorry that I am late). Excuse me and may I just say are other ways into an interruption with their own register."
+    },
+    {
+      "sense_id": "sorry-to-interrupt.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "抱歉打断一下（在插话之前先道歉，再接上自己要说的事）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "sorry-to-interrupt.base",
+      "written": "sorry to interrupt",
+      "normalized": "sorry to interrupt",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the formula is easy to recognise and frequent wherever several people talk, so receptive value is HIGH and receptive difficulty LOW; productive value is MEDIUM because a learner can interrupt with excuse me instead, and productive difficulty is MEDIUM because the to + base verb and for + -ing split is the shape production has to choose between. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "The formula belongs to the general fluency pack's politeness set, so it carries substantial weight there; the shortfall records that it is situational rather than general and that the pack's own review has not placed it."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Interrupting a meeting politely is the workplace pack's own subject matter (sorry to interrupt, but the client is on the line), so it carries full weight in that pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "INTERACTION",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "INTERACTION",
+      "style": null,
+      "domain": "WORK",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. When the for + -ing variant is shown at all, show it as a CONTRAST with its own timing note, never as a model of the same moment of speaking."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "ING_AFTER_TO",
+      "error_pattern": "sorry to + verb in -ing form (sorry to interrupting)",
+      "corrected_pattern": "sorry to + base verb",
+      "explanation": "The two apologies are blended: the to of sorry to is kept but the -ing that belongs with sorry for is attached to the verb. to takes the plain verb here, so the shape has to be chosen once rather than mixed.",
+      "severity": "HIGH",
+      "detection_policy": "Match when to follows sorry and an -ing form follows to."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "BASE_VERB_AFTER_FOR",
+      "error_pattern": "sorry for + base verb (sorry for interrupt)",
+      "corrected_pattern": "sorry for + verb in -ing form",
+      "explanation": "for is a preposition and takes an -ing complement, so a bare verb after it is not a form English has. The learner has the right two words and the wrong verb shape after the second one.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when for follows sorry and a base verb follows for, with no -ing form."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words sorry, to or for, and the shape of the verb that follows. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (sorry goes with a that-clause or stands alone as an apology for a fact or a state, so the interruption formula is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "ING_AFTER_TO: match when sorry to is followed by an -ing form, because to in this apology takes the base verb."
+    },
+    {
+      "ordinal": 1,
+      "rule": "BASE_VERB_AFTER_FOR: match when sorry for is followed by a base verb, because for is a preposition and takes an -ing complement."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when sorry to takes a base verb (sorry to interrupt, sorry to bother you) or when sorry for takes an -ing form (sorry for interrupting, sorry for being late): both are current English and each is the accepted realization of its own shape."
+    },
+    {
+      "ordinal": 3,
+      "rule": "APOLOGY_FOR_A_FACT_OR_STATE: do not match when sorry stands with a that-clause (sorry that I am late) or with a noun phrase naming a state (sorry about the noise), because the interruption formula is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Sorry to interrupt, but I have a quick question.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Sorry to bother you so early.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Sorry for interrupting you earlier.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Sorry about the noise.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

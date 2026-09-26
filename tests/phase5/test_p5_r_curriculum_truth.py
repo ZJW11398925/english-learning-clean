@@ -10,20 +10,26 @@ through the teaching leg's §5 ``ALTERNATIVE_SUCCESS`` fold
 (elc.content.store._primary_realization_node → elc.runtime.controller.
 _verified_capability_linkage → elc.learning.teaching_evidence).
 
-What is pinned here, in order (written at P5-R's truth; C1 and C2-a
-narrowed it to its current shape, and each group states both):
+What is pinned here, in order (written at P5-R's truth; C1, C2-a and C2-b each
+moved the corpus forward, and each group states both):
 
-- the seed rows are honest: all nine rows were ``CURRICULUM_MAPPED`` at
-  P5-R; C1's editorial review approved one and C2-a's approved the other
-  eight while authoring their readiness evidence, so today all nine are
-  ``CANONICAL_APPROVED`` — each with a rationale that names the approval,
-  what it covered and what it did not (curriculum/links.json) — and
-  `primary_flag`/`strength`/`relation` untouched by either approval;
-- the credit read is gated by status: a *demoted* link keeps its row
-  readable and answers ``None`` on the credit face — the canonical corpus
-  now carries only approved rows, so the off-state is built as a variant —
-  and every approved row credits its node. The gate's semantics never moved,
-  the links' editorial status did;
+- the rows are honest: all nine seed rows were ``CURRICULUM_MAPPED`` at P5-R;
+  C1's editorial review approved one, C2-a's approved the other eight while
+  authoring their readiness evidence, and C2-b authored and approved nineteen
+  more while authoring its entities — so today all twenty-eight rows are
+  ``CANONICAL_APPROVED``, each with a rationale that names the approval, what
+  it covered and what it did not (curriculum/links.json). The seed rows'
+  mapping fields (`relation`, `strength`, `primary_flag`, the two ids) are
+  untouched by the approvals; the C2-b rows declare their own relation, and
+  the 13 ``SUPPORTS`` rows carry ``primary_flag = false`` because the primary
+  flag marks the primary **REALIZES** link (the only thing the build's
+  at-most-one check counts);
+- the credit read is gated by status *and* by relation: a *demoted* link keeps
+  its row readable and answers ``None`` on the credit face — the canonical
+  corpus now carries only approved rows, so the off-state is built as a
+  variant — and an approved ``SUPPORTS`` row credits nothing (the read filters
+  ``relation = REALIZES``), which is the second off-state the corpus itself
+  now carries. Every approved ``REALIZES`` row credits its node;
 - the gate is a gate, not a deletion: a demoted variant keeps the row and
   drops only the credit;
 - end to end: res-colloc-make-a-decision's alternative realization now
@@ -71,6 +77,19 @@ HEDGED_OPINION = "cap-eval-hedged-opinion"
 MODALITY = "TEXT_PRODUCTION"
 
 SEED_LINKS = CURRICULUM_DIR / "links.json"
+
+#: The eight rows C2-a approved while authoring their readiness evidence
+#: (C1's own row is DECISION above).
+C2A_APPROVED = (
+    "res-colloc-pay-attention-to",
+    "res-discourse-by-the-way",
+    "res-frame-id-like-to",
+    "res-hedge-i-think",
+    "res-idiom-break-the-ice",
+    "res-phrasal-look-forward-to",
+    "res-pragmatic-could-you",
+    "res-softener-kind-of",
+)
 
 _CLAIM_COLUMNS = (
     "evidence_claim_id",
@@ -128,38 +147,54 @@ def _capability_rows(db: sqlite3.Connection) -> tuple[tuple[object, ...], ...]:
 def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> None:
     """Old truth (P5-R): all nine rows were *mapped*, none *approved*. C1
     approved one row; C2-a approved the other eight while authoring their
-    targets' readiness evidence, so today every row is
-    ``CANONICAL_APPROVED`` — and the mapping-describing fields (relation,
-    strength, primary_flag, and the two ids) are exactly what the approvals
-    were forbidden to touch, asserted row by row from the source document."""
+    targets' readiness evidence; C2-b authored and approved nineteen more,
+    so today all twenty-eight rows are ``CANONICAL_APPROVED`` — and the
+    mapping-describing fields of the nine migrated rows (relation, strength,
+    primary_flag, and the two ids) are exactly what the approvals were
+    forbidden to touch, asserted row by row from the source document. The
+    nineteen C2-b rows are held to the same field discipline: a ``REALIZES``
+    row carries ``primary_flag = true``, a ``SUPPORTS`` row ``false``, and
+    ``strength`` is null everywhere (no vocabulary is invented)."""
 
     links = _links_document()["links"]
-    assert len(links) == 9
+    assert len(links) == 28
+    realizes = 0
+    supports = 0
     for row in links:
         assert row["editorial_status"] == "CANONICAL_APPROVED", row
         assert row["editorial_status"] in LIFECYCLE_STATUSES, row
-        assert row["relation"] == "REALIZES", row
-        assert row["primary_flag"] is True, row
+        assert row["relation"] in ("REALIZES", "SUPPORTS"), row
         assert row["strength"] is None, row
         assert str(row["resource_id"]).startswith("res-"), row
         assert str(row["node_id"]).startswith("cap-"), row
+        if row["relation"] == "REALIZES":
+            realizes += 1
+            assert row["primary_flag"] is True, row
+        else:
+            supports += 1
+            assert row["primary_flag"] is False, row
+    assert (realizes, supports) == (15, 13)
     print(
-        "[p5-r] seed links -> "
+        "[p5-r] corpus links -> "
         f"{sorted({row['editorial_status'] for row in links})}"
-        f" ({len(links)} rows, all approved)"
+        f" ({len(links)} rows, all approved; {realizes} REALIZES,"
+        f" {supports} SUPPORTS)"
     )
 
 
-@pytest.mark.parametrize("index", range(9))
-def test_every_seed_rationale_states_its_basis_and_its_limit(index: int) -> None:
+@pytest.mark.parametrize("index", range(28))
+def test_every_rationale_states_its_basis_and_its_limit(index: int) -> None:
     """Every rationale must carry its basis **and** its limit, and each one
-    names its own row: the approval's basis (the editorial review that made
-    it — C1 for the first row, C2-a for the other eight, since C2-a approved
-    them while authoring their readiness evidence) and its limits (what that
-    review did not cover — no capability-semantics audit, because the
-    capability has no functional definition here — plus the live risk and
-    the Revisit). The P5-R ban on crediting an unapproved row is not carried
-    by prose any more but by the status field: since C2-a no corpus row is
+    names its own row. The basis differs by cut (C1 for the first row, C2-a
+    for the eight it approved, C2-b for the nineteen it authored and
+    approved), and the limits are stated in each row's own words: what the
+    review did not cover (no capability-semantics audit, because the
+    capability has no functional definition here), the Revisit, and — for the
+    credit-bearing REALIZES rows — the live risk ``R-C1-credit``. A SUPPORTS
+    row states the same no-audit limit and adds its own credit limit: the
+    credit face reads REALIZES only, so an approved SUPPORTS row mints
+    nothing. The P5-R ban on crediting an unapproved row is not carried by
+    prose any more but by the status field: since C2-a no corpus row is
     unapproved, so this file pins the demoted case against a variant
     (test_the_gate_is_a_gate_not_a_deletion below)."""
 
@@ -168,16 +203,27 @@ def test_every_seed_rationale_states_its_basis_and_its_limit(index: int) -> None
     assert str(row["node_id"]) in rationale, rationale
     assert str(row["resource_id"]) in rationale, rationale
     assert row["editorial_status"] == "CANONICAL_APPROVED", row
-    if row["resource_id"] == DECISION:
+    resource_id = str(row["resource_id"])
+    if resource_id == DECISION:
         assert "Approved by the C1 (Phase 11) editorial review" in rationale
-    else:
+    elif resource_id in C2A_APPROVED:
         assert "Approved by the C2-a (Phase 11) editorial review" in rationale
-    assert "did NOT cover" in rationale, rationale
+    else:
+        assert "C2-b (Phase 11) editorial review" in rationale, resource_id
+        # The nineteen rows this cut authored carry their own provenance
+        # limit: unlike the migrated nine, no authoring fixture declares them.
+        assert "fixture" in rationale, resource_id
     assert "no functional definition" in rationale, rationale
     assert "no capability-semantics audit" in rationale, rationale
-    assert "no capability certification" in rationale, rationale
-    assert "R-C1-credit" in rationale, rationale
     assert "Revisit" in rationale, rationale
+    if row["relation"] == "REALIZES":
+        assert "did NOT cover" in rationale, rationale
+        assert "no capability certification" in rationale, rationale
+        assert "R-C1-credit" in rationale, rationale
+    else:
+        assert "SUPPORTS" in rationale, rationale
+        assert "credit-safe" in rationale or "mints nothing" in rationale, rationale
+        assert "primary_flag is false" in rationale, rationale
 
 
 def test_the_entity_lifecycle_is_the_authors_and_was_not_touched(
@@ -196,7 +242,7 @@ def test_the_entity_lifecycle_is_the_authors_and_was_not_touched(
             assert resource.value.lifecycle_status == "CANONICAL_APPROVED"
         eligible = supply.supply_entity_ids()
         assert isinstance(eligible, Ok), eligible
-        assert len(eligible.value) == 14
+        assert len(eligible.value) == 33
     finally:
         store.close()
 
@@ -245,19 +291,26 @@ def test_the_link_row_stays_readable_and_the_credit_face_reads_the_approved_node
         provider.close()
 
 
-def test_only_the_approved_link_credits_a_capability(built_content_db) -> None:
-    """The gate applies by status, not by row count (旧真值: all nine linked
-    resources read ``None`` on the credit face; C1: one approved row credited
-    its node; 新真值 C2-a: all nine rows are approved, so all nine credit —
-    and the *count* is what still distinguishes this from "every entity
-    credits": the five CAPABILITY entities carry no link row at all and read
-    ``None``). The unapproved direction is pinned against a demoted variant
-    in test_the_gate_is_a_gate_not_a_deletion below."""
+def test_only_the_approved_realizes_link_credits_a_capability(
+    built_content_db,
+) -> None:
+    """The gate applies by status **and by relation**, not by row count
+    (旧真值: all nine linked resources read ``None`` on the credit face; C1:
+    one approved row credited its node; C2-a: all nine approved rows credited;
+    新真值 C2-b: twenty-eight rows are approved, and exactly the fifteen
+    ``REALIZES`` rows credit — the thirteen approved ``SUPPORTS`` rows satisfy
+    §8.1 R2's ``curriculum_link`` fact and mint nothing, because the read
+    filters ``relation = REALIZES``). The count is what still distinguishes
+    this from "every entity credits": the five CAPABILITY entities carry no
+    link row at all and read ``None``. The unapproved direction is pinned
+    against a demoted variant in test_the_gate_is_a_gate_not_a_deletion
+    below."""
 
     store = ContentStore(built_content_db)
     try:
         linked = 0
         credited = 0
+        supports_only = 0
         for entity_id in store.entity_ids().value:
             links = store.curriculum_links_of(entity_id)
             assert isinstance(links, Ok), links
@@ -267,16 +320,29 @@ def test_only_the_approved_link_credits_a_capability(built_content_db) -> None:
                 assert teaching.value.capability_linkage is None, entity_id
                 continue
             linked += 1
-            assert teaching.value.capability_linkage is not None, entity_id
-            assert teaching.value.capability_linkage == str(
-                links.value[0].node_id
-            ), entity_id
-            credited += 1
-        assert linked == 9
-        assert credited == 9
+            relations = {str(link.relation) for link in links.value}
+            if "REALIZES" in relations:
+                assert teaching.value.capability_linkage is not None, entity_id
+                assert teaching.value.capability_linkage in {
+                    str(link.node_id)
+                    for link in links.value
+                    if str(link.relation) == "REALIZES"
+                }, entity_id
+                credited += 1
+            else:
+                # An approved SUPPORTS-only row: R2-readable, credit-safe.
+                supports_only += 1
+                assert relations == {"SUPPORTS"}, entity_id
+                assert teaching.value.capability_linkage is None, entity_id
+        assert linked == 28
+        assert credited == 15
+        assert supports_only == 13
     finally:
         store.close()
-    print(f"[p5-r] linked resources -> {linked} (credited: {credited})")
+    print(
+        f"[p5-r] linked resources -> {linked} (credited: {credited};"
+        f" support-only: {supports_only})"
+    )
 
 
 def test_the_gate_is_a_gate_not_a_deletion(tmp_path) -> None:

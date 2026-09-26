@@ -1,0 +1,204 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's phrasal-verb set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "come up with",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "come-up-with.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "come-up-with.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To think of an idea, a plan or a solution."
+    },
+    {
+      "sense_id": "come-up-with.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The three parts are fixed in order and inseparable: come, up, with. The thing thought of follows with as a noun phrase, and nothing may be put between the parts (she came up with a good idea, not she came a good idea up with). The verb is irregular (come, came, coming) and the unit is transitive: without an object after with the sentence is incomplete. What is produced is an idea, a name, a plan, a reason or a solution — something the speaker did not have before."
+    },
+    {
+      "sense_id": "come-up-with.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The unit has three words and only the first one inflects, so the two slips are predictable: with is dropped because the thing thought of looks like the verb's object (come up a good idea), and the preposition is put in front of the object in the learner's own word order (come up a good idea with). The pattern to keep is that the object comes after all three words, and that the sentence needs it."
+    },
+    {
+      "sense_id": "come-up-with.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "come up with X = think of X (she came up with a name). come up = be mentioned or happen (your name came up in the meeting), with no object and a different meaning. come up to X = reach or approach X physically (a man came up to me). The three share the first two words and are three different units; only the first takes an idea as its object."
+    },
+    {
+      "sense_id": "come-up-with.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "想出；想到（想出主意、办法或解决方案）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "come-up-with.base",
+      "written": "come up with",
+      "normalized": "come up with",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "come-up-with.past",
+      "written": "came up with",
+      "normalized": "come up with",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "come-up-with.present-participle",
+      "written": "coming up with",
+      "normalized": "come up with",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the unit is a very frequent way to talk about producing ideas, so all three value bands are HIGH and receptive difficulty is LOW. Productive difficulty and explanation cost are MEDIUM because a three-word unit with an object slot invites both the missing preposition and the wrong order. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The phrasal verb belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Proposing an idea or a solution is the workplace pack's own subject matter (we need to come up with a plan), so it carries full weight in that pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show all three parts of the unit together with the object after them, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "MISSING_PREPOSITION",
+      "error_pattern": "come | comes | came | coming + up + noun phrase (no preposition with)",
+      "corrected_pattern": "come up with + noun phrase",
+      "explanation": "The thing thought of is read as the verb's object, so the sentence is closed after up and with is dropped. The unit is transitive only through its preposition: with must be there for the object to have somewhere to attach.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of come is followed by up and then directly by a noun phrase, with no with between up and the noun, in a clause about thinking of something."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_BEFORE_OBJECT",
+      "error_pattern": "come | came + up + noun phrase + with",
+      "corrected_pattern": "come up with + noun phrase",
+      "explanation": "The object is placed where the learner's own word order puts it, in front of the preposition, as in structures where the preposition follows its verb immediately. In this unit with belongs to the three-word sequence and stands in front of the object, not after it.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of come is followed by up, a noun phrase and then with at the end of the unit, in a clause about thinking of something."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the form of come, the words up and with, and what stands between and after them. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (come up is there in its other meaning, so the idea sense is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "MISSING_PREPOSITION: match when up follows a form of come and a noun phrase follows immediately with no with, because the object of this unit attaches through with."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PREPOSITION_BEFORE_OBJECT: match when a noun phrase stands between up and a final with, because with belongs to the three-word unit and stands in front of its object."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when come, up and with stand together with the object after them (she came up with a good idea, we need to come up with a plan): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "COME_UP_WITHOUT_WITH: do not match when come up stands without with in its other meanings (your name came up in the meeting, something came up) or when come up to takes a person, because the idea sense is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "She came up with a good idea.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "We need to come up with a plan.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "He comes up with names quickly.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Your name came up in the meeting.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

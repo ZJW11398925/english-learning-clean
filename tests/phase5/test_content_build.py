@@ -63,7 +63,7 @@ def test_rebuild_same_path_is_byte_identical(tmp_path: Path) -> None:
     second = build_content_db(output)
     digest_second = hashlib.sha256(output.read_bytes()).hexdigest()
     assert digest_first == digest_second
-    assert first.entity_count == second.entity_count == 14
+    assert first.entity_count == second.entity_count == 33
     assert list(tmp_path.iterdir()) == [output]  # no leftover .tmp sibling
 
 
@@ -84,12 +84,15 @@ def test_two_builds_have_the_same_id_set_and_bytes(tmp_path: Path) -> None:
 
 
 def test_build_report_counts(tmp_path: Path) -> None:
-    """The report counts what was written: 14 entities, 5 capabilities, 9 links."""
+    """The report counts what was written: 33 entities (5 CAPABILITY + 28
+    RESOURCE), 5 capabilities, 28 links (15 REALIZES + 13 SUPPORTS), 28
+    evidence documents."""
 
     report = build_content_db(tmp_path / "content.db")
-    assert report.entity_count == 14
+    assert report.entity_count == 33
     assert report.capability_count == 5
-    assert report.link_count == 9
+    assert report.link_count == 28
+    assert report.evidence_count == 28
     assert report.prerequisite_count == 0
     assert report.content_version == "content-v1"
     assert report.curriculum_version == "curriculum-v1"
@@ -126,11 +129,11 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
     C1: ``content_meta`` carries the three version keys **plus** the
     declared-reading TypicalError-need key for an entity whose source states
     it (elc.content.types.typical_error_required_key). C2-a authored the
-    other eight RESOURCE targets' evidence documents, each declaring the
-    same need, so nine such keys stand beside the three version keys — and
-    the nine ids are written out here rather than read back from the
-    artifact, so a source that loses one fails here instead of quietly
-    shrinking the expected list.
+    other eight RESOURCE targets' evidence documents and C2-b the nineteen
+    entities it authored, each declaring the same need, so twenty-eight such
+    keys stand beside the three version keys — and the ids are written out
+    here rather than read back from the artifact, so a source that loses one
+    fails here instead of quietly shrinking the expected list.
     """
 
     conn = sqlite3.connect(str(built_content_db))
@@ -155,20 +158,39 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
         conn.close()
     assert entities == sorted(entities)
     assert capabilities == sorted(capabilities)
-    # C1 (one) and C2-a (eight): the sources' own declarations that these
-    # targets need a §24.9 TypicalError, carried durably and read back by the
-    # readiness face.
+    # C1 (one), C2-a (eight) and C2-b (nineteen): the sources' own
+    # declarations that these targets need a §24.9 TypicalError, carried
+    # durably and read back by the readiness face.
     typical_error_need_keys = [
         (build_module.typical_error_required_key(entity_id), "true")
         for entity_id in (
+            "res-colloc-heavy-rain",
             "res-colloc-make-a-decision",
+            "res-colloc-make-sense",
+            "res-colloc-meet-a-deadline",
             "res-colloc-pay-attention-to",
+            "res-colloc-play-a-role",
+            "res-colloc-take-part-in",
+            "res-discourse-anyway",
             "res-discourse-by-the-way",
+            "res-discourse-to-be-honest",
             "res-frame-id-like-to",
+            "res-frame-what-im-saying-is",
+            "res-frame-would-you-mind",
             "res-hedge-i-think",
+            "res-hedge-im-not-sure",
+            "res-hedge-it-depends",
             "res-idiom-break-the-ice",
+            "res-idiom-on-the-same-page",
+            "res-idiom-piece-of-cake",
+            "res-phrasal-come-up-with",
+            "res-phrasal-figure-out",
             "res-phrasal-look-forward-to",
+            "res-phrasal-run-out-of",
             "res-pragmatic-could-you",
+            "res-pragmatic-sorry-to-interrupt",
+            "res-pragmatic-thats-a-good-point-but",
+            "res-softener-a-bit",
             "res-softener-kind-of",
         )
     ]
@@ -453,9 +475,9 @@ def test_cli_builds_and_reports(
     exit_code = main(["--out", str(output)])
     assert exit_code == 0
     captured = capsys.readouterr().out
-    assert "entities=14" in captured
+    assert "entities=33" in captured
     assert "capabilities=5" in captured
-    assert "links=9" in captured
+    assert "links=28" in captured
     assert output.is_file()
 
 

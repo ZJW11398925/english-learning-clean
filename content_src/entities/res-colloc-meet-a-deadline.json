@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-colloc-meet-a-deadline",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "COLLOCATION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that the work was finished in time, before the date it was due.",
+      "Use the verb meet with the noun deadline, and say which piece of work it was.",
+      "Start with the words: We ___ the deadline for the report."
+    ],
+    "reveal_form": "We met the deadline for the report.",
+    "canonical_forms": [
+      "We met the deadline for the report."
+    ],
+    "alternative_realizations": [
+      "We made the deadline for the report."
+    ],
+    "required_slots": [
+      [
+        "deadline"
+      ],
+      [
+        "meet",
+        "make"
+      ]
+    ]
+  }
+}

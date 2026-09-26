@@ -1,0 +1,178 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's discourse-marker set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "to be honest",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "to-be-honest.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "to-be-honest.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A comment that marks what follows as the speaker's own frank opinion, offered as if the plain truth were being admitted."
+    },
+    {
+      "sense_id": "to-be-honest.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The marker most often stands at the front of the sentence, separated by a comma: to be honest, I don't like the design. The form is fixed as to be honest, with the base form of be; the longer variant to be honest with you adds the listener and means the same thing. It can also come at the end of the clause (I don't like it, to be honest), which English allows for this kind of comment, so the front position is the common one rather than the only one."
+    },
+    {
+      "sense_id": "to-be-honest.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The marker does two jobs at once: it warns the listener that an unfavourable opinion is coming, and it softens the opinion by presenting it as honesty rather than as attack. Learners reach for a participle form built on other comment frames (honestly speaking), which English does not use here, and they sometimes put it in the middle of the clause where a comment marker is awkward. The reliable shape is to be honest, then a comma, then the claim."
+    },
+    {
+      "sense_id": "to-be-honest.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "to be honest, X = my frank opinion is X (to be honest, I don't like the design). honestly, X = the same marker in its one-word form and slightly more common in British speech. to be frank and to tell you the truth are the same family with a different flavour. Honestly as a sentence adverb can also express annoyance (honestly, what were you thinking?), which is not this target."
+    },
+    {
+      "sense_id": "to-be-honest.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "说实话；老实说（听起来像是坦白自己真实想法的说法）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "to-be-honest.base",
+      "written": "to be honest",
+      "normalized": "to be honest",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the marker is easy to recognise and very frequent in talk, so receptive value is HIGH and receptive difficulty LOW; productive value is MEDIUM because a learner can already state an opinion without it, and productive difficulty is MEDIUM because the fixed participle-free form and the comma intonation have to be learned. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The marker belongs to the general fluency pack (the comment clauses a speaker uses constantly), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Delivering a frank assessment politely is ordinary workplace language (to be honest, the timeline is tight), so it carries substantial weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the marker with its comma in the front position, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "CALQUED_COMMENT_FORM",
+      "error_pattern": "honestly | frankly + speaking (as the comment marker before a clause)",
+      "corrected_pattern": "to be honest",
+      "explanation": "English does have generally speaking and strictly speaking, so the frame is over-generalised onto honest, where the language uses to be honest. The learner is not translating a single first language; the slip comes from one comment frame being applied where a different one belongs.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when honestly speaking or frankly speaking stands as the comment marker in front of a clause."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words of the marker and its position relative to the clause. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (honest is used of a person or of a statement inside the clause, so the comment marker is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "CALQUED_COMMENT_FORM: match when honestly speaking or frankly speaking is used as the comment marker before a clause, because this frame belongs to other adverbs and not to honest."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PARTICIPLE_FORM: match when being honest is used as a fronted comment marker (being honest, I don't like it), because this marker is fixed as to be honest."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when to be honest stands as a comment marker at the front or the end of a clause, with or without with you (to be honest, I don't like the design / I don't like it, to be honest): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "HONEST_INSIDE_THE_CLAUSE: do not match when honest describes a person or a statement inside the clause (she is honest about her mistakes, let's be honest with each other), because there the adjective is doing its ordinary work and no comment marker is present."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "To be honest, I don't like the design.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "To be honest with you, the deadline is tight.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "I don't like it, to be honest.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "She is honest about her mistakes.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

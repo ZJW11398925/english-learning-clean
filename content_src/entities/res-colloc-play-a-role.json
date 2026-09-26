@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "entity_id": "res-colloc-play-a-role",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "COLLOCATION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that something was one of the things that affected a result.",
+      "Use the verb play, a role with its article, and the preposition in.",
+      "Start with the words: Money played a role in the decision."
+    ],
+    "reveal_form": "Money played a role in the decision.",
+    "canonical_forms": [
+      "Money played a role in the decision."
+    ],
+    "alternative_realizations": [
+      "Money played a part in the decision."
+    ],
+    "required_slots": [
+      [
+        "role",
+        "part"
+      ],
+      [
+        "play"
+      ]
+    ]
+  }
+}

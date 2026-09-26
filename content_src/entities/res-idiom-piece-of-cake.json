@@ -1,0 +1,42 @@
+{
+  "entity": {
+    "entity_id": "res-idiom-piece-of-cake",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "IDIOM",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that a task was very easy to do.",
+      "Use the phrase a piece of cake after the verb be, with the article a in front of piece.",
+      "Start with the words: The test was a piece of ___."
+    ],
+    "reveal_form": "The test was a piece of cake.",
+    "canonical_forms": [
+      "The test was a piece of cake."
+    ],
+    "alternative_realizations": [],
+    "required_slots": [
+      [
+        "cake"
+      ],
+      [
+        "piece"
+      ]
+    ]
+  }
+}

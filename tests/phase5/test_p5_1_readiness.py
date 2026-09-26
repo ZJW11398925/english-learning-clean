@@ -54,6 +54,53 @@ FOCUS = "res-hedge-i-think"
 #: specimen for "the artifact carries nothing" that the zero-side pins read.
 NO_EVIDENCE_ENTITY = "cap-disc-topic-shift"
 
+#: The twenty-eight RESOURCE targets, in id order — the ids whose sources
+#: state all nineteen §8.1 facts and therefore read ``R4_DETECTION_READY``.
+#: 旧真值: 9 (C1 authored one, C2-a eight); C2-b added the nineteen below with
+#: their evidence documents, and the list is written out rather than derived
+#: from the artifact, so a source that loses a document fails here instead of
+#: quietly shrinking the expected set.
+R4_TARGETS = (
+    "res-colloc-heavy-rain",
+    "res-colloc-make-a-decision",
+    "res-colloc-make-sense",
+    "res-colloc-meet-a-deadline",
+    "res-colloc-pay-attention-to",
+    "res-colloc-play-a-role",
+    "res-colloc-take-part-in",
+    "res-discourse-anyway",
+    "res-discourse-by-the-way",
+    "res-discourse-to-be-honest",
+    "res-frame-id-like-to",
+    "res-frame-what-im-saying-is",
+    "res-frame-would-you-mind",
+    "res-hedge-i-think",
+    "res-hedge-im-not-sure",
+    "res-hedge-it-depends",
+    "res-idiom-break-the-ice",
+    "res-idiom-on-the-same-page",
+    "res-idiom-piece-of-cake",
+    "res-phrasal-come-up-with",
+    "res-phrasal-figure-out",
+    "res-phrasal-look-forward-to",
+    "res-phrasal-run-out-of",
+    "res-pragmatic-could-you",
+    "res-pragmatic-sorry-to-interrupt",
+    "res-pragmatic-thats-a-good-point-but",
+    "res-softener-a-bit",
+    "res-softener-kind-of",
+)
+
+#: The five CAPABILITY entities, in id order: no evidence document, no link
+#: row of their own, no level.
+NO_LEVEL_TARGETS = (
+    "cap-disc-topic-shift",
+    "cap-eval-hedged-opinion",
+    "cap-interact-backchannel",
+    "cap-ref-ask-clarification",
+    "cap-stance-soften-disagreement",
+)
+
 #: The §8.1 facts beyond R1, grouped by the level that adds them.
 R2_FACTS = (
     "curriculum_link",
@@ -545,11 +592,12 @@ def test_corpus_readiness_table_is_computed_and_printed(
     built_content_db: Path,
 ) -> None:
     """P5-R truth, now driven by the artifact instead of by missing tables
-    (C1, then C2-a): the five CAPABILITY entities state no evidence and read
-    no level, blocked at R0 by ``assessment_membership``; the nine RESOURCE
-    targets — C1's authored document plus C2-a's eight — state all nineteen
-    facts and read ``R4_DETECTION_READY``. The table prints the blocking keys
-    so the reading is checkable rather than asserted."""
+    (C1, then C2-a, then C2-b): the five CAPABILITY entities state no evidence
+    and read no level, blocked at R0 by ``assessment_membership``; the
+    twenty-eight RESOURCE targets — C1's authored document, C2-a's eight and
+    C2-b's nineteen — state all nineteen facts and read
+    ``R4_DETECTION_READY``. The table prints the blocking keys so the reading
+    is checkable rather than asserted."""
 
     table = _corpus_table(built_content_db)
 
@@ -557,9 +605,10 @@ def test_corpus_readiness_table_is_computed_and_printed(
     for target_id, level, missing in table:
         print(f"[readiness] {target_id:32} {level!s:22} {missing}")
 
-    assert len(table) == 14
+    assert len(table) == 33
     levels = {(target, missing): level for target, level, missing in table}
-    # 旧真值 → 新真值（C1: 1×R4+13×None；C2-a: 9×R4+5×None）.
+    # 旧真值 → 新真值（C1: 1×R4+13×None；C2-a: 9×R4+5×None；C2-b:
+    # 28×R4+5×None）.
     assert (
         levels[("res-colloc-make-a-decision", ())] == "R4_DETECTION_READY"
     )
@@ -570,16 +619,20 @@ def test_corpus_readiness_table_is_computed_and_printed(
             continue
         assert level is None, (target_id, level)
         assert missing == ("assessment_membership",), (target_id, missing)
+    assert sorted(t for t, _ in levels if t.startswith("res-")) == list(
+        R4_TARGETS
+    )
 
 
 def test_every_corpus_resource_target_is_detection_ready(
     built_content_db: Path,
 ) -> None:
-    """不虚报, both directions (旧真值: none; C1: exactly one; 新真值 C2-a: the
-    nine RESOURCE targets, each with its own evidence document): every target
-    whose source states all nineteen §8.1 facts reads R4 with its judgement
-    fully reached, and every target whose source states nothing carries no
-    detection evidence, no level, and reports the four R4 facts as missing."""
+    """不虚报, both directions (旧真值: none; C1: exactly one; C2-a: nine; 新真值
+    C2-b: the twenty-eight RESOURCE targets, each with its own evidence
+    document): every target whose source states all nineteen §8.1 facts reads
+    R4 with its judgement fully reached, and every target whose source states
+    nothing carries no detection evidence, no level, and reports the four R4
+    facts as missing."""
 
     r4_targets: list[str] = []
     no_level_targets: list[str] = []
@@ -598,24 +651,8 @@ def test_every_corpus_resource_target_is_detection_ready(
         # R4 is cumulative: the four detection facts *and* everything below
         # them are reported missing for every target that does not reach it.
         assert set(R4_FACTS) <= set(r4.missing_keys)
-    assert r4_targets == [
-        "res-colloc-make-a-decision",
-        "res-colloc-pay-attention-to",
-        "res-discourse-by-the-way",
-        "res-frame-id-like-to",
-        "res-hedge-i-think",
-        "res-idiom-break-the-ice",
-        "res-phrasal-look-forward-to",
-        "res-pragmatic-could-you",
-        "res-softener-kind-of",
-    ]
-    assert no_level_targets == [
-        "cap-disc-topic-shift",
-        "cap-eval-hedged-opinion",
-        "cap-interact-backchannel",
-        "cap-ref-ask-clarification",
-        "cap-stance-soften-disagreement",
-    ]
+    assert r4_targets == list(R4_TARGETS)
+    assert no_level_targets == list(NO_LEVEL_TARGETS)
 
 
 def test_the_never_present_keys_are_a_source_property_and_the_unread_mapping_is_empty(
@@ -667,7 +704,7 @@ def test_the_never_present_keys_are_a_source_property_and_the_unread_mapping_is_
 
 def test_every_artifact_entity_is_an_expression(built_content_db: Path) -> None:
     """A corpus-shape fact that no longer carries an R1 reading (P5-R): all
-    14 entities are EXPRESSION, and that is *not* why any target read R1 —
+    33 entities are EXPRESSION, and that is *not* why any target read R1 —
     entity type is not a readiness fact at all (see
     test_a_non_expression_entity_reads_the_same_no_level)."""
 
@@ -681,7 +718,7 @@ def test_every_artifact_entity_is_an_expression(built_content_db: Path) -> None:
         store.close()
     print(f"[f1] artifact entity types -> {sorted(set(types.values()))} ({len(types)})")
     assert set(types.values()) == {"EXPRESSION"}
-    assert len(types) == 14
+    assert len(types) == 33
 
 
 def test_a_non_expression_entity_reads_the_same_no_level(tmp_path: Path) -> None:
@@ -780,12 +817,13 @@ def test_every_corpus_link_is_approved_and_satisfies_the_r2_fact(
     was ``CURRICULUM_MAPPED`` and the R2 fact was False for all 14; C1: one
     approved link; 新真值 C2-a: all nine RESOURCE targets' links are approved
     by editorial review — C1 reviewed one, C2-a the other eight while
-    authoring their readiness evidence — so the R2 ``curriculum_link`` fact is
-    satisfied for exactly the nine linked targets, and the 5 CAPABILITY nodes
-    still have no link row of their own (curriculum/README.md C1 — no
-    self-link is invented). The unapproved direction — a candidate mapping
-    satisfies nothing — is pinned against a demoted variant in
-    test_an_unapproved_curriculum_link_is_not_an_r2_fact below."""
+    authoring their readiness evidence, C2-b the nineteen it authored — so the
+    R2 ``curriculum_link`` fact is satisfied for exactly the twenty-eight
+    linked targets, and the 5 CAPABILITY nodes still have no link row of their
+    own (curriculum/README.md C1 — no self-link is invented). The unapproved
+    direction — a candidate mapping satisfies nothing — is pinned against a
+    demoted variant in test_an_unapproved_curriculum_link_is_not_an_r2_fact
+    below."""
 
     store = ContentStore(built_content_db)
     try:
@@ -811,7 +849,7 @@ def test_every_corpus_link_is_approved_and_satisfies_the_r2_fact(
         assert len(store.entity_ids().value) - len(linked) == 5
     finally:
         store.close()
-    assert len(linked) == 9
+    assert len(linked) == 28
     assert all(entity_id.startswith("res-") for entity_id in linked)
     # The R2 fact and the approved status coincide on every linked target:
     # no unapproved mapping satisfies it, and every approved one does.
@@ -824,10 +862,10 @@ def test_an_unapproved_curriculum_link_is_not_an_r2_fact(
 ) -> None:
     """The fact is not dead in either direction: it turns on approval and off
     again when the approval is withdrawn. The corpus carries no unapproved
-    row since C2-a (all nine are approved), so the demotion is built as a
-    variant — and the row stays readable either way (unapproved ≠ deleted).
-    The canonical artifact is read too, so the pair "approved ⇒ True,
-    demoted ⇒ False" holds over two real builds rather than over one."""
+    row since C2-a (all twenty-eight are approved), so the demotion is built
+    as a variant — and the row stays readable either way (unapproved ≠
+    deleted). The canonical artifact is read too, so the pair "approved ⇒
+    True, demoted ⇒ False" holds over two real builds rather than over one."""
 
     def demote(documents: dict, _index: dict) -> None:
         for row in documents["links.json"]["links"]:

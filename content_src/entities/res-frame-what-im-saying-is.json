@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-frame-what-im-saying-is",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "SENTENCE_FRAME",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Restate your own point so the listener understands what you meant.",
+      "Use the frame What I'm saying is and then the point itself as a clause.",
+      "Start with the words: What I'm saying is ___ we need more time."
+    ],
+    "reveal_form": "What I'm saying is that we need more time.",
+    "canonical_forms": [
+      "What I'm saying is that we need more time."
+    ],
+    "alternative_realizations": [
+      "What I'm saying is we need more time."
+    ],
+    "required_slots": [
+      [
+        "saying"
+      ],
+      [
+        "time"
+      ]
+    ]
+  }
+}

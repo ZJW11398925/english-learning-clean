@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-discourse-anyway",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "DISCOURSE_MARKER",
+    "fixedness": "FIXED",
+    "recognition_policy": "EXACT"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Signal that you are returning to the main topic after a digression.",
+      "Use the one-word marker at the front of the sentence, before the comma.",
+      "Start with the words: ___, let's get back to the topic."
+    ],
+    "reveal_form": "Anyway, let's get back to the topic.",
+    "canonical_forms": [
+      "Anyway, let's get back to the topic."
+    ],
+    "alternative_realizations": [
+      "Anyhow, let's get back to the topic."
+    ],
+    "required_slots": [
+      [
+        "anyway"
+      ],
+      [
+        "topic"
+      ]
+    ]
+  }
+}

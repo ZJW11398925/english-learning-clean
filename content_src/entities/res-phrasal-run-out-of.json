@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-phrasal-run-out-of",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PHRASAL_VERB",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that there is none of something left because you have used it all.",
+      "Use run, then out, then of, and put the thing that is finished after of.",
+      "Start with the words: We ran out ___ time."
+    ],
+    "reveal_form": "We ran out of time.",
+    "canonical_forms": [
+      "We ran out of time."
+    ],
+    "alternative_realizations": [
+      "We are running out of time."
+    ],
+    "required_slots": [
+      [
+        "run"
+      ],
+      [
+        "time"
+      ]
+    ]
+  }
+}

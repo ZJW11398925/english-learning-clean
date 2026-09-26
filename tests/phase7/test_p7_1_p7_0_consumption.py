@@ -165,12 +165,13 @@ def test_the_real_chain_degrades_while_the_caps_stay_ungraded(
     content_supply,
 ) -> None:
     """Real durable rows, real read faces, the real corpus — and a Planner
-    that may not proceed. The gap narrowed with C1 and again with C2-a (旧真值:
-    the corpus graded nothing — 14 ungraded candidates; C1: one target at R4
-    and thirteen ungraded; 新真值: the nine RESOURCE targets are graded and the
-    five evidence-less CAPABILITY entities are not), and the kernel's answer is
-    the same: it degrades instead of inventing a number or a NO_TARGET, because
-    an ungraded candidate's eligibility cannot be judged."""
+    that may not proceed. The gap narrowed with C1, again with C2-a and again
+    with C2-b (旧真值: the corpus graded nothing — 14 ungraded candidates; C1:
+    one target at R4 and thirteen ungraded; C2-a: nine graded; 新真值 C2-b: the
+    twenty-eight RESOURCE targets are graded and the five evidence-less
+    CAPABILITY entities are not), and the kernel's answer is the same: it
+    degrades instead of inventing a number or a NO_TARGET, because an ungraded
+    candidate's eligibility cannot be judged."""
 
     policy, goals, watermark, view = _real_world(
         user_config_store,
@@ -222,9 +223,10 @@ def test_the_real_chain_degrades_while_the_caps_stay_ungraded(
     assert result.trace.context.schedule_authority is not None
     reasons = "\n".join(result.trace.context.reasons)
     assert "no content level is reachable" in reasons
-    # 旧真值: "14 candidate(s)" → C1: "13 candidate(s)" → 新真值 (C2-a): the
-    # nine graded targets leave the note's count at the five still-ungraded
-    # CAPABILITY entities.
+    # 旧真值: "14 candidate(s)" → C1: "13 candidate(s)" → C2-a: "5" → 新真值
+    # (C2-b): the twenty-eight graded targets leave the note's count at the
+    # five still-ungraded CAPABILITY entities — unchanged by C2-b, because it
+    # graded every target it added.
     assert "5 candidate(s)" in reasons
     assert AuthorityName.CURRICULUM_READINESS in (
         result.trace.context.missing_authorities

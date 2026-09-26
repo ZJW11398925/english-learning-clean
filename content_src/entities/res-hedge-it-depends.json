@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-hedge-it-depends",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Refuse to give one answer, and name what the answer rests on.",
+      "Use it depends and keep the preposition on before the thing it rests on.",
+      "Start with the words: It depends ___ the weather."
+    ],
+    "reveal_form": "It depends on the weather.",
+    "canonical_forms": [
+      "It depends on the weather."
+    ],
+    "alternative_realizations": [
+      "That depends on the weather."
+    ],
+    "required_slots": [
+      [
+        "depends"
+      ],
+      [
+        "weather"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-softener-a-bit",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "FUNCTIONAL_EXPRESSION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "DEVELOP",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Make a description gentler instead of stating it at full strength.",
+      "Use a bit directly in front of the adjective, with no of between them.",
+      "Start with the words: The room is a bit ___."
+    ],
+    "reveal_form": "The room is a bit small.",
+    "canonical_forms": [
+      "The room is a bit small."
+    ],
+    "alternative_realizations": [
+      "The room is a little small."
+    ],
+    "required_slots": [
+      [
+        "bit"
+      ],
+      [
+        "small"
+      ]
+    ]
+  }
+}

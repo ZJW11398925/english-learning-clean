@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's collocation set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "meet a deadline",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "meet-a-deadline.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "meet-a-deadline.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To finish work in time, so that it is ready by the date or time it was required."
+    },
+    {
+      "sense_id": "meet-a-deadline.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The verb is meet, the object is a deadline (or a date, a target, a standard), and the work that was finished can be added after for: we met the deadline for the report. The noun keeps its article when the deadline is a particular one (meet the deadline) and takes a when it is not (meet a deadline). American English also uses make a deadline for the same fact, and the opposite is miss a deadline. Meet is a verb with two very different faces here — meet a person, meet a standard — and only the second one takes a deadline."
+    },
+    {
+      "sense_id": "meet-a-deadline.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The pattern is verb + article + deadline, and the two things to keep are the verb and the article. Learners whose first language has no article drop the determiner (meet deadline), and learners who know meet only as 'encounter a person' avoid the verb altogether and reach for catch or finish instead. Neither is repaired by a rule about deadlines: what has to be learned is that meet also means 'satisfy a requirement', and that a singular countable noun needs its determiner in this position."
+    },
+    {
+      "sense_id": "meet-a-deadline.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "meet a deadline = finish in time (we met the deadline). miss a deadline = not finish in time (they missed the deadline). make a deadline is the American variant of the first. meeting a person and meeting a standard are the other senses of the same verb and take different objects; the words meet the deadline only mean this target when a due date is what is being satisfied."
+    },
+    {
+      "sense_id": "meet-a-deadline.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "赶上截止时间；按时完成（在期限前把工作做完）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "meet-a-deadline.base",
+      "written": "meet a deadline",
+      "normalized": "meet a deadline",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "meet-a-deadline.third-person-singular",
+      "written": "meets the deadline",
+      "normalized": "meet a deadline",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "meet-a-deadline.past",
+      "written": "met the deadline",
+      "normalized": "meet a deadline",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "meet-a-deadline.present-participle",
+      "written": "meeting the deadline",
+      "normalized": "meet a deadline",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): deadline-talk is everywhere in study and work, so receptive value is HIGH and receptive difficulty LOW. Productive value is MEDIUM and productive difficulty MEDIUM because the same verb competes with catch, finish and the American make, and the article is easy to drop; explanation cost is MEDIUM for the same reason. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "The collocation belongs to the general fluency pack's high-frequency set (time and work vocabulary), so it carries nearly full weight there; the shortfall records that the pack's own review has not placed it."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Deadlines are the workplace pack's own subject matter (status updates, project mail, reviews), so it carries full weight in that pack's coverage accounting."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "CORRESPONDENCE",
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": null,
+      "domain": "WORK",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the determiner with the deadline noun, so the model never carries the bare noun, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "ARTICLE_OMISSION",
+      "error_pattern": "meet | meets | met | meeting + deadline (no determiner in front of the noun)",
+      "corrected_pattern": "meet a deadline / meet the deadline",
+      "explanation": "Chinese has no article system (赶上截止时间), so the determiner that English needs in front of a singular countable noun is simply not produced. The noun is otherwise right; what is missing is the grammatical word that makes it a noun phrase in this position.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of meet is immediately followed by the singular noun deadline with no determiner between them, in a clause about finishing work in time."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "WRONG_VERB_FOR_SENSE",
+      "error_pattern": "catch | finish + the deadline | a deadline",
+      "corrected_pattern": "meet a deadline",
+      "explanation": "catch a train and finish the work are both correct, so the verbs are extended to the due date itself, which English does not do: the deadline is met, not caught or finished. The slip is a near-synonym substitution on the verb rather than a misreading of the noun.",
+      "severity": "LOW",
+      "detection_policy": "Match when catch or finish takes the noun deadline as its object, in a clause about the due date being respected."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb, the determiner slot in front of deadline and the noun itself. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the words are there but meet takes a person or an event as its object, so the requirement sense is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "ARTICLE_OMISSION: match when a form of meet is followed directly by the singular noun deadline with no determiner, because a singular countable noun needs its determiner in this object position."
+    },
+    {
+      "ordinal": 1,
+      "rule": "WRONG_VERB: match when catch or finish takes deadline as its object, because the verb for satisfying a due date is meet."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when a form of meet or make stands with a determiner in front of deadline, with or without a following for-phrase (we met the deadline for the report, they made the deadline): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "MEET_A_PERSON_OR_AN_EVENT: do not match when meet takes a person, a group or an event as its object (I met the manager at the deadline party) or when deadline names an administrative date rather than a requirement satisfied (the deadline for applications is Friday), because the requirement sense is not being used there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "We met the deadline for the report.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "She meets the deadline every week.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "They made the deadline for the report.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "I met the manager before the deadline.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

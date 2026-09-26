@@ -278,7 +278,7 @@ def test_origin_and_lifecycle_are_orthogonal(tmp_path: Path) -> None:
 
 def test_the_canonical_corpus_is_fully_eligible(built_content_db: Path) -> None:
     """The other side of candidate exclusion: on the canonical corpus every
-    declared entity is CANONICAL_APPROVED, so the supply set is the full 14
+    declared entity is CANONICAL_APPROVED, so the supply set is the full 33
     (a filter that excluded more would be a silent content loss)."""
 
     store = ContentStore(built_content_db)
@@ -290,7 +290,7 @@ def test_the_canonical_corpus_is_fully_eligible(built_content_db: Path) -> None:
         store.close()
     assert isinstance(eligible, Ok), eligible
     assert tuple(str(entity_id) for entity_id in eligible.value) == ids
-    assert len(ids) == 14
+    assert len(ids) == 33
 
 
 def test_a_read_failure_is_an_err_never_a_raise(

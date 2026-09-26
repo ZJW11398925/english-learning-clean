@@ -1,0 +1,212 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's collocation set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "take part in",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "take-part-in.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "take-part-in.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "To be one of the people who do an activity, so that the activity happens partly through your being in it."
+    },
+    {
+      "sense_id": "take-part-in.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The unit is take + part + in, and the thing joined follows in as a noun phrase: take part in the survey, take part in a race, take part in the discussion. The noun part carries no article (take part, not take a part), and the phrase is intransitive: the activity is named after in, never as the object of take. It is the ordinary way to say that someone was one of the participants; participate in says the same thing in a more formal register."
+    },
+    {
+      "sense_id": "take-part-in.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Two things go wrong together. First, join is transitive and takes the activity directly (join the club), so learners carry that pattern over and drop the preposition: take part the survey. Second, part is a bare noun inside this unit, so the article that other collocations need is wrong here: a part of the survey is a portion of it, not participation in it. The safe check is the preposition: if in is not there, the unit is not there either."
+    },
+    {
+      "sense_id": "take-part-in.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "take part in X = be one of the participants in X (we took part in the survey). take part of X = take a portion of X (I took part of the cake home), where part of is a quantity phrase and take is the ordinary verb of taking. a part of X names a piece of a whole (the first part of the film). The three shapes look similar and only the first is this target."
+    },
+    {
+      "sense_id": "take-part-in.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "参加；参与（作为参与者之一做某项活动）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "take-part-in.base",
+      "written": "take part in",
+      "normalized": "take part in",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "take-part-in.third-person-singular",
+      "written": "takes part in",
+      "normalized": "take part in",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "take-part-in.past",
+      "written": "took part in",
+      "normalized": "take part in",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    },
+    {
+      "form_id": "take-part-in.present-participle",
+      "written": "taking part in",
+      "normalized": "take part in",
+      "form_type": "PRESENT_PARTICIPLE",
+      "morph_features": "aspect=progressive",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the phrase is frequent and transparent, so receptive value is HIGH and receptive difficulty LOW; productive value is MEDIUM because a perfectly good near-synonym (join, participate in) competes with it, and the production difficulty is MEDIUM because the preposition is routinely dropped when the transitive pattern of join is carried over. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The collocation belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Taking part in a survey, a review or a training session is ordinary workplace wording, so it carries substantial weight in the workplace pack; the shortfall records that the pack's own review has not placed it and that the classroom sense (take part in a race) is outside that pack."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the preposition in place, so the model never carries the transitive pattern, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "MISSING_PREPOSITION",
+      "error_pattern": "take | takes | took | taking + part + noun phrase (no preposition in)",
+      "corrected_pattern": "take part in + noun phrase",
+      "explanation": "The Chinese pattern 参加 takes its object directly (参加调查), and the English near-synonym join is transitive too (join the club), so the item after part is read as the object of take and the preposition is dropped. The unit, however, is intransitive and names the activity only after in.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of take part is followed directly by a noun phrase, with no in (or other preposition) between part and the noun, in a clause about joining an activity."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "ARTICLE_INTRUSION",
+      "error_pattern": "take | took | taking + a part in + noun phrase",
+      "corrected_pattern": "take part in + noun phrase",
+      "explanation": "part is a countable noun in most of its uses, so the determiner that other singular count nouns need is supplied out of habit. Inside this unit part is bare, and take a part in reads as a different, non-idiomatic combination rather than as participation.",
+      "severity": "LOW",
+      "detection_policy": "Match when a determiner (a, the, my, this) stands between a form of take and part, in a clause about joining an activity."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb, the noun part, the words in front of part and the preposition after it. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (the same words are there but part of is a quantity phrase, so take is the ordinary verb of taking and the collocation is not being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "MISSING_PREPOSITION: match when part follows a form of take and a noun phrase follows immediately, with no preposition, because the unit is intransitive and the activity is named after in."
+    },
+    {
+      "ordinal": 1,
+      "rule": "ARTICLE_INTRUSION: match when a determiner stands between a form of take and the bare noun part, because the unit takes no article on part."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when part is followed by the preposition in and then a noun phrase or an -ing form (take part in the survey, taking part in running the event): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "PART_OF_QUANTITY: do not match when part of follows a form of take with no in anywhere (she took part of the cake home), because part of is a quantity phrase there and take is the ordinary verb of taking."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "We took part in the survey.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "She takes part in the discussion.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "They are taking part in the survey.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "She took part of the cake home.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

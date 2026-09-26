@@ -1,0 +1,204 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's hedge set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "it depends",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "it-depends.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "it-depends.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A way of refusing to give one answer, because the answer is different in different situations."
+    },
+    {
+      "sense_id": "it-depends.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The formula is it depends on X, where X is the thing the answer rests on: it depends on the weather, it depends on who is asking. On is not optional, because the thing it rests on is the object of that preposition; a clause can follow on as well (it depends on whether the shop is open). The subject can be that instead of it (that depends on the weather), and the negative it doesn't depend on X is used when something is definitely not relevant."
+    },
+    {
+      "sense_id": "it-depends.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The hedge's job is to hold back an answer, which is why it is worth teaching as a pragmatic move and not only as a verb: it gives the speaker a way to be non-committal without sounding evasive. The form error is the preposition: Chinese 取决于 takes its object directly (取决于天气), so on is dropped, and the sentence then reads as an incomplete clause rather than as a hedge."
+    },
+    {
+      "sense_id": "it-depends.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "It depends on X = X decides it (it depends on the weather). It depends whether X, without on, is also used in speech and takes a clause, not a noun phrase. depend on a person = rely on that person (you can depend on Ana), which is a different sense with a person as its object and no question of situations being different."
+    },
+    {
+      "sense_id": "it-depends.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "看情况；视……而定（不给单一答案，因为答案因情形而异）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "it-depends.base",
+      "written": "it depends",
+      "normalized": "it depends",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    },
+    {
+      "form_id": "it-depends.that-depends",
+      "written": "that depends",
+      "normalized": "it depends",
+      "form_type": "THIRD_PERSON_SINGULAR",
+      "morph_features": "person=3|number=singular|tense=present",
+      "pronunciation": null
+    },
+    {
+      "form_id": "it-depends.past",
+      "written": "it depended",
+      "normalized": "it depends",
+      "form_type": "PAST",
+      "morph_features": "tense=past",
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the hedge is very frequent in advice and planning talk, so receptive value is HIGH and receptive difficulty LOW; productive value and difficulty are MEDIUM because a learner can answer with a plain conditional instead, and the preposition is the part production drops. Transfer value is MEDIUM: the pattern extends to clauses after on. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The hedge belongs to the general fluency pack (the phrases a speaker needs to be non-committal), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "Declining to commit to one answer is ordinary workplace language (it depends on the client's schedule), so it carries nearly full weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show on with the thing the answer rests on after it, and never present the rely-on sense with a person as a model of this target or an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "MISSING_PREPOSITION",
+      "error_pattern": "depend | depends | depended + noun phrase (no preposition on)",
+      "corrected_pattern": "depend on + noun phrase",
+      "explanation": "Chinese 取决于 takes its object directly, so the preposition that carries the thing being depended on is not produced. In English the noun phrase belongs to on; without it the clause has no complement and the hedge reads as unfinished.",
+      "severity": "HIGH",
+      "detection_policy": "Match when a form of depend is followed directly by a noun phrase with no on between them."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": "zh",
+      "error_type": "BE_PLUS_BASE_VERB",
+      "error_pattern": "be + depend (it is depend on the weather)",
+      "corrected_pattern": "it depends on",
+      "explanation": "The third-person -s is felt as a plural or a noun marker rather than as verb agreement, so a form of be is supplied to carry the sentence and the verb is left in its base form. English needs no be here: the verb itself is finite.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a form of be is followed by the base verb depend in a clause."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the form of depend, the preposition on and the shape of the subject. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (depend on takes a person as its object, so the rely-on sense is in use and not the hedge)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "MISSING_PREPOSITION: match when a form of depend is followed directly by a noun phrase with no on, because the thing the answer rests on attaches through that preposition."
+    },
+    {
+      "ordinal": 1,
+      "rule": "BE_PLUS_BASE_VERB: match when a form of be is followed by the base verb depend, because the verb is finite by itself and takes no supporting be."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when a form of depend stands with on and a noun phrase or a whether-clause after it, with it or that as the subject (it depends on the weather, that depends on whether the shop is open), and do not match the negative it doesn't depend on X: those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "RELY_ON_A_PERSON: do not match when on takes a person or a thing as something to be relied on, with the meaning of trust (you can depend on Ana, the car is old but you can depend on it), because the situations-differ hedge is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "It depends on the weather.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "That depends on whether the shop is open.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "It doesn't depend on the budget.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "You can depend on Ana.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

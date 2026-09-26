@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's softener set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "a bit",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "a-bit.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "a-bit.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A softener placed before a description to make it less strong than the plain word would be."
+    },
+    {
+      "sense_id": "a-bit.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "As a softener, a bit stands directly in front of an adjective or an adverb: the room is a bit small, he arrived a bit late. No of comes between the softener and the modifier. With a noun the pattern changes to a bit of + noun, which is a quantity phrase rather than a softener: a bit of cake, a bit of help. A bit also modifies verbs in British speech (I like it a bit), and a little does the same work in both patterns."
+    },
+    {
+      "sense_id": "a-bit.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The two patterns are the lesson: a bit before a modifier, a bit of before a noun. Learners who know a bit of + noun extend it to the modifier slot (a bit of small), which is the commonest slip, and learners whose first language has no article drop the a (bit small). The safe test is what follows the phrase: a modifier takes a bit, a noun takes a bit of."
+    },
+    {
+      "sense_id": "a-bit.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "a bit + adjective = a softener (the room is a bit small). a bit of + noun = a small quantity (a bit of cake). a little does both jobs (a little small, a little cake) and is slightly more neutral. quite can weaken or strengthen depending on the adjective and is not interchangeable here."
+    },
+    {
+      "sense_id": "a-bit.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "有点儿；稍微（放在形容词或副词前，把说法讲得不那么绝对）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "a-bit.base",
+      "written": "a bit",
+      "normalized": "a bit",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the softener is common in speech, so receptive value is HIGH and receptive difficulty LOW; productive value and difficulty are MEDIUM because kind of, a little and quite cover much of the same ground and the of-intrusion has to be unlearned. Explanation cost is MEDIUM for the same reason. RESOURCE_PRACTICE follows the entity's own declared learning_intent DEVELOP. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The softener belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.6",
+      "rationale": "Softened assessments of this shape are ordinary in meetings and comments on a draft (the numbers are a bit high), so it carries more than half weight in the workplace pack; the shortfall records the casual register and that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Never present the quantity phrase (a bit of cake) as a model of this target, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "OF_INTRUSION",
+      "error_pattern": "a bit of + adjective | adverb (a bit of small, a bit of late)",
+      "corrected_pattern": "a bit + adjective | adverb",
+      "explanation": "a bit of belongs with nouns, where the phrase names a small quantity, and the pattern is extended to the modifier slot by analogy. The two shapes are not interchangeable: with of the phrase needs a noun after it, and without it the phrase needs a modifier.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a bit of is followed by an adjective or an adverb, in a clause where no noun follows the modifier."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": "zh",
+      "error_type": "ARTICLE_OMISSION",
+      "error_pattern": "be + bit + adjective (the room is bit small)",
+      "corrected_pattern": "be + a bit + adjective",
+      "explanation": "Chinese has no article system (有点儿小), so the a in the softener is not produced and the phrase loses the word that makes it a quantity expression. The modifier and the word order are right; the determiner is missing.",
+      "severity": "LOW",
+      "detection_policy": "Match when bit follows a form of be directly, with no determiner in front of it, and a modifier follows."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words a bit, the word of and the class of what follows. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (a bit of is there with a noun after it, so the quantity phrase is in use and not the softener)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "OF_INTRUSION: match when a bit of is followed by a modifier (an adjective or an adverb) rather than a noun, because the softener takes no of."
+    },
+    {
+      "ordinal": 1,
+      "rule": "ARTICLE_OMISSION: match when bit stands directly after a form of be with no determiner and a modifier follows, because the softener is the phrase a bit."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when a bit stands directly in front of a modifier (the room is a bit small, he arrived a bit late), and do not match a little in the same position: those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "QUANTITY_PHRASE_WITH_A_NOUN: do not match when a bit of is followed by a noun (a bit of cake, a bit of help) or when bit is the noun it normally is (the bit is broken), because the softener is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "The room is a bit small.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "He arrived a bit late.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "The numbers are a little high.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "He gave me a bit of cake.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

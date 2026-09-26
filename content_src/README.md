@@ -14,15 +14,19 @@
 
 探索期仓 `D:\测试1` 对 `OQ-021` / `content_toolchain` / `content_src` / `*.db`
 的全仓深搜零命中（P5-0 四查实证），故 §6 提到的旧工具链在仓内不存在可用副本；
-本目录即 P5-0 的替代 seed 路线，内容量停留在 14 个 target（不扩到 100）。
+本目录即 P5-0 的替代 seed 路线。**旧真值（P5-0）：内容量停留在 14 个 target
+（不扩到 100）；新真值（C1/C2-a/C2-b，Phase 11 内容程序）**：作者源在证据面建成
+之后按 §13「优先使用内容填补真实运行时测试需要」逐刀补齐，现为 **33 个实体
+（28 个 res + 5 个 cap）**——到了 IP §13 的 28 起点，**离 100 还有 72**，且
+Calibration100 三门全未过（登记见下）。
 
 ## 文件布局
 
 ```text
 content_src/
   index.json                 # 索引：content_version + 实体文档清单 + 证据文档清单（无 glob 兜底）
-  entities/<entity_id>.json  # 每个 validated target 一份（共 14）
-  evidence/<entity_id>.json  # C1：每个声明了 readiness 证据的 target 一份（可空集）
+  entities/<entity_id>.json  # 每个 target 一份（共 33 = 5 个 cap-* + 28 个 res-*；其中 19 个由 C2-b 编写）
+  evidence/<entity_id>.json  # C1：每个声明了 readiness 证据的 target 一份（可空集；现为 28 份，与 res-* 一一对应）
   README.md                  # 本文件 = 映射规则索引文档
 ```
 
@@ -86,12 +90,31 @@ target **不写** evidence（开工裁决 ③：cap 侧的 None 是构造性的�
 侧 link、词法面语义拉伸），因此现役真产物上 = 9×R4_DETECTION_READY +
 5×None。
 
+**登记（C2-b，十九份新 evidence 文档与语料规模）**：C2-b（Phase 11 第三段）新增
+19 个 **res** 实体（`res-colloc-*` 5 / `res-phrasal-*` 3 / `res-idiom-*` 2 /
+`res-discourse-*` 2 / `res-frame-*` 2 / `res-hedge-*` 2 / `res-softener-a-bit`
+1 / `res-pragmatic-*` 2），每个实体一份 entity 文档 + 一份 19 键 evidence 文档，
+并各配一条 §24.7 link（见 `../curriculum/README.md` C2-b 段）。语料规模：
+**33 实体 / 28 份 evidence / 28 条 link**；现役真产物上 =
+**28×R4_DETECTION_READY + 5×None**，`resource_count`（`res-*` 实体）= **28**。
+**这不是 Calibration100 的通过**：IP §13 的「28 → 100 resource calibration」
+把 28 记作**起点第一档**，三门（`resource_count ≥ 100` / `CORE_A ≥ 30` /
+`CORE_C ≥ 2`）在现役读数下**全未过**（28/100、0/30、0/2）。
+
+**登记（C2-b，19 个新实体的来源口径）**：这 19 个实体**不是** P3-1A/P3-1B
+fixture 的迁移（那 14 个 target 的迁移见下），而是 C2-b 这一刀按 §24.1/§24.2/
+§24.3/§24.4 的列与词表**新编写**的内容；因此 evidence 文档的
+`assessment_membership.source` 逐份写明「声明由本刀的编辑评审作出，本仓无外部
+评测导出」，`content_meta` 的 `typical_error_required:<id>` 键也随每份文档
+逐条落库（`typical_error_required: true` + ≥1 条 `typical_errors`）。
+
 ## 映射规则（显式声明；不发明列名）
 
 ### R1 — 每个 target 一条 ContentEntity（§24.1 七列逐字）
 
-14 个 target 每个对应**恰好一个** `entities/<target_id>.json`，`entity_id` =
-target id 原文（`res-*` 9 个、`cap-*` 5 个；无派生、无哈希重命名）。文档内
+33 个 target（P3-1A/P3-1B 迁移的 14 个 + C2-b 编写的 19 个）每个对应**恰好一个**
+`entities/<target_id>.json`，`entity_id` = target id 原文（`res-*` 28 个、`cap-*`
+5 个；无派生、无哈希重命名）。文档内
 `entity` 块**恰好**是 §24.1 的七列，顺序与拼写逐字：
 
 ```text
@@ -177,7 +200,11 @@ morph_features）；`hint_ladder` → `content_hint_rung`（ordinal 保序）；
 capability linkage **不进 content_src**，进 `../curriculum/links.json`：
 resource → capability node 的 `CurriculumLink`（§24.7 七列逐字：resource_id /
 node_id / relation / strength / primary_flag / editorial_status / rationale）。
-9 条 REALIZES 链接 = 9 个 RESOURCE target 的 fixture `capability_linkage` 逐条迁移。
+9 条 REALIZES 链接 = 9 个 RESOURCE target 的 fixture `capability_linkage` 逐条迁移；
+C2-b 另写 19 条（6 条 REALIZES + 13 条 SUPPORTS）给 19 个新实体，其语义与
+credit 面限度见 `../curriculum/README.md` 的 C2-b 段——**node_id 只取现役 5 个
+cap-* 节点**（build 的引用完整性要求 `node_id` 必须是已声明的 capability，
+`content_src/README.md` 与 `elc.content.build._check_references` 同一条）。
 
 `strength` 在 canonical 中**只有 prerequisite 边**给了词表（§7
 HARD/SOFT/SCAFFOLDABLE）；§24.7 未给 CurriculumLink 的 strength 值域，故本语料

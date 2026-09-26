@@ -1,0 +1,188 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's collocation set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "heavy rain",
+    "pos": "NOUN"
+  },
+  "senses": [
+    {
+      "sense_id": "heavy-rain.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "heavy-rain.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "Rain that is falling hard and in large amounts."
+    },
+    {
+      "sense_id": "heavy-rain.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The adjective heavy stands directly in front of the noun rain, with nothing between them: heavy rain, heavy traffic, heavy snow, a heavy smoker. The metaphor is weight from amount, not from the force of the fall, which is why the opposite is light rain rather than soft rain. The verb form is the adverb: it rained heavily all night, where heavily modifies the verb. Heavy is an adjective and modifies the noun, so the two patterns are not interchangeable."
+    },
+    {
+      "sense_id": "heavy-rain.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The collocation is worth teaching as a pair with its opposite, because the natural translation of 大雨 in many languages is an adjective of size, not of weight: big rain and strong rain are the two forms this error takes, and both are built by translating the adjective rather than by learning the pairing. The repair is a short list of the nouns heavy already goes with (rain, snow, traffic, work) plus the adverb form for verbs."
+    },
+    {
+      "sense_id": "heavy-rain.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "heavy rain = a large amount of rain (we stayed inside because of the heavy rain). a heavy shower names one short fall of that kind. It is raining heavily puts the same meaning into the verb + adverb pattern. heavy traffic and a heavy meal use the same adjective with other nouns; the word heavy does not by itself mean 'a lot of rain'."
+    },
+    {
+      "sense_id": "heavy-rain.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "大雨（雨下得又急又多）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "heavy-rain.base",
+      "written": "heavy rain",
+      "normalized": "heavy rain",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the collocation is transparent in reception and appears in the small talk and weather reports a learner meets early, so receptive value is HIGH and receptive difficulty LOW. Productive value and difficulty are MEDIUM because the pairing is arbitrary-looking (why heavy?) and competes with a direct translation of the learner's own adjective; explanation cost is LOW because the repair is a short list. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The collocation belongs to the general fluency pack's core set (the adjectives of quantity that pair with everyday nouns), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.3",
+      "rationale": "Small talk about the weather at the start of a meeting is a real workplace use, so it carries some weight in the workplace pack; the shortfall records that the register is casual and the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SMALL_TALK",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SMALL_TALK",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the adjective-noun pair in place and keep the adverb pattern (it rained heavily) clearly marked as the other shape, and never present an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": "zh",
+      "error_type": "TRANSLATED_ADJECTIVE",
+      "error_pattern": "big | large | strong + rain (adjective of size or force in front of rain)",
+      "corrected_pattern": "heavy + rain",
+      "explanation": "大雨 is built from an adjective of size and 雨, so the adjective is translated rather than the pairing learned, and English pairs its noun with an adjective of weight. big rain and strong rain are both well-formed adjective + noun phrases in English and simply are not what the language says here.",
+      "severity": "HIGH",
+      "detection_policy": "Match when big, large or strong stands directly in front of the noun rain in a phrase describing how much rain is falling."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "ADVERB_BEFORE_NOUN",
+      "error_pattern": "heavily | strongly + rain (adverb in front of the noun)",
+      "corrected_pattern": "heavy + rain (or: it rained heavily)",
+      "explanation": "The learner has learned the verb + adverb pattern (it rained heavily) and moves the adverb into the noun phrase, where an adverb cannot stand. English keeps the two shapes apart: the adverb works when the verb is rain, the adjective works when the noun is rain.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when heavily or strongly stands directly in front of the noun rain in a noun phrase, in a clause that is not a verb + adverb construction."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the word in the adjective slot in front of rain, and the shape of the phrase it stands in. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (heavy and rain are there but heavy is used of another noun or as a verb form, so the collocation is not the one being used)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "TRANSLATED_ADJECTIVE: match when big, large or strong stands directly in front of the noun rain, because the English adjective for this pairing is heavy."
+    },
+    {
+      "ordinal": 1,
+      "rule": "ADVERB_BEFORE_NOUN: match when an adverb (heavily, strongly) stands in the adjective slot directly in front of the noun rain rather than an adjective, because the adverb belongs with the verb."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when heavy stands in front of rain or when the opposite light does (heavy rain, light rain), and do not match the verb + adverb pattern (it rained heavily all night): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "HEAVY_OF_ANOTHER_NOUN: do not match when heavy modifies a different noun (heavy traffic, a heavy meal, a heavy box) or when rain is the verb rather than the noun (it is raining), because the heavy + rain pairing is not the one in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "We stayed inside because of the heavy rain.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "There was light rain all morning.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "It rained heavily all night.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The traffic was heavy that morning.",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

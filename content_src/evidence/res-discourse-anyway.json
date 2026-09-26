@@ -1,0 +1,178 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C2-b authoring declaration (2026-09-26): this target is placed in the V1 placement bank's discourse-marker set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "anyway",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "anyway.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "anyway.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A marker used to leave a digression behind and return to what matters, or to close a topic."
+    },
+    {
+      "sense_id": "anyway.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "One word, written solid: anyway, not any way. It usually stands at the beginning of a sentence with a comma after it (anyway, let's get back to the topic) and can also close a topic at the end of a turn. The variant anyhow means the same thing in the same positions. Its second job is to add 'in spite of that' inside an argument (it was late anyway), which keeps the same spelling and a different reading."
+    },
+    {
+      "sense_id": "anyway.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The spelling is the whole difficulty, because any way is a perfectly ordinary two-word sequence (is there any way to fix this?) and the marker is one word. A learner who writes it as two words produces a noun phrase where a marker belongs, and a detector that fires on any way would fire on correct English, which is why the two shapes are separated in the fixtures rather than treated as one."
+    },
+    {
+      "sense_id": "anyway.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "anyway (one word) = the discourse marker (anyway, let's start). any way (two words) = any method or route, and it belongs to the noun phrase of its own clause (is there any way to fix this?, do it any way you like). anyways is a nonstandard spelling of the marker used in some informal speech and is not the V1 model form."
+    },
+    {
+      "sense_id": "anyway.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "总之；不管怎样（结束题外话或回到正题的标记词）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "anyway.base",
+      "written": "anyway",
+      "normalized": "anyway",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "LOW",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C2-b authoring judgement (V1 carries no calibration data): the marker is extremely frequent, so receptive value is HIGH and receptive difficulty LOW; productive value is MEDIUM because a learner can already return to a topic without a marker, and productive difficulty is MEDIUM because the one-word spelling is what production has to get right. Transfer value is LOW: one fixed word with one variant. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The marker belongs to the general fluency pack (the words that hold a conversation together), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Returning a meeting to the agenda or closing a side issue is ordinary workplace language (anyway, back to the numbers), so it carries substantial weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the marker written as one word, and never present the two-word noun phrase (any way) as a model of the marker or an ERROR_INSTANCE as a model."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "SPLIT_SPELLING",
+      "error_pattern": "any way, + clause (the two-word sequence used as the fronted discourse marker)",
+      "corrected_pattern": "anyway, + clause",
+      "explanation": "The marker and the noun phrase are homophones, so the two-word spelling is available and is used for the marker. The result is a noun phrase standing where a sentence adverb belongs, which is a spelling and word-class slip rather than a meaning error.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when any way stands at the front of a clause followed by a comma, in a position where the discourse marker is meant, and no clause of its own contains the noun phrase."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the spelling of the marker and its position in the clause. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). Each rule below states the positive direction it must match; the fixture with the same ordinal states a case the rule must NOT match, so every rule ships with a testable boundary. expected values are NO_MATCH (the shape is absent) and NO_MATCH_BOUNDARY (any way is the two-word noun phrase inside its own clause, so the marker is not in use)."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "SPLIT_SPELLING: match when the two-word sequence any way is used in the fronted marker position with a comma after it, because the marker is written as one word."
+    },
+    {
+      "ordinal": 1,
+      "rule": "NONSTANDARD_SPELLING: match when anyways is used as the marker, because the V1 model form is anyway."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when anyway stands as one word in a marker position with a comma (anyway, let's get back to the topic / anyhow, let's start), including its 'in spite of that' use inside a clause (it was late anyway): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_NOUN_PHRASE_ANY_WAY: do not match when any way is the noun phrase of its own clause and carries its own grammatical role (is there any way to fix this?, do it any way you like), because the marker is not in use there."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Anyway, let's get back to the topic.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "The bus was late, but it was raining anyway.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Anyhow, let's start with the numbers.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Is there any way to fix this?",
+      "expected": "NO_MATCH_BOUNDARY"
+    }
+  ]
+}

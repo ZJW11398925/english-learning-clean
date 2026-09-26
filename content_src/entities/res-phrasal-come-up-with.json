@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-phrasal-come-up-with",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PHRASAL_VERB",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say that someone thought of an idea or found a solution.",
+      "Use come, then up, then with before the thing that was thought of.",
+      "Start with the words: She came ___ with a good idea."
+    ],
+    "reveal_form": "She came up with a good idea.",
+    "canonical_forms": [
+      "She came up with a good idea."
+    ],
+    "alternative_realizations": [
+      "She comes up with good ideas."
+    ],
+    "required_slots": [
+      [
+        "come"
+      ],
+      [
+        "idea"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-frame-would-you-mind",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "SENTENCE_FRAME",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Ask someone politely to do something, in a way that leaves them free to refuse.",
+      "Use Would you mind and then the action as an -ing form.",
+      "Start with the words: Would you mind ___ the window?"
+    ],
+    "reveal_form": "Would you mind closing the window?",
+    "canonical_forms": [
+      "Would you mind closing the window?"
+    ],
+    "alternative_realizations": [
+      "Do you mind closing the window?"
+    ],
+    "required_slots": [
+      [
+        "mind"
+      ],
+      [
+        "closing"
+      ]
+    ]
+  }
+}

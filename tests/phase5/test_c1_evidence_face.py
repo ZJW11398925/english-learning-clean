@@ -14,10 +14,11 @@ any of them absent. What this file pins, in order:
   byte-identical, a rebuild over an existing file is a replay, and two
   *subprocess* builds under different ``PYTHONHASHSEED`` values hash equal
   (C1 disposition F4 — hash randomization must not reach the bytes);
-- the corpus table reads 9 × R4_DETECTION_READY (the nine RESOURCE targets
-  whose sources state every evidence-backed fact; C1 authored one of them,
-  C2-a the other eight) + 5 × None (the five CAPABILITY entities, whose
-  sources state no readiness evidence at all);
+- the corpus table reads 28 × R4_DETECTION_READY (the twenty-eight RESOURCE
+  targets whose sources state every evidence-backed fact; C1 authored one of
+  them, C2-a the other eight, C2-b the nineteen it authored as entities too)
+  + 5 × None (the five CAPABILITY entities, whose sources state no readiness
+  evidence at all);
 - every §8.1 fact key has a dedicated per-fact pin, both directions (present
   for the evidenced target, absent for an evidence-less one), and the
   content_text role reads are load-bearing: the artifact's per-role row
@@ -348,13 +349,14 @@ def test_two_subprocess_builds_with_different_hash_seeds_hash_equal(
 # ---------------------------------------------------------------------------
 
 
-def test_readiness_by_target_is_nine_r4_and_five_none(
+def test_readiness_by_target_is_twenty_eight_r4_and_five_none(
     built_content_db: Path,
 ) -> None:
     """The corpus table on the real artifact: every RESOURCE target reads
     R4_DETECTION_READY (C1 authored one evidence document, C2-a the other
-    eight), and the five CAPABILITY entities read None — no level is invented
-    for them, §8.1 has no word below R0, and their sources state no evidence."""
+    eight, C2-b the nineteen it also authored as entities), and the five
+    CAPABILITY entities read None — no level is invented for them, §8.1 has
+    no word below R0, and their sources state no evidence."""
 
     store = ContentStore(built_content_db)
     try:
@@ -364,10 +366,10 @@ def test_readiness_by_target_is_nine_r4_and_five_none(
     finally:
         store.close()
     table = {a.target_id: a.level for a in assessments.value}
-    assert len(table) == 14
+    assert len(table) == 33
     res_targets = sorted(t for t in table if t.startswith("res-"))
     cap_targets = sorted(t for t in table if t.startswith("cap-"))
-    assert len(res_targets) == 9 and len(cap_targets) == 5
+    assert len(res_targets) == 28 and len(cap_targets) == 5
     for target_id in res_targets:
         assert table[target_id] == "R4_DETECTION_READY", target_id
     for target_id in cap_targets:
