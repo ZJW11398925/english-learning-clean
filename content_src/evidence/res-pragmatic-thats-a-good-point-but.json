@@ -130,7 +130,7 @@
       "ordinal": 1,
       "learner_l1": "zh",
       "error_type": "ARTICLE_OMISSION",
-      "error_pattern": "good point, but + clause (no determiner in front of point)",
+      "error_pattern": "be + good point, but + clause (a form of be in front, no determiner in front of point; the shorter bare good point, but is an accepted realization and rule 2 carries it)",
       "corrected_pattern": "a good point, but + clause",
       "explanation": "Chinese has no article system, so the determiner in front of the singular countable noun point is dropped while the adjective is kept. The phrase is otherwise the right one, which makes the missing word easy to overlook.",
       "severity": "LOW",

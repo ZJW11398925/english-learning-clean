@@ -205,7 +205,7 @@ def test_the_real_corpus_answers_go_on_all_four_rows_and_the_rollout_stays_held(
     declares — ``stage_allows_automatic`` answers False for the undeclared
     stage and for the fail-closed default, and the two-leg composition refuses
     with any frequency word — plus the Calibration100 volume gate
-    (docs/IMPLEMENTATION_PLAN.md §12's 100/30/2), which the corpus's own
+    (docs/IMPLEMENTATION_PLAN.md §13's 100/30/2), which the corpus's own
     counts show unmet. Content capable ≠ rollout open."""
 
     report = corpus_rollout_gate(p8world.curriculum)
@@ -256,7 +256,7 @@ def test_the_real_corpus_answers_go_on_all_four_rows_and_the_rollout_stays_held(
 
 
 def _calibration100_gate_is_unmet_and_readable() -> None:
-    """docs/IMPLEMENTATION_PLAN.md §12's Calibration100 gates (100/30/2),
+    """docs/IMPLEMENTATION_PLAN.md §13's Calibration100 gates (100/30/2),
     read against the built artifact's own counts: 28 resources (< 100, and
     exactly IP §13's starting number — the first rung of "28 → 100", not a
     pass), and no capability in the CORE_A / CORE_C families at all. The

@@ -78,11 +78,13 @@ _CURRICULUM_VERSION_KEY = "curriculum_version"
 #: CAPABILITY / POSITIVE learner evidence out of a test-corpus convenience
 #: mapping. One constant, used by the one read that feeds that credit path.
 #:
-#: C1 disposition note (approval kept), widened by C2-a: C1 approved one
-#: ``CANONICAL_APPROVED`` row (``res-colloc-make-a-decision`` →
-#: ``cap-eval-hedged-opinion``) and C2-a approved the other eight while
-#: authoring their readiness evidence, so this gate now admits all nine
-#: RESOURCE targets' links — each approval carrying the same stated limits:
+#: C1 disposition note (approval kept), widened through the C2 cuts: C1
+#: approved one ``CANONICAL_APPROVED`` row (``res-colloc-make-a-decision`` →
+#: ``cap-eval-hedged-opinion``), C2-a approved the other eight, and C2-b
+#: approved nineteen more while authoring their readiness evidence — so this
+#: gate now admits the fifteen REALIZES rows among those approvals (the
+#: thirteen SUPPORTS rows credit nothing) — each approval carrying the same
+#: stated limits:
 #: no capability-semantics audit was possible (the capabilities have no
 #: functional definition in this repository), and the admission is what lets
 #: those targets' ``ALTERNATIVE_SUCCESS`` mint CAPABILITY/POSITIVE evidence (a

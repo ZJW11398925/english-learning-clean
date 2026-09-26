@@ -120,11 +120,11 @@
       "ordinal": 0,
       "learner_l1": "zh",
       "error_type": "MISSING_AUXILIARY",
-      "error_pattern": "what + I + saying | say + is (no auxiliary am between the subject and the verb)",
+      "error_pattern": "what + I + saying + is (no auxiliary am between the subject and the verb)",
       "corrected_pattern": "what I'm saying is",
       "explanation": "The progressive needs the auxiliary be, and Chinese marks the same meaning without one (我在说的是), so the am is not produced and the frame becomes a clause with a participle and no finite verb.",
       "severity": "HIGH",
-      "detection_policy": "Match when what I is followed directly by saying or say and then is, with no am or 'm between the subject and the verb."
+      "detection_policy": "Match when what I is followed directly by saying and then is, with no am or 'm between the subject and the verb. The finite present-tense frame what I say is ... is accepted English (rule 2 carries it) and must not match."
     },
     {
       "ordinal": 1,
@@ -152,7 +152,7 @@
     },
     {
       "ordinal": 2,
-      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame stands complete with its auxiliary and is (what I'm saying is that we need more time, what I'm saying is we need more time, with or without that): those are the accepted realizations."
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame stands complete — with its auxiliary and is (what I'm saying is that we need more time, what I'm saying is we need more time, with or without that), or as the finite present-tense variant what I say is that we need more time (no auxiliary needed, a complete clause): those are the accepted realizations."
     },
     {
       "ordinal": 3,

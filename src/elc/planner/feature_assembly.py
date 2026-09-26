@@ -49,11 +49,11 @@ one says so where it is made:
   Scheduler's own;
 - **the readiness and goal-mapping legs** of ``missing_authorities``: the
   Planner needs a target's content level and the goal/assessment pack mapping
-  (IMPLEMENTATION_PLAN §7 line 340). The readiness face is landed and C2-a's
-  evidence documents back it — the corpus answers nine R4 resource targets
-  with five capability targets still level-less, so the readiness leg fires
-  for any candidate naming one of those five — while the goal/assessment pack
-  mapping is
+  (IMPLEMENTATION_PLAN §7 line 340). The readiness face is landed and C2's
+  evidence documents back it — the corpus answers twenty-eight R4 resource
+  targets with five capability targets still level-less, so the readiness leg
+  fires for any candidate naming one of those five — while the
+  goal/assessment pack mapping is
   not landed (``assessment_targets`` has no consumer). A caller that cannot
   read one of these gets INCOMPLETE, never a number (see
   :func:`assemble_feature_authority`).
@@ -575,9 +575,9 @@ def assemble_feature_authority(
     ``False`` is a value, not a missing authority.
 
     **Today's answer, honestly.** The shipped corpus no longer reads
-    ``level=None`` across the board: C2-a's evidence documents give the nine
-    resource targets an R4 level and leave five capability targets level-less,
-    and the goal/assessment mapping still does not exist
+    ``level=None`` across the board: C2's evidence documents give the
+    twenty-eight resource targets an R4 level and leave five capability
+    targets level-less, and the goal/assessment mapping still does not exist
     (``assessment_targets`` has no consumer). So the readiness leg fires for
     any candidate naming one of the five (and
     whenever the readiness face is absent), and the goal-mapping leg fires

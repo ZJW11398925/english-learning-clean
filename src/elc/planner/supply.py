@@ -23,8 +23,9 @@ on"):
   **not usable**: the generator refuses to emit it, and the caller's context
   assembly reports ``CURRICULUM_READINESS`` missing (P7-0's own leg). Nothing
   here substitutes ``R3`` for "unknown" — the ladder still answers ``None``
-  for the five capability targets whose sources state no evidence (C2-a's
-  answer for them; its nine R4 resource targets read through unchanged);
+  for the five capability targets whose sources state no evidence (C2's
+  answer for them; its twenty-eight R4 resource targets read through
+  unchanged);
 - a prerequisite that cannot be *judged* is not a prerequisite that is
   *satisfied*. BF-02 §11's ``UNKNOWN`` is the word for "not judged", the kernel
   hard-excludes ``UNKNOWN`` unless the candidate is a probe or carries a
@@ -45,10 +46,11 @@ the graph and the registry, and the repository serves two different reads:
   — because acting on an unapproved mapping to *find* prerequisites is still
   acting on it. A resource with no approved link has no readable curriculum
   standing, and its answer is ``UNKNOWN`` (**registered judgement**, not a
-  quotation): the shipped corpus maps nine resources, eight of them with
-  ``CURRICULUM_MAPPED``, so this is today's answer for those eight, and it is
-  the fail-closed one — C1's approval of ``res-colloc-make-a-decision`` reads
-  its node instead.
+  quotation): the shipped corpus maps twenty-eight resources, every link
+  approved (C2's editorial review; before it, C1's single approval was the
+  one exception in a ``CURRICULUM_MAPPED`` corpus), so the ``UNKNOWN``
+  answer has no reachable case on this corpus today — it remains the
+  fail-closed reading for any future unapproved row.
   Revisit: the curriculum review approves the links (the content-side 补课 P5
   registered), or canonical text says what a target outside the approved graph
   requires.

@@ -60,9 +60,10 @@ supply read?".
   own acceptance, not a relaxation of rule 1.
 - *slot-only and embedded spans* — closed until an **approved** §8.1 R4
   detection policy with negative fixtures and a measured false-positive rate
-  exists (today the corpus stops at R0, PRODUCT_CONTRACT §8.1 R4 is content
-  work still owed, and the slot rule's boundary is declared rather than
-  measured — elc.learning.target_resolution's false-positive section).
+  exists (the corpus now carries twenty-eight structurally testable R4
+  policies, but a measured false-positive rate is still owed content work,
+  and the slot rule's boundary is declared rather than measured —
+  elc.learning.target_resolution's false-positive section).
 
 Not re-exported from ``elc.learning.__init__``: the durable store and the
 coordinator import it by full path (the elc.learning.validation precedent),

@@ -113,10 +113,10 @@ absent, so 14 of 14 corpus targets read ``None``, blocked at R0 by
 ``assessment_membership`` and at R1 by the four lexical facts — the truthful
 report, not a regression to be papered over by a friendlier reading. C1 built
 the evidence face (thirteen tables, elc.content.build) and the corpus moved:
-after C2-a the nine resource targets whose sources state all nineteen facts
-read ``R4_DETECTION_READY``, the five capability targets still read ``None``
-because their sources state no evidence — the same report, now driven by the
-artifact instead of by the missing tables.
+after C2 the twenty-eight resource targets whose sources state all nineteen
+facts read ``R4_DETECTION_READY``, the five capability targets still read
+``None`` because their sources state no evidence — the same report, now
+driven by the artifact instead of by the missing tables.
 
 Two things this ladder deliberately does not do (stated so their absence is a
 decision rather than an omission):

@@ -8,9 +8,9 @@ observation may be ("提高 threshold / policy cost", "而不是修改 Learning
 truth"). docs/RUNTIME_ARCHITECTURE.md's automatic path (P8-0..P8-4) is the
 thing being rolled out, and BF-02 §10's four content floors are what decides
 whether it *can* be: every teaching mode names a minimum §8.1 readiness, and
-the shipped corpus's answer is nine RESOURCE targets at R4 (C1's evidence
-face authored one, C2-a the other eight) with the five CAPABILITY entities
-reading no level — their sources state no evidence.
+the shipped corpus's answer is twenty-eight RESOURCE targets at R4 (C1's
+evidence face authored one, the C2 cuts the other twenty-seven) with the five
+CAPABILITY entities reading no level — their sources state no evidence.
 
 This module is the executable half of that block, and it is deliberately
 **read-only**: it declares a process-level stage, checks BF-02 §10 against a
@@ -71,7 +71,8 @@ is GO (:attr:`RolloutGateReport.verdict`). That conjunction is this cut's
 overall HOLD"): the book's condition is implied, and the conjunction is the
 strict, fail-closed form of it — a rollout cannot enter a stage whose *preceding*
 row is empty either. Both readings agree on the shipped corpus (C1's one R4
-target and C2-a's eight make every row GO, so the answer is GO under either).
+target and the C2 cuts' twenty-seven make every row GO, so the answer is GO
+under either).
 
 **What would turn a row GO is also executable**: each row carries
 ``required_facts`` — the cumulative §8.1 fact keys
@@ -102,9 +103,9 @@ registered; no production object satisfies it yet, and this module says so
 rather than pretending otherwise (see the port's docstring for the Revisit).
 
 **⑤ The HOLD, and where it is held now.** The content gate moved under C1's
-evidence face and widened under C2-a: on the shipped corpus every row reads 9
-usable targets (the nine R4 RESOURCE targets; the five CAPABILITY entities read
-``level=None``) and
+evidence face and widened through the C2 cuts: on the shipped corpus every
+row reads 28 usable targets (the twenty-eight R4 RESOURCE targets; the five
+CAPABILITY entities read ``level=None``) and
 :func:`corpus_rollout_gate` answers **GO** — so the content gate no longer
 holds the rollout. The rollout is **still HOLD**, carried by the two gates
 this module sits beside: the stage leg (no stage is declared, and
@@ -419,9 +420,10 @@ def gate_row_verdict(usable_targets: int) -> RolloutVerdict:
 
     GO iff at least one target reaches the row's floor. There is no partial
     credit, no "almost ready", and no other input: a row that no target can
-    serve is HOLD — which, since C1's evidence face and C2-a's eight more
-    documents, is the answer **no** row gives over the shipped corpus (its
-    nine R4 RESOURCE targets serve all four; before C1 none did).
+    serve is HOLD — which, since C1's evidence face and the C2 cuts'
+    twenty-seven more documents, is the answer **no** row gives over the
+    shipped corpus (its twenty-eight R4 RESOURCE targets serve all four;
+    before C1 none did).
     """
 
     return RolloutVerdict.GO if usable_targets > 0 else RolloutVerdict.HOLD
@@ -483,9 +485,9 @@ class RolloutGateReport:
     ``automatic_verdict`` is the same rule over the two automatic rows alone,
     so a reader can see the task book's condition separately from the
     conjunction. ``targets_considered`` / ``targets_without_level`` count the
-    table the report was made over (the shipped corpus answers 14 and 5 —
-    C1's one leveled target and C2-a's eight leave the five CAPABILITY
-    entities without a level);
+    table the report was made over (the shipped corpus answers 33 and 5 —
+    C1's one leveled target and the C2 cuts' twenty-seven leave the five
+    CAPABILITY entities without a level);
     ``unknown_levels`` names any level word the ladder does not carry (empty
     for every answer the ladder itself produces).
     """

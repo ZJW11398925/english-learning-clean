@@ -24,7 +24,7 @@ in order:
   a ``SUPPORTS`` row read ``None`` while their row stays readable, and the
   five CAPABILITY entities still read ``None`` — the same read, more rows;
 - the volume gate's reading sentence: twenty-eight usable R4 targets against
-  IP §12's Calibration100 floor of 100 — the number moved, the verdict
+  IP §13's Calibration100 floor of 100 — the number moved, the verdict
   (unmet) did not, and no opening claim is made here. IP §13's own first rung
   (28 resources) *is* met and is asserted separately from the three floors.
 
@@ -447,7 +447,7 @@ def test_the_calibration100_reading_moves_and_the_verdict_does_not(
     """The numbers the rollout HOLD rests on, read from both sides: the
     artifact now answers twenty-eight detection-ready resource targets out of
     thirty-three entities (旧真值: one of fourteen; C2-a: nine of fourteen),
-    while the floors IP §12 states are 100 / 30 / 2 — so every one of them is
+    while the floors IP §13 states are 100 / 30 / 2 — so every one of them is
     still unmet and nothing here is an opening claim. IP §13's own starting
     number is 28, and the RESOURCE count now *is* 28: that is the first rung
     of "28 → 100", not a Calibration100 pass, and the two readings are
