@@ -1,0 +1,25 @@
+{
+  "format": "elc.content_src",
+  "format_version": 1,
+  "audit_id": "c3d-stratified-audit",
+  "performed_by": "C3-d independent reviewer (new-context executor-pro, read-only)",
+  "basis": "Stratified audit of the C3-d final expansion under the R9 protocol, as applied to TASK-OPI-b6271546-41b0-4bbe-90ac-d522d8429f92.7's review phase: 12 of the 18 new entities sampled across the five capability groups (at least two each: topic-shift 3, hedged-opinion 2, backchannel 3, ask-clarification 2, soften-disagreement 2) plus the four C3-c entities the c3-c review had deliberately left out of its formal sample (res-pragmatic-that-makes-sense, res-pragmatic-could-you-say-that-again, res-pragmatic-got-it, res-pragmatic-with-all-due-respect — this review re-audited them on both faces) plus three legacy controls. All 19 audited entities PASS both faces: the content-linguistics face (typical_errors genuine; every POSITIVE_ERROR row instantiates a declared error_pattern in genuine learner-error English such that a reasonable implementation of the declared detection_rules matches it; boundary rows honest) and the mapping_class face (REALIZES + CURRICULUM_MAPPING follows the capability functional_definition entry by entry; the near-boundary items no-way / go-on / im-not-convinced / come-again / right each cite and refute the applicable does_not_count entry and pin the rival reading in a boundary fixture). The six unsampled new entities (res-hedge-from-what-i-can-tell, res-hedge-if-you-ask-me, res-pragmatic-what-was-that, res-pragmatic-run-that-by-me-again, res-pragmatic-youre-kidding, res-pragmatic-thats-debatable) are deliberately not approved here (strict over lenient). Landed by the C3-d disposition cut from the reviewer's verdict table; the reviewer itself stayed read-only.",
+  "approved_entities": [
+    "res-discourse-before-i-forget",
+    "res-discourse-that-brings-me-to",
+    "res-discourse-where-was-i",
+    "res-hedge-in-a-way",
+    "res-hedge-more-or-less",
+    "res-pragmatic-come-again",
+    "res-pragmatic-could-you-clarify",
+    "res-pragmatic-could-you-say-that-again",
+    "res-pragmatic-go-on",
+    "res-pragmatic-got-it",
+    "res-pragmatic-i-hear-you-but",
+    "res-pragmatic-im-not-convinced",
+    "res-pragmatic-no-way",
+    "res-pragmatic-right",
+    "res-pragmatic-that-makes-sense",
+    "res-pragmatic-with-all-due-respect"
+  ]
+}

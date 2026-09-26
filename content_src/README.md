@@ -116,11 +116,12 @@ readiness 真值与三门读数零改动）。交付刀时 audits 目录为空�
 （16 条分层抽审中 15 条两面 PASS 的实体入列）；**C3-c 处置刀落地第二条记录
 `c3c-stratified-audit.json`**（新模板首跑的分层抽审：14 个抽样新实体 +
 `res-softener-if-anything`——其 LOW-2 规则张力已由 C3-c 收口、复审两面
-PASS、入列前提成立；4 个未入正式样本的新实体宁严不入列）——现读 =
-**70 × `AUTHOR_DECLARED` + 30 × `EDITOR_REVIEWED`** + 0 × 后两级
+PASS、入列前提成立；4 个未入正式样本的新实体宁严暂缓）；**C3-d 处置刀落地
+第三条记录 `c3d-stratified-audit.json`**（12 个抽样新实体 + 上述 4 个暂缓者
+经该刀评审补审两面 PASS 后一并入列；6 个未抽样的 C3-d 新实体宁严不入列）——
+现读 = **54 × `AUTHOR_DECLARED` + 46 × `EDITOR_REVIEWED`** + 0 × 后两级
 （评审只读纪律不变，记录由总控处置刀落盘；新实体 provenance 由结构派生
-自动 AUTHOR_DECLARED——C3-d 交付刀的 18 个新实体即如此入册、
-`content_src/audits/` 零改动零新记录，升级只经 audit 记录）。
+自动 AUTHOR_DECLARED，升级只经 audit 记录）。
 
 **登记（C2-a，`resource_labels` 的值域）**：`register` 的取值来自 canonical
 词表（PRODUCT_CONTRACT §4.6 CASUAL / NEUTRAL / POLITE / …）；其余六列

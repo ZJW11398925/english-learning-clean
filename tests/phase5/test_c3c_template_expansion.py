@@ -215,6 +215,10 @@ AUDIT_PATH = CONTENT_SRC_DIR / "audits" / "c3r2-stratified-audit.json"
 #: stratified audit of the new-template first run.
 AUDIT2_PATH = CONTENT_SRC_DIR / "audits" / "c3c-stratified-audit.json"
 
+#: The third record — the C3-d disposition re-auditing this cut's four
+#: unsampled leftovers among its own sixteen approvals.
+AUDIT3_PATH = CONTENT_SRC_DIR / "audits" / "c3d-stratified-audit.json"
+
 #: The fifteen entities that review passed on both faces: fourteen of this
 #: cut's eighteen (the four unsampled — that-makes-sense,
 #: could-you-say-that-again, got-it, with-all-due-respect — are deliberately
@@ -670,16 +674,16 @@ def test_the_four_content_gate_rows_answer_go_over_the_new_table(
 # ---------------------------------------------------------------------------
 
 
-def test_provenance_reads_52_author_and_the_30_editor_rows(
+def test_the_two_records_raise_their_slices_and_the_third_widens_them(
     built_content_db: Path,
 ) -> None:
-    """The provenance read over the widened artifact after the disposition
-    cut landed the review's audit record: at this cut's truth it read 82 rows
-    — 30 EDITOR_REVIEWED (the C3-R2 record's fifteen plus the C3-c record's
-    fifteen, each record's approved list exactly its own slice) and 52
-    AUTHOR_DECLARED. C3-d's eighteen evidence documents entered by structure
-    alone, so the read now answers 100 rows — the same 30 EDITOR_REVIEWED and
-    70 AUTHOR_DECLARED."""
+    """The provenance read after C3-d's disposition landed the third audit
+    record: 100 rows, 46 EDITOR_REVIEWED — the C3-R2 record's fifteen and
+    the C3-c record's fifteen still exactly their own slices, joined by the
+    C3-d record's sixteen (twelve sampled C3-d entities plus this cut's
+    four re-audited leftovers: that-makes-sense, could-you-say-that-again,
+    got-it, with-all-due-respect, all now EDITOR_REVIEWED) — and 54
+    AUTHOR_DECLARED."""
 
     store = ContentStore(built_content_db)
     try:
@@ -695,17 +699,21 @@ def test_provenance_reads_52_author_and_the_30_editor_rows(
     author = sorted(
         e for e, lvl in levels.items() if lvl == "AUTHOR_DECLARED"
     )
-    assert len(editor) == 30
-    assert len(author) == 70
+    assert len(editor) == 46
+    assert len(author) == 54
     audit1 = json.loads(AUDIT_PATH.read_text(encoding="utf-8"))
     audit2 = json.loads(AUDIT2_PATH.read_text(encoding="utf-8"))
+    audit3 = json.loads(AUDIT3_PATH.read_text(encoding="utf-8"))
     approved1 = set(audit1["approved_entities"])
     approved2 = set(audit2["approved_entities"])
-    assert approved1 | approved2 == set(editor)
+    approved3 = set(audit3["approved_entities"])
+    assert approved1 | approved2 | approved3 == set(editor)
     assert approved1 & approved2 == set()
+    assert approved1 & approved3 == set()
+    assert approved2 & approved3 == set()
     assert approved2 == set(C3C_AUDITED_PASS)
-    assert set(C3D_TARGETS).isdisjoint(approved1)
-    assert set(C3D_TARGETS).isdisjoint(approved2)
+    unsampled_c3c = set(C3C_TARGETS) - set(C3C_AUDITED_PASS)
+    assert unsampled_c3c < approved3
     higher = [
         (e, lvl)
         for e, lvl in levels.items()
@@ -714,15 +722,16 @@ def test_provenance_reads_52_author_and_the_30_editor_rows(
     assert higher == []
 
 
-def test_the_four_unsampled_new_entities_stay_author_declared_and_unaudited(
+def test_the_four_unsampled_new_entities_rose_via_the_c3d_record(
     built_content_db: Path,
 ) -> None:
     """The new-template provenance obligation, as it stands after the
     disposition cut: the four new entities the review's stratified audit
-    deliberately left out of its formal sample still read AUTHOR_DECLARED
-    and are named by no audit record — while the fourteen sampled new
-    entities plus res-softener-if-anything rose to EDITOR_REVIEWED through
-    the disposition-cut record alone (provenance is never promoted by hand;
+    deliberately left out of its formal sample stayed AUTHOR_DECLARED until
+    the C3-d review re-audited them — that disposition's record (#3) is what
+    promotes them — while the fourteen sampled new entities plus
+    res-softener-if-anything rose to EDITOR_REVIEWED through this cut's own
+    disposition-cut record alone (provenance is never promoted by hand;
     structure decides it, and the audits directory is scanned by the
     build)."""
 
@@ -736,14 +745,17 @@ def test_the_four_unsampled_new_entities_stay_author_declared_and_unaudited(
     unsampled = set(C3C_TARGETS) - set(C3C_AUDITED_PASS)
     assert len(unsampled) == 4
     for target in unsampled:
-        assert levels[target] == "AUTHOR_DECLARED", target
+        assert levels[target] == "EDITOR_REVIEWED", target
     for target in C3C_AUDITED_PASS:
         assert levels[target] == "EDITOR_REVIEWED", target
     audit_files = sorted((CONTENT_SRC_DIR / "audits").glob("*.json"))
     assert [p.name for p in audit_files] == [
         "c3c-stratified-audit.json",
+        "c3d-stratified-audit.json",
         "c3r2-stratified-audit.json",
     ]
+    audit3 = json.loads(AUDIT3_PATH.read_text(encoding="utf-8"))
+    assert unsampled <= set(audit3["approved_entities"])
     for path in (AUDIT_PATH, AUDIT2_PATH):
         audit = json.loads(path.read_text(encoding="utf-8"))
         assert set(audit["approved_entities"]) & unsampled == set()
@@ -771,7 +783,7 @@ def test_provenance_stays_an_independent_dimension_outside_the_ladder(
         store.close()
     audited = {e for e, lvl in rows.value if lvl == "EDITOR_REVIEWED"}
     assert all(entity.startswith("res-") for entity in audited)
-    assert len(audited) == 30
+    assert len(audited) == 46
 
 
 # ---------------------------------------------------------------------------

@@ -244,10 +244,36 @@ PRIOR_CREDIT = {
     "res-pragmatic-with-all-due-respect": "cap-stance-soften-disagreement",
 }
 
-#: The two audit records (C3-R2's and C3-c's disposition cuts landed them;
-#: this cut wrote none and the directory is untouched).
+#: The two audit records the earlier disposition cuts landed, plus this
+#: cut's own disposition record (the delivery cut itself wrote none).
 AUDIT_PATH = CONTENT_SRC_DIR / "audits" / "c3r2-stratified-audit.json"
 AUDIT2_PATH = CONTENT_SRC_DIR / "audits" / "c3c-stratified-audit.json"
+AUDIT3_PATH = CONTENT_SRC_DIR / "audits" / "c3d-stratified-audit.json"
+
+#: The sixteen entities this cut's review passed on both faces: twelve of
+#: the eighteen new entities (the six unsampled — from-what-i-can-tell,
+#: if-you-ask-me, what-was-that, run-that-by-me-again, youre-kidding,
+#: thats-debatable — are deliberately withheld, strict over lenient) plus
+#: the four C3-c entities that review re-audited. The disposition cut's
+#: audit record approves exactly these.
+C3D_AUDITED_PASS = (
+    "res-discourse-before-i-forget",
+    "res-discourse-that-brings-me-to",
+    "res-discourse-where-was-i",
+    "res-hedge-in-a-way",
+    "res-hedge-more-or-less",
+    "res-pragmatic-come-again",
+    "res-pragmatic-could-you-clarify",
+    "res-pragmatic-could-you-say-that-again",
+    "res-pragmatic-go-on",
+    "res-pragmatic-got-it",
+    "res-pragmatic-i-hear-you-but",
+    "res-pragmatic-im-not-convinced",
+    "res-pragmatic-no-way",
+    "res-pragmatic-right",
+    "res-pragmatic-that-makes-sense",
+    "res-pragmatic-with-all-due-respect",
+)
 
 #: The declared CORE reading's level set and band partition (C3-a's
 #: adjudication, still the reading here).
@@ -750,13 +776,15 @@ def test_the_four_content_gate_rows_answer_go_over_the_new_table(
 # ---------------------------------------------------------------------------
 
 
-def test_provenance_reads_70_author_and_the_30_editor_rows(
+def test_provenance_reads_54_author_and_the_46_editor_rows(
     built_content_db: Path,
 ) -> None:
-    """The provenance read over the widened artifact: 100 rows — one per
-    evidence document — of which 30 are EDITOR_REVIEWED (the two audit
-    records' disjoint approved lists, exactly as before this cut) and 70 are
-    AUTHOR_DECLARED (52 + this cut's eighteen, entered by structure alone)."""
+    """The provenance read after the disposition cut landed the review's
+    third audit record: 100 rows — one per evidence document — of which 46
+    are EDITOR_REVIEWED (three records' disjoint approved lists: C3-R2's
+    fifteen, C3-c's fifteen, and this cut's sixteen — twelve sampled new
+    entities plus the four C3-c entities re-audited here) and 54 are
+    AUTHOR_DECLARED; the six unsampled new entities stay at the baseline."""
 
     store = ContentStore(built_content_db)
     try:
@@ -772,18 +800,17 @@ def test_provenance_reads_70_author_and_the_30_editor_rows(
     author = sorted(
         e for e, lvl in levels.items() if lvl == "AUTHOR_DECLARED"
     )
-    assert len(editor) == 30
-    assert len(author) == 70
-    audit1 = json.loads(AUDIT_PATH.read_text(encoding="utf-8"))
-    audit2 = json.loads(AUDIT2_PATH.read_text(encoding="utf-8"))
-    approved1 = set(audit1["approved_entities"])
-    approved2 = set(audit2["approved_entities"])
-    assert approved1 | approved2 == set(editor)
-    assert approved1 & approved2 == set()
-    assert set(C3D_TARGETS).isdisjoint(approved1)
-    assert set(C3D_TARGETS).isdisjoint(approved2)
-    for target in C3D_TARGETS:
+    assert len(editor) == 46
+    assert len(author) == 54
+    audit3 = json.loads(AUDIT3_PATH.read_text(encoding="utf-8"))
+    approved3 = set(audit3["approved_entities"])
+    assert approved3 == set(C3D_AUDITED_PASS)
+    unsampled = set(C3D_TARGETS) - set(C3D_AUDITED_PASS)
+    assert len(unsampled) == 6
+    for target in unsampled:
         assert levels[target] == "AUTHOR_DECLARED", target
+    for target in C3D_AUDITED_PASS:
+        assert levels[target] == "EDITOR_REVIEWED", target
     higher = [
         (e, lvl)
         for e, lvl in levels.items()
@@ -792,15 +819,16 @@ def test_provenance_reads_70_author_and_the_30_editor_rows(
     assert higher == []
 
 
-def test_the_audit_directory_is_untouched_by_this_cut() -> None:
-    """The audits directory still holds exactly the two records the C3-R2
-    and C3-c disposition cuts landed — this delivery cut wrote none
+def test_the_audit_directory_carries_the_three_records() -> None:
+    """The audits directory holds the three records the C3-R2, C3-c and
+    C3-d disposition cuts landed — the C3-d delivery cut itself wrote none
     (provenance promotion is a disposition-cut act on review evidence, never
     an authoring-cut act)."""
 
     audit_files = sorted((CONTENT_SRC_DIR / "audits").glob("*.json"))
     assert [p.name for p in audit_files] == [
         "c3c-stratified-audit.json",
+        "c3d-stratified-audit.json",
         "c3r2-stratified-audit.json",
     ]
 

@@ -32,10 +32,11 @@ What this cut did, and what this file pins:
   and the truth table, the three Calibration100 gates and the four content
   rows all read exactly as they did at C3-R1.
 
-The repository's own `content_src/audits/` carries two records — this cut's
-disposition landed `c3r2-stratified-audit.json` (fifteen entities) and the
-C3-c disposition later added `c3c-stratified-audit.json` (fifteen more) — so
-the canonical corpus reads 52 × AUTHOR_DECLARED + 30 × EDITOR_REVIEWED; the
+The repository's own `content_src/audits/` carries three records — this cut's
+disposition landed `c3r2-stratified-audit.json` (fifteen entities), the
+C3-c disposition added `c3c-stratified-audit.json` (fifteen more) and the
+C3-d disposition `c3d-stratified-audit.json` (sixteen more) — so the
+canonical corpus reads 54 × AUTHOR_DECLARED + 46 × EDITOR_REVIEWED; the
 audit variants below build from pytest tmp copies, never from the canonical
 tree.
 """
@@ -550,19 +551,18 @@ def test_an_always_match_stub_fails_every_negative_row(
 # ---------------------------------------------------------------------------
 
 
-def test_the_repository_audit_records_raise_thirty_entities(
+def test_the_repository_audit_records_raise_forty_six_entities(
     built_content_db: Path,
 ) -> None:
     """The repository's own audit records: C3-R2's record (landed by its
     disposition cut) still approves exactly its fifteen entities — every one
-    of them EDITOR_REVIEWED — and C3-c's disposition-cut record added
-    fifteen more (fourteen sampled new entities plus the re-audited
-    res-softener-if-anything), so the derived EDITOR_REVIEWED set is the
-    union of the two records' approved lists (thirty); C3-d's eighteen
-    evidence documents entered by structure alone, so the other seventy
-    documented entities stay at the AUTHOR_DECLARED baseline, no capability
-    row exists at all, and no row reaches the two words no derivation
-    produces."""
+    of them EDITOR_REVIEWED — C3-c's disposition-cut record added fifteen
+    more, and C3-d's disposition-cut record added sixteen (twelve sampled
+    new entities plus the four C3-c leftovers it re-audited), so the
+    derived EDITOR_REVIEWED set is the union of the three records' approved
+    lists (forty-six); the other fifty-four documented entities stay at the
+    AUTHOR_DECLARED baseline, no capability row exists at all, and no row
+    reaches the two words no derivation produces."""
 
     levels = _provenance(built_content_db)
     assert len(levels) == 100
@@ -576,6 +576,7 @@ def test_the_repository_audit_records_raise_thirty_entities(
     )
     assert [p.name for p in audit_paths] == [
         "c3c-stratified-audit.json",
+        "c3d-stratified-audit.json",
         "c3r2-stratified-audit.json",
     ]
     approved: set[str] = set()
@@ -585,8 +586,8 @@ def test_the_repository_audit_records_raise_thirty_entities(
         )
     assert set(AUDITED_PASS_ENTITIES) <= reviewed
     assert reviewed == approved
-    assert len(reviewed) == 30
-    assert sum(1 for level in levels.values() if level == "AUTHOR_DECLARED") == 70
+    assert len(reviewed) == 46
+    assert sum(1 for level in levels.values() if level == "AUTHOR_DECLARED") == 54
     assert not (set(levels.values()) & set(UNREACHABLE_LEVELS))
     # The read face and the table agree (one read, already checked above).
     conn = sqlite3.connect(str(built_content_db))
