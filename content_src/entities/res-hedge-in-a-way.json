@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-hedge-in-a-way",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Agree with your own claim only partly: say it holds from one angle, not from every angle.",
+      "Put the phrase at the front of the sentence, before the comma, and let the limited claim follow.",
+      "Start with the words: ___, the extra traffic taught us patience."
+    ],
+    "reveal_form": "In a way, the extra traffic taught us patience.",
+    "canonical_forms": [
+      "In a way, the extra traffic taught us patience."
+    ],
+    "alternative_realizations": [
+      "In a way, I prefer the quieter office."
+    ],
+    "required_slots": [
+      [
+        "traffic"
+      ],
+      [
+        "patience"
+      ]
+    ]
+  }
+}

@@ -494,10 +494,11 @@ def test_the_shipped_supply_grades_the_resources_and_leaves_the_caps_ungraded(
         facts = content_supply.readiness_facts(str(entity_id))
         assert isinstance(facts, Ok), entity_id
         levels[str(entity_id)] = judge_readiness(facts.value).level
-    # 旧真值 → C1 → C2-a → C3-b → C3-R1 → 新真值（C3-c）: {None} → one R4 +
-    # thirteen None → nine graded RESOURCE targets and five ungraded CAPABILITY
-    # entities → all sixty-four graded → sixteen R4 + forty-eight R1 + five
-    # None → thirty-four R4 + forty-eight R1 + five None. The R1 band is the
+    # 旧真值 → C1 → C2-a → C3-b → C3-R1 → C3-c → 新真值（C3-d）: {None} →
+    # one R4 + thirteen None → nine graded RESOURCE targets and five ungraded
+    # CAPABILITY entities → all sixty-four graded → sixteen R4 + forty-eight
+    # R1 + five None → thirty-four R4 + forty-eight R1 + five None →
+    # fifty-two R4 + forty-eight R1 + five None. The R1 band is the
     # C3-R1 fall-back: the evidence is complete and the §24.7 row is a
     # coverage placement, so the ladder stops at R1.
     for entity_id, level in levels.items():
@@ -514,7 +515,7 @@ def test_the_shipped_supply_grades_the_resources_and_leaves_the_caps_ungraded(
         for target, level in levels.items()
         if level == "R4_DETECTION_READY"
     ]
-    assert len(graded) == 34
+    assert len(graded) == 52
     authority = _full_bag(curriculum_readiness=levels)
     assert authority.status is FeatureAssemblyStatus.INCOMPLETE
     assert AuthorityName.CURRICULUM_READINESS in authority.missing_authorities

@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's backchannel set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "right",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "right.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "right.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A backchannel: the one-word signal a listener produces while the other person holds the turn, showing that they are following and inviting them to go on."
+    },
+    {
+      "sense_id": "right.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The word stands alone or doubled, at the front of a listener's minimal response: Right — I'm following you. Right, right — keep going, I'm with you. It claims neither content nor the turn; the listener's flat, falling tone is the receipt, and the words after the dash (if any) only hand the floor back. In speech it is the most frequent of the continue-signals; on its own it can carry the whole response."
+    },
+    {
+      "sense_id": "right.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The spelling is the drill: the receipt is right, and the homophone write belongs to writing things down -- a learner who types the wrong word produces a different sentence entirely. The adverb rightly is the second slip: the over-corrected form belongs inside sentences (rightly so), not at the front of a listener's response. When right is the adjective before a noun (the right answer) or the agreeing answer to a question, it is not the backchannel -- that is the boundary the fixtures hold."
+    },
+    {
+      "sense_id": "right.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Right as a backchannel shows receipt while the other holds the turn; I see shows receipt of understanding; go on asks for the story to continue; okay acknowledges and often closes a step. The adjective (the right answer) and the agreement word (Right, let's start) are different moves. Written as write it is the verb of writing and is never this signal."
+    },
+    {
+      "sense_id": "right.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "嗯／对（听的人一边听一边发出的跟随信号，表示在听、请继续，不抢话）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "right.base",
+      "written": "right",
+      "normalized": "right",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the word is among the most frequent listener signals in English -- conversation runs on it -- so receptive value, productive value, naturalness are HIGH and core utility is HIGH. Both difficulties and the explanation cost are LOW: one word, one function, and the two teaching points (the homophone and the adjective reading) are single rules. Transfer value is MEDIUM: the receipt move transfers to I see and okay, though the word itself is its own. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The signal belongs to the general fluency pack (the phrases that keep a conversation alive), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "Showing a speaker one is following in a meeting or a call (right — I'm following you) is ordinary workplace language, so it carries nearly full weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the signal as the listener's response with the floor staying with the speaker, and never present the adjective reading or an ERROR_INSTANCE as a model of the backchannel."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "HOMOPHONE_SPELLING",
+      "error_pattern": "Write — I'm following you. (the homophone write produced where the receipt word right belongs)",
+      "corrected_pattern": "Right — I'm following you.",
+      "explanation": "The two words sound the same, and learners reach for write because in their own language the sound maps to the writing word; the signal in produced text is the spelling right, so the homophone produces a different sentence.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the listener receipt position carries write instead of right."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "ADVERB_OVERCORRECTION",
+      "error_pattern": "Rightly — I'm following you. (the adverb form built where the interjection belongs)",
+      "corrected_pattern": "Right — I'm following you.",
+      "explanation": "The receipt is the bare word, and learners attach the adverb ending because their own language marks every modifier uniformly; rightly stands inside sentences about correct actions and is not a stored listener signal.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the listener receipt position carries rightly instead of right."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the word standing in the listener receipt position. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the signal's errors take; the do-not-match rules state the accepted realizations and the adjective reading the signal must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the adjective reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "HOMOPHONE_SPELLING: match when the listener receipt position carries write, because the signal is spelled right."
+    },
+    {
+      "ordinal": 1,
+      "rule": "ADVERB_OVERCORRECTION: match when the listener receipt position carries rightly, because the signal is the bare word."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the signal stands bare or doubled before the floor-returning words (Right — I'm following you.; Right, right — keep going, I'm with you.): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_ADJECTIVE_READING: do not match when right is the adjective before a noun (She picked the right answer on the first try.), because there the word modifies a noun and the listener receipt is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Right — I'm following you.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Right, right — keep going, I'm with you.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Right, I see what you mean now.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "She picked the right answer on the first try.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Write — I'm following you.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Rightly — I'm following you.",
+      "expected": "MATCH"
+    }
+  ]
+}

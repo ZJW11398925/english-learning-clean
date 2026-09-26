@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-youre-kidding",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Tell the speaker that their news is hard to believe, and invite them to go on telling it.",
+      "Say the phrase as a reaction first, then echo the piece of news you cannot believe.",
+      "Start with the words: ___ — she won the lottery?"
+    ],
+    "reveal_form": "You're kidding — she won the lottery?",
+    "canonical_forms": [
+      "You're kidding — she won the lottery?"
+    ],
+    "alternative_realizations": [
+      "You're kidding me! The flight was cancelled again?"
+    ],
+    "required_slots": [
+      [
+        "kidding"
+      ],
+      [
+        "lottery"
+      ]
+    ]
+  }
+}

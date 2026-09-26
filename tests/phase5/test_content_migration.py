@@ -78,11 +78,11 @@ def test_stable_resource_identity_is_the_fixture_id_set(store: ContentStore) -> 
     minted, nothing renamed, nothing dropped.
 
     旧真值 (P5-0): the rebuilt id set *was* the fixture id set (14 == 14).
-    新真值 (C3-c): the corpus has grown past the migration — the fourteen
-    fixture ids are all still there, and seventy-three further RESOURCE
-    entities were authored by the C2-b, C3-a, C3-b and C3-c cuts, so the set
-    is a strict
-    superset (87). The fixture half stays an equality: every fixture id must
+    新真值 (C3-d): the corpus has grown past the migration — the fourteen
+    fixture ids are all still there, and eighty-six further RESOURCE
+    entities were authored by the C2-b, C3-a, C3-b, C3-c and C3-d cuts, so
+    the set is a strict
+    superset (105). The fixture half stays an equality: every fixture id must
     still resolve.
     """
 
@@ -105,15 +105,18 @@ def test_stable_resource_identity_is_the_fixture_id_set(store: ContentStore) -> 
         "res-colloc-take-advantage-of",
         "res-colloc-take-part-in",
         "res-discourse-anyway",
+        "res-discourse-before-i-forget",
         "res-discourse-having-said-that",
         "res-discourse-in-fact",
         "res-discourse-long-story-short",
         "res-discourse-moving-on",
         "res-discourse-on-another-note",
         "res-discourse-speaking-of-which",
+        "res-discourse-that-brings-me-to",
         "res-discourse-that-reminds-me",
         "res-discourse-to-be-honest",
         "res-discourse-to-get-back-to-the-point",
+        "res-discourse-where-was-i",
         "res-frame-if-you-dont-mind",
         "res-frame-just-wondering",
         "res-frame-lets-say",
@@ -121,12 +124,16 @@ def test_stable_resource_identity_is_the_fixture_id_set(store: ContentStore) -> 
         "res-frame-what-im-saying-is",
         "res-frame-would-you-mind",
         "res-hedge-as-far-as-i-know",
+        "res-hedge-from-what-i-can-tell",
         "res-hedge-i-guess",
         "res-hedge-i-mean",
         "res-hedge-if-im-not-mistaken",
+        "res-hedge-if-you-ask-me",
         "res-hedge-im-not-sure",
+        "res-hedge-in-a-way",
         "res-hedge-it-depends",
         "res-hedge-it-seems-to-me",
+        "res-hedge-more-or-less",
         "res-hedge-not-really",
         "res-hedge-sort-of",
         "res-idiom-a-blessing-in-disguise",
@@ -145,25 +152,36 @@ def test_stable_resource_identity_is_the_fixture_id_set(store: ContentStore) -> 
         "res-phrasal-turn-out",
         "res-phrasal-work-out",
         "res-pragmatic-are-you-saying",
+        "res-pragmatic-come-again",
         "res-pragmatic-could-i-ask",
+        "res-pragmatic-could-you-clarify",
         "res-pragmatic-could-you-say-that-again",
         "res-pragmatic-fair-enough",
+        "res-pragmatic-go-on",
         "res-pragmatic-got-it",
+        "res-pragmatic-i-hear-you-but",
         "res-pragmatic-i-see",
         "res-pragmatic-i-see-your-point-but",
+        "res-pragmatic-im-not-convinced",
         "res-pragmatic-let-me-make-sure",
         "res-pragmatic-no-offense-but",
+        "res-pragmatic-no-way",
+        "res-pragmatic-right",
+        "res-pragmatic-run-that-by-me-again",
         "res-pragmatic-sorry-to-interrupt",
         "res-pragmatic-that-makes-sense",
         "res-pragmatic-thats-a-good-point-but",
+        "res-pragmatic-thats-debatable",
         "res-pragmatic-up-to-a-point",
         "res-pragmatic-what-do-you-mean",
+        "res-pragmatic-what-was-that",
         "res-pragmatic-with-all-due-respect",
+        "res-pragmatic-youre-kidding",
         "res-softener-a-bit",
         "res-softener-if-anything",
         "res-softener-to-be-fair",
     }
-    assert len(rebuilt) == 87
+    assert len(rebuilt) == 105
 
 
 @pytest.mark.parametrize("target_id", TARGET_IDS)
@@ -355,7 +373,7 @@ def test_hint_ladder_ordinals_are_dense_and_ordered(
     per_entity: dict[str, list[int]] = {}
     for entity_id, ordinal in rows:
         per_entity.setdefault(str(entity_id), []).append(int(ordinal))
-    assert len(per_entity) == 87
+    assert len(per_entity) == 105
     for entity_id, ordinals in per_entity.items():
         assert ordinals == list(range(len(ordinals))), entity_id
         assert len(ordinals) == 3
@@ -439,23 +457,23 @@ def test_corpus_size_is_the_migrated_fourteen_plus_the_phase11_additions(
     it stands after the Phase 11 content programme.
 
     旧真值 (P5-0): 14 entities / 5 capabilities, i.e. "the migrated fourteen
-    and nothing else". 新真值 (C3-c): 87 entities / 5 capabilities — the
+    and nothing else". 新真值 (C3-d): 105 entities / 5 capabilities — the
     fourteen migrated targets are all still present (the equality above), the
-    seventy-three additions are the C2-b, C3-a, C3-b and C3-c RESOURCE
+    eighty-six additions are the C2-b, C3-a, C3-b, C3-c and C3-d RESOURCE
     entities, and
-    the capability registry is untouched at five. The 100 of IP §13 is still
-    not
-    reached (82 < 100); of the Calibration100 floors the volume one is unmet
-    while CORE_A/CORE_C are read under the declared reading — this test pins
+    the capability registry is untouched at five. The 100 of IP §13 is now
+    reached (100 == 100); the Calibration100 floors are read under the
+    declared reading — this test pins
     the size only, and the three readings live in
-    test_c2b_resource_expansion.py and test_c3a_readface_and_expansion.py."""
+    test_c2b_resource_expansion.py, test_c3a_readface_and_expansion.py and
+    test_c3d_final_expansion.py."""
 
-    assert len(store.entity_ids().value) == 87
+    assert len(store.entity_ids().value) == 105
     assert len(store.capability_ids().value) == 5
     resources = [
         entity_id
         for entity_id in store.entity_ids().value
         if str(entity_id).startswith("res-")
     ]
-    assert len(resources) == 82
+    assert len(resources) == 100
     assert CONTENT_SRC_DIR.name == "content_src"

@@ -63,7 +63,7 @@ def test_rebuild_same_path_is_byte_identical(tmp_path: Path) -> None:
     second = build_content_db(output)
     digest_second = hashlib.sha256(output.read_bytes()).hexdigest()
     assert digest_first == digest_second
-    assert first.entity_count == second.entity_count == 87
+    assert first.entity_count == second.entity_count == 105
     assert list(tmp_path.iterdir()) == [output]  # no leftover .tmp sibling
 
 
@@ -84,15 +84,15 @@ def test_two_builds_have_the_same_id_set_and_bytes(tmp_path: Path) -> None:
 
 
 def test_build_report_counts(tmp_path: Path) -> None:
-    """The report counts what was written (C3-c truth): 87 entities (5
-    CAPABILITY + 82 RESOURCE), 5 capabilities, 82 links (33 REALIZES + 49
-    SUPPORTS), 82 evidence documents."""
+    """The report counts what was written (C3-d truth): 105 entities (5
+    CAPABILITY + 100 RESOURCE), 5 capabilities, 100 links (51 REALIZES + 49
+    SUPPORTS), 100 evidence documents."""
 
     report = build_content_db(tmp_path / "content.db")
-    assert report.entity_count == 87
+    assert report.entity_count == 105
     assert report.capability_count == 5
-    assert report.link_count == 82
-    assert report.evidence_count == 82
+    assert report.link_count == 100
+    assert report.evidence_count == 100
     assert report.prerequisite_count == 0
     assert report.content_version == "content-v1"
     assert report.curriculum_version == "curriculum-v1"
@@ -129,8 +129,9 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
     C1: ``content_meta`` carries the three version keys **plus** the
     declared-reading TypicalError-need key for an entity whose source states
     it (elc.content.types.typical_error_required_key). C2-a authored the
-    other eight RESOURCE targets' evidence documents and C2-b the nineteen
-    entities it authored, each declaring the same need, so twenty-eight such
+    other eight RESOURCE targets' evidence documents, C2-b the nineteen
+    entities it authored, and C3-a/C3-b/C3-c/C3-d eighteen each, all
+    declaring the same need, so one hundred such
     keys stand beside the three version keys — and the ids are written out
     here rather than read back from the artifact, so a source that loses one
     fails here instead of quietly shrinking the expected list.
@@ -183,6 +184,7 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
             "res-colloc-take-advantage-of",
             "res-colloc-take-part-in",
             "res-discourse-anyway",
+            "res-discourse-before-i-forget",
             "res-discourse-by-the-way",
             "res-discourse-having-said-that",
             "res-discourse-in-fact",
@@ -190,9 +192,11 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
             "res-discourse-moving-on",
             "res-discourse-on-another-note",
             "res-discourse-speaking-of-which",
+            "res-discourse-that-brings-me-to",
             "res-discourse-that-reminds-me",
             "res-discourse-to-be-honest",
             "res-discourse-to-get-back-to-the-point",
+            "res-discourse-where-was-i",
             "res-frame-id-like-to",
             "res-frame-if-you-dont-mind",
             "res-frame-just-wondering",
@@ -201,13 +205,17 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
             "res-frame-what-im-saying-is",
             "res-frame-would-you-mind",
             "res-hedge-as-far-as-i-know",
+            "res-hedge-from-what-i-can-tell",
             "res-hedge-i-guess",
             "res-hedge-i-mean",
             "res-hedge-i-think",
             "res-hedge-if-im-not-mistaken",
+            "res-hedge-if-you-ask-me",
             "res-hedge-im-not-sure",
+            "res-hedge-in-a-way",
             "res-hedge-it-depends",
             "res-hedge-it-seems-to-me",
+            "res-hedge-more-or-less",
             "res-hedge-not-really",
             "res-hedge-sort-of",
             "res-idiom-a-blessing-in-disguise",
@@ -228,21 +236,32 @@ def test_rows_are_written_in_id_order(built_content_db: Path) -> None:
             "res-phrasal-turn-out",
             "res-phrasal-work-out",
             "res-pragmatic-are-you-saying",
+            "res-pragmatic-come-again",
             "res-pragmatic-could-i-ask",
             "res-pragmatic-could-you",
+            "res-pragmatic-could-you-clarify",
             "res-pragmatic-could-you-say-that-again",
             "res-pragmatic-fair-enough",
+            "res-pragmatic-go-on",
             "res-pragmatic-got-it",
+            "res-pragmatic-i-hear-you-but",
             "res-pragmatic-i-see",
             "res-pragmatic-i-see-your-point-but",
+            "res-pragmatic-im-not-convinced",
             "res-pragmatic-let-me-make-sure",
             "res-pragmatic-no-offense-but",
+            "res-pragmatic-no-way",
+            "res-pragmatic-right",
+            "res-pragmatic-run-that-by-me-again",
             "res-pragmatic-sorry-to-interrupt",
             "res-pragmatic-that-makes-sense",
             "res-pragmatic-thats-a-good-point-but",
+            "res-pragmatic-thats-debatable",
             "res-pragmatic-up-to-a-point",
             "res-pragmatic-what-do-you-mean",
+            "res-pragmatic-what-was-that",
             "res-pragmatic-with-all-due-respect",
+            "res-pragmatic-youre-kidding",
             "res-softener-a-bit",
             "res-softener-if-anything",
             "res-softener-kind-of",
@@ -530,9 +549,9 @@ def test_cli_builds_and_reports(
     exit_code = main(["--out", str(output)])
     assert exit_code == 0
     captured = capsys.readouterr().out
-    assert "entities=87" in captured
+    assert "entities=105" in captured
     assert "capabilities=5" in captured
-    assert "links=82" in captured
+    assert "links=100" in captured
     assert output.is_file()
 
 

@@ -269,7 +269,7 @@ def test_every_corpus_row_reads_the_declared_pairing(
     included (they already read the pairing; now the build enforces it)."""
 
     fixtures = _fixtures(built_content_db)
-    assert len(fixtures) == 487  # 255 pre-existing + 124 + C3-c's 108 positive
+    assert len(fixtures) == 595  # 255 + 124 + C3-c's 108 + C3-d's 108 positive
     for entity_id, ordinal, kind, text, expected in fixtures:
         assert DETECTION_FIXTURE_EXPECTED_BY_KIND[kind] == expected, (
             entity_id,
@@ -490,7 +490,7 @@ def test_the_store_reports_positive_error_counts(
         )
     finally:
         store.close()
-    assert total == 160
+    assert total == 196
 
 
 # ---------------------------------------------------------------------------
@@ -516,33 +516,33 @@ def test_an_always_no_match_stub_fails_every_positive_row(
     built_content_db: Path,
 ) -> None:
     """The HIGH-2 stub (answering NO_MATCH to everything) now fails the
-    fixture set — exactly on the positive rows (160), where it cannot
+    fixture set — exactly on the positive rows (196), where it cannot
     produce the declared MATCH."""
 
     failures = _stub_failures(built_content_db, "NO_MATCH")
-    # It fails every one of the 160 positive rows (its declared MATCH is
-    # unreachable for the stub) plus the 85 boundary rows whose declared
-    # reading is NO_MATCH_BOUNDARY — 245 rows in total, so the stub can no
+    # It fails every one of the 196 positive rows (its declared MATCH is
+    # unreachable for the stub) plus the 103 boundary rows whose declared
+    # reading is NO_MATCH_BOUNDARY — 299 rows in total, so the stub can no
     # longer pass the set.
     positive_failures = sum(
         1
         for _e, _o, _k, _t, expected in _fixtures(built_content_db)
         if expected == "MATCH"
     )
-    assert positive_failures == 160
-    print(f"[c3r2] always-NO_MATCH stub fails {failures} rows (>= 160)")
-    assert failures >= 160
-    assert failures == 245
+    assert positive_failures == 196
+    print(f"[c3r2] always-NO_MATCH stub fails {failures} rows (>= 196)")
+    assert failures >= 196
+    assert failures == 299
 
 
 def test_an_always_match_stub_fails_every_negative_row(
     built_content_db: Path,
 ) -> None:
     """The mirror stub (answering MATCH to everything) fails the set too —
-    on the 327 rows whose declared reading is not MATCH."""
+    on the 399 rows whose declared reading is not MATCH."""
 
-    assert _stub_failures(built_content_db, "MATCH") == 327
-    assert _stub_failures(built_content_db, "NO_MATCH_BOUNDARY") == 402
+    assert _stub_failures(built_content_db, "MATCH") == 399
+    assert _stub_failures(built_content_db, "NO_MATCH_BOUNDARY") == 492
 
 
 # ---------------------------------------------------------------------------
@@ -558,13 +558,14 @@ def test_the_repository_audit_records_raise_thirty_entities(
     of them EDITOR_REVIEWED — and C3-c's disposition-cut record added
     fifteen more (fourteen sampled new entities plus the re-audited
     res-softener-if-anything), so the derived EDITOR_REVIEWED set is the
-    union of the two records' approved lists (thirty), the other fifty-two
+    union of the two records' approved lists (thirty); C3-d's eighteen
+    evidence documents entered by structure alone, so the other seventy
     documented entities stay at the AUTHOR_DECLARED baseline, no capability
     row exists at all, and no row reaches the two words no derivation
     produces."""
 
     levels = _provenance(built_content_db)
-    assert len(levels) == 82
+    assert len(levels) == 100
     assert all(entity_id.startswith("res-") for entity_id in levels)
     reviewed = {
         entity_id for entity_id, level in levels.items()
@@ -585,7 +586,7 @@ def test_the_repository_audit_records_raise_thirty_entities(
     assert set(AUDITED_PASS_ENTITIES) <= reviewed
     assert reviewed == approved
     assert len(reviewed) == 30
-    assert sum(1 for level in levels.values() if level == "AUTHOR_DECLARED") == 52
+    assert sum(1 for level in levels.values() if level == "AUTHOR_DECLARED") == 70
     assert not (set(levels.values()) & set(UNREACHABLE_LEVELS))
     # The read face and the table agree (one read, already checked above).
     conn = sqlite3.connect(str(built_content_db))
@@ -595,7 +596,7 @@ def test_the_repository_audit_records_raise_thirty_entities(
         ).fetchone()
     finally:
         conn.close()
-    assert int(rows[0]) == 82
+    assert int(rows[0]) == 100
 
 
 def test_an_audit_approval_raises_the_entity_to_editor_reviewed(
@@ -624,9 +625,9 @@ def test_an_audit_approval_raises_the_entity_to_editor_reviewed(
     levels = _provenance(artifact)
     assert levels["res-colloc-make-a-decision"] == "EDITOR_REVIEWED"
     assert levels["res-hedge-i-think"] == "EDITOR_REVIEWED"
-    assert len(levels) == 82
+    assert len(levels) == 100
     assert sum(1 for v in levels.values() if v == "EDITOR_REVIEWED") == 2
-    assert sum(1 for v in levels.values() if v == "AUTHOR_DECLARED") == 80
+    assert sum(1 for v in levels.values() if v == "AUTHOR_DECLARED") == 98
 
 
 def test_no_derivation_produces_the_two_higher_levels(
@@ -692,12 +693,12 @@ def test_readiness_fact_keys_gain_no_provenance_key() -> None:
 def test_the_readiness_truth_table_is_exactly_unchanged(
     built_content_db: Path,
 ) -> None:
-    """34 × R4 + 48 × R1 + 5 × None — C3-R1's truth widened by C3-c's
-    eighteen authored mappings (the R1 side unchanged), re-pinned here
-    (counted, plus five named ids per band as spot checks)."""
+    """52 × R4 + 48 × R1 + 5 × None — C3-R1's truth widened by C3-c's and
+    C3-d's thirty-six authored mappings (the R1 side unchanged), re-pinned
+    here (counted, plus five named ids per band as spot checks)."""
 
     table = _levels(built_content_db)
-    assert len(table) == 87
+    assert len(table) == 105
     r4 = sorted(
         t for t, v in table.items() if v == "R4_DETECTION_READY"
     )
@@ -705,7 +706,7 @@ def test_the_readiness_truth_table_is_exactly_unchanged(
         t for t, v in table.items() if v == "R1_LEXICALLY_RESOLVED"
     )
     none = sorted(t for t, v in table.items() if v is None)
-    assert (len(r4), len(r1), len(none)) == (34, 48, 5)
+    assert (len(r4), len(r1), len(none)) == (52, 48, 5)
     # Five named ids per band (the full sets are pinned by c3-r1's tests).
     assert {
         "res-discourse-anyway",
@@ -732,9 +733,10 @@ def test_the_readiness_truth_table_is_exactly_unchanged(
 def test_the_three_calibration_gates_are_unchanged(
     built_content_db: Path,
 ) -> None:
-    """CORE_A 24 (unmet) / CORE_C 10 (met) / resource_count 82 (unmet) — the
-    C3-R1 readings widened by C3-c's authored mappings, to the value. No
-    rollout opening is claimed."""
+    """CORE_A 32 (met) / CORE_C 20 (met) / resource_count 100 (met) — the
+    C3-R1 readings widened by C3-c's and C3-d's authored mappings, to the
+    value. **No rollout opening is claimed**: the floors meeting is the
+    volume gate's answer, not the rollout's."""
 
     core_a, core_c = _core_counts(built_content_db)
     resources = [t for t in _levels(built_content_db) if t.startswith("res-")]
@@ -742,9 +744,9 @@ def test_the_three_calibration_gates_are_unchanged(
         f"[c3r2] CORE_A = {core_a}/30, CORE_C = {core_c}/2, "
         f"resource_count = {len(resources)}/100"
     )
-    assert core_a == 24
-    assert core_c == 10
-    assert len(resources) == 82
+    assert core_a == 32
+    assert core_c == 20
+    assert len(resources) == 100
 
 
 def test_the_four_content_rows_still_read_go(

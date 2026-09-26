@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's hedging-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "from what I can tell",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "from-what-i-can-tell.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "from-what-i-can-tell.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A hedge that limits a claim to what the speaker has been able to make out themselves -- marking that the judgement rests on the speaker's own observation, which may be partial."
+    },
+    {
+      "sense_id": "from-what-i-can-tell.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The phrase stands at the front of the sentence, set off by a comma: From what I can tell, the system is working fine. The words are fixed -- from what + I + can + tell -- and the claim follows as a full clause. Widening the anchor is honest when stated (from what we can tell). In speech the comma is the small reservation the voice holds: the judgement is offered from one vantage point, not as settled fact."
+    },
+    {
+      "sense_id": "from-what-i-can-tell.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The preposition and the verb are the two slips: the phrase measures a claim against the speaker's observation, so it is from what I can tell (for swaps the source for a purpose), and can takes the bare infinitive (can tell, never can to tell). The hedge does not weaken the claim's content, only its warrant: teaching it as 'maybe' would be wrong, because the speaker is committing to what their observation supports."
+    },
+    {
+      "sense_id": "from-what-i-can-tell.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "From what I can tell marks the speaker's own observation as the limit of the claim; as far as I know marks the speaker's information; it seems to me marks the speaker's impression. When can tell means being able to distinguish or perceive something real (from the window I can tell it has started snowing), the words are ordinary perception and the hedge is gone."
+    },
+    {
+      "sense_id": "from-what-i-can-tell.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "据我观察／就我所见（判断只以自己看出来的为准，可能有出入）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "from-what-i-can-tell.base",
+      "written": "from what I can tell",
+      "normalized": "from what i can tell",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the phrase is a frequent evidence-hedge in conversation, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because it is the observation-flavoured member of a family the plainer as far as I know covers for most purposes -- it earns its place when the speaker's own looking is the point. Productive difficulty is MEDIUM: the fixed preposition and the bare infinitive after can are what production has to get right. Transfer value is MEDIUM: the source-limiting move transfers to from what I can see and to my knowledge. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "The phrase belongs to the general fluency pack (high-frequency multi-word units), so it carries high weight in that pack's coverage accounting; the shortfall records that it is the observation-flavoured member of the knowledge-hedge family."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Reporting a status judgement from one's own looking (from what I can tell, the system is working fine) is ordinary workplace language, so it carries high weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the phrase whole, with from in front and the bare infinitive after can, and never present a wrong-preposition, to-infinitive or perception-reading sentence as a model of the hedge."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_CONFUSION",
+      "error_pattern": "For what I can tell, + clause (for standing where the source preposition from belongs)",
+      "corrected_pattern": "From what I can tell, + clause",
+      "explanation": "The phrase names the source the judgement is measured against, and learners reach for for because their own language marks purpose or standpoint with it; for what I can tell is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the hedged claim is fronted by for what I can tell."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "INFINITIVE_MARKER_SLIP",
+      "error_pattern": "from what I can to tell (the to-infinitive built where the bare infinitive belongs)",
+      "corrected_pattern": "from what I can tell",
+      "explanation": "The modal can takes the bare infinitive, and learners insert to because their own language marks the complement verb with an infinitive marker; can to tell is not a stored English pattern.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the phrase carries can to tell with no other verb between them."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the preposition in front of what and the verb form after can. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the frame's errors take; the do-not-match rules state the accepted realizations and the ordinary perception reading the hedge must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the perception reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PREPOSITION_CONFUSION: match when the hedged claim is fronted by for what I can tell, because the source preposition of the frame is from."
+    },
+    {
+      "ordinal": 1,
+      "rule": "INFINITIVE_MARKER_SLIP: match when the phrase carries can to tell, because the modal can takes the bare infinitive."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the phrase stands whole at the front of the sentence with its comma (From what I can tell, the system is working fine; from what we can tell, both versions behave the same): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_PERCEPTION_READING: do not match when can tell means being able to perceive something real from a vantage point (From the window I can tell it has started snowing.), because there the words report ordinary perception and the hedging of a claim is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "From what I can tell, the system is working fine.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "From what I can tell, nobody has started the survey yet.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "From what we can tell, both versions behave the same.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "From the window I can tell it has started snowing.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "For what I can tell, the system is working fine.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "From what I can to tell, nobody has started the survey yet.",
+      "expected": "MATCH"
+    }
+  ]
+}

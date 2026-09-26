@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-discourse-that-brings-me-to",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "DISCOURSE_MARKER",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Open the next matter by tying it to the one you have just finished.",
+      "Say the frame first, then name the matter it leads to.",
+      "Start with the words: ___ the travel plan: who arranges the flights?"
+    ],
+    "reveal_form": "That brings me to the travel plan: who arranges the flights?",
+    "canonical_forms": [
+      "That brings me to the travel plan: who arranges the flights?"
+    ],
+    "alternative_realizations": [
+      "Which brings me to my next point — the travel allowance."
+    ],
+    "required_slots": [
+      [
+        "travel"
+      ],
+      [
+        "flights"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-run-that-by-me-again",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Ask the speaker to go through their explanation once more.",
+      "Use the phrasal request first, then say where you lost the thread.",
+      "Start with the words: Could you ___? I lost you at the second step."
+    ],
+    "reveal_form": "Could you run that by me again? I lost you at the second step.",
+    "canonical_forms": [
+      "Could you run that by me again? I lost you at the second step."
+    ],
+    "alternative_realizations": [
+      "Run that by me again — the arrangements for the handover."
+    ],
+    "required_slots": [
+      [
+        "step"
+      ],
+      [
+        "handover"
+      ]
+    ]
+  }
+}

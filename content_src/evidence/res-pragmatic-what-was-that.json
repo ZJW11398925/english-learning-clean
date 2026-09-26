@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's clarification-request set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "what was that",
+    "pos": "AUX"
+  },
+  "senses": [
+    {
+      "sense_id": "what-was-that.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "what-was-that.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A clarification request: the short question a listener asks when they failed to catch what the speaker just said -- asking for the same words again, with the reason for the miss attached."
+    },
+    {
+      "sense_id": "what-was-that.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The question stands first and refers to the words just said, in the past (what was that, never what is that for the thing just uttered), and the reason for the miss follows: What was that? The line cut out for a second. What was that? I didn't hear you over the noise. A sorry can stand in front of it. In speech the question is quick and slightly rising; the reason is what turns a bare question into a repair move."
+    },
+    {
+      "sense_id": "what-was-that.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The word order is the drill: direct questions invert (what was that), and learners carry the statement order into it (what that was). The verb after didn't is the second slip: the auxiliary already carries the past, so the main verb stays bare (didn't hear, never didn't heard). When the words ask about an unidentified sound in the world rather than about the speaker's words, the repair move is gone -- that is the boundary the fixtures hold."
+    },
+    {
+      "sense_id": "what-was-that.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "What was that? asks for the speaker's own just-spoken words to be repeated; come again? does the same work more colloquially; what do you mean asks about the meaning rather than the words; sorry asks pardon without naming the miss. What was that? about a noise in the kitchen asks about the world and is never this repair move."
+    },
+    {
+      "sense_id": "what-was-that.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "你说什么？（没听清对方刚说的话，请对方再说一遍，并说明没听清的原因）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "what-was-that.base",
+      "written": "what was that",
+      "normalized": "what was that",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "LOW",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the question is one of the most useful repair moves an adult learner owns -- phone calls and noisy rooms make it daily bread -- so receptive value, productive value, naturalness are HIGH and core utility is HIGH. Both difficulties and the explanation cost are LOW: three fixed words plus a reason clause, with the inversion and the bare verb after didn't as the only teaching points. Transfer value is HIGH: the same repair move re-tools into come again and could you say that again. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The question belongs to the general fluency pack (the phrases that keep a conversation alive), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "Asking for a repeat on a call (what was that? the line cut out) is ordinary workplace language, so it carries nearly full weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the inverted past question followed by the reason for the miss, and never present a statement-order, double-past or sound-in-the-world sentence as a model of the repair move."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "QUESTION_INVERSION_SLIP",
+      "error_pattern": "What that was? (statement word order carried into the direct question)",
+      "corrected_pattern": "What was that?",
+      "explanation": "Direct questions invert the subject and the verb, and learners keep the statement order because their own language does not invert; what that was standing as a question is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the repair question is asked with statement order (what that was) instead of the inverted form."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "AUXILIARY_PAST_SLIP",
+      "error_pattern": "I didn't heard you (the main verb carrying past marking after the past auxiliary)",
+      "corrected_pattern": "I didn't hear you",
+      "explanation": "The auxiliary didn't already carries the past, so the main verb stays bare, and learners mark the past twice because their own language marks the verb itself; didn't heard is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the reason clause after the question carries a past-marked verb after didn't."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the word order of the repair question and the verb form in its reason clause. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the repair move's errors take; the do-not-match rules state the accepted realizations and the sound-in-the-world reading the move must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the sound-in-the-world reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "QUESTION_INVERSION_SLIP: match when the repair question is asked with statement order (What that was?), because the direct question inverts was and that."
+    },
+    {
+      "ordinal": 1,
+      "rule": "AUXILIARY_PAST_SLIP: match when the reason clause carries a past-marked verb after didn't (didn't heard), because the auxiliary already carries the past."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the question stands inverted before its reason (What was that? The line cut out for a second.; What was that? I didn't hear you over the noise.): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_SOUND_IN_THE_WORLD: do not match when the question asks about an unidentified sound rather than the speaker's words (What was that? Did you hear something fall in the kitchen?), because there the words ask about the world and the repair of understanding is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "What was that? The line cut out for a second.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "What was that? I didn't hear you over the noise.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Sorry — what was that again? The speaker mumbled.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "What was that? Did you hear something fall in the kitchen?",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "What that was? The line cut out for a second.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "What was that? I didn't heard you over the noise.",
+      "expected": "MATCH"
+    }
+  ]
+}

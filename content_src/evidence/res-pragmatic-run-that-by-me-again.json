@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's clarification-request set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "run that by me again",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "run-that-by-me-again.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "run-that-by-me-again.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A clarification request: the phrasal request a listener makes for an explanation to be gone through once more -- aimed at the speaker's own account, with the point where the listener lost the thread named."
+    },
+    {
+      "sense_id": "run-that-by-me-again.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The request comes in two shapes: with could you in front (Could you run that by me again? I lost you at the second step.) and bare as an instruction into the explanation (Run that by me again — the arrangements for the handover.). The particle is by: the explanation passes by the listener. The word that points at what was just said, and again marks the second pass. In speech the request is direct but friendly; naming where the thread was lost turns it into a repair rather than a complaint."
+    },
+    {
+      "sense_id": "run-that-by-me-again.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The word order is the drill: the frame stores the object before the particle (run that by me), so the pronoun object cannot migrate behind it (run by me that is the slip). The modal is the second: could takes the bare infinitive (could you run, never could you to run). When the words describe literally running past a place, the phrasal request is gone -- that is the boundary the fixtures hold."
+    },
+    {
+      "sense_id": "run-that-by-me-again.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Run that by me again asks for a whole explanation to be gone through once more; say that again asks for words to be repeated; walk me through it asks for a first, careful pass; run it by the boss asks a third party to review something. I run by the river is the literal motion reading and is never this request."
+    },
+    {
+      "sense_id": "run-that-by-me-again.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "再给我过一遍（请对方把刚才的解释从头再讲一次，并说明自己在哪一步没跟上）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "run-that-by-me-again.base",
+      "written": "run that by me again",
+      "normalized": "run that by me again",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the request is ordinary and valued workplace language -- meetings run on it -- so receptive value, productive value and naturalness are HIGH and core utility is HIGH. Receptive difficulty is LOW and explanation cost is MEDIUM: the phrasal verb needs one picture (the explanation passes by). Productive difficulty is MEDIUM because the frame has three things to get right at once: the object before the particle, the bare infinitive after could, and the naming of the lost step. Transfer value is HIGH: the same frame re-tools into run it by the boss and walk me through it. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "The request belongs to the general fluency pack (the phrases that repair a conversation), so it carries high weight in that pack's coverage accounting; the shortfall records that it is the whole-explanation member of the repair family."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Asking for an explanation to be gone through once more (could you run that by me again?) is ordinary workplace language, so it carries full weight in the workplace pack's coverage accounting."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": null,
+      "domain": "WORK",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the request with the object before the particle (run that by me) and the bare infinitive after could, and never present a migrated-object, to-infinitive or literal-running sentence as a model of the request."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "WORD_ORDER_SLIP",
+      "error_pattern": "Could you run by me that again? (the pronoun object migrating behind the particle)",
+      "corrected_pattern": "Could you run that by me again?",
+      "explanation": "The frame stores the object before the particle -- run that by me -- and a pronoun object cannot migrate behind it; learners move it because their own language places the object after the verb phrase, but run by me that is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the request carries run by me that with the pronoun object behind the particle."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "INFINITIVE_MARKER_SLIP",
+      "error_pattern": "Could you to run that by me again? (the to-infinitive built where the bare infinitive belongs)",
+      "corrected_pattern": "Could you run that by me again?",
+      "explanation": "The modal could takes the bare infinitive, and learners insert to because their own language marks the complement verb with an infinitive marker; could you to run is not a stored English pattern.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the request carries could you to run."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the order of the object and the particle, and the verb form after could. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the request's errors take; the do-not-match rules state the accepted realizations and the literal-running reading the request must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the literal-running reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "WORD_ORDER_SLIP: match when the request carries run by me that, because the frame stores the pronoun object before the particle (run that by me)."
+    },
+    {
+      "ordinal": 1,
+      "rule": "INFINITIVE_MARKER_SLIP: match when the request carries could you to run, because the modal could takes the bare infinitive."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the request stands whole (Could you run that by me again? I lost you at the second step.; Run that by me again — the arrangements for the handover.): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_LITERAL_RUNNING: do not match when the words describe literally running past a place (I run by the river every morning before work.), because there the motion is a body's and the repeat request is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Could you run that by me again? I lost you at the second step.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Run that by me again — the arrangements for the handover.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Could you run that by me one more time? The room was noisy.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "I run by the river every morning before work.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Could you run by me that again? I lost you at the second step.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Could you to run that by me again? I lost you at the second step.",
+      "expected": "MATCH"
+    }
+  ]
+}

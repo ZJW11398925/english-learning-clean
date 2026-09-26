@@ -380,7 +380,7 @@ class CurriculumContentStore:
                 # the resource has anything to do with the node's capability,
                 # and R2 asks for a curriculum link, not for a nearest-node
                 # bookkeeping entry (declared reading; the corpus's five nodes
-                # against eighty-two resources is what makes the distinction
+                # against one hundred resources is what makes the distinction
                 # load-bearing). The read itself — one query over the §24.7
                 # ``mapping_class`` column, gated on the same §24.11 approval
                 # the supply read keeps as its own gate — lives in

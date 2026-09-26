@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's clarification-request set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "could you clarify",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "could-you-clarify.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "could-you-clarify.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A clarification request: the polite frame a listener uses to ask the speaker to make one point of theirs clearer -- naming exactly the words or the point that need it."
+    },
+    {
+      "sense_id": "could-you-clarify.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The frame is could you clarify + the named point: Could you clarify what you meant by flexible hours? Could you clarify which version you meant? The modal could carries the politeness, the object of clarify is the speaker's own words or meaning, and what follows narrows the request to one point rather than the whole account. It serves equally in speech and in writing (email replies open with it); the neutral could you explain trades the precision of the word clarify for breadth."
+    },
+    {
+      "sense_id": "could-you-clarify.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The embedded question is the drill: after clarify, the question keeps statement order (clarify what you meant), and the inversion of a direct question (clarify what did you mean) is the classic slip. The indirect object is the second: clarify takes its object directly (clarify the point), and no person object stands in between (clarify me is the slip). When the words ask someone to go and make something clear elsewhere -- an action on a document rather than a repair of one's own understanding -- the request has left the repair family: that is the boundary the fixtures hold."
+    },
+    {
+      "sense_id": "could-you-clarify.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Could you clarify asks one named point to be made clearer; what do you mean presses harder and more directly; could you explain is broader; could you repeat asks for words, not for clarity. Could you clarify the invoice with the supplier asks the hearer to go and act, and is not this repair move."
+    },
+    {
+      "sense_id": "could-you-clarify.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "能请你说明一下吗（礼貌地请对方把某一个点讲清楚，指出是哪一点）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "could-you-clarify.base",
+      "written": "could you clarify",
+      "normalized": "could you clarify",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the frame is the standard polite clarification request of workplace speech and email, so receptive value, productive value and naturalness are HIGH and core utility is HIGH. Receptive difficulty is LOW; productive difficulty is MEDIUM because the embedded question's statement order is exactly what production has to get right. Explanation cost is MEDIUM: the frame itself is one rule, the embedded order another. Transfer value is HIGH: the same polite frame re-tools into could you elaborate and could you give an example. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "The frame belongs to the general fluency pack (the phrases that repair a conversation), so it carries high weight in that pack's coverage accounting; the shortfall records that it is the named-point member of the repair family."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Asking a colleague to clarify one point (could you clarify what you meant by flexible hours?) is ordinary workplace language, so it carries full weight in the workplace pack's coverage accounting."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": null,
+      "domain": "WORK",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the frame with a named point after clarify in statement order, and never present an embedded-inversion, person-object or go-and-act sentence as a model of the request."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "DATIVE_INSERTION",
+      "error_pattern": "Could you clarify me what you meant? (a person object inserted where clarify takes its point directly)",
+      "corrected_pattern": "Could you clarify what you meant?",
+      "explanation": "Clarify takes the thing to be made clear as its direct object, and learners insert a person object because their own language marks who benefits; clarify me is not a stored English pattern.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the frame carries clarify me (or clarify us/to me) before the named point."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "EMBEDDED_INVERSION",
+      "error_pattern": "Could you clarify what did you mean by flexible hours? (direct-question inversion carried into the embedded question)",
+      "corrected_pattern": "Could you clarify what you meant by flexible hours?",
+      "explanation": "After clarify, the question is embedded and keeps statement order, and learners carry the direct question's inversion inside because their own language inverts uniformly; clarify what did you mean is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the embedded question after clarify inverts (what did you mean)."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the object after clarify and the word order of the embedded question. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the frame's errors take; the do-not-match rules state the accepted realizations and the go-and-act reading the frame must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the go-and-act reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "DATIVE_INSERTION: match when the frame carries a person object after clarify (clarify me), because clarify takes its point directly."
+    },
+    {
+      "ordinal": 1,
+      "rule": "EMBEDDED_INVERSION: match when the embedded question after clarify inverts (what did you mean), because the embedded question keeps statement order."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame stands whole before its named point (Could you clarify what you meant by flexible hours?; Could you clarify which version you meant?): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_GO_AND_ACT_READING: do not match when the frame asks the hearer to go and make something clear elsewhere (Could you clarify the invoice with the supplier before Friday?), because there the request is for an action on a document and the repair of one's own understanding is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Could you clarify what you meant by flexible hours?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Could you clarify which version you meant?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Could you clarify the second paragraph? I'm not sure whose signature it needs.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Could you clarify the invoice with the supplier before Friday?",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Could you clarify me what you meant by flexible hours?",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Could you clarify what did you mean by flexible hours?",
+      "expected": "MATCH"
+    }
+  ]
+}

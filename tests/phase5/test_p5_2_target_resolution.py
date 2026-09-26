@@ -226,6 +226,7 @@ SINGLE_TOKEN_SLOT_SENTENCES = (
     ("See you tomorrow!", "see"),
     ("What do you mean?", "mean"),
     ("The meeting starts at nine.", "meeting"),
+    ("You are following the argument well.", "following"),
 )
 
 
@@ -254,9 +255,10 @@ def test_a_single_multi_token_group_still_slot_matches() -> None:
 def test_the_corpus_single_token_keys_never_drive_a_slot_match(
     silent_supply: ContentBackedTargetSupply,
 ) -> None:
-    """The three corpus keys whose whole slot key is one word
+    """The four corpus keys whose whole slot key is one word
     (cap-interact-backchannel "see", cap-ref-ask-clarification "mean",
-    cap-disc-topic-shift "meeting") are excluded from the slot path — with
+    cap-disc-topic-shift "meeting", and C3-d's res-pragmatic-right
+    "following") are excluded from the slot path — with
     the whole corpus present, the exact sentences the reviewer's probe used
     resolve to NO_TARGET."""
 
@@ -372,7 +374,7 @@ def test_every_corpus_canonical_form_resolves_to_its_own_target(
     silent_supply: ContentBackedTargetSupply,
 ) -> None:
     facts = _corpus_facts(silent_supply)
-    assert len(facts) == 87
+    assert len(facts) == 105
     for fact in facts:
         assert fact.canonical_forms, fact.target_id
         for form in fact.canonical_forms:
@@ -393,9 +395,9 @@ def test_every_corpus_alternative_realization_resolves_to_its_own_target(
             resolution = _resolved(form, facts)
             assert resolution.target_id == fact.target_id, (fact, form)
             assert resolution.matched_via is MatchVia.ALTERNATIVE_REALIZATION
-    assert seen == 84, (
+    assert seen == 102, (
         "the corpus's §24.5 SUPPORTING rows (C2-a 13 + C2-b 17 + C3-a 18 +"
-        " C3-b 18 + C3-c 18)"
+        " C3-b 18 + C3-c 18 + C3-d 18)"
     )
 
 
@@ -404,15 +406,15 @@ def test_every_discriminating_corpus_slot_key_resolves_to_its_own_target(
 ) -> None:
     """Every corpus §24.5 slot key with a false-positive lower bound (≥2
     groups, or a multi-token group) still resolves through rule 3 when its
-    groups are covered. The three single-token keys are the declared
+    groups are covered. The single-token keys are the declared
     exception and are pinned by
     test_the_corpus_single_token_keys_never_drive_a_slot_match. The pair
     below is a count over the corpus, so it moves with the corpus (旧真值
-    C2-a: 11 discriminating of 14; C2-b: 30 of 33; C3-b: 66 of 69; 新真值
-    C3-c: 84 of 87 —
-    the C3-a, C3-b and C3-c entity documents each add eighteen discriminating
-    keys and
-    keep the same three single-token exclusions)."""
+    C2-a: 11 discriminating of 14; C2-b: 30 of 33; C3-b: 66 of 69;
+    C3-c: 84 of 87; 新真值 C3-d: 101 of 105 —
+    the C3-a, C3-b, C3-c and C3-d entity documents each add eighteen
+    discriminating keys and C3-d's `res-pragmatic-right` (single slot group,
+    single token) is the one new single-token exclusion)."""
 
     facts = _corpus_facts(silent_supply)
     discriminating = 0
@@ -434,7 +436,7 @@ def test_every_discriminating_corpus_slot_key_resolves_to_its_own_target(
         f"[probe] discriminating slot keys -> {discriminating};"
         f" excluded single-token keys -> {excluded}"
     )
-    assert (discriminating, excluded) == (84, 3)
+    assert (discriminating, excluded) == (101, 4)
 
 
 def test_the_corpus_resolves_to_both_kinds(

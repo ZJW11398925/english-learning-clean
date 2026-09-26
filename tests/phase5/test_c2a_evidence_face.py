@@ -169,8 +169,33 @@ C3C_TARGETS = (
 )
 C3C_CREDIT_TARGETS = C3C_TARGETS
 
-#: The eighty-two RESOURCE targets, in id order (C1's, C2-a's eight, C2-b's
-#: nineteen, C3-a's eighteen, C3-b's eighteen and C3-c's eighteen).
+#: The eighteen RESOURCE targets C3-d authored (Phase 11): every row of the
+#: cut is a REALIZES + CURRICULUM_MAPPING row, so all eighteen credit.
+C3D_TARGETS = (
+    "res-discourse-before-i-forget",
+    "res-discourse-that-brings-me-to",
+    "res-discourse-where-was-i",
+    "res-hedge-from-what-i-can-tell",
+    "res-hedge-if-you-ask-me",
+    "res-hedge-in-a-way",
+    "res-hedge-more-or-less",
+    "res-pragmatic-come-again",
+    "res-pragmatic-could-you-clarify",
+    "res-pragmatic-go-on",
+    "res-pragmatic-i-hear-you-but",
+    "res-pragmatic-im-not-convinced",
+    "res-pragmatic-no-way",
+    "res-pragmatic-right",
+    "res-pragmatic-run-that-by-me-again",
+    "res-pragmatic-thats-debatable",
+    "res-pragmatic-what-was-that",
+    "res-pragmatic-youre-kidding",
+)
+C3D_CREDIT_TARGETS = C3D_TARGETS
+
+#: The one hundred RESOURCE targets, in id order (C1's, C2-a's eight, C2-b's
+#: nineteen, C3-a's eighteen, C3-b's eighteen, C3-c's eighteen and C3-d's
+#: eighteen).
 RES_TARGETS = (
     "res-colloc-make-a-decision",
     *C2A_TARGETS,
@@ -178,6 +203,7 @@ RES_TARGETS = (
     *C3A_TARGETS,
     *C3B_TARGETS,
     *C3C_TARGETS,
+    *C3D_TARGETS,
 )
 
 #: The **nine** targets whose approved §24.7 link is a REALIZES row after
@@ -234,9 +260,9 @@ C3B_CREDIT_TARGETS = (
 #: (C2-b's thirteen placements plus the six C2-a rows C3-R1 demoted):
 #: §8.1 R2-readable only where the row is a mapping, and credit-safe either
 #: way (the credit read filters relation = REALIZES).
-#: Scoped to the pre-C3-a corpus: the C3-a and C3-b additions are held to the
-#: same discipline by C3A_CREDIT_TARGETS / C3B_CREDIT_TARGETS and the file's
-#: own credit test.
+#: Scoped to the pre-C3-a corpus: the C3-a, C3-b, C3-c and C3-d additions are
+#: held to the same discipline by C3A_CREDIT_TARGETS / C3B_CREDIT_TARGETS /
+#: C3C_CREDIT_TARGETS / C3D_CREDIT_TARGETS and the file's own credit test.
 SUPPORT_ONLY_TARGETS = tuple(
     target
     for target in RES_TARGETS
@@ -244,6 +270,7 @@ SUPPORT_ONLY_TARGETS = tuple(
     and target not in C3A_TARGETS
     and target not in C3B_TARGETS
     and target not in C3C_TARGETS
+    and target not in C3D_TARGETS
 )
 
 CAP_TARGETS = (
@@ -548,6 +575,7 @@ def test_the_credit_face_reads_the_fifteen_approved_realizes_nodes(
                 or target_id in C3A_CREDIT_TARGETS
                 or target_id in C3B_CREDIT_TARGETS
                 or target_id in C3C_CREDIT_TARGETS
+                or target_id in C3D_CREDIT_TARGETS
             ):
                 assert relation == "REALIZES", target_id
                 assert teaching.value.capability_linkage == node, target_id
@@ -571,10 +599,10 @@ def test_the_credit_face_reads_the_fifteen_approved_realizes_nodes(
     assert len(C3A_CREDIT_TARGETS) == 3
     assert len(C3B_CREDIT_TARGETS) == 3
     assert len(C3C_CREDIT_TARGETS) == 18
+    assert len(C3D_CREDIT_TARGETS) == 18
     # The pre-C3-a corpus's support-only side: C2-b's thirteen placements plus
     # the six C2-a rows C3-R1 demoted (the demotion moved credit, not rows).
     assert len(SUPPORT_ONLY_TARGETS) == 19
-
     provider = ContentBackedTeachingTargetProvider(built_content_db)
     try:
         for target_id in CREDIT_TARGETS:
@@ -611,10 +639,10 @@ def test_the_index_lists_the_sixty_four_evidence_documents_in_entity_order() -> 
         if entry.startswith("entities/res-")
     ]
     assert index["evidence"] == expected
-    assert len(expected) == 82
+    assert len(expected) == 100
     for listed in index["evidence"]:
         assert (CONTENT_SRC_DIR / listed).is_file(), listed
-    assert len(entities) == 87
+    assert len(entities) == 105
     # The order rule, stated positively: both lists are plain id order, which
     # is what "the same order as the entities list" means here.
     assert entities == sorted(entities)
@@ -630,19 +658,23 @@ def test_the_calibration100_readings_at_c3b_truth(built_content_db: Path) -> Non
     whose level is R3_TEACHING_READY or R4_DETECTION_READY, split by
     ``content_pedagogical_profile.core_utility`` (HIGH versus MEDIUM/LOW) —
     not the capability-``family`` counts this file read until C3-a, which
-    could never move when resources were authored. At **C3-c's** truth the
-    artifact answers thirty-four detection-ready resource targets out of
-    eighty-seven entities, CORE_A = 24 (floor 30, **unmet** — only a
-    curriculum mapping satisfies §8.1 R2, and 24 of the 34 mappings carry a
-    HIGH band), CORE_C = 10 (floor 2, met) and ``resource_count`` = 82 < 100
-    (unmet) — three separate readings, never one "gate passed" sentence
+    could never move when resources were authored. At **C3-d's** truth the
+    artifact answers fifty-two detection-ready resource targets out of
+    105 entities, CORE_A = 32 (floor 30, **met** — only a
+    curriculum mapping satisfies §8.1 R2, and 32 of the 52 mappings carry a
+    HIGH band), CORE_C = 20 (floor 2, met) and ``resource_count`` = 100 == 100
+    (met, the first rung topped) — three separate readings, never one "gate
+    passed" sentence
     (旧真值: one of fourteen; C2-a: nine of fourteen with both CORE cells 0;
     C3-b: 42/22 with both cells met; C3-R1: 16 of 69 with CORE_A 11 / CORE_C
-    5). IP §13's own starting number is 28: the RESOURCE
+    5; C3-c: 34 of 87 with CORE_A 24 / CORE_C 10). IP §13's own starting
+    number is 28: the RESOURCE
     count passed it long ago, and that is the first rung of "28 → 100", not a
     Calibration100 pass — C3-R1's re-adjudication dropped the detection-ready
-    count below the rung, and the C3-c authored mappings carried it back over
-    (34 of 82), which is the rung the content program has now re-earned."""
+    count below the rung, and the C3-c/C3-d authored mappings carried it back
+    over and to the top (52 of 100), which is the rung the content program
+    has now re-earned. **The floors meeting is not the rollout opening**: the
+    stage leg and the separate opening adjudication still hold it."""
 
     plan_text = (
         Path(__file__).resolve().parents[2] / "docs" / "IMPLEMENTATION_PLAN.md"
@@ -692,19 +724,19 @@ def test_the_calibration100_readings_at_c3b_truth(built_content_db: Path) -> Non
     ]
     core_a = [t for t in banded if utilities.get(t) == "HIGH"]
     core_c = [t for t in banded if utilities.get(t) in ("MEDIUM", "LOW")]
-    assert len(ready) == 34
-    assert len(res_rows) == 82  # the IP §13 first rung: 28 — long passed
-    assert len(resources) == 87
+    assert len(ready) == 52
+    assert len(res_rows) == 100  # the IP §13 first rung: 28 — long passed, now topped
+    assert len(resources) == 105
     print(
         f"[c3r1] calibration readings -> CORE_A {len(core_a)}/{gates['CORE_A']}"
-        f" (unmet), CORE_C {len(core_c)}/{gates['CORE_C']} (met),"
-        f" resource_count {len(res_rows)}/{gates['resource_count']} (unmet;"
+        f" (met), CORE_C {len(core_c)}/{gates['CORE_C']} (met),"
+        f" resource_count {len(res_rows)}/{gates['resource_count']} (met;"
         f" IP §13 first rung = 28, detection-ready {len(ready)})"
     )
     # The direction is asserted as it is, not as the earlier cuts read it.
-    assert len(core_a) < gates["CORE_A"]
+    assert len(core_a) >= gates["CORE_A"]
     assert len(core_c) >= gates["CORE_C"]
-    assert len(res_rows) < gates["resource_count"]
+    assert len(res_rows) >= gates["resource_count"]
     # CORE_A is exactly the HIGH-band share of the mapping set: the fall-back
     # is the link's mapping class, and nothing else moved.
     assert sorted(ready) == sorted(_mapping_resource_ids(built_content_db))

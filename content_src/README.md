@@ -15,19 +15,20 @@
 探索期仓 `D:\测试1` 对 `OQ-021` / `content_toolchain` / `content_src` / `*.db`
 的全仓深搜零命中（P5-0 四查实证），故 §6 提到的旧工具链在仓内不存在可用副本；
 本目录即 P5-0 的替代 seed 路线。**旧真值（P5-0）：内容量停留在 14 个 target
-（不扩到 100）；新真值（C1/C2-a/C2-b/C3-a/C3-b/C3-c，Phase 11 内容程序）**：作者源在证据面
-建成之后按 §13「优先使用内容填补真实运行时测试需要」逐刀补齐，现为 **87 个实体
-（82 个 res + 5 个 cap）**——**离 100 还有 18**；Calibration100 的体量门（100）
-仍未过，CORE_A（24/30）未达、CORE_C（10/2）按**声明读法**达到（登记与读数见
-`../README.md` 与 `../curriculum/README.md` 的 C3-a / C3-b / C3-c 段）。
+（不扩到 100）；新真值（C1/C2-a/C2-b/C3-a/C3-b/C3-c/C3-d，Phase 11 内容程序）**：作者源在证据面
+建成之后按 §13「优先使用内容填补真实运行时测试需要」逐刀补齐，现为 **105 个实体
+（100 个 res + 5 个 cap）**——**§13「28 → 100」第一档已到顶**；Calibration100 的体量门（100）
+已过，CORE_A（32/30）、CORE_C（20/2）按**声明读法**均达到（**零开闸声称**：三门达
+≠ 开闸，stage 腿未声明、SessionBudget 三分未落地，真实 rollout 仍 HOLD；登记与读数见
+`../README.md` 与 `../curriculum/README.md` 的 C3-a / C3-b / C3-c / C3-d 段）。
 
 ## 文件布局
 
 ```text
 content_src/
   index.json                 # 索引：content_version + 实体文档清单 + 证据文档清单（无 glob 兜底）
-  entities/<entity_id>.json  # 每个 target 一份（共 87 = 5 个 cap-* + 82 个 res-*；其中 19 个由 C2-b、18 个由 C3-a、18 个由 C3-b、18 个由 C3-c 编写）
-  evidence/<entity_id>.json  # C1：每个声明了 readiness 证据的 target 一份（可空集；现为 82 份，与 res-* 一一对应）
+  entities/<entity_id>.json  # 每个 target 一份（共 105 = 5 个 cap-* + 100 个 res-*；其中 19 个由 C2-b、18 个由 C3-a、18 个由 C3-b、18 个由 C3-c、18 个由 C3-d 编写）
+  evidence/<entity_id>.json  # C1：每个声明了 readiness 证据的 target 一份（可空集；现为 100 份，与 res-* 一一对应）
   audits/*.json              # provenance 审计记录（目录缺席/空 = 合法"尚无审计"状态；现含 c3r2 与 c3c 两条处置刀记录，共批准 30 实体）
   README.md                  # 本文件 = 映射规则索引文档
 ```
@@ -85,15 +86,16 @@ detection rule 的 ordinal 应有同 ordinal 的 fixture 兜底；fixture 的 `e
 `POSITIVE_ERROR` 行（kind=`POSITIVE_ERROR`、expected=`MATCH`、text 为**真实
 学习者错误风格**的自然英语产出、实例化该条声明的 error_pattern），build 在
 装载期做**逐实体逐 error_type 的覆盖校验**（正例行数 < 声明 error_type 数 ⇒
-`BuildError`——只校结构，语言真实性由评审抽审判断）。现役语料 = **160 条正例**
+`BuildError`——只校结构，语言真实性由评审抽审判断）。现役语料 = **196 条正例**
 （C3-R2 的 124 = 60 实体 × 2 错误型 + 4 单错误型实体
 `res-discourse-anyway` / `res-discourse-in-fact` / `res-discourse-to-be-honest` /
-`res-phrasal-figure-out` 各 1；C3-c 的 36 = 其 18 个新实体 × 2 错误型），
-fixtures 总数 255 → **379** → **487**；新行一律 append 在既有 ordinal 之后
+`res-phrasal-figure-out` 各 1；C3-c 的 36 = 其 18 个新实体 × 2 错误型；C3-d 的
+36 = 其 18 个新实体 × 2 错误型），
+fixtures 总数 255 → **379** → **487** → **595**；新行一律 append 在既有 ordinal 之后
 （既有 255 行的 ordinal/text/expected 零改动）。正例行 **不声称 detector 已
 可执行**（N21 延续）——它们闭合的是「恒 NO_MATCH 假 detector 可过全部
 fixtures」这个**规格层**漏洞：tests 侧的存在性/逻辑断言钉证明恒 NO_MATCH 桩
-在全集上失败 ≥160、恒 MATCH 桩失败 327。
+在全集上失败 ≥196、恒 MATCH 桩失败 399。
 
 **登记（C3-R2，provenance 四级维度）**：`content_src/audits/*.json` 是
 provenance 审计记录的作者源（**目录扫描装载，不进 index**；文件名排序确定性；
@@ -115,9 +117,10 @@ readiness 真值与三门读数零改动）。交付刀时 audits 目录为空�
 `c3c-stratified-audit.json`**（新模板首跑的分层抽审：14 个抽样新实体 +
 `res-softener-if-anything`——其 LOW-2 规则张力已由 C3-c 收口、复审两面
 PASS、入列前提成立；4 个未入正式样本的新实体宁严不入列）——现读 =
-**52 × `AUTHOR_DECLARED` + 30 × `EDITOR_REVIEWED`** + 0 × 后两级
+**70 × `AUTHOR_DECLARED` + 30 × `EDITOR_REVIEWED`** + 0 × 后两级
 （评审只读纪律不变，记录由总控处置刀落盘；新实体 provenance 由结构派生
-自动 AUTHOR_DECLARED，升级只经 audit 记录）。
+自动 AUTHOR_DECLARED——C3-d 交付刀的 18 个新实体即如此入册、
+`content_src/audits/` 零改动零新记录，升级只经 audit 记录）。
 
 **登记（C2-a，`resource_labels` 的值域）**：`register` 的取值来自 canonical
 词表（PRODUCT_CONTRACT §4.6 CASUAL / NEUTRAL / POLITE / …）；其余六列
@@ -203,6 +206,35 @@ canonical Calibration100 定义落地时）。**这不是 Calibration100 的通�
 if-anything` 的 detection_rules rule 2 第三例证补上先行陈述句（唯一一处既有
 evidence 行改动，其两条既有正例的覆盖不变）。
 
+**登记（C3-d，十八份新 evidence 文档与体量门到顶）**：C3-d（Phase 11 第七段）
+新增 18 个 **res** 实体（`res-discourse-*` 3 / `res-hedge-*` 4 /
+`res-pragmatic-*` 11：backchannel 4、ask-clarification 4、soften-disagreement
+3），每个实体一份 entity 文档 + 一份 19 键 evidence 文档，并各配一条 §24.7
+link。语料规模：**105 实体 / 100 份 evidence / 100 条 link**；真产物上 =
+**52×R4_DETECTION_READY + 48×R1_LEXICALLY_RESOLVED + 5×None**，
+`resource_count` = **100（§13「28 → 100」第一档到顶）**。**新模板三义务末次批量
+执行**：① 每实体 fixtures 三词全、每 error_type ≥1 条 POSITIVE_ERROR（本刀
+18 实体 × 2 错误型 = 36 条正例，fixtures 总数 487 → 595；语境守卫四项
+BOUNDARY 例真在边界——right 的形容词读法 / go-on 的催促动作读法 /
+come-again 的字面回访邀请读法 / no-way 的拒绝读法）；② 18 条 link 的
+`mapping_class` 逐条引用对应 functional_definition 的 counts_as /
+does_not_count 具体条目判定（全 18 条为 CURRICULUM_MAPPING ∧ REALIZES；credit
+面 33 → 51，活风险 `R-C1-credit` 登记面随之扩为 51，Revisit 不变）；③
+provenance 由结构派生自动生效（交付刀 18 新实体全 AUTHOR_DECLARED、
+`content_src/audits/` 零改动零新记录）。CORE_A / CORE_C 沿用**声明读法**：现
+读数 **CORE_A 32/30 达到、CORE_C 20/2 达到、体量门 100/100 达到**（core_utility
+按教学价值诚实分档：8 HIGH + 10 MEDIUM，不为冲门注水；三门分开断言，见
+`tests/phase5/test_c3d_final_expansion.py`；Revisit =
+canonical Calibration100 定义落地时）。**三门达 ≠ 开闸——零开闸声称**：stage
+腿未声明、SessionBudget 三分未落地、开闸仍是独立裁决，真实 rollout 仍
+HOLD。本刀另收口两件 c3-d 义务：**N-C3C-1 三键查重**（新 18 实体的
+canonical_forms / alternative_realizations / slot 键对全语料 100 实体查重零
+碰撞 + 实体内 canonical ∩ alternative 零重叠，以测试钉住——INFO-2 的旧库
+单 token slot 群键 34 组作为声明遗留原样报告）；**LOW-1 时点限定**（
+`cap-interact-backchannel` boundary case 3 与 `cap-ref-ask-clarification`
+boundary case 2 的「no resource of the current corpus is of this shape」两句
+改为时点限定——判据词零改动，其余内容经判据面 digest 与父提交逐字一致）。
+
 **登记（C2-b，19 个新实体的来源口径）**：这 19 个实体**不是** P3-1A/P3-1B
 fixture 的迁移（那 14 个 target 的迁移见下），而是 C2-b 这一刀按 §24.1/§24.2/
 §24.3/§24.4 的列与词表**新编写**的内容；因此 evidence 文档的
@@ -214,9 +246,9 @@ fixture 的迁移（那 14 个 target 的迁移见下），而是 C2-b 这一刀
 
 ### R1 — 每个 target 一条 ContentEntity（§24.1 七列逐字）
 
-87 个 target（P3-1A/P3-1B 迁移的 14 个 + C2-b 编写的 19 个 + C3-a 编写的 18 个 +
-C3-b 编写的 18 个 + C3-c 编写的 18 个）每个对应**恰好一个**
-`entities/<target_id>.json`，`entity_id` = target id 原文（`res-*` 82 个、`cap-*`
+105 个 target（P3-1A/P3-1B 迁移的 14 个 + C2-b 编写的 19 个 + C3-a 编写的 18 个 +
+C3-b 编写的 18 个 + C3-c 编写的 18 个 + C3-d 编写的 18 个）每个对应**恰好一个**
+`entities/<target_id>.json`，`entity_id` = target id 原文（`res-*` 100 个、`cap-*`
 5 个；无派生、无哈希重命名）。文档内
 `entity` 块**恰好**是 §24.1 的七列，顺序与拼写逐字：
 
@@ -317,7 +349,8 @@ cap-* 节点**（build 的引用完整性要求 `node_id` 必须是已声明的 
 `content_src/README.md` 与 `elc.content.build._check_references` 同一条）。
 C3-c 再写 18 条（**全 18 条 REALIZES + CURRICULUM_MAPPING**，逐条引用对应
 capability functional_definition 的 counts_as / does_not_count 具体条目判定，
-credit 面 15 → 33）给 18 个新实体。
+credit 面 15 → 33）给 18 个新实体；C3-d 再写 18 条（**全 18 条 REALIZES +
+CURRICULUM_MAPPING**，同一体裁与判定纪律，credit 面 33 → 51）给 18 个新实体。
 **C3-R1 重审**：既有 64 行全部定级 `mapping_class`（16 MAPPING + 48 PLACEMENT），
 6 条旧 REALIZES 降级 SUPPORTS（见 `../curriculum/README.md` 变更记录），
 §8.1 R2 的 `curriculum_link` 事实改读 approved ∧ `CURRICULUM_MAPPING`，

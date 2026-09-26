@@ -8,12 +8,12 @@ observation may be ("提高 threshold / policy cost", "而不是修改 Learning
 truth"). docs/RUNTIME_ARCHITECTURE.md's automatic path (P8-0..P8-4) is the
 thing being rolled out, and BF-02 §10's four content floors are what decides
 whether it *can* be: every teaching mode names a minimum §8.1 readiness, and
-the shipped corpus's answer is thirty-four RESOURCE targets at R4 (C1's
+the shipped corpus's answer is fifty-two RESOURCE targets at R4 (C1's
 evidence face authored one, the C2 cuts twenty-seven more, C3-a and C3-b
 eighteen each — sixty-four had reached R4 by C3-b until C3-R1's mapping
 re-adjudication returned the forty-eight placement resources to R1, and the
-C3-c cut's eighteen resources authored against the capability definitions
-rebuilt the R4 side) with the
+C3-c and C3-d cuts' thirty-six resources authored against the capability
+definitions rebuilt the R4 side) with the
 five CAPABILITY entities reading no level —
 their sources state no evidence.
 
@@ -76,7 +76,7 @@ is GO (:attr:`RolloutGateReport.verdict`). That conjunction is this cut's
 overall HOLD"): the book's condition is implied, and the conjunction is the
 strict, fail-closed form of it — a rollout cannot enter a stage whose *preceding*
 row is empty either. Both readings agree on the shipped corpus (the
-thirty-four R4 RESOURCE targets make every row GO, so the answer is GO under
+fifty-two R4 RESOURCE targets make every row GO, so the answer is GO under
 either).
 
 **What would turn a row GO is also executable**: each row carries
@@ -109,22 +109,25 @@ rather than pretending otherwise (see the port's docstring for the Revisit).
 
 **⑤ The HOLD, and where it is held now.** The content gate moved under C1's
 evidence face and widened through the C2 and C3 cuts: on the shipped corpus
-every row reads 82 usable targets (thirty-four at R4 and forty-eight at R1 —
-C3-R1's re-adjudication split them and the C3-c authored mappings widened the
+every row reads 100 usable targets (fifty-two at R4 and forty-eight at R1 —
+C3-R1's re-adjudication split them and the C3-c and C3-d authored mappings
+widened the
 R4 side; the five CAPABILITY
 entities read ``level=None``) and
 :func:`corpus_rollout_gate` answers **GO** — so the content gate no longer
-holds the rollout. The rollout is **still HOLD**, carried by the two gates
-this module sits beside: the stage leg (no stage is declared, and
-:func:`stage_allows_automatic` refuses an undeclared stage) and the
-Calibration100 volume gate, whose three floors now read 82 resources < 100
-(unmet), CORE_A 24 < 30 (unmet since C3-R1's mapping re-adjudication) and
-CORE_C 10 >= 2 (met). The two CORE counts
+holds the rollout. The Calibration100 volume gate's three floors now all read
+met — 100 resources >= 100 (the IP §13 first rung topped), CORE_A 32 >= 30
+and CORE_C 20 >= 2 — so the volume gate no longer holds the rollout either.
+The rollout is **still HOLD**, carried by the stage leg (no stage is
+declared, and :func:`stage_allows_automatic` refuses an undeclared stage)
+and by the separate opening adjudication (SessionBudget's three-way split
+and the user's own decision remain open). The two CORE counts
 are the **declared reading** adopted by the user's adjudication
 (2026-09-26) — level in {R3_TEACHING_READY, R4_DETECTION_READY} crossed
 with ``core_utility`` HIGH / {MEDIUM, LOW} — rather than a canonical rule;
-Revisit when the canonical Calibration100 definition lands. The volume floor
-alone keeps this gate closed.
+Revisit when the canonical Calibration100 definition lands. Three floors met
+is a content-gate answer, not an opening: no stage is declared anywhere and
+nothing here opens one.
 What R5 founded the HOLD on — a corpus no target could serve — was C1's to
 change; opening the rollout remains the separate adjudication. :data:
 `GATE_OPENING_CONDITIONS` and :data:`BACKOFF_MEANS` are the
@@ -436,7 +439,7 @@ def gate_row_verdict(usable_targets: int) -> RolloutVerdict:
     credit, no "almost ready", and no other input: a row that no target can
     serve is HOLD — which, since C1's evidence face and the C2/C3 cuts'
     documents, is the answer **no** row gives over the shipped corpus (its
-    thirty-four R4 RESOURCE targets serve all four; before C1 none did).
+    fifty-two R4 RESOURCE targets serve all four; before C1 none did).
     """
 
     return RolloutVerdict.GO if usable_targets > 0 else RolloutVerdict.HOLD

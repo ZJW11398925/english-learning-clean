@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's topic-management set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "before I forget",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "before-i-forget.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "before-i-forget.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A topic-shift signpost the speaker says in order to add one matter that is not on the table, before they forget it -- the words both warn that the matter is being added and mark it as a small aside, not the new topic."
+    },
+    {
+      "sense_id": "before-i-forget.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The signpost opens the turn, set off from the new matter by a dash or a comma: Before I forget — the parking permit expires on Monday. The words are fixed (before + I + forget, present tense even though the forgetting has not happened yet), and what follows is the side matter as a full clause or question: Before I forget, did you pay the invoice? In speech the dash is a small pause and a slight rise, the sound of a hand raised to add one thing."
+    },
+    {
+      "sense_id": "before-i-forget.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The tense inside the frame is the drill: the present I forget does not report a real event, it marks the risk of one (compare the same frozen present in before it slips my mind). Learners repair the frame into a time clause about a real forgetting (before I forgot it, or before to forget), and both arrive as different sentences than the signpost. The signpost adds a matter that was not being discussed; when the clause is an ordinary time adverbial about actually forgetting to do something, the signpost use is gone -- that is the boundary the fixtures hold."
+    },
+    {
+      "sense_id": "before-i-forget.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Before I forget the signpost is a move of its own: the matter it adds was not on the table. By the way adds a side matter the same way, but carries no urgency; before I forget says the matter is being added now because it will otherwise be lost. An ordinary time clause (ask one thing before I forget to remind you) is about real forgetting, not about adding a matter, and is never this signpost."
+    },
+    {
+      "sense_id": "before-i-forget.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "趁我还没忘（先把一件眼下没在谈的事补进来说，说完再回到原话题）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "before-i-forget.base",
+      "written": "before I forget",
+      "normalized": "before i forget",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the signpost is very frequent in adult workplace and social talk -- meetings and phone calls run on it -- so receptive value, productive value and naturalness are HIGH and core utility is HIGH. Both difficulties and the explanation cost are LOW: the words are short and fixed, and the one teaching point (the frozen present tense) is a single rule. Transfer value is MEDIUM: the add-a-matter move transfers to by the way, but the frozen present is its own. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "The signpost belongs to the general fluency pack (the phrases that move a conversation), so it carries nearly full weight in that pack's coverage accounting; the shortfall records that it is the add-one-matter member of the topic-shift family, not the main-line one."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Adding a point in a meeting before it is lost (before I forget — the parking permit expires on Monday) is ordinary workplace language, so it carries most of the weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the signpost whole at the front of the turn with its dash or comma, and never present an ordinary time clause about real forgetting or an ERROR_INSTANCE as a model of the signpost."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "INFINITIVE_AFTER_PREPOSITION",
+      "error_pattern": "Before to forget, + clause (the to-infinitive built after the preposition before)",
+      "corrected_pattern": "Before I forget, + clause",
+      "explanation": "Before is a preposition here followed by a full clause, and learners attach an infinitive to it because their own language marks the purpose verb with one; before to forget is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the signpost position carries before to forget, in a sentence where a matter is being added."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "FRAME_TRUNCATION",
+      "error_pattern": "I forget, + clause (the frame cut back to its verb, the signpost lost)",
+      "corrected_pattern": "Before I forget, + clause",
+      "explanation": "The frame is the three words together, and learners drop the preposition because their own language marks the add-a-matter move with the verb alone; I forget standing alone reads as a plain statement, not a signpost.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when a turn opens with I forget followed by a comma and a new matter, with no before in front."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words of the signpost at the front of a turn and the clause that follows them. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the frame's errors take; the do-not-match rules state the accepted realizations and the ordinary time clause the signpost must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the ordinary time clause."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "INFINITIVE_AFTER_PREPOSITION: match when the signpost position carries before to forget, because before takes a clause with the frozen present (before I forget), not an infinitive."
+    },
+    {
+      "ordinal": 1,
+      "rule": "FRAME_TRUNCATION: match when a turn that adds a matter opens with I forget and a comma, with no before in front, because the signpost is the three words together."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the signpost stands whole at the front of the turn (Before I forget — the parking permit expires on Monday; Before I forget, did you pay the invoice?): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_ORDINARY_TIME_CLAUSE: do not match when before I forget is a time adverbial about actually forgetting a task (take your medicine before I forget to remind you), because there the clause reports a real forgetting and the add-a-matter move is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Before I forget — the parking permit expires on Monday.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Before I forget, did you pay the invoice?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Oh, before I forget — the supplier changed their address.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Take your medicine before I forget to remind you.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Before to forget, the parking permit expires on Monday.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "I forget, the parking permit expires on Monday.",
+      "expected": "MATCH"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-hedge-from-what-i-can-tell",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "State what you believe, while marking that your evidence is only what you have been able to see.",
+      "Put the phrase at the front of the sentence, before the comma, and let the claim follow.",
+      "Start with the words: ___, the system is working fine."
+    ],
+    "reveal_form": "From what I can tell, the system is working fine.",
+    "canonical_forms": [
+      "From what I can tell, the system is working fine."
+    ],
+    "alternative_realizations": [
+      "From what I can tell, nobody has started the survey yet."
+    ],
+    "required_slots": [
+      [
+        "system"
+      ],
+      [
+        "survey"
+      ]
+    ]
+  }
+}

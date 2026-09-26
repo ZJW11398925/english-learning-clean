@@ -86,6 +86,30 @@ C3C_TARGETS = (
     "res-pragmatic-with-all-due-respect",
 )
 
+#: The eighteen RESOURCE targets C3-d authored after this cut (readable
+#: here so this file's whole-corpus pins can state the post-C3-d truth
+#: without importing a sibling test module). Plain id sort order.
+C3D_TARGETS = (
+    "res-discourse-before-i-forget",
+    "res-discourse-that-brings-me-to",
+    "res-discourse-where-was-i",
+    "res-hedge-from-what-i-can-tell",
+    "res-hedge-if-you-ask-me",
+    "res-hedge-in-a-way",
+    "res-hedge-more-or-less",
+    "res-pragmatic-come-again",
+    "res-pragmatic-could-you-clarify",
+    "res-pragmatic-go-on",
+    "res-pragmatic-i-hear-you-but",
+    "res-pragmatic-im-not-convinced",
+    "res-pragmatic-no-way",
+    "res-pragmatic-right",
+    "res-pragmatic-run-that-by-me-again",
+    "res-pragmatic-thats-debatable",
+    "res-pragmatic-what-was-that",
+    "res-pragmatic-youre-kidding",
+)
+
 #: The thirteen C3-c targets whose pedagogical profile declares core_utility
 #: HIGH (they move CORE_A from 11 to 24).
 C3C_HIGH_TARGETS = (
@@ -349,9 +373,10 @@ def _digest(payload: object) -> str:
 
 
 def _old_evidence_paths() -> list[Path]:
-    """The 64 pre-existing evidence documents, in sorted id order."""
+    """The 64 pre-existing evidence documents, in sorted id order (the
+    documents that predate both this cut and C3-d)."""
 
-    news = set(C3C_TARGETS)
+    news = set(C3C_TARGETS) | set(C3D_TARGETS)
     paths = [
         path
         for path in sorted((CONTENT_SRC_DIR / "evidence").glob("res-*.json"))
@@ -440,11 +465,12 @@ def _evidence_variant(
 def test_the_corpus_table_reads_34_r4_48_r1_and_5_none(
     built_content_db: Path,
 ) -> None:
-    """The whole readiness table, read once at this cut's truth: the
-    thirty-four `res-*` targets whose §24.7 row is a curriculum mapping read
+    """The whole readiness table, read once at the post-C3-d truth: the
+    fifty-two `res-*` targets whose §24.7 row is a curriculum mapping read
     R4, the forty-eight placements read R1_LEXICALLY_RESOLVED, and the five
-    `cap-*` entities read None. This cut's eighteen rows are all mappings, so
-    the R4 side is 16 + 18 and the R1 side is unchanged."""
+    `cap-*` entities read None. This cut's eighteen rows were all mappings,
+    and C3-d's eighteen joined them, so the R4 side is 16 + 18 + 18 and the
+    R1 side is unchanged."""
 
     store = ContentStore(built_content_db)
     try:
@@ -454,7 +480,7 @@ def test_the_corpus_table_reads_34_r4_48_r1_and_5_none(
     finally:
         store.close()
     table = {a.target_id: a.level for a in assessments.value}
-    assert len(table) == 87
+    assert len(table) == 105
     r4 = sorted(
         t for t, level in table.items() if level == "R4_DETECTION_READY"
     )
@@ -462,7 +488,7 @@ def test_the_corpus_table_reads_34_r4_48_r1_and_5_none(
         t for t, level in table.items() if level == "R1_LEXICALLY_RESOLVED"
     )
     none = sorted(t for t, level in table.items() if level is None)
-    assert len(r4) == 34
+    assert len(r4) == 52
     assert len(r1) == 48
     assert len(none) == 5
     assert all(target.startswith("cap-") for target in none)
@@ -478,8 +504,8 @@ def test_r4_is_exactly_the_prior_mappings_plus_the_eighteen_new_ones(
     built_content_db: Path,
 ) -> None:
     """The R4 set, id for id: the sixteen resources whose rows were mappings
-    before this cut, plus this cut's eighteen — no target entered R4 by any
-    other door and none left it."""
+    before this cut, plus this cut's eighteen, plus C3-d's eighteen — no
+    target entered R4 by any other door and none left it."""
 
     store = ContentStore(built_content_db)
     try:
@@ -492,16 +518,19 @@ def test_r4_is_exactly_the_prior_mappings_plus_the_eighteen_new_ones(
     r4 = sorted(
         t for t, level in table.items() if level == "R4_DETECTION_READY"
     )
-    assert r4 == sorted(set(PRIOR_R4) | set(C3C_TARGETS))
+    assert r4 == sorted(
+        set(PRIOR_R4) | set(C3C_TARGETS) | set(C3D_TARGETS)
+    )
     assert len(PRIOR_R4) == 16
     assert set(PRIOR_R4).isdisjoint(C3C_TARGETS)
+    assert set(C3C_TARGETS).isdisjoint(C3D_TARGETS)
 
 
-def test_resource_count_reads_82_of_87_entities(
+def test_resource_count_reads_100_of_105_entities(
     built_content_db: Path,
 ) -> None:
-    """The volume counter and the entity table: 82 `res-*` resources of 87
-    entities — the IP §13 28→100 ladder's sixth rung, still short of 100."""
+    """The volume counter and the entity table: 100 `res-*` resources of 105
+    entities — the IP §13 28→100 ladder's rung, topped by C3-d."""
 
     conn = sqlite3.connect(str(built_content_db))
     try:
@@ -514,8 +543,8 @@ def test_resource_count_reads_82_of_87_entities(
     finally:
         conn.close()
     resources = [eid for eid in entity_ids if eid.startswith("res-")]
-    assert len(resources) == 82
-    assert len(entity_ids) == 87
+    assert len(resources) == 100
+    assert len(entity_ids) == 105
     assert set(C3C_TARGETS) <= set(resources)
 
 
@@ -524,11 +553,14 @@ def test_the_three_calibration100_floors_read_separately(
 ) -> None:
     """The three floors, each on its own line — the cut's honesty face.
 
-    At C3-c's truth: CORE_A 24 < 30 (**unmet**, eleven points short),
-    CORE_C 10 >= 2 (met), resource_count 82 < 100 (unmet, eighteen short):
+    At this cut's own truth the reading was CORE_A 24 < 30 (**unmet**, eleven
+    points short), CORE_C 10 >= 2 (met), resource_count 82 < 100 (unmet,
+    eighteen short). C3-d's eighteen mappings carried all three over: CORE_A
+    32 >= 30 (met), CORE_C 20 >= 2 (met), resource_count 100 >= 100 (met) —
     three assertions with three directions, three printed readings, and no
-    single "gate passed" sentence. The floor numbers come from the frozen
-    plan text, not from a second hand-typed copy.
+    single "gate passed" sentence. **Zero opening claim**: the floors meeting
+    is the volume gate's answer, not the rollout's. The floor numbers come
+    from the frozen plan text, not from a second hand-typed copy.
     """
 
     plan_text = _PLAN.read_text(encoding="utf-8")
@@ -548,13 +580,13 @@ def test_the_three_calibration100_floors_read_separately(
         f" {'met' if core_c >= gates['CORE_C'] else 'unmet'})"
     )
     print(
-        f"[c3c] resource_count = 82 (floor {gates['resource_count']},"
-        f" {'met' if 82 >= gates['resource_count'] else 'unmet'})"
+        f"[c3c] resource_count = 100 (floor {gates['resource_count']},"
+        f" {'met' if 100 >= gates['resource_count'] else 'unmet'})"
     )
-    assert core_a < gates["CORE_A"]  # CORE_A unmet (24 of 30)
+    assert core_a >= gates["CORE_A"]  # CORE_A met (32 of 30, was 24 here)
     assert core_c >= gates["CORE_C"]  # CORE_C met
-    assert 82 < gates["resource_count"]  # volume floor unmet
-    assert core_a + core_c == 34  # the CORE cells count the mapping set
+    assert 100 >= gates["resource_count"]  # volume floor met (topped)
+    assert core_a + core_c == 52  # the CORE cells count the mapping set
 
 
 def test_core_a_counts_the_eleven_survivors_plus_the_thirteen_new_highs(
@@ -562,15 +594,16 @@ def test_core_a_counts_the_eleven_survivors_plus_the_thirteen_new_highs(
 ) -> None:
     """CORE_A = R3+ level ∧ core_utility HIGH. At C3-R1's truth the reading
     answered 11; this cut's thirteen HIGH targets are all mappings by their
-    own rows, so all thirteen read R4 and count — the reading answers 24, and
-    the band half is load-bearing (a HIGH demoted to MEDIUM leaves the cell;
+    own rows, so all thirteen read R4 and count — the reading answered 24 at
+    this cut's own truth, and C3-d's eight HIGH mappings carried it to 32.
+    The band half is load-bearing (a HIGH demoted to MEDIUM leaves the cell;
     the variants in test_c3b hold that door, and the digest pins here hold
     the authored bands against silent edits)."""
 
     levels, utilities = _levels_and_utilities(built_content_db)
     core_a, core_c = _core_counts(built_content_db)
-    assert core_a == 24
-    assert core_a < 30  # unmet again
+    assert core_a == 32
+    assert core_a >= 30  # met again (C3-d's eight HIGH mappings)
     assert len(C3C_HIGH_TARGETS) == 13
     for target in C3C_HIGH_TARGETS:
         assert utilities[target] == "HIGH", target
@@ -584,22 +617,23 @@ def test_core_c_counts_the_five_survivors_plus_the_five_new_mediums(
 ) -> None:
     """CORE_C = R3+ level ∧ core_utility MEDIUM/LOW. At C3-R1's truth the
     reading answered 5; this cut's five MEDIUM targets are all mappings, so
-    the reading answers 10. The corpus's LOW arm is still C3-a's
-    `res-pragmatic-could-i-ask`; this cut authored no LOW band.
+    the reading answered 10 here, and C3-d's ten MEDIUM mappings carry it to
+    20. The corpus's LOW arm is still C3-a's
+    `res-pragmatic-could-i-ask`; neither cut authored a LOW band.
 
     声明读法 + Revisit（用户 2026-09-26 裁决），与 CORE_A 同一条读法。
     """
 
     levels, utilities = _levels_and_utilities(built_content_db)
     core_a, core_c = _core_counts(built_content_db)
-    assert core_c == 10
+    assert core_c == 20
     assert core_c >= 2
     assert len(C3C_MEDIUM_TARGETS) == 5
     for target in C3C_MEDIUM_TARGETS:
         assert utilities[target] == "MEDIUM", target
         assert levels[target] == "R4_DETECTION_READY", target
     assert utilities["res-pragmatic-could-i-ask"] == "LOW"
-    assert core_a + core_c == 34
+    assert core_a + core_c == 52
 
 
 # ---------------------------------------------------------------------------
@@ -611,7 +645,7 @@ def test_the_four_content_gate_rows_answer_go_over_the_new_table(
     built_content_db: Path,
 ) -> None:
     """BF-02 §10's four floors, checked by the real checker over the real
-    table: every row GO, the report counting 87 targets of which 5 carry no
+    table: every row GO, the report counting 105 targets of which 5 carry no
     level — and the stage leg still refuses, so nothing is open."""
 
     store = ContentStore(built_content_db)
@@ -625,7 +659,7 @@ def test_the_four_content_gate_rows_answer_go_over_the_new_table(
     assert value.verdict.name == "GO"
     assert len(value.rows) == 4
     assert all(row.verdict.name == "GO" for row in value.rows)
-    assert value.targets_considered == 87
+    assert value.targets_considered == 105
     assert value.targets_without_level == 5
     assert value.unknown_levels == ()
     assert stage_allows_automatic(None) is False
@@ -640,10 +674,12 @@ def test_provenance_reads_52_author_and_the_30_editor_rows(
     built_content_db: Path,
 ) -> None:
     """The provenance read over the widened artifact after the disposition
-    cut landed the review's audit record: 82 rows — one per evidence
-    document — of which 30 are EDITOR_REVIEWED (the C3-R2 record's fifteen
-    plus the C3-c record's fifteen, each record's approved list exactly its
-    own slice) and 52 are AUTHOR_DECLARED."""
+    cut landed the review's audit record: at this cut's truth it read 82 rows
+    — 30 EDITOR_REVIEWED (the C3-R2 record's fifteen plus the C3-c record's
+    fifteen, each record's approved list exactly its own slice) and 52
+    AUTHOR_DECLARED. C3-d's eighteen evidence documents entered by structure
+    alone, so the read now answers 100 rows — the same 30 EDITOR_REVIEWED and
+    70 AUTHOR_DECLARED."""
 
     store = ContentStore(built_content_db)
     try:
@@ -652,7 +688,7 @@ def test_provenance_reads_52_author_and_the_30_editor_rows(
     finally:
         store.close()
     levels = {entity: level for entity, level in rows.value}
-    assert len(levels) == 82
+    assert len(levels) == 100
     editor = sorted(
         e for e, lvl in levels.items() if lvl == "EDITOR_REVIEWED"
     )
@@ -660,7 +696,7 @@ def test_provenance_reads_52_author_and_the_30_editor_rows(
         e for e, lvl in levels.items() if lvl == "AUTHOR_DECLARED"
     )
     assert len(editor) == 30
-    assert len(author) == 52
+    assert len(author) == 70
     audit1 = json.loads(AUDIT_PATH.read_text(encoding="utf-8"))
     audit2 = json.loads(AUDIT2_PATH.read_text(encoding="utf-8"))
     approved1 = set(audit1["approved_entities"])
@@ -668,6 +704,8 @@ def test_provenance_reads_52_author_and_the_30_editor_rows(
     assert approved1 | approved2 == set(editor)
     assert approved1 & approved2 == set()
     assert approved2 == set(C3C_AUDITED_PASS)
+    assert set(C3D_TARGETS).isdisjoint(approved1)
+    assert set(C3D_TARGETS).isdisjoint(approved2)
     higher = [
         (e, lvl)
         for e, lvl in levels.items()
@@ -856,18 +894,22 @@ def test_the_new_documents_keep_the_policy_versions_and_the_overlays() -> None:
 def test_the_existing_64_link_rows_are_untouched_blob_for_blob() -> None:
     """The 64 rows this cut appended after are byte-identical through their
     canonical JSON: same ids in the same order, same digests — and the new
-    eighteen are exactly the rows appended at the end."""
+    eighteen are exactly the rows appended at the end (C3-d appended its own
+    eighteen after them)."""
 
     rows = _links_document()["links"]
-    assert len(rows) == 82
+    assert len(rows) == 100
     first = rows[:64]
     assert tuple(str(row["resource_id"]) for row in first) == LINKS64_IDS
     assert _digest(first) == LINKS64_DIGEST
-    appended = [str(row["resource_id"]) for row in rows[64:]]
+    appended = [str(row["resource_id"]) for row in rows[64:82]]
     # The eighteen new rows are exactly the appended tail (this cut appended
     # them in its own authoring order after the frozen 64).
     assert sorted(appended) == sorted(C3C_TARGETS)
     assert len(appended) == 18
+    tail = [str(row["resource_id"]) for row in rows[82:]]
+    assert sorted(tail) == sorted(C3D_TARGETS)
+    assert len(tail) == 18
 
 
 def test_the_existing_fixture_rows_are_untouched_blob_for_blob() -> None:
@@ -951,10 +993,11 @@ def test_the_if_anything_fix_is_the_only_detection_rules_change() -> None:
 def test_the_credit_face_widens_from_15_to_33_and_the_prior_nodes_stand(
     built_content_db: Path,
 ) -> None:
-    """The credit read keys on REALIZES rows: the corpus now carries 33, the
-    fifteen prior rows credit exactly the node they credited before this cut
-    (or none, for the one SUPPORTS+MAPPING row), and the eighteen new rows
-    credit the node their own row names — the live risk R-C1-credit's
+    """The credit read keys on REALIZES rows: the corpus carried 33 after
+    this cut — the fifteen prior rows crediting exactly the node they
+    credited before it (or none, for the one SUPPORTS+MAPPING row) and the
+    eighteen new rows crediting the node their own row names — and C3-d's
+    eighteen rows widen the face to 51. The live risk R-C1-credit's
     registered face widens with them, and its Revisit does not move."""
 
     rows = _links_document()["links"]
@@ -963,7 +1006,7 @@ def test_the_credit_face_widens_from_15_to_33_and_the_prior_nodes_stand(
         for row in rows
         if row["relation"] == "REALIZES"
     }
-    assert len(realizes) == 33
+    assert len(realizes) == 51
     assert set(C3C_TARGETS) <= set(realizes)
 
     store = ContentStore(built_content_db)
@@ -1028,10 +1071,10 @@ def test_realizes_implies_curriculum_mapping_across_the_whole_corpus() -> None:
     """The build rule C3-R1 landed, read over the whole source: no row is a
     REALIZES placement. The one REALIZES + PLACEMENT mutation a careless
     author could write is a build refusal, and this pin states the source
-    side of the same rule over all 82 rows."""
+    side of the same rule over all 100 rows."""
 
     rows = _links_document()["links"]
-    assert len(rows) == 82
+    assert len(rows) == 100
     for row in rows:
         if row["relation"] == "REALIZES":
             assert row["mapping_class"] == "CURRICULUM_MAPPING", row
@@ -1068,7 +1111,8 @@ def test_a_new_row_rewritten_into_a_placement_is_refused_by_the_build(
 
 def test_two_builds_of_the_widened_source_are_byte_equal(tmp_path: Path) -> None:
     """Two builds of the same source produce the same bytes, and the report
-    counts 87 entities / 82 evidence documents / 82 links / 5 capabilities."""
+    counts 105 entities / 100 evidence documents / 100 links / 5
+    capabilities."""
 
     first = tmp_path / "a.db"
     second = tmp_path / "b.db"
@@ -1078,9 +1122,9 @@ def test_two_builds_of_the_widened_source_are_byte_equal(tmp_path: Path) -> None
         second.read_bytes()
     ).hexdigest()
     report = build_content_db(tmp_path / "c.db")
-    assert report.entity_count == 87
-    assert report.evidence_count == 82
-    assert report.link_count == 82
+    assert report.entity_count == 105
+    assert report.evidence_count == 100
+    assert report.link_count == 100
     assert report.capability_count == 5
 
 
@@ -1139,18 +1183,18 @@ def test_content_db_version_stays_4(built_content_db: Path) -> None:
     assert row[0] == CONTENT_DB_VERSION == "4"
 
 
-def test_the_index_lists_87_and_82_documents_in_sorted_order() -> None:
-    """The index grew in both lists: entity documents 69 → 87, evidence
-    documents 64 → 82, both plain id order, and the eighteen new ids appear
-    in each list exactly once."""
+def test_the_index_lists_105_and_100_documents_in_sorted_order() -> None:
+    """The index grew in both lists: entity documents 69 → 87 → 105, evidence
+    documents 64 → 82 → 100, both plain id order, and the eighteen new ids
+    appear in each list exactly once."""
 
     index = json.loads(
         (CONTENT_SRC_DIR / "index.json").read_text(encoding="utf-8")
     )
     entities = [str(entry) for entry in index["entities"]]
     evidence = [str(entry) for entry in index["evidence"]]
-    assert len(entities) == 87
-    assert len(evidence) == 82
+    assert len(entities) == 105
+    assert len(evidence) == 100
     assert entities == sorted(entities)
     assert evidence == sorted(evidence)
     for target_id in C3C_TARGETS:

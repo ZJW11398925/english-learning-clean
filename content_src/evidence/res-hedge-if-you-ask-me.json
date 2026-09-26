@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's hedging-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "if you ask me",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "if-you-ask-me.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "if-you-ask-me.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A hedge that presents the following claim as the speaker's own opinion -- offered although nobody asked -- marking the judgement as personal rather than as fact."
+    },
+    {
+      "sense_id": "if-you-ask-me.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The phrase stands at the front of the sentence, set off by a comma: If you ask me, the first plan was better. The words are fixed -- if + you + ask + me, present tense -- and the opinion follows as a full clause. Nobody has asked; that is the point of the frame, which volunteers the view while labelling it the speaker's own. In speech the comma carries a slight settling of the voice, the sound of an opinion being offered for what it is worth."
+    },
+    {
+      "sense_id": "if-you-ask-me.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The tense is the drill: the condition is frozen in the present (if you ask me), because nobody is actually going to ask -- the frame is a ritual, not a real condition, and the future (if you will ask me) turns it into one. The frame lowers nothing in the claim's content; it labels the source. When the words are a genuine condition about asking a question (if you ask me a question, I will answer it), the hedge is gone."
+    },
+    {
+      "sense_id": "if-you-ask-me.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "If you ask me marks a volunteered judgement as the speaker's own; in my opinion states the same source plainly; if you want my opinion asks whether the view is wanted. I think hedges the speaker's certainty about a claim; if you ask me marks whose claim it is. A literal condition about asking (ask me a question) is never this hedge."
+    },
+    {
+      "sense_id": "if-you-ask-me.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "要我说／依我看（没人问也把自己的看法说出去，同时标明这只是个人意见）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "if-you-ask-me.base",
+      "written": "if you ask me",
+      "normalized": "if you ask me",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the phrase is a frequent opinion marker in conversation, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because the plainer in my opinion and I think cover the same ground for most purposes -- this frame earns its place when the speaker wants to volunteer a view and label it personal in one motion. Productive difficulty is LOW: four fixed words in one order, with one teaching point (the frozen present). Transfer value is MEDIUM: the volunteering move transfers to if you want my opinion. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "The phrase belongs to the general fluency pack (high-frequency multi-word units), so it carries high weight in that pack's coverage accounting; the shortfall records that it is the volunteering member of the opinion-marker family."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Volunteering a judgement in a discussion (if you ask me, the first plan was better) is ordinary workplace language, so the unit has a real workplace use; the reduced weight records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the phrase whole, in the present tense with the comma before the opinion, and never present a future-in-condition or literal-question sentence as a model of the hedge."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "FUTURE_IN_CONDITIONAL",
+      "error_pattern": "If you will ask me, + clause (the future tense built inside the frozen condition)",
+      "corrected_pattern": "If you ask me, + clause",
+      "explanation": "The frame is a ritual condition frozen in the present -- nobody is going to ask -- and learners build the future inside it because their own language marks the future in both halves of a condition; if you will ask me turns the ritual into a real question about the future.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the hedged opinion is fronted by if you will ask me."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_INSERTION",
+      "error_pattern": "If you ask to me, + clause (a preposition added before the pronoun)",
+      "corrected_pattern": "If you ask me, + clause",
+      "explanation": "Ask takes a double object with no preposition (ask me a question), and learners insert to because their own language marks the person asked with one; if you ask to me is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the frame carries ask to me with no other object between."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the tense inside the frame and the words between ask and me. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the frame's errors take; the do-not-match rules state the accepted realizations and the literal condition the hedge must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the literal condition."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "FUTURE_IN_CONDITIONAL: match when the hedged opinion is fronted by if you will ask me, because the frame's condition is frozen in the present."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PREPOSITION_INSERTION: match when the frame carries ask to me, because ask takes its person object bare."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the phrase stands whole before its comma (If you ask me, the first plan was better; If you ask me, the membership fee is too high.): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_LITERAL_CONDITION: do not match when the words are a real condition about asking a question (If you ask me a question, I will answer it.), because there the asking is real and the volunteered-opinion move is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "If you ask me, the first plan was better.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "If you ask me, the membership fee is too high.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "If you ask me, the whole trip was worth it.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "If you ask me a question, I will answer it.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "If you will ask me, the first plan was better.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "If you ask to me, the membership fee is too high.",
+      "expected": "MATCH"
+    }
+  ]
+}

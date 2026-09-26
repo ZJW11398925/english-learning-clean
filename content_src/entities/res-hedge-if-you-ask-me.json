@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-hedge-if-you-ask-me",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Give your opinion, and mark at the same time that it is only yours.",
+      "Put the phrase at the front of the sentence, before the comma, and let your own judgement follow.",
+      "Start with the words: ___, the first plan was better."
+    ],
+    "reveal_form": "If you ask me, the first plan was better.",
+    "canonical_forms": [
+      "If you ask me, the first plan was better."
+    ],
+    "alternative_realizations": [
+      "If you ask me, the membership fee is too high."
+    ],
+    "required_slots": [
+      [
+        "plan"
+      ],
+      [
+        "fee"
+      ]
+    ]
+  }
+}

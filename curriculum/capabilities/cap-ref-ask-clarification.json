@@ -18,7 +18,7 @@
     ],
     "boundary_cases": [
       "\"I was just wondering if you could help me.\" is a hedged request for help, not for a clarification of what was said: the object of the request is an action by the hearer, so it does not count.",
-      "\"Sorry, what does that mean?\" (an alternative realization of the capability's own fixture face) asks for the meaning of the other person's words, so it counts -- no resource of the current corpus is of this shape, which is why this node's links are placements at C3-R1.",
+      "\"Sorry, what does that mean?\" (an alternative realization of the capability's own fixture face) asks for the meaning of the other person's words, so it counts -- at C3-R1 the corpus carried no resource of this shape, which is why this node's links were placements then; the C3-c and C3-d cuts have since authored REALIZES rows for this node (curriculum/links.json), so the placement-era wording no longer describes the corpus.",
       "\"Would you mind closing the window?\" asks the hearer to act; the frame is a politeness device, not a repair of understanding.",
       "\"Could I ask you a question?\" is a pre-request: even the question it asks permission for is not yet a clarification, so it does not count."
     ],

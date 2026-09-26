@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's hedging-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "more or less",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "more-or-less.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "more-or-less.sense-1",
+      "ordinal": 0,
+      "role": "definition",
+      "text": "A hedge that presents a claim as approximately true -- nearly, but not exactly -- lowering how exact the statement is without withdrawing it.",
+      "language": "en"
+    },
+    {
+      "sense_id": "more-or-less.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The pair stands where an adverb would: before an adjective or participle (The migration is more or less complete.), or at the end of the clause it lowers (The two estimates match more or less.). The words are fixed -- more + or + less, in that order -- and they survive in positions other adverbs cannot take. In speech the pair is quick and flat: the claim stands, only its exactness is given up."
+    },
+    {
+      "sense_id": "more-or-less.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Two slips are the drill: the order of the pair (less or more is not the stored form), and the word class after it -- the hedge lowers an adjective or participle (more or less complete), so a bare verb form after it (more or less finish) falls out of the frame. The hedge does not say the claim is false; it says the claim holds to a degree. When more and less are genuine alternatives about quantity (bring more or less paper -- we can print extra), the hedge is gone."
+    },
+    {
+      "sense_id": "more-or-less.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "More or less the hedge presents one claim as approximate. More or less than is the literal comparison of quantities and is never the hedge. Sort of and kind of mark the same approximation with a more colloquial voice; roughly and approximately are the plain and formal mates. The hedge can also answer a question by itself (are the repairs done? -- more or less), where it lowers a whole answer."
+    },
+    {
+      "sense_id": "more-or-less.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "差不多／大体上（说某事接近属实但不精确，不撤回说法只降低精确度）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "more-or-less.base",
+      "written": "more or less",
+      "normalized": "more or less",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the pair is one of the most frequent approximation hedges in adult English -- status answers, estimates and reports run on it -- so receptive value, productive value, naturalness are HIGH and core utility is HIGH. Both difficulties and the explanation cost are LOW: two fixed words, one order, one teaching point (the word class it lowers). Transfer value is MEDIUM: the approximation move transfers to roughly and sort of, though the fixed pair itself is its own. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The pair belongs to the general fluency pack (high-frequency multi-word units), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "Answering status questions approximately (the migration is more or less complete) is ordinary workplace language, so it carries nearly full weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the pair whole, in the order more or less, lowering an adjective or participle, and never present a swapped-order or bare-verb sentence as a model of the hedge."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PARTICIPLE_SLIP",
+      "error_pattern": "more or less finish (the bare verb form standing where the participle or adjective belongs)",
+      "corrected_pattern": "more or less complete",
+      "explanation": "The hedge lowers an adjective or participle that carries the claim (is more or less complete), and learners put the bare verb there because their own language predicates the verb directly; more or less finish is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the pair is followed by a bare verb form with no adjective or participle between is and the pair's target."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PAIR_ORDER_SLIP",
+      "error_pattern": "less or more (the two halves of the pair swapped)",
+      "corrected_pattern": "more or less",
+      "explanation": "The pair is a fixed collocation stored in the order more or less, and learners reverse it because the two words are independently meaningful; less or more as a hedge is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the hedge position carries less or more."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the order of the pair and the word class it lowers. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the hedge's errors take; the do-not-match rules state the accepted realizations and the literal quantity reading the hedge must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the literal quantity reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PARTICIPLE_SLIP: match when the pair lowers a bare verb form (is more or less finish), because the frame holds an adjective or participle after it."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PAIR_ORDER_SLIP: match when the hedge position carries the pair reversed (less or more), because the fixed collocation is stored as more or less."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the pair stands in its order lowering an adjective, participle or clause (The migration is more or less complete.; The two estimates match more or less.): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_QUANTITY_READING: do not match when more and less are genuine alternatives about an amount (Bring more or less paper — we can print extra.), because there the words are a literal disjunction of quantities and the hedge is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "The migration is more or less complete.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "The two estimates match more or less.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "We're more or less done for the day.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Bring more or less paper — we can print extra.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "The migration is more or less finish.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "The migration is less or more complete.",
+      "expected": "MATCH"
+    }
+  ]
+}

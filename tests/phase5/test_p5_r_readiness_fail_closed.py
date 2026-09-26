@@ -277,7 +277,7 @@ def test_five_targets_read_no_level_and_the_rest_split_by_the_mapping(
             f"[p5-r] {assessment.target_id:32} {assessment.level!s:22}"
             f" {assessment.missing_keys}"
         )
-    assert len(assessments) == 87
+    assert len(assessments) == 105
     leveled: list[str] = []
     r4_targets: list[str] = []
     r1_targets: list[str] = []
@@ -303,8 +303,8 @@ def test_five_targets_read_no_level_and_the_rest_split_by_the_mapping(
         assert set(R1_FACETS) <= set(r1.missing_keys)
         # Cumulative reporting: the R0 blocker is still standing in R1's set.
         assert "assessment_membership" in r1.missing_keys
-    assert len(leveled) == 82
-    assert len(r4_targets) == 34
+    assert len(leveled) == 100
+    assert len(r4_targets) == 52
     assert len(r1_targets) == 48
 
 

@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's backchannel set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "no way",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "no-way.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "no-way.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A backchannel of surprised receipt: the two words a listener produces when the other person's news is hard to believe, registering the surprise and inviting the speaker to keep telling it."
+    },
+    {
+      "sense_id": "no-way.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The pair stands first, often followed by a repeated piece of the news as a question: No way! She actually moved to Lisbon? No way — he ran the whole marathon? The words claim neither content nor the turn: the surprise is the receipt, and the echo question is the invitation to continue. In speech the pair carries strong rising intonation; the informality is part of it, and it belongs to talk between people who know each other."
+    },
+    {
+      "sense_id": "no-way.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The negator is the drill: the stored receipt is no way, and not way is not a form -- the pair works as one unit meaning 'that can't be true'. The verb in the echoed news is the second slip: a third-person subject still takes its -s even under surprise (she actually moved). When the words answer a request -- refusing something -- they are a refusal and not the receipt; that is the boundary the fixtures hold."
+    },
+    {
+      "sense_id": "no-way.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "No way! as a surprised receipt registers the other person's news; you're kidding does the same work with a teasing edge; really? is the plainest version. No way as a refusal (no way, I'm not lending you the car) rejects a request and is a different move. No way out or in no way are other constructions entirely."
+    },
+    {
+      "sense_id": "no-way.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "不会吧！（听对方说出难以相信的消息时的惊讶回应，表示收到了并请对方接着讲）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "no-way.base",
+      "written": "no way",
+      "normalized": "no way",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the pair is a very frequent surprised receipt in informal adult conversation, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because its informality bounds where it serves -- the plain really? covers the careful registers -- and production has to land both the fixed negator and the echo question. Productive difficulty is MEDIUM for the same reason. Transfer value is MEDIUM: the surprised-receipt move transfers to you're kidding and really?. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "The pair belongs to the general fluency pack (the phrases that keep a conversation alive), so it carries high weight in that pack's coverage accounting; the shortfall records that it is the informal member of the surprised-receipt family."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.6",
+      "rationale": "Reacting to a colleague's surprising news (no way — he ran the whole marathon?) is natural in a relaxed workplace, but the pair's informality bounds its use; the reduced weight records both facts and that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the pair as the listener's surprised receipt with the speaker holding the floor, and never present the refusal reading or an ERROR_INSTANCE as a model of the backchannel."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "NEGATOR_SUBSTITUTION",
+      "error_pattern": "Not way! (the free negator not built where the fixed pair's no belongs)",
+      "corrected_pattern": "No way!",
+      "explanation": "The receipt is the fixed pair no way, stored as one unit, and learners substitute the free negator not because their own language negates with a single adverb; not way is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the surprised receipt position carries not way."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "THIRD_PERSON_S_DROP",
+      "error_pattern": "She actually move to Lisbon? (the echoed news losing its third-person -s under surprise)",
+      "corrected_pattern": "She actually moved to Lisbon?",
+      "explanation": "Surprise does not lift English agreement: a third-person subject keeps its -s in the echo question, and learners drop the ending because their own language marks the person on nothing here; she actually move is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the echo question after the receipt puts a bare verb form after a third-person singular subject."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words of the receipt and the verb form in its echo question. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the receipt's errors take; the do-not-match rules state the accepted realizations and the refusal reading the receipt must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the refusal reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "NEGATOR_SUBSTITUTION: match when the surprised receipt position carries not way, because the stored pair is no way."
+    },
+    {
+      "ordinal": 1,
+      "rule": "THIRD_PERSON_S_DROP: match when the echo question after the receipt puts a bare verb form after a third-person singular subject (she actually move), because surprise does not lift English agreement."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the pair stands whole as the receipt (No way! She actually moved to Lisbon?; No way — he ran the whole marathon?): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_REFUSAL_READING: do not match when no way answers a request and refuses it (No way, I'm not lending you the car again.), because there the words are a rejection, not a listener's receipt of news."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "No way! She actually moved to Lisbon?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "No way — he ran the whole marathon?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "No way! You finished the puzzle in one evening?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "No way, I'm not lending you the car again.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Not way! She actually moved to Lisbon?",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "No way! She actually move to Lisbon?",
+      "expected": "MATCH"
+    }
+  ]
+}

@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's soften-disagreement set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "that's debatable",
+    "pos": "ADJ"
+  },
+  "senses": [
+    {
+      "sense_id": "thats-debatable.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "thats-debatable.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A mitigate unit standing as a disagreement: the phrase answers the other person's claim by opening it to question instead of calling it wrong -- the objection arrives as an unsettled question, not as a contradiction."
+    },
+    {
+      "sense_id": "thats-debatable.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The phrase stands as the answer to the other person's claim, followed by the reason it is not settled: That's debatable — the data from last year points the other way. The word carries its apostrophe (That's, never Thats), and a semicolon or dash joins the reason. The softening is the phrase's own contribution: the same disagreement delivered as you're wrong attacks; delivered as that's debatable, it invites evidence. In speech the phrase is dry and even -- firm without heat."
+    },
+    {
+      "sense_id": "thats-debatable.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The apostrophe is the drill: That's is the contraction of that is, and Thats without it is a spelling slip that changes the sentence. The word class is the second: the predicate stores the adjective (that's debatable), and the bare noun (that's debate) is the over-reduction. The phrase positions the other side's claim negatively while taking the edge off the move -- that is its work -- and when debatable is an ordinary adjective about a general topic with no interlocutor's claim in play, the mitigated disagreement is gone."
+    },
+    {
+      "sense_id": "thats-debatable.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "That's debatable answers the other person's claim by opening it to question; I'm not convinced states the speaker's own doubt; you could be right, but concedes first; that's wrong contradicts with no softening. The best month for a holiday is debatable is an ordinary adjective about a general topic, not the responsive move."
+    },
+    {
+      "sense_id": "thats-debatable.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "这可不一定／这有争议（不同意对方的说法，但以“尚无定论”的方式说出，不直接说对方错了）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "thats-debatable.base",
+      "written": "that's debatable",
+      "normalized": "that's debatable",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the phrase is a standard professional pushback in meetings and debates, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because its register runs formal-adjacent -- it suits measured disagreement rather than casual chat, and learners need the judgement of when it fits. Productive difficulty is LOW: three words plus a reason clause, with the apostrophe and the word class as the teaching points. Transfer value is MEDIUM: the open-it-to-question move transfers to I'd question that and that's open to debate. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "The phrase belongs to the general fluency pack (the phrases that keep disagreement polite), so it carries high weight in that pack's coverage accounting; the shortfall records that it is the measured-disagreement member of the soften family."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "Opening a colleague's claim to question in a meeting (that's debatable — the data points the other way) is ordinary workplace language, so it carries nearly full weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the phrase with its apostrophe and the adjective form, followed by the reason the claim is not settled, and never present a dropped-apostrophe, bare-noun or general-topic sentence as a model of the mitigation."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "APOSTROPHE_DROP",
+      "error_pattern": "Thats debatable (the contraction written without its apostrophe)",
+      "corrected_pattern": "That's debatable",
+      "explanation": "The phrase contracts that is into that's, and learners write it without the apostrophe because the sound carries no trace of it in their own spelling habits; thats debatable is a misspelling of the stored phrase.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the disagreement opens with thats debatable with no apostrophe."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "WORD_CLASS_SLIP",
+      "error_pattern": "That's debate (the bare noun built where the predicate adjective belongs)",
+      "corrected_pattern": "That's debatable",
+      "explanation": "The predicate stores the adjective -- that's debatable -- and learners reduce it to the noun because their own language predicates with a noun phrase; that's debate is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the disagreement opens with that's debate (or that is debate)."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the spelling of the contraction and the word class in the predicate. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the phrase's errors take; the do-not-match rules state the accepted realizations and the general-topic reading the phrase must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the general-topic reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "APOSTROPHE_DROP: match when the disagreement opens with thats debatable with no apostrophe, because the phrase contracts that is into that's."
+    },
+    {
+      "ordinal": 1,
+      "rule": "WORD_CLASS_SLIP: match when the disagreement opens with that's debate, because the predicate stores the adjective debatable."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the phrase stands whole before its reason (That's debatable — the data from last year points the other way.; That's debatable; plenty of economists read it differently.): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_GENERAL_TOPIC: do not match when debatable is an ordinary adjective about a general topic with no interlocutor's claim in play (The best month for a holiday is debatable — people disagree every year.), because there the word describes a topic and the mitigated disagreement is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "That's debatable — the data from last year points the other way.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "That's debatable; plenty of economists read it differently.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "That's debatable — ask two referees and you get two answers.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The best month for a holiday is debatable — people disagree every year.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Thats debatable — the data from last year points the other way.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "That's debate — the data from last year points the other way.",
+      "expected": "MATCH"
+    }
+  ]
+}

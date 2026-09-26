@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-discourse-where-was-i",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "DISCOURSE_MARKER",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Come back to the topic after an interruption, and let the others rejoin you.",
+      "Ask the question about your own place in the talk, then answer it yourself with the point you had reached.",
+      "Start with the words: ___? Oh yes — the training schedule for October."
+    ],
+    "reveal_form": "Where was I? Oh yes — the training schedule for October.",
+    "canonical_forms": [
+      "Where was I? Oh yes — the training schedule for October."
+    ],
+    "alternative_realizations": [
+      "Now, where was I before the phone rang?"
+    ],
+    "required_slots": [
+      [
+        "training"
+      ],
+      [
+        "schedule"
+      ]
+    ]
+  }
+}

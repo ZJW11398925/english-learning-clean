@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-no-way",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "React to surprising news with the two words, and let the speaker keep telling the story.",
+      "Say the pair with rising surprise, then repeat a piece of the news as a question.",
+      "Start with the words: ___! She actually moved to Lisbon?"
+    ],
+    "reveal_form": "No way! She actually moved to Lisbon?",
+    "canonical_forms": [
+      "No way! She actually moved to Lisbon?"
+    ],
+    "alternative_realizations": [
+      "No way — he ran the whole marathon?"
+    ],
+    "required_slots": [
+      [
+        "lisbon"
+      ],
+      [
+        "marathon"
+      ]
+    ]
+  }
+}

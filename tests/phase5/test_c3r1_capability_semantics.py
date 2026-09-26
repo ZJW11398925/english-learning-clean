@@ -76,7 +76,9 @@ CAPABILITY_IDS = (
 )
 
 #: The sixteen resources whose §24.7 row is a curriculum mapping after the
-#: C3-R1 re-review — the R4 set, written out rather than derived.
+#: C3-R1 re-review — written out rather than derived. (C3-c's and C3-d's
+#: eighteen authored mappings each are declared separately below and extend
+#: the set where this file reads the whole corpus.)
 MAPPING_TARGETS = (
     "res-discourse-anyway",
     "res-discourse-by-the-way",
@@ -113,6 +115,33 @@ MAPPING_TARGETS = (
     "res-softener-kind-of",
     "res-softener-to-be-fair",
 )
+
+#: The eighteen rows the C3-d cut authored after C3-c (Phase 11): every row
+#: of that cut is a REALIZES + CURRICULUM_MAPPING row too. Plain id order.
+C3D_AUTHORED = (
+    "res-discourse-before-i-forget",
+    "res-discourse-that-brings-me-to",
+    "res-discourse-where-was-i",
+    "res-hedge-from-what-i-can-tell",
+    "res-hedge-if-you-ask-me",
+    "res-hedge-in-a-way",
+    "res-hedge-more-or-less",
+    "res-pragmatic-come-again",
+    "res-pragmatic-could-you-clarify",
+    "res-pragmatic-go-on",
+    "res-pragmatic-i-hear-you-but",
+    "res-pragmatic-im-not-convinced",
+    "res-pragmatic-no-way",
+    "res-pragmatic-right",
+    "res-pragmatic-run-that-by-me-again",
+    "res-pragmatic-thats-debatable",
+    "res-pragmatic-what-was-that",
+    "res-pragmatic-youre-kidding",
+)
+
+#: The corpus-wide mapping set after C3-d (the re-review's sixteen + C3-c's
+#: eighteen + C3-d's eighteen = 52).
+MAPPING_TARGETS_CORPUS = tuple(sorted(set(MAPPING_TARGETS) | set(C3D_AUTHORED)))
 
 #: The fifteen REALIZES rows that survived the re-review (the credit face).
 REALIZES_TARGETS = tuple(
@@ -324,11 +353,12 @@ def test_the_definitions_are_operational() -> None:
 
 
 def test_the_corpus_review_splits_34_mappings_and_48_placements() -> None:
-    """m + p = 82, and the split is written out rather than counted twice
-    (C3-R1's 16 + 48; C3-c's eighteen authored rows are all mappings)."""
+    """m + p = 100, and the split is written out rather than counted twice
+    (C3-R1's 16 + 48; C3-c's and C3-d's thirty-six authored rows are all
+    mappings)."""
 
     rows = _link_rows()
-    assert len(rows) == 82
+    assert len(rows) == 100
     mapping = sorted(
         target
         for target, row in rows.items()
@@ -339,10 +369,10 @@ def test_the_corpus_review_splits_34_mappings_and_48_placements() -> None:
         for target, row in rows.items()
         if row["mapping_class"] == "COVERAGE_PLACEMENT"
     )
-    assert mapping == sorted(MAPPING_TARGETS)
-    assert len(mapping) == 34
+    assert mapping == sorted(MAPPING_TARGETS_CORPUS)
+    assert len(mapping) == 52
     assert len(placement) == 48
-    assert len(mapping) + len(placement) == 82
+    assert len(mapping) + len(placement) == 100
 
 
 def test_realizes_implies_curriculum_mapping() -> None:
@@ -357,8 +387,8 @@ def test_realizes_implies_curriculum_mapping() -> None:
     realizes = sorted(
         target for target, row in rows.items() if row["relation"] == "REALIZES"
     )
-    assert realizes == sorted(REALIZES_TARGETS)
-    assert len(realizes) == 33
+    assert realizes == sorted(set(REALIZES_TARGETS) | set(C3D_AUTHORED))
+    assert len(realizes) == 51
 
 
 def test_the_six_demotions_are_disclosed_row_by_row() -> None:
@@ -393,13 +423,14 @@ def test_the_migrated_rows_are_unchanged_against_the_fixture_declaration() -> No
 
 
 def test_every_rationale_is_written_in_the_review_genre() -> None:
-    """All 82 rationales: they name the node they point at and that node's
+    """All 100 rationales: they name the node they point at and that node's
     definition file, quote the resource's **own** first taught rung (the
     row-identity check that replaced "names its own row" — it is checkable
     against the entity source, so a copy-pasted rationale fails), state the
     class word, cite the criterion list they were judged by, state their
     credit consequence in their own words, state their provenance, and
-    register their Revisit. The eighteen C3-c rows carry their own cut's
+    register their Revisit. The eighteen C3-c rows and the eighteen C3-d rows
+    carry their own cut's
     authoring label instead of the C3-R1 re-review label — the genre is the
     same, the provenance line names the cut that wrote the row."""
 
@@ -413,6 +444,8 @@ def test_every_rationale_is_written_in_the_review_genre() -> None:
         assert row["mapping_class"] in rationale, target
         if target in C3C_AUTHORED:
             assert "C3-c (Phase 11)" in rationale, target
+        elif target in C3D_AUTHORED:
+            assert "C3-d (Phase 11)" in rationale, target
         else:
             assert (
                 "C3-R1 (Phase 11) capability-semantics re-review"
@@ -513,7 +546,7 @@ def test_the_mapping_read_is_the_r4_set(built_content_db: Path) -> None:
 
     levels = _levels(built_content_db)
     r4 = sorted(t for t, level in levels.items() if level == "R4_DETECTION_READY")
-    assert r4 == sorted(MAPPING_TARGETS)
+    assert r4 == sorted(MAPPING_TARGETS_CORPUS)
     assert r4 == list(_mapping_resource_ids(built_content_db))
 
 
@@ -551,7 +584,7 @@ def test_flipping_one_mapping_to_a_placement_flips_that_target(tmp_path: Path) -
     )
     assert _facts(artifact, "res-hedge-not-really").curriculum_link is False
     assert _levels(artifact)["res-hedge-not-really"] == "R1_LEXICALLY_RESOLVED"
-    assert len(_mapping_resource_ids(artifact)) == 33
+    assert len(_mapping_resource_ids(artifact)) == 51
 
 
 # ---------------------------------------------------------------------------
@@ -560,21 +593,21 @@ def test_flipping_one_mapping_to_a_placement_flips_that_target(tmp_path: Path) -
 
 
 def test_the_truth_table_is_m_r4_and_the_rest_at_r1(built_content_db: Path) -> None:
-    """M × R4 + (82 − M) × R1 + 5 × None, with M = 34 stated as the mapping
-    count (C3-R1's 16 + C3-c's 18) — the consistency the decision asked to be
-    pinned."""
+    """M × R4 + (100 − M) × R1 + 5 × None, with M = 52 stated as the mapping
+    count (C3-R1's 16 + C3-c's 18 + C3-d's 18) — the consistency the decision
+    asked to be pinned."""
 
     levels = _levels(built_content_db)
-    assert len(levels) == 87
+    assert len(levels) == 105
     r4 = sorted(t for t, level in levels.items() if level == "R4_DETECTION_READY")
     r1 = sorted(
         t for t, level in levels.items() if level == "R1_LEXICALLY_RESOLVED"
     )
     none = sorted(t for t, level in levels.items() if level is None)
-    assert r4 == sorted(MAPPING_TARGETS)
-    assert len(r4) == 34 == len(_mapping_resource_ids(built_content_db))
+    assert r4 == sorted(MAPPING_TARGETS_CORPUS)
+    assert len(r4) == 52 == len(_mapping_resource_ids(built_content_db))
     assert len(r1) == 48
-    assert len(r1) + len(r4) == 82
+    assert len(r1) + len(r4) == 100
     assert none == sorted(CAP_ENTITIES)
     # Every resource is in exactly one of the two bands: nothing new appears.
     assert sorted(r4 + r1) == sorted(

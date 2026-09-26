@@ -1,0 +1,41 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-right",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Show the person speaking that you are following them, without taking the turn.",
+      "Say the one word as they talk, and let your tone carry them on.",
+      "Start with the words: ___ — I'm following you."
+    ],
+    "reveal_form": "Right — I'm following you.",
+    "canonical_forms": [
+      "Right — I'm following you."
+    ],
+    "alternative_realizations": [
+      "Right, right — keep going, I'm with you."
+    ],
+    "required_slots": [
+      [
+        "following"
+      ]
+    ]
+  }
+}

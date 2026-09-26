@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's backchannel set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "you're kidding",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "youre-kidding.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "youre-kidding.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A backchannel of surprised receipt: the phrase a listener produces when news is hard to believe -- telling the speaker, in fun, that the news sounds invented, and inviting them to keep telling it."
+    },
+    {
+      "sense_id": "youre-kidding.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The phrase stands first, usually followed by an echo of the news: You're kidding — she won the lottery? The pronoun-verb pair carries its apostrophe (you're, never your), and the progressive kidding is the stored form (you kid me is not); the echo question repeats the piece of news that cannot be believed. In speech the phrase is quick and warm -- it teases the teller and hands the floor straight back."
+    },
+    {
+      "sense_id": "youre-kidding.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The apostrophe is the drill: you're is the contraction of you are, and your is a possessive -- your kidding is a different sentence that happens to sound the same. The progressive is the second slip: the receipt stores the -ing form (you're kidding), and the simple present turns the receipt into a literal accusation. When the words describe actual joking behaviour (you're kidding around when you should be studying), the receipt is gone -- that is the boundary the fixtures hold."
+    },
+    {
+      "sense_id": "youre-kidding.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "You're kidding as a receipt registers surprising news; no way! does the same work with a blunter edge; you must be joking is the fuller form. You're kidding around describes joking behaviour and is not the receipt. Your kidding -- possessive in place of contraction -- is a spelling slip, never the phrase."
+    },
+    {
+      "sense_id": "youre-kidding.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "你开玩笑吧！（对方消息难以相信时的惊讶回应，带一点打趣，请对方接着讲）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "youre-kidding.base",
+      "written": "you're kidding",
+      "normalized": "you're kidding",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the phrase is a very frequent news receipt in informal adult conversation, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because its informality bounds where it serves, and production has to land both the contraction and the progressive. Productive difficulty is MEDIUM for exactly those two forms -- the apostrophe slip and the progressive slip are the classic failures. Transfer value is MEDIUM: the surprised-receipt move transfers to no way and you must be joking. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "The phrase belongs to the general fluency pack (the phrases that keep a conversation alive), so it carries high weight in that pack's coverage accounting; the shortfall records that it is the teasing member of the surprised-receipt family."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.6",
+      "rationale": "Reacting to a colleague's surprising news (you're kidding — she won the lottery?) is natural in a relaxed workplace, but the phrase's informality bounds its use; the reduced weight records both facts and that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the phrase with the contracted you're and the progressive kidding before the echoed news, and never present the joking-behaviour reading or an ERROR_INSTANCE as a model of the backchannel."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "APOSTROPHE_SLIP",
+      "error_pattern": "Your kidding (the possessive your written where the contraction you're belongs)",
+      "corrected_pattern": "You're kidding",
+      "explanation": "The receipt contracts you are into you're, and learners write the possessive your because the two sound identical in speech; your kidding is a different sentence that only accidentally sounds like the phrase.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the receipt position carries your kidding with no apostrophe."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PROGRESSIVE_SLIP",
+      "error_pattern": "You kid me (the simple present built where the progressive kidding belongs)",
+      "corrected_pattern": "You're kidding me",
+      "explanation": "The receipt stores the progressive -- you're kidding -- and learners build the simple present because their own language marks the here-and-now with a bare form; you kid me reads as a habit or an accusation, not the receipt.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the receipt position carries you kid with no be-form and no -ing."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the spelling of the contraction and the verb form after it. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the receipt's errors take; the do-not-match rules state the accepted realizations and the joking-behaviour reading the receipt must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the joking-behaviour reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "APOSTROPHE_SLIP: match when the receipt position carries your kidding, because the phrase contracts you are into you're."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PROGRESSIVE_SLIP: match when the receipt position carries you kid with no be-form and no -ing, because the phrase stores the progressive."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the phrase stands whole before the echoed news (You're kidding — she won the lottery?; You're kidding me! The flight was cancelled again?): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_JOKING_BEHAVIOUR: do not match when the words describe actual joking behaviour (You're kidding around when you should be studying.), because there the phrase reports what someone is doing and the news receipt is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "You're kidding — she won the lottery?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "You're kidding me! The flight was cancelled again?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "You're kidding! Nobody told me about the party.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "You're kidding around when you should be studying.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Your kidding — she won the lottery?",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "You kid me — she won the lottery?",
+      "expected": "MATCH"
+    }
+  ]
+}

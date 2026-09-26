@@ -54,13 +54,14 @@ FOCUS = "res-hedge-i-think"
 #: specimen for "the artifact carries nothing" that the zero-side pins read.
 NO_EVIDENCE_ENTITY = "cap-disc-topic-shift"
 
-#: The sixty-four RESOURCE targets, in id order — every one of them states all
-#: nineteen §8.1 facts in its own evidence document (C1 authored one, C2-a
-#: eight, C2-b nineteen with their entities, C3-a eighteen of its cut and
-#: C3-b the last eighteen), and the list is written out rather than derived
+#: The one hundred RESOURCE targets, in id order — every one of them states
+#: all nineteen §8.1 facts in its own evidence document (C1 authored one,
+#: C2-a eight, C2-b nineteen with their entities, C3-a eighteen of its cut,
+#: C3-b the next eighteen, C3-c the next eighteen and C3-d the last
+#: eighteen), and the list is written out rather than derived
 #: from the artifact, so a source that loses a document fails here instead of
 #: quietly shrinking the expected set. **C3-R1 moved their *level*, not their
-#: evidence**: the sixteen whose §24.7 row is a curriculum mapping read R4,
+#: evidence**: the fifty-two whose §24.7 row is a curriculum mapping read R4,
 #: the other forty-eight are coverage placements and read R1 (their link is
 #: the first missing key). The split is written out in ``MAPPING_TARGETS``.
 RESOURCE_TARGETS = (
@@ -82,6 +83,7 @@ RESOURCE_TARGETS = (
     "res-colloc-take-advantage-of",
     "res-colloc-take-part-in",
     "res-discourse-anyway",
+    "res-discourse-before-i-forget",
     "res-discourse-by-the-way",
     "res-discourse-having-said-that",
     "res-discourse-in-fact",
@@ -89,9 +91,11 @@ RESOURCE_TARGETS = (
     "res-discourse-moving-on",
     "res-discourse-on-another-note",
     "res-discourse-speaking-of-which",
+    "res-discourse-that-brings-me-to",
     "res-discourse-that-reminds-me",
     "res-discourse-to-be-honest",
     "res-discourse-to-get-back-to-the-point",
+    "res-discourse-where-was-i",
     "res-frame-id-like-to",
     "res-frame-if-you-dont-mind",
     "res-frame-just-wondering",
@@ -100,13 +104,17 @@ RESOURCE_TARGETS = (
     "res-frame-what-im-saying-is",
     "res-frame-would-you-mind",
     "res-hedge-as-far-as-i-know",
+    "res-hedge-from-what-i-can-tell",
     "res-hedge-i-guess",
     "res-hedge-i-mean",
     "res-hedge-i-think",
     "res-hedge-if-im-not-mistaken",
+    "res-hedge-if-you-ask-me",
     "res-hedge-im-not-sure",
+    "res-hedge-in-a-way",
     "res-hedge-it-depends",
     "res-hedge-it-seems-to-me",
+    "res-hedge-more-or-less",
     "res-hedge-not-really",
     "res-hedge-sort-of",
     "res-idiom-a-blessing-in-disguise",
@@ -127,21 +135,32 @@ RESOURCE_TARGETS = (
     "res-phrasal-turn-out",
     "res-phrasal-work-out",
     "res-pragmatic-are-you-saying",
+    "res-pragmatic-come-again",
     "res-pragmatic-could-i-ask",
     "res-pragmatic-could-you",
+    "res-pragmatic-could-you-clarify",
     "res-pragmatic-could-you-say-that-again",
     "res-pragmatic-fair-enough",
+    "res-pragmatic-go-on",
     "res-pragmatic-got-it",
+    "res-pragmatic-i-hear-you-but",
     "res-pragmatic-i-see",
     "res-pragmatic-i-see-your-point-but",
+    "res-pragmatic-im-not-convinced",
     "res-pragmatic-let-me-make-sure",
     "res-pragmatic-no-offense-but",
+    "res-pragmatic-no-way",
+    "res-pragmatic-right",
+    "res-pragmatic-run-that-by-me-again",
     "res-pragmatic-sorry-to-interrupt",
     "res-pragmatic-that-makes-sense",
     "res-pragmatic-thats-a-good-point-but",
+    "res-pragmatic-thats-debatable",
     "res-pragmatic-up-to-a-point",
     "res-pragmatic-what-do-you-mean",
+    "res-pragmatic-what-was-that",
     "res-pragmatic-with-all-due-respect",
+    "res-pragmatic-youre-kidding",
     "res-softener-a-bit",
     "res-softener-if-anything",
     "res-softener-kind-of",
@@ -158,40 +177,59 @@ NO_LEVEL_TARGETS = (
     "cap-stance-soften-disagreement",
 )
 
-#: The sixteen RESOURCE targets whose §24.7 row is a curriculum mapping after
-#: C3-R1 — the R4 half of the corpus, written out rather than derived.
+#: The RESOURCE targets whose §24.7 row is a curriculum mapping (C3-R1's
+#: sixteen, extended in place by C3-c's and C3-d's authored mappings — the
+#: R4 half of the corpus, written out rather than derived; 52 after C3-d).
 MAPPING_TARGETS = (
     "res-discourse-anyway",
+    "res-discourse-before-i-forget",
     "res-discourse-by-the-way",
     "res-discourse-having-said-that",
     "res-discourse-moving-on",
     "res-discourse-on-another-note",
     "res-discourse-speaking-of-which",
+    "res-discourse-that-brings-me-to",
     "res-discourse-that-reminds-me",
     "res-discourse-to-be-honest",
     "res-discourse-to-get-back-to-the-point",
+    "res-discourse-where-was-i",
     "res-hedge-as-far-as-i-know",
+    "res-hedge-from-what-i-can-tell",
     "res-hedge-i-guess",
     "res-hedge-i-think",
     "res-hedge-if-im-not-mistaken",
+    "res-hedge-if-you-ask-me",
     "res-hedge-im-not-sure",
+    "res-hedge-in-a-way",
     "res-hedge-it-depends",
     "res-hedge-it-seems-to-me",
+    "res-hedge-more-or-less",
     "res-hedge-not-really",
     "res-hedge-sort-of",
     "res-pragmatic-are-you-saying",
+    "res-pragmatic-come-again",
+    "res-pragmatic-could-you-clarify",
     "res-pragmatic-could-you-say-that-again",
     "res-pragmatic-fair-enough",
+    "res-pragmatic-go-on",
     "res-pragmatic-got-it",
+    "res-pragmatic-i-hear-you-but",
     "res-pragmatic-i-see",
     "res-pragmatic-i-see-your-point-but",
+    "res-pragmatic-im-not-convinced",
     "res-pragmatic-let-me-make-sure",
     "res-pragmatic-no-offense-but",
+    "res-pragmatic-no-way",
+    "res-pragmatic-right",
+    "res-pragmatic-run-that-by-me-again",
     "res-pragmatic-that-makes-sense",
     "res-pragmatic-thats-a-good-point-but",
+    "res-pragmatic-thats-debatable",
     "res-pragmatic-up-to-a-point",
     "res-pragmatic-what-do-you-mean",
+    "res-pragmatic-what-was-that",
     "res-pragmatic-with-all-due-respect",
+    "res-pragmatic-youre-kidding",
     "res-softener-a-bit",
     "res-softener-kind-of",
     "res-softener-to-be-fair",
@@ -713,11 +751,12 @@ def test_corpus_readiness_table_is_computed_and_printed(
     for target_id, level, missing in table:
         print(f"[readiness] {target_id:32} {level!s:22} {missing}")
 
-    assert len(table) == 87
+    assert len(table) == 105
     levels = {(target, missing): level for target, level, missing in table}
     # 旧真值 → 新真值（C1: 1×R4+13×None；C2-a: 9×R4+5×None；C2-b:
     # 28×R4+5×None；C3-a: 46×R4+5×None；C3-b: 64×R4+5×None；C3-R1:
-    # 16×R4 + 48×R1 + 5×None；C3-c: 34×R4 + 48×R1 + 5×None）.
+    # 16×R4 + 48×R1 + 5×None；C3-c: 34×R4 + 48×R1 + 5×None；C3-d:
+    # 52×R4 + 48×R1 + 5×None）.
     assert levels[("res-hedge-i-think", ())] == "R4_DETECTION_READY"
     assert (
         levels[("res-colloc-make-a-decision", ("curriculum_link",))]
@@ -852,7 +891,7 @@ def test_every_artifact_entity_is_an_expression(built_content_db: Path) -> None:
         store.close()
     print(f"[f1] artifact entity types -> {sorted(set(types.values()))} ({len(types)})")
     assert set(types.values()) == {"EXPRESSION"}
-    assert len(types) == 87
+    assert len(types) == 105
 
 
 def test_a_non_expression_entity_reads_the_same_no_level(tmp_path: Path) -> None:
@@ -989,12 +1028,12 @@ def test_every_corpus_link_is_approved_and_satisfies_the_r2_fact(
         assert len(store.entity_ids().value) - len(linked) == 5
     finally:
         store.close()
-    assert len(linked) == 82
+    assert len(linked) == 100
     assert all(entity_id.startswith("res-") for entity_id in linked)
     # Every linked row is approved, and the R2 fact now reads one clause
     # further: it is satisfied exactly by the mapping rows (C3-R1).
     assert approved == sorted(linked)
-    assert len(with_fact) == 34
+    assert len(with_fact) == 52
     assert set(with_fact) <= set(approved)
 
 

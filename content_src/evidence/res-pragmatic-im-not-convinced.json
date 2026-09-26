@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's soften-disagreement set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "I'm not convinced",
+    "pos": "ADJ"
+  },
+  "senses": [
+    {
+      "sense_id": "im-not-convinced.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "im-not-convinced.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A mitigate unit standing as a disagreement: the phrase pushes back on the other person's claim by naming the speaker's own doubt instead of the other's mistake -- the objection arrives as an unpersuaded state, not as a verdict."
+    },
+    {
+      "sense_id": "im-not-convinced.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The phrase stands as the answer to the other person's claim, followed either by the claim itself (I'm not convinced the cheaper option lasts.) or by the demand for the missing evidence (I'm not convinced — show me the numbers.). The participle is -ed (convinced, the state of being persuaded), and the contraction carries its apostrophe. The softening is the phrase's own contribution: the same disagreement delivered as that's false attacks; delivered as I'm not convinced, it keeps the exchange about the evidence. In speech the phrase is measured and unhurried."
+    },
+    {
+      "sense_id": "im-not-convinced.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The participle is the drill: the state stores the -ed form (I'm not convinced), and the base form (I'm not convince) or the -ing form (I'm not convincing) falls outside it -- the -ing flips the meaning to 'I fail to persuade others'. The frame's object is the other person's claim, and the move is a softened disagreement -- not a hedge on the speaker's own forward commitment. When the words report a purely personal belief state with no interlocutor's claim in play, the mitigated disagreement is gone -- that is the boundary the fixtures hold."
+    },
+    {
+      "sense_id": "im-not-convinced.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "I'm not convinced answers the other person's claim with the speaker's own doubt; that's debatable opens the claim to question; I'm not sure holds back the speaker's own answer rather than meeting the other's claim; I don't believe you challenges the teller. I'm not convincing describes a failed persuader and is a different sentence."
+    },
+    {
+      "sense_id": "im-not-convinced.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "我不太信服（用自己尚未被说服的状态来表示不同意，把交锋留在证据上而不指责对方）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "im-not-convinced.base",
+      "written": "I'm not convinced",
+      "normalized": "i'm not convinced",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the phrase is the standard professional pushback -- meetings, reviews and negotiations run on it -- so receptive value, productive value and naturalness are HIGH and core utility is HIGH. Receptive difficulty is LOW; productive difficulty is MEDIUM because the participle choice (-ed against -ing, against the bare form) is exactly what production has to get right and the -ing slip flips the meaning. Explanation cost is MEDIUM: the frame is one rule plus the -ed/-ing contrast. Transfer value is HIGH: the name-your-doubt move re-tools into I need more evidence and you haven't persuaded me. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "The phrase belongs to the general fluency pack (the phrases that keep disagreement polite), so it carries high weight in that pack's coverage accounting; the shortfall records that it is the professional-pushback member of the soften family."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Meeting a proposal with named doubt (I'm not convinced the cheaper option lasts) is ordinary workplace language, so it carries full weight in the workplace pack's coverage accounting."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": null,
+      "domain": "WORK",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the phrase with the contracted I'm and the -ed participle, aimed at the other person's claim, and never present a bare-form, -ing-form or personal-belief sentence as a model of the mitigation."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PARTICIPLE_SLIP",
+      "error_pattern": "I'm not convince the cheaper option lasts. (the base form built where the -ed participle belongs)",
+      "corrected_pattern": "I'm not convinced the cheaper option lasts.",
+      "explanation": "The state of being persuaded stores the -ed participle (I'm not convinced), and learners build the base form because their own language predicates with the bare verb; I'm not convince is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the frame carries not convince with no participle ending."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PARTICIPLE_VOICE_SLIP",
+      "error_pattern": "I'm not convincing the cheaper option lasts. (the -ing form built where the passive-state -ed belongs)",
+      "corrected_pattern": "I'm not convinced the cheaper option lasts.",
+      "explanation": "The frame describes the speaker's state of being persuaded, so the participle is -ed; learners build the -ing because their own language marks the ongoing state with a progressive shape, but I'm not convincing means failing to persuade others.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the frame carries not convincing before the other person's claim."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the participle form in the frame. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the frame's errors take; the do-not-match rules state the accepted realizations and the personal-belief reading the frame must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the personal-belief reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PARTICIPLE_SLIP: match when the frame carries not convince with no participle ending, because the state stores the -ed form."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PARTICIPLE_VOICE_SLIP: match when the frame carries not convincing before the other person's claim, because the frame describes the speaker's state of being persuaded, not a failure to persuade."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the phrase stands whole before its claim or demand (I'm not convinced the cheaper option lasts.; I'm not convinced — show me the numbers.): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_PERSONAL_BELIEF: do not match when the words report a purely personal belief state with no interlocutor's claim in play (I'm not convinced ghosts exist.), because there the phrase hedges the speaker's own view and the softened disagreement is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "I'm not convinced the cheaper option lasts.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "I'm not convinced — show me the numbers.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "I'm not convinced by the argument in the third paragraph.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "I'm not convinced ghosts exist.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "I'm not convince the cheaper option lasts.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "I'm not convincing the cheaper option lasts.",
+      "expected": "MATCH"
+    }
+  ]
+}

@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's soften-disagreement set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "I hear you, but",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "i-hear-you-but.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "i-hear-you-but.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A mitigate unit attached to a disagreement: the frame gives the other side credit for their point first, and then delivers the objection -- so the refusal arrives without a flat no."
+    },
+    {
+      "sense_id": "i-hear-you-but.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The frame stands at the front of the turn: I hear you, but we can't spend any more on this. The comma is the hinge -- what stands before it accepts the other person's point as heard, and what stands after it is the objection, carried by but. The frame works with any refusal after the comma (I hear you, but the timeline doesn't move.), and the softening is the frame's own contribution: the same objection without it starts an argument. In speech the first part is warm and unhurried, the second plain."
+    },
+    {
+      "sense_id": "i-hear-you-but.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "Two slips are the drill: the modal takes the bare form (can't spend, never can't spent), and hear takes its person object with no preposition (hear you, never hear to you). The frame lowers the interpersonal force of the objection, not the speaker's own certainty -- it is not a hedge on a claim -- and teaching it as plain agreement would be wrong: the but after the comma is where the disagreement lives. When the words report literal hearing on a bad line (I hear you, but I can't see you), the mitigation is gone."
+    },
+    {
+      "sense_id": "i-hear-you-but.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "I hear you, but concedes before objecting; I see your point, but does the same work with a more explicit credit; that's fair, but is shorter. I hear you alone, without the but-clause, is pure receipt and objects to nothing. A literal hearing report (I hear you, but I can't see you) is not this move."
+    },
+    {
+      "sense_id": "i-hear-you-but.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "我明白你的意思，不过……（先给对方的话记上一笔，然后再说出反对意见）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "i-hear-you-but.base",
+      "written": "I hear you, but",
+      "normalized": "i hear you, but",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "HIGH",
+    "receptive_value": "HIGH",
+    "productive_value": "HIGH",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "LOW",
+    "transfer_value": "HIGH",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the frame is one of the standard concede-then-object moves of adult English -- disagreements at work and at home run on it -- so receptive value, productive value, naturalness are HIGH and core utility is HIGH. Both difficulties and the explanation cost are LOW: five fixed words, one hinge, and the bare-form and bare-object rules as the only teaching points. Transfer value is HIGH: the same concede-then-object shape re-tools into I see your point, but and that's fair, but. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "1.0",
+      "rationale": "The frame belongs to the general fluency pack (the phrases that keep disagreement polite), so it carries full weight in that pack's coverage accounting."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "1.0",
+      "rationale": "Refusing a request after giving it credit (I hear you, but we can't spend any more on this) is ordinary workplace language, so it carries full weight in the workplace pack's coverage accounting."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the frame with the credit before the comma and the objection after but, and never present a wrong-modal, preposition-inserted or literal-hearing sentence as a model of the mitigation."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "MODAL_VERB_SLIP",
+      "error_pattern": "we can't spent any more on this (the past participle built where the modal's bare form belongs)",
+      "corrected_pattern": "we can't spend any more on this",
+      "explanation": "The modal can't takes the bare infinitive, and learners attach the past form because their own language marks the verb's time on itself; can't spent is not a stored English pattern.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the objection after but carries a past or participial form straight after a modal."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_INSERTION",
+      "error_pattern": "I hear to you, but ... (a preposition added between hear and its person object)",
+      "corrected_pattern": "I hear you, but ...",
+      "explanation": "Hear takes its person object with no preposition, and learners insert one because their own language marks the perceiver's relation with one; hear to you is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the credit clause carries hear to you (or hear to him/her)."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb form after the modal in the objection and the object of hear in the credit clause. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the frame's errors take; the do-not-match rules state the accepted realizations and the literal-hearing reading the frame must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the literal-hearing reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "MODAL_VERB_SLIP: match when the objection after but carries a past or participial form straight after a modal (can't spent), because the modal takes the bare form."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PREPOSITION_INSERTION: match when the credit clause carries hear to you, because hear takes its person object bare."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame stands whole with its hinge (I hear you, but we can't spend any more on this.; I hear you, but the timeline doesn't move.): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_LITERAL_HEARING: do not match when the words report literal hearing on a bad connection (I hear you, but I can't see you — where are you standing?), because there the hearing is physical and the concede-then-object move is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "I hear you, but we can't spend any more on this.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "I hear you, but the timeline doesn't move.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "I hear you, but the answer is still no.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "I hear you, but I can't see you — where are you standing?",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "I hear you, but we can't spent any more on this.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "I hear to you, but the timeline doesn't move.",
+      "expected": "MATCH"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-what-was-that",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Ask the speaker to repeat what they just said, and say why you missed it.",
+      "Ask the short question first, then give the reason — the line, the noise, the speed.",
+      "Start with the words: ___? The line cut out for a second."
+    ],
+    "reveal_form": "What was that? The line cut out for a second.",
+    "canonical_forms": [
+      "What was that? The line cut out for a second."
+    ],
+    "alternative_realizations": [
+      "What was that? I didn't hear you over the noise."
+    ],
+    "required_slots": [
+      [
+        "line"
+      ],
+      [
+        "noise"
+      ]
+    ]
+  }
+}

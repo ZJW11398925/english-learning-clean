@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-could-you-clarify",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SLOT_BASED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Ask the speaker to make one point of theirs clearer.",
+      "Open with the polite request, then name exactly the words or the point that need clarifying.",
+      "Start with the words: ___ what you meant by flexible hours?"
+    ],
+    "reveal_form": "Could you clarify what you meant by flexible hours?",
+    "canonical_forms": [
+      "Could you clarify what you meant by flexible hours?"
+    ],
+    "alternative_realizations": [
+      "Could you clarify which version you meant?"
+    ],
+    "required_slots": [
+      [
+        "clarify"
+      ],
+      [
+        "hours"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-im-not-convinced",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "SLOT_PATTERN"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Push back on the other person's claim by naming your own doubt, not their mistake.",
+      "Say what you are not yet persuaded of, and let them meet the doubt with evidence.",
+      "Start with the words: ___ the cheaper option lasts."
+    ],
+    "reveal_form": "I'm not convinced the cheaper option lasts.",
+    "canonical_forms": [
+      "I'm not convinced the cheaper option lasts."
+    ],
+    "alternative_realizations": [
+      "I'm not convinced — show me the numbers."
+    ],
+    "required_slots": [
+      [
+        "convinced"
+      ],
+      [
+        "numbers"
+      ]
+    ]
+  }
+}

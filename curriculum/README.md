@@ -64,22 +64,24 @@ editorial_status / mapping_class / rationale
 - **`mapping_class`（C3-R1 声明读法）∈ 两词表**：`CURRICULUM_MAPPING`（真语义
   映射——资源的教学功能满足该 node 功能定义 `counts_as_realization` 的至少一条
   且不落入其 `does_not_count`）或 `COVERAGE_PLACEMENT`（覆盖记账——现役 5 个
-  节点对 82 个资源的语料所迫的就近选位，**不含语义映射主张**）。build 强制两条
+  节点对 100 个资源的语料所迫的就近选位，**不含语义映射主张**）。build 强制两条
   形状规则：词表成员 + **`REALIZES ⇒ CURRICULUM_MAPPING`**（实现主张即映射主张）；
   另一条规则是 `CURRICULUM_MAPPING` 行命名的 capability 必须携带
   `functional_definition`（映射只对已陈述的标准有意义）；
-- **现役 82 行（C3-R1 重审 + C3-c 新模板首跑后）**：**34 条 `CURRICULUM_MAPPING`**
-  （33 条 REALIZES + 1 条 SUPPORTS）+ **48 条 `COVERAGE_PLACEMENT`**（全
-  SUPPORTS），m + p = 82；
-  **relation 分布 33 条 REALIZES + 49 条 SUPPORTS**（C3-R1 重审把 6 条旧
-  REALIZES 降级为 SUPPORTS——见下方变更记录，逐条披露；C3-c 又按五份功能定义
-  把 18 个新行全部判为真映射并以 REALIZES 写入——见变更记录 C3-c 行）；
+- **现役 100 行（C3-R1 重审 + C3-c/C3-d 新模板两跑后）**：**52 条
+  `CURRICULUM_MAPPING`**
+  （51 条 REALIZES + 1 条 SUPPORTS）+ **48 条 `COVERAGE_PLACEMENT`**（全
+  SUPPORTS），m + p = 100；
+  **relation 分布 51 条 REALIZES + 49 条 SUPPORTS**（C3-R1 重审把 6 条旧
+  REALIZES 降级为 SUPPORTS——见下方变更记录，逐条披露；C3-c 与 C3-d 又按五份
+  功能定义把各自 18 个新行全部判为真映射并以 REALIZES 写入——见变更记录
+  C3-c / C3-d 行）；
   **`primary_flag` 的读法自 C3-R1 起是「authoring 主张的冻结记录」**：6 条被降级
   行的 `primary_flag` 仍为 `true`（改动它们会改写历史主张；credit 读面按
   `relation = REALIZES` 过滤，降级即退出 credit 面）；
 - `strength` 一律 `null`：§24.7 未给链接 strength 值域（§7 的三词只属于
   prerequisite 边），不发明；
-- `editorial_status` ∈ §24.11 词表；**C3-c 后的状态**：82 行全部为
+- `editorial_status` ∈ §24.11 词表；**C3-d 后的状态**：100 行全部为
   `CANONICAL_APPROVED` —— C1（Phase 11）编辑评审批准了
   `res-colloc-make-a-decision` 一行，C2-a 在为其余 8 个 res target 编写 readiness
   证据时逐条批准了其余 8 行，C2-b 在为 19 个新实体编写 readiness 证据时批准了那
@@ -87,7 +89,8 @@ editorial_status / mapping_class / rationale
   它的 18 个新实体编写 readiness 证据时批准了那 18 行，C3-c 在为它的 18 个新实体
   编写 readiness 证据时按各自 capability 的 functional_definition 逐条判定并批准
   了那 18 行（**新模板首跑**：每条 rationale 引用 counts_as / does_not_count
-  具体条目）。P5-R 的规则
+  具体条目），C3-d 以同一体裁判定并批准了它的 18 行（**新模板末次批量**）。P5-R
+  的规则
   对**未批准**行不变：行既然只是候选映射（`CURRICULUM_MAPPED`），便不得计入
   capability 证据（读面门见 `elc.content.store.CAPABILITY_CREDIT_EDITORIAL_STATUS`
   ——未审 link 在 `get_teaching_content().capability_linkage` 读作 `None`，但仍是
@@ -99,31 +102,34 @@ editorial_status / mapping_class / rationale
   `relation = REALIZES`）与"已批准但 `COVERAGE_PLACEMENT` ⇒ 不满足 §8.1 R2"
   （R2 读面见下）两条都由现役语料自己钉住。
 
-  **已批准行的口径（C1 处置定谳的体裁，C2-a / C2-b / C3-a / C3-b 逐行沿用）**——① 每一条批准
+  **已批准行的口径（C1 处置定谳的体裁，C2-a / C2-b / C3-a / C3-b / C3-c / C3-d 逐行沿用）**——① 每一条批准
   **覆盖**：该行的 provenance（C1/C2-a 的 9 行 = P3-1A/P3-1B fixture 声明，未改；
-  C2-b 的 19 行、C3-a 的 18 行与 C3-b 的 18 行 = 无 fixture 声明、由各自那一刀自己作出，
+  C2-b 的 19 行、C3-a 的 18 行、C3-b 的 18 行、C3-c 的 18 行与 C3-d 的 18 行 =
+  无 fixture 声明、由各自那一刀自己作出，
   rationale
   逐条写明）、该
   target 的证据文档（`../content_src/evidence/<entity_id>.json`，C1 一份 / C2-a
-  八份 / C2-b 十九份 / C3-a 十八份 / C3-b 十八份 / C3-c 十八份），以及「此批准使 §8.1 R2 的 `curriculum_link` 事实可读」；
+  八份 / C2-b 十九份 / C3-a 十八份 / C3-b 十八份 / C3-c 十八份 / C3-d 十八份），以及「此批准使 §8.1 R2 的 `curriculum_link` 事实可读」；
   ② 每一条批准**不覆盖**：被 link 命名的 capability 在本仓无功能定义，capability
   语义审计**未做**，批准不构成能力认证——64 条映射的课程语义当时未审（C3-R1 起
   已由五份功能定义逐条补审，见 ④）；
   ③ **credit 的限度**：`CAPABILITY_CREDIT_EDITORIAL_STATUS` 门据此放行，故
-  **33 个** RESOURCE target 的 `ALTERNATIVE_SUCCESS` 可铸 CAPABILITY/POSITIVE
+  **51 个** RESOURCE target 的 `ALTERNATIVE_SUCCESS` 可铸 CAPABILITY/POSITIVE
   学习者证据——**已知并接受的行为变更链**：C1 时为 1 条、C2-a 后为 9 条、
   C2-b 后为 15 条、C3-a 后为 18 条、C3-b 后为 21 条、**C3-R1 重审后回落为 15 条**
   （6 条降级行退出 credit 面，逐条见变更记录）、**C3-c 后为 33 条**（18 条新
-  REALIZES 按功能定义判定写入）；C2-b/C3-a/C3-b/C3-c 的
+  REALIZES 按功能定义判定写入）、**C3-d 后为 51 条**（又是 18 条按同一体裁
+  判定写入）；C2-b/C3-a/C3-b/C3-c/C3-d 的
   SUPPORTS 行 **不进 credit 面**（读面按 relation 过滤）；
   ④ **Revisit（C3-R1 已触发并执行）**：capability 功能定义已随 C3-R1 落地
   （5 份，见上文 C1 段），对全部既有 64 条批准的**能力语义重审**已完成（C3-c
-  的 18 条新行在写入时即按同一批定义逐条判定）——结果即
+  与 C3-d 的 36 条新行在写入时即按同一批定义逐条判定）——结果即
   `mapping_class` 列与本文件的变更记录；C3-R1 重审把 credit 面缩为 15 条，
-  **C3-c 又以同一把尺子写入 18 条新 REALIZES，现 credit 面 = 33 条，活风险
-  `R-C1-credit` 的登记面随之为 33 个 target**（33 条现役 REALIZES 行仍自认
+  **C3-c 又以同一把尺子写入 18 条新 REALIZES，C3-d 以同一体裁再写 18 条，现
+  credit 面 = 51 条，活风险
+  `R-C1-credit` 的登记面随之为 51 个 target**（51 条现役 REALIZES 行仍自认
   「本映射以本仓 authoring 判断的功能定义为据」而非外部认证；canonical 定义
-  落地时仍须复审；Revisit 触发条件不变 = 首次真实教学运行前必须重审），台账见 `AGENTS.md` 的 C1/C2-a/C2-b/C3-a/C3-b/C3-R1/C3-c 处置条目。
+  落地时仍须复审；Revisit 触发条件不变 = 首次真实教学运行前必须重审），台账见 `AGENTS.md` 的 C1/C2-a/C2-b/C3-a/C3-b/C3-R1/C3-c/C3-d 处置条目。
 
 #### R2 读法变化（C3-R1，src 行为改动；**声明读法 + Revisit**——canonical 未定义 CurriculumLink 的 mapping/placement 二分，见 `DEC-OPI-4b549908-…31` revisit ②）
 
@@ -135,7 +141,8 @@ has_approved_curriculum_mapping`，一条查询、同样以 §24.11 批准为门
 §8.1 事实键零改动。后果即**真值诚实回落**：R4 资源数 = 真映射资源数（C3-R1 时
 **16**，与
 links 的 `CURRICULUM_MAPPING` 行集逐 id 一致，一致性钉在
-`tests/phase5/test_c3r1_capability_semantics.py`；**C3-c 后为 34**——18 个新行
+`tests/phase5/test_c3r1_capability_semantics.py`；**C3-c 后为 34、C3-d 后为
+52**——两刀共 36 个新行
 在写入时即按功能定义判为真映射，回落机制不变、真值随行集走），其余 48 个 res 停在
 **R1_LEXICALLY_RESOLVED**（词汇资源身份、19 键齐全、`curriculum_link` 是第一
 缺键——可区分于「无证据」），5 个 cap 仍 None。**回落是裁决目的，不是事故**：
@@ -146,7 +153,7 @@ readiness 阶梯重新有区分度。四行内容门仍 GO（≥1 个 R4）。pl
 `SUPPORTS ∧ CURRICULUM_MAPPING`（`res-hedge-not-really`）满足 R2 但无可解析
 节点，其 prerequisites 答 UNKNOWN（fail-closed），由同文件 ⑤ 组测试钉住。
 
-#### link 状态变更记录（C1 + C2-a + C2-b + C3-a + C3-b + C3-R1）
+#### link 状态变更记录（C1 + C2-a + C2-b + C3-a + C3-b + C3-R1 + C3-d）
 
 | 变更 | 行 | 理由与范围 |
 | --- | --- | --- |
@@ -159,6 +166,7 @@ readiness 阶梯重新有区分度。四行内容门仍 GO（≥1 个 R4）。pl
 | **全 64 行 `mapping_class` 定级（16 `CURRICULUM_MAPPING` + 48 `COVERAGE_PLACEMENT`）** | 64 行各一行 | C3-R1 重审的另一半：15 条幸存 REALIZES 全部为真映射（build 规则 `REALIZES ⇒ CURRICULUM_MAPPING` 所迫，且逐条引用 `counts_as_realization` 具体条目）；**1 条 SUPPORTS 判为真映射**（`res-hedge-not-really` → `cap-stance-soften-disagreement`：答话的温和否定是一次立场行动，满足该 node counts_as 1/2——relation 保持 SUPPORTS 强度不变；`mapping_class` 判语义真值、relation 判强度，二者正交）；其余 48 条判 `COVERAGE_PLACEMENT`（就近选位、无语义映射主张），rationale 逐条改写为重审体裁（点名 node + 引用其定义文件 + 引用判定所依条目 + 自述 provenance + Revisit）。 |
 | **新增 18 行（全 18 条 REALIZES + CURRICULUM_MAPPING，`editorial_status = CANONICAL_APPROVED`）** | C3-c（Phase 11）的 18 个新实体各一行 | **新模板首跑**：C3-c 在为这 18 个新实体编写 readiness 证据时，按其 node 的 functional_definition **逐条引用 counts_as / does_not_count 具体条目**判定映射（discourse×4 → `cap-disc-topic-shift`，其中 `speaking-of-which` 即该 node boundary case 3 的本仓脸面；hedge×3 → `cap-eval-hedged-opinion`；backchannel×4 → `cap-interact-backchannel`——该 node 在 C3-R1 时尚无本形资源、其
 placement rationale 自记「等这类资源出现」；clarification×4 → `cap-ref-ask-clarification`，其中 `what-do-you-mean` 即该 node counts_as 1 点名的本仓脸面；soften×3 → `cap-stance-soften-disagreement`）。全部 `primary_flag = true`、`strength = null`，rationale 逐条含判定所依条目 + credit 面自述 + 活风险 `R-C1-credit`（登记面 15 → 33）+ **本行无 fixture 声明、由 C3-c 自己作出** + Revisit。**credit 面 15 → 33**（逐条披露）；48 条既有 PLACEMENT 与既有 64 行的其余字段零改动。 |
+| **新增 18 行（全 18 条 REALIZES + CURRICULUM_MAPPING，`editorial_status = CANONICAL_APPROVED`）** | C3-d（Phase 11）的 18 个新实体各一行 | **新模板末次批量**：C3-d 在为这 18 个新实体编写 readiness 证据时，按其 node 的 functional_definition **逐条引用 counts_as / does_not_count 具体条目**判定映射（discourse×3 → `cap-disc-topic-shift`：`before-i-forget` / `that-brings-me-to` / `where-was-i`；hedge×4 → `cap-eval-hedged-opinion`：`from-what-i-can-tell` / `more-or-less` / `in-a-way` / `if-you-ask-me`；backchannel×4 → `cap-interact-backchannel`：`right` / `no-way` / `youre-kidding` / `go-on`——四个惊讶/继续信号的惊讶接收与邀请续讲按 counts_as 2 的 receipt/invite 臂判定，`no-way` 的拒绝读法与 `go-on` 的催促动作读法以该 node 判据不适用 + 各自文档的 FALSE_POSITIVE_BOUNDARY 例收口；clarification×4 → `cap-ref-ask-clarification`：`what-was-that` / `come-again` / `run-that-by-me-again` / `could-you-clarify`；soften×3 → `cap-stance-soften-disagreement`：`i-hear-you-but` / `thats-debatable` / `im-not-convinced`——后两者的对象判定按 does_not_count 2 的「对象是负向移动的人际力度而非说话人自身断言承诺」逐条写明）。全部 `primary_flag = true`、`strength = null`，rationale 逐条含判定所依条目 + credit 面自述 + 活风险 `R-C1-credit`（登记面 33 → 51）+ **本行无 fixture 声明、由 C3-d 自己作出** + Revisit。**credit 面 33 → 51**（逐条披露）；48 条既有 PLACEMENT 与既有 82 行的其余字段零改动。另：两份 capability 文件（`cap-interact-backchannel` / `cap-ref-ask-clarification`）按 C3-c 处置 LOW-1 的登记把 boundary case 里的「no resource of the current corpus is of this shape」句改写为时点限定（**只改叙事句，判据词零改动**，判据面 digest 与父提交逐字一致）。 |
 
 ### C3 — Prerequisite 边（DOMAIN_MODEL §7）
 

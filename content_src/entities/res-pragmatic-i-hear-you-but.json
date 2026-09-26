@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-i-hear-you-but",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Give the other side credit first, and then deliver your objection.",
+      "Say that you accept their point, then move past the comma to the thing that still stops you.",
+      "Start with the words: ___, we can't spend any more on this."
+    ],
+    "reveal_form": "I hear you, but we can't spend any more on this.",
+    "canonical_forms": [
+      "I hear you, but we can't spend any more on this."
+    ],
+    "alternative_realizations": [
+      "I hear you, but the timeline doesn't move."
+    ],
+    "required_slots": [
+      [
+        "hear"
+      ],
+      [
+        "spend"
+      ]
+    ]
+  }
+}

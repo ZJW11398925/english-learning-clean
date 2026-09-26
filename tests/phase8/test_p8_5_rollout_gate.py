@@ -196,52 +196,51 @@ def test_off_refuses_at_every_stage() -> None:
 def test_the_real_corpus_answers_go_on_all_four_rows_and_the_rollout_stays_held(
     p8world: World,
 ) -> None:
-    """The measured answer at C3-c's truth, as a two-layer statement (旧真值:
+    """The measured answer at C3-d's truth, as a two-layer statement (旧真值:
     every row 0, four HOLD rows, 14 targets all without a level; C1: the one
     authored R4 target made every row GO; C2-a: nine usable targets; C2-b:
     twenty-eight; C3-a: forty-six; C3-b: sixty-four; C3-R1: the sixteen
     RESOURCE targets whose §24.7 row is a curriculum mapping reached R4 (the
-    re-review's deliberate fall-back); 新真值 C3-c: the cut's eighteen
-    resources authored against the functional definitions are mappings by
-    their own rows, so
-    every row reads thirty-four usable targets — BF-02 §10's "at least one
+    re-review's deliberate fall-back); C3-c: thirty-four; 新真值 C3-d: C3-d's
+    eighteen resources authored against the functional definitions are
+    mappings by their own rows, so
+    every row reads fifty-two usable targets — BF-02 §10's "at least one
     target" is met on all four floors — **and the rollout is still held**):
     layer one is the content gate's GO; layer two is the stage leg, which no
     shipped caller declares — ``stage_allows_automatic`` answers False for the
     undeclared stage and for the fail-closed default, and the two-leg
     composition refuses with any frequency word — plus the Calibration100
-    volume gate (docs/IMPLEMENTATION_PLAN.md §13's 100/30/2), under which the
-    volume floor is unmet and CORE_A stays below its floor at C3-c's
-    truth while CORE_C stays met under the declared reading. Content capable
-    ≠ rollout open."""
+    volume gate (docs/IMPLEMENTATION_PLAN.md §13's 100/30/2), whose floors
+    now all read met (100/32/20) but whose gate is not the rollout's only
+    door. Content capable ≠ rollout open."""
 
     report = corpus_rollout_gate(p8world.curriculum)
     assert isinstance(report, Ok), report
     gate = report.value
-    # Layer one: the content gate's four rows all read GO on thirty-four usable
+    # Layer one: the content gate's four rows all read GO on fifty-two usable
     # targets — 旧真值 was ("PROBE", 0) … ("automatic CURRENT_USER_ERROR", 0),
-    # C3-b was 64 per row, C3-R1 was 16 per row.
+    # C3-b was 64 per row, C3-R1 was 16 per row, C3-c was 34.
     assert [(row.row_word, row.usable_targets) for row in gate.rows] == [
-        ("PROBE", 34),
-        ("user-initiated teaching", 34),
-        ("automatic general/review", 34),
-        ("automatic CURRENT_USER_ERROR", 34),
+        ("PROBE", 52),
+        ("user-initiated teaching", 52),
+        ("automatic general/review", 52),
+        ("automatic CURRENT_USER_ERROR", 52),
     ]
     assert all(row.verdict is RolloutVerdict.GO for row in gate.rows)
     assert gate.verdict is RolloutVerdict.GO
     assert gate.automatic_verdict is RolloutVerdict.GO
-    assert gate.targets_considered == 87
+    assert gate.targets_considered == 105
     assert gate.targets_without_level == 5
     assert gate.unknown_levels == ()
     assert gate.summary() == (
-        "PROBE: required R2_PLANNER_READY, usable targets 34 → GO",
-        "user-initiated teaching: required R3_TEACHING_READY, usable targets 34"
+        "PROBE: required R2_PLANNER_READY, usable targets 52 → GO",
+        "user-initiated teaching: required R3_TEACHING_READY, usable targets 52"
         " → GO",
-        "automatic general/review: required R3_TEACHING_READY, usable targets 34"
+        "automatic general/review: required R3_TEACHING_READY, usable targets 52"
         " → GO",
         "automatic CURRENT_USER_ERROR: required R4_DETECTION_READY, usable"
-        " targets 34 → GO",
-        "targets: 87 considered, 5 without a level",
+        " targets 52 → GO",
+        "targets: 105 considered, 5 without a level",
         "verdict: GO (automatic rows: GO)",
     )
     # No row blocks, so the report's blocked tail is empty (旧真值: four
@@ -265,16 +264,18 @@ def test_the_real_corpus_answers_go_on_all_four_rows_and_the_rollout_stays_held(
 
 def _calibration100_floors_are_readable() -> None:
     """docs/IMPLEMENTATION_PLAN.md §13's Calibration100 floors (100/30/2),
-    read against the built artifact's own counts at C3-c's truth: the volume
-    floor is unmet (82 resources < 100), CORE_A stays below its floor
-    (the R3+ set is the thirty-four mapping targets, of which 24 carry a HIGH
-    band, so CORE_A 24 < 30) while CORE_C
-    (10 >= 2) stays met under the **声明读法 + Revisit（用户 2026-09-26 裁决）**
+    read against the built artifact's own counts at C3-d's truth: the volume
+    floor is met (100 resources == 100, the first rung topped), CORE_A reads
+    over its floor (the R3+ set is the fifty-two mapping targets, of which 32
+    carry a HIGH band, so CORE_A 32 >= 30) and CORE_C
+    (20 >= 2) stays met under the **声明读法 + Revisit（用户 2026-09-26 裁决）**
     — R3_TEACHING_READY or R4_DETECTION_READY crossed with
     ``content_pedagogical_profile.core_utility`` HIGH / {MEDIUM, LOW}. The
     numbers live in the frozen document and are read from it, and the three
     floors are asserted one per line, each with its own direction, so they
-    can never be folded into one "gate passed" sentence."""
+    can never be folded into one "gate passed" sentence. **Zero opening
+    claim**: the floors meeting is the volume gate's answer — the stage leg
+    pinned in ① is still the door."""
 
     import re
     import sqlite3
@@ -323,8 +324,8 @@ def _calibration100_floors_are_readable() -> None:
     ]
     core_a = [t for t in banded if utilities.get(t) == "HIGH"]
     core_c = [t for t in banded if utilities.get(t) in ("MEDIUM", "LOW")]
-    assert resources < gates["resource_count"]  # volume floor unmet
-    assert len(core_a) < gates["CORE_A"]  # CORE_A unmet (24 of 30)
+    assert resources >= gates["resource_count"]  # volume floor met (topped)
+    assert len(core_a) >= gates["CORE_A"]  # CORE_A met (32 of 30)
     assert len(core_c) >= gates["CORE_C"]  # CORE_C met
 
 

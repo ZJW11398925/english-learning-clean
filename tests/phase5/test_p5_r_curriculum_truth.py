@@ -193,6 +193,29 @@ C3C_APPROVED = (
     "res-pragmatic-with-all-due-respect",
 )
 
+#: The eighteen rows C3-d authored and adjudicated against the capability
+#: functional definitions (every row of the cut is a REALIZES mapping).
+C3D_APPROVED = (
+    "res-discourse-before-i-forget",
+    "res-discourse-that-brings-me-to",
+    "res-discourse-where-was-i",
+    "res-hedge-from-what-i-can-tell",
+    "res-hedge-if-you-ask-me",
+    "res-hedge-in-a-way",
+    "res-hedge-more-or-less",
+    "res-pragmatic-come-again",
+    "res-pragmatic-could-you-clarify",
+    "res-pragmatic-go-on",
+    "res-pragmatic-i-hear-you-but",
+    "res-pragmatic-im-not-convinced",
+    "res-pragmatic-no-way",
+    "res-pragmatic-right",
+    "res-pragmatic-run-that-by-me-again",
+    "res-pragmatic-thats-debatable",
+    "res-pragmatic-what-was-that",
+    "res-pragmatic-youre-kidding",
+)
+
 _CLAIM_COLUMNS = (
     "evidence_claim_id",
     "target_type",
@@ -264,7 +287,7 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
     null everywhere (no vocabulary is invented)."""
 
     links = _links_document()["links"]
-    assert len(links) == 82
+    assert len(links) == 100
     realizes = 0
     supports = 0
     demoted = 0
@@ -288,7 +311,7 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
                 ), row
             else:
                 assert row["primary_flag"] is False, row
-    assert (realizes, supports) == (33, 49)
+    assert (realizes, supports) == (51, 49)
     assert demoted == 6
     print(
         "[p5-r] corpus links -> "
@@ -298,7 +321,7 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
     )
 
 
-@pytest.mark.parametrize("index", range(82))
+@pytest.mark.parametrize("index", range(100))
 def test_every_rationale_states_its_basis_and_its_limit(index: int) -> None:
     """Every rationale is written in the C3-R1 review genre: it names the node
     it points at and that node's functional-definition file, quotes the
@@ -326,6 +349,8 @@ def test_every_rationale_states_its_basis_and_its_limit(index: int) -> None:
         # The C3-c rows carry their own cut's authoring label: the genre is
         # the same adjudication genre, the provenance line names the cut.
         assert "C3-c (Phase 11)" in rationale, rationale
+    elif str(row["resource_id"]) in C3D_APPROVED:
+        assert "C3-d (Phase 11)" in rationale, rationale
     else:
         assert "C3-R1 (Phase 11) capability-semantics re-review" in rationale
     assert "Revisit" in rationale, rationale
@@ -343,6 +368,8 @@ def test_every_rationale_states_its_basis_and_its_limit(index: int) -> None:
             assert "C3-b (Phase 11)" in rationale, resource_id
         elif resource_id in C3C_APPROVED:
             assert "C3-c (Phase 11)" in rationale, resource_id
+        elif resource_id in C3D_APPROVED:
+            assert "C3-d (Phase 11)" in rationale, resource_id
         else:
             # Every remaining row was authored by C2-b (the C2-a rows are all
             # fixture-declared; C1's own row is DECISION above).
@@ -375,7 +402,7 @@ def test_the_entity_lifecycle_is_the_authors_and_was_not_touched(
             assert resource.value.lifecycle_status == "CANONICAL_APPROVED"
         eligible = supply.supply_entity_ids()
         assert isinstance(eligible, Ok), eligible
-        assert len(eligible.value) == 87
+        assert len(eligible.value) == 105
     finally:
         store.close()
 
@@ -474,8 +501,8 @@ def test_only_the_approved_realizes_link_credits_a_capability(
                 supports_only += 1
                 assert relations == {"SUPPORTS"}, entity_id
                 assert teaching.value.capability_linkage is None, entity_id
-        assert linked == 82
-        assert credited == 33
+        assert linked == 100
+        assert credited == 51
         assert supports_only == 49
     finally:
         store.close()

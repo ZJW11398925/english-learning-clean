@@ -314,16 +314,17 @@ def test_an_unreadable_ladder_is_no_level_and_carries_the_failure(
     assert "DEPENDENCY_UNAVAILABLE" in outcome.reasons[0]
 
 
-def test_the_shipped_corpus_levels_are_five_none_34_r4_and_48_r1(
+def test_the_shipped_corpus_levels_are_five_none_52_r4_and_48_r1(
     content_supply,
 ) -> None:
-    """The real ladder over the real corpus, at C3-c's truth (旧真值: every
+    """The real ladder over the real corpus, at C3-d's truth (旧真值: every
     target read no level, blocked at R0 by ``assessment_membership`` — the
     P5-R strict reading; C1: one target reached R4; C2-a: nine; C2-b:
     twenty-eight; C3-b: all sixty-four; C3-R1: the sixteen RESOURCE
     targets whose §24.7 row is a curriculum mapping read R4_DETECTION_READY
-    with no blocking key; 新真值 C3-c: the thirty-four mappings (C3-R1's
-    sixteen plus the cut's eighteen authored rows) read R4 with no blocking
+    with no blocking key; C3-c: thirty-four; 新真值 C3-d: the fifty-two
+    mappings (C3-R1's sixteen plus C3-c's and C3-d's thirty-six authored
+    rows) read R4 with no blocking
     key, the other forty-eight read R1_LEXICALLY_RESOLVED
     with ``curriculum_link`` as the level-1 blocking key — unusable, and
     distinguishable from "no evidence" — and the five evidence-less
@@ -331,7 +332,7 @@ def test_the_shipped_corpus_levels_are_five_none_34_r4_and_48_r1(
 
     ids = content_supply.supply_entity_ids()
     assert isinstance(ids, Ok)
-    assert len(ids.value) == 87
+    assert len(ids.value) == 105
     r4: list[str] = []
     r1: list[str] = []
     for entity_id in ids.value:
@@ -360,41 +361,59 @@ def test_the_shipped_corpus_levels_are_five_none_34_r4_and_48_r1(
     assert len(r1) == 48
 
 
-#: The thirty-four RESOURCE targets whose §24.7 row is a curriculum mapping
-#: after C3-R1 plus C3-c's authored mappings (the R4 set the shipped corpus
-#: grades), written out rather than derived.
+#: The fifty-two RESOURCE targets whose §24.7 row is a curriculum mapping
+#: after C3-R1 plus C3-c's and C3-d's authored mappings (the R4 set the
+#: shipped corpus grades), written out rather than derived.
 _MAPPING_TARGETS = (
     "res-discourse-anyway",
+    "res-discourse-before-i-forget",
     "res-discourse-by-the-way",
     "res-discourse-having-said-that",
     "res-discourse-moving-on",
     "res-discourse-on-another-note",
     "res-discourse-speaking-of-which",
+    "res-discourse-that-brings-me-to",
     "res-discourse-that-reminds-me",
     "res-discourse-to-be-honest",
     "res-discourse-to-get-back-to-the-point",
+    "res-discourse-where-was-i",
     "res-hedge-as-far-as-i-know",
+    "res-hedge-from-what-i-can-tell",
     "res-hedge-i-guess",
     "res-hedge-i-think",
     "res-hedge-if-im-not-mistaken",
+    "res-hedge-if-you-ask-me",
     "res-hedge-im-not-sure",
+    "res-hedge-in-a-way",
     "res-hedge-it-depends",
     "res-hedge-it-seems-to-me",
+    "res-hedge-more-or-less",
     "res-hedge-not-really",
     "res-hedge-sort-of",
     "res-pragmatic-are-you-saying",
+    "res-pragmatic-come-again",
+    "res-pragmatic-could-you-clarify",
     "res-pragmatic-could-you-say-that-again",
     "res-pragmatic-fair-enough",
+    "res-pragmatic-go-on",
     "res-pragmatic-got-it",
+    "res-pragmatic-i-hear-you-but",
     "res-pragmatic-i-see",
     "res-pragmatic-i-see-your-point-but",
+    "res-pragmatic-im-not-convinced",
     "res-pragmatic-let-me-make-sure",
     "res-pragmatic-no-offense-but",
+    "res-pragmatic-no-way",
+    "res-pragmatic-right",
+    "res-pragmatic-run-that-by-me-again",
     "res-pragmatic-that-makes-sense",
     "res-pragmatic-thats-a-good-point-but",
+    "res-pragmatic-thats-debatable",
     "res-pragmatic-up-to-a-point",
     "res-pragmatic-what-do-you-mean",
+    "res-pragmatic-what-was-that",
     "res-pragmatic-with-all-due-respect",
+    "res-pragmatic-youre-kidding",
     "res-softener-a-bit",
     "res-softener-kind-of",
     "res-softener-to-be-fair",

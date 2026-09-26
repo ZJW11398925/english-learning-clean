@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's clarification-request set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "come again",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "come-again.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "come-again.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A clarification request: the two words a listener says with rising intonation to ask for the same words once more -- a colloquial repeat request aimed at what the speaker just said."
+    },
+    {
+      "sense_id": "come-again.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The pair stands first, with rising intonation and often a dash or question mark into the missed words: Come again? I didn't quite catch the name. Come again — did you say four thirty or four fifteen? The request is for the words themselves, not their meaning, and the reason for the miss can follow. It is spoken, informal and warm; in careful or written contexts say that again or could you repeat that takes its place."
+    },
+    {
+      "sense_id": "come-again.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The double marking is the drill: didn't already carries the past, so the main verb stays bare (didn't quite catch, never didn't quite catched). The time expression is the second slip: clock times take no preposition (say four thirty, never say on four thirty). When the words are a host's invitation to return (come again next weekend), they are about visiting and not about repeating words -- that is the boundary the fixtures hold."
+    },
+    {
+      "sense_id": "come-again.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Come again? asks for the same words once more; what was that? does the same work more neutrally; could you say that again? is the careful form. Come again soon is a host's invitation to revisit and is never this repair move."
+    },
+    {
+      "sense_id": "come-again.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "你说啥？／再来一遍？（口语的重复请求，请对方把刚才的话再说一次）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "come-again.base",
+      "written": "come again",
+      "normalized": "come again",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "LOW",
+    "explanation_cost": "LOW",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the pair is a very frequent repeat request in informal speech, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because it is the colloquial member of the repeat-request family -- the neutral what was that covers careful registers, and learners need to know where this one belongs. Productive difficulty is LOW: two fixed words plus a reason clause, with the double-marking and clock-time slips as the teaching points. Transfer value is MEDIUM: the repeat move transfers to say that again and could you repeat that. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "The pair belongs to the general fluency pack (the phrases that keep a conversation alive), so it carries high weight in that pack's coverage accounting; the shortfall records that it is the colloquial member of the repeat-request family."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.6",
+      "rationale": "Asking a colleague for a repeat (come again — did you say four thirty?) serves in relaxed workplaces, but the pair's informality bounds its use; the reduced weight records both facts and that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the pair with its rising repeat request aimed at the words just said, and never present the visit-invitation reading or an ERROR_INSTANCE as a model of the repair move."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "DOUBLE_MARKING",
+      "error_pattern": "I didn't quite catched the name (the main verb carrying past marking after the past auxiliary)",
+      "corrected_pattern": "I didn't quite catch the name",
+      "explanation": "The auxiliary didn't already carries the past, so the main verb stays bare, and learners mark the past twice because their own language marks the verb itself; didn't catched is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the reason clause carries a past-marked or irregular-past verb form after didn't."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_INSERTION",
+      "error_pattern": "did you say on four thirty or four fifteen? (a preposition added inside the clock time)",
+      "corrected_pattern": "did you say four thirty or four fifteen?",
+      "explanation": "Clock times in English take no preposition after say, and learners insert one because their own language marks the time phrase with one; say on four thirty is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the echoed words carry a preposition inside a bare clock time."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the verb form in the reason clause and the shape of the echoed words. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the repair move's errors take; the do-not-match rules state the accepted realizations and the visit-invitation reading the move must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the visit-invitation reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "DOUBLE_MARKING: match when the reason clause carries a past-marked verb after didn't (didn't quite catched), because the auxiliary already carries the past."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PREPOSITION_INSERTION: match when the echoed words carry a preposition inside a bare clock time (say on four thirty), because clock times take no preposition here."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the pair stands whole as the repeat request (Come again? I didn't quite catch the name.; Come again — did you say four thirty or four fifteen?): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_VISIT_INVITATION: do not match when the words invite a return visit (Come again next weekend — the garden looks its best in autumn.), because there the words are a host's invitation and the repeat request is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Come again? I didn't quite catch the name.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Come again — did you say four thirty or four fifteen?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Come again? The microphone keeps cutting out.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Come again next weekend — the garden looks its best in autumn.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Come again? I didn't quite catched the name.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Come again — did you say on four thirty or four fifteen?",
+      "expected": "MATCH"
+    }
+  ]
+}

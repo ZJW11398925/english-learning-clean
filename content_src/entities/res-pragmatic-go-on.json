@@ -1,0 +1,44 @@
+{
+  "entity": {
+    "entity_id": "res-pragmatic-go-on",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PRAGMATIC_FORMULA",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "RESOURCE",
+    "target_mode": "RESOURCE_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Invite the person who is talking to continue their story.",
+      "Say the two words as an invitation, then ask for the part you want to hear.",
+      "Start with the words: ___ — what happened next?"
+    ],
+    "reveal_form": "Go on — what happened next?",
+    "canonical_forms": [
+      "Go on — what happened next?"
+    ],
+    "alternative_realizations": [
+      "Go on, I'm listening."
+    ],
+    "required_slots": [
+      [
+        "happened"
+      ],
+      [
+        "listening"
+      ]
+    ]
+  }
+}

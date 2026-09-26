@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's topic-management set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "that brings me to",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "that-brings-me-to.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "that-brings-me-to.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A topic-shift signpost that opens the next matter by tying it to the one just finished -- the frame names the link out loud, so the shift reads as a step in one argument rather than a jump."
+    },
+    {
+      "sense_id": "that-brings-me-to.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The frame is that (or which) + brings me to + the named matter: That brings me to the travel plan: who arranges the flights? In running speech the relative which is common (Which brings me to my next point — the travel allowance), and the matter named fills the slot after to. The frame sits at the front of the turn, and what follows it is content about the new matter -- the same content without the frame would read as continuing the old one."
+    },
+    {
+      "sense_id": "that-brings-me-to.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The preposition is the drill: bring someone to a matter takes to, and learners swap in on or at because their own language marks movement onto a topic; the object is the next misstep -- the frame carries an object after brings (that brings me to...), and cutting it leaves a verb without the person being moved. When the words report physical transport, the signpost is gone -- that is the boundary the fixtures hold."
+    },
+    {
+      "sense_id": "that-brings-me-to.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "That brings me to the signpost moves the talk and names the new matter in the same breath. Speaking of which picks up a matter the previous turn evoked; that brings me to states the link as the speaker's own step in their plan. The literal transport reading (the taxi brings me to the office) moves a body, not a topic, and is never this signpost."
+    },
+    {
+      "sense_id": "that-brings-me-to.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "这就说到／由此引出（把刚谈完的事和下一件事连起来，顺势进入新话题）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "that-brings-me-to.base",
+      "written": "that brings me to",
+      "normalized": "that brings me to",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the signpost is common in presentations, meetings and careful conversation, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because it belongs mostly to structured talk -- one speaker holding the floor -- and the plainer moving on covers the looser cases. Productive difficulty is MEDIUM: the preposition to and the object pronoun are what production has to get right. Transfer value is MEDIUM: the frame's link-stating move transfers to which brings me to and this leads me to. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "The signpost belongs to the general fluency pack (the phrases that move a conversation), so it carries high weight in that pack's coverage accounting; the shortfall records that it is the structured-talk member of the topic-shift family."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.9",
+      "rationale": "Stepping from one agenda item to the next with the link named (that brings me to the travel plan) is ordinary workplace language, so it carries nearly full weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the frame with the object pronoun me and the preposition to before the named matter, and never present a wrong-preposition, object-less or transport-reading sentence as a model of the signpost."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_SLIP",
+      "error_pattern": "That brings me on the travel plan (on standing where the preposition to belongs)",
+      "corrected_pattern": "That brings me to the travel plan",
+      "explanation": "Bring someone to a matter takes to, and learners swap in on because their own language marks arriving onto a topic with an onto-like word; bring me on the plan reads as physical movement and is not the frame's stored form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the signpost carries brings me on (or at) before the named matter."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "OBJECT_DROP",
+      "error_pattern": "That brings to the travel plan (the object pronoun cut from the frame)",
+      "corrected_pattern": "That brings me to the travel plan",
+      "explanation": "The frame moves a person -- that brings me to -- and learners cut the object pronoun because their own language allows the topic itself to be the mover; that brings to is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when brings is followed straight by to with no object pronoun between them."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words between brings and the named matter. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the frame's errors take; the do-not-match rules state the accepted realizations and the literal transport reading the signpost must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the transport reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "PREPOSITION_SLIP: match when the signpost carries brings me on or brings me at before the named matter, because the frame's preposition is to."
+    },
+    {
+      "ordinal": 1,
+      "rule": "OBJECT_DROP: match when brings is followed straight by to with no object pronoun (that brings to the travel plan), because the frame moves the speaker into the new matter."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the frame stands whole (That brings me to the travel plan: who arranges the flights?; Which brings me to my next point — the travel allowance.): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_TRANSPORT_READING: do not match when the words report physical transport of a person (The taxi brings me to the office every morning.), because there the movement is a body's and the topic shift is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "That brings me to the travel plan: who arranges the flights?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Which brings me to my next point — the travel allowance.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "And that brings me to the last item on the agenda.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "The taxi brings me to the office every morning.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "That brings me on the travel plan: who arranges the flights?",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "That brings to the travel plan: who arranges the flights?",
+      "expected": "MATCH"
+    }
+  ]
+}

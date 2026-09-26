@@ -598,14 +598,14 @@ def wired_world(world: World) -> World:
 def test_the_shipped_corpus_answers_the_scheduled_row_and_the_run_degrades(
     wired_world: World,
 ) -> None:
-    """The honest chain: real supply, real rows, real ladder. At C3-c's truth
+    """The honest chain: real supply, real rows, real ladder. At C3-d's truth
     the world has grown but the shape of the answer has not changed (旧真值:
     all 14 refused at CONTENT_READINESS; C1: thirteen still refused there and
     the one R4-graded target refused at SCHEDULE_ROW; C2-a: the eight
     unscheduled RESOURCE targets refused at SCHEDULE_ROW; C2-b: twenty-seven
-    unscheduled; C3-a: forty-five; 新真值: the five
+    unscheduled; C3-a: forty-five; C3-c: eighty-one; 新真值: the five
     evidence-less CAPABILITY entities are still refused at CONTENT_READINESS,
-    the eighty-one unscheduled RESOURCE targets at SCHEDULE_ROW, and the one
+    the ninety-nine unscheduled RESOURCE targets at SCHEDULE_ROW, and the one
     RESOURCE target the world schedules — the row target, R4 — is answered by
     two real sources). The run still degrades instead of deciding, because the
     five ungraded entities the caller holds leave the readiness authority
@@ -660,6 +660,7 @@ def test_the_shipped_corpus_answers_the_scheduled_row_and_the_run_degrades(
         "res-colloc-take-advantage-of",
         "res-colloc-take-part-in",
         "res-discourse-anyway",
+        "res-discourse-before-i-forget",
         "res-discourse-by-the-way",
         "res-discourse-having-said-that",
         "res-discourse-in-fact",
@@ -667,9 +668,11 @@ def test_the_shipped_corpus_answers_the_scheduled_row_and_the_run_degrades(
         "res-discourse-moving-on",
         "res-discourse-on-another-note",
         "res-discourse-speaking-of-which",
+        "res-discourse-that-brings-me-to",
         "res-discourse-that-reminds-me",
         "res-discourse-to-be-honest",
         "res-discourse-to-get-back-to-the-point",
+        "res-discourse-where-was-i",
         "res-frame-id-like-to",
         "res-frame-if-you-dont-mind",
         "res-frame-just-wondering",
@@ -678,12 +681,16 @@ def test_the_shipped_corpus_answers_the_scheduled_row_and_the_run_degrades(
         "res-frame-what-im-saying-is",
         "res-frame-would-you-mind",
         "res-hedge-as-far-as-i-know",
+        "res-hedge-from-what-i-can-tell",
         "res-hedge-i-guess",
         "res-hedge-i-mean",
         "res-hedge-if-im-not-mistaken",
+        "res-hedge-if-you-ask-me",
         "res-hedge-im-not-sure",
+        "res-hedge-in-a-way",
         "res-hedge-it-depends",
         "res-hedge-it-seems-to-me",
+        "res-hedge-more-or-less",
         "res-hedge-not-really",
         "res-hedge-sort-of",
         "res-idiom-a-blessing-in-disguise",
@@ -704,21 +711,32 @@ def test_the_shipped_corpus_answers_the_scheduled_row_and_the_run_degrades(
         "res-phrasal-turn-out",
         "res-phrasal-work-out",
         "res-pragmatic-are-you-saying",
+        "res-pragmatic-come-again",
         "res-pragmatic-could-i-ask",
         "res-pragmatic-could-you",
+        "res-pragmatic-could-you-clarify",
         "res-pragmatic-could-you-say-that-again",
         "res-pragmatic-fair-enough",
+        "res-pragmatic-go-on",
         "res-pragmatic-got-it",
+        "res-pragmatic-i-hear-you-but",
         "res-pragmatic-i-see",
         "res-pragmatic-i-see-your-point-but",
+        "res-pragmatic-im-not-convinced",
         "res-pragmatic-let-me-make-sure",
         "res-pragmatic-no-offense-but",
+        "res-pragmatic-no-way",
+        "res-pragmatic-right",
+        "res-pragmatic-run-that-by-me-again",
         "res-pragmatic-sorry-to-interrupt",
         "res-pragmatic-that-makes-sense",
         "res-pragmatic-thats-a-good-point-but",
+        "res-pragmatic-thats-debatable",
         "res-pragmatic-up-to-a-point",
         "res-pragmatic-what-do-you-mean",
+        "res-pragmatic-what-was-that",
         "res-pragmatic-with-all-due-respect",
+        "res-pragmatic-youre-kidding",
         "res-softener-a-bit",
         "res-softener-if-anything",
         "res-softener-kind-of",
@@ -868,7 +886,7 @@ def test_the_broad_readiness_read_is_the_coarse_one_and_degrades(
         FOCUS_TARGET: "R3_TEACHING_READY",
         ROW_TARGET: "R4_DETECTION_READY",
     }
-    assert len(supply.readiness) == 87
+    assert len(supply.readiness) == 105
 
 
 def test_the_scope_constraint_is_what_restricts_the_candidate_set(

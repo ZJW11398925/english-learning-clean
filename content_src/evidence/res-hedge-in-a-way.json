@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's hedging-formula set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "in a way",
+    "pos": "ADV"
+  },
+  "senses": [
+    {
+      "sense_id": "in-a-way.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "in-a-way.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A hedge that presents a claim as true from one angle only -- the speaker stands partly behind it, and the words mark the part that does not hold."
+    },
+    {
+      "sense_id": "in-a-way.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The phrase stands at the front of the sentence, set off by a comma: In a way, the extra traffic taught us patience. It can also stand inside the clause before the verb (I in a way prefer the quieter office), though the fronted position is the usual one. The words are fixed -- in + a + way, with the article -- and the limited claim follows as a full clause. In speech the comma is the speaker showing one hand: this holds from one side, not from every side."
+    },
+    {
+      "sense_id": "in-a-way.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The article and the preposition are the two slips: the frame is in a way (the article a is part of the stored form, and on does not replace in). The hedge grants the claim only part of its force, so what follows is a claim the speaker is prepared to defend only from one angle; teaching it as plain agreement would be wrong. When a way is a literal route or method (cook it in a way that keeps the grains whole), the hedge is gone."
+    },
+    {
+      "sense_id": "in-a-way.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "In a way marks the speaker's own claim as partly true; in some ways counts the angles and needs a plural to follow; sort of and kind of lower the claim with a more colloquial voice. In the way (blocking a path) and in a way that + clause (a manner) are literal readings and are never this hedge."
+    },
+    {
+      "sense_id": "in-a-way.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "从某种角度说／在某种程度上（只承认自己说法的一面成立，不是全部）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "in-a-way.base",
+      "written": "in a way",
+      "normalized": "in a way",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the phrase is common in conversation, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because the partial-agreement move it makes is subtler than the plain hedges -- it is the right tool when the speaker wants to grant a claim only one angle, and the plainer sort of covers the casual cases. Productive difficulty is MEDIUM: the fixed article and the choice of what follows are what production has to get right. Transfer value is MEDIUM: the angle-marking move transfers to in some ways and to a certain extent. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "The phrase belongs to the general fluency pack (high-frequency multi-word units), so it carries high weight in that pack's coverage accounting; the shortfall records that it is the partial-agreement member of the hedge family."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Granting a claim one angle before the team weighs it (in a way, the extra traffic taught us patience) is ordinary workplace language, so the unit has a real workplace use; the reduced weight records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the phrase whole, with the article a and in front, before the comma and the limited claim, and never present a dropped-article, wrong-preposition or literal-manner sentence as a model of the hedge."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "ARTICLE_DROP",
+      "error_pattern": "In way, + clause (the article a dropped from the fixed frame)",
+      "corrected_pattern": "In a way, + clause",
+      "explanation": "The frame stores the article -- in a way -- and learners cut it because their own language marks the phrase without one; in way standing alone is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the hedged claim is fronted by in way with no article."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PREPOSITION_SLIP",
+      "error_pattern": "On a way, + clause (on standing where the preposition in belongs)",
+      "corrected_pattern": "In a way, + clause",
+      "explanation": "The frame locates the claim inside one of several angles -- in a way -- and learners swap in on because their own language marks the manner or side with an on-like word; on a way as a hedge is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the hedged claim is fronted by on a way."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the words of the frame at the front of a hedged claim. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the frame's errors take; the do-not-match rules state the accepted realizations and the literal manner reading the hedge must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the literal manner reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "ARTICLE_DROP: match when the hedged claim is fronted by in way with no article, because the frame stores the article (in a way)."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PREPOSITION_SLIP: match when the hedged claim is fronted by on a way, because the frame's preposition is in."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the phrase stands whole before its comma (In a way, the extra traffic taught us patience; In a way, I prefer the quieter office.): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_LITERAL_MANNER: do not match when a way is a route or a method of doing something (Cook the rice in a way that keeps the grains whole.), because there the words are a literal manner phrase and the hedging of a claim is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "In a way, the extra traffic taught us patience.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "In a way, I prefer the quieter office.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "In a way, her leaving made the team stronger.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Cook the rice in a way that keeps the grains whole.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "In way, the extra traffic taught us patience.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "On a way, the extra traffic taught us patience.",
+      "expected": "MATCH"
+    }
+  ]
+}

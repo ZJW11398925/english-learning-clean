@@ -252,16 +252,17 @@ def test_core_a_counts_the_high_utility_targets_at_r3_and_above(
     reading is the adjudicated one. At C3-R1's truth the reading answered 11 —
     the HIGH-band share of the sixteen curriculum mappings. The C3-c cut's
     eighteen resources are mappings by their own rows, so its thirteen HIGH
-    targets all count and the reading answers 24 — still **below the floor**:
-    a placement row satisfies no R2 fact, so a HIGH target counts only where
-    its row is a mapping.
+    targets all count and the reading answered 24 — still **below the floor**
+    then: a placement row satisfies no R2 fact, so a HIGH target counts only
+    where its row is a mapping. C3-d's eighteen more mappings with eight HIGH
+    targets carried the reading to 32 — over the floor again.
     """
 
     levels, utilities = _levels_and_utilities(built_content_db)
     core_a, core_c = _core_counts(built_content_db)
-    assert core_a == 24
-    assert core_a < 30  # unmet again (was met at C3-b)
-    assert core_a + core_c == 34
+    assert core_a == 32
+    assert core_a >= 30  # met again (C3-d's eight HIGH mappings)
+    assert core_a + core_c == 52
     assert len(C3B_HIGH_TARGETS) == 10
     kept = [t for t in C3B_HIGH_TARGETS if levels[t] == "R4_DETECTION_READY"]
     assert kept == [t for t in C3B_HIGH_TARGETS if t in C3B_MAPPING_TARGETS]
@@ -274,7 +275,8 @@ def test_core_c_counts_the_medium_and_low_utility_targets_at_r3_and_above(
 ) -> None:
     """CORE_C = R3+ level ∧ core_utility MEDIUM/LOW. At C3-R1's truth the
     reading answered 5 (the MEDIUM-band share of the sixteen curriculum
-    mappings); the C3-c cut's five MEDIUM mappings widen it to 10, and the
+    mappings); the C3-c cut's five MEDIUM mappings widened it to 10, C3-d's
+    ten MEDIUM mappings widen it to 20, and the
     corpus's LOW arm still comes from C3-a's
     `res-pragmatic-could-i-ask`.
 
@@ -283,12 +285,12 @@ def test_core_c_counts_the_medium_and_low_utility_targets_at_r3_and_above(
 
     levels, utilities = _levels_and_utilities(built_content_db)
     core_a, core_c = _core_counts(built_content_db)
-    assert core_c == 10
+    assert core_c == 20
     assert core_c >= 2
     assert len(C3B_NON_HIGH_TARGETS) == 8
     assert utilities["res-pragmatic-could-i-ask"] == "LOW"
     banded = {t for t in levels if t.startswith("res-")}
-    assert len(banded) == 82
+    assert len(banded) == 100
     for target in banded:
         assert utilities[target] in UTILITY_BANDS, target
 
@@ -337,12 +339,12 @@ def test_the_three_calibration100_floors_read_separately(
         f" (floor {gates['resource_count']},"
         f" {'met' if len(resources) >= gates['resource_count'] else 'unmet'})"
     )
-    assert core_a < gates["CORE_A"]  # CORE_A unmet (was met at C3-b)
+    assert core_a >= gates["CORE_A"]  # CORE_A met (32 of 30)
     assert core_c >= gates["CORE_C"]  # CORE_C met
-    assert len(resources) < gates["resource_count"]  # volume floor unmet
-    assert len(resources) == 82
-    assert len(entity_ids) == 87
-    assert core_a + core_c == 34  # the CORE cells count the mapping set
+    assert len(resources) >= gates["resource_count"]  # volume floor met
+    assert len(resources) == 100
+    assert len(entity_ids) == 105
+    assert core_a + core_c == 52  # the CORE cells count the mapping set
 
 
 # ---------------------------------------------------------------------------
@@ -399,7 +401,7 @@ def test_the_corpus_table_is_sixteen_r4_forty_eight_r1_and_five_none(
     finally:
         store.close()
     table = {a.target_id: a.level for a in assessments.value}
-    assert len(table) == 87
+    assert len(table) == 105
     r4 = sorted(t for t, level in table.items() if level == "R4_DETECTION_READY")
     r1 = sorted(
         t for t, level in table.items() if level == "R1_LEXICALLY_RESOLVED"
@@ -407,7 +409,7 @@ def test_the_corpus_table_is_sixteen_r4_forty_eight_r1_and_five_none(
     none = sorted(t for t, level in table.items() if level is None)
     assert all(target in r4 for target in C3B_MAPPING_TARGETS)
     assert all(target in r1 for target in C3B_PLACEMENT_TARGETS)
-    assert len(r4) == 34
+    assert len(r4) == 52
     assert len(r1) == 48
     assert len(none) == 5
     assert all(target.startswith("cap-") for target in none)
@@ -544,13 +546,13 @@ def test_the_credit_face_widens_by_the_three_new_realizes_rows(
         (CURRICULUM_DIR / "links.json").read_text(encoding="utf-8")
     )
     rows = document["links"]
-    assert len(rows) == 82
+    assert len(rows) == 100
     realizes = {
         str(row["resource_id"]): str(row["node_id"])
         for row in rows
         if row["relation"] == "REALIZES"
     }
-    assert len(realizes) == 33
+    assert len(realizes) == 51
     assert set(C3B_REALIZES) <= set(realizes)
     assert realizes["res-hedge-i-guess"] == "cap-eval-hedged-opinion"
     assert realizes["res-discourse-that-reminds-me"] == "cap-disc-topic-shift"
@@ -582,7 +584,7 @@ def test_the_credit_face_widens_by_the_three_new_realizes_rows(
     finally:
         store.close()
     assert credited == realizes
-    assert len(credited) == 33
+    assert len(credited) == 51
     assert len(C3B_SUPPORT_TARGETS) == 15
     assert len(C3B_TARGETS) == 18
 
@@ -643,7 +645,7 @@ def test_a_high_utility_target_demoted_to_medium_leaves_core_a(
 
     artifact = _evidence_variant(tmp_path, "res-hedge-not-really", demote)
     assert _level_of(artifact, "res-hedge-not-really") == "R4_DETECTION_READY"
-    assert _core_counts(artifact) == (23, 11)
+    assert _core_counts(artifact) == (31, 21)
 
 
 def test_demoting_a_new_targets_link_below_r3_drops_its_core_a_count(
@@ -652,7 +654,7 @@ def test_demoting_a_new_targets_link_below_r3_drops_its_core_a_count(
     """The level half of the reading, load-bearing: demoting one C3-b HIGH
     target's approved §24.7 link to CURRICULUM_MAPPED costs it the R2 fact and
     the level falls to R1_LEXICALLY_RESOLVED — so it leaves CORE_A although
-    its core_utility is untouched (24/10 -> 23/10). A band-only reading would
+    its core_utility is untouched (32/20 -> 31/20). A band-only reading would
     keep counting it; a placement row's approval is what its demotion
     removes."""
 
@@ -666,7 +668,7 @@ def test_demoting_a_new_targets_link_below_r3_drops_its_core_a_count(
     levels, utilities = _levels_and_utilities(artifact)
     assert utilities["res-hedge-i-guess"] == "HIGH"
     assert levels["res-hedge-i-guess"] not in CORE_LEVELS
-    assert _core_counts(artifact) == (23, 10)
+    assert _core_counts(artifact) == (31, 20)
 
 
 # ---------------------------------------------------------------------------
@@ -674,16 +676,16 @@ def test_demoting_a_new_targets_link_below_r3_drops_its_core_a_count(
 # ---------------------------------------------------------------------------
 
 
-def test_the_index_lists_87_and_82_documents() -> None:
-    """The index grew in both lists: entity documents 51 → 69 → 87, evidence
-    documents 46 → 64 → 82, both plain id order, and the eighteen new ids appear in
-    each list exactly once."""
+def test_the_index_lists_105_and_100_documents() -> None:
+    """The index grew in both lists: entity documents 51 → 69 → 87 → 105,
+    evidence documents 46 → 64 → 82 → 100, both plain id order, and the
+    eighteen new ids appear in each list exactly once."""
 
     index = json.loads((CONTENT_SRC_DIR / "index.json").read_text(encoding="utf-8"))
     entities = [str(entry) for entry in index["entities"]]
     evidence = [str(entry) for entry in index["evidence"]]
-    assert len(entities) == 87
-    assert len(evidence) == 82
+    assert len(entities) == 105
+    assert len(evidence) == 100
     assert entities == sorted(entities)
     assert evidence == sorted(evidence)
     for target_id in C3B_TARGETS:
@@ -723,7 +725,7 @@ def test_an_unknown_block_in_a_new_evidence_document_is_refused(
 def test_two_builds_of_the_grown_source_are_byte_equal(tmp_path: Path) -> None:
     """Determinism re-checked after the corpus passed 82: two builds of the
     same source produce the same bytes, and the report counts 87 entities /
-    82 evidence documents / 82 links / 5 capabilities."""
+    100 evidence documents / 100 links / 5 capabilities."""
 
     first = tmp_path / "a.db"
     second = tmp_path / "b.db"
@@ -733,9 +735,9 @@ def test_two_builds_of_the_grown_source_are_byte_equal(tmp_path: Path) -> None:
         second.read_bytes()
     ).hexdigest()
     report = build_content_db(tmp_path / "c.db")
-    assert report.entity_count == 87
-    assert report.evidence_count == 82
-    assert report.link_count == 82
+    assert report.entity_count == 105
+    assert report.evidence_count == 100
+    assert report.link_count == 100
     assert report.capability_count == 5
 
 

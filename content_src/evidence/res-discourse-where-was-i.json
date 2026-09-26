@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's topic-management set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "where was I",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "where-was-i.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "where-was-i.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A resumption signpost the speaker says to return to the topic after an interruption -- the speaker asks about their own place in the talk and then answers the question themselves with the point they had reached."
+    },
+    {
+      "sense_id": "where-was-i.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The question stands first, in the past tense (where was I, never where am I for the talk one was having), and the same speaker answers it in the next breath: Where was I? Oh yes — the training schedule for October. A soft opener can stand in front of it (Now, where was I before the phone rang?). The past tense is the point: the talk one is returning to already happened, and the question is asked of oneself, not of the listeners."
+    },
+    {
+      "sense_id": "where-was-i.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The question word-order is the drill: direct questions invert (Where was I?), and learners carry the statement order into it (Where I was?) or leave the wh-word in place after the subject (I was where?). The tense is the second slip: the resumption is about the talk that stopped, so the past was is the frame's word, and replacing it with the present is a different question about a different time. When the words ask about a physical place rather than a place in the talk, the signpost is gone -- that is the boundary the fixtures hold."
+    },
+    {
+      "sense_id": "where-was-i.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Where was I? as a resumption signpost is asked by the speaker about their own place in the talk, and the speaker answers it. Where was I sitting asks about a physical location and has nothing to do with the signpost. What was I saying is the same resumption move with a different object (the words rather than the place in the talk); where were we asks the group the same question."
+    },
+    {
+      "sense_id": "where-was-i.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "我刚才说到哪儿了（被打断后回到原话题，自己问、自己答）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "where-was-i.base",
+      "written": "where was I",
+      "normalized": "where was i",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the signpost is very common in meetings, lessons and phone calls, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because it is situationally narrower than the main-line shift markers -- it only fires when one's own talk was interrupted, and the plainer anyway covers much of the same ground. Productive difficulty is MEDIUM: the inversion and the past tense are exactly what production has to get right. Transfer value is MEDIUM: the resumption move transfers to where were we and what was I saying. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.8",
+      "rationale": "The signpost belongs to the general fluency pack (the phrases that move a conversation), so it carries high weight in that pack's coverage accounting; the shortfall records that it is the resumption member of the topic-shift family, used only after an interruption."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.8",
+      "rationale": "Picking a meeting back up after a disruption (where was I? Oh yes — the training schedule) is ordinary workplace language, so it carries high weight in the workplace pack; the shortfall records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the question with its inversion and past tense was, followed by the speaker's own answer, and never present a statement-order or physical-location sentence as a model of the signpost."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "QUESTION_INVERSION_SLIP",
+      "error_pattern": "Where I was? (statement word order carried into the direct question)",
+      "corrected_pattern": "Where was I?",
+      "explanation": "Direct questions invert the subject and the verb, and learners keep the statement order because their own language does not invert; where I was standing as a question is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the resumption question is asked with statement order (where I was) instead of the inverted form."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "WH_IN_SITU",
+      "error_pattern": "I was where? (the question word left in place after the subject)",
+      "corrected_pattern": "Where was I?",
+      "explanation": "English fronted the question word when it became a direct question, and learners leave it in the base position because their own language keeps wh-words in place; I was where is not the frame's stored shape.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the question word where stands after the subject and verb in the resumption question."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the word order of the resumption question and the tense of its verb. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the frame's errors take; the do-not-match rules state the accepted realizations and the physical-location reading the signpost must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the physical-location reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "QUESTION_INVERSION_SLIP: match when the resumption question is asked with statement order (Where I was?), because the direct question inverts was and I."
+    },
+    {
+      "ordinal": 1,
+      "rule": "WH_IN_SITU: match when the question word stays after the subject (I was where?), because English fronts the question word in a direct question."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the question stands inverted (Where was I? Oh yes — the training schedule for October; Now, where was I before the phone rang?): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_PHYSICAL_PLACE: do not match when where was I asks about a physical location (Where was I sitting when the lights went out?), because there the words ask about a place in the world and the resumption move is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Where was I? Oh yes — the training schedule for October.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Now, where was I before the phone rang?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Sorry about the interruption — where was I? The training schedule.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Where was I sitting when the lights went out?",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Where I was? Oh yes — the training schedule for October.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "I was where? Oh yes — the training schedule for October.",
+      "expected": "MATCH"
+    }
+  ]
+}

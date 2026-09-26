@@ -1,0 +1,200 @@
+{
+  "assessment_membership": [
+    {
+      "assessment_id": "elc-placement-bank-v1",
+      "membership_status": "MEMBER",
+      "source": "C3-d authoring declaration (2026-09-27): this target is placed in the V1 placement bank's backchannel set by this cut's authoring review. The declaration is made here — no authoring fixture and no external assessment export in this repository places this target, so the membership is this review's own and is recorded as such."
+    }
+  ],
+  "lexical_entry": {
+    "lemma": "go on",
+    "pos": "VERB"
+  },
+  "senses": [
+    {
+      "sense_id": "go-on.sense-1",
+      "ordinal": 0
+    }
+  ],
+  "texts": [
+    {
+      "sense_id": "go-on.sense-1",
+      "language": "en",
+      "role": "definition",
+      "ordinal": 0,
+      "text": "A backchannel that invites the speaker to continue: the two words a listener produces to hand the floor back and ask for the next part of the story."
+    },
+    {
+      "sense_id": "go-on.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 0,
+      "text": "The pair stands first, often followed by the request for the next part: Go on — what happened next? On its own with the listening clause it does the same work: Go on, I'm listening. The words claim neither content nor the turn -- the listener asks for more of the same telling, not for new business. In speech the pair carries an eager, leaning-in tone, and a then can follow (go on then — finish the story)."
+    },
+    {
+      "sense_id": "go-on.sense-1",
+      "language": "en",
+      "role": "teaching_note",
+      "ordinal": 0,
+      "text": "The subject is the first drill: English keeps the imperative subjectless only in the imperative, so the listening clause needs its own subject (Go on, I'm listening -- the dropped I is the slip). The tense of the follow-up question is the second: the story already moved, so the past is what carries it (what happened next, never what happen next). When the words urge an action rather than a telling (go on, take the last biscuit), the invitation is to do something, not to keep talking -- that is the boundary the fixtures hold."
+    },
+    {
+      "sense_id": "go-on.sense-1",
+      "language": "en",
+      "role": "disambiguation",
+      "ordinal": 0,
+      "text": "Go on as a backchannel invites the same telling to continue; go ahead grants permission to start; tell me more is the plainer request. Go on about something (talk at length) and go on = continue an activity (carry on) are other members of the verb's family. The urging-action reading (go on, take it) is the nearest neighbour and the boundary."
+    },
+    {
+      "sense_id": "go-on.sense-1",
+      "language": "zh",
+      "role": "translation",
+      "ordinal": 0,
+      "text": "接着说／快讲（请对方把故事或说明继续讲下去的邀请信号）"
+    }
+  ],
+  "forms": [
+    {
+      "form_id": "go-on.base",
+      "written": "go on",
+      "normalized": "go on",
+      "form_type": "BASE",
+      "morph_features": null,
+      "pronunciation": null
+    }
+  ],
+  "pedagogical_profile": {
+    "core_utility": "MEDIUM",
+    "receptive_value": "HIGH",
+    "productive_value": "MEDIUM",
+    "receptive_difficulty": "LOW",
+    "productive_difficulty": "MEDIUM",
+    "explanation_cost": "MEDIUM",
+    "transfer_value": "MEDIUM",
+    "naturalness_value": "HIGH",
+    "default_target_mode": "RESOURCE_PRACTICE",
+    "editorial_status": "CANONICAL_APPROVED",
+    "rationale": "Bands are the C3-d authoring judgement (V1 carries no calibration data): the pair is a very frequent invitation-to-continue in conversation, so receptive value and naturalness are HIGH; core utility and productive value are MEDIUM because the invitation move it makes is one a learner can also make with tell me more, and because production has to keep the boundary against the urging-action reading -- the two differ only in what follows. Productive difficulty is MEDIUM: the subject in the listening clause and the past in the follow-up are the two classic slips. Transfer value is MEDIUM: the invitation move transfers to go ahead and tell me more. RESOURCE_PRACTICE follows the entity's own declared learning_intent ESTABLISH. Revisit when Calibration100 response data exists."
+  },
+  "pack_overlays": [
+    {
+      "pack_id": "pack-general-fluency-v1",
+      "weight": "0.9",
+      "rationale": "The pair belongs to the general fluency pack (the phrases that keep a conversation alive), so it carries high weight in that pack's coverage accounting; the shortfall records that it is the story-invitation member of the continue-signal family."
+    },
+    {
+      "pack_id": "pack-workplace-communication-v1",
+      "weight": "0.7",
+      "rationale": "Inviting a colleague to continue an account (go on — what happened next?) is ordinary workplace language, so the unit has a real workplace use; the reduced weight records that the pack's own review has not placed it."
+    }
+  ],
+  "resource_labels": [
+    {
+      "ordinal": 0,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 1,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": null,
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    }
+  ],
+  "example_policy": {
+    "policy_version": "example-policy-v1",
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the pair as an invitation for the speaker's story to continue, and never present the urging-action reading or an ERROR_INSTANCE as a model of the backchannel."
+  },
+  "typical_error_required": true,
+  "typical_errors": [
+    {
+      "ordinal": 0,
+      "learner_l1": null,
+      "error_type": "SUBJECT_DROP",
+      "error_pattern": "Go on, am listening. (the subject dropped from the clause that follows the invitation)",
+      "corrected_pattern": "Go on, I'm listening.",
+      "explanation": "English states the subject of every finite clause -- only the imperative goes without -- and learners extend the imperative's subjectlessness into the clause after the comma because their own language allows it; am listening standing alone is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the clause after the invitation opens with a bare be-form (am/is/are) with no subject."
+    },
+    {
+      "ordinal": 1,
+      "learner_l1": null,
+      "error_type": "PAST_MARKING_SLIP",
+      "error_pattern": "What happen next? (the follow-up question losing its past marking)",
+      "corrected_pattern": "What happened next?",
+      "explanation": "The story the listener is asking for already moved, so the question carries the past -- what happened -- and learners build the bare form because their own language leaves time to context; what happen next is not a stored English form.",
+      "severity": "MEDIUM",
+      "detection_policy": "Match when the follow-up question after the invitation carries a bare verb form where the story's past belongs."
+    }
+  ],
+  "detection_policy": {
+    "policy_version": "detection-policy-v1",
+    "policy": "Fires only on the learner's own produced English text, and only on a visible surface form: the subject of the clause after the invitation and the tense of the follow-up question. No model judgement and no confidence score participates (PRODUCT_CONTRACT §8.1: V1 does not treat a model's self-reported high confidence as an R4 certification). The two match rules below state the broken forms the invitation's errors take; the do-not-match rules state the accepted realizations and the urging-action reading the invitation must not be read into. The POSITIVE_ERROR fixtures instantiate the two error_patterns; the FALSE_POSITIVE_BOUNDARY fixture states the urging-action reading."
+  },
+  "detection_rules": [
+    {
+      "ordinal": 0,
+      "rule": "SUBJECT_DROP: match when the clause after the invitation opens with a bare be-form and no subject (Go on, am listening.), because only the imperative carries no subject."
+    },
+    {
+      "ordinal": 1,
+      "rule": "PAST_MARKING_SLIP: match when the follow-up question carries a bare verb form where the story's past belongs (what happen next), because the telling already moved."
+    },
+    {
+      "ordinal": 2,
+      "rule": "ACCEPTED_REALIZATIONS: do not match when the invitation stands whole (Go on — what happened next?; Go on, I'm listening.): those are the accepted realizations."
+    },
+    {
+      "ordinal": 3,
+      "rule": "THE_URGING_READING: do not match when the pair urges an action rather than a telling (Go on, take the last biscuit — I don't want it.), because there the invitation is to do something and the story-continuation move is not in use."
+    }
+  ],
+  "detection_fixtures": [
+    {
+      "ordinal": 0,
+      "kind": "NEGATIVE",
+      "text": "Go on — what happened next?",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 1,
+      "kind": "NEGATIVE",
+      "text": "Go on, I'm listening.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 2,
+      "kind": "NEGATIVE",
+      "text": "Go on then — finish the story.",
+      "expected": "NO_MATCH"
+    },
+    {
+      "ordinal": 3,
+      "kind": "FALSE_POSITIVE_BOUNDARY",
+      "text": "Go on, take the last biscuit — I don't want it.",
+      "expected": "NO_MATCH_BOUNDARY"
+    },
+    {
+      "ordinal": 4,
+      "kind": "POSITIVE_ERROR",
+      "text": "Go on, am listening.",
+      "expected": "MATCH"
+    },
+    {
+      "ordinal": 5,
+      "kind": "POSITIVE_ERROR",
+      "text": "Go on — what happen next?",
+      "expected": "MATCH"
+    }
+  ]
+}
