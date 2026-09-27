@@ -403,7 +403,8 @@ def open_host(
             # satisfied at runtime (every phase suite assembles exactly these
             # objects) yet formally narrower than the protocol's widened
             # shapes. The bridge lives here, where the concrete and the
-            # declared meet — nowhere else in this module is a face cast.
+            # declared meet — the one further cast in this module is the
+            # learning store's ``LearningTurnAnalysis`` bridge below.
             automatic = AutomaticTurnWiring(
                 planner_store=cast("PlannerDecisionRecordStore", planner_store),
                 teaching=cast("TeachingOpenAuthority", teaching),

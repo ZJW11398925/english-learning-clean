@@ -228,10 +228,13 @@ def _wiring_names(tree: ast.Module) -> set[str]:
     return names
 
 
-def test_nothing_in_src_constructs_the_wiring() -> None:
-    """The opt-in is the caller's: no shipped module builds an
-    ``AutomaticTurnWiring`` (the controller only *takes* one), so a production
-    assembly that never passes it keeps the pre-P8-4 behaviour by construction.
+def test_the_wiring_has_exactly_one_shipped_constructor() -> None:
+    """The opt-in is the caller's, and since D-5 the caller exists: exactly
+    one shipped module builds an ``AutomaticTurnWiring`` — ``host.py``, the
+    composition root, behind the fail-closed ``rollout_stage`` default — so a
+    production assembly that never passes it still keeps the pre-P8-4
+    behaviour by construction, and a second constructor is the regression
+    this pin answers.
 
     Review F5's registered limit is discharged here: the pin is the **AST
     form** (it walks every ``Call`` and resolves the callee name against the
