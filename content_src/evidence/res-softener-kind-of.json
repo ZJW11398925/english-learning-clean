@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "The ending was a kind of rushed, if you ask me.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_INTRUSION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "They run kind of hostel just around the corner from the station.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "CLASSIFIER_ARTICLE_MISSING"
     }
   ]
 }

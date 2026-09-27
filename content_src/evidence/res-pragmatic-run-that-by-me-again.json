@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Could you run by me that again? I lost you at the second step.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "WORD_ORDER_SLIP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Could you to run that by me again? I lost you at the second step.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "INFINITIVE_MARKER_SLIP"
     }
   ]
 }

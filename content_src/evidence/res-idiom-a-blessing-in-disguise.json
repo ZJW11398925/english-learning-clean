@@ -196,13 +196,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Losing that job was a disguised blessing — I finally started my own studio.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "WORD_ORDER_IN_IDIOM"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "The delay turned out to be blessing in disguise for our budget.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_OMISSION"
     }
   ]
 }

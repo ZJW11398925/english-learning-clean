@@ -204,13 +204,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "We ran out coffee again — can you grab some on your way in?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "MISSING_PREPOSITION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "The printer ran ink out of in the middle of the big job.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "OBJECT_AFTER_OF_MISSING_ALTERNATIVE_ORDER"
     }
   ]
 }

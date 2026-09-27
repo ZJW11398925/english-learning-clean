@@ -212,13 +212,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "I would like to raise attention to the missing receipts in the quarterly report.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "VERB_FOR_DRAW"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Her article draws attention on how little sleep most students actually get.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PREPOSITION_ON"
     }
   ]
 }

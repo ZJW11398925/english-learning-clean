@@ -205,13 +205,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "You should pay more attention on your pronunciation during the presentation.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PREPOSITION_CHOICE"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Please pay attention the road signs when you drive in the mountains.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PREPOSITION_OMISSION"
     }
   ]
 }

@@ -212,13 +212,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "It I guess will rain tomorrow, so bring the big umbrella.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "HEDGE_PLACEMENT"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I'm guess the deadline is next Friday, but nobody confirmed it.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "VERB_FORM_OF_GUESS"
     }
   ]
 }

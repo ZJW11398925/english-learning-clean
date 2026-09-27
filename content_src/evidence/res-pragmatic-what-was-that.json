@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "What that was? The line cut out for a second.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "QUESTION_INVERSION_SLIP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "What was that? I didn't heard you over the noise.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "AUXILIARY_PAST_SLIP"
     }
   ]
 }

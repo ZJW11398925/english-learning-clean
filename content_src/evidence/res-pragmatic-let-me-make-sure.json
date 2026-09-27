@@ -181,13 +181,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Let me to make sure I've got this right — the deadline is Friday.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "INFINITIVE_MARKER_SLIP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Let me making sure I understand the plan for the launch.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "GERUND_SLIP"
     }
   ]
 }

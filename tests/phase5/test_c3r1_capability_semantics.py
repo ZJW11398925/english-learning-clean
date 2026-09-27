@@ -480,9 +480,10 @@ def test_the_artifact_carries_the_mapping_class_column(built_content_db: Path) -
     guessed)."""
 
     # The column landed at version "3" (C3-R1); C3-R2 has since moved the
-    # artifact to "4" with the content_provenance table, so the pin reads
-    # the current generation.
-    assert CONTENT_DB_VERSION == "4"
+    # artifact to "4" with the content_provenance table and D-1 to "5" with
+    # the content_detection_fixture.source_error_type column, so the pin
+    # reads the current generation.
+    assert CONTENT_DB_VERSION == "5"
     assert CURRICULUM_MAPPING_CLASS == READ_FACE_MAPPING_CLASS
     conn = sqlite3.connect(str(built_content_db))
     try:
@@ -503,10 +504,11 @@ def test_the_artifact_carries_the_mapping_class_column(built_content_db: Path) -
         conn.close()
     assert "mapping_class" in columns
     assert words == ["COVERAGE_PLACEMENT", "CURRICULUM_MAPPING"]
-    # The column landed with version "3"; C3-R2 has since moved the
-    # artifact generation to "4" (content_provenance), so the stored value
-    # reads the current version, not the landing one.
-    assert version == "4"
+    # The column landed with version "3"; C3-R2 (content_provenance) and
+    # D-1 (content_detection_fixture.source_error_type) have since moved the
+    # artifact generation on, so the stored value reads the current version,
+    # not the landing one.
+    assert version == "5"
 
 
 def test_the_c1_target_falls_to_r1_although_its_evidence_is_intact(

@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Write — I'm following you.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "HOMOPHONE_SPELLING"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Rightly — I'm following you.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ADVERB_OVERCORRECTION"
     }
   ]
 }

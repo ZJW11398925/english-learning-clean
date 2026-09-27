@@ -212,13 +212,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "I look forward to hear from you about the internship.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "INFINITIVE_AFTER_PREPOSITION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "We look them forward to visiting us in the spring break.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PARTICLE_OBJECT_ORDER"
     }
   ]
 }

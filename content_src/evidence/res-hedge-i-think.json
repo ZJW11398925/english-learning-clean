@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Think we should take the earlier train and skip the rush.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "SUBJECT_OMISSION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I think, the invoice was already paid last Tuesday.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "COMMA_INTRUSION"
     }
   ]
 }

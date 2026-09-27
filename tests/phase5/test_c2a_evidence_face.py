@@ -426,11 +426,22 @@ def test_a_declared_error_need_without_rows_drops_the_target_to_r2(
     stays declared while the rows are gone, so the key is unsatisfied and the
     target stops one rung lower. The variant runs over a C3-R1 *mapping*
     target, because R2 is the rung a target with a mapping link and an
-    incomplete R3 set stops at."""
+    incomplete R3 set stops at.
+
+    D-1 migration: the edit drops the positive fixture rows along with the
+    error rows — a POSITIVE_ERROR fixture instantiates a declared error
+    type by name, so with the declared rows gone the positive rows would be
+    dangling and the build would refuse. Positive fixtures are not a ladder
+    key, so the level and the missing set read exactly as before."""
 
     def drop(document: dict) -> None:
         assert document["typical_error_required"] is True
         del document["typical_errors"]
+        document["detection_fixtures"] = [
+            row
+            for row in document["detection_fixtures"]
+            if row["kind"] != "POSITIVE_ERROR"
+        ]
 
     artifact = _evidence_variant(tmp_path, "res-hedge-i-think", drop)
     level, missing = _level_and_missing(artifact, "res-hedge-i-think")

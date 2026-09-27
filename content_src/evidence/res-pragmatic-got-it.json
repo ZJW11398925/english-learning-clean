@@ -181,13 +181,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Get it, I will send the file tonight.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "FORM_SLIP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I am got it, I will send the file tonight.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "AUXILIARY_INTRUSION"
     }
   ]
 }

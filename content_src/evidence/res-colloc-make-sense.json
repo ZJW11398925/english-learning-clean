@@ -204,13 +204,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "The plan make sense only if we cut the marketing budget first.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "THIRD_PERSON_SINGULAR_MISSING"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "His explanation made a sense, but I still have two questions.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_INTRUSION"
     }
   ]
 }

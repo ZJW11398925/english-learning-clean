@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "The flight got delayed because of the big rain we had last night.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "TRANSLATED_ADJECTIVE"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "We were soaked walking home in the heavily rain.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ADVERB_BEFORE_NOUN"
     }
   ]
 }

@@ -212,13 +212,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "I did not want to bring up about the raise in front of the whole team.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PREPOSITION_AFTER_PARTICLE"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "If the delay gets worse, we should bring up it with the supplier directly.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PRONOUN_AFTER_PARTICLE"
     }
   ]
 }

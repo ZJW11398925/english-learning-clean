@@ -371,7 +371,10 @@ def test_deleting_one_of_two_positive_rows_is_refused(
     tmp_path: Path,
 ) -> None:
     """A two-error entity keeps needing one positive row per type: with two
-    declared types and one row left, the count check refuses the source."""
+    declared types and one row left (naming the other type), the per-type
+    coverage check refuses the source and names the uncovered type — the
+    D-1 real-coverage check that replaced the row-count proxy, which could
+    only count rows."""
 
     def edit(document: dict) -> None:
         positives = [
@@ -388,7 +391,10 @@ def test_deleting_one_of_two_positive_rows_is_refused(
 
     with pytest.raises(BuildError) as raised:
         _evidence_variant(tmp_path, "res-colloc-make-a-decision", edit)
-    assert "2 declared error_type(s)" in str(raised.value)
+    # The deleted row was the LIGHT_VERB_CHOICE positive ("done a decision"),
+    # so the check names exactly that uncovered type.
+    assert "LIGHT_VERB_CHOICE" in str(raised.value)
+    assert "no POSITIVE_ERROR fixture" in str(raised.value)
 
 
 # ---------------------------------------------------------------------------
@@ -399,9 +405,11 @@ def test_deleting_one_of_two_positive_rows_is_refused(
 def test_every_declared_error_type_has_a_positive_row(
     built_content_db: Path,
 ) -> None:
-    """Source-level coverage: for every documented entity, the positive row
-    count covers its distinct declared error types, positives append after
-    the rule-bounded ordinals, and the corpus total meets the 124 floor."""
+    """Source-level coverage (D-1 migration of the count form): for every
+    documented entity, the positive rows instantiate exactly the declared
+    error types by name (the real foreign key, not a count), positives
+    append after the rule-bounded ordinals, and the corpus total meets the
+    124 floor."""
 
     total_positive = 0
     for path in sorted((CONTENT_SRC_DIR / "evidence").glob("*.json")):
@@ -410,7 +418,15 @@ def test_every_declared_error_type_has_a_positive_row(
         fixtures = document["detection_fixtures"]
         positives = [f for f in fixtures if f["kind"] == "POSITIVE_ERROR"]
         bounded = [f for f in fixtures if f["kind"] != "POSITIVE_ERROR"]
-        assert len(positives) >= len(types), path.name
+        # D-1: the named instantiation replaces the count inequality —
+        # every positive row names a declared type, and every declared type
+        # is named (for entities with no declared types, there are no
+        # positive rows either).
+        named = {f["source_error_type"] for f in positives}
+        assert named == types, path.name
+        assert all(f["source_error_type"] in types for f in positives), (
+            path.name
+        )
         rule_ords = sorted(
             int(r["ordinal"]) for r in document["detection_rules"]
         )
@@ -768,13 +784,16 @@ def test_the_four_content_rows_still_read_go(
 # ---------------------------------------------------------------------------
 
 
-def test_content_db_version_moves_to_four(
+def test_content_db_version_moves_to_five(
     built_content_db: Path,
 ) -> None:
-    """CONTENT_DB_VERSION = "4", in the module and in the artifact's own
-    content_meta (the explicit-bump discipline of §26.1)."""
+    """CONTENT_DB_VERSION started at "4" when this cut landed and has since
+    moved to "5" (D-1 added the nullable
+    ``content_detection_fixture.source_error_type`` column), in the module
+    and in the artifact's own content_meta (the explicit-bump discipline of
+    §26.1)."""
 
-    assert CONTENT_DB_VERSION == "4"
+    assert CONTENT_DB_VERSION == "5"
     conn = sqlite3.connect(str(built_content_db))
     try:
         row = conn.execute(
@@ -782,7 +801,7 @@ def test_content_db_version_moves_to_four(
         ).fetchone()
     finally:
         conn.close()
-    assert row is not None and str(row[0]) == "4"
+    assert row is not None and str(row[0]) == "5"
 
 
 def test_the_artifact_has_exactly_twenty_five_tables(

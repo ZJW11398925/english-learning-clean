@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "That's a good point, the demo still runs on the old server nobody maintains.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "MISSING_CONJUNCTION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "That's good point, but the budget simply will not cover two contractors.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_OMISSION"
     }
   ]
 }

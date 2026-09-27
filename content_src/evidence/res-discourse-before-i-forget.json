@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Before to forget, the parking permit expires on Monday.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "INFINITIVE_AFTER_PREPOSITION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I forget, the parking permit expires on Monday.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "FRAME_TRUNCATION"
     }
   ]
 }

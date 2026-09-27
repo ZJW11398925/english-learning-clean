@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "You saying that we should cancel the order before the invoice arrives?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "AUXILIARY_DROP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Are you say that the delivery comes on Saturday now?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "VERB_FORM_SLIP"
     }
   ]
 }

@@ -212,13 +212,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "The numbers look wrong, but finance will work out it before the audit.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PRONOUN_AFTER_PARTICLE"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I cannot workout the answer to the last question at all.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "NOUN_VERB_BOUNDARY"
     }
   ]
 }

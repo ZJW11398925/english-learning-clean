@@ -197,13 +197,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "The manager still has not done a decision about my holiday request.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "LIGHT_VERB_CHOICE"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "We need to make decision before the client call tomorrow morning.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_OMISSION"
     }
   ]
 }

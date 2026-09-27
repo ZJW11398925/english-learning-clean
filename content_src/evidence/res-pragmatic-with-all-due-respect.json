@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "In all due respect, I think the numbers are wrong.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PREPOSITION_SLIP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "With all due respects, that is not what the report says.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "NUMBER_SLIP"
     }
   ]
 }

@@ -196,13 +196,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "You hit the nail in the head — the budget, not the design, is the problem.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PREPOSITION_CHOICE"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "The reviewer hit nail on the head about our pricing being too low.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_OMISSION"
     }
   ]
 }

@@ -212,13 +212,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "The climb was brutal, but nobody in our group gave up it.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PRONOUN_AFTER_PARTICLE"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "My father gave up to smoke the year I was born.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "INFINITIVE_COMPLEMENT"
     }
   ]
 }

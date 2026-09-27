@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Come again? I didn't quite catched the name.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "DOUBLE_MARKING"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Come again — did you say on four thirty or four fifteen?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PREPOSITION_INSERTION"
     }
   ]
 }

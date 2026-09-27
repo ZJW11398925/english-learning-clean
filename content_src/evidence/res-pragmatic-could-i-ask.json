@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Could I ask what is the service fee for international transfers?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "EMBEDDED_QUESTION_ORDER"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I wanted to ask to you about the overtime policy for weekends.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PREPOSITION_INTRUSION"
     }
   ]
 }

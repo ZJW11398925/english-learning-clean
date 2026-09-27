@@ -204,13 +204,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Turned out that the parcel had been sitting next door all week.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "SUBJECT_OMISSION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "It turn out the tickets were for the following day, not that one.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "THIRD_PERSON_SINGULAR_MISSING"
     }
   ]
 }

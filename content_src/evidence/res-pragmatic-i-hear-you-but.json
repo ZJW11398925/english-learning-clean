@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "I hear you, but we can't spent any more on this.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "MODAL_VERB_SLIP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I hear to you, but the timeline doesn't move.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PREPOSITION_INSERTION"
     }
   ]
 }

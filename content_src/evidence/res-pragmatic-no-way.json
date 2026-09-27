@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Not way! She actually moved to Lisbon?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "NEGATOR_SUBSTITUTION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "No way! She actually move to Lisbon?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "THIRD_PERSON_S_DROP"
     }
   ]
 }

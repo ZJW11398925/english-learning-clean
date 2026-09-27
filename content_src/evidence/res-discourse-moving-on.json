@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Move on, let's look at the timeline for the launch.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "FORM_SLIP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Moving on the next topic is the budget for October.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "MISSING_COMMA"
     }
   ]
 }

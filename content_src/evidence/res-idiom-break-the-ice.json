@@ -220,13 +220,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "He told a terrible joke to break ice at the start of the workshop.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_OMISSION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "She cut the ice by asking everyone about their weekend plans.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "VERB_SUBSTITUTION"
     }
   ]
 }

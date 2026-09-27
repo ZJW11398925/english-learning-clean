@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Was the trip expensive? Not real, we used points for the flights.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "DOUBLED_NEGATION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Do you like the new layout? Not.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "SOFT_ANSWER_WITHOUT_REALLY"
     }
   ]
 }

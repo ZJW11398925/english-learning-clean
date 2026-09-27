@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "In another note, has anyone heard from the supplier in Hamburg?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PREPOSITION_SLIP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "On another note I wanted to ask about the invoice for August.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "MISSING_COMMA"
     }
   ]
 }

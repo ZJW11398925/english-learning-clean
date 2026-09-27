@@ -181,13 +181,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Enough fair — let's split the difference and finish this today.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "WORD_ORDER_SLIP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Fairly enough, we'll do it your way this time.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ADVERB_FORM_SLIP"
     }
   ]
 }

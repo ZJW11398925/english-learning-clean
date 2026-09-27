@@ -208,7 +208,14 @@ EVIDENCE_TABLES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
     ),
     (
         "content_detection_fixture",
-        ("entity_id", "ordinal", "kind", "text", "expected"),
+        (
+            "entity_id",
+            "ordinal",
+            "kind",
+            "text",
+            "expected",
+            "source_error_type",
+        ),
         ("entity_id", "ordinal"),
     ),
 )
@@ -698,6 +705,16 @@ def test_a_declared_need_without_rows_reports_the_gap(tmp_path: Path) -> None:
     def drop_errors(document: dict) -> None:
         del document["typical_errors"]
         # `typical_error_required: true` stays declared.
+        # D-1: the positive fixture rows go with them — a POSITIVE_ERROR
+        # fixture instantiates a declared error type by name, so with the
+        # declared rows gone the positive rows would be dangling. Positive
+        # fixtures are not a ladder key, so the level reads exactly as
+        # before.
+        document["detection_fixtures"] = [
+            row
+            for row in document["detection_fixtures"]
+            if row["kind"] != "POSITIVE_ERROR"
+        ]
 
     artifact = _build_edited(
         tmp_path, _edit_evidence(drop_errors, MAPPING_TARGET)
@@ -722,19 +739,24 @@ def test_a_declared_need_without_rows_reports_the_gap(tmp_path: Path) -> None:
 def test_an_untriggered_need_satisfies_the_conditional_key(
     tmp_path: Path,
 ) -> None:
-    """No declaration, no rows: the conditional key is satisfied by the
-    declared absence of a need (§8.1 "以及需要时" — a condition, not a
-    silent skip), so the R3 set completes without any TypicalError row —
-    and the detection face is independent of it, so the level is still R4
-    (the variant is built over the C3-R1 mapping target: R4 is reachable
-    only where the §24.7 row is a mapping)."""
+    """No declaration: the conditional key is satisfied by the declared
+    absence of a need (§8.1 "以及需要时" — a condition, not a silent skip),
+    so the R3 set completes and the level is still R4 (the variant is built
+    over the C3-R1 mapping target: R4 is reachable only where the §24.7 row
+    is a mapping).
 
-    def drop_need_and_errors(document: dict) -> None:
-        del document["typical_errors"]
+    D-1 migration: the TypicalError rows stay. A POSITIVE_ERROR fixture row
+    instantiates a declared error type by name (the real foreign key), so
+    the "no declaration and no rows" state of the pre-D-1 edit can no
+    longer coexist with R4's positive fixtures; the need *declaration* is
+    what this test is about, and with the rows present the key is
+    satisfied by the rows while the declaration itself reads False."""
+
+    def drop_need_declaration(document: dict) -> None:
         del document["typical_error_required"]
 
     artifact = _build_edited(
-        tmp_path, _edit_evidence(drop_need_and_errors, MAPPING_TARGET)
+        tmp_path, _edit_evidence(drop_need_declaration, MAPPING_TARGET)
     )
     store = ContentStore(artifact)
     try:
@@ -746,7 +768,7 @@ def test_an_untriggered_need_satisfies_the_conditional_key(
     finally:
         store.close()
     assert facts.value.curriculum_link is True
-    assert facts.value.typical_error is False
+    assert facts.value.typical_error is True
     assert facts.value.typical_error_required is False
     assert facts.value.present("typical_error_when_needed") is True
     assert assessment.value.level == "R4_DETECTION_READY"
@@ -948,14 +970,15 @@ def test_an_evidence_less_target_reads_zero_rows_per_role(
 def test_the_artifact_declares_the_bumped_content_db_version(
     built_content_db: Path,
 ) -> None:
-    """C1 disposition F6, moved again by C3-R1 and C3-R2: the schema
+    """C1 disposition F6, moved again by C3-R1, C3-R2 and D-1: the schema
     generation is explicit (docs/DATA_MODEL.md §26.1 requires the version to
     be updated explicitly, never guessed from the schema). C1 moved "1" →
     "2" with the table set (11 → 24); C3-R1 moved "2" → "3" with a column
-    (``curriculum_link.mapping_class``); C3-R2 moves "3" → "4" with the
-    ``content_provenance`` table (24 → 25), so a reader can always tell the
-    artifact generations apart."""
-    assert CONTENT_DB_VERSION == "4"
+    (``curriculum_link.mapping_class``); C3-R2 moved "3" → "4" with the
+    ``content_provenance`` table (24 → 25); D-1 moves "4" → "5" with the
+    nullable ``content_detection_fixture.source_error_type`` column, so a
+    reader can always tell the artifact generations apart."""
+    assert CONTENT_DB_VERSION == "5"
     conn = sqlite3.connect(str(built_content_db))
     try:
         row = conn.execute(
@@ -964,7 +987,7 @@ def test_the_artifact_declares_the_bumped_content_db_version(
     finally:
         conn.close()
     assert row is not None
-    assert row[0] == CONTENT_DB_VERSION == "4"
+    assert row[0] == CONTENT_DB_VERSION == "5"
 
 
 def test_reviewed_explanation_requires_the_approved_lifecycle(

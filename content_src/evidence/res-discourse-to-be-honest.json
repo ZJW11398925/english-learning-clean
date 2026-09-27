@@ -178,7 +178,8 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Honestly speaking, the soup needs more salt than the recipe says.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "CALQUED_COMMENT_FORM"
     }
   ]
 }

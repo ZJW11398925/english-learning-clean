@@ -196,13 +196,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "I was just wondering if could you send me the slides from today's session.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "EMBEDDED_QUESTION_INVERSION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I just wondering if the library even opens on Sundays.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "SHAPE_OF_THE_FRAME"
     }
   ]
 }

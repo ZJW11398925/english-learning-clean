@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Thing is, we already paid the deposit on the venue.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_OMISSION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "The thing is because my visa expires in March, not because of the money.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "CALQUED_CONNECTOR"
     }
   ]
 }

@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "The migration is more or less finish.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PARTICIPLE_SLIP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "The migration is less or more complete.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PAIR_ORDER_SLIP"
     }
   ]
 }

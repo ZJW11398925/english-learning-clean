@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Thats debatable — the data from last year points the other way.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "APOSTROPHE_DROP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "That's debate — the data from last year points the other way.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "WORD_CLASS_SLIP"
     }
   ]
 }

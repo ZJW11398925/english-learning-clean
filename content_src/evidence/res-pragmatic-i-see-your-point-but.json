@@ -181,13 +181,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "I see you point, but we don't have the budget for both venues.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "POSSESSIVE_DROP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I see your point, and it is still too expensive for us this year.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "CONNECTOR_CHOICE"
     }
   ]
 }

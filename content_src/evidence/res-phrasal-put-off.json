@@ -212,13 +212,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "The dentist is unpleasant, so I keep putting off it every month.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PRONOUN_AFTER_PARTICLE"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "We put off to announce the change until the audit was finished.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "INFINITIVE_AFTER_PUT_OFF"
     }
   ]
 }

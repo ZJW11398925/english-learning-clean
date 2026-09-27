@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "As long as I know, the shop is still open on Saturdays.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "CONJUNCTION_CONFUSION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "As far I know the meeting is still on for Friday.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "CONJUNCTION_DROP"
     }
   ]
 }

@@ -212,13 +212,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Taking the toll road will win us almost two hours.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "CALQUED_VERB_CHOICE"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I batch all my calls after lunch to save time to write the report in one go.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PURPOSE_CLAUSE_AFTER_SAVE"
     }
   ]
 }

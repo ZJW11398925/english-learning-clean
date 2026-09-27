@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "That make sense — so we start in May, right?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "SUBJECT_VERB_AGREEMENT"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Those makes sense, thanks for the explanation.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PRONOUN_NUMBER_SLIP"
     }
   ]
 }

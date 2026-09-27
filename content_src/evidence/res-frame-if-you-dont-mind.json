@@ -196,13 +196,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "If you don't mind to wait a moment, I will check whether we have the size.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "INFINITIVE_AFTER_MIND"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "If you mind, I would rather sit by the window than in the middle.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "MISSING_NEGATIVE"
     }
   ]
 }

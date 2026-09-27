@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "In way, the extra traffic taught us patience.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_DROP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "On a way, the extra traffic taught us patience.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PREPOSITION_SLIP"
     }
   ]
 }

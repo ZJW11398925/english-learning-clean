@@ -212,13 +212,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "He knew the interview mattered, so I expected him to do an effort.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "DO_FOR_MAKE"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "If you make effort with the accent, locals understand you much better.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_OMISSION"
     }
   ]
 }

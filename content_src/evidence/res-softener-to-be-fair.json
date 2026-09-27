@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Fairly speaking, both designs share exactly the same flaw.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "CALQUED_COMMENT_FORM"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Being fair, the old printer never jammed the way this one does.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PARTICIPLE_FORM"
     }
   ]
 }

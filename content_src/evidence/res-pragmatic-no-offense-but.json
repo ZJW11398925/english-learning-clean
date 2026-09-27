@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "No offense, your handwriting is really hard to read on the whiteboard.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "MISSING_CONJUNCTION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "No offends, but I think the blue logo worked better than the red one.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "NOUN_FORM_OF_OFFENSE"
     }
   ]
 }

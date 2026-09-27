@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "That reminds me of I have to pay the rent before Friday.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "CLAUSE_AFTER_OF"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Oh, that remind me — did you actually feed the cat this morning?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "AGREEMENT_WITH_THAT"
     }
   ]
 }

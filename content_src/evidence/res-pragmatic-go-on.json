@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Go on, am listening.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "SUBJECT_DROP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Go on — what happen next?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PAST_MARKING_SLIP"
     }
   ]
 }

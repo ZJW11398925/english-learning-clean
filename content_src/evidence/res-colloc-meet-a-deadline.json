@@ -212,13 +212,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "The supplier promised to meet deadline this time, after the January delay.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_OMISSION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "We nearly did not catch the deadline for the tax forms.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "WRONG_VERB_FOR_SENSE"
     }
   ]
 }

@@ -196,13 +196,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "I means we should leave before seven to catch the ferry.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "WRONG_FINITE_VERB"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I'm meaning the blue folder, not the red one on the shelf.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PROGRESSIVE_FOR_SIMPLE"
     }
   ]
 }

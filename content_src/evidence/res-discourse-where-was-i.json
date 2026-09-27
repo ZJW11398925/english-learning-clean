@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Where I was? Oh yes — the training schedule for October.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "QUESTION_INVERSION_SLIP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I was where? Oh yes — the training schedule for October.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "WH_IN_SITU"
     }
   ]
 }

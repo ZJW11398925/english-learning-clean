@@ -212,13 +212,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "She carried on to talk as if nothing had happened in the meeting.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "INFINITIVE_AFTER_ON"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "The band carried on it despite the rain until the power cut.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PRONOUN_AFTER_PARTICLE"
     }
   ]
 }

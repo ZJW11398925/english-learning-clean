@@ -204,13 +204,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Please make in mind that the office closes early on Fridays.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "MAKE_FOR_KEEP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I will keep in mind it when I write the second draft.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "OBJECT_AFTER_PHRASE"
     }
   ]
 }

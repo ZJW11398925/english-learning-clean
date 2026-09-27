@@ -181,13 +181,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Up to point, yes, but the second half of the plan worries me.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_DROP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I agree until a point, but the second half of the plan worries me.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PREPOSITION_SLIP"
     }
   ]
 }

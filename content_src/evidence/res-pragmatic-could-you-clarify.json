@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Could you clarify me what you meant by flexible hours?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "DATIVE_INSERTION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Could you clarify what did you mean by flexible hours?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "EMBEDDED_INVERSION"
     }
   ]
 }

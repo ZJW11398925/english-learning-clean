@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "What you mean by that? The deadline is still Monday, no?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "AUXILIARY_DROP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "What do you mean that? I thought the contract was signed.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "OBJECT_SLIP"
     }
   ]
 }

@@ -97,6 +97,21 @@ layer and stands up the provenance dimension:
   data; their reachability conditions are written on the constant). Levels
   land in the new ``content_provenance`` table and never touch the §8.1
   ladder; `CONTENT_DB_VERSION` moves to ``"4"`` for the new table.
+
+D-1 (Detector Executability Program) makes the C3-R2 positive-row contract
+a real foreign key:
+
+- **POSITIVE_ERROR fixtures carry ``source_error_type``** — the declared
+  §24.9 error_type the row instantiates. A positive row without the key,
+  or naming a word the entity's ``typical_errors`` do not declare, is
+  refused (the error message carries the entity's legal set); a
+  ``source_error_type`` key on a NEGATIVE or FALSE_POSITIVE_BOUNDARY row is
+  refused too (a non-error example instantiates no error type). Every
+  declared error_type must in turn be instantiated by at least one positive
+  row naming it — the per-type structure check that replaces the C3-R2
+  row-count proxy (registrations N-C3R2-1 / EXT-C3-01). The
+  ``content_detection_fixture`` table gains the nullable
+  ``source_error_type`` column and `CONTENT_DB_VERSION` moves to ``"5"``.
 """
 
 from __future__ import annotations
@@ -179,8 +194,12 @@ DEFAULT_OUTPUT = REPO_ROOT / "build" / "content.db"
 #: the shape (elc.content.store, elc.curriculum.store) must be able to tell
 #: the two generations apart. Bumped ``"3"`` → ``"4"`` by C3-R2: the table
 #: set grows again (``content_provenance``, 24 → 25), carrying the
-#: structurally derived provenance level of every documented entity.
-CONTENT_DB_VERSION = "4"
+#: structurally derived provenance level of every documented entity. Bumped
+#: ``"4"`` → ``"5"`` by D-1: the table set is unchanged, but
+#: ``content_detection_fixture`` gains the nullable ``source_error_type``
+#: column — the real foreign key from a POSITIVE_ERROR row to the declared
+#: §24.9 error_type it instantiates (N-C3R2-1 / EXT-C3-01 closed).
+CONTENT_DB_VERSION = "5"
 
 #: The authoring-source formats this build reads. A document that declares a
 #: different `format` / `format_version` is refused: the build may only read a
@@ -341,7 +360,21 @@ _TYPICAL_ERROR_KEYS = (
 )
 _DETECTION_POLICY_KEYS = ("policy_version", "policy")
 _DETECTION_RULE_KEYS = ("ordinal", "rule")
+#: D-1: fixture rows are keyed by kind. A NEGATIVE or FALSE_POSITIVE_BOUNDARY
+#: row carries exactly these four keys — a ``source_error_type`` on a row
+#: that is not an error instance is refused (the row declares a *non*-error,
+#: so naming a source error for it would contradict its own kind). A
+#: POSITIVE_ERROR row must also name the declared error_type it instantiates
+#: (``_POSITIVE_FIXTURE_KEYS``); the value's membership in the entity's
+#: declared set is checked after the whole document is read.
 _DETECTION_FIXTURE_KEYS = ("ordinal", "kind", "text", "expected")
+_POSITIVE_FIXTURE_KEYS = (
+    "ordinal",
+    "kind",
+    "text",
+    "expected",
+    "source_error_type",
+)
 
 
 @dataclass(frozen=True)
@@ -452,6 +485,13 @@ class DetectionFixtureRow:
     kind: str
     text: str
     expected: str
+    #: D-1: the declared error_type this row instantiates. ``None`` for the
+    #: two non-error kinds (a negative or boundary example is not an error
+    #: instance, and the build refuses a ``source_error_type`` key on them);
+    #: a POSITIVE_ERROR row always carries one, and its value must be one of
+    #: the entity's declared error_type words (checked below, once the
+    #: entity's ``typical_errors`` have been read).
+    source_error_type: str | None
 
 
 @dataclass(frozen=True)
@@ -731,17 +771,23 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
     "PRIMARY KEY (entity_id, ordinal)"
     ")",
     # §8.1 R4 "negative fixtures / false-positive boundaries". kind is the
-    # two-word reading (elc.content.types.DETECTION_FIXTURE_KINDS): the
-    # example an expected reading must NOT match (NEGATIVE), or the example
-    # sitting on the declared boundary (FALSE_POSITIVE_BOUNDARY). `expected`
+    # three-word declared reading (elc.content.types.DETECTION_FIXTURE_KINDS):
+    # the example an expected reading must NOT match (NEGATIVE), the example
+    # sitting on the declared boundary (FALSE_POSITIVE_BOUNDARY), or the
+    # learner-error production that must match (POSITIVE_ERROR). `expected`
     # is the declared expected reading of that fixture, so a fixture is a
-    # checkable pair rather than a sentence.
+    # checkable pair rather than a sentence. D-1 adds the real foreign key
+    # `source_error_type` (nullable): a POSITIVE_ERROR row always names the
+    # declared §24.9 error_type it instantiates (the build refuses a name the
+    # entity does not declare), and the two non-error kinds carry NULL — a
+    # negative or boundary example is not an error instance.
     "CREATE TABLE content_detection_fixture ("
     "entity_id TEXT NOT NULL REFERENCES content_entity(entity_id),"
     "ordinal INTEGER NOT NULL,"
     "kind TEXT NOT NULL,"
     "text TEXT NOT NULL,"
     "expected TEXT NOT NULL,"
+    "source_error_type TEXT,"
     "PRIMARY KEY (entity_id, ordinal)"
     ")",
     # -- C3-R2: the structurally derived provenance face --------------------
@@ -1111,6 +1157,69 @@ def _rows(
         build(item, f"{where}.{key}")
         for item in _object_list(mapping, key, item_keys, where)
     )
+
+
+def _detection_fixture_rows(
+    document: Mapping[str, Any], where: str
+) -> tuple[DetectionFixtureRow, ...]:
+    """The detection fixtures, read with the D-1 kind-keyed contract.
+
+    A fixture row's key set depends on its own ``kind`` — the one row shape
+    in the source that is not uniform, which is why this block is read by a
+    dedicated loop instead of the uniform ``_rows``. A NEGATIVE or
+    FALSE_POSITIVE_BOUNDARY row carries exactly ``_DETECTION_FIXTURE_KEYS``
+    (a ``source_error_type`` on it is refused: the row declares a *non*-
+    error, so naming a source error for it would contradict its own kind);
+    a POSITIVE_ERROR row must carry ``_POSITIVE_FIXTURE_KEYS``. The value's
+    membership in the entity's declared error_type set is checked by the
+    caller once ``typical_errors`` has been read.
+    """
+
+    if "detection_fixtures" not in document:
+        return ()
+    value = document["detection_fixtures"]
+    if not isinstance(value, list) or not value:
+        raise BuildError(
+            f"{where}.detection_fixtures: expected a non-empty JSON array "
+            "(omit the block instead of stating it empty)"
+        )
+    rows: list[DetectionFixtureRow] = []
+    for index, raw in enumerate(value):
+        item_where = f"{where}.detection_fixtures[{index}]"
+        item = _mapping(raw, item_where)
+        kind_value = item.get("kind")
+        if not isinstance(kind_value, str) or not kind_value:
+            raise BuildError(f"{item_where}.kind: expected a non-empty string")
+        kind = _vocabulary(
+            kind_value,
+            DETECTION_FIXTURE_KINDS,
+            f"{item_where}.kind",
+        )
+        if kind == "POSITIVE_ERROR":
+            _exact_keys(item, _POSITIVE_FIXTURE_KEYS, item_where)
+            rows.append(
+                DetectionFixtureRow(
+                    ordinal=_ordinal(item, "ordinal", item_where),
+                    kind=kind,
+                    text=_string(item, "text", item_where),
+                    expected=_string(item, "expected", item_where),
+                    source_error_type=_string(
+                        item, "source_error_type", item_where
+                    ),
+                )
+            )
+        else:
+            _exact_keys(item, _DETECTION_FIXTURE_KEYS, item_where)
+            rows.append(
+                DetectionFixtureRow(
+                    ordinal=_ordinal(item, "ordinal", item_where),
+                    kind=kind,
+                    text=_string(item, "text", item_where),
+                    expected=_string(item, "expected", item_where),
+                    source_error_type=None,
+                )
+            )
+    return tuple(rows)
 
 
 def _refuse_duplicate_keys(
@@ -1750,22 +1859,7 @@ def _evidence_from_document(
         "content_detection_rule (ordinal)",
     )
 
-    detection_fixtures = _rows(
-        document,
-        "detection_fixtures",
-        _DETECTION_FIXTURE_KEYS,
-        where,
-        lambda item, item_where: DetectionFixtureRow(
-            ordinal=_ordinal(item, "ordinal", item_where),
-            kind=_vocabulary(
-                _string(item, "kind", item_where),
-                DETECTION_FIXTURE_KINDS,
-                f"{item_where}.kind",
-            ),
-            text=_string(item, "text", item_where),
-            expected=_string(item, "expected", item_where),
-        ),
-    )
+    detection_fixtures = _detection_fixture_rows(document, where)
     _refuse_duplicate_keys(
         [row.ordinal for row in detection_fixtures],
         f"{where}.detection_fixtures",
@@ -1783,21 +1877,40 @@ def _evidence_from_document(
                 f"{where}.detection_fixtures[{row.ordinal}]: kind "
                 f"{row.kind!r} expects {legal!r}, got {row.expected!r}"
             )
-    # C3-R2: every declared error_type must be instantiated by at least one
-    # POSITIVE_ERROR fixture — a structure check only, never a judgement of
-    # the English. Without a positive row per declared type a detector stub
-    # answering NO_MATCH to everything would still pass the whole fixture
-    # set, which is exactly the gap the third kind closes. The fixture row
-    # carries no error_type column, so the check is the per-entity positive
-    # row count against the distinct declared types (the corpus authors one
-    # positive row per type).
-    error_types = {row.error_type for row in typical_errors}
-    positives = [row for row in detection_fixtures if row.kind == "POSITIVE_ERROR"]
-    if len(positives) < len(error_types):
+    # D-1: the real foreign key. Every POSITIVE_ERROR row names the declared
+    # error_type it instantiates, and the name must be one of the entity's
+    # declared §24.9 words — a dangling name is refused with the entity's
+    # legal set in the message. Conversely every declared error_type must be
+    # instantiated by at least one positive row naming it: a structure check
+    # only, never a judgement of the English. Without a positive row per
+    # declared type a detector stub answering NO_MATCH to everything would
+    # still pass the whole fixture set, which is exactly the gap the third
+    # kind closes. This replaces the C3-R2 row-count proxy, which compared
+    # bare counts because the fixture row carried no error_type column
+    # (registrations N-C3R2-1 / EXT-C3-01); the proxy is gone — a
+    # corpus that satisfies the per-type check satisfies it a fortiori.
+    declared_types = {row.error_type for row in typical_errors}
+    for row in detection_fixtures:
+        if (
+            row.kind == "POSITIVE_ERROR"
+            and row.source_error_type not in declared_types
+        ):
+            raise BuildError(
+                f"{where}.detection_fixtures[{row.ordinal}]: source_error_type "
+                f"{row.source_error_type!r} is not one of the entity's declared "
+                f"error_type(s) {sorted(declared_types)}"
+            )
+    instantiated = {
+        row.source_error_type
+        for row in detection_fixtures
+        if row.kind == "POSITIVE_ERROR"
+    }
+    uncovered = sorted(declared_types - instantiated)
+    if uncovered:
         raise BuildError(
-            f"{where}.detection_fixtures: {len(error_types)} declared "
-            "error_type(s) need at least one POSITIVE_ERROR fixture each; "
-            f"the document declares {len(positives)}"
+            f"{where}.detection_fixtures: declared error_type(s) {uncovered} "
+            "have no POSITIVE_ERROR fixture naming them as its "
+            "source_error_type"
         )
 
     return EvidenceDoc(
@@ -2596,8 +2709,8 @@ def _write_evidence_rows(
     )
     conn.executemany(
         "INSERT INTO content_detection_fixture ("
-        "entity_id, ordinal, kind, text, expected"
-        ") VALUES (?, ?, ?, ?, ?)",
+        "entity_id, ordinal, kind, text, expected, source_error_type"
+        ") VALUES (?, ?, ?, ?, ?, ?)",
         (
             (
                 document.entity_id,
@@ -2605,6 +2718,7 @@ def _write_evidence_rows(
                 row.kind,
                 row.text,
                 row.expected,
+                row.source_error_type,
             )
             for document in evidence
             for row in sorted(

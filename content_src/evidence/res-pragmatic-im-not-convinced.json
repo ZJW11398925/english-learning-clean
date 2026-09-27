@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "I'm not convince the cheaper option lasts.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PARTICIPLE_SLIP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I'm not convincing the cheaper option lasts.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PARTICIPLE_VOICE_SLIP"
     }
   ]
 }

@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Seems that the plan is too risky for the budget we have.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "SUBJECT_DROP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "It seems for me that the plan is too risky.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PREPOSITION_SLIP"
     }
   ]
 }

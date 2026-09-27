@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "What I saying is, we cannot sign anything before the lawyer reads it.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "MISSING_AUXILIARY"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "What I'm saying are that the two numbers do not add up at all.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "WRONG_FINITE_VERB"
     }
   ]
 }

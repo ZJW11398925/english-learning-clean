@@ -196,13 +196,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "To make long story short, we missed the last train and took an expensive taxi.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "REBUILT_FIXED_FORM"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Long story short, the keys in my other bag the whole time.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "MARKER_WITHOUT_A_CLAUSE"
     }
   ]
 }

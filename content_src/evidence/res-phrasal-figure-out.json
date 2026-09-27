@@ -202,7 +202,8 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "I could not figure out it from the manual alone, to be honest.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PRONOUN_AFTER_PARTICLE"
     }
   ]
 }

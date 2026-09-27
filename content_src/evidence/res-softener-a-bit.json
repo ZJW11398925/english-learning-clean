@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "The flat is a bit of small for two desks and a sofa.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "OF_INTRUSION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "The soup is bit salty for my taste, actually.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_OMISSION"
     }
   ]
 }

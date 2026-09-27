@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "That brings me on the travel plan: who arranges the flights?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PREPOSITION_SLIP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "That brings to the travel plan: who arranges the flights?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "OBJECT_DROP"
     }
   ]
 }

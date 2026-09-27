@@ -178,7 +178,8 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Any way, as I was saying before the phone rang, the course starts in October.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "SPLIT_SPELLING"
     }
   ]
 }

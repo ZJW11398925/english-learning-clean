@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Your kidding — she won the lottery?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "APOSTROPHE_SLIP"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "You kid me — she won the lottery?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PROGRESSIVE_SLIP"
     }
   ]
 }

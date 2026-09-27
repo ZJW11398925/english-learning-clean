@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "The ending was a sort of predictable, to be honest with you.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_INTRUSION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "My uncle runs sort of boarding house for international students.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "CLASSIFIER_ARTICLE_MISSING"
     }
   ]
 }

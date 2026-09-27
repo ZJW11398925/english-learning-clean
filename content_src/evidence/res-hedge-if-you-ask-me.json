@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "If you will ask me, the first plan was better.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "FUTURE_IN_CONDITIONAL"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "If you ask to me, the membership fee is too high.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PREPOSITION_INSERTION"
     }
   ]
 }

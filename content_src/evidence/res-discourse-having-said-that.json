@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "The pay is not great. Having said that, but the team is the best I have worked with.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "REDUNDANT_CONJUNCTION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Having saying that, I still prefer the first design over the revision.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PARTICIPLE_FORM"
     }
   ]
 }

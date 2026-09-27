@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Speaking of it, how was the meeting with the new supplier?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PRONOUN_SUBSTITUTION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Speaking of which how was the meeting with the new supplier?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "MISSING_COMMA"
     }
   ]
 }

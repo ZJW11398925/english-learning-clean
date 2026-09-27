@@ -204,13 +204,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Cutting the subsidy will make a big effect on family budgets this winter.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "MAKE_FOR_HAVE"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "The new timetable has effect on the early buses only.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_OMISSION"
     }
   ]
 }

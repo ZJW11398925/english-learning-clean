@@ -212,13 +212,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Luck definitely played role in how fast their channel grew.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_OMISSION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Her former advisor played a role getting the paper published so quickly.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "MISSING_PREPOSITION"
     }
   ]
 }

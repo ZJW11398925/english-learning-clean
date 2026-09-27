@@ -928,16 +928,47 @@ def test_the_existing_fixture_rows_are_untouched_blob_for_blob() -> None:
     """The 379 fixture rows of the 64 old documents digest to the frozen
     value and still count 188 / 67 / 124; the eighteen new documents
     contribute exactly 54 / 18 / 36, so the artifact total is 242 / 85 /
-    160 = 487 and every old row is inside the digest."""
+    160 = 487 and every old row is inside the digest.
+
+    D-1 migration: the digest is computed over each row's four original
+    keys (``ordinal`` / ``kind`` / ``text`` / ``expected`` — D-1 later
+    appended the nullable ``source_error_type`` key to positive rows), and
+    the projection is additionally proven exact: every old row equals its
+    own projection plus at most that one appended key."""
 
     fx_digest = hashlib.sha256()
     totals = {"NEGATIVE": 0, "FALSE_POSITIVE_BOUNDARY": 0, "POSITIVE_ERROR": 0}
     for path in _old_evidence_paths():
         document = json.loads(path.read_text(encoding="utf-8"))
         rows = document["detection_fixtures"]
-        fx_digest.update(_canon(rows))
+        fx_digest.update(
+            _canon(
+                [
+                    {
+                        key: row[key]
+                        for key in ("ordinal", "kind", "text", "expected")
+                    }
+                    for row in rows
+                ]
+            )
+        )
         for row in rows:
             totals[str(row["kind"])] += 1
+            if row["kind"] == "POSITIVE_ERROR":
+                assert set(row) == {
+                    "ordinal",
+                    "kind",
+                    "text",
+                    "expected",
+                    "source_error_type",
+                }, (path.name, row["ordinal"])
+            else:
+                assert set(row) == {
+                    "ordinal",
+                    "kind",
+                    "text",
+                    "expected",
+                }, (path.name, row["ordinal"])
     assert fx_digest.hexdigest() == FIXTURES_DIGEST
     assert totals == OLD_FIXTURE_TOTALS
     new_totals = {
@@ -1179,11 +1210,13 @@ def test_a_subprocess_build_matches_the_bytes_under_pythonhashseed(
 # ---------------------------------------------------------------------------
 
 
-def test_content_db_version_stays_4(built_content_db: Path) -> None:
-    """No schema change, no version bump: the module constant and the built
-    artifact both still say ``"4"``."""
+def test_content_db_version_stays_until_d1(built_content_db: Path) -> None:
+    """No schema change of this cut's own: the module constant and the built
+    artifact moved "4" → "5" when D-1 later added the nullable
+    ``content_detection_fixture.source_error_type`` column, and read the
+    same generation."""
 
-    assert CONTENT_DB_VERSION == "4"
+    assert CONTENT_DB_VERSION == "5"
     conn = sqlite3.connect(str(built_content_db))
     try:
         row = conn.execute(
@@ -1192,7 +1225,7 @@ def test_content_db_version_stays_4(built_content_db: Path) -> None:
     finally:
         conn.close()
     assert row is not None
-    assert row[0] == CONTENT_DB_VERSION == "4"
+    assert row[0] == CONTENT_DB_VERSION == "5"
 
 
 def test_the_index_lists_105_and_100_documents_in_sorted_order() -> None:
@@ -1266,7 +1299,10 @@ def test_deleting_a_positive_fixture_from_a_new_document_is_refused(
         assert len(positives) == 2
         document["detection_fixtures"].remove(positives[-1])
 
-    with pytest.raises(BuildError, match="POSITIVE_ERROR fixture each"):
+    # D-1 truth update: the build refuses by naming the uncovered declared
+    # error type (the per-type coverage check that replaced the row-count
+    # proxy), so the match reads the check's own words.
+    with pytest.raises(BuildError, match="no POSITIVE_ERROR fixture"):
         _evidence_variant(tmp_path, "res-pragmatic-got-it", drop)
 
 

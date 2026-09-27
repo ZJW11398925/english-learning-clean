@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "Could you repeat again? I didn't hear the date of the delivery.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "REDUNDANT_AGAIN"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "Could you say again, please? The line broke up for a second.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "OBJECT_DROP"
     }
   ]
 }

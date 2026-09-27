@@ -168,7 +168,8 @@
       "ordinal": 3,
       "kind": "POSITIVE_ERROR",
       "text": "The test was easy. In a fact, I finished it twenty minutes early.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "ARTICLE_INTRUSION"
     }
   ]
 }

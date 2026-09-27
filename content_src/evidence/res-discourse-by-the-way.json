@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "On the way, has anyone heard whether the bakery on Elm Street closed down?",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PHRASE_CONFUSION"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "By the way the meeting has moved to room four.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PUNCTUATION_OMISSION"
     }
   ]
 }

@@ -70,7 +70,7 @@ content_src/
 | `typical_errors` | `content_typical_error` | ordinal / learner_l1(可空) / error_type / error_pattern / corrected_pattern / explanation / severity / detection_policy（§24.9 七列 + ordinal） |
 | `detection_policy` | `content_detection_policy` | policy_version / policy（§24.10 未给字段表 ⇒ 声明读法） |
 | `detection_rules` | `content_detection_rule` | ordinal / rule |
-| `detection_fixtures` | `content_detection_fixture` | ordinal / kind（`NEGATIVE` \| `FALSE_POSITIVE_BOUNDARY` \| `POSITIVE_ERROR`，声明读法；C3-R2 起三词）/ text / expected（**C3-R2 起非自由串**：由 kind 决定——`NEGATIVE→NO_MATCH` / `FALSE_POSITIVE_BOUNDARY→NO_MATCH_BOUNDARY` / `POSITIVE_ERROR→MATCH`（`elc.content.types.DETECTION_FIXTURE_EXPECTED_BY_KIND`），错配 ⇒ `BuildError`，既含存量 255 行也含新行） |
+| `detection_fixtures` | `content_detection_fixture` | ordinal / kind（`NEGATIVE` \| `FALSE_POSITIVE_BOUNDARY` \| `POSITIVE_ERROR`，声明读法；C3-R2 起三词）/ text / expected（**C3-R2 起非自由串**：由 kind 决定——`NEGATIVE→NO_MATCH` / `FALSE_POSITIVE_BOUNDARY→NO_MATCH_BOUNDARY` / `POSITIVE_ERROR→MATCH`（`elc.content.types.DETECTION_FIXTURE_EXPECTED_BY_KIND`），错配 ⇒ `BuildError`，既含存量 255 行也含新行）/ **`source_error_type`（D-1 起，键集按 kind 分集）**：`POSITIVE_ERROR` 行**必带**——值 = 该实体 `typical_errors` 声明的 `error_type` 集之一（悬空 ⇒ `BuildError`，错误信息带合法集）；`NEGATIVE` / `FALSE_POSITIVE_BOUNDARY` 行**不带**（非错误实例化；出现该键 ⇒ `BuildError`）；落库为可空列 `content_detection_fixture.source_error_type`（正例行非空、其余行 NULL） |
 
 R4 可测性规则（本仓现役语料的自约束，build 不校验语义、只校验词表）：每条
 detection rule 的 ordinal 应有同 ordinal 的 fixture 兜底；fixture 的 `expected`
@@ -80,13 +80,14 @@ detection rule 的 ordinal 应有同 ordinal 的 fixture 兜底；fixture 的 `e
 **没有执行者**（`NO_MATCH` / `NO_MATCH_BOUNDARY` 只活在本语料策略散文与测试
 字面量里）；本登记不声称任何 detector 已存在。
 
-**登记（C3-R2，POSITIVE_ERROR 正例面）**：外评 HIGH-2 的规格层修复——修复前，
-一个恒返 `NO_MATCH` 的假 detector 能通过全部（当时仅两词的）fixtures；修复后，
-每份 evidence 文档的**每条 typical_error（按 error_type）**必须有 ≥1 条
-`POSITIVE_ERROR` 行（kind=`POSITIVE_ERROR`、expected=`MATCH`、text 为**真实
-学习者错误风格**的自然英语产出、实例化该条声明的 error_pattern），build 在
-装载期做**逐实体逐 error_type 的覆盖校验**（正例行数 < 声明 error_type 数 ⇒
-`BuildError`——只校结构，语言真实性由评审抽审判断）。现役语料 = **196 条正例**
+**登记（C3-R2，POSITIVE_ERROR 正例面；覆盖校验的现役形态见下方 D-1 登记）**：
+外评 HIGH-2 的规格层修复——修复前，一个恒返 `NO_MATCH` 的假 detector 能通过全部
+（当时仅两词的）fixtures；修复后，每份 evidence 文档的**每条 typical_error（按
+error_type）**必须有 ≥1 条 `POSITIVE_ERROR` 行（kind=`POSITIVE_ERROR`、
+expected=`MATCH`、text 为**真实学习者错误风格**的自然英语产出、实例化该条声明的
+error_pattern）。C3-R2 当时的校验是**行数代理**（正例行数 < 声明 error_type 数 ⇒
+`BuildError`——因当时 fixture 行不带 error_type 列，只能比计数）；该代理已被
+D-1 的真 FK + 逐名覆盖校验**取代并删除**（见下）。现役语料 = **196 条正例**
 （C3-R2 的 124 = 60 实体 × 2 错误型 + 4 单错误型实体
 `res-discourse-anyway` / `res-discourse-in-fact` / `res-discourse-to-be-honest` /
 `res-phrasal-figure-out` 各 1；C3-c 的 36 = 其 18 个新实体 × 2 错误型；C3-d 的
@@ -96,6 +97,26 @@ fixtures 总数 255 → **379** → **487** → **595**；新行一律 append �
 可执行**（N21 延续）——它们闭合的是「恒 NO_MATCH 假 detector 可过全部
 fixtures」这个**规格层**漏洞：tests 侧的存在性/逻辑断言钉证明恒 NO_MATCH 桩
 在全集上失败 ≥196、恒 MATCH 桩失败 399。
+
+**登记（D-1，Detector Executability Program 首刀——POSITIVE_ERROR 真 FK）**：
+外评 EXT-C3-01 与仓内 N-C3R2-1 的收口——正例行与声明错误型的**真关联**：
+
+- **源契约**：`POSITIVE_ERROR` 行**必带** `source_error_type`（缺失 ⇒
+  `BuildError`）；值域 = 该实体 `typical_errors` 声明的 `error_type` 集
+  （悬空 ⇒ `BuildError`，错误信息带实体合法集）；`NEGATIVE` /
+  `FALSE_POSITIVE_BOUNDARY` 行出现该键 ⇒ `BuildError`（非错误实例化）。
+- **逐型覆盖取代行数代理**：每条声明的 `error_type` 必须有 ≥1 条
+  `source_error_type` 命名它的正例行（未覆盖 ⇒ `BuildError` 并**列出未覆盖型**）；
+  C3-R2 的行数代理校验删除（被真校验包含——逐名匹配严格强于计数比较）。
+- **196 行存量迁移**：全部既有正例行各补 `source_error_type` 一键（append 在
+  `expected` 之后），归属 = **POS 行按 ordinal 升序与 declared error_type 按
+  ordinal 升序一一对应**，逐对 pattern/text 人工核验；既有行其余三键与全部
+  NEG/BOUND 行零改动（c3-c/c3-d 的投影 digest 钉以四键投影复原冻结常量证明）。
+- **载体与版本**：`content_detection_fixture` 增可空列
+  `source_error_type`（正例行非空、其余行 NULL）；`CONTENT_DB_VERSION`
+  "4" → "5"（表集 25 不变）。
+- **边界不变**：本登记只立 FK 契约，**不声称 detector 已可执行**
+  （N21 延续，`EXECUTABLY_VERIFIED` 仍 0）；真实 rollout 仍 HOLD，零开闸声称。
 
 **登记（C3-R2，provenance 四级维度）**：`content_src/audits/*.json` 是
 provenance 审计记录的作者源（**目录扫描装载，不进 index**；文件名排序确定性；
@@ -405,10 +426,11 @@ target 的两个域视图，故不造自环链接行）。
 PYTHONPATH=src python -m elc.content.build --out build/content.db
 ```
 
-产物元数据：`content_meta.content_db_version = "4"`（docs/DATA_MODEL.md §26.1；
+产物元数据：`content_meta.content_db_version = "5"`（docs/DATA_MODEL.md §26.1；
 C1 把表集 11 → 24，C3-R1 给 `curriculum_link` 加 `mapping_class` 列（表集不变、
-行形状变化），C3-R2 加 `content_provenance` 表（24 → 25），均据此显式 bump，
-禁止依赖代码猜 schema）。
+行形状变化），C3-R2 加 `content_provenance` 表（24 → 25），D-1 给
+`content_detection_fixture` 加可空列 `source_error_type`（表集不变、行形状变化），
+均据此显式 bump，禁止依赖代码猜 schema）。
 
 ADR：`content.db` 是生成物（`.gitignore` 已含 `*.db`），由 CI/本地按需重建；
 本目录与 `../curriculum/` 是版本控制内的唯一作者源。

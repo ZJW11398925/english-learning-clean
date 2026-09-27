@@ -188,13 +188,15 @@
       "ordinal": 4,
       "kind": "POSITIVE_ERROR",
       "text": "I am seeing, please go on with the story.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "PROGRESSIVE_FORM"
     },
     {
       "ordinal": 5,
       "kind": "POSITIVE_ERROR",
       "text": "I saw, please continue with what happened next.",
-      "expected": "MATCH"
+      "expected": "MATCH",
+      "source_error_type": "TENSE_SLIP"
     }
   ]
 }
