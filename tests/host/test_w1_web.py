@@ -857,3 +857,63 @@ def test_a_refused_conversation_open_raises_before_serving(
             run_web(host, _free_port(), conversation=str(CONV))
     finally:
         host.close()
+
+
+def test_the_web_command_prints_a_serving_banner(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The controller fix for the silent-start defect: ``python -m elc web``
+    prints where it is serving (and how to stop) before blocking — an
+    operator must never face a silent prompt and guess the server is up.
+    A busy port answers with the human sentence + exit 1, never a
+    traceback."""
+
+    monkeypatch.setattr(elc.cli, "open_host", lambda *a, **k: _StubServeHost())
+    monkeypatch.setattr("elc.web.run_web", lambda host, port, **kw: None)
+    out, err = io.StringIO(), io.StringIO()
+    code = elc.cli.main(
+        [
+            "web",
+            "--app-db",
+            str(tmp_path / "app.db"),
+            "--base-url",
+            "https://offline.invalid/v1",
+            "--model",
+            "offline-model",
+            "--api-key-env",
+            "W1_UNSET_KEY_VAR",
+            "--port",
+            "8961",
+        ],
+        stdout=out,
+        stderr=err,
+    )
+    assert code == 0
+    assert "serving http://127.0.0.1:8961" in out.getvalue()
+    assert "Ctrl+C" in out.getvalue()
+
+    def busy(host: Any, port: int, **kwargs: Any) -> None:
+        raise OSError(10048, "address already in use")
+
+    monkeypatch.setattr("elc.web.run_web", busy)
+    out2, err2 = io.StringIO(), io.StringIO()
+    code2 = elc.cli.main(
+        [
+            "web",
+            "--app-db",
+            str(tmp_path / "app2.db"),
+            "--base-url",
+            "https://offline.invalid/v1",
+            "--model",
+            "offline-model",
+            "--api-key-env",
+            "W1_UNSET_KEY_VAR",
+            "--port",
+            "8962",
+        ],
+        stdout=out2,
+        stderr=err2,
+    )
+    assert code2 == 1
+    assert "cannot listen on 127.0.0.1:8962" in err2.getvalue()
+    assert "--port" in err2.getvalue()

@@ -421,6 +421,13 @@ def main(
                 run_web,
             )
 
+            print(
+                f"elc web · serving http://127.0.0.1:{args.port} · open it"
+                " in a browser; Ctrl+C to stop"
+                "（浏览器打开该地址开始对话；Ctrl+C 停止服务）",
+                file=out,
+            )
+            out.flush()
             try:
                 run_web(
                     host,
@@ -431,6 +438,16 @@ def main(
                 )
             except WebOpenError as exc:
                 print(f"elc web: {exc}", file=err)
+                return 1
+            except OSError as exc:
+                # A port already taken (or unavailable) is the one startup
+                # failure an operator can fix by choosing another --port —
+                # said as a sentence, never as a traceback.
+                print(
+                    f"elc web: cannot listen on 127.0.0.1:{args.port}:"
+                    f" {exc} — pass another --port",
+                    file=err,
+                )
                 return 1
             return 0
         return _chat(host, args, stdin=stdin, stdout=out, stderr=err)
