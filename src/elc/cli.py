@@ -36,6 +36,19 @@ signal, teaching-moment states, generation-action statuses, the delivery /
 exposure / ledger-event tables), and the pilot matchers' known
 false-positive faces — a pure SQL read face that prints, never writes.
 
+``python -m elc seed --app-db PATH --content-db PATH`` is the cold-start
+bootstrap (the D-6 dogfood precondition): a brand-new app.db has no §5.1
+teaching policy, no goal portfolio and no §5.2 schedule rows, so the planner's
+candidate generators refuse everything and no automatic teaching can ever
+trigger. ``seed`` writes exactly the three missing pieces through the host's
+own controllers — the default policy (``pv-seed-v1``, BALANCED), the single
+speaking goal (``goal-seed-v1``) and one schedule row per
+``EXECUTABLY_VERIFIED`` target of the given content.db — and nothing else: no
+provider, no model, no key and no network (the host is opened with a
+never-called scripted provider). Every write is an idempotent upsert, so
+rerunning the command is safe. It configures a study deployment; it opens
+nothing (no rollout stage is declared here).
+
 ``python -m elc gate --content-db PATH`` (D-5) is the corpus rollout gate over
 one built content.db — no host, no app.db, no key: it reads the readiness
 table and the artifact's own provenance rows, prints the report (the four
@@ -102,18 +115,24 @@ from elc.persona.openai_provider import (
     OpenAICompatibleProvider,
     insecure_http_destination,
 )
-from elc.persona.provider import PersonaProvider
+from elc.persona.provider import PersonaProvider, ScriptedPersonaProvider
 from elc.platform.db.migrations import MigrationError
 from elc.platform.secrets import EnvSecretSource, FileSecretSource, SecretSource
 from elc.platform.types import (
     ClientMessageId,
     ConversationId,
     Err,
+    EvidenceModality,
+    GoalId,
+    GoalModality,
+    GoalVersion,
     InputId,
     InteractionChannel,
+    PolicyVersion,
     Result,
     RuntimeVersion,
     SecretRef,
+    TargetId,
 )
 from elc.runtime.types import InputEnvelope, TurnCompletion
 from elc.teaching.rollout import (
@@ -122,6 +141,12 @@ from elc.teaching.rollout import (
     RolloutStage,
     RolloutVerdict,
     corpus_rollout_gate,
+)
+from elc.user_config.types import (
+    LearningGoal,
+    LearningGoalPortfolio,
+    TeachingFrequency,
+    TeachingPolicyProfile,
 )
 
 __all__ = [
@@ -182,6 +207,25 @@ _ROLLOUT_STAGE_HINT = (
 )
 
 _OBSERVATIONS_HINT = "elc observations: --app-db PATH is required"
+
+_SEED_REQUIRED_HINT = (
+    "elc seed: --app-db and --content-db are required (the seed writes the"
+    " default teaching policy, the goal portfolio and one schedule row per"
+    " EXECUTABLY_VERIFIED target of the built artifact; no provider, model"
+    " or key is needed)"
+)
+
+#: The seeded §5.1 pieces' fixed ids (the seed's own declared values — the
+#: same idea as D-6-a's test seed, promoted to the shipped command).
+_SEED_POLICY_VERSION = "pv-seed-v1"
+_SEED_GOAL_VERSION = "gv-seed-v1"
+_SEED_GOAL_ID = "goal-seed-v1"
+_SEED_GOAL_DESCRIPTION = "a long-term speaking goal"
+
+#: The provenance level whose targets get a §5.2 row (the vocabulary is
+#: ``elc.content.types.PROVENANCE_LEVELS``; the level is read off the
+#: artifact's derived ``content_provenance`` rows, never declared).
+_EXECUTABLY_VERIFIED = "EXECUTABLY_VERIFIED"
 
 #: The reason code whose gate rows are the drift-interception signal: an
 #: automatic OPEN that reached the Gate while pointing at a target this
@@ -305,6 +349,13 @@ def main(
             print(_OBSERVATIONS_HINT, file=err)
             return 2
         return _observations(args, stdout=out, stderr=err)
+    if args.command == "seed":
+        # Its own required pair, checked before the chat validation below so
+        # the seed never needs a base-url/model/key (it sends no request).
+        if args.app_db is None or args.content_db is None:
+            print(_SEED_REQUIRED_HINT, file=err)
+            return 2
+        return _seed(args, stdout=out, stderr=err)
 
     # chat's and web's required arguments are validated here rather than by
     # argparse so the gate command can share one flat parser without them (a
@@ -610,6 +661,144 @@ def _observations(
     return 0
 
 
+def _seed(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -> int:
+    """The cold-start bootstrap (the ``seed`` command).
+
+    A brand-new app.db passes every migration and opens fine — but it has no
+    §5.1 teaching policy, no goal portfolio and no §5.2 schedule rows, so the
+    planner's generators refuse every candidate and automatic teaching can
+    never trigger. This command writes exactly those three pieces, all through
+    the host's own controllers (the D-6-a test seed's shape, promoted): the
+    default policy, the single speaking goal, and one ``recompute_schedule_item``
+    row per ``EXECUTABLY_VERIFIED`` target of the given content.db. The host is
+    opened with a scripted provider whose script is empty and never called —
+    the seed sends no request — and it declares no rollout stage, so the host
+    this command opens could not run automatic teaching even if it wanted to.
+    Every write is an idempotent upsert (the schedule row is keyed by
+    target × modality and an identical recomputation replays), so rerunning
+    the command is safe and says so. Exit codes: 0 seeded, 2 missing
+    arguments (checked in ``main``), 1 an unopenable database or a refused
+    write.
+    """
+
+    try:
+        host = open_host(
+            args.app_db,
+            provider=ScriptedPersonaProvider(script=()),
+            content_db_path=args.content_db,
+        )
+    except (sqlite3.Error, MigrationError, OSError, ContentStoreError) as exc:
+        print(
+            "elc seed: cannot open the databases"
+            f" (app.db {args.app_db}, content.db {args.content_db}): {exc}",
+            file=stderr,
+        )
+        return 1
+    try:
+        # The full-chain tier is guaranteed by content_db_path being required;
+        # the asserts say so where mypy needs it said.
+        assert host.user_id is not None and host.user_config is not None
+        assert host.content_store is not None
+        assert host.curriculum is not None and host.scheduler is not None
+
+        written = host.user_config.upsert_teaching_policy(
+            TeachingPolicyProfile(
+                teaching_policy_profile_id=host.user_id,
+                policy_version=PolicyVersion(_SEED_POLICY_VERSION),
+                teaching_frequency=TeachingFrequency.BALANCED,
+            )
+        )
+        if isinstance(written, Err):
+            print(
+                f"elc seed: the teaching-policy write was refused:"
+                f" {written.error.message}",
+                file=stderr,
+            )
+            return 1
+        portfolio = host.user_config.upsert_goal_portfolio(
+            LearningGoalPortfolio(
+                goal_portfolio_id=host.user_id,
+                goal_version=GoalVersion(_SEED_GOAL_VERSION),
+                goals=(
+                    LearningGoal(
+                        goal_id=GoalId(_SEED_GOAL_ID),
+                        goal_modality=GoalModality.SPEAKING,
+                        description=_SEED_GOAL_DESCRIPTION,
+                    ),
+                ),
+                modality_weights={GoalModality.SPEAKING: 1.0},
+                assessment_targets=(),
+                # The F-4 sentinel ("not configured"), not a clock reading: a
+                # fresh effective_from per run would change the content under
+                # the same goal_version, and the store would rightly refuse
+                # the second write as a CONFLICT — the seed's idempotence
+                # needs every byte of the write to be the same every run.
+                effective_from="",
+            )
+        )
+        if isinstance(portfolio, Err):
+            print(
+                f"elc seed: the goal-portfolio write was refused:"
+                f" {portfolio.error.message}",
+                file=stderr,
+            )
+            return 1
+
+        provenance = host.content_store.provenance_levels()
+        if isinstance(provenance, Err):
+            print(
+                "elc seed: the content artifact's provenance table could not"
+                f" be read: {provenance.error.message}",
+                file=stderr,
+            )
+            return 1
+        ev_targets = [
+            entity_id
+            for entity_id, level in provenance.value
+            if level == _EXECUTABLY_VERIFIED
+        ]
+        now = datetime.now(tz=UTC).isoformat()
+        seeded: list[str] = []
+        skipped: list[str] = []
+        for entity_id in ev_targets:
+            row = host.curriculum.get_target(TargetId(entity_id))
+            if isinstance(row, Err):
+                skipped.append(entity_id)
+                continue
+            scheduled = host.scheduler.recompute_schedule_item(
+                row.value.target_type,
+                TargetId(entity_id),
+                EvidenceModality(row.value.evidence_modality),
+                now,
+            )
+            if isinstance(scheduled, Err):
+                skipped.append(entity_id)
+                continue
+            seeded.append(entity_id)
+        skip_note = ", ".join(skipped) if skipped else "none"
+        print(
+            f"elc seed · seeded policy {_SEED_POLICY_VERSION} (BALANCED)",
+            file=stdout,
+        )
+        print(
+            f"elc seed · seeded goal {_SEED_GOAL_ID} (SPEAKING)",
+            file=stdout,
+        )
+        print(
+            f"elc seed · {len(seeded)} schedule rows for"
+            f" {len(ev_targets)} EV targets (skipped: {skip_note})",
+            file=stdout,
+        )
+        print(
+            "elc seed · rerunning is safe: every write is an idempotent"
+            " upsert",
+            file=stdout,
+        )
+        return 0
+    finally:
+        host.close()
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m elc",
@@ -621,27 +810,30 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "command",
-        choices=("chat", "gate", "observations", "web"),
+        choices=("chat", "gate", "observations", "seed", "web"),
         help=(
             "chat: the conversation loop; gate: the corpus rollout gate;"
             " observations: the D-6-a dogfood readout over one app.db;"
+            " seed: the cold-start bootstrap (default policy + goal + one"
+            " schedule row per EV target; run once before a dogfood);"
             " web: the local study-first page over one app.db (127.0.0.1"
             " only, no auth — a single-user dogfood face, not a service)"
         ),
     )
     parser.add_argument(
         "--app-db",
-        help="path to app.db (chat: created and migrated when absent;"
-        " observations: opened read-only)",
+        help="path to app.db (chat and seed: created and migrated when"
+        " absent; observations: opened read-only)",
     )
     parser.add_argument(
         "--content-db",
         default=None,
         help=(
             "path to a built content.db (chat: the full-chain tier — the"
-            " automatic teaching leg with its detectors; absent = the plain"
-            " prep-1 tier. gate: the artifact to gate, default: the"
-            " repository build artifact)"
+            " automatic teaching leg with its detectors; seed: required —"
+            " its EXECUTABLY_VERIFIED targets are what gets schedule rows;"
+            " absent for chat = the plain prep-1 tier. gate: the artifact"
+            " to gate, default: the repository build artifact)"
         ),
     )
     parser.add_argument(

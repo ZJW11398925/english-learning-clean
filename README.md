@@ -43,6 +43,7 @@ PYTHONPATH=src python -m elc gate --content-db ./build/content.db
 ### 全链 chat 与 dogfood 观察（D-6-a，用户已明示同意 D-6）
 
 ```bash
+PYTHONPATH=src python -m elc seed --app-db ./app.db --content-db ./build/content.db
 PYTHONPATH=src python -m elc chat --app-db ./app.db \
   --base-url https://api.example.com/v1 --model gpt-4o-mini \
   --api-key-env OPENAI_API_KEY \
@@ -50,6 +51,8 @@ PYTHONPATH=src python -m elc chat --app-db ./app.db \
 PYTHONPATH=src python -m elc observations --app-db ./app.db
 ```
 
+- **dogfood 前对全新 app.db 跑一次 `seed`**：它经 host 自己的 controller 写入缺省教学策略（`pv-seed-v1`，BALANCED）+ 单一 SPEAKING 目标（`goal-seed-v1`）+ 每个可执行验证（EV）目标一行 §5.2 schedule 行——没有这三件，planner 生成零候选，自动教学永不触发。
+- `seed` 幂等：所有写入都是 upsert（schedule 行按 target×modality 键重放），重跑安全；它不发任何网络请求（不需要 provider/model/key），也不声明 rollout stage——只铺配置，不开闸。
 - `--content-db` 给 chat 装配**全链 tier**（自动教学腿 + 真检测器）；`--rollout-stage` 声明 §12 四词之一（缺省不声明 = fail-closed，零自动教学；非法词人话退出 2）。
 - `observations` 是纯 SQL 读面：§12 六指标声明 + app.db 真实计数（gate_decision 按 decision×reason_codes，含 `TARGET_NOT_EXECUTABLY_VERIFIED` 漂移信号计数）+ D-3 matcher 已知假阳面清单——只打印，不写任何表。
 
