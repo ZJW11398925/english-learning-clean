@@ -484,6 +484,66 @@ def test_the_web_subcommand_refuses_a_missing_base_url(
     assert not app_db.exists()
 
 
+class _StubServeHost:
+    """Just enough host for the web branch over a faked ``run_web``."""
+
+    epoch = "epoch-stub"
+
+    def close(self) -> None:
+        return None
+
+
+def test_the_web_command_passes_content_db_stage_and_port_through(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The web branch assembles exactly like chat: the operator's
+    ``--content-db`` / ``--rollout-stage`` reach ``open_host`` verbatim (a
+    stage forced to ``None`` here is the zero-open boundary broken) and the
+    ``--port`` reaches ``run_web`` — one assembly path, pinned end to end."""
+
+    received: dict[str, object] = {}
+    captured: dict[str, object] = {}
+
+    def recording_open_host(app_db_path: object, **kwargs: object) -> Any:
+        received["app_db"] = app_db_path
+        received.update(kwargs)
+        return _StubServeHost()
+
+    def fake_run_web(host: Any, port: int, **kwargs: object) -> None:
+        captured["host"] = host
+        captured["port"] = port
+        captured.update(kwargs)
+
+    monkeypatch.setattr(elc.cli, "open_host", recording_open_host)
+    monkeypatch.setattr("elc.web.run_web", fake_run_web)
+    content_db = tmp_path / "content.db"
+    content_db.write_bytes(b"not a real artifact (open_host is stubbed)")
+    code, _, err = run_cli(
+        [
+            "web",
+            "--app-db",
+            str(tmp_path / "app.db"),
+            "--base-url",
+            "https://offline.invalid/v1",
+            "--model",
+            "offline-model",
+            "--api-key-env",
+            "W1_UNSET_KEY_VAR",
+            "--content-db",
+            str(content_db),
+            "--rollout-stage",
+            "Study-first",
+            "--port",
+            "8977",
+        ]
+    )
+    assert (code, err) == (0, "")
+    assert received["content_db_path"] == str(content_db)
+    assert received["rollout_stage"] is RolloutStage.STUDY_FIRST
+    assert captured["port"] == 8977
+    assert captured["host"] is not None
+
+
 def test_the_web_entry_delegates_to_the_same_command(tmp_path: Path) -> None:
     app_db = tmp_path / "app.db"
     err = io.StringIO()
