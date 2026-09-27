@@ -364,10 +364,20 @@ def main(
             # The lazy import keeps elc.web → elc.cli (its readings core and
             # runtime version) acyclic: this module never imports the server
             # at load time, only here, where the command runs.
-            from elc.web import WebOpenError, run_web
+            from elc.web import (
+                DEFAULT_WEB_CONVERSATION_ID,
+                WebOpenError,
+                run_web,
+            )
 
             try:
-                run_web(host, args.port, conversation=args.conversation)
+                run_web(
+                    host,
+                    args.port,
+                    conversation=(
+                        args.conversation or DEFAULT_WEB_CONVERSATION_ID
+                    ),
+                )
             except WebOpenError as exc:
                 print(f"elc web: {exc}", file=err)
                 return 1
@@ -387,11 +397,13 @@ def _chat(
 ) -> int:
     """Startup recovery, then one turn per line until ``:quit`` / EOF."""
 
-    conversation_id = ConversationId(args.conversation)
+    conversation_id = ConversationId(
+        args.conversation or DEFAULT_CONVERSATION_ID
+    )
     opened = host.open_conversation(conversation_id)
     if isinstance(opened, Err):
         print(
-            f"elc chat: cannot open conversation {args.conversation}:"
+            f"elc chat: cannot open conversation {conversation_id}:"
             f" {opened.error.code.value}: {opened.error.message}",
             file=stderr,
         )
@@ -670,8 +682,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--conversation",
-        default=DEFAULT_CONVERSATION_ID,
-        help="conversation id (default: %(default)s)",
+        default=None,
+        help=(
+            "conversation id (default: chat opens cli-default, web opens"
+            " web-default — the two faces never share one transcript by"
+            " accident)"
+        ),
     )
     parser.add_argument(
         "--port",

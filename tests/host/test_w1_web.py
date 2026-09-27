@@ -544,6 +544,91 @@ def test_the_web_command_passes_content_db_stage_and_port_through(
     assert captured["host"] is not None
 
 
+def test_the_two_faces_default_to_their_own_transcripts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """MEDIUM-1 (review): the web face's documented isolation — its default
+    conversation is ``web-default``, never the CLI's ``cli-default`` — must
+    be behaviour, not prose. An explicit ``--conversation`` stays honoured
+    on both faces."""
+
+    web_conversation: dict[str, object] = {}
+    monkeypatch.setattr(elc.cli, "open_host", lambda *a, **k: _StubServeHost())
+    monkeypatch.setattr(
+        "elc.web.run_web",
+        lambda host, port, **kwargs: web_conversation.update(kwargs),
+    )
+    code, _, err = run_cli(
+        [
+            "web",
+            "--app-db",
+            str(tmp_path / "app.db"),
+            "--base-url",
+            "https://offline.invalid/v1",
+            "--model",
+            "offline-model",
+            "--api-key-env",
+            "W1_UNSET_KEY_VAR",
+        ]
+    )
+    assert (code, err) == (0, "")
+    assert web_conversation["conversation"] == "web-default"
+
+    web_conversation.clear()
+    code, _, err = run_cli(
+        [
+            "web",
+            "--app-db",
+            str(tmp_path / "app2.db"),
+            "--base-url",
+            "https://offline.invalid/v1",
+            "--model",
+            "offline-model",
+            "--api-key-env",
+            "W1_UNSET_KEY_VAR",
+            "--conversation",
+            "explicit-conv",
+        ]
+    )
+    assert (code, err) == (0, "")
+    assert web_conversation["conversation"] == "explicit-conv"
+
+
+def test_the_cli_web_branch_answers_web_open_error_with_a_sentence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """LOW-1 (review): the human-sentence exit-1 branch for a refused
+    conversation open is part of the fix — this pins it (its mutation,
+    deleting the branch, left the whole suite green)."""
+
+    from elc.web import WebOpenError
+
+    monkeypatch.setattr(elc.cli, "open_host", lambda *a, **k: _StubServeHost())
+    monkeypatch.setattr(
+        "elc.web.run_web",
+        lambda host, port, **kwargs: (_ for _ in ()).throw(
+            WebOpenError("cannot open conversation x: NOT_FOUND: no")
+        ),
+    )
+    err = io.StringIO()
+    code = elc.cli.main(
+        [
+            "web",
+            "--app-db",
+            str(tmp_path / "app.db"),
+            "--base-url",
+            "https://offline.invalid/v1",
+            "--model",
+            "offline-model",
+            "--api-key-env",
+            "W1_UNSET_KEY_VAR",
+        ],
+        stderr=err,
+    )
+    assert code == 1
+    assert "elc web: cannot open conversation" in err.getvalue()
+
+
 def test_the_web_entry_delegates_to_the_same_command(tmp_path: Path) -> None:
     app_db = tmp_path / "app.db"
     err = io.StringIO()
@@ -616,7 +701,7 @@ def test_run_web_opens_the_conversation_itself(tmp_path: Path) -> None:
             data=body,
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=30.0) as response:
+        with _OPENER.open(req, timeout=30.0) as response:
             data = json.loads(response.read())
         assert data["reply"] == REPLY, data
         assert data["failure_reason"] is None, data
