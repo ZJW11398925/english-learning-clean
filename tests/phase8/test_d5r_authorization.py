@@ -45,7 +45,7 @@ from elc.platform.types import (
     Ok,
     PolicyVersion,
 )
-from elc.runtime import automatic_turn
+from elc.runtime import automatic_teaching, automatic_turn
 from elc.runtime.automatic_teaching import (
     AUTO_SESSION_BUDGET_UNREADABLE,
     PROVENANCE_FACE_MISSING,
@@ -210,8 +210,8 @@ def _policy_wired_controller(
     """The composition root's adapter shape, over the real stores: the
     full chain's ``TeachingController(store, policy=_UserConfigPolicySource(
     user_config, user_id))`` — the adapter is host.py's own private class,
-    reconstructed here over the same two faces (a test module does not
-    import another module's private)."""
+    imported here by name and reconstructed over the same two faces, so
+    this module pins the local reconstruction against the real one."""
 
     from elc.host import LOCAL_V1_USER_ID, _UserConfigPolicySource
 
@@ -552,3 +552,28 @@ def test_the_wiring_forwards_the_authorization_facts() -> None:
         " \"CURRENT_USER_ERROR\" in plan.selected.origins )" in normalized
     )
     assert "provenance=wiring.provenance" in normalized
+
+
+# ---------------------------------------------------------------------------
+# 6. the three refusal words are their own words (D-5R review LOW-1)
+# ---------------------------------------------------------------------------
+
+
+def test_the_refusal_words_are_literally_themselves() -> None:
+    """The three D-5R refusals must not be silently aliased onto a Gate
+    frozen word: "budget unreadable" reported as "budget exhausted" (or
+    "not verified" as "teaching disabled") would be a lie with a durable
+    row behind it, and every other pin here reads the Python symbol —
+    which an alias assignment keeps green. The words are pinned by value
+    (the review's m9 form: re-point one constant at a Gate word ⇒ this
+    goes red)."""
+
+    assert automatic_teaching.AUTO_SESSION_BUDGET_UNREADABLE == (
+        "AUTO_SESSION_BUDGET_UNREADABLE"
+    )
+    assert automatic_teaching.TARGET_NOT_EXECUTABLY_VERIFIED == (
+        "TARGET_NOT_EXECUTABLY_VERIFIED"
+    )
+    assert automatic_teaching.PROVENANCE_FACE_MISSING == (
+        "PROVENANCE_FACE_MISSING"
+    )

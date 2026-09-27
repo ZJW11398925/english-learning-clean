@@ -316,5 +316,39 @@ def test_a_not_verifiably_executable_target_is_refused_end_to_end(
         host.close()
 
 
+def test_an_unreadable_provenance_table_refuses_to_assemble(
+    tmp_path: Path, pilot_content_db: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The assembly-time fail-closed branch (D-5R review LOW-2): if the
+    content artifact's provenance table cannot be read, ``open_host``
+    raises ``ContentStoreError`` instead of assembling a host whose
+    automatic leg could not tell a verified target from an unverified
+    one. Injected as a monkeypatched ``Err`` because every artifact the
+    store itself accepts answers the read — the branch answers broken
+    reads, and the pin holds the refusal, not the artifact shape."""
+
+    from elc.content import store as content_store_module
+    from elc.content.store import ContentStoreError
+    from elc.platform.types import DomainError, DomainErrorCode, Err
+
+    def unreadable(self: content_store_module.ContentStore) -> object:
+        return Err(
+            DomainError(
+                code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                message="provenance read failed (injected)",
+            )
+        )
+
+    monkeypatch.setattr(
+        content_store_module.ContentStore, "provenance_levels", unreadable
+    )
+    with pytest.raises(ContentStoreError, match="provenance table"):
+        full(
+            tmp_path / "app.db",
+            pilot_content_db,
+            candidate_target=EV_TARGET,
+        )
+
+
 def count(db: sqlite3.Connection, table: str) -> int:
     return int(db.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])
