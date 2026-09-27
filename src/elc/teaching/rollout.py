@@ -79,6 +79,28 @@ row is empty either. Both readings agree on the shipped corpus (the
 fifty-two R4 RESOURCE targets make every row GO, so the answer is GO under
 either).
 
+**③.1 The fifth leg (D-4) — provenance, as a wiring-level declaration.**
+:attr:`GateRowSpec.requires_executable_detection` marks the one row whose
+target must not merely *be* R4 but be **executably verified**: the external
+review's hard gate (EXT-C3-03 — "automatic CURRENT_USER_ERROR needs
+R4 ∧ EXECUTABLY_VERIFIED", which today's corpus answers 0-of-52 without
+D-3's pilot). This is the **declared reading** of that gate, adopted at the
+rollout wiring layer (DEC-OPI-24fd89e7's R5): BF-02 §10's frozen four lines
+are not edited — the marker is a field beside them, and a caller that passes
+no provenance mapping (:func:`rollout_gate_of`'s default) gets exactly the
+four-floor §10 answer, field for field. When a caller *does* pass a
+provenance mapping (``entity_id → PROVENANCE_LEVELS`` word), the marked
+row's count tightens to targets that clear their readiness floor **and**
+reach ``EXECUTABLY_VERIFIED`` on :data:`elc.content.types.PROVENANCE_LEVELS`'
+own ladder order (``EMPIRICALLY_CALIBRATED`` is a higher rung and is not
+blocked); the targets the provenance leg removed are reported honestly in
+:attr:`RolloutGateRow.blocked_by_provenance`, never silently dropped. A
+missing provenance entry and an unknown provenance word both fail closed
+(the repository's "an unknown word is refused, not guessed" rule). The
+other three rows never read provenance. Revisit: when the canonical or
+BF-02 revision lands, the marker is promoted into §10's own lines and this
+declaration becomes the document's.
+
 **What would turn a row GO is also executable**: each row carries
 ``required_facts`` — the cumulative §8.1 fact keys
 (:func:`elc.curriculum.readiness.required_fact_keys`) that must become present
@@ -109,10 +131,9 @@ rather than pretending otherwise (see the port's docstring for the Revisit).
 
 **⑤ The HOLD, and where it is held now.** The content gate moved under C1's
 evidence face and widened through the C2 and C3 cuts: on the shipped corpus
-every row reads 100 usable targets (fifty-two at R4 and forty-eight at R1 —
-C3-R1's re-adjudication split them and the C3-c and C3-d authored mappings
-widened the
-R4 side; the five CAPABILITY
+every row reads fifty-two usable targets (the R4 side — the forty-eight R1
+resources sit below even the PROBE floor after C3-R1's re-adjudication
+split them, and the five CAPABILITY
 entities read ``level=None``) and
 :func:`corpus_rollout_gate` answers **GO** — so the content gate no longer
 holds the rollout. The Calibration100 volume gate's three floors now all read
@@ -170,6 +191,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Iterable, Mapping, Protocol, Sequence
 
+from elc.content.types import PROVENANCE_LEVELS
 from elc.curriculum.readiness import (
     READINESS_LEVELS,
     ReadinessAssessment,
@@ -197,6 +219,7 @@ __all__ = [
     "AUTOMATIC_STAGES",
     "BACKOFF_MEANS",
     "DEFAULT_ROLLOUT_STAGE",
+    "EXECUTABLE_VERIFICATION_FLOOR",
     "GATE_OPENING_CONDITIONS",
     "GATE_ROWS",
     "NEUTRAL_OVEREXPOSURE_BANDS",
@@ -401,20 +424,40 @@ class GateRowSpec:
     key set of ``required_level``, read off the ladder's own
     ``required_fact_keys`` — the executable form of "what content work opens
     this row".
+
+    ``requires_executable_detection`` is the rollout wiring layer's
+    **declared-reading** hard-gate marker (DEC-OPI-24fd89e7's R5, closing
+    EXT-C3-03's wiring half): when a caller hands :func:`rollout_gate_of` a
+    provenance mapping, the marked row's count also requires each target's
+    provenance to reach ``EXECUTABLY_VERIFIED`` on
+    :data:`elc.content.types.PROVENANCE_LEVELS`' own order. It defaults to
+    ``False`` on every row but the automatic CURRENT_USER_ERROR one, the
+    frozen BF-02 §10 lines are not edited by it, and a caller that passes no
+    provenance mapping never sees it act. Revisit: when the canonical text
+    or BF-02 itself promotes the detection hard gate into §10's own lines,
+    this field's declaration becomes the document's.
     """
 
     row_word: str
     required_level: str
     automatic: bool
     required_facts: tuple[str, ...]
+    requires_executable_detection: bool = False
 
 
-def _row_spec(row_word: str, required_level: str, *, automatic: bool) -> GateRowSpec:
+def _row_spec(
+    row_word: str,
+    required_level: str,
+    *,
+    automatic: bool,
+    requires_executable_detection: bool = False,
+) -> GateRowSpec:
     return GateRowSpec(
         row_word=row_word,
         required_level=required_level,
         automatic=automatic,
         required_facts=required_fact_keys(required_level),
+        requires_executable_detection=requires_executable_detection,
     )
 
 
@@ -423,13 +466,49 @@ def _row_spec(row_word: str, required_level: str, *, automatic: bool) -> GateRow
 #: document's order. The two ``automatic`` rows are §10's own words
 #: ("automatic general/review", "automatic CURRENT_USER_ERROR"); the other two
 #: are the modes §12's rollout order starts from (``PROBE`` is the Planner's
-#: own probe profile; ``user-initiated teaching`` is §12's first stage).
+#: own probe profile; ``user-initiated teaching`` is §12's first stage). The
+#: fourth row alone carries the wiring layer's declared-reading detection
+#: hard gate (``requires_executable_detection=True``; module ③.1) — the four
+#: frozen fields are §10's, unchanged.
 GATE_ROWS: tuple[GateRowSpec, ...] = (
     _row_spec("PROBE", "R2_PLANNER_READY", automatic=False),
     _row_spec("user-initiated teaching", "R3_TEACHING_READY", automatic=False),
     _row_spec("automatic general/review", "R3_TEACHING_READY", automatic=True),
-    _row_spec("automatic CURRENT_USER_ERROR", "R4_DETECTION_READY", automatic=True),
+    _row_spec(
+        "automatic CURRENT_USER_ERROR",
+        "R4_DETECTION_READY",
+        automatic=True,
+        requires_executable_detection=True,
+    ),
 )
+
+#: The provenance floor of the fifth leg: the word on
+#: :data:`elc.content.types.PROVENANCE_LEVELS`' own ladder at (and above)
+#: which a target counts as executably verified. ``EMPIRICALLY_CALIBRATED``
+#: sits above it and passes; everything at or below ``EDITOR_REVIEWED`` —
+#: and any word the ladder does not carry — fails.
+EXECUTABLE_VERIFICATION_FLOOR = "EXECUTABLY_VERIFIED"
+
+
+def _provenance_reaches_executable(level: str | None) -> bool:
+    """The provenance leg of the marked row: does this target's provenance
+    reach :data:`EXECUTABLE_VERIFICATION_FLOOR` on the vocabulary's own
+    order?
+
+    Fail-closed at every gap: no provenance record at all (``None``) is not
+    a pass, and a word :data:`elc.content.types.PROVENANCE_LEVELS` does not
+    carry is refused, not guessed (the repository's unknown-word rule).
+    """
+
+    if level is None:
+        return False
+    try:
+        return (
+            PROVENANCE_LEVELS.index(level)
+            >= PROVENANCE_LEVELS.index(EXECUTABLE_VERIFICATION_FLOOR)
+        )
+    except ValueError:
+        return False
 
 
 def gate_row_verdict(usable_targets: int) -> RolloutVerdict:
@@ -473,7 +552,16 @@ def usable_targets_for(
 class RolloutGateRow:
     """One row's reading: the floor, the count, the verdict, and the facts its
     threshold needs (the spec's own set, carried so a reader of the report does
-    not have to look it up)."""
+    not have to look it up).
+
+    ``blocked_by_provenance`` is the fifth leg's honest report (module ③.1):
+    how many targets cleared this row's readiness floor but were held back by
+    the provenance requirement — the count is only ever non-zero on the row
+    whose spec carries ``requires_executable_detection`` **and** only when
+    the caller passed a provenance mapping; every other reading answers 0, so
+    an unmarked row can never hide a provenance removal and an unmapped call
+    can never pretend the leg ran.
+    """
 
     row_word: str
     required_level: str
@@ -481,14 +569,26 @@ class RolloutGateRow:
     usable_targets: int
     verdict: RolloutVerdict
     required_facts: tuple[str, ...]
+    blocked_by_provenance: int = 0
 
     def line(self) -> str:
-        """The row as one readable line (the receipt's own shape)."""
+        """The row as one readable line (the receipt's own shape).
 
-        return (
+        A row the provenance leg held back names the held-back count
+        explicitly — the number travels with the verdict instead of a reader
+        having to diff two reports to see it.
+        """
+
+        base = (
             f"{self.row_word}: required {self.required_level}, usable targets"
             f" {self.usable_targets} → {self.verdict.value}"
         )
+        if self.blocked_by_provenance:
+            return (
+                f"{base} ({self.blocked_by_provenance} blocked by"
+                " provenance)"
+            )
+        return base
 
 
 @dataclass(frozen=True)
@@ -501,11 +601,19 @@ class RolloutGateReport:
     ``automatic_verdict`` is the same rule over the two automatic rows alone,
     so a reader can see the task book's condition separately from the
     conjunction. ``targets_considered`` / ``targets_without_level`` count the
-    table the report was made over (the shipped corpus answers 87 and 5 —
+    table the report was made over (the shipped corpus answers 105 and 5 —
     the C1/C2/C3 evidence face leaves the five CAPABILITY entities without a
     level);
     ``unknown_levels`` names any level word the ladder does not carry (empty
     for every answer the ladder itself produces).
+
+    The **fifth leg** (module ③.1) shows up only through the rows' own
+    ``blocked_by_provenance`` counts: a report made without a provenance
+    mapping is field for field the four-floor §10 answer (D-4's
+    backward-compatibility face), and a report made with one tightens only
+    the marked row — the other three never read provenance, so their counts
+    are identical between the two calls and any drift there is a wiring bug,
+    not a reading.
     """
 
     rows: tuple[RolloutGateRow, ...]
@@ -564,23 +672,52 @@ class RolloutGateReport:
 
 
 def _row_of(
-    spec: GateRowSpec, levels: Sequence[str | None]
+    spec: GateRowSpec,
+    levels: Sequence[str | None],
+    ids: Sequence[str],
+    provenance: Mapping[str, str] | None = None,
 ) -> RolloutGateRow:
-    """One row's reading, made the only way a row is ever made."""
+    """One row's reading, made the only way a row is ever made.
 
-    usable = usable_targets_for(levels, required_level=spec.required_level)
+    ``ids`` (positional, one per level) and ``provenance`` carry the fifth
+    leg: on the row whose spec is marked (and only there), a caller-supplied
+    provenance mapping tightens the count to targets that clear the readiness
+    floor **and** reach ``EXECUTABLE_VERIFICATION_FLOOR`` — the held-back
+    targets are counted into ``blocked_by_provenance`` (level-leg passes
+    minus both-leg passes), so the report says what was removed instead of
+    losing it. An unmarked row and an unmapped call leave the count
+    untouched.
+    """
+
+    level_leg = usable_targets_for(levels, required_level=spec.required_level)
+    blocked = 0
+    if provenance is not None and spec.requires_executable_detection:
+        both_legs = 0
+        for target_id, level in zip(ids, levels):
+            if level is None:
+                continue
+            rank = READINESS_RANK.get(level)
+            if rank is None or rank < READINESS_RANK[spec.required_level]:
+                continue
+            if _provenance_reaches_executable(provenance.get(target_id)):
+                both_legs += 1
+            else:
+                blocked += 1
+        level_leg = both_legs
     return RolloutGateRow(
         row_word=spec.row_word,
         required_level=spec.required_level,
         automatic=spec.automatic,
-        usable_targets=usable,
-        verdict=gate_row_verdict(usable),
+        usable_targets=level_leg,
+        verdict=gate_row_verdict(level_leg),
         required_facts=spec.required_facts,
+        blocked_by_provenance=blocked,
     )
 
 
 def rollout_gate_of(
     targets: Iterable[tuple[str, str | None]],
+    provenance: Mapping[str, str] | None = None,
 ) -> RolloutGateReport:
     """Check BF-02 §10 against one readiness table.
 
@@ -588,15 +725,28 @@ def rollout_gate_of(
     ``elc.curriculum.store.CurriculumContentStore.readiness_by_target`` answers
     once its assessments are flattened. The report is a pure function of the
     pairs: no IO, no clock, no store.
+
+    ``provenance`` (optional, module ③.1) is an ``entity_id →`` a
+    :data:`elc.content.types.PROVENANCE_LEVELS` word mapping — the shape
+    ``elc.content.store.ContentStore.provenance_levels`` answers. ``None``
+    (the default) is the plain §10 call: no fifth leg, field for field the
+    historical answer. A mapping tightens only the row marked
+    ``requires_executable_detection``; a target missing from the mapping and
+    a target whose word the vocabulary does not carry both fail closed.
     """
 
+    pairs = list(targets)
     levels: list[str | None] = []
     unknown: list[str] = []
-    for _, level in targets:
+    for _, level in pairs:
         levels.append(level)
         if level is not None and level not in READINESS_RANK:
             unknown.append(level)
-    rows = tuple(_row_of(spec, levels) for spec in GATE_ROWS)
+    ids = [target_id for target_id, _ in pairs]
+    rows = tuple(
+        _row_of(spec, levels, ids=ids, provenance=provenance)
+        for spec in GATE_ROWS
+    )
     verdict = (
         RolloutVerdict.GO
         if all(entry.verdict is RolloutVerdict.GO for entry in rows)
@@ -625,12 +775,23 @@ class ReadinessTableFace(Protocol):
         ...
 
 
-def corpus_rollout_gate(face: ReadinessTableFace) -> Result[RolloutGateReport]:
+def corpus_rollout_gate(
+    face: ReadinessTableFace,
+    provenance: Mapping[str, str] | None = None,
+) -> Result[RolloutGateReport]:
     """The checker over a real readiness table (module ⑤).
 
     An ``Err`` from the table is returned untouched: a corpus whose levels
     cannot be read has no gate answer, and this function does not manufacture
     a HOLD (or a GO) out of a failed read — the two are different facts.
+
+    ``provenance`` is passed through to :func:`rollout_gate_of` untouched
+    (module ③.1). The face protocol deliberately does **not** grow a
+    provenance read: fetching the mapping is the assembly point's
+    responsibility (``elc.content.store.ContentStore.provenance_levels`` is
+    the real read, and D-5's composition root is the caller meant to wire
+    the two together), so the checker stays a pure function of what it is
+    handed.
     """
 
     table = face.readiness_by_target()
@@ -640,7 +801,7 @@ def corpus_rollout_gate(face: ReadinessTableFace) -> Result[RolloutGateReport]:
         (str(assessment.target_id), assessment.level)
         for assessment in table.value
     )
-    return Ok(rollout_gate_of(pairs))
+    return Ok(rollout_gate_of(pairs, provenance))
 
 
 def opening_conditions() -> tuple[tuple[str, str, tuple[str, ...]], ...]:

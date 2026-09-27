@@ -66,10 +66,14 @@ BF02 = (
 #: ``elc.teaching.rollout``'s whole import set — declared, and asserted by
 #: equality: the canonical vocabulary modules, the two pure planner modules
 #: (the frequency→switch table and the ledger core), the platform's types and
-#: the teaching types. No store, no sqlite3, no SQL module.
+#: the teaching types. No store, no sqlite3, no SQL module. (D-4 added
+#: ``elc.content.types`` — the provenance vocabulary's own pure types
+#: module, the fifth leg's word list; same species as
+#: ``elc.curriculum.readiness``, the truth migrated 1:1 with the fact.)
 ROLLOUT_IMPORTS = {
     "__future__",
     "dataclasses",
+    "elc.content.types",
     "elc.curriculum.readiness",
     "elc.planner.feature_assembly",
     "elc.planner.ledger",
