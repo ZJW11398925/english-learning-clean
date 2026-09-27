@@ -2880,8 +2880,12 @@ def build_content_db(
 ) -> BuildReport:
     """Build (or rebuild) content.db from the authoring source.
 
-    Deterministic and idempotent: same source → same rows in the same order →
-    same bytes. The artifact is written to a temporary sibling and moved into
+    Deterministic and idempotent: same source **and the same detector
+    registry handed in** → same rows in the same order → same bytes (the
+    EV derivation is part of the input, so two registries that verify
+    different target sets produce honestly different artifacts — D-5R's
+    verification profile makes that difference visible in the artifact).
+    The artifact is written to a temporary sibling and moved into
     place, so a failed build never leaves a half-written content.db.
 
     ``detector_registry`` (D-2) is the injection seam for the
