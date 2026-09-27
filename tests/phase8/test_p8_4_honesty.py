@@ -268,7 +268,12 @@ def test_nothing_in_src_constructs_the_wiring() -> None:
                 if called in names:
                     callers.append(path.relative_to(SRC_ROOT).as_posix())
                     break
-    assert callers == []
+    # D-5 (the full production composition root) is the "caller's opt-in"
+    # this pin waited for: host.py is the one shipped module that builds an
+    # AutomaticTurnWiring, behind the fail-closed rollout_stage default. The
+    # honest reading moved from "no shipped constructor" to "exactly one" —
+    # a second assembly point is the new regression this pin answers.
+    assert callers == ["host.py"]
 
 
 def test_the_wiring_bundle_requires_only_the_two_faces_the_unit_needs() -> None:

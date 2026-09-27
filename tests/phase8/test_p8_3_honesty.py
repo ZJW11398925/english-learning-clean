@@ -184,9 +184,13 @@ def test_the_two_rollup_columns_are_nowhere_in_the_schema_or_a_statement() -> No
 # -- ⑨ no shipped caller -----------------------------------------------------
 
 
-def test_no_src_module_imports_the_ledger_store() -> None:
-    """The producer is p8-4's: today the store has exactly one importer that is
-    not a test — itself."""
+def test_the_ledger_store_has_exactly_one_shipped_importer() -> None:
+    """The producer is p8-4's; when this pin landed the store had exactly
+    one importer that was not a test — itself. D-5 (the full production
+    composition root) is the registered successor: ``host.py`` now imports
+    the store for the assembled ledger leg, and the honest reading moved
+    with it — exactly one shipped importer besides the store itself, and a
+    second one is the new regression this pin answers."""
 
     importers: list[str] = []
     for path in sorted(SRC_ROOT.rglob("*.py")):
@@ -202,7 +206,7 @@ def test_no_src_module_imports_the_ledger_store() -> None:
                 continue
             if any("ledger_store" in name for name in names):
                 importers.append(path.name)
-    assert importers == []
+    assert importers == ["host.py"]
 
 
 def test_the_store_is_not_exported_from_the_package() -> None:

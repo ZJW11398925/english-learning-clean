@@ -150,9 +150,12 @@ def test_the_adapter_satisfies_the_port(
     assert isinstance(store, PlannerRecordStore)
 
 
-def test_no_shipped_module_wires_the_adapter_yet() -> None:
-    """This cut lands the face; the orchestrator that owns CP2 is a later
-    cut's work item, so nothing under ``src/`` calls the adapter."""
+def test_the_adapter_has_exactly_one_shipped_wirer() -> None:
+    """This cut landed the face with no caller ("the orchestrator that owns
+    CP2 is a later cut's work item"); D-5 (the full production composition
+    root) is that later cut. The honest reading moved with it: the adapter
+    now has exactly one shipped wirer — ``host.py``, the composition root —
+    and a second assembly point is the new regression this pin answers."""
 
     offenders: list[str] = []
     for path in sorted(SRC_ROOT.rglob("*.py")):
@@ -172,7 +175,7 @@ def test_no_shipped_module_wires_the_adapter_yet() -> None:
                 for name in names
                 if "planner_store" in name
             )
-    assert offenders == []
+    assert offenders == ["host.py: elc.platform.db.planner_store"]
 
 
 def test_the_planner_package_exports_the_port() -> None:
