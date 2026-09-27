@@ -1,0 +1,507 @@
+"""W-1 — the minimal local web face, over the production assembly.
+
+The server is the real ``elc.web.run_web`` (``ThreadingHTTPServer`` bound to
+127.0.0.1, work shipped to the host's thread), reached with ``urllib`` over
+the loopback; the host is the real ``open_host`` — for the online legs the
+full chain over the pilot ``content.db`` with ``Study-first`` declared and
+the §5.1 policy + goal portfolio + §5.2 ``NOT_SCHEDULED`` row written through
+the host's own controllers (the D-6-a online setup, unchanged). The one
+environmental guard: the loopback opener is built with an empty proxy map, so
+a developer's ``http_proxy`` can never stand between the test and the page.
+
+Pinned here (the six VAL groups):
+
+1. the page — GET ``/`` answers 200 text/html with the title, an input, and
+   the three API calls the page makes;
+2. the turn contract — POST ``/api/turn`` answers the four fields, and a
+   clean turn on the online chain opens no moment;
+3. the online chain end to end — the error text opens exactly one moment,
+   focused on ``res-discourse-anyway``, read through the durable lineage;
+4. the observations face answers the CLI readings core's numbers over the
+   same app.db (one core, two faces — and the value pins);
+5. the history face serves the turns the page sent, in order;
+6. the structural pins — loopback-only bind, the CLI envelope shape kept,
+   the human exit 2 for a missing ``--base-url`` (via both command entries),
+   and a malformed body being a 400 that commits no turn.
+"""
+
+from __future__ import annotations
+
+import contextlib
+import io
+import json
+import socket
+import sqlite3
+import threading
+import urllib.error
+import urllib.request
+from collections.abc import Iterator
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+import elc.cli
+from elc.cli import main as cli_main
+from elc.cli import observation_drift_count, observation_sections
+from elc.content.build import build_content_db
+from elc.detection import DetectorRegistry
+from elc.detection.pilot import PILOT_VERSION, register_pilot
+from elc.host import open_host
+from elc.persona.provider import ScriptedPersonaProvider
+from elc.persona.types import ProviderOutput
+from elc.platform.types import (
+    ConversationId,
+    EvidenceModality,
+    GoalId,
+    GoalModality,
+    GoalVersion,
+    Ok,
+    PolicyVersion,
+    TargetId,
+)
+from elc.teaching.rollout import RolloutStage
+from elc.user_config.types import (
+    LearningGoal,
+    LearningGoalPortfolio,
+    TeachingFrequency,
+    TeachingPolicyProfile,
+)
+from elc.web import _build_server, _commit, run_web
+from elc.web import main as web_main
+
+REPLY = "w1 web reply"
+CONV = ConversationId("web-test")
+CLEAN_TEXT = "The meeting starts at nine."
+SECOND_TEXT = "I will call you tomorrow."
+ERROR_TEXT = "Any way, let's continue with the plan."
+EV_TARGET = "res-discourse-anyway"
+
+#: The loopback opener: an empty proxy map, so a developer's ``http_proxy``
+#: (this machine runs one) can never stand between the test and the page.
+_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
+def _free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
+
+
+def _get_json(port: int, path: str) -> tuple[int, Any]:
+    with _OPENER.open(
+        f"http://127.0.0.1:{port}{path}", timeout=30
+    ) as response:
+        return response.status, json.loads(response.read().decode("utf-8"))
+
+
+def _get_raw(port: int, path: str) -> tuple[int, str, bytes]:
+    with _OPENER.open(
+        f"http://127.0.0.1:{port}{path}", timeout=30
+    ) as response:
+        return (
+            response.status,
+            response.headers.get("Content-Type") or "",
+            response.read(),
+        )
+
+
+def _post_json(port: int, path: str, payload: Any) -> tuple[int, Any]:
+    request = urllib.request.Request(
+        f"http://127.0.0.1:{port}{path}",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    return _open_request(request)
+
+
+def _post_raw(port: int, path: str, body: bytes) -> tuple[int, Any]:
+    request = urllib.request.Request(
+        f"http://127.0.0.1:{port}{path}",
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    return _open_request(request)
+
+
+def _open_request(request: urllib.request.Request) -> tuple[int, Any]:
+    try:
+        with _OPENER.open(request, timeout=30) as response:
+            return response.status, json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        return exc.code, json.loads(exc.read().decode("utf-8"))
+
+
+@dataclass
+class _Stack:
+    """One serving stack: the port to hit, and the thread to stop."""
+
+    port: int
+    stop: threading.Event
+    thread: threading.Thread
+    box: dict[str, Any]
+
+    def get_json(self, path: str) -> tuple[int, Any]:
+        return _get_json(self.port, path)
+
+    def get_raw(self, path: str) -> tuple[int, str, bytes]:
+        return _get_raw(self.port, path)
+
+    def post(self, path: str, payload: Any) -> tuple[int, Any]:
+        return _post_json(self.port, path, payload)
+
+    def post_raw(self, path: str, body: bytes) -> tuple[int, Any]:
+        return _post_raw(self.port, path, body)
+
+
+@contextlib.contextmanager
+def web_stack(
+    app_db: Path,
+    *,
+    content_db: Path | None = None,
+    stage: RolloutStage | None = None,
+    seed: Any = None,
+) -> Iterator[_Stack]:
+    """Serve one host until the with-block ends.
+
+    The host's whole lifecycle — open, seed, serve, close — lives on the
+    worker thread, because that is the one thread the work loop runs host
+    touches on (``elc.web``'s one-thread rule; sqlite3 answers only the
+    thread that opened the connection). A worker failure before the bind is
+    re-raised on the test thread instead of timing out.
+    """
+
+    port = _free_port()
+    ready = threading.Event()
+    stop = threading.Event()
+    box: dict[str, Any] = {}
+
+    def worker() -> None:
+        try:
+            host = open_host(
+                app_db,
+                provider=ScriptedPersonaProvider(
+                    script=(ProviderOutput(text=REPLY),)
+                ),
+                content_db_path=content_db,
+                rollout_stage=stage,
+            )
+            box["host"] = host
+            opened = host.open_conversation(CONV)
+            assert isinstance(opened, Ok), opened
+            if seed is not None:
+                seed(host)
+            run_web(
+                host, port, conversation=str(CONV), ready=ready, stop=stop
+            )
+        except BaseException as exc:  # surfaced to the test thread below
+            box["error"] = exc
+            ready.set()
+
+    thread = threading.Thread(target=worker, daemon=True)
+    thread.start()
+    try:
+        assert ready.wait(timeout=60.0), "the web worker never became ready"
+        if "error" in box:
+            raise box["error"]
+        yield _Stack(port=port, stop=stop, thread=thread, box=box)
+    finally:
+        stop.set()
+        thread.join(timeout=60.0)
+        assert not thread.is_alive(), "the web worker did not stop"
+        host = box.get("host")
+        if host is not None and "error" not in box:
+            # close() already ran on the worker thread (its finally); this is
+            # the no-op repeat that proves the stack ended whole.
+            pass
+
+
+@pytest.fixture(scope="module")
+def pilot_content_db(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    path = tmp_path_factory.mktemp("w1-pilot") / "content.db"
+    registry = DetectorRegistry()
+    register_pilot(registry)
+    build_content_db(
+        path,
+        detector_registry=registry,
+        verification_pilot_version=PILOT_VERSION,
+    )
+    return path
+
+
+def seed_online(host: Any) -> None:
+    """The D-6-a online setup, unchanged: §5.1 policy + goal portfolio, then
+    the §5.2 NOT_SCHEDULED row — all through the host's own controllers."""
+
+    written = host.user_config.upsert_teaching_policy(
+        TeachingPolicyProfile(
+            teaching_policy_profile_id=host.user_id,
+            policy_version=PolicyVersion("pv-w1"),
+            teaching_frequency=TeachingFrequency.BALANCED,
+        )
+    )
+    assert isinstance(written, Ok), written
+    portfolio = host.user_config.upsert_goal_portfolio(
+        LearningGoalPortfolio(
+            goal_portfolio_id=host.user_id,
+            goal_version=GoalVersion("gv-w1"),
+            goals=(
+                LearningGoal(
+                    goal_id=GoalId("goal-w1"),
+                    goal_modality=GoalModality.SPEAKING,
+                    description="a long-term goal",
+                ),
+            ),
+            modality_weights={GoalModality.SPEAKING: 1.0},
+            assessment_targets=(),
+            effective_from=datetime.now(tz=UTC).isoformat(),
+        )
+    )
+    assert isinstance(portfolio, Ok), portfolio
+    row = host.curriculum.get_target(TargetId(EV_TARGET))
+    assert isinstance(row, Ok), row
+    scheduled = host.scheduler.recompute_schedule_item(
+        row.value.target_type,
+        TargetId(EV_TARGET),
+        EvidenceModality(row.value.evidence_modality),
+        datetime.now(tz=UTC).isoformat(),
+    )
+    assert isinstance(scheduled, Ok), scheduled
+
+
+def run_cli(argv: list[str], **kwargs: Any) -> tuple[int, str, str]:
+    out, err = io.StringIO(), io.StringIO()
+    code = cli_main(argv, stdout=out, stderr=err, **kwargs)
+    return code, out.getvalue(), err.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# 1. the page
+
+
+def test_the_page_serves_the_title_and_the_three_calls(
+    tmp_path: Path,
+) -> None:
+    with web_stack(tmp_path / "app.db") as stack:
+        status, content_type, body = stack.get_raw("/")
+        assert status == 200
+        assert content_type.startswith("text/html")
+        page = body.decode("utf-8")
+        assert "英语客厅 · Study-first dogfood" in page
+        assert '<input id="text"' in page
+        assert "/api/turn" in page
+        assert "/api/observations" in page
+        assert "/api/history" in page
+
+
+# ---------------------------------------------------------------------------
+# 2. the turn contract (offline tier)
+
+
+def test_a_turn_answers_the_full_json_contract(tmp_path: Path) -> None:
+    with web_stack(tmp_path / "app.db") as stack:
+        status, data = stack.post("/api/turn", {"text": CLEAN_TEXT})
+        assert status == 200
+        assert set(data) == {
+            "reply",
+            "turn_status",
+            "failure_reason",
+            "teaching_moments",
+        }
+        assert data["reply"] == REPLY
+        assert data["turn_status"] == "COMPLETED"
+        assert data["failure_reason"] is None
+        assert data["teaching_moments"] == []
+
+
+# ---------------------------------------------------------------------------
+# 3. the online chain, end to end
+
+
+def test_the_online_chain_opens_exactly_one_moment(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    with web_stack(
+        tmp_path / "app.db",
+        content_db=pilot_content_db,
+        stage=RolloutStage.STUDY_FIRST,
+        seed=seed_online,
+    ) as stack:
+        status, data = stack.post("/api/turn", {"text": ERROR_TEXT})
+        assert status == 200
+        assert data["reply"], data
+        assert data["turn_status"] == "COMPLETED"
+        assert data["teaching_moments"] == [
+            {
+                "focus_target_id": EV_TARGET,
+                "lifecycle_state": "AWAITING_USER",
+                "kind": "RESOURCE_PRACTICE",
+            }
+        ]
+
+
+def test_a_clean_text_opens_no_moment(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    with web_stack(
+        tmp_path / "app.db",
+        content_db=pilot_content_db,
+        stage=RolloutStage.STUDY_FIRST,
+        seed=seed_online,
+    ) as stack:
+        status, data = stack.post("/api/turn", {"text": CLEAN_TEXT})
+        assert status == 200
+        assert data["turn_status"] == "COMPLETED"
+        assert data["teaching_moments"] == []
+
+
+# ---------------------------------------------------------------------------
+# 4. the observations face — the CLI readings core's numbers
+
+
+def test_observations_answer_the_cli_core_over_the_same_db(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    app_db = tmp_path / "app.db"
+    with web_stack(
+        app_db,
+        content_db=pilot_content_db,
+        stage=RolloutStage.STUDY_FIRST,
+        seed=seed_online,
+    ) as stack:
+        stack.post("/api/turn", {"text": ERROR_TEXT})
+        status, payload = stack.get_json("/api/observations")
+        assert status == 200
+        assert payload["indicators"]
+        ro = sqlite3.connect(f"file:{app_db}?mode=ro", uri=True)
+        try:
+            core = observation_sections(ro)
+            drift = observation_drift_count(ro)
+        finally:
+            ro.close()
+        assert payload["sections"] == [
+            {
+                "title": s.title,
+                "rows": [list(row) for row in s.rows],
+                "error": s.error,
+            }
+            for s in core
+        ]
+        assert payload["drift_count"] == drift == 0
+        moment_rows = next(
+            s
+            for s in payload["sections"]
+            if s["title"] == "teaching_moment by lifecycle_state"
+        )
+        assert moment_rows["rows"] == [["AWAITING_USER", "1"]]
+        gate_rows = next(
+            s
+            for s in payload["sections"]
+            if s["title"] == "gate_decision by decision × reason_codes"
+        )
+        assert gate_rows["rows"] == [["ALLOW", "[]", "1"]]
+
+
+# ---------------------------------------------------------------------------
+# 5. the history face
+
+
+def test_history_serves_the_turns_the_page_sent(tmp_path: Path) -> None:
+    with web_stack(tmp_path / "app.db") as stack:
+        for text in (CLEAN_TEXT, SECOND_TEXT):
+            status, _ = stack.post("/api/turn", {"text": text})
+            assert status == 200
+        status, payload = stack.get_json("/api/history")
+        assert status == 200
+        assert payload["turns"] == [
+            {"user": CLEAN_TEXT, "assistant": REPLY},
+            {"user": SECOND_TEXT, "assistant": REPLY},
+        ]
+
+
+# ---------------------------------------------------------------------------
+# 6. the structural pins
+
+
+def test_the_server_binds_loopback_only(tmp_path: Path) -> None:
+    host = open_host(
+        tmp_path / "app.db",
+        provider=ScriptedPersonaProvider(script=(ProviderOutput(text=REPLY),)),
+    )
+    try:
+        chosen = _free_port()
+        server = _build_server(host, chosen, conversation=str(CONV))
+        try:
+            assert server.server_address == ("127.0.0.1", chosen)
+        finally:
+            server.server_close()
+        ephemeral = _build_server(host, 0, conversation=str(CONV))
+        try:
+            address = ephemeral.server_address
+            assert address[0] == "127.0.0.1"
+            assert address[1] != 0
+        finally:
+            ephemeral.server_close()
+    finally:
+        host.close()
+
+
+def test_the_web_envelope_is_shape_equal_to_the_cli_envelope() -> None:
+    web_command = _commit(ConversationId("conv-x"), "hello there")
+    cli_command = elc.cli._commit(ConversationId("conv-x"), "hello there")
+    assert web_command.conversation_id == cli_command.conversation_id
+    assert web_command.raw_content == cli_command.raw_content == "hello there"
+    assert web_command.envelope.raw_payload == cli_command.envelope.raw_payload
+    assert web_command.runtime_version == cli_command.runtime_version
+    assert (
+        web_command.envelope.interaction_channel
+        == cli_command.envelope.interaction_channel
+    )
+    assert web_command.envelope.persona_id is None
+    assert cli_command.envelope.persona_id is None
+    assert web_command.envelope.scene_id is None
+    assert cli_command.envelope.scene_id is None
+    assert str(web_command.envelope.input_id).startswith("web-")
+    assert str(cli_command.envelope.input_id).startswith("cli-")
+    minted_again = _commit(ConversationId("conv-x"), "hello there")
+    assert (
+        minted_again.envelope.client_message_id
+        != web_command.envelope.client_message_id
+    )
+
+
+def test_the_web_subcommand_refuses_a_missing_base_url(
+    tmp_path: Path,
+) -> None:
+    app_db = tmp_path / "app.db"
+    code, _, err = run_cli(["web", "--app-db", str(app_db)])
+    assert code == 2
+    assert "--app-db" in err and "required" in err
+    assert not app_db.exists()
+
+
+def test_the_web_entry_delegates_to_the_same_command(tmp_path: Path) -> None:
+    app_db = tmp_path / "app.db"
+    err = io.StringIO()
+    code = web_main(["--app-db", str(app_db)], stderr=err)
+    assert code == 2
+    assert "required" in err.getvalue()
+    assert not app_db.exists()
+
+
+def test_a_malformed_body_is_a_400_that_commits_no_turn(
+    tmp_path: Path,
+) -> None:
+    with web_stack(tmp_path / "app.db") as stack:
+        status, data = stack.post_raw("/api/turn", b"this is not json")
+        assert status == 400
+        assert "error" in data
+        status, data = stack.post("/api/turn", {"no_text": ""})
+        assert status == 400
+        status, payload = stack.get_json("/api/history")
+        assert status == 200
+        assert payload["turns"] == []

@@ -20,6 +20,15 @@ shipped CLI can now assemble what the dogfood observes):
   ``rollout_stage=None`` reaches the host, fail-closed, and no automatic
   teaching runs.
 
+``python -m elc web …`` (W-1, user-consented) is the same assembly serving a
+minimal local study page instead of the line loop: the chat command's full
+argument set plus ``--port`` (default 8760), bound to **127.0.0.1 only**, no
+auth — a single-user dogfood face for the D-6-b browser run, not a service.
+The turn face reuses this module's envelope shape and the observations face
+reads this module's readings core (``observation_sections`` /
+``observation_drift_count``), so the page and the CLI answer the same numbers
+by construction. ``elc.web`` documents the server's own contracts.
+
 ``python -m elc observations --app-db PATH`` is the dogfood readout: the §12
 six-indicator declarations, the app.db's durable counts (gate decisions by
 decision × reason codes with the ``TARGET_NOT_EXECUTABLY_VERIFIED`` drift
@@ -38,10 +47,14 @@ adjudication).
 
 Deliberate limits, each a contract rather than an omission:
 
-- **in-process only.** This is the client boundary ``DEC-…d7937fd7.12``
-  postponed: V1's surface is the process-internal Python API, so the CLI never
-  starts an HTTP server and never listens on a port — the only egress it can
-  cause is the provider adapter's single POST;
+- **in-process first, one local server exception.** V1's surface is the
+  process-internal Python API (client boundary ``DEC-…d7937fd7.12``): ``chat``
+  never listens on a port, and the only egress it can cause is the provider
+  adapter's single POST. W-1 (user-consented) adds exactly one exception —
+  the ``web`` command's local study page on ``http.server``, bound to
+  127.0.0.1 and documented in ``elc.web``; no other server or client
+  machinery exists in ``src`` (the structural scan in ``tests/host`` pins
+  the exception to that one module);
 - **the key is never an argument.** ``--api-key-env`` / ``--secrets-file``
   point at a source (``elc.platform.secrets``); the value is resolved at send
   time and appears in no output, message or table. The two flags are mutually
@@ -74,6 +87,7 @@ import argparse
 import sqlite3
 import sys
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Sequence, TextIO
@@ -114,7 +128,10 @@ __all__ = [
     "DEFAULT_CONVERSATION_ID",
     "DEFAULT_SECRET_REF",
     "RUNTIME_VERSION",
+    "ObservationSection",
     "main",
+    "observation_drift_count",
+    "observation_sections",
 ]
 
 #: The version every turn this CLI commits carries (§1.4's ``runtime_version``;
@@ -172,6 +189,96 @@ _OBSERVATIONS_HINT = "elc observations: --app-db PATH is required"
 #: count, and should stay at zero in a healthy deployment.
 _DRIFT_REASON = "TARGET_NOT_EXECUTABLY_VERIFIED"
 
+#: The durable-counts sections of the dogfood readout, in print order —
+#: ``(title, sql)`` pairs shared verbatim by the print face and the W-1 web
+#: face, so the two readouts answer the same numbers from one definition.
+_OBSERVATION_SECTION_SQL: tuple[tuple[str, str], ...] = (
+    (
+        "gate_decision by decision × reason_codes",
+        "SELECT decision, reason_codes, COUNT(*) FROM gate_decision"
+        " GROUP BY decision, reason_codes ORDER BY decision, reason_codes",
+    ),
+    (
+        "teaching_moment by lifecycle_state",
+        "SELECT lifecycle_state, COUNT(*) FROM teaching_moment"
+        " GROUP BY lifecycle_state ORDER BY lifecycle_state",
+    ),
+    (
+        "generation_action_intent by status",
+        "SELECT status, COUNT(*) FROM generation_action_intent"
+        " GROUP BY status ORDER BY status",
+    ),
+    (
+        "server_delivery_record by state",
+        "SELECT state, COUNT(*) FROM server_delivery_record"
+        " GROUP BY state ORDER BY state",
+    ),
+    (
+        "exposure_estimate by exposure_level",
+        "SELECT exposure_level, COUNT(*) FROM exposure_estimate"
+        " GROUP BY exposure_level ORDER BY exposure_level",
+    ),
+    (
+        "planning_ledger_event by event",
+        "SELECT event, COUNT(*) FROM planning_ledger_event"
+        " GROUP BY event ORDER BY event",
+    ),
+)
+
+
+@dataclass(frozen=True)
+class ObservationSection:
+    """One durable-counts section, read and ready to print or to serialize.
+
+    The shared core of the two dogfood readouts (W-1): the ``observations``
+    command prints these and the web face serves them as JSON — one readings
+    core, two faces, one number. Cells are read as strings so neither face
+    can reformat its way to a different value; ``error`` is set (and ``rows``
+    empty) when the section's table could not be read, which the print face
+    shows as ``(unreadable: …)`` and the web face as ``{"error": …}``.
+    """
+
+    title: str
+    rows: tuple[tuple[str, ...], ...]
+    error: str | None = None
+
+
+def observation_sections(db: sqlite3.Connection) -> tuple[ObservationSection, ...]:
+    """The six durable-counts sections over one open app.db connection.
+
+    A section whose table cannot be read comes back with its error message
+    and the rest still reads — one broken table never silences the readout.
+    """
+
+    sections: list[ObservationSection] = []
+    for title, sql in _OBSERVATION_SECTION_SQL:
+        try:
+            rows = tuple(
+                tuple(str(cell) for cell in row)
+                for row in db.execute(sql).fetchall()
+            )
+        except sqlite3.Error as exc:
+            sections.append(ObservationSection(title=title, rows=(), error=str(exc)))
+        else:
+            sections.append(ObservationSection(title=title, rows=rows))
+    return tuple(sections)
+
+
+def observation_drift_count(db: sqlite3.Connection) -> int:
+    """Gate rows naming ``TARGET_NOT_EXECUTABLY_VERIFIED`` — the drift signal.
+
+    Printed even at zero, because a non-zero there is the signal that an
+    automatic OPEN reached the Gate for a target this deployment cannot
+    executably verify.
+    """
+
+    return int(
+        db.execute(
+            "SELECT COUNT(*) FROM gate_decision WHERE reason_codes LIKE ?",
+            (f"%{_DRIFT_REASON}%",),
+        ).fetchone()[0]
+    )
+
 
 def main(
     argv: Sequence[str] | None = None,
@@ -199,9 +306,11 @@ def main(
             return 2
         return _observations(args, stdout=out, stderr=err)
 
-    # chat's required arguments are validated here rather than by argparse so
-    # the gate command can share one flat parser without them (a missing
-    # --base-url stays a human sentence and a 2, only now from this check).
+    # chat's and web's required arguments are validated here rather than by
+    # argparse so the gate command can share one flat parser without them (a
+    # missing --base-url stays a human sentence and a 2, only now from this
+    # check). The web command (W-1) reuses this whole validation path — and
+    # the provider construction and the host assembly below — verbatim.
     if args.app_db is None or args.base_url is None or args.model is None:
         print(_CHAT_REQUIRED_HINT, file=err)
         return 2
@@ -248,9 +357,17 @@ def main(
             rollout_stage=rollout_stage,
         )
     except (sqlite3.Error, MigrationError, OSError, ContentStoreError) as exc:
-        print(f"elc chat: cannot open app.db {app_db}: {exc}", file=err)
+        print(f"elc {args.command}: cannot open app.db {app_db}: {exc}", file=err)
         return 1
     try:
+        if args.command == "web":
+            # The lazy import keeps elc.web → elc.cli (its readings core and
+            # runtime version) acyclic: this module never imports the server
+            # at load time, only here, where the command runs.
+            from elc.web import run_web
+
+            run_web(host, args.port, conversation=args.conversation)
+            return 0
         return _chat(host, args, stdin=stdin, stdout=out, stderr=err)
     finally:
         host.close()
@@ -434,58 +551,26 @@ def _observations(
     for spec in OBSERVATION_SPECS:
         print(f"  {spec.indicator} — {spec.definition}", file=stdout)
 
-    def section(title: str, sql: str) -> None:
-        print(f"{title}:", file=stdout)
-        try:
-            rows = db.execute(sql).fetchall()
-        except sqlite3.Error as exc:
-            print(f"  (unreadable: {exc})", file=stdout)
+    def section(s: ObservationSection) -> None:
+        print(f"{s.title}:", file=stdout)
+        if s.error is not None:
+            print(f"  (unreadable: {s.error})", file=stdout)
             return
-        if not rows:
+        if not s.rows:
             print("  (no rows)", file=stdout)
             return
-        for row in rows:
-            cells = " | ".join(str(cell) for cell in row)
-            print(f"  {cells}", file=stdout)
+        for row in s.rows:
+            print(f"  {' | '.join(row)}", file=stdout)
 
-    section(
-        "gate_decision by decision × reason_codes",
-        "SELECT decision, reason_codes, COUNT(*) FROM gate_decision"
-        " GROUP BY decision, reason_codes ORDER BY decision, reason_codes",
-    )
-    drift = db.execute(
-        "SELECT COUNT(*) FROM gate_decision WHERE reason_codes LIKE ?",
-        (f"%{_DRIFT_REASON}%",),
-    ).fetchone()[0]
+    readings = observation_sections(db)
+    section(readings[0])
     print(
-        f"  gate rows naming {_DRIFT_REASON} (the drift signal): {drift}",
+        f"  gate rows naming {_DRIFT_REASON} (the drift signal):"
+        f" {observation_drift_count(db)}",
         file=stdout,
     )
-    section(
-        "teaching_moment by lifecycle_state",
-        "SELECT lifecycle_state, COUNT(*) FROM teaching_moment"
-        " GROUP BY lifecycle_state ORDER BY lifecycle_state",
-    )
-    section(
-        "generation_action_intent by status",
-        "SELECT status, COUNT(*) FROM generation_action_intent"
-        " GROUP BY status ORDER BY status",
-    )
-    section(
-        "server_delivery_record by state",
-        "SELECT state, COUNT(*) FROM server_delivery_record"
-        " GROUP BY state ORDER BY state",
-    )
-    section(
-        "exposure_estimate by exposure_level",
-        "SELECT exposure_level, COUNT(*) FROM exposure_estimate"
-        " GROUP BY exposure_level ORDER BY exposure_level",
-    )
-    section(
-        "planning_ledger_event by event",
-        "SELECT event, COUNT(*) FROM planning_ledger_event"
-        " GROUP BY event ORDER BY event",
-    )
+    for s in readings[1:]:
+        section(s)
 
     print(
         "known false-positive faces (D-3 pilot matchers, watched):",
@@ -512,14 +597,20 @@ def _observations(
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m elc",
-        description="One in-process conversation loop over app.db (no HTTP server).",
+        description=(
+            "One in-process conversation loop over app.db — chat, the corpus"
+            " gate, the dogfood readout, and (W-1) the local web face bound"
+            " to 127.0.0.1."
+        ),
     )
     parser.add_argument(
         "command",
-        choices=("chat", "gate", "observations"),
+        choices=("chat", "gate", "observations", "web"),
         help=(
             "chat: the conversation loop; gate: the corpus rollout gate;"
-            " observations: the D-6-a dogfood readout over one app.db"
+            " observations: the D-6-a dogfood readout over one app.db;"
+            " web: the local study-first page over one app.db (127.0.0.1"
+            " only, no auth — a single-user dogfood face, not a service)"
         ),
     )
     parser.add_argument(
@@ -577,6 +668,12 @@ def _build_parser() -> argparse.ArgumentParser:
         "--conversation",
         default=DEFAULT_CONVERSATION_ID,
         help="conversation id (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8760,
+        help="web: the local port to serve on (default: %(default)s)",
     )
     parser.add_argument(
         "--timeout",

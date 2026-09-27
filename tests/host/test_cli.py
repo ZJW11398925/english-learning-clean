@@ -1,10 +1,11 @@
-"""The minimum CLI (prep-1 deliverable D) — usage errors, one turn, no server.
+"""The minimum CLI (prep-1 deliverable D) — usage errors, one turn, one server.
 
 Three cases: usage errors answer a human message and a non-zero code; one
 scripted turn prints the reply, lands in app.db and exits 0 on ``:quit``; and a
-source scan over ``src/elc`` proves the two structural promises — **no server
-and one egress point** — with a negative control (the adapter really is the one
-module that imports ``urllib``).
+source scan over ``src/elc`` proves the structural promises — **one egress
+point and exactly one sanctioned server module** — with a negative control
+(the adapter really is the one module that imports ``urllib``; W-1's
+``web.py`` really is the one module that imports ``http.server``).
 """
 
 from __future__ import annotations
@@ -161,10 +162,17 @@ def test_a_scripted_turn_prints_the_reply_and_quit_exits_zero(
 
 def test_the_only_egress_point_and_no_server() -> None:
     """R5/R6 as a **structural** source scan: no network client or server
-    machinery anywhere in ``src``, exactly one module reaches for
-    ``urllib.request`` — the adapter whose single ``_urllib_post`` is the whole
-    network surface — and that module still contains the call that leaves the
-    process.
+    machinery anywhere in ``src`` except W-1's one sanctioned server module,
+    exactly one module reaches for ``urllib.request`` — the adapter whose
+    single ``_urllib_post`` is the whole network surface — and that module
+    still contains the call that leaves the process.
+
+    W-1 (user-consented local study page) migrated this pin's truth: the
+    server machinery that used to be forbidden outright is now allowed in
+    exactly one file, ``web.py``, and only as ``http.server`` — the exception
+    is bound to the module (deleting ``web.py`` turns the pin red again) and
+    no other network root (``socket``, ``socketserver``, ``ssl``, …) is
+    excused anywhere, ``web.py`` included.
 
     The net is wide on purpose (prep-1 review F2): third-party HTTP clients
     belong in the forbidden set next to ``socket``/``http``, and the negative
@@ -182,6 +190,7 @@ def test_the_only_egress_point_and_no_server() -> None:
 
     forbidden: set[str] = set()
     urllib_request_importers: set[str] = set()
+    server_module_imports: set[str] = set()
     network_roots = {
         "socket",
         "http",
@@ -214,9 +223,16 @@ def test_the_only_egress_point_and_no_server() -> None:
                 if name == "urllib.request":
                     urllib_request_importers.add(rel)
                 if root_name in network_roots:
-                    forbidden.add(f"{rel}: {name}")
+                    if rel == "web.py" and name == "http.server":
+                        server_module_imports.add(name)
+                    else:
+                        forbidden.add(f"{rel}: {name}")
 
     assert forbidden == set()
+    # W-1's negative control, bound to the module: the one sanctioned server
+    # module really is the one file this exception exists for — no server
+    # import anywhere else, and no second import kind inside it either.
+    assert server_module_imports == {"http.server"}
     # Negative control, symbol level: the one module that may reach the network
     # imports urllib.request, builds its own opener and calls it — asserted over
     # the **syntax tree**, so a mention of any of these names in prose neither
