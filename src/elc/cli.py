@@ -439,6 +439,11 @@ def main(
             except WebOpenError as exc:
                 print(f"elc web: {exc}", file=err)
                 return 1
+            except KeyboardInterrupt:
+                # The banner promises "Ctrl+C to stop" — the stop is answered
+                # with a clean exit, not a traceback (the chat loop's own
+                # KeyboardInterrupt posture, one face over).
+                return 0
             except OSError as exc:
                 # A port already taken (or unavailable) is the one startup
                 # failure an operator can fix by choosing another --port —

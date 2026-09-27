@@ -917,3 +917,28 @@ def test_the_web_command_prints_a_serving_banner(
     assert code2 == 1
     assert "cannot listen on 127.0.0.1:8962" in err2.getvalue()
     assert "--port" in err2.getvalue()
+
+    def interrupted(host: Any, port: int, **kwargs: Any) -> None:
+        raise KeyboardInterrupt()
+
+    monkeypatch.setattr("elc.web.run_web", interrupted)
+    out3, err3 = io.StringIO(), io.StringIO()
+    code3 = elc.cli.main(
+        [
+            "web",
+            "--app-db",
+            str(tmp_path / "app3.db"),
+            "--base-url",
+            "https://offline.invalid/v1",
+            "--model",
+            "offline-model",
+            "--api-key-env",
+            "W1_UNSET_KEY_VAR",
+        ],
+        stdout=out3,
+        stderr=err3,
+    )
+    # the banner promises "Ctrl+C to stop"; the stop answers with a clean
+    # exit 0, never a traceback (review INFO-2, fixed with the banner)
+    assert code3 == 0
+    assert "Traceback" not in err3.getvalue()
