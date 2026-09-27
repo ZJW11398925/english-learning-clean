@@ -29,7 +29,7 @@ content_src/
   index.json                 # 索引：content_version + 实体文档清单 + 证据文档清单（无 glob 兜底）
   entities/<entity_id>.json  # 每个 target 一份（共 105 = 5 个 cap-* + 100 个 res-*；其中 19 个由 C2-b、18 个由 C3-a、18 个由 C3-b、18 个由 C3-c、18 个由 C3-d 编写）
   evidence/<entity_id>.json  # C1：每个声明了 readiness 证据的 target 一份（可空集；现为 100 份，与 res-* 一一对应）
-  audits/*.json              # provenance 审计记录（目录缺席/空 = 合法"尚无审计"状态；现含 c3r2 与 c3c 两条处置刀记录，共批准 30 实体）
+  audits/*.json              # provenance 审计记录（目录缺席/空 = 合法"尚无审计"状态；现含 c3r2/c3c/c3d 三条处置刀记录，共批准 46 实体）
   README.md                  # 本文件 = 映射规则索引文档
 ```
 

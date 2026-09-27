@@ -1845,12 +1845,15 @@ _AUDIT_OPTIONAL_KEYS = ("format", "format_version")
 class AuditRecord:
     """One provenance audit record (`content_src/audits/<name>.json`, C3-R2).
 
-    A record is a **third-party fact**, which is the whole point of the
-    provenance dimension: an entity's level rises above AUTHOR_DECLARED only
-    when a record outside the entity's own evidence document names it. The
-    record states its own basis honestly (which review, by whom, against
-    what); the build validates shape and references, never the review's
-    judgement.
+    A record is a **separate-document fact**: an entity's level rises above
+    AUTHOR_DECLARED only when a record outside the entity's own evidence
+    document names it. What the build enforces is exactly that separation —
+    shape, referential integrity, record identity — and nothing more: it
+    cannot verify who wrote the record, that the review actually happened,
+    or that the reviewer differs from the author (EXT-C3-02). The
+    third-party nature is a **process fact**, carried by the workflow that
+    lands records (a read-only separate-context review, recorded verbatim by
+    the disposition cut), not by this loader.
     """
 
     audit_id: str
@@ -2123,7 +2126,10 @@ def _provenance_rows(source: ContentSource) -> tuple[tuple[str, str], ...]:
     document is ``AUTHOR_DECLARED`` (the author states the facts, nothing has
     checked them). One step up — an entity named in ``approved_entities`` of
     at least one audit record is ``EDITOR_REVIEWED`` (the record is a
-    third-party fact, so an author cannot promote their own work). No
+    separate-document fact, so the authoring evidence file itself cannot
+    promote its own entity — the build enforces that separation, while the
+    reviewer's independence from the author is a process fact this loader
+    cannot check; EXT-C3-02). No
     derivation produces ``EXECUTABLY_VERIFIED`` or
     ``EMPIRICALLY_CALIBRATED`` today: no detector executor exists to pass
     the fixtures (the N21 registration) and no real teaching run exists to
