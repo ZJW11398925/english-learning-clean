@@ -25,7 +25,14 @@ Pinned here (the six VAL groups):
    and a malformed body being a 400 that commits no turn;
 7. the W-1R human face — the card title read out of content.db (the target's
    own words; the raw id on any read failure), the Chinese status/kind
-   words, and the page's rendering of the human card line.
+   words, and the page's rendering of the human card line;
+8. the W-2 teaching reply face — the skip control releases the
+   ``AWAITING_USER`` moment's lock through the coordinator's own
+   ``respond_to_teaching`` entry (the day-one deadlock closed end to end:
+   skip, lock 0, the next error text opens a second moment), a skip with
+   no open moment is refused as a runtime fact (never an HTTP error), a
+   reply is submitted only against a moment at ``AWAITING_USER``, and a
+   body outside the V1 grammar is a 400.
 """
 
 from __future__ import annotations
@@ -47,6 +54,7 @@ from typing import Any
 import pytest
 
 import elc.cli
+import elc.teaching.budget
 from elc.cli import main as cli_main
 from elc.cli import observation_drift_count, observation_sections
 from elc.content.build import build_content_db
@@ -66,6 +74,7 @@ from elc.platform.types import (
     TargetId,
 )
 from elc.teaching.rollout import RolloutStage
+from elc.teaching.types import MomentState
 from elc.user_config.types import (
     LearningGoal,
     LearningGoalPortfolio,
@@ -81,6 +90,11 @@ CLEAN_TEXT = "The meeting starts at nine."
 SECOND_TEXT = "I will call you tomorrow."
 ERROR_TEXT = "Any way, let's continue with the plan."
 EV_TARGET = "res-discourse-anyway"
+#: The second day-one-deadlock arm: after the first moment is skipped the
+#: lock is gone, so a *different* target's error text must open a fresh
+#: moment ("get it," fronted with a pause → res-pragmatic-got-it).
+SECOND_ERROR_TEXT = "Get it, I will send the file tonight."
+EV_SECOND_TARGET = "res-pragmatic-got-it"
 
 #: The loopback opener: an empty proxy map, so a developer's ``http_proxy``
 #: (this machine runs one) can never stand between the test and the page.
@@ -276,6 +290,24 @@ def seed_online(host: Any) -> None:
     assert isinstance(scheduled, Ok), scheduled
 
 
+def seed_online_and_second_target(host: Any) -> None:
+    """``seed_online`` plus the §5.2 row for the second deadlock arm's
+    target: the real ``elc seed`` writes one row per EV target, and the
+    deadlock closure needs a second target to be schedulable after the
+    first moment is skipped (the W-1 scenarios never needed one)."""
+
+    seed_online(host)
+    row = host.curriculum.get_target(TargetId(EV_SECOND_TARGET))
+    assert isinstance(row, Ok), row
+    scheduled = host.scheduler.recompute_schedule_item(
+        row.value.target_type,
+        TargetId(EV_SECOND_TARGET),
+        EvidenceModality(row.value.evidence_modality),
+        datetime.now(tz=UTC).isoformat(),
+    )
+    assert isinstance(scheduled, Ok), scheduled
+
+
 def run_cli(argv: list[str], **kwargs: Any) -> tuple[int, str, str]:
     out, err = io.StringIO(), io.StringIO()
     code = cli_main(argv, stdout=out, stderr=err, **kwargs)
@@ -299,6 +331,9 @@ def test_the_page_serves_the_title_and_the_three_calls(
         assert "/api/turn" in page
         assert "/api/observations" in page
         assert "/api/history" in page
+        # the W-2 reply face on the page: the skip button and its call
+        assert "/api/teaching_reply" in page
+        assert "跳过教学" in page
 
 
 # ---------------------------------------------------------------------------
@@ -473,6 +508,213 @@ def test_the_page_renders_the_human_card_face(tmp_path: Path) -> None:
         assert "m.kind_cn" in page
         assert "if (m.title)" in page
         assert "m.focus_target_id" in page
+
+
+# ---------------------------------------------------------------------------
+# 3c. the W-2 teaching reply face — the skip control releases the lock
+
+
+def _durable_teaching_face(
+    app_db: Path,
+) -> tuple[list[tuple], list[tuple]]:
+    """The durable lock rows and moment states, read-only — what the
+    reply face's answer must agree with."""
+
+    ro = sqlite3.connect(f"file:{app_db}?mode=ro", uri=True)
+    try:
+        locks = ro.execute(
+            "SELECT moment_id FROM active_teaching_lock"
+            " WHERE conversation_id = ?",
+            (str(CONV),),
+        ).fetchall()
+        moments = ro.execute(
+            "SELECT moment_id, lifecycle_state FROM teaching_moment"
+            " ORDER BY created_at, moment_id"
+        ).fetchall()
+    finally:
+        ro.close()
+    return locks, moments
+
+
+def _gate_rows(app_db: Path) -> list[tuple]:
+    """The durable gate decisions, read-only — what a DENY must name."""
+
+    ro = sqlite3.connect(f"file:{app_db}?mode=ro", uri=True)
+    try:
+        return ro.execute(
+            "SELECT decision, reason_codes FROM gate_decision"
+            " ORDER BY created_at, gate_decision_id"
+        ).fetchall()
+    finally:
+        ro.close()
+
+
+def test_skipping_the_moment_releases_the_lock_and_teaching_resumes(
+    tmp_path: Path, pilot_content_db: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The day-one deadlock, closed end to end — in two honest acts.
+
+    Act one is the real configuration: the error text opens the moment and
+    takes the lock (the deadlock's starting point — 36 teaching-less turns
+    followed exactly this state); the skip control submits through the
+    coordinator's own reply entry, the moment leaves ``AWAITING_USER``
+    closed with ``USER_SKIP``, and the lock row is gone (the deadlock's
+    blocker, released). The very next error text still opens no moment —
+    and the durable gate row names the real reason: the canonical
+    §5.2 hard-opening cooldown (BF-03 §17, a declared 1800 s window from
+    the first moment's opening), **not** the lock. Act two contracts that
+    declared constant (``elc.teaching.budget.COOLDOWN_WINDOW_SECONDS = 0``
+    — an implementation-declared default whose own docstring awaits a
+    calibration; no gate or budget face is touched) and re-sends the
+    second error text: the second moment opens on the other target —
+    proof the lock, once skipped, never blocks teaching again.
+    """
+
+    app_db = tmp_path / "app.db"
+    with web_stack(
+        app_db,
+        content_db=pilot_content_db,
+        stage=RolloutStage.STUDY_FIRST,
+        seed=seed_online_and_second_target,
+    ) as stack:
+        status, data = stack.post("/api/turn", {"text": ERROR_TEXT})
+        assert status == 200
+        (moment,) = data["teaching_moments"]
+        assert moment["focus_target_id"] == EV_TARGET
+        assert moment["lifecycle_state"] == "AWAITING_USER"
+        locks, moments = _durable_teaching_face(app_db)
+        assert len(locks) == 1
+        assert [state for _, state in moments] == ["AWAITING_USER"]
+
+        status, data = stack.post("/api/teaching_reply", {"control": "skip"})
+        assert status == 200
+        skip_answer = data
+        assert skip_answer["accepted"] is True
+        assert skip_answer["error"] is None
+        assert skip_answer["moment_state"] != "AWAITING_USER"
+        locks, moments = _durable_teaching_face(app_db)
+        assert locks == []
+        assert [state for _, state in moments] == [skip_answer["moment_state"]]
+
+        # act one, closed: the lock is gone, and the next error text's
+        # empty moment list is the cooldown's answer, named in the gate row
+        status, data = stack.post("/api/turn", {"text": SECOND_ERROR_TEXT})
+        assert status == 200
+        assert data["turn_status"] == "COMPLETED"
+        assert data["teaching_moments"] == []
+        assert _gate_rows(app_db)[-1] == (
+            "DENY",
+            '["HARD_COOLDOWN_ACTIVE"]',
+        )
+
+        monkeypatch.setattr(
+            elc.teaching.budget, "COOLDOWN_WINDOW_SECONDS", 0.0
+        )
+        status, data = stack.post("/api/turn", {"text": SECOND_ERROR_TEXT})
+        assert status == 200
+        (moment,) = data["teaching_moments"]
+        assert moment["focus_target_id"] == EV_SECOND_TARGET
+        assert moment["lifecycle_state"] == "AWAITING_USER"
+        locks, moments = _durable_teaching_face(app_db)
+        assert len(locks) == 1
+        assert [state for _, state in moments] == [
+            skip_answer["moment_state"],
+            "AWAITING_USER",
+        ]
+
+
+def test_a_skip_with_no_open_moment_is_refused_not_an_error(
+    tmp_path: Path,
+) -> None:
+    """No lock, no reply: the ordinary refusal (the button pressed twice,
+    a stale page, a conversation with no teaching at all) answers
+    ``accepted: false`` with the fixed sentence — a runtime fact, never
+    an HTTP error."""
+
+    with web_stack(tmp_path / "app.db") as stack:
+        status, data = stack.post("/api/teaching_reply", {"control": "skip"})
+        assert status == 200
+        assert data == {
+            "accepted": False,
+            "moment_state": None,
+            "error": "no open teaching moment",
+        }
+
+
+class _ReplyStubHost:
+    """A host whose lock read answers one canned row (or None), and whose
+    coordinator records whether a reply was submitted — the unit seam the
+    reply face's pre-submit check is pinned against."""
+
+    def __init__(self, row: tuple[str] | None) -> None:
+        """``row`` mirrors the real read's shape: one column, the locked
+        moment's lifecycle state (``None`` = no lock row)."""
+
+        self._row = row
+        self.submitted: list[Any] = []
+
+    @property
+    def db(self) -> "_ReplyStubHost":
+        return self
+
+    def execute(self, _sql: str, _params: Any) -> "_ReplyStubHost":
+        return self
+
+    def fetchone(self) -> tuple[str] | None:
+        return self._row
+
+    @property
+    def coordinator(self) -> "_ReplyStubHost":
+        return self
+
+    def respond_to_teaching(self, request: Any) -> Any:
+        self.submitted.append(request)
+        return Ok(type("Completion", (), {"moment_state": MomentState.CLOSED})())
+
+
+def test_a_reply_is_submitted_only_for_an_awaiting_moment() -> None:
+    """The shape pin: the face checks the locked moment's state *before*
+    it submits. An open ``AWAITING_USER`` moment submits (and passes the
+    result's own state word through); a lock whose moment has already
+    moved on is refused at the face with the fixed sentence and the
+    coordinator is never called — a face that submits against any lock
+    row goes red here."""
+
+    awaiting = _ReplyStubHost(row=("AWAITING_USER",))
+    answer = _WebFace(awaiting, str(CONV)).teaching_reply("skip")
+    assert len(awaiting.submitted) == 1
+    assert answer == {"accepted": True, "moment_state": "CLOSED", "error": None}
+
+    moved_on = _ReplyStubHost(row=("EVALUATING",))
+    answer = _WebFace(moved_on, str(CONV)).teaching_reply("skip")
+    assert moved_on.submitted == []
+    assert answer["accepted"] is False
+    assert answer["error"] == "no open teaching moment"
+
+    unlocked = _ReplyStubHost(row=None)
+    answer = _WebFace(unlocked, str(CONV)).teaching_reply("skip")
+    assert unlocked.submitted == []
+    assert answer["accepted"] is False
+    assert answer["error"] == "no open teaching moment"
+
+
+def test_a_malformed_teaching_reply_body_is_a_400(tmp_path: Path) -> None:
+    """Bodies outside the V1 grammar are bad requests: no JSON, no
+    ``control`` key, and any control word other than ``skip`` (V1 carries
+    the skip control only) — and none of them commits anything."""
+
+    with web_stack(tmp_path / "app.db") as stack:
+        status, data = stack.post_raw("/api/teaching_reply", b"not json")
+        assert status == 400
+        assert "error" in data
+        status, data = stack.post("/api/teaching_reply", {"nope": 1})
+        assert status == 400
+        status, data = stack.post("/api/teaching_reply", {"control": "attempt"})
+        assert status == 400
+        assert "skip" in data["error"]
+        status, payload = stack.get_json("/api/history")
+        assert status == 200
+        assert payload["turns"] == []
 
 
 # ---------------------------------------------------------------------------

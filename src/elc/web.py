@@ -51,6 +51,23 @@ The turn face mirrors ``elc.cli`` exactly where it must:
   readings of the two vocabularies (unknown words pass through untranslated
   — fail-open display beats a broken card).
 
+The teaching reply face (W-2) closes the day-one deadlock the first
+dogfood run hit: a turn's teaching moment lands at ``AWAITING_USER``
+holding the conversation's one-focus lock, and with no way to answer it
+every later turn stayed teaching-less while the lock held.
+``POST /api/teaching_reply`` with ``{"control": "skip"}`` locates the
+conversation's ``AWAITING_USER`` moment through the durable lock, submits
+a :class:`~elc.runtime.controller.TeachingReplyRequest` (SKIP, no
+attempt) through the coordinator's existing ``respond_to_teaching``
+entry — the §4 pipeline, the §7 abort and the lock release are the
+runtime's own, unmodified — and answers ``{accepted, moment_state,
+error}``. A refused reply is a **runtime fact, not an HTTP error** (200
++ ``accepted: false`` + the error sentence), exactly like the turn face;
+only a body outside the V1 grammar is a 400. **V1 implements the skip
+control only** — the attempt face (the user types their sentence and it
+is judged) is a later cut, and this endpoint says so instead of
+pretending.
+
 ``observations`` serves ``elc.cli``'s readings core (the six §12 indicator
 declarations, the six durable-counts sections, the drift signal) — the same
 numbers the ``observations`` command prints, by construction. ``history``
@@ -86,8 +103,11 @@ from elc.platform.types import (
     InputId,
     InteractionChannel,
 )
+from elc.runtime.controller import TeachingReplyRequest
 from elc.runtime.types import InputEnvelope
+from elc.teaching.envelope import TeachingControlIntent, TeachingResponseEnvelope
 from elc.teaching.rollout import OBSERVATION_SPECS
+from elc.teaching.types import MomentState
 
 __all__ = [
     "DEFAULT_WEB_CONVERSATION_ID",
@@ -182,6 +202,10 @@ _PAGE = """<!doctype html>
   .moment { border: 1px solid #b8c9b8; background: #f2f8f2; border-radius: 6px;
             padding: .5rem .75rem; margin-top: .5rem; }
   .moment b { color: #2c5a2c; }
+  .moment.skipped { border-color: #bbb; background: #f4f4f4; opacity: .55; }
+  .moment.skipped b { color: #777; }
+  .moment button { margin-top: .35rem; font-size: .85rem; }
+  .system { align-self: center; color: #666; font-size: .85rem; }
   button { padding: .45rem .9rem; cursor: pointer; }
   pre { background: #f7f7f7; border: 1px solid #ddd; border-radius: 6px;
         padding: .75rem; overflow-x: auto; }
@@ -247,7 +271,39 @@ function showMoments(list) {
       card.appendChild(document.createTextNode(
         " · 状态 " + m.lifecycle_state + " · 类型 " + m.kind));
     }
+    if (m.lifecycle_state === "AWAITING_USER") {
+      // the W-2 deadlock release: a moment waiting for the user offers the
+      // skip control (V1 carries skip only)
+      card.appendChild(document.createElement("br"));
+      const skip = document.createElement("button");
+      skip.type = "button";
+      skip.textContent = "跳过教学";
+      skip.addEventListener("click", () => skipMoment(card));
+      card.appendChild(skip);
+    }
     momentsBox.appendChild(card);
+  }
+}
+
+async function skipMoment(card) {
+  const res = await fetch("/api/teaching_reply", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ control: "skip" }),
+  });
+  const data = await res.json();
+  if (res.status !== 200) {
+    addLine("failure", data.error || "跳过教学失败");
+    return;
+  }
+  if (data.accepted) {
+    card.classList.add("skipped");
+    const button = card.querySelector("button");
+    if (button !== null) button.remove();
+    card.appendChild(document.createTextNode(" · 已跳过"));
+    addLine("system", "教学已跳过");
+  } else {
+    addLine("failure", data.error || "无法跳过这个教学时刻");
   }
 }
 
@@ -456,6 +512,62 @@ class _WebFace:
             return name
         return f"{name} — {function}"
 
+    def teaching_reply(self, control: str) -> dict[str, Any]:
+        """One user reply to the open teaching moment — V1: skip only.
+
+        The moment is located the way ``_moments_of_turn`` reads moments —
+        through the durable rows, never a guess: the conversation's
+        ``active_teaching_lock`` row names the one moment, and only a
+        moment at ``AWAITING_USER`` is open for a reply. No such moment is
+        the ordinary answer (``accepted: false`` + ``no open teaching
+        moment``), not an error — the button can be pressed twice, and a
+        stale page can press it after the moment already moved. The reply
+        itself goes through the coordinator's own ``respond_to_teaching``
+        entry with a fresh ``web-msg-`` id (CP0 replay safety, the turn
+        face's id shape): SKIP with no attempt, so the §4 order, the §7
+        abort and the lock release stay the runtime's, unmodified. An
+        ``Err`` from it is a runtime fact — 200, ``accepted: false``, the
+        error sentence; the face never fabricates a state, the reported
+        ``moment_state`` is the reply result's own word (and stays
+        consistent with the durable row the next read sees). **V1 carries
+        the skip control only**; the attempt face (a judged learner
+        sentence) is a later cut.
+        """
+
+        lock = self._host.db.execute(
+            "SELECT m.lifecycle_state"
+            " FROM active_teaching_lock l"
+            " JOIN teaching_moment m ON m.moment_id = l.moment_id"
+            " WHERE l.conversation_id = ?",
+            (str(self._conversation_id),),
+        ).fetchone()
+        if lock is None or str(lock[0]) != MomentState.AWAITING_USER.value:
+            return {
+                "accepted": False,
+                "moment_state": None,
+                "error": "no open teaching moment",
+            }
+        request = TeachingReplyRequest(
+            conversation_id=self._conversation_id,
+            envelope=TeachingResponseEnvelope(
+                control_intent=TeachingControlIntent.SKIP, attempt_present=False
+            ),
+            client_message_id=ClientMessageId(f"web-msg-{uuid.uuid4().hex}"),
+            requested_at=datetime.now(tz=UTC).isoformat(),
+        )
+        result = self._host.coordinator.respond_to_teaching(request)
+        if isinstance(result, Err):
+            return {
+                "accepted": False,
+                "moment_state": None,
+                "error": f"{result.error.code.value}: {result.error.message}",
+            }
+        return {
+            "accepted": True,
+            "moment_state": result.value.moment_state.value,
+            "error": None,
+        }
+
     def observations(self) -> dict[str, Any]:
         """The CLI readout's numbers, as JSON (one readings core)."""
 
@@ -604,7 +716,7 @@ def _build_server(
                 self._send_json(404, {"error": "not found"})
 
         def do_POST(self) -> None:
-            if self.path != "/api/turn":
+            if self.path not in ("/api/turn", "/api/teaching_reply"):
                 self._send_json(404, {"error": "not found"})
                 return
             try:
@@ -616,6 +728,23 @@ def _build_server(
                 payload = json.loads(raw.decode("utf-8"))
             except (UnicodeDecodeError, json.JSONDecodeError):
                 payload = None
+            if self.path == "/api/teaching_reply":
+                # The V1 reply grammar is exactly {"control": "skip"} — any
+                # other body (no JSON, another key, an unsupported control
+                # word) is a bad request, not a runtime fact.
+                if not isinstance(payload, dict) or (payload.get("control") != "skip"):
+                    self._send_json(
+                        400,
+                        {
+                            "error": (
+                                'need a JSON body {"control": "skip"}'
+                                " (V1 carries the skip control only)"
+                            )
+                        },
+                    )
+                    return
+                self._run_on_host_thread(lambda: face.teaching_reply("skip"))
+                return
             text = payload.get("text") if isinstance(payload, dict) else None
             if not isinstance(text, str) or not text.strip():
                 self._send_json(
