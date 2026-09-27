@@ -83,7 +83,18 @@ from elc.platform.types import (
 from elc.runtime.types import InputEnvelope
 from elc.teaching.rollout import OBSERVATION_SPECS
 
-__all__ = ["DEFAULT_WEB_CONVERSATION_ID", "main", "run_web"]
+__all__ = [
+    "DEFAULT_WEB_CONVERSATION_ID",
+    "WebOpenError",
+    "main",
+    "run_web",
+]
+
+
+class WebOpenError(RuntimeError):
+    """The conversation the page serves could not be opened (run_web raises
+    before binding; the CLI branch answers it with chat's open-failure
+    shape — one human sentence and exit 1, never a 500-per-request loop)."""
 
 #: The default conversation the web face opens (idempotent; distinct from the
 #: CLI's so the two surfaces never interleave one transcript by accident).
@@ -538,8 +549,21 @@ def run_web(
     accept loop is live (the test seam); ``stop`` ends the serve within one
     poll interval and closes the socket. The bind is hardwired to
     ``127.0.0.1`` — no argument can widen it.
+
+    The conversation is opened here, before the server binds — the live
+    first-request form (``python -m elc web`` against a fresh app.db) has no
+    other opener: the tests that pre-open theirs keep working because the
+    open is idempotent per conversation, and an open that refuses raises
+    :class:`WebOpenError` for the CLI branch to answer with its human
+    sentence (the ``chat`` open-failure shape, not a 500-per-request loop).
     """
 
+    opened = host.open_conversation(ConversationId(conversation))
+    if isinstance(opened, Err):
+        raise WebOpenError(
+            f"cannot open conversation {conversation}:"
+            f" {opened.error.code.value}: {opened.error.message}"
+        )
     server = _build_server(host, port, conversation=conversation)
     serve_thread = threading.Thread(target=server.serve_forever, daemon=True)
     serve_thread.start()

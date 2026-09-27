@@ -565,3 +565,94 @@ def test_a_malformed_body_is_a_400_that_commits_no_turn(
         status, payload = stack.get_json("/api/history")
         assert status == 200
         assert payload["turns"] == []
+
+
+# ---------------------------------------------------------------------------
+# the live first-request form (controller-verified defect, fixed in-run):
+# run_web opens the conversation itself
+# ---------------------------------------------------------------------------
+
+
+def test_run_web_opens_the_conversation_itself(tmp_path: Path) -> None:
+    """The real CLI form — ``python -m elc web`` against a fresh app.db —
+    has no other opener than run_web: the web_stack fixture pre-opens, so
+    this test serves a host whose conversation was never opened and posts
+    one turn. Before the fix every such turn answered
+    ``NOT_FOUND: conversation not found``; now the reply is real."""
+
+    from elc.web import run_web
+
+    port = _free_port()
+    ready, stop = threading.Event(), threading.Event()
+    box: dict[str, Any] = {}
+
+    def worker() -> None:
+        try:
+            host = open_host(
+                tmp_path / "app.db",
+                provider=ScriptedPersonaProvider(
+                    script=(ProviderOutput(text=REPLY),)
+                ),
+            )
+            box["host"] = host
+            # NOTE: no open_conversation here — that is the point.
+            run_web(host, port, conversation=str(CONV), ready=ready, stop=stop)
+        except BaseException as exc:
+            box["error"] = exc
+            ready.set()
+        finally:
+            host = box.get("host")
+            if host is not None and "error" not in box:
+                host.close()
+
+    thread = threading.Thread(target=worker, daemon=True)
+    thread.start()
+    try:
+        assert ready.wait(timeout=60.0), "the web worker never became ready"
+        assert "error" not in box, box.get("error")
+        body = json.dumps({"text": CLEAN_TEXT}).encode()
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{port}/api/turn",
+            data=body,
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=30.0) as response:
+            data = json.loads(response.read())
+        assert data["reply"] == REPLY, data
+        assert data["failure_reason"] is None, data
+    finally:
+        stop.set()
+        thread.join(timeout=60.0)
+
+
+def test_a_refused_conversation_open_raises_before_serving(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An open that refuses is chat's open-failure shape: run_web raises
+    WebOpenError before binding, the CLI branch answers it with one human
+    sentence and exit 1 — never a 500-per-request loop."""
+
+    from elc.platform.types import DomainError, DomainErrorCode, Err
+    from elc.web import WebOpenError, run_web
+
+    host = open_host(
+        tmp_path / "app.db",
+        provider=ScriptedPersonaProvider(script=(ProviderOutput(text=REPLY),)),
+    )
+    try:
+        # Host is a frozen dataclass: patch the class (monkeypatch restores
+        # it), so the instance's call goes to the refusing stub.
+        monkeypatch.setattr(
+            type(host),
+            "open_conversation",
+            lambda _self, _cid: Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message="conversation refused (injected)",
+                )
+            ),
+        )
+        with pytest.raises(WebOpenError, match="conversation refused"):
+            run_web(host, _free_port(), conversation=str(CONV))
+    finally:
+        host.close()

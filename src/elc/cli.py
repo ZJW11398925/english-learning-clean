@@ -364,9 +364,13 @@ def main(
             # The lazy import keeps elc.web → elc.cli (its readings core and
             # runtime version) acyclic: this module never imports the server
             # at load time, only here, where the command runs.
-            from elc.web import run_web
+            from elc.web import WebOpenError, run_web
 
-            run_web(host, args.port, conversation=args.conversation)
+            try:
+                run_web(host, args.port, conversation=args.conversation)
+            except WebOpenError as exc:
+                print(f"elc web: {exc}", file=err)
+                return 1
             return 0
         return _chat(host, args, stdin=stdin, stdout=out, stderr=err)
     finally:
