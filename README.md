@@ -30,6 +30,16 @@ PYTHONPATH=src python -m elc chat \
 - 操作者卫生（不要求改代码）：`--secrets-file` 指向的仓外 JSON 由操作者自行设权限（本仓只读它，不检查 group/world 可读）；**错路径 / 错 `--secret-ref` 与「未设密钥」在 CLI 上是同一个 `missing-secret` 事实**（该缝所有失败都答 `None`）。
 - 参数缺失 / 互斥 ⇒ 人话错误 + 退出码 **2**；app.db 打不开 ⇒ 退出码 **1**。**真实 automatic-teaching rollout 仍 HOLD**（开闸由 IP §12 的门槛检查与用户裁决决定，本 CLI 不改变它）。
 
+### 语料 rollout 门（D-5）：`gate` 子命令
+
+```bash
+PYTHONPATH=src python -m elc gate --content-db ./build/content.db
+```
+
+- 只读 content.db（不需要 app.db / 密钥 / 网络）：打印四行门报告（每行的 usable 目标数与 verdict，`automatic CURRENT_USER_ERROR` 行含 provenance 腿的 blocked 计数）+ targets 行 + verdict；退出码 **GO=0 / HOLD=1**，可脚本化判读。
+- 门报告是**内容腿的答案，不是开闸**：GO 也不开任何东西——HOLD/GO 之外的 rollout 归因（stage 腿未声明、SessionBudget 三分、独立开闸裁决）打印在报告之后。
+- `--content-db` 缺省指仓内构建产物 `build/content.db`（`PYTHONPATH=src python -m elc.content.build` 生成——该口径带 D-3 的 12 实体 EV 集；库 API `build_content_db` 缺省零 EV，两种构建的门读数不同是**产物事实**）。
+
 ### 真实端点 smoke（可复制；dogfood 步骤，不属 CI）
 
 ```bash

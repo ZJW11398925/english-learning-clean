@@ -7,6 +7,15 @@ one ``CommitUserTurn`` through
 ``ConversationCoordinator.begin_turn``, and the reply — or the honest failure —
 is printed. ``:quit`` or EOF exits and closes the connection.
 
+``python -m elc gate --content-db PATH`` (D-5) is the corpus rollout gate over
+one built content.db — no host, no app.db, no key: it reads the readiness
+table and the artifact's own provenance rows, prints the report (the four
+rows, the targets line, the verdict) and codes the verdict as the exit status
+(GO = 0, HOLD = 1). The report is the content leg's answer only; a GO here
+opens nothing, and the note it prints names what stays outside this command's
+answer (the stage declaration, the session-budget split, the opening
+adjudication).
+
 Deliberate limits, each a contract rather than an omission:
 
 - **in-process only.** This is the client boundary ``DEC-…d7937fd7.12``
@@ -49,7 +58,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Sequence, TextIO
 
+from elc.content.build import DEFAULT_OUTPUT
+from elc.content.store import ContentStore, ContentStoreError
 from elc.conversation.types import CommitUserTurn
+from elc.curriculum.store import CurriculumContentStore
 from elc.host import Host, open_host
 from elc.persona.openai_provider import (
     OpenAICompatibleConfig,
@@ -70,8 +82,14 @@ from elc.platform.types import (
     SecretRef,
 )
 from elc.runtime.types import InputEnvelope, TurnCompletion
+from elc.teaching.rollout import RolloutVerdict, corpus_rollout_gate
 
-__all__ = ["DEFAULT_CONVERSATION_ID", "DEFAULT_SECRET_REF", "RUNTIME_VERSION", "main"]
+__all__ = [
+    "DEFAULT_CONVERSATION_ID",
+    "DEFAULT_SECRET_REF",
+    "RUNTIME_VERSION",
+    "main",
+]
 
 #: The version every turn this CLI commits carries (§1.4's ``runtime_version``;
 #: the value the rest of the V1 tree uses).
@@ -96,6 +114,22 @@ _INSECURE_HTTP_HINT = (
     " explicitly (loopback http:// needs no flag)"
 )
 
+_CHAT_REQUIRED_HINT = (
+    "elc chat: --app-db, --base-url and --model are required"
+    " (the gate command needs none of them)"
+)
+
+_GATE_LEG_NOTE = (
+    "provenance leg live: the automatic CURRENT_USER_ERROR row also requires"
+    " EXECUTABLY_VERIFIED provenance (its blocked count is in the row above)"
+)
+
+_GATE_SCOPE_NOTE = (
+    "this report is the content leg's answer only; rollout stays a separate"
+    " decision (the stage declaration, the session-budget split and the"
+    " opening adjudication live outside it) — a GO here opens nothing"
+)
+
 
 def main(
     argv: Sequence[str] | None = None,
@@ -115,10 +149,22 @@ def main(
     except SystemExit as exc:  # argparse's own usage errors: human + non-zero
         return int(exc.code) if isinstance(exc.code, int) else 2
 
+    if args.command == "gate":
+        return _gate(args, stdout=out, stderr=err)
+
+    # chat's required arguments are validated here rather than by argparse so
+    # the gate command can share one flat parser without them (a missing
+    # --base-url stays a human sentence and a 2, only now from this check).
+    if args.app_db is None or args.base_url is None or args.model is None:
+        print(_CHAT_REQUIRED_HINT, file=err)
+        return 2
+    app_db: str = args.app_db
+    base_url: str = args.base_url
+    model: str = args.model
     if (args.api_key_env is None) == (args.secrets_file is None):
         print(_KEY_SOURCE_HINT, file=err)
         return 2
-    if not args.allow_insecure_http and insecure_http_destination(args.base_url):
+    if not args.allow_insecure_http and insecure_http_destination(base_url):
         # Before any host is opened and before any key is resolved: the rule the
         # adapter answers as a ``cleartext-http`` value, said as a sentence that
         # names the way out (EXT-P1-02).
@@ -128,8 +174,8 @@ def main(
     if provider is None:
         provider = OpenAICompatibleProvider(
             OpenAICompatibleConfig(
-                base_url=args.base_url,
-                model=args.model,
+                base_url=base_url,
+                model=model,
                 secret_ref=SecretRef(args.secret_ref),
                 timeout_seconds=args.timeout,
                 allow_insecure_http=args.allow_insecure_http,
@@ -138,9 +184,9 @@ def main(
         )
 
     try:
-        host = open_host(args.app_db, provider=provider, secrets=secrets)
+        host = open_host(app_db, provider=provider, secrets=secrets)
     except (sqlite3.Error, MigrationError, OSError) as exc:
-        print(f"elc chat: cannot open app.db {args.app_db}: {exc}", file=err)
+        print(f"elc chat: cannot open app.db {app_db}: {exc}", file=err)
         return 1
     try:
         return _chat(host, args, stdin=stdin, stdout=out, stderr=err)
@@ -240,19 +286,79 @@ def _render(result: Result[TurnCompletion]) -> str:
     return f"[{completion.turn_status.value}] {reason}"
 
 
+def _gate(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -> int:
+    """The corpus rollout gate over one built content.db (the ``gate`` command).
+
+    No host, no app.db, no key: the artifact and nothing else. The report is
+    printed verbatim (the four rows, the targets line, the verdict), then the
+    two notes — the provenance leg's live status and what this answer does
+    not own. Exit codes: GO 0, HOLD 1. An artifact this command cannot open,
+    or one whose reads fail, is also 1 with the reason on stderr — a failed
+    read is not a HOLD and is never printed as one (the checker's own Err
+    passthrough contract).
+    """
+
+    try:
+        content_store = ContentStore(args.content_db)
+    except (ContentStoreError, sqlite3.Error, OSError) as exc:
+        print(
+            f"elc gate: cannot open content.db {args.content_db}: {exc!r}",
+            file=stderr,
+        )
+        return 1
+    try:
+        curriculum = CurriculumContentStore(content_store)
+        provenance = content_store.provenance_levels()
+        if isinstance(provenance, Err):
+            print(
+                "elc gate: content_provenance unreadable:"
+                f" {provenance.error.message}",
+                file=stderr,
+            )
+            return 1
+        report = corpus_rollout_gate(
+            curriculum, provenance=dict(provenance.value)
+        )
+    finally:
+        content_store.close()
+    if isinstance(report, Err):
+        print(
+            f"elc gate: the corpus has no gate answer: {report.error.message}",
+            file=stderr,
+        )
+        return 1
+    for line in report.value.summary():
+        print(line, file=stdout)
+    print(_GATE_LEG_NOTE, file=stdout)
+    print(_GATE_SCOPE_NOTE, file=stdout)
+    return 0 if report.value.verdict is RolloutVerdict.GO else 1
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m elc",
         description="One in-process conversation loop over app.db (no HTTP server).",
     )
-    parser.add_argument("command", choices=("chat",), help="the only command in V1")
     parser.add_argument(
-        "--app-db",
-        required=True,
-        help="path to app.db (created and migrated when absent)",
+        "command",
+        choices=("chat", "gate"),
+        help="chat: the conversation loop; gate: the corpus rollout gate",
     )
     parser.add_argument(
-        "--base-url", required=True, help="OpenAI-compatible base URL (PC §11)"
+        "--app-db",
+        help="path to app.db (chat; created and migrated when absent)",
+    )
+    parser.add_argument(
+        "--content-db",
+        default=str(DEFAULT_OUTPUT),
+        help=(
+            "path to a built content.db (gate;"
+            " default: the repository build artifact)"
+        ),
+    )
+    parser.add_argument(
+        "--base-url",
+        help="OpenAI-compatible base URL (PC §11)",
     )
     parser.add_argument(
         "--allow-insecure-http",
@@ -262,7 +368,7 @@ def _build_parser() -> argparse.ArgumentParser:
             " loopback http:// needs no flag and the default refuses the rest"
         ),
     )
-    parser.add_argument("--model", required=True, help="model name to request")
+    parser.add_argument("--model", help="model name to request")
     key_source = parser.add_mutually_exclusive_group()
     key_source.add_argument(
         "--api-key-env", metavar="VAR", help="resolve the key from variable VAR"
