@@ -133,6 +133,29 @@ def test_the_bound_face_answers_as_the_function_does() -> None:
     ) == detect_current_user_errors("Any way, let's continue.", registry)
 
 
+def test_no_turn_text_answers_none_not_an_empty_observation() -> None:
+    """The D-6-a review LOW-2 guard: ``_turn_observation`` with a wired face
+    but no turn text answers ``None`` — "no observation" — never an empty
+    ``OpportunityObservation()`` (which would read as "observed zero hits").
+    The three-state promise is the wiring docstring's; this pins the middle
+    state at the unit the review's m9 mutation broke (deleting the guard
+    silently downgrades "not observed" into "observed nothing")."""
+
+    from elc.runtime.automatic_turn import (
+        AutomaticTurnWiring,
+        _turn_observation,
+    )
+
+    registry = DetectorRegistry()
+    register_pilot(registry)
+    wiring = AutomaticTurnWiring(
+        planner_store=None,  # type: ignore[arg-type]
+        teaching=None,  # type: ignore[arg-type]
+        error_detectors=RegistryDispatch(registry),
+    )
+    assert _turn_observation(wiring, None, []) is None
+
+
 def test_the_detection_package_never_imports_content_still_holds() -> None:
     """The D-2 one-way dependency re-asserted over the new module (the
     package-level scan in ``test_d2_build_ev_derivation`` already covers it;

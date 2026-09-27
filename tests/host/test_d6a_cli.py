@@ -235,7 +235,19 @@ def test_observations_prints_indicators_counts_and_fp_faces(
     assert "TARGET_NOT_EXECUTABLY_VERIFIED" in out
     assert "Thought" in out
     assert "I think" in out
-    assert "vocative" in out
+    assert "Any way" in out
+    # value-level pins (D-6-a review LOW-1): this database carries exactly
+    # one ALLOW over an empty reason list, one AWAITING_USER moment, one
+    # TERMINAL action, and a zero drift signal — the readout must answer
+    # those numbers, not merely name the rows (the review's m6 mutation
+    # hardcoded every count to zero and stayed green against the pins above)
+    assert "ALLOW | [] | 1" in out
+    assert "AWAITING_USER | 1" in out
+    assert "TERMINAL | 1" in out
+    assert (
+        "gate rows naming TARGET_NOT_EXECUTABLY_VERIFIED"
+        " (the drift signal): 0" in out
+    )
 
 
 def seed_and_open_one_moment(host: Host) -> None:

@@ -496,8 +496,10 @@ def _observations(
     print("    matcher still reads as one)", file=stdout)
     print('  - a parenthetical adverb right after "I think," (the', file=stdout)
     print("    comma-after-hedge family's insertion reading)", file=stdout)
-    print("  - a vocative after a fronted marker (N-D3-4 family:", file=stdout)
-    print("    the pause before a name reads as the marker's boundary)", file=stdout)
+    print("  - any fronted 'Any way, ...' split spelling (the marker", file=stdout)
+    print("    family's one shape; a vocative after the comma has not", file=stdout)
+    print("    reproduced as its own face — watch item, not a separate", file=stdout)
+    print("    known face)", file=stdout)
     print(
         "  tracked during dogfood observation: a hit that proves false feeds",
         file=stdout,
