@@ -80,6 +80,7 @@ from __future__ import annotations
 
 import json
 import queue
+import sys
 import threading
 import uuid
 from datetime import UTC, datetime
@@ -779,6 +780,18 @@ def run_web(
     open is idempotent per conversation, and an open that refuses raises
     :class:`WebOpenError` for the CLI branch to answer with its human
     sentence (the ``chat`` open-failure shape, not a 500-per-request loop).
+
+    After the open and before the bind, the host's startup recovery runs
+    once — the same sweep the ``chat`` command runs at its startup. A web
+    restart is exactly the shape the sweep exists for: the dead process's
+    ``AWAITING_USER`` moment keeps holding the conversation's one-focus
+    teaching lock, and without the sweep nothing in the web face ever
+    releases it (the second dogfood deadlock arm). An ``Err`` — a refusal
+    to scan at all — is said out loud on ``sys.stderr`` (this function has
+    no stderr parameter of its own; the process's stderr is the honest
+    place) and the serving continues: the recovery lines are
+    failure-tolerant by contract, so an unavailable sweep blocks the page
+    no more than it blocks chat.
     """
 
     opened = host.open_conversation(ConversationId(conversation))
@@ -787,6 +800,18 @@ def run_web(
             f"cannot open conversation {conversation}:"
             f" {opened.error.code.value}: {opened.error.message}"
         )
+
+    recovery = host.startup_recovery()
+    if isinstance(recovery, Err):
+        # The recovery lines are failure-tolerant by contract, but a refusal
+        # to scan at all is said out loud; the serving goes on (the chat
+        # startup's exact shape).
+        print(
+            "elc web: startup recovery unavailable:"
+            f" {recovery.error.code.value}: {recovery.error.message}",
+            file=sys.stderr,
+        )
+
     server = _build_server(host, port, conversation=conversation)
     serve_thread = threading.Thread(target=server.serve_forever, daemon=True)
     serve_thread.start()

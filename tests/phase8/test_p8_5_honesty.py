@@ -91,11 +91,13 @@ ROLLOUT_PACKAGE_DEPENDENCIES = tuple(
     sorted(name for name in ROLLOUT_IMPORTS if name.startswith("elc."))
 )
 
-#: The two budget windows' declarations, verbatim: the text P8-5 declined to
-#: move (``elc.teaching.budget``'s Revisit named p8-5 as a possible calibrator,
-#: and this cut registers the decline there).
+#: The two budget windows' declarations, verbatim. P8-5 declined to move
+#: them (``elc.teaching.budget``'s Revisit named p8-5 as a possible
+#: calibrator, and that cut registered the decline there); the W-2
+#: disposition cut later calibrated the cooldown to its dogfood-era sixty
+#: seconds, and this verbatim text follows the declaration.
 BUDGET_DECLARATIONS = {
-    "COOLDOWN_WINDOW_SECONDS": "COOLDOWN_WINDOW_SECONDS: float = 1800.0",
+    "COOLDOWN_WINDOW_SECONDS": "COOLDOWN_WINDOW_SECONDS: float = 60.0",
     "RECENT_TEACHING_WINDOW_SECONDS": (
         "RECENT_TEACHING_WINDOW_SECONDS: float = 3600.0"
     ),
@@ -325,11 +327,15 @@ def test_the_module_carries_no_calibration_literal() -> None:
     assert not literals.intersection({1800, 3600, 1800.0, 3600.0})
 
 
-def test_the_budget_constants_are_untouched() -> None:
-    """This cut declined the budget windows' p8-5 calibration clause (module
-    docstring ⑥), and "declined" is checkable three ways: the values are still
-    P8-2's, each constant is declared **once** — in ``budget.py``, nowhere else
-    in ``src/`` — and neither module imports the other.
+def test_the_budget_constants_carry_their_declared_values() -> None:
+    """The p8-5 honesty cut declined the budget windows' p8-5 calibration
+    clause (module docstring ⑥); the W-2 disposition cut later calibrated
+    the cooldown to its dogfood-era sixty seconds — against the deadlock
+    the first real dogfood run hit, not against a usage measurement —
+    while the "recent" window keeps P8-2's value. Whatever the values, the
+    declaration shape is checkable three ways: each constant is declared
+    **once** — in ``budget.py``, nowhere else in ``src/`` — and neither
+    module imports the other.
 
     The p8-5 disposal's F2: the as-found form stripped the declaration text
     out of ``budget.py`` and asserted the *name* appears nowhere else in it —
@@ -350,7 +356,7 @@ def test_the_budget_constants_are_untouched() -> None:
         RECENT_TEACHING_WINDOW_SECONDS,
     )
 
-    assert COOLDOWN_WINDOW_SECONDS == 1800.0
+    assert COOLDOWN_WINDOW_SECONDS == 60.0
     assert RECENT_TEACHING_WINDOW_SECONDS == 3600.0
     assert "elc.teaching.budget" not in _imports(ROLLOUT_MODULE)
     budget_source = BUDGET_MODULE.read_text(encoding="utf-8")

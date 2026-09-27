@@ -168,21 +168,24 @@ __all__ = [
 #: constant**. BF-03 §17 gives the cooldown's semantics ("只针对 ``new
 #: AUTOMATIC OPEN``"; it blocks neither a user-initiated OPEN nor an active
 #: Moment's continuation) and names **no number**, and neither does
-#: docs/IMPLEMENTATION_PLAN.md; this cut therefore declares one, states it
-#: once here, and never presents it as canonical. Thirty minutes is the
-#: declared default: long enough that a hard cooldown means a break between
-#: teaching bursts, short enough that one sitting's later turns are not
-#: starved. **Revisit**: BF-03 v1.2 or IP §13's calibration face pins a
-#: number — a calibration replaces this constant (and
-#: :data:`RECENT_TEACHING_WINDOW_SECONDS` stays independent of it: they answer
-#: different questions). P8-5's rollout gate **declined** the clause this
-#: Revisit used to name it for: a calibration is a measurement over real
-#: usage, and there is none to measure — the rollout is still HOLD, held by
-#: the undeclared stage leg and the Calibration100 volume gate, not by the
-#: content gate (C1's corpus answers it GO) — and ``elc.teaching.rollout``
-#: registers the decline. The clause therefore
-#: stays open for the cut that has the usage to spend.
-COOLDOWN_WINDOW_SECONDS: float = 1800.0
+#: docs/IMPLEMENTATION_PLAN.md; the declaration lives here, stated once, and
+#: is never presented as canonical. **Sixty seconds is the dogfood-era
+#: calibration** (the W-2 disposition cut): the first real dogfood run hit
+#: the deadlock the window itself closes — a skipped moment's retry landing
+#: in a thirty-minute dead end no interactive sitting can wait out — so the
+#: window is calibrated to a minute-scale break while a dogfood feedback
+#: loop is the consumer. The declared history stays on the record: P8-5's
+#: rollout gate **declined** to calibrate (a calibration is a measurement
+#: over real usage, and there was none to measure — the rollout was still
+#: HOLD, held by the undeclared stage leg and the Calibration100 volume
+#: gate, not by the content gate (C1's corpus answered it GO) — and
+#: ``elc.teaching.rollout`` registers that decline); this cut calibrates
+#: against a different fact, the dogfood deadlock itself, and claims no
+#: usage measurement. **Revisit**: BF-03 v1.2 or IP §13's calibration face
+#: pins a number, or the real rollout needs its own — that recalibration
+#: replaces this constant (and :data:`RECENT_TEACHING_WINDOW_SECONDS` stays
+#: independent of it: they answer different questions).
+COOLDOWN_WINDOW_SECONDS: float = 60.0
 
 #: The "recent" window of the two closure counts, in seconds — an
 #: **implementation-declared constant**, separate from the cooldown on

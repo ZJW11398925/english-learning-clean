@@ -129,6 +129,17 @@ def _at(minutes: int) -> str:
     ).isoformat()
 
 
+def _at_s(seconds: int) -> str:
+    """DAY_TWO plus ``seconds`` — the second-scale clock the dogfood-era
+    calibration reads: the cooldown window is now sixty seconds (the W-2
+    disposition cut), so the window's scenarios are spelled in seconds —
+    minute-scale shapes would all land past it."""
+
+    return (
+        datetime.fromisoformat(DAY_TWO) + timedelta(seconds=seconds)
+    ).isoformat()
+
+
 def _record(
     *,
     conversation_id: ConversationId = CONV,
@@ -346,9 +357,11 @@ def test_every_derived_reading_carries_a_revisit() -> None:
 
 def test_the_two_windows_are_declared_constants_with_their_reasons() -> None:
     """BF-03 §17 and IP pin no number, so this cut declares the two — stated
-    once, separately, and never presented as canonical."""
+    once, separately, and never presented as canonical. The cooldown's value
+    is now the W-2 disposition cut's dogfood-era calibration (sixty
+    seconds); the "recent" window keeps this cut's one hour."""
 
-    assert COOLDOWN_WINDOW_SECONDS == 1800.0
+    assert COOLDOWN_WINDOW_SECONDS == 60.0
     assert RECENT_TEACHING_WINDOW_SECONDS == 3600.0
     source = source_text(BUDGET_MODULE)
     cooldown_block = source[: source.index("COOLDOWN_WINDOW_SECONDS: float")]
@@ -392,17 +405,19 @@ def test_a_busy_session_still_invents_no_fatigue_signal() -> None:
 
     view = _view(
         [
-            _record(moment_id=f"tm-busy-{index}", opened_at=_at(index))
+            _record(moment_id=f"tm-busy-{index}", opened_at=_at_s(index * 10))
             for index in range(6)
         ],
-        as_of=_at(10),
+        as_of=_at_s(70),
     )
     assert view.automatic_teaching_used == 6
     assert view.fatigue_signal is None
     # The derived facts a busy session does state are unaffected: the newest
-    # opening (at +5) leaves the declared cooldown running, and nothing was
-    # closed, so both recency counts are real zeros.
-    assert view.cooldown_remaining == COOLDOWN_WINDOW_SECONDS - 5 * 60
+    # opening (at +50 s) leaves the declared cooldown running — twenty of
+    # its sixty calibrated seconds — and nothing was closed, so both
+    # recency counts are real zeros (all six openings sit inside the
+    # separate one-hour recent window too).
+    assert view.cooldown_remaining == COOLDOWN_WINDOW_SECONDS - 20
     assert view.recent_skips == 0
     assert view.recent_rejections == 0
 
@@ -458,28 +473,29 @@ def test_closed_and_live_automatic_moments_both_count() -> None:
 
 
 def test_the_cooldown_is_the_declared_window_minus_the_elapsed_time() -> None:
-    """An opening twenty minutes ago leaves ten of the declared thirty."""
+    """An opening thirty seconds ago leaves half the (calibrated) window."""
 
-    view = _view([_record(opened_at=DAY_TWO)], as_of=_at(20))
-    assert view.cooldown_remaining == COOLDOWN_WINDOW_SECONDS - 20 * 60
+    view = _view([_record(opened_at=DAY_TWO)], as_of=_at_s(30))
+    assert view.cooldown_remaining == COOLDOWN_WINDOW_SECONDS - 30
 
 
 @pytest.mark.parametrize(
-    "minutes,expected",
+    "seconds,expected",
     [
-        (0, 1800.0),
-        (1, 1740.0),
-        (29, 60.0),
-        (30, 0.0),
-        (31, 0.0),
+        (0, 60.0),
+        (1, 59.0),
+        (29, 31.0),
+        (30, 30.0),
+        (60, 0.0),
+        (61, 0.0),
         (600, 0.0),
     ],
 )
-def test_the_cooldown_is_floored_at_zero(minutes: int, expected: float) -> None:
+def test_the_cooldown_is_floored_at_zero(seconds: int, expected: float) -> None:
     """The window is inclusive at its near edge and floored beyond it: the
     boundary instant is already ``0.0`` (no time is left)."""
 
-    view = _view([_record(opened_at=DAY_TWO)], as_of=_at(minutes))
+    view = _view([_record(opened_at=DAY_TWO)], as_of=_at_s(seconds))
     assert view.cooldown_remaining == expected
 
 
@@ -501,11 +517,11 @@ def test_the_newest_automatic_opening_is_the_anchor() -> None:
     view = _view(
         [
             _record(moment_id="tm-old", opened_at=DAY_TWO),
-            _record(moment_id="tm-new", opened_at=_at(10)),
+            _record(moment_id="tm-new", opened_at=_at_s(15)),
         ],
-        as_of=_at(20),
+        as_of=_at_s(45),
     )
-    assert view.cooldown_remaining == COOLDOWN_WINDOW_SECONDS - 10 * 60
+    assert view.cooldown_remaining == COOLDOWN_WINDOW_SECONDS - 30
 
 
 def test_an_opening_after_as_of_has_not_started_a_cooldown_yet() -> None:
@@ -910,20 +926,20 @@ def test_the_view_reads_the_real_history_through_the_real_faces(
         moment_id="tm-p8-2-real",
         opened_at=DAY_TWO,
     )
-    view_result = teaching_controller.get_session_budget_view(CONV, _at(20))
+    view_result = teaching_controller.get_session_budget_view(CONV, _at_s(30))
     assert isinstance(view_result, Ok), view_result
     view = view_result.value
 
     assert view.conversation_id == CONV
     assert view.policy_version == PolicyVersion("pv-p8-2")
     assert view.automatic_teaching_used == 1
-    assert view.cooldown_remaining == COOLDOWN_WINDOW_SECONDS - 20 * 60
+    assert view.cooldown_remaining == COOLDOWN_WINDOW_SECONDS - 30
     assert view.recent_skips == 0
     assert view.recent_rejections == 0
     assert view.automatic_teaching_remaining is None
     assert view.probe_budget_remaining is None
     assert view.fatigue_signal is None
-    assert view.as_of == _at(20)
+    assert view.as_of == _at_s(30)
 
 
 def test_a_closed_skip_is_counted_through_the_durable_world(
@@ -1335,4 +1351,4 @@ def test_the_budget_module_imports_cold() -> None:
         timeout=300,
     )
     assert process.returncode == 0, process.stderr
-    assert "COLD-BUDGET 1800.0" in process.stdout
+    assert "COLD-BUDGET 60.0" in process.stdout

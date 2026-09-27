@@ -32,7 +32,12 @@ Pinned here (the six VAL groups):
    skip, lock 0, the next error text opens a second moment), a skip with
    no open moment is refused as a runtime fact (never an HTTP error), a
    reply is submitted only against a moment at ``AWAITING_USER``, and a
-   body outside the V1 grammar is a 400.
+   body outside the V1 grammar is a 400;
+9. the W-2 disposition — a web restart runs the startup recovery sweep
+   (the dead epoch's orphan moment closes ``SYSTEM_RECOVERY_ABORT``, the
+   lock is gone, before the bind), and the calibrated sixty-second
+   cooldown still answers ``HARD_COOLDOWN_ACTIVE`` on the first post-skip
+   retry (the calibration is a real window, not a silent open).
 """
 
 from __future__ import annotations
@@ -232,8 +237,9 @@ def web_stack(
         assert not thread.is_alive(), "the web worker did not stop"
         host = box.get("host")
         if host is not None and "error" not in box:
-            # close() already ran on the worker thread (its finally); this is
-            # the no-op repeat that proves the stack ended whole.
+            # The worker thread has exited without closing its host (no
+            # close() runs on this path — the connections die with the
+            # daemon thread); this block stays the no-op it always was.
             pass
 
 
@@ -561,13 +567,15 @@ def test_skipping_the_moment_releases_the_lock_and_teaching_resumes(
     closed with ``USER_SKIP``, and the lock row is gone (the deadlock's
     blocker, released). The very next error text still opens no moment —
     and the durable gate row names the real reason: the canonical
-    §5.2 hard-opening cooldown (BF-03 §17, a declared 1800 s window from
-    the first moment's opening), **not** the lock. Act two contracts that
+    §5.2 hard-opening cooldown (BF-03 §17, a declared window from the
+    first moment's opening — sixty seconds since the W-2 disposition's
+    dogfood-era calibration), **not** the lock. Act two contracts that
     declared constant (``elc.teaching.budget.COOLDOWN_WINDOW_SECONDS = 0``
-    — an implementation-declared default whose own docstring awaits a
-    calibration; no gate or budget face is touched) and re-sends the
-    second error text: the second moment opens on the other target —
-    proof the lock, once skipped, never blocks teaching again.
+    — the implementation-declared window contracted for the moment, the
+    same act the calibration performs at a finer grain; no gate or budget
+    face is touched) and re-sends the second error text: the second moment
+    opens on the other target — proof the lock, once skipped, never blocks
+    teaching again.
     """
 
     app_db = tmp_path / "app.db"
@@ -715,6 +723,179 @@ def test_a_malformed_teaching_reply_body_is_a_400(tmp_path: Path) -> None:
         status, payload = stack.get_json("/api/history")
         assert status == 200
         assert payload["turns"] == []
+
+
+# ---------------------------------------------------------------------------
+# 3d. the W-2 disposition — the restart sweep and the calibrated window
+
+
+def _durable_moment_words(app_db: Path) -> list[tuple]:
+    """The durable moment states with their abort words, read-only — the
+    recovery sweep's exact answer."""
+
+    ro = sqlite3.connect(f"file:{app_db}?mode=ro", uri=True)
+    try:
+        return ro.execute(
+            "SELECT lifecycle_state, abort_reason FROM teaching_moment"
+            " ORDER BY created_at, moment_id"
+        ).fetchall()
+    finally:
+        ro.close()
+
+
+def test_a_web_restart_sweeps_the_orphan_moment_of_the_dead_epoch(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    """The second dogfood deadlock arm, closed in the real shape end to
+    end. Act one: a host whose error-text turn opened the moment dies
+    holding the lock — ``close()`` is the crash's honest stand-in, the
+    durable rows outlive the process exactly as the dogfood run's did. Act
+    two: the web comes back on a NEW host (a new epoch) and ``run_web``
+    runs the startup recovery sweep after its open and before its bind —
+    so by the time ``ready`` fires, the orphan moment has already left
+    ``AWAITING_USER`` closed with ``SYSTEM_RECOVERY_ABORT`` and the lock
+    row is gone. No request is served first: the sweep is the only actor
+    between the death and the read."""
+
+    app_db = tmp_path / "app.db"
+    host_one = open_host(
+        app_db,
+        provider=ScriptedPersonaProvider(script=(ProviderOutput(text=REPLY),)),
+        content_db_path=pilot_content_db,
+        rollout_stage=RolloutStage.STUDY_FIRST,
+    )
+    try:
+        opened = host_one.open_conversation(CONV)
+        assert isinstance(opened, Ok), opened
+        seed_online(host_one)
+        completion = host_one.coordinator.begin_turn(
+            _commit(CONV, ERROR_TEXT)
+        )
+        assert isinstance(completion, Ok), completion
+        assert completion.value.turn_status.value == "COMPLETED"
+        locks, moments = _durable_teaching_face(app_db)
+        assert len(locks) == 1
+        assert [state for _, state in moments] == ["AWAITING_USER"]
+    finally:
+        host_one.close()
+
+    with web_stack(
+        app_db,
+        content_db=pilot_content_db,
+        stage=RolloutStage.STUDY_FIRST,
+    ):
+        # nothing is posted: the sweep ran inside run_web before the bind,
+        # so the durable face is already the recovery's answer
+        locks, moments = _durable_teaching_face(app_db)
+        assert locks == []
+        assert _durable_moment_words(app_db) == [
+            ("CLOSED", "SYSTEM_RECOVERY_ABORT")
+        ]
+
+
+def test_an_unavailable_sweep_is_said_out_loud_and_serving_continues(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The chat startup's exact shape, kept: a recovery that refuses to
+    scan at all is one line on stderr (``run_web`` has no stderr parameter
+    of its own — the process's stderr is the honest place) and the page
+    still serves — an unavailable sweep blocks the dogfood no more than it
+    blocks chat. A run_web that deletes the line, or skips the call it
+    reports, goes red here."""
+
+    from elc.platform.types import DomainError, DomainErrorCode, Err
+    from elc.web import run_web
+
+    err = io.StringIO()
+    port = _free_port()
+    ready, stop = threading.Event(), threading.Event()
+    box: dict[str, Any] = {}
+
+    def refusing_sweep(_self: Any) -> Any:
+        return Err(
+            DomainError(
+                code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                message="the sweep refused (injected)",
+            )
+        )
+
+    def worker() -> None:
+        host = open_host(
+            tmp_path / "app.db",
+            provider=ScriptedPersonaProvider(
+                script=(ProviderOutput(text=REPLY),)
+            ),
+        )
+        box["host"] = host
+        try:
+            with contextlib.redirect_stderr(err):
+                run_web(
+                    host, port, conversation=str(CONV), ready=ready, stop=stop
+                )
+        except BaseException as exc:
+            box["error"] = exc
+            ready.set()
+        finally:
+            host.close()
+
+    # Host is a frozen dataclass: patch the class (monkeypatch restores
+    # it), so run_web's own call answers the refusing stub.
+    from elc.host import Host
+
+    monkeypatch.setattr(Host, "startup_recovery", refusing_sweep)
+    thread = threading.Thread(target=worker, daemon=True)
+    thread.start()
+    try:
+        assert ready.wait(timeout=60.0), "the web worker never became ready"
+        assert "error" not in box, box.get("error")
+        assert "elc web: startup recovery unavailable" in err.getvalue()
+        assert "DEPENDENCY_UNAVAILABLE" in err.getvalue()
+        assert "the sweep refused (injected)" in err.getvalue()
+        status, data = _post_json(port, "/api/turn", {"text": CLEAN_TEXT})
+        assert status == 200
+        assert data["reply"] == REPLY
+    finally:
+        stop.set()
+        thread.join(timeout=60.0)
+
+
+def test_the_calibrated_cooldown_still_holds_right_after_the_skip(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    """The W-2 disposition's calibration is a real window, not a silent
+    open: within sixty seconds of the first moment's opening — the test's
+    very next requests, no waiting — the second error text still opens no
+    moment, and the durable gate row names the same canonical reason the
+    thirty-minute default gave (``HARD_COOLDOWN_ACTIVE``). The calibrated
+    value is pinned last, so the window cannot quietly revert: a revert to
+    any other number would answer this test's next-turn question with a
+    denial no dogfood sitting can wait out — or with no denial at all."""
+
+    app_db = tmp_path / "app.db"
+    with web_stack(
+        app_db,
+        content_db=pilot_content_db,
+        stage=RolloutStage.STUDY_FIRST,
+        seed=seed_online_and_second_target,
+    ) as stack:
+        status, data = stack.post("/api/turn", {"text": ERROR_TEXT})
+        assert status == 200
+        (moment,) = data["teaching_moments"]
+        assert moment["lifecycle_state"] == "AWAITING_USER"
+
+        status, data = stack.post("/api/teaching_reply", {"control": "skip"})
+        assert status == 200
+        assert data["accepted"] is True
+
+        status, data = stack.post("/api/turn", {"text": SECOND_ERROR_TEXT})
+        assert status == 200
+        assert data["teaching_moments"] == []
+        assert _gate_rows(app_db)[-1] == (
+            "DENY",
+            '["HARD_COOLDOWN_ACTIVE"]',
+        )
+
+    assert elc.teaching.budget.COOLDOWN_WINDOW_SECONDS == 60.0
 
 
 # ---------------------------------------------------------------------------
