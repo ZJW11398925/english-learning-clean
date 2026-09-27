@@ -9,14 +9,18 @@ source_error_type** — a typed hit or nothing.
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
+
 import pytest
 
 from elc.detection import (
-    GLOBAL_REGISTRY,
     DetectorRegistry,
     run_fixture,
     run_fixtures,
 )
+from tests.conftest import REPO_ROOT
 from tests.detection.support import (
     SyntheticFixture,
     always_match,
@@ -173,12 +177,27 @@ def test_duplicate_registration_is_refused_and_replaces_nothing() -> None:
 
 
 def test_the_global_registry_ships_empty() -> None:
-    """V1 registers no matcher: the module-level default is empty at import
-    time, and the skeleton posture says it stays that way until D-3."""
+    """V1 registers no matcher: importing the package is side-effect
+    free, so a fresh interpreter sees the module-level default empty.
+    (Read in a fresh interpreter: an in-process CLI assembly — D-3's
+    ``main`` — legitimately populates the object afterwards, and that is
+    an assembly act, not an import effect.)"""
 
-    assert GLOBAL_REGISTRY.known_targets() == ()
-    assert GLOBAL_REGISTRY.entries() == ()
-    assert GLOBAL_REGISTRY.resolve("res-discourse-anyway") is None
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from elc.detection import GLOBAL_REGISTRY;"
+            "print(GLOBAL_REGISTRY.known_targets())",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+        env={**os.environ, "PYTHONPATH": str(REPO_ROOT / "src")},
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "()"
 
 
 def test_an_unknown_fixture_kind_is_refused_not_scored() -> None:

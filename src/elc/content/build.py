@@ -126,9 +126,9 @@ D-2 (Detector Executability Program) adds the execution half of
   FALSE_POSITIVE_BOUNDARY row must not match; a POSITIVE_ERROR row must
   match with the row's own ``source_error_type``).
 - **the injection seam** — :func:`build_content_db` gains the optional
-  keyword-only ``detector_registry``. ``None`` (the default, and what
-  :func:`main` passes) derives the artifact exactly as before,
-  byte-for-byte. A handed-in registry is validated entry by entry (the
+  keyword-only ``detector_registry``. ``None`` (the library default)
+  derives the artifact exactly as before, byte-for-byte. A handed-in
+  registry is validated entry by entry (the
   entity must be a documented one; the entry's ``rule_ordinals`` must be a
   subset of the entity's declared rule ordinals; a matcher exception is
   wrapped into :class:`BuildError`), each registered entity's full fixture
@@ -138,6 +138,18 @@ D-2 (Detector Executability Program) adds the execution half of
   fixtures is never promoted for an empty pass. ``EMPIRICALLY_CALIBRATED``
   still has no derivation: no real teaching run exists to calibrate
   against (rollout HOLD).
+
+D-3 (Detector Executability Program) pilots the first real matchers:
+:mod:`elc.detection.pilot` implements the declared rule prose of twelve
+``EDITOR_REVIEWED`` R4 targets and :func:`register_pilot
+<elc.detection.pilot.register_pilot>` loads them into a registry. The
+**CLI** (:func:`main`) is the assembling entry point — it registers the
+pilot set into :data:`elc.detection.GLOBAL_REGISTRY` and hands the
+registry to the build, so the command-line artifact carries their twelve
+``EXECUTABLY_VERIFIED`` rows. The library API
+(:func:`build_content_db` with no registry) keeps building the
+pre-D-3 artifact: the default answer stays zero EV, and
+``CONTENT_DB_VERSION`` is unchanged (the schema did not move).
 """
 
 from __future__ import annotations
@@ -174,7 +186,7 @@ from elc.curriculum.types import (
     CurriculumLinkRelation,
     PrerequisiteStrength,
 )
-from elc.detection import DetectorRegistry, run_fixtures
+from elc.detection import GLOBAL_REGISTRY, DetectorRegistry, pilot, run_fixtures
 from elc.platform.types import EvidenceModality
 
 _T = TypeVar("_T")
@@ -2280,9 +2292,11 @@ def _provenance_rows(
     registry is handed in, every registered entity whose **full** fixture
     set passes (:mod:`elc.detection`) is ``EXECUTABLY_VERIFIED``; the word
     replaces whatever the two structural steps below it derived, being the
-    strongest earned claim. With no registry (the default build, and the
-    CLI) or an empty registry this step is skipped and the level set is
-    exactly what C3-R2 and D-1 produced. ``EMPIRICALLY_CALIBRATED`` is
+    strongest earned claim. With no registry (the library default) or an
+    empty registry this step is skipped and the level set is exactly what
+    C3-R2 and D-1 produced; the CLI (D-3) hands in the pilot registry, so
+    the command-line artifact carries the verified rows.
+    ``EMPIRICALLY_CALIBRATED`` is
     still derived by nothing: no real teaching run exists to calibrate
     against (rollout HOLD).
 
@@ -2871,10 +2885,12 @@ def build_content_db(
     place, so a failed build never leaves a half-written content.db.
 
     ``detector_registry`` (D-2) is the injection seam for the
-    ``EXECUTABLY_VERIFIED`` derivation: ``None`` — the default, and what
-    :func:`main` passes — builds exactly the pre-D-2 artifact, byte for
-    byte. A handed-in registry is validated entry by entry and executed
-    (see :func:`_provenance_rows`).
+    ``EXECUTABLY_VERIFIED`` derivation: ``None`` — the library default —
+    builds exactly the pre-D-2 artifact, byte for byte, so the default
+    answer stays zero EV. :func:`main` (the CLI, D-3) passes the
+    pilot-registered :data:`elc.detection.GLOBAL_REGISTRY` instead (see
+    :func:`elc.detection.pilot.register_pilot`). A handed-in registry is
+    validated entry by entry and executed (see :func:`_provenance_rows`).
     """
 
     source = load_source(content_src_dir, curriculum_dir)
@@ -2913,7 +2929,19 @@ def build_content_db(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Rebuild content.db from the command line (see content_src/README.md)."""
+    """Rebuild content.db from the command line (see content_src/README.md).
+
+    D-3: the CLI is the assembling build entry point. It loads the pilot
+    detector set (:func:`elc.detection.pilot.register_pilot` — twelve
+    matchers) into :data:`elc.detection.GLOBAL_REGISTRY` and hands the
+    registry to :func:`build_content_db`, so the command-line artifact
+    carries the ``EXECUTABLY_VERIFIED`` rows the matchers earned. The
+    library API keeps its registry-free default (zero EV, byte-identical
+    to the pre-D-2 artifact). The assembly is once per process: the
+    registry refuses duplicate registrations, so a second ``main`` call
+    reuses the already-assembled :data:`GLOBAL_REGISTRY` instead of
+    re-registering it.
+    """
 
     parser = argparse.ArgumentParser(
         prog="python -m elc.content.build",
@@ -2934,11 +2962,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    if GLOBAL_REGISTRY.known_targets() != pilot.PILOT_ENTITIES:
+        pilot.register_pilot(GLOBAL_REGISTRY)
     try:
         report = build_content_db(
             Path(args.out),
             content_src_dir=Path(args.content_src),
             curriculum_dir=Path(args.curriculum),
+            detector_registry=GLOBAL_REGISTRY,
         )
     except BuildError as error:
         print(f"content.db build refused: {error}", file=sys.stderr)

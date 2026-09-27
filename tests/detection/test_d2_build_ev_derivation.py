@@ -38,8 +38,9 @@ DETECTION_ROOT = SRC_ROOT / "detection"
 def test_default_and_empty_registry_builds_are_byte_identical(
     tmp_path: Path,
 ) -> None:
-    """``None`` (the default, and what the CLI passes) and an explicitly
-    handed-in empty registry produce the same bytes and the same 100-row
+    """``None`` (the library default, which no registry reaches) and an
+    explicitly handed-in empty registry produce the same bytes and the
+    same 100-row
     provenance table with zero EV/EC rows — the pre-D-2 artifact."""
 
     default = tmp_path / "default.db"
