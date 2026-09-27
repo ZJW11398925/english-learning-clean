@@ -92,8 +92,10 @@ layer and stands up the provenance dimension:
   references must resolve. An entity's level is ``EDITOR_REVIEWED`` when at
   least one audit approves it and ``AUTHOR_DECLARED`` otherwise (the
   baseline for every documented entity). The two stronger words
-  (:data:`elc.content.types.PROVENANCE_LEVELS`) are vocabulary members only
-  — no derivation produces them today (no detector executor, no real-run
+  (:data:`elc.content.types.PROVENANCE_LEVELS`) stay reachable-only in a
+  **default** build — see the D-2 paragraph below for the one derivation
+  ``EXECUTABLY_VERIFIED`` has since gained;
+  ``EMPIRICALLY_CALIBRATED`` is still produced by nothing (no real-run
   data; their reachability conditions are written on the constant). Levels
   land in the new ``content_provenance`` table and never touch the §8.1
   ladder; `CONTENT_DB_VERSION` moves to ``"4"`` for the new table.
@@ -112,6 +114,30 @@ a real foreign key:
   row-count proxy (registrations N-C3R2-1 / EXT-C3-01). The
   ``content_detection_fixture`` table gains the nullable
   ``source_error_type`` column and `CONTENT_DB_VERSION` moves to ``"5"``.
+
+D-2 (Detector Executability Program) adds the execution half of
+``EXECUTABLY_VERIFIED``:
+
+- **the harness** — :mod:`elc.detection` (a one-way dependency:
+  ``content.build → detection``, never the reverse): a detector is a pure
+  function over the learner production's plain text (no model, no
+  confidence), the registry is insert-only and ships **empty** in V1, and
+  the fixture runner's judgment is pinned per kind (a NEGATIVE or
+  FALSE_POSITIVE_BOUNDARY row must not match; a POSITIVE_ERROR row must
+  match with the row's own ``source_error_type``).
+- **the injection seam** — :func:`build_content_db` gains the optional
+  keyword-only ``detector_registry``. ``None`` (the default, and what
+  :func:`main` passes) derives the artifact exactly as before,
+  byte-for-byte. A handed-in registry is validated entry by entry (the
+  entity must be a documented one; the entry's ``rule_ordinals`` must be a
+  subset of the entity's declared rule ordinals; a matcher exception is
+  wrapped into :class:`BuildError`), each registered entity's full fixture
+  set is executed, and an entity whose every fixture passes is promoted to
+  ``EXECUTABLY_VERIFIED``. A fixture failure is **not** a refusal — the
+  entity honestly stays at its derived level — and an entity with no
+  fixtures is never promoted for an empty pass. ``EMPIRICALLY_CALIBRATED``
+  still has no derivation: no real teaching run exists to calibrate
+  against (rollout HOLD).
 """
 
 from __future__ import annotations
@@ -148,6 +174,7 @@ from elc.curriculum.types import (
     CurriculumLinkRelation,
     PrerequisiteStrength,
 )
+from elc.detection import DetectorRegistry, run_fixtures
 from elc.platform.types import EvidenceModality
 
 _T = TypeVar("_T")
@@ -2225,13 +2252,20 @@ def load_source(
     return source
 
 
-#: The two provenance words the build's derivation can produce today, taken
-#: from the vocabulary by position (the derivation may never invent a word).
+#: The provenance words the build's derivation can produce, taken from the
+#: vocabulary by position (the derivation may never invent a word).
+#: ``EXECUTABLY_VERIFIED`` is produced only when a detector registry is
+#: handed in (D-2) and a registered matcher passes the entity's full fixture
+#: set; ``EMPIRICALLY_CALIBRATED`` is still produced by nothing.
 _BASELINE_PROVENANCE = PROVENANCE_LEVELS[0]
 _REVIEWED_PROVENANCE = PROVENANCE_LEVELS[1]
+_VERIFIED_PROVENANCE = PROVENANCE_LEVELS[2]
 
 
-def _provenance_rows(source: ContentSource) -> tuple[tuple[str, str], ...]:
+def _provenance_rows(
+    source: ContentSource,
+    detector_registry: DetectorRegistry | None = None,
+) -> tuple[tuple[str, str], ...]:
     """C3-R2: derive one provenance level per **documented** entity.
 
     The derivation is structural, never self-declared: the authoring source
@@ -2242,13 +2276,15 @@ def _provenance_rows(source: ContentSource) -> tuple[tuple[str, str], ...]:
     separate-document fact, so the authoring evidence file itself cannot
     promote its own entity — the build enforces that separation, while the
     reviewer's independence from the author is a process fact this loader
-    cannot check; EXT-C3-02). No
-    derivation produces ``EXECUTABLY_VERIFIED`` or
-    ``EMPIRICALLY_CALIBRATED`` today: no detector executor exists to pass
-    the fixtures (the N21 registration) and no real teaching run exists to
-    calibrate against (rollout HOLD) — the words stay reachable-only, with
-    their conditions written on
-    :data:`elc.content.types.PROVENANCE_LEVELS`.
+    cannot check; EXT-C3-02). One step further, D-2's — when a detector
+    registry is handed in, every registered entity whose **full** fixture
+    set passes (:mod:`elc.detection`) is ``EXECUTABLY_VERIFIED``; the word
+    replaces whatever the two structural steps below it derived, being the
+    strongest earned claim. With no registry (the default build, and the
+    CLI) or an empty registry this step is skipped and the level set is
+    exactly what C3-R2 and D-1 produced. ``EMPIRICALLY_CALIBRATED`` is
+    still derived by nothing: no real teaching run exists to calibrate
+    against (rollout HOLD).
 
     Only documented entities get a row: a capability with no evidence
     document makes no provenance claim for the table to carry, and the
@@ -2261,13 +2297,73 @@ def _provenance_rows(source: ContentSource) -> tuple[tuple[str, str], ...]:
         for record in source.audits
         for entity_id in record.approved_entities
     }
-    return tuple(
-        (
-            entity_id,
-            _REVIEWED_PROVENANCE if entity_id in approved else _BASELINE_PROVENANCE,
-        )
-        for entity_id in documented
-    )
+    verified: frozenset[str] = frozenset()
+    if detector_registry is not None:
+        verified = _run_registered_detectors(source, detector_registry)
+
+    def _level(entity_id: str) -> str:
+        if entity_id in verified:
+            return _VERIFIED_PROVENANCE
+        if entity_id in approved:
+            return _REVIEWED_PROVENANCE
+        return _BASELINE_PROVENANCE
+
+    return tuple((entity_id, _level(entity_id)) for entity_id in documented)
+
+
+def _run_registered_detectors(
+    source: ContentSource, registry: DetectorRegistry
+) -> frozenset[str]:
+    """D-2: validate every registry entry, run each entity's full fixture
+    set, and answer the ids that earned ``EXECUTABLY_VERIFIED``.
+
+    Refusals (build-level contracts, same family as the D-1 foreign key):
+
+    - an entry naming an entity with no evidence document (a detector may
+      only be registered against a documented entity);
+    - an entry whose ``rule_ordinals`` name an ordinal the entity's
+      ``detection_rules`` do not declare (the error carries the legal set).
+
+    A matcher that raises is wrapped into a :class:`BuildError` that names
+    the detector — never silently swallowed. A fixture that fails is NOT a
+    refusal: the entity is simply not promoted (an honest no-pass, the
+    state D-3 iterates from), and an entity with no fixtures is never
+    promoted either — an empty set passes vacuously, and verification
+    requires something to have been verified.
+    """
+
+    documents = {document.entity_id: document for document in source.evidence}
+    verified: set[str] = set()
+    for entry in registry.entries():
+        document = documents.get(entry.entity_id)
+        if document is None:
+            raise BuildError(
+                f"registry entry for {entry.entity_id}: {entry.entity_id!r} "
+                "is not a documented entity (no evidence document declares "
+                "it, so there is nothing to verify)"
+            )
+        legal_ordinals = sorted(row.ordinal for row in document.detection_rules)
+        for ordinal in entry.rule_ordinals:
+            if ordinal not in legal_ordinals:
+                raise BuildError(
+                    f"registry entry for {entry.entity_id}: rule ordinal "
+                    f"{ordinal} is not one of the entity's declared rule "
+                    f"ordinals {legal_ordinals}"
+                )
+        try:
+            outcome = run_fixtures(
+                entry.matcher,
+                document.detection_fixtures,
+                entity_id=entry.entity_id,
+            )
+        except Exception as exc:
+            raise BuildError(
+                f"detector for {entry.entity_id} raised "
+                f"{type(exc).__name__}: {exc}"
+            ) from exc
+        if outcome.all_passed and outcome.fixture_count > 0:
+            verified.add(entry.entity_id)
+    return frozenset(verified)
 
 
 def _check_references(
@@ -2356,7 +2452,11 @@ def _check_references(
 # ---------------------------------------------------------------------------
 
 
-def _write_rows(conn: sqlite3.Connection, source: ContentSource) -> None:
+def _write_rows(
+    conn: sqlite3.Connection,
+    source: ContentSource,
+    detector_registry: DetectorRegistry | None,
+) -> None:
     conn.executemany(
         "INSERT INTO content_meta (key, value) VALUES (?, ?)",
         (
@@ -2497,7 +2597,7 @@ def _write_rows(conn: sqlite3.Connection, source: ContentSource) -> None:
             for edge in source.prerequisites
         ),
     )
-    _write_evidence_rows(conn, source)
+    _write_evidence_rows(conn, source, detector_registry)
 
 
 def _one(row: _T | None) -> tuple[_T, ...]:
@@ -2507,7 +2607,9 @@ def _one(row: _T | None) -> tuple[_T, ...]:
 
 
 def _write_evidence_rows(
-    conn: sqlite3.Connection, source: ContentSource
+    conn: sqlite3.Connection,
+    source: ContentSource,
+    detector_registry: DetectorRegistry | None,
 ) -> None:
     """C1: the readiness evidence rows, in table-creation order.
 
@@ -2745,10 +2847,13 @@ def _write_evidence_rows(
     )
     # C3-R2: the derived provenance rows (one per documented entity, in the
     # derivation's sorted-entity-id order — deterministic by construction).
+    # D-2: a handed-in detector registry can promote entities to
+    # EXECUTABLY_VERIFIED; with None (the default) the rows are exactly the
+    # pre-D-2 ones.
     conn.executemany(
         "INSERT INTO content_provenance (entity_id, provenance_level) "
         "VALUES (?, ?)",
-        _provenance_rows(source),
+        _provenance_rows(source, detector_registry),
     )
 
 
@@ -2757,12 +2862,19 @@ def build_content_db(
     *,
     content_src_dir: Path = CONTENT_SRC_DIR,
     curriculum_dir: Path = CURRICULUM_DIR,
+    detector_registry: DetectorRegistry | None = None,
 ) -> BuildReport:
     """Build (or rebuild) content.db from the authoring source.
 
     Deterministic and idempotent: same source → same rows in the same order →
     same bytes. The artifact is written to a temporary sibling and moved into
     place, so a failed build never leaves a half-written content.db.
+
+    ``detector_registry`` (D-2) is the injection seam for the
+    ``EXECUTABLY_VERIFIED`` derivation: ``None`` — the default, and what
+    :func:`main` passes — builds exactly the pre-D-2 artifact, byte for
+    byte. A handed-in registry is validated entry by entry and executed
+    (see :func:`_provenance_rows`).
     """
 
     source = load_source(content_src_dir, curriculum_dir)
@@ -2777,7 +2889,7 @@ def build_content_db(
         conn.execute("BEGIN IMMEDIATE")
         for statement in SCHEMA_STATEMENTS:
             conn.execute(statement)
-        _write_rows(conn, source)
+        _write_rows(conn, source, detector_registry)
         conn.execute("COMMIT")
     except BaseException:
         conn.close()

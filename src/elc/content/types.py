@@ -167,11 +167,13 @@ DETECTION_FIXTURE_EXPECTED_BY_KIND: Mapping[str, str] = MappingProxyType(
 #:   entity in its ``approved_entities``. The record is a third-party fact
 #:   (``performed_by`` / ``basis``), so an author cannot promote their own
 #:   work. Today's highest reachable level.
-#: - ``EXECUTABLY_VERIFIED`` — **not produced today**: no detector executor
-#:   exists in the repository (the N21 registration — "R4's testability is
-#:   structural"), so nothing can pass all three fixture kinds. Reachable
-#:   when a detector executor runs the fixtures against the declared
-#:   expected readings; Revisit = that landing.
+#: - ``EXECUTABLY_VERIFIED`` — produced only by a build that is handed a
+#:   detector registry (elc.content.build's ``detector_registry`` seam,
+#:   D-2): a registered pure-text matcher ran the entity's full fixture set
+#:   and every fixture passed. The registry ships empty in V1 (D-3 pilots
+#:   the first matchers), so a default build — and the CLI — still produce
+#:   zero EV rows: the N21 registration ("R4's testability is structural")
+#:   is thereby narrowed to "no matcher is registered yet", not closed.
 #: - ``EMPIRICALLY_CALIBRATED`` — **not produced today**: no real teaching
 #:   run exists (rollout HOLD), so no response data can calibrate a target.
 #:   Reachable when real-run calibration data exists; Revisit = same

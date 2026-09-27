@@ -699,8 +699,9 @@ class ContentStore:
         an authoring evidence document, ``EDITOR_REVIEWED`` means a record in
         `content_src/audits/` approves the entity
         (:data:`elc.content.types.PROVENANCE_LEVELS` carries the full four-word
-        vocabulary and the reachability conditions of the two stronger words,
-        which no derivation produces today).
+        vocabulary and the reachability conditions of the two stronger words —
+        ``EXECUTABLY_VERIFIED`` only when a build is handed a populated
+        detector registry (D-2), ``EMPIRICALLY_CALIBRATED`` by nothing yet).
 
         An entity with no row (an undocumented capability) has **no
         provenance claim** — it is absent from the answer rather than

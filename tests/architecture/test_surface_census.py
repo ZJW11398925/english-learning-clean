@@ -123,6 +123,15 @@ SURFACE_CENSUS: tuple[Row, ...] = (
         live_face="elc.curriculum.provider:ContentBackedTeachingTargetProvider",
         skeletons=(Skeleton("CurriculumController", "ALL_RAISE"),),
     ),
+    # D-2 (Detector Executability Program): the execution half of
+    # EXECUTABLY_VERIFIED. The registry is the live face; the runner is
+    # build-time only (elc.content.build is the only EV grantor), and V1
+    # ships no registered matcher (the skeleton state is the package's own
+    # declared posture, not a missing implementation).
+    Row(
+        "detection",
+        live_face="elc.detection.registry:DetectorRegistry",
+    ),
     Row(
         "deletion",
         live_face="elc.deletion.controller:DeletionController",
