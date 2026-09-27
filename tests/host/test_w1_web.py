@@ -22,7 +22,10 @@ Pinned here (the six VAL groups):
 5. the history face serves the turns the page sent, in order;
 6. the structural pins — loopback-only bind, the CLI envelope shape kept,
    the human exit 2 for a missing ``--base-url`` (via both command entries),
-   and a malformed body being a 400 that commits no turn.
+   and a malformed body being a 400 that commits no turn;
+7. the W-1R human face — the card title read out of content.db (the target's
+   own words; the raw id on any read failure), the Chinese status/kind
+   words, and the page's rendering of the human card line.
 """
 
 from __future__ import annotations
@@ -69,7 +72,7 @@ from elc.user_config.types import (
     TeachingFrequency,
     TeachingPolicyProfile,
 )
-from elc.web import _build_server, _commit, run_web
+from elc.web import _build_server, _commit, _WebFace, run_web
 from elc.web import main as web_main
 
 REPLY = "w1 web reply"
@@ -340,6 +343,12 @@ def test_the_online_chain_opens_exactly_one_moment(
                 "focus_target_id": EV_TARGET,
                 "lifecycle_state": "AWAITING_USER",
                 "kind": "RESOURCE_PRACTICE",
+                "title": (
+                    "anyway — Signal that you are returning"
+                    " to the main topic after a digression."
+                ),
+                "status_cn": "等待您回应",
+                "kind_cn": "资源练习",
             }
         ]
 
@@ -357,6 +366,113 @@ def test_a_clean_text_opens_no_moment(
         assert status == 200
         assert data["turn_status"] == "COMPLETED"
         assert data["teaching_moments"] == []
+
+
+# ---------------------------------------------------------------------------
+# 3b. the W-1R human face on the moment cards
+
+
+def test_a_moment_card_carries_the_human_face(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    """The card speaks: the title is the target's own words (the spoken
+    name plus the authored function sentence, read out of content.db), the
+    two vocabularies answer in Chinese, and the raw three fields survive
+    untouched on top of the same moment."""
+
+    with web_stack(
+        tmp_path / "app.db",
+        content_db=pilot_content_db,
+        stage=RolloutStage.STUDY_FIRST,
+        seed=seed_online,
+    ) as stack:
+        status, data = stack.post("/api/turn", {"text": ERROR_TEXT})
+        assert status == 200
+        (moment,) = data["teaching_moments"]
+        assert moment["title"].startswith("anyway — ")
+        assert "Signal that you are returning" in moment["title"]
+        assert moment["status_cn"] == "等待您回应"
+        assert moment["kind_cn"] == "资源练习"
+        assert moment["focus_target_id"] == EV_TARGET
+        assert moment["lifecycle_state"] == "AWAITING_USER"
+        assert moment["kind"] == "RESOURCE_PRACTICE"
+
+
+def test_an_unreadable_target_falls_back_to_the_raw_id(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    """A failing content read is a plain card, never a broken turn.
+
+    Three arms: a store whose read explodes answers the raw id; a host
+    without a content store answers the raw id (the prep-1 tier); and over
+    the real online chain a store swapped for an exploding delegate still
+    answers 200 with the raw-id title (during a turn the web face is the
+    only live reader of ``host.content_store`` — the teaching legs hold
+    their own assembly-time references, so the swap reaches the card read
+    and nothing else).
+    """
+
+    class _ExplodingStore:
+        def get_teaching_content(self, entity_id: str) -> Any:
+            raise RuntimeError(f"the content read exploded: {entity_id}")
+
+    class _UnitHost:
+        content_store: Any = _ExplodingStore()
+
+    assert _WebFace(_UnitHost(), "web-test")._moment_title(EV_TARGET) == EV_TARGET
+
+    class _StorelessHost:
+        content_store: Any = None
+
+    assert (
+        _WebFace(_StorelessHost(), "web-test")._moment_title(EV_TARGET)
+        == EV_TARGET
+    )
+
+    class _ExplodingDelegate:
+        """Everything delegates to the real store; the card read explodes."""
+
+        def __init__(self, real: Any) -> None:
+            self._real = real
+
+        def __getattr__(self, name: str) -> Any:
+            if name == "get_teaching_content":
+                raise RuntimeError("the content read exploded")
+            return getattr(self._real, name)
+
+    with web_stack(
+        tmp_path / "app.db",
+        content_db=pilot_content_db,
+        stage=RolloutStage.STUDY_FIRST,
+        seed=seed_online,
+    ) as stack:
+        host = stack.box["host"]
+        real = host.content_store
+        object.__setattr__(host, "content_store", _ExplodingDelegate(real))
+        try:
+            status, data = stack.post("/api/turn", {"text": ERROR_TEXT})
+        finally:
+            object.__setattr__(host, "content_store", real)
+        assert status == 200
+        (moment,) = data["teaching_moments"]
+        assert moment["title"] == EV_TARGET
+        assert moment["focus_target_id"] == EV_TARGET
+        assert moment["status_cn"] == "等待您回应"
+
+
+def test_the_page_renders_the_human_card_face(tmp_path: Path) -> None:
+    """The embedded page renders the human card line — title first, Chinese
+    state words — and keeps the raw-id row as the no-title fallback."""
+
+    with web_stack(tmp_path / "app.db") as stack:
+        status, content_type, body = stack.get_raw("/")
+        assert status == 200
+        page = body.decode("utf-8")
+        assert "教学时刻：" in page
+        assert "m.status_cn" in page
+        assert "m.kind_cn" in page
+        assert "if (m.title)" in page
+        assert "m.focus_target_id" in page
 
 
 # ---------------------------------------------------------------------------

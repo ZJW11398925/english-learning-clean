@@ -44,6 +44,12 @@ The turn face mirrors ``elc.cli`` exactly where it must:
   durable lineage (``teaching_moment → decision_cycle → turn_id``), never
   "whatever is latest"; ``kind`` is the moment's ``target_mode`` word
   (RESOURCE_PRACTICE / CAPABILITY_PRACTICE / PROBE / REVIEW / TRANSFER).
+  Each moment also carries the card's human face (W-1R): ``title`` is the
+  target's own words read out of content.db (the id tail plus rung 0 of its
+  hint ladder — the authored function sentence; the raw id when the content
+  side cannot answer), and ``status_cn`` / ``kind_cn`` are the fixed Chinese
+  readings of the two vocabularies (unknown words pass through untranslated
+  — fail-open display beats a broken card).
 
 ``observations`` serves ``elc.cli``'s readings core (the six §12 indicator
 declarations, the six durable-counts sections, the drift signal) — the same
@@ -108,6 +114,49 @@ HISTORY_TURNS = 50
 #: reports the worker as gone (generous: the worker loop polls its queue and
 #: never blocks on anything but the work itself).
 _WORKER_WAIT_SECONDS = 60.0
+
+#: The card's Chinese readings of the moment lifecycle vocabulary (the
+#: canonical ``MomentState`` words, docs/STATE_MACHINES.md §1). Display only:
+#: a word outside the map passes through untranslated.
+_STATUS_CN: dict[str, str] = {
+    "AUTHORIZED": "已授权",
+    "OPENING": "正在打开",
+    "AWAITING_USER": "等待您回应",
+    "EVALUATING": "正在评判",
+    "DECIDING_NEXT_ACTION": "正在决定下一步",
+    "COMPLETING": "正在收尾",
+    "ABORTING": "正在中止",
+    "TEACHING_TERMINAL": "教学已终局",
+    "RESUMING": "正在续接",
+    "CLOSED": "已结束",
+}
+
+#: The card's Chinese readings of the target-mode vocabulary (the five words
+#: the module docstring names). Display only, same fail-open rule.
+_KIND_CN: dict[str, str] = {
+    "RESOURCE_PRACTICE": "资源练习",
+    "CAPABILITY_PRACTICE": "能力练习",
+    "PROBE": "探测",
+    "REVIEW": "复习",
+    "TRANSFER": "迁移",
+}
+
+
+def _target_display_name(target_id: str) -> str:
+    """The spoken name of one focus target, out of its id.
+
+    Content ids are authored ``<kind>-<category>-<keyword phrase>``
+    (``res-discourse-anyway``, ``cap-stance-soften-disagreement``); the
+    keyword phrase after the two leading segments is the name a person says
+    (``anyway``, ``soften disagreement``). An id without the two leading
+    segments is returned whole — the caller's fallback shape.
+    """
+
+    parts = target_id.split("-")
+    if len(parts) < 3:
+        return target_id
+    return " ".join(parts[2:])
+
 
 _PAGE = """<!doctype html>
 <html lang="zh">
@@ -186,10 +235,18 @@ function showMoments(list) {
     const card = document.createElement("div");
     card.className = "moment";
     const b = document.createElement("b");
-    b.textContent = m.focus_target_id;
-    card.appendChild(b);
-    card.appendChild(document.createTextNode(
-      " · 状态 " + m.lifecycle_state + " · 类型 " + m.kind));
+    if (m.title) {
+      b.textContent = "💡 教学时刻：" + m.title;
+      card.appendChild(b);
+      card.appendChild(document.createTextNode(
+        " · 状态 " + (m.status_cn || m.lifecycle_state) +
+        " · " + (m.kind_cn || m.kind)));
+    } else {
+      b.textContent = m.focus_target_id;
+      card.appendChild(b);
+      card.appendChild(document.createTextNode(
+        " · 状态 " + m.lifecycle_state + " · 类型 " + m.kind));
+    }
     momentsBox.appendChild(card);
   }
 }
@@ -342,7 +399,9 @@ class _WebFace:
         id out of the moment's durable JSON document (the
         ``TeachingTargetRef`` storage form, ``elc.teaching.store``'s
         ``_target_from_document`` shape) and ``kind`` is the moment's
-        ``target_mode``.
+        ``target_mode``. ``title`` / ``status_cn`` / ``kind_cn`` are the
+        card's human face on top of the same three durable facts (W-1R);
+        the raw three fields stay first so older readers keep their shape.
         """
 
         rows = self._host.db.execute(
@@ -353,14 +412,49 @@ class _WebFace:
             " ORDER BY m.created_at, m.moment_id",
             (turn_id,),
         ).fetchall()
-        return [
-            {
-                "focus_target_id": _focus_id_of(str(row[0])),
-                "lifecycle_state": str(row[1]),
-                "kind": str(row[2]),
-            }
-            for row in rows
-        ]
+        moments: list[dict[str, str]] = []
+        for row in rows:
+            focus_id = _focus_id_of(str(row[0]))
+            state = str(row[1])
+            kind = str(row[2])
+            moments.append(
+                {
+                    "focus_target_id": focus_id,
+                    "lifecycle_state": state,
+                    "kind": kind,
+                    "title": self._moment_title(focus_id),
+                    "status_cn": _STATUS_CN.get(state, state),
+                    "kind_cn": _KIND_CN.get(kind, kind),
+                }
+            )
+        return moments
+
+    def _moment_title(self, target_id: str) -> str:
+        """The card title for one focus target — the target's own words.
+
+        Read through ``host.content_store``: rung 0 of the target's hint
+        ladder is the authored function sentence ("Signal that you are
+        returning to the main topic after a digression."), and the id tail
+        is the spoken name — ``anyway — Signal that …``. Every failure (no
+        content store on this host, unknown id, unreadable artifact) falls
+        back to the raw id: a card may be plain, never broken.
+        """
+
+        store = self._host.content_store
+        if store is None:
+            return target_id
+        try:
+            view = store.get_teaching_content(target_id)
+        except Exception:
+            return target_id
+        if isinstance(view, Err):
+            return target_id
+        hints = view.value.hint_ladder
+        function = str(hints[0]).strip() if hints else ""
+        name = _target_display_name(target_id)
+        if not function:
+            return name
+        return f"{name} — {function}"
 
     def observations(self) -> dict[str, Any]:
         """The CLI readout's numbers, as JSON (one readings core)."""
