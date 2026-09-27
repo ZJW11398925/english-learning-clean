@@ -163,24 +163,29 @@ def _core_counts(artifact: Path) -> tuple[int, int]:
 # ---------------------------------------------------------------------------
 
 
-def test_content_db_version_moves_to_five() -> None:
-    """The module constant says "5" — D-1's column move, explicit per
-    docs/DATA_MODEL.md §26.1 (the artifact's own copy is pinned in the
-    migrated C1/C3-R2/C3-c/C3-d/C3-R1 version tests)."""
+def test_content_db_version_has_moved_again_since_d1() -> None:
+    """D-1's own move said "5" (docs/DATA_MODEL.md §26.1, explicit per
+    §26.1); D-5R has since moved the generation to "6" with the
+    ``content_verification_profile`` table, so the pin reads the current
+    generation (the artifact's own copy is pinned in the migrated
+    C1/C3-R2/C3-c/C3-d/C3-R1 version tests)."""
 
-    assert CONTENT_DB_VERSION == "5"
+    assert CONTENT_DB_VERSION == "6"
 
 
-def test_the_table_set_is_unchanged_at_twenty_five() -> None:
-    """D-1 adds a column, not a table: the schema statement set is exactly
-    what C3-R2 left (25 tables), content_detection_fixture among them."""
+def test_the_table_set_grew_by_the_verification_profile() -> None:
+    """D-1 added a column, not a table: its schema statement set was exactly
+    what C3-R2 left (25 tables). D-5R then added one table of its own —
+    ``content_verification_profile``, 25 → 26 — beside
+    ``content_detection_fixture``, which stays."""
 
     names = tuple(
         statement.split("(", 1)[0].split()[-1]
         for statement in SCHEMA_STATEMENTS
     )
-    assert len(names) == 25
+    assert len(names) == 26
     assert "content_detection_fixture" in names
+    assert "content_verification_profile" in names
 
 
 def test_the_fixture_table_gains_the_source_error_type_column(

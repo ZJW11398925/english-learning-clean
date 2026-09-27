@@ -64,6 +64,7 @@ __all__ = [
     "ContentEvidenceCounts",
     "ContentStore",
     "ContentStoreError",
+    "ContentVerificationProfile",
     "open_read_only",
 ]
 
@@ -167,7 +168,34 @@ _REQUIRED_TABLES = (
     # Required like the rest: an artifact without it would answer every
     # provenance read with "no rows" — a silent skip of the whole dimension.
     "content_provenance",
+    # D-5R's verifier identity (25 → 26 tables). Required like the rest: a
+    # build that skipped the profile would answer "who verified this" with
+    # a silent "nobody recorded", and an artifact built before the face is
+    # stale in exactly the way the version bump declares (CONTENT_DB_VERSION
+    # "5" → "6") — refused at open, never read past.
+    "content_verification_profile",
 )
+
+
+@dataclass(frozen=True)
+class ContentVerificationProfile:
+    """D-5R: the artifact's verifier identity — the four profile columns.
+
+    ``content_provenance`` states the level each entity reached; this record
+    states **who did the verifying and against what**: the detector set's
+    digest (which entities' matchers ran, over which rule ordinals), the
+    fixture bytes that verification was judged on, and the pilot version
+    that names the matcher implementation
+    (:data:`elc.detection.pilot.PILOT_VERSION` on the CLI-built artifact).
+    Two builds over one world write byte-identical profiles — no timestamp,
+    the ``profile_id`` digests the other three fields — so the same id is
+    the same verification, not merely a similar-looking one.
+    """
+
+    profile_id: str
+    detector_set_digest: str
+    fixture_set_digest: str
+    pilot_version: str
 
 
 @dataclass(frozen=True)
@@ -714,6 +742,40 @@ class ContentStore:
             "ORDER BY entity_id"
         ).fetchall()
         return Ok(tuple((str(row[0]), str(row[1])) for row in rows))
+
+    def verification_profile(
+        self,
+    ) -> Result[ContentVerificationProfile | None]:
+        """The artifact's verifier identity (D-5R), or ``None`` for the
+        legitimate empty baseline.
+
+        The ``content_verification_profile`` row exists exactly when the
+        build was handed a non-empty detector registry — the pilot-built
+        artifact answers its one row, the default build answers ``Ok(None)``:
+        "no verification ran" is a declared state of the artifact, not a
+        lookup failure, so it is a value and not an ``Err``. A build with a
+        registry but zero passing entities still writes its row (the profile
+        records what *ran*; the provenance table records what *passed*).
+
+        This read is a report face only: the §8.1 readiness ladder reads
+        none of it, and neither does the runtime's eligibility check (which
+        reads the derived provenance levels, not this identity).
+        """
+
+        row = self._conn.execute(
+            "SELECT profile_id, detector_set_digest, fixture_set_digest, "
+            "pilot_version FROM content_verification_profile"
+        ).fetchone()
+        if row is None:
+            return Ok(None)
+        return Ok(
+            ContentVerificationProfile(
+                profile_id=str(row[0]),
+                detector_set_digest=str(row[1]),
+                fixture_set_digest=str(row[2]),
+                pilot_version=str(row[3]),
+            )
+        )
 
     # -- curriculum registry face ------------------------------------------
 

@@ -130,7 +130,7 @@ re-opens it):
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Protocol, Sequence, cast
+from typing import Mapping, Protocol, Sequence, cast
 
 from elc.planner.candidates import (
     CandidateSupply,
@@ -337,9 +337,12 @@ class SessionBudgetFace(Protocol):
     """P8-2's §5.2 view read (``TeachingController.get_session_budget_view``).
 
     A controller constructed without a policy source **refuses** this — an
-    ``Err`` this assembly records as a missing leg (the two budget controls then
-    read ``False``, which is the mapping's own fail-open posture, stated in
-    :mod:`elc.runtime.automatic_controls`).
+    ``Err`` this assembly records as a missing leg. The two budget *controls*
+    then read ``False`` (the mapping's own fail-open posture, stated in
+    :mod:`elc.runtime.automatic_controls`), and since D-5R the missing view
+    also **refuses the OPEN at the authorization point**
+    (:data:`elc.runtime.automatic_teaching.AUTO_SESSION_BUDGET_UNREADABLE`):
+    the read face stays fail-open, the automatic OPEN does not.
     """
 
     def get_session_budget_view(
@@ -378,6 +381,23 @@ class AutomaticTurnWiring:
     most permissive one (``elc.teaching.rollout.stage_allows_automatic``). A
     caller that means to run the automatic leg declares the stage its rollout
     is at; a caller that does not is in the state the shipped product is in.
+
+    **``provenance`` is D-5R's per-target verification face** — the
+    ``content_provenance`` rows of the artifact this process opened
+    (``entity_id → level``), handed in by the composition root so the
+    unit's eligibility refusal (:data:`elc.runtime.automatic_teaching.
+    TARGET_NOT_EXECUTABLY_VERIFIED` / ``PROVENANCE_FACE_MISSING``) can check
+    that a CURRENT_USER_ERROR candidate's target was **executably verified
+    in this deployment**. The two layers are deliberately distinct and both
+    exist: this runtime leg judges the *candidate about to open* (D-5R);
+    the release-level corpus gate (:func:`elc.teaching.rollout.
+    corpus_rollout_gate`, D-4) judges the *corpus before rollout*. ``None``
+    is the fail-closed default: a wiring without the face refuses every
+    gated candidate rather than assuming unverified content was verified.
+    **Revisit**: the canonical/BF gate text is updated to name the runtime
+    leg (today it names the release-level corpus gate, D-4's registration) —
+    at which point this paragraph's declared reading is promoted, not
+    changed.
     """
 
     planner_store: PlannerDecisionRecordStore
@@ -392,6 +412,7 @@ class AutomaticTurnWiring:
     user_id: object | None = None
     candidate_supply: CandidateSupply | None = None
     rollout_stage: RolloutStage | None = None
+    provenance: Mapping[str, str] | None = None
 
 
 # -- §4 step 3: the conversation leg -----------------------------------------
@@ -987,6 +1008,14 @@ def decide_automatic_turn(
     §15 template (``None`` when the run selected nothing — such a run is
     decided before any template is read, and an ALLOW without one is refused by
     the unit rather than guessed here).
+
+    D-5R adds the three authorization facts the unit's refusals read, each
+    derived here where its authority lives: whether the budget view was
+    really read (the plan keeps the view it was derived from — a leg that
+    failed read as ``None``), whether the selected candidate is a
+    CURRENT_USER_ERROR candidate (the gated source — its §6 source word is
+    the proposal's own ``origins``, never re-inferred), and the wiring's
+    provenance mapping (``None`` keeps the unit's face-missing refusal).
     """
 
     template: TeachingMomentRecord | None = None
@@ -1017,6 +1046,14 @@ def decide_automatic_turn(
         teaching=wiring.teaching,
         user_intent_scope=plan.scope.scope.value,
         trace=plan.run.trace,
+        session_budget_readable=isinstance(
+            plan.session_budget_view, SessionBudgetView
+        ),
+        candidate_provenance_gated=(
+            plan.selected is not None
+            and "CURRENT_USER_ERROR" in plan.selected.origins
+        ),
+        provenance=wiring.provenance,
     )
 
 

@@ -2,7 +2,8 @@
 
 docs/DATA_MODEL.md §24 (Normative) + PRODUCT_CONTRACT.md §8.1. Thirteen new
 tables (elc.content.build.SCHEMA_STATEMENTS, 11 → 24, grown to 25 by
-C3-R2's ``content_provenance``), a strict
+C3-R2's ``content_provenance`` and to 26 by D-5R's
+``content_verification_profile``), a strict
 ``content_src/evidence/<entity_id>.json`` authoring tree, and a read face
 (elc.curriculum.store.readiness_facts) that reads the eighteen row-backed
 §8.1 fact keys from the artifact and proves ``entity_row`` from the entity's
@@ -298,12 +299,13 @@ def test_the_artifact_has_exactly_the_declared_tables(
     built_content_db: Path,
 ) -> None:
     """The artifact's table set is SCHEMA_STATEMENTS (11 + 13 = 24, grown
-    to 25 by C3-R2's ``content_provenance``), nothing more, nothing less."""
+    to 25 by C3-R2's ``content_provenance`` and to 26 by D-5R's
+    ``content_verification_profile``), nothing more, nothing less."""
 
     declared = tuple(
         statement.split("(", 1)[0].split()[-1] for statement in SCHEMA_STATEMENTS
     )
-    assert len(declared) == 25
+    assert len(declared) == 26
     conn = sqlite3.connect(str(built_content_db))
     try:
         rows = conn.execute(
@@ -970,15 +972,17 @@ def test_an_evidence_less_target_reads_zero_rows_per_role(
 def test_the_artifact_declares_the_bumped_content_db_version(
     built_content_db: Path,
 ) -> None:
-    """C1 disposition F6, moved again by C3-R1, C3-R2 and D-1: the schema
-    generation is explicit (docs/DATA_MODEL.md §26.1 requires the version to
-    be updated explicitly, never guessed from the schema). C1 moved "1" →
-    "2" with the table set (11 → 24); C3-R1 moved "2" → "3" with a column
-    (``curriculum_link.mapping_class``); C3-R2 moved "3" → "4" with the
-    ``content_provenance`` table (24 → 25); D-1 moves "4" → "5" with the
-    nullable ``content_detection_fixture.source_error_type`` column, so a
-    reader can always tell the artifact generations apart."""
-    assert CONTENT_DB_VERSION == "5"
+    """C1 disposition F6, moved again by C3-R1, C3-R2, D-1 and D-5R: the
+    schema generation is explicit (docs/DATA_MODEL.md §26.1 requires the
+    version to be updated explicitly, never guessed from the schema). C1
+    moved "1" → "2" with the table set (11 → 24); C3-R1 moved "2" → "3"
+    with a column (``curriculum_link.mapping_class``); C3-R2 moved "3" →
+    "4" with the ``content_provenance`` table (24 → 25); D-1 moved "4" →
+    "5" with the nullable ``content_detection_fixture.source_error_type``
+    column; D-5R moves "5" → "6" with the
+    ``content_verification_profile`` table (25 → 26), so a reader can
+    always tell the artifact generations apart."""
+    assert CONTENT_DB_VERSION == "6"
     conn = sqlite3.connect(str(built_content_db))
     try:
         row = conn.execute(
@@ -987,7 +991,7 @@ def test_the_artifact_declares_the_bumped_content_db_version(
     finally:
         conn.close()
     assert row is not None
-    assert row[0] == CONTENT_DB_VERSION == "5"
+    assert row[0] == CONTENT_DB_VERSION == "6"
 
 
 def test_reviewed_explanation_requires_the_approved_lifecycle(

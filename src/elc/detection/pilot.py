@@ -36,6 +36,19 @@ from elc.detection.patterns import (
 from elc.detection.registry import DetectorRegistry
 from elc.detection.types import DetectionMatch, Matcher
 
+#: The pilot detector set's semantic version — D-5R's verifier identity. The
+#: word names **the matcher implementation set**, not the corpus: a change to
+#: any matcher's behaviour (its pattern, its word tables, its exclusion list)
+#: must bump this constant, because the verification profile the build writes
+#: (``content_verification_profile.pilot_version``, D-5R) records exactly this
+#: word as the "who verified" fact a provenance row cannot carry. A fixture
+#: or corpus change does not bump it — the fixture-set half of the profile's
+#: digests moves on its own — but a matcher change with a stale version would
+#: make two different detector sets claim the same identity. The initial
+#: value names the cut that landed the twelve (D-3), which is the set this
+#: module still is.
+PILOT_VERSION = "d3-pilot-1"
+
 #: The pilot roster, sorted: twelve EDITOR_REVIEWED R4 targets whose
 #: declared fixtures the matchers below must pass in full.
 PILOT_ENTITIES: tuple[str, ...] = (

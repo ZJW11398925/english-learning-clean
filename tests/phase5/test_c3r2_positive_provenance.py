@@ -787,16 +787,17 @@ def test_the_four_content_rows_still_read_go(
 # ---------------------------------------------------------------------------
 
 
-def test_content_db_version_moves_to_five(
+def test_content_db_version_moved_to_six_with_the_profile_table(
     built_content_db: Path,
 ) -> None:
-    """CONTENT_DB_VERSION started at "4" when this cut landed and has since
-    moved to "5" (D-1 added the nullable
-    ``content_detection_fixture.source_error_type`` column), in the module
-    and in the artifact's own content_meta (the explicit-bump discipline of
-    §26.1)."""
+    """CONTENT_DB_VERSION started at "4" when this cut landed, moved to
+    "5" when D-1 added the nullable
+    ``content_detection_fixture.source_error_type`` column, and to "6"
+    when D-5R added the ``content_verification_profile`` table — in the
+    module and in the artifact's own content_meta (the explicit-bump
+    discipline of §26.1)."""
 
-    assert CONTENT_DB_VERSION == "5"
+    assert CONTENT_DB_VERSION == "6"
     conn = sqlite3.connect(str(built_content_db))
     try:
         row = conn.execute(
@@ -804,21 +805,22 @@ def test_content_db_version_moves_to_five(
         ).fetchone()
     finally:
         conn.close()
-    assert row is not None and str(row[0]) == "5"
+    assert row is not None and str(row[0]) == "6"
 
 
-def test_the_artifact_has_exactly_twenty_five_tables(
+def test_the_artifact_has_exactly_twenty_six_tables(
     built_content_db: Path,
 ) -> None:
-    """The 25th table is content_provenance; the artifact's table set is
+    """The 25th table was content_provenance (this cut's); the 26th is
+    D-5R's content_verification_profile; the artifact's table set is
     exactly SCHEMA_STATEMENTS, nothing more, nothing less."""
 
     declared = tuple(
         statement.split("(", 1)[0].split()[-1]
         for statement in SCHEMA_STATEMENTS
     )
-    assert len(declared) == 25
-    assert declared[-1] == "content_provenance"
+    assert len(declared) == 26
+    assert declared[-1] == "content_verification_profile"
     conn = sqlite3.connect(str(built_content_db))
     try:
         rows = conn.execute(

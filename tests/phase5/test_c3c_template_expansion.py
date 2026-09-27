@@ -1210,13 +1210,16 @@ def test_a_subprocess_build_matches_the_bytes_under_pythonhashseed(
 # ---------------------------------------------------------------------------
 
 
-def test_content_db_version_stays_until_d1(built_content_db: Path) -> None:
+def test_content_db_version_tracks_the_current_generation(
+    built_content_db: Path,
+) -> None:
     """No schema change of this cut's own: the module constant and the built
     artifact moved "4" → "5" when D-1 later added the nullable
-    ``content_detection_fixture.source_error_type`` column, and read the
-    same generation."""
+    ``content_detection_fixture.source_error_type`` column, and "5" → "6"
+    when D-5R added the ``content_verification_profile`` table; they read
+    the current generation."""
 
-    assert CONTENT_DB_VERSION == "5"
+    assert CONTENT_DB_VERSION == "6"
     conn = sqlite3.connect(str(built_content_db))
     try:
         row = conn.execute(
@@ -1225,7 +1228,7 @@ def test_content_db_version_stays_until_d1(built_content_db: Path) -> None:
     finally:
         conn.close()
     assert row is not None
-    assert row[0] == CONTENT_DB_VERSION == "5"
+    assert row[0] == CONTENT_DB_VERSION == "6"
 
 
 def test_the_index_lists_105_and_100_documents_in_sorted_order() -> None:

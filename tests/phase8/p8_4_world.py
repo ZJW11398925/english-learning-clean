@@ -235,6 +235,29 @@ class World:
     lease: ConversationCoordinatorLease
 
 
+class _WorldPolicySource:
+    """The world's §5.1 policy leg for the session-budget view (D-5R 真值
+    随迁): the ``SessionBudgetPolicySource`` protocol over the real
+    ``UserConfigController`` — the ``user_id`` leg the protocol reads off its
+    source (the controller class carries none) and a verbatim
+    ``get_teaching_policy`` forward. Before D-5R the world passed
+    ``policy=None`` and its budget leg read as unavailable; D-5R makes the
+    automatic OPEN refuse an unreadable budget, so the world now wires the
+    same adapter shape the composition root does and the ALLOW chain reads a
+    real view (``policy_version = pv-p8-4`` off the row ``world()`` writes).
+    """
+
+    def __init__(self, controller: UserConfigController) -> None:
+        self._controller = controller
+
+    @property
+    def user_id(self) -> object:
+        return USER
+
+    def get_teaching_policy(self, user_id: object) -> Result[object]:
+        return self._controller.get_teaching_policy(user_id)  # type: ignore[arg-type,return-value]
+
+
 def world(
     db: sqlite3.Connection,
     fence: RuntimeEpochFence,
@@ -255,7 +278,6 @@ def world(
 
     store = SqliteConversationStore(db, fence)
     generation = AssemblyGenerationStore(db, fence)
-    teaching = TeachingController(SqliteTeachingStore(db, fence))
     planner = SqlitePlannerRecordStore(db, fence)
     ledger = SqliteLedgerStore(db, fence)
     learning = LearningController(SqliteLearningStore(db, fence))
@@ -263,6 +285,9 @@ def world(
         SqliteSchedulerStore(db, fence), learning=learning
     )
     user_config = UserConfigController(SqliteUserConfigStore(db, fence))
+    teaching = TeachingController(
+        SqliteTeachingStore(db, fence), policy=_WorldPolicySource(user_config)
+    )
     curriculum = CurriculumContentStore(ContentStore(content_path))
     targets = ContentBackedTeachingTargetProvider(content_path)
     real_supply = ContentBackedTargetSupply(content_path)

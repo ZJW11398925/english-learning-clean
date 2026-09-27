@@ -155,6 +155,7 @@ pre-D-3 artifact: the default answer stays zero EV, and
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sqlite3
@@ -237,8 +238,12 @@ DEFAULT_OUTPUT = REPO_ROOT / "build" / "content.db"
 #: ``"4"`` → ``"5"`` by D-1: the table set is unchanged, but
 #: ``content_detection_fixture`` gains the nullable ``source_error_type``
 #: column — the real foreign key from a POSITIVE_ERROR row to the declared
-#: §24.9 error_type it instantiates (N-C3R2-1 / EXT-C3-01 closed).
-CONTENT_DB_VERSION = "5"
+#: §24.9 error_type it instantiates (N-C3R2-1 / EXT-C3-01 closed). Bumped
+#: ``"5"`` → ``"6"`` by D-5R: the table set grows once more
+#: (``content_verification_profile``, 25 → 26), carrying the verifier
+#: identity the provenance rows cannot state — which detector set verified,
+#: against which fixture bytes, under which pilot version.
+CONTENT_DB_VERSION = "6"
 
 #: The authoring-source formats this build reads. A document that declares a
 #: different `format` / `format_version` is refused: the build may only read a
@@ -842,6 +847,26 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
     "CREATE TABLE content_provenance ("
     "entity_id TEXT PRIMARY KEY REFERENCES content_entity(entity_id),"
     "provenance_level TEXT NOT NULL"
+    ")",
+    # -- D-5R: the verifier identity (external review round 5, EXT-D2-01) ----
+    # One row when a detector registry ran (the build was handed a non-empty
+    # registry), no row otherwise (the default build's legitimate baseline):
+    # **what did the verifying** — the detector set's digest, the fixture
+    # bytes it was judged against, and the pilot version that names the
+    # matcher implementation. This is the fact a provenance row cannot
+    # carry: ``content_provenance`` states the level an entity reached,
+    # never who verified it or against what, so two builds from one source
+    # (an EV-bearing one and a registry-free one) were indistinguishable in
+    # their answer to "can I trust this level". No timestamp on purpose —
+    # the row is part of the artifact's deterministic bytes, and the
+    # ``profile_id`` is a digest of the other three columns, so two builds
+    # over one world (same source, same registry, same pilot version) write
+    # byte-identical profiles.
+    "CREATE TABLE content_verification_profile ("
+    "profile_id TEXT PRIMARY KEY,"
+    "detector_set_digest TEXT NOT NULL,"
+    "fixture_set_digest TEXT NOT NULL,"
+    "pilot_version TEXT NOT NULL"
     ")",
 )
 
@@ -2275,8 +2300,7 @@ _VERIFIED_PROVENANCE = PROVENANCE_LEVELS[2]
 
 
 def _provenance_rows(
-    source: ContentSource,
-    detector_registry: DetectorRegistry | None = None,
+    source: ContentSource, verified: frozenset[str]
 ) -> tuple[tuple[str, str], ...]:
     """C3-R2: derive one provenance level per **documented** entity.
 
@@ -2288,14 +2312,15 @@ def _provenance_rows(
     separate-document fact, so the authoring evidence file itself cannot
     promote its own entity — the build enforces that separation, while the
     reviewer's independence from the author is a process fact this loader
-    cannot check; EXT-C3-02). One step further, D-2's — when a detector
-    registry is handed in, every registered entity whose **full** fixture
-    set passes (:mod:`elc.detection`) is ``EXECUTABLY_VERIFIED``; the word
-    replaces whatever the two structural steps below it derived, being the
-    strongest earned claim. With no registry (the library default) or an
-    empty registry this step is skipped and the level set is exactly what
-    C3-R2 and D-1 produced; the CLI (D-3) hands in the pilot registry, so
-    the command-line artifact carries the verified rows.
+    cannot check; EXT-C3-02). One step further, D-2's — ``verified`` is the
+    set :func:`_run_registered_detectors` answered for this build (every
+    registered entity whose **full** fixture set passes), and each of its
+    entities is ``EXECUTABLY_VERIFIED``; the word replaces whatever the two
+    structural steps below it derived, being the strongest earned claim. An
+    empty set (no registry handed in — the library default — or an empty
+    one, or no entry passing) skips the step and the level set is exactly
+    what C3-R2 and D-1 produced; the CLI (D-3) hands in the pilot registry,
+    so the command-line artifact carries the verified rows.
     ``EMPIRICALLY_CALIBRATED`` is
     still derived by nothing: no real teaching run exists to calibrate
     against (rollout HOLD).
@@ -2311,9 +2336,6 @@ def _provenance_rows(
         for record in source.audits
         for entity_id in record.approved_entities
     }
-    verified: frozenset[str] = frozenset()
-    if detector_registry is not None:
-        verified = _run_registered_detectors(source, detector_registry)
 
     def _level(entity_id: str) -> str:
         if entity_id in verified:
@@ -2378,6 +2400,129 @@ def _run_registered_detectors(
         if outcome.all_passed and outcome.fixture_count > 0:
             verified.add(entry.entity_id)
     return frozenset(verified)
+
+
+# -- D-5R: the verifier identity ---------------------------------------------
+#
+# The profile's four facts, derived the same way the provenance levels are —
+# structurally, never self-declared. The digests are sha256 over stable
+# serializations, so one world (same source, same registry, same pilot
+# version) always writes one byte-identical row and no timestamp is needed.
+
+#: The hex characters kept of the profile digest compound — enough to name a
+#: profile without pretending to be the full digest (the full digests sit in
+#: their own columns; the id only has to be stable and collision-free for
+#: the artifact's lifetimes).
+_PROFILE_ID_HEX_CHARS = 16
+
+#: The field separator of one fixture line's stable serialization. A unit
+#: separator, not a newline: fixture texts are prose and may contain any
+#: character, and the line join needs a byte that cannot appear inside a
+#: field so the concatenation is injective.
+_FIXTURE_FIELD_SEP = "\x1f"
+
+
+def _detector_set_digest(registry: DetectorRegistry) -> str:
+    """D-5R: sha256 of the registry's entry set, in its sorted-entity-id
+    order (the registry's own iteration order), serialized as
+    ``{entity_id: [rule_ordinals]}``.
+
+    This is the "**who** did the verifying" half of the profile: two
+    registries that name different entities, or name the same entity over
+    different rule ordinals, produce different digests — while the *same*
+    registry contents (whatever built them) produce the same digest, so the
+    identity names the detector set and not the object that held it.
+    """
+
+    entries = {
+        entry.entity_id: list(entry.rule_ordinals)
+        for entry in registry.entries()
+    }
+    payload = json.dumps(entries, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _fixture_set_digest(
+    source: ContentSource, entity_ids: frozenset[str] | set[str]
+) -> str:
+    """D-5R: sha256 over the verified entities' full fixture rows, sorted by
+    ``(entity_id, ordinal)`` and serialized line by line — each line the six
+    declared fields joined by the unit separator (``entity_id``, ``ordinal``,
+    ``kind``, ``text``, ``expected``, ``source_error_type``; a null
+    ``source_error_type`` serializes as the empty field, never a placeholder
+    word).
+
+    This is the "**against what**" half of the profile: the fixtures are the
+    verification set (D-3's rule — never the implementation), so the digest
+    binds the awarded levels to the exact sentences they were earned on. A
+    fixture edit rewords the evidence of every level above baseline, and the
+    profile says so; an empty verified set digests the empty byte string.
+    """
+
+    documents = {
+        document.entity_id: document
+        for document in source.evidence
+        if document.entity_id in entity_ids
+    }
+    lines: list[str] = []
+    for entity_id in sorted(documents):
+        for row in sorted(
+            documents[entity_id].detection_fixtures,
+            key=lambda row: row.ordinal,
+        ):
+            lines.append(
+                _FIXTURE_FIELD_SEP.join(
+                    (
+                        entity_id,
+                        str(row.ordinal),
+                        row.kind,
+                        row.text,
+                        row.expected,
+                        row.source_error_type or "",
+                    )
+                )
+            )
+    return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
+
+
+def _verification_profile_row(
+    source: ContentSource,
+    detector_registry: DetectorRegistry | None,
+    verified: frozenset[str],
+    pilot_version: str,
+) -> tuple[tuple[str, str, str, str], ...]:
+    """D-5R: the profile's one row, or none for an absent/empty registry.
+
+    Two states, exactly: a non-empty registry ran a verification, so the
+    artifact carries exactly one profile row (what ran, against what, under
+    which pilot version); no registry (or an empty one) verified nothing
+    and the table stays empty — the default build's legitimate baseline,
+    byte-identical with the pre-D-5R artifact modulo the schema's own new
+    empty table. ``verified`` is the set
+    :func:`_run_registered_detectors` answered for this same build (the
+    fixture digest reads only the entities whose full fixture sets actually
+    passed). ``pilot_version`` is the caller's naming of the detector set
+    (the CLI passes :data:`elc.detection.pilot.PILOT_VERSION`); an empty
+    string is a legal "unnamed set" and still digests into the id.
+    """
+
+    if detector_registry is None or not detector_registry.entries():
+        return ()
+    detector_digest = _detector_set_digest(registry=detector_registry)
+    fixture_digest = _fixture_set_digest(source, verified)
+    profile_id = hashlib.sha256(
+        _FIXTURE_FIELD_SEP.join(
+            (detector_digest, fixture_digest, pilot_version)
+        ).encode("utf-8")
+    ).hexdigest()[:_PROFILE_ID_HEX_CHARS]
+    return (
+        (
+            profile_id,
+            detector_digest,
+            fixture_digest,
+            pilot_version,
+        ),
+    )
 
 
 def _check_references(
@@ -2470,6 +2615,7 @@ def _write_rows(
     conn: sqlite3.Connection,
     source: ContentSource,
     detector_registry: DetectorRegistry | None,
+    pilot_version: str,
 ) -> None:
     conn.executemany(
         "INSERT INTO content_meta (key, value) VALUES (?, ?)",
@@ -2611,7 +2757,7 @@ def _write_rows(
             for edge in source.prerequisites
         ),
     )
-    _write_evidence_rows(conn, source, detector_registry)
+    _write_evidence_rows(conn, source, detector_registry, pilot_version)
 
 
 def _one(row: _T | None) -> tuple[_T, ...]:
@@ -2624,6 +2770,7 @@ def _write_evidence_rows(
     conn: sqlite3.Connection,
     source: ContentSource,
     detector_registry: DetectorRegistry | None,
+    pilot_version: str,
 ) -> None:
     """C1: the readiness evidence rows, in table-creation order.
 
@@ -2633,7 +2780,18 @@ def _write_evidence_rows(
     array cannot change the artifact's bytes. A row is written only for a
     block the source states: no table is padded, and an entity with no
     evidence document contributes nothing.
+
+    D-5R: the EV derivation runs **once** for the build (the verified set
+    both the provenance rows and the verification profile read), and the
+    profile row — the verifier identity — is written beside the provenance
+    rows it explains.
     """
+
+    verified = (
+        _run_registered_detectors(source, detector_registry)
+        if detector_registry is not None
+        else frozenset()
+    )
 
     evidence = tuple(
         document
@@ -2867,7 +3025,17 @@ def _write_evidence_rows(
     conn.executemany(
         "INSERT INTO content_provenance (entity_id, provenance_level) "
         "VALUES (?, ?)",
-        _provenance_rows(source, detector_registry),
+        _provenance_rows(source, verified),
+    )
+    # D-5R: the verifier identity — one row when a registry ran, none when
+    # it did not (the deterministic-baseline rule is on the row helper).
+    conn.executemany(
+        "INSERT INTO content_verification_profile ("
+        "profile_id, detector_set_digest, fixture_set_digest, pilot_version"
+        ") VALUES (?, ?, ?, ?)",
+        _verification_profile_row(
+            source, detector_registry, verified, pilot_version
+        ),
     )
 
 
@@ -2877,24 +3045,30 @@ def build_content_db(
     content_src_dir: Path = CONTENT_SRC_DIR,
     curriculum_dir: Path = CURRICULUM_DIR,
     detector_registry: DetectorRegistry | None = None,
+    verification_pilot_version: str = "",
 ) -> BuildReport:
     """Build (or rebuild) content.db from the authoring source.
 
     Deterministic and idempotent: same source **and the same detector
     registry handed in** → same rows in the same order → same bytes (the
-    EV derivation is part of the input, so two registries that verify
-    different target sets produce honestly different artifacts — D-5R's
-    verification profile makes that difference visible in the artifact).
-    The artifact is written to a temporary sibling and moved into
-    place, so a failed build never leaves a half-written content.db.
+    EV derivation is part of the input, and D-5R's
+    ``content_verification_profile`` row records which detector set verified,
+    against which fixture bytes, under which pilot version — no timestamp,
+    so one world always writes byte-identical artifacts).
 
     ``detector_registry`` (D-2) is the injection seam for the
     ``EXECUTABLY_VERIFIED`` derivation: ``None`` — the library default —
     builds exactly the pre-D-2 artifact, byte for byte, so the default
-    answer stays zero EV. :func:`main` (the CLI, D-3) passes the
-    pilot-registered :data:`elc.detection.GLOBAL_REGISTRY` instead (see
-    :func:`elc.detection.pilot.register_pilot`). A handed-in registry is
-    validated entry by entry and executed (see :func:`_provenance_rows`).
+    answer stays zero EV (D-5R adds the schema's own new **empty**
+    ``content_verification_profile`` table, and nothing else). :func:`main`
+    (the CLI, D-3) passes the pilot-registered
+    :data:`elc.detection.GLOBAL_REGISTRY` together with
+    ``verification_pilot_version=pilot.PILOT_VERSION``, so the command-line
+    artifact carries the verified rows **and** the verifier identity that
+    says who earned them (D-5R). ``verification_pilot_version`` only feeds
+    the profile row — it changes no level — and a registry-free build never
+    reads it. A handed-in registry is validated entry by entry and executed
+    (see :func:`_provenance_rows` and :func:`_run_registered_detectors`).
     """
 
     source = load_source(content_src_dir, curriculum_dir)
@@ -2909,7 +3083,9 @@ def build_content_db(
         conn.execute("BEGIN IMMEDIATE")
         for statement in SCHEMA_STATEMENTS:
             conn.execute(statement)
-        _write_rows(conn, source, detector_registry)
+        _write_rows(
+            conn, source, detector_registry, verification_pilot_version
+        )
         conn.execute("COMMIT")
     except BaseException:
         conn.close()
@@ -2939,9 +3115,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     detector set (:func:`elc.detection.pilot.register_pilot` — twelve
     matchers) into :data:`elc.detection.GLOBAL_REGISTRY` and hands the
     registry to :func:`build_content_db`, so the command-line artifact
-    carries the ``EXECUTABLY_VERIFIED`` rows the matchers earned. The
-    library API keeps its registry-free default (zero EV, byte-identical
-    to the pre-D-2 artifact). The assembly is once per process: the
+    carries the ``EXECUTABLY_VERIFIED`` rows the matchers earned. D-5R
+    passes the pilot set's version beside it
+    (:data:`elc.detection.pilot.PILOT_VERSION`), so the artifact's
+    ``content_verification_profile`` row names the detector set that did
+    the verifying. The library API keeps its registry-free default (zero
+    EV, an empty profile table). The assembly is once per process: the
     registry refuses duplicate registrations, so a second ``main`` call
     reuses the already-assembled :data:`GLOBAL_REGISTRY` instead of
     re-registering it.
@@ -2974,6 +3153,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             content_src_dir=Path(args.content_src),
             curriculum_dir=Path(args.curriculum),
             detector_registry=GLOBAL_REGISTRY,
+            verification_pilot_version=pilot.PILOT_VERSION,
         )
     except BuildError as error:
         print(f"content.db build refused: {error}", file=sys.stderr)

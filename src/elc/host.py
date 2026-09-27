@@ -59,21 +59,29 @@ the permissive reading.
 
 **Three assembly facts, registered where the reader trips over them:**
 
-1. ``TeachingController(store, policy=None)`` — the §5.1 policy source would
-   have to be the user-config controller, and that class carries no ``user_id``
-   attribute for the ``SessionBudgetPolicySource`` protocol to read, so every
-   assembly in the repository (this one included) passes ``policy=None`` and
-   the session-budget view answers its documented refusal — the ``Err`` the
-   automatic assembly records as a missing budget leg, with the two budget
-   controls reading False (the mapping's own fail-open posture). Revisit: the
-   SessionBudget split cut re-derives the policy leg (p10-3's fail-open
-   adjudication covers the guard half; this is its budget half).
+1. ``TeachingController(store, policy=_UserConfigPolicySource(...))`` — the
+   §5.1 policy source is the user-config controller wrapped in this module's
+   thin adapter (D-5R): the controller class itself carries no ``user_id``
+   attribute for the ``SessionBudgetPolicySource`` protocol to read, so the
+   adapter adds exactly that (the Local V1 user) and forwards
+   ``get_teaching_policy`` untouched — "shaped exactly like the real
+   controller so a caller's adapter is a forward, not a translation"
+   (``elc.teaching.budget``). With the leg wired, the full chain's
+   session-budget view reads for real (``policy_version=None`` until a
+   policy row is written — "no policy is configured" is the honest answer,
+   distinct from "no policy read face was wired", which the full chain no
+   longer is); and the automatic OPEN **fail-closed** on an unreadable
+   budget (:data:`elc.runtime.automatic_teaching.
+   AUTO_SESSION_BUDGET_UNREADABLE`) — D-5R closed the p10-3 fail-open
+   adjudication's budget half at the authorization posture, so this
+   assembly can no longer produce the world where the view is unreadable
+   and the OPEN proceeds anyway (external review round 5, EXT-D5-01).
 2. ``LOCAL_V1_USER_ID`` — Local V1 has exactly one user, and the only user
    identity the repository names is the learning store's adjudicated scope
    word (``LOCAL_V1_DEFAULT_USER_SCOPE``); the full chain binds it as the
-   ``UserId`` every user-keyed leg reads (the wiring, the persona views and
-   both projection executors). No user value is invented anywhere in this
-   module.
+   ``UserId`` every user-keyed leg reads (the wiring, the policy adapter,
+   the persona views and both projection executors). No user value is
+   invented anywhere in this module.
 3. ``content_rollout_gate()`` reads **artifact facts**, not live ones: the
    four-row answer is the corpus gate over the built ``content.db`` this host
    was opened with (the pilot build answers a fourth-row GO 12 usable / 40
@@ -81,12 +89,23 @@ the permissive reading.
    answer only — rollout HOLD has causes outside it (the stage declaration,
    the session-budget split, the opening adjudication) — and it manufactures
    neither verdict: an unreadable artifact or a missing content leg comes
-   back as the ``Err`` it is.
+   back as the ``Err`` it is. **D-5R**: the same artifact facts feed the
+   automatic wiring's ``provenance`` mapping (read once at assembly; a
+   failing read fails the open — fail-closed assembly), which is the
+   runtime-level per-target half of the same fifth leg the gate reads at
+   release level.
 
 ``secrets`` is held, never read: the V1 secret seam belongs to the provider
 (RA §24.3 — resolve at send time), and the key never enters app.db, this module
 or any log. It is kept here so the process has one place that knows which
 source it opened with; nothing in this module calls ``resolve``.
+
+``candidate_supply`` passes through to the automatic wiring verbatim
+(``None`` — the production value — means the generators run over the ports).
+It is the wiring field's own declared seam ("a caller that already holds this
+cycle's supply — an acceptance test, or an orchestrator that generated
+candidates earlier"), and the composition root forwards it rather than
+forcing such a caller to rebuild the assembly it just asked for.
 """
 
 from __future__ import annotations
@@ -110,6 +129,7 @@ from elc.learning.store import LOCAL_V1_DEFAULT_USER_SCOPE, SqliteLearningStore
 from elc.persona.provider import PersonaProvider
 from elc.persona.runtime import PersonaRuntime
 from elc.persona.types import CharacterPackageRecord
+from elc.planner.candidates import CandidateSupply
 from elc.planner.ledger_store import SqliteLedgerStore
 from elc.platform.db.connection import DEFAULT_MIGRATIONS_DIR, connect
 from elc.platform.db.decision_cycle_store import SqliteDecisionCycleStore
@@ -172,6 +192,43 @@ __all__ = ["LOCAL_V1_USER_ID", "Host", "open_host"]
 #: chain reads. The value lives in exactly one place — the learning store's
 #: constant — and this module invents no other.
 LOCAL_V1_USER_ID = UserId(LOCAL_V1_DEFAULT_USER_SCOPE)
+
+
+class _UserConfigPolicySource:
+    """The §5.1 half of the session-budget view, wired from the real
+    user-config controller (D-5R, assembly fact 1).
+
+    A thin adapter, exactly the two members the
+    ``SessionBudgetPolicySource`` protocol names: the ``user_id`` the
+    protocol must read off its source (assembly fact 2 — the controller
+    class carries none of its own) and a verbatim forward of
+    ``get_teaching_policy`` ("shaped exactly like the real controller so the
+    adapter is a forward, not a translation" — ``elc.teaching.budget``). It
+    adds nothing, defaults nothing and reads nothing on its own: an
+    ``Ok(None)`` ("never written") and an ``Err`` (the read's own failure)
+    reach the view untouched, which is what keeps "no policy is configured"
+    and "the policy read failed" the two different facts the view refuses to
+    conflate.
+    """
+
+    __slots__ = ("_controller", "_user_id")
+
+    def __init__(
+        self, controller: UserConfigController, user_id: UserId
+    ) -> None:
+        self._controller = controller
+        self._user_id = user_id
+
+    @property
+    def user_id(self) -> UserId:
+        """The user whose policy this source serves (the protocol's leg)."""
+
+        return self._user_id
+
+    def get_teaching_policy(self, user_id: UserId) -> Result[object]:
+        """The §5.1 read, forwarded verbatim (never a translation)."""
+
+        return cast("Result[object]", self._controller.get_teaching_policy(user_id))
 
 
 @dataclass(frozen=True)
@@ -308,6 +365,7 @@ def open_host(
     migrations_dir: Path = DEFAULT_MIGRATIONS_DIR,
     content_db_path: str | Path | None = None,
     rollout_stage: RolloutStage | None = None,
+    candidate_supply: CandidateSupply | None = None,
 ) -> Host:
     """Assemble the whole loop over one app.db (see the module docstring).
 
@@ -315,7 +373,15 @@ def open_host(
     full chain over that built artifact (read-only — the store refuses a
     writable connection by construction) and binds ``rollout_stage`` into the
     automatic wiring verbatim (``None`` keeps the fail-closed default; this
-    function never substitutes a stage of its own).
+    function never substitutes a stage of its own). ``candidate_supply``
+    passes through to the wiring verbatim (``None`` — the production value —
+    runs the generators over the ports; see the module docstring).
+
+    D-5R: the full chain's session-budget leg is wired (assembly fact 1) and
+    the wiring's ``provenance`` mapping is read from the artifact at assembly
+    time — a failing provenance read **fails this open** (fail-closed
+    assembly: a host that cannot say which targets are executably verified
+    must not silently run as if none were, or all were).
 
     Raises what the infrastructure raises (``sqlite3.Error`` /
     ``MigrationError`` / ``ContentStoreError`` / ``OSError``) after closing
@@ -355,11 +421,29 @@ def open_host(
             user_config = UserConfigController(SqliteUserConfigStore(db, fence))
             learning_store = SqliteLearningStore(db, fence)
             learning_controller = LearningController(learning_store)
+            # D-5R (assembly fact 1): the policy leg is wired through the
+            # thin adapter, so the full chain's budget view reads for real
+            # and the automatic OPEN's budget refusal has a face that can
+            # actually answer.
             teaching = TeachingController(
-                SqliteTeachingStore(db, fence), policy=None
+                SqliteTeachingStore(db, fence),
+                policy=_UserConfigPolicySource(user_config, LOCAL_V1_USER_ID),
             )
             content_store = ContentStore(content_path)
             curriculum = CurriculumContentStore(content_store)
+            # D-5R: the per-target verification face, read once at assembly.
+            # An Err here is a build-time fact this host refuses to guess
+            # around: fail-closed assembly, surfaced as ContentStoreError so
+            # the except clause below releases the connections it opened.
+            provenance_read = content_store.provenance_levels()
+            if isinstance(provenance_read, Err):
+                raise ContentStoreError(
+                    "the content artifact's provenance table could not be"
+                    f" read ({provenance_read.error.message}); refusing to"
+                    " assemble a host whose automatic leg cannot tell a"
+                    " verified target from an unverified one"
+                )
+            provenance = dict(provenance_read.value)
             targets = ContentBackedTeachingTargetProvider(content_path)
             supply = ContentBackedTargetSupply(content_path)
             silent = ContentBackedSilentTargets(supply)
@@ -416,8 +500,9 @@ def open_host(
                 ledger=cast("LedgerTurnFace", ledger),
                 session_budget=teaching,
                 user_id=LOCAL_V1_USER_ID,
-                candidate_supply=None,
+                candidate_supply=candidate_supply,
                 rollout_stage=rollout_stage,
+                provenance=provenance,
             )
         coordinator = ConversationCoordinator(
             lease=lease,

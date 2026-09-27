@@ -4,6 +4,10 @@ This module is the *one* place where a Planner answer becomes an automatic
 teaching attempt:
 
     PlanningOutcome ─► [CP2 planner half: durable records]  (P8-0's port)
+                    ─► durable Gate trace replay             (P8-1's F1)
+                    ─► D-5R authorization refusals           (budget leg +
+                    │                                         EV eligibility)
+                    ├─ refused ─► GateDecision(DENY) only
                     ─► Gate OPEN (AUTOMATIC)                (P8-1's profile)
                     ─► ALLOW  ─► CP2 five-fact atomic open  (P8-1's controller)
                        DENY   ─► GateDecision(DENY) only
@@ -18,6 +22,24 @@ Gate at all (RA §4's 9A/9B Normal Persona arm: nothing was judged worth
 teaching, so the turn is an ordinary one). A Gate DEGRADED answer is
 persisted as a status row and **no** GateDecision — critical state unknown
 is never laundered into a synthetic DENY (docs/DATA_MODEL.md §14.1).
+
+**The two D-5R authorization refusals** (external review round 5). Between
+the replay and the Gate, the unit refuses an OPEN that the caller's own
+legs cannot authorize: a session-budget view that could not be read
+(:data:`AUTO_SESSION_BUDGET_UNREADABLE` — an automatic open no longer
+proceeds because its budget leg failed open) and a CURRENT_USER_ERROR
+candidate whose target's provenance does not reach the executable floor
+(:data:`TARGET_NOT_EXECUTABLY_VERIFIED` /
+:data:`PROVENANCE_FACE_MISSING` — the runtime-level per-target half of
+D-4's fifth gate leg, enforced where an OPEN is actually authorized).
+Both deny **before** the Gate is asked — their reason words are this
+module's, not the Gate's frozen vocabulary — and both record the very
+shape a Gate DENY leaves, so the replay treats them identically. The
+read-face mapping that answers ``False`` for an absent view
+(:mod:`elc.runtime.automatic_controls`) is untouched: that mapping derives
+the Gate's controls and stays fail-open; this posture consumes its answer
+and is fail-closed — the exact split that module's Revisit registered for
+"the cut that makes the budget leg mandatory for the automatic path".
 
 A cycle's Gate trace is written **once**. Before the Gate is asked, the
 unit reads the cycle's own durable trace; when one exists, the unit
@@ -108,8 +130,9 @@ equality, the way the ``CONVERSATION_WINDOW_MAX_TURNS`` pair is held.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Mapping, Protocol
 
+from elc.content.types import PROVENANCE_LEVELS
 from elc.planner.records import PlannerCycleRecords
 from elc.platform.types import (
     ActionId,
@@ -138,6 +161,7 @@ from elc.teaching.gate import (
     GateVerdict,
     decide_automatic_open,
 )
+from elc.teaching.rollout import EXECUTABLE_VERIFICATION_FLOOR
 from elc.teaching.types import (
     AuthorizationBasis,
     GateDecisionContext,
@@ -158,7 +182,10 @@ if TYPE_CHECKING:
     from elc.teaching.store import CP2OpenRequest
 
 __all__ = [
+    "AUTO_SESSION_BUDGET_UNREADABLE",
+    "PROVENANCE_FACE_MISSING",
     "TEACHING_OPEN_CONTRACT_ID",
+    "TARGET_NOT_EXECUTABLY_VERIFIED",
     "AutomaticTeachingResult",
     "AutomaticTeachingTurn",
     "PlannerDecisionRecordStore",
@@ -175,6 +202,32 @@ __all__ = [
 #: ``elc.runtime.controller.TEACHING_OPEN_CONTRACT_ID`` declares (see the
 #: module docstring: mirrored on purpose, held equal by a test).
 TEACHING_OPEN_CONTRACT_ID = "gc-teaching-open"
+
+#: D-5R's budget refusal code (external review round 5, EXT-D5-01): the
+#: reason a durable GateDecision DENY carries when the session-budget view
+#: could not be read at the authorization point. A word of this cut's — the
+#: Gate's frozen vocabulary (``elc.teaching.gate``) has
+#: ``AUTO_SESSION_BUDGET_EXHAUSTED`` for "the budget says stop" and this
+#: refusal is a different fact ("the budget could not be read at all"), so
+#: it does not borrow that word. The mapping's own fail-open reading for an
+#: absent view (:mod:`elc.runtime.automatic_controls`) is untouched; this
+#: code lives at the authorization posture that consumes the mapping.
+AUTO_SESSION_BUDGET_UNREADABLE = "AUTO_SESSION_BUDGET_UNREADABLE"
+
+#: D-5R's eligibility refusal code: the selected candidate's source is
+#: CURRENT_USER_ERROR and its target's provenance could not be established
+#: at (or above) :data:`elc.teaching.rollout.EXECUTABLE_VERIFICATION_FLOOR`
+#: — the runtime-level per-target leg of the fifth gate leg (D-4 put the
+#: release-level corpus gate in ``elc.teaching.rollout``; this is the same
+#: requirement, enforced per candidate at the only place an OPEN can be
+#: authorized).
+TARGET_NOT_EXECUTABLY_VERIFIED = "TARGET_NOT_EXECUTABLY_VERIFIED"
+
+#: D-5R's eligibility refusal code for the missing **face**: the wiring
+#: carried no provenance mapping at all, so no target could be established
+#: verified — stated separately from the per-target code above because the
+#: two refusals have different repairs (wire the face vs. fix the level).
+PROVENANCE_FACE_MISSING = "PROVENANCE_FACE_MISSING"
 
 
 def automatic_moment_id(turn_id: TurnId) -> MomentId:
@@ -423,6 +476,101 @@ def _refusal(code: DomainErrorCode, message: str) -> Err[Any]:
     return Err(DomainError(code=code, message=message))
 
 
+def _provenance_reaches_floor(level: str | None) -> bool:
+    """D-5R: does one provenance level reach the D-4 floor on the
+    vocabulary's own ladder?
+
+    The runtime mirror of :func:`elc.teaching.rollout.
+    _provenance_reaches_executable` — same floor
+    (:data:`elc.teaching.rollout.EXECUTABLE_VERIFICATION_FLOOR`), same
+    fail-closed readings (a ``None`` level and a word the ladder does not
+    carry both fail), restated rather than imported because the rollout
+    helper is that module's private and this module must not reach into it
+    (the repository's restate-and-pin rule); the equality is held by
+    ``tests/phase8/test_d5r_authorization.py``.
+    """
+
+    if level is None:
+        return False
+    try:
+        return (
+            PROVENANCE_LEVELS.index(level)
+            >= PROVENANCE_LEVELS.index(EXECUTABLE_VERIFICATION_FLOOR)
+        )
+    except ValueError:
+        return False
+
+
+def _authorization_refusal(
+    *,
+    turn: AutomaticTeachingTurn,
+    candidate_id: str,
+    records: PlannerCycleRecords,
+    controls: TeachingControlFacts,
+    teaching: TeachingOpenAuthority,
+    reasons: tuple[str, ...],
+) -> Result[AutomaticTeachingResult]:
+    """D-5R: record one pre-Gate authorization refusal, stage-refusal shape.
+
+    The stage refusal composes a failed leg into
+    ``automatic_teaching_enabled`` and lets the Gate DENY; these two
+    refusals (budget unreadable, target not executably verified) carry
+    reason words the Gate's frozen vocabulary does not have, so they deny
+    **before** the Gate is asked and record the very same durable shape the
+    Gate's own DENY leaves: GateExecutionStatus(SUCCEEDED) +
+    GateDecision(DENY), one short transaction through the unit's own faces,
+    and a :class:`GateVerdict` answering the durable words — never a silent
+    skip, never a second write on re-entry (the replay reads these rows
+    exactly as it reads the Gate's).
+
+    A write failure is the caller's ``Err``, verbatim — the authorization
+    is not recorded, so nothing downstream may treat the turn as denied.
+    """
+
+    status_record = GateExecutionStatusRecord(
+        gate_execution_status_id=automatic_gate_execution_status_id(
+            turn.turn_id
+        ),
+        decision_cycle_id=turn.cycle.decision_cycle_id,
+        moment_id=None,  # an OPEN binds the DecisionCycle, not a moment
+        gate_context=GateDecisionContext.OPEN,
+        authorization_basis=AuthorizationBasis.DECISION_CYCLE,
+        authorization_status=controls.authorization_status,
+        status=GateExecutionStatusValue.SUCCEEDED,
+        missing_or_unknown=(),
+    )
+    persisted = teaching.record_gate_denial(
+        status_record,
+        GateDecisionRecord(
+            gate_decision_id=automatic_gate_decision_id(turn.turn_id),
+            decision_cycle_id=turn.cycle.decision_cycle_id,
+            candidate_id=candidate_id,
+            context=GateDecisionContext.OPEN,
+            decision=GateDecisionValue.DENY,
+            reason_codes=reasons,
+            policy_version=PolicyVersion(GATE_POLICY_VERSION),
+        ),
+    )
+    if not isinstance(persisted, Ok):
+        return persisted
+    return Ok(
+        AutomaticTeachingResult(
+            gate_verdict=GateVerdict(
+                execution_status="SUCCEEDED",
+                decision="DENY",
+                primary_reason=reasons[0],
+                reasons=reasons,
+                missing_or_unknown=(),
+                policy_version=PolicyVersion(GATE_POLICY_VERSION),
+            ),
+            moment_id=None,
+            action_id=None,
+            planner_records=records,
+            normal_persona_generation=True,
+        )
+    )
+
+
 def _moment_template_refusal(
     turn: AutomaticTeachingTurn,
 ) -> Err[Any] | None:
@@ -487,10 +635,13 @@ def decide_automatic_teaching(
     teaching: TeachingOpenAuthority,
     user_intent_scope: str = "OPEN",
     trace: object | None = None,
+    session_budget_readable: bool = True,
+    candidate_provenance_gated: bool = False,
+    provenance: Mapping[str, str] | None = None,
 ) -> Result[AutomaticTeachingResult]:
     """One automatic decision: Planner records first, then the cycle's
-    durable Gate trace if it has one, then the Gate, then the CP2 open
-    (RA §4 9A–10B, §6).
+    durable Gate trace if it has one, then the unit's two D-5R authorization
+    refusals, then the Gate, then the CP2 open (RA §4 9A–10B, §6).
 
     ``outcome`` is the kernel's own answer
     (:class:`elc.planner.types.PlanningOutcome`; typed as ``object`` here
@@ -511,10 +662,40 @@ def decide_automatic_teaching(
     reachable in production (a ``JUST_CHAT`` turn must not be auto-opened). The
     default keeps every pre-P8-4 caller behaving exactly as before.
 
+    **D-5R's two authorization legs** (external review round 5; the three
+    keywords default to the pre-D-5R behaviour so every direct caller — and
+    every pre-D-5R wiring — behaves exactly as before):
+
+    - ``session_budget_readable`` — whether the session-budget view was
+      actually read for this cycle. ``False`` (the wiring's budget leg came
+      back ``Err`` / ``DEPENDENCY_UNAVAILABLE`` / absent, so no view exists)
+      **refuses the automatic OPEN** with
+      :data:`AUTO_SESSION_BUDGET_UNREADABLE` — the stage-allowed world no
+      longer reads an unreadable budget as "no budget fact" (the mapping's
+      fail-open posture, :mod:`elc.runtime.automatic_controls`, is the read
+      face's and stays; this is the authorization posture that consumes it —
+      exactly the cut that module's Revisit registered). The refusal is the
+      stage refusal's durable shape: a recorded DENY, then an ordinary turn.
+    - ``candidate_provenance_gated`` / ``provenance`` — the runtime-level
+      per-target leg of the fifth gate leg. When the selected candidate's
+      source is CURRENT_USER_ERROR (the only gated source, as in D-4's
+      corpus gate), the candidate's target must reach
+      :data:`elc.teaching.rollout.EXECUTABLE_VERIFICATION_FLOOR` on the
+      wiring's provenance mapping. A mapping that is absent entirely
+      (:data:`PROVENANCE_FACE_MISSING`), a target with no row or a
+      below-floor or unknown level (:data:`TARGET_NOT_EXECUTABLY_VERIFIED`)
+      each refuse the OPEN — the kernel's R4 hard condition
+      (``ELIGIBLE_CURRENT_USER_ERROR_READINESS``, BF-02 §10) says the
+      *content* is detection-ready; this leg says *this deployment has
+      actually executed the detector* on it. Other sources are never gated
+      (``kernel.py`` stays untouched).
+
     A cycle the Gate already decided is not decided again: the durable trace
     is replayed (:func:`_durable_gate_replay`), so a re-entry answers with
     the durable verdict and writes nothing, whatever the fresh facts would
-    have produced.
+    have produced — the two D-5R refusals sit **after** the replay for the
+    same reason: their recorded DENY is a durable fact a re-entry replays,
+    never re-decides.
     """
 
     # 1. The Planner half of CP2 goes durable first (P8-0's port) — this is
@@ -558,14 +739,55 @@ def decide_automatic_teaching(
     if replay is not None:
         return replay
 
-    # 4. The lock fact is BF-03 §14's, read from the durable
+    # 4. D-5R's two authorization refusals — each fires only where it can
+    #    change an outcome (a run the Gate would otherwise hear) and each
+    #    records the stage refusal's durable shape (see
+    #    :func:`_authorization_refusal`), then leaves the turn an ordinary
+    #    one. Ordered before the lock read on purpose: an unreadable budget
+    #    or an unverified target denies the OPEN itself, whatever the lock
+    #    would have said, and the denial names that fact.
+    if not session_budget_readable:
+        return _authorization_refusal(
+            turn=turn,
+            candidate_id=candidate_id,
+            records=records,
+            controls=controls,
+            teaching=teaching,
+            reasons=(AUTO_SESSION_BUDGET_UNREADABLE,),
+        )
+    if candidate_provenance_gated:
+        target = (
+            str(turn.moment.focus_target.target_id)
+            if turn.moment is not None
+            else None
+        )
+        codes: tuple[str, ...]
+        if provenance is None:
+            codes = (PROVENANCE_FACE_MISSING,)
+        elif not _provenance_reaches_floor(
+            provenance.get(target) if target is not None else None
+        ):
+            codes = (TARGET_NOT_EXECUTABLY_VERIFIED,)
+        else:
+            codes = ()
+        if codes:
+            return _authorization_refusal(
+                turn=turn,
+                candidate_id=candidate_id,
+                records=records,
+                controls=controls,
+                teaching=teaching,
+                reasons=codes,
+            )
+
+    # 5. The lock fact is BF-03 §14's, read from the durable
     #    ``active_teaching_lock`` row (never declared, never hard-coded):
     #    any existing lock denies an OPEN.
     lock = teaching.observed_lock_state(turn.conversation_id)
     if isinstance(lock, Err):
         return lock
 
-    # 5. The Gate's AUTOMATIC OPEN profile (pure; the Planner facts are the
+    # 6. The Gate's AUTOMATIC OPEN profile (pure; the Planner facts are the
     #    inputs just read back from the durable rows, the critical facts are
     #    the caller's declarations).
     verdict = decide_automatic_open(
@@ -613,7 +835,7 @@ def decide_automatic_teaching(
         missing_or_unknown=verdict.missing_or_unknown,
     )
 
-    # 6. DEGRADED: one status row, no GateDecision (docs/DATA_MODEL.md
+    # 7. DEGRADED: one status row, no GateDecision (docs/DATA_MODEL.md
     #    §14.1) — and no moment.
     if verdict.decision is None:
         persisted = teaching.record_gate_degraded(status_record)
@@ -629,7 +851,7 @@ def decide_automatic_teaching(
             )
         )
 
-    # 7. DENY: two facts (status + decision), never a Moment / lock / action.
+    # 8. DENY: two facts (status + decision), never a Moment / lock / action.
     if verdict.decision == "DENY":
         denial = teaching.record_gate_denial(
             status_record,
@@ -655,7 +877,7 @@ def decide_automatic_teaching(
             )
         )
 
-    # 8. ALLOW: the CP2 five-fact atomic open. The three derived fields are
+    # 9. ALLOW: the CP2 five-fact atomic open. The three derived fields are
     #    set here (not trusted from the template — refused above), the
     #    bindings come from the durable cycle, and the first action is the
     #    shared opening contract.
