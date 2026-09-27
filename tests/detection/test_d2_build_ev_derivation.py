@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -24,6 +25,7 @@ from elc.platform.types import Ok
 from tests.conftest import SRC_ROOT
 from tests.detection.support import (
     ANYWAY_ENTITY,
+    always_match,
     anyway_stub,
     copy_source_trees,
     never_match,
@@ -198,6 +200,47 @@ def test_a_raising_matcher_is_wrapped_into_a_build_error(
     message = str(raised.value)
     assert f"detector for {ANYWAY_ENTITY} raised ZeroDivisionError" in message
     assert isinstance(raised.value.__cause__, ZeroDivisionError)
+
+
+def test_an_empty_fixture_set_never_verifies_even_when_registered(
+    tmp_path: Path,
+) -> None:
+    """The ``fixture_count > 0`` guard (D-2 review LOW-1). An entity whose
+    evidence omits the ``detection_fixtures`` block carries nothing to
+    verify — the block is optional (the reader answers ``()`` for an
+    absent block), so a registered always-matching stub must not promote
+    it: an empty set passes vacuously, and verification requires something
+    to have been verified. The ``typical_errors`` block goes with it,
+    because D-1's per-type coverage would otherwise refuse the tree (a
+    declared error_type with no positive row). The unreachable-in-corpus
+    guard is reachable exactly here, through the tmp tree."""
+
+    content_src, curriculum = copy_source_trees(tmp_path)
+    evidence = content_src / "evidence" / f"{ANYWAY_ENTITY}.json"
+    document = json.loads(evidence.read_text(encoding="utf-8"))
+    del document["typical_errors"]
+    del document["detection_fixtures"]
+    evidence.write_text(json.dumps(document), encoding="utf-8")
+
+    registry = DetectorRegistry()
+    registry.register(ANYWAY_ENTITY, (), always_match("SPLIT_SPELLING"))
+
+    baseline = tmp_path / "baseline.db"
+    build_content_db(
+        baseline, content_src_dir=content_src, curriculum_dir=curriculum
+    )
+    promoted = tmp_path / "promoted.db"
+    build_content_db(
+        promoted,
+        content_src_dir=content_src,
+        curriculum_dir=curriculum,
+        detector_registry=registry,
+    )
+
+    baseline_levels = provenance_map(baseline)
+    assert provenance_map(promoted) == baseline_levels
+    assert baseline_levels[ANYWAY_ENTITY] != "EXECUTABLY_VERIFIED"
+    assert "EXECUTABLY_VERIFIED" not in baseline_levels.values()
 
 
 def test_the_detection_package_never_imports_content() -> None:

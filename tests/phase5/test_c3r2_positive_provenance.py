@@ -11,8 +11,8 @@ What this cut did, and what this file pins:
   fail it (§④). The word is still a **declared reading** of docs/
   DATA_MODEL.md §24.10 (which names no word list), and the closure is an
   *existence* closure: the corpus now carries rows a lying stub cannot
-  satisfy — nothing here claims a detector executor exists (the N21
-  registration stands);
+  satisfy — nothing here claims a matcher is registered (N21 is narrowed,
+  not closed, since D-2's empty registry);
 - **the pairing as a source contract**: ``DETECTION_FIXTURE_EXPECTED_BY_
   KIND`` decides the expected side of every row; a row that disagrees with
   its own kind is refused by the build (the c2-a review F4 rule, now at
@@ -25,9 +25,11 @@ What this cut did, and what this file pins:
   one level per documented entity — ``AUTHOR_DECLARED`` for the bare
   evidence baseline, ``EDITOR_REVIEWED`` once an audit record in
   `content_src/audits/` approves the entity. The two stronger words of
-  ``PROVENANCE_LEVELS`` are reachable today by nothing: no derivation
-  produces them (no detector executor, no real-run data), and their
-  conditions are written on the constant. The dimension is independent of
+  ``PROVENANCE_LEVELS`` stay out of reach of this build's default path:
+  ``EXECUTABLY_VERIFIED`` needs a registered matcher passing the fixture
+  set (the D-2 registry ships empty, so the default derivation emits
+  nothing), ``EMPIRICALLY_CALIBRATED`` needs real-run data (rollout HOLD);
+  their conditions are written on the constant. The dimension is independent of
   the §8.1 ladder by construction: ``READINESS_FACT_KEYS`` gains no key,
   and the truth table, the three Calibration100 gates and the four content
   rows all read exactly as they did at C3-R1.
@@ -651,8 +653,9 @@ def test_no_derivation_produces_the_two_higher_levels(
     tmp_path: Path,
 ) -> None:
     """EXECUTABLY_VERIFIED / EMPIRICALLY_CALIBRATED stay reachable-only:
-    even with audit records present, no derivation emits them (no detector
-    executor N21; no real-run data — rollout HOLD)."""
+    even with audit records present, the default derivation emits neither
+    (no matcher is registered — N21 narrowed, not closed, since D-2; no
+    real-run data — rollout HOLD)."""
 
     artifact = _audits_variant(
         tmp_path,
