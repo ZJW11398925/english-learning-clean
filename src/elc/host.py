@@ -47,7 +47,11 @@ GenerationContext (``None`` keeps the P1 assembly).
   ``projections`` (both CP4 executors, the complete
   :data:`SUPPORTED_PROJECTION_TYPES` set — the runtime refuses an incomplete
   one at construction), ``persona_views``, ``silent_evidence``,
-  ``automatic_teaching`` and ``constraint_views``.
+  ``automatic_teaching`` and ``constraint_views``. D-6-a adds the detection
+  dispatch face to the automatic wiring (the CURRENT_USER_ERROR producer over
+  the process-level pilot registry — ``elc.detection.dispatch``), so the
+  full chain turns a user turn's error text into a teaching opportunity the
+  whole gate chain still has to authorize.
 
 **The zero-open boundary.** ``rollout_stage`` passes through to the automatic
 wiring untouched and defaults to ``None``: the wiring is assembled, but
@@ -119,6 +123,9 @@ from elc.content.store import ContentStore, ContentStoreError
 from elc.conversation import SqliteConversationStore
 from elc.curriculum.provider import ContentBackedTeachingTargetProvider
 from elc.curriculum.store import CurriculumContentStore
+from elc.detection import GLOBAL_REGISTRY
+from elc.detection import pilot as pilot_detectors
+from elc.detection.dispatch import RegistryDispatch
 from elc.learning.analysis import LearningTurnAnalysis
 from elc.learning.controller import LearningController
 from elc.learning.silent_evidence import (
@@ -480,6 +487,17 @@ def open_host(
                 user_config=user_config,
                 user_id=LOCAL_V1_USER_ID,
             )
+            # D-6-a: the detection dispatch face over the process-level pilot
+            # registry — the same assembly form the build CLI uses
+            # (``elc.content.build.main``): the pilot matchers are registered
+            # into ``GLOBAL_REGISTRY`` once per process (the registry refuses
+            # duplicate registrations, so the sentinel reuses an
+            # already-assembled registry instead of re-registering), and the
+            # wiring's CURRENT_USER_ERROR producer reads it. An artifact built
+            # by this same process's registry and a host opened by it agree on
+            # who is EXECUTABLY_VERIFIED, because they are the same detectors.
+            if GLOBAL_REGISTRY.known_targets() != pilot_detectors.PILOT_ENTITIES:
+                pilot_detectors.register_pilot(GLOBAL_REGISTRY)
             # The casts are the assembly point's one bridge: the automatic
             # bundle's protocols widen their parameters and answers to
             # ``object``/``Any`` so the bundle cannot reach what it does not
@@ -503,6 +521,7 @@ def open_host(
                 candidate_supply=candidate_supply,
                 rollout_stage=rollout_stage,
                 provenance=provenance,
+                error_detectors=RegistryDispatch(GLOBAL_REGISTRY),
             )
         coordinator = ConversationCoordinator(
             lease=lease,

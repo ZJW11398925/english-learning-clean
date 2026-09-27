@@ -7,6 +7,26 @@ one ``CommitUserTurn`` through
 ``ConversationCoordinator.begin_turn``, and the reply — or the honest failure —
 is printed. ``:quit`` or EOF exits and closes the connection.
 
+D-6-a adds the chat command's two dogfood legs (EXT-D5-02's closure: the
+shipped CLI can now assemble what the dogfood observes):
+
+- ``--content-db PATH`` assembles the **full-chain tier** (the automatic
+  teaching leg with its real detectors over the pilot registry) instead of
+  the plain prep-1 tier;
+- ``--rollout-stage WORD`` declares one of §12's four stage words
+  (``elc.teaching.rollout.RolloutStage``), which is the operator's explicit
+  act the zero-open boundary requires; an unknown word is a human sentence
+  and exit 2, and **not passing the flag declares no stage** —
+  ``rollout_stage=None`` reaches the host, fail-closed, and no automatic
+  teaching runs.
+
+``python -m elc observations --app-db PATH`` is the dogfood readout: the §12
+six-indicator declarations, the app.db's durable counts (gate decisions by
+decision × reason codes with the ``TARGET_NOT_EXECUTABLY_VERIFIED`` drift
+signal, teaching-moment states, generation-action statuses, the delivery /
+exposure / ledger-event tables), and the pilot matchers' known
+false-positive faces — a pure SQL read face that prints, never writes.
+
 ``python -m elc gate --content-db PATH`` (D-5) is the corpus rollout gate over
 one built content.db — no host, no app.db, no key: it reads the readiness
 table and the artifact's own provenance rows, prints the report (the four
@@ -82,7 +102,13 @@ from elc.platform.types import (
     SecretRef,
 )
 from elc.runtime.types import InputEnvelope, TurnCompletion
-from elc.teaching.rollout import RolloutVerdict, corpus_rollout_gate
+from elc.teaching.rollout import (
+    OBSERVATION_SPECS,
+    ROLLOUT_STAGES,
+    RolloutStage,
+    RolloutVerdict,
+    corpus_rollout_gate,
+)
 
 __all__ = [
     "DEFAULT_CONVERSATION_ID",
@@ -130,6 +156,22 @@ _GATE_SCOPE_NOTE = (
     " opening adjudication live outside it) — a GO here opens nothing"
 )
 
+_ROLLOUT_STAGE_HINT = (
+    "elc chat: unknown --rollout-stage {word!r}; the four words"
+    " docs/IMPLEMENTATION_PLAN.md §12 names are "
+    + ", ".join(repr(stage.value) for stage in ROLLOUT_STAGES)
+    + " (not passing the flag declares no stage and opens no automatic"
+    " teaching)"
+)
+
+_OBSERVATIONS_HINT = "elc observations: --app-db PATH is required"
+
+#: The reason code whose gate rows are the drift-interception signal: an
+#: automatic OPEN that reached the Gate while pointing at a target this
+#: deployment cannot executably verify should never be missing from this
+#: count, and should stay at zero in a healthy deployment.
+_DRIFT_REASON = "TARGET_NOT_EXECUTABLY_VERIFIED"
+
 
 def main(
     argv: Sequence[str] | None = None,
@@ -151,6 +193,11 @@ def main(
 
     if args.command == "gate":
         return _gate(args, stdout=out, stderr=err)
+    if args.command == "observations":
+        if args.app_db is None:
+            print(_OBSERVATIONS_HINT, file=err)
+            return 2
+        return _observations(args, stdout=out, stderr=err)
 
     # chat's required arguments are validated here rather than by argparse so
     # the gate command can share one flat parser without them (a missing
@@ -170,6 +217,15 @@ def main(
         # names the way out (EXT-P1-02).
         print(_INSECURE_HTTP_HINT, file=err)
         return 2
+    rollout_stage: RolloutStage | None = None
+    if args.rollout_stage is not None:
+        try:
+            rollout_stage = RolloutStage(args.rollout_stage)
+        except ValueError:
+            print(
+                _ROLLOUT_STAGE_HINT.format(word=args.rollout_stage), file=err
+            )
+            return 2
     secrets = _secret_source(args)
     if provider is None:
         provider = OpenAICompatibleProvider(
@@ -184,8 +240,14 @@ def main(
         )
 
     try:
-        host = open_host(app_db, provider=provider, secrets=secrets)
-    except (sqlite3.Error, MigrationError, OSError) as exc:
+        host = open_host(
+            app_db,
+            provider=provider,
+            secrets=secrets,
+            content_db_path=args.content_db,
+            rollout_stage=rollout_stage,
+        )
+    except (sqlite3.Error, MigrationError, OSError, ContentStoreError) as exc:
         print(f"elc chat: cannot open app.db {app_db}: {exc}", file=err)
         return 1
     try:
@@ -298,11 +360,16 @@ def _gate(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -> int:
     passthrough contract).
     """
 
+    content_db = (
+        args.content_db
+        if args.content_db is not None
+        else str(DEFAULT_OUTPUT)
+    )
     try:
-        content_store = ContentStore(args.content_db)
+        content_store = ContentStore(content_db)
     except (ContentStoreError, sqlite3.Error, OSError) as exc:
         print(
-            f"elc gate: cannot open content.db {args.content_db}: {exc!r}",
+            f"elc gate: cannot open content.db {content_db}: {exc!r}",
             file=stderr,
         )
         return 1
@@ -334,6 +401,112 @@ def _gate(args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO) -> int:
     return 0 if report.value.verdict is RolloutVerdict.GO else 1
 
 
+def _observations(
+    args: argparse.Namespace, *, stdout: TextIO, stderr: TextIO
+) -> int:
+    """The D-6-a dogfood readout over one app.db (the ``observations`` command).
+
+    A pure SQL read face — no host, no provider, no key, no new table: the
+    §12 six-indicator declarations (``rollout.py``'s ``OBSERVATION_SPECS``,
+    the repository's own honesty about what each reading is), then the
+    durable counts the declarations point at (gate decisions by decision ×
+    reason codes — the ``TARGET_NOT_EXECUTABLY_VERIFIED`` count is printed
+    even at zero, because a non-zero there is the drift-interception signal —
+    teaching-moment states, generation-action statuses, and the delivery /
+    exposure / ledger-event tables that exist to answer the six), and finally
+    the known false-positive faces of the D-3 pilot matchers, named so a
+    dogfood run watches them deliberately instead of rediscovering them.
+    An app.db that cannot be opened read-only is exit 1; a section whose
+    table cannot be read is reported as unreadable and the rest prints.
+    """
+
+    try:
+        db = sqlite3.connect(f"file:{args.app_db}?mode=ro", uri=True)
+    except sqlite3.Error as exc:
+        print(
+            f"elc observations: cannot open app.db {args.app_db}: {exc}",
+            file=stderr,
+        )
+        return 1
+    print(f"elc observations · app.db = {args.app_db}", file=stdout)
+
+    print("the six §12 indicators (declaration first, count second):", file=stdout)
+    for spec in OBSERVATION_SPECS:
+        print(f"  {spec.indicator} — {spec.definition}", file=stdout)
+
+    def section(title: str, sql: str) -> None:
+        print(f"{title}:", file=stdout)
+        try:
+            rows = db.execute(sql).fetchall()
+        except sqlite3.Error as exc:
+            print(f"  (unreadable: {exc})", file=stdout)
+            return
+        if not rows:
+            print("  (no rows)", file=stdout)
+            return
+        for row in rows:
+            cells = " | ".join(str(cell) for cell in row)
+            print(f"  {cells}", file=stdout)
+
+    section(
+        "gate_decision by decision × reason_codes",
+        "SELECT decision, reason_codes, COUNT(*) FROM gate_decision"
+        " GROUP BY decision, reason_codes ORDER BY decision, reason_codes",
+    )
+    drift = db.execute(
+        "SELECT COUNT(*) FROM gate_decision WHERE reason_codes LIKE ?",
+        (f"%{_DRIFT_REASON}%",),
+    ).fetchone()[0]
+    print(
+        f"  gate rows naming {_DRIFT_REASON} (the drift signal): {drift}",
+        file=stdout,
+    )
+    section(
+        "teaching_moment by lifecycle_state",
+        "SELECT lifecycle_state, COUNT(*) FROM teaching_moment"
+        " GROUP BY lifecycle_state ORDER BY lifecycle_state",
+    )
+    section(
+        "generation_action_intent by status",
+        "SELECT status, COUNT(*) FROM generation_action_intent"
+        " GROUP BY status ORDER BY status",
+    )
+    section(
+        "server_delivery_record by state",
+        "SELECT state, COUNT(*) FROM server_delivery_record"
+        " GROUP BY state ORDER BY state",
+    )
+    section(
+        "exposure_estimate by exposure_level",
+        "SELECT exposure_level, COUNT(*) FROM exposure_estimate"
+        " GROUP BY exposure_level ORDER BY exposure_level",
+    )
+    section(
+        "planning_ledger_event by event",
+        "SELECT event, COUNT(*) FROM planning_ledger_event"
+        " GROUP BY event ORDER BY event",
+    )
+
+    print(
+        "known false-positive faces (D-3 pilot matchers, watched):",
+        file=stdout,
+    )
+    print("  - a fronted 'Thought ...' clause (N-D3-4: legal", file=stdout)
+    print("    spoken-English subject omission the think/thought", file=stdout)
+    print("    matcher still reads as one)", file=stdout)
+    print('  - a parenthetical adverb right after "I think," (the', file=stdout)
+    print("    comma-after-hedge family's insertion reading)", file=stdout)
+    print("  - a vocative after a fronted marker (N-D3-4 family:", file=stdout)
+    print("    the pause before a name reads as the marker's boundary)", file=stdout)
+    print(
+        "  tracked during dogfood observation: a hit that proves false feeds",
+        file=stdout,
+    )
+    print("  the matcher audit before anything widens.", file=stdout)
+    db.close()
+    return 0
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m elc",
@@ -341,19 +514,34 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "command",
-        choices=("chat", "gate"),
-        help="chat: the conversation loop; gate: the corpus rollout gate",
+        choices=("chat", "gate", "observations"),
+        help=(
+            "chat: the conversation loop; gate: the corpus rollout gate;"
+            " observations: the D-6-a dogfood readout over one app.db"
+        ),
     )
     parser.add_argument(
         "--app-db",
-        help="path to app.db (chat; created and migrated when absent)",
+        help="path to app.db (chat: created and migrated when absent;"
+        " observations: opened read-only)",
     )
     parser.add_argument(
         "--content-db",
-        default=str(DEFAULT_OUTPUT),
+        default=None,
         help=(
-            "path to a built content.db (gate;"
-            " default: the repository build artifact)"
+            "path to a built content.db (chat: the full-chain tier — the"
+            " automatic teaching leg with its detectors; absent = the plain"
+            " prep-1 tier. gate: the artifact to gate, default: the"
+            " repository build artifact)"
+        ),
+    )
+    parser.add_argument(
+        "--rollout-stage",
+        default=None,
+        help=(
+            "chat: declare the rollout stage (one of §12's four words;"
+            " absent = no stage declared — the fail-closed default that runs"
+            " no automatic teaching)"
         ),
     )
     parser.add_argument(

@@ -40,6 +40,19 @@ PYTHONPATH=src python -m elc gate --content-db ./build/content.db
 - 门报告是**内容腿的答案，不是开闸**：GO 也不开任何东西——HOLD/GO 之外的 rollout 归因（stage 腿未声明、SessionBudget 三分、独立开闸裁决）打印在报告之后。
 - `--content-db` 缺省指仓内构建产物 `build/content.db`（`PYTHONPATH=src python -m elc.content.build` 生成——该口径带 D-3 的 12 实体 EV 集；库 API `build_content_db` 缺省零 EV，两种构建的门读数不同是**产物事实**）。
 
+### 全链 chat 与 dogfood 观察（D-6-a，用户已明示同意 D-6）
+
+```bash
+PYTHONPATH=src python -m elc chat --app-db ./app.db \
+  --base-url https://api.example.com/v1 --model gpt-4o-mini \
+  --api-key-env OPENAI_API_KEY \
+  --content-db ./build/content.db --rollout-stage Study-first
+PYTHONPATH=src python -m elc observations --app-db ./app.db
+```
+
+- `--content-db` 给 chat 装配**全链 tier**（自动教学腿 + 真检测器）；`--rollout-stage` 声明 §12 四词之一（缺省不声明 = fail-closed，零自动教学；非法词人话退出 2）。
+- `observations` 是纯 SQL 读面：§12 六指标声明 + app.db 真实计数（gate_decision 按 decision×reason_codes，含 `TARGET_NOT_EXECUTABLY_VERIFIED` 漂移信号计数）+ D-3 matcher 已知假阳面清单——只打印，不写任何表。
+
 ### 真实端点 smoke（可复制；dogfood 步骤，不属 CI）
 
 ```bash

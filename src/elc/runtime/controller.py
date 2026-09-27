@@ -1505,6 +1505,7 @@ class ConversationCoordinator:
                     decision_cycle_id=self._cycle_id(cp0.turn_id, ""),
                     as_of=command.envelope.received_at,
                     supply=self._automatic.candidate_supply,
+                    user_text=command.raw_content,
                 )
             )
             cycle_result = self._decision_cycles.record_decision_cycle(

@@ -135,6 +135,7 @@ from typing import Mapping, Protocol, Sequence, cast
 from elc.planner.candidates import (
     CandidateSupply,
     CandidateSupplyInputs,
+    OpportunityObservation,
     SchedulePort,
     TargetRowPort,
     TargetSupplyPort,
@@ -208,6 +209,7 @@ __all__ = [
     "AutomaticTurnPlan",
     "AutomaticTurnWiring",
     "CurriculumTurnFace",
+    "ErrorDetectorFace",
     "LearningTurnFace",
     "LedgerTurnFace",
     "SchedulerTurnFace",
@@ -350,6 +352,26 @@ class SessionBudgetFace(Protocol):
     ) -> Result[SessionBudgetView]: ...
 
 
+class ErrorDetectorFace(Protocol):
+    """D-6-a's CURRENT_USER_ERROR producer — the one Track A source with a
+    landed producer.
+
+    The face reads one turn's user text and answers the target ids whose
+    error patterns the deployment's detectors recognized
+    (:func:`elc.detection.dispatch.detect_current_user_errors` is the
+    registry-bound implementation the host injects). The answer is exactly
+    :class:`elc.planner.candidates.OpportunityObservation`'s
+    ``current_user_errors`` field's content; the observation's other four
+    fields stay empty, because their sources still have **no producer** in
+    this repository — the honest split this cut keeps: one of RA §4 step 3's
+    five turn-scoped facts is produced, four are reported as the gaps they
+    still are (each a :class:`~elc.planner.candidates.SourceGap`, never an
+    invented observation).
+    """
+
+    def detect_current_user_errors(self, text: str) -> tuple[str, ...]: ...
+
+
 @dataclass(frozen=True)
 class AutomaticTurnWiring:
     """The optional dependency bundle the coordinator takes for this leg.
@@ -398,6 +420,17 @@ class AutomaticTurnWiring:
     leg (today it names the release-level corpus gate, D-4's registration) —
     at which point this paragraph's declared reading is promoted, not
     changed.
+
+    **``error_detectors`` is D-6-a's CURRENT_USER_ERROR producer**
+    (:class:`ErrorDetectorFace`), and ``None`` — the default — is today's
+    shape kept: no face wired, no observation produced, every Track A source
+    a ``SourceGap``, and every existing assembly behaves exactly as before.
+    A wired face is read once per generated supply, over the turn's own user
+    text (the ``user_text`` the coordinator passes), and the answer becomes
+    the observation's ``current_user_errors`` — the first of RA §4 step 3's
+    five turn-scoped facts with a producer. The other four fields are never
+    filled here: their sources have no producer, and a partially filled
+    observation must not read as a fully observed turn.
     """
 
     planner_store: PlannerDecisionRecordStore
@@ -413,6 +446,7 @@ class AutomaticTurnWiring:
     candidate_supply: CandidateSupply | None = None
     rollout_stage: RolloutStage | None = None
     provenance: Mapping[str, str] | None = None
+    error_detectors: ErrorDetectorFace | None = None
 
 
 # -- §4 step 3: the conversation leg -----------------------------------------
@@ -531,6 +565,7 @@ def assemble_automatic_turn(
     decision_cycle_id: DecisionCycleId,
     as_of: str,
     supply: CandidateSupply | None = None,
+    user_text: str | None = None,
 ) -> Result[AutomaticTurnPlan]:
     """Read every authority this cycle names and run the Planner over them.
 
@@ -542,6 +577,12 @@ def assemble_automatic_turn(
     generators are not run a second time; production passes ``None`` and the
     generators run over the wiring's faces. Both paths converge on the same
     request, the same run and the same decision chain.
+
+    ``user_text`` is the committed user turn's ``raw_content``, passed by the
+    coordinator so the D-6-a detection face
+    (``wiring.error_detectors``) can produce the turn's
+    ``current_user_errors`` — see :func:`_turn_observation` for the
+    produced-never-inferred posture and the fail-safe.
 
     Every failure of a *read* is a leg: it makes that one argument ``None`` (and
     adds a line to ``notes``), because that is what makes the generators answer
@@ -644,7 +685,7 @@ def assemble_automatic_turn(
                 schedule=cast("SchedulePort | None", wiring.scheduler),
                 constraints=constraints,
                 priority=priority_view,
-                observation=None,
+                observation=_turn_observation(wiring, user_text, notes),
                 ledger=(
                     ledger_view
                     if isinstance(ledger_view, PlanningLedger)
@@ -720,6 +761,39 @@ def assemble_automatic_turn(
             notes=tuple(notes),
         )
     )
+
+
+def _turn_observation(
+    wiring: AutomaticTurnWiring,
+    user_text: str | None,
+    notes: list[str],
+) -> OpportunityObservation | None:
+    """D-6-a's one produced observation, or the honest ``None``.
+
+    Three states, each said rather than inferred. No face wired (``None`` is
+    every existing assembly's value) — no observation, the CURRENT_USER_ERROR
+    source gaps on its own authority exactly as it did before this field
+    existed. No turn text reached this assembly (a caller that assembles for
+    a cycle without a fresh user utterance) — the same ``None``, because
+    running detection over a fabricated or empty string would mint
+    opportunities out of nothing. A wired face and a real text — the face is
+    read **once**, and its answer becomes ``current_user_errors``; the other
+    four fields stay empty (their sources have no producer — the wiring
+    docstring's honest split). A face that *raises* is a degraded read, the
+    same posture every other optional leg takes: the observation is ``None``,
+    the reason is in ``notes``, and the user's turn proceeds unbroken.
+    """
+
+    if wiring.error_detectors is None:
+        return None
+    if not user_text:
+        return None
+    try:
+        errors = wiring.error_detectors.detect_current_user_errors(user_text)
+    except Exception as exc:  # noqa: BLE001 — a broken port is a missing leg
+        notes.append(f"error detectors: the read raised {exc!r}")
+        return None
+    return OpportunityObservation(current_user_errors=tuple(errors))
 
 
 def _read(
