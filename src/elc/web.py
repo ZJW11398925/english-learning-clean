@@ -117,8 +117,44 @@ still one embedded string over ``dependencies = []``). The shell is a fixed
 ``show``/``hide`` (no router): **聊天** (the default — everything the W
 series built, re-typeset: the message stream as user-right /
 assistant-left cards, the input row, and the teaching card on an
-accent-wash surface) and **诊断** — the five-whys panel (below) with the
-observations readout folded in at the top.
+accent-wash surface), **学习** (F-2) and **诊断** — the five-whys panel
+(below) with the observations readout folded in at the top.
+
+**F-2 turns the shell into the learning face** — three read/act features on
+top of F-1, all honest and none new in kind:
+
+- ``GET /api/learning`` is the 学习 view's one read, built exactly like
+  ``/api/diagnostics`` (read-only SQL on the work queue, panel-level
+  guards, honest empty shapes, a content-snapshot pin): the schedule
+  panel (every ``schedule_item`` row, DUE/OVERDUE first and
+  NOT_SCHEDULED last), the goals panel (the portfolio's ``goals`` and
+  ``modality_weights`` JSON parsed and passed through verbatim) and the
+  evidence panel (the last five ``evidence_claim`` rows plus the
+  ``learner_target_state`` and ``evidence_claim`` counts — numbers, not
+  readings).
+- ``GET /api/targets`` names what can be taught, from the first face the
+  host actually holds: with a content leg the curriculum readiness table
+  is read and every target at readiness R3 or above is listed (the
+  ``source`` word says so); without one the fallback is the
+  ``schedule_item`` target set — "schedule 覆盖的供给目标", never an
+  invented corpus. Display names are :func:`_target_display_name`'s, the
+  card's own.
+- ``POST /api/teach_me`` is the 学习 view's one act: a
+  :class:`~elc.teaching.request.TeachingRequest` through the
+  coordinator's own ``request_teaching`` entry — and that one call is
+  the whole chain, survey result: the P3-1B opening delivery is
+  dispatched inside the same entry (the stale "stops at CP2" docstring
+  notwithstanding, pinned by the happy-path test), so the moment is at
+  ``AWAITING_USER`` when the answer lands and the W-4 poll picks the
+  card up. An ``Err``, a DENY or a DEGRADED is a runtime fact (200 +
+  ``accepted: false`` + the error sentence); only a body outside the
+  ``{"target_id": …}`` grammar is a 400.
+- the chat view says why a quiet turn was quiet: when the turn response
+  carries no teaching moments, the page pulls ``/api/diagnostics`` and
+  renders one gray line from the why-not-teach panel (the top
+  not-activated candidate's utility against its threshold, or the DENY
+  reason codes); a failed or empty pull is silent — the line never
+  blocks a chat.
 
 ``/api/diagnostics`` is the diagnostics view's one read: **read-only SQL**
 assembled into the five panels IP §15 asks a front end to answer. It runs
@@ -190,6 +226,7 @@ from elc.cli import (
 )
 from elc.cli import main as cli_main
 from elc.conversation.types import CommitUserTurn
+from elc.curriculum.readiness import READINESS_LEVELS
 from elc.host import Host
 from elc.persona.provider import PersonaProvider
 from elc.planner.trace_document import decode_factor_trace
@@ -199,6 +236,7 @@ from elc.platform.types import (
     Err,
     InputId,
     InteractionChannel,
+    TargetId,
 )
 from elc.runtime.controller import TeachingReplyRequest
 from elc.runtime.types import InputEnvelope
@@ -207,6 +245,7 @@ from elc.teaching.envelope import (
     TeachingControlIntent,
     TeachingResponseEnvelope,
 )
+from elc.teaching.request import TeachingRequest
 from elc.teaching.rollout import OBSERVATION_SPECS
 from elc.teaching.types import MomentState
 
@@ -318,6 +357,27 @@ _DIAG_PANEL_ROWS = 5
 
 #: How many not-activated candidates the why-not-teach panel serves.
 _DIAG_NOT_TEACH_CANDIDATES = 3
+
+#: How many recent evidence claims the learning view's evidence panel
+#: serves (the diagnostics list panels' width, same number, own name: the
+#: two faces widen independently).
+_LEARNING_EVIDENCE_ROWS = 5
+
+#: The learning view's targets floor: readiness R3 and above can be taught
+#: (the §8.1 ladder's own words; the index keeps the comparison a ladder
+#: fact instead of a two-word list that the next level would silently
+#: exclude).
+_TARGETS_READINESS_FLOOR = "R3_TEACHING_READY"
+
+#: The schedule panel's reading order, as SQL: the due states first, the
+#: not-scheduled rows last (the task's own words — a person reads the
+#: panel top-down), then recency and the id pair for a deterministic tie.
+_SCHEDULE_PANEL_ORDER = (
+    "CASE review_state"
+    " WHEN 'DUE' THEN 0 WHEN 'OVERDUE' THEN 0"
+    " WHEN 'UPCOMING' THEN 1 ELSE 2 END,"
+    " updated_at DESC, target_id, target_type, evidence_modality"
+)
 
 
 def _readable_outcome(outcome: str) -> str:
@@ -583,6 +643,111 @@ def _degraded_panel(db: sqlite3.Connection) -> dict[str, Any]:
     }
 
 
+# ---------------------------------------------------------------------------
+# the F-2 learning panels — read-only SELECTs over app.db, one per face
+# ---------------------------------------------------------------------------
+
+
+def _schedule_panel(db: sqlite3.Connection) -> dict[str, Any]:
+    """The review schedule, in the order a person reads it.
+
+    Every ``schedule_item`` row — the whole current projection, no window —
+    with the eight columns the panel names (the migration's own words);
+    DUE and OVERDUE first, NOT_SCHEDULED last (:data:`_SCHEDULE_PANEL_ORDER`).
+    The numbers are the rows' own: review_urgency and the window pair pass
+    through verbatim, nothing here derives a "due-ness" the Scheduler did
+    not already write.
+    """
+
+    rows = db.execute(
+        "SELECT target_type, target_id, review_state, review_urgency,"
+        " next_review_window_start, next_review_window_end, spacing_stage,"
+        f" updated_at FROM schedule_item ORDER BY {_SCHEDULE_PANEL_ORDER}"
+    ).fetchall()
+    return {
+        "items": [
+            {
+                "target_type": str(row[0]),
+                "target_id": str(row[1]),
+                "review_state": str(row[2]),
+                "review_urgency": None if row[3] is None else float(row[3]),
+                "next_review_window_start": (
+                    None if row[4] is None else str(row[4])
+                ),
+                "next_review_window_end": (
+                    None if row[5] is None else str(row[5])
+                ),
+                "spacing_stage": None if row[6] is None else str(row[6]),
+                "updated_at": str(row[7]),
+            }
+            for row in rows
+        ]
+    }
+
+
+def _goals_panel(db: sqlite3.Connection) -> dict[str, Any]:
+    """The goal portfolios, their JSON parsed and passed through verbatim.
+
+    ``goals`` is a JSON array and ``modality_weights`` a JSON object in the
+    column's durable form (migration 0011); this panel decodes both and
+    hands the page the parsed value — the shape the user-config controller
+    wrote, never a re-shape of it. A column that does not parse explodes
+    into the panel guard's ``{"error": …}`` — the page shows the read
+    failure, not a guessed portfolio.
+    """
+
+    rows = db.execute(
+        "SELECT goal_portfolio_id, goal_version, goals, modality_weights"
+        " FROM goal_portfolio ORDER BY goal_portfolio_id"
+    ).fetchall()
+    return {
+        "portfolios": [
+            {
+                "goal_portfolio_id": str(row[0]),
+                "goal_version": str(row[1]),
+                "goals": json.loads(str(row[2])),
+                "modality_weights": json.loads(str(row[3])),
+            }
+            for row in rows
+        ]
+    }
+
+
+def _learning_evidence_panel(db: sqlite3.Connection) -> dict[str, Any]:
+    """The evidence ledger at a glance: recent claims plus the two counts.
+
+    The last five ``evidence_claim`` rows (newest first) and the row
+    counts of ``evidence_claim`` and ``learner_target_state`` — the counts
+    are counts, not readings: the panel serves the numbers the tables
+    hold, the page labels them and adds nothing.
+    """
+
+    rows = db.execute(
+        "SELECT target_id, polarity, outcome, performance_type, created_at"
+        " FROM evidence_claim"
+        " ORDER BY created_at DESC, rowid DESC LIMIT ?",
+        (_LEARNING_EVIDENCE_ROWS,),
+    ).fetchall()
+    claims = db.execute("SELECT COUNT(*) FROM evidence_claim").fetchone()
+    states = db.execute(
+        "SELECT COUNT(*) FROM learner_target_state"
+    ).fetchone()
+    return {
+        "claims": [
+            {
+                "target_id": str(row[0]),
+                "polarity": str(row[1]),
+                "outcome": str(row[2]),
+                "performance_type": str(row[3]),
+                "created_at": str(row[4]),
+            }
+            for row in rows
+        ],
+        "evidence_claim_count": int(claims[0]) if claims else 0,
+        "learner_target_state_count": int(states[0]) if states else 0,
+    }
+
+
 def _diagnostics_panel(
     name: str,
     build: Callable[[sqlite3.Connection], dict[str, Any]],
@@ -719,6 +884,9 @@ _PAGE = """<!doctype html>
   .resultstrip.part { background: var(--surface-sunken); color: var(--ink-soft); }
   .resultstrip.miss { background: var(--danger-wash); color: var(--danger); }
   .busystrip { margin-top: .4rem; color: var(--ink-soft); font-size: .85rem; }
+  /* F-2 blocked 行：本轮没有教学时的一行诚实小字（数据不在就沉默）。 */
+  .blockedline { align-self: flex-start; color: var(--ink-faint);
+                 font-size: .85rem; padding: .1rem .3rem; }
   pre { background: var(--surface-sunken); border: 1px solid var(--line);
         border-radius: var(--r-sm); padding: .75rem; overflow-x: auto;
         color: var(--ink); }
@@ -763,6 +931,29 @@ _PAGE = """<!doctype html>
       <div id="moments"><p class="note">发送一轮后显示本轮打开的教学时刻。</p></div>
     </section>
   </section>
+  <section id="view-learning" class="view" hidden>
+    <p class="note">可教目标、复习日程、学习目标与证据记录——
+       客厅如实读给你看（只读）。</p>
+    <div style="margin-top: .75rem;">
+      <button id="learning-refresh" type="button">刷新读数</button>
+    </div>
+    <section class="panel diag">
+      <h2>可教目标</h2>
+      <div id="target-list"><p class="note">暂无数据</p></div>
+    </section>
+    <section class="panel diag">
+      <h2>复习日程</h2>
+      <div id="learn-schedule"><p class="note">暂无数据</p></div>
+    </section>
+    <section class="panel diag">
+      <h2>学习目标</h2>
+      <div id="learn-goals"><p class="note">暂无数据</p></div>
+    </section>
+    <section class="panel diag">
+      <h2>证据记录</h2>
+      <div id="learn-evidence"><p class="note">暂无数据</p></div>
+    </section>
+  </section>
   <section id="view-diagnostics" class="view" hidden>
     <p class="note">五个「为什么」——客厅的每一步都有 durable 记录，
        这里如实读给你看（只读）。</p>
@@ -798,6 +989,7 @@ _PAGE = """<!doctype html>
 </main>
 <nav class="tabbar" aria-label="视图切换">
   <button type="button" data-view="chat" aria-current="page">聊天</button>
+  <button type="button" data-view="learning">学习</button>
   <button type="button" data-view="diagnostics">诊断</button>
 </nav>
 <script>
@@ -814,12 +1006,15 @@ function addLine(cls, text) {
   return div;
 }
 
-// F-1: two views over one page — a fixed bottom tab bar, plain show/hide.
+// F-1: the views over one page — a fixed bottom tab bar, plain show/hide.
+// F-2 adds the 学习 view (targets / schedule / goals / evidence).
 const viewChat = document.getElementById("view-chat");
+const viewLearn = document.getElementById("view-learning");
 const viewDiag = document.getElementById("view-diagnostics");
 
 function showView(name) {
   viewChat.hidden = name !== "chat";
+  viewLearn.hidden = name !== "learning";
   viewDiag.hidden = name !== "diagnostics";
   for (const tab of document.querySelectorAll(".tabbar > button")) {
     if (tab.dataset.view === name) {
@@ -829,6 +1024,7 @@ function showView(name) {
     }
   }
   if (name === "diagnostics") loadDiagnostics();
+  if (name === "learning") { loadTargets(); loadLearning(); }
 }
 
 for (const tab of document.querySelectorAll(".tabbar > button")) {
@@ -1093,7 +1289,12 @@ async function postTurn(text) {
     } else if (data.failure_reason) {
       addLine("failure", data.failure_reason);
     }
-    showMoments(data.teaching_moments || []);
+    const moments = data.teaching_moments || [];
+    showMoments(moments);
+    // F-2: a turn that taught nothing says why, in one gray line under
+    // the transcript — read from the diagnostics face, silent when the
+    // read fails or has nothing to say.
+    if (!moments.length) showBlockedNote();
   }
 }
 
@@ -1314,6 +1515,171 @@ async function loadDiagnostics() {
 }
 
 document.getElementById("diag-refresh").addEventListener("click", loadDiagnostics);
+
+// F-2: the 学习 view — what can be taught, the schedule, the goals and
+// the evidence ledger. Read-only numbers under Chinese labels; the one
+// act is 教我这个, which asks the runtime to open the teaching.
+async function loadTargets() {
+  const box = diagBox("target-list");
+  box.textContent = "";
+  try {
+    const res = await fetch("/api/targets");
+    const data = await res.json();
+    const list = data.targets || [];
+    if (!list.length) { diagEmpty(box, "暂无可教目标"); return; }
+    for (const t of list) {
+      const row = document.createElement("div");
+      row.className = "kv";
+      const b = document.createElement("b");
+      b.textContent = t.name || t.target_id;
+      row.appendChild(b);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "teach-me";
+      button.textContent = "教我这个";
+      button.addEventListener("click", () => postTeachMe(t.target_id));
+      row.appendChild(button);
+      box.appendChild(row);
+    }
+  } catch {
+    diagError(box, "目标清单拉取失败");
+  }
+}
+
+async function postTeachMe(targetId) {
+  try {
+    const res = await fetch("/api/teach_me", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target_id: targetId }),
+    });
+    const data = await res.json();
+    if (data.accepted) {
+      addLine("system", "教学已开始，卡片出现在下方");
+      showView("chat");
+    } else {
+      addLine("failure", data.error || "无法开始这节课");
+    }
+  } catch {
+    addLine("failure", "请求失败，请重试");
+  }
+}
+
+function renderSchedule(d) {
+  const box = diagBox("learn-schedule");
+  box.textContent = "";
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  const rows = d.items || [];
+  if (!rows.length) {
+    diagEmpty(box, "暂无数据——还没有任何复习日程。");
+    return;
+  }
+  for (const it of rows) {
+    const g = diagGroup(box, it.target_id + "（" + it.target_type + "）");
+    diagLine(g, "复习状态", it.review_state);
+    diagLine(g, "紧迫度 review_urgency", fmtNum(it.review_urgency));
+    diagLine(g, "窗口开始", fmtNum(it.next_review_window_start));
+    diagLine(g, "窗口结束", fmtNum(it.next_review_window_end));
+    diagLine(g, "间隔阶 spacing_stage", fmtNum(it.spacing_stage));
+    diagLine(g, "更新时间", it.updated_at);
+  }
+}
+
+function renderGoals(d) {
+  const box = diagBox("learn-goals");
+  box.textContent = "";
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  const rows = d.portfolios || [];
+  if (!rows.length) {
+    diagEmpty(box, "暂无数据——还没有写下学习目标。");
+    return;
+  }
+  for (const p of rows) {
+    const g = diagGroup(box, p.goal_portfolio_id);
+    const goals = p.goals || [];
+    diagLine(g, "目标数", goals.length);
+    for (const goal of goals) {
+      diagLine(g, "目标 " + (goal.goal_id || ""),
+        (goal.description || "") + " · " + (goal.goal_modality || ""));
+    }
+    const weights = p.modality_weights || {};
+    for (const key of Object.keys(weights)) {
+      diagLine(g, "权重 " + key, String(weights[key]));
+    }
+  }
+}
+
+function renderLearnEvidence(d) {
+  const box = diagBox("learn-evidence");
+  box.textContent = "";
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  diagLine(box, "证据记录总数", (d.evidence_claim_count || 0) + " 条");
+  diagLine(box, "学习者目标状态", (d.learner_target_state_count || 0) + " 行");
+  const rows = d.claims || [];
+  if (!rows.length) {
+    diagEmpty(box, "暂无单条记录——还没有任何证据被写入。");
+    return;
+  }
+  for (const c of rows) {
+    const g = diagGroup(box, c.target_id);
+    diagLine(g, "polarity", c.polarity);
+    diagLine(g, "outcome", c.outcome);
+    diagLine(g, "performance_type", c.performance_type);
+    diagLine(g, "时间", c.created_at);
+  }
+}
+
+async function loadLearning() {
+  try {
+    const res = await fetch("/api/learning");
+    const data = await res.json();
+    renderSchedule(data.schedule);
+    renderGoals(data.goals);
+    renderLearnEvidence(data.evidence);
+  } catch {
+    for (const id of ["learn-schedule", "learn-goals", "learn-evidence"]) {
+      diagError(diagBox(id), "学习读数拉取失败");
+    }
+  }
+}
+
+document.getElementById("learning-refresh").addEventListener("click",
+  () => { loadTargets(); loadLearning(); });
+
+// F-2: why a quiet turn was quiet — one gray line from the diagnostics
+// face's why-not-teach panel. The gate lives in postTurn (only when the
+// turn response carried no teaching moments); a failed or empty pull
+// stays silent, the chat is never blocked by the note.
+async function showBlockedNote() {
+  let data = null;
+  try {
+    const res = await fetch("/api/diagnostics");
+    data = await res.json();
+  } catch {
+    return;
+  }
+  const panel = data && data.why_not_teach;
+  if (!panel || panel.error) return;
+  let summary = "";
+  const candidate = (panel.candidates || [])[0];
+  if (candidate) {
+    summary = "本轮未教学：候选 " +
+      (candidate.canonical_key || candidate.candidate_id) +
+      " 效用 " + fmtNum(candidate.utility) +
+      " 低于阈值 " + fmtNum(candidate.activation_threshold);
+  } else if (panel.gate_deny) {
+    const codes = panel.gate_deny.reason_codes;
+    summary = "本轮未教学：门拦截 " +
+      (Array.isArray(codes) ? codes.join("、") : String(codes));
+  } else {
+    return;
+  }
+  const line = document.createElement("div");
+  line.className = "blockedline";
+  line.textContent = summary;
+  messages.appendChild(line);
+  messages.scrollTop = messages.scrollHeight;
+}
 
 async function loadHistory() {
   const res = await fetch("/api/history");
@@ -1750,6 +2116,138 @@ class _WebFace:
             "degraded": _diagnostics_panel("degraded", _degraded_panel, db),
         }
 
+    def learning(self) -> dict[str, Any]:
+        """The 学习 view's one read — the F-2 three panels.
+
+        The diagnostics route's construction, repeated: read-only SQL on
+        the work queue over ``host.db`` (the view is pulled by a person,
+        never mid-generation), each panel guarded separately — a panel
+        whose read explodes answers ``{"error": …}`` in its own slot and
+        the other two still answer; a panel with no durable rows answers
+        its honest empty shape. Nothing here writes, ever (pinned by a
+        content-snapshot test, the diagnostics pin's shape).
+        """
+
+        db = self._host.db
+        return {
+            "schedule": _diagnostics_panel("schedule", _schedule_panel, db),
+            "goals": _diagnostics_panel("goals", _goals_panel, db),
+            "evidence": _diagnostics_panel(
+                "learning_evidence", _learning_evidence_panel, db
+            ),
+        }
+
+    def targets(self) -> dict[str, Any]:
+        """What can be taught, from the first face the host actually holds.
+
+        With a content leg (the full-chain tier), the curriculum
+        readiness table is the source: every target whose §8.1 level is
+        R3 or above (the ladder index, not a word list), ``source`` says
+        ``readiness>=R3``. Without one (the prep-1 tier) the honest
+        fallback is the ``schedule_item`` target set — "schedule 覆盖的
+        供给目标", ``source`` says ``schedule_item`` — never an invented
+        corpus. Names are :func:`_target_display_name`'s, the card's own
+        reading of the id.
+        """
+
+        curriculum = self._host.curriculum
+        if curriculum is None:
+            rows = self._host.db.execute(
+                "SELECT DISTINCT target_id FROM schedule_item"
+                " ORDER BY target_id"
+            ).fetchall()
+            return {
+                "source": "schedule_item",
+                "targets": [
+                    {
+                        "target_id": str(row[0]),
+                        "name": _target_display_name(str(row[0])),
+                    }
+                    for row in rows
+                ],
+            }
+        read = curriculum.readiness_by_target()
+        if isinstance(read, Err):
+            raise RuntimeError(
+                "the readiness table could not be read:"
+                f" {read.error.code.value}: {read.error.message}"
+            )
+        floor = READINESS_LEVELS.index(_TARGETS_READINESS_FLOOR)
+        return {
+            "source": "readiness>=R3",
+            "targets": [
+                {
+                    "target_id": assessment.target_id,
+                    "name": _target_display_name(assessment.target_id),
+                }
+                for assessment in read.value
+                if assessment.level is not None
+                and READINESS_LEVELS.index(assessment.level) >= floor
+            ],
+        }
+
+    def teach_me(self, target_id: str) -> dict[str, Any]:
+        """The 学习 view's one act: teach this target now.
+
+        A :class:`~elc.teaching.request.TeachingRequest` through the
+        coordinator's own ``request_teaching`` entry (``RESOURCE`` scope,
+        a fresh ``web-msg-`` id — the turn face's replay-safe shape).
+        One survey fact this face is built on: that single call is the
+        whole chain — the P3-1B opening delivery is dispatched inside the
+        entry (the docstring's "stops at CP2" is stale P3-1A prose; the
+        happy-path test pins the delivered truth), so an ALLOW answer
+        already carries the moment at ``AWAITING_USER`` and the page's
+        W-4 poll picks the card up. No follow-up call exists or is
+        needed.
+
+        A refusal is a runtime fact, never an HTTP error (200 +
+        ``accepted: false`` + the error sentence — an ``Err`` code, or
+        the Gate's own DENY reason codes such as
+        ``TEACHING_LOCK_CONFLICT`` for a moment already open, or a
+        DEGRADED's missing facts): the face passes the verdict through
+        and fabricates nothing.
+        """
+
+        request = TeachingRequest(
+            conversation_id=self._conversation_id,
+            focus_target_id=TargetId(target_id),
+            target_type="RESOURCE",
+            client_message_id=ClientMessageId(f"web-msg-{uuid.uuid4().hex}"),
+            requested_at=datetime.now(tz=UTC).isoformat(),
+        )
+        result = self._host.coordinator.request_teaching(request)
+        if isinstance(result, Err):
+            return {
+                "accepted": False,
+                "error": f"{result.error.code.value}: {result.error.message}",
+                "moment": None,
+            }
+        value = result.value
+        if value.gate_decision != "ALLOW" or value.moment_id is None:
+            reasons = [*value.reason_codes, *value.missing_or_unknown]
+            detail = "、".join(reasons) if reasons else "the gate said no"
+            code = value.gate_decision or "GATE"
+            return {
+                "accepted": False,
+                "error": f"{code}: {detail}",
+                "moment": None,
+            }
+        state = (
+            value.moment_state.value
+            if value.moment_state is not None
+            else None
+        )
+        return {
+            "accepted": True,
+            "error": None,
+            "moment": {
+                "moment_id": str(value.moment_id),
+                "focus_target_id": target_id,
+                "lifecycle_state": state,
+                "status_cn": _RO_STATUS_CN.get(state, state) if state else None,
+            },
+        }
+
     def history(self) -> dict[str, Any]:
         """The canonical transcript window — what the page recovers on load.
 
@@ -1887,13 +2385,27 @@ def _build_server(
                 # is pulled by a person, not mid-generation — no ro bypass
                 # needed). Panel-level errors ride inside the payload.
                 self._run_on_host_thread(face.diagnostics)
+            elif self.path == "/api/learning":
+                # The F-2 learning readout — the diagnostics construction
+                # repeated: read-only, work queue, panel-level errors ride
+                # inside the payload.
+                self._run_on_host_thread(face.learning)
+            elif self.path == "/api/targets":
+                # The teachable-target list (readiness R3+ when the host
+                # holds a content leg, the schedule set otherwise). A read
+                # failure is a server fact: the route's own 500 posture.
+                self._run_on_host_thread(face.targets)
             elif self.path == "/api/observations":
                 self._run_on_host_thread(face.observations)
             else:
                 self._send_json(404, {"error": "not found"})
 
         def do_POST(self) -> None:
-            if self.path not in ("/api/turn", "/api/teaching_reply"):
+            if self.path not in (
+                "/api/turn",
+                "/api/teaching_reply",
+                "/api/teach_me",
+            ):
                 self._send_json(404, {"error": "not found"})
                 return
             try:
@@ -1951,6 +2463,24 @@ def _build_server(
                         )
                     },
                 )
+                return
+            if self.path == "/api/teach_me":
+                # The F-2 grammar is one shape: {"target_id": "..."} — a
+                # body without JSON, without a non-empty target_id string,
+                # is a bad request, not a runtime fact; a runtime refusal
+                # (an unknown target, the lock held) rides 200 below.
+                target_id = (
+                    payload.get("target_id")
+                    if isinstance(payload, dict)
+                    else None
+                )
+                if not isinstance(target_id, str) or not target_id.strip():
+                    self._send_json(
+                        400,
+                        {"error": 'need a JSON body {"target_id": "..."}'},
+                    )
+                    return
+                self._run_on_host_thread(lambda: face.teach_me(target_id))
                 return
             text = payload.get("text") if isinstance(payload, dict) else None
             if not isinstance(text, str) or not text.strip():

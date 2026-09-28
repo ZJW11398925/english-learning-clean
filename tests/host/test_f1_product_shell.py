@@ -10,10 +10,11 @@ face on top:
    full and pinned here by name, with the shared radius / motion / tabbar
    tokens and the focus ring; the sheet links no external resource at all
    (no CDN, no web font — ``dependencies = []`` stays true);
-2. the two-view navigation — a fixed bottom tab bar with exactly two tabs
-   (聊天 default / 诊断), switched by plain JS show/hide (no router), the
-   diagnostics view holding the five why-panels and the observations
-   readout;
+2. the view navigation — a fixed bottom tab bar with exactly three tabs
+   (聊天 default / 学习 / 诊断; the 学习 tab is F-2's, migrated here from
+   the two-tab pin — the pin moved, it was not deleted), switched by
+   plain JS show/hide (no router), the diagnostics view holding the five
+   why-panels and the observations readout;
 3. the diagnostics face — ``GET /api/diagnostics`` answers the five whys
    read-only: over a real teaching chain the why-teach panel names the
    selected candidate and its ALLOW gate row; a fresh conversation answers
@@ -150,19 +151,24 @@ def test_the_page_links_no_external_resource(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 2. the two-view navigation
+# 2. the view navigation (F-2 migration: the two-tab pin became three-tab,
+#    the assertions kept and re-truthed — 学习 between 聊天 and 诊断)
 
 
-def test_the_page_has_the_two_view_navigation(tmp_path: Path) -> None:
+def test_the_page_has_the_view_navigation(tmp_path: Path) -> None:
     page = _page_of(tmp_path)
-    # the fixed bottom tab bar, two tabs, the words a person reads
+    # the fixed bottom tab bar, three tabs, the words a person reads
     assert 'class="tabbar"' in page
     assert ">聊天</button>" in page
+    assert ">学习</button>" in page
     assert ">诊断</button>" in page
     assert 'data-view="chat"' in page
+    assert 'data-view="learning"' in page
     assert 'data-view="diagnostics"' in page
-    # the two view containers, chat the default and diagnostics hidden
+    # the three view containers, chat the default, learning and
+    # diagnostics hidden
     assert 'id="view-chat"' in page
+    assert 'id="view-learning"' in page
     assert 'id="view-diagnostics"' in page
     # the switch is plain JS show/hide (no router library)
     assert "function showView(" in page
