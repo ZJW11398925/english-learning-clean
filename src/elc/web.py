@@ -512,7 +512,7 @@ function helpButton(label, control, busyText, doneNote, card) {
   button.textContent = label;
   button.addEventListener("click", () => {
     if (control === "reveal" &&
-        !window.confirm("看答案将结束本题并显示完整形式，确定？")) {
+        !window.confirm("看答案将显示完整目标表达，之后你仍可作答，确定？")) {
       return;
     }
     postReply(card, { control: control }, busyText, doneNote);

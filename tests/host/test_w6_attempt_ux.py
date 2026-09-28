@@ -325,7 +325,7 @@ def test_the_page_pins_the_w6_strings(tmp_path: Path) -> None:
     assert 'helpButton("看提示", "hint"' in page
     assert 'helpButton("看答案", "reveal"' in page
     assert 'helpButton("解释", "explanation"' in page
-    assert "看答案将结束本题并显示完整形式，确定？" in page
+    assert "看答案将显示完整目标表达，之后你仍可作答，确定？" in page
     assert "setReplyBusy(" in page
     assert "showResultStrip(" in page
     assert "提交失败，请重试" in page
@@ -333,3 +333,53 @@ def test_the_page_pins_the_w6_strings(tmp_path: Path) -> None:
     # the card stays XSS-inert: textContent, never innerHTML
     assert "textContent" in page
     assert ".innerHTML" not in page
+
+
+# ---------------------------------------------------------------------------
+# 6. the ro verdict reads the LATEST evaluation (disposition L-1: the
+#    DESC ordering was unpinned — two judged attempts on one moment, a
+#    PARTIAL first and a FAILURE second, must read the FAILURE)
+
+
+def test_the_ro_card_reads_the_latest_verdict_not_the_first(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    app_db = tmp_path / "app.db"
+    with web_stack(
+        app_db,
+        content_db=pilot_content_db,
+        stage=RolloutStage.STUDY_FIRST,
+        seed=seed_online,
+    ) as stack:
+        _open_moment(stack)
+
+        # attempt 1: covers the target's only slot group → PARTIAL
+        status, data = stack.post(
+            "/api/teaching_reply",
+            {
+                "control": "attempt",
+                "text": "Anyway, I will join the meeting tomorrow morning.",
+            },
+        )
+        assert status == 200
+        assert data["accepted"] is True
+        assert data["feedback"] is not None
+        assert "PARTIAL" in data["feedback"]
+
+        # attempt 2: no slot coverage → FAILURE (the newer verdict)
+        status, data = stack.post(
+            "/api/teaching_reply",
+            {"control": "attempt", "text": ATTEMPT_MISS},
+        )
+        assert status == 200
+        assert data["feedback"] is not None
+        assert "FAILURE" in data["feedback"]
+
+        # the ro card carries the newer verdict; the ASC reading would
+        # answer the PARTIAL string instead
+        status, payload = stack.get_json("/api/teaching/current")
+        assert status == 200
+        assert (
+            payload["moment"]["last_attempt_feedback"]
+            == "FAILURE（未命中目标表达）"
+        )
