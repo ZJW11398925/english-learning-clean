@@ -263,6 +263,28 @@ def test_the_word_endpoint_answers_multi_word_lemmas(
         assert data["lemma"] == "a bit"
 
 
+def test_the_word_endpoint_prefers_the_longest_nested_lemma(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    """Review LOW-1: the corpus's real nested pair — "I see your point,
+    but" contains "I see" — had no in-suite competition pin, so a
+    shortest-first ordering mutation passed green. The 5-word lemma must
+    win both when q carries the whole phrase and when it carries the
+    phrase inside a longer sentence."""
+
+    with web_stack(
+        tmp_path / "app.db",
+        content_db=pilot_content_db,
+    ) as stack:
+        for q in ("I see your point, but", "maybe I see your point, but later"):
+            status, data = stack.get_json(
+                "/api/word?q=" + urllib.parse.quote(q)
+            )
+            assert status == 200
+            assert data["found"] is True
+            assert data["lemma"] == "I see your point, but", q
+
+
 def test_the_word_endpoint_misses_honestly(
     tmp_path: Path, pilot_content_db: Path
 ) -> None:

@@ -351,6 +351,11 @@ export function stateBanner(kind, opts) {
 // 与服务端同一套边界字符。浮层 showWordCard 挂 body、贴点击点收进
 // 视口；关闭 = 点卡外或「收起」（closeWordCard），无 busy——命中即显，
 // miss 按契约静默。
+// 两条登记（p-1 评审）：①命中词可以不含被点词——点击某词的 3 词窗若
+// 含更长 lemma，出的是长窗的卡（点 "Anyway," 可能出 "I see" 的卡）；
+// 是否收紧为「命中须含被点 token」属产品裁决，Revisit。②词表 100 条
+// lemma 中 25 条超 3 词窗（最长 6 词）——点词对这些目标结构性不可达，
+// 窗口加宽或句级匹配是 Revisit 方向，定量以词表实测为准。
 const WORD_EDGE_CHARS = "\"'`.,;:!?()[]{}<>…—–-“”‘’《》「」*_/\\|=+~^%$#@&";
 
 export function letterWords(text) {
