@@ -566,15 +566,25 @@ function renderDelRefused(text) {
 function renderDelResult(data) {
   const box = diagBox("del-result");
   box.textContent = "";
-  const g = diagGroup(box, "已删除：" + data.scope);
   const notes = data.notes || [];
+  // p-2 评审 F-2：notes 含 already absent = 幂等空删——标题与尾句不得
+  // 对未发生的事声称发生（无新墓碑、台账无更新）。
+  const alreadyAbsent = notes.some((n) => n.includes("already absent"));
+  const g = diagGroup(
+    box,
+    alreadyAbsent
+      ? "没有可删的（" + data.scope + " 已不在）"
+      : "已删除：" + data.scope
+  );
   diagLine(g, "说明", notes.length ? notes.join("；") : "无");
   diagLine(g, "重建",
     (data.rebuilds_ok || 0) + " 成功 / " + (data.rebuilds_total || 0) + " 项");
   diagLine(g, "墓碑记录", (data.tombstoned || 0) + " 条");
   const tail = document.createElement("p");
   tail.className = "sub";
-  tail.textContent = "删除台账已更新——打开「记忆」的「删除台账」可以看到这次删除留下的记录。";
+  tail.textContent = alreadyAbsent
+    ? "这次没有删除任何新东西——之前留下的删除记录仍可在「记忆」的「删除台账」里看到。"
+    : "删除台账已更新——打开「记忆」的「删除台账」可以看到这次删除留下的记录。";
   box.appendChild(tail);
 }
 

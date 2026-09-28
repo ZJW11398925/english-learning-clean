@@ -417,6 +417,10 @@ def test_the_page_carries_the_safety_copy_and_the_result_strip(
         # the empty-state family and the RELATIONSHIP_PAIR honesty note
         assert "还没有记住什么" in page
         assert "此版本不出这个入口" in page
+        # p-2 review F-2: the idempotent no-op path must not claim a
+        # deletion happened — both its honest title and tail are pinned
+        assert "没有可删的（\" + data.scope + \" 已不在）" in page
+        assert "这次没有删除任何新东西" in page
         # textContent-only holds: the shell renders no markup anywhere
         assert "innerHTML" not in page
 
