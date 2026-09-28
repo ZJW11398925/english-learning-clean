@@ -33,6 +33,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+import pytest
+
 import elc.web
 from tests.host.test_w1_web import _OPENER, _Stack, web_stack
 
@@ -180,6 +182,37 @@ def test_the_static_face_fails_closed(tmp_path: Path) -> None:
         payload = json.loads(response.read().decode("utf-8"))
         assert "web.py" not in json.dumps(payload)
         connection.close()
+
+
+def test_a_missing_allowlisted_file_fails_closed(
+    tmp_path: Path, monkeypatch: "pytest.MonkeyPatch"
+) -> None:
+    """Review LOW-1: the allowlist can pass while the file itself is gone
+    (a truncated install, a stray delete). That arm — the OSError inside
+    the per-request read — must answer the same 404 JSON human sentence
+    as an unknown name, never a 500 traceback. The root is monkeypatched
+    to a copy missing one file, so the repo tree is never touched."""
+
+    import shutil
+
+    short_root = tmp_path / "webui-short"
+    short_root.mkdir()
+    for name in FILES:
+        if name != "screens.css":
+            shutil.copy2(WEBUI / name, short_root / name)
+    monkeypatch.setattr(elc.web, "_WEBUI_ROOT", short_root)
+
+    with web_stack(tmp_path / "app.db") as stack:
+        status, ctype, body = _get_any(stack, "/static/screens.css")
+        assert status == 404
+        assert status < 500
+        assert ctype.startswith("application/json")
+        error = json.loads(body.decode("utf-8"))["error"]
+        assert error
+        # the surviving half of the face still serves
+        status, ctype, body = _get_any(stack, "/static/tokens.css")
+        assert status == 200
+        assert ctype.startswith("text/css")
 
 
 def test_zero_external_resources_per_file() -> None:
