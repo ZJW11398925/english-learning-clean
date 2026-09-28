@@ -104,6 +104,60 @@ an authorized user-requested reveal **keeps the moment open** at
 ``FULL_REVEAL`` — SM §3's ``POST_REVEAL_OPTIONAL_ATTEMPT`` phase exists
 precisely because seeing the answer does not have to end the episode.
 
+**F-1 turns the instrument into a product shell** (the design language and
+the two-view navigation move in from the archived exploration repo's web
+face as *token values and interaction shapes only* — not one line of its
+code). The page's ``<style>`` is a two-theme token sheet: every color,
+radius and motion value is a CSS custom property, the light values on
+``:root`` and the dark values under ``@media (prefers-color-scheme: dark)``
+— the browser's own theme switch, no toggle, no script. Zero external
+resources stays the law (no CDN, no web font, no framework — the shell is
+still one embedded string over ``dependencies = []``). The shell is a fixed
+64px bottom tab bar with exactly two views, switched by plain JS
+``show``/``hide`` (no router): **聊天** (the default — everything the W
+series built, re-typeset: the message stream as user-right /
+assistant-left cards, the input row, and the teaching card on an
+accent-wash surface) and **诊断** — the five-whys panel (below) with the
+observations readout folded in at the top.
+
+``/api/diagnostics`` is the diagnostics view's one read: **read-only SQL**
+assembled into the five panels IP §15 asks a front end to answer. It runs
+on the work queue (:meth:`_WebFace.diagnostics` over ``host.db``) rather
+than on a handler-thread ro connection — the deliberate simple choice,
+written down: the diagnostics view is pulled by a person who is *not*
+mid-generation (the W-4 poll exists precisely because the card races the
+model), so nothing here needs to bypass the queue, and riding it keeps the
+one-connection one-thread discipline with zero new concurrency. Every
+panel is a plain ``SELECT`` (no write, ever — pinned by a before/after
+``rowid`` maxima test), each guarded separately: a panel whose read
+explodes answers ``{"error": …}`` in its own slot, never a 500 for the
+whole readout, and a panel with no durable rows answers its honest empty
+shape (the page says 暂无数据 / 无降级记录, never a fabricated number).
+The five panels:
+
+1. **Why did it teach?** — the latest ``planner_evaluation`` whose
+   ``factor_trace`` document marks a candidate ``selected: true`` (the
+   column is decoded by its own reader,
+   ``elc.planner.trace_document.decode_factor_trace``; a legacy prose row
+   simply has no candidates to speak of), with the candidate's
+   ``canonical_key`` / ``benefit_score`` / ``cost_score`` / ``utility``
+   and the matching ``gate_decision`` row's ``decision`` + ``reason_codes``.
+2. **Why did it NOT teach?** — the latest evaluation's top-3 **not
+   activated** candidates in ranking order (``utility`` against
+   ``activation_threshold``, ``activated: false``, each cost factor's
+   reading — the overexposure band value among them), plus the latest
+   ``DENY`` gate row's ``reason_codes``.
+3. **What evidence changed?** — the last five ``attempt_evaluation_record``
+   rows (``outcome`` / ``confidence`` / ``created_at``).
+4. **What support was visible?** — the last five teaching-class
+   ``generation_action_intent`` rows (``action_type`` / ``created_at``)
+   plus the ``exposure_estimate`` row count.
+5. **Why was a turn degraded?** — the latest ``DEGRADED`` row of
+   ``planner_execution_status`` and the latest
+   ``DEGRADED_NO_AUTOMATIC_TEACHING`` row of ``runtime_decision_outcome``
+   (either table may legitimately be empty — the honest answer is
+   无降级记录).
+
 ``observations`` serves ``elc.cli``'s readings core (the six §12 indicator
 declarations, the six durable-counts sections, the drift signal) — the same
 numbers the ``observations`` command prints, by construction. ``history``
@@ -136,6 +190,7 @@ from elc.cli import main as cli_main
 from elc.conversation.types import CommitUserTurn
 from elc.host import Host
 from elc.persona.provider import PersonaProvider
+from elc.planner.trace_document import decode_factor_trace
 from elc.platform.types import (
     ClientMessageId,
     ConversationId,
@@ -240,6 +295,28 @@ _RO_STATUS_CN: dict[str, str] = {
     MomentState.OPENING.value: "教学开启中…",
 }
 
+#: The teaching-class words of ``generation_action_intent.action_type`` (the
+#: CHECK's six words minus the two persona words) — the support panel's
+#: row filter, word for word from migration 0003's vocabulary.
+_TEACHING_ACTION_TYPES: tuple[str, ...] = (
+    "TEACHING_OPEN",
+    "TEACHING_HINT",
+    "TEACHING_REVEAL",
+    "TEACHING_EXPLANATION",
+)
+
+#: How many recent ``planner_evaluation`` rows the why-teach panel may walk
+#: back through before it answers the honest empty shape (bounded work: the
+#: scan stops at the first selected candidate, and a conversation whose
+#: every recent evaluation selected nothing has its real answer anyway).
+_DIAG_EVAL_SCAN = 50
+
+#: How many rows the list-shaped panels serve (evidence / support).
+_DIAG_PANEL_ROWS = 5
+
+#: How many not-activated candidates the why-not-teach panel serves.
+_DIAG_NOT_TEACH_CANDIDATES = 3
+
 
 def _readable_outcome(outcome: str) -> str:
     """One evaluator outcome word, readable: ``FAILURE（未命中目标表达）``.
@@ -283,70 +360,444 @@ def _target_display_name(target_id: str) -> str:
     return " ".join(parts[2:])
 
 
+# ---------------------------------------------------------------------------
+# the F-1 diagnostics panels — read-only SELECTs over app.db, one per why
+# ---------------------------------------------------------------------------
+
+
+def _reason_codes_of(raw: object) -> list[str] | str:
+    """The bracketed reason-codes column, as a list when it parses as one.
+
+    The column's durable form is a JSON array (``'["HARD_COOLDOWN_ACTIVE"]'``);
+    the diagnostics face hands the page the decoded list so it can join it
+    with human separators. A value that does not parse is passed through as
+    the raw string — a diagnostics panel reports what the row says, it does
+    not invent a cleaner shape for it."""
+
+    try:
+        loaded = json.loads(str(raw))
+    except (TypeError, ValueError):
+        return str(raw)
+    if isinstance(loaded, list):
+        return [str(item) for item in loaded]
+    return str(raw)
+
+
+def _candidate_face(candidate: Any) -> dict[str, Any]:
+    """One decoded candidate trace, as the page reads it.
+
+    The identification, the two partial sums, the utility against its
+    activation threshold, and every cost reading — the overexposure band
+    value among them, carried like any other factor number (the verdict
+    that silenced a candidate is a *number* the kernel scored, and the
+    panel shows the number, not a paraphrase)."""
+
+    return {
+        "candidate_id": candidate.candidate_id,
+        "canonical_key": candidate.canonical_key,
+        "benefit_score": candidate.benefit_score,
+        "cost_score": candidate.cost_score,
+        "utility": candidate.utility,
+        "activation_threshold": candidate.activation_threshold,
+        "activated": candidate.activated,
+        "selected": candidate.selected,
+        "costs": [
+            {"factor": reading.factor, "value": reading.value}
+            for reading in candidate.cost
+        ],
+    }
+
+
+def _why_teach_panel(db: sqlite3.Connection) -> dict[str, Any]:
+    """Why did it teach — the latest evaluation that actually selected one.
+
+    Walks the recent evaluations newest-first and stops at the first whose
+    ``factor_trace`` document marks a candidate ``selected: true``; the
+    matching gate row is the same cycle's decision for the same candidate
+    id. A legacy prose-array row (P9-0's predecessor encoding) has no
+    candidate trace to speak of and is stepped over, not decoded by
+    guessing. Nothing selected in the scanned window is the honest empty
+    shape."""
+
+    rows = db.execute(
+        "SELECT decision_cycle_id, factor_trace, created_at"
+        " FROM planner_evaluation"
+        " ORDER BY created_at DESC, rowid DESC LIMIT ?",
+        (_DIAG_EVAL_SCAN,),
+    ).fetchall()
+    for cycle_id, trace, created_at in rows:
+        document = decode_factor_trace(str(trace))
+        if isinstance(document, tuple):
+            continue
+        chosen = [c for c in document.candidates if c.selected]
+        if not chosen:
+            continue
+        candidate = chosen[0]
+        gate = db.execute(
+            "SELECT decision, reason_codes, created_at FROM gate_decision"
+            " WHERE decision_cycle_id = ? AND candidate_id = ?"
+            " ORDER BY created_at DESC, rowid DESC LIMIT 1",
+            (str(cycle_id), candidate.candidate_id),
+        ).fetchone()
+        return {
+            "created_at": str(created_at),
+            "candidate": _candidate_face(candidate),
+            "gate": None
+            if gate is None
+            else {
+                "decision": str(gate[0]),
+                "reason_codes": _reason_codes_of(gate[1]),
+                "created_at": str(gate[2]),
+            },
+        }
+    return {"created_at": None, "candidate": None, "gate": None}
+
+
+def _why_not_teach_panel(db: sqlite3.Connection) -> dict[str, Any]:
+    """Why did it NOT teach — the latest evaluation's silenced candidates.
+
+    The top-3 **not activated** candidates in the evaluation's own ranking
+    order (``ranked_candidate_ids``), each with its utility against the
+    activation threshold and every cost reading; plus the latest ``DENY``
+    gate row's reason codes (a different silence: the gate's no, not the
+    kernel's). No evaluation at all is the honest empty shape — and the
+    DENY row is still reported, because a conversation can be gated before
+    it is ever planned over."""
+
+    row = db.execute(
+        "SELECT ranked_candidate_ids, factor_trace, created_at"
+        " FROM planner_evaluation"
+        " ORDER BY created_at DESC, rowid DESC LIMIT 1"
+    ).fetchone()
+    candidates: list[dict[str, Any]] = []
+    created_at: str | None = None
+    if row is not None:
+        created_at = str(row[2])
+        document = decode_factor_trace(str(row[1]))
+        if not isinstance(document, tuple):
+            ranked = json.loads(str(row[0])) if row[0] else []
+            by_id = {c.candidate_id: c for c in document.candidates}
+            for cid in ranked if isinstance(ranked, list) else []:
+                candidate = by_id.get(str(cid))
+                if candidate is not None and candidate.activated is not True:
+                    candidates.append(_candidate_face(candidate))
+                    if len(candidates) >= _DIAG_NOT_TEACH_CANDIDATES:
+                        break
+    deny = db.execute(
+        "SELECT reason_codes, created_at FROM gate_decision"
+        " WHERE decision = 'DENY'"
+        " ORDER BY created_at DESC, rowid DESC LIMIT 1"
+    ).fetchone()
+    return {
+        "created_at": created_at,
+        "candidates": candidates,
+        "gate_deny": None
+        if deny is None
+        else {
+            "reason_codes": _reason_codes_of(deny[0]),
+            "created_at": str(deny[1]),
+        },
+    }
+
+
+def _evidence_panel(db: sqlite3.Connection) -> dict[str, Any]:
+    """What evidence changed — the last five judged attempts."""
+
+    rows = db.execute(
+        "SELECT outcome, confidence, created_at FROM attempt_evaluation_record"
+        " ORDER BY created_at DESC, rowid DESC LIMIT ?",
+        (_DIAG_PANEL_ROWS,),
+    ).fetchall()
+    return {
+        "records": [
+            {
+                "outcome": str(row[0]),
+                "confidence": float(row[1]),
+                "created_at": str(row[2]),
+            }
+            for row in rows
+        ]
+    }
+
+
+def _support_panel(db: sqlite3.Connection) -> dict[str, Any]:
+    """What support was visible — teaching deliveries and their exposure.
+
+    The last five teaching-class action intents (the four words of
+    :data:`_TEACHING_ACTION_TYPES`, the CHECK vocabulary minus the two
+    persona words) plus the ``exposure_estimate`` row count — how many
+    exposure estimates the delivery records ever wrote."""
+
+    rows = db.execute(
+        "SELECT action_type, created_at FROM generation_action_intent"
+        " WHERE action_type IN (?, ?, ?, ?)"
+        " ORDER BY created_at DESC, rowid DESC LIMIT ?",
+        (*_TEACHING_ACTION_TYPES, _DIAG_PANEL_ROWS),
+    ).fetchall()
+    counted = db.execute("SELECT COUNT(*) FROM exposure_estimate").fetchone()
+    return {
+        "actions": [
+            {"action_type": str(row[0]), "created_at": str(row[1])}
+            for row in rows
+        ],
+        "exposure_estimate_count": int(counted[0]) if counted else 0,
+    }
+
+
+def _degraded_panel(db: sqlite3.Connection) -> dict[str, Any]:
+    """Why was a turn degraded — the two degradation ledgers, latest rows.
+
+    ``planner_execution_status``'s ``DEGRADED`` word and
+    ``runtime_decision_outcome``'s ``DEGRADED_NO_AUTOMATIC_TEACHING`` word
+    (the only outcome word on that table that carries "DEGRADED"). Either
+    table may legitimately be empty — both ``None`` is the ordinary
+    healthy answer, and the page says 无降级记录."""
+
+    execution = db.execute(
+        "SELECT status, error_code, created_at FROM planner_execution_status"
+        " WHERE status = 'DEGRADED'"
+        " ORDER BY created_at DESC, rowid DESC LIMIT 1"
+    ).fetchone()
+    outcome = db.execute(
+        "SELECT outcome, reason_codes, created_at FROM runtime_decision_outcome"
+        " WHERE outcome = 'DEGRADED_NO_AUTOMATIC_TEACHING'"
+        " ORDER BY created_at DESC, rowid DESC LIMIT 1"
+    ).fetchone()
+    return {
+        "planner_execution": None
+        if execution is None
+        else {
+            "status": str(execution[0]),
+            "error_code": None if execution[1] is None else str(execution[1]),
+            "created_at": str(execution[2]),
+        },
+        "runtime_outcome": None
+        if outcome is None
+        else {
+            "outcome": str(outcome[0]),
+            "reason_codes": _reason_codes_of(outcome[1]),
+            "created_at": str(outcome[2]),
+        },
+    }
+
+
+def _diagnostics_panel(
+    name: str,
+    build: Callable[[sqlite3.Connection], dict[str, Any]],
+    db: sqlite3.Connection,
+) -> dict[str, Any]:
+    """One panel, guarded: a read that explodes answers an error word.
+
+    The five panels are independent reads; one dirty table must not take
+    the whole readout down (the route would otherwise 500 and the page
+    would show nothing at all). The error is the panel's own shape —
+    ``{"error": "<Exception>: <message>"}`` — which the page renders as a
+    read-failure line in that one slot."""
+
+    try:
+        return build(db)
+    except Exception as exc:
+        return {"error": f"{name}: {type(exc).__name__}: {exc}"}
+
+
 _PAGE = """<!doctype html>
 <html lang="zh">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>英语客厅 · Study-first dogfood</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto;
-         padding: 0 1rem; color: #222; }
-  h1 { font-size: 1.3rem; } h2 { font-size: 1.05rem; margin-top: 2rem; }
-  #messages { border: 1px solid #ccc; border-radius: 6px; min-height: 14rem;
-              padding: .75rem; display: flex; flex-direction: column; gap: .5rem; }
-  .user { align-self: flex-end; background: #e8f0fe; padding: .4rem .7rem;
-          border-radius: 10px 10px 2px 10px; max-width: 80%; white-space: pre-wrap; }
-  .assistant { align-self: flex-start; background: #f1f1f1; padding: .4rem .7rem;
-               border-radius: 10px 10px 10px 2px; max-width: 80%;
-               white-space: pre-wrap; }
-  .failure { align-self: flex-start; background: #fde8e8; color: #8a1f1f;
-             padding: .4rem .7rem; border-radius: 6px; max-width: 80%;
-             font-family: monospace; font-size: .85rem; }
+  /* 设计令牌：唯一出处。光主题在 :root，暗主题由系统偏好切换（无脚本、无开关）。 */
+  :root {
+    --bg: #faf8f5;
+    --surface: #ffffff;
+    --surface-sunken: #f3f0eb;
+    --ink: #1a1815;
+    --ink-soft: #6d675e;
+    --ink-faint: #98918a;
+    --line: #e8e3db;
+    --line-strong: #d8d1c7;
+    --accent: #0f766e;
+    --accent-press: #0b5d56;
+    --accent-wash: #e9f3f1;
+    --on-accent: #ffffff;
+    --danger: #b3261e;
+    --danger-wash: #fdeceb;
+    --ok: #3f6212;
+    --r-sm: 8px;
+    --r: 12px;
+    --r-lg: 16px;
+    --r-xl: 22px;
+    --dur: 180ms;
+    --ease: cubic-bezier(0.2, 0, 0.2, 1);
+    --tabbar-h: 64px;
+    --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161513;
+      --surface: #201e1b;
+      --surface-sunken: #1a1917;
+      --ink: #f2efe9;
+      --ink-soft: #a8a199;
+      --ink-faint: #7d766e;
+      --line: #2f2c28;
+      --line-strong: #403c37;
+      --accent: #4fd1c5;
+      --accent-press: #38b2a8;
+      --accent-wash: #12302d;
+      --on-accent: #08201e;
+      --danger: #ff8a80;
+      --danger-wash: #331b19;
+      --ok: #a3c96b;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC",
+         "Microsoft YaHei", sans-serif; max-width: 46rem; margin: 0 auto;
+         padding: 1rem 1rem calc(var(--tabbar-h) + 1.5rem
+                                 + env(safe-area-inset-bottom));
+         color: var(--ink); background: var(--bg); }
+  h1 { font-size: 1.25rem; margin: 0; }
+  h2 { font-size: 1.02rem; margin: 0 0 .5rem; }
+  .appbar { padding-bottom: .75rem; }
+  .appstatus { color: var(--ink-faint); font-size: .8125rem; margin: .2rem 0 0; }
+  .view > .note { color: var(--ink-soft); font-size: .875rem; }
+  .panel { background: var(--surface); border: 1px solid var(--line);
+           border-radius: var(--r-lg); padding: 1rem; margin-top: 1rem; }
+  .note { color: var(--ink-soft); font-size: .875rem; }
+  /* 消息流：用户右、assistant 左，卡片化（分组用底色+发丝边，不叠阴影）。 */
+  #messages { background: var(--surface); border: 1px solid var(--line);
+              border-radius: var(--r-lg); min-height: 14rem; padding: .75rem;
+              display: flex; flex-direction: column; gap: .5rem; }
+  .user, .assistant, .failure { max-width: 85%; padding: .5rem .8rem;
+                                white-space: pre-wrap; line-height: 1.55; }
+  .user { align-self: flex-end; background: var(--accent); color: var(--on-accent);
+          border-radius: var(--r) var(--r) var(--r-sm) var(--r); }
+  .assistant { align-self: flex-start; background: var(--surface-sunken);
+               border-radius: var(--r) var(--r) var(--r) var(--r-sm); }
+  .failure { align-self: flex-start; background: var(--danger-wash);
+             color: var(--danger); border-radius: var(--r-sm);
+             font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem; }
+  .system { align-self: center; color: var(--ink-faint); font-size: .85rem; }
   form { display: flex; gap: .5rem; margin-top: .75rem; }
-  #text { flex: 1; padding: .45rem; }
-  .moment { border: 1px solid #b8c9b8; background: #f2f8f2; border-radius: 6px;
-            padding: .5rem .75rem; margin-top: .5rem; }
-  .moment b { color: #2c5a2c; }
-  .moment.skipped { border-color: #bbb; background: #f4f4f4; opacity: .55; }
-  .moment.skipped b { color: #777; }
-  .moment button { margin-top: .35rem; font-size: .85rem; }
-  .replyrow { display: flex; gap: .4rem; margin-top: .35rem; }
-  .replytext { flex: 1; padding: .3rem; min-width: 0; font-size: .85rem; }
-  .system { align-self: center; color: #666; font-size: .85rem; }
-  button { padding: .45rem .9rem; cursor: pointer; }
+  #text { flex: 1; min-height: 44px; padding: .45rem .7rem; font: inherit;
+          color: var(--ink); background: var(--surface);
+          border: 1px solid var(--line-strong); border-radius: var(--r); }
+  .replytext { flex: 1; min-height: 40px; padding: .3rem .6rem; min-width: 0;
+               font-size: .875rem; font: inherit; color: var(--ink);
+               background: var(--surface); border: 1px solid var(--line-strong);
+               border-radius: var(--r-sm); }
+  button { min-height: 44px; padding: .4rem .9rem; cursor: pointer; font: inherit;
+           color: var(--ink); background: var(--surface);
+           border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+           transition: background var(--dur) var(--ease),
+                       border-color var(--dur) var(--ease),
+                       color var(--dur) var(--ease); }
+  button:hover { background: var(--surface-sunken); border-color: var(--line-strong); }
+  button:focus-visible { outline: none; box-shadow: var(--ring); }
   button:disabled { opacity: .5; cursor: wait; }
-  .resultstrip { margin-top: .4rem; padding: .35rem .6rem; border-radius: 6px;
+  button.primary { background: var(--accent); color: var(--on-accent);
+                   border-color: var(--accent); }
+  button.primary:hover { background: var(--accent-press);
+                         border-color: var(--accent-press); }
+  /* 教学时刻卡：重音浅底 + 大圆角；跳过态整体降透明。 */
+  .moment { border: 1px solid var(--line-strong); background: var(--accent-wash);
+            border-radius: var(--r-lg); padding: .75rem .9rem; margin-top: .6rem; }
+  .moment b { color: var(--accent-press); }
+  .moment.skipped { border-color: var(--line); background: var(--surface-sunken);
+                    opacity: .6; }
+  .moment.skipped b { color: var(--ink-soft); }
+  .replyrow { display: flex; gap: .4rem; margin-top: .45rem; }
+  .resultstrip { margin-top: .45rem; padding: .4rem .65rem; border-radius: var(--r-sm);
                  font-size: .9rem; }
-  .resultstrip.ok { background: #e5f4e0; color: #245c24; }
-  .resultstrip.part { background: #fdf3d7; color: #6b5310; }
-  .resultstrip.miss { background: #fde8e8; color: #8a1f1f; }
-  .busystrip { margin-top: .4rem; color: #555; font-size: .85rem; }
-  pre { background: #f7f7f7; border: 1px solid #ddd; border-radius: 6px;
-        padding: .75rem; overflow-x: auto; }
-  .note { color: #666; font-size: .85rem; }
+  .resultstrip.ok { background: color-mix(in srgb, var(--ok) 14%, transparent);
+                    color: var(--ok); }
+  .resultstrip.part { background: var(--surface-sunken); color: var(--ink-soft); }
+  .resultstrip.miss { background: var(--danger-wash); color: var(--danger); }
+  .busystrip { margin-top: .4rem; color: var(--ink-soft); font-size: .85rem; }
+  pre { background: var(--surface-sunken); border: 1px solid var(--line);
+        border-radius: var(--r-sm); padding: .75rem; overflow-x: auto;
+        color: var(--ink); }
+  /* 诊断视图：五个「为什么」面板。 */
+  .diag .kv { display: flex; gap: .4rem; padding: .15rem 0; font-size: .9rem;
+              font-variant-numeric: tabular-nums; }
+  .diag .kv b { color: var(--ink-soft); font-weight: 600; flex: none; }
+  .kvgroup { border-left: 3px solid var(--accent); background: var(--surface-sunken);
+             border-radius: var(--r-sm); padding: .5rem .7rem; margin-top: .5rem; }
+  .kvtitle { display: block; color: var(--accent-press); font-size: .875rem; }
+  .diagerror { color: var(--danger); font-size: .875rem; }
+  /* 底部页签：固定、64px、两枚（当前页 = 浅重音底 + 重音字 + 重音描边）。 */
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+            display: flex; gap: .5rem; max-width: 46rem; margin: 0 auto;
+            padding: .5rem .75rem calc(.5rem + env(safe-area-inset-bottom));
+            background: var(--surface); border-top: 1px solid var(--line); }
+  .tabbar > button { flex: 1 1 0; min-width: 0;
+                     min-height: calc(var(--tabbar-h) - 1rem);
+                     padding: 0 .25rem; background: var(--surface);
+                     border-color: var(--surface); color: var(--ink-soft);
+                     border-radius: var(--r); font-weight: 600; }
+  .tabbar > button[aria-current="page"] { background: var(--accent-wash);
+      color: var(--accent); border-color: var(--accent); }
 </style>
 </head>
 <body>
-<h1>英语客厅 · Study-first dogfood</h1>
-<p class="note">本地单用户页面（127.0.0.1，无鉴权）——你说英语，客厅用英语回你；
-若这一轮触发了自动教学，教学时刻卡会出现在下方。</p>
-<section>
-  <h2>对话</h2>
-  <div id="messages"></div>
-  <form id="send">
-    <input id="text" autocomplete="off" placeholder="用英语说点什么……">
-    <button type="submit">发送</button>
-  </form>
-</section>
-<section>
-  <h2>教学时刻（本轮）</h2>
-  <div id="moments"><p class="note">发送一轮后显示本轮打开的教学时刻。</p></div>
-</section>
-<section>
-  <h2>观察读数</h2>
-  <button id="obs" type="button">拉取观察读数</button>
-  <pre id="obsout" hidden></pre>
-</section>
+<header class="appbar">
+  <h1>英语客厅</h1>
+  <p class="appstatus">本地单用户 · 127.0.0.1 · 无鉴权</p>
+</header>
+<main>
+  <section id="view-chat" class="view">
+    <p class="note">你说英语，客厅用英语回你；若这一轮触发了自动教学，
+       教学时刻卡会出现在下方。</p>
+    <div id="messages" style="margin-top: .75rem;" aria-live="polite"></div>
+    <form id="send">
+      <input id="text" autocomplete="off" placeholder="用英语说点什么……">
+      <button type="submit" class="primary">发送</button>
+    </form>
+    <section class="panel">
+      <h2>教学时刻（本轮）</h2>
+      <div id="moments"><p class="note">发送一轮后显示本轮打开的教学时刻。</p></div>
+    </section>
+  </section>
+  <section id="view-diagnostics" class="view" hidden>
+    <p class="note">五个「为什么」——客厅的每一步都有 durable 记录，
+       这里如实读给你看（只读）。</p>
+    <div style="margin-top: .75rem;">
+      <button id="diag-refresh" type="button">刷新读数</button>
+    </div>
+    <section class="panel diag">
+      <h2>观察读数</h2>
+      <button id="obs" type="button">拉取观察读数</button>
+      <pre id="obsout" hidden></pre>
+    </section>
+    <section class="panel diag">
+      <h2>为什么教了这一课？</h2>
+      <div id="why-teach"><p class="note">暂无数据</p></div>
+    </section>
+    <section class="panel diag">
+      <h2>为什么没有教？</h2>
+      <div id="why-not-teach"><p class="note">暂无数据</p></div>
+    </section>
+    <section class="panel diag">
+      <h2>证据有什么变化？</h2>
+      <div id="why-evidence"><p class="note">暂无数据</p></div>
+    </section>
+    <section class="panel diag">
+      <h2>你看到了哪些支持？</h2>
+      <div id="why-support"><p class="note">暂无数据</p></div>
+    </section>
+    <section class="panel diag">
+      <h2>有没有轮次被降级？</h2>
+      <div id="why-degraded"><p class="note">无降级记录</p></div>
+    </section>
+  </section>
+</main>
+<nav class="tabbar" aria-label="视图切换">
+  <button type="button" data-view="chat" aria-current="page">聊天</button>
+  <button type="button" data-view="diagnostics">诊断</button>
+</nav>
 <script>
 "use strict";
 const messages = document.getElementById("messages");
@@ -355,10 +806,31 @@ const momentsBox = document.getElementById("moments");
 function addLine(cls, text) {
   const div = document.createElement("div");
   div.className = cls;
-  div.textContent = text;            // textContent, never innerHTML: the
+  div.textContent = text;            // textContent, never markup: the
   messages.appendChild(div);          // user's own words stay inert text
   messages.scrollTop = messages.scrollHeight;
   return div;
+}
+
+// F-1: two views over one page — a fixed bottom tab bar, plain show/hide.
+const viewChat = document.getElementById("view-chat");
+const viewDiag = document.getElementById("view-diagnostics");
+
+function showView(name) {
+  viewChat.hidden = name !== "chat";
+  viewDiag.hidden = name !== "diagnostics";
+  for (const tab of document.querySelectorAll(".tabbar > button")) {
+    if (tab.dataset.view === name) {
+      tab.setAttribute("aria-current", "page");
+    } else {
+      tab.removeAttribute("aria-current");
+    }
+  }
+  if (name === "diagnostics") loadDiagnostics();
+}
+
+for (const tab of document.querySelectorAll(".tabbar > button")) {
+  tab.addEventListener("click", () => showView(tab.dataset.view || "chat"));
 }
 
 // W-6: the attempt loop, made legible. The verdict is a prominent strip
@@ -652,6 +1124,194 @@ document.getElementById("obs").addEventListener("click", async () => {
   out.hidden = false;
   out.textContent = lines.join("\\n");
 });
+
+// F-1: the diagnostics view — the five whys, read from /api/diagnostics.
+// Chinese labels over the raw numbers; a panel with nothing to say says so.
+const OUTCOME_CN = {
+  SUCCESS: "回答正确",
+  ALTERNATIVE_SUCCESS: "回答正确（另一种合格表达）",
+  PARTIAL: "部分正确",
+  FAILURE: "未命中目标表达",
+  ABSTAIN: "本次作答无法评判",
+};
+const ACTION_CN = {
+  TEACHING_OPEN: "打开教学",
+  TEACHING_HINT: "给提示",
+  TEACHING_REVEAL: "展示答案",
+  TEACHING_EXPLANATION: "给解释",
+};
+
+function fmtNum(value) {
+  return (value === null || value === undefined) ? "—" : String(value);
+}
+
+function diagBox(id) {
+  return document.getElementById(id);
+}
+
+function diagEmpty(box, word) {
+  const p = document.createElement("p");
+  p.className = "note";
+  p.textContent = word || "暂无数据";
+  box.appendChild(p);
+}
+
+function diagError(box, message) {
+  const p = document.createElement("p");
+  p.className = "diagerror";
+  p.textContent = "读取失败：" + message;
+  box.appendChild(p);
+}
+
+function diagLine(box, label, value) {
+  const row = document.createElement("div");
+  row.className = "kv";
+  const b = document.createElement("b");
+  b.textContent = label + "：";
+  row.appendChild(b);
+  row.appendChild(document.createTextNode(String(value)));
+  box.appendChild(row);
+}
+
+function diagGroup(box, title) {
+  const g = document.createElement("div");
+  g.className = "kvgroup";
+  const b = document.createElement("b");
+  b.className = "kvtitle";
+  b.textContent = title;
+  g.appendChild(b);
+  box.appendChild(g);
+  return g;
+}
+
+function renderWhyTeach(d) {
+  const box = diagBox("why-teach");
+  box.textContent = "";
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  if (!d.candidate) {
+    diagEmpty(box, "暂无数据——还没有任何一轮把一个候选真正选中。");
+    return;
+  }
+  const g = diagGroup(box, "被选中的候选");
+  diagLine(g, "目标（canonical_key）", d.candidate.canonical_key);
+  diagLine(g, "收益分 benefit", fmtNum(d.candidate.benefit_score));
+  diagLine(g, "成本分 cost", fmtNum(d.candidate.cost_score));
+  diagLine(g, "效用 utility", fmtNum(d.candidate.utility));
+  if (d.gate) {
+    const gg = diagGroup(box, "门（Gate）裁决");
+    diagLine(gg, "裁决", d.gate.decision);
+    const codes = d.gate.reason_codes;
+    diagLine(gg, "理由码", Array.isArray(codes) ? codes.join("、") : String(codes));
+    diagLine(gg, "时间", d.gate.created_at);
+  }
+  diagLine(box, "评估时间", d.created_at);
+}
+
+function renderWhyNot(d) {
+  const box = diagBox("why-not-teach");
+  box.textContent = "";
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  const list = d.candidates || [];
+  if (d.created_at === null && !list.length) {
+    diagEmpty(box, "暂无数据——还没有任何一轮规划评估。");
+    return;
+  }
+  if (!list.length) {
+    diagLine(box, "本轮未激活候选", "无（本轮候选全部激活，或本轮没有候选）");
+  }
+  for (const c of list) {
+    const g = diagGroup(box, c.canonical_key || c.candidate_id);
+    diagLine(g, "效用 vs 阈值",
+      fmtNum(c.utility) + "  vs  " + fmtNum(c.activation_threshold));
+    diagLine(g, "是否激活",
+      c.activated === false ? "未激活（activated: false）" : String(c.activated));
+    for (const r of (c.costs || [])) {
+      diagLine(g, "成本因子 " + r.factor, fmtNum(r.value));
+    }
+  }
+  if (d.gate_deny) {
+    const gg = diagGroup(box, "最近一次门拦截（DENY）");
+    const codes = d.gate_deny.reason_codes;
+    diagLine(gg, "理由码", Array.isArray(codes) ? codes.join("、") : String(codes));
+    diagLine(gg, "时间", d.gate_deny.created_at);
+  }
+}
+
+function renderEvidence(d) {
+  const box = diagBox("why-evidence");
+  box.textContent = "";
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  const rows = d.records || [];
+  if (!rows.length) {
+    diagEmpty(box, "暂无数据——还没有任何一次作答被判分。");
+    return;
+  }
+  for (const r of rows) {
+    const g = diagGroup(box, OUTCOME_CN[r.outcome] || r.outcome);
+    diagLine(g, "outcome", r.outcome);
+    diagLine(g, "confidence", fmtNum(r.confidence));
+    diagLine(g, "时间", r.created_at);
+  }
+}
+
+function renderSupport(d) {
+  const box = diagBox("why-support");
+  box.textContent = "";
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  const rows = d.actions || [];
+  if (!rows.length) {
+    diagEmpty(box, "暂无数据——还没有任何一次教学支持被交付。");
+    return;
+  }
+  for (const a of rows) {
+    const g = diagGroup(box, ACTION_CN[a.action_type] || a.action_type);
+    diagLine(g, "action_type", a.action_type);
+    diagLine(g, "时间", a.created_at);
+  }
+  diagLine(box, "曝光估计累计（exposure_estimate）",
+    d.exposure_estimate_count + " 条");
+}
+
+function renderDegraded(d) {
+  const box = diagBox("why-degraded");
+  box.textContent = "";
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  const pe = d.planner_execution;
+  const ro = d.runtime_outcome;
+  if (!pe && !ro) { diagEmpty(box, "无降级记录"); return; }
+  if (pe) {
+    const g = diagGroup(box, "Planner 执行状态");
+    diagLine(g, "status", pe.status);
+    diagLine(g, "error_code", pe.error_code === null ? "—" : pe.error_code);
+    diagLine(g, "时间", pe.created_at);
+  }
+  if (ro) {
+    const g = diagGroup(box, "运行时轮次结局");
+    diagLine(g, "outcome", ro.outcome);
+    const codes = ro.reason_codes;
+    diagLine(g, "理由码", Array.isArray(codes) ? codes.join("、") : String(codes));
+    diagLine(g, "时间", ro.created_at);
+  }
+}
+
+async function loadDiagnostics() {
+  try {
+    const res = await fetch("/api/diagnostics");
+    const data = await res.json();
+    renderWhyTeach(data.why_teach);
+    renderWhyNot(data.why_not_teach);
+    renderEvidence(data.evidence);
+    renderSupport(data.support);
+    renderDegraded(data.degraded);
+  } catch {
+    for (const id of ["why-teach", "why-not-teach", "why-evidence",
+                      "why-support", "why-degraded"]) {
+      diagError(diagBox(id), "诊断读数拉取失败");
+    }
+  }
+}
+
+document.getElementById("diag-refresh").addEventListener("click", loadDiagnostics);
 
 async function loadHistory() {
   const res = await fetch("/api/history");
@@ -1062,6 +1722,32 @@ class _WebFace:
             "drift_count": observation_drift_count(self._host.db),
         }
 
+    def diagnostics(self) -> dict[str, Any]:
+        """The five-whys readout — read-only SQL, one guarded panel per why.
+
+        Served on the work queue over ``host.db`` (the module docstring
+        records why this face does not need the W-4 ro bypass: a person
+        pulls it from the diagnostics view, never mid-generation). Every
+        panel is a plain ``SELECT``; nothing here writes, ever. A panel
+        whose read explodes answers ``{"error": …}`` in its own slot and
+        the other four still answer; a panel with no durable rows answers
+        its honest empty shape, which the page renders as 暂无数据 /
+        无降级记录 — never a fabricated number.
+        """
+
+        db = self._host.db
+        return {
+            "why_teach": _diagnostics_panel(
+                "why_teach", _why_teach_panel, db
+            ),
+            "why_not_teach": _diagnostics_panel(
+                "why_not_teach", _why_not_teach_panel, db
+            ),
+            "evidence": _diagnostics_panel("evidence", _evidence_panel, db),
+            "support": _diagnostics_panel("support", _support_panel, db),
+            "degraded": _diagnostics_panel("degraded", _degraded_panel, db),
+        }
+
     def history(self) -> dict[str, Any]:
         """The canonical transcript window — what the page recovers on load.
 
@@ -1193,6 +1879,12 @@ def _build_server(
                         face.app_db_path, face.conversation_id
                     ),
                 )
+            elif self.path == "/api/diagnostics":
+                # The five-whys readout, read-only, on the work queue (the
+                # module docstring records the choice: the diagnostics view
+                # is pulled by a person, not mid-generation — no ro bypass
+                # needed). Panel-level errors ride inside the payload.
+                self._run_on_host_thread(face.diagnostics)
             elif self.path == "/api/observations":
                 self._run_on_host_thread(face.observations)
             else:
