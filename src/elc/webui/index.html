@@ -111,6 +111,8 @@
     <div class="setlinks">
       <button type="button" class="btn btn--set" data-block="learning">学习</button>
       <button type="button" class="btn btn--set" data-block="diagnostics">诊断</button>
+      <button type="button" class="btn btn--set" data-block="memory">记忆</button>
+      <button type="button" class="btn btn--set" data-block="privacy">隐私</button>
     </div>
 
     <section id="set-learning" class="setblock" hidden>
@@ -160,6 +162,59 @@
         <div id="why-degraded"><p class="note">无降级记录</p></div>
       </div>
       <button id="diag-refresh" class="btn btn--dot" type="button">刷新读数</button>
+    </section>
+
+    <!-- p-2 记忆区块：五面板——关系记忆 / 剧情记忆 / 学习者状态（行级）/
+         证据 / 删除台账。点开即读（就地展开）；空态诚实（「还没有记住
+         什么」族——客厅如实说它没记住东西，不装）。 -->
+    <section id="set-memory" class="setblock" hidden>
+      <div class="sec">
+        <h3>关系记忆</h3>
+        <div id="mem-relationship"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>剧情记忆</h3>
+        <div id="mem-episode"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>学习者状态</h3>
+        <div id="mem-states"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>证据</h3>
+        <div id="mem-evidence"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>删除台账</h3>
+        <div id="mem-tombstones"><p class="note">暂无数据</p></div>
+      </div>
+      <button id="mem-refresh" class="btn btn--dot" type="button">刷新读数</button>
+    </section>
+
+    <!-- p-2 隐私区块：三个有行为腿的删除入口。所有删除都不可恢复；
+         每个入口都要过两层确认。关系对删除需要 persona_id，本页无法
+         得知——诚实不装（宁缺勿假）。 -->
+    <section id="set-privacy" class="setblock" hidden>
+      <p class="sub">这里可以删除客厅记住的东西。所有删除操作都不可恢复。</p>
+      <div class="sec">
+        <h3>当前对话</h3>
+        <p class="sub">删除这段对话的全部记录——信件、教学痕迹与它留下的
+           证据行，一并删去。</p>
+        <button id="del-conversation" class="btn btn--pencil" type="button">
+          删除当前对话的全部记录</button>
+      </div>
+      <div class="sec">
+        <h3>按目标删学习数据</h3>
+        <p class="sub">删除某个目标的学习证据、学习状态与复习日程；对话
+           信件本身保留。</p>
+        <div id="del-targets"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>关系对删除</h3>
+        <p class="sub">关系对删除需要角色 id（persona_id），本页无法得知
+           ——此版本不出这个入口。</p>
+      </div>
+      <div id="del-result" class="sec"></div>
     </section>
     </div>
   </section>

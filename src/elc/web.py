@@ -176,6 +176,25 @@ top of F-1, all honest and none new in kind:
   reason codes); a failed or empty pull is silent — the line never
   blocks a chat.
 
+**p-2 adds the memory readout and the delete face.** ``GET /api/memory``
+is the diagnostics construction once more (read-only SQL on the work
+queue, panel-level guards, honest empty shapes): five panels over what
+the parlor *remembers* — relationship memories, episode summaries, the
+learner_target_state rows (row-level: each row's target, watermark and
+the state document's key set, never a guessed reading of the keys), the
+evidence counts with the last five claims, and the §24 deletion ledger
+through the host's own deletion controller (删除也要透明: a tombstone is
+the opaque digest §24 pins, never the deleted body). ``POST /api/delete``
+is the page's one destructive act: the grammar accepts exactly the three
+scopes with behaviour legs (``CONVERSATION`` / ``LEARNING_TARGET`` /
+``RELATIONSHIP_PAIR``, each with its own key — every other scope word,
+including the deletion vocabulary's other four, answers a 400 人话), the
+request goes through the controller's own ``execute`` (an ``Err`` is a
+runtime fact: 200 + ``accepted: false`` + the controller's code and
+sentence, passed through verbatim), and a ``CONVERSATION`` body without a
+``conversation_id`` names the conversation this face serves — the page
+never learns its own id, so the face supplies the honest referent.
+
 **p-1 adds the word-card face and the 今日 screen.** ``GET
 /api/word?q=<text>`` is one read-only lookup over content.db's word list
 (the §24.2/§24.3 rows the build wrote): the query's tokens must contain a
@@ -263,6 +282,8 @@ from elc.cli import main as cli_main
 from elc.content.store import open_read_only
 from elc.conversation.types import CommitUserTurn
 from elc.curriculum.readiness import READINESS_LEVELS
+from elc.deletion.controller import DeletionController
+from elc.deletion.types import DeletionRequest, DeletionScope
 from elc.host import Host
 from elc.persona.provider import PersonaProvider
 from elc.planner.trace_document import decode_factor_trace
@@ -272,6 +293,7 @@ from elc.platform.types import (
     Err,
     InputId,
     InteractionChannel,
+    PersonaId,
     TargetId,
 )
 from elc.runtime.controller import TeachingReplyRequest
@@ -809,6 +831,192 @@ def _learning_evidence_panel(db: sqlite3.Connection) -> dict[str, Any]:
         ],
         "evidence_claim_count": int(claims[0]) if claims else 0,
         "learner_target_state_count": int(states[0]) if states else 0,
+    }
+
+
+# ---------------------------------------------------------------------------
+# the p-2 memory panels — what the parlor remembers, one read-only face
+# ---------------------------------------------------------------------------
+
+#: How many recent evidence claims the memory view's evidence panel serves
+#: (the learning view's width, same number, own name).
+_MEMORY_EVIDENCE_ROWS = 5
+
+#: The three scopes the delete face accepts — the ones with behaviour legs
+#: on this assembly — each mapped to its own request key. The deletion
+#: vocabulary's other four words are the store's, not this face's: they
+#: answer the route's 400 人话, never a silent widening.
+_DELETE_SCOPE_KEYS: dict[DeletionScope, str] = {
+    DeletionScope.CONVERSATION: "conversation_id",
+    DeletionScope.LEARNING_TARGET: "target_id",
+    DeletionScope.RELATIONSHIP_PAIR: "persona_id",
+}
+
+
+def _json_array_column(raw: object) -> list[str] | str:
+    """One JSON-array column, decoded when it parses as one (the goals
+    panel's convention); anything else passes through as the raw string —
+    a memory panel reports what the row says, never a cleaner shape it
+    invented for it."""
+
+    try:
+        loaded = json.loads(str(raw))
+    except (TypeError, ValueError):
+        return str(raw)
+    if isinstance(loaded, list):
+        return [str(item) for item in loaded]
+    return str(raw)
+
+
+def _relationship_memory_panel(db: sqlite3.Connection) -> dict[str, Any]:
+    """关系记忆 — every relationship_memory row, canonical text in full (v1
+    serves the whole row; truncation is the page's display choice, never a
+    data decision made server-side)."""
+
+    rows = db.execute(
+        "SELECT relationship_memory_id, memory_type, provenance, status,"
+        " canonical_content, sensitivity_class, persistence_authorization,"
+        " confidence, persona_id, user_id, created_at, updated_at"
+        " FROM relationship_memory ORDER BY relationship_memory_id"
+    ).fetchall()
+    return {
+        "memories": [
+            {
+                "relationship_memory_id": str(row[0]),
+                "memory_type": str(row[1]),
+                "provenance": str(row[2]),
+                "status": str(row[3]),
+                "canonical_content": str(row[4]),
+                "sensitivity_class": str(row[5]),
+                "persistence_authorization": str(row[6]),
+                "confidence": None if row[7] is None else float(row[7]),
+                "persona_id": str(row[8]),
+                "user_id": str(row[9]),
+                "created_at": str(row[10]),
+                "updated_at": str(row[11]),
+            }
+            for row in rows
+        ]
+    }
+
+
+def _episode_panel(db: sqlite3.Connection) -> dict[str, Any]:
+    """剧情记忆 — every episode row: the summary plus the two JSON-array
+    columns decoded (:func:`_json_array_column`), status and version."""
+
+    rows = db.execute(
+        "SELECT episode_id, conversation_id, version, summary, open_threads,"
+        " recent_events, status, updated_at FROM episode"
+        " ORDER BY episode_id"
+    ).fetchall()
+    return {
+        "episodes": [
+            {
+                "episode_id": str(row[0]),
+                "conversation_id": str(row[1]),
+                "version": str(row[2]),
+                "summary": str(row[3]),
+                "open_threads": _json_array_column(row[4]),
+                "recent_events": _json_array_column(row[5]),
+                "status": str(row[6]),
+                "updated_at": str(row[7]),
+            }
+            for row in rows
+        ]
+    }
+
+
+def _learner_state_panel(db: sqlite3.Connection) -> dict[str, Any]:
+    """学习者状态 — row-level (the p-1 I-4 closure): every
+    learner_target_state row with its target key, the durable evidence
+    watermark and the state document's *key set*. The keys are names, not
+    readings — what a key means is the estimator's vocabulary and this
+    panel does not guess at it."""
+
+    rows = db.execute(
+        "SELECT target_id, target_type, evidence_modality, estimator_version,"
+        " evidence_watermark, state_json, updated_at"
+        " FROM learner_target_state"
+        " ORDER BY target_id, target_type, evidence_modality"
+    ).fetchall()
+    states: list[dict[str, Any]] = []
+    for row in rows:
+        try:
+            document = json.loads(str(row[5]))
+        except (TypeError, ValueError):
+            document = None
+        states.append(
+            {
+                "target_id": str(row[0]),
+                "target_type": str(row[1]),
+                "evidence_modality": str(row[2]),
+                "estimator_version": str(row[3]),
+                "evidence_watermark": int(row[4]),
+                "state_keys": (
+                    sorted(str(key) for key in document)
+                    if isinstance(document, dict)
+                    else None
+                ),
+                "updated_at": str(row[6]),
+            }
+        )
+    return {"states": states}
+
+
+def _memory_evidence_panel(db: sqlite3.Connection) -> dict[str, Any]:
+    """证据 — the two counts plus the last five claims (numbers, not
+    readings; the learning panel's own shape on its own endpoint)."""
+
+    rows = db.execute(
+        "SELECT target_id, polarity, outcome, performance_type, created_at"
+        " FROM evidence_claim"
+        " ORDER BY created_at DESC, rowid DESC LIMIT ?",
+        (_MEMORY_EVIDENCE_ROWS,),
+    ).fetchall()
+    claims = db.execute("SELECT COUNT(*) FROM evidence_claim").fetchone()
+    commits = db.execute(
+        "SELECT COUNT(*) FROM evidence_commit"
+    ).fetchone()
+    return {
+        "claims": [
+            {
+                "target_id": str(row[0]),
+                "polarity": str(row[1]),
+                "outcome": str(row[2]),
+                "performance_type": str(row[3]),
+                "created_at": str(row[4]),
+            }
+            for row in rows
+        ],
+        "evidence_claim_count": int(claims[0]) if claims else 0,
+        "evidence_commit_count": int(commits[0]) if commits else 0,
+    }
+
+
+def _tombstones_of(controller: DeletionController) -> dict[str, Any]:
+    """删除台账 — the §24 ledger through the controller's own read face.
+    A tombstone carries the opaque digest §24 pins (``entity_hash``), never
+    the deleted body — transparency about *what kind of thing* went and
+    when, which is all the ledger honestly holds."""
+
+    read = controller.list_tombstones()
+    if isinstance(read, Err):
+        raise RuntimeError(
+            "the tombstone ledger could not be read:"
+            f" {read.error.code.value}: {read.error.message}"
+        )
+    return {
+        "tombstones": [
+            {
+                "tombstone_id": record.tombstone_id,
+                "entity_kind": record.entity_kind,
+                "entity_hash": record.entity_hash,
+                "deleted_at": record.deleted_at,
+                "deletion_scope": record.deletion_scope.value,
+                "scope_version": record.scope_version,
+            }
+            for record in read.value
+        ]
     }
 
 
@@ -1458,6 +1666,113 @@ class _WebFace:
             ],
         }
 
+    def memory(self) -> dict[str, Any]:
+        """p-2: the memory readout — five guarded panels, read-only SQL on
+        the work queue (the diagnostics face's construction; a person pulls
+        it from the 仪表 screen, never mid-generation)."""
+
+        db = self._host.db
+        return {
+            "relationship_memory": _diagnostics_panel(
+                "relationship_memory", _relationship_memory_panel, db
+            ),
+            "episode": _diagnostics_panel("episode", _episode_panel, db),
+            "learner_states": _diagnostics_panel(
+                "learner_states", _learner_state_panel, db
+            ),
+            "evidence": _diagnostics_panel(
+                "memory_evidence", _memory_evidence_panel, db
+            ),
+            "tombstones": _diagnostics_panel(
+                "tombstones",
+                lambda _db: self._tombstones(),
+                db,
+            ),
+        }
+
+    def _tombstones(self) -> dict[str, Any]:
+        """The tombstone panel's read: the host's own deletion controller,
+        or the honest refusal when this host carries none (``open_host``
+        always wires one; the guard is the posture, not an expectation)."""
+
+        controller = self._host.deletion
+        if controller is None:
+            raise RuntimeError(
+                "no deletion controller is wired into this host"
+            )
+        return _tombstones_of(controller)
+
+    def delete(
+        self,
+        scope: DeletionScope,
+        conversation_id: str | None,
+        target_id: str | None,
+        persona_id: str | None,
+    ) -> dict[str, Any]:
+        """p-2: one destructive request, through the BF-05 authority face.
+
+        The controller owns every semantic — what the scope removes, the
+        tombstones, the rebuilds — and this face only constructs the
+        request and passes the answer through: an ``Ok`` is the outcome
+        summary (scope, notes, the rebuild attempts with their own ok
+        verdicts, the tombstone and per-table tallies), an ``Err`` is a
+        runtime fact (200 + ``accepted: false`` + the controller's own
+        code and sentence, verbatim — the teaching faces' refusal shape).
+        Nothing here deletes a row itself, ever.
+        """
+
+        controller = self._host.deletion
+        if controller is None:
+            return {
+                "accepted": False,
+                "code": "DEPENDENCY_UNAVAILABLE",
+                "message": "no deletion controller is wired into this host",
+                "scope": scope.value,
+            }
+        request = DeletionRequest(
+            scope=scope,
+            conversation_id=(
+                None if conversation_id is None
+                else ConversationId(conversation_id)
+            ),
+            target_id=None if target_id is None else TargetId(target_id),
+            persona_id=None if persona_id is None else PersonaId(persona_id),
+        )
+        result = controller.execute(request)
+        if isinstance(result, Err):
+            return {
+                "accepted": False,
+                "code": result.error.code.value,
+                "message": result.error.message,
+                "scope": scope.value,
+            }
+        outcome = result.value
+        return {
+            "accepted": True,
+            "code": None,
+            "message": None,
+            "scope": outcome.scope.value,
+            "notes": list(outcome.notes),
+            "rebuilds": [
+                {
+                    "kind": attempt.kind,
+                    "key": attempt.key,
+                    "ok": attempt.ok,
+                    "detail": attempt.detail,
+                }
+                for attempt in outcome.rebuilds
+            ],
+            "rebuilds_ok": sum(
+                1 for attempt in outcome.rebuilds if attempt.ok
+            ),
+            "rebuilds_total": len(outcome.rebuilds),
+            "tombstoned": outcome.execution.tombstoned,
+            "tallies": {
+                tally.table: tally.removed
+                for tally in outcome.execution.tallies
+            },
+        }
+
     def word(self, q: str) -> dict[str, Any]:
         """One word-card lookup over the content leg's word list (p-1).
 
@@ -1738,6 +2053,10 @@ def _build_server(
                 else:
                     looked_up = q_values[0]
                     self._run_on_host_thread(lambda: face.word(looked_up))
+            elif self.path == "/api/memory":
+                # p-2: the memory readout — five guarded panels, read-only,
+                # on the work queue (the diagnostics construction).
+                self._run_on_host_thread(face.memory)
             else:
                 self._send_json(404, {"error": "not found"})
 
@@ -1746,6 +2065,7 @@ def _build_server(
                 "/api/turn",
                 "/api/teaching_reply",
                 "/api/teach_me",
+                "/api/delete",
             ):
                 self._send_json(404, {"error": "not found"})
                 return
@@ -1822,6 +2142,88 @@ def _build_server(
                     )
                     return
                 self._run_on_host_thread(lambda: face.teach_me(target_id))
+                return
+            if self.path == "/api/delete":
+                # p-2 grammar: {"scope": <one of the three words>} plus the
+                # scope's own key (and nothing else — a key outside the
+                # scope's own is a 400, never a silent widening). A
+                # CONVERSATION body without a conversation_id names the
+                # conversation this face serves: the page never learns its
+                # own id, so the face supplies the honest referent. A scope
+                # word outside the three — including the deletion
+                # vocabulary's other four — is the 400 人话 below; a missing
+                # key for a valid scope reaches the controller and comes
+                # back as its own VALIDATION_FAILED (200, honestly).
+                if not isinstance(payload, dict):
+                    self._send_json(
+                        400,
+                        {
+                            "error": (
+                                'need a JSON body {"scope": "CONVERSATION"'
+                                ' | "LEARNING_TARGET" | "RELATIONSHIP_PAIR",'
+                                " plus that scope's own key"
+                            )
+                        },
+                    )
+                    return
+                scope_word = payload.get("scope")
+                scope: DeletionScope | None = None
+                if isinstance(scope_word, str):
+                    try:
+                        scope = DeletionScope(scope_word)
+                    except ValueError:
+                        scope = None
+                if scope not in _DELETE_SCOPE_KEYS:
+                    self._send_json(
+                        400,
+                        {
+                            "error": (
+                                "此版本不支持该范围："
+                                f"{scope_word!r}（只支持 CONVERSATION /"
+                                " LEARNING_TARGET / RELATIONSHIP_PAIR）"
+                            )
+                        },
+                    )
+                    return
+                own_key = _DELETE_SCOPE_KEYS[scope]
+                keys: dict[str, str] = {}
+                for key in ("conversation_id", "target_id", "persona_id"):
+                    value = payload.get(key)
+                    if value is None:
+                        continue
+                    if not isinstance(value, str) or not value.strip():
+                        self._send_json(
+                            400,
+                            {"error": f'"{key}" needs a non-empty string'},
+                        )
+                        return
+                    keys[key] = value
+                extra = set(payload) - {"scope", own_key}
+                if extra:
+                    self._send_json(
+                        400,
+                        {
+                            "error": (
+                                f"{scope.value} 只接受 {own_key}；多出的键："
+                                + "、".join(sorted(extra))
+                            )
+                        },
+                    )
+                    return
+                conversation_id = keys.get("conversation_id")
+                if scope is DeletionScope.CONVERSATION and (
+                    conversation_id is None
+                ):
+                    conversation_id = face.conversation_id
+                final_scope = scope
+                self._run_on_host_thread(
+                    lambda: face.delete(
+                        final_scope,
+                        conversation_id,
+                        keys.get("target_id"),
+                        keys.get("persona_id"),
+                    )
+                )
                 return
             text = payload.get("text") if isinstance(payload, dict) else None
             if not isinstance(text, str) or not text.strip():

@@ -15,6 +15,7 @@ import {
   installBrandMarks,
   wordWindows,
   showWordCard,
+  confirmDialog,
 } from "./components.js";
 import {
   fetchTurn,
@@ -26,6 +27,8 @@ import {
   fetchHistory,
   fetchCurrentMoment,
   fetchWord,
+  fetchMemory,
+  fetchDelete,
 } from "./api.js";
 
 // F-1: the diagnostics view — the five whys, read from /api/diagnostics.
@@ -423,6 +426,216 @@ async function loadToday() {
 
 document.getElementById("today-refresh").addEventListener("click", loadToday);
 
+// p-2: the 记忆 view — what the parlor remembers, in five panels over one
+// read (/api/memory). Honest empties say 还没有记住什么 rather than
+// dressing absence up; every number is the row's own.
+const MEM_PANEL_IDS = ["mem-relationship", "mem-episode", "mem-states",
+                       "mem-evidence", "mem-tombstones"];
+
+function renderMemRelationship(d, retry) {
+  const box = diagBox("mem-relationship");
+  box.textContent = "";
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
+  const rows = d.memories || [];
+  if (!rows.length) {
+    diagEmpty(box, "还没有记住什么——聊得多起来，才会记住关于你和它的事。");
+    return;
+  }
+  for (const m of rows) {
+    const g = diagGroup(box, m.memory_type + "（" + m.status + "）");
+    diagLine(g, "记住的内容", m.canonical_content);
+    diagLine(g, "provenance", m.provenance);
+    diagLine(g, "敏感级与授权",
+      m.sensitivity_class + " / " + m.persistence_authorization);
+    if (m.confidence !== null && m.confidence !== undefined) {
+      diagLine(g, "confidence", fmtNum(m.confidence));
+    }
+    diagLine(g, "更新时间", m.updated_at);
+  }
+}
+
+function renderMemEpisode(d, retry) {
+  const box = diagBox("mem-episode");
+  box.textContent = "";
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
+  const rows = d.episodes || [];
+  if (!rows.length) {
+    diagEmpty(box, "还没有记住什么——没有一段对话被总结成剧情。");
+    return;
+  }
+  for (const e of rows) {
+    const g = diagGroup(box, e.conversation_id);
+    diagLine(g, "摘要", e.summary);
+    diagLine(g, "未了话题",
+      Array.isArray(e.open_threads) ? e.open_threads.join("；") : fmtNum(e.open_threads));
+    diagLine(g, "最近事件",
+      Array.isArray(e.recent_events) ? e.recent_events.join("；") : fmtNum(e.recent_events));
+    diagLine(g, "状态", e.status);
+    diagLine(g, "更新时间", e.updated_at);
+  }
+}
+
+function renderMemStates(d, retry) {
+  const box = diagBox("mem-states");
+  box.textContent = "";
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
+  const rows = d.states || [];
+  if (!rows.length) {
+    diagEmpty(box, "还没有学习状态——还没有任何证据被投影到这里。");
+    return;
+  }
+  for (const s of rows) {
+    const g = diagGroup(box,
+      s.target_id + "（" + s.target_type + " · " + s.evidence_modality + "）");
+    diagLine(g, "证据水位", fmtNum(s.evidence_watermark));
+    diagLine(g, "状态键", Array.isArray(s.state_keys)
+      ? (s.state_keys.length ? s.state_keys.join("、") : "（空）") : "—");
+    diagLine(g, "estimator", s.estimator_version);
+    diagLine(g, "更新时间", s.updated_at);
+  }
+}
+
+function renderMemEvidence(d, retry) {
+  const box = diagBox("mem-evidence");
+  box.textContent = "";
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
+  diagLine(box, "证据行（evidence_claim）", (d.evidence_claim_count || 0) + " 条");
+  diagLine(box, "证据提交（evidence_commit）", (d.evidence_commit_count || 0) + " 次");
+  const rows = d.claims || [];
+  if (!rows.length) {
+    diagEmpty(box, "还没有任何证据——答对答错都会在这里留下痕迹。");
+    return;
+  }
+  for (const c of rows) {
+    const g = diagGroup(box, c.target_id);
+    diagLine(g, "polarity", c.polarity);
+    diagLine(g, "outcome", c.outcome);
+    diagLine(g, "performance_type", c.performance_type);
+    diagLine(g, "时间", c.created_at);
+  }
+}
+
+function renderMemTombstones(d, retry) {
+  const box = diagBox("mem-tombstones");
+  box.textContent = "";
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
+  const rows = d.tombstones || [];
+  if (!rows.length) {
+    diagEmpty(box, "删除台账为空——还没有删除过任何东西。");
+    return;
+  }
+  for (const t of rows) {
+    const g = diagGroup(box, t.entity_kind);
+    diagLine(g, "摘要（单向摘要，不含正文）", t.entity_hash);
+    diagLine(g, "删除于", t.deleted_at);
+    diagLine(g, "范围", t.deletion_scope);
+    diagLine(g, "口径版本", t.scope_version);
+  }
+}
+
+async function loadMemory() {
+  showLoading(MEM_PANEL_IDS);
+  try {
+    const data = await fetchMemory();
+    renderMemRelationship(data.relationship_memory, loadMemory);
+    renderMemEpisode(data.episode, loadMemory);
+    renderMemStates(data.learner_states, loadMemory);
+    renderMemEvidence(data.evidence, loadMemory);
+    renderMemTombstones(data.tombstones, loadMemory);
+  } catch {
+    for (const id of MEM_PANEL_IDS) {
+      diagError(diagBox(id), "记忆读数拉取失败", loadMemory);
+    }
+  }
+}
+
+document.getElementById("mem-refresh").addEventListener("click", loadMemory);
+
+// p-2: the 隐私 view — three deletable scopes, each behind two confirms.
+// 删除不可逆：第一层把范围用人话讲清（带「此操作不可恢复」），第二层
+// 再问一次（「确定继续？再次确认」）；两层都过才发请求。结果条只说
+// runtime 自己报的数（scope / notes / rebuilds 计数）。
+function renderDelRefused(text) {
+  const box = diagBox("del-result");
+  box.textContent = "";
+  const b = document.createElement("b");
+  b.textContent = "删除未执行：" + text;
+  box.appendChild(b);
+}
+
+function renderDelResult(data) {
+  const box = diagBox("del-result");
+  box.textContent = "";
+  const g = diagGroup(box, "已删除：" + data.scope);
+  const notes = data.notes || [];
+  diagLine(g, "说明", notes.length ? notes.join("；") : "无");
+  diagLine(g, "重建",
+    (data.rebuilds_ok || 0) + " 成功 / " + (data.rebuilds_total || 0) + " 项");
+  diagLine(g, "墓碑记录", (data.tombstoned || 0) + " 条");
+  const tail = document.createElement("p");
+  tail.className = "sub";
+  tail.textContent = "删除台账已更新——打开「记忆」的「删除台账」可以看到这次删除留下的记录。";
+  box.appendChild(tail);
+}
+
+async function runDelete(payload, humanText) {
+  if (!confirmDialog(humanText)) return;
+  if (!confirmDialog("确定继续？再次确认")) return;
+  let data = null;
+  try {
+    data = await fetchDelete(payload);
+  } catch {
+    renderDelRefused("请求失败，请重试");
+    return;
+  }
+  if (!data.accepted) {
+    renderDelRefused((data.code || "拒绝") + "：" + (data.message || ""));
+    return;
+  }
+  renderDelResult(data);
+  loadMemory();  // the tombstone this deletion minted is visible in 记忆
+}
+
+function deleteTargetRow(name, targetId) {
+  const row = document.createElement("div");
+  row.className = "kv";
+  const b = document.createElement("b");
+  b.textContent = name;
+  row.appendChild(b);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "btn btn--pencil";
+  button.textContent = "删除这项目标数据";
+  button.addEventListener("click", () => runDelete(
+    { scope: "LEARNING_TARGET", target_id: targetId },
+    "将删除目标 " + name + " 的学习证据、学习状态与复习日程。此操作不可恢复。"));
+  row.appendChild(button);
+  return row;
+}
+
+async function loadDelTargets() {
+  const box = diagBox("del-targets");
+  box.textContent = "";
+  box.appendChild(stateBanner("loading"));
+  try {
+    const data = await fetchTargets();
+    box.textContent = "";
+    const list = data.targets || [];
+    if (!list.length) { diagEmpty(box, "暂无可教目标"); return; }
+    for (const t of list) {
+      box.appendChild(deleteTargetRow(t.name || t.target_id, t.target_id));
+    }
+  } catch {
+    box.textContent = "";
+    diagError(box, "目标清单拉取失败", loadDelTargets);
+  }
+}
+
+document.getElementById("del-conversation").addEventListener("click", () =>
+  runDelete(
+    { scope: "CONVERSATION" },
+    "将删除这段对话的全部记录，包括信件与教学痕迹。此操作不可恢复。"));
+
 // F-2: why a quiet turn was quiet — one gray line from the diagnostics
 // face's why-not-teach panel. The gate lives in postTurn (only when the
 // turn response carried no teaching moments); a failed or empty pull
@@ -518,15 +731,18 @@ messages.addEventListener("click", async (event) => {
   }
 });
 
-// F-1R: the set screen's two blocks — 学习 and 诊断 — expand in place
-// (the F-1R task book leaves the choice to this page, recorded here):
-// the expansion pulls the block's read, the refresh links re-pull.
+// F-1R: the set screen's four blocks — 学习 / 诊断 / 记忆（p-2）/ 隐私
+// （p-2）— expand in place (the F-1R task book leaves the choice to this
+// page, recorded here): the expansion pulls the block's read, the refresh
+// links re-pull.
 function toggleSetBlock(name) {
-  document.getElementById("set-learning").hidden = name !== "learning";
-  document.getElementById("set-diagnostics").hidden =
-    name !== "diagnostics";
+  for (const block of ["learning", "diagnostics", "memory", "privacy"]) {
+    document.getElementById("set-" + block).hidden = name !== block;
+  }
   if (name === "diagnostics") loadDiagnostics();
   if (name === "learning") { loadTargets(); loadLearning(); }
+  if (name === "memory") loadMemory();
+  if (name === "privacy") loadDelTargets();
 }
 
 for (const link of document.querySelectorAll(".btn--set")) {

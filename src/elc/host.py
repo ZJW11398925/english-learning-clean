@@ -110,6 +110,24 @@ It is the wiring field's own declared seam ("a caller that already holds this
 cycle's supply — an acceptance test, or an orchestrator that generated
 candidates earlier"), and the composition root forwards it rather than
 forcing such a caller to rebuild the assembly it just asked for.
+
+**p-2 adds the deletion leg (additive, both tiers).** A
+:class:`~elc.deletion.controller.DeletionController` over a
+:class:`~elc.deletion.store.SqliteDeletionStore` built on this host's own
+connection and fence (the store opens no connection of its own, so
+:meth:`Host.close` needs no new step): pure composition, zero runtime
+semantics changed — the module is consumed, never modified. The three
+rebuild legs are injected **from the faces this assembly already holds**:
+the full-chain tier passes ``learning_controller`` / ``scheduler`` /
+``projections`` (each structurally satisfies the controller's narrow
+ports — ``rebuild_learner_state``, ``get_schedule_item`` +
+``recompute_schedule_item``, ``ensure_projection_jobs`` + ``run_pending``);
+the prep-1 tier passes ``None`` for all three, and the controller's own
+declared behaviour is what that costs — each affected key reports its own
+``ok=False`` :class:`~elc.deletion.types.RebuildAttempt` ("no … face is
+wired into this controller") instead of the rebuild running, so a
+prep-1-tier deletion leaves the derived LearnerState / schedule / episode
+faces un-rebuilt and *says so* in the outcome rather than hiding it.
 """
 
 from __future__ import annotations
@@ -123,6 +141,8 @@ from elc.content.store import ContentStore, ContentStoreError
 from elc.conversation import SqliteConversationStore
 from elc.curriculum.provider import ContentBackedTeachingTargetProvider
 from elc.curriculum.store import CurriculumContentStore
+from elc.deletion.controller import DeletionController
+from elc.deletion.store import SqliteDeletionStore
 from elc.detection import GLOBAL_REGISTRY
 from elc.detection import pilot as pilot_detectors
 from elc.detection.dispatch import RegistryDispatch
@@ -279,6 +299,10 @@ class Host:
     projections: CP4ProjectionRuntime | None = None
     persona_views: ControllerPersonaViews | None = None
     automatic: AutomaticTurnWiring | None = None
+    #: p-2: always built (both tiers — the store needs only the shared
+    #: connection and fence); the rebuild legs differ by tier (module
+    #: docstring, "p-2 adds the deletion leg").
+    deletion: DeletionController | None = None
 
     def open_conversation(
         self,
@@ -523,6 +547,18 @@ def open_host(
                 provenance=provenance,
                 error_detectors=RegistryDispatch(GLOBAL_REGISTRY),
             )
+        # p-2: the deletion leg over the shared connection and fence, with
+        # every rebuild face this assembly holds — built after the
+        # full-chain block so the tier's controllers are the legs (all
+        # three in the full chain, all None in the prep-1 tier; the
+        # controller reports each missing rebuild as its own failed
+        # RebuildAttempt, never a silent skip — module docstring).
+        deletion = DeletionController(
+            SqliteDeletionStore(db, fence),
+            learning=learning_controller,
+            scheduler=scheduler,
+            projections=projections,
+        )
         coordinator = ConversationCoordinator(
             lease=lease,
             conversation_commands=conversations,
@@ -578,4 +614,5 @@ def open_host(
         projections=projections,
         persona_views=persona_views,
         automatic=automatic,
+        deletion=deletion,
     )

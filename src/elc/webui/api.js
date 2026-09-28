@@ -69,3 +69,14 @@ export function fetchCurrentMoment() {
 export function fetchWord(q) {
   return getJson("/api/word?q=" + encodeURIComponent(q));
 }
+
+/** 记忆读数（p-2）：关系记忆 / 剧情记忆 / 学习者状态 / 证据 / 删除台账。 */
+export function fetchMemory() {
+  return getJson("/api/memory");
+}
+
+/** 删除（p-2，不可逆）：scope 三词之一 + 该 scope 自己的键。
+ *  CONVERSATION 可省 conversation_id（服务端补本页正在服务的对话）。 */
+export function fetchDelete(payload) {
+  return postJson("/api/delete", payload);
+}

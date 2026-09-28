@@ -134,9 +134,14 @@ def test_the_page_has_the_honest_set_screen(tmp_path: Path) -> None:
     assert 'id="set-learning"' in page
     assert 'id="set-diagnostics"' in page
     assert 'id="back-to-living"' in page
-    # the in-place expansion choice, recorded where the task book left it
+    # the in-place expansion choice, recorded where the task book left it.
+    # p-2 migrated the literal: the two-block assignments became the
+    # four-block loop (学习 / 诊断 / 记忆 / 隐私), so the pin reads the
+    # loop's own toggle — same semantics (one block visible at a time),
+    # all four blocks named.
     assert "function toggleSetBlock(" in page
-    assert 'document.getElementById("set-learning").hidden' in page
+    assert 'document.getElementById("set-" + block).hidden' in page
+    assert '"learning", "diagnostics", "memory", "privacy"' in page
 
 
 # ---------------------------------------------------------------------------

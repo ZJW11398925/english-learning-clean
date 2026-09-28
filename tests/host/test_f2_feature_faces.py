@@ -142,7 +142,10 @@ def test_the_page_has_the_learning_view(tmp_path: Path) -> None:
     assert '"/api/teach_me"' in page_source
     assert "loadTargets" in page_source
     assert "loadLearning" in page_source
-    assert 'name !== "learning"' in page_source
+    # p-2 migrated the literal: the show/hide branch became the four-block
+    # loop's `hidden = name !== block` (学习 / 诊断 / 记忆 / 隐私) — same
+    # semantics, the loop comparison is the pin
+    assert 'name !== block' in page_source
     # the 教我这个 act: click-through, no confirm (a low-risk request)
     assert "教我这个" in page_source
     assert 'button.className = "teach-me";' in page_source
