@@ -25,7 +25,8 @@ face on top:
    factor_trace row stepped over); a database without the tables answers
    ``{"error": …}`` per panel, never a 500;
 4. the face is silent — the read writes nothing: every diagnostics GET
-   leaves the key tables' ``rowid`` maxima exactly where they were.
+   leaves the key tables' full content exactly where it was (content
+   snapshot, so UPDATE-class mutations fail the pin too).
 """
 
 from __future__ import annotations
@@ -666,15 +667,17 @@ def test_the_diagnostic_panels_survive_a_dirty_database() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 4. the face is silent — read-only, pinned by rowid maxima
+# 4. the face is silent — read-only, pinned by a content snapshot
 
 
 def test_the_diagnostics_face_is_read_only(
     tmp_path: Path, pilot_content_db: Path
 ) -> None:
     """Three diagnostics GETs over a chain that really taught: every key
-    table's last ``rowid`` stays exactly where the turn left it — the
-    readout reads, it never writes."""
+    table's full content stays exactly where the turn left it — the
+    readout reads, it never writes. The snapshot is content-level (every
+    row, not just the max ``rowid``): an UPDATE-class mutation inside a
+    panel would change a row and fail here just the same (review L-1)."""
 
     app_db = tmp_path / "app.db"
     tables = (
@@ -689,15 +692,13 @@ def test_the_diagnostics_face_is_read_only(
         "runtime_decision_outcome",
     )
 
-    def maxima() -> dict[str, int]:
+    def snapshot() -> dict[str, list]:
         ro = sqlite3.connect(f"file:{app_db}?mode=ro", uri=True)
         try:
             return {
-                table: int(
-                    ro.execute(
-                        f"SELECT COALESCE(MAX(rowid), 0) FROM {table}"
-                    ).fetchone()[0]
-                )
+                table: ro.execute(
+                    f"SELECT * FROM {table} ORDER BY rowid"
+                ).fetchall()
                 for table in tables
             }
         finally:
@@ -712,9 +713,9 @@ def test_the_diagnostics_face_is_read_only(
         status, data = stack.post("/api/turn", {"text": ERROR_TEXT})
         assert status == 200
         assert data["teaching_moments"]
-        before = maxima()
+        before = snapshot()
         for _ in range(3):
             status, diag = stack.get_json("/api/diagnostics")
             assert status == 200
             assert "error" not in diag["why_teach"]
-        assert maxima() == before
+        assert snapshot() == before

@@ -129,10 +129,12 @@ mid-generation (the W-4 poll exists precisely because the card races the
 model), so nothing here needs to bypass the queue, and riding it keeps the
 one-connection one-thread discipline with zero new concurrency. Every
 panel is a plain ``SELECT`` (no write, ever — pinned by a before/after
-``rowid`` maxima test), each guarded separately: a panel whose read
-explodes answers ``{"error": …}`` in its own slot, never a 500 for the
-whole readout, and a panel with no durable rows answers its honest empty
-shape (the page says 暂无数据 / 无降级记录, never a fabricated number).
+content-snapshot test that fails on insert-class *and* update-class
+mutations alike), each guarded separately:
+a panel whose read explodes answers ``{"error": …}`` in its own slot,
+never a 500 for the whole readout, and a panel with no durable rows
+answers its honest empty shape (the page says 暂无数据 / 无降级记录,
+never a fabricated number).
 The five panels:
 
 1. **Why did it teach?** — the latest ``planner_evaluation`` whose
@@ -1189,7 +1191,7 @@ function renderWhyTeach(d) {
   box.textContent = "";
   if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
   if (!d.candidate) {
-    diagEmpty(box, "暂无数据——还没有任何一轮把一个候选真正选中。");
+    diagEmpty(box, "暂无数据——最近 50 轮规划评估里没有选中任何候选。");
     return;
   }
   const g = diagGroup(box, "被选中的候选");
