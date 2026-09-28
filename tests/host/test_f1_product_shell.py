@@ -45,6 +45,7 @@ from tests.host import test_w1_web
 from tests.host.test_w1_web import (
     CONV,
     ERROR_TEXT,
+    _page_source,
     seed_online,
     web_stack,
 )
@@ -93,12 +94,11 @@ _DIAG_PANEL_IDS = (
 
 
 def _page_of(tmp_path: Path) -> str:
-    """The served page source, over the plain offline stack."""
+    """The served page source, over the plain offline stack — the F-G1
+    union: the shell plus every static asset it links."""
 
     with web_stack(tmp_path / "app.db") as stack:
-        status, _, body = stack.get_raw("/")
-        assert status == 200
-        return body.decode("utf-8")
+        return _page_source(stack)
 
 
 # ---------------------------------------------------------------------------

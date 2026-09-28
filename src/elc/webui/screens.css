@@ -1,0 +1,70 @@
+/* screens.css —— 三屏布局与壳层（F-G1）。
+   开张（first-visit）/ 客厅（默认）/ 仪表（诚实事实屏）+ dock/flow 等
+   屏级规则。声明值逐字来自拆分前的内嵌样式（零视觉变化）；组件样式
+   一律在 components.css，本文件不得定义组件（尤其不得定义按钮样式——
+   docs/FRONTEND_SPEC.md ④⑤）。 */
+
+/* ── 壳层 ─────────────────────────────────────────────────────────── */
+html, body { margin: 0; padding: 0; background: var(--bg); }
+body {
+  color: var(--ink); font-family: var(--f-serif); font-size: 16px;
+  line-height: 1.55; -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+#stage { max-width: 430px; margin: 0 auto; min-height: 100vh;
+         position: relative; }
+
+/* ── 开张屏（first visit；localStorage 记住后不再出现）────────────── */
+.ob { padding: 54px var(--read-pad) 60px; min-height: 100vh; }
+.ob .formhead { text-align: center; font-family: var(--f-sans);
+                font-size: 11px; letter-spacing: 0.3em;
+                color: var(--ink-faint); margin: 0 0 26px; }
+.ob h1 { text-align: center; margin: 0 0 10px; font-size: 27px;
+         font-weight: 500; letter-spacing: 0.14em; }
+.ob .sub { text-align: center; margin: 0 0 10px; font-size: 13px;
+           color: var(--ink-soft); }
+.ob .hint { margin: 14px 0 0; text-align: center;
+            font-family: var(--f-sans); font-size: 11px;
+            color: var(--ink-faint); }
+
+/* ── 客厅屏：伙伴卡（上下发丝线夹住）+ 信笺流 + 写信区 ─────────────── */
+.top { position: sticky; top: 0; z-index: 5; background: var(--bg);
+       border-bottom: 1px solid var(--rule);
+       padding: 10px var(--read-pad) 8px;
+       display: flex; align-items: baseline; gap: 10px; }
+.who { font-size: 15px; font-weight: 600; letter-spacing: 0.18em; }
+.who-sub { font-size: 11px; color: var(--ink-faint);
+           font-family: var(--f-sans); margin-top: 2px; }
+
+.flow { padding: 18px var(--read-pad) 250px; }
+.typing { margin: 0 0 18px; font-family: var(--f-sans); font-size: 12px;
+          color: var(--ink-faint); }
+.errline { margin: 0 0 14px; padding: 8px 10px;
+           border-left: 1px solid var(--pencil);
+           font-family: var(--f-sans); font-size: 12px;
+           color: var(--pencil); line-height: 1.7;
+           white-space: pre-wrap; overflow-wrap: anywhere; }
+/* F-2 blocked 行：本轮没有教学时的一行诚实小字（数据不在就沉默）。 */
+.blockedline { margin: 0 0 14px; font-family: var(--f-sans);
+               font-size: 11px; color: var(--ink-faint); }
+
+/* 写信区：固定底、上发丝线、无边框输入行 + 寄出链接 */
+.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8;
+        background: var(--bg); border-top: 1px solid var(--rule);
+        padding: 10px var(--read-pad)
+                 calc(14px + var(--safe-bottom));
+        max-width: 430px; margin: 0 auto; }
+.dock-row { display: flex; align-items: stretch; gap: 12px; }
+
+/* ── 仪表屏：诚实事实屏——mono 仪表 + 学习/诊断两个链接区块 ────────── */
+.set { padding: 30px var(--read-pad) 60px; min-height: 100vh; }
+.set h2 { margin: 0 0 6px; font-size: 24px; font-weight: 500;
+          letter-spacing: 0.12em; }
+.set .sub { margin: 0 0 8px; font-family: var(--f-sans); font-size: 12px;
+            color: var(--ink-faint); line-height: 1.7; }
+.diagerror { color: var(--pencil); font-size: 12px;
+             font-family: var(--f-sans); }
+pre { font-family: var(--f-mono); font-size: 11px; line-height: 1.7;
+      color: var(--ink-soft); overflow-x: auto; white-space: pre-wrap;
+      overflow-wrap: anywhere; border-top: 1px solid var(--rule-soft);
+      border-bottom: 1px solid var(--rule-soft); padding: 8px 0; }

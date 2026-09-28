@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>英语客厅 · Study-first dogfood</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="stylesheet" href="/static/components.css">
+<link rel="stylesheet" href="/static/screens.css">
+<script type="module" src="/static/app.js"></script>
+</head>
+<body>
+<div id="stage">
+
+  <!-- 开张屏：first visit 一次（localStorage 记住）。诚实映射 runtime：
+       没有用户自定义人设面，就不伪装——进入即开聊，这就是全部的「设定」。 -->
+  <section id="screen-onboard" class="ob">
+    <p class="formhead">✉ 第一步，也是唯一步</p>
+    <h1>把英语请进客厅</h1>
+    <p class="sub">跟一位固定伙伴用英语闲聊——想说什么，就说什么。</p>
+    <p class="sub">客厅在旁听着：看得懂你的每一步，该教的时候才开口。</p>
+    <button id="ob-go" class="btn btn--ink" type="button">就这么定 →</button>
+    <p class="hint">进入后，右上角的「仪表」摊开客厅的全部账目与记录。</p>
+  </section>
+
+  <!-- 客厅屏：伙伴卡（上下发丝线夹住）+ 信笺流（教学短笺随信流）+ 写信区 -->
+  <section id="screen-living" hidden>
+    <header class="top">
+      <div>
+        <div class="who">英语客厅</div>
+        <div class="who-sub">固定伙伴 · 你说英语，它用英语回你</div>
+      </div>
+      <button id="meter-toggle" class="btn btn--meter" type="button">仪表</button>
+    </header>
+    <main class="flow">
+      <div id="messages" aria-live="polite"></div>
+      <div id="moments"></div>
+    </main>
+    <div class="dock">
+      <form id="send" class="dock-row">
+        <textarea id="text" class="pen" rows="2" autocomplete="off"
+                  placeholder="用英语说点什么……"></textarea>
+        <button type="submit" class="btn btn--send">寄出 →</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- 仪表屏（设置）：诚实事实屏。模型端点与模型名由启动命令给定，页面没有
+       读取它们的口——宁缺勿假，不显示。学习与诊断两个区块点开即读（就地
+       展开），回客厅链接回客厅屏。 -->
+  <section id="screen-set" class="set" hidden>
+    <h2>仪表</h2>
+    <p class="sub">客厅的账目与记录摊在这里——只读，如实。</p>
+    <p class="sub">本地单用户 · 127.0.0.1 · 无鉴权。模型端点与模型名由启动
+       命令给定，页面不读取、不显示（宁缺勿假）。</p>
+    <div class="setlinks">
+      <button type="button" class="btn btn--set" data-block="learning">学习</button>
+      <button type="button" class="btn btn--set" data-block="diagnostics">诊断</button>
+    </div>
+
+    <section id="set-learning" class="setblock" hidden>
+      <div class="sec">
+        <h3>可教目标</h3>
+        <div id="target-list"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>复习日程</h3>
+        <div id="learn-schedule"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>学习目标</h3>
+        <div id="learn-goals"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>证据记录</h3>
+        <div id="learn-evidence"><p class="note">暂无数据</p></div>
+      </div>
+      <button id="learning-refresh" class="btn btn--dot" type="button">刷新读数</button>
+    </section>
+
+    <section id="set-diagnostics" class="setblock" hidden>
+      <div class="sec">
+        <h3>观察读数</h3>
+        <button id="obs" class="btn btn--dot" type="button">拉取观察读数</button>
+        <pre id="obsout" hidden></pre>
+      </div>
+      <div class="sec">
+        <h3>为什么教了这一课？</h3>
+        <div id="why-teach"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>为什么没有教？</h3>
+        <div id="why-not-teach"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>证据有什么变化？</h3>
+        <div id="why-evidence"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>你看到了哪些支持？</h3>
+        <div id="why-support"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>有没有轮次被降级？</h3>
+        <div id="why-degraded"><p class="note">无降级记录</p></div>
+      </div>
+      <button id="diag-refresh" class="btn btn--dot" type="button">刷新读数</button>
+    </section>
+
+    <button id="back-to-living" class="btn btn--back" type="button">← 回客厅</button>
+  </section>
+
+</div>
+</body>
+</html>

@@ -48,6 +48,7 @@ from tests.host.test_w1_web import (
     CONV,
     ERROR_TEXT,
     EV_TARGET,
+    _page_source,
     _WebFace,
     seed_online,
     web_stack,
@@ -318,9 +319,7 @@ def test_the_face_maps_the_help_words_onto_the_runtime_intents() -> None:
 
 def test_the_page_pins_the_w6_strings(tmp_path: Path) -> None:
     with web_stack(tmp_path / "app.db") as stack:
-        status, _, body = stack.get_raw("/")
-        assert status == 200
-        page = body.decode("utf-8")
+        page = _page_source(stack)
     assert "批改中…" in page
     assert 'helpButton("看提示", "hint"' in page
     assert 'helpButton("看答案", "reveal"' in page

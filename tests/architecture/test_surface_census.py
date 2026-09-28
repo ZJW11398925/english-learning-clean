@@ -158,6 +158,17 @@ SURFACE_CENSUS: tuple[Row, ...] = (
         live_face="elc.relationship.controller:RelationshipController",
         store="elc.relationship.store:SqliteRelationshipStore",
     ),
+    # F-G1 (web architecture): a static-asset directory, not a package —
+    # the shell (index.html) plus three CSS sheets and three ES modules
+    # served by elc.web. No Python module exists here to import; the row
+    # exists only so the on-disk enumeration above stays exhaustive.
+    Row(
+        "webui",
+        no_live_face_because=(
+            "static assets (html/css/js) only — no Python module;"
+            " Revisit = first Python face lands in webui/"
+        ),
+    ),
     Row(
         "runtime",
         live_face="elc.runtime.controller:ConversationCoordinator",

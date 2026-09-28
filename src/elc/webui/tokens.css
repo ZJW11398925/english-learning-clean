@@ -1,0 +1,24 @@
+/* F-1R 设计令牌：唯一出处 = 旧仓 VS1「对话客厅」chat.css 的纸感令牌
+   （逐值采用，不复制其代码）：纸 #fbf9f4 / 三级墨 / 两档发丝线 /
+   赭红铅笔 / 触压底。本文件是全套令牌的唯一物理出处——任何组件样式
+   只许 var() 引用，不许在他处重写字面值（docs/FRONTEND_SPEC.md ②）。
+   形态法则（用户否掉上一版的条款，逐条遵守）：
+   零卡片、零气泡、零底栏页签、零大圆角面板、零阴影、零青绿——
+   分层靠上下发丝线、留白与三级墨色；动作一律是赭红下划线文字链接。 */
+:root {
+  --bg: #fbf9f4;
+  --ink: #1b1a17;
+  --ink-soft: #5c574e;
+  --ink-faint: #726a5e;
+  --rule: #ded7c9;
+  --rule-soft: #ebe5d8;
+  --pencil: #a8562f;
+  --touch: #f0e9dc;
+  --f-serif: Georgia, 'Times New Roman', 'Songti SC', 'SimSun',
+    'Noto Serif CJK SC', serif;
+  --f-sans: system-ui, -apple-system, 'Segoe UI', 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
+  --f-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --read-pad: 18px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}

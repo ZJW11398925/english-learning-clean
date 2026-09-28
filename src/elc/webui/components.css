@@ -1,0 +1,205 @@
+/* components.css —— 组件库唯一样式源（F-G1）。
+   规则：每个组件一个契约注释块（结构 / 状态矩阵 / 使用规则 / 禁止变体），
+   声明值逐字来自拆分前的内嵌样式（零视觉变化）。旧类名作为别名保留在
+   同一规则的选择器表尾（单一物理出处）；页面引用一律走新变体类。
+   规范全文见 docs/FRONTEND_SPEC.md；token 一律 var() 引用 tokens.css。 */
+
+/* ── 地基：元素复位（组件共用的元素级默认）───────────────────────── */
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+button { border: 0; background: none; padding: 0; cursor: pointer;
+         font: inherit; color: inherit; }
+button:focus-visible, input:focus-visible {
+  outline: 1px solid var(--pencil); outline-offset: 2px; }
+
+/* ── 1. link-btn（下划线文字链接按钮）───────────────────────────────
+   结构：<button class="btn btn--<变体>">（仅文字子节点）。
+   状态矩阵：default（下划线文字）/ active（opacity .55，仅标 :active 的
+   变体）/ disabled（.btn[disabled]：opacity .4 + 无 pointer）/ busy
+   （不在此定义——busy 的文案切换由 JS 承担，见 spec ③）。
+   使用规则：一切动作都是文字链接；primary（墨色衬线）用 --ink / --send，
+   secondary（赭红或弱化）用 --pencil / --set / --faint / --dot / --meter /
+   --back。别名（现役旧类名，仅兼容保留）：.ob .go / .send / .linklike /
+   .setlink / .skiplink / .refresh / .back / .meter。
+   禁止变体：底色块、描边框、图标、非下划线弱化以外的 disabled 以外态。 */
+.btn { border: 0; background: none; padding: 0; cursor: pointer;
+       font: inherit; color: inherit; }
+.btn[disabled] { opacity: 0.4; pointer-events: none; }
+.btn--ink, .ob .go { display: block; margin: 26px auto 0; font-family: var(--f-serif);
+            font-size: 17px; font-weight: 700; color: var(--ink);
+            text-decoration: underline; text-decoration-thickness: 1px;
+            text-underline-offset: 0.32em; }
+.btn--ink:active, .ob .go:active { opacity: 0.55; }
+.btn--send, .send { flex: none; align-self: flex-end; font-family: var(--f-serif);
+          font-size: 15px; font-weight: 700; color: var(--ink);
+          text-decoration: underline; text-decoration-thickness: 1px;
+          text-underline-offset: 0.3em; }
+.btn--send:active, .send:active { opacity: 0.55; }
+.btn--pencil, .linklike { font-family: var(--f-sans); font-size: 12px;
+              color: var(--pencil); text-decoration: underline;
+              text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.btn--pencil:active, .linklike:active { opacity: 0.55; }
+.btn--set, .setlink { font-family: var(--f-serif); font-size: 15px; font-weight: 600;
+             color: var(--pencil); text-decoration: underline;
+             text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.btn--faint, .skiplink { display: block; margin-top: 10px;
+              font-family: var(--f-sans); font-size: 11px;
+              color: var(--ink-faint); text-decoration: underline dotted;
+              text-underline-offset: 0.28em;
+              text-decoration-color: var(--rule); }
+.btn--faint:active, .skiplink:active { opacity: 0.55; }
+.btn--dot, .refresh { margin-top: 10px; font-family: var(--f-sans); font-size: 12px;
+             color: var(--ink-soft); text-decoration: underline dotted;
+             text-underline-offset: 0.28em;
+             text-decoration-color: var(--rule); }
+.btn--dot:active, .refresh:active { opacity: 0.55; }
+.btn--back, .back { display: block; margin-top: 30px; font-family: var(--f-sans);
+          font-size: 12px; color: var(--ink-soft);
+          text-decoration: underline dotted;
+          text-underline-offset: 0.3em; }
+.btn--meter, .meter { margin-left: auto; font-family: var(--f-mono); font-size: 11px;
+           color: var(--ink-soft); text-decoration: underline dotted;
+           text-underline-offset: 0.28em;
+           text-decoration-color: var(--rule); }
+.btn--meter:active, .meter:active { opacity: 0.55; }
+
+/* ── 2. pen（稿纸 textarea）─────────────────────────────────────────
+   结构：<textarea class="pen">。状态矩阵：default（横线稿纸，线随文滚）/
+   placeholder（弱化小字）/ Enter 由 app.js 绑定（plain Enter 寄出、
+   Shift+Enter 换行——行为在 JS，不在此）。
+   使用规则：写信区唯一输入件；min/max-height 双界不许拆。
+   禁止变体：边框、圆角、独立滚动条样式。 */
+.pen { width: 100%; border: 0; background: none; outline: none;
+       resize: none; overflow-y: auto;
+       font-family: var(--f-serif); font-size: 16px; color: var(--ink);
+       line-height: 1.6; padding: 10px 2px; min-height: 64px;
+       max-height: 160px;
+       background-image: repeating-linear-gradient(
+         to bottom, transparent 0 25px, var(--rule-soft) 25px 26px);
+       background-attachment: local; }
+.pen::placeholder { color: var(--ink-faint); font-size: 13px;
+                    font-family: var(--f-sans); }
+
+/* ── 3. note-paper（教学短笺）───────────────────────────────────────
+   结构：<div class="note-paper"><b>标题</b> · 状态 · 类型 …[回复控件]
+   [结果条][批改条]</div>；回复控件（.replyrow / .replytext）是本组件的
+   内置Reply面，随契约一起定义。
+   状态矩阵：default（rule-soft 底色块）/ skipped（opacity .55，终局后）/
+   busy（卡片控件 disabled + .busystrip，由 JS 置）。
+   使用规则：只出现在信流（.flow）里；标题 b 用 textContent。
+   禁止变体：阴影、描边、弹层。 */
+.note-paper { margin: 0 0 18px; background: var(--rule-soft);
+              padding: 12px 14px 14px; font-size: 15px; }
+.note-paper > b { font-weight: 600; overflow-wrap: anywhere; }
+.note-paper.skipped { opacity: 0.55; }
+.replyrow { display: flex; gap: 14px; margin-top: 10px;
+            align-items: baseline; }
+.replytext { flex: 1; min-width: 0; border: 0;
+             border-bottom: 1px solid var(--rule); background: none;
+             outline: none; padding: 4px 2px; font-family: var(--f-serif);
+             font-size: 15px; color: var(--ink); }
+.replytext::placeholder { color: var(--ink-faint); font-size: 13px;
+                          font-family: var(--f-sans); }
+.replytext:focus { border-bottom-color: var(--pencil); }
+
+/* ── 4. letter（信笺）───────────────────────────────────────────────
+   结构：<div class="letter may|me">[.paper 包 .say]（me 撕边）| <p
+   class="say">（may 平信）</div>。
+   状态矩阵：default（.letter.may 平信纸）/ torn（.letter.me 撕边回执，
+   --touch 衬底 + 顶部撕口；零圆角零描边，不是气泡）。
+   使用规则：may = 客厅的话居左，me = 用户的话居右；正文一律 .say
+   （white-space: pre-wrap），文字只走 textContent。
+   禁止变体：气泡（任何圆角/描边/底色除 --touch 撕边衬底）。 */
+.letter { margin: 0 0 18px; max-width: 84%; }
+.letter.may { margin-right: auto; }
+.letter.me { margin-left: auto; }
+.say { margin: 0; font-size: 16px; white-space: pre-wrap;
+       overflow-wrap: anywhere; }
+/* 我的回信 = 撕边信纸（--touch 衬底 + 顶部撕口；不是气泡：零圆角零描边） */
+.letter.me .paper {
+  background: var(--touch); padding: 10px 14px 12px; font-weight: 600;
+  clip-path: polygon(0 6px, 4% 2px, 11% 7px, 19% 1px, 27% 6px, 36% 2px,
+                     46% 7px, 55% 2px, 64% 6px, 74% 1px, 83% 7px, 92% 2px,
+                     100% 6px, 100% 100%, 0 100%);
+}
+
+/* ── 5. hairline-section（发丝线分区）──────────────────────────────
+   结构：<div class="sec"><h3>小标</h3> …内容</div>。
+   状态矩阵：default（上发丝线 + 顶距）。无交互态。
+   使用规则：仪表屏内每个读数块一个 .sec；h3 是 sans 弱化小字。
+   禁止变体：卡片化（四侧描边/底色/阴影）。 */
+.sec { margin-top: 22px; border-top: 1px solid var(--rule-soft);
+       padding-top: 12px; }
+.sec h3 { margin: 0 0 8px; font-family: var(--f-sans); font-size: 11px;
+          letter-spacing: 0.18em; color: var(--ink-faint);
+          font-weight: 500; }
+
+/* ── 6. setlink-block（设置屏链接区块）─────────────────────────────
+   结构：<div class="setlinks">[.btn--set ×n]</div> + 随后的
+   <section class="setblock">（就地展开的面板容器）。
+   状态矩阵：default（顶发丝线 + 水平排布）；setblock 靠 [hidden] 切换
+   （display 由地基规则关断）。
+   使用规则：一对二（学习 / 诊断）；展开块紧跟 .setlinks。
+   禁止变体：页签条、下拉。 */
+.setlinks { display: flex; gap: 22px; margin-top: 18px;
+            border-top: 1px solid var(--rule); padding-top: 14px; }
+.setblock { margin-top: 4px; }
+
+/* ── 7. resultstrip（判分结果条）───────────────────────────────────
+   结构：<div class="resultstrip ok|part|miss">✓|◐|✗ 判分反馈：…</div>。
+   状态矩阵：ok（赭红，命中）/ part（次级墨，部分）/ miss（主墨，未中）。
+   使用规则：只挂在 note-paper 卡内；符号是显示件，词是 runtime 自己的。
+   禁止变体：绿红底色块（W-6 条款）。 */
+.resultstrip { margin-top: 8px; font-size: .9rem; }
+.resultstrip.ok { color: var(--pencil); }
+.resultstrip.part { color: var(--ink-soft); }
+.resultstrip.miss { color: var(--ink); }
+
+/* ── 8. busystrip（批改中条）───────────────────────────────────────
+   结构：<div class="busystrip">批改中…</div>。
+   状态矩阵：default（弱化小字，出现即 busy、消失即复位——由 JS 置）。
+   使用规则：只挂在 note-paper 卡内；busy 期间卡内控件全 disabled。
+   禁止变体：转圈动画、遮罩。 */
+.busystrip { margin-top: 6px; color: var(--ink-soft);
+             font-family: var(--f-sans); font-size: .85rem; }
+
+/* ── 9. meter-row（mono 仪表行）────────────────────────────────────
+   结构：<div class="kv"><b>标签：</b>值</div>；组容器 .kvgroup >
+   b.kvtitle（组标题）+ 若干 .kv。
+   状态矩阵：default（mono 等宽、tabular-nums）；无交互态。
+   使用规则：仪表屏读数行唯一形态；b 是 sans 弱化标签，值是裸文本。
+   禁止变体：表格线、斑马纹。 */
+.kv { display: flex; gap: 8px; padding: 3px 0; font-size: 12px;
+      font-family: var(--f-mono); font-variant-numeric: tabular-nums;
+      align-items: baseline; }
+.kv b { color: var(--ink-soft); font-weight: 500; flex: none;
+        font-family: var(--f-sans); font-size: 12px; }
+.kvgroup { border-left: 1px solid var(--rule); padding: 4px 10px;
+           margin-top: 8px; }
+.kvtitle { display: block; color: var(--ink-soft); font-size: 12px;
+           font-family: var(--f-sans); }
+
+/* ── 10. empty-state（空态行）──────────────────────────────────────
+   结构：<p class="note">暂无数据…</p>。
+   状态矩阵：default（弱化 sans 小字）。无交互态。
+   使用规则：一切「没有数据」的诚实答法；词照面板事实说，不造数。
+   禁止变体：占位插画、骨架屏。 */
+.note { color: var(--ink-faint); font-size: .85rem;
+        font-family: var(--f-sans); }
+
+/* ── 11. confirm-dialog（原生确认框封装点）─────────────────────────
+   结构：无 CSS——保持 window.confirm 原生形态；JS 封装点是
+   components.js 的 confirmDialog(message)（页面里唯一一处 confirm 调用）。
+   状态矩阵：native confirm 的确定 / 取消两臂。
+   使用规则：只用于不可逆面（看答案）；低风险动作（教我这个）不确认。
+   禁止变体：自制弹层。 */
+
+/* ── 12. system-line（居中弱化系统行）──────────────────────────────
+   结构：<p class="sysline">文字</p>。
+   状态矩阵：default（居中、弱化 sans 小字）。无交互态。
+   使用规则：系统注记（已提交作答 / 教学已跳过…）走此行；
+   失败注记是 .errline（屏级，见 screens.css 信流节），不混用。
+   禁止变体：底色、描边。 */
+.sysline { text-align: center; margin: 0 0 14px;
+           font-family: var(--f-sans); font-size: 11px;
+           color: var(--ink-faint); }

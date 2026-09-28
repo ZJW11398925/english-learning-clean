@@ -212,6 +212,40 @@ class _Stack:
         return _post_raw(self.port, path, body)
 
 
+#: The shell's static assets (F-G1): the once-embedded page string now
+#: lives in ``src/elc/webui/`` and reaches the browser as seven files.
+#: Every page-source pin reads the union below, so a pin's semantics are
+#: unchanged while its negatives got stronger — a forbidden string in
+#: ANY served file turns the pin red.
+SHELL_ASSETS = (
+    "/static/tokens.css",
+    "/static/components.css",
+    "/static/screens.css",
+    "/static/api.js",
+    "/static/components.js",
+    "/static/app.js",
+)
+
+
+def _page_source(stack: _Stack) -> str:
+    """The whole served page source over one stack (the F-G1 reading).
+
+    The shell (``GET /``) plus every static asset it links, joined with
+    newlines. Before F-G1 the pins read the embedded ``_PAGE`` constant;
+    the union is the same source, split across files — same assertions,
+    same strength, served over the real HTTP face."""
+
+    status, content_type, body = stack.get_raw("/")
+    assert status == 200
+    assert content_type.startswith("text/html")
+    parts = [body.decode("utf-8")]
+    for asset in SHELL_ASSETS:
+        status, _, asset_body = stack.get_raw(asset)
+        assert status == 200, asset
+        parts.append(asset_body.decode("utf-8"))
+    return "\n".join(parts)
+
+
 @contextlib.contextmanager
 def web_stack(
     app_db: Path,
@@ -360,10 +394,7 @@ def test_the_page_serves_the_title_and_the_three_calls(
     tmp_path: Path,
 ) -> None:
     with web_stack(tmp_path / "app.db") as stack:
-        status, content_type, body = stack.get_raw("/")
-        assert status == 200
-        assert content_type.startswith("text/html")
-        page = body.decode("utf-8")
+        page = _page_source(stack)
         assert "英语客厅 · Study-first dogfood" in page
         assert '<textarea id="text"' in page
         assert "/api/turn" in page
@@ -540,9 +571,7 @@ def test_the_page_renders_the_human_card_face(tmp_path: Path) -> None:
     state words — and keeps the raw-id row as the no-title fallback."""
 
     with web_stack(tmp_path / "app.db") as stack:
-        status, content_type, body = stack.get_raw("/")
-        assert status == 200
-        page = body.decode("utf-8")
+        page = _page_source(stack)
         assert "教学时刻：" in page
         assert "m.status_cn" in page
         assert "m.kind_cn" in page
@@ -1118,9 +1147,7 @@ def test_the_page_offers_the_attempt_box_and_the_skip_button(
     never as markup."""
 
     with web_stack(tmp_path / "app.db") as stack:
-        status, content_type, body = stack.get_raw("/")
-        assert status == 200
-        page = body.decode("utf-8")
+        page = _page_source(stack)
         assert "用英语试着造个句子…" in page
         assert "寄出作答" in page
         assert "跳过这一题" in page
@@ -1825,9 +1852,7 @@ def test_the_page_signals_generation_and_polls_the_current_face(
     stop function ends it when the turn response lands."""
 
     with web_stack(tmp_path / "app.db") as stack:
-        status, content_type, body = stack.get_raw("/")
-        assert status == 200
-        page = body.decode("utf-8")
+        page = _page_source(stack)
     assert "（生成中…）" in page
     assert "startMomentPolling()" in page
     assert "stopMomentPolling()" in page

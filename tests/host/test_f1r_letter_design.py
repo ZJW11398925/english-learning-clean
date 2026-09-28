@@ -27,16 +27,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tests.host.test_w1_web import web_stack
+from tests.host.test_w1_web import _page_source, web_stack
 
 
 def _page_of(tmp_path: Path) -> str:
-    """The served page source, over the plain offline stack."""
+    """The served page source, over the plain offline stack — the F-G1
+    union: the shell plus every static asset it links (the pins used to
+    read the embedded ``_PAGE``; same semantics, stronger negatives)."""
 
     with web_stack(tmp_path / "app.db") as stack:
-        status, _, body = stack.get_raw("/")
-        assert status == 200
-        return body.decode("utf-8")
+        return _page_source(stack)
 
 
 # ---------------------------------------------------------------------------
