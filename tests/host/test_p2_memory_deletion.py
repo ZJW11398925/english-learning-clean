@@ -398,12 +398,15 @@ def test_the_page_carries_the_safety_copy_and_the_result_strip(
 ) -> None:
     with web_stack(tmp_path / "app.db") as stack:
         page = _page_source(stack)
-        # the two confirm layers, sentence for sentence (m3's catcher)
+        # the two confirm layers, sentence for sentence (m3's catcher) —
+        # the second layer pinned in its executable form, so removing the
+        # call while keeping the prose comment is still a red
         assert (
             "将删除这段对话的全部记录，包括信件与教学痕迹。此操作不可恢复。"
             in page
         )
         assert "确定继续？再次确认" in page
+        assert 'if (!confirmDialog("确定继续？再次确认")) return;' in page
         # the target arm's own first layer and the standing statement
         assert "的学习证据、学习状态与复习日程。此操作不可恢复。" in page
         assert "所有删除操作都不可恢复" in page
