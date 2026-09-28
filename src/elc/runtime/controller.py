@@ -502,18 +502,22 @@ class StreamedDelivery:
 
 @dataclass(frozen=True)
 class TeachingTurnResult:
-    """The outcome of one ``request_teaching`` command turn (P3-1A).
+    """The outcome of one ``request_teaching`` command turn (P3-1A,
+    completed by P3-1B).
 
     The three Gate outputs map here directly: ALLOW carries
-    ``moment_id`` / ``action_id`` / ``moment_state=OPENING`` /
-    ``action_status=PREPARED``; DENY carries the reason codes and no
-    moment; DEGRADED carries ``missing_or_unknown`` and no decision.
+    ``moment_id`` / ``action_id`` and, since P3-1B folded the opening
+    delivery into the same entry, the delivered state —
+    ``moment_state=AWAITING_USER`` (the abort word on a delivery
+    failure), ``action_status=TERMINAL`` and the delivery's own
+    ``outcome``; DENY carries the reason codes and no moment; DEGRADED
+    carries ``missing_or_unknown`` and no decision.
 
-    ``outcome`` stays None in P3-1A: the stop point is CP2 (the opening
-    delivery is P3-1B), so no user-visible delivery happened and the turn
-    is deliberately left nonterminal with no ``turn_outcome`` — the
-    outcome is chosen by the real delivery (STATE_MACHINES §10 "Turn
-    outcome 单独记录").
+    P3-1A once stopped at CP2 with ``outcome=None`` and a deliberately
+    nonterminal turn (the opening delivery was P3-1B's); that stop point
+    no longer exists on the ALLOW path — the turn outcome is the real
+    delivery's (``REPLIED_FULL`` shown / ``NO_ASSISTANT_OUTPUT`` not
+    shown, STATE_MACHINES §10 "Turn outcome 单独记录").
     """
 
     turn_id: TurnId
@@ -3789,8 +3793,11 @@ class ConversationCoordinator:
         coordinator guard → CP0 (command turn) → Learning snapshot read
         with at most one pre-cycle repair → DecisionCycle → Gate
         USER_INITIATED OPEN (target resolution + durable lock + snapshot
-        consistency facts) → CP2 / DENY / DEGRADED. Stop point: CP2 —
-        TEACHING_OPEN stays PREPARED and the opening delivery is P3-1B's.
+        consistency facts) → CP2 / DENY / DEGRADED. ALLOW continues in
+        this same entry: P3-1B folded the opening delivery into the P3-1A
+        stop point (``_finish_teaching_open``), so a successful return
+        carries an ``AWAITING_USER`` moment, a ``TERMINAL`` opening
+        action and a terminalized turn.
 
         Deliberate scope notes:
 
@@ -3798,9 +3805,12 @@ class ConversationCoordinator:
           said (``raw_content=""``), so there is no observable behavior —
           no TEXT_* Evidence, no analysis artifact, no watermark move, and
           the turn goes USER_COMMITTED → DECIDING without ANALYZING;
-        - the turn is never terminalized here (no delivery happened), so
-          no ``turn_outcome`` is written — the outcome belongs to the real
-          delivery (STATE_MACHINES §10);
+        - the P3-1A half stopped before any delivery (it wrote no
+          ``turn_outcome``); since P3-1B folded the opening delivery in,
+          the ALLOW path terminalizes with the delivery's real outcome
+          (``REPLIED_FULL`` when shown — and the delivery-failure arm
+          keeps its own outcome while aborting the moment,
+          STATE_MACHINES §10);
         - re-entry (duplicate client_message_id, or a crash after CP2)
           replays the durable outcome instead of re-running the Gate: one
           cycle opens at most one moment (RUNTIME §23);

@@ -521,3 +521,40 @@ def test_the_blocked_line_has_data_after_a_blocked_turn(
         status, learning = stack.get_json("/api/learning")
         assert status == 200
         assert "error" not in learning["evidence"]
+
+
+def test_the_evidence_panel_shows_data_after_a_closed_loop(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    """Review LOW-1: the evidence panel had only its honest-empty pin —
+    a teaching loop that really closed (a judged miss then a judged hit)
+    must leave the panel carrying the claims, newest first, not just the
+    empty shape."""
+
+    with web_stack(
+        tmp_path / "app.db",
+        content_db=pilot_content_db,
+        stage=RolloutStage.STUDY_FIRST,
+        seed=seed_online,
+    ) as stack:
+        status, opened = stack.post("/api/teach_me", {"target_id": EV_TARGET})
+        assert status == 200
+        assert opened["accepted"] is True
+
+        for text in (ATTEMPT_MISS, ATTEMPT_HIT):
+            status, reply = stack.post(
+                "/api/teaching_reply", {"control": "attempt", "text": text}
+            )
+            assert status == 200
+            assert reply["accepted"] is True
+
+        status, learning = stack.get_json("/api/learning")
+        assert status == 200
+        evidence = learning["evidence"]
+        assert "error" not in evidence
+        assert evidence["evidence_claim_count"] >= 2
+        assert evidence["claims"], "a closed loop must leave claims shown"
+        shown = evidence["claims"]
+        assert all(claim["target_id"] == EV_TARGET for claim in shown)
+        # newest first: the hit's claim is not older than the miss's
+        assert shown[0]["created_at"] >= shown[-1]["created_at"]
