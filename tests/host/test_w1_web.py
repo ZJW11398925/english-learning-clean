@@ -365,7 +365,7 @@ def test_the_page_serves_the_title_and_the_three_calls(
         assert content_type.startswith("text/html")
         page = body.decode("utf-8")
         assert "英语客厅 · Study-first dogfood" in page
-        assert '<input id="text"' in page
+        assert '<textarea id="text"' in page
         assert "/api/turn" in page
         assert "/api/observations" in page
         assert "/api/history" in page

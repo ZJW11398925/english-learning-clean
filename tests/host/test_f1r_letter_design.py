@@ -70,7 +70,7 @@ def test_the_page_keeps_the_letter_form_laws(tmp_path: Path) -> None:
 
 def test_the_page_has_the_first_visit_cover(tmp_path: Path) -> None:
     """The 开张屏: the anchor's envelope line, the serif title, the two
-    honest description lines, the pencil 就这么定 link — and no persona
+    honest description lines, the serif ink 就这么定 link — and no persona
     authoring (the runtime has no such face; the cover invents none)."""
 
     page = _page_of(tmp_path)
@@ -100,7 +100,7 @@ def test_the_page_has_the_parlor_screen(tmp_path: Path) -> None:
     assert 'id="meter-toggle"' in page
     assert 'id="messages"' in page
     assert 'id="moments"' in page
-    assert '<input id="text" class="pen"' in page
+    assert '<textarea id="text" class="pen"' in page
     assert "寄出 →</button>" in page
     # the flow's two letter shapes: the plain sheet and the torn-edge
     # reply slip (clip-path, the anchor's own polygon)
@@ -168,3 +168,48 @@ def test_the_teaching_note_keeps_the_w6_faces(tmp_path: Path) -> None:
     # every word inert: textContent, never innerHTML
     assert "textContent" in page
     assert ".innerHTML" not in page
+
+
+# ---------------------------------------------------------------------------
+# 6. disposition fidelity pins (review LOW-1/LOW-2 + the teach-me poll gap)
+
+
+def test_the_pen_is_the_anchors_lined_paper(tmp_path: Path) -> None:
+    """LOW-1: the writing area is the anchor's own lined-paper textarea —
+    the repeating rule-soft lines that scroll with the text, the
+    min/max-height bounds, and Enter posts / Shift+Enter breaks."""
+
+    page = _page_of(tmp_path)
+    assert "repeating-linear-gradient(" in page
+    assert "background-attachment: local" in page
+    assert "min-height: 64px" in page
+    assert 'document.getElementById("text").addEventListener("keydown"' in page
+    assert 'if (event.key === "Enter" && !event.shiftKey)' in page
+
+
+def test_primary_actions_are_ink_secondary_stay_pencil(tmp_path: Path) -> None:
+    """LOW-2: the anchor's color semantics — the primary serif actions
+    (就这么定 / 寄出 / 寄出作答) carry ink underlines; the pencil color
+    belongs to the secondary links (help arms, set links, skip)."""
+
+    page = _page_of(tmp_path)
+    # the two primary selectors spell ink
+    assert (
+        ".ob .go { display: block; margin: 26px auto 0;"
+        " font-family: var(--f-serif);" in page
+    )
+    assert "font-weight: 700; color: var(--ink);" in page
+    # and pencil still lives on the secondary faces
+    assert ".setlink {" in page
+    assert ".linklike { font-family: var(--f-sans);" in page
+
+
+def test_teach_me_starts_the_moment_poll(tmp_path: Path) -> None:
+    """The F-2-era gap the review registered: a successful teach-me used
+    to leave the card invisible until the next turn or a refresh — the
+    reply now starts the W-4 poll in the same breath."""
+
+    page = _page_of(tmp_path)
+    assert (
+        'showScreen("living");\n      startMomentPolling();' in page
+    )

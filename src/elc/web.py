@@ -830,7 +830,7 @@ _PAGE = """<!doctype html>
   .ob .sub { text-align: center; margin: 0 0 10px; font-size: 13px;
              color: var(--ink-soft); }
   .ob .go { display: block; margin: 26px auto 0; font-family: var(--f-serif);
-            font-size: 17px; font-weight: 700; color: var(--pencil);
+            font-size: 17px; font-weight: 700; color: var(--ink);
             text-decoration: underline; text-decoration-thickness: 1px;
             text-underline-offset: 0.32em; }
   .ob .go:active { opacity: 0.55; }
@@ -852,7 +852,7 @@ _PAGE = """<!doctype html>
            text-decoration-color: var(--rule); }
   .meter:active { opacity: 0.55; }
 
-  .flow { padding: 18px var(--read-pad) 170px; }
+  .flow { padding: 18px var(--read-pad) 250px; }
   .letter { margin: 0 0 18px; max-width: 84%; }
   .letter.may { margin-right: auto; }
   .letter.me { margin-left: auto; }
@@ -919,12 +919,17 @@ _PAGE = """<!doctype html>
           max-width: 430px; margin: 0 auto; }
   .dock-row { display: flex; align-items: stretch; gap: 12px; }
   .pen { width: 100%; border: 0; background: none; outline: none;
+         resize: none; overflow-y: auto;
          font-family: var(--f-serif); font-size: 16px; color: var(--ink);
-         line-height: 1.6; padding: 10px 2px; }
+         line-height: 1.6; padding: 10px 2px; min-height: 64px;
+         max-height: 160px;
+         background-image: repeating-linear-gradient(
+           to bottom, transparent 0 25px, var(--rule-soft) 25px 26px);
+         background-attachment: local; }
   .pen::placeholder { color: var(--ink-faint); font-size: 13px;
                       font-family: var(--f-sans); }
   .send { flex: none; align-self: flex-end; font-family: var(--f-serif);
-          font-size: 15px; font-weight: 700; color: var(--pencil);
+          font-size: 15px; font-weight: 700; color: var(--ink);
           text-decoration: underline; text-decoration-thickness: 1px;
           text-underline-offset: 0.3em; }
   .send:active { opacity: 0.55; }
@@ -1001,8 +1006,8 @@ _PAGE = """<!doctype html>
     </main>
     <div class="dock">
       <form id="send" class="dock-row">
-        <input id="text" class="pen" autocomplete="off"
-               placeholder="用英语说点什么……">
+        <textarea id="text" class="pen" rows="2" autocomplete="off"
+                  placeholder="用英语说点什么……"></textarea>
         <button type="submit" class="send">寄出 →</button>
       </form>
     </div>
@@ -1314,7 +1319,7 @@ function addReplyControls(card) {
   input.placeholder = "用英语试着造个句子…";
   const submit = document.createElement("button");
   submit.type = "button";
-  submit.className = "linklike";
+  submit.className = "send";
   submit.textContent = "寄出作答";
   submit.addEventListener("click", () => submitAttempt(card, input));
   row.appendChild(input);
@@ -1469,6 +1474,15 @@ document.getElementById("send").addEventListener("submit", (event) => {
   if (!text) return;
   input.value = "";
   postTurn(text);
+});
+
+// The pen is a lined-paper textarea (the anchor's own .pen): plain Enter
+// posts the letter, Shift+Enter stays a line break.
+document.getElementById("text").addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    document.getElementById("send").requestSubmit();
+  }
 });
 
 document.getElementById("obs").addEventListener("click", async () => {
@@ -1721,6 +1735,7 @@ async function postTeachMe(targetId) {
     if (data.accepted) {
       addLine("system", "教学已开始，卡片出现在下方");
       showScreen("living");
+      startMomentPolling();
     } else {
       addLine("failure", data.error || "无法开始这节课");
     }
