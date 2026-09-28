@@ -57,11 +57,14 @@
 | 12 | system-line | `.sysline` | — | default（无交互态） | components.css + components.js（addLine system 臂） |
 | 13 | brand-mark | `.brandmark`（+ `--sm` `--lg`） | — | default 30px / 尺寸修饰 --sm 20px、--lg 64px / reduced-motion 不适用（静态标记，无动效——契约注明） | index.html（`<template id="brand-mark-source">` 内联 SVG，几何唯一出处）+ components.css + components.js（`brandMark()`/`installBrandMarks()`） |
 | 14 | state-banner | `.state-banner`（+ `--loading` `--empty` `--error`） | — | loading（取信中…，尾点呼吸微动）/ empty（弱化诚实句）/ error（赭红人话句 + `--pencil` 重试链接，回调由调用方注入）/ reduced-motion（loading 呼吸降级为静态） | components.css + components.js（`stateBanner()`；`diagEmpty`/`diagError` 一律委托它） |
+| 15 | word-card | `.word-card`（+ `.wc-lemma` `.wc-pos` `.wc-forms` `.wc-zh` `.wc-en` `.wc-example` `.word`） | — | default（rule-soft 底浮层）/ closed（点卡外或「收起」；DOM 移除语义，同 #11 的两臂不在 CSS）；无 busy——命中即显，miss 按契约静默 | components.css + components.js（`wordCard()`/`showWordCard()`/`closeWordCard()`；触发面 = `letterWords()` 的 `.word` 分片 + `wordWindows()` 窗口查询，app.js 委派） |
 
 库外现役类（登记，不扩库）：`.teach-me`（裸 button 元素复位直用，无独立
-样式；Revisit = 视觉规范刀再裁）；`.replyrow` / `.replytext`（note-paper 的
+样式；p-1 起今日屏两块与目标清单共用同一行工厂；Revisit = 视觉规范刀再
+裁）；`.replyrow` / `.replytext`（note-paper 的
 内置回复面，随 #3 契约）；`.formhead` `.sub` `.hint` `.who` `.who-sub`
-`.typing` `.errline` `.blockedline`（屏级文字形态，screens.css）。
+`.typing` `.errline` `.blockedline`（屏级文字形态，screens.css）；
+`.today` `.todaybody` `.topactions`（今日屏屏级布局，screens.css，p-1）。
 （F-G2 移出：`.diagerror`——面板失败态改走 #14，该类无现役用户，规则已删。）
 #10 empty-state（`.note`）的现役面收窄为**壳上静态占位行**（index.html 的
 「暂无数据 / 无降级记录」首绘）；运行时面板的空态一律走 #14 的 empty 变体。
@@ -115,14 +118,16 @@ resultstrip）必须定义至少 default + 一态（active/disabled/busy/skipped
 
 ```
 src/elc/webui/
-  index.html        页面骨架（三屏 + <link>×3 + <script type="module">
+  index.html        页面骨架（四屏 + <link>×3 + <script type="module">
                     + brand-mark 的 <template> 几何出处）
   tokens.css        VS1 token 唯一出处
-  components.css    组件库唯一样式源（14 组件 + 元素复位地基）
-  screens.css       三屏布局 + 壳层（html/body/#stage/dock/flow/屏级文字）
+  components.css    组件库唯一样式源（15 组件 + 元素复位地基）
+  screens.css       屏级布局 + 壳层（html/body/#stage/dock/flow/屏级文字；
+                    p-1 起四屏：开张/客厅/今日/仪表）
   api.js            端点 fetch 封装（页面唯一 fetch 调用点）
-  components.js     组件工厂 + 教学卡当场行为（textContent-only；唯一 confirm 封装点）
-  app.js            装配：三屏切换/事件/轮询/学习与诊断渲染（面板三态走 #14）
+  components.js     组件工厂 + 教学卡当场行为 + 点词卡（textContent-only；
+                    唯一 confirm 封装点）
+  app.js            装配：屏切换/事件/轮询/学习与诊断渲染（面板三态走 #14）
 ```
 
 - **ES modules、零构建**：浏览器直 import 相对路径（`./api.js`），无打包

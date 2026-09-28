@@ -176,6 +176,20 @@ top of F-1, all honest and none new in kind:
   reason codes); a failed or empty pull is silent — the line never
   blocks a chat.
 
+**p-1 adds the word-card face and the 今日 screen.** ``GET
+/api/word?q=<text>`` is one read-only lookup over content.db's word list
+(the §24.2/§24.3 rows the build wrote): the query's tokens must contain a
+lemma's tokens as a whole-word run — case-insensitive, edge punctuation
+stripped — and the **longest** hit wins ("a bit of luck" answers "a bit",
+and "make senses" matches nothing, the whole-word alignment keeping a bare
+substring accident out); a miss answers ``{"found": false}``, a 200 fact,
+never a 404. The page's letters fragment their text into clickable words
+and open a #15 word-card on the answer; the 今日 screen (a fourth page
+behind the parlor's brand bar) re-serves the learning readout's due rows
+with an inline 教我这个, the recent-evidence targets and the teachable
+list — no invented daily activity, the screen reuses three existing
+read-only faces and adds nothing writable.
+
 ``/api/diagnostics`` is the diagnostics view's one read: **read-only SQL**
 assembled into the five panels IP §15 asks a front end to answer. It runs
 on the work queue (:meth:`_WebFace.diagnostics` over ``host.db``) rather
@@ -237,6 +251,7 @@ from functools import partial
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Callable, Sequence, TextIO
+from urllib.parse import parse_qs, urlsplit
 
 from elc.cli import (
     RUNTIME_VERSION,
@@ -245,6 +260,7 @@ from elc.cli import (
     observation_sections,
 )
 from elc.cli import main as cli_main
+from elc.content.store import open_read_only
 from elc.conversation.types import CommitUserTurn
 from elc.curriculum.readiness import READINESS_LEVELS
 from elc.host import Host
@@ -796,6 +812,142 @@ def _learning_evidence_panel(db: sqlite3.Connection) -> dict[str, Any]:
     }
 
 
+# ---------------------------------------------------------------------------
+# the p-1 word-card lookup — one read-only face over content.db's word list
+# ---------------------------------------------------------------------------
+
+
+#: Characters stripped from both ends of every whitespace-separated token
+#: before two sides compare (the page strips its clicked windows with the
+#: same set, so "Anyway," matches the lemma "anyway"). Punctuation *inside*
+#: a token stays: "I'm" is one token, the way the lemma "I'm not sure"
+#: spells it.
+_WORD_EDGE_CHARS = "\"'`.,;:!?()[]{}<>…—–-“”‘’《》「」*_/\\|=+~^%$#@&"
+
+#: The en-side reading order inside one sense: the definition role is the
+#: card's canonical gloss, the other roles follow alphabetically — a
+#: deterministic tie-break for the ordinal ties the corpus actually has
+#: (every role lands on ordinal 0), not a semantic claim about the others.
+_WORD_TEXT_ORDER = (
+    "ORDER BY ordinal, CASE role WHEN 'definition' THEN 0 ELSE 1 END, role"
+)
+
+#: The content_text roles that pass through under their own role word —
+#: surveyed, not guessed (the p-1 survey: the corpus carries definition /
+#: usage / teaching_note / disambiguation in en and translation in zh;
+#: gloss is in the build's vocabulary but in no row). The card maps the
+#: zh-language text to ``zh`` and the en-language one to ``en``; these ride
+#: the response verbatim beside them, for a later face to render.
+_WORD_PASSTHROUGH_ROLES = ("gloss", "usage", "teaching_note", "disambiguation")
+
+#: How many example sentences a card serves (the task's own bound).
+_WORD_EXAMPLE_LIMIT = 2
+
+
+def _word_tokens(text: str) -> list[str]:
+    """A query or a lemma as lowercased, edge-stripped word tokens."""
+
+    tokens: list[str] = []
+    for raw in str(text).split():
+        token = raw.strip(_WORD_EDGE_CHARS).casefold()
+        if token:
+            tokens.append(token)
+    return tokens
+
+
+def _contains_run(sequence: list[str], sub: list[str]) -> bool:
+    """Whether ``sub`` sits in ``sequence`` as a contiguous whole-word run
+    (the alignment that keeps "make senses" from matching "make sense" —
+    a bare substring test would)."""
+
+    if not sub:
+        return False
+    return any(
+        sequence[i : i + len(sub)] == sub
+        for i in range(len(sequence) - len(sub) + 1)
+    )
+
+
+def _word_lookup(conn: sqlite3.Connection, q: str) -> dict[str, Any]:
+    """One word-card answer, read-only SELECTs over the built content.db.
+
+    The match is whole-word aligned containment: the query's token run
+    must contain a lemma's token run contiguously, and the **longest**
+    hit wins (a same-length tie goes to the smaller entity id, so the
+    answer never depends on row order). Nothing here ranks by frequency
+    or guesses a role: senses are the corpus's own rows (``zh`` = the
+    sense's first zh-language text, ``en`` = the first en one — the
+    definition role ordered first by :data:`_WORD_TEXT_ORDER`), the
+    remaining roles ride the response under their own role word
+    (:data:`_WORD_PASSTHROUGH_ROLES`), and examples are the entity's own
+    ``content_example`` rows, primary-target first — they carry no
+    ``sense_id``, so the same ≤2 list rides every sense of the entity
+    (today one sense per entity).
+    """
+
+    q_tokens = _word_tokens(q)
+    if not q_tokens:
+        return {"found": False}
+    hits: list[tuple[int, str, str, str]] = []
+    for entity_id, lemma, pos in conn.execute(
+        "SELECT entity_id, lemma, pos FROM content_lexical_entry"
+    ):
+        lemma_tokens = _word_tokens(str(lemma))
+        if _contains_run(q_tokens, lemma_tokens):
+            hits.append(
+                (len(lemma_tokens), str(entity_id), str(lemma), str(pos))
+            )
+    if not hits:
+        return {"found": False}
+    hits.sort(key=lambda hit: (-hit[0], hit[1]))
+    _, entity_id, lemma, pos = hits[0]
+    examples = [
+        str(row[0])
+        for row in conn.execute(
+            "SELECT form FROM content_example WHERE entity_id = ?"
+            " ORDER BY CASE role WHEN 'PRIMARY_TARGET' THEN 0 ELSE 1 END,"
+            " ordinal LIMIT ?",
+            (entity_id, _WORD_EXAMPLE_LIMIT),
+        )
+    ]
+    forms = [
+        {"written": str(row[0]), "form_type": str(row[1])}
+        for row in conn.execute(
+            "SELECT written, form_type FROM content_form"
+            " WHERE entity_id = ? ORDER BY form_id",
+            (entity_id,),
+        )
+    ]
+    senses: list[dict[str, Any]] = []
+    for (sense_id,) in conn.execute(
+        "SELECT sense_id FROM content_sense WHERE entity_id = ?"
+        " ORDER BY ordinal, sense_id",
+        (entity_id,),
+    ):
+        sense: dict[str, Any] = {"zh": None, "en": None, "examples": examples}
+        for role, language, text in conn.execute(
+            "SELECT role, language, text FROM content_text"
+            " WHERE entity_id = ? AND sense_id = ? " + _WORD_TEXT_ORDER,
+            (entity_id, str(sense_id)),
+        ):
+            role, language = str(role), str(language)
+            if sense["zh"] is None and language == "zh":
+                sense["zh"] = str(text)
+            elif sense["en"] is None and language == "en":
+                sense["en"] = str(text)
+            elif role in _WORD_PASSTHROUGH_ROLES and role not in sense:
+                sense[role] = str(text)
+        senses.append(sense)
+    return {
+        "found": True,
+        "lemma": lemma,
+        "pos": pos,
+        "forms": forms,
+        "senses": senses,
+        "entity_id": entity_id,
+    }
+
+
 def _diagnostics_panel(
     name: str,
     build: Callable[[sqlite3.Connection], dict[str, Any]],
@@ -972,6 +1124,16 @@ class _WebFace:
         # values: the handler thread reads these (never ``self._host``)
         # when it serves ``/api/teaching/current`` off the work queue.
         self.app_db_path = str(host.app_db_path)
+        # The word-card face's one parameter: the content artifact's path,
+        # read off the store once (ContentStore does not publish it — the
+        # lookup opens its own per-request read-only connections, the W-4
+        # posture, and never touches the store's connection). getattr with
+        # a default, not attribute access: a host without the full-chain
+        # tier (the test doubles' shape) simply has no word list.
+        self._word_db_path: Path | None = None
+        content_store = getattr(host, "content_store", None)
+        if content_store is not None:
+            self._word_db_path = getattr(content_store, "_db_path", None)
 
     @property
     def conversation_id(self) -> str:
@@ -1296,6 +1458,29 @@ class _WebFace:
             ],
         }
 
+    def word(self, q: str) -> dict[str, Any]:
+        """One word-card lookup over the content leg's word list (p-1).
+
+        The diagnostics face's construction with the W-4 connection
+        posture: the lookup runs on the work queue (a person's click is
+        never mid-generation), over this face's own short **read-only**
+        connection (``mode=ro`` enforced by SQLite, opened per request
+        and closed before answering — ContentStore's connection stays
+        private to the store; only its artifact path is read, once, in
+        ``__init__``). Without a content leg there is no word list and
+        every lookup honestly misses (``{"found": false}`` — the card
+        never opens, and nothing pretends otherwise). The SQL is fully
+        parameterized; the lookup writes nothing, ever.
+        """
+
+        if self._word_db_path is None:
+            return {"found": False}
+        conn = open_read_only(self._word_db_path)
+        try:
+            return _word_lookup(conn, q)
+        finally:
+            conn.close()
+
     def teach_me(self, target_id: str) -> dict[str, Any]:
         """The 学习 view's one act: teach this target now.
 
@@ -1540,6 +1725,19 @@ def _build_server(
                 self._run_on_host_thread(face.targets)
             elif self.path == "/api/observations":
                 self._run_on_host_thread(face.observations)
+            elif self.path == "/api/word" or self.path.startswith("/api/word?"):
+                # The p-1 word-card lookup — read-only SQL over content.db
+                # on the work queue (the diagnostics face's construction).
+                # Grammar: one query parameter ?q=<text>; a request without
+                # it is a bad request, and a lookup that misses — or a q
+                # that strips to nothing — answers {"found": false}, a 200
+                # fact, never a 404.
+                q_values = parse_qs(urlsplit(self.path).query).get("q")
+                if not q_values:
+                    self._send_json(400, {"error": "need ?q=<text>"})
+                else:
+                    looked_up = q_values[0]
+                    self._run_on_host_thread(lambda: face.word(looked_up))
             else:
                 self._send_json(404, {"error": "not found"})
 

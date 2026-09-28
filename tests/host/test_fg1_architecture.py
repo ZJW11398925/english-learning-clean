@@ -11,7 +11,7 @@ Three groups (the task book's own):
    its assets with ``<link>`` and one ``type="module"`` script; the
    served bytes equal the repo's bytes.
 2. **component library** — the contract blocks exist for every registered
-   component (fourteen since F-G2); every core component class's style is
+   component (fifteen since p-1); every core component class's style is
    defined exactly once across the whole webui tree (the alias selectors
    included); screens.css defines no button styling and app.js no inline
    styling (the button unification); the interactive components carry
@@ -59,7 +59,8 @@ FILES: dict[str, str] = {
 #: components.css's contract blocks and the spec's table must both carry
 #: them (a renamed or dropped component breaks both pins at once).
 #: The registry is living (spec ⑤): F-G2 added brand-mark and
-#: state-banner, in the same cut that registered them in the spec.
+#: state-banner, p-1 added word-card — each in the same cut that
+#: registered it in the spec.
 COMPONENTS = (
     "link-btn",
     "pen",
@@ -75,6 +76,7 @@ COMPONENTS = (
     "system-line",
     "brand-mark",
     "state-banner",
+    "word-card",
 )
 
 

@@ -36,7 +36,8 @@
     </div>
   </section>
 
-  <!-- 客厅屏：品牌条（上下发丝线夹住）+ 信笺流（教学短笺随信流）+ 写信区 -->
+  <!-- 客厅屏：品牌条（上下发丝线夹住）+ 信笺流（教学短笺随信流）+ 写信区。
+       信件文本按词分片（#15 的触发面），点词出卡。 -->
   <section id="screen-living" hidden>
     <header class="top">
       <span data-brand-mark="sm"></span>
@@ -44,7 +45,10 @@
         <div class="who">英语客厅</div>
         <div class="who-sub">固定伙伴 · 你说英语，它用英语回你</div>
       </div>
-      <button id="meter-toggle" class="btn btn--meter" type="button">仪表</button>
+      <div class="topactions">
+        <button id="today-toggle" class="btn btn--meter" type="button">今日</button>
+        <button id="meter-toggle" class="btn btn--meter" type="button">仪表</button>
+      </div>
     </header>
     <main class="flow">
       <div id="messages" aria-live="polite"></div>
@@ -56,6 +60,37 @@
                   placeholder="用英语说点什么……"></textarea>
         <button type="submit" class="btn btn--send">寄出 →</button>
       </form>
+    </div>
+  </section>
+
+  <!-- 今日屏（p-1）：进客厅先看今天——到期复习 / 最近在学 / 想练一把。
+       三块全走 state-banner 三态；页面没有的活动供给不伪装（登记 Revisit）。
+       信流里点词出卡（#15）与本体无关，这里是客厅之外的第二个日常入口。 -->
+  <section id="screen-today" class="today" hidden>
+    <header class="top">
+      <span data-brand-mark="sm"></span>
+      <div class="who">今日</div>
+      <div class="topactions">
+        <button id="today-set" class="btn btn--meter" type="button">仪表</button>
+        <button id="back-from-today" class="btn btn--meter" type="button">← 回客厅</button>
+      </div>
+    </header>
+    <div class="todaybody">
+    <h2>今日</h2>
+    <p class="sub">客厅在今天的样子——到期复习、最近在学、可以练什么。</p>
+    <div class="sec">
+      <h3>到期复习</h3>
+      <div id="today-due"><p class="note">暂无数据</p></div>
+    </div>
+    <div class="sec">
+      <h3>最近在学</h3>
+      <div id="today-recent"><p class="note">暂无数据</p></div>
+    </div>
+    <div class="sec">
+      <h3>想练一把</h3>
+      <div id="today-practice"><p class="note">暂无数据</p></div>
+    </div>
+    <button id="today-refresh" class="btn btn--dot" type="button">刷新读数</button>
     </div>
   </section>
 

@@ -251,3 +251,36 @@ button:focus-visible, input:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .state-banner--loading::after { animation: none; }
 }
+
+/* ── 15. word-card（点词卡）─────────────────────────────────────────
+   结构：<div class="word-card">[.wc-lemma 衬线词头 + .wc-pos 小字词性]
+   [.wc-forms 变形行]（逐 sense：.wc-zh 释义 / .wc-en 例义 /
+   .wc-example 例句×）[收起链接（link-btn --faint，复用 #1）]</div>。
+   触发面 = 信件与用户回条的文本分片：addLine 的 user/assistant 臂把
+   .say 的文本节点切成 <span class="word">词</span> + 原样空白文本节点
+   （整段 textContent 逐字不变，letter 的结构钉不动）；点击 .word 由
+   app.js 依 wordWindows 取 1–3 词窗口调 /api/word，首个命中即
+   showWordCard。工厂 wordCard(data)、浮层定位与开关是
+   showWordCard/closeWordCard（components.js），浮层挂 body。
+   状态矩阵：default（rule-soft 底、零圆角零阴影的浮层）/ closed（关闭
+   = 点卡外或「收起」，DOM 移除语义，同 #11 的原生两臂不在 CSS）；
+   无 busy——命中即显，miss 按契约静默。
+   使用规则：卡片只由 /api/word 的 found:true 打开；一切文字
+   textContent；教学短笺与系统行不参与点词（只有 .letter 的 .say 分片）。
+   禁止变体：阴影、圆角、--rule-soft 以外的底色块、busy 态、占位插画。 */
+.word-card { position: absolute; z-index: 9; max-width: 300px;
+             background: var(--rule-soft); padding: 12px 14px 14px;
+             font-size: 14px; }
+.wc-lemma { font-family: var(--f-serif); font-size: 17px; font-weight: 700; }
+.wc-pos { margin-left: 8px; font-family: var(--f-sans); font-size: 11px;
+          color: var(--ink-faint); }
+.wc-forms { margin-top: 6px; font-family: var(--f-mono); font-size: 11px;
+            color: var(--ink-soft); overflow-wrap: anywhere; }
+.wc-zh { margin: 8px 0 0; font-size: 14px; overflow-wrap: anywhere; }
+.wc-en { margin: 6px 0 0; font-size: 13px; color: var(--ink-soft);
+         overflow-wrap: anywhere; }
+.wc-example { margin: 8px 0 0; padding-left: 10px;
+              border-left: 1px solid var(--rule);
+              font-family: var(--f-serif); font-size: 14px;
+              color: var(--ink-soft); overflow-wrap: anywhere; }
+.word { cursor: pointer; }

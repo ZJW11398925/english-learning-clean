@@ -147,7 +147,9 @@ def test_the_page_has_the_learning_view(tmp_path: Path) -> None:
     assert "教我这个" in page_source
     assert 'button.className = "teach-me";' in page_source
     # the XSS face: the target name rides textContent, never markup
-    assert "b.textContent = t.name || t.target_id;" in page_source
+    # (p-1 随迁：行工厂 teachRow 被 p-1 今日屏两块与目标清单共用，
+    # 名字经 b.textContent = name 落节点——语义不变，形状随迁)
+    assert "b.textContent = name;" in page_source
 
 
 def _page_of(tmp_path: Path) -> str:

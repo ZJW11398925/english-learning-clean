@@ -66,6 +66,17 @@ body {
         max-width: 430px; margin: 0 auto; }
 .dock-row { display: flex; align-items: stretch; gap: 12px; }
 
+/* ── 今日屏（p-1）：客厅的今天——到期复习 / 最近在学 / 想练一把 ── */
+.today { min-height: 100vh; }
+.todaybody { padding: 26px var(--read-pad) 60px; }
+.today h2 { margin: 0 0 6px; font-size: 24px; font-weight: 500;
+            letter-spacing: 0.12em; }
+.today .sub { margin: 0 0 8px; font-family: var(--f-sans); font-size: 12px;
+              color: var(--ink-faint); line-height: 1.7; }
+/* 品牌条右槽的并列链接（客厅：今日+仪表 / 今日屏：仪表+回客厅）：
+   容器吃掉全部自由空间，两枚链接靠 gap 排开。 */
+.topactions { margin-left: auto; display: flex; gap: 14px; }
+
 /* ── 仪表屏：品牌条 + 诚实事实屏（mono 仪表 + 学习/诊断两个链接区块）─ */
 .set { min-height: 100vh; }
 /* 品牌条吃掉顶部，正文自带的留白搬进 .setbody（视觉与旧 .set 内边距

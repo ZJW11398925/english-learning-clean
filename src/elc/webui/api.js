@@ -1,7 +1,8 @@
-// api.js —— 页面对六个读/写端点（含观察/历史/当前卡三个只读面）的唯一
-// fetch 封装（F-G1）。约定：每个函数收窄参数、返回已解析的 JSON；网络
-// 失败或非 JSON 体原样抛出，由调用方的既有失败姿态处理（一行人话，永不
-// 静默）。除本文件外页面任何代码不得直接调 fetch（spec ⑦）。
+// api.js —— 页面对全部读/写端点（含观察/历史/当前卡三个只读面）的唯一
+// fetch 封装（F-G1；p-1 起随端点增长，不再数个数）。约定：每个函数收窄
+// 参数、返回已解析的 JSON；网络失败或非 JSON 体原样抛出，由调用方的既有
+// 失败姿态处理（一行人话，永不静默）。除本文件外页面任何代码不得直接调
+// fetch（spec ⑦）。
 //
 // 零外链纪律：本文件不出现任何站外地址；一切请求都是同源相对路径。
 
@@ -62,4 +63,9 @@ export function fetchHistory() {
 /** 只读当前教学卡（W-4 即时面；不走工作队列）。 */
 export function fetchCurrentMoment() {
   return getJson("/api/teaching/current");
+}
+
+/** 点词卡查询（p-1）：q 是以点击词为中心、剥好标点的窗口串。 */
+export function fetchWord(q) {
+  return getJson("/api/word?q=" + encodeURIComponent(q));
 }

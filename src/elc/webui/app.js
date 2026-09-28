@@ -13,6 +13,8 @@ import {
   diagGroup,
   stateBanner,
   installBrandMarks,
+  wordWindows,
+  showWordCard,
 } from "./components.js";
 import {
   fetchTurn,
@@ -23,6 +25,7 @@ import {
   fetchObservations,
   fetchHistory,
   fetchCurrentMoment,
+  fetchWord,
 } from "./api.js";
 
 // F-1: the diagnostics view — the five whys, read from /api/diagnostics.
@@ -197,6 +200,23 @@ document.getElementById("diag-refresh").addEventListener("click", loadDiagnostic
 // F-2: the 学习 view — what can be taught, the schedule, the goals and
 // the evidence ledger. Read-only numbers under Chinese labels; the one
 // act is 教我这个, which asks the runtime to open the teaching.
+// p-1: the row factory is shared with the 今日 screen's two act blocks
+// (the same 教我这个, the same .teach-me form).
+function teachRow(name, targetId) {
+  const row = document.createElement("div");
+  row.className = "kv";
+  const b = document.createElement("b");
+  b.textContent = name;
+  row.appendChild(b);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "teach-me";
+  button.textContent = "教我这个";
+  button.addEventListener("click", () => postTeachMe(targetId));
+  row.appendChild(button);
+  return row;
+}
+
 async function loadTargets() {
   const box = diagBox("target-list");
   box.textContent = "";
@@ -207,18 +227,7 @@ async function loadTargets() {
     const list = data.targets || [];
     if (!list.length) { diagEmpty(box, "暂无可教目标"); return; }
     for (const t of list) {
-      const row = document.createElement("div");
-      row.className = "kv";
-      const b = document.createElement("b");
-      b.textContent = t.name || t.target_id;
-      row.appendChild(b);
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "teach-me";
-      button.textContent = "教我这个";
-      button.addEventListener("click", () => postTeachMe(t.target_id));
-      row.appendChild(button);
-      box.appendChild(row);
+      box.appendChild(teachRow(t.name || t.target_id, t.target_id));
     }
   } catch {
     box.textContent = "";
@@ -322,6 +331,98 @@ async function loadLearning() {
 document.getElementById("learning-refresh").addEventListener("click",
   () => { loadTargets(); loadLearning(); });
 
+// p-1: the 今日 screen — 到期复习 / 最近在学 / 想练一把, three read-only
+// blocks over the same faces the 学习 view reads (no fourth endpoint, no
+// invented daily activity). Entering the screen is the pull.
+const TODAY_PANEL_IDS = ["today-due", "today-recent", "today-practice"];
+
+// the spoken name of a target id, the server's own reading rule done
+// client-side (the claims and schedule rows carry ids, not names)
+function todayName(targetId) {
+  const parts = String(targetId).split("-");
+  return parts.length > 2 ? parts.slice(2).join(" ") : String(targetId);
+}
+
+function renderTodayDue(schedule, retry) {
+  const box = diagBox("today-due");
+  box.textContent = "";
+  if (!schedule || schedule.error) {
+    diagError(box, (schedule && schedule.error) || "空响应", retry);
+    return;
+  }
+  const due = (schedule.items || []).filter(
+    (it) => it.review_state === "DUE" || it.review_state === "OVERDUE");
+  if (!due.length) { diagEmpty(box, "现在没有到期的复习"); return; }
+  for (const it of due) {
+    box.appendChild(teachRow(
+      todayName(it.target_id) + "（" + it.review_state + "）",
+      it.target_id));
+  }
+}
+
+function renderTodayRecent(evidence, retry) {
+  const box = diagBox("today-recent");
+  box.textContent = "";
+  if (!evidence || evidence.error) {
+    diagError(box, (evidence && evidence.error) || "空响应", retry);
+    return;
+  }
+  const claims = evidence.claims || [];
+  if (!claims.length) {
+    // 槽位单态：空态独占面板（清空先于挂载），计数只随数据出现
+    diagEmpty(box, "还没有学习记录——聊起来才会积累。");
+    return;
+  }
+  diagLine(box, "有学习状态的目标",
+    (evidence.learner_target_state_count || 0) + " 个");
+  // the claims come newest-first; the first sighting of a target is its
+  // most recent outcome
+  const latest = new Map();
+  for (const claim of claims) {
+    if (!latest.has(claim.target_id)) latest.set(claim.target_id, claim);
+  }
+  for (const [targetId, claim] of latest) {
+    const g = diagGroup(box, todayName(targetId));
+    diagLine(g, "最近 outcome", claim.outcome);
+    diagLine(g, "时间", claim.created_at);
+  }
+}
+
+function renderTodayPractice(targets, retry) {
+  const box = diagBox("today-practice");
+  box.textContent = "";
+  if (!targets || targets.error) {
+    diagError(box, (targets && targets.error) || "空响应", retry);
+    return;
+  }
+  const list = targets.targets || [];
+  if (!list.length) { diagEmpty(box, "暂无可练的目标"); return; }
+  for (const t of list) {
+    box.appendChild(teachRow(t.name || t.target_id, t.target_id));
+  }
+}
+
+async function loadToday() {
+  showLoading(TODAY_PANEL_IDS);
+  let learning = null;
+  let targets = null;
+  try {
+    learning = await fetchLearning();
+  } catch {
+    learning = null;
+  }
+  try {
+    targets = await fetchTargets();
+  } catch {
+    targets = null;
+  }
+  renderTodayDue(learning === null ? null : learning.schedule, loadToday);
+  renderTodayRecent(learning === null ? null : learning.evidence, loadToday);
+  renderTodayPractice(targets, loadToday);
+}
+
+document.getElementById("today-refresh").addEventListener("click", loadToday);
+
 // F-2: why a quiet turn was quiet — one gray line from the diagnostics
 // face's why-not-teach panel. The gate lives in postTurn (only when the
 // turn response carried no teaching moments); a failed or empty pull
@@ -356,12 +457,13 @@ async function showBlockedNote() {
   messages.scrollTop = messages.scrollHeight;
 }
 
-// F-1R: the three screens — 开张 / 客厅 / 仪表 — plain show/hide, no
-// router, no tab bar: the parlor header's 仪表 link leads to the set
-// screen and its 回客厅 link leads back.
+// F-1R: the screens — 开张 / 客厅 / 今日 / 仪表 — plain show/hide, no
+// router: the parlor header's 今日 and 仪表 links lead to their screens
+// and each screen's way back leads to the parlor.
 const screens = {
   onboard: document.getElementById("screen-onboard"),
   living: document.getElementById("screen-living"),
+  today: document.getElementById("screen-today"),
   set: document.getElementById("screen-set"),
 };
 
@@ -369,13 +471,52 @@ function showScreen(name) {
   for (const key of Object.keys(screens)) {
     screens[key].hidden = key !== name;
   }
+  // p-1: entering the 今日 screen is the pull — the screen always shows
+  // today's facts, never a stale page
+  if (name === "today") loadToday();
   window.scrollTo(0, 0);
 }
 
 document.getElementById("meter-toggle").addEventListener("click",
   () => showScreen("set"));
+document.getElementById("today-toggle").addEventListener("click",
+  () => showScreen("today"));
+document.getElementById("today-set").addEventListener("click",
+  () => showScreen("set"));
+document.getElementById("back-from-today").addEventListener("click",
+  () => showScreen("living"));
 document.getElementById("back-to-living").addEventListener("click",
   () => showScreen("living"));
+
+// p-1: 点词——信件与用户回条里的 .word 可点。以点击词为中心取 1–3 词
+// 窗口（长窗优先），逐窗口调 /api/word，首个命中即出卡；miss 按契约
+// 静默（不弹「没查到」浮层）。stopPropagation 让开卡点击不被浮层的
+// 「点卡外关闭」监听立即收掉。
+messages.addEventListener("click", async (event) => {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  if (!target.classList.contains("word")) return;
+  if (!target.closest(".letter")) return;
+  event.stopPropagation();
+  const say = target.closest(".say");
+  if (!say) return;
+  const spans = Array.from(say.querySelectorAll(".word"));
+  const index = spans.indexOf(target);
+  if (index < 0) return;
+  for (const query of
+       wordWindows(spans.map((span) => span.textContent || ""), index)) {
+    let data = null;
+    try {
+      data = await fetchWord(query);
+    } catch {
+      return;  // 一行人话的失败姿态属于教学与读数面；点词失败保持安静
+    }
+    if (data && data.found) {
+      showWordCard(event, data);
+      return;
+    }
+  }
+});
 
 // F-1R: the set screen's two blocks — 学习 and 诊断 — expand in place
 // (the F-1R task book leaves the choice to this page, recorded here):

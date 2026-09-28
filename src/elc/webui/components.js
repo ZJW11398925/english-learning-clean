@@ -31,15 +31,15 @@ export function addLine(cls, text) {
     paper.className = "paper";
     const say = document.createElement("p");
     say.className = "say";
-    say.textContent = text;            // textContent, never markup: the
-    paper.appendChild(say);            // user's own words stay inert text
+    say.appendChild(letterWords(text));  // 分片（#15 触发面）：文字仍全部
+    paper.appendChild(say);              // 惰性文本，整段逐字不变
     node.appendChild(paper);
   } else if (cls === "assistant") {
     node = document.createElement("div");
     node.className = "letter may";
     const say = document.createElement("p");
     say.className = "say";
-    say.textContent = text;
+    say.appendChild(letterWords(text));
     node.appendChild(say);
   } else if (cls === "typing") {
     node = document.createElement("p");
@@ -341,4 +341,143 @@ export function stateBanner(kind, opts) {
     box.appendChild(retry);
   }
   return box;
+}
+
+// 15. word-card：点词卡——信件文本分片 + 窗口查词 + 信笺浮层（p-1）。
+// 分片 letterWords 是惰性的：.say 的文本节点切成 span.word + 原样空白
+// 文本节点，整段 textContent 逐字不变（信笺结构钉不动）。查询窗口
+// wordWindows 以点击词为中心取 1–3 词，每种窗长把含点击词的对齐都试
+// 一遍（长窗优先、去重）；查询串 normalizeWordQuery 剥边标点 + 小写化，
+// 与服务端同一套边界字符。浮层 showWordCard 挂 body、贴点击点收进
+// 视口；关闭 = 点卡外或「收起」（closeWordCard），无 busy——命中即显，
+// miss 按契约静默。
+const WORD_EDGE_CHARS = "\"'`.,;:!?()[]{}<>…—–-“”‘’《》「」*_/\\|=+~^%$#@&";
+
+export function letterWords(text) {
+  const frag = document.createDocumentFragment();
+  for (const part of String(text).split(/(\s+)/)) {
+    if (!part) continue;
+    if (/^\s+$/.test(part)) {
+      frag.appendChild(document.createTextNode(part));
+      continue;
+    }
+    const span = document.createElement("span");
+    span.className = "word";
+    span.textContent = part;
+    frag.appendChild(span);
+  }
+  return frag;
+}
+
+export function normalizeWordQuery(text) {
+  return String(text).split(/\s+/).map((word) => {
+    let a = 0;
+    let b = word.length;
+    while (a < b && WORD_EDGE_CHARS.includes(word[a])) a += 1;
+    while (b > a && WORD_EDGE_CHARS.includes(word[b - 1])) b -= 1;
+    return word.slice(a, b).toLowerCase();
+  }).filter(Boolean).join(" ");
+}
+
+export function wordWindows(words, index) {
+  const queries = [];
+  const seen = new Set();
+  for (const size of [3, 2, 1]) {
+    for (let start = Math.max(0, index - size + 1);
+         start <= index && start + size <= words.length; start += 1) {
+      const query =
+        normalizeWordQuery(words.slice(start, start + size).join(" "));
+      if (query && !seen.has(query)) {
+        seen.add(query);
+        queries.push(query);
+      }
+    }
+  }
+  return queries;
+}
+
+export function wordCard(data) {
+  const card = document.createElement("div");
+  card.className = "word-card";
+  const lemma = document.createElement("b");
+  lemma.className = "wc-lemma";
+  lemma.textContent = String(data.lemma || "");
+  card.appendChild(lemma);
+  if (data.pos) {
+    const pos = document.createElement("span");
+    pos.className = "wc-pos";
+    pos.textContent = data.pos;
+    card.appendChild(pos);
+  }
+  const forms = data.forms || [];
+  if (forms.length) {
+    const row = document.createElement("div");
+    row.className = "wc-forms";
+    row.textContent = forms
+      .map((f) => f.written + "（" + f.form_type + "）")
+      .join(" · ");
+    card.appendChild(row);
+  }
+  for (const sense of data.senses || []) {
+    if (sense.zh) {
+      const zh = document.createElement("p");
+      zh.className = "wc-zh";
+      zh.textContent = sense.zh;
+      card.appendChild(zh);
+    }
+    if (sense.en) {
+      const en = document.createElement("p");
+      en.className = "wc-en";
+      en.textContent = sense.en;
+      card.appendChild(en);
+    }
+    for (const example of sense.examples || []) {
+      const ex = document.createElement("p");
+      ex.className = "wc-example";
+      ex.textContent = example;
+      card.appendChild(ex);
+    }
+  }
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "btn btn--faint";
+  close.textContent = "收起";
+  close.addEventListener("click", closeWordCard);
+  card.appendChild(close);
+  return card;
+}
+
+let openCard = null;
+let cardCloser = null;
+
+export function closeWordCard() {
+  if (cardCloser !== null) {
+    document.removeEventListener("click", cardCloser);
+    cardCloser = null;
+  }
+  if (openCard !== null) {
+    openCard.remove();
+    openCard = null;
+  }
+}
+
+export function showWordCard(at, data) {
+  closeWordCard();
+  const card = wordCard(data);
+  document.body.appendChild(card);
+  const maxLeft = window.scrollX + document.documentElement.clientWidth -
+    card.offsetWidth - 12;
+  const maxTop = window.scrollY + window.innerHeight -
+    card.offsetHeight - 12;
+  card.style.left =
+    Math.max(window.scrollX + 6, Math.min(at.pageX, maxLeft)) + "px";
+  card.style.top =
+    Math.max(window.scrollY + 6, Math.min(at.pageY, maxTop)) + "px";
+  openCard = card;
+  cardCloser = (event) => {
+    if (event.target !== card && !card.contains(event.target)) {
+      closeWordCard();
+    }
+  };
+  document.addEventListener("click", cardCloser);
 }
