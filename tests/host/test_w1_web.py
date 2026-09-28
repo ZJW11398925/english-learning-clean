@@ -55,7 +55,7 @@ Pinned here (the six VAL groups):
     connection), so a poll during a turn's model generation answers in
     under a second and sees the ``OPENING`` card ("教学开启中…") before the
     reply lands; the replaced reload contract keeps its shape over the ro
-    path (six fields, ``{"moment": None}`` when nothing is open or the
+    path (seven fields, ``{"moment": None}`` when nothing is open or the
     database is unreadable — never a 500), the title being the ro face's
     declared narrowing (the target's spoken name out of its id), and the
     page sends its placeholder line ("生成中…") plus the poll the instant a
@@ -1781,7 +1781,7 @@ def test_the_current_face_answers_the_same_card_over_the_ro_path(
     tmp_path: Path, pilot_content_db: Path
 ) -> None:
     """The ro replacement keeps the reload contract: an open teaching
-    answers 200 with the full card (all six fields, the Chinese words), and
+    answers 200 with the full card (all seven fields, the Chinese words), and
     an unreadable database answers ``{"moment": None}`` — a poll never
     raises, never 500s. The title is the ro face's declared narrowing: the
     target's spoken name out of its id (the hint-ladder sentence stays the

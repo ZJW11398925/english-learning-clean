@@ -85,6 +85,25 @@ false`` + the error sentence), exactly like the turn face; only a body
 outside the grammar (an unknown control word, an attempt without a
 non-empty ``text``) is a 400.
 
+W-6 makes the attempt loop legible on the page (作答回路可感化). A
+submitted reply is visible the instant it goes out — every control on
+the card is disabled and a busy strip says so (``批改中…``), because a
+help reply waits out a model round trip and a silent wait reads as a
+dead page; a fetch that dies is said in one human line instead of
+silence. The attempt's verdict renders as a result strip (✓ / ◐ / ✗
+before the verdict's own words), and the ro current card carries
+``last_attempt_feedback`` — the moment's latest durable evaluation
+outcome through the same reading, so a refresh does not bury the
+verdict. The reply grammar grows the three help arms SM §1 already
+names: ``{"control": "hint"}`` / ``{"control": "reveal"}`` /
+``{"control": "explanation"}`` map onto ``ASK_HINT`` / ``ASK_ANSWER`` /
+``ASK_EXPLANATION`` — the mapping is the whole feature; the envelopes,
+the §4 pipeline, the §8 limits and the ladder are the runtime's,
+unmodified. One runtime fact the mapping inherits (pinned, not fought):
+an authorized user-requested reveal **keeps the moment open** at
+``FULL_REVEAL`` — SM §3's ``POST_REVEAL_OPTIONAL_ATTEMPT`` phase exists
+precisely because seeing the answer does not have to end the episode.
+
 ``observations`` serves ``elc.cli``'s readings core (the six §12 indicator
 declarations, the six durable-counts sections, the drift signal) — the same
 numbers the ``observations`` command prints, by construction. ``history``
@@ -102,6 +121,7 @@ import sys
 import threading
 import uuid
 from datetime import UTC, datetime
+from functools import partial
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Callable, Sequence, TextIO
@@ -197,6 +217,19 @@ _OUTCOME_CN: dict[str, str] = {
     "ABSTAIN": "本次作答无法评判",
 }
 
+#: The W-6 help words the page sends, and the runtime control intents they
+#: map onto (SM §4's own vocabulary). The mapping is the whole feature: the
+#: envelopes, the §4 pipeline, the §8 limits and the hint ladder are the
+#: runtime's, unmodified — ``ASK_HINT`` delivers the next hint rung,
+#: ``ASK_ANSWER`` delivers the reveal, ``ASK_EXPLANATION`` the explanation,
+#: and an authorized reveal keeps the moment open at ``FULL_REVEAL`` (SM §3
+#: ``POST_REVEAL_OPTIONAL_ATTEMPT``), it does not close it.
+_HELP_INTENT_BY_WORD: dict[str, TeachingControlIntent] = {
+    "hint": TeachingControlIntent.ASK_HINT,
+    "reveal": TeachingControlIntent.ASK_ANSWER,
+    "explanation": TeachingControlIntent.ASK_EXPLANATION,
+}
+
 #: The read-only current card's Chinese status readings: the shared
 #: vocabulary map with the generation-window word said the way the user
 #: meets it — an ``OPENING`` moment here means "the teaching is opening"
@@ -206,6 +239,15 @@ _RO_STATUS_CN: dict[str, str] = {
     **_STATUS_CN,
     MomentState.OPENING.value: "教学开启中…",
 }
+
+
+def _readable_outcome(outcome: str) -> str:
+    """One evaluator outcome word, readable: ``FAILURE（未命中目标表达）``.
+
+    The shared shape of the reply face's ``feedback`` and the ro card's
+    ``last_attempt_feedback`` — one reading, two readers."""
+
+    return f"{outcome}（{_OUTCOME_CN.get(outcome, outcome)}）"
 
 
 def _feedback_of(result: Any) -> str | None:
@@ -222,8 +264,7 @@ def _feedback_of(result: Any) -> str | None:
     outcome = getattr(result, "evaluation_outcome", None)
     if not outcome:
         return None
-    word = str(outcome)
-    return f"{word}（{_OUTCOME_CN.get(word, word)}）"
+    return _readable_outcome(str(outcome))
 
 
 def _target_display_name(target_id: str) -> str:
@@ -273,6 +314,13 @@ _PAGE = """<!doctype html>
   .replytext { flex: 1; padding: .3rem; min-width: 0; font-size: .85rem; }
   .system { align-self: center; color: #666; font-size: .85rem; }
   button { padding: .45rem .9rem; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: wait; }
+  .resultstrip { margin-top: .4rem; padding: .35rem .6rem; border-radius: 6px;
+                 font-size: .9rem; }
+  .resultstrip.ok { background: #e5f4e0; color: #245c24; }
+  .resultstrip.part { background: #fdf3d7; color: #6b5310; }
+  .resultstrip.miss { background: #fde8e8; color: #8a1f1f; }
+  .busystrip { margin-top: .4rem; color: #555; font-size: .85rem; }
   pre { background: #f7f7f7; border: 1px solid #ddd; border-radius: 6px;
         padding: .75rem; overflow-x: auto; }
   .note { color: #666; font-size: .85rem; }
@@ -311,6 +359,46 @@ function addLine(cls, text) {
   messages.appendChild(div);          // user's own words stay inert text
   messages.scrollTop = messages.scrollHeight;
   return div;
+}
+
+// W-6: the attempt loop, made legible. The verdict is a prominent strip
+// (the symbol is display only; the words are the runtime's own), and a
+// submitted reply is visible the instant it goes out — a help reply waits
+// out a model round trip, and a silent wait reads as a dead page.
+function outcomeSymbol(feedback) {
+  const word = String(feedback).split("（")[0];
+  if (word === "SUCCESS" || word === "ALTERNATIVE_SUCCESS") return "✓";
+  if (word === "PARTIAL") return "◐";
+  if (word === "FAILURE") return "✗";
+  return "";
+}
+
+function showResultStrip(card, feedback) {
+  const symbol = outcomeSymbol(feedback);
+  const strip = document.createElement("div");
+  strip.className = "resultstrip " +
+    (symbol === "✓" ? "ok" : symbol === "✗" ? "miss" : "part");
+  strip.textContent = (symbol ? symbol + " " : "") + "判分反馈：" + feedback;
+  card.appendChild(strip);
+}
+
+function setReplyBusy(card, busy, note) {
+  for (const button of Array.from(card.querySelectorAll("button"))) {
+    button.disabled = busy;
+  }
+  const input = card.querySelector(".replytext");
+  if (input) input.disabled = busy;
+  let strip = card.querySelector(".busystrip");
+  if (busy) {
+    if (!strip) {
+      strip = document.createElement("div");
+      strip.className = "busystrip";
+      card.appendChild(strip);
+    }
+    strip.textContent = note;
+  } else if (strip) {
+    strip.remove();
+  }
 }
 
 // W-4: the teaching card must not wait for the model. The moment row is
@@ -373,6 +461,11 @@ function showMoments(list) {
       card.appendChild(document.createTextNode(
         " · 状态 " + m.lifecycle_state + " · 类型 " + m.kind));
     }
+    if (m.last_attempt_feedback) {
+      // W-6: the verdict survives a refresh — the ro current card carries
+      // the moment's latest durable evaluation outcome
+      showResultStrip(card, m.last_attempt_feedback);
+    }
     if (m.lifecycle_state === "AWAITING_USER") {
       // the W-2/W-3 reply face: a moment waiting for the user offers the
       // attempt box (their own English sentence, judged) and the skip
@@ -397,11 +490,34 @@ function addReplyControls(card) {
   const skip = document.createElement("button");
   skip.type = "button";
   skip.textContent = "跳过教学";
-  skip.addEventListener("click", () => skipMoment(card));
+  skip.addEventListener("click", () =>
+    postReply(card, { control: "skip" }, "跳过中…", "教学已跳过"));
   row.appendChild(input);
   row.appendChild(submit);
   row.appendChild(skip);
   card.appendChild(row);
+  // W-6: the three help arms SM §1 names, as buttons — the words map onto
+  // the runtime's ASK_HINT / ASK_ANSWER / ASK_EXPLANATION and nothing else
+  const help = document.createElement("div");
+  help.className = "replyrow";
+  help.appendChild(helpButton("看提示", "hint", "取提示中…", "已看提示", card));
+  help.appendChild(helpButton("看答案", "reveal", "取答案中…", "已看答案", card));
+  help.appendChild(helpButton("解释", "explanation", "取解释中…", "已看解释", card));
+  card.appendChild(help);
+}
+
+function helpButton(label, control, busyText, doneNote, card) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = label;
+  button.addEventListener("click", () => {
+    if (control === "reveal" &&
+        !window.confirm("看答案将结束本题并显示完整形式，确定？")) {
+      return;
+    }
+    postReply(card, { control: control }, busyText, doneNote);
+  });
+  return button;
 }
 
 function disarmMomentCard(card) {
@@ -412,7 +528,8 @@ function disarmMomentCard(card) {
 
 function readReplyAnswer(card, data) {
   // the reply result's own words, never a fabricated one: the new state
-  // plus the feedback verdict when the reply carried one
+  // plus the feedback verdict (as the W-6 result strip) when the reply
+  // carried one
   disarmMomentCard(card);
   card.appendChild(document.createElement("br"));
   const b = document.createElement("b");
@@ -423,57 +540,56 @@ function readReplyAnswer(card, data) {
   card.appendChild(document.createTextNode(
     " · 状态 " + (data.moment_state || "未知")));
   if (data.feedback !== null && data.feedback !== undefined) {
-    card.appendChild(document.createElement("br"));
-    card.appendChild(document.createTextNode("判分反馈：" + data.feedback));
+    showResultStrip(card, data.feedback);
   }
   if (data.moment_state === "AWAITING_USER") {
-    // the moment lives on (a miss re-prompts): the user can retry or skip
+    // the moment lives on (a miss re-prompts, an authorized reveal leaves
+    // the post-reveal optional attempt open): the user can retry or skip
     addReplyControls(card);
   } else {
     card.classList.add("skipped");
   }
 }
 
-async function submitAttempt(card, input) {
-  const text = input.value.trim();
-  if (!text) return;
-  const res = await fetch("/api/teaching_reply", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ control: "attempt", text: text }),
-  });
-  const data = await res.json();
-  if (res.status !== 200) {
-    addLine("failure", data.error || "提交作答失败");
-    return;
-  }
-  if (data.accepted) {
-    addLine("system", "已提交作答");
+async function postReply(card, payload, busyText, doneNote) {
+  // W-6: one reply path for all five control words — the busy strip goes
+  // up before the fetch and every control is disabled, so the multi-second
+  // model round trip is never silent; a failed fetch (network gone, a
+  // non-2xx) is one human line, and the card rearms either way
+  setReplyBusy(card, true, busyText);
+  try {
+    const res = await fetch("/api/teaching_reply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (res.status !== 200) {
+      addLine("failure", data.error || "提交失败，请重试");
+      return;
+    }
+    if (!data.accepted) {
+      addLine("failure", data.error || "无法提交这个作答");
+      return;
+    }
+    addLine("system", doneNote);
+    if (data.delivery_text) {
+      // the runtime's own delivered words (the hint rung / the reveal
+      // form / the explanation), shown like any assistant line
+      addLine("assistant", data.delivery_text);
+    }
     readReplyAnswer(card, data);
-  } else {
-    addLine("failure", data.error || "无法提交这个作答");
+  } catch {
+    addLine("failure", "提交失败，请重试");
+  } finally {
+    setReplyBusy(card, false);
   }
 }
 
-async function skipMoment(card) {
-  const res = await fetch("/api/teaching_reply", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ control: "skip" }),
-  });
-  const data = await res.json();
-  if (res.status !== 200) {
-    addLine("failure", data.error || "跳过教学失败");
-    return;
-  }
-  if (data.accepted) {
-    disarmMomentCard(card);
-    card.classList.add("skipped");
-    card.appendChild(document.createTextNode(" · 已跳过"));
-    addLine("system", "教学已跳过");
-  } else {
-    addLine("failure", data.error || "无法跳过这个教学时刻");
-  }
+async function submitAttempt(card, input) {
+  const text = input.value.trim();
+  if (!text) return;
+  await postReply(card, { control: "attempt", text: text }, "批改中…", "已提交作答");
 }
 
 async function postTurn(text) {
@@ -577,6 +693,30 @@ def _focus_id_of(document: str) -> str:
     return str(parsed["target_id"])
 
 
+def _last_attempt_feedback_of(
+    connection: sqlite3.Connection, moment_id: str
+) -> str | None:
+    """The open moment's latest evaluation verdict, readable (W-6).
+
+    One read-only query over the same connection the card read on: the
+    moment's most recent durable ``attempt_evaluation_record`` (the last
+    ``created_at`` wins; ``rowid`` breaks a same-timestamp tie by insertion
+    order), passed through :func:`_readable_outcome`. No evaluation yet —
+    an untouched moment, a hint reply — is ``None``. The caller's own
+    failure posture covers this read too: any exception answers
+    ``{"moment": None}`` up there, never a 500."""
+
+    row = connection.execute(
+        "SELECT outcome FROM attempt_evaluation_record"
+        " WHERE moment_id = ?"
+        " ORDER BY created_at DESC, rowid DESC LIMIT 1",
+        (moment_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    return _readable_outcome(str(row[0]))
+
+
 def _current_teaching_ro(
     app_db_path: str, conversation_id: str
 ) -> dict[str, Any]:
@@ -603,10 +743,13 @@ def _current_teaching_ro(
     (:func:`_target_display_name`) — the authored function sentence lives in
     content.db, whose path this face does not hold and whose store answers
     only the host's thread, so the hint-ladder title stays the turn card's;
-    and the moment kind's own word is served unchanged. Any failure — a
-    locked database, a missing file, a focus document in the wrong shape —
-    answers ``{"moment": None}``: the page polls again, and a poll must
-    never 500 the user's browser.
+    and the moment kind's own word is served unchanged. W-6 adds one field
+    back the other way: ``last_attempt_feedback`` is the moment's latest
+    durable evaluation verdict (readable), so a refresh re-renders the
+    result strip instead of burying it. Any failure — a locked database, a
+    missing file, a focus document in the wrong shape — answers
+    ``{"moment": None}``: the page polls again, and a poll must never 500
+    the user's browser.
     """
 
     try:
@@ -614,7 +757,8 @@ def _current_teaching_ro(
         connection = sqlite3.connect(uri, uri=True, timeout=2.0)
         try:
             row = connection.execute(
-                "SELECT m.focus_target, m.lifecycle_state, m.target_mode"
+                "SELECT m.moment_id, m.focus_target, m.lifecycle_state,"
+                " m.target_mode"
                 " FROM active_teaching_lock l"
                 " JOIN teaching_moment m ON m.moment_id = l.moment_id"
                 " WHERE l.conversation_id = ?"
@@ -625,13 +769,15 @@ def _current_teaching_ro(
                     MomentState.AWAITING_USER.value,
                 ),
             ).fetchone()
+            if row is None:
+                return {"moment": None}
+            moment_id = str(row[0])
+            focus_id = _focus_id_of(str(row[1]))
+            state = str(row[2])
+            kind = str(row[3])
+            feedback = _last_attempt_feedback_of(connection, moment_id)
         finally:
             connection.close()
-        if row is None:
-            return {"moment": None}
-        focus_id = _focus_id_of(str(row[0]))
-        state = str(row[1])
-        kind = str(row[2])
         return {
             "moment": {
                 "focus_target_id": focus_id,
@@ -642,6 +788,7 @@ def _current_teaching_ro(
                     state, _STATUS_CN.get(state, state)
                 ),
                 "kind_cn": _KIND_CN.get(kind, kind),
+                "last_attempt_feedback": feedback,
             }
         }
     except Exception:
@@ -788,7 +935,7 @@ class _WebFace:
     def teaching_reply(
         self, control: str, text: str | None = None
     ) -> dict[str, Any]:
-        """One user reply to the open teaching moment — skip or attempt.
+        """One user reply to the open teaching moment — five control words.
 
         The moment is located the way ``_moments_of_turn`` reads moments —
         through the durable rows, never a guess: the conversation's
@@ -809,7 +956,15 @@ class _WebFace:
           against the target's own answer key (the evaluator is pure, no
           model), a success closes the moment and releases the lock, and
           a miss re-prompts (the moment returns to ``AWAITING_USER``
-          holding the lock, so the card can ask again).
+          holding the lock, so the card can ask again);
+        - ``"hint"`` / ``"reveal"`` / ``"explanation"`` (W-6) submit the
+          SM §4 ask intents — ``ASK_HINT`` delivers the next hint rung,
+          ``ASK_ANSWER`` the reveal, ``ASK_EXPLANATION`` the explanation.
+          The mapping (:data:`_HELP_INTENT_BY_WORD`) is the whole
+          feature; the §8 limits and the ladder stay the runtime's. An
+          authorized reveal keeps the moment open at ``FULL_REVEAL``
+          (SM §3's ``POST_REVEAL_OPTIONAL_ATTEMPT``: seeing the answer
+          does not have to end the episode), it does not close it.
 
         An ``Err`` from the entry is a runtime fact — 200, ``accepted:
         false``, the error sentence; the face never fabricates a state,
@@ -817,7 +972,13 @@ class _WebFace:
         stays consistent with the durable row the next read sees).
         ``feedback`` is the result's own evaluation verdict, readable, or
         ``None`` when the reply carried no evaluation — never a
-        fabricated judgement.
+        fabricated judgement. ``delivery_text`` (W-6, additive, present
+        only when the runtime delivered words) is the result's own
+        ``reply_text`` — the hint rung, the reveal form or the
+        explanation the page should show; a control word outside the
+        five-word grammar never reaches this face (the HTTP layer 400s
+        it), so an unknown word here raises rather than silently meaning
+        SKIP.
         """
 
         lock = self._host.db.execute(
@@ -840,9 +1001,18 @@ class _WebFace:
                 attempt_present=True,
                 attempt=AttemptPayload(text=text or ""),
             )
-        else:
+        elif control == "skip":
             envelope = TeachingResponseEnvelope(
                 control_intent=TeachingControlIntent.SKIP, attempt_present=False
+            )
+        else:
+            intent = _HELP_INTENT_BY_WORD.get(control)
+            if intent is None:
+                raise ValueError(
+                    f"unknown teaching reply control word: {control!r}"
+                )
+            envelope = TeachingResponseEnvelope(
+                control_intent=intent, attempt_present=False
             )
         request = TeachingReplyRequest(
             conversation_id=self._conversation_id,
@@ -858,12 +1028,16 @@ class _WebFace:
                 "error": f"{result.error.code.value}: {result.error.message}",
                 "feedback": None,
             }
-        return {
+        answer: dict[str, Any] = {
             "accepted": True,
             "moment_state": result.value.moment_state.value,
             "error": None,
             "feedback": _feedback_of(result.value),
         }
+        delivered = getattr(result.value, "reply_text", None)
+        if delivered:
+            answer["delivery_text"] = str(delivered)
+        return answer
 
     def observations(self) -> dict[str, Any]:
         """The CLI readout's numbers, as JSON (one readings core)."""
@@ -1038,11 +1212,12 @@ def _build_server(
             except (UnicodeDecodeError, json.JSONDecodeError):
                 payload = None
             if self.path == "/api/teaching_reply":
-                # The reply grammar is exactly {"control": "skip"} or
-                # {"control": "attempt", "text": "..."} — any other body
-                # (no JSON, another key, an unknown control word, an
-                # attempt without a non-empty text) is a bad request, not
-                # a runtime fact.
+                # The reply grammar is {"control": "skip"},
+                # {"control": "attempt", "text": "..."} and the three W-6
+                # help words {"control": "hint" | "reveal" |
+                # "explanation"} — any other body (no JSON, another key,
+                # an unknown control word, an attempt without a
+                # non-empty text) is a bad request, not a runtime fact.
                 control = (
                     payload.get("control") if isinstance(payload, dict) else None
                 )
@@ -1066,12 +1241,19 @@ def _build_server(
                 if control == "skip":
                     self._run_on_host_thread(lambda: face.teaching_reply("skip"))
                     return
+                if control in _HELP_INTENT_BY_WORD:
+                    self._run_on_host_thread(
+                        partial(face.teaching_reply, str(control))
+                    )
+                    return
                 self._send_json(
                     400,
                     {
                         "error": (
                             'need a JSON body {"control": "skip"} or'
-                            ' {"control": "attempt", "text": "..."}'
+                            ' {"control": "attempt", "text": "..."} or'
+                            ' {"control": "hint" | "reveal" |'
+                            ' "explanation"}'
                         )
                     },
                 )
