@@ -61,6 +61,8 @@ button:focus-visible, input:focus-visible {
            color: var(--ink-soft); text-decoration: underline dotted;
            text-underline-offset: 0.28em;
            text-decoration-color: var(--rule); }
+/* --meter 的槽位职责：品牌条右槽链接（客厅屏的「仪表」/ 仪表屏的
+   「← 回客厅」）——mono 小字、右对齐，两条品牌条共用同一形态。 */
 .btn--meter:active, .meter:active { opacity: 0.55; }
 
 /* ── 2. pen（稿纸 textarea）─────────────────────────────────────────
@@ -203,3 +205,49 @@ button:focus-visible, input:focus-visible {
 .sysline { text-align: center; margin: 0 0 14px;
            font-family: var(--f-sans); font-size: 11px;
            color: var(--ink-faint); }
+
+/* ── 13. brand-mark（品牌印记）──────────────────────────────────────
+   结构：内联 SVG——几何唯一出处是 index.html 的
+   <template id="brand-mark-source">（信封 + 封蜡封缄）；工厂
+   brandMark(variant)（components.js）克隆模板并落尺寸变体类。
+   零外链：无 http(s)、无 data URI、不取任何资源（HTML 原生解析 svg，
+   源码里连 SVG 命名串都不出现）。
+   状态矩阵：default（30px）/ 尺寸修饰 --sm（20px，品牌条）/
+   --lg（64px，开张屏顶）；reduced-motion 不适用——静态标记、无动效
+   （契约在此注明）。
+   使用规则：开张屏顶部（--lg）与客厅/仪表屏品牌条（--sm）；墨线描形
+   （.bm-line，var(--ink)）、赭点封缄（.bm-seal，var(--pencil)）；
+   viewBox 等比缩放，不作正文插图。
+   禁止变体：外链图片、底色块、描边框、动效。 */
+.brandmark { width: 30px; height: 30px; }
+.brandmark--sm { width: 20px; height: 20px; }
+.brandmark--lg { width: 64px; height: 64px; }
+.brandmark .bm-line { fill: none; stroke: var(--ink); stroke-width: 2;
+          stroke-linecap: round; stroke-linejoin: round; }
+.brandmark .bm-seal { fill: var(--pencil); }
+
+/* ── 14. state-banner（状态横幅）─────────────────────────────────────
+   结构：<div class="state-banner state-banner--loading|empty|error">文字
+   [重试链接]</div>——工厂 stateBanner(kind, opts)（components.js）；
+   error 的重试是 link-btn 的 --pencil 变体（复用 #1，不另造链接形），
+   重试回调由调用方注入（只重拉本面板）。
+   状态矩阵：loading（取信中…，尾点呼吸微动）/ empty（弱化诚实句）/
+   error（赭红人话一句 + 重试）；reduced-motion：loading 尾点呼吸降级
+   为静态（@media 块——全页唯一动效的唯一出口）。未知 kind 只落基类
+   （无修饰样式，addLine 的 else 臂同形：基样仍在、不抛错）。
+   使用规则：读数面板（学习/诊断/目标清单）加载中、空、失败三态的唯一
+   答法（#10 .note 保留给壳上静态占位行）；文字一律 textContent。
+   禁止变体：转圈动画、骨架屏、遮罩、占位插画、弹层。 */
+.state-banner { color: var(--ink-faint); font-family: var(--f-sans);
+        font-size: .85rem; line-height: 1.7; }
+.state-banner--error { color: var(--pencil); }
+.state-banner .btn--pencil { margin-left: 10px; }
+.state-banner--loading::after { content: "…"; display: inline-block;
+        animation: state-breathe 1.6s ease-in-out infinite; }
+@keyframes state-breathe {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .state-banner--loading::after { animation: none; }
+}

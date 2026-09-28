@@ -10,15 +10,16 @@ Three groups (the task book's own):
    file bytes); zero external resources holds per file; the shell links
    its assets with ``<link>`` and one ``type="module"`` script; the
    served bytes equal the repo's bytes.
-2. **component library** — the twelve contract blocks exist; every core
-   component class's style is defined exactly once across the whole
-   webui tree (the alias selectors included); screens.css defines no
-   button styling and app.js no inline styling (the button unification);
-   the interactive components carry their state words (the completeness
-   gate).
+2. **component library** — the contract blocks exist for every registered
+   component (fourteen since F-G2); every core component class's style is
+   defined exactly once across the whole webui tree (the alias selectors
+   included); screens.css defines no button styling and app.js no inline
+   styling (the button unification); the interactive components carry
+   their state words (the completeness gate).
 3. **spec** — ``docs/FRONTEND_SPEC.md`` exists with its seven section
-   headers, names all twelve components, carries the library-uniqueness
-   clause, and AGENTS.md carries the governance clause.
+   headers, names every registered component, carries the
+   library-as-living-registry clause, and AGENTS.md carries the
+   governance clause.
 
 Every page-source *string* pin lives where it always lived (the W/F
 suites, now reading :func:`tests.host.test_w1_web._page_source`'s
@@ -54,9 +55,11 @@ FILES: dict[str, str] = {
     "app.js": "text/javascript; charset=utf-8",
 }
 
-#: The twelve components, in contract order — the numbering in
+#: The registered components, in contract order — the numbering in
 #: components.css's contract blocks and the spec's table must both carry
 #: them (a renamed or dropped component breaks both pins at once).
+#: The registry is living (spec ⑤): F-G2 added brand-mark and
+#: state-banner, in the same cut that registered them in the spec.
 COMPONENTS = (
     "link-btn",
     "pen",
@@ -70,6 +73,8 @@ COMPONENTS = (
     "empty-state",
     "confirm-dialog",
     "system-line",
+    "brand-mark",
+    "state-banner",
 )
 
 
@@ -232,19 +237,20 @@ def test_zero_external_resources_per_file() -> None:
 # 2. the component library
 
 
-def test_the_twelve_contract_blocks_exist() -> None:
+def test_the_contract_blocks_exist() -> None:
     """Each component owns one numbered contract block in components.css
     (structure / state matrix / usage rules / forbidden variants), in the
-    spec's order."""
+    spec's order — the block count is the registry's length, so a
+    same-cut registration is the only way a new component passes."""
 
     css = _webui_text("components.css")
     for number, name in enumerate(COMPONENTS, start=1):
         assert f"{number}. {name}" in css, (number, name)
     # the four contract clauses, once per component (the file header's
     # rule line names them without the colon — blocks carry the colon)
-    assert css.count("状态矩阵：") == 12
-    assert css.count("使用规则：") == 12
-    assert css.count("禁止变体：") == 12
+    assert css.count("状态矩阵：") == len(COMPONENTS)
+    assert css.count("使用规则：") == len(COMPONENTS)
+    assert css.count("禁止变体：") == len(COMPONENTS)
 
 
 def test_core_component_styles_have_exactly_one_source() -> None:
@@ -320,9 +326,10 @@ def test_interactive_components_carry_their_states() -> None:
 
 
 def test_the_frontend_spec_exists_and_governs() -> None:
-    """docs/FRONTEND_SPEC.md: the seven sections, the twelve component
-    names, the uniqueness clause — and the AGENTS.md governance clause
-    that makes the spec binding for every later frontend cut."""
+    """docs/FRONTEND_SPEC.md: the seven sections, every registered
+    component name, the uniqueness clause and the living-registry
+    doctrine — and the AGENTS.md governance clause that makes the spec
+    binding for every later frontend cut."""
 
     spec = (REPO_ROOT / "docs" / "FRONTEND_SPEC.md").read_text(encoding="utf-8")
     for header in (

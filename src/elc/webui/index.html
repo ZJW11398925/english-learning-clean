@@ -12,20 +12,34 @@
 <body>
 <div id="stage">
 
-  <!-- 开张屏：first visit 一次（localStorage 记住）。诚实映射 runtime：
-       没有用户自定义人设面，就不伪装——进入即开聊，这就是全部的「设定」。 -->
+  <!-- 开张屏：first visit 一次（localStorage 记住）。三步信纸——是什么 /
+       教学怎么发生 / 就这么定；说到哪一行都是真的，不伪装任何功能。 -->
   <section id="screen-onboard" class="ob">
-    <p class="formhead">✉ 第一步，也是唯一步</p>
+    <span data-brand-mark="lg"></span>
     <h1>把英语请进客厅</h1>
-    <p class="sub">跟一位固定伙伴用英语闲聊——想说什么，就说什么。</p>
-    <p class="sub">客厅在旁听着：看得懂你的每一步，该教的时候才开口。</p>
-    <button id="ob-go" class="btn btn--ink" type="button">就这么定 →</button>
-    <p class="hint">进入后，右上角的「仪表」摊开客厅的全部账目与记录。</p>
+    <div class="ob-steps">
+      <section class="ob-step">
+        <p class="formhead">第一步 · 是什么</p>
+        <p class="sub">跟一位固定伙伴用英语闲聊——想说什么，就说什么。</p>
+      </section>
+      <section class="ob-step">
+        <p class="formhead">第二步 · 教学怎么发生</p>
+        <p class="sub">聊着聊着，客厅在旁听着。</p>
+        <p class="sub">发现值得练的表达时，信流里会出现一张短笺。</p>
+        <p class="sub">答对答错都有反馈，也可以跳过。</p>
+      </section>
+      <section class="ob-step">
+        <button id="ob-go" class="btn btn--ink" type="button">就这么定 →</button>
+        <p class="hint">进入后，右上角的「仪表」摊开客厅的全部账目与记录。</p>
+        <p class="ob-version">elc · web</p>
+      </section>
+    </div>
   </section>
 
-  <!-- 客厅屏：伙伴卡（上下发丝线夹住）+ 信笺流（教学短笺随信流）+ 写信区 -->
+  <!-- 客厅屏：品牌条（上下发丝线夹住）+ 信笺流（教学短笺随信流）+ 写信区 -->
   <section id="screen-living" hidden>
     <header class="top">
+      <span data-brand-mark="sm"></span>
       <div>
         <div class="who">英语客厅</div>
         <div class="who-sub">固定伙伴 · 你说英语，它用英语回你</div>
@@ -45,10 +59,16 @@
     </div>
   </section>
 
-  <!-- 仪表屏（设置）：诚实事实屏。模型端点与模型名由启动命令给定，页面没有
-       读取它们的口——宁缺勿假，不显示。学习与诊断两个区块点开即读（就地
-       展开），回客厅链接回客厅屏。 -->
+  <!-- 仪表屏（设置）：顶部同款品牌条（回客厅常驻右上，面板再长也够得着）。
+       诚实事实屏：模型端点与模型名由启动命令给定，页面没有读取它们的口
+       ——宁缺勿假，不显示。学习与诊断两个区块点开即读（就地展开）。 -->
   <section id="screen-set" class="set" hidden>
+    <header class="top sethead">
+      <span data-brand-mark="sm"></span>
+      <div class="who">英语客厅</div>
+      <button id="back-to-living" class="btn btn--meter" type="button">← 回客厅</button>
+    </header>
+    <div class="setbody">
     <h2>仪表</h2>
     <p class="sub">客厅的账目与记录摊在这里——只读，如实。</p>
     <p class="sub">本地单用户 · 127.0.0.1 · 无鉴权。模型端点与模型名由启动
@@ -106,10 +126,15 @@
       </div>
       <button id="diag-refresh" class="btn btn--dot" type="button">刷新读数</button>
     </section>
-
-    <button id="back-to-living" class="btn btn--back" type="button">← 回客厅</button>
+    </div>
   </section>
 
 </div>
+
+<!-- 品牌印记的唯一几何出处（components.js 工厂 brandMark 克隆它）：
+     信封 + 封蜡——墨线描形、赭点封缄，衬线气质、几何简洁。零外链：
+     内联 SVG，无 http(s)、无 data URI、不取任何资源（HTML 原生解析
+     svg，不需要命名串）。静态标记：无动效，reduced-motion 不适用。 -->
+<template id="brand-mark-source"><svg class="brandmark" viewBox="0 0 48 48" role="img" aria-label="英语客厅印记"><rect class="bm-line" x="7" y="13" width="34" height="24"/><path class="bm-line" d="M7 15 L24 28 L41 15"/><circle class="bm-seal" cx="24" cy="28" r="4.6"/></svg></template>
 </body>
 </html>

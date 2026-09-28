@@ -1,0 +1,230 @@
+"""F-G2 — the entry face made product, the state suite, and the living
+registry.
+
+Four groups (the task book's own):
+
+1. **brand-mark** — the mark is an inline SVG whose *geometry* lives in
+   index.html's ``<template>`` (the HTML parser reads ``svg`` natively, so
+   the source never spells the SVG namespace string and the per-file
+   zero-external pins hold untouched); the factory clones it and lands
+   the size variants; the ink line and the wax-seal dot ride the tokens;
+   the brand bar (mark + serif wordmark + the mono right slot) graces
+   both the parlor and the set screen, hairline-clamped top and bottom.
+2. **state-banner** — the three variants (loading with the one breathing
+   ellipsis and its reduced-motion static arm / empty / error with the
+   injected retry link) are registered once, and the panels' three faces
+   all ride it: the loaders show loading first, the empty and error arms
+   delegate through diagEmpty/diagError, and every retry re-pulls only
+   its own panel.
+3. **the cover** — three letter steps (是什么 / 教学怎么发生 / 就这么定)
+   under the large mark, hairline-separated, with the honest version
+   line (``elc · web`` — no fabricated version digits).
+4. **the living registry** — spec ⑤ carries the user's doctrine (the
+   library grows with the product; check-then-reuse-then-build-then-
+   register in the same cut) and the ③ table rows for both new
+   components; AGENTS.md carries the growth clause.
+
+Every page-source pin reads the served union (the F-G1 reading), so
+what is pinned is what the browser actually gets.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import elc.web
+from tests.host.test_fg1_architecture import (
+    COMPONENTS,
+    _webui_all_text,
+    _webui_text,
+)
+from tests.host.test_w1_web import _page_source, web_stack
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+WEBUI = Path(elc.web.__file__).parent / "webui"
+
+
+def _page_of(tmp_path: Path) -> str:
+    """The served page source over the plain offline stack — the shell
+    plus every static asset it links."""
+
+    with web_stack(tmp_path / "app.db") as stack:
+        return _page_source(stack)
+
+
+# ---------------------------------------------------------------------------
+# 1. brand-mark
+
+
+def test_the_brand_mark_is_an_inline_svg_with_no_resource_hole(
+    tmp_path: Path,
+) -> None:
+    """The mark's geometry is the shell's own template (one inline svg:
+    the envelope outline, the flap and the wax-seal dot), the factory
+    clones it — no namespace string anywhere, no ``data:`` URI anywhere,
+    and the ink line / seal dot ride the tokens, not literal hex."""
+
+    index = _webui_text("index.html")
+    assert '<template id="brand-mark-source">' in index
+    assert '<svg class="brandmark" viewBox="0 0 48 48"' in index
+    assert '<rect class="bm-line" x="7" y="13" width="34" height="24"/>' in index
+    assert '<path class="bm-line" d="M7 15 L24 28 L41 15"/>' in index
+    assert '<circle class="bm-seal" cx="24" cy="28" r="4.6"/>' in index
+    js = _webui_text("components.js")
+    assert "export function brandMark(variant) {" in js
+    assert ".content.firstElementChild.cloneNode(true)" in js
+    # the namespace-string shape is not how the mark is built: cloning the
+    # template is (the per-file "http://" pins then hold untouched)
+    assert "createElementNS" not in js
+    css = _webui_text("components.css")
+    assert ".brandmark { width: 30px; height: 30px; }" in css
+    assert ".brandmark--sm { width: 20px; height: 20px; }" in css
+    assert ".brandmark--lg { width: 64px; height: 64px; }" in css
+    assert (
+        ".brandmark .bm-line { fill: none; stroke: var(--ink);"
+        " stroke-width: 2;" in css
+    )
+    assert ".brandmark .bm-seal { fill: var(--pencil); }" in css
+    for name in ("index.html", "components.js", "components.css"):
+        assert "data:" not in _webui_text(name), name
+    # single source (spec ⑤): the component's own base definition, once
+    # in the tree (the screens.css placement rules are descendant
+    # selectors — `.top .brandmark {` — and not redefinitions)
+    whole = _webui_all_text()
+    assert whole.count("\n.brandmark {") == 1
+
+
+def test_the_brand_bar_graces_both_screens(tmp_path: Path) -> None:
+    """The brand bar — mark (sm) + serif wordmark + the mono right slot —
+    sits on the parlor header and on the set screen's own top bar, whose
+    back link lives there now (always reachable above the long panels);
+    both bars are clamped by a top and a bottom hairline; the marks land
+    before the first screen shows."""
+
+    index = _webui_text("index.html")
+    assert index.count('data-brand-mark="sm"') == 2
+    assert index.count('data-brand-mark="lg"') == 1
+    assert '<header class="top sethead">' in index
+    assert '<div class="who">英语客厅</div>' in index
+    # the set screen's way back rides the brand bar, above the panels
+    page = _page_of(tmp_path)
+    assert page.index('id="back-to-living"') < page.index("<h2>仪表</h2>")
+    assert "← 回客厅</button>" in page
+    app = _webui_text("app.js")
+    assert "installBrandMarks();" in app
+    assert app.index("installBrandMarks();") < app.index("loadHistory();")
+    screens = _webui_text("screens.css")
+    assert (
+        "border-top: 1px solid var(--rule);\n"
+        "       border-bottom: 1px solid var(--rule);" in screens
+    )
+    assert ".top .brandmark { align-self: center; flex: none; }" in screens
+    assert ".ob .brandmark { display: block; margin: 0 auto 18px; }" in screens
+
+
+# ---------------------------------------------------------------------------
+# 2. state-banner
+
+
+def test_the_state_banner_family_is_registered(tmp_path: Path) -> None:
+    """The three variants, registered once: loading's breathing ellipsis
+    is the page's single animation and the reduced-motion media block is
+    its only off switch; error's retry is the link-btn pencil variant
+    with the caller's callback; the empty face is the faint honest
+    sentence."""
+
+    page = _page_of(tmp_path)
+    css = page  # the union covers components.css
+    assert css.count("animation: state-breathe") == 1
+    assert "@keyframes state-breathe {" in css
+    reduce_at = css.index("@media (prefers-reduced-motion: reduce) {")
+    assert ".state-banner--loading::after { animation: none; }" in css
+    assert css.index(".state-banner--loading::after { animation: none;") > reduce_at
+    js = _webui_text("components.js")
+    assert "export function stateBanner(kind, opts) {" in js
+    assert 'loading: "取信中…"' in js
+    assert 'empty: "暂无数据"' in js
+    assert 'error: "读取失败"' in js
+    assert 'retry.className = "btn btn--pencil";' in js
+    assert 'retry.textContent = "重试";' in js
+    assert 'typeof options.retry === "function"' in js
+    whole = _webui_all_text()
+    assert whole.count("\n.state-banner {") == 1
+    assert ".state-banner--error { color: var(--pencil); }" in whole
+
+
+def test_the_panel_faces_ride_the_state_banner(tmp_path: Path) -> None:
+    """The consolidation: every loader shows the loading banner first, the
+    empty and error arms delegate through diagEmpty/diagError (both now
+    wrappers — no panel builds its own note or error line any more), and
+    each retry link re-pulls exactly its own panel. The shell's static
+    placeholder notes stay .note (empty-state #10's narrowed face)."""
+
+    js = _webui_text("components.js")
+    assert 'box.appendChild(stateBanner("empty", { text: word || "暂无数据" }));' in js
+    assert 'box.appendChild(stateBanner("error",' in js
+    assert 'className = "note"' not in js
+    # the flow's own empty face rides the family too (no stragglers)
+    assert 'stateBanner("empty", { text: "本轮没有打开教学时刻。" }));' in js
+    app = _webui_text("app.js")
+    assert "function showLoading(ids) {" in app
+    assert "box.appendChild(stateBanner(\"loading\"));" in app
+    assert "showLoading(DIAG_PANEL_IDS);" in app
+    assert "showLoading(LEARN_PANEL_IDS);" in app
+    assert 'diagError(diagBox(id), "诊断读数拉取失败", loadDiagnostics);' in app
+    assert 'diagError(diagBox(id), "学习读数拉取失败", loadLearning);' in app
+    assert 'diagError(box, "目标清单拉取失败", loadTargets);' in app
+    assert "renderWhyTeach(data.why_teach, loadDiagnostics);" in app
+    assert "renderSchedule(data.schedule, loadLearning);" in app
+    index = _webui_text("index.html")
+    assert '<p class="note">暂无数据</p>' in index
+
+
+# ---------------------------------------------------------------------------
+# 3. the cover
+
+
+def test_the_cover_is_a_three_step_letter(tmp_path: Path) -> None:
+    """Three hairline-separated steps under the large mark — what this
+    is, how teaching happens (the honest three sentences), and the ink
+    就这么定 link with the honest mono version line (no fabricated
+    version digits). The localStorage gate keeps its exact semantics."""
+
+    page = _page_of(tmp_path)
+    assert "第一步 · 是什么" in page
+    assert "第二步 · 教学怎么发生" in page
+    assert "聊着聊着，客厅在旁听着。" in page
+    assert "发现值得练的表达时，信流里会出现一张短笺。" in page
+    assert "答对答错都有反馈，也可以跳过。" in page
+    assert "就这么定 →</button>" in page
+    # the honest version line: the product's own name, no invented semver
+    assert '<p class="ob-version">elc · web</p>' in page
+    screens = _webui_text("screens.css")
+    assert (
+        ".ob-step { border-top: 1px solid var(--rule-soft);"
+        " margin-top: 22px;" in screens
+    )
+
+
+# ---------------------------------------------------------------------------
+# 4. the living registry
+
+
+def test_the_spec_carries_the_living_registry() -> None:
+    """Spec ⑤: the library is a living registry by the user's ruling —
+    the four-step induction flow, the same-cut registration rule, and the
+    ③ table rows for both new components; AGENTS.md carries the growth
+    clause. The registry's length is the components tuple's length."""
+
+    spec = (REPO_ROOT / "docs" / "FRONTEND_SPEC.md").read_text(encoding="utf-8")
+    assert "**库是活注册表**" in spec
+    assert "用户裁决 2026-09-28" in spec
+    assert "1. **先查库**" in spec
+    assert "2. **已有则复用**" in spec
+    assert "3. **无则新建**" in spec
+    assert "4. **同刀登记**" in spec
+    assert "| 13 | brand-mark" in spec
+    assert "| 14 | state-banner" in spec
+    agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    assert "库随产品增长" in agents
+    assert len(COMPONENTS) == 14

@@ -11,6 +11,8 @@ import {
   diagError,
   diagLine,
   diagGroup,
+  stateBanner,
+  installBrandMarks,
 } from "./components.js";
 import {
   fetchTurn,
@@ -47,10 +49,27 @@ function diagBox(id) {
   return document.getElementById(id);
 }
 
-function renderWhyTeach(d) {
+// F-G2: the read panels answer through the state-banner family — loading
+// while the pull is in flight, empty and error through diagEmpty/diagError
+// (both now delegate to the one component; the old scattered hard-coded
+// notes are gone). A failed pull offers 重试, which re-pulls that panel
+// only — the retry callback is injected by each loader below.
+const DIAG_PANEL_IDS = ["why-teach", "why-not-teach", "why-evidence",
+                        "why-support", "why-degraded"];
+const LEARN_PANEL_IDS = ["learn-schedule", "learn-goals", "learn-evidence"];
+
+function showLoading(ids) {
+  for (const id of ids) {
+    const box = diagBox(id);
+    box.textContent = "";
+    box.appendChild(stateBanner("loading"));
+  }
+}
+
+function renderWhyTeach(d, retry) {
   const box = diagBox("why-teach");
   box.textContent = "";
-  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   if (!d.candidate) {
     diagEmpty(box, "暂无数据——最近 50 轮规划评估里没有选中任何候选。");
     return;
@@ -70,10 +89,10 @@ function renderWhyTeach(d) {
   diagLine(box, "评估时间", d.created_at);
 }
 
-function renderWhyNot(d) {
+function renderWhyNot(d, retry) {
   const box = diagBox("why-not-teach");
   box.textContent = "";
-  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const list = d.candidates || [];
   if (d.created_at === null && !list.length) {
     diagEmpty(box, "暂无数据——还没有任何一轮规划评估。");
@@ -100,10 +119,10 @@ function renderWhyNot(d) {
   }
 }
 
-function renderEvidence(d) {
+function renderEvidence(d, retry) {
   const box = diagBox("why-evidence");
   box.textContent = "";
-  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const rows = d.records || [];
   if (!rows.length) {
     diagEmpty(box, "暂无数据——还没有任何一次作答被判分。");
@@ -117,10 +136,10 @@ function renderEvidence(d) {
   }
 }
 
-function renderSupport(d) {
+function renderSupport(d, retry) {
   const box = diagBox("why-support");
   box.textContent = "";
-  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const rows = d.actions || [];
   if (!rows.length) {
     diagEmpty(box, "暂无数据——还没有任何一次教学支持被交付。");
@@ -135,10 +154,10 @@ function renderSupport(d) {
     d.exposure_estimate_count + " 条");
 }
 
-function renderDegraded(d) {
+function renderDegraded(d, retry) {
   const box = diagBox("why-degraded");
   box.textContent = "";
-  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const pe = d.planner_execution;
   const ro = d.runtime_outcome;
   if (!pe && !ro) { diagEmpty(box, "无降级记录"); return; }
@@ -158,17 +177,17 @@ function renderDegraded(d) {
 }
 
 async function loadDiagnostics() {
+  showLoading(DIAG_PANEL_IDS);
   try {
     const data = await fetchDiagnostics();
-    renderWhyTeach(data.why_teach);
-    renderWhyNot(data.why_not_teach);
-    renderEvidence(data.evidence);
-    renderSupport(data.support);
-    renderDegraded(data.degraded);
+    renderWhyTeach(data.why_teach, loadDiagnostics);
+    renderWhyNot(data.why_not_teach, loadDiagnostics);
+    renderEvidence(data.evidence, loadDiagnostics);
+    renderSupport(data.support, loadDiagnostics);
+    renderDegraded(data.degraded, loadDiagnostics);
   } catch {
-    for (const id of ["why-teach", "why-not-teach", "why-evidence",
-                      "why-support", "why-degraded"]) {
-      diagError(diagBox(id), "诊断读数拉取失败");
+    for (const id of DIAG_PANEL_IDS) {
+      diagError(diagBox(id), "诊断读数拉取失败", loadDiagnostics);
     }
   }
 }
@@ -181,8 +200,10 @@ document.getElementById("diag-refresh").addEventListener("click", loadDiagnostic
 async function loadTargets() {
   const box = diagBox("target-list");
   box.textContent = "";
+  box.appendChild(stateBanner("loading"));
   try {
     const data = await fetchTargets();
+    box.textContent = "";
     const list = data.targets || [];
     if (!list.length) { diagEmpty(box, "暂无可教目标"); return; }
     for (const t of list) {
@@ -200,7 +221,8 @@ async function loadTargets() {
       box.appendChild(row);
     }
   } catch {
-    diagError(box, "目标清单拉取失败");
+    box.textContent = "";
+    diagError(box, "目标清单拉取失败", loadTargets);
   }
 }
 
@@ -219,10 +241,10 @@ async function postTeachMe(targetId) {
   }
 }
 
-function renderSchedule(d) {
+function renderSchedule(d, retry) {
   const box = diagBox("learn-schedule");
   box.textContent = "";
-  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const rows = d.items || [];
   if (!rows.length) {
     diagEmpty(box, "暂无数据——还没有任何复习日程。");
@@ -239,10 +261,10 @@ function renderSchedule(d) {
   }
 }
 
-function renderGoals(d) {
+function renderGoals(d, retry) {
   const box = diagBox("learn-goals");
   box.textContent = "";
-  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const rows = d.portfolios || [];
   if (!rows.length) {
     diagEmpty(box, "暂无数据——还没有写下学习目标。");
@@ -263,10 +285,10 @@ function renderGoals(d) {
   }
 }
 
-function renderLearnEvidence(d) {
+function renderLearnEvidence(d, retry) {
   const box = diagBox("learn-evidence");
   box.textContent = "";
-  if (!d || d.error) { diagError(box, (d && d.error) || "空响应"); return; }
+  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   diagLine(box, "证据记录总数", (d.evidence_claim_count || 0) + " 条");
   diagLine(box, "学习者目标状态", (d.learner_target_state_count || 0) + " 行");
   const rows = d.claims || [];
@@ -284,14 +306,15 @@ function renderLearnEvidence(d) {
 }
 
 async function loadLearning() {
+  showLoading(LEARN_PANEL_IDS);
   try {
     const data = await fetchLearning();
-    renderSchedule(data.schedule);
-    renderGoals(data.goals);
-    renderLearnEvidence(data.evidence);
+    renderSchedule(data.schedule, loadLearning);
+    renderGoals(data.goals, loadLearning);
+    renderLearnEvidence(data.evidence, loadLearning);
   } catch {
-    for (const id of ["learn-schedule", "learn-goals", "learn-evidence"]) {
-      diagError(diagBox(id), "学习读数拉取失败");
+    for (const id of LEARN_PANEL_IDS) {
+      diagError(diagBox(id), "学习读数拉取失败", loadLearning);
     }
   }
 }
@@ -516,6 +539,9 @@ async function loadHistory() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+  // F-G2: the brand marks (the template's clones) land before the first
+  // screen shows, so the cover and both brand bars are never bare.
+  installBrandMarks();
   loadHistory();
   // F-1R: the first visit sees the cover; every later visit lands in the
   // parlor directly (the cover never comes back once localStorage says so)

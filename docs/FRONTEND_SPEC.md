@@ -55,11 +55,16 @@
 | 10 | empty-state | `.note` | — | default（无交互态） | components.css + components.js（diagEmpty） |
 | 11 | confirm-dialog | 无 CSS（原生 confirm） | — | native 确定/取消两臂 | components.js（`confirmDialog()`，全页唯一 confirm 调用点） |
 | 12 | system-line | `.sysline` | — | default（无交互态） | components.css + components.js（addLine system 臂） |
+| 13 | brand-mark | `.brandmark`（+ `--sm` `--lg`） | — | default 30px / 尺寸修饰 --sm 20px、--lg 64px / reduced-motion 不适用（静态标记，无动效——契约注明） | index.html（`<template id="brand-mark-source">` 内联 SVG，几何唯一出处）+ components.css + components.js（`brandMark()`/`installBrandMarks()`） |
+| 14 | state-banner | `.state-banner`（+ `--loading` `--empty` `--error`） | — | loading（取信中…，尾点呼吸微动）/ empty（弱化诚实句）/ error（赭红人话句 + `--pencil` 重试链接，回调由调用方注入）/ reduced-motion（loading 呼吸降级为静态） | components.css + components.js（`stateBanner()`；`diagEmpty`/`diagError` 一律委托它） |
 
 库外现役类（登记，不扩库）：`.teach-me`（裸 button 元素复位直用，无独立
 样式；Revisit = 视觉规范刀再裁）；`.replyrow` / `.replytext`（note-paper 的
 内置回复面，随 #3 契约）；`.formhead` `.sub` `.hint` `.who` `.who-sub`
-`.typing` `.errline` `.blockedline` `.diagerror`（屏级文字形态，screens.css）。
+`.typing` `.errline` `.blockedline`（屏级文字形态，screens.css）。
+（F-G2 移出：`.diagerror`——面板失败态改走 #14，该类无现役用户，规则已删。）
+#10 empty-state（`.note`）的现役面收窄为**壳上静态占位行**（index.html 的
+「暂无数据 / 无降级记录」首绘）；运行时面板的空态一律走 #14 的 empty 变体。
 
 **状态完备性硬门**：交互组件（本表现役 = link-btn、pen、note-paper、
 resultstrip）必须定义至少 default + 一态（active/disabled/busy/skipped）；
@@ -74,11 +79,29 @@ resultstrip）必须定义至少 default + 一态（active/disabled/busy/skipped
 3. 文件级前缀不引入；屏级布局类（`.ob` `.set` `.top` `.flow` `.dock`）
    留在 screens.css，不得进 components.css。
 
-## ⑤ 库唯一出处条款
+## ⑤ 库唯一出处条款（活注册表）
+
+**库是活注册表**（用户裁决 2026-09-28：组件库非定死——产品长则库长）。
+每个新前端需求都走同一遍入库流程：
+
+1. **先查库**：本文件 ③ 表 + `components.css` 的契约注释块；
+2. **已有则复用**（禁重写——同一需求第二个实现仍是
+   重复实现 = 评审 finding（拒收事由））；
+3. **无则新建**：遵循既有契约形——契约注释块（结构/状态矩阵/使用规则/
+   禁止变体）进 components.css、工厂函数进 components.js（文字一律
+   textContent）、交互组件过 ⑥ 的状态完备硬门；
+4. **同刀登记**：本文件 ③ 表加行 **且**
+   `tests/host/test_fg1_architecture.py` 的 `COMPONENTS` 元组加名——
+   两处必须同刀，缺一处 = 评审 finding。
+
+登记不是归档：③ 表的每一行都是后续需求的查库入口；组件的现役面变化
+（收窄、别名退场、变体易主）也随触碰它的那刀改行，不让表说谎。
 
 1. 组件样式的**唯一物理出处**是 `components.css`：同一组件类名（含别名）
    的样式规则在全 webui 目录**恰出现一次**；`screens.css`、`index.html`、
-   JS 内联样式不得重复定义（钉：`test_fg1_architecture.py` 单出处组）。
+   JS 内联样式不得重复定义（钉：`test_fg1_architecture.py` 单出处组；
+   brand-mark 的 SVG **几何**是唯一例外——出处是 index.html 的模板，
+   其样式仍只在 components.css）。
 2. 新前端需求**先查本 spec**：已有组件直接复用；确需变体时扩展现组件的
    修饰符，不另起炉灶。
 3. 新增/修改组件：任务书四查写明 + 本文件 ③ 表同刀登记。
@@ -92,13 +115,14 @@ resultstrip）必须定义至少 default + 一态（active/disabled/busy/skipped
 
 ```
 src/elc/webui/
-  index.html        页面骨架（三屏 + <link>×3 + <script type="module">）
+  index.html        页面骨架（三屏 + <link>×3 + <script type="module">
+                    + brand-mark 的 <template> 几何出处）
   tokens.css        VS1 token 唯一出处
-  components.css    组件库唯一样式源（12 组件 + 元素复位地基）
+  components.css    组件库唯一样式源（14 组件 + 元素复位地基）
   screens.css       三屏布局 + 壳层（html/body/#stage/dock/flow/屏级文字）
   api.js            端点 fetch 封装（页面唯一 fetch 调用点）
   components.js     组件工厂 + 教学卡当场行为（textContent-only；唯一 confirm 封装点）
-  app.js            装配：三屏切换/事件/轮询/学习与诊断渲染
+  app.js            装配：三屏切换/事件/轮询/学习与诊断渲染（面板三态走 #14）
 ```
 
 - **ES modules、零构建**：浏览器直 import 相对路径（`./api.js`），无打包

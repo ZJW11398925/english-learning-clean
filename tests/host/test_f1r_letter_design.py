@@ -69,13 +69,20 @@ def test_the_page_keeps_the_letter_form_laws(tmp_path: Path) -> None:
 
 
 def test_the_page_has_the_first_visit_cover(tmp_path: Path) -> None:
-    """The 开张屏: the anchor's envelope line, the serif title, the two
-    honest description lines, the serif ink 就这么定 link — and no persona
-    authoring (the runtime has no such face; the cover invents none)."""
+    """The 开张屏: the brand mark over the serif title, the three-step
+    letter (F-G2 migrated the single ✉ line to the step formheads —
+    1:1, the honesty faces kept), the serif ink 就这么定 link — and no
+    persona authoring (the runtime has no such face; the cover invents
+    none)."""
 
     page = _page_of(tmp_path)
     assert 'id="screen-onboard"' in page
-    assert "✉ 第一步，也是唯一步" in page
+    # F-G2 随迁：旧钉「✉ 第一步，也是唯一步」随开张屏三步升维退役，
+    # 语义由三段 formhead（第一步 · 是什么 / 第二步 · 教学怎么发生）
+    # 与顶部 brand-mark（--lg）继承。
+    assert "✉ 第一步，也是唯一步" not in page
+    assert "第一步 · 是什么" in page
+    assert 'data-brand-mark="lg"' in page
     assert "把英语请进客厅" in page
     assert "跟一位固定伙伴用英语闲聊" in page
     assert "就这么定 →</button>" in page

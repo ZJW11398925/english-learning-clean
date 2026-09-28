@@ -111,10 +111,10 @@ export function setReplyBusy(card, busy, note) {
 export function showMoments(list) {
   momentsBox.textContent = "";
   if (!list.length) {
-    const p = document.createElement("p");
-    p.className = "note";
-    p.textContent = "本轮没有打开教学时刻。";
-    momentsBox.appendChild(p);
+    // F-G2: the flow's empty face rides the state-banner family too —
+    // no panel builds its own note any more
+    momentsBox.appendChild(
+      stateBanner("empty", { text: "本轮没有打开教学时刻。" }));
     return;
   }
   for (const m of list) {
@@ -265,18 +265,18 @@ async function submitAttempt(card, input) {
 }
 
 // 9/10 的仪表面工厂：meter-row（kv/kvgroup/kvtitle）与 empty-state（note）。
+// F-G2 起空态与失败态收拢到 state-banner（#14）：这两个入口保留签名、
+// 内部一律委托——面板的空/失败两态不再各自硬编码。委托语义是「面板槽
+// = 该状态」（先清空再挂）：loading 先行的拉取失败不会两态并存。
 export function diagEmpty(box, word) {
-  const p = document.createElement("p");
-  p.className = "note";
-  p.textContent = word || "暂无数据";
-  box.appendChild(p);
+  box.textContent = "";
+  box.appendChild(stateBanner("empty", { text: word || "暂无数据" }));
 }
 
-export function diagError(box, message) {
-  const p = document.createElement("p");
-  p.className = "diagerror";
-  p.textContent = "读取失败：" + message;
-  box.appendChild(p);
+export function diagError(box, message, retry) {
+  box.textContent = "";
+  box.appendChild(stateBanner("error",
+    { text: "读取失败：" + message, retry: retry }));
 }
 
 export function diagLine(box, label, value) {
@@ -298,4 +298,47 @@ export function diagGroup(box, title) {
   g.appendChild(b);
   box.appendChild(g);
   return g;
+}
+
+// 13. brand-mark：品牌印记——几何唯一出处是 index.html 的
+// <template id="brand-mark-source">（信封 + 封蜡，内联 SVG），本工厂
+// 克隆模板并落尺寸变体（--sm 品牌条 / --lg 开张屏；默认 30px）。
+// 零外链：模板就是页面里的一段 svg 标记，无 http(s)、无 data URI、
+// 无任何资源取用——源码里连 SVG 命名串都不需要（HTML 原生解析 svg）。
+export function brandMark(variant) {
+  const svg = document.getElementById("brand-mark-source")
+    .content.firstElementChild.cloneNode(true);
+  if (variant) svg.classList.add("brandmark--" + variant);
+  return svg;
+}
+
+// 把品牌印记装进壳上的插槽（<span data-brand-mark="sm|lg|">——空值落
+// 默认尺寸）；DOMContentLoaded 时由 app.js 调一次。
+export function installBrandMarks() {
+  for (const slot of document.querySelectorAll("[data-brand-mark]")) {
+    slot.replaceWith(brandMark(slot.dataset.brandMark || undefined));
+  }
+}
+
+// 14. state-banner：读数面板三态（loading / empty / error）的唯一答法。
+// loading 尾点呼吸是全页唯一动效（reduced-motion 下静止，见 #14 契约）；
+// error 的人话句后跟一枚「重试」赭红链接（link-btn 的 --pencil 变体），
+// 回调由调用方注入——只重拉本面板，不连带整屏。
+export function stateBanner(kind, opts) {
+  const options = opts || {};
+  const defaults = { loading: "取信中…", empty: "暂无数据",
+                     error: "读取失败" };
+  const box = document.createElement("div");
+  box.className = "state-banner state-banner--" + kind;
+  box.appendChild(document.createTextNode(
+    options.text || defaults[kind] || "暂无数据"));
+  if (kind === "error" && typeof options.retry === "function") {
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "btn btn--pencil";
+    retry.textContent = "重试";
+    retry.addEventListener("click", options.retry);
+    box.appendChild(retry);
+  }
+  return box;
 }
