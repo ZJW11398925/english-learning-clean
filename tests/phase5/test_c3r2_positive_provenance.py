@@ -578,7 +578,9 @@ def test_the_repository_audit_records_raise_forty_six_entities(
     more, and C3-d's disposition-cut record added sixteen (twelve sampled
     new entities plus the four C3-c leftovers it re-audited), so the
     derived EDITOR_REVIEWED set is the union of the three records' approved
-    lists (forty-six); the other fifty-four documented entities stay at the
+    lists (forty-six); the W-5 key-face re-audit record approves twelve
+    entities that are all inside that union, so it promotes nobody and the
+    counts stand; the other fifty-four documented entities stay at the
     AUTHOR_DECLARED baseline, no capability row exists at all, and no row
     reaches the two words no derivation produces."""
 
@@ -596,6 +598,7 @@ def test_the_repository_audit_records_raise_forty_six_entities(
         "c3c-stratified-audit.json",
         "c3d-stratified-audit.json",
         "c3r2-stratified-audit.json",
+        "w5-key-face-audit.json",
     ]
     approved: set[str] = set()
     for path in audit_paths:

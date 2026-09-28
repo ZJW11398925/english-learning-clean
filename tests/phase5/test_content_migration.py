@@ -44,6 +44,29 @@ C3R1_DEMOTED_TARGETS = (
     "res-pragmatic-could-you",
 )
 
+#: The W-5 key-face re-audit targets (content_src/audits/w5-key-face-audit.json):
+#: each gained the bare formula as canonical_forms[0] (the P3-1B form kept
+#: verbatim behind it; i-think's slots untouched), and their entity_revision
+#: moved 1 → 2 with updated_in_version "content-w5". Of the fourteen fixture
+#: targets exactly one is in this set: res-hedge-i-think.
+W5_KEY_FACE_TARGETS = frozenset(
+    {
+        "res-discourse-anyway",
+        "res-discourse-before-i-forget",
+        "res-discourse-moving-on",
+        "res-hedge-i-guess",
+        "res-hedge-i-think",
+        "res-hedge-more-or-less",
+        "res-pragmatic-come-again",
+        "res-pragmatic-fair-enough",
+        "res-pragmatic-got-it",
+        "res-pragmatic-i-see",
+        "res-pragmatic-no-way",
+        "res-pragmatic-that-makes-sense",
+    }
+)
+W5_UPDATED_IN_VERSION = "content-w5"
+
 
 def _document(entity_id: str) -> dict[str, object]:
     path = CONTENT_SRC_DIR / "entities" / f"{entity_id}.json"
@@ -192,9 +215,18 @@ def test_entity_row_is_the_seven_canonical_columns(
     assert view.entity_type == str(ContentType.EXPRESSION)
     assert view.language == "en"
     assert view.lifecycle_status == "CANONICAL_APPROVED"
-    assert view.entity_revision == 1
+    # 旧真值 (P5-0): every migrated row read revision 1 / content-v1.
+    # 新真值 (W-5): the twelve key-face targets moved to revision 2 /
+    # content-w5; every other row is unchanged.
+    assert view.entity_revision == (
+        2 if target_id in W5_KEY_FACE_TARGETS else 1
+    )
     assert view.created_in_version == CONTENT_VERSION
-    assert view.updated_in_version == CONTENT_VERSION
+    assert view.updated_in_version == (
+        W5_UPDATED_IN_VERSION
+        if target_id in W5_KEY_FACE_TARGETS
+        else CONTENT_VERSION
+    )
 
 
 @pytest.mark.parametrize("target_id", TARGET_IDS)
@@ -240,7 +272,15 @@ def test_teaching_payload_matches_the_fixture_verbatim(
     view = store.get_teaching_content(target_id).value
     assert view.hint_ladder == fixture.hint_ladder
     assert view.reveal_form == fixture.reveal_form
-    assert view.canonical_forms == fixture.canonical_forms
+    if target_id == "res-hedge-i-think":
+        # W-5 (the only fixture target in the key-face re-audit): the bare
+        # formula is prepended; the P3-1B form stays verbatim, in order, and
+        # the slots are untouched.
+        assert view.canonical_forms == (
+            ("I think.",) + fixture.canonical_forms
+        )
+    else:
+        assert view.canonical_forms == fixture.canonical_forms
     assert view.alternative_realizations == fixture.alternative_realizations
     assert view.required_slots == fixture.required_slots
     if fixture.capability_linkage is None:
@@ -282,9 +322,15 @@ def test_authored_document_matches_the_fixture_verbatim(target_id: str) -> None:
     assert isinstance(teaching, dict)
     assert tuple(teaching["hint_ladder"]) == tuple(fixture_content["hint_ladder"])
     assert teaching["reveal_form"] == fixture_content["reveal_form"]
-    assert tuple(teaching["canonical_forms"]) == tuple(
-        fixture_content["canonical_forms"]
-    )
+    if target_id == "res-hedge-i-think":
+        # W-5: the bare formula prepended in front of the frozen P3-1B form.
+        assert tuple(teaching["canonical_forms"]) == (
+            ("I think.",) + tuple(fixture_content["canonical_forms"])
+        )
+    else:
+        assert tuple(teaching["canonical_forms"]) == tuple(
+            fixture_content["canonical_forms"]
+        )
     assert tuple(teaching["alternative_realizations"]) == tuple(
         fixture_content["alternative_realizations"]
     )
@@ -354,7 +400,12 @@ def test_forms_are_stored_under_canonical_example_roles(
     for target_id in TARGET_IDS:
         view = store.get_teaching_content(target_id).value
         if view.canonical_forms:
-            assert view.canonical_forms[0] == view.reveal_form
+            # 旧真值 (P5-0): the single canonical form was the reveal form
+            # ([0] == reveal). 新真值 (W-5): the key-face targets carry the
+            # bare formula in front, so the reveal form is pinned at the
+            # authored tail instead (identical truth for every single-form
+            # target, which the non-W-5 rows all still are).
+            assert view.canonical_forms[-1] == view.reveal_form
 
 
 def test_hint_ladder_ordinals_are_dense_and_ordered(

@@ -4,9 +4,9 @@
     "entity_type": "EXPRESSION",
     "language": "en",
     "lifecycle_status": "CANONICAL_APPROVED",
-    "entity_revision": 1,
+    "entity_revision": 2,
     "created_in_version": "content-v1",
-    "updated_in_version": "content-v1"
+    "updated_in_version": "content-w5"
   },
   "expression": {
     "expression_type": "DISCOURSE_MARKER",
@@ -27,6 +27,7 @@
     ],
     "reveal_form": "Anyway, let's get back to the topic.",
     "canonical_forms": [
+      "Anyway.",
       "Anyway, let's get back to the topic."
     ],
     "alternative_realizations": [
@@ -35,9 +36,6 @@
     "required_slots": [
       [
         "anyway"
-      ],
-      [
-        "topic"
       ]
     ]
   }

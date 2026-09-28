@@ -4,9 +4,9 @@
     "entity_type": "EXPRESSION",
     "language": "en",
     "lifecycle_status": "CANONICAL_APPROVED",
-    "entity_revision": 1,
+    "entity_revision": 2,
     "created_in_version": "content-v1",
-    "updated_in_version": "content-v1"
+    "updated_in_version": "content-w5"
   },
   "expression": {
     "expression_type": "PRAGMATIC_FORMULA",
@@ -27,6 +27,7 @@
     ],
     "reveal_form": "No way! She actually moved to Lisbon?",
     "canonical_forms": [
+      "No way!",
       "No way! She actually moved to Lisbon?"
     ],
     "alternative_realizations": [
@@ -34,10 +35,10 @@
     ],
     "required_slots": [
       [
-        "lisbon"
+        "no"
       ],
       [
-        "marathon"
+        "way"
       ]
     ]
   }

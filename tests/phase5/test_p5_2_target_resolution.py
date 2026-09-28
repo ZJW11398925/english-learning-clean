@@ -255,12 +255,17 @@ def test_a_single_multi_token_group_still_slot_matches() -> None:
 def test_the_corpus_single_token_keys_never_drive_a_slot_match(
     silent_supply: ContentBackedTargetSupply,
 ) -> None:
-    """The four corpus keys whose whole slot key is one word
-    (cap-interact-backchannel "see", cap-ref-ask-clarification "mean",
+    """The corpus keys whose whole slot key is one word never drive a slot
+    match. The probe sample covers the four originals (cap-interact-
+    backchannel "see", cap-ref-ask-clarification "mean",
     cap-disc-topic-shift "meeting", and C3-d's res-pragmatic-right
-    "following") are excluded from the slot path — with
-    the whole corpus present, the exact sentences the reviewer's probe used
-    resolve to NO_TARGET."""
+    "following"); W-5 added four more single-token keys
+    (`res-discourse-anyway` "anyway", `res-hedge-i-guess` "guess",
+    `res-pragmatic-got-it` "got", `res-pragmatic-i-see` "see"), whose
+    exclusion the count pair in
+    test_every_discriminating_corpus_slot_key_resolves_to_its_own_target
+    pins corpus-wide. With the whole corpus present, the exact sentences
+    the reviewer's probe used resolve to NO_TARGET."""
 
     facts = _corpus_facts(silent_supply)
     for sentence, token in SINGLE_TOKEN_SLOT_SENTENCES:
@@ -384,21 +389,122 @@ def test_every_corpus_canonical_form_resolves_to_its_own_target(
             assert resolution.matched_via is MatchVia.CANONICAL_FORM
 
 
+#: The closed W-5 cross-match list: alternative realizations that *contain*
+#: one of the W-5 bare canonical formulas ("I think.", "I see."), so the
+#: canonical class — which outranks the alternative class by the fixed
+#: priority order — now resolves them to the formula's own target. Declared,
+#: not claimed away: everything outside this exact (fact, form) pair list
+#: still resolves to its own target via ALTERNATIVE_REALIZATION (or, for the
+#: ten own-target upgrades in W5_ALTERNATIVE_VIA_UPGRADES below, via the
+#: formula's CANONICAL_FORM), and each listed pair is pinned to its exact
+#: new resolution below.
+W5_ALTERNATIVE_CROSS_MATCHES = {
+    ("cap-eval-hedged-opinion", "It could be too late, I think."):
+        ("res-hedge-i-think", MatchVia.CANONICAL_FORM, "I think."),
+    ("cap-interact-backchannel", "Uh-huh, I see."):
+        ("res-pragmatic-i-see", MatchVia.CANONICAL_FORM, "I see."),
+    (
+        "res-pragmatic-i-see-your-point-but",
+        "I see your point, but the timeline doesn't work.",
+    ):
+        ("res-pragmatic-i-see", MatchVia.CANONICAL_FORM, "I see."),
+    (
+        "res-pragmatic-no-offense-but",
+        "No offense, but I think we should start again.",
+    ):
+        ("res-hedge-i-think", MatchVia.CANONICAL_FORM, "I think."),
+}
+
+#: The closed W-5 same-target upgrade list: alternatives that contain their
+#: *own* entity's new bare formula, so the same target wins through the
+#: canonical class instead of the alternative class. The target is
+#: unchanged; only the rule that fired moved (ten of the twelve W-5
+#: entities; i-think's and anyway's alternatives contain no bare formula).
+W5_ALTERNATIVE_VIA_UPGRADES = {
+    (
+        "res-discourse-before-i-forget",
+        "Before I forget, did you pay the invoice?",
+    ):
+        "Before I forget.",
+    (
+        "res-discourse-moving-on",
+        "Moving on to the next item, let's look at the timeline.",
+    ):
+        "Moving on.",
+    ("res-hedge-i-guess", "It's going to rain, I guess."):
+        "I guess.",
+    ("res-hedge-more-or-less", "The two estimates match more or less."):
+        "More or less.",
+    (
+        "res-pragmatic-come-again",
+        "Come again — did you say four thirty or four fifteen?",
+    ):
+        "Come again?",
+    ("res-pragmatic-fair-enough", "Fair enough, we'll do it your way this time."):
+        "Fair enough.",
+    ("res-pragmatic-got-it", "Got it, thanks — I'll send the file tonight."):
+        "Got it.",
+    ("res-pragmatic-i-see", "I see. Please go on."):
+        "I see.",
+    ("res-pragmatic-no-way", "No way — he ran the whole marathon?"):
+        "No way!",
+    ("res-pragmatic-that-makes-sense", "That makes sense to me."):
+        "That makes sense.",
+}
+
+
 def test_every_corpus_alternative_realization_resolves_to_its_own_target(
     silent_supply: ContentBackedTargetSupply,
 ) -> None:
+    """Every corpus §24.5 SUPPORTING row still resolves to its own target —
+    with the W-5 rule-class movement declared: four alternative realizations
+    containing another entity's bare formula now resolve to that entity
+    (CANONICAL_FORM outranks ALTERNATIVE_REALIZATION), and ten alternatives
+    containing their own entity's bare formula keep their target through the
+    canonical class instead (旧真值 P5-2: own target via
+    ALTERNATIVE_REALIZATION for all 102; 新真值 W-5: 88 unchanged, 10
+    same-target via CANONICAL_FORM, 4 cross-target via CANONICAL_FORM —
+    every deviation pinned to its exact pair above)."""
+
     facts = _corpus_facts(silent_supply)
     seen = 0
+    cross = 0
+    upgraded = 0
     for fact in facts:
         for form in fact.alternative_realizations:
             seen += 1
             resolution = _resolved(form, facts)
-            assert resolution.target_id == fact.target_id, (fact, form)
-            assert resolution.matched_via is MatchVia.ALTERNATIVE_REALIZATION
+            exception = W5_ALTERNATIVE_CROSS_MATCHES.get(
+                (fact.target_id, form)
+            )
+            upgrade = W5_ALTERNATIVE_VIA_UPGRADES.get(
+                (fact.target_id, form)
+            )
+            if exception is not None:
+                cross += 1
+                target_id, via, matched_form = exception
+                assert resolution.target_id == target_id, (fact, form)
+                assert resolution.matched_via is via, (fact, form)
+                assert resolution.matched_form == matched_form, (fact, form)
+            elif upgrade is not None:
+                upgraded += 1
+                assert resolution.target_id == fact.target_id, (fact, form)
+                assert (
+                    resolution.matched_via is MatchVia.CANONICAL_FORM
+                ), (fact, form)
+                assert resolution.matched_form == upgrade, (fact, form)
+            else:
+                assert resolution.target_id == fact.target_id, (fact, form)
+                assert (
+                    resolution.matched_via is MatchVia.ALTERNATIVE_REALIZATION
+                ), (fact, form)
     assert seen == 102, (
         "the corpus's §24.5 SUPPORTING rows (C2-a 13 + C2-b 17 + C3-a 18 +"
         " C3-b 18 + C3-c 18 + C3-d 18)"
     )
+    assert cross == len(W5_ALTERNATIVE_CROSS_MATCHES)
+    assert upgraded == len(W5_ALTERNATIVE_VIA_UPGRADES)
+    assert cross + upgraded == 14
 
 
 def test_every_discriminating_corpus_slot_key_resolves_to_its_own_target(
@@ -411,10 +517,11 @@ def test_every_discriminating_corpus_slot_key_resolves_to_its_own_target(
     test_the_corpus_single_token_keys_never_drive_a_slot_match. The pair
     below is a count over the corpus, so it moves with the corpus (旧真值
     C2-a: 11 discriminating of 14; C2-b: 30 of 33; C3-b: 66 of 69;
-    C3-c: 84 of 87; 新真值 C3-d: 101 of 105 —
-    the C3-a, C3-b, C3-c and C3-d entity documents each add eighteen
-    discriminating keys and C3-d's `res-pragmatic-right` (single slot group,
-    single token) is the one new single-token exclusion)."""
+    C3-c: 84 of 87; C3-d: 101 of 105; 新真值 W-5: 97 of 105 —
+    the W-5 key-face cut replaced four formerly multi-group keys with the
+    bare formula's single one-token group (`res-discourse-anyway`,
+    `res-hedge-i-guess`, `res-pragmatic-got-it`, `res-pragmatic-i-see`),
+    which adds four single-token exclusions to C3-d's one)."""
 
     facts = _corpus_facts(silent_supply)
     discriminating = 0
@@ -436,7 +543,7 @@ def test_every_discriminating_corpus_slot_key_resolves_to_its_own_target(
         f"[probe] discriminating slot keys -> {discriminating};"
         f" excluded single-token keys -> {excluded}"
     )
-    assert (discriminating, excluded) == (101, 4)
+    assert (discriminating, excluded) == (97, 8)
 
 
 def test_the_corpus_resolves_to_both_kinds(

@@ -4,9 +4,9 @@
     "entity_type": "EXPRESSION",
     "language": "en",
     "lifecycle_status": "CANONICAL_APPROVED",
-    "entity_revision": 1,
+    "entity_revision": 2,
     "created_in_version": "content-v1",
-    "updated_in_version": "content-v1"
+    "updated_in_version": "content-w5"
   },
   "expression": {
     "expression_type": "PRAGMATIC_FORMULA",
@@ -27,6 +27,7 @@
     ],
     "reveal_form": "Right, I see. Please go on.",
     "canonical_forms": [
+      "I see.",
       "Right, I see. Please go on."
     ],
     "alternative_realizations": [
@@ -35,10 +36,6 @@
     "required_slots": [
       [
         "see"
-      ],
-      [
-        "go",
-        "continue"
       ]
     ]
   }

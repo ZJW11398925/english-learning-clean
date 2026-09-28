@@ -4,9 +4,9 @@
     "entity_type": "EXPRESSION",
     "language": "en",
     "lifecycle_status": "CANONICAL_APPROVED",
-    "entity_revision": 1,
+    "entity_revision": 2,
     "created_in_version": "content-v1",
-    "updated_in_version": "content-v1"
+    "updated_in_version": "content-w5"
   },
   "expression": {
     "expression_type": "PRAGMATIC_FORMULA",
@@ -27,6 +27,7 @@
     ],
     "reveal_form": "That makes sense — so we start in May.",
     "canonical_forms": [
+      "That makes sense.",
       "That makes sense — so we start in May."
     ],
     "alternative_realizations": [
@@ -34,10 +35,10 @@
     ],
     "required_slots": [
       [
-        "sense"
+        "makes"
       ],
       [
-        "makes"
+        "sense"
       ]
     ]
   }

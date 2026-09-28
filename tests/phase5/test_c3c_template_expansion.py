@@ -753,6 +753,7 @@ def test_the_four_unsampled_new_entities_rose_via_the_c3d_record(
         "c3c-stratified-audit.json",
         "c3d-stratified-audit.json",
         "c3r2-stratified-audit.json",
+        "w5-key-face-audit.json",
     ]
     audit3 = json.loads(AUDIT3_PATH.read_text(encoding="utf-8"))
     assert unsampled <= set(audit3["approved_entities"])

@@ -637,7 +637,13 @@ def test_the_resolver_still_matches_the_counterexample_families(
         assert resolution.target_id == HEDGE, utterance
     slot_hit = resolve_target("The rain was heavy, I guess.", facts.value)
     assert slot_hit is not NO_TARGET
-    assert slot_hit.matched_via is MatchVia.REQUIRED_SLOTS
+    # 旧真值 (P5-R): REQUIRED_SLOTS on the hedge's old multi-group key.
+    # 新真值 (W-5): i-guess's bare canonical "I guess." occurs as a bounded
+    # span, and the canonical class outranks the slot class — same target
+    # family, now via rule 1.
+    assert slot_hit.target_id == "res-hedge-i-guess"
+    assert slot_hit.matched_via is MatchVia.CANONICAL_FORM
+    assert slot_hit.matched_form == "I guess."
     print("[p5-r] the P5-2 rule table is unchanged under the admission layer")
 
 

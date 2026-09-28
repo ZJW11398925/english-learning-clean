@@ -4,9 +4,9 @@
     "entity_type": "EXPRESSION",
     "language": "en",
     "lifecycle_status": "CANONICAL_APPROVED",
-    "entity_revision": 1,
+    "entity_revision": 2,
     "created_in_version": "content-v1",
-    "updated_in_version": "content-v1"
+    "updated_in_version": "content-w5"
   },
   "expression": {
     "expression_type": "DISCOURSE_MARKER",
@@ -27,6 +27,7 @@
     ],
     "reveal_form": "Moving on, let's look at the timeline.",
     "canonical_forms": [
+      "Moving on.",
       "Moving on, let's look at the timeline."
     ],
     "alternative_realizations": [
@@ -37,7 +38,7 @@
         "moving"
       ],
       [
-        "timeline"
+        "on"
       ]
     ]
   }

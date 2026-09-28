@@ -819,17 +819,19 @@ def test_provenance_reads_54_author_and_the_46_editor_rows(
     assert higher == []
 
 
-def test_the_audit_directory_carries_the_three_records() -> None:
+def test_the_audit_directory_carries_the_four_records() -> None:
     """The audits directory holds the three records the C3-R2, C3-c and
     C3-d disposition cuts landed — the C3-d delivery cut itself wrote none
     (provenance promotion is a disposition-cut act on review evidence, never
-    an authoring-cut act)."""
+    an authoring-cut act) — plus the W-5 key-face re-audit record, whose
+    approved set is a subset of the prior union and so promotes nobody."""
 
     audit_files = sorted((CONTENT_SRC_DIR / "audits").glob("*.json"))
     assert [p.name for p in audit_files] == [
         "c3c-stratified-audit.json",
         "c3d-stratified-audit.json",
         "c3r2-stratified-audit.json",
+        "w5-key-face-audit.json",
     ]
 
 
@@ -1227,20 +1229,30 @@ def test_a_new_row_rewritten_into_a_placement_is_refused_by_the_build(
 def test_the_three_key_spaces_are_collision_free_over_100_entities() -> None:
     """The N-C3C-1 dedup, run in-cut and pinned: across the whole
     100-resource corpus no canonical form and no alternative realization is
-    shared between two entities, no slot token of a C3-d entity is shared
-    with any other entity, and within every entity the canonical and
-    alternative key sets are disjoint. The pre-existing corpus's own
+    shared between two entities, and within every entity the canonical and
+    alternative key sets are disjoint. The slot-token face moved with W-5
+    (旧真值 C3-d: no C3-d slot token shared with any other entity; 新真值
+    W-5: the bare formula's own tokens `come`/`again`/`way` are shared) and
+    is pinned to that exact closed list below. The pre-existing corpus's own
     slot-token sharing (INFO-2's registered legacy group shape — content
     words like `time` or `point` inside old slot groups) is declared here,
     not claimed away: the pin reports it as the legacy set and asserts only
-    that no **new** key enters any collision."""
+    that no **new** key enters any collision beyond the declared list."""
 
     documents = _entity_key_documents()
     assert len(documents) == 100
     report = _three_key_report(documents)
     assert report["canonical_cross"] == [], report["canonical_cross"]
     assert report["alternative_cross"] == [], report["alternative_cross"]
-    assert report["slot_new_vs_any"] == [], report["slot_new_vs_any"]
+    # 旧真值 (C3-d): []. 新真值 (W-5): the key-face cut replaced two C3-d
+    # entities' in-sentence content-word slots with the bare formula's own
+    # tokens, and those tokens are shared with legacy slot groups
+    # (`come`/`again` via res-pragmatic-come-again, `way` via
+    # res-pragmatic-no-way). Declared as this exact closed list — no other
+    # C3-d slot token entered any collision.
+    assert report["slot_new_vs_any"] == ["again", "come", "way"], (
+        report["slot_new_vs_any"]
+    )
     assert report["within_entity_overlap"] == []
     # INFO-2's legacy shape, declared: the old corpus's own shared slot
     # tokens. This is the registered reading — a future cut that shrinks it

@@ -208,7 +208,13 @@ def artifact_with_lifecycle(tmp_path: Path, statuses: dict[str, str]) -> Path:
 #: The canonical form of the P5-2 candidate probe entity: unique in the
 #: corpus (nothing else's form, alternative or slot group matches it), so a
 #: resolution on it can only be the candidate's.
-CANDIDATE_UNIQUE_FORM = "I think it is going to snow."
+#: 旧值 (P5-2): "I think it is going to snow." — W-5's bare canonical
+#: formulas made "i think" a bounded-span canonical match for
+#: res-hedge-i-think, so the probe moved to a string that shares no token
+#: with any corpus key face and resolves NO_TARGET against the whole supply.
+CANDIDATE_UNIQUE_FORM = (
+    "Purple otters negotiate zebra treaties beneath midnight shelves."
+)
 
 
 def candidate_entity_edit(lifecycle: str):

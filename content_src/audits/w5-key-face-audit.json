@@ -1,0 +1,21 @@
+{
+  "format": "elc.content_src",
+  "format_version": 1,
+  "audit_id": "w5-key-face-audit",
+  "performed_by": "W-5 executor (answer-key-face judgeability knife, under DEC-OPI-631452f9-bd11-4b69-8fb6-df16f825fca6.1 and DEC-OPI-631452f9-bd11-4b69-8fb6-df16f825fca6.4)",
+  "basis": "W-5 key-face re-audit (conservative-addition form per DEC-OPI-631452f9-bd11-4b69-8fb6-df16f825fca6.4, superseding the alternatives-cleansing wording of DEC-OPI-631452f9-bd11-4b69-8fb6-df16f825fca6.1 R2). Dogfood evidence (read-only user library D:\\_d6b\\app.db) showed 4 teaching moments / 4 attempts / 4:4 all FAILURE with confidence pinned at 0.5 (NO_MATCH shape) on semantically correct attempts ('no way' x2, 'No way！let me go！' full-width exclamation, 'No way！') because the 12 EV pilot answer keys carried contextualized whole sentences as canonical and in-sentence content words as required_slots, making the attempt face effectively unpassable. Remedy: for each of the 12 EV pilot entities, canonical_forms gains the bare formula as canonical[0] (the previous contextualized sentence is preserved verbatim as canonical[1]; got-it additionally gains the common subject-carrying variant 'I got it.'), alternative_realizations are untouched, and required_slots are replaced by the formula tokens of the pre-written table (i-think keeps its old slots per the adjudication). Every entity was checked line by line against the pre-written table and against conservative-addition monotonicity: the previously accepted set (old canonical forms and old alternative realizations) is revoked nowhere. Only teaching_content.canonical_forms, teaching_content.required_slots, entity.entity_revision (1 -> 2) and entity.updated_in_version (content-v1 -> content-w5) were touched; hint_ladder, reveal_form and all other fields are unchanged.",
+  "approved_entities": [
+    "res-discourse-anyway",
+    "res-discourse-before-i-forget",
+    "res-discourse-moving-on",
+    "res-hedge-i-guess",
+    "res-hedge-i-think",
+    "res-hedge-more-or-less",
+    "res-pragmatic-come-again",
+    "res-pragmatic-fair-enough",
+    "res-pragmatic-got-it",
+    "res-pragmatic-i-see",
+    "res-pragmatic-no-way",
+    "res-pragmatic-that-makes-sense"
+  ]
+}
