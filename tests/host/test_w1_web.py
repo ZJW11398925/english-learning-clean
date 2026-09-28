@@ -1579,3 +1579,43 @@ def test_the_web_command_prints_a_serving_banner(
     # exit 0, never a traceback (review INFO-2, fixed with the banner)
     assert code3 == 0
     assert "Traceback" not in err3.getvalue()
+
+
+def test_a_page_reload_recovers_the_open_teaching_card(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    """The reload-recovery face (user's stranded-controls gap): the card a
+    turn response rendered disappears on refresh, yet the moment is still
+    open and still holds the lock — ``/api/teaching/current`` answers that
+    same moment in the card's own shape (human fields included), and after
+    a skip it answers ``{"moment": None}`` — a refresh can never strand an
+    open teaching without its attempt box and skip button."""
+
+    with web_stack(
+        tmp_path / "app.db",
+        content_db=pilot_content_db,
+        stage=RolloutStage.STUDY_FIRST,
+        seed=seed_online_and_second_target,
+    ) as stack:
+        status, data = stack.post("/api/turn", {"text": ERROR_TEXT})
+        assert status == 200
+        assert data["teaching_moments"], data
+
+        status, payload = stack.get_json("/api/teaching/current")
+        assert status == 200
+        moment = payload["moment"]
+        assert moment is not None
+        assert moment["focus_target_id"] == EV_TARGET
+        assert moment["lifecycle_state"] == "AWAITING_USER"
+        assert moment["title"].startswith("anyway — ")
+        assert moment["status_cn"] == "等待您回应"
+        assert moment["kind_cn"] == "资源练习"
+
+        status, data = stack.post(
+            "/api/teaching_reply", {"control": "skip"}
+        )
+        assert status == 200 and data["accepted"] is True
+
+        status, payload = stack.get_json("/api/teaching/current")
+        assert status == 200
+        assert payload == {"moment": None}

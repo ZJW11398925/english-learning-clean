@@ -473,6 +473,14 @@ async function loadHistory() {
     if (turn.user !== null) addLine("user", turn.user);
     if (turn.assistant !== null) addLine("assistant", turn.assistant);
   }
+  // the open teaching moment survives a refresh: rebuild its card (with
+  // the attempt box and the skip button) so an open teaching is never
+  // stranded without its controls
+  const cur = await fetch("/api/teaching/current");
+  const curData = await cur.json();
+  if (curData.moment !== null) {
+    showMoments([curData.moment]);
+  }
 }
 
 window.addEventListener("DOMContentLoaded", loadHistory);
@@ -621,6 +629,41 @@ class _WebFace:
         if not function:
             return name
         return f"{name} — {function}"
+
+    def current_teaching(self) -> dict[str, Any]:
+        """The conversation's open teaching moment, for the page's reload.
+
+        The card a turn response rendered disappears on refresh, yet the
+        moment it showed may still be open and still hold the lock — losing
+        the card loses the only reply entry points (attempt box, skip
+        button). This answers that same moment in the same shape the turn
+        response served it (human fields included), or ``{"moment": None}``
+        when nothing is open — the page rebuilds the card either way, so a
+        refresh can never strand an open teaching without its controls.
+        """
+
+        row = self._host.db.execute(
+            "SELECT m.focus_target, m.lifecycle_state, m.target_mode"
+            " FROM active_teaching_lock l"
+            " JOIN teaching_moment m ON m.moment_id = l.moment_id"
+            " WHERE l.conversation_id = ?",
+            (str(self._conversation_id),),
+        ).fetchone()
+        if row is None or str(row[1]) != MomentState.AWAITING_USER.value:
+            return {"moment": None}
+        focus_id = _focus_id_of(str(row[0]))
+        state = str(row[1])
+        kind = str(row[2])
+        return {
+            "moment": {
+                "focus_target_id": focus_id,
+                "lifecycle_state": state,
+                "kind": kind,
+                "title": self._moment_title(focus_id),
+                "status_cn": _STATUS_CN.get(state, state),
+                "kind_cn": _KIND_CN.get(kind, kind),
+            }
+        }
 
     def teaching_reply(
         self, control: str, text: str | None = None
@@ -844,6 +887,8 @@ def _build_server(
                 self._send_html()
             elif self.path == "/api/history":
                 self._run_on_host_thread(face.history)
+            elif self.path == "/api/teaching/current":
+                self._run_on_host_thread(face.current_teaching)
             elif self.path == "/api/observations":
                 self._run_on_host_thread(face.observations)
             else:
