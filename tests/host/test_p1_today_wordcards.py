@@ -442,6 +442,9 @@ def test_word_card_is_registered_in_all_four_places() -> None:
     assert "15. word-card" in css
     js = _webui_text("components.js")
     assert "export function wordCard(data) {" in js
+    # the factory is the only builder: the overlay assembly goes through
+    # wordCard (a hand-built div in showWordCard would bypass the registry)
+    assert "const card = wordCard(data);" in js
     whole = _webui_all_text()
     for selector in (
         ".word-card {",
