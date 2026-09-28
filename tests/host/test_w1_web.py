@@ -49,7 +49,17 @@ Pinned here (the six VAL groups):
     (``feedback``; ``None`` when the reply carried no evaluation — never
     a fabricated one), and the attempt grammar (a non-empty ``text``)
     and the skip/attempt routing are pinned at both the HTTP and the
-    envelope seam.
+    envelope seam;
+11. the W-4 immediacy face — ``/api/teaching/current`` runs off the work
+    queue (a read-only poll on the handler thread over its own
+    connection), so a poll during a turn's model generation answers in
+    under a second and sees the ``OPENING`` card ("教学开启中…") before the
+    reply lands; the replaced reload contract keeps its shape over the ro
+    path (six fields, ``{"moment": None}`` when nothing is open or the
+    database is unreadable — never a 500), the title being the ro face's
+    declared narrowing (the target's spoken name out of its id), and the
+    page sends its placeholder line ("生成中…") plus the poll the instant a
+    turn goes out.
 """
 
 from __future__ import annotations
@@ -60,6 +70,7 @@ import json
 import socket
 import sqlite3
 import threading
+import time
 import urllib.error
 import urllib.request
 from collections.abc import Iterator
@@ -79,7 +90,7 @@ from elc.detection import DetectorRegistry
 from elc.detection.pilot import PILOT_VERSION, register_pilot
 from elc.host import open_host
 from elc.persona.provider import ScriptedPersonaProvider
-from elc.persona.types import ProviderOutput
+from elc.persona.types import CompiledPrompt, ProviderOutput
 from elc.platform.types import (
     ConversationId,
     EvidenceModality,
@@ -99,7 +110,7 @@ from elc.user_config.types import (
     TeachingFrequency,
     TeachingPolicyProfile,
 )
-from elc.web import _build_server, _commit, _WebFace, run_web
+from elc.web import _build_server, _commit, _current_teaching_ro, _WebFace, run_web
 from elc.web import main as web_main
 
 REPLY = "w1 web reply"
@@ -480,11 +491,13 @@ def test_an_unreadable_target_falls_back_to_the_raw_id(
 
     class _UnitHost:
         content_store: Any = _ExplodingStore()
+        app_db_path = "stub-app.db"
 
     assert _WebFace(_UnitHost(), "web-test")._moment_title(EV_TARGET) == EV_TARGET
 
     class _StorelessHost:
         content_store: Any = None
+        app_db_path = "stub-app.db"
 
     assert (
         _WebFace(_StorelessHost(), "web-test")._moment_title(EV_TARGET)
@@ -675,6 +688,9 @@ class _ReplyStubHost:
     """A host whose lock read answers one canned row (or None), and whose
     coordinator records whether a reply was submitted — the unit seam the
     reply face's pre-submit check is pinned against."""
+
+    #: the W-4 face copies this off any host it is handed (never read here)
+    app_db_path = "stub-app.db"
 
     def __init__(self, row: tuple[str] | None) -> None:
         """``row`` mirrors the real read's shape: one column, the locked
@@ -942,6 +958,9 @@ class _AttemptStubHost:
     """The attempt face's unit seam: a canned lock row (``None`` = no
     lock), a coordinator that records the submitted reply request, and a
     canned reply result whose evaluation verdict is configurable."""
+
+    #: the W-4 face copies this off any host it is handed (never read here)
+    app_db_path = "stub-app.db"
 
     def __init__(
         self, row: tuple[str] | None, evaluation_outcome: str | None = None
@@ -1607,7 +1626,10 @@ def test_a_page_reload_recovers_the_open_teaching_card(
         assert moment is not None
         assert moment["focus_target_id"] == EV_TARGET
         assert moment["lifecycle_state"] == "AWAITING_USER"
-        assert moment["title"].startswith("anyway — ")
+        # W-4: the current face is the read-only poll face now — its title
+        # is the target's spoken name out of the id (the ro narrowing); the
+        # hint-ladder sentence stays the turn card's own title.
+        assert moment["title"] == "anyway"
         assert moment["status_cn"] == "等待您回应"
         assert moment["kind_cn"] == "资源练习"
 
@@ -1619,3 +1641,197 @@ def test_a_page_reload_recovers_the_open_teaching_card(
         status, payload = stack.get_json("/api/teaching/current")
         assert status == 200
         assert payload == {"moment": None}
+
+
+# ---------------------------------------------------------------------------
+# 11. the W-4 immediacy face — the read-only current poll off the work queue
+
+
+@dataclass
+class _SlowProvider:
+    """A provider wrapper that stalls one wall-clock stretch per call.
+
+    The stall stands in for the real model round trip (the 3–14 s the
+    dogfood run measured); 1.5 s keeps both arms of the core pin far from
+    the threshold — the queue arm cannot answer before the stall's
+    remainder, the handler-thread arm answers in a request's time.
+    """
+
+    inner: ScriptedPersonaProvider
+    seconds: float
+
+    def call(self, prompt: CompiledPrompt) -> ProviderOutput:
+        time.sleep(self.seconds)
+        return self.inner.call(prompt)
+
+
+@contextlib.contextmanager
+def slow_stack(
+    app_db: Path, content_db: Path, provider: Any
+) -> Iterator[_Stack]:
+    """``web_stack`` with a caller-chosen provider.
+
+    The shared fixture pins the scripted provider (every other face runs
+    deterministic); the W-4 core pin needs one that is slow on purpose, so
+    it gets the same open → seed → serve → stop lifecycle with that one
+    substitution — everything else (the real ``run_web``, the real
+    ``open_host``, the worker-thread shape) is shared verbatim.
+    """
+
+    port = _free_port()
+    ready = threading.Event()
+    stop = threading.Event()
+    box: dict[str, Any] = {}
+
+    def worker() -> None:
+        try:
+            host = open_host(
+                app_db,
+                provider=provider,
+                content_db_path=content_db,
+                rollout_stage=RolloutStage.STUDY_FIRST,
+            )
+            box["host"] = host
+            opened = host.open_conversation(CONV)
+            assert isinstance(opened, Ok), opened
+            seed_online(host)
+            run_web(
+                host, port, conversation=str(CONV), ready=ready, stop=stop
+            )
+        except BaseException as exc:  # surfaced to the test thread below
+            box["error"] = exc
+            ready.set()
+
+    thread = threading.Thread(target=worker, daemon=True)
+    thread.start()
+    try:
+        assert ready.wait(timeout=60.0), "the web worker never became ready"
+        if "error" in box:
+            raise box["error"]
+        yield _Stack(port=port, stop=stop, thread=thread, box=box)
+    finally:
+        stop.set()
+        thread.join(timeout=60.0)
+        assert not thread.is_alive(), "the web worker did not stop"
+
+
+def test_during_a_slow_generation_the_current_face_stays_unblocked(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    """The W-4 core pin: the read-only poll is answered **during** a turn's
+    generation, off the work queue.
+
+    Concurrency construction: a daemon thread POSTs the error text (the
+    turn's closure occupies the host's thread for the whole 1.5 s provider
+    stall); meanwhile the test thread polls ``/api/teaching/current`` in a
+    0.05 s loop. The moment is durable at ``OPENING`` **before** the
+    provider call, so every poll served on the handler thread must answer
+    200 fast (well under 1 s — on the work queue the same poll would queue
+    behind the turn and take at least the stall's remainder, ≈1.2 s past
+    the first attempt) and must observe the ``OPENING`` card inside the
+    window. After the turn lands, the same face answers the real
+    ``AWAITING_USER`` card.
+    """
+
+    provider = _SlowProvider(
+        ScriptedPersonaProvider(script=(ProviderOutput(text=REPLY),)), 1.5
+    )
+    with slow_stack(tmp_path / "app.db", pilot_content_db, provider) as stack:
+        answer: dict[str, Any] = {}
+
+        def post() -> None:
+            answer["turn"] = stack.post("/api/turn", {"text": ERROR_TEXT})
+
+        turner = threading.Thread(target=post, daemon=True)
+        turner.start()
+        deadline = time.monotonic() + 8.0
+        opening: dict[str, Any] | None = None
+        while time.monotonic() < deadline:
+            started = time.monotonic()
+            status, payload = stack.get_json("/api/teaching/current")
+            elapsed = time.monotonic() - started
+            assert status == 200, payload
+            assert elapsed < 1.0, (
+                f"the poll queued behind the turn: {elapsed:.2f}s"
+            )
+            moment = payload["moment"]
+            if moment is not None and moment["lifecycle_state"] == "OPENING":
+                opening = moment
+                break
+            time.sleep(0.05)
+        assert opening is not None, "the OPENING window was never observed"
+        assert opening["focus_target_id"] == EV_TARGET
+        assert opening["status_cn"] == "教学开启中…"
+
+        turner.join(timeout=30.0)
+        assert not turner.is_alive()
+        status, data = answer["turn"]
+        assert status == 200
+        assert data["turn_status"] == "COMPLETED"
+        assert data["teaching_moments"], data
+
+        status, payload = stack.get_json("/api/teaching/current")
+        assert status == 200
+        assert payload["moment"] is not None
+        assert payload["moment"]["lifecycle_state"] == "AWAITING_USER"
+        assert payload["moment"]["status_cn"] == "等待您回应"
+
+
+def test_the_current_face_answers_the_same_card_over_the_ro_path(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    """The ro replacement keeps the reload contract: an open teaching
+    answers 200 with the full card (all six fields, the Chinese words), and
+    an unreadable database answers ``{"moment": None}`` — a poll never
+    raises, never 500s. The title is the ro face's declared narrowing: the
+    target's spoken name out of its id (the hint-ladder sentence stays the
+    turn card's, since content.db's path does not reach this face)."""
+
+    with web_stack(
+        tmp_path / "app.db",
+        content_db=pilot_content_db,
+        stage=RolloutStage.STUDY_FIRST,
+        seed=seed_online,
+    ) as stack:
+        status, data = stack.post("/api/turn", {"text": ERROR_TEXT})
+        assert status == 200
+        assert data["teaching_moments"], data
+
+        status, payload = stack.get_json("/api/teaching/current")
+        assert status == 200
+        moment = payload["moment"]
+        assert moment is not None
+        assert moment["focus_target_id"] == EV_TARGET
+        assert moment["lifecycle_state"] == "AWAITING_USER"
+        assert moment["kind"] == "RESOURCE_PRACTICE"
+        assert moment["title"] == "anyway"
+        assert moment["title"] != EV_TARGET
+        assert moment["status_cn"] == "等待您回应"
+        assert moment["kind_cn"] == "资源练习"
+
+    # the ro face's own failure posture, unit-level: a database that does
+    # not exist answers "nothing open" — no exception out, nothing to 500
+    assert _current_teaching_ro(str(tmp_path / "absent.db"), "web-test") == {
+        "moment": None
+    }
+
+
+def test_the_page_signals_generation_and_polls_the_current_face(
+    tmp_path: Path,
+) -> None:
+    """The send-time UX pin, as strings the browser actually runs: a turn
+    sent puts up the placeholder line and starts the moment poll, the poll
+    hits the read-only current face every 400 ms with a 90 s cap, and the
+    stop function ends it when the turn response lands."""
+
+    with web_stack(tmp_path / "app.db") as stack:
+        status, content_type, body = stack.get_raw("/")
+        assert status == 200
+        page = body.decode("utf-8")
+    assert "（生成中…）" in page
+    assert "startMomentPolling()" in page
+    assert "stopMomentPolling()" in page
+    assert "setInterval(" in page
+    assert '"/api/teaching/current"' in page
+    assert "MOMENT_POLL_MS = 400" in page
+    assert "MOMENT_POLL_MAX_MS = 90000" in page

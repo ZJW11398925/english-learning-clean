@@ -28,6 +28,17 @@ handler threads parse HTTP and serialize JSON and nothing else. This is also
 the single-user serial assumption, made structural rather than hoped for:
 concurrent requests queue, and the host never interleaves two turns.
 
+**The one exception: ``/api/teaching/current`` never touches the host.**
+A turn's generation stalls the work queue for the whole model round trip
+(seconds on a real provider), and the teaching moment row is durable long
+before that — ``OPENING`` is committed at the CP2 open, before the persona
+call, so the card's data is readable locally while the model is still
+talking. That route therefore runs :func:`_current_teaching_ro` directly on
+the handler thread over its own short read-only connection (never the host's
+connections, never the work queue): the page's send-time poll gets the card
+in about a request's time instead of queueing behind the generation. Every
+other route keeps the one-thread rule unchanged.
+
 The turn face mirrors ``elc.cli`` exactly where it must:
 
 - the envelope is minted per turn the way ``cli._commit`` mints it (fresh
@@ -86,11 +97,13 @@ from __future__ import annotations
 
 import json
 import queue
+import sqlite3
 import sys
 import threading
 import uuid
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any, Callable, Sequence, TextIO
 
 from elc.cli import (
@@ -182,6 +195,16 @@ _OUTCOME_CN: dict[str, str] = {
     "PARTIAL": "部分正确",
     "FAILURE": "未命中目标表达",
     "ABSTAIN": "本次作答无法评判",
+}
+
+#: The read-only current card's Chinese status readings: the shared
+#: vocabulary map with the generation-window word said the way the user
+#: meets it — an ``OPENING`` moment here means "the teaching is opening"
+#: (the model is still finishing its reply), which the generic "正在打开"
+#: does not say on a card the user is actively waiting on.
+_RO_STATUS_CN: dict[str, str] = {
+    **_STATUS_CN,
+    MomentState.OPENING.value: "教学开启中…",
 }
 
 
@@ -287,6 +310,42 @@ function addLine(cls, text) {
   div.textContent = text;            // textContent, never innerHTML: the
   messages.appendChild(div);          // user's own words stay inert text
   messages.scrollTop = messages.scrollHeight;
+  return div;
+}
+
+// W-4: the teaching card must not wait for the model. The moment row is
+// durable the instant the turn opens it (OPENING), so the page polls the
+// read-only current face (served off the work queue — it answers while the
+// generation is still running) and re-renders with the turn response.
+let momentTimer = null;
+let momentPollStart = 0;
+const MOMENT_POLL_MS = 400;
+const MOMENT_POLL_MAX_MS = 90000;
+
+function stopMomentPolling() {
+  if (momentTimer !== null) {
+    clearInterval(momentTimer);
+    momentTimer = null;
+  }
+}
+
+function startMomentPolling() {
+  stopMomentPolling();
+  momentPollStart = Date.now();
+  momentTimer = setInterval(async () => {
+    if (Date.now() - momentPollStart > MOMENT_POLL_MAX_MS) {
+      stopMomentPolling();
+      return;
+    }
+    try {
+      const res = await fetch("/api/teaching/current");
+      const data = await res.json();
+      if (data.moment) showMoments([data.moment]);
+    } catch {
+      // a failed poll just waits for the next tick; the turn response
+      // re-renders the card authoritatively when it lands
+    }
+  }, MOMENT_POLL_MS);
 }
 
 function showMoments(list) {
@@ -419,21 +478,33 @@ async function skipMoment(card) {
 
 async function postTurn(text) {
   addLine("user", text);
-  const res = await fetch("/api/turn", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: text }),
-  });
-  const data = await res.json();
-  if (data.reply !== null && data.reply !== undefined) {
-    addLine("assistant", data.reply);
-  } else if (data.turn_status !== null && data.turn_status !== undefined) {
-    addLine("failure", "[" + data.turn_status + "] " +
-      (data.failure_reason || "无回复"));
-  } else if (data.failure_reason) {
-    addLine("failure", data.failure_reason);
+  // the placeholder is the user's "it is working" signal: removed the
+  // moment the turn response lands (or fails) — never left behind
+  const pending = addLine("assistant", "（生成中…）");
+  startMomentPolling();
+  let data = null;
+  try {
+    const res = await fetch("/api/turn", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: text }),
+    });
+    data = await res.json();
+  } finally {
+    stopMomentPolling();
+    pending.remove();
   }
-  showMoments(data.teaching_moments || []);
+  if (data !== null) {
+    if (data.reply !== null && data.reply !== undefined) {
+      addLine("assistant", data.reply);
+    } else if (data.turn_status !== null && data.turn_status !== undefined) {
+      addLine("failure", "[" + data.turn_status + "] " +
+        (data.failure_reason || "无回复"));
+    } else if (data.failure_reason) {
+      addLine("failure", data.failure_reason);
+    }
+    showMoments(data.teaching_moments || []);
+  }
 }
 
 document.getElementById("send").addEventListener("submit", (event) => {
@@ -506,6 +577,79 @@ def _focus_id_of(document: str) -> str:
     return str(parsed["target_id"])
 
 
+def _current_teaching_ro(
+    app_db_path: str, conversation_id: str
+) -> dict[str, Any]:
+    """The conversation's open teaching moment, read without the host.
+
+    This is the W-4 immediacy face: a turn's teaching moment is durable at
+    ``OPENING`` **before** the persona call starts, so the card's data sits
+    in app.db for the whole (seconds-long) generation — but the host's own
+    connections answer only the work-queue thread, which the turn's closure
+    occupies until the model answers. This function therefore runs on the
+    handler thread over its own short **read-only** connection (``mode=ro``,
+    enforced by SQLite; :meth:`Path.as_uri` spells the Windows path with
+    forward slashes so the URI parses), reads the same durable lock join the
+    queued route used to read, and closes the connection before answering.
+
+    It answers both ``OPENING`` (the generation-window card — "the teaching
+    is opening", no reply controls) and ``AWAITING_USER`` (the W-3 reload
+    card, controls and all) — exactly the poll's promise: the card appears
+    while the model is still talking and turns into the reply card when the
+    turn response lands.
+
+    Two declared narrowings against the turn card (the same moment, served
+    from this face): ``title`` is the target's spoken name out of its id
+    (:func:`_target_display_name`) — the authored function sentence lives in
+    content.db, whose path this face does not hold and whose store answers
+    only the host's thread, so the hint-ladder title stays the turn card's;
+    and the moment kind's own word is served unchanged. Any failure — a
+    locked database, a missing file, a focus document in the wrong shape —
+    answers ``{"moment": None}``: the page polls again, and a poll must
+    never 500 the user's browser.
+    """
+
+    try:
+        uri = Path(app_db_path).resolve().as_uri() + "?mode=ro"
+        connection = sqlite3.connect(uri, uri=True, timeout=2.0)
+        try:
+            row = connection.execute(
+                "SELECT m.focus_target, m.lifecycle_state, m.target_mode"
+                " FROM active_teaching_lock l"
+                " JOIN teaching_moment m ON m.moment_id = l.moment_id"
+                " WHERE l.conversation_id = ?"
+                " AND m.lifecycle_state IN (?, ?)",
+                (
+                    conversation_id,
+                    MomentState.OPENING.value,
+                    MomentState.AWAITING_USER.value,
+                ),
+            ).fetchone()
+        finally:
+            connection.close()
+        if row is None:
+            return {"moment": None}
+        focus_id = _focus_id_of(str(row[0]))
+        state = str(row[1])
+        kind = str(row[2])
+        return {
+            "moment": {
+                "focus_target_id": focus_id,
+                "lifecycle_state": state,
+                "kind": kind,
+                "title": _target_display_name(focus_id),
+                "status_cn": _RO_STATUS_CN.get(
+                    state, _STATUS_CN.get(state, state)
+                ),
+                "kind_cn": _KIND_CN.get(kind, kind),
+            }
+        }
+    except Exception:
+        # A poll that cannot read answers "nothing open" — the page's next
+        # tick retries, and the turn response re-renders the card anyway.
+        return {"moment": None}
+
+
 def _commit(conversation_id: ConversationId, raw_content: str) -> CommitUserTurn:
     """One CP0 command for the web face: the CLI's envelope shape, ``web-`` ids.
 
@@ -539,6 +683,17 @@ class _WebFace:
     def __init__(self, host: Host, conversation: str) -> None:
         self._host = host
         self._conversation_id = ConversationId(conversation)
+        # The read-only current face's two parameters, copied as plain
+        # values: the handler thread reads these (never ``self._host``)
+        # when it serves ``/api/teaching/current`` off the work queue.
+        self.app_db_path = str(host.app_db_path)
+
+    @property
+    def conversation_id(self) -> str:
+        """The conversation this face serves, as the read-only current
+        face's parameter (a plain string, no host touch)."""
+
+        return str(self._conversation_id)
 
     def turn(self, text: str) -> dict[str, Any]:
         """One committed turn, as the page renders it."""
@@ -629,41 +784,6 @@ class _WebFace:
         if not function:
             return name
         return f"{name} — {function}"
-
-    def current_teaching(self) -> dict[str, Any]:
-        """The conversation's open teaching moment, for the page's reload.
-
-        The card a turn response rendered disappears on refresh, yet the
-        moment it showed may still be open and still hold the lock — losing
-        the card loses the only reply entry points (attempt box, skip
-        button). This answers that same moment in the same shape the turn
-        response served it (human fields included), or ``{"moment": None}``
-        when nothing is open — the page rebuilds the card either way, so a
-        refresh can never strand an open teaching without its controls.
-        """
-
-        row = self._host.db.execute(
-            "SELECT m.focus_target, m.lifecycle_state, m.target_mode"
-            " FROM active_teaching_lock l"
-            " JOIN teaching_moment m ON m.moment_id = l.moment_id"
-            " WHERE l.conversation_id = ?",
-            (str(self._conversation_id),),
-        ).fetchone()
-        if row is None or str(row[1]) != MomentState.AWAITING_USER.value:
-            return {"moment": None}
-        focus_id = _focus_id_of(str(row[0]))
-        state = str(row[1])
-        kind = str(row[2])
-        return {
-            "moment": {
-                "focus_target_id": focus_id,
-                "lifecycle_state": state,
-                "kind": kind,
-                "title": self._moment_title(focus_id),
-                "status_cn": _STATUS_CN.get(state, state),
-                "kind_cn": _KIND_CN.get(kind, kind),
-            }
-        }
 
     def teaching_reply(
         self, control: str, text: str | None = None
@@ -888,7 +1008,17 @@ def _build_server(
             elif self.path == "/api/history":
                 self._run_on_host_thread(face.history)
             elif self.path == "/api/teaching/current":
-                self._run_on_host_thread(face.current_teaching)
+                # The one route served off the work queue (module docstring,
+                # "The one exception"): a read-only poll must not queue
+                # behind a turn's generation, which occupies the worker for
+                # the whole model round trip. A poll that cannot read
+                # answers {"moment": None}, never a 500.
+                self._send_json(
+                    200,
+                    _current_teaching_ro(
+                        face.app_db_path, face.conversation_id
+                    ),
+                )
             elif self.path == "/api/observations":
                 self._run_on_host_thread(face.observations)
             else:
