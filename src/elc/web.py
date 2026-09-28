@@ -61,12 +61,18 @@ a :class:`~elc.runtime.controller.TeachingReplyRequest` (SKIP, no
 attempt) through the coordinator's existing ``respond_to_teaching``
 entry — the §4 pipeline, the §7 abort and the lock release are the
 runtime's own, unmodified — and answers ``{accepted, moment_state,
-error}``. A refused reply is a **runtime fact, not an HTTP error** (200
-+ ``accepted: false`` + the error sentence), exactly like the turn face;
-only a body outside the V1 grammar is a 400. **V1 implements the skip
-control only** — the attempt face (the user types their sentence and it
-is judged) is a later cut, and this endpoint says so instead of
-pretending.
+error}``. W-3 adds the attempt control: ``{"control": "attempt",
+"text": "..."}`` submits the user's own English sentence as the
+envelope's attempt (``CONTINUE`` + ``attempt_present`` + an
+``AttemptPayload`` — the §4 step-3 evaluation, the durable records and
+the evidence chain are the runtime's, unmodified), and the answer grows
+a ``feedback`` field: the reply result's own evaluation outcome word
+with its Chinese reading, or ``null`` when the reply carried no
+evaluation (a skip, a refusal) — never a fabricated verdict. A refused
+reply is a **runtime fact, not an HTTP error** (200 + ``accepted:
+false`` + the error sentence), exactly like the turn face; only a body
+outside the grammar (an unknown control word, an attempt without a
+non-empty ``text``) is a 400.
 
 ``observations`` serves ``elc.cli``'s readings core (the six §12 indicator
 declarations, the six durable-counts sections, the drift signal) — the same
@@ -106,7 +112,11 @@ from elc.platform.types import (
 )
 from elc.runtime.controller import TeachingReplyRequest
 from elc.runtime.types import InputEnvelope
-from elc.teaching.envelope import TeachingControlIntent, TeachingResponseEnvelope
+from elc.teaching.envelope import (
+    AttemptPayload,
+    TeachingControlIntent,
+    TeachingResponseEnvelope,
+)
 from elc.teaching.rollout import OBSERVATION_SPECS
 from elc.teaching.types import MomentState
 
@@ -162,6 +172,36 @@ _KIND_CN: dict[str, str] = {
     "TRANSFER": "迁移",
 }
 
+#: The attempt feedback's Chinese readings of the evaluator's outcome
+#: vocabulary (STATE_MACHINES §5's five words, the durable
+#: ``attempt_evaluation_record.outcome`` CHECK). Display only, same
+#: fail-open rule: a word outside the map passes through untranslated.
+_OUTCOME_CN: dict[str, str] = {
+    "SUCCESS": "回答正确",
+    "ALTERNATIVE_SUCCESS": "回答正确（另一种合格表达）",
+    "PARTIAL": "部分正确",
+    "FAILURE": "未命中目标表达",
+    "ABSTAIN": "本次作答无法评判",
+}
+
+
+def _feedback_of(result: Any) -> str | None:
+    """The readable face of a reply result's own evaluation verdict.
+
+    The runtime's ``TeachingReplyTurnResult`` carries the evaluator's
+    outcome word (``evaluation_outcome``) when the reply was judged and
+    ``None`` when it was not (a skip, an attemptless control) — this
+    passes the fact through as ``<WORD>（<Chinese reading>）`` and ``None``
+    stays ``None``. Nothing here re-judges or fabricates: no verdict word,
+    no feedback.
+    """
+
+    outcome = getattr(result, "evaluation_outcome", None)
+    if not outcome:
+        return None
+    word = str(outcome)
+    return f"{word}（{_OUTCOME_CN.get(word, word)}）"
+
 
 def _target_display_name(target_id: str) -> str:
     """The spoken name of one focus target, out of its id.
@@ -206,6 +246,8 @@ _PAGE = """<!doctype html>
   .moment.skipped { border-color: #bbb; background: #f4f4f4; opacity: .55; }
   .moment.skipped b { color: #777; }
   .moment button { margin-top: .35rem; font-size: .85rem; }
+  .replyrow { display: flex; gap: .4rem; margin-top: .35rem; }
+  .replytext { flex: 1; padding: .3rem; min-width: 0; font-size: .85rem; }
   .system { align-self: center; color: #666; font-size: .85rem; }
   button { padding: .45rem .9rem; cursor: pointer; }
   pre { background: #f7f7f7; border: 1px solid #ddd; border-radius: 6px;
@@ -273,16 +315,84 @@ function showMoments(list) {
         " · 状态 " + m.lifecycle_state + " · 类型 " + m.kind));
     }
     if (m.lifecycle_state === "AWAITING_USER") {
-      // the W-2 deadlock release: a moment waiting for the user offers the
-      // skip control (V1 carries skip only)
-      card.appendChild(document.createElement("br"));
-      const skip = document.createElement("button");
-      skip.type = "button";
-      skip.textContent = "跳过教学";
-      skip.addEventListener("click", () => skipMoment(card));
-      card.appendChild(skip);
+      // the W-2/W-3 reply face: a moment waiting for the user offers the
+      // attempt box (their own English sentence, judged) and the skip
+      addReplyControls(card);
     }
     momentsBox.appendChild(card);
+  }
+}
+
+function addReplyControls(card) {
+  const row = document.createElement("div");
+  row.className = "replyrow";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "replytext";
+  input.autocomplete = "off";
+  input.placeholder = "用英语试着造个句子…";
+  const submit = document.createElement("button");
+  submit.type = "button";
+  submit.textContent = "提交作答";
+  submit.addEventListener("click", () => submitAttempt(card, input));
+  const skip = document.createElement("button");
+  skip.type = "button";
+  skip.textContent = "跳过教学";
+  skip.addEventListener("click", () => skipMoment(card));
+  row.appendChild(input);
+  row.appendChild(submit);
+  row.appendChild(skip);
+  card.appendChild(row);
+}
+
+function disarmMomentCard(card) {
+  for (const row of Array.from(card.querySelectorAll(".replyrow"))) {
+    row.remove();
+  }
+}
+
+function readReplyAnswer(card, data) {
+  // the reply result's own words, never a fabricated one: the new state
+  // plus the feedback verdict when the reply carried one
+  disarmMomentCard(card);
+  card.appendChild(document.createElement("br"));
+  const b = document.createElement("b");
+  b.textContent = data.moment_state === "AWAITING_USER"
+    ? "再试一次？"
+    : "本次回应已收下";
+  card.appendChild(b);
+  card.appendChild(document.createTextNode(
+    " · 状态 " + (data.moment_state || "未知")));
+  if (data.feedback !== null && data.feedback !== undefined) {
+    card.appendChild(document.createElement("br"));
+    card.appendChild(document.createTextNode("判分反馈：" + data.feedback));
+  }
+  if (data.moment_state === "AWAITING_USER") {
+    // the moment lives on (a miss re-prompts): the user can retry or skip
+    addReplyControls(card);
+  } else {
+    card.classList.add("skipped");
+  }
+}
+
+async function submitAttempt(card, input) {
+  const text = input.value.trim();
+  if (!text) return;
+  const res = await fetch("/api/teaching_reply", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ control: "attempt", text: text }),
+  });
+  const data = await res.json();
+  if (res.status !== 200) {
+    addLine("failure", data.error || "提交作答失败");
+    return;
+  }
+  if (data.accepted) {
+    addLine("system", "已提交作答");
+    readReplyAnswer(card, data);
+  } else {
+    addLine("failure", data.error || "无法提交这个作答");
   }
 }
 
@@ -298,9 +408,8 @@ async function skipMoment(card) {
     return;
   }
   if (data.accepted) {
+    disarmMomentCard(card);
     card.classList.add("skipped");
-    const button = card.querySelector("button");
-    if (button !== null) button.remove();
     card.appendChild(document.createTextNode(" · 已跳过"));
     addLine("system", "教学已跳过");
   } else {
@@ -513,8 +622,10 @@ class _WebFace:
             return name
         return f"{name} — {function}"
 
-    def teaching_reply(self, control: str) -> dict[str, Any]:
-        """One user reply to the open teaching moment — V1: skip only.
+    def teaching_reply(
+        self, control: str, text: str | None = None
+    ) -> dict[str, Any]:
+        """One user reply to the open teaching moment — skip or attempt.
 
         The moment is located the way ``_moments_of_turn`` reads moments —
         through the durable rows, never a guess: the conversation's
@@ -525,14 +636,25 @@ class _WebFace:
         stale page can press it after the moment already moved. The reply
         itself goes through the coordinator's own ``respond_to_teaching``
         entry with a fresh ``web-msg-`` id (CP0 replay safety, the turn
-        face's id shape): SKIP with no attempt, so the §4 order, the §7
-        abort and the lock release stay the runtime's, unmodified. An
-        ``Err`` from it is a runtime fact — 200, ``accepted: false``, the
-        error sentence; the face never fabricates a state, the reported
-        ``moment_state`` is the reply result's own word (and stays
-        consistent with the durable row the next read sees). **V1 carries
-        the skip control only**; the attempt face (a judged learner
-        sentence) is a later cut.
+        face's id shape), so the §4 order, the durable records and the
+        lock discipline stay the runtime's, unmodified:
+
+        - ``"skip"`` submits SKIP with no attempt (the attemptless
+          control the envelope contract demands);
+        - ``"attempt"`` submits CONTINUE carrying the user's sentence as
+          the attempt payload — the §4 step-3 evaluation judges it
+          against the target's own answer key (the evaluator is pure, no
+          model), a success closes the moment and releases the lock, and
+          a miss re-prompts (the moment returns to ``AWAITING_USER``
+          holding the lock, so the card can ask again).
+
+        An ``Err`` from the entry is a runtime fact — 200, ``accepted:
+        false``, the error sentence; the face never fabricates a state,
+        the reported ``moment_state`` is the reply result's own word (and
+        stays consistent with the durable row the next read sees).
+        ``feedback`` is the result's own evaluation verdict, readable, or
+        ``None`` when the reply carried no evaluation — never a
+        fabricated judgement.
         """
 
         lock = self._host.db.execute(
@@ -547,12 +669,21 @@ class _WebFace:
                 "accepted": False,
                 "moment_state": None,
                 "error": "no open teaching moment",
+                "feedback": None,
             }
+        if control == "attempt":
+            envelope = TeachingResponseEnvelope(
+                control_intent=TeachingControlIntent.CONTINUE,
+                attempt_present=True,
+                attempt=AttemptPayload(text=text or ""),
+            )
+        else:
+            envelope = TeachingResponseEnvelope(
+                control_intent=TeachingControlIntent.SKIP, attempt_present=False
+            )
         request = TeachingReplyRequest(
             conversation_id=self._conversation_id,
-            envelope=TeachingResponseEnvelope(
-                control_intent=TeachingControlIntent.SKIP, attempt_present=False
-            ),
+            envelope=envelope,
             client_message_id=ClientMessageId(f"web-msg-{uuid.uuid4().hex}"),
             requested_at=datetime.now(tz=UTC).isoformat(),
         )
@@ -562,11 +693,13 @@ class _WebFace:
                 "accepted": False,
                 "moment_state": None,
                 "error": f"{result.error.code.value}: {result.error.message}",
+                "feedback": None,
             }
         return {
             "accepted": True,
             "moment_state": result.value.moment_state.value,
             "error": None,
+            "feedback": _feedback_of(result.value),
         }
 
     def observations(self) -> dict[str, Any]:
@@ -730,21 +863,43 @@ def _build_server(
             except (UnicodeDecodeError, json.JSONDecodeError):
                 payload = None
             if self.path == "/api/teaching_reply":
-                # The V1 reply grammar is exactly {"control": "skip"} — any
-                # other body (no JSON, another key, an unsupported control
-                # word) is a bad request, not a runtime fact.
-                if not isinstance(payload, dict) or (payload.get("control") != "skip"):
-                    self._send_json(
-                        400,
-                        {
-                            "error": (
-                                'need a JSON body {"control": "skip"}'
-                                " (V1 carries the skip control only)"
-                            )
-                        },
+                # The reply grammar is exactly {"control": "skip"} or
+                # {"control": "attempt", "text": "..."} — any other body
+                # (no JSON, another key, an unknown control word, an
+                # attempt without a non-empty text) is a bad request, not
+                # a runtime fact.
+                control = (
+                    payload.get("control") if isinstance(payload, dict) else None
+                )
+                if control == "attempt":
+                    text = payload.get("text")
+                    if not isinstance(text, str) or not text.strip():
+                        self._send_json(
+                            400,
+                            {
+                                "error": (
+                                    'need a JSON body {"control": "attempt",'
+                                    ' "text": "..."} with a non-empty text'
+                                )
+                            },
+                        )
+                        return
+                    self._run_on_host_thread(
+                        lambda: face.teaching_reply("attempt", text)
                     )
                     return
-                self._run_on_host_thread(lambda: face.teaching_reply("skip"))
+                if control == "skip":
+                    self._run_on_host_thread(lambda: face.teaching_reply("skip"))
+                    return
+                self._send_json(
+                    400,
+                    {
+                        "error": (
+                            'need a JSON body {"control": "skip"} or'
+                            ' {"control": "attempt", "text": "..."}'
+                        )
+                    },
+                )
                 return
             text = payload.get("text") if isinstance(payload, dict) else None
             if not isinstance(text, str) or not text.strip():

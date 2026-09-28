@@ -32,12 +32,24 @@ Pinned here (the six VAL groups):
    skip, lock 0, the next error text opens a second moment), a skip with
    no open moment is refused as a runtime fact (never an HTTP error), a
    reply is submitted only against a moment at ``AWAITING_USER``, and a
-   body outside the V1 grammar is a 400;
+   body outside the reply grammar is a 400;
 9. the W-2 disposition — a web restart runs the startup recovery sweep
    (the dead epoch's orphan moment closes ``SYSTEM_RECOVERY_ABORT``, the
    lock is gone, before the bind), and the calibrated sixty-second
    cooldown still answers ``HARD_COOLDOWN_ACTIVE`` on the first post-skip
-   retry (the calibration is a real window, not a silent open).
+   retry (the calibration is a real window, not a silent open);
+10. the W-3 attempt face — the user's own sentence goes through the same
+    reply protocol as the skip (``CONTINUE`` carrying the attempt
+    payload): a miss is judged FAILURE and re-prompts (the moment
+    returns to ``AWAITING_USER`` with the lock held), the canonical
+    answer completes the moment and releases the lock end to end (the
+    durable lock row gone, the durable moment agreeing, teaching opening
+    again once the calibrated cooldown is contracted), the verdict is
+    the reply result's own evaluation word passed through readable
+    (``feedback``; ``None`` when the reply carried no evaluation — never
+    a fabricated one), and the attempt grammar (a non-empty ``text``)
+    and the skip/attempt routing are pinned at both the HTTP and the
+    envelope seam.
 """
 
 from __future__ import annotations
@@ -78,6 +90,7 @@ from elc.platform.types import (
     PolicyVersion,
     TargetId,
 )
+from elc.teaching.envelope import TeachingControlIntent
 from elc.teaching.rollout import RolloutStage
 from elc.teaching.types import MomentState
 from elc.user_config.types import (
@@ -100,6 +113,14 @@ EV_TARGET = "res-discourse-anyway"
 #: moment ("get it," fronted with a pause → res-pragmatic-got-it).
 SECOND_ERROR_TEXT = "Get it, I will send the file tonight."
 EV_SECOND_TARGET = "res-pragmatic-got-it"
+
+#: The W-3 attempt pair, against ``EV_TARGET``'s authored answer key
+#: (content.db's ``teaching_content``: the canonical form is "Anyway,
+#: let's get back to the topic."): a sentence that misses the key (the
+#: evaluator answers FAILURE and the moment re-prompts) and the canonical
+#: form itself (the evaluator answers SUCCESS and the moment completes).
+ATTEMPT_MISS = "I got it, thanks."
+ATTEMPT_HIT = "Anyway, let's get back to the topic."
 
 #: The loopback opener: an empty proxy map, so a developer's ``http_proxy``
 #: (this machine runs one) can never stand between the test and the page.
@@ -646,6 +667,7 @@ def test_a_skip_with_no_open_moment_is_refused_not_an_error(
             "accepted": False,
             "moment_state": None,
             "error": "no open teaching moment",
+            "feedback": None,
         }
 
 
@@ -691,7 +713,12 @@ def test_a_reply_is_submitted_only_for_an_awaiting_moment() -> None:
     awaiting = _ReplyStubHost(row=("AWAITING_USER",))
     answer = _WebFace(awaiting, str(CONV)).teaching_reply("skip")
     assert len(awaiting.submitted) == 1
-    assert answer == {"accepted": True, "moment_state": "CLOSED", "error": None}
+    assert answer == {
+        "accepted": True,
+        "moment_state": "CLOSED",
+        "error": None,
+        "feedback": None,
+    }
 
     moved_on = _ReplyStubHost(row=("EVALUATING",))
     answer = _WebFace(moved_on, str(CONV)).teaching_reply("skip")
@@ -707,9 +734,10 @@ def test_a_reply_is_submitted_only_for_an_awaiting_moment() -> None:
 
 
 def test_a_malformed_teaching_reply_body_is_a_400(tmp_path: Path) -> None:
-    """Bodies outside the V1 grammar are bad requests: no JSON, no
-    ``control`` key, and any control word other than ``skip`` (V1 carries
-    the skip control only) — and none of them commits anything."""
+    """Bodies outside the reply grammar are bad requests: no JSON, no
+    ``control`` key, an unknown control word, and an attempt without a
+    non-empty ``text`` (the W-3 grammar: an attempt carries the user's
+    sentence) — and none of them commits anything."""
 
     with web_stack(tmp_path / "app.db") as stack:
         status, data = stack.post_raw("/api/teaching_reply", b"not json")
@@ -719,7 +747,15 @@ def test_a_malformed_teaching_reply_body_is_a_400(tmp_path: Path) -> None:
         assert status == 400
         status, data = stack.post("/api/teaching_reply", {"control": "attempt"})
         assert status == 400
+        assert "text" in data["error"]
+        status, data = stack.post(
+            "/api/teaching_reply", {"control": "attempt", "text": "   "}
+        )
+        assert status == 400
+        status, data = stack.post("/api/teaching_reply", {"control": "banana"})
+        assert status == 400
         assert "skip" in data["error"]
+        assert "attempt" in data["error"]
         status, payload = stack.get_json("/api/history")
         assert status == 200
         assert payload["turns"] == []
@@ -896,6 +932,184 @@ def test_the_calibrated_cooldown_still_holds_right_after_the_skip(
         )
 
     assert elc.teaching.budget.COOLDOWN_WINDOW_SECONDS == 60.0
+
+
+# ---------------------------------------------------------------------------
+# 3e. the W-3 attempt face — the user's sentence, judged
+
+
+class _AttemptStubHost:
+    """The attempt face's unit seam: a canned lock row (``None`` = no
+    lock), a coordinator that records the submitted reply request, and a
+    canned reply result whose evaluation verdict is configurable."""
+
+    def __init__(
+        self, row: tuple[str] | None, evaluation_outcome: str | None = None
+    ) -> None:
+        self._row = row
+        self._evaluation_outcome = evaluation_outcome
+        self.submitted: list[Any] = []
+
+    @property
+    def db(self) -> "_AttemptStubHost":
+        return self
+
+    def execute(self, _sql: str, _params: Any) -> "_AttemptStubHost":
+        return self
+
+    def fetchone(self) -> tuple[str] | None:
+        return self._row
+
+    @property
+    def coordinator(self) -> "_AttemptStubHost":
+        return self
+
+    def respond_to_teaching(self, request: Any) -> Any:
+        self.submitted.append(request)
+        fields: dict[str, Any] = {"moment_state": MomentState.CLOSED}
+        if self._evaluation_outcome is not None:
+            fields["evaluation_outcome"] = self._evaluation_outcome
+        return Ok(type("Completion", (), fields)())
+
+
+def test_an_attempt_submits_the_envelope_and_passes_the_verdict_through() -> None:
+    """The attempt face's shape pins, at the unit seam.
+
+    The user's sentence travels as the §4 envelope's attempt: CONTINUE
+    (the control word a bare attempt carries — SM §4's attemptless
+    controls are SKIP / REJECT_TARGET / CHANGE_TOPIC, and an envelope
+    claiming one of those with an attempt attached is refused before any
+    durable write), ``attempt_present=True``, and the payload's text is
+    exactly the submitted string. The verdict is the runtime result's
+    own word passed through readable — and a result with no evaluation
+    answers ``feedback: None`` rather than a fabricated verdict. A skip
+    still submits attemptless (the W-2 shape, unchanged)."""
+
+    awaiting = _AttemptStubHost(
+        row=("AWAITING_USER",), evaluation_outcome="SUCCESS"
+    )
+    answer = _WebFace(awaiting, str(CONV)).teaching_reply(
+        "attempt", ATTEMPT_HIT
+    )
+    (request,) = awaiting.submitted
+    assert request.envelope.control_intent is TeachingControlIntent.CONTINUE
+    assert request.envelope.attempt_present is True
+    assert request.envelope.attempt is not None
+    assert request.envelope.attempt.text == ATTEMPT_HIT
+    assert str(request.client_message_id).startswith("web-msg-")
+    assert answer == {
+        "accepted": True,
+        "moment_state": "CLOSED",
+        "error": None,
+        "feedback": "SUCCESS（回答正确）",
+    }
+
+    silent = _AttemptStubHost(row=("AWAITING_USER",))
+    answer = _WebFace(silent, str(CONV)).teaching_reply("attempt", "hello")
+    assert len(silent.submitted) == 1
+    assert answer["accepted"] is True
+    assert answer["feedback"] is None
+
+    skipping = _AttemptStubHost(row=("AWAITING_USER",))
+    answer = _WebFace(skipping, str(CONV)).teaching_reply("skip")
+    (request,) = skipping.submitted
+    assert request.envelope.control_intent is TeachingControlIntent.SKIP
+    assert request.envelope.attempt_present is False
+    assert request.envelope.attempt is None
+    assert answer["feedback"] is None
+
+
+def test_an_attempt_is_judged_and_the_teaching_loop_stays_closed(
+    tmp_path: Path, pilot_content_db: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The attempt loop, end to end over the real chain — the day-one
+    dead end's last arm closed: the user answers, and the answer is
+    judged.
+
+    Act one: the miss is a runtime fact, not an error — accepted, judged
+    (``feedback`` names the FAILURE verdict the evaluator produced
+    against the target's own answer key), and the re-prompt returns the
+    moment to ``AWAITING_USER`` with the lock still held (SM §1's
+    "HINT / RETRY → AWAITING_USER": a miss asks again, it does not end
+    the episode). Act two: the canonical sentence completes the moment —
+    ``moment_state`` is the result's own word past ``AWAITING_USER``, the
+    durable lock row is gone, the durable moment agrees, and the
+    feedback carries the SUCCESS verdict. Act three: with the lock
+    released, teaching can open again (the calibrated cooldown
+    contracted exactly as the W-2 pin contracts it) — an answered moment
+    never dead-ends the conversation's teaching."""
+
+    app_db = tmp_path / "app.db"
+    with web_stack(
+        app_db,
+        content_db=pilot_content_db,
+        stage=RolloutStage.STUDY_FIRST,
+        seed=seed_online_and_second_target,
+    ) as stack:
+        status, data = stack.post("/api/turn", {"text": ERROR_TEXT})
+        assert status == 200
+        (moment,) = data["teaching_moments"]
+        assert moment["focus_target_id"] == EV_TARGET
+        assert moment["lifecycle_state"] == "AWAITING_USER"
+
+        status, data = stack.post(
+            "/api/teaching_reply",
+            {"control": "attempt", "text": ATTEMPT_MISS},
+        )
+        assert status == 200
+        assert data["accepted"] is True
+        assert data["error"] is None
+        assert data["moment_state"] == "AWAITING_USER"
+        assert data["feedback"] is not None
+        assert "FAILURE" in data["feedback"]
+        locks, moments = _durable_teaching_face(app_db)
+        assert len(locks) == 1
+        assert [state for _, state in moments] == ["AWAITING_USER"]
+
+        status, data = stack.post(
+            "/api/teaching_reply",
+            {"control": "attempt", "text": ATTEMPT_HIT},
+        )
+        assert status == 200
+        assert data["accepted"] is True
+        assert data["error"] is None
+        assert data["moment_state"] != "AWAITING_USER"
+        assert data["feedback"] is not None
+        assert "SUCCESS" in data["feedback"]
+        locks, moments = _durable_teaching_face(app_db)
+        assert locks == []
+        assert [state for _, state in moments] == [data["moment_state"]]
+
+        monkeypatch.setattr(
+            elc.teaching.budget, "COOLDOWN_WINDOW_SECONDS", 0.0
+        )
+        status, data = stack.post("/api/turn", {"text": SECOND_ERROR_TEXT})
+        assert status == 200
+        (moment,) = data["teaching_moments"]
+        assert moment["focus_target_id"] == EV_SECOND_TARGET
+        assert moment["lifecycle_state"] == "AWAITING_USER"
+
+
+def test_the_page_offers_the_attempt_box_and_the_skip_button(
+    tmp_path: Path,
+) -> None:
+    """The AWAITING_USER card's W-3 face: the attempt box (the user's own
+    English sentence) beside the skip button, and the page still keeps
+    every word inert (textContent) — the attempt text travels as data,
+    never as markup."""
+
+    with web_stack(tmp_path / "app.db") as stack:
+        status, content_type, body = stack.get_raw("/")
+        assert status == 200
+        page = body.decode("utf-8")
+        assert "用英语试着造个句子…" in page
+        assert "提交作答" in page
+        assert "跳过教学" in page
+        assert 'control: "attempt"' in page
+        assert "已提交作答" in page
+        # the card stays XSS-inert: textContent, never innerHTML
+        assert "textContent" in page
+        assert ".innerHTML" not in page
 
 
 # ---------------------------------------------------------------------------

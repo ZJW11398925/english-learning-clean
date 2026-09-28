@@ -68,7 +68,7 @@ PYTHONPATH=src python -m elc web --app-db ./app.db \
 ```
 
 - 参数 = chat 全套 + `--port`（缺省 8760）；**只绑 127.0.0.1、无鉴权**——单用户单机 dogfood 面，不是服务，别暴露到本机之外。
-- 页面：对话区（逐轮 POST `/api/turn`）+ 本轮教学时刻卡（按 turn 血缘查，非「最新行」；等待回应的时刻带**「跳过教学」按钮**——POST `/api/teaching_reply` `{"control":"skip"}` 经 coordinator 既有回应入口释放时刻锁，V1 只做跳过）+ 观察读数按钮（与 `observations` 命令同一读数核心，数字同源）+ 打开页面即拉最近 50 轮恢复对话。
+- 页面：对话区（逐轮 POST `/api/turn`）+ 本轮教学时刻卡（按 turn 血缘查，非「最新行」；等待回应的时刻带**「提交作答」输入框**（POST `/api/teaching_reply` `{"control":"attempt","text":"…"}`，经 coordinator 既有回应入口进 §4 评估链判分，答对结课释锁、答错再给一次）与**「跳过教学」按钮**（`{"control":"skip"}` 同入口释放时刻锁））+ 观察读数按钮（与 `observations` 命令同一读数核心，数字同源）+ 打开页面即拉最近 50 轮恢复对话。
 - turn 级失败是**运行事实**（HTTP 200 + failure 字段）；只有坏请求体才是 400。
 
 ### 真实端点 smoke（可复制；dogfood 步骤，不属 CI）
