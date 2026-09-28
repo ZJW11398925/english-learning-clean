@@ -4,17 +4,19 @@ The server, the host and the online seed are the W-1 suite's own fixtures
 (one serving stack, one production assembly); this file pins only the F-1
 face on top:
 
-1. the design language — the page's ``<style>`` is a two-theme token sheet
-   (the light values on ``:root``, the dark values under
-   ``@media (prefers-color-scheme: dark)``), every token value spelled in
-   full and pinned here by name, with the shared radius / motion / tabbar
-   tokens and the focus ring; the sheet links no external resource at all
+1. the design language (F-1R) — the page's ``<style>`` is the VS1 letter
+   token sheet (the archived chat parlor's ``chat.css``, value for value:
+   the paper ground, the three ink levels, the two hairline rules, the
+   ochre pencil, the touch wash, the three font stacks); the form laws
+   are pinned as absolute negatives elsewhere (tests/host/
+   test_f1r_letter_design.py: no tab bar, no teal, no radius, no shadow,
+   no dark switch) and the sheet links no external resource at all
    (no CDN, no web font — ``dependencies = []`` stays true);
-2. the view navigation — a fixed bottom tab bar with exactly three tabs
-   (聊天 default / 学习 / 诊断; the 学习 tab is F-2's, migrated here from
-   the two-tab pin — the pin moved, it was not deleted), switched by
-   plain JS show/hide (no router), the diagnostics view holding the five
-   why-panels and the observations readout;
+2. the screen navigation (F-1R) — three screens (开张 the first-visit
+   cover / 客厅 the parlor / 仪表 the honest set screen), switched by
+   plain JS show/hide (no router, no tab bar), the parlor header's
+   仪表 link leading to the set screen, which holds the five why-panels
+   and the observations readout;
 3. the diagnostics face — ``GET /api/diagnostics`` answers the five whys
    read-only: over a real teaching chain the why-teach panel names the
    selected candidate and its ALLOW gate row; a fresh conversation answers
@@ -51,54 +53,34 @@ from tests.host.test_w1_web import (
 #: the same name so pytest resolves it for this module's tests too.
 pilot_content_db = test_w1_web.pilot_content_db
 
-#: The light-theme token sheet, value for value (the design language's one
-#: origin — the page's ``:root`` block and this table must agree).
-LIGHT_TOKENS: dict[str, str] = {
-    "--bg": "#faf8f5",
-    "--surface": "#ffffff",
-    "--surface-sunken": "#f3f0eb",
-    "--ink": "#1a1815",
-    "--ink-soft": "#6d675e",
-    "--ink-faint": "#98918a",
-    "--line": "#e8e3db",
-    "--line-strong": "#d8d1c7",
-    "--accent": "#0f766e",
-    "--accent-press": "#0b5d56",
-    "--accent-wash": "#e9f3f1",
-    "--on-accent": "#ffffff",
-    "--danger": "#b3261e",
-    "--danger-wash": "#fdeceb",
-    "--ok": "#3f6212",
+#: The letter token sheet, value for value — the one visual anchor is the
+#: archived VS1 ``chat.css`` (values adopted, never its code): the page's
+#: ``:root`` block and this table must agree.
+LETTER_TOKENS: dict[str, str] = {
+    "--bg": "#fbf9f4",
+    "--ink": "#1b1a17",
+    "--ink-soft": "#5c574e",
+    "--ink-faint": "#726a5e",
+    "--rule": "#ded7c9",
+    "--rule-soft": "#ebe5d8",
+    "--pencil": "#a8562f",
+    "--touch": "#f0e9dc",
 }
 
-#: The dark-theme sheet, under ``@media (prefers-color-scheme: dark)`` —
-#: warm black, not pure black; the same token names, the dark values.
-DARK_TOKENS: dict[str, str] = {
-    "--bg": "#161513",
-    "--surface": "#201e1b",
-    "--surface-sunken": "#1a1917",
-    "--ink": "#f2efe9",
-    "--ink-soft": "#a8a199",
-    "--ink-faint": "#7d766e",
-    "--line": "#2f2c28",
-    "--line-strong": "#403c37",
-    "--accent": "#4fd1c5",
-    "--accent-press": "#38b2a8",
-    "--accent-wash": "#12302d",
-    "--on-accent": "#08201e",
-    "--danger": "#ff8a80",
-    "--danger-wash": "#331b19",
-    "--ok": "#a3c96b",
-}
+#: The three font stacks (serif for titles and letters, sans for the small
+#: interface words, mono for the meters and the numbers), word for word.
+LETTER_F_STACKS: tuple[str, ...] = (
+    "--f-serif: Georgia, 'Times New Roman', 'Songti SC', 'SimSun',"
+    " 'Noto Serif CJK SC', serif",
+    "--f-sans: system-ui, -apple-system, 'Segoe UI', 'PingFang SC',"
+    " 'Microsoft YaHei', sans-serif",
+    "--f-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace",
+)
 
-#: The theme-independent tokens: radii, motion, the tab bar's height.
-SHARED_TOKENS: dict[str, str] = {
-    "--r-sm": "8px",
-    "--r": "12px",
-    "--r-lg": "16px",
-    "--r-xl": "22px",
-    "--dur": "180ms",
-    "--tabbar-h": "64px",
+#: The layout pair: the reading gutter and the safe-area bottom inset.
+LETTER_LAYOUT_TOKENS: dict[str, str] = {
+    "--read-pad": "18px",
+    "--safe-bottom": "env(safe-area-inset-bottom, 0px)",
 }
 
 _DIAG_PANEL_IDS = (
@@ -123,21 +105,23 @@ def _page_of(tmp_path: Path) -> str:
 # 1. the design language — the two-theme token sheet
 
 
-def test_the_page_carries_both_theme_token_sheets(tmp_path: Path) -> None:
-    page = _page_of(tmp_path)
-    for sheet in (LIGHT_TOKENS, DARK_TOKENS):
-        for name, value in sheet.items():
-            assert f"{name}: {value}" in page, (name, value)
-    for name, value in SHARED_TOKENS.items():
+def test_the_page_carries_the_letter_tokens(tmp_path: Path) -> None:
+    """The F-1R re-pin: the token sheet is chat.css's, value for value —
+    the F-1 two-theme teal sheet is gone (one paper theme, no dark
+    switch), and the three font stacks are spelled in full. The stacks
+    are matched whitespace-normalized: CSS wraps a long stack across
+    lines (ruff's own line length), and CSS itself is whitespace-blind —
+    the family names and their order are what the pin holds."""
+
+    page = " ".join(_page_of(tmp_path).split())
+    for name, value in LETTER_TOKENS.items():
         assert f"{name}: {value}" in page, (name, value)
-    # the dark sheet is a media-query switch, not a script or a toggle
-    assert "@media (prefers-color-scheme: dark)" in page
-    # the one motion curve and the focus ring, spelled in full
-    assert "--ease: cubic-bezier(0.2, 0, 0.2, 1)" in page
-    assert (
-        "--ring: 0 0 0 3px"
-        " color-mix(in srgb, var(--accent) 28%, transparent)" in page
-    )
+    for name, value in LETTER_LAYOUT_TOKENS.items():
+        assert f"{name}: {value}" in page, (name, value)
+    for stack in LETTER_F_STACKS:
+        assert " ".join(stack.split()) in page, stack
+    # one paper theme: the dark media-query sheet does not come back
+    assert "@media (prefers-color-scheme: dark)" not in page
 
 
 def test_the_page_links_no_external_resource(tmp_path: Path) -> None:
@@ -155,26 +139,27 @@ def test_the_page_links_no_external_resource(tmp_path: Path) -> None:
 #    the assertions kept and re-truthed — 学习 between 聊天 and 诊断)
 
 
-def test_the_page_has_the_view_navigation(tmp_path: Path) -> None:
+def test_the_page_has_the_three_screens(tmp_path: Path) -> None:
+    """The F-1R re-pin of the navigation: three screens — the first-visit
+    cover, the parlor, the honest set screen — plain JS show/hide, no
+    router, no tab bar; the parlor header's 仪表 link leads to the set
+    screen, which holds the five why-panels and the observations readout."""
+
     page = _page_of(tmp_path)
-    # the fixed bottom tab bar, three tabs, the words a person reads
-    assert 'class="tabbar"' in page
-    assert ">聊天</button>" in page
-    assert ">学习</button>" in page
-    assert ">诊断</button>" in page
-    assert 'data-view="chat"' in page
-    assert 'data-view="learning"' in page
-    assert 'data-view="diagnostics"' in page
-    # the three view containers, chat the default, learning and
-    # diagnostics hidden
-    assert 'id="view-chat"' in page
-    assert 'id="view-learning"' in page
-    assert 'id="view-diagnostics"' in page
+    # the three screens (the form laws' negatives — no tab bar, no teal —
+    # live in tests/host/test_f1r_letter_design.py)
+    assert 'id="screen-onboard"' in page
+    assert 'id="screen-living"' in page
+    assert 'id="screen-set"' in page
+    # the parlor header's meter link and the set screen's way back
+    assert 'id="meter-toggle"' in page
+    assert ">仪表</button>" in page
+    assert 'id="back-to-living"' in page
+    assert "← 回客厅</button>" in page
     # the switch is plain JS show/hide (no router library)
-    assert "function showView(" in page
-    assert 'tab.setAttribute("aria-current", "page")' in page
-    assert ".hidden = " in page
-    # the diagnostics view holds the five why-panels and a refresh
+    assert "function showScreen(" in page
+    assert "screens[key].hidden = key !== name;" in page
+    # the set screen holds the five why-panels and a refresh
     for panel in _DIAG_PANEL_IDS:
         assert f'id="{panel}"' in page
     assert 'id="diag-refresh"' in page

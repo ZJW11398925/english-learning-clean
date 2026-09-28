@@ -104,21 +104,28 @@ an authorized user-requested reveal **keeps the moment open** at
 ``FULL_REVEAL`` — SM §3's ``POST_REVEAL_OPTIONAL_ATTEMPT`` phase exists
 precisely because seeing the answer does not have to end the episode.
 
-**F-1 turns the instrument into a product shell** (the design language and
-the two-view navigation move in from the archived exploration repo's web
-face as *token values and interaction shapes only* — not one line of its
-code). The page's ``<style>`` is a two-theme token sheet: every color,
-radius and motion value is a CSS custom property, the light values on
-``:root`` and the dark values under ``@media (prefers-color-scheme: dark)``
-— the browser's own theme switch, no toggle, no script. Zero external
-resources stays the law (no CDN, no web font, no framework — the shell is
-still one embedded string over ``dependencies = []``). The shell is a fixed
-64px bottom tab bar with exactly two views, switched by plain JS
-``show``/``hide`` (no router): **聊天** (the default — everything the W
-series built, re-typeset: the message stream as user-right /
-assistant-left cards, the input row, and the teaching card on an
-accent-wash surface), **学习** (F-2) and **诊断** — the five-whys panel
-(below) with the observations readout folded in at the top.
+**F-1R re-typesets the shell onto the VS1 letter design** (the user's
+accepted visual anchor — the archived exploration repo's 9/19 chat
+parlor; its token values and layout laws move in as *values and shapes
+only*, not one line of its code). One paper theme, no dark switch: the
+``<style>`` is the letter token sheet (``--bg #fbf9f4`` / three ink
+levels / two hairline rules / the ochre pencil / the touch wash / the
+serif-sans-mono font stacks), and the form laws are absolute — zero
+cards, zero chat bubbles, zero tab bar, zero radius, zero shadow:
+layers are hairlines, whitespace and the ink levels, and every action
+is an underlined pencil text link. Zero external resources stays the
+law (no CDN, no web font, no framework — the shell is still one
+embedded string over ``dependencies = []``). The shell is three screens
+switched by plain JS ``show``/``hide`` (no router): **开张** (a
+first-visit cover, remembered in localStorage — an honest "this is what
+this is": the runtime has no persona-authoring face, so the cover
+invents none), **客厅** (the default — everything the W series built,
+re-typeset: the stream as letters, the user's line a torn-edge reply
+slip and the parlor's a plain sheet, the teaching moment a short note
+in the letter flow, the input a borderless pen line with a 寄出 link),
+and **仪表** (the set screen — the honest facts screen: the endpoint
+and the model name have no page-side source and are not shown, the
+学习 and 诊断 blocks expand in place, and 回客厅 leads back).
 
 **F-2 turns the shell into the learning face** — three read/act features on
 top of F-1, all honest and none new in kind:
@@ -774,262 +781,414 @@ _PAGE = """<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>英语客厅 · Study-first dogfood</title>
 <style>
-  /* 设计令牌：唯一出处。光主题在 :root，暗主题由系统偏好切换（无脚本、无开关）。 */
+  /* F-1R 设计令牌：唯一出处 = 旧仓 VS1「对话客厅」chat.css 的纸感令牌
+     （逐值采用，不复制其代码）：纸 #fbf9f4 / 三级墨 / 两档发丝线 /
+     赭红铅笔 / 触压底。形态法则（用户否掉上一版的条款，逐条遵守）：
+     零卡片、零气泡、零底栏页签、零大圆角面板、零阴影、零青绿——
+     分层靠上下发丝线、留白与三级墨色；动作一律是赭红下划线文字链接。 */
   :root {
-    --bg: #faf8f5;
-    --surface: #ffffff;
-    --surface-sunken: #f3f0eb;
-    --ink: #1a1815;
-    --ink-soft: #6d675e;
-    --ink-faint: #98918a;
-    --line: #e8e3db;
-    --line-strong: #d8d1c7;
-    --accent: #0f766e;
-    --accent-press: #0b5d56;
-    --accent-wash: #e9f3f1;
-    --on-accent: #ffffff;
-    --danger: #b3261e;
-    --danger-wash: #fdeceb;
-    --ok: #3f6212;
-    --r-sm: 8px;
-    --r: 12px;
-    --r-lg: 16px;
-    --r-xl: 22px;
-    --dur: 180ms;
-    --ease: cubic-bezier(0.2, 0, 0.2, 1);
-    --tabbar-h: 64px;
-    --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #161513;
-      --surface: #201e1b;
-      --surface-sunken: #1a1917;
-      --ink: #f2efe9;
-      --ink-soft: #a8a199;
-      --ink-faint: #7d766e;
-      --line: #2f2c28;
-      --line-strong: #403c37;
-      --accent: #4fd1c5;
-      --accent-press: #38b2a8;
-      --accent-wash: #12302d;
-      --on-accent: #08201e;
-      --danger: #ff8a80;
-      --danger-wash: #331b19;
-      --ok: #a3c96b;
-    }
+    --bg: #fbf9f4;
+    --ink: #1b1a17;
+    --ink-soft: #5c574e;
+    --ink-faint: #726a5e;
+    --rule: #ded7c9;
+    --rule-soft: #ebe5d8;
+    --pencil: #a8562f;
+    --touch: #f0e9dc;
+    --f-serif: Georgia, 'Times New Roman', 'Songti SC', 'SimSun',
+      'Noto Serif CJK SC', serif;
+    --f-sans: system-ui, -apple-system, 'Segoe UI', 'PingFang SC',
+      'Microsoft YaHei', sans-serif;
+    --f-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+    --read-pad: 18px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
-  body { font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC",
-         "Microsoft YaHei", sans-serif; max-width: 46rem; margin: 0 auto;
-         padding: 1rem 1rem calc(var(--tabbar-h) + 1.5rem
-                                 + env(safe-area-inset-bottom));
-         color: var(--ink); background: var(--bg); }
-  h1 { font-size: 1.25rem; margin: 0; }
-  h2 { font-size: 1.02rem; margin: 0 0 .5rem; }
-  .appbar { padding-bottom: .75rem; }
-  .appstatus { color: var(--ink-faint); font-size: .8125rem; margin: .2rem 0 0; }
-  .view > .note { color: var(--ink-soft); font-size: .875rem; }
-  .panel { background: var(--surface); border: 1px solid var(--line);
-           border-radius: var(--r-lg); padding: 1rem; margin-top: 1rem; }
-  .note { color: var(--ink-soft); font-size: .875rem; }
-  /* 消息流：用户右、assistant 左，卡片化（分组用底色+发丝边，不叠阴影）。 */
-  #messages { background: var(--surface); border: 1px solid var(--line);
-              border-radius: var(--r-lg); min-height: 14rem; padding: .75rem;
-              display: flex; flex-direction: column; gap: .5rem; }
-  .user, .assistant, .failure { max-width: 85%; padding: .5rem .8rem;
-                                white-space: pre-wrap; line-height: 1.55; }
-  .user { align-self: flex-end; background: var(--accent); color: var(--on-accent);
-          border-radius: var(--r) var(--r) var(--r-sm) var(--r); }
-  .assistant { align-self: flex-start; background: var(--surface-sunken);
-               border-radius: var(--r) var(--r) var(--r) var(--r-sm); }
-  .failure { align-self: flex-start; background: var(--danger-wash);
-             color: var(--danger); border-radius: var(--r-sm);
-             font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem; }
-  .system { align-self: center; color: var(--ink-faint); font-size: .85rem; }
-  form { display: flex; gap: .5rem; margin-top: .75rem; }
-  #text { flex: 1; min-height: 44px; padding: .45rem .7rem; font: inherit;
-          color: var(--ink); background: var(--surface);
-          border: 1px solid var(--line-strong); border-radius: var(--r); }
-  .replytext { flex: 1; min-height: 40px; padding: .3rem .6rem; min-width: 0;
-               font-size: .875rem; font: inherit; color: var(--ink);
-               background: var(--surface); border: 1px solid var(--line-strong);
-               border-radius: var(--r-sm); }
-  button { min-height: 44px; padding: .4rem .9rem; cursor: pointer; font: inherit;
-           color: var(--ink); background: var(--surface);
-           border: 1px solid var(--line-strong); border-radius: var(--r-sm);
-           transition: background var(--dur) var(--ease),
-                       border-color var(--dur) var(--ease),
-                       color var(--dur) var(--ease); }
-  button:hover { background: var(--surface-sunken); border-color: var(--line-strong); }
-  button:focus-visible { outline: none; box-shadow: var(--ring); }
-  button:disabled { opacity: .5; cursor: wait; }
-  button.primary { background: var(--accent); color: var(--on-accent);
-                   border-color: var(--accent); }
-  button.primary:hover { background: var(--accent-press);
-                         border-color: var(--accent-press); }
-  /* 教学时刻卡：重音浅底 + 大圆角；跳过态整体降透明。 */
-  .moment { border: 1px solid var(--line-strong); background: var(--accent-wash);
-            border-radius: var(--r-lg); padding: .75rem .9rem; margin-top: .6rem; }
-  .moment b { color: var(--accent-press); }
-  .moment.skipped { border-color: var(--line); background: var(--surface-sunken);
-                    opacity: .6; }
-  .moment.skipped b { color: var(--ink-soft); }
-  .replyrow { display: flex; gap: .4rem; margin-top: .45rem; }
-  .resultstrip { margin-top: .45rem; padding: .4rem .65rem; border-radius: var(--r-sm);
-                 font-size: .9rem; }
-  .resultstrip.ok { background: color-mix(in srgb, var(--ok) 14%, transparent);
-                    color: var(--ok); }
-  .resultstrip.part { background: var(--surface-sunken); color: var(--ink-soft); }
-  .resultstrip.miss { background: var(--danger-wash); color: var(--danger); }
-  .busystrip { margin-top: .4rem; color: var(--ink-soft); font-size: .85rem; }
+  html, body { margin: 0; padding: 0; background: var(--bg); }
+  body {
+    color: var(--ink); font-family: var(--f-serif); font-size: 16px;
+    line-height: 1.55; -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage { max-width: 430px; margin: 0 auto; min-height: 100vh;
+           position: relative; }
+  button { border: 0; background: none; padding: 0; cursor: pointer;
+           font: inherit; color: inherit; }
+  button:focus-visible, input:focus-visible {
+    outline: 1px solid var(--pencil); outline-offset: 2px; }
+  .note { color: var(--ink-faint); font-size: .85rem;
+          font-family: var(--f-sans); }
+
+  /* ── 开张屏（first visit；localStorage 记住后不再出现）────────────── */
+  .ob { padding: 54px var(--read-pad) 60px; min-height: 100vh; }
+  .ob .formhead { text-align: center; font-family: var(--f-sans);
+                  font-size: 11px; letter-spacing: 0.3em;
+                  color: var(--ink-faint); margin: 0 0 26px; }
+  .ob h1 { text-align: center; margin: 0 0 10px; font-size: 27px;
+           font-weight: 500; letter-spacing: 0.14em; }
+  .ob .sub { text-align: center; margin: 0 0 10px; font-size: 13px;
+             color: var(--ink-soft); }
+  .ob .go { display: block; margin: 26px auto 0; font-family: var(--f-serif);
+            font-size: 17px; font-weight: 700; color: var(--pencil);
+            text-decoration: underline; text-decoration-thickness: 1px;
+            text-underline-offset: 0.32em; }
+  .ob .go:active { opacity: 0.55; }
+  .ob .hint { margin: 14px 0 0; text-align: center;
+              font-family: var(--f-sans); font-size: 11px;
+              color: var(--ink-faint); }
+
+  /* ── 客厅屏：伙伴卡（上下发丝线夹住）+ 信笺流 + 写信区 ─────────────── */
+  .top { position: sticky; top: 0; z-index: 5; background: var(--bg);
+         border-bottom: 1px solid var(--rule);
+         padding: 10px var(--read-pad) 8px;
+         display: flex; align-items: baseline; gap: 10px; }
+  .who { font-size: 15px; font-weight: 600; letter-spacing: 0.18em; }
+  .who-sub { font-size: 11px; color: var(--ink-faint);
+             font-family: var(--f-sans); margin-top: 2px; }
+  .meter { margin-left: auto; font-family: var(--f-mono); font-size: 11px;
+           color: var(--ink-soft); text-decoration: underline dotted;
+           text-underline-offset: 0.28em;
+           text-decoration-color: var(--rule); }
+  .meter:active { opacity: 0.55; }
+
+  .flow { padding: 18px var(--read-pad) 170px; }
+  .letter { margin: 0 0 18px; max-width: 84%; }
+  .letter.may { margin-right: auto; }
+  .letter.me { margin-left: auto; }
+  .say { margin: 0; font-size: 16px; white-space: pre-wrap;
+         overflow-wrap: anywhere; }
+  /* 我的回信 = 撕边信纸（--touch 衬底 + 顶部撕口；不是气泡：零圆角零描边） */
+  .letter.me .paper {
+    background: var(--touch); padding: 10px 14px 12px; font-weight: 600;
+    clip-path: polygon(0 6px, 4% 2px, 11% 7px, 19% 1px, 27% 6px, 36% 2px,
+                       46% 7px, 55% 2px, 64% 6px, 74% 1px, 83% 7px, 92% 2px,
+                       100% 6px, 100% 100%, 0 100%);
+  }
+  .typing { margin: 0 0 18px; font-family: var(--f-sans); font-size: 12px;
+            color: var(--ink-faint); }
+  .sysline { text-align: center; margin: 0 0 14px;
+             font-family: var(--f-sans); font-size: 11px;
+             color: var(--ink-faint); }
+  .errline { margin: 0 0 14px; padding: 8px 10px;
+             border-left: 1px solid var(--pencil);
+             font-family: var(--f-sans); font-size: 12px;
+             color: var(--pencil); line-height: 1.7;
+             white-space: pre-wrap; overflow-wrap: anywhere; }
   /* F-2 blocked 行：本轮没有教学时的一行诚实小字（数据不在就沉默）。 */
-  .blockedline { align-self: flex-start; color: var(--ink-faint);
-                 font-size: .85rem; padding: .1rem .3rem; }
-  pre { background: var(--surface-sunken); border: 1px solid var(--line);
-        border-radius: var(--r-sm); padding: .75rem; overflow-x: auto;
-        color: var(--ink); }
-  /* 诊断视图：五个「为什么」面板。 */
-  .diag .kv { display: flex; gap: .4rem; padding: .15rem 0; font-size: .9rem;
-              font-variant-numeric: tabular-nums; }
-  .diag .kv b { color: var(--ink-soft); font-weight: 600; flex: none; }
-  .kvgroup { border-left: 3px solid var(--accent); background: var(--surface-sunken);
-             border-radius: var(--r-sm); padding: .5rem .7rem; margin-top: .5rem; }
-  .kvtitle { display: block; color: var(--accent-press); font-size: .875rem; }
-  .diagerror { color: var(--danger); font-size: .875rem; }
-  /* 底部页签：固定、64px、两枚（当前页 = 浅重音底 + 重音字 + 重音描边）。 */
-  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
-            display: flex; gap: .5rem; max-width: 46rem; margin: 0 auto;
-            padding: .5rem .75rem calc(.5rem + env(safe-area-inset-bottom));
-            background: var(--surface); border-top: 1px solid var(--line); }
-  .tabbar > button { flex: 1 1 0; min-width: 0;
-                     min-height: calc(var(--tabbar-h) - 1rem);
-                     padding: 0 .25rem; background: var(--surface);
-                     border-color: var(--surface); color: var(--ink-soft);
-                     border-radius: var(--r); font-weight: 600; }
-  .tabbar > button[aria-current="page"] { background: var(--accent-wash);
-      color: var(--accent); border-color: var(--accent); }
+  .blockedline { margin: 0 0 14px; font-family: var(--f-sans);
+                 font-size: 11px; color: var(--ink-faint); }
+
+  /* 教学时刻 = 信流里的一张短笺（rule-soft 底色块；零圆角零阴影） */
+  .note-paper { margin: 0 0 18px; background: var(--rule-soft);
+                padding: 12px 14px 14px; font-size: 15px; }
+  .note-paper > b { font-weight: 600; overflow-wrap: anywhere; }
+  .note-paper.skipped { opacity: 0.55; }
+  .replyrow { display: flex; gap: 14px; margin-top: 10px;
+              align-items: baseline; }
+  .replytext { flex: 1; min-width: 0; border: 0;
+               border-bottom: 1px solid var(--rule); background: none;
+               outline: none; padding: 4px 2px; font-family: var(--f-serif);
+               font-size: 15px; color: var(--ink); }
+  .replytext::placeholder { color: var(--ink-faint); font-size: 13px;
+                            font-family: var(--f-sans); }
+  .replytext:focus { border-bottom-color: var(--pencil); }
+  .linklike { font-family: var(--f-sans); font-size: 12px;
+              color: var(--pencil); text-decoration: underline;
+              text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  .linklike:active { opacity: 0.55; }
+  .skiplink { display: block; margin-top: 10px;
+              font-family: var(--f-sans); font-size: 11px;
+              color: var(--ink-faint); text-decoration: underline dotted;
+              text-underline-offset: 0.28em;
+              text-decoration-color: var(--rule); }
+  .skiplink:active { opacity: 0.55; }
+  /* W-6 结果条：赭红/墨色呈现，不用绿红底色块。 */
+  .resultstrip { margin-top: 8px; font-size: .9rem; }
+  .resultstrip.ok { color: var(--pencil); }
+  .resultstrip.part { color: var(--ink-soft); }
+  .resultstrip.miss { color: var(--ink); }
+  .busystrip { margin-top: 6px; color: var(--ink-soft);
+               font-family: var(--f-sans); font-size: .85rem; }
+
+  /* 写信区：固定底、上发丝线、无边框输入行 + 寄出链接 */
+  .dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8;
+          background: var(--bg); border-top: 1px solid var(--rule);
+          padding: 10px var(--read-pad)
+                   calc(14px + var(--safe-bottom));
+          max-width: 430px; margin: 0 auto; }
+  .dock-row { display: flex; align-items: stretch; gap: 12px; }
+  .pen { width: 100%; border: 0; background: none; outline: none;
+         font-family: var(--f-serif); font-size: 16px; color: var(--ink);
+         line-height: 1.6; padding: 10px 2px; }
+  .pen::placeholder { color: var(--ink-faint); font-size: 13px;
+                      font-family: var(--f-sans); }
+  .send { flex: none; align-self: flex-end; font-family: var(--f-serif);
+          font-size: 15px; font-weight: 700; color: var(--pencil);
+          text-decoration: underline; text-decoration-thickness: 1px;
+          text-underline-offset: 0.3em; }
+  .send:active { opacity: 0.55; }
+
+  /* ── 仪表屏：诚实事实屏——mono 仪表 + 学习/诊断两个链接区块 ────────── */
+  .set { padding: 30px var(--read-pad) 60px; min-height: 100vh; }
+  .set h2 { margin: 0 0 6px; font-size: 24px; font-weight: 500;
+            letter-spacing: 0.12em; }
+  .set .sub { margin: 0 0 8px; font-family: var(--f-sans); font-size: 12px;
+              color: var(--ink-faint); line-height: 1.7; }
+  .setlinks { display: flex; gap: 22px; margin-top: 18px;
+              border-top: 1px solid var(--rule); padding-top: 14px; }
+  .setlink { font-family: var(--f-serif); font-size: 15px; font-weight: 600;
+             color: var(--pencil); text-decoration: underline;
+             text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  .setblock { margin-top: 4px; }
+  .sec { margin-top: 22px; border-top: 1px solid var(--rule-soft);
+         padding-top: 12px; }
+  .sec h3 { margin: 0 0 8px; font-family: var(--f-sans); font-size: 11px;
+            letter-spacing: 0.18em; color: var(--ink-faint);
+            font-weight: 500; }
+  .kv { display: flex; gap: 8px; padding: 3px 0; font-size: 12px;
+        font-family: var(--f-mono); font-variant-numeric: tabular-nums;
+        align-items: baseline; }
+  .kv b { color: var(--ink-soft); font-weight: 500; flex: none;
+          font-family: var(--f-sans); font-size: 12px; }
+  .kvgroup { border-left: 1px solid var(--rule); padding: 4px 10px;
+             margin-top: 8px; }
+  .kvtitle { display: block; color: var(--ink-soft); font-size: 12px;
+             font-family: var(--f-sans); }
+  .diagerror { color: var(--pencil); font-size: 12px;
+               font-family: var(--f-sans); }
+  .refresh { margin-top: 10px; font-family: var(--f-sans); font-size: 12px;
+             color: var(--ink-soft); text-decoration: underline dotted;
+             text-underline-offset: 0.28em;
+             text-decoration-color: var(--rule); }
+  .refresh:active { opacity: 0.55; }
+  pre { font-family: var(--f-mono); font-size: 11px; line-height: 1.7;
+        color: var(--ink-soft); overflow-x: auto; white-space: pre-wrap;
+        overflow-wrap: anywhere; border-top: 1px solid var(--rule-soft);
+        border-bottom: 1px solid var(--rule-soft); padding: 8px 0; }
+  .back { display: block; margin-top: 30px; font-family: var(--f-sans);
+          font-size: 12px; color: var(--ink-soft);
+          text-decoration: underline dotted;
+          text-underline-offset: 0.3em; }
 </style>
 </head>
 <body>
-<header class="appbar">
-  <h1>英语客厅</h1>
-  <p class="appstatus">本地单用户 · 127.0.0.1 · 无鉴权</p>
-</header>
-<main>
-  <section id="view-chat" class="view">
-    <p class="note">你说英语，客厅用英语回你；若这一轮触发了自动教学，
-       教学时刻卡会出现在下方。</p>
-    <div id="messages" style="margin-top: .75rem;" aria-live="polite"></div>
-    <form id="send">
-      <input id="text" autocomplete="off" placeholder="用英语说点什么……">
-      <button type="submit" class="primary">发送</button>
-    </form>
-    <section class="panel">
-      <h2>教学时刻（本轮）</h2>
-      <div id="moments"><p class="note">发送一轮后显示本轮打开的教学时刻。</p></div>
-    </section>
+<div id="stage">
+
+  <!-- 开张屏：first visit 一次（localStorage 记住）。诚实映射 runtime：
+       没有用户自定义人设面，就不伪装——进入即开聊，这就是全部的「设定」。 -->
+  <section id="screen-onboard" class="ob">
+    <p class="formhead">✉ 第一步，也是唯一步</p>
+    <h1>把英语请进客厅</h1>
+    <p class="sub">跟一位固定伙伴用英语闲聊——想说什么，就说什么。</p>
+    <p class="sub">客厅在旁听着：看得懂你的每一步，该教的时候才开口。</p>
+    <button id="ob-go" class="go" type="button">就这么定 →</button>
+    <p class="hint">进入后，右上角的「仪表」摊开客厅的全部账目与记录。</p>
   </section>
-  <section id="view-learning" class="view" hidden>
-    <p class="note">可教目标、复习日程、学习目标与证据记录——
-       客厅如实读给你看（只读）。</p>
-    <div style="margin-top: .75rem;">
-      <button id="learning-refresh" type="button">刷新读数</button>
+
+  <!-- 客厅屏：伙伴卡（上下发丝线夹住）+ 信笺流（教学短笺随信流）+ 写信区 -->
+  <section id="screen-living" hidden>
+    <header class="top">
+      <div>
+        <div class="who">英语客厅</div>
+        <div class="who-sub">固定伙伴 · 你说英语，它用英语回你</div>
+      </div>
+      <button id="meter-toggle" class="meter" type="button">仪表</button>
+    </header>
+    <main class="flow">
+      <div id="messages" aria-live="polite"></div>
+      <div id="moments"></div>
+    </main>
+    <div class="dock">
+      <form id="send" class="dock-row">
+        <input id="text" class="pen" autocomplete="off"
+               placeholder="用英语说点什么……">
+        <button type="submit" class="send">寄出 →</button>
+      </form>
     </div>
-    <section class="panel diag">
-      <h2>可教目标</h2>
-      <div id="target-list"><p class="note">暂无数据</p></div>
-    </section>
-    <section class="panel diag">
-      <h2>复习日程</h2>
-      <div id="learn-schedule"><p class="note">暂无数据</p></div>
-    </section>
-    <section class="panel diag">
-      <h2>学习目标</h2>
-      <div id="learn-goals"><p class="note">暂无数据</p></div>
-    </section>
-    <section class="panel diag">
-      <h2>证据记录</h2>
-      <div id="learn-evidence"><p class="note">暂无数据</p></div>
-    </section>
   </section>
-  <section id="view-diagnostics" class="view" hidden>
-    <p class="note">五个「为什么」——客厅的每一步都有 durable 记录，
-       这里如实读给你看（只读）。</p>
-    <div style="margin-top: .75rem;">
-      <button id="diag-refresh" type="button">刷新读数</button>
+
+  <!-- 仪表屏（设置）：诚实事实屏。模型端点与模型名由启动命令给定，页面没有
+       读取它们的口——宁缺勿假，不显示。学习与诊断两个区块点开即读（就地
+       展开），回客厅链接回客厅屏。 -->
+  <section id="screen-set" class="set" hidden>
+    <h2>仪表</h2>
+    <p class="sub">客厅的账目与记录摊在这里——只读，如实。</p>
+    <p class="sub">本地单用户 · 127.0.0.1 · 无鉴权。模型端点与模型名由启动
+       命令给定，页面不读取、不显示（宁缺勿假）。</p>
+    <div class="setlinks">
+      <button type="button" class="setlink" data-block="learning">学习</button>
+      <button type="button" class="setlink" data-block="diagnostics">诊断</button>
     </div>
-    <section class="panel diag">
-      <h2>观察读数</h2>
-      <button id="obs" type="button">拉取观察读数</button>
-      <pre id="obsout" hidden></pre>
+
+    <section id="set-learning" class="setblock" hidden>
+      <div class="sec">
+        <h3>可教目标</h3>
+        <div id="target-list"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>复习日程</h3>
+        <div id="learn-schedule"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>学习目标</h3>
+        <div id="learn-goals"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>证据记录</h3>
+        <div id="learn-evidence"><p class="note">暂无数据</p></div>
+      </div>
+      <button id="learning-refresh" class="refresh" type="button">刷新读数</button>
     </section>
-    <section class="panel diag">
-      <h2>为什么教了这一课？</h2>
-      <div id="why-teach"><p class="note">暂无数据</p></div>
+
+    <section id="set-diagnostics" class="setblock" hidden>
+      <div class="sec">
+        <h3>观察读数</h3>
+        <button id="obs" class="refresh" type="button">拉取观察读数</button>
+        <pre id="obsout" hidden></pre>
+      </div>
+      <div class="sec">
+        <h3>为什么教了这一课？</h3>
+        <div id="why-teach"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>为什么没有教？</h3>
+        <div id="why-not-teach"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>证据有什么变化？</h3>
+        <div id="why-evidence"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>你看到了哪些支持？</h3>
+        <div id="why-support"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>有没有轮次被降级？</h3>
+        <div id="why-degraded"><p class="note">无降级记录</p></div>
+      </div>
+      <button id="diag-refresh" class="refresh" type="button">刷新读数</button>
     </section>
-    <section class="panel diag">
-      <h2>为什么没有教？</h2>
-      <div id="why-not-teach"><p class="note">暂无数据</p></div>
-    </section>
-    <section class="panel diag">
-      <h2>证据有什么变化？</h2>
-      <div id="why-evidence"><p class="note">暂无数据</p></div>
-    </section>
-    <section class="panel diag">
-      <h2>你看到了哪些支持？</h2>
-      <div id="why-support"><p class="note">暂无数据</p></div>
-    </section>
-    <section class="panel diag">
-      <h2>有没有轮次被降级？</h2>
-      <div id="why-degraded"><p class="note">无降级记录</p></div>
-    </section>
+
+    <button id="back-to-living" class="back" type="button">← 回客厅</button>
   </section>
-</main>
-<nav class="tabbar" aria-label="视图切换">
-  <button type="button" data-view="chat" aria-current="page">聊天</button>
-  <button type="button" data-view="learning">学习</button>
-  <button type="button" data-view="diagnostics">诊断</button>
-</nav>
+
+</div>
 <script>
 "use strict";
 const messages = document.getElementById("messages");
 const momentsBox = document.getElementById("moments");
 
-function addLine(cls, text) {
-  const div = document.createElement("div");
-  div.className = cls;
-  div.textContent = text;            // textContent, never markup: the
-  messages.appendChild(div);          // user's own words stay inert text
-  messages.scrollTop = messages.scrollHeight;
-  return div;
+function scrollBottom() {
+  window.scrollTo(0, document.body.scrollHeight);
 }
 
-// F-1: the views over one page — a fixed bottom tab bar, plain show/hide.
-// F-2 adds the 学习 view (targets / schedule / goals / evidence).
-const viewChat = document.getElementById("view-chat");
-const viewLearn = document.getElementById("view-learning");
-const viewDiag = document.getElementById("view-diagnostics");
-
-function showView(name) {
-  viewChat.hidden = name !== "chat";
-  viewLearn.hidden = name !== "learning";
-  viewDiag.hidden = name !== "diagnostics";
-  for (const tab of document.querySelectorAll(".tabbar > button")) {
-    if (tab.dataset.view === name) {
-      tab.setAttribute("aria-current", "page");
-    } else {
-      tab.removeAttribute("aria-current");
-    }
+// F-1R: the letter flow — a turn's words become letters, never bubbles.
+// The user's line is the torn-edge reply slip (.letter.me .paper), the
+// parlor's is the plain sheet (.letter.may); a failure is marginalia (a
+// pencil rule in the left margin), a system note is a centered faint
+// line. Every word rides textContent — the user's own words stay inert
+// text, never markup.
+function addLine(cls, text) {
+  let node;
+  if (cls === "user") {
+    node = document.createElement("div");
+    node.className = "letter me";
+    const paper = document.createElement("div");
+    paper.className = "paper";
+    const say = document.createElement("p");
+    say.className = "say";
+    say.textContent = text;            // textContent, never markup: the
+    paper.appendChild(say);            // user's own words stay inert text
+    node.appendChild(paper);
+  } else if (cls === "assistant") {
+    node = document.createElement("div");
+    node.className = "letter may";
+    const say = document.createElement("p");
+    say.className = "say";
+    say.textContent = text;
+    node.appendChild(say);
+  } else if (cls === "typing") {
+    node = document.createElement("p");
+    node.className = "typing";
+    node.textContent = text;
+  } else if (cls === "failure") {
+    node = document.createElement("p");
+    node.className = "errline";
+    node.textContent = text;
+  } else {
+    node = document.createElement("p");
+    node.className = "sysline";
+    node.textContent = text;
   }
+  messages.appendChild(node);
+  scrollBottom();
+  return node;
+}
+
+// F-1R: the three screens — 开张 / 客厅 / 仪表 — plain show/hide, no
+// router, no tab bar: the parlor header's 仪表 link leads to the set
+// screen and its 回客厅 link leads back.
+const screens = {
+  onboard: document.getElementById("screen-onboard"),
+  living: document.getElementById("screen-living"),
+  set: document.getElementById("screen-set"),
+};
+
+function showScreen(name) {
+  for (const key of Object.keys(screens)) {
+    screens[key].hidden = key !== name;
+  }
+  window.scrollTo(0, 0);
+}
+
+document.getElementById("meter-toggle").addEventListener("click",
+  () => showScreen("set"));
+document.getElementById("back-to-living").addEventListener("click",
+  () => showScreen("living"));
+
+// F-1R: the set screen's two blocks — 学习 and 诊断 — expand in place
+// (the F-1R task book leaves the choice to this page, recorded here):
+// the expansion pulls the block's read, the refresh links re-pull.
+function toggleSetBlock(name) {
+  document.getElementById("set-learning").hidden = name !== "learning";
+  document.getElementById("set-diagnostics").hidden =
+    name !== "diagnostics";
   if (name === "diagnostics") loadDiagnostics();
   if (name === "learning") { loadTargets(); loadLearning(); }
 }
 
-for (const tab of document.querySelectorAll(".tabbar > button")) {
-  tab.addEventListener("click", () => showView(tab.dataset.view || "chat"));
+for (const link of document.querySelectorAll(".setlink")) {
+  link.addEventListener("click", () =>
+    toggleSetBlock(link.dataset.block || "learning"));
 }
+
+// F-1R: the first-visit screen. localStorage remembers the visit; a
+// storage that refuses (privacy mode) answers "seen" so nobody is
+// trapped on the cover page, and a mark that fails to persist costs
+// nothing — the parlor does not depend on it.
+const ONBOARD_KEY = "elp.parlor.onboarded.v1";
+
+function seenOnboard() {
+  try {
+    return localStorage.getItem(ONBOARD_KEY) === "1";
+  } catch {
+    return true;
+  }
+}
+
+function markOnboarded() {
+  try {
+    localStorage.setItem(ONBOARD_KEY, "1");
+  } catch {
+    // 存不进去就下次再问一次：聊天不受影响
+  }
+}
+
+document.getElementById("ob-go").addEventListener("click", () => {
+  markOnboarded();
+  showScreen("living");
+});
 
 // W-6: the attempt loop, made legible. The verdict is a prominent strip
 // (the symbol is display only; the words are the runtime's own), and a
@@ -1117,10 +1276,10 @@ function showMoments(list) {
   }
   for (const m of list) {
     const card = document.createElement("div");
-    card.className = "moment";
+    card.className = "note-paper";
     const b = document.createElement("b");
     if (m.title) {
-      b.textContent = "💡 教学时刻：" + m.title;
+      b.textContent = "教学时刻：" + m.title;
       card.appendChild(b);
       card.appendChild(document.createTextNode(
         " · 状态 " + (m.status_cn || m.lifecycle_state) +
@@ -1155,25 +1314,30 @@ function addReplyControls(card) {
   input.placeholder = "用英语试着造个句子…";
   const submit = document.createElement("button");
   submit.type = "button";
-  submit.textContent = "提交作答";
+  submit.className = "linklike";
+  submit.textContent = "寄出作答";
   submit.addEventListener("click", () => submitAttempt(card, input));
-  const skip = document.createElement("button");
-  skip.type = "button";
-  skip.textContent = "跳过教学";
-  skip.addEventListener("click", () =>
-    postReply(card, { control: "skip" }, "跳过中…", "教学已跳过"));
   row.appendChild(input);
   row.appendChild(submit);
-  row.appendChild(skip);
   card.appendChild(row);
-  // W-6: the three help arms SM §1 names, as buttons — the words map onto
-  // the runtime's ASK_HINT / ASK_ANSWER / ASK_EXPLANATION and nothing else
+  // W-6: the three help arms SM §1 names, as pencil links at the note's
+  // tail — the words map onto the runtime's ASK_HINT / ASK_ANSWER /
+  // ASK_EXPLANATION and nothing else
   const help = document.createElement("div");
   help.className = "replyrow";
   help.appendChild(helpButton("看提示", "hint", "取提示中…", "已看提示", card));
   help.appendChild(helpButton("看答案", "reveal", "取答案中…", "已看答案", card));
   help.appendChild(helpButton("解释", "explanation", "取解释中…", "已看解释", card));
   card.appendChild(help);
+  // W-2: the skip — a faint small link under the help arms; the moment's
+  // lock releases through the runtime's own reply entry, nothing else
+  const skip = document.createElement("button");
+  skip.type = "button";
+  skip.className = "skiplink";
+  skip.textContent = "跳过这一题";
+  skip.addEventListener("click", () =>
+    postReply(card, { control: "skip" }, "跳过中…", "教学已跳过"));
+  card.appendChild(skip);
 }
 
 function helpButton(label, control, busyText, doneNote, card) {
@@ -1266,7 +1430,7 @@ async function postTurn(text) {
   addLine("user", text);
   // the placeholder is the user's "it is working" signal: removed the
   // moment the turn response lands (or fails) — never left behind
-  const pending = addLine("assistant", "（生成中…）");
+  const pending = addLine("typing", "（生成中…）");
   startMomentPolling();
   let data = null;
   try {
@@ -1556,7 +1720,7 @@ async function postTeachMe(targetId) {
     const data = await res.json();
     if (data.accepted) {
       addLine("system", "教学已开始，卡片出现在下方");
-      showView("chat");
+      showScreen("living");
     } else {
       addLine("failure", data.error || "无法开始这节课");
     }
@@ -1698,7 +1862,12 @@ async function loadHistory() {
   }
 }
 
-window.addEventListener("DOMContentLoaded", loadHistory);
+window.addEventListener("DOMContentLoaded", () => {
+  loadHistory();
+  // F-1R: the first visit sees the cover; every later visit lands in the
+  // parlor directly (the cover never comes back once localStorage says so)
+  showScreen(seenOnboard() ? "living" : "onboard");
+});
 </script>
 </body>
 </html>

@@ -118,10 +118,11 @@ class _FaceHost:
 
 def test_the_page_has_the_learning_view(tmp_path: Path) -> None:
     page_source = _page_of(tmp_path)
-    # the third tab and its hidden view container
-    assert 'data-view="learning"' in page_source
+    # the set screen's 学习 block and its link (F-1R: the third tab became
+    # an in-place block on the 仪表 screen — the pin moved, not deleted)
+    assert 'data-block="learning"' in page_source
     assert ">学习</button>" in page_source
-    assert 'id="view-learning"' in page_source
+    assert 'id="set-learning"' in page_source
     # the four panels and their refresh
     for element in (
         "target-list",

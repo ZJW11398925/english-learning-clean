@@ -371,7 +371,7 @@ def test_the_page_serves_the_title_and_the_three_calls(
         assert "/api/history" in page
         # the W-2 reply face on the page: the skip button and its call
         assert "/api/teaching_reply" in page
-        assert "跳过教学" in page
+        assert "跳过这一题" in page
 
 
 # ---------------------------------------------------------------------------
@@ -1122,8 +1122,8 @@ def test_the_page_offers_the_attempt_box_and_the_skip_button(
         assert status == 200
         page = body.decode("utf-8")
         assert "用英语试着造个句子…" in page
-        assert "提交作答" in page
-        assert "跳过教学" in page
+        assert "寄出作答" in page
+        assert "跳过这一题" in page
         assert 'control: "attempt"' in page
         assert "已提交作答" in page
         # the card stays XSS-inert: textContent, never innerHTML
