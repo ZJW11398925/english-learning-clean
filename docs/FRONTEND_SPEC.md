@@ -33,9 +33,26 @@
 | `--read-pad` | `18px` | 阅读左右留白 | — |
 | `--safe-bottom` | `env(safe-area-inset-bottom, 0px)` | dock 底安全区 | — |
 | `--navdock-h` | `54px` | 常驻 dock（#18）高度：body 底 padding 与写信区让位的同一来源 | 不作行高 |
+| `--paper-high` | `#fdfcf8` | 泛起纸面：hover 微起、浮层卡面（R-1V ⑨-3） | 不作大面积正文底 |
+| `--paper-2` | `#f4efe4` | 次纸：短笺底、垫纸层（R-1V；`--rule-soft` 兼任的「色块底」职责迁此，它回归纯发丝线） | 不作发丝线 |
+| `--desk` | `#eae3d3` | 桌布：≥900px 时 body 案头底色（R-1V ⑨-6） | 窄屏不用 |
+| `--ink-ghost` | `#aaa191` | 水印墨：界尺/角饰/水印印记（R-1V） | **永不作文字** |
+| `--pencil-deep` | `#8a3f1f` | 赭红加重：hover 泛赭、印章落款（R-1V） | 不取代 `--pencil` 基准位 |
+| `--pencil-soft` | `#bb7a52` | 赭红中间档：极淡印记、触点泛赭（R-1V） | 不作链接基准色 |
+| `--fs-display` `--fs-title` `--fs-head` `--fs-body` `--fs-small` | `27px` `21px` `17px` `16px` `14px` | 衬线字号标度五档（R-1V ⑨-1） | 新规则不裸写像素 |
+| `--fs-ui` `--fs-micro` | `12px` `11px` | sans 界面小字两档（R-1V ⑨-1） | — |
+| `--lh-body` `--lh-letter` `--lh-ui` | `1.55` `1.75` `1.7` | 行高三档（R-1V ⑨-1） | — |
+| `--ls-title` `--ls-caps` `--ls-formhead` | `0.14em` `0.18em` `0.3em` | 字距三档（R-1V ⑨-1） | — |
+| `--sp-1` … `--sp-8` | `4px`–`64px`（4 基数） | 间距阶八阶（R-1V ⑨-2） | 新规则不裸写像素 |
+| `--dur-1` `--dur-2` `--dur-3` | `140ms` `260ms` `480ms` | 动效时长三档：触压 / 纸面 / 仪式（R-1V ⑨-5） | 不裸写时长 |
+| `--ease-ink` `--ease-paper` `--ease-press` | cubic-bezier 三条 | 缓动：墨迹稳出 / 纸面长尾 / 触压对称（R-1V ⑨-5） | — |
+| `--icon-size` `--icon-stroke` | `18px` `1.5` | #22 图标参数：默认见方与统一笔重（R-1V ⑨-4） | — |
+| `--shell-w` | `430px`（≥900px 媒体查询改写 `1080px`） | 信纸栏宽：#18 navdock 与写信区 .dock 的同一宽度出处（R-1V ⑨-6） | 不作颜色 |
 
 规则：组件样式只许 `var()` 引用，**禁止在任何其他文件重写令牌字面值**；
 禁止新增 token 之外的十六进制颜色（零青绿——旧双色主题不得回流）。
+现役八字号/间距字面值（`17px`、`22px` 等祖辈规则里的）是冻结存量，
+不回迁不扩散；**R-1V 起新写的尺寸规则一律走标度与间距阶**。
 
 ## ③ 组件契约（唯一出处：`webui/components.css` + `webui/components.js`）
 
@@ -44,9 +61,9 @@
 
 | # | 组件 | 类名（新） | 别名（现役旧名） | 状态矩阵 | 出处 |
 |---|---|---|---|---|---|
-| 1 | link-btn | `.btn` + `.btn--ink` `--send` `--pencil` `--set` `--faint` `--dot` `--back` `--meter` | `.ob .go` `.send` `.linklike` `.setlink` `.skiplink` `.refresh` `.back` `.meter` | default / `:active`（各变体自带）/ `[disabled]`（opacity .4 + 无 pointer）/ busy（文案切换由 JS 承担） | components.css + components.js（helpButton/skip/寄出作答） |
-| 2 | pen | `.pen` | — | default / placeholder / Enter 绑定（app.js） | components.css |
-| 3 | note-paper | `.note-paper`（+ `.skipped`） | — | default / skipped / busy（JS 置 disabled+busystrip） | components.css + components.js（showMoments/addReplyControls） |
+| 1 | link-btn | `.btn` + `.btn--ink` `--send` `--pencil` `--set` `--faint` `--dot` `--back` `--meter` | `.ob .go` `.send` `.linklike` `.setlink` `.skiplink` `.refresh` `.back` `.meter` | default / hover（R-1V：泛赭/加深）/ `:active`（opacity .55 + 触压 1px，R-1V）/ `[disabled]`（opacity .4 + 无 pointer）/ busy（文案切换由 JS 承担） | components.css + components.js（helpButton/skip/寄出作答） |
+| 2 | pen | `.pen` | — | default / placeholder / focus（R-1V：纸面微起 --paper-high）/ Enter 绑定（app.js） | components.css |
+| 3 | note-paper | `.note-paper`（+ `.skipped` `.note-paper--enter` `.note-head`） | — | default（--paper-2 次纸 + 左缘界尺 + 卡头 #22 note 小图，R-1V 修订）/ skipped / busy（JS 置 disabled+busystrip）/ enter（新短笺组递入一次，⑨-5 note-arrive） | components.css + components.js（showMoments/addReplyControls） |
 | 4 | letter | `.letter` `.may` `.me` `.paper` `.say` | — | plain（may）/ torn（me） | components.css + components.js（addLine） |
 | 5 | hairline-section | `.sec` | — | default（无交互态） | components.css |
 | 6 | setlink-block | `.setlinks` `.setblock` | — | default / [hidden] 切换 | components.css |
@@ -57,18 +74,21 @@
 | 11 | confirm-dialog | 无 CSS（原生 confirm） | — | native 确定/取消两臂 | components.js（`confirmDialog()`，全页唯一 confirm 调用点） |
 | 12 | system-line | `.sysline` | — | default（无交互态） | components.css + components.js（addLine system 臂） |
 | 13 | brand-mark | `.brandmark`（+ `--sm` `--lg`） | — | default 30px / 尺寸修饰 --sm 20px、--lg 64px / reduced-motion 不适用（静态标记，无动效——契约注明） | index.html（`<template id="brand-mark-source">` 内联 SVG，几何唯一出处）+ components.css + components.js（`brandMark()`/`installBrandMarks()`） |
-| 14 | state-banner | `.state-banner`（+ `--loading` `--empty` `--error`） | — | loading（取信中…，尾点呼吸微动）/ empty（弱化诚实句）/ error（赭红人话句 + `--pencil` 重试链接，回调由调用方注入）/ reduced-motion（loading 呼吸降级为静态） | components.css + components.js（`stateBanner()`；`diagEmpty`/`diagError` 一律委托它） |
-| 15 | word-card | `.word-card`（+ `.wc-lemma` `.wc-pos` `.wc-forms` `.wc-zh` `.wc-en` `.wc-example` `.word`） | — | default（rule-soft 底浮层）/ closed（点卡外或「收起」；DOM 移除语义，同 #11 的两臂不在 CSS）；无 busy——命中即显，miss 按契约静默 | components.css + components.js（`wordCard()`/`showWordCard()`/`closeWordCard()`；触发面 = `letterWords()` 的 `.word` 分片 + `wordWindows()` 窗口查询，app.js 委派） |
-| 16 | field | `.field`（+ `.fieldname`） | — | default（下发丝线）/ `:focus-within`（发丝线与名转赭红）/ 控件 `[disabled]`（opacity .4 + 无 pointer） | components.css + components.js（`fieldRow()`，p-3；label 包裹控件，点名牌即聚焦） |
-| 17 | chip | `.chip`（+ `--on` `--badge`） | — | off（default，发丝线描边）/ on（`--on`，主墨反白）/ `[disabled]`（opacity .4）/ `--badge`（只读徽标，非交互） | components.css + components.js（`chip()`，p-3；考试/语域/教学频率词表 picker + modality 徽标） |
-| 18 | dock | `.navdock`（+ `.navdock-item` `--on`；类名与写信区屏级类 `.dock` 异名共存） | — | default（次级墨、透明点线占位）/ `--on`（当前空间：主墨加重 + 赭红实线短下划 + `aria-current`）/ `[disabled]`（opacity .4） | components.css + components.js（`wireNavdock()`/`markNavdock()`，R-1；常驻底部三项 客厅/学案/柜抽，门厅整条让位；z 6 低于点词卡 z 9） |
+| 14 | state-banner | `.state-banner`（+ `--loading` `--empty` `--error`） | — | loading（取信中…，尾点呼吸微动）/ empty（弱化诚实句 + #22 lamp 墨线小图，R-1V 修订）/ error（赭红人话句 + `--pencil` 重试链接，回调由调用方注入）/ reduced-motion（loading 呼吸降级为静态 + 库尾 R-1V 总降级块） | components.css + components.js（`stateBanner()`；`diagEmpty`/`diagError` 一律委托它） |
+| 15 | word-card | `.word-card`（+ `.wc-lemma` `.wc-pos` `.wc-forms` `.wc-zh` `.wc-en` `.wc-example` `.word`） | — | default（--paper-high 泛起纸面 + 发丝边 + 垫纸错位层——浮层纸影无 box-shadow，R-1V 修订；`.word:hover` 触点泛赭）/ closed（点卡外或「收起」；DOM 移除语义，同 #11 的两臂不在 CSS）；无 busy——命中即显，miss 按契约静默 | components.css + components.js（`wordCard()`/`showWordCard()`/`closeWordCard()`；触发面 = `letterWords()` 的 `.word` 分片 + `wordWindows()` 窗口查询，app.js 委派） |
+| 16 | field | `.field`（+ `.fieldname`） | — | default（下发丝线）/ `:focus-within`（发丝线与名转赭红，--dur-1 淡入）/ 控件 `[disabled]`（opacity .4 + 无 pointer）；名牌可配 #22 search 小图（R-1V） | components.css + components.js（`fieldRow()`，p-3；label 包裹控件，点名牌即聚焦） |
+| 17 | chip | `.chip`（+ `--on` `--badge`） | — | off（default，发丝线描边）/ hover（R-1V：边转次级墨，--on 不被冲淡）/ on（`--on`，主墨反白）/ `:active`（触压 1px，R-1V）/ `[disabled]`（opacity .4）/ `--badge`（只读徽标，非交互） | components.css + components.js（`chip()`，p-3；考试/语域/教学频率词表 picker + modality 徽标） |
+| 18 | dock | `.navdock`（+ `.navdock-item` `--on`；类名与写信区屏级类 `.dock` 异名共存） | — | default（次级墨、透明点线占位）/ hover（R-1V：墨色微沉）/ `--on`（当前空间：主墨加重 + 赭红实线短下划 + `aria-current`）/ `:active`（触压 1px，R-1V）/ `[disabled]`（opacity .4）；宽度随 `--shell-w`（≥900px 三项收拢居中，R-1V 修订） | components.css + components.js（`wireNavdock()`/`markNavdock()`，R-1；常驻底部三项 客厅/学案/柜抽，门厅整条让位；z 6 低于点词卡 z 9） |
 | 19 | space-header | `.space-header`（+ 节名槽 `.spacehead-sec`；与屏级基形 `.top` 合用） | — | default（发丝线夹持 sticky 顶栏，随 `.top`）；无交互态——静态头部，reduced-motion 不适用（契约注明） | components.css + components.js（`sectionLabel()`，R-1；学案/柜抽头部 = `.top` 基形 + 本类；客厅头部用 `.top` 原形；品牌条不再增长链接） |
-| 20 | section-tabs | `.section-tabs` / `.section-tab`（+ `--on`） | — | unselected（default，透明点线占位）/ selected（`--on`，主墨加重 + 赭红实线短下划 + `aria-selected`）/ focus（地基 `:focus-visible` 赭红焦点环，不另设）/ `[disabled]`（opacity .4） | components.css + components.js（`wireSectionTabs()`/`markSectionTabs()`，R-1；roving tabindex + 左右箭头循环移选；学案/柜抽各一排三项，切节即拉） |
-| 21 | disclosure | `.disclosure`（+ `.disclosure-head` `.disclosure-marker` `.disclosure-title` `.disclosure-examples` `.disclosure-body` `--open`） | — | collapsed（default，内容区 hidden，标记 ▸）/ expanded（`--open`，内容区展开、标记 ▾、`aria-expanded="true"`，计数保留）/ focus（地基 `:focus-visible` 赭红环，不另设） | components.css + components.js（`disclosure()`，R-1R；组头行即开关——名称 + 计数 + 两枚示例；一切「超过 8 行的同质列表」与「参考 / 原始读数」走它；不得手风琴互斥、不得嵌套、不得图标外链） |
+| 20 | section-tabs | `.section-tabs` / `.section-tab`（+ `--on`） | — | unselected（default，透明点线占位）/ hover（R-1V：墨色微沉）/ selected（`--on`，主墨加重 + 赭红实线短下划 + `aria-selected`）/ focus（地基 `:focus-visible` 赭红焦点环，不另设）/ `[disabled]`（opacity .4） | components.css + components.js（`wireSectionTabs()`/`markSectionTabs()`，R-1；roving tabindex + 左右箭头循环移选；学案/柜抽各一排三项，切节即拉） |
+| 21 | disclosure | `.disclosure`（+ `.disclosure-head` `.disclosure-marker` `.disclosure-title` `.disclosure-examples` `.disclosure-body` `--open`） | — | collapsed（default，内容区 hidden，chevron 向右）/ expanded（`--open`，内容区展开、chevron 旋转 90°、`aria-expanded="true"`，计数保留；入场 = ⑨-5 paper-unfold）/ focus（地基 `:focus-visible` 赭红环，不另设）；R-1V 修订：标记 ▸/▾ 字符 → #22 自绘墨线 chevron | components.css + components.js（`disclosure()`，R-1R；组头行即开关——名称 + 计数 + 两枚示例；一切「超过 8 行的同质列表」与「参考 / 原始读数」走它；不得手风琴互斥、不得嵌套、不得图标外链） |
+| 22 | icon-set | `.inkicon`（几何模板 `id="icon-search\|chevron\|note\|write\|inbox\|lamp\|postmark"`） | — | default（`--icon-size` 见方、currentColor 墨色、`--icon-stroke` 1.5、圆角端点；无独立交互态——chevron 旋转是宿主 #21 的 `--open` 态面）/ reduced-motion（宿主动效随库尾总降级归零后静帧） | index.html（`<template id="icon-set-source">` 七枚内联 SVG，几何唯一出处）+ components.css + components.js（`inkIcon()`/`installIcons()`，R-1V；统一 20×20 网格/笔重/圆角端点；aria-hidden，锚位必有文字同行） |
 
-库外现役类（登记，不扩库）：`.teach-me`（裸 button 元素复位直用，无独立
-样式；p-1 起今日屏两块与目标清单共用同一行工厂；Revisit = 视觉规范刀再
-裁）；`.replyrow` / `.replytext`（note-paper 的
+库外现役类（登记，不扩库）：`.teach-me`（**R-1V 定裁**：弱化 pencil
+行链接——sans 12px 赭红下划线，hover 转 `--pencil-deep`，:active
+触压 1px；样式唯一出处 components.css 的库外登记规则（#1 块尾），
+JS 类名 `teach-me` 有钉不动；原登记「视觉规范刀再裁」就此销账）；
+`.replyrow` / `.replytext`（note-paper 的
 内置回复面，随 #3 契约）；`.formhead` `.sub` `.hint` `.who` `.who-sub`
 `.typing` `.errline` `.blockedline` `.grouphead`（屏级文字形态，
 screens.css；`.grouphead` 是 R-1 进步节的分组小标）；`.today`
@@ -134,18 +154,25 @@ resultstrip）必须定义至少 default + 一态（active/disabled/busy/skipped
 src/elc/webui/
   index.html        页面骨架（R-1 起三空间 + 门厅：#space-parlor /
                     #space-study（三节）/ #space-drawer（三节）+
-                    #screen-onboard 门厅 + #navdock 常驻导航；
-                    <link>×3 + <script type="module"> + brand-mark 的
+                    #screen-onboard 门厅 + #navdock 常驻导航 + R-1V
+                    .marginalia 桌面边注栏；<link>×3 + <script
+                    type="module"> + brand-mark 与 #22 icon-set 的
                     <template> 几何出处）
-  tokens.css        VS1 token 唯一出处（R-1 增 --navdock-h）
-  components.css    组件库唯一样式源（20 组件 + 元素复位地基）
+  tokens.css        VS1 token 唯一出处（R-1 增 --navdock-h；R-1V 扩
+                    纸系层次/赭红层次/字号标度/行高字距/间距阶/动效/
+                    图标参数/--shell-w——现役八色与字体栈逐值不动）
+  components.css    组件库唯一样式源（22 组件 + 元素复位地基；R-1V
+                    动效注册表与 reduced-motion 总降级块在库尾）
   screens.css       屏级布局 + 壳层（html/body/#stage/dock=写信区/flow/
-                    spacebody/屏级文字；R-1 起三空间 + 门厅）
+                    spacebody/屏级文字；R-1 起三空间 + 门厅；R-1V 起
+                    ≥900px 桌面构图——舞台化纸面 + 边注栏，断点 900px）
   api.js            端点 fetch 封装（页面唯一 fetch 调用点）
-  components.js     组件工厂 + 教学卡当场行为 + 点词卡 + 壳导航接线
+  components.js     组件工厂 + 教学卡当场行为 + 点词卡 + 壳导航接线 +
+                    R-1V 图标工厂（inkIcon/installIcons）
                     （textContent-only；唯一 confirm 封装点）
   app.js            装配：空间与节切换/事件/轮询/学习与诊断渲染（面板
-                    三态走 #14；进空间落默认节，切节即拉）
+                    三态走 #14；进空间落默认节，切节即拉；R-1V：图标
+                    插槽与案头日期安装、新信 enter 动效切换）
 ```
 
 - **ES modules、零构建**：浏览器直 import 相对路径（`./api.js`），无打包
@@ -905,3 +932,148 @@ app.js:568-657；走查 07）。
 10. **隐私页拒绝行**：「没能忘掉。」+ 服务端 message + 括号工程词
     （code 等宽小字）；网络失败「请求没送到——再试一次。」（蓝图未给
     拒绝形，8.4 失败 = 人话主句 + 括号工程词的兑现）。
+
+---
+
+## ⑨ 视觉工艺规范（R-1V · 2026-09-30）
+
+> 地位：本节是「高级信笺」视觉工艺层的规范出处——用户否决上一版
+> （「整体不够协调，留白过分，不高级。设计简陋，如同白板模版……
+> 组件、图标、动效简陋」）之后，R-1V 对**呈现层**的整体精修规范。
+> ⑧ 的信息架构与文案冻结线、F-1R 的形态法则（零卡片/零气泡/零阴影
+> /零青绿/零圆角）、十二端点与 Python 侧零改动——全部不动；本节只
+> 规范版式、质感、图标、动效四个工艺面，参数唯一出处是 ② 的 token 表。
+
+### 9.1 排版标度
+
+| 档 | token | 值 | 用于 |
+|---|---|---|---|
+| 衬线 display | `--fs-display` | 27px | 门厅 h1 |
+| 衬线 title | `--fs-title` | 21px | 页级大题（预留） |
+| 衬线 head | `--fs-head` | 17px | 卡题 / 词头 / primary 动作 |
+| 衬线 body | `--fs-body` | 16px | 信笺正文 |
+| 衬线 small | `--fs-small` | 14px | 词卡正文、辅助衬线 |
+| sans ui | `--fs-ui` | 12px | 界面小字基准 |
+| sans micro | `--fs-micro` | 11px | 弱化 / 系统行 / 仪表 |
+
+- 行高：`--lh-body` 1.55 / `--lh-letter` 1.75 / `--lh-ui` 1.7。
+- 字距：`--ls-title` 0.14em / `--ls-caps` 0.18em / `--ls-formhead` 0.3em。
+- mono 细节：数字一律 tabular-nums（摘要行 `.sumnum`、仪表行 #9）；
+  日期 / 指纹 / 版本号 / 原始 id 走 mono micro（`.rawtag`）。
+- 字重：衬线正文 400，卡题与词头 600–700，sans 小标 500；反白仅
+  `chip--on` 一处。
+
+### 9.2 间距节奏
+
+- 4 基数八阶（`--sp-1`…`--sp-8` = 4/8/12/16/24/32/48/64px）：R-1V 起
+  新写的尺寸规则一律走阶，不裸写像素。
+- **大处疏朗、密处有致**：节与节之间 24–48（--sp-5..7），页首引导句
+  后 16（--sp-4）；行内与卡内 4–12（--sp-1..3）。发丝线分区（#5）是
+  疏密的分界线，不是容器——均匀的大空白 + 细字（白板观感）是反例，
+  疏密对比才是信笺。
+- 阅读宽：信纸栏 ≤640px（9.6）；阅读左右留白 `--read-pad`。
+
+### 9.3 质感与层次
+
+- **纸系四层**（同色系深浅，零彩色）：主纸 `--bg` / 泛起纸面
+  `--paper-high`（hover 微起、浮层卡面）/ 次纸 `--paper-2`（短笺底、
+  垫纸层）/ 桌布 `--desk`（≥900px 案头底）。
+- 发丝边两档（`--rule` / `--rule-soft`，钉）；界尺与角饰用**水印墨**
+  `--ink-ghost`（永不作文字）。
+- **压痕/纸影只许垫纸错位**：纯色次纸层 3px 以内错位（唯一现役例
+  = #15 `word-card::after`）——`box-shadow` 全库永禁（F-1R 形态法则
+  不动，pin 在 tests/host/test_f1r_letter_design.py）。
+- 撕边/撕缝：`.letter.me` 的 clip-path 撕口（钉）与 #7 resultstrip
+  的 1px dashed 撕缝线。
+- 印记母题：#13 brand-mark（信封 + 封蜡）与 #22 postmark（邮戳水
+  印）；赭红克制三档（`--pencil` / `--pencil-deep` / `--pencil-soft`）。
+
+### 9.4 图标集契约（#22 icon-set）
+
+- 统一 20×20 网格、统一笔重 1.5（`--icon-stroke`）、统一圆角端点；
+  `currentColor` 随宿主墨色层级（弱化位 `--ink-faint` / 水印位
+  `--ink-ghost`）；默认见方 `--icon-size` 18px，语境尺寸随宿主登记
+  在 #22 契约块。
+- 现役七枚与锚位：`search` → 筛框名牌（随 #16）/ `chevron` → #21
+  折叠箭头 / `note` → #3 卡头 / `write` → 回信在途中（.typing）/
+  `inbox` → 空厅（.sysline.emptyhall）/ `lamp` → #14 空态 /
+  `postmark` → 桌面边注栏水印（9.6）。
+- 新增图标：同网格同笔重自绘 + ⑤ 四步登记；永远 `aria-hidden` 且
+  锚位必有文字同行（图标永不单独承担语义）。
+- 禁：外链图标 / 图标字体 / data URI / 彩色填充 / 第二套网格或笔重 /
+  纯图标按钮（#1「禁图标」不动——图标不进按钮当唯一内容）。
+
+### 9.5 动效注册表
+
+| 动效 | 触发 | 时长 × 缓动 | 实现 | reduced-motion 降级 |
+|---|---|---|---|---|
+| ink-fade 墨迹淡入 | 新信寄出与到达（`addLine` 的 `opts.enter`；历史回填不播）；#15 词卡开启复用（`--dur-2`） | `--dur-3` × `--ease-ink`（词卡 `--dur-2`） | `.flow-enter` + `@keyframes ink-fade` | 总降级块归零 |
+| note-arrive 短笺递入 | 新短笺组到达（轮询重渲染同 key 静帧，不重演） | `--dur-2` × `--ease-paper` | `.note-paper--enter` + `@keyframes note-arrive` | 同上 |
+| paper-unfold 纸面展开 | #21 每次展开 | `--dur-2` × `--ease-paper` | `.disclosure-body:not([hidden])` + `@keyframes paper-unfold` | 同上 |
+| chevron 旋转 | #21 `--open` 切换 | `--dur-2` × `--ease-paper` | `.disclosure--open .disclosure-marker .inkicon` transform | 同上 |
+| 触压下沉 | `:active`（#1 / #17 / #18） | `--dur-1` × `--ease-press` | `transform: translateY(1px)` | 同上 |
+| 纸面微起 | #2 pen focus | `--dur-2` × `--ease-ink` | `background-color` → `--paper-high` | 同上 |
+| hover 泛赭/加深 | #1 / #15 .word / #17 / #18 / #20 / #21 组头 | `--dur-1` × `--ease-press` | color / text-decoration-color / border-color | 同上 |
+| 焦点环 | `:focus-visible`（button / input / textarea / select） | 无动效 | 现役赭红环（R-1V 补齐 textarea/select 两漏网） | 不适用 |
+| state-breathe 呼吸尾点 | #14 loading（现役） | 1.6s ease-in-out（现役值） | 现役 `@keyframes state-breathe` | 现役专门块 + 总降级块双保险 |
+
+- 纪律：零 JS 动画库、零 WAAPI；全部 CSS transitions/keyframes +
+  class 切换；库尾 **reduced-motion 总降级块**是全库统一保险
+  （`animation: none !important; transition: none !important`）。
+
+### 9.6 桌面构图
+
+- **断点 900px**（钉）。≥900px = 舞台化纸面：桌布 `--desk` 托着纸面
+  （`--bg`，`--shell-w` 改写 1080px，双层发丝镶边 = border +
+  outline-offset），信纸栏收 640px 居中，右缘 208px 边注栏——留白
+  被「案头」构图占用，不是删掉也不是填满。
+- 边注栏（`.marginalia`，`aria-hidden`）：案头日期（客户端当日，
+  mono）+ 界尺 + postmark 水印；纯装饰 + 真实日期，**零伪数据**；
+  窄屏 `display:none` 整条缺席。
+- dock（#18）三项 ≥900px 收拢居中；写信区 `.dock` 与 `.dock-row`
+  随 `--shell-w`。
+- **≤480px 移动形态一行不动**（现役质量冻结）；481–899px 保持 430
+  居中原形（不改写 `--shell-w`）。
+
+### 9.7 本刀的 ③ 契约修订登记（显式修订 + 理由）
+
+1. **#1 link-btn**：状态矩阵 +hover/+:active 触压——理由：否决词
+   「组件简陋」；纸压感是信笺语言的触感谢。
+2. **#2 pen**：+focus 纸面微起——写字区的焦点应答从「无」到「纸亮」。
+3. **#3 note-paper**：default 底 `--rule-soft`→`--paper-2` + 左缘界尺
+   + 卡头 #22 note 小图 + enter 态——「短笺是一张纸」的纸色差；左缘
+   界尺是契约形非描边框（禁止变体措辞同步修订：阴影、四侧描边框、
+   弹层）。
+4. **#5 sec**：h3 前墨线界尺小饰——手作小标治「白板感」。
+5. **#7 resultstrip**：+撕缝虚线——判词条读作从短笺撕下的一行。
+6. **#14 state-banner**：empty 配 #22 lamp 小图——否决词「空态纯
+   文字」的正面回答（壳上 `.note` 静态行结构有钉，保持纯文字）。
+7. **#15 word-card**：`--rule-soft` 底 → `--paper-high` + 发丝边 +
+   垫纸错位层；禁止变体措辞「阴影」精确化为「盒影类投影」
+   （`box-shadow` 字面不入库——页源负钉常绿；垫纸层是契约形，
+   F-1R 零阴影法则不动）——浮层纸影与形态法则两全。
+8. **#16 / #17 / #18 / #20**：+hover/:active 触压与 transition——同 1。
+9. **#21 disclosure**：标记 ▸/▾ 字符 → #22 chevron（`--open` 驱动
+   旋转 90°）+ paper-unfold 入场——否决词「图标简陋」；
+   aria-expanded / roving / 默认折叠 / 禁手风琴语义零回退（既有钉
+   随迁：`tests/host/test_r1r_blueprint_v2.py` 的标记两钉改钉
+   chevron 形）。
+10. **#18 dock**：宽度 430px → `--shell-w`、≥900px 三项收拢居中——
+    桌面构图（否决词「留白过分」的主因）。
+11. **新增 #22 icon-set**（⑤ 四步同刀）：③ 表行 + 契约块 +
+    `inkIcon()`/`installIcons()` + `COMPONENTS` 元组（21 → 22，三处
+    注册钉随迁）。
+12. **② token 表扩充 + 本 ⑨ 节**：新 token 全登记（现役八色与字体
+    栈逐值不动）；R-1V 起新写尺寸规则一律走标度与间距阶。
+13. **#4 letter / #9 meter-row / 摘要行 / #15 入场**：`.say` 行高
+    `--lh-letter`（信要呼吸——信笺行与界面行从此不同高）；`.kv b`
+    5.5em 对齐（账页科目列）；`.sumline .sumnum` 墨色加重（账页读
+    数感，mono 细节）；#15 词卡开启复用 ink-fade（--dur-2，注册表
+    首行）。
+14. **走查回修四件**（双宽度活体走查发现，同刀修）：①`.teach-me`
+    定裁为弱化 pencil 行链接（原 ③ 库外登记「视觉规范刀再裁」
+    销账）；②`spokenOf` 对竖线五段探针全键只念首段（⑧ 8.0.2
+    「全键不进信流」对探针键同样成立——blocked 行不再漏工程
+    键）；③`scrollBottom` 短通信不追底（旧实现把第一封信顶进
+    sticky 品牌条背后；长通信追底行为不变）；④空厅整行下移
+    `--sp-6` 落座。

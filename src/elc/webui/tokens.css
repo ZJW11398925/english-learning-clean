@@ -4,8 +4,13 @@
    只许 var() 引用，不许在他处重写字面值（docs/FRONTEND_SPEC.md ②）。
    形态法则（用户否掉上一版的条款，逐条遵守）：
    零卡片、零气泡、零底栏页签、零大圆角面板、零阴影、零青绿——
-   分层靠上下发丝线、留白与三级墨色；动作一律是赭红下划线文字链接。 */
+   分层靠上下发丝线、留白与三级墨色；动作一律是赭红下划线文字链接。
+   R-1V 扩充（视觉工艺刀；现役八色与字体栈逐值不动——旧 token 的语义
+   不迁移，新层次/标度/动效一律新名）：纸系四层 + 桌布、赭红层次、
+   字号标度（衬线五档 / sans 两档）、行高字距、4 基数间距阶、
+   动效时长×缓动、图标参数、壳宽。规范全文 = spec ② 与 ⑨。 */
 :root {
+  /* ── 现役八色（F-1R 钉住，值与语义不动）────────────────────────── */
   --bg: #fbf9f4;
   --ink: #1b1a17;
   --ink-soft: #5c574e;
@@ -14,12 +19,70 @@
   --rule-soft: #ebe5d8;
   --pencil: #a8562f;
   --touch: #f0e9dc;
+  /* ── 纸系层次（R-1V）：--bg 是主纸；下三层是它的同胞，不是新色 ──
+     paper-high = 泛起的纸面（hover 微起、浮层卡面）；paper-2 = 次纸
+     （短笺与词卡的稍深纸面——从 --rule-soft 兼任的「色块底」职责里
+     解放出来，--rule-soft 回归纯发丝线）；desk = 桌布（宽屏时 body 的
+     案头底色，纸面摊在其上）；ink-ghost = 水印墨（界尺/角饰/水印印记，
+     比弱化墨再淡半档，永不作文字）。 */
+  --paper-high: #fdfcf8;
+  --paper-2: #f4efe4;
+  --desk: #eae3d3;
+  --ink-ghost: #aaa191;
+  /* ── 赭红层次（R-1V）：--pencil 是基准；deep 加重（hover/印章/
+     落款），soft 是中间档（极淡印记、装饰蜡点）——克制三档 ────── */
+  --pencil-deep: #8a3f1f;
+  --pencil-soft: #bb7a52;
+  /* ── 字体栈（F-1R 钉住，逐字不动）────────────────────────────── */
   --f-serif: Georgia, 'Times New Roman', 'Songti SC', 'SimSun',
     'Noto Serif CJK SC', serif;
   --f-sans: system-ui, -apple-system, 'Segoe UI', 'PingFang SC',
     'Microsoft YaHei', sans-serif;
   --f-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  /* ── 字号标度（R-1V；spec ⑨-1 排版标度表的唯一出处）────────────
+     衬线五档：display（门厅 h1）/ title（页级大题）/ head（卡题·词头·
+     primary 动作）/ body（信笺正文）/ small（词卡正文·辅助衬线）；
+     sans 两档：ui（界面小字基准）/ micro（弱化·系统行·仪表）。 */
+  --fs-display: 27px;
+  --fs-title: 21px;
+  --fs-head: 17px;
+  --fs-body: 16px;
+  --fs-small: 14px;
+  --fs-ui: 12px;
+  --fs-micro: 11px;
+  /* ── 行高与字距（R-1V）───────────────────────────────────────── */
+  --lh-body: 1.55;
+  --lh-letter: 1.75;
+  --lh-ui: 1.7;
+  --ls-title: 0.14em;
+  --ls-caps: 0.18em;
+  --ls-formhead: 0.3em;
+  /* ── 间距阶（R-1V；4 基数八阶——新规则一律走阶，不裸写像素）─── */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+  /* ── 动效（R-1V；spec ⑨-5 动效注册表的参数出处）────────────────
+     三档时长：触压 / 纸面 / 仪式；三条缓动：墨迹（稳出）、纸面
+     （长尾展开）、触压（对称）。每个动效的触发与降级注册在 ⑨-5。 */
+  --dur-1: 140ms;
+  --dur-2: 260ms;
+  --dur-3: 480ms;
+  --ease-ink: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-paper: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-press: cubic-bezier(0.4, 0, 0.2, 1);
+  /* ── 图标参数（R-1V #22 icon-set 契约）───────────────────────── */
+  --icon-size: 18px;
+  --icon-stroke: 1.5;
+  /* ── 布局（--read-pad / --safe-bottom / --navdock-h 钉住不动）──
+     --shell-w：信纸栏宽——navdock 与写信区的同一宽度出处；窄屏
+     430px（现役值），宽屏由 screens.css 的桌面媒体查询改写。 */
   --read-pad: 18px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --navdock-h: 54px;
+  --shell-w: 430px;
 }

@@ -240,5 +240,6 @@ def test_the_spec_carries_the_living_registry() -> None:
     assert "库随产品增长" in agents
     # p-3 随迁：活注册表随 field/chip 入库生长两格（15 → 17）；
     # R-1 随迁：壳导航三件再长三格（17 → 20）；
-    # R-1R 随迁：折叠组 disclosure 再长一格（20 → 21）——同刀登记
-    assert len(COMPONENTS) == 21
+    # R-1R 随迁：折叠组 disclosure 再长一格（20 → 21）——同刀登记；
+    # R-1V 随迁：icon-set 入库再长一格（21 → 22）——同刀登记
+    assert len(COMPONENTS) == 22

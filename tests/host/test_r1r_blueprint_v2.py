@@ -132,7 +132,8 @@ def test_disclosure_is_registered_in_all_four_places() -> None:
     )
 
     assert "disclosure" in COMPONENTS
-    assert len(COMPONENTS) == 21
+    # R-1V 随迁：icon-set 入库再长一格（21 → 22）——同刀登记
+    assert len(COMPONENTS) == 22
     spec = (
         Path(__file__).resolve().parents[2]
         / "docs" / "FRONTEND_SPEC.md"
@@ -164,8 +165,12 @@ def test_the_disclosure_is_collapsed_by_default_and_no_accordion(
     assert "export function disclosure(opts) {" in page
     assert "body.hidden = true;" in page
     assert 'head.setAttribute("aria-expanded", "false");' in page
-    assert 'marker.textContent = "▸";' in page
-    assert 'marker.textContent = open ? "▾" : "▸";' in page
+    # R-1V 随迁（spec ⑨-7.9）：▸/▾ 字符标记退役，换 #22 自绘墨线
+    # chevron——展开态不再换字符，由 --open 类驱动 SVG 旋转 90°
+    assert 'marker.appendChild(inkIcon("chevron"));' in page
+    assert 'marker.textContent = "▸";' not in page
+    assert 'marker.textContent = open ? "▾" : "▸";' not in page
+    assert 'root.classList.toggle("disclosure--open", open);' in page
     assert '"（" + options.count + "）"' in page
     # no accordion: the factory never reaches outside its own root
     js = _text("components.js")

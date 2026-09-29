@@ -19,6 +19,8 @@ import {
   diagGroup,
   stateBanner,
   installBrandMarks,
+  inkIcon,
+  installIcons,
   wordWindows,
   showWordCard,
   confirmDialog,
@@ -254,9 +256,11 @@ function shortHash(hash) {
 }
 
 // 表达名：界面只显示 spoken 形（⑧ 8.3）——res-hedge-i-think → i think；
-// canonical_key（无 res-/cap- 前缀的键）同法去连字符。
+// canonical_key（无 res-/cap- 前缀的键）同法去连字符。R-1V：竖线五段的
+// 探针全键（i think|PROBE|TEXT_PRODUCTION|…）只念首段——⑧ 8.0.2 定的
+// 「全键与浮点不进信流」对探针键同样成立。
 function spokenOf(keyOrId) {
-  const text = String(keyOrId);
+  const text = String(keyOrId).split("|")[0];
   const parts = text.split("-");
   if (parts.length > 2 && (parts[0] === "res" || parts[0] === "cap")) {
     return parts.slice(2).join(" ");
@@ -658,7 +662,11 @@ function familyGroupsBlock(list, rowFor) {
   input.type = "text";
   input.autocomplete = "off";
   input.placeholder = "找一个表达……";
-  root.appendChild(fieldRow("找", input));
+  // R-1V：筛框名牌配 search 墨线小图（#22）——图是装饰，「找」字仍在
+  const findLabel = document.createDocumentFragment();
+  findLabel.appendChild(inkIcon("search"));
+  findLabel.appendChild(document.createTextNode(" 找"));
+  root.appendChild(fieldRow(findLabel, input));
   const noHit = document.createElement("p");
   noHit.className = "note";
   noHit.hidden = true;
@@ -1786,6 +1794,8 @@ function showEmptyHall() {
   if (messages.firstChild) return;
   const line = addLine("system", EMPTY_HALL_TEXT);
   line.classList.add("emptyhall");
+  // R-1V：空厅配墨线小图（⑨-4 inbox——空信箱；图是装饰，定稿句不动）
+  line.prepend(inkIcon("inbox"));
 }
 
 function dismissEmptyHall() {
@@ -1796,7 +1806,7 @@ function dismissEmptyHall() {
 
 async function postTurn(text) {
   dismissEmptyHall();
-  addLine("user", text);
+  addLine("user", text, { enter: true });
   // the placeholder is the user's "it is working" signal: removed the
   // moment the turn response lands (or fails) — never left behind
   const pending = addLine("typing", "（回信在途中……）");
@@ -1812,7 +1822,7 @@ async function postTurn(text) {
   }
   if (data !== null) {
     if (data.reply !== null && data.reply !== undefined) {
-      addLine("assistant", data.reply);
+      addLine("assistant", data.reply, { enter: true });
     } else if (data.turn_status !== null && data.turn_status !== undefined) {
       failLine("这封信没有回音——客厅没能联系上模型端点",
         data.failure_reason || "无回复");
@@ -1885,6 +1895,16 @@ window.addEventListener("DOMContentLoaded", () => {
   // F-G2: the brand marks (the template's clones) land before the first
   // screen shows, so the cover and every space header is never bare.
   installBrandMarks();
+  // R-1V：#22 图标插槽与桌面边注栏的案头日期（客户端当日，mono——
+  // 机械事实，非文案；边注栏窄屏缺席，日期槽随之不显）
+  installIcons();
+  const dateSlot = document.getElementById("marginalia-date");
+  if (dateSlot) {
+    const today = new Date();
+    dateSlot.textContent = today.getFullYear() + " · " +
+      String(today.getMonth() + 1).padStart(2, "0") + " · " +
+      String(today.getDate()).padStart(2, "0");
+  }
   loadHistory();
   // F-1R/R-1: the first visit sees the cover; every later visit lands in
   // the parlor directly (the cover never comes back once localStorage

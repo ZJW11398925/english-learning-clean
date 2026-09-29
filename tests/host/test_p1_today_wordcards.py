@@ -471,8 +471,9 @@ def test_word_card_is_registered_in_all_four_places() -> None:
     assert "word-card" in COMPONENTS
     # p-3 随迁：活注册表随 field/chip 入库生长两格（15 → 17）；
     # R-1 随迁：壳导航三件再长三格（17 → 20）；
-    # R-1R 随迁：折叠组 disclosure 再长一格（20 → 21）
-    assert len(COMPONENTS) == 21
+    # R-1R 随迁：折叠组 disclosure 再长一格（20 → 21）；
+    # R-1V 随迁：icon-set 入库再长一格（21 → 22）
+    assert len(COMPONENTS) == 22
     spec = (
         Path(__file__).resolve().parents[2]
         / "docs" / "FRONTEND_SPEC.md"

@@ -13,7 +13,17 @@ export const messages = document.getElementById("messages");
 const momentsBox = document.getElementById("moments");
 
 function scrollBottom() {
-  window.scrollTo(0, document.body.scrollHeight);
+  // R-1V：短通信不追底——旧实现无条件滚到文档最底，内容不满一屏时
+  // 也把第一封信顶进 sticky 品牌条背后（滚掉的只是底部留白）。新法：
+  // 只在「最后一行的底部会没入写信区」时滚到刚好让它露出；长通信的
+  // 追底行为与旧实现一致（clamp 到文档底）。
+  const last = messages.lastElementChild;
+  if (!last) return;
+  const clearance = 150;  // dock + navdock 的遮挡余量（保守值）
+  const lastBottom = last.offsetTop + last.offsetHeight;
+  const target = lastBottom + clearance - window.innerHeight;
+  window.scrollTo(0, Math.max(0, Math.min(target,
+    document.body.scrollHeight - window.innerHeight)));
 }
 
 // F-1R: the letter flow — a turn's words become letters, never bubbles.
@@ -22,7 +32,8 @@ function scrollBottom() {
 // pencil rule in the left margin), a system note is a centered faint
 // line. Every word rides textContent — the user's own words stay inert
 // text, never markup.
-export function addLine(cls, text) {
+export function addLine(cls, text, opts) {
+  const options = opts || {};
   let node;
   if (cls === "user") {
     node = document.createElement("div");
@@ -44,7 +55,8 @@ export function addLine(cls, text) {
   } else if (cls === "typing") {
     node = document.createElement("p");
     node.className = "typing";
-    node.textContent = text;
+    node.appendChild(inkIcon("write"));  // R-1V：回信在途中配执笔小图
+    node.appendChild(document.createTextNode(text));
   } else if (cls === "failure") {
     node = document.createElement("p");
     node.className = "errline";
@@ -54,6 +66,9 @@ export function addLine(cls, text) {
     node.className = "sysline";
     node.textContent = text;
   }
+  // R-1V：墨迹淡入（⑨-5 ink-fade）——opts.enter 的新信才播；历史回填
+  // （loadHistory）不播，五十轮回填不闪。
+  if (options.enter) node.classList.add("flow-enter");
   messages.appendChild(node);
   scrollBottom();
   return node;
@@ -136,12 +151,22 @@ export function showMoments(list) {
   if (!list.length) {
     return;
   }
+  // R-1V：短笺递入动效只在新短笺组到达时播一次——轮询的每次重渲染
+  // 同 key 静帧（key = 本组短笺 id 列），不重演不闪。
+  const noteKey = list.map(
+    (m) => String(m.id || m.focus_target_id)).join("|");
+  const arrive = noteKey !== momentsBox.dataset.noteKey;
+  momentsBox.dataset.noteKey = noteKey;
   for (const m of list) {
     const card = document.createElement("div");
-    card.className = "note-paper";
+    card.className = "note-paper" + (arrive ? " note-paper--enter" : "");
+    const head = document.createElement("div");
+    head.className = "note-head";
+    head.appendChild(inkIcon("note"));
     const b = document.createElement("b");
     b.textContent = "短笺：" + (m.title || m.focus_target_id);
-    card.appendChild(b);
+    head.appendChild(b);
+    card.appendChild(head);
     const status = document.createElement("div");
     status.className = "noteline";
     status.textContent = m.status_cn || m.lifecycle_state;
@@ -286,7 +311,7 @@ async function postReply(card, payload, busyText, doneNote) {
     if (data.delivery_text) {
       // the runtime's own delivered words (the hint rung / the reveal
       // form / the explanation), shown like any assistant line
-      addLine("assistant", data.delivery_text);
+      addLine("assistant", data.delivery_text, { enter: true });
     }
     readReplyAnswer(card, data);
   } catch {
@@ -363,6 +388,31 @@ export function installBrandMarks() {
   }
 }
 
+// 22. icon-set（R-1V）：自绘墨线内联 SVG 图标集——几何唯一出处是
+// index.html 的 <template id="icon-set-source">（20×20 网格、笔重 1.5、
+// 圆角端点；与 #13 同法：HTML 原生解析 svg，零外链、源码无命名串）。
+// 工厂 inkIcon(name) 从模板内容里查一枚克隆并摘掉 id（克隆体不带重复
+// id）；installIcons() 把 <span data-icon="…"> 插槽换成克隆（brandMark
+// 同法），插槽自身的 class 过继给克隆体（语境尺寸/色调随插槽）。
+export function inkIcon(name) {
+  const template = document.getElementById("icon-set-source");
+  const source = template.content.querySelector("#icon-" + name);
+  if (!source) return document.createElement("span");
+  const icon = source.cloneNode(true);
+  icon.removeAttribute("id");
+  return icon;
+}
+
+export function installIcons() {
+  for (const slot of document.querySelectorAll("[data-icon]")) {
+    const icon = inkIcon(slot.dataset.icon);
+    if (slot.className) {
+      icon.setAttribute("class", slot.className + " inkicon");
+    }
+    slot.replaceWith(icon);
+  }
+}
+
 // 14. state-banner：读数面板三态（loading / empty / error）的唯一答法。
 // loading 尾点呼吸是全页唯一动效（reduced-motion 下静止，见 #14 契约）；
 // error 的人话句后跟一枚「重试」赭红链接（link-btn 的 --pencil 变体），
@@ -373,6 +423,9 @@ export function stateBanner(kind, opts) {
                      error: "读取失败" };
   const box = document.createElement("div");
   box.className = "state-banner state-banner--" + kind;
+  // R-1V：空态配墨线小图（⑨-4 lamp——未点亮的灯；图是装饰，诚实句
+  // 仍是主体，aria-hidden 由模板带出）
+  if (kind === "empty") box.appendChild(inkIcon("lamp"));
   box.appendChild(document.createTextNode(
     options.text || defaults[kind] || "暂无数据"));
   if (kind === "error" && typeof options.retry === "function") {
@@ -644,7 +697,9 @@ export function disclosure(opts) {
   head.setAttribute("aria-expanded", "false");
   const marker = document.createElement("span");
   marker.className = "disclosure-marker";
-  marker.textContent = "▸";
+  // R-1V：▸/▾ 字符标记换 #22 的自绘墨线 chevron——展开态不再换字符，
+  // 由 --open 类驱动 SVG 旋转 90°（⑨-5；aria-expanded 语义不动）
+  marker.appendChild(inkIcon("chevron"));
   head.appendChild(marker);
   const title = document.createElement("span");
   title.className = "disclosure-title";
@@ -673,7 +728,6 @@ export function disclosure(opts) {
     open = Boolean(next);
     body.hidden = !open;
     head.setAttribute("aria-expanded", open ? "true" : "false");
-    marker.textContent = open ? "▾" : "▸";
     root.classList.toggle("disclosure--open", open);
     if (open && !openedOnce) {
       openedOnce = true;

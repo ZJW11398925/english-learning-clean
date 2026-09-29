@@ -1,8 +1,11 @@
 /* components.css —— 组件库唯一样式源（F-G1）。
    规则：每个组件一个契约注释块（结构 / 状态矩阵 / 使用规则 / 禁止变体），
-   声明值逐字来自拆分前的内嵌样式（零视觉变化）。旧类名作为别名保留在
-   同一规则的选择器表尾（单一物理出处）；页面引用一律走新变体类。
-   规范全文见 docs/FRONTEND_SPEC.md；token 一律 var() 引用 tokens.css。 */
+   声明值逐字来自拆分前的内嵌样式（R-1V 起的精修值在契约块内逐件登记
+   「R-1V 修订」，见 spec ⑨-7）。旧类名作为别名保留在同一规则的选择器
+   表尾（单一物理出处）；页面引用一律走新变体类。
+   规范全文见 docs/FRONTEND_SPEC.md；token 一律 var() 引用 tokens.css。
+   库尾三段：#22 icon-set / R-1V 动效注册表（keyframes 唯一出处）/
+   reduced-motion 总降级块——动效纪律见 spec ⑨-5。 */
 
 /* ── 地基：元素复位（组件共用的元素级默认）───────────────────────── */
 * { box-sizing: border-box; }
@@ -14,17 +17,32 @@ button:focus-visible, input:focus-visible {
 
 /* ── 1. link-btn（下划线文字链接按钮）───────────────────────────────
    结构：<button class="btn btn--<变体>">（仅文字子节点）。
-   状态矩阵：default（下划线文字）/ active（opacity .55，仅标 :active 的
-   变体）/ disabled（.btn[disabled]：opacity .4 + 无 pointer）/ busy
-   （不在此定义——busy 的文案切换由 JS 承担，见 spec ③）。
+   状态矩阵：default（下划线文字）/ hover（R-1V：墨色泛赭 / 赭色加深，
+   弱化族转主墨）/ active（opacity .55 + 触压 1px 下沉——R-1V 起全族
+   带触压，opacity 仍仅标 :active 的变体）/ disabled（.btn[disabled]：
+   opacity .4 + 无 pointer）/ busy（不在此定义——busy 的文案切换由
+   JS 承担，见 spec ③）。
    使用规则：一切动作都是文字链接；primary（墨色衬线）用 --ink / --send，
    secondary（赭红或弱化）用 --pencil / --set / --faint / --dot / --meter /
    --back。别名（现役旧类名，仅兼容保留）：.ob .go / .send / .linklike /
    .setlink / .skiplink / .refresh / .back / .meter。
    禁止变体：底色块、描边框、图标、非下划线弱化以外的 disabled 以外态。 */
 .btn { border: 0; background: none; padding: 0; cursor: pointer;
-       font: inherit; color: inherit; }
+       font: inherit; color: inherit;
+       transition: color var(--dur-1) var(--ease-press),
+                   text-decoration-color var(--dur-1) var(--ease-press),
+                   transform var(--dur-1) var(--ease-press); }
 .btn[disabled] { opacity: 0.4; pointer-events: none; }
+/* R-1V 精修（⑨-3）：hover 的纸压感——墨色/赭色各沉半档、下划线泛赭；
+   :active 触压 1px 下沉（纸面被指尖按住的感觉，--dur-1 --ease-press）。 */
+.btn:active { transform: translateY(1px); }
+.btn--ink:hover, .ob .go:hover, .btn--send:hover, .send:hover {
+  text-decoration-color: var(--pencil-deep); }
+.btn--pencil:hover, .linklike:hover, .btn--set:hover, .setlink:hover {
+  color: var(--pencil-deep); }
+.btn--faint:hover, .skiplink:hover, .btn--dot:hover, .refresh:hover,
+.btn--back:hover, .back:hover, .btn--meter:hover, .meter:hover {
+  color: var(--ink); }
 .btn--ink, .ob .go { display: block; margin: 26px auto 0; font-family: var(--f-serif);
             font-size: 17px; font-weight: 700; color: var(--ink);
             text-decoration: underline; text-decoration-thickness: 1px;
@@ -65,9 +83,23 @@ button:focus-visible, input:focus-visible {
    「← 回客厅」）——mono 小字、右对齐，两条品牌条共用同一形态。 */
 .btn--meter:active, .meter:active { opacity: 0.55; }
 
+/* 库外现役类（spec ③ 登记）：.teach-me——今日到期行 / 可以练的表达行 /
+   隐私按表达忘掉行的行内动作（JS 类名有钉，故不落 #1 变体类）。R-1V
+   定裁（登记里的「视觉规范刀再裁」到期）：弱化 pencil 行链接——与
+   #1 的 --pencil 同族同行（形态法则「动作一律赭红下划线文字链接」），
+   行内密度位用 sans 12px。 */
+.teach-me { font-family: var(--f-sans); font-size: 12px;
+            color: var(--pencil); text-decoration: underline;
+            text-decoration-thickness: 1px; text-underline-offset: 3px;
+            transition: color var(--dur-1) var(--ease-press),
+                        transform var(--dur-1) var(--ease-press); }
+.teach-me:hover { color: var(--pencil-deep); }
+.teach-me:active { transform: translateY(1px); }
+
 /* ── 2. pen（稿纸 textarea）─────────────────────────────────────────
    结构：<textarea class="pen">。状态矩阵：default（横线稿纸，线随文滚）/
-   placeholder（弱化小字）/ Enter 由 app.js 绑定（plain Enter 寄出、
+   placeholder（弱化小字）/ focus（R-1V：纸面微起 --paper-high 半档，
+   --dur-2 --ease-ink 淡入）/ Enter 由 app.js 绑定（plain Enter 寄出、
    Shift+Enter 换行——行为在 JS，不在此）。
    使用规则：写信区唯一输入件；min/max-height 双界不许拆。
    禁止变体：边框、圆角、独立滚动条样式。 */
@@ -78,24 +110,36 @@ button:focus-visible, input:focus-visible {
        max-height: 160px;
        background-image: repeating-linear-gradient(
          to bottom, transparent 0 25px, var(--rule-soft) 25px 26px);
-       background-attachment: local; }
+       background-attachment: local;
+       transition: background-color var(--dur-2) var(--ease-ink); }
 .pen::placeholder { color: var(--ink-faint); font-size: 13px;
                     font-family: var(--f-sans); }
+/* R-1V：focus 时稿纸微微泛起（--paper-high 半档之差，纸被点亮的感觉） */
+.pen:focus { background-color: var(--paper-high); }
 
 /* ── 3. note-paper（教学短笺）───────────────────────────────────────
-   结构：<div class="note-paper"><b>短笺：标题</b><div class="noteline">
-   状态行</div>[<div class="noteline">类型行（中文映射，未知值省略该行）
-   </div>]…[指路行 .noteline][回复控件][结果条][批改条]</div>；回复控件
+   结构：<div class="note-paper"><div class="note-head">[note 墨线小图
+   （#22）]<b>短笺：标题</b></div><div class="noteline">状态行</div>
+   [<div class="noteline">类型行（中文映射，未知值省略该行）</div>]…
+   [指路行 .noteline][回复控件][结果条][批改条]</div>；回复控件
    （.replyrow / .replytext）是本组件的内置回复面，随契约一起定义；
    .noteline 是卡内弱化小字行（状态/类型/指路共用）。
-   状态矩阵：default（rule-soft 底色块）/ skipped（opacity .55，终局后）/
-   busy（卡片控件 disabled + .busystrip，由 JS 置）。
+   状态矩阵：default（--paper-2 次纸底 + 左缘界尺墨线——R-1V 修订：
+   底从 --rule-soft 迁 --paper-2（纸色差），左缘 2px 界尺是契约形，
+   非描边框）/ skipped（opacity .55，终局后）/ busy（卡片控件
+   disabled + .busystrip，由 JS 置）/ enter（.note-paper--enter：
+   新短笺组到达时递入一次，⑨-5 note-arrive，轮询重渲染不重演）。
    使用规则：只出现在信流（.flow）里；标题 b 用 textContent；卡头
-   「短笺：{功能句}」，状态行用服务端 status_cn 原词（界面不自造）。
-   禁止变体：阴影、描边、弹层。 */
-.note-paper { margin: 0 0 18px; background: var(--rule-soft);
+   「短笺：{功能句}」，状态行用服务端 status_cn 原词（界面不自造）；
+   卡头小图是 #22 的 note，aria-hidden 装饰。
+   禁止变体：阴影、四侧描边框、弹层。 */
+.note-paper { margin: 0 0 18px; background: var(--paper-2);
+              border-left: 2px solid var(--rule);
               padding: 12px 14px 14px; font-size: 15px; }
-.note-paper > b { font-weight: 600; overflow-wrap: anywhere; }
+.note-head { display: flex; gap: var(--sp-2); align-items: center; }
+.note-head .inkicon { flex: none; width: 15px; height: 15px;
+                      color: var(--pencil); }
+.note-head b { font-weight: 600; overflow-wrap: anywhere; }
 .note-paper.skipped { opacity: 0.55; }
 .noteline { margin-top: 4px; font-family: var(--f-sans); font-size: 11px;
             color: var(--ink-faint); }
@@ -113,15 +157,19 @@ button:focus-visible, input:focus-visible {
    结构：<div class="letter may|me">[.paper 包 .say]（me 撕边）| <p
    class="say">（may 平信）</div>。
    状态矩阵：default（.letter.may 平信纸）/ torn（.letter.me 撕边回执，
-   --touch 衬底 + 顶部撕口；零圆角零描边，不是气泡）。
+   --touch 衬底 + 顶部撕口；零圆角零描边，不是气泡）/ enter（R-1V：
+   .flow-enter 墨迹淡入，新信才播，⑨-5）。
    使用规则：may = 客厅的话居左，me = 用户的话居右；正文一律 .say
-   （white-space: pre-wrap），文字只走 textContent。
+   （white-space: pre-wrap），文字只走 textContent；R-1V 起 .say 行高
+   --lh-letter（1.75——信要呼吸，信笺行与界面行从此不同高）；
+   三层纸色差：may 平信 = 主纸（--bg 直出）/ me 撕边 = 暖纸 --touch /
+   短笺（#3）= 次纸 --paper-2。
    禁止变体：气泡（任何圆角/描边/底色除 --touch 撕边衬底）。 */
 .letter { margin: 0 0 18px; max-width: 84%; }
 .letter.may { margin-right: auto; }
 .letter.me { margin-left: auto; }
 .say { margin: 0; font-size: 16px; white-space: pre-wrap;
-       overflow-wrap: anywhere; }
+       overflow-wrap: anywhere; line-height: var(--lh-letter); }
 /* 我的回信 = 撕边信纸（--touch 衬底 + 顶部撕口；不是气泡：零圆角零描边） */
 .letter.me .paper {
   background: var(--touch); padding: 10px 14px 12px; font-weight: 600;
@@ -132,7 +180,8 @@ button:focus-visible, input:focus-visible {
 
 /* ── 5. hairline-section（发丝线分区）──────────────────────────────
    结构：<div class="sec"><h3>小标</h3> …内容</div>。
-   状态矩阵：default（上发丝线 + 顶距）。无交互态。
+   状态矩阵：default（上发丝线 + 顶距；R-1V 起 h3 前带一截墨线界尺
+   小饰，--ink-ghost 水印墨）。无交互态。
    使用规则：仪表屏内每个读数块一个 .sec；h3 是 sans 弱化小字。
    禁止变体：卡片化（四侧描边/底色/阴影）。 */
 .sec { margin-top: 22px; border-top: 1px solid var(--rule-soft);
@@ -140,6 +189,10 @@ button:focus-visible, input:focus-visible {
 .sec h3 { margin: 0 0 8px; font-family: var(--f-sans); font-size: 11px;
           letter-spacing: 0.18em; color: var(--ink-faint);
           font-weight: 500; }
+/* R-1V：小标前的墨线小饰——一截手作界尺（--ink-ghost 水印墨，不动字） */
+.sec h3::before { content: ""; display: inline-block; width: 10px;
+                  border-top: 1px solid var(--ink-ghost);
+                  margin-right: 7px; vertical-align: 3px; }
 
 /* ── 6. setlink-block（设置屏链接区块）─────────────────────────────
    结构：<div class="setlinks">[.btn--set ×n]</div> + 随后的
@@ -156,11 +209,13 @@ button:focus-visible, input:focus-visible {
 
 /* ── 7. resultstrip（判分结果条）───────────────────────────────────
    结构：<div class="resultstrip ok|part|miss">✓ 答对了|◐ 答对一半|
-   ✗ 没答中 · runtime 原话</div>（R-1R 起中文判词打头，⑧ 8.2.10）。
+   ✗ 没答中 · runtime 原话</div>（R-1R 起中文判词打头，⑧ 8.2.10；
+   R-1V 起条上加一道撕缝虚线——判词像从短笺上撕下的一行）。
    状态矩阵：ok（赭红，命中）/ part（次级墨，部分）/ miss（主墨，未中）。
    使用规则：只挂在 note-paper 卡内；符号是显示件，词是 runtime 自己的。
    禁止变体：绿红底色块（W-6 条款）。 */
-.resultstrip { margin-top: 8px; font-size: .9rem; }
+.resultstrip { margin-top: 10px; border-top: 1px dashed var(--rule);
+               padding-top: 6px; font-size: .9rem; }
 .resultstrip.ok { color: var(--pencil); }
 .resultstrip.part { color: var(--ink-soft); }
 .resultstrip.miss { color: var(--ink); }
@@ -183,6 +238,7 @@ button:focus-visible, input:focus-visible {
       font-family: var(--f-mono); font-variant-numeric: tabular-nums;
       align-items: baseline; }
 .kv b { color: var(--ink-soft); font-weight: 500; flex: none;
+        min-width: 5.5em;
         font-family: var(--f-sans); font-size: 12px; }
 .kvgroup { border-left: 1px solid var(--rule); padding: 4px 10px;
            margin-top: 8px; }
@@ -239,10 +295,12 @@ button:focus-visible, input:focus-visible {
    [重试链接]</div>——工厂 stateBanner(kind, opts)（components.js）；
    error 的重试是 link-btn 的 --pencil 变体（复用 #1，不另造链接形），
    重试回调由调用方注入（只重拉本面板）。
-   状态矩阵：loading（取信中…，尾点呼吸微动）/ empty（弱化诚实句）/
-   error（赭红人话一句 + 重试）；reduced-motion：loading 尾点呼吸降级
-   为静态（@media 块——全页唯一动效的唯一出口）。未知 kind 只落基类
-   （无修饰样式，addLine 的 else 臂同形：基样仍在、不抛错）。
+   状态矩阵：loading（取信中…，尾点呼吸微动）/ empty（弱化诚实句；
+   R-1V 起配 #22 lamp 墨线小图——未点亮的灯，装饰 aria-hidden，句
+   仍是主体）/ error（赭红人话一句 + 重试）；reduced-motion：loading
+   尾点呼吸降级为静态（@media 块——加上库尾 R-1V 总降级块，双保险）。
+   未知 kind 只落基类（无修饰样式，addLine 的 else 臂同形：基样仍在、
+   不抛错）。
    使用规则：读数面板（学习/诊断/目标清单）加载中、空、失败三态的唯一
    答法（#10 .note 保留给壳上静态占位行）；文字一律 textContent。
    禁止变体：转圈动画、骨架屏、遮罩、占位插画、弹层。 */
@@ -250,6 +308,11 @@ button:focus-visible, input:focus-visible {
         font-size: .85rem; line-height: 1.7; }
 .state-banner--error { color: var(--pencil); }
 .state-banner .btn--pencil { margin-left: 10px; }
+/* R-1V：empty 变体的墨线小图（#22 lamp——未点亮的灯；弱化水印墨色，
+   与句同行不抢话） */
+.state-banner--empty .inkicon { width: 15px; height: 15px;
+        margin-right: 7px; vertical-align: -2px;
+        color: var(--ink-ghost); }
 .state-banner--loading::after { content: "…"; display: inline-block;
         animation: state-breathe 1.6s ease-in-out infinite; }
 @keyframes state-breathe {
@@ -270,15 +333,26 @@ button:focus-visible, input:focus-visible {
    app.js 依 wordWindows 取 1–3 词窗口调 /api/word，首个命中即
    showWordCard。工厂 wordCard(data)、浮层定位与开关是
    showWordCard/closeWordCard（components.js），浮层挂 body。
-   状态矩阵：default（rule-soft 底、零圆角零阴影的浮层）/ closed（关闭
-   = 点卡外或「收起」，DOM 移除语义，同 #11 的原生两臂不在 CSS）；
+   状态矩阵：default（--paper-high 泛起纸面 + 发丝边 + 垫纸错位层——
+   R-1V 修订：浮层纸影以 ::after 垫纸达成（纯色错位 3px，零盒影
+   ——「零阴影」形态法则不动）；开启入场 = ⑨-5 ink-fade --dur-2
+   复用）；触发词 hover 有触点提示（点线泛赭）/ closed（关闭 =
+   点卡外或「收起」，DOM 移除语义，同 #11 的原生两臂不在 CSS）；
    无 busy——命中即显，miss 按契约静默。
    使用规则：卡片只由 /api/word 的 found:true 打开；一切文字
    textContent；教学短笺与系统行不参与点词（只有 .letter 的 .say 分片）。
-   禁止变体：阴影、圆角、--rule-soft 以外的底色块、busy 态、占位插画。 */
+   禁止变体：盒影类投影、圆角、--paper-high 以外的底色块、busy 态、
+   占位插画。 */
 .word-card { position: absolute; z-index: 9; max-width: 300px;
-             background: var(--rule-soft); padding: 12px 14px 14px;
-             font-size: 14px; }
+             background: var(--paper-high); border: 1px solid var(--rule);
+             padding: 12px 14px 14px; font-size: 14px;
+             animation: ink-fade var(--dur-2) var(--ease-ink) both; }
+/* 浮层纸影（R-1V）：一张垫在下面的次纸，错位 3px——纸叠纸的层次，
+   不用盒影（形态法则不动） */
+.word-card::after { content: ""; position: absolute; inset: 0;
+                    z-index: -1; background: var(--paper-2);
+                    border: 1px solid var(--rule);
+                    transform: translate(3px, 3px); }
 .wc-lemma { font-family: var(--f-serif); font-size: 17px; font-weight: 700; }
 .wc-pos { margin-left: 8px; font-family: var(--f-sans); font-size: 11px;
           color: var(--ink-faint); }
@@ -292,6 +366,11 @@ button:focus-visible, input:focus-visible {
               font-family: var(--f-serif); font-size: 14px;
               color: var(--ink-soft); overflow-wrap: anywhere; }
 .word { cursor: pointer; }
+/* R-1V：可点词的触点提示——hover 时点线泛赭（VS1 .w 的弱化点线 affordance
+   回归，比旧锚更克制：只现于 hover，不常驻） */
+.word:hover { text-decoration: underline dotted;
+              text-decoration-color: var(--pencil-soft);
+              text-underline-offset: 0.24em; }
 
 /* .rawtag（原文小字，R-1R）——机械事实的等宽小字形态：存储词表值的英文
    原文（⑧ 8.3 中英并置的英文半）、指纹、id、失败原因工程词。样式唯一
@@ -312,11 +391,17 @@ button:focus-visible, input:focus-visible {
    频率名）；select 与 input 的字面样式随本契约（唯一出处在此）。
    禁止变体：边框框体、底色块、圆角；不得当只读展示行用（只读走 #9）。 */
 .field { display: flex; align-items: baseline; gap: 10px;
-         border-bottom: 1px solid var(--rule-soft); padding: 8px 0; }
+         border-bottom: 1px solid var(--rule-soft); padding: 8px 0;
+         transition: border-color var(--dur-1) var(--ease-press); }
 .field:focus-within { border-bottom-color: var(--pencil); }
 .field:focus-within .fieldname { color: var(--pencil); }
 .field .fieldname { flex: none; min-width: 4.5em; font-family: var(--f-sans);
-                    font-size: 12px; color: var(--ink-soft); }
+                    font-size: 12px; color: var(--ink-soft);
+                    transition: color var(--dur-1) var(--ease-press); }
+/* R-1V：名牌里的墨线小图（#22 search——筛框的「找」） */
+.field .fieldname .inkicon { width: 13px; height: 13px;
+                    margin-right: 4px; vertical-align: -2px;
+                    color: var(--ink-faint); }
 .field input, .field select { flex: 1; min-width: 0; border: 0;
              background: none; outline: none; padding: 2px 0;
              font-family: var(--f-serif); font-size: 15px;
@@ -329,9 +414,11 @@ button:focus-visible, input:focus-visible {
 /* ── 17. chip（词表词选择片）────────────────────────────────────────
    结构：<button class="chip [--on|--badge]">词</button>——工厂
    chip(word, opts)（components.js，p-3）。
-   状态矩阵：off（default，发丝线描边、次级墨）/ --on（选中：主墨反白
-   描边）/ [disabled]（opacity .4 + 无 pointer，随地基规则）/ --badge
-   （只读徽标：弱发丝线、次级墨、无 pointer——非交互，禁止点击语义）。
+   状态矩阵：off（default，发丝线描边、次级墨）/ hover（R-1V：发丝
+   边转次级墨、字转主墨；--on 不被 hover 冲淡）/ --on（选中：主墨反白
+   描边）/ :active（触压 1px，R-1V）/ [disabled]（opacity .4 + 无
+   pointer，随地基规则）/ --badge（只读徽标：弱发丝线、次级墨、无
+   pointer——非交互，禁止点击语义）。
    使用规则：考试 / 语域 / 教学频率三个词表 picker（可点选词）；--badge
    用于目标卡的 modality 徽标与一切「词即标签」的只读展示；词表词级
    短词，文字一律 textContent。
@@ -339,27 +426,37 @@ button:focus-visible, input:focus-visible {
    （导航走 #1）。 */
 .chip { font-family: var(--f-sans); font-size: 12px; letter-spacing: 0.04em;
         padding: 3px 10px; border: 1px solid var(--rule); background: none;
-        color: var(--ink-soft); }
+        color: var(--ink-soft);
+        transition: border-color var(--dur-1) var(--ease-press),
+                    color var(--dur-1) var(--ease-press),
+                    transform var(--dur-1) var(--ease-press); }
 .chip--on { border-color: var(--ink); color: var(--bg); background: var(--ink); }
 .chip--badge { border-color: var(--rule-soft); color: var(--ink-soft);
         pointer-events: none; }
 .chip[disabled] { opacity: 0.4; pointer-events: none; }
+/* R-1V：hover 发丝边转次级墨（指尖下的纸边加深；选中片不动——--on
+   的反白不被 hover 冲淡）；:active 触压 1px */
+.chip:not(.chip--on):hover { border-color: var(--ink-soft);
+        color: var(--ink); }
+.chip:active { transform: translateY(1px); }
 
 /* ── 18. dock（常驻空间导航）───────────────────────────────────────
    结构：<nav class="navdock"><button class="navdock-item"
-   data-space="…">空间名</button>×3</nav>；fixed 底栏（随 #stage 居中
-   430px），发丝线顶边 + 纸底，无大面积色块；底 padding 吃
-   --safe-bottom。类名 navdock：与写信区 .dock（屏级类，screens.css）
-   异名共存在同一页。
+   data-space="…">空间名</button>×3</nav>；fixed 底栏（宽随 --shell-w：
+   窄屏 430px 随 #stage 居中；≥900px 桌面构图时随纸面 1080px、三项
+   收拢居中——R-1V 修订，⑨-6），发丝线顶边 + 纸底，无大面积色块；
+   底 padding 吃 --safe-bottom。类名 navdock：与写信区 .dock（屏级类，
+   screens.css）异名共存在同一页。
    状态矩阵：default（次级墨、透明点线占位——active 出现时不跳版）/
-   --on（当前空间：主墨加重 + 赭红实线下划短线，aria-current="page"）/
+   hover（墨色微沉，R-1V）/ --on（当前空间：主墨加重 + 赭红实线下划
+   短线，aria-current="page"）/ :active（触压 1px，R-1V）/
    [disabled]（opacity .4 + 无 pointer，随地基规则）。
    使用规则：每空间恰一项（客厅/学案/柜抽，底栏 ≤5 规则）；门厅时整条
    [hidden]（进门钮承担进入）；教学短笺随信流可滚出底栏、点词卡浮层
    （#15，z 9）在本组件（z 6）之上。接线 wireNavdock/markNavdock
    （components.js）。禁止变体：色块、图标、四项以上、堆叠页签。 */
 .navdock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
-           display: flex; max-width: 430px; margin: 0 auto;
+           display: flex; max-width: var(--shell-w); margin: 0 auto;
            background: var(--bg);
            border-top: 1px solid var(--rule);
            padding: 6px var(--read-pad)
@@ -369,11 +466,18 @@ button:focus-visible, input:focus-visible {
                 padding: 8px 0 4px; text-align: center;
                 text-decoration: underline dotted;
                 text-decoration-color: transparent;
-                text-underline-offset: 6px; }
+                text-underline-offset: 6px;
+                transition: color var(--dur-1) var(--ease-press),
+                            text-decoration-color var(--dur-1)
+                              var(--ease-press),
+                            transform var(--dur-1) var(--ease-press); }
 .navdock-item--on { color: var(--ink); font-weight: 600;
                 text-decoration-style: solid;
                 text-decoration-color: var(--pencil); }
 .navdock-item[disabled] { opacity: 0.4; pointer-events: none; }
+/* R-1V：hover 墨色微沉；:active 触压 1px */
+.navdock-item:hover { color: var(--ink); }
+.navdock-item:active { transform: translateY(1px); }
 
 /* ── 19. space-header（空间头部）───────────────────────────────────
    结构：<header class="top space-header">——.top（屏级品牌条基形，
@@ -395,12 +499,12 @@ button:focus-visible, input:focus-visible {
    <button class="section-tab" role="tab" aria-controls="…"
    data-section="…">节名</button>×n</nav> + role="tabpanel" 面板
    （aria-labelledby 回指签 id）。
-   状态矩阵：unselected（default：次级墨、透明点线占位）/ selected
-   （--on：主墨加重 + 赭红实线下划短线，aria-selected="true"）/
-   focus（地基 button:focus-visible 的 --pencil 焦点环，不另设）/
-   [disabled]（opacity .4 + 无 pointer，随地基规则）。键盘：roving
-   tabindex（选中项 tabindex 0、其余 -1），左右箭头循环移选
-   （wireSectionTabs）。
+   状态矩阵：unselected（default：次级墨、透明点线占位）/ hover
+   （R-1V：墨色微沉）/ selected（--on：主墨加重 + 赭红实线下划短线，
+   aria-selected="true"）/ focus（地基 button:focus-visible 的
+   --pencil 焦点环，不另设）/ [disabled]（opacity .4 + 无 pointer，
+   随地基规则）。键盘：roving tabindex（选中项 tabindex 0、其余 -1），
+   左右箭头循环移选（wireSectionTabs）。
    使用规则：学案与柜抽各一排（三项）；进空间落默认节、切节即拉（面板
    三态走 #14）；一切文字 textContent。
    禁止变体：页签底色块、关闭钮、横滚、两层节签嵌套。 */
@@ -412,33 +516,132 @@ button:focus-visible, input:focus-visible {
                padding: 10px 0 8px;
                text-decoration: underline dotted;
                text-decoration-color: transparent;
-               text-underline-offset: 6px; }
+               text-underline-offset: 6px;
+               transition: color var(--dur-1) var(--ease-press),
+                           text-decoration-color var(--dur-1)
+                             var(--ease-press); }
 .section-tab--on { color: var(--ink); font-weight: 600;
                text-decoration-style: solid;
                text-decoration-color: var(--pencil); }
 .section-tab[disabled] { opacity: 0.4; pointer-events: none; }
+/* R-1V：hover 墨色微沉（未选中签的指尖应答） */
+.section-tab:hover { color: var(--ink); }
 
 /* ── 21. disclosure（折叠组）────────────────────────────────────────
    结构：<div class="disclosure"><button class="disclosure-head"
-   aria-expanded="false"><span class="disclosure-marker">▸</span>
-   <span class="disclosure-title">名称（计数）<span
+   aria-expanded="false"><span class="disclosure-marker">[chevron 墨线
+   小图（#22）]</span><span class="disclosure-title">名称（计数）<span
    class="disclosure-examples">例一 · 例二 …</span></span></button>
    <div class="disclosure-body" hidden>…内容区…</div></div>——工厂
    disclosure(opts)（components.js，R-1R）；组头行即开关（名称 + 计数 +
    两枚示例弱化小字），计数与示例在展开后保留。
-   状态矩阵：collapsed（default，内容区 hidden，标记 ▸）/ expanded
-   （--open：内容区展开、标记 ▾、aria-expanded="true"）/ focus（地基
-   button:focus-visible 的赭红环，不另设）。
+   状态矩阵：collapsed（default，内容区 hidden，chevron 向右）/
+   expanded（--open：内容区展开、chevron 旋转 90° 向下、
+   aria-expanded="true"；内容区入场 = ⑨-5 paper-unfold 纸面展开
+   一次）/ focus（地基 button:focus-visible 的赭红环，不另设）。
+   R-1V 修订：标记由 ▸/▾ 字符换 #22 自绘墨线 chevron（展开态从换
+   字符改 --open 类驱动 SVG 旋转）——「不得图标外链」不变（内联
+   自绘非外链）。
    使用规则：一切「超过 8 行的同质列表」与「参考 / 原始读数」一律走它
    （⑧ 8.2.9）；组头文字一律 textContent（名称 / 计数 / 示例全惰性）。
    禁止变体：手风琴（互斥展开）、嵌套、图标外链。 */
 .disclosure { margin-top: 6px; }
 .disclosure-head { display: flex; gap: 8px; align-items: baseline;
             width: 100%; text-align: left; font-family: var(--f-sans);
-            font-size: 12px; color: var(--ink-soft); padding: 4px 0; }
+            font-size: 12px; color: var(--ink-soft); padding: 4px 0;
+            transition: color var(--dur-1) var(--ease-press); }
 .disclosure-head:hover { color: var(--ink); }
 .disclosure-marker { flex: none; color: var(--ink-faint); }
+/* chevron（#22）：12px 墨线小箭头；展开 = 旋转 90°，纸面翻开的手感
+   （⑨-5，--dur-2 --ease-paper） */
+.disclosure-marker .inkicon { width: 12px; height: 12px;
+            vertical-align: -1px;
+            transition: transform var(--dur-2) var(--ease-paper); }
+.disclosure--open .disclosure-marker .inkicon {
+            transform: rotate(90deg); }
 .disclosure-examples { margin-left: 8px; color: var(--ink-faint);
             font-family: var(--f-mono); font-size: 11px;
             overflow-wrap: anywhere; }
 .disclosure-body { margin: 2px 0 8px 16px; }
+/* 纸面展开（⑨-5 paper-unfold）：内容区每次展开入场一次——轻位移 +
+   淡入，长尾纸感缓动；reduced-motion 随库尾总降级归零 */
+.disclosure-body:not([hidden]) {
+            animation: paper-unfold var(--dur-2) var(--ease-paper) both; }
+
+/* ── 22. icon-set（墨线图标集，R-1V）─────────────────────────────────
+   结构：<svg class="inkicon" viewBox="0 0 20 20">——几何唯一出处是
+   index.html 的 <template id="icon-set-source">；工厂 inkIcon(name)
+   （components.js）从模板内容查一枚克隆并摘掉 id；插槽安装
+   installIcons() 把 <span data-icon="…"> 换成克隆（#13 同法），插槽
+   class 过继给克隆体。
+   现役七枚：search（筛框名牌，随 #16）/ chevron（#21 折叠箭头，随
+   --open 旋转）/ note（#3 卡头小笺）/ write（回信在途中执笔，随
+   .typing）/ inbox（空厅空信箱，随 .sysline.emptyhall）/ lamp（#14
+   空态未点亮的灯）/ postmark（桌面边注栏邮戳水印，⑨-6）。
+   状态矩阵：default（--icon-size 见方、currentColor 墨色、
+   --icon-stroke 笔重 1.5、圆角端点——颜色随宿主上下文，无独立
+   交互态；chevron 的旋转是宿主 #21 的 --open 态面，不是图标自身
+   态）；reduced-motion：宿主动效随库尾总降级块归零后图标静帧。
+   使用规则：统一 20×20 网格自绘、统一笔重、统一圆角端点；功能位
+   用 currentColor 随宿主墨色层级（弱化位 = --ink-faint / 水印位 =
+   --ink-ghost）；一切图标 aria-hidden——语义由宿主文字承担，锚位
+   必有文字同行。
+   禁止变体：外链图标 / 图标字体 / data URI、彩色填充、第二套网格
+   或笔重、无文字同行的纯图标按钮（#1 契约「禁图标」不动——图标
+   不进按钮当唯一内容）。 */
+.inkicon { width: var(--icon-size); height: var(--icon-size);
+           fill: none; stroke: currentColor;
+           stroke-width: var(--icon-stroke);
+           stroke-linecap: round; stroke-linejoin: round; }
+/* 语境位（宿主在屏级/组件内的尺寸与色调，一处登记）： */
+.typing .inkicon { width: 14px; height: 14px; margin-right: 7px;
+           vertical-align: -2px; color: var(--ink-ghost); }
+/* 空厅：整行向下让一档（--sp-6），空信箱与定稿句在纸面中央偏上落座 */
+.sysline.emptyhall { margin-top: var(--sp-6); }
+.sysline.emptyhall .inkicon { display: block; width: 30px;
+           height: 30px; margin: 0 auto 10px; color: var(--ink-ghost); }
+
+/* ── R-1V 动效注册表（spec ⑨-5 的唯一实现出处）─────────────────────
+   ink-fade（新信墨迹淡入：.flow-enter，addLine 的 enter 选项——新寄出
+   与新到达的信才播，历史回填不播）/ note-arrive（短笺递入：
+   .note-paper--enter，新短笺组到达播一次，轮询重渲染不重演）/
+   paper-unfold（折叠组纸面展开：.disclosure-body:not([hidden])，
+   见 #21）。时长×缓动全走令牌（--dur-*/--ease-*）；reduced-motion
+   由库尾总降级块归零。 */
+.flow-enter { animation: ink-fade var(--dur-3) var(--ease-ink) both; }
+@keyframes ink-fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.note-paper--enter { animation: note-arrive var(--dur-2)
+          var(--ease-paper) both; }
+@keyframes note-arrive {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes paper-unfold {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* R-1V 焦点环精修：地基环（button/input）不动，补齐 textarea/select
+   两个漏网控件——同一赭红环，同一 offset。 */
+textarea:focus-visible, select:focus-visible {
+  outline: 1px solid var(--pencil); outline-offset: 2px; }
+
+/* R-1V 桌面构图的组件侧调整（⑨-6；壳层构图在 screens.css）：≥900px
+   时 dock 三项收拢居中（默认 flex:1 是窄屏均分形态，一行不动）。 */
+@media (min-width: 900px) {
+  .navdock[aria-label] { justify-content: center; gap: var(--sp-7); }
+  .navdock-item[data-space] { flex: 0 1 auto; min-width: 132px; }
+}
+
+/* R-1V 动效总降级（⑨-5）：prefers-reduced-motion 下全库 transition /
+   animation 归零——#14 的 state-breathe 专门降级块保留在契约旁（既有
+   钉），本块是覆盖全部新旧动效的统一保险。 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

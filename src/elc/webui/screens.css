@@ -2,7 +2,9 @@
    门厅（first-visit）/ 客厅 / 学案 / 柜抽 + dock（写信区）/flow/spacebody
    等屏级规则。声明值逐字来自拆分前的内嵌样式（组件三件 #18/#19/#20 的
    样式在 components.css，本文件不得定义组件——尤其不得定义按钮样式——
-   docs/FRONTEND_SPEC.md ④⑤）。 */
+   docs/FRONTEND_SPEC.md ④⑤）。R-1V 起：≥900px 桌面构图（舞台化纸面 +
+   边注栏 .marginalia，断点 900px，⑨-6）也在此——组件侧响应调整在
+   components.css 库尾（单一出处不搬家）。 */
 
 /* ── 壳层 ─────────────────────────────────────────────────────────── */
 html, body { margin: 0; padding: 0; background: var(--bg); }
@@ -20,9 +22,14 @@ body {
 /* ── 开张屏（first visit；localStorage 记住后不再出现）：三步信纸 ── */
 .ob { padding: 54px var(--read-pad) 60px; min-height: 100vh; }
 .ob .brandmark { display: block; margin: 0 auto 18px; }
-.ob .formhead { text-align: center; font-family: var(--f-sans);
+.ob .formhead { display: flex; align-items: center; gap: 12px;
+                font-family: var(--f-sans);
                 font-size: 11px; letter-spacing: 0.3em;
                 color: var(--ink-faint); margin: 0 0 10px; }
+/* R-1V：步题两侧的界尺发丝线——信纸分栏的手作小标（线随字伸缩） */
+.ob .formhead::before, .ob .formhead::after {
+                content: ""; flex: 1;
+                border-top: 1px solid var(--rule-soft); }
 .ob h1 { text-align: center; margin: 0 0 10px; font-size: 27px;
          font-weight: 500; letter-spacing: 0.14em; }
 .ob .sub { text-align: center; margin: 0 0 10px; font-size: 13px;
@@ -67,8 +74,8 @@ body {
         bottom: var(--navdock-h); z-index: 8;
         background: var(--bg); border-top: 1px solid var(--rule);
         padding: 10px var(--read-pad) 14px;
-        max-width: 430px; margin: 0 auto; }
-.dock-row { display: flex; align-items: stretch; gap: 12px; }
+        max-width: var(--shell-w); margin: 0 auto; }
+.dock-row { display: flex; align-items: stretch; gap: var(--sp-3); }
 
 /* ── 学案/柜抽的空间正文（R-1）：三个节面板共用的正文留白与标题形态 ── */
 /* R-1R（⑧ 8.2.9）：页题只念一遍（节名槽承担），节内不再有 h2；
@@ -82,7 +89,8 @@ body {
    （.sub 底 + mono 数字），非组件故留在本表。原文小字 .rawtag 是组件库
    形态（#15 词卡 / #17 chip 共用），唯一出处在 components.css。 */
 .sumline .sumnum { font-family: var(--f-mono); font-size: 11px;
-              font-variant-numeric: tabular-nums; }
+              font-variant-numeric: tabular-nums; font-weight: 600;
+              color: var(--ink); }
 pre { font-family: var(--f-mono); font-size: 11px; line-height: 1.7;
       color: var(--ink-soft); overflow-x: auto; white-space: pre-wrap;
       overflow-wrap: anywhere; border-top: 1px solid var(--rule-soft);
@@ -104,3 +112,34 @@ pre { font-family: var(--f-mono); font-size: 11px; line-height: 1.7;
 .taxref { margin: 4px 0 0; font-family: var(--f-sans); font-size: 11px;
           color: var(--ink-faint); line-height: 1.8;
           overflow-wrap: anywhere; }
+
+/* ── R-1V 桌面构图（spec ⑨-6；断点 900px）────────────────────────────
+   否决词「留白过分 / 白板模版」的构图解法：≥900px 时整页成一张摊在
+   案头的纸——桌布（--desk）托着纸面（--bg，1080 宽，双层发丝镶边），
+   信纸栏收 640 阅读宽居中，右缘边注栏（案头日期 / 界尺 / 邮戳水印）
+   把留白写成构图。空白不是删掉也不是填满，是被「案头」占用。
+   窄屏（≤480）与中间档一行不动——以下全部规则只在 ≥900px 生效。 */
+.marginalia { display: none; }
+@media (min-width: 900px) {
+  :root { --shell-w: 1080px; }
+  html, body { background: var(--desk); }
+  #stage { max-width: 1080px; background: var(--bg);
+           border-left: 1px solid var(--rule);
+           border-right: 1px solid var(--rule);
+           outline: 1px solid var(--rule-soft); outline-offset: 5px; }
+  .ob { max-width: 640px; margin-left: auto; margin-right: auto; }
+  .flow, .spacebody { max-width: 640px; margin-left: auto;
+                      margin-right: auto; }
+  .dock-row { max-width: 604px; margin-left: auto; margin-right: auto; }
+  .marginalia { display: block; position: absolute; top: 0; right: 0;
+                bottom: 0; width: 208px; pointer-events: none; }
+  .marginalia-date { margin: 74px 28px 0 0; text-align: right;
+                     font-family: var(--f-mono);
+                     font-size: var(--fs-micro);
+                     letter-spacing: 0.12em; color: var(--ink-faint); }
+  .marginalia-rule { position: absolute; top: 96px; right: 33px;
+                     width: 44px; border-top: 1px solid var(--ink-ghost); }
+  .marginalia-mark { position: absolute; right: 26px; bottom: 148px;
+                     width: 84px; height: 84px; color: var(--ink-ghost);
+                     opacity: 0.55; }
+}
