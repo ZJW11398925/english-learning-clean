@@ -1,6 +1,6 @@
-// app.js —— 装配：三屏切换 / 信流事件 / 轮询 / 学习与诊断的读数渲染
-// （F-G1）。只做装配与视图渲染：端点调用只走 api.js，DOM 工厂只走
-// components.js；文字一律 textContent。装配顺序＝模块加载即绑定
+// app.js —— 装配：空间与节切换（R-1）/ 信流事件 / 轮询 / 学习与诊断的
+// 读数渲染（F-G1）。只做装配与视图渲染：端点调用只走 api.js，DOM 工厂
+// 只走 components.js；文字一律 textContent。装配顺序＝模块加载即绑定
 // （type="module" 天然延迟到文档解析后，与拆分前页尾内联脚本同语义）。
 
 import {
@@ -18,6 +18,11 @@ import {
   confirmDialog,
   fieldRow,
   chip,
+  wireNavdock,
+  markNavdock,
+  wireSectionTabs,
+  markSectionTabs,
+  sectionLabel,
 } from "./components.js";
 import {
   fetchTurn,
@@ -248,7 +253,7 @@ async function postTeachMe(targetId) {
     const data = await fetchTeachMe(targetId);
     if (data.accepted) {
       addLine("system", "教学已开始，卡片出现在下方");
-      showScreen("living");
+      showSpace("parlor");
       startMomentPolling();
     } else {
       addLine("failure", data.error || "无法开始这节课");
@@ -1007,7 +1012,7 @@ async function loadGoals() {
     box.appendChild(stateBanner("loading"));
   }
   // the result box is NOT touched here: a save's own line must survive the
-  // re-read that follows it (hiding happens on screen entry, showScreen)
+  // re-read that follows it (hiding happens on section entry, showSection)
   try {
     goalData = await fetchGoals();
   } catch {
@@ -1043,12 +1048,6 @@ async function loadGoals() {
   renderGoalTaxref();
 }
 
-document.getElementById("goal-toggle").addEventListener("click",
-  () => showScreen("goal"));
-document.getElementById("goal-set").addEventListener("click",
-  () => showScreen("set"));
-document.getElementById("back-from-goal").addEventListener("click",
-  () => showScreen("living"));
 document.getElementById("goal-refresh").addEventListener("click", loadGoals);
 
 // F-2: why a quiet turn was quiet — one gray line from the diagnostics
@@ -1085,43 +1084,87 @@ async function showBlockedNote() {
   messages.scrollTop = messages.scrollHeight;
 }
 
-// F-1R: the screens — 开张 / 客厅 / 今日 / 仪表 — plain show/hide, no
-// router: the parlor header's 今日 and 仪表 links lead to their screens
-// and each screen's way back leads to the parlor.
-const screens = {
+// R-1: the spaces — 门厅 / 客厅 / 学案 / 柜抽 — plain show/hide, no
+// router. The dock (#18) is the only way between spaces; entering the
+// study or the drawer lands its default section, and switching a section
+// (#20 tabs) is the pull — the section always shows its own facts, never
+// a stale page.
+const spaces = {
   onboard: document.getElementById("screen-onboard"),
-  living: document.getElementById("screen-living"),
-  today: document.getElementById("screen-today"),
-  goal: document.getElementById("screen-goal"),
-  set: document.getElementById("screen-set"),
+  parlor: document.getElementById("space-parlor"),
+  study: document.getElementById("space-study"),
+  drawer: document.getElementById("space-drawer"),
 };
 
-function showScreen(name) {
-  for (const key of Object.keys(screens)) {
-    screens[key].hidden = key !== name;
-  }
-  // p-1: entering the 今日 screen is the pull — the screen always shows
-  // today's facts, never a stale page. p-3: the 目标 screen is the same
-  // kind of door — entering it reads the goals afresh (and starts with no
-  // leftover save result; a save's own line survives its re-read).
-  if (name === "today") loadToday();
-  if (name === "goal") {
+const SECTION_BODIES = {
+  study: {
+    today: document.getElementById("study-today"),
+    goal: document.getElementById("study-goal"),
+    progress: document.getElementById("study-progress"),
+  },
+  drawer: {
+    memory: document.getElementById("drawer-memory"),
+    privacy: document.getElementById("drawer-privacy"),
+    settings: document.getElementById("drawer-settings"),
+  },
+};
+
+const SECTION_NAMES = {
+  today: "今日", goal: "目标", progress: "进步",
+  memory: "记忆", privacy: "隐私", settings: "设置",
+};
+
+// 进空间落默认节（学案=今日、柜抽=记忆）
+const DEFAULT_SECTION = { study: "today", drawer: "memory" };
+
+// entering a section is the pull; settings has nothing to pull yet — the
+// honest placeholder stands (no promised face, no promised date)
+const SECTION_PULLS = {
+  "study-today": loadToday,
+  "study-goal": () => {
+    // a save's own line must survive the re-read that follows a save;
+    // the hiding happens on entry (showSection), not inside loadGoals
     goalBox("goal-result").hidden = true;
     loadGoals();
+  },
+  "study-progress": () => { loadTargets(); loadLearning(); loadDiagnostics(); },
+  "drawer-memory": loadMemory,
+  "drawer-privacy": loadDelTargets,
+};
+
+function showSection(space, name) {
+  const group = SECTION_BODIES[space];
+  for (const key of Object.keys(group)) {
+    group[key].hidden = key !== name;
   }
+  markSectionTabs(document.getElementById(space + "-tabs"), name);
+  sectionLabel(document.getElementById(space + "-head"),
+    SECTION_NAMES[name]);
+  const pull = SECTION_PULLS[space + "-" + name];
+  if (pull) pull();
   window.scrollTo(0, 0);
 }
 
-document.getElementById("meter-toggle").addEventListener("click",
-  () => showScreen("set"));
-document.getElementById("today-toggle").addEventListener("click",
-  () => showScreen("today"));
-document.getElementById("today-set").addEventListener("click",
-  () => showScreen("set"));
-document.getElementById("back-from-today").addEventListener("click",
-  () => showScreen("living"));
-document.getElementById("back-to-living").addEventListener("click",
-  () => showScreen("living"));
+function showSpace(name) {
+  for (const key of Object.keys(spaces)) {
+    spaces[key].hidden = key !== name;
+  }
+  markNavdock(name);
+  // the vestibule has no spaces to switch between — the door button is
+  // the one way in, so the dock stands down while the cover is up
+  document.getElementById("navdock").hidden = name === "onboard";
+  if (name === "study") showSection("study", DEFAULT_SECTION.study);
+  if (name === "drawer") showSection("drawer", DEFAULT_SECTION.drawer);
+  window.scrollTo(0, 0);
+}
+
+// R-1 wiring: the dock switches spaces, the two tab lists switch sections
+// (a click and the left/right arrows both land on the same showSection).
+wireNavdock((name) => showSpace(name));
+wireSectionTabs(document.getElementById("study-tabs"),
+  (name) => showSection("study", name));
+wireSectionTabs(document.getElementById("drawer-tabs"),
+  (name) => showSection("drawer", name));
 
 // p-1: 点词——信件与用户回条里的 .word 可点。以点击词为中心取 1–3 词
 // 窗口（长窗优先），逐窗口调 /api/word，首个命中即出卡；miss 按契约
@@ -1153,24 +1196,10 @@ messages.addEventListener("click", async (event) => {
   }
 });
 
-// F-1R: the set screen's four blocks — 学习 / 诊断 / 记忆（p-2）/ 隐私
-// （p-2）— expand in place (the F-1R task book leaves the choice to this
-// page, recorded here): the expansion pulls the block's read, the refresh
-// links re-pull.
-function toggleSetBlock(name) {
-  for (const block of ["learning", "diagnostics", "memory", "privacy"]) {
-    document.getElementById("set-" + block).hidden = name !== block;
-  }
-  if (name === "diagnostics") loadDiagnostics();
-  if (name === "learning") { loadTargets(); loadLearning(); }
-  if (name === "memory") loadMemory();
-  if (name === "privacy") loadDelTargets();
-}
-
-for (const link of document.querySelectorAll(".btn--set")) {
-  link.addEventListener("click", () =>
-    toggleSetBlock(link.dataset.block || "learning"));
-}
+// R-1: the old four-block expansion row (the set-screen links) retired
+// with the 仪表 screen — the blocks now live as always-mounted sections
+// (学案·进步 / 柜抽·记忆 / 柜抽·隐私), pulled on section entry
+// (SECTION_PULLS).
 
 // F-1R: the first-visit screen. localStorage remembers the visit; a
 // storage that refuses (privacy mode) answers "seen" so nobody is
@@ -1196,7 +1225,7 @@ function markOnboarded() {
 
 document.getElementById("ob-go").addEventListener("click", () => {
   markOnboarded();
-  showScreen("living");
+  showSpace("parlor");
 });
 
 // W-4: the teaching card must not wait for the model. The moment row is
@@ -1319,10 +1348,11 @@ async function loadHistory() {
 
 window.addEventListener("DOMContentLoaded", () => {
   // F-G2: the brand marks (the template's clones) land before the first
-  // screen shows, so the cover and both brand bars are never bare.
+  // screen shows, so the cover and every space header is never bare.
   installBrandMarks();
   loadHistory();
-  // F-1R: the first visit sees the cover; every later visit lands in the
-  // parlor directly (the cover never comes back once localStorage says so)
-  showScreen(seenOnboard() ? "living" : "onboard");
+  // F-1R/R-1: the first visit sees the cover; every later visit lands in
+  // the parlor directly (the cover never comes back once localStorage
+  // says so)
+  showSpace(seenOnboard() ? "parlor" : "onboard");
 });

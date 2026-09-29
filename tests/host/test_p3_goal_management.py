@@ -671,8 +671,12 @@ def test_the_goal_screen_is_wired_into_the_shell(
 ) -> None:
     with web_stack(tmp_path / "app.db") as stack:
         page = _page_source(stack)
-        assert 'id="screen-goal"' in page
-        assert 'id="goal-toggle"' in page
+        # R-1 随迁：目标屏迁入**学案空间 · 目标节**——旧屏 id 与 toggle
+        # 退役（缺位钉），节面板与刷新读数原 id 保留
+        assert 'id="screen-goal"' not in page
+        assert 'id="goal-toggle"' not in page
+        assert 'id="study-goal"' in page
+        assert 'id="tab-study-goal"' in page
         assert 'id="goal-refresh"' in page
         # the remove-goal copy says what it really is: a version move,
         # not an /api/delete-grade irreversible deletion. The p-3

@@ -13,7 +13,9 @@ never its code):
    客厅 (the parlor: the partner card, the letter flow, the borderless
    pen line with the 寄出 link) and 仪表 (the honest set screen: the
    endpoint and the model name have no page-side source and are not
-   shown, 学习/诊断 expand in place, 回客厅 leads back);
+   shown, 学习/诊断 expand in place, 回客厅 leads back) — R-1 随迁后：
+   屏迁空间（客厅=space-parlor），仪表的诚实句与四块归位（进步/柜抽），
+   缺位钉保证旧壳不回流;
 3. the teaching note keeps every semantic string the behavior suites
    pin (the W-6 arms and their confirm, the busy strip, the verdict
    strip in ochre/ink — never a green/red wash), and the letters keep
@@ -89,22 +91,27 @@ def test_the_page_has_the_first_visit_cover(tmp_path: Path) -> None:
     # the cover never returns once localStorage says so; a refusing
     # storage answers "seen" (nobody is trapped on the cover)
     assert 'ONBOARD_KEY = "elp.parlor.onboarded.v1"' in page
-    assert 'seenOnboard() ? "living" : "onboard"' in page
+    # R-1 随迁：进门落客厅空间（space-parlor 取代 screen-living）
+    assert 'seenOnboard() ? "parlor" : "onboard"' in page
     # honesty: no persona-authoring form exists on the cover
     assert "生成人设" not in page
     assert "人设卡" not in page
 
 
 def test_the_page_has_the_parlor_screen(tmp_path: Path) -> None:
-    """The 客厅屏: the partner card (the fixed name — the host exposes no
-    readable persona identity, so none is shown), the 仪表 toggle, the
-    letter flow, and the borderless pen line with the 寄出 link."""
+    """The 客厅空间: the partner card (the fixed name — the host exposes no
+    readable persona identity, so none is shown), the letter flow, and the
+    borderless pen line with the 寄出 link. R-1 随迁：屏迁空间
+    （space-parlor），品牌条减三 toggle（导航归 dock，缺位钉）。"""
 
     page = _page_of(tmp_path)
-    assert 'id="screen-living"' in page
+    assert 'id="space-parlor"' in page
+    assert 'id="screen-living"' not in page
     assert '<div class="who">英语客厅</div>' in page
     assert "固定伙伴" in page
-    assert 'id="meter-toggle"' in page
+    assert 'id="meter-toggle"' not in page
+    assert 'id="topactions"' not in page
+    assert "topactions" not in page
     assert 'id="messages"' in page
     assert 'id="moments"' in page
     assert '<textarea id="text" class="pen"' in page
@@ -119,29 +126,40 @@ def test_the_page_has_the_parlor_screen(tmp_path: Path) -> None:
     )
 
 
-def test_the_page_has_the_honest_set_screen(tmp_path: Path) -> None:
-    """The 仪表屏: the model endpoint and the model name have no
-    page-side source — the absence is said, not faked; 学习/诊断 expand
-    in place; 回客厅 leads back."""
+def test_the_honest_faces_split_into_drawer_and_progress(
+    tmp_path: Path,
+) -> None:
+    """The honest faces of the old 仪表 screen, R-1 归位后仍在：
+    the model endpoint and the model name have no page-side source — the
+    absence is said, not faked (the sentence moved to the drawer's
+    settings section); 学习/诊断 live as always-mounted blocks in
+    学案·进步（证据/为什么/观察 三组），记忆/隐私 in the drawer; the
+    old setlinks/toggleSetBlock expansion retired (absence pins), the
+    one-visible-section semantics rides the section loop."""
 
     page = _page_of(tmp_path)
-    assert 'id="screen-set"' in page
+    assert 'id="screen-set"' not in page
     assert "页面不读取、不显示（宁缺勿假）" in page
-    assert 'data-block="learning"' in page
-    assert 'data-block="diagnostics"' in page
-    assert ">学习</button>" in page
-    assert ">诊断</button>" in page
+    # the two always-mounted read blocks and the three group headings
     assert 'id="set-learning"' in page
     assert 'id="set-diagnostics"' in page
-    assert 'id="back-to-living"' in page
-    # the in-place expansion choice, recorded where the task book left it.
-    # p-2 migrated the literal: the two-block assignments became the
-    # four-block loop (学习 / 诊断 / 记忆 / 隐私), so the pin reads the
-    # loop's own toggle — same semantics (one block visible at a time),
-    # all four blocks named.
-    assert "function toggleSetBlock(" in page
-    assert 'document.getElementById("set-" + block).hidden' in page
-    assert '"learning", "diagnostics", "memory", "privacy"' in page
+    for group in (">证据</h3>", ">为什么</h3>", ">观察</h3>"):
+        assert group in page
+    # the setlinks row and its data-block links retired (absence pins)
+    assert 'data-block=' not in page
+    assert ">学习</button>" not in page
+    assert ">诊断</button>" not in page
+    assert 'id="back-to-living"' not in page
+    # the in-place expansion loop retired with the screen; the same
+    # one-visible semantics rides the section switch's comparison
+    assert "function toggleSetBlock(" not in page
+    assert 'document.getElementById("set-" + block).hidden' not in page
+    assert '"learning", "diagnostics", "memory", "privacy"' not in page
+    assert "group[key].hidden = key !== name;" in page
+    # the six section panels exist (three per space)
+    for panel in ("study-today", "study-goal", "study-progress",
+                  "drawer-memory", "drawer-privacy", "drawer-settings"):
+        assert f'id="{panel}"' in page
 
 
 # ---------------------------------------------------------------------------
@@ -222,6 +240,7 @@ def test_teach_me_starts_the_moment_poll(tmp_path: Path) -> None:
     reply now starts the W-4 poll in the same breath."""
 
     page = _page_of(tmp_path)
+    # R-1 随迁：教学开在空间切换后照常可见（showSpace("parlor") 同形两行）
     assert (
-        'showScreen("living");\n      startMomentPolling();' in page
+        'showSpace("parlor");\n      startMomentPolling();' in page
     )

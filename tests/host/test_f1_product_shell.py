@@ -140,26 +140,32 @@ def test_the_page_links_no_external_resource(tmp_path: Path) -> None:
 
 
 def test_the_page_has_the_three_screens(tmp_path: Path) -> None:
-    """The F-1R re-pin of the navigation: three screens — the first-visit
-    cover, the parlor, the honest set screen — plain JS show/hide, no
-    router, no tab bar; the parlor header's 仪表 link leads to the set
-    screen, which holds the five why-panels and the observations readout."""
+    """The R-1 re-pin of the navigation: 门厅 + 三空间 — the first-visit
+    cover, the parlor, the study and the drawer — plain JS show/hide, no
+    router, no tab bar; the dock (#18) is the only way between spaces
+    (the old toggles and ways back retired — absence pins), and the
+    study holds the five why-panels and the observations readout."""
 
     page = _page_of(tmp_path)
-    # the three screens (the form laws' negatives — no tab bar, no teal —
-    # live in tests/host/test_f1r_letter_design.py)
+    # the vestibule and the three spaces (the form laws' negatives — no
+    # tab bar, no teal — live in tests/host/test_f1r_letter_design.py)
     assert 'id="screen-onboard"' in page
-    assert 'id="screen-living"' in page
-    assert 'id="screen-set"' in page
-    # the parlor header's meter link and the set screen's way back
-    assert 'id="meter-toggle"' in page
-    assert ">仪表</button>" in page
-    assert 'id="back-to-living"' in page
-    assert "← 回客厅</button>" in page
-    # the switch is plain JS show/hide (no router library)
-    assert "function showScreen(" in page
-    assert "screens[key].hidden = key !== name;" in page
-    # the set screen holds the five why-panels and a refresh
+    assert 'id="space-parlor"' in page
+    assert 'id="space-study"' in page
+    assert 'id="space-drawer"' in page
+    # the old screens and their toggles/ways back are gone
+    assert 'id="screen-living"' not in page
+    assert 'id="screen-set"' not in page
+    assert 'id="meter-toggle"' not in page
+    assert ">仪表</button>" not in page
+    assert 'id="back-to-living"' not in page
+    assert "← 回客厅</button>" not in page
+    # the switch is plain JS show/hide (no router library); the dock
+    # carries the space switch
+    assert "function showSpace(" in page
+    assert "spaces[key].hidden = key !== name;" in page
+    assert 'id="navdock"' in page
+    # the study holds the five why-panels and a refresh
     for panel in _DIAG_PANEL_IDS:
         assert f'id="{panel}"' in page
     assert 'id="diag-refresh"' in page

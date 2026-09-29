@@ -12,8 +12,9 @@
 <body>
 <div id="stage">
 
-  <!-- 开张屏：first visit 一次（localStorage 记住）。三步信纸——是什么 /
-       教学怎么发生 / 就这么定；说到哪一行都是真的，不伪装任何功能。 -->
+  <!-- 门厅（开张屏，first visit 一次——localStorage 记住后不再出现）：
+       三步信纸——是什么 / 教学怎么发生 / 就这么定；说到哪一行都是真的，
+       不伪装任何功能。进门钮是它通向客厅的唯一门（R-1 起结构原样保留）。 -->
   <section id="screen-onboard" class="ob">
     <span data-brand-mark="lg"></span>
     <h1>把英语请进客厅</h1>
@@ -30,25 +31,21 @@
       </section>
       <section class="ob-step">
         <button id="ob-go" class="btn btn--ink" type="button">就这么定 →</button>
-        <p class="hint">进入后，右上角的「仪表」摊开客厅的全部账目与记录。</p>
+        <p class="hint">进入后，底部的「学案」摊开今天的复习与你的长期方向。</p>
         <p class="ob-version">elc · web</p>
       </section>
     </div>
   </section>
 
-  <!-- 客厅屏：品牌条（上下发丝线夹住）+ 信笺流（教学短笺随信流）+ 写信区。
-       信件文本按词分片（#15 的触发面），点词出卡。 -->
-  <section id="screen-living" hidden>
+  <!-- 客厅空间：品牌条（上下发丝线夹住；R-1 起不再挂任何链接——导航归
+       dock）+ 信笺流（教学短笺随信流）+ 写信区。信件文本按词分片（#15
+       的触发面），点词出卡。 -->
+  <section id="space-parlor" hidden>
     <header class="top">
       <span data-brand-mark="sm"></span>
       <div>
         <div class="who">英语客厅</div>
         <div class="who-sub">固定伙伴 · 你说英语，它用英语回你</div>
-      </div>
-      <div class="topactions">
-        <button id="today-toggle" class="btn btn--meter" type="button">今日</button>
-        <button id="goal-toggle" class="btn btn--meter" type="button">目标</button>
-        <button id="meter-toggle" class="btn btn--meter" type="button">仪表</button>
       </div>
     </header>
     <main class="flow">
@@ -64,19 +61,35 @@
     </div>
   </section>
 
-  <!-- 今日屏（p-1）：进客厅先看今天——到期复习 / 最近在学 / 想练一把。
-       三块全走 state-banner 三态；页面没有的活动供给不伪装（登记 Revisit）。
-       信流里点词出卡（#15）与本体无关，这里是客厅之外的第二个日常入口。 -->
-  <section id="screen-today" class="today" hidden>
-    <header class="top">
+  <!-- 学案空间：书桌。三节（今日 / 目标 / 进步），节签切换（#20），
+       进空间落默认节（今日）。头部 = #19 space-header（品牌条基形 +
+       节名槽，随节签联动）。 -->
+  <section id="space-study" hidden>
+    <header class="top space-header" id="study-head">
       <span data-brand-mark="sm"></span>
-      <div class="who">今日</div>
-      <div class="topactions">
-        <button id="today-set" class="btn btn--meter" type="button">仪表</button>
-        <button id="back-from-today" class="btn btn--meter" type="button">← 回客厅</button>
-      </div>
+      <div class="who">学案</div>
+      <div class="spacehead-sec">今日</div>
     </header>
-    <div class="todaybody">
+    <nav id="study-tabs" class="section-tabs" role="tablist"
+         aria-label="学案的节">
+      <button type="button" class="section-tab" role="tab"
+              id="tab-study-today" data-section="today"
+              aria-controls="study-today" aria-selected="true">今日</button>
+      <button type="button" class="section-tab" role="tab"
+              id="tab-study-goal" data-section="goal"
+              aria-controls="study-goal" aria-selected="false">目标</button>
+      <button type="button" class="section-tab" role="tab"
+              id="tab-study-progress" data-section="progress"
+              aria-controls="study-progress" aria-selected="false">进步</button>
+    </nav>
+    <div class="spacebody">
+
+    <!-- 今日节（p-1 迁入）：进客厅先看今天——到期复习 / 最近在学 /
+         想练一把。三块全走 state-banner 三态；页面没有的活动供给不伪装
+         （登记 Revisit）。信流里点词出卡（#15）与本体无关，这里是客厅
+         之外的第二个日常入口。 -->
+    <section id="study-today" role="tabpanel"
+             aria-labelledby="tab-study-today">
     <h2>今日</h2>
     <p class="sub">客厅在今天的样子——到期复习、最近在学、可以练什么。</p>
     <div class="sec">
@@ -92,23 +105,15 @@
       <div id="today-practice"><p class="note">暂无数据</p></div>
     </div>
     <button id="today-refresh" class="btn btn--dot" type="button">刷新读数</button>
-    </div>
-  </section>
+    </section>
 
-  <!-- 目标屏（p-3）：长期方向在此写下——目标卡读面 + 编辑面（增/删/改、
-       权重、考试与语域词表）+ 教学频率单列写。保存 = 全组合 upsert（版本
-       前移，替换当前内容，不保留旧版）；冲突诚实上浮（409）→「重新读取」。
-       参考词表三面 V1 无存储位，只看不改。文案 R7：执行者拟定，用户首验否决。 -->
-  <section id="screen-goal" class="goal" hidden>
-    <header class="top">
-      <span data-brand-mark="sm"></span>
-      <div class="who">目标</div>
-      <div class="topactions">
-        <button id="goal-set" class="btn btn--meter" type="button">仪表</button>
-        <button id="back-from-goal" class="btn btn--meter" type="button">← 回客厅</button>
-      </div>
-    </header>
-    <div class="goalbody">
+    <!-- 目标节（p-3 迁入）：长期方向在此写下——目标卡读面 + 编辑面
+         （增/删/改、权重、考试与语域词表）+ 教学频率单列写。保存 =
+         全组合 upsert（版本前移，替换当前内容，不保留旧版）；冲突诚实
+         上浮（409）→「重新读取」。参考词表三面 V1 无存储位，只看不改。
+         文案 R7：执行者拟定，用户首验否决。 -->
+    <section id="study-goal" role="tabpanel"
+             aria-labelledby="tab-study-goal" hidden>
     <h2>目标</h2>
     <p class="sub">你想把英语用在哪里、练到什么程度——这是客厅的长期方向。
        每次保存都会更新当前组合（版本号前移）；保存后无法找回上一版。</p>
@@ -149,31 +154,17 @@
     </div>
     <div id="goal-result" class="sec" hidden></div>
     <button id="goal-refresh" class="btn btn--dot" type="button">重新读取</button>
-    </div>
-  </section>
+    </section>
 
-  <!-- 仪表屏（设置）：顶部同款品牌条（回客厅常驻右上，面板再长也够得着）。
-       诚实事实屏：模型端点与模型名由启动命令给定，页面没有读取它们的口
-       ——宁缺勿假，不显示。学习与诊断两个区块点开即读（就地展开）。 -->
-  <section id="screen-set" class="set" hidden>
-    <header class="top sethead">
-      <span data-brand-mark="sm"></span>
-      <div class="who">英语客厅</div>
-      <button id="back-to-living" class="btn btn--meter" type="button">← 回客厅</button>
-    </header>
-    <div class="setbody">
-    <h2>仪表</h2>
+    <!-- 进步节：旧仪表屏的学习/诊断两块 + 观察读数合并迁入（R-1 归位，
+         分组标题：证据 / 为什么 / 观察）；各面板三态不变。 -->
+    <section id="study-progress" role="tabpanel"
+             aria-labelledby="tab-study-progress" hidden>
+    <h2>进步</h2>
     <p class="sub">客厅的账目与记录摊在这里——只读，如实。</p>
-    <p class="sub">本地单用户 · 127.0.0.1 · 无鉴权。模型端点与模型名由启动
-       命令给定，页面不读取、不显示（宁缺勿假）。</p>
-    <div class="setlinks">
-      <button type="button" class="btn btn--set" data-block="learning">学习</button>
-      <button type="button" class="btn btn--set" data-block="diagnostics">诊断</button>
-      <button type="button" class="btn btn--set" data-block="memory">记忆</button>
-      <button type="button" class="btn btn--set" data-block="privacy">隐私</button>
-    </div>
 
-    <section id="set-learning" class="setblock" hidden>
+    <section id="set-learning">
+      <div class="sec"><h3 class="grouphead">证据</h3></div>
       <div class="sec">
         <h3>可教目标</h3>
         <div id="target-list"><p class="note">暂无数据</p></div>
@@ -193,12 +184,8 @@
       <button id="learning-refresh" class="btn btn--dot" type="button">刷新读数</button>
     </section>
 
-    <section id="set-diagnostics" class="setblock" hidden>
-      <div class="sec">
-        <h3>观察读数</h3>
-        <button id="obs" class="btn btn--dot" type="button">拉取观察读数</button>
-        <pre id="obsout" hidden></pre>
-      </div>
+    <section id="set-diagnostics">
+      <div class="sec"><h3 class="grouphead">为什么</h3></div>
       <div class="sec">
         <h3>为什么教了这一课？</h3>
         <div id="why-teach"><p class="note">暂无数据</p></div>
@@ -222,10 +209,44 @@
       <button id="diag-refresh" class="btn btn--dot" type="button">刷新读数</button>
     </section>
 
-    <!-- p-2 记忆区块：五面板——关系记忆 / 剧情记忆 / 学习者状态（行级）/
-         证据 / 删除台账。点开即读（就地展开）；空态诚实（「还没有记住
-         什么」族——客厅如实说它没记住东西，不装）。 -->
-    <section id="set-memory" class="setblock" hidden>
+    <div class="sec">
+      <h3 class="grouphead">观察</h3>
+      <button id="obs" class="btn btn--dot" type="button">拉取观察读数</button>
+      <pre id="obsout" hidden></pre>
+    </div>
+    </section>
+
+    </div>
+  </section>
+
+  <!-- 柜抽空间：收纳抽屉（低频）。三节：记忆 / 隐私 / 设置。 -->
+  <section id="space-drawer" hidden>
+    <header class="top space-header" id="drawer-head">
+      <span data-brand-mark="sm"></span>
+      <div class="who">柜抽</div>
+      <div class="spacehead-sec">记忆</div>
+    </header>
+    <nav id="drawer-tabs" class="section-tabs" role="tablist"
+         aria-label="柜抽的节">
+      <button type="button" class="section-tab" role="tab"
+              id="tab-drawer-memory" data-section="memory"
+              aria-controls="drawer-memory" aria-selected="true">记忆</button>
+      <button type="button" class="section-tab" role="tab"
+              id="tab-drawer-privacy" data-section="privacy"
+              aria-controls="drawer-privacy" aria-selected="false">隐私</button>
+      <button type="button" class="section-tab" role="tab"
+              id="tab-drawer-settings" data-section="settings"
+              aria-controls="drawer-settings" aria-selected="false">设置</button>
+    </nav>
+    <div class="spacebody">
+
+    <!-- 记忆节（p-2 迁入）：五面板——关系记忆 / 剧情记忆 / 学习者状态
+         （行级）/ 证据 / 删除台账。点开即读（进节即拉）；空态诚实
+         （「还没有记住什么」族——客厅如实说它没记住东西，不装）。 -->
+    <section id="drawer-memory" role="tabpanel"
+             aria-labelledby="tab-drawer-memory">
+    <h2>记忆</h2>
+    <section id="set-memory">
       <div class="sec">
         <h3>关系记忆</h3>
         <div id="mem-relationship"><p class="note">暂无数据</p></div>
@@ -248,11 +269,14 @@
       </div>
       <button id="mem-refresh" class="btn btn--dot" type="button">刷新读数</button>
     </section>
+    </section>
 
-    <!-- p-2 隐私区块：三个有行为腿的删除入口。所有删除都不可恢复；
-         每个入口都要过两层确认。关系对删除需要 persona_id，本页无法
-         得知——诚实不装（宁缺勿假）。 -->
-    <section id="set-privacy" class="setblock" hidden>
+    <!-- 隐私节（p-2 迁入）：三个有行为腿的删除入口（本页两条 + 关系对
+         诚实缺席）。所有删除都不可恢复；每个入口都要过两层确认。 -->
+    <section id="drawer-privacy" role="tabpanel"
+             aria-labelledby="tab-drawer-privacy" hidden>
+    <h2>隐私</h2>
+    <section id="set-privacy">
       <p class="sub">这里可以删除客厅记住的东西。所有删除操作都不可恢复。</p>
       <div class="sec">
         <h3>当前对话</h3>
@@ -274,8 +298,31 @@
       </div>
       <div id="del-result" class="sec"></div>
     </section>
+    </section>
+
+    <!-- 设置节：诚实空态占位（R-3 将铺模式面与端点信息读面，此处不
+         预建、不承诺时点）。端点的诚实句在此延续：页面没有读取端点与
+         模型名的口，宁缺勿假。 -->
+    <section id="drawer-settings" role="tabpanel"
+             aria-labelledby="tab-drawer-settings" hidden>
+    <h2>设置</h2>
+    <p class="note">设置面尚未到来。</p>
+    <p class="sub">本地单用户 · 127.0.0.1 · 无鉴权。模型端点与模型名由启动
+       命令给定，页面不读取、不显示（宁缺勿假）。</p>
+    </section>
+
     </div>
   </section>
+
+  <!-- 空间导航（#18 dock）：常驻底部三项——客厅 / 学案 / 柜抽；当前
+       空间高亮（主墨加重 + 赭红短下划线）。门厅时整条让位（进门钮承担
+       进入）。教学短笺随信流可滚出底栏、点词卡浮层（#15，z 9）都在它
+       （z 6）之上。 -->
+  <nav id="navdock" class="navdock" aria-label="空间">
+    <button type="button" class="navdock-item" data-space="parlor">客厅</button>
+    <button type="button" class="navdock-item" data-space="study">学案</button>
+    <button type="button" class="navdock-item" data-space="drawer">柜抽</button>
+  </nav>
 
 </div>
 

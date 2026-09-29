@@ -518,3 +518,58 @@ export function chip(word, opts) {
   }
   return el;
 }
+
+// 18/19/20（R-1）：壳导航三件的接线面。dock 的项点击回报调用方
+//（wireNavdock）、当前态由 markNavdock 落 --on + aria-current；
+// section-tabs 的点击与左右箭头都回报调用方（wireSectionTabs——roving
+// tabindex：选中项 tabindex 0、其余 -1，焦点随箭头走，键盘序 = 视觉序），
+// 选中态由 markSectionTabs 落 aria-selected；space-header 的节名槽联动
+// 是 sectionLabel（textContent）。一切文字 textContent。
+export function wireNavdock(onSelect) {
+  for (const item of document.querySelectorAll(".navdock-item")) {
+    item.addEventListener("click", () => onSelect(item.dataset.space));
+  }
+}
+
+export function markNavdock(name) {
+  for (const item of document.querySelectorAll(".navdock-item")) {
+    const on = item.dataset.space === name;
+    item.classList.toggle("navdock-item--on", on);
+    if (on) item.setAttribute("aria-current", "page");
+    else item.removeAttribute("aria-current");
+  }
+}
+
+export function wireSectionTabs(list, onSelect) {
+  const tabs = Array.from(list.querySelectorAll("[role=tab]"));
+  list.addEventListener("keydown", (event) => {
+    const at = tabs.indexOf(document.activeElement);
+    if (at < 0) return;
+    let next = null;
+    if (event.key === "ArrowRight") next = (at + 1) % tabs.length;
+    if (event.key === "ArrowLeft") {
+      next = (at - 1 + tabs.length) % tabs.length;
+    }
+    if (next === null) return;
+    event.preventDefault();
+    tabs[next].focus();
+    onSelect(tabs[next].dataset.section);
+  });
+  for (const tab of tabs) {
+    tab.addEventListener("click", () => onSelect(tab.dataset.section));
+  }
+}
+
+export function markSectionTabs(list, name) {
+  for (const tab of list.querySelectorAll("[role=tab]")) {
+    const on = tab.dataset.section === name;
+    tab.classList.toggle("section-tab--on", on);
+    tab.setAttribute("aria-selected", on ? "true" : "false");
+    tab.tabIndex = on ? 0 : -1;
+  }
+}
+
+export function sectionLabel(header, text) {
+  const slot = header.querySelector(".spacehead-sec");
+  if (slot) slot.textContent = text;
+}

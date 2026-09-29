@@ -32,6 +32,7 @@
 | `--f-mono` | ui-monospace,… | 仪表行读数 | — |
 | `--read-pad` | `18px` | 阅读左右留白 | — |
 | `--safe-bottom` | `env(safe-area-inset-bottom, 0px)` | dock 底安全区 | — |
+| `--navdock-h` | `54px` | 常驻 dock（#18）高度：body 底 padding 与写信区让位的同一来源 | 不作行高 |
 
 规则：组件样式只许 `var()` 引用，**禁止在任何其他文件重写令牌字面值**；
 禁止新增 token 之外的十六进制颜色（零青绿——旧双色主题不得回流）。
@@ -60,16 +61,26 @@
 | 15 | word-card | `.word-card`（+ `.wc-lemma` `.wc-pos` `.wc-forms` `.wc-zh` `.wc-en` `.wc-example` `.word`） | — | default（rule-soft 底浮层）/ closed（点卡外或「收起」；DOM 移除语义，同 #11 的两臂不在 CSS）；无 busy——命中即显，miss 按契约静默 | components.css + components.js（`wordCard()`/`showWordCard()`/`closeWordCard()`；触发面 = `letterWords()` 的 `.word` 分片 + `wordWindows()` 窗口查询，app.js 委派） |
 | 16 | field | `.field`（+ `.fieldname`） | — | default（下发丝线）/ `:focus-within`（发丝线与名转赭红）/ 控件 `[disabled]`（opacity .4 + 无 pointer） | components.css + components.js（`fieldRow()`，p-3；label 包裹控件，点名牌即聚焦） |
 | 17 | chip | `.chip`（+ `--on` `--badge`） | — | off（default，发丝线描边）/ on（`--on`，主墨反白）/ `[disabled]`（opacity .4）/ `--badge`（只读徽标，非交互） | components.css + components.js（`chip()`，p-3；考试/语域/教学频率词表 picker + modality 徽标） |
+| 18 | dock | `.navdock`（+ `.navdock-item` `--on`；类名与写信区屏级类 `.dock` 异名共存） | — | default（次级墨、透明点线占位）/ `--on`（当前空间：主墨加重 + 赭红实线短下划 + `aria-current`）/ `[disabled]`（opacity .4） | components.css + components.js（`wireNavdock()`/`markNavdock()`，R-1；常驻底部三项 客厅/学案/柜抽，门厅整条让位；z 6 低于点词卡 z 9） |
+| 19 | space-header | `.space-header`（+ 节名槽 `.spacehead-sec`；与屏级基形 `.top` 合用） | — | default（发丝线夹持 sticky 顶栏，随 `.top`）；无交互态——静态头部，reduced-motion 不适用（契约注明） | components.css + components.js（`sectionLabel()`，R-1；学案/柜抽头部 = `.top` 基形 + 本类；客厅头部用 `.top` 原形；品牌条不再增长链接） |
+| 20 | section-tabs | `.section-tabs` / `.section-tab`（+ `--on`） | — | unselected（default，透明点线占位）/ selected（`--on`，主墨加重 + 赭红实线短下划 + `aria-selected`）/ focus（地基 `:focus-visible` 赭红焦点环，不另设）/ `[disabled]`（opacity .4） | components.css + components.js（`wireSectionTabs()`/`markSectionTabs()`，R-1；roving tabindex + 左右箭头循环移选；学案/柜抽各一排三项，切节即拉） |
 
 库外现役类（登记，不扩库）：`.teach-me`（裸 button 元素复位直用，无独立
 样式；p-1 起今日屏两块与目标清单共用同一行工厂；Revisit = 视觉规范刀再
 裁）；`.replyrow` / `.replytext`（note-paper 的
 内置回复面，随 #3 契约）；`.formhead` `.sub` `.hint` `.who` `.who-sub`
-`.typing` `.errline` `.blockedline`（屏级文字形态，screens.css）；
-`.today` `.todaybody` `.topactions`（今日屏屏级布局，screens.css，p-1）。
+`.typing` `.errline` `.blockedline` `.grouphead`（屏级文字形态，
+screens.css；`.grouphead` 是 R-1 进步节的分组小标）；`.today`
+`.todaybody` `.topactions` `.goalbody` `.setbody`（**R-1 退役**：五屏
+屏级布局类，随空间模型让位 `.spacebody`）。
 （F-G2 移出：`.diagerror`——面板失败态改走 #14，该类无现役用户，规则已删。）
+**R-1 现役面收窄**：#6 setlink-block（`.setlinks`/`.setblock`）与 #1 的
+`--set`/`--meter` 变体的**页面现役用户清零**（五屏的就地展开与品牌条
+链接被空间模型接替）——组件与变体**留库**（活注册表不是死档），契约块
+已改行注明；再启用须走 ⑤ 四步。
 #10 empty-state（`.note`）的现役面收窄为**壳上静态占位行**（index.html 的
-「暂无数据 / 无降级记录」首绘）；运行时面板的空态一律走 #14 的 empty 变体。
+「暂无数据 / 无降级记录 / 设置面尚未到来」首绘）；运行时面板的空态一律
+走 #14 的 empty 变体。
 
 **状态完备性硬门**：交互组件（本表现役 = link-btn、pen、note-paper、
 resultstrip）必须定义至少 default + 一态（active/disabled/busy/skipped）；
@@ -120,16 +131,20 @@ resultstrip）必须定义至少 default + 一态（active/disabled/busy/skipped
 
 ```
 src/elc/webui/
-  index.html        页面骨架（五屏 + <link>×3 + <script type="module">
-                    + brand-mark 的 <template> 几何出处）
-  tokens.css        VS1 token 唯一出处
-  components.css    组件库唯一样式源（17 组件 + 元素复位地基）
-  screens.css       屏级布局 + 壳层（html/body/#stage/dock/flow/屏级文字；
-                    p-3 起五屏：开张/客厅/今日/目标/仪表）
+  index.html        页面骨架（R-1 起三空间 + 门厅：#space-parlor /
+                    #space-study（三节）/ #space-drawer（三节）+
+                    #screen-onboard 门厅 + #navdock 常驻导航；
+                    <link>×3 + <script type="module"> + brand-mark 的
+                    <template> 几何出处）
+  tokens.css        VS1 token 唯一出处（R-1 增 --navdock-h）
+  components.css    组件库唯一样式源（20 组件 + 元素复位地基）
+  screens.css       屏级布局 + 壳层（html/body/#stage/dock=写信区/flow/
+                    spacebody/屏级文字；R-1 起三空间 + 门厅）
   api.js            端点 fetch 封装（页面唯一 fetch 调用点）
-  components.js     组件工厂 + 教学卡当场行为 + 点词卡（textContent-only；
-                    唯一 confirm 封装点）
-  app.js            装配：屏切换/事件/轮询/学习与诊断渲染（面板三态走 #14）
+  components.js     组件工厂 + 教学卡当场行为 + 点词卡 + 壳导航接线
+                    （textContent-only；唯一 confirm 封装点）
+  app.js            装配：空间与节切换/事件/轮询/学习与诊断渲染（面板
+                    三态走 #14；进空间落默认节，切节即拉）
 ```
 
 - **ES modules、零构建**：浏览器直 import 相对路径（`./api.js`），无打包
@@ -151,6 +166,13 @@ src/elc/webui/
 > 本节规定**空间模型、导航、屏内信息架构、交互模式与前瞻预留**——R-1..R-4
 > 每刀的任务书以本节为基准。结构本身属 R7 域：**用户对蓝图有首验否决权**
 > （F-1R 教训前置——先过目再动刀）。
+>
+> **落位注记**（R-1，2026-09-29）：8.1/8.2 已兑现——门厅 + 三空间
+>（`#space-parlor`/`#space-study`/`#space-drawer`）+ 常驻 dock 三项 +
+> 学案/柜抽节签；五屏归位映射完成（今日→学案·今日、目标→学案·目标、
+> 仪表拆→学案·进步〔证据/为什么/观察〕+ 柜抽·记忆/隐私；设置节 =
+> 诚实空态占位，R-3 铺面）；十二端点全部复用、零 API 改动；#18/#19/#20
+> 同刀入库（⑤）。8.4 伙伴条与 8.5 设置面**未动**（R-2/R-3 的位）。
 
 ### 8.1 空间模型（产品隐喻一致）
 

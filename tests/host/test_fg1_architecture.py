@@ -59,8 +59,9 @@ FILES: dict[str, str] = {
 #: components.css's contract blocks and the spec's table must both carry
 #: them (a renamed or dropped component breaks both pins at once).
 #: The registry is living (spec ⑤): F-G2 added brand-mark and
-#: state-banner, p-1 added word-card — each in the same cut that
-#: registered it in the spec.
+#: state-banner, p-1 added word-card, p-3 added field and chip, R-1
+#: added the shell navigation trio (dock / space-header / section-tabs)
+#: — each in the same cut that registered it in the spec.
 COMPONENTS = (
     "link-btn",
     "pen",
@@ -79,6 +80,9 @@ COMPONENTS = (
     "word-card",
     "field",
     "chip",
+    "dock",
+    "space-header",
+    "section-tabs",
 )
 
 
@@ -318,8 +322,17 @@ def test_interactive_components_carry_their_states() -> None:
         ".resultstrip.part",
         ".resultstrip.miss",
         ".pen::placeholder",  # pen: placeholder
+        ".navdock-item--on {",  # dock (R-1): active
+        ".navdock-item[disabled] {",  # dock: disabled
+        ".section-tab--on {",  # section-tabs (R-1): selected
     ):
         assert state in css, state
+    # section-tabs' focus arm rides the foundation's pencil ring (the
+    # R-1 contract names it; the ring itself is the ground rule's)
+    assert (
+        "button:focus-visible, input:focus-visible {\n"
+        "  outline: 1px solid var(--pencil); outline-offset: 2px; }" in css
+    )
     app = _webui_text("components.js")
     assert "批改中…" in app  # the busy wording (busystrip's live face)
     assert "button.disabled = busy" in app  # the disabled state, driven

@@ -141,7 +141,9 @@ button:focus-visible, input:focus-visible {
    <section class="setblock">（就地展开的面板容器）。
    状态矩阵：default（顶发丝线 + 水平排布）；setblock 靠 [hidden] 切换
    （display 由地基规则关断）。
-   使用规则：一对二（学习 / 诊断）；展开块紧跟 .setlinks。
+   使用规则：链接 + 随后展开块的配对形；R-1 起页面现役面退役（五屏的
+   就地展开被空间节切换接替）——组件留库，供后续同类「链接挑块」面
+   复用；再启用前不得在页面出现第四种用法。
    禁止变体：页签条、下拉。 */
 .setlinks { display: flex; gap: 22px; margin-top: 18px;
             border-top: 1px solid var(--rule); padding-top: 14px; }
@@ -327,3 +329,76 @@ button:focus-visible, input:focus-visible {
 .chip--badge { border-color: var(--rule-soft); color: var(--ink-soft);
         pointer-events: none; }
 .chip[disabled] { opacity: 0.4; pointer-events: none; }
+
+/* ── 18. dock（常驻空间导航）───────────────────────────────────────
+   结构：<nav class="navdock"><button class="navdock-item"
+   data-space="…">空间名</button>×3</nav>；fixed 底栏（随 #stage 居中
+   430px），发丝线顶边 + 纸底，无大面积色块；底 padding 吃
+   --safe-bottom。类名 navdock：与写信区 .dock（屏级类，screens.css）
+   异名共存在同一页。
+   状态矩阵：default（次级墨、透明点线占位——active 出现时不跳版）/
+   --on（当前空间：主墨加重 + 赭红实线下划短线，aria-current="page"）/
+   [disabled]（opacity .4 + 无 pointer，随地基规则）。
+   使用规则：每空间恰一项（客厅/学案/柜抽，底栏 ≤5 规则）；门厅时整条
+   [hidden]（进门钮承担进入）；教学短笺随信流可滚出底栏、点词卡浮层
+   （#15，z 9）在本组件（z 6）之上。接线 wireNavdock/markNavdock
+   （components.js）。禁止变体：色块、图标、四项以上、堆叠页签。 */
+.navdock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+           display: flex; max-width: 430px; margin: 0 auto;
+           background: var(--bg);
+           border-top: 1px solid var(--rule);
+           padding: 6px var(--read-pad)
+                    calc(6px + var(--safe-bottom)); }
+.navdock-item { flex: 1; font-family: var(--f-sans); font-size: 12px;
+                letter-spacing: 0.18em; color: var(--ink-soft);
+                padding: 8px 0 4px; text-align: center;
+                text-decoration: underline dotted;
+                text-decoration-color: transparent;
+                text-underline-offset: 6px; }
+.navdock-item--on { color: var(--ink); font-weight: 600;
+                text-decoration-style: solid;
+                text-decoration-color: var(--pencil); }
+.navdock-item[disabled] { opacity: 0.4; pointer-events: none; }
+
+/* ── 19. space-header（空间头部）───────────────────────────────────
+   结构：<header class="top space-header">——.top（屏级品牌条基形，
+   screens.css）+ 本修饰类；内含 brand-mark --sm（#13）+ 空间名（.who）
+   + 节名槽 .spacehead-sec（唯一联动面：随节签由 sectionLabel 落
+   textContent）。客厅头部用 .top 原形不加本类（品牌条减三 toggle 后
+   的形态），学案/柜抽头部加本类。
+   状态矩阵：default（上下发丝线夹持、sticky 顶栏——随 .top 基形）；
+   无交互态——静态头部，reduced-motion 不适用（契约在此注明）。
+   使用规则：每空间恰一具；品牌条不再增长链接（导航归 dock，含节名槽
+   在内的一切文字 textContent）。
+   禁止变体：头部链接回归、色块、双行节名。 */
+.space-header .spacehead-sec { margin-left: auto; align-self: center;
+               font-family: var(--f-sans); font-size: 11px;
+               letter-spacing: 0.18em; color: var(--ink-faint); }
+
+/* ── 20. section-tabs（空间内节签）─────────────────────────────────
+   结构：<nav class="section-tabs" role="tablist" aria-label="…">
+   <button class="section-tab" role="tab" aria-controls="…"
+   data-section="…">节名</button>×n</nav> + role="tabpanel" 面板
+   （aria-labelledby 回指签 id）。
+   状态矩阵：unselected（default：次级墨、透明点线占位）/ selected
+   （--on：主墨加重 + 赭红实线下划短线，aria-selected="true"）/
+   focus（地基 button:focus-visible 的 --pencil 焦点环，不另设）/
+   [disabled]（opacity .4 + 无 pointer，随地基规则）。键盘：roving
+   tabindex（选中项 tabindex 0、其余 -1），左右箭头循环移选
+   （wireSectionTabs）。
+   使用规则：学案与柜抽各一排（三项）；进空间落默认节、切节即拉（面板
+   三态走 #14）；一切文字 textContent。
+   禁止变体：页签底色块、关闭钮、横滚、两层节签嵌套。 */
+.section-tabs { display: flex; gap: 22px;
+                border-top: 1px solid var(--rule);
+                padding: 0 var(--read-pad); }
+.section-tab { font-family: var(--f-sans); font-size: 12px;
+               letter-spacing: 0.18em; color: var(--ink-soft);
+               padding: 10px 0 8px;
+               text-decoration: underline dotted;
+               text-decoration-color: transparent;
+               text-underline-offset: 6px; }
+.section-tab--on { color: var(--ink); font-weight: 600;
+               text-decoration-style: solid;
+               text-decoration-color: var(--pencil); }
+.section-tab[disabled] { opacity: 0.4; pointer-events: none; }

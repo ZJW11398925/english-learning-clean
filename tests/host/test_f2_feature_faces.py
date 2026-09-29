@@ -119,10 +119,10 @@ class _FaceHost:
 
 def test_the_page_has_the_learning_view(tmp_path: Path) -> None:
     page_source = _page_of(tmp_path)
-    # the set screen's 学习 block and its link (F-1R: the third tab became
-    # an in-place block on the 仪表 screen — the pin moved, not deleted)
-    assert 'data-block="learning"' in page_source
-    assert ">学习</button>" in page_source
+    # the 学习 block: R-1 随迁——常挂学案·进步（证据组），setlinks 的
+    # data-block 链接退役（缺位钉；p-3 先例）
+    assert 'data-block="learning"' not in page_source
+    assert ">学习</button>" not in page_source
     assert 'id="set-learning"' in page_source
     # the four panels and their refresh
     for element in (
@@ -142,10 +142,11 @@ def test_the_page_has_the_learning_view(tmp_path: Path) -> None:
     assert '"/api/teach_me"' in page_source
     assert "loadTargets" in page_source
     assert "loadLearning" in page_source
-    # p-2 migrated the literal: the show/hide branch became the four-block
-    # loop's `hidden = name !== block` (学习 / 诊断 / 记忆 / 隐私) — same
-    # semantics, the loop comparison is the pin
-    assert 'name !== block' in page_source
+    # p-2 migrated the literal, R-1 migrated the mechanism: the four-block
+    # loop's `hidden = name !== block` became the section switch's
+    # `hidden = key !== name` (一节可见 semantics unchanged — the pin
+    # moved, not deleted)
+    assert 'key !== name' in page_source
     # the 教我这个 act: click-through, no confirm (a low-risk request)
     assert "教我这个" in page_source
     assert 'button.className = "teach-me";' in page_source

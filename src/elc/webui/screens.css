@@ -1,7 +1,7 @@
-/* screens.css —— 三屏布局与壳层（F-G1）。
-   开张（first-visit）/ 客厅（默认）/ 仪表（诚实事实屏）+ dock/flow 等
-   屏级规则。声明值逐字来自拆分前的内嵌样式（零视觉变化）；组件样式
-   一律在 components.css，本文件不得定义组件（尤其不得定义按钮样式——
+/* screens.css —— 壳层与屏级布局（F-G1；R-1 起三空间 + 门厅）。
+   门厅（first-visit）/ 客厅 / 学案 / 柜抽 + dock（写信区）/flow/spacebody
+   等屏级规则。声明值逐字来自拆分前的内嵌样式（组件三件 #18/#19/#20 的
+   样式在 components.css，本文件不得定义组件——尤其不得定义按钮样式——
    docs/FRONTEND_SPEC.md ④⑤）。 */
 
 /* ── 壳层 ─────────────────────────────────────────────────────────── */
@@ -10,6 +10,9 @@ body {
   color: var(--ink); font-family: var(--f-serif); font-size: 16px;
   line-height: 1.55; -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  /* 常驻 dock 的高度计入流布局：底 padding 让正文最后一行永远滚得出
+     底栏（R-1）。 */
+  padding-bottom: calc(var(--navdock-h) + var(--safe-bottom));
 }
 #stage { max-width: 430px; margin: 0 auto; min-height: 100vh;
          position: relative; }
@@ -46,7 +49,7 @@ body {
 .who-sub { font-size: 11px; color: var(--ink-faint);
            font-family: var(--f-sans); margin-top: 2px; }
 
-.flow { padding: 18px var(--read-pad) 250px; }
+.flow { padding: 18px var(--read-pad) 310px; }
 .typing { margin: 0 0 18px; font-family: var(--f-sans); font-size: 12px;
           color: var(--ink-faint); }
 .errline { margin: 0 0 14px; padding: 8px 10px;
@@ -58,48 +61,31 @@ body {
 .blockedline { margin: 0 0 14px; font-family: var(--f-sans);
                font-size: 11px; color: var(--ink-faint); }
 
-/* 写信区：固定底、上发丝线、无边框输入行 + 寄出链接 */
-.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8;
+/* 写信区：固定底（R-1 起让位于其下的常驻 dock）、上发丝线、无边框
+   输入行 + 寄出链接；底部安全区由 dock 负责，这里只留自身呼吸。 */
+.dock { position: fixed; left: 0; right: 0;
+        bottom: var(--navdock-h); z-index: 8;
         background: var(--bg); border-top: 1px solid var(--rule);
-        padding: 10px var(--read-pad)
-                 calc(14px + var(--safe-bottom));
+        padding: 10px var(--read-pad) 14px;
         max-width: 430px; margin: 0 auto; }
 .dock-row { display: flex; align-items: stretch; gap: 12px; }
 
-/* ── 今日屏（p-1）：客厅的今天——到期复习 / 最近在学 / 想练一把 ── */
-.today { min-height: 100vh; }
-.todaybody { padding: 26px var(--read-pad) 60px; }
-.today h2 { margin: 0 0 6px; font-size: 24px; font-weight: 500;
+/* ── 学案/柜抽的空间正文（R-1）：三个节面板共用的正文留白与标题形态 ── */
+.spacebody { padding: 26px var(--read-pad) 60px; }
+.spacebody h2 { margin: 0 0 6px; font-size: 24px; font-weight: 500;
             letter-spacing: 0.12em; }
-.today .sub { margin: 0 0 8px; font-family: var(--f-sans); font-size: 12px;
+.spacebody .sub { margin: 0 0 8px; font-family: var(--f-sans); font-size: 12px;
               color: var(--ink-faint); line-height: 1.7; }
-/* 品牌条右槽的并列链接（客厅：今日+仪表 / 今日屏：仪表+回客厅）：
-   容器吃掉全部自由空间，两枚链接靠 gap 排开。 */
-.topactions { margin-left: auto; display: flex; gap: 14px; }
-
-/* ── 仪表屏：品牌条 + 诚实事实屏（mono 仪表 + 学习/诊断两个链接区块）─ */
-.set { min-height: 100vh; }
-/* 品牌条吃掉顶部，正文自带的留白搬进 .setbody（视觉与旧 .set 内边距
-   同值：26px 顶 = 旧 30px 减去品牌条自身下沿的呼吸差）。 */
-.setbody { padding: 26px var(--read-pad) 60px; }
-.set h2 { margin: 0 0 6px; font-size: 24px; font-weight: 500;
-          letter-spacing: 0.12em; }
-.set .sub { margin: 0 0 8px; font-family: var(--f-sans); font-size: 12px;
-            color: var(--ink-faint); line-height: 1.7; }
+/* 进步节的分组标题（证据 / 为什么 / 观察）：比面板小标重一档。 */
+.grouphead { color: var(--ink-soft); font-weight: 600; }
 pre { font-family: var(--f-mono); font-size: 11px; line-height: 1.7;
       color: var(--ink-soft); overflow-x: auto; white-space: pre-wrap;
       overflow-wrap: anywhere; border-top: 1px solid var(--rule-soft);
       border-bottom: 1px solid var(--rule-soft); padding: 8px 0; }
 
-/* ── 目标屏（p-3）：品牌条 + 目标卡读面 + 编辑行 + 参考词表 ──────────
+/* ── 目标节（p-3 迁入学案）：目标卡读面 + 编辑行 + 参考词表 ──────────
    组件样式不在此（.field/.chip 唯一出处是 components.css）；这里只有
-   屏级布局与文字形态（.goal 家族，同 .set/.today 的归属）。 */
-.goal { min-height: 100vh; }
-.goalbody { padding: 26px var(--read-pad) 60px; }
-.goal h2 { margin: 0 0 6px; font-size: 24px; font-weight: 500;
-           letter-spacing: 0.12em; }
-.goal .sub { margin: 0 0 8px; font-family: var(--f-sans); font-size: 12px;
-             color: var(--ink-faint); line-height: 1.7; }
+   屏级布局与文字形态（.goalcard 家族，同 .spacebody 的归属）。 */
 /* 目标卡：modality 徽标（#17 chip--badge）+ 描述文本（惰性文本）。 */
 .goalcard { display: flex; align-items: baseline; gap: 8px;
             padding: 6px 0; border-bottom: 1px solid var(--rule-soft); }

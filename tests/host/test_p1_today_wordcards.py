@@ -86,25 +86,31 @@ def _page_of(tmp_path: Path) -> str:
 
 
 def test_the_page_has_the_today_screen(tmp_path: Path) -> None:
-    """The fourth screen: the parlor bar gains 今日 beside 仪表, the
-    screen carries its own 仪表 link and way back, entering is the pull,
-    and the three blocks live there with the refresh link."""
+    """The 今日 face: R-1 随迁——今日屏迁入**学案空间 · 今日节**（旧屏
+    id 与三枚 toggle/返回钮退役，缺位钉）；进空间落默认节（学案=今日），
+    进节即拉；三块与刷新读数原 id 保留。"""
 
     index = _page_of(tmp_path)
-    assert 'id="screen-today"' in index
-    assert 'id="today-toggle"' in index
+    # the old screen and its three toggles/way back are gone (absence
+    # pins — the p-3 precedent)
+    assert 'id="screen-today"' not in index
+    assert 'id="today-toggle"' not in index
+    assert 'id="today-set"' not in index
+    assert 'id="back-from-today"' not in index
+    # the section panel and its tab (the nav lives in the dock/tabs now)
+    assert 'id="study-today"' in index
+    assert 'id="tab-study-today"' in index
     assert ">今日</button>" in index
-    assert 'id="today-set"' in index
-    assert 'id="back-from-today"' in index
     assert 'id="today-refresh"' in index
     for block in ("today-due", "today-recent", "today-practice"):
         assert f'id="{block}"' in index
     assert "<h2>今日</h2>" in index
     app = index  # the served union covers app.js
-    assert 'today: document.getElementById("screen-today")' in app
-    assert 'if (name === "today") loadToday();' in app
-    assert 'showScreen("today")' in app
-    assert '() => showScreen("living")' in app
+    # entering the study space lands 今日 and the entry is the pull
+    assert 'DEFAULT_SECTION = { study: "today", drawer: "memory" }' in app
+    assert '"study-today": loadToday' in app
+    assert 'showSection("study"' in app
+    assert 'showSpace("parlor")' in app
     # the pull rides the two read-only faces the 学习 view already reads
     assert "fetchLearning()" in app
     assert "fetchTargets()" in app
@@ -454,8 +460,9 @@ def test_word_card_is_registered_in_all_four_places() -> None:
     )
 
     assert "word-card" in COMPONENTS
-    # p-3 随迁：活注册表随 field/chip 入库生长两格（15 → 17）
-    assert len(COMPONENTS) == 17
+    # p-3 随迁：活注册表随 field/chip 入库生长两格（15 → 17）；
+    # R-1 随迁：壳导航三件再长三格（17 → 20）
+    assert len(COMPONENTS) == 20
     spec = (
         Path(__file__).resolve().parents[2]
         / "docs" / "FRONTEND_SPEC.md"

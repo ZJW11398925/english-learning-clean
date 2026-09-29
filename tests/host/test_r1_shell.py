@@ -1,0 +1,258 @@
+"""R-1 — the shell rebuilt: 门厅 + three spaces + the dock.
+
+The R program's first cut (blueprint ⑧): the five screens re-form into a
+vestibule plus three spaces, the dock (#18) is the only way between
+spaces, and the study and the drawer each hold three sections behind
+real tablists (#20) with space headers (#19). The old shell's remains
+are pinned absent (the p-3 precedent): no toggles on the parlor bar, no
+ways back, no setlinks row, no 仪表 screen. The migration is pure
+regrouping — every panel id the older suites pin survives untouched.
+
+Groups (the task book's own):
+
+1. the shell — the vestibule and the three spaces exist, every old
+   screen id and nav control is absent, and the panel-level ids survive;
+2. the dock (#18) — three items with their data-space wiring, the fixed
+   bottom form over the safe area, the active mark, the layout tokens
+   (body padding, the composer's offset), and the z-order law (the
+   word-card overlay floats above the dock);
+3. the section tabs (#20) — two tablists with the full ARIA wiring
+   (tablist/tab/tabpanel, aria-selected, aria-controls/labelledby), the
+   roving tabindex and the left/right arrows, both wired in app.js;
+4. the space headers (#19) — the two space-headers ride the .top base
+   with a section-name slot; the parlor keeps its own bar, linkless;
+5. the default-section law — entering the study lands 今日, entering
+   the drawer lands 记忆, and each section's entry is its pull by name
+   (settings pulls nothing);
+6. the settings honesty — the drawer's settings section is an honest
+   placeholder: one sentence, no promised date, and the endpoint line
+   that has nowhere else to live.
+
+Every page-source pin reads the served union (the F-G1 reading).
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import elc.web
+from tests.host.test_w1_web import _page_source, web_stack
+
+WEBUI = Path(elc.web.__file__).parent / "webui"
+
+
+def _page_of(tmp_path: Path) -> str:
+    """The served page source over the plain offline stack."""
+
+    with web_stack(tmp_path / "app.db") as stack:
+        return _page_source(stack)
+
+
+def _text(name: str) -> str:
+    return (WEBUI / name).read_text(encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# 1. the shell
+
+
+def test_the_shell_is_a_vestibule_and_three_spaces(tmp_path: Path) -> None:
+    """门厅 + 客厅 + 学案 + 柜抽 exist; the four old screen ids are gone;
+    and every panel-level id the older suites pin survived the regrouping
+    untouched (纯重组零语义丢失)."""
+
+    page = _page_of(tmp_path)
+    for space in ("screen-onboard", "space-parlor", "space-study",
+                  "space-drawer"):
+        assert f'id="{space}"' in page, space
+    for gone in ("screen-living", "screen-today", "screen-goal",
+                 "screen-set"):
+        assert f'id="{gone}"' not in page, gone
+    for panel in (
+        "today-due", "today-recent", "today-practice",
+        "goal-list", "goal-editor", "goal-weights", "goal-assessment",
+        "goal-register", "goal-frequency", "goal-taxref", "goal-result",
+        "target-list", "learn-schedule", "learn-goals", "learn-evidence",
+        "why-teach", "why-not-teach", "why-evidence", "why-support",
+        "why-degraded", "obs", "obsout",
+        "mem-relationship", "mem-episode", "mem-states", "mem-evidence",
+        "mem-tombstones", "del-targets", "del-result",
+        "set-learning", "set-diagnostics", "set-memory", "set-privacy",
+    ):
+        assert f'id="{panel}"' in page, panel
+
+
+def test_the_old_nav_controls_are_all_gone(tmp_path: Path) -> None:
+    """The old shell's control face, pinned absent: the three toggles and
+    the five ways back/over, the topactions slot, the setlinks row and
+    its expansion loop."""
+
+    page = _page_of(tmp_path)
+    for gone in ("today-toggle", "goal-toggle", "meter-toggle",
+                 "today-set", "goal-set", "back-from-today",
+                 "back-from-goal", "back-to-living"):
+        assert f'id="{gone}"' not in page, gone
+    assert "topactions" not in page
+    assert "toggleSetBlock" not in page
+    assert "data-block" not in page
+    assert "setlinks" not in (WEBUI / "index.html").read_text(
+        encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# 2. the dock (#18)
+
+
+def test_the_navdock_is_the_only_way_between_spaces(tmp_path: Path) -> None:
+    """The dock: exactly three items (客厅/学案/柜抽) with their data-space
+    wiring, the app-side wiring, and the fixed bottom form — hairline top
+    edge, paper ground, the safe area in its own padding."""
+
+    index = _text("index.html")
+    assert '<nav id="navdock" class="navdock" aria-label="空间">' in index
+    for space in ("parlor", "study", "drawer"):
+        assert f'class="navdock-item" data-space="{space}"' in index
+    for label in (">客厅</button>", ">学案</button>", ">柜抽</button>"):
+        assert label in index
+    app = _text("app.js")
+    assert "wireNavdock((name) => showSpace(name));" in app
+    assert "markNavdock(name);" in app
+    # the vestibule stands the dock down (the door button is the way in)
+    assert 'document.getElementById("navdock").hidden = name === "onboard";' \
+        in app
+    css = _text("components.css")
+    assert css.count("\n.navdock {") == 1
+    assert (
+        ".navdock { position: fixed; left: 0; right: 0; bottom: 0;"
+        " z-index: 6;" in css
+    )
+    assert "border-top: 1px solid var(--rule);" in css
+    assert "calc(6px + var(--safe-bottom))" in css
+
+
+def test_the_dock_clears_the_flow_and_the_overlays(tmp_path: Path) -> None:
+    """The layout law: the body's bottom padding is the dock's height (so
+    the last line always scrolls clear), the composer stands on the dock
+    (not on top of it), and the word-card overlay (z 9) floats above the
+    dock (z 6) — the teaching note lives in the flow and scrolls out."""
+
+    tokens = _text("tokens.css")
+    assert "--navdock-h: 54px;" in tokens
+    screens = _text("screens.css")
+    assert (
+        "padding-bottom: calc(var(--navdock-h) + var(--safe-bottom));"
+        in screens
+    )
+    assert "bottom: var(--navdock-h); z-index: 8;" in screens
+    css = _text("components.css")
+    assert ".word-card { position: absolute; z-index: 9;" in css
+    # the flow's bottom padding grew by the dock's height
+    assert ".flow { padding: 18px var(--read-pad) 310px; }" in screens
+
+
+# ---------------------------------------------------------------------------
+# 3. the section tabs (#20)
+
+
+def test_section_tabs_carry_the_full_aria_wiring(tmp_path: Path) -> None:
+    """Two tablists, six tabs, six panels — every tab controls its panel,
+    every panel is labelled by its tab, the selected tab is marked in the
+    markup, and the roving tabindex + arrow keys live in components.js."""
+
+    index = _text("index.html")
+    assert index.count('role="tablist"') == 2
+    assert index.count('role="tab"') == 6
+    assert index.count('role="tabpanel"') == 6
+    for space, sections in (
+        ("study", ("today", "goal", "progress")),
+        ("drawer", ("memory", "privacy", "settings")),
+    ):
+        assert f'id="{space}-tabs"' in index
+        for sec in sections:
+            assert f'id="tab-{space}-{sec}" data-section="{sec}"' in index
+            assert f'aria-controls="{space}-{sec}"' in index
+            assert f'id="{space}-{sec}" role="tabpanel"' in index
+            assert f'aria-labelledby="tab-{space}-{sec}"' in index
+    assert 'aria-selected="true"' in index
+    js = _text("components.js")
+    assert 'tab.setAttribute("aria-selected", on ? "true" : "false");' in js
+    assert "tab.tabIndex = on ? 0 : -1;" in js
+    assert "tabs[next].focus();" in js
+    assert "if (event.key === \"ArrowRight\") next = (at + 1) % tabs.length;" \
+        in js
+    assert "next = (at - 1 + tabs.length) % tabs.length;" in js
+    app = _text("app.js")
+    assert 'wireSectionTabs(document.getElementById("study-tabs"),' in app
+    assert 'wireSectionTabs(document.getElementById("drawer-tabs"),' in app
+    assert "markSectionTabs(" in app
+
+
+# ---------------------------------------------------------------------------
+# 4. the space headers (#19)
+
+
+def test_space_headers_and_the_linkless_parlor_bar(tmp_path: Path) -> None:
+    """学案/柜抽 headers ride the .top base with a section-name slot; the
+    parlor keeps its own bar — the brand form minus the toggles, not a
+    single button left in it."""
+
+    index = _text("index.html")
+    assert '<header class="top space-header" id="study-head">' in index
+    assert '<header class="top space-header" id="drawer-head">' in index
+    assert '<div class="spacehead-sec">今日</div>' in index
+    assert '<div class="spacehead-sec">记忆</div>' in index
+    parlor = index.split('id="space-parlor"', 1)[1].split("</header>", 1)[0]
+    assert '<div class="who">英语客厅</div>' in parlor
+    assert "固定伙伴" in parlor
+    assert "<button" not in parlor
+    app = _text("app.js")
+    assert (
+        'sectionLabel(document.getElementById(space + "-head"),' in app
+    )
+
+
+# ---------------------------------------------------------------------------
+# 5. the default-section law
+
+
+def test_entering_a_space_lands_its_default_section(tmp_path: Path) -> None:
+    """进空间落默认节（学案=今日、柜抽=记忆），切节即拉——the pulls wired
+    by section key; the goal entry still clears a leftover save line, the
+    progress entry pulls all three faces at once, and settings pulls
+    nothing."""
+
+    app = _text("app.js")
+    assert 'const DEFAULT_SECTION = { study: "today", drawer: "memory" };' \
+        in app
+    assert (
+        'if (name === "study") showSection("study", DEFAULT_SECTION.study);'
+        in app
+    )
+    assert (
+        'if (name === "drawer") showSection("drawer",'
+        " DEFAULT_SECTION.drawer);" in app
+    )
+    assert '"study-today": loadToday' in app
+    assert '"drawer-memory": loadMemory' in app
+    assert '"drawer-privacy": loadDelTargets' in app
+    assert (
+        '"study-progress": () => { loadTargets(); loadLearning();'
+        " loadDiagnostics(); }," in app
+    )
+    assert 'goalBox("goal-result").hidden = true;' in app
+    assert '"drawer-settings":' not in app
+
+
+# ---------------------------------------------------------------------------
+# 6. the settings honesty
+
+
+def test_the_settings_node_is_an_honest_placeholder(tmp_path: Path) -> None:
+    """The drawer's settings section: one honest sentence — no promised
+    face, no promised date — and the endpoint line whose truth has
+    nowhere else to live (the old set screen's, kept verbatim)."""
+
+    page = _page_of(tmp_path)
+    assert "设置面尚未到来。" in page
+    assert "页面不读取、不显示（宁缺勿假）" in page
+    assert "即将" not in page

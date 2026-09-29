@@ -95,22 +95,26 @@ def test_the_brand_mark_is_an_inline_svg_with_no_resource_hole(
 
 
 def test_the_brand_bar_graces_both_screens(tmp_path: Path) -> None:
-    """The brand bar — mark (sm) + serif wordmark + the mono right slot —
-    sits on the parlor header and on the set screen's own top bar, whose
-    back link lives there now (always reachable above the long panels);
-    both bars are clamped by a top and a bottom hairline; the marks land
-    before the first screen shows."""
+    """The brand bar — mark (sm) + serif wordmark — graces every space
+    header (the parlor's own bar and the two space-headers), each clamped
+    by a top and a bottom hairline; the marks land before the first
+    screen shows. R-1 随迁：品牌条不再挂链接（导航归 dock），旧「回
+    客厅」钮与 sethead 变体退役（缺位钉）；空间头的节名槽由
+    space-header（#19）承担。"""
 
     index = _webui_text("index.html")
-    # p-3 随迁：目标屏品牌条第四枚 --sm（客厅 / 仪表 / 今日 / 目标）
-    assert index.count('data-brand-mark="sm"') == 4
+    # R-1 随迁：空间头三枚 --sm（客厅 / 学案 / 柜抽；今日/目标/仪表的
+    # 品牌条随五屏退役——空间头部唯一）
+    assert index.count('data-brand-mark="sm"') == 3
     assert index.count('data-brand-mark="lg"') == 1
-    assert '<header class="top sethead">' in index
+    # R-1 随迁：学案/柜抽头部走 space-header（.top 基形 + 节名槽）；
+    # 旧 sethead 变体与「回客厅」钮退役（缺位钉）
+    assert '<header class="top space-header" id="study-head">' in index
+    assert '<header class="top space-header" id="drawer-head">' in index
+    assert '<header class="top sethead">' not in index
+    assert 'id="back-to-living"' not in index
+    assert "← 回客厅" not in index
     assert '<div class="who">英语客厅</div>' in index
-    # the set screen's way back rides the brand bar, above the panels
-    page = _page_of(tmp_path)
-    assert page.index('id="back-to-living"') < page.index("<h2>仪表</h2>")
-    assert "← 回客厅</button>" in page
     app = _webui_text("app.js")
     assert "installBrandMarks();" in app
     assert app.index("installBrandMarks();") < app.index("loadHistory();")
@@ -228,5 +232,6 @@ def test_the_spec_carries_the_living_registry() -> None:
     assert "| 14 | state-banner" in spec
     agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "库随产品增长" in agents
-    # p-3 随迁：活注册表随 field/chip 入库生长两格（15 → 17），同刀登记
-    assert len(COMPONENTS) == 17
+    # p-3 随迁：活注册表随 field/chip 入库生长两格（15 → 17）；
+    # R-1 随迁：壳导航三件再长三格（17 → 20）——同刀登记
+    assert len(COMPONENTS) == 20

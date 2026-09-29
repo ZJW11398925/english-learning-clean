@@ -21,4 +21,5 @@
   --f-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
   --read-pad: 18px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --navdock-h: 54px;
 }
