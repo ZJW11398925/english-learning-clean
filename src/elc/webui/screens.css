@@ -90,3 +90,26 @@ pre { font-family: var(--f-mono); font-size: 11px; line-height: 1.7;
       color: var(--ink-soft); overflow-x: auto; white-space: pre-wrap;
       overflow-wrap: anywhere; border-top: 1px solid var(--rule-soft);
       border-bottom: 1px solid var(--rule-soft); padding: 8px 0; }
+
+/* ── 目标屏（p-3）：品牌条 + 目标卡读面 + 编辑行 + 参考词表 ──────────
+   组件样式不在此（.field/.chip 唯一出处是 components.css）；这里只有
+   屏级布局与文字形态（.goal 家族，同 .set/.today 的归属）。 */
+.goal { min-height: 100vh; }
+.goalbody { padding: 26px var(--read-pad) 60px; }
+.goal h2 { margin: 0 0 6px; font-size: 24px; font-weight: 500;
+           letter-spacing: 0.12em; }
+.goal .sub { margin: 0 0 8px; font-family: var(--f-sans); font-size: 12px;
+             color: var(--ink-faint); line-height: 1.7; }
+/* 目标卡：modality 徽标（#17 chip--badge）+ 描述文本（惰性文本）。 */
+.goalcard { display: flex; align-items: baseline; gap: 8px;
+            padding: 6px 0; border-bottom: 1px solid var(--rule-soft); }
+.goalcard .goaldesc { flex: 1; overflow-wrap: anywhere; }
+/* 编辑面里一条目标的行组（模态行 + 描述行 + 移除链接），发丝线分界。 */
+.goaledge { border-top: 1px solid var(--rule-soft); margin-top: 10px;
+            padding-top: 4px; }
+/* 词表 picker 的容器：可换行的一排 chip（#17）。 */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 6px 0; }
+/* 参考词表的弱化小字行（非交互；面名 + 词列）。 */
+.taxref { margin: 4px 0 0; font-family: var(--f-sans); font-size: 11px;
+          color: var(--ink-faint); line-height: 1.8;
+          overflow-wrap: anywhere; }

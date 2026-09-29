@@ -102,8 +102,8 @@ def test_the_brand_bar_graces_both_screens(tmp_path: Path) -> None:
     before the first screen shows."""
 
     index = _webui_text("index.html")
-    # p-1 随迁：今日屏品牌条第三枚 --sm（客厅 / 仪表 / 今日）
-    assert index.count('data-brand-mark="sm"') == 3
+    # p-3 随迁：目标屏品牌条第四枚 --sm（客厅 / 仪表 / 今日 / 目标）
+    assert index.count('data-brand-mark="sm"') == 4
     assert index.count('data-brand-mark="lg"') == 1
     assert '<header class="top sethead">' in index
     assert '<div class="who">英语客厅</div>' in index
@@ -228,5 +228,5 @@ def test_the_spec_carries_the_living_registry() -> None:
     assert "| 14 | state-banner" in spec
     agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "库随产品增长" in agents
-    # p-1 随迁：活注册表随 word-card 入库生长一格（14 → 15），同刀登记
-    assert len(COMPONENTS) == 15
+    # p-3 随迁：活注册表随 field/chip 入库生长两格（15 → 17），同刀登记
+    assert len(COMPONENTS) == 17

@@ -47,6 +47,7 @@
       </div>
       <div class="topactions">
         <button id="today-toggle" class="btn btn--meter" type="button">今日</button>
+        <button id="goal-toggle" class="btn btn--meter" type="button">目标</button>
         <button id="meter-toggle" class="btn btn--meter" type="button">仪表</button>
       </div>
     </header>
@@ -91,6 +92,63 @@
       <div id="today-practice"><p class="note">暂无数据</p></div>
     </div>
     <button id="today-refresh" class="btn btn--dot" type="button">刷新读数</button>
+    </div>
+  </section>
+
+  <!-- 目标屏（p-3）：长期方向在此写下——目标卡读面 + 编辑面（增/删/改、
+       权重、考试与语域词表）+ 教学频率单列写。保存 = 全组合 upsert（每次
+       一个新版本，旧版本保留）；冲突诚实上浮（409）→「重新读取」。参考
+       词表三面 V1 无存储位，只看不改。文案 R7：执行者拟定，用户首验否决。 -->
+  <section id="screen-goal" class="goal" hidden>
+    <header class="top">
+      <span data-brand-mark="sm"></span>
+      <div class="who">目标</div>
+      <div class="topactions">
+        <button id="goal-set" class="btn btn--meter" type="button">仪表</button>
+        <button id="back-from-goal" class="btn btn--meter" type="button">← 回客厅</button>
+      </div>
+    </header>
+    <div class="goalbody">
+    <h2>目标</h2>
+    <p class="sub">你想把英语用在哪里、练到什么程度——这是客厅的长期方向。
+       每次保存都是一个新版本，旧版本保留在历史里。</p>
+    <div class="sec">
+      <h3>长期目标</h3>
+      <div id="goal-list"><p class="note">暂无数据</p></div>
+      <div id="goal-editor"></div>
+    </div>
+    <div class="sec">
+      <h3>技能权重</h3>
+      <p class="sub">四项各 0 以上；留空表示不设权重。</p>
+      <div id="goal-weights"><p class="note">暂无数据</p></div>
+    </div>
+    <div class="sec">
+      <h3>考试目标</h3>
+      <p class="sub">点选适用的词，可多选、可取消。</p>
+      <div id="goal-assessment"><p class="note">暂无数据</p></div>
+    </div>
+    <div class="sec">
+      <h3>语域与文风</h3>
+      <p class="sub">点选想练的表达风格。</p>
+      <div id="goal-register"><p class="note">暂无数据</p></div>
+    </div>
+    <div id="goal-save" class="sec"></div>
+    <div class="sec">
+      <h3>教学频率</h3>
+      <div id="goal-frequency"><p class="note">暂无数据</p></div>
+    </div>
+    <div class="sec" id="goal-focus-sec" hidden>
+      <h3>临时侧重</h3>
+      <p class="sub">只影响当前这段对话，不改上面写下的长期方向。</p>
+      <div id="goal-focus"></div>
+    </div>
+    <div class="sec">
+      <h3>参考词表</h3>
+      <p class="sub">以下三面此版本只作参考，还没有存储位。</p>
+      <div id="goal-taxref"></div>
+    </div>
+    <div id="goal-result" class="sec" hidden></div>
+    <button id="goal-refresh" class="btn btn--dot" type="button">重新读取</button>
     </div>
   </section>
 

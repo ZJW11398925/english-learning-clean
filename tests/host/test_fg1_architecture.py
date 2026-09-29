@@ -77,6 +77,8 @@ COMPONENTS = (
     "brand-mark",
     "state-banner",
     "word-card",
+    "field",
+    "chip",
 )
 
 

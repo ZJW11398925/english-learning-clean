@@ -284,3 +284,46 @@ button:focus-visible, input:focus-visible {
               font-family: var(--f-serif); font-size: 14px;
               color: var(--ink-soft); overflow-wrap: anywhere; }
 .word { cursor: pointer; }
+
+/* ── 16. field（编辑面一行式表单行）────────────────────────────────
+   结构：<label class="field"><span class="fieldname">名</span>
+   input|select</label>——工厂 fieldRow(labelText, control)
+   （components.js，p-3）；label 包裹控件保证可点聚焦。
+   状态矩阵：default（下发丝线）/ focus-within（发丝线与名转赭红）/
+   控件 [disabled]（opacity .4 + 无 pointer，随地基 button/input 规则）。
+   使用规则：目标编辑面的行式输入（目标描述、权重数值、模态下拉、
+   频率名）；select 与 input 的字面样式随本契约（唯一出处在此）。
+   禁止变体：边框框体、底色块、圆角；不得当只读展示行用（只读走 #9）。 */
+.field { display: flex; align-items: baseline; gap: 10px;
+         border-bottom: 1px solid var(--rule-soft); padding: 8px 0; }
+.field:focus-within { border-bottom-color: var(--pencil); }
+.field:focus-within .fieldname { color: var(--pencil); }
+.field .fieldname { flex: none; min-width: 4.5em; font-family: var(--f-sans);
+                    font-size: 12px; color: var(--ink-soft); }
+.field input, .field select { flex: 1; min-width: 0; border: 0;
+             background: none; outline: none; padding: 2px 0;
+             font-family: var(--f-serif); font-size: 15px;
+             color: var(--ink); }
+.field input::placeholder { color: var(--ink-faint); font-family: var(--f-sans);
+             font-size: 13px; }
+.field input[disabled], .field select[disabled] { opacity: 0.4;
+             pointer-events: none; }
+
+/* ── 17. chip（词表词选择片）────────────────────────────────────────
+   结构：<button class="chip [--on|--badge]">词</button>——工厂
+   chip(word, opts)（components.js，p-3）。
+   状态矩阵：off（default，发丝线描边、次级墨）/ --on（选中：主墨反白
+   描边）/ [disabled]（opacity .4 + 无 pointer，随地基规则）/ --badge
+   （只读徽标：弱发丝线、次级墨、无 pointer——非交互，禁止点击语义）。
+   使用规则：考试 / 语域 / 教学频率三个词表 picker（可点选词）；--badge
+   用于目标卡的 modality 徽标与一切「词即标签」的只读展示；词表词级
+   短词，文字一律 textContent。
+   禁止变体：圆角、阴影、长文本（句子级内容走正文形态）；不得当导航用
+   （导航走 #1）。 */
+.chip { font-family: var(--f-sans); font-size: 12px; letter-spacing: 0.04em;
+        padding: 3px 10px; border: 1px solid var(--rule); background: none;
+        color: var(--ink-soft); }
+.chip--on { border-color: var(--ink); color: var(--bg); background: var(--ink); }
+.chip--badge { border-color: var(--rule-soft); color: var(--ink-soft);
+        pointer-events: none; }
+.chip[disabled] { opacity: 0.4; pointer-events: none; }

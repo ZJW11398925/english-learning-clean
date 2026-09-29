@@ -58,6 +58,8 @@
 | 13 | brand-mark | `.brandmark`（+ `--sm` `--lg`） | — | default 30px / 尺寸修饰 --sm 20px、--lg 64px / reduced-motion 不适用（静态标记，无动效——契约注明） | index.html（`<template id="brand-mark-source">` 内联 SVG，几何唯一出处）+ components.css + components.js（`brandMark()`/`installBrandMarks()`） |
 | 14 | state-banner | `.state-banner`（+ `--loading` `--empty` `--error`） | — | loading（取信中…，尾点呼吸微动）/ empty（弱化诚实句）/ error（赭红人话句 + `--pencil` 重试链接，回调由调用方注入）/ reduced-motion（loading 呼吸降级为静态） | components.css + components.js（`stateBanner()`；`diagEmpty`/`diagError` 一律委托它） |
 | 15 | word-card | `.word-card`（+ `.wc-lemma` `.wc-pos` `.wc-forms` `.wc-zh` `.wc-en` `.wc-example` `.word`） | — | default（rule-soft 底浮层）/ closed（点卡外或「收起」；DOM 移除语义，同 #11 的两臂不在 CSS）；无 busy——命中即显，miss 按契约静默 | components.css + components.js（`wordCard()`/`showWordCard()`/`closeWordCard()`；触发面 = `letterWords()` 的 `.word` 分片 + `wordWindows()` 窗口查询，app.js 委派） |
+| 16 | field | `.field`（+ `.fieldname`） | — | default（下发丝线）/ `:focus-within`（发丝线与名转赭红）/ 控件 `[disabled]`（opacity .4 + 无 pointer） | components.css + components.js（`fieldRow()`，p-3；label 包裹控件，点名牌即聚焦） |
+| 17 | chip | `.chip`（+ `--on` `--badge`） | — | off（default，发丝线描边）/ on（`--on`，主墨反白）/ `[disabled]`（opacity .4）/ `--badge`（只读徽标，非交互） | components.css + components.js（`chip()`，p-3；考试/语域/教学频率词表 picker + modality 徽标） |
 
 库外现役类（登记，不扩库）：`.teach-me`（裸 button 元素复位直用，无独立
 样式；p-1 起今日屏两块与目标清单共用同一行工厂；Revisit = 视觉规范刀再
@@ -118,12 +120,12 @@ resultstrip）必须定义至少 default + 一态（active/disabled/busy/skipped
 
 ```
 src/elc/webui/
-  index.html        页面骨架（四屏 + <link>×3 + <script type="module">
+  index.html        页面骨架（五屏 + <link>×3 + <script type="module">
                     + brand-mark 的 <template> 几何出处）
   tokens.css        VS1 token 唯一出处
-  components.css    组件库唯一样式源（15 组件 + 元素复位地基）
+  components.css    组件库唯一样式源（17 组件 + 元素复位地基）
   screens.css       屏级布局 + 壳层（html/body/#stage/dock/flow/屏级文字；
-                    p-1 起四屏：开张/客厅/今日/仪表）
+                    p-3 起五屏：开张/客厅/今日/目标/仪表）
   api.js            端点 fetch 封装（页面唯一 fetch 调用点）
   components.js     组件工厂 + 教学卡当场行为 + 点词卡（textContent-only；
                     唯一 confirm 封装点）

@@ -486,3 +486,35 @@ export function showWordCard(at, data) {
   };
   document.addEventListener("click", cardCloser);
 }
+
+// 16. field：编辑面一行式表单行（p-3）。label 包裹控件——点名牌即聚焦；
+// 控件由调用方 createElement（input/select），字面样式随 #16 契约（唯一
+// 出处 components.css）。名牌文字一律 textContent。
+export function fieldRow(labelText, control) {
+  const row = document.createElement("label");
+  row.className = "field";
+  const name = document.createElement("span");
+  name.className = "fieldname";
+  name.textContent = labelText;
+  row.appendChild(name);
+  row.appendChild(control);
+  return row;
+}
+
+// 17. chip：词表词选择片（p-3）。可点选（on 态、点击回报调用方，选中态
+// 由调用方重渲染）与只读徽标（--badge，disabled——非交互）两种用法；
+// 词即内容，文字一律 textContent。
+export function chip(word, opts) {
+  const options = opts || {};
+  const el = document.createElement("button");
+  el.type = "button";
+  el.className = "chip" + (options.on ? " chip--on" : "") +
+    (options.badge ? " chip--badge" : "");
+  el.textContent = String(word);
+  if (options.badge) {
+    el.disabled = true;
+  } else if (typeof options.onClick === "function") {
+    el.addEventListener("click", options.onClick);
+  }
+  return el;
+}

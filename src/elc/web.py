@@ -255,6 +255,26 @@ numbers the ``observations`` command prints, by construction. ``history``
 serves the conversation store's canonical window (last 50 turns, delivered
 assistant output only — the store's own §3 key rule), so what the page
 recovers on load is exactly what the transcript holds.
+
+**p-3 adds the goal-management face** — the first screen where the page
+*writes* user configuration. ``GET /api/goals`` answers the whole read in
+one payload: the portfolio's eight columns (§5.1 verbatim), the policy's
+version + frequency + its eight unpinned columns passed through raw
+(``None`` = 未配置 — the store's own honesty, carried as JSON null), the
+session focus of the conversation this face serves as a note when one
+exists (临时侧重，不改长期目标 — the §5.1 semantics; ``None`` stays
+``None``, never fabricated), and the §4 taxonomy reference block whose
+three non-stored faces are labelled "canonical 词表参考 · V1 无存储位" and
+are never editable. The two writes surface the store's own version
+discipline: ``POST /api/goals`` upserts the full new combination as the
+next version (an unchanged replay answers idempotent and writes nothing; a
+same-version-different-content CONFLICT — another writer won the race —
+rides HTTP 409 with one human sentence), and ``POST
+/api/teaching_frequency`` rewrites the one policy column, rebuilding the
+other columns verbatim. Out-of-vocabulary words are 400 人话 refusals
+(fail-closed, never a silent drop), the write faces' version scheme is
+:func:`_next_version` (declared there), and a host without the user-config
+leg answers the honest refusal shape instead of pretending to save.
 """
 
 from __future__ import annotations
@@ -290,10 +310,15 @@ from elc.planner.trace_document import decode_factor_trace
 from elc.platform.types import (
     ClientMessageId,
     ConversationId,
+    DomainErrorCode,
     Err,
+    GoalId,
+    GoalModality,
+    GoalVersion,
     InputId,
     InteractionChannel,
     PersonaId,
+    PolicyVersion,
     TargetId,
 )
 from elc.runtime.controller import TeachingReplyRequest
@@ -306,6 +331,13 @@ from elc.teaching.envelope import (
 from elc.teaching.request import TeachingRequest
 from elc.teaching.rollout import OBSERVATION_SPECS
 from elc.teaching.types import MomentState
+from elc.user_config.types import (
+    LearningGoal,
+    LearningGoalPortfolio,
+    SessionFocus,
+    TeachingFrequency,
+    TeachingPolicyProfile,
+)
 
 __all__ = [
     "DEFAULT_WEB_CONVERSATION_ID",
@@ -1156,6 +1188,372 @@ def _word_lookup(conn: sqlite3.Connection, q: str) -> dict[str, Any]:
     }
 
 
+# ---------------------------------------------------------------------------
+# the p-3 goal faces — the §4 vocabularies, the version scheme, the grammar
+# ---------------------------------------------------------------------------
+
+
+#: docs/PRODUCT_CONTRACT.md §4.3's GoalModality words, derived from the
+#: platform enum — the single source the §5.1 ``goals[]`` column already
+#: binds (GoalModality is a *goal* vocabulary, never an evidence modality).
+_GOAL_MODALITY_WORDS: tuple[str, ...] = tuple(
+    modality.value for modality in GoalModality
+)
+
+#: docs/PRODUCT_CONTRACT.md §4.5's External Assessment words, word for word
+#: (no enum exists; the tuple is the citation). The score/date/skill
+#: priorities §4.5 also names have **no V1 storage column** and are not
+#: accepted here: the face stores what the columns hold, nothing else.
+_ASSESSMENT_WORDS: tuple[str, ...] = ("CET4", "CET6", "IELTS", "TOEFL")
+
+#: docs/PRODUCT_CONTRACT.md §4.6's Register/Style words, word for word.
+_REGISTER_WORDS: tuple[str, ...] = (
+    "CASUAL",
+    "NEUTRAL",
+    "POLITE",
+    "FORMAL",
+    "ACADEMIC",
+    "PERSUASIVE",
+    "LITERARY",
+    "PLAYFUL",
+)
+
+#: docs/PRODUCT_CONTRACT.md §4.1 / §4.2 / §4.4's words, word for word — the
+#: three faces canonical §4 names but **V1 has no storage column for**. They
+#: are served as the taxonomy block's reference only, never editable, never
+#: stored (诚实：不伪造存储位).
+_CONTEXT_DOMAIN_WORDS: tuple[str, ...] = (
+    "DAILY_CONVERSATION",
+    "SOCIAL_RELATIONSHIP",
+    "ACADEMIC",
+    "WORKPLACE",
+    "TRAVEL",
+    "DEBATE",
+    "PUBLIC_SPEAKING",
+    "TECHNICAL",
+    "FICTION_ROLEPLAY",
+)
+
+_GENRE_DISCOURSE_WORDS: tuple[str, ...] = (
+    "CASUAL_CHAT",
+    "NARRATIVE",
+    "ARGUMENTATION",
+    "EXPOSITION",
+    "DESCRIPTION",
+    "PERSUASION",
+    "DAILY_WRITING",
+    "ACADEMIC_WRITING",
+    "CREATIVE_WRITING",
+    "LITERARY_READING",
+    "POETRY_READING",
+    "POETRY_WRITING",
+)
+
+_EXPRESSIVE_DEPTH_WORDS: tuple[str, ...] = (
+    "FOUNDATIONAL",
+    "FUNCTIONAL",
+    "NATURAL",
+    "NUANCED",
+    "ADVANCED",
+)
+
+#: The teaching-frequency picker's words — the implementation-declared
+#: :class:`~elc.user_config.types.TeachingFrequency` list, not a canonical
+#: one (the enum's own docstring says so; migration 0011 puts no CHECK on
+#: the column for the same reason).
+_FREQUENCY_WORDS: tuple[str, ...] = tuple(
+    frequency.value for frequency in TeachingFrequency
+)
+
+#: The taxonomy reference block the GET serves once per read: the six §4
+#: faces with their storage truth (``stored: true`` = the editor's own
+#: picker words; ``stored: false`` = canonical reference, V1 无存储位) plus
+#: the frequency picker's implementation-declared words. Built once — the
+#: block is a constant, not a read.
+_TAXONOMY_REFERENCE: dict[str, Any] = {
+    "faces": [
+        {
+            "name": "goal_modality",
+            "section": "4.3",
+            "stored": True,
+            "words": list(_GOAL_MODALITY_WORDS),
+        },
+        {
+            "name": "external_assessment",
+            "section": "4.5",
+            "stored": True,
+            "words": list(_ASSESSMENT_WORDS),
+        },
+        {
+            "name": "register_style",
+            "section": "4.6",
+            "stored": True,
+            "words": list(_REGISTER_WORDS),
+        },
+        {
+            "name": "context_domain",
+            "section": "4.1",
+            "stored": False,
+            "words": list(_CONTEXT_DOMAIN_WORDS),
+        },
+        {
+            "name": "genre_discourse",
+            "section": "4.2",
+            "stored": False,
+            "words": list(_GENRE_DISCOURSE_WORDS),
+        },
+        {
+            "name": "expressive_depth",
+            "section": "4.4",
+            "stored": False,
+            "words": list(_EXPRESSIVE_DEPTH_WORDS),
+        },
+    ],
+    "teaching_frequency": {
+        "words": list(_FREQUENCY_WORDS),
+        "note": (
+            "implementation-declared (elc.user_config.types."
+            "TeachingFrequency), not canonical"
+        ),
+    },
+    "non_stored_note": "canonical 词表参考 · V1 无存储位",
+}
+
+#: The frequency write's 400 sentence — one grammar line, the picker's own
+#: words spelled out.
+_FREQUENCY_GRAMMAR = (
+    'need a JSON body {"teaching_frequency":'
+    f" {' | '.join(_FREQUENCY_WORDS)}"
+)
+
+
+def _next_version(current: str | None) -> str:
+    """The two write faces' next version string, from the current one.
+
+    The store's version discipline is value-based (elc.user_config.store:
+    the same version with different content is a ``CONFLICT``, any different
+    version replaces), so a successor only has to differ from the current
+    value — this scheme also keeps it monotonic and readable where it can:
+    an integer current bumps by one, and any non-integer current yields
+    ``"1"``. The scheme is this face's own, disclosed rather than canonical
+    (versions are opaque strings to the store): the seed writers use the
+    non-integer ``gv-seed-v1`` / ``pv-seed-v1`` strings, so the first web
+    write after a seed lands on ``"1"`` and the endpoint keeps bumping
+    integers from there; a first write at all also starts at ``"1"``.
+    """
+
+    if current is not None and current.isdigit():
+        return str(int(current) + 1)
+    return "1"
+
+
+def _no_user_config_answer() -> dict[str, Any]:
+    """The honest refusal both write faces share when this host carries no
+    user-config leg (the prep-1 tier): the delete face's shape — 200,
+    ``accepted: false``, the dependency's own code and one human sentence.
+    Nothing is written, nothing is pretended."""
+
+    return {
+        "accepted": False,
+        "conflict": False,
+        "code": "DEPENDENCY_UNAVAILABLE",
+        "error": "本进程未装配用户配置面（无 content-tier），目标与教学频率不可写",
+    }
+
+
+def _goal_request_parts(
+    payload: Any,
+) -> tuple[
+    str | None, list[dict[str, Any]], dict[str, Any], list[str], list[str]
+]:
+    """The W1 body, parsed and fail-closed.
+
+    Returns ``(error, goals, weights, assessment, register)``: a non-empty
+    ``error`` is the 400 人话 sentence (the other four are meaningless
+    then); a ``None`` error means the four pieces are in grammar — each
+    goal's ``goal_id`` / ``description`` a non-empty string, ``goal_modality``
+    inside §4.3, every weight key inside §4.3 and its value a number, every
+    assessment word inside §4.5, every register word inside §4.6. An
+    out-of-vocabulary word is refused, never silently dropped (fail-closed
+    over 发明); the body must carry all four pieces (the full new
+    combination) — a missing one is a 400, never an assumed empty.
+    """
+
+    def _reject(
+        message: str,
+    ) -> tuple[
+        str | None, list[dict[str, Any]], dict[str, Any], list[str], list[str]
+    ]:
+        return (message, [], {}, [], [])
+
+    if not isinstance(payload, dict):
+        return _reject(
+            'need a JSON body {"goals": [...], "modality_weights": {...},'
+            ' "assessment_targets": [...], "register_style_goals": [...]}'
+        )
+    for key in (
+        "goals",
+        "modality_weights",
+        "assessment_targets",
+        "register_style_goals",
+    ):
+        if key not in payload:
+            return _reject(
+                f'"{key}" is missing: the body is the full new combination'
+                " (goals / modality_weights / assessment_targets /"
+                " register_style_goals)"
+            )
+    raw_goals = payload["goals"]
+    if not isinstance(raw_goals, list):
+        return _reject('"goals" needs a list')
+    goals: list[dict[str, Any]] = []
+    for index, item in enumerate(raw_goals):
+        if not isinstance(item, dict):
+            return _reject(f"goals[{index}] needs an object")
+        goal_id = item.get("goal_id")
+        modality = item.get("goal_modality")
+        description = item.get("description")
+        if not isinstance(goal_id, str) or not goal_id.strip():
+            return _reject(
+                f"goals[{index}].goal_id needs a non-empty string"
+            )
+        if not isinstance(modality, str) or modality not in (
+            _GOAL_MODALITY_WORDS
+        ):
+            return _reject(
+                f"goals[{index}].goal_modality must be one of"
+                f" {'/'.join(_GOAL_MODALITY_WORDS)}; got {modality!r}"
+            )
+        if not isinstance(description, str) or not description.strip():
+            return _reject(
+                f"goals[{index}].description needs a non-empty string"
+            )
+        goals.append(
+            {
+                "goal_id": goal_id,
+                "goal_modality": modality,
+                "description": description,
+            }
+        )
+    raw_weights = payload["modality_weights"]
+    if not isinstance(raw_weights, dict):
+        return _reject('"modality_weights" needs an object')
+    weights: dict[str, Any] = {}
+    for key, value in raw_weights.items():
+        if not isinstance(key, str) or key not in _GOAL_MODALITY_WORDS:
+            return _reject(
+                "modality_weights keys must be one of"
+                f" {'/'.join(_GOAL_MODALITY_WORDS)}; got {key!r}"
+            )
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return _reject(
+                f"modality_weights[{key}] needs a number; got {value!r}"
+            )
+        weights[key] = value
+    lists: dict[str, list[str]] = {}
+    for key, allowed in (
+        ("assessment_targets", _ASSESSMENT_WORDS),
+        ("register_style_goals", _REGISTER_WORDS),
+    ):
+        raw = payload[key]
+        if not isinstance(raw, list):
+            return _reject(f'"{key}" needs a list')
+        for word in raw:
+            if not isinstance(word, str) or word not in allowed:
+                return _reject(
+                    f"{key} words must be one of"
+                    f" {'/'.join(allowed)}; got {word!r}"
+                )
+        lists[key] = raw
+    return (None, goals, weights, lists["assessment_targets"], lists[
+        "register_style_goals"
+    ])
+
+
+def _frequency_request_word(payload: Any) -> str | None:
+    """The W2 body's one word, or ``None`` when it is outside the grammar
+    (the picker's four words are case-sensitive — the enum's own words)."""
+
+    if not isinstance(payload, dict):
+        return None
+    word = payload.get("teaching_frequency")
+    if not isinstance(word, str) or word not in _FREQUENCY_WORDS:
+        return None
+    return word
+
+
+def _portfolio_face(portfolio: LearningGoalPortfolio) -> dict[str, Any]:
+    """The durable portfolio's eight columns, verbatim (§5.1's shape; the
+    read re-shapes nothing — enums spell their own words, ``effective_from``
+    carries the F-4 ``""`` sentinel as the value it is)."""
+
+    return {
+        "goal_version": str(portfolio.goal_version),
+        "goals": [
+            {
+                "goal_id": str(goal.goal_id),
+                "goal_modality": str(goal.goal_modality.value),
+                "description": goal.description,
+            }
+            for goal in portfolio.goals
+        ],
+        "modality_weights": {
+            str(key.value): float(value)
+            for key, value in portfolio.modality_weights.items()
+        },
+        "assessment_targets": [
+            str(target) for target in portfolio.assessment_targets
+        ],
+        "register_style_goals": [
+            str(register) for register in portfolio.register_style_goals
+        ],
+        "effective_from": portfolio.effective_from,
+        "updated_at": portfolio.updated_at,
+    }
+
+
+def _policy_face(policy: TeachingPolicyProfile) -> dict[str, Any]:
+    """The policy's ten served columns: version + frequency + the eight
+    unpinned columns verbatim — ``None`` = 未配置, carried as JSON null,
+    the store's own honesty passed through (no invented default)."""
+
+    return {
+        "policy_version": str(policy.policy_version),
+        "teaching_frequency": str(policy.teaching_frequency.value),
+        "mode": policy.mode,
+        "interruption_budget": policy.interruption_budget,
+        "curriculum_initiative": policy.curriculum_initiative,
+        "correction_strictness": policy.correction_strictness,
+        "hint_policy": policy.hint_policy,
+        "assessment_visibility": policy.assessment_visibility,
+        "practice_density": policy.practice_density,
+        "persona_freedom": policy.persona_freedom,
+    }
+
+
+def _session_focus_face(focus: SessionFocus) -> dict[str, Any]:
+    """The conversation's current focus row, verbatim — the read the note
+    renders (临时侧重：the §5.1 semantics live in the page's words, the
+    payload only carries the durable row)."""
+
+    return {
+        "session_focus_id": focus.session_focus_id,
+        "conversation_id": str(focus.conversation_id),
+        "base_goal_portfolio_version": str(focus.base_goal_portfolio_version),
+        "temporary_goal_weights": {
+            str(key.value): float(value)
+            for key, value in focus.temporary_goal_weights.items()
+        },
+        "manual_focus_target": (
+            None
+            if focus.manual_focus_target is None
+            else str(focus.manual_focus_target)
+        ),
+        "starts_at": focus.starts_at,
+        "expires_at": focus.expires_at,
+    }
+
+
 def _diagnostics_panel(
     name: str,
     build: Callable[[sqlite3.Connection], dict[str, Any]],
@@ -1796,6 +2194,342 @@ class _WebFace:
         finally:
             conn.close()
 
+    def goals(self) -> dict[str, Any]:
+        """The goal screen's one read (p-3) — portfolio + policy + the
+        served conversation's session focus + the taxonomy reference.
+
+        Read-only, on the work queue (the diagnostics construction: a person
+        pulls the screen, never mid-generation). The three durable reads go
+        through the host's own user-config controller; an unreadable row is
+        a server fact (the route's 500 posture), an unwritten row is
+        ``None`` — the honest empty shape the page greets with 写下第一个
+        目标, never a fabricated portfolio. The session-focus note is keyed
+        to **the conversation this face serves** (the delete face's honest
+        referent rule: §5.1 keys a focus to a conversation, and this page
+        knows exactly one). A host without the user-config leg (the prep-1
+        tier) answers ``available: false`` — the refusal is the honest
+        shape, and the taxonomy block still rides along because it is a
+        constant, not a read.
+        """
+
+        controller = self._host.user_config
+        if controller is None:
+            return {
+                "available": False,
+                "portfolio": None,
+                "policy": None,
+                "session_focus": None,
+                "taxonomy": _TAXONOMY_REFERENCE,
+            }
+        user_id = self._host.user_id
+        assert user_id is not None  # the assembly sets the pair together
+        portfolio = controller.get_goal_portfolio(user_id)
+        if isinstance(portfolio, Err):
+            raise RuntimeError(
+                "the goal portfolio could not be read:"
+                f" {portfolio.error.code.value}: {portfolio.error.message}"
+            )
+        policy = controller.get_teaching_policy(user_id)
+        if isinstance(policy, Err):
+            raise RuntimeError(
+                "the teaching policy could not be read:"
+                f" {policy.error.code.value}: {policy.error.message}"
+            )
+        focus = controller.get_session_focus_for_conversation(
+            self._conversation_id
+        )
+        if isinstance(focus, Err):
+            raise RuntimeError(
+                "the session focus could not be read:"
+                f" {focus.error.code.value}: {focus.error.message}"
+            )
+        return {
+            "available": True,
+            "portfolio": (
+                None
+                if portfolio.value is None
+                else _portfolio_face(portfolio.value)
+            ),
+            "policy": (
+                None if policy.value is None else _policy_face(policy.value)
+            ),
+            "session_focus": (
+                None
+                if focus.value is None
+                else _session_focus_face(focus.value)
+            ),
+            "taxonomy": _TAXONOMY_REFERENCE,
+        }
+
+    def goals_save(
+        self,
+        goals: list[dict[str, Any]],
+        weights: dict[str, Any],
+        assessment: list[str],
+        register: list[str],
+    ) -> tuple[int, dict[str, Any]]:
+        """The goal screen's one write (p-3 W1): the full new combination as
+        the portfolio's next version.
+
+        The store owns every rule (elc.user_config.store: same version +
+        same content = an idempotent Ok, same version + different content =
+        ``CONFLICT``, any moved version replaces); this face reads the
+        current row, answers 200 with ``idempotent`` and writes nothing when
+        the combination already reads back the same, and otherwise upserts
+        ``GoalVersion(_next_version(current))`` with ``effective_from``
+        preserved (the F-4 ``""`` sentinel on the first write — no clock
+        value is invented: F-4 forbids substituting a clock for a
+        declaration the user never made). The replay comparison covers the
+        four content pieces in the store's own normal form (weights through
+        the word-keyed float map; lists as sequences — order is content);
+        ``effective_from`` is preserved by construction, so it is not
+        compared. A ``CONFLICT`` rides HTTP 409 with the one human sentence;
+        any other refusal is a runtime fact (200 + ``accepted: false``), the
+        teaching faces' shape.
+        """
+
+        controller = self._host.user_config
+        if controller is None or self._host.user_id is None:
+            return (200, _no_user_config_answer())
+        user_id = self._host.user_id
+        current = controller.get_goal_portfolio(user_id)
+        if isinstance(current, Err):
+            raise RuntimeError(
+                "the goal portfolio could not be read:"
+                f" {current.error.code.value}: {current.error.message}"
+            )
+        portfolio_now = current.value
+        incoming_goals = tuple(
+            LearningGoal(
+                goal_id=GoalId(str(goal["goal_id"])),
+                goal_modality=GoalModality(str(goal["goal_modality"])),
+                description=str(goal["description"]),
+            )
+            for goal in goals
+        )
+        incoming_weights = {
+            GoalModality(str(key)): float(value)
+            for key, value in weights.items()
+        }
+        incoming = (
+            tuple(
+                (goal.goal_id, goal.goal_modality.value, goal.description)
+                for goal in incoming_goals
+            ),
+            {key.value: value for key, value in incoming_weights.items()},
+            tuple(assessment),
+            tuple(register),
+        )
+        if portfolio_now is not None:
+            durable = (
+                tuple(
+                    (goal.goal_id, goal.goal_modality.value, goal.description)
+                    for goal in portfolio_now.goals
+                ),
+                {
+                    key.value: float(value)
+                    for key, value in portfolio_now.modality_weights.items()
+                },
+                tuple(portfolio_now.assessment_targets),
+                tuple(portfolio_now.register_style_goals),
+            )
+            if durable == incoming:
+                return (
+                    200,
+                    {
+                        "accepted": True,
+                        "idempotent": True,
+                        "goal_version": str(portfolio_now.goal_version),
+                        "conflict": False,
+                        "error": None,
+                    },
+                )
+        version = _next_version(
+            None if portfolio_now is None else str(portfolio_now.goal_version)
+        )
+        written = controller.upsert_goal_portfolio(
+            LearningGoalPortfolio(
+                goal_portfolio_id=user_id,
+                goal_version=GoalVersion(version),
+                goals=incoming_goals,
+                modality_weights=incoming_weights,
+                assessment_targets=tuple(assessment),
+                register_style_goals=tuple(register),
+                effective_from=(
+                    ""
+                    if portfolio_now is None
+                    else portfolio_now.effective_from
+                ),
+            )
+        )
+        if isinstance(written, Err):
+            if written.error.code is DomainErrorCode.CONFLICT:
+                return (
+                    409,
+                    {
+                        "accepted": False,
+                        "conflict": True,
+                        "error": "配置已被别处更新，请重读再改",
+                        "detail": (
+                            f"{written.error.code.value}:"
+                            f" {written.error.message}"
+                        ),
+                    },
+                )
+            return (
+                200,
+                {
+                    "accepted": False,
+                    "conflict": False,
+                    "error": (
+                        f"{written.error.code.value}:"
+                        f" {written.error.message}"
+                    ),
+                },
+            )
+        return (
+            200,
+            {
+                "accepted": True,
+                "idempotent": False,
+                "goal_version": str(written.value),
+                "conflict": False,
+                "error": None,
+            },
+        )
+
+    def teaching_frequency(self, word: str) -> tuple[int, dict[str, Any]]:
+        """The goal screen's one policy write (p-3 W2): the single
+        ``teaching_frequency`` column, everything else verbatim.
+
+        The current policy's eight unpinned columns are rebuilt exactly as
+        they read (zero invented values — the unpinned columns have no
+        default in this slice), ``effective_from`` is preserved (the F-4
+        ``""`` sentinel on the first write), and the version moves by
+        :func:`_next_version`. An unchanged frequency answers 200 with
+        ``idempotent`` and writes nothing (no empty version churn); a
+        ``CONFLICT`` rides 409 like W1; the word itself was validated at the
+        HTTP layer and is re-derived here only to fail closed (a
+        :class:`~elc.user_config.types.TeachingFrequency` construction
+        cannot be talked past the enum).
+        """
+
+        controller = self._host.user_config
+        if controller is None or self._host.user_id is None:
+            return (200, _no_user_config_answer())
+        user_id = self._host.user_id
+        try:
+            frequency = TeachingFrequency(word)
+        except ValueError:
+            return (
+                400,
+                {
+                    "accepted": False,
+                    "conflict": False,
+                    "error": _FREQUENCY_GRAMMAR,
+                },
+            )
+        current = controller.get_teaching_policy(user_id)
+        if isinstance(current, Err):
+            raise RuntimeError(
+                "the teaching policy could not be read:"
+                f" {current.error.code.value}: {current.error.message}"
+            )
+        policy_now = current.value
+        if policy_now is not None and policy_now.teaching_frequency is (
+            frequency
+        ):
+            return (
+                200,
+                {
+                    "accepted": True,
+                    "idempotent": True,
+                    "policy_version": str(policy_now.policy_version),
+                    "teaching_frequency": word,
+                    "conflict": False,
+                    "error": None,
+                },
+            )
+        version = _next_version(
+            None if policy_now is None else str(policy_now.policy_version)
+        )
+        written = controller.upsert_teaching_policy(
+            TeachingPolicyProfile(
+                teaching_policy_profile_id=user_id,
+                policy_version=PolicyVersion(version),
+                teaching_frequency=frequency,
+                mode=None if policy_now is None else policy_now.mode,
+                interruption_budget=(
+                    None
+                    if policy_now is None
+                    else policy_now.interruption_budget
+                ),
+                curriculum_initiative=(
+                    None
+                    if policy_now is None
+                    else policy_now.curriculum_initiative
+                ),
+                correction_strictness=(
+                    None
+                    if policy_now is None
+                    else policy_now.correction_strictness
+                ),
+                hint_policy=(
+                    None if policy_now is None else policy_now.hint_policy
+                ),
+                assessment_visibility=(
+                    None
+                    if policy_now is None
+                    else policy_now.assessment_visibility
+                ),
+                practice_density=(
+                    None if policy_now is None else policy_now.practice_density
+                ),
+                persona_freedom=(
+                    None if policy_now is None else policy_now.persona_freedom
+                ),
+                effective_from=(
+                    "" if policy_now is None else policy_now.effective_from
+                ),
+            )
+        )
+        if isinstance(written, Err):
+            if written.error.code is DomainErrorCode.CONFLICT:
+                return (
+                    409,
+                    {
+                        "accepted": False,
+                        "conflict": True,
+                        "error": "配置已被别处更新，请重读再改",
+                        "detail": (
+                            f"{written.error.code.value}:"
+                            f" {written.error.message}"
+                        ),
+                    },
+                )
+            return (
+                200,
+                {
+                    "accepted": False,
+                    "conflict": False,
+                    "error": (
+                        f"{written.error.code.value}:"
+                        f" {written.error.message}"
+                    ),
+                },
+            )
+        return (
+            200,
+            {
+                "accepted": True,
+                "idempotent": False,
+                "policy_version": str(written.value),
+                "teaching_frequency": word,
+                "conflict": False,
+                "error": None,
+            },
+        )
+
     def teach_me(self, target_id: str) -> dict[str, Any]:
         """The 学习 view's one act: teach this target now.
 
@@ -1996,6 +2730,59 @@ def _build_server(
                 return
             self._send_json(200, box["payload"])
 
+        def _read_json_body(self) -> Any:
+            """(p-3) The POST body, parsed once — the turn face's inline
+            read, extracted for the two new write faces only (the existing
+            branches keep their own lines untouched; the helper is theirs
+            alone). A body that is not JSON answers ``None``, which every
+            caller turns into its own 400."""
+
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = 0
+            raw = self.rfile.read(length) if length > 0 else b""
+            try:
+                return json.loads(raw.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                return None
+
+        def _run_host_write(
+            self, route: Callable[[], tuple[int, Any]]
+        ) -> None:
+            """(p-3) The write faces that answer their own status — the
+            queue discipline of :meth:`_run_on_host_thread` (same box, same
+            failure posture, same wait) with the route's ``(status,
+            payload)`` sent verbatim: the CONFLICT arm answers 409, an
+            exception on the host thread is still a 500. A separate method
+            on purpose: the existing route arms keep their exact lines (the
+            byte-identical posture), and only the two new write faces ride
+            this one."""
+
+            box: dict[str, Any] = {}
+            failure: list[str] = []
+            done = threading.Event()
+
+            def job() -> None:
+                try:
+                    box["answer"] = route()
+                except Exception as exc:  # answered, never swallowed
+                    failure.append(f"{type(exc).__name__}: {exc}")
+                finally:
+                    done.set()
+
+            work.put(job)
+            if not done.wait(timeout=_WORKER_WAIT_SECONDS):
+                self._send_json(
+                    500, {"error": "the host worker did not answer in time"}
+                )
+                return
+            if failure:
+                self._send_json(500, {"error": failure[0]})
+                return
+            status, payload = box["answer"]
+            self._send_json(status, payload)
+
         def do_GET(self) -> None:
             if self.path == "/":
                 self._send_page_file("index.html")
@@ -2057,10 +2844,45 @@ def _build_server(
                 # p-2: the memory readout — five guarded panels, read-only,
                 # on the work queue (the diagnostics construction).
                 self._run_on_host_thread(face.memory)
+            elif self.path == "/api/goals":
+                # p-3: the goal screen's read — the portfolio, the policy,
+                # the served conversation's session focus and the taxonomy
+                # reference, read-only on the work queue (the diagnostics
+                # construction). A read failure is a server fact: the
+                # route's own 500 posture.
+                self._run_on_host_thread(face.goals)
             else:
                 self._send_json(404, {"error": "not found"})
 
         def do_POST(self) -> None:
+            if self.path == "/api/goals":
+                # p-3 W1: the full new combination as the portfolio's next
+                # version. The grammar is validated here, fail-closed (an
+                # out-of-vocabulary word is a 400 人话, never a silent
+                # drop); the store's version discipline rides 200 / 409
+                # from the face (an idempotent replay, a CONFLICT 上浮).
+                error, goals, weights, assessment, register = (
+                    _goal_request_parts(self._read_json_body())
+                )
+                if error is not None:
+                    self._send_json(400, {"error": error})
+                    return
+                self._run_host_write(
+                    lambda: face.goals_save(
+                        goals, weights, assessment, register
+                    )
+                )
+                return
+            if self.path == "/api/teaching_frequency":
+                # p-3 W2: the one policy column. One word inside the
+                # implementation-declared four, case-sensitive (the enum's
+                # own words); anything else is the 400 below.
+                word = _frequency_request_word(self._read_json_body())
+                if word is None:
+                    self._send_json(400, {"error": _FREQUENCY_GRAMMAR})
+                    return
+                self._run_host_write(lambda: face.teaching_frequency(word))
+                return
             if self.path not in (
                 "/api/turn",
                 "/api/teaching_reply",

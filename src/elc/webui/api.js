@@ -80,3 +80,19 @@ export function fetchMemory() {
 export function fetchDelete(payload) {
   return postJson("/api/delete", payload);
 }
+
+/** 目标读数（p-3）：组合 + 政策 + 本对话临时侧重 + 词表参考，一读全归。 */
+export function fetchGoals() {
+  return getJson("/api/goals");
+}
+
+/** 保存目标组合（p-3）：全组合 upsert，版本前移；409 = 冲突（重读再改）。 */
+export function fetchSaveGoals(payload) {
+  return postJson("/api/goals", payload);
+}
+
+/** 保存教学频率（p-3）：单列写；409 = 冲突（重读再改）。 */
+export function fetchSaveFrequency(word) {
+  return postJson("/api/teaching_frequency",
+                  { teaching_frequency: word });
+}

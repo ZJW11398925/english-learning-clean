@@ -16,6 +16,8 @@ import {
   wordWindows,
   showWordCard,
   confirmDialog,
+  fieldRow,
+  chip,
 } from "./components.js";
 import {
   fetchTurn,
@@ -29,6 +31,9 @@ import {
   fetchWord,
   fetchMemory,
   fetchDelete,
+  fetchGoals,
+  fetchSaveGoals,
+  fetchSaveFrequency,
 } from "./api.js";
 
 // F-1: the diagnostics view — the five whys, read from /api/diagnostics.
@@ -646,6 +651,405 @@ document.getElementById("del-conversation").addEventListener("click", () =>
     { scope: "CONVERSATION" },
     "将删除这段对话的全部记录，包括信件与教学痕迹。此操作不可恢复。"));
 
+// p-3: the 目标 screen — the long-term direction, read from /api/goals and
+// written back through the store's own version discipline: the full new
+// combination is one upsert (every save a new version, history kept), the
+// teaching frequency is a single-column write, and a CONFLICT (another
+// writer won) says so with a 重新读取 action. The pickers build themselves
+// from the taxonomy the server serves — the words are the server's, never a
+// client copy. Every user string rides textContent.
+
+const GOAL_PANEL_IDS = ["goal-list", "goal-weights", "goal-assessment",
+                        "goal-register", "goal-frequency"];
+
+let goalData = null;   // the last GET /api/goals payload
+let goalEditor = null; // the working copy the save sends
+
+function goalBox(id) {
+  return document.getElementById(id);
+}
+
+function goalWordSet(faceName) {
+  // one taxonomy face's words, served by the GET (empty when absent —
+  // the pickers stay empty rather than guessing a client-side list)
+  const faces = (goalData && goalData.taxonomy &&
+                 goalData.taxonomy.faces) || [];
+  for (const face of faces) {
+    if (face.name === faceName) return face.words || [];
+  }
+  return [];
+}
+
+function goalFrequencyWords() {
+  return (goalData && goalData.taxonomy &&
+          goalData.taxonomy.teaching_frequency &&
+          goalData.taxonomy.teaching_frequency.words) || [];
+}
+
+// the result box: one human line, optionally with an action (the conflict's
+// 重新读取). Failure rides the .errline form, success the .sub one.
+function goalResult(text, failure, action) {
+  const box = goalBox("goal-result");
+  box.hidden = false;
+  box.textContent = "";
+  const line = document.createElement("p");
+  line.className = failure ? "errline" : "sub";
+  line.textContent = text;
+  box.appendChild(line);
+  if (action) box.appendChild(action);
+}
+
+function editorFromData(data) {
+  const portfolio = data.portfolio;
+  return {
+    goals: ((portfolio && portfolio.goals) || []).map((goal) => ({
+      goal_id: goal.goal_id,
+      goal_modality: goal.goal_modality,
+      description: goal.description,
+    })),
+    weights: Object.assign(
+      {}, (portfolio && portfolio.modality_weights) || {}),
+    assessment: new Set((portfolio && portfolio.assessment_targets) || []),
+    register: new Set((portfolio && portfolio.register_style_goals) || []),
+  };
+}
+
+function renderGoalList() {
+  const box = goalBox("goal-list");
+  box.textContent = "";
+  const goals = (goalData && goalData.portfolio &&
+                 goalData.portfolio.goals) || [];
+  if (!goals.length) {
+    diagEmpty(box, "还没有写下目标——在下面的编辑区写下第一个目标。");
+    return;
+  }
+  for (const goal of goals) {
+    const row = document.createElement("div");
+    row.className = "goalcard";
+    row.appendChild(chip(goal.goal_modality, { badge: true }));
+    const desc = document.createElement("span");
+    desc.className = "goaldesc";
+    desc.textContent = goal.description;
+    row.appendChild(desc);
+    box.appendChild(row);
+  }
+}
+
+function renderGoalEditor() {
+  const box = goalBox("goal-editor");
+  box.textContent = "";
+  if (!goalEditor) return;
+  const editor = goalEditor;
+  const words = goalWordSet("goal_modality");
+  editor.goals.forEach((goal, index) => {
+    const edge = document.createElement("div");
+    edge.className = "goaledge";
+    const select = document.createElement("select");
+    for (const word of words) {
+      const option = document.createElement("option");
+      option.value = word;
+      option.textContent = word;
+      if (word === goal.goal_modality) option.selected = true;
+      select.appendChild(option);
+    }
+    select.addEventListener("change", () => {
+      goal.goal_modality = select.value;
+    });
+    edge.appendChild(fieldRow("目标 " + (index + 1) + " · 模态", select));
+    const description = document.createElement("input");
+    description.type = "text";
+    description.value = goal.description;
+    description.placeholder = "一句话说清这个方向……";
+    description.addEventListener("input", () => {
+      goal.description = description.value;
+    });
+    edge.appendChild(fieldRow("目标 " + (index + 1) + " · 描述", description));
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "btn btn--faint";
+    remove.textContent = "从当前组合移除（历史版本保留）";
+    remove.addEventListener("click", () => {
+      editor.goals.splice(editor.goals.indexOf(goal), 1);
+      renderGoalEditor();
+    });
+    edge.appendChild(remove);
+    box.appendChild(edge);
+  });
+  const add = document.createElement("button");
+  add.type = "button";
+  add.className = "btn btn--pencil";
+  add.textContent = "加一条目标";
+  add.addEventListener("click", () => {
+    editor.goals.push({
+      goal_id: "goal-web-" + Date.now().toString(36) + "-" +
+               Math.random().toString(36).slice(2, 8),
+      goal_modality: words[0] || "SPEAKING",
+      description: "",
+    });
+    renderGoalEditor();
+  });
+  box.appendChild(add);
+}
+
+function renderGoalWeights() {
+  const box = goalBox("goal-weights");
+  box.textContent = "";
+  if (!goalEditor) return;
+  for (const word of goalWordSet("goal_modality")) {
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "0";
+    input.step = "0.1";
+    input.placeholder = "未设";
+    const value = goalEditor.weights[word];
+    if (value !== undefined && value !== null) input.value = String(value);
+    input.addEventListener("input", () => {
+      if (input.value === "") delete goalEditor.weights[word];
+      else goalEditor.weights[word] = Number(input.value);
+    });
+    box.appendChild(fieldRow(word, input));
+  }
+}
+
+function renderWordPicker(boxId, faceName, set) {
+  const box = goalBox(boxId);
+  box.textContent = "";
+  if (!goalEditor) return;
+  const row = document.createElement("div");
+  row.className = "chips";
+  for (const word of goalWordSet(faceName)) {
+    const on = set.has(word);
+    row.appendChild(chip(word, {
+      on: on,
+      onClick: () => {
+        if (on) set.delete(word);
+        else set.add(word);
+        renderWordPicker(boxId, faceName, set);
+      },
+    }));
+  }
+  box.appendChild(row);
+}
+
+function renderGoalSave() {
+  const box = goalBox("goal-save");
+  box.textContent = "";
+  if (!goalEditor) return;
+  const save = document.createElement("button");
+  save.type = "button";
+  save.className = "btn btn--ink";
+  save.textContent = "保存组合（目标 + 权重 + 考试 + 语域）";
+  save.addEventListener("click", () => savePortfolio(save));
+  box.appendChild(save);
+}
+
+async function savePortfolio(button) {
+  const editor = goalEditor;
+  if (!editor) return;
+  for (let i = 0; i < editor.goals.length; i += 1) {
+    if (!editor.goals[i].description.trim()) {
+      goalResult("第 " + (i + 1) + " 条目标还没有描述。", true);
+      return;
+    }
+  }
+  const payload = {
+    goals: editor.goals.map((goal) => ({
+      goal_id: goal.goal_id,
+      goal_modality: goal.goal_modality,
+      description: goal.description.trim(),
+    })),
+    modality_weights: editor.weights,
+    assessment_targets: Array.from(editor.assessment),
+    register_style_goals: Array.from(editor.register),
+  };
+  button.disabled = true;
+  const original = button.textContent;
+  button.textContent = "保存中…";
+  let data = null;
+  try {
+    data = await fetchSaveGoals(payload);
+  } catch {
+    goalResult("保存失败，请重试", true);
+    button.disabled = false;
+    button.textContent = original;
+    return;
+  }
+  button.disabled = false;
+  button.textContent = original;
+  if (data.accepted) {
+    goalResult(data.idempotent
+      ? "内容没有变化——没有写新版本。"
+      : "已保存（版本 " + data.goal_version + "）。", false);
+    loadGoals();
+  } else if (data.conflict) {
+    // the store refused the same-version write: the human sentence plus
+    // the one action that resolves it — re-read and try again
+    const again = document.createElement("button");
+    again.type = "button";
+    again.className = "btn btn--pencil";
+    again.textContent = "重新读取";
+    again.addEventListener("click", loadGoals);
+    goalResult(data.error || "配置已被别处更新，请重读再改。", true, again);
+  } else {
+    goalResult(data.error || "保存失败，请重试", true);
+  }
+}
+
+function renderGoalFrequency() {
+  const box = goalBox("goal-frequency");
+  box.textContent = "";
+  if (!goalEditor) return;
+  const policy = goalData && goalData.policy;
+  if (policy) {
+    diagLine(box, "当前", policy.teaching_frequency +
+             "（版本 " + policy.policy_version + "）");
+  } else {
+    diagLine(box, "当前", "未配置");
+  }
+  const row = document.createElement("div");
+  row.className = "chips";
+  for (const word of goalFrequencyWords()) {
+    row.appendChild(chip(word, {
+      on: goalEditor.frequency === word,
+      onClick: () => {
+        goalEditor.frequency = word;
+        renderGoalFrequency();
+      },
+    }));
+  }
+  box.appendChild(row);
+  const save = document.createElement("button");
+  save.type = "button";
+  save.className = "btn btn--pencil";
+  save.textContent = "保存频率";
+  save.addEventListener("click", () => saveFrequency(save));
+  box.appendChild(save);
+}
+
+async function saveFrequency(button) {
+  const editor = goalEditor;
+  if (!editor || !editor.frequency) {
+    goalResult("先在下面选一个频率。", true);
+    return;
+  }
+  button.disabled = true;
+  const original = button.textContent;
+  button.textContent = "保存中…";
+  let data = null;
+  try {
+    data = await fetchSaveFrequency(editor.frequency);
+  } catch {
+    goalResult("保存失败，请重试", true);
+    button.disabled = false;
+    button.textContent = original;
+    return;
+  }
+  button.disabled = false;
+  button.textContent = original;
+  if (data.accepted) {
+    goalResult(data.idempotent
+      ? "频率没有变化——没有写新版本。"
+      : "教学频率已保存（版本 " + data.policy_version + "）。", false);
+    loadGoals();
+  } else if (data.conflict) {
+    const again = document.createElement("button");
+    again.type = "button";
+    again.className = "btn btn--pencil";
+    again.textContent = "重新读取";
+    again.addEventListener("click", loadGoals);
+    goalResult(data.error || "配置已被别处更新，请重读再改。", true, again);
+  } else {
+    goalResult(data.error || "保存失败，请重试", true);
+  }
+}
+
+function renderGoalFocus() {
+  const sec = goalBox("goal-focus-sec");
+  const box = goalBox("goal-focus");
+  box.textContent = "";
+  const focus = goalData && goalData.session_focus;
+  if (!focus) {
+    sec.hidden = true;
+    return;
+  }
+  sec.hidden = false;
+  const group = diagGroup(box, "对话 " + focus.conversation_id);
+  const weights = focus.temporary_goal_weights || {};
+  const said = Object.keys(weights).map(
+    (word) => word + " " + weights[word]).join("；");
+  diagLine(group, "临时权重", said || "（无）");
+  diagLine(group, "手动聚焦", focus.manual_focus_target || "—");
+  diagLine(group, "开始于", focus.starts_at || "—");
+  if (focus.expires_at) diagLine(group, "结束于", focus.expires_at);
+}
+
+function renderGoalTaxref() {
+  const box = goalBox("goal-taxref");
+  box.textContent = "";
+  const taxonomy = (goalData && goalData.taxonomy) || {};
+  const note = taxonomy.non_stored_note || "";
+  for (const face of taxonomy.faces || []) {
+    if (face.stored) continue;
+    const line = document.createElement("p");
+    line.className = "taxref";
+    line.textContent = "§" + (face.section || "?") + " " + face.name +
+      "（" + face.words.length + " 词 · " + note + "）：" +
+      face.words.join("、");
+    box.appendChild(line);
+  }
+}
+
+async function loadGoals() {
+  for (const id of GOAL_PANEL_IDS) {
+    const box = goalBox(id);
+    box.textContent = "";
+    box.appendChild(stateBanner("loading"));
+  }
+  // the result box is NOT touched here: a save's own line must survive the
+  // re-read that follows it (hiding happens on screen entry, showScreen)
+  try {
+    goalData = await fetchGoals();
+  } catch {
+    for (const id of GOAL_PANEL_IDS) {
+      diagError(goalBox(id), "目标读数拉取失败", loadGoals);
+    }
+    return;
+  }
+  if (!goalData.available) {
+    // the honest refusal: no user-config leg on this host, nothing to
+    // read and nothing to edit — said in every panel, no editor built
+    goalEditor = null;
+    for (const id of GOAL_PANEL_IDS) {
+      diagEmpty(goalBox(id),
+        "本进程未装配用户配置面（无 content-tier）——目标读写不可用。");
+    }
+    goalBox("goal-save").textContent = "";
+    return;
+  }
+  goalEditor = editorFromData(goalData);
+  goalEditor.frequency =
+    (goalData.policy && goalData.policy.teaching_frequency) || null;
+  renderGoalList();
+  renderGoalEditor();
+  renderGoalWeights();
+  renderWordPicker("goal-assessment", "external_assessment",
+    goalEditor.assessment);
+  renderWordPicker("goal-register", "register_style",
+    goalEditor.register);
+  renderGoalSave();
+  renderGoalFrequency();
+  renderGoalFocus();
+  renderGoalTaxref();
+}
+
+document.getElementById("goal-toggle").addEventListener("click",
+  () => showScreen("goal"));
+document.getElementById("goal-set").addEventListener("click",
+  () => showScreen("set"));
+document.getElementById("back-from-goal").addEventListener("click",
+  () => showScreen("living"));
+document.getElementById("goal-refresh").addEventListener("click", loadGoals);
+
 // F-2: why a quiet turn was quiet — one gray line from the diagnostics
 // face's why-not-teach panel. The gate lives in postTurn (only when the
 // turn response carried no teaching moments); a failed or empty pull
@@ -687,6 +1091,7 @@ const screens = {
   onboard: document.getElementById("screen-onboard"),
   living: document.getElementById("screen-living"),
   today: document.getElementById("screen-today"),
+  goal: document.getElementById("screen-goal"),
   set: document.getElementById("screen-set"),
 };
 
@@ -695,8 +1100,14 @@ function showScreen(name) {
     screens[key].hidden = key !== name;
   }
   // p-1: entering the 今日 screen is the pull — the screen always shows
-  // today's facts, never a stale page
+  // today's facts, never a stale page. p-3: the 目标 screen is the same
+  // kind of door — entering it reads the goals afresh (and starts with no
+  // leftover save result; a save's own line survives its re-read).
   if (name === "today") loadToday();
+  if (name === "goal") {
+    goalBox("goal-result").hidden = true;
+    loadGoals();
+  }
   window.scrollTo(0, 0);
 }
 
