@@ -26,7 +26,11 @@ Groups (the task book's own):
    (settings pulls nothing);
 6. the settings honesty — the drawer's settings section is an honest
    placeholder: one sentence, no promised date, and the endpoint line
-   that has nowhere else to live.
+   that has nowhere else to live;
+7. the registration — the three shell components are pinned the
+   word-card way (the R-1 review's disposition: spec rows, css contract
+   blocks, js factories, single-source selectors, and the dock's
+   aria-current that a mutation once deleted green).
 
 Every page-source pin reads the served union (the F-G1 reading).
 """
@@ -256,3 +260,58 @@ def test_the_settings_node_is_an_honest_placeholder(tmp_path: Path) -> None:
     assert "设置面尚未到来。" in page
     assert "页面不读取、不显示（宁缺勿假）" in page
     assert "即将" not in page
+
+
+# ---------------------------------------------------------------------------
+# 7. the registration (the disposition knife: LOW-1 + LOW-2)
+
+
+def test_the_three_shell_components_are_pinned_registered() -> None:
+    """The R-1 registration is pinned the word-card way (the p-1
+    precedent, four pieces): the spec's numbered rows, the css contract
+    blocks, the js wiring factories, and the selectors as single sources
+    across the tree — plus the dock's aria-current pair, the one wiring
+    line the review's m9 mutation deleted without a red."""
+
+    from tests.host.test_fg1_architecture import (
+        COMPONENTS,
+        _webui_all_text,
+        _webui_text,
+    )
+
+    for name in ("dock", "space-header", "section-tabs"):
+        assert name in COMPONENTS, name
+    spec = (
+        Path(__file__).resolve().parents[2]
+        / "docs" / "FRONTEND_SPEC.md"
+    ).read_text(encoding="utf-8")
+    for row in ("| 18 | dock", "| 19 | space-header",
+                "| 20 | section-tabs"):
+        assert row in spec, row
+    css = _webui_text("components.css")
+    for block in ("18. dock", "19. space-header", "20. section-tabs"):
+        assert block in css, block
+    js = _webui_text("components.js")
+    for factory in (
+        "export function wireNavdock(",
+        "export function markNavdock(",
+        "export function sectionLabel(",
+        "export function wireSectionTabs(",
+        "export function markSectionTabs(",
+    ):
+        assert factory in js, factory
+    # the active-space semantics: the on-arm sets aria-current, the
+    # off-arm clears it (m9 deleted both and stayed green)
+    assert 'if (on) item.setAttribute("aria-current", "page");' in js
+    assert 'else item.removeAttribute("aria-current");' in js
+    whole = _webui_all_text()
+    for selector in (
+        ".navdock {",
+        ".navdock-item {",
+        ".navdock-item--on {",
+        ".space-header .spacehead-sec {",
+        ".section-tabs {",
+        ".section-tab {",
+        ".section-tab--on {",
+    ):
+        assert whole.count(selector) == 1, selector
