@@ -74,16 +74,26 @@ def test_the_shell_is_a_vestibule_and_three_spaces(tmp_path: Path) -> None:
         assert f'id="{gone}"' not in page, gone
     for panel in (
         "today-due", "today-recent", "today-practice",
-        "goal-list", "goal-editor", "goal-weights", "goal-assessment",
+        "goal-editor", "goal-weights", "goal-assessment",
         "goal-register", "goal-frequency", "goal-taxref", "goal-result",
-        "target-list", "learn-schedule", "learn-goals", "learn-evidence",
+        "record-book", "raw-readings",
+        "learn-schedule", "learn-goals", "learn-evidence",
         "why-teach", "why-not-teach", "why-evidence", "why-support",
-        "why-degraded", "obs", "obsout",
+        "why-degraded", "obsout", "diag-raw",
         "mem-relationship", "mem-episode", "mem-states", "mem-evidence",
         "mem-tombstones", "del-targets", "del-result",
         "set-learning", "set-diagnostics", "set-memory", "set-privacy",
     ):
         assert f'id="{panel}"' in page, panel
+    # R-1R 退役（⑧ 8.2.4 读写合一 / 8.2.5 可教目标唯一居所在今日 /
+    # 进节即拉取代刷新钮 / 观察读数第一次展开才拉）：三个面板 id 与
+    # 六个拉取钮 id 的缺位钉
+    for gone in (
+        "goal-list", "target-list", "obs",
+        "today-refresh", "learning-refresh", "diag-refresh",
+        "mem-refresh", "goal-refresh",
+    ):
+        assert f'id="{gone}"' not in page, gone
 
 
 def test_the_old_nav_controls_are_all_gone(tmp_path: Path) -> None:
@@ -207,7 +217,8 @@ def test_space_headers_and_the_linkless_parlor_bar(tmp_path: Path) -> None:
     assert '<div class="spacehead-sec">记忆</div>' in index
     parlor = index.split('id="space-parlor"', 1)[1].split("</header>", 1)[0]
     assert '<div class="who">英语客厅</div>' in parlor
-    assert "固定伙伴" in parlor
+    # R-1R 随迁（⑧ 8.2.2 定稿）：「固定笔友 · 来信去信都用英语」
+    assert "固定笔友" in parlor
     assert "<button" not in parlor
     app = _text("app.js")
     assert (
@@ -222,8 +233,8 @@ def test_space_headers_and_the_linkless_parlor_bar(tmp_path: Path) -> None:
 def test_entering_a_space_lands_its_default_section(tmp_path: Path) -> None:
     """进空间落默认节（学案=今日、柜抽=记忆），切节即拉——the pulls wired
     by section key; the goal entry still clears a leftover save line, the
-    progress entry pulls all three faces at once, and settings pulls
-    nothing."""
+    progress entry pulls the learning and diagnostics faces（R-1R：可教
+    目标面退役后剩两面）, and settings pulls nothing."""
 
     app = _text("app.js")
     assert 'const DEFAULT_SECTION = { study: "today", drawer: "memory" };' \
@@ -239,9 +250,11 @@ def test_entering_a_space_lands_its_default_section(tmp_path: Path) -> None:
     assert '"study-today": loadToday' in app
     assert '"drawer-memory": loadMemory' in app
     assert '"drawer-privacy": loadDelTargets' in app
+    # R-1R 随迁（⑧ 8.2.5）：记录节只拉学习 + 诊断两面——可教目标 52 行
+    # 退役后 loadTargets 不再属于本页（唯一居所 = 今日 · 可以练的表达）
     assert (
-        '"study-progress": () => { loadTargets(); loadLearning();'
-        " loadDiagnostics(); }," in app
+        '"study-progress": () => { loadLearning(); loadDiagnostics(); },'
+        in app
     )
     assert 'goalBox("goal-result").hidden = true;' in app
     assert '"drawer-settings":' not in app
@@ -252,13 +265,15 @@ def test_entering_a_space_lands_its_default_section(tmp_path: Path) -> None:
 
 
 def test_the_settings_node_is_an_honest_placeholder(tmp_path: Path) -> None:
-    """The drawer's settings section: one honest sentence — no promised
-    face, no promised date — and the endpoint line whose truth has
-    nowhere else to live (the old set screen's, kept verbatim)."""
+    """The drawer's settings section: the honest two blocks（现在能如实
+    说的 / 将来这里会有——R-1R ⑧ 8.2.8 定稿）— no promised face, no
+    promised date — and the endpoint line whose truth has nowhere else
+    to live."""
 
     page = _page_of(tmp_path)
-    assert "设置面尚未到来。" in page
-    assert "页面不读取、不显示（宁缺勿假）" in page
+    assert "设置面还没有铺开。" in page
+    assert "页面不读取，也不显示" in page
+    assert "教学模式读面与端点说明（位次 R-3，不承诺时点）" in page
     assert "即将" not in page
 
 

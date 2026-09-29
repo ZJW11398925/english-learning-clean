@@ -165,10 +165,11 @@ def test_the_page_has_the_three_screens(tmp_path: Path) -> None:
     assert "function showSpace(" in page
     assert "spaces[key].hidden = key !== name;" in page
     assert 'id="navdock"' in page
-    # the study holds the five why-panels and a refresh
+    # the study holds the five why-panels（R-1R：刷新钮全退——进节即拉是
+    # 唯一拉取点，diag-refresh 缺位钉）
     for panel in _DIAG_PANEL_IDS:
         assert f'id="{panel}"' in page
-    assert 'id="diag-refresh"' in page
+    assert 'id="diag-refresh"' not in page
     # the diagnostics pull rides the read-only endpoint
     assert '"/api/diagnostics"' in page
     assert "loadDiagnostics" in page

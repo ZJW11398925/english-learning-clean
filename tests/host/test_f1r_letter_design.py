@@ -14,7 +14,7 @@ never its code):
    pen line with the 寄出 link) and 仪表 (the honest set screen: the
    endpoint and the model name have no page-side source and are not
    shown, 学习/诊断 expand in place, 回客厅 leads back) — R-1 随迁后：
-   屏迁空间（客厅=space-parlor），仪表的诚实句与四块归位（进步/柜抽），
+   屏迁空间（客厅=space-parlor），仪表的诚实句与四块归位（记录/柜抽），
    缺位钉保证旧壳不回流;
 3. the teaching note keeps every semantic string the behavior suites
    pin (the W-6 arms and their confirm, the busy strip, the verdict
@@ -80,13 +80,13 @@ def test_the_page_has_the_first_visit_cover(tmp_path: Path) -> None:
     page = _page_of(tmp_path)
     assert 'id="screen-onboard"' in page
     # F-G2 随迁：旧钉「✉ 第一步，也是唯一步」随开张屏三步升维退役，
-    # 语义由三段 formhead（第一步 · 是什么 / 第二步 · 教学怎么发生）
-    # 与顶部 brand-mark（--lg）继承。
+    # 语义由 formhead 与顶部 brand-mark（--lg）继承；R-1R 随迁（⑧ 8.2.1
+    # 定稿）：步题改「一 · 这是什么 / 二 · 短笺怎么来」（门不当步）。
     assert "✉ 第一步，也是唯一步" not in page
-    assert "第一步 · 是什么" in page
+    assert "一 · 这是什么" in page
     assert 'data-brand-mark="lg"' in page
     assert "把英语请进客厅" in page
-    assert "跟一位固定伙伴用英语闲聊" in page
+    assert "跟一位固定笔友用英语通信——想写什么，就写什么。" in page
     assert "就这么定 →</button>" in page
     # the cover never returns once localStorage says so; a refusing
     # storage answers "seen" (nobody is trapped on the cover)
@@ -108,7 +108,8 @@ def test_the_page_has_the_parlor_screen(tmp_path: Path) -> None:
     assert 'id="space-parlor"' in page
     assert 'id="screen-living"' not in page
     assert '<div class="who">英语客厅</div>' in page
-    assert "固定伙伴" in page
+    # R-1R 随迁（⑧ 8.2.2 定稿）：who-sub「固定笔友 · 来信去信都用英语」
+    assert "固定笔友 · 来信去信都用英语" in page
     assert 'id="meter-toggle"' not in page
     assert 'id="topactions"' not in page
     assert "topactions" not in page
@@ -133,18 +134,25 @@ def test_the_honest_faces_split_into_drawer_and_progress(
     the model endpoint and the model name have no page-side source — the
     absence is said, not faked (the sentence moved to the drawer's
     settings section); 学习/诊断 live as always-mounted blocks in
-    学案·进步（证据/为什么/观察 三组），记忆/隐私 in the drawer; the
+    学案·记录（在学的表达 / 为什么 / 原始读数 三段，R-1R 重命名），
+    记忆/隐私 in the drawer; the
     old setlinks/toggleSetBlock expansion retired (absence pins), the
     one-visible-section semantics rides the section loop."""
 
     page = _page_of(tmp_path)
     assert 'id="screen-set"' not in page
-    assert "页面不读取、不显示（宁缺勿假）" in page
-    # the two always-mounted read blocks and the three group headings
+    # R-1R 随迁（⑧ 8.2.8 定稿）：端点诚实句的新词形
+    assert "页面不读取，也不显示" in page
+    # the two always-mounted read blocks and the 记录 page's group
+    # headings（R-1R 随迁：证据/为什么/观察 → 在学的表达/为什么/底，
+    # 「底」由 #21 折叠组「原始读数（给排查用）」承担）
     assert 'id="set-learning"' in page
     assert 'id="set-diagnostics"' in page
-    for group in (">证据</h3>", ">为什么</h3>", ">观察</h3>"):
-        assert group in page
+    assert ">在学的表达</h3>" in page
+    assert ">为什么</h3>" in page
+    assert "原始读数（给排查用）" in page
+    assert ">证据</h3>" not in page
+    assert ">观察</h3>" not in page
     # the setlinks row and its data-block links retired (absence pins)
     assert 'data-block=' not in page
     assert ">学习</button>" not in page
@@ -174,21 +182,24 @@ def test_the_teaching_note_keeps_the_w6_faces(tmp_path: Path) -> None:
     semantic string the W suites pin, restyled but never renamed away."""
 
     page = _page_of(tmp_path)
-    # the note itself (the old accent-wash .moment card is gone)
+    # the note itself (the old accent-wash .moment card is gone)；R-1R
+    # 随迁（⑧ 8.2.10 定稿）：卡头「短笺：{功能句}」，状态行用服务端
+    # status_cn 原词，kind 走中文映射（未知值省略该行）
     assert 'card.className = "note-paper"' in page
     assert ".note-paper {" in page
-    assert "教学时刻：" in page
+    assert '"短笺："' in page
     # the underline answer box and its link
-    assert "用英语试着造个句子…" in page
+    assert "用英语写一句试试……" in page
     assert "寄出作答" in page
-    # the three help arms, the confirm, the skip
-    assert 'helpButton("看提示", "hint"' in page
-    assert 'helpButton("看答案", "reveal"' in page
-    assert 'helpButton("解释", "explanation"' in page
-    assert "看答案将显示完整目标表达，之后你仍可作答，确定？" in page
-    assert "跳过这一题" in page
+    # the three help arms, the confirm, the skip（R-1R：三词同性 提示 /
+    # 答案 / 讲解；跳过「这次跳过」；看答案 confirm 新定稿）
+    assert 'helpButton("提示", "hint"' in page
+    assert 'helpButton("答案", "reveal"' in page
+    assert 'helpButton("讲解", "explanation"' in page
+    assert "看了答案，完整说法就摆在眼前——看过之后仍可作答。要看吗？" in page
+    assert "这次跳过" in page
     # the busy strip and the verdict strip (ochre/ink, never washes)
-    assert "批改中…" in page
+    assert "批改中……" in page
     assert ".resultstrip.ok { color: var(--pencil); }" in page
     assert ".resultstrip.miss { color: var(--ink); }" in page
     # the W-4 immediacy face, unchanged
@@ -240,7 +251,8 @@ def test_teach_me_starts_the_moment_poll(tmp_path: Path) -> None:
     reply now starts the W-4 poll in the same breath."""
 
     page = _page_of(tmp_path)
-    # R-1 随迁：教学开在空间切换后照常可见（showSpace("parlor") 同形两行）
+    # R-1 随迁：教学开在空间切换后照常可见（showSpace("parlor") 同形两行；
+    # R-1R 随迁：缩进随 postTeachMe 的 try/catch 重组收一档，语义不变）
     assert (
-        'showSpace("parlor");\n      startMomentPolling();' in page
+        'showSpace("parlor");\n    startMomentPolling();' in page
     )

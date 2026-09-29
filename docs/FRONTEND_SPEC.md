@@ -64,6 +64,7 @@
 | 18 | dock | `.navdock`（+ `.navdock-item` `--on`；类名与写信区屏级类 `.dock` 异名共存） | — | default（次级墨、透明点线占位）/ `--on`（当前空间：主墨加重 + 赭红实线短下划 + `aria-current`）/ `[disabled]`（opacity .4） | components.css + components.js（`wireNavdock()`/`markNavdock()`，R-1；常驻底部三项 客厅/学案/柜抽，门厅整条让位；z 6 低于点词卡 z 9） |
 | 19 | space-header | `.space-header`（+ 节名槽 `.spacehead-sec`；与屏级基形 `.top` 合用） | — | default（发丝线夹持 sticky 顶栏，随 `.top`）；无交互态——静态头部，reduced-motion 不适用（契约注明） | components.css + components.js（`sectionLabel()`，R-1；学案/柜抽头部 = `.top` 基形 + 本类；客厅头部用 `.top` 原形；品牌条不再增长链接） |
 | 20 | section-tabs | `.section-tabs` / `.section-tab`（+ `--on`） | — | unselected（default，透明点线占位）/ selected（`--on`，主墨加重 + 赭红实线短下划 + `aria-selected`）/ focus（地基 `:focus-visible` 赭红焦点环，不另设）/ `[disabled]`（opacity .4） | components.css + components.js（`wireSectionTabs()`/`markSectionTabs()`，R-1；roving tabindex + 左右箭头循环移选；学案/柜抽各一排三项，切节即拉） |
+| 21 | disclosure | `.disclosure`（+ `.disclosure-head` `.disclosure-marker` `.disclosure-title` `.disclosure-examples` `.disclosure-body` `--open`） | — | collapsed（default，内容区 hidden，标记 ▸）/ expanded（`--open`，内容区展开、标记 ▾、`aria-expanded="true"`，计数保留）/ focus（地基 `:focus-visible` 赭红环，不另设） | components.css + components.js（`disclosure()`，R-1R；组头行即开关——名称 + 计数 + 两枚示例；一切「超过 8 行的同质列表」与「参考 / 原始读数」走它；不得手风琴互斥、不得嵌套、不得图标外链） |
 
 库外现役类（登记，不扩库）：`.teach-me`（裸 button 元素复位直用，无独立
 样式；p-1 起今日屏两块与目标清单共用同一行工厂；Revisit = 视觉规范刀再
@@ -868,3 +869,39 @@ app.js:568-657；走查 07）。
 冻结线（本方案实施时）：十二既有端点零改动；src 限 `webui/`（+ 既有壳钉
 随迁）；新增组件仅 #21，走 ⑤ 四步；词表中文映射是**表达层**（客户端展示），
 不改任何存储值。
+
+### 8.7 实现注记（R-1R 落地时追加；不改 8.0–8.6 一字）
+
+1. **短笺卡 kind 映射**：客户端表 `MOMENT_KIND_CN` 两键——
+   `CURRENT_USER_ERROR → 来自你的句子`（8.2.10 给定）与
+   `RESOURCE_PRACTICE → 资源练习`（镜像服务端 `kind_cn` 的原词，非客户端
+   自造译名）；其余未知值省略整行（不兜底直出，蓝图原话）。
+2. **`<select>` 的中英并置**：`<option>` 只能是纯文本，无法挂等宽小字
+   span——目标技能下拉的并置退化为纯文本形态「口语 SPEAKING」；chips 与
+   field 名牌保持富形态（中文 + `.rawtag` 原文小字）。
+3. **blocked 行「原委在 学案 · 记录」**：链接是 `btn--pencil` 文字钮，
+   点击调现役 `showSpace("study")` + `showSection("study", "progress")`
+   （8.2.2 映射的兑现）。
+4. **筛框无命中句**以本蓝图 8.2.3 为准：「没有叫这个的表达。」（任务书
+   摘要曾写「没有叫这个表达。」——以蓝图定稿逐字为准，差异已回执披露）。
+5. **作答/寄出的回音行**：作答成功回音「作答已寄出。」、跳过回音「这次
+   跳过了。」（8.4 动词表禁「提交」；蓝图未给这两个回音词，此处为最小
+   合规拟定，R7 域用户首验可否决）。作答失败回退「请求没送到——再试
+   一次。」（与教我失败网络臂同词）。
+6. **空厅句是客户端静态系统行**（无历史时一行，第一封信寄出即撤），
+   不是伪造的历史记录。
+7. **「为什么」面板**的 `benefit_score`/`cost_score` 原值不进中文行——
+   它们的归宿是记录页底「原始读数」区的「为什么 · 原值」（诊断载荷的
+   逐字 JSON）。
+8. **刷新/拉取钮全退**（进节即拉即唯一拉取点）：today-refresh /
+   learning-refresh / diag-refresh / mem-refresh / goal-refresh / obs
+   六个 id 退役（观察读数改为「原始读数」区第一次展开时拉，失败区内
+   一行 + 重试）；`goal-list`（方向页读卡，读写合一取消）与
+   `target-list`（记录页可教目标 52 行，唯一居所 = 今日）两个面板 id
+   退役。
+9. **错误/空/加载三态的既有词**（读取失败 / 暂无数据 / 取信中…）是
+   ⑧ 8.1.3「读数块一律 #14 state-banner 族（现役）」的保留面，未按
+   8.4 动词表改写；若用户首验要求改写，另起一刀。
+10. **隐私页拒绝行**：「没能忘掉。」+ 服务端 message + 括号工程词
+    （code 等宽小字）；网络失败「请求没送到——再试一次。」（蓝图未给
+    拒绝形，8.4 失败 = 人话主句 + 括号工程词的兑现）。

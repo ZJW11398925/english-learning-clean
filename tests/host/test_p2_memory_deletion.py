@@ -398,29 +398,42 @@ def test_the_page_carries_the_safety_copy_and_the_result_strip(
 ) -> None:
     with web_stack(tmp_path / "app.db") as stack:
         page = _page_source(stack)
-        # the two confirm layers, sentence for sentence (m3's catcher) —
-        # the second layer pinned in its executable form, so removing the
-        # call while keeping the prose comment is still a red
+        # R-1R 随迁（⑧ 8.2.7 定稿）：「忘掉」语言全页——两层 confirm
+        # 逐字（一说范围，二说不可逆），第二层钉在可执行形态（删掉调用
+        # 留下散文注释仍红）
         assert (
-            "将删除这段对话的全部记录，包括信件与教学痕迹。此操作不可恢复。"
+            "将把「\" + rangeText + \"」请出柜抽，找不回来。确定继续？"
             in page
         )
-        assert "确定继续？再次确认" in page
-        assert 'if (!confirmDialog("确定继续？再次确认")) return;' in page
-        # the target arm's own first layer and the standing statement
-        assert "的学习证据、学习状态与复习日程。此操作不可恢复。" in page
-        assert "所有删除操作都不可恢复" in page
-        # the two faces and the result strip's read fields
+        assert "再确认一次：忘掉之后无法恢复。" in page
+        assert (
+            'if (!confirmDialog("再确认一次：忘掉之后无法恢复。")) return;'
+            in page
+        )
+        assert "确定继续？再次确认" not in page
+        # the page's standing copy: the two entries' own sentences and
+        # the RELATIONSHIP_PAIR honesty note（这版做不了——一句原因）
+        assert "请客厅忘掉一些事——走出去就找不回来。" in page
+        assert "忘掉某个表达的学习痕迹、学习状态与复习安排" in page
+        assert "这版做不了——页面不知道伙伴的角色编号。" in page
+        assert "此版本不出这个入口" not in page
+        assert "所有删除操作都不可恢复" not in page
+        assert "删除这项目标数据" not in page
+        assert "忘掉这项的痕迹" in page
+        # the two faces and the result strip's read fields（结果只说
+        # runtime 自己报的数——存根计数；rebuilds 机件计数不进结果区）
         assert "/api/memory" in page and "/api/delete" in page
         assert 'id="del-result"' in page
-        assert "rebuilds_ok" in page and "tombstoned" in page
-        # the empty-state family and the RELATIONSHIP_PAIR honesty note
+        assert "tombstoned" in page
+        assert "rebuilds_ok" not in page
+        # the result sentences（8.2.7 定稿）and the p-2 F-2 honesty arm:
+        # 幂等空删不得声称忘掉
+        assert "已忘掉：" in page
+        assert "没有什么可忘——它之前就不在柜抽里。" in page
+        assert "这次忘掉留下的存根，在 柜抽 · 记忆 里能看到。" in page
+        assert "没有可删的" not in page
+        # the empty-state family lives on（记忆页空态句保留）
         assert "还没有记住什么" in page
-        assert "此版本不出这个入口" in page
-        # p-2 review F-2: the idempotent no-op path must not claim a
-        # deletion happened — both its honest title and tail are pinned
-        assert "没有可删的（\" + data.scope + \" 已不在）" in page
-        assert "这次没有删除任何新东西" in page
         # textContent-only holds: the shell renders no markup anywhere
         assert "innerHTML" not in page
 

@@ -66,9 +66,18 @@ export function confirmDialog(message) {
 }
 
 // W-6: the attempt loop, made legible. The verdict is a prominent strip
-// (the symbol is display only; the words are the runtime's own), and a
-// submitted reply is visible the instant it goes out — a help reply waits
-// out a model round trip, and a silent wait reads as a dead page.
+// （R-1R 起：中文判词打头——✓ 答对了 / ◐ 答对一半 / ✗ 没答中——runtime
+// 原话随后；the symbol is display only）, and a submitted reply is visible
+// the instant it goes out — a help reply waits out a model round trip, and
+// a silent wait reads as a dead page.
+const OUTCOME_VERDICT_CN = {
+  SUCCESS: "✓ 答对了",
+  ALTERNATIVE_SUCCESS: "✓ 答对了（另一种说法也算）",
+  PARTIAL: "◐ 答对一半",
+  FAILURE: "✗ 没答中",
+  ABSTAIN: "这次没法判",
+};
+
 function outcomeSymbol(feedback) {
   const word = String(feedback).split("（")[0];
   if (word === "SUCCESS" || word === "ALTERNATIVE_SUCCESS") return "✓";
@@ -77,13 +86,15 @@ function outcomeSymbol(feedback) {
   return "";
 }
 
-// 7. resultstrip：判分结果条（✓/◐/✗ 是显示件，词是 runtime 自己的）。
+// 7. resultstrip：判分结果条（✓/◐/✗ 是显示件；中文判词打头，runtime
+// 原话随后——⑧ 8.2.10 定稿）。
 export function showResultStrip(card, feedback) {
   const symbol = outcomeSymbol(feedback);
+  const head = OUTCOME_VERDICT_CN[String(feedback).split("（")[0]] || "";
   const strip = document.createElement("div");
   strip.className = "resultstrip " +
     (symbol === "✓" ? "ok" : symbol === "✗" ? "miss" : "part");
-  strip.textContent = (symbol ? symbol + " " : "") + "判分反馈：" + feedback;
+  strip.textContent = head ? head + " · " + feedback : feedback;
   card.appendChild(strip);
 }
 
@@ -107,31 +118,40 @@ export function setReplyBusy(card, busy, note) {
   }
 }
 
-// 3. note-paper：教学短笺卡（标题 + 状态 + 类型，等回复控件）。
+// 3. note-paper：教学短笺卡（R-1R 起：卡头「短笺：{功能句}」+ 状态行
+// （服务端 status_cn 原词，界面不自造）+ 类型行（中文映射，未知值省略
+// 该行——不兜底直出），等回复控件）。
+// kind 的中文映射（⑧ 8.2.10 / 8.3）：CURRENT_USER_ERROR → 来自你的句子；
+// RESOURCE_PRACTICE → 资源练习（服务端 kind_cn 的原词，镜像非自造）；
+// 其余未知值 → 省略整行（不兜底直出）。
+const MOMENT_KIND_CN = {
+  CURRENT_USER_ERROR: "来自你的句子",
+  RESOURCE_PRACTICE: "资源练习",
+};
+
 export function showMoments(list) {
   momentsBox.textContent = "";
+  // R-1R（⑧ 8.2.2）：无短笺的轮次不再在信流里挂空态横幅——空态是读数
+  // 块的答法，不是信流的；信流只放信与短笺。
   if (!list.length) {
-    // F-G2: the flow's empty face rides the state-banner family too —
-    // no panel builds its own note any more
-    momentsBox.appendChild(
-      stateBanner("empty", { text: "本轮没有打开教学时刻。" }));
     return;
   }
   for (const m of list) {
     const card = document.createElement("div");
     card.className = "note-paper";
     const b = document.createElement("b");
-    if (m.title) {
-      b.textContent = "教学时刻：" + m.title;
-      card.appendChild(b);
-      card.appendChild(document.createTextNode(
-        " · 状态 " + (m.status_cn || m.lifecycle_state) +
-        " · " + (m.kind_cn || m.kind)));
-    } else {
-      b.textContent = m.focus_target_id;
-      card.appendChild(b);
-      card.appendChild(document.createTextNode(
-        " · 状态 " + m.lifecycle_state + " · 类型 " + m.kind));
+    b.textContent = "短笺：" + (m.title || m.focus_target_id);
+    card.appendChild(b);
+    const status = document.createElement("div");
+    status.className = "noteline";
+    status.textContent = m.status_cn || m.lifecycle_state;
+    card.appendChild(status);
+    const kindCn = MOMENT_KIND_CN[m.kind];
+    if (kindCn) {
+      const kind = document.createElement("div");
+      kind.className = "noteline";
+      kind.textContent = kindCn;
+      card.appendChild(kind);
     }
     if (m.last_attempt_feedback) {
       // W-6: the verdict survives a refresh — the ro current card carries
@@ -148,13 +168,19 @@ export function showMoments(list) {
 }
 
 export function addReplyControls(card) {
+  // R-1R（⑧ 8.2.10）：作答面开启时的卡内指路行——作答写在这张短笺上，
+  // 不是下面的信纸。
+  const guide = document.createElement("div");
+  guide.className = "noteline guide";
+  guide.textContent = "作答写在这张短笺上（不是下面的信纸）。";
+  card.appendChild(guide);
   const row = document.createElement("div");
   row.className = "replyrow";
   const input = document.createElement("input");
   input.type = "text";
   input.className = "replytext";
   input.autocomplete = "off";
-  input.placeholder = "用英语试着造个句子…";
+  input.placeholder = "用英语写一句试试……";
   const submit = document.createElement("button");
   submit.type = "button";
   submit.className = "btn btn--send";
@@ -165,21 +191,22 @@ export function addReplyControls(card) {
   card.appendChild(row);
   // W-6: the three help arms SM §1 names, as pencil links at the note's
   // tail — the words map onto the runtime's ASK_HINT / ASK_ANSWER /
-  // ASK_EXPLANATION and nothing else
+  // ASK_EXPLANATION and nothing else（R-1R 起三词同性：提示 / 答案 /
+  // 讲解；busy / seen 词族：取提示中…… / 已看提示 ……）
   const help = document.createElement("div");
   help.className = "replyrow";
-  help.appendChild(helpButton("看提示", "hint", "取提示中…", "已看提示", card));
-  help.appendChild(helpButton("看答案", "reveal", "取答案中…", "已看答案", card));
-  help.appendChild(helpButton("解释", "explanation", "取解释中…", "已看解释", card));
+  help.appendChild(helpButton("提示", "hint", "取提示中……", "已看提示", card));
+  help.appendChild(helpButton("答案", "reveal", "取答案中……", "已看答案", card));
+  help.appendChild(helpButton("讲解", "explanation", "取讲解中……", "已看讲解", card));
   card.appendChild(help);
   // W-2: the skip — a faint small link under the help arms; the moment's
   // lock releases through the runtime's own reply entry, nothing else
   const skip = document.createElement("button");
   skip.type = "button";
   skip.className = "btn btn--faint";
-  skip.textContent = "跳过这一题";
+  skip.textContent = "这次跳过";
   skip.addEventListener("click", () =>
-    postReply(card, { control: "skip" }, "跳过中…", "教学已跳过"));
+    postReply(card, { control: "skip" }, "跳过中……", "这次跳过了。"));
   card.appendChild(skip);
 }
 
@@ -190,7 +217,7 @@ function helpButton(label, control, busyText, doneNote, card) {
   button.textContent = label;
   button.addEventListener("click", () => {
     if (control === "reveal" &&
-        !confirmDialog("看答案将显示完整目标表达，之后你仍可作答，确定？")) {
+        !confirmDialog("看了答案，完整说法就摆在眼前——看过之后仍可作答。要看吗？")) {
       return;
     }
     postReply(card, { control: control }, busyText, doneNote);
@@ -202,7 +229,18 @@ function disarmMomentCard(card) {
   for (const row of Array.from(card.querySelectorAll(".replyrow"))) {
     row.remove();
   }
+  // the guide line belongs to the reply face: it leaves with the controls
+  // and comes back with them (never duplicated on a re-arm)
+  for (const note of Array.from(card.querySelectorAll(".guide"))) {
+    note.remove();
+  }
 }
+
+// 短笺生命周期词的界面读法（⑧ 8.3：AWAITING_USER → 等你作答；未列出的
+// 词不伪装翻译——原样小字呈现）。
+const LIFECYCLE_CN = {
+  AWAITING_USER: "等你作答",
+};
 
 function readReplyAnswer(card, data) {
   // the reply result's own words, never a fabricated one: the new state
@@ -216,7 +254,7 @@ function readReplyAnswer(card, data) {
     : "本次回应已收下";
   card.appendChild(b);
   card.appendChild(document.createTextNode(
-    " · 状态 " + (data.moment_state || "未知")));
+    " · 状态 " + (LIFECYCLE_CN[data.moment_state] || data.moment_state || "未知")));
   if (data.feedback !== null && data.feedback !== undefined) {
     showResultStrip(card, data.feedback);
   }
@@ -239,9 +277,9 @@ async function postReply(card, payload, busyText, doneNote) {
     const data = await fetchTeachingReply(payload);
     // 拒收面（200 + accepted:false，或 400/500）都带 error 句——一行人话，
     // 与拆分前 status 臂与 accepted 臂的合并等价（两臂回退词在服务端
-    // 实际形状下不可区分，统一用提交失败；见 spec ⑦ 等价注记）。
+    // 实际形状下不可区分，统一用没送到句；见 spec ⑦ 等价注记）。
     if (!data.accepted) {
-      addLine("failure", data.error || "提交失败，请重试");
+      addLine("failure", data.error || "请求没送到——再试一次。");
       return;
     }
     addLine("system", doneNote);
@@ -252,7 +290,7 @@ async function postReply(card, payload, busyText, doneNote) {
     }
     readReplyAnswer(card, data);
   } catch {
-    addLine("failure", "提交失败，请重试");
+    addLine("failure", "请求没送到——再试一次。");
   } finally {
     setReplyBusy(card, false);
   }
@@ -261,7 +299,8 @@ async function postReply(card, payload, busyText, doneNote) {
 async function submitAttempt(card, input) {
   const text = input.value.trim();
   if (!text) return;
-  await postReply(card, { control: "attempt", text: text }, "批改中…", "已提交作答");
+  await postReply(card, { control: "attempt", text: text }, "批改中……",
+                  "作答已寄出。");
 }
 
 // 9/10 的仪表面工厂：meter-row（kv/kvgroup/kvtitle）与 empty-state（note）。
@@ -285,7 +324,10 @@ export function diagLine(box, label, value) {
   const b = document.createElement("b");
   b.textContent = label + "：";
   row.appendChild(b);
-  row.appendChild(document.createTextNode(String(value)));
+  // R-1R: the value may be a Node (a humanized timestamp with its ISO
+  // tooltip, a bilingual word pair); a plain value stays a bare text node
+  if (value instanceof Node) row.appendChild(value);
+  else row.appendChild(document.createTextNode(String(value)));
   box.appendChild(row);
 }
 
@@ -294,7 +336,8 @@ export function diagGroup(box, title) {
   g.className = "kvgroup";
   const b = document.createElement("b");
   b.className = "kvtitle";
-  b.textContent = title;
+  if (title instanceof Node) b.appendChild(title);
+  else b.textContent = title;
   g.appendChild(b);
   box.appendChild(g);
   return g;
@@ -489,13 +532,15 @@ export function showWordCard(at, data) {
 
 // 16. field：编辑面一行式表单行（p-3）。label 包裹控件——点名牌即聚焦；
 // 控件由调用方 createElement（input/select），字面样式随 #16 契约（唯一
-// 出处 components.css）。名牌文字一律 textContent。
+// 出处 components.css）。名牌文字一律惰性（R-1R 起名牌可以是 Node——
+// 中英并置的「中文 + 等宽小字」片，仍逐片 textContent）。
 export function fieldRow(labelText, control) {
   const row = document.createElement("label");
   row.className = "field";
   const name = document.createElement("span");
   name.className = "fieldname";
-  name.textContent = labelText;
+  if (labelText instanceof Node) name.appendChild(labelText);
+  else name.textContent = labelText;
   row.appendChild(name);
   row.appendChild(control);
   return row;
@@ -503,14 +548,23 @@ export function fieldRow(labelText, control) {
 
 // 17. chip：词表词选择片（p-3）。可点选（on 态、点击回报调用方，选中态
 // 由调用方重渲染）与只读徽标（--badge，disabled——非交互）两种用法；
-// 词即内容，文字一律 textContent。
+// 词即内容，文字一律惰性（R-1R 起 opts.cn 给中文名牌：中文在前 + 英文
+// 原词等宽小字在后，⑧ 8.3 存储词表值中英并置）。
 export function chip(word, opts) {
   const options = opts || {};
   const el = document.createElement("button");
   el.type = "button";
   el.className = "chip" + (options.on ? " chip--on" : "") +
     (options.badge ? " chip--badge" : "");
-  el.textContent = String(word);
+  if (options.cn) {
+    el.appendChild(document.createTextNode(String(options.cn) + " "));
+    const en = document.createElement("span");
+    en.className = "rawtag";
+    en.textContent = String(word);
+    el.appendChild(en);
+  } else {
+    el.textContent = String(word);
+  }
   if (options.badge) {
     el.disabled = true;
   } else if (typeof options.onClick === "function") {
@@ -572,4 +626,62 @@ export function markSectionTabs(list, name) {
 export function sectionLabel(header, text) {
   const slot = header.querySelector(".spacehead-sec");
   if (slot) slot.textContent = text;
+}
+
+// 21. disclosure（折叠组，R-1R；⑧ 8.2.9 契约形）：组头行（名称 + 计数 +
+// 两枚示例弱化小字）即开关，内容区默认收。不得手风琴互斥、不得嵌套、
+// 不得图标外链。opts：name（名称，textContent）/ count（计数，保留在
+// 组头）/ examples（两枚示例）/ content（一次性收养进内容区的既有节点）
+// / onFirstExpand（第一次展开时回调一次——惰性拉取的挂载点）。返回
+// { root, head, body, setOpen, isOpen }——筛框等调用方经 setOpen 驱动。
+export function disclosure(opts) {
+  const options = opts || {};
+  const root = document.createElement("div");
+  root.className = "disclosure";
+  const head = document.createElement("button");
+  head.type = "button";
+  head.className = "disclosure-head";
+  head.setAttribute("aria-expanded", "false");
+  const marker = document.createElement("span");
+  marker.className = "disclosure-marker";
+  marker.textContent = "▸";
+  head.appendChild(marker);
+  const title = document.createElement("span");
+  title.className = "disclosure-title";
+  title.appendChild(document.createTextNode(String(options.name || "")));
+  if (options.count !== undefined && options.count !== null) {
+    title.appendChild(document.createTextNode("（" + options.count + "）"));
+  }
+  const examples = options.examples || [];
+  if (examples.length) {
+    title.appendChild(document.createTextNode("　"));
+    const shown = document.createElement("span");
+    shown.className = "disclosure-examples";
+    shown.textContent = examples.join(" · ") + " …";
+    title.appendChild(shown);
+  }
+  head.appendChild(title);
+  root.appendChild(head);
+  const body = document.createElement("div");
+  body.className = "disclosure-body";
+  body.hidden = true;
+  if (options.content) body.appendChild(options.content);
+  root.appendChild(body);
+  let open = false;
+  let openedOnce = false;
+  function setOpen(next) {
+    open = Boolean(next);
+    body.hidden = !open;
+    head.setAttribute("aria-expanded", open ? "true" : "false");
+    marker.textContent = open ? "▾" : "▸";
+    root.classList.toggle("disclosure--open", open);
+    if (open && !openedOnce) {
+      openedOnce = true;
+      if (typeof options.onFirstExpand === "function") {
+        options.onFirstExpand(body);
+      }
+    }
+  }
+  head.addEventListener("click", () => setOpen(!open));
+  return { root, head, body, setOpen, isOpen: () => open };
 }

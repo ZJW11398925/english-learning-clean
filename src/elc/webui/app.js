@@ -1,7 +1,13 @@
-// app.js —— 装配：空间与节切换（R-1）/ 信流事件 / 轮询 / 学习与诊断的
-// 读数渲染（F-G1）。只做装配与视图渲染：端点调用只走 api.js，DOM 工厂
-// 只走 components.js；文字一律 textContent。装配顺序＝模块加载即绑定
-// （type="module" 天然延迟到文档解析后，与拆分前页尾内联脚本同语义）。
+// app.js —— 装配：空间与节切换（R-1）/ 信流事件 / 轮询 / 学习·记忆·诊断
+// 读数渲染（F-G1；R-1R 起屏内信息组织与文案按 ⑧ 设计蓝图 v2 定稿）。
+// 只做装配与视图渲染：端点调用只走 api.js，DOM 工厂只走 components.js；
+// 文字一律惰性（textContent / 节点拼装，绝不进标记——XSS 面）。装配顺序
+// ＝模块加载即绑定（type="module" 天然延迟到文档解析后）。
+//
+// R-1R 表达面总则（⑧ 8.3 / 8.4）：状态与枚举只出中文（翻译表在本文件
+// 集中定义，未知值不兜底伪装——原样等宽小字 .rawtag）；存储词表值中英
+// 并置（中文在前，英文等宽小字在后）；时间一律人话格式（title 放全时间
+// 戳）；机械原值与 ISO 时间戳的唯一归宿 = 记录页折叠的「原始读数」区。
 
 import {
   addLine,
@@ -23,6 +29,7 @@ import {
   wireSectionTabs,
   markSectionTabs,
   sectionLabel,
+  disclosure,
 } from "./components.js";
 import {
   fetchTurn,
@@ -41,35 +48,273 @@ import {
   fetchSaveFrequency,
 } from "./api.js";
 
-// F-1: the diagnostics view — the five whys, read from /api/diagnostics.
-// Chinese labels over the raw numbers; a panel with nothing to say says so.
+// ── ⑧ 8.3 术语翻译表（工程词 → 客厅语言，唯一集中定义）──────────────
+// 总则：状态 / 枚举只出中文；未列出的词不伪装翻译——原样小字（.rawtag）。
+
 const OUTCOME_CN = {
-  SUCCESS: "回答正确",
-  ALTERNATIVE_SUCCESS: "回答正确（另一种合格表达）",
-  PARTIAL: "部分正确",
-  FAILURE: "未命中目标表达",
-  ABSTAIN: "本次作答无法评判",
+  SUCCESS: "答对了",
+  ALTERNATIVE_SUCCESS: "答对了（另一种说法也算）",
+  PARTIAL: "答对一半",
+  FAILURE: "没答中",
+  ABSTAIN: "这次没法判",
 };
 const ACTION_CN = {
-  TEACHING_OPEN: "打开教学",
-  TEACHING_HINT: "给提示",
-  TEACHING_REVEAL: "展示答案",
-  TEACHING_EXPLANATION: "给解释",
+  TEACHING_OPEN: "递了短笺",
+  TEACHING_HINT: "给了提示",
+  TEACHING_REVEAL: "摆了答案",
+  TEACHING_EXPLANATION: "给了讲解",
+};
+const REVIEW_STATE_CN = {
+  NOT_SCHEDULED: "还没排上",
+  UPCOMING: "排上了",
+  DUE: "今天到期",
+  OVERDUE: "过期了",
+};
+const FAMILY_CN = {
+  discourse: "接话与转题",
+  hedge: "留有余地",
+  pragmatic: "应对与表态",
+  softener: "委婉说法",
+};
+// 家族组的展示序：四族现役序在前，未知家族按原名排在后（不伪装翻译）
+const FAMILY_ORDER = ["discourse", "hedge", "pragmatic", "softener"];
+const GATE_DECISION_CN = {
+  ALLOW: "放行",
+  DENY: "拦下",
+};
+// 门规理由（逐码）：全集 = gate.py 的 DENY_PRECEDENCE 十七词 +
+// runtime/automatic_teaching.py 的三条装配拒绝词（D-5R）。未知码原样小字。
+const GATE_REASON_CN = {
+  SAFETY_PRIVACY_BLOCK: "安全与隐私规则",
+  ACTION_CANCELLED: "动作已取消",
+  ACTION_SUPERSEDED: "动作已被更新的取代",
+  AUTHORIZATION_INVALID: "授权不成立",
+  TARGET_INVALID: "这个表达不存在",
+  CONTENT_INVALID: "教学内容无效",
+  TARGET_SUPPRESSED: "这个表达被压着不递",
+  USER_INTENT_BLOCK: "你的意图不让递",
+  AUTO_TEACH_DISABLED: "自动教学没有开",
+  TEACHING_LOCK_CONFLICT: "另一张短笺还在进行",
+  TEACHING_LOCK_INVALID: "短笺锁不成立",
+  MOMENT_NOT_CONTINUABLE: "这张短笺走不下去",
+  HARD_PROTECTED_FLOW: "受保护的流程在进行",
+  AUTO_SESSION_BUDGET_EXHAUSTED: "这一程的自动教学预算用完了",
+  HARD_COOLDOWN_ACTIVE: "刚递过，还在冷却",
+  HARD_ATTEMPT_LIMIT: "作答次数到了上限",
+  HARD_TEACHING_TURN_LIMIT: "教学轮数到了上限",
+  AUTO_SESSION_BUDGET_UNREADABLE: "这一程的预算读不出来",
+  TARGET_NOT_EXECUTABLY_VERIFIED: "这个表达还没有可执行的检测",
+  PROVENANCE_FACE_MISSING: "出处读面缺失",
+};
+const MODALITY_CN = {
+  SPEAKING: "口语",
+  LISTENING: "听力",
+  READING: "阅读",
+  WRITING: "写作",
+};
+const REGISTER_CN = {
+  CASUAL: "随意",
+  NEUTRAL: "中性",
+  POLITE: "客气",
+  FORMAL: "正式",
+  ACADEMIC: "学术",
+  PERSUASIVE: "说服",
+  LITERARY: "文雅",
+  PLAYFUL: "俏皮",
+};
+const FREQUENCY_CN = {
+  OFF: "不递",
+  MINIMAL: "少递",
+  BALANCED: "适度",
+  EAGER: "勤递",
+};
+const POLARITY_CN = {
+  POSITIVE: "正面",
+  NEGATIVE: "负面",
+  NEUTRAL: "中性",
+};
+const PERFORMANCE_TYPE_CN = {
+  RECOGNITION: "认出来",
+  IMITATIVE_PRODUCTION: "跟着写",
+  GUIDED_PRODUCTION: "引着写",
+  INDEPENDENT_PRODUCTION: "自己写",
+  SPONTANEOUS_PRODUCTION: "脱口写出",
+  SELF_REPAIR: "自己改对",
+  FAILED_ATTEMPT: "写错了",
+  MISUSE: "用偏了",
+};
+const MEMORY_TYPE_CN = {
+  USER_STATED_FACT: "你说过的事实",
+  SHARED_EVENT: "共同经历",
+  PERSONA_IMPRESSION: "伙伴的印象",
+  PROMISE: "约定",
+  OPEN_THREAD: "未了的话头",
+  RUNNING_JOKE: "两人玩笑",
+  RELATIONSHIP_EVENT: "关系里的事",
+  CONVERSATION_PREFERENCE: "说话的偏好",
+};
+const ENTITY_KIND_CN = {
+  conversation: "这段通信",
+  learning_target: "表达",
+  relationship_pair: "伙伴关系",
+};
+const SCOPE_CN = {
+  CONVERSATION: "这段通信",
+  LEARNING_TARGET: "表达",
+  RELATIONSHIP_PAIR: "伙伴关系",
+};
+const TARGET_TYPE_CN = {
+  RESOURCE: "资源",
+  CAPABILITY: "能力",
+};
+const EVIDENCE_MODALITY_CN = {
+  TEXT_PRODUCTION: "写下的英语",
+  TEXT_COMPREHENSION: "读懂的英语",
 };
 
-function fmtNum(value) {
-  return (value === null || value === undefined) ? "—" : String(value);
-}
+// ── 表达面小件（单点 helper）─────────────────────────────────────────
 
 function diagBox(id) {
   return document.getElementById(id);
 }
 
-// F-G2: the read panels answer through the state-banner family — loading
-// while the pull is in flight, empty and error through diagEmpty/diagError
-// (both now delegate to the one component; the old scattered hard-coded
-// notes are gone). A failed pull offers 重试, which re-pulls that panel
-// only — the retry callback is injected by each loader below.
+function fmtNum(value) {
+  return (value === null || value === undefined) ? "—" : String(value);
+}
+
+// 原文小字：机械事实（英文原词 / id / 指纹 / 版本）的等宽小字形态
+function rawTag(text) {
+  const tag = document.createElement("span");
+  tag.className = "rawtag";
+  tag.textContent = String(text);
+  return tag;
+}
+
+// 中英并置：中文在前 + 英文等宽小字在后（⑧ 8.3 存储词表值形态）
+function biLabel(cn, en) {
+  const frag = document.createDocumentFragment();
+  frag.appendChild(document.createTextNode(String(cn) + " "));
+  frag.appendChild(rawTag(en));
+  return frag;
+}
+
+// 时间人话化（⑧ 8.3：今天 14:05 / 昨天 / 9 月 21 日；跨年只到「去年」
+// 为止）；全时间戳放 title。解析不了的原样直出（不造时间）。
+function humanTime(iso) {
+  const then = new Date(String(iso));
+  if (Number.isNaN(then.getTime())) return String(iso);
+  const now = new Date();
+  const hh = String(then.getHours()).padStart(2, "0");
+  const mm = String(then.getMinutes()).padStart(2, "0");
+  if (then.getFullYear() === now.getFullYear() &&
+      then.getMonth() === now.getMonth() &&
+      then.getDate() === now.getDate()) {
+    return "今天 " + hh + ":" + mm;
+  }
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (then.getFullYear() === yesterday.getFullYear() &&
+      then.getMonth() === yesterday.getMonth() &&
+      then.getDate() === yesterday.getDate()) {
+    return "昨天";
+  }
+  if (then.getFullYear() === now.getFullYear()) {
+    return (then.getMonth() + 1) + " 月 " + then.getDate() + " 日";
+  }
+  return "去年";
+}
+
+function whenNode(iso) {
+  const span = document.createElement("span");
+  span.title = String(iso);
+  span.textContent = humanTime(iso);
+  return span;
+}
+
+// 分量 / 门槛：浮点收三位小数进屏（浮点噪声不进屏），原值放 title
+function scoreNode(value) {
+  const span = document.createElement("span");
+  if (value === null || value === undefined) {
+    span.textContent = "—";
+    return span;
+  }
+  const num = Number(value);
+  span.textContent = Number.isFinite(num)
+    ? String(Number(num.toFixed(3)))
+    : String(value);
+  span.title = String(value);
+  return span;
+}
+
+// 指纹：前 12 位等宽 + title 全值（⑧ 8.3 entity_hash 行）
+function shortHash(hash) {
+  const span = rawTag(String(hash).slice(0, 12));
+  span.title = String(hash);
+  return span;
+}
+
+// 表达名：界面只显示 spoken 形（⑧ 8.3）——res-hedge-i-think → i think；
+// canonical_key（无 res-/cap- 前缀的键）同法去连字符。
+function spokenOf(keyOrId) {
+  const text = String(keyOrId);
+  const parts = text.split("-");
+  if (parts.length > 2 && (parts[0] === "res" || parts[0] === "cap")) {
+    return parts.slice(2).join(" ");
+  }
+  return parts.join(" ");
+}
+
+// 门规理由：逐码中文，未知码原样小字（⑧ 8.3 gate reason codes 行）
+function reasonsNode(codes) {
+  const frag = document.createDocumentFragment();
+  const list = Array.isArray(codes) ? codes : [String(codes)];
+  list.forEach((code, index) => {
+    if (index > 0) frag.appendChild(document.createTextNode("、"));
+    if (GATE_REASON_CN[code]) {
+      frag.appendChild(document.createTextNode(GATE_REASON_CN[code]));
+    } else {
+      frag.appendChild(rawTag(code));
+    }
+  });
+  return frag;
+}
+
+// 词表值的界面形：有中文译名 → 中英并置（中文 + 等宽小字原文）；未列出
+// 的词不伪装翻译——原文等宽小字
+function vocabNode(cnMap, word) {
+  if (cnMap[word]) return biLabel(cnMap[word], word);
+  return rawTag(word);
+}
+
+// 摘要行（⑧ 8.2.3 / 8.2.6：屏级一行 .sub + mono 数字，非组件不入库）
+function renderSummaryLine(id, pairs) {
+  const line = diagBox(id);
+  line.hidden = false;
+  line.textContent = "";
+  pairs.forEach((pair, index) => {
+    if (index > 0) line.appendChild(document.createTextNode(" · "));
+    line.appendChild(document.createTextNode(pair[0] + " "));
+    const num = document.createElement("span");
+    num.className = "sumnum";
+    num.textContent = String(pair[1]);
+    line.appendChild(num);
+  });
+}
+
+// 失败行（⑧ 8.4：人话主句 + 括号工程词，工程词等宽小字）
+function failLine(main, reason) {
+  const line = document.createElement("p");
+  line.className = "errline";
+  line.appendChild(document.createTextNode(main + "（"));
+  line.appendChild(rawTag(reason));
+  line.appendChild(document.createTextNode("）。"));
+  messages.appendChild(line);
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+// ── F-1: the diagnostics view — the five whys（R-1R 起中文化：中文行 +
+// 括号工程词，原值与 ISO 时间戳归页底「原始读数」区）─────────────────
+
 const DIAG_PANEL_IDS = ["why-teach", "why-not-teach", "why-evidence",
                         "why-support", "why-degraded"];
 const LEARN_PANEL_IDS = ["learn-schedule", "learn-goals", "learn-evidence"];
@@ -87,22 +332,25 @@ function renderWhyTeach(d, retry) {
   box.textContent = "";
   if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   if (!d.candidate) {
-    diagEmpty(box, "暂无数据——最近 50 轮规划评估里没有选中任何候选。");
+    diagEmpty(box, "最近 50 轮里，客厅的盘算没有选中任何表达。");
     return;
   }
-  const g = diagGroup(box, "被选中的候选");
-  diagLine(g, "目标（canonical_key）", d.candidate.canonical_key);
-  diagLine(g, "收益分 benefit", fmtNum(d.candidate.benefit_score));
-  diagLine(g, "成本分 cost", fmtNum(d.candidate.cost_score));
-  diagLine(g, "效用 utility", fmtNum(d.candidate.utility));
+  const g = diagGroup(box,
+    "客厅想过「" + spokenOf(d.candidate.canonical_key || "") + "」");
+  const score = document.createDocumentFragment();
+  score.appendChild(document.createTextNode("分量 "));
+  score.appendChild(scoreNode(d.candidate.utility));
+  score.appendChild(document.createTextNode(" · 门槛 "));
+  score.appendChild(scoreNode(d.candidate.activation_threshold));
+  diagLine(g, "分量与门槛", score);
   if (d.gate) {
-    const gg = diagGroup(box, "门（Gate）裁决");
-    diagLine(gg, "裁决", d.gate.decision);
-    const codes = d.gate.reason_codes;
-    diagLine(gg, "理由码", Array.isArray(codes) ? codes.join("、") : String(codes));
-    diagLine(gg, "时间", d.gate.created_at);
+    const gg = diagGroup(box, "门规");
+    diagLine(gg, "裁决",
+      GATE_DECISION_CN[d.gate.decision] || rawTag(d.gate.decision));
+    diagLine(gg, "理由", reasonsNode(d.gate.reason_codes));
+    diagLine(gg, "时间", whenNode(d.gate.created_at));
   }
-  diagLine(box, "评估时间", d.created_at);
+  diagLine(box, "盘算时间", whenNode(d.created_at));
 }
 
 function renderWhyNot(d, retry) {
@@ -111,27 +359,36 @@ function renderWhyNot(d, retry) {
   if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const list = d.candidates || [];
   if (d.created_at === null && !list.length) {
-    diagEmpty(box, "暂无数据——还没有任何一轮规划评估。");
+    diagEmpty(box, "还没有任何一轮盘算。");
     return;
   }
   if (!list.length) {
-    diagLine(box, "本轮未激活候选", "无（本轮候选全部激活，或本轮没有候选）");
+    diagLine(box, "这一轮的候选", "都递了——或这一轮本来没有候选。");
   }
   for (const c of list) {
-    const g = diagGroup(box, c.canonical_key || c.candidate_id);
-    diagLine(g, "效用 vs 阈值",
-      fmtNum(c.utility) + "  vs  " + fmtNum(c.activation_threshold));
-    diagLine(g, "是否激活",
-      c.activated === false ? "未激活（activated: false）" : String(c.activated));
+    const g = diagGroup(box,
+      "客厅想过「" + spokenOf(c.canonical_key || c.candidate_id) + "」");
+    const score = document.createDocumentFragment();
+    score.appendChild(document.createTextNode("分量 "));
+    score.appendChild(scoreNode(c.utility));
+    score.appendChild(document.createTextNode(" · 门槛 "));
+    score.appendChild(scoreNode(c.activation_threshold));
+    diagLine(g, "分量与门槛", score);
+    diagLine(g, "递了吗",
+      c.activated === false ? "没递——分量没过门槛。"
+        : c.activated === true ? "递了" : "说不准");
     for (const r of (c.costs || [])) {
-      diagLine(g, "成本因子 " + r.factor, fmtNum(r.value));
+      const cost = document.createDocumentFragment();
+      cost.appendChild(rawTag(r.factor));
+      cost.appendChild(document.createTextNode(" "));
+      cost.appendChild(scoreNode(r.value));
+      diagLine(g, "成本", cost);
     }
   }
   if (d.gate_deny) {
-    const gg = diagGroup(box, "最近一次门拦截（DENY）");
-    const codes = d.gate_deny.reason_codes;
-    diagLine(gg, "理由码", Array.isArray(codes) ? codes.join("、") : String(codes));
-    diagLine(gg, "时间", d.gate_deny.created_at);
+    const gg = diagGroup(box, "最近一次被门规拦下");
+    diagLine(gg, "理由", reasonsNode(d.gate_deny.reason_codes));
+    diagLine(gg, "时间", whenNode(d.gate_deny.created_at));
   }
 }
 
@@ -141,14 +398,17 @@ function renderEvidence(d, retry) {
   if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const rows = d.records || [];
   if (!rows.length) {
-    diagEmpty(box, "暂无数据——还没有任何一次作答被判分。");
+    diagEmpty(box, "还没有任何一次作答被判分。");
     return;
   }
   for (const r of rows) {
-    const g = diagGroup(box, OUTCOME_CN[r.outcome] || r.outcome);
-    diagLine(g, "outcome", r.outcome);
-    diagLine(g, "confidence", fmtNum(r.confidence));
-    diagLine(g, "时间", r.created_at);
+    const head = document.createDocumentFragment();
+    head.appendChild(document.createTextNode(
+      (OUTCOME_CN[r.outcome] || "") + " "));
+    head.appendChild(rawTag(r.outcome));
+    const g = diagGroup(box, head);
+    diagLine(g, "把握", scoreNode(r.confidence));
+    diagLine(g, "时间", whenNode(r.created_at));
   }
 }
 
@@ -158,16 +418,22 @@ function renderSupport(d, retry) {
   if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const rows = d.actions || [];
   if (!rows.length) {
-    diagEmpty(box, "暂无数据——还没有任何一次教学支持被交付。");
+    diagEmpty(box, "还没有收到过帮助。");
     return;
   }
   for (const a of rows) {
-    const g = diagGroup(box, ACTION_CN[a.action_type] || a.action_type);
-    diagLine(g, "action_type", a.action_type);
-    diagLine(g, "时间", a.created_at);
+    const head = document.createDocumentFragment();
+    head.appendChild(document.createTextNode(
+      (ACTION_CN[a.action_type] || "") + " "));
+    head.appendChild(rawTag(a.action_type));
+    const g = diagGroup(box, head);
+    diagLine(g, "时间", whenNode(a.created_at));
   }
-  diagLine(box, "曝光估计累计（exposure_estimate）",
-    d.exposure_estimate_count + " 条");
+  const total = document.createDocumentFragment();
+  total.appendChild(document.createTextNode(
+    (d.exposure_estimate_count || 0) + " 条 "));
+  total.appendChild(rawTag("（exposure_estimate）"));
+  diagLine(box, "递出估计累计", total);
 }
 
 function renderDegraded(d, retry) {
@@ -176,19 +442,19 @@ function renderDegraded(d, retry) {
   if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const pe = d.planner_execution;
   const ro = d.runtime_outcome;
-  if (!pe && !ro) { diagEmpty(box, "无降级记录"); return; }
+  if (!pe && !ro) { diagEmpty(box, "没有从简处理的轮次。"); return; }
   if (pe) {
-    const g = diagGroup(box, "Planner 执行状态");
-    diagLine(g, "status", pe.status);
-    diagLine(g, "error_code", pe.error_code === null ? "—" : pe.error_code);
-    diagLine(g, "时间", pe.created_at);
+    const g = diagGroup(box, "客厅的盘算");
+    diagLine(g, "状态",
+      pe.status === "DEGRADED" ? "从简处理" : rawTag(pe.status));
+    diagLine(g, "错误码", pe.error_code === null ? "—" : pe.error_code);
+    diagLine(g, "时间", whenNode(pe.created_at));
   }
   if (ro) {
-    const g = diagGroup(box, "运行时轮次结局");
-    diagLine(g, "outcome", ro.outcome);
-    const codes = ro.reason_codes;
-    diagLine(g, "理由码", Array.isArray(codes) ? codes.join("、") : String(codes));
-    diagLine(g, "时间", ro.created_at);
+    const g = diagGroup(box, "轮次结局");
+    diagLine(g, "结局", rawTag(ro.outcome));
+    diagLine(g, "理由", reasonsNode(ro.reason_codes));
+    diagLine(g, "时间", whenNode(ro.created_at));
   }
 }
 
@@ -201,6 +467,10 @@ async function loadDiagnostics() {
     renderEvidence(data.evidence, loadDiagnostics);
     renderSupport(data.support, loadDiagnostics);
     renderDegraded(data.degraded, loadDiagnostics);
+    // 「为什么 · 原值」——五问的原始载荷归页底折叠的原始读数区
+    const raw = diagBox("diag-raw");
+    raw.hidden = false;
+    raw.textContent = JSON.stringify(data, null, 1);
   } catch {
     for (const id of DIAG_PANEL_IDS) {
       diagError(diagBox(id), "诊断读数拉取失败", loadDiagnostics);
@@ -208,60 +478,76 @@ async function loadDiagnostics() {
   }
 }
 
-document.getElementById("diag-refresh").addEventListener("click", loadDiagnostics);
+// ── 记录页 · 账（在学的表达）────────────────────────────────────────
+// schedule ∪ claims 客户端按 target_id 合流成一张表（⑧ 8.2.5：表达 /
+// 痕迹数 / 最近判分 / 复习；无新端点，纯前端重组）。
 
-// F-2: the 学习 view — what can be taught, the schedule, the goals and
-// the evidence ledger. Read-only numbers under Chinese labels; the one
-// act is 教我这个, which asks the runtime to open the teaching.
-// p-1: the row factory is shared with the 今日 screen's two act blocks
-// (the same 教我这个, the same .teach-me form).
-function teachRow(name, targetId) {
-  const row = document.createElement("div");
-  row.className = "kv";
-  const b = document.createElement("b");
-  b.textContent = name;
-  row.appendChild(b);
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "teach-me";
-  button.textContent = "教我这个";
-  button.addEventListener("click", () => postTeachMe(targetId));
-  row.appendChild(button);
-  return row;
-}
-
-async function loadTargets() {
-  const box = diagBox("target-list");
+function renderRecordBook(schedule, evidence, retry) {
+  const box = diagBox("record-book");
   box.textContent = "";
-  box.appendChild(stateBanner("loading"));
-  try {
-    const data = await fetchTargets();
-    box.textContent = "";
-    const list = data.targets || [];
-    if (!list.length) { diagEmpty(box, "暂无可教目标"); return; }
-    for (const t of list) {
-      box.appendChild(teachRow(t.name || t.target_id, t.target_id));
+  if (!schedule || schedule.error) {
+    diagError(box, (schedule && schedule.error) || "空响应", retry);
+    return;
+  }
+  if (!evidence || evidence.error) {
+    diagError(box, (evidence && evidence.error) || "空响应", retry);
+    return;
+  }
+  const byTarget = new Map();
+  for (const item of schedule.items || []) {
+    byTarget.set(item.target_id, { schedule: item, claims: [] });
+  }
+  for (const claim of evidence.claims || []) {
+    let entry = byTarget.get(claim.target_id);
+    if (!entry) {
+      entry = { schedule: null, claims: [] };
+      byTarget.set(claim.target_id, entry);
     }
-  } catch {
-    box.textContent = "";
-    diagError(box, "目标清单拉取失败", loadTargets);
+    entry.claims.push(claim);
+  }
+  if (!byTarget.size) {
+    diagEmpty(box, "还没有在学任何表达——短笺来过才会有账。");
+    return;
+  }
+  const rows = [];
+  for (const [targetId, entry] of byTarget) {
+    // the claims come newest-first; the first sighting is the latest verdict
+    const latestClaim = entry.claims.length ? entry.claims[0] : null;
+    const at = latestClaim ? latestClaim.created_at
+      : (entry.schedule ? entry.schedule.updated_at : "");
+    rows.push({ targetId, entry, latestClaim, at });
+  }
+  rows.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+  for (const row of rows) {
+    const line = document.createElement("div");
+    line.className = "kv";
+    line.title = row.targetId;
+    const b = document.createElement("b");
+    b.textContent = spokenOf(row.targetId);
+    line.appendChild(b);
+    line.appendChild(document.createTextNode(
+      "痕迹 " + row.entry.claims.length + " 条"));
+    if (row.latestClaim) {
+      line.appendChild(document.createTextNode(
+        " · 最近 " +
+        (OUTCOME_CN[row.latestClaim.outcome] ||
+         row.latestClaim.outcome) + "（"));
+      line.appendChild(whenNode(row.latestClaim.created_at));
+      line.appendChild(document.createTextNode("）"));
+    } else {
+      line.appendChild(document.createTextNode(" · 最近 ——"));
+    }
+    line.appendChild(document.createTextNode(
+      " · " + (row.entry.schedule
+        ? (REVIEW_STATE_CN[row.entry.schedule.review_state] ||
+           row.entry.schedule.review_state)
+        : REVIEW_STATE_CN.NOT_SCHEDULED)));
+    box.appendChild(line);
   }
 }
 
-async function postTeachMe(targetId) {
-  try {
-    const data = await fetchTeachMe(targetId);
-    if (data.accepted) {
-      addLine("system", "教学已开始，卡片出现在下方");
-      showSpace("parlor");
-      startMomentPolling();
-    } else {
-      addLine("failure", data.error || "无法开始这节课");
-    }
-  } catch {
-    addLine("failure", "请求失败，请重试");
-  }
-}
+// ── 记录页 · 底（原始读数区：各面原值与 ISO 时间戳的合法归宿，⑧ 8.2.5）
+// 三面原值渲染器保持原样——原值在这个折叠区里是合法形态。
 
 function renderSchedule(d, retry) {
   const box = diagBox("learn-schedule");
@@ -331,6 +617,7 @@ async function loadLearning() {
   showLoading(LEARN_PANEL_IDS);
   try {
     const data = await fetchLearning();
+    renderRecordBook(data.schedule, data.evidence, loadLearning);
     renderSchedule(data.schedule, loadLearning);
     renderGoals(data.goals, loadLearning);
     renderLearnEvidence(data.evidence, loadLearning);
@@ -341,19 +628,108 @@ async function loadLearning() {
   }
 }
 
-document.getElementById("learning-refresh").addEventListener("click",
-  () => { loadTargets(); loadLearning(); });
+// ── p-1 / R-1R: 今日页 —— 到期复习（行动位）/ 最近在学（痕迹位）/
+// 可以练的表达（家族分组 + 默认折叠 + 筛框）。进节即拉，无刷新钮。 ──
 
-// p-1: the 今日 screen — 到期复习 / 最近在学 / 想练一把, three read-only
-// blocks over the same faces the 学习 view reads (no fourth endpoint, no
-// invented daily activity). Entering the screen is the pull.
 const TODAY_PANEL_IDS = ["today-due", "today-recent", "today-practice"];
 
-// the spoken name of a target id, the server's own reading rule done
-// client-side (the claims and schedule rows carry ids, not names)
-function todayName(targetId) {
+function teachRow(name, targetId) {
+  const row = document.createElement("div");
+  row.className = "kv";
+  const b = document.createElement("b");
+  b.textContent = name;
+  row.appendChild(b);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "teach-me";
+  button.textContent = "教我这一句";
+  button.addEventListener("click", () => postTeachMe(targetId));
+  row.appendChild(button);
+  return row;
+}
+
+// R-1R（⑧ 8.2.3 / 8.2.7）：52 行的解法——家族分组（组键 = target_id
+// 第二段，客户端派生）+ #21 折叠组（默认收）+ 筛框（输入即展开命中组
+// 并过滤行，无命中说一句真话）。rowFor(t) 造一行；筛面 = 表达名 +
+// 原 id 一并小写匹配。
+function familyGroupsBlock(list, rowFor) {
+  const root = document.createElement("div");
+  const input = document.createElement("input");
+  input.type = "text";
+  input.autocomplete = "off";
+  input.placeholder = "找一个表达……";
+  root.appendChild(fieldRow("找", input));
+  const noHit = document.createElement("p");
+  noHit.className = "note";
+  noHit.hidden = true;
+  noHit.textContent = "没有叫这个的表达。";
+  root.appendChild(noHit);
+  const byFamily = new Map();
+  for (const item of list) {
+    const family = familyOf(item.target_id);
+    if (!byFamily.has(family)) byFamily.set(family, []);
+    byFamily.get(family).push(item);
+  }
+  const families = Array.from(byFamily.keys()).sort((a, b) => {
+    const ia = FAMILY_ORDER.indexOf(a);
+    const ib = FAMILY_ORDER.indexOf(b);
+    const ra = ia < 0 ? FAMILY_ORDER.length : ia;
+    const rb = ib < 0 ? FAMILY_ORDER.length : ib;
+    if (ra !== rb) return ra - rb;
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
+  const groups = [];
+  for (const family of families) {
+    const rows = byFamily.get(family);
+    const disc = disclosure({
+      name: FAMILY_CN[family] || family || "其他",
+      count: rows.length,
+      examples: rows.slice(0, 2).map(
+        (t) => t.name || spokenOf(t.target_id)),
+    });
+    const built = [];
+    for (const t of rows) {
+      const node = rowFor(t);
+      built.push({
+        node,
+        probe: ((t.name || "") + " " + t.target_id).toLowerCase(),
+      });
+      disc.body.appendChild(node);
+    }
+    groups.push({ disc, rows: built });
+    root.appendChild(disc.root);
+  }
+  input.addEventListener("input", () => {
+    const q = input.value.trim().toLowerCase();
+    let any = false;
+    for (const g of groups) {
+      if (!q) {
+        g.disc.root.hidden = false;
+        g.disc.setOpen(false);
+        for (const r of g.rows) r.node.hidden = false;
+        any = true;
+        continue;
+      }
+      let hit = false;
+      for (const r of g.rows) {
+        const on = r.probe.includes(q);
+        r.node.hidden = !on;
+        if (on) hit = true;
+      }
+      g.disc.root.hidden = !hit;
+      g.disc.setOpen(hit);
+      if (hit) any = true;
+    }
+    noHit.hidden = any;
+  });
+  return root;
+}
+
+// the family key of a target id — the second dash segment
+// (res-discourse-… → discourse), derived client-side like the spoken name
+function familyOf(targetId) {
   const parts = String(targetId).split("-");
-  return parts.length > 2 ? parts.slice(2).join(" ") : String(targetId);
+  return parts.length > 2 ? parts[1] : "";
 }
 
 function renderTodayDue(schedule, retry) {
@@ -365,10 +741,11 @@ function renderTodayDue(schedule, retry) {
   }
   const due = (schedule.items || []).filter(
     (it) => it.review_state === "DUE" || it.review_state === "OVERDUE");
-  if (!due.length) { diagEmpty(box, "现在没有到期的复习"); return; }
+  if (!due.length) { diagEmpty(box, "今天没有到期的复习。"); return; }
   for (const it of due) {
     box.appendChild(teachRow(
-      todayName(it.target_id) + "（" + it.review_state + "）",
+      spokenOf(it.target_id) + " · " +
+      (REVIEW_STATE_CN[it.review_state] || it.review_state),
       it.target_id));
   }
 }
@@ -383,11 +760,9 @@ function renderTodayRecent(evidence, retry) {
   const claims = evidence.claims || [];
   if (!claims.length) {
     // 槽位单态：空态独占面板（清空先于挂载），计数只随数据出现
-    diagEmpty(box, "还没有学习记录——聊起来才会积累。");
+    diagEmpty(box, "还没有学习痕迹——聊起来才会积累。");
     return;
   }
-  diagLine(box, "有学习状态的目标",
-    (evidence.learner_target_state_count || 0) + " 个");
   // the claims come newest-first; the first sighting of a target is its
   // most recent outcome
   const latest = new Map();
@@ -395,9 +770,16 @@ function renderTodayRecent(evidence, retry) {
     if (!latest.has(claim.target_id)) latest.set(claim.target_id, claim);
   }
   for (const [targetId, claim] of latest) {
-    const g = diagGroup(box, todayName(targetId));
-    diagLine(g, "最近 outcome", claim.outcome);
-    diagLine(g, "时间", claim.created_at);
+    const row = document.createElement("div");
+    row.className = "kv";
+    const b = document.createElement("b");
+    b.textContent = spokenOf(targetId);
+    row.appendChild(b);
+    row.appendChild(document.createTextNode(
+      "最近：" + (OUTCOME_CN[claim.outcome] || claim.outcome) + "（"));
+    row.appendChild(whenNode(claim.created_at));
+    row.appendChild(document.createTextNode("）"));
+    box.appendChild(row);
   }
 }
 
@@ -409,10 +791,29 @@ function renderTodayPractice(targets, retry) {
     return;
   }
   const list = targets.targets || [];
-  if (!list.length) { diagEmpty(box, "暂无可练的目标"); return; }
-  for (const t of list) {
-    box.appendChild(teachRow(t.name || t.target_id, t.target_id));
+  if (!list.length) {
+    diagEmpty(box, "还没有可练的表达——语料还没有铺到这里。");
+    return;
   }
+  box.appendChild(familyGroupsBlock(list,
+    (t) => teachRow(t.name || spokenOf(t.target_id), t.target_id)));
+}
+
+function renderTodaySummary(learning, targets) {
+  const schedule = learning && !learning.error ? learning.schedule : null;
+  const evidence = learning && !learning.error ? learning.evidence : null;
+  const due = schedule ? (schedule.items || []).filter(
+    (it) => it.review_state === "DUE" || it.review_state === "OVERDUE"
+  ).length : "—";
+  const learningCount = evidence
+    ? (evidence.learner_target_state_count || 0) : "—";
+  const practice = targets && !targets.error
+    ? (targets.targets || []).length : "—";
+  renderSummaryLine("today-summary", [
+    ["今天：到期", due],
+    ["在学", learningCount],
+    ["可练", practice],
+  ]);
 }
 
 async function loadToday() {
@@ -432,13 +833,12 @@ async function loadToday() {
   renderTodayDue(learning === null ? null : learning.schedule, loadToday);
   renderTodayRecent(learning === null ? null : learning.evidence, loadToday);
   renderTodayPractice(targets, loadToday);
+  renderTodaySummary(learning, targets);
 }
 
-document.getElementById("today-refresh").addEventListener("click", loadToday);
+// ── p-2 / R-1R: 记忆页 —— 摘要行 + 五面板（关系 / 剧情 / 学习状态 /
+// 痕迹 / 存根）。字段名全中文化；指纹缩前 12 位；时间一律人话。 ──────
 
-// p-2: the 记忆 view — what the parlor remembers, in five panels over one
-// read (/api/memory). Honest empties say 还没有记住什么 rather than
-// dressing absence up; every number is the row's own.
 const MEM_PANEL_IDS = ["mem-relationship", "mem-episode", "mem-states",
                        "mem-evidence", "mem-tombstones"];
 
@@ -452,15 +852,19 @@ function renderMemRelationship(d, retry) {
     return;
   }
   for (const m of rows) {
-    const g = diagGroup(box, m.memory_type + "（" + m.status + "）");
+    const head = document.createDocumentFragment();
+    head.appendChild(document.createTextNode(
+      (MEMORY_TYPE_CN[m.memory_type] || "") + " "));
+    head.appendChild(rawTag(m.memory_type + " · " + m.status));
+    const g = diagGroup(box, head);
     diagLine(g, "记住的内容", m.canonical_content);
-    diagLine(g, "provenance", m.provenance);
-    diagLine(g, "敏感级与授权",
-      m.sensitivity_class + " / " + m.persistence_authorization);
+    diagLine(g, "从哪记住的", rawTag(m.provenance));
+    diagLine(g, "敏感程度",
+      rawTag(m.sensitivity_class + " / " + m.persistence_authorization));
     if (m.confidence !== null && m.confidence !== undefined) {
-      diagLine(g, "confidence", fmtNum(m.confidence));
+      diagLine(g, "把握", scoreNode(m.confidence));
     }
-    diagLine(g, "更新时间", m.updated_at);
+    diagLine(g, "时间", whenNode(m.updated_at));
   }
 }
 
@@ -474,14 +878,17 @@ function renderMemEpisode(d, retry) {
     return;
   }
   for (const e of rows) {
-    const g = diagGroup(box, e.conversation_id);
+    const head = document.createDocumentFragment();
+    head.appendChild(document.createTextNode("这段通信 "));
+    head.appendChild(rawTag(e.conversation_id));
+    const g = diagGroup(box, head);
     diagLine(g, "摘要", e.summary);
-    diagLine(g, "未了话题",
+    diagLine(g, "未了的话头",
       Array.isArray(e.open_threads) ? e.open_threads.join("；") : fmtNum(e.open_threads));
-    diagLine(g, "最近事件",
+    diagLine(g, "最近的事",
       Array.isArray(e.recent_events) ? e.recent_events.join("；") : fmtNum(e.recent_events));
-    diagLine(g, "状态", e.status);
-    diagLine(g, "更新时间", e.updated_at);
+    diagLine(g, "状态", rawTag(e.status));
+    diagLine(g, "时间", whenNode(e.updated_at));
   }
 }
 
@@ -491,17 +898,22 @@ function renderMemStates(d, retry) {
   if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const rows = d.states || [];
   if (!rows.length) {
-    diagEmpty(box, "还没有学习状态——还没有任何证据被投影到这里。");
+    diagEmpty(box, "还没有记住什么——还没有任何痕迹积累到这里。");
     return;
   }
   for (const s of rows) {
-    const g = diagGroup(box,
-      s.target_id + "（" + s.target_type + " · " + s.evidence_modality + "）");
+    const head = document.createDocumentFragment();
+    head.appendChild(document.createTextNode(spokenOf(s.target_id) + " "));
+    head.appendChild(rawTag(s.target_id));
+    const g = diagGroup(box, head);
+    diagLine(g, "目标种类", vocabNode(TARGET_TYPE_CN, s.target_type));
+    diagLine(g, "凭据渠道",
+      vocabNode(EVIDENCE_MODALITY_CN, s.evidence_modality));
     diagLine(g, "证据水位", fmtNum(s.evidence_watermark));
-    diagLine(g, "状态键", Array.isArray(s.state_keys)
+    diagLine(g, "记着哪些状态", Array.isArray(s.state_keys)
       ? (s.state_keys.length ? s.state_keys.join("、") : "（空）") : "—");
-    diagLine(g, "estimator", s.estimator_version);
-    diagLine(g, "更新时间", s.updated_at);
+    diagLine(g, "估算法版本", rawTag(s.estimator_version));
+    diagLine(g, "时间", whenNode(s.updated_at));
   }
 }
 
@@ -509,19 +921,28 @@ function renderMemEvidence(d, retry) {
   const box = diagBox("mem-evidence");
   box.textContent = "";
   if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
-  diagLine(box, "证据行（evidence_claim）", (d.evidence_claim_count || 0) + " 条");
-  diagLine(box, "证据提交（evidence_commit）", (d.evidence_commit_count || 0) + " 次");
+  const claimCount = document.createDocumentFragment();
+  claimCount.appendChild(document.createTextNode(
+    (d.evidence_claim_count || 0) + " 条 "));
+  claimCount.appendChild(rawTag("（evidence_claim）"));
+  diagLine(box, "痕迹行", claimCount);
+  const commitCount = document.createDocumentFragment();
+  commitCount.appendChild(document.createTextNode(
+    (d.evidence_commit_count || 0) + " 次 "));
+  commitCount.appendChild(rawTag("（evidence_commit）"));
+  diagLine(box, "痕迹提交", commitCount);
   const rows = d.claims || [];
   if (!rows.length) {
-    diagEmpty(box, "还没有任何证据——答对答错都会在这里留下痕迹。");
+    diagEmpty(box, "还没有记住什么——答对答错都会在这里留下痕迹。");
     return;
   }
   for (const c of rows) {
-    const g = diagGroup(box, c.target_id);
-    diagLine(g, "polarity", c.polarity);
-    diagLine(g, "outcome", c.outcome);
-    diagLine(g, "performance_type", c.performance_type);
-    diagLine(g, "时间", c.created_at);
+    const g = diagGroup(box, spokenOf(c.target_id));
+    diagLine(g, "正负", vocabNode(POLARITY_CN, c.polarity));
+    diagLine(g, "判分", vocabNode(OUTCOME_CN, c.outcome));
+    diagLine(g, "出力方式",
+      vocabNode(PERFORMANCE_TYPE_CN, c.performance_type));
+    diagLine(g, "时间", whenNode(c.created_at));
   }
 }
 
@@ -531,16 +952,35 @@ function renderMemTombstones(d, retry) {
   if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const rows = d.tombstones || [];
   if (!rows.length) {
-    diagEmpty(box, "删除台账为空——还没有删除过任何东西。");
+    diagEmpty(box, "还没有忘掉过任何东西。");
     return;
   }
   for (const t of rows) {
-    const g = diagGroup(box, t.entity_kind);
-    diagLine(g, "摘要（单向摘要，不含正文）", t.entity_hash);
-    diagLine(g, "删除于", t.deleted_at);
-    diagLine(g, "范围", t.deletion_scope);
-    diagLine(g, "口径版本", t.scope_version);
+    const head = document.createDocumentFragment();
+    head.appendChild(document.createTextNode(
+      (ENTITY_KIND_CN[t.entity_kind] || "") + " "));
+    head.appendChild(rawTag(t.entity_kind));
+    const g = diagGroup(box, head);
+    diagLine(g, "指纹（单向摘要，不含正文）", shortHash(t.entity_hash));
+    diagLine(g, "忘掉于", whenNode(t.deleted_at));
+    diagLine(g, "范围", vocabNode(SCOPE_CN, t.deletion_scope));
+    diagLine(g, "口径版本", rawTag(t.scope_version));
   }
+}
+
+function renderMemSummary(data) {
+  const rel = data.relationship_memory;
+  const epi = data.episode;
+  const states = data.learner_states;
+  const evi = data.evidence;
+  const tom = data.tombstones;
+  renderSummaryLine("mem-summary", [
+    ["记住：关系", rel && !rel.error ? (rel.memories || []).length : "—"],
+    ["剧情", epi && !epi.error ? (epi.episodes || []).length : "—"],
+    ["学习", states && !states.error ? (states.states || []).length : "—"],
+    ["痕迹", evi && !evi.error ? (evi.evidence_claim_count || 0) : "—"],
+    ["存根", tom && !tom.error ? (tom.tombstones || []).length : "—"],
+  ]);
 }
 
 async function loadMemory() {
@@ -552,6 +992,7 @@ async function loadMemory() {
     renderMemStates(data.learner_states, loadMemory);
     renderMemEvidence(data.evidence, loadMemory);
     renderMemTombstones(data.tombstones, loadMemory);
+    renderMemSummary(data);
   } catch {
     for (const id of MEM_PANEL_IDS) {
       diagError(diagBox(id), "记忆读数拉取失败", loadMemory);
@@ -559,60 +1000,62 @@ async function loadMemory() {
   }
 }
 
-document.getElementById("mem-refresh").addEventListener("click", loadMemory);
+// ── p-2 / R-1R: 隐私页 —— 请客厅忘掉一些事。先讲会失去什么，再要两次
+// 点头（两层各说一件事：一说范围，二说不可逆）；结果只说 runtime 自己
+// 报的数。 ────────────────────────────────────────────────────────────
 
-// p-2: the 隐私 view — three deletable scopes, each behind two confirms.
-// 删除不可逆：第一层把范围用人话讲清（带「此操作不可恢复」），第二层
-// 再问一次（「确定继续？再次确认」）；两层都过才发请求。结果条只说
-// runtime 自己报的数（scope / notes / rebuilds 计数）。
-function renderDelRefused(text) {
+function renderDelRefused(message, code) {
   const box = diagBox("del-result");
   box.textContent = "";
   const b = document.createElement("b");
-  b.textContent = "删除未执行：" + text;
+  b.textContent = "没能忘掉。";
   box.appendChild(b);
+  const line = document.createElement("p");
+  line.className = "sub";
+  line.appendChild(document.createTextNode(message + "（"));
+  line.appendChild(rawTag(code));
+  line.appendChild(document.createTextNode("）"));
+  box.appendChild(line);
 }
 
-function renderDelResult(data) {
+function renderDelResult(data, rangeText) {
   const box = diagBox("del-result");
   box.textContent = "";
   const notes = data.notes || [];
-  // p-2 评审 F-2：notes 含 already absent = 幂等空删——标题与尾句不得
-  // 对未发生的事声称发生（无新墓碑、台账无更新）。
+  // p-2 评审 F-2：notes 含 already absent = 幂等空删——不得对未发生的
+  // 事声称发生（无新存根、记忆页不添行）。
   const alreadyAbsent = notes.some((n) => n.includes("already absent"));
   const g = diagGroup(
     box,
     alreadyAbsent
-      ? "没有可删的（" + data.scope + " 已不在）"
-      : "已删除：" + data.scope
+      ? "没有什么可忘——它之前就不在柜抽里。"
+      : "已忘掉：" + rangeText + "（存根 " + (data.tombstoned || 0) + " 条）"
   );
-  diagLine(g, "说明", notes.length ? notes.join("；") : "无");
-  diagLine(g, "重建",
-    (data.rebuilds_ok || 0) + " 成功 / " + (data.rebuilds_total || 0) + " 项");
-  diagLine(g, "墓碑记录", (data.tombstoned || 0) + " 条");
-  const tail = document.createElement("p");
-  tail.className = "sub";
-  tail.textContent = alreadyAbsent
-    ? "这次没有删除任何新东西——之前留下的删除记录仍可在「记忆」的「删除台账」里看到。"
-    : "删除台账已更新——打开「记忆」的「删除台账」可以看到这次删除留下的记录。";
-  box.appendChild(tail);
+  if (!alreadyAbsent) {
+    const tail = document.createElement("p");
+    tail.className = "sub";
+    tail.textContent = "这次忘掉留下的存根，在 柜抽 · 记忆 里能看到。";
+    box.appendChild(tail);
+  }
 }
 
-async function runDelete(payload, humanText) {
-  if (!confirmDialog(humanText)) return;
-  if (!confirmDialog("确定继续？再次确认")) return;
+async function runDelete(payload, rangeText) {
+  if (!confirmDialog(
+    "将把「" + rangeText + "」请出柜抽，找不回来。确定继续？")) return;
+  if (!confirmDialog("再确认一次：忘掉之后无法恢复。")) return;
   let data = null;
   try {
     data = await fetchDelete(payload);
   } catch {
-    renderDelRefused("请求失败，请重试");
+    renderDelRefused("请求没送到——再试一次。", "network");
     return;
   }
   if (!data.accepted) {
-    renderDelRefused((data.code || "拒绝") + "：" + (data.message || ""));
+    renderDelRefused(data.message || "客厅拒绝了这次忘掉。",
+      data.code || "拒绝");
     return;
   }
-  renderDelResult(data);
+  renderDelResult(data, rangeText);
   loadMemory();  // the tombstone this deletion minted is visible in 记忆
 }
 
@@ -625,10 +1068,10 @@ function deleteTargetRow(name, targetId) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "btn btn--pencil";
-  button.textContent = "删除这项目标数据";
+  button.textContent = "忘掉这项的痕迹";
   button.addEventListener("click", () => runDelete(
     { scope: "LEARNING_TARGET", target_id: targetId },
-    "将删除目标 " + name + " 的学习证据、学习状态与复习日程。此操作不可恢复。"));
+    name));
   row.appendChild(button);
   return row;
 }
@@ -641,10 +1084,12 @@ async function loadDelTargets() {
     const data = await fetchTargets();
     box.textContent = "";
     const list = data.targets || [];
-    if (!list.length) { diagEmpty(box, "暂无可教目标"); return; }
-    for (const t of list) {
-      box.appendChild(deleteTargetRow(t.name || t.target_id, t.target_id));
+    if (!list.length) {
+      diagEmpty(box, "还没有可忘的表达——语料还没有铺到这里。");
+      return;
     }
+    box.appendChild(familyGroupsBlock(list,
+      (t) => deleteTargetRow(t.name || spokenOf(t.target_id), t.target_id)));
   } catch {
     box.textContent = "";
     diagError(box, "目标清单拉取失败", loadDelTargets);
@@ -654,18 +1099,14 @@ async function loadDelTargets() {
 document.getElementById("del-conversation").addEventListener("click", () =>
   runDelete(
     { scope: "CONVERSATION" },
-    "将删除这段对话的全部记录，包括信件与教学痕迹。此操作不可恢复。"));
+    "这段通信的全部记录"));
 
-// p-3: the 目标 screen — the long-term direction, read from /api/goals and
-// written back through the store's own version discipline: the full new
-// combination is one upsert (every save moves the version; the previous
-// content is replaced, not kept — the p-3 disposition's F-1 honesty fix),
-// the teaching frequency is a single-column write, and a CONFLICT (another
-// writer won) says so with a 重新读取 action. The pickers build themselves
-// from the taxonomy the server serves — the words are the server's, never a
-// client copy. Every user string rides textContent.
+// ── p-3 / R-1R: 方向页 —— 长期方向在此写下。读写合一（读卡取消，当前
+// 值直接进编辑面）；保存 = 全组合 upsert（版本前移，不保留旧版）；冲突
+// 诚实上浮（409）→「重新读过」。词表词中英并置（中文 + 等宽小字原文）。
+// 词表取自服务端 taxonomy，客户端零拷贝。 ─────────────────────────────
 
-const GOAL_PANEL_IDS = ["goal-list", "goal-weights", "goal-assessment",
+const GOAL_PANEL_IDS = ["goal-weights", "goal-assessment",
                         "goal-register", "goal-frequency"];
 
 let goalData = null;   // the last GET /api/goals payload
@@ -693,7 +1134,7 @@ function goalFrequencyWords() {
 }
 
 // the result box: one human line, optionally with an action (the conflict's
-// 重新读取). Failure rides the .errline form, success the .sub one.
+// 重新读过). Failure rides the .errline form, success the .sub one.
 function goalResult(text, failure, action) {
   const box = goalBox("goal-result");
   box.hidden = false;
@@ -720,27 +1161,6 @@ function editorFromData(data) {
   };
 }
 
-function renderGoalList() {
-  const box = goalBox("goal-list");
-  box.textContent = "";
-  const goals = (goalData && goalData.portfolio &&
-                 goalData.portfolio.goals) || [];
-  if (!goals.length) {
-    diagEmpty(box, "还没有写下目标——在下面的编辑区写下第一个目标。");
-    return;
-  }
-  for (const goal of goals) {
-    const row = document.createElement("div");
-    row.className = "goalcard";
-    row.appendChild(chip(goal.goal_modality, { badge: true }));
-    const desc = document.createElement("span");
-    desc.className = "goaldesc";
-    desc.textContent = goal.description;
-    row.appendChild(desc);
-    box.appendChild(row);
-  }
-}
-
 function renderGoalEditor() {
   const box = goalBox("goal-editor");
   box.textContent = "";
@@ -754,14 +1174,18 @@ function renderGoalEditor() {
     for (const word of words) {
       const option = document.createElement("option");
       option.value = word;
-      option.textContent = word;
+      // select 的 option 只能是纯文本：中英并置在此退化为纯文本形态
+      // （中文 + 空格 + 原文；等宽小字形态见 chips / field 名牌）
+      option.textContent = MODALITY_CN[word]
+        ? MODALITY_CN[word] + " " + word
+        : word;
       if (word === goal.goal_modality) option.selected = true;
       select.appendChild(option);
     }
     select.addEventListener("change", () => {
       goal.goal_modality = select.value;
     });
-    edge.appendChild(fieldRow("目标 " + (index + 1) + " · 模态", select));
+    edge.appendChild(fieldRow("目标 " + (index + 1) + " · 技能", select));
     const description = document.createElement("input");
     description.type = "text";
     description.value = goal.description;
@@ -769,7 +1193,7 @@ function renderGoalEditor() {
     description.addEventListener("input", () => {
       goal.description = description.value;
     });
-    edge.appendChild(fieldRow("目标 " + (index + 1) + " · 描述", description));
+    edge.appendChild(fieldRow("目标 " + (index + 1) + " · 内容", description));
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "btn btn--faint";
@@ -813,11 +1237,12 @@ function renderGoalWeights() {
       if (input.value === "") delete goalEditor.weights[word];
       else goalEditor.weights[word] = Number(input.value);
     });
-    box.appendChild(fieldRow(word, input));
+    box.appendChild(fieldRow(
+      MODALITY_CN[word] ? biLabel(MODALITY_CN[word], word) : word, input));
   }
 }
 
-function renderWordPicker(boxId, faceName, set) {
+function renderWordPicker(boxId, faceName, set, cnMap) {
   const box = goalBox(boxId);
   box.textContent = "";
   if (!goalEditor) return;
@@ -827,10 +1252,11 @@ function renderWordPicker(boxId, faceName, set) {
     const on = set.has(word);
     row.appendChild(chip(word, {
       on: on,
+      cn: cnMap ? cnMap[word] : null,
       onClick: () => {
         if (on) set.delete(word);
         else set.add(word);
-        renderWordPicker(boxId, faceName, set);
+        renderWordPicker(boxId, faceName, set, cnMap);
       },
     }));
   }
@@ -844,7 +1270,7 @@ function renderGoalSave() {
   const save = document.createElement("button");
   save.type = "button";
   save.className = "btn btn--ink";
-  save.textContent = "保存组合（目标 + 权重 + 考试 + 语域）";
+  save.textContent = "保存方向";
   save.addEventListener("click", () => savePortfolio(save));
   box.appendChild(save);
 }
@@ -870,12 +1296,12 @@ async function savePortfolio(button) {
   };
   button.disabled = true;
   const original = button.textContent;
-  button.textContent = "保存中…";
+  button.textContent = "保存中……";
   let data = null;
   try {
     data = await fetchSaveGoals(payload);
   } catch {
-    goalResult("保存失败，请重试", true);
+    goalResult("保存没送到——再试一次。", true);
     button.disabled = false;
     button.textContent = original;
     return;
@@ -885,7 +1311,7 @@ async function savePortfolio(button) {
   if (data.accepted) {
     goalResult(data.idempotent
       ? "内容没有变化——没有写新版本。"
-      : "已保存（版本 " + data.goal_version + "）。", false);
+      : "已保存（第 " + data.goal_version + " 版）。", false);
     loadGoals();
   } else if (data.conflict) {
     // the store refused the same-version write: the human sentence plus
@@ -893,11 +1319,11 @@ async function savePortfolio(button) {
     const again = document.createElement("button");
     again.type = "button";
     again.className = "btn btn--pencil";
-    again.textContent = "重新读取";
+    again.textContent = "重新读过";
     again.addEventListener("click", loadGoals);
-    goalResult(data.error || "配置已被别处更新，请重读再改。", true, again);
+    goalResult("这份方向刚在别处被改过——重新读过再改。", true, again);
   } else {
-    goalResult(data.error || "保存失败，请重试", true);
+    goalResult(data.error || "保存没送到——再试一次。", true);
   }
 }
 
@@ -907,16 +1333,31 @@ function renderGoalFrequency() {
   if (!goalEditor) return;
   const policy = goalData && goalData.policy;
   if (policy) {
-    diagLine(box, "当前", policy.teaching_frequency +
-             "（版本 " + policy.policy_version + "）");
+    // 「现在：适度（BALANCED）」——版本号移出常显（⑧ 8.2.4：版本只出现
+    // 在保存回执与冲突句）
+    const line = document.createElement("div");
+    line.className = "kv";
+    const b = document.createElement("b");
+    b.textContent = "现在：";
+    line.appendChild(b);
+    const word = policy.teaching_frequency;
+    if (FREQUENCY_CN[word]) {
+      line.appendChild(document.createTextNode(FREQUENCY_CN[word] + "（"));
+      line.appendChild(rawTag(word));
+      line.appendChild(document.createTextNode("）"));
+    } else {
+      line.appendChild(rawTag(word));
+    }
+    box.appendChild(line);
   } else {
-    diagLine(box, "当前", "未配置");
+    diagLine(box, "现在", "还没有写过——在下面挑一个。");
   }
   const row = document.createElement("div");
   row.className = "chips";
   for (const word of goalFrequencyWords()) {
     row.appendChild(chip(word, {
       on: goalEditor.frequency === word,
+      cn: FREQUENCY_CN[word] || null,
       onClick: () => {
         goalEditor.frequency = word;
         renderGoalFrequency();
@@ -927,7 +1368,7 @@ function renderGoalFrequency() {
   const save = document.createElement("button");
   save.type = "button";
   save.className = "btn btn--pencil";
-  save.textContent = "保存频率";
+  save.textContent = "保存短笺频率";
   save.addEventListener("click", () => saveFrequency(save));
   box.appendChild(save);
 }
@@ -940,12 +1381,12 @@ async function saveFrequency(button) {
   }
   button.disabled = true;
   const original = button.textContent;
-  button.textContent = "保存中…";
+  button.textContent = "保存中……";
   let data = null;
   try {
     data = await fetchSaveFrequency(editor.frequency);
   } catch {
-    goalResult("保存失败，请重试", true);
+    goalResult("保存没送到——再试一次。", true);
     button.disabled = false;
     button.textContent = original;
     return;
@@ -954,18 +1395,18 @@ async function saveFrequency(button) {
   button.textContent = original;
   if (data.accepted) {
     goalResult(data.idempotent
-      ? "频率没有变化——没有写新版本。"
-      : "教学频率已保存（版本 " + data.policy_version + "）。", false);
+      ? "内容没有变化——没有写新版本。"
+      : "已保存（第 " + data.policy_version + " 版）。", false);
     loadGoals();
   } else if (data.conflict) {
     const again = document.createElement("button");
     again.type = "button";
     again.className = "btn btn--pencil";
-    again.textContent = "重新读取";
+    again.textContent = "重新读过";
     again.addEventListener("click", loadGoals);
-    goalResult(data.error || "配置已被别处更新，请重读再改。", true, again);
+    goalResult("这份方向刚在别处被改过——重新读过再改。", true, again);
   } else {
-    goalResult(data.error || "保存失败，请重试", true);
+    goalResult(data.error || "保存没送到——再试一次。", true);
   }
 }
 
@@ -979,14 +1420,26 @@ function renderGoalFocus() {
     return;
   }
   sec.hidden = false;
-  const group = diagGroup(box, "对话 " + focus.conversation_id);
+  const head = document.createDocumentFragment();
+  head.appendChild(document.createTextNode("这段通信 "));
+  head.appendChild(rawTag(focus.conversation_id));
+  const group = diagGroup(box, head);
   const weights = focus.temporary_goal_weights || {};
-  const said = Object.keys(weights).map(
-    (word) => word + " " + weights[word]).join("；");
-  diagLine(group, "临时权重", said || "（无）");
-  diagLine(group, "手动聚焦", focus.manual_focus_target || "—");
-  diagLine(group, "开始于", focus.starts_at || "—");
-  if (focus.expires_at) diagLine(group, "结束于", focus.expires_at);
+  const said = document.createDocumentFragment();
+  const entries = Object.keys(weights);
+  entries.forEach((word, index) => {
+    if (index > 0) said.appendChild(document.createTextNode("；"));
+    if (MODALITY_CN[word]) said.appendChild(biLabel(MODALITY_CN[word], word));
+    else said.appendChild(rawTag(word));
+    said.appendChild(document.createTextNode(" " + weights[word]));
+  });
+  if (!entries.length) said.appendChild(document.createTextNode("（无）"));
+  diagLine(group, "临时权重", said);
+  diagLine(group, "手动聚焦",
+    focus.manual_focus_target ? spokenOf(focus.manual_focus_target) : "—");
+  diagLine(group, "开始于",
+    focus.starts_at ? whenNode(focus.starts_at) : "—");
+  if (focus.expires_at) diagLine(group, "结束于", whenNode(focus.expires_at));
 }
 
 function renderGoalTaxref() {
@@ -994,6 +1447,7 @@ function renderGoalTaxref() {
   box.textContent = "";
   const taxonomy = (goalData && goalData.taxonomy) || {};
   const note = taxonomy.non_stored_note || "";
+  const content = document.createElement("div");
   for (const face of taxonomy.faces || []) {
     if (face.stored) continue;
     const line = document.createElement("p");
@@ -1001,8 +1455,13 @@ function renderGoalTaxref() {
     line.textContent = "§" + (face.section || "?") + " " + face.name +
       "（" + face.words.length + " 词 · " + note + "）：" +
       face.words.join("、");
-    box.appendChild(line);
+    content.appendChild(line);
   }
+  // 参考词表三段折进 #21（默认收）——无存储位的参考不占主峰版面
+  box.appendChild(disclosure({
+    name: "词表原文（三面 · 本版只作参考）",
+    content: content,
+  }).root);
 }
 
 async function loadGoals() {
@@ -1017,7 +1476,7 @@ async function loadGoals() {
     goalData = await fetchGoals();
   } catch {
     for (const id of GOAL_PANEL_IDS) {
-      diagError(goalBox(id), "目标读数拉取失败", loadGoals);
+      diagError(goalBox(id), "方向读数没取到", loadGoals);
     }
     return;
   }
@@ -1027,33 +1486,31 @@ async function loadGoals() {
     goalEditor = null;
     for (const id of GOAL_PANEL_IDS) {
       diagEmpty(goalBox(id),
-        "本进程未装配用户配置面（无 content-tier）——目标读写不可用。");
+        "本进程未装配用户配置面（无 content-tier）——方向读写不可用。");
     }
+    goalBox("goal-editor").textContent = "";
     goalBox("goal-save").textContent = "";
     return;
   }
   goalEditor = editorFromData(goalData);
   goalEditor.frequency =
     (goalData.policy && goalData.policy.teaching_frequency) || null;
-  renderGoalList();
   renderGoalEditor();
   renderGoalWeights();
   renderWordPicker("goal-assessment", "external_assessment",
-    goalEditor.assessment);
+    goalEditor.assessment, null);
   renderWordPicker("goal-register", "register_style",
-    goalEditor.register);
+    goalEditor.register, REGISTER_CN);
   renderGoalSave();
   renderGoalFrequency();
   renderGoalFocus();
   renderGoalTaxref();
 }
 
-document.getElementById("goal-refresh").addEventListener("click", loadGoals);
+// ── F-2 / R-1R: blocked 行 —— 一轮没递短笺的两形诚实小字（⑧ 8.2.2：
+// 分量不足 / 被门规拦；全键与浮点不进信流，「原委在」链接到 学案 ·
+// 记录）。读取失败就沉默——信流永不被注脚打断。 ───────────────────────
 
-// F-2: why a quiet turn was quiet — one gray line from the diagnostics
-// face's why-not-teach panel. The gate lives in postTurn (only when the
-// turn response carried no teaching moments); a failed or empty pull
-// stays silent, the chat is never blocked by the note.
 async function showBlockedNote() {
   let data = null;
   try {
@@ -1063,32 +1520,40 @@ async function showBlockedNote() {
   }
   const panel = data && data.why_not_teach;
   if (!panel || panel.error) return;
-  let summary = "";
   const candidate = (panel.candidates || [])[0];
+  const line = document.createElement("div");
+  line.className = "blockedline";
   if (candidate) {
-    summary = "本轮未教学：候选 " +
-      (candidate.canonical_key || candidate.candidate_id) +
-      " 效用 " + fmtNum(candidate.utility) +
-      " 低于阈值 " + fmtNum(candidate.activation_threshold);
+    line.textContent = "这一轮没有递短笺——客厅想过「" +
+      spokenOf(candidate.canonical_key || candidate.candidate_id) +
+      "」，今天它的分量还不够。（原委在 ";
+    const link = document.createElement("button");
+    link.type = "button";
+    link.className = "btn btn--pencil";
+    link.textContent = "学案 · 记录";
+    link.addEventListener("click", () => {
+      showSpace("study");
+      showSection("study", "progress");
+    });
+    line.appendChild(link);
+    line.appendChild(document.createTextNode("）"));
   } else if (panel.gate_deny) {
-    const codes = panel.gate_deny.reason_codes;
-    summary = "本轮未教学：门拦截 " +
-      (Array.isArray(codes) ? codes.join("、") : String(codes));
+    line.textContent = "这一轮没有递短笺——被门规拦下（";
+    line.appendChild(reasonsNode(panel.gate_deny.reason_codes));
+    line.appendChild(document.createTextNode("）。"));
   } else {
     return;
   }
-  const line = document.createElement("div");
-  line.className = "blockedline";
-  line.textContent = summary;
   messages.appendChild(line);
   messages.scrollTop = messages.scrollHeight;
 }
 
-// R-1: the spaces — 门厅 / 客厅 / 学案 / 柜抽 — plain show/hide, no
+// ── R-1: the spaces — 门厅 / 客厅 / 学案 / 柜抽 — plain show/hide, no
 // router. The dock (#18) is the only way between spaces; entering the
 // study or the drawer lands its default section, and switching a section
 // (#20 tabs) is the pull — the section always shows its own facts, never
-// a stale page.
+// a stale page. ────────────────────────────────────────────────────────
+
 const spaces = {
   onboard: document.getElementById("screen-onboard"),
   parlor: document.getElementById("space-parlor"),
@@ -1109,8 +1574,10 @@ const SECTION_BODIES = {
   },
 };
 
+// R-1R（⑧ 8.1.2 命名定稿）：内部 id/键零改名，显示名 目标→方向、
+// 进步→记录——节签文字、节名槽、此处映射，三处一致。
 const SECTION_NAMES = {
-  today: "今日", goal: "目标", progress: "进步",
+  today: "今日", goal: "方向", progress: "记录",
   memory: "记忆", privacy: "隐私", settings: "设置",
 };
 
@@ -1127,7 +1594,7 @@ const SECTION_PULLS = {
     goalBox("goal-result").hidden = true;
     loadGoals();
   },
-  "study-progress": () => { loadTargets(); loadLearning(); loadDiagnostics(); },
+  "study-progress": () => { loadLearning(); loadDiagnostics(); },
   "drawer-memory": loadMemory,
   "drawer-privacy": loadDelTargets,
 };
@@ -1166,6 +1633,58 @@ wireSectionTabs(document.getElementById("study-tabs"),
 wireSectionTabs(document.getElementById("drawer-tabs"),
   (name) => showSection("drawer", name));
 
+// 记录页的底：一切原值折进一个 #21（⑧ 8.2.5）——观察读数第一次展开
+// 才拉，拉取失败 = 区内一行 + 重试。
+let observationsLoaded = false;
+
+async function loadObservations() {
+  if (observationsLoaded) return;
+  observationsLoaded = true;
+  const status = diagBox("obs-status");
+  const out = diagBox("obsout");
+  status.textContent = "";
+  status.appendChild(stateBanner("loading"));
+  let data = null;
+  try {
+    data = await fetchObservations();
+  } catch {
+    data = null;
+  }
+  status.textContent = "";
+  if (data === null) {
+    status.appendChild(stateBanner("error", {
+      text: "观察读数没取到。",
+      retry: () => {
+        observationsLoaded = false;
+        loadObservations();
+      },
+    }));
+    return;
+  }
+  const lines = [];
+  for (const ind of data.indicators) {
+    lines.push(ind.indicator + " — " + ind.definition);
+  }
+  lines.push("");
+  for (const s of data.sections) {
+    lines.push(s.title + ":");
+    if (s.error !== null) { lines.push("  (unreadable: " + s.error + ")"); continue; }
+    if (!s.rows.length) { lines.push("  (no rows)"); continue; }
+    for (const row of s.rows) lines.push("  " + row.join(" | "));
+  }
+  lines.push("  gate rows naming " + data.drift_reason +
+    " (the drift signal): " + data.drift_count);
+  out.hidden = false;
+  out.textContent = lines.join("\n");
+}
+
+const rawReadings = disclosure({
+  name: "原始读数（给排查用）",
+  content: diagBox("raw-readings"),
+  onFirstExpand: () => loadObservations(),
+});
+diagBox("raw-slot").appendChild(rawReadings.root);
+
 // p-1: 点词——信件与用户回条里的 .word 可点。以点击词为中心取 1–3 词
 // 窗口（长窗优先），逐窗口调 /api/word，首个命中即出卡；miss 按契约
 // 静默（不弹「没查到」浮层）。stopPropagation 让开卡点击不被浮层的
@@ -1195,11 +1714,6 @@ messages.addEventListener("click", async (event) => {
     }
   }
 });
-
-// R-1: the old four-block expansion row (the set-screen links) retired
-// with the 仪表 screen — the blocks now live as always-mounted sections
-// (学案·进步 / 柜抽·记忆 / 柜抽·隐私), pulled on section entry
-// (SECTION_PULLS).
 
 // F-1R: the first-visit screen. localStorage remembers the visit; a
 // storage that refuses (privacy mode) answers "seen" so nobody is
@@ -1262,15 +1776,36 @@ function startMomentPolling() {
   }, MOMENT_POLL_MS);
 }
 
+// R-1R（⑧ 8.2.2）：空厅不是一间空屋——历史为空时信流中央一行系统
+// 小字（客户端静态系统行，非伪造历史）；第一封信寄出即撤。
+const EMPTY_HALL_TEXT =
+  "信还没开始写——用英语给笔友写第一句，写什么都行；写错了也不要紧，" +
+  "客厅正是为此在听。";
+
+function showEmptyHall() {
+  if (messages.firstChild) return;
+  const line = addLine("system", EMPTY_HALL_TEXT);
+  line.classList.add("emptyhall");
+}
+
+function dismissEmptyHall() {
+  for (const line of Array.from(messages.querySelectorAll(".emptyhall"))) {
+    line.remove();
+  }
+}
+
 async function postTurn(text) {
+  dismissEmptyHall();
   addLine("user", text);
   // the placeholder is the user's "it is working" signal: removed the
   // moment the turn response lands (or fails) — never left behind
-  const pending = addLine("typing", "（生成中…）");
+  const pending = addLine("typing", "（回信在途中……）");
   startMomentPolling();
   let data = null;
   try {
     data = await fetchTurn(text);
+  } catch {
+    addLine("failure", "请求没送到——再试一次。");
   } finally {
     stopMomentPolling();
     pending.remove();
@@ -1279,10 +1814,11 @@ async function postTurn(text) {
     if (data.reply !== null && data.reply !== undefined) {
       addLine("assistant", data.reply);
     } else if (data.turn_status !== null && data.turn_status !== undefined) {
-      addLine("failure", "[" + data.turn_status + "] " +
-        (data.failure_reason || "无回复"));
+      failLine("这封信没有回音——客厅没能联系上模型端点",
+        data.failure_reason || "无回复");
     } else if (data.failure_reason) {
-      addLine("failure", data.failure_reason);
+      failLine("这封信没有回音——客厅没能联系上模型端点",
+        data.failure_reason);
     }
     const moments = data.teaching_moments || [];
     showMoments(moments);
@@ -1290,6 +1826,23 @@ async function postTurn(text) {
     // the transcript — read from the diagnostics face, silent when the
     // read fails or has nothing to say.
     if (!moments.length) showBlockedNote();
+  }
+}
+
+async function postTeachMe(targetId) {
+  let data = null;
+  try {
+    data = await fetchTeachMe(targetId);
+  } catch {
+    addLine("failure", "请求没送到——再试一次。");
+    return;
+  }
+  if (data.accepted) {
+    addLine("system", "短笺来了——就在下面的信流里。");
+    showSpace("parlor");
+    startMomentPolling();
+  } else {
+    failLine("没能开始这张短笺——", data.error || "被拒绝");
   }
 }
 
@@ -1311,32 +1864,14 @@ document.getElementById("text").addEventListener("keydown", (event) => {
   }
 });
 
-document.getElementById("obs").addEventListener("click", async () => {
-  const out = document.getElementById("obsout");
-  const data = await fetchObservations();
-  const lines = [];
-  for (const ind of data.indicators) {
-    lines.push(ind.indicator + " — " + ind.definition);
-  }
-  lines.push("");
-  for (const s of data.sections) {
-    lines.push(s.title + ":");
-    if (s.error !== null) { lines.push("  (unreadable: " + s.error + ")"); continue; }
-    if (!s.rows.length) { lines.push("  (no rows)"); continue; }
-    for (const row of s.rows) lines.push("  " + row.join(" | "));
-  }
-  lines.push("  gate rows naming " + data.drift_reason +
-    " (the drift signal): " + data.drift_count);
-  out.hidden = false;
-  out.textContent = lines.join("\n");
-});
-
 async function loadHistory() {
   const data = await fetchHistory();
   for (const turn of data.turns) {
     if (turn.user !== null) addLine("user", turn.user);
     if (turn.assistant !== null) addLine("assistant", turn.assistant);
   }
+  // 空厅句：一封信都还没有时，客户端静态系统行开场（⑧ 8.2.2）
+  showEmptyHall();
   // the open teaching moment survives a refresh: rebuild its card (with
   // the attempt box and the skip button) so an open teaching is never
   // stranded without its controls

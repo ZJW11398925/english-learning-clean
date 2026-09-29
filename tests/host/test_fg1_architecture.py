@@ -60,8 +60,9 @@ FILES: dict[str, str] = {
 #: them (a renamed or dropped component breaks both pins at once).
 #: The registry is living (spec ⑤): F-G2 added brand-mark and
 #: state-banner, p-1 added word-card, p-3 added field and chip, R-1
-#: added the shell navigation trio (dock / space-header / section-tabs)
-#: — each in the same cut that registered it in the spec.
+#: added the shell navigation trio (dock / space-header / section-tabs),
+#: R-1R added the disclosure group — each in the same cut that
+#: registered it in the spec.
 COMPONENTS = (
     "link-btn",
     "pen",
@@ -83,6 +84,7 @@ COMPONENTS = (
     "dock",
     "space-header",
     "section-tabs",
+    "disclosure",
 )
 
 
@@ -282,6 +284,8 @@ def test_core_component_styles_have_exactly_one_source() -> None:
         ".kv {",
         ".note {",
         ".btn[disabled] {",
+        # R-1R: the raw-value form the library's #15/#17 wear
+        ".rawtag {",
     ):
         assert whole.count(selector) == 1, (selector, whole.count(selector))
 

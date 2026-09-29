@@ -16,7 +16,7 @@ Four groups (the task book's own):
    all ride it: the loaders show loading first, the empty and error arms
    delegate through diagEmpty/diagError, and every retry re-pulls only
    its own panel.
-3. **the cover** — three letter steps (是什么 / 教学怎么发生 / 就这么定)
+3. **the cover** — three letter steps (这是什么 / 短笺怎么来 / 就这么定)
    under the large mark, hairline-separated, with the honest version
    line (``elc · web`` — no fabricated version digits).
 4. **the living registry** — spec ⑤ carries the user's doctrine (the
@@ -169,16 +169,20 @@ def test_the_panel_faces_ride_the_state_banner(tmp_path: Path) -> None:
     assert 'box.appendChild(stateBanner("empty", { text: word || "暂无数据" }));' in js
     assert 'box.appendChild(stateBanner("error",' in js
     assert 'className = "note"' not in js
-    # the flow's own empty face rides the family too (no stragglers)
-    assert 'stateBanner("empty", { text: "本轮没有打开教学时刻。" }));' in js
+    # R-1R（⑧ 8.2.2）：信流的空态横幅退役——空态是读数块的答法，不是
+    # 信流的；无短笺的轮次在信流里什么都不挂（缺位钉）
+    assert "本轮没有打开教学时刻" not in js
     app = _webui_text("app.js")
+    assert "本轮没有打开教学时刻" not in app
     assert "function showLoading(ids) {" in app
     assert "box.appendChild(stateBanner(\"loading\"));" in app
     assert "showLoading(DIAG_PANEL_IDS);" in app
     assert "showLoading(LEARN_PANEL_IDS);" in app
     assert 'diagError(diagBox(id), "诊断读数拉取失败", loadDiagnostics);' in app
     assert 'diagError(diagBox(id), "学习读数拉取失败", loadLearning);' in app
-    assert 'diagError(box, "目标清单拉取失败", loadTargets);' in app
+    # R-1R 随迁：目标清单的读取面只剩隐私页的按表达忘掉（今日 · 可以练
+    # 的表达经 loadToday 读 targets，失败行在面板槽内同形）
+    assert 'diagError(box, "目标清单拉取失败", loadDelTargets);' in app
     assert "renderWhyTeach(data.why_teach, loadDiagnostics);" in app
     assert "renderSchedule(data.schedule, loadLearning);" in app
     index = _webui_text("index.html")
@@ -196,11 +200,13 @@ def test_the_cover_is_a_three_step_letter(tmp_path: Path) -> None:
     version digits). The localStorage gate keeps its exact semantics."""
 
     page = _page_of(tmp_path)
-    assert "第一步 · 是什么" in page
-    assert "第二步 · 教学怎么发生" in page
-    assert "聊着聊着，客厅在旁听着。" in page
+    # R-1R 随迁（⑧ 8.2.1 定稿）：内容步只给两步（一 / 二），门不当步；
+    # 「反馈」改「回音」；hint 一次交代 dock 三词（学案与柜抽）
+    assert "一 · 这是什么" in page
+    assert "二 · 短笺怎么来" in page
+    assert "写着写着，客厅在旁听着。" in page
     assert "发现值得练的表达时，信流里会出现一张短笺。" in page
-    assert "答对答错都有反馈，也可以跳过。" in page
+    assert "答对答错都有回音，也可以跳过。" in page
     assert "就这么定 →</button>" in page
     # the honest version line: the product's own name, no invented semver
     assert '<p class="ob-version">elc · web</p>' in page
@@ -233,5 +239,6 @@ def test_the_spec_carries_the_living_registry() -> None:
     agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "库随产品增长" in agents
     # p-3 随迁：活注册表随 field/chip 入库生长两格（15 → 17）；
-    # R-1 随迁：壳导航三件再长三格（17 → 20）——同刀登记
-    assert len(COMPONENTS) == 20
+    # R-1 随迁：壳导航三件再长三格（17 → 20）；
+    # R-1R 随迁：折叠组 disclosure 再长一格（20 → 21）——同刀登记
+    assert len(COMPONENTS) == 21

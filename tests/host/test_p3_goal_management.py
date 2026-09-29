@@ -671,13 +671,15 @@ def test_the_goal_screen_is_wired_into_the_shell(
 ) -> None:
     with web_stack(tmp_path / "app.db") as stack:
         page = _page_source(stack)
-        # R-1 随迁：目标屏迁入**学案空间 · 目标节**——旧屏 id 与 toggle
-        # 退役（缺位钉），节面板与刷新读数原 id 保留
+        # R-1R 随迁（⑧ 8.2.4 定稿）：目标屏 = 学案空间 · 方向节——旧屏 id
+        # 与 toggle 退役（缺位钉），刷新钮退役（进节即拉），读卡取消
+        # （读写合一：goal-list 缺位钉），保存/冲突/重读句新词形
         assert 'id="screen-goal"' not in page
         assert 'id="goal-toggle"' not in page
         assert 'id="study-goal"' in page
         assert 'id="tab-study-goal"' in page
-        assert 'id="goal-refresh"' in page
+        assert 'id="goal-refresh"' not in page
+        assert 'id="goal-list"' not in page
         # the remove-goal copy says what it really is: a version move,
         # not an /api/delete-grade irreversible deletion. The p-3
         # disposition (review F-1) retired the false kept-history promise
@@ -686,12 +688,21 @@ def test_the_goal_screen_is_wired_into_the_shell(
         assert "从当前组合移除（保存后生效）" in page
         assert "历史版本保留" not in page
         assert "旧版本保留" not in page
-        # both endpoint call sites and the save actions
+        # both endpoint call sites and the save actions（R-1R 词形：保存
+        # 方向 / 保存短笺频率；冲突的重读钮「重新读过」；版本号只出现在
+        # 保存回执与冲突句——「第 {n} 版」）
         assert "/api/goals" in page
         assert "/api/teaching_frequency" in page
         assert "fetchSaveGoals" in page and "fetchSaveFrequency" in page
-        assert "保存组合" in page and "保存频率" in page
-        assert "重新读取" in page
+        assert "保存方向" in page and "保存短笺频率" in page
+        assert "保存组合" not in page
+        assert "重新读过" in page
+        assert "重新读取" not in page
+        assert "已保存（第 " in page
+        assert "内容没有变化——没有写新版本。" in page
+        assert "这份方向刚在别处被改过——重新读过再改。" in page
+        # 「技能」代「模态」（⑧ 8.2.4）；词表词中英并置（中文 + 等宽小字）
+        assert "· 技能" in page
         # the two new components' factories and their single CSS source
         assert "fieldRow" in page and "chip(" in page
         assert ".field {" in page and ".chip--on" in page

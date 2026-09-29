@@ -58,8 +58,8 @@ Pinned here (the six VAL groups):
     path (seven fields, ``{"moment": None}`` when nothing is open or the
     database is unreadable — never a 500), the title being the ro face's
     declared narrowing (the target's spoken name out of its id), and the
-    page sends its placeholder line ("生成中…") plus the poll the instant a
-    turn goes out.
+    page sends its placeholder line (「（回信在途中……）」, the R-1R word)
+    plus the poll the instant a turn goes out.
 """
 
 from __future__ import annotations
@@ -395,14 +395,18 @@ def test_the_page_serves_the_title_and_the_three_calls(
 ) -> None:
     with web_stack(tmp_path / "app.db") as stack:
         page = _page_source(stack)
-        assert "英语客厅 · Study-first dogfood" in page
+        # R-1R 随迁（⑧ 8.2.1）：浏览器标签是产品门面，工程阶段词不上
+        # 门面——<title> 只写产品名
+        assert "<title>英语客厅</title>" in page
+        assert "Study-first dogfood" not in page
         assert '<textarea id="text"' in page
         assert "/api/turn" in page
         assert "/api/observations" in page
         assert "/api/history" in page
         # the W-2 reply face on the page: the skip button and its call
+        # (R-1R 词形：这次跳过)
         assert "/api/teaching_reply" in page
-        assert "跳过这一题" in page
+        assert "这次跳过" in page
 
 
 # ---------------------------------------------------------------------------
@@ -567,16 +571,20 @@ def test_an_unreadable_target_falls_back_to_the_raw_id(
 
 
 def test_the_page_renders_the_human_card_face(tmp_path: Path) -> None:
-    """The embedded page renders the human card line — title first, Chinese
-    state words — and keeps the raw-id row as the no-title fallback."""
+    """The embedded page renders the human card face — R-1R（⑧ 8.2.10）:
+    the header is 「短笺：{功能句}」(the title, with the raw id as the
+    no-title fallback), the status line is the server's own status_cn
+    word, and the kind rides the client-side Chinese map (an unknown
+    kind omits the line — never a raw fallback)."""
 
     with web_stack(tmp_path / "app.db") as stack:
         page = _page_source(stack)
-        assert "教学时刻：" in page
+        assert '"短笺："' in page
+        assert "教学时刻：" not in page
         assert "m.status_cn" in page
-        assert "m.kind_cn" in page
-        assert "if (m.title)" in page
-        assert "m.focus_target_id" in page
+        assert "MOMENT_KIND_CN[m.kind]" in page
+        assert "来自你的句子" in page
+        assert "(m.title || m.focus_target_id)" in page
 
 
 # ---------------------------------------------------------------------------
@@ -1148,11 +1156,15 @@ def test_the_page_offers_the_attempt_box_and_the_skip_button(
 
     with web_stack(tmp_path / "app.db") as stack:
         page = _page_source(stack)
-        assert "用英语试着造个句子…" in page
+        # R-1R 随迁（⑧ 8.2.10 定稿）：作答框「用英语写一句试试……」，
+        # 跳过「这次跳过」，作答寄出回音「作答已寄出。」（8.4 动词表
+        # 禁「提交」），卡内指路行在作答面开启时出现
+        assert "用英语写一句试试……" in page
         assert "寄出作答" in page
-        assert "跳过这一题" in page
+        assert "这次跳过" in page
         assert 'control: "attempt"' in page
-        assert "已提交作答" in page
+        assert "作答已寄出。" in page
+        assert "作答写在这张短笺上（不是下面的信纸）。" in page
         # the card stays XSS-inert: textContent, never innerHTML
         assert "textContent" in page
         assert ".innerHTML" not in page
@@ -1853,7 +1865,8 @@ def test_the_page_signals_generation_and_polls_the_current_face(
 
     with web_stack(tmp_path / "app.db") as stack:
         page = _page_source(stack)
-    assert "（生成中…）" in page
+    # R-1R 随迁（⑧ 8.2.2 定稿）：等待占位「（回信在途中……）」
+    assert "（回信在途中……）" in page
     assert "startMomentPolling()" in page
     assert "stopMomentPolling()" in page
     assert "setInterval(" in page

@@ -83,17 +83,22 @@ button:focus-visible, input:focus-visible {
                     font-family: var(--f-sans); }
 
 /* ── 3. note-paper（教学短笺）───────────────────────────────────────
-   结构：<div class="note-paper"><b>标题</b> · 状态 · 类型 …[回复控件]
-   [结果条][批改条]</div>；回复控件（.replyrow / .replytext）是本组件的
-   内置Reply面，随契约一起定义。
+   结构：<div class="note-paper"><b>短笺：标题</b><div class="noteline">
+   状态行</div>[<div class="noteline">类型行（中文映射，未知值省略该行）
+   </div>]…[指路行 .noteline][回复控件][结果条][批改条]</div>；回复控件
+   （.replyrow / .replytext）是本组件的内置回复面，随契约一起定义；
+   .noteline 是卡内弱化小字行（状态/类型/指路共用）。
    状态矩阵：default（rule-soft 底色块）/ skipped（opacity .55，终局后）/
    busy（卡片控件 disabled + .busystrip，由 JS 置）。
-   使用规则：只出现在信流（.flow）里；标题 b 用 textContent。
+   使用规则：只出现在信流（.flow）里；标题 b 用 textContent；卡头
+   「短笺：{功能句}」，状态行用服务端 status_cn 原词（界面不自造）。
    禁止变体：阴影、描边、弹层。 */
 .note-paper { margin: 0 0 18px; background: var(--rule-soft);
               padding: 12px 14px 14px; font-size: 15px; }
 .note-paper > b { font-weight: 600; overflow-wrap: anywhere; }
 .note-paper.skipped { opacity: 0.55; }
+.noteline { margin-top: 4px; font-family: var(--f-sans); font-size: 11px;
+            color: var(--ink-faint); }
 .replyrow { display: flex; gap: 14px; margin-top: 10px;
             align-items: baseline; }
 .replytext { flex: 1; min-width: 0; border: 0;
@@ -150,7 +155,8 @@ button:focus-visible, input:focus-visible {
 .setblock { margin-top: 4px; }
 
 /* ── 7. resultstrip（判分结果条）───────────────────────────────────
-   结构：<div class="resultstrip ok|part|miss">✓|◐|✗ 判分反馈：…</div>。
+   结构：<div class="resultstrip ok|part|miss">✓ 答对了|◐ 答对一半|
+   ✗ 没答中 · runtime 原话</div>（R-1R 起中文判词打头，⑧ 8.2.10）。
    状态矩阵：ok（赭红，命中）/ part（次级墨，部分）/ miss（主墨，未中）。
    使用规则：只挂在 note-paper 卡内；符号是显示件，词是 runtime 自己的。
    禁止变体：绿红底色块（W-6 条款）。 */
@@ -195,7 +201,7 @@ button:focus-visible, input:focus-visible {
    结构：无 CSS——保持 window.confirm 原生形态；JS 封装点是
    components.js 的 confirmDialog(message)（页面里唯一一处 confirm 调用）。
    状态矩阵：native confirm 的确定 / 取消两臂。
-   使用规则：只用于不可逆面（看答案）；低风险动作（教我这个）不确认。
+   使用规则：只用于不可逆面（看答案）；低风险动作（教我这一句）不确认。
    禁止变体：自制弹层。 */
 
 /* ── 12. system-line（居中弱化系统行）──────────────────────────────
@@ -286,6 +292,15 @@ button:focus-visible, input:focus-visible {
               font-family: var(--f-serif); font-size: 14px;
               color: var(--ink-soft); overflow-wrap: anywhere; }
 .word { cursor: pointer; }
+
+/* .rawtag（原文小字，R-1R）——机械事实的等宽小字形态：存储词表值的英文
+   原文（⑧ 8.3 中英并置的英文半）、指纹、id、失败原因工程词。样式唯一
+   出处在此（组件库），页面只引用不定义（同 #15 的 .word 分片形）。
+   用法：文字一律 textContent；全值（未截断的原值）放 title；未列出的
+   词不伪装翻译——原样走它（⑧ 8.3 总则）。
+   不得做成：换行块级形态、底色块、非等宽的「小字原文」。 */
+.rawtag { font-family: var(--f-mono); font-size: 11px;
+          color: var(--ink-faint); overflow-wrap: anywhere; }
 
 /* ── 16. field（编辑面一行式表单行）────────────────────────────────
    结构：<label class="field"><span class="fieldname">名</span>
@@ -402,3 +417,28 @@ button:focus-visible, input:focus-visible {
                text-decoration-style: solid;
                text-decoration-color: var(--pencil); }
 .section-tab[disabled] { opacity: 0.4; pointer-events: none; }
+
+/* ── 21. disclosure（折叠组）────────────────────────────────────────
+   结构：<div class="disclosure"><button class="disclosure-head"
+   aria-expanded="false"><span class="disclosure-marker">▸</span>
+   <span class="disclosure-title">名称（计数）<span
+   class="disclosure-examples">例一 · 例二 …</span></span></button>
+   <div class="disclosure-body" hidden>…内容区…</div></div>——工厂
+   disclosure(opts)（components.js，R-1R）；组头行即开关（名称 + 计数 +
+   两枚示例弱化小字），计数与示例在展开后保留。
+   状态矩阵：collapsed（default，内容区 hidden，标记 ▸）/ expanded
+   （--open：内容区展开、标记 ▾、aria-expanded="true"）/ focus（地基
+   button:focus-visible 的赭红环，不另设）。
+   使用规则：一切「超过 8 行的同质列表」与「参考 / 原始读数」一律走它
+   （⑧ 8.2.9）；组头文字一律 textContent（名称 / 计数 / 示例全惰性）。
+   禁止变体：手风琴（互斥展开）、嵌套、图标外链。 */
+.disclosure { margin-top: 6px; }
+.disclosure-head { display: flex; gap: 8px; align-items: baseline;
+            width: 100%; text-align: left; font-family: var(--f-sans);
+            font-size: 12px; color: var(--ink-soft); padding: 4px 0; }
+.disclosure-head:hover { color: var(--ink); }
+.disclosure-marker { flex: none; color: var(--ink-faint); }
+.disclosure-examples { margin-left: 8px; color: var(--ink-faint);
+            font-family: var(--f-mono); font-size: 11px;
+            overflow-wrap: anywhere; }
+.disclosure-body { margin: 2px 0 8px 16px; }

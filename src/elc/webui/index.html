@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>英语客厅 · Study-first dogfood</title>
+<title>英语客厅</title>
 <link rel="stylesheet" href="/static/tokens.css">
 <link rel="stylesheet" href="/static/components.css">
 <link rel="stylesheet" href="/static/screens.css">
@@ -13,39 +13,40 @@
 <div id="stage">
 
   <!-- 门厅（开张屏，first visit 一次——localStorage 记住后不再出现）：
-       三步信纸——是什么 / 教学怎么发生 / 就这么定；说到哪一行都是真的，
-       不伪装任何功能。进门钮是它通向客厅的唯一门（R-1 起结构原样保留）。 -->
+       内容步只给两步（一 / 二），门不当步；说到哪一行都是真的，不伪装
+       任何功能。进门钮是它通向客厅的唯一门（⑧ 8.2.1 定稿；R-1R 起
+       <title> 只写产品名，工程阶段词不上门面）。 -->
   <section id="screen-onboard" class="ob">
     <span data-brand-mark="lg"></span>
     <h1>把英语请进客厅</h1>
     <div class="ob-steps">
       <section class="ob-step">
-        <p class="formhead">第一步 · 是什么</p>
-        <p class="sub">跟一位固定伙伴用英语闲聊——想说什么，就说什么。</p>
+        <p class="formhead">一 · 这是什么</p>
+        <p class="sub">跟一位固定笔友用英语通信——想写什么，就写什么。</p>
       </section>
       <section class="ob-step">
-        <p class="formhead">第二步 · 教学怎么发生</p>
-        <p class="sub">聊着聊着，客厅在旁听着。</p>
+        <p class="formhead">二 · 短笺怎么来</p>
+        <p class="sub">写着写着，客厅在旁听着。</p>
         <p class="sub">发现值得练的表达时，信流里会出现一张短笺。</p>
-        <p class="sub">答对答错都有反馈，也可以跳过。</p>
+        <p class="sub">答对答错都有回音，也可以跳过。</p>
       </section>
       <section class="ob-step">
         <button id="ob-go" class="btn btn--ink" type="button">就这么定 →</button>
-        <p class="hint">进入后，底部的「学案」摊开今天的复习与你的长期方向。</p>
+        <p class="hint">进来以后，底部三个词随时可走——学案摊着今天的复习与方向，柜抽收着它记住的事。</p>
         <p class="ob-version">elc · web</p>
       </section>
     </div>
   </section>
 
-  <!-- 客厅空间：品牌条（上下发丝线夹住；R-1 起不再挂任何链接——导航归
-       dock）+ 信笺流（教学短笺随信流）+ 写信区。信件文本按词分片（#15
-       的触发面），点词出卡。 -->
+  <!-- 客厅空间：品牌条（上下发丝线夹住；导航归 dock）+ 信笺流（教学
+       短笺随信流）+ 写信区。信件文本按词分片（#15 的触发面），点词出卡。
+       空厅由 app.js 落一句客户端静态系统行（⑧ 8.2.2），不伪装历史。 -->
   <section id="space-parlor" hidden>
     <header class="top">
       <span data-brand-mark="sm"></span>
       <div>
         <div class="who">英语客厅</div>
-        <div class="who-sub">固定伙伴 · 你说英语，它用英语回你</div>
+        <div class="who-sub">固定笔友 · 来信去信都用英语</div>
       </div>
     </header>
     <main class="flow">
@@ -55,15 +56,17 @@
     <div class="dock">
       <form id="send" class="dock-row">
         <textarea id="text" class="pen" rows="2" autocomplete="off"
-                  placeholder="用英语说点什么……"></textarea>
+                  placeholder="用英语写一句……"></textarea>
         <button type="submit" class="btn btn--send">寄出 →</button>
       </form>
     </div>
   </section>
 
-  <!-- 学案空间：书桌。三节（今日 / 目标 / 进步），节签切换（#20），
+  <!-- 学案空间：书桌。三节（今日 / 方向 / 记录），节签切换（#20），
        进空间落默认节（今日）。头部 = #19 space-header（品牌条基形 +
-       节名槽，随节签联动）。 -->
+       节名槽，随节签联动）。页题只念一遍：节名槽是「我在哪」，节内
+       不再有 h2（⑧ 8.2.9）；内部 id 零改名（study-goal / study-progress
+       等键保持，只改显示名）。 -->
   <section id="space-study" hidden>
     <header class="top space-header" id="study-head">
       <span data-brand-mark="sm"></span>
@@ -77,21 +80,20 @@
               aria-controls="study-today" aria-selected="true">今日</button>
       <button type="button" class="section-tab" role="tab"
               id="tab-study-goal" data-section="goal"
-              aria-controls="study-goal" aria-selected="false">目标</button>
+              aria-controls="study-goal" aria-selected="false">方向</button>
       <button type="button" class="section-tab" role="tab"
               id="tab-study-progress" data-section="progress"
-              aria-controls="study-progress" aria-selected="false">进步</button>
+              aria-controls="study-progress" aria-selected="false">记录</button>
     </nav>
     <div class="spacebody">
 
-    <!-- 今日节（p-1 迁入）：进客厅先看今天——到期复习 / 最近在学 /
-         想练一把。三块全走 state-banner 三态；页面没有的活动供给不伪装
-         （登记 Revisit）。信流里点词出卡（#15）与本体无关，这里是客厅
-         之外的第二个日常入口。 -->
+    <!-- 今日节（⑧ 8.2.3）：回答「现在该干什么」——页首摘要行（mono
+         数字）+ 到期复习（行动位）+ 最近在学（痕迹位）+ 可以练的表达
+         （家族分组 #21 默认折叠 + 筛框；组键 = target_id 第二段，客户
+         端派生）。三块全走 state-banner 三态；没有的活动供给不伪装。 -->
     <section id="study-today" role="tabpanel"
              aria-labelledby="tab-study-today">
-    <h2>今日</h2>
-    <p class="sub">客厅在今天的样子——到期复习、最近在学、可以练什么。</p>
+    <p class="sub sumline" id="today-summary" hidden></p>
     <div class="sec">
       <h3>到期复习</h3>
       <div id="today-due"><p class="note">暂无数据</p></div>
@@ -101,119 +103,121 @@
       <div id="today-recent"><p class="note">暂无数据</p></div>
     </div>
     <div class="sec">
-      <h3>想练一把</h3>
+      <h3>可以练的表达</h3>
       <div id="today-practice"><p class="note">暂无数据</p></div>
     </div>
-    <button id="today-refresh" class="btn btn--dot" type="button">刷新读数</button>
     </section>
 
-    <!-- 目标节（p-3 迁入）：长期方向在此写下——目标卡读面 + 编辑面
-         （增/删/改、权重、考试与语域词表）+ 教学频率单列写。保存 =
-         全组合 upsert（版本前移，替换当前内容，不保留旧版）；冲突诚实
-         上浮（409）→「重新读取」。参考词表三面 V1 无存储位，只看不改。
-         文案 R7：执行者拟定，用户首验否决。 -->
+    <!-- 方向节（⑧ 8.2.4，p-3 迁入重写）：一页「写」的纸——读写合一
+         （当前值即编辑值，无读卡）。保存 = 全组合 upsert（版本前移，
+         不保留旧版）；冲突诚实上浮（409）→「重新读过」。参考词表三面
+         V1 无存储位，折进 #21。词表词中英并置（中文 + 等宽小字）。 -->
     <section id="study-goal" role="tabpanel"
              aria-labelledby="tab-study-goal" hidden>
-    <h2>目标</h2>
-    <p class="sub">你想把英语用在哪里、练到什么程度——这是客厅的长期方向。
-       每次保存都会更新当前组合（版本号前移）；保存后无法找回上一版。</p>
+    <p class="sub">你想把英语用在哪里——这是客厅记着的长期方向。
+       每次保存都前移版本；上一版找不回来。</p>
     <div class="sec">
       <h3>长期目标</h3>
-      <div id="goal-list"><p class="note">暂无数据</p></div>
       <div id="goal-editor"></div>
     </div>
     <div class="sec">
-      <h3>技能权重</h3>
+      <h3>四项的轻重</h3>
       <p class="sub">四项各 0 以上；留空表示不设权重。</p>
       <div id="goal-weights"><p class="note">暂无数据</p></div>
     </div>
     <div class="sec">
-      <h3>考试目标</h3>
+      <h3>要考的试</h3>
       <p class="sub">点选适用的词，可多选、可取消。</p>
       <div id="goal-assessment"><p class="note">暂无数据</p></div>
     </div>
     <div class="sec">
-      <h3>语域与文风</h3>
+      <h3>文风</h3>
       <p class="sub">点选想练的表达风格。</p>
       <div id="goal-register"><p class="note">暂无数据</p></div>
     </div>
     <div id="goal-save" class="sec"></div>
     <div class="sec">
-      <h3>教学频率</h3>
+      <h3>短笺频率</h3>
       <div id="goal-frequency"><p class="note">暂无数据</p></div>
     </div>
     <div class="sec" id="goal-focus-sec" hidden>
-      <h3>临时侧重</h3>
-      <p class="sub">只影响当前这段对话，不改上面写下的长期方向。</p>
+      <h3>临时侧重（有才出现）</h3>
+      <p class="sub">只影响当前这段通信，不改上面写下的长期方向。</p>
       <div id="goal-focus"></div>
     </div>
     <div class="sec">
-      <h3>参考词表</h3>
-      <p class="sub">以下三面此版本只作参考，还没有存储位。</p>
       <div id="goal-taxref"></div>
     </div>
     <div id="goal-result" class="sec" hidden></div>
-    <button id="goal-refresh" class="btn btn--dot" type="button">重新读取</button>
     </section>
 
-    <!-- 进步节：旧仪表屏的学习/诊断两块 + 观察读数合并迁入（R-1 归位，
-         分组标题：证据 / 为什么 / 观察）；各面板三态不变。 -->
+    <!-- 记录节（⑧ 8.2.5）：客厅的账页——账（在学的表达：schedule ∪
+         claims 客户端按 target_id 合流一张表）→ 因（五问，中文化）
+         → 底（#21 折叠「原始读数」：观察指标定义原文 / 各面原值与
+         ISO 时间戳的唯一合法归宿，第一次展开才拉观察）。可练的 52 行
+         从本页移除——唯一居所 = 今日 · 可以练的表达。 -->
     <section id="study-progress" role="tabpanel"
              aria-labelledby="tab-study-progress" hidden>
-    <h2>进步</h2>
-    <p class="sub">客厅的账目与记录摊在这里——只读，如实。</p>
+    <p class="sub">客厅的账页——只读，如实。</p>
 
-    <section id="set-learning">
-      <div class="sec"><h3 class="grouphead">证据</h3></div>
-      <div class="sec">
-        <h3>可教目标</h3>
-        <div id="target-list"><p class="note">暂无数据</p></div>
-      </div>
-      <div class="sec">
-        <h3>复习日程</h3>
-        <div id="learn-schedule"><p class="note">暂无数据</p></div>
-      </div>
-      <div class="sec">
-        <h3>学习目标</h3>
-        <div id="learn-goals"><p class="note">暂无数据</p></div>
-      </div>
-      <div class="sec">
-        <h3>证据记录</h3>
-        <div id="learn-evidence"><p class="note">暂无数据</p></div>
-      </div>
-      <button id="learning-refresh" class="btn btn--dot" type="button">刷新读数</button>
-    </section>
+    <div class="sec">
+      <h3>在学的表达</h3>
+      <div id="record-book"><p class="note">暂无数据</p></div>
+    </div>
 
     <section id="set-diagnostics">
       <div class="sec"><h3 class="grouphead">为什么</h3></div>
       <div class="sec">
-        <h3>为什么教了这一课？</h3>
+        <h3>为什么递了这张短笺</h3>
         <div id="why-teach"><p class="note">暂无数据</p></div>
       </div>
       <div class="sec">
-        <h3>为什么没有教？</h3>
+        <h3>为什么没有递</h3>
         <div id="why-not-teach"><p class="note">暂无数据</p></div>
       </div>
       <div class="sec">
-        <h3>证据有什么变化？</h3>
+        <h3>判分有什么变化</h3>
         <div id="why-evidence"><p class="note">暂无数据</p></div>
       </div>
       <div class="sec">
-        <h3>你看到了哪些支持？</h3>
+        <h3>你收到了哪些帮助</h3>
         <div id="why-support"><p class="note">暂无数据</p></div>
       </div>
       <div class="sec">
-        <h3>有没有轮次被降级？</h3>
-        <div id="why-degraded"><p class="note">无降级记录</p></div>
+        <h3>有没有从简处理的轮次</h3>
+        <div id="why-degraded"><p class="note">暂无数据</p></div>
       </div>
-      <button id="diag-refresh" class="btn btn--dot" type="button">刷新读数</button>
     </section>
 
-    <div class="sec">
-      <h3 class="grouphead">观察</h3>
-      <button id="obs" class="btn btn--dot" type="button">拉取观察读数</button>
-      <pre id="obsout" hidden></pre>
-    </div>
+    <section id="set-learning">
+      <div class="sec">
+        <div id="raw-slot">
+          <div id="raw-readings">
+            <div class="sec">
+              <h3>复习日程</h3>
+              <div id="learn-schedule"><p class="note">暂无数据</p></div>
+            </div>
+            <div class="sec">
+              <h3>学习目标</h3>
+              <div id="learn-goals"><p class="note">暂无数据</p></div>
+            </div>
+            <div class="sec">
+              <h3>证据记录</h3>
+              <div id="learn-evidence"><p class="note">暂无数据</p></div>
+            </div>
+            <div class="sec">
+              <h3>为什么 · 原值</h3>
+              <pre id="diag-raw" hidden></pre>
+            </div>
+            <div class="sec">
+              <h3>观察读数</h3>
+              <div id="obs-status"></div>
+              <pre id="obsout" hidden></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
     </section>
 
     </div>
@@ -240,75 +244,80 @@
     </nav>
     <div class="spacebody">
 
-    <!-- 记忆节（p-2 迁入）：五面板——关系记忆 / 剧情记忆 / 学习者状态
-         （行级）/ 证据 / 删除台账。点开即读（进节即拉）；空态诚实
-         （「还没有记住什么」族——客厅如实说它没记住东西，不装）。 -->
+    <!-- 记忆节（⑧ 8.2.6，p-2 迁入重写）：摘要行 + 五面板（关系 / 剧情 /
+         学习状态（行级）/ 痕迹 / 存根）。字段名全中文化；指纹缩前 12
+         位等宽 + title 全值；时间一律人话格式（title 放全时间戳）。 -->
     <section id="drawer-memory" role="tabpanel"
              aria-labelledby="tab-drawer-memory">
-    <h2>记忆</h2>
+    <p class="sub">客厅记住的事都在这里——一条条如实。</p>
+    <p class="sub sumline" id="mem-summary" hidden></p>
     <section id="set-memory">
       <div class="sec">
-        <h3>关系记忆</h3>
+        <h3>关系</h3>
         <div id="mem-relationship"><p class="note">暂无数据</p></div>
       </div>
       <div class="sec">
-        <h3>剧情记忆</h3>
+        <h3>剧情</h3>
         <div id="mem-episode"><p class="note">暂无数据</p></div>
       </div>
       <div class="sec">
-        <h3>学习者状态</h3>
+        <h3>学习状态</h3>
         <div id="mem-states"><p class="note">暂无数据</p></div>
       </div>
       <div class="sec">
-        <h3>证据</h3>
+        <h3>痕迹</h3>
         <div id="mem-evidence"><p class="note">暂无数据</p></div>
       </div>
       <div class="sec">
-        <h3>删除台账</h3>
+        <h3>存根</h3>
         <div id="mem-tombstones"><p class="note">暂无数据</p></div>
       </div>
-      <button id="mem-refresh" class="btn btn--dot" type="button">刷新读数</button>
     </section>
     </section>
 
-    <!-- 隐私节（p-2 迁入）：三个有行为腿的删除入口（本页两条 + 关系对
-         诚实缺席）。所有删除都不可恢复；每个入口都要过两层确认。 -->
+    <!-- 隐私节（⑧ 8.2.7，p-2 迁入重写）：请客厅忘掉一些事——先讲清会
+         失去什么，再要两次点头。危险分级呈现：整段通信一处一钮；按表达
+         忘掉走家族分组 #21 + 筛框（危险不均质平铺）；缺席入口保持诚实。 -->
     <section id="drawer-privacy" role="tabpanel"
              aria-labelledby="tab-drawer-privacy" hidden>
-    <h2>隐私</h2>
+    <p class="sub">请客厅忘掉一些事——走出去就找不回来。</p>
     <section id="set-privacy">
-      <p class="sub">这里可以删除客厅记住的东西。所有删除操作都不可恢复。</p>
       <div class="sec">
-        <h3>当前对话</h3>
-        <p class="sub">删除这段对话的全部记录——信件、教学痕迹与它留下的
-           证据行，一并删去。</p>
+        <h3>这段通信</h3>
+        <p class="sub">把这段通信的全部记录请出柜抽——信件、短笺痕迹与它
+           留下的证据行，一并忘掉。</p>
         <button id="del-conversation" class="btn btn--pencil" type="button">
-          删除当前对话的全部记录</button>
+          忘掉这段通信的全部记录</button>
       </div>
       <div class="sec">
-        <h3>按目标删学习数据</h3>
-        <p class="sub">删除某个目标的学习证据、学习状态与复习日程；对话
-           信件本身保留。</p>
+        <h3>按表达忘掉</h3>
+        <p class="sub">忘掉某个表达的学习痕迹、学习状态与复习安排；信件
+           本身保留。</p>
         <div id="del-targets"><p class="note">暂无数据</p></div>
       </div>
       <div class="sec">
-        <h3>关系对删除</h3>
-        <p class="sub">关系对删除需要角色 id（persona_id），本页无法得知
-           ——此版本不出这个入口。</p>
+        <h3>按伙伴关系忘掉</h3>
+        <p class="sub">这版做不了——页面不知道伙伴的角色编号。</p>
       </div>
       <div id="del-result" class="sec"></div>
     </section>
     </section>
 
-    <!-- 设置节：诚实空态占位（R-3 将铺模式面与端点信息读面，此处不
-         预建、不承诺时点）。端点的诚实句在此延续：页面没有读取端点与
-         模型名的口，宁缺勿假。 -->
+    <!-- 设置节（⑧ 8.2.8）：诚实地说「还没铺开」——现在能说的 / 将来
+         会有 的两块结构；本页即 R-3 的落位槽（届时以真读面替换「将来」
+         块，不动本页其余）。 -->
     <section id="drawer-settings" role="tabpanel"
              aria-labelledby="tab-drawer-settings" hidden>
-    <h2>设置</h2>
-    <p class="note">设置面尚未到来。</p>
-    <p class="sub">本地单用户 · 127.0.0.1 · 无鉴权。模型端点与模型名由启动
-       命令给定，页面不读取、不显示（宁缺勿假）。</p>
+    <p class="sub">设置面还没有铺开。</p>
+    <div class="sec">
+      <h3>现在能如实说的</h3>
+      <p class="sub">这台应用只服务你一个人（127.0.0.1，无账号无密码）。</p>
+      <p class="sub">模型端点与模型名由启动命令给定——页面不读取，也不显示。</p>
+    </div>
+    <div class="sec">
+      <h3>将来这里会有</h3>
+      <p class="sub">教学模式读面与端点说明（位次 R-3，不承诺时点）。</p>
+    </div>
     </section>
 
     </div>

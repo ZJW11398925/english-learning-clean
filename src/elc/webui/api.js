@@ -45,7 +45,7 @@ export function fetchLearning() {
   return getJson("/api/learning");
 }
 
-/** 可教目标清单（readiness R3+ 或 schedule 覆盖的供给目标）。 */
+/** 可练的表达清单（readiness R3+ 或 schedule 覆盖的供给目标）。 */
 export function fetchTargets() {
   return getJson("/api/targets");
 }

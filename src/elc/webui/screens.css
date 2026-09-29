@@ -71,13 +71,18 @@ body {
 .dock-row { display: flex; align-items: stretch; gap: 12px; }
 
 /* ── 学案/柜抽的空间正文（R-1）：三个节面板共用的正文留白与标题形态 ── */
+/* R-1R（⑧ 8.2.9）：页题只念一遍（节名槽承担），节内不再有 h2；
+   页首引导句接 ⑧ 8.2 各页定稿。 */
 .spacebody { padding: 26px var(--read-pad) 60px; }
-.spacebody h2 { margin: 0 0 6px; font-size: 24px; font-weight: 500;
-            letter-spacing: 0.12em; }
 .spacebody .sub { margin: 0 0 8px; font-family: var(--f-sans); font-size: 12px;
               color: var(--ink-faint); line-height: 1.7; }
-/* 进步节的分组标题（证据 / 为什么 / 观察）：比面板小标重一档。 */
+/* 进步节的分组标题（为什么 / 原始读数）：比面板小标重一档。 */
 .grouphead { color: var(--ink-soft); font-weight: 600; }
+/* R-1R 屏级文字形态（非组件不入库，⑧ 8.2.9 注记）：摘要行——屏级一行
+   （.sub 底 + mono 数字），非组件故留在本表。原文小字 .rawtag 是组件库
+   形态（#15 词卡 / #17 chip 共用），唯一出处在 components.css。 */
+.sumline .sumnum { font-family: var(--f-mono); font-size: 11px;
+              font-variant-numeric: tabular-nums; }
 pre { font-family: var(--f-mono); font-size: 11px; line-height: 1.7;
       color: var(--ink-soft); overflow-x: auto; white-space: pre-wrap;
       overflow-wrap: anywhere; border-top: 1px solid var(--rule-soft);

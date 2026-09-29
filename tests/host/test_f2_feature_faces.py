@@ -4,8 +4,9 @@ The server, the host and the online seed are the W-1 suite's own fixtures
 (one serving stack, one production assembly); this file pins only the F-2
 face on top of F-1's shell:
 
-1. the 学习 view — a third tab and its four panels (可教目标 / 复习日程 /
-   学习目标 / 证据记录), the 「教我这个」 act, all ``textContent``-only;
+1. the 学习 view — a third tab and its panels (R-1R：可教目标 52 行迁往
+   今日 · 可以练的表达，本页留 复习日程 / 学习目标 / 证据记录 原值于
+   折叠的原始读数区), the 「教我这一句」 act, all ``textContent``-only;
 2. ``GET /api/learning`` — the diagnostics construction repeated: read-only
    SQL on the work queue, panel-level guards, honest empty shapes, and the
    read-silence pin (a content snapshot, so UPDATE-class mutations fail it
@@ -119,39 +120,46 @@ class _FaceHost:
 
 def test_the_page_has_the_learning_view(tmp_path: Path) -> None:
     page_source = _page_of(tmp_path)
-    # the 学习 block: R-1 随迁——常挂学案·进步（证据组），setlinks 的
-    # data-block 链接退役（缺位钉；p-3 先例）
+    # the 学习 block: R-1 随迁——常挂学案·进步，setlinks 的 data-block
+    # 链接退役（缺位钉；p-3 先例）；R-1R 随迁（⑧ 8.2.5）：「可教目标」
+    # 52 行从记录页移除（唯一居所 = 今日 · 可以练的表达，缺位钉），
+    # 日程/目标/证据三面原值迁入页底「原始读数」折叠区（id 保留），
+    # 刷新钮全退（进节即拉，learning-refresh 缺位钉）
     assert 'data-block="learning"' not in page_source
     assert ">学习</button>" not in page_source
     assert 'id="set-learning"' in page_source
-    # the four panels and their refresh
+    # the three raw panels keep their ids inside the 原始读数 fold; the
+    # 52-row target list and the refresh button are gone
     for element in (
-        "target-list",
         "learn-schedule",
         "learn-goals",
         "learn-evidence",
-        "learning-refresh",
     ):
         assert f'id="{element}"' in page_source
-    # the panel labels, in the task's own words
-    for label in ("可教目标", "复习日程", "学习目标", "证据记录"):
+    assert 'id="target-list"' not in page_source
+    assert 'id="learning-refresh"' not in page_source
+    # the raw panel labels, in the task's own words（原值区合法形态）
+    for label in ("复习日程", "学习目标", "证据记录"):
         assert label in page_source
+    assert "可教目标" not in page_source
     # the one read, the one act, and the show/hide branch
     assert '"/api/learning"' in page_source
     assert '"/api/targets"' in page_source
     assert '"/api/teach_me"' in page_source
-    assert "loadTargets" in page_source
+    assert "loadTargets" not in page_source
     assert "loadLearning" in page_source
     # p-2 migrated the literal, R-1 migrated the mechanism: the four-block
     # loop's `hidden = name !== block` became the section switch's
     # `hidden = key !== name` (一节可见 semantics unchanged — the pin
     # moved, not deleted)
     assert 'key !== name' in page_source
-    # the 教我这个 act: click-through, no confirm (a low-risk request)
-    assert "教我这个" in page_source
+    # the 教我 act: click-through, no confirm (a low-risk request)——R-1R
+    # 随迁：钮词「教我这一句」（⑧ 8.2.3 线框定稿），库外类 .teach-me 不变
+    assert "教我这一句" in page_source
+    assert "教我这个" not in page_source
     assert 'button.className = "teach-me";' in page_source
     # the XSS face: the target name rides textContent, never markup
-    # (p-1 随迁：行工厂 teachRow 被 p-1 今日屏两块与目标清单共用，
+    # (p-1 随迁：行工厂 teachRow 被今日屏到期块与可以练的表达共用，
     # 名字经 b.textContent = name 落节点——语义不变，形状随迁)
     assert "b.textContent = name;" in page_source
 
@@ -479,15 +487,17 @@ def test_the_blocked_line_is_pinned_in_the_page(tmp_path: Path) -> None:
     # the line reads the diagnostics face and dies silently on failure
     assert "async function showBlockedNote()" in page_source
     assert "if (!panel || panel.error) return;" in page_source
-    # the two honest summaries: utility vs threshold, or the DENY codes
-    assert "本轮未教学：候选" in page_source
-    assert "效用" in page_source
-    assert "低于阈值" in page_source
-    assert "本轮未教学：门拦截" in page_source
+    # R-1R 随迁（⑧ 8.2.2 定稿）：blocked 行两形——分量不足（候选名
+    # todayName 派生 + 「原委在 学案 · 记录」链接）/ 被门规拦（中文
+    # 理由）；全键与浮点不再进信流
+    assert "这一轮没有递短笺——客厅想过「" in page_source
+    assert "今天它的分量还不够。（原委在 " in page_source
+    assert "这一轮没有递短笺——被门规拦下（" in page_source
+    assert "本轮未教学" not in page_source
+    assert "低于阈值" not in page_source
     # the gray small-text face and its inert rendering
     assert ".blockedline" in page_source
     assert 'line.className = "blockedline";' in page_source
-    assert "line.textContent = summary;" in page_source
 
 
 def test_the_blocked_line_has_data_after_a_blocked_turn(

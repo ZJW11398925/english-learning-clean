@@ -4,9 +4,10 @@ Four groups (the task book's own):
 
 1. the 今日 screen — a fourth page behind the parlor's brand bar (今日
    beside 仪表, its own way back and its own 仪表 link), entering is the
-   pull, and its three blocks (到期复习 / 最近在学 / 想练一把) re-serve
+   pull, and its three blocks (到期复习 / 最近在学 / 可以练的表达——R-1R
+   自「想练一把」改名并家族分组折叠) re-serve
    the learning readout and the teachable list — the due block filters to
-   DUE/OVERDUE and puts an inline 教我这个 on every row, every block
+   DUE/OVERDUE and puts an inline 教我这一句 on every row, every block
    answers through the state-banner family, and no daily activity is
    invented (the empty faces say so);
 2. ``GET /api/word`` — one read-only lookup over content.db's word list:
@@ -101,40 +102,48 @@ def test_the_page_has_the_today_screen(tmp_path: Path) -> None:
     assert 'id="study-today"' in index
     assert 'id="tab-study-today"' in index
     assert ">今日</button>" in index
-    assert 'id="today-refresh"' in index
+    # R-1R（⑧ 8.2.3/8.2.9）：刷新钮全退（进节即拉为唯一拉取点），页内
+    # h2 取消（页题只念一遍——节名槽承担「我在哪」）
+    assert 'id="today-refresh"' not in index
+    assert "<h2>" not in index
     for block in ("today-due", "today-recent", "today-practice"):
         assert f'id="{block}"' in index
-    assert "<h2>今日</h2>" in index
     app = index  # the served union covers app.js
     # entering the study space lands 今日 and the entry is the pull
     assert 'DEFAULT_SECTION = { study: "today", drawer: "memory" }' in app
     assert '"study-today": loadToday' in app
     assert 'showSection("study"' in app
     assert 'showSpace("parlor")' in app
-    # the pull rides the two read-only faces the 学习 view already reads
+    # the pull rides the two read-only faces the 记录 view already reads
     assert "fetchLearning()" in app
     assert "fetchTargets()" in app
 
 
 def test_the_today_blocks_pin_their_data_faces(tmp_path: Path) -> None:
     """The three blocks' data grammar, in the served source: the due
-    filter is exactly DUE/OVERDUE with an inline 教我这个 per row, the
-    empty faces are the honest sentences, every block answers through the
-    state-banner family (loading first, diagError with the re-pull), and
-    the practice block shares the 学习 view's row factory."""
+    filter is exactly DUE/OVERDUE with an inline 教我这一句 per row
+    (R-1R 钮词定稿), the empty faces are the honest sentences, every
+    block answers through the state-banner family (loading first,
+    diagError with the re-pull), and the practice block is the family-
+    grouped, folded and filterable 可以练的表达（⑧ 8.2.3）."""
 
     page = _page_of(tmp_path)
     # the due filter and its inline act
     assert 'it.review_state === "DUE" || it.review_state === "OVERDUE"' in page
-    assert '"现在没有到期的复习"' in page
+    assert '"今天没有到期的复习。"' in page
     assert "function teachRow(" in page
     assert 'button.className = "teach-me"' in page
-    # the recent block: the states count, the claims map, the empty face
-    assert "有学习状态的目标" in page
-    assert "还没有学习记录" in page
-    assert "最近 outcome" in page
-    # the practice block and the loading family
-    assert "暂无可练的目标" in page
+    # the recent block: the claims map, the empty face（R-1R：最近判分
+    # 中文 + 人话时间；计数归页首摘要行「在学」）
+    assert "最近：" in page
+    assert "还没有学习痕迹——聊起来才会积累。" in page
+    assert "有学习状态的目标" not in page
+    assert "最近 outcome" not in page
+    # the practice block: the family grouping + fold + filter, the empty
+    # face, and the loading family
+    assert "还没有可练的表达——语料还没有铺到这里。" in page
+    assert "找一个表达……" in page
+    assert "没有叫这个的表达。" in page
     assert "showLoading(TODAY_PANEL_IDS)" in page
     assert 'diagError(box, (schedule && schedule.error) || "空响应", retry)' in page
     # no invented daily activity: the screen names no challenge/任务 block
@@ -461,8 +470,9 @@ def test_word_card_is_registered_in_all_four_places() -> None:
 
     assert "word-card" in COMPONENTS
     # p-3 随迁：活注册表随 field/chip 入库生长两格（15 → 17）；
-    # R-1 随迁：壳导航三件再长三格（17 → 20）
-    assert len(COMPONENTS) == 20
+    # R-1 随迁：壳导航三件再长三格（17 → 20）；
+    # R-1R 随迁：折叠组 disclosure 再长一格（20 → 21）
+    assert len(COMPONENTS) == 21
     spec = (
         Path(__file__).resolve().parents[2]
         / "docs" / "FRONTEND_SPEC.md"
