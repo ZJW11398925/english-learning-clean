@@ -491,6 +491,14 @@ def test_the_privacy_face_speaks_忘掉(tmp_path: Path) -> None:
     assert "忘掉这项的痕迹" in page
     assert "按表达忘掉" in page
     assert "这版做不了——页面不知道伙伴的角色编号。" in page
+    # the two sub-copy sentences render contiguously — a source line-wrap
+    # inside a sentence shows up as an intra-sentence space (the review's
+    # L-1: 「信件 本身保留」); the contiguous pins refuse that form
+    assert (
+        "把这段通信的全部记录请出柜抽——信件、短笺痕迹与它留下的证据行，"
+        "一并忘掉。" in page
+    )
+    assert "忘掉某个表达的学习痕迹、学习状态与复习安排；信件本身保留。" in page
     # the two layers, each saying one thing (范围 / 不可逆)
     assert "请出柜抽，找不回来。确定继续？" in page
     assert "再确认一次：忘掉之后无法恢复。" in page
