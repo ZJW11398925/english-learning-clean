@@ -478,6 +478,23 @@ def test_w1_grammar_and_vocabulary_refusals_are_fail_closed(
             assert refused["error"], (body, refused)
 
 
+def test_w1_refuses_non_finite_weights_even_though_json_allows_them(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    # p-3 disposition (review F-2): json.dumps(float("nan")) emits the bare
+    # NaN literal and Python's json.loads accepts it back — the write face
+    # must refuse non-finite weights fail-closed, or one hand-crafted POST
+    # poisons the GET payload for every JSON.parse reader.
+    with _stack(tmp_path / "app.db", pilot_content_db) as stack:
+        for bad in (float("nan"), float("inf"), float("-inf")):
+            status, refused = stack.post(
+                "/api/goals",
+                _combination(modality_weights={"SPEAKING": bad}),
+            )
+            assert status == 400, (bad, refused)
+            assert "finite" in refused["error"], (bad, refused)
+
+
 # ---------------------------------------------------------------------------
 # 8./9. W2 — the single column, verbatim rebuild, grammar, conflict
 # ---------------------------------------------------------------------------
@@ -658,8 +675,13 @@ def test_the_goal_screen_is_wired_into_the_shell(
         assert 'id="goal-toggle"' in page
         assert 'id="goal-refresh"' in page
         # the remove-goal copy says what it really is: a version move,
-        # not an /api/delete-grade irreversible deletion
-        assert "从当前组合移除（历史版本保留）" in page
+        # not an /api/delete-grade irreversible deletion. The p-3
+        # disposition (review F-1) retired the false kept-history promise
+        # — the store overwrites the single portfolio row — so the honest
+        # copy is pinned present and both retired sentences pinned absent.
+        assert "从当前组合移除（保存后生效）" in page
+        assert "历史版本保留" not in page
+        assert "旧版本保留" not in page
         # both endpoint call sites and the save actions
         assert "/api/goals" in page
         assert "/api/teaching_frequency" in page

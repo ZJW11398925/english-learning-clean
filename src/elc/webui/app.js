@@ -653,8 +653,9 @@ document.getElementById("del-conversation").addEventListener("click", () =>
 
 // p-3: the 目标 screen — the long-term direction, read from /api/goals and
 // written back through the store's own version discipline: the full new
-// combination is one upsert (every save a new version, history kept), the
-// teaching frequency is a single-column write, and a CONFLICT (another
+// combination is one upsert (every save moves the version; the previous
+// content is replaced, not kept — the p-3 disposition's F-1 honesty fix),
+// the teaching frequency is a single-column write, and a CONFLICT (another
 // writer won) says so with a 重新读取 action. The pickers build themselves
 // from the taxonomy the server serves — the words are the server's, never a
 // client copy. Every user string rides textContent.
@@ -767,7 +768,7 @@ function renderGoalEditor() {
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "btn btn--faint";
-    remove.textContent = "从当前组合移除（历史版本保留）";
+    remove.textContent = "从当前组合移除（保存后生效）";
     remove.addEventListener("click", () => {
       editor.goals.splice(editor.goals.indexOf(goal), 1);
       renderGoalEditor();

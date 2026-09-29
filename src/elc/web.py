@@ -280,6 +280,7 @@ leg answers the honest refusal shape instead of pretending to save.
 from __future__ import annotations
 
 import json
+import math
 import queue
 import sqlite3
 import sys
@@ -1445,9 +1446,18 @@ def _goal_request_parts(
                 "modality_weights keys must be one of"
                 f" {'/'.join(_GOAL_MODALITY_WORDS)}; got {key!r}"
             )
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
+        # p-3 disposition (review F-2): Python's json accepts bare NaN /
+        # Infinity on both ends — a weight that slipped through would ride
+        # the store's own json.dumps into the durable row and poison the
+        # GET payload for every JSON.parse reader — so only finite numbers.
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+        ):
             return _reject(
-                f"modality_weights[{key}] needs a number; got {value!r}"
+                f"modality_weights[{key}] needs a finite number;"
+                f" got {value!r}"
             )
         weights[key] = value
     lists: dict[str, list[str]] = {}
