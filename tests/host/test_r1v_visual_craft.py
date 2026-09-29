@@ -397,3 +397,45 @@ def test_the_marginalia_date_is_real_client_data() -> None:
     assert "installIcons();" in app
     # the brand-mark install order pin's neighborhood stays intact
     assert app.index("installBrandMarks();") < app.index("loadHistory();")
+
+
+# ---------------------------------------------------------------------------
+# 6. the walkthrough repairs and their craft kin (the disposition knife:
+#    the review's F-2 — registered in spec 9.7-14 but unpinned)
+
+
+def test_the_walkthrough_repairs_and_craft_kin_are_pinned() -> None:
+    """9.7-14②③④ + the same-family craft forms the review found without
+    regression cover: the probe-key truncation (the pipe-five-segment
+    engineering key never leaks into the letter flow), the short-flow
+    scroll discipline, the empty-hall seat, the desktop dock collapse,
+    the chip hover, the teach-me re-cut."""
+
+    app = _text("app.js")
+    # ② spokenOf reads only the first segment of a probe key
+    assert 'const text = String(keyOrId).split("|")[0];' in app
+    js = _text("components.js")
+    # ③ the scroll keeps the last line clear of the composer, clamped
+    # to the document bottom (long flows scroll exactly as before)
+    assert "const clearance = 150;" in js
+    assert (
+        "window.scrollTo(0, Math.max(0, Math.min(target,"
+        "\n    document.body.scrollHeight - window.innerHeight)));"
+        in js
+    )
+    css = _text("components.css")
+    # ④ the empty-hall line takes its seat below the brand bar
+    assert ".sysline.emptyhall { margin-top: var(--sp-6); }" in css
+    # the desktop dock collapses onto the paper (⑨-6, component side)
+    assert (
+        ".navdock[aria-label] { justify-content: center;"
+        " gap: var(--sp-7); }" in css
+    )
+    assert (
+        ".navdock-item[data-space] { flex: 0 1 auto; min-width: 132px; }"
+        in css
+    )
+    # the chip's hover answer and the teach-me re-cut
+    assert ".chip:not(.chip--on):hover { border-color: var(--ink-soft);" in css
+    assert ".teach-me { font-family: var(--f-sans); font-size: 12px;" in css
+    assert ".teach-me:hover { color: var(--pencil-deep); }" in css

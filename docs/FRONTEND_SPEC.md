@@ -958,6 +958,12 @@ app.js:568-657；走查 07）。
 
 - 行高：`--lh-body` 1.55 / `--lh-letter` 1.75 / `--lh-ui` 1.7。
 - 字距：`--ls-title` 0.14em / `--ls-caps` 0.18em / `--ls-formhead` 0.3em。
+- **预留诚实注（处置刀收口评审 F-1）**：本节 token 已接线的只有
+  `--fs-micro`（边注日期）与 `--lh-letter`（信笺 `.say`）——其余
+  （衬线五档 / `--fs-ui` / `--lh-body` / `--lh-ui` / 三个字距）尚为
+  标度基准：现役字号、行高、字距由 ②「祖辈字面冻结存量」的既有规则
+  承担（如门厅 h1 的 27px 是祖辈字面，非 `--fs-display` 接线）；新写
+  规则起用本表，不回迁存量。`--fs-title` 行内（预留）体例同此。
 - mono 细节：数字一律 tabular-nums（摘要行 `.sumnum`、仪表行 #9）；
   日期 / 指纹 / 版本号 / 原始 id 走 mono micro（`.rawtag`）。
 - 字重：衬线正文 400，卡题与词头 600–700，sans 小标 500；反白仅
@@ -1077,3 +1083,8 @@ app.js:568-657；走查 07）。
     键）；③`scrollBottom` 短通信不追底（旧实现把第一封信顶进
     sticky 品牌条背后；长通信追底行为不变）；④空厅整行下移
     `--sp-6` 落座。
+15. **`.ob .formhead` 步题界尺小标**（处置刀补登记，评审 F-3——
+    钉先落 `test_r1v_visual_craft.py::test_the_small_craft_touches_land`
+    而登记缺位）：门厅步题由居中改为 flex 两侧发丝线（线随字伸缩，
+    screens.css）；③ 库外 `.teach-me` 行的「铅笔行链接」定裁以
+    第 14① 条为准。
