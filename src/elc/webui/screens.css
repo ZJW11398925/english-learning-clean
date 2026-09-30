@@ -179,6 +179,8 @@ pre { font-family: var(--f-mono); font-size: 11px; line-height: 1.7;
   animation: ink-fade var(--dur-1) var(--ease-enter) both;
   animation-delay: calc(var(--i, 0) * 40ms); }
 
+/* 回执用加速曲线入场是刻意的：100ms 档要的是「落下即止」的稳，
+   不是登场的戏——减速入场留给信纸落桌/短笺递出这些真主角。 */
 #space-parlor :is(.typing, .sysline, .errline, .busystrip,
                   .resultstrip) {
   transition: opacity var(--dur-micro) var(--ease-exit),
