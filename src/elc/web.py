@@ -374,7 +374,7 @@ _WORKER_WAIT_SECONDS = 60.0
 _STATUS_CN: dict[str, str] = {
     "AUTHORIZED": "已授权",
     "OPENING": "正在打开",
-    "AWAITING_USER": "等待您回应",
+    "AWAITING_USER": "等你回应",
     "EVALUATING": "正在评判",
     "DECIDING_NEXT_ACTION": "正在决定下一步",
     "COMPLETING": "正在收尾",

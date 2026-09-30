@@ -456,7 +456,7 @@ def test_the_online_chain_opens_exactly_one_moment(
                     "anyway — Signal that you are returning"
                     " to the main topic after a digression."
                 ),
-                "status_cn": "等待您回应",
+                "status_cn": "等你回应",
                 "kind_cn": "资源练习",
             }
         ]
@@ -500,7 +500,7 @@ def test_a_moment_card_carries_the_human_face(
         (moment,) = data["teaching_moments"]
         assert moment["title"].startswith("anyway — ")
         assert "Signal that you are returning" in moment["title"]
-        assert moment["status_cn"] == "等待您回应"
+        assert moment["status_cn"] == "等你回应"
         assert moment["kind_cn"] == "资源练习"
         assert moment["focus_target_id"] == EV_TARGET
         assert moment["lifecycle_state"] == "AWAITING_USER"
@@ -568,7 +568,7 @@ def test_an_unreadable_target_falls_back_to_the_raw_id(
         (moment,) = data["teaching_moments"]
         assert moment["title"] == EV_TARGET
         assert moment["focus_target_id"] == EV_TARGET
-        assert moment["status_cn"] == "等待您回应"
+        assert moment["status_cn"] == "等你回应"
 
 
 def test_the_page_renders_the_human_card_face(tmp_path: Path) -> None:
@@ -1683,7 +1683,7 @@ def test_a_page_reload_recovers_the_open_teaching_card(
         # is the target's spoken name out of the id (the ro narrowing); the
         # hint-ladder sentence stays the turn card's own title.
         assert moment["title"] == "anyway"
-        assert moment["status_cn"] == "等待您回应"
+        assert moment["status_cn"] == "等你回应"
         assert moment["kind_cn"] == "资源练习"
 
         status, data = stack.post(
@@ -1827,7 +1827,7 @@ def test_during_a_slow_generation_the_current_face_stays_unblocked(
         assert status == 200
         assert payload["moment"] is not None
         assert payload["moment"]["lifecycle_state"] == "AWAITING_USER"
-        assert payload["moment"]["status_cn"] == "等待您回应"
+        assert payload["moment"]["status_cn"] == "等你回应"
 
 
 def test_the_current_face_answers_the_same_card_over_the_ro_path(
@@ -1859,7 +1859,7 @@ def test_the_current_face_answers_the_same_card_over_the_ro_path(
         assert moment["kind"] == "RESOURCE_PRACTICE"
         assert moment["title"] == "anyway"
         assert moment["title"] != EV_TARGET
-        assert moment["status_cn"] == "等待您回应"
+        assert moment["status_cn"] == "等你回应"
         assert moment["kind_cn"] == "资源练习"
 
     # the ro face's own failure posture, unit-level: a database that does

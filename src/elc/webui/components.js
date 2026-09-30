@@ -264,8 +264,8 @@ function disarmMomentCard(card) {
 }
 
 // 批注生命周期词的界面读法（rd-2：作答→回应族；AWAITING_USER → 等你
-// 回应；未列出的词不伪装翻译——原样小字呈现。服务端 status_cn 词面为
-// 「等待您回应」，web.py 冻结——回应结果行用本客户端读法，登记披露）。
+// 回应；未列出的词不伪装翻译——原样小字呈现。服务端 status_cn 词面
+// 已随 rd-2 处置刀同改「等你回应」，语气宪法第 6 条称你不称您全站归一）。
 const LIFECYCLE_CN = {
   AWAITING_USER: "等你回应",
 };
