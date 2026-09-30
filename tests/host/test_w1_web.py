@@ -1380,6 +1380,12 @@ def test_the_two_faces_default_to_their_own_transcripts(
             "offline-model",
             "--api-key-env",
             "W1_UNSET_KEY_VAR",
+            # W-7: the CLI now probes the port before open_host — a bare
+            # default (8760) collides with a live dogfood instance and the
+            # start is (correctly) refused; every fake-host start takes a
+            # free port instead.
+            "--port",
+            str(_free_port()),
         ]
     )
     assert (code, err) == (0, "")
@@ -1399,6 +1405,8 @@ def test_the_two_faces_default_to_their_own_transcripts(
             "W1_UNSET_KEY_VAR",
             "--conversation",
             "explicit-conv",
+            "--port",
+            str(_free_port()),
         ]
     )
     assert (code, err) == (0, "")
@@ -1433,6 +1441,8 @@ def test_the_cli_web_branch_answers_web_open_error_with_a_sentence(
             "offline-model",
             "--api-key-env",
             "W1_UNSET_KEY_VAR",
+            "--port",
+            str(_free_port()),
         ],
         stderr=err,
     )
@@ -1629,6 +1639,8 @@ def test_the_web_command_prints_a_serving_banner(
             "offline-model",
             "--api-key-env",
             "W1_UNSET_KEY_VAR",
+            "--port",
+            str(_free_port()),
         ],
         stdout=out3,
         stderr=err3,
