@@ -120,14 +120,16 @@ class _FaceHost:
 
 def test_the_page_has_the_learning_view(tmp_path: Path) -> None:
     page_source = _page_of(tmp_path)
-    # the 学习 block: R-1 随迁——常挂学案·进步，setlinks 的 data-block
+    # the 学习 block: R-1 随迁——常挂温故·档案，setlinks 的 data-block
     # 链接退役（缺位钉；p-3 先例）；R-1R 随迁（⑧ 8.2.5）：「可教目标」
-    # 52 行从记录页移除（唯一居所 = 今日 · 可以练的表达，缺位钉），
-    # 日程/目标/证据三面原值迁入页底「原始读数」折叠区（id 保留），
-    # 刷新钮全退（进节即拉，learning-refresh 缺位钉）
+    # 52 行从记录页移除（唯一居所迁档案 · 可以练的表达，缺位钉），
+    # 日程/目标/证据三面原值迁入「计划明细 / 原始读数」折叠区（id 保留），
+    # 刷新钮全退（进节即拉，learning-refresh 缺位钉）；rd-3 随迁
+    # （9.11-22）：节容器 set-learning 随诊断移除退役（缺位钉），三面
+    # 原值各归折叠
     assert 'data-block="learning"' not in page_source
     assert ">学习</button>" not in page_source
-    assert 'id="set-learning"' in page_source
+    assert 'id="set-learning"' not in page_source
     # the three raw panels keep their ids inside the 原始读数 fold; the
     # 52-row target list and the refresh button are gone
     for element in (

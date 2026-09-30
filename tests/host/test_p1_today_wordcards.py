@@ -82,14 +82,29 @@ def _page_of(tmp_path: Path) -> str:
         return _page_source(stack)
 
 
+def _fn_body(source: str, name: str) -> str:
+    """One JS function's body from the served union — cut at the next
+    ``function``/``async function`` head, whichever comes first."""
+
+    after = source.split(f"function {name}(", 1)[1]
+    cut = len(after)
+    for marker in ("\nfunction ", "\nasync function "):
+        index = after.find(marker)
+        if index != -1:
+            cut = min(cut, index)
+    return after[:cut]
+
+
 # ---------------------------------------------------------------------------
 # 1. the 今日 screen
 
 
 def test_the_page_has_the_today_screen(tmp_path: Path) -> None:
-    """The 今日 face: R-1 随迁——今日屏迁入**学案空间 · 今日节**（旧屏
-    id 与三枚 toggle/返回钮退役，缺位钉）；进空间落默认节（学案=今日），
-    进节即拉；三块与刷新读数原 id 保留。"""
+    """The 今日 face: R-1 随迁——今日屏迁入**温故空间 · 今日节**（旧屏
+    id 与三枚 toggle/返回钮退役，缺位钉）；进空间落默认节（温故=今日），
+    进节即拉；rd-3 随迁（9.11-22）：默认层恰两块（今天的行动 / 你的
+    成长），旧三块 id 中 today-due / today-recent 随收拢退役（缺位钉），
+    today-practice 迁档案（id 保留）。"""
 
     index = _page_of(tmp_path)
     # the old screen and its three toggles/way back are gone (absence
@@ -106,49 +121,75 @@ def test_the_page_has_the_today_screen(tmp_path: Path) -> None:
     # h2 取消（页题只念一遍——节名槽承担「我在哪」）
     assert 'id="today-refresh"' not in index
     assert "<h2>" not in index
-    for block in ("today-due", "today-recent", "today-practice"):
+    # rd-3 随迁（⑧ 8.2.3 修订版）：两块 = today-action / growth-summary；
+    # 旧三块里 today-due / today-recent 退役、today-practice 迁档案
+    for block in ("today-action", "growth-summary"):
         assert f'id="{block}"' in index
+    assert 'id="today-due"' not in index
+    assert 'id="today-recent"' not in index
+    assert 'id="today-practice"' in index
+    assert ">今天的行动</h3>" in index
+    assert ">你的成长</h3>" in index
     app = index  # the served union covers app.js
     # entering the study space lands 今日 and the entry is the pull
     assert 'DEFAULT_SECTION = { study: "today", drawer: "memory" }' in app
     assert '"study-today": loadToday' in app
     assert 'showSection("study"' in app
     assert 'showSpace("parlor")' in app
-    # the pull rides the two read-only faces the 记录 view already reads
+    # the pull rides the read-only learning face (rd-3: 今日不再读
+    # targets——可以练的表达迁档案，由档案节自己拉)
     assert "fetchLearning()" in app
-    assert "fetchTargets()" in app
+    assert "fetchCurrentMoment()" in app
 
 
 def test_the_today_blocks_pin_their_data_faces(tmp_path: Path) -> None:
-    """The three blocks' data grammar, in the served source: the due
+    """The two blocks' data grammar, in the served source: the due
     filter is exactly DUE/OVERDUE with an inline 教我这一句 per row
-    (R-1R 钮词定稿), the empty faces are the honest sentences, every
-    block answers through the state-banner family (loading first,
-    diagError with the re-pull), and the practice block is the family-
-    grouped, folded and filterable 可以练的表达（⑧ 8.2.3）."""
+    (R-1R 钮词定稿), the invitation empty face and the three verbs are
+    the honest sentences, every block answers through the state-banner
+    family (loading first, diagError with the re-pull), and the growth
+    block is the three-verdict word-level conclusion (rd-3，⑧ 8.2.3
+    修订版)."""
 
     page = _page_of(tmp_path)
     # the due filter and its inline act
     assert 'it.review_state === "DUE" || it.review_state === "OVERDUE"' in page
-    assert '"今天没有到期的复习。"' in page
     assert "function teachRow(" in page
     assert 'button.className = "teach-me"' in page
-    # the recent block: the claims map, the empty face（R-1R：最近判分
-    # 中文 + 人话时间；计数归页首摘要行「在学」）
-    assert "最近：" in page
-    assert "还没有学习痕迹——聊起来才会积累。" in page
-    assert "有学习状态的目标" not in page
-    assert "最近 outcome" not in page
-    # the practice block: the family grouping + fold + filter, the empty
-    # face, and the loading family
-    assert "还没有可练的表达——语料还没有铺到这里。" in page
-    assert "找一个表达……" in page
-    assert "没有叫这个的表达。" in page
+    # the action block: one verb button = the first-priority act; the
+    # N=0 invitation says so and offers the parlor
+    assert "今天不用复习，要不要聊一句？" in page
+    assert '"去聊一句"' in page
+    assert '"去回应"' in page
+    assert '"开始复习"' in page
+    assert "有一张批注等着你回应。" in page
+    assert "今天没有到期的复习。" not in page
+    # the growth block: three word-level verdicts, at most three lines,
+    # no numbers anywhere — the pull-revelation empty card offers the
+    # path in
+    assert "能做到" in page
+    assert "还在练" in page
+    assert "暂时不能" in page
+    assert "学过一次之后，这里会出现你掌握的技能。" in page
+    assert "先去客厅聊一句，批注会自己来找你。" in page
+    assert "const GROWTH_LINES = 3;" in page
     assert "showLoading(TODAY_PANEL_IDS)" in page
     assert 'diagError(box, (schedule && schedule.error) || "空响应", retry)' in page
     # no invented daily activity: the screen names no challenge/任务 block
     assert "每日挑战" not in page
     assert "每日活动" not in page
+    # rd-3 缺位钉：温故面四个新渲染函数体内无内部数值面（scoreNode/
+    # confidence/urgency）——抽屉记忆页的「把握」是既有面，本刀不触碰
+    # （豁免登记 9.11-22：内部数值永不面向温故用户）
+    for fn in ("renderGrowth", "renderTodayAction", "renderArchive",
+               "renderPlanLine"):
+        body = _fn_body(page, fn)
+        assert "scoreNode" not in body, fn
+        assert "confidence" not in body, fn
+        assert "urgency" not in body, fn
+    # rd-3 缺位钉：旧摘要行不回潮
+    assert 'id="today-summary"' not in page
+    assert '"今天：到期"' not in page
 
 
 def test_the_today_faces_answer_the_durable_rows(

@@ -143,8 +143,10 @@ def test_the_page_has_the_three_screens(tmp_path: Path) -> None:
     """The R-1 re-pin of the navigation: 门厅 + 三空间 — the first-visit
     cover, the parlor, the study and the drawer — plain JS show/hide, no
     router, no tab bar; the dock (#18) is the only way between spaces
-    (the old toggles and ways back retired — absence pins), and the
-    study holds the five why-panels and the observations readout."""
+    (the old toggles and ways back retired — absence pins). rd-3 随迁
+    （9.11-22 归档读法）：诊断五板移出用户面——页面源不再引用
+    /api/diagnostics（缺位钉）；端点本身与其数据面钉保留在本文件第 3
+    节的 API 层（直打端点），web.py 零 diff。"""
 
     page = _page_of(tmp_path)
     # the vestibule and the three spaces (the form laws' negatives — no
@@ -165,14 +167,13 @@ def test_the_page_has_the_three_screens(tmp_path: Path) -> None:
     assert "function showSpace(" in page
     assert "spaces[key].hidden = key !== name;" in page
     assert 'id="navdock"' in page
-    # the study holds the five why-panels（R-1R：刷新钮全退——进节即拉是
-    # 唯一拉取点，diag-refresh 缺位钉）
+    # rd-3 归档读法：五板 id、诊断调用与拉取函数全部退役（缺位钉）；
+    # 刷新钮缺位钉照旧
     for panel in _DIAG_PANEL_IDS:
-        assert f'id="{panel}"' in page
+        assert f'id="{panel}"' not in page, panel
     assert 'id="diag-refresh"' not in page
-    # the diagnostics pull rides the read-only endpoint
-    assert '"/api/diagnostics"' in page
-    assert "loadDiagnostics" in page
+    assert '"/api/diagnostics"' not in page
+    assert "loadDiagnostics" not in page
 
 
 # ---------------------------------------------------------------------------

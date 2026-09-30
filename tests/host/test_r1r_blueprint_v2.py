@@ -72,35 +72,40 @@ def test_no_page_internal_h2_and_the_guide_sentences_open_the_sections(
     index = _text("index.html")
     assert "<h2>" not in index
     assert "<h2 " not in index
-    # the guide sentences (⑧ 8.2 各页定稿，逐字)
+    # the guide sentences (⑧ 8.2 各页定稿，逐字；rd-3 随迁：档案节
+    # 引导句接任——旧账页句退役)
     assert "客厅在今天的样子" not in index  # 今日的旧引导句退役（摘要行接任）
     assert (
         "你想把英语用在哪里——这是客厅记着的长期方向。" in index
     )
     assert "每次保存都前移版本；上一版找不回来。" in index
-    assert "客厅的账页——只读，如实。" in index
+    assert "批注留过的痕迹与接下来的计划——要的时候来翻。" in index
+    assert "客厅的账页——只读，如实。" not in index
     assert "客厅记住的事都在这里——一条条如实。" in index
     assert "请客厅忘掉一些事——走出去就找不回来。" in index
     assert "设置面还没有铺开。" in index
 
 
 def test_the_section_tabs_renamed_display_only(tmp_path: Path) -> None:
-    """⑧ 8.1.2: the study tabs read 今日 / 方向 / 记录 — the display names
-    moved, the internal ids and keys did not (data-section, panel ids,
-    DEFAULT_SECTION, SECTION_BODIES keys all survive)."""
+    """⑧ 8.1.2 + rd-3（9.11-22）: the study tabs read 今日 / 方向 / 档案
+    （记录→档案，收藏档语义）— the display names moved, the internal ids
+    and keys did not (data-section, panel ids, DEFAULT_SECTION,
+    SECTION_BODIES keys all survive)."""
 
     index = _text("index.html")
     assert 'data-section="goal"' in index
     assert 'data-section="progress"' in index
     assert ">方向</button>" in index
-    assert ">记录</button>" in index
+    assert ">档案</button>" in index
+    assert ">记录</button>" not in index
     assert ">目标</button>" not in index
     assert ">进步</button>" not in index
     assert 'id="study-goal"' in index
     assert 'id="study-progress"' in index
     app = _text("app.js")
     assert 'goal: "方向"' in app
-    assert 'progress: "记录"' in app
+    assert 'progress: "档案"' in app
+    assert 'progress: "记录"' not in app
     assert 'goal: "目标"' not in app
     assert 'progress: "进步"' not in app
     assert 'const DEFAULT_SECTION = { study: "today", drawer: "memory" };' \
@@ -279,8 +284,10 @@ def test_the_translation_tables_carry_the_blueprint_words() -> None:
 
     app = _text("app.js")
     for word in (
-        # rd-2 随迁：判词豪放档（答得漂亮 / 答了一半）+ 批注家族
-        # （TEACHING_OPEN「留了批注」）
+        # rd-2 随迁：判词豪放档（答得漂亮 / 答了一半）；rd-3 随迁
+        # （9.11-22）：批注动作四词（ACTION_CN）与门规理由二十码
+        # （GATE_REASON_CN）随诊断五板退役——词面归服务端与 web.py
+        # （前端缺位钉移到 test_rd3_information_architecture.py）
         'SUCCESS: "答得漂亮"',
         'PARTIAL: "答了一半"',
         'FAILURE: "没答中"',
@@ -297,37 +304,12 @@ def test_the_translation_tables_carry_the_blueprint_words() -> None:
         'LISTENING: "听力"',
         'READING: "阅读"',
         'WRITING: "写作"',
-        'TEACHING_OPEN: "留了批注"',
-        'TEACHING_HINT: "给了提示"',
-        'TEACHING_REVEAL: "摆了答案"',
-        'TEACHING_EXPLANATION: "给了讲解"',
     ):
         assert word in app, word
     # the gate reason map is the full set (gate.py's DENY_PRECEDENCE
-    # seventeen + the D-5R assembly three), unknown codes raw
-    for code in (
-        "SAFETY_PRIVACY_BLOCK",
-        "ACTION_CANCELLED",
-        "ACTION_SUPERSEDED",
-        "AUTHORIZATION_INVALID",
-        "TARGET_INVALID",
-        "CONTENT_INVALID",
-        "TARGET_SUPPRESSED",
-        "USER_INTENT_BLOCK",
-        "AUTO_TEACH_DISABLED",
-        "TEACHING_LOCK_CONFLICT",
-        "TEACHING_LOCK_INVALID",
-        "MOMENT_NOT_CONTINUABLE",
-        "HARD_PROTECTED_FLOW",
-        "AUTO_SESSION_BUDGET_EXHAUSTED",
-        "HARD_COOLDOWN_ACTIVE",
-        "HARD_ATTEMPT_LIMIT",
-        "HARD_TEACHING_TURN_LIMIT",
-        "AUTO_SESSION_BUDGET_UNREADABLE",
-        "TARGET_NOT_EXECUTABLY_VERIFIED",
-        "PROVENANCE_FACE_MISSING",
-    ):
-        assert f"{code}:" in app, code
+    # seventeen + the D-5R assembly three), unknown codes raw —
+    # rd-3 随迁：前端 GATE_REASON_CN 随诊断面退役，二十码的缺位由
+    # test_rd3_information_architecture.py 钉住（服务端词面不动）
 
 
 def test_the_human_time_and_the_fingerprint_helpers() -> None:
@@ -528,25 +510,36 @@ def test_the_privacy_face_speaks_忘掉(tmp_path: Path) -> None:
 
 
 def test_the_record_page_is_account_why_raw(tmp_path: Path) -> None:
-    """⑧ 8.2.5: the book (在学的表达 — schedule ∪ claims merged
-    client-side by target_id: 表达 / 痕迹数 / 最近判分 / 复习), the five
-    whys in Chinese, and the bottom fold 原始读数（给排查用）holding the
-    raw panels, the diagnostics payload and the observations."""
+    """⑧ 8.2.5（rd-3 修订版）: the 档案 face — the raw fold 原始读数
+    （给排查用）holding the evidence panel and the observations (the
+    lazy pull survives), the account table and the schedule/goals
+    原值 demoted into their own folds, and the five whys gone from the
+    user face entirely (rd-3 移走清单，9.11-22)."""
 
     page = _page_of(tmp_path)
-    assert ">在学的表达</h3>" in page
-    assert ">为什么</h3>" in page
-    assert ">为什么留了这张批注</h3>" in page
-    assert ">为什么没有递</h3>" in page
-    assert ">判分有什么变化</h3>" in page
-    assert ">你收到了哪些帮助</h3>" in page
-    assert ">有没有从简处理的轮次</h3>" in page
+    # rd-3 缺位钉：诊断五问与「为什么 · 原值」用户面零渲染
+    assert ">为什么留了这张批注</h3>" not in page
+    assert ">为什么没有递</h3>" not in page
+    assert ">判分有什么变化</h3>" not in page
+    assert ">你收到了哪些帮助</h3>" not in page
+    assert ">有没有从简处理的轮次</h3>" not in page
+    assert ">为什么</h3>" not in page
+    assert ">为什么 · 原值</h3>" not in page
     # the raw fold: name, the adopted content, the lazy observations pull
     assert 'name: "原始读数（给排查用）"' in page
     assert "onFirstExpand: () => loadObservations()" in page
     assert 'id="raw-readings"' in page
-    assert 'id="diag-raw"' in page
     assert 'id="obsout"' in page
+    # rd-3：账表与排程/目标降入各自的折叠（收养法同 raw-readings）
+    assert 'name: "计划明细（复习排程 · 目标）"' in page
+    assert 'name: "按表达看：在学的表达"' in page
+    assert 'id="plan-detail"' in page
+    assert 'id="book-detail"' in page
+    assert ">在学的表达</h3>" in page
+    assert ">复习日程</h3>" in page
+    assert ">学习目标</h3>" in page
+    assert ">痕迹</h3>" in page
+    assert ">计划</h3>" in page
     # the account table's merge and its columns
     app = _text("app.js")
     assert "function renderRecordBook(" in app
@@ -559,14 +552,16 @@ def test_the_record_page_is_account_why_raw(tmp_path: Path) -> None:
 
 
 def test_the_summary_rows_carry_mono_numbers(tmp_path: Path) -> None:
-    """⑧ 8.2.3/8.2.6: the page-head summary rows (今日 / 记忆), one
-    screen-level line with mono digits."""
+    """⑧ 8.2.6 + rd-3 随迁: the page-head summary row lives only on the
+    drawer's 记忆 face now — the 今日 summary row retired with the
+    移走清单（计数是副产品，9.11-22）."""
 
     index = _text("index.html")
-    assert 'id="today-summary"' in index
+    assert 'id="today-summary"' not in index
     assert 'id="mem-summary"' in index
     app = _text("app.js")
-    assert '["今天：到期", due]' in app
+    assert '"今天：到期"' not in app
+    assert 'renderSummaryLine("today-summary"' not in app
     assert '["记住：关系"' in app
     assert 'className = "sumnum"' in app
     screens = _text("screens.css")

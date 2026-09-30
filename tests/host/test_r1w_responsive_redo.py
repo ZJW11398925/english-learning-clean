@@ -173,29 +173,31 @@ def test_the_wide_tier_extends_the_desk_not_the_line_length() -> None:
 
 
 def test_the_homogeneous_panels_pair_up() -> None:
-    """The per-page wrappers: today's due + recent, the record page's
-    five whys, memory's five panels and settings' two blocks all ride
-    .panel-grid — while the record page's 账表 stays full-width (a
-    four-field row needs the width; the walkthrough killed the hard
-    账|为什么 split). Id arithmetic unchanged (the JS reads the same
-    panel ids)."""
+    """The per-page wrappers: today's 行动 + 成长 (rd-3 重排——同位网格
+    从诊断五板挪到今日两块，总数不变), memory's five panels and
+    settings' two blocks all ride .panel-grid. rd-3 随迁（9.11-22）：
+    the five whys' grid retired with the diagnostics face (缺位钉);
+    the archive face is a vertical flow (搜索/时间线/折叠不配网格).
+    Id arithmetic unchanged (the JS reads the same panel ids)."""
 
     index = _text("index.html")
-    assert index.count('class="panel-grid"') == 4
-    # the account table opens the record page unpaired; the five whys
-    # ride the grid inside #set-diagnostics, below the grouphead
-    assert "<h3>在学的表达</h3>" in index
+    # 旧 4（今日 + 诊断五板 + 记忆 + 设置）→ 3：诊断五板的网格随移走
+    # 清单退役，今日两块的网格原本就在（rd-3 重排不变总数减一）
+    assert index.count('class="panel-grid"') == 3
+    # the today blocks pair up (行动 + 成长)
+    today = index.split('id="study-today"', 1)[1].split(
+        'id="study-goal"', 1)[0]
+    assert 'class="panel-grid">' in today
+    for panel in ("today-action", "growth-summary"):
+        assert f'id="{panel}"' in today, panel
+    assert "<h3>今天的行动</h3>" in index
+    assert "<h3>你的成长</h3>" in index
     assert 'class="ledger-cols"' not in index
-    whys = index.split('id="set-diagnostics"', 1)[1].split(
-        'id="set-learning"', 1)[0]
-    assert 'class="panel-grid">' in whys
+    # rd-3 缺位钉：诊断节容器与五板不回潮
+    assert 'id="set-diagnostics"' not in index
     for panel in ("why-teach", "why-not-teach", "why-evidence",
                   "why-support", "why-degraded"):
-        assert f'id="{panel}"' in whys, panel
-    # the grouphead rides above the grid, exactly once — the delivery
-    # duplicated it into the first grid cell (review MEDIUM-1: a doubled
-    # hairline row on tablets, a stolen grid cell at ≥900)
-    assert whys.count('class="grouphead">为什么</h3>') == 1
+        assert f'id="{panel}"' not in index, panel
     assert "study-progress" in index  # the panel itself survives
 
 
@@ -412,7 +414,8 @@ def test_the_frozen_copy_outside_the_cover_is_verbatim(
     page = _page_of(tmp_path)
     for sentence in (
         "你想把英语用在哪里——这是客厅记着的长期方向。",
-        "客厅的账页——只读，如实。",
+        # rd-3 随迁（9.11-22）：档案节引导句接任——旧账页句退役
+        "批注留过的痕迹与接下来的计划——要的时候来翻。",
         "请客厅忘掉一些事——走出去就找不回来。",
         "客厅记住的事都在这里——一条条如实。",
         "设置面还没有铺开。",

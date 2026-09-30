@@ -151,13 +151,15 @@ def test_the_honest_faces_split_into_drawer_and_progress(
     assert 'id="screen-set"' not in page
     # R-1R 随迁（⑧ 8.2.8 定稿）：端点诚实句的新词形
     assert "页面不读取，也不显示" in page
-    # the two always-mounted read blocks and the 记录 page's group
+    # the two always-mounted read blocks and the 档案 page's group
     # headings（R-1R 随迁：证据/为什么/观察 → 在学的表达/为什么/底，
-    # 「底」由 #21 折叠组「原始读数（给排查用）」承担）
-    assert 'id="set-learning"' in page
-    assert 'id="set-diagnostics"' in page
+    # 「底」由 #21 折叠组「原始读数（给排查用）」承担；rd-3 随迁
+    # （9.11-22 移走清单）：节容器 set-learning/set-diagnostics 随诊断
+    # 五板退役（缺位钉），「为什么」段移出用户面，显示名 记录→档案）
+    assert 'id="set-learning"' not in page
+    assert 'id="set-diagnostics"' not in page
     assert ">在学的表达</h3>" in page
-    assert ">为什么</h3>" in page
+    assert ">为什么</h3>" not in page
     assert "原始读数（给排查用）" in page
     assert ">证据</h3>" not in page
     assert ">观察</h3>" not in page

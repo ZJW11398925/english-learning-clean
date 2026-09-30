@@ -74,21 +74,30 @@ def test_the_shell_is_a_vestibule_and_three_spaces(tmp_path: Path) -> None:
                  "screen-set"):
         assert f'id="{gone}"' not in page, gone
     for panel in (
-        "today-due", "today-recent", "today-practice",
+        "today-action", "growth-summary", "today-practice",
         "goal-editor", "goal-weights", "goal-assessment",
         "goal-register", "goal-frequency", "goal-taxref", "goal-result",
-        "record-book", "raw-readings",
+        "record-book", "raw-readings", "obsout", "obs-status",
         "learn-schedule", "learn-goals", "learn-evidence",
-        "why-teach", "why-not-teach", "why-evidence", "why-support",
-        "why-degraded", "obsout", "diag-raw",
+        "archive-board", "plan-line", "plan-slot", "plan-detail",
+        "book-slot", "book-detail",
         "mem-relationship", "mem-episode", "mem-states", "mem-evidence",
         "mem-tombstones", "del-targets", "del-result",
-        "set-learning", "set-diagnostics", "set-memory", "set-privacy",
+        "set-memory", "set-privacy",
     ):
         assert f'id="{panel}"' in page, panel
-    # R-1R 退役（⑧ 8.2.4 读写合一 / 8.2.5 可教目标唯一居所在今日 /
-    # 进节即拉取代刷新钮 / 观察读数第一次展开才拉）：三个面板 id 与
-    # 六个拉取钮 id 的缺位钉
+    # rd-3 随迁（9.11-22 移走清单）：诊断五板与「为什么 · 原值」随
+    # 用户面零渲染退役（缺位钉）；旧今日三块里 today-due / today-recent
+    # 随收拢退役；today-summary 摘要行退役；set-diagnostics / set-
+    # learning 两个节容器随之退役
+    for gone in (
+        "why-teach", "why-not-teach", "why-evidence", "why-support",
+        "why-degraded", "diag-raw", "set-diagnostics", "set-learning",
+        "today-due", "today-recent", "today-summary",
+    ):
+        assert f'id="{gone}"' not in page, gone
+    # R-1R 退役（⑧ 8.2.4 读写合一 / 进节即拉取代刷新钮 / 观察读数第一
+    # 次展开才拉）：三个面板 id 与六个拉取钮 id 的缺位钉
     for gone in (
         "goal-list", "target-list", "obs",
         "today-refresh", "learning-refresh", "diag-refresh",
@@ -253,12 +262,10 @@ def test_entering_a_space_lands_its_default_section(tmp_path: Path) -> None:
     assert '"study-today": loadToday' in app
     assert '"drawer-memory": loadMemory' in app
     assert '"drawer-privacy": loadDelTargets' in app
-    # R-1R 随迁（⑧ 8.2.5）：记录节只拉学习 + 诊断两面——可教目标 52 行
-    # 退役后 loadTargets 不再属于本页（唯一居所 = 今日 · 可以练的表达）
-    assert (
-        '"study-progress": () => { loadLearning(); loadDiagnostics(); },'
-        in app
-    )
+    # rd-3 随迁（9.11-22）：档案节只拉学习一面——诊断五板移出用户面后
+    # loadDiagnostics 退役（缺位钉）
+    assert '"study-progress": () => { loadLearning(); },' in app
+    assert "loadDiagnostics" not in app
     assert 'goalBox("goal-result").hidden = true;' in app
     assert '"drawer-settings":' not in app
 

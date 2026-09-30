@@ -179,14 +179,21 @@ def test_the_panel_faces_ride_the_state_banner(tmp_path: Path) -> None:
     assert "本轮没有打开教学时刻" not in app
     assert "function showLoading(ids) {" in app
     assert "box.appendChild(stateBanner(\"loading\"));" in app
-    assert "showLoading(DIAG_PANEL_IDS);" in app
+    # rd-3 随迁（9.11-22 移走清单）：诊断五问移出用户面——DIAG_PANEL_IDS
+    # 与 loadDiagnostics 整体退役（缺位钉）；档案板自带进行时占位句，
+    # 其余面板走统一 loading banner
+    assert "showLoading(DIAG_PANEL_IDS);" not in app
+    assert "loadDiagnostics" not in app
     assert "showLoading(LEARN_PANEL_IDS);" in app
-    assert 'diagError(diagBox(id), "诊断读数拉取失败", loadDiagnostics);' in app
+    assert 'diagError(diagBox(id), "诊断读数拉取失败", loadDiagnostics);' \
+        not in app
     assert 'diagError(diagBox(id), "学习读数拉取失败", loadLearning);' in app
-    # R-1R 随迁：目标清单的读取面只剩隐私页的按表达忘掉（今日 · 可以练
-    # 的表达经 loadToday 读 targets，失败行在面板槽内同形）
+    # R-1R 随迁：目标清单的读取面只剩隐私页的按表达忘掉（档案 · 可以练
+    # 的表达经 loadLearning 读 targets，失败行在面板槽内同形）
     assert 'diagError(box, "目标清单拉取失败", loadDelTargets);' in app
-    assert "renderWhyTeach(data.why_teach, loadDiagnostics);" in app
+    # rd-3 随迁：诊断渲染函数族随五板退役；排程照旧由 loadLearning 拉取
+    # （降入档案的「计划明细」折叠）
+    assert "renderWhyTeach" not in app
     assert "renderSchedule(data.schedule, loadLearning);" in app
     index = _webui_text("index.html")
     assert '<p class="note">暂无数据</p>' in index

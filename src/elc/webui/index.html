@@ -62,11 +62,13 @@
     </div>
   </section>
 
-  <!-- 温故空间：书桌。三节（今日 / 方向 / 记录），节签切换（#20），
+  <!-- 温故空间：书桌。三节（今日 / 方向 / 档案），节签切换（#20），
        进空间落默认节（今日）。头部 = #19 space-header（品牌条基形 +
        节名槽，随节签联动）。页题只念一遍：节名槽是「我在哪」，节内
        不再有 h2（⑧ 8.2.9）；内部 id 零改名（study-goal / study-progress
-       等键保持，只改显示名）。 -->
+       等键保持，只改显示名）。默认层恰两块（rd-3 IA 重构，9.11-22：
+       今天的行动 + 你的成长；环块诚实省略）——大量信息并非都要显式
+       表达：诊断五问移出用户面、排程与账表降入档案折叠。 -->
   <section id="space-study" hidden>
     <header class="top space-header" id="study-head">
       <span data-brand-mark="sm"></span>
@@ -83,32 +85,30 @@
               aria-controls="study-goal" aria-selected="false">方向</button>
       <button type="button" class="section-tab" role="tab"
               id="tab-study-progress" data-section="progress"
-              aria-controls="study-progress" aria-selected="false">记录</button>
+              aria-controls="study-progress" aria-selected="false">档案</button>
     </nav>
     <div class="spacebody">
 
-    <!-- 今日节（⑧ 8.2.3）：回答「现在该干什么」——页首摘要行（mono
-         数字）+ 到期复习（行动位）+ 最近在学（痕迹位）+ 可以练的表达
-         （家族分组 #21 默认折叠 + 筛框；组键 = target_id 第二段，客户
-         端派生）。三块全走 state-banner 三态；没有的活动供给不伪装。
-         R-1W：到期与在学两块入 .panel-grid（≥481px 并排，平板档起两
-         栏；窄屏自然单栏）。 -->
+    <!-- 今日节（⑧ 8.2.3，rd-3 IA 重构）：默认层恰两块——今天的行动
+         （到期 N 项 + 进行中的批注 + 一个动词按钮；N=0 且无批注时一句
+         邀请）+ 你的成长（恰 3 条词级结论，聚合自批注判分——不是分数
+         是结论；空态 = pull-revelation 卡，给学习线索与直达路径）。
+         环块诚实省略：无可靠的连续天数数据源，今日进度又与行动块重复
+         （豁免理由登记 9.11-22）。内部数值（confidence/urgency/档位）
+         不出现在本屏——词级表达替代。页首计数摘要行随移走清单退役
+         （计数是副产品）。两块全走 state-banner 三态。R-1W：两块入
+         .panel-grid（≥481px 并排，窄屏自然单栏）。 -->
     <section id="study-today" role="tabpanel"
              aria-labelledby="tab-study-today" data-reveal>
-    <p class="sub sumline" id="today-summary" hidden></p>
     <div class="panel-grid">
       <div class="sec">
-        <h3>到期复习</h3>
-        <div id="today-due"><p class="note">暂无数据</p></div>
+        <h3>今天的行动</h3>
+        <div id="today-action"><p class="note">暂无数据</p></div>
       </div>
       <div class="sec">
-        <h3>最近在学</h3>
-        <div id="today-recent"><p class="note">暂无数据</p></div>
+        <h3>你的成长</h3>
+        <div id="growth-summary"><p class="note">暂无数据</p></div>
       </div>
-    </div>
-    <div class="sec">
-      <h3>可以练的表达</h3>
-      <div id="today-practice"><p class="note">暂无数据</p></div>
     </div>
     </section>
 
@@ -155,77 +155,72 @@
     <div id="goal-result" class="sec" hidden></div>
     </section>
 
-    <!-- 记录节（⑧ 8.2.5）：客厅的账页——账（在学的表达：schedule ∪
-         claims 客户端按 target_id 合流一张表）→ 因（五问，中文化）
-         → 底（#21 折叠「原始读数」：观察指标定义原文 / 各面原值与
-         ISO 时间戳的唯一合法归宿，第一次展开才拉观察）。可练的 52 行
-         从本页移除——唯一居所 = 今日 · 可以练的表达。R-1W：账表整幅
-         在前（四字段行要宽度），为什么五面板入 .panel-grid（≥481px
-         两栏，同质面板配同质网格）。 -->
+    <!-- 档案节（⑧ 8.2.5，rd-3 IA 重构；内部 id study-progress 零改名，
+         显示名 记录→档案）：收藏档 = 搜索 + 聚合时间线（按周/月折叠成
+         一行一句，点开见明细；明细读服务端已加载的最近几条，Wrapped
+         计数读全量）+ 计划一行（未来 7 天，全量排程与目标降入折叠）
+         + 可以练的表达（自今日节迁入，家族分组不变）+ 按表达看 +
+         原始读数（观察读数的唯一合法归宿，第一次展开才拉）。加载态
+         两形：「批注正在来的路上……」是进行时，区别于「还没有批注
+         留痕」的没有（NN/g：未加载不得显示无记录）。诊断五问整体移出
+         用户面——/api/diagnostics 保留在 API 层（归档读法，9.11-22）。 -->
     <section id="study-progress" role="tabpanel"
              aria-labelledby="tab-study-progress" hidden data-reveal>
-    <p class="sub">客厅的账页——只读，如实。</p>
+    <p class="sub">批注留过的痕迹与接下来的计划——要的时候来翻。</p>
 
     <div class="sec">
-      <h3>在学的表达</h3>
-      <div id="record-book"><p class="note">暂无数据</p></div>
+      <h3>痕迹</h3>
+      <div id="archive-board"><p class="note">暂无数据</p></div>
     </div>
 
-    <section id="set-diagnostics">
-      <div class="sec"><h3 class="grouphead">为什么</h3></div>
-      <div class="panel-grid">
-      <div class="sec">
-        <h3>为什么留了这张批注</h3>
-        <div id="why-teach"><p class="note">暂无数据</p></div>
-      </div>
-      <div class="sec">
-        <h3>为什么没有递</h3>
-        <div id="why-not-teach"><p class="note">暂无数据</p></div>
-      </div>
-      <div class="sec">
-        <h3>判分有什么变化</h3>
-        <div id="why-evidence"><p class="note">暂无数据</p></div>
-      </div>
-      <div class="sec">
-        <h3>你收到了哪些帮助</h3>
-        <div id="why-support"><p class="note">暂无数据</p></div>
-      </div>
-      <div class="sec">
-        <h3>有没有从简处理的轮次</h3>
-        <div id="why-degraded"><p class="note">暂无数据</p></div>
-      </div>
-      </div>
-    </section>
-
-    <section id="set-learning">
-      <div class="sec">
-        <div id="raw-slot">
-          <div id="raw-readings">
-            <div class="sec">
-              <h3>复习日程</h3>
-              <div id="learn-schedule"><p class="note">暂无数据</p></div>
-            </div>
-            <div class="sec">
-              <h3>学习目标</h3>
-              <div id="learn-goals"><p class="note">暂无数据</p></div>
-            </div>
-            <div class="sec">
-              <h3>证据记录</h3>
-              <div id="learn-evidence"><p class="note">暂无数据</p></div>
-            </div>
-            <div class="sec">
-              <h3>为什么 · 原值</h3>
-              <pre id="diag-raw" hidden></pre>
-            </div>
-            <div class="sec">
-              <h3>观察读数</h3>
-              <div id="obs-status"></div>
-              <pre id="obsout" hidden></pre>
-            </div>
+    <div class="sec">
+      <h3>计划</h3>
+      <div id="plan-line"><p class="note">暂无数据</p></div>
+      <div id="plan-slot">
+        <div id="plan-detail">
+          <div class="sec">
+            <h3>复习日程</h3>
+            <div id="learn-schedule"><p class="note">暂无数据</p></div>
+          </div>
+          <div class="sec">
+            <h3>学习目标</h3>
+            <div id="learn-goals"><p class="note">暂无数据</p></div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
+
+    <div class="sec">
+      <h3>可以练的表达</h3>
+      <div id="today-practice"><p class="note">暂无数据</p></div>
+    </div>
+
+    <div class="sec">
+      <div id="book-slot">
+        <div id="book-detail">
+          <div class="sec">
+            <h3>在学的表达</h3>
+            <div id="record-book"><p class="note">暂无数据</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div id="raw-slot">
+        <div id="raw-readings">
+          <div class="sec">
+            <h3>证据记录</h3>
+            <div id="learn-evidence"><p class="note">暂无数据</p></div>
+          </div>
+          <div class="sec">
+            <h3>观察读数</h3>
+            <div id="obs-status"></div>
+            <pre id="obsout" hidden></pre>
+          </div>
+        </div>
+      </div>
+    </div>
     </section>
 
     </div>

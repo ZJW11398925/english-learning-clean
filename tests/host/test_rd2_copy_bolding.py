@@ -164,8 +164,11 @@ def test_the_old_space_words_are_retired_from_live_faces() -> None:
 
 def test_the_annotation_family_heads_the_card() -> None:
     """批注家族：卡头「批注：」、指路行回应族、寄出回应、先搁着（含
-    busy 与回音）、批注来了/没能开始、留了批注、批注频率、为什么留了
-    这张批注、批注来过才会有账、批注痕迹。"""
+    busy 与回音）、批注来了/没能开始、批注频率、批注来过才会有账、
+    批注痕迹；rd-3 随迁（9.11-22 移走清单）：「留了批注」（ACTION_CN）、
+    门规三词（GATE_REASON_CN）与「为什么留了这张批注」面板随诊断五板
+    移出用户面——服务端词面（web.py）不动，前端缺位由
+    test_rd3_information_architecture.py 钉住。"""
 
     components = _text("webui/components.js")
     app = _text("webui/app.js")
@@ -180,13 +183,13 @@ def test_the_annotation_family_heads_the_card() -> None:
     assert "再试一回？" in components
     assert "批注来了——就在下面的信流里。" in app
     assert "没能开始这张批注——" in app
-    assert 'TEACHING_OPEN: "留了批注"' in app
+    assert 'TEACHING_OPEN: "留了批注"' not in app
     assert "批注来过才会有账" in app
-    assert "另一张批注还在进行" in app
-    assert "批注锁不成立" in app
-    assert "这张批注走不下去" in app
+    assert "另一张批注还在进行" not in app
+    assert "批注锁不成立" not in app
+    assert "这张批注走不下去" not in app
     assert "保存批注频率" in app
-    assert ">为什么留了这张批注</h3>" in index
+    assert ">为什么留了这张批注</h3>" not in index
     assert "批注痕迹" in index
     # 旧家族词缺位（live 面）
     assert '"短笺："' not in components

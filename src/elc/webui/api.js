@@ -35,11 +35,6 @@ export function fetchTeachMe(targetId) {
   return postJson("/api/teach_me", { target_id: targetId });
 }
 
-/** 五问诊断读数（每面板独立守卫，错误在面板槽内）。 */
-export function fetchDiagnostics() {
-  return getJson("/api/diagnostics");
-}
-
 /** 学习视图读数（日程 / 目标 / 证据）。 */
 export function fetchLearning() {
   return getJson("/api/learning");

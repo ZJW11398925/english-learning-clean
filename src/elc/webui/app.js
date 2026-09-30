@@ -37,7 +37,6 @@ import {
 import {
   fetchTurn,
   fetchTeachMe,
-  fetchDiagnostics,
   fetchLearning,
   fetchTargets,
   fetchObservations,
@@ -61,12 +60,6 @@ const OUTCOME_CN = {
   FAILURE: "没答中",
   ABSTAIN: "这次没法判",
 };
-const ACTION_CN = {
-  TEACHING_OPEN: "留了批注",
-  TEACHING_HINT: "给了提示",
-  TEACHING_REVEAL: "摆了答案",
-  TEACHING_EXPLANATION: "给了讲解",
-};
 const REVIEW_STATE_CN = {
   NOT_SCHEDULED: "还没排上",
   UPCOMING: "排上了",
@@ -81,34 +74,6 @@ const FAMILY_CN = {
 };
 // 家族组的展示序：四族现役序在前，未知家族按原名排在后（不伪装翻译）
 const FAMILY_ORDER = ["discourse", "hedge", "pragmatic", "softener"];
-const GATE_DECISION_CN = {
-  ALLOW: "放行",
-  DENY: "拦下",
-};
-// 门规理由（逐码）：全集 = gate.py 的 DENY_PRECEDENCE 十七词 +
-// runtime/automatic_teaching.py 的三条装配拒绝词（D-5R）。未知码原样小字。
-const GATE_REASON_CN = {
-  SAFETY_PRIVACY_BLOCK: "安全与隐私规则",
-  ACTION_CANCELLED: "动作已取消",
-  ACTION_SUPERSEDED: "动作已被更新的取代",
-  AUTHORIZATION_INVALID: "授权不成立",
-  TARGET_INVALID: "这个表达不存在",
-  CONTENT_INVALID: "教学内容无效",
-  TARGET_SUPPRESSED: "这个表达被压着不递",
-  USER_INTENT_BLOCK: "你的意图不让递",
-  AUTO_TEACH_DISABLED: "自动教学没有开",
-  TEACHING_LOCK_CONFLICT: "另一张批注还在进行",
-  TEACHING_LOCK_INVALID: "批注锁不成立",
-  MOMENT_NOT_CONTINUABLE: "这张批注走不下去",
-  HARD_PROTECTED_FLOW: "受保护的流程在进行",
-  AUTO_SESSION_BUDGET_EXHAUSTED: "这一程的自动教学预算用完了",
-  HARD_COOLDOWN_ACTIVE: "刚递过，还在冷却",
-  HARD_ATTEMPT_LIMIT: "作答次数到了上限",
-  HARD_TEACHING_TURN_LIMIT: "教学轮数到了上限",
-  AUTO_SESSION_BUDGET_UNREADABLE: "这一程的预算读不出来",
-  TARGET_NOT_EXECUTABLY_VERIFIED: "这个表达还没有可执行的检测",
-  PROVENANCE_FACE_MISSING: "出处读面缺失",
-};
 const MODALITY_CN = {
   SPEAKING: "口语",
   LISTENING: "听力",
@@ -269,21 +234,6 @@ function spokenOf(keyOrId) {
   return parts.join(" ");
 }
 
-// 门规理由：逐码中文，未知码原样小字（⑧ 8.3 gate reason codes 行）
-function reasonsNode(codes) {
-  const frag = document.createDocumentFragment();
-  const list = Array.isArray(codes) ? codes : [String(codes)];
-  list.forEach((code, index) => {
-    if (index > 0) frag.appendChild(document.createTextNode("、"));
-    if (GATE_REASON_CN[code]) {
-      frag.appendChild(document.createTextNode(GATE_REASON_CN[code]));
-    } else {
-      frag.appendChild(rawTag(code));
-    }
-  });
-  return frag;
-}
-
 // 词表值的界面形：有中文译名 → 中英并置（中文 + 等宽小字原文）；未列出
 // 的词不伪装翻译——原文等宽小字
 function vocabNode(cnMap, word) {
@@ -315,172 +265,6 @@ function failLine(main, reason) {
   line.appendChild(document.createTextNode("）。"));
   messages.appendChild(line);
   window.scrollTo(0, document.body.scrollHeight);
-}
-
-// ── F-1: the diagnostics view — the five whys（R-1R 起中文化：中文行 +
-// 括号工程词，原值与 ISO 时间戳归页底「原始读数」区）─────────────────
-
-const DIAG_PANEL_IDS = ["why-teach", "why-not-teach", "why-evidence",
-                        "why-support", "why-degraded"];
-const LEARN_PANEL_IDS = ["learn-schedule", "learn-goals", "learn-evidence"];
-
-function showLoading(ids) {
-  for (const id of ids) {
-    const box = diagBox(id);
-    box.textContent = "";
-    box.appendChild(stateBanner("loading"));
-  }
-}
-
-function renderWhyTeach(d, retry) {
-  const box = diagBox("why-teach");
-  box.textContent = "";
-  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
-  if (!d.candidate) {
-    diagEmpty(box, "最近 50 轮里，客厅的盘算没有选中任何表达。");
-    return;
-  }
-  const g = diagGroup(box,
-    "客厅想过「" + spokenOf(d.candidate.canonical_key || "") + "」");
-  const score = document.createDocumentFragment();
-  score.appendChild(document.createTextNode("分量 "));
-  score.appendChild(scoreNode(d.candidate.utility));
-  score.appendChild(document.createTextNode(" · 门槛 "));
-  score.appendChild(scoreNode(d.candidate.activation_threshold));
-  diagLine(g, "分量与门槛", score);
-  if (d.gate) {
-    const gg = diagGroup(box, "门规");
-    diagLine(gg, "裁决",
-      GATE_DECISION_CN[d.gate.decision] || rawTag(d.gate.decision));
-    diagLine(gg, "理由", reasonsNode(d.gate.reason_codes));
-    diagLine(gg, "时间", whenNode(d.gate.created_at));
-  }
-  diagLine(box, "盘算时间", whenNode(d.created_at));
-}
-
-function renderWhyNot(d, retry) {
-  const box = diagBox("why-not-teach");
-  box.textContent = "";
-  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
-  const list = d.candidates || [];
-  if (d.created_at === null && !list.length) {
-    diagEmpty(box, "还没有任何一轮盘算。");
-    return;
-  }
-  if (!list.length) {
-    diagLine(box, "这一轮的候选", "都递了——或这一轮本来没有候选。");
-  }
-  for (const c of list) {
-    const g = diagGroup(box,
-      "客厅想过「" + spokenOf(c.canonical_key || c.candidate_id) + "」");
-    const score = document.createDocumentFragment();
-    score.appendChild(document.createTextNode("分量 "));
-    score.appendChild(scoreNode(c.utility));
-    score.appendChild(document.createTextNode(" · 门槛 "));
-    score.appendChild(scoreNode(c.activation_threshold));
-    diagLine(g, "分量与门槛", score);
-    diagLine(g, "递了吗",
-      c.activated === false ? "没递——分量没过门槛。"
-        : c.activated === true ? "递了" : "说不准");
-    for (const r of (c.costs || [])) {
-      const cost = document.createDocumentFragment();
-      cost.appendChild(rawTag(r.factor));
-      cost.appendChild(document.createTextNode(" "));
-      cost.appendChild(scoreNode(r.value));
-      diagLine(g, "成本", cost);
-    }
-  }
-  if (d.gate_deny) {
-    const gg = diagGroup(box, "最近一次被门规拦下");
-    diagLine(gg, "理由", reasonsNode(d.gate_deny.reason_codes));
-    diagLine(gg, "时间", whenNode(d.gate_deny.created_at));
-  }
-}
-
-function renderEvidence(d, retry) {
-  const box = diagBox("why-evidence");
-  box.textContent = "";
-  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
-  const rows = d.records || [];
-  if (!rows.length) {
-    diagEmpty(box, "还没有任何一次作答被判分。");
-    return;
-  }
-  for (const r of rows) {
-    const head = document.createDocumentFragment();
-    head.appendChild(document.createTextNode(
-      (OUTCOME_CN[r.outcome] || "") + " "));
-    head.appendChild(rawTag(r.outcome));
-    const g = diagGroup(box, head);
-    diagLine(g, "把握", scoreNode(r.confidence));
-    diagLine(g, "时间", whenNode(r.created_at));
-  }
-}
-
-function renderSupport(d, retry) {
-  const box = diagBox("why-support");
-  box.textContent = "";
-  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
-  const rows = d.actions || [];
-  if (!rows.length) {
-    diagEmpty(box, "还没有收到过帮助。");
-    return;
-  }
-  for (const a of rows) {
-    const head = document.createDocumentFragment();
-    head.appendChild(document.createTextNode(
-      (ACTION_CN[a.action_type] || "") + " "));
-    head.appendChild(rawTag(a.action_type));
-    const g = diagGroup(box, head);
-    diagLine(g, "时间", whenNode(a.created_at));
-  }
-  const total = document.createDocumentFragment();
-  total.appendChild(document.createTextNode(
-    (d.exposure_estimate_count || 0) + " 条 "));
-  total.appendChild(rawTag("（exposure_estimate）"));
-  diagLine(box, "递出估计累计", total);
-}
-
-function renderDegraded(d, retry) {
-  const box = diagBox("why-degraded");
-  box.textContent = "";
-  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
-  const pe = d.planner_execution;
-  const ro = d.runtime_outcome;
-  if (!pe && !ro) { diagEmpty(box, "没有从简处理的轮次。"); return; }
-  if (pe) {
-    const g = diagGroup(box, "客厅的盘算");
-    diagLine(g, "状态",
-      pe.status === "DEGRADED" ? "从简处理" : rawTag(pe.status));
-    diagLine(g, "错误码", pe.error_code === null ? "—" : pe.error_code);
-    diagLine(g, "时间", whenNode(pe.created_at));
-  }
-  if (ro) {
-    const g = diagGroup(box, "轮次结局");
-    diagLine(g, "结局", rawTag(ro.outcome));
-    diagLine(g, "理由", reasonsNode(ro.reason_codes));
-    diagLine(g, "时间", whenNode(ro.created_at));
-  }
-}
-
-async function loadDiagnostics() {
-  showLoading(DIAG_PANEL_IDS);
-  try {
-    const data = await fetchDiagnostics();
-    renderWhyTeach(data.why_teach, loadDiagnostics);
-    renderWhyNot(data.why_not_teach, loadDiagnostics);
-    renderEvidence(data.evidence, loadDiagnostics);
-    renderSupport(data.support, loadDiagnostics);
-    renderDegraded(data.degraded, loadDiagnostics);
-    // 「为什么 · 原值」——五问的原始载荷归页底折叠的原始读数区
-    const raw = diagBox("diag-raw");
-    raw.hidden = false;
-    raw.textContent = JSON.stringify(data, null, 1);
-  } catch {
-    for (const id of DIAG_PANEL_IDS) {
-      diagError(diagBox(id), "诊断读数拉取失败", loadDiagnostics);
-    }
-  }
 }
 
 // ── 记录页 · 账（在学的表达）────────────────────────────────────────
@@ -551,8 +335,11 @@ function renderRecordBook(schedule, evidence, retry) {
   }
 }
 
-// ── 记录页 · 底（原始读数区：各面原值与 ISO 时间戳的合法归宿，⑧ 8.2.5）
-// 三面原值渲染器保持原样——原值在这个折叠区里是合法形态。
+// ── 档案 · 折叠明细（rd-3 降级位）────────────────────────────────────
+// 三面原值渲染器保持原样——原值在折叠区里是合法形态（机械事实的唯一
+// 归宿 = 折叠的原始读数，⑧ 8.4.3）。排程与目标降入「计划明细」折叠
+// （时间敏感的是今天不是下周——默认层只留计划一行）；账表降入
+// 「按表达看」折叠。
 
 function renderSchedule(d, retry) {
   const box = diagBox("learn-schedule");
@@ -618,10 +405,20 @@ function renderLearnEvidence(d, retry) {
   }
 }
 
+// ── rd-3: 档案节拉取（进节即拉）——档案板的进行时占位先落（NN/g：
+// 未加载不得显示无记录，「批注正在来的路上……」区别于空态的「还没有」
+// ——8.2.5 加载态两形）；其余面板走统一 loading banner。可练的表达
+// 从本节自己的 targets 拉取（家族分组筛框照旧）。
 async function loadLearning() {
+  const board = diagBox("archive-board");
+  board.textContent = "";
+  board.appendChild(stateBanner("loading",
+    { text: "批注正在来的路上……" }));
   showLoading(LEARN_PANEL_IDS);
   try {
     const data = await fetchLearning();
+    renderArchive(data.evidence, loadLearning);
+    renderPlanLine(data.schedule, loadLearning);
     renderRecordBook(data.schedule, data.evidence, loadLearning);
     renderSchedule(data.schedule, loadLearning);
     renderGoals(data.goals, loadLearning);
@@ -630,13 +427,51 @@ async function loadLearning() {
     for (const id of LEARN_PANEL_IDS) {
       diagError(diagBox(id), "学习读数拉取失败", loadLearning);
     }
+    board.textContent = "";
+    diagError(board, "学习读数拉取失败", loadLearning);
+    return;
+  }
+  let targets = null;
+  try {
+    targets = await fetchTargets();
+  } catch {
+    targets = null;
+  }
+  renderTodayPractice(targets, loadLearning);
+}
+
+// ── rd-3: 温故默认层与档案（⑧ 8.2.3 / 8.2.5，rd-3 IA 重构）──────────
+// 默认层（今日节）恰两块：今天的行动（到期 N 项 + 进行中的批注 + 一个
+// 动词按钮；N=0 时一句邀请）/ 你的成长（恰 3 条词级结论——聚合自批注
+// 判分，不是分数是结论；空态 = pull-revelation 卡）。环块诚实省略：
+// 无可靠的连续天数数据源，今日进度又与行动块重复（豁免登记 9.11-22）。
+// 档案节（原记录节）：搜索 + 聚合时间线 + 计划一行 + 可以练的表达 +
+// 按表达看 + 原始读数深档。诊断五问与页首计数摘要行已移出用户面
+// （9.11-22 移走清单：内部决策理由 = 噪音，计数是副产品）。
+
+const TODAY_PANEL_IDS = ["today-action", "growth-summary"];
+const LEARN_PANEL_IDS = ["archive-board", "plan-line", "record-book",
+                         "learn-schedule", "learn-goals", "learn-evidence",
+                         "today-practice"];
+
+function showLoading(ids) {
+  for (const id of ids) {
+    const box = diagBox(id);
+    box.textContent = "";
+    box.appendChild(stateBanner("loading"));
   }
 }
 
-// ── p-1 / R-1R: 今日页 —— 到期复习（行动位）/ 最近在学（痕迹位）/
-// 可以练的表达（家族分组 + 默认折叠 + 筛框）。进节即拉，无刷新钮。 ──
-
-const TODAY_PANEL_IDS = ["today-due", "today-recent", "today-practice"];
+// 回客厅的直达按钮（行动块的邀请态与成长空态共用）——动作词，落点
+// 是客厅信流（教学批注与聊天都发生在那里）
+function parlorButton(word) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "btn btn--ink";
+  button.textContent = word;
+  button.addEventListener("click", () => showSpace("parlor"));
+  return button;
+}
 
 function teachRow(name, targetId) {
   const row = document.createElement("div");
@@ -744,26 +579,22 @@ function familyOf(targetId) {
   return parts.length > 2 ? parts[1] : "";
 }
 
-function renderTodayDue(schedule, retry) {
-  const box = diagBox("today-due");
-  box.textContent = "";
-  if (!schedule || schedule.error) {
-    diagError(box, (schedule && schedule.error) || "空响应", retry);
-    return;
-  }
-  const due = (schedule.items || []).filter(
-    (it) => it.review_state === "DUE" || it.review_state === "OVERDUE");
-  if (!due.length) { diagEmpty(box, "今天没有到期的复习。"); return; }
-  for (const it of due) {
-    box.appendChild(teachRow(
-      spokenOf(it.target_id) + " · " +
-      (REVIEW_STATE_CN[it.review_state] || it.review_state),
-      it.target_id));
-  }
-}
+// 成长三档的词级表达（能 / 还在练 / 暂时不能）——判分枚举到词的
+// 唯一映射；数值不入本屏（9.11-22：词级表达替代内部档位）
+const GROWTH_LINES = 3;
+const GROWTH_VERDICTS = [
+  { outcomes: ["SUCCESS", "ALTERNATIVE_SUCCESS"], word: "能做到" },
+  { outcomes: ["PARTIAL", "ABSTAIN"], word: "还在练" },
+  { outcomes: ["FAILURE"], word: "暂时不能" },
+];
 
-function renderTodayRecent(evidence, retry) {
-  const box = diagBox("today-recent");
+// 块② 你的成长（⑧ 8.2.3）：恰 3 条词级结论句——每个表达取最新一次
+// 判分，归入三档；能做到优先、同档按最近活跃（claims 最新在前），
+// 取 3 条（调研B：恒 3 条是选出来的，不是全放出来的）。不足 3 条时
+// 如实显示有的几条；0 条 = pull-revelation 空态卡（给学习线索与
+// 直达路径，NN/g）。不显示数值、档位、置信度。
+function renderGrowth(evidence, retry) {
+  const box = diagBox("growth-summary");
   box.textContent = "";
   if (!evidence || evidence.error) {
     diagError(box, (evidence && evidence.error) || "空响应", retry);
@@ -771,30 +602,84 @@ function renderTodayRecent(evidence, retry) {
   }
   const claims = evidence.claims || [];
   if (!claims.length) {
-    // 槽位单态：空态独占面板（清空先于挂载），计数只随数据出现
-    diagEmpty(box, "还没有学习痕迹——聊起来才会积累。");
+    const note = document.createElement("p");
+    note.className = "note";
+    note.textContent = "学过一次之后，这里会出现你掌握的技能。";
+    box.appendChild(note);
+    const hint = document.createElement("p");
+    hint.className = "sub";
+    hint.textContent = "先去客厅聊一句，批注会自己来找你。";
+    box.appendChild(hint);
+    box.appendChild(parlorButton("去聊一句"));
     return;
   }
   // the claims come newest-first; the first sighting of a target is its
-  // most recent outcome
+  // most recent verdict
   const latest = new Map();
   for (const claim of claims) {
     if (!latest.has(claim.target_id)) latest.set(claim.target_id, claim);
   }
-  for (const [targetId, claim] of latest) {
-    const row = document.createElement("div");
-    row.className = "kv";
-    const b = document.createElement("b");
-    b.textContent = spokenOf(targetId);
-    row.appendChild(b);
-    row.appendChild(document.createTextNode(
-      "最近：" + (OUTCOME_CN[claim.outcome] || claim.outcome) + "（"));
-    row.appendChild(whenNode(claim.created_at));
-    row.appendChild(document.createTextNode("）"));
-    box.appendChild(row);
+  const rows = [];
+  for (const verdict of GROWTH_VERDICTS) {
+    for (const [targetId, claim] of latest) {
+      if (verdict.outcomes.includes(claim.outcome)) {
+        rows.push({ targetId, word: verdict.word });
+      }
+    }
+  }
+  for (const row of rows.slice(0, GROWTH_LINES)) {
+    const line = document.createElement("div");
+    line.className = "kv";
+    line.appendChild(document.createTextNode(
+      row.word + "：" + spokenOf(row.targetId) + "。"));
+    box.appendChild(line);
   }
 }
 
+// 块① 今天的行动（⑧ 8.2.3）：到期复习 N 项 + 进行中的批注 + 一个
+// 动词按钮。按钮 = 当前第一优先的行动（批注回应 > 到期复习 > 邀请）；
+// 「开始复习」直接开教第一句到期句（真动作，不是导航）。
+function renderTodayAction(schedule, moment, retry) {
+  const box = diagBox("today-action");
+  box.textContent = "";
+  if (!schedule || schedule.error) {
+    diagError(box, (schedule && schedule.error) || "空响应", retry);
+    return;
+  }
+  const due = (schedule.items || []).filter(
+    (it) => it.review_state === "DUE" || it.review_state === "OVERDUE");
+  if (moment) {
+    const line = document.createElement("p");
+    line.className = "sub";
+    line.textContent = "有一张批注等着你回应。";
+    box.appendChild(line);
+    box.appendChild(parlorButton("去回应"));
+  }
+  for (const it of due) {
+    box.appendChild(teachRow(
+      spokenOf(it.target_id) + " · " +
+      (REVIEW_STATE_CN[it.review_state] || it.review_state),
+      it.target_id));
+  }
+  if (moment) return;
+  if (due.length) {
+    const start = document.createElement("button");
+    start.type = "button";
+    start.className = "btn btn--ink";
+    start.textContent = "开始复习";
+    start.addEventListener("click", () => postTeachMe(due[0].target_id));
+    box.appendChild(start);
+    return;
+  }
+  const line = document.createElement("p");
+  line.className = "sub";
+  line.textContent = "今天不用复习，要不要聊一句？";
+  box.appendChild(line);
+  box.appendChild(parlorButton("去聊一句"));
+}
+
+// 可以练的表达（rd-3 迁入档案节；家族分组 + 默认折叠 + 筛框不变——
+// 组键 = target_id 第二段，客户端派生；筛框就是这个折叠自己的搜索）
 function renderTodayPractice(targets, retry) {
   const box = diagBox("today-practice");
   box.textContent = "";
@@ -811,41 +696,196 @@ function renderTodayPractice(targets, retry) {
     (t) => teachRow(t.name || spokenOf(t.target_id), t.target_id)));
 }
 
-function renderTodaySummary(learning, targets) {
-  const schedule = learning && !learning.error ? learning.schedule : null;
-  const evidence = learning && !learning.error ? learning.evidence : null;
-  const due = schedule ? (schedule.items || []).filter(
+// 档案 · 痕迹（⑧ 8.2.5）：Wrapped 期待态 + 搜索框 + 聚合时间线。
+// 读数口径：明细只有服务端已加载的最近几条（web.py 的窗口，冻结面故
+// 口径如实呈现——「已加载的」）；Wrapped 计数读全量 evidence_claim_count。
+// 门槛不足时讲期待不讲遗憾（调研B：数据不够就不解锁）；时间线桶 =
+// 本周 / 上周 / {m} 月 / 去年 / 更早，桶行一句、点开见明细。
+const ARCHIVE_STORY_GATE = 30;
+
+function timeBucketLabel(iso) {
+  const then = new Date(String(iso));
+  if (Number.isNaN(then.getTime())) return "更早";
+  const now = new Date();
+  const dayMs = 86400000;
+  const midnight = (d) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const mondayOffset = (now.getDay() + 6) % 7;
+  const thisMonday = midnight(now) - mondayOffset * dayMs;
+  const t = then.getTime();
+  if (t >= thisMonday) return "本周";
+  if (t >= thisMonday - 7 * dayMs) return "上周";
+  if (then.getFullYear() === now.getFullYear()) {
+    return (then.getMonth() + 1) + " 月";
+  }
+  if (then.getFullYear() === now.getFullYear() - 1) return "去年";
+  return "更早";
+}
+
+function renderArchive(evidence, retry) {
+  const board = diagBox("archive-board");
+  board.textContent = "";
+  if (!evidence || evidence.error) {
+    diagError(board, (evidence && evidence.error) || "空响应", retry);
+    return;
+  }
+  const claims = evidence.claims || [];
+  const total = evidence.evidence_claim_count || 0;
+  if (total < ARCHIVE_STORY_GATE) {
+    const wish = document.createElement("p");
+    wish.className = "sub";
+    wish.textContent = "攒够 " + ARCHIVE_STORY_GATE + " 次批注，这里会讲一个学期的故事——现在有 " + total + " 条。";
+    board.appendChild(wish);
+  }
+  if (!claims.length) {
+    diagEmpty(board, "还没有批注留痕——聊起来才会有。");
+    return;
+  }
+  const input = document.createElement("input");
+  input.type = "text";
+  input.autocomplete = "off";
+  input.placeholder = "搜一句痕迹……";
+  const findLabel = document.createDocumentFragment();
+  findLabel.appendChild(inkIcon("search"));
+  findLabel.appendChild(document.createTextNode(" 搜"));
+  board.appendChild(fieldRow(findLabel, input));
+  const noHit = document.createElement("p");
+  noHit.className = "note";
+  noHit.hidden = true;
+  noHit.textContent = "没搜到这一句的痕迹。";
+  board.appendChild(noHit);
+  // 聚合时间线：claims 最新在前，桶按首次出现即时间倒序
+  const order = [];
+  const buckets = new Map();
+  for (const claim of claims) {
+    const bucket = timeBucketLabel(claim.created_at);
+    if (!buckets.has(bucket)) {
+      buckets.set(bucket, []);
+      order.push(bucket);
+    }
+    buckets.get(bucket).push(claim);
+  }
+  const groups = [];
+  for (const bucket of order) {
+    const rows = buckets.get(bucket);
+    const themes = [];
+    for (const claim of rows) {
+      const name = spokenOf(claim.target_id);
+      if (!themes.includes(name)) themes.push(name);
+      if (themes.length >= 2) break;
+    }
+    const body = document.createElement("div");
+    const built = [];
+    for (const claim of rows) {
+      const line = document.createElement("div");
+      line.className = "kv";
+      const b = document.createElement("b");
+      b.textContent = spokenOf(claim.target_id);
+      line.appendChild(b);
+      line.appendChild(document.createTextNode(
+        (OUTCOME_CN[claim.outcome] || claim.outcome) + "（"));
+      line.appendChild(whenNode(claim.created_at));
+      line.appendChild(document.createTextNode("）"));
+      body.appendChild(line);
+      built.push({
+        node: line,
+        probe: ((spokenOf(claim.target_id) + " " + claim.target_id)
+                .toLowerCase()),
+      });
+    }
+    const disc = disclosure({
+      name: bucket + "：" + rows.length + " 次批注，主题 " +
+        themes.join(" / "),
+      content: body,
+    });
+    groups.push({ disc, rows: built });
+    board.appendChild(disc.root);
+  }
+  input.addEventListener("input", () => {
+    const q = input.value.trim().toLowerCase();
+    let any = false;
+    for (const g of groups) {
+      if (!q) {
+        g.disc.root.hidden = false;
+        g.disc.setOpen(false);
+        for (const r of g.rows) r.node.hidden = false;
+        any = true;
+        continue;
+      }
+      let hit = false;
+      for (const r of g.rows) {
+        const on = r.probe.includes(q);
+        r.node.hidden = !on;
+        if (on) hit = true;
+      }
+      g.disc.root.hidden = !hit;
+      g.disc.setOpen(hit);
+      if (hit) any = true;
+    }
+    noHit.hidden = any;
+  });
+}
+
+// 档案 · 计划（⑧ 8.2.5）：未来 7 天一行——今天 = DUE/OVERDUE；
+// 明天/往后 = UPCOMING 的复习窗口落点（窗口落在过去或 7 天外的
+// UPCOMING 不上数，口径如实）。全量排程与目标降入下方折叠明细。
+function renderPlanLine(schedule, retry) {
+  const box = diagBox("plan-line");
+  box.textContent = "";
+  if (!schedule || schedule.error) {
+    diagError(box, (schedule && schedule.error) || "空响应", retry);
+    return;
+  }
+  const items = schedule.items || [];
+  if (!items.length) {
+    diagEmpty(box, "还没有排程——批注来过才会排。");
+    return;
+  }
+  const due = items.filter(
     (it) => it.review_state === "DUE" || it.review_state === "OVERDUE"
-  ).length : "—";
-  const learningCount = evidence
-    ? (evidence.learner_target_state_count || 0) : "—";
-  const practice = targets && !targets.error
-    ? (targets.targets || []).length : "—";
-  renderSummaryLine("today-summary", [
-    ["今天：到期", due],
-    ["在学", learningCount],
-    ["可练", practice],
-  ]);
+  ).length;
+  const dayMs = 86400000;
+  const midnight = (d) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const today = midnight(new Date());
+  let tomorrow = 0;
+  let later = 0;
+  for (const it of items) {
+    if (it.review_state !== "UPCOMING") continue;
+    const start = it.next_review_window_start
+      ? new Date(String(it.next_review_window_start)).getTime() : NaN;
+    if (Number.isNaN(start)) continue;
+    const offset = Math.floor(
+      (midnight(new Date(start)) - today) / dayMs);
+    if (offset === 1) tomorrow += 1;
+    else if (offset >= 2 && offset <= 6) later += 1;
+  }
+  const line = document.createElement("p");
+  line.className = "sub";
+  line.textContent = "未来 7 天：今天 " + due + "、明天 " + tomorrow +
+    "、往后 " + later + "。";
+  box.appendChild(line);
 }
 
 async function loadToday() {
   showLoading(TODAY_PANEL_IDS);
   let learning = null;
-  let targets = null;
+  let moment = null;
   try {
     learning = await fetchLearning();
   } catch {
     learning = null;
   }
   try {
-    targets = await fetchTargets();
+    const current = await fetchCurrentMoment();
+    moment = current.moment;
   } catch {
-    targets = null;
+    moment = null;
   }
-  renderTodayDue(learning === null ? null : learning.schedule, loadToday);
-  renderTodayRecent(learning === null ? null : learning.evidence, loadToday);
-  renderTodayPractice(targets, loadToday);
-  renderTodaySummary(learning, targets);
+  renderTodayAction(
+    learning === null ? null : learning.schedule, moment, loadToday);
+  renderGrowth(
+    learning === null ? null : learning.evidence, loadToday);
 }
 
 // ── p-2 / R-1R: 记忆页 —— 摘要行 + 五面板（关系 / 剧情 / 学习状态 /
@@ -1546,9 +1586,10 @@ const SECTION_BODIES = {
 };
 
 // R-1R（⑧ 8.1.2 命名定稿）：内部 id/键零改名，显示名 目标→方向、
-// 进步→记录——节签文字、节名槽、此处映射，三处一致。
+// 进步→档案（rd-3：记录→档案——收藏档语义，搜索优先聚合时间线）；
+// 节签文字、节名槽、此处映射，三处一致。
 const SECTION_NAMES = {
-  today: "今日", goal: "方向", progress: "记录",
+  today: "今日", goal: "方向", progress: "档案",
   memory: "记忆", privacy: "隐私", settings: "设置",
 };
 
@@ -1565,7 +1606,7 @@ const SECTION_PULLS = {
     goalBox("goal-result").hidden = true;
     loadGoals();
   },
-  "study-progress": () => { loadLearning(); loadDiagnostics(); },
+  "study-progress": () => { loadLearning(); },
   "drawer-memory": loadMemory,
   "drawer-privacy": loadDelTargets,
 };
@@ -1605,7 +1646,8 @@ wireSectionTabs(document.getElementById("drawer-tabs"),
   (name) => showSection("drawer", name));
 
 // 记录页的底：一切原值折进一个 #21（⑧ 8.2.5）——观察读数第一次展开
-// 才拉，拉取失败 = 区内一行 + 重试。
+// 才拉，拉取失败 = 区内一行 + 重试。计划明细与按表达看同法收养
+// （rd-3：排程/目标/账表降入按需折叠，默认层只留计划一行）。
 let observationsLoaded = false;
 
 async function loadObservations() {
@@ -1655,6 +1697,16 @@ const rawReadings = disclosure({
   onFirstExpand: () => loadObservations(),
 });
 diagBox("raw-slot").appendChild(rawReadings.root);
+
+diagBox("plan-slot").appendChild(disclosure({
+  name: "计划明细（复习排程 · 目标）",
+  content: diagBox("plan-detail"),
+}).root);
+
+diagBox("book-slot").appendChild(disclosure({
+  name: "按表达看：在学的表达",
+  content: diagBox("book-detail"),
+}).root);
 
 // p-1: 点词——信件与用户回条里的 .word 可点。以点击词为中心取 1–3 词
 // 窗口（长窗优先），逐窗口调 /api/word，首个命中即出卡；miss 按契约
