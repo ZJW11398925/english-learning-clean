@@ -432,8 +432,9 @@ def test_the_word_card_overlay_is_the_letter_language(
     tmp_path: Path,
 ) -> None:
     """The card itself: lemma + pos + forms + zh-first senses + examples,
-    the 收起 link, the outside-click closer — zero radius, zero shadow
-    (the form laws hold over the overlay too)."""
+    the 收起 link, the outside-click closer — zero radius; rd-1 随迁
+    （面6 解除零阴影，DEC-OPI-dc0ba4b6-…13）：垫纸层承两级注册阴影，
+    全黑阴影仍永禁（正面契约钉在 rd1 套件）。"""
 
     page = _page_of(tmp_path)
     assert "export function wordCard(data) {" in page
@@ -449,7 +450,7 @@ def test_the_word_card_overlay_is_the_letter_language(
     assert "export function showWordCard(at, data) {" in page
     assert "document.addEventListener" in page
     assert "border-radius" not in page
-    assert "box-shadow" not in page
+    assert "rgba(0, 0, 0" not in page
 
 
 # ---------------------------------------------------------------------------

@@ -7,7 +7,9 @@ the rework onto that one visual anchor (its ``chat.css`` values adopted,
 never its code):
 
 1. the letter form laws, as absolute negatives — no tab bar, no teal, no
-   border-radius, no box-shadow, no dark-theme switch, no bubble classes;
+   border-radius, no dark-theme switch, no bubble classes (「零阴影」
+   随 rd-1 解除为纸叠偏移阴影两级契约，DEC-OPI-dc0ba4b6-…13；全黑
+   阴影与两级之外的自造 shadow 仍是绝对负面);
 2. the three screens — 开张 (the first-visit cover, remembered in
    localStorage, honest about there being no persona-authoring face),
    客厅 (the parlor: the partner card, the letter flow, the borderless
@@ -48,15 +50,19 @@ def _page_of(tmp_path: Path) -> str:
 def test_the_page_keeps_the_letter_form_laws(tmp_path: Path) -> None:
     """The clauses the user rejected the previous face over, pinned so
     they cannot come back: no bottom tab bar, no teal from the old
-    two-theme sheet, no radius, no shadow, no dark switch, and the old
-    bubble classes are gone (the letters replaced them)."""
+    two-theme sheet, no radius, no dark switch, and the old bubble
+    classes are gone (the letters replaced them). rd-1 随迁（用户
+    2026-09-30 解除「零阴影」禁令，DEC-OPI-dc0ba4b6-…13）：全黑阴影
+    （rgba(0,0,0,…)）与两级 token 之外的自造 shadow 永禁——禁令换了
+    契约，强度不降（正面的两级契约钉在 test_rd1_craft_foundation）。"""
 
     page = _page_of(tmp_path)
     assert "tabbar" not in page
     assert "#0f766e" not in page
     assert "#4fd1c5" not in page
     assert "border-radius" not in page
-    assert "box-shadow" not in page
+    assert "rgba(0, 0, 0" not in page
+    assert "rgba(0,0,0" not in page
     assert "@media (prefers-color-scheme: dark)" not in page
     # the old bubbles: the accent-filled .user / the sunken .assistant
     assert ".user {" not in page

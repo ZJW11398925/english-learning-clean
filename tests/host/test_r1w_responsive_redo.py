@@ -307,7 +307,11 @@ def test_the_cover_typography_rides_the_scale() -> None:
     assert ".ob h1 { margin: var(--sp-2) 0 0; text-align: center;" in screens
     assert "font-size: var(--fs-display); font-weight: 500;" in screens
     assert "letter-spacing: var(--ls-title); }" in screens
-    assert "letter-spacing: var(--ls-caps);" in screens
+    # rd-1 随迁：wordmark 的字距改走微标签配方（--meta-track 归
+    # --ls-caps——链路保「西文大写微标签走 caps 字距标度」的出处）
+    wordmark = screens[screens.index(".ob-wordmark {"):]
+    wordmark = wordmark[:wordmark.index("}")]
+    assert "letter-spacing: var(--meta-track);" in wordmark
     assert (
         ".ob-para { margin: 0 0 var(--sp-3); line-height: var(--lh-letter);\n"
         "           text-indent: 2em;" in screens

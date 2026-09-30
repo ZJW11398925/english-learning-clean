@@ -46,6 +46,16 @@
 | `--sp-1` … `--sp-8` | `4px`–`64px`（4 基数） | 间距阶八阶（R-1V ⑨-2） | 新规则不裸写像素 |
 | `--dur-1` `--dur-2` `--dur-3` | `140ms` `260ms` `480ms` | 动效时长三档：触压 / 纸面 / 仪式（R-1V ⑨-5） | 不裸写时长 |
 | `--ease-ink` `--ease-paper` `--ease-press` | cubic-bezier 三条 | 缓动：墨迹稳出 / 纸面长尾 / 触压对称（R-1V ⑨-5） | — |
+| `--meta-font` | `500 var(--fs-micro)/var(--lh-ui) var(--f-sans)` | 微标签配方 sans 角色（rd-1）：状态词/节名/词性等元信息——小字号 + 500 + 界面行高，`font: var(--meta-font)` 整体取用 | 元信息位只许引用配方，不重写字面 |
+| `--meta-mono` | `var(--fs-micro)/var(--lh-ui) var(--f-mono)` | 微标签配方等宽角色（rd-1）：时间/编号/计数/日期/版本行——等宽自有节奏，免字距 | 同上 |
+| `--meta-track` | `var(--ls-caps)` | 微标签字距（rd-1） | — |
+| `--meta-ink` | `var(--ink-faint)` | 微标签暖灰（rd-1） | — |
+| `--dur-micro` | `100ms` | 触感反馈档（rd-1 ⑨-5）：state layer / hover / press（80–120ms 带） | 一切反馈 ≤ 此档；纸事件不走它 |
+| `--dur-stamp` `--dur-note` | `120ms` `240ms` | 纸事件时长（rd-1 ⑨-5）：邮戳盖下 / 短笺递出 | 现役 `--dur-1/2/3` 语义不动 |
+| `--dur-panel-in` `--dur-panel-out` `--dur-settle` | `280ms` `200ms` `320ms` | 纸事件时长（rd-1 ⑨-5）：柜抽进·出 / 信纸落桌——进入比退出略长（`--dur-panel-out` 已立、容器级现役待接，⑨-5 Revisit） | 同上 |
+| `--ease-enter` `--ease-exit` | cubic-bezier 两条 | 进入/退出缓动分离（rd-1 ⑨-5）：进入减速长尾 `(.05,.7,.1,1)`、退出加速收势 `(.3,0,1,1)` | 现役三缓动不动 |
+| `--state-hover` `--state-focus` `--state-press` | `0.08` `0.12` `0.12` | 触感层三值（rd-1 ⑨-5；Material state layer 实测值） | 只作 `::after` 的 opacity，不碰布局 |
+| `--stack-shadow-soft` `--stack-shadow-deep` | `3px -3px 6px rgba(27,26,23,.12)` / `-5px 6px 10px rgba(27,26,23,.16)` | 纸叠偏移阴影两级（rd-1 面6）：轻=右上（短笺/浮层在人手近侧）、重=左下（信纸摊在案头）——方向不统一 | **阴影色 = 墨色同源**（`rgba(27,26,23,…)`），禁 `rgba(0,0,0,…)`；全局恰两级；与发丝描边配对；禁大面积模糊投影型 |
 | `--icon-size` `--icon-stroke` | `18px` `1.5` | #22 图标参数：默认见方与统一笔重（R-1V ⑨-4） | — |
 | `--shell-w` | `430px`（≥900px 媒体查询改写 `1080px`） | 信纸栏宽：#18 navdock 与写信区 .dock 的同一宽度出处（R-1V ⑨-6） | 不作颜色 |
 
@@ -53,6 +63,20 @@
 禁止新增 token 之外的十六进制颜色（零青绿——旧双色主题不得回流）。
 现役八字号/间距字面值（`17px`、`22px` 等祖辈规则里的）是冻结存量，
 不回迁不扩散；**R-1V 起新写的尺寸规则一律走标度与间距阶**。
+
+**元信息纪律（rd-1）**：全站元信息位（时间戳/状态词/计数/编号/版本行/
+日期）一律走微标签配方（`--meta-*`）——第一次用文字表达状态差异，
+第二次才用颜色；彩色徽章/胶囊保持退役（赭红只作文字与小面强调，
+不作胶囊底）。
+
+**「零阴影」解除登记（rd-1 面6；用户 2026-09-30 明示从未否决过阴影，
+纸叠偏移阴影授权入刀，`DEC-OPI-dc0ba4b6-…13`）**：F-1R 历史提交原文
+保留不改写；现役阴影法 = **纸叠偏移阴影两级**（`--stack-shadow-*`）——
+阴影色与墨同源、位移小（±3–6px 量级）、方向不统一（信纸左下/短笺
+右上，人手叠放感）、与发丝描边配对、**禁大面积模糊投影型 shadow**
+（那是 UI 卡片语汇）。应用面三类：信纸在桌布上（`#stage` ≥900 桌面
+档，重档）/ 短笺在信纸上（`--stack-shadow-soft`）/ 浮层卡面
+（#15 词卡的垫纸层承影）。
 
 ## ③ 组件契约（唯一出处：`webui/components.css` + `webui/components.js`）
 
@@ -75,7 +99,7 @@
 | 12 | system-line | `.sysline` | — | default（无交互态） | components.css + components.js（addLine system 臂） |
 | 13 | brand-mark | `.brandmark`（+ `--sm` `--lg`） | — | default 30px / 尺寸修饰 --sm 20px、--lg 64px / reduced-motion 不适用（静态标记，无动效——契约注明） | index.html（`<template id="brand-mark-source">` 内联 SVG，几何唯一出处）+ components.css + components.js（`brandMark()`/`installBrandMarks()`） |
 | 14 | state-banner | `.state-banner`（+ `--loading` `--empty` `--error`） | — | loading（取信中…，尾点呼吸微动）/ empty（弱化诚实句 + #22 lamp 墨线小图，R-1V 修订）/ error（赭红人话句 + `--pencil` 重试链接，回调由调用方注入）/ reduced-motion（loading 呼吸降级为静态 + 库尾 R-1V 总降级块） | components.css + components.js（`stateBanner()`；`diagEmpty`/`diagError` 一律委托它） |
-| 15 | word-card | `.word-card`（+ `.wc-lemma` `.wc-pos` `.wc-forms` `.wc-zh` `.wc-en` `.wc-example` `.word`） | — | default（--paper-high 泛起纸面 + 发丝边 + 垫纸错位层——浮层纸影无 box-shadow，R-1V 修订；`.word:hover` 触点泛赭）/ closed（点卡外或「收起」；DOM 移除语义，同 #11 的两臂不在 CSS）；无 busy——命中即显，miss 按契约静默 | components.css + components.js（`wordCard()`/`showWordCard()`/`closeWordCard()`；触发面 = `letterWords()` 的 `.word` 分片 + `wordWindows()` 窗口查询，app.js 委派） |
+| 15 | word-card | `.word-card`（+ `.wc-lemma` `.wc-pos` `.wc-forms` `.wc-zh` `.wc-en` `.wc-example` `.word`） | — | default（--paper-high 泛起纸面 + 发丝边 + 垫纸错位层——rd-1 面6 起垫纸层承 `--stack-shadow-soft`（② 解禁两级之内），R-1V 修订；`.word:hover` 触点泛赭）/ closed（点卡外或「收起」；DOM 移除语义，同 #11 的两臂不在 CSS）；无 busy——命中即显，miss 按契约静默 | components.css + components.js（`wordCard()`/`showWordCard()`/`closeWordCard()`；触发面 = `letterWords()` 的 `.word` 分片 + `wordWindows()` 窗口查询，app.js 委派） |
 | 16 | field | `.field`（+ `.fieldname`） | — | default（下发丝线）/ `:focus-within`（发丝线与名转赭红，--dur-1 淡入）/ 控件 `[disabled]`（opacity .4 + 无 pointer）；名牌可配 #22 search 小图（R-1V） | components.css + components.js（`fieldRow()`，p-3；label 包裹控件，点名牌即聚焦） |
 | 17 | chip | `.chip`（+ `--on` `--badge`） | — | off（default，发丝线描边）/ hover（R-1V：边转次级墨，--on 不被冲淡）/ on（`--on`，主墨反白）/ `:active`（触压 1px，R-1V）/ `[disabled]`（opacity .4）/ `--badge`（只读徽标，非交互） | components.css + components.js（`chip()`，p-3；考试/语域/教学频率词表 picker + modality 徽标） |
 | 18 | dock | `.navdock`（+ `.navdock-item` `--on`；类名与写信区屏级类 `.dock` 异名共存） | — | default（次级墨、透明点线占位）/ hover（R-1V：墨色微沉）/ `--on`（当前空间：主墨加重 + 赭红实线短下划 + `aria-current`）/ `:active`（触压 1px，R-1V）/ `[disabled]`（opacity .4）；宽度随 `--shell-w`（≥900px 三项收拢居中，R-1V 修订） | components.css + components.js（`wireNavdock()`/`markNavdock()`，R-1；常驻底部三项 客厅/学案/柜抽，门厅整条让位；z 6 低于点词卡 z 9） |
@@ -952,8 +976,10 @@ app.js:568-657；走查 07）。
 > 地位：本节是「高级信笺」视觉工艺层的规范出处——用户否决上一版
 > （「整体不够协调，留白过分，不高级。设计简陋，如同白板模版……
 > 组件、图标、动效简陋」）之后，R-1V 对**呈现层**的整体精修规范。
-> ⑧ 的信息架构与文案冻结线、F-1R 的形态法则（零卡片/零气泡/零阴影
-> /零青绿/零圆角）、十二端点与 Python 侧零改动——全部不动；本节只
+> ⑧ 的信息架构与文案冻结线、F-1R 的形态法则（零卡片/零气泡/零青绿
+> /零圆角；「零阴影」一项已由用户 2026-09-30 解除——纸叠偏移阴影
+> 两级按 ② 的 rd-1 登记入册，`DEC-OPI-dc0ba4b6-…13`）、十二端点与
+> Python 侧零改动——全部不动；本节只
 > 规范版式、质感、图标、动效四个工艺面，参数唯一出处是 ② 的 token 表。
 
 ### 9.1 排版标度
@@ -998,9 +1024,13 @@ app.js:568-657；走查 07）。
   垫纸层）/ 桌布 `--desk`（≥900px 案头底）。
 - 发丝边两档（`--rule` / `--rule-soft`，钉）；界尺与角饰用**水印墨**
   `--ink-ghost`（永不作文字）。
-- **压痕/纸影只许垫纸错位**：纯色次纸层 3px 以内错位（唯一现役例
-  = #15 `word-card::after`）——`box-shadow` 全库永禁（F-1R 形态法则
-  不动，pin 在 tests/host/test_f1r_letter_design.py）。
+- **压痕/纸影两级**（rd-1 面6 解禁重写）：**纸叠偏移阴影**走
+  `--stack-shadow-*` 两级（轻=右上 soft / 重=左下 deep；墨色同源
+  `rgba(27,26,23,…)`、方向不统一、与发丝描边配对、禁大面积模糊投影
+  型）——应用面三类：`#stage` 在桌布（≥900，deep）/ `.note-paper` 在
+  信纸（soft）/ #15 词卡的垫纸层承影（soft）；垫纸错位（#15 ::after
+  3px）与阴影并存，垫纸仍是契约形。`rgba(0,0,0,…)` 阴影与两级之外的
+  自造 shadow 永禁（F-1R 历史提交原文保留不改写；解除登记见 ②）。
 - 撕边/撕缝：`.letter.me` 的 clip-path 撕口（钉）与 #7 resultstrip
   的 1px dashed 撕缝线。
 - 印记母题：#13 brand-mark（信封 + 封蜡）与 #22 postmark（邮戳水
@@ -1027,7 +1057,7 @@ app.js:568-657；走查 07）。
 | 动效 | 触发 | 时长 × 缓动 | 实现 | reduced-motion 降级 |
 |---|---|---|---|---|
 | ink-fade 墨迹淡入 | 新信寄出与到达（`addLine` 的 `opts.enter`；历史回填不播）；#15 词卡开启复用（`--dur-2`） | `--dur-3` × `--ease-ink`（词卡 `--dur-2`） | `.flow-enter` + `@keyframes ink-fade` | 总降级块归零 |
-| note-arrive 短笺递入 | 新短笺组到达（轮询重渲染同 key 静帧，不重演） | `--dur-2` × `--ease-paper` | `.note-paper--enter` + `@keyframes note-arrive` | 同上 |
+| note-arrive 短笺递出 | 新短笺组到达（轮询重渲染同 key 静帧，不重演）；rd-1 重定档（260→240ms，四族对齐） | `--dur-note`（240ms）× `--ease-paper` | `.note-paper--enter` + `@keyframes note-arrive` | 同上 |
 | paper-unfold 纸面展开 | #21 每次展开 | `--dur-2` × `--ease-paper` | `.disclosure-body:not([hidden])` + `@keyframes paper-unfold` | 同上 |
 | chevron 旋转 | #21 `--open` 切换 | `--dur-2` × `--ease-paper` | `.disclosure--open .disclosure-marker .inkicon` transform | 同上 |
 | 触压下沉 | `:active`（#1 / #17 / #18） | `--dur-1` × `--ease-press` | `transform: translateY(1px)` | 同上 |
@@ -1037,10 +1067,30 @@ app.js:568-657；走查 07）。
 | state-breathe 呼吸尾点 | #14 loading（现役） | 1.6s ease-in-out（现役值） | 现役 `@keyframes state-breathe` | 现役专门块 + 总降级块双保险 |
 | paper-settle 信笺落座 | 门厅封面首绘（页面加载播一次，R-1W） | `--dur-3` × `--ease-paper` | `.paper-settle` + `@keyframes paper-settle` | 总降级块归零 |
 | seal-press 印记按落 | 门厅印记入场（首绘一次，R-1W） | `--dur-3` × `--ease-ink` | `.seal-press` + `@keyframes seal-press` | 同上 |
+| state-layer 触感层 | 可交互件 hover / `:focus-visible` / `:active`（.btn 全族 / #17 / #18 / #20 / #21 组头 / `.teach-me`；输入件豁免——键盘焦点有即时赭红环 + #16 发丝线转赭，雾会糊字） | `--dur-micro` × `--ease-press` | `::after` 墨雾叠色（`--state-hover` .08 / `--state-focus` .12 / `--state-press` .12），零布局位移；hover 半区 `@media (hover: hover)` 包裹（触屏只有按压半区） | 总降级块（0.01ms）即达稳态 |
+| 信纸落桌（视图切换档） | 客厅空间显形（`#space-parlor` 解隐，每次切换落一次） | `--dur-settle` × `--ease-enter` | 复用 `@keyframes paper-settle`，挂 `#space-parlor:not([hidden]) .flow`（内容层——容器动画会让 fixed 写信区在动画期改挂本节） | 总降级块归零 |
+| 邮戳盖下 stamp-press | 信笺寄出一瞬（composer 提交，JS 落类一次，animationend 自摘） | `--dur-stamp` × `--ease-press` | `.stamp-press` + `@keyframes stamp-press`（scale .96→1 的 transform 收束，非投影） | 0.01ms 即终，animationend 仍到（JS 清理不失效） |
+| 柜抽开合 drawer | tabpanel 显隐（学案/柜抽的节切换） | 进 `--dur-panel-in` × `--ease-enter`（**出 200 已立待接**——容器级退出需 allow-discrete 的 display 参与，活体实证与祖先 display 翻转同帧组合会把透明度卡死在 0（canonical 单时长形态同死）；待 JS 编排或引擎修正，Revisit；现役退出 = `[hidden]` 直切） | `[role="tabpanel"]:not([hidden])` transition + `@starting-style`（只走透明度，位移交给逐行落墨；旧引擎直接显隐） | 总降级块（0.01ms）直切 |
+| 逐行落墨 reveal stagger | tabpanel 首次入视（IntersectionObserver 落 `.is-revealed`，回调只加类） | ink-fade `--dur-1` × `--ease-enter`，步长 40ms、只对前 8 项生效（`--i` 由 JS 落，总封顶 320ms；`animation-fill-mode: backwards` 防先亮一下） | `[data-reveal].is-revealed` 子项 + `--i`（components.js `wireReveal`） | 双面：CSS 总降级块 + JS 半区 `matchMedia` 即落定 |
+| 回执首渲 @starting-style | 动态插入的回执件（.typing / .sysline / .errline / .busystrip / .resultstrip）首渲 | `--dur-micro` × `--ease-exit` | `@starting-style`（Baseline 2024-08；缺失 = 直接出现，天然渐进增强）。信笺/短笺不走此路（JS 门控的 ink-fade/note-arrive 保历史回填静帧）；#15 词卡已有 ink-fade 不叠加 | 总降级块归零 |
 
 - 纪律：零 JS 动画库、零 WAAPI；全部 CSS transitions/keyframes +
   class 切换；库尾 **reduced-motion 总降级块**是全库统一保险
-  （`animation: none !important; transition: none !important`）。
+  （rd-1 起用 **0.01ms 技巧**：`animation/transition-duration:
+  0.01ms !important` + 延迟归零 + `iteration-count: 1`——即刻到终态而
+  `animationend`/`transitionend` 照发，JS 一次性清理不失效）。
+  **reduced-motion 双面纪律（rd-1）**：CSS 媒体查询管不到 WAAPI/JS
+  编排——components.js 的 `wireReveal` 自行监听
+  `matchMedia('(prefers-reduced-motion: reduce)')`，reduce 即落定
+  全部容器并停掉在飞编排。**手感第一律（rd-1）**：一切可交互件的
+  可见反馈 ≤100ms（hover/press/state layer 全走 `--dur-micro`）；
+  **进入比退出略长**（`--ease-enter`/`--ease-exit` 分离）；触屏纪律：
+  hover 效果一律 `@media (hover: hover)` 包裹。**纸事件守恒**：同屏
+  最多 1 expressive + 1 standard；一屏一次纸事件。**痕迹随机化**
+  （rd-1）：印记微旋 ±0.5–1° 与位置微偏移由 CSS 变量驱动
+  （`--mark-*`，nth-child 离散梯，确定性零 JS 重算）；每屏至多一处
+  随机痕迹——现役唯一活点 = 门厅封面邮票角标（边注栏邮戳是水印，
+  不旋不入计数）。
 
 ### 9.6 断点系统（R-1W 重写版：全断点响应式）
 
@@ -1091,6 +1141,9 @@ app.js:568-657；走查 07）。
    垫纸错位层；禁止变体措辞「阴影」精确化为「盒影类投影」
    （`box-shadow` 字面不入库——页源负钉常绿；垫纸层是契约形，
    F-1R 零阴影法则不动）——浮层纸影与形态法则两全。
+   （rd-1 注记：「零阴影法则不动」已过时——用户 2026-09-30 解除零
+   阴影禁令（`DEC-OPI-dc0ba4b6-…13`），词卡垫纸层现承
+   `--stack-shadow-soft`；本条其余为 R-1V 历史登记，原文保留。）
 8. **#16 / #17 / #18 / #20**：+hover/:active 触压与 transition——同 1。
 9. **#21 disclosure**：标记 ▸/▾ 字符 → #22 chevron（`--open` 驱动
    旋转 90°）+ paper-unfold 入场——否决词「图标简陋」；

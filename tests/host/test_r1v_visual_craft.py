@@ -22,9 +22,10 @@ Python side stay frozen. This file pins the craft deliverables (spec ⑨):
    class toggles, the chevron's open-class rotation, and the
    reduced-motion blanket that degrades every one of them;
 5. **the component refinements** — the note-paper's paper wash and
-   margin rule, the word-card's deckle underlay (paper shadow with no
-   box-shadow — the F-1R form laws hold), the torn stitch, the pen's
-   focus wash, the hover affordances.
+   margin rule, the word-card's deckle underlay (paper shadow; since
+   rd-1 the underlay carries the registered two-tier stack shadow —
+   DEC-OPI-dc0ba4b6-…13 lifted the zero-shadow ban), the torn stitch,
+   the pen's focus wash, the hover affordances.
 
 Every page-source pin reads the served union (the F-G1 reading).
 """
@@ -292,7 +293,12 @@ def test_the_motion_registry_and_its_class_toggles() -> None:
         ".flow-enter { animation: ink-fade var(--dur-3) var(--ease-ink)"
         " both; }" in css
     )
-    assert ".note-paper--enter { animation: note-arrive var(--dur-2)" in css
+    # rd-1 随迁：note-arrive 重定档 --dur-2 → --dur-note（240ms，四族
+    # 对齐——⑨-5 注册表行同步改）
+    assert (
+        ".note-paper--enter { animation: note-arrive var(--dur-note)"
+        in css
+    )
     assert (
         ".disclosure-body:not([hidden]) {\n"
         "            animation: paper-unfold var(--dur-2)"
@@ -315,14 +321,20 @@ def test_every_motion_degrades_under_reduced_motion() -> None:
     """The reduced-motion law: the blanket block at the library's tail
     zeroes every animation and transition, and it comes *after* every
     keyframes block (the #14 dedicated breathe arm stays as the first,
-    dedicated one — double insurance)."""
+    dedicated one — double insurance). rd-1 随迁：blanket 由
+    animation/transition: none 改 0.01ms 技巧（即刻到终态而
+    animationend/transitionend 照发——JS 一次性清理不失效）+ 延迟归零
+    （stagger 的 delay 不在 reduce 下重演）+ iteration-count 1。"""
 
     css = _text("components.css")
     blanket = (
         "@media (prefers-reduced-motion: reduce) {\n"
         "  *, *::before, *::after {\n"
-        "    animation: none !important;\n"
-        "    transition: none !important;\n"
+        "    animation-duration: 0.01ms !important;\n"
+        "    animation-delay: 0s !important;\n"
+        "    animation-iteration-count: 1 !important;\n"
+        "    transition-duration: 0.01ms !important;\n"
+        "    transition-delay: 0s !important;\n"
         "  }\n"
         "}"
     )
@@ -331,6 +343,7 @@ def test_every_motion_degrades_under_reduced_motion() -> None:
     for motion in ("@keyframes ink-fade {", "@keyframes note-arrive {",
                    "@keyframes paper-unfold {",
                    "@keyframes paper-settle {", "@keyframes seal-press {",
+                   "@keyframes stamp-press {",
                    "@keyframes state-breathe {"):
         assert css.index(motion) < blanket_at, motion
     # the dedicated arm survives untouched (its own pin keeps guarding it)
@@ -358,13 +371,14 @@ def test_the_note_paper_is_a_distinct_wash_with_a_margin_rule() -> None:
 
 def test_the_word_card_wears_a_deckle_not_a_shadow(tmp_path: Path) -> None:
     """#15 (⑨-7.7): the overlay floats as stacked paper — the paper-high
-    face, a hairline edge and the deckle underlay 3px offset — while
-    the F-1R form laws hold over the whole served union: no box-shadow,
-    no border-radius, anywhere."""
+    face, a hairline edge and the deckle underlay 3px offset. rd-1 随迁
+    （面6 解除零阴影，DEC-OPI-dc0ba4b6-…13）：垫纸层承注册的
+    --stack-shadow-soft（两级之内、墨色同源）；契约反面不变式照旧
+    （radius 无、全黑 rgba(0,0,0) 无——正面契约钉在 rd1 套件）。"""
 
     page = _page_of(tmp_path)
-    assert "box-shadow" not in page
     assert "border-radius" not in page
+    assert "rgba(0, 0, 0" not in page
     css = _text("components.css")
     assert (
         ".word-card { position: absolute; z-index: 9; max-width: 300px;\n"
@@ -373,6 +387,10 @@ def test_the_word_card_wears_a_deckle_not_a_shadow(tmp_path: Path) -> None:
     )
     assert ".word-card::after {" in css
     assert "transform: translate(3px, 3px);" in css
+    # the deckle underlay carries the registered two-tier shadow, not a
+    # hand-written one (the tier tokens are the only shadow sources)
+    deckle = css.split(".word-card::after {", 1)[1].split("}", 1)[0]
+    assert "box-shadow: var(--stack-shadow-soft);" in deckle
 
 
 def test_the_small_craft_touches_land(tmp_path: Path) -> None:

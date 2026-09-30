@@ -4,7 +4,10 @@
    样式在 components.css，本文件不得定义组件——尤其不得定义按钮样式——
    docs/FRONTEND_SPEC.md ④⑤）。R-1V 起：桌面构图（舞台化纸面 + 边注栏
    .marginalia）也在此；R-1W 起：⑨-6 由单一 900px 断点重写为四档断点
-   系统（481 / 900 / 1280——边界值即契约），门厅重做为封面信笺。 */
+   系统（481 / 900 / 1280——边界值即契约），门厅重做为封面信笺。
+   rd-1 起：动效基建应用层（纸物理四族接线 + 逐行落墨 stagger +
+   回执首渲 @starting-style）与痕迹随机化（邮票角标微旋）也在此
+   （spec ⑨-5 与 ② 的 rd-1 面）。 */
 
 /* ── 壳层 ─────────────────────────────────────────────────────────── */
 html, body { margin: 0; padding: 0; background: var(--bg); }
@@ -35,20 +38,24 @@ body {
             border: 1px solid var(--rule);
             outline: 1px solid var(--rule-soft); outline-offset: 4px;
             padding: var(--sp-6) var(--sp-5) var(--sp-4); }
-/* 案头日期行：日期在左、邮票角标在右——信笺天头的构图件 */
+/* 案头日期行：日期在左、邮票角标在右——信笺天头的构图件。
+   rd-1：日期走微标签配方的等宽角色（--meta-mono + --meta-track +
+   --meta-ink，值与原 mono 11px/0.12em/--ink-faint 相等出处归一——
+   字距 0.12em → 0.18em 是配方统一）；
+   痕迹随机化见文件尾 rd-1 节（邮票角标的微旋与微偏移）。 */
 .ob-dateline { display: flex; justify-content: space-between;
                align-items: center; margin: 0 0 var(--sp-6); }
-.ob-date { font-family: var(--f-mono); font-size: var(--fs-micro);
-           letter-spacing: 0.12em; color: var(--ink-faint); }
+.ob-date { font: var(--meta-mono); letter-spacing: var(--meta-track);
+           color: var(--meta-ink); }
 .ob-stamp { width: 34px; height: 34px; color: var(--ink-ghost);
             opacity: 0.75; }
 /* 印记居中落座（R-1W：旧「display:block + auto 边距」的居中法随重做迁
    为 flex 容器；seal-press 动效类在 components.css 动效注册表） */
 .ob-mark { display: flex; justify-content: center;
            margin-bottom: var(--sp-4); }
-.ob-wordmark { margin: 0; text-align: center; font-family: var(--f-sans);
-               font-size: var(--fs-micro); letter-spacing: var(--ls-caps);
-               color: var(--ink-faint); }
+.ob-wordmark { margin: 0; text-align: center; font: var(--meta-font);
+               letter-spacing: var(--meta-track);
+               color: var(--meta-ink); }
 .ob h1 { margin: var(--sp-2) 0 0; text-align: center;
          font-size: var(--fs-display); font-weight: 500;
          letter-spacing: var(--ls-title); }
@@ -62,8 +69,8 @@ body {
            text-indent: 2em; overflow-wrap: anywhere; }
 .ob-ps { text-indent: 0; color: var(--ink-soft); }
 .ob-version { margin: var(--sp-5) 0 0; text-align: center;
-              font-family: var(--f-mono); font-size: var(--fs-micro);
-              letter-spacing: 0.1em; color: var(--ink-faint); }
+              font: var(--meta-mono); letter-spacing: var(--meta-track);
+              color: var(--meta-ink); }
 
 /* ── 客厅屏：品牌条（上下发丝线夹住）+ 信笺流 + 写信区 ─────────────── */
 .top { position: sticky; top: 0; z-index: 5; background: var(--bg);
@@ -130,6 +137,68 @@ pre { font-family: var(--f-mono); font-size: 11px; line-height: 1.7;
           color: var(--ink-faint); line-height: 1.8;
           overflow-wrap: anywhere; }
 
+/* ── rd-1 动效基建应用层（spec ⑨-5：纸物理四族的页面接线）────────────
+   ① 信纸落桌（视图切换档）：客厅的显形 = 一张信纸落上案头。复用
+   paper-settle keyframes（注册表唯一出处），换 --dur-settle 320ms 档；
+   挂在 .flow 不挂在节本身——settle 的 transform 会让 position:fixed
+   的写信区在动画期改挂本节（写信区跳动 320ms），内容层没有 fixed
+   子孙。display 翻转即动画重启，每次切回都落一次；一屏一次纸事件。
+   ② 柜抽开合（学案/柜抽面板）：进 280（--ease-enter）——@starting-style
+   首渲过渡，缺失 = 直接显隐（渐进增强）。退出的 200ms 档
+   （--dur-panel-out × --ease-exit）已立、现役不接容器：退出过渡需
+   allow-discrete 的 display 参与，活体走查实证它与祖先（空间节）的
+   display 翻转同帧组合时把透明度过渡卡死在 0（canonical 单时长形态
+   同死）——退出待 JS 编排或引擎修正后再接（⑨-5 Revisit），现役
+   退出 = [hidden] 直切（与旧引擎同一答法：直接显隐，零信息丢失）。
+   容器只走透明度，位移交给子项的逐行落墨——一件纸事件，两层完成。
+   ③ 逐行落墨（reveal stagger）：IO 落 .is-revealed（components.js
+   wireReveal——回调只加类）；子项按 --i 错步，步长 40ms、只对前 8 项
+   生效（总封顶 320ms；backwards 防先亮一下）。reduced-motion 双面：
+   CSS 总降级块（0.01ms + 延迟归零）+ JS 半区 wireReveal 自听
+   matchMedia 立即落定。
+   ④ 回执首渲：动态插入的回执件（在途行/系统行/失败行/批改中条/判分
+   条）以 @starting-style 首渲过渡（Baseline 2024-08；缺失 = 直接
+   出现）。信笺与短笺不走此路——它们的入场是 JS 门控的 ink-fade /
+   note-arrive（历史回填必须静帧，五十轮回填不闪）；#15 词卡已有
+   ink-fade 首渲，不叠加。 */
+#space-parlor:not([hidden]) .flow {
+  animation: paper-settle var(--dur-settle) var(--ease-enter) both; }
+
+[role="tabpanel"]:not([hidden]) {
+  transition: opacity var(--dur-panel-in) var(--ease-enter); }
+@starting-style {
+  [role="tabpanel"]:not([hidden]) { opacity: 0; }
+}
+
+/* 入场错步（fg1 的单出处计数钉钉「.sec 加左括号」的相邻字面全树恰一次
+   ——本规则是上下文入场钩子非第二定义，故左括号换行书写让出字面） */
+[data-reveal].is-revealed > .sec,
+[data-reveal].is-revealed > section > .sec,
+[data-reveal].is-revealed .panel-grid > .sec
+{
+  animation: ink-fade var(--dur-1) var(--ease-enter) both;
+  animation-delay: calc(var(--i, 0) * 40ms); }
+
+#space-parlor :is(.typing, .sysline, .errline, .busystrip,
+                  .resultstrip) {
+  transition: opacity var(--dur-micro) var(--ease-exit),
+              transform var(--dur-micro) var(--ease-exit); }
+@starting-style {
+  #space-parlor :is(.typing, .sysline, .errline, .busystrip,
+                    .resultstrip) { opacity: 0; transform: translateY(4px); }
+}
+
+/* ── rd-1 痕迹随机化（调研A 解构⑨；确定性优先）─────────────────────
+   手作盖章的微旋与微偏移：CSS 变量驱动（--mark-tilt/--mark-dx/
+   --mark-dy），取值走 nth-child 离散梯——确定性伪随机，零 JS 重算
+   （图标工厂换标签不挪位，故用 nth-child 不用 nth-of-type）；
+   每屏至多一处随机痕迹：现役唯一活点 = 门厅封面的邮票角标（真实
+   事件——信的日期戳）；边注栏邮戳是水印，不旋、不入计数。 */
+.ob-dateline > *:nth-child(2) {
+  --mark-tilt: -0.7deg; --mark-dx: 1px; --mark-dy: -1px; }
+.ob-stamp { transform: translate(var(--mark-dx, 0px), var(--mark-dy, 0px))
+            rotate(var(--mark-tilt, 0deg)); }
+
 /* ── R-1W 断点系统（spec ⑨-6 重写版；媒体查询的边界值即契约）────────
    四档构图：
    · ≤480 手机——基线形态（--shell-w 430 随视口收窄），现役移动规则冻结；
@@ -178,7 +247,11 @@ pre { font-family: var(--f-mono); font-size: 11px; line-height: 1.7;
   #stage { max-width: 1080px; background: var(--bg);
            border-left: 1px solid var(--rule);
            border-right: 1px solid var(--rule);
-           outline: 1px solid var(--rule-soft); outline-offset: 5px; }
+           outline: 1px solid var(--rule-soft); outline-offset: 5px;
+           /* rd-1 面6：信纸摊在案头（--desk）上——纸叠偏移阴影重档
+              （左下，与短笺的右上相反：人手叠放的方向不统一），与
+              双层发丝镶边配对；窄屏无桌布，阴影随之缺席 */
+           box-shadow: var(--stack-shadow-deep); }
   /* 门厅：封面信笺在案头居中放宽到 640（与阅读栏同一宽） */
   .ob-sheet { width: 640px; }
   .flow, .spacebody { max-width: 640px; margin-left: auto;
@@ -187,9 +260,9 @@ pre { font-family: var(--f-mono); font-size: 11px; line-height: 1.7;
   .marginalia { display: block; position: absolute; top: 0; right: 0;
                 bottom: 0; width: 208px; pointer-events: none; }
   .marginalia-date { margin: 74px 28px 0 0; text-align: right;
-                     font-family: var(--f-mono);
-                     font-size: var(--fs-micro);
-                     letter-spacing: 0.12em; color: var(--ink-faint); }
+                     font: var(--meta-mono);
+                     letter-spacing: var(--meta-track);
+                     color: var(--meta-ink); }
   .marginalia-rule { position: absolute; top: 96px; right: 33px;
                      width: 44px; border-top: 1px solid var(--ink-ghost); }
   .marginalia-mark { position: absolute; right: 26px; bottom: 148px;

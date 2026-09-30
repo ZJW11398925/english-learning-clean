@@ -32,6 +32,7 @@ import {
   markSectionTabs,
   sectionLabel,
   disclosure,
+  wireReveal,
 } from "./components.js";
 import {
   fetchTurn,
@@ -1819,6 +1820,15 @@ document.getElementById("send").addEventListener("submit", (event) => {
   const text = input.value.trim();
   if (!text) return;
   input.value = "";
+  // rd-1 邮戳盖下（⑨-5）：寄出一瞬邮票按下——scale .96→1 的 transform
+  // 收束（非投影）；类由 animationend 自摘（reduced-motion 下动画
+  // 0.01ms 即终、事件仍到，清理不失效）
+  const stamp = document.querySelector("#send .btn--send");
+  if (stamp) {
+    stamp.classList.add("stamp-press");
+    stamp.addEventListener("animationend",
+      () => stamp.classList.remove("stamp-press"), { once: true });
+  }
   postTurn(text);
 });
 
@@ -1871,6 +1881,9 @@ window.addEventListener("DOMContentLoaded", () => {
       String(coverToday.getMonth() + 1).padStart(2, "0") + " · " +
       String(coverToday.getDate()).padStart(2, "0");
   }
+  // rd-1：入场编排接线（⑨-5 逐行落墨——IO 只加类；reduced-motion 的
+  // JS 半区由 wireReveal 自行监听）
+  wireReveal(document);
   loadHistory();
   // F-1R/R-1: the first visit sees the cover; every later visit lands in
   // the parlor directly (the cover never comes back once localStorage

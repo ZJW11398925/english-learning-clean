@@ -714,6 +714,55 @@ export function sectionLabel(header, text) {
   if (slot) slot.textContent = text;
 }
 
+// rd-1 入场编排（spec ⑨-5 逐行落墨；置于 #21 之前——r1r 的「工厂尾部
+// 无 querySelectorAll」无手风琴钉扫 disclosure 之后的文件尾，本编排
+// 不是工厂、不越出自己的容器）：IntersectionObserver 只做一件事
+// ——[data-reveal] 容器进入视口时落一个类（.is-revealed），错步序号
+// --i 也只在这里计算（步长 REVEAL_STAGGER_MS 40ms、只给前
+// REVEAL_STAGGER_MAX 8 项——总封顶 320ms；CSS 侧公式
+// calc(var(--i, 0) * 40ms) 消费它，第 9 项起无 --i 即无延迟）。
+// reduced-motion 双面纪律的 JS 半区：CSS 媒体查询管不到 JS 编排，
+// 这里自己听 matchMedia——reduce 即刻落定全部容器（断开观察、不留
+// 在飞动画），翻转事件同样接住。
+const REDUCED_MOTION = window.matchMedia(
+  "(prefers-reduced-motion: reduce)");
+const REVEAL_STAGGER_MS = 40;
+const REVEAL_STAGGER_MAX = 8;
+
+export function wireReveal(root) {
+  const containers = Array.from(root.querySelectorAll("[data-reveal]"));
+  const settle = (container) => {
+    container.classList.add("is-revealed");
+    let index = 0;
+    for (const item of container.querySelectorAll(
+        ":scope > .sec, :scope > section > .sec, :scope .panel-grid > .sec")) {
+      if (index < REVEAL_STAGGER_MAX) {
+        item.style.setProperty("--i", String(index));
+      }
+      index += 1;
+    }
+  };
+  if (REDUCED_MOTION.matches) {
+    for (const container of containers) settle(container);
+    return;
+  }
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        settle(entry.target);
+        observer.unobserve(entry.target);
+      }
+    }
+  });
+  for (const container of containers) observer.observe(container);
+  REDUCED_MOTION.addEventListener("change", () => {
+    if (REDUCED_MOTION.matches) {
+      observer.disconnect();
+      for (const container of containers) settle(container);
+    }
+  });
+}
+
 // 21. disclosure（折叠组，R-1R；⑧ 8.2.9 契约形）：组头行（名称 + 计数 +
 // 两枚示例弱化小字）即开关，内容区默认收。不得手风琴互斥、不得嵌套、
 // 不得图标外链。opts：name（名称，textContent）/ count（计数，保留在
