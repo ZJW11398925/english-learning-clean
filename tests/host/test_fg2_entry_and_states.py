@@ -16,9 +16,9 @@ Four groups (the task book's own):
    all ride it: the loaders show loading first, the empty and error arms
    delegate through diagEmpty/diagError, and every retry re-pulls only
    its own panel.
-3. **the cover** — three letter steps (这是什么 / 短笺怎么来 / 就这么定)
-   under the large mark, hairline-separated, with the honest version
-   line (``elc · web`` — no fabricated version digits).
+3. **the cover** — R-1W 重做后的封面信笺（称呼 / 两段缩进正文 / 又及 /
+   拆开这封信 →）与诚实的版本落款（``elc · web`` — no fabricated
+   version digits）.
 4. **the living registry** — spec ⑤ carries the user's doctrine (the
    library grows with the product; check-then-reuse-then-build-then-
    register in the same cut) and the ③ table rows for both new
@@ -124,7 +124,10 @@ def test_the_brand_bar_graces_both_screens(tmp_path: Path) -> None:
         "       border-bottom: 1px solid var(--rule);" in screens
     )
     assert ".top .brandmark { align-self: center; flex: none; }" in screens
-    assert ".ob .brandmark { display: block; margin: 0 auto 18px; }" in screens
+    # R-1W 随迁（门厅重做）：印记居中法由「.ob .brandmark display:block
+    # + auto 边距」迁为 flex 容器 .ob-mark（旧串：.ob .brandmark
+    # { display: block; margin: 0 auto 18px; }）
+    assert ".ob-mark { display: flex; justify-content: center;" in screens
 
 
 # ---------------------------------------------------------------------------
@@ -193,28 +196,31 @@ def test_the_panel_faces_ride_the_state_banner(tmp_path: Path) -> None:
 # 3. the cover
 
 
-def test_the_cover_is_a_three_step_letter(tmp_path: Path) -> None:
-    """Three hairline-separated steps under the large mark — what this
-    is, how teaching happens (the honest three sentences), and the ink
-    就这么定 link with the honest mono version line (no fabricated
-    version digits). The localStorage gate keeps its exact semantics."""
+def test_the_cover_is_a_complete_letter(tmp_path: Path) -> None:
+    """R-1W 重做（⑧ 8.2.1 修订版）：封面是一张完整的信笺——称呼、两段
+    缩进正文、又及、进门钮「拆开这封信 →」与诚实的 mono 落款（无编造
+    版本数字）；旧三步白板版（一 / 二步题与旧进门词）退役。localStorage
+    门语义不动（f1r 套件钉）。"""
 
     page = _page_of(tmp_path)
-    # R-1R 随迁（⑧ 8.2.1 定稿）：内容步只给两步（一 / 二），门不当步；
-    # 「反馈」改「回音」；hint 一次交代 dock 三词（学案与柜抽）
-    assert "一 · 这是什么" in page
-    assert "二 · 短笺怎么来" in page
+    # R-1W 随迁（旧串 → 新串）：一 · 这是什么 → 致 来到门前的人：；
+    # 二 · 短笺怎么来 + 三句步文 → 两段缩进正文；就这么定 → → 拆开
+    # 这封信 →；hint → 又及（进信体）
+    assert "致 来到门前的人：" in page
+    assert "这间客厅只做一件事——你和一位固定笔友用英语通信。" in page
     assert "写着写着，客厅在旁听着。" in page
-    assert "发现值得练的表达时，信流里会出现一张短笺。" in page
-    assert "答对答错都有回音，也可以跳过。" in page
-    assert "就这么定 →</button>" in page
+    assert "又及：进门以后，底部三个词随时可走" in page
+    assert "拆开这封信 →</button>" in page
     # the honest version line: the product's own name, no invented semver
     assert '<p class="ob-version">elc · web</p>' in page
+    # 旧形缺位钉：三步结构与旧进门词不再出现
+    assert "一 · 这是什么" not in page
+    assert "二 · 短笺怎么来" not in page
+    assert "就这么定" not in page
     screens = _webui_text("screens.css")
-    assert (
-        ".ob-step { border-top: 1px solid var(--rule-soft);"
-        " margin-top: 22px;" in screens
-    )
+    # R-1W 随迁：.ob-step { → .ob-sheet {（封面信笺对象）
+    assert ".ob-sheet {" in screens
+    assert ".ob-step" not in screens
 
 
 # ---------------------------------------------------------------------------

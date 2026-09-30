@@ -658,6 +658,9 @@ function teachRow(name, targetId) {
 // 原 id 一并小写匹配。
 function familyGroupsBlock(list, rowFor) {
   const root = document.createElement("div");
+  // R-1W：家族折叠组容器带上 .family-groups——平板档起两栏网格的挂点
+  // （screens.css 断点系统；窄屏自然单栏）
+  root.className = "family-groups";
   const input = document.createElement("input");
   input.type = "text";
   input.autocomplete = "off";
@@ -1904,6 +1907,15 @@ window.addEventListener("DOMContentLoaded", () => {
     dateSlot.textContent = today.getFullYear() + " · " +
       String(today.getMonth() + 1).padStart(2, "0") + " · " +
       String(today.getDate()).padStart(2, "0");
+  }
+  // R-1W：门厅封面的案头日期（⑧ 8.2.1 修订版）——与边注栏同一真实
+  // 数据源、同一格式，textContent 落（机械事实，非文案；零伪数据）
+  const coverDate = document.querySelector(".ob-date");
+  if (coverDate) {
+    const coverToday = new Date();
+    coverDate.textContent = coverToday.getFullYear() + " · " +
+      String(coverToday.getMonth() + 1).padStart(2, "0") + " · " +
+      String(coverToday.getDate()).padStart(2, "0");
   }
   loadHistory();
   // F-1R/R-1: the first visit sees the cover; every later visit lands in

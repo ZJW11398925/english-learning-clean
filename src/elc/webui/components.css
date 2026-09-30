@@ -574,10 +574,11 @@ button:focus-visible, input:focus-visible {
    （components.js）从模板内容查一枚克隆并摘掉 id；插槽安装
    installIcons() 把 <span data-icon="…"> 换成克隆（#13 同法），插槽
    class 过继给克隆体。
-   现役七枚：search（筛框名牌，随 #16）/ chevron（#21 折叠箭头，随
+   现役八枚：search（筛框名牌，随 #16）/ chevron（#21 折叠箭头，随
    --open 旋转）/ note（#3 卡头小笺）/ write（回信在途中执笔，随
    .typing）/ inbox（空厅空信箱，随 .sysline.emptyhall）/ lamp（#14
-   空态未点亮的灯）/ postmark（桌面边注栏邮戳水印，⑨-6）。
+   空态未点亮的灯）/ postmark（桌面边注栏邮戳水印，⑨-6）/
+   stamp（门厅封面案头日期行的邮票角标，R-1W ⑧ 8.2.1 修订版）。
    状态矩阵：default（--icon-size 见方、currentColor 墨色、
    --icon-stroke 笔重 1.5、圆角端点——颜色随宿主上下文，无独立
    交互态；chevron 的旋转是宿主 #21 的 --open 态面，不是图标自身
@@ -606,8 +607,9 @@ button:focus-visible, input:focus-visible {
    与新到达的信才播，历史回填不播）/ note-arrive（短笺递入：
    .note-paper--enter，新短笺组到达播一次，轮询重渲染不重演）/
    paper-unfold（折叠组纸面展开：.disclosure-body:not([hidden])，
-   见 #21）。时长×缓动全走令牌（--dur-*/--ease-*）；reduced-motion
-   由库尾总降级块归零。 */
+   见 #21）/ paper-settle 与 seal-press（R-1W 门厅封面：信笺落座与
+   印记按落——页面首绘各播一次，⑧ 8.2.1 修订版）。时长×缓动全走令牌
+   （--dur-*/--ease-*）；reduced-motion 由库尾总降级块归零。 */
 .flow-enter { animation: ink-fade var(--dur-3) var(--ease-ink) both; }
 @keyframes ink-fade {
   from { opacity: 0; transform: translateY(6px); }
@@ -621,6 +623,19 @@ button:focus-visible, input:focus-visible {
 }
 @keyframes paper-unfold {
   from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+/* R-1W：门厅封面两枚入场（screens.css 封面节引用）——信笺从纸面落座
+   （长尾纸感）与印记按落（墨迹稳出的落款手感），均首绘一次 */
+.paper-settle { animation: paper-settle var(--dur-3) var(--ease-paper)
+                both; }
+@keyframes paper-settle {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.seal-press { animation: seal-press var(--dur-3) var(--ease-ink) both; }
+@keyframes seal-press {
+  from { opacity: 0; transform: scale(0.92); }
   to { opacity: 1; transform: none; }
 }
 

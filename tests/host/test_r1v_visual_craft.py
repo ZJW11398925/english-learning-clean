@@ -133,7 +133,10 @@ def test_the_spec_registers_the_tokens_and_the_craft_section() -> None:
     assert "## ⑨ 视觉工艺规范" in spec
     for subsection in (
         "### 9.1 排版标度", "### 9.2 间距节奏", "### 9.3 质感与层次",
-        "### 9.4 图标集契约", "### 9.5 动效注册表", "### 9.6 桌面构图",
+        "### 9.4 图标集契约", "### 9.5 动效注册表",
+        # R-1W 随迁：9.6 由「桌面构图」（单一 900px 断点）重写为四档
+        # 断点系统——旧串「### 9.6 桌面构图」就此退役
+        "### 9.6 断点系统（R-1W 重写版：全断点响应式）",
         "### 9.7 本刀的 ③ 契约修订登记",
     ):
         assert subsection in spec, subsection
@@ -187,9 +190,14 @@ def test_the_narrow_screen_base_values_are_untouched(tmp_path: Path) -> None:
         in screens
     )
     assert "bottom: var(--navdock-h); z-index: 8;" in screens
-    # the dock stands on the 430px column by default; 1080px only lives
-    # behind the desktop media query
-    assert screens.count("@media (min-width: 900px) {") == 1
+    # R-1W 随迁：断点系统落地——「恰一个 ≥900 媒体查询」计数钉迁为三
+    # 边界各恰一次（481 / 900 / 1280 是 ⑨-6 的档位契约；新档语义由
+    # test_r1w_responsive_redo.py 钉）。430 基线值 = token 默认不动。
+    for boundary in ("481px", "900px", "1280px"):
+        assert screens.count(f"@media (min-width: {boundary}) {{") == 1, \
+            boundary
+    # the dock stands on the 430px column by default; the tier rewrites
+    # live only behind the media queries
     assert page.count("--shell-w: 1080px;") == 1
 
 
@@ -216,19 +224,20 @@ def test_the_icon_set_is_registered_in_all_four_places() -> None:
 
 
 def test_the_seven_icons_share_one_grid_and_one_stroke() -> None:
-    """⑨-4: the seven ink icons live in the shell's template on one
-    20×20 grid, all aria-hidden (their hosts' words carry the meaning);
-    the stroke weight is the token, spelled once in components.css —
-    no per-icon stroke drift, no external geometry."""
+    """⑨-4: the ink icons live in the shell's template on one 20×20 grid,
+    all aria-hidden (their hosts' words carry the meaning); the stroke
+    weight is the token, spelled once in components.css — no per-icon
+    stroke drift, no external geometry. R-1W 随迁：stamp 入集，七枚 →
+    八枚。"""
 
     index = _text("index.html")
     assert '<template id="icon-set-source">' in index
     for name in ("search", "chevron", "note", "write",
-                 "inbox", "lamp", "postmark"):
+                 "inbox", "lamp", "postmark", "stamp"):
         assert f'<svg id="icon-{name}" class="inkicon" ' \
             f'viewBox="0 0 20 20" aria-hidden="true">' in index, name
-    # the grid is uniform: seven icons, seven identical viewBoxes
-    assert index.count('viewBox="0 0 20 20"') == 7
+    # the grid is uniform: eight icons, eight identical viewBoxes
+    assert index.count('viewBox="0 0 20 20"') == 8
     css = _text("components.css")
     assert (
         ".inkicon { width: var(--icon-size); height: var(--icon-size);"
@@ -239,7 +248,7 @@ def test_the_seven_icons_share_one_grid_and_one_stroke() -> None:
     # the icons carry no stroke literals of their own (one weight, one
     # source — the token)
     for name in ("search", "chevron", "note", "write",
-                 "inbox", "lamp", "postmark"):
+                 "inbox", "lamp", "postmark", "stamp"):
         svg = index.split(f'<svg id="icon-{name}"', 1)[1].split(
             "</svg>", 1)[0]
         assert "stroke" not in svg, name
@@ -249,7 +258,8 @@ def test_every_icon_has_a_live_anchor() -> None:
     """A registered icon is a used icon (the registry is not an attic):
     search rides the filter field's label, chevron the disclosure
     marker, note the moment card's head, write the waiting line, inbox
-    the empty hall, lamp the empty state, postmark the marginalia."""
+    the empty hall, lamp the empty state, postmark the marginalia, stamp
+    the cover's dateline (R-1W)."""
 
     js = _text("components.js")
     assert 'inkIcon("chevron")' in js  # disclosure's marker
@@ -261,6 +271,7 @@ def test_every_icon_has_a_live_anchor() -> None:
     assert 'inkIcon("inbox")' in app  # the empty hall
     index = _text("index.html")
     assert 'data-icon="postmark"' in index  # the marginalia watermark
+    assert 'data-icon="stamp"' in index  # the cover's dateline corner
 
 
 # ---------------------------------------------------------------------------
@@ -319,6 +330,7 @@ def test_every_motion_degrades_under_reduced_motion() -> None:
     blanket_at = css.index(blanket)
     for motion in ("@keyframes ink-fade {", "@keyframes note-arrive {",
                    "@keyframes paper-unfold {",
+                   "@keyframes paper-settle {", "@keyframes seal-press {",
                    "@keyframes state-breathe {"):
         assert css.index(motion) < blanket_at, motion
     # the dedicated arm survives untouched (its own pin keeps guarding it)
@@ -384,7 +396,9 @@ def test_the_small_craft_touches_land(tmp_path: Path) -> None:
         "  outline: 1px solid var(--pencil); outline-offset: 2px; }" in css
     )
     screens = _text("screens.css")
-    assert ".ob .formhead::before, .ob .formhead::after {" in screens
+    # R-1W 随迁：门厅重做后步题界尺小标（.ob .formhead::before/::after）
+    # 退役，封面工艺钉迁为 .ob-divider（标题与信体之间的短界尺分饰）
+    assert ".ob-divider { display: block; width: 3em;" in screens
 
 
 def test_the_marginalia_date_is_real_client_data() -> None:

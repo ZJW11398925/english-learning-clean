@@ -1,0 +1,377 @@
+"""R-1W — the full-breakpoint responsive system + the cover redo, pinned.
+
+The user's twin order: 「各个页面在不同屏幕大小中的显示效果差距很大，
+完全没有做这方面的优化」 and 「欢迎页必须完全重做，高规格，不得敷衍」.
+R-1W answers on two faces in one cut (spec ⑨-6 rewritten as a four-tier
+breakpoint system; ⑧ 8.2.1 rewritten as the cover letter). This file pins:
+
+1. **the breakpoint contract** — the three boundary queries (481 / 900 /
+   1280) each spelled exactly once, in tier order; the tablet tier is a
+   real composition (600px shell + the two-column panel containers), not
+   a stretched 430;
+2. **the wide tier extends the desk, not the line length** — the paper
+   grows to 1240 and the rail to 240 while the 640 reading column and
+   the composer stay untouched;
+3. **the per-page adaptations** — the family groups (today + privacy)
+   carry the grid class at the JS factory, the homogeneous panels pair
+   up (memory / settings / today), the record page splits 账｜为什么;
+4. **the keyboard face** — interactive-widget=resizes-content on the
+   viewport, the cover's 100vh → 100dvh double declaration;
+5. **the cover redo** — the complete letter structure (dateline + stamp
+   / mark / wordmark / display title / salutation / indented body /
+   postscript / door / version), the copy verbatim, the door semantics
+   (localStorage gate, title, landing space) untouched;
+6. **the cover craft** — typography rides the ② scale tokens, the two
+   registered motions (paper-settle / seal-press) sit before the
+   reduced-motion blanket, the stamp icon's four-step registration, the
+   cover date is real client data;
+7. **the spec carries the rewritten ⑨-6 and the revision register**
+   (9.8's three entries, 8.2.1's revision marker).
+
+The frozen lines hold elsewhere: every other page's 8.2 copy verbatim
+(tested by the r1r suite untouched), web.py and all Python untouched,
+ARIA/keyboard semantics with zero regression. Every page-source pin
+reads the served union (the F-G1 reading).
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import elc.web
+from tests.host.test_w1_web import _page_source, web_stack
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+WEBUI = Path(elc.web.__file__).parent / "webui"
+
+
+def _page_of(tmp_path: Path) -> str:
+    """The served page source over the plain offline stack."""
+
+    with web_stack(tmp_path / "app.db") as stack:
+        return _page_source(stack)
+
+
+def _text(name: str) -> str:
+    return (WEBUI / name).read_text(encoding="utf-8")
+
+
+def _spec() -> str:
+    return (REPO_ROOT / "docs" / "FRONTEND_SPEC.md").read_text(
+        encoding="utf-8")
+
+
+def _tier(screens: str, boundary: str) -> str:
+    """The rules of one tier: the slice from its query to the next one
+    (or the end of the file)."""
+
+    start = screens.index(f"@media (min-width: {boundary}) {{")
+    later = [screens.find(f"@media (min-width: {b}) {{", start + 1)
+             for b in ("481px", "900px", "1280px")
+             if screens.find(f"@media (min-width: {b}) {{", start + 1) != -1]
+    end = min(later) if later else len(screens)
+    return screens[start:end]
+
+
+# ---------------------------------------------------------------------------
+# 1. the breakpoint contract
+
+
+def test_the_three_boundaries_are_the_contract() -> None:
+    """⑨-6: four tiers over three boundaries — 481 / 900 / 1280 each
+    spelled exactly once in screens.css, in ascending order (the tier
+    order is the cascade order); the base shell width stays the token's
+    430 default and #stage now rides --shell-w (one width source for
+    stage, navdock and composer)."""
+
+    screens = _text("screens.css")
+    at = {}
+    for boundary in ("481px", "900px", "1280px"):
+        assert screens.count(f"@media (min-width: {boundary}) {{") == 1, \
+            boundary
+        at[boundary] = screens.index(f"@media (min-width: {boundary}) {{")
+    assert at["481px"] < at["900px"] < at["1280px"]
+    # the base width is the token (no tier rewrite outside the queries)
+    tokens = _text("tokens.css")
+    assert "--shell-w: 430px;" in tokens
+    assert screens.count("--shell-w:") == 3  # one rewrite per tier, no base
+    assert "#stage { max-width: var(--shell-w);" in screens
+    assert "max-width: 430px" not in screens
+
+
+def test_the_tablet_tier_is_a_real_composition() -> None:
+    """481–899 is not a stretched 430: the shell widens to 600, the cover
+    letter centers as a 560 sheet, and the two-column containers take
+    their grids (family groups with the filter spanning full width;
+    the homogeneous panels). The walkthrough-killed form (.ledger-cols,
+    账|为什么 hard-split — cramped at 768) leaves no rule behind."""
+
+    tablet = _tier(_text("screens.css"), "481px")
+    assert ":root { --shell-w: 600px; }" in tablet
+    assert ".ob { display: flex; justify-content: center; }" in tablet
+    assert ".ob-sheet { width: 560px; margin: auto 0; }" in tablet
+    assert ".family-groups { display: grid;" in tablet
+    assert "repeat(auto-fill, minmax(260px, 1fr));" in tablet
+    assert (
+        ".family-groups > .note, .family-groups > .field {\n"
+        "                   grid-column: 1 / -1; }" in tablet
+    )
+    assert ".panel-grid { display: grid;" in tablet
+    assert "repeat(auto-fill, minmax(280px, 1fr));" in tablet
+    # the killed two-column form leaves nothing behind
+    assert ".ledger-cols" not in _text("screens.css")
+
+
+def test_the_wide_tier_extends_the_desk_not_the_line_length() -> None:
+    """≥1280: the paper grows to 1240 and the rail to 240 (a slightly
+    larger postmark), while the reading column keeps its 640 ceiling —
+    the wide tier never touches .flow/.spacebody/.dock-row."""
+
+    screens = _text("screens.css")
+    wide = _tier(screens, "1280px")
+    assert ":root { --shell-w: 1240px; }" in wide
+    assert "#stage { max-width: 1240px; }" in wide
+    assert ".marginalia { width: 240px; }" in wide
+    assert ".marginalia-mark { width: 96px; height: 96px;" in wide
+    for untouchable in (".flow", ".spacebody", ".dock-row"):
+        assert untouchable not in wide, untouchable
+    # the 640 ceiling is set once, in the desktop tier, and inherited
+    desktop = _tier(screens, "900px")
+    assert "max-width: 640px;" in desktop
+
+
+def test_the_homogeneous_panels_pair_up() -> None:
+    """The per-page wrappers: today's due + recent, the record page's
+    five whys, memory's five panels and settings' two blocks all ride
+    .panel-grid — while the record page's 账表 stays full-width (a
+    four-field row needs the width; the walkthrough killed the hard
+    账|为什么 split). Id arithmetic unchanged (the JS reads the same
+    panel ids)."""
+
+    index = _text("index.html")
+    assert index.count('class="panel-grid"') == 4
+    # the account table opens the record page unpaired; the five whys
+    # ride the grid inside #set-diagnostics, below the grouphead
+    assert "<h3>在学的表达</h3>" in index
+    assert 'class="ledger-cols"' not in index
+    whys = index.split('id="set-diagnostics"', 1)[1].split(
+        'id="set-learning"', 1)[0]
+    assert 'class="panel-grid">' in whys
+    for panel in ("why-teach", "why-not-teach", "why-evidence",
+                  "why-support", "why-degraded"):
+        assert f'id="{panel}"' in whys, panel
+    assert "study-progress" in index  # the panel itself survives
+
+
+def test_the_family_groups_carry_the_grid_class() -> None:
+    """Both family-group faces (today's practice list and privacy's
+    per-expression forget list) are built by the one JS factory, and the
+    factory stamps the grid class — the tablet composition reaches both
+    pages through one line."""
+
+    app = _text("app.js")
+    assert 'root.className = "family-groups";' in app
+    # both call sites keep their rows (the definition itself is the
+    # third occurrence of the bare name; the r1r suite pins the rest)
+    assert app.count("appendChild(familyGroupsBlock(list,") == 2
+
+
+def test_the_keyboard_face_resizes_content() -> None:
+    """The composer must not sit under the soft keyboard: the viewport
+    meta asks resizes-content (engines that don't know the key ignore
+    it — no fallback face), and the cover's min-height carries the
+    100vh → 100dvh double declaration."""
+
+    index = _text("index.html")
+    assert (
+        'content="width=device-width, initial-scale=1, viewport-fit=cover,'
+        ' interactive-widget=resizes-content"' in index
+    )
+    screens = _text("screens.css")
+    assert ".ob { min-height: 100vh; min-height: 100dvh;" in screens
+
+
+# ---------------------------------------------------------------------------
+# 2. the cover redo
+
+
+def test_the_cover_is_a_complete_letter() -> None:
+    """The cover's anatomy, top to bottom: the sheet object (paper-high
+    + double hairline edge) carrying the dateline (date slot + stamp
+    slot), the mark wrapper, the English wordmark, the display title,
+    the short divider, the letter body (salutation / indented
+    paragraphs / postscript / the door / the version line). The old
+    three-step skeleton is gone."""
+
+    page = _text("index.html")
+    for marker in (
+        '<section id="screen-onboard" class="ob">',
+        '<div class="ob-sheet paper-settle">',
+        '<p class="ob-dateline"><span class="ob-date"></span>'
+        '<span class="ob-stamp" data-icon="stamp"></span></p>',
+        '<div class="ob-mark seal-press">',
+        '<p class="ob-wordmark">THE ENGLISH PARLOUR</p>',
+        '<h1>把英语请进客厅</h1>',
+        '<span class="ob-divider" aria-hidden="true"></span>',
+        '<p class="ob-salut">致 来到门前的人：</p>',
+        'id="ob-go"',
+        '<p class="ob-version">elc · web</p>',
+    ):
+        assert marker in page, marker
+    # the old skeleton is gone
+    for gone in ("ob-steps", "ob-step", "就这么定"):
+        assert gone not in page, gone
+
+
+def test_the_cover_copy_is_the_new_final(tmp_path: Path) -> None:
+    """The letter's copy, word for word (⑧ 8.2.1 修订版), over the
+    served union — and the retired sentences never leak back from any
+    asset."""
+
+    page = _page_of(tmp_path)
+    assert "致 来到门前的人：" in page
+    assert (
+        "这间客厅只做一件事——你和一位固定笔友用英语通信。想写什么，"
+        "就写什么；写错了，正是客厅在听的地方。" in page
+    )
+    assert (
+        "写着写着，客厅在旁听着。发现值得练的表达，它会随信递来一张"
+        "短笺——答对答错都有回音，也可以跳过。" in page
+    )
+    assert (
+        "又及：进门以后，底部三个词随时可走——学案摊着今天的复习与方向，"
+        "柜抽收着它记住的事。" in page
+    )
+    assert "拆开这封信 →</button>" in page
+    for retired in ("一 · 这是什么", "二 · 短笺怎么来",
+                    "就这么定", "跟一位固定笔友用英语通信——想写什么，"
+                    "就写什么。"):
+        assert retired not in page, retired
+
+
+def test_the_cover_door_keeps_its_semantics(tmp_path: Path) -> None:
+    """The redo never touches the door's machinery: the ob-go id, the
+    localStorage gate (a refusing storage answers "seen"), the landing
+    in the parlor, and the browser title staying the product name."""
+
+    page = _page_of(tmp_path)
+    assert 'id="ob-go" class="btn btn--ink" type="button"' in page
+    assert 'ONBOARD_KEY = "elp.parlor.onboarded.v1"' in page
+    assert 'seenOnboard() ? "parlor" : "onboard"' in page
+    assert "<title>英语客厅</title>" in page
+
+
+def test_the_cover_typography_rides_the_scale() -> None:
+    """The cover is the display rung's first real customer: the title
+    rides --fs-display with --ls-title, the wordmark rides ls-caps, the
+    letter rides --lh-letter with the 2em indents, and the sheet is the
+    paper-high wash behind a double hairline edge."""
+
+    screens = _text("screens.css")
+    assert ".ob h1 { margin: var(--sp-2) 0 0; text-align: center;" in screens
+    assert "font-size: var(--fs-display); font-weight: 500;" in screens
+    assert "letter-spacing: var(--ls-title); }" in screens
+    assert "letter-spacing: var(--ls-caps);" in screens
+    assert (
+        ".ob-para { margin: 0 0 var(--sp-3); line-height: var(--lh-letter);\n"
+        "           text-indent: 2em;" in screens
+    )
+    assert ".ob-sheet { max-width: 100%; background: var(--paper-high);" \
+        in screens
+    assert "outline: 1px solid var(--rule-soft); outline-offset: 4px;" \
+        in screens
+
+
+def test_the_cover_motions_are_registered_and_degrade() -> None:
+    """The two cover motions live in the motion registry (the keyframes'
+    one source) with their class toggles, and both sit before the
+    reduced-motion blanket — the blanket zeroing them is the only
+    degradation they need."""
+
+    css = _text("components.css")
+    assert ".paper-settle { animation: paper-settle var(--dur-3)" in css
+    assert "@keyframes paper-settle {" in css
+    assert ".seal-press { animation: seal-press var(--dur-3)" in css
+    assert "@keyframes seal-press {" in css
+    blanket_at = css.index("@media (prefers-reduced-motion: reduce) {\n"
+                           "  *, *::before, *::after {")
+    for keyframes in ("@keyframes paper-settle {",
+                      "@keyframes seal-press {"):
+        assert css.index(keyframes) < blanket_at, keyframes
+    # the classes are on the sheet and the mark (the one-shot entrance)
+    index = _text("index.html")
+    assert 'class="ob-sheet paper-settle"' in index
+    assert 'class="ob-mark seal-press"' in index
+
+
+def test_the_stamp_icon_is_registered_the_four_step_way() -> None:
+    """The eighth ink icon, registered everywhere the set is spelled:
+    the template geometry (one 20×20 grid, no stroke of its own), the
+    live anchor on the cover's dateline, the contract block's roster
+    and the spec's ③ row + ⑨-4 roster. The component count stays 22
+    (the set is the component; the icons are its members)."""
+
+    from tests.host.test_fg1_architecture import COMPONENTS
+
+    assert len(COMPONENTS) == 22
+    index = _text("index.html")
+    assert (
+        '<svg id="icon-stamp" class="inkicon" viewBox="0 0 20 20" '
+        'aria-hidden="true"><rect x="4" y="4" width="12" height="12"/>' in
+        index
+    )
+    assert 'data-icon="stamp"' in index
+    css = _text("components.css")
+    assert "现役八枚" in css
+    assert "stamp（门厅封面案头日期行的邮票角标" in css
+    spec = _spec()
+    assert 'postmark\\|stamp"' in spec   # the ③ row's template id list
+    assert "现役八枚与锚位" in spec     # ⑨-4's roster
+
+
+def test_the_cover_date_is_real_client_data() -> None:
+    """The dateline is the same mechanical fact the marginalia carries:
+    the client's own date, landed as textContent — zero fabricated
+    data, zero copy."""
+
+    app = _text("app.js")
+    assert 'document.querySelector(".ob-date")' in app
+    assert "coverDate.textContent = coverToday.getFullYear()" in app
+
+
+def test_the_spec_carries_the_breakpoint_system_and_revisions() -> None:
+    """The rewritten ⑨-6 (four tiers over the pinned boundaries, the
+    revoked mid-tier registration) and the 9.8 revision register's
+    three entries; 8.2.1 carries the R-1W revision marker."""
+
+    spec = _spec()
+    assert "### 9.6 断点系统（R-1W 重写版：全断点响应式）" in spec
+    for tier_word in ("手机", "平板", "桌面", "宽屏"):
+        assert tier_word in spec, tier_word
+    assert "延展的是案头与边注，不是行长" in spec
+    assert "### 9.8 R-1W 修订登记" in spec
+    assert "16. **⑨-6 重写为四档断点系统**" in spec
+    assert "17. **门厅完全重做（⑧ 8.2.1 修订版）**" in spec
+    assert "18. **#22 增枚 stamp（邮票角标）**" in spec
+    assert "#### 8.2.1 门厅（R-1W 修订版——封面信笺）" in spec
+    # 9.5's registry grew the two cover motions
+    assert "| paper-settle 信笺落座 |" in spec
+    assert "| seal-press 印记按落 |" in spec
+
+
+def test_the_frozen_copy_outside_the_cover_is_verbatim(
+    tmp_path: Path,
+) -> None:
+    """The freeze line: three of the other pages' 8.2 guide sentences,
+    word for word over the served union (the r1r suite pins the rest) —
+    the responsive wrappers moved divs, not words."""
+
+    page = _page_of(tmp_path)
+    for sentence in (
+        "你想把英语用在哪里——这是客厅记着的长期方向。",
+        "客厅的账页——只读，如实。",
+        "请客厅忘掉一些事——走出去就找不回来。",
+        "客厅记住的事都在这里——一条条如实。",
+        "设置面还没有铺开。",
+    ):
+        assert sentence in page, sentence

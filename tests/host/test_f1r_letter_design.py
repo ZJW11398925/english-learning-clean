@@ -71,23 +71,20 @@ def test_the_page_keeps_the_letter_form_laws(tmp_path: Path) -> None:
 
 
 def test_the_page_has_the_first_visit_cover(tmp_path: Path) -> None:
-    """The 开张屏: the brand mark over the serif title, the three-step
-    letter (F-G2 migrated the single ✉ line to the step formheads —
-    1:1, the honesty faces kept), the serif ink 就这么定 link — and no
-    persona authoring (the runtime has no such face; the cover invents
-    none)."""
+    """The 开张屏: R-1W 重做（⑧ 8.2.1 修订版）后的封面信笺——印记之上的
+    称呼、两段缩进正文、进门钮「拆开这封信 →」——and no persona
+    authoring (the runtime has no such face; the cover invents none)."""
 
     page = _page_of(tmp_path)
     assert 'id="screen-onboard"' in page
-    # F-G2 随迁：旧钉「✉ 第一步，也是唯一步」随开张屏三步升维退役，
-    # 语义由 formhead 与顶部 brand-mark（--lg）继承；R-1R 随迁（⑧ 8.2.1
-    # 定稿）：步题改「一 · 这是什么 / 二 · 短笺怎么来」（门不当步）。
-    assert "✉ 第一步，也是唯一步" not in page
-    assert "一 · 这是什么" in page
+    # R-1W 随迁（旧串 → 新串）：一 · 这是什么 → 致 来到门前的人：；
+    # 跟一位固定笔友……一句 → 这间客厅只做一件事……；就这么定 → →
+    # 拆开这封信 →（F-G2/R-1R 的步题语义由信体三行继承）
+    assert "致 来到门前的人：" in page
     assert 'data-brand-mark="lg"' in page
     assert "把英语请进客厅" in page
-    assert "跟一位固定笔友用英语通信——想写什么，就写什么。" in page
-    assert "就这么定 →</button>" in page
+    assert "这间客厅只做一件事——你和一位固定笔友用英语通信。" in page
+    assert "拆开这封信 →</button>" in page
     # the cover never returns once localStorage says so; a refusing
     # storage answers "seen" (nobody is trapped on the cover)
     assert 'ONBOARD_KEY = "elp.parlor.onboarded.v1"' in page

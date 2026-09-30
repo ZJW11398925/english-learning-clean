@@ -82,7 +82,7 @@
 | 19 | space-header | `.space-header`（+ 节名槽 `.spacehead-sec`；与屏级基形 `.top` 合用） | — | default（发丝线夹持 sticky 顶栏，随 `.top`）；无交互态——静态头部，reduced-motion 不适用（契约注明） | components.css + components.js（`sectionLabel()`，R-1；学案/柜抽头部 = `.top` 基形 + 本类；客厅头部用 `.top` 原形；品牌条不再增长链接） |
 | 20 | section-tabs | `.section-tabs` / `.section-tab`（+ `--on`） | — | unselected（default，透明点线占位）/ hover（R-1V：墨色微沉）/ selected（`--on`，主墨加重 + 赭红实线短下划 + `aria-selected`）/ focus（地基 `:focus-visible` 赭红焦点环，不另设）/ `[disabled]`（opacity .4） | components.css + components.js（`wireSectionTabs()`/`markSectionTabs()`，R-1；roving tabindex + 左右箭头循环移选；学案/柜抽各一排三项，切节即拉） |
 | 21 | disclosure | `.disclosure`（+ `.disclosure-head` `.disclosure-marker` `.disclosure-title` `.disclosure-examples` `.disclosure-body` `--open`） | — | collapsed（default，内容区 hidden，chevron 向右）/ expanded（`--open`，内容区展开、chevron 旋转 90°、`aria-expanded="true"`，计数保留；入场 = ⑨-5 paper-unfold）/ focus（地基 `:focus-visible` 赭红环，不另设）；R-1V 修订：标记 ▸/▾ 字符 → #22 自绘墨线 chevron | components.css + components.js（`disclosure()`，R-1R；组头行即开关——名称 + 计数 + 两枚示例；一切「超过 8 行的同质列表」与「参考 / 原始读数」走它；不得手风琴互斥、不得嵌套、不得图标外链） |
-| 22 | icon-set | `.inkicon`（几何模板 `id="icon-search\|chevron\|note\|write\|inbox\|lamp\|postmark"`） | — | default（`--icon-size` 见方、currentColor 墨色、`--icon-stroke` 1.5、圆角端点；无独立交互态——chevron 旋转是宿主 #21 的 `--open` 态面）/ reduced-motion（宿主动效随库尾总降级归零后静帧） | index.html（`<template id="icon-set-source">` 七枚内联 SVG，几何唯一出处）+ components.css + components.js（`inkIcon()`/`installIcons()`，R-1V；统一 20×20 网格/笔重/圆角端点；aria-hidden，锚位必有文字同行） |
+| 22 | icon-set | `.inkicon`（几何模板 `id="icon-search\|chevron\|note\|write\|inbox\|lamp\|postmark\|stamp"`） | — | default（`--icon-size` 见方、currentColor 墨色、`--icon-stroke` 1.5、圆角端点；无独立交互态——chevron 旋转是宿主 #21 的 `--open` 态面）/ reduced-motion（宿主动效随库尾总降级归零后静帧） | index.html（`<template id="icon-set-source">` 八枚内联 SVG，几何唯一出处）+ components.css + components.js（`inkIcon()`/`installIcons()`，R-1V；统一 20×20 网格/笔重/圆角端点；aria-hidden，锚位必有文字同行；R-1W 增枚 stamp） |
 
 库外现役类（登记，不扩库）：`.teach-me`（**R-1V 定裁**：弱化 pencil
 行链接——sans 12px 赭红下划线，hover 转 `--pencil-deep`，:active
@@ -165,7 +165,8 @@ src/elc/webui/
                     动效注册表与 reduced-motion 总降级块在库尾）
   screens.css       屏级布局 + 壳层（html/body/#stage/dock=写信区/flow/
                     spacebody/屏级文字；R-1 起三空间 + 门厅；R-1V 起
-                    ≥900px 桌面构图——舞台化纸面 + 边注栏，断点 900px）
+                    桌面构图——舞台化纸面 + 边注栏；R-1W 起 ⑨-6 四档
+                    断点系统 481/900/1280 + 门厅封面信笺节）
   api.js            端点 fetch 封装（页面唯一 fetch 调用点）
   components.js     组件工厂 + 教学卡当场行为 + 点词卡 + 壳导航接线 +
                     R-1V 图标工厂（inkIcon/installIcons）
@@ -474,32 +475,47 @@ app.js:568-657；走查 07）。
 （每页：线框 → 信息组织 → 文案定稿 → 状态 → 组件 → 实现映射。文案即
 定稿，语气总则见 8.4；线框内数字以现役语料为例。）
 
-#### 8.2.1 门厅
+#### 8.2.1 门厅（R-1W 修订版——封面信笺）
+
+> 版本史：R-1R 定稿的「三步白板版」（一 · 这是什么 / 二 · 短笺怎么来 /
+> 就这么定）随 R-1W 门厅完全重做退役（用户双令之 B 面：「欢迎页必须
+> 完全重做，所有方面高规格设计」）；本节为现行定稿。旧定稿相关钉随迁
+> 清单见 9.7-17；localStorage 门、`<title>`、进门落客厅的现役语义不动。
 
 ```
-            [印记]
-       把英语请进客厅
-  ─────────────────────────────
-  一 · 这是什么
-  跟一位固定笔友用英语通信——想写什么，就写什么。
-  ─────────────────────────────
-  二 · 短笺怎么来
-  写着写着，客厅在旁听着。
-  发现值得练的表达时，信流里会出现一张短笺。
-  答对答错都有回音，也可以跳过。
-  ─────────────────────────────
-            就这么定 →
-  进来以后，底部三个词随时可走——
-  学案摊着今天的复习与方向，柜抽收着它记住的事。
-           elc · web
+      ┌────────────── 一张待拆的信（--paper-high + 双层发丝镶边）─────┐
+      ｜ 2026 · 09 · 30（案头日期，真实客户端日期，mono）      〔邮票〕｜
+      ｜                                                                ｜
+      ｜                          〔印记 seal-press〕                    ｜
+      ｜                    THE ENGLISH PARLOUR（ls-caps 小字）         ｜
+      ｜                       把英语请进客厅（display）                 ｜
+      ｜                           ———（短界尺分饰）                    ｜
+      ｜  致 来到门前的人：                                              ｜
+      ｜    这间客厅只做一件事——你和一位固定笔友用英语通信。想写        ｜
+      ｜    什么，就写什么；写错了，正是客厅在听的地方。                 ｜
+      ｜    写着写着，客厅在旁听着。发现值得练的表达，它会随信递来       ｜
+      ｜    一张短笺——答对答错都有回音，也可以跳过。                    ｜
+      ｜  又及：进门以后，底部三个词随时可走——学案摊着今天的复习         ｜
+      ｜  与方向，柜抽收着它记住的事。                                   ｜
+      ｜                       拆开这封信 →                              ｜
+      ｜                        elc · web                                ｜
+      └────────────────────────────────────────────────────────────────┘
 ```
 
-- 组织：序号只给内容步（一 / 二），门不当步。
-- 文案定稿：h1 不动；步题与步文如上；hint 如上（dock 三词一次交代）；
-  落款不动；`<title>` 改「英语客厅」。
+- 组织：封面是一张完整的信笺对象——天头（案头日期 + #22 stamp 邮票角
+  标，水印墨装饰）/ 印记 / 英文小字与 display 题（`--fs-display` 的首位
+  接线者）/ 信体（称呼 · 两段缩进正文 · 又及）/ 进门链接（#1 --ink）/
+  诚实 mono 落款。档位构图：≤480 信笺满幅；481–899 信笺 560 垂直居中；
+  ≥900 信笺 640 落在案头（9.6）。
+- 文案定稿（逐字）：称呼「致 来到门前的人：」；一段与二段如线框（段
+  首缩进两格）；又及如线框（不缩进、次级墨）；进门钮「拆开这封信 →」；
+  落款「elc · web」不动；h1「把英语请进客厅」与 `<title>`英语客厅` 不动。
+- 动效（⑨-5 注册表）：paper-settle 信笺落座 + seal-press 印记按落，均
+  首绘一次，reduced-motion 随库尾总降级块归零。
 - 状态：静态页无四态；localStorage 拒绝时直进客厅（现役行为不动）。
-- 组件：#13 brand-mark、#1 btn--ink（均不动）。
-- 映射：**纯前端重组**（index.html 文案）。
+- 组件：#13 brand-mark（--lg）、#1 btn--ink、#22 stamp（R-1W 增枚）。
+- 映射：纯前端（index.html 门厅节 + screens.css 封面节 + components.css
+  动效注册表两枚 + app.js 案头日期）。
 
 #### 8.2.2 客厅
 
@@ -1000,10 +1016,11 @@ app.js:568-657；走查 07）。
   `currentColor` 随宿主墨色层级（弱化位 `--ink-faint` / 水印位
   `--ink-ghost`）；默认见方 `--icon-size` 18px，语境尺寸随宿主登记
   在 #22 契约块。
-- 现役七枚与锚位：`search` → 筛框名牌（随 #16）/ `chevron` → #21
+- 现役八枚与锚位：`search` → 筛框名牌（随 #16）/ `chevron` → #21
   折叠箭头 / `note` → #3 卡头 / `write` → 回信在途中（.typing）/
   `inbox` → 空厅（.sysline.emptyhall）/ `lamp` → #14 空态 /
-  `postmark` → 桌面边注栏水印（9.6）。
+  `postmark` → 桌面边注栏水印（9.6）/ `stamp` → 门厅封面案头日期行
+  的邮票角标（R-1W，⑧ 8.2.1 修订版）。
 - 新增图标：同网格同笔重自绘 + ⑤ 四步登记；永远 `aria-hidden` 且
   锚位必有文字同行（图标永不单独承担语义）。
 - 禁：外链图标 / 图标字体 / data URI / 彩色填充 / 第二套网格或笔重 /
@@ -1022,24 +1039,41 @@ app.js:568-657；走查 07）。
 | hover 泛赭/加深 | #1 / #15 .word / #17 / #18 / #20 / #21 组头 | `--dur-1` × `--ease-press` | color / text-decoration-color / border-color | 同上 |
 | 焦点环 | `:focus-visible`（button / input / textarea / select） | 无动效 | 现役赭红环（R-1V 补齐 textarea/select 两漏网） | 不适用 |
 | state-breathe 呼吸尾点 | #14 loading（现役） | 1.6s ease-in-out（现役值） | 现役 `@keyframes state-breathe` | 现役专门块 + 总降级块双保险 |
+| paper-settle 信笺落座 | 门厅封面首绘（页面加载播一次，R-1W） | `--dur-3` × `--ease-paper` | `.paper-settle` + `@keyframes paper-settle` | 总降级块归零 |
+| seal-press 印记按落 | 门厅印记入场（首绘一次，R-1W） | `--dur-3` × `--ease-ink` | `.seal-press` + `@keyframes seal-press` | 同上 |
 
 - 纪律：零 JS 动画库、零 WAAPI；全部 CSS transitions/keyframes +
   class 切换；库尾 **reduced-motion 总降级块**是全库统一保险
   （`animation: none !important; transition: none !important`）。
 
-### 9.6 桌面构图
+### 9.6 断点系统（R-1W 重写版：全断点响应式）
 
-- **断点 900px**（钉）。≥900px = 舞台化纸面：桌布 `--desk` 托着纸面
-  （`--bg`，`--shell-w` 改写 1080px，双层发丝镶边 = border +
-  outline-offset），信纸栏收 640px 居中，右缘 208px 边注栏——留白
-  被「案头」构图占用，不是删掉也不是填满。
-- 边注栏（`.marginalia`，`aria-hidden`）：案头日期（客户端当日，
-  mono）+ 界尺 + postmark 水印；纯装饰 + 真实日期，**零伪数据**；
-  窄屏 `display:none` 整条缺席。
-- dock（#18）三项 ≥900px 收拢居中；写信区 `.dock` 与 `.dock-row`
-  随 `--shell-w`。
-- **≤480px 移动形态一行不动**（现役质量冻结）；481–899px 保持 430
-  居中原形（不改写 `--shell-w`）。
+四档构图，**媒体查询的边界值即契约**（481 / 900 / 1280，钉在
+`tests/host/test_r1w_responsive_redo.py`）：
+
+| 档 | 范围 | 构图原则 | 纸面 / 栏宽 | 边注栏 |
+|---|---|---|---|---|
+| 手机 | ≤480px | 基线形态（430 壳随视口收窄）；现役移动规则冻结 | `--shell-w` 430（token 默认） | 缺席 |
+| 平板 | 481–899px | 信纸栏放宽 + 同质面板起两栏——不是把 430 拉伸居中，而是每块面板按该档重排 | `--shell-w` 600；门厅封面信笺 560 垂直居中 | 缺席 |
+| 桌面 | 900–1279px | 案头舞台（R-1V 构图继承）：桌布 + 双层发丝镶边纸面 + 阅读栏 + 右缘边注栏 | `--shell-w` 1080；阅读栏 / 门厅封面 640 | 208px |
+| 宽屏 | ≥1280px | **延展的是案头与边注，不是行长**：纸面 1240、边注 240、邮戳水印稍大；阅读栏仍 640 | `--shell-w` 1240 | 240px |
+
+- 平板档两栏规则（grid，`align-items: start`；跨满栏件 = 筛框与无命中
+  句）：`.family-groups`（今日 · 可以练的表达 与 隐私 · 按表达忘掉 的
+  家族折叠组，`minmax(260px, 1fr)`——两 JS 工厂同容器类）/
+  `.panel-grid`（为什么五面板、记忆五面板、设置两块、今日的到期 +
+  在学，`minmax(280px, 1fr)`）。记录页的账表（四字段行）**整幅在前**
+  不分栏——需要宽度的表不分栏，同质面板才配对。481–599 视口下
+  auto-fill 自然落单栏——两栏是宽度挣来的，不是硬摆的。
+- 边注栏内容（案头日期 / 界尺 / 邮戳水印）与 dock 三项 ≥900 收拢居中
+  继承 R-1V 不动；`--shell-w` 是 #stage / #18 navdock / 写信区 .dock
+  三者的同一宽度出处（R-1W 起 #stage 基宽由字面 430 归一为 token）。
+- 交互件逐档：点词卡浮层的视口收进由 JS clamp 承担（各档同面）；
+  写信区软键盘 = viewport `interactive-widget=resizes-content`（不支持
+  的引擎忽略该键，无回退面）+ 门厅 `100vh → 100dvh` 双声明。
+- **旧登记撤销**：「481–899px 保持 430 居中原形」与「≤480 移动形态
+  一行不动（对门厅的适用）」自本刀作废（9.7-16/17）；其余页的 ≤480
+  基线规则仍冻结。
 
 ### 9.7 本刀的 ③ 契约修订登记（显式修订 + 理由）
 
@@ -1088,3 +1122,40 @@ app.js:568-657；走查 07）。
     而登记缺位）：门厅步题由居中改为 flex 两侧发丝线（线随字伸缩，
     screens.css）；③ 库外 `.teach-me` 行的「铅笔行链接」定裁以
     第 14① 条为准。
+    （R-1W 起第 15 条的 `.ob .formhead` 形随门厅重做退役——见 17。）
+
+### 9.8 R-1W 修订登记（全断点响应式 + 门厅完全重做，2026-09-30）
+
+16. **⑨-6 重写为四档断点系统**：单一 900px 断点扩为 481 / 900 / 1280
+    四档（手机 / 平板 / 桌面 / 宽屏）。**撤销**旧登记「481–899px 保持
+    430 居中原形」；「≤480px 移动形态一行不动」对门厅以外各页仍适用
+    （门厅移动形态随 17 重做）；`#stage` 基宽由字面 430 归一为
+    `var(--shell-w)`（值等价，出处归一）。平板档新容器类：`.family-
+    groups` / `.panel-grid`（屏级布局类，screens.css，非组件不入库——
+    与 ⑧ 8.2.9 摘要行同法）。走查改刀：记录页曾试「账｜为什么」硬两栏
+    （.ledger-cols），768 实测右列过挤——当刀改为账表整幅 + 为什么五
+    面板两栏（同质面板配同质网格），.ledger-cols 不留库。
+17. **门厅完全重做（⑧ 8.2.1 修订版）**：三步白板版退役，封面信笺
+    落成（案头日期 + stamp 邮票角标 / 印记 / 英文小字 + display 题 /
+    称呼 · 缩进正文 · 又及 / 「拆开这封信 →」）。旧定稿钉随迁清单
+    （旧串 → 新串，三处同刀）：
+    - `test_fg2_entry_and_states.py`：`一 · 这是什么`/`二 · 短笺怎么
+      来`/三句步文/`就这么定 →</button>` → 新称呼/两段正文/又及/
+      `拆开这封信 →</button>`；`.ob-step {` → `.ob-sheet {`；
+      `.ob .brandmark { display: block; … }` → `.ob-mark { display:
+      flex; … }`；docstring 同步。
+    - `test_f1r_letter_design.py`：`一 · 这是什么` → `致 来到门前
+      的人：`；`跟一位固定笔友用英语通信——想写什么，就写什么。` →
+      `这间客厅只做一件事——你和一位固定笔友用英语通信。`；
+      `就这么定 →</button>` → `拆开这封信 →</button>`（ONBOARD_KEY /
+      seenOnboard / 无 persona 面 / `<title>` 四钉不动）。
+    - `test_r1v_visual_craft.py`：`.ob .formhead::before/::after` →
+      `.ob-divider {`（封面短界尺分饰）；「唯一媒体查询」计数钉 →
+      三边界各恰一次（9.6 边界契约）。
+18. **#22 增枚 stamp（邮票角标）**：第八枚，锚位 = 门厅封面案头日期
+    行（水印墨装饰，aria-hidden，同行有日期文字）；③ 表 #22 行、
+    components.css 契约块「现役八枚」、index.html 模板与头注、
+    ⑨-4 现役清单四处同刀；**组件数仍 22**（icon-set 是组件、枚是成员）。
+    ⑨-5 注册表增 paper-settle / seal-press 两行（首绘各一次，
+    reduced-motion 随库尾总降级块归零——r1v 钉空转检查的循环元组
+    同刀扩入两枚）。
