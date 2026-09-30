@@ -171,8 +171,13 @@ def test_the_only_egress_point_and_no_server() -> None:
     server machinery that used to be forbidden outright is now allowed in
     exactly one file, ``web.py``, and only as ``http.server`` — the exception
     is bound to the module (deleting ``web.py`` turns the pin red again) and
-    no other network root (``socket``, ``socketserver``, ``ssl``, …) is
-    excused anywhere, ``web.py`` included.
+    no other network root (``socketserver``, ``ssl``, …) is excused anywhere,
+    ``web.py`` included. W-7 migrated it once more, just as tightly: ``web.py``
+    may also import ``socket`` — for one thing only, the loopback connect
+    probe that refuses a second instance on an already-serving port (Windows
+    lets two servers bind one port silently; that incident is W-7's cause).
+    The probe dials 127.0.0.1 only; it is not an egress surface, and the
+    exception stays bound to the same single module.
 
     The net is wide on purpose (prep-1 review F2): third-party HTTP clients
     belong in the forbidden set next to ``socket``/``http``, and the negative
@@ -225,14 +230,19 @@ def test_the_only_egress_point_and_no_server() -> None:
                 if root_name in network_roots:
                     if rel == "web.py" and name == "http.server":
                         server_module_imports.add(name)
+                    elif rel == "web.py" and name == "socket":
+                        # W-7: the loopback instance probe, same single
+                        # module as the sanctioned server import above.
+                        server_module_imports.add(name)
                     else:
                         forbidden.add(f"{rel}: {name}")
 
     assert forbidden == set()
     # W-1's negative control, bound to the module: the one sanctioned server
     # module really is the one file this exception exists for — no server
-    # import anywhere else, and no second import kind inside it either.
-    assert server_module_imports == {"http.server"}
+    # import anywhere else, and no second import kind inside it either
+    # (W-7 grew the set by exactly the loopback probe's ``socket``).
+    assert server_module_imports == {"http.server", "socket"}
     # Negative control, symbol level: the one module that may reach the network
     # imports urllib.request, builds its own opener and calls it — asserted over
     # the **syntax tree**, so a mention of any of these names in prose neither

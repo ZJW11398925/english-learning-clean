@@ -282,6 +282,7 @@ from __future__ import annotations
 import json
 import math
 import queue
+import socket
 import sqlite3
 import sys
 import threading
@@ -2704,6 +2705,11 @@ def _build_server(
                 return
             self.send_response(200)
             self.send_header("Content-Type", _STATIC_TYPES[name])
+            # W-7: the assets carry no versioned names, so a browser that
+            # heuristically caches them can mix an old shell with a new
+            # script across a delivery — no-cache makes every load
+            # revalidate against the one source of truth on disk.
+            self.send_header("Cache-Control", "no-cache")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
@@ -3068,6 +3074,25 @@ def _build_server(
     return _WebServer(("127.0.0.1", port), Handler, face=face, work=work)
 
 
+def _port_already_serving(port: int) -> bool:
+    """True when something already accepts connections on 127.0.0.1:port.
+
+    Windows lets a second ``ThreadingHTTPServer`` bind an in-use loopback
+    port silently (``allow_reuse_address`` is SO_REUSEADDR there — a
+    hijack permission, not the POSIX TIME_WAIT relief), which is how a
+    restart that did not stop the old instance left two runtimes on one
+    app.db and killed every turn at the door. A connect probe is the
+    cross-platform truth: TIME_WAIT leftovers accept nothing, a live
+    listener does.
+    """
+
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=0.5):
+            return True
+    except OSError:
+        return False
+
+
 def run_web(
     host: Host,
     port: int,
@@ -3103,7 +3128,20 @@ def run_web(
     place) and the serving continues: the recovery lines are
     failure-tolerant by contract, so an unavailable sweep blocks the page
     no more than it blocks chat.
+
+    Before any of that, the port itself is probed: a second instance on an
+    already-serving port refuses with the same :class:`WebOpenError`
+    before touching the database (Windows would otherwise let both bind
+    silently — the dual-instance incident behind W-7, where two runtimes
+    on one app.db answered every turn with an instant 500).
     """
+
+    if _port_already_serving(port):
+        raise WebOpenError(
+            f"port {port} is already serving an elc web instance —"
+            " stop the old one first (or pass a different --port);"
+            " two instances on one app.db corrupt each other's turns"
+        )
 
     opened = host.open_conversation(ConversationId(conversation))
     if isinstance(opened, Err):
