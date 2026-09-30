@@ -156,7 +156,8 @@ pre { font-family: var(--f-mono); font-size: 11px; line-height: 1.7;
   .ob { display: flex; justify-content: center; }
   .ob-sheet { width: 560px; margin: auto 0; }
   /* 家族折叠组（今日 · 可以练的表达 / 隐私 · 按表达忘掉，同一 JS 工厂
-     .family-groups）：两栏网格；筛框与无命中句跨满栏 */
+     .family-groups）：两栏网格（阈值 2×260+sp-5(24)=544，约 580px
+     视口起两栏）；筛框与无命中句跨满栏 */
   .family-groups { display: grid;
                    grid-template-columns:
                      repeat(auto-fill, minmax(260px, 1fr));
@@ -164,11 +165,13 @@ pre { font-family: var(--f-mono); font-size: 11px; line-height: 1.7;
   .family-groups > .note, .family-groups > .field {
                    grid-column: 1 / -1; }
   /* 同质面板两栏容器（记录页为什么五面板 / 记忆五面板 / 设置两块 /
-     今日的到期与在学）：481–599 视口 auto-fill 自然落单栏——两栏是
-     宽度挣来的 */
+     今日的到期与在学）：两栏阈值 2×264+sp-6(32)=560 ≤ 本档内容上限
+     600−2×read-pad(18)=564——约 596px 视口起两栏，更窄自然落单栏。
+     R-1W 处置修正：交付版 280px 阈值 592>564，本档内永不两栏（死
+     规则，活体渲染抓出——算术钉在 test_r1w_responsive_redo） */
   .panel-grid { display: grid;
                 grid-template-columns:
-                  repeat(auto-fill, minmax(280px, 1fr));
+                  repeat(auto-fill, minmax(264px, 1fr));
                 column-gap: var(--sp-6); align-items: start; }
 }
 

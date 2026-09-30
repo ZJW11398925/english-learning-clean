@@ -36,6 +36,7 @@ reads the served union (the F-G1 reading).
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import elc.web
@@ -117,9 +118,40 @@ def test_the_tablet_tier_is_a_real_composition() -> None:
         "                   grid-column: 1 / -1; }" in tablet
     )
     assert ".panel-grid { display: grid;" in tablet
-    assert "repeat(auto-fill, minmax(280px, 1fr));" in tablet
+    assert "repeat(auto-fill, minmax(264px, 1fr));" in tablet
     # the killed two-column form leaves nothing behind
     assert ".ledger-cols" not in _text("screens.css")
+
+
+def test_the_tablet_two_columns_are_earned_inside_the_band() -> None:
+    """The tier's own arithmetic, made executable (R-1W disposition):
+    two columns must fit inside the tablet band's content ceiling
+    (shell 600 − 2×read-pad 18 = 564px). The delivery's minmax(280px)
+    needed 2×280+sp-6(32)=592 > 564 — a rule that could never fire on
+    any tablet viewport (dead in its own band; caught only by live
+    rendering). This pin reads the real token values so a future width
+    edit that re-kills the tier goes RED arithmetically."""
+
+    tablet = _tier(_text("screens.css"), "481px")
+    tokens = _text("tokens.css")
+    shell_w = int(re.search(r"--shell-w: (\d+)px", tablet).group(1))
+    read_pad = int(
+        re.search(r"--read-pad: (\d+)px", tokens).group(1))
+    ceiling = shell_w - 2 * read_pad
+    for rule in (".family-groups", ".panel-grid"):
+        block = re.search(
+            re.escape(rule) + r" \{[^}]*?minmax\((\d+)px, 1fr\)[^}]*\}",
+            tablet, re.S)
+        assert block is not None, rule
+        gap_var = re.search(
+            r"column-gap: var\(--sp-(\d)\)", block.group(0))
+        assert gap_var is not None, rule
+        gap = int(re.search(
+            rf"--sp-{gap_var.group(1)}: (\d+)px", tokens).group(1))
+        min_col = int(block.group(1))
+        assert 2 * min_col + gap <= ceiling, (
+            f"{rule}: 2×{min_col}+{gap}={2 * min_col + gap}"
+            f" exceeds the tablet ceiling {ceiling}")
 
 
 def test_the_wide_tier_extends_the_desk_not_the_line_length() -> None:
@@ -160,6 +192,10 @@ def test_the_homogeneous_panels_pair_up() -> None:
     for panel in ("why-teach", "why-not-teach", "why-evidence",
                   "why-support", "why-degraded"):
         assert f'id="{panel}"' in whys, panel
+    # the grouphead rides above the grid, exactly once — the delivery
+    # duplicated it into the first grid cell (review MEDIUM-1: a doubled
+    # hairline row on tablets, a stolen grid cell at ≥900)
+    assert whys.count('class="grouphead">为什么</h3>') == 1
     assert "study-progress" in index  # the panel itself survives
 
 

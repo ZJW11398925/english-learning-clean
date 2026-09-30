@@ -217,6 +217,9 @@ def test_the_cover_is_a_complete_letter(tmp_path: Path) -> None:
     assert "一 · 这是什么" not in page
     assert "二 · 短笺怎么来" not in page
     assert "就这么定" not in page
+    # f1r 旧负控随迁复钉（R-1W 处置：交付迁移退役了它，评审 INFO-2
+    # 登记——防回潮面零真空要求下复钉）
+    assert "✉ 第一步，也是唯一步" not in page
     screens = _webui_text("screens.css")
     # R-1W 随迁：.ob-step { → .ob-sheet {（封面信笺对象）
     assert ".ob-sheet {" in screens
