@@ -483,6 +483,18 @@ class PersonaCommands(Protocol):
         ...
 
 
+#: The fixed trusted [response] section (W-8): the system's own response
+#: stance, zero interpolation, byte-deterministic.
+RESPONSE_SECTION = (
+    "[response]\n"
+    "language: follow the user — reply in the language the user writes in"
+    " (simplified Chinese by default)\n"
+    "teaching expressions: keep a taught expression itself in English,"
+    " exactly as given\n"
+    "format: plain prose, no markdown markers (**, *, #, `, _)"
+)
+
+
 class PromptCompiler:
     """Persona Runtime prompt compiler — the sole final-prompt authority.
 
@@ -635,6 +647,7 @@ class PromptCompiler:
             )
 
         sections.append(f"[channel]\n{request.interaction_channel.value}")
+        sections.append(RESPONSE_SECTION)
         prompt_text = "\n\n".join(sections)
         return Ok(
             CompiledPrompt(

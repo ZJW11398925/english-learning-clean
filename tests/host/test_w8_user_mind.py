@@ -2,15 +2,14 @@
 信流尾注退役）。
 
 用户立场原话：「我从没有说过这个应用只能用英语交流」「前端所有显示必须
-从用户角度，使用用户思维思考」。本文件钉的是已落地三面：
+从用户角度，使用用户思维思考」。三面：
 
-1. 语言立场（文案面）：五处 live 文案（封面 / who-sub / placeholder /
-   空厅 / spec 8.1.2 原则句）+ controller 四处 ``language_policy`` 改
-   ``"follow-user"``；旧英语限定句全仓退役（唯一登记例外 = 作答框
-   「用英语写一句试试……」——教学表达练习面，本刀范围外）。
-   【登记】prompt 编译的 ``[response]`` 固定可信节与 phase9 冻结钉的
-   十六处节头基线钉冲突，待总控终裁（A 形态包裹已在仓外完整验证
-   4559/0/0 全绿）；裁决落地后本文件补回对应两钉。
+1. 语言立场：PromptCompiler 输出新增固定可信节 ``[response]``（在
+   ``[channel]`` 之后、零插值、字节确定）；runtime controller 的四处
+   ``language_policy`` 从 ``"default"`` 改 ``"follow-user"``；五处 live
+   文案（封面 / who-sub / placeholder / 空厅 / spec 8.1.2 原则句）；
+   旧英语限定句全仓退役（唯一登记例外 = 作答框「用英语写一句试试……」
+   ——教学表达练习面，本刀范围外）。
 2. markdown 兜底：``letterWords`` 三记号（**粗** / *斜* / ``码``）——
    正则分段、记号内照旧 span.word 分片外包 strong/em/code、纯节点拼装、
    无记号路径与旧输出逐字节同、未配对原样；.say 纸系样式三行。
@@ -18,17 +17,43 @@
    零残留（spec ③ 的类名行同刀清扫）；没递短笺的一轮在信流里静默，
    why_not 数据面不动。
 
-钉形随仓内先例：源码串钉（fg1 ``_webui_text`` 同法）。JS 行为的活体
-验证以仓外 Node 单跑承担（回执记录），仓内只落源码结构钉。
+钉形随仓内先例：源码串钉（fg1 ``_webui_text`` 同法）+ 编译级钉
+（PromptCompiler 真跑，phase1 同法）。JS 行为的活体验证以仓外 Node
+单跑承担（回执记录），仓内只落源码结构钉。
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
+from elc.persona import (
+    GenerationContext,
+    GenerationContract,
+    PromptCompilationRequest,
+    PromptCompiler,
+)
+from elc.platform.types import (
+    ConversationId,
+    InteractionChannel,
+    Ok,
+    PersonaId,
+)
+from elc.runtime.types import GenerationActionType
+
 REPO = Path(__file__).resolve().parents[2]
 SRC = REPO / "src" / "elc"
 SPEC = REPO / "docs" / "FRONTEND_SPEC.md"
+
+#: The response-stance block, verbatim (W-8 任务书 ①) — the section
+#: header plus three key:value rows, zero interpolation.
+RESPONSE_LINES = (
+    "[response]",
+    "language: follow the user — reply in the language the user writes in"
+    " (simplified Chinese by default)",
+    "teaching expressions: keep a taught expression itself in English,"
+    " exactly as given",
+    "format: plain prose, no markdown markers (**, *, #, `, _)",
+)
 
 
 def _text(rel: str) -> str:
@@ -39,8 +64,65 @@ def _spec_text() -> str:
     return SPEC.read_text(encoding="utf-8")
 
 
+def _contract() -> GenerationContract:
+    return GenerationContract(
+        generation_contract_id="gc-w8",
+        action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
+        persona_id=PersonaId("persona-w8"),
+        allowed_disclosures=(),
+        language_policy="follow-user",
+        style_constraints=(),
+    )
+
+
+def _compile_prompt() -> str:
+    context = GenerationContext(
+        character_package=None,
+        relationship_view=None,
+        episode_view=None,
+        world_lore_view=None,
+        disclosed_user_profile=None,
+        conversation_window=None,
+        language_policy="follow-user",
+        generation_policy="default",
+        generation_contract=_contract(),
+        ephemeral_teaching_directive=None,
+    )
+    request = PromptCompilationRequest(
+        conversation_id=ConversationId("conv-w8"),
+        persona_id=PersonaId("persona-w8"),
+        interaction_channel=InteractionChannel.TEXT,
+        generation_context=context,
+        generation_contract=_contract(),
+    )
+    compiled = PromptCompiler().compile(request)
+    assert isinstance(compiled, Ok), compiled
+    return compiled.value.prompt_text
+
+
 # ---------------------------------------------------------------------------
-# 1. the language stance — controller value + five live copy faces
+# 1. [response] — the fixed trusted section in the compiled prompt
+
+
+def test_the_response_section_lands_after_the_channel() -> None:
+    """The section exists, carries the three stance lines verbatim, and
+    stands after ``[channel]`` — the last word the model reads before the
+    stance is the system's own response contract."""
+
+    text = _compile_prompt()
+    block = "\n".join(RESPONSE_LINES)
+    assert block in text
+    assert text.index("[response]") > text.index("[channel]")
+    # one header, one section; the tail is exactly the constant's bytes
+    assert text.count("[response]") == 1
+    assert text[text.index("[response]"):].startswith(block)
+
+
+def test_the_response_section_is_byte_deterministic() -> None:
+    """Same request in, byte-identical prompt out — the fixed section
+    rides the same determinism the compiler already guarantees."""
+
+    assert _compile_prompt() == _compile_prompt()
 
 
 def test_the_controller_follows_the_user_language() -> None:
@@ -50,6 +132,10 @@ def test_the_controller_follows_the_user_language() -> None:
     controller = _text("runtime/controller.py")
     assert controller.count('language_policy="follow-user"') == 4
     assert 'language_policy="default"' not in controller
+
+
+# ---------------------------------------------------------------------------
+# 2. the five live copy faces
 
 
 def test_the_cover_copy_follows_the_user_language() -> None:
@@ -108,7 +194,7 @@ def test_the_english_only_sentences_are_retired_repo_wide() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 2. letterWords — the markdown fallback (source-structure pins; the
+# 3. letterWords — the markdown fallback (source-structure pins; the
 # behavior itself is verified by the out-of-repo Node run)
 
 
@@ -154,7 +240,7 @@ def test_letterwords_plain_path_is_untouched() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 3. the letter-flow footnote retirement
+# 4. the letter-flow footnote retirement
 
 
 def test_the_blocked_line_is_gone_from_the_user_faces() -> None:

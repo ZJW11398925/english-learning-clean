@@ -205,10 +205,15 @@ def test_the_declared_section_order_is_the_compiled_order() -> None:
         "relationship",
         "episode",
         "channel",
+        # W-8 随迁：固定可信尾节 [response]（不在 PROMPT_SECTION_ORDER——
+        # 它不按视图出现，是恒定尾节）
+        "response",
     ]
-    assert rendered == [
-        name for name in PROMPT_SECTION_ORDER if name in set(rendered)
+    assert rendered[:-1] == [
+        name for name in PROMPT_SECTION_ORDER
+        if name in set(rendered[:-1])
     ]
+    assert rendered[-1] == "response"
 
 
 def test_absent_views_produce_exactly_the_pre_p4_3_prompt() -> None:
@@ -381,3 +386,63 @@ def test_a_prompt_without_the_views_carries_no_persona_material() -> None:
     text = _compile(_request())
     for absent in (A_MEMORY, A_THREAD, A_FACT):
         assert absent not in text
+
+
+def test_the_p43_prompt_carries_the_response_stance() -> None:
+    """W-8 随迁钉：编译产物携带固定可信节 [response]——存在、在
+    [channel] 之后、三行立场逐字、同一 request 两次 compile 字节相同。"""
+
+    from elc.platform.types import (
+        ConversationId,
+        InteractionChannel,
+        Ok,
+        PersonaId,
+    )
+    from elc.runtime.types import GenerationActionType
+
+    def build():
+        contract = GenerationContract(
+            generation_contract_id="gc-w8-pinp",
+            action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
+            persona_id=PersonaId("persona-w8-pinp"),
+            allowed_disclosures=(),
+            language_policy="follow-user",
+            style_constraints=(),
+        )
+        context = GenerationContext(
+            character_package=None,
+            relationship_view=None,
+            episode_view=None,
+            world_lore_view=None,
+            disclosed_user_profile=None,
+            conversation_window=None,
+            language_policy="follow-user",
+            generation_policy="default",
+            generation_contract=contract,
+            ephemeral_teaching_directive=None,
+        )
+        return PromptCompilationRequest(
+            conversation_id=ConversationId("conv-w8-pinp"),
+            persona_id=PersonaId("persona-w8-pinp"),
+            interaction_channel=InteractionChannel.TEXT,
+            generation_context=context,
+            generation_contract=contract,
+        )
+
+    block = (
+        "[response]\n"
+        "language: follow the user — reply in the language the user "
+        "writes in (simplified Chinese by default)\n"
+        "teaching expressions: keep a taught expression itself in "
+        "English, exactly as given\n"
+        "format: plain prose, no markdown markers (**, *, #, `, _)"
+    )
+    first = PromptCompiler().compile(build())
+    assert isinstance(first, Ok), first
+    text = first.value.prompt_text
+    assert block in text
+    assert text.count("[response]") == 1
+    assert text.index("[response]") > text.index("[channel]")
+    second = PromptCompiler().compile(build())
+    assert isinstance(second, Ok), second
+    assert second.value.prompt_text == text

@@ -368,7 +368,9 @@ def test_the_baseline_headers_are_the_declared_sections() -> None:
     appears once (the free-text block carries no header of its own)."""
 
     text = _compile(_request(_package()))
-    assert _header_lines(text) == ["[persona]", "[contract]", "[channel]"]
+    # W-8 随迁：固定尾节
+    assert _header_lines(text) == [
+        "[persona]", "[contract]", "[channel]", "[response]"]
     assert text.count("[persona]") == 1
 
 
@@ -381,7 +383,9 @@ def test_a_card_vector_cannot_add_a_header(column: str) -> None:
     baseline = _compile(_request(_package()))
     injected = _compile(_request(_package(**{column: VECTORS[column]})))
     assert _header_lines(injected) == _header_lines(baseline)
-    assert _header_lines(injected) == ["[persona]", "[contract]", "[channel]"]
+    # W-8 随迁：固定尾节
+    assert _header_lines(injected) == [
+        "[persona]", "[contract]", "[channel]", "[response]"]
     for forged in ("[contract]", "[teaching]"):
         # the real [contract] head stands once; the vector's copy adds none,
         # and [teaching] exists in neither prompt (no directive here)
@@ -601,7 +605,9 @@ def test_a_structure_vector_cannot_start_a_line(field: str) -> None:
         _section(baseline, "persona").splitlines()
     )
     assert _header_lines(text) == _header_lines(baseline)
-    assert _header_lines(text) == ["[persona]", "[contract]", "[channel]"]
+    # W-8 随迁：固定尾节
+    assert _header_lines(text) == [
+        "[persona]", "[contract]", "[channel]", "[response]"]
     assert text.count(UNTRUSTED_SECTION_BEGIN) == 1  # only the card frame
     assert RESIDUAL_VECTOR not in text
     # the vector's own lines never stand, and the other sections' bytes are
@@ -634,7 +640,9 @@ def test_the_card_rows_two_moved_values_render_escaped_inside_the_frame() -> Non
     assert structure.splitlines() == _structure_lines(package, _contract())
     assert "generation_policy" not in structure
     assert "lore_refs" not in structure
-    assert _header_lines(text) == ["[persona]", "[contract]", "[channel]"]
+    # W-8 随迁：固定尾节
+    assert _header_lines(text) == [
+        "[persona]", "[contract]", "[channel]", "[response]"]
     assert text.count(UNTRUSTED_SECTION_BEGIN) == 1
     assert text.splitlines().count("[contract]") == 1
     assert "action_type: SYSTEM_OVERRIDE" not in text.splitlines()
@@ -758,7 +766,9 @@ def test_the_package_free_fallback_stays_a_single_system_section() -> None:
     no frame: there is no free text to frame."""
 
     text = _compile(_request(None))
-    assert _header_lines(text) == ["[persona]", "[contract]", "[channel]"]
+    # W-8 随迁：固定尾节
+    assert _header_lines(text) == [
+        "[persona]", "[contract]", "[channel]", "[response]"]
     assert (
         f"[persona]\npersona_id: {PERSONA}\nlanguage_policy: default" in text
     )
