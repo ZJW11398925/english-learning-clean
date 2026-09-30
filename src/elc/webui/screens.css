@@ -82,6 +82,11 @@ body {
 .who { font-size: 15px; font-weight: 600; letter-spacing: 0.18em; }
 .who-sub { font-size: 11px; color: var(--ink-faint);
            font-family: var(--f-sans); margin-top: 2px; }
+/* rd-4 伙伴面（9.12-23）：身份条原地的可点手感——客厅屏的 who 块
+   整体可点（app.js 接线开 #23 partner-card）；hover 触点提示在
+   components.css 的 hover 媒体块（rd-1 钉：screens 零 hover 规则、
+   触屏纪律单出处）。品牌条不增长动作钮（r1_shell 钉保留）。 */
+#space-parlor .top > div { cursor: pointer; }
 
 .flow { padding: 18px var(--read-pad) 310px; }
 .typing { margin: 0 0 18px; font-family: var(--f-sans); font-size: 12px;
@@ -100,6 +105,10 @@ body {
         padding: 10px var(--read-pad) 14px;
         max-width: var(--shell-w); margin: 0 auto; }
 .dock-row { display: flex; align-items: stretch; gap: var(--sp-3); }
+/* rd-4 指路行（9.12-23 乙案表达）：批注开着时写信区上方的一句话——
+   纯表达不改路由；开着才显，收场即隐（components.js 落 hidden）。 */
+.dock-guide { margin: 0 0 8px; font: var(--meta-font);
+              letter-spacing: var(--meta-track); color: var(--meta-ink); }
 
 /* ── 学案/柜抽的空间正文（R-1）：三个节面板共用的正文留白与标题形态 ── */
 /* R-1R（⑧ 8.2.9）：页题只念一遍（节名槽承担），节内不再有 h2；

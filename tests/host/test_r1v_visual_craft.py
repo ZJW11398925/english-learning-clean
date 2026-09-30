@@ -215,7 +215,8 @@ def test_the_icon_set_is_registered_in_all_four_places() -> None:
     from tests.host.test_fg1_architecture import COMPONENTS
 
     assert "icon-set" in COMPONENTS
-    assert len(COMPONENTS) == 22
+    # rd-4 随迁：partner-card 入库 → 23
+    assert len(COMPONENTS) == 23
     assert "| 22 | icon-set" in _spec()
     css = _text("components.css")
     assert "22. icon-set" in css
@@ -377,7 +378,11 @@ def test_the_word_card_wears_a_deckle_not_a_shadow(tmp_path: Path) -> None:
     （radius 无、全黑 rgba(0,0,0) 无——正面契约钉在 rd1 套件）。"""
 
     page = _page_of(tmp_path)
-    assert "border-radius" not in page
+    # rd-4 随迁（9.12-23）：零圆角形态法则收窄——唯一豁免 = 手写批注层
+    # 的红笔圈线椭圆（手迹几何非面板圆角；spec 8.2.10 / 9.12-23 登记）；
+    # 第二处 radius 仍即红
+    assert page.count("border-radius") == 1
+    assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
     css = _text("components.css")
     assert (

@@ -48,12 +48,20 @@
         <div class="who">英语客厅</div>
         <div class="who-sub">一位固定笔友 · 中英不拘</div>
       </div>
+      <!-- rd-4 伙伴面（R-2 前端先行桩态）：身份条原地的可点手感——
+           .who/.who-sub 逐字不动（四处钉在册），品牌条不增长按钮元
+           （r1_shell 的品牌条无钮钉保留）：who 块整体可点
+           （app.js 接线 + screens.css 触点提示），开 #23 partner-card
+           浮层（components.js 工厂）。 -->
     </header>
     <main class="flow">
       <div id="messages" aria-live="polite"></div>
       <div id="moments"></div>
     </main>
     <div class="dock">
+      <!-- rd-4 指路行（9.12-23 裁决预告之乙案表达）：批注开着时一句话
+           指明回应写在哪——纯表达，不改任何路由（routing 裁决仍悬）。 -->
+      <p id="reply-guide" class="dock-guide" hidden>批注开着——回应写在上面那张；也可以直接写一封新信。</p>
       <form id="send" class="dock-row">
         <textarea id="text" class="pen" rows="2" autocomplete="off"
                   placeholder="今日如何？"></textarea>
@@ -171,6 +179,16 @@
     <div class="sec">
       <h3>痕迹</h3>
       <div id="archive-board"><p class="note">暂无数据</p></div>
+    </div>
+
+    <!-- 搜信里的句子（rd-4 检索扩展）：/api/history 的 50 轮窗口内
+         找一句话；口径写在脸上（只搜已加载的），命中列「第 n 封
+         （你/客厅）」+ 片段——历史轮次无时间戳，一个日期都不造；
+         跨信重现不做（9.12-23 登记数据缝）。 -->
+    <div class="sec">
+      <h3>搜信里的句子</h3>
+      <p class="sub">只搜已加载的最近 50 轮。</p>
+      <div id="letter-search"><p class="note">暂无数据</p></div>
     </div>
 
     <div class="sec">
@@ -305,21 +323,29 @@
     </section>
     </section>
 
-    <!-- 设置节（⑧ 8.2.8）：诚实地说「还没铺开」——现在能说的 / 将来
-         会有的 两块结构；本页即 R-3 的落位槽（届时以真读面替换「将来」
-         块，不动本页其余）。R-1W：两块入 .panel-grid（≥481px 并排）。 -->
+    <!-- 设置节（⑧ 8.2.8，rd-4 修订版）：R-3 前端先行——旧「还没铺开 /
+         将来这里会有」两句退役，换成能如实说的真面：两真句保留
+         （127.0.0.1 单用户 / 模型端点页面不读不显）+ 教学模式的诚实
+         读法（fail-closed 事实：档位由启动命令给定，页面读不到也
+         不改它）+ 三档参考读物（docs/PRODUCT_CONTRACT.md §3 的中文
+         名与分寸）+ 批注频率的指向句（不与方向节重复——IA 分层）。
+         纯静态：SECTION_PULLS 不拉本节（r1_shell 缺位钉保留）。 -->
     <section id="drawer-settings" role="tabpanel"
              aria-labelledby="tab-drawer-settings" hidden data-reveal>
-    <p class="sub">设置面还没有铺开。</p>
     <div class="panel-grid">
       <div class="sec">
         <h3>现在能如实说的</h3>
         <p class="sub">这台应用只服务你一个人（127.0.0.1，无账号无密码）。</p>
         <p class="sub">模型端点与模型名由启动命令给定——页面不读取，也不显示。</p>
+        <p class="sub">批注频率在 温故 · 方向 里调。</p>
       </div>
       <div class="sec">
-        <h3>将来这里会有</h3>
-        <p class="sub">教学模式读面与端点说明（位次 R-3，不承诺时点）。</p>
+        <h3>三档教学模式（参考）</h3>
+        <p class="sub">当前这一档由启动命令给定——页面读不到，也不改它。</p>
+        <p class="sub">换端点或换档 = 改启动命令再启动。</p>
+        <p class="sub">娱乐 · 关系优先：聊得多，递得少，客厅以听和陪为主。</p>
+        <p class="sub">平衡：聊天与练句并行，批注适度。</p>
+        <p class="sub">学习优先：练句密度优先，批注递得勤，课程感更明显。</p>
       </div>
     </div>
     </section>

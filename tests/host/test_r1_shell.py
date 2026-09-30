@@ -275,16 +275,29 @@ def test_entering_a_space_lands_its_default_section(tmp_path: Path) -> None:
 
 
 def test_the_settings_node_is_an_honest_placeholder(tmp_path: Path) -> None:
-    """The drawer's settings section: the honest two blocks（现在能如实
-    说的 / 将来这里会有——R-1R ⑧ 8.2.8 定稿）— no promised face, no
-    promised date — and the endpoint line whose truth has nowhere else
-    to live."""
+    """The drawer's settings section（rd-4 随迁——8.2.8 修订版为真面，
+    原「还没铺开 / 将来这里会有」两句退役）: the two standing truths
+    survive, the teaching-mode line is the fail-closed fact（档位由启动
+    命令给定——页面读不到也不改它）, the three modes ride along as
+    reference-only copy, and no promise word anywhere."""
 
     page = _page_of(tmp_path)
-    assert "设置面还没有铺开。" in page
+    # rd-4 缺位钉：旧两句退役，不回潮
+    assert "设置面还没有铺开。" not in page
+    assert "教学模式读面与端点说明（位次 R-3，不承诺时点）" not in page
+    # 两真句保留 + 批注频率的指向句（IA 分层：不与方向节重复）
     assert "页面不读取，也不显示" in page
-    assert "教学模式读面与端点说明（位次 R-3，不承诺时点）" in page
+    assert "这台应用只服务你一个人（127.0.0.1，无账号无密码）。" in page
+    assert "批注频率在 温故 · 方向 里调。" in page
+    # 诚实读法句 + 换档句 + 三档参考（PRODUCT_CONTRACT §3 三名）
+    assert "当前这一档由启动命令给定——页面读不到，也不改它。" in page
+    assert "换端点或换档 = 改启动命令再启动。" in page
+    assert "娱乐 · 关系优先" in page
+    assert "平衡" in page
+    assert "学习优先" in page
+    # no promise words（含「即将」的旧钉保持）
     assert "即将" not in page
+    assert "敬请" not in page
 
 
 # ---------------------------------------------------------------------------

@@ -61,7 +61,11 @@ def test_the_page_keeps_the_letter_form_laws(tmp_path: Path) -> None:
     assert "tabbar" not in page
     assert "#0f766e" not in page
     assert "#4fd1c5" not in page
-    assert "border-radius" not in page
+    # rd-4 随迁（9.12-23）：零圆角形态法则收窄——唯一豁免 = 手写批注层
+    # 的红笔圈线椭圆（手迹几何非面板圆角；spec 8.2.10 / 9.12-23 登记）；
+    # 第二处 radius 仍即红
+    assert page.count("border-radius") == 1
+    assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
     assert "rgba(0,0,0" not in page
     assert "@media (prefers-color-scheme: dark)" not in page

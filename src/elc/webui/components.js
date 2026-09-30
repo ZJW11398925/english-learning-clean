@@ -147,6 +147,12 @@ const MOMENT_KIND_CN = {
 
 export function showMoments(list) {
   momentsBox.textContent = "";
+  // rd-4 指路行（9.12-23 乙案表达）：批注开着时写信区上方一句话——
+  // 纯表达不改路由；开着才显，空组与收场同隐
+  const guide = document.getElementById("reply-guide");
+  if (guide) {
+    guide.hidden = !list.some((m) => m.lifecycle_state === "AWAITING_USER");
+  }
   // R-1R（⑧ 8.2.2）：无批注的轮次不再在信流里挂空态横幅——空态是读数
   // 块的答法，不是信流的；信流只放信与批注。
   if (!list.length) {
@@ -186,7 +192,10 @@ export function showMoments(list) {
     }
     if (m.lifecycle_state === "AWAITING_USER") {
       // the W-2/W-3 reply face: a moment waiting for the user offers the
-      // attempt box (their own English sentence, judged) and the skip
+      // attempt box (their own English sentence, judged) and the skip.
+      // rd-4 手写批注层：等回应的卡带红笔圈线（锚行外包伪元素椭圆，
+      // 静态形随卡入场一次；收场即摘——9.12-23）
+      card.classList.add("circled");
       addReplyControls(card);
     }
     momentsBox.appendChild(card);
@@ -291,8 +300,25 @@ function readReplyAnswer(card, data) {
     // the post-reveal optional attempt open): the user can retry or skip
     addReplyControls(card);
   } else {
-    card.classList.add("skipped");
+    // rd-4 两态可分（9.12-23）：现役两臂同落 .skipped 改为分臂——
+    // 成功族（SUCCESS / ALTERNATIVE_SUCCESS）= 盖戳完成态：圈线摘下、
+    // #22 stamp 同枚印记按上（stamp-press 复用，零新动效）；搁置与
+    // 负值收场 = 淡出态（skipped 现役原样）。守恒律：一卡至多一处
+    // 手迹——盖戳落地时圈线已离场。
+    const word = String(data.feedback || "").split("（")[0];
+    card.classList.remove("circled");
+    if (word === "SUCCESS" || word === "ALTERNATIVE_SUCCESS") {
+      card.classList.add("settled");
+      const stamp = inkIcon("stamp");
+      stamp.classList.add("card-stamp", "stamp-press");
+      card.appendChild(stamp);
+    } else {
+      card.classList.add("skipped");
+    }
   }
+  // rd-4 指路行随收场同步：批注还开着（再试一回）则留，收场则隐
+  const guide = document.getElementById("reply-guide");
+  if (guide) guide.hidden = data.moment_state !== "AWAITING_USER";
 }
 
 async function postReply(card, payload, busyText, doneNote) {
@@ -823,4 +849,42 @@ export function disclosure(opts) {
   }
   head.addEventListener("click", () => setOpen(!open));
   return { root, head, body, setOpen, isOpen: () => open };
+}
+
+// 23. partner-card（伙伴卡，rd-4）：浮层纸卡——#15 词卡同法（挂 body、
+// 点卡外关闭、ink-fade 入场）。工厂只造壳与开合；卡内读数槽的文案、
+// 名册样例与 localStorage 语义由 app.js 装配（数据只读 /api/memory 的
+// 既有读面，无新端点；伙伴名现役无源 → 诚实占位；名册 = persona 域
+// 内容的前端静态临时副本，选中只落 localStorage、零生效声称——
+// 9.12-23 裁决预告）。DOM 移除语义与 #15 同：closed 即 remove。
+export function partnerCard() {
+  const card = document.createElement("div");
+  card.className = "partner-card";
+  return card;
+}
+
+let openPartner = null;
+let partnerCloser = null;
+
+export function showPartnerCard(card) {
+  closePartnerCard();
+  document.body.appendChild(card);
+  openPartner = card;
+  partnerCloser = (event) => {
+    if (event.target !== card && !card.contains(event.target)) {
+      closePartnerCard();
+    }
+  };
+  document.addEventListener("click", partnerCloser);
+}
+
+export function closePartnerCard() {
+  if (partnerCloser !== null) {
+    document.removeEventListener("click", partnerCloser);
+    partnerCloser = null;
+  }
+  if (openPartner !== null) {
+    openPartner.remove();
+    openPartner = null;
+  }
 }

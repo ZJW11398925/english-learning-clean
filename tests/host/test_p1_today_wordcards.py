@@ -490,7 +490,11 @@ def test_the_word_card_overlay_is_the_letter_language(
     assert "export function closeWordCard() {" in page
     assert "export function showWordCard(at, data) {" in page
     assert "document.addEventListener" in page
-    assert "border-radius" not in page
+    # rd-4 随迁（9.12-23）：零圆角形态法则收窄——唯一豁免 = 手写批注层
+    # 的红笔圈线椭圆（手迹几何非面板圆角；spec 8.2.10 / 9.12-23 登记）；
+    # 第二处 radius 仍即红
+    assert page.count("border-radius") == 1
+    assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
 
 
@@ -514,8 +518,9 @@ def test_word_card_is_registered_in_all_four_places() -> None:
     # p-3 随迁：活注册表随 field/chip 入库生长两格（15 → 17）；
     # R-1 随迁：壳导航三件再长三格（17 → 20）；
     # R-1R 随迁：折叠组 disclosure 再长一格（20 → 21）；
-    # R-1V 随迁：icon-set 入库再长一格（21 → 22）
-    assert len(COMPONENTS) == 22
+    # R-1V 随迁：icon-set 入库再长一格（21 → 22）；
+    # rd-4 随迁：partner-card 入库再长一格（22 → 23）
+    assert len(COMPONENTS) == 23
     spec = (
         Path(__file__).resolve().parents[2]
         / "docs" / "FRONTEND_SPEC.md"

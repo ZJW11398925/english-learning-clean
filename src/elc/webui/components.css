@@ -189,6 +189,23 @@ button:focus-visible, input:focus-visible {
                           font-family: var(--f-sans); }
 .replytext:focus { border-bottom-color: var(--pencil); }
 
+/* rd-4 手写批注层（9.12-23）：红笔圈线——批注递入后，卡头的锚行被
+   红笔框一圈（伪元素椭圆，rotate 供给手写斜度）；回应收场即离场
+   （盖戳 settled / 搁置 skipped 两态都不再带圈）。静态形、零新动效：
+   圈线随卡自身的 note-arrive 递入一次；描线动画不做的理由——border
+   圆角椭圆没有描线路径，逐段画得换 SVG 几何（登记 9.12-23）。 */
+.note-paper.circled .note-head { position: relative; }
+.note-paper.circled .note-head::after {
+  content: ""; position: absolute; left: -10px; right: -10px; top: -7px;
+  bottom: -6px; border: 2px solid var(--pencil);
+  border-radius: 50%; transform: rotate(-2.5deg);
+  pointer-events: none; }
+/* rd-4 完成态（成功族）的印记：#22 stamp 同枚水印小图；负值与搁置
+   不盖。与圈线互斥（守恒律：一卡至多一处手迹——settled 落地时
+   circled 已摘）。 */
+.card-stamp { width: 16px; height: 16px; margin-top: 8px;
+              color: var(--ink-ghost); }
+
 /* ── 4. letter（信笺）───────────────────────────────────────────────
    结构：<div class="letter may|me">[.paper 包 .say]（me 撕边）| <p
    class="say">（may 平信）</div>。
@@ -659,6 +676,80 @@ button:focus-visible, input:focus-visible {
 .sysline.emptyhall { margin-top: var(--sp-6); }
 .sysline.emptyhall .inkicon { display: block; width: 30px;
            height: 30px; margin: 0 auto 10px; color: var(--ink-ghost); }
+
+/* ── 23. partner-card（伙伴卡，rd-4）─────────────────────────────────
+   结构：<div class="partner-card">[.pc-name 伙伴名（诚实占位）+ .pc-label
+   占位注记][.pc-sec 读数槽 ×2（关系 / 近况）：.pc-label 名牌 + .pc-line
+   行族，三态委托 #14][.pc-roster 名册（.pc-sample 样例卡 ×3，各带
+   #17 --badge「预览」只读徽标与「先记下这一位」#1 --pencil；选中态
+   .pc-sample--on + 按钮词转「记下了」）][.pc-note 诚实注记][去向行
+   「全部记忆在 抽屉 · 记忆」（#1 --pencil 直达）][收起（#1 --faint）]
+   ——工厂 partnerCard() 与浮层开合 showPartnerCard()/closePartnerCard()
+   （components.js，rd-4）；浮层挂 body；触发 = 品牌条 who 块整体可点
+   （app.js 接线，screens.css 触点提示——品牌条不增长按钮元，r1_shell
+   的「<button 不在品牌条」钉保留）。
+   状态矩阵：default（--paper-high 泛起 + 发丝边 + 垫纸错位层——#15
+   同族浮层纸；开启入场 = ⑨-5 ink-fade 复用 --dur-2，零新动效）/
+   closed（点卡外或「收起」，DOM 移除语义，#15 同法）；读数槽三态 =
+   #14（工厂只落文案与重试回调）；.pc-sample--on（名册样例选中）。
+   使用规则：数据只读既有读面（/api/memory，无新端点）；伙伴名现役
+   无源（host 未注入 character package）→ 诚实占位句「一位还没取名
+   字的笔友」；名册 = persona 域内容的前端静态临时副本（真源
+   src/elc/persona/types.py 的 CharacterPackage 字段），逐卡标注
+   「预览」；选中只落 localStorage（elp.partner.pick.v1），页面上
+   不得出现任何生效声称（「生效 / 重启后」字样缺位——裁决预告
+   9.12-23）；去向行 = showSpace("drawer") 直达（默认落记忆节）。
+   禁止变体：外链头像 / 图片占位、新端点、生效声称、第四种浮层
+   （浮层现役 #15 词卡与 #23 本卡两形）、大面积色块。 */
+.partner-card { position: fixed; z-index: 9; left: 0; right: 0; top: 60px;
+             margin: 0 auto; width: min(360px, calc(100vw - 24px));
+             background: var(--paper-high); border: 1px solid var(--rule);
+             padding: 14px 16px 16px; font-size: 14px;
+             animation: ink-fade var(--dur-2) var(--ease-ink) both; }
+/* 浮层纸影：#15 同法——垫纸错位 3px 承影（--stack-shadow-soft），
+   卡面本体干净 */
+.partner-card::after { content: ""; position: absolute; inset: 0;
+             z-index: -1; background: var(--paper-2);
+             border: 1px solid var(--rule);
+             box-shadow: var(--stack-shadow-soft);
+             transform: translate(3px, 3px); }
+.pc-name { display: block; font-family: var(--f-serif); font-size: 17px;
+           font-weight: 700; }
+.pc-sec { margin-top: 10px; }
+.pc-label { margin: 0; font: var(--meta-font);
+            letter-spacing: var(--meta-track); color: var(--meta-ink); }
+.pc-line { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft);
+           line-height: 1.7; overflow-wrap: anywhere; }
+.pc-note { margin: 10px 0 0; font-size: 12px; color: var(--ink-faint);
+           line-height: 1.7; }
+.pc-sample { margin-top: 8px; border: 1px solid var(--rule-soft);
+             padding: 8px 10px 9px; }
+.pc-sample--on { border-color: var(--ink); }
+
+/* rd-4 伙伴面触发位（9.12-23）：who 块可点的 hover 触点提示——.word
+   的点线泛赭同族；screens 零 hover 规则（rd-1 钉），触屏纪律包 hover
+   媒体，单出处在此。 */
+@media (hover: hover) {
+  #space-parlor .top > div:hover .who {
+    text-decoration: underline dotted;
+    text-decoration-color: var(--pencil-soft);
+    text-underline-offset: 0.24em; }
+}
+
+/* ── rd-4 机制物化（9.12-23）：被验证才入册的印记与在途角标 ──────────
+   .arc-stamp：档案时间线明细行 outcome ∈ {SUCCESS, ALTERNATIVE_SUCCESS}
+   落 #22 stamp 水印小图（--ink-ghost，行内右缘）；PARTIAL / FAILURE /
+   ABSTAIN 不盖（负控钉在 test_rd4_full_face）。.letter--en-route：刚
+   寄出的信别一枚虚发丝角标，回信落地或失败即摘（行为钉）；「客厅把
+   灯留着」的 typing 行现役不动、不重复造。两者全复用 #22 与既有色
+   token——新增符号族 = 0（守恒律核算入回执）。 */
+.arc-stamp { flex: none; width: 14px; height: 14px; margin-left: auto;
+             align-self: center; color: var(--ink-ghost); }
+.letter--en-route { position: relative; }
+.letter--en-route::after {
+  content: ""; position: absolute; top: -4px; right: -6px; width: 16px;
+  height: 16px; border-top: 1px dashed var(--pencil-soft);
+  border-right: 1px dashed var(--pencil-soft); }
 
 /* ── R-1V 动效注册表（spec ⑨-5 的唯一实现出处；rd-1 扩充）───────────
    ink-fade（新信墨迹淡入：.flow-enter，addLine 的 enter 选项——新寄出

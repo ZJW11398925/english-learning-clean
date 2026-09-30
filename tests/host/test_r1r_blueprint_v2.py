@@ -83,7 +83,9 @@ def test_no_page_internal_h2_and_the_guide_sentences_open_the_sections(
     assert "客厅的账页——只读，如实。" not in index
     assert "客厅记住的事都在这里——一条条如实。" in index
     assert "请客厅忘掉一些事——走出去就找不回来。" in index
-    assert "设置面还没有铺开。" in index
+    # rd-4 随迁（9.12-23）：设置节升真面——旧「还没铺开」句退役不回潮
+    assert "设置面还没有铺开。" not in index
+    assert "当前这一档由启动命令给定——页面读不到，也不改它。" in index
 
 
 def test_the_section_tabs_renamed_display_only(tmp_path: Path) -> None:
@@ -138,8 +140,9 @@ def test_disclosure_is_registered_in_all_four_places() -> None:
     )
 
     assert "disclosure" in COMPONENTS
-    # R-1V 随迁：icon-set 入库再长一格（21 → 22）——同刀登记
-    assert len(COMPONENTS) == 22
+    # R-1V 随迁：icon-set 入库再长一格（21 → 22）——同刀登记；
+    # rd-4 随迁：partner-card 入库再长一格（22 → 23）——同刀登记
+    assert len(COMPONENTS) == 23
     spec = (
         Path(__file__).resolve().parents[2]
         / "docs" / "FRONTEND_SPEC.md"

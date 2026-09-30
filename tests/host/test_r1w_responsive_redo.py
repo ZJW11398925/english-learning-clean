@@ -353,12 +353,12 @@ def test_the_stamp_icon_is_registered_the_four_step_way() -> None:
     """The eighth ink icon, registered everywhere the set is spelled:
     the template geometry (one 20×20 grid, no stroke of its own), the
     live anchor on the cover's dateline, the contract block's roster
-    and the spec's ③ row + ⑨-4 roster. The component count stays 22
-    (the set is the component; the icons are its members)."""
+    and the spec's ③ row + ⑨-4 roster. The set stays one component
+    (the icons are its members; rd-4 随迁：partner-card 入库 → 23)."""
 
     from tests.host.test_fg1_architecture import COMPONENTS
 
-    assert len(COMPONENTS) == 22
+    assert len(COMPONENTS) == 23
     index = _text("index.html")
     assert (
         '<svg id="icon-stamp" class="inkicon" viewBox="0 0 20 20" '
@@ -418,6 +418,7 @@ def test_the_frozen_copy_outside_the_cover_is_verbatim(
         "批注留过的痕迹与接下来的计划——要的时候来翻。",
         "请客厅忘掉一些事——走出去就找不回来。",
         "客厅记住的事都在这里——一条条如实。",
-        "设置面还没有铺开。",
+        # rd-4 随迁（9.12-23）：设置节升真面——冻结句换诚实读法句
+        "当前这一档由启动命令给定——页面读不到，也不改它。",
     ):
         assert sentence in page, sentence

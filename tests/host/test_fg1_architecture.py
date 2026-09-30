@@ -61,8 +61,8 @@ FILES: dict[str, str] = {
 #: The registry is living (spec ⑤): F-G2 added brand-mark and
 #: state-banner, p-1 added word-card, p-3 added field and chip, R-1
 #: added the shell navigation trio (dock / space-header / section-tabs),
-#: R-1R added the disclosure group, R-1V added the icon-set — each in
-#: the same cut that registered it in the spec.
+#: R-1R added the disclosure group, R-1V added the icon-set, rd-4 added
+#: partner-card — each in the same cut that registered it in the spec.
 COMPONENTS = (
     "link-btn",
     "pen",
@@ -86,6 +86,7 @@ COMPONENTS = (
     "section-tabs",
     "disclosure",
     "icon-set",
+    "partner-card",
 )
 
 

@@ -394,11 +394,13 @@ def test_the_stack_shadows_are_ink_derived_and_two_tiered(
     assert "rgba(0,0,0" not in page
     css = _text("components.css")
     screens = _text("screens.css")
-    # the two tiers, three applications: the stage on the desk (deep),
-    # the note on the letter and the deckle underlay (soft)
+    # the two tiers, four applications: the stage on the desk (deep),
+    # the note on the letter, the deckle underlay and — rd-4 随迁
+    # （9.12-23，#23 partner-card 的垫纸同层）— the partner-card
+    # underlay (soft)：应用数随浮层纸家族生长，层级值仍恰两级
     assert "box-shadow: var(--stack-shadow-deep);" in screens
     assert screens.count("box-shadow: var(--stack-shadow-") == 1
-    assert css.count("box-shadow: var(--stack-shadow-soft);") == 2
+    assert css.count("box-shadow: var(--stack-shadow-soft);") == 3
     assert "box-shadow: var(--stack-shadow-" in css
     # directions disagree: soft's x is positive, deep's is negative
     soft_xy = tokens[soft:].split(";", 1)[0].split(":", 1)[1].strip()
@@ -407,8 +409,9 @@ def test_the_stack_shadows_are_ink_derived_and_two_tiered(
     assert deep_xy.startswith("-5px 6px")
     # disposition F-1 (review): totals, not just var() forms — a
     # hand-written shadow literal (ink-coloured or not) trips these
+    # (rd-4 随迁：应用总数 2 → 3，#23 partner-card 垫纸同层)
     assert screens.count("box-shadow") == 1
-    assert css.count("box-shadow") == 2
+    assert css.count("box-shadow") == 3
     spec = _spec()
     assert "「零阴影」解除登记" in spec
     assert "DEC-OPI-dc0ba4b6-…13" in spec

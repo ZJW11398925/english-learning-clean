@@ -292,6 +292,15 @@ def test_the_archive_loading_and_empty_are_two_shapes(
     learn = _fn_body(page, "loadLearning")
     assert "批注正在来的路上……" in learn
     assert "diagEmpty" not in learn.split("try {", 1)[0]
+    # 处置二（OCR 独有捕获 #1/#2）：archive-board 不得在通用横幅列表里
+    # ——通用 loading/错误循环会整板覆盖它的定制进行时占位并重复清板
+    ids = page.split("const LEARN_PANEL_IDS = [", 1)[1].split("];", 1)[0]
+    assert '"archive-board"' not in ids
+    # 处置二（OCR 独有捕获 #4）：空态分支必须保留期待句——0 条时
+    # 「攒够 30 次……现在有 0 条」与「还没有批注留痕」同屏可读
+    empty_branch = page.split('diagEmpty(board, "还没有批注留痕', 1)[1] \
+                           .split("return;", 1)[0]
+    assert "这里会讲一个学期的故事" in empty_branch
 
 
 def test_the_wrapped_expectation_reads_the_full_count(
