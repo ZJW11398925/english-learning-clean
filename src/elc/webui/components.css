@@ -170,6 +170,12 @@ button:focus-visible, input:focus-visible {
 .letter.me { margin-left: auto; }
 .say { margin: 0; font-size: 16px; white-space: pre-wrap;
        overflow-wrap: anywhere; line-height: var(--lh-letter); }
+/* W-8 兜底记号的纸系样式：粗体墨色加重、斜体是笔锋、代码片段落次纸
+   浅盒（--f-mono + --paper-2）；不引入新色、零圆角、克制。 */
+.say strong { font-weight: 700; color: var(--ink); }
+.say em { font-style: italic; }
+.say code { font-family: var(--f-mono); font-size: 14px;
+            background: var(--paper-2); padding: 1px 4px; }
 /* 我的回信 = 撕边信纸（--touch 衬底 + 顶部撕口；不是气泡：零圆角零描边） */
 .letter.me .paper {
   background: var(--touch); padding: 10px 14px 12px; font-weight: 600;

@@ -83,7 +83,7 @@ def test_the_page_has_the_first_visit_cover(tmp_path: Path) -> None:
     assert "致 来到门前的人：" in page
     assert 'data-brand-mark="lg"' in page
     assert "把英语请进客厅" in page
-    assert "这间客厅只做一件事——你和一位固定笔友用英语通信。" in page
+    assert "这间客厅只做一件事——你和一位固定笔友以通信学英语。" in page
     assert "拆开这封信 →</button>" in page
     # the cover never returns once localStorage says so; a refusing
     # storage answers "seen" (nobody is trapped on the cover)
@@ -105,8 +105,8 @@ def test_the_page_has_the_parlor_screen(tmp_path: Path) -> None:
     assert 'id="space-parlor"' in page
     assert 'id="screen-living"' not in page
     assert '<div class="who">英语客厅</div>' in page
-    # R-1R 随迁（⑧ 8.2.2 定稿）：who-sub「固定笔友 · 来信去信都用英语」
-    assert "固定笔友 · 来信去信都用英语" in page
+    # W-8 随迁（用户思维三修）：who-sub「固定笔友 · 中文英文都行」
+    assert "固定笔友 · 中文英文都行" in page
     assert 'id="meter-toggle"' not in page
     assert 'id="topactions"' not in page
     assert "topactions" not in page

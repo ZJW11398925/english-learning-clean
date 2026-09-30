@@ -377,17 +377,17 @@ def test_the_parlor_speaks_the_new_copy(tmp_path: Path) -> None:
     pair."""
 
     page = _page_of(tmp_path)
-    # the empty hall — and the banner is gone from the flow
+    # the empty hall — and the banner is gone from the flow（W-8 随迁：
+    # 空厅句改「中文或英文都行」——对话语言跟随用户）
     assert (
-        "信还没开始写——用英语给笔友写第一句，写什么都行；写错了也不要紧，"
+        "信还没开始写——想说什么就写什么，中文或英文都行；客厅正听着。"
         in page
     )
-    assert "客厅正是为此在听。" in page
     assert "showEmptyHall();" in page
     assert "dismissEmptyHall();" in page
     assert "本轮没有打开教学时刻" not in page
-    # the writing face and the waiting face
-    assert 'placeholder="用英语写一句……"' in page
+    # the writing face and the waiting face（W-8 随迁：placeholder 同改）
+    assert 'placeholder="写一句……中文英文都行"' in page
     assert "（回信在途中……）" in page
     assert "用英语说点什么" not in page
     assert "（生成中…）" not in page
@@ -403,17 +403,15 @@ def test_the_parlor_speaks_the_new_copy(tmp_path: Path) -> None:
     assert "请求失败，请重试" not in page
 
 
-def test_the_blocked_line_keeps_its_two_forms(tmp_path: Path) -> None:
-    """⑧ 8.2.2: 分量不足 (the candidate's spoken name + the 原委在 link
-    into 学案 · 记录) / 被门规拦下 (the Chinese reasons)."""
+def test_the_blocked_line_is_retired_from_the_flow(tmp_path: Path) -> None:
+    """W-8（信流尾注搬出用户面）：blocked 行（⑧ 8.2.2 的两形）从信流
+    退役——没递短笺的一轮在信流里静默，「为什么」的原委留在学案 ·
+    记录的 why_not 面（数据面另有钉）。"""
 
     page = _page_of(tmp_path)
-    assert "这一轮没有递短笺——客厅想过「" in page
-    assert "」，今天它的分量还不够。（原委在 " in page
-    assert "这一轮没有递短笺——被门规拦下（" in page
-    assert 'link.textContent = "学案 · 记录";' in page
-    assert 'showSection("study", "progress");' in page
-    assert "showBlockedNote()" in page
+    assert "这一轮没有递短笺" not in page
+    assert "showBlockedNote" not in page
+    assert "blockedline" not in page
 
 
 # ---------------------------------------------------------------------------

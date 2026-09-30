@@ -84,9 +84,6 @@ body {
            font-family: var(--f-sans); font-size: 12px;
            color: var(--pencil); line-height: 1.7;
            white-space: pre-wrap; overflow-wrap: anywhere; }
-/* F-2 blocked 行：本轮没有教学时的一行诚实小字（数据不在就沉默）。 */
-.blockedline { margin: 0 0 14px; font-family: var(--f-sans);
-               font-size: 11px; color: var(--ink-faint); }
 
 /* 写信区：固定底（R-1 起让位于其下的常驻 dock）、上发丝线、无边框
    输入行 + 寄出链接；底部安全区由 dock 负责，这里只留自身呼吸。 */

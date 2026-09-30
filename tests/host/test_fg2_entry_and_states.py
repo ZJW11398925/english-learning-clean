@@ -207,7 +207,8 @@ def test_the_cover_is_a_complete_letter(tmp_path: Path) -> None:
     # 二 · 短笺怎么来 + 三句步文 → 两段缩进正文；就这么定 → → 拆开
     # 这封信 →；hint → 又及（进信体）
     assert "致 来到门前的人：" in page
-    assert "这间客厅只做一件事——你和一位固定笔友用英语通信。" in page
+    # W-8 随迁：封面定稿段改「以通信学英语……中文英文都行」
+    assert "这间客厅只做一件事——你和一位固定笔友以通信学英语。" in page
     assert "写着写着，客厅在旁听着。" in page
     assert "又及：进门以后，底部三个词随时可走" in page
     assert "拆开这封信 →</button>" in page

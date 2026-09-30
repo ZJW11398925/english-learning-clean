@@ -217,7 +217,7 @@ def test_space_headers_and_the_linkless_parlor_bar(tmp_path: Path) -> None:
     assert '<div class="spacehead-sec">记忆</div>' in index
     parlor = index.split('id="space-parlor"', 1)[1].split("</header>", 1)[0]
     assert '<div class="who">英语客厅</div>' in parlor
-    # R-1R 随迁（⑧ 8.2.2 定稿）：「固定笔友 · 来信去信都用英语」
+    # W-8 随迁（用户思维三修）：「固定笔友 · 中文英文都行」
     assert "固定笔友" in parlor
     assert "<button" not in parlor
     app = _text("app.js")

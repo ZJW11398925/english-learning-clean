@@ -1518,47 +1518,6 @@ async function loadGoals() {
   renderGoalTaxref();
 }
 
-// ── F-2 / R-1R: blocked 行 —— 一轮没递短笺的两形诚实小字（⑧ 8.2.2：
-// 分量不足 / 被门规拦；全键与浮点不进信流，「原委在」链接到 学案 ·
-// 记录）。读取失败就沉默——信流永不被注脚打断。 ───────────────────────
-
-async function showBlockedNote() {
-  let data = null;
-  try {
-    data = await fetchDiagnostics();
-  } catch {
-    return;
-  }
-  const panel = data && data.why_not_teach;
-  if (!panel || panel.error) return;
-  const candidate = (panel.candidates || [])[0];
-  const line = document.createElement("div");
-  line.className = "blockedline";
-  if (candidate) {
-    line.textContent = "这一轮没有递短笺——客厅想过「" +
-      spokenOf(candidate.canonical_key || candidate.candidate_id) +
-      "」，今天它的分量还不够。（原委在 ";
-    const link = document.createElement("button");
-    link.type = "button";
-    link.className = "btn btn--pencil";
-    link.textContent = "学案 · 记录";
-    link.addEventListener("click", () => {
-      showSpace("study");
-      showSection("study", "progress");
-    });
-    line.appendChild(link);
-    line.appendChild(document.createTextNode("）"));
-  } else if (panel.gate_deny) {
-    line.textContent = "这一轮没有递短笺——被门规拦下（";
-    line.appendChild(reasonsNode(panel.gate_deny.reason_codes));
-    line.appendChild(document.createTextNode("）。"));
-  } else {
-    return;
-  }
-  messages.appendChild(line);
-  messages.scrollTop = messages.scrollHeight;
-}
-
 // ── R-1: the spaces — 门厅 / 客厅 / 学案 / 柜抽 — plain show/hide, no
 // router. The dock (#18) is the only way between spaces; entering the
 // study or the drawer lands its default section, and switching a section
@@ -1790,8 +1749,7 @@ function startMomentPolling() {
 // R-1R（⑧ 8.2.2）：空厅不是一间空屋——历史为空时信流中央一行系统
 // 小字（客户端静态系统行，非伪造历史）；第一封信寄出即撤。
 const EMPTY_HALL_TEXT =
-  "信还没开始写——用英语给笔友写第一句，写什么都行；写错了也不要紧，" +
-  "客厅正是为此在听。";
+  "信还没开始写——想说什么就写什么，中文或英文都行；客厅正听着。";
 
 function showEmptyHall() {
   if (messages.firstChild) return;
@@ -1835,10 +1793,6 @@ async function postTurn(text) {
     }
     const moments = data.teaching_moments || [];
     showMoments(moments);
-    // F-2: a turn that taught nothing says why, in one gray line under
-    // the transcript — read from the diagnostics face, silent when the
-    // read fails or has nothing to say.
-    if (!moments.length) showBlockedNote();
   }
 }
 

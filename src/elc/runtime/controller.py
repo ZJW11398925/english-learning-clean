@@ -1596,7 +1596,7 @@ class ConversationCoordinator:
                 world_lore_view=None,
                 disclosed_user_profile=disclosed_profile,
                 conversation_window=window,
-                language_policy="default",
+                language_policy="follow-user",
                 generation_policy="default",
                 generation_contract=contract,
                 ephemeral_teaching_directive=None,
@@ -6623,7 +6623,7 @@ class ConversationCoordinator:
             action_type=action_type,
             persona_id=persona_id,
             allowed_disclosures=(),
-            language_policy="default",
+            language_policy="follow-user",
             style_constraints=(),
         )
         existing_result = self._generation.get_action_for_turn(turn_id)
@@ -6704,7 +6704,7 @@ class ConversationCoordinator:
             world_lore_view=None,
             disclosed_user_profile=disclosed_profile,
             conversation_window=window,
-            language_policy="default",
+            language_policy="follow-user",
             generation_policy="default",
             generation_contract=contract,
             ephemeral_teaching_directive=prompt_view,
@@ -7794,7 +7794,7 @@ class ConversationCoordinator:
             action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
             persona_id=persona_id,
             allowed_disclosures=(),
-            language_policy="default",
+            language_policy="follow-user",
             style_constraints=(),
             response_mode=delivery_mode_of(
                 GenerationActionType.NORMAL_PERSONA_REPLY

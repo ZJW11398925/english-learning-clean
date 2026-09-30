@@ -267,8 +267,8 @@ def test_the_cover_copy_is_the_new_final(tmp_path: Path) -> None:
     page = _page_of(tmp_path)
     assert "致 来到门前的人：" in page
     assert (
-        "这间客厅只做一件事——你和一位固定笔友用英语通信。想写什么，"
-        "就写什么；写错了，正是客厅在听的地方。" in page
+        "这间客厅只做一件事——你和一位固定笔友以通信学英语。想写什么，"
+        "就写什么——中文英文都行；写错了，正是客厅在听的地方。" in page
     )
     assert (
         "写着写着，客厅在旁听着。发现值得练的表达，它会随信递来一张"

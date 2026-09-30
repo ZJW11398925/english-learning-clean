@@ -454,18 +454,51 @@ export function stateBanner(kind, opts) {
 // 窗口加宽或句级匹配是 Revisit 方向，定量以词表实测为准。
 const WORD_EDGE_CHARS = "\"'`.,;:!?()[]{}<>…—–-“”‘’《》「」*_/\\|=+~^%$#@&";
 
-export function letterWords(text) {
-  const frag = document.createDocumentFragment();
+// W-8 前端兜底：模型偶尔仍带 markdown 记号，信笺把三记号排版出来——
+// **粗** / *斜* / `码`；分段用正则，未配对或内容以空白开头/结尾的不
+// 配对，原样直出。记号内照旧 span.word 分片，只是外包 strong/em/code；
+// 全程纯节点拼装（老纪律：用户的字永远不进标记）。无记号文本走的分支
+// 与旧实现逐字节同构（历史回填与 #15 触发面零扰动；`*` 仍在
+// WORD_EDGE_CHARS）。
+const LETTER_MARKS =
+  /(\*\*[^*\s](?:[^*]*[^*\s])?\*\*|\*[^*\s](?:[^*]*[^*\s])?\*|`[^`]+`)/;
+
+function appendWordSpans(parent, text) {
   for (const part of String(text).split(/(\s+)/)) {
     if (!part) continue;
     if (/^\s+$/.test(part)) {
-      frag.appendChild(document.createTextNode(part));
+      parent.appendChild(document.createTextNode(part));
       continue;
     }
     const span = document.createElement("span");
     span.className = "word";
     span.textContent = part;
-    frag.appendChild(span);
+    parent.appendChild(span);
+  }
+}
+
+export function letterWords(text) {
+  const frag = document.createDocumentFragment();
+  const segments = String(text).split(LETTER_MARKS);
+  for (let i = 0; i < segments.length; i += 1) {
+    const seg = segments[i];
+    if (!seg) continue;
+    if (i % 2 === 0) {
+      appendWordSpans(frag, seg);
+      continue;
+    }
+    let tag = "em";
+    let inner = seg.slice(1, -1);
+    if (seg.startsWith("**")) {
+      tag = "strong";
+      inner = seg.slice(2, -2);
+    } else if (seg.startsWith("`")) {
+      tag = "code";
+      inner = seg.slice(1, -1);
+    }
+    const el = document.createElement(tag);
+    appendWordSpans(el, inner);
+    frag.appendChild(el);
   }
   return frag;
 }

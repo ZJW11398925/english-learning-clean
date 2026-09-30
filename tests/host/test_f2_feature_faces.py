@@ -479,25 +479,17 @@ def test_teach_me_honest_refusals_and_grammar(
 # 5. the blocked line — one honest gray sentence after a quiet turn
 
 
-def test_the_blocked_line_is_pinned_in_the_page(tmp_path: Path) -> None:
+def test_the_blocked_line_is_retired_from_the_page(tmp_path: Path) -> None:
+    """W-8（信流尾注搬出用户面）：信流不再有「为什么没递」的注脚——
+    blocked 行退役，没递短笺的一轮在信流里静默；原委的读出归学案 ·
+    记录的 why_not 面（数据面钉见下方 diagnostics 测试）。"""
+
     page_source = _page_of(tmp_path)
-    # the gate is exactly "the turn taught nothing" — the mutation that
-    # makes the line always show must delete this line to do it
-    assert "if (!moments.length) showBlockedNote();" in page_source
-    # the line reads the diagnostics face and dies silently on failure
-    assert "async function showBlockedNote()" in page_source
-    assert "if (!panel || panel.error) return;" in page_source
-    # R-1R 随迁（⑧ 8.2.2 定稿）：blocked 行两形——分量不足（候选名
-    # todayName 派生 + 「原委在 学案 · 记录」链接）/ 被门规拦（中文
-    # 理由）；全键与浮点不再进信流
-    assert "这一轮没有递短笺——客厅想过「" in page_source
-    assert "今天它的分量还不够。（原委在 " in page_source
-    assert "这一轮没有递短笺——被门规拦下（" in page_source
+    assert "showBlockedNote" not in page_source
+    assert "blockedline" not in page_source
+    assert "这一轮没有递短笺" not in page_source
     assert "本轮未教学" not in page_source
     assert "低于阈值" not in page_source
-    # the gray small-text face and its inert rendering
-    assert ".blockedline" in page_source
-    assert 'line.className = "blockedline";' in page_source
 
 
 def test_the_blocked_line_has_data_after_a_blocked_turn(
