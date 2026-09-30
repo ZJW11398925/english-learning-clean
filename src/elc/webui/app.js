@@ -737,12 +737,6 @@ function renderArchive(evidence, retry) {
   }
   const claims = evidence.claims || [];
   const total = evidence.evidence_claim_count || 0;
-  if (total < ARCHIVE_STORY_GATE) {
-    const wish = document.createElement("p");
-    wish.className = "sub";
-    wish.textContent = "攒够 " + ARCHIVE_STORY_GATE + " 次批注，这里会讲一个学期的故事——现在有 " + total + " 条。";
-    board.appendChild(wish);
-  }
   if (!claims.length) {
     diagEmpty(board, "还没有批注留痕——聊起来才会有。");
     if (total < ARCHIVE_STORY_GATE) {
@@ -753,6 +747,12 @@ function renderArchive(evidence, retry) {
       board.appendChild(wish);
     }
     return;
+  }
+  if (total < ARCHIVE_STORY_GATE) {
+    const wish = document.createElement("p");
+    wish.className = "sub";
+    wish.textContent = "攒够 " + ARCHIVE_STORY_GATE + " 次批注，这里会讲一个学期的故事——现在有 " + total + " 条。";
+    board.appendChild(wish);
   }
   const input = document.createElement("input");
   input.type = "text";
@@ -1759,16 +1759,26 @@ function mountLetterSearch() {
   box.appendChild(result);
   let history = null;
   let historyAt = 0;
+  let historyPending = null;
   input.addEventListener("input", async () => {
     const q = input.value.trim().toLowerCase();
     result.textContent = "";
     if (!q) return;
     if (!history || Date.now() - historyAt > LETTER_SEARCH_TTL) {
+      // 单飞（OCR 处置三 #4）：并发按键共用一次在途请求，结果不交叠
+      if (!historyPending) {
+        historyPending = fetchHistory().then((h) => {
+          history = h;
+          historyAt = Date.now();
+        }).finally(() => { historyPending = null; });
+      }
       try {
-        history = await fetchHistory();
-        historyAt = Date.now();
+        await historyPending;
       } catch {
-        history = { turns: [] };
+        // 读失败不谎报「没有」（OCR 处置三 #5）：失败态如实、下次再试
+        result.appendChild(stateBanner("error",
+          { text: "信箱这会儿没翻开——稍后再搜一次。" }));
+        return;
       }
     }
     let hits = 0;
@@ -2048,11 +2058,22 @@ function fillPartnerReads(slots, panel) {
     relSlot.appendChild(stateBanner("empty",
       { text: "还没有留下关于你们关系的记忆。" }));
   } else {
-    for (const m of relRows.slice(-2).reverse()) {
-      relSlot.appendChild(partnerLine(m.canonical_content));
+    // OCR 处置三 #8：服务端按内容哈希序返回且含 SUPERSEDED/WITHDRAWN
+    // 行——「最近」须自排：只取 ACTIVE，按 updated_at 倒序取 2。
+    const activeRel = relRows
+      .filter((m) => m.status === "ACTIVE")
+      .sort((a, b) => String(b.updated_at).localeCompare(
+        String(a.updated_at)));
+    if (!activeRel.length) {
+      relSlot.appendChild(stateBanner("empty",
+        { text: "还没有留下关于你们关系的记忆。" }));
+    } else {
+      for (const m of activeRel.slice(0, 2)) {
+        relSlot.appendChild(partnerLine(m.canonical_content));
+      }
+      relSlot.appendChild(partnerLabel(
+        "记着 " + activeRel.length + " 件你们之间的事。"));
     }
-    relSlot.appendChild(partnerLabel(
-      "记着 " + relRows.length + " 件你们之间的事。"));
   }
   const epiData = panel && panel.episode;
   const episodes =
@@ -2065,7 +2086,17 @@ function fillPartnerReads(slots, panel) {
     epiSlot.appendChild(stateBanner("empty",
       { text: "还没有留下你们的近况。" }));
   } else {
-    const latest = episodes[episodes.length - 1];
+    // OCR 处置三 #9：episode_id 是会话哈希序非时间序——「最新」取
+    // ACTIVE 行里 updated_at 最大者
+    const latest = episodes
+      .filter((e) => e.status === "ACTIVE")
+      .sort((a, b) => String(b.updated_at).localeCompare(
+        String(a.updated_at)))[0];
+    if (!latest) {
+      epiSlot.appendChild(stateBanner("empty",
+        { text: "还没有留下你们的近况。" }));
+      return;
+    }
     epiSlot.appendChild(partnerLine(firstSentence(latest.summary)));
     const threads =
       Array.isArray(latest.open_threads) ? latest.open_threads.length : 0;

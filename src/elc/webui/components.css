@@ -202,8 +202,10 @@ button:focus-visible, input:focus-visible {
   pointer-events: none; }
 /* rd-4 完成态（成功族）的印记：#22 stamp 同枚水印小图；负值与搁置
    不盖。与圈线互斥（守恒律：一卡至多一处手迹——settled 落地时
-   circled 已摘）。 */
-.card-stamp { width: 16px; height: 16px; margin-top: 8px;
+   circled 已摘）。处置三 #1：复合选择器抬特异性——.inkicon 基础
+   规则（18px）在文件后段，同级单类被源序压过（rd-4 先例
+   .note-head .inkicon 同法）。 */
+.card-stamp.inkicon { width: 16px; height: 16px; margin-top: 8px;
               color: var(--ink-ghost); }
 
 /* ── 4. letter（信笺）───────────────────────────────────────────────
@@ -703,6 +705,9 @@ button:focus-visible, input:focus-visible {
    （浮层现役 #15 词卡与 #23 本卡两形）、大面积色块。 */
 .partner-card { position: fixed; z-index: 9; left: 0; right: 0; top: 60px;
              margin: 0 auto; width: min(360px, calc(100vw - 24px));
+             /* 处置三 #7：矮视口（≤480 档）卡高可超可视区且 fixed 面
+                不可滚——限高自滚，内容与收起钮永远可达 */
+             max-height: calc(100vh - 84px); overflow-y: auto;
              background: var(--paper-high); border: 1px solid var(--rule);
              padding: 14px 16px 16px; font-size: 14px;
              animation: ink-fade var(--dur-2) var(--ease-ink) both; }

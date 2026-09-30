@@ -144,7 +144,13 @@ def test_the_partner_card_carries_the_four_honest_items(
     fill = _fn_body(page, "fillPartnerReads")
     assert "panel.relationship_memory" in fill
     assert "panel.episode" in fill
-    assert 'relRows.slice(-2).reverse()' in fill
+    # 处置三 #8/#9：服务端序 = 内容哈希序且含 SUPERSEDED/WITHDRAWN——
+    # 「最近」必须客户端自排：只取 ACTIVE，按 updated_at 倒序
+    assert 'm.status === "ACTIVE"' in fill
+    assert "b.updated_at).localeCompare" in fill
+    assert "relRows.slice(-2)" not in fill  # 哈希序取尾不再是「最近」
+    assert 'e.status === "ACTIVE"' in fill
+    assert "episodes[episodes.length - 1]" not in fill
     assert "firstSentence(latest.summary)" in fill
     # the slots' own key shape (the walkthrough's live-render catch: a
     # slots.rel/relSlot mismatch is a silent TypeError in the browser)
@@ -318,10 +324,15 @@ def test_the_letter_search_is_window_honest(tmp_path: Path) -> None:
     assert ">搜信里的句子</h3>" in index
     assert "只搜已加载的最近 50 轮。" in index
     search = _fn_body(page, "mountLetterSearch")
-    assert "history = await fetchHistory();" in search
+    assert "fetchHistory()" in search
     assert '"第 " + (i + 1) + " 封（" + who + "）"' in search
     assert 'input.placeholder = "搜信里的一句话……";' in search
     assert "这五十轮里没有这一句。" in search
+    # 处置三 #4/#5：单飞（并发按键共用一次在途请求）+ 失败不谎报
+    # 「没有」——读失败给失败态一句，不落到空窗结论
+    assert "historyPending" in search
+    assert "信箱这会儿没翻开——稍后再搜一次。" in search
+    assert "history = { turns: [] };" not in search  # 失败≠空窗
     # the window has a freshness TTL — a cached empty pull must not wall
     # off letters that arrive later in the same session (the walkthrough's
     # live-render catch)
