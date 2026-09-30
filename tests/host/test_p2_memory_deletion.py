@@ -402,7 +402,7 @@ def test_the_page_carries_the_safety_copy_and_the_result_strip(
         # 逐字（一说范围，二说不可逆），第二层钉在可执行形态（删掉调用
         # 留下散文注释仍红）
         assert (
-            "将把「\" + rangeText + \"」请出柜抽，找不回来。确定继续？"
+            "将把「\" + rangeText + \"」请出抽屉，找不回来。确定继续？"
             in page
         )
         assert "再确认一次：忘掉之后无法恢复。" in page
@@ -429,8 +429,8 @@ def test_the_page_carries_the_safety_copy_and_the_result_strip(
         # the result sentences（8.2.7 定稿）and the p-2 F-2 honesty arm:
         # 幂等空删不得声称忘掉
         assert "已忘掉：" in page
-        assert "没有什么可忘——它之前就不在柜抽里。" in page
-        assert "这次忘掉留下的存根，在 柜抽 · 记忆 里能看到。" in page
+        assert "没有什么可忘——它之前就不在抽屉里。" in page
+        assert "这次忘掉留下的存根，在 抽屉 · 记忆 里能看到。" in page
         assert "没有可删的" not in page
         # the empty-state family lives on（记忆页空态句保留）
         assert "还没有记住什么" in page

@@ -103,11 +103,11 @@ def test_the_brand_bar_graces_both_screens(tmp_path: Path) -> None:
     space-header（#19）承担。"""
 
     index = _webui_text("index.html")
-    # R-1 随迁：空间头三枚 --sm（客厅 / 学案 / 柜抽；今日/目标/仪表的
-    # 品牌条随五屏退役——空间头部唯一）
+    # R-1 随迁：空间头三枚 --sm（客厅 / 温故 / 抽屉【rd-2 前称学案/柜
+    # 抽】；今日/目标/仪表的品牌条随五屏退役——空间头部唯一）
     assert index.count('data-brand-mark="sm"') == 3
     assert index.count('data-brand-mark="lg"') == 1
-    # R-1 随迁：学案/柜抽头部走 space-header（.top 基形 + 节名槽）；
+    # R-1 随迁：温故/抽屉头部走 space-header（.top 基形 + 节名槽）；
     # 旧 sethead 变体与「回客厅」钮退役（缺位钉）
     assert '<header class="top space-header" id="study-head">' in index
     assert '<header class="top space-header" id="drawer-head">' in index
@@ -203,12 +203,12 @@ def test_the_cover_is_a_complete_letter(tmp_path: Path) -> None:
     门语义不动（f1r 套件钉）。"""
 
     page = _page_of(tmp_path)
-    # R-1W 随迁（旧串 → 新串）：一 · 这是什么 → 致 来到门前的人：；
-    # 二 · 短笺怎么来 + 三句步文 → 两段缩进正文；就这么定 → → 拆开
-    # 这封信 →；hint → 又及（进信体）
-    assert "致 来到门前的人：" in page
-    # W-8 随迁：封面定稿段改「以通信学英语……中文英文都行」
-    assert "这间客厅只做一件事——你和一位固定笔友以通信学英语。" in page
+    # R-1W 随迁（旧串 → 新串）：一 · 这是什么 → 致 明日之我：（rd-2
+    # 豪放档，原「致 来到门前的人：」）；二 · 短笺怎么来 + 三句步文 →
+    # 两段缩进正文；就这么定 → → 拆开这封信 →；hint → 又及（进信体）
+    assert "致 明日之我：" in page
+    # rd-2 随迁：封面定稿段改「致明日之我」两重收信人段（豪放档）
+    assert "今日落笔，明日展信。" in page
     assert "写着写着，客厅在旁听着。" in page
     assert "又及：进门以后，底部三个词随时可走" in page
     assert "拆开这封信 →</button>" in page

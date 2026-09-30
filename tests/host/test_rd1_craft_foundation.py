@@ -339,12 +339,18 @@ def test_the_spec_registers_the_families_and_the_tokens() -> None:
 
     spec = _spec()
     for row in ("| state-layer 触感层 |", "| 信纸落桌（视图切换档） |",
-                "| 邮戳盖下 stamp-press |", "| 柜抽开合 drawer |",
+                "| 邮戳盖下 stamp-press |", "| 抽屉开合 drawer |",
                 "| 逐行落墨 reveal stagger |",
                 "| 回执首渲 @starting-style |"):
         assert row in spec, row
-    arrive = spec.split("| note-arrive 短笺递出 |", 1)[1].split("\n", 1)[0]
+    arrive = spec.split("| note-arrive 批注递出 |", 1)[1].split("\n", 1)[0]
     assert "--dur-note" in arrive
+    # disposition F-2 (review): the registered durations are pinned by
+    # number, not just by token name — spec-global so the row header's
+    # copy can be re-worded (rd-2) without breaking the pin
+    assert "`--dur-note`（240ms）" in spec
+    assert "总封顶 320ms" in spec
+    assert "`--dur-stamp` `--dur-note` | `120ms` `240ms`" in spec
     for token in ("`--dur-micro`", "`--ease-enter` `--ease-exit`",
                   "`--state-hover`", "`--stack-shadow-soft`"):
         assert token in spec, token
@@ -399,6 +405,10 @@ def test_the_stack_shadows_are_ink_derived_and_two_tiered(
     deep_xy = tokens[deep:].split(";", 1)[0].split(":", 1)[1].strip()
     assert soft_xy.startswith("3px -3px")
     assert deep_xy.startswith("-5px 6px")
+    # disposition F-1 (review): totals, not just var() forms — a
+    # hand-written shadow literal (ink-coloured or not) trips these
+    assert screens.count("box-shadow") == 1
+    assert css.count("box-shadow") == 2
     spec = _spec()
     assert "「零阴影」解除登记" in spec
     assert "DEC-OPI-dc0ba4b6-…13" in spec

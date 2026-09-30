@@ -81,14 +81,14 @@ export function confirmDialog(message) {
 }
 
 // W-6: the attempt loop, made legible. The verdict is a prominent strip
-// （R-1R 起：中文判词打头——✓ 答对了 / ◐ 答对一半 / ✗ 没答中——runtime
-// 原话随后；the symbol is display only）, and a submitted reply is visible
-// the instant it goes out — a help reply waits out a model round trip, and
-// a silent wait reads as a dead page.
+// （R-1R 起：中文判词打头——rd-2 豪放档判词：✓ 答得漂亮 / ◐ 答了一半 /
+// ✗ 没答中——runtime 原话随后；the symbol is display only）, and a
+// submitted reply is visible the instant it goes out — a help reply waits
+// out a model round trip, and a silent wait reads as a dead page.
 const OUTCOME_VERDICT_CN = {
-  SUCCESS: "✓ 答对了",
-  ALTERNATIVE_SUCCESS: "✓ 答对了（另一种说法也算）",
-  PARTIAL: "◐ 答对一半",
+  SUCCESS: "✓ 答得漂亮",
+  ALTERNATIVE_SUCCESS: "✓ 答得漂亮（另一种说法也算）",
+  PARTIAL: "◐ 答了一半",
   FAILURE: "✗ 没答中",
   ABSTAIN: "这次没法判",
 };
@@ -133,26 +133,27 @@ export function setReplyBusy(card, busy, note) {
   }
 }
 
-// 3. note-paper：教学短笺卡（R-1R 起：卡头「短笺：{功能句}」+ 状态行
-// （服务端 status_cn 原词，界面不自造）+ 类型行（中文映射，未知值省略
-// 该行——不兜底直出），等回复控件）。
-// kind 的中文映射（⑧ 8.2.10 / 8.3）：CURRENT_USER_ERROR → 来自你的句子；
-// RESOURCE_PRACTICE → 资源练习（服务端 kind_cn 的原词，镜像非自造）；
-// 其余未知值 → 省略整行（不兜底直出）。
+// 3. note-paper：教学批注卡（rd-2 起家族词批注；R-1R 起：卡头
+// 「批注：{功能句}」+ 状态行（服务端 status_cn 原词，界面不自造）+
+// 类型行（中文映射，未知值省略该行——不兜底直出），等回应控件）。
+// kind 的中文映射（⑧ 8.2.10 / 8.3）：CURRENT_USER_ERROR → 你信里的
+// 句子（rd-2 豪放档）；RESOURCE_PRACTICE → 资源练习（服务端 kind_cn
+// 的原词，镜像非自造，web.py 冻结故保持）；其余未知值 → 省略整行
+// （不兜底直出）。
 const MOMENT_KIND_CN = {
-  CURRENT_USER_ERROR: "来自你的句子",
+  CURRENT_USER_ERROR: "你信里的句子",
   RESOURCE_PRACTICE: "资源练习",
 };
 
 export function showMoments(list) {
   momentsBox.textContent = "";
-  // R-1R（⑧ 8.2.2）：无短笺的轮次不再在信流里挂空态横幅——空态是读数
-  // 块的答法，不是信流的；信流只放信与短笺。
+  // R-1R（⑧ 8.2.2）：无批注的轮次不再在信流里挂空态横幅——空态是读数
+  // 块的答法，不是信流的；信流只放信与批注。
   if (!list.length) {
     return;
   }
-  // R-1V：短笺递入动效只在新短笺组到达时播一次——轮询的每次重渲染
-  // 同 key 静帧（key = 本组短笺 id 列），不重演不闪。
+  // R-1V：批注递入动效只在新批注组到达时播一次——轮询的每次重渲染
+  // 同 key 静帧（key = 本组批注 id 列），不重演不闪。
   const noteKey = list.map(
     (m) => String(m.id || m.focus_target_id)).join("|");
   const arrive = noteKey !== momentsBox.dataset.noteKey;
@@ -164,7 +165,7 @@ export function showMoments(list) {
     head.className = "note-head";
     head.appendChild(inkIcon("note"));
     const b = document.createElement("b");
-    b.textContent = "短笺：" + (m.title || m.focus_target_id);
+    b.textContent = "批注：" + (m.title || m.focus_target_id);
     head.appendChild(b);
     card.appendChild(head);
     const status = document.createElement("div");
@@ -193,11 +194,11 @@ export function showMoments(list) {
 }
 
 export function addReplyControls(card) {
-  // R-1R（⑧ 8.2.10）：作答面开启时的卡内指路行——作答写在这张短笺上，
-  // 不是下面的信纸。
+  // R-1R（⑧ 8.2.10）：回应面开启时的卡内指路行——回应写在这张批注上，
+  // 不是下面的信纸（rd-2：作答→回应族）。
   const guide = document.createElement("div");
   guide.className = "noteline guide";
-  guide.textContent = "作答写在这张短笺上（不是下面的信纸）。";
+  guide.textContent = "回应写在这张批注上（不是下面的信纸）。";
   card.appendChild(guide);
   const row = document.createElement("div");
   row.className = "replyrow";
@@ -209,7 +210,7 @@ export function addReplyControls(card) {
   const submit = document.createElement("button");
   submit.type = "button";
   submit.className = "btn btn--send";
-  submit.textContent = "寄出作答";
+  submit.textContent = "寄出回应";
   submit.addEventListener("click", () => submitAttempt(card, input));
   row.appendChild(input);
   row.appendChild(submit);
@@ -225,13 +226,14 @@ export function addReplyControls(card) {
   help.appendChild(helpButton("讲解", "explanation", "取讲解中……", "已看讲解", card));
   card.appendChild(help);
   // W-2: the skip — a faint small link under the help arms; the moment's
-  // lock releases through the runtime's own reply entry, nothing else
+  // lock releases through the runtime's own reply entry, nothing else.
+  // rd-2：跳过 → 搁置族（「先搁着」）。
   const skip = document.createElement("button");
   skip.type = "button";
   skip.className = "btn btn--faint";
-  skip.textContent = "这次跳过";
+  skip.textContent = "先搁着";
   skip.addEventListener("click", () =>
-    postReply(card, { control: "skip" }, "跳过中……", "这次跳过了。"));
+    postReply(card, { control: "skip" }, "搁置中……", "先搁着了——回头再拾。"));
   card.appendChild(skip);
 }
 
@@ -242,7 +244,7 @@ function helpButton(label, control, busyText, doneNote, card) {
   button.textContent = label;
   button.addEventListener("click", () => {
     if (control === "reveal" &&
-        !confirmDialog("看了答案，完整说法就摆在眼前——看过之后仍可作答。要看吗？")) {
+        !confirmDialog("看了答案，完整说法就摆在眼前——看过之后仍可回应。要看吗？")) {
       return;
     }
     postReply(card, { control: control }, busyText, doneNote);
@@ -261,10 +263,11 @@ function disarmMomentCard(card) {
   }
 }
 
-// 短笺生命周期词的界面读法（⑧ 8.3：AWAITING_USER → 等你作答；未列出的
-// 词不伪装翻译——原样小字呈现）。
+// 批注生命周期词的界面读法（rd-2：作答→回应族；AWAITING_USER → 等你
+// 回应；未列出的词不伪装翻译——原样小字呈现。服务端 status_cn 词面为
+// 「等待您回应」，web.py 冻结——回应结果行用本客户端读法，登记披露）。
 const LIFECYCLE_CN = {
-  AWAITING_USER: "等你作答",
+  AWAITING_USER: "等你回应",
 };
 
 function readReplyAnswer(card, data) {
@@ -275,7 +278,7 @@ function readReplyAnswer(card, data) {
   card.appendChild(document.createElement("br"));
   const b = document.createElement("b");
   b.textContent = data.moment_state === "AWAITING_USER"
-    ? "再试一次？"
+    ? "再试一回？"
     : "本次回应已收下";
   card.appendChild(b);
   card.appendChild(document.createTextNode(
@@ -325,7 +328,7 @@ async function submitAttempt(card, input) {
   const text = input.value.trim();
   if (!text) return;
   await postReply(card, { control: "attempt", text: text }, "批改中……",
-                  "作答已寄出。");
+                  "回应已寄出。");
 }
 
 // 9/10 的仪表面工厂：meter-row（kv/kvgroup/kvtitle）与 empty-state（note）。

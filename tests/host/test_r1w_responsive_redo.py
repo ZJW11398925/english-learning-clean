@@ -249,7 +249,7 @@ def test_the_cover_is_a_complete_letter() -> None:
         '<p class="ob-wordmark">THE ENGLISH PARLOUR</p>',
         '<h1>把英语请进客厅</h1>',
         '<span class="ob-divider" aria-hidden="true"></span>',
-        '<p class="ob-salut">致 来到门前的人：</p>',
+        '<p class="ob-salut">致 明日之我：</p>',
         'id="ob-go"',
         '<p class="ob-version">elc · web</p>',
     ):
@@ -260,23 +260,26 @@ def test_the_cover_is_a_complete_letter() -> None:
 
 
 def test_the_cover_copy_is_the_new_final(tmp_path: Path) -> None:
-    """The letter's copy, word for word (⑧ 8.2.1 修订版), over the
-    served union — and the retired sentences never leak back from any
-    asset."""
+    """The letter's copy, word for word (⑧ 8.2.1 修订版 + rd-2「致明日
+    之我」豪放档), over the served union — and the retired sentences
+    never leak back from any asset."""
 
     page = _page_of(tmp_path)
-    assert "致 来到门前的人：" in page
+    assert "致 明日之我：" in page
+    assert "致明日之我" in "".join(page.split())
+    assert "今日落笔，明日展信。" in page
     assert (
-        "这间客厅只做一件事——你和一位固定笔友以通信学英语。想写什么，"
-        "就写什么——中文英文都行；写错了，正是客厅在听的地方。" in page
+        "今日落笔，明日展信。这间客厅里，你同一位固定笔友通信，也在给"
+        "明日之自己写信——两重收信人，同一张信纸。想写什么就写什么，"
+        "中文英文都行；写错了，正是回信要讲给你听的地方。" in page
     )
     assert (
-        "写着写着，客厅在旁听着。发现值得练的表达，它会随信递来一张"
-        "短笺——答对答错都有回音，也可以跳过。" in page
+        "写着写着，客厅在旁听着。发现值得练的表达，它随信递来一条英文"
+        "批注——答对答错都有回音，也可以先搁着。" in page
     )
     assert (
-        "又及：进门以后，底部三个词随时可走——学案摊着今天的复习与方向，"
-        "柜抽收着它记住的事。" in page
+        "又及：进门以后，底部三个词随时可走——温故摊着今天的复习与方向，"
+        "抽屉收着它记住的事。" in page
     )
     assert "拆开这封信 →</button>" in page
     for retired in ("一 · 这是什么", "二 · 短笺怎么来",

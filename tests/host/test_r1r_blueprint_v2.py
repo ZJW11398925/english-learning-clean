@@ -23,7 +23,8 @@ blueprint — the copy is 8.2's, word for word:
 5. the parlor faces — the empty-hall sentence, the retired empty banner, the
    two blocked-line forms with the 原委在 link, the teach-me success/failure
    lines, the waiting placeholder;
-6. the teaching note — 短笺： header, the status line from the server's own
+6. the teaching note — 批注： header（rd-2 批注家族，原「短笺」）, the
+   status line from the server's own
    word, the kind line through the Chinese map (unknown kinds omit the row),
    the guide line, the three help arms and their busy/seen words, the skip,
    the reveal confirm, the verdict strip with the Chinese verdict first;
@@ -231,7 +232,7 @@ def test_the_family_grouping_and_the_filter(tmp_path: Path) -> None:
     assert "g.disc.setOpen(hit);" in app
     assert "r.probe.includes(q)" in app
     # both homes ride the one builder (今日 · 可以练的表达 and
-    # 柜抽 · 隐私 · 按表达忘掉)
+    # 抽屉 · 隐私 · 按表达忘掉)
     assert "familyGroupsBlock(list," in app
     assert "function renderTodayPractice(" in app
     assert "function loadDelTargets(" in app
@@ -278,8 +279,10 @@ def test_the_translation_tables_carry_the_blueprint_words() -> None:
 
     app = _text("app.js")
     for word in (
-        'SUCCESS: "答对了"',
-        'PARTIAL: "答对一半"',
+        # rd-2 随迁：判词豪放档（答得漂亮 / 答了一半）+ 批注家族
+        # （TEACHING_OPEN「留了批注」）
+        'SUCCESS: "答得漂亮"',
+        'PARTIAL: "答了一半"',
         'FAILURE: "没答中"',
         'ABSTAIN: "这次没法判"',
         'NOT_SCHEDULED: "还没排上"',
@@ -294,7 +297,7 @@ def test_the_translation_tables_carry_the_blueprint_words() -> None:
         'LISTENING: "听力"',
         'READING: "阅读"',
         'WRITING: "写作"',
-        'TEACHING_OPEN: "递了短笺"',
+        'TEACHING_OPEN: "留了批注"',
         'TEACHING_HINT: "给了提示"',
         'TEACHING_REVEAL: "摆了答案"',
         'TEACHING_EXPLANATION: "给了讲解"',
@@ -377,26 +380,27 @@ def test_the_parlor_speaks_the_new_copy(tmp_path: Path) -> None:
     pair."""
 
     page = _page_of(tmp_path)
-    # the empty hall — and the banner is gone from the flow（W-8 随迁：
-    # 空厅句改「中文或英文都行」——对话语言跟随用户）
+    # the empty hall — and the banner is gone from the flow（rd-2 随迁：
+    # 空厅句升豪放档——语义底线①③由本句承载）
     assert (
-        "信还没开始写——想说什么就写什么，中文或英文都行；客厅正听着。"
+        "信还没开始写——想从哪句起，就从哪句起。中文英文都行；"
+        "写错了，客厅接得住。"
         in page
     )
     assert "showEmptyHall();" in page
     assert "dismissEmptyHall();" in page
     assert "本轮没有打开教学时刻" not in page
-    # the writing face and the waiting face（W-8 随迁：placeholder 同改）
-    assert 'placeholder="写一句……中文英文都行"' in page
-    assert "（回信在途中……）" in page
+    # the writing face and the waiting face（rd-2 随迁：placeholder 占
+    # 锚例二「今日如何？」；发送后状态行升「信已寄出——」收尾）
+    assert 'placeholder="今日如何？"' in page
+    assert "信已寄出，等回信——客厅把灯留着。" in page
     assert "用英语说点什么" not in page
     assert "（生成中…）" not in page
     # the failure line: 人话主句 + 括号工程词
     assert "这封信没有回音——客厅没能联系上模型端点" in page
-    # teach-me: success / refusal / network (⑧ 8.2.2 + the disposition's
-    # two arms)
-    assert "短笺来了——就在下面的信流里。" in page
-    assert "没能开始这张短笺——" in page
+    # teach-me: success / refusal / network (⑧ 8.2.2 + rd-2 批注家族)
+    assert "批注来了——就在下面的信流里。" in page
+    assert "没能开始这张批注——" in page
     assert "请求没送到——再试一次。" in page
     assert "教学已开始" not in page
     assert "无法开始这节课" not in page
@@ -405,8 +409,8 @@ def test_the_parlor_speaks_the_new_copy(tmp_path: Path) -> None:
 
 def test_the_blocked_line_is_retired_from_the_flow(tmp_path: Path) -> None:
     """W-8（信流尾注搬出用户面）：blocked 行（⑧ 8.2.2 的两形）从信流
-    退役——没递短笺的一轮在信流里静默，「为什么」的原委留在学案 ·
-    记录的 why_not 面（数据面另有钉）。"""
+    退役——没递批注的一轮（rd-2 前称短笺）在信流里静默，「为什么」的
+    原委留在 温故 · 记录 的 why_not 面（数据面另有钉）。"""
 
     page = _page_of(tmp_path)
     assert "这一轮没有递短笺" not in page
@@ -419,28 +423,29 @@ def test_the_blocked_line_is_retired_from_the_flow(tmp_path: Path) -> None:
 
 
 def test_the_teaching_note_faces_the_blueprint(tmp_path: Path) -> None:
-    """⑧ 8.2.10: the header is 短笺：{功能句}; the status line is the
-    server's own status_cn; the kind rides the client map and an unknown
-    kind omits the row; the guide line appears with the answer face; the
-    three help arms with their busy/seen words; 这次跳过; the reveal
-    confirm; the verdict strip leads with the Chinese verdict."""
+    """⑧ 8.2.10: the header is 批注：{功能句}（rd-2 批注家族）; the
+    status line is the server's own status_cn; the kind rides the client
+    map and an unknown kind omits the row; the guide line appears with
+    the answer face; the three help arms with their busy/seen words;
+    先搁着（rd-2 搁置族）; the reveal confirm; the verdict strip leads
+    with the Chinese verdict."""
 
     page = _page_of(tmp_path)
-    assert '"短笺："' in page
+    assert '"批注："' in page
     assert "MOMENT_KIND_CN[m.kind]" in page
-    assert 'CURRENT_USER_ERROR: "来自你的句子"' in page
+    assert 'CURRENT_USER_ERROR: "你信里的句子"' in page
     assert "m.status_cn || m.lifecycle_state" in page
-    assert "作答写在这张短笺上（不是下面的信纸）。" in page
+    assert "回应写在这张批注上（不是下面的信纸）。" in page
     assert 'helpButton("提示", "hint", "取提示中……", "已看提示", card)' in page
     assert 'helpButton("答案", "reveal", "取答案中……", "已看答案", card)' in page
     assert 'helpButton("讲解", "explanation", "取讲解中……", "已看讲解", card)' in page
-    assert 'skip.textContent = "这次跳过";' in page
-    assert "看了答案，完整说法就摆在眼前——看过之后仍可作答。要看吗？" in page
+    assert 'skip.textContent = "先搁着";' in page
+    assert "看了答案，完整说法就摆在眼前——看过之后仍可回应。要看吗？" in page
     # the verdict strip: the Chinese verdict first, the runtime's own
     # words after (the symbol is display-only)
     assert 'FAILURE: "✗ 没答中"' in page
-    assert 'PARTIAL: "◐ 答对一半"' in page
-    assert 'SUCCESS: "✓ 答对了"' in page
+    assert 'PARTIAL: "◐ 答了一半"' in page
+    assert 'SUCCESS: "✓ 答得漂亮"' in page
     assert 'head + " · " + feedback' in page
     assert "判分反馈：" not in page
     # the retired words stay retired（「已看提示」含「看提示」子串——缺位
@@ -466,7 +471,7 @@ def test_the_direction_face_is_read_write_one(tmp_path: Path) -> None:
     assert '"目标 " + (index + 1) + " · 技能"' in page
     assert "· 内容" in page
     assert 'save.textContent = "保存方向";' in page
-    assert 'save.textContent = "保存短笺频率";' in page
+    assert 'save.textContent = "保存批注频率";' in page
     assert "已保存（第 " in page
     assert "内容没有变化——没有写新版本。" in page
     assert "这份方向刚在别处被改过——重新读过再改。" in page
@@ -498,17 +503,17 @@ def test_the_privacy_face_speaks_忘掉(tmp_path: Path) -> None:
     # inside a sentence shows up as an intra-sentence space (the review's
     # L-1: 「信件 本身保留」); the contiguous pins refuse that form
     assert (
-        "把这段通信的全部记录请出柜抽——信件、短笺痕迹与它留下的证据行，"
+        "把这段通信的全部记录请出抽屉——信件、批注痕迹与它留下的证据行，"
         "一并忘掉。" in page
     )
     assert "忘掉某个表达的学习痕迹、学习状态与复习安排；信件本身保留。" in page
     # the two layers, each saying one thing (范围 / 不可逆)
-    assert "请出柜抽，找不回来。确定继续？" in page
+    assert "请出抽屉，找不回来。确定继续？" in page
     assert "再确认一次：忘掉之后无法恢复。" in page
     # the result sentences
     assert "已忘掉：" in page
-    assert "没有什么可忘——它之前就不在柜抽里。" in page
-    assert "这次忘掉留下的存根，在 柜抽 · 记忆 里能看到。" in page
+    assert "没有什么可忘——它之前就不在抽屉里。" in page
+    assert "这次忘掉留下的存根，在 抽屉 · 记忆 里能看到。" in page
     # the dangerous 52-row wall is the grouped + filtered disclosure list
     app = _text("app.js")
     assert "function deleteTargetRow(" in app
@@ -531,7 +536,7 @@ def test_the_record_page_is_account_why_raw(tmp_path: Path) -> None:
     page = _page_of(tmp_path)
     assert ">在学的表达</h3>" in page
     assert ">为什么</h3>" in page
-    assert ">为什么递了这张短笺</h3>" in page
+    assert ">为什么留了这张批注</h3>" in page
     assert ">为什么没有递</h3>" in page
     assert ">判分有什么变化</h3>" in page
     assert ">你收到了哪些帮助</h3>" in page
@@ -548,7 +553,7 @@ def test_the_record_page_is_account_why_raw(tmp_path: Path) -> None:
     assert "byTarget.set(item.target_id" in app
     assert "byTarget.get(claim.target_id)" in app
     assert '"痕迹 "' in app
-    assert "还没有在学任何表达——短笺来过才会有账。" in app
+    assert "还没有在学任何表达——批注来过才会有账。" in app
     # the 52-row teachable list is gone from this page
     assert 'id="target-list"' not in page
 

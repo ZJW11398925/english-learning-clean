@@ -16,7 +16,8 @@ never its code):
    pen line with the 寄出 link) and 仪表 (the honest set screen: the
    endpoint and the model name have no page-side source and are not
    shown, 学习/诊断 expand in place, 回客厅 leads back) — R-1 随迁后：
-   屏迁空间（客厅=space-parlor），仪表的诚实句与四块归位（记录/柜抽），
+   屏迁空间（客厅=space-parlor），仪表的诚实句与四块归位（记录/抽屉
+   【rd-2 前称柜抽】），
    缺位钉保证旧壳不回流;
 3. the teaching note keeps every semantic string the behavior suites
    pin (the W-6 arms and their confirm, the busy strip, the verdict
@@ -83,13 +84,14 @@ def test_the_page_has_the_first_visit_cover(tmp_path: Path) -> None:
 
     page = _page_of(tmp_path)
     assert 'id="screen-onboard"' in page
-    # R-1W 随迁（旧串 → 新串）：一 · 这是什么 → 致 来到门前的人：；
-    # 跟一位固定笔友……一句 → 这间客厅只做一件事……；就这么定 → →
-    # 拆开这封信 →（F-G2/R-1R 的步题语义由信体三行继承）
-    assert "致 来到门前的人：" in page
+    # R-1W 随迁 + rd-2 随迁（旧串 → 新串）：一 · 这是什么 → 致 明日之
+    # 我：（豪放档，原「致 来到门前的人：」）；跟一位固定笔友……一句 →
+    # 致明日之我两重收信人段；就这么定 → → 拆开这封信 →（F-G2/R-1R 的
+    # 步题语义由信体三行继承）
+    assert "致 明日之我：" in page
+    assert "今日落笔，明日展信。" in page
     assert 'data-brand-mark="lg"' in page
     assert "把英语请进客厅" in page
-    assert "这间客厅只做一件事——你和一位固定笔友以通信学英语。" in page
     assert "拆开这封信 →</button>" in page
     # the cover never returns once localStorage says so; a refusing
     # storage answers "seen" (nobody is trapped on the cover)
@@ -111,8 +113,10 @@ def test_the_page_has_the_parlor_screen(tmp_path: Path) -> None:
     assert 'id="space-parlor"' in page
     assert 'id="screen-living"' not in page
     assert '<div class="who">英语客厅</div>' in page
-    # W-8 随迁（用户思维三修）：who-sub「固定笔友 · 中文英文都行」
-    assert "固定笔友 · 中文英文都行" in page
+    # rd-2 随迁（豪放档，原「固定笔友 · 中文英文都行」）：
+    # who-sub「一位固定笔友 · 中英不拘」
+    assert "固定笔友" in page
+    assert "一位固定笔友 · 中英不拘" in page
     assert 'id="meter-toggle"' not in page
     assert 'id="topactions"' not in page
     assert "topactions" not in page
@@ -137,7 +141,8 @@ def test_the_honest_faces_split_into_drawer_and_progress(
     the model endpoint and the model name have no page-side source — the
     absence is said, not faked (the sentence moved to the drawer's
     settings section); 学习/诊断 live as always-mounted blocks in
-    学案·记录（在学的表达 / 为什么 / 原始读数 三段，R-1R 重命名），
+    温故·记录【rd-2 前称学案】（在学的表达 / 为什么 / 原始读数 三段，
+    R-1R 重命名），
     记忆/隐私 in the drawer; the
     old setlinks/toggleSetBlock expansion retired (absence pins), the
     one-visible-section semantics rides the section loop."""
@@ -179,28 +184,30 @@ def test_the_honest_faces_split_into_drawer_and_progress(
 
 def test_the_teaching_note_keeps_the_w6_faces(tmp_path: Path) -> None:
     """The teaching moment is a short note in the letter flow: the
-    target's words under the 教学时刻 label, the underline answer box,
-    the 寄出作答 link, the three help arms with their confirm, the faint
-    skip link, the busy strip and the verdict strip in ochre/ink — every
-    semantic string the W suites pin, restyled but never renamed away."""
+    target's words under the 批注 label（rd-2 批注家族，原「教学时刻」
+    退役后再迁批注）, the underline answer box, the 寄出回应 link
+    （rd-2 回应族，原「寄出作答」）, the three help arms with their
+    confirm, the faint skip link（先搁着）, the busy strip and the
+    verdict strip in ochre/ink — every semantic string the W suites
+    pin, restyled but never renamed away."""
 
     page = _page_of(tmp_path)
     # the note itself (the old accent-wash .moment card is gone)；R-1R
-    # 随迁（⑧ 8.2.10 定稿）：卡头「短笺：{功能句}」，状态行用服务端
-    # status_cn 原词，kind 走中文映射（未知值省略该行）
+    # 随迁（⑧ 8.2.10 定稿）：卡头「批注：{功能句}」（rd-2 批注家族），
+    # 状态行用服务端 status_cn 原词，kind 走中文映射（未知值省略该行）
     assert 'card.className = "note-paper"' in page
     assert ".note-paper {" in page
-    assert '"短笺："' in page
-    # the underline answer box and its link
+    assert '"批注："' in page
+    # the underline answer box and its link（作答框 = 登记例外不动）
     assert "用英语写一句试试……" in page
-    assert "寄出作答" in page
+    assert "寄出回应" in page
     # the three help arms, the confirm, the skip（R-1R：三词同性 提示 /
-    # 答案 / 讲解；跳过「这次跳过」；看答案 confirm 新定稿）
+    # 答案 / 讲解；rd-2 搁置族「先搁着」；看答案 confirm 随回应族）
     assert 'helpButton("提示", "hint"' in page
     assert 'helpButton("答案", "reveal"' in page
     assert 'helpButton("讲解", "explanation"' in page
-    assert "看了答案，完整说法就摆在眼前——看过之后仍可作答。要看吗？" in page
-    assert "这次跳过" in page
+    assert "看了答案，完整说法就摆在眼前——看过之后仍可回应。要看吗？" in page
+    assert "先搁着" in page
     # the busy strip and the verdict strip (ochre/ink, never washes)
     assert "批改中……" in page
     assert ".resultstrip.ok { color: var(--pencil); }" in page
@@ -233,8 +240,9 @@ def test_the_pen_is_the_anchors_lined_paper(tmp_path: Path) -> None:
 
 def test_primary_actions_are_ink_secondary_stay_pencil(tmp_path: Path) -> None:
     """LOW-2: the anchor's color semantics — the primary serif actions
-    (就这么定 / 寄出 / 寄出作答) carry ink underlines; the pencil color
-    belongs to the secondary links (help arms, set links, skip)."""
+    (就这么定 / 寄出 / 寄出回应【rd-2，原寄出作答】) carry ink
+    underlines; the pencil color belongs to the secondary links (help
+    arms, set links, skip)."""
 
     page = _page_of(tmp_path)
     # the two primary selectors spell ink

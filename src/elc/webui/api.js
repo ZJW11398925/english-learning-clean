@@ -20,7 +20,7 @@ async function getJson(path) {
   return res.json();
 }
 
-/** 一轮对话：提交一句英语，拿回合信与教学时刻。 */
+/** 一轮对话：提交一句英语，拿回合信与教学批注。 */
 export function fetchTurn(text) {
   return postJson("/api/turn", { text: text });
 }

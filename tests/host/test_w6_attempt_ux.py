@@ -320,14 +320,15 @@ def test_the_face_maps_the_help_words_onto_the_runtime_intents() -> None:
 def test_the_page_pins_the_w6_strings(tmp_path: Path) -> None:
     with web_stack(tmp_path / "app.db") as stack:
         page = _page_source(stack)
-    # R-1R 随迁（⑧ 8.2.10 定稿）：占位「批改中……」；求助三词同性
-    # （提示 / 答案 / 讲解）；看答案 confirm 新定稿；失败回退
-    # 「请求没送到——再试一次。」（8.4 动词表禁「提交」）
+    # R-1R 随迁（⑧ 8.2.10 定稿）+ rd-2 随迁：占位「批改中……」；求助
+    # 三词同性（提示 / 答案 / 讲解）；看答案 confirm 随回应族
+    # （「仍可回应」，原「仍可作答」）；失败回退「请求没送到——再试
+    # 一次。」（8.4 动词表禁「提交」）
     assert "批改中……" in page
     assert 'helpButton("提示", "hint"' in page
     assert 'helpButton("答案", "reveal"' in page
     assert 'helpButton("讲解", "explanation"' in page
-    assert "看了答案，完整说法就摆在眼前——看过之后仍可作答。要看吗？" in page
+    assert "看了答案，完整说法就摆在眼前——看过之后仍可回应。要看吗？" in page
     assert "setReplyBusy(" in page
     assert "showResultStrip(" in page
     assert "请求没送到——再试一次。" in page

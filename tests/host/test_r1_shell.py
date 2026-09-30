@@ -61,7 +61,8 @@ def _text(name: str) -> str:
 
 
 def test_the_shell_is_a_vestibule_and_three_spaces(tmp_path: Path) -> None:
-    """门厅 + 客厅 + 学案 + 柜抽 exist; the four old screen ids are gone;
+    """门厅 + 客厅 + 温故 + 抽屉（rd-2 空间词，原学案/柜抽）exist; the
+    four old screen ids are gone;
     and every panel-level id the older suites pin survived the regrouping
     untouched (纯重组零语义丢失)."""
 
@@ -118,7 +119,7 @@ def test_the_old_nav_controls_are_all_gone(tmp_path: Path) -> None:
 
 
 def test_the_navdock_is_the_only_way_between_spaces(tmp_path: Path) -> None:
-    """The dock: exactly three items (客厅/学案/柜抽) with their data-space
+    """The dock: exactly three items (客厅/温故/抽屉) with their data-space
     wiring, the app-side wiring, and the fixed bottom form — hairline top
     edge, paper ground, the safe area in its own padding."""
 
@@ -126,7 +127,7 @@ def test_the_navdock_is_the_only_way_between_spaces(tmp_path: Path) -> None:
     assert '<nav id="navdock" class="navdock" aria-label="空间">' in index
     for space in ("parlor", "study", "drawer"):
         assert f'class="navdock-item" data-space="{space}"' in index
-    for label in (">客厅</button>", ">学案</button>", ">柜抽</button>"):
+    for label in (">客厅</button>", ">温故</button>", ">抽屉</button>"):
         assert label in index
     app = _text("app.js")
     assert "wireNavdock((name) => showSpace(name));" in app
@@ -206,7 +207,7 @@ def test_section_tabs_carry_the_full_aria_wiring(tmp_path: Path) -> None:
 
 
 def test_space_headers_and_the_linkless_parlor_bar(tmp_path: Path) -> None:
-    """学案/柜抽 headers ride the .top base with a section-name slot; the
+    """温故/抽屉 headers ride the .top base with a section-name slot; the
     parlor keeps its own bar — the brand form minus the toggles, not a
     single button left in it."""
 
@@ -217,8 +218,10 @@ def test_space_headers_and_the_linkless_parlor_bar(tmp_path: Path) -> None:
     assert '<div class="spacehead-sec">记忆</div>' in index
     parlor = index.split('id="space-parlor"', 1)[1].split("</header>", 1)[0]
     assert '<div class="who">英语客厅</div>' in parlor
-    # W-8 随迁（用户思维三修）：「固定笔友 · 中文英文都行」
+    # rd-2 随迁（豪放档，原「固定笔友 · 中文英文都行」）：
+    # 「一位固定笔友 · 中英不拘」
     assert "固定笔友" in parlor
+    assert "一位固定笔友 · 中英不拘" in parlor
     assert "<button" not in parlor
     app = _text("app.js")
     assert (
@@ -231,7 +234,7 @@ def test_space_headers_and_the_linkless_parlor_bar(tmp_path: Path) -> None:
 
 
 def test_entering_a_space_lands_its_default_section(tmp_path: Path) -> None:
-    """进空间落默认节（学案=今日、柜抽=记忆），切节即拉——the pulls wired
+    """进空间落默认节（温故=今日、抽屉=记忆），切节即拉——the pulls wired
     by section key; the goal entry still clears a leftover save line, the
     progress entry pulls the learning and diagnostics faces（R-1R：可教
     目标面退役后剩两面）, and settings pulls nothing."""

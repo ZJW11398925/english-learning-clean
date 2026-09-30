@@ -266,7 +266,7 @@ def test_every_icon_has_a_live_anchor() -> None:
     assert 'inkIcon("chevron")' in js  # disclosure's marker
     assert 'inkIcon("note")' in js  # the moment card's head
     assert 'inkIcon("lamp")' in js  # the empty state-banner
-    assert 'inkIcon("write")' in js  # the （回信在途中……）line
+    assert 'inkIcon("write")' in js  # the sent-line（rd-2 词面「信已寄出……」）
     app = _text("app.js")
     assert 'inkIcon("search")' in app  # the filter field's label
     assert 'inkIcon("inbox")' in app  # the empty hall

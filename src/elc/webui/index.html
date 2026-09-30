@@ -16,8 +16,10 @@
        R-1W 完全重做（B 面）= 封面信笺——产品门面是一张待拆的信：案头
        日期（客户端真实日期）+ 邮票角标（#22 stamp 水印墨装饰）/ 印记
        （seal-press 入场）/ 英文小字 + display 题 / 信体（称呼 · 两段
-       缩进正文 · 又及）/ 进门钮「拆开这封信 →」/ 诚实落款。说到哪一行
-       都是真的，不伪装任何功能；localStorage 门与 <title> 语义不动。 -->
+       缩进正文 · 又及）/ 进门钮「拆开这封信 →」/ 诚实落款。rd-2 起
+       封面信升「致明日之我」——两重收信人（笔友 ∥ 明日之自己），文案
+       洒脱豪放档（DEC-OPI-dc0ba4b6-…13 之②）。说到哪一行都是真的，
+       不伪装任何功能；localStorage 门与 <title> 语义不动。 -->
   <section id="screen-onboard" class="ob">
     <div class="ob-sheet paper-settle">
       <p class="ob-dateline"><span class="ob-date"></span><span class="ob-stamp" data-icon="stamp"></span></p>
@@ -26,10 +28,10 @@
       <h1>把英语请进客厅</h1>
       <span class="ob-divider" aria-hidden="true"></span>
       <div class="ob-letter">
-        <p class="ob-salut">致 来到门前的人：</p>
-        <p class="ob-para">这间客厅只做一件事——你和一位固定笔友以通信学英语。想写什么，就写什么——中文英文都行；写错了，正是客厅在听的地方。</p>
-        <p class="ob-para">写着写着，客厅在旁听着。发现值得练的表达，它会随信递来一张短笺——答对答错都有回音，也可以跳过。</p>
-        <p class="ob-para ob-ps">又及：进门以后，底部三个词随时可走——学案摊着今天的复习与方向，柜抽收着它记住的事。</p>
+        <p class="ob-salut">致 明日之我：</p>
+        <p class="ob-para">今日落笔，明日展信。这间客厅里，你同一位固定笔友通信，也在给明日之自己写信——两重收信人，同一张信纸。想写什么就写什么，中文英文都行；写错了，正是回信要讲给你听的地方。</p>
+        <p class="ob-para">写着写着，客厅在旁听着。发现值得练的表达，它随信递来一条英文批注——答对答错都有回音，也可以先搁着。</p>
+        <p class="ob-para ob-ps">又及：进门以后，底部三个词随时可走——温故摊着今天的复习与方向，抽屉收着它记住的事。</p>
         <button id="ob-go" class="btn btn--ink" type="button">拆开这封信 →</button>
       </div>
       <p class="ob-version">elc · web</p>
@@ -37,14 +39,14 @@
   </section>
 
   <!-- 客厅空间：品牌条（上下发丝线夹住；导航归 dock）+ 信笺流（教学
-       短笺随信流）+ 写信区。信件文本按词分片（#15 的触发面），点词出卡。
+       批注随信流）+ 写信区。信件文本按词分片（#15 的触发面），点词出卡。
        空厅由 app.js 落一句客户端静态系统行（⑧ 8.2.2），不伪装历史。 -->
   <section id="space-parlor" hidden>
     <header class="top">
       <span data-brand-mark="sm"></span>
       <div>
         <div class="who">英语客厅</div>
-        <div class="who-sub">固定笔友 · 中文英文都行</div>
+        <div class="who-sub">一位固定笔友 · 中英不拘</div>
       </div>
     </header>
     <main class="flow">
@@ -54,13 +56,13 @@
     <div class="dock">
       <form id="send" class="dock-row">
         <textarea id="text" class="pen" rows="2" autocomplete="off"
-                  placeholder="写一句……中文英文都行"></textarea>
+                  placeholder="今日如何？"></textarea>
         <button type="submit" class="btn btn--send">寄出 →</button>
       </form>
     </div>
   </section>
 
-  <!-- 学案空间：书桌。三节（今日 / 方向 / 记录），节签切换（#20），
+  <!-- 温故空间：书桌。三节（今日 / 方向 / 记录），节签切换（#20），
        进空间落默认节（今日）。头部 = #19 space-header（品牌条基形 +
        节名槽，随节签联动）。页题只念一遍：节名槽是「我在哪」，节内
        不再有 h2（⑧ 8.2.9）；内部 id 零改名（study-goal / study-progress
@@ -68,11 +70,11 @@
   <section id="space-study" hidden>
     <header class="top space-header" id="study-head">
       <span data-brand-mark="sm"></span>
-      <div class="who">学案</div>
-      <div class="spacehead-sec">今日</div>
-    </header>
-    <nav id="study-tabs" class="section-tabs" role="tablist"
-         aria-label="学案的节">
+        <div class="who">温故</div>
+        <div class="spacehead-sec">今日</div>
+      </header>
+      <nav id="study-tabs" class="section-tabs" role="tablist"
+           aria-label="温故的节">
       <button type="button" class="section-tab" role="tab"
               id="tab-study-today" data-section="today"
               aria-controls="study-today" aria-selected="true">今日</button>
@@ -139,7 +141,7 @@
     </div>
     <div id="goal-save" class="sec"></div>
     <div class="sec">
-      <h3>短笺频率</h3>
+      <h3>批注频率</h3>
       <div id="goal-frequency"><p class="note">暂无数据</p></div>
     </div>
     <div class="sec" id="goal-focus-sec" hidden>
@@ -173,7 +175,7 @@
       <div class="sec"><h3 class="grouphead">为什么</h3></div>
       <div class="panel-grid">
       <div class="sec">
-        <h3>为什么递了这张短笺</h3>
+        <h3>为什么留了这张批注</h3>
         <div id="why-teach"><p class="note">暂无数据</p></div>
       </div>
       <div class="sec">
@@ -229,15 +231,15 @@
     </div>
   </section>
 
-  <!-- 柜抽空间：收纳抽屉（低频）。三节：记忆 / 隐私 / 设置。 -->
+  <!-- 抽屉空间：收纳抽屉（低频）。三节：记忆 / 隐私 / 设置。 -->
   <section id="space-drawer" hidden>
     <header class="top space-header" id="drawer-head">
       <span data-brand-mark="sm"></span>
-      <div class="who">柜抽</div>
+      <div class="who">抽屉</div>
       <div class="spacehead-sec">记忆</div>
     </header>
     <nav id="drawer-tabs" class="section-tabs" role="tablist"
-         aria-label="柜抽的节">
+         aria-label="抽屉的节">
       <button type="button" class="section-tab" role="tab"
               id="tab-drawer-memory" data-section="memory"
               aria-controls="drawer-memory" aria-selected="true">记忆</button>
@@ -291,7 +293,7 @@
     <section id="set-privacy">
       <div class="sec">
         <h3>这段通信</h3>
-        <p class="sub">把这段通信的全部记录请出柜抽——信件、短笺痕迹与它留下的证据行，一并忘掉。</p>
+        <p class="sub">把这段通信的全部记录请出抽屉——信件、批注痕迹与它留下的证据行，一并忘掉。</p>
         <button id="del-conversation" class="btn btn--pencil" type="button">
           忘掉这段通信的全部记录</button>
       </div>
@@ -330,14 +332,14 @@
     </div>
   </section>
 
-  <!-- 空间导航（#18 dock）：常驻底部三项——客厅 / 学案 / 柜抽；当前
+  <!-- 空间导航（#18 dock）：常驻底部三项——客厅 / 温故 / 抽屉；当前
        空间高亮（主墨加重 + 赭红短下划线）。门厅时整条让位（进门钮承担
-       进入）。教学短笺随信流可滚出底栏、点词卡浮层（#15，z 9）都在它
+       进入）。教学批注随信流可滚出底栏、点词卡浮层（#15，z 9）都在它
        （z 6）之上。 -->
   <nav id="navdock" class="navdock" aria-label="空间">
     <button type="button" class="navdock-item" data-space="parlor">客厅</button>
-    <button type="button" class="navdock-item" data-space="study">学案</button>
-    <button type="button" class="navdock-item" data-space="drawer">柜抽</button>
+    <button type="button" class="navdock-item" data-space="study">温故</button>
+    <button type="button" class="navdock-item" data-space="drawer">抽屉</button>
   </nav>
 
   <!-- 桌面边注栏（R-1V，⑨-6 桌面构图）：≥900px 才显形的纸面构图件——
@@ -362,7 +364,7 @@
      网格、统一笔重（var(--icon-stroke) = 1.5，由 components.css 的
      .inkicon 落）、统一圆角端点；与 brand-mark 同法：HTML 原生解析
      svg，零外链、无 data URI、源码无命名串。现役八枚：search（筛框
-     名牌）/ chevron（#21 折叠箭头）/ note（短笺卡头）/ write（回信
+     名牌）/ chevron（#21 折叠箭头）/ note（批注卡头）/ write（回信
      在途中）/ inbox（空厅空信箱）/ lamp（空态未点亮的灯）/ postmark
      （桌面边注栏邮戳水印）/ stamp（门厅封面案头日期行的邮票角标，
      R-1W）。全部 aria-hidden——语义由同行文字承担。 -->

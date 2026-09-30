@@ -55,14 +55,14 @@ import {
 // 总则：状态 / 枚举只出中文；未列出的词不伪装翻译——原样小字（.rawtag）。
 
 const OUTCOME_CN = {
-  SUCCESS: "答对了",
-  ALTERNATIVE_SUCCESS: "答对了（另一种说法也算）",
-  PARTIAL: "答对一半",
+  SUCCESS: "答得漂亮",
+  ALTERNATIVE_SUCCESS: "答得漂亮（另一种说法也算）",
+  PARTIAL: "答了一半",
   FAILURE: "没答中",
   ABSTAIN: "这次没法判",
 };
 const ACTION_CN = {
-  TEACHING_OPEN: "递了短笺",
+  TEACHING_OPEN: "留了批注",
   TEACHING_HINT: "给了提示",
   TEACHING_REVEAL: "摆了答案",
   TEACHING_EXPLANATION: "给了讲解",
@@ -97,9 +97,9 @@ const GATE_REASON_CN = {
   TARGET_SUPPRESSED: "这个表达被压着不递",
   USER_INTENT_BLOCK: "你的意图不让递",
   AUTO_TEACH_DISABLED: "自动教学没有开",
-  TEACHING_LOCK_CONFLICT: "另一张短笺还在进行",
-  TEACHING_LOCK_INVALID: "短笺锁不成立",
-  MOMENT_NOT_CONTINUABLE: "这张短笺走不下去",
+  TEACHING_LOCK_CONFLICT: "另一张批注还在进行",
+  TEACHING_LOCK_INVALID: "批注锁不成立",
+  MOMENT_NOT_CONTINUABLE: "这张批注走不下去",
   HARD_PROTECTED_FLOW: "受保护的流程在进行",
   AUTO_SESSION_BUDGET_EXHAUSTED: "这一程的自动教学预算用完了",
   HARD_COOLDOWN_ACTIVE: "刚递过，还在冷却",
@@ -511,7 +511,7 @@ function renderRecordBook(schedule, evidence, retry) {
     entry.claims.push(claim);
   }
   if (!byTarget.size) {
-    diagEmpty(box, "还没有在学任何表达——短笺来过才会有账。");
+    diagEmpty(box, "还没有在学任何表达——批注来过才会有账。");
     return;
   }
   const rows = [];
@@ -1037,23 +1037,23 @@ function renderDelResult(data, rangeText) {
   // p-2 评审 F-2：notes 含 already absent = 幂等空删——不得对未发生的
   // 事声称发生（无新存根、记忆页不添行）。
   const alreadyAbsent = notes.some((n) => n.includes("already absent"));
-  const g = diagGroup(
+    const g = diagGroup(
     box,
     alreadyAbsent
-      ? "没有什么可忘——它之前就不在柜抽里。"
+      ? "没有什么可忘——它之前就不在抽屉里。"
       : "已忘掉：" + rangeText + "（存根 " + (data.tombstoned || 0) + " 条）"
   );
   if (!alreadyAbsent) {
     const tail = document.createElement("p");
     tail.className = "sub";
-    tail.textContent = "这次忘掉留下的存根，在 柜抽 · 记忆 里能看到。";
+    tail.textContent = "这次忘掉留下的存根，在 抽屉 · 记忆 里能看到。";
     box.appendChild(tail);
   }
 }
 
 async function runDelete(payload, rangeText) {
   if (!confirmDialog(
-    "将把「" + rangeText + "」请出柜抽，找不回来。确定继续？")) return;
+    "将把「" + rangeText + "」请出抽屉，找不回来。确定继续？")) return;
   if (!confirmDialog("再确认一次：忘掉之后无法恢复。")) return;
   let data = null;
   try {
@@ -1380,7 +1380,7 @@ function renderGoalFrequency() {
   const save = document.createElement("button");
   save.type = "button";
   save.className = "btn btn--pencil";
-  save.textContent = "保存短笺频率";
+  save.textContent = "保存批注频率";
   save.addEventListener("click", () => saveFrequency(save));
   box.appendChild(save);
 }
@@ -1519,7 +1519,7 @@ async function loadGoals() {
   renderGoalTaxref();
 }
 
-// ── R-1: the spaces — 门厅 / 客厅 / 学案 / 柜抽 — plain show/hide, no
+// ── R-1: the spaces — 门厅 / 客厅 / 温故 / 抽屉 — plain show/hide, no
 // router. The dock (#18) is the only way between spaces; entering the
 // study or the drawer lands its default section, and switching a section
 // (#20 tabs) is the pull — the section always shows its own facts, never
@@ -1552,7 +1552,7 @@ const SECTION_NAMES = {
   memory: "记忆", privacy: "隐私", settings: "设置",
 };
 
-// 进空间落默认节（学案=今日、柜抽=记忆）
+// 进空间落默认节（温故=今日、抽屉=记忆）
 const DEFAULT_SECTION = { study: "today", drawer: "memory" };
 
 // entering a section is the pull; settings has nothing to pull yet — the
@@ -1748,9 +1748,11 @@ function startMomentPolling() {
 }
 
 // R-1R（⑧ 8.2.2）：空厅不是一间空屋——历史为空时信流中央一行系统
-// 小字（客户端静态系统行，非伪造历史）；第一封信寄出即撤。
+// 小字（客户端静态系统行，非伪造历史）；第一封信寄出即撤。rd-2 豪放档
+// 重写（语义底线①③在场：中文可写 + 写错被接住——placeholder 让位
+// 「今日如何？」锚例后，不读封面也能从这里得知中文可写）。
 const EMPTY_HALL_TEXT =
-  "信还没开始写——想说什么就写什么，中文或英文都行；客厅正听着。";
+  "信还没开始写——想从哪句起，就从哪句起。中文英文都行；写错了，客厅接得住。";
 
 function showEmptyHall() {
   if (messages.firstChild) return;
@@ -1770,8 +1772,9 @@ async function postTurn(text) {
   dismissEmptyHall();
   addLine("user", text, { enter: true });
   // the placeholder is the user's "it is working" signal: removed the
-  // moment the turn response lands (or fails) — never left behind
-  const pending = addLine("typing", "（回信在途中……）");
+  // moment the turn response lands (or fails) — never left behind.
+  // rd-2：发送后状态行升「信已寄出，等回信——」收尾（8.5 流式落点句随迁）
+  const pending = addLine("typing", "信已寄出，等回信——客厅把灯留着。");
   startMomentPolling();
   let data = null;
   try {
@@ -1806,11 +1809,11 @@ async function postTeachMe(targetId) {
     return;
   }
   if (data.accepted) {
-    addLine("system", "短笺来了——就在下面的信流里。");
+    addLine("system", "批注来了——就在下面的信流里。");
     showSpace("parlor");
     startMomentPolling();
   } else {
-    failLine("没能开始这张短笺——", data.error || "被拒绝");
+    failLine("没能开始这张批注——", data.error || "被拒绝");
   }
 }
 

@@ -140,26 +140,43 @@ def test_the_controller_follows_the_user_language() -> None:
 
 def test_the_cover_copy_follows_the_user_language() -> None:
     """index.html: the cover paragraph, who-sub and the dock placeholder
-    speak the user's language stance, word for word."""
+    speak the user's language stance, word for word. rd-2 升豪放档：
+    封面信重写为「致明日之我」（锚例一），placeholder 占「今日如何？」
+    （锚例二，逐字），who-sub 升「中英不拘」——语言立场句面随迁，
+    断言语义不变（三处 live 面仍各自说清：给明日之自己写信 / 中英不拘 /
+    真问句占位）。"""
 
     index = _text("webui/index.html")
-    assert (
-        "这间客厅只做一件事——你和一位固定笔友以通信学英语。想写什么，"
-        "就写什么——中文英文都行；写错了，正是客厅在听的地方。" in index
-    )
-    assert "固定笔友 · 中文英文都行" in index
-    assert 'placeholder="写一句……中文英文都行"' in index
+    assert "今日落笔，明日展信。" in index
+    # 锚例一：称呼/题眼含「致明日之我」（界面排版「致 明日之我：」带
+    # 空格——去空白后逐字比对）
+    assert "致 明日之我：" in index
+    assert "致明日之我" in "".join(index.split())
+    assert "两重收信人，同一张信纸" in index
+    assert "一位固定笔友 · 中英不拘" in index
+    assert 'placeholder="今日如何？"' in index
+    # W-8 中档句缺位（防回潮，rd-2 起——见 test_rd2_copy_bolding 的
+    # 全仓形；此处就 file 面再钉一道）
+    assert "固定笔友 · 中文英文都行" not in index
+    assert "写一句……中文英文都行" not in index
 
 
 def test_the_empty_hall_copy_follows_the_user_language() -> None:
-    """app.js: the empty-hall system line invites either language."""
+    """app.js: the empty-hall system line invites either language and
+    keeps floor ③ (a mistake gets answered) — rd-2 豪放句
+    「客厅接得住」承接 placeholder 让位后的底线①③承载义务。"""
 
     app = _text("webui/app.js")
     assert (
-        "信还没开始写——想说什么就写什么，中文或英文都行；客厅正听着。"
-        in app
+        "信还没开始写——想从哪句起，就从哪句起。中文英文都行；"
+        "写错了，客厅接得住。" in app
     )
     assert "用英语给笔友写" not in app
+    # W-8 中档句缺位（防回潮）
+    assert (
+        "信还没开始写——想说什么就写什么，中文或英文都行；客厅正听着。"
+        not in app
+    )
 
 
 def test_the_spec_carries_the_language_principle() -> None:
@@ -179,15 +196,25 @@ def test_the_english_only_sentences_are_retired_repo_wide() -> None:
     """The English-only sentence families are gone from src/elc and the
     spec. The one registered exception is the attempt box's
     「用英语写一句试试……」（components.js 作答框 + spec 8.2.10）——教学
-    表达练习面，本刀范围外：钉先剥掉该登记形再断言缺位。"""
+    表达练习面，本刀范围外：钉先剥掉该登记形再断言缺位。rd-2 起 spec 面
+    取现役区（8.1–8.6）——9.7–9.9 历史登记的旧词指称（9.8-17 指称式
+    先例）不在缺位断言范围。"""
 
+    spec_zone = _spec_text().split("### 8.7 实现注记", 1)[0]
     corpus = "\n".join(
         p.read_text(encoding="utf-8")
         for p in sorted(SRC.rglob("*"))
         if p.is_file() and p.suffix in {".py", ".js", ".css", ".html"}
-    ) + "\n" + _spec_text()
+    ) + "\n" + spec_zone
 
-    for retired in ("用英语通信", "来信去信都用英语", "用英语给笔友写"):
+    for retired in ("用英语通信", "来信去信都用英语", "用英语给笔友写",
+                    # W-8 中档句全整句入缺位清单（rd-2 防回潮；「中文英文
+                    # 都行」子串被新空厅句合法使用，故钉整句形而非子串）
+                    "这间客厅只做一件事——你和一位固定笔友以通信学英语",
+                    "固定笔友 · 中文英文都行",
+                    "写一句……中文英文都行",
+                    "信还没开始写——想说什么就写什么，中文或英文都行；"
+                    "客厅正听着。"):
         assert retired not in corpus, retired
     carve = corpus.replace("用英语写一句试试", "")
     assert "用英语写一句" not in carve
