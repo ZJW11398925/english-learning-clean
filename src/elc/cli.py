@@ -399,6 +399,23 @@ def main(
             secrets,
         )
 
+    if args.command == "web":
+        # W-7 review MEDIUM-1: probe BEFORE open_host — opening the host
+        # bumps the store epoch, which fences a live instance's writes even
+        # when this start is then refused. Probed here, a refused second
+        # start never touches the database at all (and the banner below
+        # stays honest: it prints only for a start that will serve).
+        from elc.web import port_is_serving
+
+        if port_is_serving(args.port):
+            print(
+                f"elc web: port {args.port} is already serving an elc web"
+                " instance — stop the old one first; two instances on one"
+                " app.db corrupt each other's turns",
+                file=err,
+            )
+            return 1
+
     try:
         host = open_host(
             app_db,

@@ -345,6 +345,7 @@ __all__ = [
     "DEFAULT_WEB_CONVERSATION_ID",
     "WebOpenError",
     "main",
+    "port_is_serving",
     "run_web",
 ]
 
@@ -2674,6 +2675,10 @@ def _build_server(
             body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
             self.send_response(status)
             self.send_header("Content-Type", "application/json; charset=utf-8")
+            # W-7 review LOW-1: the API URLs are as unversioned as the
+            # statics — a polled endpoint (teaching/current) replaying a
+            # cached answer is the same stale-mix failure one layer up.
+            self.send_header("Cache-Control", "no-cache")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
@@ -3074,7 +3079,7 @@ def _build_server(
     return _WebServer(("127.0.0.1", port), Handler, face=face, work=work)
 
 
-def _port_already_serving(port: int) -> bool:
+def port_is_serving(port: int) -> bool:
     """True when something already accepts connections on 127.0.0.1:port.
 
     Windows lets a second ``ThreadingHTTPServer`` bind an in-use loopback
@@ -3083,7 +3088,9 @@ def _port_already_serving(port: int) -> bool:
     restart that did not stop the old instance left two runtimes on one
     app.db and killed every turn at the door. A connect probe is the
     cross-platform truth: TIME_WAIT leftovers accept nothing, a live
-    listener does.
+    listener does. The CLI's ``web`` branch calls this **before**
+    ``open_host`` — opening the host bumps the store epoch, which fences
+    a live instance's writes even when this start is then refused.
     """
 
     try:
@@ -3136,11 +3143,11 @@ def run_web(
     on one app.db answered every turn with an instant 500).
     """
 
-    if _port_already_serving(port):
+    if port_is_serving(port):
         raise WebOpenError(
             f"port {port} is already serving an elc web instance —"
-            " stop the old one first (or pass a different --port);"
-            " two instances on one app.db corrupt each other's turns"
+            " stop the old one first; two instances on one app.db"
+            " corrupt each other's turns"
         )
 
     opened = host.open_conversation(ConversationId(conversation))
