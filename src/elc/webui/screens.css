@@ -231,11 +231,11 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
                 overflow-y: auto; overscroll-behavior: contain;
                 --env-fan: 0.35; --env-step: 46px; --env-body: 104px;
                 max-height: calc(var(--env-body) + 2 * var(--env-step));
-                height: calc(var(--env-body)
+                height: calc(12px + var(--env-body)
                              + var(--env-n, 1) * var(--env-step));
                 margin-top: var(--sp-2); }
 .env { position: absolute; left: 0; right: 0;
-       top: calc(var(--env-i, 0) * var(--env-step));
+       top: calc(12px + var(--env-i, 0) * var(--env-step));
        min-height: var(--env-body);
        background: var(--paper-2);
        border: 1px solid var(--rule);
@@ -252,9 +252,11 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
 .env--lift { transform: translateY(-4px)
              translateX(calc(var(--env-dx, 0px) * var(--env-fan, 0)))
              rotate(calc(var(--env-rot, 0deg) * var(--env-fan, 0))); }
-/* 沓尾的新建空白信封：虚线空封——一眼「还没写」（纸叠影的抵消臂在
-   components.css 的 mc-1 段；本文件的纸影声明恰一处 = 案头舞台）。 */
-.env--new { top: calc(var(--env-n, 1) * var(--env-step));
+/* 沓尾的新建空白信封：虚线空封——一眼「还没写」；z 落底（压不住任何
+   一封真信），12px 基准与真封同排。（纸叠影的抵消臂在 components.css
+   的 mc-1 段；本文件的纸影声明恰一处 = 案头舞台。） */
+.env--new { top: calc(12px + var(--env-n, 1) * var(--env-step));
+            z-index: 0;
             background: none; border: 1px dashed var(--rule); }
 .env-to { margin: 0; display: flex; gap: 6px; align-items: baseline;
           padding-right: 60px; }
