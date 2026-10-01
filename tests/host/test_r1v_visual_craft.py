@@ -62,32 +62,49 @@ def _spec() -> str:
 
 
 def test_the_token_sheet_carries_the_r1v_scales() -> None:
-    """⑨-1/9.2: the type scale (five serif, two sans), the line heights
-    and letter spacings, the 4-based spacing ladder, the four paper
-    washes plus the desk ground, the ochre depths, the motion tokens
-    (three durations × three easings), the icon parameters and the
-    shell width — every new token lives in tokens.css, the values of
-    the eight legacy tokens untouched (the F-1 pin guards those)."""
+    """⑨-1/9.2 → v2 随迁（简报 §2/§3）：the v2 mature core's 14-colour
+    iron-gall sheet, the nine-step type scale（行高写整 px）, the
+    letter spacings, the 4-based spacing ladder, the motion tokens
+    （opacity 恒慢于 transform 的 --dur-ink 与墨水物理 --dur-wet）,
+    the icon parameters and the shell width — every token lives in
+    tokens.css; the legacy names survive as aliases resolving into the
+    v2 tiers（--pencil 系 = --accent 系、--f-sans = --f-ui、--bg =
+    --paper——消费面平滑，值全换）。"""
 
     tokens = _text("tokens.css")
     for declaration in (
-        # the type scale (five serif steps, two sans steps)
-        "--fs-display: 27px;", "--fs-title: 21px;", "--fs-head: 17px;",
-        "--fs-body: 16px;", "--fs-small: 14px;",
-        "--fs-ui: 12px;", "--fs-micro: 11px;",
-        # line heights and letter spacings
-        "--lh-body: 1.55;", "--lh-letter: 1.75;", "--lh-ui: 1.7;",
-        "--ls-title: 0.14em;", "--ls-caps: 0.18em;",
-        "--ls-formhead: 0.3em;",
-        # the paper washes and the desk ground
-        "--paper-high: #fdfcf8;", "--paper-2: #f4efe4;",
-        "--desk: #eae3d3;", "--ink-ghost: #aaa191;",
-        # the ochre depths
-        "--pencil-deep: #8a3f1f;", "--pencil-soft: #bb7a52;",
-        # the motion tokens
-        "--dur-1: 140ms;", "--dur-2: 260ms;", "--dur-3: 480ms;",
-        "--ease-ink: cubic-bezier(0.22, 0.61, 0.36, 1);",
+        # the v2 14-colour sheet (the iron-gall core)
+        "--paper: #f6f2e8;", "--paper-high: #fdfbf6;",
+        "--paper-2: #efe9dc;", "--desk: #e3dccb;",
+        "--ink: #191b1e;", "--ink-soft: #4a4d52;",
+        "--ink-faint: #6b6e72;", "--rule: #d9d3c5;",
+        "--rule-soft: #e7e1d3;", "--accent: #2c476a;",
+        "--accent-deep: #1c3049;", "--accent-soft: #8ba0b8;",
+        "--seal: #9a392b;", "--touch: #ece6d9;",
+        # the watermark ink and the legacy aliases
+        "--ink-ghost: #a8a496;",
+        "--bg: var(--paper);", "--pencil: var(--accent);",
+        # the nine-step scale (whole-px line heights, 4-based)
+        "--fs-display: 34px;", "--lh-display: 42px;",
+        "--fs-title: 24px;", "--lh-title: 32px;",
+        "--fs-head: 18px;", "--lh-head: 26px;",
+        "--fs-body: 17px;", "--lh-body: 32px;",
+        "--fs-body-latin: 17px;", "--lh-body-latin: 28px;",
+        "--fs-small: 14.5px;", "--lh-small: 24px;",
+        "--fs-hand: 19px;", "--lh-hand: 30px;",
+        "--fs-ui: 12.5px;", "--lh-ui: 20px;",
+        "--fs-micro: 11.5px;", "--lh-micro: 18px;",
+        # the measure and the baseline grid（字落线上）
+        "--measure: 34em;", "--baseline: 32px;",
+        # the motion tokens（纸先落、墨后渗）
+        "--dur-micro: 100ms;", "--dur-stamp: 120ms;",
+        "--dur-1: 140ms;", "--dur-note: 260ms;",
+        "--dur-panel-in: 280ms;", "--dur-ink: 360ms;",
+        "--dur-wet: 600ms;", "--dur-panel-out: 200ms;",
+        "--dur-settle: 320ms;",
         "--ease-paper: cubic-bezier(0.16, 1, 0.3, 1);",
+        "--ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);",
+        "--ease-exit: cubic-bezier(0.3, 0, 1, 1);",
         "--ease-press: cubic-bezier(0.4, 0, 0.2, 1);",
         # the icon parameters and the shell width
         "--icon-size: 18px;", "--icon-stroke: 1.5;",
@@ -101,19 +118,21 @@ def test_the_token_sheet_carries_the_r1v_scales() -> None:
 
 
 def test_the_paper_and_ochre_layers_are_not_flattened() -> None:
-    """⑨-3: the washes are *layers* — four papers and two ochre depths,
-    pairwise distinct (a flattened wash is not a layer)."""
+    """⑨-3 → v2 随迁：the washes are *layers* — four papers and the
+    ink-blue accent tier（--pencil 系 = --accent 系旧名别名），pairwise
+    distinct (a flattened wash is not a layer)."""
 
     tokens = _text("tokens.css")
-    papers = ("#fbf9f4", "#fdfcf8", "#f4efe4", "#eae3d3")
-    ochres = ("#a8562f", "#8a3f1f", "#bb7a52")
-    for value in papers + ochres:
+    papers = ("#f6f2e8", "#fdfbf6", "#efe9dc", "#e3dccb")
+    inks = ("#191b1e", "#4a4d52", "#6b6e72")
+    accents = ("#2c476a", "#1c3049", "#8ba0b8")
+    for value in papers + inks + accents:
         assert f": {value};" in tokens, value
     assert len(set(papers)) == 4
-    assert len(set(ochres)) == 3
+    assert len(set(accents)) == 3
     # the washes sit between paper and ink — none of them is an ink
-    for ink in ("#1b1a17", "#5c574e", "#726a5e"):
-        assert ink not in papers + ochres
+    # or an accent（三档互不重合）
+    assert not (set(papers) & set(inks + accents))
 
 
 def test_the_spec_registers_the_tokens_and_the_craft_section() -> None:
@@ -152,24 +171,28 @@ def test_the_spec_registers_the_tokens_and_the_craft_section() -> None:
 
 
 def test_the_desktop_composition_has_a_breakpoint_and_a_sheet() -> None:
-    """⑨-6: ≥900px the page becomes a sheet on a desk — the breakpoint
-    pin (900px exactly), the shell width rewritten to 1080px inside the
-    query, the reading column at 640px, and the marginalia rail with
-    its date slot and postmark watermark."""
+    """⑨-6 → v2 随迁：≥900px the page becomes a sheet on a desk — the
+    breakpoint pin (900px exactly), the shell width rewritten to 1080px
+    inside the query, the reading column at --measure（34em 版心，
+    简报 §3b）, and the marginalia rail with its date slot（楷体手迹位，
+    T1 三合法面之一）; the decorative postmark watermark is gone
+    （邮戳只落真实事件——T2）."""
 
     screens = _text("screens.css")
     assert "@media (min-width: 900px) {" in screens
     desktop = screens.split("@media (min-width: 900px) {", 1)[1]
     assert "--shell-w: 1080px;" in desktop
     assert "max-width: 1080px;" in desktop
-    assert "max-width: 640px;" in desktop
+    assert "max-width: var(--measure);" in desktop
     assert "background: var(--desk);" in desktop
     assert "outline: 1px solid var(--rule-soft); outline-offset: 5px;" \
         in desktop
     index = _text("index.html")
     assert '<aside class="marginalia" aria-hidden="true">' in index
     assert 'id="marginalia-date"' in index
-    assert 'data-icon="postmark"' in index
+    # the decorative watermark is gone (the rail keeps date + rule only)
+    assert "marginalia-mark" not in index
+    assert "postmark" not in index
     # the rail hides by default (the narrow screens never see it)
     assert ".marginalia { display: none; }" in screens
 
@@ -229,17 +252,19 @@ def test_the_seven_icons_share_one_grid_and_one_stroke() -> None:
     """⑨-4: the ink icons live in the shell's template on one 20×20 grid,
     all aria-hidden (their hosts' words carry the meaning); the stroke
     weight is the token, spelled once in components.css — no per-icon
-    stroke drift, no external geometry. R-1W 随迁：stamp 入集，七枚 →
-    八枚。"""
+    stroke drift, no external geometry. v2 随迁：postmark 随边注栏水印
+    撤除退役（注册的图标是使用的图标，注册表不做阁楼）——八枚 → 七枚。"""
 
     index = _text("index.html")
     assert '<template id="icon-set-source">' in index
     for name in ("search", "chevron", "note", "write",
-                 "inbox", "lamp", "postmark", "stamp"):
+                 "inbox", "lamp", "stamp"):
         assert f'<svg id="icon-{name}" class="inkicon" ' \
             f'viewBox="0 0 20 20" aria-hidden="true">' in index, name
-    # the grid is uniform: eight icons, eight identical viewBoxes
-    assert index.count('viewBox="0 0 20 20"') == 8
+    # the retired watermark icon is gone with its anchor
+    assert 'id="icon-postmark"' not in index
+    # the grid is uniform: seven icons, seven identical viewBoxes
+    assert index.count('viewBox="0 0 20 20"') == 7
     css = _text("components.css")
     assert (
         ".inkicon { width: var(--icon-size); height: var(--icon-size);"
@@ -250,7 +275,7 @@ def test_the_seven_icons_share_one_grid_and_one_stroke() -> None:
     # the icons carry no stroke literals of their own (one weight, one
     # source — the token)
     for name in ("search", "chevron", "note", "write",
-                 "inbox", "lamp", "postmark", "stamp"):
+                 "inbox", "lamp", "stamp"):
         svg = index.split(f'<svg id="icon-{name}"', 1)[1].split(
             "</svg>", 1)[0]
         assert "stroke" not in svg, name
@@ -260,8 +285,9 @@ def test_every_icon_has_a_live_anchor() -> None:
     """A registered icon is a used icon (the registry is not an attic):
     search rides the filter field's label, chevron the disclosure
     marker, note the moment card's head, write the waiting line, inbox
-    the empty hall, lamp the empty state, postmark the marginalia, stamp
-    the cover's dateline (R-1W)."""
+    the empty hall, lamp the empty state, stamp the cover's dateline
+    and the settled teaching card（结课邮票——真实事件位）. The
+    postmark watermark icon is retired with its anchor (v2 随迁)."""
 
     js = _text("components.js")
     assert 'inkIcon("chevron")' in js  # disclosure's marker
@@ -272,8 +298,9 @@ def test_every_icon_has_a_live_anchor() -> None:
     assert 'inkIcon("search")' in app  # the filter field's label
     assert 'inkIcon("inbox")' in app  # the empty hall
     index = _text("index.html")
-    assert 'data-icon="postmark"' in index  # the marginalia watermark
     assert 'data-icon="stamp"' in index  # the cover's dateline corner
+    # no decorative postmark watermark anywhere
+    assert "postmark" not in index
 
 
 # ---------------------------------------------------------------------------
@@ -281,51 +308,66 @@ def test_every_icon_has_a_live_anchor() -> None:
 
 
 def test_the_motion_registry_and_its_class_toggles() -> None:
-    """⑨-5: three keyframe motions with their class toggles — ink-fade
-    on new letters (history backfill stays still), note-arrive on a new
-    moment group (the poll's re-renders do not replay it), paper-unfold
-    on the disclosure body — and the chevron's open-class rotation."""
+    """⑨-5 → v2 随迁（简报 §5「纸先落、墨后渗」）：the keyframes carry
+    the drop/wash pair — paper-drop（transform）+ ink-wash（opacity，
+    calc(var(--dur-*) * 1.3) 表达「opacity 恒慢于 transform ≈1.3×」的
+    法则）; the class toggles keep their JS gating（history backfill
+    stays still, the poll's re-renders do not replay）; the chevron's
+    open-class rotation. 退役名单：ink-fade / note-arrive（被双动画
+    取代）/ paper-settle / seal-press（被 wash 档取代）/ state-breathe
+    （零常驻循环）。"""
 
     css = _text("components.css")
-    for motion in ("@keyframes ink-fade {", "@keyframes note-arrive {",
-                   "@keyframes paper-unfold {"):
+    for motion in ("@keyframes paper-drop {", "@keyframes ink-wash {",
+                   "@keyframes ink-set {", "@keyframes paper-unfold {",
+                   "@keyframes stamp-press {"):
         assert motion in css, motion
+    for retired in ("@keyframes ink-fade {", "@keyframes note-arrive {",
+                    "@keyframes paper-settle {", "@keyframes seal-press {",
+                    "@keyframes state-breathe {"):
+        assert retired not in css, retired
+    # the new-letter entrance: transform 280 + opacity 360（1.3× 慢）,
+    # plus the ink wash（墨水物理 T1-3：ink-ghost → ink ≈600ms）
     assert (
-        ".flow-enter { animation: ink-fade var(--dur-3) var(--ease-ink)"
-        " both; }" in css
+        ".flow-enter { animation: paper-drop var(--dur-panel-in)"
+        " var(--ease-paper)\n               both, ink-wash"
+        " var(--dur-ink) var(--ease-paper) both; }" in css
     )
-    # rd-1 随迁：note-arrive 重定档 --dur-2 → --dur-note（240ms，四族
-    # 对齐——⑨-5 注册表行同步改）
     assert (
-        ".note-paper--enter { animation: note-arrive var(--dur-note)"
+        ".ink-wet .say { animation: ink-set var(--dur-wet)"
+        " var(--ease-paper) both; }" in css
+    )
+    # the note arrival rides the note tier with the same 1.3× wash
+    assert (
+        ".note-paper--enter { animation: paper-drop var(--dur-note)"
         in css
     )
     assert (
         ".disclosure-body:not([hidden]) {\n"
-        "            animation: paper-unfold var(--dur-2)"
-        " var(--ease-paper) both; }" in css
+        "            animation: paper-unfold var(--dur-note)"
+        " var(--ease-enter) both," in css
     )
     # the toggles, JS side: new letters only (history never enters)
     js = _text("components.js")
-    assert 'if (options.enter) node.classList.add("flow-enter");' in js
+    assert 'if (options.enter) node.classList.add("flow-enter", "ink-wet");' in js
     assert '" note-paper--enter"' in js
     app = _text("app.js")
-    assert 'addLine("user", text, { enter: true });' in app
-    assert 'addLine("assistant", data.reply, { enter: true });' in app
+    assert 'addLine("user", text, { enter: true, when: sentAt });' in app
     # the chevron rotates on the host's open class, not a glyph swap
     assert ".disclosure--open .disclosure-marker .inkicon {" in css
     assert "transform: rotate(90deg);" in css
-    assert "transition: transform var(--dur-2) var(--ease-paper);" in css
+    assert (
+        "transition: transform var(--dur-note) var(--ease-paper);" in css
+    )
 
 
 def test_every_motion_degrades_under_reduced_motion() -> None:
     """The reduced-motion law: the blanket block at the library's tail
     zeroes every animation and transition, and it comes *after* every
-    keyframes block (the #14 dedicated breathe arm stays as the first,
-    dedicated one — double insurance). rd-1 随迁：blanket 由
-    animation/transition: none 改 0.01ms 技巧（即刻到终态而
-    animationend/transitionend 照发——JS 一次性清理不失效）+ 延迟归零
-    （stagger 的 delay 不在 reduce 下重演）+ iteration-count 1。"""
+    keyframes block. v2 随迁：keyframes 清单 = 五枚（drop/wash/ink-set/
+    unfold/stamp-press）——循环件 state-breathe 已退役（零常驻循环，
+    专项降级臂随之无对象）。rd-1 的 0.01ms 技巧保留（animationend/
+    transitionend 照发——JS 一次性清理不失效）。"""
 
     css = _text("components.css")
     blanket = (
@@ -341,14 +383,12 @@ def test_every_motion_degrades_under_reduced_motion() -> None:
     )
     assert blanket in css
     blanket_at = css.index(blanket)
-    for motion in ("@keyframes ink-fade {", "@keyframes note-arrive {",
-                   "@keyframes paper-unfold {",
-                   "@keyframes paper-settle {", "@keyframes seal-press {",
-                   "@keyframes stamp-press {",
-                   "@keyframes state-breathe {"):
+    for motion in ("@keyframes paper-drop {", "@keyframes ink-wash {",
+                   "@keyframes ink-set {", "@keyframes paper-unfold {",
+                   "@keyframes stamp-press {"):
         assert css.index(motion) < blanket_at, motion
-    # the dedicated arm survives untouched (its own pin keeps guarding it)
-    assert ".state-banner--loading::after { animation: none; }" in css
+    # zero standing loops: no infinite iteration anywhere
+    assert "infinite" not in css
 
 
 # ---------------------------------------------------------------------------
@@ -378,10 +418,10 @@ def test_the_word_card_wears_a_deckle_not_a_shadow(tmp_path: Path) -> None:
     （radius 无、全黑 rgba(0,0,0) 无——正面契约钉在 rd1 套件）。"""
 
     page = _page_of(tmp_path)
-    # rd-4 随迁（9.12-23）：零圆角形态法则收窄——唯一豁免 = 手写批注层
-    # 的红笔圈线椭圆（手迹几何非面板圆角；spec 8.2.10 / 9.12-23 登记）；
-    # 第二处 radius 仍即红
-    assert page.count("border-radius") == 1
+    # rd-4 随迁（9.12-23）+ v2 随迁（简报 §6「仅邮票/邮戳允许圆形」）：
+    # 零圆角形态法则的豁免位 = 手迹/盖印几何两族——红笔圈线椭圆 +
+    # 邮戳双圈圆（外圈 + 内圈）；第三处 radius 仍即红
+    assert page.count("border-radius") == 3
     assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
     css = _text("components.css")
@@ -472,7 +512,11 @@ def test_the_walkthrough_repairs_and_craft_kin_are_pinned() -> None:
         ".navdock-item[data-space] { flex: 0 1 auto; min-width: 132px; }"
         in css
     )
-    # the chip's hover answer and the teach-me re-cut
+    # the chip's hover answer and the teach-me re-cut（v2 随迁：字号
+    # 字面收编入 ui 档 token——tokens 是唯一物理出处）
     assert ".chip:not(.chip--on):hover { border-color: var(--ink-soft);" in css
-    assert ".teach-me { font-family: var(--f-sans); font-size: 12px;" in css
+    assert (
+        ".teach-me { font-family: var(--f-sans);"
+        " font-size: var(--fs-ui); position: relative;" in css
+    )
     assert ".teach-me:hover { color: var(--pencil-deep); }" in css

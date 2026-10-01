@@ -47,22 +47,26 @@ def _spec_current_zone() -> str:
 
 def test_anchor_one_the_cover_is_a_letter_to_tomorrow() -> None:
     """锚例一：封面开篇「致明日之我」——称呼/题眼含「致明日之我」；
-    两重收信人叙事与「今日落笔，明日展信」时序意象在场；结构与视觉锚
-    （称呼体例 / 又及 / 进门钮 / 英文题 / h1 / title）不动。"""
+    两重收信人叙事与「今日落笔，明日展信」时序意象在场；结构锚
+    （称呼体例 / 又及 / 进门钮 / h1 / title）不动。v2-1 命名随迁
+    （简报 §1，品牌换名是用户令）：英文并写 Dear You、题 = 展信佳；
+    旧品牌字面缺位。"""
 
     index = _text("webui/index.html")
     assert "致 明日之我：" in index          # 称呼（排版带空格）
     assert "致明日之我" in _squashed(index)  # 题眼逐字（去空白）
     assert "今日落笔，明日展信。" in index
     assert "两重收信人，同一张信纸" in index
-    # 结构与视觉锚不动（rd-1 面零触碰）
-    assert "THE ENGLISH PARLOUR" in index
-    assert "<h1>把英语请进客厅</h1>" in index
-    assert "<title>英语客厅</title>" in index
+    # 结构与视觉锚不动；v2 命名随迁（wordmark = Dear You、题 = 展信佳）
+    assert "DEAR YOU" in index
+    assert "<h1>展信佳</h1>" in index
+    assert "<title>展信佳</title>" in index
     assert ">拆开这封信 →</button>" in index
     assert 'class="ob-para ob-ps"' in index  # 又及段结构保留
-    # 旧称呼缺位（防回潮）
+    # 旧称呼缺位（防回潮）+ 旧品牌缺位（v2 用户令：连「英语客厅」也换）
     assert "致 来到门前的人：" not in index
+    assert "把英语请进客厅" not in index
+    assert "英语客厅" not in index
 
 
 def test_anchor_two_the_placeholder_asks_about_today() -> None:
@@ -97,10 +101,13 @@ def test_the_three_semantic_floors_survive_the_boldness() -> None:
 
 
 def test_the_who_sub_carries_the_new_boldness() -> None:
-    """who-sub 升「一位固定笔友 · 中英不拘」；旧中档句缺位。"""
+    """who-sub 升 v2 副题（简报 §1：见字如晤，今日如何——与用户锚例
+    「今日如何」同族）；旧中档句缺位。语言立场「中英不拘」由封面段与
+    空厅句承载（test_the_three_semantic_floors…钉不缺位）。"""
 
     index = _text("webui/index.html")
-    assert "一位固定笔友 · 中英不拘" in index
+    assert "见字如晤，今日如何" in index
+    assert "一位固定笔友 · 中英不拘" not in index
     assert "固定笔友 · 中文英文都行" not in index
 
 
@@ -220,11 +227,12 @@ def test_the_verdict_and_kind_words_follow_the_family() -> None:
 
 
 def test_the_sent_line_replaces_the_en_route_placeholder() -> None:
-    """发送后状态行「信已寄出，等回信——客厅把灯留着。」；旧占位缺位
+    """发送后状态行「信已寄出，等回信——笔友把灯留着。」（v2-1 锚屏
+    措辞精修：客厅→笔友——回信者是笔友）；旧占位缺位
     （app.js live 面；spec 8.5 的指称式「原『（回信在途中……）』」豁免）。"""
 
     app = _text("webui/app.js")
-    assert "信已寄出，等回信——客厅把灯留着。" in app
+    assert "信已寄出，等回信——笔友把灯留着。" in app
     assert "回信在途中" not in app
 
 

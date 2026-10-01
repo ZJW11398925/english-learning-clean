@@ -226,11 +226,10 @@ def test_space_headers_and_the_linkless_parlor_bar(tmp_path: Path) -> None:
     assert '<div class="spacehead-sec">今日</div>' in index
     assert '<div class="spacehead-sec">记忆</div>' in index
     parlor = index.split('id="space-parlor"', 1)[1].split("</header>", 1)[0]
-    assert '<div class="who">英语客厅</div>' in parlor
-    # rd-2 随迁（豪放档，原「固定笔友 · 中文英文都行」）：
-    # 「一位固定笔友 · 中英不拘」
-    assert "固定笔友" in parlor
-    assert "一位固定笔友 · 中英不拘" in parlor
+    # v2 命名随迁（简报 §1）：信头 = 名 + 副题小字（BRAND 同值兜底）
+    assert '<div class="who">展信佳</div>' in parlor
+    assert '<div class="who-sub">见字如晤，今日如何</div>' in parlor
+    assert "英语客厅" not in parlor
     assert "<button" not in parlor
     app = _text("app.js")
     assert (

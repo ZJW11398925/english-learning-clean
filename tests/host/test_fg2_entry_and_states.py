@@ -84,7 +84,9 @@ def test_the_brand_mark_is_an_inline_svg_with_no_resource_hole(
         ".brandmark .bm-line { fill: none; stroke: var(--ink);"
         " stroke-width: 2;" in css
     )
-    assert ".brandmark .bm-seal { fill: var(--pencil); }" in css
+    # v2 随迁（简报 §2 纪律：朱砂只盖真实事件——品牌印记不是事件）：
+    # 封缄点色 = 墨蓝强调（--accent；--pencil 别名同源）
+    assert ".brandmark .bm-seal { fill: var(--accent); }" in css
     for name in ("index.html", "components.js", "components.css"):
         assert "data:" not in _webui_text(name), name
     # single source (spec ⑤): the component's own base definition, once
@@ -114,7 +116,9 @@ def test_the_brand_bar_graces_both_screens(tmp_path: Path) -> None:
     assert '<header class="top sethead">' not in index
     assert 'id="back-to-living"' not in index
     assert "← 回客厅" not in index
-    assert '<div class="who">英语客厅</div>' in index
+    # v2 命名随迁（简报 §1）：信头静态兜底 = BRAND 同值
+    assert '<div class="who">展信佳</div>' in index
+    assert "英语客厅" not in index
     app = _webui_text("app.js")
     assert "installBrandMarks();" in app
     assert app.index("installBrandMarks();") < app.index("loadHistory();")
@@ -135,19 +139,20 @@ def test_the_brand_bar_graces_both_screens(tmp_path: Path) -> None:
 
 
 def test_the_state_banner_family_is_registered(tmp_path: Path) -> None:
-    """The three variants, registered once: loading's breathing ellipsis
-    is the page's single animation and the reduced-motion media block is
-    its only off switch; error's retry is the link-btn pencil variant
-    with the caller's callback; the empty face is the faint honest
-    sentence."""
+    """The three variants, registered once. v2 随迁（简报 §5 零常驻循环
+    铁律）：loading 尾点静态化——原 state-breathe 1.6s infinite 呼吸
+    动画退役（页面现在零循环动画），reduced-motion 专项降级臂随之无
+    对象；「取信中…」的信息由文字本身承担（信息本就不得只有动画一个
+    载体）。error's retry is the link-btn pencil variant with the
+    caller's callback; the empty face is the faint honest sentence."""
 
     page = _page_of(tmp_path)
     css = page  # the union covers components.css
-    assert css.count("animation: state-breathe") == 1
-    assert "@keyframes state-breathe {" in css
-    reduce_at = css.index("@media (prefers-reduced-motion: reduce) {")
-    assert ".state-banner--loading::after { animation: none; }" in css
-    assert css.index(".state-banner--loading::after { animation: none;") > reduce_at
+    # the breathing loop is gone — and no loop of any kind may return
+    assert "state-breathe" not in css
+    assert "infinite" not in css
+    # the ellipsis tail stays, static (the loading face keeps its shape)
+    assert '.state-banner--loading::after { content: "…";' in css
     js = _webui_text("components.js")
     assert "export function stateBanner(kind, opts) {" in js
     assert 'loading: "取信中…"' in js

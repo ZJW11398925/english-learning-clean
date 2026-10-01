@@ -142,9 +142,10 @@ def test_the_cover_copy_follows_the_user_language() -> None:
     """index.html: the cover paragraph, who-sub and the dock placeholder
     speak the user's language stance, word for word. rd-2 升豪放档：
     封面信重写为「致明日之我」（锚例一），placeholder 占「今日如何？」
-    （锚例二，逐字），who-sub 升「中英不拘」——语言立场句面随迁，
-    断言语义不变（三处 live 面仍各自说清：给明日之自己写信 / 中英不拘 /
-    真问句占位）。"""
+    （锚例二，逐字）；v2-1 随迁（简报 §1）：who-sub 升副题「见字如晤，
+    今日如何」——语言立场句面由封面段（「中文英文都行」）与空厅句承载，
+    断言语义不变（三处 live 面仍各自说清：给明日之自己写信 / 中文英文
+    都行 / 真问句占位）。"""
 
     index = _text("webui/index.html")
     assert "今日落笔，明日展信。" in index
@@ -153,7 +154,10 @@ def test_the_cover_copy_follows_the_user_language() -> None:
     assert "致 明日之我：" in index
     assert "致明日之我" in "".join(index.split())
     assert "两重收信人，同一张信纸" in index
-    assert "一位固定笔友 · 中英不拘" in index
+    # v2 副题（简报 §1：名 + 副题小字；「中英不拘」立场句面由封面段
+    # 「中文英文都行」承载——下一断言钉住不缺位）
+    assert "见字如晤，今日如何" in index
+    assert "中文英文都行" in index
     assert 'placeholder="今日如何？"' in index
     # W-8 中档句缺位（防回潮，rd-2 起——见 test_rd2_copy_bolding 的
     # 全仓形；此处就 file 面再钉一道）

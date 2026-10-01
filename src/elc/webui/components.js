@@ -27,11 +27,93 @@ function scrollBottom() {
 }
 
 // F-1R: the letter flow — a turn's words become letters, never bubbles.
-// The user's line is the torn-edge reply slip (.letter.me .paper), the
-// parlor's is the plain sheet (.letter.may); a failure is marginalia (a
-// pencil rule in the left margin), a system note is a centered faint
-// line. Every word rides textContent — the user's own words stay inert
-// text, never markup.
+// v2 信件排印骨架（简报 T1）：件件来自真实数据，不虚构文本——
+// 来信 .letter.may = 日期行（真实时间戳；无则整件缺席）+ 称呼（仅当
+// 正文自带）+ 正文段（段间距模式）+ 落款（仅当正文自带结束语/署名，
+// 楷体手迹位齐右）+ 又及（仅当正文自带）。我方回信 .letter.me = 撕口
+// 信纸 + 原文 + 落款「你」（界面通篇的第二人称——现役无用户名字源，
+// 不虚构人名）。a failure is marginalia (a pencil rule in the left
+// margin), a system note is a centered faint line. Every word rides
+// textContent — the user's own words stay inert text, never markup.
+
+// 段落切分：信件惯例（单换行即新段——模型的回信与西文 block 传统）。
+function letterParagraphs(text) {
+  return String(text).split(/\n+/).map((p) => p.trim()).filter(Boolean);
+}
+
+// 称呼（salutation）：仅当正文自带——首段是独立称呼行（短、以逗号/
+// 叹号/冒号收尾、无句中标点）。提取不到就没有这件（不虚构问候）。
+function salutationOf(paragraphs) {
+  const first = paragraphs[0] || "";
+  if (paragraphs.length < 2 || first.length > 48) return null;
+  if (!/[,!：:]$/.test(first)) return null;
+  if (/[.；;?？]/.test(first.slice(0, -1))) return null;
+  return first;
+}
+
+// 落款块（complimentary close + signature）：仅当正文自带——尾部收
+// 结束语行（短、逗号收尾、常见结束语词）与/或署名行（更短、无终端
+// 标点、非 P.S.）。提取不到就没有这件（不虚构结束语文本）。
+const SIGN_CLOSE =
+  /(yours|best|love|warmly|regards|cheers|sincerely|talk soon|take care|later|as ever|thanks)/i;
+
+function signatureBlockOf(paragraphs) {
+  const lines = [];
+  let at = paragraphs.length;
+  const last = paragraphs[at - 1] || "";
+  const isPs = /^(p\.?\s?s\.?|ps)/i.test(last);
+  if (!isPs && at > 1 && last.split(/\s+/).length <= 4 &&
+      !/[.!?。！？]$/.test(last)) {
+    lines.push(last);
+    at -= 1;
+    const close = paragraphs[at - 1] || "";
+    if (at > 1 && close.split(/\s+/).length <= 5 &&
+        /,$/.test(close) && SIGN_CLOSE.test(close)) {
+      lines.unshift(close);
+      at -= 1;
+    }
+  }
+  return { lines, rest: paragraphs.slice(0, at) };
+}
+
+// 又及（P.S.）：仅当正文自带——以 P.S. / PS 开头的段落（弱墨、不缩进）。
+function isPostscript(paragraph) {
+  return /^(p\.?\s?s\.?:?|ps\.?:?)/i.test(paragraph);
+}
+
+// 日期行（dateline）：真实时间戳才有——历史回填无时间戳（web.py 冻结
+// 面故无字段），一个日期都不造；新信由调用方传落地当下（客户端本机
+// 时间的真实事件时刻）。
+function letterDate(when) {
+  if (!when) return null;
+  const row = document.createElement("p");
+  row.className = "letter-date";
+  const span = document.createElement("span");
+  span.title = String(when);
+  span.textContent = humanLetterTime(String(when));
+  row.appendChild(span);
+  return row;
+}
+
+// 信件日期行的人话时间（humanTime 的信件读法，components.js 内自足：
+// 今天 14:05 / 9 月 21 日 / 2025 年 12 月 3 日——跨年给全年月日，
+// 不再「去年」止步：信要经年重读）。解析不了的原样直出。
+function humanLetterTime(iso) {
+  const then = new Date(iso);
+  if (Number.isNaN(then.getTime())) return iso;
+  const now = new Date();
+  const hh = String(then.getHours()).padStart(2, "0");
+  const mm = String(then.getMinutes()).padStart(2, "0");
+  if (then.getFullYear() === now.getFullYear() &&
+      then.getMonth() === now.getMonth() &&
+      then.getDate() === now.getDate()) {
+    return "今天 " + hh + ":" + mm;
+  }
+  const year = then.getFullYear() === now.getFullYear()
+    ? "" : then.getFullYear() + " 年 ";
+  return year + (then.getMonth() + 1) + " 月 " + then.getDate() + " 日";
+}
+
 export function addLine(cls, text, opts) {
   const options = opts || {};
   let node;
@@ -40,18 +122,46 @@ export function addLine(cls, text, opts) {
     node.className = "letter me";
     const paper = document.createElement("div");
     paper.className = "paper";
+    const date = letterDate(options.when);
+    if (date) paper.appendChild(date);
     const say = document.createElement("p");
     say.className = "say";
     say.appendChild(letterWords(text));  // 分片（#15 触发面）：文字仍全部
     paper.appendChild(say);              // 惰性文本，整段逐字不变
+    const sign = document.createElement("p");
+    sign.className = "letter-sign";
+    sign.textContent = "你";
+    paper.appendChild(sign);
     node.appendChild(paper);
   } else if (cls === "assistant") {
     node = document.createElement("div");
     node.className = "letter may";
-    const say = document.createElement("p");
-    say.className = "say";
-    say.appendChild(letterWords(text));
-    node.appendChild(say);
+    const paragraphs = letterParagraphs(text);
+    const date = letterDate(options.when);
+    if (date) node.appendChild(date);
+    const salut = salutationOf(paragraphs);
+    let body = paragraphs;
+    if (salut !== null) {
+      const row = document.createElement("p");
+      row.className = "letter-salut";
+      row.appendChild(letterWords(salut));
+      node.appendChild(row);
+      body = paragraphs.slice(1);
+    }
+    const signBlock = signatureBlockOf(body);
+    body = signBlock.rest;
+    for (const para of body) {
+      const say = document.createElement("p");
+      say.className = "say" + (isPostscript(para) ? " letter-ps" : "");
+      say.appendChild(letterWords(para));
+      node.appendChild(say);
+    }
+    for (const line of signBlock.lines) {
+      const sign = document.createElement("p");
+      sign.className = "letter-sign";
+      sign.appendChild(letterWords(line));
+      node.appendChild(sign);
+    }
   } else if (cls === "typing") {
     node = document.createElement("p");
     node.className = "typing";
@@ -66,9 +176,11 @@ export function addLine(cls, text, opts) {
     node.className = "sysline";
     node.textContent = text;
   }
-  // R-1V：墨迹淡入（⑨-5 ink-fade）——opts.enter 的新信才播；历史回填
-  // （loadHistory）不播，五十轮回填不闪。
-  if (options.enter) node.classList.add("flow-enter");
+  // v2 动效（简报 §5 纸先落墨后渗）：opts.enter 的新信才播——双动画
+  // （paper-drop transform 280 + ink-wash opacity 360，opacity 恒慢于
+  // transform）+ .ink-wet 墨水物理（正文字色 ink-ghost→ink ≈600ms
+  // 一次性）；历史回填（loadHistory）不播，五十轮回填不闪。
+  if (options.enter) node.classList.add("flow-enter", "ink-wet");
   messages.appendChild(node);
   scrollBottom();
   return node;
@@ -339,8 +451,10 @@ async function postReply(card, payload, busyText, doneNote) {
     addLine("system", doneNote);
     if (data.delivery_text) {
       // the runtime's own delivered words (the hint rung / the reveal
-      // form / the explanation), shown like any assistant line
-      addLine("assistant", data.delivery_text, { enter: true });
+      // form / the explanation), shown like any assistant line — a new
+      // arrival, so it carries the arrival stamp of ink too
+      addLine("assistant", data.delivery_text,
+        { enter: true, when: new Date().toISOString() });
     }
     readReplyAnswer(card, data);
   } catch {

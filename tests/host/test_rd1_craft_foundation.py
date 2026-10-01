@@ -138,12 +138,16 @@ def test_the_meta_positions_wear_the_recipe() -> None:
         ("components.css", ".disclosure-examples {"),
         ("screens.css", ".ob-date {"),
         ("screens.css", ".ob-version {"),
-        ("screens.css", ".marginalia-date {"),
     )
     for name, head in sans:
         assert "font: var(--meta-font);" in _block(_text(name), head), head
     for name, head in mono:
         assert "font: var(--meta-mono);" in _block(_text(name), head), head
+    # v2 随迁（简报 T1 楷体边界）：案头日期 = 楷体手迹位（三合法面之
+    # 一）——从 mono 配方位迁为 hand 位（真实日期不变，载体换手迹）
+    date_block = _block(_text("screens.css"), ".marginalia-date {")
+    assert "font-family: var(--f-hand);" in date_block
+    assert "font-size: var(--fs-hand);" in date_block
 
 
 def test_colored_badges_stay_retired(tmp_path: Path) -> None:
@@ -209,21 +213,27 @@ def test_hover_affordances_are_pointer_only() -> None:
 
 def test_the_enter_exit_tiers_exist() -> None:
     """Enter and exit are separate curves and durations (enter is
-    longer): the tokens exist, and the drawer family consumes the
-    enter tier through @starting-style. The exit tier stays
-    registered but deliberately unwired at the container: the live
-    walkthrough wedged the opacity at 0 whenever the allow-discrete
-    display transition shared a frame with an ancestor's display
-    toggle (the canonical single-duration form wedged identically) —
-    the guard below keeps that poison form out of the panel rules."""
+    longer): the tokens exist（v2 随迁，简报 §5：--dur-note 260 /
+    --dur-panel-in 280 / --dur-ink 360 = opacity 恒慢 ≈1.3× /
+    --dur-wet 600 墨水物理 / --dur-settle 320 封顶）, and the drawer
+    family consumes the enter tier through @starting-style. The exit
+    tier stays registered but deliberately unwired at the container:
+    the live walkthrough wedged the opacity at 0 whenever the
+    allow-discrete display transition shared a frame with an ancestor's
+    display toggle — the guard below keeps that poison form out of the
+    panel rules."""
 
     tokens = _text("tokens.css")
     for value in ("--dur-micro: 100ms;", "--dur-stamp: 120ms;",
-                  "--dur-note: 240ms;", "--dur-panel-in: 280ms;",
+                  "--dur-note: 260ms;", "--dur-panel-in: 280ms;",
+                  "--dur-ink: 360ms;", "--dur-wet: 600ms;",
                   "--dur-panel-out: 200ms;", "--dur-settle: 320ms;",
                   "--ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);",
                   "--ease-exit: cubic-bezier(0.3, 0, 1, 1);"):
         assert value in tokens, value
+    # the entry law: opacity rides its own, slower token family and the
+    # 1.3× rule is expressed where it is consumed
+    assert "--dur-ink: 360ms;" in tokens  # 280 × ≈1.3
     screens = _text("screens.css")
     panel = screens[screens.index('[role="tabpanel"]'):]
     panel = panel[:panel.index("@starting-style")]
@@ -253,8 +263,9 @@ def test_the_transient_receipts_transition_on_first_render(
     assert group in screens
     assert screens.count("@starting-style {") == 2  # receipts + panels
     # the gated entrances stay exactly where the r1v suite pins them
+    #（v2 随迁：新信入场 = 双动画类 + 墨水物理类一起挂）
     js = _text("components.js")
-    assert 'if (options.enter) node.classList.add("flow-enter");' in js
+    assert 'node.classList.add("flow-enter", "ink-wet");' in js
     assert '" note-paper--enter"' in js
 
 
@@ -263,21 +274,22 @@ def test_the_transient_receipts_transition_on_first_render(
 
 
 def test_the_paper_motion_families_are_wired() -> None:
-    """The families land on real surfaces: the parlor's flow settles
-    (the view-switch tier of the registered paper-settle keyframes),
-    the note arrival rides the re-tiered --dur-note, the stamp press
-    has its class and keyframes (a transform snap, no blur), and the
-    JS drops the class once with an animationend cleanup."""
+    """The families land on real surfaces（v2 随迁，简报 §5）：the
+    parlor's flow washes in（容器只走透明度——settle 的 transform 会
+    让 fixed 写信区改挂本节的坑在册）, the note arrival rides the
+    --dur-note tier, the stamp press has its class and keyframes (a
+    transform snap, no blur), and the JS drops the class once with an
+    animationend cleanup."""
 
     screens = _text("screens.css")
     assert "#space-parlor:not([hidden]) .flow {" in screens
     assert (
-        "animation: paper-settle var(--dur-settle) var(--ease-enter)"
+        "animation: ink-wash var(--dur-settle) var(--ease-enter)"
         " both;" in screens
     )
     css = _text("components.css")
     assert (
-        ".note-paper--enter { animation: note-arrive var(--dur-note)"
+        ".note-paper--enter { animation: paper-drop var(--dur-note)"
         in css
     )
     assert (
@@ -360,8 +372,9 @@ def test_the_mark_randomization_is_deterministic_and_single() -> None:
     """The hand-stamped marks: the tilt/drift ride CSS custom
     properties picked from the nth-child ladder (deterministic, no JS
     re-rolls — nth-child because the icon factory swaps the tag), and
-    exactly one live site per screen — the cover's stamp; the
-    marginalia postmark is a watermark and never transforms."""
+    exactly one live site per screen — the cover's stamp. v2 随迁：
+    边注栏邮戳水印已撤（邮戳只落真实事件，T2）——水印不入计数的
+    旧随迁句随之消失。"""
 
     screens = _text("screens.css")
     assert "--mark-tilt" in screens
@@ -369,38 +382,40 @@ def test_the_mark_randomization_is_deterministic_and_single() -> None:
     rd1 = screens[screens.index(".ob-dateline > *:nth-child(2) {"):]
     assert "translate(var(--mark-dx, 0px), var(--mark-dy, 0px))" in rd1
     assert "rotate(var(--mark-tilt, 0deg));" in rd1
-    mark = _block(screens, ".marginalia-mark {")
-    assert "transform" not in mark
+    # the watermark is gone — no un-transformed mark face survives
+    assert "marginalia-mark" not in screens
 
 
 def test_the_stack_shadows_are_ink_derived_and_two_tiered(
     tmp_path: Path,
 ) -> None:
-    """The stack shadows (rd-1 face 6, DEC-OPI-dc0ba4b6-…13): exactly
-    two tiers in the token sheet, both ink-derived (rgba(27, 26, 23) —
-    the --ink rgb, never rgba(0,0,0)), with disagreeing directions
-    (soft up-right, deep down-left), consumed only as var() (no
-    hand-written shadow literals anywhere), paired with the hairline
-    edges; the spec carries the lifting registration."""
+    """The stack shadows (rd-1 face 6, DEC-OPI-dc0ba4b6-…13 lifted the
+    zero-shadow ban): exactly two tiers in the token sheet, both
+    ink-derived（v2 随迁：--ink 新值 #191b1e 的 rgb = 25, 27, 30——
+    rgba(0,0,0) 永禁）, with disagreeing directions (soft up-right,
+    deep down-left), consumed only as var() (no hand-written shadow
+    literals anywhere), paired with the hairline edges; the spec
+    carries the lifting registration. v2 envelope 在途信封 = soft 档
+    第五处应用（#4b 信封是纸物件——与短笺同层）。"""
 
     tokens = _text("tokens.css")
     soft = tokens.index("--stack-shadow-soft:")
     deep = tokens.index("--stack-shadow-deep:")
     assert soft < deep
     assert tokens.count("box-shadow") == 0  # tokens declare, rules use
-    assert tokens.count("rgba(27, 26, 23") == 2
+    assert tokens.count("rgba(25, 27, 30") == 2
+    assert "rgba(27, 26, 23" not in tokens
     page = _page_of(tmp_path)
     assert "rgba(0, 0, 0" not in page
     assert "rgba(0,0,0" not in page
     css = _text("components.css")
     screens = _text("screens.css")
-    # the two tiers, four applications: the stage on the desk (deep),
-    # the note on the letter, the deckle underlay and — rd-4 随迁
-    # （9.12-23，#23 partner-card 的垫纸同层）— the partner-card
-    # underlay (soft)：应用数随浮层纸家族生长，层级值仍恰两级
+    # the two tiers: the stage on the desk (deep), the note on the
+    # letter, the deckle underlay, the partner-card underlay and the
+    # en-route envelope (soft)；层级值仍恰两级
     assert "box-shadow: var(--stack-shadow-deep);" in screens
     assert screens.count("box-shadow: var(--stack-shadow-") == 1
-    assert css.count("box-shadow: var(--stack-shadow-soft);") == 3
+    assert css.count("box-shadow: var(--stack-shadow-soft);") == 4
     assert "box-shadow: var(--stack-shadow-" in css
     # directions disagree: soft's x is positive, deep's is negative
     soft_xy = tokens[soft:].split(";", 1)[0].split(":", 1)[1].strip()
@@ -409,9 +424,8 @@ def test_the_stack_shadows_are_ink_derived_and_two_tiered(
     assert deep_xy.startswith("-5px 6px")
     # disposition F-1 (review): totals, not just var() forms — a
     # hand-written shadow literal (ink-coloured or not) trips these
-    # (rd-4 随迁：应用总数 2 → 3，#23 partner-card 垫纸同层)
     assert screens.count("box-shadow") == 1
-    assert css.count("box-shadow") == 3
+    assert css.count("box-shadow") == 4
     spec = _spec()
     assert "「零阴影」解除登记" in spec
     assert "DEC-OPI-dc0ba4b6-…13" in spec

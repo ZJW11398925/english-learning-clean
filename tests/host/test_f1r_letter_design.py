@@ -61,10 +61,11 @@ def test_the_page_keeps_the_letter_form_laws(tmp_path: Path) -> None:
     assert "tabbar" not in page
     assert "#0f766e" not in page
     assert "#4fd1c5" not in page
-    # rd-4 随迁（9.12-23）：零圆角形态法则收窄——唯一豁免 = 手写批注层
-    # 的红笔圈线椭圆（手迹几何非面板圆角；spec 8.2.10 / 9.12-23 登记）；
-    # 第二处 radius 仍即红
-    assert page.count("border-radius") == 1
+    # rd-4 随迁（9.12-23）+ v2 随迁（简报 §6「仅邮票/邮戳允许圆形」）：
+    # 零圆角形态法则的豁免位 = 手迹/盖印几何两族——①手写批注层的红笔
+    # 圈线椭圆（手迹几何非面板圆角）；②邮戳的双圈圆（外圈 + 内圈，
+    # .postmark 本体与 ::before）。第三处 radius 仍即红。
+    assert page.count("border-radius") == 3
     assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
     assert "rgba(0,0,0" not in page
@@ -72,7 +73,8 @@ def test_the_page_keeps_the_letter_form_laws(tmp_path: Path) -> None:
     # the old bubbles: the accent-filled .user / the sunken .assistant
     assert ".user {" not in page
     assert ".assistant {" not in page
-    # the letter actions are pencil underlined text links
+    # the letter actions are pencil underlined text links（v2：--pencil
+    # = 墨蓝 --accent 的旧名别名，链接语义不变）
     assert "var(--pencil)" in page
     assert "text-underline-offset" in page
 
@@ -88,14 +90,15 @@ def test_the_page_has_the_first_visit_cover(tmp_path: Path) -> None:
 
     page = _page_of(tmp_path)
     assert 'id="screen-onboard"' in page
-    # R-1W 随迁 + rd-2 随迁（旧串 → 新串）：一 · 这是什么 → 致 明日之
-    # 我：（豪放档，原「致 来到门前的人：」）；跟一位固定笔友……一句 →
-    # 致明日之我两重收信人段；就这么定 → → 拆开这封信 →（F-G2/R-1R 的
-    # 步题语义由信体三行继承）
+    # R-1W 随迁 + rd-2 随迁 + v2 命名随迁（简报 §1：题 = 展信佳，
+    # wordmark = 英文并写 Dear You 大写微标签档）：
     assert "致 明日之我：" in page
     assert "今日落笔，明日展信。" in page
     assert 'data-brand-mark="lg"' in page
-    assert "把英语请进客厅" in page
+    assert "<h1>展信佳</h1>" in page
+    assert "DEAR YOU" in page
+    assert "把英语请进客厅" not in page
+    assert "THE ENGLISH PARLOUR" not in page
     assert "拆开这封信 →</button>" in page
     # the cover never returns once localStorage says so; a refusing
     # storage answers "seen" (nobody is trapped on the cover)
@@ -116,11 +119,12 @@ def test_the_page_has_the_parlor_screen(tmp_path: Path) -> None:
     page = _page_of(tmp_path)
     assert 'id="space-parlor"' in page
     assert 'id="screen-living"' not in page
-    assert '<div class="who">英语客厅</div>' in page
-    # rd-2 随迁（豪放档，原「固定笔友 · 中文英文都行」）：
-    # who-sub「一位固定笔友 · 中英不拘」
-    assert "固定笔友" in page
-    assert "一位固定笔友 · 中英不拘" in page
+    # v2 命名随迁（简报 §1）：信头 = 名 + 副题小字（静态兜底；app.js
+    # 的 BRAND 单点常量同值驱动）
+    assert '<div class="who">展信佳</div>' in page
+    assert '<div class="who-sub">见字如晤，今日如何</div>' in page
+    assert "BRAND = { name:" in page
+    assert "英语客厅" not in page
     assert 'id="meter-toggle"' not in page
     assert 'id="topactions"' not in page
     assert "topactions" not in page
@@ -129,7 +133,8 @@ def test_the_page_has_the_parlor_screen(tmp_path: Path) -> None:
     assert '<textarea id="text" class="pen"' in page
     assert "寄出 →</button>" in page
     # the flow's two letter shapes: the plain sheet and the torn-edge
-    # reply slip (clip-path, the anchor's own polygon)
+    # reply slip (clip-path, the anchor's own polygon)——v2 骨架随迁：
+    # 撕口保留（人手触碰过的件才有毛边）
     assert 'node.className = "letter me"' in page
     assert 'node.className = "letter may"' in page
     assert (
@@ -248,7 +253,8 @@ def test_primary_actions_are_ink_secondary_stay_pencil(tmp_path: Path) -> None:
     """LOW-2: the anchor's color semantics — the primary serif actions
     (就这么定 / 寄出 / 寄出回应【rd-2，原寄出作答】) carry ink
     underlines; the pencil color belongs to the secondary links (help
-    arms, set links, skip)."""
+    arms, set links, skip). v2 随迁（简报工艺法则 2：宋体/楷体禁合成
+    粗体——中文标题靠字号跳档 + 字距）：primary 字重 700 → 400。"""
 
     page = _page_of(tmp_path)
     # the two primary selectors spell ink
@@ -256,7 +262,7 @@ def test_primary_actions_are_ink_secondary_stay_pencil(tmp_path: Path) -> None:
         ".ob .go { display: block; margin: 26px auto 0;"
         " font-family: var(--f-serif);" in page
     )
-    assert "font-weight: 700; color: var(--ink);" in page
+    assert "font-weight: 400; color: var(--ink);" in page
     # and pencil still lives on the secondary faces
     assert ".setlink {" in page
     assert ".linklike { font-family: var(--f-sans);" in page

@@ -53,6 +53,12 @@ import {
   fetchSaveFrequency,
 } from "./api.js";
 
+// ── v2 品牌名单点常量（简报 §1；改名 = 改这一处）──────────────────
+// 门上候选五名（现役默认见 BRAND 值）换名只动这里；index.html 的
+// <title> 与信头静态兜底同值（无 JS 兜底），仓内品牌字面值不得有
+// 第三处物理点。
+const BRAND = { name: "展信佳", tagline: "见字如晤，今日如何", en: "Dear You" };
+
 // ── ⑧ 8.3 术语翻译表（工程词 → 客厅语言，唯一集中定义）──────────────
 // 总则：状态 / 枚举只出中文；未列出的词不伪装翻译——原样小字（.rawtag）。
 
@@ -799,16 +805,10 @@ function renderArchive(evidence, retry) {
         (OUTCOME_CN[claim.outcome] || claim.outcome) + "（"));
       line.appendChild(whenNode(claim.created_at));
       line.appendChild(document.createTextNode("）"));
-      // rd-4 盖戳（Obra Dinn「被验证才入册」）：判分落在成功族
-      // （SUCCESS / ALTERNATIVE_SUCCESS）的明细行才落 #22 stamp 水印
-      // 小图；PARTIAL / FAILURE / ABSTAIN 不盖（负控钉）。行本身是
-      // .kv 等宽形——日期的 mono 即此。
-      if (claim.outcome === "SUCCESS" ||
-          claim.outcome === "ALTERNATIVE_SUCCESS") {
-        const stamp = inkIcon("stamp");
-        stamp.classList.add("arc-stamp");
-        line.appendChild(stamp);
-      }
+      // v2：判分行不盖章——邮戳只落三类真实事件（寄出/结课/归档开启，
+      // 简报 T2），判分行不在其中；判词文字（中文判词打头）已是完整
+      // 信息。旧判分戳随 v2 撤除（缺位钉在 rd4 套件）。
+      // 行本身是 .kv 等宽形——日期的 mono 即此。
       body.appendChild(line);
       built.push({
         node: line,
@@ -2201,15 +2201,27 @@ function dismissEmptyHall() {
 
 async function postTurn(text) {
   dismissEmptyHall();
-  const mine = addLine("user", text, { enter: true });
-  // rd-4 在途角标：刚寄出的信别上「在途」（虚发丝角标）——回信落地
-  // 或失败即摘（finally 的落点就是这两个时刻）；「客厅把灯留着」的
-  // typing 行现役不动。
-  mine.classList.add("letter--en-route");
+  // 寄出的当下 = 信件日期行的真实时间源（客户端本机时间；web.py 冻结
+  // 面故 /api/turn 无时间戳字段——新信落当下、历史不造）。
+  const sentAt = new Date().toISOString();
+  const mine = addLine("user", text, { enter: true, when: sentAt });
+  // v2 封/信分物（简报 T1-4）：刚寄出的信装封在途——信封形（矩形 +
+  // 封舌 + 折线，信文暂不可见），回信落地或失败即摘封见信；封上盖
+  // 「寄出」邮戳（邮戳三真实事件之一——T2；盖印 120ms 唯一 overshoot，
+  // 类由 animationend 自摘；reduced-motion 下 0.01ms 即终、事件仍到）。
+  mine.classList.add("en-route");
+  const postmark = document.createElement("span");
+  postmark.className = "postmark postmark--sent stamp-press";
+  const word = document.createElement("span");
+  word.textContent = "寄出";
+  postmark.appendChild(word);
+  postmark.addEventListener("animationend",
+    () => postmark.classList.remove("stamp-press"), { once: true });
+  mine.appendChild(postmark);
   // the placeholder is the user's "it is working" signal: removed the
   // moment the turn response lands (or fails) — never left behind.
-  // rd-2：发送后状态行升「信已寄出，等回信——」收尾（8.5 流式落点句随迁）
-  const pending = addLine("typing", "信已寄出，等回信——客厅把灯留着。");
+  // rd-2：发送后状态行「信已寄出，等回信——」收尾（8.5 流式落点句随迁）
+  const pending = addLine("typing", "信已寄出，等回信——笔友把灯留着。");
   startMomentPolling();
   let data = null;
   try {
@@ -2219,16 +2231,21 @@ async function postTurn(text) {
   } finally {
     stopMomentPolling();
     pending.remove();
-    mine.classList.remove("letter--en-route");
+    // 摘封：回信落地（或失败）即从在途信封回到撕口信纸——同一 DOM，
+    // 无拆信演出（T3 死刑清单）；「寄出」邮戳随信封一并离场。
+    mine.classList.remove("en-route");
+    const stamp = mine.querySelector(".postmark--sent");
+    if (stamp) stamp.remove();
   }
   if (data !== null) {
     if (data.reply !== null && data.reply !== undefined) {
-      addLine("assistant", data.reply, { enter: true });
+      addLine("assistant", data.reply,
+        { enter: true, when: new Date().toISOString() });
     } else if (data.turn_status !== null && data.turn_status !== undefined) {
-      failLine("这封信没有回音——客厅没能联系上模型端点",
+      failLine("这封信没有回音——笔友没能联系上模型端点",
         data.failure_reason || "无回复");
     } else if (data.failure_reason) {
-      failLine("这封信没有回音——客厅没能联系上模型端点",
+      failLine("这封信没有回音——笔友没能联系上模型端点",
         data.failure_reason);
     }
     const moments = data.teaching_moments || [];
@@ -2298,6 +2315,15 @@ async function loadHistory() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+  // v2 品牌名单点驱动（简报 §1）：标题、信头名与副题、门厅英文并写
+  // 全部取自 BRAND——index.html 的同值字面只是无 JS 静态兜底。
+  document.title = BRAND.name;
+  const whoSlot = document.querySelector("#space-parlor .who");
+  if (whoSlot) whoSlot.textContent = BRAND.name;
+  const whoSub = document.querySelector("#space-parlor .who-sub");
+  if (whoSub) whoSub.textContent = BRAND.tagline;
+  const wordmark = document.querySelector(".ob-wordmark");
+  if (wordmark) wordmark.textContent = BRAND.en.toUpperCase();
   // F-G2: the brand marks (the template's clones) land before the first
   // screen shows, so the cover and every space header is never bare.
   installBrandMarks();

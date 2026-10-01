@@ -58,7 +58,7 @@ Pinned here (the six VAL groups):
     path (seven fields, ``{"moment": None}`` when nothing is open or the
     database is unreadable — never a 500), the title being the ro face's
     declared narrowing (the target's spoken name out of its id), and the
-    page sends its sent-line (「信已寄出，等回信——客厅把灯留着。」, the
+    page sends its sent-line (「信已寄出，等回信——笔友把灯留着。」, the
     rd-2 word, formerly 「（回信在途中……）」)
     plus the poll the instant a turn goes out.
 """
@@ -396,9 +396,9 @@ def test_the_page_serves_the_title_and_the_three_calls(
 ) -> None:
     with web_stack(tmp_path / "app.db") as stack:
         page = _page_source(stack)
-        # R-1R 随迁（⑧ 8.2.1）：浏览器标签是产品门面，工程阶段词不上
-        # 门面——<title> 只写产品名
-        assert "<title>英语客厅</title>" in page
+        # R-1R 随迁（⑧ 8.2.1）+ v2 命名随迁（简报 §1）：浏览器标签是
+        # 产品门面，工程阶段词不上门面——<title> 只写产品名（展信佳）
+        assert "<title>展信佳</title>" in page
         assert "Study-first dogfood" not in page
         assert '<textarea id="text"' in page
         assert "/api/turn" in page
@@ -1879,9 +1879,9 @@ def test_the_page_signals_generation_and_polls_the_current_face(
 
     with web_stack(tmp_path / "app.db") as stack:
         page = _page_source(stack)
-    # R-1R 随迁 + rd-2 随迁：发送后状态行「信已寄出，等回信——客厅把
-    # 灯留着。」（原「（回信在途中……）」）
-    assert "信已寄出，等回信——客厅把灯留着。" in page
+    # R-1R 随迁 + rd-2 随迁 + v2-1 锚屏措辞随迁：发送后状态行「信已
+    # 寄出，等回信——笔友把灯留着。」（原「（回信在途中……）」）
+    assert "信已寄出，等回信——笔友把灯留着。" in page
     assert "startMomentPolling()" in page
     assert "stopMomentPolling()" in page
     assert "setInterval(" in page

@@ -1,70 +1,88 @@
-/* F-1R 设计令牌：唯一出处 = 旧仓 VS1「对话客厅」chat.css 的纸感令牌
-   （逐值采用，不复制其代码）：纸 #fbf9f4 / 三级墨 / 两档发丝线 /
-   赭红铅笔 / 触压底。本文件是全套令牌的唯一物理出处——任何组件样式
-   只许 var() 引用，不许在他处重写字面值（docs/FRONTEND_SPEC.md ②）。
-   形态法则（用户否掉上一版的条款，逐条遵守；rd-1 修订一处）：
-   零卡片、零气泡、零底栏页签、零大圆角面板、零青绿——分层靠上下
-   发丝线、留白与三级墨色；动作一律是赭红下划线文字链接。
-   「零阴影」已由用户 2026-09-30 解除（DEC-OPI-dc0ba4b6-…13）：纸叠
-   偏移阴影以 --stack-shadow-* 两级入册（墨色同源、方向不统一、与
-   发丝描边配对）；F-1R 历史提交原文保留不改写。
-   R-1V 扩充（视觉工艺刀；现役八色与字体栈逐值不动——旧 token 的语义
-   不迁移，新层次/标度/动效一律新名）：纸系四层 + 桌布、赭红层次、
-   字号标度（衬线五档 / sans 两档）、行高字距、4 基数间距阶、
-   动效时长×缓动、图标参数、壳宽。
-   rd-1 扩充（视觉工艺地基深化；同样全部新名，现役值逐字不动）：
-   微标签配方（--meta-*）、动效基建（micro 档 + 纸事件四族时长 +
-   进入/退出缓动分离）、触感层三值（--state-*）、纸叠偏移阴影两级
-   （--stack-shadow-*）。规范全文 = spec ② 与 ⑨。 */
+/* v2 设计内核令牌：唯一物理出处 = docs/research/2026-10-01-v2-mature-core-brief.md
+   （铁胆墨 × 真纸内核，逐值采用，不复制其文字）：主纸 #f6f2e8 脱数码白 /
+   冷墨（h267°，15.44:1）/ 钢笔墨蓝强调三档 / 朱砂 --seal 只盖真实事件。
+   本文件是全套令牌的唯一物理出处——任何组件样式只许 var() 引用，
+   不许在他处重写字面值。
+   旧名别名（消费面平滑；v2-1 内核刀裁）：--bg = --paper、--pencil 三档
+   = --accent 三档、--f-sans = --f-ui——语义角色不变、值全换（14 色
+   保持简报角色名在册）；r1v/r1w 旧值钉已随 v2 真值同族迁移。
+   形态法则（承 F-1R 否决条款 + 简报 §6 增补）：零卡片、零气泡、零底栏
+   页签、零大圆角面板（圆角收窄一档：信纸物件 ≤2px，仅邮票/邮戳圆形）、
+   零青绿——分层靠上下发丝线、留白与三级墨色；动作一律是墨蓝下划线
+   文字链接；阴影只用墨色降透明度（--stack-shadow-* 两级，墨色同源）。
+   spec ⑨-5 注册表的 --dur-note 240ms 为 rd-1 旧档：v2 按简报 §5 教学卡
+   260ms 重定档（docs/ 冻结面，spec 行更新属下一程序——本注释即留痕）。 */
 :root {
-  /* ── 现役八色（F-1R 钉住，值与语义不动）────────────────────────── */
-  --bg: #fbf9f4;
-  --ink: #1b1a17;
-  --ink-soft: #5c574e;
-  --ink-faint: #726a5e;
-  --rule: #ded7c9;
-  --rule-soft: #ebe5d8;
-  --pencil: #a8562f;
-  --touch: #f0e9dc;
-  /* ── 纸系层次（R-1V）：--bg 是主纸；下三层是它的同胞，不是新色 ──
-     paper-high = 泛起的纸面（hover 微起、浮层卡面）；paper-2 = 次纸
-     （短笺与词卡的稍深纸面——从 --rule-soft 兼任的「色块底」职责里
-     解放出来，--rule-soft 回归纯发丝线）；desk = 桌布（宽屏时 body 的
-     案头底色，纸面摊在其上）；ink-ghost = 水印墨（界尺/角饰/水印印记，
-     比弱化墨再淡半档，永不作文字）。 */
-  --paper-high: #fdfcf8;
-  --paper-2: #f4efe4;
-  --desk: #eae3d3;
-  --ink-ghost: #aaa191;
-  /* ── 赭红层次（R-1V）：--pencil 是基准；deep 加重（hover/印章/
-     落款），soft 是中间档（极淡印记、装饰蜡点）——克制三档 ────── */
-  --pencil-deep: #8a3f1f;
-  --pencil-soft: #bb7a52;
-  /* ── 字体栈（F-1R 钉住，逐字不动）────────────────────────────── */
-  --f-serif: Georgia, 'Times New Roman', 'Songti SC', 'SimSun',
-    'Noto Serif CJK SC', serif;
-  --f-sans: system-ui, -apple-system, 'Segoe UI', 'PingFang SC',
-    'Microsoft YaHei', sans-serif;
-  --f-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
-  /* ── 字号标度（R-1V；spec ⑨-1 排版标度表的唯一出处）────────────
-     衬线五档：display（门厅 h1）/ title（页级大题）/ head（卡题·词头·
-     primary 动作）/ body（信笺正文）/ small（词卡正文·辅助衬线）；
-     sans 两档：ui（界面小字基准）/ micro（弱化·系统行·仪表）。 */
-  --fs-display: 27px;
-  --fs-title: 21px;
-  --fs-head: 17px;
-  --fs-body: 16px;
-  --fs-small: 14px;
-  --fs-ui: 12px;
-  --fs-micro: 11px;
-  /* ── 行高与字距（R-1V）───────────────────────────────────────── */
-  --lh-body: 1.55;
-  --lh-letter: 1.75;
-  --lh-ui: 1.7;
-  --ls-title: 0.14em;
-  --ls-caps: 0.18em;
-  --ls-formhead: 0.3em;
-  /* ── 间距阶（R-1V；4 基数八阶——新规则一律走阶，不裸写像素）─── */
+  /* ── 色彩 14 值（简报 §2 方案 A「铁胆墨」定稿；对比度已实算）────── */
+  --paper: #f6f2e8;       /* 主纸 L*95.5——数码白→纸白 */
+  --paper-high: #fdfbf6;  /* 顶纸（浮起面） */
+  --paper-2: #efe9dc;     /* 次纸（短笺/词卡面） */
+  --desk: #e3dccb;        /* 桌布（宽屏 body 底） */
+  --ink: #191b1e;         /* 正文墨（冷调 h267°，15.44:1） */
+  --ink-soft: #4a4d52;    /* 次墨（7.59:1） */
+  --ink-faint: #6b6e72;   /* 弱墨（元信息下限 4.58:1） */
+  --rule: #d9d3c5;        /* 发丝线（纸的暗面 1.33） */
+  --rule-soft: #e7e1d3;   /* 淡发丝线 */
+  --accent: #2c476a;      /* 钢笔墨蓝（链接/下划线文字，8.47:1） */
+  --accent-deep: #1c3049; /* hover/active/落款重档（11.98:1） */
+  --accent-soft: #8ba0b8; /* 8–12% 透明底纹/装饰点，永不作文字 */
+  --seal: #9a392b;        /* 朱砂——只盖真实事件（邮戳/红笔圈），≤1 处/屏 */
+  --touch: #ece6d9;       /* 触压底 */
+  /* ── 水印墨（v2 扩展一值，简报 14 色之外的角色令牌）：界尺/水印印记，
+     比弱化墨再淡半档、永不作文字；墨水物理的起笔色（T1-3）。 */
+  --ink-ghost: #a8a496;
+  /* ── 旧名别名（消费面平滑；语义角色同 v2 档，值全由上方正名承担）── */
+  --bg: var(--paper);
+  --pencil: var(--accent);
+  --pencil-deep: var(--accent-deep);
+  --pencil-soft: var(--accent-soft);
+  --f-sans: var(--f-ui);
+  /* ── 字体栈五条（简报 §3a；离线、仅 Win11 系统字体；CJK 回退次序
+     固定：西文族在前 → Songti SC → SimSun → Noto Serif CJK SC →
+     通用族。Constantia x-height 0.453 = 宋体 0.453 混排精确对齐）── */
+  --f-serif: 'Sitka Text', Constantia, Cambria, Georgia,
+    'Palatino Linotype', 'Times New Roman',
+    'Songti SC', SimSun, 'Noto Serif CJK SC', serif;
+  --f-display: 'Sitka Display', 'Sitka Banner', Cambria, Georgia,
+    Constantia, 'Times New Roman',
+    'Songti SC', SimSun, 'Noto Serif CJK SC', serif;
+  --f-hand: KaiTi, 'Kaiti SC', STKaiti, cursive;
+  --f-ui: 'Segoe UI Variable Text', 'Segoe UI Variable',
+    'Segoe UI', DengXian, 'Microsoft YaHei UI', sans-serif;
+  --f-mono: Consolas, 'Cascadia Mono', ui-monospace, monospace;
+  /* ── 字号–行高–字距九档（简报 §3b；行高写整 px，4 基数；正文 =
+     信件正文 = 核心阅读面 17/32）──────────────────────────────── */
+  --fs-display: 34px;
+  --lh-display: 42px;
+  --fs-title: 24px;
+  --lh-title: 32px;
+  --fs-head: 18px;
+  --lh-head: 26px;
+  --fs-body: 17px;
+  --lh-body: 32px;
+  --fs-body-latin: 17px;
+  --lh-body-latin: 28px;
+  --fs-small: 14.5px;
+  --lh-small: 24px;
+  --fs-hand: 19px;
+  --lh-hand: 30px;
+  --fs-ui: 12.5px;
+  --lh-ui: 20px;
+  --fs-micro: 11.5px;
+  --lh-micro: 18px;
+  /* 字距（简报 §3b 刻度列；大写微标签 0.14em，正文/西文小写 0–0.02em） */
+  --ls-display: 0.01em;
+  --ls-title: 0.02em;
+  --ls-head: 0.03em;
+  --ls-body: 0.01em;
+  --ls-small: 0.01em;
+  --ls-hand: 0.04em;
+  --ls-ui: 0.02em;
+  --ls-caps: 0.14em;
+  /* ── 版心与基线（简报 §3b：字必须落在线上）────────────────────── */
+  --measure: 34em;     /* ≈578px——中西文舒适区交集 */
+  --baseline: 32px;    /* = --lh-body：正文行高、稿纸横线周期、批注文字同锁 */
+  /* ── 间距阶（4 基数八阶——新规则一律走阶，不裸写像素）────────── */
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -73,54 +91,43 @@
   --sp-6: 32px;
   --sp-7: 48px;
   --sp-8: 64px;
-  /* ── 动效（R-1V；spec ⑨-5 动效注册表的参数出处）────────────────
-     三档时长：触压 / 纸面 / 仪式；三条缓动：墨迹（稳出）、纸面
-     （长尾展开）、触压（对称）。每个动效的触发与降级注册在 ⑨-5。 */
+  /* ── 动效（简报 §5「纸先落、墨后渗」规格表的参数出处）──────────
+     时长：hover/回执 100（NN/g 100ms 内可见反馈）/ 盖印 120（唯一
+     overshoot）/ 逐行落墨 140 / 教学卡展开 260 / 进入 transform 280 /
+     进入 opacity 360（恒慢于 transform ≈1.3×）/ 墨水物理 600（一次性
+     ink-ghost→ink）/ 退出 200 / stagger 与信纸落桌封顶 320。
+     缓动：进入减速长尾（--ease-paper）/ 教学卡稳出（--ease-enter）/
+     退出加速收势（--ease-exit）/ 盖印收束（--ease-press）。
+     零常驻循环（v2 铁律：呼吸循环件已随本刀退役）。 */
+  --dur-micro: 100ms;
+  --dur-stamp: 120ms;
   --dur-1: 140ms;
-  --dur-2: 260ms;
-  --dur-3: 480ms;
-  --ease-ink: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur-note: 260ms;
+  --dur-panel-in: 280ms;
+  --dur-ink: 360ms;
+  --dur-wet: 600ms;
+  --dur-panel-out: 200ms;
+  --dur-settle: 320ms;
   --ease-paper: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);
   --ease-press: cubic-bezier(0.4, 0, 0.2, 1);
-  /* ── 微标签配方（rd-1；元信息位的唯一物理出处——小字号 + 字距 +
-     暖灰的 sans 角色，与等宽角色并存；全部引用既有标度，不自立值）──
-     sans 角色 = 状态词/节名/词性这类「印在页边的小字」；等宽角色 =
-     时间/编号/计数/日期/版本行（等宽自有节奏，免字距）。 */
+  /* ── 微标签配方（rd-1 沿用；元信息位的唯一物理出处——小字号 + 字距 +
+     暖灰的 sans 角色，与等宽角色并存；全部引用既有标度，不自立值）── */
   --meta-font: 500 var(--fs-micro)/var(--lh-ui) var(--f-sans);
   --meta-mono: var(--fs-micro)/var(--lh-ui) var(--f-mono);
   --meta-track: var(--ls-caps);
   --meta-ink: var(--ink-faint);
-  /* ── 动效基建（rd-1；spec ⑨-5：全部新名，现役三档三缓动不动）────
-     micro 档 = 触感反馈（80-120ms 带，100 为准）——一切 hover/press/
-     state layer 的时长出处；纸事件四族各记其时：邮戳盖下 120 /
-     短笺递出 240 / 柜抽进 280（出 200 已立待接——活体实证容器级
-     display 退出过渡与祖先翻转同帧组合会卡死透明度，⑨-5 Revisit）/
-     信纸落桌 320（进入比退出略长）；进入/退出缓动分离（进入减速
-     长尾、退出加速收势）。 */
-  --dur-micro: 100ms;
-  --dur-stamp: 120ms;
-  --dur-note: 240ms;
-  --dur-panel-in: 280ms;
-  --dur-panel-out: 200ms;
-  --dur-settle: 320ms;
-  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
-  --ease-exit: cubic-bezier(0.3, 0, 1, 1);
-  /* ── 触感层三值（rd-1；Material state layer 实测值）──────────────
-     墨色薄雾以伪元素叠上可交互面（零布局位移）：hover 轻、focus 与
-     press 重半档。只许作 ::after 的 opacity，不碰布局。 */
+  /* ── 触感层三值（rd-1；Material state layer 实测值）────────────── */
   --state-hover: 0.08;
   --state-focus: 0.12;
   --state-press: 0.12;
-  /* ── 纸叠偏移阴影两级（rd-1 面6；用户 2026-09-30 解除零阴影禁令，
-     DEC-OPI-dc0ba4b6-…13）────────────────────────────────────────
-     阴影色 = 墨色同源（--ink #1b1a17 的降透明度；全黑零基色的阴影
-     形态永禁）；全局恰两级（一轻一重）；方向不统一——信纸摊在案头
-     影子落左下、短笺在人手近侧影子落右上（人手叠放感）；位移小、
-     模糊收着（纸的投影贴着纸走，不是 UI 卡片的悬浮泛光）；与发丝
-     描边配对。 */
-  --stack-shadow-soft: 3px -3px 6px rgba(27, 26, 23, 0.12);
-  --stack-shadow-deep: -5px 6px 10px rgba(27, 26, 23, 0.16);
-  /* ── 图标参数（R-1V #22 icon-set 契约）───────────────────────── */
+  /* ── 纸叠偏移阴影两级（rd-1 面6；墨色同源——--ink #191b1e 的降
+     透明度，全黑零基色的阴影形态永禁；方向不统一：信纸摊在案头影子
+     落左下、短笺在人手近侧影子落右上；与发丝描边配对）──────────── */
+  --stack-shadow-soft: 3px -3px 6px rgba(25, 27, 30, 0.12);
+  --stack-shadow-deep: -5px 6px 10px rgba(25, 27, 30, 0.16);
+  /* ── 图标参数（#22 icon-set 契约）────────────────────────────── */
   --icon-size: 18px;
   --icon-stroke: 1.5;
   /* ── 布局（--read-pad / --safe-bottom / --navdock-h 钉住不动）──

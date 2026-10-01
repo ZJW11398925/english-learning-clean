@@ -84,8 +84,9 @@ def test_the_who_block_is_the_trigger_and_the_bar_grows_no_button(
 
     index = _page_of(tmp_path)
     parlor = index.split('id="space-parlor"', 1)[1].split("</header>", 1)[0]
-    assert '<div class="who">英语客厅</div>' in parlor
-    assert "一位固定笔友 · 中英不拘" in parlor
+    # v2 命名随迁（简报 §1）：信头 = 名 + 副题小字
+    assert '<div class="who">展信佳</div>' in parlor
+    assert '<div class="who-sub">见字如晤，今日如何</div>' in parlor
     assert "<button" not in parlor
     app = index
     assert 'document.querySelector("#space-parlor .top > div")' in app
@@ -232,8 +233,10 @@ def test_the_settings_face_replaces_the_placeholder(tmp_path: Path) -> None:
 
 def test_the_red_pencil_circle_is_one_static_mark(tmp_path: Path) -> None:
     """主形 = 红笔圈线：等回应的卡带 circled 类，锚行外包伪元素椭圆
-    （border 2px --pencil + 圆角椭圆 + rotate -2.5deg）；静态形——
-    零新 keyframes（⑨-5 零新行的实现面），零 data URI。"""
+    （v2 随简报 T2：色 = --seal 朱砂——待回应的批注是真实事件）+
+    圆角椭圆 + rotate -2.5deg；静态形——零新 keyframes（v2 注册集 =
+    五枚：paper-drop / ink-wash / ink-set / paper-unfold / stamp-press），
+    零 data URI。"""
 
     page = _page_of(tmp_path)
     assert 'card.classList.add("circled");' in page
@@ -241,14 +244,13 @@ def test_the_red_pencil_circle_is_one_static_mark(tmp_path: Path) -> None:
     assert (
         ".note-paper.circled .note-head::after {" in css
     )
-    assert "border: 2px solid var(--pencil);" in css
+    assert "border: 2px solid var(--seal);" in css
     assert "border-radius: 50%; transform: rotate(-2.5deg);" in css
     # the mark rides pure geometry: no data URI anywhere on the face
     assert "data:" not in css.split("SHELL_ASSETS")[0]
-    # zero new keyframes: the registered set is exactly the pre-existing
-    # seven (ink-fade / note-arrive / paper-unfold / stamp-press /
-    # paper-settle / seal-press / state-breathe)
-    assert css.count("@keyframes ") == 7
+    # zero new keyframes: the registered set is exactly the v2 five
+    # (paper-drop / ink-wash / ink-set / paper-unfold / stamp-press)
+    assert css.count("@keyframes ") == 5
 
 
 def test_the_closing_arms_split_settled_from_skipped(tmp_path: Path) -> None:
@@ -280,38 +282,53 @@ def test_the_closing_arms_split_settled_from_skipped(tmp_path: Path) -> None:
 
 
 def test_stamps_land_on_verified_rows_only(tmp_path: Path) -> None:
-    """盖戳只挂被验证面：档案明细行 outcome ∈ {SUCCESS,
-    ALTERNATIVE_SUCCESS} 落 #22 stamp 水印小图；负值与半中不盖
-    （负控钉——条件式逐字）。"""
+    """盖戳只挂真实事件（v2 随简报 T2 换真值，强度升格）：档案明细行
+    整族不再盖章——邮戳三真实事件 = 寄出（在途封）/ 结课（教学卡
+    settled）/ 归档开启（信档日期戳），判分行不在其中（判词文字已是
+    完整信息；旧 .arc-stamp 判分戳撤除，负控钉升格为全族缺位钉）。"""
 
     page = _page_of(tmp_path)
     archive = _fn_body(page, "renderArchive")
-    assert "claim.outcome === \"SUCCESS\" ||" in archive
-    assert 'claim.outcome === "ALTERNATIVE_SUCCESS"' in archive
-    assert 'stamp.classList.add("arc-stamp");' in archive
-    # the negative family never matches the stamp arm
-    for word in ("PARTIAL", "FAILURE", "ABSTAIN"):
-        assert f'claim.outcome === "{word}"' not in archive
+    # the whole verdict-stamp arm is gone from the archive renderer
+    assert "arc-stamp" not in archive
+    assert 'inkIcon("stamp")' not in archive
     css = page
-    assert ".arc-stamp { flex: none; width: 14px; height: 14px;" in css
+    assert ".arc-stamp" not in css
+    # the verdict row keeps its mono kv form (the stamp's information
+    # successor is the human verdict word itself)
+    assert 'line.className = "kv";' in archive
+    assert "(OUTCOME_CN[claim.outcome] || claim.outcome)" in archive
 
 
 def test_the_en_route_badge_comes_off_when_the_reply_lands(
     tmp_path: Path,
 ) -> None:
-    """在途角标：刚寄出的信别上 .letter--en-route，回信落地或失败即摘
-    （finally 的落点就是这两个时刻）；「客厅把灯留着」的 typing 行
-    现役不动。"""
+    """在途信封（v2 封/信分物，简报 T1-4）：刚寄出的信挂 .en-route
+    信封形（矩形 + 封舌 + 折线，信文暂不可见）并盖「寄出」邮戳
+    （邮戳三真实事件之一），回信落地或失败即摘封见信
+    （finally 的落点就是这两个时刻）；「笔友把灯留着」的 typing 行
+    随 v2-1 锚屏措辞。旧虚发丝角标退役。"""
 
     page = _page_of(tmp_path)
     turn = _fn_body(page, "postTurn")
-    assert 'mine.classList.add("letter--en-route");' in turn
-    assert 'mine.classList.remove("letter--en-route");' in turn
-    assert "const mine = addLine(\"user\", text, { enter: true });" in turn
-    assert "信已寄出，等回信——客厅把灯留着。" in turn
+    assert 'mine.classList.add("en-route");' in turn
+    assert 'mine.classList.remove("en-route");' in turn
+    assert (
+        "const mine = addLine(\"user\", text,"
+        " { enter: true, when: sentAt });" in turn
+    )
+    # the sent postmark rides the envelope and leaves with it
+    assert 'postmark.className = "postmark postmark--sent stamp-press";' \
+        in turn
+    assert 'mine.querySelector(".postmark--sent")' in turn
+    assert "信已寄出，等回信——笔友把灯留着。" in turn
     css = page
-    assert ".letter--en-route::after {" in css
-    assert "border-top: 1px dashed var(--pencil-soft);" in css
+    # the envelope shape: the flap, the fold line, the hidden sheet
+    assert ".letter.me.en-route::before {" in css
+    assert ".letter.me.en-route::after {" in css
+    assert ".letter.me.en-route .paper { visibility: hidden; }" in css
+    # the old dashed corner badge is retired
+    assert ".letter--en-route" not in css
 
 
 def test_the_letter_search_is_window_honest(tmp_path: Path) -> None:

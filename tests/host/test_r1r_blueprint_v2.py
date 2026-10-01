@@ -116,11 +116,13 @@ def test_the_section_tabs_renamed_display_only(tmp_path: Path) -> None:
 
 def test_the_browser_title_is_the_product_name(tmp_path: Path) -> None:
     """⑧ 8.2.1: the browser tab is the product's face — no engineering
-    stage word on it."""
+    stage word on it. v2 命名随迁（简报 §1）：题 = 展信佳（app.js 的
+    BRAND.name 同值驱动，<title> 为静态兜底）。"""
 
     index = _text("index.html")
-    assert "<title>英语客厅</title>" in index
+    assert "<title>展信佳</title>" in index
     assert "dogfood" not in index
+    assert "英语客厅" not in index
 
 
 # ---------------------------------------------------------------------------
@@ -376,13 +378,15 @@ def test_the_parlor_speaks_the_new_copy(tmp_path: Path) -> None:
     assert "dismissEmptyHall();" in page
     assert "本轮没有打开教学时刻" not in page
     # the writing face and the waiting face（rd-2 随迁：placeholder 占
-    # 锚例二「今日如何？」；发送后状态行升「信已寄出——」收尾）
+    # 锚例二「今日如何？」；发送后状态行升「信已寄出——」收尾。
+    # v2-1 锚屏措辞精修随迁：在途/寄出措辞的「客厅」→「笔友」——回信
+    # 者是笔友（锚屏授权面；语义底线不变））
     assert 'placeholder="今日如何？"' in page
-    assert "信已寄出，等回信——客厅把灯留着。" in page
+    assert "信已寄出，等回信——笔友把灯留着。" in page
     assert "用英语说点什么" not in page
     assert "（生成中…）" not in page
-    # the failure line: 人话主句 + 括号工程词
-    assert "这封信没有回音——客厅没能联系上模型端点" in page
+    # the failure line: 人话主句 + 括号工程词（v2-1 措辞随迁同上）
+    assert "这封信没有回音——笔友没能联系上模型端点" in page
     # teach-me: success / refusal / network (⑧ 8.2.2 + rd-2 批注家族)
     assert "批注来了——就在下面的信流里。" in page
     assert "没能开始这张批注——" in page

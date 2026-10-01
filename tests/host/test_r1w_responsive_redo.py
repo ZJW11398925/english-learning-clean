@@ -155,21 +155,22 @@ def test_the_tablet_two_columns_are_earned_inside_the_band() -> None:
 
 
 def test_the_wide_tier_extends_the_desk_not_the_line_length() -> None:
-    """≥1280: the paper grows to 1240 and the rail to 240 (a slightly
-    larger postmark), while the reading column keeps its 640 ceiling —
-    the wide tier never touches .flow/.spacebody/.dock-row."""
+    """≥1280: the paper grows to 1240 and the rail to 240（v2 随迁：
+    装饰邮戳水印撤除——宽档不再放大水印，只延展案头与边注）, while the
+    reading column keeps its --measure ceiling — the wide tier never
+    touches .flow/.spacebody/.dock-row."""
 
     screens = _text("screens.css")
     wide = _tier(screens, "1280px")
     assert ":root { --shell-w: 1240px; }" in wide
     assert "#stage { max-width: 1240px; }" in wide
     assert ".marginalia { width: 240px; }" in wide
-    assert ".marginalia-mark { width: 96px; height: 96px;" in wide
+    assert "marginalia-mark" not in wide
     for untouchable in (".flow", ".spacebody", ".dock-row"):
         assert untouchable not in wide, untouchable
-    # the 640 ceiling is set once, in the desktop tier, and inherited
+    # the --measure ceiling is set once, in the desktop tier, inherited
     desktop = _tier(screens, "900px")
-    assert "max-width: 640px;" in desktop
+    assert "max-width: var(--measure);" in desktop
 
 
 def test_the_homogeneous_panels_pair_up() -> None:
@@ -248,16 +249,19 @@ def test_the_cover_is_a_complete_letter() -> None:
         '<p class="ob-dateline"><span class="ob-date"></span>'
         '<span class="ob-stamp" data-icon="stamp"></span></p>',
         '<div class="ob-mark seal-press">',
-        '<p class="ob-wordmark">THE ENGLISH PARLOUR</p>',
-        '<h1>把英语请进客厅</h1>',
+        # v2 命名随迁（简报 §1）：wordmark = 英文并写 Dear You 大写
+        # 微标签档；display 题 = 展信佳
+        '<p class="ob-wordmark">DEAR YOU</p>',
+        '<h1>展信佳</h1>',
         '<span class="ob-divider" aria-hidden="true"></span>',
         '<p class="ob-salut">致 明日之我：</p>',
         'id="ob-go"',
         '<p class="ob-version">elc · web</p>',
     ):
         assert marker in page, marker
-    # the old skeleton is gone
-    for gone in ("ob-steps", "ob-step", "就这么定"):
+    # the old skeleton is gone — and the old brand with it
+    for gone in ("ob-steps", "ob-step", "就这么定", "把英语请进客厅",
+                 "THE ENGLISH PARLOUR"):
         assert gone not in page, gone
 
 
@@ -299,26 +303,36 @@ def test_the_cover_door_keeps_its_semantics(tmp_path: Path) -> None:
     assert 'id="ob-go" class="btn btn--ink" type="button"' in page
     assert 'ONBOARD_KEY = "elp.parlor.onboarded.v1"' in page
     assert 'seenOnboard() ? "parlor" : "onboard"' in page
-    assert "<title>英语客厅</title>" in page
+    # v2 命名随迁（简报 §1）：题 = 展信佳
+    assert "<title>展信佳</title>" in page
 
 
 def test_the_cover_typography_rides_the_scale() -> None:
-    """The cover is the display rung's first real customer: the title
-    rides --fs-display with --ls-title, the wordmark rides ls-caps, the
-    letter rides --lh-letter with the 2em indents, and the sheet is the
+    """The cover is the display rung's first real customer（v2 随迁：
+    display 档 34/42、宋体 400 禁合成粗体——工艺法则 2；题字距走
+    --ls-display；信体行高锁 --baseline 基线网格）: the title rides
+    --fs-display with --lh-display, the wordmark rides ls-caps, the
+    letter rides --baseline with the 2em indents, and the sheet is the
     paper-high wash behind a double hairline edge."""
 
     screens = _text("screens.css")
-    assert ".ob h1 { margin: var(--sp-2) 0 0; text-align: center;" in screens
-    assert "font-size: var(--fs-display); font-weight: 500;" in screens
-    assert "letter-spacing: var(--ls-title); }" in screens
-    # rd-1 随迁：wordmark 的字距改走微标签配方（--meta-track 归
+    assert (
+        ".ob h1 { margin: var(--sp-2) 0 0; text-align: center;" in screens
+    )
+    assert "font-family: var(--f-display);" in screens
+    assert (
+        "font-size: var(--fs-display); line-height: var(--lh-display);"
+        in screens
+    )
+    assert "font-weight: 400;" in screens
+    assert "letter-spacing: var(--ls-display); }" in screens
+    # rd-1 随迁：wordmark 的字距走微标签配方（--meta-track 归
     # --ls-caps——链路保「西文大写微标签走 caps 字距标度」的出处）
     wordmark = screens[screens.index(".ob-wordmark {"):]
     wordmark = wordmark[:wordmark.index("}")]
     assert "letter-spacing: var(--meta-track);" in wordmark
     assert (
-        ".ob-para { margin: 0 0 var(--sp-3); line-height: var(--lh-letter);\n"
+        ".ob-para { margin: 0 0 var(--sp-3); line-height: var(--baseline);\n"
         "           text-indent: 2em;" in screens
     )
     assert ".ob-sheet { max-width: 100%; background: var(--paper-high);" \
@@ -329,20 +343,25 @@ def test_the_cover_typography_rides_the_scale() -> None:
 
 def test_the_cover_motions_are_registered_and_degrade() -> None:
     """The two cover motions live in the motion registry (the keyframes'
-    one source) with their class toggles, and both sit before the
-    reduced-motion blanket — the blanket zeroing them is the only
-    degradation they need."""
+    one source) with their class toggles. v2 随迁（简报 §5）：封面双
+    动画 = paper-drop + ink-wash（--dur-settle 320 封顶 + 1.3× wash）；
+    印记走 ink-wash 档；旧 paper-settle/seal-press keyframes 退役，
+    类名保留（消费面平滑）。both sit before the reduced-motion
+    blanket — the blanket zeroing them is the only degradation they
+    need."""
 
     css = _text("components.css")
-    assert ".paper-settle { animation: paper-settle var(--dur-3)" in css
-    assert "@keyframes paper-settle {" in css
-    assert ".seal-press { animation: seal-press var(--dur-3)" in css
-    assert "@keyframes seal-press {" in css
+    assert (
+        ".paper-settle { animation: paper-drop var(--dur-settle)"
+        " var(--ease-paper)" in css
+    )
+    assert ".seal-press { animation: ink-wash var(--dur-ink)" in css
     blanket_at = css.index("@media (prefers-reduced-motion: reduce) {\n"
                            "  *, *::before, *::after {")
-    for keyframes in ("@keyframes paper-settle {",
-                      "@keyframes seal-press {"):
+    for keyframes in ("@keyframes paper-drop {", "@keyframes ink-wash {"):
         assert css.index(keyframes) < blanket_at, keyframes
+    for retired in ("@keyframes paper-settle {", "@keyframes seal-press {"):
+        assert retired not in css, retired
     # the classes are on the sheet and the mark (the one-shot entrance)
     index = _text("index.html")
     assert 'class="ob-sheet paper-settle"' in index
@@ -350,11 +369,12 @@ def test_the_cover_motions_are_registered_and_degrade() -> None:
 
 
 def test_the_stamp_icon_is_registered_the_four_step_way() -> None:
-    """The eighth ink icon, registered everywhere the set is spelled:
+    """The ink icon, registered everywhere the set is spelled:
     the template geometry (one 20×20 grid, no stroke of its own), the
     live anchor on the cover's dateline, the contract block's roster
     and the spec's ③ row + ⑨-4 roster. The set stays one component
-    (the icons are its members; rd-4 随迁：partner-card 入库 → 23)."""
+    (the icons are its members; rd-4 随迁：partner-card 入库 → 23；
+    v2 随迁：水印圆戳出集，八枚 → 七枚)."""
 
     from tests.host.test_fg1_architecture import COMPONENTS
 
@@ -367,11 +387,12 @@ def test_the_stamp_icon_is_registered_the_four_step_way() -> None:
     )
     assert 'data-icon="stamp"' in index
     css = _text("components.css")
-    assert "现役八枚" in css
-    assert "stamp（门厅封面案头日期行的邮票角标" in css
+    assert "现役七枚" in css
+    assert "stamp（门厅封面邮票角标 + 教学卡结课邮票）" in css
     spec = _spec()
     assert 'postmark\\|stamp"' in spec   # the ③ row's template id list
-    assert "现役八枚与锚位" in spec     # ⑨-4's roster
+    assert "现役八枚与锚位" in spec     # ⑨-4's roster（冻结面，v2 集内
+    # 收缩由 components.css 契约块承载——spec 更新属下一程序）
 
 
 def test_the_cover_date_is_real_client_data() -> None:

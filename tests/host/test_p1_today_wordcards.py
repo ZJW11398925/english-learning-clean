@@ -436,15 +436,19 @@ def test_the_word_face_unit_answers_over_a_store(tmp_path: Path) -> None:
 def test_the_letters_fragment_into_clickable_words(tmp_path: Path) -> None:
     """The fragmentation is inert and letter-only: the user and assistant
     arms split their text into .word spans plus verbatim whitespace (the
-    letter structure pins keep their exact strings), the typing/system
+    letter structure pins keep their exact strings; v2 骨架随迁——assistant
+    臂按段分片，每段同一分片形), the typing/system
     arms do not fragment, and the words stay textContent."""
 
     page = _page_of(tmp_path)
+    # the user arm fragments its single paragraph; the assistant arm
+    # fragments every paragraph through the same sharding call
     assert "say.appendChild(letterWords(text));" in page
+    assert "say.appendChild(letterWords(para));" in page
     assert 'node.className = "letter me"' in page
     assert 'node.className = "letter may"' in page
     assert (
-        page.count("say.appendChild(letterWords(text));") == 2
+        page.count("say.appendChild(letterWords(") == 2
     ), "only the two letter arms fragment"
     assert 'span.className = "word"' in page
     assert ".innerHTML" not in page
@@ -490,10 +494,10 @@ def test_the_word_card_overlay_is_the_letter_language(
     assert "export function closeWordCard() {" in page
     assert "export function showWordCard(at, data) {" in page
     assert "document.addEventListener" in page
-    # rd-4 随迁（9.12-23）：零圆角形态法则收窄——唯一豁免 = 手写批注层
-    # 的红笔圈线椭圆（手迹几何非面板圆角；spec 8.2.10 / 9.12-23 登记）；
-    # 第二处 radius 仍即红
-    assert page.count("border-radius") == 1
+    # rd-4 随迁（9.12-23）+ v2 随迁（简报 §6「仅邮票/邮戳允许圆形」）：
+    # 零圆角形态法则的豁免位 = 手迹/盖印几何两族——红笔圈线椭圆 +
+    # 邮戳双圈圆（外圈 + 内圈）；第三处 radius 仍即红
+    assert page.count("border-radius") == 3
     assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
 

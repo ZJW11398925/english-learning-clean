@@ -55,27 +55,29 @@ from tests.host.test_w1_web import (
 pilot_content_db = test_w1_web.pilot_content_db
 
 #: The letter token sheet, value for value — the one visual anchor is the
-#: archived VS1 ``chat.css`` (values adopted, never its code): the page's
-#: ``:root`` block and this table must agree.
+#: v2 mature core（docs/research/2026-10-01-v2-mature-core-brief.md §2，
+#: 「铁胆墨」14 色定稿；v2-1 内核刀随迁）：the page's ``:root`` block and
+#: this table must agree. 旧名别名（--bg/--pencil）解析到 v2 正名的值。
 LETTER_TOKENS: dict[str, str] = {
-    "--bg": "#fbf9f4",
-    "--ink": "#1b1a17",
-    "--ink-soft": "#5c574e",
-    "--ink-faint": "#726a5e",
-    "--rule": "#ded7c9",
-    "--rule-soft": "#ebe5d8",
-    "--pencil": "#a8562f",
-    "--touch": "#f0e9dc",
+    "--paper": "#f6f2e8",
+    "--ink": "#191b1e",
+    "--ink-soft": "#4a4d52",
+    "--ink-faint": "#6b6e72",
+    "--rule": "#d9d3c5",
+    "--rule-soft": "#e7e1d3",
+    "--accent": "#2c476a",
+    "--seal": "#9a392b",
+    "--touch": "#ece6d9",
 }
 
-#: The three font stacks (serif for titles and letters, sans for the small
-#: interface words, mono for the meters and the numbers), word for word.
+#: The five font stacks (v2 §3a：serif/display 双衬线、hand 楷体手迹位、
+#: ui 界面小字、mono 数据；whitespace-normalized 匹配), word for word.
 LETTER_F_STACKS: tuple[str, ...] = (
-    "--f-serif: Georgia, 'Times New Roman', 'Songti SC', 'SimSun',"
+    "--f-serif: 'Sitka Text', Constantia, Cambria, Georgia,"
+    " 'Palatino Linotype', 'Times New Roman', 'Songti SC', SimSun,"
     " 'Noto Serif CJK SC', serif",
-    "--f-sans: system-ui, -apple-system, 'Segoe UI', 'PingFang SC',"
-    " 'Microsoft YaHei', sans-serif",
-    "--f-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace",
+    "--f-hand: KaiTi, 'Kaiti SC', STKaiti, cursive",
+    "--f-mono: Consolas, 'Cascadia Mono', ui-monospace, monospace",
 )
 
 #: The layout pair: the reading gutter and the safe-area bottom inset.
@@ -106,12 +108,13 @@ def _page_of(tmp_path: Path) -> str:
 
 
 def test_the_page_carries_the_letter_tokens(tmp_path: Path) -> None:
-    """The F-1R re-pin: the token sheet is chat.css's, value for value —
-    the F-1 two-theme teal sheet is gone (one paper theme, no dark
-    switch), and the three font stacks are spelled in full. The stacks
-    are matched whitespace-normalized: CSS wraps a long stack across
-    lines (ruff's own line length), and CSS itself is whitespace-blind —
-    the family names and their order are what the pin holds."""
+    """The v2 re-pin: the token sheet is the v2 mature core's, value for
+    value（简报 §2 十四色 + §3a 字体栈；v2-1 内核刀随迁）——the F-1
+    two-theme teal sheet is gone (one paper theme, no dark switch), and
+    the font stacks are spelled in full. The stacks are matched
+    whitespace-normalized: CSS wraps a long stack across lines, and CSS
+    itself is whitespace-blind — the family names and their order are
+    what the pin holds."""
 
     page = " ".join(_page_of(tmp_path).split())
     for name, value in LETTER_TOKENS.items():
@@ -120,6 +123,10 @@ def test_the_page_carries_the_letter_tokens(tmp_path: Path) -> None:
         assert f"{name}: {value}" in page, (name, value)
     for stack in LETTER_F_STACKS:
         assert " ".join(stack.split()) in page, stack
+    # the legacy names survive as aliases resolving into the v2 accent
+    # tier (the consumer faces stay smooth; the values are the v2 ones)
+    assert "--pencil: var(--accent);" in page
+    assert "--bg: var(--paper);" in page
     # one paper theme: the dark media-query sheet does not come back
     assert "@media (prefers-color-scheme: dark)" not in page
 
