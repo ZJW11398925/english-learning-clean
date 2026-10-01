@@ -2938,7 +2938,7 @@ function buildEditorForm(form, opts) {
         prevPaper.classList.toggle("editor-openprev--empty", !text);
         prevPaper.textContent = text
           ? pen.value
-          : "开场信还没写——写上几句，这里就是那封信的样子。";
+          : "旧信这里读不回——写上几句，这里就是新信的样子。";
       };
       pen.addEventListener("input", syncPreview);
       syncPreview();

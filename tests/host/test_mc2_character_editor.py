@@ -133,6 +133,21 @@ def test_the_zoom_transition_pins() -> None:
     ) in app
     assert 'full.textContent = "完整编辑";' in app
 
+    # the zoom origin is the clicked envelope's own center (LOW-2
+    # disposition: the formula itself is pinned — a wrong-quadrant
+    # arithmetic must not pass)
+    assert (
+        "rect.left + rect.width / 2, rect.top + rect.height / 2);"
+        in app
+    )
+    # the click-side coexistence guard (LOW-4 disposition): with the
+    # editor open the stack must not fold underneath it — the Esc-side
+    # guard is pinned below via the stopPropagation pin
+    assert (
+        "if (charEditorPanel) return;"
+        "   // 编辑台开着——沓在它底下，别替它收" in app
+    )
+
     # the sheet opens with the enter class; the origin comes from the
     # clicked envelope's own rect and lands as custom props in
     # components.js (app.js is barred from .style)
@@ -254,6 +269,9 @@ def test_the_editor_saves_through_the_real_crud() -> None:
     # the never-open-blank guard: a failed card read refuses to open
     assert "data = await fetchPartnerOf(item.character_id);" in app
     assert "这张卡的旧文没读到——读不回就不开笔，免得拿空白盖了旧文。" in app
+    # the known server-404 literal maps to a Chinese line in the editor
+    # (LOW-5 disposition: the mapping sentence itself is pinned)
+    assert "没找到这张卡——它可能刚被删掉，回沓看看。" in app
 
 
 def test_the_crud_is_live_and_the_veiled_faces_survive(
@@ -400,10 +418,17 @@ def test_the_opening_letter_has_a_live_preview() -> None:
     assert 'prevPaper.className = "editor-openprev-paper";' in app
     assert "pen.addEventListener(\"input\", syncPreview);" in app
     assert "prevPaper.textContent = text" in app
-    assert "开场信还没写——写上几句，这里就是那封信的样子。" in app
+    # LOW-1 disposition: the empty state must not deny the card's old
+    # letter (the builtin's opening is non-empty — the veil just cannot
+    # read it back); the sentence speaks of the unreadable old letter
+    assert "旧信这里读不回——写上几句，这里就是新信的样子。" in app
+    assert "开场信还没写" not in app
     css = _editor_css()
     assert ".editor-openprev-paper { margin: var(--sp-1) 0 0;" in css
     assert "background: var(--paper-2);" in css
+    # INFO-1 disposition: the value itself is pinned (the count pin
+    # never locked it) — the preview paper is a ≤2px letter object
+    assert "border-radius: 2px;" in css
 
 
 # ---------------------------------------------------------------------------
