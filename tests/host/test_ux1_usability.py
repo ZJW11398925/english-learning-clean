@@ -6,11 +6,13 @@
 
 1. **the sticky faces** — the two back rows (the dossier's 「回案头」
    and the character editor's 「回沓」) and the section-tab bars stick
-   (the dossier bar and the tab bars right under the 46px brand bar —
-   the arithmetic lives in the same source; the editor bar at the top
-   of its own scroll well), and the goal save rides a sticky bottom
-   dock-height bar (the one survey-confirmed scroll-lost action button
-   in 温故/抽屉);
+   right under the brand bar — whose height the test recomputes from
+   the CSS sources (the LOW's executable arithmetic; the editor bar
+   sticks at the top of its own scroll well) — and the goal save (the
+   one survey-confirmed scroll-lost action button in 温故/抽屉) rides
+   a sticky bottom bar held clear of the dock's real height by a calc
+   (the review's MEDIUM: the --navdock-h token alone left a dead
+   strip behind the dock);
 2. **the swipe switcher** — the touch recognition lives in one factory
    (wirePanelSwipe) with the 48px threshold constant, the strict
    |dx| > |dy| discrimination, the tab-DOM panel order, the adjacent
@@ -64,6 +66,54 @@ def _block(css: str, head: str) -> str:
 BAR_ARITHMETIC = "10 上距 + 26 行高 + 8 下距 + 2 发丝边"
 
 
+def _px(source: str, head: str, prop: str, tokens: str) -> int:
+    """One declaration's integer px value out of the block at ``head``,
+    resolving a single var() reference through tokens.css (the tokens
+    are the only physical source, so one hop is the whole chain). The
+    lookbehind keeps ``border-top:`` from answering a ``top:`` read."""
+
+    block = _block(source, head)
+    m = re.search(r"(?<![-\w])" + prop + r":\s*([^;]+);", block)
+    assert m, (head, prop)
+    value = m.group(1).strip()
+    if value.startswith("var("):
+        t = re.search(re.escape(value[4:-1]) + r":\s*(\d+)px;", tokens)
+        assert t, value
+        return int(t.group(1))
+    return int(value.rstrip("px"))
+
+
+def test_the_46_sticky_offset_is_the_brand_bars_real_height() -> None:
+    """The LOW's executable arithmetic: 46 is not a free constant — the
+    test recomputes the brand bar's height from the CSS sources (.top's
+    own paddings and hairlines, plus the taller of .who's line-height
+    var(--lh-head) and the small brand mark) and demands both under-bar
+    sticky offsets equal it. Moving .top's metrics without moving the
+    offsets is red (the review's mA form), and so is nudging either
+    offset alone; the human-readable arithmetic comment must still
+    stand in both consumers."""
+
+    tokens = _text("tokens.css")
+    components = _text("components.css")
+    screens = _text("screens.css")
+
+    top_block = _block(screens, ".top {")
+    pad = re.search(r"padding:\s*(\d+)px\s+[^;]*?\s(\d+)px;", top_block)
+    assert pad, ".top padding shorthand"
+    borders = len(re.findall(r"border-(?:top|bottom): 1px solid", top_block))
+    content = max(
+        _px(screens, ".who {", "line-height", tokens),
+        _px(components, ".brandmark--sm {", "height", tokens),
+    )
+    real = int(pad.group(1)) + content + int(pad.group(2)) + borders
+    assert (real, borders) == (46, 2), real
+
+    assert _px(components, ".section-tabs {", "top", tokens) == real
+    assert _px(screens, ".dossier-back {", "top", tokens) == real
+    assert BAR_ARITHMETIC in components
+    assert BAR_ARITHMETIC in screens
+
+
 # ---------------------------------------------------------------------------
 # 1. the sticky faces
 
@@ -110,11 +160,22 @@ def test_the_editor_back_row_sticks_in_its_own_well() -> None:
 def test_the_goal_save_is_the_one_sticky_action_dock() -> None:
     """保存方向 — the survey's one scroll-lost action button in
     温故/抽屉 — rides a sticky bottom bar held above the standing nav
-    dock; paper ground, the .sec's own top hairline separates."""
+    dock; paper ground, the .sec's own top hairline separates. ux-1R
+    (the review's MEDIUM): the offset is a calc — the dock's real
+    height is its hairline + paddings + the 44px item row = 57px, three
+    more than the --navdock-h token (which stays untouched), and the
+    safe-area inset rides the same dock layer — so the bare token left
+    a ~3px dead strip of the button behind the dock. Dropping the calc
+    back to the bare token is red."""
 
     screens = _text("screens.css")
     block = _block(screens, "#goal-save {")
-    assert "position: sticky; bottom: var(--navdock-h); z-index: 3;" in block
+    assert "position: sticky;" in block
+    assert (
+        "bottom: calc(var(--navdock-h) + var(--safe-bottom) + 3px);"
+        in block
+    )
+    assert "z-index: 3;" in block
     assert "background: var(--bg);" in block
 
 

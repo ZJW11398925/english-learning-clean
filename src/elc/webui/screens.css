@@ -176,8 +176,15 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
 /* ux-1：保存方向常显（用户原话——重要按钮不得因滚动被遮挡；温故各页
    动作钮普查，此为现役唯一滚动丢失面）：sticky 底栏贴在常驻导航之上，
    编辑上方各面时保存始终可及；滚过自然位（下方只读面）即随流让位。
-   纸底 + .sec 自带的上发丝线。 */
-#goal-save { position: sticky; bottom: var(--navdock-h); z-index: 3;
+   纸底 + .sec 自带的上发丝线。
+   ux-1R（处置）：底缘贴 dock 顶——navdock 实高 = 1 发丝边 + 6/6 上下距
+   + 44 签行（8+32+4）= 57 + 安全区，比 --navdock-h（54，令牌钉住不动）
+   高 3px；不加 3px 时按钮底缘没进 dock 背后成死区（评审活体实测
+   2.8px，真机 safe-bottom 下缺口更大）；+safe-bottom 随 dock 的同款
+   安全区垫层一起抬。 */
+#goal-save { position: sticky;
+             bottom: calc(var(--navdock-h) + var(--safe-bottom) + 3px);
+             z-index: 3;
              background: var(--bg); }
 .taxref { margin: 4px 0 0; font-family: var(--f-sans);
           font-size: var(--fs-micro);
