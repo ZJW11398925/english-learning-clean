@@ -38,6 +38,7 @@ from elc.detection.registry import DetectorRegistry
 from elc.host import open_host
 from elc.persona.commands import (
     ENCLOSED_NOTE_INSTRUCTION,
+    PROMPT_SECTION_ORDER,
     RESPONSE_SECTION,
     PromptCompiler,
 )
@@ -81,6 +82,13 @@ CONV = ConversationId("cs0-conv")
 LETTER = "I read your last letter twice — the city sounds wonderful."
 ERROR_TEXT = "Any way, let's continue with the plan."
 EV_TARGET = "res-discourse-anyway"
+
+REPO = Path(__file__).resolve().parents[2]
+SRC = REPO / "src" / "elc"
+
+
+def _text(rel: str) -> str:
+    return (SRC / rel).read_text(encoding="utf-8")
 
 #: The corpus note the opening carries: canonical_forms[0] of the EV target
 #: (read from the built artifact in the e2e; the frame is the system copy).
@@ -295,10 +303,9 @@ def pilot_content_db(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return path
 
 
-def _command(text: str) -> object:
+def _command(text: str, suffix: str = "cs0-one") -> object:
     from elc.conversation.types import CommitUserTurn
 
-    suffix = "cs0-one"
     return CommitUserTurn(
         conversation_id=CONV,
         envelope=InputEnvelope(
@@ -657,3 +664,138 @@ def test_the_relationship_executor_consumes_the_visible_read(cs0_world) -> None:
     assert isinstance(detail, Ok), detail
     assert "proposals=0" in detail.value
     assert "recorder_refusals=1" in detail.value
+
+
+# ---------------------------------------------------------------------------
+# cs-0 处置刀钉（M-1 / M-2 / LOW-1 / LOW-2）
+
+
+def test_the_compiled_section_order_carries_the_note_slot() -> None:
+    """M-2（节序零承载修复）：带 directive 的真编译的节头序 == 声明常量
+    派生的序——enclosed-note 钉在 episode 之后、channel 之前。节序被挪位
+    （常量或 append 序任一动）此钉必红。"""
+
+    text = _compile(
+        _request(
+            action_type=GenerationActionType.TEACHING_HINT,
+            contract_id="gc-note-hint",
+            directive=TeachingPromptView(
+                action_type="TEACHING_HINT",
+                enclosed_note="Hedge the claim.",
+            ),
+        )
+    )
+    headers = [
+        line
+        for line in text.splitlines()
+        if line.startswith("[") and line.endswith("]")
+    ]
+    assert headers == [
+        f"[{name}]"
+        for name in PROMPT_SECTION_ORDER
+        if name in {"persona", "contract", "enclosed-note", "channel"}
+    ] + ["[response]"]
+    assert headers.index("[enclosed-note]") == 2
+    assert PROMPT_SECTION_ORDER.index("enclosed-note") == (
+        PROMPT_SECTION_ORDER.index("episode") + 1
+    )
+
+
+def test_an_actionless_assistant_row_is_hidden_from_the_role_only(
+    cs0_world,
+) -> None:
+    """LOW-1（fail-closed 负例钉）：assistant 行在而 §20 action 行缺的库
+    ——该轮不入角色可见读面（窗口与可见切片都为 None，放行即变异 M-A
+    形态必红），同时用户可见读面照旧带出该行（用户读的是 durable
+    transcript，不需要 provenance 证明）。"""
+
+    host, _provider = cs0_world
+    result = host.coordinator.begin_turn(_command(ERROR_TEXT))
+    assert isinstance(result, Ok), result
+    committed = host.conversations.commit_user_turn(
+        _command("plain hello for the ghost row", "cs0-ghost")
+    )
+    assert isinstance(committed, Ok), committed
+    ghost_turn = committed.value
+    row = host.db.execute(
+        "SELECT turn_sequence, message_sequence FROM user_turn"
+        " WHERE turn_id = ?",
+        (str(ghost_turn.turn_id),),
+    ).fetchone()
+    assert row is not None
+    host.db.execute(
+        "INSERT INTO assistant_turn (assistant_turn_id, turn_id,"
+        " conversation_id, turn_sequence, message_sequence, action_id,"
+        " content, delivery_state, delivery_certainty, created_at)"
+        " VALUES ('at-cs0-ghost', ?, ?, ?, ?, 'act-cs0-ghost',"
+        " 'ghost reply', 'SENT_COMPLETE', 'SERVER_SENT_UNCONFIRMED', 'now')",
+        (
+            str(ghost_turn.turn_id),
+            str(CONV),
+            int(row[0]),
+            int(row[1]),
+        ),
+    )
+
+    window = host.conversations.get_conversation_window(CONV, 10)
+    assert isinstance(window, Ok), window
+    ghost_visible = [
+        s for s in window.value.slices if s.turn_id == ghost_turn.turn_id
+    ]
+    assert len(ghost_visible) == 1
+    assert ghost_visible[0].assistant_turn is None
+    seen = host.conversations.get_persona_visible_turn_slice(ghost_turn.turn_id)
+    assert isinstance(seen, Ok) and seen.value is not None
+    assert seen.value.assistant_turn is None
+
+    user_window = host.conversations.get_user_visible_conversation_window(
+        CONV, 10
+    )
+    assert isinstance(user_window, Ok), user_window
+    ghost_user = [
+        s
+        for s in user_window.value.slices
+        if s.turn_id == ghost_turn.turn_id
+    ]
+    assert len(ghost_user) == 1
+    assert ghost_user[0].assistant_turn is not None
+    assert ghost_user[0].assistant_turn.content == "ghost reply"
+
+
+def test_history_shows_the_letter_the_role_history_hides(cs0_world) -> None:
+    """M-1 双面钉：/api/history（用户可见读）带出教学轮的完整信件（复合
+    文本非空），同一会话的角色窗口读（get_conversation_window）不含它——
+    一条钉锁两面。前端渲染打磨归 cs-2：历史行现含复合文本（信+附笺）。"""
+
+    from elc.web import HISTORY_TURNS, _WebFace
+
+    host, _provider = cs0_world
+    result = host.coordinator.begin_turn(_command(ERROR_TEXT))
+    assert isinstance(result, Ok), result
+    composed = result.value.reply_text
+    assert composed is not None
+
+    face = _WebFace(host, str(CONV))
+    history = face.history()
+    turns = history["turns"]
+    teaching_turns = [t for t in turns if t["assistant"] == composed]
+    assert len(teaching_turns) == 1
+    assert teaching_turns[0]["user"] == ERROR_TEXT
+
+    role_window = host.conversations.get_conversation_window(CONV, HISTORY_TURNS)
+    assert isinstance(role_window, Ok), role_window
+    for slice_ in role_window.value.slices:
+        assert slice_.assistant_turn is None or (
+            slice_.assistant_turn.content != composed
+        )
+
+
+def test_the_delivery_renders_as_a_card_line_not_a_letter() -> None:
+    """LOW-2（组件级源钉）：components.js 的交付文本渲染为批注卡内
+    .noteline 系统行（card.appendChild），不再以 addLine("assistant", …)
+    入信流——回退即变异 M-E 形态必红。"""
+
+    source = _text("webui/components.js")
+    assert 'addLine("assistant", data.delivery_text' not in source
+    assert 'note.className = "noteline";' in source
+    assert "card.appendChild(note);" in source

@@ -276,7 +276,9 @@ def ladder_step(
                 if is_post_reveal_attempt(current_phase)
                 else current_support
             ),
-            text=None,  # the explanation text is the persona's own content
+            text=None,  # cs-0: the explanation note is assembled from the
+            # corpus's §24.3 teaching_note rows by the runtime, not written
+            # here — the ladder only fixes the (phase, support) move
             delivery_kind="EXPLANATION",
         )
     if delivery_kind == "RETRY":

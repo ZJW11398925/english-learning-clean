@@ -313,14 +313,17 @@ TEACHING_ACTION_BY_DELIVERY = {
 # The note is the runtime's own deterministic composition over validated
 # corpus content: a hint carries the ladder rung, a reveal carries the
 # reveal form, an explanation carries the §24.3 teaching_note rows, an
-# opening carries the target's canonical form. Three delivery kinds have no
-# corpus row to carry — the retry nudge, the plain closing line, and the
-# opening when the target resolved with no canonical form — and for those
-# the fixed system lines below stand in (declared here, word for word, so
-# the copy is pinned text and never a model's free hand). The note rides
-# the compiled prompt as the neutral enclosed-note instruction and is
-# composed onto the persona's letter at the one delivery site, so the note
-# text reaches the user verbatim whatever the letter says.
+# opening carries the target's canonical form. Two delivery kinds have no
+# corpus row to carry — the retry nudge and the plain closing line — and
+# for those the fixed system lines below stand in (declared here, word for
+# word, so the copy is pinned text and never a model's free hand). An
+# opening whose target resolved with no canonical form takes **no note at
+# all** (an empty note degrades the delivery to its letter — the
+# conservative direction, aligned with ``_target_view_for``'s honest
+# reading: the runtime never fabricates a corpus line it could not read).
+# The note rides the compiled prompt as the neutral enclosed-note
+# instruction and is composed onto the persona's letter at the one delivery
+# site, so the note text reaches the user verbatim whatever the letter says.
 
 #: The opening note's frame: the target's canonical form, presented as the
 #: expression to try (the corpus's own words; the frame is system copy).
@@ -358,8 +361,10 @@ def _opening_note_for(view: TeachingTargetView | None) -> str:
     """The opening note: the target's canonical form in the fixed frame.
 
     The form is corpus content (``canonical_forms[0]``); a target that
-    resolved with no canonical form takes the fixed closing line's sister
-    — the plain system line — rather than a fabricated one.
+    resolved with no canonical form takes **no note** — the empty string,
+    which degrades the delivery to its letter (the conservative direction,
+    the same reading ``_target_view_for`` states: a corpus line the runtime
+    could not read is never fabricated).
     """
 
     if view is not None and view.canonical_forms:

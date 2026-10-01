@@ -2607,11 +2607,16 @@ class _WebFace:
     def history(self) -> dict[str, Any]:
         """The canonical transcript window — what the page recovers on load.
 
-        The store's own window read (delivered assistant output only;
-        teaching command turns never appear), oldest first.
+        The store's user-visible window read (cs-0 处置 M-1: the *user* may
+        read back every delivered assistant turn, the teaching letters
+        included — the composed delivery text travels whole; the
+        role-visible filter that keeps those texts from the persona's
+        history stays on ``get_conversation_window`` and never touches this
+        face). Delivered assistant output only; teaching command turns never
+        appear; oldest first.
         """
 
-        window = self._host.conversations.get_conversation_window(
+        window = self._host.conversations.get_user_visible_conversation_window(
             self._conversation_id, HISTORY_TURNS
         )
         if isinstance(window, Err):

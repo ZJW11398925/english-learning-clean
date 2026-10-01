@@ -768,12 +768,15 @@ class SqliteConversationStore:
         §20 action is not the ordinary persona reply is excluded too —
         the teaching deliveries are the runtime's own composed texts, and
         the role must neither read them back in its history nor have the
-        memory and episode projections remember them (the three consumers
-        of this window — the ``[history]`` section, ``rebuild_episode``'s
-        ``recent_events`` and the webui history read — see the same
-        filtered view; the write face is untouched and the full
-        transcript stays on ``get_canonical_turn_slice``). An assistant
-        turn whose action row cannot be read is excluded with it
+        memory and episode projections remember them (the two consumers of
+        this window — the ``[history]`` section and ``rebuild_episode``'s
+        ``recent_events`` — plus the recorder's visible slice read see the
+        same filtered view; the write face is untouched and the full
+        transcript stays on ``get_canonical_turn_slice``). cs-0 处置 M-1:
+        the *user-facing* display read is the separate
+        :meth:`get_user_visible_conversation_window` — the page may show
+        the teaching letter whole; only the role's reads are filtered. An
+        assistant turn whose action row cannot be read is excluded with it
         (fail-closed, the P9-3 recorder's rule: a turn that cannot prove
         it is an ordinary reply is not shown as one).
         """
@@ -849,6 +852,61 @@ class SqliteConversationStore:
                     turn_id
                 ),
                 outcome=self._turn_outcome(turn_id),
+            )
+        )
+
+    def get_user_visible_conversation_window(
+        self, conversation_id: ConversationId, max_turns: int
+    ) -> Result[ConversationWindow]:
+        """The user-visible canonical transcript window (cs-0 处置 M-1).
+
+        The same slice shape and the same command-turn filters as
+        :meth:`get_conversation_window`, with the one opposite reading the
+        two audiences need: the assistant turn is present whenever it was
+        canonically delivered, whatever its §20 action — the *user* may
+        read back the whole letter (the composed delivery text), while the
+        *role* must not (that filter stays on
+        :meth:`get_conversation_window`). The display consumer
+        (``elc.web`` ``/api/history``) reads this face; the prompt,
+        episode and recorder consumers keep the persona-visible one. A
+        missing action row does not hide the assistant turn here: the user
+        sees the durable transcript, not a provenance proof.
+        """
+
+        rows = self._conn.execute(
+            "SELECT u.user_turn_id, u.turn_id, u.conversation_id,"
+            " u.turn_sequence, u.message_sequence, u.input_id,"
+            " u.client_message_id, u.interaction_channel, u.raw_content,"
+            " u.normalized_content"
+            " FROM user_turn u"
+            " JOIN input_envelope e ON e.input_id = u.input_id"
+            " WHERE u.conversation_id = ?"
+            "  AND NOT (u.raw_content = '' AND e.raw_payload LIKE ?)"
+            "  AND NOT (u.raw_content = '' AND e.raw_payload LIKE ?)"
+            " ORDER BY u.turn_sequence DESC LIMIT ?",
+            (
+                conversation_id,
+                f"%{TEACHING_REQUEST_PAYLOAD_MARKER}%",
+                f"%{TEACHING_RESPONSE_PAYLOAD_MARKER}%",
+                max_turns,
+            ),
+        ).fetchall()
+        slices = [
+            CanonicalTurnSlice(
+                turn_id=TurnId(str(row[1])),
+                conversation_id=ConversationId(str(row[2])),
+                turn_sequence=TurnSequence(int(row[3])),
+                user_turn=self._user_turn_record(row),
+                assistant_turn=self._assistant_for_turn(TurnId(str(row[1]))),
+                outcome=self._turn_outcome(TurnId(str(row[1]))),
+            )
+            for row in rows
+        ]
+        slices.reverse()
+        return Ok(
+            ConversationWindow(
+                conversation_id=conversation_id,
+                slices=tuple(slices),
             )
         )
 

@@ -441,12 +441,16 @@ class EphemeralTeachingDirective:
     TargetCandidate for Persona Runtime consumption; creates no persona
     prompt and no persona identity (D-INV-002).
 
-    Phase 3 P3-1B: the directive carries exactly the fields Persona Runtime
-    needs to render the ``[teaching]`` section — the moment/action links,
+    Phase 3 P3-1B: the directive carries exactly the fields the orchestrator
+    projects onto the persona-owned prompt view — the moment/action links,
     the presentation ladder position (phase + support, computed by Teaching
     from the target fixture, never chosen by the provider) and the text of
-    the currently delivered ladder step. The Persona authoritative prompt
-    stays with ``PromptCompiler``; the directive is a view, not a prompt."""
+    the currently delivered ladder step. cs-0（附笺模式）: the compiled
+    section no longer renders these mechanism fields — the role's prompt
+    carries only the neutral enclosed-note instruction and the
+    system-assembled note text; the fields stay as the orchestrator's
+    projection carriers. The Persona authoritative prompt stays with
+    ``PromptCompiler``; the directive is a view, not a prompt."""
 
     moment_id: MomentId
     action_id: ActionId
