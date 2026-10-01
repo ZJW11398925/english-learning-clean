@@ -61,11 +61,15 @@ def test_the_page_keeps_the_letter_form_laws(tmp_path: Path) -> None:
     assert "tabbar" not in page
     assert "#0f766e" not in page
     assert "#4fd1c5" not in page
-    # rd-4 随迁（9.12-23）+ v2 随迁（简报 §6「仅邮票/邮戳允许圆形」）：
-    # 零圆角形态法则的豁免位 = 手迹/盖印几何两族——①手写批注层的红笔
-    # 圈线椭圆（手迹几何非面板圆角）；②邮戳的双圈圆（外圈 + 内圈，
-    # .postmark 本体与 ::before）。第三处 radius 仍即红。
-    assert page.count("border-radius") == 3
+    # rd-4 随迁（9.12-23）+ v2 随迁（简报 §6「仅邮票/邮戳允许圆形；
+    # 信纸物件圆角收窄一档 ≤2px」）：零大圆角面板法则的豁免位 =
+    # ①手写批注层的红笔圈线椭圆（手迹几何非面板圆角）；②邮戳的双圈圆
+    # （.postmark 本体与 ::before、信封沓的「当前」邮戳 .env-mark 本体
+    # 与 ::before——盖印几何）；③邮票图形两枚（.stamp-v0 圆环 /
+    # .stamp-v5 圆拱——邮票圆形豁免位）；④信纸物件的 2px 收窄圆角
+    # （.envsel 沓面板与 .env 信封——简报 §6 增补档，非面板大圆角）。
+    # 面板大圆角仍一处即红。
+    assert page.count("border-radius") == 9
     assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
     assert "rgba(0,0,0" not in page
@@ -119,10 +123,12 @@ def test_the_page_has_the_parlor_screen(tmp_path: Path) -> None:
     page = _page_of(tmp_path)
     assert 'id="space-parlor"' in page
     assert 'id="screen-living"' not in page
-    # v2 命名随迁（简报 §1）：信头 = 名 + 副题小字（静态兜底；app.js
-    # 的 BRAND 单点常量同值驱动）
-    assert '<div class="who">展信佳</div>' in page
-    assert '<div class="who-sub">见字如晤，今日如何</div>' in page
+    # mc-1 随迁（主从条 = 当前角色名）：案头 .who/.who-sub 改端点驱动
+    # （/api/characters 的 current），静态兜底留空——品牌名与副题退居
+    # 门厅封面（ob-tagline；BRAND 单点常量同值驱动，钉在 v21 套件）
+    assert '<div class="who"></div>' in page
+    assert '<div class="who-sub"></div>' in page
+    assert '<p class="ob-tagline">见字如晤，今日如何</p>' in page
     assert "BRAND = { name:" in page
     assert "英语客厅" not in page
     assert 'id="meter-toggle"' not in page

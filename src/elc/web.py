@@ -1333,6 +1333,15 @@ _CHARACTER_CARD_FIELDS = (
     "scenario",
 )
 
+#: The card fields' length caps (mc-1's F-2): the name rides the
+#: envelope's addressee line and the stamp's initial, forty characters
+#: is already a mouthful for both; every prose field answers one dossier
+#: face, and two thousand characters is a whole honest card of it. A
+#: longer field is a bad request — a 400 人话 naming the field, never a
+#: silent truncation (the shelf stores as given or refuses).
+_CHARACTER_NAME_MAX = 40
+_CHARACTER_PROSE_MAX = 2000
+
 
 def _character_request_parts(
     payload: Any, *, name_required: bool
@@ -1364,6 +1373,14 @@ def _character_request_parts(
             )
         if not isinstance(value, str):
             return (f'"{key}" needs a string', None)
+        cap = (
+            _CHARACTER_NAME_MAX if key == "name" else _CHARACTER_PROSE_MAX
+        )
+        if len(value) > cap:
+            return (
+                f'"{key}" is too long — {cap} characters at most',
+                None,
+            )
         fields[key] = value
     if "name" in fields and not fields["name"].strip():
         return ("a character card needs a non-empty name", None)

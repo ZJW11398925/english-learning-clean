@@ -33,6 +33,8 @@ import {
   sectionLabel,
   disclosure,
   wireReveal,
+  envelopeCard,
+  layoutEnvelopeStack,
 } from "./components.js";
 import {
   fetchTurn,
@@ -45,6 +47,11 @@ import {
   fetchWord,
   fetchMemory,
   fetchPartner,
+  fetchPartnerOf,
+  fetchCharacters,
+  fetchSwitchCharacter,
+  fetchCreateCharacter,
+  fetchRenameCharacter,
   fetchDelete,
   fetchGoals,
   fetchSaveGoals,
@@ -2110,7 +2117,10 @@ function renderDossier(data) {
   renderDossierTimeline(data && data.stats);
 }
 
-async function openPartnerDossier() {
+// mc-1：档案参数化——不带参数读正服务角色的原面（cs-2 原样）；带
+// character_id 走 /api/partner?character_id=（信封沓的「档案」动作从
+// 沓中任意一封进，读的就是那一位的卡与她自己的通信）。
+async function openPartnerDossier(characterId) {
   dossierOpen = true;
   showSpace("partner");
   diagBox("dossier-name").textContent = "";
@@ -2123,7 +2133,9 @@ async function openPartnerDossier() {
   }
   let data = null;
   try {
-    data = await fetchPartner();
+    data = characterId
+      ? await fetchPartnerOf(characterId)
+      : await fetchPartner();
   } catch {
     data = null;
   }
@@ -2136,25 +2148,9 @@ function closePartnerDossier() {
   showSpace("parlor");
 }
 
-// 触发：品牌条 who 块整体可点（不增长按钮元——r1_shell「<button 不在
-// 品牌条」钉保留）；键盘可达（tabindex + Enter/Space）。
-const whoBlock = document.querySelector("#space-parlor .top > div");
-if (whoBlock) {
-  whoBlock.setAttribute("tabindex", "0");
-  whoBlock.setAttribute("role", "button");
-  whoBlock.setAttribute("aria-label", "笔友是谁？");
-  whoBlock.addEventListener("click", (event) => {
-    event.stopPropagation();
-    openPartnerDossier();
-  });
-  whoBlock.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      event.stopPropagation();
-      openPartnerDossier();
-    }
-  });
-}
+// 触发与信封沓在文件尾的 mc-1 模块（接线顺序无关紧要——type="module"
+// 全模块求值完后 DOMContentLoaded 才发；放尾部是 fg2「品牌印记先于
+// 首次取数」位序钉的伴生事实：loadHistory 的首现保持在原位）。
 
 // 返回钮：档案页的唯一回途（导航条在本页让位）。
 document.getElementById("partner-back").addEventListener(
@@ -2342,13 +2338,13 @@ async function loadHistory() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  // v2 品牌名单点驱动（简报 §1）：标题、信头名与副题、门厅英文并写
-  // 全部取自 BRAND——index.html 的同值字面只是无 JS 静态兜底。
+  // v2 品牌名单点驱动（简报 §1）：标题、门厅英文并写与封面副题取自
+  // BRAND——index.html 的同值字面只是无 JS 静态兜底。mc-1 起案头
+  // 主从条不再念品牌：.who/.who-sub = 当前角色名与身份行（端点驱动，
+  // 见 renderMasthead；品牌名与副题退居门厅封面）。
   document.title = BRAND.name;
-  const whoSlot = document.querySelector("#space-parlor .who");
-  if (whoSlot) whoSlot.textContent = BRAND.name;
-  const whoSub = document.querySelector("#space-parlor .who-sub");
-  if (whoSub) whoSub.textContent = BRAND.tagline;
+  const coverTagline = document.querySelector(".ob-tagline");
+  if (coverTagline) coverTagline.textContent = BRAND.tagline;
   const wordmark = document.querySelector(".ob-wordmark");
   if (wordmark) wordmark.textContent = BRAND.en.toUpperCase();
   // F-G2: the brand marks (the template's clones) land before the first
@@ -2376,9 +2372,471 @@ window.addEventListener("DOMContentLoaded", () => {
   // rd-1：入场编排接线（⑨-5 逐行落墨——IO 只加类；reduced-motion 的
   // JS 半区由 wireReveal 自行监听）
   wireReveal(document);
+  // mc-1：主从条首灌（当前角色名 + 身份行）——失败留空不轰炸，下次
+  // 打开信封沓会重读
+  fetchCharacters().then(renderMasthead).catch(() => {});
   loadHistory();
   // F-1R/R-1: the first visit sees the cover; every later visit lands in
   // the parlor directly (the cover never comes back once localStorage
   // says so)
   showSpace(seenOnboard() ? "parlor" : "onboard");
 });
+
+// ── mc-1: 信封沓——点案头主从条弹出的那一沓信封──────────────────────
+// 沓形 = 案头的一叠信（components.js 的 envelopeCard/layoutEnvelopeStack
+// 承担 DOM 与排布半区；屏级形态在 screens.css 的 .envsel 节）：微扇形
+// 错位叠放，rotate/translateX 从 stamp_key 确定性派生（同一角色恒同
+// 姿态——零随机）；当前通信的一封盖「当前」邮戳角标（--seal，真实
+// 状态事件）；沓尾是新建空白信封（名字 + 一句简介即可开笔——其余
+// 散文案面 mc-2 的编辑台来写，诚实留白）。预览 = 点沓中一封 → 滑到
+// 沓首微抬（260ms 减速长尾 + 让位 stagger）；再点它或点「对话」→
+// 切换。零常驻循环；reduced-motion 双面降级（库尾总降级块 0.01ms
+// 即终，本模块不依赖动画事件）。
+let envselPanel = null;
+let envselPreviewId = null;
+let charactersCache = null;
+let envselBornId = null;   // 刚建好的那封——重排时给它一次落沓纸事件
+
+// 邮票变体的确定性派生（mc-0 stamp_key 的前端消费半区）：key 是角色
+// id 的 SHA-256 前 16 位十六进制（elc.persona.card_store.stamp_key_for，
+// 同 id 恒同 key、改名不动）——取其中各位的离散梯拼变体类：边框图形
+// 8 种 × 墨色 4 档 × 票面 3 色，全部 v2 既有色族（components.css 的
+// .env-stamp 段）。同 key 恒同类（跨进程跨重启），异 key 尽散；零
+// 随机零素材，纯 class 派发。
+function stampVariantClasses(stampKey) {
+  const key = String(stampKey || "");
+  const at = (index) => parseInt(key.charAt(index), 16) || 0;
+  return [
+    "stamp-v" + (at(0) % 8),
+    "stamp-c" + (at(1) % 4),
+    "stamp-p" + (at(2) % 3),
+  ];
+}
+
+// 微扇姿态的确定性派生（同一 stamp_key 家族，取另外几位）：rotate
+// ±1/±2/±3°、translateX ±6/±12/±18px——像案头随手叠放的一沓，同一
+// 角色每次打开姿态一致。
+function envelopeTilt(stampKey) {
+  const key = String(stampKey || "");
+  const size = (parseInt(key.charAt(3), 16) || 0) % 3;
+  const flip = (parseInt(key.charAt(5), 16) || 0) % 2 ? -1 : 1;
+  return flip * (1 + size) + "deg";
+}
+
+function envelopeDrift(stampKey) {
+  const key = String(stampKey || "");
+  const size = (parseInt(key.charAt(4), 16) || 0) % 3;
+  const flip = (parseInt(key.charAt(6), 16) || 0) % 2 ? -1 : 1;
+  return flip * (6 + size * 6) + "px";
+}
+
+// 案头主从条（mc-1 的真源）：.who = 当前角色名、.who-sub = 该角色
+// 身份行——全部来自 /api/characters 的 current_character_id（webui
+// 零角色名字面）；读不到（无名册 / current 为 null）就留空，不发明
+// 人名。品牌名与副题退居门厅封面（BRAND 常量的封面消费面）。
+function renderMasthead(roster) {
+  const who = document.querySelector("#space-parlor .who");
+  const sub = document.querySelector("#space-parlor .who-sub");
+  if (!who || !sub) return;
+  const items = (roster && roster.characters) || [];
+  const current = items.find(
+    (item) => item.character_id === (roster && roster.current_character_id));
+  who.textContent = current ? current.name : "";
+  sub.textContent = current ? current.identity_line : "";
+}
+
+function envselCloser(event) {
+  if (!(event.target instanceof Element)) return;
+  if (envselPanel && !envselPanel.contains(event.target)) {
+    closeEnvelopeSelector();
+  }
+}
+
+function envselEsc(event) {
+  if (event.key === "Escape") closeEnvelopeSelector();
+}
+
+function closeEnvelopeSelector() {
+  document.removeEventListener("click", envselCloser);
+  document.removeEventListener("keydown", envselEsc);
+  if (envselPanel) envselPanel.remove();
+  envselPanel = null;
+  envselPreviewId = null;
+}
+
+async function openEnvelopeSelector() {
+  if (envselPanel) return;
+  const panel = document.createElement("div");
+  panel.className = "envsel";
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-label", "信封沓");
+  panel.tabIndex = -1;
+  const stack = document.createElement("div");
+  stack.className = "envsel-stack";
+  panel.appendChild(stack);
+  const foot = document.createElement("p");
+  foot.className = "envsel-foot";
+  const fold = document.createElement("button");
+  fold.type = "button";
+  fold.className = "btn btn--faint";
+  fold.textContent = "收起";
+  fold.addEventListener("click", (event) => {
+    event.stopPropagation();
+    closeEnvelopeSelector();
+  });
+  foot.appendChild(fold);
+  panel.appendChild(foot);
+  document.getElementById("space-parlor").appendChild(panel);
+  envselPanel = panel;
+  panel.classList.add("envsel--open");   // 入场一次（复用注册双动画）
+  panel.focus();
+  document.addEventListener("click", envselCloser);
+  document.addEventListener("keydown", envselEsc);
+  await renderEnvelopeStack(stack);
+}
+
+async function renderEnvelopeStack(stack) {
+  envselPreviewId = null;
+  stack.textContent = "";
+  stack.appendChild(stateBanner("loading"));
+  let roster = null;
+  try {
+    roster = await fetchCharacters();
+  } catch {
+    roster = null;
+  }
+  stack.textContent = "";
+  if (!roster) {
+    stack.appendChild(stateBanner("error", {
+      text: "信封沓没取到。",
+      retry: () => {
+        closeEnvelopeSelector();
+        openEnvelopeSelector();
+      },
+    }));
+    return;
+  }
+  charactersCache = roster;
+  renderMasthead(roster);
+  let order = 0;
+  for (const item of roster.characters || []) {
+    const isCurrent = item.character_id === roster.current_character_id;
+    const env = envelopeCard(item, {
+      current: isCurrent,
+      stampClasses: stampVariantClasses(item.stamp_key).join(" "),
+      rot: envelopeTilt(item.stamp_key),
+      dx: envelopeDrift(item.stamp_key),
+      onTalk: () => {
+        if (isCurrent) {
+          closeEnvelopeSelector();   // 已在通信中——收沓即回
+          return;
+        }
+        switchToCharacter(item.character_id).then((done) => {
+          if (done) closeEnvelopeSelector();
+        });
+      },
+      onDossier: () => {
+        closeEnvelopeSelector();
+        openPartnerDossier(item.character_id);
+      },
+      onEdit: (envNode) => startRename(envNode, item),
+    });
+    if (item.character_id === envselBornId) env.classList.add("env--born");
+    env.dataset.order = String(order);
+    env.addEventListener("click", (event) => {
+      if (event.target instanceof Element &&
+          event.target.closest(".env-actions, .env-rename, .env-create")) {
+        return;   // 动作行与表单自理
+      }
+      previewEnvelope(item.character_id);
+    });
+    env.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && event.target === env) {
+        event.preventDefault();
+        previewEnvelope(item.character_id);
+      }
+    });
+    stack.appendChild(env);
+    order += 1;
+  }
+  stack.appendChild(newEnvelopeCard());
+  layoutEnvelopeStack(stack);
+  envselBornId = null;   // 纸事件只播一次——下轮重排不再落
+}
+
+async function refreshEnvelopeStack() {
+  const stack = envselPanel && envselPanel.querySelector(".envsel-stack");
+  if (!stack) return;
+  await renderEnvelopeStack(stack);
+}
+
+// 预览（精准动画的第一半）：点沓中一封 → 该封滑到沓首微抬，其余
+// 让位重排（layoutEnvelopeStack 的排名重算驱动 CSS transition——
+// 260ms 减速长尾，stagger 步长 20ms 封顶 60ms，总封顶 320ms）；
+// 再次点选同一封 = 就是他——切换。
+function previewEnvelope(characterId) {
+  if (!envselPanel) return;
+  if (envselPreviewId === characterId) {
+    switchToCharacter(characterId).then((done) => {
+      if (done) closeEnvelopeSelector();
+    });
+    return;
+  }
+  envselPreviewId = characterId;
+  const stack = envselPanel.querySelector(".envsel-stack");
+  if (!stack) return;
+  const picked = stack.querySelector(
+    '.env[data-id="' + CSS.escape(characterId) + '"]');
+  if (!picked) return;
+  let lowest = 0;
+  for (const env of Array.from(
+      stack.querySelectorAll(".env[data-order]"))) {
+    const order = Number(env.dataset.order) || 0;
+    if (!lowest || order < lowest) lowest = order;
+  }
+  picked.dataset.order = String(lowest - 1);   // 滑到沓首
+  for (const env of Array.from(stack.querySelectorAll(".env"))) {
+    env.classList.toggle("env--lift", env === picked);
+  }
+  layoutEnvelopeStack(stack);
+}
+
+// 切换（F-3 在内）：批注开着不硬禁，一句话——那边的批注会先搁着，
+// 回来还在（教学锁是各会话自己的，不跨信封跟随）。成功 = 局部刷新
+// 案头（refreshCorrespondence），失败一行人话，永静默。
+async function switchToCharacter(characterId) {
+  let moment = null;
+  try {
+    moment = (await fetchCurrentMoment()).moment;
+  } catch {
+    moment = null;
+  }
+  if (moment && moment.lifecycle_state === "AWAITING_USER") {
+    if (!confirmDialog("那边的批注还等着回应——切过去它会先搁着。")) {
+      return false;
+    }
+  }
+  let data = null;
+  try {
+    data = await fetchSwitchCharacter(characterId);
+  } catch {
+    data = null;
+  }
+  if (!data || !data.switched) {
+    addLine("failure", "没切过去——再试一次。");
+    return false;
+  }
+  await refreshCorrespondence();
+  return true;
+}
+
+// 切换后的案头刷新——局部，非整页（v2 动效内）：主从条重读名册；
+// 信流清空重载该角色的 50 轮窗口；批注面随 loadHistory 的当前卡重建
+// （教学轮询的 /api/teaching/current 本就随会话走，无需重指）；统计
+// 与档案是读时取数，下一次打开自然落在新通信上。纸事件恰一次。
+async function refreshCorrespondence() {
+  try {
+    renderMasthead(await fetchCharacters());
+  } catch {
+    // 名册这会儿读不到——主从条留空，下次打开选择器再灌
+  }
+  messages.textContent = "";
+  showMoments([]);
+  await loadHistory();
+  const flow = document.querySelector("#space-parlor .flow");
+  if (flow) {
+    flow.classList.remove("flow-resettle");
+    void flow.offsetWidth;
+    flow.classList.add("flow-resettle");
+  }
+}
+
+// 简化编辑（mc-1 自裁披露）：只改名字——改的是信封上的收件人；邮票
+// 不动（stamp_key 系于 id，改名不挪）。其余散文案面 mc-2 的编辑台。
+function startRename(envNode, item) {
+  if (envNode.querySelector(".env-rename")) return;
+  const nameEl = envNode.querySelector(".env-name");
+  if (!nameEl) return;
+  const rename = document.createElement("span");
+  rename.className = "env-rename";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.maxLength = 40;
+  input.value = String(item.name || "");
+  input.setAttribute("aria-label", "改名字");
+  const row = document.createElement("span");
+  row.className = "env-actions";
+  const save = document.createElement("button");
+  save.type = "button";
+  save.className = "btn btn--pencil";
+  save.textContent = "存";
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "btn btn--faint";
+  cancel.textContent = "不改了";
+  const err = document.createElement("p");
+  err.className = "env-err";
+  cancel.addEventListener("click", (event) => {
+    event.stopPropagation();
+    rename.replaceWith(nameEl);
+  });
+  save.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    const name = input.value.trim();
+    if (!name) {
+      err.textContent = "名字不能空——空白的信封寄不出去。";
+      return;
+    }
+    save.disabled = true;
+    let data = null;
+    try {
+      data = await fetchRenameCharacter(item.character_id, name);
+    } catch {
+      data = null;
+    }
+    if (!data || !data.character) {
+      save.disabled = false;
+      err.textContent = (data && data.error)
+        ? data.error
+        : "没能改成——再试一次。";
+      return;
+    }
+    await refreshEnvelopeStack();   // 沓重排：名更新、邮票与姿态不动
+  });
+  row.appendChild(save);
+  row.appendChild(cancel);
+  rename.appendChild(input);
+  rename.appendChild(row);
+  rename.appendChild(err);
+  nameEl.replaceWith(rename);
+  input.focus();
+}
+
+// 沓尾的新建空白信封：本刀只放入口与最简一形（名字 + 一句简介），
+// 建好的卡其余各面留白，等 mc-2 的编辑台——诚实留白，不伪装已写。
+function newEnvelopeCard() {
+  const env = document.createElement("article");
+  env.className = "env env--new";
+  env.tabIndex = 0;
+  const to = document.createElement("p");
+  to.className = "env-to";
+  const name = document.createElement("b");
+  name.className = "env-name";
+  name.textContent = "写给一位新笔友";
+  to.appendChild(name);
+  env.appendChild(to);
+  const hint = document.createElement("p");
+  hint.className = "env-line env-newhint";
+  hint.textContent = "起个名字，多一位可以通信的人。性情、背景这些面，等编辑台来写。";
+  env.appendChild(hint);
+  const start = document.createElement("button");
+  start.type = "button";
+  start.className = "btn btn--pencil env-newbtn";
+  start.textContent = "起笔";
+  start.addEventListener("click", (event) => {
+    event.stopPropagation();
+    start.hidden = true;
+    hint.hidden = true;
+    env.appendChild(buildCreateForm(env, hint, start));
+  });
+  env.appendChild(start);
+  return env;
+}
+
+function buildCreateForm(envNode, hint, start) {
+  const form = document.createElement("div");
+  form.className = "env-create";
+  const nameInput = document.createElement("input");
+  nameInput.type = "text";
+  nameInput.maxLength = 40;
+  nameInput.autocomplete = "off";
+  nameInput.placeholder = "名字（必填）";
+  nameInput.setAttribute("aria-label", "新笔友的名字");
+  const lineInput = document.createElement("input");
+  lineInput.type = "text";
+  lineInput.maxLength = 2000;
+  lineInput.autocomplete = "off";
+  lineInput.placeholder = "一句简介（可空）";
+  lineInput.setAttribute("aria-label", "新笔友的一句简介");
+  const row = document.createElement("p");
+  row.className = "env-actions";
+  const go = document.createElement("button");
+  go.type = "button";
+  go.className = "btn btn--pencil";
+  go.textContent = "开笔";
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "btn btn--faint";
+  cancel.textContent = "先不起";
+  const err = document.createElement("p");
+  err.className = "env-err";
+  cancel.addEventListener("click", (event) => {
+    event.stopPropagation();
+    form.remove();
+    hint.hidden = false;
+    start.hidden = false;
+  });
+  go.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    const name = nameInput.value.trim();
+    if (!name) {
+      err.textContent = "先起个名字——空白的信封寄不出去。";
+      return;
+    }
+    go.disabled = true;
+    let data = null;
+    try {
+      const fields = { name: name };
+      const line = lineInput.value.trim();
+      if (line) fields.identity = line;
+      data = await fetchCreateCharacter(fields);
+    } catch {
+      data = null;
+    }
+    go.disabled = false;
+    if (!data || !data.character) {
+      err.textContent = (data && data.error)
+        ? data.error
+        : "没能落笔——再试一次。";
+      return;
+    }
+    envselBornId = data.character.character_id;
+    await refreshEnvelopeStack();   // 新封落沓（最尾，纸事件一次）
+  });
+  form.appendChild(nameInput);
+  form.appendChild(lineInput);
+  row.appendChild(go);
+  row.appendChild(cancel);
+  form.appendChild(row);
+  form.appendChild(err);
+  return form;
+}
+
+// 触发（mc-1）：品牌条 who 块整体可点（不增长按钮元——r1_shell
+// 「<button 不在品牌条」钉保留）；键盘可达（tabindex + Enter/Space）。
+// 点开信封沓（再点一次收沓）；档案从沓中每封的「档案」动作进。
+const whoBlock = document.querySelector("#space-parlor .top > div");
+if (whoBlock) {
+  whoBlock.setAttribute("tabindex", "0");
+  whoBlock.setAttribute("role", "button");
+  whoBlock.setAttribute("aria-label", "信封沓——挑一位笔友");
+  whoBlock.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (envselPanel) {
+      closeEnvelopeSelector();
+      return;
+    }
+    openEnvelopeSelector();
+  });
+  whoBlock.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      event.stopPropagation();
+      if (envselPanel) {
+        closeEnvelopeSelector();
+        return;
+      }
+      openEnvelopeSelector();
+    }
+  });
+}

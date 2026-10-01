@@ -418,10 +418,13 @@ def test_the_word_card_wears_a_deckle_not_a_shadow(tmp_path: Path) -> None:
     （radius 无、全黑 rgba(0,0,0) 无——正面契约钉在 rd1 套件）。"""
 
     page = _page_of(tmp_path)
-    # rd-4 随迁（9.12-23）+ v2 随迁（简报 §6「仅邮票/邮戳允许圆形」）：
-    # 零圆角形态法则的豁免位 = 手迹/盖印几何两族——红笔圈线椭圆 +
-    # 邮戳双圈圆（外圈 + 内圈）；第三处 radius 仍即红
-    assert page.count("border-radius") == 3
+    # rd-4 随迁（9.12-23）+ v2 随迁（简报 §6「仅邮票/邮戳允许圆形；
+    # 信纸物件圆角收窄一档 ≤2px」）：零大圆角面板法则的豁免位 =
+    # 手迹/盖印/邮票几何 + 信纸物件 2px——红笔圈线椭圆 + 邮戳双圈圆
+    # 两处（.postmark 与信封沓的 .env-mark 各含本体与 ::before）+
+    # 邮票图形两枚（.stamp-v0/.stamp-v5）+ 信封沓的 2px 两处
+    # （.envsel/.env，简报 §6 增补档）。面板大圆角仍一处即红。
+    assert page.count("border-radius") == 9
     assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
     css = _text("components.css")

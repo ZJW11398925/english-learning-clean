@@ -833,3 +833,112 @@ h1, .grouphead, .note-head b { text-wrap: balance; }
 @supports (text-spacing-trim: trim-start) {
   .say, .ob-para { text-spacing-trim: trim-start; }
 }
+
+/* ── mc-1 信封选择器的交互态与工艺件（屏级形态在 screens.css 的
+   .envsel 节）──────────────────────────────────────────────────────
+   本段是该面的状态与装饰件，非新注册组件（档案 .dossier-* 同例：
+   屏级面不入组件注册表）。邮戳角标与 #4c postmark 同一语言（双圈圆
+   + 内字、rotate、褪色或朱砂）——「当前」是真实状态事件（你正与谁
+   通信），朱砂在此成立且每沓恰一枚。邮票 = 用户点名的沓面陈列（「有
+   不同设计的邮票」是需求原话）：每封一枚、确定性变体（stamp_key 派
+   生的 stamp-v/c/p 类），简报 T2「不集邮不陈列」在本面被用户原话豁免
+   ——披露在册。齿孔读法 = 纸色虚线凿边（零素材零 mask）；图形变体
+   全部 currentColor 单色墨线/墨形。零新 keyframes（复用注册五枚）；
+   零常驻循环；reduced-motion 随库尾总降级块归零。 */
+.env:focus-visible { outline: 1px solid var(--pencil); outline-offset: 2px; }
+@media (hover: hover) {
+  .env:hover { border-color: var(--ink-ghost); }
+}
+/* 预览微抬的影：垫纸层（错位纸影）opacity 半档——阴影不做动画，
+   动的是垫纸层透明度（简报 §5；word-card 的垫纸同法）。沓中每一封
+   本身带 soft 档纸叠影（rd-1 两级令牌的第六处应用——信封是纸物件，
+   与在途信封同层；沓形靠它读出「一叠」）。 */
+.env { box-shadow: var(--stack-shadow-soft); }
+/* 空白封没有纸叠影可承——虚线空封的抵消臂（本文件内后位覆盖）。 */
+.env--new { box-shadow: none; cursor: default; }
+.env::after { content: ""; position: absolute; inset: 0; z-index: -1;
+              background: var(--paper-2); border: 1px solid var(--rule);
+              transform: translate(3px, 3px); opacity: 0;
+              transition: opacity var(--dur-micro) var(--ease-press); }
+.env--lift::after { opacity: 1; }
+/* 「当前」邮戳角标：双圈圆 + 内字，rotate -5deg，朱砂——每沓恰一枚
+   （信封沓面是邮戳的许可位：正在通信是真实事件）。 */
+.env-mark { position: absolute; top: -9px; left: -9px; z-index: 2;
+            width: 46px; height: 46px;
+            display: flex; align-items: center; justify-content: center;
+            border: 1.5px solid var(--seal); border-radius: 50%;
+            color: var(--seal);
+            font: var(--meta-font); letter-spacing: var(--meta-track);
+            transform: rotate(-5deg); opacity: 0.55;
+            background: var(--paper-high); pointer-events: none; }
+.env-mark::before { content: ""; position: absolute; inset: 4px;
+                    border: 1px solid var(--seal); border-radius: 50%; }
+.env-mark span { position: relative; }
+/* 专属邮票：齿孔 = 纸色虚线凿边 + 发丝外缘；内框墨线（雕版感）；
+   票面中央角色名首字母（衬线 display 档）。变体三轴全部确定性
+   （stamp_key 派生，app.js 的 stampVariantClasses）：stamp-v0..7
+   图形 × stamp-c0..3 墨色 × stamp-p0..2 票面——色全取 v2 既有族。 */
+.env-stamp { position: absolute; top: 10px; right: 10px;
+             width: 44px; height: 52px;
+             display: flex; align-items: center; justify-content: center;
+             border: 3px dashed var(--paper-2);
+             outline: 1px solid var(--rule);
+             transform: rotate(1.5deg); }
+.env-stamp::before { content: ""; position: absolute; inset: 4px;
+                     border: 1px solid currentColor; opacity: 0.5; }
+.env-stamp-ini { position: relative; font-family: var(--f-display);
+                 font-size: var(--fs-title); line-height: var(--lh-title); }
+.stamp-p0 { background: var(--paper-high); }
+.stamp-p1 { background: var(--paper-2); }
+.stamp-p2 { background: var(--touch); }
+.stamp-c0 { color: var(--ink); }
+.stamp-c1 { color: var(--accent); }
+.stamp-c2 { color: var(--accent-deep); }
+.stamp-c3 { color: var(--ink-soft); }
+/* 图形变体八枚（::after 单色墨形，居中）——零素材、纯几何 */
+.env-stamp::after { content: ""; position: absolute; inset: 0; margin: auto; }
+.stamp-v0::after { width: 16px; height: 16px;
+                   border: 1px solid currentColor; border-radius: 50%; }
+.stamp-v1::after { width: 18px; height: 14px; background: currentColor;
+                   clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.stamp-v2::after { width: 20px; height: 12px;
+                   background: repeating-linear-gradient(0deg,
+                     currentColor 0 1px, transparent 1px 4px); }
+.stamp-v3::after { width: 11px; height: 11px; background: currentColor;
+                   transform: rotate(45deg); }
+.stamp-v4::after { width: 20px; height: 12px;
+                   background: repeating-linear-gradient(90deg,
+                     currentColor 0 2px, transparent 2px 6px); }
+.stamp-v5::after { width: 18px; height: 11px;
+                   border: 1px solid currentColor;
+                   border-radius: 9px 9px 0 0; }
+.stamp-v6::after { width: 16px; height: 16px;
+                   background:
+                     linear-gradient(currentColor, currentColor) 50% 0/1px
+                       100% no-repeat,
+                     linear-gradient(currentColor, currentColor) 0 50%/100%
+                       1px no-repeat; }
+.stamp-v7::after { width: 16px; height: 16px;
+                   background: radial-gradient(circle,
+                     currentColor 1.2px, transparent 1.6px) 0 0/8px 8px; }
+/* 新封落沓的一次纸事件（复用注册双动画——opacity 恒慢于 transform） */
+.env--born { animation: paper-drop var(--dur-panel-in) var(--ease-paper)
+                       both, ink-wash calc(var(--dur-panel-in) * 1.3)
+                       var(--ease-paper) both; }
+/* 动作行命中带：ui 档行高 20px + 上下 6px = 32px 级（吸取单词卡审计
+   教训；窄屏整封可点已足够，动作行自身也要够着）。 */
+.env-actions .btn { padding: 6px 2px; }
+/* 沓内简化表单（改名 / 新建）：与 #16 同族的下发丝线行式输入 */
+.env-rename { display: flex; flex-wrap: wrap; gap: 8px;
+              align-items: baseline; margin: 2px 0 0; }
+.env-create { display: flex; flex-direction: column; gap: 6px;
+              margin-top: 4px; }
+.env-rename input, .env-create input {
+  flex: 1 1 140px; min-width: 0; border: 0; background: none;
+  outline: none; border-bottom: 1px solid var(--rule);
+  padding: 4px 2px; font-family: var(--f-serif);
+  font-size: var(--fs-small); color: var(--ink); }
+.env-rename input:focus, .env-create input:focus {
+  border-bottom-color: var(--pencil); }
+.env-err { margin: 2px 0 0; font-family: var(--f-sans);
+           font-size: var(--fs-ui); color: var(--pencil); }

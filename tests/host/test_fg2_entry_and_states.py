@@ -117,8 +117,10 @@ def test_the_brand_bar_graces_both_screens(tmp_path: Path) -> None:
     assert '<header class="top sethead">' not in index
     assert 'id="back-to-living"' not in index
     assert "← 回客厅" not in index
-    # v2 命名随迁（简报 §1）：信头静态兜底 = BRAND 同值
-    assert '<div class="who">展信佳</div>' in index
+    # mc-1 随迁（主从条 = 当前角色名）：案头 .who/.who-sub 端点驱动、
+    # 静态兜底留空；品牌名与副题退居门厅封面（ob-tagline，BRAND 同值）
+    assert '<div class="who"></div>' in index
+    assert '<p class="ob-tagline">见字如晤，今日如何</p>' in index
     assert "英语客厅" not in index
     app = _webui_text("app.js")
     assert "installBrandMarks();" in app

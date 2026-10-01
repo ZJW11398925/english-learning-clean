@@ -78,28 +78,33 @@ def _spec_text() -> str:
 def test_the_who_block_is_the_trigger_and_the_bar_grows_no_button(
     tmp_path: Path,
 ) -> None:
-    """身份条原地的可点手感（cs-2 后仍在）：who 块整体可点（app.js 接线
-    #space-parlor .top > div + 键盘可达——点开的是档案全页视图），品牌条
-    不增长按钮元（r1_shell 的品牌条无钮钉随迁保留）；.who/.who-sub 逐字
-    不动（四处钉不动）。"""
+    """身份条原地的可点手感（cs-2 后仍在；mc-1 随迁改指信封沓）：who 块
+    整体可点（app.js 接线 #space-parlor .top > div + 键盘可达——点开的
+    是信封沓，mc-1 的选择器；再点一次收沓），品牌条不增长按钮元
+    （r1_shell 的品牌条无钮钉随迁保留）；.who/.who-sub = 端点驱动的空槽
+    （当前角色名与身份行，webui 零角色名字面）。"""
 
     index = _page_of(tmp_path)
     parlor = index.split('id="space-parlor"', 1)[1].split("</header>", 1)[0]
-    # v2 命名随迁（简报 §1）：信头 = 名 + 副题小字
-    assert '<div class="who">展信佳</div>' in parlor
-    assert '<div class="who-sub">见字如晤，今日如何</div>' in parlor
+    # mc-1 随迁：信头 = 端点驱动的空槽（品牌名与副题退居门厅封面）
+    assert '<div class="who"></div>' in parlor
+    assert '<div class="who-sub"></div>' in parlor
     assert "<button" not in parlor
     app = index
     assert 'document.querySelector("#space-parlor .top > div")' in app
     assert 'whoBlock.setAttribute("tabindex", "0");' in app
     assert 'whoBlock.setAttribute("role", "button");' in app
-    assert 'whoBlock.setAttribute("aria-label", "笔友是谁？");' in app
+    assert 'whoBlock.setAttribute("aria-label", "信封沓——挑一位笔友");' in app
     # the click wiring itself (a deleted call goes red, not just the
-    # helper's name surviving elsewhere) — cs-2 随迁：点开档案全页视图
+    # helper's name surviving elsewhere) — mc-1 随迁：点开信封沓
     assert (
         'whoBlock.addEventListener("click", (event) => {\n'
         "    event.stopPropagation();\n"
-        "    openPartnerDossier();\n"
+        "    if (envselPanel) {\n"
+        "      closeEnvelopeSelector();\n"
+        "      return;\n"
+        "    }\n"
+        "    openEnvelopeSelector();\n"
         "  });" in app
     )
     assert "event.stopPropagation();" in app

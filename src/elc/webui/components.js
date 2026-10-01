@@ -913,6 +913,107 @@ export function wireReveal(root) {
   });
 }
 
+// ── mc-1: 信封沓的排布半区（app.js 禁 .style，custom props 只在此落）
+// ────────────────────────────────────────────────────────────────────
+// 位置：在 #21 disclosure 之前（r1r 的「工厂尾部无 querySelectorAll」
+// 无手风琴钉扫 disclosure 之后的文件尾——wireReveal 同例，含查询的
+// 非手风琴件都排在折叠工厂之前）。
+// 沓形几何：每封的视觉位序 --env-i（驱动 top 的错位叠放）/ 叠放序
+// --env-z（沓首最高）/ 让位 stagger --env-delay（步长 20ms、封顶
+// 60ms——transition 260ms + 60ms = 总封顶 320ms，简报 §5）由 data-order
+// 的排名重算；rotate/translateX 的确定性微扇（stamp_key 派生值）由
+// 工厂 envelopeCard 落，此处只读不改。首排时 delay 恒 0（排名未变），
+// 预览重排才起 stagger。reduced-motion 由库尾总降级块归零（0.01ms
+// 即终、transitionend 仍到——本排布不依赖事件，双面降级成立）。
+export function layoutEnvelopeStack(stack) {
+  const envelopes = Array.from(stack.querySelectorAll(".env[data-id]"));
+  const ordered = envelopes.slice().sort(
+    (a, b) => (Number(a.dataset.order) || 0) - (Number(b.dataset.order) || 0));
+  const count = ordered.length;
+  stack.style.setProperty("--env-n", String(count));
+  ordered.forEach((env, position) => {
+    env.style.setProperty("--env-i", String(position));
+    env.style.setProperty("--env-z", String(count - position));
+    const before = env.dataset.pos === undefined
+      ? position : Number(env.dataset.pos);
+    const delay = Math.min(Math.abs(before - position) * 20, 60);
+    env.style.setProperty("--env-delay", delay + "ms");
+    env.dataset.pos = String(position);
+  });
+}
+
+// 一封信封的 DOM（mc-1）：收件人位（角色名）+ 一行简介 + 右上角专属
+// 邮票（变体类由 app.js 从 stamp_key 确定性派生）+ 动作行（对话 ·
+// 档案 · 编辑——下划线文字链接，形态走 #1 的 --pencil）；当前通信的
+// 一封带 .env--current 并落「当前」邮戳角标（components.css 的
+// .env-mark——朱砂真实状态事件，每沓恰一枚）。微扇的 rotate/
+// translateX 在此落 custom props（确定性值由调用方算好传入）。一切
+// 文字 textContent——角色名与简介是用户自己的散文，绝不进标记。
+export function envelopeCard(item, opts) {
+  const options = opts || {};
+  const env = document.createElement("article");
+  env.className = "env" + (options.current ? " env--current" : "");
+  env.dataset.id = String(item.character_id);
+  env.tabIndex = 0;
+  env.style.setProperty("--env-rot", options.rot || "0deg");
+  env.style.setProperty("--env-dx", options.dx || "0px");
+  const stamp = document.createElement("span");
+  stamp.className = ("env-stamp " + (options.stampClasses || "")).trim();
+  const initial = document.createElement("span");
+  initial.className = "env-stamp-ini";
+  initial.textContent = String(item.name || "").charAt(0);
+  stamp.appendChild(initial);
+  env.appendChild(stamp);
+  const to = document.createElement("p");
+  to.className = "env-to";
+  const toWord = document.createElement("span");
+  toWord.className = "env-to-word";
+  toWord.textContent = "致";
+  to.appendChild(toWord);
+  const name = document.createElement("b");
+  name.className = "env-name";
+  name.textContent = String(item.name || "");
+  to.appendChild(name);
+  env.appendChild(to);
+  const line = document.createElement("p");
+  line.className = "env-line";
+  line.textContent = String(item.identity_line || "");
+  env.appendChild(line);
+  const actions = document.createElement("p");
+  actions.className = "env-actions";
+  const act = (word, cls, handler) => {
+    const link = document.createElement("button");
+    link.type = "button";
+    link.className = "btn btn--pencil " + cls;
+    link.textContent = word;
+    link.addEventListener("click", (event) => {
+      event.stopPropagation();
+      handler(env);
+    });
+    actions.appendChild(link);
+    return link;
+  };
+  act("对话", "env-act-talk", () => {
+    if (typeof options.onTalk === "function") options.onTalk();
+  });
+  act("档案", "env-act-dossier", () => {
+    if (typeof options.onDossier === "function") options.onDossier();
+  });
+  act("编辑", "env-act-edit", () => {
+    if (typeof options.onEdit === "function") options.onEdit(env);
+  });
+  env.appendChild(actions);
+  if (options.current) {
+    const mark = document.createElement("span");
+    mark.className = "env-mark";
+    const word = document.createElement("span");
+    word.textContent = "当前";
+    mark.appendChild(word);
+    env.appendChild(mark);
+  }
+  return env;
+}
+
 // 21. disclosure（折叠组，R-1R；⑧ 8.2.9 契约形）：组头行（名称 + 计数 +
 // 两枚示例弱化小字）即开关，内容区默认收。不得手风琴互斥、不得嵌套、
 // 不得图标外链。opts：name（名称，textContent）/ count（计数，保留在
@@ -975,4 +1076,6 @@ export function disclosure(opts) {
 // rd-4 的浮层伙伴卡（#23）：cs-2 整体退役。工厂三件（卡片壳 + 浮层
 // 开合）随档案全页视图拆除——点品牌条 who 块开的是整页档案（app.js
 // 的 cs-2 模块，屏级形态，非浮层）；名册桩与 localStorage pick 一并
-// 退役（真名由 /api/partner 的单一真源供给）。
+// 退役（真名由 /api/partner 的单一真源供给）。mc-1 的信封沓两工厂
+// （layoutEnvelopeStack / envelopeCard）在 wireReveal 与 #21 之间
+// ——见该处的位置注记。

@@ -227,9 +227,11 @@ def test_space_headers_and_the_linkless_parlor_bar(tmp_path: Path) -> None:
     assert '<div class="spacehead-sec">今日</div>' in index
     assert '<div class="spacehead-sec">记忆</div>' in index
     parlor = index.split('id="space-parlor"', 1)[1].split("</header>", 1)[0]
-    # v2 命名随迁（简报 §1）：信头 = 名 + 副题小字（BRAND 同值兜底）
-    assert '<div class="who">展信佳</div>' in parlor
-    assert '<div class="who-sub">见字如晤，今日如何</div>' in parlor
+    # mc-1 随迁（主从条 = 当前角色名）：信头 = 端点驱动的空槽（.who =
+    # 当前角色名、.who-sub = 身份行，/api/characters 供给）；无 JS 兜底
+    # 留空——不发明人名；品牌名与副题退居门厅封面（v21 套件钉）
+    assert '<div class="who"></div>' in parlor
+    assert '<div class="who-sub"></div>' in parlor
     assert "英语客厅" not in parlor
     assert "<button" not in parlor
     app = _text("app.js")

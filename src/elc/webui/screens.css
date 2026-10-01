@@ -63,6 +63,10 @@ body {
          font-size: var(--fs-display); line-height: var(--lh-display);
          font-weight: 400;
          letter-spacing: var(--ls-display); }
+/* mc-1：品牌副题退居封面（案头主从条让位给当前角色名——端点驱动） */
+.ob-tagline { margin: var(--sp-1) 0 0; text-align: center;
+              font: var(--meta-font); letter-spacing: var(--meta-track);
+              color: var(--meta-ink); }
 /* 标题与信体之间的短界尺（居中一截，随字幅的静止分饰） */
 .ob-divider { display: block; width: 3em;
               margin: var(--sp-5) auto; border-top: 1px solid var(--rule); }
@@ -197,6 +201,76 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
                  font-size: var(--fs-micro); color: var(--ink);
                  font-variant-numeric: tabular-nums; }
 
+/* ── mc-1 信封选择器（点案头主从条弹出的那沓信）──────────────────────
+   沓形 = 案头的一叠信封：沓内绝对定位错位叠放——top 由视觉位序
+   --env-i 驱动（components.js 的 layoutEnvelopeStack 排名重算，custom
+   props 的唯一落点）、叠放序 --env-z 沓首最高；rotate/translateX 的
+   微扇由 stamp_key 确定性派生（--env-rot/--env-dx，同一角色恒同姿态），
+   窄屏收半（--env-fan 因子）。基础形态即窄屏形态：近垂直小叠、可见
+   ≤3 封、沓内滚动翻检——四档断点契约零新增边界（481 档内只放大沓步
+   与幅面）。预览切换的精准动画 = transform 260ms 减速长尾 + 让位
+   stagger（--env-delay 步长 20ms 封顶 60ms，总封顶 320ms）；微抬的
+   阴影半档在 components.css 的垫纸层 opacity（阴影不做动画）。
+   交互态（hover/focus/邮票变体/邮戳角标/动作行命中带）在
+   components.css 的 mc-1 段。 */
+.envsel { position: fixed; top: calc(var(--sp-8) + var(--sp-1));
+          left: 0; right: 0; z-index: 7;
+          max-width: var(--shell-w); margin: 0 auto;
+          background: var(--paper-high);
+          border: 1px solid var(--rule);
+          outline: 1px solid var(--rule-soft); outline-offset: 3px;
+          border-radius: 2px;
+          padding: var(--sp-4) var(--sp-4) var(--sp-2);
+          max-height: calc(100dvh - var(--sp-8) - var(--sp-6));
+          display: flex; flex-direction: column; }
+/* 沓面板入场一次（复用注册双动画——纸先落、墨后渗；零新 keyframes） */
+.envsel--open { animation: paper-drop var(--dur-note) var(--ease-enter) both,
+                            ink-wash calc(var(--dur-note) * 1.3)
+                            var(--ease-enter) both; }
+.envsel-stack { position: relative; overflow-x: hidden;
+                overflow-y: auto; overscroll-behavior: contain;
+                --env-fan: 0.35; --env-step: 46px; --env-body: 104px;
+                max-height: calc(var(--env-body) + 2 * var(--env-step));
+                height: calc(var(--env-body)
+                             + var(--env-n, 1) * var(--env-step));
+                margin-top: var(--sp-2); }
+.env { position: absolute; left: 0; right: 0;
+       top: calc(var(--env-i, 0) * var(--env-step));
+       min-height: var(--env-body);
+       background: var(--paper-2);
+       border: 1px solid var(--rule);
+       border-radius: 2px;
+       z-index: var(--env-z, 1);
+       padding: 10px 12px 6px;
+       cursor: pointer;
+       transform: translateX(calc(var(--env-dx, 0px) * var(--env-fan)))
+                  rotate(calc(var(--env-rot, 0deg) * var(--env-fan)));
+       transition: transform var(--dur-note) var(--ease-paper)
+                   var(--env-delay, 0ms); }
+/* 预览微抬（精准动画的第二半）：被预览封微升 + 让位重排——垫纸层
+   （components.css 的 ::after）opacity 半档承影，本条只动 transform。 */
+.env--lift { transform: translateY(-4px)
+             translateX(calc(var(--env-dx, 0px) * var(--env-fan, 0)))
+             rotate(calc(var(--env-rot, 0deg) * var(--env-fan, 0))); }
+/* 沓尾的新建空白信封：虚线空封——一眼「还没写」（纸叠影的抵消臂在
+   components.css 的 mc-1 段；本文件的纸影声明恰一处 = 案头舞台）。 */
+.env--new { top: calc(var(--env-n, 1) * var(--env-step));
+            background: none; border: 1px dashed var(--rule); }
+.env-to { margin: 0; display: flex; gap: 6px; align-items: baseline;
+          padding-right: 60px; }
+.env-to-word { flex: none; font: var(--meta-font);
+               letter-spacing: var(--meta-track); color: var(--meta-ink); }
+.env-name { font-family: var(--f-display); font-size: var(--fs-head);
+            line-height: var(--lh-head); font-weight: 400;
+            letter-spacing: var(--ls-head); overflow-wrap: anywhere; }
+.env-line { margin: 2px 0 0; font-size: var(--fs-small);
+            line-height: var(--lh-small); color: var(--ink-soft);
+            white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis; }
+.env-newhint { white-space: normal; overflow: visible; }
+.env-actions { display: flex; gap: 16px; margin: 4px 0 0; }
+.envsel-foot { margin: var(--sp-2) 0 0; text-align: right; }
+
 /* ── v2 动效基建应用层（简报 §5：纸先落、墨后渗的页面接线）──────────
    ① 信纸落桌（视图切换档）：客厅显形 = 一张信纸摊上案头。容器只走
    透明度（ink-wash 档——settle 的 transform 会让 position:fixed 的
@@ -214,6 +288,12 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
    （历史回填必须静帧，五十轮回填不闪）。 */
 #space-parlor:not([hidden]) .flow {
   animation: ink-wash var(--dur-settle) var(--ease-enter) both; }
+
+/* mc-1 切换后的案头重落（app.js 落类、刷新前先摘——一屏一次纸事件）：
+   复用注册双动画（纸先落、墨后渗），260ms 档。 */
+#space-parlor .flow.flow-resettle {
+  animation: paper-drop var(--dur-note) var(--ease-enter) both,
+             ink-wash calc(var(--dur-note) * 1.3) var(--ease-enter) both; }
 
 [role="tabpanel"]:not([hidden]) {
   transition: opacity var(--dur-panel-in) var(--ease-enter); }
@@ -267,6 +347,11 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
   :root { --shell-w: 600px; }
   .ob { display: flex; justify-content: center; }
   .ob-sheet { width: 560px; margin: auto 0; }
+  /* mc-1：信封沓的桌面扇形档——微扇全幅（--env-fan 1）、沓步放大、
+     不再限三封可见（沓内全摊）；沓面板定宽居中。 */
+  .envsel { max-width: 420px; }
+  .envsel-stack { --env-fan: 1; --env-step: 56px; --env-body: 116px;
+                  max-height: none; }
   .family-groups { display: grid;
                    grid-template-columns:
                      repeat(auto-fill, minmax(260px, 1fr));

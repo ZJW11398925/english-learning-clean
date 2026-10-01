@@ -18,14 +18,16 @@
        T2）/ 印记（seal-press 入场）/ 英文并写小字 + display 题（v2
        命名：展信佳 · Dear You——简报 §1）/ 信体（称呼 · 两段缩进
        正文 · 又及）/ 进门钮「拆开这封信 →」/ 诚实落款。rd-2 起
-       封面信升「致明日之我」。说到哪一行都是真的，不伪装任何功能；
-       localStorage 门与 <title> 语义不动。 -->
+       封面信升「致明日之我」。mc-1 起品牌名与副题退居于此（案头
+       主从条让位给当前角色名——端点驱动）；说到哪一行都是真的，
+       不伪装任何功能；localStorage 门与 <title> 语义不动。 -->
   <section id="screen-onboard" class="ob">
     <div class="ob-sheet paper-settle">
       <p class="ob-dateline"><span class="ob-date"></span><span class="ob-stamp" data-icon="stamp"></span></p>
       <div class="ob-mark seal-press"><span data-brand-mark="lg"></span></div>
       <p class="ob-wordmark">DEAR YOU</p>
       <h1>展信佳</h1>
+      <p class="ob-tagline">见字如晤，今日如何</p>
       <span class="ob-divider" aria-hidden="true"></span>
       <div class="ob-letter">
         <p class="ob-salut">致 明日之我：</p>
@@ -41,19 +43,20 @@
   <!-- 客厅空间：品牌条（上下发丝线夹住；导航归 dock）+ 信笺流（教学
        批注随信流）+ 写信区。信件文本按词分片（#15 的触发面），点词出卡。
        空厅由 app.js 落一句客户端静态系统行（⑧ 8.2.2），不伪装历史。
-       v2 信头（简报 §1）：名 + 副题小字——静态兜底与 app.js 的 BRAND
-       常量同值（品牌名单点常量驱动，此处为无 JS 兜底）。 -->
+       mc-1 主从条：.who = 当前角色名、.who-sub = 该角色身份行——端点
+       驱动（/api/characters），webui 零角色名字面（无 JS 兜底 = 留空，
+       不发明人名）；品牌名与副题退居门厅封面（上方 ob-tagline）。
+       点主从条弹出的不再是档案，是信封沓（mc-1 选择器，app.js 接线）。 -->
   <section id="space-parlor" hidden>
     <header class="top">
       <span data-brand-mark="sm"></span>
       <div>
-        <div class="who">展信佳</div>
-        <div class="who-sub">见字如晤，今日如何</div>
+        <div class="who"></div>
+        <div class="who-sub"></div>
       </div>
-      <!-- cs-2 档案页：身份条原地的可点手感——.who/.who-sub 逐字不动
-           （四处钉在册），品牌条不增长按钮元（r1_shell 的品牌条无钮钉
-           保留）：who 块整体可点（app.js 接线 + screens.css 触点提示），
-           开笔友档案的全页视图（rd-4 的浮层卡与名册桩整体退役）。 -->
+      <!-- mc-1：who 块整体可点（键盘可达），点开信封沓——沓中每封的
+           「档案」动作才进笔友档案全页（cs-2 的全页视图参数化复用）。
+           品牌条不增长按钮元（r1_shell 的品牌条无钮钉保留）。 -->
     </header>
     <main class="flow">
       <div id="messages" aria-live="polite"></div>

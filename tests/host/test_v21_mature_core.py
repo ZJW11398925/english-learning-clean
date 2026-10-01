@@ -99,10 +99,14 @@ def test_the_brand_literal_has_exactly_two_physical_points() -> None:
         ' tagline: "见字如晤，今日如何", en: "Dear You" };' in app
     )
     assert app.count("展信佳") == 1
-    # index.html: the title and the header fallback (same values)
+    # index.html: the title and the cover (same values)——mc-1 随迁：
+    # 案头 .who 兜底让位（空槽，端点驱动），品牌字面的第二物理点 =
+    # 门厅封面的题字（<h1>）
     index = _text("index.html")
     assert "<title>展信佳</title>" in index
-    assert '<div class="who">展信佳</div>' in index
+    assert "<h1>展信佳</h1>" in index
+    assert '<div class="who"></div>' in index
+    assert '<p class="ob-tagline">见字如晤，今日如何</p>' in index
     # the old brand is gone from the whole face（用户令：连「英语客厅」
     # 也换掉——含 aria-label）
     whole = "".join(_text(name) for name in SHELL_FILES)
@@ -301,15 +305,20 @@ def test_pen_ruled_period_locks_to_baseline() -> None:
 
 def test_letter_ps_and_brand_driver_are_wired_not_dead() -> None:
     """LOW-1/LOW-2：又及接线与品牌驱动线是消费钉不是在场钉——删
-    接线（留死码）或删驱动语句（靠静态兜底假装）都必须红。"""
+    接线（留死码）或删驱动语句（靠静态兜底假装）都必须红。mc-1 随迁：
+    案头主从条的 BRAND 驱动线退役（.who/.who-sub = 当前角色名与身份
+    行，端点驱动）；品牌驱动线的现役消费面 = 标题 + 封面副题 + 封面
+    英文并写，主从条的端点驱动线（renderMasthead 的名册消费）同场
+    在钉——删任何一条驱动线都红。"""
     js = _text("components.js")
     assert ('say.className = "say" + (isPostscript(para) '
             '? " letter-ps" : "");') in js
     app = _text("app.js")
     assert "document.title = BRAND.name;" in app
-    assert "whoSlot.textContent = BRAND.name;" in app
-    assert "whoSub.textContent = BRAND.tagline;" in app
+    assert "coverTagline.textContent = BRAND.tagline;" in app
     assert "wordmark.textContent = BRAND.en.toUpperCase();" in app
+    assert "renderMasthead(await fetchCharacters());" in app
+    assert "fetchCharacters().then(renderMasthead)" in app
 
 
 def test_postmark_keeps_its_handmade_tilt() -> None:

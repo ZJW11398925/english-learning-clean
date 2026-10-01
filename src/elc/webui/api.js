@@ -15,6 +15,15 @@ async function postJson(path, payload) {
   return res.json();
 }
 
+async function putJson(path, payload) {
+  const res = await fetch(path, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
 async function getJson(path) {
   const res = await fetch(path);
   return res.json();
@@ -96,4 +105,36 @@ export function fetchSaveGoals(payload) {
 export function fetchSaveFrequency(word) {
   return postJson("/api/teaching_frequency",
                   { teaching_frequency: word });
+}
+
+/** 角色名册（mc-0）：全部卡片（内置在前）+ 本页正服务的
+ *  current_character_id（可能为 null——如实，不猜）。 */
+export function fetchCharacters() {
+  return getJson("/api/characters");
+}
+
+/** 信封切换（mc-0）：此后由该角色自己的会话服务本页——历史、批注、
+ *  档案全部随下一次请求落在新通信上。 */
+export function fetchSwitchCharacter(characterId) {
+  return postJson("/api/characters/switch", { character_id: characterId });
+}
+
+/** 笔友档案读数（mc-1 参数化面）：一位角色的卡与它自己通信的统计/
+ *  记忆/近况。不带参数的原面仍是 fetchPartner（正服务的角色）。 */
+export function fetchPartnerOf(characterId) {
+  return getJson("/api/partner?character_id="
+                 + encodeURIComponent(characterId));
+}
+
+/** 新建空白信封（mc-0 CRUD 面）：name 必填，其余散文面可选；超长
+ *  是 400 人话（服务端 F-2 上限），错误句原样上浮。 */
+export function fetchCreateCharacter(fields) {
+  return postJson("/api/characters", fields);
+}
+
+/** 只改名字（mc-1 简化编辑）：PUT 一个字段；其余散文案面 mc-2 的
+ *  编辑台来写。 */
+export function fetchRenameCharacter(characterId, name) {
+  return putJson("/api/characters/" + encodeURIComponent(characterId),
+                 { name: name });
 }
