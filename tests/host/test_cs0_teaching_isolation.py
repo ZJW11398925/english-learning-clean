@@ -59,6 +59,7 @@ from elc.platform.types import (
     InteractionChannel,
     Ok,
     PersonaId,
+    ProjectionJobId,
     UserId,
 )
 from elc.relationship.episode import rebuild_episode
@@ -384,7 +385,10 @@ def cs0_world(tmp_path: Path, pilot_content_db: Path):
         rollout_stage=RolloutStage.STUDY_FIRST,
     )
     try:
-        assert isinstance(host.open_conversation(CONV), Ok)
+        assert isinstance(
+            host.open_conversation(CONV, persona_id=PersonaId("persona-cs0")),
+            Ok,
+        )
         _seed(host)
         yield host, provider
     finally:
@@ -584,3 +588,72 @@ def test_the_explanation_note_reads_the_corpus_teaching_notes(
         assert _explanation_note_for(None) == ""
     finally:
         supply.close()
+
+
+def test_the_relationship_executor_consumes_the_visible_read(cs0_world) -> None:
+    """The recorder's consumption face is wired through the executor: the
+    real ``RelationshipProjectionExecutor`` over the real store reads the
+    persona-visible slice, so an assistant-grounded candidate over a
+    teaching turn is refused (zero proposals) — a wiring back to the
+    full-transcript read would propose it."""
+
+    from elc.platform.db.epoch import open_runtime_epoch
+    from elc.relationship.controller import RelationshipController
+    from elc.relationship.projection import (
+        PROJECTION_TYPE_RELATIONSHIP,
+        RelationshipProjectionExecutor,
+    )
+    from elc.relationship.recorder import (
+        RelationshipMemoryCandidate,
+        RelationshipRecorder,
+    )
+    from elc.relationship.store import SqliteRelationshipStore
+    from elc.runtime.projections import ProjectionJobView
+    from elc.runtime.types import ProjectionJobState
+
+    host, _provider = cs0_world
+    result = host.coordinator.begin_turn(_command(ERROR_TEXT))
+    assert isinstance(result, Ok), result
+    turn_id = result.value.turn_id
+
+    class _ScriptedCandidates:
+        """One assistant-grounded candidate for every turn."""
+
+        def candidates_for(self, slice_: object):
+            return Ok(
+                (
+                    RelationshipMemoryCandidate(
+                        memory_type=RelationshipMemoryType.SHARED_EVENT,
+                        provenance=MemoryProvenance.USER_STATED_FACT,
+                        content="the user answered and the reply came",
+                    ),
+                )
+            )
+
+    executor = RelationshipProjectionExecutor(
+        recorder=RelationshipRecorder(host.conversations),
+        controller=RelationshipController(
+            SqliteRelationshipStore(
+                host.db, open_runtime_epoch(host.db)
+            )
+        ),
+        conversation=host.conversations,
+        user_id=host.user_id,
+        candidates=_ScriptedCandidates(),
+    )
+    detail = executor.project(
+        ProjectionJobView(
+            projection_job_id=ProjectionJobId("pj-cs0-probe"),
+            projection_type=PROJECTION_TYPE_RELATIONSHIP,
+            source_turn_id=turn_id,
+            source_turn_slice_hash="cs0-probe-hash",
+            base_domain_version=None,
+            status=ProjectionJobState.RUNNING,
+            attempt_count=1,
+            created_at="probe",
+            updated_at="probe",
+        )
+    )
+    assert isinstance(detail, Ok), detail
+    assert "proposals=0" in detail.value
+    assert "recorder_refusals=1" in detail.value
