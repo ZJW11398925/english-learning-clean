@@ -234,7 +234,12 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
                 height: calc(12px + var(--env-body)
                              + var(--env-n, 1) * var(--env-step));
                 margin-top: var(--sp-2); }
-.env { position: absolute; left: 0; right: 0;
+.env { position: absolute;
+       /* 横向出血缓冲（LOW-1）：沓内左右各 --sp-5（24px）≥ 微扇 dx
+          ±18px + ±3° 旋转角 ≈3.6px + 「当前」邮戳左缘 −9px 的最大
+          出血——overflow-x:hidden 的裁切线在任何档位、任何 stamp_key
+          姿态下都不碰信封与邮戳（stack 宽随面板内减两侧此值）。 */
+       left: var(--sp-5); right: var(--sp-5);
        top: calc(12px + var(--env-i, 0) * var(--env-step));
        min-height: var(--env-body);
        background: var(--paper-2);

@@ -2588,11 +2588,15 @@ function previewEnvelope(characterId) {
   const picked = stack.querySelector(
     '.env[data-id="' + CSS.escape(characterId) + '"]');
   if (!picked) return;
-  let lowest = 0;
+  // 沓首 = 全沓严格最小 order − 1：初值必须取「非 0 的中性元」——
+  // order=0 是合法值（首排沓首恒 0），falsy 判别（!lowest）会把
+  // 最小值在循环里被后续非零覆盖（评审活体实锤：点第 2 封不滑到
+  // 沓首、让位与 stagger 整体不发生），Infinity 起步 + 纯 < 比较。
+  let lowest = Infinity;
   for (const env of Array.from(
       stack.querySelectorAll(".env[data-order]"))) {
     const order = Number(env.dataset.order) || 0;
-    if (!lowest || order < lowest) lowest = order;
+    if (order < lowest) lowest = order;
   }
   picked.dataset.order = String(lowest - 1);   // 滑到沓首
   for (const env of Array.from(stack.querySelectorAll(".env"))) {

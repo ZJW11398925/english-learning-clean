@@ -531,7 +531,8 @@ def test_the_base_form_is_the_phone_form_and_the_tiers_gain_no_edge() -> None:
         "max-height: calc(var(--env-body) + 2 * var(--env-step));" in screens
     )
     assert "overflow-y: auto; overscroll-behavior: contain;" in screens
-    assert ".env { position: absolute; left: 0; right: 0;" in screens
+    assert ".env { position: absolute;" in screens
+    assert "left: var(--sp-5); right: var(--sp-5);" in screens
     assert "min-height: var(--env-body);" in screens
     # the four-tier contract stands untouched (mc-1 adds no boundary)
     for boundary in ("481px", "900px", "1280px"):
@@ -591,3 +592,110 @@ def test_the_migration_manifest_restates_the_new_truths() -> None:
     # the mc-1 face styles live outside the component registry (the
     # dossier precedent): no numbered contract block, no clause words
     assert "mc-1 信封选择器的交互态与工艺件" in components
+
+
+# ---------------------------------------------------------------------------
+# 9 — the disposition cut (mc-1 评审 2M+3L 的必修面)
+
+
+def test_the_preview_settle_reaches_the_front_and_others_give_way() -> None:
+    """MEDIUM-1（评审活体实锤的算法缺陷）：沓首 = 全沓严格最小
+    order − 1——旧 falsy 判别（!lowest，0 是合法 order）会在循环里
+    被后续非零覆盖，预览封不滑到沓首、让位与 stagger 整体不发生。
+    修复形态正钉 + 旧形态缺位钉（把修复还原即红）；让位重排与 z 序
+    （预览封 z 最高 = count − 0）的源在场；多封连点臂（再点即切换）
+    与沓首本封臂（已在通信中——收沓）随钉。行为复证由活体承担
+    （settled 后 picked --env-i == "0"、其余封存在 --env-delay
+    ≠ "0ms"——处置回执附 DOM 读数）。"""
+
+    app = _text("app.js")
+    js = _text("components.js")
+    # the fix: a neutral Infinity seed with a pure < comparison
+    assert "let lowest = Infinity;" in app
+    assert "if (order < lowest) lowest = order;" in app
+    # the retired falsy form is gone — restoring it turns this red
+    assert "let lowest = 0;" not in app
+    assert "if (!lowest || order < lowest)" not in app
+    # the picked envelope takes the strict-minimum seat in front
+    assert "picked.dataset.order = String(lowest - 1);" in app
+    # the give-way arithmetic feeds --env-delay (the others move too)
+    assert (
+        "const delay = Math.min(Math.abs(before - position) * 20, 60);"
+        in js
+    )
+    # the front seat rides the top z (count − position 0 = count)
+    assert 'env.style.setProperty("--env-z", String(count - position));' in js
+    # the two arms: a second click on the previewed envelope switches;
+    # talking to the current one just folds the selector
+    assert (
+        "if (envselPreviewId === characterId) {\n"
+        "    switchToCharacter(characterId).then((done) => {\n"
+        "      if (done) closeEnvelopeSelector();\n"
+        "    });\n"
+        "    return;\n"
+        "  }" in app
+    )
+    assert (
+        "if (isCurrent) {\n"
+        "          closeEnvelopeSelector();   // 已在通信中——收沓即回\n"
+        "          return;\n"
+        "        }" in app
+    )
+
+
+def test_the_current_postmark_never_clips_and_the_live_fixes_hold() -> None:
+    """LOW-1：沓内左右 --sp-5（24px）横向出血缓冲 ≥ 微扇 dx ±18 +
+    ±3° 旋转角 ≈3.6 + 「当前」邮戳 −9——overflow-x:hidden 的裁切线
+    不碰信封与邮戳（8a1b5dd 只修了竖向 12px 基准，此为横向半区）。
+    LOW-2：8a1b5dd 的两活体修在此有源钉——空白封 z 落底（压不住任何
+    真封）+ 沓首 12px 基准（.env/.env--new/stack height 三处）。还原
+    任一处即红。"""
+
+    screens = _text("screens.css")
+    # LOW-1: the horizontal bleed budget, as a rule (not a comment)
+    assert "left: var(--sp-5); right: var(--sp-5);" in screens
+    assert ".env { position: absolute; left: 0;" not in screens
+    # LOW-2a: the blank envelope sinks below every real envelope
+    assert (
+        ".env--new { top: calc(12px + var(--env-n, 1) * var(--env-step));\n"
+        "            z-index: 0;" in screens
+    )
+    # LOW-2b: the 12px head seat in all three places (the postmark's
+    # −9px top bleed lands inside the scroll box)
+    assert (
+        "top: calc(12px + var(--env-i, 0) * var(--env-step));" in screens
+    )
+    assert (
+        "top: calc(12px + var(--env-n, 1) * var(--env-step));" in screens
+    )
+    assert (
+        "height: calc(12px + var(--env-body)\n"
+        "                             + var(--env-n, 1)"
+        " * var(--env-step));" in screens
+    )
+
+
+def test_the_selector_esc_rename_and_z_order_wiring_is_pinned() -> None:
+    """LOW-3 三交互语义源钉：①z 序（沓首最高，layoutEnvelopeStack 的
+    排名公式）；②Esc 收沓（接线 + 摘除对——开关对称）；③改名成功后
+    refreshEnvelopeStack（沓重排：名更新、邮票与姿态不动）。删任一
+    接线即红。"""
+
+    app = _text("app.js")
+    js = _text("components.js")
+    # ① the visual order is the rank order (preview = rank 0 = top z)
+    assert 'env.style.setProperty("--env-i", String(position));' in js
+    assert 'env.style.setProperty("--env-z", String(count - position));' in js
+    # ② Esc folds the selector; the listener leaves with it
+    assert (
+        'function envselEsc(event) {\n'
+        '  if (event.key === "Escape") closeEnvelopeSelector();\n'
+        "}" in app
+    )
+    assert 'document.addEventListener("keydown", envselEsc);' in app
+    assert 'document.removeEventListener("keydown", envselEsc);' in app
+    # ③ a saved rename re-renders the stack (name moves, stamp stays)
+    assert (
+        "await refreshEnvelopeStack();"
+        "   // 沓重排：名更新、邮票与姿态不动" in app
+    )
