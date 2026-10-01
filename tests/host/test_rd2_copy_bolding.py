@@ -85,7 +85,7 @@ def test_anchor_two_the_placeholder_asks_about_today() -> None:
 def test_the_three_semantic_floors_survive_the_boldness() -> None:
     """底线①中文也可以写（封面 + 空厅两处在场）②教学发生在英文（封面
     「英文批注」）③写错被看见且被回应（封面「回信要讲给你听」+ 空厅
-    「客厅接得住」）——placeholder 让位锚例后，不读封面也能从空厅句得知
+    「笔友接得住」）——placeholder 让位锚例后，不读封面也能从空厅句得知
     中文可写。"""
 
     index = _text("webui/index.html")
@@ -97,7 +97,7 @@ def test_the_three_semantic_floors_survive_the_boldness() -> None:
     assert "英文批注" in index                # 封面段二
     # ③ 写错会被看见且被回应
     assert "写错了，正是回信要讲给你听的地方" in index
-    assert "写错了，客厅接得住" in app
+    assert "写错了，笔友接得住" in app
 
 
 def test_the_who_sub_carries_the_new_boldness() -> None:
@@ -117,7 +117,7 @@ def test_the_empty_hall_line_is_the_bold_form() -> None:
     app = _text("webui/app.js")
     assert (
         "信还没开始写——想从哪句起，就从哪句起。中文英文都行；"
-        "写错了，客厅接得住。" in app
+        "写错了，笔友接得住。" in app
     )
     assert (
         "信还没开始写——想说什么就写什么，中文或英文都行；客厅正听着。"
@@ -130,12 +130,13 @@ def test_the_empty_hall_line_is_the_bold_form() -> None:
 
 
 def test_the_nav_words_are_wengu_and_drawer() -> None:
-    """dock 三词 = 客厅 / 温故 / 抽屉；空间头与 aria-label 同步；写信
-    动作词不动（寄出 → 保留）。「信匣」经功能核实名不副实（抽屉装记忆/
-    隐私/设置，无信件收藏），退「抽屉」——核实结论见回执。"""
+    """dock 三词 = 案头 / 温故 / 抽屉（v2-1R：品牌更名「展信佳」后旧
+    空间词「客厅」退役，信件案头语域归位）；空间头与 aria-label 同
+    步；写信动作词不动（寄出 → 保留）。「信匣」经功能核实名不副实
+    （抽屉装记忆/隐私/设置，无信件收藏），退「抽屉」——核实结论见回执。"""
 
     index = _text("webui/index.html")
-    for label in (">客厅</button>", ">温故</button>", ">抽屉</button>"):
+    for label in (">案头</button>", ">温故</button>", ">抽屉</button>"):
         assert label in index, label
     assert '<div class="who">温故</div>' in index
     assert '<div class="who">抽屉</div>' in index

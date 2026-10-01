@@ -620,7 +620,7 @@ function renderGrowth(evidence, retry) {
     box.appendChild(note);
     const hint = document.createElement("p");
     hint.className = "sub";
-    hint.textContent = "先去客厅聊一句，批注会自己来找你。";
+    hint.textContent = "先去案头聊一句，批注会自己来找你。";
     box.appendChild(hint);
     box.appendChild(parlorButton("去聊一句"));
     return;
@@ -2183,7 +2183,7 @@ function startMomentPolling() {
 // 重写（语义底线①③在场：中文可写 + 写错被接住——placeholder 让位
 // 「今日如何？」锚例后，不读封面也能从这里得知中文可写）。
 const EMPTY_HALL_TEXT =
-  "信还没开始写——想从哪句起，就从哪句起。中文英文都行；写错了，客厅接得住。";
+  "信还没开始写——想从哪句起，就从哪句起。中文英文都行；写错了，笔友接得住。";
 
 function showEmptyHall() {
   if (messages.firstChild) return;
@@ -2270,12 +2270,19 @@ async function postTeachMe(targetId) {
   }
 }
 
+// v2-1R M-3：在途只此一封——并发寄出会让多枚「寄出」邮戳同屏并立，
+// 破简报 T2「同屏 ≤1 枚」；一封落地或失败（postTurn 的 finally）才
+// 解锁输入。守卫只在客户端，服务端仍按到达序处理。
+let sending = false;
 document.getElementById("send").addEventListener("submit", (event) => {
   event.preventDefault();
+  if (sending) return;
   const input = document.getElementById("text");
   const text = input.value.trim();
   if (!text) return;
   input.value = "";
+  sending = true;
+  input.disabled = true;
   // rd-1 邮戳盖下（⑨-5）：寄出一瞬邮票按下——scale .96→1 的 transform
   // 收束（非投影）；类由 animationend 自摘（reduced-motion 下动画
   // 0.01ms 即终、事件仍到，清理不失效）
@@ -2285,7 +2292,11 @@ document.getElementById("send").addEventListener("submit", (event) => {
     stamp.addEventListener("animationend",
       () => stamp.classList.remove("stamp-press"), { once: true });
   }
-  postTurn(text);
+  postTurn(text).finally(() => {
+    sending = false;
+    input.disabled = false;
+    input.focus();
+  });
 });
 
 // The pen is a lined-paper textarea (the anchor's own .pen): plain Enter

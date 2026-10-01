@@ -147,7 +147,7 @@ def test_the_growth_block_is_word_level(tmp_path: Path) -> None:
     assert 'outcomes: ["FAILURE"], word: "暂时不能"' in page
     assert "rows.slice(0, GROWTH_LINES)" in page
     assert "学过一次之后，这里会出现你掌握的技能。" in page
-    assert "先去客厅聊一句，批注会自己来找你。" in page
+    assert "先去案头聊一句，批注会自己来找你。" in page
     # the empty card's path in is the same parlor button
     growth = _fn_body(page, "renderGrowth")
     assert 'parlorButton("去聊一句")' in growth

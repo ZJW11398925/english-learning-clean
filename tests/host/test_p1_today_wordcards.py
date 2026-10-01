@@ -171,7 +171,7 @@ def test_the_today_blocks_pin_their_data_faces(tmp_path: Path) -> None:
     assert "还在练" in page
     assert "暂时不能" in page
     assert "学过一次之后，这里会出现你掌握的技能。" in page
-    assert "先去客厅聊一句，批注会自己来找你。" in page
+    assert "先去案头聊一句，批注会自己来找你。" in page
     assert "const GROWTH_LINES = 3;" in page
     assert "showLoading(TODAY_PANEL_IDS)" in page
     assert 'diagError(box, (schedule && schedule.error) || "空响应", retry)' in page

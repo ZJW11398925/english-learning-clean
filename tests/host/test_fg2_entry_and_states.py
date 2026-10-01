@@ -221,7 +221,7 @@ def test_the_cover_is_a_complete_letter(tmp_path: Path) -> None:
     assert "致 明日之我：" in page
     # rd-2 随迁：封面定稿段改「致明日之我」两重收信人段（豪放档）
     assert "今日落笔，明日展信。" in page
-    assert "写着写着，客厅在旁听着。" in page
+    assert "写着写着，它在旁听着。" in page
     assert "又及：进门以后，底部三个词随时可走" in page
     assert "拆开这封信 →</button>" in page
     # the honest version line: the product's own name, no invented semver

@@ -262,3 +262,78 @@ def test_the_other_screens_keep_their_structure() -> None:
     # the disclosure/family-groups factories unchanged（结构工厂零改，
     # 工厂在 app.js：family-groups 类由装配侧落）
     assert 'root.className = "family-groups";' in _text("app.js")
+
+
+# ---------------------------------------------------------------------------
+# 9. v2-1R 处置钉（评审 M-1/M-2/M-3/M-4 + LOW-1/2/3/4/5）
+
+
+def test_chinese_letter_skeleton_is_first_class() -> None:
+    """M-1：主语言中文的回信不能系统性缺骨架件——称呼收全角标点、
+    结束语收中文词表（含无标点短语臂）。提取不到仍不虚构（缺省诚实），
+    但中文不得因标点/词表缺席而结构性缺件。"""
+    js = _text("components.js")
+    assert "[,，!！：:]$" in js          # 称呼收尾：中英全半角皆收
+    assert "[.。；;?？]" in js           # 句中标点排除补句号
+    for word in ("此致", "敬上", "祝好", "顺祝", "勿念"):
+        assert word in js, word
+    assert "close.length <= 8" in js     # 中文无标点结束语短语臂
+
+
+def test_single_flight_guard_keeps_one_postmark_per_screen() -> None:
+    """M-3：在途只此一封——并发寄出会让多枚「寄出」邮戳同屏并立，
+    破简报 T2「同屏 ≤1 枚」。"""
+    app = _text("app.js")
+    assert "let sending = false;" in app
+    assert "if (sending) return;" in app
+    assert "input.disabled = true;" in app
+    assert "postTurn(text).finally(() => {" in app   # 落地/失败才解锁
+
+
+def test_pen_ruled_period_locks_to_baseline() -> None:
+    """M-4（判负钉）：稿纸横线周期 = --baseline——周期漂移（旧 26px
+    形态回潮）即红，字必须落在线上。"""
+    css = _text("components.css")
+    assert "transparent 0 calc(var(--baseline) - 1px)" in css
+    assert ("var(--rule-soft) calc(var(--baseline) - 1px)"
+            " var(--baseline)") in css
+
+
+def test_letter_ps_and_brand_driver_are_wired_not_dead() -> None:
+    """LOW-1/LOW-2：又及接线与品牌驱动线是消费钉不是在场钉——删
+    接线（留死码）或删驱动语句（靠静态兜底假装）都必须红。"""
+    js = _text("components.js")
+    assert ('say.className = "say" + (isPostscript(para) '
+            '? " letter-ps" : "");') in js
+    app = _text("app.js")
+    assert "document.title = BRAND.name;" in app
+    assert "whoSlot.textContent = BRAND.name;" in app
+    assert "whoSub.textContent = BRAND.tagline;" in app
+    assert "wordmark.textContent = BRAND.en.toUpperCase();" in app
+
+
+def test_postmark_keeps_its_handmade_tilt() -> None:
+    """LOW-3：邮戳手作斜度在场（简报 T2 rotate 3–6deg 的实现值）。"""
+    assert "rotate(-5deg)" in _text("components.css")
+
+
+def test_craft_rules_5_7_live_and_synth_bold_banned() -> None:
+    """M-2/LOW-4/LOW-5：法则 5/7 落地（孤字/平衡/标点挤压，@supports
+    静默降级）；全局禁合成粗体；head 档真粗走 UI 无衬线；批注头图标
+    退墨族（朱砂只留给红笔圈与盖印）。"""
+    css = _text("components.css")
+    assert "text-wrap: pretty;" in css
+    assert "text-wrap: balance;" in css
+    assert "@supports (text-spacing-trim: trim-start)" in css
+    icon_seg = css.split(".note-head .inkicon")[1][:220]
+    assert "var(--ink-soft)" in icon_seg
+    assert "var(--seal)" not in icon_seg
+    head_b_seg = css.split(".note-head b")[1][:160]
+    assert "var(--f-ui)" in head_b_seg
+    say_strong_seg = css.split(".say strong")[1][:140]
+    assert "var(--accent-deep)" in say_strong_seg
+    screens = _text("screens.css")
+    assert "font-synthesis: none;" in screens
+    grouphead_seg = screens.split(".grouphead")[1][:160]
+    assert "var(--f-ui)" in grouphead_seg
+    assert "font-weight: 600" in grouphead_seg

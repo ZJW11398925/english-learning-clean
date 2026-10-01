@@ -128,7 +128,8 @@ def test_the_old_nav_controls_are_all_gone(tmp_path: Path) -> None:
 
 
 def test_the_navdock_is_the_only_way_between_spaces(tmp_path: Path) -> None:
-    """The dock: exactly three items (客厅/温故/抽屉) with their data-space
+    """The dock: exactly three items (案头/温故/抽屉——v2-1R 品牌更名后
+    旧空间词「客厅」退役) with their data-space
     wiring, the app-side wiring, and the fixed bottom form — hairline top
     edge, paper ground, the safe area in its own padding."""
 
@@ -136,7 +137,7 @@ def test_the_navdock_is_the_only_way_between_spaces(tmp_path: Path) -> None:
     assert '<nav id="navdock" class="navdock" aria-label="空间">' in index
     for space in ("parlor", "study", "drawer"):
         assert f'class="navdock-item" data-space="{space}"' in index
-    for label in (">客厅</button>", ">温故</button>", ">抽屉</button>"):
+    for label in (">案头</button>", ">温故</button>", ">抽屉</button>"):
         assert label in index
     app = _text("app.js")
     assert "wireNavdock((name) => showSpace(name));" in app

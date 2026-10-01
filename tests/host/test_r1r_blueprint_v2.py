@@ -371,7 +371,7 @@ def test_the_parlor_speaks_the_new_copy(tmp_path: Path) -> None:
     # 空厅句升豪放档——语义底线①③由本句承载）
     assert (
         "信还没开始写——想从哪句起，就从哪句起。中文英文都行；"
-        "写错了，客厅接得住。"
+        "写错了，笔友接得住。"
         in page
     )
     assert "showEmptyHall();" in page

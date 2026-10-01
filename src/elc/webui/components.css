@@ -173,9 +173,14 @@ button:focus-visible, input:focus-visible {
               box-shadow: var(--stack-shadow-soft);
               padding: 12px 14px 14px; font-size: var(--fs-small); }
 .note-head { display: flex; gap: var(--sp-2); align-items: center; }
+/* v2-1R LOW-4：批注头图标退回墨族——朱砂只留给红笔圈与盖印
+   （同卡 .circled 已占印章位，图标再朱砂则破「每屏 ≤1 处」）。 */
 .note-head .inkicon { flex: none; width: 15px; height: 15px;
-                      color: var(--seal); }
-.note-head b { font-weight: 600; overflow-wrap: anywhere; }
+                      color: var(--ink-soft); }
+/* v2-1R LOW-5：head 档中文真粗体走 UI 无衬线（简报法则 2——宋体
+   无真 Bold，合成 600 已由 body 的 font-synthesis: none 禁掉）。 */
+.note-head b { font-family: var(--f-ui); font-weight: 600;
+               overflow-wrap: anywhere; }
 .note-paper.skipped { opacity: 0.55; }
 .noteline { margin-top: 4px; font: var(--meta-font);
             line-height: var(--baseline);
@@ -253,8 +258,12 @@ button:focus-visible, input:focus-visible {
                color: var(--ink); }
 .letter-ps { color: var(--ink-soft); }
 /* W-8 兜底记号的纸系样式：粗体墨色加重、斜体是笔锋、代码片段落次纸
-   浅盒（--f-mono + --paper-2）；不引入新色、零圆角、克制。 */
-.say strong { font-weight: 700; color: var(--ink); }
+   浅盒（--f-mono + --paper-2）；不引入新色、零圆角、克制。
+   v2-1R LOW-5：西文 Bold 是真粗（Sitka/Constantia 有 Bold 面）；
+   中文面无 Bold，合成粗已被 body 禁——加重改由墨蓝深档承载
+   （accent-deep 11.98:1，简报 §2 深档语义「落款/盖印」外的批注
+   记号延伸——兜底记号就是「笔友的批改」，用笔的深墨蓝成立）。 */
+.say strong { font-weight: 700; color: var(--accent-deep); }
 .say em { font-style: italic; }
 .say code { font-family: var(--f-mono); font-size: var(--fs-small);
             background: var(--paper-2); padding: 1px 4px; }
@@ -842,4 +851,14 @@ textarea:focus-visible, select:focus-visible {
     transition-duration: 0.01ms !important;
     transition-delay: 0s !important;
   }
+}
+
+/* ── v2-1R M-2：简报工艺法则 5/7（正文收孤字 / 标题平衡 / 标点挤压
+   探测启用——@supports 不支持即静默降级，无 hack 无 JS）──────────── */
+.say, .letter-date, .letter-sign, .letter-ps, .ob-para {
+  text-wrap: pretty;
+}
+h1, .grouphead, .note-head b { text-wrap: balance; }
+@supports (text-spacing-trim: trim-start) {
+  .say, .ob-para { text-spacing-trim: trim-start; }
 }

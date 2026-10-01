@@ -168,12 +168,13 @@ def test_the_cover_copy_follows_the_user_language() -> None:
 def test_the_empty_hall_copy_follows_the_user_language() -> None:
     """app.js: the empty-hall system line invites either language and
     keeps floor ③ (a mistake gets answered) — rd-2 豪放句
-    「客厅接得住」承接 placeholder 让位后的底线①③承载义务。"""
+    「笔友接得住」（v2-1R 随更名自「客厅接得住」随迁）承接 placeholder
+    让位后的底线①③承载义务。"""
 
     app = _text("webui/app.js")
     assert (
         "信还没开始写——想从哪句起，就从哪句起。中文英文都行；"
-        "写错了，客厅接得住。" in app
+        "写错了，笔友接得住。" in app
     )
     assert "用英语给笔友写" not in app
     # W-8 中档句缺位（防回潮）

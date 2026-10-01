@@ -42,20 +42,22 @@ function letterParagraphs(text) {
 }
 
 // 称呼（salutation）：仅当正文自带——首段是独立称呼行（短、以逗号/
-// 叹号/冒号收尾、无句中标点）。提取不到就没有这件（不虚构问候）。
+// 叹号/冒号收尾【中英全角半角皆收——v2-1R M-1：主语言中文的回信
+// 不能系统性缺这件】、无句中标点）。提取不到就没有这件（不虚构问候）。
 function salutationOf(paragraphs) {
   const first = paragraphs[0] || "";
   if (paragraphs.length < 2 || first.length > 48) return null;
-  if (!/[,!：:]$/.test(first)) return null;
-  if (/[.；;?？]/.test(first.slice(0, -1))) return null;
+  if (!/[,，!！：:]$/.test(first)) return null;
+  if (/[.。；;?？]/.test(first.slice(0, -1))) return null;
   return first;
 }
 
 // 落款块（complimentary close + signature）：仅当正文自带——尾部收
-// 结束语行（短、逗号收尾、常见结束语词）与/或署名行（更短、无终端
-// 标点、非 P.S.）。提取不到就没有这件（不虚构结束语文本）。
+// 结束语行（短、常见结束语词【中英语表皆收——v2-1R M-1】、逗号收尾
+// 或中文无标点短语）与/或署名行（更短、无终端标点、非 P.S.）。
+// 提取不到就没有这件（不虚构结束语文本）。
 const SIGN_CLOSE =
-  /(yours|best|love|warmly|regards|cheers|sincerely|talk soon|take care|later|as ever|thanks)/i;
+  /(yours|best|love|warmly|regards|cheers|sincerely|talk soon|take care|later|as ever|thanks|此致|敬上|敬祝|祝好|祝安|顺祝|近好|秋安|冬安|春安|夏安|勿念)/i;
 
 function signatureBlockOf(paragraphs) {
   const lines = [];
@@ -67,8 +69,11 @@ function signatureBlockOf(paragraphs) {
     lines.push(last);
     at -= 1;
     const close = paragraphs[at - 1] || "";
-    if (at > 1 && close.split(/\s+/).length <= 5 &&
-        /,$/.test(close) && SIGN_CLOSE.test(close)) {
+    const closeOk =
+      (/[,，]$/.test(close) && SIGN_CLOSE.test(close)) ||
+      (SIGN_CLOSE.test(close) && close.length <= 8 &&
+       !/[.!?。！？，,]$/.test(close));
+    if (at > 1 && close.split(/\s+/).length <= 6 && closeOk) {
       lines.unshift(close);
       at -= 1;
     }
