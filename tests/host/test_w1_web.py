@@ -1549,11 +1549,13 @@ def test_a_refused_conversation_open_raises_before_serving(
     )
     try:
         # Host is a frozen dataclass: patch the class (monkeypatch restores
-        # it), so the instance's call goes to the refusing stub.
+        # it), so the instance's call goes to the refusing stub. cs-1 随迁：
+        # run_web now binds the penpal persona on the open, so the stub
+        # takes the keyword (and refuses before it matters).
         monkeypatch.setattr(
             type(host),
             "open_conversation",
-            lambda _self, _cid: Err(
+            lambda _self, _cid, *, persona_id=None: Err(
                 DomainError(
                     code=DomainErrorCode.NOT_FOUND,
                     message="conversation refused (injected)",

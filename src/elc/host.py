@@ -24,7 +24,14 @@ one. :func:`open_host` is that place, and it is deliberately the only one:
 Optional injections pass through unchanged: ``stream_transport`` reaches the
 coordinator's client boundary (``None`` keeps V1's in-process single-chunk
 default) and ``character_package`` reaches the ordinary turn's
-GenerationContext (``None`` keeps the P1 assembly).
+GenerationContext. cs-1 gives the package a production default: the fixed
+penpal (:mod:`elc.persona.penpal`) — ``open_host`` injects her card unless
+the caller passes a different package, and ``character_package=None``
+restores the bare prep-1 shape (the degradation arm of the ``[persona]``
+section). The shipped entry faces (``elc.cli`` / ``elc.web``) bind the
+matching ``persona_id`` onto the conversations they open, so the card, the
+conversation row and the Persona×User pair the projections write for are
+one character.
 
 **Two assembly tiers, declared rather than implied (D-5):**
 
@@ -153,6 +160,7 @@ from elc.learning.silent_evidence import (
     ContentBackedTargetSupply,
 )
 from elc.learning.store import LOCAL_V1_DEFAULT_USER_SCOPE, SqliteLearningStore
+from elc.persona.penpal import PENPAL_CHARACTER_PACKAGE
 from elc.persona.provider import PersonaProvider
 from elc.persona.runtime import PersonaRuntime
 from elc.persona.types import CharacterPackageRecord
@@ -178,6 +186,7 @@ from elc.platform.types import (
     SceneId,
     UserId,
 )
+from elc.relationship.candidates import PatternCandidateProvider
 from elc.relationship.controller import RelationshipController
 from elc.relationship.episode_store import SqliteEpisodeStore
 from elc.relationship.projection import (
@@ -317,14 +326,31 @@ class Host:
         Delegation, not logic: the store is the authority (``user_id`` is in
         the signature but §3's Conversation column set has no column for it, so
         the store discards it).
+
+        cs-1: when a ``persona_id`` is passed, a conversation that somehow
+        exists without one (a row opened before the shipped faces carried a
+        persona — the dogfood app.db's legacy NULL rows) is adopted: the
+        store's ``bind_persona_if_unbound`` fills the empty persona, and a
+        conversation that already carries one is never overwritten. The
+        fill's own ``Err`` (``NOT_FOUND`` cannot happen after the open —
+        the row exists) propagates instead of being swallowed.
         """
 
-        return self.conversations.open_conversation(
+        opened = self.conversations.open_conversation(
             conversation_id,
             user_id if user_id is not None else UserId("local-user"),
             persona_id,
             scene_id,
         )
+        if isinstance(opened, Err):
+            return opened
+        if persona_id is not None:
+            bound = self.conversations.bind_persona_if_unbound(
+                conversation_id, persona_id
+            )
+            if isinstance(bound, Err):
+                return bound
+        return opened
 
     def startup_recovery(self) -> Result[StartupRecoveryOutcome]:
         """RA §22's startup pass — the delegate that closes gap 7.
@@ -392,7 +418,7 @@ def open_host(
     provider: PersonaProvider,
     secrets: SecretSource | None = None,
     stream_transport: StreamTransportFactory | None = None,
-    character_package: CharacterPackageRecord | None = None,
+    character_package: CharacterPackageRecord | None = PENPAL_CHARACTER_PACKAGE,
     migrations_dir: Path = DEFAULT_MIGRATIONS_DIR,
     content_db_path: str | Path | None = None,
     rollout_stage: RolloutStage | None = None,
@@ -400,13 +426,16 @@ def open_host(
 ) -> Host:
     """Assemble the whole loop over one app.db (see the module docstring).
 
-    ``content_db_path=None`` assembles the prep-1 tier; a path assembles the
-    full chain over that built artifact (read-only — the store refuses a
-    writable connection by construction) and binds ``rollout_stage`` into the
-    automatic wiring verbatim (``None`` keeps the fail-closed default; this
-    function never substitutes a stage of its own). ``candidate_supply``
-    passes through to the wiring verbatim (``None`` — the production value —
-    runs the generators over the ports; see the module docstring).
+    ``character_package`` defaults to the fixed penpal (cs-1) — the caller
+    may pass another package, or an explicit ``None`` to restore the bare
+    prep-1 shape. ``content_db_path=None`` assembles the prep-1 tier; a
+    path assembles the full chain over that built artifact (read-only —
+    the store refuses a writable connection by construction) and binds
+    ``rollout_stage`` into the automatic wiring verbatim (``None`` keeps
+    the fail-closed default; this function never substitutes a stage of
+    its own). ``candidate_supply`` passes through to the wiring verbatim
+    (``None`` — the production value — runs the generators over the ports;
+    see the module docstring).
 
     D-5R: the full chain's session-budget leg is wired (assembly fact 1) and
     the wiring's ``provenance`` mapping is read from the artifact at assembly
@@ -488,11 +517,18 @@ def open_host(
             )
             episode_store = SqliteEpisodeStore(db, fence)
             recorder = RelationshipRecorder(conversations)
+            # cs-1: the deterministic candidate producer replaces the
+            # no-provider assembly (``candidates=None`` proposed nothing, so
+            # the relationship memory stayed empty forever). The producer is
+            # a source, not an authority — every candidate it hands back
+            # still walks the Recorder's refusal order and the Controller's
+            # validate / gate / dedupe faces (elc.relationship.candidates).
             relationship_executor = RelationshipProjectionExecutor(
                 recorder=recorder,
                 controller=relationship,
                 conversation=conversations,
                 user_id=LOCAL_V1_USER_ID,
+                candidates=PatternCandidateProvider(),
             )
             episode_executor = EpisodeProjectionExecutor(
                 store=episode_store,

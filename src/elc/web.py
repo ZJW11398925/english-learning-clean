@@ -307,6 +307,7 @@ from elc.curriculum.readiness import READINESS_LEVELS
 from elc.deletion.controller import DeletionController
 from elc.deletion.types import DeletionRequest, DeletionScope
 from elc.host import Host
+from elc.persona.penpal import PENPAL_PERSONA_ID
 from elc.persona.provider import PersonaProvider
 from elc.planner.trace_document import decode_factor_trace
 from elc.platform.types import (
@@ -876,6 +877,21 @@ def _learning_evidence_panel(db: sqlite3.Connection) -> dict[str, Any]:
 #: How many recent evidence claims the memory view's evidence panel serves
 #: (the learning view's width, same number, own name).
 _MEMORY_EVIDENCE_ROWS = 5
+
+#: cs-1: the semantic partition of the memory readout's five panels — which
+#: side of the character/learning/audit line each panel answers. The field
+#: is additive and purely declarative today (the page does not read it yet;
+#: cs-2 wires the character face), but the partition is the server's to
+#: name, so it is declared here once and stamped on every panel — including
+#: a panel that answered with its error shape, whose partition is just as
+#: much a fact about it.
+_MEMORY_PANEL_DOMAINS: dict[str, str] = {
+    "relationship_memory": "character",
+    "episode": "character",
+    "learner_states": "learning",
+    "evidence": "learning",
+    "tombstones": "audit",
+}
 
 #: The three scopes the delete face accepts — the ones with behaviour legs
 #: on this assembly — each mapped to its own request key. The deletion
@@ -2079,10 +2095,12 @@ class _WebFace:
     def memory(self) -> dict[str, Any]:
         """p-2: the memory readout — five guarded panels, read-only SQL on
         the work queue (the diagnostics face's construction; a person pulls
-        it from the 仪表 screen, never mid-generation)."""
+        it from the 仪表 screen, never mid-generation). cs-1 stamps each
+        panel with its semantic partition (:data:`_MEMORY_PANEL_DOMAINS`)
+        — an additive key the page does not read yet (cs-2 will)."""
 
         db = self._host.db
-        return {
+        readout = {
             "relationship_memory": _diagnostics_panel(
                 "relationship_memory", _relationship_memory_panel, db
             ),
@@ -2099,6 +2117,9 @@ class _WebFace:
                 db,
             ),
         }
+        for name, panel in readout.items():
+            panel["domain"] = _MEMORY_PANEL_DOMAINS[name]
+        return readout
 
     def _tombstones(self) -> dict[str, Any]:
         """The tombstone panel's read: the host's own deletion controller,
@@ -3128,6 +3149,11 @@ def run_web(
     open is idempotent per conversation, and an open that refuses raises
     :class:`WebOpenError` for the CLI branch to answer with its human
     sentence (the ``chat`` open-failure shape, not a 500-per-request loop).
+    cs-1 binds the conversation to the fixed penpal
+    (``elc.persona.penpal``) — the same binding the chat command makes, so
+    both faces serve the same character; a legacy row that predates the
+    binding is adopted (an empty persona is filled, a bound one is never
+    overwritten).
 
     After the open and before the bind, the host's startup recovery runs
     once — the same sweep the ``chat`` command runs at its startup. A web
@@ -3155,7 +3181,9 @@ def run_web(
             " corrupt each other's turns"
         )
 
-    opened = host.open_conversation(ConversationId(conversation))
+    opened = host.open_conversation(
+        ConversationId(conversation), persona_id=PENPAL_PERSONA_ID
+    )
     if isinstance(opened, Err):
         raise WebOpenError(
             f"cannot open conversation {conversation}:"

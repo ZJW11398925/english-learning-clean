@@ -72,8 +72,14 @@ class _StubHost:
     epoch = "epoch-stub"
 
     def open_conversation(
-        self, conversation_id: ConversationId
+        self,
+        conversation_id: ConversationId,
+        *,
+        persona_id: object = None,
     ) -> Result[ConversationId]:
+        # cs-1 随迁：_chat now binds the fixed penpal on the open; the stub
+        # accepts the argument (and does nothing with it, as before).
+        del persona_id
         return Ok(conversation_id)
 
     def startup_recovery(self) -> Result[object]:

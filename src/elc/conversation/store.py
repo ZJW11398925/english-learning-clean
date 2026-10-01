@@ -223,6 +223,51 @@ class SqliteConversationStore:
                 )
         return Ok(conversation_id)
 
+    def bind_persona_if_unbound(
+        self, conversation_id: ConversationId, persona_id: PersonaId
+    ) -> Result[bool]:
+        """Fill one conversation's empty persona (cs-1) — the idempotent
+        adoption of a legacy row.
+
+        ``open_conversation`` is insert-only: a conversation that already
+        exists is left exactly as it is, so rows opened before the shipped
+        faces carried a persona (the dogfood app.db's ``persona_id`` NULL
+        rows) kept it forever, and the two readings of such a conversation
+        disagreed — the turn pipeline fell back to ``persona-default``
+        while the CP4 projections refused the persona-less row. This face
+        is the minimal repair, additive to that semantics:
+
+        - ``Ok(True)`` — the row existed with a NULL persona and now
+          carries this one (the adoption);
+        - ``Ok(False)`` — the row already carries a persona, which is
+          **never overwritten**: a bound conversation keeps its own
+          character (the fill predicate is in the UPDATE's WHERE clause,
+          so even a racing second writer cannot clobber one);
+        - ``Err(NOT_FOUND)`` — no such conversation; nothing is created
+          here (opening one is ``open_conversation``'s job).
+        """
+
+        with short_transaction(self._conn):
+            self._require_current_epoch()
+            row = self._conn.execute(
+                "SELECT persona_id FROM conversation"
+                " WHERE conversation_id = ?",
+                (conversation_id,),
+            ).fetchone()
+            if row is None:
+                return _err(
+                    DomainErrorCode.NOT_FOUND,
+                    f"conversation not found: {conversation_id}",
+                )
+            if row[0] is not None:
+                return Ok(False)
+            self._conn.execute(
+                "UPDATE conversation SET persona_id = ?"
+                " WHERE conversation_id = ? AND persona_id IS NULL",
+                (persona_id, conversation_id),
+            )
+        return Ok(True)
+
     def ingest_input(self, envelope: InputEnvelope) -> Result[InputEnvelope]:
         """Durable + dedupe outside the coordinator guard (RUNTIME §17.1)."""
         if envelope.client_message_id is not None:

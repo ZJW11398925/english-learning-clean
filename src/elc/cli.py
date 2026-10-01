@@ -5,7 +5,9 @@
 (``elc.host``), runs the startup recovery once, then reads lines: one line is
 one ``CommitUserTurn`` through
 ``ConversationCoordinator.begin_turn``, and the reply — or the honest failure —
-is printed. ``:quit`` or EOF exits and closes the connection.
+is printed. ``:quit`` or EOF exits and closes the connection. cs-1 binds the
+conversation to the fixed penpal (``elc.persona.penpal``): the persona the
+character card describes is the persona the memory projections write for.
 
 D-6-a adds the chat command's two dogfood legs (EXT-D5-02's closure: the
 shipped CLI can now assemble what the dogfood observes):
@@ -115,6 +117,7 @@ from elc.persona.openai_provider import (
     OpenAICompatibleProvider,
     insecure_http_destination,
 )
+from elc.persona.penpal import PENPAL_PERSONA_ID
 from elc.persona.provider import PersonaProvider, ScriptedPersonaProvider
 from elc.platform.db.migrations import MigrationError
 from elc.platform.secrets import EnvSecretSource, FileSecretSource, SecretSource
@@ -490,7 +493,15 @@ def _chat(
     conversation_id = ConversationId(
         args.conversation or DEFAULT_CONVERSATION_ID
     )
-    opened = host.open_conversation(conversation_id)
+    # cs-1: the conversation is bound to the fixed penpal, so the Persona
+    # ×User pair the CP4 projections write for is the pair the character
+    # card describes (an unbound row made the projections refuse and the
+    # turn pipeline fall back to ``persona-default`` — the two readings
+    # disagreed). A legacy row that predates the binding is adopted
+    # (``open_conversation`` fills an empty persona, never overwrites one).
+    opened = host.open_conversation(
+        conversation_id, persona_id=PENPAL_PERSONA_ID
+    )
     if isinstance(opened, Err):
         print(
             f"elc chat: cannot open conversation {conversation_id}:"
