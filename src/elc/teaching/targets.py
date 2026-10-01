@@ -77,8 +77,11 @@ class TeachingTargetView:
       (docs/DATA_MODEL.md §13 REALIZES/SUPPORTS links); it is what lets
       Learning map an alternative realization onto a capability claim.
 
-    All six default to the empty/absent value, so a Phase 5 provider that
-    only knows validity facts keeps working unchanged."""
+    cs-0 adds ``teaching_notes``: the §24.3 corpus rows in the
+    ``teaching_note`` role, in authored order — the explanation delivery's
+    note text is assembled from them (the corpus's own words, never a
+    model's free hand). Defaulted empty, so a provider that only knows
+    validity facts keeps working unchanged."""
 
     target_type: str
     target_id: str
@@ -93,6 +96,7 @@ class TeachingTargetView:
     alternative_realizations: tuple[str, ...] = ()
     required_slots: tuple[tuple[str, ...], ...] = ()
     capability_linkage: str | None = None
+    teaching_notes: tuple[str, ...] = ()
 
     def answer_key(self) -> AttemptAnswerKey:
         """The evaluator's view of this target (the evaluator module owns

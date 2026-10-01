@@ -193,7 +193,14 @@ class RelationshipProjectionExecutor:
         whatever the read could not see.
         """
 
-        slice_result = self._conversation.get_canonical_turn_slice(
+        # cs-0: the Recorder consumes the persona-visible slice — the same
+        # filtered view the ``[history]`` section and the episode rebuild
+        # see. A teaching delivery's assistant text is the runtime's own
+        # composition, not the role's words, so a memory may not carry it
+        # as provenance (the assistant_turn_id stays unset for such a
+        # turn); the user's own utterance on the same turn reads exactly
+        # as before.
+        slice_result = self._conversation.get_persona_visible_turn_slice(
             view.source_turn_id
         )
         if isinstance(slice_result, Err):

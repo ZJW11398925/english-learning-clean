@@ -279,16 +279,22 @@ CONVERSATION_WINDOW_MAX_TURNS = 20
 
 #: GenerationContract id of the CP2 first teaching action (§20
 #: generation_contract_id; the opening action itself is dispatched by
-#: :meth:`ConversationCoordinator.request_teaching`).
-TEACHING_OPEN_CONTRACT_ID = "gc-teaching-open"
+#: :meth:`ConversationCoordinator.request_teaching`). cs-0 renamed the
+#: id's word: the id rides the compiled ``[contract]`` section into the
+#: role's prompt, so it carries the neutral ``note`` word, never the
+#: runtime's own vocabulary (the compiled prompt must stay free of the
+#: teaching mechanism's names). New durable rows carry the new id; rows
+#: written before cs-0 keep the old one (no migration — the column has no
+#: vocabulary constraint, and the id is bookkeeping, not semantics).
+TEACHING_OPEN_CONTRACT_ID = "gc-note-open"
 
 #: §20 generation contract id per teaching action (P3-1B): one contract
 #: per action type, so a validator rule change is a contract change.
 TEACHING_CONTRACT_BY_ACTION = {
     "TEACHING_OPEN": TEACHING_OPEN_CONTRACT_ID,
-    "TEACHING_HINT": "gc-teaching-hint",
-    "TEACHING_REVEAL": "gc-teaching-reveal",
-    "TEACHING_EXPLANATION": "gc-teaching-explanation",
+    "TEACHING_HINT": "gc-note-hint",
+    "TEACHING_REVEAL": "gc-note-reveal",
+    "TEACHING_EXPLANATION": "gc-note-explanation",
     "PERSONA_RESUME": "gc-persona-resume",
 }
 
@@ -301,6 +307,72 @@ TEACHING_ACTION_BY_DELIVERY = {
     "EXPLANATION": "TEACHING_EXPLANATION",
     "RESUME": "PERSONA_RESUME",
 }
+
+# -- cs-0: the system-assembled delivery note (附笺模式) ---------------------
+#
+# The note is the runtime's own deterministic composition over validated
+# corpus content: a hint carries the ladder rung, a reveal carries the
+# reveal form, an explanation carries the §24.3 teaching_note rows, an
+# opening carries the target's canonical form. Three delivery kinds have no
+# corpus row to carry — the retry nudge, the plain closing line, and the
+# opening when the target resolved with no canonical form — and for those
+# the fixed system lines below stand in (declared here, word for word, so
+# the copy is pinned text and never a model's free hand). The note rides
+# the compiled prompt as the neutral enclosed-note instruction and is
+# composed onto the persona's letter at the one delivery site, so the note
+# text reaches the user verbatim whatever the letter says.
+
+#: The opening note's frame: the target's canonical form, presented as the
+#: expression to try (the corpus's own words; the frame is system copy).
+OPENING_NOTE_TEMPLATE = "这封信里附了一条表达：「{form}」——回信时试着用上它。"
+
+#: The retry note: the ladder does not move and no corpus row exists for a
+#: nudge; the fixed line is the delivery (system copy, pinned here).
+RETRY_NOTE = "这句还没说对——再试一回。"
+
+#: The closing note for a resume that carries no reveal: the fixed line is
+#: the delivery (system copy, pinned here). A closing reveal carries the
+#: reveal form instead (corpus content).
+CLOSING_NOTE = "这封就先到这里——回头再聊。"
+
+
+def _compose_letter_and_note(letter: str | None, note: str | None) -> str:
+    """One delivery text: the persona's letter with the note appended.
+
+    The composition is the whole point of the unknowing-messenger shape
+    (cs-0): the model writes its letter and never has to be trusted with
+    the note — the note text reaches the user verbatim because the runtime
+    appends it, byte for byte, after the letter. Either side alone is
+    legal (a note with no letter, a letter with no note); the separator is
+    the blank line a letter's enclosure convention reads as.
+    """
+
+    letter_body = (letter or "").strip()
+    note_body = (note or "").strip()
+    if letter_body and note_body:
+        return f"{letter_body}\n\n{note_body}"
+    return note_body or letter_body
+
+
+def _opening_note_for(view: TeachingTargetView | None) -> str:
+    """The opening note: the target's canonical form in the fixed frame.
+
+    The form is corpus content (``canonical_forms[0]``); a target that
+    resolved with no canonical form takes the fixed closing line's sister
+    — the plain system line — rather than a fabricated one.
+    """
+
+    if view is not None and view.canonical_forms:
+        return OPENING_NOTE_TEMPLATE.format(form=view.canonical_forms[0])
+    return ""
+
+
+def _explanation_note_for(view: TeachingTargetView | None) -> str:
+    """The explanation note: the §24.3 teaching_note rows, authored order."""
+
+    if view is not None and view.teaching_notes:
+        return " ".join(view.teaching_notes)
+    return ""
 
 #: delivery kind → BF-03 proposed-action word (the continuation Gate's own
 #: vocabulary, which is not the §20 action type).
@@ -1868,6 +1940,12 @@ class ConversationCoordinator:
                 moment_id=str(moment_id),
                 focus_target_type=str(moment.focus_target.target_type),
                 focus_target_id=str(moment.focus_target.target_id),
+                enclosed_note=_opening_note_for(
+                    self._target_view_for(
+                        str(moment.focus_target.target_type),
+                        str(moment.focus_target.target_id),
+                    )
+                ),
             ),
         )
         if isinstance(delivery, Err):
@@ -5001,6 +5079,11 @@ class ConversationCoordinator:
                 moment_id=str(moment_id),
                 focus_target_type=request.target_type,
                 focus_target_id=str(request.focus_target_id),
+                enclosed_note=_opening_note_for(
+                    self._target_view_for(
+                        request.target_type, str(request.focus_target_id)
+                    )
+                ),
             ),
         )
         if isinstance(delivery, Err):
@@ -5871,6 +5954,15 @@ class ConversationCoordinator:
         if refusal is not None:
             return Err(refusal)
         action_type = TEACHING_ACTION_BY_DELIVERY[step.delivery_kind]
+        # cs-0: the note the delivery carries — the corpus's own words when
+        # the ladder has them (a hint rung, a reveal form), the fixed retry
+        # line on a retry, the §24.3 teaching_note rows on an explanation.
+        if step.delivery_kind == "RETRY":
+            note = RETRY_NOTE
+        elif step.text:
+            note = step.text
+        else:
+            note = _explanation_note_for(view)
         delivery = self._deliver_teaching_action(
             turn_id=cp0.turn_id,
             conversation_id=ConversationId(turn.conversation_id),
@@ -5900,7 +5992,8 @@ class ConversationCoordinator:
                     explanation_text=(
                         step.text if step.delivery_kind == "EXPLANATION" else None
                     ),
-                )
+                ),
+                enclosed_note=note,
             ),
         )
         if isinstance(delivery, Err):
@@ -6109,6 +6202,9 @@ class ConversationCoordinator:
                 return stepped
             current = stepped.value
         if current.lifecycle_state is MomentState.RESUMING:
+            # cs-0: the closing note — the reveal form (corpus) when the
+            # episode closes with one, the fixed closing line otherwise.
+            closing_reveal = None if view is None else view.reveal_form
             resume_view = self._resume_prompt_view(
                 ResumeDirective(
                     moment_id=current.moment_id,
@@ -6119,7 +6215,10 @@ class ConversationCoordinator:
                     completion_outcome=current.completion_outcome,
                     abort_reason=current.abort_reason,
                 ),
-                reveal_text=None if view is None else view.reveal_form,
+                reveal_text=closing_reveal,
+                enclosed_note=(
+                    closing_reveal if closing_reveal else CLOSING_NOTE
+                ),
             )
             delivery = self._deliver_teaching_action(
                 turn_id=cp0.turn_id,
@@ -6737,6 +6836,15 @@ class ConversationCoordinator:
                 )
             )
         reply = generation.buffered_reply
+        # cs-0: the delivery text is the letter with the note appended —
+        # the note the system assembled from the validated corpus rides
+        # verbatim whatever the letter says (the unknowing-messenger rule).
+        # The composition happens here, at the one site every teaching
+        # delivery passes through, so the canonicalized assistant turn, the
+        # exposure read and the §20 half all see the same composed text.
+        text = _compose_letter_and_note(
+            reply.text, prompt_view.note_text()
+        )
         # RA §4 steps 13 → 14 → 15 on the buffered face (P9-3 disposition,
         # review MEDIUM-1): §15's guard runs once, before any user-visible
         # content is released, and this is the one site every teaching
@@ -6791,7 +6899,7 @@ class ConversationCoordinator:
                 turn_id=turn_id,
                 action_id=reply.action_id,
                 assistant_turn_id=reply.assistant_turn_id,
-                text=reply.text,
+                text=text,
                 turn_sequence=turn_sequence,
                 message_sequence=message_sequence,
                 delivery_state=DeliveryState.SENT_COMPLETE,
@@ -6804,7 +6912,7 @@ class ConversationCoordinator:
         delivered = TeachingActionDelivery(
             action_id=reply.action_id,
             assistant_turn_id=reply.assistant_turn_id,
-            text=reply.text,
+            text=text,
             outcome=TurnOutcome.REPLIED_FULL.value,
             turn_status=completion.value.turn_status,
             state_version=completion.value.state_version,
@@ -7340,15 +7448,38 @@ class ConversationCoordinator:
             )
         return Ok((decision_cycles, learning, teaching, targets))
 
+    def _target_view_for(
+        self, target_type: str, target_id: str
+    ) -> TeachingTargetView | None:
+        """The target's corpus view, or ``None`` when it cannot resolve.
+
+        cs-0's note assembly reads the corpus through the same provider the
+        Gate uses; a resolve failure here degrades the delivery to its
+        letter (an empty note), never to a fabricated corpus line. The
+        degrade is a registered cs-0 face, pinned from the resolvable side.
+        """
+
+        if self._targets is None:
+            return None
+        resolved = self._targets.resolve(target_type, target_id)
+        if isinstance(resolved, Err):
+            return None
+        return resolved.value
+
     @staticmethod
     def _directive_prompt_view(
         directive: EphemeralTeachingDirective,
+        *,
+        enclosed_note: str | None = None,
     ) -> TeachingPromptView:
         """Project a Teaching directive onto the persona-owned prompt view.
 
         The projection lives here because ``persona`` must not import
         ``teaching`` (the AST pin) and ``teaching`` must not import
-        ``persona``: the orchestrator is the one place that knows both."""
+        ``persona``: the orchestrator is the one place that knows both.
+        cs-0 adds ``enclosed_note`` — the system-assembled note text the
+        compiled section carries; the mechanism fields below stay the
+        durable projection's carriers and never reach the prompt."""
         return TeachingPromptView(
             action_type=directive.action_type,
             presentation_phase=directive.presentation_phase.value,
@@ -7360,18 +7491,25 @@ class ConversationCoordinator:
             hint=directive.hint,
             reveal=directive.reveal_text,
             explanation=directive.explanation_text,
+            enclosed_note=enclosed_note,
         )
 
     @staticmethod
     def _resume_prompt_view(
-        directive: ResumeDirective, *, reveal_text: str | None = None
+        directive: ResumeDirective,
+        *,
+        reveal_text: str | None = None,
+        enclosed_note: str | None = None,
     ) -> TeachingPromptView:
         """Project the narrow resume directive (never the moment record).
 
         A closing reveal travels as the resume section's ``reveal`` text:
         the episode's last message shows the form and returns the
         conversation to normal, and the moment record itself (attempts,
-        ladder internals, snapshots) never reaches the prompt."""
+        ladder internals, snapshots) never reaches the prompt. cs-0 adds
+        ``enclosed_note`` — the note the delivery carries (the reveal form
+        when the episode closes with one, the fixed closing line
+        otherwise)."""
         fields = dict(directive.as_view_fields())
         return TeachingPromptView(
             action_type=GenerationActionType.PERSONA_RESUME.value,
@@ -7382,6 +7520,7 @@ class ConversationCoordinator:
             completion_outcome=fields["completion_outcome"],
             abort_reason=fields["abort_reason"],
             reveal=reveal_text,
+            enclosed_note=enclosed_note,
         )
 
     def _teaching_result(

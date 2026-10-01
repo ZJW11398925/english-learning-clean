@@ -174,6 +174,7 @@ def _keys(section: str) -> list[str]:
 
 
 def test_the_declared_section_order_is_the_compiled_order() -> None:
+    # cs-0 随迁：临时槽的节名随附笺模式改为 [enclosed-note]，位置不变
     assert PROMPT_SECTION_ORDER == (
         "persona",
         "profile",
@@ -181,7 +182,7 @@ def test_the_declared_section_order_is_the_compiled_order() -> None:
         "history",
         "relationship",
         "episode",
-        "teaching",
+        "enclosed-note",
         "channel",
     )
     text = _compile(
@@ -433,7 +434,7 @@ def test_the_p43_prompt_carries_the_response_stance() -> None:
         "[response]\n"
         "language: follow the user — reply in the language the user "
         "writes in (simplified Chinese by default)\n"
-        "teaching expressions: keep a taught expression itself in "
+        "english expressions: keep an expression itself in "
         "English, exactly as given\n"
         "format: plain prose, no markdown markers (**, *, #, `, _)"
     )

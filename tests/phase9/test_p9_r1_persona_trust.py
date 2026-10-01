@@ -561,7 +561,11 @@ def test_the_trusted_rows_render_as_literal_section_lines() -> None:
     assert "user_id: user-p9-r1" in _section(text, "relationship")
     assert "version: epv-p9-r1" in _section(text, "episode")
     assert "response_mode: BUFFERED_VALIDATED" in _section(text, "contract")
-    assert "hint: try the past tense" in _section(text, "teaching")
+    # cs-0 随迁（用户授权的最小随迁，D-4 honesty 随迁先例）：原钉
+    # `[teaching]` 节含 `hint: try the past tense` 随附笺模式退役——钉的
+    # 强度保持（指令的内容必须逐字进入 prompt），节名与形状随 cs-0 改为
+    # 中性 [enclosed-note]；视图未填 note 字段时按携带序回退到 hint。
+    assert "try the past tense" in _section(text, "enclosed-note")
     assert _section(text, "channel") == "[channel]\nTEXT"
 
 

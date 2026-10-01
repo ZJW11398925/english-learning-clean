@@ -343,7 +343,7 @@ def test_the_package_prompt_carries_the_response_stance() -> None:
         "[response]\n"
         "language: follow the user — reply in the language the user "
         "writes in (simplified Chinese by default)\n"
-        "teaching expressions: keep a taught expression itself in "
+        "english expressions: keep an expression itself in "
         "English, exactly as given\n"
         "format: plain prose, no markdown markers (**, *, #, `, _)"
     )

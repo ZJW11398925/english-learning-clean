@@ -686,7 +686,12 @@ def test_the_teaching_contract_keeps_the_buffered_mode(db, p8world) -> None:
 
     assert len(provider.prompts) == 1
     fields = _contract_fields(provider.prompts[0])
-    assert fields["action_type"] == "TEACHING_OPEN"
+    # cs-0 随迁（用户授权的最小随迁，D-4 honesty 随迁先例）：编译产物
+    # 的 [contract] 不再渲染运行时自己的动作词表（TEACHING_OPEN 等）——
+    # 钉的意图保持（教学臂声明的 delivery 模式 = 真实交付面，provider
+    # 恰被调一次），动作词改为编译面的唯一中性词。
+    assert fields["action_type"] != "TEACHING_OPEN"
+    assert fields["action_type"] == "PERSONA_REPLY"
     assert fields["response_mode"] == "BUFFERED_VALIDATED"
     assert fields["response_mode"] == (
         delivery_mode_of(GenerationActionType.TEACHING_OPEN).value

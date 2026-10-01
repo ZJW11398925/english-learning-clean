@@ -68,6 +68,7 @@ from elc.platform.types import (
 from elc.runtime.types import (
     TERMINAL_TURN_STATUSES,
     GenerationActionStatus,
+    GenerationActionType,
     InputEnvelope,
     InterruptRequest,
     TurnRecordData,
@@ -82,6 +83,15 @@ __all__ = [
 ]
 
 T = TypeVar("T")
+
+#: cs-0: the one action word whose assistant text the persona-visible reads
+#: may carry. The window and the visible-slice read exclude every other
+#: action's assistant text (a delivery the teaching machinery composed is
+#: not the role's own words — the role must not read them back, and the
+#: memory/episode projections must not remember them). The word is a bound
+#: parameter taken from the vocabulary's own enum, so the filter cannot
+#: drift from ``GenerationActionType``.
+_PERSONA_VISIBLE_ACTION_WORD = GenerationActionType.NORMAL_PERSONA_REPLY.value
 
 #: Canonical payload discriminator of a teaching command turn
 #: (elc.teaching.request.teaching_request_payload emits sorted-key /
@@ -739,9 +749,9 @@ class SqliteConversationStore:
     def get_conversation_window(
         self, conversation_id: ConversationId, max_turns: int
     ) -> Result[ConversationWindow]:
-        """Canonical transcript window (docs/DOMAIN_MODEL.md §3 key rule:
-        only canonicalized, delivered assistant output appears; undelivered
-        provider output is never stored as an AssistantTurn).
+        """The persona-visible canonical transcript window (docs/DOMAIN_MODEL.md
+        §3 key rule: only canonicalized, delivered assistant output appears;
+        undelivered provider output is never stored as an AssistantTurn).
 
         Teaching command turns are excluded (P3-1A): a ``request_teaching``
         call writes a UserTurn with ``raw_content=""`` whose typed payload
@@ -753,6 +763,19 @@ class SqliteConversationStore:
         teaching *reply* turn (TEACHING_RESPONSE) to the same filter: the
         user's answer to a moment is a typed envelope too, and an empty
         user line would otherwise be read as an utterance.
+
+        cs-0 adds the assistant-side filter: an assistant turn whose
+        §20 action is not the ordinary persona reply is excluded too —
+        the teaching deliveries are the runtime's own composed texts, and
+        the role must neither read them back in its history nor have the
+        memory and episode projections remember them (the three consumers
+        of this window — the ``[history]`` section, ``rebuild_episode``'s
+        ``recent_events`` and the webui history read — see the same
+        filtered view; the write face is untouched and the full
+        transcript stays on ``get_canonical_turn_slice``). An assistant
+        turn whose action row cannot be read is excluded with it
+        (fail-closed, the P9-3 recorder's rule: a turn that cannot prove
+        it is an ordinary reply is not shown as one).
         """
 
         rows = self._conn.execute(
@@ -779,7 +802,9 @@ class SqliteConversationStore:
                 conversation_id=ConversationId(str(row[2])),
                 turn_sequence=TurnSequence(int(row[3])),
                 user_turn=self._user_turn_record(row),
-                assistant_turn=self._assistant_for_turn(TurnId(str(row[1]))),
+                assistant_turn=self._persona_visible_assistant_for_turn(
+                    TurnId(str(row[1]))
+                ),
                 outcome=self._turn_outcome(TurnId(str(row[1]))),
             )
             for row in rows
@@ -789,6 +814,41 @@ class SqliteConversationStore:
             ConversationWindow(
                 conversation_id=conversation_id,
                 slices=tuple(slices),
+            )
+        )
+
+    def get_persona_visible_turn_slice(
+        self, turn_id: TurnId
+    ) -> Result[CanonicalTurnSlice | None]:
+        """One CanonicalTurnSlice as the persona may see it (cs-0).
+
+        The same shape ``get_canonical_turn_slice`` returns, with one
+        difference: the assistant turn is present only when its §20 action
+        is the ordinary persona reply — the same filter the window read
+        applies, so the relationship recorder's per-turn face consumes the
+        exact view the ``[history]`` section and the episode rebuild see.
+        The write face and the full-transcript read are untouched.
+        """
+
+        user_row = self._conn.execute(
+            "SELECT user_turn_id, turn_id, conversation_id, turn_sequence,"
+            " message_sequence, input_id, client_message_id,"
+            " interaction_channel, raw_content, normalized_content"
+            " FROM user_turn WHERE turn_id = ?",
+            (turn_id,),
+        ).fetchone()
+        if user_row is None:
+            return Ok(None)
+        return Ok(
+            CanonicalTurnSlice(
+                turn_id=turn_id,
+                conversation_id=ConversationId(str(user_row[2])),
+                turn_sequence=TurnSequence(int(user_row[3])),
+                user_turn=self._user_turn_record(user_row),
+                assistant_turn=self._persona_visible_assistant_for_turn(
+                    turn_id
+                ),
+                outcome=self._turn_outcome(turn_id),
             )
         )
 
@@ -1047,6 +1107,42 @@ class SqliteConversationStore:
             " delivery_state, delivery_certainty"
             " FROM assistant_turn WHERE turn_id = ?",
             (turn_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return AssistantTurnRecord(
+            assistant_turn_id=AssistantTurnId(str(row[0])),
+            turn_id=TurnId(str(row[1])),
+            conversation_id=ConversationId(str(row[2])),
+            turn_sequence=TurnSequence(int(row[3])),
+            message_sequence=MessageSequence(int(row[4])),
+            action_id=ActionId(str(row[5])),
+            content=str(row[6]),
+            delivery_state=DeliveryState(str(row[7])),
+            delivery_certainty=str(row[8]),
+        )
+
+    def _persona_visible_assistant_for_turn(
+        self, turn_id: TurnId
+    ) -> AssistantTurnRecord | None:
+        """The assistant turn the persona-visible reads may carry (cs-0).
+
+        One query: the assistant row joined to the §20 action row that owns
+        it, kept only when that action is the ordinary persona reply. A
+        missing action row fails closed (excluded) — a turn that cannot
+        prove it is an ordinary reply is not shown as one — and a turn
+        with no assistant row at all reads as no assistant text, exactly
+        like ``_assistant_for_turn``.
+        """
+
+        row = self._conn.execute(
+            "SELECT t.assistant_turn_id, t.turn_id, t.conversation_id,"
+            " t.turn_sequence, t.message_sequence, t.action_id, t.content,"
+            " t.delivery_state, t.delivery_certainty"
+            " FROM assistant_turn t"
+            " JOIN generation_action_intent a ON a.action_id = t.action_id"
+            " WHERE t.turn_id = ? AND a.action_type = ?",
+            (str(turn_id), _PERSONA_VISIBLE_ACTION_WORD),
         ).fetchone()
         if row is None:
             return None

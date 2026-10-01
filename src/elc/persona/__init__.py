@@ -30,8 +30,8 @@ from elc.persona.runtime import (
 )
 from elc.persona.types import (
     DEFAULT_FORBIDDEN_CLAIMS,
-    TEACHING_PROMPT_KEY_ORDER,
-    TEACHING_PROMPT_SECTION_VERSION,
+    ENCLOSED_NOTE_PROMPT_KEY_ORDER,
+    ENCLOSED_NOTE_PROMPT_SECTION_VERSION,
     CharacterPackageRecord,
     CompiledPrompt,
     GenerationContext,
@@ -51,8 +51,8 @@ from elc.persona.validator import (
 __all__ = [
     "DEFAULT_FORBIDDEN_CLAIMS",
     "DEFAULT_MAX_PROVIDER_ATTEMPTS",
-    "TEACHING_PROMPT_KEY_ORDER",
-    "TEACHING_PROMPT_SECTION_VERSION",
+    "ENCLOSED_NOTE_PROMPT_KEY_ORDER",
+    "ENCLOSED_NOTE_PROMPT_SECTION_VERSION",
     "VALIDATOR_VERSION",
     "BufferedReply",
     "CharacterPackageRecord",

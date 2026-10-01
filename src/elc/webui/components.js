@@ -455,11 +455,13 @@ async function postReply(card, payload, busyText, doneNote) {
     }
     addLine("system", doneNote);
     if (data.delivery_text) {
-      // the runtime's own delivered words (the hint rung / the reveal
-      // form / the explanation), shown like any assistant line — a new
-      // arrival, so it carries the arrival stamp of ink too
-      addLine("assistant", data.delivery_text,
-        { enter: true, when: new Date().toISOString() });
+      // cs-0：交付文本是系统组装的批注（语料的提示阶梯 / 揭示形 / 讲解），
+      // 不再以角色的信行入流——落在批注卡内作为系统行（note-paper 家族
+      // 的 .noteline，与卡头状态行同形），信流里不出现教学文本。
+      const note = document.createElement("div");
+      note.className = "noteline";
+      note.textContent = data.delivery_text;
+      card.appendChild(note);
     }
     readReplyAnswer(card, data);
   } catch {

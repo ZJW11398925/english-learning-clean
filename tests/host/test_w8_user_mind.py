@@ -44,13 +44,14 @@ REPO = Path(__file__).resolve().parents[2]
 SRC = REPO / "src" / "elc"
 SPEC = REPO / "docs" / "FRONTEND_SPEC.md"
 
-#: The response-stance block, verbatim (W-8 任务书 ①) — the section
-#: header plus three key:value rows, zero interpolation.
+#: The response-stance block, verbatim (W-8 任务书 ①; cs-0 reworded the
+#: second row — the mechanism word is gone, the semantics stay verbatim) —
+#: the section header plus three key:value rows, zero interpolation.
 RESPONSE_LINES = (
     "[response]",
     "language: follow the user — reply in the language the user writes in"
     " (simplified Chinese by default)",
-    "teaching expressions: keep a taught expression itself in English,"
+    "english expressions: keep an expression itself in English,"
     " exactly as given",
     "format: plain prose, no markdown markers (**, *, #, `, _)",
 )

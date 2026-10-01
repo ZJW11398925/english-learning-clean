@@ -14,7 +14,7 @@ make a frame; P9-R1 adds the persona card's text to that set.** Four of the
 compiled sections carry text the *user or a model produced and the system
 persisted* — ``[profile]``'s disclosed facts, ``[relationship]``'s
 remembered memories, ``[episode]``'s summary and threads, ``[history]``'s
-turns — while the other three (``[contract]``, ``[teaching]``'s directive,
+turns — while the other three (``[contract]``, the ``[enclosed-note]``
 ``[channel]``) are the system's own. ``[persona]`` is the one *mixed*
 section: every value of the CharacterPackage card row — the eight free-text
 columns (identity / personality / background / speech_style / values /
@@ -143,9 +143,9 @@ Declared readings (this cut's, each with the condition that re-opens it):
    card text`` outright, the card's values are editable prose rather than a
    controlled vocabulary, and ``SEC-008`` forbids persona/lore text from
    modifying system policy — a card line that can start a line can do
-   exactly that to the prompt's structure. ``[contract]``/``[teaching]``/
+   exactly that to the prompt's structure. ``[contract]``/``[enclosed-note]``/
    ``[channel]`` stay the system's own (the contract is configuration, the
-   directive is built by the teaching flow from validated targets, the
+   instruction is built by the runtime flow from validated targets, the
    channel is an enum). Within ``[persona]`` the classification is per
    field, recorded in :data:`PROMPT_FIELD_TRUST`: the id/revision/
    language-policy/contract rows keep the section carrier, the card-row
@@ -167,7 +167,7 @@ Declared readings (this cut's, each with the condition that re-opens it):
    reversible encoding, and the values' spelling changes with it).
 4. **The frame is version-stamped and length-prefixed.** The marker's
    ``version`` word (``elc-untrusted-v1``) lets a stored prompt say which
-   framing produced it — the ``[teaching]``/P4-3 section-version convention —
+   framing produced it — the P4-3 section-version convention —
    and ``chars`` (the payload block's length) is the length prefix a reader
    needs to know where the delimited payload ends without trusting its
    contents. Revisit: the marker's shape changes (then the version word
@@ -251,6 +251,7 @@ from elc.platform.types import (
     Ok,
     Result,
 )
+from elc.runtime.types import GenerationActionType
 
 #: The fixed section order of the compiled prompt (Phase 3 P3-1B ⑨ pinned
 #: it; Phase 4 P4-3 ④ extends it with the three §11 views the persona
@@ -259,19 +260,16 @@ from elc.platform.types import (
 #: ConversationWindow among the GenerationContext members):
 #:
 #:     persona → profile → contract → history → relationship → episode →
-#:     teaching → channel
+#:     enclosed-note → channel
 #:
 #: The new sections sit where they do for stated reasons, not by accident:
 #: ``profile`` immediately after ``persona`` (both are "who is talking to
 #: whom"); ``relationship``/``episode`` after ``history`` (they are the
 #: distilled form of what history shows in full, so the model reads the
-#: transcript first and the continuity summary after it); ``teaching`` stays
-#: last-but-one because it is the ephemeral directive of *this* turn.
-#: Byte-determinism of the compiled prompt depends on this order, so it lives
-#: here as a declared constant and is asserted by test rather than being
-#: implied by the sequence of appends below. A section is only emitted when
-#: its view is present, so every pre-P4-3 assembly compiles byte-identical
-#: prompts (pinned by the P1/P3 suites).
+#: transcript first and the continuity summary after it); ``enclosed-note``
+#: stays last-but-one because it is the ephemeral note this turn's letter
+#: carries (cs-0's neutral rename of the former teaching slot — the
+#: position is the old one, the section is not).
 PROMPT_SECTION_ORDER = (
     "persona",
     "profile",
@@ -279,7 +277,7 @@ PROMPT_SECTION_ORDER = (
     "history",
     "relationship",
     "episode",
-    "teaching",
+    "enclosed-note",
     "channel",
 )
 
@@ -306,7 +304,7 @@ UNTRUSTED_PROMPT_SECTIONS = (
 )
 
 #: The frame's version word — a stored prompt says which framing produced it
-#: (the ``[teaching]``/P4-3 section-version convention).
+#: (the P4-3 section-version convention).
 UNTRUSTED_FRAMING_VERSION = "elc-untrusted-v1"
 
 #: The two boundary marker prefixes. They are **not** ``[...]``-shaped on
@@ -436,32 +434,28 @@ PROMPT_FIELD_TRUST: tuple[tuple[str, str, str, str], ...] = (
     ("episode", "summary", "untrusted", TRUST_CARRIER_FRAME),
     ("episode", "open_threads", "untrusted", TRUST_CARRIER_FRAME),
     ("episode", "recent_events", "untrusted", TRUST_CARRIER_FRAME),
-    # contract — configuration, all the system's own.
+    # contract — configuration, all the system's own. cs-0: the compiled
+    # action word is the neutral one for every non-ordinary action
+    # (:data:`COMPILED_ACTION_WORD`), so the runtime's own action
+    # vocabulary never reaches the role's prompt; the response mode is the
+    # delivery fact and stays as the contract carries it.
     ("contract", "generation_contract_id", "trusted", TRUST_CARRIER_SECTION),
     ("contract", "action_type", "trusted", TRUST_CARRIER_SECTION),
     ("contract", "response_mode", "trusted", TRUST_CARRIER_SECTION),
     ("contract", "allowed_disclosures", "trusted", TRUST_CARRIER_SECTION),
     ("contract", "max_length", "trusted", TRUST_CARRIER_SECTION),
-    # teaching — the ephemeral directive, built by the teaching flow from
-    # validated curriculum targets, rendered from the persona-owned
-    # TeachingPromptView (P9-0's ruling; the two-way AST pin keeps this
-    # module from importing elc.teaching). Revisit: a cut that fills hint /
-    # reveal / explanation from provider output rather than validated
-    # content re-opens these rows — model output is UNTRUSTED_CONTENT.
-    ("teaching", "prompt_version", "trusted", TRUST_CARRIER_SECTION),
-    ("teaching", "action_type", "trusted", TRUST_CARRIER_SECTION),
-    ("teaching", "moment_id", "trusted", TRUST_CARRIER_SECTION),
-    ("teaching", "focus_target_type", "trusted", TRUST_CARRIER_SECTION),
-    ("teaching", "focus_target_id", "trusted", TRUST_CARRIER_SECTION),
-    ("teaching", "presentation_phase", "trusted", TRUST_CARRIER_SECTION),
-    ("teaching", "support_level", "trusted", TRUST_CARRIER_SECTION),
-    ("teaching", "attempt_index", "trusted", TRUST_CARRIER_SECTION),
-    ("teaching", "hint", "trusted", TRUST_CARRIER_SECTION),
-    ("teaching", "reveal", "trusted", TRUST_CARRIER_SECTION),
-    ("teaching", "explanation", "trusted", TRUST_CARRIER_SECTION),
-    ("teaching", "closure", "trusted", TRUST_CARRIER_SECTION),
-    ("teaching", "completion_outcome", "trusted", TRUST_CARRIER_SECTION),
-    ("teaching", "abort_reason", "trusted", TRUST_CARRIER_SECTION),
+    # enclosed-note — the neutral note this turn's letter carries (cs-0's
+    # rename of the former teaching slot). The three rows are the system's
+    # own: the template version, the fixed carry instruction and the note
+    # text the system assembled from validated curriculum content (the
+    # P9-0 ruling's validated-content class). No mechanism key renders:
+    # the moment / ladder / attempt words stay on the durable rows.
+    # Revisit: a cut that fills the note from provider output rather than
+    # validated content re-opens these rows — model output is
+    # UNTRUSTED_CONTENT.
+    ("enclosed-note", "prompt_version", "trusted", TRUST_CARRIER_SECTION),
+    ("enclosed-note", "instruction", "trusted", TRUST_CARRIER_SECTION),
+    ("enclosed-note", "note", "trusted", TRUST_CARRIER_SECTION),
     # channel — the interaction channel enum.
     ("channel", "interaction_channel", "trusted", TRUST_CARRIER_SECTION),
 )
@@ -483,15 +477,37 @@ class PersonaCommands(Protocol):
         ...
 
 
-#: The fixed trusted [response] section (W-8): the system's own response
-#: stance, zero interpolation, byte-deterministic.
+#: The fixed trusted [response] section (W-8; cs-0 reworded the second
+#: row): the system's own response stance, zero interpolation,
+#: byte-deterministic. cs-0 removed the mechanism word from the second row
+#: while keeping its semantics verbatim — an expression the letter uses as
+#: an expression stays in English, exactly as given.
 RESPONSE_SECTION = (
     "[response]\n"
     "language: follow the user — reply in the language the user writes in"
     " (simplified Chinese by default)\n"
-    "teaching expressions: keep a taught expression itself in English,"
+    "english expressions: keep an expression itself in English,"
     " exactly as given\n"
     "format: plain prose, no markdown markers (**, *, #, `, _)"
+)
+
+#: cs-0: the action word the compiled ``[contract]`` renders for every
+#: non-ordinary action. The runtime's own action vocabulary
+#: (``GenerationActionType``'s durable words) names the teaching machinery —
+#: the product rule is that the role cannot see it — so the prompt carries
+#: one neutral word instead. The durable rows keep the runtime's words
+#: (``generation_action_intent.action_type`` is unchanged); this mapping is
+#: a compile-face projection only.
+COMPILED_ACTION_WORD = "PERSONA_REPLY"
+
+#: cs-0: the ``[enclosed-note]`` section's fixed carry instruction. World
+#: wording on purpose — the letter carries a note, word for word, and the
+#: role is not told why (the unknowing-messenger rule). The text names no
+#: mechanism: no runtime word, no lesson word, nothing but the letter-craft
+#: fact and the verbatim duty.
+ENCLOSED_NOTE_INSTRUCTION = (
+    "this letter carries an enclosed note — copy the note into your"
+    " letter exactly as written, word for word, changing nothing"
 )
 
 
@@ -538,7 +554,7 @@ class PromptCompiler:
     facts / level / persona), [relationship] (the RelationshipView's ACTIVE
     memories, in the view's own order) and [episode] (the EpisodeView's
     content columns). Each section is versioned and renders its version key
-    first, exactly like [teaching]. Scope isolation is structural, not
+    first, exactly like [enclosed-note] today. Scope isolation is structural, not
     defensive: the compiler renders what the views hold, and the views are
     scope-bound reads (one Persona×User pair, one disclosure grant), so
     Persona A's material cannot appear in Persona B's prompt — there is no
@@ -591,10 +607,19 @@ class PromptCompiler:
             max_length = (
                 str(contract.max_length) if contract.max_length is not None else "none"
             )
+            # cs-0: the action word is the compile-face projection — the
+            # ordinary action keeps its own word (the streaming mode is
+            # keyed on it), every other action renders the one neutral
+            # word, so the durable vocabulary never reaches the prompt.
+            action_word = (
+                contract.action_type.value
+                if contract.action_type is GenerationActionType.NORMAL_PERSONA_REPLY
+                else COMPILED_ACTION_WORD
+            )
             sections.append(
                 "[contract]\n"
                 f"generation_contract_id: {contract.generation_contract_id}\n"
-                f"action_type: {contract.action_type.value}\n"
+                f"action_type: {action_word}\n"
                 f"response_mode: {contract.response_mode}\n"
                 f"allowed_disclosures: {disclosures}\n"
                 f"max_length: {max_length}"
@@ -641,7 +666,7 @@ class PromptCompiler:
 
         if context is not None and context.ephemeral_teaching_directive is not None:
             sections.append(
-                _rendered_teaching_section(
+                _rendered_note_section(
                     context.ephemeral_teaching_directive
                 )
             )
@@ -736,7 +761,7 @@ def _persona_card_text_block(package: CharacterPackageRecord) -> str:
 def _section(name: str, fields: tuple[tuple[str, str], ...]) -> str:
     """One P4-3 section: ``[name]`` plus its ``key: value`` lines.
 
-    The shape is the ``[teaching]`` one — a fixed key order, one line per
+    The shape is the ``[enclosed-note]`` one — a fixed key order, one line per
     key, values already rendered to text — so a section's line count and key
     order never depend on which optional values are set.
     """
@@ -809,21 +834,29 @@ def _framed_untrusted_block(name: str, block: str) -> str:
     )
 
 
-def _rendered_teaching_section(directive: object) -> str:
-    """Render the teaching section of the prompt — PromptCompiler-owned.
+def _rendered_note_section(directive: object) -> str:
+    """Render the enclosed-note section of the prompt — compiler-owned.
 
-    Phase 3 P3-1B ⑨: Teaching produces a directive, Persona Runtime owns
-    the prompt. The canonical directive projection is
-    :class:`TeachingPromptView`; it renders as the ``[teaching]`` section
-    with the keys of :data:`TEACHING_PROMPT_KEY_ORDER` in that exact order
-    and ``key: value`` lines, so the same view always yields the same
-    bytes. Any other object keeps the pre-P3-1B ``[directive]`` rendering
-    (no silent drop of a caller's directive).
+    cs-0（附笺模式）: the former ``[teaching]`` section is retired. What
+    renders now is the neutral ``[enclosed-note]`` section — the section
+    version, the fixed carry instruction (:data:`ENCLOSED_NOTE_INSTRUCTION`)
+    and the note text the system assembled from validated curriculum
+    content (:meth:`TeachingPromptView.note_text`), escaped like every
+    section-carrier value. No mechanism key renders: the moment / ladder /
+    attempt words stay on the durable rows and the role never reads them
+    (the unknowing-messenger rule — the role is told to carry a note, not
+    why). The same view always yields the same bytes. Any other object
+    keeps the pre-P3-1B ``[directive]`` rendering (no silent drop of a
+    caller's directive).
     """
 
     if isinstance(directive, TeachingPromptView):
         lines = "\n".join(
-            f"{key}: {value}" for key, value in directive.as_prompt_fields()
+            (
+                f"prompt_version: {directive.prompt_version}",
+                f"instruction: {ENCLOSED_NOTE_INSTRUCTION}",
+                f"note: {_escaped_untrusted_text(directive.note_text())}",
+            )
         )
-        return "[teaching]\n" + lines
+        return "[enclosed-note]\n" + lines
     return f"[directive]\n{str(directive)}"

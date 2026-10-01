@@ -120,8 +120,10 @@ asked — but the store's own replay branch
 defence behind this unit.
 
 The first action's generation contract is **not** re-invented here:
-:data:`TEACHING_OPEN_CONTRACT_ID` is the same ``"gc-teaching-open"`` value
-``elc.runtime.controller`` declares. The duplication is deliberate and
+:data:`TEACHING_OPEN_CONTRACT_ID` is the same ``"gc-note-open"`` value
+``elc.runtime.controller`` declares (cs-0 renamed the word: the id rides
+the compiled ``[contract]`` into the role's prompt, so it stays neutral).
+The duplication is deliberate and
 mirrored (that module would have to import this one or vice versa, and both
 are Runtime faces); ``tests/phase8/test_p8_1_automatic_unit.py`` holds the
 equality, the way the ``CONVERSATION_WINDOW_MAX_TURNS`` pair is held.
@@ -200,8 +202,10 @@ __all__ = [
 
 #: The CP2 first action's §20 generation contract — the same value
 #: ``elc.runtime.controller.TEACHING_OPEN_CONTRACT_ID`` declares (see the
-#: module docstring: mirrored on purpose, held equal by a test).
-TEACHING_OPEN_CONTRACT_ID = "gc-teaching-open"
+#: module docstring: mirrored on purpose, held equal by a test). cs-0
+#: renamed the word (``gc-note-open``): the id rides the compiled
+#: ``[contract]`` into the role's prompt, so it stays neutral.
+TEACHING_OPEN_CONTRACT_ID = "gc-note-open"
 
 #: D-5R's budget refusal code (external review round 5, EXT-D5-01): the
 #: reason a durable GateDecision DENY carries when the session-budget view

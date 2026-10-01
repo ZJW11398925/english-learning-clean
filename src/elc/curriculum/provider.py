@@ -239,5 +239,6 @@ class ContentBackedTeachingTargetProvider:
                 ),
                 required_slots=teaching.value.required_slots,
                 capability_linkage=teaching.value.capability_linkage,
+                teaching_notes=teaching.value.teaching_notes,
             )
         )

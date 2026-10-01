@@ -11,16 +11,61 @@ import sqlite3
 
 from elc.conversation import AssistantTurnRecord, SqliteConversationStore
 from elc.conversation.types import DeliveryState, TurnOutcome
+from elc.platform.db.decision_cycle_store import SqliteDecisionCycleStore
+from elc.platform.db.generation_store import SqliteGenerationStore
 from elc.platform.types import (
     ActionId,
     AssistantTurnId,
     ConversationId,
+    DecisionCycleId,
     Err,
     MessageSequence,
     Ok,
     TurnSequence,
 )
+from elc.runtime.decision_cycles import DecisionCycleBindings
+from elc.runtime.types import (
+    GenerationActionIntentRecord,
+    GenerationActionStatus,
+    GenerationActionType,
+)
 from tests.phase1.conftest import CONV, commit_ok
+
+
+def make_action(
+    generation_store: SqliteGenerationStore,
+    decision_cycle_store: SqliteDecisionCycleStore,
+    action_id: str,
+    turn,
+) -> None:
+    """cs-0 随迁（测试助手，不是放宽）：person-visible 窗口只保留
+    §20 action 为普通回信的 assistant 行（fail-closed）——运行时写下的每
+    个 canonical 行本就带着自己的 action 行，手工构造的 canonical 行也照
+    真实形状补上（cycle 行 + NORMAL_PERSONA_REPLY action 行）。"""
+
+    cycle = decision_cycle_store.record_decision_cycle(
+        decision_cycle_id=DecisionCycleId(f"dcy-{action_id}"),
+        turn_id=turn.turn_id,
+        bindings=DecisionCycleBindings(),
+        expected_turn_state_version=turn.state_version,
+    )
+    assert isinstance(cycle, Ok), cycle
+    created = generation_store.create_action(
+        GenerationActionIntentRecord(
+            action_id=ActionId(action_id),
+            turn_id=turn.turn_id,
+            decision_cycle_id=cycle.value.decision_cycle_id,
+            moment_id=None,
+            assistant_turn_id=f"aturn-{action_id}",
+            action_type=GenerationActionType.NORMAL_PERSONA_REPLY,
+            generation_contract_id="gc-p1-normal",
+            status=GenerationActionStatus.PREPARED,
+            attempt_count=0,
+            created_at=None,
+            owner_epoch=None,
+        )
+    )
+    assert isinstance(created, Ok), created
 
 
 def make_assistant(
@@ -73,10 +118,13 @@ def test_delivered_output_canonicalizes_once_and_appears(
     store: SqliteConversationStore,
     db: sqlite3.Connection,
     conversation: ConversationId,
+    generation_store: SqliteGenerationStore,
+    decision_cycle_store: SqliteDecisionCycleStore,
 ) -> None:
     """VAL ⑥: SENT_COMPLETE output is canonicalized exactly once (idempotent
     by turn) and is the only assistant content the transcript exposes."""
     turn = commit_ok(store, CONV, "cm-1", "question")
+    make_action(generation_store, decision_cycle_store, "act-at-1", turn)
 
     first = store.canonicalize_assistant_turn(
         make_assistant(
@@ -132,6 +180,8 @@ def test_partial_delivery_canonicalizes_marked_partial(
 def test_window_orders_by_turn_sequence_and_slices(
     store: SqliteConversationStore,
     conversation: ConversationId,
+    generation_store: SqliteGenerationStore,
+    decision_cycle_store: SqliteDecisionCycleStore,
 ) -> None:
     """The transcript window returns the latest ``max_turns`` slices in
     ascending turn_sequence order; undelivered drafts appear nowhere."""
@@ -140,6 +190,7 @@ def test_window_orders_by_turn_sequence_and_slices(
     t3 = commit_ok(store, CONV, "cm-3", "three")
     assert t1.turn_sequence < t2.turn_sequence < t3.turn_sequence
 
+    make_action(generation_store, decision_cycle_store, "act-at-2", t2)
     canonical = store.canonicalize_assistant_turn(
         make_assistant(t2.turn_id, "at-2", "answer two", DeliveryState.SENT_COMPLETE)
     )

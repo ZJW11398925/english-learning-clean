@@ -947,7 +947,9 @@ def test_the_module_is_sql_free_and_imports_cold() -> None:
             "sys.path[:0] = [os.path.join(ROOT, 'src'), ROOT]",
             "import elc.runtime.automatic_teaching as m",
             "assert m.decide_automatic_teaching is not None",
-            "assert m.TEACHING_OPEN_CONTRACT_ID == 'gc-teaching-open'",
+            # cs-0 随迁：id 改中性词（gc-note-open）——id 随编译产物进入
+            # 角色 prompt，不再携带机制词
+            "assert m.TEACHING_OPEN_CONTRACT_ID == 'gc-note-open'",
             "print('COLD-AUTOMATIC')",
         ]
     )

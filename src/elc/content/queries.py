@@ -94,6 +94,14 @@ class ContentTeachingView:
     a linkage here, because this field is what the teaching chain credits on
     an ``ALTERNATIVE_SUCCESS`` attempt; an unapproved mapping reads ``None``
     and stays readable as a link row.
+
+    cs-0 adds ``teaching_notes``: the §24.3 ``content_text`` rows in the
+    ``teaching_note`` role, in authored order — the corpus's own explanation
+    words, which the delivery note assembles from (cs-0's G2: the
+    explanation text is corpus content, not a model's free hand). Defaulted
+    empty so every existing constructor keeps working; an entity with no
+    teaching_note row carries the empty tuple and the delivery note falls
+    back to the reveal form.
     """
 
     entity_id: str
@@ -103,6 +111,7 @@ class ContentTeachingView:
     alternative_realizations: tuple[str, ...]
     required_slots: tuple[tuple[str, ...], ...]
     capability_linkage: str | None
+    teaching_notes: tuple[str, ...] = ()
 
 
 @runtime_checkable

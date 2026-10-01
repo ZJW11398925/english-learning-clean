@@ -221,30 +221,27 @@ class GenerationContext:
     ephemeral_teaching_directive: object | None = None
 
 
-#: Version of the ``[teaching]`` section template (Phase 3 P3-1B, TASK-…2.2
-#: ⑨). The prompt is a canonical artifact: changing the key set, the order
-#: or the separators of this section is a NEW version, and the version is
-#: rendered inside the section so a stored prompt says which template
-#: produced it.
-TEACHING_PROMPT_SECTION_VERSION = "teaching-prompt-v1"
+#: cs-0（附笺模式）: the ``[teaching]`` section is retired. The compiled
+#: section is now the neutral ``[enclosed-note]`` one — the system's own
+#: instruction to carry a note verbatim plus the note text itself — and it
+#: carries none of the runtime's mechanism vocabulary (the moment / ladder /
+#: attempt words stay on the durable rows; the role never reads them).
+#: Version of the ``[enclosed-note]`` section template. The prompt is a
+#: canonical artifact: changing the key set, the order or the separators of
+#: this section is a NEW version, and the version is rendered inside the
+#: section so a stored prompt says which template produced it (the P3-1B
+#: convention, renamed by cs-0).
+ENCLOSED_NOTE_PROMPT_SECTION_VERSION = "enclosed-note-prompt-v1"
 
-#: The ``[teaching]`` section's key order, pinned here and enforced by the
-#: compiler — byte-determinism (same view → same bytes) depends on it.
-TEACHING_PROMPT_KEY_ORDER = (
+#: The ``[enclosed-note]`` section's key order, pinned here and enforced by
+#: the compiler — byte-determinism (same view → same bytes) depends on it.
+#: Three rows: the template's version word, the neutral carry instruction,
+#: and the note text. Nothing else renders — no moment id, no ladder word,
+#: no attempt counter (cs-0's zero-mechanism-words rule).
+ENCLOSED_NOTE_PROMPT_KEY_ORDER = (
     "prompt_version",
-    "action_type",
-    "moment_id",
-    "focus_target_type",
-    "focus_target_id",
-    "presentation_phase",
-    "support_level",
-    "attempt_index",
-    "hint",
-    "reveal",
-    "explanation",
-    "closure",
-    "completion_outcome",
-    "abort_reason",
+    "instruction",
+    "note",
 )
 
 
@@ -358,7 +355,7 @@ def episode_prompt_fields(view: EpisodeView) -> tuple[tuple[str, str], ...]:
 
 @dataclass(frozen=True)
 class TeachingPromptView:
-    """The narrow teaching view the PromptCompiler is allowed to render
+    """The narrow view the PromptCompiler is allowed to render
     (Phase 3 P3-1B ⑨; docs/DOMAIN_MODEL.md §14: the Teaching Planner
     produces the directive, Persona Runtime owns the final prompt).
 
@@ -369,8 +366,20 @@ class TeachingPromptView:
     the view carries no attempt content, no ladder internals and no
     learner state (D-INV-002: no persona identity is created here).
 
-    Absent optional fields render as the empty string, so the section's
-    line count and key order never depend on which fields are set.
+    cs-0（附笺模式）: the compiled section no longer renders the mechanism
+    fields below — the runtime's action / moment / ladder / attempt words
+    never reach the role's prompt. What renders is the **enclosed note**
+    (:attr:`enclosed_note`): the note text the system assembled from the
+    validated curriculum content, carried verbatim. The older fields stay
+    on the type as the orchestrator's projection carriers (and their
+    values remain the durable truth the runtime rows hold); the compiler
+    reads only :attr:`enclosed_note` — falling back to the legacy content
+    fields (hint / reveal / explanation) when the orchestrator has not
+    filled the note yet, so a view is never rendered as an empty note.
+
+    Absent optional fields render as nothing: the note falls back through
+    the legacy fields and then to the empty string, so the section's line
+    count and key order never depend on which fields are set.
     """
 
     action_type: str
@@ -386,29 +395,28 @@ class TeachingPromptView:
     closure: str | None = None
     completion_outcome: str | None = None
     abort_reason: str | None = None
-    prompt_version: str = TEACHING_PROMPT_SECTION_VERSION
+    prompt_version: str = ENCLOSED_NOTE_PROMPT_SECTION_VERSION
+    enclosed_note: str | None = None
 
-    def as_prompt_fields(self) -> tuple[tuple[str, str], ...]:
-        """The canonical (key, value) pairs in :data:`TEACHING_PROMPT_KEY_ORDER`
-        order — the deterministic source of the ``[teaching]`` section."""
+    def note_text(self) -> str:
+        """The note text this view carries, in one deterministic order.
 
-        values = {
-            "prompt_version": self.prompt_version,
-            "action_type": self.action_type,
-            "moment_id": self.moment_id,
-            "focus_target_type": self.focus_target_type,
-            "focus_target_id": self.focus_target_id,
-            "presentation_phase": self.presentation_phase,
-            "support_level": self.support_level,
-            "attempt_index": str(self.attempt_index),
-            "hint": self.hint or "",
-            "reveal": self.reveal or "",
-            "explanation": self.explanation or "",
-            "closure": self.closure or "",
-            "completion_outcome": self.completion_outcome or "",
-            "abort_reason": self.abort_reason or "",
-        }
-        return tuple((key, values[key]) for key in TEACHING_PROMPT_KEY_ORDER)
+        ``enclosed_note`` first — the system-assembled note (cs-0's G2);
+        then the legacy content fields in their ladder order (hint →
+        reveal → explanation), which the orchestrator filled from the same
+        validated corpus before the note field existed. The first non-empty
+        value wins; none renders as the empty string.
+        """
+
+        for candidate in (
+            self.enclosed_note,
+            self.hint,
+            self.reveal,
+            self.explanation,
+        ):
+            if candidate:
+                return candidate
+        return ""
 
 
 class ValidatorDecision(StrEnum):

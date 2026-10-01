@@ -402,7 +402,14 @@ class ContentStore:
         )
 
     def get_teaching_content(self, entity_id: str) -> Result[ContentTeachingView]:
-        """The migrated P3-1B payload, reassembled in authored order."""
+        """The migrated P3-1B payload, reassembled in authored order.
+
+        cs-0 adds the §24.3 ``teaching_note`` rows to the view (authored
+        order, ``ordinal``): the corpus's explanation words, which the
+        runtime's delivery note assembles from. The read is one SELECT on
+        the same table the readiness count already reads — no new table, no
+        migration.
+        """
 
         reveal_row = self._conn.execute(
             "SELECT reveal_form FROM content_teaching WHERE entity_id = ?",
@@ -415,6 +422,14 @@ class ContentStore:
             for row in self._conn.execute(
                 "SELECT rung FROM content_hint_rung WHERE entity_id = ? "
                 "ORDER BY ordinal",
+                (entity_id,),
+            ).fetchall()
+        )
+        teaching_notes = tuple(
+            str(row[0])
+            for row in self._conn.execute(
+                "SELECT text FROM content_text WHERE entity_id = ? "
+                "AND role = 'teaching_note' ORDER BY ordinal",
                 (entity_id,),
             ).fetchall()
         )
@@ -433,6 +448,7 @@ class ContentStore:
                 alternative_realizations=alternative_realizations,
                 required_slots=required_slots,
                 capability_linkage=linkage,
+                teaching_notes=teaching_notes,
             )
         )
 

@@ -634,7 +634,16 @@ def test_the_teaching_legs_are_read_on_a_healthy_delivery(
         "SENT_COMPLETE",
         "SERVER_SENT_UNCONFIRMED",
     )
-    assert str(row[2]) == PROVIDER_TEXT
+    # cs-0 随迁（用户授权的最小随迁同类，D-4 honesty 随迁先例；全量扫描
+    # 发现的第三处：原钉「canonical 文本 == provider 原文」随附笺模式退
+    # 役——交付文本 = 信 + 系统组装的附笺逐字复合，钉的强度保持：provider
+    # 原文必须是 canonical 文本的前缀，开场附笺的固定框架词必须逐字在场
+    # （附笺正文是语料形，不在此钉，由 cs-0 钉文件对语料逐字钉）。
+    assert str(row[2]).startswith(PROVIDER_TEXT)
+    assert str(row[2]).startswith(
+        PROVIDER_TEXT + "\n\n" + "这封信里附了一条表达：「"
+    )
+    assert str(row[2]).endswith("」——回信时试着用上它。")
     assert (
         scalar(
             file_world,

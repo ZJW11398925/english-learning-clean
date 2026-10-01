@@ -314,12 +314,22 @@ class ProjectionTurnSource(Protocol):
     SQL-free (Gate item 2) while the projection runtime can still reconcile
     a job against the *current* durable turn — its coordination status, its
     canonical slice, and the conversation that owns it.
+
+    cs-0 adds the persona-visible slice: the relationship recorder consumes
+    the same filtered view the ``[history]`` section and the episode
+    rebuild see (an assistant text the teaching machinery composed carries
+    no provenance into a memory).
     """
 
     def get_turn_record(self, turn_id: TurnId) -> Result[TurnRecordData | None]:
         ...
 
     def get_canonical_turn_slice(
+        self, turn_id: TurnId
+    ) -> Result[CanonicalTurnSlice | None]:
+        ...
+
+    def get_persona_visible_turn_slice(
         self, turn_id: TurnId
     ) -> Result[CanonicalTurnSlice | None]:
         ...
