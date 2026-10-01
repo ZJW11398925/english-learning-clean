@@ -1936,8 +1936,9 @@ let dossierOpen = false;
 const DOSSIER_SLOT_IDS = ["dossier-portrait", "dossier-memories",
                           "dossier-episode", "dossier-timeline"];
 
-// 日期人话（通信统计与时间线）：当日 「10 月 1 日」，往年只到「去年」
-// 为止——一个更精的日期都不造；解析不了的原样直出。
+// 日期人话（通信统计与时间线）：今年 「10 月 1 日」，去年 「去年」，
+// 更早 「更早」——一个更精的日期都不造，也不把更旧的信谎报成去年的
+// （cs-2R INFO-4：往年一律「去年」是假话）；解析不了的原样直出。
 function dossierDay(iso) {
   const then = new Date(String(iso));
   if (Number.isNaN(then.getTime())) return String(iso);
@@ -1945,7 +1946,8 @@ function dossierDay(iso) {
   if (then.getFullYear() === now.getFullYear()) {
     return (then.getMonth() + 1) + " 月 " + then.getDate() + " 日";
   }
-  return "去年";
+  if (then.getFullYear() === now.getFullYear() - 1) return "去年";
+  return "更早";
 }
 
 // 时间线行的日（YYYY-MM-DD 纯日期串，不游时区）：拆串直读。

@@ -35,7 +35,15 @@ Six groups (the slice VAL's own):
    its place);
 6. **old-consumer pins** — ``/api/memory`` keeps its five panel keys and
    the cs-1 domain partition verbatim (the dossier added a face, it did
-   not reshape the old one).
+   not reshape the old one);
+7. **the cs-2R disposition pins** — command turns are not letters (a
+   teaching request or reply commits an empty ``raw_content`` row and
+   the stats read reuses the store's own two payload markers to exclude
+   it), the timeline order is pinned on *multi-day* data (a single-day
+   ascend assertion is vacuous), the in-flight guard and the
+   no-nesting rule are source-pinned, the day label coarsens without
+   lying (更早, not 去年, for older years), and the two docstrings say
+   what the SQL actually reads.
 """
 
 from __future__ import annotations
@@ -156,6 +164,86 @@ def _seed_relationship_rows(host) -> None:
     host.db.commit()
 
 
+def _seed_two_days_of_letters(host) -> None:
+    """Two ordinary letters on two distinct days (the durable shape a
+    web commit writes: the raw text in both the envelope payload and the
+    row's raw_content). Direct INSERTs keep the dates exact — a seeded
+    date is a read-face fact, never a clock race."""
+
+    for index, (stamp, text) in enumerate(
+        (
+            ("2026-09-28T10:00:00+00:00", "A letter from September."),
+            ("2026-10-01T09:00:00+00:00", "A letter from October."),
+        )
+    ):
+        suffix = f"cs2-day{index}"
+        host.db.execute(
+            "INSERT INTO input_envelope (input_id, client_message_id,"
+            " conversation_id, persona_id, scene_id, interaction_channel,"
+            " raw_payload, received_at) VALUES (?, ?, ?, NULL, NULL, ?, ?, ?)",
+            (f"in-{suffix}", f"msg-{suffix}", CONV, "TEXT", text, stamp),
+        )
+        host.db.execute(
+            "INSERT INTO user_turn (user_turn_id, turn_id, conversation_id,"
+            " turn_sequence, message_sequence, input_id, client_message_id,"
+            " interaction_channel, raw_content, normalized_content,"
+            " created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)",
+            (
+                f"ut-{suffix}",
+                f"t-{suffix}",
+                CONV,
+                800 + index,
+                800 + index,
+                f"in-{suffix}",
+                f"msg-{suffix}",
+                "TEXT",
+                text,
+                stamp,
+            ),
+        )
+    host.db.commit()
+
+
+def _seed_command_turn(host) -> None:
+    """One durable teaching-command turn, in the shape
+    ``request_teaching``/``respond_to_teaching`` actually commit
+    (controller: empty ``raw_content``, the typed payload in the
+    envelope) — the read face under pin is the stats SQL's discriminator,
+    seeded in the producer's own durable form. The row sits at a high
+    turn_sequence so a real committed letter (sequence 1) never
+    collides."""
+
+    host.db.execute(
+        "INSERT INTO input_envelope (input_id, client_message_id,"
+        " conversation_id, persona_id, scene_id, interaction_channel,"
+        " raw_payload, received_at) VALUES (?, ?, ?, NULL, NULL, ?, ?, ?)",
+        (
+            "in-cs2-cmd",
+            "msg-cs2-cmd",
+            CONV,
+            "TEXT",
+            '{"type":"TEACHING_REQUEST","target_id":"res-discourse-anyway"}',
+            "2026-09-27T08:00:00+00:00",
+        ),
+    )
+    host.db.execute(
+        "INSERT INTO user_turn (user_turn_id, turn_id, conversation_id,"
+        " turn_sequence, message_sequence, input_id, client_message_id,"
+        " interaction_channel, raw_content, normalized_content, created_at)"
+        " VALUES (?, ?, ?, 900, 900, ?, ?, ?, '', NULL, ?)",
+        (
+            "ut-cs2-cmd",
+            "t-cs2-cmd",
+            CONV,
+            "in-cs2-cmd",
+            "msg-cs2-cmd",
+            "TEXT",
+            "2026-09-27T08:00:00+00:00",
+        ),
+    )
+    host.db.commit()
+
+
 def _seeded_stack(tmp_path: Path):
     """One serving stack with the two memory rows already durable (the
     seed runs on the worker thread — the one thread the host's sqlite
@@ -228,6 +316,8 @@ def test_the_full_page_view_is_present(tmp_path: Path) -> None:
         'if (name === "partner")'
         ' document.getElementById("navdock").hidden = true;' in index
     )
+    # cs-2R INFO-1：在飞守卫源钉（读在飞时人已回案头——不往看不见的页上写）
+    assert "if (!dossierOpen) return;" in index
     # the dock keeps its three items; the dossier is not a fourth
     navdock = index.split('id="navdock"', 1)[1].split("</nav>", 1)[0]
     for item in ("parlor", "study", "drawer"):
@@ -346,6 +436,57 @@ def test_the_episode_face_serves_the_active_row(tmp_path: Path) -> None:
     assert payload["stats"]["timeline"] == []
 
 
+def test_command_turns_are_not_letters(tmp_path: Path) -> None:
+    """cs-2R MEDIUM-1：教学命令轮（request_teaching / respond_to_teaching
+    各落一行 ``raw_content=''`` 的 user_turn）不是往来——种一行命令轮 +
+    零普通信：turns=0、首次/最近通信日空、时间线空。修复前这两行被计
+    成「往来 1 封」。"""
+
+    with web_stack(tmp_path / "app.db", seed=_seed_command_turn) as stack:
+        status, payload = stack.get_json("/api/partner")
+    assert status == 200
+    stats = payload["stats"]
+    assert stats["turns"] == 0
+    assert stats["first_letter_at"] is None
+    assert stats["latest_letter_at"] is None
+    assert stats["timeline"] == []
+
+
+def test_a_command_turn_ride_along_is_not_counted(tmp_path: Path) -> None:
+    """cs-2R MEDIUM-1 混合例：命令轮 + 一封普通信 → 只计普通信
+    （turns=1、时间线恰一日一封）——排除面只吃命令轮，不吃邻居。"""
+
+    with web_stack(tmp_path / "app.db", seed=_seed_command_turn) as stack:
+        posted = stack.post("/api/turn", {"text": "A real letter."})
+        assert posted[0] == 200
+        status, payload = stack.get_json("/api/partner")
+    assert status == 200
+    stats = payload["stats"]
+    assert stats["turns"] == 1
+    assert len(stats["timeline"]) == 1
+    assert stats["timeline"][0]["turns"] == 1
+
+
+def test_the_timeline_orders_days_ascending(tmp_path: Path) -> None:
+    """cs-2R LOW-1：顺序钉落在多日数据上（两日各一封；单日数据的
+    「升序」断言恒真、无鉴别力）——timeline 恰为升序两行逐值相等，
+    first/latest 随真实先后。"""
+
+    with web_stack(
+        tmp_path / "app.db", seed=_seed_two_days_of_letters
+    ) as stack:
+        status, payload = stack.get_json("/api/partner")
+    assert status == 200
+    stats = payload["stats"]
+    assert stats["turns"] == 2
+    assert stats["timeline"] == [
+        {"date": "2026-09-28", "turns": 1},
+        {"date": "2026-10-01", "turns": 1},
+    ]
+    assert stats["first_letter_at"] == "2026-09-28T10:00:00+00:00"
+    assert stats["latest_letter_at"] == "2026-10-01T09:00:00+00:00"
+
+
 # ---------------------------------------------------------------------------
 # ③ the drawer partition pins
 
@@ -415,6 +556,9 @@ def test_every_panel_is_a_disclosure(tmp_path: Path) -> None:
     assert "disclosure({" in mount
     assert "name: name," in mount
     assert "count: count," in mount
+    # cs-2R INFO-2：嵌套负控（#21 禁嵌套）——面板折叠体内只造一件
+    # disclosure（m15 形态：体内再嵌一件 → 恰此断言变红）
+    assert mount.count("disclosure(") == 1
     # the five panels mount with their own names and counts
     for name, key in (
         ("关系", "memories"),
@@ -488,6 +632,32 @@ def test_the_unfocused_pen_occupies_nothing(tmp_path: Path) -> None:
     # value colon, so the colon form is the assertion)
     dock_rule = _fn_body_after(page, ".dock {", ".dock:focus-within")
     assert "transform:" not in dock_rule
+
+
+def test_the_dossier_day_coarsens_honestly(tmp_path: Path) -> None:
+    """cs-2R INFO-4：dossierDay 的粗化不撒谎——今年「N 月 N 日」、去年
+    「去年」、更早「更早」（原实现把更旧的信一律谎报成「去年」）。"""
+
+    app = _page_of(tmp_path)
+    day = _fn_body(app, "dossierDay")
+    assert "now.getFullYear() - 1" in day
+    assert '"去年"' in day
+    assert '"更早"' in day
+
+
+def test_the_dossier_docstrings_say_what_the_sql_reads() -> None:
+    """cs-2R LOW-2 / INFO-5 的源钉：memories 面不再声称 user 绑定
+    （V1 单用户照实），stats 面写明 60 日上限作用在 GROUP BY day 之后
+    （修掉的是 quiet days，不是有信的日子）；命令轮判别式来自 store
+    同一对 marker（同语义复用，不再自推导）。"""
+
+    web = WEB.read_text(encoding="utf-8")
+    assert "Local V1 is single-user" in web
+    assert "bound user" not in web
+    assert "that carried letters" in web
+    assert "_LETTER_FILTER_SQL" in web
+    assert "TEACHING_REQUEST_PAYLOAD_MARKER" in web
+    assert "TEACHING_RESPONSE_PAYLOAD_MARKER" in web
 
 
 # ---------------------------------------------------------------------------

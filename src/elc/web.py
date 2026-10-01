@@ -302,6 +302,10 @@ from elc.cli import (
 )
 from elc.cli import main as cli_main
 from elc.content.store import open_read_only
+from elc.conversation.store import (
+    TEACHING_REQUEST_PAYLOAD_MARKER,
+    TEACHING_RESPONSE_PAYLOAD_MARKER,
+)
 from elc.conversation.types import CommitUserTurn
 from elc.curriculum.readiness import READINESS_LEVELS
 from elc.deletion.controller import DeletionController
@@ -1100,30 +1104,58 @@ def _partner_card_face() -> dict[str, Any]:
     }
 
 
+#: The canonical command-turn discriminator (the conversation store's own
+#: window filter, cs-2R MEDIUM-1: the same two payload markers, bound the
+#: same way). A teaching request or reply commits a ``user_turn`` whose
+#: ``raw_content`` is empty and whose envelope payload carries the typed
+#: marker — a command, not something the user said — and the dossier
+#: counts letters, so both stats queries exclude those rows with the same
+#: two clauses (P3-1A/P3-1B's rule, reused rather than re-derived).
+_LETTER_FILTER_SQL = (
+    " FROM user_turn u"
+    " JOIN input_envelope e ON e.input_id = u.input_id"
+    " WHERE u.conversation_id = ?"
+    "  AND NOT (u.raw_content = '' AND e.raw_payload LIKE ?)"
+    "  AND NOT (u.raw_content = '' AND e.raw_payload LIKE ?)"
+)
+
+
 def _partner_stats_panel(db: sqlite3.Connection, conversation: str) -> dict[str, Any]:
-    """The correspondence statistics, from the conversation's own turns.
+    """The correspondence statistics, from the conversation's own letters.
 
     Three counts the dossier head names: how many letters went out (the
-    committed ``user_turn`` rows — one per turn the page or the CLI
-    committed), the first letter's day and the latest one (the rows' own
-    ``created_at`` min/max, passed through as the ISO strings they are).
-    The per-day timeline rides along (most recent 60 days, oldest first):
-    one row per day that saw a letter, the day and the count — the
-    dossier's 极简时间线 renders these, it does not re-derive them.
+    committed ``user_turn`` rows minus the command turns — a teaching
+    request or reply rides an empty ``raw_content`` with a typed envelope
+    payload and is excluded by :data:`_LETTER_FILTER_SQL`, the store's own
+    window discriminator), the first letter's day and the latest one (the
+    rows' own ``created_at`` min/max, passed through as the ISO strings
+    they are). The per-day timeline rides along (the most recent 60 days
+    that carried letters — the LIMIT applies *after* the GROUP BY day, so
+    it trims quiet days, never lettered ones — oldest first): one row per
+    day that saw a letter, the day and the count — the dossier's 极简
+    时间线 renders these, it does not re-derive them.
     """
 
     row = db.execute(
-        "SELECT COUNT(*), MIN(created_at), MAX(created_at)"
-        " FROM user_turn WHERE conversation_id = ?",
-        (conversation,),
+        "SELECT COUNT(*), MIN(u.created_at), MAX(u.created_at)"
+        + _LETTER_FILTER_SQL,
+        (
+            conversation,
+            f"%{TEACHING_REQUEST_PAYLOAD_MARKER}%",
+            f"%{TEACHING_RESPONSE_PAYLOAD_MARKER}%",
+        ),
     ).fetchone()
     days = [
         (str(day), int(count))
         for day, count in db.execute(
-            "SELECT substr(created_at, 1, 10) AS day, COUNT(*)"
-            " FROM user_turn WHERE conversation_id = ?"
-            " GROUP BY day ORDER BY day DESC LIMIT 60",
-            (conversation,),
+            "SELECT substr(u.created_at, 1, 10) AS day, COUNT(*)"
+            + _LETTER_FILTER_SQL
+            + " GROUP BY day ORDER BY day DESC LIMIT 60",
+            (
+                conversation,
+                f"%{TEACHING_REQUEST_PAYLOAD_MARKER}%",
+                f"%{TEACHING_RESPONSE_PAYLOAD_MARKER}%",
+            ),
         ).fetchall()
     ]
     days.reverse()
@@ -1138,13 +1170,15 @@ def _partner_stats_panel(db: sqlite3.Connection, conversation: str) -> dict[str,
 def _partner_memories_panel(db: sqlite3.Connection) -> dict[str, Any]:
     """What the penpal remembers about you — the ACTIVE relationship rows.
 
-    Scoped to the pair this face serves: the penpal's persona id (the
-    imported constant, never a spelled value) against the conversation's
-    bound user, newest first (``updated_at`` desc, the row id breaking a
-    same-stamp tie). Only ``ACTIVE`` rows are "remembered" — a superseded
-    or withdrawn row is the memory's history, not its present. The
-    canonical text passes through whole; nothing here paraphrases what
-    was remembered."""
+    Scoped by the penpal's persona id (the imported constant, never a
+    spelled value), newest first (``updated_at`` desc, the row id breaking
+    a same-stamp tie). Local V1 is single-user, so the persona key names
+    the whole pair today — a second user side would need the ``user_id``
+    leg added here, and this sentence would be the place (cs-2R LOW-2:
+    the pair wording is narrowed to what the SQL actually reads). Only
+    ``ACTIVE`` rows are "remembered" — a superseded or withdrawn row is
+    the memory's history, not its present. The canonical text passes
+    through whole; nothing here paraphrases what was remembered."""
 
     rows = db.execute(
         "SELECT canonical_content, memory_type, updated_at"
@@ -2270,9 +2304,10 @@ class _WebFace:
         - ``stats`` / ``memories`` / ``episode`` — three guarded SQL reads
           (the diagnostics construction: a panel that explodes answers
           ``{"error": …}`` in its own slot, the others still answer). The
-          stats read is scoped to the conversation this face serves; the
-          memories read to the penpal's persona pair; the episode read to
-          the conversation's ACTIVE row.
+          stats read is scoped to the conversation this face serves (its
+          letters — command turns excluded); the memories read to the
+          penpal's persona id (Local V1's single-user pair); the episode
+          read to the conversation's ACTIVE row.
 
         Read-only, always: nothing here writes (the memory face's
         content-snapshot posture applies verbatim)."""
