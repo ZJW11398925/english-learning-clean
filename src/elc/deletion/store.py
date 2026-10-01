@@ -214,6 +214,10 @@ _SURFACE_SELECT: Mapping[str, str] = {
     "validator_result": (
         "SELECT rowid, validator_result_id FROM validator_result"
     ),
+    # MC-0's user-authored cards (migration 0019): a card's identity is its
+    # own id. The ALL_USER_DATA walk appends ``is_builtin = 0`` — the sweep
+    # removes the user's authored characters and never the builtin.
+    "character_card": "SELECT rowid, character_id FROM character_card",
 }
 
 #: table → the delete head. An ``IN (…)`` run of bound rowids is appended;
@@ -296,6 +300,10 @@ _DELETE_BY_ROWID: Mapping[str, str] = {
     "validator_result": (
         "DELETE FROM validator_result WHERE rowid IN ("
     ),
+    # MC-0's user-authored cards (migration 0019); one literal, the same
+    # rowid run the surface select collects (``is_builtin = 0`` rides the
+    # walk's predicate, so the builtin row is never collected).
+    "character_card": "DELETE FROM character_card WHERE rowid IN (",
 }
 
 if set(_SURFACE_SELECT) != set(SWEPT_TABLES) or set(_DELETE_BY_ROWID) != set(
@@ -1689,7 +1697,15 @@ class SqliteDeletionStore:
         )
         self._count_queue_and_actions(run)
         for table in ALL_USER_DATA_SWEPT_TABLES:
-            self._remove(table=table, predicate="", params=(), run=run)
+            # MC-0: the user's authored cards go with the rest of their
+            # data; the builtin card stays (its own authority rule — "the
+            # builtin cannot be deleted" — enforced in the sweep too: a
+            # whole-data wipe removes *user* data, and the shipped
+            # character is not that).
+            predicate = (
+                "is_builtin = 0" if table == "character_card" else ""
+            )
+            self._remove(table=table, predicate=predicate, params=(), run=run)
         run.notes.append(
             "ALL_USER_DATA swept every user table and kept only schema_meta,"
             " schema_migrations, runtime_epoch and the §24 deletion ledger"

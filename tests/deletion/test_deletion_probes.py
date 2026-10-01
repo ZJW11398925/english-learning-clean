@@ -466,7 +466,13 @@ def test_all_user_data_sweeps_every_user_table(
     assert isinstance(result, Ok), result
 
     for table in ALL_USER_DATA_SWEPT_TABLES:
-        assert _count(db, table) == 0, table
+        # MC-0's character_card is swept user-rows-only: the builtin seed
+        # row survives (the same authority rule the card store's delete
+        # face enforces — a whole-data wipe removes *user* data, and the
+        # shipped character is not that), so its post-sweep count is the
+        # one builtin, not zero.
+        expected = 1 if table == "character_card" else 0
+        assert _count(db, table) == expected, table
     assert result.value.execution.tombstoned > 0
 
 
@@ -492,11 +498,12 @@ def test_all_user_data_keeps_the_infrastructure_and_the_ledger(
             " WHERE key LIKE '%schema_version%'"
         ).fetchall()
     ) == stamps_before
-    # 18 = the applied lineage through P9-1's 0018_delivery_records (the
+    # 19 = the applied lineage through MC-0's 0019_character_cards (the
     # head count; the pin moved 14 → 15 with P8-0's 0015_planner_records,
     # 15 → 16 with P8-3's 0016_planning_ledger, 16 → 17 with P8-4's
-    # 0017_ledger_event_provenance, and 17 → 18 with this migration).
-    assert _count(db, "schema_migrations") == 18
+    # 0017_ledger_event_provenance, 17 → 18 with P9-1's 0018, and
+    # 18 → 19 with this migration).
+    assert _count(db, "schema_migrations") == 19
     assert _count(db, "runtime_epoch") == 1
     assert _count(db, "deletion_tombstone") > 0
 

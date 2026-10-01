@@ -414,10 +414,13 @@ def test_no_source_file_carries_this_cuts_name() -> None:
         + list((REPO_ROOT / "migrations").rglob("*p9-5*"))
     ]
     assert tagged == [], tagged
-    # and the migration head this cut was told not to move is still the one
+    # and the migration head is still the lineage's own newest entry — the
+    # literal moved with MC-0's 0019_character_cards (this pin read
+    # "0018_delivery_records.sql" while 0018 was the head, the stamp-pin
+    # discipline every head move has followed since P8-4).
     assert sorted(
         path.name for path in (REPO_ROOT / "migrations").glob("*.sql")
-    )[-1] == "0018_delivery_records.sql"
+    )[-1] == "0019_character_cards.sql"
 
 
 def test_the_frozen_surfaces_are_read_not_written() -> None:

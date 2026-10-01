@@ -160,6 +160,10 @@ from elc.learning.silent_evidence import (
     ContentBackedTargetSupply,
 )
 from elc.learning.store import LOCAL_V1_DEFAULT_USER_SCOPE, SqliteLearningStore
+from elc.persona.card_store import (
+    CharacterCardPackages,
+    SqliteCharacterCardStore,
+)
 from elc.persona.penpal import PENPAL_CHARACTER_PACKAGE
 from elc.persona.provider import PersonaProvider
 from elc.persona.runtime import PersonaRuntime
@@ -287,6 +291,11 @@ class Host:
     generation: SqliteGenerationStore
     decision_cycles: SqliteDecisionCycleStore
     deliveries: SqliteDeliveryRecordStore
+    #: MC-0: the user-authored character cards' store (migration 0019's
+    #: ``character_card`` table, always built — both tiers, the deletion
+    #: leg's composition shape). The coordinator's per-persona card map is
+    #: read from it at assembly ("table first, penpal fallback").
+    character_cards: SqliteCharacterCardStore
     persona: PersonaRuntime
     coordinator: ConversationCoordinator
     secrets: SecretSource | None = None
@@ -428,7 +437,13 @@ def open_host(
 
     ``character_package`` defaults to the fixed penpal (cs-1) — the caller
     may pass another package, or an explicit ``None`` to restore the bare
-    prep-1 shape. ``content_db_path=None`` assembles the prep-1 tier; a
+    prep-1 shape. MC-0: with a package (the production default included)
+    the coordinator also receives the per-persona card view over
+    migration 0019's ``character_card`` table — **table first, penpal
+    fallback**, read-through — so a conversation bound to any card's
+    persona speaks with that card as the table has it now, and a persona
+    without a row keeps the injected default.
+    ``content_db_path=None`` assembles the prep-1 tier; a
     path assembles the full chain over that built artifact (read-only —
     the store refuses a writable connection by construction) and binds
     ``rollout_stage`` into the automatic wiring verbatim (``None`` keeps
@@ -457,6 +472,20 @@ def open_host(
         generation = SqliteGenerationStore(db, fence)
         decision_cycles = SqliteDecisionCycleStore(db, fence)
         deliveries = SqliteDeliveryRecordStore(db, fence)
+        # MC-0: the card store over migration 0019's table (always built,
+        # both tiers), and the coordinator's per-persona card view over it
+        # — "table first, penpal fallback": a conversation bound to a
+        # card's persona speaks with that card as the table has it right
+        # now (the view is read-through, so a card the user creates after
+        # this open speaks from its first turn); any persona the table
+        # does not name (and every assembly when ``character_package is
+        # None`` — the bare prep-1 shape stays bare) falls back to the
+        # injected default package. A read that explodes raises through
+        # the same except clause below — loud, never a guessed card.
+        character_cards = SqliteCharacterCardStore(db, fence)
+        character_packages: CharacterCardPackages | None = None
+        if character_package is not None:
+            character_packages = CharacterCardPackages(character_cards)
         persona = PersonaRuntime(actions=generation, provider=provider)
         lease = ConversationCoordinatorLease()
         lease.adopt_epoch(RuntimeEpoch(fence.current))
@@ -605,6 +634,7 @@ def open_host(
                 "LearningTurnAnalysis | None", learning_store
             ),
             character_package=character_package,
+            character_packages=character_packages,
             decision_cycles=decision_cycles,
             learning_controller=learning_controller,
             teaching=teaching,
@@ -630,6 +660,7 @@ def open_host(
         generation=generation,
         decision_cycles=decision_cycles,
         deliveries=deliveries,
+        character_cards=character_cards,
         persona=persona,
         coordinator=coordinator,
         secrets=secrets,

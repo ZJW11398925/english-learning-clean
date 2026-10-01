@@ -47,12 +47,16 @@ MIGRATION_IDS: tuple[str, ...] = (
     "0016_planning_ledger",
     "0017_ledger_event_provenance",
     "0018_delivery_records",
+    # MC-0 (DEC-OPI-a31b14c9…43): the user-authored character card — the
+    # zero-migration stretch ends here on the user's call (user-created
+    # characters persist).
+    "0019_character_cards",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0018_delivery_records.sql"
-SCHEMA_HEAD_VERSION = "18"
+SCHEMA_HEAD_FILE = "0019_character_cards.sql"
+SCHEMA_HEAD_VERSION = "19"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

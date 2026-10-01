@@ -311,7 +311,17 @@ from elc.curriculum.readiness import READINESS_LEVELS
 from elc.deletion.controller import DeletionController
 from elc.deletion.types import DeletionRequest, DeletionScope
 from elc.host import Host
-from elc.persona.penpal import PENPAL_CHARACTER_PACKAGE, PENPAL_PERSONA_ID
+from elc.persona.card_store import (
+    CharacterCardRecord,
+    SqliteCharacterCardStore,
+    persona_id_for_card,
+    stamp_key_for,
+)
+from elc.persona.penpal import (
+    PENPAL_CHARACTER_PACKAGE,
+    PENPAL_CHARACTER_PACKAGE_ID,
+    PENPAL_PERSONA_ID,
+)
 from elc.persona.provider import PersonaProvider
 from elc.planner.trace_document import decode_factor_trace
 from elc.platform.types import (
@@ -1167,17 +1177,20 @@ def _partner_stats_panel(db: sqlite3.Connection, conversation: str) -> dict[str,
     }
 
 
-def _partner_memories_panel(db: sqlite3.Connection) -> dict[str, Any]:
-    """What the penpal remembers about you — the ACTIVE relationship rows.
+def _partner_memories_panel(
+    db: sqlite3.Connection, persona_id: str = str(PENPAL_PERSONA_ID)
+) -> dict[str, Any]:
+    """What a character remembers about you — the ACTIVE relationship rows.
 
-    Scoped by the penpal's persona id (the imported constant, never a
-    spelled value), newest first (``updated_at`` desc, the row id breaking
-    a same-stamp tie). Local V1 is single-user, so the persona key names
-    the whole pair today — a second user side would need the ``user_id``
-    leg added here, and this sentence would be the place (cs-2R LOW-2:
-    the pair wording is narrowed to what the SQL actually reads). Only
-    ``ACTIVE`` rows are "remembered" — a superseded or withdrawn row is
-    the memory's history, not its present. The canonical text passes
+    Scoped by the character's persona id (the parameter; the default is the
+    penpal's imported constant, so every caller before MC-0 reads exactly
+    what it always read), newest first (``updated_at`` desc, the row id
+    breaking a same-stamp tie). Local V1 is single-user, so the persona key
+    names the whole pair today — a second user side would need the
+    ``user_id`` leg added here, and this sentence would be the place (cs-2R
+    LOW-2: the pair wording is narrowed to what the SQL actually reads).
+    Only ``ACTIVE`` rows are "remembered" — a superseded or withdrawn row
+    is the memory's history, not its present. The canonical text passes
     through whole; nothing here paraphrases what was remembered."""
 
     rows = db.execute(
@@ -1185,7 +1198,7 @@ def _partner_memories_panel(db: sqlite3.Connection) -> dict[str, Any]:
         " FROM relationship_memory"
         " WHERE persona_id = ? AND status = 'ACTIVE'"
         " ORDER BY updated_at DESC, relationship_memory_id",
-        (str(PENPAL_PERSONA_ID),),
+        (persona_id,),
     ).fetchall()
     return {
         "memories": [
@@ -1225,6 +1238,138 @@ def _partner_episode_panel(
             "updated_at": str(row[2]),
         }
     }
+
+
+# ---------------------------------------------------------------------------
+# the MC-0 characters — user-authored cards, one conversation each
+# ---------------------------------------------------------------------------
+
+
+def _conversation_for_character(character_id: str) -> str:
+    """The one conversation a character's letters live in — the mapping rule.
+
+    A **convention, not a table**: the penpal keeps her shipped conversation
+    (:data:`DEFAULT_WEB_CONVERSATION_ID` — backward compatibility: every
+    ``web-default`` letter ever written stays hers), every other character
+    gets ``web-<character_id>``. The ids are unique, so the derived
+    conversation ids are too, and the derivation is stable under renames —
+    the letters stay in the same envelope when the character is reworded.
+    """
+
+    if character_id == str(PENPAL_CHARACTER_PACKAGE_ID):
+        return DEFAULT_WEB_CONVERSATION_ID
+    return f"web-{character_id}"
+
+
+def _character_of_conversation(conversation_id: str) -> str | None:
+    """The reverse mapping — which character a conversation id names.
+
+    The ``None`` is honest: a conversation id that follows neither shape
+    (``web-test``, the tests' own; ``cli-default``) names no character, and
+    the caller answers ``current_character_id: None`` rather than guessing.
+    """
+
+    if conversation_id == DEFAULT_WEB_CONVERSATION_ID:
+        return str(PENPAL_CHARACTER_PACKAGE_ID)
+    if conversation_id.startswith("web-"):
+        return conversation_id[len("web-") :]
+    return None
+
+
+def _character_summary(record: CharacterCardRecord) -> dict[str, Any]:
+    """One list row — the roster face the page renders.
+
+    ``identity_line`` is the card's own identity text, whole (the roster's
+    简介行; the dossier face may reshape further). ``stamp_key`` is the
+    derived stamp variant key (:func:`elc.persona.card_store.stamp_key_for`
+    — the server only derives it; the stamp art is the frontend's).
+    """
+
+    return {
+        "character_id": record.character_id,
+        "name": record.name,
+        "identity_line": record.identity,
+        "is_builtin": record.is_builtin,
+        "stamp_key": stamp_key_for(record.character_id),
+        "persona_id": record.persona_id,
+        "revision": record.revision,
+        "updated_at": record.updated_at,
+    }
+
+
+def _character_card_face(record: CharacterCardRecord) -> dict[str, Any]:
+    """The dossier card for a table-sourced character — the penpal face's
+    five keys, table-fed.
+
+    The keys match :func:`_partner_card_face` exactly so the page renders
+    both shapes with one reader. The derivation differs where the sources
+    differ: a user card carries its name as a column (the penpal's name is
+    partitioned out of her identity line), and the identity text is the
+    user's own free prose — it passes through whole, never re-split.
+    """
+
+    return {
+        "name": record.name,
+        "identity_line": record.identity,
+        "background": record.background,
+        "values": record.values,
+        "letter_habits": record.speech_style,
+    }
+
+
+#: The create/update body's whole field vocabulary — the prose a card
+#: carries, by its column name (``values`` included; it is JSON here, no
+#: SQL quoting needed). A body with any other key is a bad request, never
+#: a silent widening (the /api/delete grammar's rule).
+_CHARACTER_CARD_FIELDS = (
+    "name",
+    "identity",
+    "personality",
+    "background",
+    "speech_style",
+    "values",
+    "boundaries",
+    "opening",
+    "scenario",
+)
+
+
+def _character_request_parts(
+    payload: Any, *, name_required: bool
+) -> tuple[str | None, dict[str, str] | None]:
+    """The create/update grammar: only card fields, all strings.
+
+    ``(error, None)`` is a bad request (the 400 人话 rides the error);
+    ``(None, fields)`` is the parsed body — only the keys present, so the
+    update face rewords exactly what the caller sent. The name, when sent,
+    must be non-empty (a card without a name is a blank stamp); at create
+    time it must be sent at all.
+    """
+
+    if not isinstance(payload, dict):
+        return (
+            'need a JSON object with {"name": "..."} and optional card'
+            " fields (identity, personality, background, speech_style,"
+            " values, boundaries, opening, scenario)",
+            None,
+        )
+    fields: dict[str, str] = {}
+    for key, value in payload.items():
+        if key not in _CHARACTER_CARD_FIELDS:
+            return (
+                f"unknown character field: {key!r} (the card's fields are:"
+                + ", ".join(_CHARACTER_CARD_FIELDS)
+                + ")",
+                None,
+            )
+        if not isinstance(value, str):
+            return (f'"{key}" needs a string', None)
+        fields[key] = value
+    if "name" in fields and not fields["name"].strip():
+        return ("a character card needs a non-empty name", None)
+    if name_required and "name" not in fields:
+        return ('a new character card needs a non-empty "name"', None)
+    return None, fields
 
 
 # ---------------------------------------------------------------------------
@@ -1924,6 +2069,22 @@ class _WebFace:
         content_store = getattr(host, "content_store", None)
         if content_store is not None:
             self._word_db_path = getattr(content_store, "_db_path", None)
+        # MC-0: the character card store (the assembly always builds one;
+        # getattr with a default for the same test-double reason as the
+        # word path above — a stub host simply has no roster, and the
+        # roster faces say so loudly instead of pretending).
+        self._cards: SqliteCharacterCardStore | None = getattr(
+            host, "character_cards", None
+        )
+
+    def _require_cards(self) -> SqliteCharacterCardStore:
+        """The card store, or the loud refusal (never a silent empty)."""
+
+        if self._cards is None:
+            raise RuntimeError(
+                "this host carries no character card store"
+            )
+        return self._cards
 
     @property
     def conversation_id(self) -> str:
@@ -2330,6 +2491,209 @@ class _WebFace:
                 db,
             ),
         }
+
+    def partner_of(self, character_id: str) -> tuple[int, Any]:
+        """The dossier, parameterized (MC-0) — one character's four faces.
+
+        ``(status, payload)`` for the write-route discipline: an unknown
+        character is a 404, a known one a 200 carrying the same four keys
+        as :meth:`partner` — the card from the table row, the statistics
+        and the episode from **the character's own conversation** (the
+        mapping rule, :func:`_conversation_for_character` — the letters
+        live in its envelope whether or not this process has served it
+        yet; a never-opened conversation reads honest zeros), the memories
+        from the card's persona pair. ``character_id`` /
+        ``conversation_id`` ride along so the page knows what it read.
+        Read-only, always."""
+
+        cards = self._require_cards()
+        read = cards.get(character_id)
+        if isinstance(read, Err):
+            return (
+                404,
+                {"error": f"no such character card: {character_id}"},
+            )
+        record = read.value
+        conversation = _conversation_for_character(character_id)
+        db = self._host.db
+        return (
+            200,
+            {
+                "character_id": character_id,
+                "conversation_id": conversation,
+                "card": _character_card_face(record),
+                "stats": _diagnostics_panel(
+                    "stats",
+                    lambda conn: _partner_stats_panel(conn, conversation),
+                    db,
+                ),
+                "memories": _diagnostics_panel(
+                    "memories",
+                    lambda conn: _partner_memories_panel(
+                        conn, record.persona_id
+                    ),
+                    db,
+                ),
+                "episode": _diagnostics_panel(
+                    "episode",
+                    lambda conn: _partner_episode_panel(conn, conversation),
+                    db,
+                ),
+            },
+        )
+
+    def characters(self) -> dict[str, Any]:
+        """The roster (MC-0) — every card, builtin first, plus the current.
+
+        The current character is the reverse-mapped owner of the
+        conversation this face serves, and ``None`` when the id names no
+        card (the tests' ``web-test``; an honest absent, never a guess).
+        Read-only, on the work queue like every face."""
+
+        cards = self._require_cards()
+        read = cards.list_all()
+        if isinstance(read, Err):
+            raise RuntimeError(
+                "the character roster could not be read:"
+                f" {read.error.code.value}: {read.error.message}"
+            )
+        items = [_character_summary(record) for record in read.value]
+        known = {item["character_id"] for item in items}
+        current = _character_of_conversation(str(self._conversation_id))
+        return {
+            "characters": items,
+            "current_character_id": (
+                current if current is not None and current in known else None
+            ),
+        }
+
+    def character_create(
+        self, fields: dict[str, str]
+    ) -> tuple[int, Any]:
+        """One new user-authored card (MC-0) — ``(status, payload)``.
+
+        The id is server-minted (``card-`` + hex), the persona derived
+        (``persona-<id>`` — one card, one persona, one isolated memory),
+        the prose stored as given (**untrusted text is stored as-is** —
+        the no-blacklist ruling; rendering escapes it, the store is a
+        shelf). The lifecycle words come off the penpal's card (the one
+        production-proven values — no second spelling), the revision
+        starts at 1, the card is born ``is_builtin: False`` — a user card
+        can be edited and deleted like any other user card."""
+
+        cards = self._require_cards()
+        character_id = cards.mint_user_card_id()
+        now = datetime.now(tz=UTC).isoformat()
+        record = CharacterCardRecord(
+            character_id=character_id,
+            persona_id=persona_id_for_card(character_id),
+            name=fields.get("name", ""),
+            identity=fields.get("identity", ""),
+            personality=fields.get("personality", ""),
+            background=fields.get("background", ""),
+            speech_style=fields.get("speech_style", ""),
+            values=fields.get("values", ""),
+            boundaries=fields.get("boundaries", ""),
+            opening=fields.get("opening", ""),
+            scenario=fields.get("scenario", ""),
+            generation_policy=PENPAL_CHARACTER_PACKAGE.generation_policy,
+            lore_refs=(),
+            revision=1,
+            status=PENPAL_CHARACTER_PACKAGE.status,
+            is_builtin=False,
+            created_at=now,
+            updated_at=now,
+        )
+        created = cards.create(record)
+        if isinstance(created, Err):
+            return (409, {"error": created.error.message})
+        return (200, {"character": _character_summary(created.value)})
+
+    def character_update(
+        self, character_id: str, fields: dict[str, str]
+    ) -> tuple[int, Any]:
+        """Reword one card (MC-0) — the builtin included (editable, the
+        adjudication's ruling; it is the *deletion* that is refused).
+
+        ``NOT_FOUND`` is a 404, a shape refusal a 400, and an accepted
+        update a 200 carrying the row after the rewrite (revision bumped,
+        ``updated_at`` re-stamped by the store)."""
+
+        cards = self._require_cards()
+        updated = cards.update(character_id, fields)
+        if isinstance(updated, Err):
+            code = updated.error.code
+            status = 404 if code is DomainErrorCode.NOT_FOUND else 400
+            return (status, {"error": updated.error.message})
+        return (200, {"character": _character_summary(updated.value)})
+
+    def character_delete(self, character_id: str) -> tuple[int, Any]:
+        """Remove one user-authored card (MC-0) — the builtin is refused.
+
+        ``AUTHORITY_VIOLATION`` (there is exactly one Nell) rides 409, an
+        unknown id 404. Deleting retires the card from the roster; the
+        conversation and the memories it earned stay (history is not
+        rewritten here — the deeper walk is BF-05's business, out of this
+        cut's scope)."""
+
+        cards = self._require_cards()
+        deleted = cards.delete(character_id)
+        if isinstance(deleted, Err):
+            status = (
+                404
+                if deleted.error.code is DomainErrorCode.NOT_FOUND
+                else 409
+            )
+            return (status, {"error": deleted.error.message})
+        return (200, {"deleted": character_id})
+
+    def character_switch(self, character_id: str) -> tuple[int, Any]:
+        """Serve this character from now on (MC-0) — the envelope switch.
+
+        The character's own conversation is opened **lazily here, at the
+        switch** (the adjudicated timing: the opening is idempotent and
+        cheap on the host thread, and the conversation is born bound to the
+        card's persona — cs-1's lesson was that an unbound row makes the
+        turn pipeline and the projections disagree; a first-letter build
+        would leave the roster reading an unbuilt envelope). Then this
+        face re-points: history, turns, the dossier and the teaching face
+        all read the new conversation from their next request on. The
+        handlers run on the one work-queue thread, so the re-point is
+        ordered against every other face; the one off-queue reader (the
+        ``/api/teaching/current`` poll) reads a plain attribute swap —
+        a stale poll may answer one beat late, never a torn answer.
+
+        An unknown character is a 404 before anything opens; a refused
+        open is raised (the route's 500 posture — a runtime fact, not a
+        grammar error)."""
+
+        cards = self._require_cards()
+        read = cards.get(character_id)
+        if isinstance(read, Err):
+            return (
+                404,
+                {"error": f"no such character card: {character_id}"},
+            )
+        record = read.value
+        conversation = _conversation_for_character(character_id)
+        opened = self._host.open_conversation(
+            ConversationId(conversation),
+            persona_id=PersonaId(record.persona_id),
+        )
+        if isinstance(opened, Err):
+            raise RuntimeError(
+                f"cannot open conversation {conversation}:"
+                f" {opened.error.code.value}: {opened.error.message}"
+            )
+        self._conversation_id = ConversationId(conversation)
+        return (
+            200,
+            {
+                "switched": True,
+                "character": _character_summary(record),
+                "conversation": conversation,
+            },
+        )
 
     def delete(
         self,
@@ -3094,6 +3458,28 @@ def _build_server(
                 # of its single source plus three guarded SQL reads, on the
                 # work queue (the diagnostics construction).
                 self._run_on_host_thread(face.partner)
+            elif self.path == "/api/characters":
+                # MC-0: the character roster — every card, builtin first,
+                # plus which one this face currently serves. Read-only on
+                # the work queue (the diagnostics construction).
+                self._run_on_host_thread(face.characters)
+            elif self.path.startswith("/api/partner?"):
+                # MC-0: the dossier, parameterized — one character's card
+                # and its own conversation's statistics/memories/episode.
+                # The grammar is one ?character_id=<id>; a request without
+                # it is a bad request (the bare /api/partner above is the
+                # no-parameter face, untouched). An unknown character is
+                # the parameterized face's own 404.
+                values = parse_qs(urlsplit(self.path).query).get(
+                    "character_id"
+                )
+                if not values:
+                    self._send_json(
+                        400, {"error": "need ?character_id=<id>"}
+                    )
+                else:
+                    asked = values[0]
+                    self._run_host_write(lambda: face.partner_of(asked))
             elif self.path == "/api/goals":
                 # p-3: the goal screen's read — the portfolio, the policy,
                 # the served conversation's session focus and the taxonomy
@@ -3132,6 +3518,41 @@ def _build_server(
                     self._send_json(400, {"error": _FREQUENCY_GRAMMAR})
                     return
                 self._run_host_write(lambda: face.teaching_frequency(word))
+                return
+            if self.path == "/api/characters":
+                # MC-0: one new user-authored card. The grammar is
+                # validated here, fail-closed (an unknown field or a
+                # missing/empty name is a 400 人话); the store's own
+                # refusals ride 409 from the face.
+                error, fields = _character_request_parts(
+                    self._read_json_body(), name_required=True
+                )
+                if error is not None or fields is None:
+                    self._send_json(400, {"error": error})
+                    return
+                self._run_host_write(lambda: face.character_create(fields))
+                return
+            if self.path == "/api/characters/switch":
+                # MC-0: the envelope switch — serve this character's
+                # conversation from now on (the face opens it lazily
+                # here, bound to the card's persona, then re-points).
+                payload = self._read_json_body()
+                asked = (
+                    payload.get("character_id")
+                    if isinstance(payload, dict)
+                    else None
+                )
+                if not isinstance(asked, str) or not asked.strip():
+                    self._send_json(
+                        400,
+                        {
+                            "error": (
+                                'need a JSON body {"character_id": "..."}'
+                            )
+                        },
+                    )
+                    return
+                self._run_host_write(lambda: face.character_switch(asked))
                 return
             if self.path not in (
                 "/api/turn",
@@ -3304,6 +3725,50 @@ def _build_server(
                 )
                 return
             self._run_on_host_thread(lambda: face.turn(text))
+
+        def _character_path_id(self) -> str | None:
+            """The id out of a ``/api/characters/<id>`` path, or ``None``
+            when the path is not that shape (the caller answers 404)."""
+
+            prefix = "/api/characters/"
+            if not self.path.startswith(prefix):
+                return None
+            character_id = self.path[len(prefix):]
+            if not character_id or "/" in character_id:
+                return None
+            return character_id
+
+        def do_PUT(self) -> None:
+            # MC-0: reword one card. The grammar is the shared one (a name
+            # may be reworded but not emptied); at least one field must
+            # ride along. The builtin is editable like any other card.
+            character_id = self._character_path_id()
+            if character_id is None:
+                self._send_json(404, {"error": "not found"})
+                return
+            error, fields = _character_request_parts(
+                self._read_json_body(), name_required=False
+            )
+            if error is not None:
+                self._send_json(400, {"error": error})
+                return
+            if not fields:
+                self._send_json(
+                    400, {"error": "an update needs at least one field"}
+                )
+                return
+            self._run_host_write(
+                lambda: face.character_update(character_id, fields)
+            )
+
+        def do_DELETE(self) -> None:
+            # MC-0: remove one user-authored card; the builtin is refused
+            # (409, the store's AUTHORITY_VIOLATION), an unknown id a 404.
+            character_id = self._character_path_id()
+            if character_id is None:
+                self._send_json(404, {"error": "not found"})
+                return
+            self._run_host_write(lambda: face.character_delete(character_id))
 
     return _WebServer(("127.0.0.1", port), Handler, face=face, work=work)
 

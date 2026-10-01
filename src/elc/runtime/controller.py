@@ -32,7 +32,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Callable, TypeVar
+from typing import TYPE_CHECKING, Callable, Mapping, TypeVar
 
 from elc.conversation.commands import CommitUserTurn, ConversationCommands
 from elc.conversation.queries import ConversationQueries
@@ -1045,6 +1045,20 @@ class ConversationCoordinator:
       why an ordinary turn through this face is field-for-field the buffered
       one.
 
+    MC-0 (multi-character): the card stops being one-for-all. The optional
+    ``character_packages`` mapping (persona id → :class:
+    `CharacterPackageRecord`) is the per-persona override the composition
+    root builds from the ``character_card`` table ("table first, penpal
+    fallback" — :mod:`elc.persona.card_store`): at each GenerationContext
+    site the card is picked by the turn conversation's **own persona id**
+    (read off the durable conversation row, never a guess), and a persona
+    the mapping does not name falls back to the single ``character_package``
+    — today's shape, byte for byte, which is also what ``None`` (the
+    default, every assembly before this slice) keeps. Two characters bound
+    to two conversations therefore speak with two cards through one
+    coordinator; a conversation whose persona has no card speaks with the
+    default, exactly as before.
+
     ``finalize_delivery`` (the ``BUFFERED_VALIDATED`` face) stays the teaching
     legs' delivery — §13's default table sends every teaching action type and
     ``PERSONA_RESUME`` through it, and only ``NORMAL_PERSONA_REPLY`` through
@@ -1112,6 +1126,7 @@ class ConversationCoordinator:
         delivery_records: DeliveryRecordStore | None = None,
         stream_transport: StreamTransportFactory | None = None,
         constraint_views: PlannerConstraintSource | None = None,
+        character_packages: Mapping[str, CharacterPackageRecord] | None = None,
     ) -> None:
         self._lease = lease
         self._commands = conversation_commands
@@ -1120,6 +1135,13 @@ class ConversationCoordinator:
         self._generation = generation_actions
         self._learning = learning
         self._character_package = character_package
+        # Held, never copied: the mapping may be a live view over the card
+        # table (elc.persona.card_store.CharacterCardPackages — read-through,
+        # so a card created after this assembly still resolves), and a copy
+        # would freeze it into an assembly-time snapshot.
+        self._character_packages = (
+            character_packages if character_packages else None
+        )
         self._decision_cycles = decision_cycles
         self._learning_controller = learning_controller
         self._teaching = teaching
@@ -1667,7 +1689,7 @@ class ConversationCoordinator:
                 disclosed_profile,
             ) = self._persona_views_for(command.conversation_id, persona_id)
             context = GenerationContext(
-                character_package=self._character_package,
+                character_package=self._character_package_for(persona_id),
                 relationship_view=relationship_view,
                 episode_view=episode_view,
                 world_lore_view=None,
@@ -6802,7 +6824,7 @@ class ConversationCoordinator:
             disclosed_profile,
         ) = self._persona_views_for(conversation_id, persona_id)
         context = GenerationContext(
-            character_package=self._character_package,
+            character_package=self._character_package_for(persona_id),
             relationship_view=relationship_view,
             episode_view=episode_view,
             world_lore_view=None,
@@ -7920,6 +7942,24 @@ class ConversationCoordinator:
             if persona is not None:
                 return persona
         return PersonaId("persona-default")
+
+    def _character_package_for(
+        self, persona_id: PersonaId
+    ) -> CharacterPackageRecord | None:
+        """The card this persona speaks with (MC-0).
+
+        The per-persona mapping first (the composition root's
+        "table first" half — a card row keyed by its persona id), the
+        single injected package second (the fallback half — a persona the
+        table does not name speaks with the default card, and with no
+        mapping at all this is the only answer, today's behaviour exactly).
+        """
+
+        if self._character_packages:
+            package = self._character_packages.get(str(persona_id))
+            if package is not None:
+                return package
+        return self._character_package
 
     def _contract(self, persona_id: PersonaId) -> GenerationContract:
         """The ordinary persona reply's contract.

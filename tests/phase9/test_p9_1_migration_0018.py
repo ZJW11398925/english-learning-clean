@@ -170,9 +170,17 @@ def _canonical_vocabulary() -> dict[str, tuple[str, ...]]:
 
 
 def test_0018_is_0017s_successor_and_the_head() -> None:
+    """0018 is in the chain, 0017 is immediately behind it, and its own
+    successor is MC-0's ``0019_character_cards.sql``. The head assertion
+    moved with that migration (this pin read
+    ``names[-1] == SCHEMA_HEAD_FILE == HEAD_0018`` while 0018 was the head
+    — the P8-4 suite's rule: the successor is a **literal** here so the
+    head can move without silently falsifying the lineage claim)."""
+
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert MIGRATION_IDS[-1] == "0018_delivery_records"
-    assert names[-1] == SCHEMA_HEAD_FILE == HEAD_0018
+    assert MIGRATION_IDS[-1] == "0019_character_cards"
+    assert SCHEMA_HEAD_FILE == "0019_character_cards.sql"
+    assert names[names.index(HEAD_0018) + 1] == "0019_character_cards.sql"
     assert names[names.index(PRE_0018) + 1] == HEAD_0018
     assert [name[:4] for name in names] == [
         f"{index:04d}" for index in range(1, len(MIGRATION_IDS) + 1)
@@ -202,7 +210,7 @@ def test_applying_the_chain_is_idempotent(db: sqlite3.Connection) -> None:
 
 
 def test_the_stamps_move_to_the_shared_head(db: sqlite3.Connection) -> None:
-    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "18"
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "19"
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"

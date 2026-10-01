@@ -221,6 +221,15 @@ SWEPT_TABLES: tuple[str, ...] = (
     "planning_ledger_event",
     "planning_ledger",
     "coverage_obligation",
+    # MC-0's user-authored character cards (migration 0019). A leaf of every
+    # other table's graph — no foreign key in, none out (a conversation
+    # carries its persona as plain data, the 0003 shape) — so it sits at the
+    # end of the sweep. Only ALL_USER_DATA walks it, and only the user's own
+    # cards: the store's leg carries ``is_builtin = 0``, the same authority
+    # rule the card store's delete face enforces ("the builtin cannot be
+    # deleted" — there is exactly one Nell; a whole-data wipe does not
+    # override that, it wipes *user* data).
+    "character_card",
 )
 
 #: The subset ALL_USER_DATA walks — §23's "all user canonical records / all

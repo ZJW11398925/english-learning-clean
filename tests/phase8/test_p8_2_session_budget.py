@@ -1233,8 +1233,10 @@ def test_no_migration_carries_the_view() -> None:
 
     P8-3 moved the head to 0016_planning_ledger (the PlanningLedger's tables,
     not this view), P8-4 to 0017_ledger_event_provenance (one column on that
-    log, still not this view) and P9-1 to 0018_delivery_records (the §22 /
-    §21.1 delivery tables, still not this view), and this pin carries that
+    log, still not this view), P9-1 to 0018_delivery_records (the §22 /
+    §21.1 delivery tables, still not this view) and MC-0 to
+    0019_character_cards (the user-authored character card, still not this
+    view), and this pin carries that
     head as **literals reconciled against the shared declarations**: the
     left-hand sides are ``tests.conftest``'s ``MIGRATION_IDS`` /
     ``SCHEMA_HEAD_FILE`` / ``SCHEMA_HEAD_VERSION`` (which
@@ -1244,9 +1246,9 @@ def test_no_migration_carries_the_view() -> None:
     stamp. The *claim* (this cut adds no table for the view) is unchanged, and
     the schema scan below is what holds it."""
 
-    assert MIGRATION_IDS[-1] == "0018_delivery_records"
-    assert SCHEMA_HEAD_FILE == "0018_delivery_records.sql"
-    assert SCHEMA_HEAD_VERSION == "18"
+    assert MIGRATION_IDS[-1] == "0019_character_cards"
+    assert SCHEMA_HEAD_FILE == "0019_character_cards.sql"
+    assert SCHEMA_HEAD_VERSION == "19"
     schema = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted((REPO_ROOT / "migrations").glob("*.sql"))
