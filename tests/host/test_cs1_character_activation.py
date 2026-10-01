@@ -723,3 +723,84 @@ def test_the_three_consumers_import_the_penpal_constants() -> None:
         "from elc.persona.penpal import PENPAL_PERSONA_ID"
         in (SRC / "web.py").read_text(encoding="utf-8")
     )
+
+
+# ---------------------------------------------------------------------------
+# ⑦ the cs-1R disposition pins (review MEDIUM-1 + LOW-2)
+#
+# The ZH fake-capture family: slots now end at person words, the
+# negation/cleft family is refused, fullwidth letters land as ASCII and the
+# trailing 的 particle is stripped. Every adversarial sample the review
+# ran is pinned here with its exact expected behavior.
+
+
+def _zh_contents(text: str) -> list[str]:
+    from elc.relationship.candidates import PatternCandidateProvider
+
+    outcome = PatternCandidateProvider().candidates_for(_slice_with(text))
+    assert isinstance(outcome, Ok), outcome
+    return [candidate.content for candidate in outcome.value]
+
+
+@pytest.mark.parametrize(
+    ("utterance",),
+    [
+        ("我叫你一声",),
+        ("我叫你过来一下",),
+        ("我喜欢你做的菜",),
+        # the whole-slot pronoun rejection the v1 already had (regression)
+        ("我喜欢你",),
+        ("我喜欢他们做的菜",),
+    ],
+)
+def test_the_zh_person_word_slots_propose_nothing(utterance: str) -> None:
+    """A slot about someone else is not a self-statement: person words end
+    a ZH slot at capture, so these propose nothing (MEDIUM-1's
+    second/third-person arm)."""
+
+    assert _zh_contents(utterance) == []
+
+
+@pytest.mark.parametrize(
+    ("utterance",),
+    [
+        ("我喜欢的不是工作",),
+        ("我喜欢的工作不是这个",),
+        # the cleft family: 「我喜欢的是…」 says nothing extractable
+        ("我喜欢的是书法",),
+    ],
+)
+def test_the_zh_negation_and_cleft_slots_propose_nothing(
+    utterance: str,
+) -> None:
+    """A slot that begins with 的 or carries 不是 compares or negates — it
+    never becomes content (MEDIUM-1's negation arm). The bare attributive
+    不 stays legal: 「我喜欢不辣的菜」 still proposes."""
+
+    assert _zh_contents(utterance) == []
+    assert _zh_contents("我喜欢不辣的菜") == ["The user likes 不辣的菜."]
+
+
+def test_the_zh_first_person_clause_boundary_splits_the_facts() -> None:
+    """「我叫小明我住在杭州」 (no punctuation): 我 ends the name slot, so
+    the two clauses propose their two facts independently — the name never
+    swallows the city (MEDIUM-1's connected-writing adjudication: truncate,
+    not refuse)."""
+
+    assert _zh_contents("我叫小明我住在杭州") == [
+        "The user's name is 小明.",
+        "The user lives in 杭州.",
+    ]
+
+
+def test_fullwidth_letters_land_as_ascii() -> None:
+    """Ｍａｒｙ is stored as Mary (LOW-2): NFKC folds the fullwidth forms
+    before the slot becomes content."""
+
+    assert _zh_contents("我的名字是Ｍａｒｙ") == ["The user's name is Mary."]
+
+
+def test_the_trailing_de_particle_is_stripped() -> None:
+    """「我姓王的」 remembers surname 王, not 王的 (LOW-2)."""
+
+    assert _zh_contents("我姓王的") == ["The user's surname is 王."]
