@@ -481,7 +481,8 @@ button:focus-visible, input:focus-visible {
    状态矩阵：default（--paper-high 泛起纸面 + 发丝边 + 垫纸错位层——
    浮层纸影以 ::after 垫纸达成（纯色错位 3px）+ --stack-shadow-soft；
    开启入场 = paper-drop + ink-wash 双动画（opacity 恒慢于 transform））；
-   触发词 hover 有触点提示 / closed（关闭 = 点卡外或「收起」，DOM
+   触发词 hover 有触点提示（ux-1 起命中带 5px/2px 外扩负抵消 +
+   触屏 (hover: none) 镜像同款点线）/ closed（关闭 = 点卡外或「收起」，DOM
    移除语义）；无 busy——命中即显，miss 按契约静默。
    使用规则：卡片只由 /api/word 的 found:true 打开；一切文字
    textContent；教学短笺与系统行不参与点词。
@@ -513,11 +514,23 @@ button:focus-visible, input:focus-visible {
               border-left: 1px solid var(--rule);
               font-family: var(--f-serif); font-size: var(--fs-small);
               color: var(--ink-soft); overflow-wrap: anywhere; }
-.word { cursor: pointer; }
+/* ux-1（可用性刀）：命中带外扩——字身框高 ~17px（≈2.8mm）是移动端
+   单词卡点不中的根因（触点落行距/词间空隙即静默丢弃）；padding 向外
+   扩 5px/2px、负 margin 精确抵消（行内盒：纵向 padding 不入行高、
+   横向 padding+margin 相抵）＝零重排的扩大命中。 */
+.word { cursor: pointer; padding: 5px 2px; margin: -5px -2px; }
 @media (hover: hover) {
   .word:hover { text-decoration: underline dotted;
                 text-decoration-color: var(--pencil-soft);
                 text-underline-offset: 0.24em; }
+}
+/* 触屏可发现性：hover 点线在触屏（hover: none）缺席——命中带扩了也
+   没人知道能点。同一触点提示的触屏镜像（rd-1 触屏纪律：悬停面
+   包 (hover: hover)，此为 none 半区、零悬停选择器）。 */
+@media (hover: none) {
+  .say .word { text-decoration: underline dotted;
+               text-decoration-color: var(--pencil-soft);
+               text-underline-offset: 0.24em; }
 }
 
 /* .rawtag（原文小字，R-1R）——机械事实的等宽小字形态：存储词表值的
@@ -637,10 +650,18 @@ button:focus-visible, input:focus-visible {
    主墨加重 + 墨蓝实线下划短线）/ focus（地基墨蓝环）。
    键盘：roving tabindex，左右箭头循环移选（wireSectionTabs）。
    使用规则：温故与抽屉各一排（三项）；进空间落默认节、切节即拉。
+   ux-1 起：整条 sticky 贴顶常显（用户原话——顶部的今日/方向/档案
+   不得因滚动被遮挡）；纸底 + 下发丝线的 sticky 面，top 紧跟品牌条
+   （46 = .top 的 10 上距 + 26 行高 + 8 下距 + 2 发丝边），z 在品牌条
+   （5）之下、正文之上；移动端另有横滑切相邻面板的补充切换面
+   （wirePanelSwipe，三签仍是主切换面）。
    禁止变体：页签底色块、关闭钮、横滚、两层节签嵌套。 */
 .section-tabs { display: flex; gap: 22px;
                 border-top: 1px solid var(--rule);
-                padding: 0 var(--read-pad); }
+                border-bottom: 1px solid var(--rule-soft);
+                padding: 0 var(--read-pad);
+                position: sticky; top: 46px; z-index: 4;
+                background: var(--bg); }
 .section-tab { font-family: var(--f-sans); font-size: var(--fs-ui);
                letter-spacing: var(--ls-caps); color: var(--ink-soft);
                padding: 10px 0 8px; position: relative;
@@ -735,6 +756,9 @@ button:focus-visible, input:focus-visible {
     text-decoration-color: var(--pencil-soft);
     text-underline-offset: 0.24em; }
 }
+/* ux-1：who 块的按压反馈——文字链接族的 opacity 半键
+   （.btn--ink:active 同档；触屏纪律：:active 在 hover 包裹之外）。 */
+#space-parlor .top > div:active { opacity: 0.55; }
 
 /* ── 机制物化：被验证才入册的印记 ──────────────────────────────────
    档案时间线明细行的判分戳已随 v2 撤除——邮戳只落三类真实事件

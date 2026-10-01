@@ -142,8 +142,15 @@ body {
               letter-spacing: var(--meta-track); color: var(--meta-ink); }
 
 /* ── 温故/抽屉的空间正文（R-1）：三个节面板共用的正文留白与标题形态 ── */
-/* 页题只念一遍（节名槽承担），节内不再有 h2。 */
-.spacebody { padding: 26px var(--read-pad) 60px; }
+/* 页题只念一遍（节名槽承担），节内不再有 h2。
+   ux-1：容器自带 transform 过渡——横滑切面板的落纸动效载体（一记
+   12px 方向性位移、140ms 弹回；纸的物理，100–200ms 档）。类由
+   components.js 的 wirePanelSwipe 在松手判定后落/摘（transitionend
+   对账），reduced-motion 随库尾总降级块归零。 */
+.spacebody { padding: 26px var(--read-pad) 60px;
+             transition: transform var(--dur-1) var(--ease-paper); }
+.spacebody.panel-nudge--next { transform: translateX(calc(var(--sp-3) * -1)); }
+.spacebody.panel-nudge--prev { transform: translateX(var(--sp-3)); }
 .spacebody .sub { margin: 0 0 8px; font-family: var(--f-sans);
               font-size: var(--fs-ui);
               color: var(--ink-faint); line-height: 1.7; }
@@ -166,6 +173,12 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
 .goaledge { border-top: 1px solid var(--rule-soft); margin-top: 10px;
             padding-top: 4px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 6px 0; }
+/* ux-1：保存方向常显（用户原话——重要按钮不得因滚动被遮挡；温故各页
+   动作钮普查，此为现役唯一滚动丢失面）：sticky 底栏贴在常驻导航之上，
+   编辑上方各面时保存始终可及；滚过自然位（下方只读面）即随流让位。
+   纸底 + .sec 自带的上发丝线。 */
+#goal-save { position: sticky; bottom: var(--navdock-h); z-index: 3;
+             background: var(--bg); }
 .taxref { margin: 4px 0 0; font-family: var(--f-sans);
           font-size: var(--fs-micro);
           color: var(--ink-faint); line-height: 1.8;
@@ -178,7 +191,13 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
    记忆与话头行 = 左缘发丝线（分层靠发丝线，简报 §6）；时间线行 = 等宽
    日期 + tabular-nums（数据列排等宽，简报 3a 禁令）。全部引用令牌，
    零新值。数据只读 /api/partner——角色文本零字面（真源在服务端）。 */
-.dossier-back { margin: 0 0 var(--sp-4); }
+.dossier-back { margin: 0 0 var(--sp-4);
+                /* ux-1：返回钮常显（用户原话——返回按钮不得因页面滚动
+                   被遮挡）：sticky 贴在品牌条之下，top 46 = .top 的高度
+                   （10 上距 + 26 行高 + 8 下距 + 2 发丝边）；纸底盖住
+                   从底下滚过的正文。 */
+                position: sticky; top: 46px; z-index: 4;
+                background: var(--bg); }
 .dossier-name { margin: 0; font-family: var(--f-display);
                 font-size: var(--fs-title); line-height: var(--lh-title);
                 font-weight: 400; letter-spacing: var(--ls-title); }
@@ -315,7 +334,12 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
 .char-editor-body { max-width: var(--measure);
                     margin: 0 auto; padding: var(--sp-6) var(--sp-4)
                     var(--sp-8); }
-.editor-back { margin: 0 0 var(--sp-4); }
+.editor-back { margin: 0 0 var(--sp-4);
+               /* ux-1：编辑台的「回沓」贴顶常显——sticky 于编辑台自身的
+                  滚动井（.char-editor 是 overflow-y:auto 的定页面），
+                  top 0 贴其顶；纸底（与编辑台同面）盖住滚过的表单。 */
+               position: sticky; top: 0; z-index: 2;
+               background: var(--paper); }
 .editor-kicker { margin: 0; font: var(--meta-font);
                  letter-spacing: var(--meta-track);
                  color: var(--meta-ink); }

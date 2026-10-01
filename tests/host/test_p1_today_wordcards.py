@@ -550,6 +550,11 @@ def test_word_card_is_registered_in_all_four_places() -> None:
         ".wc-zh {",
         ".wc-en {",
         ".wc-example {",
-        ".word {",
     ):
         assert whole.count(selector) == 1, selector
+    # ux-1 随迁：.word 的触屏镜像块（@media (hover: none) 的 .say .word）
+    # 使 ".word {" 子串为 2——基形与触屏镜像都在 components.css（单一
+    # 物理出处不变），恰一次钉改读「恰两处、同文件」；同块形源钉由
+    # tests/host/test_ux1_usability.py 接手。
+    assert whole.count(".word {") == 2
+    assert css.count(".word {") == 2

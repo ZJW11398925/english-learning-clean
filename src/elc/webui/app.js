@@ -31,6 +31,7 @@ import {
   wireSectionTabs,
   markSectionTabs,
   sectionLabel,
+  wirePanelSwipe,
   disclosure,
   wireReveal,
   envelopeCard,
@@ -1730,11 +1731,15 @@ function showSpace(name) {
 
 // R-1 wiring: the dock switches spaces, the two tab lists switch sections
 // (a click and the left/right arrows both land on the same showSection).
+// ux-1: the touch swipe is a supplementary switcher for the same two
+// spaces — the tabs stay the primary face.
 wireNavdock((name) => showSpace(name));
 wireSectionTabs(document.getElementById("study-tabs"),
   (name) => showSection("study", name));
 wireSectionTabs(document.getElementById("drawer-tabs"),
   (name) => showSection("drawer", name));
+wirePanelSwipe("study", (name) => showSection("study", name));
+wirePanelSwipe("drawer", (name) => showSection("drawer", name));
 
 // 记录页的底：一切原值折进一个 #21（⑧ 8.2.5）——观察读数第一次展开
 // 才拉，拉取失败 = 区内一行 + 重试。计划明细与按表达看同法收养
@@ -1880,10 +1885,46 @@ mountLetterSearch();
 // 窗口（长窗优先），逐窗口调 /api/word，首个命中即出卡；miss 按契约
 // 静默（不弹「没查到」浮层）。stopPropagation 让开卡点击不被浮层的
 // 「点卡外关闭」监听立即收掉。
+// ux-1: 最近词兜底——命中带外扩后仍会点在行距/词间空隙（触屏尤甚），
+// 以落点的文本位（caretRangeFromPoint / caretPositionFromPoint）归到
+// .letter .say，取该 .say 里字心欧氏距离最近的 .word；caret 取不到、
+// 不在任何 .letter .say 里或该 .say 没有词，就保持静默 miss 契约。
+// 精确命中仍走快路径，行为一字不变。
+function wordFromCaret(event) {
+  const doc = document;
+  let node = null;
+  if (typeof doc.caretRangeFromPoint === "function") {
+    const range = doc.caretRangeFromPoint(event.clientX, event.clientY);
+    if (range) node = range.startContainer;
+  } else if (typeof doc.caretPositionFromPoint === "function") {
+    const pos = doc.caretPositionFromPoint(event.clientX, event.clientY);
+    if (pos) node = pos.offsetNode;
+  }
+  const holder = node && (node.nodeType === 1 ? node : node.parentElement);
+  const say = holder && holder.closest(".letter .say");
+  if (!say) return null;
+  let best = null;
+  let bestD = Infinity;
+  for (const span of say.querySelectorAll(".word")) {
+    const box = span.getBoundingClientRect();
+    const dx = event.clientX - (box.left + box.width / 2);
+    const dy = event.clientY - (box.top + box.height / 2);
+    const d = dx * dx + dy * dy;
+    if (d < bestD) {
+      bestD = d;
+      best = span;
+    }
+  }
+  return best;
+}
+
 messages.addEventListener("click", async (event) => {
-  const target = event.target;
+  let target = event.target;
   if (!(target instanceof Element)) return;
-  if (!target.classList.contains("word")) return;
+  if (!target.classList.contains("word")) {
+    target = wordFromCaret(event);   // 兜底：点在字身框之外
+    if (!target) return;
+  }
   if (!target.closest(".letter")) return;
   event.stopPropagation();
   const say = target.closest(".say");

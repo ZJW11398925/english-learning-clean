@@ -864,6 +864,61 @@ export function sectionLabel(header, text) {
   if (slot) slot.textContent = text;
 }
 
+// ux-1（可用性刀）：移动端横滑切面板——温故/抽屉的补充切换面（用户
+// 原话：移动端在合理触发条件下左右滑动切换面板；现役三签仍是主切换
+// 面）。touch 事件只做识别、全程零 preventDefault（纵向滚动不受影响；
+// 桌面无 touch 不触发）。松手判定：单指、横向位移 ≥ 48px 且 |dx| 严格
+// 大于 |dy|（防误触纵滚）才切相邻面板；面板序取自节签 DOM（单一出处）。
+// 识别成功落一记 12px（--sp-3）方向性位移、140ms（--dur-1）弹回的落纸
+// 动效（screens.css 的 .panel-nudge--*；transitionend 对账摘类）。
+// 起点在动作件（button/a/input/textarea/select）或横向滚动面（pre）上
+// 不识别——动作钮的点击与既有横滚优先。
+const SWIPE_MIN_PX = 48;
+
+export function wirePanelSwipe(space, onSelect) {
+  const host = document.getElementById("space-" + space);
+  const body = host && host.querySelector(".spacebody");
+  const tabs = Array.from(
+    document.querySelectorAll("#" + space + "-tabs [role=tab]"));
+  if (!host || !body || tabs.length === 0) return;
+  const order = tabs.map((tab) => tab.dataset.section);
+  let x0 = 0;
+  let y0 = 0;
+  let live = false;
+  host.addEventListener("touchstart", (event) => {
+    live = event.touches.length === 1
+      && !event.target.closest("button, a, input, textarea, select, pre");
+    if (live) {
+      x0 = event.touches[0].clientX;
+      y0 = event.touches[0].clientY;
+    }
+  }, { passive: true });
+  host.addEventListener("touchcancel", () => { live = false; },
+    { passive: true });
+  host.addEventListener("touchend", (event) => {
+    if (!live) return;
+    live = false;
+    const dx = event.changedTouches[0].clientX - x0;
+    const dy = event.changedTouches[0].clientY - y0;
+    if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) <= Math.abs(dy)) {
+      return;
+    }
+    const current = tabs.find(
+      (tab) => tab.getAttribute("aria-selected") === "true");
+    const at = order.indexOf(current ? current.dataset.section : "");
+    const next = at + (dx < 0 ? 1 : -1);
+    if (at < 0 || next < 0 || next >= order.length) return;
+    const settle = (fe) => {
+      if (fe.target !== body || fe.propertyName !== "transform") return;
+      body.classList.remove("panel-nudge--next", "panel-nudge--prev");
+      body.removeEventListener("transitionend", settle);
+    };
+    body.addEventListener("transitionend", settle);
+    body.classList.add(dx < 0 ? "panel-nudge--next" : "panel-nudge--prev");
+    onSelect(order[next]);
+  }, { passive: true });
+}
+
 // rd-1 入场编排（spec ⑨-5 逐行落墨；置于 #21 之前——r1r 的「工厂尾部
 // 无 querySelectorAll」无手风琴钉扫 disclosure 之后的文件尾，本编排
 // 不是工厂、不越出自己的容器）：IntersectionObserver 只做一件事
