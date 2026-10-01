@@ -307,7 +307,7 @@ from elc.curriculum.readiness import READINESS_LEVELS
 from elc.deletion.controller import DeletionController
 from elc.deletion.types import DeletionRequest, DeletionScope
 from elc.host import Host
-from elc.persona.penpal import PENPAL_PERSONA_ID
+from elc.persona.penpal import PENPAL_CHARACTER_PACKAGE, PENPAL_PERSONA_ID
 from elc.persona.provider import PersonaProvider
 from elc.planner.trace_document import decode_factor_trace
 from elc.platform.types import (
@@ -1068,6 +1068,128 @@ def _tombstones_of(controller: DeletionController) -> dict[str, Any]:
             }
             for record in read.value
         ]
+    }
+
+
+# ---------------------------------------------------------------------------
+# the cs-2 partner dossier — one read-only face over the penpal's true source
+# ---------------------------------------------------------------------------
+
+
+def _partner_card_face() -> dict[str, Any]:
+    """The character card's narrative face, shaped for the page.
+
+    The single-source rule (cs-1, pinned) makes this a derivation, never a
+    second spelling: the name is the identity line's first segment (the
+    text before the card's own em dash) and the identity line is the rest
+    — both read out of :data:`PENPAL_CHARACTER_PACKAGE` at call time. The
+    three prose fields pass through whole (the page renders them as the
+    dossier's paragraphs, it does not re-shape the words). Nothing here
+    hardcodes a value of the character: a changed card changes this face.
+    """
+
+    card = PENPAL_CHARACTER_PACKAGE
+    identity = str(card.identity)
+    head, sep, tail = identity.partition(" — ")
+    return {
+        "name": head if sep else identity,
+        "identity_line": tail if sep else "",
+        "background": str(card.background),
+        "values": str(card.values),
+        "letter_habits": str(card.speech_style),
+    }
+
+
+def _partner_stats_panel(db: sqlite3.Connection, conversation: str) -> dict[str, Any]:
+    """The correspondence statistics, from the conversation's own turns.
+
+    Three counts the dossier head names: how many letters went out (the
+    committed ``user_turn`` rows — one per turn the page or the CLI
+    committed), the first letter's day and the latest one (the rows' own
+    ``created_at`` min/max, passed through as the ISO strings they are).
+    The per-day timeline rides along (most recent 60 days, oldest first):
+    one row per day that saw a letter, the day and the count — the
+    dossier's 极简时间线 renders these, it does not re-derive them.
+    """
+
+    row = db.execute(
+        "SELECT COUNT(*), MIN(created_at), MAX(created_at)"
+        " FROM user_turn WHERE conversation_id = ?",
+        (conversation,),
+    ).fetchone()
+    days = [
+        (str(day), int(count))
+        for day, count in db.execute(
+            "SELECT substr(created_at, 1, 10) AS day, COUNT(*)"
+            " FROM user_turn WHERE conversation_id = ?"
+            " GROUP BY day ORDER BY day DESC LIMIT 60",
+            (conversation,),
+        ).fetchall()
+    ]
+    days.reverse()
+    return {
+        "turns": int(row[0]) if row else 0,
+        "first_letter_at": None if row is None or row[1] is None else str(row[1]),
+        "latest_letter_at": None if row is None or row[2] is None else str(row[2]),
+        "timeline": [{"date": day, "turns": count} for day, count in days],
+    }
+
+
+def _partner_memories_panel(db: sqlite3.Connection) -> dict[str, Any]:
+    """What the penpal remembers about you — the ACTIVE relationship rows.
+
+    Scoped to the pair this face serves: the penpal's persona id (the
+    imported constant, never a spelled value) against the conversation's
+    bound user, newest first (``updated_at`` desc, the row id breaking a
+    same-stamp tie). Only ``ACTIVE`` rows are "remembered" — a superseded
+    or withdrawn row is the memory's history, not its present. The
+    canonical text passes through whole; nothing here paraphrases what
+    was remembered."""
+
+    rows = db.execute(
+        "SELECT canonical_content, memory_type, updated_at"
+        " FROM relationship_memory"
+        " WHERE persona_id = ? AND status = 'ACTIVE'"
+        " ORDER BY updated_at DESC, relationship_memory_id",
+        (str(PENPAL_PERSONA_ID),),
+    ).fetchall()
+    return {
+        "memories": [
+            {
+                "content": str(row[0]),
+                "memory_type": str(row[1]),
+                "updated_at": str(row[2]),
+            }
+            for row in rows
+        ]
+    }
+
+
+def _partner_episode_panel(
+    db: sqlite3.Connection, conversation: str
+) -> dict[str, Any]:
+    """The latest ACTIVE episode — the dossier's 近况 face.
+
+    The conversation's own episode row (Local V1 keeps one per
+    conversation): the summary and the open threads decoded through the
+    memory face's array reader. No ACTIVE episode is the honest ``None``
+    — the correspondence has not been summarized yet, and the page says
+    so instead of inventing a near-past."""
+
+    row = db.execute(
+        "SELECT summary, open_threads, updated_at FROM episode"
+        " WHERE conversation_id = ? AND status = 'ACTIVE'"
+        " ORDER BY updated_at DESC, episode_id DESC LIMIT 1",
+        (conversation,),
+    ).fetchone()
+    if row is None:
+        return {"episode": None}
+    return {
+        "episode": {
+            "summary": str(row[0]),
+            "open_threads": _json_array_column(row[1]),
+            "updated_at": str(row[2]),
+        }
     }
 
 
@@ -2133,6 +2255,47 @@ class _WebFace:
             )
         return _tombstones_of(controller)
 
+    def partner(self) -> dict[str, Any]:
+        """cs-2: the penpal dossier — one read, four faces, work queue.
+
+        The dossier page's whole read (the overlay card it replaces pulled
+        three of these out of ``/api/memory``; the page now has a face of
+        its own):
+
+        - ``card`` — the character's narrative face
+          (:func:`_partner_card_face`), derived from
+          :data:`PENPAL_CHARACTER_PACKAGE` at call time — the single-source
+          rule holds server-side too (the page never spells a value of the
+          character, this face never spells a second copy);
+        - ``stats`` / ``memories`` / ``episode`` — three guarded SQL reads
+          (the diagnostics construction: a panel that explodes answers
+          ``{"error": …}`` in its own slot, the others still answer). The
+          stats read is scoped to the conversation this face serves; the
+          memories read to the penpal's persona pair; the episode read to
+          the conversation's ACTIVE row.
+
+        Read-only, always: nothing here writes (the memory face's
+        content-snapshot posture applies verbatim)."""
+
+        db = self._host.db
+        conversation = str(self._conversation_id)
+        return {
+            "card": _partner_card_face(),
+            "stats": _diagnostics_panel(
+                "stats",
+                lambda conn: _partner_stats_panel(conn, conversation),
+                db,
+            ),
+            "memories": _diagnostics_panel(
+                "memories", _partner_memories_panel, db
+            ),
+            "episode": _diagnostics_panel(
+                "episode",
+                lambda conn: _partner_episode_panel(conn, conversation),
+                db,
+            ),
+        }
+
     def delete(
         self,
         scope: DeletionScope,
@@ -2891,6 +3054,11 @@ def _build_server(
                 # p-2: the memory readout — five guarded panels, read-only,
                 # on the work queue (the diagnostics construction).
                 self._run_on_host_thread(face.memory)
+            elif self.path == "/api/partner":
+                # cs-2: the penpal dossier — the card's narrative face out
+                # of its single source plus three guarded SQL reads, on the
+                # work queue (the diagnostics construction).
+                self._run_on_host_thread(face.partner)
             elif self.path == "/api/goals":
                 # p-3: the goal screen's read — the portfolio, the policy,
                 # the served conversation's session focus and the taxonomy

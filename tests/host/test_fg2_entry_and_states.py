@@ -107,7 +107,8 @@ def test_the_brand_bar_graces_both_screens(tmp_path: Path) -> None:
     index = _webui_text("index.html")
     # R-1 随迁：空间头三枚 --sm（客厅 / 温故 / 抽屉【rd-2 前称学案/柜
     # 抽】；今日/目标/仪表的品牌条随五屏退役——空间头部唯一）
-    assert index.count('data-brand-mark="sm"') == 3
+    # cs-2 随迁：档案页（#space-partner）入列第四枚 --sm——同基形。
+    assert index.count('data-brand-mark="sm"') == 4
     assert index.count('data-brand-mark="lg"') == 1
     # R-1 随迁：温故/抽屉头部走 space-header（.top 基形 + 节名槽）；
     # 旧 sethead 变体与「回客厅」钮退役（缺位钉）
@@ -264,5 +265,5 @@ def test_the_spec_carries_the_living_registry() -> None:
     # R-1 随迁：壳导航三件再长三格（17 → 20）；
     # R-1R 随迁：折叠组 disclosure 再长一格（20 → 21）——同刀登记；
     # R-1V 随迁：icon-set 入库再长一格（21 → 22）——同刀登记；
-    # rd-4 随迁：partner-card 入库再长一格（22 → 23）——同刀登记
-    assert len(COMPONENTS) == 23
+    # rd-4 曾随迁长到 23；cs-2 随迁：浮层伙伴卡退役再缩回（23 → 22）
+    assert len(COMPONENTS) == 22

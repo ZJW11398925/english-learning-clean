@@ -33,9 +33,6 @@ import {
   sectionLabel,
   disclosure,
   wireReveal,
-  partnerCard,
-  showPartnerCard,
-  closePartnerCard,
 } from "./components.js";
 import {
   fetchTurn,
@@ -47,6 +44,7 @@ import {
   fetchCurrentMoment,
   fetchWord,
   fetchMemory,
+  fetchPartner,
   fetchDelete,
   fetchGoals,
   fetchSaveGoals,
@@ -915,19 +913,59 @@ async function loadToday() {
     learning === null ? null : learning.evidence, loadToday);
 }
 
-// ── p-2 / R-1R: 记忆页 —— 摘要行 + 五面板（关系 / 剧情 / 学习状态 /
-// 痕迹 / 存根）。字段名全中文化；指纹缩前 12 位；时间一律人话。 ──────
+// ── p-2 / R-1R / cs-2: 记忆页 —— 摘要行 + 三摞五面板。cs-2 重组：
+// 归属分区（角色记忆 / 学习记录 / 存根）由 /api/memory 的 domain 字段
+// 分组落位（错位即搬家——分区是服务端声明的，页面照它归垛）；五个面板
+// 各是一件 #21 折叠（默认收，组头 = 面板名 + 计数）。字段名全中文化；
+// 指纹缩前 12 位；时间一律人话。 ─────────────────────────────────────
 
 const MEM_PANEL_IDS = ["mem-relationship", "mem-episode", "mem-states",
                        "mem-evidence", "mem-tombstones"];
 
-function renderMemRelationship(d, retry) {
-  const box = diagBox("mem-relationship");
+// cs-2 三摞：domain 词 → 摞容器与归属标注（标注文字在 index.html 的
+// 摞头上，此处只持容器 id 与名）。domain 缺席/未知 = 面板留在原地，
+// 不发明第四摞。
+const MEM_ZONES = {
+  character: { box: "mem-zone-character" },
+  learning: { box: "mem-zone-learning" },
+  audit: { box: "mem-zone-audit" },
+};
+
+// 分区消费：把面板槽搬进它的 domain 点名的摞（页面初次装载已在
+// 静态归位处——服务端改口时这里跟着搬）。
+function placePanel(panel, slotId) {
+  const zone = MEM_ZONES[panel && panel.domain];
+  if (!zone) return;
+  const slot = diagBox(slotId);
+  const container = diagBox(zone.box);
+  if (!container.contains(slot)) container.appendChild(slot);
+}
+
+// 面板折叠（cs-2）：面板名 + 计数做组头，内容默认收；返回内容体。
+function mountPanelDisclosure(slot, name, count) {
+  slot.textContent = "";
+  const body = document.createElement("div");
+  slot.appendChild(disclosure({
+    name: name,
+    count: count,
+    content: body,
+  }).root);
+  return body;
+}
+
+// 计数口径：面板负载体里的行数（证据面是 claims 计数列）。
+function panelCount(panel, key) {
+  if (!panel || panel.error) return undefined;
+  if (key === "claims") return panel.evidence_claim_count || 0;
+  return (panel[key] || []).length;
+}
+
+function renderMemRelationship(d, retry, box) {
   box.textContent = "";
   if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const rows = d.memories || [];
   if (!rows.length) {
-    diagEmpty(box, "还没有记住什么——聊得多起来，才会记住关于你和它的事。");
+    diagEmpty(box, "还没记住什么——把你的事写进信里（名字、住的地方、喜欢的事），她会记下来。");
     return;
   }
   for (const m of rows) {
@@ -947,8 +985,7 @@ function renderMemRelationship(d, retry) {
   }
 }
 
-function renderMemEpisode(d, retry) {
-  const box = diagBox("mem-episode");
+function renderMemEpisode(d, retry, box) {
   box.textContent = "";
   if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const rows = d.episodes || [];
@@ -971,8 +1008,7 @@ function renderMemEpisode(d, retry) {
   }
 }
 
-function renderMemStates(d, retry) {
-  const box = diagBox("mem-states");
+function renderMemStates(d, retry, box) {
   box.textContent = "";
   if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const rows = d.states || [];
@@ -996,8 +1032,7 @@ function renderMemStates(d, retry) {
   }
 }
 
-function renderMemEvidence(d, retry) {
-  const box = diagBox("mem-evidence");
+function renderMemEvidence(d, retry, box) {
   box.textContent = "";
   if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const claimCount = document.createDocumentFragment();
@@ -1025,8 +1060,7 @@ function renderMemEvidence(d, retry) {
   }
 }
 
-function renderMemTombstones(d, retry) {
-  const box = diagBox("mem-tombstones");
+function renderMemTombstones(d, retry, box) {
   box.textContent = "";
   if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
   const rows = d.tombstones || [];
@@ -1066,11 +1100,27 @@ async function loadMemory() {
   showLoading(MEM_PANEL_IDS);
   try {
     const data = await fetchMemory();
-    renderMemRelationship(data.relationship_memory, loadMemory);
-    renderMemEpisode(data.episode, loadMemory);
-    renderMemStates(data.learner_states, loadMemory);
-    renderMemEvidence(data.evidence, loadMemory);
-    renderMemTombstones(data.tombstones, loadMemory);
+    // cs-2 分区消费：domain 字段决定面板归哪一摞
+    placePanel(data.relationship_memory, "mem-relationship");
+    placePanel(data.episode, "mem-episode");
+    placePanel(data.learner_states, "mem-states");
+    placePanel(data.evidence, "mem-evidence");
+    placePanel(data.tombstones, "mem-tombstones");
+    renderMemRelationship(data.relationship_memory, loadMemory,
+      mountPanelDisclosure(diagBox("mem-relationship"), "关系",
+        panelCount(data.relationship_memory, "memories")));
+    renderMemEpisode(data.episode, loadMemory,
+      mountPanelDisclosure(diagBox("mem-episode"), "剧情",
+        panelCount(data.episode, "episodes")));
+    renderMemStates(data.learner_states, loadMemory,
+      mountPanelDisclosure(diagBox("mem-states"), "学习状态",
+        panelCount(data.learner_states, "states")));
+    renderMemEvidence(data.evidence, loadMemory,
+      mountPanelDisclosure(diagBox("mem-evidence"), "痕迹",
+        panelCount(data.evidence, "claims")));
+    renderMemTombstones(data.tombstones, loadMemory,
+      mountPanelDisclosure(diagBox("mem-tombstones"), "存根",
+        panelCount(data.tombstones, "tombstones")));
     renderMemSummary(data);
   } catch {
     for (const id of MEM_PANEL_IDS) {
@@ -1595,6 +1645,7 @@ async function loadGoals() {
 const spaces = {
   onboard: document.getElementById("screen-onboard"),
   parlor: document.getElementById("space-parlor"),
+  partner: document.getElementById("space-partner"),
   study: document.getElementById("space-study"),
   drawer: document.getElementById("space-drawer"),
 };
@@ -1659,6 +1710,9 @@ function showSpace(name) {
   // the vestibule has no spaces to switch between — the door button is
   // the one way in, so the dock stands down while the cover is up
   document.getElementById("navdock").hidden = name === "onboard";
+  // cs-2 档案页同门厅形态：整页自持，导航条让位（返回钮是唯一回途——
+  // closePartnerDossier 走 showSpace("parlor") 即归位）。
+  if (name === "partner") document.getElementById("navdock").hidden = true;
   if (name === "study") showSection("study", DEFAULT_SECTION.study);
   if (name === "drawer") showSection("drawer", DEFAULT_SECTION.drawer);
   window.scrollTo(0, 0);
@@ -1869,263 +1923,219 @@ document.getElementById("ob-go").addEventListener("click", () => {
   showSpace("parlor");
 });
 
-// ── rd-4: 伙伴面（R-2 前端先行桩态；9.12-23）────────────────────────
-// 身份条原地的可点手感：点品牌条的 who 块打开浮层纸卡（#23）。
-// 卡内四件全诚实——① 名：现役 host 未注入 character package（全链
-// None），诚实占位句；② 关系/近况：只读 /api/memory 的既有读面（无新
-// 端点）；③ 名册：persona 域内容的前端静态临时副本（真源
-// src/elc/persona/types.py 的 CharacterPackage 字段；Maya 改造自
-// sample_character_package，另两位本刀拟定——R7 域，用户首验否决），
-// 逐卡带「预览」只读徽标（#17 --badge）；④ 选中只落 localStorage
-// （elp.partner.pick.v1，开张门 ONBOARD_KEY 同法）——零生效声称：
-// CLI 无 --character、web 不读 localStorage、host 无读面，任何声称
-// 挑选已生效的词面都不得出现在页面上（词面缺位由钉承担——裁决预告
-// 9.12-23）。拒存不崩：storage
-// 拒绝时如实报一句，通信不受影响。
+// ── cs-2: 笔友档案（全页视图；rd-4 浮层卡与名册桩退役）────────────────
+// 入口不变：品牌条 who 块整体可点（键盘可达），点开整页档案——同门厅
+// cover 的整页形态，非浮层，导航条让位（showSpace 的 partner 臂），
+// 返回钮回案头。数据只读 /api/partner 一个端点；角色文本的真源在服务
+// 端单一出处（penpal 模块），webui 零字面——她的名字、身份行、散文
+// 全部来自端点。五面各走自己的三态（#14），读不到的面自己报错，不拖
+// 累整页；在读在飞时人已回案头，就不往看不见的页上写。
 
-const PARTNER_PICK_KEY = "elp.partner.pick.v1";
+let dossierOpen = false;
 
-const PARTNER_PICK_NOTE =
-  "先记下你的意思——等伙伴的门真开了，这一位才会上场。";
+const DOSSIER_SLOT_IDS = ["dossier-portrait", "dossier-memories",
+                          "dossier-episode", "dossier-timeline"];
 
-const PARTNER_ROSTER = [
-  {
-    name: "Maya",
-    line: "西雅图一家小咖啡馆的咖啡师。热情、好奇，带一点玩心。",
-  },
-  {
-    name: "Nadia",
-    line: "夜班电台的主持人。说话慢，最会接住没说完的话。",
-  },
-  {
-    name: "Sam",
-    line: "修老房子的木匠。话不多，句句实在，爱问人周末做了什么。",
-  },
-];
+// 日期人话（通信统计与时间线）：当日 「10 月 1 日」，往年只到「去年」
+// 为止——一个更精的日期都不造；解析不了的原样直出。
+function dossierDay(iso) {
+  const then = new Date(String(iso));
+  if (Number.isNaN(then.getTime())) return String(iso);
+  const now = new Date();
+  if (then.getFullYear() === now.getFullYear()) {
+    return (then.getMonth() + 1) + " 月 " + then.getDate() + " 日";
+  }
+  return "去年";
+}
 
-function readPartnerPick() {
+// 时间线行的日（YYYY-MM-DD 纯日期串，不游时区）：拆串直读。
+function dossierDayLabel(ymd) {
+  const parts = String(ymd).split("-");
+  if (parts.length !== 3) return String(ymd);
+  return Number(parts[1]) + " 月 " + Number(parts[2]) + " 日";
+}
+
+function renderDossierHead(data) {
+  const nameBox = diagBox("dossier-name");
+  const identityBox = diagBox("dossier-identity");
+  const statsBox = diagBox("dossier-stats");
+  const card = data && data.card;
+  if (!card) {
+    nameBox.textContent = "档案没读到。";
+    identityBox.textContent = "";
+    statsBox.textContent = "";
+    return;
+  }
+  nameBox.textContent = card.name;
+  identityBox.textContent = card.identity_line;
+  const stats = data.stats;
+  statsBox.textContent = "";
+  if (!stats || stats.error) {
+    statsBox.textContent = "通信统计没读到。";
+    return;
+  }
+  const parts = ["往来 " + (stats.turns || 0) + " 封"];
+  if (stats.first_letter_at) {
+    parts.push("第一封 " + dossierDay(stats.first_letter_at));
+  }
+  if (stats.latest_letter_at) {
+    parts.push("最近一封 " + dossierDay(stats.latest_letter_at));
+  }
+  statsBox.textContent = parts.join(" · ") + "。";
+}
+
+// 人物节：角色包叙事化成散文（背景 / 价值观 / 写信习惯），非表格非
+// 字段墙——三段各归各的中文小节名，正文原样（服务端来什么写什么）。
+function renderDossierPortrait(card) {
+  const box = diagBox("dossier-portrait");
+  box.textContent = "";
+  if (!card) {
+    box.appendChild(stateBanner("error",
+      { text: "人物这一面没读到。", retry: openPartnerDossier }));
+    return;
+  }
+  const faces = [
+    ["她的日子", card.background],
+    ["她看重的事", card.values],
+    ["她写信的样子", card.letter_habits],
+  ];
+  for (const face of faces) {
+    const head = document.createElement("p");
+    head.className = "dossier-prosehead";
+    head.textContent = face[0];
+    box.appendChild(head);
+    const para = document.createElement("p");
+    para.className = "dossier-prose";
+    para.textContent = String(face[1] || "");
+    box.appendChild(para);
+  }
+}
+
+// 她记得的关于你的事：诚实措辞——她记得的只是信里说过的，不一定
+// 完整，也不承诺记得更多；空态诚实（还没记住什么——聊聊你自己）。
+function renderDossierMemories(memories) {
+  const box = diagBox("dossier-memories");
+  box.textContent = "";
+  if (!memories || memories.error) {
+    box.appendChild(stateBanner("error",
+      { text: "记忆这一面没读到。", retry: openPartnerDossier }));
+    return;
+  }
+  const note = document.createElement("p");
+  note.className = "sub";
+  note.textContent =
+    "她记得的只是信里说过的——不一定完整，也不会比你说得多。";
+  box.appendChild(note);
+  const rows = memories.memories || [];
+  if (!rows.length) {
+    const empty = document.createElement("p");
+    empty.className = "note";
+    empty.textContent = "还没记住什么——聊聊你自己。";
+    box.appendChild(empty);
+    return;
+  }
+  for (const m of rows) {
+    const line = document.createElement("p");
+    line.className = "dossier-memory";
+    line.textContent = String(m.content);
+    box.appendChild(line);
+  }
+}
+
+function renderDossierEpisode(episodeFace) {
+  const box = diagBox("dossier-episode");
+  box.textContent = "";
+  if (!episodeFace || episodeFace.error) {
+    box.appendChild(stateBanner("error",
+      { text: "近况这一面没读到。", retry: openPartnerDossier }));
+    return;
+  }
+  const row = episodeFace.episode;
+  if (!row) {
+    box.appendChild(stateBanner("empty",
+      { text: "还没有留下近况——通信还在早头。" }));
+    return;
+  }
+  const summary = document.createElement("p");
+  summary.className = "dossier-prose";
+  summary.textContent = String(row.summary);
+  box.appendChild(summary);
+  const threads = Array.isArray(row.open_threads) ? row.open_threads : [];
+  if (threads.length) {
+    const head = document.createElement("p");
+    head.className = "dossier-prosehead";
+    head.textContent = "还没说完的话头";
+    box.appendChild(head);
+    for (const thread of threads) {
+      const line = document.createElement("p");
+      line.className = "dossier-memory";
+      line.textContent = String(thread);
+      box.appendChild(line);
+    }
+  }
+}
+
+function renderDossierTimeline(stats) {
+  const box = diagBox("dossier-timeline");
+  box.textContent = "";
+  if (!stats || stats.error) {
+    box.appendChild(stateBanner("error",
+      { text: "通信的日子这一面没读到。", retry: openPartnerDossier }));
+    return;
+  }
+  const days = stats.timeline || [];
+  if (!days.length) {
+    box.appendChild(stateBanner("empty",
+      { text: "还没有通过信——第一封还没写。" }));
+    return;
+  }
+  for (const day of days) {
+    const line = document.createElement("p");
+    line.className = "dossier-day";
+    const b = document.createElement("b");
+    b.textContent = dossierDayLabel(day.date);
+    line.appendChild(b);
+    line.appendChild(document.createTextNode(" · " + day.turns + " 封"));
+    box.appendChild(line);
+  }
+}
+
+function renderDossier(data) {
+  renderDossierHead(data);
+  renderDossierPortrait(data && data.card);
+  renderDossierMemories(data && data.memories);
+  renderDossierEpisode(data && data.episode);
+  renderDossierTimeline(data && data.stats);
+}
+
+async function openPartnerDossier() {
+  dossierOpen = true;
+  showSpace("partner");
+  diagBox("dossier-name").textContent = "";
+  diagBox("dossier-identity").textContent = "";
+  diagBox("dossier-stats").textContent = "";
+  for (const id of DOSSIER_SLOT_IDS) {
+    const box = diagBox(id);
+    box.textContent = "";
+    box.appendChild(stateBanner("loading"));
+  }
+  let data = null;
   try {
-    return localStorage.getItem(PARTNER_PICK_KEY);
+    data = await fetchPartner();
   } catch {
-    return null;  // 拒存环境如实答没选——不影响通信
+    data = null;
   }
+  if (!dossierOpen) return;  // 人已回案头——不往看不见的页上写
+  renderDossier(data);
 }
 
-function writePartnerPick(name) {
-  try {
-    localStorage.setItem(PARTNER_PICK_KEY, name);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function partnerLabel(text) {
-  const p = document.createElement("p");
-  p.className = "pc-label";
-  p.textContent = text;
-  return p;
-}
-
-function partnerLine(text) {
-  const p = document.createElement("p");
-  p.className = "pc-line";
-  p.textContent = text;
-  return p;
-}
-
-// 近况的首句：summary 到第一个句读为止——只截断，不添一字
-function firstSentence(text) {
-  const s = String(text || "");
-  const cut = s.search(/[。！？!?]/);
-  return cut >= 0 ? s.slice(0, cut + 1) : s;
-}
-
-function rosterCard(sample, noteSlot, currentPick) {
-  const box = document.createElement("div");
-  box.className = "pc-sample";
-  const name = document.createElement("b");
-  name.textContent = sample.name;
-  box.appendChild(name);
-  box.appendChild(document.createTextNode(" "));
-  box.appendChild(chip("预览", { badge: true }));
-  box.appendChild(partnerLine(sample.line));
-  const pick = document.createElement("button");
-  pick.type = "button";
-  pick.className = "btn btn--pencil";
-  const picked = currentPick === sample.name;
-  pick.textContent = picked ? "记下了" : "先记下这一位";
-  if (picked) box.classList.add("pc-sample--on");
-  pick.addEventListener("click", () => {
-    const ok = writePartnerPick(sample.name);
-    const roster = box.parentElement;
-    for (const other of Array.from(roster.children)) {
-      if (!other.classList.contains("pc-sample")) continue;
-      const on = ok && other === box;
-      other.classList.toggle("pc-sample--on", on);
-      // the pick button, not the badge: the sample card's first button
-      // is the #17 --badge 预览 chip — select the pencil variant
-      const button = other.querySelector("button.btn--pencil");
-      if (button) button.textContent = on ? "记下了" : "先记下这一位";
-    }
-    noteSlot.textContent = "";
-    noteSlot.appendChild(partnerNote(ok
-      ? PARTNER_PICK_NOTE
-      : "这一句没能记下——这版先不带它走，通信不受影响。"));
-  });
-  box.appendChild(pick);
-  return box;
-}
-
-function partnerNote(text) {
-  const p = document.createElement("p");
-  p.className = "pc-note";
-  p.textContent = text;
-  return p;
-}
-
-// 卡内四件的装配（读数槽先落 #14 loading，数据到了再换）
-function buildPartnerCard() {
-  const card = partnerCard();
-  const name = document.createElement("b");
-  name.className = "pc-name";
-  name.textContent = "一位还没取名字的笔友";
-  card.appendChild(name);
-  card.appendChild(partnerLine("名字还没处取——先这么叫着。"));
-  const rel = document.createElement("div");
-  rel.className = "pc-sec";
-  rel.appendChild(partnerLabel("关系"));
-  const relSlot = document.createElement("div");
-  relSlot.appendChild(stateBanner("loading"));
-  rel.appendChild(relSlot);
-  card.appendChild(rel);
-  const epi = document.createElement("div");
-  epi.className = "pc-sec";
-  epi.appendChild(partnerLabel("近况"));
-  const epiSlot = document.createElement("div");
-  epiSlot.appendChild(stateBanner("loading"));
-  epi.appendChild(epiSlot);
-  card.appendChild(epi);
-  const roster = document.createElement("div");
-  roster.className = "pc-sec";
-  roster.appendChild(partnerLabel("名册（预览）"));
-  const noteSlot = document.createElement("div");
-  const currentPick = readPartnerPick();
-  for (const sample of PARTNER_ROSTER) {
-    roster.appendChild(rosterCard(sample, noteSlot, currentPick));
-  }
-  noteSlot.appendChild(partnerNote(PARTNER_PICK_NOTE));
-  roster.appendChild(noteSlot);
-  card.appendChild(roster);
-  const gotoSec = document.createElement("div");
-  gotoSec.className = "pc-sec";
-  const gotoLine = document.createElement("p");
-  gotoLine.className = "pc-line";
-  gotoLine.appendChild(document.createTextNode("全部记忆在 "));
-  const gotoBtn = document.createElement("button");
-  gotoBtn.type = "button";
-  gotoBtn.className = "btn btn--pencil";
-  gotoBtn.textContent = "抽屉 · 记忆";
-  gotoBtn.addEventListener("click", () => {
-    closePartnerCard();
-    showSpace("drawer");
-  });
-  gotoLine.appendChild(gotoBtn);
-  gotoSec.appendChild(gotoLine);
-  card.appendChild(gotoSec);
-  const close = document.createElement("button");
-  close.type = "button";
-  close.className = "btn btn--faint";
-  close.textContent = "收起";
-  close.addEventListener("click", closePartnerCard);
-  card.appendChild(close);
-  return { card, relSlot, epiSlot };
-}
-
-// 读数落槽：关系取最近 1-2 条 + 计数；近况取最新 episode 的摘要首句
-// + 话头计数（如有）。空态两格各说各的实话；读不到的格子自己报错，
-// 不拖累整卡。
-function fillPartnerReads(slots, panel) {
-  const relSlot = slots.relSlot;
-  const epiSlot = slots.epiSlot;
-  const rel = panel && panel.relationship_memory;
-  const relRows = rel && !rel.error ? (rel.memories || []) : null;
-  relSlot.textContent = "";
-  if (relRows === null) {
-    relSlot.appendChild(stateBanner("error",
-      { text: "关系记忆这一格没读到。", retry: openPartnerFace }));
-  } else if (!relRows.length) {
-    relSlot.appendChild(stateBanner("empty",
-      { text: "还没有留下关于你们关系的记忆。" }));
-  } else {
-    // OCR 处置三 #8：服务端按内容哈希序返回且含 SUPERSEDED/WITHDRAWN
-    // 行——「最近」须自排：只取 ACTIVE，按 updated_at 倒序取 2。
-    const activeRel = relRows
-      .filter((m) => m.status === "ACTIVE")
-      .sort((a, b) => String(b.updated_at).localeCompare(
-        String(a.updated_at)));
-    if (!activeRel.length) {
-      relSlot.appendChild(stateBanner("empty",
-        { text: "还没有留下关于你们关系的记忆。" }));
-    } else {
-      for (const m of activeRel.slice(0, 2)) {
-        relSlot.appendChild(partnerLine(m.canonical_content));
-      }
-      relSlot.appendChild(partnerLabel(
-        "记着 " + activeRel.length + " 件你们之间的事。"));
-    }
-  }
-  const epiData = panel && panel.episode;
-  const episodes =
-    epiData && !epiData.error ? (epiData.episodes || []) : null;
-  epiSlot.textContent = "";
-  if (episodes === null) {
-    epiSlot.appendChild(stateBanner("error",
-      { text: "近况这一格没读到。", retry: openPartnerFace }));
-  } else if (!episodes.length) {
-    epiSlot.appendChild(stateBanner("empty",
-      { text: "还没有留下你们的近况。" }));
-  } else {
-    // OCR 处置三 #9：episode_id 是会话哈希序非时间序——「最新」取
-    // ACTIVE 行里 updated_at 最大者
-    const latest = episodes
-      .filter((e) => e.status === "ACTIVE")
-      .sort((a, b) => String(b.updated_at).localeCompare(
-        String(a.updated_at)))[0];
-    if (!latest) {
-      epiSlot.appendChild(stateBanner("empty",
-        { text: "还没有留下你们的近况。" }));
-      return;
-    }
-    epiSlot.appendChild(partnerLine(firstSentence(latest.summary)));
-    const threads =
-      Array.isArray(latest.open_threads) ? latest.open_threads.length : 0;
-    if (threads) {
-      epiSlot.appendChild(partnerLabel(
-        "还有 " + threads + " 个话头没说完。"));
-    }
-  }
-}
-
-async function openPartnerFace() {
-  const slots = buildPartnerCard();
-  showPartnerCard(slots.card);
-  let panel = null;
-  try {
-    panel = await fetchMemory();
-  } catch {
-    panel = null;
-  }
-  // 读在飞时卡可能已被收起——只填还在页面上的卡
-  if (slots.card.isConnected) {
-    fillPartnerReads(slots, panel);
-  }
+function closePartnerDossier() {
+  dossierOpen = false;
+  showSpace("parlor");
 }
 
 // 触发：品牌条 who 块整体可点（不增长按钮元——r1_shell「<button 不在
-// 品牌条」钉保留）；键盘可达（tabindex + Enter/Space）。词卡的
-// stopPropagation 同法：开卡的那一下点击不能落到 document 级的
-// 「点卡外关闭」监听上。
+// 品牌条」钉保留）；键盘可达（tabindex + Enter/Space）。
 const whoBlock = document.querySelector("#space-parlor .top > div");
 if (whoBlock) {
   whoBlock.setAttribute("tabindex", "0");
@@ -2133,16 +2143,20 @@ if (whoBlock) {
   whoBlock.setAttribute("aria-label", "笔友是谁？");
   whoBlock.addEventListener("click", (event) => {
     event.stopPropagation();
-    openPartnerFace();
+    openPartnerDossier();
   });
   whoBlock.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       event.stopPropagation();
-      openPartnerFace();
+      openPartnerDossier();
     }
   });
 }
+
+// 返回钮：档案页的唯一回途（导航条在本页让位）。
+document.getElementById("partner-back").addEventListener(
+  "click", closePartnerDossier);
 
 // W-4: the teaching card must not wait for the model. The moment row is
 // durable the instant the turn opens it (OPENING), so the page polls the

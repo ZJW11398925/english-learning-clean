@@ -175,16 +175,20 @@ def test_the_wide_tier_extends_the_desk_not_the_line_length() -> None:
 
 def test_the_homogeneous_panels_pair_up() -> None:
     """The per-page wrappers: today's 行动 + 成长 (rd-3 重排——同位网格
-    从诊断五板挪到今日两块，总数不变), memory's five panels and
-    settings' two blocks all ride .panel-grid. rd-3 随迁（9.11-22）：
-    the five whys' grid retired with the diagnostics face (缺位钉);
-    the archive face is a vertical flow (搜索/时间线/折叠不配网格).
-    Id arithmetic unchanged (the JS reads the same panel ids)."""
+    从诊断五板挪到今日两块，总数不变) and settings' two blocks ride
+    .panel-grid. rd-3 随迁（9.11-22）：the five whys' grid retired with
+    the diagnostics face (缺位钉); the archive face is a vertical flow
+    (搜索/时间线/折叠不配网格). cs-2 随迁：memory 的五面板重组为三摞
+    归属分区 + 面板折叠，网格随重组退役. Id arithmetic unchanged (the
+    JS reads the same panel ids)."""
 
     index = _text("index.html")
     # 旧 4（今日 + 诊断五板 + 记忆 + 设置）→ 3：诊断五板的网格随移走
     # 清单退役，今日两块的网格原本就在（rd-3 重排不变总数减一）
-    assert index.count('class="panel-grid"') == 3
+    # cs-2 随迁（3 → 2）：记忆五面板重组为三摞归属分区，摞内面板各是
+    # 一件折叠（全宽行不再配两栏网格）——set-memory 的 panel-grid 随
+    # 重组退役；今日两块 + 设置两块的网格保留。
+    assert index.count('class="panel-grid"') == 2
     # the today blocks pair up (行动 + 成长)
     today = index.split('id="study-today"', 1)[1].split(
         'id="study-goal"', 1)[0]
@@ -373,12 +377,12 @@ def test_the_stamp_icon_is_registered_the_four_step_way() -> None:
     the template geometry (one 20×20 grid, no stroke of its own), the
     live anchor on the cover's dateline, the contract block's roster
     and the spec's ③ row + ⑨-4 roster. The set stays one component
-    (the icons are its members; rd-4 随迁：partner-card 入库 → 23；
+    (the icons are its members; cs-2 随迁：浮层伙伴卡退役 → 22；
     v2 随迁：水印圆戳出集，八枚 → 七枚)."""
 
     from tests.host.test_fg1_architecture import COMPONENTS
 
-    assert len(COMPONENTS) == 23
+    assert len(COMPONENTS) == 22
     index = _text("index.html")
     assert (
         '<svg id="icon-stamp" class="inkicon" viewBox="0 0 20 20" '
@@ -438,7 +442,8 @@ def test_the_frozen_copy_outside_the_cover_is_verbatim(
         # rd-3 随迁（9.11-22）：档案节引导句接任——旧账页句退役
         "批注留过的痕迹与接下来的计划——要的时候来翻。",
         "请客厅忘掉一些事——走出去就找不回来。",
-        "客厅记住的事都在这里——一条条如实。",
+        # cs-2 随迁：记忆页引导句接三摞重组后的口径
+        "客厅记住的事都在这里——一条条如实，分三摞收纳。",
         # rd-4 随迁（9.12-23）：设置节升真面——冻结句换诚实读法句
         "当前这一档由启动命令给定——页面读不到，也不改它。",
     ):

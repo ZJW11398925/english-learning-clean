@@ -70,6 +70,12 @@ export function fetchMemory() {
   return getJson("/api/memory");
 }
 
+/** 笔友档案读数（cs-2）：角色卡叙事面（真源在服务端单一出处）+
+ *  通信统计 + 她记得的事 + 近况。 */
+export function fetchPartner() {
+  return getJson("/api/partner");
+}
+
 /** 删除（p-2，不可逆）：scope 三词之一 + 该 scope 自己的键。
  *  CONVERSATION 可省 conversation_id（服务端补本页正在服务的对话）。 */
 export function fetchDelete(payload) {

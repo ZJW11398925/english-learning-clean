@@ -972,40 +972,7 @@ export function disclosure(opts) {
   return { root, head, body, setOpen, isOpen: () => open };
 }
 
-// 23. partner-card（伙伴卡，rd-4）：浮层纸卡——#15 词卡同法（挂 body、
-// 点卡外关闭、ink-fade 入场）。工厂只造壳与开合；卡内读数槽的文案、
-// 名册样例与 localStorage 语义由 app.js 装配（数据只读 /api/memory 的
-// 既有读面，无新端点；伙伴名现役无源 → 诚实占位；名册 = persona 域
-// 内容的前端静态临时副本，选中只落 localStorage、零生效声称——
-// 9.12-23 裁决预告）。DOM 移除语义与 #15 同：closed 即 remove。
-export function partnerCard() {
-  const card = document.createElement("div");
-  card.className = "partner-card";
-  return card;
-}
-
-let openPartner = null;
-let partnerCloser = null;
-
-export function showPartnerCard(card) {
-  closePartnerCard();
-  document.body.appendChild(card);
-  openPartner = card;
-  partnerCloser = (event) => {
-    if (event.target !== card && !card.contains(event.target)) {
-      closePartnerCard();
-    }
-  };
-  document.addEventListener("click", partnerCloser);
-}
-
-export function closePartnerCard() {
-  if (partnerCloser !== null) {
-    document.removeEventListener("click", partnerCloser);
-    partnerCloser = null;
-  }
-  if (openPartner !== null) {
-    openPartner.remove();
-    openPartner = null;
-  }
-}
+// rd-4 的浮层伙伴卡（#23）：cs-2 整体退役。工厂三件（卡片壳 + 浮层
+// 开合）随档案全页视图拆除——点品牌条 who 块开的是整页档案（app.js
+// 的 cs-2 模块，屏级形态，非浮层）；名册桩与 localStorage pick 一并
+// 退役（真名由 /api/partner 的单一真源供给）。

@@ -106,13 +106,34 @@ body {
            white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* 写信区：固定底（R-1 起让位于其下的常驻 dock）、上发丝线、无边框
-   输入行 + 寄出链接；底部安全区由 dock 负责，这里只留自身呼吸。 */
+   输入行 + 寄出链接；底部安全区由 dock 负责，这里只留自身呼吸。
+   cs-2 输入态：聚焦臂的过渡载体声明在块内（transform 与发丝线色，
+   100ms 档——纸的物理，禁发光；非聚焦零改动）。 */
 .dock { position: fixed; left: 0; right: 0;
         bottom: var(--navdock-h); z-index: 8;
         background: var(--bg); border-top: 1px solid var(--rule);
         padding: 10px var(--read-pad) 14px;
-        max-width: var(--shell-w); margin: 0 auto; }
-.dock-row { display: flex; align-items: stretch; gap: var(--sp-3); }
+        max-width: var(--shell-w); margin: 0 auto;
+        transition: transform var(--dur-micro) var(--ease-press),
+                    border-top-color var(--dur-micro) var(--ease-press); }
+/* cs-2 输入态（聚焦臂）：笔尖落在稿纸上，案头微微抬起——dock 升
+   2px、上发丝线加深半档（--ink-ghost）、稿纸左缘显现一条墨线。 */
+.dock:focus-within { transform: translateY(-2px);
+                     border-top-color: var(--ink-ghost); }
+.dock-row { position: relative;
+            display: flex; align-items: stretch; gap: var(--sp-3); }
+/* 稿纸左缘的墨线：非聚焦零占用（opacity 0 + 绝对定位，不占布局位），
+   聚焦时落墨显形（100ms 档，进入减速长尾）。 */
+.dock-row::before { content: ""; position: absolute; left: -10px;
+                    top: 4px; bottom: 4px; width: 2px;
+                    background: var(--ink-soft);
+                    opacity: 0; transform: scaleY(0.9);
+                    transform-origin: top;
+                    transition: opacity var(--dur-micro) var(--ease-paper),
+                                transform var(--dur-micro)
+                                var(--ease-paper); }
+.dock:focus-within .dock-row::before { opacity: 0.5;
+                                       transform: scaleY(1); }
 .dock-guide { margin: 0 0 8px; font: var(--meta-font);
               letter-spacing: var(--meta-track); color: var(--meta-ink); }
 
@@ -145,6 +166,36 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
           font-size: var(--fs-micro);
           color: var(--ink-faint); line-height: 1.8;
           overflow-wrap: anywhere; }
+
+/* ── cs-2 笔友档案（全页视图）：整页形态，非浮层 ────────────────────
+   结构：top（品牌条基形 + 页名）+ 返回链接行 + 五面（档案头 / 人物 /
+   她记得的事 / 近况 / 通信的日子）。档案头 = 真名（title 档 display 族
+   400）+ 身份行 + 统计行；人物节散文 = body-latin 档（纯英文段）；
+   记忆与话头行 = 左缘发丝线（分层靠发丝线，简报 §6）；时间线行 = 等宽
+   日期 + tabular-nums（数据列排等宽，简报 3a 禁令）。全部引用令牌，
+   零新值。数据只读 /api/partner——角色文本零字面（真源在服务端）。 */
+.dossier-back { margin: 0 0 var(--sp-4); }
+.dossier-name { margin: 0; font-family: var(--f-display);
+                font-size: var(--fs-title); line-height: var(--lh-title);
+                font-weight: 400; letter-spacing: var(--ls-title); }
+.dossier-identity { font-family: var(--f-serif);
+                    font-size: var(--fs-small); color: var(--ink-soft); }
+.dossier-prosehead { margin: var(--sp-3) 0 0; font: var(--meta-font);
+                     letter-spacing: var(--meta-track);
+                     color: var(--meta-ink); }
+.dossier-prose { margin: 4px 0 0; font-size: var(--fs-body);
+                 line-height: var(--lh-body-latin); letter-spacing: 0;
+                 color: var(--ink-soft); overflow-wrap: anywhere; }
+.dossier-memory { margin: 6px 0 0; padding-left: 10px;
+                  border-left: 1px solid var(--rule);
+                  font-size: var(--fs-small); line-height: var(--lh-small);
+                  color: var(--ink-soft); overflow-wrap: anywhere; }
+.dossier-day { margin: 0; padding: 6px 0;
+               border-bottom: 1px solid var(--rule-soft);
+               font-size: var(--fs-small); color: var(--ink-soft); }
+.dossier-day b { font-family: var(--f-mono); font-weight: 400;
+                 font-size: var(--fs-micro); color: var(--ink);
+                 font-variant-numeric: tabular-nums; }
 
 /* ── v2 动效基建应用层（简报 §5：纸先落、墨后渗的页面接线）──────────
    ① 信纸落桌（视图切换档）：客厅显形 = 一张信纸摊上案头。容器只走

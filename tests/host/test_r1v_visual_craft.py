@@ -238,8 +238,8 @@ def test_the_icon_set_is_registered_in_all_four_places() -> None:
     from tests.host.test_fg1_architecture import COMPONENTS
 
     assert "icon-set" in COMPONENTS
-    # rd-4 随迁：partner-card 入库 → 23
-    assert len(COMPONENTS) == 23
+    # rd-4 曾随迁长到 23；cs-2 随迁：浮层伙伴卡退役再缩回（23 → 22）
+    assert len(COMPONENTS) == 22
     assert "| 22 | icon-set" in _spec()
     css = _text("components.css")
     assert "22. icon-set" in css

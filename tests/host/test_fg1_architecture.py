@@ -63,6 +63,8 @@ FILES: dict[str, str] = {
 #: added the shell navigation trio (dock / space-header / section-tabs),
 #: R-1R added the disclosure group, R-1V added the icon-set, rd-4 added
 #: partner-card — each in the same cut that registered it in the spec.
+#: cs-2 随迁：partner-card 随档案全页视图退役（浮层与名册桩拆除，
+#: same-cut retirement）——注册表不做阁楼，编号空出不复用。
 COMPONENTS = (
     "link-btn",
     "pen",
@@ -86,7 +88,6 @@ COMPONENTS = (
     "section-tabs",
     "disclosure",
     "icon-set",
-    "partner-card",
 )
 
 

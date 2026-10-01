@@ -50,11 +50,10 @@
         <div class="who">展信佳</div>
         <div class="who-sub">见字如晤，今日如何</div>
       </div>
-      <!-- rd-4 伙伴面（R-2 前端先行桩态）：身份条原地的可点手感——
-           .who/.who-sub 逐字不动（四处钉在册），品牌条不增长按钮元
-           （r1_shell 的品牌条无钮钉保留）：who 块整体可点
-           （app.js 接线 + screens.css 触点提示），开 #23 partner-card
-           浮层（components.js 工厂）。 -->
+      <!-- cs-2 档案页：身份条原地的可点手感——.who/.who-sub 逐字不动
+           （四处钉在册），品牌条不增长按钮元（r1_shell 的品牌条无钮钉
+           保留）：who 块整体可点（app.js 接线 + screens.css 触点提示），
+           开笔友档案的全页视图（rd-4 的浮层卡与名册桩整体退役）。 -->
     </header>
     <main class="flow">
       <div id="messages" aria-live="polite"></div>
@@ -69,6 +68,48 @@
                   placeholder="今日如何？"></textarea>
         <button type="submit" class="btn btn--send">寄出 →</button>
       </form>
+    </div>
+  </section>
+
+  <!-- cs-2 笔友档案（全页视图，rd-4 浮层卡退役）：同门厅 cover 的整页
+       形态，非浮层——品牌条入口不变，点开即一整页；返回钮回案头。
+       五面数据只读 /api/partner 一个端点（角色文本真源在服务端单一
+       出处，webui 零字面）：① 档案头（真名 + 身份行 + 通信统计三数）
+       ② 人物节（角色包叙事化散文）③ 她记得的关于你的事（诚实措辞，
+       不承诺完美记忆）④ 近况（episode 摘要 + 未完话头）⑤ 通信的
+       日子（按日极简往来行数）。导航条让位（同门厅），返回钮是唯一
+       回途。五面各走自己的三态（#14），一面对了别面不陪葬。 -->
+  <section id="space-partner" class="dossier" hidden>
+    <header class="top space-header" id="partner-head">
+      <span data-brand-mark="sm"></span>
+      <div>
+        <div class="who">笔友档案</div>
+      </div>
+    </header>
+    <div class="spacebody">
+      <p class="dossier-back"><button id="partner-back" class="btn btn--pencil"
+              type="button">← 回案头</button></p>
+      <div class="sec" id="dossier-head-sec">
+        <p class="dossier-name" id="dossier-name"></p>
+        <p class="sub dossier-identity" id="dossier-identity"></p>
+        <p class="sub dossier-stats" id="dossier-stats"></p>
+      </div>
+      <div class="sec">
+        <h3>她是谁</h3>
+        <div id="dossier-portrait"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>她记得的关于你的事</h3>
+        <div id="dossier-memories"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>近况</h3>
+        <div id="dossier-episode"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>通信的日子</h3>
+        <div id="dossier-timeline"><p class="note">暂无数据</p></div>
+      </div>
     </div>
   </section>
 
@@ -267,33 +308,34 @@
     </nav>
     <div class="spacebody">
 
-    <!-- 记忆节（⑧ 8.2.6，p-2 迁入重写）：摘要行 + 五面板（关系 / 剧情 /
-         学习状态（行级）/ 痕迹 / 存根）。字段名全中文化；指纹缩前 12
-         位等宽 + title 全值；时间一律人话格式（title 放全时间戳）。
-         R-1W：五面板入 .panel-grid（≥481px 两栏，窄屏自然单栏）。 -->
+    <!-- 记忆节（⑧ 8.2.6，p-2 迁入；cs-2 三区重组）：摘要行 + 三摞——
+         角色记忆（关系+剧情：笔友记住的，笔友并不知道教学系统的存在）
+         / 学习记录（学习状态+痕迹：教学系统的记录）/ 存根（审计）。
+         归属由 /api/memory 的 domain 字段分组（app.js 落位），标注写在
+         每摞脸上。cs-2 收起/展开：五个面板各是一件 #21 折叠（默认收，
+         组头=面板名+计数）——痕迹等内容不再永久摊开。字段名全中文化；
+         指纹缩前 12 位等宽 + title 全值；时间一律人话格式（title 放
+         全时间戳）。 -->
     <section id="drawer-memory" role="tabpanel"
              aria-labelledby="tab-drawer-memory" data-reveal>
-    <p class="sub">客厅记住的事都在这里——一条条如实。</p>
+    <p class="sub">客厅记住的事都在这里——一条条如实，分三摞收纳。</p>
     <p class="sub sumline" id="mem-summary" hidden></p>
-    <section id="set-memory" class="panel-grid">
-      <div class="sec">
-        <h3>关系</h3>
+    <section id="set-memory">
+      <div class="sec" id="mem-zone-character">
+        <h3>角色记忆</h3>
+        <p class="sub">笔友记住的——关于你们的通信。</p>
         <div id="mem-relationship"><p class="note">暂无数据</p></div>
-      </div>
-      <div class="sec">
-        <h3>剧情</h3>
         <div id="mem-episode"><p class="note">暂无数据</p></div>
       </div>
-      <div class="sec">
-        <h3>学习状态</h3>
+      <div class="sec" id="mem-zone-learning">
+        <h3>学习记录</h3>
+        <p class="sub">教学系统的记录——笔友并不知道这些。</p>
         <div id="mem-states"><p class="note">暂无数据</p></div>
-      </div>
-      <div class="sec">
-        <h3>痕迹</h3>
         <div id="mem-evidence"><p class="note">暂无数据</p></div>
       </div>
-      <div class="sec">
+      <div class="sec" id="mem-zone-audit">
         <h3>存根</h3>
+        <p class="sub">忘掉这件事留下的收据——只有单向摘要，没有正文。</p>
         <div id="mem-tombstones"><p class="note">暂无数据</p></div>
       </div>
     </section>

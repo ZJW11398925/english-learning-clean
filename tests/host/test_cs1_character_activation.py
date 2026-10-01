@@ -709,7 +709,9 @@ def test_the_penpal_lives_in_exactly_one_src_file(literal: str) -> None:
 
 def test_the_three_consumers_import_the_penpal_constants() -> None:
     """host / cli / web reach the character through the one import — none
-    of them spells a value of its own."""
+    of them spells a value of its own. cs-2 随迁：web 的导入随档案端点
+    长出第二常量名（PENPAL_CHARACTER_PACKAGE），合并为一行——钉的意图
+    不变（web 只经导入取角色，零自拼字面），强度相等。"""
 
     assert (
         "from elc.persona.penpal import PENPAL_CHARACTER_PACKAGE"
@@ -720,7 +722,8 @@ def test_the_three_consumers_import_the_penpal_constants() -> None:
         in (SRC / "cli.py").read_text(encoding="utf-8")
     )
     assert (
-        "from elc.persona.penpal import PENPAL_PERSONA_ID"
+        "from elc.persona.penpal import"
+        " PENPAL_CHARACTER_PACKAGE, PENPAL_PERSONA_ID"
         in (SRC / "web.py").read_text(encoding="utf-8")
     )
 

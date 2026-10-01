@@ -127,11 +127,13 @@ button:focus-visible, input:focus-visible {
 /* ── 2. pen（稿纸 textarea）─────────────────────────────────────────
    结构：<textarea class="pen">。状态矩阵：default（横线稿纸，线随文滚；
    v2 基线网格——横线周期 = --baseline 32px = 行高，字落线上，
-   background-position 与 padding 对齐首行）/ placeholder（弱化小字）/
-   focus（纸面微起 --paper-high 半档淡入）/ Enter 由 app.js 绑定。
-   使用规则：写信区唯一输入件；min/max-height 双界不许拆（64 = 2×32
-   基线，160 = 5×32）。
-   禁止变体：边框、圆角、独立滚动条样式。 */
+   background-position 与 padding 对齐首行）/ placeholder（弱化小字；
+   cs-2：色随聚焦淡出——转 --ink-ghost，100ms 档，占位让位于落笔）/
+   focus（纸面微起 --paper-high 半档淡入；屏级聚焦臂——案头升起、
+   发丝线加深、稿纸左缘墨线——在 screens.css 的 .dock 聚焦块）/ Enter
+   由 app.js 绑定。使用规则：写信区唯一输入件；min/max-height 双界不许
+   拆（64 = 2×32 基线，160 = 5×32）。
+   禁止变体：边框、圆角、独立滚动条样式、发光。 */
 .pen { width: 100%; border: 0; background: none; outline: none;
        resize: none; overflow-y: auto;
        font-family: var(--f-serif); font-size: var(--fs-body); color: var(--ink);
@@ -144,9 +146,12 @@ button:focus-visible, input:focus-visible {
        background-attachment: local;
        transition: background-color var(--dur-note) var(--ease-paper); }
 .pen::placeholder { color: var(--ink-faint); font-size: var(--fs-small);
-                    font-family: var(--f-sans); }
-/* focus 时稿纸微微泛起（--paper-high 半档之差，纸被点亮的感觉） */
+                    font-family: var(--f-sans);
+                    transition: color var(--dur-micro) var(--ease-press); }
+/* focus 时稿纸微微泛起（--paper-high 半档之差，纸被点亮的感觉）；
+   cs-2：占位句同步退让（色淡向 --ink-ghost，100ms——克制的一档） */
 .pen:focus { background-color: var(--paper-high); }
+.pen:focus::placeholder { color: var(--ink-ghost); }
 
 /* ── 3. note-paper（教学短笺）───────────────────────────────────────
    结构：<div class="note-paper"><div class="note-head">[note 墨线小图
@@ -718,45 +723,11 @@ button:focus-visible, input:focus-visible {
 .sysline.emptyhall .inkicon { display: block; width: 30px;
            height: 30px; margin: 0 auto 10px; color: var(--ink-ghost); }
 
-/* ── 23. partner-card（伙伴卡，rd-4）─────────────────────────────────
-   结构：<div class="partner-card">[.pc-name + .pc-label][.pc-sec 读数槽
-   ×2][.pc-roster 名册][.pc-note][去向行][收起]——工厂 partnerCard()
-   与浮层开合 showPartnerCard()/closePartnerCard()；浮层挂 body；
-   触发 = 品牌条 who 块整体可点（品牌条不增长按钮元）。
-   状态矩阵：default（--paper-high 泛起 + 发丝边 + 垫纸错位层——#15
-   同族浮层纸；开启入场 = paper-drop + ink-wash 双动画，零新动效）/
-   closed（点卡外或「收起」，DOM 移除语义）；读数槽三态 = #14。
-   使用规则：数据只读既有读面（/api/memory，无新端点）；伙伴名现役
-   无源 → 诚实占位句；名册 = persona 域内容的前端静态临时副本，逐卡
-   标注「预览」；选中只落 localStorage、零生效声称。
-   禁止变体：外链头像 / 图片占位、新端点、生效声称、第四种浮层、
-   大面积色块。 */
-.partner-card { position: fixed; z-index: 9; left: 0; right: 0; top: 60px;
-             margin: 0 auto; width: min(360px, calc(100vw - 24px));
-             max-height: calc(100vh - 84px); overflow-y: auto;
-             background: var(--paper-high); border: 1px solid var(--rule);
-             padding: 14px 16px 16px; font-size: var(--fs-small);
-             animation: paper-drop var(--dur-note) var(--ease-paper) both,
-                        ink-wash calc(var(--dur-note) * 1.3)
-                        var(--ease-paper) both; }
-.partner-card::after { content: ""; position: absolute; inset: 0;
-             z-index: -1; background: var(--paper-2);
-             border: 1px solid var(--rule);
-             box-shadow: var(--stack-shadow-soft);
-             transform: translate(3px, 3px); }
-.pc-name { display: block; font-family: var(--f-serif);
-           font-size: var(--fs-head); font-weight: 400; }
-.pc-sec { margin-top: 10px; }
-.pc-label { margin: 0; font: var(--meta-font);
-            letter-spacing: var(--meta-track); color: var(--meta-ink); }
-.pc-line { margin: 4px 0 0; font-size: var(--fs-small);
-           color: var(--ink-soft); line-height: 1.7;
-           overflow-wrap: anywhere; }
-.pc-note { margin: 10px 0 0; font-size: var(--fs-ui); color: var(--ink-faint);
-           line-height: 1.7; }
-.pc-sample { margin-top: 8px; border: 1px solid var(--rule-soft);
-             padding: 8px 10px 9px; }
-.pc-sample--on { border-color: var(--ink); }
+/* rd-4 的浮层伙伴卡（#23）：cs-2 整体退役。浮层卡与其名册桩随档案
+   全页视图（cs-2）拆除——契约块、工厂（components.js）、注册行三处
+   同刀清出；品牌条 who 块的入口保留（点开的是整页档案，屏级样式在
+   screens.css 的 .dossier 节）。登记注记：#23 编号随退役空出——
+   注册表不做阁楼，后继组件不复用编号。 */
 
 @media (hover: hover) {
   #space-parlor .top > div:hover .who {
