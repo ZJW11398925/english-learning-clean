@@ -928,17 +928,16 @@ h1, .grouphead, .note-head b { text-wrap: balance; }
 /* 动作行命中带：ui 档行高 20px + 上下 6px = 32px 级（吸取单词卡审计
    教训；窄屏整封可点已足够，动作行自身也要够着）。 */
 .env-actions .btn { padding: 6px 2px; }
-/* 沓内简化表单（改名 / 新建）：与 #16 同族的下发丝线行式输入 */
-.env-rename { display: flex; flex-wrap: wrap; gap: 8px;
-              align-items: baseline; margin: 2px 0 0; }
+/* 沓内简化建卡表单（mc-2 起：改名内联交互随编辑台退役，.env-rename
+   段同刀拆除——zoom 动效入册的守恒律对价）：与 #16 同族的下发丝线
+   行式输入。 */
 .env-create { display: flex; flex-direction: column; gap: 6px;
               margin-top: 4px; }
-.env-rename input, .env-create input {
+.env-create input {
   flex: 1 1 140px; min-width: 0; border: 0; background: none;
   outline: none; border-bottom: 1px solid var(--rule);
   padding: 4px 2px; font-family: var(--f-serif);
   font-size: var(--fs-small); color: var(--ink); }
-.env-rename input:focus, .env-create input:focus {
-  border-bottom-color: var(--pencil); }
+.env-create input:focus { border-bottom-color: var(--pencil); }
 .env-err { margin: 2px 0 0; font-family: var(--f-sans);
            font-size: var(--fs-ui); color: var(--pencil); }

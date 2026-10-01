@@ -67,9 +67,10 @@ def test_the_page_keeps_the_letter_form_laws(tmp_path: Path) -> None:
     # （.postmark 本体与 ::before、信封沓的「当前」邮戳 .env-mark 本体
     # 与 ::before——盖印几何）；③邮票图形两枚（.stamp-v0 圆环 /
     # .stamp-v5 圆拱——邮票圆形豁免位）；④信纸物件的 2px 收窄圆角
-    # （.envsel 沓面板与 .env 信封——简报 §6 增补档，非面板大圆角）。
+    # （.envsel 沓面板与 .env 信封——简报 §6 增补档，非面板大圆角；
+    # mc-2 起加编辑台的开场信预览短笺——同 ≤2px 信纸物件档）。
     # 面板大圆角仍一处即红。
-    assert page.count("border-radius") == 9
+    assert page.count("border-radius") == 10
     assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
     assert "rgba(0,0,0" not in page

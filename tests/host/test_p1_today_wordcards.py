@@ -499,8 +499,9 @@ def test_the_word_card_overlay_is_the_letter_language(
     # 手迹/盖印/邮票几何 + 信纸物件 2px——红笔圈线椭圆 + 邮戳双圈圆
     # 两处（.postmark 与信封沓的 .env-mark 各含本体与 ::before）+
     # 邮票图形两枚（.stamp-v0/.stamp-v5）+ 信封沓的 2px 两处
-    # （.envsel/.env，简报 §6 增补档）。面板大圆角仍一处即红。
-    assert page.count("border-radius") == 9
+    # （.envsel/.env，简报 §6 增补档；mc-2 起加编辑台的开场信预览
+    # 短笺——同 ≤2px 信纸物件档）。面板大圆角仍一处即红。
+    assert page.count("border-radius") == 10
     assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
 

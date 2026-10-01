@@ -211,8 +211,13 @@ def test_every_envelope_carries_its_three_faces_and_the_actions() -> None:
     assert "stack.appendChild(newEnvelopeCard());" in app
     assert 'name.textContent = "写给一位新笔友";' in app
     assert 'start.textContent = "起笔";' in app
-    # the honest blank: the rest of the dossier waits for mc-2's editor
-    assert "起个名字，多一位可以通信的人。性情、背景这些面，等编辑台来写。" in app
+    # mc-2 起真值随迁：编辑台已开——空白封两条路（起笔最简 / 完整
+    # 编辑全字段），诚实留白的「等编辑台」句退役。
+    assert (
+        "起个名字就能开笔；性情、背景这些面想一次写全，点「完整编辑」。"
+        in app
+    )
+    assert 'full.textContent = "完整编辑";' in app
     # the stack opens from the roster and the current drives the postmark
     assert "const isCurrent = item.character_id === roster.current_character_id;" in app
     assert "current: isCurrent," in app
@@ -448,7 +453,8 @@ def test_f2_the_card_field_caps_refuse_with_a_human_sentence(
         " else _CHARACTER_PROSE_MAX\n"
         "        )" in web
     )
-    assert 'f\'"{key}" is too long — {cap} characters at most\',' in web
+    # mc-2 起：400 人话中文化（INFO-3 收口）——点名字段与上限数字仍在。
+    assert 'f"「{key}」太长了——最多 {cap} 字",' in web
 
     long_name = "n" * (_CHARACTER_NAME_MAX + 1)
     long_prose = "p" * (_CHARACTER_PROSE_MAX + 1)
@@ -456,12 +462,12 @@ def test_f2_the_card_field_caps_refuse_with_a_human_sentence(
         status, payload = stack.post(
             "/api/characters", {"name": long_name, "identity": "x"})
         assert status == 400, payload
-        assert '"name" is too long — 40 characters at most' in payload["error"]
+        assert "「name」太长了——最多 40 字" in payload["error"]
 
         status, payload = stack.post(
             "/api/characters", {"name": "钟表匠", "identity": long_prose})
         assert status == 400, payload
-        assert '"identity" is too long — 2000 characters at most' in (
+        assert "「identity」太长了——最多 2000 字" in (
             payload["error"])
 
         # the boundary values land (create, then reword at both caps)
@@ -580,12 +586,13 @@ def test_the_migration_manifest_restates_the_new_truths() -> None:
         "      : await fetchPartner();" in app
     )
     # the counting pins' new exemptions, in one place: 2px seats in
-    # screens (.envsel/.env), stamp & postmark geometry + the three
+    # screens (.envsel/.env，mc-2 起加编辑台的开场信预览短笺——同 ≤2px
+    # 信纸物件档), stamp & postmark geometry + the three
     # baseline seats (circle, postmark pair) in components; the soft
     # shadows at four, the stage's deep alone in screens
     screens = _text("screens.css")
     components = _text("components.css")
-    assert screens.count("border-radius") == 2      # .envsel + .env (2px)
+    assert screens.count("border-radius") == 3      # .envsel + .env + 预览短笺 (2px)
     assert components.count("border-radius") == 7   # 基线3 + 邮戳双圈2 + 邮票图形2
     assert components.count("box-shadow: var(--stack-shadow-soft);") == 4
     assert screens.count("box-shadow") == 1         # 案头舞台的 deep 档
@@ -677,7 +684,8 @@ def test_the_current_postmark_never_clips_and_the_live_fixes_hold() -> None:
 
 def test_the_selector_esc_rename_and_z_order_wiring_is_pinned() -> None:
     """LOW-3 三交互语义源钉：①z 序（沓首最高，layoutEnvelopeStack 的
-    排名公式）；②Esc 收沓（接线 + 摘除对——开关对称）；③改名成功后
+    排名公式）；②Esc 收沓（接线 + 摘除对——开关对称；mc-2 起编辑台
+    开着时 Esc 归编辑台，沓不替它收）；③编辑台保存成功后
     refreshEnvelopeStack（沓重排：名更新、邮票与姿态不动）。删任一
     接线即红。"""
 
@@ -686,15 +694,19 @@ def test_the_selector_esc_rename_and_z_order_wiring_is_pinned() -> None:
     # ① the visual order is the rank order (preview = rank 0 = top z)
     assert 'env.style.setProperty("--env-i", String(position));' in js
     assert 'env.style.setProperty("--env-z", String(count - position));' in js
-    # ② Esc folds the selector; the listener leaves with it
+    # ② Esc folds the selector; the listener leaves with it; the editor
+    # (mc-2) owns Escape while it is open
     assert (
         'function envselEsc(event) {\n'
+        '  if (charEditorPanel) return;'
+        "   // Esc 归编辑台（它自己的收拢）\n"
         '  if (event.key === "Escape") closeEnvelopeSelector();\n'
         "}" in app
     )
     assert 'document.addEventListener("keydown", envselEsc);' in app
     assert 'document.removeEventListener("keydown", envselEsc);' in app
-    # ③ a saved rename re-renders the stack (name moves, stamp stays)
+    # ③ a saved edit re-renders the stack (name moves, stamp stays) —
+    # the comment now lives in the mc-2 editor's save path
     assert (
         "await refreshEnvelopeStack();"
         "   // 沓重排：名更新、邮票与姿态不动" in app

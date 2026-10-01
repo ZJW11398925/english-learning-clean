@@ -35,6 +35,8 @@ import {
   wireReveal,
   envelopeCard,
   layoutEnvelopeStack,
+  placeEditorOrigin,
+  REDUCED_MOTION,
 } from "./components.js";
 import {
   fetchTurn,
@@ -51,7 +53,8 @@ import {
   fetchCharacters,
   fetchSwitchCharacter,
   fetchCreateCharacter,
-  fetchRenameCharacter,
+  fetchUpdateCharacter,
+  fetchDeleteCharacter,
   fetchDelete,
   fetchGoals,
   fetchSaveGoals,
@@ -2387,8 +2390,8 @@ window.addEventListener("DOMContentLoaded", () => {
 // 承担 DOM 与排布半区；屏级形态在 screens.css 的 .envsel 节）：微扇形
 // 错位叠放，rotate/translateX 从 stamp_key 确定性派生（同一角色恒同
 // 姿态——零随机）；当前通信的一封盖「当前」邮戳角标（--seal，真实
-// 状态事件）；沓尾是新建空白信封（名字 + 一句简介即可开笔——其余
-// 散文案面 mc-2 的编辑台来写，诚实留白）。预览 = 点沓中一封 → 滑到
+// 状态事件）；沓尾是新建空白信封（「起笔」最简一形——名字 + 一句
+// 简介；「完整编辑」进 mc-2 的全页编辑台）。预览 = 点沓中一封 → 滑到
 // 沓首微抬（260ms 减速长尾 + 让位 stagger）；再点它或点「对话」→
 // 切换。零常驻循环；reduced-motion 双面降级（库尾总降级块 0.01ms
 // 即终，本模块不依赖动画事件）。
@@ -2447,12 +2450,14 @@ function renderMasthead(roster) {
 
 function envselCloser(event) {
   if (!(event.target instanceof Element)) return;
+  if (charEditorPanel) return;   // 编辑台开着——沓在它底下，别替它收
   if (envselPanel && !envselPanel.contains(event.target)) {
     closeEnvelopeSelector();
   }
 }
 
 function envselEsc(event) {
+  if (charEditorPanel) return;   // Esc 归编辑台（它自己的收拢）
   if (event.key === "Escape") closeEnvelopeSelector();
 }
 
@@ -2539,13 +2544,14 @@ async function renderEnvelopeStack(stack) {
         closeEnvelopeSelector();
         openPartnerDossier(item.character_id);
       },
-      onEdit: (envNode) => startRename(envNode, item),
+      onEdit: (envNode) =>
+        openCharacterEditor({ item: item, envNode: envNode, mode: "edit" }),
     });
     if (item.character_id === envselBornId) env.classList.add("env--born");
     env.dataset.order = String(order);
     env.addEventListener("click", (event) => {
       if (event.target instanceof Element &&
-          event.target.closest(".env-actions, .env-rename, .env-create")) {
+          event.target.closest(".env-actions, .env-create")) {
         return;   // 动作行与表单自理
       }
       previewEnvelope(item.character_id);
@@ -2655,69 +2661,391 @@ async function refreshCorrespondence() {
   }
 }
 
-// 简化编辑（mc-1 自裁披露）：只改名字——改的是信封上的收件人；邮票
-// 不动（stamp_key 系于 id，改名不挪）。其余散文案面 mc-2 的编辑台。
-function startRename(envNode, item) {
-  if (envNode.querySelector(".env-rename")) return;
-  const nameEl = envNode.querySelector(".env-name");
-  if (!nameEl) return;
-  const rename = document.createElement("span");
-  rename.className = "env-rename";
-  const input = document.createElement("input");
-  input.type = "text";
-  input.maxLength = 40;
-  input.value = String(item.name || "");
-  input.setAttribute("aria-label", "改名字");
-  const row = document.createElement("span");
-  row.className = "env-actions";
+// ── mc-2: 角色编辑台——信封沓的「编辑」/空白封「完整编辑」进的全页
+// DIY 面（用户原话：想编辑或新建角色卡，页面自然放大过渡到编辑页面，
+// 自由 DIY 想要的角色）──────────────────────────────────────────────
+// 放大过渡 = zoom/scale + fade：进入 transform 260ms（--dur-note，
+// --ease-enter）、opacity 恒慢于 transform（--dur-ink，简报 §5 纸的
+// 物理法则）；退出反向收拢 200ms（--dur-panel-out，--ease-exit）；
+// transform-origin 从被点的那封信出发（getBoundingClientRect 的视口
+// 坐标经 placeEditorOrigin 落 custom props——app.js 禁内联样式）。
+// reduced-motion：直切（REDUCED_MOTION 单一归宿在 components.js，本
+// 模块读它的 matches + 库尾总降级块 0.01ms 即终的双面）。
+// 预填的诚实边界：/api/partner 的卡面只回五个键（name、identity_line、
+// background、values、letter_habits）——personality、boundaries、
+// opening、scenario 四面读不回（mc-0 没有全字段读面，web.py 本刀只许
+// 动 400 人话）。表单照实开九面，读不回的四面如实话注记「留空原样
+// 留着，写下就盖上」，保存时只送写过字的四面（PUT 不送 = 服务端原样
+// 不动，mc-0 的更新文法）——永不拿空白盖旧文。
+// 内置卡九面全部可编辑（mc-0 契约：编辑不拒、删除才拒；card_store 的
+// _UPDATABLE_COLUMNS 九面全可写，勘察在册），不给删除钮。
+let charEditorPanel = null;
+
+// 九面的规格表（名字单独建面——必填 + 40 上限）：键 / 中文标签 / 一句
+// 克制的人话说明 / 是否读不回 / 是否带开场信预览。中英皆可——用户
+// 自建卡不禁词（总控已裁）。
+const EDITOR_FACES = [
+  { key: "identity", label: "身份行", veiled: false,
+    hint: "信封面上示人的第一句——她一句话介绍自己。" },
+  { key: "personality", label: "性情", veiled: true,
+    hint: "她是个什么样的人，怎么与人相处。" },
+  { key: "background", label: "背景", veiled: false,
+    hint: "她走过的路，过着的日子。" },
+  { key: "speech_style", label: "写信习惯", veiled: false,
+    hint: "她的信长什么样——长短、口气、落笔的规矩。" },
+  { key: "values", label: "看重的事", veiled: false,
+    hint: "她放在心里、不肯换出去的东西。" },
+  { key: "boundaries", label: "边界", veiled: true,
+    hint: "她不做的事，不接的话题。" },
+  { key: "opening", label: "开场信", veiled: true, preview: true,
+    hint: "刚开始通信时，她寄来的第一封。" },
+  { key: "scenario", label: "场景", veiled: true,
+    hint: "她写信的地方，提笔的那一刻。" },
+];
+
+// 卡面读回键 → 表单键的映射（只有两处错位）：identity_line 载身份行、
+// letter_habits 载写信习惯（服务端的两个旧键名，如实认）。
+function editorCardValue(card, key) {
+  if (!card) return "";
+  if (key === "identity") return String(card.identity_line || "");
+  if (key === "speech_style") return String(card.letter_habits || "");
+  return String(card[key] || "");
+}
+
+// 就地字数（上限与 F-2 同源：name 40 / 散文 2000——maxLength 拦输入，
+// 计数给眼睛）。
+function editorCapLine(input, cap) {
+  const line = document.createElement("p");
+  line.className = "editor-cap";
+  const count = document.createElement("span");
+  count.className = "editor-count";
+  count.textContent = String(input.value.length);
+  line.appendChild(count);
+  line.appendChild(document.createTextNode(" / " + cap));
+  input.addEventListener("input", () => {
+    count.textContent = String(input.value.length);
+  });
+  return line;
+}
+
+// 错误行人话：400（超上限等）已是中文，原样上浮；服务端 404 的英文
+// 定谳句（no such character card，不在本刀 400 中文化范围）映射成
+// 中文——已知句的定向替换，非通译。
+function editorErrLine(data, fallback) {
+  const message = data && data.error ? String(data.error) : "";
+  if (message.indexOf("no such character card") !== -1) {
+    return "没找到这张卡——它可能刚被删掉，回沓看看。";
+  }
+  return message || fallback;
+}
+
+function editorEsc(event) {
+  if (event.key === "Escape") {
+    event.stopPropagation();   // 收台这拍不冒泡——底下的沓不陪葬（收拢
+    closeCharacterEditor();    // 期间 charEditorPanel 已空，守卫接不住）
+  }
+}
+
+// 收台：反向收拢（--char-editor--out，200ms 加速收势）到被点信封的
+// origin；落定后跑 after（回沓重排——born 纸事件要等台撤了才播得见）。
+function closeCharacterEditor(after) {
+  const panel = charEditorPanel;
+  if (!panel) return;
+  charEditorPanel = null;
+  panel.removeEventListener("keydown", editorEsc);
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    if (panel.parentNode) panel.remove();
+    if (typeof after === "function") after();
+  };
+  if (REDUCED_MOTION.matches) {
+    finish();   // reduced-motion：直切
+    return;
+  }
+  panel.classList.add("char-editor--out");
+  panel.addEventListener("animationend", (event) => {
+    if (event.animationName === "editor-zoom-out") finish();
+  });
+  setTimeout(finish, 480);   // 保险丝（animationend 正常先到）
+}
+
+// 开台：mode = "edit"（沓中一封的「编辑」）| "create"（空白封的
+// 「完整编辑」）。编辑先读卡面再开笔——读不回就不开（错误 + 重试），
+// 免得拿空白表单盖了旧文。
+async function openCharacterEditor(opts) {
+  if (charEditorPanel) return;
+  const mode = opts.mode === "create" ? "create" : "edit";
+  const item = opts.item || null;
+  const panel = document.createElement("div");
+  panel.className = "char-editor char-editor--in";
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-label",
+    mode === "create" ? "给新笔友起卡" : "编辑角色卡");
+  panel.tabIndex = -1;
+
+  const body = document.createElement("div");
+  body.className = "char-editor-body";
+  panel.appendChild(body);
+
+  const back = document.createElement("p");
+  back.className = "editor-back";
+  const backBtn = document.createElement("button");
+  backBtn.type = "button";
+  backBtn.className = "btn btn--pencil";
+  backBtn.textContent = "← 回沓";
+  backBtn.addEventListener("click", () => closeCharacterEditor());
+  back.appendChild(backBtn);
+  body.appendChild(back);
+
+  const kicker = document.createElement("p");
+  kicker.className = "editor-kicker";
+  kicker.textContent = mode === "create" ? "新笔友" : "角色卡";
+  body.appendChild(kicker);
+
+  const title = document.createElement("h2");
+  title.className = "editor-title";
+  title.textContent = mode === "create"
+    ? "写给一位新笔友"
+    : String((item && item.name) || "");
+  body.appendChild(title);
+
+  const sub = document.createElement("p");
+  sub.className = "editor-sub";
+  sub.textContent = mode === "create"
+    ? "想到什么写什么——信封上只示人名字和身份行，其余的面她自己看。"
+    : "想到什么改什么——信封上只示人名字和身份行，其余的面她自己看。";
+  body.appendChild(sub);
+
+  if (item && item.is_builtin) {
+    const note = document.createElement("p");
+    note.className = "editor-note";
+    note.textContent = "这是随信来的第一位笔友——她可以改，不能删。";
+    body.appendChild(note);
+  }
+
+  const form = document.createElement("div");
+  form.className = "editor-form";
+  body.appendChild(form);
+
+  document.getElementById("space-parlor").appendChild(panel);
+  charEditorPanel = panel;
+  const envNode = opts.envNode;
+  if (envNode && typeof envNode.getBoundingClientRect === "function") {
+    const rect = envNode.getBoundingClientRect();
+    placeEditorOrigin(panel,
+      rect.left + rect.width / 2, rect.top + rect.height / 2);
+  }
+  panel.focus();
+  panel.addEventListener("keydown", editorEsc);
+
+  if (mode === "create") {
+    buildEditorForm(form, { mode: mode, item: null, card: null });
+    return;
+  }
+  form.appendChild(stateBanner("loading"));
+  let data = null;
+  try {
+    data = await fetchPartnerOf(item.character_id);
+  } catch {
+    data = null;
+  }
+  if (charEditorPanel !== panel) return;  // 人已回沓——不往看不见的页上写
+  form.textContent = "";
+  if (!data || !data.card) {
+    form.appendChild(stateBanner("error", {
+      text: "这张卡的旧文没读到——读不回就不开笔，免得拿空白盖了旧文。",
+      retry: () => {
+        closeCharacterEditor(() => openCharacterEditor(opts));
+      },
+    }));
+    return;
+  }
+  buildEditorForm(form, { mode: mode, item: item, card: data.card });
+}
+
+function buildEditorForm(form, opts) {
+  const mode = opts.mode;
+  const item = opts.item;
+  const card = opts.card;
+  const caps = { name: 40, prose: 2000 };   // 与 F-2 / 服务端同源
+
+  const err = document.createElement("p");
+  err.className = "editor-err";
+
+  // 名字（必填）：信封的收件人、邮票的首字母。
+  const nameFace = document.createElement("div");
+  nameFace.className = "editor-face editor-face--name";
+  const nameLabel = document.createElement("p");
+  nameLabel.className = "editor-label";
+  nameLabel.textContent = "名字";
+  nameFace.appendChild(nameLabel);
+  const nameHint = document.createElement("p");
+  nameHint.className = "editor-hint";
+  nameHint.textContent = "信封的收件人，邮票上的首字母——40 字已是满口。";
+  nameFace.appendChild(nameHint);
+  const nameInput = document.createElement("input");
+  nameInput.type = "text";
+  nameInput.maxLength = caps.name;
+  nameInput.autocomplete = "off";
+  nameInput.placeholder = "名字（必填）";
+  nameInput.setAttribute("aria-label", "角色名");
+  nameInput.value = String((card && card.name) || "");
+  nameFace.appendChild(nameInput);
+  nameFace.appendChild(editorCapLine(nameInput, caps.name));
+  form.appendChild(nameFace);
+
+  // 八个散文面：稿纸 textarea（.pen 家族）+ 说明句 + 就地字数；
+  // 读不回的四面加一句如实话。
+  const pens = {};
+  for (const face of EDITOR_FACES) {
+    const wrap = document.createElement("div");
+    wrap.className = "editor-face"
+      + (face.veiled ? " editor-face--veiled" : "");
+    const label = document.createElement("p");
+    label.className = "editor-label";
+    label.textContent = face.label;
+    wrap.appendChild(label);
+    const hint = document.createElement("p");
+    hint.className = "editor-hint";
+    hint.textContent = face.hint;
+    wrap.appendChild(hint);
+    if (face.veiled) {
+      const veil = document.createElement("p");
+      veil.className = "editor-veil";
+      veil.textContent = "旧文这里读不回——留空原样留着，写下就盖上。";
+      wrap.appendChild(veil);
+    }
+    const pen = document.createElement("textarea");
+    pen.className = "pen editor-pen";
+    pen.maxLength = caps.prose;
+    pen.setAttribute("aria-label", face.label);
+    pen.value = editorCardValue(card, face.key);
+    wrap.appendChild(pen);
+    wrap.appendChild(editorCapLine(pen, caps.prose));
+    if (face.preview) {
+      const prevWrap = document.createElement("div");
+      prevWrap.className = "editor-openprev";
+      const prevLabel = document.createElement("p");
+      prevLabel.className = "editor-label";
+      prevLabel.textContent = "信的样子";
+      prevWrap.appendChild(prevLabel);
+      const prevPaper = document.createElement("p");
+      prevPaper.className = "editor-openprev-paper";
+      const syncPreview = () => {
+        const text = pen.value.trim();
+        prevPaper.classList.toggle("editor-openprev--empty", !text);
+        prevPaper.textContent = text
+          ? pen.value
+          : "开场信还没写——写上几句，这里就是那封信的样子。";
+      };
+      pen.addEventListener("input", syncPreview);
+      syncPreview();
+      prevWrap.appendChild(prevPaper);
+      wrap.appendChild(prevWrap);
+    }
+    pens[face.key] = pen;
+    form.appendChild(wrap);
+  }
+
+  // 动作：存（主）· 不改了 · 删了这封（只有用户卡有）。
   const save = document.createElement("button");
   save.type = "button";
-  save.className = "btn btn--pencil";
+  save.className = "btn btn--ink editor-save";
   save.textContent = "存";
-  const cancel = document.createElement("button");
-  cancel.type = "button";
-  cancel.className = "btn btn--faint";
-  cancel.textContent = "不改了";
-  const err = document.createElement("p");
-  err.className = "env-err";
-  cancel.addEventListener("click", (event) => {
-    event.stopPropagation();
-    rename.replaceWith(nameEl);
-  });
-  save.addEventListener("click", async (event) => {
-    event.stopPropagation();
-    const name = input.value.trim();
+  save.addEventListener("click", async () => {
+    const name = nameInput.value.trim();
     if (!name) {
-      err.textContent = "名字不能空——空白的信封寄不出去。";
+      err.textContent = "一张卡得有名字——空白的信封寄不出去。";
       return;
     }
     save.disabled = true;
     let data = null;
     try {
-      data = await fetchRenameCharacter(item.character_id, name);
+      if (mode === "create") {
+        const fields = { name: name };
+        for (const face of EDITOR_FACES) {
+          const raw = pens[face.key].value;
+          if (raw.trim()) fields[face.key] = raw;
+        }
+        data = await fetchCreateCharacter(fields);
+      } else {
+        const fields = { name: name };
+        for (const face of EDITOR_FACES) {
+          const raw = pens[face.key].value;
+          if (face.veiled) {
+            if (raw.trim()) fields[face.key] = raw;   // 写下才盖上
+          } else {
+            fields[face.key] = raw;   // 读得回的五面照抄表单
+          }
+        }
+        data = await fetchUpdateCharacter(item.character_id, fields);
+      }
     } catch {
       data = null;
     }
     if (!data || !data.character) {
       save.disabled = false;
-      err.textContent = (data && data.error)
-        ? data.error
-        : "没能改成——再试一次。";
+      err.textContent = editorErrLine(data, "没能落笔——再试一次。");
       return;
     }
-    await refreshEnvelopeStack();   // 沓重排：名更新、邮票与姿态不动
+    if (mode === "create") {
+      envselBornId = data.character.character_id;   // 新封落沓的纸事件
+      closeCharacterEditor(async () => {
+        await refreshEnvelopeStack();   // 新封落沓（最尾，纸事件一次）
+      });
+    } else {
+      closeCharacterEditor(async () => {
+        await refreshEnvelopeStack();   // 沓重排：名更新、邮票与姿态不动
+      });
+    }
   });
-  row.appendChild(save);
-  row.appendChild(cancel);
-  rename.appendChild(input);
-  rename.appendChild(row);
-  rename.appendChild(err);
-  nameEl.replaceWith(rename);
-  input.focus();
+  form.appendChild(save);
+
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "btn btn--faint";
+  cancel.textContent = "不改了";
+  cancel.addEventListener("click", () => closeCharacterEditor());
+  form.appendChild(cancel);
+
+  if (item && !item.is_builtin) {
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "btn btn--faint editor-delete";
+    del.textContent = "删了这封";
+    del.addEventListener("click", async () => {
+      if (!confirmDialog(
+          "删了这封，沓里就再没有这位笔友——已写过的信留在信档里。"
+          + "这一步收不回来。")) {
+        return;
+      }
+      del.disabled = true;
+      let data = null;
+      try {
+        data = await fetchDeleteCharacter(item.character_id);
+      } catch {
+        data = null;
+      }
+      if (!data || !data.deleted) {
+        del.disabled = false;
+        err.textContent = editorErrLine(data, "没删成——再试一次。");
+        return;
+      }
+      closeCharacterEditor(async () => {
+        await refreshEnvelopeStack();   // 沓重排：那封不在了
+      });
+    });
+    form.appendChild(del);
+  }
+
+  form.appendChild(err);
 }
 
-// 沓尾的新建空白信封：本刀只放入口与最简一形（名字 + 一句简介），
-// 建好的卡其余各面留白，等 mc-2 的编辑台——诚实留白，不伪装已写。
+// 沓尾的新建空白信封：两条路——「起笔」还是最简一形（名字 + 一句
+// 简介）；「完整编辑」进 mc-2 的全页编辑台，九面自由 DIY（用户原话：
+// 自由 diy 想要的角色）。
 function newEnvelopeCard() {
   const env = document.createElement("article");
   env.className = "env env--new";
@@ -2731,7 +3059,7 @@ function newEnvelopeCard() {
   env.appendChild(to);
   const hint = document.createElement("p");
   hint.className = "env-line env-newhint";
-  hint.textContent = "起个名字，多一位可以通信的人。性情、背景这些面，等编辑台来写。";
+  hint.textContent = "起个名字就能开笔；性情、背景这些面想一次写全，点「完整编辑」。";
   env.appendChild(hint);
   const start = document.createElement("button");
   start.type = "button";
@@ -2744,6 +3072,15 @@ function newEnvelopeCard() {
     env.appendChild(buildCreateForm(env, hint, start));
   });
   env.appendChild(start);
+  const full = document.createElement("button");
+  full.type = "button";
+  full.className = "btn btn--pencil env-newbtn env-newfull";
+  full.textContent = "完整编辑";
+  full.addEventListener("click", (event) => {
+    event.stopPropagation();
+    openCharacterEditor({ item: null, envNode: env, mode: "create" });
+  });
+  env.appendChild(full);
   return env;
 }
 

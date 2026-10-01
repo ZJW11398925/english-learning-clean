@@ -644,7 +644,8 @@ def test_the_character_http_refusals(tmp_path: Path) -> None:
             {**FERRYMAN_FIELDS, "homepage": "https://no.example"},
         )
         assert status == 400, payload
-        assert "unknown character field" in payload["error"]
+        # mc-2 起 400 人话中文化：点名字段的中文句（同强度真值随迁）。
+        assert "没有叫 'homepage' 的卡面" in payload["error"]
 
         status, payload = _put_json(
             stack.port, "/api/characters/card-nobody", {"name": "x"}

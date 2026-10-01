@@ -275,8 +275,96 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
             white-space: nowrap; overflow: hidden;
             text-overflow: ellipsis; }
 .env-newhint { white-space: normal; overflow: visible; }
+.env-newfull { margin-left: 16px; }   /* 空白封第二入口（mc-2 完整编辑） */
 .env-actions { display: flex; gap: 16px; margin: 4px 0 0; }
 .envsel-foot { margin: var(--sp-2) 0 0; text-align: right; }
+
+/* ── mc-2 角色编辑台（信封沓的「编辑」/空白封「完整编辑」进的全页
+   DIY 面；工厂与接线在 app.js 的 mc-2 模块）────────────────────────
+   放大过渡（用户原话「页面自然放大过渡到编辑页面」）：transform 260ms
+   （--dur-note，--ease-enter——教学卡同一档）+ opacity 恒慢于
+   transform（--dur-ink，简报 §5 纸的物理法则）；退出反向收拢 200ms
+   （--dur-panel-out，--ease-exit）。transform-origin 从被点的那封信
+   出发：--editor-ox/--editor-oy 由 components.js 的 placeEditorOrigin
+   落（app.js 禁 .style），缺省回版心。两条 keyframes 是本面新增的
+   注册件（zoom 是纸的物理里新的一种——守恒律的对价：信封内联改名
+   交互随本面退役，.env-rename 段同刀拆除）。reduced-motion：库尾总
+   降级块 0.01ms 即终（animationend 照发，JS 收台不失效）+ JS 半区
+   matchMedia 直切。设计语言：纸面 + 发丝线分区 + 微标签（rd-1 配方）
+   + 输入态复用 .pen 家族；零新色值（全 var()）、零新楷体位、零朱砂、
+   零新断点（版心 = --measure，四档通用）。 */
+@keyframes editor-zoom-in {
+  from { transform: scale(0.45); }
+  to { transform: scale(1); }
+}
+@keyframes editor-zoom-out {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(0.45); opacity: 0; }
+}
+.char-editor { position: fixed; inset: 0; z-index: 8;
+               background: var(--paper);
+               overflow-y: auto; overscroll-behavior: contain;
+               transform-origin: var(--editor-ox, 50%)
+                                 var(--editor-oy, 50%); }
+.char-editor--in { animation: editor-zoom-in var(--dur-note)
+                              var(--ease-enter) both,
+                              ink-wash var(--dur-ink)
+                              var(--ease-enter) both; }
+.char-editor--out { animation: editor-zoom-out var(--dur-panel-out)
+                               var(--ease-exit) both; }
+.char-editor-body { max-width: var(--measure);
+                    margin: 0 auto; padding: var(--sp-6) var(--sp-4)
+                    var(--sp-8); }
+.editor-back { margin: 0 0 var(--sp-4); }
+.editor-kicker { margin: 0; font: var(--meta-font);
+                 letter-spacing: var(--meta-track);
+                 color: var(--meta-ink); }
+.editor-title { margin: var(--sp-1) 0 0; font-family: var(--f-display);
+                font-size: var(--fs-title); line-height: var(--lh-title);
+                font-weight: 400; letter-spacing: var(--ls-title);
+                overflow-wrap: anywhere; }
+.editor-sub { margin: var(--sp-2) 0 0; font-size: var(--fs-small);
+              line-height: var(--lh-small); color: var(--ink-soft); }
+.editor-note { margin: var(--sp-2) 0 0; font-size: var(--fs-small);
+               line-height: var(--lh-small); color: var(--ink-faint); }
+/* 面与面之间 = 上下发丝线（分层不靠面板底色） */
+.editor-face { padding: var(--sp-4) 0 var(--sp-5); }
+.editor-face + .editor-face { border-top: 1px solid var(--rule-soft); }
+.editor-label { margin: 0; font: var(--meta-font);
+                letter-spacing: var(--meta-track);
+                color: var(--meta-ink); }
+.editor-hint { margin: var(--sp-1) 0 0; font-size: var(--fs-small);
+               line-height: var(--lh-small); color: var(--ink-faint); }
+.editor-veil { margin: var(--sp-1) 0 0; font-size: var(--fs-small);
+               line-height: var(--lh-small); color: var(--ink-faint); }
+.editor-pen { min-height: 64px; max-height: 160px; }
+.editor-face--name input { width: 100%; border: 0; background: none;
+                           outline: none; border-bottom: 1px solid var(--rule);
+                           padding: 4px 2px; font-family: var(--f-serif);
+                           font-size: var(--fs-body);
+                           line-height: var(--lh-body); color: var(--ink); }
+.editor-face--name input:focus { border-bottom-color: var(--pencil); }
+.editor-cap { margin: var(--sp-1) 0 0; text-align: right;
+              font: var(--meta-mono); font-variant-numeric: tabular-nums;
+              color: var(--meta-ink); }
+/* 开场信预览：短笺纸面（paper-2 + 发丝缘 + ≤2px 圆角）——信件语体的
+   样例渲染，读的是将寄出的那一封 */
+.editor-openprev { margin-top: var(--sp-3); }
+.editor-openprev-paper { margin: var(--sp-1) 0 0; padding: var(--sp-3)
+                         var(--sp-4); background: var(--paper-2);
+                         border: 1px solid var(--rule);
+                         border-radius: 2px;
+                         font-family: var(--f-serif);
+                         font-size: var(--fs-body);
+                         line-height: var(--baseline);
+                         color: var(--ink); overflow-wrap: anywhere; }
+.editor-openprev-paper.editor-openprev--empty { color: var(--ink-faint);
+                         font-size: var(--fs-small); }
+.editor-actions { margin: 0; }
+.editor-save { margin-top: var(--sp-6); }
+.editor-delete { margin-top: var(--sp-6); }
+.editor-err { margin: var(--sp-2) 0 0; font-family: var(--f-sans);
+              font-size: var(--fs-ui); color: var(--pencil); }
 
 /* ── v2 动效基建应用层（简报 §5：纸先落、墨后渗的页面接线）──────────
    ① 信纸落桌（视图切换档）：客厅显形 = 一张信纸摊上案头。容器只走

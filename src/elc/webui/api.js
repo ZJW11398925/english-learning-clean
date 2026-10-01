@@ -29,6 +29,11 @@ async function getJson(path) {
   return res.json();
 }
 
+async function deleteJson(path) {
+  const res = await fetch(path, { method: "DELETE" });
+  return res.json();
+}
+
 /** 一轮对话：提交一句英语，拿回合信与教学批注。 */
 export function fetchTurn(text) {
   return postJson("/api/turn", { text: text });
@@ -132,9 +137,17 @@ export function fetchCreateCharacter(fields) {
   return postJson("/api/characters", fields);
 }
 
-/** 只改名字（mc-1 简化编辑）：PUT 一个字段；其余散文案面 mc-2 的
- *  编辑台来写。 */
-export function fetchRenameCharacter(characterId, name) {
+/** 全字段保存（mc-2 编辑台）：PUT 只送送出的面——服务端对没送的面
+ *  原样不动（mc-0 的更新文法），所以「读不回的四面」不送即保留。
+ *  400 人话（超上限等）已中文化，错误句原样上浮。名字的改写也从这
+ *  里走（mc-1 的信封内改名随编辑台退役——api.js 不留无人调用的封装）。 */
+export function fetchUpdateCharacter(characterId, fields) {
   return putJson("/api/characters/" + encodeURIComponent(characterId),
-                 { name: name });
+                 fields);
+}
+
+/** 删除一张用户卡（mc-2 编辑台）：内置卡服务端 409 拒（页面也不给
+ *  内置卡这个钮）；删除后退沓，已写的信留在信档。 */
+export function fetchDeleteCharacter(characterId) {
+  return deleteJson("/api/characters/" + encodeURIComponent(characterId));
 }

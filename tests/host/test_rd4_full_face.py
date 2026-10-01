@@ -170,9 +170,11 @@ def test_the_red_pencil_circle_is_one_static_mark(tmp_path: Path) -> None:
     assert "border-radius: 50%; transform: rotate(-2.5deg);" in css
     # the mark rides pure geometry: no data URI anywhere on the face
     assert "data:" not in css.split("SHELL_ASSETS")[0]
-    # zero new keyframes: the registered set is exactly the v2 five
-    # (paper-drop / ink-wash / ink-set / paper-unfold / stamp-press)
-    assert css.count("@keyframes ") == 5
+    # keyframes: the v2 five registered set + the mc-2 zoom pair (the
+    # declared new registrations of the character editor's zoom
+    # transition — conservation price: the inline rename interaction
+    # retired in the same cut, .env-rename 段同刀拆除)
+    assert css.count("@keyframes ") == 7
 
 
 def test_the_closing_arms_split_settled_from_skipped(tmp_path: Path) -> None:

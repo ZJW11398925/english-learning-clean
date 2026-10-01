@@ -874,7 +874,7 @@ export function sectionLabel(header, text) {
 // reduced-motion 双面纪律的 JS 半区：CSS 媒体查询管不到 JS 编排，
 // 这里自己听 matchMedia——reduce 即刻落定全部容器（断开观察、不留
 // 在飞动画），翻转事件同样接住。
-const REDUCED_MOTION = window.matchMedia(
+export const REDUCED_MOTION = window.matchMedia(
   "(prefers-reduced-motion: reduce)");
 const REVEAL_STAGGER_MS = 40;
 const REVEAL_STAGGER_MAX = 8;
@@ -1012,6 +1012,17 @@ export function envelopeCard(item, opts) {
     env.appendChild(mark);
   }
   return env;
+}
+
+// ── mc-2: 角色编辑台的 zoom 原点落点（app.js 禁 .style，custom props
+// 只在此落——mc-1 排布半区同一规矩）──────────────────────────────────
+// app.js 从被点信封的 getBoundingClientRect 算出视口坐标，这里只落
+// --editor-ox/--editor-oy 两个 custom props（screens.css 的
+// .char-editor 消费作 transform-origin——放大过渡从那封信出发）。
+// 数值原样落，零换算零兜底（缺省 50% 50% 由 CSS 自带）。
+export function placeEditorOrigin(root, x, y) {
+  root.style.setProperty("--editor-ox", x + "px");
+  root.style.setProperty("--editor-oy", y + "px");
 }
 
 // 21. disclosure（折叠组，R-1R；⑧ 8.2.9 契约形）：组头行（名称 + 计数 +

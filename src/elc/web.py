@@ -1357,35 +1357,34 @@ def _character_request_parts(
 
     if not isinstance(payload, dict):
         return (
-            'need a JSON object with {"name": "..."} and optional card'
-            " fields (identity, personality, background, speech_style,"
-            " values, boundaries, opening, scenario)",
+            "请求体得是 JSON 对象：带 \"name\"（必填），其余卡面"
+            "（identity、personality、background、speech_style、"
+            "values、boundaries、opening、scenario）可带可不带",
             None,
         )
     fields: dict[str, str] = {}
     for key, value in payload.items():
         if key not in _CHARACTER_CARD_FIELDS:
             return (
-                f"unknown character field: {key!r} (the card's fields are:"
-                + ", ".join(_CHARACTER_CARD_FIELDS)
-                + ")",
+                f"没有叫 {key!r} 的卡面——能写的面是："
+                + "、".join(_CHARACTER_CARD_FIELDS),
                 None,
             )
         if not isinstance(value, str):
-            return (f'"{key}" needs a string', None)
+            return (f"「{key}」得是一段文字", None)
         cap = (
             _CHARACTER_NAME_MAX if key == "name" else _CHARACTER_PROSE_MAX
         )
         if len(value) > cap:
             return (
-                f'"{key}" is too long — {cap} characters at most',
+                f"「{key}」太长了——最多 {cap} 字",
                 None,
             )
         fields[key] = value
     if "name" in fields and not fields["name"].strip():
-        return ("a character card needs a non-empty name", None)
+        return ("一张卡得有名字——名字不能是空白", None)
     if name_required and "name" not in fields:
-        return ('a new character card needs a non-empty "name"', None)
+        return ("新建一张卡得带 \"name\"——名字不能是空白", None)
     return None, fields
 
 
