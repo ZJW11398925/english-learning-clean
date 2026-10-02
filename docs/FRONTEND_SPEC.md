@@ -577,7 +577,7 @@ tap 的按压窗口，`--dur-micro` 档，松手即隐，零 JS）。备案（�
 - **【角色卡翻页全览——现役（v2-2 落地）】** 沓内**全览可翻页**：
   入口一钮两态（「翻看 / 回沓」，沓面板底行左位）；每页一张角色卡
   全貌（可读回的五面摘要——name / identity / background / values /
-  speech_style；personality / boundaries / opening / scenario 四面
+  letter_habits；personality / boundaries / opening / scenario 四面
   读不回 = veiled 语义，页卡如实注记，开场信预览位缺席不虚构）+
   页序计数（mono 竖排）；**横滑翻页**（`wirePageTurn`——ux-1 横滑
   守卫同法：横大于纵严格判定、单指重臂双指全拦、边界静止、零

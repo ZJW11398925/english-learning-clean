@@ -26,7 +26,7 @@ Groups (the task book's own):
    graphic's arch) — no literal pixel radius anywhere else;
 3. the face pins — sheet top corners / float card / paper faces /
    controls / chip each consume their tier (≥1 consumer each);
-4. the sharp-corner clearance — twelve named container faces each carry
+4. the sharp-corner clearance — fourteen named container faces each carry
    a non-zero radius in their own rule block; the scrim stays bare and
    the text-link buttons stay bare;
 5. the spec revision — ② carries the five token rows and the ruling
@@ -247,7 +247,7 @@ def test_chip_is_a_pill() -> None:
 # 4. the sharp-corner clearance (negative controls, ≥8 faces)
 
 
-def test_twelve_named_container_faces_carry_a_nonzero_radius() -> None:
+def test_fourteen_named_container_faces_carry_a_nonzero_radius() -> None:
     """直角清零负控: each named container face's own rule block declares
     a border-radius that is present and not 0 — the audit face of the
     user ruling, one entry per known sharp-corner survivor."""

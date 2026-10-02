@@ -2775,7 +2775,7 @@ async function openEnvelopeSelector() {
 // page-turn 2D 形态；翻页态不替换档案页（页卡上的「档案」动作仍进
 // 全页）。诚实降级（读面缺口呈报在案）：/api/partner 的卡面只回五键，
 // 全貌页展示可读回的 name / identity / background / values /
-// speech_style 五面；personality / boundaries / opening / scenario
+// letter_habits 五面；personality / boundaries / opening / scenario
 // 四面读不回（mc-0 无全字段读面）——如实注记，开场信预览位缺席
 // （不虚构「第一封信」）。
 let envselBrowserBox = null;

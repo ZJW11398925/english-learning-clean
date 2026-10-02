@@ -36,7 +36,7 @@ spec 内对应块回填为现役描述。十组钉：
     document typography (settings/privacy), the retired tokens
     placeholder note, and the font-stack consumption discipline.
 
-预算刀内义务：新钉 15–30 例（本文件 25 例）。
+预算刀内义务：新钉 15–30 例（本文件 14 例；台账口径以收集数为准）。
 """
 
 from __future__ import annotations
@@ -231,6 +231,13 @@ def test_the_browser_layer_lives_inside_the_selector() -> None:
     assert "export function wirePageTurn(page, current, onTurn)" in js
     assert "Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) <= Math.abs(dy)" in js
     assert 'event.target.closest("button, a, input, textarea, select, pre")' in js
+    # 严格判定必须钉在 wirePageTurn 自己的函数体内（评审 F-M1）：全文件
+    # 断言会被 wirePanelSwipe 的同字面兜底——弱化本工厂的 |dx|<=|dy|
+    # 判定（斜滑误触翻页）时，仅工厂切片断言能红
+    factory = js[js.index("export function wirePageTurn"):]
+    factory = factory[: factory.index("\nexport function", 1)]
+    assert "Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) <= Math.abs(dy)" \
+        in factory, "wirePageTurn 横滑严格判定被弱化（斜滑会误触翻页）"
 
 
 # ---------------------------------------------------------------------------
