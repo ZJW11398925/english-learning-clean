@@ -1,132 +1,205 @@
-# FRONTEND_SPEC — 前端架构与规范（F-G1）
+# FRONTEND_SPEC — 前端架构与规范（F-G1 · v2 重写版）
 
-状态：**非 canonical**（经 `DEC-OPI-631452f9-…37` 授权设立的工程规范文档）。
-服从对象：`docs/` 六 canonical 文档与用户裁决；本文件的 R7 域（命名法、组
-件契约措辞、规范条款）由执行者拟定、用户首验否决。适用对象：`src/elc/webui/`
-（本仓唯一前端面）及其一切后续改动。
+状态：**非 canonical**（经 `DEC-OPI-631452f9-…37` 授权设立的工程规范文档；
+2026-10-02 经 `DEC-OPI-10bbc3c8-…3` 授权以 v2 设计内核简报为唯一权威源
+全文重写）。
+服从对象：`docs/` 六 canonical 文档、`docs/research/2026-10-01-v2-mature-core-brief.md`
+（v2 设计唯一权威源，下称「简报」）与用户裁决；本文件的 R7 域（命名法、
+组件契约措辞、规范条款）由执行者拟定、用户首验否决。适用对象：
+`src/elc/webui/`（本仓唯一前端面）及其一切后续改动。
 
 ## ① 地位与治理
 
 1. 本文件**不是 canonical**：与六 canonical 冲突时，六 canonical 胜；
+   与简报冲突时，简报胜（R1 权威序：简报 > v2-1 实现现状 > 本文件旧文；
+   实现与简报有出入时以实现为准并在本文件注记，不反向改代码）。
    与用户裁决冲突时，用户裁决胜。
 2. 前端改动的**唯一合法路径**：先查本文件 → 复用库中已有组件 → 确无
    可复用才允许新增；新增/修改组件必须在**同一刀**内完成 spec 登记
    （本文件 ③ 追加条目 + 任务书四查写明）。**库中已有组件的重复实现
    = 评审 finding（拒收事由）。**
 3. 每次触碰本文件的刀，须在处置/交付记录中列明 spec 变更条目。
+4. **v2 授权链**（本重写版的效力来源）：`DEC-OPI-a31b14c9-…3` 开工
+   （用户三裁决：成熟内核先行 / 全部屏一次重设计 / 命名换名）→ 简报
+   落盘（`bf9c3e5`，v2-1 内核刀唯一设计权威源）→ v2-1 内核刀（章
+   `VR-OPI-a31b14c9-…14` PASS）→ 2026-10-02 门三问落定：新内核首验
+   判词**通过** / 命名定案**展信佳**（五候选圈选）/ 本文件重写授权
+   `DEC-OPI-10bbc3c8-…3`（链件 PLAN-…7 / TASK-…9 / VAL-…5）→ 用户
+   第三批定向 8 条（2026-10-02 总控转发）入 8.2 / ③ / ⑨，均标
+   「实施在 v2-2」。
+5. **设计义务（用户元指令 2026-10-02 入册）**：「高级动效应自然设计，
+   总控/执行者应主动巡检优化点，不等用户提」——巡检所得以登记条目
+   落本文件现役节，不等点名。
 
 ## ② Token 语义表（唯一出处：`webui/tokens.css`）
 
+v2 内核 = 简报 §2「铁胆墨」14 色 + 水印墨扩展一值。下表逐值与
+`tokens.css` 现役实值一致（本重写刀已做三方对照：简报 §2 ↔ 本表 ↔
+`tokens.css`，见刀回执）；散文里的旧色名「赭红」随 v2 换档改称
+「墨蓝」（`--pencil` 系旧名以别名形态在册，见别名表）。
+
+### ②-1 色彩 14 值（简报 §2 方案 A，对比度已实算）
+
+| token | 值 | 用面 | 禁忌 |
+|---|---|---|---|
+| `--paper` | `#f6f2e8` | 主纸（html/body/信纸面；L\*95.5——数码白→纸白） | 不作文字色 |
+| `--paper-high` | `#fdfbf6` | 顶纸：hover 微起、浮层卡面、dock 垫板（目标态） | 不作大面积正文底 |
+| `--paper-2` | `#efe9dc` | 次纸：批注底、垫纸层、短笺/词卡面 | 不作发丝线 |
+| `--desk` | `#e3dccb` | 桌布：≥900px 时 body 案头底色 | 窄屏不用 |
+| `--ink` | `#191b1e` | 正文墨（冷调 h267°，15.44:1——「冷墨热纸」） | — |
+| `--ink-soft` | `#4a4d52` | 次墨（7.59:1）：说明行、meter、busy | 不作大面积正文 |
+| `--ink-faint` | `#6b6e72` | 弱墨（4.58:1，元信息下限）：系统行、空态、占位 | 不作正文 |
+| `--rule` | `#d9d3c5` | 发丝线（纸的暗面，对比度锁 1.28–1.40） | 不作文字色 |
+| `--rule-soft` | `#e7e1d3` | 淡发丝线（稿纸横线/分区线） | — |
+| `--accent` | `#2c476a` | 墨蓝（钢笔墨蓝，8.47:1）：链接文字/下划线/次级强调 | 面积 ≤5%/屏 |
+| `--accent-deep` | `#1c3049` | 墨蓝深档（11.98:1）：hover/active/落款重档 | 只在 hover·落款·盖印 |
+| `--accent-soft` | `#8ba0b8` | 墨蓝淡档（2.40）：8–12% 透明底纹/装饰点 | **永不作文字** |
+| `--seal` | `#9a392b` | 朱砂（6.27:1）：**只盖印**——邮戳/红笔圈/批注；每屏 ≤1 处且必须对应真实事件 | 伪事件不盖 |
+| `--touch` | `#ece6d9` | 触压底 | 只用于回执撕边衬底 |
+| `--ink-ghost` | `#a8a496` | 水印墨：界尺/角饰/水印印记；墨水物理的起笔色 | **永不作文字** |
+
+色彩纪律（简报 §2，可写成 lint）：强调色面积 ≤5%/屏（≈3 处文字链接 +
+1 条下划线）；三档纪律（基准 ≥6.5:1 文字用 / 深档只在 hover·落款·盖印 /
+淡档永不作文字）；**强调色 ≠ 印章色**——朱砂只盖真实事件，年份/日期/
+页码一律墨色族；按钮维持下划线文字形态；唯一大色块 = 印章。
+
+### ②-2 旧名别名（消费面平滑；语义角色不变、值全由 v2 正名承担）
+
+| token | 值 | 说明 | 禁忌 |
+|---|---|---|---|
+| `--bg` | `var(--paper)` | 旧纸底名 → 主纸 | 不作文字色 |
+| `--pencil` | `var(--accent)` | 旧「赭红基准」→ 墨蓝基准（次级链接/焦点圈/错误行） | 只作小面强调 |
+| `--pencil-deep` | `var(--accent-deep)` | 旧「赭红加重」→ 墨蓝深档 | 不取代基准位 |
+| `--pencil-soft` | `var(--accent-soft)` | 旧「赭红中间档」→ 墨蓝淡档 | 不作链接基准色 |
+| `--f-sans` | `var(--f-ui)` | 旧 sans 名 → `--f-ui` | — |
+
+### ②-3 字体栈五条（简报 §3a；离线、仅 Win11 系统字体；CJK 回退次序固定）
+
+| token | 栈 | 用面 | 禁忌 |
+|---|---|---|---|
+| `--f-serif` | `'Sitka Text', Constantia, Cambria, Georgia, 'Palatino Linotype', 'Times New Roman', 'Songti SC', SimSun, 'Noto Serif CJK SC', serif` | 标题、信笺、primary 动作 | Constantia x-height 0.453 = 宋体 0.453 混排精确对齐 |
+| `--f-display` | `'Sitka Display', 'Sitka Banner', Cambria, Georgia, Constantia, 'Times New Roman', 'Songti SC', SimSun, 'Noto Serif CJK SC', serif` | 大字题（opsz 自动切 Display 切面） | — |
+| `--f-hand` | `KaiTi, 'Kaiti SC', STKaiti, cursive` | **仅手迹位**（落款、案头日期、边注；17–24px，每屏 ≤2 行 ≤1 处） | 禁作正文、禁 <16px、禁 >28px |
+| `--f-ui` | `'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI', DengXian, 'Microsoft YaHei UI', sans-serif` | 界面小字 | 雅黑显大 8%，只作可读性吃紧处降级 |
+| `--f-mono` | `Consolas, 'Cascadia Mono', ui-monospace, monospace` | 仪表行读数、数据列 | 数据一律配 `font-variant-numeric: tabular-nums` |
+
+禁（简报 §3a）：宋体/楷体/仿宋 `font-weight:700`（upem=256 单一
+weight，700 = 合成粗体发糊——中文标题靠字号跳档 + 字距）；数据列排
+雅黑/宋体数字（非等宽无 tnum）。
+
+### ②-4 字号–行高–字距九档（简报 §3b；行高写整 px，4 基数）
+
+| token | 值 | 说明 | 禁忌 |
+|---|---|---|---|
+| `--fs-display` `--fs-title` `--fs-head` `--fs-body` `--fs-body-latin` `--fs-small` `--fs-hand` `--fs-ui` `--fs-micro` | `34px` `24px` `18px` `17px` `17px` `14.5px` `19px` `12.5px` `11.5px` | 九档标度（display/title/head/body/body-latin/small/hand/ui/micro）；正文 = 信件正文 = 核心阅读面 17px | 新规则不裸写像素 |
+| `--lh-display` … `--lh-micro`（同名配对九条） | `42px` `32px` `26px` `32px` `28px` `24px` `30px` `20px` `18px` | 行高整 px（body 1.88 为中文满框留气） | 行高只写整 px |
+| `--ls-display` `--ls-title` `--ls-head` `--ls-body` `--ls-small` `--ls-hand` `--ls-ui` `--ls-caps` | `0.01em` `0.02em` `0.03em` `0.01em` `0.01em` `0.04em` `0.02em` `0.14em` | 字距刻度（简报 §3b）；`--ls-caps` 只给大写微标签与 2 字中文标签 | 正文/西文小写字距 >0.02em 即「散」 |
+| `--measure` | `34em`（≈578px） | 版心（中西文舒适区交集 380–580px） | — |
+| `--baseline` | `32px`（= `--lh-body`） | 基线网格：正文行高、稿纸横线周期、批注卡内文字同锁——**字必须落在线上** | — |
+
+版心与页边距：窄屏 394px ≈ 23 字/行仍舒适；页边距 ≥2 行高（64px 桌面）。
+
+### ②-5 间距·动效·微标签·触感·阴影·图标·布局
+
 | token | 值 | 用途 | 禁忌 |
 |---|---|---|---|
-| `--bg` | `#fbf9f4` | 纸底（html/body/顶栏/dock） | 不作文字色 |
-| `--ink` | `#1b1a17` | 主墨：正文、primary 动作、resultstrip.miss | — |
-| `--ink-soft` | `#5c574e` | 次级墨：说明行、meter、busy、resultstrip.part | 不作大面积正文 |
-| `--ink-faint` | `#726a5e` | 弱化：系统行、空态、占位、跳过链接 | 不作正文 |
-| `--rule` | `#ded7c9` | 发丝线（顶栏/dock/组框） | 不作文字色 |
-| `--rule-soft` | `#ebe5d8` | 弱发丝线（稿纸横线/分区线/note-paper 底） | — |
-| `--pencil` | `#a8562f` | 赭红铅笔：**次级链接、焦点圈、错误行、resultstrip.ok** | **只用于次级链接与强调小面，不用于大面积底色** |
-| `--touch` | `#f0e9dc` | 用户回执撕边衬底 | 只用于 .letter.me .paper |
-| `--f-serif` | Georgia,… | 标题、信笺、primary 动作 | — |
-| `--f-sans` | system-ui,… | 小字界面词（说明/系统行/标签） | — |
-| `--f-mono` | ui-monospace,… | 仪表行读数 | — |
+| `--sp-1` … `--sp-8` | `4px`–`64px`（4 基数） | 间距阶八阶 | 新规则不裸写像素 |
+| `--dur-micro` | `100ms` | 触感反馈档：state layer / hover / press | 一切反馈 ≤ 此档；纸事件不走它 |
+| `--dur-stamp` `--dur-note` | `120ms` `260ms` | 纸事件：邮戳盖下 / 批注递出（教学卡展开档——v2 按简报 §5 重定 260ms，rd-1 旧档 240ms 已废） | 不裸写时长 |
+| `--dur-1` | `140ms` | 逐行落墨步长 / hover 色变 | 同上 |
+| `--dur-panel-in` `--dur-panel-out` | `280ms` `200ms` | 抽屉进·出——进入比退出略长（容器级退出现役待接，⑨-5 Revisit） | 同上 |
+| `--dur-ink` `--dur-wet` | `360ms` `600ms` | 渗墨（opacity 恒慢于 transform ≈1.3×）/ 墨水物理（ink-ghost→ink 一次性） | opacity 先至 = 数字语汇 |
+| `--dur-settle` | `320ms` | 大件封顶：信纸落桌、编辑台过渡、逐行总封顶 | 大件 >320ms 恐过慢 |
+| `--ease-paper` | `cubic-bezier(0.16, 1, 0.3, 1)` | 进入减速长尾（纸先落） | 禁 linear |
+| `--ease-enter` `--ease-exit` | `cubic-bezier(0.05, 0.7, 0.1, 1)` / `cubic-bezier(0.3, 0, 1, 1)` | 教学/面板进·退缓动分离（进入长尾/退出收势） | — |
+| `--ease-press` | `cubic-bezier(0.4, 0, 0.2, 1)` | 触压对称/盖印收束（唯一 overshoot 许可） | 无弹性回弹 |
+| `--meta-font` | `500 var(--fs-micro)/var(--lh-ui) var(--f-sans)` | 微标签配方 sans 角色（rd-1）：状态词/节名/词性等元信息——`font: var(--meta-font)` 整体取用 | 元信息位只许引用配方，不重写字面 |
+| `--meta-mono` | `var(--fs-micro)/var(--lh-ui) var(--f-mono)` | 微标签配方等宽角色（rd-1）：时间/编号/计数/日期/版本行 | 同上 |
+| `--meta-track` | `var(--ls-caps)` | 微标签字距（rd-1） | — |
+| `--meta-ink` | `var(--ink-faint)` | 微标签暖灰（rd-1） | — |
+| `--state-hover` `--state-focus` `--state-press` | `0.08` `0.12` `0.12` | 触感层三值（rd-1；Material state layer 实测值） | 只作 `::after` 的 opacity，不碰布局 |
+| `--stack-shadow-soft` `--stack-shadow-deep` | `3px -3px 6px rgba(25,27,30,.12)` / `-5px 6px 10px rgba(25,27,30,.16)` | 纸叠偏移阴影两级（rd-1 面6）：轻=右上（批注/浮层在人手近侧）、重=左下（信纸摊在案头）——方向不统一 | **阴影色 = 墨色同源**（`rgba(25,27,30,…)`，`--ink` 降透明度），禁 `rgba(0,0,0,…)`；全局恰两级；与发丝描边配对；禁大面积模糊投影型 |
+| `--icon-size` `--icon-stroke` | `18px` `1.5` | #22 图标参数：默认见方与统一笔重 | — |
 | `--read-pad` | `18px` | 阅读左右留白 | — |
 | `--safe-bottom` | `env(safe-area-inset-bottom, 0px)` | dock 底安全区 | — |
 | `--navdock-h` | `54px` | 常驻 dock（#18）高度：body 底 padding 与写信区让位的同一来源 | 不作行高 |
-| `--paper-high` | `#fdfcf8` | 泛起纸面：hover 微起、浮层卡面（R-1V ⑨-3） | 不作大面积正文底 |
-| `--paper-2` | `#f4efe4` | 次纸：批注底、垫纸层（R-1V；`--rule-soft` 兼任的「色块底」职责迁此，它回归纯发丝线） | 不作发丝线 |
-| `--desk` | `#eae3d3` | 桌布：≥900px 时 body 案头底色（R-1V ⑨-6） | 窄屏不用 |
-| `--ink-ghost` | `#aaa191` | 水印墨：界尺/角饰/水印印记（R-1V） | **永不作文字** |
-| `--pencil-deep` | `#8a3f1f` | 赭红加重：hover 泛赭、印章落款（R-1V） | 不取代 `--pencil` 基准位 |
-| `--pencil-soft` | `#bb7a52` | 赭红中间档：极淡印记、触点泛赭（R-1V） | 不作链接基准色 |
-| `--fs-display` `--fs-title` `--fs-head` `--fs-body` `--fs-small` | `27px` `21px` `17px` `16px` `14px` | 衬线字号标度五档（R-1V ⑨-1） | 新规则不裸写像素 |
-| `--fs-ui` `--fs-micro` | `12px` `11px` | sans 界面小字两档（R-1V ⑨-1） | — |
-| `--lh-body` `--lh-letter` `--lh-ui` | `1.55` `1.75` `1.7` | 行高三档（R-1V ⑨-1） | — |
-| `--ls-title` `--ls-caps` `--ls-formhead` | `0.14em` `0.18em` `0.3em` | 字距三档（R-1V ⑨-1） | — |
-| `--sp-1` … `--sp-8` | `4px`–`64px`（4 基数） | 间距阶八阶（R-1V ⑨-2） | 新规则不裸写像素 |
-| `--dur-1` `--dur-2` `--dur-3` | `140ms` `260ms` `480ms` | 动效时长三档：触压 / 纸面 / 仪式（R-1V ⑨-5） | 不裸写时长 |
-| `--ease-ink` `--ease-paper` `--ease-press` | cubic-bezier 三条 | 缓动：墨迹稳出 / 纸面长尾 / 触压对称（R-1V ⑨-5） | — |
-| `--meta-font` | `500 var(--fs-micro)/var(--lh-ui) var(--f-sans)` | 微标签配方 sans 角色（rd-1）：状态词/节名/词性等元信息——小字号 + 500 + 界面行高，`font: var(--meta-font)` 整体取用 | 元信息位只许引用配方，不重写字面 |
-| `--meta-mono` | `var(--fs-micro)/var(--lh-ui) var(--f-mono)` | 微标签配方等宽角色（rd-1）：时间/编号/计数/日期/版本行——等宽自有节奏，免字距 | 同上 |
-| `--meta-track` | `var(--ls-caps)` | 微标签字距（rd-1） | — |
-| `--meta-ink` | `var(--ink-faint)` | 微标签暖灰（rd-1） | — |
-| `--dur-micro` | `100ms` | 触感反馈档（rd-1 ⑨-5）：state layer / hover / press（80–120ms 带） | 一切反馈 ≤ 此档；纸事件不走它 |
-| `--dur-stamp` `--dur-note` | `120ms` `240ms` | 纸事件时长（rd-1 ⑨-5）：邮戳盖下 / 批注递出 | 现役 `--dur-1/2/3` 语义不动 |
-| `--dur-panel-in` `--dur-panel-out` `--dur-settle` | `280ms` `200ms` `320ms` | 纸事件时长（rd-1 ⑨-5）：抽屉进·出 / 信纸落桌——进入比退出略长（`--dur-panel-out` 已立、容器级现役待接，⑨-5 Revisit） | 同上 |
-| `--ease-enter` `--ease-exit` | cubic-bezier 两条 | 进入/退出缓动分离（rd-1 ⑨-5）：进入减速长尾 `(.05,.7,.1,1)`、退出加速收势 `(.3,0,1,1)` | 现役三缓动不动 |
-| `--state-hover` `--state-focus` `--state-press` | `0.08` `0.12` `0.12` | 触感层三值（rd-1 ⑨-5；Material state layer 实测值） | 只作 `::after` 的 opacity，不碰布局 |
-| `--stack-shadow-soft` `--stack-shadow-deep` | `3px -3px 6px rgba(27,26,23,.12)` / `-5px 6px 10px rgba(27,26,23,.16)` | 纸叠偏移阴影两级（rd-1 面6）：轻=右上（批注/浮层在人手近侧）、重=左下（信纸摊在案头）——方向不统一 | **阴影色 = 墨色同源**（`rgba(27,26,23,…)`），禁 `rgba(0,0,0,…)`；全局恰两级；与发丝描边配对；禁大面积模糊投影型 |
-| `--icon-size` `--icon-stroke` | `18px` `1.5` | #22 图标参数：默认见方与统一笔重（R-1V ⑨-4） | — |
-| `--shell-w` | `430px`（≥900px 媒体查询改写 `1080px`） | 信纸栏宽：#18 navdock 与写信区 .dock 的同一宽度出处（R-1V ⑨-6） | 不作颜色 |
+| `--shell-w` | `430px`（≥900px 媒体查询改写 `1080px`，≥1280 改 `1240px`） | 信纸栏宽：#18 navdock 与写信区 .dock 的同一宽度出处 | 不作颜色 |
 
 规则：组件样式只许 `var()` 引用，**禁止在任何其他文件重写令牌字面值**；
 禁止新增 token 之外的十六进制颜色（零青绿——旧双色主题不得回流）。
-现役八字号/间距字面值（`17px`、`22px` 等祖辈规则里的）是冻结存量，
-不回迁不扩散；**R-1V 起新写的尺寸规则一律走标度与间距阶**。
+v2 起 `tokens.css` 是全套令牌的唯一物理出处，其头注即简报 §2/§3 的
+逐值采用记录；旧名别名只供消费面平滑，**新写规则一律用 v2 正名**。
 
 **元信息纪律（rd-1）**：全站元信息位（时间戳/状态词/计数/编号/版本行/
 日期）一律走微标签配方（`--meta-*`）——第一次用文字表达状态差异，
-第二次才用颜色；彩色徽章/胶囊保持退役（赭红只作文字与小面强调，
+第二次才用颜色；彩色徽章/胶囊保持退役（墨蓝只作文字与小面强调，
 不作胶囊底）。
 
 **「零阴影」解除登记（rd-1 面6；用户 2026-09-30 明示从未否决过阴影，
 纸叠偏移阴影授权入刀，`DEC-OPI-dc0ba4b6-…13`）**：F-1R 历史提交原文
 保留不改写；现役阴影法 = **纸叠偏移阴影两级**（`--stack-shadow-*`）——
-阴影色与墨同源、位移小（±3–6px 量级）、方向不统一（信纸左下/批注
-右上，人手叠放感）、与发丝描边配对、**禁大面积模糊投影型 shadow**
-（那是 UI 卡片语汇）。应用面三类：信纸在桌布上（`#stage` ≥900 桌面
-档，重档）/ 批注在信纸上（`--stack-shadow-soft`）/ 浮层卡面
-（#15 词卡的垫纸层承影）。
+阴影色与墨同源（v2 起 `rgba(25,27,30,…)`）、位移小（±3–6px 量级）、
+方向不统一（信纸左下/批注右上，人手叠放感）、与发丝描边配对、
+**禁大面积模糊投影型 shadow**（那是 UI 卡片语汇）。应用面三类：信纸
+在桌布上（`#stage` ≥900 桌面档，重档）/ 批注在信纸上
+（`--stack-shadow-soft`）/ 浮层卡面的垫纸层承影。
 
 ## ③ 组件契约（唯一出处：`webui/components.css` + `webui/components.js`）
 
 每组件在 components.css 有契约注释块（结构/状态矩阵/使用规则/禁止变体）。
 页面引用一律走新变体类；旧类名仅作为别名保留在同一规则的选择器表尾。
+现役注册表 = 22 组件（#1–#22 连号；rd-4 曾增 #23 partner-card，cs-2
+随档案全页视图退役——浮层与名册桩拆除、same-cut retirement，注册表
+不做阁楼，**编号空出不复用**，见本节表后注）。
 
 | # | 组件 | 类名（新） | 别名（现役旧名） | 状态矩阵 | 出处 |
 |---|---|---|---|---|---|
-| 1 | link-btn | `.btn` + `.btn--ink` `--send` `--pencil` `--set` `--faint` `--dot` `--back` `--meter` | `.ob .go` `.send` `.linklike` `.setlink` `.skiplink` `.refresh` `.back` `.meter` | default / hover（R-1V：泛赭/加深）/ `:active`（opacity .55 + 触压 1px，R-1V）/ `[disabled]`（opacity .4 + 无 pointer）/ busy（文案切换由 JS 承担） | components.css + components.js（helpButton/skip/寄出作答） |
-| 2 | pen | `.pen` | — | default / placeholder / focus（R-1V：纸面微起 --paper-high）/ Enter 绑定（app.js） | components.css |
-| 3 | note-paper | `.note-paper`（+ `.skipped` `.note-paper--enter` `.note-head`） | — | default（--paper-2 次纸 + 左缘界尺 + 卡头 #22 note 小图，R-1V 修订）/ skipped / busy（JS 置 disabled+busystrip）/ enter（新批注组递入一次，⑨-5 note-arrive） | components.css + components.js（showMoments/addReplyControls） |
-| 4 | letter | `.letter` `.may` `.me` `.paper` `.say` | — | plain（may）/ torn（me） | components.css + components.js（addLine） |
+| 1 | link-btn | `.btn` + `.btn--ink` `--send` `--pencil` `--set` `--faint` `--dot` `--back` `--meter` | `.ob .go` `.send` `.linklike` `.setlink` `.skiplink` `.refresh` `.back` `.meter` | default / hover（v2：`--accent-deep` 加深）/ `:active`（opacity .55 + 触压 1px）/ `[disabled]`（opacity .4 + 无 pointer）/ busy（文案切换由 JS 承担）；`--pencil` 变体现役值 = 墨蓝（旧赭红名） | components.css + components.js（helpButton/skip/寄出作答） |
+| 2 | pen | `.pen` | — | default / placeholder / focus（纸面微起 --paper-high）/ Enter 绑定（app.js） | components.css |
+| 3 | note-paper | `.note-paper`（+ `.skipped` `.note-paper--enter` `.note-head`） | — | default（--paper-2 次纸 + 左缘界尺 + 卡头 #22 note 小图）/ skipped / busy（JS 置 disabled+busystrip）/ enter（新批注组递入一次：`.note-paper--enter` = paper-drop + ink-wash 双动画，v2 改形——见 ⑨-5 note-arrive 行） | components.css + components.js（showMoments/addReplyControls） |
+| 4 | letter | `.letter` `.may` `.me` `.paper` `.say` | — | plain（may）/ torn（me）；v2 增在途形态 `.letter--en-route`（rd-4 登记的虚发丝角标，回信落地/失败即摘）与 `.ink-wet` 墨水物理宿主（新到信 `--ink-ghost→--ink` 一次性，简报 T1-3） | components.css + components.js（addLine） |
 | 5 | hairline-section | `.sec` | — | default（无交互态） | components.css |
-| 6 | setlink-block | `.setlinks` `.setblock` | — | default / [hidden] 切换 | components.css |
+| 6 | setlink-block | `.setlinks` `.setblock` | — | default / [hidden] 切换；**现役页面用户清零**（留库，再启用走 ⑤ 四步） | components.css |
 | 7 | resultstrip | `.resultstrip.ok` `.part` `.miss` | — | ok / part / miss | components.css + components.js（showResultStrip） |
 | 8 | busystrip | `.busystrip` | — | 出现即 busy、消失即复位 | components.css + components.js（setReplyBusy） |
 | 9 | meter-row | `.kv` `.kvgroup` `.kvtitle` | — | default（无交互态） | components.css + components.js（diagLine/diagGroup） |
-| 10 | empty-state | `.note` | — | default（无交互态） | components.css + components.js（diagEmpty） |
+| 10 | empty-state | `.note` | — | default（无交互态）；现役面收窄为壳上静态占位行（「暂无数据」族首绘），运行时空态走 #14 | components.css + components.js（diagEmpty） |
 | 11 | confirm-dialog | 无 CSS（原生 confirm） | — | native 确定/取消两臂 | components.js（`confirmDialog()`，全页唯一 confirm 调用点） |
 | 12 | system-line | `.sysline` | — | default（无交互态） | components.css + components.js（addLine system 臂） |
-| 13 | brand-mark | `.brandmark`（+ `--sm` `--lg`） | — | default 30px / 尺寸修饰 --sm 20px、--lg 64px / reduced-motion 不适用（静态标记，无动效——契约注明） | index.html（`<template id="brand-mark-source">` 内联 SVG，几何唯一出处）+ components.css + components.js（`brandMark()`/`installBrandMarks()`） |
-| 14 | state-banner | `.state-banner`（+ `--loading` `--empty` `--error`） | — | loading（取信中…，尾点呼吸微动）/ empty（弱化诚实句 + #22 lamp 墨线小图，R-1V 修订）/ error（赭红人话句 + `--pencil` 重试链接，回调由调用方注入）/ reduced-motion（loading 呼吸降级为静态 + 库尾 R-1V 总降级块） | components.css + components.js（`stateBanner()`；`diagEmpty`/`diagError` 一律委托它） |
-| 15 | word-card | `.word-card`（+ `.wc-lemma` `.wc-pos` `.wc-forms` `.wc-zh` `.wc-en` `.wc-example` `.word`） | — | default（--paper-high 泛起纸面 + 发丝边 + 垫纸错位层——rd-1 面6 起垫纸层承 `--stack-shadow-soft`（② 解禁两级之内），R-1V 修订；`.word:hover` 触点泛赭）/ closed（点卡外或「收起」；DOM 移除语义，同 #11 的两臂不在 CSS）；无 busy——命中即显，miss 按契约静默 | components.css + components.js（`wordCard()`/`showWordCard()`/`closeWordCard()`；触发面 = `letterWords()` 的 `.word` 分片 + `wordWindows()` 窗口查询，app.js 委派） |
-| 16 | field | `.field`（+ `.fieldname`） | — | default（下发丝线）/ `:focus-within`（发丝线与名转赭红，--dur-1 淡入）/ 控件 `[disabled]`（opacity .4 + 无 pointer）；名牌可配 #22 search 小图（R-1V） | components.css + components.js（`fieldRow()`，p-3；label 包裹控件，点名牌即聚焦） |
-| 17 | chip | `.chip`（+ `--on` `--badge`） | — | off（default，发丝线描边）/ hover（R-1V：边转次级墨，--on 不被冲淡）/ on（`--on`，主墨反白）/ `:active`（触压 1px，R-1V）/ `[disabled]`（opacity .4）/ `--badge`（只读徽标，非交互） | components.css + components.js（`chip()`，p-3；考试/语域/教学频率词表 picker + modality 徽标） |
-| 18 | dock | `.navdock`（+ `.navdock-item` `--on`；类名与写信区屏级类 `.dock` 异名共存） | — | default（次级墨、透明点线占位）/ hover（R-1V：墨色微沉）/ `--on`（当前空间：主墨加重 + 赭红实线短下划 + `aria-current`）/ `:active`（触压 1px，R-1V）/ `[disabled]`（opacity .4）；宽度随 `--shell-w`（≥900px 三项收拢居中，R-1V 修订） | components.css + components.js（`wireNavdock()`/`markNavdock()`，R-1；常驻底部三项 客厅/温故/抽屉【rd-2 前为 学案/柜抽】，门厅整条让位；z 6 低于点词卡 z 9） |
-| 19 | space-header | `.space-header`（+ 节名槽 `.spacehead-sec`；与屏级基形 `.top` 合用） | — | default（发丝线夹持 sticky 顶栏，随 `.top`）；无交互态——静态头部，reduced-motion 不适用（契约注明） | components.css + components.js（`sectionLabel()`，R-1；温故/抽屉头部 = `.top` 基形 + 本类；客厅头部用 `.top` 原形；品牌条不再增长链接） |
-| 20 | section-tabs | `.section-tabs` / `.section-tab`（+ `--on`） | — | unselected（default，透明点线占位）/ hover（R-1V：墨色微沉）/ selected（`--on`，主墨加重 + 赭红实线短下划 + `aria-selected`）/ focus（地基 `:focus-visible` 赭红焦点环，不另设）/ `[disabled]`（opacity .4） | components.css + components.js（`wireSectionTabs()`/`markSectionTabs()`，R-1；roving tabindex + 左右箭头循环移选；温故/抽屉各一排三项，切节即拉） |
-| 21 | disclosure | `.disclosure`（+ `.disclosure-head` `.disclosure-marker` `.disclosure-title` `.disclosure-examples` `.disclosure-body` `--open`） | — | collapsed（default，内容区 hidden，chevron 向右）/ expanded（`--open`，内容区展开、chevron 旋转 90°、`aria-expanded="true"`，计数保留；入场 = ⑨-5 paper-unfold）/ focus（地基 `:focus-visible` 赭红环，不另设）；R-1V 修订：标记 ▸/▾ 字符 → #22 自绘墨线 chevron | components.css + components.js（`disclosure()`，R-1R；组头行即开关——名称 + 计数 + 两枚示例；一切「超过 8 行的同质列表」与「参考 / 原始读数」走它；不得手风琴互斥、不得嵌套、不得图标外链） |
-| 22 | icon-set | `.inkicon`（几何模板 `id="icon-search\|chevron\|note\|write\|inbox\|lamp\|postmark\|stamp"`） | — | default（`--icon-size` 见方、currentColor 墨色、`--icon-stroke` 1.5、圆角端点；无独立交互态——chevron 旋转是宿主 #21 的 `--open` 态面）/ reduced-motion（宿主动效随库尾总降级归零后静帧） | index.html（`<template id="icon-set-source">` 八枚内联 SVG，几何唯一出处）+ components.css + components.js（`inkIcon()`/`installIcons()`，R-1V；统一 20×20 网格/笔重/圆角端点；aria-hidden，锚位必有文字同行；R-1W 增枚 stamp） |
-| 23 | partner-card | `.partner-card`（+ `.pc-name` `.pc-sec` `.pc-label` `.pc-line` `.pc-note` `.pc-sample`（+ `--on`）） | — | default（--paper-high 泛起 + 发丝边 + 垫纸错位层，#15 同族浮层纸；开启入场 = ⑨-5 ink-fade 复用，零新动效）/ closed（点卡外或「收起」，DOM 移除语义，#15 同法）/ 读数槽三态（委托 #14）/ `.pc-sample--on`（名册样例选中） | components.css + components.js（`partnerCard()`/`showPartnerCard()`/`closePartnerCard()`，rd-4；触发 = 品牌条 who 块可点——不增长按钮元；数据只读 /api/memory 既有读面，无新端点；名册 = persona 域前端静态临时副本，选中只落 localStorage、零生效声称——9.12-23） |
+| 13 | brand-mark | `.brandmark`（+ `--sm` `--lg`） | — | default 30px / 尺寸修饰 --sm 20px、--lg 64px / 静态标记无动效；**几何 = 信封 + 封缄墨线，封缄点 v2 裁用墨蓝**（`--accent`——朱砂只盖真实事件，品牌印记不是事件，简报 T2；aria-label「展信佳印记」随模板，改名只动模板与 BRAND 常量） | index.html（`<template id="brand-mark-source">` 内联 SVG，几何唯一出处）+ components.css + components.js（`brandMark()`/`installBrandMarks()`） |
+| 14 | state-banner | `.state-banner`（+ `--loading` `--empty` `--error`） | — | loading（取信中…——v2 起尾点**静态化**：零常驻循环铁律，呼吸循环件已退役）/ empty（弱化诚实句 + #22 lamp 墨线小图）/ error（人话句 + `--pencil`（墨蓝）重试链接，回调由调用方注入）/ reduced-motion 随库尾总降级块 | components.css + components.js（`stateBanner()`；`diagEmpty`/`diagError` 一律委托它） |
+| 15 | word-card | `.word-card`（+ `.wc-lemma` `.wc-pos` `.wc-forms` `.wc-zh` `.wc-en` `.wc-example` `.word`） | — | default（--paper-high 泛起纸面 + 发丝边 + 垫纸错位层承 `--stack-shadow-soft`；开启入场 = paper-drop + ink-wash 双动画；`.word:hover` 触点泛淡墨蓝 `--pencil-soft`）\| closed（点卡外或「收起」，DOM 移除语义）\| 无 busy——命中即显，miss 按契约静默。**目标形态（用户定向 2026-10-02，实施在 v2-2）= 底部覆盖面板（bottom sheet）**：移动端直接覆盖下方屏幕（非侧边悬浮小卡），丝滑展开（纸面曲线 translateY，`--ease-paper`）；桌面档裁量 = 保留点击点近侧浮卡（理由见 8.2.2③）——两形态同一组件两档布局。触屏可发现性重设计（同批定向）：现状根因 = components.css 的 `@media (hover: none)` 给 `.say .word` 常显 `underline dotted`，整段对话英文词连成「波浪线」；目标态否定「全文常显点线」，候选方向见 8.2.2④ | components.css + components.js（`wordCard()`/`showWordCard()`/`closeWordCard()`；触发面 = `letterWords()` 的 `.word` 分片 + `wordWindows()` 窗口查询，app.js 委派） |
+| 16 | field | `.field`（+ `.fieldname`） | — | default（下发丝线）/ `:focus-within`（发丝线与名转墨蓝，--dur-1 淡入）/ 控件 `[disabled]`（opacity .4 + 无 pointer）；名牌可配 #22 search 小图 | components.css + components.js（`fieldRow()`，p-3；label 包裹控件，点名牌即聚焦） |
+| 17 | chip | `.chip`（+ `--on` `--badge`） | — | off（default，发丝线描边）/ hover（边转次级墨）/ on（`--on`，主墨反白）/ `:active`（触压 1px）/ `[disabled]`（opacity .4）/ `--badge`（只读徽标，非交互） | components.css + components.js（`chip()`，p-3；考试/语域/教学频率词表 picker + modality 徽标） |
+| 18 | dock | `.navdock`（+ `.navdock-item` `--on`；类名与写信区屏级类 `.dock` 异名共存） | — | default（次级墨、透明点线占位）/ hover（墨色微沉）/ `--on`（当前空间：主墨加重 + 墨蓝实线短下划 + `aria-current`）/ `:active`（触压 1px）/ `[disabled]`（opacity .4）；宽度随 `--shell-w`（≥900px 三项收拢居中）；常驻底部三项 **案头 / 温故 / 抽屉**（v2 换名：rd-2 定稿首词改「案头」；门厅整条让位；z 6 低于点词卡 z 9） | components.css + components.js（`wireNavdock()`/`markNavdock()`，R-1） |
+| 19 | space-header | `.space-header`（+ 节名槽 `.spacehead-sec`；与屏级基形 `.top` 合用） | — | default（发丝线夹持 sticky 顶栏，随 `.top`）；无交互态——静态头部；案头头部用 `.top` 原形（who 块端点驱动空槽，mc-1 起点开信封沓）；温故/抽屉头部 = `.top` 基形 + 本类；品牌名与副题退居门厅封面，空间头不再增长链接 | components.css + components.js（`sectionLabel()`，R-1） |
+| 20 | section-tabs | `.section-tabs` / `.section-tab`（+ `--on`） | — | unselected（default，透明点线占位）/ hover（墨色微沉）/ selected（`--on`，主墨加重 + 墨蓝实线短下划 + `aria-selected`）/ focus（地基 `:focus-visible` 焦点环，不另设）/ `[disabled]`（opacity .4）；roving tabindex + 左右箭头循环移选；温故/抽屉各一排三项，切节即拉 | components.css + components.js（`wireSectionTabs()`/`markSectionTabs()`，R-1） |
+| 21 | disclosure | `.disclosure`（+ `.disclosure-head` `.disclosure-marker` `.disclosure-title` `.disclosure-examples` `.disclosure-body` `--open`） | — | collapsed（default，内容区 hidden，chevron 向右）/ expanded（`--open`，内容区展开、chevron 旋转 90°、`aria-expanded="true"`，计数保留；入场 = ⑨-5 paper-unfold）/ focus（地基环，不另设）；标记 = #22 自绘墨线 chevron；一切「超过 8 行的同质列表」与「参考 / 原始读数」走它；不得手风琴互斥、不得嵌套、不得图标外链 | components.css + components.js（`disclosure()`，R-1R） |
+| 22 | icon-set | `.inkicon`（几何模板 `id="icon-search\|chevron\|note\|write\|inbox\|lamp\|stamp"`） | — | default（`--icon-size` 见方、currentColor 墨色、`--icon-stroke` 1.5、圆角端点；无独立交互态——chevron 旋转是宿主 #21 的 `--open` 态面）/ reduced-motion（宿主动效随库尾总降级归零后静帧） | index.html（`<template id="icon-set-source">` 七枚内联 SVG，几何唯一出处）+ components.css + components.js（`inkIcon()`/`installIcons()`，R-1V） |
 
-库外现役类（登记，不扩库）：`.teach-me`（**R-1V 定裁**：弱化 pencil
-行链接——sans 12px 赭红下划线，hover 转 `--pencil-deep`，:active
-触压 1px；样式唯一出处 components.css 的库外登记规则（#1 块尾），
-JS 类名 `teach-me` 有钉不动；原登记「视觉规范刀再裁」就此销账）；
-`.replyrow` / `.replytext`（note-paper 的
-内置回复面，随 #3 契约）；`.formhead` `.sub` `.hint` `.who` `.who-sub`
-`.typing` `.errline` `.grouphead`（屏级文字形态，
-screens.css；`.grouphead` 是 R-1 进步节的分组小标）；`.today`
-`.todaybody` `.topactions` `.goalbody` `.setbody`（**R-1 退役**：五屏
-屏级布局类，随空间模型让位 `.spacebody`）。
-（F-G2 移出：`.diagerror`——面板失败态改走 #14，该类无现役用户，规则已删。）
+**#23 退役注记（cs-2，替代 rd-4 假句的现役真值）**：rd-4 的
+`.partner-card` 浮层纸卡与名册桩（名册 = 前端静态副本、选中只落
+localStorage、零生效声称）已随 cs-2 档案全页视图**整体退役**——现役
+伙伴面 = 全页笔友档案（`#space-partner`，数据只读 `GET /api/partner`
+一个端点，角色文本真源在 `src/elc/persona/penpal.py` 单一出处，webui
+零角色名字面）+ mc-1 信封沓选择器 + mc-2 角色编辑台（全页 DIY，九面
+表单、真 CRUD、veiled 四面「留空保留/写下盖上」）；详见 8.2.2a。
+9.12 历史登记保留 rd-4 时代的登记原文，不作现役断言。
+
+库外现役类（登记，不扩库）：`.teach-me`（弱化行链接——sans 12px
+墨蓝下划线，hover 转 `--pencil-deep`，:active 触压 1px；样式唯一出处
+components.css 的库外登记规则（#1 块尾），JS 类名 `teach-me` 有钉
+不动）；`.replyrow` / `.replytext`（note-paper 的内置回复面，随 #3
+契约）；`.formhead` `.sub` `.hint` `.who` `.who-sub` `.typing` `.errline`
+`.grouphead`（屏级文字形态，screens.css）；`.today` `.todaybody`
+`.topactions` `.goalbody` `.setbody`（**R-1 退役**：五屏屏级布局类，
+随空间模型让位 `.spacebody`）。
+（F-G2 移出：`.diagerror`——面板失败态改走 #14，该类无现役用户，规则
+已删。W-8 移出的 blocked 行族（类与规则双除名）不再登记——防回潮
+负钉在测试侧。）
 **R-1 现役面收窄**：#6 setlink-block（`.setlinks`/`.setblock`）与 #1 的
-`--set`/`--meter` 变体的**页面现役用户清零**（五屏的就地展开与品牌条
-链接被空间模型接替）——组件与变体**留库**（活注册表不是死档），契约块
-已改行注明；再启用须走 ⑤ 四步。
-#10 empty-state（`.note`）的现役面收窄为**壳上静态占位行**（index.html 的
-「暂无数据 / 无降级记录 / 设置面尚未到来」首绘）；运行时面板的空态一律
-走 #14 的 empty 变体。
+`--set`/`--meter` 变体的**页面现役用户清零**——组件与变体**留库**
+（活注册表不是死档），再启用须走 ⑤ 四步。
 
 **状态完备性硬门**：交互组件（本表现役 = link-btn、pen、note-paper、
 resultstrip）必须定义至少 default + 一态（active/disabled/busy/skipped）；
@@ -157,13 +230,14 @@ resultstrip）必须定义至少 default + 一态（active/disabled/busy/skipped
    两处必须同刀，缺一处 = 评审 finding。
 
 登记不是归档：③ 表的每一行都是后续需求的查库入口；组件的现役面变化
-（收窄、别名退场、变体易主）也随触碰它的那刀改行，不让表说谎。
+（收窄、别名退场、变体易主、**退役除名**）也随触碰它的那刀改行，
+不让表说谎（cs-2 的 #23 除名即此条的首个退役先例）。
 
 1. 组件样式的**唯一物理出处**是 `components.css`：同一组件类名（含别名）
    的样式规则在全 webui 目录**恰出现一次**；`screens.css`、`index.html`、
    JS 内联样式不得重复定义（钉：`test_fg1_architecture.py` 单出处组；
-   brand-mark 的 SVG **几何**是唯一例外——出处是 index.html 的模板，
-   其样式仍只在 components.css）。
+   brand-mark 与 icon-set 的 SVG **几何**是唯一例外——出处是 index.html
+   的模板，其样式仍只在 components.css）。
 2. 新前端需求**先查本 spec**：已有组件直接复用；确需变体时扩展现组件的
    修饰符，不另起炉灶。
 3. 新增/修改组件：任务书四查写明 + 本文件 ③ 表同刀登记。
@@ -177,357 +251,155 @@ resultstrip）必须定义至少 default + 一态（active/disabled/busy/skipped
 
 ```
 src/elc/webui/
-  index.html        页面骨架（R-1 起三空间 + 门厅：#space-parlor /
-                    #space-study（三节）/ #space-drawer（三节）+
-                    #screen-onboard 门厅 + #navdock 常驻导航 + R-1V
-                    .marginalia 桌面边注栏；<link>×3 + <script
-                    type="module"> + brand-mark 与 #22 icon-set 的
-                    <template> 几何出处）
-  tokens.css        VS1 token 唯一出处（R-1 增 --navdock-h；R-1V 扩
-                    纸系层次/赭红层次/字号标度/行高字距/间距阶/动效/
-                    图标参数/--shell-w——现役八色与字体栈逐值不动）
-  components.css    组件库唯一样式源（22 组件 + 元素复位地基；R-1V
-                    动效注册表与 reduced-motion 总降级块在库尾）
+  index.html        页面骨架（v2 内核 + cs/mc 现役）：#screen-onboard
+                    门厅封面（展信佳 · Dear You）+ #space-parlor 案头
+                    （品牌条端点驱动空槽 + 信流 + 写信区）+ #space-partner
+                    笔友档案全页（cs-2）+ #space-study 温故（今日/方向/
+                    档案三节）+ #space-drawer 抽屉（记忆/隐私/设置三节；
+                    记忆 = cs-2 三摞）+ #navdock 常驻三项 + .marginalia
+                    桌面边注栏（案头日期 + 界尺；装饰邮戳水印已随 v2
+                    撤除——邮戳只落真实事件）；brand-mark 与 #22
+                    icon-set 的 <template> 几何出处（icon-set 现役七枚，
+                    圆戳已出集）
+  tokens.css        v2 内核令牌唯一物理出处（简报 §2 十四色 + 水印墨
+                    + 旧名别名 + §3a 五字体栈 + §3b 九档标度/行高/字距
+                    + 版心与基线 + 间距阶 + 动效档 + 微标签配方 + 触感
+                    三值 + 纸叠阴影两级 + 图标参数 + 布局四件）
+  components.css    组件库唯一样式源（22 组件 + 元素复位地基；v2 动效
+                    注册表：paper-drop / ink-wash / ink-set / paper-unfold
+                    / stamp-press 五 keyframes + reduced-motion 总降级块
+                    在库尾）
   screens.css       屏级布局 + 壳层（html/body/#stage/dock=写信区/flow/
-                    spacebody/屏级文字；R-1 起三空间 + 门厅；R-1V 起
-                    桌面构图——舞台化纸面 + 边注栏；R-1W 起 ⑨-6 四档
-                    断点系统 481/900/1280 + 门厅封面信笺节）
-  api.js            端点 fetch 封装（页面唯一 fetch 调用点）
+                    spacebody/屏级文字；四档断点系统 481/900/1280 +
+                    桌面舞台构图；信封沓 .envsel 与角色编辑台的屏级
+                    形态；editor-zoom-in/out 两 keyframes——mc-2）
+  api.js            端点 fetch 封装（页面唯一 fetch 调用点；含
+                    /api/partner、/api/characters 等现役读面）
   components.js     组件工厂 + 教学卡当场行为 + 点词卡 + 壳导航接线 +
-                    R-1V 图标工厂（inkIcon/installIcons）
+                    信封卡与沓排布（envelopeCard/layoutEnvelopeStack，
+                    mc-1 消费）+ 图标工厂（inkIcon/installIcons）
                     （textContent-only；唯一 confirm 封装点）
-  app.js            装配：空间与节切换/事件/轮询/学习与诊断渲染（面板
-                    三态走 #14；进空间落默认节，切节即拉；R-1V：图标
-                    插槽与案头日期安装、新信 enter 动效切换）
+  app.js            装配：BRAND 品牌单点常量（换名只动这里 +
+                    index.html <title> 静态兜底）/ 空间与节切换 / 角色
+                    面（案头主从条、信封沓、编辑台、笔友档案）/ 事件 /
+                    轮询 / 学习与诊断渲染（面板三态走 #14；进空间落
+                    默认节，切节即拉）
 ```
 
 - **ES modules、零构建**：浏览器直 import 相对路径（`./api.js`），无打包
-  器、无 importmap、`type="module"` 天然延迟绑定（与拆分前页尾内联脚本
-  同语义）。`dependencies = []` 不变。
+  器、无 importmap、`type="module"` 天然延迟绑定。`dependencies = []`
+  不变。
 - **零外链**：无 CDN、无站外字体、无任何 http(s) 资源与 `@import`。
 - **静态服务**：`elc/web.py` 按 `_STATIC_TYPES` 允许表**逐请求**读盘；
   允许表即路径校验（表外名字不触盘，404 人话）；文件缺失/不可读 →
   404 + 人话 JSON（fail-closed，永不 500 裸栈）。
-- **行为等价注记**：教学回应的拒收臂（原 status 臂与 accepted 臂）合并
-  为单 `!accepted` 臂——服务端一切实形（200 拒收 / 400 / 500）都带
-  `error` 句，渲染结果逐形相等；两臂回退词统一为「提交失败，请重试」。
+- **单一出处纪律（cs-1）**：角色的一切字面（名、身份行、卡文）真源在
+  `src/elc/persona/penpal.py` / `character_card` 表；webui 零角色名字面
+  （无 JS 兜底 = 留空，不发明人名）；`/api/partner`（及
+  `/api/partner?character_id=`）是从真源派生的只读面，不是第二份抄本。
 
 ---
 
-## ⑧ 设计蓝图 v2（R-1A · 逐页剖析与方案重设计 · 2026-09-29）
+## ⑧ 设计蓝图 v2（v2-s 重写版 · 2026-10-02）
 
-> 版本史：**v1** = R-0 结构蓝图（空间模型 / 导航 / 迁移映射；其壳已由 R-1
-> 兑现，全文见 git 历史 `c8649d3` 起）；**v2** = 本刀（R-1A）——用户首验
-> 否决 v1 壳的**信息组织、表达方式、特色延续**（「信息组织和表达方式太差了，
-> 而且也没有合理地延续应用的特色。还要修改甚至重做。」）之后的逐页剖析与
-> 方案重设计。v2 对 v1：空间模型（门厅 + 三空间 + dock）**保留**，屏内信息
-> 架构与文案**整体重写**。
+> 版本史：R-0 结构蓝图（`c8649d3` 起）→ R-1A 蓝图 v2（逐页剖析与方案
+> 重设计，原文见 git 历史）→ rd-2/rd-3/rd-4 三轮修订（语气/IA/全面面，
+> 登记在 9.10–9.12）→ **v2**：用户否决旧范式整体（「自建了不成熟且
+> 简陋的内核就开始深化，再怎么改都无济于事」），v2-1 内核刀按简报把
+> 铁胆墨×真纸内核落进外壳与对话主面，cs/mc/ux 三程序跟进；本节由
+> v2-s 授权（`DEC-OPI-10bbc3c8-…3`）按简报 + v2-1 实现真值整体重写。
 >
-> 地位（沿用 v1）：本节是 R 程序的结构权威；② ③ 的 token 与组件契约不变，
-> 新增组件一律按 ⑤ 四步入库。结构与文案属 R7 域：**用户对本蓝图有首验否决
-> 权**。本刀是纯设计刀（零 src/tests 改动）；8.2 的每个页块自成一节，单页
-> 被否决只换该块，不牵连他页。
->
-> 证词口径：8.0 的「现状」= 2026-09-29 总控亲走查（探针库 `D:\_r1a_probe\app.db`
-> 经 `elc seed` 铺三件套 + 死端点 provider；逐屏截图与 innerText 存
-> `D:\_r1a_probe\`，编号 01–10，与 VS1 锚并排比对）+ 代码行号。教学短笺等
-> 需真模型才出现的状态从 `components.js` 与 tests/host 夹具推断，推断处
-> 注明（推断）。线框内数字以现役语料（52 表达 = 12+13+24+3 四族）为例。
+> 地位：本节是 v2 前端的结构权威；② ③ 的 token 与组件契约不变，新增
+> 组件一律按 ⑤ 四步入库。结构与文案属 R7 域：**用户对本蓝图有首验
+> 否决权**。标注「目标设计——实施在 v2-2」的块是设计态，不是现役
+> 断言；未标注的块描述现役真值。
 
-### 8.0 逐页剖析（R-1 壳现役面）
+### 8.0 旧壳诊断史（存目）
 
-总诊断（对用户的三个否决词各一句）：
-
-1. **信息组织**：R-1 交付的是「读数面板的拼贴」而不是「页面」——52 个目标
-   在三处各平铺一次（今日 · 想练 / 进步 · 可教目标 / 隐私 · 按目标删）、
-   12 行原始日程逐字段铺开、五问与整段英文指标定义并列一屏；无摘要层、
-   无优先级、无「这页想让你干什么」的主线。
-2. **表达方式**：数据库原值直接出屏——NOT_SCHEDULED、review_urgency、
-   canonical_key 全键（竖线五段）、浮点原值（0.016000000000000042）、
-   微秒级 ISO 时间戳、版本号（pv-seed-v1）、英文指标定义；与信笺世界的
-   人话断裂。
-3. **特色延续**：信笺语言只覆盖门厅与客厅；学案是数据库浏览器（读数 /
-   刷新 / 指标），柜抽是后台管理页（台账 / scope / 墓碑）——「摊开的案卷」
-   与「收着的抽屉」两个空间隐喻没有兑现。
-
-#### 8.0.1 门厅
-
-现状（信息块）：印记 → h1「把英语请进客厅」→ 第一步「是什么」→ 第二步
-「教学怎么发生」→ 按钮「就这么定 →」+ hint → 版本落款「elc · web」
-（index.html:18-38；走查 01）。
-
-- P2〔架构〕第三步不是步是门——「第一步 / 第二步」之后直接是按钮，
-  序号断裂（index.html:23 / 28 / 32-36）。
-- P2〔文案〕hint 只预告「学案」；「柜抽」在全应用的首次出现是 dock 上
-  自说自话（index.html:34）。
-- P2〔隐喻〕`<title>` = 「英语客厅 · Study-first dogfood」（index.html:6）——
-  浏览器标签是产品门面，工程阶段词不该上门面。
-- 气质核对：与 VS1 锚（走查 10）同纸底、同衬线、同留白节奏——此页气质
-  **未断**。
-
-主张：让第一次来的人三十秒内知道「这是什么、教学怎么发生、怎么进门」，
-说到哪句都是真话。
-
-#### 8.0.2 客厅（信流 + 写信区）
-
-现状：品牌条（who + who-sub）→ 信笺流（撕边回信 / 普通信）→ 教学短笺区 →
-横线稿纸写信区（index.html:43-62；走查 02 / 09）。
-
-- P0〔特色〕**空厅是一间空屋**：历史为空时整屏只剩头部与写信区，无一字
-  引导（走查 02；index.html:51-54 无空态结构）。门厅把人领进来，客厅却
-  不说话。
-- P0〔表达〕失败行 = 工程原值：「[FAILED_FINAL] missing-secret」
-  （app.js:1282-1283；走查 09）。
-- P0〔表达〕blocked 行 = 诊断原文：「本轮未教学：候选
-  res-hedge-i-think|PROBE|TEXT_PRODUCTION|PROBE|UNKNOWN_PROBE 效用
-  0.016000000000000042 低于阈值 0.195」（app.js:1068-1077；走查 09）——
-  竖线五段全键 + 浮点噪声，出现在信笺流的纸面上。
-- P1〔架构〕每个无教学的轮次都在信流尾部挂一张「本轮没有打开教学时刻。」
-  空态横幅（components.js:114-118；app.js:1287-1288；走查 09）——空态
-  横幅是读数面板的答法不是信流的，且与 blocked 行同义重复。
-- P1〔隐喻〕写信区 placeholder「用英语说点什么……」（index.html:58）——
-  本产品是写信不是说话；「（生成中…）」（app.js:1269）是系统腔。
-- P2〔文案〕who-sub「你说英语，它用英语回你」的「它」指伙伴，冷
-  （index.html:48）。
-
-主张：这里是写信的地方——信是主角，其余一切都退成纸边的注脚。
-
-#### 8.0.3 学案 · 今日
-
-现状：页题 + 引导句 → 到期复习（行 = 表达名 + 原始状态词 + 教我这个）→
-最近在学（行 = 名 + 最近 outcome 原值 + ISO 时间）→ 想练一把（**52 行
-平铺**，每行一个「教我这个」）→「刷新读数」（index.html:91-108；
-app.js:359-437；走查 03）。
-
-- P0〔架构〕想练一把 52 行全量平铺：无分组、无优先级、无折叠——一屏滚
-  不到头的同质按钮墙（app.js:404-416；走查 03，实测 52 行）。
-- P0〔表达〕到期行尾缀原始状态词「（DUE）」，最近行直出「最近 outcome：
-  FAILURE」+ 微秒 ISO 时间（app.js:369-373 / 398-401）。
-- P1〔架构〕三块之间无摘要——「今天该先干什么」要用户自己从三块里拼。
-- P2〔文案〕「刷新读数」是仪表盘词；且进节即拉（app.js:1122-1133），
-  此钮冗余（index.html:107）。
-
-主张：回答「现在该干什么」——到期在先，痕迹其次，可练的表达收着等你翻。
-
-#### 8.0.4 学案 · 目标
-
-现状：页题 + 引导句 → 长期目标（读卡 + 编辑行重复呈现）→ 技能权重 →
-考试目标 → 语域与文风 → 保存组合 → 教学频率（当前值带版本号）→ 临时
-侧重 → 参考词表（三段英文词表原文）→「重新读取」（index.html:115-157；
-app.js:668-1051；走查 04）。
-
-- P0〔架构〕七区块一屏纵排、读写混排：读卡与编辑行重复呈现同一目标
-  （app.js:723-798）；保存钮埋在第四节之后（app.js:840-850）；「教学
-  频率」的独立保存与「保存组合」并存，两条写路径不说明边界。
-- P0〔表达〕词表词全部英文原值直出：模态下拉 SPEAKING/LISTENING/…
-  （app.js:750-760）、chip 墙 CASUAL/ACADEMIC/…（app.js:820-838）、
-  频率四词 OFF/MINIMAL/BALANCED/EAGER（app.js:917-924）。
-- P0〔表达〕参考词表三段英文原文（§4.1 context_domain 9 词 / §4.2
-  genre_discourse 12 词 / §4.4 expressive_depth 5 词）占版面约五分之一，
-  且自认「V1 无存储位」（app.js:992-1006；走查 04）——无存储位的参考
-  不该占主峰版面。
-- P1〔表达〕「当前： BALANCED（版本 pv-seed-v1）」（app.js:909-912）——
-  版本号是冲突解决机件，不是用户信息。
-- P2〔文案〕「目标 1 · 模态」的「模态」是术语（app.js:764）；「重新读取」
-  与「保存组合（目标 + 权重 + 考试 + 语域）」皆系统腔（index.html:156；
-  app.js:844-848）。
-
-主张：把长期方向说清楚、改明白——这是一页「写」的纸，读数让位给决心。
-
-#### 8.0.5 学案 · 进步
-
-现状：页题 + 引导句 →【证据】可教目标（52 行平铺）/ 复习日程（12 行 ×
-六字段原始铺开）/ 学习目标（id + 权重原值）/ 证据记录 →【为什么】五问
-（中文题 + 原值行）→【观察】拉取观察读数（整段英文指标定义 + 六表原文）
-（index.html:161-217；app.js:85-345 / 1314-1332；走查 05 / 05b）。
-
-- P0〔架构〕三个读数世界硬并一屏：52 行目标墙 + 12×6 字段日程 + 五问 +
-  英文观察原文，全页长逾两千像素（走查 05）；「证据 / 为什么 / 观察」
-  分组标题（index.html:167 / 188 / 213）方向对，内容漏底。
-- P0〔表达〕存储字段直译给人看：「复习状态：NOT_SCHEDULED」「紧迫度
-  review_urgency：0」「间隔阶 spacing_stage：—」「窗口开始：—」
-  （app.js:276-282；走查 05）——仪表盘裸奔，与信笺叙事完全断裂。
-- P0〔表达〕原始 id 与枚举直出：res-pragmatic-that-makes-sense
-  （RESOURCE）（app.js:276）、user-local-v1 / goal-seed-v1
-  （app.js:296-306）、polarity / outcome / performance_type
-  （app.js:318-326）、微秒 ISO 时间戳贯穿全页。
-- P0〔表达〕观察块 = 六段英文指标定义 + 六表原文 + drift 行
-  （app.js:1314-1332；走查 05b）——整段英文工程散文出现在中文产品里。
-- P1〔架构〕「可教目标」与今日 · 想练是同一 52 行的第二次平铺
-  （app.js:233-249）——同一信息两处重复，是信息架构的失职。
-- P2〔文案〕「刷新读数 ×2」「拉取观察读数」仪表盘腔（index.html:184 /
-  209 / 214）；诊断面中文题下仍挂原值行（outcome / action_type 原值，
-  app.js:148-170）——半译半裸。
-
-主张：这是客厅的账页——如实，但账要记成账的样子（摘要 + 人话科目），
-不是把数据库倒扣在桌上。
-
-#### 8.0.6 柜抽 · 记忆
-
-现状：五面板（关系记忆 / 剧情记忆 / 学习者状态 / 证据 / 删除台账）+
-「刷新读数」（index.html:246-272；app.js:445-562；走查 06）。
-
-- P1〔表达〕字段名半中半英：「provenance」「敏感级与授权（值原样）」
-  「confidence」「estimator」「状态键」（app.js:457-463 / 498-505）。
-- P1〔表达〕删除台账行 = entity_kind + 64 位十六进制指纹原文
-  （app.js:537-543）——指纹该缩成指纹的样子。
-- P2〔文案〕「学习者状态」「投影到这里」（app.js:494）是工程词；空态句
-  （「还没有记住什么——」族，app.js:451-535）是**全应用最好的文案**，
-  应升格为模板而非孤例。
-- P2〔架构〕五面板无摘要行。
-
-主张：客厅记住的事都在这里，一条条如实——看得见，才谈得上信得过。
-
-#### 8.0.7 柜抽 · 隐私
-
-现状：引导句 → 当前对话（危险钮）→ 按目标删学习数据（**52 行危险钮
-平铺**）→ 关系对删除（诚实缺席）→ 结果区（index.html:276-301；
-app.js:568-657；走查 07）。
-
-- P0〔架构〕52 行「删除这项目标数据」按钮平铺（app.js:636-652；走查
-  07）——危险操作做成按钮墙，既轰炸又麻痹（第 30 行与第 1 行长得一样，
-  危险被均质化）。
-- P1〔文案〕「按目标删学习数据」「关系对删除需要角色 id（persona_id）」
-  （index.html:289 / 295-297）——scope / persona_id 是后台词。
-- P1〔表达〕结果区直出「重建 0 成功 / 0 项」「墓碑记录 1 条」
-  （app.js:590-592）——rebuilds / tombstoned 是机件计数。
-- P2〔文案〕第二层确认「确定继续？再次确认」语序生硬（app.js:602-603）。
-- P2〔隐喻〕「删除」全页出现十余次——客厅世界里，这个动作该叫「忘掉」。
-
-主张：让主人把东西请出柜抽——先讲清会失去什么，再要两次点头。
-
-#### 8.0.8 柜抽 · 设置（占位）
-
-现状：「设置面尚未到来。」+ 一句本地单用户与端点诚实句
-（index.html:306-312；走查 08）。
-
-- P2〔文案〕「尚未到来」生硬；两句实话没有组织结构（现在能说的 / 将来
-  会有的，混在一起）。
-- P2〔前瞻〕R-3 的模式读面与端点说明已在 v1 蓝图列位，此页不预留落位
-  结构，届时只能再改版。
-
-主张：诚实地说「还没铺开」，同时把「现在能说的」说好。
-
-#### 8.0.9 全局壳（dock / 空间标头 / 节签 / 导航语言）
-
-现状：门厅 → dock 三项（客厅 / 学案 / 柜抽）→ 空间标头（印记 + 空间名 +
-节名槽）→ 节签横排（index.html:43-325；走查 01-08）。
-
-- P1〔架构〕**同一个词念三遍**：进「学案 · 今日」，屏顶依次是 spacehead
-  节名槽「今日」、节签「今日」（高亮）、页题 h2「今日」（index.html:71 /
-  77 / 93；走查 03）——六节同病。
-- P1〔架构〕双层命名未经校验：dock 三词（空间）与节名六词（页）构成两套
-  词表；「目标」一词同时是节名（学案 · 目标）与领域词（可教目标 / 学习
-  目标 / 按目标删）——一词三义，全应用最重的命名事故。
-- P2〔隐喻〕dock 三词与隐喻一致（客厅 / 学案 / 柜抽），此层**通过**；
-  门厅 dock 让位正确；z 序与遮挡走查未见异常。
-- P2〔表达〕「学案」自造词可立（练习案卷），但需要门厅一句解释接住
-  （8.0.1 的 hint 只提了一次，「柜抽」零次）。
-
-主张：壳的任务是让人永远知道「我在哪、还能去哪」——念一遍就够，别念
-三遍。
-
-#### 8.0.10 教学时刻面（短笺 + 作答 + 点词卡）
-
-现状：短笺卡（标题「教学时刻：… · 状态 … · 类型 …」+ 判分条 + 作答行 +
-三求助 + 跳过）随信流；点词卡浮层（lemma / pos / forms / zh / en / 例句 /
-收起）（components.js:110-265 / 404-453；app.js:1234-1294；判分与作答
-行为为 tests/host 夹具与代码推断，本刀未真模型走查）。
-
-- P1〔表达〕卡头信息行串烧：「教学时刻：{title} · 状态 … · 类型 …」——
-  kind_cn 缺位时英文原值兜底直出（components.js:122-135）。
-- P1〔表达〕判分条以英文判词打头：「判分反馈：SUCCESS（…）」
-  （components.js:72-88）——先中文判词，runtime 原话随后。
-- P1〔架构〕作答框在卡内、写信区在页底：作答写进聊天框则判分永远等不到
-  （dogfood 实测登记，AGENTS.md W-3；卡内无指路句）——推断引自登记。
-- P2〔文案〕求助三词「看提示 / 看答案 / 解释」词性不齐（动 / 动 / 名）
-  （components.js:171-173）；「跳过这一题」的「题」把短笺说成试卷
-  （components.js:181）。
-- P2〔特色〕点词卡气质未断（纸底浮层 + 收起），通过；「命中可不含被点词」
-  「25/100 lemma 超 3 词窗」两处登记项（components.js:346-358 头注）
-  保持登记，不在本刀。
-
-主张：短笺是客厅递来的一张纸——接住它只需要一支笔，不需要一本说明书。
-
----
+R-1 时代的逐页剖析（信息组织 / 表达方式 / 特色延续三个否决词的逐页
+证据，编号 01–10 走查）已完成使命：其 P0/P1 主张由 R-1R/rd-2/rd-3/rd-4
+四刀兑现，其「现状」描述已被 v2-1 内核 + cs/mc 取代。原文见 git 历史
+（R-1A 蓝图 v2 全文）；本节只存目，不再作任何现役断言。方法论存续：
+逐页走查 + 探针库 + 截图存档的做法沿用于 v2-2 的验收（VAL 人验门）。
 
 ### 8.1 信息架构总纲
 
 #### 8.1.1 层级定谳
 
 门厅（首访一次）→ 三空间（常驻）→ 空间内节（页）→ 页内块 → 块内行。
-**空间模型保留**（门厅 + 客厅 / 温故 / 抽屉 + dock 三项；rd-2 前空间词为
-学案 / 柜抽，见 9.10-21）：用户否决命中的
-是屏内组织与表达，不是壳；推翻壳的代价 = R-1 整刀与 41 处随迁作废，且
-无证据收益。壳层仅修三处：页题去重（8.2.9）、节名定稿（8.1.2）、
-`<title>` 去工程词。
+**空间模型保留**（门厅 + 案头 / 温故 / 抽屉 + dock 三项）；v2 增两处
+附属面：**笔友档案全页**（`#space-partner`，从信封沓的「档案」动作进，
+返回钮回案头）与**角色编辑台**（mc-2 全页 DIY，从信封沓进）——两者
+是案头的纵深，不是新空间（dock ≤5 红线不动）。壳层 v2-1 已按内核
+换装（品牌名退居门厅封面、边注栏水印撤除）；屏内信息架构与文案的
+结构重铸属 v2-2。
 
 #### 8.1.2 命名系统定稿
 
-- dock（空间词，rd-2 定稿）：**客厅 / 温故 / 抽屉**（rd-2 前「学案 /
-  柜抽」——「柜抽」不是现成词（刻板随意感最重处，调研E 点名）；「信匣」
-  经功能核实名不副实——抽屉装记忆/隐私/设置，无信件收藏，退「抽屉」；
-  「学案」学术气偏重，改「温故」——今日节以到期复习为主体）。
-- 温故节名：**今日 / 方向 / 记录**——「目标」改「方向」（一词三义事故，
-  8.0.9）；「进步」改「记录」（诚实纪律：证据增益永不声称掌握，「进步」
-  是过度承诺）。
+- dock（空间词）：**案头 / 温故 / 抽屉**（v2 换名：rd-2 定稿的首词
+  随品牌换名改「案头」——写信的案头，信摊在上面；rd-2 前为「学案 /
+  柜抽」两代旧词，均退役）。
+- 温故节名：**今日 / 方向 / 档案**（「目标」改「方向」（一词三义事故）；
+  「进步」改「档案」（诚实纪律：证据增益永不声称掌握））。
 - 抽屉节名（不动）：**记忆 / 隐私 / 设置**。
-- 领域词定稿（全应用一致，8.3 是翻译表）：teaching target → **表达**
-  （门厅第二步早已这么说：「发现值得练的表达」——产品语言早就有，界面
-  没有跟上）；teaching moment → **批注**（rd-2 起；批注把教学变成
-  「信上被划出来的那一行」，rd-2 前为「短笺」）；conversation → **这段通信**；
-  delete → **忘掉**；tombstone → **存根**；gate → **门规**。
-- 中英混排：界面语言为中文；英文只在三种合法位置出现——① 学习内容本身
-  （表达、例句、词卡）；② 存储词表值的原文（跟在中文后，等宽小字）；
-  ③ 折叠的「原始读数」区。此外一律不出现。
+- 品牌名：**展信佳**（副题「见字如晤，今日如何」；英文并写 `Dear You`）
+  ——`app.js` 的 `BRAND` 常量是唯一可变点 + index.html `<title>` 同值
+  静态兜底；门上候选四名（笔谈 / 尺素 / 提笔 / 亲启）在简报 §1 备案，
+  换名 = 改一处常量。
+- 领域词定稿（全应用一致，8.3 是翻译表）：teaching target → **表达**；
+  teaching moment → **批注**；conversation → **这段通信**；delete →
+  **忘掉**；tombstone → **存根**；gate → **门规**；character/penpal →
+  **笔友**（v2 定稿：角色即笔友——Nell Alder 是内置首角色，名字由
+  端点驱动，界面不写死）。
 - 对话语言跟随用户（默认中文）——『学习内容本身』指教学表达/例句/词卡，
-  非对话语言的限定。
+  非对话语言的限定。界面语言为中文；英文只在三种合法位置出现——
+  ① 学习内容本身（表达、例句、词卡）；② 存储词表值的原文（跟在中文
+  后，等宽小字）；③ 折叠的「原始读数」区。此外一律不出现。
 
 #### 8.1.3 导航模型
 
 - dock 三项常驻不变；门厅 dock 让位不变；节签横排不变（#20 契约）。
 - **页题只念一遍**：spacehead 节名槽承担「我在哪」，节签承担「还能去哪」；
   页内 h2 取消，页首以引导句开场（8.2.9）。
-- 「为什么」的归处：blocked 行（客厅）= 一句话 + 「原委在 温故 · 记录」，
-  不再在信流里展开诊断。
+- 「为什么」的归处：读数与原委归 温故 · 档案 的 why_not 面与原始读数；
+  信流里没递批注的一轮静默（W-8 定案延续）。
 - 满 / 加载 / 空 / 错误四态：读数块一律 #14 state-banner 族（现役）；
-  信流不用横幅（8.2.2）。
+  信流不用横幅。
 
-#### 8.1.4 v1 沿用不变项（防静默丢失）
+#### 8.1.4 v2 沿用不变项（防静默丢失）
 
-视觉语言定谳（token 全保留、零卡片零气泡零阴影）；交互模式注册表
+视觉内核（简报 §0–§6：铁胆墨 14 色 / 排印骨架 / 基线 32px / 封信分物 /
+邮戳只落真实事件 / T3 死刑清单 / 「纸先落、墨后渗」）；交互模式注册表
 （读改模式 / 教学时刻模式 / 破坏性模式 / 三态模式 / 浮层模式）；skill
-使用纪律（采纳前验证适配，不适配弃用留痕）；伙伴面（R-2）与设置面
-（R-3）的位次（rd-4 起两者已有前端先行桩态/真面——8.2.2a / 8.2.8
-修订版，9.12-23）；canonical §18 排除项不设计。
+使用纪律（采纳前验证适配，不适配弃用留痕）；伙伴面（cs-2 全页档案 +
+mc-1 信封沓 + mc-2 编辑台——8.2.2a）与设置面（rd-4 真面——8.2.8）的
+位次；canonical §18 排除项不设计。
 
 ---
 
 ### 8.2 逐页方案
 
-（每页：线框 → 信息组织 → 文案定稿 → 状态 → 组件 → 实现映射。文案即
-定稿，语气总则见 8.4；线框内数字以现役语料为例。）
+（每页：现役真值 → 目标设计（如有）→ 文案定稿 → 状态 → 组件 → 映射。
+文案即定稿，语气总则见 8.4；目标设计块均标「实施在 v2-2」。）
 
 #### 8.2.1 门厅（R-1W 修订版——封面信笺）
 
-> 版本史：R-1R 定稿的「三步白板版」（一 · 这是什么 / 二 · 短笺怎么来 /
-> 就这么定）随 R-1W 门厅完全重做退役（用户双令之 B 面：「欢迎页必须
-> 完全重做，所有方面高规格设计」）；本节为现行定稿。旧定稿相关钉随迁
-> 清单见 9.7-17；localStorage 门、`<title>`、进门落客厅的现役语义不动。
+现役真值（v2-1 起品牌换装，结构 = R-1W 封面信笺不动）：
 
 ```
       ┌────────────── 一张待拆的信（--paper-high + 双层发丝镶边）─────┐
-      ｜ 2026 · 09 · 30（案头日期，真实客户端日期，mono）      〔邮票〕｜
+      ｜ 2026 · 10 · 02（案头日期，真实客户端日期，mono）      〔邮票〕｜
       ｜                                                                ｜
-      ｜                          〔印记 seal-press〕                    ｜
-      ｜                    THE ENGLISH PARLOUR（ls-caps 小字）         ｜
-      ｜                       把英语请进客厅（display）                 ｜
+      ｜                          〔印记 seal-press 入场〕               ｜
+      ｜                         DEAR YOU（ls-caps 小字）               ｜
+      ｜                           展信佳（display）                    ｜
+      ｜                     见字如晤，今日如何（副题）                 ｜
       ｜                           ———（短界尺分饰）                    ｜
       ｜  致 明日之我：                                                  ｜
-      ｜    今日落笔，明日展信。这间客厅里，你同一位固定笔友通信，也    ｜
+      ｜    今日落笔，明日展信。这张案头前，你同一位固定笔友通信，也    ｜
       ｜    在给明日之自己写信——两重收信人，同一张信纸。想写什么就写    ｜
       ｜    什么，中文英文都行；写错了，正是回信要讲给你听的地方。       ｜
-      ｜    写着写着，客厅在旁听着。发现值得练的表达，它随信递来一条    ｜
+      ｜    写着写着，它在旁听着。发现值得练的表达，它随信递来一条      ｜
       ｜    英文批注——答对答错都有回音，也可以先搁着。                  ｜
       ｜  又及：进门以后，底部三个词随时可走。温故摊着今天的复习        ｜
       ｜  与方向，抽屉收着它记住的事。                                   ｜
@@ -536,115 +408,147 @@ app.js:568-657；走查 07）。
       └────────────────────────────────────────────────────────────────┘
 ```
 
-- 组织：封面是一张完整的信笺对象——天头（案头日期 + #22 stamp 邮票角
-  标，水印墨装饰）/ 印记 / 英文小字与 display 题（`--fs-display` 的首位
-  接线者）/ 信体（称呼 · 两段缩进正文 · 又及）/ 进门链接（#1 --ink）/
-  诚实 mono 落款。档位构图：≤480 信笺满幅；481–899 信笺 560 垂直居中；
-  ≥900 信笺 640 落在案头（9.6）。
-- 文案定稿（rd-2 豪放档逐字；授权 = `DEC-OPI-dc0ba4b6-…13` 之②，锚例
-  一「致明日之我」）：称呼「致 明日之我：」；一段与二段如线框（段首缩
-  进两格；两重收信人叙事——与固定笔友的通信 ∥ 写给明日之自己的信；
-  语义底线三件在场：①「中文英文都行」②「英文批注」③「写错了，正是
-  回信要讲给你听的地方」）；又及如线框（不缩进、次级墨；导航新词随行）；
-  进门钮「拆开这封信 →」（豪放变体候选「拆开 →」备而未采）；落款
-  「elc · web」不动；h1「把英语请进客厅」与 `<title>英语客厅` 不动。
-- 动效（⑨-5 注册表）：paper-settle 信笺落座 + seal-press 印记按落，均
-  首绘一次，reduced-motion 随库尾总降级块归零。
-- 状态：静态页无四态；localStorage 拒绝时直进客厅（现役行为不动）。
-- 组件：#13 brand-mark（--lg）、#1 btn--ink、#22 stamp（R-1W 增枚）。
-- 映射：纯前端（index.html 门厅节 + screens.css 封面节 + components.css
-  动效注册表两枚 + app.js 案头日期）。
+- 组织：封面是一张完整的信笺对象——天头（案头日期 + #22 stamp 邮票角标，
+  水印墨装饰）/ 印记（信封 + 封缄墨线，**封缄点 = 墨蓝**——品牌印记不是
+  事件，朱砂不落）/ 英文并写小字与 display 题（展信佳 · Dear You——
+  `BRAND` 常量消费面）/ 信体（称呼 · 两段缩进正文 · 又及）/ 进门链接
+  （#1 --ink）/ 诚实 mono 落款。档位构图：≤480 信笺满幅；481–899 信笺
+  560 垂直居中；≥900 信笺 640 落在案头（9.6）。
+- 文案定稿（rd-2 豪放档逐字 + v2 换名）：称呼「致 明日之我：」；两段
+  与又及如线框（语义底线三件在场：①「中文英文都行」②「英文批注」
+  ③「写错了，正是回信要讲给你听的地方」）；进门钮「拆开这封信 →」；
+  落款「elc · web」；题 = 展信佳、副题 = 见字如晤，今日如何、英文并写
+  DEAR YOU（`BRAND` 大写消费）。
+- 动效（⑨-5）：paper-settle（现役实现 = paper-drop @ `--dur-settle`）
+  信笺落座 + seal-press（现役实现 = ink-wash @ `--dur-ink`）印记浮现，
+  均首绘一次，reduced-motion 随库尾总降级块归零。
+- 状态：静态页无四态；localStorage 拒绝时直进案头（现役行为不动）。
+- 组件：#13 brand-mark（--lg）、#1 btn--ink、#22 stamp。
+- 映射：v2-1 已实施（index.html 门厅节 + `BRAND` 常量）；目标设计无
+  新增（本屏 v2-2 只承受工艺巡检，见 ①.5 设计义务）。
 
-#### 8.2.2 客厅
+#### 8.2.2 案头（信流与写信区）
+
+现役真值：
 
 ```
-  [印记] 英语客厅
-         一位固定笔友 · 中英不拘
+  [印记] （主从条：当前角色名 + 身份行——端点驱动空槽，块可点）
+         点开 = 信封沓（mc-1；沓中每封的「档案」动作进笔友档案全页）
   ─────────────────────────────
   （空厅，纸面中央一行系统小字：）
-  信还没开始写——想从哪句起，就从哪句起。中
-  文英文都行；写错了，客厅接得住。
+  信还没开始写——想从哪句起，就从哪句起。中文英文都
+  行；写错了，笔友接得住。
 
-  …信件（撕边回信 / 普通信）…
+  …信件（撕边回信 / 普通信；在途件带虚发丝角标）…
   …批注卡（见 8.2.10）…
-  （失败，纸边赭红小字：）
-  这封信没有回音——客厅没能联系上模型端点
-  （missing-secret）。
+  （失败，纸边小字：）
+  这封信没有回音——笔友没能收到（missing-secret）。
   ─────────────────────────────
   [ 今日如何？                  ] 寄出 →
+  （批注开着时一行指路：批注开着——回应写在上面那张；也可以直接写一封新信。）
   ─────────────────────────────
-     客厅        温故        抽屉
+     案头        温故        抽屉
 ```
 
-- 组织：信流只放信与批注；失败注脚降级为纸边小字；W-8 起「为什么没递」
-  的注脚退役——没递批注的一轮在信流里静默，原委读出归 温故 · 记录的
-  why_not 面；空态横幅从信流移除（空态是读数块的答法，不是信流的）。
-- 文案定稿（rd-2 豪放档；锚例二 = placeholder「今日如何？」逐字）：
-  - who-sub：「一位固定笔友 · 中英不拘」
-  - 空厅句（客户端静态系统行，非伪造历史）：「信还没开始写——想从哪
-    句起，就从哪句起。中文英文都行；写错了，客厅接得住。」——placeholder
-    让位锚例后，语义底线①③由本句独立承载（不读封面也得知中文可写）。
-  - placeholder：「今日如何？」；寄出钮不动。
-  - 等待占位（发送后状态行）：「信已寄出，等回信——客厅把灯留着。」
-  - 失败行：「这封信没有回音——客厅没能联系上模型端点
-    （{failure_reason}）。」（人话主句 + 括号工程词；turn_status 不进文案。）
-  - 教我成功行：「批注来了——就在下面的信流里。」
-  - 教我失败行（两臂）：拒绝 =「没能开始这张批注——（{原因}）。」；
-    网络 =「请求没送到——再试一次。」
+- 组织：信流只放信与批注；失败注脚 = 纸边小字（人话主句 + 括号工程词）；
+  没递批注的一轮静默；空态横幅不进信流（空态是读数块的答法）。
+  主从条 who 块整体可点（键盘可达；品牌条不增长按钮元），点开信封沓。
+- 文案定稿：空厅句「信还没开始写——想从哪句起，就从哪句起。中文英文
+  都行；写错了，笔友接得住。」（客户端静态系统行，非伪造历史）；
+  placeholder「今日如何？」；等待占位「信已寄出，等回信——笔友把灯
+  留着。」；失败行「这封信没有回音——笔友没能收到（{failure_reason}）。」；
+  指路行「批注开着——回应写在上面那张；也可以直接写一封新信。」
 - 状态：空厅 = 上述静态句；加载即历史（现役）；失败 = 纸边小字；批注
   轮询现役不动。
-- 组件：#4 letter、#12 system-line、#3 note-paper、#15 word-card
-  （均不动）。
-- 映射：**纯前端重组**（表达名派生 todayName 现役已有 app.js:354-357；
-  W-8 起「原委在」链接随 blocked 行退役）。
+- 组件：#4 letter、#12 system-line、#3 note-paper、#15 word-card。
+- 映射：v2-1 已实施（锚屏）；v2-2 结构重铸件如下两块。
 
-#### 8.2.2a 伙伴卡与名册（rd-4 增补——R-2 前端先行桩态）
+① 【角色信息面板瘦身——目标设计（用户定向 2026-10-02，实施在 v2-2）】
+案头主从条只留**当前角色姓名** + 右侧一行**符合人物性格的问候语**：
+问候语从角色包的语料面（scenario / opening / speech_style 派生的问候
+句池）取材，可随机切换；预留后续设置项位（落 8.2.8 的 v2-2 重铸块）：
+每日切换 / 每次进入切换。**目标态否定项**：现主从条的大面积身份介绍
+行（who-sub 长句族）退役——身份介绍退入笔友档案页（8.2.2a），案头
+只报名与问候，不设展柜。问候句逐条署名角色语料面（单一出处纪律，
+webui 不发明句库）。
 
-```
-  （点品牌条的身份块——who 块可点，不增长按钮元：）笔友是谁？
-  ┌─ 浮层纸卡（#23 partner-card）──────────────┐
-  │ 一位还没取名字的笔友                        │
-  │ 名字还没处取——先这么叫着。                  │
-  │ 关系                                        │
-  │  （最近 1–2 条关系记忆 + 计数行；空态：）   │
-  │  还没有留下关于你们关系的记忆。              │
-  │ 近况                                        │
-  │  （最新剧情摘要首句 + 话头计数；空态：）    │
-  │  还没有留下你们的近况。                      │
-  │ 名册（预览）                                │
-  │  [Maya｜预览] 西雅图一家小咖啡馆的咖啡师……  │
-  │  [Nadia｜预览] 夜班电台的主持人……            │
-  │  [Sam｜预览] 修老房子的木匠……                │
-  │  先记下你的意思——等伙伴的门真开了，          │
-  │  这一位才会上场。                            │
-  │ 全部记忆在 抽屉 · 记忆                       │
-  │ 收起                                         │
-  └──────────────────────────────────────────────┘
-```
+② 【dock 与 flow 的层次质感——目标设计（用户定向 2026-10-02，实施在
+v2-2）】明确写信区（dock）与信流（flow）的纸叠关系，目标形态：
+**flow = 摊在案头上的信纸堆**（主纸 `--paper`，桌面包围，桌面档已有
+`--stack-shadow-deep` 承托）；**dock = 案头前沿的垫板层**（顶纸
+`--paper-high` 浮起面 + 上缘发丝线 `--rule` + `--stack-shadow-soft`
+向上承影落在前一封信的纸尾上）——分层只用 paper 色阶 + 发丝线 + 两级
+墨色阴影，零描边框、零圆角面板（简报 §6 形态法则）；dock 聚焦微起
+（现役 `:focus-within` translateY(-2px)）保留，作为「垫板被手压起」
+的触感。输入框纸面 = 顶纸，与信流的主纸形成一档色差——打字的地方
+比信纸「新」。
 
-- 组织：身份条原地（.who/.who-sub 逐字不动——四处钉在册），开卡动作
-  = who 块整体可点（hover 点线泛赭触点提示；品牌条不增长按钮元——
-  r1_shell 的「<button 不在品牌条」钉保留；键盘可达 tabindex +
-  Enter/Space）；浮层纸卡 = #23（#15 同法：挂 body、点卡外关闭、
-  ink-fade 入场）。
-- 诚实边界（本刀的桩态声明）：伙伴名现役无源（host 未注入 character
-  package，全链 None）→ 占位句；名册 = persona 域内容的前端静态临时
-  副本（真源 `src/elc/persona/types.py` 的 CharacterPackage 字段；
-  Maya 改造自 sample_character_package，Nadia/Sam 本刀拟定）；选中只
-  落 localStorage（`elp.partner.pick.v1`），**零生效声称**——CLI 无
-  --character、web 不读 localStorage、host 无读面（裁决预告 9.12-23
-  之名册后端缝）；封面「生成人设/人设卡」与隐私节「这版做不了——
-  页面不知道伙伴的角色编号」的缺位钉保留不回潮。
-- 数据：只读 /api/memory 既有读面（关系 = 最近 1–2 条 + 计数行；近况
-  = 最新剧情摘要首句 + 未了话头计数如有）；两格空态各说各的实话；
-  读不到的格子自己报错（#14 error + 重试），不拖累整卡；无新端点。
-- 文案定稿：触发钮「笔友是谁？」；占位名「一位还没取名字的笔友」；
-  关系空态「还没有留下关于你们关系的记忆。」；近况空态「还没有留下
-  你们的近况。」；选中注记「先记下你的意思——等伙伴的门真开了，
-  这一位才会上场。」；去向「全部记忆在 抽屉 · 记忆」（按钮直达抽屉
-  记忆节）；收起。
-- R7 域声明：名册三位的姓名与一行性格/背景、占位句、注记句为本刀
-  拟定——用户首验否决权保留。
+③ 【点词卡目标形态——目标设计（用户定向 2026-10-02，实施在 v2-2）】
+#15 word-card 改**底部覆盖面板（bottom sheet）**：移动端从屏幕下缘
+丝滑展开、直接覆盖下方屏幕（不再是侧边悬浮小卡），动画走纸面曲线
+translateY（`--ease-paper` + `--dur-note` 260ms 档，opacity 恒慢于
+transform——同简报 §5 教学卡展开参数）；上缘发丝线 + 「收起」文字钮，
+点卡外关闭语义不变。**桌面档裁量**：保留点击点近侧浮卡（viewport
+clamp 现役机制）——理由：桌面指针就在被点词上，卡贴词而现是视线最短
+路径；bottom sheet 会把视线拽到屏底，桌面阅读面（`--measure` 版心）
+也会被整幅遮断。两形态 = 同一组件的两档布局（媒体查询分档），数据、
+关闭语义与无障碍面同源。
+
+④ 【触屏点词可发现性——目标设计（用户定向 2026-10-02，实施在 v2-2）】
+**现状根因**（已定位）：components.css 的 `@media (hover: none)` 半区
+给 `.say .word` **常显** `underline dotted`（触屏镜像 hover 提示）——
+移动端整段对话的英文词全部带点线，连缀成「波浪线」，观感差（用户
+点名）。**目标态否定项：「全文常显点线」永禁。** 候选方向（本刀裁定
+采纳前两条、其余备案）：**(a) 仅最近一封信的词带暗示**——最新到信的
+`.word` 保留弱提示（弱色差 `--accent-soft` 12% 底纹或下划线色差），
+历史信静默——「当前可查」语义随信龄衰减，视线最干净；**(b) 触摸时
+短暂提示**——pointerdown 高亮一次（`--dur-micro` 档），发现性由门厅
+封面与空厅句的首次引导承载；备案：弱色差替代下划线 / 无常显装饰。
+四条共通的硬边界：提示只走墨蓝族与透明度，零新色、零圆点、零图标。
+
+（本节其余目标块无——工艺巡检义务见 ①.5，巡检所得另起登记条目。）
+
+#### 8.2.2a 笔友档案、信封沓与角色编辑台（cs/mc 现役真面）
+
+现役真值（cs-0/cs-1/cs-2 + mc-0/mc-1/mc-2 六刀落地；rd-4 的浮层卡与
+名册桩已整体退役）：
+
+- **笔友档案全页**（`#space-partner`）：从信封沓中每封的「档案」动作进
+  （参数化 `/api/partner?character_id=`），同门厅 cover 的整页形态，
+  非浮层；返回钮回案头是唯一回途，导航条让位。五面数据只读
+  `/api/partner` 一个端点（角色文本真源 `src/elc/persona/penpal.py`
+  单一出处，webui 零字面）：① 档案头（真名 + 身份行 + 通信统计三数
+  ——往来封数计入命令轮排除口径）② 人物节（角色包叙事化散文）
+  ③ 她记得的关于你的事（诚实措辞，不承诺完美记忆）④ 近况（episode
+  摘要 + 未完话头）⑤ 通信的日子（按日极简往来行数）。五面各走自己的
+  三态（#14），一面对了别面不陪葬。
+- **信封沓**（mc-1，案头主从条点开）：沓形 = 案头的一叠信封（微扇形
+  错位叠放，rotate/translateX 从 stamp_key 确定性派生——同一角色恒同
+  姿态，零随机）；当前通信的一封盖「当前」邮戳角标（`--seal`，真实
+  状态事件——T2 合法面）；沓尾 = 新建空白信封：「起笔」（名字 + 一句
+  简介，最简开笔）与「完整编辑」（进编辑台）。点沓中一封 → 滑到沓首
+  微抬（260ms 减速长尾 + 让位 stagger）；再点或点「对话」→ 切换。
+- **角色编辑台**（mc-2 全页 DIY）：信封沓的「编辑」/ 空白封「完整编辑」
+  进——放大过渡（zoom origin 系于被点信封，editor-zoom-in/out）→ 九面
+  表单（identity / personality / background / speech_style / values /
+  boundaries / opening / scenario 等；读不回的面诚实注记）；veiled 四面
+  「留空保留 / 写下盖上」（空值不伪装已填）；真 CRUD（内置卡可编辑、
+  删除有确认；born/邮票不变）；开场信预览；400 人话中文化。
+- **【角色卡翻页全览——目标设计（用户定向 2026-10-02，实施在 v2-2）】**
+  现状 = 沓是扇形叠、单封全貌要进档案页；目标 = 沓内**全览可翻页**：
+  每页一张角色卡全貌（九面摘要 + 开场信预览），**横滑翻页**（ux-1 横滑
+  守卫同法：横大于纵严格判定、单指重臂双指全拦、边界静止、零
+  preventDefault）+ **点击翻页**（两侧墨线 chevron #22 复用）；翻页动效
+  = page-turn（⑨-5 目标行，用户点名）。翻页态不替换档案页——「档案」
+  动作仍进全页，翻页是沓内的浏览层。
+- **【起笔向下展开——目标设计（用户定向 2026-10-02，实施在 v2-2）】**
+  「起笔」确认（新建或选中角色）后，选择器页面向下**自动展开成对话
+  主界面**：方向感 = 信封沓收拢、信纸向下铺开摊上案头；动画 = 纸面
+  曲线（`--ease-paper`）+ 大件 ≤320ms 档（`--dur-settle`），沓面板退出
+  与信流首屏进入同帧编排（transform 与 opacity 拆开，opacity 恒慢）；
+  reduced-motion 直落终态。注册为 ⑨-5 目标行。
+- 映射：现役真面已实施（web.py 端点 + webui 九文件内）；两目标块实施
+  在 v2-2，动效注册行见 ⑨-5。
 
 #### 8.2.3 温故 · 今日（rd-3 修订版——默认层两块）
 
@@ -661,40 +565,39 @@ app.js:568-657；走查 07）。
    〔开始复习〕
   （空：今天不用复习，要不要聊一句？〔去聊一句〕）
   （成长空：学过一次之后，这里会出现你掌握的技能。
-        先去客厅聊一句，批注会自己来找你。〔去聊一句〕）
+        先去案头聊一句，批注会自己来找你。〔去聊一句〕）
 ```
 
 - 组织（rd-3 提案B；授权 `DEC-OPI-dc0ba4b6-…9` + 用户令②「大量信息
-  并非用户需要看见的」，调研B）：默认层恰两块——① 今天的行动 =
-  到期 N 项 + 进行中的批注 + 一个动词按钮；按钮 = 第一优先行动
-  （批注回应 > 到期复习 > 邀请），「开始复习」直接开教第一句到期句
-  （真动作不是导航），到期行仍带「教我这一句」行内钮；② 你的成长 =
-  恰 3 条词级结论句（「能做到 / 还在练 / 暂时不能」三档词级表达，
-  聚合自批注判分——不是分数是结论；不显示数值/档位/置信度；不足
-  3 条如实显示有的几条，0 条 = pull-revelation 空态卡，给学习线索
-  与直达路径——NN/g）。环块诚实省略：无可靠的连续天数数据源，今日
-  进度又与行动块重复（调研B「计数是副产品、最多 1 环」——宁缺毋凑，
-  两块是合法形态）。
-- 文案定稿：批注在场「有一张批注等着你回应。」/ 钮「去回应」；
-  空邀「今天不用复习，要不要聊一句？」/ 钮「去聊一句」；到期行沿
-  「{表达} · 今天到期 / 过期了 + 教我这一句」；成长行「能做到：
-  {表达}。」/「还在练：{表达}。」/「暂时不能：{表达}。」；成长
-  空态「学过一次之后，这里会出现你掌握的技能。」+「先去客厅聊一句，
-  批注会自己来找你。」；成长三档映射 SUCCESS / ALTERNATIVE_SUCCESS →
-  能做到，PARTIAL / ABSTAIN → 还在练，FAILURE → 暂时不能。
-- 移走清单（9.11-22）：页首计数摘要行退役（计数是副产品）；诊断
-  五问用户面零渲染（归档读法——8.2.5）；可以练的表达迁档案（8.2.5）。
+  并非用户需要看见的」）：默认层恰两块——① 今天的行动 = 到期 N 项 +
+  进行中的批注 + 一个动词按钮；按钮 = 第一优先行动（批注回应 > 到期
+  复习 > 邀请），「开始复习」直接开教第一句到期句（真动作不是导航），
+  到期行仍带「教我这一句」行内钮；② 你的成长 = 恰 3 条词级结论句
+  （「能做到 / 还在练 / 暂时不能」三档词级表达，聚合自批注判分——
+  不是分数是结论；不显示数值/档位/置信度；不足 3 条如实显示有的几条，
+  0 条 = pull-revelation 空态卡，给学习线索与直达路径）。
+  **环块诚实省略：无可靠的连续天数数据源，今日进度又与行动块重复**
+  （宁缺毋凑，两块是合法形态）。
+- 文案定稿：批注在场「有一张批注等着你回应。」/ 钮「去回应」；空邀
+  「今天不用复习，要不要聊一句？」/ 钮「去聊一句」；到期行沿
+  「{表达} · 今天到期 / 过期了 + 教我这一句」；成长行「能做到：{表达}。」
+  /「还在练：{表达}。」/「暂时不能：{表达}。」；成长空态「学过一次
+  之后，这里会出现你掌握的技能。」+「先去案头聊一句，批注会自己来找
+  你。」；成长三档映射 SUCCESS / ALTERNATIVE_SUCCESS → 能做到，
+  PARTIAL / ABSTAIN → 还在练，FAILURE → 暂时不能。
+- 移走清单（9.11-22）：页首计数摘要行退役（计数是副产品）；诊断五问
+  用户面零渲染（归档读法——8.2.5）；可以练的表达迁档案（8.2.5）。
 - 状态：两块各走 #14 三态（现役）。
 - 组件：#14、#1（--ink 主钮）、行内按钮沿库外类 .teach-me。
-- 映射：**纯前端重组**（成长聚合与行动合并客户端派生，无新端点；
-  进行中的批注读 /api/teaching/current 只读面）。
+- 映射：**纯前端重组，已实施**（成长聚合与行动合并客户端派生，无新
+  端点；进行中的批注读 /api/teaching/current 只读面）。
 
 #### 8.2.4 温故 · 方向
 
 ```
   温故 · 方向
   ─────────────────────────────
-  你想把英语用在哪里——这是客厅记着的长期方向。
+  你想把英语用在哪里——这是笔友记着的长期方向。
   每次保存都前移版本；上一版找不回来。
 
   长期目标                  （读编合一：当前值即编辑值）
@@ -725,12 +628,17 @@ app.js:568-657；走查 07）。
 
 - 组织：读写合一（读卡取消，当前值直接进编辑面）；保存区独立成块，与
   频率写路径分界；参考词表折叠；版本号移出常显。
-- 文案定稿：引导句如上；「技能」代「模态」；保存回执「已保存（第 {n} 版）。」
-  /「内容没有变化——没有写新版本。」；冲突句「这份方向刚在别处被改过——
-  重新读过再改。」+ 钮「重新读过」；词表词中英并置（中文 + 等宽英文小字）。
+- 文案定稿：引导句如上（v2 换名：rd-2 句的自称主语随本刀改「笔友」
+  ——记着方向的是与你通信的笔友）；「技能」代「模态」；保存回执
+  「已保存（第 {n} 版）。」/「内容没有变化——没有写新版本。」；冲突句
+  「这份方向刚在别处被改过——重新读过再改。」+ 钮「重新读过」；词表词
+  中英并置（中文 + 等宽英文小字）。
 - 状态：各面板 #14 三态现役；保存 busy 现役；未装配面诚实句现役保留。
 - 组件：#16 field、#17 chip、#1（--ink / --pencil）、#21。
-- 映射：**纯前端重组**。
+- 映射：**纯前端重组，已实施**。
+- 目标设计（实施在 v2-2）：随 9.2 基线网格重排——表单行的行高锁
+  `--lh-ui`/`--lh-small` 与基线对齐；保存底栏 sticky 语义按 ux-1
+  现役（calc 对齐 dock 顶）保持。
 
 #### 8.2.5 温故 · 档案（rd-3 修订版——收藏档）
 
@@ -752,7 +660,7 @@ app.js:568-657；走查 07）。
    只搜已加载的最近 50 轮。
    〔搜〕搜信里的一句话……
       第 3 封（你）……片段……
-      第 5 封（客厅）……片段……
+      第 5 封（笔友）……片段……
 
   计划
    未来 7 天：今天 2、明天 1、往后 3。
@@ -772,71 +680,75 @@ app.js:568-657；走查 07）。
   点开见明细；明细读服务端已加载的最近几条，Wrapped 计数读全量
   evidence_claim_count；搜索过滤已加载的明细行——表达名 + 原 id）；
   ② 计划 = 一行「未来 7 天」+ 全量排程与目标降入折叠（时间敏感的是
-  今天不是下周——调研B 移走清单）；③ 可以练的表达（自今日迁入，
-  家族分组 + 筛框不变）+ 按表达看（账表：schedule ∪ claims 按
-  target_id 合流）+ 原始读数（观察读数的唯一合法归宿，第一次展开
-  才拉）。
+  今天不是下周）；③ 可以练的表达（自今日迁入，家族分组 + 筛框不变）+
+  按表达看（账表：schedule ∪ claims 按 target_id 合流）+ 原始读数
+  （观察读数的唯一合法归宿，第一次展开才拉）。
 - 加载态两形（NN/g）：进行时「批注正在来的路上……」区别于没有的
   「还没有批注留痕——聊起来才会有。」——未加载不得显示无记录。
 - 搜信里的句子（rd-4）：/api/history 的 50 轮窗口内找一句话，口径
   写在脸上（「只搜已加载的最近 50 轮。」）；命中列「第 n 封（你/
-  客厅）」+ 前后片段——历史轮次没有时间戳，一个日期都不造（第 n 封
+  笔友）」+ 前后片段——历史轮次没有时间戳，一个日期都不造（第 n 封
   按已加载窗口内的顺序数）；同一轮两侧都命中列两行；无命中「这五十
   轮里没有这一句。」；跨信重现**不做**（客户端没有那张表面——裁决
   预告 9.12-23 之数据缝）。痕迹搜索的检索串并入中文读法（族名 +
   判词——「接话」「答得漂亮」也搜得到；rd-3 INFO-4 收口）；判分落
   成功族（SUCCESS / ALTERNATIVE_SUCCESS）的明细行落 #22 stamp 水印
   小图（--ink-ghost，日期沿 .kv 的 mono）——PARTIAL / FAILURE /
-  ABSTAIN 不盖（被验证才入册）。
-- 诊断归档读法（9.11-22）：诊断五问（为什么留了这张批注 / 为什么
-  没有递 / 判分有什么变化 / 你收到了哪些帮助 / 有没有从简处理的
-  轮次）与「为什么 · 原值」整体移出用户面——/api/diagnostics 端点
-  与其数据面钉保留在 API 层（web.py 冻结），前端调用与渲染整体移除；
-  内部决策理由 = 噪音与焦虑源（调研B 移走清单：用户面 0 展示）。
-  观察流水留在原始读数深档（排查材料，非搜索对象）。
+  ABSTAIN 不盖（被验证才入册）。**注记（v2-2 对齐项）**：现役
+  app.js 的来信侧标签仍是 rd-2 旧自称词，v2-2 随本节文案改「笔友」。
+- 诊断归档读法（9.11-22）：诊断五问与「为什么 · 原值」整体移出用户面
+  ——/api/diagnostics 端点与其数据面钉保留在 API 层（web.py 冻结），
+  前端调用与渲染整体移除；**用户面零渲染**、内部决策理由 = 噪音与
+  焦虑源。观察流水留在原始读数深档（排查材料，非搜索对象）。
 - 文案定稿：期待态「攒够 30 次批注，这里会讲一个学期的故事——现在有
-  {n} 条。」（不足门槛讲期待不讲遗憾——调研B Wrapped：数据不够就
-  不解锁）；搜索无命中「没搜到这一句的痕迹。」；桶行「{本周 / 上周 /
-  {m} 月 / 去年 / 更早}：{n} 次批注，主题 {A} / {B}」；计划行
-  「未来 7 天：今天 {n}、明天 {m}、往后 {k}。」（UPCOMING 窗口落在
-  过去或 7 天外不上数，口径如实）；排程空态「还没有排程——批注来过
-  才会排。」；账表列沿「痕迹 {n} 条 / 最近判分 / 复习」，判分词沿
-  「答得漂亮 / 答了一半 / 没答中」，复习列沿「今天到期 / 过期了 /
-  排上了 / 还没排上」。
+  {n} 条。」（**不足门槛讲期待不讲遗憾**——数据不够就不解锁）；搜索
+  无命中「没搜到这一句的痕迹。」；桶行「{本周 / 上周 / {m} 月 / 去年 /
+  更早}：{n} 次批注，主题 {A} / {B}」；计划行「未来 7 天：今天 {n}、
+  明天 {m}、往后 {k}。」（UPCOMING 窗口落在过去或 7 天外不上数，口径
+  如实）；排程空态「还没有排程——批注来过才会排。」；账表列沿
+  「痕迹 {n} 条 / 最近判分 / 复习」，判分词沿「答得漂亮 / 答了一半 /
+  没答中」，复习列沿「今天到期 / 过期了 / 排上了 / 还没排上」。
 - 状态：痕迹 / 计划 #14 三态（痕迹 loading 用进行时句）；折叠内面板
   原值三态现役；账表拉取失败 = 折叠内一行 + 重试。
 - 组件：#16 field、#21 折叠组、#9 meter-row（账表行）、#14。
-- 映射：**纯前端重组**（聚合 / 分桶 / 计数客户端派生，无新端点）。
+- 映射：**纯前端重组，已实施**（聚合 / 分桶 / 计数客户端派生，无新
+  端点）。
 
 #### 8.2.6 抽屉 · 记忆
 
 ```
   抽屉 · 记忆
   ─────────────────────────────
-  客厅记住的事都在这里——一条条如实。
+  笔友记住的事都在这里——一条条如实，分三摞收纳。
   记住：关系 0 · 剧情 0 · 学习 0 · 痕迹 0 · 存根 0  （摘要行）
 
-  关系      （空：还没有记住什么——聊得多起来，才会记住关于你和它的事。）
-  剧情      （空：……没有一段对话被总结成剧情。）
-  学习状态   （空：……还没有任何痕迹积累到这里。）
-  痕迹      （空：……答对答错都会在这里留下痕迹。）
-  存根      （空：还没有忘掉过任何东西。）
+  角色记忆（cs-2 分摞）
+   笔友记住的——关于你们的通信。
+   （关系 + 剧情：空态各说各的实话）
+  学习记录
+   教学系统的记录——笔友并不知道这些。
+   （学习状态 + 痕迹）
+  存根
+   忘掉这件事留下的收据——只有单向摘要，没有正文。
 ```
 
-- 组织：摘要行 + 五面板（删除台账改名「存根」）；字段名全中文化；指纹
-  缩为前 12 位等宽 + title 全值。
-- 文案定稿：字段「从哪记住的 / 敏感程度 / 保存许可 / 把握 / 指纹」；
-  时间一律 8.4 时间格式。
+- 组织（cs-2 三摞归属分区）：五面板按 `/api/memory` 的 domain 字段
+  分三摞——角色记忆（relationship_memory + episode）/ 学习记录
+  （learner_states + evidence）/ 存根（tombstones，审计）；归属标注
+  写在每摞脸上。cs-2 收起/展开：五个面板各是一件 #21 折叠（默认收，
+  组头 = 面板名 + 计数）——痕迹等内容不再永久摊开。字段名全中文化
+  （「从哪记住的 / 敏感程度 / 保存许可 / 把握 / 指纹」）；指纹缩为前
+  12 位等宽 + title 全值；时间一律 8.4 时间格式。
 - 状态：#14 三态现役。
-- 组件：#9 / #14（不动）。
-- 映射：**纯前端重组**。
+- 组件：#9 / #14 / #21。
+- 映射：**已实施**（cs-2 分摞 + 折叠化）。
 
 #### 8.2.7 抽屉 · 隐私
 
 ```
   抽屉 · 隐私
   ─────────────────────────────
-  请客厅忘掉一些事——走出去就找不回来。
+  请笔友忘掉一些事——走出去就找不回来。
 
   这段通信
    把这段通信的全部记录请出抽屉——信件、批注痕迹与它
@@ -857,15 +769,19 @@ app.js:568-657；走查 07）。
 
 - 组织：危险分级呈现——整段通信一处一钮；52 项目标删除按族折叠 + 筛框
   （与今日同法），危险不再均质平铺；缺席入口保持诚实。
-- 文案定稿：两层 confirm——其一「将把「{范围}」请出抽屉，找不回来。
-  确定继续？」其二「再确认一次：忘掉之后无法恢复。」；结果「已忘掉：
-  {范围}（存根 {n} 条）」/「没有什么可忘——它之前就不在抽屉里。」；
-  结果尾句「这次忘掉留下的存根，在 抽屉 · 记忆 里能看到。」
+- 文案定稿：引导句如上（v2 换名：请求句主语随本刀改「笔友」——
+  记住的是笔友，忘掉的请求也递给她）；两层 confirm——其一「将把
+  「{范围}」请出抽屉，找不回来。确定继续？」其二「再确认一次：忘掉
+  之后无法恢复。」；结果「已忘掉：{范围}（存根 {n} 条）」/「没有什么
+  可忘——它之前就不在抽屉里。」；结果尾句「这次忘掉留下的存根，在
+  抽屉 · 记忆 里能看到。」
 - 状态：删除列表 #14 三态；结果区现役。
 - 组件：#11 confirm-dialog、#1 --pencil、#16、#21。
-- 映射：**纯前端重组**。
+- 映射：**纯前端重组，已实施**。
 
 #### 8.2.8 抽屉 · 设置（rd-4 修订版——R-3 前端先行真面）
+
+现役真值（rd-4 落地，v2-1 换肤）：
 
 ```
   抽屉 · 设置
@@ -875,94 +791,133 @@ app.js:568-657；走查 07）。
    （127.0.0.1，无账号无密码）。     │  页面读不到，也不改它。
    模型端点与模型名由启动命令        │  换端点或换档 = 改启动命令再启动。
    给定——页面不读取，也不显示。     │  娱乐 · 关系优先：聊得多，递得少，
-   批注频率在 温故 · 方向 里调。     │  客厅以听和陪为主。
+   批注频率在 温故 · 方向 里调。     │  案头以听和陪为主。
                                      │  平衡：聊天与练句并行，批注适度。
                                      │  学习优先：练句密度优先，批注递
                                      │  得勤，课程感更明显。
 ```
 
-- 组织（rd-4）：旧两句「设置面还没有铺开。」「教学模式读面与端点
-  说明（位次 R-3，不承诺时点）。」退役（缺位钉随迁）；「现在能如实
-  说的」两真句保留（127.0.0.1 单用户 / 模型端点页面不读不显）+ 批注
-  频率的指向句（不与方向节重复——IA 分层）；新增教学模式参考块。
-  两块入 .panel-grid（≥481px 并排）。
+- 组织（rd-4）：两真句（127.0.0.1 单用户 / 模型端点页面不读不显）+
+  批注频率的指向句 + 教学模式参考块；两块入 .panel-grid（≥481px 并排）。
 - 诚实读法（fail-closed 事实）：当前档位由启动命令给定——页面读不到，
   也不改它；换端点或换档 = 改启动命令再启动。三档参考读物
-  （`docs/PRODUCT_CONTRACT.md` §3 的三名与分寸：娱乐·关系优先 /
-  平衡 / 学习优先）只作参考读物，不构成读面——页面上没有任何承诺词
-  （「即将 / 将来 / 敬请」缺位）。
-- 映射：**纯前端静态**；SECTION_PULLS 不拉本节（缺位钉保留）；模式
-  真读面端点 = 裁决预告 9.12-23（需要服务端暴露档位读面，本刀不设
-  计后端）。
+  （`docs/PRODUCT_CONTRACT.md` §3 的三名与分寸）只作参考读物，不构成
+  读面——页面上没有任何承诺词。纯静态：SECTION_PULLS 不拉本节。
+- 文案定稿：如线框（三档参考的「案头以听和陪为主」为 v2 换名句——
+  rd-4 原句的旧空间词随本刀退役，v2-2 对齐页面字面）。
+- **目标设计（实施在 v2-2）**：① 结构重铸 = 纸面 + 发丝线两块（现役
+  .panel-grid 形态已符内核，重铸只动排印——正文行高锁基线、
+  micro 标签走 `--meta-*` 配方）；② **问候语切换设置项位**（8.2.2①
+  的预留位落此：每日切换 / 每次进入切换两选项，缺省每日；设置写面
+  需要服务端读面——裁决预告见 9.12-23 ①，本版不设计后端）；③ 模式
+  真读面端点（页面读到当前档）沿 9.12-23 ① 预告位次。
+- 组件：#16 / #14（备用）/ #17（设置项位启用时）。
+- 映射：真面已实施；目标两件实施在 v2-2。
 
 #### 8.2.9 全局壳
 
 - 页题去重：六节的页内 h2 取消；spacehead 节名槽 = 唯一页题；页首引导句
-  接 8.2 各页定稿。客厅头部不动（who + who-sub 即页题）。
-- 节签 / dock / 门厅让位 / z 序：不动（R-1 已验收）。
-- 新组件 **#21 折叠组（disclosure）** 契约形（入库走 ⑤ 四步）：
-  - 结构：组头行（名称 + 计数 + 两枚示例，弱化小字）+ 内容区；组头即
-    开关。
-  - 状态矩阵：collapsed（default，内容区 hidden）/ expanded（内容区
-    展开，组头计数保留）/ focus（地基 `:focus-visible` 赭红环，不另设）。
-  - 使用规则：一切「超过 8 行的同质列表」与「参考 / 原始读数」一律走它；
-    组头文字一律 textContent；不得嵌套。
-  - 禁止变体：不得做成手风琴（互斥展开）；不得带图标外链。
-- 摘要行：屏级一行（.sub + mono 数字），非组件不入库。
-- 映射：**纯前端重组**（index.html 六处 h2 移除 + 引导句迁入；既有壳钉
-  随迁）。
+  接 8.2 各页定稿。案头头部 = 端点驱动主从条（mc-1 起）。
+- 节签 / dock / 门厅让位 / z 序：不动（R-1 已验收；v2 换名只改词面）。
+- #21 折叠组（disclosure）契约见 ③；摘要行 = 屏级一行（.sub + mono
+  数字），非组件不入库。
+- 边注栏（≥900px）：案头日期（楷体手迹位——简报 T1 楷体三合法面之一）
+  + 界尺；**装饰邮戳水印已随 v2 撤除**（邮戳只落真实事件，简报 T2）；
+  aria-hidden；窄屏整条缺席。
+- 映射：**已实施**（v2-1 换装 + ux-1 sticky 四面常显）。
 
 #### 8.2.10 教学时刻面
 
 - 卡头（rd-2 批注家族）：「批注：{功能句}」+ 状态行（服务端 status_cn
   原词，界面不自造——AWAITING_USER 词面「等待您回应」在 web.py 冻结，
-  回应结果行用客户端读法「等你回应」，9.10-21 登记）；kind 只走中文映射
-  （CURRENT_USER_ERROR → 你信里的句子），未知值**不兜底直出**，省略该行。
+  回应结果行用客户端读法「等你回应」，9.10-21 登记）；kind 只走中文
+  映射（CURRENT_USER_ERROR → 你信里的句子），未知值**不兜底直出**，
+  省略该行。
 - 卡内指路行（回应面开启时）：「回应写在这张批注上（不是下面的信纸）。」
-- 手写批注层（rd-4）：等回应的卡带红笔圈线（卡头锚行外包伪元素椭圆，
-  border 2px `--pencil` + rotate -2.5deg；静态形随卡递入一次，零新
-  动效）；收场两态可分——成功族 → 盖戳完成态（圈线摘下、#22 stamp
-  同枚印记按上，stamp-press 复用），搁置/负值 → 淡出态（skipped 原
-  样）；守恒律：一卡至多一处手迹。批注开着时写信区上方一行指路
-  「批注开着——回应写在上面那张；也可以直接写一封新信。」（乙案
-  表达，纯文案不改路由——路由裁决见 9.12-23）。
-- 文案定稿（rd-2 豪放档；作答→回应族、跳过→搁置族）：作答框
-  「用英语写一句试试……」（**登记例外不动**——教学表达练习面，W-8 已裁）；
-  钮「寄出回应」；回应寄出后占位「批改中……」（批注家族词面自洽，保留）；
-  求助三词「提示 / 答案 / 讲解」，busy / seen 词族
+- 手写批注层（rd-4）：等回应的卡带红笔圈线（v2 起色 = `--seal` 朱砂
+  ——待回应的批注是真实事件，T2 合法面；border 2px + rotate
+  -2.5deg；静态形随卡递入一次，零新动效）；收场两态可分——成功族 →
+  盖戳完成态（圈线摘下、#22 stamp 同枚印记按上），搁置/负值 → 淡出
+  态；守恒律：一卡至多一处手迹。
+- 文案定稿（rd-2 豪放档）：作答框「用英语写一句试试……」（**登记例外
+  不动**——教学表达练习面，W-8 已裁）；钮「寄出回应」；回应寄出后
+  占位「批改中……」；求助三词「提示 / 答案 / 讲解」，busy / seen 词族
   「取提示中…… / 已看提示 · 取答案中…… / 已看答案 · 取讲解中…… /
-  已看讲解」；跳过「先搁着」（busy「搁置中……」、回音
-  「先搁着了——回头再拾。」）；看答案 confirm「看了答案，
-  完整说法就摆在眼前——看过之后仍可回应。要看吗？」；判分条
-  「✓ 答得漂亮 / ◐ 答了一半 / ✗ 没答中」+ runtime 原话随后（符号为显示件，
-  现役不变；「这次没法判」不动）；回应回音「回应已寄出。」；重试问句
-  「再试一回？」。
-- 点词卡：不动（气质通过；两处登记项保持登记）。
-- 映射：**纯前端重组**（文案与兜底规则）；「回应期聊天框路由到批注」=
-  **需裁决**（产品语义：回应期间写进信纸的字算回应还是算一封信——技术
-  上纯前端可达），本方案只标注不设计。
+  已看讲解」；跳过「先搁着」（busy「搁置中……」、回音「先搁着了——
+  回头再拾。」）；看答案 confirm「看了答案，完整说法就摆在眼前——
+  看过之后仍可回应。要看吗？」；判分条「✓ 答得漂亮 / ◐ 答了一半 /
+  ✗ 没答中」+ runtime 原话随后（「这次没法判」不动）；回应回音
+  「回应已寄出。」；重试问句「再试一回？」。
+- 点词卡：目标形态见 8.2.2③（bottom sheet，v2-2）；两处登记项保持
+  登记（「命中可不含被点词」「25/100 lemma 超 3 词窗」——components.js
+  头注）。
+- 映射：**纯前端重组，已实施**；「回应期聊天框路由」沿 9.12-23 ②
+  预告（乙案指路行已落，纯表达不改路由）。
+
+#### 8.2.11 信档屏（目标设计——实施在 v2-2）
+
+按简报内核写的目标设计（现役对应物 = 案头信流的历史恢复 + 档案节
+搜信；本屏是 v2-2 的结构重铸件）：
+
+- **信封形接线（T1-4 封/信分物——本屏的定义性形态）**：「在途」件与
+  「归档」件一律呈现为**信封形**（矩形 + 中央折线 + 封舌 polygon，
+  毛边只在人手触碰过的件——我方回信与被批注过的信）；**展开读 = 信纸**
+  （同一物件展开，不是跳页换新物件）；信档条目是信封，展开读才是信。
+  在途信封上盖「寄出」邮戳（T2 合法面）。
+- **归档戳挂点（`DEC-OPI-a31b14c9-…16` ⑦ 形态位）**：归档开启动作盖
+  **日期戳**——双圈圆 + 内日/地字，`rotate(3–6deg)`，opacity .35–.5，
+  `--seal` 或 `--ink-ghost`；**同屏 ≤1 枚**、多数屏 0，只落真实事件
+  （归档这件事本身）。
+- 排印骨架：展开的信纸带完整信件骨架（dateline / salutation / 正文
+  段距模式 / complimentary close + signature 楷体手迹位 / P.S.——
+  简报 T1-1）；基线 32px 网格、稿纸横线周期同锁。
+- 口径诚实：只列已加载的窗口（/api/history 50 轮），口径写在脸上；
+  无时间戳的轮次不造日期（第 n 封口径沿 8.2.5）。
+- 状态与组件：条目列表 #14 三态；信封条目 = #4 letter 的封形态扩展
+  （新变体走 ⑤ 四步，如需入库）；展开 = ⑨-5 paper-unfold。
+- 零开闸面：本屏不新增端点（现役读面够用）；真「全历史」读面 = 数据
+  缝（沿 9.12-23 ④ 预告位次）。
+
+#### 8.2.12 观察仪表屏（目标设计——实施在 v2-2）
+
+按简报内核写的目标设计（现役对应物 = 档案节「原始读数」深档 +
+`python -m elc observations` 命令行读出；本屏是 v2-2 的结构重铸件）：
+
+- 定位延续 rd-3 归档读法：观察读数 = **排查材料**，不进任何默认层、
+  不做运营仪表盘——本屏是「原始读数」的专门面，给排查与校准用，
+  不是给学习用。
+- 组织：人话摘要行（一句话：本会话轮数 / 批注递出数 / 误报数——计数
+  是副产品，一行封顶）+ 六表逐表 #21 折叠（默认全收）；表内原值直出
+  （等宽 + tabular-nums），英文指标定义折叠呈现不翻译（8.3 原则）。
+- 排印与质感：mono 微标签配方（`--meta-mono`）、行高锁 `--lh-ui`；
+  零图表、零彩色、零徽章——数据列是账页不是看板（T3 死刑清单）。
+- 状态：每表独立 #14 三态；第一次展开才拉（档案节现役语义迁入）。
+- 组件：#21、#9、#14、#16（筛框备用）。
+- 零开闸面：读面 = 现役 observations 端点；无新端点、无写面。
 
 ---
 
-### 8.3 术语翻译表（工程词 → 客厅语言）
+### 8.3 术语翻译表（工程词 → 通信语言）
 
 总则：状态 / 枚举只出中文（原值归「原始读数」）；存储词表值中英并置
 （中文在前，英文等宽小字在后）；专名（CET4 / IELTS / TOEFL）不译；
 **未列出的词不伪装翻译**——原样小字呈现并登记，下次触碰时补行。
+（v2 换名注：rd-2 表的拟人主体旧称全列随本刀改「笔友」——
+与你通信、旁听、记着事的那一位。）
 
-| 工程词 | 客厅语言 | 备注 |
+| 工程词 | 通信语言 | 备注 |
 |---|---|---|
 | teaching target / 可教目标 | 表达 | 「可以练的表达」 |
 | canonical_key / target_id | 表达名 | 界面只显示 spoken 形（i think） |
 | teaching moment / 教学时刻 | 批注 | rd-2 起（原「短笺」）；批注卡头「批注：{功能句}」 |
 | conversation | 这段通信 | |
 | turn | 一封信 / 一来一往 | |
-| delete / deletion | 忘掉 | 动词「请客厅忘掉」 |
+| delete / deletion | 忘掉 | 动词「请笔友忘掉」 |
 | tombstone / 删除台账 | 存根 | 「这次忘掉留下的存根」 |
 | entity_hash | 指纹 | 前 12 位等宽 + title 全值 |
 | gate | 门规 | DENY = 拦下 |
 | gate reason codes | 门规理由（逐码） | 映射全集在实现刀四查列全；未知码原样小字 |
-| planner / planner evaluation | 客厅（想过）/ 客厅的盘算 | 拟人化 |
+| planner / planner evaluation | 笔友（想过）/ 笔友的盘算 | 拟人主体 = 笔友（v2 换名） |
 | diagnostics | 为什么 | |
 | observations | 原始观察读数 | 归折叠区；指标定义原文不译（折叠呈现） |
 | rollout stage | 教学模式 | Study-first → 学习优先 |
@@ -986,8 +941,9 @@ app.js:568-657；走查 07）。
 | outcome FAILURE | 没答中 | |
 | outcome ABSTAIN | 这次没法判 | |
 | action TEACHING_OPEN / HINT / REVEAL / EXPLANATION | 留了批注 / 给了提示 / 摆了答案 / 给了讲解 | rd-2：TEACHING_OPEN 原词「递了短笺」 |
-| lifecycle AWAITING_USER | 等你回应 | 回应结果行的客户端读法（rd-2，原「等你作答」）；卡头状态行走服务端 status_cn（词面「等待您回应」，web.py 冻结） |
+| lifecycle AWAITING_USER | 等你回应 | 回应结果行的客户端读法（rd-2）；卡头状态行走服务端 status_cn（词面「等待您回应」，web.py 冻结） |
 | kind CURRENT_USER_ERROR | 你信里的句子 | rd-2（原「来自你的句子」）；未知 kind 省略该行，不兜底 |
+| character / penpal / persona | 笔友 | v2 定稿；内置首角色 Nell Alder（名字端点驱动，界面不写死） |
 | 表达家族 discourse | 接话与转题 | |
 | 表达家族 hedge | 留有余地 | |
 | 表达家族 pragmatic | 应对与表态 | |
@@ -1014,13 +970,14 @@ app.js:568-657；走查 07）。
 
 ### 8.4 文案总则
 
-1. **人称**：对用户称「你」，不称「您」；客厅以「客厅」自称（第三人称的
-   地方，不装成人）；伙伴称「笔友」或「伙伴」，避免代词（性别未知）。
-2. **口吻**：克制的书卷气——短句、实词、不用感叹号（引述除外）、不卖萌、
-   不客服腔（禁「请问 / 您反馈的问题 / 很高兴为您服务」）、不打鸡血
-   （禁「太棒了 / 加油」）。
-3. **诚实的表达式**：缺 =「还没有……——（怎样才能有）」（模板出自记忆页
-   空态，升格为全应用范式）；不能 =「这版做不了——（一句原因）」；
+1. **人称**：对用户称「你」，不称「您」；应用叙事的声音是「笔友」
+   （第三人称的地方，不装成人——旁听、回信、记着事的都是笔友，v2
+   定谳）；笔友有名字时用名字（端点驱动），避免代词。
+2. **口吻**：克制的书卷气——短句、实词、不用感叹号（引述除外）、不
+   卖萌、不客服腔（禁「请问 / 您反馈的问题 / 很高兴为您服务」）、
+   不打鸡血（禁「太棒了 / 加油」）。
+3. **诚实的表达式**：缺 =「还没有……——（怎样才能有）」（模板出自
+   记忆页空态，升格为全应用范式）；不能 =「这版做不了——（一句原因）」；
    说不准 =「说不准」；失败 = 人话主句 + 括号工程词；机械事实（版本 /
    时间戳 / 原值）有且只有一个家 = 折叠的「原始读数」。
 4. **危险与不可逆**：先讲会失去什么，再要两次点头；两次确认各说一件事
@@ -1036,7 +993,8 @@ app.js:568-657；走查 07）。
 （rd-2 起口吻从 8.4 第 2 条的「克制的书卷气」升「洒脱豪放」档——用户
 裁定 `DEC-OPI-dc0ba4b6-…13` 之②；本节七条是豪放档的护栏，与 8.4 冲突
 处以此为准，调研底稿 = `docs/research/2026-09-30-frontend-redesign-research.md`
-调研E。）
+调研E。v2-s 换名随迁：第 6 条自称改「笔友」，其余六条一字
+不动。）
 
 1. 一句一事，主句 12–22 字；30 字长句只许铺陈画面，一屏最多一句；
    禁同义反复。
@@ -1048,8 +1006,9 @@ app.js:568-657；走查 07）。
    ③ 写错会被看见且被回应——冲突时清晰优先，氛围让路。
 5. 禁用：喊话祈使（立即 / 马上 / 快来）、网络热词、机械对仗假古风、
    综艺腔、emoji 作语气。
-6. 对用户称「你」（不用「您」）；自称「客厅」（第三人称，不用「我们」
-   避免客服腔）。
+6. 对用户称「你」（不用「您」）；自称「笔友」（第三人称，不用「我们」
+   避免客服腔；v2-s 换名：rd-2 原自称旧词随品牌换名退役——
+   回信的、旁听的、把灯留着的都是笔友）。
 7. 错误反馈写具体改法（「这个词换成 X 更自然」）；不写「错误 / 失败」
    标签，也不写空洞安慰。
 
@@ -1058,64 +1017,67 @@ app.js:568-657；走查 07）。
 
 ### 8.5 前瞻预留
 
-- **流式回复**：「信已寄出，等回信——客厅把灯留着。」占位即流式落点
-  （rd-2 定稿句，原「（回信在途中……）」）——同一位置渐进显字，
-  信纸结构与点词分片不变；信笺语言天然兼容逐字上纸。
-- **历史回看**：/api/history 已服务 50 轮；将来在客厅头部加一条
-  「以前的信 →」即可，信流结构不动。
-- **多伙伴 / 名册**：伙伴身份条（v1 8.4 / R-2 位）落客厅头部；本方案文案
-  不预设「唯一伙伴」以外形态，也不写死「唯一」。rd-4：名册预览与选中
-  记忆已落前端（8.2.2a）——后端缝待裁决（9.12-23）。
-- **设置面（R-3）**：rd-4 起为真面（8.2.8 修订版）——模式真读面端点
-  仍待裁决（9.12-23）。
-- **数据增长**：52 → 100+ 表达后，家族分组 + 折叠 + 筛框线性扩展（组键
-  是语料自身的 taxonomy 段）；摘要行不变；记录页从空到满不改版。
-- **功能增长**：新读数归 温故 · 记录，新私事归抽屉，新行动归客厅 / 今日；
-  新页级功能 = 空间内加节（节签横排可扩），**不为新功能加新空间**
-  （dock ≤5 红线）。
+- **流式回复**：「信已寄出，等回信——笔友把灯留着。」占位即流式落点
+  （rd-2 定稿句，原「（回信在途中……）」；v2-1 措辞精修：自称主语改
+  笔友）——同一位置渐进显字，信纸结构与点词分片不变；信笺语言天然兼容
+  逐字上纸。
+- **历史回看 → 信档屏**：8.2.11（目标设计，实施在 v2-2）承接「以前的
+  信」——信封形接线 + 归档日期戳（`DEC-OPI-a31b14c9-…16` ⑦ 形态位）；
+  /api/history 50 轮窗口口径不变。
+- **多伙伴**：cs/mc 六刀已兑现（信封沓 / 编辑台 / 每角色一会话 / 参数
+  化档案）；沓内翻页全览 = 8.2.2a 目标块（用户定向 2026-10-02）。
+- **设置面**：rd-4 真面（8.2.8）+ v2-2 目标件（问候语切换项位 / 模式
+  真读面端点——9.12-23 ①）。
+- **数据增长**：52 → 100+ 表达后，家族分组 + 折叠 + 筛框线性扩展
+  （组键是语料自身的 taxonomy 段）；摘要行不变；档案页从空到满不改版。
+- **功能增长**：新读数归 温故 · 档案 / 观察仪表屏，新私事归抽屉，新
+  行动归案头 / 今日；新页级功能 = 空间内加节（节签横排可扩），
+  **不为新功能加新空间**（dock ≤5 红线）。
 
-### 8.6 实现映射预告
+### 8.6 实现映射与状态
 
-| 页 | 性质 | 说明 |
+| 页 | 状态 | 说明 |
 |---|---|---|
-| 门厅 | 纯前端重组 | index.html 文案 + `<title>` |
-| 客厅 | 纯前端重组 | 空厅句 / 失败行 / blocked 行 / 空横幅移除 |
-| 温故 · 今日 | 纯前端重组 | 分组键 = target_id 第二段客户端派生；#21 入库 |
-| 温故 · 方向 | 纯前端重组 | 词表中英并置客户端映射；参考词表折叠 |
-| 温故 · 记录 | 纯前端重组 | 三面合流客户端（可选优化 = 服务端聚合读数，非依赖） |
-| 抽屉 · 记忆 | 纯前端重组 | 字段名与指纹呈现 |
-| 抽屉 · 隐私 | 纯前端重组 | 52 行分组折叠 + 筛框 |
-| 抽屉 · 设置 | 纯前端静态（rd-4 真面） | 三档参考 + 诚实读法句（8.2.8 修订版）；模式真读面端点 = 裁决预告 9.12-23 |
-| 全局壳 | 纯前端重组 | h2 取消 + 引导句迁入；#21 同刀入库；既有壳钉随迁 |
-| 教学时刻面 | 纯前端重组 | 文案与兜底规则；「回应期聊天框路由」= **需裁决**（9.12-23；rd-4 已落乙案指路行——纯表达不改路由） |
+| 门厅 | **已实施**（v2-1 换装） | 展信佳 · Dear You 封面；`BRAND` 常量单点 |
+| 案头（信流与写信区） | **已实施**（v2-1 锚屏）+ v2-2 目标块 ①②③④ | 主从条端点驱动；瘦身/层次/bottom sheet/触点提示四件实施在 v2-2 |
+| 笔友档案、信封沓、编辑台 | **已实施**（cs-2/mc-1/mc-2） | 翻页全览与起笔展开实施在 v2-2 |
+| 温故 · 今日 | **已实施**（rd-3） | 默认层两块 |
+| 温故 · 方向 | **已实施** | 读写合一 |
+| 温故 · 档案 | **已实施**（rd-3/rd-4） | 「第 n 封（你/笔友）」标签 v2-2 对齐 |
+| 抽屉 · 记忆 | **已实施**（cs-2 三摞） | 归属分区 + 折叠化 |
+| 抽屉 · 隐私 | **已实施** | 「请笔友忘掉」句 v2-2 对齐页面字面 |
+| 抽屉 · 设置 | **已实施**（rd-4 真面）+ v2-2 目标件 | 问候语项位 / 模式真读面 |
+| 信档屏 | **目标设计**（8.2.11） | 实施在 v2-2；信封形 + 归档戳 |
+| 观察仪表屏 | **目标设计**（8.2.12） | 实施在 v2-2 |
+| 全局壳 | **已实施**（v2-1 + ux-1） | 边注栏水印撤除；sticky 常显 |
+| 教学时刻面 | **已实施** | 红笔圈 = 朱砂（v2 T2 对齐） |
 
-冻结线（本方案实施时）：十二既有端点零改动；src 限 `webui/`（+ 既有壳钉
-随迁）；新增组件仅 #21，走 ⑤ 四步；词表中文映射是**表达层**（客户端展示），
-不改任何存储值。
+冻结线（v2-1 已履行存证）：十二既有端点零改动 + cs/mc 按各自任务书
+新增端点；src 限 `webui/`（+ 既有壳钉随迁）；词表中文映射是**表达层**
+（客户端展示），不改任何存储值。v2-2 的冻结线实施时另立（预计：
+`/api/settings` 读面与信档读面需另裁）。
 
-### 8.7 实现注记（R-1R 落地时追加；不改 8.0–8.6 一字）
+### 8.7 实现注记（R-1R 落地时的注记存目；v2-s 起为历史注记——冲突处以各刀登记与现役节为准）
 
 1. **短笺卡 kind 映射**：客户端表 `MOMENT_KIND_CN` 两键——
-   `CURRENT_USER_ERROR → 来自你的句子`（8.2.10 给定）与
+   `CURRENT_USER_ERROR → 来自你的句子`（8.2.10 给定；rd-2 起
+   界面词 = 「你信里的句子」）与
    `RESOURCE_PRACTICE → 资源练习`（镜像服务端 `kind_cn` 的原词，非客户端
    自造译名）；其余未知值省略整行（不兜底直出，蓝图原话）。
 2. **`<select>` 的中英并置**：`<option>` 只能是纯文本，无法挂等宽小字
    span——目标技能下拉的并置退化为纯文本形态「口语 SPEAKING」；chips 与
    field 名牌保持富形态（中文 + `.rawtag` 原文小字）。
-3. **blocked 行「原委在 学案 · 记录」**：链接是 `btn--pencil` 文字钮，
-   点击调现役 `showSpace("study")` + `showSection("study", "progress")`
-   （8.2.2 映射的兑现）。
-4. **筛框无命中句**以本蓝图 8.2.3 为准：「没有叫这个的表达。」（任务书
-   摘要曾写「没有叫这个表达。」——以蓝图定稿逐字为准，差异已回执披露）。
-5. **作答/寄出的回音行**：作答成功回音「作答已寄出。」、跳过回音「这次
-   跳过了。」（8.4 动词表禁「提交」；蓝图未给这两个回音词，此处为最小
-   合规拟定，R7 域用户首验可否决）。作答失败回退「请求没送到——再试
-   一次。」（与教我失败网络臂同词）。
+3. **「原委在」链接**：blocked 行（两形）已随 W-8 从信流退役；「为什么」
+   的读出归 温故 · 档案 why_not 面与原始读数（现役读法）。
+4. **筛框无命中句**以蓝图 8.2.3 为准：「没有叫这个的表达。」
+5. **作答/寄出的回音行**：作答成功回音后改「回应已寄出。」、跳过回音
+   「先搁着了——回头再拾。」（rd-2 批注家族，8.2.10 定稿）；失败回退
+   「请求没送到——再试一次。」。
 6. **空厅句是客户端静态系统行**（无历史时一行，第一封信寄出即撤），
    不是伪造的历史记录。
 7. **「为什么」面板**的 `benefit_score`/`cost_score` 原值不进中文行——
-   它们的归宿是记录页底「原始读数」区的「为什么 · 原值」（诊断载荷的
-   逐字 JSON）。
+   它们的归宿是档案页「原始读数」区的「为什么 · 原值」（诊断载荷的
+   逐字 JSON；rd-3 起整体归档读法，见 8.2.5）。
 8. **刷新/拉取钮全退**（进节即拉即唯一拉取点）：today-refresh /
    learning-refresh / diag-refresh / mem-refresh / goal-refresh / obs
    六个 id 退役（观察读数改为「原始读数」区第一次展开时拉，失败区内
@@ -1126,75 +1088,93 @@ app.js:568-657；走查 07）。
    ⑧ 8.1.3「读数块一律 #14 state-banner 族（现役）」的保留面，未按
    8.4 动词表改写；若用户首验要求改写，另起一刀。
 10. **隐私页拒绝行**：「没能忘掉。」+ 服务端 message + 括号工程词
-    （code 等宽小字）；网络失败「请求没送到——再试一次。」（蓝图未给
-    拒绝形，8.4 失败 = 人话主句 + 括号工程词的兑现）。
+    （code 等宽小字）；网络失败「请求没送到——再试一次。」（8.4 失败
+    = 人话主句 + 括号工程词的兑现）。
 
 ---
 
-## ⑨ 视觉工艺规范（R-1V · 2026-09-30）
+## ⑨ 视觉工艺规范（R-1V 立 · v2 内核重写）
 
-> 地位：本节是「高级信笺」视觉工艺层的规范出处——用户否决上一版
-> （「整体不够协调，留白过分，不高级。设计简陋，如同白板模版……
-> 组件、图标、动效简陋」）之后，R-1V 对**呈现层**的整体精修规范。
-> ⑧ 的信息架构与文案冻结线、F-1R 的形态法则（零卡片/零气泡/零青绿
-> /零圆角；「零阴影」一项已由用户 2026-09-30 解除——纸叠偏移阴影
-> 两级按 ② 的 rd-1 登记入册，`DEC-OPI-dc0ba4b6-…13`）、十二端点与
-> Python 侧零改动——全部不动；本节只
-> 规范版式、质感、图标、动效四个工艺面，参数唯一出处是 ② 的 token 表。
+> 地位：本节是视觉工艺层的规范出处。v2 起工艺权威 = 简报 §0–§6
+> （铁胆墨 14 色 / 排印系统 / 信件机制层 / 动效手感 / 形态法则）；
+> 本节把简报参数与 webui 实现的对接面写全，参数唯一出处是 ② 的
+> token 表。⑧ 的信息架构与文案、F-1R 的形态法则（零卡片/零气泡/零
+> 青绿；圆角 v2 收窄一档：信纸物件 ≤2px，仅邮票/邮戳圆形）、Python
+> 侧端点与 web.py 允许表——全部不动。设计义务（用户元指令 2026-10-02）：
+> 高级动效应自然设计，总控/执行者主动巡检优化点，不等用户提（①.5）。
 
 ### 9.1 排版标度
 
-| 档 | token | 值 | 用于 |
-|---|---|---|---|
-| 衬线 display | `--fs-display` | 27px | 门厅 h1 |
-| 衬线 title | `--fs-title` | 21px | 页级大题（预留） |
-| 衬线 head | `--fs-head` | 17px | 卡题 / 词头 / primary 动作 |
-| 衬线 body | `--fs-body` | 16px | 信笺正文 |
-| 衬线 small | `--fs-small` | 14px | 词卡正文、辅助衬线 |
-| sans ui | `--fs-ui` | 12px | 界面小字基准 |
-| sans micro | `--fs-micro` | 11px | 弱化 / 系统行 / 仪表 |
+九档标度（简报 §3b，token 逐值见 ②-4；行高写整 px）：
 
-- 行高：`--lh-body` 1.55 / `--lh-letter` 1.75 / `--lh-ui` 1.7。
-- 字距：`--ls-title` 0.14em / `--ls-caps` 0.18em / `--ls-formhead` 0.3em。
-- **预留诚实注（处置刀收口评审 F-1）**：本节 token 已接线的只有
-  `--fs-micro`（边注日期）与 `--lh-letter`（信笺 `.say`）——其余
-  （衬线五档 / `--fs-ui` / `--lh-body` / `--lh-ui` / 三个字距）尚为
-  标度基准：现役字号、行高、字距由 ②「祖辈字面冻结存量」的既有规则
-  承担（如门厅 h1 的 27px 是祖辈字面，非 `--fs-display` 接线）；新写
-  规则起用本表，不回迁存量。`--fs-title` 行内（预留）体例同此。
+| 档 | px × 行高 | 字距 | 用面 |
+|---|---|---|---|
+| display | 34 × 42 | +0.01em / 西 −0.01em | 门厅题/信头（宋体 400，禁 700） |
+| title | 24 × 32 | +0.02em | 节题/页级大题 |
+| head | 18 × 26 | +0.03em | 卡题/词头/批注头 |
+| **body** | **17 × 32** | +0.01em | **信件正文**（1.88 为中文满框留气） |
+| body-latin | 17 × 28 | 0 | 纯英文段（Sitka/Constantia） |
+| small | 14.5 × 24 | +0.01em | 词卡释义/批注正文（连续阅读下限） |
+| hand | 19 × 30 | +0.04em | 手迹位（KaiTi，≤2 行 ≤1 处/屏） |
+| ui | 12.5 × 20 | +0.02em | 按钮/界面小字 |
+| micro | 11.5 × 18 | 大写 +0.14em | 元信息/节名——**禁排中文整句**，只许 2–4 字标签与数字 |
+
+- 字体栈五条见 ②-3（简报 §3a；离线、仅 Win11 系统字体；CJK 回退次序
+  固定）。**楷体边界**：仅 3 个用面（落款、案头日期、边注），17–24px，
+  每屏 ≤2 行 ≤1 处；禁作正文、禁 <16px、禁 >28px。
+- 工艺法则（简报 §3c 十条，逐条可执行）：中文正文 ≥15px；禁合成粗体
+  （宋/楷 700 发糊——中文标题靠字号跳档 + 字距）；微标签统一「大写 +
+  0.14em 字距 + 降一档重」，不用 small-caps；信件正文旧式数字
+  （Georgia/Constantia 默认 onum），数据列等宽 tnum；中文全角「」、
+  西文真弯引号“”，`text-spacing-trim: trim-start` 以 `CSS.supports()`
+  探测启用；信件流段落 = 段间距 0.75em + 零缩进，中文文档页（设置/
+  隐私）才 `text-indent:2em` 零段距；`text-wrap: pretty`（正文）/
+  `balance`（标题）；行高只写整 px；中英混排不手工插空格（ex-height
+  匹配由字体栈保证）；正文字距 0–0.02em。
 - mono 细节：数字一律 tabular-nums（摘要行 `.sumnum`、仪表行 #9）；
   日期 / 指纹 / 版本号 / 原始 id 走 mono micro（`.rawtag`）。
-- 字重：衬线正文 400，卡题与词头 600–700，sans 小标 500；反白仅
+- 字重：衬线正文 400，卡题与词头 600（衬线 700 禁用于中文面——合成
+  粗体；head 档需要更重时切雅黑/等线真 Bold），sans 小标 500；反白仅
   `chip--on` 一处。
 
 ### 9.2 间距节奏
 
-- 4 基数八阶（`--sp-1`…`--sp-8` = 4/8/12/16/24/32/48/64px）：R-1V 起
-  新写的尺寸规则一律走阶，不裸写像素。
+- 4 基数八阶（`--sp-1`…`--sp-8` = 4/8/12/16/24/32/48/64px）：新写的
+  尺寸规则一律走阶，不裸写像素。
 - **大处疏朗、密处有致**：节与节之间 24–48（--sp-5..7），页首引导句
   后 16（--sp-4）；行内与卡内 4–12（--sp-1..3）。发丝线分区（#5）是
   疏密的分界线，不是容器——均匀的大空白 + 细字（白板观感）是反例，
   疏密对比才是信笺。
-- 阅读宽：信纸栏 ≤640px（9.6）；阅读左右留白 `--read-pad`。
+- **基线网格**：`--baseline: 32px`（= body 行高）——正文行高、稿纸
+  横线周期、批注卡内文字全部锁死同值，`background-position` 对齐
+  首行，**字必须落在线上**。
+- 版心 `--measure: 34em`（≈578px）；阅读宽：信纸栏 ≤640px（9.6）；
+  阅读左右留白 `--read-pad`；页边距 ≥2 行高。
 
 ### 9.3 质感与层次
 
-- **纸系四层**（同色系深浅，零彩色）：主纸 `--bg` / 泛起纸面
-  `--paper-high`（hover 微起、浮层卡面）/ 次纸 `--paper-2`（批注底、
-  垫纸层）/ 桌布 `--desk`（≥900px 案头底）。
+- **纸系四层**（同色系深浅，零彩色）：主纸 `--paper` / 顶纸
+  `--paper-high`（hover 微起、浮层卡面、dock 垫板目标态）/ 次纸
+  `--paper-2`（批注底、垫纸层）/ 桌布 `--desk`（≥900px 案头底）。
 - 发丝边两档（`--rule` / `--rule-soft`，钉）；界尺与角饰用**水印墨**
-  `--ink-ghost`（永不作文字）。
-- **压痕/纸影两级**（rd-1 面6 解禁重写）：**纸叠偏移阴影**走
-  `--stack-shadow-*` 两级（轻=右上 soft / 重=左下 deep；墨色同源
-  `rgba(27,26,23,…)`、方向不统一、与发丝描边配对、禁大面积模糊投影
-  型）——应用面三类：`#stage` 在桌布（≥900，deep）/ `.note-paper` 在
-  信纸（soft）/ #15 词卡的垫纸层承影（soft）；垫纸错位（#15 ::after
-  3px）与阴影并存，垫纸仍是契约形。`rgba(0,0,0,…)` 阴影与两级之外的
-  自造 shadow 永禁（F-1R 历史提交原文保留不改写；解除登记见 ②）。
-- 撕边/撕缝：`.letter.me` 的 clip-path 撕口（钉）与 #7 resultstrip
-  的 1px dashed 撕缝线。
-- 印记母题：#13 brand-mark（信封 + 封蜡）与 #22 postmark（邮戳水
-  印）；赭红克制三档（`--pencil` / `--pencil-deep` / `--pencil-soft`）。
+  `--ink-ghost`（永不作文字）；水印墨同时是墨水物理的起笔色
+  （新到信 `--ink-ghost → --ink` 一次性过渡 ≈600ms，reduced-motion
+  直落终态——简报 T1-3「墨是暖纸上的冷墨，层级靠浓淡不靠灰」）。
+- **纸叠偏移阴影两级**（rd-1 面6 解禁重写；v2 值 = `rgba(25,27,30,…)`）：
+  走 `--stack-shadow-*`（轻=右上 soft / 重=左下 deep；墨色同源、方向
+  不统一、与发丝描边配对、禁大面积模糊投影型）——应用面：`#stage`
+  在桌布（≥900，deep）/ `.note-paper` 在信纸（soft）/ 词卡垫纸层
+  （soft）/ 信封沓每封（soft，mc-1）。`rgba(0,0,0,…)` 阴影与两级之外
+  的自造 shadow 永禁（F-1R 历史提交原文保留不改写；解除登记见 ②）。
+- 撕边/撕缝：`.letter.me` 的 clip-path 撕口（钉——人手触碰过的件才有
+  毛边，简报 T1-1）与 #7 resultstrip 的 1px dashed 撕缝线。
+- 折痕（简报 T1-5）：归档件展开时两条 1px 横线（距顶 1/3 与 2/3，
+  opacity 3–4%），淡到初看不见、不压字（8.2.11 信档屏载）。
+- 印记母题：#13 brand-mark（信封 + 封缄，**封缄点 = 墨蓝**——品牌印记
+  不是事件，朱砂不落）；**朱砂 `--seal` 只盖真实事件**：邮戳（寄出/
+  结课/归档开启三类）/ 红笔圈（学习反馈存活期）/ 批注圈线；每屏 ≤1
+  处。档号/编号/日期 = 等宽小字 + tabular-nums，只标真实编号，≤2
+  处/屏（简报 T2 全量纪律以简报为准）。
 
 ### 9.4 图标集契约（#22 icon-set）
 
@@ -1202,37 +1182,48 @@ app.js:568-657；走查 07）。
   `currentColor` 随宿主墨色层级（弱化位 `--ink-faint` / 水印位
   `--ink-ghost`）；默认见方 `--icon-size` 18px，语境尺寸随宿主登记
   在 #22 契约块。
-- 现役八枚与锚位：`search` → 筛框名牌（随 #16）/ `chevron` → #21
+- **现役七枚与锚位**：`search` → 筛框名牌（随 #16）/ `chevron` → #21
   折叠箭头 / `note` → #3 卡头 / `write` → 回信在途中（.typing）/
-  `inbox` → 空厅（.sysline.emptyhall）/ `lamp` → #14 空态 /
-  `postmark` → 桌面边注栏水印（9.6）/ `stamp` → 门厅封面案头日期行
-  的邮票角标（R-1W，⑧ 8.2.1 修订版）。
+  `inbox` → 空厅（.sysline.emptyhall）/ `lamp` → #14 空态 / `stamp` →
+  门厅封面邮票角标 + 教学卡结课邮票。（v2 随边注栏水印撤除退役的那枚
+  圆戳图标已出集——注册的图标是使用的图标，注册表不做阁楼。）
 - 新增图标：同网格同笔重自绘 + ⑤ 四步登记；永远 `aria-hidden` 且
   锚位必有文字同行（图标永不单独承担语义）。
 - 禁：外链图标 / 图标字体 / data URI / 彩色填充 / 第二套网格或笔重 /
   纯图标按钮（#1「禁图标」不动——图标不进按钮当唯一内容）。
 
-### 9.5 动效注册表
+### 9.5 动效注册表（「纸先落、墨后渗」——简报 §5）
+
+v2-1 起注册表改形：全库 keyframes 恰五枚（`paper-drop` 落纸 /
+`ink-wash` 渗墨 / `ink-set` 落墨 / `paper-unfold` 展开 / `stamp-press`
+盖印，components.css 库尾；screens.css 另有 `editor-zoom-in/out` 编辑
+台过渡）——行级动效 = 这五枚原语按消费面组合，**opacity 恒慢于
+transform ≈1.3×**（消费面用 `calc(var(--dur-*) * 1.3)` 表达法则）。
+呼吸循环件已随 v2 退役（零常驻循环铁律）。
 
 | 动效 | 触发 | 时长 × 缓动 | 实现 | reduced-motion 降级 |
 |---|---|---|---|---|
-| ink-fade 墨迹淡入 | 新信寄出与到达（`addLine` 的 `opts.enter`；历史回填不播）；#15 词卡开启复用（`--dur-2`） | `--dur-3` × `--ease-ink`（词卡 `--dur-2`） | `.flow-enter` + `@keyframes ink-fade` | 总降级块归零 |
-| note-arrive 批注递出 | 新批注组到达（轮询重渲染同 key 静帧，不重演）；rd-1 重定档（260→240ms，四族对齐） | `--dur-note`（240ms）× `--ease-paper` | `.note-paper--enter` + `@keyframes note-arrive` | 同上 |
-| paper-unfold 纸面展开 | #21 每次展开 | `--dur-2` × `--ease-paper` | `.disclosure-body:not([hidden])` + `@keyframes paper-unfold` | 同上 |
-| chevron 旋转 | #21 `--open` 切换 | `--dur-2` × `--ease-paper` | `.disclosure--open .disclosure-marker .inkicon` transform | 同上 |
-| 触压下沉 | `:active`（#1 / #17 / #18） | `--dur-1` × `--ease-press` | `transform: translateY(1px)` | 同上 |
-| 纸面微起 | #2 pen focus | `--dur-2` × `--ease-ink` | `background-color` → `--paper-high` | 同上 |
-| hover 泛赭/加深 | #1 / #15 .word / #17 / #18 / #20 / #21 组头 | `--dur-1` × `--ease-press` | color / text-decoration-color / border-color | 同上 |
-| 焦点环 | `:focus-visible`（button / input / textarea / select） | 无动效 | 现役赭红环（R-1V 补齐 textarea/select 两漏网） | 不适用 |
-| state-breathe 呼吸尾点 | #14 loading（现役） | 1.6s ease-in-out（现役值） | 现役 `@keyframes state-breathe` | 现役专门块 + 总降级块双保险 |
-| paper-settle 信笺落座 | 门厅封面首绘（页面加载播一次，R-1W） | `--dur-3` × `--ease-paper` | `.paper-settle` + `@keyframes paper-settle` | 总降级块归零 |
-| seal-press 印记按落 | 门厅印记入场（首绘一次，R-1W） | `--dur-3` × `--ease-ink` | `.seal-press` + `@keyframes seal-press` | 同上 |
-| state-layer 触感层 | 可交互件 hover / `:focus-visible` / `:active`（.btn 全族 / #17 / #18 / #20 / #21 组头 / `.teach-me`；输入件豁免——键盘焦点有即时赭红环 + #16 发丝线转赭，雾会糊字） | `--dur-micro` × `--ease-press` | `::after` 墨雾叠色（`--state-hover` .08 / `--state-focus` .12 / `--state-press` .12），零布局位移；hover 半区 `@media (hover: hover)` 包裹（触屏只有按压半区） | 总降级块（0.01ms）即达稳态 |
-| 信纸落桌（视图切换档） | 客厅空间显形（`#space-parlor` 解隐，每次切换落一次） | `--dur-settle` × `--ease-enter` | 复用 `@keyframes paper-settle`，挂 `#space-parlor:not([hidden]) .flow`（内容层——容器动画会让 fixed 写信区在动画期改挂本节） | 总降级块归零 |
-| 邮戳盖下 stamp-press | 信笺寄出一瞬（composer 提交，JS 落类一次，animationend 自摘） | `--dur-stamp` × `--ease-press` | `.stamp-press` + `@keyframes stamp-press`（scale .96→1 的 transform 收束，非投影） | 0.01ms 即终，animationend 仍到（JS 清理不失效） |
-| 抽屉开合 drawer | tabpanel 显隐（温故/抽屉的节切换） | 进 `--dur-panel-in` × `--ease-enter`（**出 200 已立待接**——容器级退出需 allow-discrete 的 display 参与，活体实证与祖先 display 翻转同帧组合会把透明度卡死在 0（canonical 单时长形态同死）；待 JS 编排或引擎修正，Revisit；现役退出 = `[hidden]` 直切） | `[role="tabpanel"]:not([hidden])` transition + `@starting-style`（只走透明度，位移交给逐行落墨；旧引擎直接显隐） | 总降级块（0.01ms）直切 |
-| 逐行落墨 reveal stagger | tabpanel 首次入视（IntersectionObserver 落 `.is-revealed`，回调只加类） | ink-fade `--dur-1` × `--ease-enter`，步长 40ms、只对前 8 项生效（`--i` 由 JS 落，总封顶 320ms；`animation-fill-mode: backwards` 防先亮一下） | `[data-reveal].is-revealed` 子项 + `--i`（components.js `wireReveal`） | 双面：CSS 总降级块 + JS 半区 `matchMedia` 即落定 |
-| 回执首渲 @starting-style | 动态插入的回执件（.typing / .sysline / .errline / .busystrip / .resultstrip）首渲 | `--dur-micro` × `--ease-exit` | `@starting-style`（Baseline 2024-08；缺失 = 直接出现，天然渐进增强）。信笺/批注不走此路（JS 门控的 ink-fade/note-arrive 保历史回填静帧）；#15 词卡已有 ink-fade 不叠加 | 总降级块归零 |
+| paper-settle 信笺落座 | 门厅封面首绘（页面加载播一次） | `--dur-settle` × `--ease-paper` | `.paper-settle` = paper-drop（旧 keyframes 已退役，类名沿用） | 总降级块归零 |
+| seal-press 印记按落 | 门厅印记入场（首绘一次） | `--dur-ink` × `--ease-paper` | `.seal-press` = ink-wash（同上） | 同上 |
+| 信到达（ink-wash 组合） | 新信寄出与到达（`addLine` 的 `opts.enter`；历史回填不播）；词卡开启同法 | `--dur-panel-in` transform × `--ease-paper` + `--dur-ink` opacity | `.flow-enter` = paper-drop + ink-wash 双动画 | 总降级块归零 |
+| 墨水物理（ink-set） | 新到信正文字色 `--ink-ghost→--ink` 一次性（T1-3） | `--dur-wet` × `--ease-paper` | `.ink-wet .say` + `@keyframes ink-set` | 直落终态 |
+| note-arrive 批注递出 | 新批注组到达（轮询重渲染同 key 静帧，不重演） | `--dur-note`（260ms）× `--ease-enter` transform + ×1.3 ink-wash | `.note-paper--enter` = paper-drop + ink-wash 双动画（rd-1 的单 keyframe 形由 v2 双动画取代，档值 260ms 为 v2 重定——原 240ms 旧档废） | 同上 |
+| paper-unfold 纸面展开 | #21 每次展开 | `--dur-note` × `--ease-paper` | `@keyframes paper-unfold`（折叠展开 8px 下落） | 同上 |
+| chevron 旋转 | #21 `--open` 切换 | `--dur-note` × `--ease-paper` | `.disclosure--open .disclosure-marker .inkicon` transform | 同上 |
+| 触压下沉 | `:active`（#1 / #17 / #18 / #20） | `--dur-micro` × `--ease-press` | `transform: translateY(1px)` | 同上 |
+| 纸面微起 | #2 pen focus | `--dur-note` × `--ease-enter` | `background-color` → `--paper-high` | 同上 |
+| hover 加深 | #1 / #15 .word / #17 / #18 / #20 / #21 组头 | `--dur-micro` × `--ease-press` | color / text-decoration-color / border-color | 同上 |
+| 焦点环 | `:focus-visible`（button / input / textarea / select） | 无动效 | 现役环（textarea/select 已补齐） | 不适用 |
+| state-layer 触感层 | 可交互件 hover / `:focus-visible` / `:active`（.btn 全族 / #17 / #18 / #20 / #21 组头 / `.teach-me`；输入件豁免——键盘焦点有即时环 + #16 发丝线变色，雾会糊字） | `--dur-micro` × `--ease-press` | `::after` 墨雾叠色（`--state-hover` .08 / `--state-focus` .12 / `--state-press` .12），零布局位移；hover 半区 `@media (hover: hover)` 包裹（触屏只有按压半区） | 总降级块（0.01ms）即达稳态 |
+| 信纸落桌（视图切换档） | 案头空间显形（`#space-parlor` 解隐，每次切换落一次） | `--dur-settle` × `--ease-enter` | `#space-parlor:not([hidden]) .flow` = ink-wash（内容层——容器动画会让 fixed 写信区在动画期改挂本节） | 总降级块归零 |
+| 案头重落（mc-1 切换档） | 角色切换后的信流重铺（app.js 落类、刷新前先摘——一屏一次纸事件） | `--dur-note` + ×1.3 × `--ease-enter` | `.flow.flow-resettle` = paper-drop + ink-wash | 同上 |
+| 邮戳盖下 stamp-press | 信笺寄出一瞬（composer 提交，JS 落类一次，animationend 自摘）；教学卡结课同枚 | `--dur-stamp` × `--ease-press` | `.stamp-press` + `@keyframes stamp-press`（scale .96→1 的 transform 收束——全应用唯一 overshoot 许可，非投影） | 0.01ms 即终，animationend 仍到（JS 清理不失效） |
+| 编辑台放大过渡（mc-2） | 信封沓「编辑/完整编辑」开台与收台（zoom origin 系于被点信封，缺省回版心） | screens.css 两 keyframes（editor-zoom-in/out），时值走 `--dur-settle` 档 | `.char-editor` 开台/收台类（app.js 禁 .style） | 总降级块直切 |
+| 抽屉开合 drawer | tabpanel 显隐（温故/抽屉的节切换） | 进 `--dur-panel-in` × `--ease-enter`（出 200 已立待接——容器级退出需 allow-discrete 的 display 参与，待 JS 编排或引擎修正，Revisit；现役退出 = `[hidden]` 直切） | `[role="tabpanel"]:not([hidden])` transition + `@starting-style`（只走透明度，位移交给逐行落墨；旧引擎直接显隐） | 总降级块（0.01ms）直切 |
+| 逐行落墨 reveal stagger | tabpanel 首次入视（IntersectionObserver 落 `.is-revealed`，回调只加类） | ink-wash 纯淡入 `--dur-1` × `--ease-enter`，步长 40ms、只对前 8 项生效（`--i` 由 JS 落，**总封顶 320ms**；`animation-fill-mode: backwards` 防先亮一下）——v2 行级改纯淡入（简报 §5「每行 140ms fade」） | `[data-reveal].is-revealed` 子项 + `--i`（components.js `wireReveal`） | 双面：CSS 总降级块 + JS 半区 `matchMedia` 即落定 |
+| 回执首渲 @starting-style | 动态插入的回执件（.typing / .sysline / .errline / .busystrip / .resultstrip）首渲 | `--dur-micro` × `--ease-exit` | `@starting-style`（Baseline 2024-08；缺失 = 直接出现，天然渐进增强）。信笺/批注不走此路（JS 门控的双动画保历史回填静帧）；#15 词卡已有组合入场不叠加 | 总降级块归零 |
+| **起笔向下展开（目标——实施在 v2-2，用户定向 2026-10-02）** | 「起笔」确认后选择器页面向下展开成对话主界面（8.2.2a 目标块） | `--dur-settle`（≤320ms 档）× `--ease-paper`；沓收拢与信流首屏同帧编排，transform/opacity 拆开且 opacity 恒慢 | 目标行——现役无此动效；实施时按 ⑤/⑨ 纪律落库并回填本行为现役描述 | 直落终态 |
+| **page-turn 翻页（目标——实施在 v2-2，用户点名）** | 信封沓翻页全览（8.2.2a）与面板横滑切换（ux-1 横滑） | `--dur-settle` × `--ease-paper` | **2D 翻页感优先**：位移 + rotateY 小角度（≤8°）+ 梯形 transform 与边缘卷曲阴影（墨色同源渐变模拟）+ `--stack-shadow-*` 承托；**禁 3D 书本仿真**（preserve-3d 全景 flipbook）——简报 T3 原列「翻页 flipbook」禁令按 T2 邮票豁免先例收窄（**用户点名豁免 2026-10-02**：禁令收窄为「3D 书本仿真」，2D 翻页感不在禁列） | 总降级块直切 |
 
 - 纪律：零 JS 动画库、零 WAAPI；全部 CSS transitions/keyframes +
   class 切换；库尾 **reduced-motion 总降级块**是全库统一保险
@@ -1246,11 +1237,14 @@ app.js:568-657；走查 07）。
   可见反馈 ≤100ms（hover/press/state layer 全走 `--dur-micro`）；
   **进入比退出略长**（`--ease-enter`/`--ease-exit` 分离）；触屏纪律：
   hover 效果一律 `@media (hover: hover)` 包裹。**纸事件守恒**：同屏
-  最多 1 expressive + 1 standard；一屏一次纸事件。**痕迹随机化**
-  （rd-1）：印记微旋 ±0.5–1° 与位置微偏移由 CSS 变量驱动
-  （`--mark-*`，nth-child 离散梯，确定性零 JS 重算）；每屏至多一处
-  随机痕迹——现役唯一活点 = 门厅封面邮票角标（边注栏邮戳是水印，
-  不旋不入计数）。
+  最多 1 expressive + 1 standard；一屏一次纸事件。**纸的物理法则**
+  （简报 §5）：位移 4–12px 封顶；无弹性回弹（唯一 overshoot = 盖印
+  收束）；进入减速长尾/退出加速收势/禁 linear；transform 与 opacity
+  拆开且 opacity 恒慢于 transform；纸不发光；阴影不做动画（用垫纸层
+  opacity 换）。**痕迹随机化**（rd-1）：印记微旋 ±0.5–1° 与位置微偏移
+  由 CSS 变量驱动（`--mark-*`，nth-child 离散梯，确定性零 JS 重算）；
+  每屏至多一处随机痕迹——现役唯一活点 = 门厅封面邮票角标（mc-1 信封
+  沓的 rotate/translateX 是 stamp_key 确定性派生，不入随机计数）。
 
 ### 9.6 断点系统（R-1W 重写版：全断点响应式）
 
@@ -1259,10 +1253,10 @@ app.js:568-657；走查 07）。
 
 | 档 | 范围 | 构图原则 | 纸面 / 栏宽 | 边注栏 |
 |---|---|---|---|---|
-| 手机 | ≤480px | 基线形态（430 壳随视口收窄）；现役移动规则冻结 | `--shell-w` 430（token 默认） | 缺席 |
+| 手机 | ≤480px | 基线形态（430 壳随视口收窄）；现役移动规则冻结（ux-1 横滑切面板与触摸三修落在此档） | `--shell-w` 430（token 默认） | 缺席 |
 | 平板 | 481–899px | 信纸栏放宽 + 同质面板起两栏——不是把 430 拉伸居中，而是每块面板按该档重排 | `--shell-w` 600；门厅封面信笺 560 垂直居中 | 缺席 |
-| 桌面 | 900–1279px | 案头舞台（R-1V 构图继承）：桌布 + 双层发丝镶边纸面 + 阅读栏 + 右缘边注栏 | `--shell-w` 1080；阅读栏 / 门厅封面 640 | 208px |
-| 宽屏 | ≥1280px | **延展的是案头与边注，不是行长**：纸面 1240、边注 240、邮戳水印稍大；阅读栏仍 640 | `--shell-w` 1240 | 240px |
+| 桌面 | 900–1279px | 案头舞台：桌布 + 双层发丝镶边纸面 + 阅读栏 + 右缘边注栏 | `--shell-w` 1080；阅读栏 / 门厅封面 640 | 208px |
+| 宽屏 | ≥1280px | **延展的是案头与边注，不是行长**：纸面 1240、边注 240；阅读栏仍 640 | `--shell-w` 1240 | 240px |
 
 - 平板档两栏规则（grid，`align-items: start`；跨满栏件 = 筛框与无命中
   句）：`.family-groups`（今日 · 可以练的表达 与 隐私 · 按表达忘掉 的
@@ -1274,15 +1268,21 @@ app.js:568-657；走查 07）。
   两栏，更窄自然落单栏：两栏是本档内真实挣得到的，不是硬摆的
   （R-1W 处置修正：交付版 280px 阈值 592>564，平板档永不两栏——
   算术钉 test_r1w_responsive_redo 使其可执行）。
-- 边注栏内容（案头日期 / 界尺 / 邮戳水印）与 dock 三项 ≥900 收拢居中
-  继承 R-1V 不动；`--shell-w` 是 #stage / #18 navdock / 写信区 .dock
-  三者的同一宽度出处（R-1W 起 #stage 基宽由字面 430 归一为 token）。
-- 交互件逐档：点词卡浮层的视口收进由 JS clamp 承担（各档同面）；
-  写信区软键盘 = viewport `interactive-widget=resizes-content`（不支持
-  的引擎忽略该键，无回退面）+ 门厅 `100vh → 100dvh` 双声明。
+- 边注栏内容（案头日期 / 界尺；**装饰邮戳水印已随 v2 撤除**）与
+  dock 三项 ≥900 收拢居中不动；`--shell-w` 是 #stage / #18 navdock /
+  写信区 .dock 三者的同一宽度出处。
+- 交互件逐档：点词卡浮层的视口收进由 JS clamp 承担（各档同面；
+  v2-2 移动档改 bottom sheet，见 8.2.2③）；写信区软键盘 = viewport
+  `interactive-widget=resizes-content`（不支持的引擎忽略该键，无回退
+  面）+ 门厅 `100vh → 100dvh` 双声明。
 - **旧登记撤销**：「481–899px 保持 430 居中原形」与「≤480 移动形态
-  一行不动（对门厅的适用）」自本刀作废（9.7-16/17）；其余页的 ≤480
+  一行不动（对门厅的适用）」自 R-1W 作废（9.8-16/17）；其余页的 ≤480
   基线规则仍冻结。
+
+> **时点限定**：以下 9.7–9.12 为 rd 时代（2026-09-30 前后）的历史修订
+> 登记，是过程记录不是现役断言——其中的语汇（含旧品牌词与旧空间词）、
+> 色名与数值以本文件现役节（①–⑧ 与 9.1–9.6）为准；历史归属句保留
+> 原文（prep-0 裁决 R1 纪律）。
 
 ### 9.7 本刀的 ③ 契约修订登记（显式修订 + 理由）
 
@@ -1391,7 +1391,7 @@ app.js:568-657；走查 07）。
       complete_letter` 函数改名（评审 INFO-4）；8.2.1 反引号排版
       修正（INFO-3）。
     - VAL ② 组「十页截图矩阵」由总控多宽度活体亲验闭合（375/768/
-      1280/1600 × 门厅/客厅/今日/记录 + 计算样式探针——评审 INFO-5
+      1280/1600 × 门厅/案头/今日/记录 + 计算样式探针——评审 INFO-5
       的核验不能由总控面替补）。
 
 ### 9.9 W-8 修订登记（用户思维三修，2026-09-30）
@@ -1417,7 +1417,7 @@ app.js:568-657；走查 07）。
       未配对原样直出；.say strong/em/code 纸系样式三行（#4 letter
       契约块内，不新增色与圆角）。
     - **信流尾注退役**：blocked 行（两形）从信流删除——没递短笺的
-      一轮在信流里静默；「为什么」的读出归学案 · 记录 why_not 面
+      一轮在信流里静默；「为什么」的读出归温故 · 记录 why_not 面
       （数据面不动）；③ 库外类清单的对应退役类行同刀清扫（除名）。
 
 ### 9.10 rd-2 修订登记（文案洒脱豪放档，2026-09-30）
@@ -1527,23 +1527,26 @@ app.js:568-657；走查 07）。
       读 localStorage、host 全链 None）；封面「生成人设/人设卡」与
       隐私节「这版做不了——页面不知道伙伴的角色编号」缺位钉保留
       不回潮。
+      （**cs-2 后记**：上款桩态已随档案全页视图整体退役——#23 出册、
+      名册拆除、/api/partner 真面落成；本条为 rd-4 时代登记原文，
+      现役真值见 8.2.2a。）
     - **设置节真面（R-3 前端先行，8.2.8 重写）**：旧两句退役（缺位
       钉随迁 r1_shell/r1r/r1w）；两真句保留 + 三档教学模式参考
       （`docs/PRODUCT_CONTRACT.md` §3）+ 诚实读法句（fail-closed：
       档位由启动命令给定，页面读不到也不改它）+ 换档句 + 批注频率
       指向句；纯静态——SECTION_PULLS 不拉本节（缺位钉保留）。
     - **手写批注层（调研D 建议 3：教学 × 物感最强交集）**：主形 =
-      红笔圈线（批注卡锚行外包伪元素椭圆，border 2px `--pencil` +
-      rotate -2.5deg；静态形零新动效——⑨-5 零新行的理由：border
-      圆角椭圆没有描线路径，逐段画得换 SVG 几何）；副形 = 完成盖戳
-      （#22 stamp 同枚，stamp-press 复用）；守恒律：一卡至多一处
-      手迹；完成 vs 搁置两态可分（成功族 → settled 盖戳；搁置/负值
-      → skipped 淡出——原两臂同落 .skipped 的合并答法退役）。
+      红笔圈线（批注卡锚行外包伪元素椭圆，border 2px + rotate
+      -2.5deg；静态形零新动效——⑨-5 零新行的理由：border 圆角椭圆
+      没有描线路径，逐段画得换 SVG 几何）；副形 = 完成盖戳（#22
+      stamp 同枚，stamp-press 复用）；守恒律：一卡至多一处手迹；
+      完成 vs 搁置两态可分（成功族 → settled 盖戳；搁置/负值 →
+      skipped 淡出——原两臂同落 .skipped 的合并答法退役）。
     - **机制物化首批**：盖戳只挂被验证面（档案明细行 outcome ∈
       {SUCCESS, ALTERNATIVE_SUCCESS} 落 #22 stamp 水印 + 日期沿
       .kv mono；PARTIAL/FAILURE/ABSTAIN 不盖——负控钉）；在途角标
       （`.letter--en-route` 虚发丝角标，回信落地/失败即摘——行为钉；
-      typing「客厅把灯留着」不重复造）；归档检索扩展（「搜信里的
+      typing「笔友把灯留着」不重复造）；归档检索扩展（「搜信里的
       句子」= /api/history 50 轮窗口，口径写在脸上、无时间戳不造
       日期、命中列「第 n 封（你/客厅）」+ 片段；中文 probe = 族名 +
       判词并入检索串——rd-3 INFO-4 收口；跨信重现**不做**）。新增
@@ -1552,6 +1555,9 @@ app.js:568-657；走查 07）。
     - **零开闸面**：web.py 零 diff；无 GET /api/partner、无
       /api/settings——R-2/R-3 的「真读面」全部诚实桩/纯静态；十二
       既有端点零改动；零迁移。
+      （**cs-2 后记**：/api/partner 已由 cs-2 按设计新增（档案页唯一
+      读面），上款「无 /api/partner」禁令解除；/api/settings 禁令
+      保留。）
     - **R7 域声明**：名册三位的姓名与一行性格/背景、伙伴占位句、
       选中注记句、关系/近况空态句、设置节三档参考的分寸句、搜信
       提示与无命中句为本刀拟定——用户首验否决权保留。
@@ -1560,8 +1566,8 @@ app.js:568-657；走查 07）。
       ② 作答期聊天路由（批注开着时 composer 的信落哪里——本刀已落
       乙案指路行「批注开着——回应写在上面那张；也可以直接写一封
       新信。」，纯表达不改路由）；③ 名册后端缝（--character 注入 +
-      选中读面——localStorage 的意思何时真生效）；④ 跨信重现数据缝
-      （同一表达在几封信里的足迹需要新索引/读面，客户端无表面形）；
-      ⑤ rd-3 INFO-3 成长条目不可点（点一条成长结论跳到它的批注/
-      痕迹——需条目级锚点）。
-
+      选中读面——localStorage 的意思何时真生效；**cs-2 后记**：真源
+      与真面已落，此缝随名册退役闭合）；④ 跨信重现数据缝（同一表达
+      在几封信里的足迹需要新索引/读面，客户端无表面形）；⑤ rd-3
+      INFO-3 成长条目不可点（点一条成长结论跳到它的批注/痕迹——需
+      条目级锚点）。

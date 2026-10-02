@@ -1,0 +1,7 @@
+# v2-s spec 重写刀（2026-10-02）首立：全仓文本统一 LF——仓内归一 +
+# 工作树检出为 LF（LF 钉族以字节验证为准；不重写历史、不批量翻工作
+# 树，新提交自然归一）。摸底（git ls-files，2026-10-02）：仓内现无
+# 二进制文件（py/json/md/sql/js/css/yml/toml/html）；后续新增二进制
+# 先靠 git 的 binary 自动探测豁免，确认误伤再在此显式登记
+# `*.<ext> binary`。
+* text=auto eol=lf

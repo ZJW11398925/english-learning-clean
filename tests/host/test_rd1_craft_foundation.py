@@ -360,9 +360,11 @@ def test_the_spec_registers_the_families_and_the_tokens() -> None:
     # disposition F-2 (review): the registered durations are pinned by
     # number, not just by token name — spec-global so the row header's
     # copy can be re-worded (rd-2) without breaking the pin
-    assert "`--dur-note`（240ms）" in spec
+    # （v2-s 随迁：260ms 为 v2 重定档——简报 §5 教学卡展开，rd-1 旧档
+    # 240ms 已废；tokens.css 现值同真）
+    assert "`--dur-note`（260ms）" in spec
     assert "总封顶 320ms" in spec
-    assert "`--dur-stamp` `--dur-note` | `120ms` `240ms`" in spec
+    assert "`--dur-stamp` `--dur-note` | `120ms` `260ms`" in spec
     for token in ("`--dur-micro`", "`--ease-enter` `--ease-exit`",
                   "`--state-hover`", "`--stack-shadow-soft`"):
         assert token in spec, token

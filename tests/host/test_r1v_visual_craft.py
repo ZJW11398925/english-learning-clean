@@ -146,7 +146,9 @@ def test_the_spec_registers_the_tokens_and_the_craft_section() -> None:
         "| `--paper-high` |", "| `--paper-2` |", "| `--desk` |",
         "| `--ink-ghost` |", "| `--pencil-deep` |", "| `--pencil-soft` |",
         "`--fs-display` `--fs-title`", "| `--sp-1` … `--sp-8` |",
-        "| `--dur-1` `--dur-2` `--dur-3` |",
+        # v2-s 随迁：旧三时长行（--dur-1/2/3）随 v2 动效档重定退役，
+        # 改钉现役进/出对行（280/200，值真仍在）
+        "| `--dur-panel-in` `--dur-panel-out` |",
         "| `--icon-size` `--icon-stroke` |", "| `--shell-w` |",
     ):
         assert row in spec, row
@@ -161,7 +163,9 @@ def test_the_spec_registers_the_tokens_and_the_craft_section() -> None:
     ):
         assert subsection in spec, subsection
     # the motion registry names every motion with its degradation
-    for word in ("ink-fade", "note-arrive", "paper-unfold",
+    # （v2-s 随迁：ink-fade 由 v2 的 ink-wash 渗墨原语取代——注册表
+    # 五 keyframes：paper-drop/ink-wash/ink-set/paper-unfold/stamp-press）
+    for word in ("ink-wash", "note-arrive", "paper-unfold",
                  "reduced-motion", "总降级块"):
         assert word in spec, word
 

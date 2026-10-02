@@ -394,9 +394,10 @@ def test_the_stamp_icon_is_registered_the_four_step_way() -> None:
     assert "现役七枚" in css
     assert "stamp（门厅封面邮票角标 + 教学卡结课邮票）" in css
     spec = _spec()
-    assert 'postmark\\|stamp"' in spec   # the ③ row's template id list
-    assert "现役八枚与锚位" in spec     # ⑨-4's roster（冻结面，v2 集内
-    # 收缩由 components.css 契约块承载——spec 更新属下一程序）
+    # v2-s 随迁：spec ③ 行与 ⑨-4 名册随实现同真（七枚，圆戳出集）——
+    # 冻结面更新由本刀承载（spec 重写授权 DEC-OPI-10bbc3c8-…3）
+    assert 'lamp\\|stamp"' in spec   # the ③ row's template id list tail
+    assert "现役七枚与锚位" in spec     # ⑨-4's roster, seven icons now
 
 
 def test_the_cover_date_is_real_client_data() -> None:
