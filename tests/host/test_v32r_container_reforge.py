@@ -154,7 +154,9 @@ def test_the_compose_face_carries_the_full_letter_flow() -> None:
     assert face.count("event.stopPropagation();") == 3
     screens = _text("screens.css")
     pen = _block(screens, ".compose-pen {")
-    assert "min-height: calc(var(--baseline) * 5);" in pen
+    # v3-2R 处置刀随迁（复测可6）：5→10 行且不吃家族 160 上限
+    assert "min-height: calc(var(--baseline) * 10);" in pen
+    assert "max-height: none;" in pen
     actions = _block(screens, ".compose-actions {")
     assert "display: flex; justify-content: space-between;" in actions
 
@@ -487,3 +489,51 @@ def test_the_design_language_census_stands() -> None:
     assert _re.search(r"#[0-9a-fA-F]{3,8}\b", compose_css) is None
     assert "border-radius" not in compose_css
     assert "box-shadow" not in compose_css
+
+
+def test_the_desk_dock_yields_while_the_container_is_open() -> None:
+    """v3-2R 处置刀（复测坏1/差4，⑩ 10.3-5 扩面）：沓开着时案头
+    写信区同步让路——否则其「寄出」浮在容器上（z8>z7），误触即容器
+    关闭 + 草稿无声丢弃；新建表单「存」也被咬。开/收双点位对称。"""
+    app = _text("app.js")
+    assert "function setDockStilled(still)" in app
+    assert 'dock.classList.toggle("dock--stilled", still)' in app
+    # 开沓与收沓两处都必须带上 dock（与 navdock 同批对称）
+    assert app.count("setDockStilled(true);") == 1
+    assert app.count("setDockStilled(false);") == 1
+    assert app.index("setNavdockStilled(true);") < \
+        app.index("setDockStilled(true);")
+    assert app.index("setNavdockStilled(false);") < \
+        app.index("setDockStilled(false);")
+    screens = _text("screens.css")
+    rule = screens[screens.index(".dock.dock--stilled {"):]
+    rule = rule[: rule.index("}")]
+    assert "opacity: 0.4" in rule
+    assert "pointer-events: none" in rule
+
+
+def test_compose_drafts_survive_every_exit_except_sending() -> None:
+    """v3-2R 处置刀（复测坏2/坏3，⑩ 10.3-6）：草稿按角色分桶，重开
+    恢复；唯一清稿时机 = 寄出成功（postTurn 后 removeItem）——Esc/
+    回沓/先搁着/点外一律保稿。"""
+    app = _text("app.js")
+    assert "function composeDraftKey(characterId)" in app
+    assert 'return `compose-draft-${characterId}`;' in app
+    # 恢复：buildComposeFace 里 pen 创建后读草稿
+    assert 'sessionStorage.getItem(composeDraftKey(item.character_id))' in app
+    # 存稿：input 事件
+    assert 'sessionStorage.setItem(composeDraftKey(item.character_id)' in app
+    # 清稿恰一处 = 寄出（postTurn 之后、回执之前）
+    assert app.count("sessionStorage.removeItem(composeDraftKey") == 1
+    assert app.index("postTurn(text)") < \
+        app.index("sessionStorage.removeItem(composeDraftKey")
+
+
+def test_the_compose_pen_grows_past_the_pen_family_cap() -> None:
+    """v3-2R 处置刀（复测可6）：写信稿纸起步 10 行且不吃 .pen 家族
+    160 上限——长信不留小窗。"""
+    screens = _text("screens.css")
+    rule = screens[screens.index(".compose-pen {"):]
+    rule = rule[: rule.index("}")]
+    assert "min-height: calc(var(--baseline) * 10)" in rule
+    assert "max-height: none" in rule

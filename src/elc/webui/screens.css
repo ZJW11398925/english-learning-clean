@@ -147,6 +147,11 @@ body {
    2px、上发丝线加深半档（--ink-ghost）、稿纸左缘显现一条墨线。 */
 .dock:focus-within { transform: translateY(-2px);
                      border-top-color: var(--ink-ghost); }
+/* 沓容器开着时的让路形态（v3-2R 处置刀，⑩ 10.3-5 同一定谳扩面）：
+   案头写信区淡化置灰且不可点——它的「寄出」浮在容器之上（z8>z7），
+   误触即容器关闭草稿丢弃；视觉可点性 = 实际可点性，收沓即解。 */
+.dock.dock--stilled { opacity: 0.4; pointer-events: none;
+                      transform: none; }
 .dock-row { position: relative;
             display: flex; align-items: stretch; gap: var(--sp-3); }
 /* 稿纸左缘的墨线：非聚焦零占用（opacity 0 + 绝对定位，不占布局位），
@@ -592,9 +597,11 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
 /* 身份句整句可读（工作区里不用信封沓的单行省略读法） */
 .compose-line { white-space: normal; overflow: visible;
                 text-overflow: clip; }
-/* 写信稿纸：一整面五行（5×--baseline = .pen 家族上限——起笔即满页），
-   上限沿用 .pen 家族的 160 */
-.compose-pen { min-height: calc(var(--baseline) * 5);
+/* 写信稿纸：长信不留小窗（v3-2R 处置刀，复测可6——原 5×baseline 沿
+   .pen 家族 160 上限，面板下方大片空白没吃上）；起步 10 行且不吃家族
+   上限，长信在整面里写，容器自己的滚动井兜底。 */
+.compose-pen { min-height: calc(var(--baseline) * 10);
+               max-height: none;
                margin-top: var(--sp-3); }
 .compose-actions { display: flex; justify-content: space-between;
                    align-items: baseline; margin: var(--sp-3) 0 0; }

@@ -2744,6 +2744,23 @@ function setNavdockStilled(still) {
   }
 }
 
+// 案头写信区随沓让路（v3-2R 处置刀，复测坏1/差4）：容器（含写信工作
+// 区/编辑面/全览）开着时 dock 整体淡化置灰且不可点——否则它的「寄出」
+// 浮在容器之上（z8>z7），误触 = 容器关闭 + 草稿无声丢弃；新建表单的
+// 「存」也被它咬住。视觉可点性 = 实际可点性（⑩ 10.3-5 同一定谳），
+// 收沓即解。
+function setDockStilled(still) {
+  const dock = document.querySelector(".dock");
+  if (dock) dock.classList.toggle("dock--stilled", still);
+}
+
+// 起笔草稿层（v3-2R 处置刀，复测坏2/坏3）：写信的退出路径只有寄出才
+// 清稿——Esc/回沓/先搁着/点外一律保稿（「写了一半的东西不能丢」）；
+// 按角色分桶（与 D-B 方案的草稿分桶设计同向），寄出成功即清。
+function composeDraftKey(characterId) {
+  return `compose-draft-${characterId}`;
+}
+
 // 收沓（v2-2 重排沿用）：默认走 fold 退场（纸先落墨后渗的出场半——收拢
 // 200ms × --ease-exit + ink-wash reverse 恒慢），animationend 后摘
 // DOM（移动端遮罩随批摘）；reduced-motion 直切（REDUCED_MOTION 单一
@@ -2759,6 +2776,7 @@ function closeEnvelopeSelector(opts) {
   envselPageAt = 0;
   envselFacePending = null;
   setNavdockStilled(false);   // 底坞解除静置（与开沓的置灰对称）
+  setDockStilled(false);      // 案头写信区同步解除让路
   const scrim = document.querySelector(".envsel-scrim");
   if (scrim) scrim.remove();
   if (!panel) return;
@@ -2795,6 +2813,7 @@ async function openEnvelopeSelector() {
   if (envselPanel) return;
   closeWordCard();   // ⑩ 互斥：开下拉容器自动关浮层
   setNavdockStilled(true);   // 硬伤 A：底坞淡化置灰且不可点（收沓即解）
+  setDockStilled(true);      // 案头写信区同步让路（复测坏1：防误触其寄出）
   const panel = document.createElement("div");
   panel.className = "envsel";
   panel.setAttribute("role", "dialog");
@@ -3700,6 +3719,16 @@ function buildComposeFace(item) {
   pen.setAttribute("aria-label", "写给她的信");
   pen.placeholder = "今日如何？想从哪句起，就从哪句起。";
   body.appendChild(pen);
+  // 草稿层（复测坏3）：退出保稿、重开恢复——Esc/回沓/点外都不是「扔信」
+  try {
+    const draft = sessionStorage.getItem(composeDraftKey(item.character_id));
+    if (draft) pen.value = draft;
+  } catch { /* 隐私模式等存储不可用——退化为无草稿，不阻断写信 */ }
+  pen.addEventListener("input", () => {
+    try {
+      sessionStorage.setItem(composeDraftKey(item.character_id), pen.value);
+    } catch { /* 同上：存不上也不打断 */ }
+  });
 
   const actions = document.createElement("p");
   actions.className = "compose-actions";
@@ -3745,6 +3774,10 @@ function buildComposeFace(item) {
     postTurn(text).finally(() => {
       sending = false;
     });
+    // 寄出是唯一清稿时机（草稿层纪律：其余退出路径一律保稿）
+    try {
+      sessionStorage.removeItem(composeDraftKey(item.character_id));
+    } catch { /* 存储不可用——无稿可清 */ }
     // 回执一拍：寄出是真实事件——一句人话回执（邮戳留在案头那封上，
     // 同屏 ≤1 枚的纪律不在这里再盖），随后容器收拢让位案头信流（收
     // 拢方向与延展对称，同曲线反向）。回执期间 Esc/先搁着回沓即取消
@@ -3758,6 +3791,9 @@ function buildComposeFace(item) {
     setTimeout(() => {
       if (envselPanel && envselFace === "compose") {
         closeEnvelopeSelector();   // 收拢让位案头——在途的信就在信流里
+        // 收拢后滚到信流底：新落的信（复测小7——签名行不被输入条遮）
+        const flow = document.getElementById("messages");
+        if (flow) flow.scrollTop = flow.scrollHeight;
       }
     }, beat);
   };
