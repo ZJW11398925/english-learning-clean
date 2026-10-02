@@ -177,8 +177,11 @@ def test_the_red_pencil_circle_is_one_static_mark(tmp_path: Path) -> None:
     # v3-2 随迁 10→8：mc-2 zoom 对枚（2 枚）随编辑台容器化退役（同刀
     # 除名，⑩ 容器延展档取代——extendContainer 是 height 过渡，零新
     # keyframes）；历史：v2-2 加两枚 9.5 表落库 / v2-2R 随迁 9→10
-    # （基线 517da30 实测本钉已红留痕）。
-    assert css.count("@keyframes ") == 8
+    # （基线 517da30 实测本钉已红留痕）。v3-a 随迁 8→9：paper-drop-down
+    # 落底（触屏贴底 sheet 的落纸方向原语——O2 定谳修，⑨-5 名册同刀
+    # 改行「全库八枚」的 keyframes 原语账：五枚 v2 + fold/turn/scrim
+    # 三枚 + drop-down 一枚；scrim-in 不在 ⑨-5 原语名册、单独计数）。
+    assert css.count("@keyframes ") == 9
     assert "editor-zoom" not in css
 
 

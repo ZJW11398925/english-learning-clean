@@ -58,6 +58,17 @@ button:focus-visible, input:focus-visible {
   .section-tab:hover::after, .disclosure-head:hover::after,
   .teach-me:hover::after { opacity: var(--state-hover); }
 }
+/* v3-a 第七族：笔搁触发条（screens.css 屏级件——触感层的规则本体
+   仍在库；同一三值同一纪律，screens 零 hover 由本包裹半区承担）。 */
+.dock-trigger::after {
+  content: ""; position: absolute; inset: 0;
+  background: var(--ink); opacity: 0; pointer-events: none;
+  transition: opacity var(--dur-micro) var(--ease-press); }
+.dock-trigger:active::after { opacity: var(--state-press); }
+.dock-trigger:focus-visible::after { opacity: var(--state-focus); }
+@media (hover: hover) {
+  .dock-trigger:hover::after { opacity: var(--state-hover); }
+}
 
 /* ── 1. link-btn（下划线文字链接按钮）───────────────────────────────
    结构：<button class="btn btn--<变体>">（仅文字子节点）。
@@ -726,38 +737,55 @@ button:focus-visible, input:focus-visible {
 }
 .chip:active { transform: translateY(1px); }
 
-/* ── 18. dock（常驻空间导航）───────────────────────────────────────
+/* ── 18. dock（常驻空间导航；v3-a 落墨页签）────────────────────────
    结构：<nav class="navdock"><button class="navdock-item"
-   data-space="…">空间名</button>×3</nav>；fixed 底栏（宽随 --shell-w），
-   发丝线顶边 + 纸底，无大面积色块；底 padding 吃 --safe-bottom。
-   状态矩阵：default（次级墨、透明点线占位）/ hover（墨色微沉）/
-   --on（当前空间：主墨加重 + 墨蓝实线下划短线，aria-current="page"）/
-   :active（触压 1px）。
-   使用规则：每空间恰一项；门厅时整条 [hidden]；教学短笺随信流可滚出
-   底栏、点词卡浮层在本组件（z 6）之上。
-   禁止变体：色块、图标、四项以上、堆叠页签。 */
+   data-space="…"><span class="navdock-glyph" data-icon="…">[墨线图标]
+   </span><span class="navdock-word">空间名</span></button>×3</nav>；
+   fixed 底栏（宽随 --shell-w），发丝线顶边 + --paper-high 顶纸垫条
+   （与写信区垫板同族材质），底 padding 吃 --safe-bottom。
+   v3-a 令牌账：上下 padding 用 calc() 从 --navdock-h 反推——实高恒等
+   于令牌（60 = 签行 44 + 上下距 + 边框 1，签行 44 是触靶常量、非间距
+   阶位；历史 54/57 账实差消亡）。
+   状态矩阵：default（图标描形 fill-opacity 0、标签次墨 400）/
+   hover（图标与标签同落主墨，100ms——hover 半区）/ --on（落墨当前态：
+   图标实墨填充 fill-opacity .9 + 标签 --ink 600；填充切换 = 一次落墨
+   事件——进入 260ms × --ease-paper、退出 200ms × --ease-exit 一褪一落
+   同帧；aria-current="page"；下划线语汇从导航当前态岗位退役）/
+   :active（触压 1px + state-layer press 雾）/ [disabled]（opacity .4）。
+   使用规则：每空间恰一项；图标与文字标签同钮（锚位契约——图标永不
+   单独承担语义）；门厅/全页/写作态整条 [hidden]；教学短笺随信流可滚
+   出底栏、点词卡浮层在本组件（z 6）之上。
+   禁止变体：色块、四项以上、堆叠页签、纯图标钮（图标须与文字同钮）。
+   （v3-a 显式修订：旧条款「禁止变体——图标」随落墨页签退役——修订
+   理由与用户首验位登记在 spec 9.13；图标网格/笔重/单色契约不动。） */
 .navdock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
            display: flex; max-width: var(--shell-w); margin: 0 auto;
-           background: var(--bg);
+           background: var(--paper-high);
            border-top: 1px solid var(--rule);
-           padding: 6px var(--read-pad)
-                    calc(6px + var(--safe-bottom)); }
-.navdock-item { flex: 1; font-family: var(--f-sans); font-size: var(--fs-ui);
+           padding: calc((var(--navdock-h) - 44px - 1px) / 2)
+                     var(--read-pad)
+                    calc((var(--navdock-h) - 44px - 1px) / 2
+                         + var(--safe-bottom)); }
+.navdock-item { flex: 1; display: flex; flex-direction: column;
+                align-items: center; justify-content: center; gap: 2px;
+                font-family: var(--f-sans); font-size: var(--fs-ui);
+                line-height: var(--lh-ui);
                 letter-spacing: var(--ls-caps); color: var(--ink-soft);
-                padding: 8px 0 4px; text-align: center; position: relative;
-                text-decoration: underline dotted;
-                text-decoration-color: transparent;
-                text-underline-offset: 6px;
+                padding: 1px 0; text-align: center; position: relative;
                 transition: color var(--dur-micro) var(--ease-press),
-                            text-decoration-color var(--dur-micro)
-                              var(--ease-press),
                             transform var(--dur-micro) var(--ease-press); }
-.navdock-item--on { color: var(--ink); font-weight: 600;
-                text-decoration-style: solid;
-                text-decoration-color: var(--pencil); }
+.navdock-item .inkicon { width: 20px; height: 20px;
+                         fill: currentColor; fill-opacity: 0;
+                         transition: fill-opacity var(--dur-panel-out)
+                                     var(--ease-exit); }
+.navdock-item--on { color: var(--ink); font-weight: 600; }
+.navdock-item--on .inkicon { fill-opacity: 0.9;
+                             transition: fill-opacity var(--dur-note)
+                                         var(--ease-paper); }
 .navdock-item[disabled] { opacity: 0.4; pointer-events: none; }
 @media (hover: hover) {
   .navdock-item:hover { color: var(--ink); }
+  .dock-trigger:hover { color: var(--ink-soft); }
 }
 .navdock-item:active { transform: translateY(1px); }
 
@@ -850,15 +878,19 @@ button:focus-visible, input:focus-visible {
    index.html 的 <template id="icon-set-source">；工厂 inkIcon(name)
    从模板内容查一枚克隆并摘掉 id；installIcons() 把 <span data-icon>
    换成克隆，插槽 class 过继给克隆体。
-   现役七枚（v2：postmark 随边注栏水印撤除退役——注册的图标是使用的
-   图标，注册表不做阁楼）：search（筛框名牌）/ chevron（折叠箭头）/
-   note（批注卡头）/ write（回信在途中）/ inbox（空厅空信箱）/
-   lamp（空态未点亮的灯）/ stamp（门厅封面邮票角标 + 教学卡结课邮票）。
+   现役十枚（v2：postmark 随边注栏水印撤除退役——注册的图标是使用的
+   图标，注册表不做阁楼；v3-a：#18 落墨页签三枚入集）：search（筛框
+   名牌）/ chevron（折叠箭头）/ note（批注卡头）/ write（回信在途中）/
+   inbox（空厅空信箱）/ lamp（空态未点亮的灯）/
+   stamp（门厅封面邮票角标 + 教学卡结课邮票）。
+   v3-a 三枚锚位（#18 落墨页签——图标与文字标签同钮）：desk（案头
+   签行）/ revisit（温故签行）/ drawer（抽屉签行）。
    全部 aria-hidden——语义由宿主文字承担。
    状态矩阵：default（--icon-size 见方、currentColor 墨色、
    --icon-stroke 笔重 1.5、圆角端点；chevron 的旋转是宿主 #21 的
-   --open 态面）；reduced-motion：宿主动效随库尾总降级块归零后图标
-   静帧。
+   --open 态面；#18 三枚的落墨填充是宿主 .navdock-item--on 的态面
+   ——fill-opacity 过渡，图标本体仍无独立交互态）；reduced-motion：
+   宿主动效随库尾总降级块归零后图标静帧。
    使用规则：统一 20×20 网格自绘、统一笔重、统一圆角端点；功能位
    用 currentColor 随宿主墨色层级（弱化位 = --ink-faint / 水印位 =
    --ink-ghost）；一切图标 aria-hidden。
@@ -922,6 +954,15 @@ button:focus-visible, input:focus-visible {
 .ink-wet .say { animation: ink-set var(--dur-wet) var(--ease-paper) both; }
 @keyframes paper-drop {
   from { transform: translateY(8px); }
+  to { transform: none; }
+}
+/* v3-a 新注册一枚（⑨-5 名册同刀改行）：paper-drop-down 落底——从上方
+   8px 落下到位。触屏 sheet（贴底件）的落纸方向原语：paper-drop 的
+   +8px 起步会让贴底件（含底部安全垫层）在入场 320ms 内沉到视口缘下
+   （活体实测 bottom 852 > 视口 844——报告 §2「越界 8px」的根因是
+   动画中帧取样），本原语反其向，底缘全程不出视口。 */
+@keyframes paper-drop-down {
+  from { transform: translateY(-8px); }
   to { transform: none; }
 }
 @keyframes ink-wash {

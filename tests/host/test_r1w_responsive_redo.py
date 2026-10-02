@@ -378,7 +378,8 @@ def test_the_stamp_icon_is_registered_the_four_step_way() -> None:
     live anchor on the cover's dateline, the contract block's roster
     and the spec's ③ row + ⑨-4 roster. The set stays one component
     (the icons are its members; cs-2 随迁：浮层伙伴卡退役 → 22；
-    v2 随迁：水印圆戳出集，八枚 → 七枚)."""
+    v2 随迁：水印圆戳出集，八枚 → 七枚；v3-a 随迁：#18 落墨页签三枚
+    入集，七枚 → 十枚)."""
 
     from tests.host.test_fg1_architecture import COMPONENTS
 
@@ -391,13 +392,14 @@ def test_the_stamp_icon_is_registered_the_four_step_way() -> None:
     )
     assert 'data-icon="stamp"' in index
     css = _text("components.css")
-    assert "现役七枚" in css
+    assert "现役十枚" in css
     assert "stamp（门厅封面邮票角标 + 教学卡结课邮票）" in css
     spec = _spec()
-    # v2-s 随迁：spec ③ 行与 ⑨-4 名册随实现同真（七枚，圆戳出集）——
-    # 冻结面更新由本刀承载（spec 重写授权 DEC-OPI-10bbc3c8-…3）
-    assert 'lamp\\|stamp"' in spec   # the ③ row's template id list tail
-    assert "现役七枚与锚位" in spec     # ⑨-4's roster, seven icons now
+    # v2-s 随迁：spec ③ 行与 ⑨-4 名册随实现同真（v3-a 起十枚——圆戳
+    # 出集 + 落墨页签三枚入集）——冻结面更新由本刀承载（spec 重写授权
+    # DEC-OPI-10bbc3c8-…3）
+    assert 'lamp\\|stamp\\|desk\\|revisit\\|drawer"' in spec  # ③ 行尾
+    assert "现役十枚与锚位" in spec     # ⑨-4's roster, ten icons now
 
 
 def test_the_cover_date_is_real_client_data() -> None:

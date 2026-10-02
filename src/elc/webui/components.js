@@ -314,11 +314,13 @@ const MOMENT_KIND_CN = {
 export function showMoments(list) {
   momentsBox.textContent = "";
   // rd-4 指路行（9.12-23 乙案表达）：批注开着时写信区上方一句话——
-  // 纯表达不改路由；开着才显，空组与收场同隐
+  // 纯表达不改路由；开着才显，空组与收场同隐。v3-a 同步半：笔搁触发
+  // 条的文案态切同一句（收起态的批注指路，8.2.2⑤）——路由不变。
   const guide = document.getElementById("reply-guide");
   if (guide) {
     guide.hidden = !list.some((m) => m.lifecycle_state === "AWAITING_USER");
   }
+  syncDockTriggerNote(guide ? !guide.hidden : false);
   // R-1R（⑧ 8.2.2）：无批注的轮次不再在信流里挂空态横幅——空态是读数
   // 块的答法，不是信流的；信流只放信与批注。
   if (!list.length) {
@@ -560,9 +562,20 @@ function readReplyAnswer(card, data) {
       card.classList.add("skipped");
     }
   }
-  // rd-4 指路行随收场同步：批注还开着（再试一回）则留，收场则隐
+  // rd-4 指路行随收场同步：批注还开着（再试一回）则留，收场则隐；
+  // v3-a 同步半：触发条文案态同拍归位。
   const guide = document.getElementById("reply-guide");
   if (guide) guide.hidden = data.moment_state !== "AWAITING_USER";
+  syncDockTriggerNote(guide ? !guide.hidden : false);
+}
+
+// v3-a 笔搁触发条的文案态同步（8.2.2⑤）：批注开着（AWAITING_USER）时
+// 收起态触发条显示指路行原文（与 #reply-guide 同一拍、同一真源——
+// showMoments/noteDelivery 两处落），其余时刻显「提笔 · 今日如何？」。
+// 元素缺席（旧壳）安全空操作。
+function syncDockTriggerNote(awaiting) {
+  const note = document.getElementById("dock-trigger-note");
+  if (note) note.hidden = !awaiting;
 }
 
 async function postReply(card, payload, busyText, doneNote) {
@@ -1319,6 +1332,19 @@ export function extendContainer(panel, mutate) {
 // components.js 自己的 openCard 单源。
 export function wordCardOpen() {
   return openCard !== null;
+}
+
+// v3-a 矮视口降级半区的稿纸 autosize（D-A 展开条形态）：rows 起步、
+// scrollHeight 钳制封顶后内滚。动态几何属库（extendContainer 同族——
+// app 面不落内联样式）；封顶值与档位判定由调用方（app.js 的
+// SHORT_VIEWPORT 半区）注入。
+export function autosizeTo(pen, cap) {
+  pen.style.height = "auto";
+  pen.style.height = Math.min(pen.scrollHeight, cap) + "px";
+}
+
+export function clearAutosize(pen) {
+  pen.style.height = "";
 }
 
 // 21. disclosure（折叠组，R-1R；⑧ 8.2.9 契约形）：组头行（名称 + 计数 +

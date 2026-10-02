@@ -210,12 +210,16 @@ def test_the_narrow_screen_base_values_are_untouched(tmp_path: Path) -> None:
     page = _page_of(tmp_path)
     tokens = _text("tokens.css")
     assert "--shell-w: 430px;" in tokens
-    assert "--navdock-h: 54px;" in tokens
+    # v3-a 随迁：--navdock-h = navdock 实高（N-A 体量账 60，历史 54
+    # 与实高 57 的账实差消亡）。
+    assert "--navdock-h: 60px;" in tokens
     screens = _text("screens.css")
-    # v3-2 随迁：flow 尾距升级 --navdock-clearance 令牌账（字面 310
-    # 退役——navdock + 安全区 + 写信区高度带；P1-1 底坞遮挡全局清）
+    # v3-2 随迁：flow 尾距升级 --navdock-clearance 令牌账；v3-a 再随迁：
+    # 手写 256px 余量退役（账 = navdock + 安全区 + 笔搁触发条 + 呼吸，
+    # O7 死区清账）。
     assert ".flow { padding: 18px var(--read-pad)" in screens
-    assert "calc(var(--navdock-clearance) + 256px); }" in screens
+    assert ("calc(var(--navdock-clearance) + var(--dock-trigger-h)"
+            in screens)
     assert (
         "padding-bottom: calc(var(--navdock-h) + var(--safe-bottom));"
         in screens
@@ -260,18 +264,21 @@ def test_the_seven_icons_share_one_grid_and_one_stroke() -> None:
     all aria-hidden (their hosts' words carry the meaning); the stroke
     weight is the token, spelled once in components.css — no per-icon
     stroke drift, no external geometry. v2 随迁：postmark 随边注栏水印
-    撤除退役（注册的图标是使用的图标，注册表不做阁楼）——八枚 → 七枚。"""
+    撤除退役（注册的图标是使用的图标，注册表不做阁楼）——八枚 → 七枚。
+    v3-a 随迁：#18 落墨页签的导航三枚入集（desk/revisit/drawer，
+    「禁止变体：图标」显式修订）——七枚 → 十枚。"""
 
     index = _text("index.html")
     assert '<template id="icon-set-source">' in index
     for name in ("search", "chevron", "note", "write",
-                 "inbox", "lamp", "stamp"):
+                 "inbox", "lamp", "stamp",
+                 "desk", "revisit", "drawer"):
         assert f'<svg id="icon-{name}" class="inkicon" ' \
             f'viewBox="0 0 20 20" aria-hidden="true">' in index, name
     # the retired watermark icon is gone with its anchor
     assert 'id="icon-postmark"' not in index
-    # the grid is uniform: seven icons, seven identical viewBoxes
-    assert index.count('viewBox="0 0 20 20"') == 7
+    # the grid is uniform: ten icons, ten identical viewBoxes
+    assert index.count('viewBox="0 0 20 20"') == 10
     css = _text("components.css")
     assert (
         ".inkicon { width: var(--icon-size); height: var(--icon-size);"
@@ -282,7 +289,8 @@ def test_the_seven_icons_share_one_grid_and_one_stroke() -> None:
     # the icons carry no stroke literals of their own (one weight, one
     # source — the token)
     for name in ("search", "chevron", "note", "write",
-                 "inbox", "lamp", "stamp"):
+                 "inbox", "lamp", "stamp",
+                 "desk", "revisit", "drawer"):
         svg = index.split(f'<svg id="icon-{name}"', 1)[1].split(
             "</svg>", 1)[0]
         assert "stroke" not in svg, name
@@ -293,8 +301,10 @@ def test_every_icon_has_a_live_anchor() -> None:
     search rides the filter field's label, chevron the disclosure
     marker, note the moment card's head, write the waiting line, inbox
     the empty hall, lamp the empty state, stamp the cover's dateline
-    and the settled teaching card（结课邮票——真实事件位）. The
-    postmark watermark icon is retired with its anchor (v2 随迁)."""
+    and the settled teaching card（结课邮票——真实事件位）; the v3-a
+    navigation trio rides the #18 tabs（desk/revisit/drawer——图标与
+    文字标签同钮）. The postmark watermark icon is retired with its
+    anchor (v2 随迁)."""
 
     js = _text("components.js")
     assert 'inkIcon("chevron")' in js  # disclosure's marker
@@ -306,6 +316,9 @@ def test_every_icon_has_a_live_anchor() -> None:
     assert 'inkIcon("inbox")' in app  # the empty hall
     index = _text("index.html")
     assert 'data-icon="stamp"' in index  # the cover's dateline corner
+    for glyph in ("data-icon=\"desk\"", "data-icon=\"revisit\"",
+                  "data-icon=\"drawer\""):
+        assert glyph in index  # the #18 ink tabs (v3-a)
     # no decorative postmark watermark anywhere
     assert "postmark" not in index
 

@@ -133,16 +133,25 @@
   /* ── 图标参数（#22 icon-set 契约）────────────────────────────── */
   --icon-size: 18px;
   --icon-stroke: 1.5;
-  /* ── 布局（--read-pad / --safe-bottom / --navdock-h 钉住不动）──
+  /* ── 布局（--read-pad / --safe-bottom 钉住不动）────────────────
      --shell-w：信纸栏宽——navdock 与写信区的同一宽度出处；窄屏
      430px（现役值），宽屏由 screens.css 的桌面媒体查询改写。
      --navdock-clearance（v3-2）：固定底具的补偿带——navdock 高与
      安全区的一次合计（P1-1 底坞遮挡全局清的算术出处：一切滚动容器
      的 bottom padding 以它为底再加油 breath，screens.css 的 .flow /
-     .spacebody 消费），零第三处手写 54px。 */
+     .spacebody 消费），零第三处手写。
+     --navdock-h（v3-a 令牌账定谳）：语义 = navdock 的**实高**——
+     .navdock 的上下 padding 用 calc() 从本令牌反推（v3-a 报告 §4.0
+     N5 清账），实高恒等于令牌；历史值 54 与实高 57 的 3px 账实差
+     （dock 盖住 navdock 顶发丝线）就此消亡。N-A 落墨页签（图标 +
+     标签）的体量账：签行 44 + 上下距 + 边框 1 = 60。
+     --dock-trigger-h / --dock-compose-inset（v3-a ② 表登记）：
+     笔搁触发条的内容高 / 写作态面板与屏幕缘的距离（桌面档）。 */
   --read-pad: 18px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --navdock-h: 54px;
+  --navdock-h: 60px;
+  --dock-trigger-h: 44px;
+  --dock-compose-inset: 16px;
   --navdock-clearance: calc(var(--navdock-h) + var(--safe-bottom));
   --shell-w: 430px;
 }

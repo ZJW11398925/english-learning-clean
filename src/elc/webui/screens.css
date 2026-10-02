@@ -108,11 +108,14 @@ body {
    聚焦微起（:focus-within translateY(-2px)）保留 = 垫板被手压起。 */
 /* v3-2（P1-1 底坞遮挡全局清）：滚动尾距 = 固定底具的真实高度账——
    --navdock-clearance（navdock + 安全区，令牌出处 tokens.css）+
-   写信区自身的最坏高度带（textarea max 160 + 上下距与指路行 ≈ 250，
-   历史值 310 的可读拆法）。末行永远滚得出底具（三处点名：教学卡
-   「寄出回应」/ 温故·档案末行 / 案头「翻看以前的信 →」）。 */
+   v3-a 起笔搁触发条自身一档（--dock-trigger-h）+ 一档呼吸（--sp-6）。
+   历史手写余量（v2-2 的写信区最坏高度带）随 D-B 触发条退役
+   （O7 死区清账：滚到底的空白纸消亡）。
+   末行永远滚得出底具（三处点名：教学卡「寄出回应」/ 温故·档案末行 /
+   案头「翻看以前的信 →」）。 */
 .flow { padding: 18px var(--read-pad)
-        calc(var(--navdock-clearance) + 256px); }
+        calc(var(--navdock-clearance) + var(--dock-trigger-h)
+             + var(--sp-6)); }
 .typing { margin: 0 0 18px; font-family: var(--f-sans);
           font-size: var(--fs-ui); color: var(--ink-faint); }
 .errline { margin: 0 0 14px; padding: 8px 10px;
@@ -127,29 +130,97 @@ body {
    信流主纸新一档）+ --stack-shadow-soft 向上承影（阴影色墨同源、
    y 分量向上落在信纸堆上；两级令牌之内，非自造）。
    cs-2 输入态：聚焦臂的过渡载体声明在块内（transform 与发丝线色，
-   100ms 档——纸的物理，禁发光；非聚焦零改动）。 */
-/* 写信区：固定底（R-1 起让位于其下的常驻 dock）、上发丝线、无边框
-   输入行 + 寄出链接；底部安全区由 dock 负责，这里只留自身呼吸。
-   v2-2（8.2.2②）：垫板层——顶纸 --paper-high 浮起面（输入框纸面比
-   信流主纸新一档）+ --stack-shadow-soft 向上承影（阴影色墨同源、
-   y 分量向上落在信纸堆上；两级令牌之内，非自造）。
-   cs-2 输入态：聚焦臂的过渡载体声明在块内（transform 与发丝线色，
-   100ms 档——纸的物理，禁发光；非聚焦零改动）。 */
+   100ms 档——纸的物理，禁发光；非聚焦零改动）。
+   v3-a（8.2.2⑤，D-B 信纸全幅写作态）：两态同件——收起态 = 笔搁触发
+   条（--dock-trigger-h 44，常驻税 163→104px 级）；写作态 = .dock--compose
+   近全屏「新信纸」（⑩ 全页成员：fixed 全高、--shell-w 限宽、navdock
+   让位、Esc 收起——宪法登记行在 ⑩ 10.1）。触发条是 form#send 稿纸的
+   投影文案（textarea 唯一真源）；写作面升落 = paper-drop + ink-wash
+   双动画（落 --dur-panel-in × --ease-paper、opacity 恒慢 ×1.3）/ 收 =
+   paper-fold + ink-wash reverse（--dur-panel-out × --ease-exit），
+   reduced-motion 双面直落。矮视口（max-height: 520px）诚实降级为
+   D-A 展开条形态（稿纸 autosize 封顶内滚）。 */
 .dock { position: fixed; left: 0; right: 0;
         bottom: var(--navdock-h); z-index: 8;
         background: var(--paper-high); border-top: 1px solid var(--rule);
         box-shadow: var(--stack-shadow-soft);
-        padding: 10px var(--read-pad) 14px;
+        padding: 0 var(--read-pad);
         max-width: var(--shell-w); margin: 0 auto;
         transition: transform var(--dur-micro) var(--ease-press),
                     border-top-color var(--dur-micro) var(--ease-press); }
 /* cs-2 输入态（聚焦臂）：笔尖落在稿纸上，案头微微抬起——dock 升
-   2px、上发丝线加深半档（--ink-ghost）、稿纸左缘显现一条墨线。 */
+   2px、上发丝线加深半档（--ink-ghost）、稿纸左缘显现一条墨线。
+   v3-a：本臂只属收起/展开条形态——写作态全页成员不随聚焦位移
+   （整页微跳是伪触感），写作态臂在 .dock--compose 块内归零。 */
 .dock:focus-within { transform: translateY(-2px);
                      border-top-color: var(--ink-ghost); }
+/* ── 笔搁触发条（收起态的全部）：一行触靶 44px——左侧占位投影文案
+   （提笔 · 今日如何？），右端寄出链投影；批注开着（AWAITING_USER）
+   文案态切指路行原文（components.js 同步落 hidden，路由不变）。
+   点靶整条 ≥44px（触屏纪律），state-layer 触感层在 components.css
+   （与六族同法第二条，screens 零 hover）。 */
+.dock-trigger { width: 100%; height: var(--dock-trigger-h);
+                display: flex; align-items: center;
+                justify-content: space-between; gap: var(--sp-3);
+                font: var(--meta-font); letter-spacing: var(--meta-track);
+                color: var(--meta-ink); position: relative; }
+.dock-trigger[aria-expanded="true"] { display: none; }
+.dock-trigger-word { overflow: hidden; white-space: nowrap;
+                     text-overflow: ellipsis; }
+.dock-trigger-send { flex: none; }
+/* ── 写作态（.dock--compose = ⑩ 全页成员）：面板升起吃满触发条以上
+   的余高——顶行（↑ 收起 + dateline）+ 称呼位 + 稿纸（form#send）+
+   底行寄出链；navdock 让位由 JS 落 [hidden]（同门厅/全页语族）。
+   头顶让出 --sp-8 + --sp-1 的铬件账（与沓面板同一头顶账）；桌面档
+   面板两侧各让 --dock-compose-inset（一张新信纸摊在案头中央）。 */
+.dock.dock--compose { bottom: 0; top: calc(var(--sp-8) + var(--sp-1));
+                      padding: var(--sp-4) var(--read-pad);
+                      display: flex; flex-direction: column;
+                      transform: none; }
+.dock.dock--compose:focus-within { transform: none; }
+/* 升起/落下（⑨-5 v3-a 两行）：复用注册四原语的既有组合形态——
+   升 = paper-drop + ink-wash（transform 280 × --ease-paper、opacity
+   恒慢 ×1.3）；落 = paper-fold + ink-wash reverse（200 × --ease-exit）。
+   类由 app.js 落/摘（animationend 对账 + 480ms 保险丝同沓家）。 */
+.dock-compose--in { animation: paper-drop var(--dur-panel-in)
+                               var(--ease-paper) both,
+                               ink-wash calc(var(--dur-panel-in) * 1.3)
+                               var(--ease-paper) both; }
+.dock-compose--out { animation: paper-fold var(--dur-panel-out)
+                               var(--ease-exit) both,
+                               ink-wash calc(var(--dur-panel-out) * 1.3)
+                               var(--ease-exit) both reverse; }
+/* navdock 让位的收半（同 envsel--fold 语族）：paper-fold 200 ×
+   --ease-exit，animationend 后 JS 落 [hidden] 摘类。 */
+.navdock--fold { animation: paper-fold var(--dur-panel-out)
+                           var(--ease-exit) both; }
+.compose-face { display: flex; flex-direction: column;
+                flex: 1; min-height: 0; }
+.compose-toprow { margin: 0; display: flex; align-items: baseline;
+                  justify-content: space-between; gap: var(--sp-3); }
+.compose-dateline { font: var(--meta-mono);
+                    letter-spacing: var(--meta-track);
+                    color: var(--meta-ink); }
+/* 称呼位：致 + 当前角色名（端点驱动零字面）+ 逗——弱墨只读；无名册
+   时 JS 落 hidden（不发明称呼）。 */
+.compose-salut { margin: var(--sp-3) 0 0; color: var(--ink-faint); }
+/* 稿纸区：form#send 转纵队——textarea 吃满顶行与底行之间的余高
+   （#2 pen 的 --open 变体只落尺寸修饰，字面/线语汇仍唯一出处；
+   超长内滚、字落线上——background-attachment: local 现役机制）；
+   寄出链右齐（同现役语汇）。 */
+.dock--compose .dock-row { position: relative; flex: 1; min-height: 0;
+                           display: flex; flex-direction: column;
+                           gap: var(--sp-2); margin-top: var(--sp-2); }
+.dock--compose .pen--open { flex: 1;
+                            min-height: calc(var(--baseline) * 4);
+                            max-height: none; }
+.compose-sendrow { margin: 0; display: flex;
+                   justify-content: flex-end; }
 /* 沓容器开着时的让路形态（v3-2R 处置刀，⑩ 10.3-5 同一定谳扩面）：
    案头写信区淡化置灰且不可点——它的「寄出」浮在容器之上（z8>z7），
-   误触即容器关闭草稿丢弃；视觉可点性 = 实际可点性，收沓即解。 */
+   误触即容器关闭草稿丢弃；视觉可点性 = 实际可点性，收沓即解。
+   v3-a：触发条与写作态同批置灰（置灰优先——沓开时写作态先收、
+   触发条同件不可点）。 */
 .dock.dock--stilled { opacity: 0.4; pointer-events: none;
                       transform: none; }
 .dock-row { position: relative;
@@ -168,6 +239,17 @@ body {
                                        transform: scaleY(1); }
 .dock-guide { margin: 0 0 8px; font: var(--meta-font);
               letter-spacing: var(--meta-track); color: var(--meta-ink); }
+/* ── v3-a 矮视口诚实降级（报告 §4 D-B）：max-height 520px（横屏/分屏）
+   全幅写作得不偿失——写作态降为 D-A 展开条形态：面板不再吃满全高
+   （top 归还），稿纸 autosize 封顶 160px 内滚（JS 半区同键
+   matchMedia），dateline/称呼位保留（排印骨架不因降级缺席）。 */
+@media (max-height: 520px) {
+  .dock.dock--compose { top: auto; }
+  .dock--compose .pen--open { flex: none;
+                              min-height: calc(var(--baseline) * 2);
+                              max-height: 160px; }
+  .dock--compose .dock-row { flex: none; }
+}
 
 /* ── 温故/抽屉的空间正文（R-1）：三个节面板共用的正文留白与标题形态 ── */
 /* 页题只念一遍（节名槽承担），节内不再有 h2。
@@ -209,13 +291,11 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
    动作钮普查，此为现役唯一滚动丢失面）：sticky 底栏贴在常驻导航之上，
    编辑上方各面时保存始终可及；滚过自然位（下方只读面）即随流让位。
    纸底 + .sec 自带的上发丝线。
-   ux-1R（处置）：底缘贴 dock 顶——navdock 实高 = 1 发丝边 + 6/6 上下距
-   + 44 签行（8+32+4）= 57 + 安全区，比 --navdock-h（54，令牌钉住不动）
-   高 3px；不加 3px 时按钮底缘没进 dock 背后成死区（评审活体实测
-   2.8px，真机 safe-bottom 下缺口更大）；+safe-bottom 随 dock 的同款
-   安全区垫层一起抬。 */
+   v3-a：底缘账随令牌账定谳归一——历史 +3px 手工补差（navdock 实高 57
+   > 令牌 54 的账实差）随 --navdock-h = 实高（60）的 calc 账消亡，
+   bottom 直取 --navdock-clearance（navdock + 安全区），零补差项。 */
 #goal-save { position: sticky;
-             bottom: calc(var(--navdock-h) + var(--safe-bottom) + 3px);
+             bottom: calc(var(--navdock-h) + var(--safe-bottom));
              z-index: 3;
              background: var(--bg); }
 .taxref { margin: 4px 0 0; font-family: var(--f-sans);
@@ -722,8 +802,21 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
                       margin-right: auto; }
   .dock-row { max-width: var(--measure); margin-left: auto;
               margin-right: auto; }
+  /* v3-a 写作态的稿纸对齐：.dock--compose 里 form#send 是纵队 flex
+     项——≥900 档的 auto 边距会吃掉 flex 的 cross-axis stretch（活体
+     实测稿纸缩成内容宽 ≈210px），显式 width = 版心定宽、auto 边距
+     居中（稿纸两侧露案头，8.2.2⑤ 的「一张新信纸摊在案头中央」）；
+     称呼位与指路行同版心对齐（信纸骨架一线）。 */
+  .dock--compose .dock-row { width: var(--measure); }
+  .dock--compose .compose-salut,
+  .dock--compose .dock-guide { width: var(--measure);
+                               margin-left: auto; margin-right: auto; }
   .marginalia { display: block; position: absolute; top: 0; right: 0;
                 bottom: 0; width: 208px; pointer-events: none; }
+  /* v3-a：写作态面板桌面档两侧各让 --dock-compose-inset——一张新信纸
+     摊在案头中央（面板缘与纸面缘之间露一线案头）。 */
+  .dock.dock--compose { max-width: calc(var(--shell-w)
+                                        - var(--dock-compose-inset) * 2); }
   /* 案头日期（楷体手迹位——简报 T1 楷体三合法面之一：真实日期，
      mono → hand 换轨）+ 界尺；装饰邮戳水印位随 v2 撤除。 */
   .marginalia-date { margin: 74px 28px 0 0; text-align: right;
@@ -754,6 +847,16 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
 @media (hover: none) {
   .envsel-scrim { display: block;
                   animation: scrim-in var(--dur-note)
+                             var(--ease-paper) both; }
+  /* v3-a O2 定谳修：贴底 sheet 的入场方向原语换 paper-drop-down（从
+     上方 8px 落到底缘）——paper-drop 的 +8px 起步让 sheet 连同底部
+     垫层在入场 320ms 内沉到缘下（活体实测 bottom 852 > 视口 844，
+     报告 §2 读数的根因）；本向底缘全程不出视口（静止账本已精确，
+     bottom 0 账实为零——报告开的「补 --safe-bottom」在静止态是
+     无效修，落的是意图：垫层永不被裁）。 */
+  .envsel--open { animation: paper-drop-down var(--dur-settle)
+                             var(--ease-paper) both,
+                             ink-wash calc(var(--dur-settle) * 1.3)
                              var(--ease-paper) both; }
   /* 顶缘圆角沿容器基形的 2px（信纸物件 ≤2px 档——圆角纪律的合法
      下限，不另发覆盖声明）。 */

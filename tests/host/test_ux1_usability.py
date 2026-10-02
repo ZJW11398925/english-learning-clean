@@ -170,20 +170,18 @@ def test_the_goal_save_is_the_one_sticky_action_dock() -> None:
     """保存方向 — the survey's one scroll-lost action button in
     温故/抽屉 — rides a sticky bottom bar held above the standing nav
     dock; paper ground, the .sec's own top hairline separates. ux-1R
-    (the review's MEDIUM): the offset is a calc — the dock's real
-    height is its hairline + paddings + the 44px item row = 57px, three
-    more than the --navdock-h token (which stays untouched), and the
-    safe-area inset rides the same dock layer — so the bare token left
-    a ~3px dead strip of the button behind the dock. Dropping the calc
-    back to the bare token is red."""
+    (the review's MEDIUM): the offset was a calc — the dock's real
+    height (57px) exceeded the --navdock-h token (54px) by three, so
+    the bare token left a ~3px dead strip. v3-a 随迁（N5 令牌账定谳）：
+    --navdock-h 的语义升为 navdock 实高（60px，padding 从令牌反推，
+    账实差消亡），+3px 手工补差项退役——bottom 直取 navdock + 安全区，
+    补差回潮即红。"""
 
     screens = _text("screens.css")
     block = _block(screens, "#goal-save {")
     assert "position: sticky;" in block
-    assert (
-        "bottom: calc(var(--navdock-h) + var(--safe-bottom) + 3px);"
-        in block
-    )
+    assert "bottom: calc(var(--navdock-h) + var(--safe-bottom));" in block
+    assert "+ 3px" not in block
     assert "z-index: 3;" in block
     assert "background: var(--bg);" in block
 

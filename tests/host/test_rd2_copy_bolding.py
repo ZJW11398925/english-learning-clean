@@ -136,7 +136,9 @@ def test_the_nav_words_are_wengu_and_drawer() -> None:
     （抽屉装记忆/隐私/设置，无信件收藏），退「抽屉」——核实结论见回执。"""
 
     index = _text("webui/index.html")
-    for label in (">案头</button>", ">温故</button>", ">抽屉</button>"):
+    # v3-a 随迁（落墨页签）：文字标签同钮在册（标签行收尾，非按钮行）
+    for label in (">案头</span></button>", ">温故</span></button>",
+                  ">抽屉</span></button>"):
         assert label in index, label
     assert '<div class="who">温故</div>' in index
     assert '<div class="who">抽屉</div>' in index

@@ -42,6 +42,8 @@ import {
   envelopeCard,
   layoutEnvelopeStack,
   extendContainer,
+  autosizeTo,
+  clearAutosize,
   REDUCED_MOTION,
 } from "./components.js";
 import {
@@ -1724,9 +1726,11 @@ function showSection(space, name) {
 function showSpace(name) {
   // ⑩ 层级宪法的互斥半：进任何空间（含全页）收一切浮层与下拉容器——
   // 换空间的人不该被上一空间的浮层/沓跟着走。closeEnvelopeSelector 在
-  // 容器不在场时是安全的空操作；closeWordCard 同。
+  // 容器不在场时是安全的空操作；closeWordCard 同。v3-a：写作态同批
+  // （全页成员，8.2.2⑤——保稿收起）。
   closeWordCard();
   closeEnvelopeSelector();
+  closeComposeFace();
   for (const key of Object.keys(spaces)) {
     spaces[key].hidden = key !== name;
   }
@@ -2527,6 +2531,20 @@ document.getElementById("send").addEventListener("submit", (event) => {
   const text = input.value.trim();
   if (!text) return;
   input.value = "";
+  // v3-a 草稿层（8.2.2⑤，10.3-6 同一定谳）：寄出是唯一清稿时机——
+  // 案头笔搁草稿桶与信同清；收起/Esc 一律保稿。
+  try {
+    sessionStorage.removeItem(dockDraftKey());
+  } catch { /* 存储不可用——无稿可清 */ }
+  // D-B 寄出编排（报告 §4.2）：写作态先收（落 = paper-fold 200ms 加速
+  // 收势 + ink-wash reverse），信落信流的纸事件由 postTurn/addLine 承担
+  // ——一屏一次纸事件；焦点回触发条（落旗先于收场——fold finish 时
+  // 兑现，快慢端点两种时序都接得住）。
+  const wasComposing = composeOpen();
+  if (wasComposing) {
+    composeFocusPending = true;
+    closeComposeFace();
+  }
   sending = true;
   input.disabled = true;
   // rd-1 邮戳盖下（⑨-5）：寄出一瞬邮票按下——scale .96→1 的 transform
@@ -2541,7 +2559,9 @@ document.getElementById("send").addEventListener("submit", (event) => {
   postTurn(text).finally(() => {
     sending = false;
     input.disabled = false;
-    input.focus();
+    // v3-a 焦点流：写作态寄出的旗已在收场前落（finish 兑现）；条态
+    // 寄出 → 焦点留 textarea（现役续写手感原样）。
+    if (!wasComposing) input.focus();
   });
 });
 
@@ -2552,6 +2572,243 @@ document.getElementById("text").addEventListener("keydown", (event) => {
     event.preventDefault();
     document.getElementById("send").requestSubmit();
   }
+});
+
+// ── v3-a D-B 信纸全幅写作态（8.2.2⑤；⑩ 10.1 全页成员登记行）────────
+// 两态同件：收起 = 笔搁触发条（44px，常驻税 163→104px 级）；点触发条/
+// 寄出链 = 升起 .dock--compose 近全屏「新信纸」——navdock 让位（fold
+// 200ms 同 envsel--fold 语族）、Esc 收起（浮层裁决之后的一层）、草稿
+// 按角色分桶 sessionStorage（与起笔草稿层 compose-draft-* 同构独立
+// key——10.3-6 同一定谳：退出保稿、寄出即清）、矮视口（max-height
+// 520px）诚实降级为 D-A 展开条形态（autosize 封顶 160 内滚）。
+// ⑩ 层级互斥：升写作态先收浮层；开沓先收写作态（保稿，置灰优先——
+// 10.3-5）；进任何空间收写作态（showSpace 同批）。
+const SHORT_VIEWPORT = window.matchMedia("(max-height: 520px)");
+let composeFoldHandler = null;   // 收场动画的对账柄（重开即拆）
+let composeFocusPending = false;   // 寄出路径的焦点归还——fold 收场时兑现
+
+function dockDraftKey() {
+  // 草稿桶 = 角色 id 派生（webui 零角色名字面——id 是机械键非文案）；
+  // 无名册（current 为 null）落 local 桶，不发明归属。
+  const cid = (charactersCache && charactersCache.current_character_id)
+    || "";
+  return "draft-" + (cid || "local");
+}
+
+function composeOpen() {
+  const dock = document.querySelector(".dock");
+  return Boolean(dock && dock.classList.contains("dock--compose"));
+}
+
+// 矮视口降级半区的稿纸 autosize（D-A 形态：rows 起步、scrollHeight
+// 钳制 160 封顶后内滚；内联样式面在库——autosizeTo/clearAutosize）；
+// 正常档稿纸吃满面板余高（flex），autosize 不插手。
+function autosizePen() {
+  if (!SHORT_VIEWPORT.matches) return;
+  const pen = document.getElementById("text");
+  if (pen) autosizeTo(pen, 160);
+}
+
+// 写作面的排印骨架：dateline = 本机当日（与边注栏/封面同一真实数据源、
+// 同一格式——机械事实非文案）；称呼位 = 致 + 当前角色名（.who 端点驱动
+// 空槽，零字面——无名册时 hidden，不发明称呼）。
+function fillComposeChrome() {
+  const dateline = document.getElementById("compose-dateline");
+  if (dateline) {
+    const now = new Date();
+    dateline.textContent = now.getFullYear() + " · " +
+      String(now.getMonth() + 1).padStart(2, "0") + " · " +
+      String(now.getDate()).padStart(2, "0");
+  }
+  const salut = document.getElementById("compose-salut");
+  if (salut) {
+    const who = document.querySelector("#space-parlor .who");
+    const name = who ? who.textContent.trim() : "";
+    salut.textContent = name ? "致 " + name + "，" : "";
+    salut.hidden = !name;
+  }
+}
+
+// navdock 让位（写作态 = 全页成员，同门厅/全页语族）：fold 200ms
+// （paper-fold × --ease-exit）animationend 后落 [hidden] 摘类；
+// reduced-motion 直落。fuse 内查写作态仍在场——快速收起时不得把
+// 已归还的导航藏掉。
+function yieldNavdock() {
+  const navdock = document.getElementById("navdock");
+  if (!navdock || navdock.hidden) return;
+  const lay = () => {
+    navdock.classList.remove("navdock--fold");
+    navdock.removeEventListener("animationend", onEnd);
+    if (composeOpen()) navdock.hidden = true;
+  };
+  const onEnd = (event) => {
+    if (event.animationName !== "paper-fold") return;
+    lay();
+  };
+  if (REDUCED_MOTION.matches) {
+    navdock.hidden = true;
+    return;
+  }
+  navdock.classList.add("navdock--fold");
+  navdock.addEventListener("animationend", onEnd);
+  setTimeout(lay, 480);   // 保险丝（animationend 正常先到）
+}
+
+// navdock 归位：按当前空间还其可见性（与 showSpace 同一账——门厅与
+// 三全页让位、三空间常驻）；在飞 fold 即刻摘类（fill both 的冻结形防呆）。
+function restoreNavdock() {
+  const navdock = document.getElementById("navdock");
+  if (!navdock) return;
+  navdock.classList.remove("navdock--fold");
+  const current = Object.keys(spaces).find((key) => !spaces[key].hidden);
+  navdock.hidden = current === "onboard" || current === "partner" ||
+    current === "letters" || current === "obs";
+}
+
+// Esc 逐层退栈（⑩ 10.4）：浮层在场 → 归浮层（wordCardOpen 裁决，它的
+// 监听收它自己）；写作态 → 收起（保稿）。沓容器与写作态互斥（开沓先
+// 收写作态），二者 Esc 不可能同拍。
+function composeEsc(event) {
+  if (event.key !== "Escape") return;
+  if (wordCardOpen()) return;
+  closeComposeFace({ refocus: true });
+}
+
+function openComposeFace() {
+  const dock = document.querySelector(".dock");
+  if (!dock || dock.classList.contains("dock--compose")) return;
+  if (dock.classList.contains("dock--stilled")) return;   // 置灰优先（⑩ 10.3-5）
+  // ⑩ 互斥：升全页写作态先收浮层；上一次收场的对账柄与落半类即拆
+  //（快速重开不追认旧收场）。
+  closeWordCard();
+  if (composeFoldHandler) {
+    dock.removeEventListener("animationend", composeFoldHandler);
+    composeFoldHandler = null;
+  }
+  dock.classList.remove("dock-compose--out");
+  const pen = document.getElementById("text");
+  try {
+    const draft = sessionStorage.getItem(dockDraftKey());
+    if (draft) pen.value = draft;
+  } catch { /* 隐私模式等存储不可用——退化为无草稿，不阻断写信 */ }
+  fillComposeChrome();
+  const face = document.getElementById("compose-face");
+  if (face) face.hidden = false;
+  const trigger = document.getElementById("dock-trigger");
+  if (trigger) {
+    trigger.hidden = true;
+    trigger.setAttribute("aria-expanded", "true");
+  }
+  dock.classList.add("dock--compose");
+  if (!REDUCED_MOTION.matches) {
+    dock.classList.add("dock-compose--in");
+    const settleIn = (event) => {
+      if (event.animationName !== "paper-drop") return;
+      dock.classList.remove("dock-compose--in");
+      dock.removeEventListener("animationend", settleIn);
+    };
+    dock.addEventListener("animationend", settleIn);
+    setTimeout(() => dock.classList.remove("dock-compose--in"), 680);
+  }
+  yieldNavdock();
+  document.addEventListener("keydown", composeEsc);
+  pen.focus();
+  autosizePen();
+}
+
+function closeComposeFace(opts) {
+  const dock = document.querySelector(".dock");
+  if (!dock || !dock.classList.contains("dock--compose")) return;
+  document.removeEventListener("keydown", composeEsc);
+  const pen = document.getElementById("text");
+  if (pen) clearAutosize(pen);   // autosize 内联高归还（降级态→正常态）
+  const finish = () => {
+    if (composeFoldHandler) {
+      dock.removeEventListener("animationend", composeFoldHandler);
+      composeFoldHandler = null;
+    }
+    dock.classList.remove("dock--compose", "dock-compose--out");
+    const face = document.getElementById("compose-face");
+    if (face) face.hidden = true;
+    const trigger = document.getElementById("dock-trigger");
+    restoreNavdock();
+    // v3-a 焦点归还（两源一收口）：寄出路径（composeFocusPending——
+    // postTurn 的 finally 落旗，此处兑现：fold 未收完时触发条还 hidden，
+    // 直接 focus 会竞态落空）与用户显式退出（opts.refocus）——触发条
+    // 接笔，写信焦点流不丢；空间切换/开沓路径两源皆空，不抢焦点。
+    if (trigger) {
+      trigger.hidden = false;
+      trigger.setAttribute("aria-expanded", "false");
+      if (composeFocusPending) {
+        composeFocusPending = false;
+        trigger.focus();
+      } else if (opts && opts.refocus) {
+        trigger.focus();
+      }
+    }
+  };
+  if (REDUCED_MOTION.matches) {
+    finish();
+    return;
+  }
+  // 落半（报告 §4.2）：paper-fold 200ms × --ease-exit + ink-wash reverse
+  // 恒慢——收势与沓家 fold 同语族；animationend 对账 + 480ms 保险丝。
+  dock.classList.add("dock-compose--out");
+  composeFoldHandler = (event) => {
+    if (event.animationName !== "paper-fold") return;
+    finish();
+  };
+  dock.addEventListener("animationend", composeFoldHandler);
+  setTimeout(() => {
+    if (dock.classList.contains("dock-compose--out")) finish();
+  }, 480);
+}
+
+document.getElementById("dock-trigger").addEventListener(
+  "click", openComposeFace);
+document.getElementById("compose-close").addEventListener(
+  "click", () => closeComposeFace({ refocus: true }));
+// 触屏辅出口（报告 §4.2 D-B 状态矩阵）：面板铬件上下滑（|dy|>|dx| 且
+// >60px）= 收起——收起钮/Esc 是主出口，下滑只是补充；识别纪律同
+// wirePanelSwipe（touch 只做识别、零 preventDefault、passive；起点在
+// 稿纸/动作件上不识别——稿纸内滚动优先）。
+(function wireComposeSwipe() {
+  const face = document.getElementById("compose-face");
+  if (!face) return;
+  let x0 = 0;
+  let y0 = 0;
+  let live = false;
+  face.addEventListener("touchstart", (event) => {
+    live = event.touches.length === 1 &&
+      !event.target.closest("textarea, button, input, select, a");
+    if (live) {
+      x0 = event.touches[0].clientX;
+      y0 = event.touches[0].clientY;
+    }
+  }, { passive: true });
+  face.addEventListener("touchcancel", () => { live = false; },
+    { passive: true });
+  face.addEventListener("touchend", (event) => {
+    if (!live) return;
+    live = false;
+    const dy = event.changedTouches[0].clientY - y0;
+    const dx = event.changedTouches[0].clientX - x0;
+    if (dy > 60 && Math.abs(dy) > Math.abs(dx)) closeComposeFace();
+  }, { passive: true });
+})();
+// 草稿随写随存（10.3-6 同一定谳的桶半区）；收起/Esc 不清（保稿），
+// 唯一清稿时机 = 寄出（submit 半区）。
+document.getElementById("text").addEventListener("input", () => {
+  const pen = document.getElementById("text");
+  try {
+    sessionStorage.setItem(dockDraftKey(), pen.value);
+  } catch { /* 存储不可用——存不上也不打断 */ }
+  autosizePen();
+});
+// 矮视口档位切换时归还 autosize 内联高（降级 ↔ 全幅的几何互斥）。
+SHORT_VIEWPORT.addEventListener?.("change", () => {
+  const pen = document.getElementById("text");
+  if (pen) clearAutosize(pen);
 });
 
 async function loadHistory() {
@@ -2812,6 +3069,8 @@ function unfoldToParlor(after) {
 async function openEnvelopeSelector() {
   if (envselPanel) return;
   closeWordCard();   // ⑩ 互斥：开下拉容器自动关浮层
+  closeComposeFace();   // ⑩ 互斥（v3-a）：开沓先收写作态（保稿）——
+                        // 两具固定底件不同屏（10.3-5 置灰优先的同一定谳）
   setNavdockStilled(true);   // 硬伤 A：底坞淡化置灰且不可点（收沓即解）
   setDockStilled(true);      // 案头写信区同步让路（复测坏1：防误触其寄出）
   const panel = document.createElement("div");

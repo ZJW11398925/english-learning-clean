@@ -144,8 +144,14 @@ def test_the_navdock_is_the_only_way_between_spaces(tmp_path: Path) -> None:
     assert '<nav id="navdock" class="navdock" aria-label="空间">' in index
     for space in ("parlor", "study", "drawer"):
         assert f'class="navdock-item" data-space="{space}"' in index
-    for label in (">案头</button>", ">温故</button>", ">抽屉</button>"):
+    # v3-a 随迁（落墨页签）：每项 = 图标插槽 + 文字标签同钮——文字行
+    # 语义由标签承担（图标永不单独承担语义），三条签行逐字在册。
+    for label in (">案头</span></button>", ">温故</span></button>",
+                  ">抽屉</span></button>"):
         assert label in index
+    for glyph in ("data-icon=\"desk\"", "data-icon=\"revisit\"",
+                  "data-icon=\"drawer\""):
+        assert glyph in index
     app = _text("app.js")
     assert "wireNavdock((name) => showSpace(name));" in app
     assert "markNavdock(name);" in app
@@ -159,7 +165,11 @@ def test_the_navdock_is_the_only_way_between_spaces(tmp_path: Path) -> None:
         " z-index: 6;" in css
     )
     assert "border-top: 1px solid var(--rule);" in css
-    assert "calc(6px + var(--safe-bottom))" in css
+    # v3-a 随迁（N-A 落墨页签 + 令牌账定谳）：垫条材质与写信区垫板同族
+    # （--paper-high 顶纸）；上下 padding 从 --navdock-h 反推——实高恒
+    # 等于令牌（历史 54/57 的 3px 账实差与 dock 盖线缺陷就此消亡）。
+    assert "background: var(--paper-high);" in css
+    assert "calc((var(--navdock-h) - 44px - 1px) / 2)" in css
 
 
 def test_the_dock_clears_the_flow_and_the_overlays(tmp_path: Path) -> None:
@@ -169,7 +179,12 @@ def test_the_dock_clears_the_flow_and_the_overlays(tmp_path: Path) -> None:
     dock (z 6) — the teaching note lives in the flow and scrolls out."""
 
     tokens = _text("tokens.css")
-    assert "--navdock-h: 54px;" in tokens
+    # v3-a 随迁：--navdock-h 语义 = navdock 实高（N-A 体量账 60），
+    # 历史 54 与实高 57 的账实差消亡；新增笔搁触发条与写作态面板缘距
+    # 两令牌（v3-a 报告 §4.0 新增令牌登记）。
+    assert "--navdock-h: 60px;" in tokens
+    assert "--dock-trigger-h: 44px;" in tokens
+    assert "--dock-compose-inset: 16px;" in tokens
     screens = _text("screens.css")
     assert (
         "padding-bottom: calc(var(--navdock-h) + var(--safe-bottom));"
@@ -179,10 +194,11 @@ def test_the_dock_clears_the_flow_and_the_overlays(tmp_path: Path) -> None:
     css = _text("components.css")
     assert ".word-card { position: absolute; z-index: 9;" in css
     # the flow's bottom padding grew by the dock's height (v3-2 随迁：
-    # 算术升级为 --navdock-clearance 令牌账——navdock + 安全区 + 写信
-    # 区自身高度带，字面 310 退役；P1-1 底坞遮挡全局清)
+    # 算术升级为 --navdock-clearance 令牌账；v3-a 再随迁：手写 256px 余量
+    # 退役——账 = navdock + 安全区 + 笔搁触发条 + 一档呼吸，O7 死区清账)
     assert ".flow { padding: 18px var(--read-pad)" in screens
-    assert "calc(var(--navdock-clearance) + 256px); }" in screens
+    assert ("calc(var(--navdock-clearance) + var(--dock-trigger-h)"
+            in screens)
     assert ("--navdock-clearance: calc(var(--navdock-h)"
             " + var(--safe-bottom));" in tokens)
 

@@ -326,7 +326,10 @@ def test_the_scroll_tails_carry_the_navdock_clearance() -> None:
             " + var(--safe-bottom));" in tokens)
     screens = _text("screens.css")
     flow = _block(screens, ".flow {")
-    assert "calc(var(--navdock-clearance) + 256px);" in flow
+    # v3-a 随迁：手写 256px 余量退役（D-B 笔搁触发条账——navdock +
+    # 安全区 + 触发条 + 一档呼吸，O7 死区清账）
+    assert ("calc(var(--navdock-clearance) + var(--dock-trigger-h)"
+            in flow)
     space = _block(screens, ".spacebody {")
     assert "calc(var(--navdock-clearance) + var(--sp-6));" in space
     # the magic numbers are retired (negative)

@@ -140,7 +140,9 @@ def test_the_page_has_the_parlor_screen(tmp_path: Path) -> None:
     assert "topactions" not in page
     assert 'id="messages"' in page
     assert 'id="moments"' in page
-    assert '<textarea id="text" class="pen"' in page
+    # v3-a 随迁（D-B）：textarea 带 --open 尺寸修饰类（写作态尺寸面，
+    # 字面唯一出处不变）
+    assert '<textarea id="text" class="pen pen--open"' in page
     assert "寄出 →</button>" in page
     # the flow's two letter shapes: the plain sheet and the torn-edge
     # reply slip (clip-path, the anchor's own polygon)——v2 骨架随迁：

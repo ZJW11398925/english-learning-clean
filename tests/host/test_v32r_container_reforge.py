@@ -465,7 +465,9 @@ def test_the_spec_carries_the_v32r_truth() -> None:
 
 def test_the_design_language_census_stands() -> None:
     """v2 内核纪律不降级：动效注册表仍 8 枚 keyframes（零新注册——
-    写信工作区复用 paper-fold/ink-wash/stamp-press 既有枚）；圆角
+    写信工作区复用 paper-fold/ink-wash/stamp-press 既有枚；v3-a 随迁
+    8→9：paper-drop-down 落底入册——O2 定谳修的新方向原语，⑨-5 名册
+    同刀改行）；圆角
     census（screens 4 / components 7，全 ≤2px 信纸物件档 + 邮票邮戳
     圆形豁免）；阴影 census（screens 4 / components 5）；零毛玻璃；
     reduced-motion 字面不进 app.js（REDUCED_MOTION 单一归宿）；写
@@ -473,7 +475,7 @@ def test_the_design_language_census_stands() -> None:
 
     components = _text("components.css")
     screens = _text("screens.css")
-    assert components.count("@keyframes ") == 8
+    assert components.count("@keyframes ") == 9
     assert screens.count("border-radius") == 4
     assert components.count("border-radius") == 7
     assert screens.count("box-shadow") == 4
