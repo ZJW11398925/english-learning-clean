@@ -138,6 +138,14 @@ def test_the_word_card_sheet_tier_is_the_touch_layout() -> None:
     scrim = _block(css, ".word-scrim {")
     assert "background: var(--ink);" in scrim
     assert "opacity: 0.4;" in scrim
+    # 遮罩动画终态必须回落元素值 0.4（scrim-in from-only）：ink-wash 的
+    # to{opacity:1} 在 both 填充下会永久覆盖 0.4 ⇒ 全屏不透明墨黑
+    # （用户实测黑屏缺陷根因，2026-10-02 修复）
+    hover_none = css[css.index("@media (hover: none) {"):]
+    assert "animation: scrim-in var(--dur-note)" in hover_none
+    kf = css[css.index("@keyframes scrim-in {"):][:200]
+    assert "from { opacity: 0;" in kf
+    assert "to" not in kf, "scrim-in 不得有 to——终态须回落元素 opacity 0.4"
 
 
 def test_the_sheet_semantics_are_one_component_two_tiers() -> None:

@@ -537,15 +537,19 @@ button:focus-visible, input:focus-visible {
   }
 }
 /* 墨色遮罩（sheet 档专用）：--ink 降透明度（元素 opacity 0.4——墨色
-   同源，禁毛玻璃）；display 由媒体查询落，浮现 = ink-wash 一次
-   （both——挂着即稳态）；关闭即 DOM 移除。 */
+   同源，禁毛玻璃）；display 由媒体查询落；浮现走 scrim-in（from-only
+   keyframe——**不**用 ink-wash：其 to{opacity:1} 在 both 填充下会
+   永久覆盖元素 opacity 0.4，稳态变全屏不透明墨黑；from-only 的终态
+   回落元素值，稳态恒 0.4——用户实测黑屏缺陷的根因即此）；关闭即
+   DOM 移除。 */
 .word-scrim { display: none; position: fixed; inset: 0; z-index: 8;
               background: var(--ink); opacity: 0.4; }
 @media (hover: none) {
   .word-scrim { display: block;
-                animation: ink-wash calc(var(--dur-note) * 1.3)
+                animation: scrim-in var(--dur-note)
                            var(--ease-paper) both; }
 }
+@keyframes scrim-in { from { opacity: 0; } }
 .wc-lemma { font-family: var(--f-serif); font-size: var(--fs-head);
             font-weight: 400; }
 .wc-pos { margin-left: 8px; font: var(--meta-font);
