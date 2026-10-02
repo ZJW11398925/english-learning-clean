@@ -109,7 +109,9 @@ def test_the_46_sticky_offset_is_the_brand_bars_real_height() -> None:
     assert (real, borders) == (46, 2), real
 
     assert _px(components, ".section-tabs {", "top", tokens) == real
-    assert _px(screens, ".dossier-back {", "top", tokens) == real
+    # v2-2 随迁：.dossier-back 更名 .pageback（三屏共用的单一出处——
+    # cs-2 档案 / 信档 / 观察三纵深屏的 sticky 返回行）
+    assert _px(screens, ".pageback {", "top", tokens) == real
     assert BAR_ARITHMETIC in components
     assert BAR_ARITHMETIC in screens
 
@@ -135,13 +137,20 @@ def test_the_tab_bars_stick_under_the_brand_bar() -> None:
 def test_the_dossier_back_row_sticks() -> None:
     """The dossier's 「← 回案头」 row (screens.css) sticks right under
     the brand bar on the full-page view — the only way back never
-    scrolls away; paper ground, arithmetic in the same source."""
+    scrolls away; paper ground, arithmetic in the same source. v2-2:
+    the row's class is .pageback now (the one shared definition for
+    the three full-page depths — dossier / letters archive / obs)."""
 
     screens = _text("screens.css")
-    block = _block(screens, ".dossier-back {")
+    block = _block(screens, ".pageback {")
     assert "position: sticky; top: 46px; z-index: 4;" in block
     assert "background: var(--bg);" in block
     assert BAR_ARITHMETIC in screens
+    # the single definition: no per-screen duplicate of the sticky face
+    assert "dossier-back" not in screens
+    index = _text("index.html")
+    assert 'class="pageback"' in index
+    assert "dossier-back" not in index
 
 
 def test_the_editor_back_row_sticks_in_its_own_well() -> None:
@@ -220,15 +229,24 @@ def test_the_swipe_never_hijacks_the_scroll() -> None:
     """Zero preventDefault anywhere in the factory, every listener
     passive, and the recognition stands down on interactive starts and
     the one horizontal scroll surface (pre) — vertical scrolling and
-    button taps keep their default lives."""
+    button taps keep their default lives. v2-2: the page-turn guard
+    (wirePageTurn — the envelope browser's swipe, 8.2.2a) is the same
+    recognition discipline in a second factory: 3 + 3 = 6 passive
+    listeners, zero preventDefault, same stand-down set."""
 
-    factory = _swipe_factory()
-    assert ".preventDefault(" not in factory
-    assert factory.count("{ passive: true }") == 3
-    assert (
-        '!event.target.closest("button, a, input, textarea, select, pre")'
-        in factory
-    )
+    whole = _text("components.js")
+    swipe = _swipe_factory()
+    turn = whole[whole.index("export function wirePageTurn"):]
+    turn = turn[:turn.index("\n}", turn.index("touchend")) + 2]
+    for factory in (swipe, turn):
+        assert ".preventDefault(" not in factory
+        assert (
+            '!event.target.closest("button, a, input, textarea, select, pre")'
+            in factory
+        )
+        assert "Math.abs(dx) < SWIPE_MIN_PX" in factory \
+            or "48" in factory
+    assert whole.count("{ passive: true }") == 6
 
 
 def test_the_swipe_is_wired_for_both_spaces_as_a_supplement() -> None:
@@ -296,17 +314,39 @@ def test_the_word_hit_area_widens_with_zero_reflow_in_one_block() -> None:
 
 
 def test_the_touch_affordance_mirrors_the_hover_dots() -> None:
-    """The (hover: none) half carries the same dotted affordance for the
-    letter words — no :hover selector (the rd1 pointer-only law is
-    untouched), same pencil-soft color and offset as the hover face."""
+    """v2-2 重写（8.2.2④ 波浪线修复——用户点名否决旧形态）：旧
+    (hover: none) 半区的「.say .word 常显 dotted」已退役——整段对话
+    的英文词连缀成波浪线的根因，目标态否定项「全文常显点线」永禁。
+    负控：hover:none 半区无常显点线（零 text-decoration 提示）；替代
+    两件在场（墨蓝族 + 透明度，零新色零圆点零图标）——(a) 仅最新一
+    封弱底纹（.letter--latest .say .word，--accent-soft 12%）+
+    (b) 按压即亮（.word:active，--dur-micro 档）；桌面 hover 点线
+    半区原样。"""
 
     css = _text("components.css")
     at = css.index("@media (hover: none) {")
-    mirror = css[at:css.index("}", at)]
-    assert ".say .word { text-decoration: underline dotted;" in mirror
-    assert "text-decoration-color: var(--pencil-soft);" in mirror
-    assert "text-underline-offset: 0.24em;" in mirror
-    assert ":hover" not in mirror
+    while True:
+        mirror = css[at:css.index("}", at)]
+        if ".say .word" in mirror or ".letter--latest" in mirror:
+            break
+        at = css.index("@media (hover: none) {", at + 1)
+    # the root cause is gone: no standing dotted line in the none half
+    assert "text-decoration: underline dotted;" not in mirror
+    assert "text-decoration-color: var(--pencil-soft);" not in mirror
+    # the replacements ride the accent family at set opacities only
+    assert ".letter--latest .say .word" in mirror
+    assert "color-mix(in srgb, var(--accent-soft) 12%, transparent);" \
+        in mirror
+    active = _block(css, ".word:active {")
+    assert "color-mix(in srgb, var(--accent-soft) 30%, transparent);" \
+        in active
+    # the maintenance arm of the latest-letter marker (it lives in the
+    # letter factory — addLine is the single writer of the marker)
+    components = _text("components.js")
+    assert 'node.classList.add("letter--latest");' in components
+    assert 'prev.classList.remove("letter--latest");' in components
+    # the hover half keeps its dots (desktop affordance unchanged)
+    assert "@media (hover: hover) {" in css
 
 
 def test_the_nearest_word_fallback_wires_behind_the_fast_path() -> None:

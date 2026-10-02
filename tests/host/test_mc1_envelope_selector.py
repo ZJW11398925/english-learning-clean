@@ -106,21 +106,28 @@ def _put_json(port: int, path: str, payload: Any) -> tuple[int, Any]:
 
 
 def test_the_masthead_reads_the_roster_not_literals() -> None:
-    """案头主从条的真源钉：.who = 当前角色名、.who-sub = 该角色身份行
-    ——renderMasthead 只从 /api/characters 的 current 取（删驱动线即
-    红）；webui 七文件零角色名字面（Nell 保持零出现）；无 JS 兜底 =
-    空槽（不发明人名）；品牌名与副题退居门厅封面；页面 title 保持
+    """案头主从条的真源钉：.who = 当前角色名一行（v2-2 瘦身，8.2.2①：
+    who-sub 身份行长句族退役——身份介绍退入笔友档案全页，缺位钉防
+    回潮）——renderMasthead 只从 /api/characters 的 current 取（删驱动
+    线即红）；webui 七文件零角色名字面（Nell 保持零出现）；无 JS 兜底
+    = 空槽（不发明人名）；品牌名与副题退居门厅封面；页面 title 保持
     品牌（mc-1 自裁披露：不拼角色名——避免每封信重排标签页标题）。"""
 
     index = _text("index.html")
     assert '<div class="who"></div>' in index
-    assert '<div class="who-sub"></div>' in index
+    assert 'who-sub' not in index
     assert '<p class="ob-tagline">见字如晤，今日如何</p>' in index
     assert "<title>展信佳</title>" in index
     app = _text("app.js")
     assert "function renderMasthead(roster)" in app
     assert 'who.textContent = current ? current.name : "";' in app
-    assert 'sub.textContent = current ? current.identity_line : "";' in app
+    # the sub slot is gone with the v2-2 slim-down (the editor's own
+    # editor-sub line in mc-2 shares the receiver name — pin the exact
+    # masthead spelling, not the bare receiver)
+    assert (
+        'sub.textContent = current ? current.identity_line : "";'
+        not in app
+    )
     assert (
         "const current = items.find(\n"
         "    (item) => item.character_id ==="
@@ -327,11 +334,19 @@ def test_the_preview_animation_is_pinned_to_the_v2_motion_law() -> None:
         " var(--ease-press); }" in components
     )
     assert ".env--lift::after { opacity: 1; }" in components
-    # the panel's entrance and the desk's resettle reuse the registered
-    # pair — no new keyframes anywhere in this cut
+    # the desk's resettle reuses the registered pair; the panel's
+    # entrance was re-sequenced by v2-2 (8.2.2a 弹窗整体优化)：面板是
+    # 大件——入场 320 大件档 × --ease-paper 减速长尾（原 --ease-enter
+    # 稳出档让位），退场 = paper-fold 收拢 200 × --ease-exit + ink-wash
+    # reverse 恒慢（起笔向下展开的「沓收拢」半）。page-turn 两枚新
+    # keyframes 是 ⑨-5 的落库行（spec 9.5 表）——沓翻页与横滑共用。
     assert (
-        ".envsel--open { animation: paper-drop var(--dur-note)"
-        " var(--ease-enter) both," in screens
+        ".envsel--open { animation: paper-drop var(--dur-settle)"
+        " var(--ease-paper) both," in screens
+    )
+    assert (
+        ".envsel--fold { animation: paper-fold var(--dur-panel-out)"
+        " var(--ease-exit)" in screens
     )
     assert (
         "animation: paper-drop var(--dur-note) var(--ease-enter) both,\n"
@@ -376,16 +391,20 @@ def test_the_talk_action_wires_the_switch_and_the_local_refresh() -> None:
     assert "await loadHistory();" in app
     assert 'flow.classList.remove("flow-resettle");' in app
     assert 'flow.classList.add("flow-resettle");' in app
-    # the talk arm and the second-click arm both land in the switch
+    # the talk arm and the second-click arm both land in the switch —
+    # v2-2 随迁（8.2.2a 起笔向下展开）：切换确认后 unfoldToParlor
+    # （沓收拢与信流首屏同帧，fold 退场），不再直摘
     assert (
         "switchToCharacter(item.character_id).then((done) => {\n"
-        "          if (done) closeEnvelopeSelector();\n"
+        "          if (done) unfoldToParlor();\n"
         "        });" in app
     )
     assert (
         "if (envselPreviewId === characterId) {\n"
+        "    // 再点同一封 = 就是他——切换 + 起笔向下展开\n"
+        "    // （8.2.2a：选中角色后沓收拢、信纸向下铺开成对话主界面）\n"
         "    switchToCharacter(characterId).then((done) => {\n"
-        "      if (done) closeEnvelopeSelector();\n"
+        "      if (done) unfoldToParlor();\n"
         "    });\n"
         "    return;\n"
         "  }" in app
@@ -569,7 +588,9 @@ def test_the_migration_manifest_restates_the_new_truths() -> None:
 
     index = _text("index.html")
     assert '<div class="who"></div>' in index
-    assert '<div class="who-sub"></div>' in index
+    # v2-2 随迁（8.2.2①）：who-sub 身份行长句族退役（身份介绍退入
+    # 笔友档案全页）——缺位钉防回潮
+    assert 'who-sub' not in index
     assert "<h1>展信佳</h1>" in index
     assert '<p class="ob-tagline">见字如晤，今日如何</p>' in index
     app = _text("app.js")
@@ -587,15 +608,20 @@ def test_the_migration_manifest_restates_the_new_truths() -> None:
     )
     # the counting pins' new exemptions, in one place: 2px seats in
     # screens (.envsel/.env，mc-2 起加编辑台的开场信预览短笺——同 ≤2px
-    # 信纸物件档), stamp & postmark geometry + the three
-    # baseline seats (circle, postmark pair) in components; the soft
-    # shadows at four, the stage's deep alone in screens
+    # 信纸物件档, v2-2 起加翻页全览页卡 .envpage——同档), stamp & postmark
+    # geometry + the three baseline seats (circle, postmark pair) in
+    # components; the soft shadows: note/deckle/en-route/stack 四座 +
+    # 空白封的 none 抵消臂在 components（v2-2 增词卡遮罩无影——计数
+    # 不变），screens 的 box-shadow 自 v2-2 起四座（案头舞台 deep +
+    # 写信区垫板 soft 向上 8.2.2② + 翻页页卡 soft 承托 + 信档缩略封
+    # soft——全部两级令牌之内、零手写字面）
     screens = _text("screens.css")
     components = _text("components.css")
-    assert screens.count("border-radius") == 3      # .envsel + .env + 预览短笺 (2px)
+    assert screens.count("border-radius") == 4
+    # .envsel + .env + 预览短笺 + .envpage (2px)
     assert components.count("border-radius") == 7   # 基线3 + 邮戳双圈2 + 邮票图形2
     assert components.count("box-shadow: var(--stack-shadow-soft);") == 4
-    assert screens.count("box-shadow") == 1         # 案头舞台的 deep 档
+    assert screens.count("box-shadow") == 4         # 舞台 deep + 垫板/页卡/缩略封 soft
     # the mc-1 face styles live outside the component registry (the
     # dossier precedent): no numbered contract block, no clause words
     assert "mc-1 信封选择器的交互态与工艺件" in components
@@ -632,19 +658,22 @@ def test_the_preview_settle_reaches_the_front_and_others_give_way() -> None:
     )
     # the front seat rides the top z (count − position 0 = count)
     assert 'env.style.setProperty("--env-z", String(count - position));' in js
-    # the two arms: a second click on the previewed envelope switches;
-    # talking to the current one just folds the selector
+    # the two arms: a second click on the previewed envelope switches
+    # (v2-2: 起笔向下展开——unfoldToParlor); talking to the current one
+    # folds the selector into the parlor the same way
     assert (
         "if (envselPreviewId === characterId) {\n"
+        "    // 再点同一封 = 就是他——切换 + 起笔向下展开\n"
+        "    // （8.2.2a：选中角色后沓收拢、信纸向下铺开成对话主界面）\n"
         "    switchToCharacter(characterId).then((done) => {\n"
-        "      if (done) closeEnvelopeSelector();\n"
+        "      if (done) unfoldToParlor();\n"
         "    });\n"
         "    return;\n"
         "  }" in app
     )
     assert (
         "if (isCurrent) {\n"
-        "          closeEnvelopeSelector();   // 已在通信中——收沓即回\n"
+        "          unfoldToParlor();   // 已在通信中——沓收拢、信纸摊开（8.2.2a）\n"
         "          return;\n"
         "        }" in app
     )
@@ -695,12 +724,21 @@ def test_the_selector_esc_rename_and_z_order_wiring_is_pinned() -> None:
     assert 'env.style.setProperty("--env-i", String(position));' in js
     assert 'env.style.setProperty("--env-z", String(count - position));' in js
     # ② Esc folds the selector; the listener leaves with it; the editor
-    # (mc-2) owns Escape while it is open
+    # (mc-2) owns Escape while it is open. v2-2 随迁：翻页全览是沓内的
+    # 浏览层——Esc 先退回扇叠（setEnvelopeBrowser(false)），再一记才
+    # 收沓（层层退，不一步跳关）。
     assert (
         'function envselEsc(event) {\n'
         '  if (charEditorPanel) return;'
         "   // Esc 归编辑台（它自己的收拢）\n"
-        '  if (event.key === "Escape") closeEnvelopeSelector();\n'
+        '  if (event.key === "Escape") {\n'
+        "    // 翻页全览是沓内的浏览层——Esc 先退回扇叠，再一记才收沓\n"
+        "    if (envselBrowser) {\n"
+        "      setEnvelopeBrowser(false);\n"
+        "      return;\n"
+        "    }\n"
+        "    closeEnvelopeSelector();\n"
+        "  }\n"
         "}" in app
     )
     assert 'document.addEventListener("keydown", envselEsc);' in app

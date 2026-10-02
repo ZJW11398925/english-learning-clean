@@ -73,17 +73,25 @@ def test_no_page_internal_h2_and_the_guide_sentences_open_the_sections(
     assert "<h2>" not in index
     assert "<h2 " not in index
     # the guide sentences (⑧ 8.2 各页定稿，逐字；rd-3 随迁：档案节
-    # 引导句接任——旧账页句退役)
+    # 引导句接任——旧账页句退役)。v2-2 随迁（换名句对齐，spec 8.2.4/
+    # 8.2.6/8.2.7 定稿）：自称主语改「笔友」——记着方向、记着事、
+    # 被请求忘掉的都是与你通信的笔友。
     assert "客厅在今天的样子" not in index  # 今日的旧引导句退役（摘要行接任）
     assert (
-        "你想把英语用在哪里——这是客厅记着的长期方向。" in index
+        "你想把英语用在哪里——这是笔友记着的长期方向。" in index
     )
     assert "每次保存都前移版本；上一版找不回来。" in index
     assert "批注留过的痕迹与接下来的计划——要的时候来翻。" in index
     assert "客厅的账页——只读，如实。" not in index
     # cs-2 随迁：记忆页引导句接三摞重组后的口径（分三摞收纳）
-    assert "客厅记住的事都在这里——一条条如实，分三摞收纳。" in index
-    assert "请客厅忘掉一些事——走出去就找不回来。" in index
+    assert "笔友记住的事都在这里——一条条如实，分三摞收纳。" in index
+    assert "请笔友忘掉一些事——走出去就找不回来。" in index
+    for retired_line in (
+        "你想把英语用在哪里——这是客厅记着的长期方向。",
+        "客厅记住的事都在这里——一条条如实，分三摞收纳。",
+        "请客厅忘掉一些事——走出去就找不回来。",
+    ):
+        assert retired_line not in index
     # rd-4 随迁（9.12-23）：设置节升真面——旧「还没铺开」句退役不回潮
     assert "设置面还没有铺开。" not in index
     assert "当前这一档由启动命令给定——页面读不到，也不改它。" in index
@@ -484,7 +492,8 @@ def test_the_privacy_face_speaks_忘掉(tmp_path: Path) -> None:
     result sentences, the grouped + filtered target list."""
 
     page = _page_of(tmp_path)
-    assert "请客厅忘掉一些事——走出去就找不回来。" in page
+    # v2-2 随迁（换名句对齐，spec 8.2.7 定稿）：自称主语改「笔友」
+    assert "请笔友忘掉一些事——走出去就找不回来。" in page
     assert "忘掉这段通信的全部记录" in page
     assert "忘掉这项的痕迹" in page
     assert "按表达忘掉" in page
@@ -533,11 +542,15 @@ def test_the_record_page_is_account_why_raw(tmp_path: Path) -> None:
     assert ">有没有从简处理的轮次</h3>" not in page
     assert ">为什么</h3>" not in page
     assert ">为什么 · 原值</h3>" not in page
-    # the raw fold: name, the adopted content, the lazy observations pull
+    # the raw fold: name, the adopted content. v2-2 随迁（8.2.12）：
+    # 观察读数迁入专门面（观察仪表屏）——折叠内只留入口行
+    # （obs-entry 的「翻开原始读数 →」，obsout/obs-status 退役）
     assert 'name: "原始读数（给排查用）"' in page
-    assert "onFirstExpand: () => loadObservations()" in page
     assert 'id="raw-readings"' in page
-    assert 'id="obsout"' in page
+    assert 'id="obs-entry"' in page
+    assert '"翻开原始读数 →"' in page
+    assert 'id="obsout"' not in page
+    assert "loadObservations()" not in page
     # rd-3：账表与排程/目标降入各自的折叠（收养法同 raw-readings）
     assert 'name: "计划明细（复习排程 · 目标）"' in page
     assert 'name: "按表达看：在学的表达"' in page

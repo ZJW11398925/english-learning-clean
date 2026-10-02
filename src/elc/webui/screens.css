@@ -88,18 +88,24 @@ body {
        padding: 10px var(--read-pad) 8px;
        display: flex; align-items: baseline; gap: 10px; }
 .top .brandmark { align-self: center; flex: none; }
-/* 信头 = 名 + 副题小字（简报 §1）：名走 display 族衬线 400（宋体禁
-   合成粗体——中文字重靠字号与字距，工艺法则 2）。 */
+/* 信头 = 当前角色名（简报 §1；v2-2 主从条瘦身，8.2.2①：只报名，
+   不设展柜——身份行副槽长句族退役，身份介绍退入笔友档案页）。
+   head 档读法（9.1：18/26 + 0.03em，排印 head 档的字面在此落齐）。 */
 .who { font-family: var(--f-display); font-size: var(--fs-head);
        line-height: var(--lh-head); font-weight: 400;
        letter-spacing: var(--ls-head); }
-.who-sub { font: var(--meta-font); color: var(--ink-faint);
-           letter-spacing: var(--meta-track); margin-top: 2px; }
 /* rd-4 伙伴面：身份条原地的可点手感——客厅屏的 who 块整体可点；
    hover 触点提示在 components.css（rd-1 钉：screens 零 hover 规则）。
    品牌条不增长动作钮。 */
 #space-parlor .top > div { cursor: pointer; }
 
+/* 8.2.2② dock/flow 层次（v2-2）：flow = 摊在案头上的信纸堆（主纸
+   --paper 直出，零面板感——桌面包围与 --stack-shadow-deep 承托由
+   #stage 的桌面档承担，不重复落）；dock = 案头前沿的垫板层——顶纸
+   --paper-high 浮起面 + 上缘发丝线 + --stack-shadow-soft 向上承影
+   落在前一封信的纸尾上（soft 的 y 分量 -3px 即向上）。分层只用
+   paper 色阶 + 发丝线 + 两级墨色阴影；打字的地方比信纸「新」。
+   聚焦微起（:focus-within translateY(-2px)）保留 = 垫板被手压起。 */
 .flow { padding: 18px var(--read-pad) 310px; }
 .typing { margin: 0 0 18px; font-family: var(--f-sans);
           font-size: var(--fs-ui); color: var(--ink-faint); }
@@ -111,11 +117,15 @@ body {
 
 /* 写信区：固定底（R-1 起让位于其下的常驻 dock）、上发丝线、无边框
    输入行 + 寄出链接；底部安全区由 dock 负责，这里只留自身呼吸。
+   v2-2（8.2.2②）：垫板层——顶纸 --paper-high 浮起面（输入框纸面比
+   信流主纸新一档）+ --stack-shadow-soft 向上承影（阴影色墨同源、
+   y 分量向上落在信纸堆上；两级令牌之内，非自造）。
    cs-2 输入态：聚焦臂的过渡载体声明在块内（transform 与发丝线色，
    100ms 档——纸的物理，禁发光；非聚焦零改动）。 */
 .dock { position: fixed; left: 0; right: 0;
         bottom: var(--navdock-h); z-index: 8;
-        background: var(--bg); border-top: 1px solid var(--rule);
+        background: var(--paper-high); border-top: 1px solid var(--rule);
+        box-shadow: var(--stack-shadow-soft);
         padding: 10px var(--read-pad) 14px;
         max-width: var(--shell-w); margin: 0 auto;
         transition: transform var(--dur-micro) var(--ease-press),
@@ -198,13 +208,14 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
    记忆与话头行 = 左缘发丝线（分层靠发丝线，简报 §6）；时间线行 = 等宽
    日期 + tabular-nums（数据列排等宽，简报 3a 禁令）。全部引用令牌，
    零新值。数据只读 /api/partner——角色文本零字面（真源在服务端）。 */
-.dossier-back { margin: 0 0 var(--sp-4);
-                /* ux-1：返回钮常显（用户原话——返回按钮不得因页面滚动
-                   被遮挡）：sticky 贴在品牌条之下，top 46 = .top 的高度
-                   （10 上距 + 26 行高 + 8 下距 + 2 发丝边）；纸底盖住
-                   从底下滚过的正文。 */
-                position: sticky; top: 46px; z-index: 4;
-                background: var(--bg); }
+/* ── 全页纵深的 sticky 返回行（单一出处；cs-2 档案 / v2-2 信档 ·
+   观察三屏共用 .pageback，ux-1 的常显语义）：贴品牌条之下，top 46 =
+   .top 的高度（10 上距 + 26 行高 + 8 下距 + 2 发丝边）；纸底盖住从
+   底下滚过的正文。（档案页返回行的旧类名随 v2-2 更名——同一 sticky
+   返回行形态不再每屏一份。） */
+.pageback { margin: 0 0 var(--sp-4);
+            position: sticky; top: 46px; z-index: 4;
+            background: var(--bg); }
 .dossier-name { margin: 0; font-family: var(--f-display);
                 font-size: var(--fs-title); line-height: var(--lh-title);
                 font-weight: 400; letter-spacing: var(--ls-title); }
@@ -226,6 +237,75 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
 .dossier-day b { font-family: var(--f-mono); font-weight: 400;
                  font-size: var(--fs-micro); color: var(--ink);
                  font-variant-numeric: tabular-nums; }
+
+/* ── v2-2 中文文档页排印（9.1 工艺法则 6 落位：设置/隐私两节）──────
+   正文 17/32（行高锁基线——8.2.8 重铸①）、首行缩进 2em、零段距；
+   micro 标签（.sec h3）已走 --meta-* 配方（rd-1 现役）。
+   rd-4 时代的 .sub 说明行在本两节升文档段读法（面板节 .sub 原样
+   不动——本类只挂设置与隐私的文档行）。 */
+.doc-line { margin: 0; font-size: var(--fs-body);
+            line-height: var(--baseline); text-indent: 2em;
+            overflow-wrap: anywhere; }
+
+/* ── v2-2 信档屏（#space-letters，8.2.11 结构重铸件）────────────────
+   信封形接线（T1-4 封/信分物——本屏的定义性形态）：条目 = 信封缩略
+   （.env-mini——4b 信封形的缩略读法：矩形 + 中央折线 + 封舌），
+   点条目展开读 = 信纸（letterNode 复用 #4 的排印骨架，非重复实现），
+   展开动效 = paper-unfold（注册原语）。归档戳挂点（DEC-…16 ⑦ 形态
+   位）：屏头一枚 .postmark--archived 日期戳（4c 形态、--ink-ghost、
+   同屏 ≤1——「归档开启」是真实事件，翻开信档这件事本身）。
+   口径诚实：只列 /api/history 已加载的 50 轮窗口，第 n 封按窗口内
+   顺序数（8.2.5 同口径），无时间戳不造日期。 */
+.letters-entry { margin: 0; text-align: center; }
+.letters-calibre { margin: 0 0 var(--sp-4); font-family: var(--f-sans);
+                   font-size: var(--fs-ui); color: var(--ink-faint);
+                   line-height: var(--lh-ui); }
+.letters-head { position: relative; }
+.letters-datestamp { position: absolute; top: calc(var(--sp-1) * -1);
+                     right: 0; }
+.letters-datestamp .postmark { position: static; }
+.letterline { border-top: 1px solid var(--rule-soft); }
+.letterline-head { display: flex; align-items: center; gap: var(--sp-3);
+                   width: 100%; text-align: left; padding: var(--sp-2) 0;
+                   position: relative; }
+.env-mini { position: relative; flex: none; width: 64px; height: 42px;
+            background: var(--paper-2); border: 1px solid var(--rule);
+            box-shadow: var(--stack-shadow-soft); }
+.env-mini::before { content: ""; position: absolute; left: 0; right: 0;
+                    top: 0; height: 46%;
+                    background: var(--paper-high);
+                    clip-path: polygon(0 0, 100% 0, 50% 96%, 50% 100%,
+                                       0 100%);
+                    border-bottom: 1px solid var(--rule); }
+.env-mini::after { content: ""; position: absolute; left: 0; right: 0;
+                   top: 50%; border-top: 1px solid var(--rule); }
+.letterline-no { font: var(--meta-mono); font-variant-numeric:
+                 tabular-nums; color: var(--meta-ink); flex: none; }
+.letterline-snippet { flex: 1; min-width: 0; font-size: var(--fs-small);
+                      line-height: var(--lh-small); color: var(--ink-soft);
+                      white-space: nowrap; overflow: hidden;
+                      text-overflow: ellipsis; }
+.letterline-body { padding: 0 0 var(--sp-4); }
+.letterline-body:not([hidden]) {
+  animation: paper-unfold var(--dur-note) var(--ease-enter) both,
+             ink-wash calc(var(--dur-note) * 1.3) var(--ease-enter)
+             both; }
+/* 展开读的信纸：#4 letter 的 DOM（letterNode 复用）在条目内的缩距
+   ——letter 自带的 --sp-5 底距在条目内偏宽，收在条目自身的 padding
+   里（信纸规则零重定义——单一出处）。 */
+.letterline-body > :last-child { margin-bottom: 0; }
+
+/* ── v2-2 观察仪表屏（#space-obs，8.2.12 结构重铸件）────────────────
+   定位延续 rd-3 归档读法：观察读数 = 排查材料（不是给学习用的面）。
+   摘要行一行封顶（.sumline 摘要行同形——mono 数字）；六表逐表 #21
+   折叠（默认全收，第一次展开才拉的一次性读数）；表内原值直出
+   （.kv mono + tabular-nums——零图表零彩色零徽章，账页不是看板）。
+   结构样式近乎零新增：摘要行走屏级 .sumline、表行走 #9 .kv、折叠走
+   #21——本节只落屏头的返回/口径两行的间距语义。 */
+.obs-head { position: relative; }
+.obs-note { margin: 0 0 var(--sp-4); font-family: var(--f-sans);
+            font-size: var(--fs-ui); color: var(--ink-faint);
+            line-height: var(--lh-ui); }
 
 /* ── mc-1 信封选择器（点案头主从条弹出的那沓信）──────────────────────
    沓形 = 案头的一叠信封：沓内绝对定位错位叠放——top 由视觉位序
@@ -249,10 +329,21 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
           padding: var(--sp-4) var(--sp-4) var(--sp-2);
           max-height: calc(100dvh - var(--sp-8) - var(--sp-6));
           display: flex; flex-direction: column; }
-/* 沓面板入场一次（复用注册双动画——纸先落、墨后渗；零新 keyframes） */
-.envsel--open { animation: paper-drop var(--dur-note) var(--ease-enter) both,
-                            ink-wash calc(var(--dur-note) * 1.3)
-                            var(--ease-enter) both; }
+/* 沓面板入场一次（复用注册双动画——纸先落、墨后渗；v2-2 重排
+   8.2.2a：面板是大件，落 --dur-settle 320 档 + 进入减速长尾
+   --ease-paper（原 --ease-enter 稳出档让位——「纸先落」的长尾才是
+   进入的气度）；opacity 恒慢 ×1.3）。 */
+.envsel--open { animation: paper-drop var(--dur-settle) var(--ease-paper) both,
+                            ink-wash calc(var(--dur-settle) * 1.3)
+                            var(--ease-paper) both; }
+/* 沓面板退场（v2-2 起笔向下展开的「沓收拢」半，8.2.2a）：transform
+   200ms 加速收势（--ease-exit）+ ink-wash reverse 恒慢（墨后散）；
+   类由 app.js 落，animationend 后摘 DOM（reduced-motion 随库尾总
+   降级块 0.01ms 即终 + JS 直切双面）。 */
+.envsel--fold { animation: paper-fold var(--dur-panel-out) var(--ease-exit)
+                           both,
+                           ink-wash calc(var(--dur-panel-out) * 1.3)
+                           var(--ease-exit) both reverse; }
 .envsel-stack { position: relative; overflow-x: hidden;
                 overflow-y: auto; overscroll-behavior: contain;
                 --env-fan: 0.35; --env-step: 46px; --env-body: 104px;
@@ -303,7 +394,64 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
 .env-newhint { white-space: normal; overflow: visible; }
 .env-newfull { margin-left: 16px; }   /* 空白封第二入口（mc-2 完整编辑） */
 .env-actions { display: flex; gap: 16px; margin: 4px 0 0; }
-.envsel-foot { margin: var(--sp-2) 0 0; text-align: right; }
+/* v2-2：沓面板底行两钮——翻看（左，翻页全览入口）+ 收起（右）。 */
+.envsel-foot { margin: var(--sp-2) 0 0; display: flex;
+               justify-content: space-between; align-items: baseline; }
+
+/* ── mc-1 翻页全览（v2-2，8.2.2a 目标块落地）：沓内的浏览层——每页
+   一张角色卡全貌（可读回的卡面摘要 + 开场信缺席的诚实注记），横滑
+   （ux-1 守卫同法）与点击（#22 chevron 复用）翻页；翻页态不替换
+   档案页——页卡上的「档案」动作仍进全页。page-turn = 2D 翻页感
+   （位移 + rotateY ≤8° + 梯形；零 preserve-3d——简报 T3「翻页
+   flipbook」禁令按 T2 豁免先例收窄为「3D 书本仿真」，用户点名
+   2026-10-02）；边缘卷曲阴影 = 墨色同源渐变（color-mix --ink，非
+   自造 rgba）；承托 = --stack-shadow-soft（两级之内）。 */
+.envsel-browser { position: relative;
+                  margin-top: var(--sp-2);
+                  min-height: 200px;
+                  display: flex; align-items: stretch; gap: var(--sp-2); }
+.envpage { flex: 1; min-width: 0; position: relative;
+           background: var(--paper-2); border: 1px solid var(--rule);
+           border-radius: 2px;
+           box-shadow: var(--stack-shadow-soft);
+           padding: var(--sp-3) var(--sp-4) var(--sp-3);
+           overflow-y: auto; overscroll-behavior: contain;
+           /* 左缘卷曲影：墨色同源渐变（下一页纸缘的暗示；阴影不做
+              动画——静态形，方向随翻向类镜像）。 */
+           background-image: linear-gradient(90deg,
+             color-mix(in srgb, var(--ink) 7%, transparent),
+             transparent 12px); }
+.envpage--turn-next { --pt-x: 14px; --pt-ry: 8deg; --pt-sk: -1.2deg; }
+.envpage--turn-prev { --pt-x: -14px; --pt-ry: -8deg; --pt-sk: 1.2deg; }
+.envpage--turn-next, .envpage--turn-prev {
+  animation: page-turn var(--dur-settle) var(--ease-paper) both,
+             ink-wash calc(var(--dur-settle) * 1.3) var(--ease-paper)
+             both; }
+.envpage-face { margin: 0; }
+.envpage-name { margin: 0; font-family: var(--f-display);
+                font-size: var(--fs-head); line-height: var(--lh-head);
+                font-weight: 400; letter-spacing: var(--ls-head); }
+.envpage-line { margin: 2px 0 0; font-size: var(--fs-small);
+                line-height: var(--lh-small); color: var(--ink-soft); }
+.envpage-label { margin: var(--sp-2) 0 0; font: var(--meta-font);
+                 letter-spacing: var(--meta-track); color: var(--meta-ink); }
+.envpage-prose { margin: 2px 0 0; font-size: var(--fs-small);
+                 line-height: var(--lh-small); color: var(--ink-soft);
+                 overflow-wrap: anywhere; }
+.envpage-veil { margin: 2px 0 0; font-size: var(--fs-ui);
+                color: var(--ink-faint); }
+.envpage-actions { display: flex; gap: 16px; margin: var(--sp-3) 0 0; }
+.envpage-nav { flex: none; display: flex; flex-direction: column;
+               justify-content: center; padding: 10px 6px; }
+/* chevron 钮无自有 padding（screens 零按钮样式——命中带由容器
+   .envpage-nav 的 padding 承担）；图标尺寸是图标的语境登记。 */
+.envpage-nav .inkicon { width: 18px; height: 18px; }
+.envpage-nav--prev .inkicon { transform: rotate(180deg); }
+.envpage-count { flex: none; align-self: center;
+                 font: var(--meta-mono); font-variant-numeric:
+                 tabular-nums; color: var(--meta-ink);
+                 writing-mode: vertical-rl; }
+.envsel-toys { display: flex; align-items: center; gap: var(--sp-3); }
 
 /* ── mc-2 角色编辑台（信封沓的「编辑」/空白封「完整编辑」进的全页
    DIY 面；工厂与接线在 app.js 的 mc-2 模块）────────────────────────

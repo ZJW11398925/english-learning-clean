@@ -272,7 +272,8 @@ def test_the_archive_face_has_search_timeline_and_folds(
     assert '次批注，主题 ' in page
     assert 'name: "按表达看：在学的表达"' in page
     assert 'name: "原始读数（给排查用）"' in page
-    assert "onFirstExpand: () => loadObservations()" in page
+    # v2-2 随迁（8.2.12）：观察读数迁入专门面——折叠内只留入口行
+    assert '"翻开原始读数 →"' in page
     index = page  # the union covers index.html
     assert ">痕迹</h3>" in index
     assert ">计划</h3>" in index

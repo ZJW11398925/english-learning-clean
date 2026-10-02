@@ -81,14 +81,15 @@ def test_the_who_block_is_the_trigger_and_the_bar_grows_no_button(
     """身份条原地的可点手感（cs-2 后仍在；mc-1 随迁改指信封沓）：who 块
     整体可点（app.js 接线 #space-parlor .top > div + 键盘可达——点开的
     是信封沓，mc-1 的选择器；再点一次收沓），品牌条不增长按钮元
-    （r1_shell 的品牌条无钮钉随迁保留）；.who/.who-sub = 端点驱动的空槽
-    （当前角色名与身份行，webui 零角色名字面）。"""
+    （r1_shell 的品牌条无钮钉随迁保留）；.who = 端点驱动的空槽
+    （当前角色名，webui 零角色名字面）；v2-2 起 who-sub 退役
+    （8.2.2① 主从条瘦身——身份介绍退入笔友档案全页）。"""
 
     index = _page_of(tmp_path)
     parlor = index.split('id="space-parlor"', 1)[1].split("</header>", 1)[0]
     # mc-1 随迁：信头 = 端点驱动的空槽（品牌名与副题退居门厅封面）
     assert '<div class="who"></div>' in parlor
-    assert '<div class="who-sub"></div>' in parlor
+    assert 'who-sub' not in parlor
     assert "<button" not in parlor
     app = index
     assert 'document.querySelector("#space-parlor .top > div")' in app
@@ -138,7 +139,8 @@ def test_the_settings_face_replaces_the_placeholder(tmp_path: Path) -> None:
     assert "批注频率在 温故 · 方向 里调。" in settings
     assert "当前这一档由启动命令给定——页面读不到，也不改它。" in settings
     assert "换端点或换档 = 改启动命令再启动。" in settings
-    assert "娱乐 · 关系优先：聊得多，递得少，客厅以听和陪为主。" in settings
+    assert "娱乐 · 关系优先：聊得多，递得少，笔友以听和陪为主。" in settings
+    assert "客厅以听和陪为主" not in settings
     assert "平衡：聊天与练句并行，批注适度。" in settings
     assert "学习优先：练句密度优先，批注递得勤，课程感更明显。" in settings
     assert "设置面还没有铺开。" not in settings
@@ -173,8 +175,10 @@ def test_the_red_pencil_circle_is_one_static_mark(tmp_path: Path) -> None:
     # keyframes: the v2 five registered set + the mc-2 zoom pair (the
     # declared new registrations of the character editor's zoom
     # transition — conservation price: the inline rename interaction
-    # retired in the same cut, .env-rename 段同刀拆除)
-    assert css.count("@keyframes ") == 7
+    # retired in the same cut, .env-rename 段同刀拆除)；v2-2 起加两枚
+    # （paper-fold 沓收拢 / page-turn 2D 翻页——⑨-5 目标行落库，spec
+    # 9.5 表回填为现役行）
+    assert css.count("@keyframes ") == 9
 
 
 def test_the_closing_arms_split_settled_from_skipped(tmp_path: Path) -> None:

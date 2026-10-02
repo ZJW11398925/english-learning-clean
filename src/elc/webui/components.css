@@ -289,8 +289,10 @@ button:focus-visible, input:focus-visible {
    （不做「拆信」演出：一次性惊喜变日常负担 = 简报 T3 死刑清单）。
    展开读才是信（读信 = 信纸）。
    用法：只由 postTurn 的在途窗口挂载/摘除（components.js/app.js
-   行为钉）；信档/历史归档条目的信封形属 v2-2 信档结构刀（本刀登记，
-   不虚构挂点）。
+   行为钉）；v2-2 信档屏（#space-letters）起，历史归档条目 = 信封
+   缩略形（.env-mini，screens.css 的信档节——屏级形态，同 mc-1 先例
+   不入组件注册表），点条目展开读 = 信纸（letterNode 复用，非重复
+   实现）。
    禁形：拆封转场、动画开合、封蜡滴落。 */
 .letter.me.en-route { max-width: 88%; }
 .letter.me.en-route .paper { visibility: hidden; }
@@ -335,8 +337,10 @@ button:focus-visible, input:focus-visible {
    许可；stamp-press 类由 animationend 自摘，JS 半区在 app.js） */
 .postmark.stamp-press { animation: stamp-press var(--dur-stamp)
                         var(--ease-press) both; }
-/* 归档开启戳（信档日期戳）：形态登记位——条目载体 v2-2 接线，
-   现役无消费者（不虚构挂点）。 */
+/* 归档开启戳（信档日期戳）：v2-2 接线——信档屏（#space-letters）打开
+   即「归档开启」真实事件，屏头盖一枚日期戳（--ink-ghost 褪色墨、
+   rotate 微旋、同屏 ≤1；形态由 4c 本段承担，屏级挂点在 screens.css
+   的信档节）。 */
 .postmark--archived { color: var(--ink-ghost); }
 
 /* ── 5. hairline-section（发丝线分区）──────────────────────────────
@@ -471,24 +475,41 @@ button:focus-visible, input:focus-visible {
    载体本就成立）。 */
 .state-banner--loading::after { content: "…"; display: inline-block; }
 
-/* ── 15. word-card（点词卡）─────────────────────────────────────────
+/* ── 15. word-card（点词卡——v2-2 起双形态：浮卡 / bottom sheet）─────
    结构：<div class="word-card">[.wc-lemma 衬线词头 + .wc-pos 小字词性]
    [.wc-forms 变形行]（逐 sense：.wc-zh 释义 / .wc-en 例义 /
-   .wc-example 例句×）[收起链接（link-btn --faint，复用 #1）]</div>。
+   .wc-example 例句×）[收起链接（link-btn --faint，复用 #1）]</div>；
+   bottom sheet 档另挂 <div class="word-scrim"> 墨色遮罩（同批挂/同批摘，
+   独立节点——遮罩不是卡的子件，点遮罩即「点卡外」）。
    触发面 = 信件文本分片：letterWords 把 .say 文本切成 span.word +
    原样空白文本节点（整段 textContent 逐字不变）；点击 .word 由 app.js
    取 1–3 词窗口调 /api/word，首个命中即 showWordCard。
-   状态矩阵：default（--paper-high 泛起纸面 + 发丝边 + 垫纸错位层——
-   浮层纸影以 ::after 垫纸达成（纯色错位 3px）+ --stack-shadow-soft；
-   开启入场 = paper-drop + ink-wash 双动画（opacity 恒慢于 transform））；
-   触发词 hover 有触点提示（ux-1 起命中带 5px/2px 外扩负抵消 +
-   触屏 (hover: none) 镜像同款点线）/ closed（关闭 = 点卡外或「收起」，DOM
-   移除语义）；无 busy——命中即显，miss 按契约静默。
+   状态矩阵：v2-2 双形态，媒体查询分档——数据/关闭语义/无障碍同源。
+   浮卡（指针档 = 现役默认形态）：--paper-high 泛起纸面 + 发丝边 +
+   垫纸错位层承 --stack-shadow-soft；定位 = --wc-x/--wc-y custom props
+   （viewport clamp，components.js 落——app.js 禁 .style 的同一规矩）；
+   开启入场 = paper-drop + ink-wash 双动画（opacity 恒慢于 transform）。
+   sheet（触屏档，@media (hover: none)）：fixed 底部覆盖面板——left/right
+   拉满、贴底、上缘发丝线 + 安全区垫层；垫纸错位层与浮卡双动画让位
+   （浮卡双动画让位——animation-name: none），入场走 @starting-style 的
+   纸面曲线（transform
+   --dur-note × --ease-paper + opacity ×1.3 恒慢——8.2.2③ 同简报 §5
+   教学卡参数）；墨色遮罩（--ink 降透明度 0.4，禁毛玻璃）盖住下方屏幕，
+   点遮罩 = 点卡外（同一 cardCloser 机制关闭）。
+   关闭语义两档同源：点卡外（遮罩）/「收起」/ Esc（v2-2 增）→ DOM 移除；
+   无 busy——命中即显，miss 按契约静默。
+   触发词提示（v2-2 重设计，8.2.2④——「全文常显点线」永禁）：桌面维持
+   hover 点线；触屏 (hover: none) 改两件——(a) 仅最新一封信的词带弱底纹
+   （--accent-soft 12%，.letter--latest 由 addLine 维护，历史信静默，
+   「当前可查」随信龄衰减）；(b) 按压即亮（.word:active，--accent-soft
+   30%，--dur-micro 档，松手即隐）。提示只走墨蓝族与透明度。
    使用规则：卡片只由 /api/word 的 found:true 打开；一切文字
    textContent；教学短笺与系统行不参与点词。
    禁止变体：全黑零基色的阴影、两级（--stack-shadow-*）之外的自造
-   shadow、圆角、--paper-high 以外的底色块、busy 态、占位插画。 */
+   shadow、圆角、--paper-high 以外的底色块、busy 态、占位插画、毛玻璃
+   遮罩、3D（sheet 是 2D 纸面曲线）。 */
 .word-card { position: absolute; z-index: 9; max-width: 300px;
+             left: var(--wc-x, 0px); top: var(--wc-y, 0px);
              background: var(--paper-high); border: 1px solid var(--rule);
              padding: 12px 14px 14px; font-size: var(--fs-small);
              animation: paper-drop var(--dur-note) var(--ease-paper) both,
@@ -499,6 +520,32 @@ button:focus-visible, input:focus-visible {
                     border: 1px solid var(--rule);
                     box-shadow: var(--stack-shadow-soft);
                     transform: translate(3px, 3px); }
+/* 触屏档（bottom sheet）：输入形态查询分档（hover:none 与触屏纪律
+   同族；不是断点边界——四档断点契约零新增边界）。 */
+@media (hover: none) {
+  .word-card { position: fixed; left: 0; right: 0; bottom: 0; top: auto;
+               max-width: none;
+               border-left: 0; border-right: 0; border-bottom: 0;
+               padding-bottom: calc(14px + var(--safe-bottom));
+               animation-name: none;
+               transition: transform var(--dur-note) var(--ease-paper),
+                           opacity calc(var(--dur-note) * 1.3)
+                           var(--ease-paper); }
+  .word-card::after { display: none; }
+  @starting-style {
+    .word-card { opacity: 0; transform: translateY(100%); }
+  }
+}
+/* 墨色遮罩（sheet 档专用）：--ink 降透明度（元素 opacity 0.4——墨色
+   同源，禁毛玻璃）；display 由媒体查询落，浮现 = ink-wash 一次
+   （both——挂着即稳态）；关闭即 DOM 移除。 */
+.word-scrim { display: none; position: fixed; inset: 0; z-index: 8;
+              background: var(--ink); opacity: 0.4; }
+@media (hover: none) {
+  .word-scrim { display: block;
+                animation: ink-wash calc(var(--dur-note) * 1.3)
+                           var(--ease-paper) both; }
+}
 .wc-lemma { font-family: var(--f-serif); font-size: var(--fs-head);
             font-weight: 400; }
 .wc-pos { margin-left: 8px; font: var(--meta-font);
@@ -517,20 +564,25 @@ button:focus-visible, input:focus-visible {
 /* ux-1（可用性刀）：命中带外扩——字身框高 ~17px（≈2.8mm）是移动端
    单词卡点不中的根因（触点落行距/词间空隙即静默丢弃）；padding 向外
    扩 5px/2px、负 margin 精确抵消（行内盒：纵向 padding 不入行高、
-   横向 padding+margin 相抵）＝零重排的扩大命中。 */
-.word { cursor: pointer; padding: 5px 2px; margin: -5px -2px; }
+   横向 padding+margin 相抵）＝零重排的扩大命中。v2-2 增：底纹提示的
+   过渡（--dur-micro——按压即亮、松手即隐同档）。 */
+.word { cursor: pointer; padding: 5px 2px; margin: -5px -2px;
+        transition: background-color var(--dur-micro) var(--ease-press); }
 @media (hover: hover) {
   .word:hover { text-decoration: underline dotted;
                 text-decoration-color: var(--pencil-soft);
                 text-underline-offset: 0.24em; }
 }
-/* 触屏可发现性：hover 点线在触屏（hover: none）缺席——命中带扩了也
-   没人知道能点。同一触点提示的触屏镜像（rd-1 触屏纪律：悬停面
-   包 (hover: hover)，此为 none 半区、零悬停选择器）。 */
+/* v2-2 触屏可发现性重设计（8.2.2④；旧「(hover: none) 常显点线」块已
+   退役——整段对话英文词连成波浪线，用户点名否决，「全文常显点线」
+   永禁）。替代两件（墨蓝族 + 透明度，零新色零圆点零图标）：
+   (b) 按压即亮——:active 是触屏 tap 的按压窗口，松手即隐，零 JS；
+   (a) 仅最新一封信弱底纹（.letter--latest 由 addLine 维护）——见下块。 */
+.word:active { background-color:
+               color-mix(in srgb, var(--accent-soft) 30%, transparent); }
 @media (hover: none) {
-  .say .word { text-decoration: underline dotted;
-               text-decoration-color: var(--pencil-soft);
-               text-underline-offset: 0.24em; }
+  .letter--latest .say .word { background-color:
+    color-mix(in srgb, var(--accent-soft) 12%, transparent); }
 }
 
 /* .rawtag（原文小字，R-1R）——机械事实的等宽小字形态：存储词表值的
@@ -547,6 +599,9 @@ button:focus-visible, input:focus-visible {
    包裹控件保证可点聚焦。
    状态矩阵：default（下发丝线）/ focus-within（发丝线与名转墨蓝）/
    控件 [disabled]（opacity .4 + 无 pointer）。
+   v2-2 基线重排（8.2.4 目标设计落位）：行高锁整 px 档——名牌
+   --lh-ui、控件 --lh-small（9.2 基线网格的表单行读法；保存底栏
+   sticky 语义按 ux-1 现役 calc 不动，在 screens.css）。
    使用规则：方向编辑面的行式输入；select 与 input 的字面样式随本契约。
    禁止变体：边框框体、底色块、圆角；不得当只读展示行用（只读走 #9）。 */
 .field { display: flex; align-items: baseline; gap: 10px;
@@ -555,7 +610,8 @@ button:focus-visible, input:focus-visible {
 .field:focus-within { border-bottom-color: var(--pencil); }
 .field:focus-within .fieldname { color: var(--pencil); }
 .field .fieldname { flex: none; min-width: 4.5em; font-family: var(--f-sans);
-                    font-size: var(--fs-ui); color: var(--ink-soft);
+                    font-size: var(--fs-ui); line-height: var(--lh-ui);
+                    color: var(--ink-soft);
                     transition: color var(--dur-micro) var(--ease-press); }
 .field .fieldname .inkicon { width: 13px; height: 13px;
                     margin-right: 4px; vertical-align: -2px;
@@ -563,6 +619,7 @@ button:focus-visible, input:focus-visible {
 .field input, .field select { flex: 1; min-width: 0; border: 0;
              background: none; outline: none; padding: 2px 0;
              font-family: var(--f-serif); font-size: var(--fs-small);
+             line-height: var(--lh-small);
              color: var(--ink); }
 .field input::placeholder { color: var(--ink-faint); font-family: var(--f-sans);
              font-size: var(--fs-small); }
@@ -766,10 +823,13 @@ button:focus-visible, input:focus-visible {
    判词文字本身已是完整信息）。缺位钉在 rd4 套件。 */
 
 /* ── v2 动效注册表（keyframes 唯一出处；简报 §5「纸先落、墨后渗」）──
-   五 keyframes 两族：
+   v2-1 五枚原语，v2-2 起七枚（新增两枚见下方注）：
    · 落（transform）：paper-drop（进入 8px 下落）/ paper-unfold（折叠
      展开 8px）/ stamp-press（盖印 scale .96→1，120ms——全应用唯一
-     overshoot 许可）；
+     overshoot 许可）/ paper-fold（收拢：8px 上收 + 微缩——沓面板
+     退场与起笔向下展开的收拢半）/ page-turn（2D 翻页感：位移 +
+     rotateY ≤8° + 梯形——信封沓全览翻页与面板横滑切换共用，方向由
+     --pt-* 变量落）；
    · 墨（opacity/色）：ink-wash（透明度进场——恒慢于 transform
      ≈1.3×，消费面用 calc(var(--dur-*) * 1.3) 表达法则）/ ink-set
      （墨水物理：正文字色一次性 --ink-ghost → --ink，--dur-wet 600ms，
@@ -802,6 +862,24 @@ button:focus-visible, input:focus-visible {
 }
 @keyframes stamp-press {
   from { transform: scale(0.96); }
+  to { transform: none; }
+}
+/* v2-2 新注册两枚（⑨-5 目标行落库；守恒律的对价 = 消费面接上）：
+   · paper-fold 收拢——沓面板退场/起笔向下展开的「沓收拢」半：8px 上收
+     + 微缩（transform 单属性；opacity 走 ink-wash reverse 恒慢——
+     transform/opacity 拆开）；
+   · page-turn 翻页——信封沓全览与面板横滑切换共用的 2D 翻页感：位移 +
+     rotateY ≤8° + skewY 梯形（零 preserve-3d——禁 3D 书本仿真，简报
+     T3 收窄注记）；方向由消费面落 --pt-x/--pt-ry/--pt-sk（变量驱动，
+     现役手法）。 */
+@keyframes paper-fold {
+  from { transform: none; }
+  to { transform: translateY(-8px) scale(0.985); }
+}
+@keyframes page-turn {
+  from { transform: translateX(var(--pt-x, 14px))
+                    rotateY(var(--pt-ry, 8deg))
+                    skewY(var(--pt-sk, -1.2deg)); }
   to { transform: none; }
 }
 .note-paper--enter { animation: paper-drop var(--dur-note)

@@ -77,15 +77,22 @@ def test_the_shell_is_a_vestibule_and_three_spaces(tmp_path: Path) -> None:
         "today-action", "growth-summary", "today-practice",
         "goal-editor", "goal-weights", "goal-assessment",
         "goal-register", "goal-frequency", "goal-taxref", "goal-result",
-        "record-book", "raw-readings", "obsout", "obs-status",
+        "record-book", "raw-readings", "obs-entry",
         "learn-schedule", "learn-goals", "learn-evidence",
         "archive-board", "plan-line", "plan-slot", "plan-detail",
         "book-slot", "book-detail",
         "mem-relationship", "mem-episode", "mem-states", "mem-evidence",
         "mem-tombstones", "del-targets", "del-result",
         "set-memory", "set-privacy",
+        # v2-2 随迁：obsout/obs-status 随观察读数迁入专门面退役
+        # （8.2.12 观察仪表屏——档案折叠内只留入口 obs-entry）；
+        # 信档/观察两屏的骨架 id 在场（8.2.11/8.2.12 结构重铸件）
+        "space-letters", "letters-board", "letters-datestamp",
+        "space-obs", "obs-board", "obs-summary",
     ):
         assert f'id="{panel}"' in page, panel
+    for retired_panel in ("obsout", "obs-status"):
+        assert f'id="{retired_panel}"' not in page, retired_panel
     # rd-3 随迁（9.11-22 移走清单）：诊断五板与「为什么 · 原值」随
     # 用户面零渲染退役（缺位钉）；旧今日三块里 today-due / today-recent
     # 随收拢退役；today-summary 摘要行退役；set-diagnostics / set-
@@ -228,10 +235,11 @@ def test_space_headers_and_the_linkless_parlor_bar(tmp_path: Path) -> None:
     assert '<div class="spacehead-sec">记忆</div>' in index
     parlor = index.split('id="space-parlor"', 1)[1].split("</header>", 1)[0]
     # mc-1 随迁（主从条 = 当前角色名）：信头 = 端点驱动的空槽（.who =
-    # 当前角色名、.who-sub = 身份行，/api/characters 供给）；无 JS 兜底
-    # 留空——不发明人名；品牌名与副题退居门厅封面（v21 套件钉）
+    # 当前角色名，/api/characters 供给）；无 JS 兜底留空——不发明人名；
+    # 品牌名与副题退居门厅封面（v21 套件钉）。v2-2 随迁（8.2.2①）：
+    # who-sub 身份行长句族退役（身份介绍退入笔友档案全页）——缺位钉。
     assert '<div class="who"></div>' in parlor
-    assert '<div class="who-sub"></div>' in parlor
+    assert 'who-sub' not in parlor
     assert "英语客厅" not in parlor
     assert "<button" not in parlor
     app = _text("app.js")

@@ -105,10 +105,12 @@ def test_the_brand_bar_graces_both_screens(tmp_path: Path) -> None:
     space-header（#19）承担。"""
 
     index = _webui_text("index.html")
-    # R-1 随迁：空间头三枚 --sm（客厅 / 温故 / 抽屉【rd-2 前称学案/柜
+    # R-1 随迁：空间头三枚 --sm（案头 / 温故 / 抽屉【rd-2 前称学案/柜
     # 抽】；今日/目标/仪表的品牌条随五屏退役——空间头部唯一）
     # cs-2 随迁：档案页（#space-partner）入列第四枚 --sm——同基形。
-    assert index.count('data-brand-mark="sm"') == 4
+    # v2-2 随迁：信档（#space-letters）与观察（#space-obs）两纵深屏
+    # 各一枚——同基形（案头与档案的纵深，非新空间）。
+    assert index.count('data-brand-mark="sm"') == 6
     assert index.count('data-brand-mark="lg"') == 1
     # R-1 随迁：温故/抽屉头部走 space-header（.top 基形 + 节名槽）；
     # 旧 sethead 变体与「回客厅」钮退役（缺位钉）

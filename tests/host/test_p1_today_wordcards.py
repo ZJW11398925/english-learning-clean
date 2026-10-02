@@ -500,8 +500,9 @@ def test_the_word_card_overlay_is_the_letter_language(
     # 两处（.postmark 与信封沓的 .env-mark 各含本体与 ::before）+
     # 邮票图形两枚（.stamp-v0/.stamp-v5）+ 信封沓的 2px 两处
     # （.envsel/.env，简报 §6 增补档；mc-2 起加编辑台的开场信预览
-    # 短笺——同 ≤2px 信纸物件档）。面板大圆角仍一处即红。
-    assert page.count("border-radius") == 10
+    # 短笺——同 ≤2px 信纸物件档；v2-2 起加翻页全览页卡 .envpage）。
+    # 面板大圆角仍一处即红。
+    assert page.count("border-radius") == 11
     assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
 
@@ -543,7 +544,6 @@ def test_word_card_is_registered_in_all_four_places() -> None:
     assert "const card = wordCard(data);" in js
     whole = _webui_all_text()
     for selector in (
-        ".word-card {",
         ".wc-lemma {",
         ".wc-pos {",
         ".wc-forms {",
@@ -552,9 +552,14 @@ def test_word_card_is_registered_in_all_four_places() -> None:
         ".wc-example {",
     ):
         assert whole.count(selector) == 1, selector
-    # ux-1 随迁：.word 的触屏镜像块（@media (hover: none) 的 .say .word）
-    # 使 ".word {" 子串为 2——基形与触屏镜像都在 components.css（单一
-    # 物理出处不变），恰一次钉改读「恰两处、同文件」；同块形源钉由
-    # tests/host/test_ux1_usability.py 接手。
+    # v2-2 随迁（8.2.2③ 双形态）：".word-card {" 在 components.css 恰
+    # 三处——浮卡基形、触屏 (hover: none) 档的 sheet 覆写、
+    # @starting-style 的入场初值（全部同文件 = 单一物理出处不变；
+    # 两档布局是同一组件的媒体查询分档，非第二实现）。
+    assert whole.count(".word-card {") == 3
+    assert css.count(".word-card {") == 3
+    # ux-1 随迁：.word 的触屏镜像块已随 v2-2 波浪线修复退役
+    # （8.2.2④——「全文常显点线」永禁）；".word {" 子串仍恰 2——
+    # 基形 + (a) 最新信弱底纹块（.letter--latest .say .word）。
     assert whole.count(".word {") == 2
     assert css.count(".word {") == 2

@@ -40,19 +40,20 @@
     </div>
   </section>
 
-  <!-- 客厅空间：品牌条（上下发丝线夹住；导航归 dock）+ 信笺流（教学
+  <!-- 案头空间：主从条（上下发丝线夹住；导航归 dock）+ 信笺流（教学
        批注随信流）+ 写信区。信件文本按词分片（#15 的触发面），点词出卡。
        空厅由 app.js 落一句客户端静态系统行（⑧ 8.2.2），不伪装历史。
-       mc-1 主从条：.who = 当前角色名、.who-sub = 该角色身份行——端点
-       驱动（/api/characters），webui 零角色名字面（无 JS 兜底 = 留空，
-       不发明人名）；品牌名与副题退居门厅封面（上方 ob-tagline）。
-       点主从条弹出的不再是档案，是信封沓（mc-1 选择器，app.js 接线）。 -->
+       v2-2 主从条瘦身（8.2.2①）：.who = 当前角色名一行（端点驱动，
+       webui 零角色名字面——无 JS 兜底 = 留空，不发明人名）；身份行
+       副槽长句族退役（身份介绍退入笔友档案全页）；
+       品牌名与副题退居门厅封面（上方 ob-tagline）。
+       点主从条弹出的不再是档案，是信封沓（mc-1 选择器 + v2-2 翻页
+       全览，app.js 接线）。 -->
   <section id="space-parlor" hidden>
     <header class="top">
       <span data-brand-mark="sm"></span>
       <div>
         <div class="who"></div>
-        <div class="who-sub"></div>
       </div>
       <!-- mc-1：who 块整体可点（键盘可达），点开信封沓——沓中每封的
            「档案」动作才进笔友档案全页（cs-2 的全页视图参数化复用）。
@@ -61,6 +62,10 @@
     <main class="flow">
       <div id="messages" aria-live="polite"></div>
       <div id="moments"></div>
+      <!-- v2-2 信档入口（8.2.11）：信的末尾一行弱化链接——「以前的
+           信」的专门面（信封形条目 + 展开读信纸）。 -->
+      <p class="letters-entry"><button id="letters-go" class="btn btn--faint"
+              type="button">翻看以前的信 →</button></p>
     </main>
     <div class="dock">
       <!-- rd-4 指路行（9.12-23 裁决预告之乙案表达）：批注开着时一句话
@@ -90,7 +95,7 @@
       </div>
     </header>
     <div class="spacebody">
-      <p class="dossier-back"><button id="partner-back" class="btn btn--pencil"
+      <p class="pageback"><button id="partner-back" class="btn btn--pencil"
               type="button">← 回案头</button></p>
       <div class="sec" id="dossier-head-sec">
         <p class="dossier-name" id="dossier-name"></p>
@@ -113,6 +118,53 @@
         <h3>通信的日子</h3>
         <div id="dossier-timeline"><p class="note">暂无数据</p></div>
       </div>
+    </div>
+  </section>
+
+  <!-- v2-2 信档屏（8.2.11 结构重铸件）：以前的信的专门面——同档案页
+       的整页形态（导航条让位，返回钮是唯一回途）。信封形接线（T1-4）：
+       条目 = 信封缩略（.env-mini），展开读 = 信纸（#4 排印骨架复用，
+       paper-unfold）；屏头一枚归档日期戳（4c 的 archived 形态，翻开
+       信档 = 归档开启真实事件，同屏 ≤1）。口径写在脸上：只摊开
+       /api/history 已加载的最近 50 轮，第 n 封按窗口内的顺序数，无
+       时间戳不造日期。零新端点（现役读面够用）。 -->
+  <section id="space-letters" class="dossier" hidden>
+    <header class="top space-header" id="letters-head">
+      <span data-brand-mark="sm"></span>
+      <div>
+        <div class="who">信档</div>
+      </div>
+    </header>
+    <div class="spacebody">
+      <p class="pageback"><button id="letters-back" class="btn btn--pencil"
+              type="button">← 回案头</button></p>
+      <div class="letters-head">
+        <div class="letters-datestamp" id="letters-datestamp"
+             aria-hidden="true"></div>
+        <p class="sub letters-calibre"
+           id="letters-calibre">只摊开已加载的最近 50 轮——第 n 封按窗口里的顺序数。</p>
+      </div>
+      <div id="letters-board"><p class="note">暂无数据</p></div>
+    </div>
+  </section>
+
+  <!-- v2-2 观察仪表屏（8.2.12 结构重铸件）：观察读数的专门面——定位
+       延续 rd-3 归档读法：排查材料，不进任何默认层、不做运营仪表盘。
+       入口在 温故 · 档案 的「原始读数」折叠内（下方档案节）；本屏 =
+       人话摘要一行 + 六表逐表 #21 折叠（默认全收）+ 指标定义折叠
+       （英文原文不翻译）。零图表、零彩色、零徽章——数据列是账页。 -->
+  <section id="space-obs" class="dossier" hidden>
+    <header class="top space-header" id="obs-head">
+      <span data-brand-mark="sm"></span>
+      <div>
+        <div class="who">原始读数</div>
+      </div>
+    </header>
+    <div class="spacebody">
+      <p class="pageback"><button id="obs-back" class="btn btn--pencil"
+              type="button">← 回档案</button></p>
+      <p class="sub sumline obs-note" id="obs-summary" hidden></p>
+      <div id="obs-board"><p class="note">暂无数据</p></div>
     </div>
   </section>
 
@@ -172,7 +224,7 @@
          V1 无存储位，折进 #21。词表词中英并置（中文 + 等宽小字）。 -->
     <section id="study-goal" role="tabpanel"
              aria-labelledby="tab-study-goal" hidden data-reveal>
-    <p class="sub">你想把英语用在哪里——这是客厅记着的长期方向。
+    <p class="sub">你想把英语用在哪里——这是笔友记着的长期方向。
        每次保存都前移版本；上一版找不回来。</p>
     <div class="sec">
       <h3>长期目标</h3>
@@ -229,7 +281,7 @@
 
     <!-- 搜信里的句子（rd-4 检索扩展）：/api/history 的 50 轮窗口内
          找一句话；口径写在脸上（只搜已加载的），命中列「第 n 封
-         （你/客厅）」+ 片段——历史轮次无时间戳，一个日期都不造；
+         （你/笔友）」+ 片段——历史轮次无时间戳，一个日期都不造；
          跨信重现不做（9.12-23 登记数据缝）。 -->
     <div class="sec">
       <h3>搜信里的句子</h3>
@@ -279,8 +331,10 @@
           </div>
           <div class="sec">
             <h3>观察读数</h3>
-            <div id="obs-status"></div>
-            <pre id="obsout" hidden></pre>
+            <!-- v2-2（8.2.12）：观察读数迁入专门面（观察仪表屏）——
+                 排查材料不摊在档案里，这里只留入口。 -->
+            <p class="sub">排查材料不摊在档案里——原始观察读数有自己的专门面：一行摘要 + 六表明细。</p>
+            <div id="obs-entry"></div>
           </div>
         </div>
       </div>
@@ -321,7 +375,7 @@
          全时间戳）。 -->
     <section id="drawer-memory" role="tabpanel"
              aria-labelledby="tab-drawer-memory" data-reveal>
-    <p class="sub">客厅记住的事都在这里——一条条如实，分三摞收纳。</p>
+    <p class="sub">笔友记住的事都在这里——一条条如实，分三摞收纳。</p>
     <p class="sub sumline" id="mem-summary" hidden></p>
     <section id="set-memory">
       <div class="sec" id="mem-zone-character">
@@ -344,55 +398,61 @@
     </section>
     </section>
 
-    <!-- 隐私节（⑧ 8.2.7，p-2 迁入重写）：请客厅忘掉一些事——先讲清会
-         失去什么，再要两次点头。危险分级呈现：整段通信一处一钮；按表达
-         忘掉走家族分组 #21 + 筛框（危险不均质平铺）；缺席入口保持诚实。 -->
+    <!-- 隐私节（⑧ 8.2.7，p-2 迁入重写；v2-2 文档排印）：请笔友忘掉
+         一些事——先讲清会失去什么，再要两次点头。危险分级呈现：整段
+         通信一处一钮；按表达忘掉走家族分组 #21 + 筛框（危险不均质
+         平铺）；缺席入口保持诚实。段落走 .doc-line（中文文档页排印，
+         9.1 工艺法则 6）。 -->
     <section id="drawer-privacy" role="tabpanel"
              aria-labelledby="tab-drawer-privacy" hidden data-reveal>
-    <p class="sub">请客厅忘掉一些事——走出去就找不回来。</p>
+    <p class="doc-line">请笔友忘掉一些事——走出去就找不回来。</p>
     <section id="set-privacy">
       <div class="sec">
         <h3>这段通信</h3>
-        <p class="sub">把这段通信的全部记录请出抽屉——信件、批注痕迹与它留下的证据行，一并忘掉。</p>
+        <p class="doc-line">把这段通信的全部记录请出抽屉——信件、批注痕迹与它留下的证据行，一并忘掉。</p>
         <button id="del-conversation" class="btn btn--pencil" type="button">
           忘掉这段通信的全部记录</button>
       </div>
       <div class="sec">
         <h3>按表达忘掉</h3>
-        <p class="sub">忘掉某个表达的学习痕迹、学习状态与复习安排；信件本身保留。</p>
+        <p class="doc-line">忘掉某个表达的学习痕迹、学习状态与复习安排；信件本身保留。</p>
         <div id="del-targets"><p class="note">暂无数据</p></div>
       </div>
       <div class="sec">
         <h3>按伙伴关系忘掉</h3>
-        <p class="sub">这版做不了——页面不知道伙伴的角色编号。</p>
+        <p class="doc-line">这版做不了——页面不知道伙伴的角色编号。</p>
       </div>
       <div id="del-result" class="sec"></div>
     </section>
     </section>
 
-    <!-- 设置节（⑧ 8.2.8，rd-4 修订版）：R-3 前端先行——旧「还没铺开 /
-         将来这里会有」两句退役，换成能如实说的真面：两真句保留
-         （127.0.0.1 单用户 / 模型端点页面不读不显）+ 教学模式的诚实
-         读法（fail-closed 事实：档位由启动命令给定，页面读不到也
+    <!-- 设置节（⑧ 8.2.8，rd-4 修订版；v2-2 重铸①）：R-3 前端先行——
+         旧「还没铺开 / 将来这里会有」两句退役，换成能如实说的真面：
+         两真句保留（127.0.0.1 单用户 / 模型端点页面不读不显）+ 教学模式的
+         诚实读法（fail-closed 事实：档位由启动命令给定，页面读不到也
          不改它）+ 三档参考读物（docs/PRODUCT_CONTRACT.md §3 的中文
          名与分寸）+ 批注频率的指向句（不与方向节重复——IA 分层）。
-         纯静态：SECTION_PULLS 不拉本节（r1_shell 缺位钉保留）。 -->
+         v2-2 结构重铸（8.2.8 目标设计①）：重铸只动排印——正文行高锁
+         基线（.doc-line，中文文档页排印）、micro 标签走 --meta-* 配方
+         （rd-1 现役）。纯静态：SECTION_PULLS 不拉本节（r1_shell 缺位钉
+         保留）。（8.2.8 目标设计②问候语切换设置项位：随 8.2.2① 问候
+         语面挂起——语料面缺口呈报在案，待裁后落位。） -->
     <section id="drawer-settings" role="tabpanel"
              aria-labelledby="tab-drawer-settings" hidden data-reveal>
     <div class="panel-grid">
       <div class="sec">
         <h3>现在能如实说的</h3>
-        <p class="sub">这台应用只服务你一个人（127.0.0.1，无账号无密码）。</p>
-        <p class="sub">模型端点与模型名由启动命令给定——页面不读取，也不显示。</p>
-        <p class="sub">批注频率在 温故 · 方向 里调。</p>
+        <p class="doc-line">这台应用只服务你一个人（127.0.0.1，无账号无密码）。</p>
+        <p class="doc-line">模型端点与模型名由启动命令给定——页面不读取，也不显示。</p>
+        <p class="doc-line">批注频率在 温故 · 方向 里调。</p>
       </div>
       <div class="sec">
         <h3>三档教学模式（参考）</h3>
-        <p class="sub">当前这一档由启动命令给定——页面读不到，也不改它。</p>
-        <p class="sub">换端点或换档 = 改启动命令再启动。</p>
-        <p class="sub">娱乐 · 关系优先：聊得多，递得少，客厅以听和陪为主。</p>
-        <p class="sub">平衡：聊天与练句并行，批注适度。</p>
-        <p class="sub">学习优先：练句密度优先，批注递得勤，课程感更明显。</p>
+        <p class="doc-line">当前这一档由启动命令给定——页面读不到，也不改它。</p>
+        <p class="doc-line">换端点或换档 = 改启动命令再启动。</p>
+        <p class="doc-line">娱乐 · 关系优先：聊得多，递得少，笔友以听和陪为主。</p>
+        <p class="doc-line">平衡：聊天与练句并行，批注适度。</p>
+        <p class="doc-line">学习优先：练句密度优先，批注递得勤，课程感更明显。</p>
       </div>
     </div>
     </section>
@@ -400,10 +460,10 @@
     </div>
   </section>
 
-  <!-- 空间导航（#18 dock）：常驻底部三项——客厅 / 温故 / 抽屉；当前
-       空间高亮（主墨加重 + 赭红短下划线）。门厅时整条让位（进门钮承担
-       进入）。教学批注随信流可滚出底栏、点词卡浮层（#15，z 9）都在它
-       （z 6）之上。 -->
+  <!-- 空间导航（#18 dock）：常驻底部三项——案头 / 温故 / 抽屉；当前
+       空间高亮（主墨加重 + 墨蓝短下划线）。门厅时整条让位（进门钮承担
+       进入）。教学批注随信流可滚出底栏、点词卡（#15——v2-2 触屏档为
+       bottom sheet，z 9 + 墨色遮罩 z 8）都在它（z 6）之上。 -->
   <nav id="navdock" class="navdock" aria-label="空间">
     <button type="button" class="navdock-item" data-space="parlor">案头</button>
     <button type="button" class="navdock-item" data-space="study">温故</button>

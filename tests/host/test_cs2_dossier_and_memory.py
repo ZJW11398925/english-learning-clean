@@ -307,14 +307,15 @@ def test_the_full_page_view_is_present(tmp_path: Path) -> None:
         "}" in index
     )
     assert 'partner: document.getElementById("space-partner"),' in index
-    # the navdock stand-down arm (the onboard line stays byte-identical)
+    # the navdock stand-down arm (the onboard line stays byte-identical);
+    # v2-2 随迁：信档/观察两纵深同法让位（案头与档案的纵深，非新空间）
     assert (
         'document.getElementById("navdock").hidden = name === "onboard";'
         in index
     )
     assert (
-        'if (name === "partner")'
-        ' document.getElementById("navdock").hidden = true;' in index
+        'if (name === "partner" || name === "letters" || name === "obs") {'
+        in index
     )
     # cs-2R INFO-1：在飞守卫源钉（读在飞时人已回案头——不往看不见的页上写）
     assert "if (!dossierOpen) return;" in index
@@ -612,9 +613,12 @@ def test_the_focused_pen_lifts_the_desk(tmp_path: Path) -> None:
         screens, ".dock:focus-within .dock-row::before", ".dock-guide"
     )
     assert "opacity: 0.5;" in focused
-    # the focused arms glow nothing: no shadow, no blur in the block
+    # the focused arms glow nothing: no blur in the block. v2-2 随迁
+    # （8.2.2② dock/flow 层次）：垫板层的静态承托影（--stack-shadow-soft
+    # 向上——纸叠两级令牌之内）在此块在场；聚焦臂仍零新增阴影/零发光
+    # （blur 缺位钉保持——聚焦不改变阴影形态）。
     dock_block = _fn_body_after(screens, "/* 写信区：", "/* ── 温故")
-    assert "box-shadow" not in dock_block
+    assert "box-shadow: var(--stack-shadow-soft);" in dock_block
     assert "blur(" not in dock_block
 
 

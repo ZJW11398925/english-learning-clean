@@ -428,13 +428,18 @@ def test_the_word_card_wears_a_deckle_not_a_shadow(tmp_path: Path) -> None:
     # 两处（.postmark 与信封沓的 .env-mark 各含本体与 ::before）+
     # 邮票图形两枚（.stamp-v0/.stamp-v5）+ 信封沓的 2px 两处
     # （.envsel/.env，简报 §6 增补档；mc-2 起加编辑台的开场信预览
-    # 短笺——同 ≤2px 信纸物件档）。面板大圆角仍一处即红。
-    assert page.count("border-radius") == 10
+    # 短笺——同 ≤2px 信纸物件档；v2-2 起加翻页全览页卡 .envpage）。
+    # 面板大圆角仍一处即红。
+    assert page.count("border-radius") == 11
     assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
     css = _text("components.css")
+    # v2-2 随迁（8.2.2③ 双形态）：浮卡基形加 --wc-x/--wc-y 定位
+    # （custom props 承 clamp 值——触屏 sheet 档不消费坐标，媒体查询
+    # 分档）；纸面与发丝边不变。
     assert (
         ".word-card { position: absolute; z-index: 9; max-width: 300px;\n"
+        "             left: var(--wc-x, 0px); top: var(--wc-y, 0px);\n"
         "             background: var(--paper-high);"
         " border: 1px solid var(--rule);" in css
     )

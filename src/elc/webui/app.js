@@ -11,6 +11,7 @@
 
 import {
   addLine,
+  letterNode,
   messages,
   showMoments,
   diagEmpty,
@@ -32,6 +33,8 @@ import {
   markSectionTabs,
   sectionLabel,
   wirePanelSwipe,
+  wirePageTurn,
+  playPageTurn,
   disclosure,
   wireReveal,
   envelopeCard,
@@ -68,7 +71,7 @@ import {
 // 第三处物理点。
 const BRAND = { name: "展信佳", tagline: "见字如晤，今日如何", en: "Dear You" };
 
-// ── ⑧ 8.3 术语翻译表（工程词 → 客厅语言，唯一集中定义）──────────────
+// ── ⑧ 8.3 术语翻译表（工程词 → 通信语言，唯一集中定义）──────────────
 // 总则：状态 / 枚举只出中文；未列出的词不伪装翻译——原样小字（.rawtag）。
 
 const OUTCOME_CN = {
@@ -483,8 +486,8 @@ function showLoading(ids) {
   }
 }
 
-// 回客厅的直达按钮（行动块的邀请态与成长空态共用）——动作词，落点
-// 是客厅信流（教学批注与聊天都发生在那里）
+// 回案头的直达按钮（行动块的邀请态与成长空态共用）——动作词，落点
+// 是案头信流（教学批注与聊天都发生在那里）
 function parlorButton(word) {
   const button = document.createElement("button");
   button.type = "button";
@@ -1140,7 +1143,7 @@ async function loadMemory() {
   }
 }
 
-// ── p-2 / R-1R: 隐私页 —— 请客厅忘掉一些事。先讲会失去什么，再要两次
+// ── p-2 / R-1R: 隐私页 —— 请笔友忘掉一些事。先讲会失去什么，再要两次
 // 点头（两层各说一件事：一说范围，二说不可逆）；结果只说 runtime 自己
 // 报的数。 ────────────────────────────────────────────────────────────
 
@@ -1191,7 +1194,7 @@ async function runDelete(payload, rangeText) {
     return;
   }
   if (!data.accepted) {
-    renderDelRefused(data.message || "客厅拒绝了这次忘掉。",
+    renderDelRefused(data.message || "笔友拒绝了这次忘掉。",
       data.code || "拒绝");
     return;
   }
@@ -1647,8 +1650,9 @@ async function loadGoals() {
   renderGoalTaxref();
 }
 
-// ── R-1: the spaces — 门厅 / 客厅 / 温故 / 抽屉 — plain show/hide, no
-// router. The dock (#18) is the only way between spaces; entering the
+// ── R-1: the spaces — 门厅 / 案头 / 温故 / 抽屉 + 两纵深（信档 ·
+// 观察）— plain show/hide, no router. The dock (#18) is the only way
+// between spaces; entering the
 // study or the drawer lands its default section, and switching a section
 // (#20 tabs) is the pull — the section always shows its own facts, never
 // a stale page. ────────────────────────────────────────────────────────
@@ -1657,6 +1661,8 @@ const spaces = {
   onboard: document.getElementById("screen-onboard"),
   parlor: document.getElementById("space-parlor"),
   partner: document.getElementById("space-partner"),
+  letters: document.getElementById("space-letters"),
+  obs: document.getElementById("space-obs"),
   study: document.getElementById("space-study"),
   drawer: document.getElementById("space-drawer"),
 };
@@ -1721,9 +1727,12 @@ function showSpace(name) {
   // the vestibule has no spaces to switch between — the door button is
   // the one way in, so the dock stands down while the cover is up
   document.getElementById("navdock").hidden = name === "onboard";
-  // cs-2 档案页同门厅形态：整页自持，导航条让位（返回钮是唯一回途——
-  // closePartnerDossier 走 showSpace("parlor") 即归位）。
-  if (name === "partner") document.getElementById("navdock").hidden = true;
+  // cs-2 档案页同门厅形态：整页自持，导航条让位（返回钮是唯一回途）。
+  // v2-2：信档/观察两屏同法——案头与档案的纵深，不是新空间（dock ≤5
+  // 红线不动），返回钮各归其位（信档 → 案头、观察 → 温故 · 档案）。
+  if (name === "partner" || name === "letters" || name === "obs") {
+    document.getElementById("navdock").hidden = true;
+  }
   if (name === "study") showSection("study", DEFAULT_SECTION.study);
   if (name === "drawer") showSection("drawer", DEFAULT_SECTION.drawer);
   window.scrollTo(0, 0);
@@ -1741,56 +1750,14 @@ wireSectionTabs(document.getElementById("drawer-tabs"),
 wirePanelSwipe("study", (name) => showSection("study", name));
 wirePanelSwipe("drawer", (name) => showSection("drawer", name));
 
-// 记录页的底：一切原值折进一个 #21（⑧ 8.2.5）——观察读数第一次展开
-// 才拉，拉取失败 = 区内一行 + 重试。计划明细与按表达看同法收养
-// （rd-3：排程/目标/账表降入按需折叠，默认层只留计划一行）。
-let observationsLoaded = false;
-
-async function loadObservations() {
-  if (observationsLoaded) return;
-  observationsLoaded = true;
-  const status = diagBox("obs-status");
-  const out = diagBox("obsout");
-  status.textContent = "";
-  status.appendChild(stateBanner("loading"));
-  let data = null;
-  try {
-    data = await fetchObservations();
-  } catch {
-    data = null;
-  }
-  status.textContent = "";
-  if (data === null) {
-    status.appendChild(stateBanner("error", {
-      text: "观察读数没取到。",
-      retry: () => {
-        observationsLoaded = false;
-        loadObservations();
-      },
-    }));
-    return;
-  }
-  const lines = [];
-  for (const ind of data.indicators) {
-    lines.push(ind.indicator + " — " + ind.definition);
-  }
-  lines.push("");
-  for (const s of data.sections) {
-    lines.push(s.title + ":");
-    if (s.error !== null) { lines.push("  (unreadable: " + s.error + ")"); continue; }
-    if (!s.rows.length) { lines.push("  (no rows)"); continue; }
-    for (const row of s.rows) lines.push("  " + row.join(" | "));
-  }
-  lines.push("  gate rows naming " + data.drift_reason +
-    " (the drift signal): " + data.drift_count);
-  out.hidden = false;
-  out.textContent = lines.join("\n");
-}
+// 记录页的底：一切原值折进一个 #21（⑧ 8.2.5）——证据记录留在折叠内
+// （原值读数的第一层）；观察读数自 v2-2 迁入专门面（8.2.12 观察仪表
+// 屏——排查材料不摊在档案里，折叠内只留入口）。计划明细与按表达看
+// 同法收养（rd-3：排程/目标/账表降入按需折叠，默认层只留计划一行）。
 
 const rawReadings = disclosure({
   name: "原始读数（给排查用）",
   content: diagBox("raw-readings"),
-  onFirstExpand: () => loadObservations(),
 });
 diagBox("raw-slot").appendChild(rawReadings.root);
 
@@ -1804,9 +1771,210 @@ diagBox("book-slot").appendChild(disclosure({
   content: diagBox("book-detail"),
 }).root);
 
+// ── v2-2: 观察仪表屏（8.2.12 结构重铸件）——观察读数的专门面───────
+// 定位延续 rd-3 归档读法：观察读数 = 排查材料，不进任何默认层、不做
+// 运营仪表盘。组织：人话摘要一行封顶 + 六表逐表 #21 折叠（默认全收）
+// + 指标定义折叠（英文原文不翻译，8.3 原则）；表内原值直出（#9 mono
+// + tabular-nums——零图表、零彩色、零徽章，账页不是看板）。
+// 诚实口径（摘要在案）：spec 摘要行语汇的「本会话轮数 / 批注递出数 /
+// 误报数」在现役 observations 读面（六表 durable counts + 漂移信号）
+// 无直接对应列——摘要行给可得计数（六表行数 + 漂移行数），不硬凑
+// 无源的数。第一次展开（进屏）才拉。
+async function loadObservationsFace() {
+  const board = diagBox("obs-board");
+  const summary = diagBox("obs-summary");
+  board.textContent = "";
+  board.appendChild(stateBanner("loading"));
+  let data = null;
+  try {
+    data = await fetchObservations();
+  } catch {
+    data = null;
+  }
+  board.textContent = "";
+  if (!data) {
+    diagError(board, "观察读数没取到。", loadObservationsFace);
+    return;
+  }
+  const sections = data.sections || [];
+  let rowCount = 0;
+  for (const s of sections) rowCount += (s.rows || []).length;
+  summary.hidden = false;
+  summary.textContent = "";
+  summary.appendChild(document.createTextNode(
+    "六表 " + sections.length + " 张、" + rowCount + " 行读数摊在下面"
+    + " · 门规漂移信号 "));
+  const drift = document.createElement("span");
+  drift.className = "sumnum";
+  drift.textContent = String(data.drift_count ?? 0);
+  drift.title = String(data.drift_reason || "");
+  summary.appendChild(drift);
+  summary.appendChild(document.createTextNode(" 行。"));
+  for (const s of sections) {
+    const content = document.createElement("div");
+    if (s.error !== null && s.error !== undefined) {
+      const err = document.createElement("p");
+      err.className = "note";
+      err.textContent = "这张表读不出来（" + s.error + "）。";
+      content.appendChild(err);
+    } else {
+      const rows = s.rows || [];
+      if (!rows.length) {
+        const none = document.createElement("p");
+        none.className = "note";
+        none.textContent = "（无行）";
+        content.appendChild(none);
+      }
+      for (const row of rows) {
+        const line = document.createElement("div");
+        line.className = "kv";
+        const b = document.createElement("b");
+        b.textContent = String(row[0] ?? "");
+        line.appendChild(b);
+        line.appendChild(document.createTextNode(row.slice(1).join(" | ")));
+        content.appendChild(line);
+      }
+    }
+    board.appendChild(disclosure({ name: s.title, content }).root);
+  }
+  // 指标定义：英文原文折叠呈现不翻译（8.3「观察读数」行的原则）
+  const defs = document.createElement("div");
+  for (const ind of data.indicators || []) {
+    const line = document.createElement("p");
+    line.className = "taxref";
+    line.textContent = ind.indicator + " — " + ind.definition;
+    defs.appendChild(line);
+  }
+  board.appendChild(disclosure(
+    { name: "指标定义（原文）", content: defs }).root);
+}
+
+// 档案节折叠内的入口行：一行按钮进专门面（零数据拉取——摘要与六表
+// 都在专门面第一次进入时才读）。
+diagBox("obs-entry").appendChild((() => {
+  const wrap = document.createElement("p");
+  const go = document.createElement("button");
+  go.type = "button";
+  go.className = "btn btn--pencil";
+  go.textContent = "翻开原始读数 →";
+  go.addEventListener("click", () => {
+    showSpace("obs");
+    loadObservationsFace();
+  });
+  wrap.appendChild(go);
+  return wrap;
+})());
+
+// ── v2-2: 信档屏（8.2.11 结构重铸件）——以前的信的专门面────────────
+// 信封形接线（T1-4 封/信分物）：条目 = 信封缩略（.env-mini），点条目
+// 展开读 = 信纸（letterNode 复用 #4 排印骨架——单一出处，非第二份
+// 信件实现），展开动效 = paper-unfold。归档戳挂点：翻开信档 = 归档
+// 开启（T2 邮戳三真实事件之一）——屏头一枚日期戳（--ink-ghost，同屏
+// 恰此一枚；日期 = 打开当天，客户端真实日期）。口径诚实：只列
+// /api/history 已加载的 50 轮窗口，第 n 封按窗口内顺序数（8.2.5 同
+// 口径）；历史轮次无时间戳，一个日期都不造。
+let lettersLoaded = false;
+
+function openLettersArchive() {
+  showSpace("letters");
+  const slot = diagBox("letters-datestamp");
+  slot.textContent = "";
+  const stamp = document.createElement("span");
+  stamp.className = "postmark postmark--archived";
+  const word = document.createElement("span");
+  const now = new Date();
+  word.textContent = (now.getMonth() + 1) + "·" + now.getDate() + " 归档";
+  stamp.appendChild(word);
+  slot.appendChild(stamp);
+  if (!lettersLoaded) loadLetters();
+}
+
+async function loadLetters() {
+  const board = diagBox("letters-board");
+  board.textContent = "";
+  board.appendChild(stateBanner("loading"));
+  let data = null;
+  try {
+    data = await fetchHistory();
+  } catch {
+    data = null;
+  }
+  board.textContent = "";
+  if (!data) {
+    diagError(board, "信档没取到。", () => {
+      lettersLoaded = false;
+      loadLetters();
+    });
+    return;
+  }
+  lettersLoaded = true;
+  const turns = data.turns || [];
+  if (!turns.length) {
+    diagEmpty(board, "还没有信——第一封还没写。");
+    return;
+  }
+  for (let i = 0; i < turns.length; i += 1) {
+    board.appendChild(letterLine(i, turns[i]));
+  }
+}
+
+// 一条信档：信封缩略 + 第 n 封 + 首行摘要，点开 = 该轮的两张信纸
+// （我方撕边 / 笔友平信——letterNode 的两臂原样）。
+function letterLine(index, turn) {
+  const line = document.createElement("div");
+  line.className = "letterline";
+  const head = document.createElement("button");
+  head.type = "button";
+  head.className = "letterline-head";
+  head.setAttribute("aria-expanded", "false");
+  const mini = document.createElement("span");
+  mini.className = "env-mini";
+  mini.setAttribute("aria-hidden", "true");
+  head.appendChild(mini);
+  const no = document.createElement("span");
+  no.className = "letterline-no";
+  no.textContent = "第 " + (index + 1) + " 封";
+  head.appendChild(no);
+  const snippet = document.createElement("span");
+  snippet.className = "letterline-snippet";
+  const sides = [];
+  if (turn.user !== null && turn.user !== undefined) sides.push(turn.user);
+  if (turn.assistant !== null && turn.assistant !== undefined) {
+    sides.push(turn.assistant);
+  }
+  snippet.textContent = sides.join(" / ").slice(0, 80);
+  head.appendChild(snippet);
+  line.appendChild(head);
+  const body = document.createElement("div");
+  body.className = "letterline-body";
+  body.hidden = true;
+  if (turn.user !== null && turn.user !== undefined) {
+    body.appendChild(letterNode("user", turn.user));
+  }
+  if (turn.assistant !== null && turn.assistant !== undefined) {
+    body.appendChild(letterNode("assistant", turn.assistant));
+  }
+  line.appendChild(body);
+  head.addEventListener("click", () => {
+    const open = body.hidden;
+    body.hidden = !open;
+    head.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  return line;
+}
+
+document.getElementById("letters-go").addEventListener(
+  "click", openLettersArchive);
+document.getElementById("letters-back").addEventListener(
+  "click", () => showSpace("parlor"));
+document.getElementById("obs-back").addEventListener("click", () => {
+  showSpace("study");
+  showSection("study", "progress");   // 回档案节（入口所在处）
+});
+
 // ── rd-4: 搜信里的句子（档案节检索扩展；9.12-23）────────────────────
 // 口径如实写在脸上：只搜页面已加载的最近 50 轮（/api/history 的窗口，
-// web.py 冻结面故窗口不动）；命中列「第 n 封（你/客厅）」+ 片段——
+// web.py 冻结面故窗口不动）；命中列「第 n 封（你/笔友）」+ 片段——
 // 历史轮次没有时间戳，一个日期都不造（第 n 封按已加载窗口内的顺序数）；
 // 同一轮两侧都命中就列两行。窗口读数带十秒保鲜（LETTER_SEARCH_TTL）——
 // 新寄的信不等刷新就能搜到，口径句照旧成立。跨信重现（同一表达在
@@ -1853,7 +2021,7 @@ function mountLetterSearch() {
     let hits = 0;
     const turns = history.turns || [];
     for (let i = 0; i < turns.length; i += 1) {
-      const sides = [["你", turns[i].user], ["客厅", turns[i].assistant]];
+      const sides = [["你", turns[i].user], ["笔友", turns[i].assistant]];
       for (const [who, text] of sides) {
         if (text === null || text === undefined) continue;
         const at = String(text).toLowerCase().indexOf(q);
@@ -2384,8 +2552,8 @@ async function loadHistory() {
 window.addEventListener("DOMContentLoaded", () => {
   // v2 品牌名单点驱动（简报 §1）：标题、门厅英文并写与封面副题取自
   // BRAND——index.html 的同值字面只是无 JS 静态兜底。mc-1 起案头
-  // 主从条不再念品牌：.who/.who-sub = 当前角色名与身份行（端点驱动，
-  // 见 renderMasthead；品牌名与副题退居门厅封面）。
+  // 主从条不再念品牌：.who = 当前角色名（端点驱动，见 renderMasthead；
+  // 品牌名与副题退居门厅封面）。
   document.title = BRAND.name;
   const coverTagline = document.querySelector(".ob-tagline");
   if (coverTagline) coverTagline.textContent = BRAND.tagline;
@@ -2434,12 +2602,21 @@ window.addEventListener("DOMContentLoaded", () => {
 // 状态事件）；沓尾是新建空白信封（「起笔」最简一形——名字 + 一句
 // 简介；「完整编辑」进 mc-2 的全页编辑台）。预览 = 点沓中一封 → 滑到
 // 沓首微抬（260ms 减速长尾 + 让位 stagger）；再点它或点「对话」→
-// 切换。零常驻循环；reduced-motion 双面降级（库尾总降级块 0.01ms
-// 即终，本模块不依赖动画事件）。
+// 切换。
+// v2-2 重审（8.2.2a 目标块「角色卡弹窗整体优化」）：进出场时序按
+// 「纸先落、墨后渗」重排——入场 320 大件档 × --ease-paper 减速长尾、
+// 退场 paper-fold 收拢 200 × --ease-exit + ink-wash reverse 恒慢；
+// 起笔展开 = 沓收拢与信流首屏铺开同帧编排（transform 与 opacity 拆
+// 开，opacity 恒慢）。沓内另有翻页全览层（envsel browser——每页一张
+// 角色卡全貌，横滑 + chevron 翻页，page-turn 2D 形态）。零常驻循环；
+// reduced-motion 双面降级（库尾总降级块 0.01ms 即终，本模块不依赖
+// 动画事件——fold 的 finish 有 480ms 保险丝 + REDUCED_MOTION 直切）。
 let envselPanel = null;
 let envselPreviewId = null;
 let charactersCache = null;
 let envselBornId = null;   // 刚建好的那封——重排时给它一次落沓纸事件
+let envselBrowser = false; // 翻页全览态（沓内的浏览层，不替换档案页）
+let envselPageAt = 0;      // 当前页（全览层页序）
 
 // 邮票变体的确定性派生（mc-0 stamp_key 的前端消费半区）：key 是角色
 // id 的 SHA-256 前 16 位十六进制（elc.persona.card_store.stamp_key_for，
@@ -2474,19 +2651,18 @@ function envelopeDrift(stampKey) {
   return flip * (6 + size * 6) + "px";
 }
 
-// 案头主从条（mc-1 的真源）：.who = 当前角色名、.who-sub = 该角色
-// 身份行——全部来自 /api/characters 的 current_character_id（webui
+// 案头主从条（mc-1 的真源；v2-2 瘦身，8.2.2①）：.who = 当前角色名
+// 一行——全部来自 /api/characters 的 current_character_id（webui
 // 零角色名字面）；读不到（无名册 / current 为 null）就留空，不发明
-// 人名。品牌名与副题退居门厅封面（BRAND 常量的封面消费面）。
+// 人名。身份行副槽长句族已退役（身份介绍退入笔友档案全页）；
+// 品牌名与副题退居门厅封面（BRAND 常量的封面消费面）。
 function renderMasthead(roster) {
   const who = document.querySelector("#space-parlor .who");
-  const sub = document.querySelector("#space-parlor .who-sub");
-  if (!who || !sub) return;
+  if (!who) return;
   const items = (roster && roster.characters) || [];
   const current = items.find(
     (item) => item.character_id === (roster && roster.current_character_id));
   who.textContent = current ? current.name : "";
-  sub.textContent = current ? current.identity_line : "";
 }
 
 function envselCloser(event) {
@@ -2499,15 +2675,52 @@ function envselCloser(event) {
 
 function envselEsc(event) {
   if (charEditorPanel) return;   // Esc 归编辑台（它自己的收拢）
-  if (event.key === "Escape") closeEnvelopeSelector();
+  if (event.key === "Escape") {
+    // 翻页全览是沓内的浏览层——Esc 先退回扇叠，再一记才收沓
+    if (envselBrowser) {
+      setEnvelopeBrowser(false);
+      return;
+    }
+    closeEnvelopeSelector();
+  }
 }
 
-function closeEnvelopeSelector() {
+// 收沓（v2-2 重排）：默认走 fold 退场（纸先落墨后渗的出场半——收拢
+// 200ms × --ease-exit + ink-wash reverse 恒慢），animationend 后摘
+// DOM；reduced-motion 直切（REDUCED_MOTION 单一归宿 + 库尾总降级块
+// 双面）。opts.skipFold = 无动画直摘（现在仅极端路径备用）。
+function closeEnvelopeSelector(opts) {
+  const panel = envselPanel;
   document.removeEventListener("click", envselCloser);
   document.removeEventListener("keydown", envselEsc);
-  if (envselPanel) envselPanel.remove();
   envselPanel = null;
   envselPreviewId = null;
+  envselBrowser = false;
+  envselPageAt = 0;
+  if (!panel) return;
+  const finish = () => {
+    if (panel.parentNode) panel.remove();
+  };
+  if (REDUCED_MOTION.matches || (opts && opts.skipFold)) {
+    finish();
+    return;
+  }
+  panel.classList.add("envsel--fold");
+  panel.addEventListener("animationend", (event) => {
+    if (event.animationName === "paper-fold") finish();
+  });
+  setTimeout(finish, 480);   // 保险丝（animationend 正常先到）
+}
+
+// 起笔向下展开（8.2.2a 目标块；⑨-5 注册行）：沓收拢与信流首屏同帧
+// 编排——沓侧 fold 类（收拢退场），信流侧的「信纸摊上案头」半由
+// refreshCorrespondence 的 resettle 承担（切角色路径必经，同帧在播）；
+// isCurrent 直回路径信流本就完好，无需重铺。transform 与 opacity 拆
+// 开（fold 的 ink-wash reverse 恒慢）。reduced-motion 直落终态
+// （REDUCED_MOTION 直切 + 库尾总降级块双面）。
+function unfoldToParlor(after) {
+  closeEnvelopeSelector();
+  if (typeof after === "function") after();
 }
 
 async function openEnvelopeSelector() {
@@ -2520,8 +2733,22 @@ async function openEnvelopeSelector() {
   const stack = document.createElement("div");
   stack.className = "envsel-stack";
   panel.appendChild(stack);
+  const browser = document.createElement("div");
+  browser.className = "envsel-browser";
+  browser.hidden = true;
+  panel.appendChild(browser);
   const foot = document.createElement("p");
   foot.className = "envsel-foot";
+  // v2-2 翻页全览的入口（8.2.2a）：沓内的浏览层——翻看/回沓一钮两态。
+  const browse = document.createElement("button");
+  browse.type = "button";
+  browse.className = "btn btn--pencil env-browse";
+  browse.textContent = "翻看";
+  browse.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setEnvelopeBrowser(!envselBrowser);
+  });
+  foot.appendChild(browse);
   const fold = document.createElement("button");
   fold.type = "button";
   fold.className = "btn btn--faint";
@@ -2534,11 +2761,194 @@ async function openEnvelopeSelector() {
   panel.appendChild(foot);
   document.getElementById("space-parlor").appendChild(panel);
   envselPanel = panel;
+  envselBrowser = false;
   panel.classList.add("envsel--open");   // 入场一次（复用注册双动画）
   panel.focus();
   document.addEventListener("click", envselCloser);
   document.addEventListener("keydown", envselEsc);
   await renderEnvelopeStack(stack);
+  buildEnvelopeBrowser(browser);
+}
+
+// ── mc-1 翻页全览（8.2.2a 目标块）：沓内的浏览层——每页一张角色卡
+// 全貌，横滑（ux-1 守卫同法，wirePageTurn）+ 点击（#22 chevron）翻页，
+// page-turn 2D 形态；翻页态不替换档案页（页卡上的「档案」动作仍进
+// 全页）。诚实降级（读面缺口呈报在案）：/api/partner 的卡面只回五键，
+// 全貌页展示可读回的 name / identity / background / values /
+// speech_style 五面；personality / boundaries / opening / scenario
+// 四面读不回（mc-0 无全字段读面）——如实注记，开场信预览位缺席
+// （不虚构「第一封信」）。
+let envselBrowserBox = null;
+
+function buildEnvelopeBrowser(box) {
+  envselBrowserBox = box;
+  box.textContent = "";
+  const prev = document.createElement("p");
+  prev.className = "envpage-nav envpage-nav--prev";
+  const prevBtn = document.createElement("button");
+  prevBtn.type = "button";
+  prevBtn.className = "btn";
+  prevBtn.setAttribute("aria-label", "上一封");
+  prevBtn.appendChild(inkIcon("chevron"));
+  prevBtn.addEventListener("click", () => turnEnvelopePage(-1));
+  prev.appendChild(prevBtn);
+  const page = document.createElement("div");
+  page.className = "envpage";
+  const next = document.createElement("p");
+  next.className = "envpage-nav envpage-nav--next";
+  const nextBtn = document.createElement("button");
+  nextBtn.type = "button";
+  nextBtn.className = "btn";
+  nextBtn.setAttribute("aria-label", "下一封");
+  nextBtn.appendChild(inkIcon("chevron"));
+  nextBtn.addEventListener("click", () => turnEnvelopePage(1));
+  next.appendChild(nextBtn);
+  const count = document.createElement("span");
+  count.className = "envpage-count";
+  count.id = "envpage-count";
+  box.appendChild(prev);
+  box.appendChild(page);
+  box.appendChild(next);
+  box.appendChild(count);
+  // 横滑翻页（ux-1 守卫同法：横大于纵严格判定、单指重臂双指全拦、
+  // 边界静止、零 preventDefault）；page-turn 与点击同一动效语汇。
+  wirePageTurn(page, () => envselPageAt > 0,
+    (step) => turnEnvelopePage(step));
+  renderEnvelopePageInto(page);
+}
+
+function envelopeBrowserRoster() {
+  return (charactersCache && charactersCache.characters) || [];
+}
+
+async function turnEnvelopePage(step) {
+  const roster = envelopeBrowserRoster();
+  const next = envselPageAt + step;
+  if (next < 0 || next >= roster.length) return;   // 边界静止
+  envselPageAt = next;
+  const page = envselBrowserBox && envselBrowserBox.querySelector(".envpage");
+  if (!page) return;
+  renderEnvelopePageInto(page);
+  playPageTurn(page, step > 0);
+}
+
+// 一页角色卡全貌：卡面（惰性拉取 + 缓存）+ 可读回五面的摘要 +
+// 读不回四面的诚实注记 + 动作行（对话 · 档案——下划线文字链接）。
+const envelopeCardCache = new Map();
+
+async function envelopePageCard(characterId) {
+  if (!envelopeCardCache.has(characterId)) {
+    envelopeCardCache.set(characterId,
+      fetchPartnerOf(characterId).catch(() => null));
+  }
+  try {
+    return await envelopeCardCache.get(characterId);
+  } catch {
+    return null;
+  }
+}
+
+function renderEnvelopePageInto(page) {
+  const roster = envelopeBrowserRoster();
+  const item = roster[envselPageAt];
+  if (!item) {
+    page.textContent = "";
+    page.appendChild(stateBanner("empty",
+      { text: "沓里还没有信——「起笔」写下第一封。" }));
+    return;
+  }
+  const count = document.getElementById("envpage-count");
+  if (count) count.textContent = (envselPageAt + 1) + " / " + roster.length;
+  page.textContent = "";
+  const face = document.createElement("div");
+  face.className = "envpage-face";
+  const name = document.createElement("p");
+  name.className = "envpage-name";
+  name.textContent = String(item.name || "");
+  face.appendChild(name);
+  const line = document.createElement("p");
+  line.className = "envpage-line";
+  line.textContent = String(item.identity_line || "");
+  face.appendChild(line);
+  page.appendChild(face);
+  const body = document.createElement("div");
+  page.appendChild(body);
+  body.appendChild(stateBanner("loading"));
+  // 页卡上不骗读数：卡面读不到就如实一行（全貌页的其余面照常）
+  envelopePageCard(item.character_id).then((data) => {
+    if (!envselBrowser) return;   // 人已回扇叠/收沓——不往看不见的层上写
+    body.textContent = "";
+    const card = data && data.card;
+    const faces = card ? [
+      ["背景", String(card.background || "")],
+      ["看重的事", String(card.values || "")],
+      ["写信的样子", String(card.letter_habits || "")],
+    ] : [];
+    for (const [label, text] of faces) {
+      if (!text) continue;
+      const head = document.createElement("p");
+      head.className = "envpage-label";
+      head.textContent = label;
+      body.appendChild(head);
+      const prose = document.createElement("p");
+      prose.className = "envpage-prose";
+      prose.textContent = text;
+      body.appendChild(prose);
+    }
+    const veil = document.createElement("p");
+    veil.className = "envpage-veil";
+    veil.textContent = "性情、边界、开场信与场景四面读不回——她收在"
+      + "自己的信封里；「档案」与「编辑」里见得到的照旧。";
+    body.appendChild(veil);
+  });
+  const actions = document.createElement("p");
+  actions.className = "envpage-actions";
+  const act = (word, handler) => {
+    const link = document.createElement("button");
+    link.type = "button";
+    link.className = "btn btn--pencil";
+    link.textContent = word;
+    link.addEventListener("click", handler);
+    actions.appendChild(link);
+  };
+  const isCurrent = charactersCache &&
+    item.character_id === charactersCache.current_character_id;
+  act("对话", () => {
+    if (isCurrent) {
+      unfoldToParlor();   // 已在通信中——沓收拢、信纸摊开
+      return;
+    }
+    switchToCharacter(item.character_id).then((done) => {
+      if (done) unfoldToParlor();
+    });
+  });
+  act("档案", () => {
+    closeEnvelopeSelector();
+    openPartnerDossier(item.character_id);
+  });
+  page.appendChild(actions);
+}
+
+// 翻看/回沓一钮两态：全览层显形时扇叠隐藏（浏览层，不替换档案页——
+// 档案仍从页卡或扇叠的「档案」动作进）。进全览态时重灌页卡——开沓时
+// buildEnvelopeBrowser 的首次渲染跑在 envselBrowser=false 的窗口里，
+// 页卡内容的异步半区（卡面摘要 + 缺席注记）守卫会早退；重灌让
+// then 半区在全览态下真正落笔。
+function setEnvelopeBrowser(on) {
+  if (!envselPanel) return;
+  envselBrowser = Boolean(on);
+  const stack = envselPanel.querySelector(".envsel-stack");
+  const browser = envselPanel.querySelector(".envsel-browser");
+  const browse = envselPanel.querySelector(".env-browse");
+  if (!stack || !browser) return;
+  stack.hidden = envselBrowser;
+  browser.hidden = !envselBrowser;
+  if (browse) browse.textContent = envselBrowser ? "回沓" : "翻看";
+  if (envselBrowser) {
+    envselPageAt = 0;
+    const page = browser.querySelector(".envpage");
+    if (page) renderEnvelopePageInto(page);
+  }
 }
 
 async function renderEnvelopeStack(stack) {
@@ -2574,11 +2984,11 @@ async function renderEnvelopeStack(stack) {
       dx: envelopeDrift(item.stamp_key),
       onTalk: () => {
         if (isCurrent) {
-          closeEnvelopeSelector();   // 已在通信中——收沓即回
+          unfoldToParlor();   // 已在通信中——沓收拢、信纸摊开（8.2.2a）
           return;
         }
         switchToCharacter(item.character_id).then((done) => {
-          if (done) closeEnvelopeSelector();
+          if (done) unfoldToParlor();
         });
       },
       onDossier: () => {
@@ -2624,8 +3034,10 @@ async function refreshEnvelopeStack() {
 function previewEnvelope(characterId) {
   if (!envselPanel) return;
   if (envselPreviewId === characterId) {
+    // 再点同一封 = 就是他——切换 + 起笔向下展开
+    // （8.2.2a：选中角色后沓收拢、信纸向下铺开成对话主界面）
     switchToCharacter(characterId).then((done) => {
-      if (done) closeEnvelopeSelector();
+      if (done) unfoldToParlor();
     });
     return;
   }
@@ -3182,8 +3594,13 @@ function buildCreateForm(envNode, hint, start) {
         : "没能落笔——再试一次。";
       return;
     }
-    envselBornId = data.character.character_id;
-    await refreshEnvelopeStack();   // 新封落沓（最尾，纸事件一次）
+    // 起笔向下展开（8.2.2a；⑨-5 注册行）：「起笔」确认（新建）后
+    // 选择器页面向下展开成对话主界面——切换到新笔友（历史/批注随
+    // 切换落新通信），沓收拢与信流首屏同帧（unfoldToParlor）。
+    // born 落沓纸事件保留给「完整编辑」路径（沓都不在了，born 无观众）。
+    envselBornId = null;
+    const created = await switchToCharacter(data.character.character_id);
+    if (created) unfoldToParlor();
   });
   form.appendChild(nameInput);
   form.appendChild(lineInput);

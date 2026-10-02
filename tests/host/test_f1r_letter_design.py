@@ -68,9 +68,10 @@ def test_the_page_keeps_the_letter_form_laws(tmp_path: Path) -> None:
     # 与 ::before——盖印几何）；③邮票图形两枚（.stamp-v0 圆环 /
     # .stamp-v5 圆拱——邮票圆形豁免位）；④信纸物件的 2px 收窄圆角
     # （.envsel 沓面板与 .env 信封——简报 §6 增补档，非面板大圆角；
-    # mc-2 起加编辑台的开场信预览短笺——同 ≤2px 信纸物件档）。
+    # mc-2 起加编辑台的开场信预览短笺——同 ≤2px 信纸物件档；v2-2 起
+    # 加信封沓翻页全览的页卡 .envpage——同档）。
     # 面板大圆角仍一处即红。
-    assert page.count("border-radius") == 10
+    assert page.count("border-radius") == 11
     assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
     assert "rgba(0,0,0" not in page
@@ -124,11 +125,13 @@ def test_the_page_has_the_parlor_screen(tmp_path: Path) -> None:
     page = _page_of(tmp_path)
     assert 'id="space-parlor"' in page
     assert 'id="screen-living"' not in page
-    # mc-1 随迁（主从条 = 当前角色名）：案头 .who/.who-sub 改端点驱动
+    # mc-1 随迁（主从条 = 当前角色名）：案头 .who 改端点驱动
     # （/api/characters 的 current），静态兜底留空——品牌名与副题退居
-    # 门厅封面（ob-tagline；BRAND 单点常量同值驱动，钉在 v21 套件）
+    # 门厅封面（ob-tagline；BRAND 单点常量同值驱动，钉在 v21 套件）。
+    # v2-2 随迁（8.2.2① 主从条瘦身）：who-sub 身份行长句族退役——
+    # 身份介绍退入笔友档案全页（缺位钉防回潮）。
     assert '<div class="who"></div>' in page
-    assert '<div class="who-sub"></div>' in page
+    assert 'who-sub' not in page
     assert '<p class="ob-tagline">见字如晤，今日如何</p>' in page
     assert "BRAND = { name:" in page
     assert "英语客厅" not in page

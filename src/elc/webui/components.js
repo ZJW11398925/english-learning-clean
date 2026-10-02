@@ -119,7 +119,10 @@ function humanLetterTime(iso) {
   return year + (then.getMonth() + 1) + " 月 " + then.getDate() + " 日";
 }
 
-export function addLine(cls, text, opts) {
+// 信纸节点（#4 letter 的 DOM 工厂，v2-2 自 addLine 抽出）：信流
+// （addLine）与信档屏的展开读（app.js 的信档节）共用同一排印骨架
+// 工厂——单一出处条款（⑤）：展开读不是第二份信件实现。
+export function letterNode(cls, text, opts) {
   const options = opts || {};
   let node;
   if (cls === "user") {
@@ -186,7 +189,22 @@ export function addLine(cls, text, opts) {
   // transform）+ .ink-wet 墨水物理（正文字色 ink-ghost→ink ≈600ms
   // 一次性）；历史回填（loadHistory）不播，五十轮回填不闪。
   if (options.enter) node.classList.add("flow-enter", "ink-wet");
+  return node;
+}
+
+export function addLine(cls, text, opts) {
+  const node = letterNode(cls, text, opts);
   messages.appendChild(node);
+  // v2-2 触屏可发现性（8.2.2④ (a)）：最新一封信 = 唯一带弱底纹暗示的
+  // 信（.letter--latest）——「当前可查」语义随信龄衰减，历史信静默。
+  // 系统行/回执不参与（只有信件件两臂落标记）。
+  if (cls === "user" || cls === "assistant") {
+    for (const prev of Array.from(
+        messages.querySelectorAll(".letter--latest"))) {
+      prev.classList.remove("letter--latest");
+    }
+    node.classList.add("letter--latest");
+  }
   scrollBottom();
   return node;
 }
@@ -733,11 +751,21 @@ export function wordCard(data) {
 
 let openCard = null;
 let cardCloser = null;
+let cardEsc = null;
+let openScrim = null;
 
 export function closeWordCard() {
   if (cardCloser !== null) {
     document.removeEventListener("click", cardCloser);
     cardCloser = null;
+  }
+  if (cardEsc !== null) {
+    document.removeEventListener("keydown", cardEsc);
+    cardEsc = null;
+  }
+  if (openScrim !== null) {
+    openScrim.remove();
+    openScrim = null;
   }
   if (openCard !== null) {
     openCard.remove();
@@ -745,18 +773,27 @@ export function closeWordCard() {
   }
 }
 
+// v2-2 双形态（8.2.2③）：浮卡档 = 点击点近侧（--wc-x/--wc-y custom
+// props 承 clamp 值，媒体查询分档——触屏 (hover: none) 档不消费坐标，
+// 由 CSS 落 bottom sheet 形态；JS 零档位感知）；sheet 档 = 同批挂一片
+// 墨色遮罩（.word-scrim——点遮罩冒泡到既有 cardCloser 即「点卡外」
+// 关闭，零新关闭机制）+ Esc 关闭（R3 语义）。DOM 移除语义两档同源。
 export function showWordCard(at, data) {
   closeWordCard();
   const card = wordCard(data);
+  const scrim = document.createElement("div");
+  scrim.className = "word-scrim";
+  document.body.appendChild(scrim);
   document.body.appendChild(card);
   const maxLeft = window.scrollX + document.documentElement.clientWidth -
     card.offsetWidth - 12;
   const maxTop = window.scrollY + window.innerHeight -
     card.offsetHeight - 12;
-  card.style.left =
-    Math.max(window.scrollX + 6, Math.min(at.pageX, maxLeft)) + "px";
-  card.style.top =
-    Math.max(window.scrollY + 6, Math.min(at.pageY, maxTop)) + "px";
+  card.style.setProperty("--wc-x",
+    Math.max(window.scrollX + 6, Math.min(at.pageX, maxLeft)) + "px");
+  card.style.setProperty("--wc-y",
+    Math.max(window.scrollY + 6, Math.min(at.pageY, maxTop)) + "px");
+  openScrim = scrim;
   openCard = card;
   cardCloser = (event) => {
     if (event.target !== card && !card.contains(event.target)) {
@@ -764,6 +801,10 @@ export function showWordCard(at, data) {
     }
   };
   document.addEventListener("click", cardCloser);
+  cardEsc = (event) => {
+    if (event.key === "Escape") closeWordCard();
+  };
+  document.addEventListener("keydown", cardEsc);
 }
 
 // 16. field：编辑面一行式表单行（p-3）。label 包裹控件——点名牌即聚焦；
@@ -917,6 +958,60 @@ export function wirePanelSwipe(space, onSelect) {
     body.classList.add(dx < 0 ? "panel-nudge--next" : "panel-nudge--prev");
     onSelect(order[next]);
   }, { passive: true });
+}
+
+// v2-2 翻页守卫（wirePageTurn，8.2.2a 翻页全览 + ⑨-5 page-turn）：
+// 与 wirePanelSwipe 同法的识别纪律——touch 只做识别、全程零
+// preventDefault（passive；纵向滚动不受影响）；松手判定 = 单指、
+// 横向位移 ≥ 48px 且 |dx| 严格大于 |dy|；起点在动作件（button/a/
+// input/textarea/select）或横向滚动面（pre）上不识别。差异只在落点：
+// 面板序不来自节签 DOM，而由调用方注入 current()/delta()（信封沓的
+// 翻页序是页卡数组——沓数据面），边界（next < 0 / ≥ 页数）静止。
+// 识别成功对 page 容器落 --pt-* 方向变量 + turn 类（12–14px 位移 +
+// rotateY ≤8° + 梯形的 2D 翻页感，page-turn 动画——⑨-5 落库行），
+// animationend 对账摘类（reduced-motion 随库尾总降级块 0.01ms 即终，
+// 事件仍到）。playPageTurn 是点击翻页（chevron）的同一落类面——横滑
+// 与点击一个动效语汇。
+export function wirePageTurn(page, current, onTurn) {
+  if (!page) return;
+  let x0 = 0;
+  let y0 = 0;
+  let live = false;
+  page.addEventListener("touchstart", (event) => {
+    live = event.touches.length === 1
+      && !event.target.closest("button, a, input, textarea, select, pre");
+    if (live) {
+      x0 = event.touches[0].clientX;
+      y0 = event.touches[0].clientY;
+    }
+  }, { passive: true });
+  page.addEventListener("touchcancel", () => { live = false; },
+    { passive: true });
+  page.addEventListener("touchend", (event) => {
+    if (!live) return;
+    live = false;
+    const dx = event.changedTouches[0].clientX - x0;
+    const dy = event.changedTouches[0].clientY - y0;
+    if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) <= Math.abs(dy)) {
+      return;
+    }
+    const step = dx < 0 ? 1 : -1;
+    if (!current() && step < 0) return;   // 边界静止
+    onTurn(step);
+  }, { passive: true });
+}
+
+export function playPageTurn(page, forward) {
+  if (!page) return;
+  const settle = (event) => {
+    if (event.animationName !== "page-turn") return;
+    page.classList.remove("envpage--turn-next", "envpage--turn-prev");
+    page.removeEventListener("animationend", settle);
+  };
+  page.addEventListener("animationend", settle);
+  page.classList.remove("envpage--turn-next", "envpage--turn-prev");
+  void page.offsetWidth;
+  page.classList.add(forward ? "envpage--turn-next" : "envpage--turn-prev");
 }
 
 // rd-1 入场编排（spec ⑨-5 逐行落墨；置于 #21 之前——r1r 的「工厂尾部

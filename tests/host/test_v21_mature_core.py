@@ -163,13 +163,18 @@ def test_the_postmark_binds_real_events_only() -> None:
     # 结课：settled 臂的邮票印记（真实事件 = 批注成功收场）
     components = _text("components.js")
     assert 'stamp.classList.add("card-stamp", "stamp-press");' in components
-    # 归档开启：--archived 形态登记位（无 JS 消费者——不虚构挂点）
+    # 归档开启：--archived 形态。v2-2 随迁（8.2.11 信档屏接线）：挂点
+    # 落成——信档屏打开即「归档开启」真实事件，屏头恰一枚日期戳
+    # （letters-datestamp 槽 + postmark--archived 形态，app.js 恰此一
+    # 处消费者）；装饰水印仍缺位。
     assert "postmark--archived" in css
-    assert "postmark--archived" not in app
+    assert app.count("postmark--archived") == 1
+    assert 'diagBox("letters-datestamp")' in app
     assert "postmark--archived" not in components
     # 装饰水印缺位（邮戳不再作纯装饰）
     assert "marginalia-mark" not in css
     assert 'data-icon="postmark"' not in _text("index.html")
+    assert "postmark" not in _text("index.html")
     # 朱砂的用面纪律：结课戳与红笔圈走 --seal；品牌印记不是事件
     assert "color: var(--seal);" in css
     assert ".brandmark .bm-seal { fill: var(--accent); }" in css
@@ -247,13 +252,17 @@ def test_the_other_screens_keep_their_structure() -> None:
     换肤声明 = 令牌引用在场 + 结构类不变双断言。"""
 
     index = _text("index.html")
-    # the settings face keeps its two blocks and its honest sentences
+    # the settings face keeps its two blocks and its honest sentences —
+    # v2-2 随迁（8.2.12）：obs-status 随观察读数迁入专门面退役，档案
+    # 折叠内只留入口（obs-entry）；观察仪表屏骨架 id 在场
     for marker in ('<section id="drawer-settings" role="tabpanel"',
                    "<h3>现在能如实说的</h3>", "<h3>三档教学模式（参考）</h3>",
                    'id="set-memory"', 'id="set-privacy"',
                    'id="study-progress"', 'id="letter-search"',
-                   'id="obs-status"', 'id="raw-readings"'):
+                   'id="obs-entry"', 'id="raw-readings"',
+                   'id="space-obs"', 'id="obs-board"'):
         assert marker in index, marker
+    assert 'id="obs-status"' not in index
     # the panels' ids are untouched (the JS reads the same ids)
     for panel in ("study-today", "study-goal", "study-progress",
                   "drawer-memory", "drawer-privacy", "drawer-settings"):

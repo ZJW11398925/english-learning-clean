@@ -416,9 +416,12 @@ def test_the_stack_shadows_are_ink_derived_and_two_tiered(
     # letter, the deckle underlay and the en-route envelope (soft)；
     # cs-2 随迁（4 → 3）：浮层伙伴卡的垫纸阴影随退役消失——层级值仍
     # 恰两级；mc-1 随迁（3 → 4）：信封沓的每一封带 soft 档纸叠影
-    # （信封是纸物件，与在途信封同层——沓形靠它读出「一叠」）。
+    # （信封是纸物件，与在途信封同层——沓形靠它读出「一叠」）；
+    # v2-2 随迁（1 → 4 座，8.2.2②/8.2.11/8.2.2a）：写信区垫板 soft
+    # 向上承影落在信纸堆上（soft 的 y 分量即向上）+ 信封沓翻页页卡
+    # soft 承托 + 信档缩略封 soft——全部两级令牌之内，零手写字面。
     assert "box-shadow: var(--stack-shadow-deep);" in screens
-    assert screens.count("box-shadow: var(--stack-shadow-") == 1
+    assert screens.count("box-shadow: var(--stack-shadow-") == 4
     assert css.count("box-shadow: var(--stack-shadow-soft);") == 4
     assert "box-shadow: var(--stack-shadow-" in css
     # directions disagree: soft's x is positive, deep's is negative
@@ -429,9 +432,10 @@ def test_the_stack_shadows_are_ink_derived_and_two_tiered(
     # disposition F-1 (review): totals, not just var() forms — a
     # hand-written shadow literal (ink-coloured or not) trips these
     # （cs-2 随迁 4 → 3：浮层伙伴卡的垫纸阴影随退役消失；mc-1 随迁
-    # 3 → 5：信封沓的每封 soft 档 + 空白封的 none 抵消臂——仍零手写
-    # 阴影字面，两级令牌之外零自造）
-    assert screens.count("box-shadow") == 1
+    # 3 → 5：信封沓的每封 soft 档 + 空白封的 none 抵消臂；v2-2 随迁
+    # screens 1 → 4：垫板/页卡/缩略封三座 soft——仍零手写阴影字面，
+    # 两级令牌之外零自造）
+    assert screens.count("box-shadow") == 4
     assert css.count("box-shadow") == 5
     spec = _spec()
     assert "「零阴影」解除登记" in spec

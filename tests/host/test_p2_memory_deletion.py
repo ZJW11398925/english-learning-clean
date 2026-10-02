@@ -413,7 +413,8 @@ def test_the_page_carries_the_safety_copy_and_the_result_strip(
         assert "确定继续？再次确认" not in page
         # the page's standing copy: the two entries' own sentences and
         # the RELATIONSHIP_PAIR honesty note（这版做不了——一句原因）
-        assert "请客厅忘掉一些事——走出去就找不回来。" in page
+        # v2-2 随迁（换名句对齐，spec 8.2.7 定稿）：自称主语改「笔友」
+        assert "请笔友忘掉一些事——走出去就找不回来。" in page
         assert "忘掉某个表达的学习痕迹、学习状态与复习安排" in page
         assert "这版做不了——页面不知道伙伴的角色编号。" in page
         assert "此版本不出这个入口" not in page
