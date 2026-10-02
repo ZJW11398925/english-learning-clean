@@ -253,13 +253,16 @@ def test_the_reference_answer_is_its_own_labelled_block() -> None:
 
 def test_older_deliveries_fold_into_a_details_history() -> None:
     """B4：最新交付显式，更早的收进 <details class="note-history"> 折叠
-    （组头带计数）；折叠是纯前端态（零新端点字面）。"""
+    （组头带计数）；折叠是纯前端态（零新端点字面）。降级必须摘除显式行
+    原位（current.remove）——只复制不摘 = 折叠是复制品、显式行照旧累积
+    （活体探针 2026-10-03 实测的第一版缺陷，钉住其回归）。"""
 
     js = _text("components.js")
     delivery_body = _fn_body(js, "noteDelivery")
     assert 'history = document.createElement("details");' in delivery_body
     assert 'history.className = "note-history";' in delivery_body
     assert "已看过的提示与讲解" in js
+    assert "current.remove();" in delivery_body
     css = _text("components.css")
     assert ".note-history {" in css
     assert ".note-history summary {" in css
