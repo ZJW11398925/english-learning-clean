@@ -17,6 +17,23 @@ button { border: 0; background: none; padding: 0; cursor: pointer;
 button:focus-visible, input:focus-visible {
   outline: 1px solid var(--pencil); outline-offset: 2px; }
 
+/* ── 滚动条纪律（v3-2S，用户实测 2026-10-02：扇叠/全览/编辑/写信面的
+   滚动条压卡）——全局纸墨细条：默认桌面滚动条 15-17px 直接吃掉卡片
+   右缘；统一 6px 细墨条（轨道透明、拇指发丝线色、悬停加深半档），
+   占位从源头缩到 6px；Firefox/新 Chromium 走 scrollbar-width: thin。
+   滚动井容器另加 scrollbar-gutter: stable（screens.css 各面）——预留
+   固定槽，滚动条出现/消失内容零跳动。新滚动容器 = 进
+   test_v32s_scroll_discipline 的清单钉 + 同刀加 gutter（spec ⑨-7 纪律）。 */
+* { scrollbar-width: thin;
+    scrollbar-color: var(--rule) transparent; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--rule); }
+@media (hover: hover) {
+  ::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }
+}
+
+
 /* ── rd-1 触感层（spec ⑨-5 state-layer 行）：Material state layer 的
    纸面读法——墨色薄雾以伪元素叠上可交互件（零布局位移、零布局改动）：
    hover 轻（--state-hover .08）、focus-visible 与 press 重半档（.12）。

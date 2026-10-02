@@ -381,6 +381,7 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
                            var(--ease-exit) both reverse; }
 .envsel-stack { position: relative; overflow-x: hidden;
                 overflow-y: auto; overscroll-behavior: contain;
+                scrollbar-gutter: stable;
                 --env-fan: 0.35; --env-step: 46px; --env-body: 104px;
                 max-height: calc(var(--env-body) + 2 * var(--env-step));
                 height: calc(12px + var(--env-body)
@@ -459,6 +460,7 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
            box-shadow: var(--stack-shadow-soft);
            padding: var(--sp-3) var(--sp-4) var(--sp-3);
            overflow-y: auto; overscroll-behavior: contain;
+           scrollbar-gutter: stable;
            /* 左缘卷曲影：墨色同源渐变（下一页纸缘的暗示；阴影不做
               动画——静态形，方向随翻向类镜像）。 */
            background-image: linear-gradient(90deg,
@@ -507,6 +509,7 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
    体位、零朱砂、零新断点（编辑面在容器内，版心随容器）。 */
 .envsel-editor { min-height: 0;
                  overflow-y: auto; overscroll-behavior: contain;
+                scrollbar-gutter: stable;
                  margin-top: var(--sp-2);
                  max-width: var(--measure); }
 .editor-back { margin: 0 0 var(--sp-4);
@@ -589,6 +592,7 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
                   min-height: calc(100dvh - var(--sp-8) - var(--sp-6)
                                      - var(--sp-8) - var(--sp-1));
                   overflow-y: auto; overscroll-behavior: contain;
+                scrollbar-gutter: stable;
                   margin-top: var(--sp-2);
                   max-width: var(--measure); }
 .compose-back { margin: 0 0 var(--sp-3); }
