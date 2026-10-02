@@ -2310,16 +2310,21 @@ class _WebFace:
         if delivered:
             answer["delivery_text"] = str(delivered)
             # v3-1（B3，additive，随 delivery_text 同现）: the delivery's
-            # own kind word (HINT / REVEAL / EXPLANATION / RETRY — the
-            # runtime's ``TeachingReplyTurnResult.delivery_kind``), so the
+            # own kind word (HINT / REVEAL / EXPLANATION / RETRY / RESUME
+            # — the runtime's ``TeachingReplyTurnResult.delivery_kind``;
+            # RESUME = 主路径收场的 persona 收场句，落普通交付行), so the
             # page can route the block: the reference answer (REVEAL)
             # renders as its own labelled block, never mixed into the
             # letter body; a RETRY's fixed line stays a plain note line.
-            # A closing reveal (the ladder's terminalizing move) rides the
-            # result's §6 outcome word instead of a delivery kind — the
-            # face reads that own word ("REVEALED", the §8 exemption: the
-            # episode closes with the answer shown) rather than deriving
-            # one.
+            # Kind truth first, fallback second (v3-1 处置刀如实化): the
+            # main-path closing reveal carries delivery_kind "RESUME" (the
+            # persona resume line is that delivery's own truth — SM §1
+            # PERSONA_RESUME leg; routing it to REVEAL would mislabel a
+            # persona sentence as "参考答案"). The closure=="REVEALED"
+            # fallback below is reachable only on the replay path
+            # (_replay_teaching_reply: kind=None + durable reply text),
+            # where the durable text is the corpus reveal form — there the
+            # REVEAL label is the honest one.
             kind = getattr(result.value, "delivery_kind", None)
             if not kind and getattr(result.value, "closure", None) == (
                 "REVEALED"
