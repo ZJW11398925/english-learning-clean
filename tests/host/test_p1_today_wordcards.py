@@ -494,15 +494,14 @@ def test_the_word_card_overlay_is_the_letter_language(
     assert "export function closeWordCard() {" in page
     assert "export function showWordCard(at, data) {" in page
     assert "document.addEventListener" in page
-    # rd-4 随迁（9.12-23）+ v2 随迁（简报 §6「仅邮票/邮戳允许圆形；
-    # 信纸物件圆角收窄一档 ≤2px」）：零大圆角面板法则的豁免位 =
-    # 手迹/盖印/邮票几何 + 信纸物件 2px——红笔圈线椭圆 + 邮戳双圈圆
-    # 两处（.postmark 与信封沓的 .env-mark 各含本体与 ::before）+
-    # 邮票图形两枚（.stamp-v0/.stamp-v5）+ 信封沓的 2px 两处
-    # （.envsel/.env，简报 §6 增补档；mc-2 起加编辑台的开场信预览
-    # 短笺——同 ≤2px 信纸物件档；v2-2 起加翻页全览页卡 .envpage）。
-    # 面板大圆角仍一处即红。
-    assert page.count("border-radius") == 11
+    # rd-4 随迁（9.12-23）+ v2 随迁 + v2-2R 随迁（用户裁决 2026-10-02：
+    # Apple 式柔和圆角语汇取代「≤2px 收窄」，T3「大圆角卡片」禁令废止
+    # ——五档 --r-* 见 tokens.css）：计数钉从 11（2px 时代）前移到
+    # 33 = 手迹/盖印豁免几何 7（红笔圈椭圆 + 邮戳双圈 2 + 「当前」邮戳
+    # 双圈 2 + 邮票图形 2）+ 五档 token 消费 26（components 16 +
+    # screens 10，含 sheet 顶角/浮卡/纸件/控件/chip/垫纸/封舌各面）。
+    # 一处字面像素圆角（豁免几何之外）即红。
+    assert page.count("border-radius") == 33
     assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
 

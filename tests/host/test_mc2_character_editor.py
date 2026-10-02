@@ -426,9 +426,11 @@ def test_the_opening_letter_has_a_live_preview() -> None:
     css = _editor_css()
     assert ".editor-openprev-paper { margin: var(--sp-1) 0 0;" in css
     assert "background: var(--paper-2);" in css
-    # INFO-1 disposition: the value itself is pinned (the count pin
-    # never locked it) — the preview paper is a ≤2px letter object
-    assert "border-radius: 2px;" in css
+    # INFO-1 disposition, migrated v2-2R: the value itself is pinned
+    # (the count pin never locked it) — the preview paper rounds with
+    # the paper tier token (the user ruling 2026-10-02 retired the 2px
+    # letter-object scale)
+    assert "border-radius: var(--r-paper);" in css
 
 
 # ---------------------------------------------------------------------------

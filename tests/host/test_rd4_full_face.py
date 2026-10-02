@@ -177,8 +177,10 @@ def test_the_red_pencil_circle_is_one_static_mark(tmp_path: Path) -> None:
     # transition — conservation price: the inline rename interaction
     # retired in the same cut, .env-rename 段同刀拆除)；v2-2 起加两枚
     # （paper-fold 沓收拢 / page-turn 2D 翻页——⑨-5 目标行落库，spec
-    # 9.5 表回填为现役行）
-    assert css.count("@keyframes ") == 9
+    # 9.5 表回填为现役行）；v2-2R 随迁 9→10（基线 517da30 实测本钉
+    # 已红——v22 黑屏修复刀加 from-only keyframe scrim-in 时未迁本
+    # 计数钉，stash 亲跑复现留痕；新真值 = 注册集 10 枚）
+    assert css.count("@keyframes ") == 10
 
 
 def test_the_closing_arms_split_settled_from_skipped(tmp_path: Path) -> None:

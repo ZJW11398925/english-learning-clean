@@ -125,6 +125,22 @@ weight，700 = 合成粗体发糊——中文标题靠字号跳档 + 字距）�
 | `--navdock-h` | `54px` | 常驻 dock（#18）高度：body 底 padding 与写信区让位的同一来源 | 不作行高 |
 | `--shell-w` | `430px`（≥900px 媒体查询改写 `1080px`，≥1280 改 `1240px`） | 信纸栏宽：#18 navdock 与写信区 .dock 的同一宽度出处 | 不作颜色 |
 
+### ②-6 圆角五档（v2-2R 柔和化——用户裁决 2026-10-02）
+
+| token | 值 | 用面 | 禁忌 |
+|---|---|---|---|
+| `--r-paper` | `6px` | 文档流纸件：信纸/短笺/批注卡/批注纸——纸的柔边，不是卡 | 不作浮起面板档 |
+| `--r-raise` | `14px` | 浮起面：词卡浮卡档/沓封卡/编辑台容器/浮起面板 | 不裸写像素 |
+| `--r-sheet-top` | `16px` | bottom sheet 顶部两角（底缘 0——贴屏） | 只用于贴屏 sheet 形 |
+| `--r-ctl` | `8px` | 输入框/textarea/表单控件/选择器 | 不作容器档 |
+| `--r-pill` | `999px` | chip/小标/实底钮 | 只作小面胶囊 |
+
+用户裁决 2026-10-02（原话）：「尽量不要使用强硬锐利的边缘，不要留
+直角，学习 apple 的圆角」——**Apple 式柔和圆角语汇取代简报 §6
+「≤2px 收窄」；T3「大圆角卡片」禁令废止，其余禁令不动**。消费面只许
+`var()` 引用（tokens.css 唯一物理出处）；豁免几何 = 邮戳/红笔圈的
+`50%` 圆与邮票图形的圆拱（手迹/盖印几何，非面板圆角）。
+
 规则：组件样式只许 `var()` 引用，**禁止在任何其他文件重写令牌字面值**；
 禁止新增 token 之外的十六进制颜色（零青绿——旧双色主题不得回流）。
 v2 起 `tokens.css` 是全套令牌的唯一物理出处，其头注即简报 §2/§3 的
@@ -155,9 +171,9 @@ v2 起 `tokens.css` 是全套令牌的唯一物理出处，其头注即简报 §
 | # | 组件 | 类名（新） | 别名（现役旧名） | 状态矩阵 | 出处 |
 |---|---|---|---|---|---|
 | 1 | link-btn | `.btn` + `.btn--ink` `--send` `--pencil` `--set` `--faint` `--dot` `--back` `--meter` | `.ob .go` `.send` `.linklike` `.setlink` `.skiplink` `.refresh` `.back` `.meter` | default / hover（v2：`--accent-deep` 加深）/ `:active`（opacity .55 + 触压 1px）/ `[disabled]`（opacity .4 + 无 pointer）/ busy（文案切换由 JS 承担）；`--pencil` 变体现役值 = 墨蓝（旧赭红名） | components.css + components.js（helpButton/skip/寄出作答） |
-| 2 | pen | `.pen` | — | default / placeholder / focus（纸面微起 --paper-high）/ Enter 绑定（app.js） | components.css |
-| 3 | note-paper | `.note-paper`（+ `.skipped` `.note-paper--enter` `.note-head`） | — | default（--paper-2 次纸 + 左缘界尺 + 卡头 #22 note 小图）/ skipped / busy（JS 置 disabled+busystrip）/ enter（新批注组递入一次：`.note-paper--enter` = paper-drop + ink-wash 双动画，v2 改形——见 ⑨-5 note-arrive 行） | components.css + components.js（showMoments/addReplyControls） |
-| 4 | letter | `.letter` `.may` `.me` `.paper` `.say` | — | plain（may）/ torn（me）；v2 增在途形态 `.letter--en-route`（rd-4 登记的虚发丝角标，回信落地/失败即摘）与 `.ink-wet` 墨水物理宿主（新到信 `--ink-ghost→--ink` 一次性，简报 T1-3） | components.css + components.js（addLine） |
+| 2 | pen | `.pen` | — | default / placeholder / focus（纸面微起 --paper-high，随框 `--r-ctl` 柔和——v2-2R）/ Enter 绑定（app.js） | components.css |
+| 3 | note-paper | `.note-paper`（+ `.skipped` `.note-paper--enter` `.note-head`） | — | default（--paper-2 次纸 + 左缘界尺 + `--r-paper` 纸角柔边（v2-2R）+ 卡头 #22 note 小图）/ skipped / busy（JS 置 disabled+busystrip）/ enter（新批注组递入一次：`.note-paper--enter` = paper-drop + ink-wash 双动画，v2 改形——见 ⑨-5 note-arrive 行） | components.css + components.js（showMoments/addReplyControls） |
+| 4 | letter | `.letter` `.may` `.me` `.paper` `.say` | — | plain（may）/ torn（me；撕口在顶、纸角 `--r-paper` 柔边——v2-2R）；v2 增在途形态 `.letter--en-route`（rd-4 登记的虚发丝角标，回信落地/失败即摘；封身与封舌顶角同随 `--r-paper`——v2-2R）与 `.ink-wet` 墨水物理宿主（新到信 `--ink-ghost→--ink` 一次性，简报 T1-3） | components.css + components.js（addLine） |
 | 5 | hairline-section | `.sec` | — | default（无交互态） | components.css |
 | 6 | setlink-block | `.setlinks` `.setblock` | — | default / [hidden] 切换；**现役页面用户清零**（留库，再启用走 ⑤ 四步） | components.css |
 | 7 | resultstrip | `.resultstrip.ok` `.part` `.miss` | — | ok / part / miss | components.css + components.js（showResultStrip） |
@@ -168,9 +184,9 @@ v2 起 `tokens.css` 是全套令牌的唯一物理出处，其头注即简报 §
 | 12 | system-line | `.sysline` | — | default（无交互态） | components.css + components.js（addLine system 臂） |
 | 13 | brand-mark | `.brandmark`（+ `--sm` `--lg`） | — | default 30px / 尺寸修饰 --sm 20px、--lg 64px / 静态标记无动效；**几何 = 信封 + 封缄墨线，封缄点 v2 裁用墨蓝**（`--accent`——朱砂只盖真实事件，品牌印记不是事件，简报 T2；aria-label「展信佳印记」随模板，改名只动模板与 BRAND 常量） | index.html（`<template id="brand-mark-source">` 内联 SVG，几何唯一出处）+ components.css + components.js（`brandMark()`/`installBrandMarks()`） |
 | 14 | state-banner | `.state-banner`（+ `--loading` `--empty` `--error`） | — | loading（取信中…——v2 起尾点**静态化**：零常驻循环铁律，呼吸循环件已退役）/ empty（弱化诚实句 + #22 lamp 墨线小图）/ error（人话句 + `--pencil`（墨蓝）重试链接，回调由调用方注入）/ reduced-motion 随库尾总降级块 | components.css + components.js（`stateBanner()`；`diagEmpty`/`diagError` 一律委托它） |
-| 15 | word-card | `.word-card`（+ `.wc-lemma` `.wc-pos` `.wc-forms` `.wc-zh` `.wc-en` `.wc-example` `.word`）+ sheet 档遮罩件 `.word-scrim` | — | default（--paper-high 泛起纸面 + 发丝边 + 垫纸错位层承 `--stack-shadow-soft`；开启入场 = paper-drop + ink-wash 双动画；`.word:hover` 触点泛淡墨蓝 `--pencil-soft`——hover 半区）\| sheet 档（`@media (hover: none)`——触屏 = 底部覆盖面板 bottom sheet：fixed 底部 + 墨色遮罩 + `@starting-style` 纸面曲线入场，8.2.2③）\| closed（点卡外/遮罩、「收起」或 Esc，DOM 移除语义）\| 无 busy——命中即显，miss 按契约静默。触屏词提示 = 两件（8.2.2④）：`.letter--latest .say .word` 弱底纹（仅最新一封）+ `.word:active` 按压即亮——「全文常显点线」永禁（负钉在库） | components.css + components.js（`wordCard()`/`showWordCard()`/`closeWordCard()`；触发面 = `letterWords()` 的 `.word` 分片 + `wordWindows()` 窗口查询，app.js 委派） |
-| 16 | field | `.field`（+ `.fieldname`） | — | default（下发丝线）/ `:focus-within`（发丝线与名转墨蓝，--dur-1 淡入）/ 控件 `[disabled]`（opacity .4 + 无 pointer）；名牌可配 #22 search 小图 | components.css + components.js（`fieldRow()`，p-3；label 包裹控件，点名牌即聚焦） |
-| 17 | chip | `.chip`（+ `--on` `--badge`） | — | off（default，发丝线描边）/ hover（边转次级墨）/ on（`--on`，主墨反白）/ `:active`（触压 1px）/ `[disabled]`（opacity .4）/ `--badge`（只读徽标，非交互） | components.css + components.js（`chip()`，p-3；考试/语域/教学频率词表 picker + modality 徽标） |
+| 15 | word-card | `.word-card`（+ `.wc-lemma` `.wc-pos` `.wc-forms` `.wc-zh` `.wc-en` `.wc-example` `.word`）+ sheet 档遮罩件 `.word-scrim` | — | default（--paper-high 泛起纸面 + 发丝边 + `--r-raise` 浮卡柔边（v2-2R，垫纸错位层同步）+ 垫纸错位层承 `--stack-shadow-soft`；开启入场 = paper-drop + ink-wash 双动画；`.word:hover` 触点泛淡墨蓝 `--pencil-soft`——hover 半区）\| sheet 档（`@media (hover: none)`——触屏 = 底部覆盖面板 bottom sheet：fixed 底部 + 顶角 `--r-sheet-top` 两角、底缘 0（v2-2R）+ 墨色遮罩 + `@starting-style` 纸面曲线入场，8.2.2③）\| closed（点卡外/遮罩、「收起」或 Esc，DOM 移除语义）\| 无 busy——命中即显，miss 按契约静默。触屏词提示 = 两件（8.2.2④）：`.letter--latest .say .word` 弱底纹（仅最新一封）+ `.word:active` 按压即亮——「全文常显点线」永禁（负钉在库） | components.css + components.js（`wordCard()`/`showWordCard()`/`closeWordCard()`；触发面 = `letterWords()` 的 `.word` 分片 + `wordWindows()` 窗口查询，app.js 委派） |
+| 16 | field | `.field`（+ `.fieldname`） | — | default（下发丝线）/ `:focus-within`（发丝线与名转墨蓝，--dur-1 淡入）/ 控件 `[disabled]`（opacity .4 + 无 pointer）；行内控件圆角 `--r-ctl`（v2-2R——行本身仍是线，不入框体）；名牌可配 #22 search 小图 | components.css + components.js（`fieldRow()`，p-3；label 包裹控件，点名牌即聚焦） |
+| 17 | chip | `.chip`（+ `--on` `--badge`） | — | off（default，发丝线描边 + `--r-pill` 全柔档——v2-2R）/ hover（边转次级墨）/ on（`--on`，主墨反白）/ `:active`（触压 1px）/ `[disabled]`（opacity .4）/ `--badge`（只读徽标，非交互） | components.css + components.js（`chip()`，p-3；考试/语域/教学频率词表 picker + modality 徽标） |
 | 18 | dock | `.navdock`（+ `.navdock-item` `--on`；类名与写信区屏级类 `.dock` 异名共存） | — | default（次级墨、透明点线占位）/ hover（墨色微沉）/ `--on`（当前空间：主墨加重 + 墨蓝实线短下划 + `aria-current`）/ `:active`（触压 1px）/ `[disabled]`（opacity .4）；宽度随 `--shell-w`（≥900px 三项收拢居中）；常驻底部三项 **案头 / 温故 / 抽屉**（v2 换名：rd-2 定稿首词改「案头」；门厅整条让位；z 6 低于点词卡 z 9） | components.css + components.js（`wireNavdock()`/`markNavdock()`，R-1） |
 | 19 | space-header | `.space-header`（+ 节名槽 `.spacehead-sec`；与屏级基形 `.top` 合用） | — | default（发丝线夹持 sticky 顶栏，随 `.top`）；无交互态——静态头部；案头头部用 `.top` 原形（who 块端点驱动空槽，mc-1 起点开信封沓）；温故/抽屉头部 = `.top` 基形 + 本类；品牌名与副题退居门厅封面，空间头不再增长链接 | components.css + components.js（`sectionLabel()`，R-1） |
 | 20 | section-tabs | `.section-tabs` / `.section-tab`（+ `--on`） | — | unselected（default，透明点线占位）/ hover（墨色微沉）/ selected（`--on`，主墨加重 + 墨蓝实线短下划 + `aria-selected`）/ focus（地基 `:focus-visible` 焦点环，不另设）/ `[disabled]`（opacity .4）；roving tabindex + 左右箭头循环移选；温故/抽屉各一排三项，切节即拉 | components.css + components.js（`wireSectionTabs()`/`markSectionTabs()`，R-1） |
@@ -369,7 +385,9 @@ R-1 时代的逐页剖析（信息组织 / 表达方式 / 特色延续三个否�
 #### 8.1.4 v2 沿用不变项（防静默丢失）
 
 视觉内核（简报 §0–§6：铁胆墨 14 色 / 排印骨架 / 基线 32px / 封信分物 /
-邮戳只落真实事件 / T3 死刑清单 / 「纸先落、墨后渗」）；交互模式注册表
+邮戳只落真实事件 / T3 死刑清单（**用户裁决 2026-10-02：其中「大圆角
+卡片」禁令废止——柔和圆角五档 `--r-*` 见 ②-6；其余禁令不动**）/
+「纸先落、墨后渗」）；交互模式注册表
 （读改模式 / 教学时刻模式 / 破坏性模式 / 三态模式 / 浮层模式）；skill
 使用纪律（采纳前验证适配，不适配弃用留痕）；伙伴面（cs-2 全页档案 +
 mc-1 信封沓 + mc-2 编辑台——8.2.2a）与设置面（rd-4 真面——8.2.8）的
@@ -485,8 +503,10 @@ speech_style 是「写作风格散文」非问候素材，机械提取或翻译�
 #stage 桌面档承担，不重复落）；**dock = 案头前沿的垫板层**（顶纸
 `--paper-high` 浮起面 + 上缘发丝线 `--rule` + `--stack-shadow-soft`
 向上承影落在前一封信的纸尾上——soft 的 y 分量即向上）——分层只用
-paper 色阶 + 发丝线 + 两级墨色阴影，零描边框、零圆角面板（简报 §6
-形态法则）；dock 聚焦微起（`:focus-within` translateY(-2px)）保留，
+paper 色阶 + 发丝线 + 两级墨色阴影，零描边框（简报 §6 形态法则；
+**用户裁决 2026-10-02 修订：Apple 式柔和圆角语汇取代「零圆角面板/
+≤2px 收窄」——dock 垫板顶角 = `--r-raise` 柔边、底缘贴 navdock
+平接，见 ②-6；T3 其余禁令不动**）；dock 聚焦微起（`:focus-within` translateY(-2px)）保留，
 作为「垫板被手压起」的触感。输入框纸面 = 顶纸，与信流的主纸形成一档
 色差——打字的地方比信纸「新」。
 
@@ -1141,7 +1161,9 @@ tap 的按压窗口，`--dur-micro` 档，松手即隐，零 JS）。备案（�
 > （铁胆墨 14 色 / 排印系统 / 信件机制层 / 动效手感 / 形态法则）；
 > 本节把简报参数与 webui 实现的对接面写全，参数唯一出处是 ② 的
 > token 表。⑧ 的信息架构与文案、F-1R 的形态法则（零卡片/零气泡/零
-> 青绿；圆角 v2 收窄一档：信纸物件 ≤2px，仅邮票/邮戳圆形）、Python
+> 青绿；圆角条款**已由用户裁决 2026-10-02 修订：Apple 式柔和圆角
+> 五档 `--r-*` 取代「信纸物件 ≤2px 收窄」——见 ②-6；T3「大圆角
+> 卡片」禁令废止，其余禁令不动**）、Python
 > 侧端点与 web.py 允许表——全部不动。设计义务（用户元指令 2026-10-02）：
 > 高级动效应自然设计，总控/执行者主动巡检优化点，不等用户提（①.5）。
 

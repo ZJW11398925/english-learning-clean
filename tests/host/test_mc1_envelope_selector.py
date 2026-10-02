@@ -606,20 +606,24 @@ def test_the_migration_manifest_restates_the_new_truths() -> None:
         "      ? await fetchPartnerOf(characterId)\n"
         "      : await fetchPartner();" in app
     )
-    # the counting pins' new exemptions, in one place: 2px seats in
-    # screens (.envsel/.env，mc-2 起加编辑台的开场信预览短笺——同 ≤2px
-    # 信纸物件档, v2-2 起加翻页全览页卡 .envpage——同档), stamp & postmark
-    # geometry + the three baseline seats (circle, postmark pair) in
-    # components; the soft shadows: note/deckle/en-route/stack 四座 +
-    # 空白封的 none 抵消臂在 components（v2-2 增词卡遮罩无影——计数
-    # 不变），screens 的 box-shadow 自 v2-2 起四座（案头舞台 deep +
-    # 写信区垫板 soft 向上 8.2.2② + 翻页页卡 soft 承托 + 信档缩略封
-    # soft——全部两级令牌之内、零手写字面）
+    # the counting pins' v2-2R truth (the user ruling 2026-10-02: the
+    # Apple-like soft radius replaces the ≤2px scale; 2px seats retired):
+    # token consumers in screens (.envsel 沓面板 / .env 沓封卡 /
+    # .envpage 页卡 = raise；.ob-sheet/.env-mini 及封舌/预览短笺/dock
+    # 顶角/编辑台容器/名牌输入 = paper·ctl 档) + the stamp & postmark
+    # geometry + the paper/ctl seats in components; the soft shadows:
+    # note/deckle/en-route/stack 四座 + 空白封的 none 抵消臂在
+    # components（v2-2 增词卡遮罩无影——计数不变），screens 的
+    # box-shadow 自 v2-2 起四座（案头舞台 deep + 写信区垫板 soft 向上
+    # 8.2.2② + 翻页页卡 soft 承托 + 信档缩略封 soft——全部两级令牌
+    # 之内、零手写字面）
     screens = _text("screens.css")
     components = _text("components.css")
-    assert screens.count("border-radius") == 4
-    # .envsel + .env + 预览短笺 + .envpage (2px)
-    assert components.count("border-radius") == 7   # 基线3 + 邮戳双圈2 + 邮票图形2
+    assert screens.count("border-radius") == 10
+    # raise 4 (envsel/env/envpage/dock 顶角) + paper 4 (ob-sheet/
+    # env-mini/封舌/预览短笺) + raise 容器 (char-editor) + ctl 1
+    # (editor-face--name input)
+    assert components.count("border-radius") == 23  # 豁免几何 7 + 五档消费 16
     assert components.count("box-shadow: var(--stack-shadow-soft);") == 4
     assert screens.count("box-shadow") == 4         # 舞台 deep + 垫板/页卡/缩略封 soft
     # the mc-1 face styles live outside the component registry (the
