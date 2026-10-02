@@ -10,3 +10,12 @@ dist/
 .venv/
 *.egg-info/
 .zcodeignore
+
+# ── AOCI 本地运行时产物（官方 .gitignore 惯例，只属于当前机器）──
+.aoci/*.bak
+.aoci/ledger.jsonl
+.aoci/reports.jsonl
+.aoci/verify_history/
+.aoci/config.local.json
+.aoci/drafts/
+.aoci/lock
