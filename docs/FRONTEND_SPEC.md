@@ -419,8 +419,9 @@ mc-1 信封沓 + mc-2 编辑台——8.2.2a）与设置面（rd-4 真面——8.
   ③「写错了，正是回信要讲给你听的地方」）；进门钮「拆开这封信 →」；
   落款「elc · web」；题 = 展信佳、副题 = 见字如晤，今日如何、英文并写
   DEAR YOU（`BRAND` 大写消费）。
-- 动效（⑨-5）：paper-settle（现役实现 = paper-drop @ `--dur-settle`）
-  信笺落座 + seal-press（现役实现 = ink-wash @ `--dur-ink`）印记浮现，
+- 动效（⑨-5）：paper-settle（现役实现 = paper-drop + ink-wash ×1.3
+  双动画 @ `--dur-settle`）信笺落座 + seal-press（现役实现 = ink-wash
+  @ `--dur-ink`）印记浮现，
   均首绘一次，reduced-motion 随库尾总降级块归零。
 - 状态：静态页无四态；localStorage 拒绝时直进案头（现役行为不动）。
 - 组件：#13 brand-mark（--lg）、#1 btn--ink、#22 stamp。
@@ -442,7 +443,7 @@ mc-1 信封沓 + mc-2 编辑台——8.2.2a）与设置面（rd-4 真面——8.
   …信件（撕边回信 / 普通信；在途件带虚发丝角标）…
   …批注卡（见 8.2.10）…
   （失败，纸边小字：）
-  这封信没有回音——笔友没能收到（missing-secret）。
+  这封信没有回音——笔友没能联系上模型端点（missing-secret）。
   ─────────────────────────────
   [ 今日如何？                  ] 寄出 →
   （批注开着时一行指路：批注开着——回应写在上面那张；也可以直接写一封新信。）
@@ -456,7 +457,7 @@ mc-1 信封沓 + mc-2 编辑台——8.2.2a）与设置面（rd-4 真面——8.
 - 文案定稿：空厅句「信还没开始写——想从哪句起，就从哪句起。中文英文
   都行；写错了，笔友接得住。」（客户端静态系统行，非伪造历史）；
   placeholder「今日如何？」；等待占位「信已寄出，等回信——笔友把灯
-  留着。」；失败行「这封信没有回音——笔友没能收到（{failure_reason}）。」；
+  留着。」；失败行「这封信没有回音——笔友没能联系上模型端点（{failure_reason}）。」；
   指路行「批注开着——回应写在上面那张；也可以直接写一封新信。」
 - 状态：空厅 = 上述静态句；加载即历史（现役）；失败 = 纸边小字；批注
   轮询现役不动。
@@ -534,6 +535,12 @@ clamp 现役机制）——理由：桌面指针就在被点词上，卡贴词�
   boundaries / opening / scenario 等；读不回的面诚实注记）；veiled 四面
   「留空保留 / 写下盖上」（空值不伪装已填）；真 CRUD（内置卡可编辑、
   删除有确认；born/邮票不变）；开场信预览；400 人话中文化。
+- **【角色卡弹窗整体优化——目标设计（用户定向 2026-10-02 第 1 条，实施
+  在 v2-2）】** 用户判「现在的弹窗效果不算好，需要思考整个优化显示设计
+  和动态效果」——信封沓选择器（mc-1）的显示与动效在 v2-2 **整体重审**：
+  沓形扇叠的静态构图、预览切换的节奏、进出台的时序编排全部按简报 §5
+  「纸先落、墨后渗」重排；下两条（翻页全览 / 起笔向下展开）是本条的
+  两个具体子项，实施时同场统筹、同一动效语汇，不各做各的。
 - **【角色卡翻页全览——目标设计（用户定向 2026-10-02，实施在 v2-2）】**
   现状 = 沓是扇形叠、单封全貌要进档案页；目标 = 沓内**全览可翻页**：
   每页一张角色卡全貌（九面摘要 + 开场信预览），**横滑翻页**（ux-1 横滑
@@ -547,7 +554,7 @@ clamp 现役机制）——理由：桌面指针就在被点词上，卡贴词�
   曲线（`--ease-paper`）+ 大件 ≤320ms 档（`--dur-settle`），沓面板退出
   与信流首屏进入同帧编排（transform 与 opacity 拆开，opacity 恒慢）；
   reduced-motion 直落终态。注册为 ⑨-5 目标行。
-- 映射：现役真面已实施（web.py 端点 + webui 九文件内）；两目标块实施
+- 映射：现役真面已实施（web.py 端点 + webui 七文件内）；两目标块实施
   在 v2-2，动效注册行见 ⑨-5。
 
 #### 8.2.3 温故 · 今日（rd-3 修订版——默认层两块）
@@ -692,10 +699,11 @@ clamp 现役机制）——理由：桌面指针就在被点词上，卡贴词�
   轮里没有这一句。」；跨信重现**不做**（客户端没有那张表面——裁决
   预告 9.12-23 之数据缝）。痕迹搜索的检索串并入中文读法（族名 +
   判词——「接话」「答得漂亮」也搜得到；rd-3 INFO-4 收口）；判分落
-  成功族（SUCCESS / ALTERNATIVE_SUCCESS）的明细行落 #22 stamp 水印
-  小图（--ink-ghost，日期沿 .kv 的 mono）——PARTIAL / FAILURE /
-  ABSTAIN 不盖（被验证才入册）。**注记（v2-2 对齐项）**：现役
-  app.js 的来信侧标签仍是 rd-2 旧自称词，v2-2 随本节文案改「笔友」。
+  **v2-1 起判分行不盖章**（邮戳只落寄出 / 结课 / 归档开启三类真实
+  事件——见 ⑨-2 与简报 T2）：旧 rd-4 判分戳（成功族 stamp 水印小图）
+  已随 v2 撤除，SUCCESS / ALTERNATIVE_SUCCESS / PARTIAL / FAILURE /
+  ABSTAIN 全族缺位有钉（test_rd4_full_face）。**注记（v2-2 对齐项）**：
+  现役 app.js 的来信侧标签仍是 rd-2 旧自称词，v2-2 随本节文案改「笔友」。
 - 诊断归档读法（9.11-22）：诊断五问与「为什么 · 原值」整体移出用户面
   ——/api/diagnostics 端点与其数据面钉保留在 API 层（web.py 冻结），
   前端调用与渲染整体移除；**用户面零渲染**、内部决策理由 = 噪音与
@@ -1203,24 +1211,24 @@ transform ≈1.3×**（消费面用 `calc(var(--dur-*) * 1.3)` 表达法则）�
 
 | 动效 | 触发 | 时长 × 缓动 | 实现 | reduced-motion 降级 |
 |---|---|---|---|---|
-| paper-settle 信笺落座 | 门厅封面首绘（页面加载播一次） | `--dur-settle` × `--ease-paper` | `.paper-settle` = paper-drop（旧 keyframes 已退役，类名沿用） | 总降级块归零 |
+| paper-settle 信笺落座 | 门厅封面首绘（页面加载播一次） | `--dur-settle` × `--ease-paper` | `.paper-settle` = paper-drop + ink-wash ×1.3 双动画（旧单 keyframes 已退役，类名沿用，320 封顶） | 总降级块归零 |
 | seal-press 印记按落 | 门厅印记入场（首绘一次） | `--dur-ink` × `--ease-paper` | `.seal-press` = ink-wash（同上） | 同上 |
 | 信到达（ink-wash 组合） | 新信寄出与到达（`addLine` 的 `opts.enter`；历史回填不播）；词卡开启同法 | `--dur-panel-in` transform × `--ease-paper` + `--dur-ink` opacity | `.flow-enter` = paper-drop + ink-wash 双动画 | 总降级块归零 |
 | 墨水物理（ink-set） | 新到信正文字色 `--ink-ghost→--ink` 一次性（T1-3） | `--dur-wet` × `--ease-paper` | `.ink-wet .say` + `@keyframes ink-set` | 直落终态 |
 | note-arrive 批注递出 | 新批注组到达（轮询重渲染同 key 静帧，不重演） | `--dur-note`（260ms）× `--ease-enter` transform + ×1.3 ink-wash | `.note-paper--enter` = paper-drop + ink-wash 双动画（rd-1 的单 keyframe 形由 v2 双动画取代，档值 260ms 为 v2 重定——原 240ms 旧档废） | 同上 |
-| paper-unfold 纸面展开 | #21 每次展开 | `--dur-note` × `--ease-paper` | `@keyframes paper-unfold`（折叠展开 8px 下落） | 同上 |
+| paper-unfold 纸面展开 | #21 每次展开 | `--dur-note` × `--ease-enter` + ×1.3 ink-wash | `.disclosure-body:not([hidden])` = paper-unfold + ink-wash 双动画（折叠展开 8px 下落，both） | 同上 |
 | chevron 旋转 | #21 `--open` 切换 | `--dur-note` × `--ease-paper` | `.disclosure--open .disclosure-marker .inkicon` transform | 同上 |
-| 触压下沉 | `:active`（#1 / #17 / #18 / #20） | `--dur-micro` × `--ease-press` | `transform: translateY(1px)` | 同上 |
-| 纸面微起 | #2 pen focus | `--dur-note` × `--ease-enter` | `background-color` → `--paper-high` | 同上 |
+| 触压下沉 | `:active`（#1 / #17 / #18） | `--dur-micro` × `--ease-press` | `transform: translateY(1px)`（#20 `.section-tab` 无位移——其按压走 state-layer 透明度档） | 同上 |
+| 纸面微起 | #2 pen focus | `--dur-note` × `--ease-paper` | `background-color` → `--paper-high` | 同上 |
 | hover 加深 | #1 / #15 .word / #17 / #18 / #20 / #21 组头 | `--dur-micro` × `--ease-press` | color / text-decoration-color / border-color | 同上 |
 | 焦点环 | `:focus-visible`（button / input / textarea / select） | 无动效 | 现役环（textarea/select 已补齐） | 不适用 |
 | state-layer 触感层 | 可交互件 hover / `:focus-visible` / `:active`（.btn 全族 / #17 / #18 / #20 / #21 组头 / `.teach-me`；输入件豁免——键盘焦点有即时环 + #16 发丝线变色，雾会糊字） | `--dur-micro` × `--ease-press` | `::after` 墨雾叠色（`--state-hover` .08 / `--state-focus` .12 / `--state-press` .12），零布局位移；hover 半区 `@media (hover: hover)` 包裹（触屏只有按压半区） | 总降级块（0.01ms）即达稳态 |
 | 信纸落桌（视图切换档） | 案头空间显形（`#space-parlor` 解隐，每次切换落一次） | `--dur-settle` × `--ease-enter` | `#space-parlor:not([hidden]) .flow` = ink-wash（内容层——容器动画会让 fixed 写信区在动画期改挂本节） | 总降级块归零 |
 | 案头重落（mc-1 切换档） | 角色切换后的信流重铺（app.js 落类、刷新前先摘——一屏一次纸事件） | `--dur-note` + ×1.3 × `--ease-enter` | `.flow.flow-resettle` = paper-drop + ink-wash | 同上 |
 | 邮戳盖下 stamp-press | 信笺寄出一瞬（composer 提交，JS 落类一次，animationend 自摘）；教学卡结课同枚 | `--dur-stamp` × `--ease-press` | `.stamp-press` + `@keyframes stamp-press`（scale .96→1 的 transform 收束——全应用唯一 overshoot 许可，非投影） | 0.01ms 即终，animationend 仍到（JS 清理不失效） |
-| 编辑台放大过渡（mc-2） | 信封沓「编辑/完整编辑」开台与收台（zoom origin 系于被点信封，缺省回版心） | screens.css 两 keyframes（editor-zoom-in/out），时值走 `--dur-settle` 档 | `.char-editor` 开台/收台类（app.js 禁 .style） | 总降级块直切 |
+| 编辑台放大过渡（mc-2） | 信封沓「编辑/完整编辑」开台与收台（zoom origin 系于被点信封，缺省回版心） | 开台 = editor-zoom-in @ `--dur-note` + ink-wash @ `--dur-ink`（`--ease-enter` both）；收台 = editor-zoom-out @ `--dur-panel-out`（`--ease-exit` both） | `.char-editor--in` / `--out`（app.js 禁 .style） | 总降级块直切 |
 | 抽屉开合 drawer | tabpanel 显隐（温故/抽屉的节切换） | 进 `--dur-panel-in` × `--ease-enter`（出 200 已立待接——容器级退出需 allow-discrete 的 display 参与，待 JS 编排或引擎修正，Revisit；现役退出 = `[hidden]` 直切） | `[role="tabpanel"]:not([hidden])` transition + `@starting-style`（只走透明度，位移交给逐行落墨；旧引擎直接显隐） | 总降级块（0.01ms）直切 |
-| 逐行落墨 reveal stagger | tabpanel 首次入视（IntersectionObserver 落 `.is-revealed`，回调只加类） | ink-wash 纯淡入 `--dur-1` × `--ease-enter`，步长 40ms、只对前 8 项生效（`--i` 由 JS 落，**总封顶 320ms**；`animation-fill-mode: backwards` 防先亮一下）——v2 行级改纯淡入（简报 §5「每行 140ms fade」） | `[data-reveal].is-revealed` 子项 + `--i`（components.js `wireReveal`） | 双面：CSS 总降级块 + JS 半区 `matchMedia` 即落定 |
+| 逐行落墨 reveal stagger | tabpanel 首次入视（IntersectionObserver 落 `.is-revealed`，回调只加类） | ink-wash 纯淡入 `--dur-1` × `--ease-enter`，步长 40ms、只对前 8 项生效（`--i` 由 JS 落，**总封顶 320ms**；`animation-fill-mode: both` 防先亮一下）——v2 行级改纯淡入（简报 §5「每行 140ms fade」） | `[data-reveal].is-revealed` 子项 + `--i`（components.js `wireReveal`） | 双面：CSS 总降级块 + JS 半区 `matchMedia` 即落定 |
 | 回执首渲 @starting-style | 动态插入的回执件（.typing / .sysline / .errline / .busystrip / .resultstrip）首渲 | `--dur-micro` × `--ease-exit` | `@starting-style`（Baseline 2024-08；缺失 = 直接出现，天然渐进增强）。信笺/批注不走此路（JS 门控的双动画保历史回填静帧）；#15 词卡已有组合入场不叠加 | 总降级块归零 |
 | **起笔向下展开（目标——实施在 v2-2，用户定向 2026-10-02）** | 「起笔」确认后选择器页面向下展开成对话主界面（8.2.2a 目标块） | `--dur-settle`（≤320ms 档）× `--ease-paper`；沓收拢与信流首屏同帧编排，transform/opacity 拆开且 opacity 恒慢 | 目标行——现役无此动效；实施时按 ⑤/⑨ 纪律落库并回填本行为现役描述 | 直落终态 |
 | **page-turn 翻页（目标——实施在 v2-2，用户点名）** | 信封沓翻页全览（8.2.2a）与面板横滑切换（ux-1 横滑） | `--dur-settle` × `--ease-paper` | **2D 翻页感优先**：位移 + rotateY 小角度（≤8°）+ 梯形 transform 与边缘卷曲阴影（墨色同源渐变模拟）+ `--stack-shadow-*` 承托；**禁 3D 书本仿真**（preserve-3d 全景 flipbook）——简报 T3 原列「翻页 flipbook」禁令按 T2 邮票豁免先例收窄（**用户点名豁免 2026-10-02**：禁令收窄为「3D 书本仿真」，2D 翻页感不在禁列） | 总降级块直切 |
