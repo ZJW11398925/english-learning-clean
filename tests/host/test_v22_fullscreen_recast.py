@@ -23,8 +23,9 @@ spec 内对应块回填为现役描述。十组钉：
    preserve-3d), the swipe guard in the ux-1 discipline, chevron
    clicks on the same animation, the honest five-face summary;
 6. **the unfold-to-parlor** — the fold class (paper-fold 200ms +
-   ink-wash reverse) and the start-writing success path that lands in
-   the conversation view in the same frame;
+   ink-wash reverse) and the two talk paths that land in the
+   conversation view in the same frame (v3-2R：「起笔」让位路径随
+   建卡表单退役，写信工作区由 v3-2r 套件钉住);
 7. **the letters archive** — envelope thumbnails, the archive
    datestamp (exactly one, a real event), the shared letterNode (no
    second letter implementation), the caliber sentence;
@@ -253,14 +254,16 @@ def test_the_browser_layer_lives_inside_the_selector() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 6. the unfold-to-parlor (8.2.2a 起笔向下展开 + ⑨-5 注册行)
+# 6. the fold & the talk-path unfolds (v3-2R：起笔让位路径退役)
 
 
-def test_the_selector_folds_and_the_start_writes_unfold() -> None:
-    """起笔向下展开：fold 类 = paper-fold 200 × --ease-exit +
-    ink-wash reverse 恒慢（transform/opacity 拆开）；三条切换路径
-    （onTalk / 二次点选 / 起笔成功）都经 unfoldToParlor；reduced-motion
-    直切（REDUCED_MOTION 归宿 + 480ms 保险丝）。"""
+def test_the_selector_folds_and_the_talk_paths_unfold() -> None:
+    """收拢与让位（v3-2R 随迁）：fold 类 = paper-fold 200 × --ease-exit +
+    ink-wash reverse 恒慢（transform/opacity 拆开）；「对话」两条让位
+    路径（onTalk / 二次点选同一封）都经 unfoldToParlor；「起笔」不再
+    走让位——它延展成写信工作区（v3-2r 套件钉），上一刀的「起笔成
+    功后切换 + 让位」路径随建卡表单整件退役；reduced-motion 直切
+    （REDUCED_MOTION 归宿 + 480ms 保险丝）。"""
 
     app = _text("app.js")
     screens = _text("screens.css")
@@ -270,19 +273,28 @@ def test_the_selector_folds_and_the_start_writes_unfold() -> None:
     assert 'event.animationName === "paper-fold"' in app
     assert "setTimeout(finish, 480);" in app
     assert "if (REDUCED_MOTION.matches || (opts && opts.skipFold))" in app
-    # the start-writing success path lands in the conversation view
-    assert ("const created = await switchToCharacter("
-            "data.character.character_id);" in app)
-    assert "if (created) unfoldToParlor();" in app
+    # the two talk paths land in the parlor unfold (kept verbatim)
+    assert (
+        "switchToCharacter(item.character_id).then((done) => {\n"
+        "          if (done) unfoldToParlor();\n"
+        "        });" in app
+    )
+    assert (
+        "switchToCharacter(characterId).then((done) => {\n"
+        "      if (done) unfoldToParlor();\n"
+        "    });" in app
+    )
+    # the retired 起笔-creates-and-unfolds path is gone for good
+    assert "const created = await switchToCharacter(" not in app
     fold = screens[screens.index(".envsel--fold {"):]
     fold = fold[:fold.index("}") + 1]
     assert "paper-fold var(--dur-panel-out) var(--ease-exit)" in fold
     assert "ink-wash calc(var(--dur-panel-out) * 1.3)" in fold
     assert "both reverse;" in fold
     # Esc steps back through the container's faces before folding the
-    # pad (v3-2: the face ladder lives in envselEsc — editor/window
-    # each step back to the deck)
-    assert 'if (envselFace === "editor" || envselFace === "window") {' in app
+    # pad (v3-2R: the face ladder covers the compose face too — one
+    # `!== "deck"` form, no new branch per face)
+    assert 'if (envselFace !== "deck") {' in app
 
 
 # ---------------------------------------------------------------------------

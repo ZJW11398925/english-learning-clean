@@ -424,9 +424,15 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
 .env-newhint { white-space: normal; overflow: visible; }
 .env-newfull { margin-left: 16px; }   /* 空白封第二入口（mc-2 完整编辑） */
 .env-actions { display: flex; gap: 16px; margin: 4px 0 0; }
-/* v2-2：沓面板底行两钮——翻看（左，翻页全览入口）+ 收起（右）。 */
+/* v2-2：沓面板底行两钮——翻看（左，翻页全览入口）+ 收起（右）。
+   v3-2R：翻看链降级为触屏辅入口（主入口 = 点沓本体与滚到底）——桌面
+   档不显示（hover:none 档在文件尾块现位）；「收起」恒右。 */
 .envsel-foot { margin: var(--sp-2) 0 0; display: flex;
                justify-content: space-between; align-items: baseline; }
+.env-browse { display: none; }
+/* 「收起」恒右（翻看链在桌面档 display:none 时它独自居右；
+   屏级面自定义类，按钮样式本体仍只在 components.css——fg1 纪律） */
+.envsel-fold { margin-left: auto; }
 
 /* ── mc-1 全览窗口（v3-2 容器升级重铸，8.2.2a）：**整个沓面板升级成
    的全览窗口**——窗口态是容器自身的形态（.envsel 内的 hidden 翻转 +
@@ -555,6 +561,45 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
 .editor-err { margin: var(--sp-2) 0 0; font-family: var(--f-sans);
               font-size: var(--fs-ui); color: var(--pencil); }
 
+/* ── v3-2R 起笔写信工作区（容器第四形态：起笔 = 容器向下延展**成为写
+   信工作界面**；工厂与接线在 app.js 的 v3-2R 模块）──────────────────
+   用户原话「直接起草编辑时，面板应当自动向下延伸拉开，是整个容器的
+   变化，而不是多一个滚动条」的起笔半：选定角色点「起笔」→ 容器从当
+   前高度一次拉开成工作区（extendContainer 同族高度过渡）。结构：回
+   沓行 + 收件人（致 + 角色名 + 一句身份——复用信封面的 env-to/
+   env-name/env-line 三class，**只读**，建卡表单形态禁入）+ 多行稿纸
+   （.pen 家族，min-height 3×baseline）+ 动作行（寄出 → / 先搁着）+
+   回执（.sysline 读法，modifier 在 components.css 的 sysline 段）。
+   设计语言：零新色值（全 var()）、零新圆角零新阴影零新 keyframes、
+   唯一滚动井是容器自己的面（overflow-y auto——小屏/软键盘的保险，
+   常态一屏装完）。 */
+/* 起笔 = 占据主屏的写信工作区（任务书原义；延展必须长开——矮于沓
+   即「收」非「展」）：面 min-height 与容器上限同式（100dvh − sp-8
+   − sp-6）再让一档铬件账（sp-8 + sp-1 = 68 ≥ 面板上下垫 24 + 面顶
+   距 8 + 底行 ≈28 并留 8px 呼吸——容器永触不到 max-height，无溢出）；
+   min-height 落在**面**上（非容器）——容器的 --panel-h 高度过渡照
+   旧量得真实落差（min 落容器会把过渡夹成直跳，钉在案）。触屏档
+   sheet 同式在文件尾块。 */
+.envsel-compose { flex: 1;
+                  min-height: calc(100dvh - var(--sp-8) - var(--sp-6)
+                                     - var(--sp-8) - var(--sp-1));
+                  overflow-y: auto; overscroll-behavior: contain;
+                  margin-top: var(--sp-2);
+                  max-width: var(--measure); }
+.compose-back { margin: 0 0 var(--sp-3); }
+/* 收件人行：信封面同一排印（致 + 名）；无邮票故摘掉避位右垫 */
+.compose-to { padding-right: 0; margin-top: var(--sp-2); }
+/* 身份句整句可读（工作区里不用信封沓的单行省略读法） */
+.compose-line { white-space: normal; overflow: visible;
+                text-overflow: clip; }
+/* 写信稿纸：一整面五行（5×--baseline = .pen 家族上限——起笔即满页），
+   上限沿用 .pen 家族的 160 */
+.compose-pen { min-height: calc(var(--baseline) * 5);
+               margin-top: var(--sp-3); }
+.compose-actions { display: flex; justify-content: space-between;
+                   align-items: baseline; margin: var(--sp-3) 0 0; }
+.compose-shelve { margin-top: 0; }
+
 /* ── v2 动效基建应用层（简报 §5：纸先落、墨后渗的页面接线）──────────
    ① 信纸落桌（视图切换档）：客厅显形 = 一张信纸摊上案头。容器只走
    透明度（ink-wash 档——settle 的 transform 会让 position:fixed 的
@@ -636,6 +681,8 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
      编辑面时放宽到版心（九面表单不挤窄沓）。 */
   .envsel { max-width: 420px; }
   .envsel--editor { max-width: var(--measure); }
+  /* v3-2R：写信工作区同放宽——一封信不挤窄沓（与编辑面同一读法） */
+  .envsel--compose { max-width: var(--measure); }
   .envsel-stack { --env-fan: 1; --env-step: 56px; --env-body: 116px;
                   max-height: none; }
   .family-groups { display: grid;
@@ -704,4 +751,30 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
             border-left: 0; border-right: 0; border-bottom: 0;
             max-height: calc(100dvh - var(--sp-8));
             padding-bottom: calc(var(--sp-2) + var(--safe-bottom)); }
+  /* 写信工作区触屏同式（起笔 = 占据主屏的 sheet 读法）：面 min-height
+     与 sheet 上限（100dvh − sp-8）同式再让同一档铬件账——sheet 自身
+     长高（⑩ 10.5 同档），面 min 落面不落容器（过渡零夹跳，同上注）。 */
+  .envsel-compose { min-height: calc(100dvh - var(--sp-8)
+                                     - var(--sp-8) - var(--sp-1)); }
+  /* v3-2R 硬伤 A 的触屏半区：底坞静置由 JS 落 disabled（置灰 +
+     不可点），遮罩仍盖住其余屏面——点遮罩 = 点容器外。 */
+  /* v3-2R 硬伤 B（390px 沓叠态可读性）：触屏档沓改**单卡纵排**——
+     微扇叠放让位（--env-fan 0），每封在文档流里独占一行、完整保
+     住头部（致 + 名）；邮票不再压住简介（卡右垫 --sp-8 = 64px ≥
+     邮票 44 + 右缘 10 的占用），简介整句可读（换行不省略）；零叠
+     压（相邻卡永不互遮），消灭「看不清点的是谁」。纵排后沓自身
+     仍滚（60dvh 上限），滚底升级与本体检点照常。 */
+  .envsel-stack { --env-fan: 0; height: auto; max-height: 60dvh;
+                  display: flex; flex-direction: column;
+                  gap: var(--sp-2); }
+  /* flex: none——纵排卡保自然高（默认 shrink 会把超出 60dvh 的卡压
+     扁、文溢出卡外；活体截图实证）——超高由沓自身滚（滚底升级）。 */
+  .env { position: relative; left: 0; right: 0; top: auto; flex: none;
+         min-height: 0; padding-right: var(--sp-8); }
+  .env--new { top: auto; }
+  .env-to { padding-right: 0; }
+  .env-line { white-space: normal; overflow: visible;
+              text-overflow: clip; }
+  /* 翻看链的触屏辅入口现位（桌面档 display:none 在 .envsel-foot 节） */
+  .env-browse { display: inline; }
 }

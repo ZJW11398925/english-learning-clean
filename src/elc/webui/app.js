@@ -2621,10 +2621,10 @@ window.addEventListener("DOMContentLoaded", () => {
 // 承担 DOM 与排布半区；屏级形态在 screens.css 的 .envsel 节）：微扇形
 // 错位叠放，rotate/translateX 从 stamp_key 确定性派生（同一角色恒同
 // 姿态——零随机）；当前通信的一封盖「当前」邮戳角标（--seal，真实
-// 状态事件）；沓尾是新建空白信封（「起笔」最简一形——名字 + 一句
-// 简介；「完整编辑」进容器内的编辑面）。预览 = 点沓中一封 → 滑到
-// 沓首微抬（260ms 减速长尾 + 让位 stagger）；再点它或点「对话」→
-// 切换。
+// 状态事件）；沓尾是新建空白信封（「完整编辑」进容器内的编辑面——
+// v3-2R 定谳：建卡表单不占「起笔」语义）。预览 = 点沓中一封 → 滑到
+// 沓首微抬（260ms 减速长尾 + 让位 stagger）；「起笔」= 容器延展成
+// 写信工作区；再点它或点「对话」→ 切换。
 // v3-2 容器与层级重铸（⑩ 层级宪法；用户两项核心误读纠正）：沓面板是
 // 一个**下拉容器**，起笔/编辑/翻看都是**容器本体的形态变化**，不是
 // 新页面也不是容器内多一个滚动条——
@@ -2636,10 +2636,21 @@ window.addEventListener("DOMContentLoaded", () => {
 //   · 编辑（editor）＝**编辑台在展开的容器内**（零新增页面级滚动条
 //     ——v2-2 的独立全页编辑台与其放大过渡退役，mc-2 九面
 //     表单原样搬进容器的编辑面）；
-//   · 起笔确认后容器收拢让位案头（unfoldToParlor——写信属于信流，
-//     容器收拢与信纸摊开同帧就是「向下延伸拉开」的桌面读法）。
+//   · 起笔（compose，v3-2R 重铸）＝**容器向下延展成为写信工作界面**——
+//     选定角色点「起笔」，容器从当前高度一次拉开成写信工作区（收件人 +
+//     多行稿纸 + 寄出 + 回执），寄出后收拢让位案头信流。
+// v3-2R 定谳（用户判词整刀否定上一刀的降级实现，2026-10-02）：
+//   · 翻看零跳变——窗口升级 = 内容先装满（隐藏层里异步灌完）→ 再量高 →
+//     一次拉开；上一刀量高发生在页卡内容填入前，用户看到「长到一半→
+//     跳到全高」。主入口 = 点沓本体（信封/动作/底行以外的容器纸面）与
+//     滚到底；「翻开全沓 ↓」文字链只作触屏辅入口（hover:none 档才现位）。
+//   · 起笔 = 写信，不是建卡——新建角色的表单归「完整编辑」（编辑台既
+//     有），不得占用「起笔」语义；空白封只剩「完整编辑」一个入口。
+//   · 三条硬伤收编：沓开时底坞淡化置灰且不可点（disabled 形态复用，
+//     视觉可点性 = 实际可点性）；触屏档沓改单卡纵排（消灭邮票压简介
+//     与叠压遮头）；起笔延展落定后笔尖聚焦（视口跟随）。
 // 层级互斥（⑩）：开容器先收浮层；进任何空间收一切浮层与容器；
-// Esc 逐层退栈：编辑面 → 扇叠 →（全览窗口 → 扇叠）→ 收沓；浮层
+// Esc 逐层退栈：编辑面/全览窗口/写信工作区 → 扇叠 → 收沓；浮层
 // 在场时 Esc 归浮层（wordCardOpen 裁决）。零常驻循环；
 // reduced-motion 双面降级（库尾总降级块 0.01ms 即终，fold/grow 的
 // finish 有 480ms 保险丝 + REDUCED_MOTION 直切）。
@@ -2648,7 +2659,9 @@ let envselPreviewId = null;
 let charactersCache = null;
 let envselBornId = null;   // 刚建好的那封——重排时给它一次落沓纸事件
 let envselFace = "deck";   // 容器态：deck 扇叠 / window 全览 / editor 编辑
+                           // / compose 写信工作区（v3-2R 第四形态）
 let envselPageAt = 0;      // 当前页（全览窗口页序）
+let envselFacePending = null;   // 窗口升级的内容先装满——过渡中的二次点名忽略
 
 // 邮票变体的确定性派生（mc-0 stamp_key 的前端消费半区）：key 是角色
 // id 的 SHA-256 前 16 位十六进制（elc.persona.card_store.stamp_key_for，
@@ -2705,17 +2718,30 @@ function envselCloser(event) {
 }
 
 // Esc 逐层退栈（⑩ 层级宪法的统一关闭语义）：浮层在场 → 归浮层（它
-// 自己的监听收它，这里让路）；编辑面 → 退一层回扇叠；全览窗口 →
-// 退一层回扇叠；扇叠 → 收沓。编辑面不再有独立监听（v2-2 的面板级
-// editorEsc + stopPropagation 随容器化退役——一个阶梯管到底）。
+// 自己的监听收它，这里让路）；编辑面/全览窗口/写信工作区 → 退一层回
+// 扇叠；扇叠 → 收沓。编辑面不再有独立监听（v2-2 的面板级 editorEsc +
+// stopPropagation 随容器化退役——一个阶梯管到底）。
 function envselEsc(event) {
   if (event.key !== "Escape") return;
   if (wordCardOpen()) return;   // 浮层先退（它的监听收它自己）
-  if (envselFace === "editor" || envselFace === "window") {
+  if (envselFace !== "deck") {
     setEnvelopeFace("deck");
     return;
   }
   closeEnvelopeSelector();
+}
+
+// 沓开时底坞静置（v3-2R 硬伤 A 定谳）：淡化置灰且**明确不可点**——复用
+// 既有 disabled 形态（components.css 的 .navdock-item[disabled]：
+// opacity .4 + pointer-events 无），视觉可点性 = 实际可点性；收沓即解。
+// 二选一取「置灰」不取「第一击直切空间并收沓」：沓是带遮罩的模态层
+// （点外关闭，⑩ 10.3-4），一个手势只该产一个效果——「收沓」与「切空
+// 间」压在同一击上是双击歧义；置灰后第一击的语义唯一（点容器外 = 收
+// 沓），底坞的灰态也把「先了结眼前这沓」写在脸上。
+function setNavdockStilled(still) {
+  for (const item of document.querySelectorAll(".navdock-item")) {
+    item.disabled = still;
+  }
 }
 
 // 收沓（v2-2 重排沿用）：默认走 fold 退场（纸先落墨后渗的出场半——收拢
@@ -2731,6 +2757,8 @@ function closeEnvelopeSelector(opts) {
   envselPreviewId = null;
   envselFace = "deck";
   envselPageAt = 0;
+  envselFacePending = null;
+  setNavdockStilled(false);   // 底坞解除静置（与开沓的置灰对称）
   const scrim = document.querySelector(".envsel-scrim");
   if (scrim) scrim.remove();
   if (!panel) return;
@@ -2748,17 +2776,16 @@ function closeEnvelopeSelector(opts) {
   setTimeout(finish, 480);   // 保险丝（animationend 正常先到）
 }
 
-// 起笔向下展开（8.2.2a；⑨-5 注册行）：沓收拢与信流首屏同帧编排——
+// 对话让位案头（8.2.2a；⑨-5 注册行）：沓收拢与信流首屏同帧编排——
 // 沓侧 fold 类（收拢退场），信流侧的「信纸摊上案头」半由
 // refreshCorrespondence 的 resettle 承担（切角色路径必经，同帧在播）；
 // isCurrent 直回路径信流本就完好，无需重铺。transform 与 opacity 拆
 // 开（fold 的 ink-wash reverse 恒慢）。reduced-motion 直落终态
 // （REDUCED_MOTION 直切 + 库尾总降级块双面）。
-// v3-2 定形（用户原话「直接起草编辑时，面板应当自动向下延伸拉开」的
-// 起笔半）：「起笔」确认后容器**收拢让位案头**——写信属于信流（写信
-// 区 + 批注都在案头），容器收拢与信纸摊开同帧就是「向下延伸拉开」的
-// 桌面读法；把对话塞进弹出容器反而把通信锁在小窗里（写一封然后呢）。
-// 编辑半不走让位——九面表单留在展开的容器内（openCharacterEditor）。
+// v3-2R 定形：本函数服务「对话」两条路（沓中「对话」/ 二次点选同一
+// 封——去看信、去读案头）；「起笔」不走这里——起笔 = 容器延展成写
+// 信工作区（startComposing），寄出后的收拢让位由 compose 面自己的
+// 回执节拍承担（closeEnvelopeSelector 同一 fold）。
 function unfoldToParlor(after) {
   closeEnvelopeSelector();
   if (typeof after === "function") after();
@@ -2767,6 +2794,7 @@ function unfoldToParlor(after) {
 async function openEnvelopeSelector() {
   if (envselPanel) return;
   closeWordCard();   // ⑩ 互斥：开下拉容器自动关浮层
+  setNavdockStilled(true);   // 硬伤 A：底坞淡化置灰且不可点（收沓即解）
   const panel = document.createElement("div");
   panel.className = "envsel";
   panel.setAttribute("role", "dialog");
@@ -2783,11 +2811,16 @@ async function openEnvelopeSelector() {
   editorFace.className = "envsel-editor";
   editorFace.hidden = true;
   panel.appendChild(editorFace);
+  const composeFace = document.createElement("div");
+  composeFace.className = "envsel-compose";
+  composeFace.hidden = true;
+  panel.appendChild(composeFace);
   const foot = document.createElement("p");
   foot.className = "envsel-foot";
-  // v3-2 全览窗口的入口（8.2.2a 重铸）：容器升级态的静默链——扇叠
-  // 底行一个弱化文字链「翻开全沓 ↓」（触屏无 Esc 的回程链「回扇叠 ↑」
-  // 在窗口态现位）；升级是容器本体的延展过渡，不是子页面替换。
+  // 全览窗口的触屏辅入口（v3-2R：主入口 = 点沓本体与滚到底——本链在
+  // hover:none 档才现位，桌面档 CSS 不显示）：容器升级态的静默链
+  // 「翻开全沓 ↓」（触屏无 Esc 的回程链「回扇叠 ↑」在窗口态现位）；
+  // 升级是容器本体的延展过渡，不是子页面替换。
   const browse = document.createElement("button");
   browse.type = "button";
   browse.className = "btn btn--pencil env-browse";
@@ -2799,7 +2832,7 @@ async function openEnvelopeSelector() {
   foot.appendChild(browse);
   const fold = document.createElement("button");
   fold.type = "button";
-  fold.className = "btn btn--faint";
+  fold.className = "btn btn--faint envsel-fold";
   fold.textContent = "收起";
   fold.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -2819,6 +2852,14 @@ async function openEnvelopeSelector() {
   panel.focus();
   document.addEventListener("click", envselCloser);
   document.addEventListener("keydown", envselEsc);
+  // 点沓本体 = 翻开全览（v3-2R 主入口）：落在容器纸面（面板留白/沓叠
+  // 背景）上的点击升级成窗口；信封、动作行、底行上的点击各有己任
+  // （预览/动作/收沓），不在这条路上。
+  panel.addEventListener("click", (event) => {
+    if (envselFace !== "deck") return;
+    if (event.target !== panel && event.target !== stack) return;
+    setEnvelopeFace("window");
+  });
   // 扇叠滚到沓底还往下滚 = 翻开全沓（触屏的主入口——静默链是键盘/
   // 指针的兜底）。一次守卫：回扇叠时 scrollTop 归零重新武装。
   stack.addEventListener("scroll", () => {
@@ -2893,13 +2934,19 @@ async function turnEnvelopePage(step) {
   envselPageAt = next;
   const page = envselBrowserBox && envselBrowserBox.querySelector(".envpage");
   if (!page) return;
-  renderEnvelopePageInto(page);
+  await renderEnvelopePageInto(page);   // 先装满再翻——翻页不拖着 loading 走
   playPageTurn(page, step > 0);
 }
 
 // 一页角色卡全貌：卡面（惰性拉取 + 缓存）+ 可读回五面的摘要 +
-// 读不回四面的诚实注记 + 动作行（对话 · 档案——下划线文字链接）。
+// 读不回四面的诚实注记 + 动作行（起笔 · 对话 · 档案——下划线文字链接）。
+// v3-2R 零跳变（用户判词「长到一半→跳到全高」的根因修复）：本函数
+// 返回灌完的 Promise——窗口升级（setEnvelopeFace 的 window 臂）先
+// await 它装满、再量高、再一次拉开；旧的面守卫（envselFace !==
+// "window" 早退）随之退役——装满可以发生在隐藏层里（那正是零跳变的
+// 前提），代次守卫（page.dataset.fill）保证只有最新一次渲染落笔。
 const envelopeCardCache = new Map();
+let envelopeFillSeq = 0;
 
 async function envelopePageCard(characterId) {
   if (!envelopeCardCache.has(characterId)) {
@@ -2919,12 +2966,15 @@ function renderEnvelopePageInto(page) {
   if (!item) {
     page.textContent = "";
     page.appendChild(stateBanner("empty",
-      { text: "沓里还没有信——「起笔」写下第一封。" }));
-    return;
+      { text: "沓里还没有信——「完整编辑」建第一位笔友。" }));
+    return Promise.resolve();
   }
   const count = document.getElementById("envpage-count");
   if (count) count.textContent = (envselPageAt + 1) + " / " + roster.length;
   page.textContent = "";
+  envelopeFillSeq += 1;
+  const fill = String(envelopeFillSeq);
+  page.dataset.fill = fill;
   const face = document.createElement("div");
   face.className = "envpage-face";
   const name = document.createElement("p");
@@ -2939,9 +2989,39 @@ function renderEnvelopePageInto(page) {
   const body = document.createElement("div");
   page.appendChild(body);
   body.appendChild(stateBanner("loading"));
-  // 页卡上不骗读数：卡面读不到就如实一行（全貌页的其余面照常）
-  envelopePageCard(item.character_id).then((data) => {
-    if (envselFace !== "window") return;   // 人已回扇叠/收沓/进编辑——不往看不见的层上写
+  const actions = document.createElement("p");
+  actions.className = "envpage-actions";
+  const act = (word, handler) => {
+    const link = document.createElement("button");
+    link.type = "button";
+    link.className = "btn btn--pencil";
+    link.textContent = word;
+    link.addEventListener("click", handler);
+    actions.appendChild(link);
+  };
+  const isCurrent = charactersCache &&
+    item.character_id === charactersCache.current_character_id;
+  act("起笔", () => {
+    startComposing(item);   // v3-2R：窗口里也能直接落笔（容器延展成工作区）
+  });
+  act("对话", () => {
+    if (isCurrent) {
+      unfoldToParlor();   // 已在通信中——沓收拢、信纸摊开
+      return;
+    }
+    switchToCharacter(item.character_id).then((done) => {
+      if (done) unfoldToParlor();
+    });
+  });
+  act("档案", () => {
+    closeEnvelopeSelector();
+    openPartnerDossier(item.character_id);
+  });
+  page.appendChild(actions);
+  // 页卡上不骗读数：卡面读不到就如实一行（全貌页的其余面照常）。
+  // 返回灌完的 Promise——调用方（窗口升级臂/翻页臂）await 它再动容器。
+  return envelopePageCard(item.character_id).then((data) => {
+    if (page.dataset.fill !== fill) return;   // 已被更新的渲染取代——不往旧面上写
     body.textContent = "";
     const card = data && data.card;
     const faces = card ? [
@@ -2966,70 +3046,62 @@ function renderEnvelopePageInto(page) {
       + "自己的信封里；「档案」与「编辑」里见得到的照旧。";
     body.appendChild(veil);
   });
-  const actions = document.createElement("p");
-  actions.className = "envpage-actions";
-  const act = (word, handler) => {
-    const link = document.createElement("button");
-    link.type = "button";
-    link.className = "btn btn--pencil";
-    link.textContent = word;
-    link.addEventListener("click", handler);
-    actions.appendChild(link);
-  };
-  const isCurrent = charactersCache &&
-    item.character_id === charactersCache.current_character_id;
-  act("对话", () => {
-    if (isCurrent) {
-      unfoldToParlor();   // 已在通信中——沓收拢、信纸摊开
-      return;
-    }
-    switchToCharacter(item.character_id).then((done) => {
-      if (done) unfoldToParlor();
-    });
-  });
-  act("档案", () => {
-    closeEnvelopeSelector();
-    openPartnerDossier(item.character_id);
-  });
-  page.appendChild(actions);
 }
 
-// 容器态机（v3-2 重铸）：deck 扇叠 / window 全览 / editor 编辑——同一
-// 个沓面板的三个形态。切换 = 容器本体的延展过渡（extendContainer：
-// 内容换装前后量高，height 走 --dur-settle 大件档 × --ease-paper），
-// 面内容只是 hidden 翻转（DOM 同一批子节点——**没有子页面**）。
-// 进窗口：页序归零重灌页卡（开沓时 buildEnvelopeBrowser 的首次渲染跑
-// 在 deck 态窗口里，页卡内容的异步半区守卫会早退；重灌让 then 半区
-// 在窗口态真正落笔），脚链换「回扇叠 ↑」；回扇叠：scrollTop 归零
-// （重武装滚底升级）。编辑态静默链让位（编辑面有自己的回沓行）；
-// 「收起」是容器级的——三态常在，从任何形态一记收沓。
-function setEnvelopeFace(face) {
+// 容器态机（v3-2 重铸 / v3-2R 第四形态）：deck 扇叠 / window 全览 /
+// editor 编辑 / compose 写信工作区——同一个沓面板的四个形态。切换 =
+// 容器本体的延展过渡（extendContainer：内容换装前后量高，height 走
+// --dur-settle 大件档 × --ease-paper），面内容只是 hidden 翻转（DOM
+// 同一批子节点——**没有子页面**）。
+// 翻看零跳变（v3-2R，上一刀 F-1 缺口的根因修复）：进窗口 = **内容先装
+// 满 → 再量高 → 一次拉开**——先在隐藏层里把页卡灌完（await
+// renderEnvelopePageInto，含异步卡面），再 extendContainer 量「换装
+// 后」的实高；上一刀先量高（量到 loading 横幅的矮高）再异步填内容，
+// 用户看到「长到一半→跳到全高」的 snap 伪影。装满期间过渡中的二次点
+// 名（连点/连滚）由 envselFacePending 忽略；装期间沓被收则整臂弃权。
+// 回扇叠：scrollTop 归零（重武装滚底升级）。编辑/写信两态静默链让位
+// （两面各有自己的回沓行）；「收起」是容器级的——四态常在，从任何
+// 形态一记收沓。
+async function setEnvelopeFace(face) {
   if (!envselPanel) return;
-  if (face !== "deck" && face !== "window" && face !== "editor") return;
+  if (face !== "deck" && face !== "window" && face !== "editor" &&
+      face !== "compose") return;
   if (envselFace === face) return;
+  if (envselFacePending) return;   // 一次只拉一次——过渡中的二次点名忽略
   const panel = envselPanel;
   const stack = panel.querySelector(".envsel-stack");
   const browser = panel.querySelector(".envsel-browser");
   const editorFace = panel.querySelector(".envsel-editor");
+  const composeFace = panel.querySelector(".envsel-compose");
   const browse = panel.querySelector(".env-browse");
+  if (face === "window") {
+    // 内容先装满（隐藏层里异步灌完，含卡面拉取）——量高在装满之后，
+    // 过渡只有一次（零跳变的次序钉：装满 → 量高 → 过渡）。
+    envselFacePending = face;
+    envselPageAt = 0;
+    const page = browser.querySelector(".envpage");
+    if (page) await renderEnvelopePageInto(page);
+    envselFacePending = null;
+    if (!envselPanel || envselPanel !== panel) return;   // 装期间沓被收
+  }
   envselFace = face;
   extendContainer(panel, () => {
     stack.hidden = face !== "deck";
     browser.hidden = face !== "window";
     editorFace.hidden = face !== "editor";
+    composeFace.hidden = face !== "compose";
     if (browse) {
-      browse.hidden = face === "editor";
+      browse.hidden = face === "editor" || face === "compose";
       browse.textContent = face === "window" ? "回扇叠 ↑" : "翻开全沓 ↓";
     }
     panel.classList.toggle("envsel--editor", face === "editor");
+    panel.classList.toggle("envsel--compose", face === "compose");
   });
-  if (face === "window") {
-    envselPageAt = 0;
-    const page = browser.querySelector(".envpage");
-    if (page) renderEnvelopePageInto(page);
-  }
   if (face === "deck") {
     stack.scrollTop = 0;
+  }
+  if (face === "compose") {
+    followComposeWorkspace(panel, composeFace);   // 硬伤 C：延展落定视口跟随
   }
 }
 
@@ -3079,13 +3151,15 @@ async function renderEnvelopeStack(stack) {
       },
       onEdit: () =>
         openCharacterEditor({ item: item, mode: "edit" }),
+      onCompose: () =>
+        startComposing(item),   // v3-2R：起笔 = 容器延展成写信工作区
     });
     if (item.character_id === envselBornId) env.classList.add("env--born");
     env.dataset.order = String(order);
     env.addEventListener("click", (event) => {
       if (event.target instanceof Element &&
-          event.target.closest(".env-actions, .env-create")) {
-        return;   // 动作行与表单自理
+          event.target.closest(".env-actions")) {
+        return;   // 动作行自理
       }
       previewEnvelope(item.character_id);
     });
@@ -3116,8 +3190,9 @@ async function refreshEnvelopeStack() {
 function previewEnvelope(characterId) {
   if (!envselPanel) return;
   if (envselPreviewId === characterId) {
-    // 再点同一封 = 就是他——切换 + 起笔向下展开
-    // （8.2.2a：选中角色后沓收拢、信纸向下铺开成对话主界面）
+    // 再点同一封 = 就是他——切换 + 让位案头（8.2.2a：选中角色后沓收
+    // 拢、信纸向下铺开成对话主界面；要写信用「起笔」——容器延展成
+    // 写信工作区，不在此路）
     switchToCharacter(characterId).then((done) => {
       if (done) unfoldToParlor();
     });
@@ -3552,9 +3627,182 @@ function buildEditorForm(form, opts) {
   form.appendChild(err);
 }
 
-// 沓尾的新建空白信封：两条路——「起笔」还是最简一形（名字 + 一句
-// 简介）；「完整编辑」进 mc-2 的全页编辑台，九面自由 DIY（用户原话：
-// 自由 diy 想要的角色）。
+// ── v3-2R 起笔写信工作区（核心一，零裁量重铸）：点「起笔」= 选定角色
+// 开始写信——沓容器本体向下延展**成为写信工作界面**（compose 面，⑩
+// 层级宪法的容器延展档），不是收沓回案头去写信，更不是建卡表单（上
+// 一刀的降级实现，用户判词整刀否定；新建角色的表单归「完整编辑」，
+// 不占「起笔」语义）。工作区内完成「写一封信并寄出」全流程：收件人
+// （角色名与一句身份，只读）→ 多行稿纸 → 寄出 → 回执 → 容器收拢
+// 让位案头信流（收拢方向与延展对称，同曲线反向——envsel--fold 同一
+// 注册对）。禁新页面切换，禁容器外新开滚动区。
+
+// 起笔（选定角色开始写信）：选定角色 ≠ 当前通信时先切换（既有确认与
+// 失败姿态原样），沓缓存的 current 同步改真（随后 Esc 回沓再点起笔
+// 不会重复发起切换）；再建面再延展——容器带着工作区的实际高度一次
+// 拉开（extendContainer 的同族过渡）。容器没开就不起笔（起笔只从沓
+// 进）。
+async function startComposing(item) {
+  if (!envselPanel) return;
+  const isCurrent = charactersCache &&
+    item.character_id === charactersCache.current_character_id;
+  if (!isCurrent) {
+    const done = await switchToCharacter(item.character_id);
+    if (!done || !envselPanel) return;   // 没切过去/切换期间沓被收——不起笔
+    charactersCache.current_character_id = item.character_id;
+  }
+  buildComposeFace(item);
+  setEnvelopeFace("compose");   // 容器带着写信工作区向下延展
+}
+
+// 写信工作区的 DOM：回沓行 + 收件人（致 + 角色名 + 一句身份——选定角色
+// 的信封面，**只读**，不是建卡表单）+ 多行稿纸（.pen 家族，与案头同一
+// 手感：Enter 寄出、Shift+Enter 换行）+ 动作行（寄出 → / 先搁着）。
+// 寄出 = 信落案头信流（postTurn 同一发送管线：在途信封、「寄出」邮戳、
+// 等回音行、批注轮询全是它的事）+ 工作区回执一拍 + 容器收拢让位案头；
+// 在途守卫与案头同一枚 sending（在途只此一封）。一切文字 textContent。
+function buildComposeFace(item) {
+  const body = envselPanel && envselPanel.querySelector(".envsel-compose");
+  if (!body) return;
+  body.textContent = "";
+
+  const back = document.createElement("p");
+  back.className = "compose-back";
+  const backBtn = document.createElement("button");
+  backBtn.type = "button";
+  backBtn.className = "btn btn--pencil";
+  backBtn.textContent = "← 回沓";
+  backBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setEnvelopeFace("deck");
+  });
+  back.appendChild(backBtn);
+  body.appendChild(back);
+
+  const to = document.createElement("p");
+  to.className = "env-to compose-to";
+  const toWord = document.createElement("span");
+  toWord.className = "env-to-word";
+  toWord.textContent = "致";
+  to.appendChild(toWord);
+  const name = document.createElement("b");
+  name.className = "env-name";
+  name.textContent = String(item.name || "");
+  to.appendChild(name);
+  body.appendChild(to);
+  const line = document.createElement("p");
+  line.className = "env-line compose-line";
+  line.textContent = String(item.identity_line || "");
+  body.appendChild(line);
+
+  const pen = document.createElement("textarea");
+  pen.className = "pen compose-pen";
+  pen.maxLength = 2000;   // 与服务端散文面上限同源（mc-2 的 caps.prose）
+  pen.setAttribute("aria-label", "写给她的信");
+  pen.placeholder = "今日如何？想从哪句起，就从哪句起。";
+  body.appendChild(pen);
+
+  const actions = document.createElement("p");
+  actions.className = "compose-actions";
+  const send = document.createElement("button");
+  send.type = "button";
+  send.className = "btn btn--send";
+  send.textContent = "寄出 →";
+  actions.appendChild(send);
+  const shelve = document.createElement("button");
+  shelve.type = "button";
+  shelve.className = "btn btn--faint compose-shelve";
+  shelve.textContent = "先搁着";
+  shelve.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setEnvelopeFace("deck");
+  });
+  actions.appendChild(shelve);
+  body.appendChild(actions);
+  const err = document.createElement("p");
+  err.className = "editor-err";
+  body.appendChild(err);
+
+  const post = () => {
+    const text = pen.value.trim();
+    if (!text) {
+      err.textContent = "空白的信寄不出去——写一句再寄。";
+      return;
+    }
+    if (sending) {   // 在途只此一封（与案头同一守卫）
+      err.textContent = "上一封还在路上——落地了再寄。";
+      return;
+    }
+    send.disabled = true;
+    pen.disabled = true;
+    // rd-1 邮戳盖下（与案头同一枚动效）：寄出一瞬按钮按下——类由
+    // animationend 自摘（reduced-motion 下 0.01ms 即终、事件仍到）。
+    send.classList.add("stamp-press");
+    send.addEventListener("animationend",
+      () => send.classList.remove("stamp-press"), { once: true });
+    sending = true;
+    // 信落案头信流（同一发送管线——在途封与「寄出」邮戳是它的事）；
+    // 回执不等回信（模型往返数秒），容器收拢后信流自己往下走。
+    postTurn(text).finally(() => {
+      sending = false;
+    });
+    // 回执一拍：寄出是真实事件——一句人话回执（邮戳留在案头那封上，
+    // 同屏 ≤1 枚的纪律不在这里再盖），随后容器收拢让位案头信流（收
+    // 拢方向与延展对称，同曲线反向）。回执期间 Esc/先搁着回沓即取消
+    // 自动收拢（人已选择留下，不追着关）。
+    body.textContent = "";
+    const receipt = document.createElement("p");
+    receipt.className = "sysline compose-receipt";
+    receipt.textContent = "寄出了——回信落在案头的信流里。";
+    body.appendChild(receipt);
+    const beat = REDUCED_MOTION.matches ? 0 : 1000;
+    setTimeout(() => {
+      if (envselPanel && envselFace === "compose") {
+        closeEnvelopeSelector();   // 收拢让位案头——在途的信就在信流里
+      }
+    }, beat);
+  };
+  send.addEventListener("click", (event) => {
+    // 容器内动作件一律 stopPropagation（沓家同例）：回执换装会把事件
+    // 目标摘出 DOM——冒泡到 document 时 envselCloser 的 contains 判定
+    // 反咬一口（收件人一边寄出一边被「点外关闭」），活体实证在案。
+    event.stopPropagation();
+    post();
+  });
+  // 与案头同一手感：Enter 寄出，Shift+Enter 换行。
+  pen.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      post();
+    }
+  });
+}
+
+// 硬伤 C 视口跟随：起笔延展落定（--dur-settle 320 + 余量，与回沓重排
+// 的 360 同款窗）后笔尖聚焦——焦点即跟随（触屏弹键盘、浏览器把聚焦
+// 件送进视口，「像没反应」的落选感不发生）；容器本体若在视口外（极
+// 端档）先把窗口滚到它。reduced-motion 直落（0ms）。
+function followComposeWorkspace(panel, face) {
+  const run = () => {
+    if (!envselPanel || envselPanel !== panel) return;
+    const rect = panel.getBoundingClientRect();
+    if (rect.top < 0 || rect.bottom > window.innerHeight) {
+      panel.scrollIntoView({ block: "nearest",
+        behavior: REDUCED_MOTION.matches ? "auto" : "smooth" });
+    }
+    const pen = face && face.querySelector(".compose-pen");
+    if (pen) pen.focus();
+  };
+  if (REDUCED_MOTION.matches) {
+    run();
+    return;
+  }
+  setTimeout(run, 360);
+}
+
+// 沓尾的新建空白信封（v3-2R 定谳）：只有「完整编辑」一个入口——新建
+// 角色的表单归编辑台（容器编辑面的九面 DIY，名字必填、其余面想写就
+// 写），**不得占用「起笔」语义**（上一刀把「起笔」做成建卡表单的降
+// 级实现已被判词否定）；建好了，她就躺在沓里等你起笔。
 function newEnvelopeCard() {
   const env = document.createElement("article");
   env.className = "env env--new";
@@ -3568,19 +3816,8 @@ function newEnvelopeCard() {
   env.appendChild(to);
   const hint = document.createElement("p");
   hint.className = "env-line env-newhint";
-  hint.textContent = "起个名字就能开笔；性情、背景这些面想一次写全，点「完整编辑」。";
+  hint.textContent = "名字加九面，点「完整编辑」一次写全——建好了，她就躺在沓里等你起笔。";
   env.appendChild(hint);
-  const start = document.createElement("button");
-  start.type = "button";
-  start.className = "btn btn--pencil env-newbtn";
-  start.textContent = "起笔";
-  start.addEventListener("click", (event) => {
-    event.stopPropagation();
-    start.hidden = true;
-    hint.hidden = true;
-    env.appendChild(buildCreateForm(env, hint, start));
-  });
-  env.appendChild(start);
   const full = document.createElement("button");
   full.type = "button";
   full.className = "btn btn--pencil env-newbtn env-newfull";
@@ -3591,80 +3828,6 @@ function newEnvelopeCard() {
   });
   env.appendChild(full);
   return env;
-}
-
-function buildCreateForm(envNode, hint, start) {
-  const form = document.createElement("div");
-  form.className = "env-create";
-  const nameInput = document.createElement("input");
-  nameInput.type = "text";
-  nameInput.maxLength = 40;
-  nameInput.autocomplete = "off";
-  nameInput.placeholder = "名字（必填）";
-  nameInput.setAttribute("aria-label", "新笔友的名字");
-  const lineInput = document.createElement("input");
-  lineInput.type = "text";
-  lineInput.maxLength = 2000;
-  lineInput.autocomplete = "off";
-  lineInput.placeholder = "一句简介（可空）";
-  lineInput.setAttribute("aria-label", "新笔友的一句简介");
-  const row = document.createElement("p");
-  row.className = "env-actions";
-  const go = document.createElement("button");
-  go.type = "button";
-  go.className = "btn btn--pencil";
-  go.textContent = "开笔";
-  const cancel = document.createElement("button");
-  cancel.type = "button";
-  cancel.className = "btn btn--faint";
-  cancel.textContent = "先不起";
-  const err = document.createElement("p");
-  err.className = "env-err";
-  cancel.addEventListener("click", (event) => {
-    event.stopPropagation();
-    form.remove();
-    hint.hidden = false;
-    start.hidden = false;
-  });
-  go.addEventListener("click", async (event) => {
-    event.stopPropagation();
-    const name = nameInput.value.trim();
-    if (!name) {
-      err.textContent = "先起个名字——空白的信封寄不出去。";
-      return;
-    }
-    go.disabled = true;
-    let data = null;
-    try {
-      const fields = { name: name };
-      const line = lineInput.value.trim();
-      if (line) fields.identity = line;
-      data = await fetchCreateCharacter(fields);
-    } catch {
-      data = null;
-    }
-    go.disabled = false;
-    if (!data || !data.character) {
-      err.textContent = (data && data.error)
-        ? data.error
-        : "没能落笔——再试一次。";
-      return;
-    }
-    // 起笔向下展开（8.2.2a；⑨-5 注册行）：「起笔」确认（新建）后
-    // 选择器页面向下展开成对话主界面——切换到新笔友（历史/批注随
-    // 切换落新通信），沓收拢与信流首屏同帧（unfoldToParlor）。
-    // born 落沓纸事件保留给「完整编辑」路径（沓都不在了，born 无观众）。
-    envselBornId = null;
-    const created = await switchToCharacter(data.character.character_id);
-    if (created) unfoldToParlor();
-  });
-  form.appendChild(nameInput);
-  form.appendChild(lineInput);
-  row.appendChild(go);
-  row.appendChild(cancel);
-  form.appendChild(row);
-  form.appendChild(err);
-  return form;
 }
 
 // 触发（mc-1）：品牌条 who 块整体可点（不增长按钮元——r1_shell

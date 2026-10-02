@@ -14,7 +14,7 @@ Eight groups (the slice's own):
    retreat to the vestibule cover); the browser title stays the brand;
 2. **the stack's presence pins** — every envelope carries the three
    faces (addressee name / one-line introduction / its own stamp), the
-   action row (对话 · 档案 · 编辑), the current postmark, and the blank
+   action row (起笔 · 对话 · 档案 · 编辑), the current postmark, and the blank
    envelope at the tail (「写给一位新笔友」);
 3. **stamp determinism pins** — the variant classes derive purely from
    the server's ``stamp_key`` (8 motifs × 4 inks × 3 papers, all v2
@@ -183,9 +183,12 @@ def test_the_masthead_data_face_is_live(tmp_path: Path) -> None:
 def test_every_envelope_carries_its_three_faces_and_the_actions() -> None:
     """信封沓在场钉（components.js 工厂 + app.js 装配）：每封三要素
     ——收件人位（致 + 角色名）/ 一行简介 / 右上角专属邮票；动作行
-    三词（对话 · 档案 · 编辑，--pencil 形）；当前通信的一封带
+    四词（起笔 · 对话 · 档案 · 编辑，--pencil 形；v3-2R：「起笔」=
+    写信工作区入口，容器向下延展成工作界面）；当前通信的一封带
     .env--current 与「当前」邮戳角标；沓尾新建空白信封（写给一位
-    新笔友 + 起笔入口 + 诚实留白句）。一切文字 textContent。"""
+    新笔友 + 「完整编辑」唯一入口——v3-2R 定谳：建卡表单不占
+    「起笔」语义，降级形态已退役）+ 诚实指向句。一切文字
+    textContent。"""
 
     js = _text("components.js")
     assert "export function envelopeCard(item, opts)" in js
@@ -201,6 +204,7 @@ def test_every_envelope_carries_its_three_faces_and_the_actions() -> None:
         ' + (options.stampClasses || "")).trim();' in js
     )
     assert 'initial.textContent = String(item.name || "").charAt(0);' in js
+    assert 'act("起笔", "env-act-compose"' in js
     assert 'act("对话", "env-act-talk"' in js
     assert 'act("档案", "env-act-dossier"' in js
     assert 'act("编辑", "env-act-edit"' in js
@@ -217,14 +221,15 @@ def test_every_envelope_carries_its_three_faces_and_the_actions() -> None:
     assert "stampClasses: stampVariantClasses(item.stamp_key).join(\" \")," in app
     assert "stack.appendChild(newEnvelopeCard());" in app
     assert 'name.textContent = "写给一位新笔友";' in app
-    assert 'start.textContent = "起笔";' in app
-    # mc-2 起真值随迁：编辑台已开——空白封两条路（起笔最简 / 完整
-    # 编辑全字段），诚实留白的「等编辑台」句退役。
+    # v3-2R 定谳随迁：空白封只剩「完整编辑」一个入口——「起笔」不再
+    # 做建卡（上一刀的降级实现，判词已否），指向句先指编辑台、再指
+    # 建好后躺在沓里等起笔。
     assert (
-        "起个名字就能开笔；性情、背景这些面想一次写全，点「完整编辑」。"
+        "名字加九面，点「完整编辑」一次写全——建好了，她就躺在沓里等你起笔。"
         in app
     )
     assert 'full.textContent = "完整编辑";' in app
+    assert 'start.textContent = "起笔";' not in app
     # the stack opens from the roster and the current drives the postmark
     assert "const isCurrent = item.character_id === roster.current_character_id;" in app
     assert "current: isCurrent," in app
@@ -401,8 +406,9 @@ def test_the_talk_action_wires_the_switch_and_the_local_refresh() -> None:
     )
     assert (
         "if (envselPreviewId === characterId) {\n"
-        "    // 再点同一封 = 就是他——切换 + 起笔向下展开\n"
-        "    // （8.2.2a：选中角色后沓收拢、信纸向下铺开成对话主界面）\n"
+        "    // 再点同一封 = 就是他——切换 + 让位案头（8.2.2a：选中角色后沓收\n"
+        "    // 拢、信纸向下铺开成对话主界面；要写信用「起笔」——容器延展成\n"
+        "    // 写信工作区，不在此路）\n"
         "    switchToCharacter(characterId).then((done) => {\n"
         "      if (done) unfoldToParlor();\n"
         "    });\n"
@@ -663,8 +669,9 @@ def test_the_preview_settle_reaches_the_front_and_others_give_way() -> None:
     # folds the selector into the parlor the same way
     assert (
         "if (envselPreviewId === characterId) {\n"
-        "    // 再点同一封 = 就是他——切换 + 起笔向下展开\n"
-        "    // （8.2.2a：选中角色后沓收拢、信纸向下铺开成对话主界面）\n"
+        "    // 再点同一封 = 就是他——切换 + 让位案头（8.2.2a：选中角色后沓收\n"
+        "    // 拢、信纸向下铺开成对话主界面；要写信用「起笔」——容器延展成\n"
+        "    // 写信工作区，不在此路）\n"
         "    switchToCharacter(characterId).then((done) => {\n"
         "      if (done) unfoldToParlor();\n"
         "    });\n"
@@ -725,9 +732,10 @@ def test_the_selector_esc_rename_and_z_order_wiring_is_pinned() -> None:
     # ① the visual order is the rank order (preview = rank 0 = top z)
     assert 'env.style.setProperty("--env-i", String(position));' in js
     assert 'env.style.setProperty("--env-z", String(count - position));' in js
-    # ② Esc folds the selector; the listener leaves with it. v3-2 随迁：
+    # ② Esc folds the selector; the listener leaves with it. v3-2R 随迁：
     # Esc 是⑩层级宪法的逐层退栈——浮层先退（wordCardOpen 让路），
-    # 编辑面/全览窗口各退一层回扇叠，扇叠一记收沓（层层退，不一步跳
+    # 编辑面/全览窗口/写信工作区各退一层回扇叠（`!== "deck"` 一式三
+    # 面——第四形态不加新分支），扇叠一记收沓（层层退，不一步跳
     # 关）；v2-2 的 charEditorPanel 让路分支与 setEnvelopeBrowser 分支
     # 随容器态机（envselFace）退役——负控防回潮。
     assert (
@@ -735,7 +743,7 @@ def test_the_selector_esc_rename_and_z_order_wiring_is_pinned() -> None:
         '  if (event.key !== "Escape") return;\n'
         "  if (wordCardOpen()) return;"
         "   // 浮层先退（它的监听收它自己）\n"
-        '  if (envselFace === "editor" || envselFace === "window") {\n'
+        '  if (envselFace !== "deck") {\n'
         '    setEnvelopeFace("deck");\n'
         "    return;\n"
         "  }\n"

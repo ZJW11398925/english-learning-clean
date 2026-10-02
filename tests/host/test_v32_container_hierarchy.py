@@ -158,18 +158,19 @@ def test_the_mutual_exclusion_wiring_is_pinned() -> None:
 
 
 def test_the_esc_ladder_steps_one_layer_at_a_time() -> None:
-    """Esc 退栈（⑩ 10.4）：容器阶梯 = 浮层让路（wordCardOpen 裁决，
-    同一拍只退一层）→ 编辑面/全览窗口退一层回扇叠 → 扇叠收沓；全页
-    层 = 档案/信档 Esc 回案头、观察 Esc 回温故·档案（与各自返回钮同
-    效）。级联关闭（一拍退三层）永禁——阶梯体里没有第二处收沓调用。"""
+    """Esc 退栈（⑩ 10.4；v3-2R 随迁）：容器阶梯 = 浮层让路
+    （wordCardOpen 裁决，同一拍只退一层）→ 编辑面/全览窗口/写信工
+    作区退一层回扇叠（`!== "deck"` 一式三面——第四形态不加新分支）
+    → 扇叠收沓；全页层 = 档案/信档 Esc 回案头、观察 Esc 回温故·档
+    案（与各自返回钮同效）。级联关闭（一拍退三层）永禁——阶梯体
+    里没有第二处收沓调用。"""
 
     app = _text("app.js")
     ladder = app[app.index("function envselEsc(event) {"):]
     ladder = ladder[: ladder.index("\n}", ladder.index("closeEnvelopeSelector();"))]
     assert 'if (event.key !== "Escape") return;' in ladder
     assert "if (wordCardOpen()) return;" in ladder
-    assert 'if (envselFace === "editor" || envselFace === "window") {' \
-        in ladder
+    assert 'if (envselFace !== "deck") {' in ladder
     assert 'setEnvelopeFace("deck");' in ladder
     assert ladder.count("closeEnvelopeSelector();") == 1
     # the full pages: Esc returns to the entry, same as the back buttons
@@ -273,9 +274,11 @@ def test_the_window_is_the_container_upgraded_not_a_subpage() -> None:
     """全览窗口 = 容器升级态（face 3，用户原话「整个角色卡的下拉窗口
     页面的完全升级」）：.envsel-browser 是容器的子节点（同一批 DOM
     子节点 hidden 翻转 + 容器高度延展——setEnvelopeFace 经
-    extendContainer），**零子页面**；升级入口 = 静默链两态
-    （翻开全沓 ↓ / 回扇叠 ↑）+ 扇叠滚底再往下滚（触屏主入口，一次
-    守卫）；v2-2 的「翻看/回沓一钮两态 + 子页面层」模式退役（负控）。"""
+    extendContainer），**零子页面**；升级入口（v3-2R 随迁）= 点沓本
+    体与滚到沓底再往下滚（触屏主入口，一次守卫）+「翻开全沓 ↓/
+    回扇叠 ↑」静默链两态（触屏辅入口，桌面档不显示）；v2-2 的
+    「翻看/回沓一钮两态 + 子页面层」模式退役（负控）；零跳变次序
+    （内容先装满 → 再量高 → 一次拉开）由 v3-2r 套件钉住。"""
 
     app = _text("app.js")
     screens = _text("screens.css")

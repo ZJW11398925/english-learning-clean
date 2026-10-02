@@ -1093,8 +1093,9 @@ export function layoutEnvelopeStack(stack) {
 }
 
 // 一封信封的 DOM（mc-1）：收件人位（角色名）+ 一行简介 + 右上角专属
-// 邮票（变体类由 app.js 从 stamp_key 确定性派生）+ 动作行（对话 ·
-// 档案 · 编辑——下划线文字链接，形态走 #1 的 --pencil）；当前通信的
+// 邮票（变体类由 app.js 从 stamp_key 确定性派生）+ 动作行（起笔 · 对话 ·
+// 档案 · 编辑——下划线文字链接，形态走 #1 的 --pencil；「起笔」=
+// v3-2R 的写信工作区入口，选定角色开始写信，容器向下延展成工作界面）；当前通信的
 // 一封带 .env--current 并落「当前」邮戳角标（components.css 的
 // .env-mark——朱砂真实状态事件，每沓恰一枚）。微扇的 rotate/
 // translateX 在此落 custom props（确定性值由调用方算好传入）。一切
@@ -1143,6 +1144,9 @@ export function envelopeCard(item, opts) {
     actions.appendChild(link);
     return link;
   };
+  act("起笔", "env-act-compose", () => {
+    if (typeof options.onCompose === "function") options.onCompose();
+  });
   act("对话", "env-act-talk", () => {
     if (typeof options.onTalk === "function") options.onTalk();
   });

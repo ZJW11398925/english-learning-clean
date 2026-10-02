@@ -802,6 +802,9 @@ button:focus-visible, input:focus-visible {
 .typing .inkicon { width: 14px; height: 14px; margin-right: 7px;
            vertical-align: -2px; color: var(--ink-ghost); }
 .sysline.emptyhall { margin-top: var(--sp-6); }
+/* v3-2R 起笔回执（写信工作区的寄出回执——sysline 读法的 modifier，
+   与 emptyhall 同例）：寄出是真实事件，一拍人话回执后容器收拢。 */
+.sysline.compose-receipt { margin: var(--sp-6) 0 var(--sp-5); }
 .sysline.emptyhall .inkicon { display: block; width: 30px;
            height: 30px; margin: 0 auto 10px; color: var(--ink-ghost); }
 
@@ -1034,16 +1037,6 @@ h1, .grouphead, .note-head b { text-wrap: balance; }
 /* 动作行命中带：ui 档行高 20px + 上下 6px = 32px 级（吸取单词卡审计
    教训；窄屏整封可点已足够，动作行自身也要够着）。 */
 .env-actions .btn { padding: 6px 2px; }
-/* 沓内简化建卡表单（mc-2 起：改名内联交互随编辑台退役，.env-rename
-   段同刀拆除——zoom 动效入册的守恒律对价）：与 #16 同族的下发丝线
-   行式输入。 */
-.env-create { display: flex; flex-direction: column; gap: 6px;
-              margin-top: 4px; }
-.env-create input {
-  flex: 1 1 140px; min-width: 0; border: 0; background: none;
-  outline: none; border-bottom: 1px solid var(--rule);
-  padding: 4px 2px; font-family: var(--f-serif);
-  font-size: var(--fs-small); color: var(--ink); }
-.env-create input:focus { border-bottom-color: var(--pencil); }
-.env-err { margin: 2px 0 0; font-family: var(--f-sans);
-           font-size: var(--fs-ui); color: var(--pencil); }
+/* 沓内简化建卡表单的样式段随 v3-2R 退役——「起笔」不再做建卡（判词
+   否定的降级实现），新建角色归「完整编辑」（容器编辑面的九面表单）；
+   注册表不做阁楼，样式与 DOM 同刀清出。 */
