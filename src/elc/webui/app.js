@@ -24,6 +24,8 @@ import {
   installIcons,
   wordWindows,
   showWordCard,
+  closeWordCard,
+  wordCardOpen,
   confirmDialog,
   fieldRow,
   chip,
@@ -39,7 +41,7 @@ import {
   wireReveal,
   envelopeCard,
   layoutEnvelopeStack,
-  placeEditorOrigin,
+  extendContainer,
   REDUCED_MOTION,
 } from "./components.js";
 import {
@@ -1720,6 +1722,11 @@ function showSection(space, name) {
 }
 
 function showSpace(name) {
+  // ⑩ 层级宪法的互斥半：进任何空间（含全页）收一切浮层与下拉容器——
+  // 换空间的人不该被上一空间的浮层/沓跟着走。closeEnvelopeSelector 在
+  // 容器不在场时是安全的空操作；closeWordCard 同。
+  closeWordCard();
+  closeEnvelopeSelector();
   for (const key of Object.keys(spaces)) {
     spaces[key].hidden = key !== name;
   }
@@ -1970,6 +1977,21 @@ document.getElementById("letters-back").addEventListener(
 document.getElementById("obs-back").addEventListener("click", () => {
   showSpace("study");
   showSection("study", "progress");   // 回档案节（入口所在处）
+});
+
+// ⑩ 层级宪法的统一关闭语义（Esc 逐层退栈）——全页的最后一层：全页
+// （笔友档案 / 信档 → 案头；原始读数 → 温故 · 档案，与各自返回钮同
+// 效）。容器与浮层在全页不在场（互斥半：进空间即收），这层 Esc 只在
+// 全页现役时接得住——与沓容器的 envselEsc（空间内层）互不越界。
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  const current = Object.keys(spaces).find((key) => !spaces[key].hidden);
+  if (current === "partner" || current === "letters") {
+    showSpace("parlor");
+  } else if (current === "obs") {
+    showSpace("study");
+    showSection("study", "progress");
+  }
 });
 
 // ── rd-4: 搜信里的句子（档案节检索扩展；9.12-23）────────────────────
@@ -2594,29 +2616,39 @@ window.addEventListener("DOMContentLoaded", () => {
   showSpace(seenOnboard() ? "parlor" : "onboard");
 });
 
-// ── mc-1: 信封沓——点案头主从条弹出的那一沓信封──────────────────────
+// ── mc-1: 信封沓——点案头主从条弹出的那一沓信封（v3-2 容器化）────────
 // 沓形 = 案头的一叠信（components.js 的 envelopeCard/layoutEnvelopeStack
 // 承担 DOM 与排布半区；屏级形态在 screens.css 的 .envsel 节）：微扇形
 // 错位叠放，rotate/translateX 从 stamp_key 确定性派生（同一角色恒同
 // 姿态——零随机）；当前通信的一封盖「当前」邮戳角标（--seal，真实
 // 状态事件）；沓尾是新建空白信封（「起笔」最简一形——名字 + 一句
-// 简介；「完整编辑」进 mc-2 的全页编辑台）。预览 = 点沓中一封 → 滑到
+// 简介；「完整编辑」进容器内的编辑面）。预览 = 点沓中一封 → 滑到
 // 沓首微抬（260ms 减速长尾 + 让位 stagger）；再点它或点「对话」→
 // 切换。
-// v2-2 重审（8.2.2a 目标块「角色卡弹窗整体优化」）：进出场时序按
-// 「纸先落、墨后渗」重排——入场 320 大件档 × --ease-paper 减速长尾、
-// 退场 paper-fold 收拢 200 × --ease-exit + ink-wash reverse 恒慢；
-// 起笔展开 = 沓收拢与信流首屏铺开同帧编排（transform 与 opacity 拆
-// 开，opacity 恒慢）。沓内另有翻页全览层（envsel browser——每页一张
-// 角色卡全貌，横滑 + chevron 翻页，page-turn 2D 形态）。零常驻循环；
-// reduced-motion 双面降级（库尾总降级块 0.01ms 即终，本模块不依赖
-// 动画事件——fold 的 finish 有 480ms 保险丝 + REDUCED_MOTION 直切）。
+// v3-2 容器与层级重铸（⑩ 层级宪法；用户两项核心误读纠正）：沓面板是
+// 一个**下拉容器**，起笔/编辑/翻看都是**容器本体的形态变化**，不是
+// 新页面也不是容器内多一个滚动条——
+//   · 扇叠（deck）＝容器的收拢态（默认）；
+//   · 翻看（window）＝**整个容器升级为全览窗口**（同族容器延展过渡，
+//     components.js 的 extendContainer：高度走 --dur-settle 大件档），
+//     翻页发生在窗口内（wirePageTurn 横滑 + chevron，page-turn 2D）；
+//     v2-2 的「翻看/回沓按钮 + envsel-browser 子页面层」模式退役；
+//   · 编辑（editor）＝**编辑台在展开的容器内**（零新增页面级滚动条
+//     ——v2-2 的独立全页编辑台与其放大过渡退役，mc-2 九面
+//     表单原样搬进容器的编辑面）；
+//   · 起笔确认后容器收拢让位案头（unfoldToParlor——写信属于信流，
+//     容器收拢与信纸摊开同帧就是「向下延伸拉开」的桌面读法）。
+// 层级互斥（⑩）：开容器先收浮层；进任何空间收一切浮层与容器；
+// Esc 逐层退栈：编辑面 → 扇叠 →（全览窗口 → 扇叠）→ 收沓；浮层
+// 在场时 Esc 归浮层（wordCardOpen 裁决）。零常驻循环；
+// reduced-motion 双面降级（库尾总降级块 0.01ms 即终，fold/grow 的
+// finish 有 480ms 保险丝 + REDUCED_MOTION 直切）。
 let envselPanel = null;
 let envselPreviewId = null;
 let charactersCache = null;
 let envselBornId = null;   // 刚建好的那封——重排时给它一次落沓纸事件
-let envselBrowser = false; // 翻页全览态（沓内的浏览层，不替换档案页）
-let envselPageAt = 0;      // 当前页（全览层页序）
+let envselFace = "deck";   // 容器态：deck 扇叠 / window 全览 / editor 编辑
+let envselPageAt = 0;      // 当前页（全览窗口页序）
 
 // 邮票变体的确定性派生（mc-0 stamp_key 的前端消费半区）：key 是角色
 // id 的 SHA-256 前 16 位十六进制（elc.persona.card_store.stamp_key_for，
@@ -2667,36 +2699,40 @@ function renderMasthead(roster) {
 
 function envselCloser(event) {
   if (!(event.target instanceof Element)) return;
-  if (charEditorPanel) return;   // 编辑台开着——沓在它底下，别替它收
   if (envselPanel && !envselPanel.contains(event.target)) {
     closeEnvelopeSelector();
   }
 }
 
+// Esc 逐层退栈（⑩ 层级宪法的统一关闭语义）：浮层在场 → 归浮层（它
+// 自己的监听收它，这里让路）；编辑面 → 退一层回扇叠；全览窗口 →
+// 退一层回扇叠；扇叠 → 收沓。编辑面不再有独立监听（v2-2 的面板级
+// editorEsc + stopPropagation 随容器化退役——一个阶梯管到底）。
 function envselEsc(event) {
-  if (charEditorPanel) return;   // Esc 归编辑台（它自己的收拢）
-  if (event.key === "Escape") {
-    // 翻页全览是沓内的浏览层——Esc 先退回扇叠，再一记才收沓
-    if (envselBrowser) {
-      setEnvelopeBrowser(false);
-      return;
-    }
-    closeEnvelopeSelector();
+  if (event.key !== "Escape") return;
+  if (wordCardOpen()) return;   // 浮层先退（它的监听收它自己）
+  if (envselFace === "editor" || envselFace === "window") {
+    setEnvelopeFace("deck");
+    return;
   }
+  closeEnvelopeSelector();
 }
 
-// 收沓（v2-2 重排）：默认走 fold 退场（纸先落墨后渗的出场半——收拢
+// 收沓（v2-2 重排沿用）：默认走 fold 退场（纸先落墨后渗的出场半——收拢
 // 200ms × --ease-exit + ink-wash reverse 恒慢），animationend 后摘
-// DOM；reduced-motion 直切（REDUCED_MOTION 单一归宿 + 库尾总降级块
-// 双面）。opts.skipFold = 无动画直摘（现在仅极端路径备用）。
+// DOM（移动端遮罩随批摘）；reduced-motion 直切（REDUCED_MOTION 单一
+// 归宿 + 库尾总降级块双面）。opts.skipFold = 无动画直摘（现在仅极端
+// 路径备用）。
 function closeEnvelopeSelector(opts) {
   const panel = envselPanel;
   document.removeEventListener("click", envselCloser);
   document.removeEventListener("keydown", envselEsc);
   envselPanel = null;
   envselPreviewId = null;
-  envselBrowser = false;
+  envselFace = "deck";
   envselPageAt = 0;
+  const scrim = document.querySelector(".envsel-scrim");
+  if (scrim) scrim.remove();
   if (!panel) return;
   const finish = () => {
     if (panel.parentNode) panel.remove();
@@ -2712,12 +2748,17 @@ function closeEnvelopeSelector(opts) {
   setTimeout(finish, 480);   // 保险丝（animationend 正常先到）
 }
 
-// 起笔向下展开（8.2.2a 目标块；⑨-5 注册行）：沓收拢与信流首屏同帧
-// 编排——沓侧 fold 类（收拢退场），信流侧的「信纸摊上案头」半由
+// 起笔向下展开（8.2.2a；⑨-5 注册行）：沓收拢与信流首屏同帧编排——
+// 沓侧 fold 类（收拢退场），信流侧的「信纸摊上案头」半由
 // refreshCorrespondence 的 resettle 承担（切角色路径必经，同帧在播）；
 // isCurrent 直回路径信流本就完好，无需重铺。transform 与 opacity 拆
 // 开（fold 的 ink-wash reverse 恒慢）。reduced-motion 直落终态
 // （REDUCED_MOTION 直切 + 库尾总降级块双面）。
+// v3-2 定形（用户原话「直接起草编辑时，面板应当自动向下延伸拉开」的
+// 起笔半）：「起笔」确认后容器**收拢让位案头**——写信属于信流（写信
+// 区 + 批注都在案头），容器收拢与信纸摊开同帧就是「向下延伸拉开」的
+// 桌面读法；把对话塞进弹出容器反而把通信锁在小窗里（写一封然后呢）。
+// 编辑半不走让位——九面表单留在展开的容器内（openCharacterEditor）。
 function unfoldToParlor(after) {
   closeEnvelopeSelector();
   if (typeof after === "function") after();
@@ -2725,6 +2766,7 @@ function unfoldToParlor(after) {
 
 async function openEnvelopeSelector() {
   if (envselPanel) return;
+  closeWordCard();   // ⑩ 互斥：开下拉容器自动关浮层
   const panel = document.createElement("div");
   panel.className = "envsel";
   panel.setAttribute("role", "dialog");
@@ -2737,16 +2779,22 @@ async function openEnvelopeSelector() {
   browser.className = "envsel-browser";
   browser.hidden = true;
   panel.appendChild(browser);
+  const editorFace = document.createElement("div");
+  editorFace.className = "envsel-editor";
+  editorFace.hidden = true;
+  panel.appendChild(editorFace);
   const foot = document.createElement("p");
   foot.className = "envsel-foot";
-  // v2-2 翻页全览的入口（8.2.2a）：沓内的浏览层——翻看/回沓一钮两态。
+  // v3-2 全览窗口的入口（8.2.2a 重铸）：容器升级态的静默链——扇叠
+  // 底行一个弱化文字链「翻开全沓 ↓」（触屏无 Esc 的回程链「回扇叠 ↑」
+  // 在窗口态现位）；升级是容器本体的延展过渡，不是子页面替换。
   const browse = document.createElement("button");
   browse.type = "button";
   browse.className = "btn btn--pencil env-browse";
-  browse.textContent = "翻看";
+  browse.textContent = "翻开全沓 ↓";
   browse.addEventListener("click", (event) => {
     event.stopPropagation();
-    setEnvelopeBrowser(!envselBrowser);
+    setEnvelopeFace(envselFace === "window" ? "deck" : "window");
   });
   foot.appendChild(browse);
   const fold = document.createElement("button");
@@ -2759,25 +2807,42 @@ async function openEnvelopeSelector() {
   });
   foot.appendChild(fold);
   panel.appendChild(foot);
+  // 移动端沓（P1-5）的遮罩件：桌面档 CSS 不显示，触屏档（hover:none）
+  // 才 display——点遮罩 = 点容器外（envselCloser 同一机制关闭）。
+  const scrim = document.createElement("div");
+  scrim.className = "envsel-scrim";
+  document.getElementById("space-parlor").appendChild(scrim);
   document.getElementById("space-parlor").appendChild(panel);
   envselPanel = panel;
-  envselBrowser = false;
+  envselFace = "deck";
   panel.classList.add("envsel--open");   // 入场一次（复用注册双动画）
   panel.focus();
   document.addEventListener("click", envselCloser);
   document.addEventListener("keydown", envselEsc);
+  // 扇叠滚到沓底还往下滚 = 翻开全沓（触屏的主入口——静默链是键盘/
+  // 指针的兜底）。一次守卫：回扇叠时 scrollTop 归零重新武装。
+  stack.addEventListener("scroll", () => {
+    if (envselFace !== "deck") return;
+    const atEnd = stack.scrollTop + stack.clientHeight >=
+      stack.scrollHeight - 2;
+    if (atEnd && (charactersCache || {}).characters &&
+        charactersCache.characters.length > 1) {
+      setEnvelopeFace("window");
+    }
+  });
   await renderEnvelopeStack(stack);
   buildEnvelopeBrowser(browser);
 }
 
-// ── mc-1 翻页全览（8.2.2a 目标块）：沓内的浏览层——每页一张角色卡
-// 全貌，横滑（ux-1 守卫同法，wirePageTurn）+ 点击（#22 chevron）翻页，
-// page-turn 2D 形态；翻页态不替换档案页（页卡上的「档案」动作仍进
-// 全页）。诚实降级（读面缺口呈报在案）：/api/partner 的卡面只回五键，
-// 全貌页展示可读回的 name / identity / background / values /
-// letter_habits 五面；personality / boundaries / opening / scenario
-// 四面读不回（mc-0 无全字段读面）——如实注记，开场信预览位缺席
-// （不虚构「第一封信」）。
+// ── mc-1 全览窗口（v3-2 容器升级重铸，8.2.2a）：**整个沓面板升级成
+// 的全览窗口**（同族容器延展过渡——setEnvelopeFace("window")）——每页
+// 一张角色卡全貌，横滑（ux-1 守卫同法，wirePageTurn）+ 点击（#22
+// chevron）翻页，page-turn 2D 形态；翻页态不替换档案页（页卡上的
+// 「档案」动作仍进全页）。诚实降级（读面缺口呈报在案）：/api/partner
+// 的卡面只回五键，全貌页展示可读回的 name / identity / background /
+// values / letter_habits 五面；personality / boundaries / opening /
+// scenario 四面读不回（mc-0 无全字段读面）——如实注记，开场信预览位
+// 缺席（不虚构「第一封信」）。
 let envselBrowserBox = null;
 
 function buildEnvelopeBrowser(box) {
@@ -2876,7 +2941,7 @@ function renderEnvelopePageInto(page) {
   body.appendChild(stateBanner("loading"));
   // 页卡上不骗读数：卡面读不到就如实一行（全貌页的其余面照常）
   envelopePageCard(item.character_id).then((data) => {
-    if (!envselBrowser) return;   // 人已回扇叠/收沓——不往看不见的层上写
+    if (envselFace !== "window") return;   // 人已回扇叠/收沓/进编辑——不往看不见的层上写
     body.textContent = "";
     const card = data && data.card;
     const faces = card ? [
@@ -2929,25 +2994,42 @@ function renderEnvelopePageInto(page) {
   page.appendChild(actions);
 }
 
-// 翻看/回沓一钮两态：全览层显形时扇叠隐藏（浏览层，不替换档案页——
-// 档案仍从页卡或扇叠的「档案」动作进）。进全览态时重灌页卡——开沓时
-// buildEnvelopeBrowser 的首次渲染跑在 envselBrowser=false 的窗口里，
-// 页卡内容的异步半区（卡面摘要 + 缺席注记）守卫会早退；重灌让
-// then 半区在全览态下真正落笔。
-function setEnvelopeBrowser(on) {
+// 容器态机（v3-2 重铸）：deck 扇叠 / window 全览 / editor 编辑——同一
+// 个沓面板的三个形态。切换 = 容器本体的延展过渡（extendContainer：
+// 内容换装前后量高，height 走 --dur-settle 大件档 × --ease-paper），
+// 面内容只是 hidden 翻转（DOM 同一批子节点——**没有子页面**）。
+// 进窗口：页序归零重灌页卡（开沓时 buildEnvelopeBrowser 的首次渲染跑
+// 在 deck 态窗口里，页卡内容的异步半区守卫会早退；重灌让 then 半区
+// 在窗口态真正落笔），脚链换「回扇叠 ↑」；回扇叠：scrollTop 归零
+// （重武装滚底升级）。编辑态静默链让位（编辑面有自己的回沓行）；
+// 「收起」是容器级的——三态常在，从任何形态一记收沓。
+function setEnvelopeFace(face) {
   if (!envselPanel) return;
-  envselBrowser = Boolean(on);
-  const stack = envselPanel.querySelector(".envsel-stack");
-  const browser = envselPanel.querySelector(".envsel-browser");
-  const browse = envselPanel.querySelector(".env-browse");
-  if (!stack || !browser) return;
-  stack.hidden = envselBrowser;
-  browser.hidden = !envselBrowser;
-  if (browse) browse.textContent = envselBrowser ? "回沓" : "翻看";
-  if (envselBrowser) {
+  if (face !== "deck" && face !== "window" && face !== "editor") return;
+  if (envselFace === face) return;
+  const panel = envselPanel;
+  const stack = panel.querySelector(".envsel-stack");
+  const browser = panel.querySelector(".envsel-browser");
+  const editorFace = panel.querySelector(".envsel-editor");
+  const browse = panel.querySelector(".env-browse");
+  envselFace = face;
+  extendContainer(panel, () => {
+    stack.hidden = face !== "deck";
+    browser.hidden = face !== "window";
+    editorFace.hidden = face !== "editor";
+    if (browse) {
+      browse.hidden = face === "editor";
+      browse.textContent = face === "window" ? "回扇叠 ↑" : "翻开全沓 ↓";
+    }
+    panel.classList.toggle("envsel--editor", face === "editor");
+  });
+  if (face === "window") {
     envselPageAt = 0;
     const page = browser.querySelector(".envpage");
     if (page) renderEnvelopePageInto(page);
+  }
+  if (face === "deck") {
+    stack.scrollTop = 0;
   }
 }
 
@@ -2995,8 +3077,8 @@ async function renderEnvelopeStack(stack) {
         closeEnvelopeSelector();
         openPartnerDossier(item.character_id);
       },
-      onEdit: (envNode) =>
-        openCharacterEditor({ item: item, envNode: envNode, mode: "edit" }),
+      onEdit: () =>
+        openCharacterEditor({ item: item, mode: "edit" }),
     });
     if (item.character_id === envselBornId) env.classList.add("env--born");
     env.dataset.order = String(order);
@@ -3114,16 +3196,19 @@ async function refreshCorrespondence() {
   }
 }
 
-// ── mc-2: 角色编辑台——信封沓的「编辑」/空白封「完整编辑」进的全页
-// DIY 面（用户原话：想编辑或新建角色卡，页面自然放大过渡到编辑页面，
-// 自由 DIY 想要的角色）──────────────────────────────────────────────
-// 放大过渡 = zoom/scale + fade：进入 transform 260ms（--dur-note，
-// --ease-enter）、opacity 恒慢于 transform（--dur-ink，简报 §5 纸的
-// 物理法则）；退出反向收拢 200ms（--dur-panel-out，--ease-exit）；
-// transform-origin 从被点的那封信出发（getBoundingClientRect 的视口
-// 坐标经 placeEditorOrigin 落 custom props——app.js 禁内联样式）。
-// reduced-motion：直切（REDUCED_MOTION 单一归宿在 components.js，本
-// 模块读它的 matches + 库尾总降级块 0.01ms 即终的双面）。
+// ── mc-2: 角色编辑台——信封沓的「编辑」/空白封「完整编辑」进的 DIY
+// 面（v3-2 容器化：**编辑台在展开的沓容器内**——用户原话「直接起草
+// 编辑时，面板应当自动向下延伸拉开，是整个容器的变化，而不是多一个
+// 滚动条」）──────────────────────────────────────────────────────────
+// v2-2 的独立全页（fixed inset-0 + zoom 放大过渡 + 自带滚动井
+// 与页面滚动条叠双杠）随本刀退役：openCharacterEditor 现在把九面
+// 表单装进沓容器的编辑面（.envsel-editor），容器本体向下延展
+// （setEnvelopeFace("editor") 经 extendContainer 的同族高度过渡——
+// ⑩ 层级宪法的容器延展档）；表单长就滚容器自己的编辑面（唯一的滚
+// 动井——零新增页面级滚动条，P2-8 一并消除）。三出口一致化（P1-4）：
+// Esc / 「← 回沓」/「不改了」同语义 = 全部回沓（容器退一层回扇叠，
+// 浏览上下文 envselPreviewId 保留）；存/删成功同样回沓（重排半区照
+// 旧在回沓后跑）。
 // 预填的诚实边界：/api/partner 的卡面只回五个键（name、identity_line、
 // background、values、letter_habits）——personality、boundaries、
 // opening、scenario 四面读不回（mc-0 没有全字段读面，web.py 本刀只许
@@ -3132,7 +3217,6 @@ async function refreshCorrespondence() {
 // 不动，mc-0 的更新文法）——永不拿空白盖旧文。
 // 内置卡九面全部可编辑（mc-0 契约：编辑不拒、删除才拒；card_store 的
 // _UPDATABLE_COLUMNS 九面全可写，勘察在册），不给删除钮。
-let charEditorPanel = null;
 
 // 九面的规格表（名字单独建面——必填 + 40 上限）：键 / 中文标签 / 一句
 // 克制的人话说明 / 是否读不回 / 是否带开场信预览。中英皆可——用户
@@ -3192,55 +3276,31 @@ function editorErrLine(data, fallback) {
   return message || fallback;
 }
 
-function editorEsc(event) {
-  if (event.key === "Escape") {
-    event.stopPropagation();   // 收台这拍不冒泡——底下的沓不陪葬（收拢
-    closeCharacterEditor();    // 期间 charEditorPanel 已空，守卫接不住）
-  }
-}
-
-// 收台：反向收拢（--char-editor--out，200ms 加速收势）到被点信封的
-// origin；落定后跑 after（回沓重排——born 纸事件要等台撤了才播得见）。
+// 回沓（v3-2 三出口统一，P1-4）：容器退一层回扇叠（同族容器收拢
+// 过渡）；落定后跑 after（沓重排——born 纸事件要等编辑面撤了才播得
+// 见）。Esc 与两颗钮都走这里——按钮与 Esc 同效，浏览上下文
+// （envselPreviewId）保留。
 function closeCharacterEditor(after) {
-  const panel = charEditorPanel;
-  if (!panel) return;
-  charEditorPanel = null;
-  panel.removeEventListener("keydown", editorEsc);
-  let done = false;
-  const finish = () => {
-    if (done) return;
-    done = true;
-    if (panel.parentNode) panel.remove();
-    if (typeof after === "function") after();
-  };
-  if (REDUCED_MOTION.matches) {
-    finish();   // reduced-motion：直切
-    return;
+  if (!envselPanel || envselFace !== "editor") return;
+  setEnvelopeFace("deck");
+  if (typeof after === "function") {
+    if (REDUCED_MOTION.matches) after();
+    else setTimeout(after, 360);   // 收拢落定后再重排（保险丝同款窗）
   }
-  panel.classList.add("char-editor--out");
-  panel.addEventListener("animationend", (event) => {
-    if (event.animationName === "editor-zoom-out") finish();
-  });
-  setTimeout(finish, 480);   // 保险丝（animationend 正常先到）
 }
 
-// 开台：mode = "edit"（沓中一封的「编辑」）| "create"（空白封的
-// 「完整编辑」）。编辑先读卡面再开笔——读不回就不开（错误 + 重试），
-// 免得拿空白表单盖了旧文。
+// 开台（v3-2 容器化）：mode = "edit"（沓中一封的「编辑」）| "create"
+// （空白封的「完整编辑」）。时序 = 先装内容再延展——容器带着编辑面
+// 的实际高度一次拉开（extendContainer 量的是换装后的高，两段跳变不
+// 发生）。编辑先读卡面再开笔——读不回就不开（错误 + 重试），免得拿
+// 空白表单盖了旧文。容器没开就不开台（编辑只从沓进）。
 async function openCharacterEditor(opts) {
-  if (charEditorPanel) return;
+  if (!envselPanel) return;
   const mode = opts.mode === "create" ? "create" : "edit";
   const item = opts.item || null;
-  const panel = document.createElement("div");
-  panel.className = "char-editor char-editor--in";
-  panel.setAttribute("role", "dialog");
-  panel.setAttribute("aria-label",
-    mode === "create" ? "给新笔友起卡" : "编辑角色卡");
-  panel.tabIndex = -1;
-
-  const body = document.createElement("div");
-  body.className = "char-editor-body";
-  panel.appendChild(body);
+  const body = envselPanel.querySelector(".envsel-editor");
+  if (!body) return;
+  body.textContent = "";
 
   const back = document.createElement("p");
   back.className = "editor-back";
@@ -3282,19 +3342,10 @@ async function openCharacterEditor(opts) {
   form.className = "editor-form";
   body.appendChild(form);
 
-  document.getElementById("space-parlor").appendChild(panel);
-  charEditorPanel = panel;
-  const envNode = opts.envNode;
-  if (envNode && typeof envNode.getBoundingClientRect === "function") {
-    const rect = envNode.getBoundingClientRect();
-    placeEditorOrigin(panel,
-      rect.left + rect.width / 2, rect.top + rect.height / 2);
-  }
-  panel.focus();
-  panel.addEventListener("keydown", editorEsc);
-
   if (mode === "create") {
     buildEditorForm(form, { mode: mode, item: null, card: null });
+    setEnvelopeFace("editor");   // 容器带着整份表单向下延展
+    body.scrollTop = 0;
     return;
   }
   form.appendChild(stateBanner("loading"));
@@ -3304,7 +3355,9 @@ async function openCharacterEditor(opts) {
   } catch {
     data = null;
   }
-  if (charEditorPanel !== panel) return;  // 人已回沓——不往看不见的页上写
+  if (!envselPanel || envselFace !== "deck") {
+    return;   // 沓已被收起/换态——不往看不见的面上写
+  }
   form.textContent = "";
   if (!data || !data.card) {
     form.appendChild(stateBanner("error", {
@@ -3313,9 +3366,12 @@ async function openCharacterEditor(opts) {
         closeCharacterEditor(() => openCharacterEditor(opts));
       },
     }));
+    setEnvelopeFace("editor");
     return;
   }
   buildEditorForm(form, { mode: mode, item: item, card: data.card });
+  setEnvelopeFace("editor");   // 容器带着整份表单向下延展
+  body.scrollTop = 0;
 }
 
 function buildEditorForm(form, opts) {
@@ -3531,7 +3587,7 @@ function newEnvelopeCard() {
   full.textContent = "完整编辑";
   full.addEventListener("click", (event) => {
     event.stopPropagation();
-    openCharacterEditor({ item: null, envNode: env, mode: "create" });
+    openCharacterEditor({ item: null, mode: "create" });
   });
   env.appendChild(full);
   return env;

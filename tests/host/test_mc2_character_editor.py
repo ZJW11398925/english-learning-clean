@@ -59,10 +59,11 @@ def _text(name: str) -> str:
 def _editor_css() -> str:
     """The editor's own section of screens.css — the slice between its
     header comment and the next section marker (the design-language
-    pins read this slice, not the whole file)."""
+    pins read this slice, not the whole file). v3-2: the header renamed
+    with the container recast (角色编辑面)."""
 
     css = _text("screens.css")
-    start = css.index("── mc-2 角色编辑台")
+    start = css.index("── mc-2 角色编辑面")
     end = css.index("── v2 动效基建应用层")
     return css[start:end]
 
@@ -105,94 +106,85 @@ def _delete_json(port: int, path: str) -> tuple[int, Any]:
 
 
 # ---------------------------------------------------------------------------
-# 1 — the zoom transition
+# 1 — the container transition (v3-2: the editor lives in the pad)
 # ---------------------------------------------------------------------------
 
 
 def test_the_zoom_transition_pins() -> None:
-    """① 放大过渡：入口改指编辑台（信封的「编辑」/空白封的「完整
-    编辑」）；origin 从被点信封出发（getBoundingClientRect →
-    placeEditorOrigin，custom props 只在 components.js 落——app.js 禁
-    .style）；进入 260ms --ease-enter + opacity 恒慢（--dur-ink），
-    退出反向收拢 200ms --ease-exit；reduced-motion 直切（JS 守卫 +
-    库尾总降级块双面）。删任一接线即红。"""
+    """① 容器延展过渡（v3-2 重铸——用户原话「直接起草编辑时，面板应当
+    自动向下延伸拉开，是整个容器的变化，而不是多一个滚动条」）：入口
+    改指容器编辑面（信封的「编辑」/空白封的「完整编辑」）；开台 =
+    先装表单再 setEnvelopeFace("editor")——容器带着实际高度一次向下
+    拉开（extendContainer，--panel-h custom prop，app.js 禁 .style 的
+    规矩经 components.js 落点）；v2-2 的独立全页 char-editor 与
+    editor-zoom 双 keyframes 同刀退役（负控防回潮）；三出口一致
+    （P1-4）：Esc /「← 回沓」/「不改了」全部 setEnvelopeFace("deck")。
+    删任一接线即红。"""
 
     app = _text("app.js")
     js = _text("components.js")
     css = _text("screens.css")
 
-    # the entries — both doors name the editor with the envelope in hand
+    # the entries — both doors name the editor from the deck
     assert (
-        "onEdit: (envNode) =>\n"
-        "        openCharacterEditor({ item: item, envNode: envNode,"
-        ' mode: "edit" }),'
+        "onEdit: () =>\n"
+        "        openCharacterEditor({ item: item, mode: \"edit\" }),"
     ) in app
     assert (
-        "openCharacterEditor({ item: null, envNode: env,"
-        ' mode: "create" });'
+        "openCharacterEditor({ item: null, mode: \"create\" });"
     ) in app
     assert 'full.textContent = "完整编辑";' in app
 
-    # the zoom origin is the clicked envelope's own center (LOW-2
-    # disposition: the formula itself is pinned — a wrong-quadrant
-    # arithmetic must not pass)
-    assert (
-        "rect.left + rect.width / 2, rect.top + rect.height / 2);"
+    # the editor lives inside the pad container: no standalone panel is
+    # appended to the document — the face opens in .envsel-editor and
+    # the container extends downward (extendContainer measures AFTER
+    # the form is in: one continuous pull, no two-step jump)
+    assert "const body = envselPanel.querySelector(\".envsel-editor\");" \
         in app
-    )
-    # the click-side coexistence guard (LOW-4 disposition): with the
-    # editor open the stack must not fold underneath it — the Esc-side
-    # guard is pinned below via the stopPropagation pin
-    assert (
-        "if (charEditorPanel) return;"
-        "   // 编辑台开着——沓在它底下，别替它收" in app
-    )
+    assert "setEnvelopeFace(\"editor\");" in app
+    assert 'body.scrollTop = 0;' in app
+    # the guard: the pad must be open, and the await window re-checks
+    assert "if (!envselPanel) return;" in app
+    assert 'if (!envselPanel || envselFace !== "deck") {' in app
 
-    # the sheet opens with the enter class; the origin comes from the
-    # clicked envelope's own rect and lands as custom props in
-    # components.js (app.js is barred from .style)
-    assert 'panel.className = "char-editor char-editor--in";' in app
-    assert "envNode.getBoundingClientRect()" in app
-    assert "placeEditorOrigin(panel," in app
-    assert "export function placeEditorOrigin(root, x, y) {" in js
-    assert 'root.style.setProperty("--editor-ox", x + "px");' in js
-    assert 'root.style.setProperty("--editor-oy", y + "px");' in js
-    assert "--editor-ox" not in app   # app.js 禁 .style：只经工厂落点
+    # the extend mechanics live in components.js (custom props only);
+    # app.js is barred from .style
+    assert "export function extendContainer(panel, mutate) {" in js
+    assert 'panel.style.setProperty("--panel-h", from + "px");' in js
+    assert 'panel.style.setProperty("--panel-h", to + "px");' in js
+    assert '"--editor-ox"' not in js and "placeEditorOrigin" not in js
+    assert "extendContainer(panel," in js
+    css_grow = css[css.index(".envsel--grow {"):]
+    css_grow = css_grow[: css_grow.index("}") + 1]
+    assert "transition: height var(--dur-settle) var(--ease-paper);" \
+        in css_grow
+    assert "overflow: hidden;" in css_grow
 
-    # the registered v2 curves: transform 260ms enter, opacity slower
-    # (--dur-ink), exit collapse 200ms exit-curve
-    assert "@keyframes editor-zoom-in {" in css
-    assert "@keyframes editor-zoom-out {" in css
-    assert (
-        "animation: editor-zoom-in var(--dur-note)\n"
-        "                              var(--ease-enter) both,\n"
-        "                              ink-wash var(--dur-ink)" in css
-    )
-    assert (
-        "animation: editor-zoom-out var(--dur-panel-out)\n"
-        "                               var(--ease-exit) both;" in css
-    )
-    assert (
-        "transform-origin: var(--editor-ox, 50%)" in css
-    )
-    assert "char-editor--out" in app   # 收拢类真的会被落上
+    # the retired standalone form is gone at the root (negative —
+    # restoring it turns this red)
+    assert "char-editor" not in app
+    assert "editor-zoom" not in css and "editor-zoom" not in app
+    assert "placeEditorOrigin" not in app
 
+    # the three exits speak with one voice (P1-4): Esc, 「← 回沓」and
+    # 「不改了」 all land on the deck face — and the save/delete paths
+    # ride the same closer with the re-stack in the callback
+    assert "function closeCharacterEditor(after)" in app
+    assert 'setEnvelopeFace("deck");' in app
+    assert 'backBtn.textContent = "← 回沓";' in app
+    assert 'cancel.textContent = "不改了";' in app
     # reduced-motion: the JS half cuts straight — reading the one
     # REDUCED_MOTION home in components.js (rd1 的「one listener, one
     # home」钉不许第二处 matchMedia 字面进 app.js), and the CSS half is
-    # the library-wide block (animationend still fires — the close
-    # survives)
-    assert "if (REDUCED_MOTION.matches) {" in app
+    # the library-wide block. v3-2 随迁：直切读面随容器化改形——fold 的
+    # 复合守卫与回沓回调的直切臂（旧独立 if 块字面退役），消费面照在。
+    assert "REDUCED_MOTION.matches" in app
     assert "REDUCED_MOTION," in app          # 经 components.js 导入
     assert "prefers-reduced-motion" not in app
     assert "export const REDUCED_MOTION = window.matchMedia(" in js
     block = _text("components.css")
     assert "@media (prefers-reduced-motion: reduce) {" in block
     assert "animation-duration: 0.01ms !important;" in block
-    # the editor owns Escape while open — and the closing keypress does
-    # not bubble to the stack's own Esc (the panel nulls first; the
-    # guard there cannot catch it, the propagation stop must)
-    assert "event.stopPropagation();   // 收台这拍不冒泡" in app
 
 
 # ---------------------------------------------------------------------------

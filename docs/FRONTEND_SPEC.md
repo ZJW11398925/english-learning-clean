@@ -123,6 +123,7 @@ weight，700 = 合成粗体发糊——中文标题靠字号跳档 + 字距）�
 | `--read-pad` | `18px` | 阅读左右留白 | — |
 | `--safe-bottom` | `env(safe-area-inset-bottom, 0px)` | dock 底安全区 | — |
 | `--navdock-h` | `54px` | 常驻 dock（#18）高度：body 底 padding 与写信区让位的同一来源 | 不作行高 |
+| `--navdock-clearance` | `calc(var(--navdock-h) + var(--safe-bottom))` | 固定底具补偿带（v3-2，P1-1）：一切滚动容器 bottom padding 的算术底数（.flow / .spacebody 消费），零第三处手写 54px | 不作行高 |
 | `--shell-w` | `430px`（≥900px 媒体查询改写 `1080px`，≥1280 改 `1240px`） | 信纸栏宽：#18 navdock 与写信区 .dock 的同一宽度出处 | 不作颜色 |
 
 ### ②-6 圆角法则（2026-10-02 回退记录）
@@ -281,7 +282,8 @@ src/elc/webui/
   screens.css       屏级布局 + 壳层（html/body/#stage/dock=写信区/flow/
                     spacebody/屏级文字；四档断点系统 481/900/1280 +
                     桌面舞台构图；信封沓 .envsel 与角色编辑台的屏级
-                    形态；editor-zoom-in/out 两 keyframes——mc-2）
+                    形态；容器延展过渡（extendContainer）与
+                    贴底 sheet（hover:none 档）——v3-2）
   api.js            端点 fetch 封装（页面唯一 fetch 调用点；含
                     /api/partner、/api/characters 等现役读面）
   components.js     组件工厂 + 教学卡当场行为 + 点词卡 + 壳导航接线 +
@@ -374,6 +376,11 @@ R-1 时代的逐页剖析（信息组织 / 表达方式 / 特色延续三个否�
   信流里没递批注的一轮静默（W-8 定案延续）。
 - 满 / 加载 / 空 / 错误四态：读数块一律 #14 state-banner 族（现役）；
   信流不用横幅。
+- **Esc 逐层退栈（v3-2，⑩ 层级宪法的统一关闭语义）**：Esc 永远只退
+  一层——浮层关浮层、下拉容器退一层（编辑面/全览窗口 → 扇叠 → 收沓）、
+  全页回其入口（笔友档案/信档 → 案头；原始读数 → 温故 · 档案，与各自
+  返回钮同效）。体验矩阵确认 Esc 是全站唯一做对过的关闭控件——推广
+  到全部层；「点外关闭」只属浮层与下拉容器的遮罩面。
 
 #### 8.1.4 v2 沿用不变项（防静默丢失）
 
@@ -547,14 +554,16 @@ tap 的按压窗口，`--dur-micro` 档，松手即隐，零 JS）。备案（�
   错位叠放，rotate/translateX 从 stamp_key 确定性派生——同一角色恒同
   姿态，零随机）；当前通信的一封盖「当前」邮戳角标（`--seal`，真实
   状态事件——T2 合法面）；沓尾 = 新建空白信封：「起笔」（名字 + 一句
-  简介，最简开笔）与「完整编辑」（进编辑台）。点沓中一封 → 滑到沓首
+  简介，最简开笔）与「完整编辑」（进容器编辑面）。点沓中一封 → 滑到沓首
   微抬（260ms 减速长尾 + 让位 stagger）；再点或点「对话」→ 切换。
-- **角色编辑台**（mc-2 全页 DIY）：信封沓的「编辑」/ 空白封「完整编辑」
-  进——放大过渡（zoom origin 系于被点信封，editor-zoom-in/out）→ 九面
+- **角色编辑台**（mc-2 容器内 DIY 面，v3-2 重铸）：信封沓的「编辑」/
+  空白封「完整编辑」进——**编辑台在展开的沓容器内**（容器向下延展，
+  ⑩ 容器延展档）→ 九面
   表单（identity / personality / background / speech_style / values /
   boundaries / opening / scenario 等；读不回的面诚实注记）；veiled 四面
   「留空保留 / 写下盖上」（空值不伪装已填）；真 CRUD（内置卡可编辑、
-  删除有确认；born/邮票不变）；开场信预览；400 人话中文化。
+  删除有确认；born/邮票不变）；开场信预览；400 人话中文化；三出口
+  一致（Esc /「← 回沓」/「不改了」全部回沓，P1-4）。
 - **【角色卡弹窗整体优化——现役（v2-2 落地；原目标：用户定向
   2026-10-02 第 1 条）】** 信封沓选择器（mc-1）的显示与动效已按简报
   §5「纸先落、墨后渗」整体重排：入场 = paper-drop `--dur-settle` 320
@@ -563,27 +572,46 @@ tap 的按压窗口，`--dur-micro` 档，松手即隐，零 JS）。备案（�
   恒慢——「收拢」语义）；预览切换节奏保持（transform 260 减速长尾 +
   让位 stagger，总封顶 320）。下两条（翻页全览 / 起笔向下展开）是本
   条的两个具体子项，同场统筹、同一动效语汇。
-- **【角色卡翻页全览——现役（v2-2 落地）】** 沓内**全览可翻页**：
-  入口一钮两态（「翻看 / 回沓」，沓面板底行左位）；每页一张角色卡
-  全貌（可读回的五面摘要——name / identity / background / values /
-  letter_habits；personality / boundaries / opening / scenario 四面
-  读不回 = veiled 语义，页卡如实注记，开场信预览位缺席不虚构）+
-  页序计数（mono 竖排）；**横滑翻页**（`wirePageTurn`——ux-1 横滑
-  守卫同法：横大于纵严格判定、单指重臂双指全拦、边界静止、零
-  preventDefault）+ **点击翻页**（两侧墨线 chevron #22 复用）；
-  翻页动效 = page-turn（⑨-5 现役行）；Esc 先退回扇叠再一记收沓
-  （层层退）。翻页态不替换档案页——「档案」动作仍进全页，翻页是
-  沓内的浏览层。
-- **【起笔向下展开——现役（v2-2 落地）】** 「起笔」确认（新建或选中
-  角色）后，选择器页面向下**自动展开成对话主界面**：三条切换路径
-  （沓中「对话」/ 二次点选同一封 / 起笔成功后切换新笔友）都经
-  `unfoldToParlor`——方向感 = 信封沓收拢（`envsel--fold`）、信纸向
-  下铺开摊上案头（切角色路径的信流 resettle 同帧在播）；动画 = 纸面
-  曲线（`--ease-paper`）+ 大件 ≤320ms 档，沓面板退出与信流首屏进入
-  同帧编排（transform 与 opacity 拆开，opacity 恒慢）；reduced-motion
-  直落终态。注册为 ⑨-5 现役行。
-- 映射：现役真面已实施（web.py 端点 + webui 七文件内）；三目标块
-  v2-2 已实施，动效注册行见 ⑨-5。
+- **【翻看 = 容器升级为全览窗口——现役（v3-2 重铸；用户两项核心
+  误读纠正之二）】**「翻看」不是加一个翻看按钮和单独的翻看页面，而是
+  **整个角色卡的下拉窗口页面的完全升级**：沓面板（下拉容器）本体经
+  一次同族容器延展过渡（⑩ 容器延展档，`--dur-settle` ×
+  `--ease-paper` 高度拉开）长成全览窗口，翻页发生在窗口内——每页一
+  张角色卡全貌（可读回的五面摘要——name / identity / background /
+  values / letter_habits；personality / boundaries / opening /
+  scenario 四面读不回 = veiled 语义，页卡如实注记，开场信预览位缺席
+  不虚构）+ 页序计数（mono 竖排）；**横滑翻页**（`wirePageTurn`——
+  ux-1 横滑守卫同法：横大于纵严格判定、单指重臂双指全拦、边界静止、
+  零 preventDefault）+ **点击翻页**（两侧墨线 chevron #22 复用）；
+  翻页动效 = page-turn（⑨-5 现役行）。v2-2 的「翻看/回沓一钮两态 +
+  envsel-browser 子页面层」模式退役（同刀除名）。升级入口：扇叠底行
+  静默链「翻开全沓 ↓」（触屏无 Esc 的回程链「回扇叠 ↑」在窗口态现
+  位）+ 扇叠滚到沓底再往下滚 = 翻开（触屏主入口）。Esc 退一层回扇叠
+  （⑩ 退栈）；翻页态不替换档案页——「档案」动作仍进全页。
+- **【起笔/编辑 = 容器向下延展——现役（v3-2 重铸；用户两项核心
+  误读纠正之一）】**「直接起草编辑时，面板应当自动向下延伸拉开，是
+  **整个容器的变化**，而不是多一个滚动条」：**编辑**半 = 编辑台在
+  展开的沓容器内（`.envsel-editor` 编辑面），容器带着九面表单的实际
+  高度一次向下拉开；表单长就滚容器自己的编辑面（唯一滚动井），零
+  新增页面级滚动条——v2-2 的独立全页 char-editor 与 editor-zoom 放
+  大过渡退役，双滚动条（P2-8）一并消除。**起笔**半 = 起笔确认（新建
+  或选中角色）后容器**收拢让位案头**：三条切换路径（沓中「对话」/
+  二次点选同一封 / 起笔成功后切换新笔友）都经 `unfoldToParlor`——
+  沓收拢（`envsel--fold`）与信纸摊上案头（`flow-resettle`）同帧编排，
+  transform 与 opacity 拆开且 opacity 恒慢；reduced-motion 直落终态。
+  **定形理由**（任务书裁量项）：写信属于信流（写信区 + 批注都在
+  案头），容器收拢与信纸向下摊开同帧就是「向下延伸拉开」的桌面读
+  法；把对话塞进弹出容器会把通信锁在小窗里（写一封然后呢）——
+  「写信区在展开容器内呈现 / 容器展开后让位案头」的两可取让位案头。
+- **【移动端沓 bottom sheet——现役（v3-2 落地，P1-5）】** 触屏档
+  （`@media (hover: none)`，与词卡 sheet 同法的输入形态查询分档——
+  四档断点契约零新增边界）整沓落成贴底 bottom sheet：全宽、贴底、
+  安全区垫层、顶缘 ≤2px（沿容器基形 2px，不另发覆盖声明）、墨色
+  遮罩（`--ink` 0.4，禁毛玻璃）盖住下方屏幕，点遮罩 = 点容器外；
+  容器三态（扇叠/全览/编辑）在 sheet 形态下照常工作——升级与延展 =
+  sheet 自身长高。窄屏旧疾（卡溢出/简介截断/动作行黏连）随之消灭。
+- 映射：现役真面已实施（web.py 端点 + webui 七文件内）；v3-2 三块
+  与 v2-2 保留块同一动效语汇，注册行见 ⑨-5。
 
 #### 8.2.3 温故 · 今日（rd-3 修订版——默认层两块）
 
@@ -1247,8 +1275,9 @@ tap 的按压窗口，`--dur-micro` 档，松手即隐，零 JS）。备案（�
 
 v2-1 起注册表改形：全库 keyframes 恰五枚（`paper-drop` 落纸 /
 `ink-wash` 渗墨 / `ink-set` 落墨 / `paper-unfold` 展开 / `stamp-press`
-盖印，components.css 库尾；screens.css 另有 `editor-zoom-in/out` 编辑
-台过渡）——行级动效 = 这五枚原语按消费面组合，**opacity 恒慢于
+盖印，components.css 库尾；screens.css 另有
+`editor-zoom-in/out` 编辑台过渡——**v3-2 随编辑台容器化退役**，见
+⑩ 容器延展行）——行级动效 = 这五枚原语按消费面组合，**opacity 恒慢于
 transform ≈1.3×**（消费面用 `calc(var(--dur-*) * 1.3)` 表达法则）。
 v2-2 起增两枚（`paper-fold` 收拢 / `page-turn` 2D 翻页——下两行，
 全库七枚）：
@@ -1271,12 +1300,12 @@ v2-2 起增两枚（`paper-fold` 收拢 / `page-turn` 2D 翻页——下两行�
 | 信纸落桌（视图切换档） | 案头空间显形（`#space-parlor` 解隐，每次切换落一次） | `--dur-settle` × `--ease-enter` | `#space-parlor:not([hidden]) .flow` = ink-wash（内容层——容器动画会让 fixed 写信区在动画期改挂本节） | 总降级块归零 |
 | 案头重落（mc-1 切换档） | 角色切换后的信流重铺（app.js 落类、刷新前先摘——一屏一次纸事件） | `--dur-note` + ×1.3 × `--ease-enter` | `.flow.flow-resettle` = paper-drop + ink-wash | 同上 |
 | 邮戳盖下 stamp-press | 信笺寄出一瞬（composer 提交，JS 落类一次，animationend 自摘）；教学卡结课同枚 | `--dur-stamp` × `--ease-press` | `.stamp-press` + `@keyframes stamp-press`（scale .96→1 的 transform 收束——全应用唯一 overshoot 许可，非投影） | 0.01ms 即终，animationend 仍到（JS 清理不失效） |
-| 编辑台放大过渡（mc-2） | 信封沓「编辑/完整编辑」开台与收台（zoom origin 系于被点信封，缺省回版心） | 开台 = editor-zoom-in @ `--dur-note` + ink-wash @ `--dur-ink`（`--ease-enter` both）；收台 = editor-zoom-out @ `--dur-panel-out`（`--ease-exit` both） | `.char-editor--in` / `--out`（app.js 禁 .style） | 总降级块直切 |
+| 容器延展（v3-2，⑩ 容器延展档） | 沓下拉容器换形态：扇叠↔全览窗口（8.2.2a 翻看重铸）与扇叠↔编辑面（mc-2 容器化）——整个容器向下拉开/收回，非子页面替换 | `--dur-settle`（≤320ms 档）× `--ease-paper`，height 一次过渡 | `extendContainer`（components.js：换装前后量高，`--panel-h` custom prop 落差 + `.envsel--grow` 类；prop 缺省 = auto）；reduced-motion 直切 | 直切（REDUCED_MOTION 单一归宿 + 库尾总降级块双面） |
 | 抽屉开合 drawer | tabpanel 显隐（温故/抽屉的节切换） | 进 `--dur-panel-in` × `--ease-enter`（出 200 已立待接——容器级退出需 allow-discrete 的 display 参与，待 JS 编排或引擎修正，Revisit；现役退出 = `[hidden]` 直切） | `[role="tabpanel"]:not([hidden])` transition + `@starting-style`（只走透明度，位移交给逐行落墨；旧引擎直接显隐） | 总降级块（0.01ms）直切 |
 | 逐行落墨 reveal stagger | tabpanel 首次入视（IntersectionObserver 落 `.is-revealed`，回调只加类） | ink-wash 纯淡入 `--dur-1` × `--ease-enter`，步长 40ms、只对前 8 项生效（`--i` 由 JS 落，**总封顶 320ms**；`animation-fill-mode: both` 防先亮一下）——v2 行级改纯淡入（简报 §5「每行 140ms fade」） | `[data-reveal].is-revealed` 子项 + `--i`（components.js `wireReveal`） | 双面：CSS 总降级块 + JS 半区 `matchMedia` 即落定 |
 | 回执首渲 @starting-style | 动态插入的回执件（.typing / .sysline / .errline / .busystrip / .resultstrip）首渲 | `--dur-micro` × `--ease-exit` | `@starting-style`（Baseline 2024-08；缺失 = 直接出现，天然渐进增强）。信笺/批注不走此路（JS 门控的双动画保历史回填静帧）；#15 词卡已有组合入场不叠加 | 总降级块归零 |
-| 起笔向下展开（现役——v2-2 落地，用户定向 2026-10-02） | 「起笔」确认后选择器页面向下展开成对话主界面（8.2.2a 现役块） | `--dur-settle`（≤320ms 档）× `--ease-paper`；沓收拢与信流首屏同帧编排，transform/opacity 拆开且 opacity 恒慢 | `.envsel--fold` = `paper-fold`（收拢 200 × `--ease-exit`）+ `ink-wash` reverse ×1.3 恒慢；信流半 = 切角色路径的 `flow-resettle` 同帧在播；三条切换路径经 `unfoldToParlor` | 直落终态 |
-| page-turn 翻页（现役——v2-2 落库，用户点名） | 信封沓翻页全览（8.2.2a）与面板横滑切换 | `--dur-settle` × `--ease-paper` | **2D 翻页感**：位移 + rotateY ≤8° + 梯形 transform（skewY）与边缘卷曲阴影（墨色同源 `color-mix` 渐变）+ `--stack-shadow-soft` 承托；方向由消费面落 `--pt-x/--pt-ry/--pt-sk`（变量驱动）；**禁 3D 书本仿真**（无 preserve-3d——简报 T3 原列「翻页 flipbook」禁令按 T2 邮票豁免先例收窄（**用户点名豁免 2026-10-02**：禁令收窄为「3D 书本仿真」，2D 翻页感不在禁列） | 总降级块直切 |
+| 起笔让位案头（现役——v3-2 重铸，用户定向 2026-10-02） | 「起笔」确认（新建/选中角色）后沓容器收拢让位案头，信纸向下摊开（8.2.2a 现役块——定形理由在案） | `--dur-settle`（≤320ms 档）× `--ease-paper`；沓收拢与信流首屏同帧编排，transform/opacity 拆开且 opacity 恒慢 | `.envsel--fold` = `paper-fold`（收拢 200 × `--ease-exit`）+ `ink-wash` reverse ×1.3 恒慢；信流半 = 切角色路径的 `flow-resettle` 同帧在播；三条切换路径经 `unfoldToParlor` | 直落终态 |
+| page-turn 翻页（现役——v2-2 落库，用户点名） | 全览窗口翻页（8.2.2a——v3-2 起窗口 = 沓容器升级态）与面板横滑切换 | `--dur-settle` × `--ease-paper` | **2D 翻页感**：位移 + rotateY ≤8° + 梯形 transform（skewY）与边缘卷曲阴影（墨色同源 `color-mix` 渐变）+ `--stack-shadow-soft` 承托；方向由消费面落 `--pt-x/--pt-ry/--pt-sk`（变量驱动）；**禁 3D 书本仿真**（无 preserve-3d——简报 T3 原列「翻页 flipbook」禁令按 T2 邮票豁免先例收窄（**用户点名豁免 2026-10-02**：禁令收窄为「3D 书本仿真」，2D 翻页感不在禁列） | 总降级块直切 |
 
 - 纪律：零 JS 动画库、零 WAAPI；全部 CSS transitions/keyframes +
   class 切换；库尾 **reduced-motion 总降级块**是全库统一保险
@@ -1625,3 +1654,79 @@ v2-2 起增两枚（`paper-fold` 收拢 / `page-turn` 2D 翻页——下两行�
       在几封信里的足迹需要新索引/读面，客户端无表面形）；⑤ rd-3
       INFO-3 成长条目不可点（点一条成长结论跳到它的批注/痕迹——需
       条目级锚点）。
+
+---
+
+## ⑩ 层级宪法（v3-2 立，2026-10-02）
+
+> 地位：本节是全站**层**（layer）的类型学、叠放序（z 序）、互斥规则
+> 与统一关闭语义的唯一出处。立刀缘由 = 新鲜眼睛体验报告的「开得越多
+> 越乱，控制毫无章法」（P1 叠开矩阵）；用户两项核心误读纠正（起笔/
+> 编辑 = 整个容器的变化；翻看 = 下拉窗口的完全升级）由本节定谳的
+> 「下拉容器」类型承载。结构与 z 值属工程事实（本节与实现对账），
+> 交互语义属 R7 域——用户有首验否决权。
+
+### 10.1 层类型学（四类）
+
+| 类型 | 现役成员 | 特征 |
+|---|---|---|
+| **内联件** | 教学批注卡（#3）、词底纹提示（8.2.2④） | 信流内、随文档流滚动，**不是浮层**——不占层位、无遮罩、无独立关闭 |
+| **浮层** | #15 词卡（浮卡档 + sheet 档 + 遮罩） | 单一、贴点/贴底、遮罩只此一家 |
+| **下拉容器** | 信封沓（.envsel）及其全部形态：扇叠 deck / 全览窗口 window / 编辑面 editor（含触屏档 bottom sheet 形态 + 遮罩） | 一个容器、多个**形态**——形态切换 = 容器本体的延展过渡（见 10.4），**零子页面、零新增页面级滚动条** |
+| **全页** | 笔友档案 / 信档 / 原始读数（`#space-partner` / `#space-letters` / `#space-obs`）+ 三空间与门厅 | 文档流整页；导航条让位，返回钮与 Esc 是回途 |
+
+### 10.2 z 序表（现值实测后固化；改动须同刀改本表）
+
+| 层 | z | 成员 |
+|---|---|---|
+| 全页文档流 | 常规流（sticky 顶栏 5） | 各 `#space-*` section；`.top` z 5 |
+| 常驻 dock | 6 | #18 navdock |
+| 下拉容器（桌面档） | 7 | `.envsel`（扇叠/全览/编辑三形态同层——形态不换层） |
+| 写信区垫板 | 8 | `.dock`（fixed 底，与浮层遮罩同值——DOM 序在后者胜） |
+| 遮罩 | 8 | `.word-scrim` / `.envsel-scrim`（触屏档 display） |
+| 浮层卡 | 9 | `.word-card`；**触屏档的下拉容器升 9**（bottom sheet 盖过写信区垫板，`.envsel` 在 hover:none 半区改 z 9） |
+
+（沓内信封自身的 --env-z 是容器**内部**排布序，不入本表。）
+
+### 10.3 互斥规则
+
+1. **同屏至多一个浮层**：showWordCard 开新卡先收旧卡（既有语义）。
+2. **开下拉容器自动关浮层**：openEnvelopeSelector 先 closeWordCard。
+3. **进任何空间收一切浮层与下拉**：showSpace 先收词卡与沓容器（换
+   空间的人不被上一空间的层跟着走）；全页由此天然无层。
+4. **点外关闭**只属浮层与下拉容器的遮罩面（浮层 = 点卡外；容器 =
+   桌面点容器外 / 触屏点遮罩）；内联件与全页不占点外语义。
+
+### 10.4 统一关闭语义（Esc 逐层退栈）
+
+Esc 永远只退**一层**，从最上层起：浮层关浮层 → 下拉容器退一层
+（编辑面 → 扇叠；全览窗口 → 扇叠；扇叠 → 收沓）→ 全页回其入口
+（笔友档案/信档 → 案头；原始读数 → 温故 · 档案，与各自返回钮同效）。
+浮层在场时容器的 Esc 让路（wordCardOpen 裁决）——同一拍只退一层。
+reduced-motion 下退栈直切（0.01ms 即终 + JS 直切双面）。
+「点外关闭」见 10.3 之 4；零「关一层顺手关三层」的级联。
+
+### 10.5 容器延展档（下拉容器的形态过渡）
+
+沓容器的形态切换（扇叠↔全览↔编辑）= **容器本体的向下拉开/收回**：
+`extendContainer`（components.js）换装前后量高，height 差经
+`--panel-h` custom prop 走一次 transition（`--dur-settle` 大件档 ×
+`--ease-paper`，prop 缺省 = auto）；动画期 `overflow: hidden`（纸的
+拉开感，内容随容器展开呈现）。**禁**：子页面替换（v2-2 的
+envsel-browser 子页面层模式即此，已除名）、形态切换引入新的页面级
+滚动条（v2-2 的独立全页编辑台双滚动条，已除名）。触屏档的 sheet
+形态同档——升级/延展 = sheet 自身长高。
+
+### 10.6 登记（v3-2 四查留档，Revisit = v3-3）
+
+**P1-2「词卡全端不可达」四查结论：事件链完整，不构成缺陷；根因 =
+词表覆盖率 × miss 静默契约的体验叠加**。活体取证（真浏览器双档，
+基线 953843b）：`.word` 分片在（一封信 57 片）、`#messages` click
+委托在（app.js 委派 + wordFromCaret 兜底）、真实鼠标点词开卡
+（桌面浮卡档 + 390px 档）、真实触屏（hasTouch 上下文）点词开卡
+（bottom sheet 档 + 遮罩）——全链无断点。**但**一封真实回信的
+36 个去重词仅 1 个命中词表（/api/word 实测），命中失败按 ③ #15
+契约**静默**——用户点任何词几乎必遇无声无息，读感即「全端不可达」。
+**不硬修**：miss 提示是 ③ #15「miss 按契约静默」的契约变更（R7 域，
+需用户首验）+ 词表覆盖是内容侧工程，均超本刀白名单——登记 v3-3
+裁量（方向：miss 的一次性轻提示 / 词表扩容后的复测）。

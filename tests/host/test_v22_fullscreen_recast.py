@@ -214,15 +214,27 @@ def test_the_page_turn_is_two_d_and_shared() -> None:
 
 
 def test_the_browser_layer_lives_inside_the_selector() -> None:
-    """沓内的浏览层：入口一钮两态（翻看/回沓）、翻页态不替换档案页
-    （页卡上的「档案」动作仍进全页）、横滑守卫 = ux-1 纪律的第二
-    工厂（wirePageTurn）、页序计数 mono、页卡诚实注记（读不回的四面
-    如实说，开场信预览位缺席）。"""
+    """沓内的浏览层（v3-2 随迁：**全览窗口 = 整个沓容器的升级态**——
+    envselFace 态机管三形态，同一批 DOM 子节点 hidden 翻转 + 容器本体
+    延展，零子页面；v2-2 的「翻看/回沓一钮两态」 retiring）、翻页态不
+    替换档案页（页卡上的「档案」动作仍进全页）、横滑守卫 = ux-1 纪律
+    的第二工厂（wirePageTurn）、页序计数 mono、页卡诚实注记（读不回
+    的四面如实说，开场信预览位缺席）。"""
 
     app = _text("app.js")
     js = _text("components.js")
     assert "function buildEnvelopeBrowser(box)" in app
-    assert 'browse.textContent = envselBrowser ? "回沓" : "翻看";' in app
+    # the upgrade affordance: one quiet link, two labels by face — the
+    # face state machine (envselFace) is the single source, and the
+    # v2-2 envselBrowser boolean is retired (negative)
+    assert 'face === "window" ? "回扇叠 ↑" : "翻开全沓 ↓";' in app
+    assert "envselFace" in app
+    import re as _re
+
+    assert not _re.search(r"\benvselBrowser\b", app), \
+        "v2-2 的 envselBrowser 布尔须已退役（envselBrowserBox 同名前缀" \
+        "不在禁列）"
+    assert "setEnvelopeBrowser" not in app
     assert "wirePageTurn(page, () => envselPageAt > 0," in app
     assert "if (next < 0 || next >= roster.length) return;" in app
     assert "openPartnerDossier(item.character_id);" in app
@@ -267,8 +279,10 @@ def test_the_selector_folds_and_the_start_writes_unfold() -> None:
     assert "paper-fold var(--dur-panel-out) var(--ease-exit)" in fold
     assert "ink-wash calc(var(--dur-panel-out) * 1.3)" in fold
     assert "both reverse;" in fold
-    # Esc steps back through the browser layer before folding the pad
-    assert "setEnvelopeBrowser(false);" in app
+    # Esc steps back through the container's faces before folding the
+    # pad (v3-2: the face ladder lives in envselEsc — editor/window
+    # each step back to the deck)
+    assert 'if (envselFace === "editor" || envselFace === "window") {' in app
 
 
 # ---------------------------------------------------------------------------

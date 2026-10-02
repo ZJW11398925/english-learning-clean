@@ -178,8 +178,13 @@ def test_the_dock_clears_the_flow_and_the_overlays(tmp_path: Path) -> None:
     assert "bottom: var(--navdock-h); z-index: 8;" in screens
     css = _text("components.css")
     assert ".word-card { position: absolute; z-index: 9;" in css
-    # the flow's bottom padding grew by the dock's height
-    assert ".flow { padding: 18px var(--read-pad) 310px; }" in screens
+    # the flow's bottom padding grew by the dock's height (v3-2 随迁：
+    # 算术升级为 --navdock-clearance 令牌账——navdock + 安全区 + 写信
+    # 区自身高度带，字面 310 退役；P1-1 底坞遮挡全局清)
+    assert ".flow { padding: 18px var(--read-pad)" in screens
+    assert "calc(var(--navdock-clearance) + 256px); }" in screens
+    assert ("--navdock-clearance: calc(var(--navdock-h)"
+            " + var(--safe-bottom));" in tokens)
 
 
 # ---------------------------------------------------------------------------

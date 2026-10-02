@@ -713,8 +713,10 @@ def test_the_current_postmark_never_clips_and_the_live_fixes_hold() -> None:
 
 def test_the_selector_esc_rename_and_z_order_wiring_is_pinned() -> None:
     """LOW-3 三交互语义源钉：①z 序（沓首最高，layoutEnvelopeStack 的
-    排名公式）；②Esc 收沓（接线 + 摘除对——开关对称；mc-2 起编辑台
-    开着时 Esc 归编辑台，沓不替它收）；③编辑台保存成功后
+    排名公式）；②Esc 收沓（接线 + 摘除对——开关对称；v3-2 重铸：
+    Esc 逐层退栈——浮层在场让路（wordCardOpen 裁决），编辑面/全览
+    窗口退一层回扇叠，扇叠才收沓；v2-2 的 setEnvelopeBrowser 分支
+    随容器态机退役）；③编辑台保存成功后
     refreshEnvelopeStack（沓重排：名更新、邮票与姿态不动）。删任一
     接线即红。"""
 
@@ -723,24 +725,25 @@ def test_the_selector_esc_rename_and_z_order_wiring_is_pinned() -> None:
     # ① the visual order is the rank order (preview = rank 0 = top z)
     assert 'env.style.setProperty("--env-i", String(position));' in js
     assert 'env.style.setProperty("--env-z", String(count - position));' in js
-    # ② Esc folds the selector; the listener leaves with it; the editor
-    # (mc-2) owns Escape while it is open. v2-2 随迁：翻页全览是沓内的
-    # 浏览层——Esc 先退回扇叠（setEnvelopeBrowser(false)），再一记才
-    # 收沓（层层退，不一步跳关）。
+    # ② Esc folds the selector; the listener leaves with it. v3-2 随迁：
+    # Esc 是⑩层级宪法的逐层退栈——浮层先退（wordCardOpen 让路），
+    # 编辑面/全览窗口各退一层回扇叠，扇叠一记收沓（层层退，不一步跳
+    # 关）；v2-2 的 charEditorPanel 让路分支与 setEnvelopeBrowser 分支
+    # 随容器态机（envselFace）退役——负控防回潮。
     assert (
         'function envselEsc(event) {\n'
-        '  if (charEditorPanel) return;'
-        "   // Esc 归编辑台（它自己的收拢）\n"
-        '  if (event.key === "Escape") {\n'
-        "    // 翻页全览是沓内的浏览层——Esc 先退回扇叠，再一记才收沓\n"
-        "    if (envselBrowser) {\n"
-        "      setEnvelopeBrowser(false);\n"
-        "      return;\n"
-        "    }\n"
-        "    closeEnvelopeSelector();\n"
+        '  if (event.key !== "Escape") return;\n'
+        "  if (wordCardOpen()) return;"
+        "   // 浮层先退（它的监听收它自己）\n"
+        '  if (envselFace === "editor" || envselFace === "window") {\n'
+        '    setEnvelopeFace("deck");\n'
+        "    return;\n"
         "  }\n"
+        "  closeEnvelopeSelector();\n"
         "}" in app
     )
+    assert "if (charEditorPanel) return;" not in app
+    assert "setEnvelopeBrowser" not in app
     assert 'document.addEventListener("keydown", envselEsc);' in app
     assert 'document.removeEventListener("keydown", envselEsc);' in app
     # ③ a saved edit re-renders the stack (name moves, stamp stays) —

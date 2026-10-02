@@ -147,8 +147,11 @@ def test_eight_key_container_faces_carry_no_large_radius() -> None:
         )
     bare_in_screens = [
         (".dock {", "写信区垫板"),
-        (".char-editor {", "编辑台容器"),
     ]
+    # v3-2 随迁：.char-editor 独立全页随编辑台容器化退役（同刀除名）
+    # ——编辑台的新居所是沓容器（.envsel，下行 2px 信纸物件档照钉）；
+    # 本名单不再有「编辑台容器」这一独立面。
+    assert ".char-editor" not in screens
     for selector, label in bare_in_screens:
         block = _rule_block(screens, selector)
         assert _radius_values_of(block) == [], (

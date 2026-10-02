@@ -1164,15 +1164,44 @@ export function envelopeCard(item, opts) {
   return env;
 }
 
-// ── mc-2: 角色编辑台的 zoom 原点落点（app.js 禁 .style，custom props
-// 只在此落——mc-1 排布半区同一规矩）──────────────────────────────────
-// app.js 从被点信封的 getBoundingClientRect 算出视口坐标，这里只落
-// --editor-ox/--editor-oy 两个 custom props（screens.css 的
-// .char-editor 消费作 transform-origin——放大过渡从那封信出发）。
-// 数值原样落，零换算零兜底（缺省 50% 50% 由 CSS 自带）。
-export function placeEditorOrigin(root, x, y) {
-  root.style.setProperty("--editor-ox", x + "px");
-  root.style.setProperty("--editor-oy", y + "px");
+// ── v3-2: 容器延展（下拉容器的形态连续过渡半区；app.js 禁 .style，
+// custom props 与高度编排只在此落——mc-1 排布半区同一规矩）────────
+// 「整个容器的变化，而不是多一个滚动条」（用户原话 2026-10-02）：
+// 起笔/编辑/翻看都是沓面板本体向下拉开——mutate() 换装容器内容前后
+// 各量一次高，高度差经 --panel-h custom prop 走一次 height transition
+// （--dur-settle 大件档 × --ease-paper 减速长尾；⑩ 层级宪法的容器
+// 延展档），transitionend 后摘 prop（height 回 auto）。reduced-motion
+// 直切（REDUCED_MOTION 单一归宿 + 库尾总降级块双面）。480ms 保险丝
+// 与沓面板的 fold 同款（animationend/transitionend 正常先到）。
+export function extendContainer(panel, mutate) {
+  if (typeof mutate !== "function") return;
+  if (REDUCED_MOTION.matches) {
+    mutate();
+    return;
+  }
+  const from = panel.offsetHeight;
+  mutate();
+  const to = panel.offsetHeight;
+  if (from === to) return;
+  panel.style.setProperty("--panel-h", from + "px");
+  panel.classList.add("envsel--grow");
+  void panel.offsetHeight;   // 起点落定——从旧高过渡到新高
+  panel.style.setProperty("--panel-h", to + "px");
+  const done = (event) => {
+    if (event && event.propertyName !== "height") return;
+    panel.classList.remove("envsel--grow");
+    panel.style.removeProperty("--panel-h");
+    panel.removeEventListener("transitionend", done);
+  };
+  panel.addEventListener("transitionend", done);
+  setTimeout(done, 480);   // 保险丝（transitionend 正常先到）
+}
+
+// 浮层在开吗（#15 词卡）：层级宪法的 Esc 退栈顺序裁决面——沓面板的
+// Esc 只在浮层不在场时才接（浮层的监听收它自己）。零状态复制：读
+// components.js 自己的 openCard 单源。
+export function wordCardOpen() {
+  return openCard !== null;
 }
 
 // 21. disclosure（折叠组，R-1R；⑧ 8.2.9 契约形）：组头行（名称 + 计数 +

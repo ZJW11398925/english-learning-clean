@@ -172,15 +172,14 @@ def test_the_red_pencil_circle_is_one_static_mark(tmp_path: Path) -> None:
     assert "border-radius: 50%; transform: rotate(-2.5deg);" in css
     # the mark rides pure geometry: no data URI anywhere on the face
     assert "data:" not in css.split("SHELL_ASSETS")[0]
-    # keyframes: the v2 five registered set + the mc-2 zoom pair (the
-    # declared new registrations of the character editor's zoom
-    # transition — conservation price: the inline rename interaction
-    # retired in the same cut, .env-rename 段同刀拆除)；v2-2 起加两枚
-    # （paper-fold 沓收拢 / page-turn 2D 翻页——⑨-5 目标行落库，spec
-    # 9.5 表回填为现役行）；v2-2R 随迁 9→10（基线 517da30 实测本钉
-    # 已红——v22 黑屏修复刀加 from-only keyframe scrim-in 时未迁本
-    # 计数钉，stash 亲跑复现留痕；新真值 = 注册集 10 枚）
-    assert css.count("@keyframes ") == 10
+    # keyframes: the v2 five registered set + paper-fold 沓收拢 /
+    # page-turn 2D 翻页 + scrim-in（from-only 遮罩——v22 黑屏修复刀）。
+    # v3-2 随迁 10→8：mc-2 zoom 对枚（2 枚）随编辑台容器化退役（同刀
+    # 除名，⑩ 容器延展档取代——extendContainer 是 height 过渡，零新
+    # keyframes）；历史：v2-2 加两枚 9.5 表落库 / v2-2R 随迁 9→10
+    # （基线 517da30 实测本钉已红留痕）。
+    assert css.count("@keyframes ") == 8
+    assert "editor-zoom" not in css
 
 
 def test_the_closing_arms_split_settled_from_skipped(tmp_path: Path) -> None:

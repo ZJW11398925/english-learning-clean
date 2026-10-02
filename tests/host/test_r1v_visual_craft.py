@@ -212,7 +212,10 @@ def test_the_narrow_screen_base_values_are_untouched(tmp_path: Path) -> None:
     assert "--shell-w: 430px;" in tokens
     assert "--navdock-h: 54px;" in tokens
     screens = _text("screens.css")
-    assert ".flow { padding: 18px var(--read-pad) 310px; }" in screens
+    # v3-2 随迁：flow 尾距升级 --navdock-clearance 令牌账（字面 310
+    # 退役——navdock + 安全区 + 写信区高度带；P1-1 底坞遮挡全局清）
+    assert ".flow { padding: 18px var(--read-pad)" in screens
+    assert "calc(var(--navdock-clearance) + 256px); }" in screens
     assert (
         "padding-bottom: calc(var(--navdock-h) + var(--safe-bottom));"
         in screens

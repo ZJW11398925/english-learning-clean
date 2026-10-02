@@ -106,7 +106,13 @@ body {
    落在前一封信的纸尾上（soft 的 y 分量 -3px 即向上）。分层只用
    paper 色阶 + 发丝线 + 两级墨色阴影；打字的地方比信纸「新」。
    聚焦微起（:focus-within translateY(-2px)）保留 = 垫板被手压起。 */
-.flow { padding: 18px var(--read-pad) 310px; }
+/* v3-2（P1-1 底坞遮挡全局清）：滚动尾距 = 固定底具的真实高度账——
+   --navdock-clearance（navdock + 安全区，令牌出处 tokens.css）+
+   写信区自身的最坏高度带（textarea max 160 + 上下距与指路行 ≈ 250，
+   历史值 310 的可读拆法）。末行永远滚得出底具（三处点名：教学卡
+   「寄出回应」/ 温故·档案末行 / 案头「翻看以前的信 →」）。 */
+.flow { padding: 18px var(--read-pad)
+        calc(var(--navdock-clearance) + 256px); }
 .typing { margin: 0 0 18px; font-family: var(--f-sans);
           font-size: var(--fs-ui); color: var(--ink-faint); }
 .errline { margin: 0 0 14px; padding: 8px 10px;
@@ -115,6 +121,13 @@ body {
            color: var(--pencil); line-height: 1.7;
            white-space: pre-wrap; overflow-wrap: anywhere; }
 
+/* 写信区：固定底（R-1 起让位于其下的常驻 dock）、上发丝线、无边框
+   输入行 + 寄出链接；底部安全区由 dock 负责，这里只留自身呼吸。
+   v2-2（8.2.2②）：垫板层——顶纸 --paper-high 浮起面（输入框纸面比
+   信流主纸新一档）+ --stack-shadow-soft 向上承影（阴影色墨同源、
+   y 分量向上落在信纸堆上；两级令牌之内，非自造）。
+   cs-2 输入态：聚焦臂的过渡载体声明在块内（transform 与发丝线色，
+   100ms 档——纸的物理，禁发光；非聚焦零改动）。 */
 /* 写信区：固定底（R-1 起让位于其下的常驻 dock）、上发丝线、无边框
    输入行 + 寄出链接；底部安全区由 dock 负责，这里只留自身呼吸。
    v2-2（8.2.2②）：垫板层——顶纸 --paper-high 浮起面（输入框纸面比
@@ -157,7 +170,11 @@ body {
    12px 方向性位移、140ms 弹回；纸的物理，100–200ms 档）。类由
    components.js 的 wirePanelSwipe 在松手判定后落/摘（transitionend
    对账），reduced-motion 随库尾总降级块归零。 */
-.spacebody { padding: 26px var(--read-pad) 60px;
+/* v3-2（P1-1）：温故/抽屉的滚动尾距同账——历史值 60px 对 navdock 54px
+   只有 6px 名义余量（刘海屏 safe-bottom 一来即负）。calc 含 navdock
+   与安全区 + 一档呼吸（--sp-6）。 */
+.spacebody { padding: 26px var(--read-pad)
+             calc(var(--navdock-clearance) + var(--sp-6));
              transition: transform var(--dur-1) var(--ease-paper); }
 .spacebody.panel-nudge--next { transform: translateX(calc(var(--sp-3) * -1)); }
 .spacebody.panel-nudge--prev { transform: translateX(var(--sp-3)); }
@@ -318,7 +335,14 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
    stagger（--env-delay 步长 20ms 封顶 60ms，总封顶 320ms）；微抬的
    阴影半档在 components.css 的垫纸层 opacity（阴影不做动画）。
    交互态（hover/focus/邮票变体/邮戳角标/动作行命中带）在
-   components.css 的 mc-1 段。 */
+   components.css 的 mc-1 段。
+   v3-2 容器化（⑩ 层级宪法）：本面板是**下拉容器**——deck 扇叠 /
+   window 全览 / editor 编辑是同一容器的三个形态（app.js 的
+   setEnvelopeFace）；形态切换 = 容器本体的高度延展（--panel-h custom
+   prop 由 components.js 的 extendContainer 落，height 走 --dur-settle
+   大件档；prop 缺省 = auto——height: var(--panel-h) 的 invalid-at-
+   computed-value-time 回退即 natural auto）。触屏档（hover:none，P1-5）
+   整体落成贴底 bottom sheet（全宽 + 遮罩 + 安全区，见文件尾块）。 */
 .envsel { position: fixed; top: calc(var(--sp-8) + var(--sp-1));
           left: 0; right: 0; z-index: 7;
           max-width: var(--shell-w); margin: 0 auto;
@@ -328,7 +352,13 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
           border-radius: 2px;
           padding: var(--sp-4) var(--sp-4) var(--sp-2);
           max-height: calc(100dvh - var(--sp-8) - var(--sp-6));
+          height: var(--panel-h);
           display: flex; flex-direction: column; }
+/* 容器延展过渡（v3-2，⑩ 容器延展档）：类由 extendContainer 落/摘，
+   height 旧→新一次过渡；overflow hidden 只在动画期——纸的拉开感，
+   内容随容器展开呈现。 */
+.envsel--grow { transition: height var(--dur-settle) var(--ease-paper);
+                overflow: hidden; }
 /* 沓面板入场一次（复用注册双动画——纸先落、墨后渗；v2-2 重排
    8.2.2a：面板是大件，落 --dur-settle 320 档 + 进入减速长尾
    --ease-paper（原 --ease-enter 稳出档让位——「纸先落」的长尾才是
@@ -398,11 +428,13 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
 .envsel-foot { margin: var(--sp-2) 0 0; display: flex;
                justify-content: space-between; align-items: baseline; }
 
-/* ── mc-1 翻页全览（v2-2，8.2.2a 目标块落地）：沓内的浏览层——每页
-   一张角色卡全貌（可读回的卡面摘要 + 开场信缺席的诚实注记），横滑
-   （ux-1 守卫同法）与点击（#22 chevron 复用）翻页；翻页态不替换
-   档案页——页卡上的「档案」动作仍进全页。page-turn = 2D 翻页感
-   （位移 + rotateY ≤8° + 梯形；零 preserve-3d——简报 T3「翻页
+/* ── mc-1 全览窗口（v3-2 容器升级重铸，8.2.2a）：**整个沓面板升级成
+   的全览窗口**——窗口态是容器自身的形态（.envsel 内的 hidden 翻转 +
+   容器高度延展，零子页面；v2-2 的「翻看/回沓按钮 + 子页面层」模式
+   退役），每页一张角色卡全貌（可读回的卡面摘要 + 开场信缺席的诚实
+   注记），横滑（ux-1 守卫同法）与点击（#22 chevron 复用）翻页；翻页
+   态不替换档案页——页卡上的「档案」动作仍进全页。page-turn = 2D 翻
+   页感（位移 + rotateY ≤8° + 梯形；零 preserve-3d——简报 T3「翻页
    flipbook」禁令按 T2 豁免先例收窄为「3D 书本仿真」，用户点名
    2026-10-02）；边缘卷曲阴影 = 墨色同源渐变（color-mix --ink，非
    自造 rgba）；承托 = --stack-shadow-soft（两级之内）。 */
@@ -453,46 +485,24 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
                  writing-mode: vertical-rl; }
 .envsel-toys { display: flex; align-items: center; gap: var(--sp-3); }
 
-/* ── mc-2 角色编辑台（信封沓的「编辑」/空白封「完整编辑」进的全页
-   DIY 面；工厂与接线在 app.js 的 mc-2 模块）────────────────────────
-   放大过渡（用户原话「页面自然放大过渡到编辑页面」）：transform 260ms
-   （--dur-note，--ease-enter——教学卡同一档）+ opacity 恒慢于
-   transform（--dur-ink，简报 §5 纸的物理法则）；退出反向收拢 200ms
-   （--dur-panel-out，--ease-exit）。transform-origin 从被点的那封信
-   出发：--editor-ox/--editor-oy 由 components.js 的 placeEditorOrigin
-   落（app.js 禁 .style），缺省回版心。两条 keyframes 是本面新增的
-   注册件（zoom 是纸的物理里新的一种——守恒律的对价：信封内联改名
-   交互随本面退役，.env-rename 段同刀拆除）。reduced-motion：库尾总
-   降级块 0.01ms 即终（animationend 照发，JS 收台不失效）+ JS 半区
-   matchMedia 直切。设计语言：纸面 + 发丝线分区 + 微标签（rd-1 配方）
-   + 输入态复用 .pen 家族；零新色值（全 var()）、零新楷体位、零朱砂、
-   零新断点（版心 = --measure，四档通用）。 */
-@keyframes editor-zoom-in {
-  from { transform: scale(0.45); }
-  to { transform: scale(1); }
-}
-@keyframes editor-zoom-out {
-  from { transform: scale(1); opacity: 1; }
-  to { transform: scale(0.45); opacity: 0; }
-}
-.char-editor { position: fixed; inset: 0; z-index: 8;
-               background: var(--paper);
-               overflow-y: auto; overscroll-behavior: contain;
-               transform-origin: var(--editor-ox, 50%)
-                                 var(--editor-oy, 50%); }
-.char-editor--in { animation: editor-zoom-in var(--dur-note)
-                              var(--ease-enter) both,
-                              ink-wash var(--dur-ink)
-                              var(--ease-enter) both; }
-.char-editor--out { animation: editor-zoom-out var(--dur-panel-out)
-                               var(--ease-exit) both; }
-.char-editor-body { max-width: var(--measure);
-                    margin: 0 auto; padding: var(--sp-6) var(--sp-4)
-                    var(--sp-8); }
+/* ── mc-2 角色编辑面（v3-2 容器化：编辑台在展开的沓容器内；工厂与
+   接线在 app.js 的 mc-2 模块）──────────────────────────────────────
+   v2-2 的独立全页（fixed inset-0 + zoom 放大过渡 + 自带滚动井
+   与页面滚动条叠双杠——P2-8）随本刀整体退役：九面表单装进沓容器的
+   .envsel-editor 编辑面，容器本体经 extendContainer 向下延展（⑩ 的
+   容器延展档）；「回沓」行 sticky 于容器自己的编辑面滚动井（唯一滚
+   动井——零新增页面级滚动条）。设计语言：纸面 + 发丝线分区 + 微标签
+   （rd-1 配方）+ 输入态复用 .pen 家族；零新色值（全 var()）、零新楷
+   体位、零朱砂、零新断点（编辑面在容器内，版心随容器）。 */
+.envsel-editor { min-height: 0;
+                 overflow-y: auto; overscroll-behavior: contain;
+                 margin-top: var(--sp-2);
+                 max-width: var(--measure); }
 .editor-back { margin: 0 0 var(--sp-4);
-               /* ux-1：编辑台的「回沓」贴顶常显——sticky 于编辑台自身的
-                  滚动井（.char-editor 是 overflow-y:auto 的定页面），
-                  top 0 贴其顶；纸底（与编辑台同面）盖住滚过的表单。 */
+               /* ux-1：编辑面的「回沓」贴顶常显——sticky 于容器自己的
+                  编辑面滚动井（.envsel-editor 是 overflow-y:auto 的
+                  唯一滚动井），top 0 贴其顶；纸底（与容器同面）盖住
+                  滚过的表单。 */
                position: sticky; top: 0; z-index: 2;
                background: var(--paper); }
 .editor-kicker { margin: 0; font: var(--meta-font);
@@ -622,8 +632,10 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
   .ob { display: flex; justify-content: center; }
   .ob-sheet { width: 560px; margin: auto 0; }
   /* mc-1：信封沓的桌面扇形档——微扇全幅（--env-fan 1）、沓步放大、
-     不再限三封可见（沓内全摊）；沓面板定宽居中。 */
+     不再限三封可见（沓内全摊）；沓面板定宽居中。v3-2：容器升级为
+     编辑面时放宽到版心（九面表单不挤窄沓）。 */
   .envsel { max-width: 420px; }
+  .envsel--editor { max-width: var(--measure); }
   .envsel-stack { --env-fan: 1; --env-step: 56px; --env-body: 116px;
                   max-height: none; }
   .family-groups { display: grid;
@@ -669,4 +681,27 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
   :root { --shell-w: 1240px; }
   #stage { max-width: 1240px; }
   .marginalia { width: 240px; }
+}
+
+/* ── v3-2 移动端沓（P1-5）：触屏档（输入形态查询 hover:none——与词卡
+   bottom sheet 同法的分档纪律，非断点边界；四档断点契约零新增边界）
+   整沓落成贴底 bottom sheet：全宽、贴底、安全区垫层、顶缘直角（圆角
+   纪律 ≤2px——本面取 0）、墨色遮罩（--ink 降透明度 0.4，禁毛玻璃）
+   盖住下方屏幕。容器三态（deck/window/editor）在 sheet 形态下照常
+   工作——升级/延展 = sheet 自身长高（同一 extendContainer 过渡）。
+   z 序（⑩ 宪法表）：sheet z 9（盖过写信区垫板 z 8 与 navdock z 6）、
+   遮罩 z 8——两件都晚于 sections/navdock 挂载，同值时序在后者胜。 */
+.envsel-scrim { display: none; position: fixed; inset: 0; z-index: 8;
+                background: var(--ink); opacity: 0.4; }
+@media (hover: none) {
+  .envsel-scrim { display: block;
+                  animation: scrim-in var(--dur-note)
+                             var(--ease-paper) both; }
+  /* 顶缘圆角沿容器基形的 2px（信纸物件 ≤2px 档——圆角纪律的合法
+     下限，不另发覆盖声明）。 */
+  .envsel { top: auto; bottom: 0; z-index: 9;
+            max-width: none; left: 0; right: 0;
+            border-left: 0; border-right: 0; border-bottom: 0;
+            max-height: calc(100dvh - var(--sp-8));
+            padding-bottom: calc(var(--sp-2) + var(--safe-bottom)); }
 }

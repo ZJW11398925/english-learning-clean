@@ -135,9 +135,14 @@
   --icon-stroke: 1.5;
   /* ── 布局（--read-pad / --safe-bottom / --navdock-h 钉住不动）──
      --shell-w：信纸栏宽——navdock 与写信区的同一宽度出处；窄屏
-     430px（现役值），宽屏由 screens.css 的桌面媒体查询改写。 */
+     430px（现役值），宽屏由 screens.css 的桌面媒体查询改写。
+     --navdock-clearance（v3-2）：固定底具的补偿带——navdock 高与
+     安全区的一次合计（P1-1 底坞遮挡全局清的算术出处：一切滚动容器
+     的 bottom padding 以它为底再加油 breath，screens.css 的 .flow /
+     .spacebody 消费），零第三处手写 54px。 */
   --read-pad: 18px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --navdock-h: 54px;
+  --navdock-clearance: calc(var(--navdock-h) + var(--safe-bottom));
   --shell-w: 430px;
 }
