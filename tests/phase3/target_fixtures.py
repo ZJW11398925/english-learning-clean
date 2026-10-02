@@ -60,8 +60,12 @@ TEACHING_CONTENT: dict[str, dict[str, object]] = {
         ),
         "reveal_form": "I think it is going to rain.",
         "canonical_forms": ("I think it is going to rain.",),
-        "alternative_realizations": ("It might rain.", "I'd say it will rain."),
-        "required_slots": (("rain",), ("think", "guess", "reckon")),
+        "alternative_realizations": (
+            "It might rain.",
+            "I'd say it will rain.",
+            "It is going to rain, I think.",
+        ),
+        "required_slots": (("think", "guess", "reckon"),),
         "capability_linkage": "cap-eval-hedged-opinion",
     },
     "res-softener-kind-of": {
@@ -73,7 +77,7 @@ TEACHING_CONTENT: dict[str, dict[str, object]] = {
         "reveal_form": "The ending is kind of sad.",
         "canonical_forms": ("The ending is kind of sad.",),
         "alternative_realizations": ("The ending is a bit sad.",),
-        "required_slots": (("ending",), ("kind", "sort", "bit")),
+        "required_slots": (("kind", "sort", "bit"),),
         "capability_linkage": "cap-stance-soften-disagreement",
     },
     "res-colloc-pay-attention-to": {
@@ -97,7 +101,7 @@ TEACHING_CONTENT: dict[str, dict[str, object]] = {
         "reveal_form": "I'd like to join the group.",
         "canonical_forms": ("I'd like to join the group.",),
         "alternative_realizations": ("I would like to join the group.",),
-        "required_slots": (("join",), ("like",)),
+        "required_slots": (("like",),),
         "capability_linkage": "cap-interact-backchannel",
     },
     "res-discourse-by-the-way": {
@@ -109,7 +113,7 @@ TEACHING_CONTENT: dict[str, dict[str, object]] = {
         "reveal_form": "By the way, did you book the room?",
         "canonical_forms": ("By the way, did you book the room?",),
         "alternative_realizations": ("Incidentally, did you book the room?",),
-        "required_slots": (("way",), ("book", "room")),
+        "required_slots": (("way",),),
         "capability_linkage": "cap-disc-topic-shift",
     },
     "res-phrasal-look-forward-to": {
@@ -121,7 +125,7 @@ TEACHING_CONTENT: dict[str, dict[str, object]] = {
         "reveal_form": "I look forward to seeing you.",
         "canonical_forms": ("I look forward to seeing you.",),
         "alternative_realizations": ("I'm looking forward to seeing you.",),
-        "required_slots": (("forward",), ("seeing",)),
+        "required_slots": (("look",), ("forward",), ("to",)),
         "capability_linkage": "cap-interact-backchannel",
     },
     "res-pragmatic-could-you": {
@@ -133,7 +137,7 @@ TEACHING_CONTENT: dict[str, dict[str, object]] = {
         "reveal_form": "Could you send me the file?",
         "canonical_forms": ("Could you send me the file?",),
         "alternative_realizations": ("Would you send me the file?",),
-        "required_slots": (("file",), ("could", "would")),
+        "required_slots": (("could", "would"),),
         "capability_linkage": "cap-ref-ask-clarification",
     },
     "res-idiom-break-the-ice": {

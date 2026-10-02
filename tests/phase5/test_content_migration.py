@@ -67,6 +67,96 @@ W5_KEY_FACE_TARGETS = frozenset(
 )
 W5_UPDATED_IN_VERSION = "content-w5"
 
+#: The v3-1 slot-criterion rewrite (content_src/entities/, sixty RESOURCE
+#: documents): each rewritten entity's required_slots moved to the target's
+#: own lexical material（槽位 = 目标自身的词汇材料；示例句话题词退出必答
+#: 面），and i-think additionally gained the evidence-declared accepted
+#: realization "It is going to rain, I think." as an alternative row. The
+#: fifty-nine entities that were still at revision 1 moved to revision 2
+#: with updated_in_version "content-v31"; i-think — already at revision 2
+#: from W-5 — moved to 3 / "content-v31".
+V31_REWRITE_TARGETS = frozenset(
+    {
+        "res-colloc-make-an-effort",
+        "res-colloc-make-progress",
+        "res-colloc-raise-awareness",
+        "res-colloc-save-time",
+        "res-colloc-take-a-look",
+        "res-discourse-by-the-way",
+        "res-discourse-long-story-short",
+        "res-discourse-on-another-note",
+        "res-discourse-speaking-of-which",
+        "res-discourse-that-brings-me-to",
+        "res-discourse-that-reminds-me",
+        "res-discourse-to-be-honest",
+        "res-discourse-to-get-back-to-the-point",
+        "res-discourse-where-was-i",
+        "res-frame-id-like-to",
+        "res-frame-just-wondering",
+        "res-frame-the-thing-is",
+        "res-frame-what-im-saying-is",
+        "res-frame-would-you-mind",
+        "res-hedge-as-far-as-i-know",
+        "res-hedge-from-what-i-can-tell",
+        "res-hedge-i-think",
+        "res-hedge-if-im-not-mistaken",
+        "res-hedge-if-you-ask-me",
+        "res-hedge-im-not-sure",
+        "res-hedge-in-a-way",
+        "res-hedge-it-depends",
+        "res-hedge-it-seems-to-me",
+        "res-hedge-not-really",
+        "res-idiom-a-blessing-in-disguise",
+        "res-idiom-the-ball-is-in-your-court",
+        "res-phrasal-bring-up",
+        "res-phrasal-come-up-with",
+        "res-phrasal-figure-out",
+        "res-phrasal-look-forward-to",
+        "res-phrasal-put-off",
+        "res-phrasal-run-out-of",
+        "res-phrasal-work-out",
+        "res-pragmatic-are-you-saying",
+        "res-pragmatic-could-you",
+        "res-pragmatic-could-you-clarify",
+        "res-pragmatic-go-on",
+        "res-pragmatic-i-hear-you-but",
+        "res-pragmatic-i-see-your-point-but",
+        "res-pragmatic-im-not-convinced",
+        "res-pragmatic-let-me-make-sure",
+        "res-pragmatic-no-offense-but",
+        "res-pragmatic-right",
+        "res-pragmatic-run-that-by-me-again",
+        "res-pragmatic-sorry-to-interrupt",
+        "res-pragmatic-thats-a-good-point-but",
+        "res-pragmatic-thats-debatable",
+        "res-pragmatic-up-to-a-point",
+        "res-pragmatic-what-do-you-mean",
+        "res-pragmatic-what-was-that",
+        "res-pragmatic-with-all-due-respect",
+        "res-pragmatic-youre-kidding",
+        "res-softener-a-bit",
+        "res-softener-if-anything",
+        "res-softener-kind-of",
+    }
+)
+V31_UPDATED_IN_VERSION = "content-v31"
+
+
+def _expected_metadata(target_id: str) -> tuple[int, str]:
+    """The (entity_revision, updated_in_version) each corpus row must read:
+    i-think sits on top of both cuts (revision 3 / content-v31), the rest
+    of the v3-1 rewrite at revision 2 / content-v31, the other W-5 rows at
+    revision 2 / content-w5, and everything else at revision 1 /
+    content-v1."""
+
+    if target_id == "res-hedge-i-think":
+        return 3, V31_UPDATED_IN_VERSION
+    if target_id in V31_REWRITE_TARGETS:
+        return 2, V31_UPDATED_IN_VERSION
+    if target_id in W5_KEY_FACE_TARGETS:
+        return 2, W5_UPDATED_IN_VERSION
+    return 1, CONTENT_VERSION
+
 
 def _document(entity_id: str) -> dict[str, object]:
     path = CONTENT_SRC_DIR / "entities" / f"{entity_id}.json"
@@ -217,16 +307,13 @@ def test_entity_row_is_the_seven_canonical_columns(
     assert view.lifecycle_status == "CANONICAL_APPROVED"
     # 旧真值 (P5-0): every migrated row read revision 1 / content-v1.
     # 新真值 (W-5): the twelve key-face targets moved to revision 2 /
-    # content-w5; every other row is unchanged.
-    assert view.entity_revision == (
-        2 if target_id in W5_KEY_FACE_TARGETS else 1
-    )
+    # content-w5. 新真值 (v3-1): the sixty slot-criterion rewrites carry
+    # revision 2 / content-v31 (i-think: 3 — it sat on both cuts); every
+    # other row is unchanged.
+    expected_revision, expected_version = _expected_metadata(target_id)
+    assert view.entity_revision == expected_revision
     assert view.created_in_version == CONTENT_VERSION
-    assert view.updated_in_version == (
-        W5_UPDATED_IN_VERSION
-        if target_id in W5_KEY_FACE_TARGETS
-        else CONTENT_VERSION
-    )
+    assert view.updated_in_version == expected_version
 
 
 @pytest.mark.parametrize("target_id", TARGET_IDS)

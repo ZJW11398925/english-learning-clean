@@ -187,7 +187,11 @@ button:focus-visible, input:focus-visible {
    与正文行高同锁——简报 §3b）。
    使用规则：只出现在信流（.flow）里；标题 b 用 textContent；卡头
    「批注：{功能句}」，状态行用服务端 status_cn 原词（界面不自造）；
-   卡头小图是 #22 的 note，aria-hidden 装饰。
+   卡头小图是 #22 的 note，aria-hidden 装饰。v3-1 起卡内子件随本组件
+   契约走（各带普通注释，不另立契约块）：结果条槽位化（至多一条）+
+   PARTIAL 指引行（至多一条）+ 回试行槽位（至多一条）+ 交付折叠
+   （至多一组）+ 参考答案独立区块（至多一块）+ .skiprow 拆装组
+   （至多一枚「先搁着」）。
    禁止变体：四侧描边框、弹层、大面积模糊投影型 shadow（阴影只许
    --stack-shadow-* 两级）。 */
 .note-paper { margin: 0 0 18px; background: var(--paper-2);
@@ -390,13 +394,61 @@ button:focus-visible, input:focus-visible {
    原话</div>（中文判词打头；条上一道撕缝虚线——判词像从短笺上撕下的
    一行）。
    状态矩阵：ok（墨蓝，命中）/ part（次级墨，部分）/ miss（主墨，未中）。
-   使用规则：只挂在 note-paper 卡内；符号是显示件，词是 runtime 自己的。
+   使用规则：只挂在 note-paper 卡内；符号是显示件，词是 runtime 自己的；
+   v3-1 起槽位化——卡内**至多一条**，新结果原位改写（旧条不残留）。
    禁止变体：绿红底色块（W-6 条款）。 */
 .resultstrip { margin-top: 10px; border-top: 1px dashed var(--rule);
                padding-top: 6px; font-size: var(--fs-small); }
 .resultstrip.ok { color: var(--pencil); }
 .resultstrip.part { color: var(--ink-soft); }
 .resultstrip.miss { color: var(--ink); }
+
+/* ── 7a. partialguide（PARTIAL 方向指引行，v3-1 A3）───────────────
+   形态：<div class="partialguide">答了一半——…点「提示」…</div>，紧随
+   结果条之后；次级墨小字，无交互态（「提示」指既有求助钮）。规则：
+   只随 ◐ 结果条在场（PARTIAL 退场即摘）；卡内至多一条。界限：底色块、
+   箭头图标不做。 */
+.partialguide { margin-top: 4px; color: var(--ink-soft);
+                font: var(--meta-font); line-height: var(--lh-ui);
+                letter-spacing: var(--meta-track); }
+
+/* ── 7b. note-state（回试行，v3-1 B1）─────────────────────────────
+   形态：<div class="note-state">再试一回？ · 状态 等你回应</div>；主墨
+   小字。规则：卡内**至多一条**，新状态原位改写（append 回潮即违）。
+   界限：粗体放大不做（回试行是状态，不是标题）。 */
+.note-state { margin-top: 6px; font-size: var(--fs-small); color: var(--ink); }
+
+/* ── 7c. note-delivery / note-history（卡内交付与折叠，v3-1 B4）───
+   形态：<div class="note-delivery">[<details class="note-history">
+   <summary>已看过的提示与讲解（n）</summary>…旧条…</details>]
+   <div class="noteline">最新交付</div></div>。规则：卡内至多一组；
+   REVEAL 不进折叠（走 7d 独立区块）；折叠默认收起（纯前端态，零新
+   端点）。 */
+.note-history { margin-top: 6px; }
+.note-history summary { cursor: pointer; color: var(--ink-soft);
+                        font: var(--meta-font);
+                        letter-spacing: var(--meta-track); }
+.note-history .noteline { margin-top: 4px; }
+
+/* ── 7d. note-answer（参考答案独立区块，v3-1 B3）──────────────────
+   形态：<div class="note-answer"><b>参考答案</b> · {reveal_form}</div>；
+   左缘界尺 = --pencil 实线 2px + 主纸垫底，与信尾落款视觉断开——参考
+   答案永不与回信文本混排。规则：REVEAL 专用（delivery_kind 路由）；
+   卡内至多一块，答案永远最新。界限：四侧描边框、弹层、大阴影不做
+   （note-paper 家族纪律）。 */
+.note-answer { margin-top: 10px; padding: 8px 10px;
+               border-left: 2px solid var(--pencil);
+               background: var(--paper);
+               font-size: var(--fs-small); overflow-wrap: anywhere; }
+.note-answer b { font-family: var(--f-ui); font-weight: 600;
+                 color: var(--ink-soft); }
+
+/* ── 7e. skiprow（先搁着的拆装组，v3-1 B2）────────────────────────
+   形态：<div class="skiprow"><button class="btn btn--faint">先搁着</button></div>。
+   规则：与 .replyrow 同规参与拆装（disarmMomentCard 一并拆）——守恒律：
+   卡内**至多一枚**「先搁着」。界限：游离于拆装组之外直挂卡上不做
+   （P0-2 的漏拆形态）。 */
+.skiprow { margin-top: 10px; }
 
 /* ── 8. busystrip（批改中条）───────────────────────────────────────
    结构：<div class="busystrip">批改中…</div>。

@@ -237,15 +237,46 @@ function outcomeSymbol(feedback) {
 }
 
 // 7. resultstrip：判分结果条（✓/◐/✗ 是显示件；中文判词打头，runtime
-// 原话随后——⑧ 8.2.10 定稿）。
+// 原话随后——⑧ 8.2.10 定稿）。v3-1 槽位化：卡内**至多一条**——新条来
+// 时更新既有节点（类名 + 文本原位改写），不再 append 累积（P0-2 的
+// 膨胀源之一）。PARTIAL（◐）伴随一条方向指引（A3）：绑「提示」按钮
+// 的既有词族，指引读者把整句说完或再看一眼提示——指引行同样至多
+// 一条，PARTIAL 退场即摘。
 export function showResultStrip(card, feedback) {
   const symbol = outcomeSymbol(feedback);
   const head = OUTCOME_VERDICT_CN[String(feedback).split("（")[0]] || "";
-  const strip = document.createElement("div");
+  let strip = card.querySelector(".resultstrip");
+  if (!strip) {
+    strip = document.createElement("div");
+    // 结果条排在回试行（.note-state）之前——8.2.10 的卡内槽位序。
+    const state = card.querySelector(".note-state");
+    if (state) state.before(strip);
+    else card.appendChild(strip);
+  }
   strip.className = "resultstrip " +
     (symbol === "✓" ? "ok" : symbol === "✗" ? "miss" : "part");
   strip.textContent = head ? head + " · " + feedback : feedback;
-  card.appendChild(strip);
+  showPartialGuide(card, strip, symbol === "◐");
+}
+
+// A3（v3-1）：PARTIAL 的人话方向指引行——「答了一半」的下一步读法，
+// 绑既有「提示」按钮的词族（不引入新控件）。至多一条，随结果条走。
+const PARTIAL_GUIDE_CN =
+  "答了一半——目标表达已经在句子里了，把整句说完，或点「提示」再看一眼。";
+
+function showPartialGuide(card, strip, on) {
+  let line = card.querySelector(".partialguide");
+  if (!on) {
+    if (line) line.remove();
+    return;
+  }
+  if (!line) {
+    line = document.createElement("div");
+    line.className = "partialguide";
+    if (strip) strip.after(line);
+    else card.appendChild(line);
+  }
+  line.textContent = PARTIAL_GUIDE_CN;
 }
 
 // 8. busystrip：busy 期间卡内控件全 disabled、出现一行批改中条。
@@ -369,16 +400,24 @@ export function addReplyControls(card) {
   help.appendChild(helpButton("答案", "reveal", "取答案中……", "已看答案", card));
   help.appendChild(helpButton("讲解", "explanation", "取讲解中……", "已看讲解", card));
   card.appendChild(help);
-  // W-2: the skip — a faint small link under the help arms; the moment's
-  // lock releases through the runtime's own reply entry, nothing else.
-  // rd-2：跳过 → 搁置族（「先搁着」）。
+  // W-2: the skip — a faint small link in its own row under the help
+  // arms; the moment's lock releases through the runtime's own reply
+  // entry, nothing else. rd-2：跳过 → 搁置族（「先搁着」）。v3-1（B2）：
+  // 「先搁着」并入拆装组（.skiprow 与 .replyrow 同规——disarmMomentCard
+  // 一并拆），守恒律：卡内至多一枚（P0-2 的漏拆修复）。
+  for (const row of Array.from(card.querySelectorAll(".skiprow"))) {
+    row.remove();
+  }
+  const skiprow = document.createElement("div");
+  skiprow.className = "skiprow";
   const skip = document.createElement("button");
   skip.type = "button";
   skip.className = "btn btn--faint";
   skip.textContent = "先搁着";
   skip.addEventListener("click", () =>
     postReply(card, { control: "skip" }, "搁置中……", "先搁着了——回头再拾。"));
-  card.appendChild(skip);
+  skiprow.appendChild(skip);
+  card.appendChild(skiprow);
 }
 
 function helpButton(label, control, busyText, doneNote, card) {
@@ -400,11 +439,76 @@ function disarmMomentCard(card) {
   for (const row of Array.from(card.querySelectorAll(".replyrow"))) {
     row.remove();
   }
+  // v3-1（B2）：skip 与求助行同规——同一拆装契约，至多一枚。
+  for (const row of Array.from(card.querySelectorAll(".skiprow"))) {
+    row.remove();
+  }
   // the guide line belongs to the reply face: it leaves with the controls
   // and comes back with them (never duplicated on a re-arm)
   for (const note of Array.from(card.querySelectorAll(".guide"))) {
     note.remove();
   }
+}
+
+// v3-1（B3/B4）：卡内交付的分派与收纳。REVEAL 永远走独立区块
+// .note-answer（「参考答案」标签 + 左缘界尺与信尾视觉断开——never
+// 混进回信文本）；至多一块，答案永远最新（原位改写）。HINT /
+// EXPLANATION / RETRY 走 .note-delivery 容器：最新一条 .noteline 显式
+// （cs-0 契约形不变），更早的一条收进 <details class="note-history">
+// 折叠——多轮求助不膨胀。一切文字 textContent（XSS 惰性纪律不变）。
+const HISTORY_LABEL_CN = "已看过的提示与讲解";
+
+function noteDelivery(card, text, kind) {
+  if (kind === "REVEAL") {
+    let block = card.querySelector(".note-answer");
+    if (!block) {
+      block = document.createElement("div");
+      block.className = "note-answer";
+      const delivery = card.querySelector(".note-delivery");
+      if (delivery) delivery.after(block);
+      else card.appendChild(block);
+    }
+    block.textContent = "";
+    const tag = document.createElement("b");
+    tag.textContent = "参考答案";
+    block.appendChild(tag);
+    block.appendChild(document.createTextNode(" · " + text));
+    return;
+  }
+  let host = card.querySelector(".note-delivery");
+  if (!host) {
+    host = document.createElement("div");
+    host.className = "note-delivery";
+    const answer = card.querySelector(".note-answer");
+    if (answer) answer.before(host);
+    else card.appendChild(host);
+  }
+  const current = host.querySelector(":scope > .noteline");
+  if (current) {
+    let history = host.querySelector(":scope > .note-history");
+    if (!history) {
+      history = document.createElement("details");
+      history.className = "note-history";
+      const summary = document.createElement("summary");
+      summary.textContent = HISTORY_LABEL_CN + "（1）";
+      history.appendChild(summary);
+      host.insertBefore(history, current);
+    }
+    const old = document.createElement("div");
+    old.className = "noteline";
+    old.textContent = current.textContent;
+    history.appendChild(old);
+    const count = history.querySelectorAll(":scope > .noteline").length;
+    history.querySelector("summary").textContent =
+      HISTORY_LABEL_CN + "（" + count + "）";
+    // 槽位 replace 的另一半：旧行收进折叠后，显式行的原位必须摘除——
+    // 否则折叠是复制、显式行照旧累积（活体探针抓到的第一版缺陷）。
+    current.remove();
+  }
+  const note = document.createElement("div");
+  note.className = "noteline";
+  note.textContent = text;
+  host.appendChild(note);
 }
 
 // 批注生命周期词的界面读法（rd-2：作答→回应族；AWAITING_USER → 等你
@@ -417,16 +521,19 @@ const LIFECYCLE_CN = {
 function readReplyAnswer(card, data) {
   // the reply result's own words, never a fabricated one: the new state
   // plus the feedback verdict (as the W-6 result strip) when the reply
-  // carried one
+  // carried one. v3-1（B1）槽位化：回试行写固定槽 .note-state——卡内
+  // 至多一条，新状态原位改写，不再 append 累积（P0-2 膨胀源之二）。
   disarmMomentCard(card);
-  card.appendChild(document.createElement("br"));
-  const b = document.createElement("b");
-  b.textContent = data.moment_state === "AWAITING_USER"
-    ? "再试一回？"
-    : "本次回应已收下";
-  card.appendChild(b);
-  card.appendChild(document.createTextNode(
-    " · 状态 " + (LIFECYCLE_CN[data.moment_state] || data.moment_state || "未知")));
+  let state = card.querySelector(".note-state");
+  if (!state) {
+    state = document.createElement("div");
+    state.className = "note-state";
+    card.appendChild(state);
+  }
+  state.textContent =
+    (data.moment_state === "AWAITING_USER" ? "再试一回？" : "本次回应已收下") +
+    " · 状态 " +
+    (LIFECYCLE_CN[data.moment_state] || data.moment_state || "未知");
   if (data.feedback !== null && data.feedback !== undefined) {
     showResultStrip(card, data.feedback);
   }
@@ -439,9 +546,11 @@ function readReplyAnswer(card, data) {
     // 成功族（SUCCESS / ALTERNATIVE_SUCCESS）= 盖戳完成态：圈线摘下、
     // #22 stamp 同枚印记按上（stamp-press 复用，零新动效）；搁置与
     // 负值收场 = 淡出态（skipped 现役原样）。守恒律：一卡至多一处
-    // 手迹——盖戳落地时圈线已离场。
+    // 手迹——盖戳落地时圈线已离场。v3-1：收场即摘 PARTIAL 指引行
+    // （指引是「再答一次」的读法，收场后不再是可答态）。
     const word = String(data.feedback || "").split("（")[0];
     card.classList.remove("circled");
+    showPartialGuide(card, null, false);
     if (word === "SUCCESS" || word === "ALTERNATIVE_SUCCESS") {
       card.classList.add("settled");
       const stamp = inkIcon("stamp");
@@ -474,12 +583,16 @@ async function postReply(card, payload, busyText, doneNote) {
     addLine("system", doneNote);
     if (data.delivery_text) {
       // cs-0：交付文本是系统组装的批注（语料的提示阶梯 / 揭示形 / 讲解），
-      // 不再以角色的信行入流——落在批注卡内作为系统行（note-paper 家族
-      // 的 .noteline，与卡头状态行同形），信流里不出现教学文本。
-      const note = document.createElement("div");
-      note.className = "noteline";
-      note.textContent = data.delivery_text;
-      card.appendChild(note);
+      // 不再以角色的信行入流——落在批注卡内，信流里不出现教学文本。
+      // v3-1（B3/B4）交付分派：REVEAL = 独立 .note-answer 区块（带
+      // 「参考答案」标签 + 独立视觉边界，永不与回信文本混排）；其余
+      // （HINT / EXPLANATION / RETRY）= 最新一条 .noteline 显式，更早
+      // 的收进 .note-history 折叠——多轮后卡内不膨胀（P0-2）。
+      noteDelivery(
+        card,
+        String(data.delivery_text),
+        String(data.delivery_kind || "")
+      );
     }
     readReplyAnswer(card, data);
   } catch {

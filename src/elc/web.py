@@ -2242,7 +2242,12 @@ class _WebFace:
         fabricated judgement. ``delivery_text`` (W-6, additive, present
         only when the runtime delivered words) is the result's own
         ``reply_text`` — the hint rung, the reveal form or the
-        explanation the page should show; a control word outside the
+        explanation the page should show — and ``delivery_kind`` (v3-1,
+        additive, present exactly when ``delivery_text`` is) is the
+        delivery's own kind word (``HINT`` / ``REVEAL`` / ``EXPLANATION``
+        / ``RETRY``), which routes the card's block: the reference answer
+        (REVEAL) renders as its own labelled block (`.note-answer`),
+        never mixed into the letter body. A control word outside the
         five-word grammar never reaches this face (the HTTP layer 400s
         it), so an unknown word here raises rather than silently meaning
         SKIP.
@@ -2304,6 +2309,23 @@ class _WebFace:
         delivered = getattr(result.value, "reply_text", None)
         if delivered:
             answer["delivery_text"] = str(delivered)
+            # v3-1（B3，additive，随 delivery_text 同现）: the delivery's
+            # own kind word (HINT / REVEAL / EXPLANATION / RETRY — the
+            # runtime's ``TeachingReplyTurnResult.delivery_kind``), so the
+            # page can route the block: the reference answer (REVEAL)
+            # renders as its own labelled block, never mixed into the
+            # letter body; a RETRY's fixed line stays a plain note line.
+            # A closing reveal (the ladder's terminalizing move) rides the
+            # result's §6 outcome word instead of a delivery kind — the
+            # face reads that own word ("REVEALED", the §8 exemption: the
+            # episode closes with the answer shown) rather than deriving
+            # one.
+            kind = getattr(result.value, "delivery_kind", None)
+            if not kind and getattr(result.value, "closure", None) == (
+                "REVEALED"
+            ):
+                kind = "REVEAL"
+            answer["delivery_kind"] = str(kind or "")
         return answer
 
     def observations(self) -> dict[str, Any]:

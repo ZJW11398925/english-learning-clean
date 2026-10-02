@@ -469,7 +469,7 @@ def test_an_embedded_document_commits_no_claim(
             {
                 "target_type": "RESOURCE",
                 "target_id": HEDGE,
-                "matched_form": "rain guess",
+                "matched_form": "guess",
                 "matched_via": "REQUIRED_SLOTS",
             },
             "The rain was heavy, I guess.",

@@ -42,7 +42,9 @@ from tests.phase3.target_fixtures import (
 KEY = AttemptAnswerKey(
     canonical_forms=("I think it is going to rain.",),
     alternative_realizations=("It might rain.",),
-    required_slots=(("rain",), ("think", "guess", "reckon")),
+    # v3-1 后的 i-think 槽位形态：槽位 = 目标自身的词汇材料（hedge 的
+    # 公式词组），示例句话题词（rain）不再是必答材料。
+    required_slots=(("think", "guess", "reckon"),),
 )
 
 

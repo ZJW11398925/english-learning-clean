@@ -48,6 +48,10 @@ from elc.curriculum.store import CurriculumContentStore
 from elc.platform.types import Ok
 from elc.teaching.evaluator import evaluate_attempt
 from elc.teaching.types import AttemptOutcome
+from tests.phase5.test_content_migration import (
+    V31_REWRITE_TARGETS,
+    V31_UPDATED_IN_VERSION,
+)
 
 #: The twelve W-5 targets, in plain id sort order (the N-C3C-2 convention).
 W5_TARGETS = (
@@ -67,7 +71,10 @@ W5_TARGETS = (
 
 #: The pre-written key face, verbatim from the task book's table:
 #: (canonical_forms, alternative_realizations, required_slots). The
-#: alternative lists are the *old* values — 保留旧值, byte for byte.
+#: alternative lists are the values as v3-1 left them — W-5's "保留旧值,
+#: byte for byte" held until the v3-1 slot-criterion rewrite added the
+#: evidence-declared realization to i-think and replaced its slot groups
+#: with the formula's own tokens（槽位 = 目标自身的词汇材料）.
 _KeyFace = tuple[tuple[str, ...], tuple[str, ...], tuple[tuple[str, ...], ...]]
 W5_KEY_FACE: dict[str, _KeyFace] = {
     "res-discourse-anyway": (
@@ -95,8 +102,14 @@ W5_KEY_FACE: dict[str, _KeyFace] = {
     ),
     "res-hedge-i-think": (
         ("I think.", "I think it is going to rain."),
-        ("It might rain.", "I'd say it will rain."),
-        (("rain",), ("think", "guess", "reckon")),
+        (
+            "It might rain.",
+            "I'd say it will rain.",
+            "It is going to rain, I think.",
+        ),
+        # v3-1: the example-scene topic word group (["rain"]) is gone; the
+        # slot key is the hedge formula's own tokens.
+        (("think", "guess", "reckon"),),
     ),
     "res-hedge-more-or-less": (
         ("More or less.", "The migration is more or less complete."),
@@ -472,26 +485,38 @@ def test_the_credit_face_fixtures_and_default_ev_stand(
 
 
 @pytest.mark.parametrize("target_id", W5_TARGETS)
-def test_the_twelve_read_revision_2_and_content_w5(
+def test_the_twelve_read_their_cut_metadata(
     built_content_db: Path, target_id: str
 ) -> None:
+    """The metadata face, per cut: W-5 moved the twelve to revision 2 /
+    content-w5, and v3-1 moved i-think on top of that (revision 3 /
+    content-v31 — its key face was rewritten again by the slot-criterion
+    cut)."""
+
+    expected_revision = 3 if target_id == "res-hedge-i-think" else 2
+    expected_version = (
+        V31_UPDATED_IN_VERSION
+        if target_id == "res-hedge-i-think"
+        else W5_UPDATED_IN_VERSION
+    )
     store = ContentStore(built_content_db)
     try:
         view = store.get_resource(target_id)
         assert isinstance(view, Ok), view
     finally:
         store.close()
-    assert view.value.entity_revision == 2
+    assert view.value.entity_revision == expected_revision
     assert view.value.created_in_version == "content-v1"
-    assert view.value.updated_in_version == W5_UPDATED_IN_VERSION
+    assert view.value.updated_in_version == expected_version
 
 
 def test_no_other_corpus_row_moved_revision_or_version(
     built_content_db: Path,
 ) -> None:
-    """The metadata face moved exactly the twelve: every other entity keeps
-    revision 1 and content-v1 (the frozen complement of the pre-written
-    table)."""
+    """The metadata face moved exactly the W-5 twelve (revision 2 /
+    content-w5; i-think 3 / content-v31) plus the v3-1 rewrite set
+    (revision 2 / content-v31): every entity outside those two cuts keeps
+    revision 1 and content-v1."""
 
     conn = sqlite3.connect(str(built_content_db))
     try:
@@ -501,33 +526,50 @@ def test_no_other_corpus_row_moved_revision_or_version(
         ).fetchall()
     finally:
         conn.close()
-    moved = sorted(
-        str(entity_id)
-        for entity_id, revision, _version in rows
-        if int(revision) != 1
-    )
-    assert moved == sorted(W5_TARGETS)
     for entity_id, revision, version in rows:
-        if str(entity_id) not in W5_TARGETS:
-            assert int(revision) == 1, entity_id
-            assert str(version) == "content-v1", entity_id
+        name = str(entity_id)
+        if name == "res-hedge-i-think":
+            assert int(revision) == 3
+            assert str(version) == V31_UPDATED_IN_VERSION
+        elif name in V31_REWRITE_TARGETS:
+            assert int(revision) == 2, name
+            assert str(version) == V31_UPDATED_IN_VERSION, name
+        elif name in W5_TARGETS:
+            assert int(revision) == 2, name
+            assert str(version) == W5_UPDATED_IN_VERSION, name
+        else:
+            assert int(revision) == 1, name
+            assert str(version) == "content-v1", name
 
 
 def test_the_source_documents_carry_the_same_metadata_face() -> None:
-    """The authoring tree and the artifact agree: the twelve source
-    documents declare revision 2 / content-w5 and no other document moved
-    (a source-side leak of the metadata face would build a second-class
-    truth)."""
+    """The authoring tree and the artifact agree: the source documents
+    declare the same two-cut metadata face (W-5 twelve; v3-1 sixty with
+    i-think on top), and no other document moved (a source-side leak of
+    the metadata face would build a second-class truth)."""
 
     moved = []
     for path in sorted((CONTENT_SRC_DIR / "entities").glob("*.json")):
         document = json.loads(path.read_text(encoding="utf-8"))
         entity = document["entity"]
+        name = str(entity["entity_id"])
         if entity["entity_revision"] != 1 or (
             entity["updated_in_version"] != "content-v1"
         ):
-            moved.append(entity["entity_id"])
-            assert entity["entity_id"] in W5_TARGETS, entity["entity_id"]
-            assert entity["entity_revision"] == 2
-            assert entity["updated_in_version"] == W5_UPDATED_IN_VERSION
-    assert sorted(moved) == sorted(W5_TARGETS)
+            moved.append(name)
+            if name == "res-hedge-i-think":
+                assert entity["entity_revision"] == 3
+                assert entity["updated_in_version"] == V31_UPDATED_IN_VERSION
+            elif name in V31_REWRITE_TARGETS:
+                assert entity["entity_revision"] == 2, name
+                assert (
+                    entity["updated_in_version"] == V31_UPDATED_IN_VERSION
+                ), name
+            else:
+                assert name in W5_TARGETS, name
+                assert entity["entity_revision"] == 2, name
+                assert entity["updated_in_version"] == W5_UPDATED_IN_VERSION, (
+                    name
+                )
+    assert set(moved) == set(W5_TARGETS) | set(V31_REWRITE_TARGETS)
+    assert len(moved) == 71

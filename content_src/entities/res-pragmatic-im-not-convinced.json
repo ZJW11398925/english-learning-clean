@@ -4,9 +4,9 @@
     "entity_type": "EXPRESSION",
     "language": "en",
     "lifecycle_status": "CANONICAL_APPROVED",
-    "entity_revision": 1,
+    "entity_revision": 2,
     "created_in_version": "content-v1",
-    "updated_in_version": "content-v1"
+    "updated_in_version": "content-v31"
   },
   "expression": {
     "expression_type": "PRAGMATIC_FORMULA",
@@ -35,9 +35,6 @@
     "required_slots": [
       [
         "convinced"
-      ],
-      [
-        "numbers"
       ]
     ]
   }

@@ -1244,20 +1244,31 @@ def test_the_three_key_spaces_are_collision_free_over_100_entities() -> None:
     report = _three_key_report(documents)
     assert report["canonical_cross"] == [], report["canonical_cross"]
     assert report["alternative_cross"] == [], report["alternative_cross"]
-    # 旧真值 (C3-d): []. 新真值 (W-5): the key-face cut replaced two C3-d
+    # 旧真值 (C3-d): []. W-5 真值: the key-face cut replaced two C3-d
     # entities' in-sentence content-word slots with the bare formula's own
     # tokens, and those tokens are shared with legacy slot groups
     # (`come`/`again` via res-pragmatic-come-again, `way` via
-    # res-pragmatic-no-way). Declared as this exact closed list — no other
-    # C3-d slot token entered any collision.
-    assert report["slot_new_vs_any"] == ["again", "come", "way"], (
+    # res-pragmatic-no-way). v3-1 真值: the slot-criterion rewrite
+    # （槽位 = 目标自身的词汇材料）rewrote sixty keys; the C3-d entities
+    # among them now share these tokens with the rest of the corpus
+    # (`ask` via res-hedge-if-you-ask-me, `come`/`on` via
+    # res-pragmatic-go-on and res-phrasal-come-up-with, `run` via
+    # res-pragmatic-run-that-by-me-again and res-phrasal-run-out-of,
+    # `way` via res-discourse-by-the-way and res-hedge-in-a-way,
+    # `again` via res-pragmatic-come-again). Declared as this exact
+    # closed list — no other C3-d slot token entered any collision.
+    assert report["slot_new_vs_any"] == ["again", "ask", "come", "on", "run", "way"], (
         report["slot_new_vs_any"]
     )
     assert report["within_entity_overlap"] == []
-    # INFO-2's legacy shape, declared: the old corpus's own shared slot
-    # tokens. This is the registered reading — a future cut that shrinks it
-    # may move this pin with the truth.
-    assert len(report["legacy_slot_groups"]) == 34
+    # INFO-2's legacy shape, declared: the corpus's own shared slot
+    # tokens. 旧真值 (C3-d): 34. v3-1 真值: 21 — the slot rewrite moved
+    # the example-scene topic words out of the key faces, so most of the
+    # old in-sentence content-word collisions (english/design/answer/
+    # train/booking/...) left the slot space entirely. This is the
+    # registered reading — a future cut that shrinks it may move this pin
+    # with the truth.
+    assert len(report["legacy_slot_groups"]) == 21
 
 
 def test_the_new_id_lists_declare_their_ordering_convention() -> None:

@@ -792,10 +792,12 @@ def test_history_shows_the_letter_the_role_history_hides(cs0_world) -> None:
 
 def test_the_delivery_renders_as_a_card_line_not_a_letter() -> None:
     """LOW-2（组件级源钉）：components.js 的交付文本渲染为批注卡内
-    .noteline 系统行（card.appendChild），不再以 addLine("assistant", …)
-    入信流——回退即变异 M-E 形态必红。"""
+    .noteline 系统行，不再以 addLine("assistant", …) 入信流——回退即
+    变异 M-E 形态必红。（v3-1 随迁：最新交付行挂进卡内的
+    .note-delivery 容器——仍在卡上、不进信流；折叠与参考答案区块同
+    容器族。）"""
 
     source = _text("webui/components.js")
     assert 'addLine("assistant", data.delivery_text' not in source
     assert 'note.className = "noteline";' in source
-    assert "card.appendChild(note);" in source
+    assert "host.appendChild(note);" in source

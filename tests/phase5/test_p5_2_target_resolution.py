@@ -34,7 +34,9 @@ HEDGE = TargetSupplyFacts(
     "res-hedge-i-think",
     ("I think it is going to rain.",),
     ("It might rain.", "I'd say it will rain."),
-    (("rain",), ("think", "guess", "reckon")),
+    # v3-1 后的 i-think 槽位形态：单组公式词（think/guess/reckon）——
+    # 示例句话题词（rain）已按「槽位 = 目标自身的词汇材料」判据移除。
+    (("think", "guess", "reckon"),),
 )
 TOPIC = TargetSupplyFacts(
     "CAPABILITY",
@@ -123,20 +125,26 @@ def test_canonical_form_occurs_case_and_punctuation_tolerant(
     ),
 )
 def test_canonical_form_requires_the_whole_span(utterance: str) -> None:
-    """Truncations and word-char neighbours are misses.
+    """Truncations and word-char neighbours are misses for the canonical
+    span.
 
     A rounded "I think it is going to rains." is the boundary case worth
     naming: the span occurs, but its right neighbour is a word character, so
     it is not the form — it is a different inflection, and this slice does
-    not fuzzily equate the two.
+    not fuzzily equate the two. (v3-1 note: the slot class may still claim
+    the utterance for the hedge's own card — the boundary pinned here is
+    the *form* class, not the card.)
     """
 
-    assert resolve_target(utterance, CORPUS) is NO_TARGET
+    resolution = resolve_target(utterance, CORPUS)
+    assert resolution is NO_TARGET or (
+        resolution.matched_via is MatchVia.REQUIRED_SLOTS
+    ), utterance
 
 
 def test_a_bare_slot_shaped_sentence_is_a_slot_match_not_a_form_match() -> None:
     """"think it is going to rain" is not the canonical span (the form starts
-    with "I"), but it does cover both slot groups — so it resolves through
+    with "I"), but it does cover the slot group — so it resolves through
     rule 3, which is exactly the priority order doing its job."""
 
     resolution = _resolved("think it is going to rain")
@@ -182,24 +190,45 @@ def test_alternative_apostrophe_is_not_loosened() -> None:
 
 
 def test_slots_need_every_group() -> None:
-    resolution = _resolved("The rain was heavy, I guess.")
-    assert resolution.target_id == "res-hedge-i-think"
-    assert resolution.matched_via is MatchVia.REQUIRED_SLOTS
-    assert resolution.matched_form == "rain guess"
+    """The AND semantics on a multi-group key: every group must be covered.
+    (The probe fact carries two groups the way the corpus's multi-group
+    keys do; i-think's own key is single-group since v3-1.)"""
+
+    fact = TargetSupplyFacts(
+        "RESOURCE",
+        "res-probe-two-groups",
+        (),
+        (),
+        (("alpha", "beta"), ("gamma", "delta")),
+    )
+    covered = resolve_target("beta and then delta", (fact,))
+    assert covered is not NO_TARGET
+    assert covered.matched_via is MatchVia.REQUIRED_SLOTS
+    assert covered.matched_form == "beta delta"
+    assert (
+        resolve_target("beta and then epsilon", (fact,)) is NO_TARGET
+    )
 
 
 def test_slots_render_takes_the_first_present_member_per_group() -> None:
-    resolution = _resolved("I reckon it rained and rain again")
-    assert resolution.matched_form == "rain reckon"
+    fact = TargetSupplyFacts(
+        "RESOURCE",
+        "res-probe-two-groups",
+        (),
+        (),
+        (("alpha", "beta"), ("gamma", "delta")),
+    )
+    resolution = resolve_target("beta and delta", (fact,))
+    assert resolution.matched_form == "beta delta"
 
 
 def test_slots_miss_when_one_group_is_uncovered() -> None:
     assert resolve_target("It is going to rain tomorrow.", CORPUS) is NO_TARGET
-    assert resolve_target("I guess so.", CORPUS) is NO_TARGET
+    assert resolve_target("We will leave soon.", CORPUS) is NO_TARGET
 
 
 def test_slot_tokens_are_whole_tokens() -> None:
-    assert resolve_target("It is rainy, I guess.", CORPUS) is NO_TARGET
+    assert resolve_target("It is rainy today.", CORPUS) is NO_TARGET
     assert resolve_target("I am guessing about the rain.", CORPUS) is NO_TARGET
 
 
@@ -226,7 +255,7 @@ SINGLE_TOKEN_SLOT_SENTENCES = (
     ("See you tomorrow!", "see"),
     ("What do you mean?", "mean"),
     ("The meeting starts at nine.", "meeting"),
-    ("You are following the argument well.", "following"),
+    ("You should clarify the requirement.", "clarify"),
 )
 
 
@@ -258,14 +287,16 @@ def test_the_corpus_single_token_keys_never_drive_a_slot_match(
     """The corpus keys whose whole slot key is one word never drive a slot
     match. The probe sample covers the four originals (cap-interact-
     backchannel "see", cap-ref-ask-clarification "mean",
-    cap-disc-topic-shift "meeting", and C3-d's res-pragmatic-right
-    "following"); W-5 added four more single-token keys
-    (`res-discourse-anyway` "anyway", `res-hedge-i-guess` "guess",
-    `res-pragmatic-got-it` "got", `res-pragmatic-i-see` "see"), whose
+    cap-disc-topic-shift "meeting") plus one v3-1 addition
+    (res-pragmatic-could-you-clarify "clarify" — the v3-1 slot rewrite
+    turned 31 formerly multi-group keys into single-token keys, whose
     exclusion the count pair in
     test_every_discriminating_corpus_slot_key_resolves_to_its_own_target
-    pins corpus-wide. With the whole corpus present, the exact sentences
-    the reviewer's probe used resolve to NO_TARGET."""
+    pins corpus-wide; W-5's four were res-discourse-anyway "anyway",
+    res-hedge-i-guess "guess", res-pragmatic-got-it "got",
+    res-pragmatic-i-see "see", and C3-d's res-pragmatic-right moved from
+    "following" to "right" in v3-1). With the whole corpus present, the
+    exact sentences the reviewer's probe used resolve to NO_TARGET."""
 
     facts = _corpus_facts(silent_supply)
     for sentence, token in SINGLE_TOKEN_SLOT_SENTENCES:
@@ -419,7 +450,8 @@ W5_ALTERNATIVE_CROSS_MATCHES = {
 #: *own* entity's new bare formula, so the same target wins through the
 #: canonical class instead of the alternative class. The target is
 #: unchanged; only the rule that fired moved (ten of the twelve W-5
-#: entities; i-think's and anyway's alternatives contain no bare formula).
+#: entities, plus v3-1's i-think evidence-declared realization; only
+#: anyway's alternatives contain no bare formula).
 W5_ALTERNATIVE_VIA_UPGRADES = {
     (
         "res-discourse-before-i-forget",
@@ -433,6 +465,11 @@ W5_ALTERNATIVE_VIA_UPGRADES = {
         "Moving on.",
     ("res-hedge-i-guess", "It's going to rain, I guess."):
         "I guess.",
+    # v3-1: i-think's key face gained the evidence-declared accepted
+    # realization as an alternative row; it carries the entity's own bare
+    # formula, so the canonical class fires (same shape as i-guess above).
+    ("res-hedge-i-think", "It is going to rain, I think."):
+        "I think.",
     ("res-hedge-more-or-less", "The two estimates match more or less."):
         "More or less.",
     (
@@ -459,11 +496,13 @@ def test_every_corpus_alternative_realization_resolves_to_its_own_target(
     """Every corpus §24.5 SUPPORTING row still resolves to its own target —
     with the W-5 rule-class movement declared: four alternative realizations
     containing another entity's bare formula now resolve to that entity
-    (CANONICAL_FORM outranks ALTERNATIVE_REALIZATION), and ten alternatives
-    containing their own entity's bare formula keep their target through the
-    canonical class instead (旧真值 P5-2: own target via
+    (CANONICAL_FORM outranks ALTERNATIVE_REALIZATION), and eleven
+    alternatives containing their own entity's bare formula keep their
+    target through the canonical class instead (旧真值 P5-2: own target via
     ALTERNATIVE_REALIZATION for all 102; 新真值 W-5: 88 unchanged, 10
-    same-target via CANONICAL_FORM, 4 cross-target via CANONICAL_FORM —
+    same-target via CANONICAL_FORM, 4 cross-target via CANONICAL_FORM;
+    新真值 v3-1: 88 unchanged, 11 same-target (i-think's evidence-declared
+    "It is going to rain, I think." joined the list), 4 cross-target —
     every deviation pinned to its exact pair above)."""
 
     facts = _corpus_facts(silent_supply)
@@ -498,13 +537,16 @@ def test_every_corpus_alternative_realization_resolves_to_its_own_target(
                 assert (
                     resolution.matched_via is MatchVia.ALTERNATIVE_REALIZATION
                 ), (fact, form)
-    assert seen == 102, (
+    assert seen == 103, (
         "the corpus's §24.5 SUPPORTING rows (C2-a 13 + C2-b 17 + C3-a 18 +"
-        " C3-b 18 + C3-c 18 + C3-d 18)"
+        " C3-b 18 + C3-c 18 + C3-d 18 + v3-1's i-think"
+        " evidence-declared realization)"
     )
     assert cross == len(W5_ALTERNATIVE_CROSS_MATCHES)
     assert upgraded == len(W5_ALTERNATIVE_VIA_UPGRADES)
-    assert cross + upgraded == 14
+    # 旧真值 (W-5): 4 + 10 = 14. 新真值 (v3-1): 4 + 11 = 15 — i-think's
+    # evidence-declared realization joined the same-target upgrade list.
+    assert cross + upgraded == 15
 
 
 def test_every_discriminating_corpus_slot_key_resolves_to_its_own_target(
@@ -517,11 +559,11 @@ def test_every_discriminating_corpus_slot_key_resolves_to_its_own_target(
     test_the_corpus_single_token_keys_never_drive_a_slot_match. The pair
     below is a count over the corpus, so it moves with the corpus (旧真值
     C2-a: 11 discriminating of 14; C2-b: 30 of 33; C3-b: 66 of 69;
-    C3-c: 84 of 87; C3-d: 101 of 105; 新真值 W-5: 97 of 105 —
-    the W-5 key-face cut replaced four formerly multi-group keys with the
-    bare formula's single one-token group (`res-discourse-anyway`,
-    `res-hedge-i-guess`, `res-pragmatic-got-it`, `res-pragmatic-i-see`),
-    which adds four single-token exclusions to C3-d's one)."""
+    C3-c: 84 of 87; C3-d: 101 of 105; W-5: 97 of 105 — the W-5 key-face
+    cut replaced four formerly multi-group keys with the bare formula's
+    single one-token group; 新真值 v3-1: 67 of 105 — the v3-1 slot rewrite
+    （槽位 = 目标自身的词汇材料）rewrote 60 keys, 31 of which became
+    single-token keys and dropped out of the discriminating set)."""
 
     facts = _corpus_facts(silent_supply)
     discriminating = 0
@@ -543,7 +585,7 @@ def test_every_discriminating_corpus_slot_key_resolves_to_its_own_target(
         f"[probe] discriminating slot keys -> {discriminating};"
         f" excluded single-token keys -> {excluded}"
     )
-    assert (discriminating, excluded) == (97, 8)
+    assert (discriminating, excluded) == (67, 38)
 
 
 def test_the_corpus_resolves_to_both_kinds(

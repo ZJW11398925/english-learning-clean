@@ -109,7 +109,8 @@ FOCUS_CAPABILITY = "cap-eval-hedged-opinion"
 CANONICAL_ANSWER = "I think it is going to rain."
 ALTERNATIVE_ANSWER = "It might rain."
 #: Misses the canonical form, the alternative realizations and every required
-#: slot group of res-hedge-i-think ("rain" + think/guess/reckon) → FAILURE.
+#: slot group of res-hedge-i-think（v3-1 后槽位 = think/guess/reckon 公式词
+#: 组）→ FAILURE.
 WRONG_ANSWER = "The weather is terrible today."
 #: 种子 evidence 的 dated 时间戳：BF-01 §22 只让 strong retrieval 决定 freshness，
 #: 时间不改历史 ability mass；把种子钉在过去就是为了让"新 strong retrieval
