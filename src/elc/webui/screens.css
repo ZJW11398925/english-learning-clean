@@ -42,7 +42,6 @@ body {
       padding: var(--sp-7) var(--read-pad); }
 .ob-sheet { max-width: 100%; background: var(--paper-high);
             border: 1px solid var(--rule);
-            border-radius: var(--r-paper);
             outline: 1px solid var(--rule-soft); outline-offset: 4px;
             padding: var(--sp-6) var(--sp-5) var(--sp-4); }
 /* 案头日期行：日期在左、邮票角标在右——信笺天头的构图件。
@@ -121,14 +120,11 @@ body {
    v2-2（8.2.2②）：垫板层——顶纸 --paper-high 浮起面（输入框纸面比
    信流主纸新一档）+ --stack-shadow-soft 向上承影（阴影色墨同源、
    y 分量向上落在信纸堆上；两级令牌之内，非自造）。
-   v2-2R：垫板顶角 = --r-raise 柔边（浮起面板档；底缘贴 navdock
-   保持平接——底角不圆，避免露底），用户裁决 2026-10-02。
    cs-2 输入态：聚焦臂的过渡载体声明在块内（transform 与发丝线色，
    100ms 档——纸的物理，禁发光；非聚焦零改动）。 */
 .dock { position: fixed; left: 0; right: 0;
         bottom: var(--navdock-h); z-index: 8;
         background: var(--paper-high); border-top: 1px solid var(--rule);
-        border-radius: var(--r-raise) var(--r-raise) 0 0;
         box-shadow: var(--stack-shadow-soft);
         padding: 10px var(--read-pad) 14px;
         max-width: var(--shell-w); margin: 0 auto;
@@ -274,12 +270,10 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
                    position: relative; }
 .env-mini { position: relative; flex: none; width: 64px; height: 42px;
             background: var(--paper-2); border: 1px solid var(--rule);
-            border-radius: var(--r-paper);
             box-shadow: var(--stack-shadow-soft); }
 .env-mini::before { content: ""; position: absolute; left: 0; right: 0;
                     top: 0; height: 46%;
                     background: var(--paper-high);
-                    border-radius: var(--r-paper) var(--r-paper) 0 0;
                     clip-path: polygon(0 0, 100% 0, 50% 96%, 50% 100%,
                                        0 100%);
                     border-bottom: 1px solid var(--rule); }
@@ -331,7 +325,7 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
           background: var(--paper-high);
           border: 1px solid var(--rule);
           outline: 1px solid var(--rule-soft); outline-offset: 3px;
-          border-radius: var(--r-raise);
+          border-radius: 2px;
           padding: var(--sp-4) var(--sp-4) var(--sp-2);
           max-height: calc(100dvh - var(--sp-8) - var(--sp-6));
           display: flex; flex-direction: column; }
@@ -367,7 +361,7 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
        min-height: var(--env-body);
        background: var(--paper-2);
        border: 1px solid var(--rule);
-       border-radius: var(--r-raise);
+       border-radius: 2px;
        z-index: var(--env-z, 1);
        padding: 10px 12px 6px;
        cursor: pointer;
@@ -418,7 +412,7 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
                   display: flex; align-items: stretch; gap: var(--sp-2); }
 .envpage { flex: 1; min-width: 0; position: relative;
            background: var(--paper-2); border: 1px solid var(--rule);
-           border-radius: var(--r-raise);
+           border-radius: 2px;
            box-shadow: var(--stack-shadow-soft);
            padding: var(--sp-3) var(--sp-4) var(--sp-3);
            overflow-y: auto; overscroll-behavior: contain;
@@ -483,7 +477,6 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
 }
 .char-editor { position: fixed; inset: 0; z-index: 8;
                background: var(--paper);
-               border-radius: var(--r-raise);
                overflow-y: auto; overscroll-behavior: contain;
                transform-origin: var(--editor-ox, 50%)
                                  var(--editor-oy, 50%); }
@@ -525,9 +518,7 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
                line-height: var(--lh-small); color: var(--ink-faint); }
 .editor-pen { min-height: 64px; max-height: 160px; }
 .editor-face--name input { width: 100%; border: 0; background: none;
-                           outline: none;
-                           border-bottom: 1px solid var(--rule);
-                           border-radius: var(--r-ctl);
+                           outline: none; border-bottom: 1px solid var(--rule);
                            padding: 4px 2px; font-family: var(--f-serif);
                            font-size: var(--fs-body);
                            line-height: var(--lh-body); color: var(--ink); }
@@ -535,14 +526,13 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
 .editor-cap { margin: var(--sp-1) 0 0; text-align: right;
               font: var(--meta-mono); font-variant-numeric: tabular-nums;
               color: var(--meta-ink); }
-/* 开场信预览：短笺纸面（paper-2 + 发丝缘 + --r-paper 柔边——v2-2R
-   用户裁决，旧「≤2px 圆角」句退役）——信件语体的样例渲染，读的是
-   将寄出的那一封 */
+/* 开场信预览：短笺纸面（paper-2 + 发丝缘 + ≤2px 圆角）——信件语体的
+   样例渲染，读的是将寄出的那一封 */
 .editor-openprev { margin-top: var(--sp-3); }
 .editor-openprev-paper { margin: var(--sp-1) 0 0; padding: var(--sp-3)
                          var(--sp-4); background: var(--paper-2);
                          border: 1px solid var(--rule);
-                         border-radius: var(--r-paper);
+                         border-radius: 2px;
                          font-family: var(--f-serif);
                          font-size: var(--fs-body);
                          line-height: var(--baseline);

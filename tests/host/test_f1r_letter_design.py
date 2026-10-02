@@ -61,11 +61,17 @@ def test_the_page_keeps_the_letter_form_laws(tmp_path: Path) -> None:
     assert "tabbar" not in page
     assert "#0f766e" not in page
     assert "#4fd1c5" not in page
-    # rd-4 随迁（9.12-23）+ v2 随迁 + v2-2R 随迁（用户裁决 2026-10-02：
-    # Apple 式柔和圆角语汇取代「≤2px 收窄」，T3「大圆角卡片」禁令废止
-    # ）：计数真值 11 → 33 = 手迹/盖印豁免几何 7 + 五档 token 消费 26
-    # （信纸物件/浮卡/控件/chip 全面上柔边——正钉在 v2-2R 套件）。
-    assert page.count("border-radius") == 33
+    # rd-4 随迁（9.12-23）+ v2 随迁（简报 §6「仅邮票/邮戳允许圆形；
+    # 信纸物件圆角收窄一档 ≤2px」）：零大圆角面板法则的豁免位 =
+    # ①手写批注层的红笔圈线椭圆（手迹几何非面板圆角）；②邮戳的双圈圆
+    # （.postmark 本体与 ::before、信封沓的「当前」邮戳 .env-mark 本体
+    # 与 ::before——盖印几何）；③邮票图形两枚（.stamp-v0 圆环 /
+    # .stamp-v5 圆拱——邮票圆形豁免位）；④信纸物件的 2px 收窄圆角
+    # （.envsel 沓面板与 .env 信封——简报 §6 增补档，非面板大圆角；
+    # mc-2 起加编辑台的开场信预览短笺——同 ≤2px 信纸物件档；v2-2 起
+    # 加信封沓翻页全览的页卡 .envpage——同档）。
+    # 面板大圆角仍一处即红。
+    assert page.count("border-radius") == 11
     assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
     assert "rgba(0,0,0" not in page

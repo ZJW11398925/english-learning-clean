@@ -1,37 +1,36 @@
-"""v2-2R — the soft-radius knife (柔和化刀: zero sharp corners webui-wide).
+"""v2-2X — the radius-revert knife (圆角回退刀: the v2-2R scale undone).
 
-The user ruling (2026-10-02, verbatim): 「尽量不要使用强硬锐利的边缘，
-不要留直角，学习 apple 的圆角」— the Apple-like soft radius vocabulary
-replaces the brief §6 「≤2px 收窄」 clause and lifts the T3 「大圆角卡片」
-ban (the other T3 bans stand). The scale was pre-fixed by the principal
-(DEC-OPI-10bbc3c8-…22 ②) and is pinned here as five ``--r-*`` tokens:
+The user ruling (2026-10-02, verbatim): 「改回去吧，不要用圆角了，
+因为你根本把握不住」— the v2-2R soft-radius knife (commit 52aa84a) is
+reverted whole. Authorization chain: DEC-OPI-5033857a-…1 (the revert
+ruling) → this knife. The restored truth is the v2-2 terminal corner
+state (commit 517da30), i.e. the brief §6 original law back in force:
+零大圆角面板（圆角收窄一档：信纸物件 ≤2px，仅邮票/邮戳圆形豁免）.
 
-====================  ======  =============================================
-token                 value   faces
-====================  ======  =============================================
-``--r-paper``         6px     in-flow paper (letters/notes/annotation cards)
-``--r-raise``         14px    raised faces (word card float/envelopes/…)
-``--r-sheet-top``     16px    bottom sheet top corners (bottom edge 0)
-``--r-ctl``           8px     inputs/textarea/form controls/selects
-``--r-pill``          999px   chips/inline marks/solid buttons
-====================  ======  =============================================
+Groups (this file's own):
 
-Groups (the task book's own):
+1. the token clearance — none of the five ``--r-*`` names appears
+   anywhere in the seven webui files or the spec; tokens.css carries no
+   ``border-radius`` declarations;
+2. the sharp-corner restoration — eight key container faces carry no
+   large radius again: their rule blocks either declare no
+   border-radius at all (word-card / note-paper / pen / chip / dock /
+   char-editor) or the literal ≤2px letter-object radius
+   (.envsel / .env — the brief §6 增补档);
+3. the counting truth — the border-radius census is back at the v2-2
+   terminal values (screens 4 / components 7), the 手迹/盖印 exempt
+   geometries survive verbatim (six ``50%`` seats + one ``9px 9px 0 0``
+   arch), and every literal value left is lawful (≤2px or exempt);
+4. the spec revert note — ②-6 carries the revert record naming the
+   user's date and the ruling verbatim; the five-tier table and the
+   three revision annotations are gone; the ⑨ preamble states the
+   original law again; the tokens.css headnote restores the
+   zero-large-radius clause.
 
-1. the token seat — the five constants exist in tokens.css with the
-   ruled values and the ruling annotation;
-2. the single-source sweep — every ``border-radius`` declaration in the
-   seven webui files consumes a ``--r-*`` token or one of the two exempt
-   geometries (the postmark/red-pen ``50%`` circles and the stamp
-   graphic's arch) — no literal pixel radius anywhere else;
-3. the face pins — sheet top corners / float card / paper faces /
-   controls / chip each consume their tier (≥1 consumer each);
-4. the sharp-corner clearance — fourteen named container faces each carry
-   a non-zero radius in their own rule block; the scrim stays bare and
-   the text-link buttons stay bare;
-5. the spec revision — ② carries the five token rows and the ruling
-   note; the §6/⑨/T3 sites carry the revision annotation; the ③ rows
-   for pen/note-paper/letter/word-card/field/chip note their tiers.
+What the revert keeps (non-radius v2-2R work, not touched here): the
+rd4 keyframes count migration 9→10 (the ``scrim-in`` keyframe added by
+the v2-2 blackout fix — pinned in test_rd4_full_face.py) and the
+b34a561 disposition edits.
 """
 
 from __future__ import annotations
@@ -44,30 +43,26 @@ TOKENS = "tokens.css"
 COMPONENTS = "components.css"
 SCREENS = "screens.css"
 
-#: The five soft-radius tokens, name → the exact ruled value (the scale
-#: is the principal's pre-fixed ruling — an executor may not retune it).
-RADIUS_TOKENS: dict[str, str] = {
-    "--r-paper": "6px",
-    "--r-raise": "14px",
-    "--r-sheet-top": "16px",
-    "--r-ctl": "8px",
-    "--r-pill": "999px",
-}
+#: The five v2-2R soft-radius token names — all of them must be gone
+#: from the webui and the spec.
+RETIRED_TOKEN_NAMES: tuple[str, ...] = (
+    "--r-paper",
+    "--r-raise",
+    "--r-sheet-top",
+    "--r-ctl",
+    "--r-pill",
+)
 
 #: The exempt geometries: the postmark / red-pen-circle / stamp-graphic
 #: seats (v2's 手迹/盖印豁免位 — circles and the arch are not panel
-#: radii and live outside the scale).
+#: radii and live outside the ≤2px letter-object scale).
 EXEMPT_RADIUS_VALUES = frozenset({"50%", "9px 9px 0 0"})
 
-#: The token-consuming declaration forms lawful across the webui
-#: (the dock and the flap faces round only their top corners — their
-#: bottom edges sit on another surface or are clipped by a tear).
-TOKEN_FORMS = frozenset(
-    {"var(--r-paper)", "var(--r-raise)", "var(--r-ctl)", "var(--r-pill)",
-     "var(--r-sheet-top) var(--r-sheet-top) 0 0",
-     "var(--r-raise) var(--r-raise) 0 0",
-     "var(--r-paper) var(--r-paper) 0 0"}
-)
+#: The lawful literal radius values after the revert: the brief §6
+#: letter-object scale (≤2px; 0 forms included for normalization) or an
+#: exempt geometry. Anything else — above all any --r-* var() form — is
+#: a violation of the revert ruling.
+LAWFUL_RADIUS_VALUES = frozenset({"0", "0px", "2px"}) | EXEMPT_RADIUS_VALUES
 
 
 def _rule_block(css: str, selector: str) -> str:
@@ -88,12 +83,11 @@ def _rule_block(css: str, selector: str) -> str:
     raise AssertionError(f"unbalanced braces after {selector!r}")
 
 
-def _radius_of(block: str) -> str:
-    """The block's single border-radius value (normalized whitespace)."""
+def _radius_values_of(block: str) -> list[str]:
+    """The block's border-radius values (normalized whitespace)."""
 
     found = re.findall(r"border-radius:\s*([^;]+);", block)
-    assert len(found) == 1, f"expected one radius, got {found}"
-    return " ".join(found[0].split())
+    return [" ".join(v.split()) for v in found]
 
 
 def _spec() -> str:
@@ -101,71 +95,74 @@ def _spec() -> str:
 
 
 # ---------------------------------------------------------------------------
-# 1. the token seat
+# 1. the token clearance
 
 
-def test_tokens_declare_the_five_soft_radius_constants() -> None:
-    """The five --r-* constants exist in tokens.css with the ruled values,
-    and the block carries the user ruling that retires the brief's
-    「≤2px 收窄」 clause (the annotation is the provenance of the scale)."""
+def test_the_five_soft_radius_tokens_are_gone() -> None:
+    """Token clearance: none of the five --r-* names appears anywhere in
+    the seven webui files (tokens.css first of all — the scale's physical
+    seat is deleted), and tokens.css carries no border-radius property at
+    all (it declares custom properties, not rules)."""
 
     tokens = _webui_text(TOKENS)
-    for name, value in RADIUS_TOKENS.items():
-        assert f"{name}: {value};" in tokens
-    assert "2026-10-02" in tokens
-    assert "apple" in tokens
-    assert "≤2px" in tokens  # the retired clause is named as retired
-    assert "柔和圆角" in tokens
+    for name in RETIRED_TOKEN_NAMES:
+        assert name not in tokens
+    assert "border-radius" not in tokens
+    everything = _webui_all_text()
+    for name in RETIRED_TOKEN_NAMES:
+        assert name not in everything, f"{name} survived the revert"
 
 
-def test_tokens_css_stays_free_of_literal_radius_declarations() -> None:
-    """tokens.css declares custom properties, not rules — the literal
-    ``border-radius`` property appears nowhere in it (the scale's values
-    are consumed via var() in the component files only)."""
+def test_no_radius_declaration_consumes_a_token() -> None:
+    """The consumer-side sweep: every border-radius value left in the
+    webui is a literal lawful value — no var(--r-*) form survives."""
 
-    assert "border-radius" not in _webui_text(TOKENS)
+    values = _radius_values_of(_webui_all_text())
+    assert values != []  # the census below pins the exact count
+    for value in values:
+        assert "--r-" not in value, f"token consumer survived: {value}"
 
 
 # ---------------------------------------------------------------------------
-# 2. the single-source sweep
+# 2. the sharp-corner restoration (the eight key faces)
 
 
-def test_every_radius_declaration_consumes_the_tokens_or_exempts() -> None:
-    """The sweep: every border-radius value across the seven webui files
-    is one of the five token forms (including the top-corner-only forms)
-    or one of the two exempt geometries — a literal pixel radius outside
-    the scale is a violation of the ruling's own single-source law."""
-
-    values = re.findall(
-        r"border-radius:\s*([^;]+);", _webui_all_text()
-    )
-    normalized = [" ".join(v.split()) for v in values]
-    lawful = TOKEN_FORMS | EXEMPT_RADIUS_VALUES
-    strangers = [v for v in normalized if v not in lawful]
-    assert strangers == []
-    # and the knife's own census: 33 declarations = components 23 +
-    # screens 10 (the migrated counting truth of the v2-2R cut)
-    assert len(normalized) == 33
-
-
-def test_exempt_geometry_seats_survive_verbatim() -> None:
-    """The 手迹/盖印 exemptions keep their exact literals: the red-pen
-    ellipse, the postmark pair, the 「当前」 mark pair and the stamp
-    graphic's ring (six 50% seats) plus the one arch — seven exempt
-    seats in total, outside the scale."""
+def test_eight_key_container_faces_carry_no_large_radius() -> None:
+    """直角恢复: the eight key container faces named by the revert knife
+    are back at the v2-2 terminal state — six bare (no border-radius at
+    all) and two letter-object seats at the literal ≤2px scale."""
 
     components = _webui_text(COMPONENTS)
-    assert components.count("border-radius: 50%") == 6
-    assert "border-radius: 9px 9px 0 0;" in components
+    screens = _webui_text(SCREENS)
+    bare_in_components = [
+        (".word-card {", "词卡浮卡"),
+        (".note-paper {", "批注卡"),
+        (".pen {", "稿纸 textarea"),
+        (".chip {", "词表片"),
+    ]
+    for selector, label in bare_in_components:
+        block = _rule_block(components, selector)
+        assert _radius_values_of(block) == [], (
+            f"{label} ({selector}) must be bare after the revert"
+        )
+    bare_in_screens = [
+        (".dock {", "写信区垫板"),
+        (".char-editor {", "编辑台容器"),
+    ]
+    for selector, label in bare_in_screens:
+        block = _rule_block(screens, selector)
+        assert _radius_values_of(block) == [], (
+            f"{label} ({selector}) must be bare after the revert"
+        )
+    # the two letter-object seats: the brief §6 增补档 (≤2px), verbatim
+    assert _radius_values_of(_rule_block(screens, ".envsel {")) == ["2px"]
+    assert _radius_values_of(_rule_block(screens, ".env {")) == ["2px"]
 
 
-# ---------------------------------------------------------------------------
-# 3. the face pins (one consumer assertion per tier, minimum)
-
-
-def test_bottom_sheet_rounds_its_top_corners_only() -> None:
-    """The sheet face: inside @media (hover: none), .word-card carries
-    --r-sheet-top on the top two corners and 0 at the bottom (贴屏)."""
+def test_the_sheet_tier_and_dock_pad_stay_bare() -> None:
+    """The two v2-2R signature faces are fully undone: the bottom-sheet
+    form of .word-card (inside @media (hover: none)) declares no radius
+    and .dock carries no top-corner padding — 底缘平接恢复原状."""
 
     components = _webui_text(COMPONENTS)
     at = components.index("\n@media (hover: none) {")
@@ -181,194 +178,59 @@ def test_bottom_sheet_rounds_its_top_corners_only() -> None:
                 end = i
                 break
     sheet_block = components[open_brace:end]
-    assert (
-        "border-radius: var(--r-sheet-top) var(--r-sheet-top) 0 0;"
-        in sheet_block
-    )
-    assert sheet_block.count("border-radius") == 1
-
-
-def test_floating_card_and_underlay_use_the_raise_tier() -> None:
-    """The float face: .word-card and its deckle underlay both consume
-    --r-raise (the raised-paper pair rounds together)."""
-
-    components = _webui_text(COMPONENTS)
-    assert _radius_of(_rule_block(components, ".word-card {")) == (
-        "var(--r-raise)"
-    )
-    assert _radius_of(_rule_block(components, ".word-card::after {")) == (
-        "var(--r-raise)"
-    )
-
-
-def test_in_flow_paper_faces_use_the_paper_tier() -> None:
-    """--r-paper consumers: the annotation card, the torn reply paper,
-    the cover sheet and the editor's opening-letter preview (文档流
-    纸件的柔边，不是卡)."""
-
-    components = _webui_text(COMPONENTS)
-    screens = _webui_text(SCREENS)
-    assert _radius_of(_rule_block(components, ".note-paper {")) == (
-        "var(--r-paper)"
-    )
-    assert _radius_of(_rule_block(components, ".letter.me .paper {")) == (
-        "var(--r-paper)"
-    )
-    assert _radius_of(_rule_block(screens, ".ob-sheet {")) == (
-        "var(--r-paper)"
-    )
-    assert _radius_of(
-        _rule_block(screens, ".editor-openprev-paper {")
-    ) == "var(--r-paper)"
-
-
-def test_form_controls_use_the_ctl_tier() -> None:
-    """--r-ctl consumers: the writing textarea, the field row's input and
-    select, and the annotation reply input."""
-
-    components = _webui_text(COMPONENTS)
-    assert _radius_of(_rule_block(components, ".pen {")) == "var(--r-ctl)"
-    assert _radius_of(
-        _rule_block(components, ".field input, .field select {")
-    ) == "var(--r-ctl)"
-    assert _radius_of(_rule_block(components, ".replytext {")) == (
-        "var(--r-ctl)"
-    )
-
-
-def test_chip_is_a_pill() -> None:
-    """--r-pill consumer: the word-picker chip (999px full-soft)."""
-
-    components = _webui_text(COMPONENTS)
-    assert _radius_of(_rule_block(components, ".chip {")) == "var(--r-pill)"
+    assert _radius_values_of(sheet_block) == []
 
 
 # ---------------------------------------------------------------------------
-# 4. the sharp-corner clearance (negative controls, ≥8 faces)
+# 3. the counting truth
 
 
-def test_fourteen_named_container_faces_carry_a_nonzero_radius() -> None:
-    """直角清零负控: each named container face's own rule block declares
-    a border-radius that is present and not 0 — the audit face of the
-    user ruling, one entry per known sharp-corner survivor."""
-
-    components = _webui_text(COMPONENTS)
-    screens = _webui_text(SCREENS)
-    faces: list[tuple[str, str, str]] = [
-        (COMPONENTS, ".note-paper {", "批注卡"),
-        (COMPONENTS, ".letter.me .paper {", "撕边信纸"),
-        (COMPONENTS, ".letter.me.en-route { position: relative;", "在途信封"),
-        (COMPONENTS, ".word-card {", "词卡浮卡"),
-        (COMPONENTS, ".pen {", "稿纸 textarea"),
-        (COMPONENTS, ".chip {", "词表片"),
-        (SCREENS, ".ob-sheet {", "门厅封面"),
-        (SCREENS, ".dock {", "写信区垫板"),
-        (SCREENS, ".env-mini {", "信档缩略封"),
-        (SCREENS, ".envsel {", "沓面板"),
-        (SCREENS, ".env {", "沓封卡"),
-        (SCREENS, ".envpage {", "翻页页卡"),
-        (SCREENS, ".char-editor {", "编辑台容器"),
-        (SCREENS, ".editor-openprev-paper {", "开场信预览短笺"),
-    ]
-    bare: list[str] = []
-    for file_name, selector, label in faces:
-        css = components if file_name == COMPONENTS else screens
-        block = _rule_block(css, selector)
-        value = _radius_of(block)
-        if value in ("0", "0px", "none"):
-            bare.append(label)
-    assert bare == []
-
-
-def test_the_scrim_and_the_text_links_stay_bare() -> None:
-    """The two lawful bare faces: the ink scrim is a mask (无圆角) and
-    the .btn family is underlined text without a box (圆角不适用)."""
-
-    components = _webui_text(COMPONENTS)
-    assert "border-radius" not in _rule_block(components, ".word-scrim {")
-    assert "border-radius" not in _rule_block(components, ".btn {")
-
-
-def test_flap_faces_follow_their_envelope_silhouette() -> None:
-    """The flap faces (en-route 封舌 / env-mini 封舌) round their top
-    corners with the paper tier so the V-clip silhouette matches the
-    rounded envelope body (a square flap would poke past the corners)."""
+def test_the_radius_census_is_back_at_the_v22_terminal_truth() -> None:
+    """The census: components 7 + screens 4 = the v2-2 terminal state
+    (the same values the f1r/p1/r1v/mc1 counting pins carry). The exempt
+    geometries survive verbatim: six 50% seats (the red-pen ellipse, the
+    postmark pair, the 「当前」 mark pair, the stamp ring) plus the
+    stamp-v5 arch. Every literal value left is ≤2px or exempt."""
 
     components = _webui_text(COMPONENTS)
     screens = _webui_text(SCREENS)
-    assert _radius_of(
-        _rule_block(components, ".letter.me.en-route::before {")
-    ) == "var(--r-paper) var(--r-paper) 0 0"
-    assert _radius_of(
-        _rule_block(screens, ".env-mini::before {")
-    ) == "var(--r-paper) var(--r-paper) 0 0"
-
-
-def test_the_dock_pads_top_corners_and_keeps_its_base_flush() -> None:
-    """The writing dock is a raised pad whose base sits on the navdock:
-    top corners take --r-raise, the bottom edge stays 0 (底角不圆，
-    露底防)."""
-
-    screens = _webui_text(SCREENS)
-    assert _radius_of(_rule_block(screens, ".dock {")) == (
-        "var(--r-raise) var(--r-raise) 0 0"
-    )
+    assert components.count("border-radius") == 7
+    assert screens.count("border-radius") == 4
+    assert components.count("border-radius: 50%") == 6
+    assert "border-radius: 9px 9px 0 0;" in components
+    values = _radius_values_of(_webui_all_text())
+    strangers = [v for v in values if v not in LAWFUL_RADIUS_VALUES]
+    assert strangers == []
 
 
 # ---------------------------------------------------------------------------
-# 5. the spec revision
+# 4. the spec revert note
 
 
-def test_spec_token_table_carries_the_five_rows_and_the_ruling() -> None:
-    """② gains the 圆角五档 table: five --r-* rows with the ruled values
-    and the ruling annotation naming the user's date and the retired
-    clauses (§6 ≤2px / T3 大圆角卡片 — the other T3 bans stand)."""
-
-    spec = _spec()
-    assert "### ②-6 圆角五档" in spec
-    for name, value in RADIUS_TOKENS.items():
-        assert f"`{name}` | `{value}`" in spec
-    assert "用户裁决 2026-10-02" in spec
-    assert "Apple 式柔和圆角" in spec
-    assert "「大圆角卡片」禁令废止，其余禁令不动" in spec
-
-
-def test_spec_revision_notes_reach_the_six_and_nine_and_t3_sites() -> None:
-    """The revision annotation is present at the §6-shaped sentence
-    (8.2.2②), the ⑨ preamble's retired ≤2px clause, and the T3 citation
-    in 8.1.4 — the three sites the task book names."""
+def test_spec_carries_the_revert_record_and_the_restored_law() -> None:
+    """②-6 is the revert record: it names the user's date and the ruling
+    verbatim and states the restored brief §6 law. The five-tier table
+    and every --r-* mention are gone; the ⑨ preamble states the original
+    law again."""
 
     spec = _spec()
-    assert "取代「零圆角面板/\n≤2px 收窄」" in spec
-    assert "取代「信纸物件 ≤2px 收窄」" in spec
-    assert "「大圆角\n卡片」禁令废止" in spec
+    assert "### ②-6 圆角法则（2026-10-02 回退记录）" in spec
+    assert "被用户否决回退" in spec
+    assert "改回去吧，不要用圆角了" in spec
+    assert "零大圆角面板" in spec
+    assert "### ②-6 圆角五档" not in spec
+    for name in RETIRED_TOKEN_NAMES:
+        assert name not in spec
+    assert "圆角 v2 收窄一档：信纸物件 ≤2px，仅邮票/邮戳圆形" in spec
 
 
-def test_spec_contract_rows_note_their_radius_tiers() -> None:
-    """The ③ rows for pen/note-paper/letter/word-card/field/chip carry
-    their tier tokens (the shape descriptions follow the radii)."""
-
-    spec = _spec()
-    assert "--r-ctl" in spec.split("| 2 | pen |", 1)[1].split("\n", 1)[0]
-    assert "--r-paper" in spec.split("| 3 | note-paper |", 1)[1].split(
-        "\n", 1
-    )[0]
-    assert "--r-paper" in spec.split("| 4 | letter |", 1)[1].split(
-        "\n", 1
-    )[0]
-    row15 = spec.split("| 15 | word-card |", 1)[1].split("\n", 1)[0]
-    assert "--r-raise" in row15
-    assert "--r-sheet-top" in row15
-    assert "--r-ctl" in spec.split("| 16 | field |", 1)[1].split("\n", 1)[0]
-    assert "--r-pill" in spec.split("| 17 | chip |", 1)[1].split("\n", 1)[0]
-
-
-def test_tokens_headnote_retracks_the_retired_clause() -> None:
-    """tokens.css's header frames the zero-large-radius law as retired,
-    not current: the v2-2R note marks the old clause 退役 with the user
-    ruling's date (a header still asserting 「零大圆角面板」 as law would
-    contradict the tokens below it)."""
+def test_tokens_headnote_restores_the_zero_large_radius_law() -> None:
+    """tokens.css's header asserts the zero-large-radius clause as law
+    again (not as retired) and carries the revert note — a header still
+    framing the clause as retired would contradict the sheet below it."""
 
     tokens = _webui_text(TOKENS)
-    assert "条款\n   由用户裁决 2026-10-02 退役" in tokens
-    assert "柔和圆角" in tokens
+    assert "零大圆角面板（圆角收窄一档：信纸物件 ≤2px，仅邮票/邮戳圆形）" in tokens
+    assert "2026-10-02 回退记录" in tokens
+    assert "圆角五档尝试被用户否决回退" in tokens
+    assert "柔和圆角" not in tokens

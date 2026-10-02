@@ -133,11 +133,8 @@ button:focus-visible, input:focus-visible {
    发丝线加深、稿纸左缘墨线——在 screens.css 的 .dock 聚焦块）/ Enter
    由 app.js 绑定。使用规则：写信区唯一输入件；min/max-height 双界不许
    拆（64 = 2×32 基线，160 = 5×32）。
-   禁止变体：边框框体、独立滚动条样式、发光。（v2-2R：控件圆角 =
-   --r-ctl 柔和档——聚焦纸面泛起时随框柔和；圆角退出禁列，用户裁决
-   2026-10-02。） */
+   禁止变体：边框、圆角、独立滚动条样式、发光。 */
 .pen { width: 100%; border: 0; background: none; outline: none;
-       border-radius: var(--r-ctl);
        resize: none; overflow-y: auto;
        font-family: var(--f-serif); font-size: var(--fs-body); color: var(--ink);
        line-height: var(--baseline); padding: 10px 2px; min-height: 64px;
@@ -173,13 +170,11 @@ button:focus-visible, input:focus-visible {
    与正文行高同锁——简报 §3b）。
    使用规则：只出现在信流（.flow）里；标题 b 用 textContent；卡头
    「批注：{功能句}」，状态行用服务端 status_cn 原词（界面不自造）；
-   卡头小图是 #22 的 note，aria-hidden 装饰。纸角 = --r-paper 柔边
-   （v2-2R 用户裁决——批注卡是文档流纸件，纸的柔边不是卡）。
+   卡头小图是 #22 的 note，aria-hidden 装饰。
    禁止变体：四侧描边框、弹层、大面积模糊投影型 shadow（阴影只许
    --stack-shadow-* 两级）。 */
 .note-paper { margin: 0 0 18px; background: var(--paper-2);
               border-left: 2px solid var(--rule);
-              border-radius: var(--r-paper);
               box-shadow: var(--stack-shadow-soft);
               padding: 12px 14px 14px; font-size: var(--fs-small); }
 .note-head { display: flex; gap: var(--sp-2); align-items: center; }
@@ -199,7 +194,6 @@ button:focus-visible, input:focus-visible {
             align-items: baseline; }
 .replytext { flex: 1; min-width: 0; border: 0;
              border-bottom: 1px solid var(--rule); background: none;
-             border-radius: var(--r-ctl);
              outline: none; padding: 4px 2px; font-family: var(--f-serif);
              font-size: var(--fs-small); color: var(--ink); }
 .replytext::placeholder { color: var(--ink-faint); font-size: var(--fs-small);
@@ -245,8 +239,7 @@ button:focus-visible, input:focus-visible {
    使用规则：may = 来信居左，me = 用户的话居右；正文一律 .say
    （white-space: pre-wrap），文字只走 textContent；行高锁
    --baseline（基线网格：正文行高 17/32，字落线上）。
-   禁止变体：气泡（描边框体与圆底对话泡形；v2-2R 起纸角柔边
-   --r-paper 不在禁列——用户裁决 2026-10-02 修订简报 §6）、虚构
+   禁止变体：气泡（任何圆角/描边/底色除 --touch 撕边衬底）、虚构
    问候/结束语文本、楷体作正文。 */
 .letter { margin: 0 0 var(--sp-5); max-width: 100%; }
 .letter.may { margin-right: auto; }
@@ -270,9 +263,7 @@ button:focus-visible, input:focus-visible {
                color: var(--ink); }
 .letter-ps { color: var(--ink-soft); }
 /* W-8 兜底记号的纸系样式：粗体墨色加重、斜体是笔锋、代码片段落次纸
-   浅盒（--f-mono + --paper-2）；不引入新色、克制。v2-2R：片段小标
-   圆角 = --r-pill（用户裁决 2026-10-02——旧「零圆角」句随柔和化
-   退役）。
+   浅盒（--f-mono + --paper-2）；不引入新色、零圆角、克制。
    v2-1R LOW-5：西文 Bold 是真粗（Sitka/Constantia 有 Bold 面）；
    中文面无 Bold，合成粗已被 body 禁——加重改由墨蓝深档承载
    （accent-deep 11.98:1，简报 §2 深档语义「落款/盖印」外的批注
@@ -280,14 +271,11 @@ button:focus-visible, input:focus-visible {
 .say strong { font-weight: 700; color: var(--accent-deep); }
 .say em { font-style: italic; }
 .say code { font-family: var(--f-mono); font-size: var(--fs-small);
-            background: var(--paper-2); padding: 1px 4px;
-            border-radius: var(--r-pill); }
-/* 我的回信 = 撕边信纸（--touch 衬底 + 顶部撕口；不是气泡：零描边；
-   纸角 = --r-paper 柔边——v2-2R 用户裁决，撕口在顶、柔边随纸角）——
-   人手触碰过的件才有毛边。 */
+            background: var(--paper-2); padding: 1px 4px; }
+/* 我的回信 = 撕边信纸（--touch 衬底 + 顶部撕口；不是气泡：零圆角
+   零描边）——人手触碰过的件才有毛边。 */
 .letter.me .paper {
   background: var(--touch); padding: 10px 14px 12px;
-  border-radius: var(--r-paper);
   clip-path: polygon(0 6px, 4% 2px, 11% 7px, 19% 1px, 27% 6px, 36% 2px,
                      46% 7px, 55% 2px, 64% 6px, 74% 1px, 83% 7px, 92% 2px,
                      100% 6px, 100% 100%, 0 100%);
@@ -295,10 +283,8 @@ button:focus-visible, input:focus-visible {
 
 /* ── 4b. envelope（信封——封/信分物，#4 letter 的在途形态）──────────
    形态：.letter.me.en-route 在途态 = 信封形。信已装封在路上：信文
-   （.paper）暂不可见，信封面 = 柔边矩形（--paper-2 + --r-paper）+
-   顶部封舌（V 形 clip-path，顶纸色，顶角随 --r-paper）+ 中央折线
-   （发丝线）（v2-2R：旧「零圆角真信封直角」条款由用户裁决
-   2026-10-02 退役——文档流信封是纸件，柔边不入气泡禁列）。
+   （.paper）暂不可见，信封面 = 矩形（--paper-2）+ 顶部封舌（V 形
+   clip-path，顶纸色）+ 中央折线（发丝线）。零圆角（真信封直角）。
    在途；回信落地或失败即摘 .en-route —— 同一 DOM 回归撕口信纸
    （不做「拆信」演出：一次性惊喜变日常负担 = 简报 T3 死刑清单）。
    展开读才是信（读信 = 信纸）。
@@ -313,12 +299,10 @@ button:focus-visible, input:focus-visible {
 .letter.me.en-route::before {
   content: ""; position: absolute; left: 0; right: 0; top: 0; height: 46%;
   background: var(--paper-high);
-  border-radius: var(--r-paper) var(--r-paper) 0 0;
   clip-path: polygon(0 0, 100% 0, 50% 96%, 50% 100%, 0 100%);
   border-bottom: 1px solid var(--rule); }
 .letter.me.en-route { position: relative; background: var(--paper-2);
                       border: 1px solid var(--rule);
-                      border-radius: var(--r-paper);
                       box-shadow: var(--stack-shadow-soft);
                       min-height: 72px; }
 .letter.me.en-route::after {
@@ -521,16 +505,12 @@ button:focus-visible, input:focus-visible {
    30%，--dur-micro 档，松手即隐）。提示只走墨蓝族与透明度。
    使用规则：卡片只由 /api/word 的 found:true 打开；一切文字
    textContent；教学短笺与系统行不参与点词。
-   圆角（v2-2R 用户裁决 2026-10-02）：浮卡档 = --r-raise（垫纸错位层
-   同步）；sheet 档 = --r-sheet-top 顶部两角、底缘 0（贴屏）。
    禁止变体：全黑零基色的阴影、两级（--stack-shadow-*）之外的自造
-   shadow、--paper-high 以外的底色块、busy 态、占位插画、毛玻璃
-   遮罩、3D（sheet 是 2D 纸面曲线）。（旧「圆角」禁句随 v2-2R 柔和化
-   退役。） */
+   shadow、圆角、--paper-high 以外的底色块、busy 态、占位插画、毛玻璃
+   遮罩、3D（sheet 是 2D 纸面曲线）。 */
 .word-card { position: absolute; z-index: 9; max-width: 300px;
              left: var(--wc-x, 0px); top: var(--wc-y, 0px);
              background: var(--paper-high); border: 1px solid var(--rule);
-             border-radius: var(--r-raise);
              padding: 12px 14px 14px; font-size: var(--fs-small);
              animation: paper-drop var(--dur-note) var(--ease-paper) both,
                         ink-wash calc(var(--dur-note) * 1.3)
@@ -538,17 +518,14 @@ button:focus-visible, input:focus-visible {
 .word-card::after { content: ""; position: absolute; inset: 0;
                     z-index: -1; background: var(--paper-2);
                     border: 1px solid var(--rule);
-                    border-radius: var(--r-raise);
                     box-shadow: var(--stack-shadow-soft);
                     transform: translate(3px, 3px); }
 /* 触屏档（bottom sheet）：输入形态查询分档（hover:none 与触屏纪律
-   同族；不是断点边界——四档断点契约零新增边界）。顶角 = --r-sheet-top
-   （v2-2R），底缘 0——贴屏。 */
+   同族；不是断点边界——四档断点契约零新增边界）。 */
 @media (hover: none) {
   .word-card { position: fixed; left: 0; right: 0; bottom: 0; top: auto;
                max-width: none;
                border-left: 0; border-right: 0; border-bottom: 0;
-               border-radius: var(--r-sheet-top) var(--r-sheet-top) 0 0;
                padding-bottom: calc(14px + var(--safe-bottom));
                animation-name: none;
                transition: transform var(--dur-note) var(--ease-paper),
@@ -630,9 +607,7 @@ button:focus-visible, input:focus-visible {
    --lh-ui、控件 --lh-small（9.2 基线网格的表单行读法；保存底栏
    sticky 语义按 ux-1 现役 calc 不动，在 screens.css）。
    使用规则：方向编辑面的行式输入；select 与 input 的字面样式随本契约。
-   禁止变体：边框框体、底色块；不得当只读展示行用（只读走 #9）。
-   （v2-2R：行仍是下发丝线的行式输入、不入框体；行内控件圆角 =
-   --r-ctl——用户裁决 2026-10-02，控件圆角退出禁列。） */
+   禁止变体：边框框体、底色块、圆角；不得当只读展示行用（只读走 #9）。 */
 .field { display: flex; align-items: baseline; gap: 10px;
          border-bottom: 1px solid var(--rule-soft); padding: 8px 0;
          transition: border-color var(--dur-micro) var(--ease-press); }
@@ -646,8 +621,7 @@ button:focus-visible, input:focus-visible {
                     margin-right: 4px; vertical-align: -2px;
                     color: var(--ink-faint); }
 .field input, .field select { flex: 1; min-width: 0; border: 0;
-             background: none; outline: none; border-radius: var(--r-ctl);
-             padding: 2px 0;
+             background: none; outline: none; padding: 2px 0;
              font-family: var(--f-serif); font-size: var(--fs-small);
              line-height: var(--lh-small);
              color: var(--ink); }
@@ -665,13 +639,10 @@ button:focus-visible, input:focus-visible {
    弱发丝线、次级墨、无 pointer）。
    使用规则：考试 / 语域 / 教学频率三个词表 picker；--badge 用于只读
    徽标；词即内容，文字一律 textContent。
-   禁止变体：阴影、长文本；不得当导航用（导航走 #1）。
-   （v2-2R：chip 圆角 = --r-pill 全柔档——用户裁决 2026-10-02，
-   旧「圆角」禁句退役。） */
+   禁止变体：圆角、阴影、长文本；不得当导航用（导航走 #1）。 */
 .chip { font-family: var(--f-sans); font-size: var(--fs-ui);
         letter-spacing: 0.04em;
         padding: 3px 10px; border: 1px solid var(--rule); background: none;
-        border-radius: var(--r-pill);
         color: var(--ink-soft); position: relative;
         transition: border-color var(--dur-micro) var(--ease-press),
                     color var(--dur-micro) var(--ease-press),
@@ -993,7 +964,6 @@ h1, .grouphead, .note-head b { text-wrap: balance; }
 .env--new { box-shadow: none; cursor: default; }
 .env::after { content: ""; position: absolute; inset: 0; z-index: -1;
               background: var(--paper-2); border: 1px solid var(--rule);
-              border-radius: var(--r-raise);
               transform: translate(3px, 3px); opacity: 0;
               transition: opacity var(--dur-micro) var(--ease-press); }
 .env--lift::after { opacity: 1; }
@@ -1011,8 +981,7 @@ h1, .grouphead, .note-head b { text-wrap: balance; }
                     border: 1px solid var(--seal); border-radius: 50%; }
 .env-mark span { position: relative; }
 /* 专属邮票：齿孔 = 纸色虚线凿边 + 发丝外缘；内框墨线（雕版感）；
-   票面中央角色名首字母（衬线 display 档）。票面纸角 = --r-paper 柔边
-   （v2-2R 用户裁决——直角清零；齿孔虚线随柔边）。变体三轴全部确定性
+   票面中央角色名首字母（衬线 display 档）。变体三轴全部确定性
    （stamp_key 派生，app.js 的 stampVariantClasses）：stamp-v0..7
    图形 × stamp-c0..3 墨色 × stamp-p0..2 票面——色全取 v2 既有族。 */
 .env-stamp { position: absolute; top: 10px; right: 10px;
@@ -1020,11 +989,9 @@ h1, .grouphead, .note-head b { text-wrap: balance; }
              display: flex; align-items: center; justify-content: center;
              border: 3px dashed var(--paper-2);
              outline: 1px solid var(--rule);
-             border-radius: var(--r-paper);
              transform: rotate(1.5deg); }
 .env-stamp::before { content: ""; position: absolute; inset: 4px;
-                     border: 1px solid currentColor; opacity: 0.5;
-                     border-radius: var(--r-paper); }
+                     border: 1px solid currentColor; opacity: 0.5; }
 .env-stamp-ini { position: relative; font-family: var(--f-display);
                  font-size: var(--fs-title); line-height: var(--lh-title); }
 .stamp-p0 { background: var(--paper-high); }
@@ -1075,7 +1042,6 @@ h1, .grouphead, .note-head b { text-wrap: balance; }
 .env-create input {
   flex: 1 1 140px; min-width: 0; border: 0; background: none;
   outline: none; border-bottom: 1px solid var(--rule);
-  border-radius: var(--r-ctl);
   padding: 4px 2px; font-family: var(--f-serif);
   font-size: var(--fs-small); color: var(--ink); }
 .env-create input:focus { border-bottom-color: var(--pencil); }
