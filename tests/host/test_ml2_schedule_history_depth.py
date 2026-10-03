@@ -434,6 +434,11 @@ def test_the_history_breadth_grammar_is_fail_closed(tmp_path: Path) -> None:
             ("?limit=-2", "from 1 up"),
             ("?limit=lots", "whole number"),
             ("?bogus=1", "bogus"),
+            # ml2R L-1/L-2：空值不再被 parse_qs 静默丢弃（keep_blank_values）
+            # 与 limit 重复值拒（与 full 分支严格性一致）——400 人话。
+            ("?full=", "1"),
+            ("?limit=", "whole number"),
+            ("?limit=5&limit=6", "one whole number"),
         ):
             status, payload = _get_status_json(stack, "/api/history" + query)
             assert status == 400, query

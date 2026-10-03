@@ -958,6 +958,8 @@ def _history_request(
             return ("?full takes the one value 1", False, None)
         return (None, True, None)
     if limit_values is not None:
+        if len(limit_values) != 1:
+            return ("?limit takes one whole number", False, None)
         try:
             limit = int(limit_values[0])
         except ValueError:
@@ -4250,7 +4252,9 @@ def _build_server(
                 # each a 400 人话); the read itself stays on the work
                 # queue (the one-thread rule).
                 error, full, limit = _history_request(
-                    parse_qs(urlsplit(self.path).query)
+                    parse_qs(
+                        urlsplit(self.path).query, keep_blank_values=True
+                    )
                 )
                 if error is not None:
                     self._send_json(400, {"error": error})
