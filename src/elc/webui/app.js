@@ -360,6 +360,85 @@ function renderRecordBook(schedule, evidence, retry) {
            row.entry.schedule.review_state)
         : REVIEW_STATE_CN.NOT_SCHEDULED)));
     box.appendChild(line);
+    box.appendChild(footprintZone(row.targetId));
+  }
+}
+
+// 表达足迹区（主线-2）：按表达看每行下挂一枚「足迹」钮——第一次点开
+// 才拉 /api/target_footprint（惰性，不打开不花一次读）；三态全部如实：
+// 拉取失败可重试、没有证据「还没有留下学习足迹」、有足迹按轮列
+// （轮次序数 + 条数 + 判分，判分走 OUTCOME_CN 中文读法、未知值原样；
+// 无轮次序的落 turn_id 短值）。再点收起；重开不重拉（读时取数的
+// 保鲜由重进节自然承担）。
+function footprintZone(targetId) {
+  const wrap = document.createElement("div");
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "btn btn--pencil";
+  toggle.textContent = "足迹";
+  const body = document.createElement("div");
+  body.hidden = true;
+  wrap.appendChild(toggle);
+  wrap.appendChild(body);
+  toggle.addEventListener("click", () => {
+    body.hidden = !body.hidden;
+    if (!body.hidden && !body.dataset.loaded) {
+      loadFootprint(body, targetId);
+    }
+  });
+  return wrap;
+}
+
+async function loadFootprint(body, targetId) {
+  body.textContent = "";
+  body.appendChild(stateBanner("loading", { text: "足迹正在来的路上……" }));
+  let d = null;
+  try {
+    d = await fetchTargetFootprint(targetId);
+  } catch {
+    d = null;
+  }
+  body.textContent = "";
+  if (!d) {
+    const err = document.createElement("p");
+    err.className = "note";
+    err.textContent = "足迹没取到。";
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "btn btn--pencil";
+    retry.textContent = "再试一次";
+    retry.addEventListener("click", () => loadFootprint(body, targetId));
+    body.appendChild(err);
+    body.appendChild(retry);
+    return;
+  }
+  body.dataset.loaded = "1";
+  if (!d.found) {
+    const none = document.createElement("p");
+    none.className = "note";
+    none.textContent = "这个表达还没有留下学习足迹。";
+    body.appendChild(none);
+    return;
+  }
+  const head = document.createElement("p");
+  head.className = "sub";
+  head.textContent = "学习足迹 " + d.active_claim_count + " 条，散在 "
+    + d.turns.length + " 轮里：";
+  body.appendChild(head);
+  for (const t of d.turns) {
+    const line = document.createElement("div");
+    line.className = "kv";
+    line.title = t.turn_id;
+    const where = document.createElement("b");
+    where.textContent = (t.turn_sequence !== null
+      && t.turn_sequence !== undefined)
+      ? "第 " + t.turn_sequence + " 轮"
+      : String(t.turn_id).slice(0, 12);
+    line.appendChild(where);
+    line.appendChild(document.createTextNode(
+      " · " + t.claim_count + " 条（"
+      + t.outcomes.map((o) => OUTCOME_CN[o] || o).join("、") + "）"));
+    body.appendChild(line);
   }
 }
 
@@ -369,24 +448,70 @@ function renderRecordBook(schedule, evidence, retry) {
 // （时间敏感的是今天不是下周——默认层只留计划一行）；账表降入
 // 「按表达看」折叠。
 
-function renderSchedule(d, retry) {
+// 复习调度区（主线-2）：/api/schedule 的三态，全部如实——
+// ① 调度腿没装配（available=false）＝「没有可显示的排程」，不虚构；
+// ② 腿在但无到期/已排期行＝诚实空态；③ 有行＝Scheduler 自己的分档
+// 视图（今日到期 = DUE+OVERDUE 在前，接下来 = UPCOMING 窗口落点）。
+// 行字段落原值（间隔阶是实现词表，原样直出不造中文；无阶 = 未分阶，
+// types 的自有读法）；窗口时间 = 机械事实走 whenNode。
+async function loadScheduleZone() {
   const box = diagBox("learn-schedule");
   box.textContent = "";
-  if (!d || d.error) { diagError(box, (d && d.error) || "空响应", retry); return; }
-  const rows = d.items || [];
-  if (!rows.length) {
-    diagEmpty(box, "暂无数据——还没有任何复习日程。");
+  box.appendChild(stateBanner("loading", { text: "复习排程正在来的路上……" }));
+  let d = null;
+  try {
+    d = await fetchSchedule();
+  } catch {
+    d = null;
+  }
+  box.textContent = "";
+  if (!d) {
+    diagError(box, "复习调度拉取失败", loadScheduleZone);
     return;
   }
-  for (const it of rows) {
-    const g = diagGroup(box, it.target_id + "（" + it.target_type + "）");
-    diagLine(g, "复习状态", it.review_state);
-    diagLine(g, "紧迫度 review_urgency", fmtNum(it.review_urgency));
-    diagLine(g, "窗口开始", fmtNum(it.next_review_window_start));
-    diagLine(g, "窗口结束", fmtNum(it.next_review_window_end));
-    diagLine(g, "间隔阶 spacing_stage", fmtNum(it.spacing_stage));
-    diagLine(g, "更新时间", it.updated_at);
+  if (d.available === false) {
+    diagEmpty(box, "复习调度腿没有装配——现在没有可显示的排程。");
+    return;
   }
+  const due = (d.due || []).concat(d.overdue || []);
+  const upcoming = d.upcoming || [];
+  if (!due.length && !upcoming.length) {
+    diagEmpty(box, "现在没有到期或已排期的复习——批注来过才会排。");
+    return;
+  }
+  if (due.length) {
+    const head = document.createElement("p");
+    head.className = "sub";
+    head.textContent = "今日到期 " + due.length + " 项";
+    box.appendChild(head);
+    for (const it of due) box.appendChild(scheduleRow(it));
+  }
+  if (upcoming.length) {
+    const head = document.createElement("p");
+    head.className = "sub";
+    head.textContent = "接下来 " + upcoming.length + " 项";
+    box.appendChild(head);
+    for (const it of upcoming) box.appendChild(scheduleRow(it));
+  }
+}
+
+// 调度区一行：表达名 + 复习状态（中文，未知值原样）+ 窗口落点 + 间隔阶。
+function scheduleRow(it) {
+  const line = document.createElement("div");
+  line.className = "kv";
+  line.title = it.target_id;
+  const b = document.createElement("b");
+  b.textContent = it.name || spokenOf(it.target_id);
+  line.appendChild(b);
+  line.appendChild(document.createTextNode(
+    " · " + (REVIEW_STATE_CN[it.review_state] || it.review_state)));
+  if (it.next_review_window_start) {
+    line.appendChild(document.createTextNode(" · 窗口 "));
+    line.appendChild(whenNode(it.next_review_window_start));
+  }
+  line.appendChild(document.createTextNode(
+    " · 间隔阶 " + (it.spacing_stage || "未分阶")));
+  return line;
 }
 
 function renderGoals(d, retry) {
@@ -448,7 +573,6 @@ async function loadLearning() {
     renderArchive(data.evidence, loadLearning);
     renderPlanLine(data.schedule, loadLearning);
     renderRecordBook(data.schedule, data.evidence, loadLearning);
-    renderSchedule(data.schedule, loadLearning);
     renderGoals(data.goals, loadLearning);
     renderLearnEvidence(data.evidence, loadLearning);
   } catch {
@@ -459,6 +583,9 @@ async function loadLearning() {
     diagError(board, "学习读数拉取失败", loadLearning);
     return;
   }
+  // 复习调度区走自己的读面（主线-2：/api/schedule 三态），失败独立
+  // 降级——不拖累 /api/learning 的其余面板。
+  loadScheduleZone();
   let targets = null;
   try {
     targets = await fetchTargets();
@@ -2170,10 +2297,14 @@ diagBox("obs-entry").appendChild((() => {
 // 展开读 = 信纸（letterNode 复用 #4 排印骨架——单一出处，非第二份
 // 信件实现），展开动效 = paper-unfold。归档戳挂点：翻开信档 = 归档
 // 开启（T2 邮戳三真实事件之一）——屏头一枚日期戳（--ink-ghost，同屏
-// 恰此一枚；日期 = 打开当天，客户端真实日期）。口径诚实：只列
-// /api/history 已加载的 50 轮窗口，第 n 封按窗口内顺序数（8.2.5 同
+// 恰此一枚；日期 = 打开当天，客户端真实日期）。口径诚实：只摊开
+// /api/history 已加载的窗口（默认 50 轮；「加载更早」按 50 轮一档
+// 往前翻，翻到头有一句收尾），第 n 封按窗口内顺序数（8.2.5 同
 // 口径）；历史轮次无时间戳，一个日期都不造。
 let lettersLoaded = false;
+// 当前信档窗口的显式宽度（null = 默认 50 轮；每按一次「加载更早」
+// 加一档），失败重试时归零回默认。
+let lettersWindow = null;
 
 function openLettersArchive() {
   showSpace("letters");
@@ -2195,7 +2326,8 @@ async function loadLetters() {
   board.appendChild(stateBanner("loading"));
   let data = null;
   try {
-    data = await fetchHistory();
+    data = await fetchHistory(lettersWindow ? { limit: lettersWindow }
+                                            : undefined);
   } catch {
     data = null;
   }
@@ -2203,6 +2335,7 @@ async function loadLetters() {
   if (!data) {
     diagError(board, "信档没取到。", () => {
       lettersLoaded = false;
+      lettersWindow = null;
       loadLetters();
     });
     return;
@@ -2215,6 +2348,25 @@ async function loadLetters() {
   }
   for (let i = 0; i < turns.length; i += 1) {
     board.appendChild(letterLine(i, turns[i]));
+  }
+  // 加载更早（主线-2）：has_more 是服务端的诚实分页位（多取一行判的，
+  // 不是猜的）——有就给一档 50 轮的「加载更早」；翻到头给一句收尾，
+  // 按钮退役。第 n 封始终按当前窗口内的顺序数。
+  if (data.has_more) {
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "btn btn--pencil";
+    more.textContent = "加载更早";
+    more.addEventListener("click", () => {
+      lettersWindow = (data.window || turns.length) + 50;
+      loadLetters();
+    });
+    board.appendChild(more);
+  } else if (lettersWindow !== null) {
+    const end = document.createElement("p");
+    end.className = "note";
+    end.textContent = "更早的信没有了——以上是全部。";
+    board.appendChild(end);
   }
 }
 
@@ -2288,12 +2440,14 @@ document.addEventListener("keydown", (event) => {
 });
 
 // ── rd-4: 搜信里的句子（档案节检索扩展；9.12-23）────────────────────
-// 口径如实写在脸上：只搜页面已加载的最近 50 轮（/api/history 的窗口，
-// web.py 冻结面故窗口不动）；命中列「第 n 封（你/笔友）」+ 片段——
-// 历史轮次没有时间戳，一个日期都不造（第 n 封按已加载窗口内的顺序数）；
-// 同一轮两侧都命中就列两行。窗口读数带十秒保鲜（LETTER_SEARCH_TTL）——
-// 新寄的信不等刷新就能搜到，口径句照旧成立。跨信重现（同一表达在
-// 几封信里的足迹）不做——客户端没有那张表面，9.12-23 登记数据缝。
+// 口径如实写在脸上：只搜检索自己读的默认窗口最近 50 轮（/api/history
+// 不带宽度参数的读面——「加载更早」翻进信档的更早轮次不在检索面）；
+// 命中列「第 n 封（你/笔友）」+ 片段——历史轮次没有时间戳，一个日期
+// 都不造（第 n 封按已加载窗口内的顺序数）；同一轮两侧都命中就列两行。
+// 窗口读数带十秒保鲜（LETTER_SEARCH_TTL）——新寄的信不等刷新就能搜
+// 到，口径句照旧成立。跨信重现（同一表达在几封信里的足迹）已由表达
+// 足迹读面落成（主线-2：/api/target_footprint + 按表达看的「足迹」
+// 入口，9.12-23④ 数据缝就此闭合）——检索本身不升级。
 const LETTER_SEARCH_TTL = 10000;
 
 function mountLetterSearch() {

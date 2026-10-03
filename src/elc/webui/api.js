@@ -64,9 +64,26 @@ export function fetchObservations() {
   return getJson("/api/observations");
 }
 
-/** 历史窗口（最后 50 轮，已交付的助手输出）。 */
-export function fetchHistory() {
-  return getJson("/api/history");
+/** 历史窗口（默认最后 50 轮，已交付的助手输出）。主线-2 起宽度可显式
+ *  指定：opts.full 取全文，opts.limit 取最近 n 轮——不带 opts 一字不变。 */
+export function fetchHistory(opts) {
+  const query = [];
+  if (opts && opts.full) query.push("full=1");
+  if (opts && opts.limit) query.push("limit=" + String(opts.limit));
+  return getJson("/api/history" + (query.length ? "?" + query.join("&") : ""));
+}
+
+/** 复习调度区读数（主线-2）：Scheduler 自己的分档视图（到期/已过期/
+ *  未到期），调度腿未装配时 available=false 如实。 */
+export function fetchSchedule() {
+  return getJson("/api/schedule");
+}
+
+/** 表达足迹（主线-2）：一个表达的 ACTIVE 学习证据按轮分布；没有证据
+ *  的表达 found=false 如实空。 */
+export function fetchTargetFootprint(targetId) {
+  return getJson("/api/target_footprint?id="
+                 + encodeURIComponent(targetId));
 }
 
 /** 只读当前教学卡（W-4 即时面；不走工作队列）。 */
