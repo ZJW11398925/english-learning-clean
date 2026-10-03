@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "我明白你的意思，不过……（先给对方的话记上一笔，然后再说出反对意见）"
+    },
+    {
+      "sense_id": "i-hear-you-but.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "I hear you, but we agreed in March that hiring would wait until the third quarter."
+    },
+    {
+      "sense_id": "i-hear-you-but.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "I hear you, but the car needs new tyres before we spend anything on a holiday."
+    },
+    {
+      "sense_id": "i-hear-you-but.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "I hear you, but the heating has failed twice this winter and the rent already covers repairs."
+    },
+    {
+      "sense_id": "i-hear-you-but.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "I hear you, but we tried that restaurant last month and you complained about the wait all evening."
     }
   ],
   "forms": [
@@ -108,11 +136,51 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 4,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the frame with the credit before the comma and the objection after but, and never present a wrong-modal, preposition-inserted or literal-hearing sentence as a model of the mitigation."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the frame with the credit before the comma and the objection after but, and never present a wrong-modal, preposition-inserted or literal-hearing sentence as a model of the mitigation. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

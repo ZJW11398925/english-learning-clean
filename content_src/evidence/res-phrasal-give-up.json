@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "放弃；戒掉（停止做某事或不再尝试）"
+    },
+    {
+      "sense_id": "give-up.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "My uncle gave up smoking two years ago and has not looked back since."
+    },
+    {
+      "sense_id": "give-up.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "Don't give up after one bad practice test; the third attempt usually tells you more."
+    },
+    {
+      "sense_id": "give-up.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "We gave up two goals in the first half but still drew the match."
+    },
+    {
+      "sense_id": "give-up.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "She refused to give up the search and sent out five more applications that week."
     }
   ],
   "forms": [
@@ -132,11 +160,51 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 3,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 4,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "CORRESPONDENCE",
+      "context": "SELF_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the object in its place (gave up smoking, give it up) and keep the pronoun order visually distinct from the noun order, and never present an ERROR_INSTANCE as a model."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the object in its place (gave up smoking, give it up) and keep the pronoun order visually distinct from the noun order, and never present an ERROR_INSTANCE as a model. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

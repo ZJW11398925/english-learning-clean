@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "我不太信服（用自己尚未被说服的状态来表示不同意，把交锋留在证据上而不指责对方）"
+    },
+    {
+      "sense_id": "im-not-convinced.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "I'm not convinced the premium plan earns back its price for a team of five."
+    },
+    {
+      "sense_id": "im-not-convinced.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "I'm not convinced this model is quieter — the reviews say otherwise."
+    },
+    {
+      "sense_id": "im-not-convinced.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "I'm not convinced the ending works, even though the acting was superb."
+    },
+    {
+      "sense_id": "im-not-convinced.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "I'm not convinced the new timetable saves anyone time; the queue at eight is longer than before."
     }
   ],
   "forms": [
@@ -108,11 +136,51 @@
       "style": null,
       "domain": "WORK",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 4,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the phrase with the contracted I'm and the -ed participle, aimed at the other person's claim, and never present a bare-form, -ing-form or personal-belief sentence as a model of the mitigation."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the phrase with the contracted I'm and the -ed participle, aimed at the other person's claim, and never present a bare-form, -ing-form or personal-belief sentence as a model of the mitigation. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "再给我过一遍（请对方把刚才的解释从头再讲一次，并说明自己在哪一步没跟上）"
+    },
+    {
+      "sense_id": "run-that-by-me-again.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "Could you run that by me again? I lost you at the second checkpoint."
+    },
+    {
+      "sense_id": "run-that-by-me-again.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "Run that by me again — the part about who collects the keys."
+    },
+    {
+      "sense_id": "run-that-by-me-again.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "You'll have to run that by me again; the signal dropped in the middle."
+    },
+    {
+      "sense_id": "run-that-by-me-again.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "Run that by me again before the whistle — I want the whole play in order."
     }
   ],
   "forms": [
@@ -108,11 +136,51 @@
       "style": null,
       "domain": "WORK",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 4,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the request with the object before the particle (run that by me) and the bare infinitive after could, and never present a migrated-object, to-infinitive or literal-running sentence as a model of the request."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the request with the object before the particle (run that by me) and the bare infinitive after could, and never present a migrated-object, to-infinitive or literal-running sentence as a model of the request. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

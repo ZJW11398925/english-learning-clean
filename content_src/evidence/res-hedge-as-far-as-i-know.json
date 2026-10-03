@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "据我所知（把说法限定在自己掌握的信息范围内，言外之意是信息可能不全或过时）"
+    },
+    {
+      "sense_id": "as-far-as-i-know.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "As far as I know, the museum is still free on Sundays, but check the website first."
+    },
+    {
+      "sense_id": "as-far-as-i-know.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "As far as I know, the server maintenance finishes tonight; nobody told me otherwise."
+    },
+    {
+      "sense_id": "as-far-as-i-know.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "As far as I know, the parcel left the depot on Tuesday and is out for delivery today."
+    },
+    {
+      "sense_id": "as-far-as-i-know.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "As far as I know, the deadline has not moved; I will confirm with the coordinator."
     }
   ],
   "forms": [
@@ -108,11 +136,51 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 4,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 5,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "CORRESPONDENCE",
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-GB"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the formula whole, with both as's and with the anchor pronoun I, and never present the shortened or swapped-conjunction sentence as a model of the hedge or an ERROR_INSTANCE as a model."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the formula whole, with both as's and with the anchor pronoun I, and never present the shortened or swapped-conjunction sentence as a model of the hedge or an ERROR_INSTANCE as a model. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

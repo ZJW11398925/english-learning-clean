@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "提出（议题）；提起（把某个话题放到对话里；可分离，代词放中间 bring it up；注意 bring up a child 是另一义）"
+    },
+    {
+      "sense_id": "bring-up.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "May I bring up the budget for the offsite before we close the agenda?"
+    },
+    {
+      "sense_id": "bring-up.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "He finally brought up the question of a raise in his December review."
+    },
+    {
+      "sense_id": "bring-up.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "Don't bring up the camping trip again — we promised never to speak of the tent."
+    },
+    {
+      "sense_id": "bring-up.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "I wanted to bring up the dizzy spells I've been having in the mornings."
     }
   ],
   "forms": [
@@ -132,11 +160,51 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 4,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the subject as the direct object with no preposition after up, and show the object's position as correct for its kind; keep the child-raising sense, if it appears at all, in a CONTRAST role; never present an ERROR_INSTANCE as a model."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the subject as the direct object with no preposition after up, and show the object's position as correct for its kind; keep the child-raising sense, if it appears at all, in a CONTRAST role; never present an ERROR_INSTANCE as a model. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

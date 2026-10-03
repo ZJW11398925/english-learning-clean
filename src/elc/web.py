@@ -1515,10 +1515,12 @@ def _word_lookup(conn: sqlite3.Connection, q: str) -> dict[str, Any]:
     sense's first zh-language text, ``en`` = the first en one — the
     definition role ordered first by :data:`_WORD_TEXT_ORDER`), the
     remaining roles ride the response under their own role word
-    (:data:`_WORD_PASSTHROUGH_ROLES`), and examples are the entity's own
+    (:data:`_WORD_PASSTHROUGH_ROLES`), examples are the entity's own
     ``content_example`` rows, primary-target first — they carry no
     ``sense_id``, so the same ≤2 list rides every sense of the entity
-    (today one sense per entity).
+    (today one sense per entity) — and the scenario-variant rows
+    (``usage`` at ordinal ≥ 2, queue-3) ride ``usage_variants`` with
+    their aligned ``content_resource_label`` context/genre words.
     """
 
     q_tokens = _word_tokens(q)
@@ -1591,6 +1593,27 @@ def _word_lookup(conn: sqlite3.Connection, q: str) -> dict[str, Any]:
             elif role in _WORD_PASSTHROUGH_ROLES and role not in sense:
                 sense[role] = str(text)
         senses.append(sense)
+    # The scenario-variant face (queue-3): the evidence texts block may carry
+    # extra ``usage`` rows at ordinal >= 2 — the same expression re-seated in
+    # a distinct real context, each aligned with the resource_labels row of
+    # the same ordinal. The read joins that aligned label row for the card's
+    # small context tag; a target with no variants (the common case) reads
+    # an empty list and the page renders nothing there.
+    usage_variants = [
+        {
+            "text": str(row[0]),
+            "context": row[1] if row[1] is not None else None,
+            "genre": row[2] if row[2] is not None else None,
+        }
+        for row in conn.execute(
+            "SELECT t.text, l.context, l.genre FROM content_text t"
+            " LEFT JOIN content_resource_label l"
+            " ON l.entity_id = t.entity_id AND l.ordinal = t.ordinal"
+            " WHERE t.entity_id = ? AND t.role = 'usage' AND t.ordinal >= 2"
+            " ORDER BY t.ordinal",
+            (entity_id,),
+        )
+    ]
     return {
         "found": True,
         "source": "corpus",
@@ -1598,6 +1621,7 @@ def _word_lookup(conn: sqlite3.Connection, q: str) -> dict[str, Any]:
         "pos": pos,
         "forms": forms,
         "senses": senses,
+        "usage_variants": usage_variants,
         "entity_id": entity_id,
     }
 

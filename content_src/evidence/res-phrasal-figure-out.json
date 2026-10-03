@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "想出；弄明白（通过思考弄清楚某事或找到办法）"
+    },
+    {
+      "sense_id": "figure-out.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "It took me an hour to figure out why the printer refused the new driver."
+    },
+    {
+      "sense_id": "figure-out.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "We'll figure out the fastest route once the new line opens in December."
+    },
+    {
+      "sense_id": "figure-out.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "The two of them sat down to figure out how much the trip would really cost."
+    },
+    {
+      "sense_id": "figure-out.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "Leave the seating chart with me — I'll figure it out before Friday."
     }
   ],
   "forms": [
@@ -132,11 +160,51 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "TASK_FOCUS",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 4,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "TASK_FOCUS",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. When a pronoun object is shown at all, show it in the between position (figure it out), so the model never carries the wrong order, and never present an ERROR_INSTANCE as a model."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. When a pronoun object is shown at all, show it in the between position (figure it out), so the model never carries the wrong order, and never present an ERROR_INSTANCE as a model. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

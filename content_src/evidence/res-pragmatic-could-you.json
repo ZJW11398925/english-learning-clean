@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "你能……吗？；可以请你……吗？（用提问的形式礼貌地请对方做事）"
+    },
+    {
+      "sense_id": "could-you.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "Could you forward me the agenda when you have a moment?"
+    },
+    {
+      "sense_id": "could-you.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "Could you keep an eye on our plants while we're away next week?"
+    },
+    {
+      "sense_id": "could-you.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "Could you bring the bill when it's convenient? We have a train to catch."
+    },
+    {
+      "sense_id": "could-you.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "Could you turn the heating down before you go to bed?"
     }
   ],
   "forms": [
@@ -108,11 +136,51 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "POLITE",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "POLITE",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 4,
+      "register": "POLITE",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical request first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Never present the formula as a bare two-word fragment without what is being asked for, and never present the past-possibility question (Could you have sent it?) as a model of this target."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical request first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Never present the formula as a bare two-word fragment without what is being asked for, and never present the past-possibility question (Could you have sent it?) as a model of this target. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

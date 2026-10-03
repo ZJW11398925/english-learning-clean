@@ -651,6 +651,18 @@ button:focus-visible, input:focus-visible {
               border-left: 1px solid var(--rule);
               font-family: var(--f-serif); font-size: var(--fs-small);
               color: var(--ink-soft); overflow-wrap: anywhere; }
+/* 队列③多场景区：标题小标 + 变体行（语境标签小字 + 场景句）——
+   标签词来自 resource_labels 同 ordinal 行（genre · context），无标签
+   的行只落句子。结构与 .wc-example 同族（左细线 + 柔墨）。 */
+.wc-variants-head { margin: 10px 0 0; font: var(--meta-font);
+                    letter-spacing: var(--meta-track);
+                    color: var(--meta-ink); }
+.wc-variant { margin: 6px 0 0; padding-left: 10px;
+              border-left: 1px solid var(--rule);
+              font-size: var(--fs-small); color: var(--ink-soft);
+              overflow-wrap: anywhere; }
+.wc-variant-tag { font: var(--meta-font); letter-spacing: var(--meta-track);
+                  font-size: var(--fs-micro); color: var(--meta-ink); }
 /* ux-1（可用性刀）：命中带外扩——字身框高 ~17px（≈2.8mm）是移动端
    单词卡点不中的根因（触点落行距/词间空隙即静默丢弃）；padding 向外
    扩 5px/2px、负 margin 精确抵消（行内盒：纵向 padding 不入行高、

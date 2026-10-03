@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "能请你说明一下吗（礼貌地请对方把某一个点讲清楚，指出是哪一点）"
+    },
+    {
+      "sense_id": "could-you-clarify.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "Could you clarify which costs the maintenance fee covers before we sign?"
+    },
+    {
+      "sense_id": "could-you-clarify.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "Could you clarify the second requirement? I'm not sure whether the essay needs footnotes."
+    },
+    {
+      "sense_id": "could-you-clarify.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "Could you clarify what you meant by flexible hours — core hours or everything outside five?"
+    },
+    {
+      "sense_id": "could-you-clarify.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "Could you clarify who approves the form once the manager has signed it?"
     }
   ],
   "forms": [
@@ -108,11 +136,51 @@
       "style": null,
       "domain": "WORK",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "CORRESPONDENCE",
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 3,
+      "register": "POLITE",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 4,
+      "register": "POLITE",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "CORRESPONDENCE",
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the frame with a named point after clarify in statement order, and never present an embedded-inversion, person-object or go-and-act sentence as a model of the request."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the frame with a named point after clarify in statement order, and never present an embedded-inversion, person-object or go-and-act sentence as a model of the request. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

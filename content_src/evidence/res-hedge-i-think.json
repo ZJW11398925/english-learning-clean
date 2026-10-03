@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "我觉得……；我想……（把自己的说法标为个人看法，给对方留出不同意的余地）"
+    },
+    {
+      "sense_id": "i-think.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "I think we should move the launch to October rather than rush September."
+    },
+    {
+      "sense_id": "i-think.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "I think the figures in the second table need a second check before we send the report."
+    },
+    {
+      "sense_id": "i-think.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "I think the earlier train is the safer choice if we want the whole day there."
+    },
+    {
+      "sense_id": "i-think.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "I think my strongest work so far has been the migration project."
     }
   ],
   "forms": [
@@ -108,11 +136,51 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "CORRESPONDENCE",
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 4,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "OPINION_EXPRESSION",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Never present the hedge as a two-word string without the claim it hedges, and never present the past-tense sentence as a model of this target. When a form is shown, show the sentence-initial position first — that is the canonical one."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Never present the hedge as a two-word string without the claim it hedges, and never present the past-tense sentence as a model of this target. When a form is shown, show the sentence-initial position first — that is the canonical one. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

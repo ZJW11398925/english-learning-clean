@@ -929,6 +929,31 @@ export function wordCard(data) {
       card.appendChild(ex);
     }
   }
+  // 队列③多场景区：usage 变体行（ordinal ≥ 2，语境标签与 resource_labels
+  // 同 ordinal 行对齐）——有变体才渲染标题行，无变体零痕迹。
+  const variants = data.usage_variants || [];
+  if (variants.length) {
+    const head = document.createElement("div");
+    head.className = "wc-variants-head";
+    head.textContent = "多场景";
+    card.appendChild(head);
+    for (const v of variants) {
+      const row = document.createElement("p");
+      row.className = "wc-variant";
+      const tag = [v.genre, v.context].filter(Boolean).join(" · ");
+      if (tag) {
+        const lab = document.createElement("span");
+        lab.className = "wc-variant-tag";
+        lab.textContent = tag;
+        row.appendChild(lab);
+        row.appendChild(document.createTextNode(" "));
+      }
+      const tx = document.createElement("span");
+      tx.textContent = v.text;
+      row.appendChild(tx);
+      card.appendChild(row);
+    }
+  }
   const close = document.createElement("button");
   close.type = "button";
   close.className = "btn btn--faint";

@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "想出来；算出来；弄明白（靠思考或计算得出答案；可分离，代词放中间 work it out；名词 workout 是另一回事）"
+    },
+    {
+      "sense_id": "work-out.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "She worked out the total on the back of the receipt before agreeing to the price."
+    },
+    {
+      "sense_id": "work-out.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "We finally worked out how to fit both cities into one week without nightly packing."
+    },
+    {
+      "sense_id": "work-out.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "The interns worked out a rota that gave everyone at least one weekend off."
+    },
+    {
+      "sense_id": "work-out.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "It took the whole family an evening to work out the train connections for the trip."
     }
   ],
   "forms": [
@@ -132,11 +160,51 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "TASK_FOCUS",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 3,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 4,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "TASK_FOCUS",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the object's position as correct for its kind — a noun either side of out, a pronoun only in the middle — and show the noun workout, if it appears at all, in a CONTRAST role; never present an ERROR_INSTANCE as a model."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the object's position as correct for its kind — a noun either side of out, a pronoun only in the middle — and show the noun workout, if it appears at all, in a CONTRAST role; never present an ERROR_INSTANCE as a model. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

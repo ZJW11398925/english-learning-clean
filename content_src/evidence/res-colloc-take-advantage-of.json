@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "利用（好好利用某个机会或条件）"
+    },
+    {
+      "sense_id": "take-advantage-of.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "Take advantage of the pre-season sale — the same boots cost twice as much in December."
+    },
+    {
+      "sense_id": "take-advantage-of.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "New staff should take advantage of the free language courses the company runs every spring."
+    },
+    {
+      "sense_id": "take-advantage-of.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "We took advantage of the dry spell and painted the whole fence in one afternoon."
+    },
+    {
+      "sense_id": "take-advantage-of.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "Take advantage of the free trial week before you decide which course to pay for."
     }
   ],
   "forms": [
@@ -132,11 +160,51 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 4,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the frame with the thing used in place (take advantage of the quiet morning) and keep the person-object reading (take advantage of someone) clearly marked as the negative sense, and never present an ERROR_INSTANCE as a model."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Show the frame with the thing used in place (take advantage of the quiet morning) and keep the person-object reading (take advantage of someone) clearly marked as the negative sense, and never present an ERROR_INSTANCE as a model. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

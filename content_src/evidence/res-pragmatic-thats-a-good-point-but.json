@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "这个想法不错，但是……（先肯定对方一部分，再提出自己的反对意见）"
+    },
+    {
+      "sense_id": "thats-a-good-point-but.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "That's a good point, but the client signed off on the current scope last week."
+    },
+    {
+      "sense_id": "thats-a-good-point-but.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "That's a good point, but the roof comes before the new kitchen."
+    },
+    {
+      "sense_id": "thats-a-good-point-but.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "That's a good point, but the study only followed the patients for six months."
+    },
+    {
+      "sense_id": "thats-a-good-point-but.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "That's a good point about cost, but the cheaper option doubles the maintenance."
     }
   ],
   "forms": [
@@ -108,11 +136,51 @@
       "style": null,
       "domain": "WORK",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "POLITE",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "INTERACTION",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 4,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "POLITE",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show both halves with the conjunction between them, so the model never carries the concession alone, and never present an ERROR_INSTANCE as a model."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show both halves with the conjunction between them, so the model never carries the concession alone, and never present an ERROR_INSTANCE as a model. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "你是什么意思？（请对方解释自己没听懂的言下之意，把话轮交回给对方）"
+    },
+    {
+      "sense_id": "what-do-you-mean.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "What do you mean by restructuring? Nobody said anything about jobs."
+    },
+    {
+      "sense_id": "what-do-you-mean.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "What do you mean by that? The two definitions sound exactly the same to me."
+    },
+    {
+      "sense_id": "what-do-you-mean.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "What do you mean, the party is off? You were all set this morning."
+    },
+    {
+      "sense_id": "what-do-you-mean.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "What do you mean by borderline? Is that something to worry about?"
     }
   ],
   "forms": [
@@ -108,11 +136,51 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 4,
+      "register": "CASUAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical question first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the question with its do and with its by-phrase or comma-echo complete, never present the auxiliary-dropped or object-bolted form as a model of the question, and never present an ERROR_INSTANCE as a model."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical question first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the question with its do and with its by-phrase or comma-echo complete, never present the auxiliary-dropped or object-bolted form as a model of the question, and never present an ERROR_INSTANCE as a model. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

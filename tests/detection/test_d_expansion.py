@@ -109,9 +109,12 @@ _EXPANSION_ENTITIES = (
 #: re-derived then (a truth-migration pin, not a freeze; re-derived for the
 #: queue-2 screening: 6edb57cf… was the C3-d-truth artifact; re-derived
 #: again for the queue-2 disposal cut's rationale citation fix:
-#: 7a2816ab… was the queue-2 delivery artifact).
+#: 7a2816ab… was the queue-2 delivery artifact; re-derived for the
+#: queue-3 scenario-variant cut — its 120 usage-variant rows + 120 aligned
+#: resource-label rows moved the corpus bytes:
+#: 21d039f3… is the queue-3 delivery artifact).
 _PARENT_DEFAULT_SHA256 = (
-    "3ddc19dca427cf8098baabaeeead719cc495876423d7e11db1457278c954cbf7"
+    "21d039f3eac822fbb7ec130c7a9d5f66f78f19d7fa1496bb3ad40a7d3fac79f8"
 )
 
 

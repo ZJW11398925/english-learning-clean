@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "用完；用光（某样东西已经用完，没有剩余了）"
+    },
+    {
+      "sense_id": "run-out-of.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "We've run out of coffee again — I'll pick some up on the way home."
+    },
+    {
+      "sense_id": "run-out-of.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "We ran out of petrol twenty kilometres before the next station."
+    },
+    {
+      "sense_id": "run-out-of.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "We're running out of time, so let's settle the venue first and argue about the menu later."
+    },
+    {
+      "sense_id": "run-out-of.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "I ran out of data halfway through the trip and had to rely on the hotel's wifi."
     }
   ],
   "forms": [
@@ -124,11 +152,51 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 4,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "CORRESPONDENCE",
+      "context": "PLANNING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show of with the exhausted noun after it, so the model never carries the objectless shape, and never present an ERROR_INSTANCE as a model."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show of with the exhausted noun after it, so the model never carries the objectless shape, and never present an ERROR_INSTANCE as a model. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

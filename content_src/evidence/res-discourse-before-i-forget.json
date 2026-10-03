@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "趁我还没忘（先把一件眼下没在谈的事补进来说，说完再回到原话题）"
+    },
+    {
+      "sense_id": "before-i-forget.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "Before I forget — the printer code changes on Monday, so note it down."
+    },
+    {
+      "sense_id": "before-i-forget.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "Before I forget, did you pay the water bill this month?"
+    },
+    {
+      "sense_id": "before-i-forget.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "Before I forget: the parking permit needs renewing before Friday."
+    },
+    {
+      "sense_id": "before-i-forget.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "Before I forget — your mother asked for the recipe, so send it when you can."
     }
   ],
   "forms": [
@@ -108,11 +136,51 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 4,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "CORRESPONDENCE",
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the signpost whole at the front of the turn with its dash or comma, and never present an ordinary time clause about real forgetting or an ERROR_INSTANCE as a model of the signpost."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the signpost whole at the front of the turn with its dash or comma, and never present an ordinary time clause about real forgetting or an ERROR_INSTANCE as a model of the signpost. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

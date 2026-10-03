@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "我想……；我希望……（礼貌地表达愿望或提出请求的框架）"
+    },
+    {
+      "sense_id": "id-like-to.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "I'd like to reserve a table for four at seven, if anything is still free."
+    },
+    {
+      "sense_id": "id-like-to.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "I'd like to change my booking from the twelfth to the fifteenth, please."
+    },
+    {
+      "sense_id": "id-like-to.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "I'd like to start by thanking everyone for making time on a Friday."
+    },
+    {
+      "sense_id": "id-like-to.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "I would like to apply for the internship advertised on your careers page."
     }
   ],
   "forms": [
@@ -108,11 +136,51 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "POLITE",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "POLITE",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "CORRESPONDENCE",
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 4,
+      "register": "POLITE",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "CONVERSATION_MANAGEMENT",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "FORMAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "CORRESPONDENCE",
+      "context": "REQUESTING",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-GB"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Never present the frame as a fragment with the subject or the complement verb missing, and never present an ERROR_INSTANCE as a model."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical sentence first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Never present the frame as a fragment with the subject or the complement verb missing, and never present an ERROR_INSTANCE as a model. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [
