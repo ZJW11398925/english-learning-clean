@@ -624,9 +624,13 @@ def test_the_migration_manifest_restates_the_new_truths() -> None:
     screens = _text("screens.css")
     components = _text("components.css")
     assert screens.count("border-radius") == 4
-    # .envsel + .env + 预览短笺 + .envpage (2px)
-    assert components.count("border-radius") == 7   # 基线3 + 邮戳双圈2 + 邮票图形2
-    assert components.count("box-shadow: var(--stack-shadow-soft);") == 4
+    # .envsel + .env + 预览短笺 + .envpage (2px)；fr-A 随迁（+2 = 9）：
+    # #24 回底墨点本体与其纸白薄雾圆——用户明示墨点样式族（②-6 豁免
+    # 登记在册）
+    # 基线3 + 邮戳双圈2 + 邮票图形2 + fr-A 墨点2 = 9
+    assert components.count("border-radius") == 9
+    # fr-A 随迁（+2 = 6）：#24 墨点承影 + #27 墨选浮层纸面——两级之内
+    assert components.count("box-shadow: var(--stack-shadow-soft);") == 6
     assert screens.count("box-shadow") == 4         # 舞台 deep + 垫板/页卡/缩略封 soft
     # the mc-1 face styles live outside the component registry (the
     # dossier precedent): no numbered contract block, no clause words

@@ -99,6 +99,31 @@ weight，700 = 合成粗体发糊——中文标题靠字号跳档 + 字距）�
 
 版心与页边距：窄屏 394px ≈ 23 字/行仍舒适；页边距 ≥2 行高（64px 桌面）。
 
+#### ②-4a 排印配方与全局应用规范（fr-A 体系化）
+
+九档标度的**值**不动（简报逐值采用在册）；本刀补的是**应用规范**——
+四族读法落成 `font:` 速记配方令牌（`--t-*`，物理出处 tokens.css），
+消费面**零拼装**（不再允许「font-family + font-size 各写一半、行高靠
+继承」的散写法；fr-A 前残留的相对行高 `1.7`/`1.8` 字面已全数清账）。
+
+| 族 | 配方 | 值 | 用面（哪个层级用哪档） |
+|---|---|---|---|
+| ① 标题层级（display 族，400——禁合成粗体，中文标题靠字号跳档 + 字距） | `--t-display` | 34/42 | 门厅封面题（唯一） |
+| | `--t-title` | 24/32 | 档案真名 / 编辑台题 |
+| | `--t-head` | 18/26 | 信头名 / 信封名 / 词卡词头 |
+| ② 正文文档档（serif 族） | `--t-body` | 17/32 | 信件正文 / 中文文档行（`.doc-line`——行高锁基线） |
+| | `--t-body-latin` | 17/28 | 纯英文散文段（档案人物节） |
+| | `--t-small` | 14.5/24 | 次墨说明 / 记忆行 / 短笺 |
+| | `--t-hand` | 19/30 | 楷体手迹位（三合法面：落款/案头日期/边注，每屏 ≤2 行 ≤1 处） |
+| ③ 界面档（UI sans 族） | `--t-ui` | 12.5/20 | 界面小字 / 链接族 / 说明行（`.sub` `.typing` `.errline` `.flow-calibre` 等） |
+| | `--t-note` | 14.5/24 sans | 界面弱化小字（`.note` 空态行 / `.state-banner` 状态横幅） |
+| ④ 微标签与 mono 数字档 | `--meta-font`（sans 500） | 11.5/20 | 微标签 sans 角色（状态词/节名/词性等元信息位——唯一去处） |
+| | `--meta-mono`（等宽 400） | 11.5/20 | 时间/编号/计数/日期/版本行/数据列（恒配 `font-variant-numeric: tabular-nums`） |
+
+规范：新规则一律 `font: var(--t-*)`（或 `var(--meta-*)`）整体取用；
+族内再分层靠**墨色三级**（`--ink`/`--ink-soft`/`--ink-faint`）与
+`letter-spacing` 刻度，不靠另立字号。
+
 ### ②-5 间距·动效·微标签·触感·阴影·图标·布局
 
 | token | 值 | 用途 | 禁忌 |
@@ -160,9 +185,9 @@ v2 起 `tokens.css` 是全套令牌的唯一物理出处，其头注即简报 §
 
 每组件在 components.css 有契约注释块（结构/状态矩阵/使用规则/禁止变体）。
 页面引用一律走新变体类；旧类名仅作为别名保留在同一规则的选择器表尾。
-现役注册表 = 22 组件（#1–#22 连号；rd-4 曾增 #23 partner-card，cs-2
-随档案全页视图退役——浮层与名册桩拆除、same-cut retirement，注册表
-不做阁楼，**编号空出不复用**，见本节表后注）。
+现役注册表 = 26 组件（#1–#22 连号 + fr-A 新增 #24–#27；rd-4 曾增 #23
+partner-card，cs-2 随档案全页视图退役——浮层与名册桩拆除、same-cut
+retirement，注册表不做阁楼，**编号空出不复用**，见本节表后注）。
 
 | # | 组件 | 类名（新） | 别名（现役旧名） | 状态矩阵 | 出处 |
 |---|---|---|---|---|---|
@@ -188,6 +213,10 @@ v2 起 `tokens.css` 是全套令牌的唯一物理出处，其头注即简报 §
 | 20 | section-tabs | `.section-tabs` / `.section-tab`（+ `--on`） | — | unselected（default，透明点线占位）/ hover（墨色微沉）/ selected（`--on`，主墨加重 + 墨蓝实线短下划 + `aria-selected`）/ focus（地基 `:focus-visible` 焦点环，不另设）/ `[disabled]`（opacity .4）；roving tabindex + 左右箭头循环移选；温故/抽屉各一排三项，切节即拉 | components.css + components.js（`wireSectionTabs()`/`markSectionTabs()`，R-1） |
 | 21 | disclosure | `.disclosure`（+ `.disclosure-head` `.disclosure-marker` `.disclosure-title` `.disclosure-examples` `.disclosure-body` `--open`） | — | collapsed（default，内容区 hidden，chevron 向右）/ expanded（`--open`，内容区展开、chevron 旋转 90°、`aria-expanded="true"`，计数保留；入场 = ⑨-5 paper-unfold）/ focus（地基环，不另设）；标记 = #22 自绘墨线 chevron；一切「超过 8 行的同质列表」与「参考 / 原始读数」走它；不得手风琴互斥、不得嵌套、不得图标外链 | components.css + components.js（`disclosure()`，R-1R） |
 | 22 | icon-set | `.inkicon`（几何模板 `id="icon-search\|chevron\|note\|write\|inbox\|lamp\|stamp\|desk\|revisit\|drawer"`） | — | default（`--icon-size` 见方、currentColor 墨色、`--icon-stroke` 1.5、圆角端点；无独立交互态——chevron 旋转是宿主 #21 的 `--open` 态面；#18 三枚的落墨填充是宿主 `.navdock-item--on` 的态面——fill-opacity 过渡，图标本体仍无独立交互态）/ reduced-motion（宿主动效随库尾总降级归零后静帧） | index.html（`<template id="icon-set-source">` 十枚内联 SVG，几何唯一出处）+ components.css + components.js（`inkIcon()`/`installIcons()`，R-1V） |
+| 24 | flow-bottom | `.flow-bottom` | — | default（墨点 .82 不透明度 + 软纸影）/ hover·focus·press（纸白薄雾三值——深件反向叠雾，rd-1 三档）/ `:active`（触压 1px）/ `[hidden]`（在底 / 写作态 / 离案头——JS 账；fr-A 会话窗三件之一，圆形 = 用户明示墨点样式族，②-6 的 fr-A 豁免登记） | index.html + components.css（视觉）+ screens.css（位置账）+ app.js（`syncFlowBottom`） |
+| 25 | flow-ruler | `.flow-ruler`（+ `.flow-tick` `--on`） | — | default（8×2 水印墨短线，flex 纵向均分条高——点距即窗口密度）/ 当前轮 `--on`（14×2 主墨 + `aria-current`，形态差异非颜色）/ hover（次墨半档）/ focus-visible（墨蓝细环）/ `[hidden]`（<2 轮 / 写作态 / 离案头）；点击 = 平滑跳该轮（reduced-motion 直落）；口径行 `.flow-calibre`（屏级，「加载更早」衔接主线-2 分页） | index.html + components.css + screens.css + app.js（`flowTurns` 锚 / `buildFlowRuler`/`syncFlowRuler`/`loadEarlierLetters`） |
+| 26 | tokenmeter | `.tokenmeter`（+ `.tm-line` `.tm-num` `.tm-fold` `.tm-turns` `.tm-turn`） | — | default（等宽微标签配方 + tabular-nums——账页读法，零图表零徽章）/ 逐轮开合（`aria-expanded`）/ `[hidden]`（开关关 / 无数据）；未计量字段如实「—」，全空如实一句——不伪造 0；累计 = 服务端会话全量（窗口无关），客户端不做本地加减 | index.html + components.css + screens.css（sticky 账 z 4）+ app.js（`setTokenMeter`/`syncFlowMeter`/`refreshFlowMeter`；开关存 sessionStorage——如实标注） |
+| 27 | select | `.select`（+ `.select-btn` `.select-value` `.select-chevron` `.select-list` `.select-option` `--on` `--active` `--open`） | — | default（按钮 = 稿纸行读法 + chevron 弱墨）/ `--open`（chevron 旋 90°，纸面浮层落 `--paper-high` + 发丝缘 + 软纸影）/ option：default（墨字）/ hover·键盘活动项（淡墨雾——color-mix 墨色同源 8%/12%，rd-1 三值读法）/ 选中 `--on`（主墨 + 勾记 ✓）/ placeholder（弱墨 ui 档）；键盘 ↑↓/Home/End/Enter/Esc/Tab 全链 + `role=listbox/option` + `aria-activedescendant` + 点外关闭 | components.css + components.js（`selectField()`，fr-A——原生 `<select>` 全应用退役，三现役消费面：方向页技能 / 设置批注频率 / 披露层级） |
 
 **#23 退役注记（cs-2，替代 rd-4 假句的现役真值）**：rd-4 的
 `.partner-card` 浮层纸卡与名册桩（名册 = 前端静态副本、选中只落
@@ -1912,6 +1941,52 @@ v2-2 起增两枚（`paper-fold` 收拢 / `page-turn` 2D 翻页——下两行�
    8px 不取越值；dateline「旧式数字」无令牌载体——mono 微标签配方
    照边注栏同源落地，不发明字位。
 
+### 9.14 fr-A 修订登记（前端修订刀 A——写作态收窄 + 会话窗三件 + 设置页完全体 + 排印体系化 + 墨选，2026-10-05）
+
+> 授权链：用户「前端修订刀 A（五问题）」任务书（分支 frontend-revamp）。
+> 五面一刀的**形态级显式修订**与登记行集中在此；逐面实现与钉在
+> `tests/host/test_frontend_revamp_a.py`（配既有套件随迁）。
+
+1. **写作态形态修订（问题 1）**：`.dock--compose` 自 v3-a 的近全屏
+   （fixed 全高）收窄为**内容自适应高 + 上限 50dvh**——信流上半始终
+   可见，写信不遮全部上下文；稿纸 autosize 封顶（`composePenCap` =
+   50dvh − 铬件账 148px，下限 4×baseline）后内滚；v3-a 的 520px 降级
+   双形态随之退役（基础形态本身已是降级读法）。Esc 收起与笔搁触发条
+   语义不变。**用户首验位** = 上限值（50dvh）与收窄方式本身，否决
+   即回改。
+2. **会话窗三件（问题 2，全新组件 #24/#25/#26）**：一键回底墨点
+   （离底 240px 浮现，平滑回底——圆形是用户明示的墨点样式族，
+   **②-6 圆角法则的 fr-A 新增豁免**：邮票/邮戳之外第二例圆形，墨点
+   不盖真实事件非印章）；轮次刻度（每轮一点、当前视位高亮、点击跳
+   转——刻度只管已加载窗口，更早部分以信流顶部「加载更早」衔接，
+   口径句写在脸上）；token 计量（数据面全链：OpenAI 兼容响应的标准
+   `usage` 字段提取 → ProviderAttempt 三列落库（迁移 0020，三列
+   NULLABLE 的 adjudicated 扩列——无该字段的兼容端点如实 NULL 不伪
+   造）→ `/api/history` 轮级 usage + 会话累计（窗口无关）→ 案头计量
+   条（累计 + 逐轮可选展开）→ 设置页显示开关——**sessionStorage 客
+   户端侧**，查过 user_config 现面无 UI 偏好合适面，如实标注）。
+3. **设置页完全体（问题 3）**：分组信息架构五区（如实说 / 教学模
+   式 / 教学策略 / 隐私与披露 / 显示与计量）；模式读面视觉化（三档
+   名映射——PRODUCT_CONTRACT §3 档名与枚举词并写非虚构，当前档高
+   亮 `aria-current` 但不可改，`mode` 写入继续 400 拒绝）；披露规则
+   **编辑面接通**（§5.1 DisclosurePolicy 写面现成——全规则集版本化
+   upsert、409 重读、重复 persona 行与词表外层级 400 人话；规则行可
+   改层级可增可减，名册供给当前 persona 的专属规则入口）；「规则经
+   profile 编辑，这里只读」句退役（钉随迁）。
+4. **排印体系化（问题 4）**：九档标度值不动（简报在册），补**应用
+   规范**——`--t-*` 配方九枚 + 四族读法（②-4a）；fr-A 前残留的相对
+   行高 `1.7`/`1.8` 字面全数清账（`.errline` `.sub` `pre` `.taxref`
+   `.state-banner` 等十处归配方）。**规范：新规则一律 `font:
+   var(--t-*)` / `var(--meta-*)` 整体取用，零拼装。**
+5. **墨选（问题 5，#27）**：原生 `<select>` 全应用退役——纸面浮层
+   下拉（`role=listbox/option`、`aria-activedescendant`、键盘
+   ↑↓/Home/End/Enter/Esc/Tab、点外关闭；选中主墨 + 勾记、hover 淡
+   墨雾 color-mix 墨色同源）；三现役消费面（方向页技能 / 设置批注
+   频率 / 披露层级）。z 序表新增 10 档（10.2 同刀改行）。
+6. **令牌账**：`--t-*` 九枚入 tokens.css（②-4a）；`--dock-compose-inset`
+   语义不变（桌面档两侧让缘照旧）；会话窗家具 z 5 与计量条 z 4 入
+   ⑩ 10.2 表。
+
 ---
 
 ## ⑩ 层级宪法（v3-2 立，2026-10-02）
@@ -1936,12 +2011,14 @@ v2-2 起增两枚（`paper-fold` 收拢 / `page-turn` 2D 翻页——下两行�
 
 | 层 | z | 成员 |
 |---|---|---|
-| 全页文档流 | 常规流（sticky 顶栏 5） | 各 `#space-*` section；`.top` z 5 |
+| 全页文档流 | 常规流（sticky 顶栏 5；fr-A 计量条 4） | 各 `#space-*` section；`.top` z 5；`#tokenmeter`（sticky 贴顶栏之下）z 4 |
+| 会话窗家具（fr-A） | 5 | `#flow-bottom`（回底墨点）/ `#flow-ruler`（轮次刻度）——信流之上、常驻 dock 之下，与 `.top` 同值不冲突（区域不交） |
 | 常驻 dock | 6 | #18 navdock |
 | 下拉容器（桌面档） | 7 | `.envsel`（扇叠/全览/编辑三形态同层——形态不换层） |
 | 写信区垫板 | 8 | `.dock`（fixed 底，与浮层遮罩同值——DOM 序在后者胜） |
 | 遮罩 | 8 | `.word-scrim` / `.envsel-scrim`（触屏档 display） |
 | 浮层卡 | 9 | `.word-card`；**触屏档的下拉容器升 9**（bottom sheet 盖过写信区垫板，`.envsel` 在 hover:none 半区改 z 9） |
+| 墨选浮层（fr-A） | 10 | `.select-list`（#27 的下拉纸面——盖过浮层卡与一切表单上下文；点外关闭由工厂接线） |
 
 （沓内信封自身的 --env-z 是容器**内部**排布序，不入本表。）
 

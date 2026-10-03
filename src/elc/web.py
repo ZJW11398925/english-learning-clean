@@ -405,7 +405,9 @@ from elc.teaching.request import TeachingRequest
 from elc.teaching.rollout import OBSERVATION_SPECS
 from elc.teaching.types import MomentState
 from elc.user_config.types import (
+    DisclosureLevel,
     DisclosurePolicy,
+    DisclosureRule,
     LearningGoal,
     LearningGoalPortfolio,
     SessionFocus,
@@ -972,6 +974,83 @@ def _history_request(
             )
         return (None, False, limit)
     return (None, False, None)
+
+
+# ---------------------------------------------------------------------------
+# fr-A token metering — the usage read faces (read-only SQL on the work
+# queue, the diagnostics construction: plain SELECTs, never a write)
+# ---------------------------------------------------------------------------
+
+#: The usage sums over one provider-attempt group: SQL's SUM ignores
+#: NULLs — an endpoint that reports no usage contributes nothing, so the
+#: sums are the *measured* consumption only (never a fabricated 0), and
+#: the measured/total call pair says how much of the traffic was metered
+#: at all. Every provider attempt of every generation action joins in —
+#: a retry's consumption is real consumption.
+_USAGE_SUMS = (
+    "SUM(p.prompt_tokens), SUM(p.completion_tokens), SUM(p.total_tokens),"
+    " COALESCE(SUM(CASE WHEN p.prompt_tokens IS NOT NULL"
+    " OR p.completion_tokens IS NOT NULL"
+    " OR p.total_tokens IS NOT NULL THEN 1 ELSE 0 END), 0),"
+    " COUNT(*)"
+)
+_USAGE_JOINS = (
+    " FROM provider_attempt p"
+    " JOIN generation_action_intent g ON g.action_id = p.action_id"
+)
+
+
+def _usage_face(sums: tuple[Any, ...]) -> dict[str, Any] | None:
+    """One usage sums tuple as the per-turn payload face — ``None`` when
+    nothing was metered (the turn's attempts reported no usage at all)."""
+
+    if not sums[3]:
+        return None
+    return {
+        "prompt_tokens": sums[0],
+        "completion_tokens": sums[1],
+        "total_tokens": sums[2],
+    }
+
+
+def _usage_totals(db: sqlite3.Connection, conversation_id: str) -> dict[str, Any]:
+    """The conversation-wide cumulative usage (fr-A): every attempt of
+    every action bound to this conversation's turns, window-independent —
+    the session's whole measured consumption, so a widened or narrowed
+    history read never changes it."""
+
+    row = db.execute(
+        "SELECT " + _USAGE_SUMS + _USAGE_JOINS
+        + " JOIN user_turn u ON u.turn_id = g.turn_id"
+          " WHERE u.conversation_id = ?",
+        (conversation_id,),
+    ).fetchone()
+    return {
+        "prompt_tokens": row[0],
+        "completion_tokens": row[1],
+        "total_tokens": row[2],
+        "measured_calls": int(row[3]),
+        "total_calls": int(row[4]),
+    }
+
+
+def _usage_by_turn(
+    db: sqlite3.Connection, turn_ids: list[str]
+) -> dict[str, dict[str, Any] | None]:
+    """The window's per-turn usage: one sums row per turn, ``None`` for a
+    turn nothing was metered on. The placeholder list is the only
+    generated text (the ``count_delivered_teaching_turns`` precedent)."""
+
+    if not turn_ids:
+        return {}
+    placeholders = ", ".join("?" for _ in turn_ids)
+    rows = db.execute(
+        "SELECT g.turn_id, " + _USAGE_SUMS + _USAGE_JOINS
+        + " WHERE g.turn_id IN (" + placeholders + ")"
+          " GROUP BY g.turn_id",
+        tuple(turn_ids),
+    ).fetchall()
+    return {str(row[0]): _usage_face(row[1:5]) for row in rows}
 
 
 def _goals_panel(db: sqlite3.Connection) -> dict[str, Any]:
@@ -2023,6 +2102,75 @@ def _settings_knob_request(
     return (None, knobs)
 
 
+def _disclosure_request_rules(
+    payload: Any,
+) -> tuple[str | None, list[DisclosureRule] | None]:
+    """The disclosure write body, parsed and fail-closed (fr-A; the knob
+    write's W1 law, restated).
+
+    Returns ``(error, rules)``: a non-empty ``error`` is the 400 人话
+    sentence; a ``None`` error means the rule set is in grammar. The body
+    is the **full new rule set** (``{"rules": [...]}`` — the version
+    discipline's replay comparison is well-defined): each rule carries
+    exactly ``persona_id`` (a non-empty string, or ``null`` for the default
+    rule) and ``disclosure_level`` (one of the enum's own three words,
+    case-sensitive). A duplicate rule for one persona — the default rule
+    included — is refused with its own sentence: the disclosure decision
+    takes the first match, so a second row would be silently dead
+    configuration. An out-of-vocabulary level is refused, never silently
+    dropped; an empty rule set is legal (the fail-closed default: nothing
+    is disclosed).
+    """
+
+    if not isinstance(payload, dict):
+        return ('need a JSON body with "rules": the full new rule set', None)
+    unknown = sorted(set(payload) - {"rules"})
+    if unknown:
+        return (f"不认识的键：{unknown[0]}（可写面只有 rules）。", None)
+    rules = payload.get("rules")
+    if not isinstance(rules, list):
+        return ('"rules" must be a list: the full new rule set', None)
+    levels = {level.value for level in DisclosureLevel}
+    parsed: list[DisclosureRule] = []
+    seen: set[str | None] = set()
+    for index, item in enumerate(rules):
+        if not isinstance(item, dict):
+            return (f"rules[{index}] 须是对象（persona_id + disclosure_level）。",
+                    None)
+        extra = sorted(set(item) - {"persona_id", "disclosure_level"})
+        if extra:
+            return (f"rules[{index}] 有不认识的键：{extra[0]}。", None)
+        persona = item.get("persona_id")
+        if persona is not None and (
+            not isinstance(persona, str) or not persona.strip()
+        ):
+            return (f"rules[{index}].persona_id 须是非空字符串或 null（默认规则）。",
+                    None)
+        level_word = item.get("disclosure_level")
+        if not isinstance(level_word, str) or level_word not in levels:
+            return (
+                f"rules[{index}].disclosure_level 须是三词之一："
+                + ", ".join(sorted(levels)),
+                None,
+            )
+        key = None if persona is None else persona
+        if key in seen:
+            who = "默认规则" if persona is None else f"角色 {persona}"
+            return (
+                f"{who}出现了两条——一个对象只能有一条披露规则"
+                "（重复行是死配置，拒收）。",
+                None,
+            )
+        seen.add(key)
+        parsed.append(
+            DisclosureRule(
+                persona_id=None if persona is None else PersonaId(persona),
+                disclosure_level=DisclosureLevel(level_word),
+            )
+        )
+    return (None, parsed)
+
+
 def _next_version(current: str | None) -> str:
     """The two write faces' next version string, from the current one.
 
@@ -2581,6 +2729,11 @@ class _WebFace:
                 None if reply is None else _letter_hit_rows(reply, self._lemma_runs)
             ),
             "user_word_hits": _letter_hit_rows(text, self._lemma_runs),
+            # fr-A: this turn's measured token usage (all its actions'
+            # attempts) — ``None`` when the endpoint reported none.
+            "usage": _usage_by_turn(
+                self._host.db, [str(completion.turn_id)]
+            ).get(str(completion.turn_id)),
         }
 
     def _moments_of_turn(self, turn_id: str) -> list[dict[str, str]]:
@@ -3646,6 +3799,7 @@ class _WebFace:
         stage_value = None if stage is None else str(stage.value)
         controller = self._host.user_config
         frequency_words = list(_FREQUENCY_WORDS)
+        disclosure_levels = [level.value for level in DisclosureLevel]
         if controller is None or self._host.user_id is None:
             return {
                 "available": False,
@@ -3653,6 +3807,7 @@ class _WebFace:
                 "teaching_policy": None,
                 "disclosure": None,
                 "frequency_words": frequency_words,
+                "disclosure_levels": disclosure_levels,
                 "writable_knobs": list(_SETTINGS_KNOBS),
             }
         user_id = self._host.user_id
@@ -3693,6 +3848,7 @@ class _WebFace:
                 else _settings_disclosure_face(disclosure.value)
             ),
             "frequency_words": frequency_words,
+            "disclosure_levels": disclosure_levels,
             "writable_knobs": list(_SETTINGS_KNOBS),
         }
 
@@ -3808,6 +3964,111 @@ class _WebFace:
                 "accepted": True,
                 "idempotent": False,
                 "policy_version": str(written.value),
+                "conflict": False,
+                "error": None,
+            },
+        )
+
+    def disclosure_save(
+        self, payload: Any
+    ) -> tuple[int, dict[str, Any]]:
+        """The disclosure section's one write (fr-A): the full new rule set
+        for the §5.1 DisclosurePolicy, versioned like the policy writes.
+
+        The grammar was validated at the HTTP layer
+        (:func:`_disclosure_request_rules`) and is re-derived here only to
+        fail closed — the ``DisclosureLevel`` construction cannot be talked
+        past the enum. The row's key is the user's own id (the Local V1
+        linking convention); the revision moves by :func:`_next_version`.
+        An unchanged rule set answers 200 with ``idempotent`` and writes
+        nothing (no empty revision churn); a ``CONFLICT`` rides 409 like
+        the goal/policy writes; any other refusal is a runtime fact (200 +
+        ``accepted: false``). The write moves what personas may be told
+        about the user only — never a profile fact, never the rollout
+        tier.
+        """
+
+        controller = self._host.user_config
+        if controller is None or self._host.user_id is None:
+            return (200, _no_user_config_answer())
+        error, rules = _disclosure_request_rules(payload)
+        if error is not None or rules is None:
+            return (
+                400,
+                {
+                    "accepted": False,
+                    "conflict": False,
+                    "error": error or "the disclosure body is out of grammar",
+                },
+            )
+        user_id = self._host.user_id
+        store = getattr(self._host, "user_config_store", None)
+        if store is None:
+            raise RuntimeError(
+                "the disclosure policy could not be read:"
+                " this host carries a user-config controller without its"
+                " store"
+            )
+        current = store.get_disclosure_policy(user_id)
+        if isinstance(current, Err):
+            raise RuntimeError(
+                "the disclosure policy could not be read:"
+                f" {current.error.code.value}: {current.error.message}"
+            )
+        policy_now = current.value
+        new_rules = tuple(rules)
+        if policy_now is not None and policy_now.rules == new_rules:
+            return (
+                200,
+                {
+                    "accepted": True,
+                    "idempotent": True,
+                    "revision": str(policy_now.revision),
+                    "conflict": False,
+                    "error": None,
+                },
+            )
+        revision = _next_version(
+            None if policy_now is None else str(policy_now.revision)
+        )
+        written = controller.set_disclosure_policy(
+            DisclosurePolicy(
+                disclosure_policy_id=str(user_id),
+                revision=revision,
+                rules=new_rules,
+            )
+        )
+        if isinstance(written, Err):
+            if written.error.code is DomainErrorCode.CONFLICT:
+                return (
+                    409,
+                    {
+                        "accepted": False,
+                        "conflict": True,
+                        "error": "配置已被别处更新，请重读再改",
+                        "detail": (
+                            f"{written.error.code.value}:"
+                            f" {written.error.message}"
+                        ),
+                    },
+                )
+            return (
+                200,
+                {
+                    "accepted": False,
+                    "conflict": False,
+                    "error": (
+                        f"{written.error.code.value}:"
+                        f" {written.error.message}"
+                    ),
+                },
+            )
+        return (
+            200,
+            {
+                "accepted": True,
+                "idempotent": False,
+                "revision": str(written.value.revision),
                 "conflict": False,
                 "error": None,
             },
@@ -3936,6 +4197,12 @@ class _WebFace:
                 # the store answers oldest-first; the bound-sized answer is
                 # the most recent tail of the bound+1 it fetched
                 slices = slices[len(slices) - bound :]
+        # fr-A: the window's per-turn usage and the conversation-wide
+        # cumulative — additive payload keys (the 主线-2 breadth keys'
+        # precedent); both are read-only sums over the durable attempt rows.
+        usage_by_turn = _usage_by_turn(
+            self._host.db, [str(slice_.turn_id) for slice_ in slices]
+        )
         turns: list[dict[str, Any]] = []
         for slice_ in slices:
             assistant = (
@@ -3958,9 +4225,18 @@ class _WebFace:
                         if assistant is None
                         else _letter_hit_rows(assistant, self._lemma_runs)
                     ),
+                    # fr-A: this turn's measured token usage, ``None`` when
+                    # its attempts reported none — never a fabricated 0.
+                    "usage": usage_by_turn.get(str(slice_.turn_id)),
                 }
             )
-        return {"turns": turns, "window": bound, "has_more": has_more}
+        return {
+            "turns": turns,
+            "window": bound,
+            "has_more": has_more,
+            # fr-A: the conversation-wide cumulative (window-independent).
+            "usage": _usage_totals(self._host.db, str(self._conversation_id)),
+        }
 
     def schedule(self) -> dict[str, Any]:
         """The review-schedule zone's read — the Scheduler's own view.
@@ -4443,6 +4719,17 @@ def _build_server(
                     return
                 self._run_host_write(
                     lambda: face.teaching_policy_save(knobs)
+                )
+                return
+            if self.path == "/api/settings/disclosure":
+                # fr-A: the disclosure rule-set write — the full new set,
+                # versioned like the policy writes. The grammar is
+                # validated here, fail-closed (a duplicate persona rule, an
+                # out-of-vocabulary level or an unknown key is a 400 人话
+                # naming itself); the store's version discipline rides
+                # 200 / 409 from the face.
+                self._run_host_write(
+                    lambda: face.disclosure_save(self._read_json_body())
                 )
                 return
             if self.path == "/api/characters":

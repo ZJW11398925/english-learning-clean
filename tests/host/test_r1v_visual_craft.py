@@ -246,11 +246,15 @@ def test_the_icon_set_is_registered_in_all_four_places() -> None:
     block with its four clauses, the components.js factory pair and the
     COMPONENTS tuple."""
 
-    from tests.host.test_fg1_architecture import COMPONENTS
+    from tests.host.test_fg1_architecture import (
+        COMPONENT_NAMES,
+        COMPONENTS,
+    )
 
-    assert "icon-set" in COMPONENTS
-    # rd-4 曾随迁长到 23；cs-2 随迁：浮层伙伴卡退役再缩回（23 → 22）
-    assert len(COMPONENTS) == 22
+    assert "icon-set" in COMPONENT_NAMES
+    # rd-4 曾随迁长到 23；cs-2 随迁：浮层伙伴卡退役再缩回（23 → 22）；
+    # fr-A 随迁：会话窗三件 + 墨选四格入库（22 → 26）
+    assert len(COMPONENTS) == 26
     assert "| 22 | icon-set" in _spec()
     css = _text("components.css")
     assert "22. icon-set" in css
@@ -444,9 +448,11 @@ def test_the_word_card_wears_a_deckle_not_a_shadow(tmp_path: Path) -> None:
     # 两处（.postmark 与信封沓的 .env-mark 各含本体与 ::before）+
     # 邮票图形两枚（.stamp-v0/.stamp-v5）+ 信封沓的 2px 两处
     # （.envsel/.env，简报 §6 增补档；mc-2 起加编辑台的开场信预览
-    # 短笺——同 ≤2px 信纸物件档；v2-2 起加翻页全览页卡 .envpage）。
+    # 短笺——同 ≤2px 信纸物件档；v2-2 起加翻页全览页卡 .envpage）；
+    # fr-A 随迁（+2 = 13）：#24 回底墨点本体与其纸白薄雾圆——用户
+    # 明示的墨点样式族，②-6 的 fr-A 豁免登记在册。
     # 面板大圆角仍一处即红。
-    assert page.count("border-radius") == 11
+    assert page.count("border-radius") == 13
     assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
     css = _text("components.css")

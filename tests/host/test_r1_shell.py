@@ -352,13 +352,13 @@ def test_the_three_shell_components_are_pinned_registered() -> None:
     line the review's m9 mutation deleted without a red."""
 
     from tests.host.test_fg1_architecture import (
-        COMPONENTS,
+        COMPONENT_NAMES,
         _webui_all_text,
         _webui_text,
     )
 
     for name in ("dock", "space-header", "section-tabs"):
-        assert name in COMPONENTS, name
+        assert name in COMPONENT_NAMES, name
     spec = (
         Path(__file__).resolve().parents[2]
         / "docs" / "FRONTEND_SPEC.md"

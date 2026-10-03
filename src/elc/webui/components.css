@@ -491,8 +491,7 @@ button:focus-visible, input:focus-visible {
    状态矩阵：default（弱化 sans 小字）。无交互态。
    使用规则：一切「没有数据」的诚实答法；词照面板事实说，不造数。
    禁止变体：占位插画、骨架屏。 */
-.note { color: var(--ink-faint); font-size: var(--fs-small);
-        font-family: var(--f-sans); }
+.note { color: var(--ink-faint); font: var(--t-note); }
 
 /* ── 11. confirm-dialog（原生确认框封装点）─────────────────────────
    结构：无 CSS——保持 window.confirm 原生形态；JS 封装点是
@@ -543,8 +542,7 @@ button:focus-visible, input:focus-visible {
    使用规则：读数面板加载中、空、失败三态的唯一答法（#10 .note 保留
    给壳上静态占位行）；文字一律 textContent。
    禁止变体：转圈动画、呼吸灯、骨架屏、遮罩、占位插画、弹层。 */
-.state-banner { color: var(--ink-faint); font-family: var(--f-sans);
-        font-size: var(--fs-small); line-height: 1.7; }
+.state-banner { color: var(--ink-faint); font: var(--t-note); }
 .state-banner--error { color: var(--pencil); }
 .state-banner .btn--pencil { margin-left: 10px; }
 .state-banner--empty .inkicon { width: 15px; height: 15px;
@@ -937,6 +935,167 @@ button:focus-visible, input:focus-visible {
 .sysline.compose-receipt { margin: var(--sp-6) 0 var(--sp-5); }
 .sysline.emptyhall .inkicon { display: block; width: 30px;
            height: 30px; margin: 0 auto 10px; color: var(--ink-ghost); }
+
+/* ── 24. flow-bottom（一键回底墨点，fr-A）──────────────────────────────
+   结构：<button class="flow-bottom">（一枚 chevron 图标，CSS 旋转 90°
+   向下；aria-label 承担语义——图标不单独表意）。
+   状态矩阵：default（墨点 .82 不透明度 + 软纸影）/ hover·focus·press
+   （纸白薄雾三值——墨点是深件，雾用 --paper-high 反向叠，同 rd-1 三档
+   纪律）/ active（触压 1px 下沉）/ hidden（在底 / 写作态 / 离案头——
+   JS 账）。
+   圆形豁免登记（fr-A）：用户明示「悬浮墨点样式族」——②-6 圆角法则的
+   「仅邮票/邮戳圆形」新增一枚豁免；墨点不盖真实事件，不是印章。
+   使用规则：屏级位置账在 screens.css（右下、navdock + 触发条之上）；
+   点击 = 平滑回底（reduced-motion 直落）。
+   禁止变体：第二形状 / 第二色 / 常驻（在底必藏）/ 徽章计数。 */
+.flow-bottom { position: relative; width: 32px; height: 32px;
+               border-radius: 50%; border: 0; padding: 0; cursor: pointer;
+               display: flex; align-items: center; justify-content: center;
+               background: var(--ink); color: var(--paper-high);
+               opacity: 0.82; box-shadow: var(--stack-shadow-soft);
+               transition: opacity var(--dur-micro) var(--ease-press),
+                           transform var(--dur-micro) var(--ease-press); }
+.flow-bottom .inkicon { width: 15px; height: 15px;
+                        transform: rotate(90deg); }
+.flow-bottom:active { transform: translateY(1px); }
+.flow-bottom::after { content: ""; position: absolute; inset: 0;
+                      border-radius: 50%;
+                      background: var(--paper-high); opacity: 0;
+                      pointer-events: none;
+                      transition: opacity var(--dur-micro)
+                                  var(--ease-press); }
+.flow-bottom:active::after { opacity: var(--state-press); }
+.flow-bottom:focus-visible::after { opacity: var(--state-focus); }
+@media (hover: hover) {
+  .flow-bottom:hover::after { opacity: var(--state-hover); }
+}
+
+/* ── 25. flow-ruler（轮次刻度，fr-A）──────────────────────────────────
+   结构：<nav class="flow-ruler"> 内每轮一枚 <button class="flow-tick">
+   （JS 建点；aria-label「第 n 轮」承担语义，当前轮 aria-current）。
+   状态矩阵：default（8×2 水印墨短线）/ 当前轮 --on（14×2 主墨——第一次
+   用形态差异表达状态，不用颜色）/ hover（次墨半档）/ focus-visible
+   （墨蓝细环）/ hidden（<2 轮 / 写作态 / 离案头——JS 账）。
+   使用规则：刻度点平均分担条高（flex 纵向均分；轮多点密、轮少点疏——
+   点距即窗口密度的如实读法）；点击 = 平滑跳到该轮（reduced-motion
+   直落）；屏级位置账在 screens.css。
+   禁止变体：数字轮标 / 进度百分比 / 彩色当前态 / 第二形状。 */
+.flow-tick { flex: 1 1 0; min-height: 4px; max-height: 20px; width: 16px;
+             border: 0; padding: 0; background: none; cursor: pointer;
+             display: flex; align-items: center;
+             justify-content: flex-end; }
+.flow-tick::before { content: ""; width: 8px; height: 2px;
+                     background: var(--ink-ghost);
+                     transition: width var(--dur-micro) var(--ease-press),
+                                 background var(--dur-micro)
+                                 var(--ease-press); }
+.flow-tick--on::before { width: 14px; background: var(--ink); }
+.flow-tick:focus-visible { outline: 1px solid var(--pencil);
+                           outline-offset: 1px; }
+@media (hover: hover) {
+  .flow-tick:hover::before { background: var(--ink-soft); }
+}
+
+/* ── 26. tokenmeter（token 计量条，fr-A）──────────────────────────────
+   结构：<div id="tokenmeter">（JS 账：开关开着且有数据才现身）——
+   计量行（累计 + 「逐轮」展开链）+ 逐轮区（可选显示的每轮读数）。
+   状态矩阵：default（等宽微标签配方 + tabular-nums 数字——账页读法，
+   零图表零徽章零彩色）/ 逐轮开合（按钮 aria-expanded）/ hidden（开关
+   关 / 无数据 / 离案头随空间）。
+   使用规则：数字一律 mono + tabular-nums（简报 3a 数据列禁令）；未
+   计量的字段如实「—」，全空如实一句——不伪造 0；累计是服务端会话
+   全量账（窗口无关），客户端不做本地加减。
+   禁止变体：进度条 / 彩色警示 / 费用换算 / 第二处数字格式。 */
+.tokenmeter { margin: 0 0 var(--sp-3); padding: 6px 0;
+              border-top: 1px solid var(--rule-soft);
+              border-bottom: 1px solid var(--rule-soft);
+              font: var(--meta-mono); letter-spacing: 0;
+              color: var(--meta-ink); }
+.tokenmeter .tm-line { margin: 0; }
+.tokenmeter .tm-num { font-variant-numeric: tabular-nums;
+                      font-weight: 400; color: var(--ink-soft); }
+.tokenmeter .tm-fold { display: inline; margin: 0; }
+.tokenmeter .tm-turns { margin: 2px 0 0; padding-left: var(--sp-3);
+                        border-left: 1px solid var(--rule-soft); }
+.tokenmeter .tm-turn { margin: 0; }
+.tokenmeter .tm-turn--faint { color: var(--ink-faint); }
+
+/* ── 27. select（墨选，fr-A）─────────────────────────────────────────
+   结构：<span class="select">（#16 fieldRow 收养）> .select-btn（当前
+   值 + chevron）+ .select-list（role=listbox 浮层）内 .select-option
+   （role=option）。工厂 components.js 的 selectField。
+   状态矩阵：default（按钮 = 稿纸同一行读法：无边框无边线，chevron 弱
+   墨）/ --open（chevron 旋 90°，浮层落纸）/ option：default（墨字）/
+   hover·键盘活动项（淡墨雾——rd-1 三值的浮层读法，color-mix 墨色同
+   源）/ 选中 --on（主墨 + 勾记 ✓）/ placeholder（弱墨 ui 档）。
+   使用规则：浮层 = 顶纸 --paper-high + 发丝缘 + 软纸影（纸面浮层语
+   汇）；列表超 240px 内滚；一切文字 textContent。
+   禁止变体：原生 select 外观 / 彩色选中条 / 多选 / 第二阴影。 */
+.select { position: relative; display: block; }
+.select-btn { display: flex; align-items: baseline; gap: var(--sp-2);
+              width: 100%; border: 0; background: none; padding: 0;
+              cursor: pointer; font: inherit; color: inherit;
+              text-align: left; }
+.select-btn .select-value { flex: 1; min-width: 0; overflow: hidden;
+                            white-space: nowrap; text-overflow: ellipsis; }
+.select-btn .select-value--placeholder { color: var(--ink-faint);
+                                         font-family: var(--f-sans);
+                                         font-size: var(--fs-ui); }
+.select-chevron { flex: none; display: inline-flex; }
+.select-chevron .inkicon { width: 13px; height: 13px;
+                           color: var(--ink-faint);
+                           transition: transform var(--dur-micro)
+                                       var(--ease-press); }
+.select--open .select-chevron .inkicon { transform: rotate(90deg); }
+.select-list { position: absolute; z-index: 10; left: 0; right: 0;
+               top: calc(100% + 2px);
+               display: block; margin: 0; padding: 4px 0;
+               background: var(--paper-high);
+               border: 1px solid var(--rule);
+               outline: 1px solid var(--rule-soft); outline-offset: 2px;
+               box-shadow: var(--stack-shadow-soft);
+               max-height: 240px; overflow-y: auto;
+               overscroll-behavior: contain;
+               scrollbar-gutter: stable; }
+.select-option { display: flex; align-items: baseline; gap: var(--sp-2);
+                 padding: 5px 10px 5px 8px; cursor: pointer;
+                 font-size: var(--fs-small); line-height: var(--lh-small);
+                 color: var(--ink); }
+.select-option .select-check { flex: none; width: 1em;
+                               visibility: hidden; color: var(--ink); }
+.select-option--on .select-check { visibility: visible; }
+.select-option--on { color: var(--ink); }
+.select-option .select-word { flex: 1; min-width: 0;
+                              overflow-wrap: anywhere; }
+.select-option--active {
+  background: color-mix(in srgb, var(--ink) 12%, transparent); }
+@media (hover: hover) {
+  .select-option:hover {
+    background: color-mix(in srgb, var(--ink) 8%, transparent); }
+  .select-option--active:hover {
+    background: color-mix(in srgb, var(--ink) 12%, transparent); }
+}
+.field .select { flex: 1; min-width: 0; }
+.field:focus-within .select-btn { border-bottom-color: var(--pencil); }
+
+/* ── fr-A 设置页完全体（模式读面 / 披露规则行）──────────────────────
+   模式三档：doc-line 同排印（17/32 文档档）+ 左缘发丝线分层；当前档
+   = 发丝线转主墨 + 名字主墨 +「当前档」微标签墨蓝下划（第一次用形态
+   与字差表达状态，不用色块——胶囊徽章保持退役）。
+   披露规则行：.kv 账行读法 + #27 墨选（层级）+ 移出链。 */
+.modeline { margin: 0; padding: 4px 0 4px 10px;
+            border-left: 1px solid var(--rule-soft);
+            font-size: var(--fs-body); line-height: var(--baseline);
+            color: var(--ink-soft); overflow-wrap: anywhere; }
+.modeline b { font-weight: 400; color: var(--ink-soft); }
+.modeline--on { border-left-color: var(--ink); color: var(--ink); }
+.modeline--on b { color: var(--ink); }
+.modeline-mark { margin-left: var(--sp-3); font: var(--meta-font);
+                 letter-spacing: var(--meta-track); color: var(--accent);
+                 border-bottom: 1px solid var(--accent);
+                 white-space: nowrap; }
+.disclosurerule { align-items: baseline; gap: var(--sp-3); }
+.disclosurerule .select { flex: 1; min-width: 0; }
 
 /* rd-4 的浮层伙伴卡（#23）：cs-2 整体退役。浮层卡与其名册桩随档案
    全页视图（cs-2）拆除——契约块、工厂（components.js）、注册行三处

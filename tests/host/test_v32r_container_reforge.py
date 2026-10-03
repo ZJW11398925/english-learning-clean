@@ -468,8 +468,10 @@ def test_the_design_language_census_stands() -> None:
     写信工作区复用 paper-fold/ink-wash/stamp-press 既有枚；v3-a 随迁
     8→9：paper-drop-down 落底入册——O2 定谳修的新方向原语，⑨-5 名册
     同刀改行）；圆角
-    census（screens 4 / components 7，全 ≤2px 信纸物件档 + 邮票邮戳
-    圆形豁免）；阴影 census（screens 4 / components 5）；零毛玻璃；
+    census（screens 4 / components 9——v2-2 的 7 + fr-A 墨点两声明，
+    全 ≤2px 信纸物件档 + 邮票邮戳圆形豁免 + fr-A 用户明示墨点豁免席）；
+    阴影 census（screens 4 / components 7——5 + fr-A 墨点与墨选浮层
+    两软纸影声明，仍恰两级 --stack-shadow-* 之内）；零毛玻璃；
     reduced-motion 字面不进 app.js（REDUCED_MOTION 单一归宿）；写
     信工作区样式块零色值字面（全 var()——v2 语言对账）。"""
 
@@ -477,9 +479,9 @@ def test_the_design_language_census_stands() -> None:
     screens = _text("screens.css")
     assert components.count("@keyframes ") == 9
     assert screens.count("border-radius") == 4
-    assert components.count("border-radius") == 7
+    assert components.count("border-radius") == 9
     assert screens.count("box-shadow") == 4
-    assert components.count("box-shadow") == 5
+    assert components.count("box-shadow") == 7
     whole = _page()
     assert "backdrop-filter" not in whole
     app = _text("app.js")

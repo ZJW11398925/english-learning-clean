@@ -64,7 +64,7 @@ from dataclasses import dataclass
 from email.message import Message
 from typing import IO, Mapping, Protocol
 
-from elc.persona.types import CompiledPrompt, ProviderOutput
+from elc.persona.types import CompiledPrompt, ProviderOutput, ProviderUsage
 from elc.platform.secrets import SecretSource
 from elc.platform.types import SecretRef
 
@@ -315,7 +315,12 @@ class OpenAICompatibleProvider:
 
 
 def _parse_success(payload: bytes) -> ProviderOutput:
-    """``choices[0].message.content`` or a ``bad-*`` reason — never a raise."""
+    """``choices[0].message.content`` or a ``bad-*`` reason — never a raise.
+
+    The standard ``usage`` object rides along when the endpoint reports one
+    (fr-A); a compatible endpoint that omits it answers ``usage=None`` —
+    the honest reading, never a fabricated counter.
+    """
 
     try:
         document = json.loads(payload)
@@ -324,7 +329,36 @@ def _parse_success(payload: bytes) -> ProviderOutput:
     content = _content_of(document)
     if content is None:
         return ProviderOutput(text=None, error=REASON_BAD_SHAPE)
-    return ProviderOutput(text=content, error=None)
+    return ProviderOutput(text=content, error=None, usage=_usage_of(document))
+
+
+def _usage_of(document: object) -> ProviderUsage | None:
+    """The standard ``usage`` object of an OpenAI-compatible 2xx body.
+
+    ``None`` when the endpoint reported none (the key absent or not an
+    object). Each counter is the reported ``int`` exactly (fr-A): a
+    counter that is missing, non-integer, boolean or negative stays
+    ``None`` for that counter — never summed from siblings, never guessed.
+    """
+
+    if not isinstance(document, dict):
+        return None
+    usage = document.get("usage")
+    if not isinstance(usage, dict):
+        return None
+    return ProviderUsage(
+        prompt_tokens=_token_count_of(usage, "prompt_tokens"),
+        completion_tokens=_token_count_of(usage, "completion_tokens"),
+        total_tokens=_token_count_of(usage, "total_tokens"),
+    )
+
+
+def _token_count_of(usage: dict[str, object], key: str) -> int | None:
+    value = usage.get(key)
+    # bool is an int subclass — a JSON true/false is never a token count.
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value if value >= 0 else None
 
 
 def _content_of(document: object) -> str | None:

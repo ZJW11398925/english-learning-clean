@@ -152,26 +152,28 @@ def test_compose_face_single_truth_and_anatomy() -> None:
     assert "justify-content: flex-end;" in sendrow
 
 
-def test_compose_fullpage_state_and_short_viewport_fallback() -> None:
-    """写作态 = ⑩ 全页成员（fixed 全高 + --shell-w 限宽 + navdock 让位
-    由 JS 落）；聚焦微起只在非写作态（写作态臂归零）；矮视口
-    max-height: 520px 诚实降级（top 归还 + autosize 封顶内滚）。"""
+def test_compose_adaptive_state_and_unified_autosize() -> None:
+    """写作态 = ⑩ 全页成员（fr-A 收窄：底缘贴底 + 高度随稿纸内容自适应
+    + 上限 50dvh——v3-a 的近全屏（fixed 全高）与 520px 降级双形态随本刀
+    退役）；聚焦微起只在非写作态（写作态臂归零）；稿纸 autosize 统一
+    封顶（composePenCap = 50dvh − 铬件账，下限 4×baseline）。"""
 
     screens = _text("webui/screens.css")
     compose = _block(screens, ".dock.dock--compose {")
     assert "bottom: 0;" in compose
-    assert "top: calc(var(--sp-8) + var(--sp-1));" in compose
+    assert "top: auto;" in compose
+    assert "max-height: 50dvh;" in compose
     lift = _block(screens, ".dock.dock--compose:focus-within {")
     assert "transform: none;" in lift
-    assert "@media (max-height: 520px) {" in screens
-    tail = screens[screens.index("@media (max-height: 520px) {"):]
-    tail = tail[: tail.index("}", tail.index("max-height: 160px"))]
-    assert ".dock.dock--compose { top: auto; }" in tail
-    assert "max-height: 160px;" in tail
+    # fr-A：近全屏形态与 520px 降级块一并退役（统一内容自适应形态）
+    assert "top: calc(var(--sp-8) + var(--sp-1));" not in compose
+    assert "@media (max-height: 520px)" not in screens
     app = _text("webui/app.js")
     assert 'dock.classList.add("dock--compose");' in app
-    assert 'const SHORT_VIEWPORT = window.matchMedia(' \
-        '"(max-height: 520px)");' in app
+    assert "function composePenCap() {" in app
+    assert "Math.floor(window.innerHeight / 2) - 148" in app
+    assert "autosizeTo(pen, composePenCap())" in app
+    assert "SHORT_VIEWPORT" not in app
 
 
 def test_esc_layering_and_mutual_exclusion() -> None:

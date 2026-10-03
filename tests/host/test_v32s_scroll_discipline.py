@@ -21,6 +21,7 @@ SCROLL_CONTAINERS = (
     ".envpage",        # 全览窗口页卡
     ".envsel-editor",  # 编辑面（唯一滚动井）
     ".envsel-compose", # 写信工作区面
+    ".select-list",    # fr-A #27 墨选浮层列表（超 240px 内滚）
 )
 
 

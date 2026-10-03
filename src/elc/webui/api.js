@@ -180,3 +180,9 @@ export function fetchSettings() {
 export function fetchSaveTeachingPolicy(payload) {
   return postJson("/api/settings/teaching_policy", payload);
 }
+
+/** 保存披露规则（fr-A）：全规则集 upsert，revision 前移；409 = 冲突
+ * （重读再改）；重复 persona 行与词表外层级都是 400 人话。 */
+export function fetchSaveDisclosure(payload) {
+  return postJson("/api/settings/disclosure", payload);
+}

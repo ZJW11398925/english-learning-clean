@@ -157,7 +157,9 @@ def test_the_settings_face_replaces_the_placeholder(tmp_path: Path) -> None:
     assert 'id="settings-save"' in settings
     assert 'id="settings-result"' in settings
     assert 'id="set-settings-disclosure"' in settings
-    assert "规则经 profile 编辑，这里只读。" in settings
+    # fr-A 随迁：披露规则自只读展示组升编辑面（⑨-14③）——「只读」句退役
+    assert "规则经 profile 编辑，这里只读。" not in settings
+    assert "规则在这里改" in settings
     app = index
     # 主线-1 随迁：SECTION_PULLS 拉本节（旧缺位钉「不拉本节」换正面钉；
     # 完整回路钉在 tests/host/test_mainline1_settings.py）

@@ -17,10 +17,11 @@ Groups (this file's own):
    border-radius at all (word-card / note-paper / pen / chip / dock /
    char-editor) or the literal ≤2px letter-object radius
    (.envsel / .env — the brief §6 增补档);
-3. the counting truth — the border-radius census is back at the v2-2
-   terminal values (screens 4 / components 7), the 手迹/盖印 exempt
-   geometries survive verbatim (six ``50%`` seats + one ``9px 9px 0 0``
-   arch), and every literal value left is lawful (≤2px or exempt);
+3. the counting truth — the border-radius census is back at the fr-A
+   terminal values (screens 4 / components 9——v2-2 的 7 + fr-A 墨点两
+   声明), the 手迹/盖印 exempt geometries survive verbatim (six ``50%``
+   seats + the fr-A ink-dot pair + one ``9px 9px 0 0`` arch), and every
+   literal value left is lawful (≤2px or exempt);
 4. the spec revert note — ②-6 carries the revert record naming the
    user's date and the ruling verbatim; the five-tier table and the
    three revision annotations are gone; the ⑨ preamble states the
@@ -189,17 +190,19 @@ def test_the_sheet_tier_and_dock_pad_stay_bare() -> None:
 
 
 def test_the_radius_census_is_back_at_the_v22_terminal_truth() -> None:
-    """The census: components 7 + screens 4 = the v2-2 terminal state
-    (the same values the f1r/p1/r1v/mc1 counting pins carry). The exempt
-    geometries survive verbatim: six 50% seats (the red-pen ellipse, the
-    postmark pair, the 「当前」 mark pair, the stamp ring) plus the
-    stamp-v5 arch. Every literal value left is ≤2px or exempt."""
+    """The census: components 9 + screens 4 = the fr-A terminal state
+    (v2-2 的 7 随本刀 +2——fr-A 用户明示的「悬浮墨点样式族」：#24
+    flow-bottom 回底墨点与其纸白薄雾圆，50% 豁免几何的新一席，②-6 的
+    fr-A 豁免登记在册）。The exempt geometries survive verbatim: the six
+    50% seats (the red-pen ellipse, the postmark pair, the 「当前」 mark
+    pair, the stamp ring) plus the fr-A ink dot pair plus the stamp-v5
+    arch. Every literal value left is ≤2px or exempt."""
 
     components = _webui_text(COMPONENTS)
     screens = _webui_text(SCREENS)
-    assert components.count("border-radius") == 7
+    assert components.count("border-radius") == 9
     assert screens.count("border-radius") == 4
-    assert components.count("border-radius: 50%") == 6
+    assert components.count("border-radius: 50%") == 8
     assert "border-radius: 9px 9px 0 0;" in components
     values = _radius_values_of(_webui_all_text())
     strangers = [v for v in values if v not in LAWFUL_RADIUS_VALUES]

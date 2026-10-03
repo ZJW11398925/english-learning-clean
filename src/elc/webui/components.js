@@ -1083,6 +1083,220 @@ export function chip(word, opts) {
   return el;
 }
 
+// 27. select（墨选，fr-A）：原生 <select> 的纸墨读法替代——按钮（当前
+// 值 + chevron）+ 纸面浮层列表。契约（spec ③ #27）：
+//   结构：.select > .select-btn（aria-haspopup="listbox" + aria-expanded
+//   + aria-activedescendant）+ .select-list（role="listbox"）
+//   内 .select-option（role="option" + aria-selected；选中主墨 + 勾记）。
+//   键盘：↓/↑/Home/End 移动活动项（wrap）、Enter/Space 选定、Esc 关
+//   闭还焦按钮、Tab 关闭（焦点自然流走）；关态 ↓/↑/Enter/Space 开。
+//   点击外部关闭； hover 淡墨雾（rd-1 三值的浮层读法）。
+// opts：options = [{value, label}]（label 一律 textContent 惰性）、
+// value（null = 未选——placeholder 弱墨）、placeholder、name（listbox
+// 的 aria-label）、onChange(value)。返回 { root, button, list,
+// getValue, setValue, setOptions, open, close }——fieldRow 直接收养
+// root。值是调用方的状态：工厂只回报，不私自改口。
+let selectFieldSeq = 0;
+//: 现役开着的墨选（⑩ 10.3 互斥：换空间 / 升写作态 / 开沓容器都要收它
+//: ——浮层与下拉容器同族待遇，同一「一个手势只产一个效果」纪律）。
+const openSelects = new Set();
+
+export function closeOpenSelects() {
+  for (const api of Array.from(openSelects)) api.close();
+}
+
+export function selectField(opts) {
+  const options = opts || {};
+  let items = options.options || [];
+  let value = (options.value === undefined) ? null : options.value;
+  const placeholder = options.placeholder || "选一档……";
+  selectFieldSeq += 1;
+  const seq = selectFieldSeq;
+
+  const root = document.createElement("span");
+  root.className = "select";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "select-btn";
+  button.setAttribute("aria-haspopup", "listbox");
+  button.setAttribute("aria-expanded", "false");
+  const shown = document.createElement("span");
+  shown.className = "select-value";
+  button.appendChild(shown);
+  const chevron = document.createElement("span");
+  chevron.className = "select-chevron";
+  chevron.appendChild(inkIcon("chevron"));
+  button.appendChild(chevron);
+  root.appendChild(button);
+  const list = document.createElement("span");
+  list.className = "select-list";
+  list.setAttribute("role", "listbox");
+  if (options.name) list.setAttribute("aria-label", options.name);
+  list.hidden = true;
+  root.appendChild(list);
+
+  let open = false;
+  let activeIndex = -1;
+
+  function labelOf(item) {
+    return item ? String(item.label) : placeholder;
+  }
+
+  function syncButton() {
+    const item = items.find((entry) => entry.value === value) || null;
+    shown.textContent = labelOf(item);
+    shown.classList.toggle("select-value--placeholder", item === null);
+  }
+
+  function syncMarks() {
+    Array.from(list.children).forEach((optionEl, i) => {
+      const on = items[i] && items[i].value === value;
+      optionEl.classList.toggle("select-option--on", Boolean(on));
+      optionEl.setAttribute("aria-selected", on ? "true" : "false");
+      const active = i === activeIndex && open;
+      optionEl.classList.toggle("select-option--active", active);
+    });
+    if (open && activeIndex >= 0 && list.children[activeIndex]) {
+      button.setAttribute("aria-activedescendant",
+                          list.children[activeIndex].id);
+    } else {
+      button.removeAttribute("aria-activedescendant");
+    }
+  }
+
+  function buildOptions() {
+    list.textContent = "";
+    items.forEach((item, i) => {
+      const optionEl = document.createElement("span");
+      optionEl.className = "select-option";
+      optionEl.id = "select-" + seq + "-option-" + i;
+      optionEl.setAttribute("role", "option");
+      const check = document.createElement("span");
+      check.className = "select-check";
+      check.setAttribute("aria-hidden", "true");
+      check.textContent = "✓";
+      optionEl.appendChild(check);
+      const word = document.createElement("span");
+      word.className = "select-word";
+      word.textContent = String(item.label);
+      optionEl.appendChild(word);
+      optionEl.addEventListener("click", () => {
+        pick(i);
+      });
+      optionEl.addEventListener("pointerenter", () => {
+        activeIndex = i;
+        syncMarks();
+      });
+      list.appendChild(optionEl);
+    });
+    syncMarks();
+  }
+
+  function pick(index) {
+    if (!items[index]) return;
+    value = items[index].value;
+    syncButton();
+    syncMarks();
+    close();
+    button.focus();
+    if (typeof options.onChange === "function") {
+      options.onChange(value);
+    }
+  }
+
+  function openList() {
+    if (open) return;
+    open = true;
+    openSelects.add(api);
+    root.classList.add("select--open");
+    list.hidden = false;
+    button.setAttribute("aria-expanded", "true");
+    const selected = items.findIndex((entry) => entry.value === value);
+    activeIndex = selected >= 0 ? selected : (items.length ? 0 : -1);
+    syncMarks();
+    if (list.children[activeIndex]) {
+      list.children[activeIndex].scrollIntoView({ block: "nearest" });
+    }
+    document.addEventListener("pointerdown", onOutside, true);
+  }
+
+  function close() {
+    if (!open) return;
+    open = false;
+    openSelects.delete(api);
+    root.classList.remove("select--open");
+    list.hidden = true;
+    button.setAttribute("aria-expanded", "false");
+    activeIndex = -1;
+    syncMarks();
+    document.removeEventListener("pointerdown", onOutside, true);
+  }
+
+  function onOutside(event) {
+    if (!root.contains(event.target)) close();
+  }
+
+  button.addEventListener("click", () => {
+    if (open) { close(); } else { openList(); }
+  });
+  button.addEventListener("keydown", (event) => {
+    if (!open && (event.key === "ArrowDown" || event.key === "ArrowUp" ||
+        event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      openList();
+      return;
+    }
+    if (!open) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      close();
+      button.focus();
+    } else if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      pick(activeIndex);
+    } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!items.length) return;
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      activeIndex = (activeIndex + step + items.length) % items.length;
+      syncMarks();
+      list.children[activeIndex].scrollIntoView({ block: "nearest" });
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      activeIndex = items.length ? 0 : -1;
+      syncMarks();
+    } else if (event.key === "End") {
+      event.preventDefault();
+      activeIndex = items.length - 1;
+      syncMarks();
+    } else if (event.key === "Tab") {
+      close();
+    }
+  });
+
+  const api = {
+    root,
+    button,
+    list,
+    getValue: () => value,
+    setValue: (next) => {
+      value = next;
+      syncButton();
+      syncMarks();
+    },
+    setOptions: (nextItems) => {
+      items = nextItems || [];
+      buildOptions();
+      syncButton();
+    },
+    open: openList,
+    close,
+  };
+  buildOptions();
+  syncButton();
+  return api;
+}
+
 // 18/19/20（R-1）：壳导航三件的接线面。dock 的项点击回报调用方
 //（wireNavdock）、当前态由 markNavdock 落 --on + aria-current；
 // section-tabs 的点击与左右箭头都回报调用方（wireSectionTabs——roving

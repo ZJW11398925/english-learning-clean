@@ -1246,9 +1246,9 @@ def test_no_migration_carries_the_view() -> None:
     stamp. The *claim* (this cut adds no table for the view) is unchanged, and
     the schema scan below is what holds it."""
 
-    assert MIGRATION_IDS[-1] == "0019_character_cards"
-    assert SCHEMA_HEAD_FILE == "0019_character_cards.sql"
-    assert SCHEMA_HEAD_VERSION == "19"
+    assert MIGRATION_IDS[-1] == "0020_provider_usage"
+    assert SCHEMA_HEAD_FILE == "0020_provider_usage.sql"
+    assert SCHEMA_HEAD_VERSION == "20"
     schema = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted((REPO_ROOT / "migrations").glob("*.sql"))

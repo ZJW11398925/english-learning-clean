@@ -256,7 +256,10 @@ def test_the_other_screens_keep_their_structure() -> None:
     # v2-2 随迁（8.2.12）：obs-status 随观察读数迁入专门面退役，档案
     # 折叠内只留入口（obs-entry）；观察仪表屏骨架 id 在场
     for marker in ('<section id="drawer-settings" role="tabpanel"',
-                   "<h3>现在能如实说的</h3>", "<h3>三档教学模式（参考）</h3>",
+                   "<h3>现在能如实说的</h3>",
+                   # fr-A 随迁：三档参考块升视觉读面（⑨-14③——组名随
+                   # 分组 IA 改「教学模式」，三档句在 app.js MODE_TIERS）
+                   "<h3>教学模式</h3>",
                    'id="set-memory"', 'id="set-privacy"',
                    'id="study-progress"', 'id="letter-search"',
                    'id="obs-entry"', 'id="raw-readings"',

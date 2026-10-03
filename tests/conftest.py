@@ -51,12 +51,16 @@ MIGRATION_IDS: tuple[str, ...] = (
     # zero-migration stretch ends here on the user's call (user-created
     # characters persist).
     "0019_character_cards",
+    # fr-A (frontend revamp cut A): the provider-reported token usage
+    # counters as three adjudicated ProviderAttempt columns (the owner_epoch
+    # precedent — a fact of the attempt, no new table).
+    "0020_provider_usage",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0019_character_cards.sql"
-SCHEMA_HEAD_VERSION = "19"
+SCHEMA_HEAD_FILE = "0020_provider_usage.sql"
+SCHEMA_HEAD_VERSION = "20"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md
