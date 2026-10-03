@@ -94,7 +94,10 @@ def test_no_page_internal_h2_and_the_guide_sentences_open_the_sections(
         assert retired_line not in index
     # rd-4 随迁（9.12-23）：设置节升真面——旧「还没铺开」句退役不回潮
     assert "设置面还没有铺开。" not in index
-    assert "当前这一档由启动命令给定——页面读不到，也不改它。" in index
+    # 主线-1 随迁（DEC-OPI-76a0a10a-….30）：读面 Law 句接任——旧
+    # fail-closed 句（页面读不到）随 stage 读面闭合退役
+    assert "由启动命令给定，这里读得到，但不能改。" in index
+    assert "当前这一档由启动命令给定——页面读不到，也不改它。" not in index
 
 
 def test_the_section_tabs_renamed_display_only(tmp_path: Path) -> None:
@@ -497,7 +500,13 @@ def test_the_privacy_face_speaks_忘掉(tmp_path: Path) -> None:
     assert "忘掉这段通信的全部记录" in page
     assert "忘掉这项的痕迹" in page
     assert "按表达忘掉" in page
-    assert "这版做不了——页面不知道伙伴的角色编号。" in page
+    # 主线-1 随迁（DEC-OPI-76a0a10a-….30）：第三面接通——旧自认句退役，
+    # 按伙伴关系忘掉接 RELATIONSHIP_PAIR（真面钉在 tests/host/
+    # test_mainline1_settings.py，此处随迁文案面）
+    assert "这版做不了——页面不知道伙伴的角色编号。" not in page
+    assert "按伙伴关系忘掉" in page
+    assert "忘掉与这位伙伴的关系记忆（她记住的你们之间的事）——信件本身保留。" \
+        in page
     # the two sub-copy sentences render contiguously — a source line-wrap
     # inside a sentence shows up as an intra-sentence space (the review's
     # L-1: 「信件 本身保留」); the contiguous pins refuse that form

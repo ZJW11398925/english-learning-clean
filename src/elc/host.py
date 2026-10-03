@@ -303,6 +303,12 @@ class Host:
     rollout_stage: RolloutStage | None = None
     user_id: UserId | None = None
     user_config: UserConfigController | None = None
+    #: 主线-1（DEC-OPI-76a0a10a-….30）：the same tier's store, exposed so a
+    #: read face that needs a §5.1 row the controller does not re-publish
+    #: (the DisclosurePolicy's own rule set) can walk the store's existing
+    #: read face without a user-config change. ``None`` in the prep-1 tier,
+    #: like every field above.
+    user_config_store: SqliteUserConfigStore | None = None
     learning_store: SqliteLearningStore | None = None
     learning_controller: LearningController | None = None
     teaching: TeachingController | None = None
@@ -491,6 +497,7 @@ def open_host(
         lease.adopt_epoch(RuntimeEpoch(fence.current))
         # -- the full-chain tier (module docstring, tier two) ----------------
         user_config: UserConfigController | None = None
+        user_config_store: SqliteUserConfigStore | None = None
         learning_store: SqliteLearningStore | None = None
         learning_controller: LearningController | None = None
         teaching: TeachingController | None = None
@@ -507,7 +514,8 @@ def open_host(
         automatic: AutomaticTurnWiring | None = None
         if content_db_path is not None:
             content_path = Path(content_db_path)
-            user_config = UserConfigController(SqliteUserConfigStore(db, fence))
+            user_config_store = SqliteUserConfigStore(db, fence)
+            user_config = UserConfigController(user_config_store)
             learning_store = SqliteLearningStore(db, fence)
             learning_controller = LearningController(learning_store)
             # D-5R (assembly fact 1): the policy leg is wired through the
@@ -667,6 +675,7 @@ def open_host(
         rollout_stage=rollout_stage,
         user_id=LOCAL_V1_USER_ID if content_db_path is not None else None,
         user_config=user_config,
+        user_config_store=user_config_store,
         learning_store=learning_store,
         learning_controller=learning_controller,
         teaching=teaching,

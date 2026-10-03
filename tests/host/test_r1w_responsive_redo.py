@@ -450,7 +450,9 @@ def test_the_frozen_copy_outside_the_cover_is_verbatim(
         # cs-2 随迁：记忆页引导句接三摞重组后的口径
         "笔友记住的事都在这里——一条条如实，分三摞收纳。",
         # rd-4 随迁（9.12-23）：设置节升真面——冻结句换诚实读法句
-        "当前这一档由启动命令给定——页面读不到，也不改它。",
+        # 主线-1 随迁（DEC-OPI-76a0a10a-….30）：stage 读面闭合，Law 句
+        # 换「读得到但不能改」的现役读法
+        "由启动命令给定，这里读得到，但不能改。",
     ):
         assert sentence in page, sentence
     for retired in (

@@ -275,6 +275,37 @@ other columns verbatim. Out-of-vocabulary words are 400 人话 refusals
 (fail-closed, never a silent drop), the write faces' version scheme is
 :func:`_next_version` (declared there), and a host without the user-config
 leg answers the honest refusal shape instead of pretending to save.
+
+**主线-1 adds the settings face** — the 抽屉 · 设置 section's read and its
+one write, the first face that reads the rollout stage back (the 9.12-23①
+preview item, closed here). ``GET /api/settings`` answers the three faces
+of live truth in one payload: ``rollout_stage`` — the host's startup
+parameter verbatim (``None`` stays ``None``: the fail-closed default is a
+fact about the launch, never a stage this face invented); the §5.1
+``TeachingPolicyProfile``'s thirteen columns when a row exists (``null``
+when none does — before a first write there is nothing to read, and the
+empty state says so instead of fabricating a policy; ``version`` rides
+under its declared alias ``policy_version``, the spelling
+``elc.user_config.types`` documents); and the §5.1 ``DisclosurePolicy``'s
+four columns — the rule set read through the store's own existing read
+face, the same one the controller's disclosure decision consults, so the
+page shows the rules exactly as they stand with no second reading of them.
+The payload also carries the two server-declared vocabularies the knob
+editor needs (the frequency picker's four words and the eight-knob
+whitelist itself), so the page copies no word list. ``POST
+/api/settings/teaching_policy`` is the one write: the eight §5.1 knobs as
+the full new set (``teaching_frequency`` inside the enum's own four words,
+the other seven a non-empty string or ``null`` = 未配置), rebuilt around
+the durable row's non-knob columns — ``mode`` / ``version`` /
+``effective_from`` are preserved verbatim, ``updated_at`` is the store's
+own clock — with the version moved by :func:`_next_version` and the same
+200 / 409 discipline as the goal writes. Every other key is a 400 人话
+refusal: the five system columns get their own sentence (``mode`` the
+loudest — the rollout tier is the launch command's to set, and the page
+neither reads it into a change nor writes it), an unknown key names
+itself. The write changes only how/how-often teaching is configured —
+never the rollout tier, never an 开闸 face (mode is not writable by
+design; the section's own copy says so).
 """
 
 from __future__ import annotations
@@ -351,6 +382,7 @@ from elc.teaching.request import TeachingRequest
 from elc.teaching.rollout import OBSERVATION_SPECS
 from elc.teaching.types import MomentState
 from elc.user_config.types import (
+    DisclosurePolicy,
     LearningGoal,
     LearningGoalPortfolio,
     SessionFocus,
@@ -1767,6 +1799,107 @@ _FREQUENCY_GRAMMAR = (
 )
 
 
+#: 主线-1（DEC-OPI-76a0a10a-….30）: the eight §5.1 columns the settings
+#: write face accepts — the knob whitelist, in §5.1's column order
+#: (``teaching_frequency`` first, then the seven unpinned columns). Every
+#: other key in a write body is refused, never dropped.
+_SETTINGS_KNOBS: tuple[str, ...] = (
+    "teaching_frequency",
+    "interruption_budget",
+    "curriculum_initiative",
+    "correction_strictness",
+    "hint_policy",
+    "assessment_visibility",
+    "practice_density",
+    "persona_freedom",
+)
+
+#: The §5.1 policy columns that are not knobs — the write body's refused
+#: system columns. ``version`` is carried under both of its declared
+#: spellings (the canonical word and the qualified alias the §5.1
+#: implementation documents), so a body that names either gets the same
+#: honest refusal instead of slipping past a spelling check.
+_SETTINGS_SYSTEM_COLUMNS: tuple[str, ...] = (
+    "mode",
+    "teaching_policy_profile_id",
+    "version",
+    "policy_version",
+    "effective_from",
+    "updated_at",
+)
+
+#: The knob write's own frequency sentence (the same four words the goal
+#: screen's picker takes — one vocabulary, two doors).
+_SETTINGS_FREQUENCY_GRAMMAR = (
+    f'"teaching_frequency" needs one of {" | ".join(_FREQUENCY_WORDS)}'
+)
+
+
+def _settings_system_column_refusal(key: str) -> str:
+    """The 400 sentence for a refused system column — ``mode`` the loudest,
+    because it names the rollout tier the page must not move."""
+
+    if key == "mode":
+        return (
+            "mode 是当前档（rollout stage），由启动命令给定——"
+            "页面只读不改；换档 = 改启动命令再启动。"
+        )
+    return f"「{key}」是系统列，不由页面写（可写面只有八个旋钮）。"
+
+
+def _settings_knob_request(
+    payload: Any,
+) -> tuple[str | None, dict[str, Any] | None]:
+    """The settings write body, parsed and fail-closed (the W1 law).
+
+    Returns ``(error, knobs)``: a non-empty ``error`` is the 400 人话
+    sentence; a ``None`` error means the eight knobs are in grammar. The
+    body is the **full new knob set** (all eight keys — the W1 full-
+    combination shape, so the version discipline's replay comparison is
+    well-defined); a key outside the whitelist is refused with its own
+    sentence — a system column names itself (``mode`` the rollout tier's
+    sentence), an unknown key names itself. ``teaching_frequency`` must be
+    one of the enum's own four words (case-sensitive); the seven unpinned
+    knobs take a non-empty string (carried verbatim — the store is a
+    shelf, the card store's rule) or ``null`` (= 未配置, the column's own
+    honesty). An out-of-vocabulary word is refused, never silently
+    dropped.
+    """
+
+    if not isinstance(payload, dict):
+        return (
+            "need a JSON body with the eight knobs: "
+            + ", ".join(_SETTINGS_KNOBS),
+            None,
+        )
+    for key in payload:
+        if key in _SETTINGS_KNOBS:
+            continue
+        if key in _SETTINGS_SYSTEM_COLUMNS:
+            return (_settings_system_column_refusal(key), None)
+        return (f"不认识的键：{key}（可写面只有八个旋钮）。", None)
+    for key in _SETTINGS_KNOBS:
+        if key not in payload:
+            return (
+                f'"{key}" is missing: the body is the full new knob set'
+                f" ({', '.join(_SETTINGS_KNOBS)})",
+                None,
+            )
+    frequency = payload["teaching_frequency"]
+    if not isinstance(frequency, str) or frequency not in _FREQUENCY_WORDS:
+        return (_SETTINGS_FREQUENCY_GRAMMAR, None)
+    knobs: dict[str, Any] = {"teaching_frequency": frequency}
+    for key in _SETTINGS_KNOBS[1:]:
+        value = payload[key]
+        if value is None:
+            knobs[key] = None
+        elif isinstance(value, str) and value.strip():
+            knobs[key] = value
+        else:
+            return (f'"{key}" needs a non-empty string or null', None)
+    return (None, knobs)
+
+
 def _next_version(current: str | None) -> str:
     """The two write faces' next version string, from the current one.
 
@@ -1977,6 +2110,65 @@ def _policy_face(policy: TeachingPolicyProfile) -> dict[str, Any]:
         "assessment_visibility": policy.assessment_visibility,
         "practice_density": policy.practice_density,
         "persona_freedom": policy.persona_freedom,
+    }
+
+
+def _settings_policy_face(policy: TeachingPolicyProfile) -> dict[str, Any]:
+    """The settings read's policy face — the §5.1 TeachingPolicyProfile's
+    thirteen columns, verbatim.
+
+    ``version`` rides under its declared alias ``policy_version`` (the
+    qualified spelling ``elc.user_config.types`` documents — the canonical
+    column is ``version``, and no sentence here claims a word-for-word
+    equality). ``effective_from`` carries the F-4 ``""`` sentinel as the
+    value it is, ``updated_at`` is the store's own clock, and the seven
+    unpinned knobs pass through raw (``None`` = 未配置). ``mode`` rides
+    along **read-only**: the settings write face refuses it, and this read
+    is where the page sees what it must not change.
+    """
+
+    return {
+        "teaching_policy_profile_id": str(policy.teaching_policy_profile_id),
+        "policy_version": str(policy.policy_version),
+        "mode": policy.mode,
+        "teaching_frequency": str(policy.teaching_frequency.value),
+        "interruption_budget": policy.interruption_budget,
+        "curriculum_initiative": policy.curriculum_initiative,
+        "correction_strictness": policy.correction_strictness,
+        "hint_policy": policy.hint_policy,
+        "assessment_visibility": policy.assessment_visibility,
+        "practice_density": policy.practice_density,
+        "persona_freedom": policy.persona_freedom,
+        "effective_from": policy.effective_from,
+        "updated_at": policy.updated_at,
+    }
+
+
+def _settings_disclosure_face(policy: DisclosurePolicy) -> dict[str, Any]:
+    """The settings read's disclosure face — the §5.1 DisclosurePolicy's
+    four columns, verbatim.
+
+    The rules ride as the row holds them (``persona_id: null`` = the
+    default rule — the one that can never authorize high-sensitivity
+    disclosure), so the page shows the authorization about content exactly
+    as it stands. Display only: this face writes nothing, and the section's
+    copy says the rules are edited through the profile, not here.
+    """
+
+    return {
+        "disclosure_policy_id": str(policy.disclosure_policy_id),
+        "revision": str(policy.revision),
+        "rules": [
+            {
+                "persona_id": (
+                    None if rule.persona_id is None
+                    else str(rule.persona_id)
+                ),
+                "disclosure_level": str(rule.disclosure_level.value),
+            }
+            for rule in policy.rules
+        ],
+        "updated_at": policy.updated_at,
     }
 
 
@@ -3304,6 +3496,200 @@ class _WebFace:
             },
         )
 
+    def settings(self) -> dict[str, Any]:
+        """The settings section's one read (主线-1) — three faces of live
+        truth in one payload.
+
+        Read-only, on the work queue (the diagnostics construction). The
+        three faces: ``rollout_stage`` is the host's startup parameter
+        verbatim — ``None`` stays ``None`` (the fail-closed launch default
+        is a fact about the launch, never a stage this face substitutes);
+        the §5.1 policy row when one exists (``null`` when none does —
+        before a first write there is nothing to read, never a fabricated
+        policy); the §5.1 disclosure row through the store's own existing
+        read face (:meth:`elc.user_config.store.SqliteUserConfigStore.
+        get_disclosure_policy` — the same row the controller's disclosure
+        decision consults, shown as it stands, no second reading). The two
+        vocabularies the knob editor needs ride server-declared (the
+        frequency words and the whitelist itself — the page copies no word
+        list). A host without the user-config leg answers
+        ``available: false`` with the stage still riding (the launch
+        parameter is the host's, not the user-config leg's) and both rows
+        honestly ``null``. An unreadable row is a server fact (the route's
+        500 posture).
+        """
+
+        stage = getattr(self._host, "rollout_stage", None)
+        stage_value = None if stage is None else str(stage.value)
+        controller = self._host.user_config
+        frequency_words = list(_FREQUENCY_WORDS)
+        if controller is None or self._host.user_id is None:
+            return {
+                "available": False,
+                "rollout_stage": stage_value,
+                "teaching_policy": None,
+                "disclosure": None,
+                "frequency_words": frequency_words,
+                "writable_knobs": list(_SETTINGS_KNOBS),
+            }
+        user_id = self._host.user_id
+        policy = controller.get_teaching_policy(user_id)
+        if isinstance(policy, Err):
+            raise RuntimeError(
+                "the teaching policy could not be read:"
+                f" {policy.error.code.value}: {policy.error.message}"
+            )
+        store = getattr(self._host, "user_config_store", None)
+        if store is None:
+            # Unreachable in production assembly (the controller and its
+            # store are built together); a test double that carries one
+            # without the other gets the loud refusal, never a fabricated
+            # "no rules".
+            raise RuntimeError(
+                "the disclosure policy could not be read:"
+                " this host carries a user-config controller without its"
+                " store"
+            )
+        disclosure = store.get_disclosure_policy(user_id)
+        if isinstance(disclosure, Err):
+            raise RuntimeError(
+                "the disclosure policy could not be read:"
+                f" {disclosure.error.code.value}: {disclosure.error.message}"
+            )
+        return {
+            "available": True,
+            "rollout_stage": stage_value,
+            "teaching_policy": (
+                None
+                if policy.value is None
+                else _settings_policy_face(policy.value)
+            ),
+            "disclosure": (
+                None
+                if disclosure.value is None
+                else _settings_disclosure_face(disclosure.value)
+            ),
+            "frequency_words": frequency_words,
+            "writable_knobs": list(_SETTINGS_KNOBS),
+        }
+
+    def teaching_policy_save(
+        self, knobs: dict[str, Any]
+    ) -> tuple[int, dict[str, Any]]:
+        """The settings section's one write (主线-1): the eight §5.1 knobs
+        as the full new set, everything else verbatim.
+
+        The grammar was validated at the HTTP layer (the whitelist, the
+        four frequency words, string-or-null per knob) and is re-derived
+        here only to fail closed — the
+        :class:`~elc.user_config.types.TeachingFrequency` construction
+        cannot be talked past the enum. The durable row's non-knob columns
+        are rebuilt exactly as they read (``mode`` / ``effective_from``
+        preserved — the F-4 ``""`` sentinel on the first write, no clock
+        value invented; ``updated_at`` is the store's own clock) and the
+        version moves by :func:`_next_version`. An unchanged knob set
+        answers 200 with ``idempotent`` and writes nothing (no empty
+        version churn); a ``CONFLICT`` rides 409 like the goal writes; any
+        other refusal is a runtime fact (200 + ``accepted: false``). The
+        write moves how/how-often configuration only — never the rollout
+        tier (``mode`` is not a knob), never an 开闸 face.
+        """
+
+        controller = self._host.user_config
+        if controller is None or self._host.user_id is None:
+            return (200, _no_user_config_answer())
+        user_id = self._host.user_id
+        try:
+            frequency = TeachingFrequency(str(knobs["teaching_frequency"]))
+        except (KeyError, ValueError):
+            return (
+                400,
+                {
+                    "accepted": False,
+                    "conflict": False,
+                    "error": _SETTINGS_FREQUENCY_GRAMMAR,
+                },
+            )
+        current = controller.get_teaching_policy(user_id)
+        if isinstance(current, Err):
+            raise RuntimeError(
+                "the teaching policy could not be read:"
+                f" {current.error.code.value}: {current.error.message}"
+            )
+        policy_now = current.value
+        if policy_now is not None:
+            unchanged = policy_now.teaching_frequency is frequency and all(
+                getattr(policy_now, knob) == knobs[knob]
+                for knob in _SETTINGS_KNOBS[1:]
+            )
+            if unchanged:
+                return (
+                    200,
+                    {
+                        "accepted": True,
+                        "idempotent": True,
+                        "policy_version": str(policy_now.policy_version),
+                        "conflict": False,
+                        "error": None,
+                    },
+                )
+        version = _next_version(
+            None if policy_now is None else str(policy_now.policy_version)
+        )
+        written = controller.upsert_teaching_policy(
+            TeachingPolicyProfile(
+                teaching_policy_profile_id=user_id,
+                policy_version=PolicyVersion(version),
+                teaching_frequency=frequency,
+                mode=None if policy_now is None else policy_now.mode,
+                interruption_budget=knobs["interruption_budget"],
+                curriculum_initiative=knobs["curriculum_initiative"],
+                correction_strictness=knobs["correction_strictness"],
+                hint_policy=knobs["hint_policy"],
+                assessment_visibility=knobs["assessment_visibility"],
+                practice_density=knobs["practice_density"],
+                persona_freedom=knobs["persona_freedom"],
+                effective_from=(
+                    "" if policy_now is None else policy_now.effective_from
+                ),
+            )
+        )
+        if isinstance(written, Err):
+            if written.error.code is DomainErrorCode.CONFLICT:
+                return (
+                    409,
+                    {
+                        "accepted": False,
+                        "conflict": True,
+                        "error": "配置已被别处更新，请重读再改",
+                        "detail": (
+                            f"{written.error.code.value}:"
+                            f" {written.error.message}"
+                        ),
+                    },
+                )
+            return (
+                200,
+                {
+                    "accepted": False,
+                    "conflict": False,
+                    "error": (
+                        f"{written.error.code.value}:"
+                        f" {written.error.message}"
+                    ),
+                },
+            )
+        return (
+            200,
+            {
+                "accepted": True,
+                "idempotent": False,
+                "policy_version": str(written.value),
+                "conflict": False,
+                "error": None,
+            },
+        )
+
     def teach_me(self, target_id: str) -> dict[str, Any]:
         """The 学习 view's one act: teach this target now.
 
@@ -3689,6 +4075,13 @@ def _build_server(
                 # construction). A read failure is a server fact: the
                 # route's own 500 posture.
                 self._run_on_host_thread(face.goals)
+            elif self.path == "/api/settings":
+                # 主线-1: the settings section's read — the rollout stage,
+                # the §5.1 policy row and the §5.1 disclosure row, one
+                # payload, read-only on the work queue (the diagnostics
+                # construction). A read failure is a server fact: the
+                # route's own 500 posture.
+                self._run_on_host_thread(face.settings)
             else:
                 self._send_json(404, {"error": "not found"})
 
@@ -3720,6 +4113,21 @@ def _build_server(
                     self._send_json(400, {"error": _FREQUENCY_GRAMMAR})
                     return
                 self._run_host_write(lambda: face.teaching_frequency(word))
+                return
+            if self.path == "/api/settings/teaching_policy":
+                # 主线-1: the eight-knob write. The grammar is validated
+                # here, fail-closed (a system column — mode 最响 — is a
+                # 400 人话 naming itself; a word outside the frequency's
+                # four is a 400); the store's version discipline rides
+                # 200 / 409 from the face (an idempotent replay, a
+                # CONFLICT 上浮).
+                error, knobs = _settings_knob_request(self._read_json_body())
+                if error is not None or knobs is None:
+                    self._send_json(400, {"error": error})
+                    return
+                self._run_host_write(
+                    lambda: face.teaching_policy_save(knobs)
+                )
                 return
             if self.path == "/api/characters":
                 # MC-0: one new user-authored card. The grammar is

@@ -68,6 +68,8 @@ import {
   fetchGoals,
   fetchSaveGoals,
   fetchSaveFrequency,
+  fetchSettings,
+  fetchSaveTeachingPolicy,
 } from "./api.js";
 
 // ── v2 品牌名单点常量（简报 §1；改名 = 改这一处）──────────────────
@@ -1249,6 +1251,53 @@ document.getElementById("del-conversation").addEventListener("click", () =>
     { scope: "CONVERSATION" },
     "这段通信的全部记录"));
 
+// ── 主线-1（8.2.7 补缺）：按伙伴关系忘掉 —— 旧「这版做不了」自认句
+// 退役。后端 RELATIONSHIP_PAIR 现成（迁移 0014 冻结词表），缺的只是
+// 编号：角色名册（mc-0）随行每位角色的 persona_id + 本页正服务的
+// current_character_id，两者一拼就是诚实 referent。双确认与既有两面
+// 同形（runDelete 的两层各说一件事），缺席（无正服务角色）保持诚实。
+// ──────────────────────────────────────────────────────────────────────
+
+async function loadDelPartner() {
+  const box = diagBox("del-partner");
+  box.textContent = "";
+  box.appendChild(stateBanner("loading"));
+  let data = null;
+  try {
+    data = await fetchCharacters();
+  } catch {
+    box.textContent = "";
+    diagError(box, "角色名册拉取失败", loadDelPartner);
+    return;
+  }
+  box.textContent = "";
+  const currentId = data.current_character_id;
+  const roster = data.characters || [];
+  const current = roster.find((c) => c.character_id === currentId);
+  if (!current || !current.persona_id) {
+    // 没有正服务角色的编号就是没有——如实一句，不猜。
+    const empty = document.createElement("p");
+    empty.className = "note";
+    empty.textContent = "还没有正在服务的伙伴——先在案头挑一位笔友。";
+    box.appendChild(empty);
+    return;
+  }
+  const row = document.createElement("div");
+  row.className = "kv";
+  const name = document.createElement("b");
+  name.textContent = current.name || current.character_id;
+  row.appendChild(name);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "btn btn--pencil";
+  button.textContent = "忘掉与这位伙伴的关系记忆";
+  button.addEventListener("click", () => runDelete(
+    { scope: "RELATIONSHIP_PAIR", persona_id: current.persona_id },
+    "与 " + (current.name || current.character_id) + " 的关系记忆"));
+  row.appendChild(button);
+  box.appendChild(row);
+}
+
 // ── p-3 / R-1R: 方向页 —— 长期方向在此写下。读写合一（读卡取消，当前
 // 值直接进编辑面）；保存 = 全组合 upsert（版本前移，不保留旧版）；冲突
 // 诚实上浮（409）→「重新读过」。词表词中英并置（中文 + 等宽小字原文）。
@@ -1655,6 +1704,238 @@ async function loadGoals() {
   renderGoalTaxref();
 }
 
+// ── 主线-1（8.2.8 重铸②）：设置节真面 —— SECTION_PULLS 拉本节。
+// 三面真值一读全归：当前档（rollout_stage 原值，None 如实——不虚构
+// 枚举到三档名的映射）、教学策略（§5.1 十三列；null = 还没有）、披露
+// 规则（§5.1 DisclosurePolicy 现值，只读——规则经 profile 编辑）。
+// 八旋钮真控件 + 保存回路（读现值→改→POST→回读刷新）；mode 等系统列
+// 服务端拒写（400 人话原样上浮），七个未钉词表的旋钮是自由文本
+// （留空 = 未配置），「存面（暂无消费）」照裁决如实标注。
+// ──────────────────────────────────────────────────────────────────────
+
+let settingsData = null;   // the last GET /api/settings payload
+let policyEditor = null;   // the eight-knob working copy the save sends
+
+// 旋钮的中文读法（本刀拟定——用户首验否决权保留）；白名单本身由
+// 服务端 writable_knobs 随行，这里不抄名单。
+const KNOB_CN = {
+  teaching_frequency: "批注频率",
+  interruption_budget: "打断预算",
+  curriculum_initiative: "课程主动度",
+  correction_strictness: "纠错严格度",
+  hint_policy: "提示策略",
+  assessment_visibility: "评估可见度",
+  practice_density: "练习密度",
+  persona_freedom: "笔友自由度",
+};
+
+// 披露阶梯的中文读法（disclosure.py 的 Local V1 宣告——三档各露什么）。
+const DISCLOSURE_CN = {
+  MINIMAL: "基础事实",
+  FUNCTIONAL: "基础 + 偏好",
+  RICH: "基础 + 偏好 + 设置",
+};
+
+function settingsBox(id) {
+  return document.getElementById(id);
+}
+
+function settingsResult(text, failure, action) {
+  const box = settingsBox("settings-result");
+  box.hidden = false;
+  box.textContent = "";
+  const line = document.createElement("p");
+  line.className = failure ? "errline" : "sub";
+  line.textContent = text;
+  box.appendChild(line);
+  if (action) box.appendChild(action);
+}
+
+// the working copy: the durable row's knob columns (null stays null —
+// 未配置是列自己的诚实), or all-null when no row exists yet (the first
+// save writes the first policy; the frequency must be picked by hand).
+function editorFromSettings(data) {
+  const policy = data.teaching_policy;
+  const editor = {};
+  for (const name of data.writable_knobs || []) {
+    const value = policy ? policy[name] : null;
+    editor[name] = (value === undefined) ? null : value;
+  }
+  return editor;
+}
+
+function renderSettingsStage() {
+  const slot = settingsBox("settings-stage");
+  slot.textContent = "";
+  const stage = settingsData && settingsData.rollout_stage;
+  // 原值直出（Study-first 等词面是文档自己的），None 如实——三档参考
+  // 块就在旁边，页面上没有任何枚举到三档名的映射声称。
+  slot.textContent = stage ? String(stage) : "未声明";
+}
+
+function renderPolicyKnobs() {
+  const box = settingsBox("settings-knobs");
+  box.textContent = "";
+  if (!policyEditor) return;
+  const knobs = (settingsData && settingsData.writable_knobs) || [];
+  for (const name of knobs) {
+    const label = document.createElement("span");
+    label.textContent = KNOB_CN[name] || name;
+    if (name !== "teaching_frequency") {
+      // 七个未钉词表的旋钮暂无消费方——「存面」照裁决标注。
+      const badge = document.createElement("span");
+      badge.className = "rawtag";
+      badge.textContent = "存面（暂无消费）";
+      label.appendChild(document.createTextNode(" "));
+      label.appendChild(badge);
+    }
+    let control;
+    if (name === "teaching_frequency") {
+      control = document.createElement("select");
+      const words = (settingsData && settingsData.frequency_words) || [];
+      if (policyEditor[name] === null || policyEditor[name] === undefined) {
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "选一档……";
+        control.appendChild(placeholder);
+      }
+      for (const word of words) {
+        const option = document.createElement("option");
+        option.value = word;
+        option.textContent = word;
+        if (word === policyEditor[name]) option.selected = true;
+        control.appendChild(option);
+      }
+      control.addEventListener("change", () => {
+        policyEditor[name] = control.value === "" ? null : control.value;
+      });
+    } else {
+      control = document.createElement("input");
+      control.type = "text";
+      control.placeholder = "未配置（留空 = 清除）";
+      const value = policyEditor[name];
+      if (value !== null && value !== undefined) control.value = String(value);
+      control.addEventListener("input", () => {
+        const trimmed = control.value.trim();
+        policyEditor[name] = trimmed === "" ? null : trimmed;
+      });
+    }
+    box.appendChild(fieldRow(label, control));
+  }
+}
+
+function renderSettingsSave() {
+  const box = settingsBox("settings-save");
+  box.textContent = "";
+  if (!policyEditor) return;
+  const save = document.createElement("button");
+  save.type = "button";
+  save.className = "btn btn--ink";
+  save.textContent = "保存教学策略";
+  save.addEventListener("click", () => savePolicy(save));
+  box.appendChild(save);
+}
+
+async function savePolicy(button) {
+  if (!policyEditor) return;
+  const payload = {};
+  for (const name of (settingsData && settingsData.writable_knobs) || []) {
+    payload[name] = policyEditor[name];
+  }
+  if (!payload.teaching_frequency) {
+    settingsResult("先给批注频率选一档——第一份策略必须选。", true);
+    return;
+  }
+  button.disabled = true;
+  const original = button.textContent;
+  button.textContent = "保存中……";
+  let data = null;
+  try {
+    data = await fetchSaveTeachingPolicy(payload);
+  } catch {
+    settingsResult("保存没送到——再试一次。", true);
+    button.disabled = false;
+    button.textContent = original;
+    return;
+  }
+  button.disabled = false;
+  button.textContent = original;
+  if (data.conflict) {
+    const again = document.createElement("button");
+    again.type = "button";
+    again.className = "btn btn--faint";
+    again.textContent = "重新读过";
+    again.addEventListener("click", () => loadSettings());
+    settingsResult(data.error || "配置已被别处更新，请重读再改", true, again);
+    return;
+  }
+  if (!data.accepted) {
+    // 服务端 400 人话（mode 等系统列、词表外值）原样上浮——页面不转译。
+    settingsResult(data.error || "没能保存。", true);
+    return;
+  }
+  // 保存回路收口：回读刷新——读回来的就是存下的。（版本号不进面孔：
+  // 机械原值的归宿是记录页折叠的原始读数区，⑧ 8.3——r1r 钉原样承重）
+  await loadSettings();
+  settingsResult("已保存——上面读回的就是它。", false);
+}
+
+function renderSettingsDisclosure() {
+  const box = settingsBox("settings-disclosure");
+  box.textContent = "";
+  const data = settingsData && settingsData.disclosure;
+  if (!data) {
+    diagEmpty(box, "还没有披露规则——缺省一无所露（fail-closed 缺省）。");
+    return;
+  }
+  const rules = data.rules || [];
+  if (!rules.length) {
+    diagEmpty(box, "没有规则行——缺省一无所露（fail-closed 缺省）。");
+    return;
+  }
+  for (const rule of rules) {
+    const row = document.createElement("div");
+    row.className = "kv";
+    const who = document.createElement("b");
+    who.textContent = rule.persona_id
+      ? "角色 " + rule.persona_id
+      : "默认规则";
+    row.appendChild(who);
+    const word = String(rule.disclosure_level || "");
+    const level = document.createElement("span");
+    level.className = "rawtag";
+    level.textContent = (DISCLOSURE_CN[word]
+      ? DISCLOSURE_CN[word] + " · " : "") + word;
+    row.appendChild(level);
+    box.appendChild(row);
+  }
+}
+
+async function loadSettings() {
+  const knobs = settingsBox("settings-knobs");
+  const rules = settingsBox("settings-disclosure");
+  knobs.textContent = "";
+  knobs.appendChild(stateBanner("loading"));
+  rules.textContent = "";
+  rules.appendChild(stateBanner("loading"));
+  let data = null;
+  try {
+    data = await fetchSettings();
+  } catch {
+    knobs.textContent = "";
+    diagError(knobs, "设置读数拉取失败", loadSettings);
+    rules.textContent = "";
+    diagError(rules, "设置读数拉取失败", loadSettings);
+    return;
+  }
+  settingsData = data;
+  policyEditor = editorFromSettings(data);
+  renderSettingsStage();
+  renderPolicyKnobs();
+  renderSettingsSave();
+  renderSettingsDisclosure();
+}
+
 // ── R-1: the spaces — 门厅 / 案头 / 温故 / 抽屉 + 两纵深（信档 ·
 // 观察）— plain show/hide, no router. The dock (#18) is the only way
 // between spaces; entering the
@@ -1696,8 +1977,9 @@ const SECTION_NAMES = {
 // 进空间落默认节（温故=今日、抽屉=记忆）
 const DEFAULT_SECTION = { study: "today", drawer: "memory" };
 
-// entering a section is the pull; settings has nothing to pull yet — the
-// honest placeholder stands (no promised face, no promised date)
+// entering a section is the pull; settings pulls its own three-face read
+// since 主线-1 (the honest placeholder retired — the section shows its
+// own facts, never a stale page)
 const SECTION_PULLS = {
   "study-today": loadToday,
   "study-goal": () => {
@@ -1708,7 +1990,13 @@ const SECTION_PULLS = {
   },
   "study-progress": () => { loadLearning(); },
   "drawer-memory": loadMemory,
-  "drawer-privacy": loadDelTargets,
+  "drawer-privacy": () => { loadDelTargets(); loadDelPartner(); },
+  "drawer-settings": () => {
+    // a save's own line must survive the re-read that follows a save;
+    // the hiding happens on entry (showSection), not inside loadSettings
+    settingsBox("settings-result").hidden = true;
+    loadSettings();
+  },
 };
 
 function showSection(space, name) {
