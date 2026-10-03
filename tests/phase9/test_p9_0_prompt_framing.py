@@ -266,11 +266,15 @@ def test_the_framed_sections_and_the_version_word_are_declared() -> None:
     (BF-05 ``UNTRUSTED_CONTENT`` lists ``persona card text``; SEC-008). The
     section's key lines stay the system's own and its eight free-text columns
     render inside the frame — pinned in
-    ``test_p9_r1_persona_trust.py``."""
+    ``test_p9_r1_persona_trust.py``. 主线-3 (DEC-OPI-32409938…36) adds
+    ``lore``: BF-05's block lists ``lore·world text`` and the section got
+    its carrier framed, in the same cut that wired it (the P9-R1 reading 5
+    registration honoured)."""
 
     assert UNTRUSTED_PROMPT_SECTIONS == (
         "persona",
         "profile",
+        "lore",
         "history",
         "relationship",
         "episode",

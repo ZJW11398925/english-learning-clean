@@ -32,6 +32,7 @@ from elc.relationship.episode import EpisodeView
 from elc.relationship.types import RelationshipView
 from elc.runtime.types import GenerationActionType
 from elc.user_config.types import DisclosedUserProfile
+from elc.world_lore.types import WorldLoreView
 
 
 @dataclass(frozen=True)
@@ -196,10 +197,12 @@ class GenerationContext:
     types; both types exist (elc.relationship.types.RelationshipView,
     elc.relationship.episode.EpisodeView,
     elc.user_config.types.DisclosedUserProfile), so the compiler renders a
-    *declared* shape instead of duck-typing whatever arrives. The remaining
-    ``object | None`` fields are the ones whose domains have not landed
-    their views yet (WorldLoreView), kept as they were — this slice types
-    what it renders, not what it cannot name.
+    *declared* shape instead of duck-typing whatever arrives. 主线-3
+    (DEC-OPI-32409938…36): the last of the placeholders is typed the same
+    way — ``world_lore_view`` is now ``WorldLoreView | None``
+    (elc.world_lore.types; the owning domain's Phase 0 shape), because the
+    compiler renders lore facts since this cut and renders a *declared*
+    shape. ``conversation_window`` stays the remaining ``object | None``.
 
     Import direction: this module imports the view *types* from the domains
     that own them, which is exactly how §11 works — Persona Runtime consumes
@@ -212,7 +215,7 @@ class GenerationContext:
     character_package: CharacterPackageRecord | None
     relationship_view: RelationshipView | None
     episode_view: EpisodeView | None
-    world_lore_view: object | None
+    world_lore_view: WorldLoreView | None
     disclosed_user_profile: DisclosedUserProfile | None
     conversation_window: object | None
     language_policy: str
@@ -355,6 +358,48 @@ def episode_prompt_fields(view: EpisodeView) -> tuple[tuple[str, str], ...]:
         "recent_events": "; ".join(view.recent_events),
     }
     return tuple((key, values[key]) for key in EPISODE_PROMPT_KEY_ORDER)
+
+
+#: Version of the ``[lore]`` section template (主线-3,
+#: DEC-OPI-32409938…36: the first cut that gives lore/world text a carrier
+#: on this compiler — the P9-R1 reading 5 registration honoured). The prompt
+#: is a canonical artifact: changing the key set, the order or the
+#: separators of this section is a NEW version, and the version is rendered
+#: inside the section so a stored prompt says which template produced it
+#: (the P4-3 section-version convention).
+WORLD_LORE_PROMPT_SECTION_VERSION = "lore-prompt-v1"
+
+#: The ``[lore]`` section's key order, pinned here and enforced by the
+#: compiler — byte-determinism (same view → same bytes) depends on it.
+#: Two rows: the template's version word and the facts line.
+WORLD_LORE_PROMPT_KEY_ORDER = (
+    "prompt_version",
+    "facts",
+)
+
+
+def world_lore_prompt_fields(
+    view: WorldLoreView,
+) -> tuple[tuple[str, str], ...]:
+    """The ``[lore]`` section as canonical (key, value) pairs.
+
+    The facts are the view's records **in the view's own order** (the
+    store's durable order — the resolution's ``canonical_key`` ascending;
+    the relationship section's order-is-content rule again): each renders as
+    ``KIND canonical_key: statement``, joined with "; ", so a section's line
+    count and key order never depend on the data. Only content renders —
+    the view carries no status or scope bookkeeping, and the canonical
+    ``WorldLoreRecord`` shape has none to leak.
+    """
+
+    values = {
+        "prompt_version": WORLD_LORE_PROMPT_SECTION_VERSION,
+        "facts": "; ".join(
+            f"{record.fact_kind.value} {record.canonical_key}: {record.statement}"
+            for record in view.facts
+        ),
+    }
+    return tuple((key, values[key]) for key in WORLD_LORE_PROMPT_KEY_ORDER)
 
 
 @dataclass(frozen=True)

@@ -269,7 +269,9 @@ def test_the_retained_set_is_unchanged_and_every_delivery_table_is_swept() -> No
         "schema_meta",
         "schema_migrations",
     }
-    assert GLOBAL_CONTENT_TABLES == ()
+    # 主线-3 随迁：全局内容集从空读到第一个 app.db 成员——共享世界的事实
+    # 不属于任何用户（SEC-025 的 keep 半）。
+    assert GLOBAL_CONTENT_TABLES == ("world_lore_fact",)
     for table in TABLES:
         assert table in SWEPT_TABLES
         assert table not in RETAINED_TABLES

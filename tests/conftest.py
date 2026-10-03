@@ -51,12 +51,15 @@ MIGRATION_IDS: tuple[str, ...] = (
     # zero-migration stretch ends here on the user's call (user-created
     # characters persist).
     "0019_character_cards",
+    # 主线-3 (DEC-OPI-32409938…36): the World/Lore canonical facts — the
+    # table the persona prompt's [lore] section is rendered from.
+    "0020_world_lore_facts",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0019_character_cards.sql"
-SCHEMA_HEAD_VERSION = "19"
+SCHEMA_HEAD_FILE = "0020_world_lore_facts.sql"
+SCHEMA_HEAD_VERSION = "20"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

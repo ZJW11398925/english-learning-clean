@@ -137,6 +137,15 @@ def test_domain_controller_is_empty_skeleton(package: str) -> None:
         # trace read (get_planner_evaluation) still raise NotImplementedError
         # with their reasons. Same mechanism as the five entries above.
         "planner": {"PlannerService"},
+        # 主线-3 (TASK-OPI-32409938-…43 ①): WorldLoreController graduates the
+        # same way — the domain authority face over elc.world_lore.store
+        # (migration 0020; all SQL lives there). propose_lore_fact lands
+        # PENDING rows (P-INV-013: untrusted text never becomes
+        # view-visible by proposing), resolve/get answer from the durable
+        # facts, and supersede_lore_fact still raises NotImplementedError
+        # with its pointer (append-first supersede = the registered approval
+        # cut) — pinned behaviourally in tests/host/test_ml3_world_lore.py.
+        "world_lore": {"WorldLoreController"},
     }
     allowed = infra_allowlist.get(package, set())
     skipped_classes = phase1_class_allowlist.get(package, set())

@@ -696,15 +696,28 @@ def _src_files_with(literal: str) -> set[str]:
 
 
 @pytest.mark.parametrize(
-    "literal",
-    ["Nell Alder", "persona-nell-alder", "cpkg-nell-alder", "Berrymoor"],
+    ("literal", "expected"),
+    [
+        ("Nell Alder", {"persona/penpal.py"}),
+        ("persona-nell-alder", {"persona/penpal.py", "world_lore/content.py"}),
+        ("cpkg-nell-alder", {"persona/penpal.py"}),
+        ("Berrymoor", {"persona/penpal.py", "world_lore/content.py"}),
+    ],
 )
-def test_the_penpal_lives_in_exactly_one_src_file(literal: str) -> None:
+def test_the_penpal_lives_in_exactly_one_src_file(
+    literal: str, expected: set[str]
+) -> None:
     """Every literal of the character has exactly one physical point: the
     penpal module (a second spelling anywhere in src is a drift the pin
-    refuses)."""
+    refuses). 主线-3 随迁：the world's own fact table legitimately names
+    the town and its persona (the lore batch is the world's canonical
+    rows, not a second spelling of the card) — the identity *definition*
+    copy stays unique to penpal.py, and the expected sets below are the
+    complete enumeration of who may carry each literal."""
 
-    assert _src_files_with(literal) == {str(Path("persona") / "penpal.py")}
+    assert _src_files_with(literal) == {
+        str(Path(path)) for path in expected
+    }
 
 
 def test_the_three_consumers_import_the_penpal_constants() -> None:

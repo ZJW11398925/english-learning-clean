@@ -249,6 +249,8 @@ from elc.user_config.types import (
     DisclosedUserProfile,
     PlannerConstraintType,
 )
+from elc.world_lore.queries import WorldLoreQueries
+from elc.world_lore.types import WorldLoreView
 
 if TYPE_CHECKING:
     # Annotations only: the coordinator calls the injected authority faces,
@@ -1063,6 +1065,20 @@ class ConversationCoordinator:
     coordinator; a conversation whose persona has no card speaks with the
     default, exactly as before.
 
+    主线-3 (DEC-OPI-32409938…36) adds one more optional injection:
+
+    - ``world_lore`` (``elc.world_lore.queries.WorldLoreQueries``): the
+      World/Lore resolution port the composition root wires as the domain
+      controller over migration 0020's facts. At each GenerationContext
+      site the view is resolved for the turn's own conversation (the
+      common world plus its persona's character facts) and handed to the
+      compiler, whose framed ``[lore]`` section renders it. ``None`` — the
+      default, and every assembly before this slice — keeps the site's
+      answer exactly ``None`` (no section, byte-identical prompts); a
+      resolution ``Err`` degrades to ``None`` the way every P4-3 view leg
+      degrades (``_world_lore_view_for`` — the prompt loses a section,
+      never a reply).
+
     ``finalize_delivery`` (the ``BUFFERED_VALIDATED`` face) stays the teaching
     legs' delivery — §13's default table sends every teaching action type and
     ``PERSONA_RESUME`` through it, and only ``NORMAL_PERSONA_REPLY`` through
@@ -1131,6 +1147,7 @@ class ConversationCoordinator:
         stream_transport: StreamTransportFactory | None = None,
         constraint_views: PlannerConstraintSource | None = None,
         character_packages: Mapping[str, CharacterPackageRecord] | None = None,
+        world_lore: WorldLoreQueries | None = None,
     ) -> None:
         self._lease = lease
         self._commands = conversation_commands
@@ -1157,6 +1174,11 @@ class ConversationCoordinator:
         self._delivery_records = delivery_records
         self._stream_transport = stream_transport
         self._constraint_views = constraint_views
+        # 主线-3 (DEC-OPI-32409938…36): the World/Lore resolution port.
+        # Held, never called at construction — the view is resolved per turn
+        # at the two GenerationContext sites, and ``None`` (every assembly
+        # before this slice) keeps those sites' answer exactly ``None``.
+        self._world_lore = world_lore
 
     # -- the §17.1 barge-in handoff (P9-3) -----------------------------------
 
@@ -1696,7 +1718,9 @@ class ConversationCoordinator:
                 character_package=self._character_package_for(persona_id),
                 relationship_view=relationship_view,
                 episode_view=episode_view,
-                world_lore_view=None,
+                world_lore_view=self._world_lore_view_for(
+                    command.conversation_id
+                ),
                 disclosed_user_profile=disclosed_profile,
                 conversation_window=window,
                 language_policy="follow-user",
@@ -2703,6 +2727,34 @@ class ConversationCoordinator:
             lambda: views.disclosed_user_profile(user_id, persona_id)
         )
         return relationship, episode, profile
+
+    def _world_lore_view_for(
+        self, conversation_id: ConversationId
+    ) -> WorldLoreView | None:
+        """Best-effort read of the lore view of one turn (主线-3).
+
+        The same degradation shape ``_persona_views_for`` declared for the
+        P4-3 views, stated for the fourth: no port (every assembly before
+        主线-3, and every assembly that does not wire one) → ``None``, so
+        the compiled prompt is byte-identical to what it was; an ``Err``
+        from the resolution (an unknown conversation, a store failure the
+        port answered) → ``None`` — the prompt loses a section, never a
+        reply, and it never carries a *guessed* world; an exception escaping
+        the port → ``None``. A resolved view with no facts is returned as
+        resolved — the compiler renders no section for it, which is the
+        honest "lore resolved, nothing to say" and not a failure.
+        """
+
+        port = self._world_lore
+        if port is None:
+            return None
+        try:
+            resolved = port.resolve_world_lore_view(conversation_id)
+        except Exception:  # noqa: BLE001 — a read never fails the turn
+            return None
+        if isinstance(resolved, Err):
+            return None
+        return resolved.value
 
     @staticmethod
     def _user_or_none(views: PersonaViewSource) -> UserId | None:
@@ -6831,7 +6883,7 @@ class ConversationCoordinator:
             character_package=self._character_package_for(persona_id),
             relationship_view=relationship_view,
             episode_view=episode_view,
-            world_lore_view=None,
+            world_lore_view=self._world_lore_view_for(conversation_id),
             disclosed_user_profile=disclosed_profile,
             conversation_window=window,
             language_policy="follow-user",

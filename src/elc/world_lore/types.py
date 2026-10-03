@@ -12,9 +12,15 @@ Boundaries:
 - Lore content is UNTRUSTED_CONTENT (docs/DOMAIN_MODEL.md §18.1;
   P-INV-013): user free text / Persona card / Lore never gains canonical
   memory write authority — writes enter as proposals validated by the
-  Domain Controller (VALIDATE/COMMIT/REJECT/ABSTAIN, §18).
+  Domain Controller (VALIDATE/COMMIT/REJECT/ABSTAIN, §18). The durable
+  form of that boundary since 主线-3 (DEC-OPI-32409938…36): a proposal
+  lands as a PENDING row no view ever serves; the controller is the
+  authority face over :mod:`elc.world_lore.store` (migration 0020).
 
-Phase 0: schema + interface skeleton only, no business logic.
+These type shapes are the implementation contract the table columns were
+derived from; the table reading itself is implementation-defined (the
+declared Revisit: canonical grows a table definition — this reading
+aligns to it).
 """
 
 from __future__ import annotations

@@ -118,7 +118,8 @@ def test_the_retained_set_is_unchanged_and_the_sweep_grew_by_four() -> None:
         "schema_meta",
         "schema_migrations",
     }
-    assert GLOBAL_CONTENT_TABLES == ()
+    # 主线-3 随迁：全局内容集迎来第一个 app.db 成员（共享世界事实）。
+    assert GLOBAL_CONTENT_TABLES == ("world_lore_fact",)
     for table in PLANNER_TABLES:
         assert table in SWEPT_TABLES
         assert table not in RETAINED_TABLES

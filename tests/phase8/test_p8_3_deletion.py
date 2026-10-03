@@ -164,7 +164,8 @@ def test_the_retained_set_is_unchanged() -> None:
         "schema_meta",
         "schema_migrations",
     }
-    assert GLOBAL_CONTENT_TABLES == ()
+    # 主线-3 随迁：全局内容集迎来第一个 app.db 成员（共享世界事实）。
+    assert GLOBAL_CONTENT_TABLES == ("world_lore_fact",)
     for table in LEDGER_TABLES:
         assert table not in RETAINED_TABLES
         assert table not in GLOBAL_CONTENT_TABLES
@@ -178,7 +179,13 @@ def test_the_three_sets_still_partition_the_real_database(
     )
     assert declared == _tables(db)
     assert_known_tables(sorted(_tables(db)))
-    assert len(SWEPT_TABLES) + len(RETAINED_TABLES) == len(declared)
+    # 主线-3 随迁：计数随全局内容集的第一个 app.db 成员扩。
+    assert (
+        len(SWEPT_TABLES)
+        + len(RETAINED_TABLES)
+        + len(GLOBAL_CONTENT_TABLES)
+        == len(declared)
+    )
 
 
 def test_the_sweep_order_still_satisfies_every_foreign_key(
@@ -468,7 +475,9 @@ def test_the_ledger_tables_are_absent_from_the_content_db_sweep(
 
     seed(db, ledger_store, TARGET)
     _execute(db, fence, DeletionRequest(scope=DeletionScope.ALL_USER_DATA))
-    assert GLOBAL_CONTENT_TABLES == ()
+    # 主线-3 随迁：全局内容集非空（world_lore_fact 在 keep 半），表集等式
+    # 随三分集扩。
+    assert GLOBAL_CONTENT_TABLES == ("world_lore_fact",)
     assert _tables(db) == (
-        set(SWEPT_TABLES) | set(RETAINED_TABLES)
+        set(SWEPT_TABLES) | set(RETAINED_TABLES) | set(GLOBAL_CONTENT_TABLES)
     )

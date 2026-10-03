@@ -247,18 +247,22 @@ def _delete_json(port: int, path: str) -> tuple[int, Any]:
 
 
 def test_0019_is_the_registered_head() -> None:
-    """The lineage ends at MC-0's migration, the shared constants say so,
-    and the stamp a fresh database carries is 19."""
+    """The lineage carried MC-0's migration, the shared constants say so,
+    and the stamp a fresh database carries moved past it (主线-3: the head
+    literal migrated the P9-1 way — 0019 stays in the chain, the head
+    assertion lives with the newest slice)."""
 
-    assert MIGRATION_IDS[-1] == "0019_character_cards"
-    assert SCHEMA_HEAD_FILE == "0019_character_cards.sql"
+    assert MIGRATION_IDS[-1] == "0020_world_lore_facts"
+    assert SCHEMA_HEAD_FILE == "0020_world_lore_facts.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "19"
+    assert SCHEMA_HEAD_VERSION == "20"
+    assert "0019_character_cards" in MIGRATION_IDS
 
     conn = sqlite3.connect(":memory:")
     applied = apply_migrations(conn)
-    assert applied[-1] == "0019_character_cards"
-    assert schema_version(conn) == "19"
+    assert applied[-1] == "0020_world_lore_facts"
+    assert "0019_character_cards" in applied
+    assert schema_version(conn) == "20"
 
 
 def test_the_character_card_table_carries_its_columns() -> None:
