@@ -252,9 +252,11 @@ The five panels:
 ``observations`` serves ``elc.cli``'s readings core (the six §12 indicator
 declarations, the six durable-counts sections, the drift signal) — the same
 numbers the ``observations`` command prints, by construction. ``history``
-serves the conversation store's canonical window (last 50 turns, delivered
-assistant output only — the store's own §3 key rule), so what the page
-recovers on load is exactly what the transcript holds.
+serves the conversation store's canonical user-visible window (the 50-turn
+default, delivered assistant output only — the store's own §3 key rule), so
+what the page recovers on load is exactly what the transcript holds; the
+breadth is now also explicit on request (``?full=1`` / ``?limit=N`` — the
+default window is untouched), the 主线-2 face below.
 
 **p-3 adds the goal-management face** — the first screen where the page
 *writes* user configuration. ``GET /api/goals`` answers the whole read in
@@ -306,6 +308,26 @@ neither reads it into a change nor writes it), an unknown key names
 itself. The write changes only how/how-often teaching is configured —
 never the rollout tier, never an 开闸 face (mode is not writable by
 design; the section's own copy says so).
+
+**主线-2 adds the schedule/history-depth face** — three reads, zero writes
+(调度与历史纵深：读面先行，§5.2 的调度调整是复核面，不进本刀).
+``GET /api/schedule`` is the review-schedule zone's read: the Scheduler's
+own classified :class:`~elc.scheduler.types.ScheduleView` at one ``as_of``
+(due / overdue / upcoming buckets, the rows' own columns verbatim) — the
+due decision stays where D-INV-009 put it, so a host without the scheduler
+leg answers the honest ``{"available": false}`` shape instead of a raw-table
+stand-in that would derive a due-ness nobody declared. ``/api/history``
+gains the explicit breadth parameters (``?full=1`` / ``?limit=N``) over the
+same user-visible filter family — the no-parameter answer is the unchanged
+50-turn window, and the unbounded read is that filter at full breadth, the
+user-visible mirror of the cs-3 full-history relation (the persona-visible
+cs-3 face itself keeps teaching letters out of the assistant side: that is
+the role's reading, not the archive's). ``GET
+/api/target_footprint?id=<target_id>`` is the cross-letter footprint (the
+9.12-23④ preview item, closed here): one expression's ACTIVE learning
+evidence distributed over the turns that produced it — per turn the claim
+count and the outcomes as the evaluator wrote them; a target with no
+evidence answers ``{"found": false}``, a 200 fact, never a 404.
 """
 
 from __future__ import annotations
@@ -373,6 +395,7 @@ from elc.platform.types import (
 )
 from elc.runtime.controller import TeachingReplyRequest
 from elc.runtime.types import InputEnvelope
+from elc.scheduler.types import ScheduleItem
 from elc.teaching.envelope import (
     AttemptPayload,
     TeachingControlIntent,
@@ -408,8 +431,10 @@ class WebOpenError(RuntimeError):
 #: CLI's so the two surfaces never interleave one transcript by accident).
 DEFAULT_WEB_CONVERSATION_ID = "web-default"
 
-#: How many canonical turns ``/api/history`` serves (the page's load-time
-#: recovery window).
+#: How many canonical turns ``/api/history`` serves by default (the page's
+#: load-time recovery window). 主线-2 keeps this the no-parameter answer —
+#: the explicit ``?full=1`` / ``?limit=N`` parameters serve more, and the
+#: default window's semantics are pinned unchanged.
 HISTORY_TURNS = 50
 
 #: How long a handler thread waits for the host's thread to answer before it
@@ -873,6 +898,80 @@ def _schedule_panel(db: sqlite3.Connection) -> dict[str, Any]:
             for row in rows
         ]
     }
+
+
+def _schedule_item_face(item: ScheduleItem) -> dict[str, Any]:
+    """One §5.2 row for the schedule zone — the row's own columns verbatim.
+
+    The classified view's items pass through as the Scheduler wrote them
+    (window pair, spacing stage, urgency); the one derived field is the
+    display name out of the id (:func:`_target_display_name`'s reading,
+    the same one the teach rows use).
+    """
+
+    return {
+        "target_type": item.target_type,
+        "target_id": str(item.target_id),
+        "name": _target_display_name(str(item.target_id)),
+        "review_state": item.review_state.value,
+        "review_urgency": item.review_urgency,
+        "next_review_window_start": item.next_review_window_start,
+        "next_review_window_end": item.next_review_window_end,
+        "spacing_stage": (
+            None if item.spacing_stage is None else item.spacing_stage.value
+        ),
+        "updated_at": item.updated_at,
+    }
+
+
+def _history_request(
+    params: dict[str, list[str]],
+) -> tuple[str | None, bool, int | None]:
+    """The ``/api/history`` query grammar, fail-closed.
+
+    No query is the unchanged default window; ``?full=1`` is the whole
+    user-visible transcript; ``?limit=<n>`` is the ``n`` most recent
+    turns (a whole number from 1 up — a zero or negative bound is not a
+    breadth, it is a typo, and it gets the 400 人话). The two parameters
+    are mutually exclusive (one read, one breadth) and any other key
+    names itself in its own refusal — never a silent drop.
+    """
+
+    full_values = params.get("full")
+    limit_values = params.get("limit")
+    unknown = sorted(set(params) - {"full", "limit"})
+    if unknown:
+        return (
+            f"unknown parameter {unknown[0]!r} — /api/history takes"
+            " ?full=1 or ?limit=<n>",
+            False,
+            None,
+        )
+    if full_values is not None and limit_values is not None:
+        return (
+            "use either ?full=1 or ?limit=<n>, not both",
+            False,
+            None,
+        )
+    if full_values is not None:
+        if full_values != ["1"]:
+            return ("?full takes the one value 1", False, None)
+        return (None, True, None)
+    if limit_values is not None:
+        if len(limit_values) != 1:
+            return ("?limit takes one whole number", False, None)
+        try:
+            limit = int(limit_values[0])
+        except ValueError:
+            return ("?limit takes a whole number of turns", False, None)
+        if limit < 1:
+            return (
+                "?limit takes a whole number of turns from 1 up",
+                False,
+                None,
+            )
+        return (None, False, limit)
+    return (None, False, None)
 
 
 def _goals_panel(db: sqlite3.Connection) -> dict[str, Any]:
@@ -3776,7 +3875,9 @@ class _WebFace:
             },
         }
 
-    def history(self) -> dict[str, Any]:
+    def history(
+        self, full: bool = False, limit: int | None = None
+    ) -> dict[str, Any]:
         """The canonical transcript window — what the page recovers on load.
 
         The store's user-visible window read (cs-0 处置 M-1: the *user* may
@@ -3786,18 +3887,57 @@ class _WebFace:
         history stays on ``get_conversation_window`` and never touches this
         face). Delivered assistant output only; teaching command turns never
         appear; oldest first.
+
+        主线-2 adds the explicit breadth parameters over the same
+        user-visible filter family, the display semantics untouched:
+
+        - no parameter — the unchanged :data:`HISTORY_TURNS` default window;
+        - ``?limit=N`` — the ``N`` most recent turns through the identical
+          read (the grammar in :func:`_history_request`);
+        - ``?full=1`` — the whole user-visible transcript: the same window
+          filter at unbounded breadth, the user-visible mirror of the cs-3
+          full-history relation. The cs-3 face itself
+          (``get_full_persona_visible_history``) stays persona-visible — its
+          assistant-side filter keeps teaching letters out, which is the
+          role's reading, not the archive's; the unbounded breadth here
+          rides the same user-visible face's ``LIMIT ?`` with a negative
+          bound (SQLite's documented no-limit reading), so the archive
+          cannot silently change filter between the default window and the
+          full read.
+
+        ``has_more`` is the honest pagination bit: a bounded read fetches
+        one row past its bound to answer it (a bound-sized answer is
+        ambiguous by itself); an unbounded read is never ``true``. The
+        per-turn shape and the default-window answer are exactly what they
+        were — the two extra payload keys are additive.
         """
 
+        bound: int | None
+        if full:
+            bound = None
+        elif limit is not None:
+            bound = limit
+        else:
+            bound = HISTORY_TURNS
         window = self._host.conversations.get_user_visible_conversation_window(
-            self._conversation_id, HISTORY_TURNS
+            self._conversation_id, -1 if bound is None else bound + 1
         )
         if isinstance(window, Err):
             raise RuntimeError(
                 "the conversation window could not be read:"
                 f" {window.error.code.value}: {window.error.message}"
             )
+        slices = list(window.value.slices)
+        if bound is None:
+            has_more = False
+        else:
+            has_more = len(slices) > bound
+            if has_more:
+                # the store answers oldest-first; the bound-sized answer is
+                # the most recent tail of the bound+1 it fetched
+                slices = slices[len(slices) - bound :]
         turns: list[dict[str, Any]] = []
-        for slice_ in window.value.slices:
+        for slice_ in slices:
             assistant = (
                 None
                 if slice_.assistant_turn is None
@@ -3820,7 +3960,114 @@ class _WebFace:
                     ),
                 }
             )
-        return {"turns": turns}
+        return {"turns": turns, "window": bound, "has_more": has_more}
+
+    def schedule(self) -> dict[str, Any]:
+        """The review-schedule zone's read — the Scheduler's own view.
+
+        The classified :class:`~elc.scheduler.types.ScheduleView` at one
+        ``as_of`` (now): every current §5.2 row in the bucket its window
+        names — due / overdue / upcoming — each row passed through
+        verbatim (:func:`_schedule_item_face`; the window pair, the spacing
+        stage and the urgency are the row's own numbers, never a derived
+        due-ness). The due decision is the Scheduler's and only the
+        Scheduler's (D-INV-009), so a host without the scheduler leg
+        answers the honest ``{"available": false}`` shape — the empty
+        buckets of an unassembled authority, never a raw-table stand-in
+        that would classify outside §9. Rows with no window
+        (``NOT_SCHEDULED``) appear in no bucket: the view's own membership
+        rule, relayed as-is. Read-only on the work queue (the diagnostics
+        construction); a view that cannot be read is a server fact (the
+        route's 500 posture).
+        """
+
+        scheduler = self._host.scheduler
+        if scheduler is None:
+            return {
+                "available": False,
+                "as_of": None,
+                "due": [],
+                "overdue": [],
+                "upcoming": [],
+            }
+        view = scheduler.get_schedule_view(datetime.now(tz=UTC).isoformat())
+        if isinstance(view, Err):
+            raise RuntimeError(
+                "the schedule view could not be read:"
+                f" {view.error.code.value}: {view.error.message}"
+            )
+        classified = view.value
+        return {
+            "available": True,
+            "as_of": classified.as_of,
+            "schedule_version": str(classified.schedule_version),
+            "due": [
+                _schedule_item_face(item) for item in classified.due_items
+            ],
+            "overdue": [
+                _schedule_item_face(item) for item in classified.overdue_items
+            ],
+            "upcoming": [
+                _schedule_item_face(item) for item in classified.upcoming
+            ],
+        }
+
+    def target_footprint(self, target_id: str) -> dict[str, Any]:
+        """One expression's cross-letter footprint — the learning evidence
+        the target left, distributed over the turns that produced it.
+
+        The aggregate reads ``evidence_claim`` (the durable ledger,
+        migration 0004) grouped by the claim's source turn: per turn the
+        claim count and the outcomes exactly as the evaluator wrote them,
+        ordered by the turn's durable sequence with the ledger's own
+        ``rowid`` breaking ties — one deterministic answer to one world (a
+        claim whose source turn row is unreachable keeps its place honestly
+        with a ``null`` sequence — the ``LEFT JOIN`` never drops a claim for
+        a missing join partner). Only ``ACTIVE`` rows count (STATE_MACHINES
+        §18: only ACTIVE evidence enters estimation — the field name carries
+        the reading); superseded or invalidated rows are not a footprint.
+        A target with no evidence answers ``{"found": false}`` with an
+        empty distribution — a 200 fact (the word lookup's posture),
+        never a 404. Read-only SQL over ``host.db`` on the work queue
+        (the diagnostics construction); nothing here writes, ever.
+        """
+
+        rows = self._host.db.execute(
+            "SELECT ec.source_turn_id, ec.conversation_id, ec.outcome,"
+            " u.turn_sequence FROM evidence_claim AS ec"
+            " LEFT JOIN user_turn AS u ON u.turn_id = ec.source_turn_id"
+            " WHERE ec.target_id = ? AND ec.status = 'ACTIVE'"
+            " ORDER BY (u.turn_sequence IS NULL), u.turn_sequence,"
+            " ec.source_turn_id, ec.rowid",
+            (target_id,),
+        ).fetchall()
+        turns: list[dict[str, Any]] = []
+        index_of: dict[str, int] = {}
+        for turn_id, conversation_id, outcome, sequence in rows:
+            position = index_of.get(str(turn_id))
+            if position is None:
+                position = len(turns)
+                index_of[str(turn_id)] = position
+                turns.append(
+                    {
+                        "turn_id": str(turn_id),
+                        "conversation_id": str(conversation_id),
+                        "turn_sequence": (
+                            None if sequence is None else int(sequence)
+                        ),
+                        "claim_count": 0,
+                        "outcomes": [],
+                    }
+                )
+            entry = turns[position]
+            entry["claim_count"] += 1
+            entry["outcomes"].append(str(outcome))
+        return {
+            "target_id": target_id,
+            "found": bool(turns),
+            "active_claim_count": len(rows),
+            "turns": turns,
+        }
 
 
 class _WebServer(ThreadingHTTPServer):
@@ -4016,8 +4263,53 @@ def _build_server(
                     self._send_page_file(name)
                 else:
                     self._send_json(404, {"error": "no such page file"})
-            elif self.path == "/api/history":
-                self._run_on_host_thread(face.history)
+            elif (
+                self.path == "/api/history"
+                or self.path.startswith("/api/history?")
+            ):
+                # The transcript window (the page's load-time recovery
+                # read) with the 主线-2 explicit breadth parameters: no
+                # query is the unchanged default window; ?full=1 and
+                # ?limit=<n> serve more on explicit request. The grammar
+                # is fail-closed (an unknown key, a non-1 full value, a
+                # non-integer or <1 limit, or both parameters at once are
+                # each a 400 人话); the read itself stays on the work
+                # queue (the one-thread rule).
+                error, full, limit = _history_request(
+                    parse_qs(
+                        urlsplit(self.path).query, keep_blank_values=True
+                    )
+                )
+                if error is not None:
+                    self._send_json(400, {"error": error})
+                else:
+                    self._run_on_host_thread(
+                        lambda: face.history(full=full, limit=limit)
+                    )
+            elif self.path == "/api/schedule":
+                # 主线-2: the review-schedule zone's read — the Scheduler's
+                # own classified view (D-INV-009's due decision read where
+                # it lives), read-only on the work queue (the diagnostics
+                # construction). A host without the scheduler leg answers
+                # the honest unavailable shape from the face itself.
+                self._run_on_host_thread(face.schedule)
+            elif (
+                self.path == "/api/target_footprint"
+                or self.path.startswith("/api/target_footprint?")
+            ):
+                # 主线-2: the cross-letter footprint (the 9.12-23④ seam,
+                # closed) — one target's ACTIVE learning evidence over the
+                # turns that produced it. Grammar: one ?id=<target_id>; a
+                # request without it is a bad request; a target with no
+                # evidence is the face's own {"found": false} 200 fact.
+                id_values = parse_qs(urlsplit(self.path).query).get("id")
+                if not id_values or not id_values[0].strip():
+                    self._send_json(400, {"error": "need ?id=<target_id>"})
+                else:
+                    asked = id_values[0].strip()
+                    self._run_on_host_thread(
+                        lambda: face.target_footprint(asked)
+                    )
             elif self.path == "/api/teaching/current":
                 # The one route served off the work queue (module docstring,
                 # "The one exception"): a read-only poll must not queue

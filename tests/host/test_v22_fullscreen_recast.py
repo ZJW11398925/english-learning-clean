@@ -323,7 +323,10 @@ def test_the_letters_archive_is_enveloped_and_honest() -> None:
     assert "body.appendChild(letterNode(\"user\", turn.user));" in app
     assert "body.appendChild(letterNode(\"assistant\", turn.assistant));" in app
     index = _text("index.html")
-    assert "只摊开已加载的最近 50 轮——第 n 封按窗口里的顺序数。" in index
+    # 主线-2 随迁：口径句升为可「加载更早」的窗口口径（默认窗口不变
+    # ——旧「最近 50 轮」定稿句退役）
+    assert ("只摊开已加载的窗口——第 n 封按窗口里的顺序数；"
+            "「加载更早」往前翻，翻到头为止。") in index
     # the entry rides the flow's tail, the back row is the only way home
     assert 'id="letters-go"' in index
     assert 'id="letters-back"' in index

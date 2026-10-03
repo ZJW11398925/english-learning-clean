@@ -159,8 +159,9 @@
        条目 = 信封缩略（.env-mini），展开读 = 信纸（#4 排印骨架复用，
        paper-unfold）；屏头一枚归档日期戳（4c 的 archived 形态，翻开
        信档 = 归档开启真实事件，同屏 ≤1）。口径写在脸上：只摊开
-       /api/history 已加载的最近 50 轮，第 n 封按窗口内的顺序数，无
-       时间戳不造日期。零新端点（现役读面够用）。 -->
+       /api/history 已加载的窗口（默认 50 轮；「加载更早」按 50 轮
+       一档往前翻——主线-2 的显式宽度参数），第 n 封按窗口内的顺序
+       数，无时间戳不造日期。 -->
   <section id="space-letters" class="dossier" hidden>
     <header class="top space-header" id="letters-head">
       <span data-brand-mark="sm"></span>
@@ -175,7 +176,7 @@
         <div class="letters-datestamp" id="letters-datestamp"
              aria-hidden="true"></div>
         <p class="sub letters-calibre"
-           id="letters-calibre">只摊开已加载的最近 50 轮——第 n 封按窗口里的顺序数。</p>
+           id="letters-calibre">只摊开已加载的窗口——第 n 封按窗口里的顺序数；「加载更早」往前翻，翻到头为止。</p>
       </div>
       <div id="letters-board"><p class="note">暂无数据</p></div>
     </div>
@@ -312,10 +313,11 @@
       <div id="archive-board"><p class="note">暂无数据</p></div>
     </div>
 
-    <!-- 搜信里的句子（rd-4 检索扩展）：/api/history 的 50 轮窗口内
-         找一句话；口径写在脸上（只搜已加载的），命中列「第 n 封
+    <!-- 搜信里的句子（rd-4 检索扩展）：/api/history 默认窗口（50 轮）
+         内找一句话；口径写在脸上（只搜已加载的），命中列「第 n 封
          （你/笔友）」+ 片段——历史轮次无时间戳，一个日期都不造；
-         跨信重现不做（9.12-23 登记数据缝）。 -->
+         跨信重现由表达足迹读面落成（主线-2，9.12-23④ 缝闭合：
+         /api/target_footprint + 按表达看的「足迹」入口）。 -->
     <div class="sec">
       <h3>搜信里的句子</h3>
       <p class="sub">只搜已加载的最近 50 轮。</p>

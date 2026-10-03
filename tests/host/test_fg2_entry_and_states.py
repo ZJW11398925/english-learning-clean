@@ -201,10 +201,12 @@ def test_the_panel_faces_ride_the_state_banner(tmp_path: Path) -> None:
     # R-1R 随迁：目标清单的读取面只剩隐私页的按表达忘掉（档案 · 可以练
     # 的表达经 loadLearning 读 targets，失败行在面板槽内同形）
     assert 'diagError(box, "目标清单拉取失败", loadDelTargets);' in app
-    # rd-3 随迁：诊断渲染函数族随五板退役；排程照旧由 loadLearning 拉取
-    # （降入档案的「计划明细」折叠）
+    # rd-3 随迁：诊断渲染函数族随五板退役；排程随主线-2 升为
+    # /api/schedule 的独立调度区（loadScheduleZone，降入档案的
+    # 「计划明细」折叠）——旧的 diagnostics 直读渲染退役
     assert "renderWhyTeach" not in app
-    assert "renderSchedule(data.schedule, loadLearning);" in app
+    assert "renderSchedule(data.schedule, loadLearning);" not in app
+    assert "loadScheduleZone();" in app
     index = _webui_text("index.html")
     assert '<p class="note">暂无数据</p>' in index
 
