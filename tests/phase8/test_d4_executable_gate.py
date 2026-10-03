@@ -81,7 +81,7 @@ def _synthetic_pairs() -> list[tuple[str, str | None]]:
 def _pilot_shaped_provenance(
     *, ev_level: str = EXECUTABLE_VERIFICATION_FLOOR
 ) -> dict[str, str]:
-    """The artifact-shaped mapping: the twelve pilot ids at ``ev_level``,
+    """The artifact-shaped mapping: the pilot ids at ``ev_level``,
     every other target at a below-floor word (the default build's truth)."""
 
     provenance = {

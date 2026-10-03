@@ -871,10 +871,10 @@ def detect_go_on(text: str) -> DetectionMatch | None:
     word after the be-form (the inverted question, "Go on, is it just
     me?") keeps the rule out through SUBJECT_WORDS. Ordinal 1: the
     follow-up question after the invitation carries the bare "what
-    happen" shape where the story's past belongs ("Go on — what come
-    next?"), with the invitation present and a question mark closing
-    the probe; the corrected past ("what happened") is word-bounded
-    away.
+    happen" shape where the story's past belongs ("Go on — what happen
+    to the money then?"), with the invitation present and a question
+    mark closing the probe; the corrected past ("what happened") is
+    word-bounded away.
     """
 
     rest = fronted_then(text, "go on")
