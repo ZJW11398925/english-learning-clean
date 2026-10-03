@@ -11,7 +11,7 @@ card table as a builtin on every open.
 Five groups (the slice's own, ``VAL-OPI-32409938-…32``):
 
 1. **the family pins** — the official set is exactly four packages by
-   id (the penpal first), every card carries all nine prose faces at
+   id (the penpal first), every card carries all eight prose faces at
    Nell's own heft (word for word compared against her), the whole
    family is cs-0 clean, and each character's literals live in exactly
    one src file;
@@ -90,7 +90,8 @@ REPLY = "Understood — the kettle is on and I am listening."
 REPO = Path(__file__).resolve().parents[2]
 SRC = REPO / "src" / "elc"
 
-#: The nine prose faces, in §5.1 order (the heft pin walks all of them).
+#: The eight prose faces, in §5.1 order (the heft pin walks all of them;
+#: lore_refs is an id list, not prose — q4R LOW-1 wording fix).
 _FACES = (
     "identity",
     "personality",

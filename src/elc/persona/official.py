@@ -26,7 +26,8 @@ value of their own.
 The characters are written under cs-0's isolation rule, like Nell: the
 card text carries **zero mechanism words** and none of the pedagogy
 words — each of them is a person with a life, not a tutor, and nothing
-in their nine faces hints that a teaching system exists.
+in their eight prose faces (plus the ``lore_refs`` id list) hints that
+a teaching system exists.
 
 Deterministic by construction: no clock, no randomness — each builder
 returns an equal package on every call, and ``updated_at`` is a fixed
