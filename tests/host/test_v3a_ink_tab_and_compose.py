@@ -208,6 +208,12 @@ def test_guide_sentence_rides_both_faces_from_one_beat() -> None:
             in components)
     assert components.count("syncDockTriggerNote(") == 3   # 定义 + 两落点
     assert "function syncDockTriggerNote(awaiting) {" in components
+    # 处置刀（评审 F-1）：文案态 = 双向切换——idle 与 note 互斥；只显
+    # note 不藏 idle 会让两文案拼接被 ellipsis 截断（活体实拍缺陷）
+    assert 'if (note) note.hidden = !awaiting;' in components
+    assert 'if (idle) idle.hidden = !!awaiting;' in components
+    assert 'const idle = document.querySelector(".dock-trigger-idle");' \
+        in components
 
 
 # ---------------------------------------------------------------------------

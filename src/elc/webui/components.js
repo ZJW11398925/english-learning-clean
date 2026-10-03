@@ -570,12 +570,16 @@ function readReplyAnswer(card, data) {
 }
 
 // v3-a 笔搁触发条的文案态同步（8.2.2⑤）：批注开着（AWAITING_USER）时
-// 收起态触发条显示指路行原文（与 #reply-guide 同一拍、同一真源——
+// 收起态触发条**切换为**指路行原文（与 #reply-guide 同一拍、同一真源——
 // showMoments/noteDelivery 两处落），其余时刻显「提笔 · 今日如何？」。
+// v3-a 处置刀（评审 F-1）：切 = 双向——idle 与 note 互斥（首版只显
+// note 不藏 idle，两文案拼接被 ellipsis 截断）。
 // 元素缺席（旧壳）安全空操作。
 function syncDockTriggerNote(awaiting) {
   const note = document.getElementById("dock-trigger-note");
+  const idle = document.querySelector(".dock-trigger-idle");
   if (note) note.hidden = !awaiting;
+  if (idle) idle.hidden = !!awaiting;
 }
 
 async function postReply(card, payload, busyText, doneNote) {
