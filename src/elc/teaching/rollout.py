@@ -8,12 +8,14 @@ observation may be ("提高 threshold / policy cost", "而不是修改 Learning
 truth"). docs/RUNTIME_ARCHITECTURE.md's automatic path (P8-0..P8-4) is the
 thing being rolled out, and BF-02 §10's four content floors are what decides
 whether it *can* be: every teaching mode names a minimum §8.1 readiness, and
-the shipped corpus's answer is fifty-two RESOURCE targets at R4 (C1's
+the shipped corpus's answer is ninety-three RESOURCE targets at R4 (C1's
 evidence face authored one, the C2 cuts twenty-seven more, C3-a and C3-b
 eighteen each — sixty-four had reached R4 by C3-b until C3-R1's mapping
-re-adjudication returned the forty-eight placement resources to R1, and the
+re-adjudication returned the forty-eight placement resources to R1, the
 C3-c and C3-d cuts' thirty-six resources authored against the capability
-definitions rebuilt the R4 side) with the
+definitions rebuilt the R4 side, and the queue-2 screening mapped forty-one
+of the forty-eight placements back against the three lexical capabilities)
+with the
 five CAPABILITY entities reading no level —
 their sources state no evidence.
 
@@ -76,14 +78,14 @@ is GO (:attr:`RolloutGateReport.verdict`). That conjunction is this cut's
 overall HOLD"): the book's condition is implied, and the conjunction is the
 strict, fail-closed form of it — a rollout cannot enter a stage whose *preceding*
 row is empty either. Both readings agree on the shipped corpus (the
-fifty-two R4 RESOURCE targets make every row GO, so the answer is GO under
+ninety-three R4 RESOURCE targets make every row GO, so the answer is GO under
 either).
 
 **③.1 The fifth leg (D-4) — provenance, as a wiring-level declaration.**
 :attr:`GateRowSpec.requires_executable_detection` marks the one row whose
 target must not merely *be* R4 but be **executably verified**: the external
 review's hard gate (EXT-C3-03 — "automatic CURRENT_USER_ERROR needs
-R4 ∧ EXECUTABLY_VERIFIED", which today's corpus answers 0-of-52 without
+R4 ∧ EXECUTABLY_VERIFIED", which today's corpus answers 0-of-93 without
 D-3's pilot). This is the **declared reading** of that gate, adopted at the
 rollout wiring layer (DEC-OPI-24fd89e7's R5): BF-02 §10's frozen four lines
 are not edited — the marker is a field beside them, and a caller that passes
@@ -131,14 +133,15 @@ rather than pretending otherwise (see the port's docstring for the Revisit).
 
 **⑤ The HOLD, and where it is held now.** The content gate moved under C1's
 evidence face and widened through the C2 and C3 cuts: on the shipped corpus
-every row reads fifty-two usable targets (the R4 side — the forty-eight R1
+every row reads ninety-three usable targets (the R4 side — the seven R1
 resources sit below even the PROBE floor after C3-R1's re-adjudication
-split them, and the five CAPABILITY
+split them, the queue-2 screening mapped forty-one of the forty-eight
+placements back, and the eight CAPABILITY
 entities read ``level=None``) and
 :func:`corpus_rollout_gate` answers **GO** — so the content gate no longer
 holds the rollout. The Calibration100 volume gate's three floors now all read
-met — 100 resources >= 100 (the IP §13 first rung topped), CORE_A 32 >= 30
-and CORE_C 20 >= 2 — so the volume gate no longer holds the rollout either.
+met — 100 resources >= 100 (the IP §13 first rung topped), CORE_A 60 >= 30
+and CORE_C 33 >= 2 — so the volume gate no longer holds the rollout either.
 The rollout is **still HOLD**, carried by the stage leg (no stage is
 declared, and :func:`stage_allows_automatic` refuses an undeclared stage)
 and by the separate opening adjudication (SessionBudget's three-way split
@@ -518,7 +521,7 @@ def gate_row_verdict(usable_targets: int) -> RolloutVerdict:
     credit, no "almost ready", and no other input: a row that no target can
     serve is HOLD — which, since C1's evidence face and the C2/C3 cuts'
     documents, is the answer **no** row gives over the shipped corpus (its
-    fifty-two R4 RESOURCE targets serve all four; before C1 none did).
+    ninety-three R4 RESOURCE targets serve all four; before C1 none did).
     """
 
     return RolloutVerdict.GO if usable_targets > 0 else RolloutVerdict.HOLD

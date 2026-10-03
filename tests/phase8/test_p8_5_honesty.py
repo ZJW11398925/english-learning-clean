@@ -471,13 +471,13 @@ def test_the_shipped_corpus_denies_any_open_claim(tmp_path: Path) -> None:
     build_content_db(path)
     report = corpus_rollout_gate(CurriculumContentStore(ContentStore(path)))
     assert isinstance(report, Ok), report
-    # Layer one: content capable — every row GO on the fifty-two R4 mapping
-    # targets (C3-R1's fall-back plus C3-c's and C3-d's authored mappings:
-    # the R2 fact reads a mapping, not a row).
+    # Layer one: content capable — every row GO on the ninety-three R4
+    # mapping targets (C3-R1's fall-back plus C3-c's, C3-d's and queue-2's
+    # screened mappings: the R2 fact reads a mapping, not a row).
     assert report.value.verdict is RolloutVerdict.GO
     assert report.value.automatic_verdict is RolloutVerdict.GO
     assert all(
-        row.usable_targets == 52 and row.verdict is RolloutVerdict.GO
+        row.usable_targets == 93 and row.verdict is RolloutVerdict.GO
         for row in report.value.rows
         if row.automatic
     )

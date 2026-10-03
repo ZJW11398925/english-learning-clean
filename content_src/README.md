@@ -360,19 +360,23 @@ node_id / relation / strength / primary_flag / editorial_status / rationale，
 **C3-R1 起另加第八列 `mapping_class`**——声明读法：canonical §24.7 未定义
 mapping/placement 二分，`CURRICULUM_MAPPING`（真语义映射，满足 node 功能定义的
 `counts_as_realization` 至少一条且不落 `does_not_count`）与
-`COVERAGE_PLACEMENT`（现役 5 节点语料所迫的就近覆盖记账）两词由 build 校验，
+`COVERAGE_PLACEMENT`（现役语料所迫的就近覆盖记账）两词由 build 校验，
 `REALIZES ⇒ CURRICULUM_MAPPING` 为 build 形状规则；Revisit 随 C3-R1 裁决登记）。
 9 条 REALIZES 链接 = 9 个 RESOURCE target 的 fixture `capability_linkage` 逐条迁移；
 C2-b 另写 19 条（6 条 REALIZES + 13 条 SUPPORTS）给 19 个新实体，C3-a 再写 18 条
 （3 条 REALIZES + 15 条 SUPPORTS）给 18 个新实体，C3-b 再写 18 条
 （3 条 REALIZES + 15 条 SUPPORTS）给 18 个新实体，其语义与
-credit 面限度见 `../curriculum/README.md` 的 C2-b / C3-a / C3-b 段——**node_id 只取现役 5 个
+credit 面限度见 `../curriculum/README.md` 的 C2-b / C3-a / C3-b 段——**node_id 只取现役 8 个
 cap-* 节点**（build 的引用完整性要求 `node_id` 必须是已声明的 capability，
 `content_src/README.md` 与 `elc.content.build._check_references` 同一条）。
 C3-c 再写 18 条（**全 18 条 REALIZES + CURRICULUM_MAPPING**，逐条引用对应
 capability functional_definition 的 counts_as / does_not_count 具体条目判定，
 credit 面 15 → 33）给 18 个新实体；C3-d 再写 18 条（**全 18 条 REALIZES +
 CURRICULUM_MAPPING**，同一体裁与判定纪律，credit 面 33 → 51）给 18 个新实体。
+队列② R1→R3 筛选（2026-10）再写 41 条（**全 41 条 REALIZES +
+CURRICULUM_MAPPING**，同一体裁）给 41 个词法 R1 实体，并新增 3 个词法
+capability 节点（现役节点 5 → 8）；语料规模现读 **108 实体 / 100 份
+evidence / 141 条 link / 93×R4 + 7×R1 + 8×None**，credit 面 51 → 92。
 **C3-R1 重审**：既有 64 行全部定级 `mapping_class`（16 MAPPING + 48 PLACEMENT），
 6 条旧 REALIZES 降级 SUPPORTS（见 `../curriculum/README.md` 变更记录），
 §8.1 R2 的 `curriculum_link` 事实改读 approved ∧ `CURRICULUM_MAPPING`，

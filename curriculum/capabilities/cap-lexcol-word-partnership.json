@@ -1,0 +1,28 @@
+{
+  "curriculum_node_id": "cap-lexcol-word-partnership",
+  "capability_id": "cap-lexcol-word-partnership",
+  "family": "STYLE",
+  "level": 2,
+  "functional_definition": {
+    "statement": "Producing a frequent multi-word combination of content words -- a verb and its noun, an adjective and its noun, or a noun phrase with its fixed preposition -- as one ready-made partnership, so that a proposition is phrased the way high-frequency English phrases it.",
+    "counts_as_realization": [
+      "the resource's taught production is a combination of two or more content words whose partners are fixed by usage: swapping any partner for a near-synonym stops the phrase being natural or changes what it means (\"make a decision\", not \"do a decision\"; \"heavy rain\", not \"strong rain\");",
+      "the combination plays a propositional role inside the learner's sentence -- it names the act, the thing, or the quality the sentence is about (its verb, object, subject or complement) -- rather than organising the discourse or managing the social episode;",
+      "the learner error the teaching answers is a partner swap: a light verb carried over from the learner's first language, a wrong preposition, or a missing or intruding article inside the frame -- and the taught unit is exactly the correct partnership;",
+      "the taught realization has the speaker producing the whole combination naturally inside a proposition, not commenting on the phrase or reporting that the phrase exists."
+    ],
+    "does_not_count": [
+      "verb + particle combinations whose meaning an adverb or preposition particle changes or refines (\"figure out\", \"give up\", \"run out of\", \"look forward to\") -- those are the verb-particle node's face, and their errors live in particle choice and object placement, not in noun or adjective partnership;",
+      "fixed expressions whose fixed unit is the whole clause shape -- idioms whose meaning cannot be assembled from their parts (\"a piece of cake\") and sentence frames the speaker fills with content (\"I'd like to ...\", \"Would you mind ...\") -- those are the two shapes of the fixed-expression node;",
+      "pragmatic formulas whose taught function is interactional or attitudinal (listener signals, clarification or permission requests, floor bids, hedges, softeners) -- the five pragmatic capability nodes govern those;",
+      "free phrases with no fixed partnership, where any native assembly of the parts is natural (\"a red car\", \"eat lunch slowly\"): no partner is wrong, so there is no partnership to teach."
+    ],
+    "boundary_cases": [
+      "\"take advantage of\" ends in a preposition, but the preposition is fixed to the noun inside the noun phrase and the verb is a light verb: the unit is a verb--noun partnership with its preposition, so it counts here, not under the verb-particle node.",
+      "\"keep in mind\" carries a container metaphor, but its meaning is still assembled transparently from \"keep\" + \"in mind\", the preposition phrase is not detachable from \"mind\", and no adverb particle moves or changes the verb: a fixed partnership, so it counts here.",
+      "\"run out of\" looks like a verb followed by a preposition, but \"out\" is an adverb particle that changes what the verb means and the object follows \"of\": it counts under the verb-particle node, not here.",
+      "\"pay attention to\" and \"take part in\" put the fixed preposition after the noun rather than inside it: the preposition is still the noun's own partner inside the taught unit, so they count here."
+    ],
+    "basis": "Authoring judgement made in this repository (queue-2 R1-to-R3 screening, 2026-10), read against the canonical vocabulary that actually exists: docs/DOMAIN_MODEL.md \u00a78's expression subtypes (COLLOCATION and LEXICAL_CHUNK name the multi-word lexical face) and the five pragmatic capability nodes' own does_not_count entries, which place this vocabulary outside their jurisdiction (cap-eval-hedged-opinion names \"make a decision\" and \"come to a conclusion\", cap-ref-ask-clarification names \"pay attention to\", cap-interact-backchannel names \"take part in\", \"look forward to\" and \"raise awareness\", cap-stance-soften-disagreement names the act-of-concluding vocabulary). The fourteen canonical families name no lexical family, so family STYLE is the declared nearest reading -- how naturally the proposition is phrased; a canonical family semantics that names a lexical family supersedes this declaration (Revisit registered with DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9). No external psychometric or corpus source is claimed."
+  }
+}

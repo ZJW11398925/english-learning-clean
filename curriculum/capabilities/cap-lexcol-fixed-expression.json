@@ -1,0 +1,28 @@
+{
+  "curriculum_node_id": "cap-lexcol-fixed-expression",
+  "capability_id": "cap-lexcol-fixed-expression",
+  "family": "STYLE",
+  "level": 2,
+  "functional_definition": {
+    "statement": "Producing a fixed expression as one whole unit -- either an idiom whose meaning cannot be assembled from its parts, or a sentence frame whose fixed shape the speaker fills with fresh content in order to make a move.",
+    "counts_as_realization": [
+      "idiom shape: the resource's taught production is a multi-word expression whose overall meaning is not derivable from its component words (\"a piece of cake\" is not about cake; \"under the weather\" is not about weather), and the learner uses it as that one whole meaning;",
+      "sentence-frame shape: the taught production is a fixed clause skeleton with a slot (\"I'd like to ...\", \"Would you mind ...ing\", \"The thing is, ...\", \"Let's say ...\") whose frame itself performs the move -- framing a polite request, adding a polite check, announcing the point, setting up a case -- while the slot takes fresh content;",
+      "the learner errors the teaching answers are whole-unit errors: a component swapped or reordered inside an idiom, a determiner or article dropped from the fixed form, or the frame's arm missing, misplaced or filled with the wrong form (an infinitive where the frame takes a gerund, an inverted question inside an embedded clause);",
+      "the taught realization has the speaker producing the expression as one unit inside a conversational move, not reporting or explaining the expression."
+    ],
+    "does_not_count": [
+      "two-word partnerships whose fixedness sits in one noun's or one verb's partner (\"make progress\", \"heavy rain\", \"save time\") -- the word-partnership node's face: nothing about the clause shape is fixed, only the word partners are;",
+      "verb + particle combinations (\"figure out\", \"put off\", \"run out of\") -- the verb-particle node's face: their fixed unit is the predicate, not a clause shape;",
+      "pragmatic formulas whose taught function is defined by their interactional position -- listener signals, clarification or permission requests, floor bids, hedges and softeners (the five pragmatic capability nodes): \"Could I ask you a question?\" and \"Sorry to interrupt\" are permission and floor-bid moves before they are clause shapes, and those nodes govern them;",
+      "transparent clauses that merely contain a frequent word (\"I want to go home\"): nothing about the shape is fixed or taught as a unit, so there is no expression to teach."
+    ],
+    "boundary_cases": [
+      "\"Would you mind closing the window?\" could be read as a literal question about annoyance, but the repository teaches it as the fixed request frame with the gerund slot (SENTENCE_FRAME, slot filled): under this definition it counts under the frame shape; the permission-question formula \"Could I ask you a question?\" stays with the pragmatic nodes.",
+      "\"The thing is, we don't have enough time.\" looks like a discourse marker, but the taught unit is the clause skeleton that announces the point before explaining it (cap-disc-topic-shift's does_not_count names it as framing the point, not moving the topic): the frame shape counts here.",
+      "\"break the ice\" contains a verb and a noun, but its meaning (ease the initial awkwardness) is not assembled from breaking or from ice: idiom shape here, and no word-partnership claim is made for it.",
+      "\"a blessing in disguise\" sits inside a full proposition (\"Losing that job turned out to be a blessing in disguise\"): the idiom is the fixed unit inside the sentence and the rest of the sentence is ordinary content -- this node claims the idiom, not the proposition around it."
+    ],
+    "basis": "Authoring judgement made in this repository (queue-2 R1-to-R3 screening, 2026-10), read against the canonical vocabulary that actually exists: docs/DOMAIN_MODEL.md \u00a78's IDIOM and SENTENCE_FRAME expression subtypes -- the two shapes this node joins under one fixedness of the whole -- and the pragmatic capability nodes' own does_not_count entries, which place idioms and frames outside their jurisdiction (cap-disc-topic-shift names \"break the ice\" as social-episode management and \"the thing is\" and \"long story short\" as organisation of material already on the table, cap-interact-backchannel names \"the ball is in your court\" and \"I'd like to\", cap-eval-hedged-opinion names \"let's say\"). The fourteen canonical families name no lexical family, so family STYLE is the declared nearest reading -- how idiomatically the move is phrased; a canonical family semantics that names a lexical family supersedes this declaration (Revisit registered with DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9). No external psychometric or corpus source is claimed."
+  }
+}

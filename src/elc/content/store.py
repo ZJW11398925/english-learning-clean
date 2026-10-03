@@ -85,13 +85,15 @@ _CURRICULUM_VERSION_KEY = "curriculum_version"
 #: ``cap-eval-hedged-opinion``), C2-a approved the other eight, C2-b
 #: approved nineteen more while authoring their readiness evidence, C3-a
 #: eighteen of its own and C3-b the last eighteen. C3-R1 then re-reviewed
-#: every row against the five capability functional definitions and demoted
-#: six ``REALIZES`` rows to ``SUPPORTS`` (they are coverage placements, not
-#: realizations), so this gate admits the **fifteen** ``REALIZES`` rows that
-#: survived the review — each approval carrying the same
-#: stated limits as before, plus the live risk ``R-C1-credit`` now narrowed to
-#: those fifteen targets. curriculum/README.md carries the full
-#: coverage/limits wording.
+#: every row against the then-five capability functional definitions and
+#: demoted six ``REALIZES`` rows to ``SUPPORTS`` (they are coverage
+#: placements, not realizations), so this gate admitted the **fifteen**
+#: ``REALIZES`` rows that survived that review — each approval carrying the
+#: same stated limits as before, plus the live risk ``R-C1-credit``. The
+#: C3-c, C3-d and queue-2 cuts then authored their own rows against the
+#: definitions (the queue-2 screening adding three lexical capability
+#: nodes), so the gate's live face is the **ninety-two** ``REALIZES`` rows.
+#: curriculum/README.md carries the full coverage/limits wording.
 CAPABILITY_CREDIT_EDITORIAL_STATUS = "CANONICAL_APPROVED"
 
 #: The C3-R1 ``mapping_class`` word that separates a real curriculum mapping

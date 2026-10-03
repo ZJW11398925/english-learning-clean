@@ -77,6 +77,7 @@ from tests.phase5.conftest import (
 DECISION = "res-colloc-make-a-decision"
 DECISION_ALTERNATIVE = "We have to take a decision today."
 HEDGED_OPINION = "cap-eval-hedged-opinion"
+WORD_PARTNERSHIP = "cap-lexcol-word-partnership"
 MODALITY = "TEXT_PRODUCTION"
 
 #: A RESOURCE whose §24.7 row C3-R1 kept as a curriculum mapping (relation
@@ -284,10 +285,16 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
     ``primary_flag`` therefore records the *authoring* claim: it stays true on
     those six rows, and the credit read — which keys on
     ``relation = REALIZES`` — is what the demotion changes. ``strength`` is
-    null everywhere (no vocabulary is invented)."""
+    null everywhere (no vocabulary is invented).
+    **queue-2 (2026-10) then screened the forty-eight R1 rows**: the
+    forty-one lexical resources gained an approved ``REALIZES``
+    ``CURRICULUM_MAPPING`` row each against the three new lexical
+    capabilities (one primary per resource), so today all one hundred
+    forty-one rows are ``CANONICAL_APPROVED``; the seven pragmatic rows
+    that failed the screen stayed unlinked."""
 
     links = _links_document()["links"]
-    assert len(links) == 100
+    assert len(links) == 141
     realizes = 0
     supports = 0
     demoted = 0
@@ -311,7 +318,7 @@ def test_all_seed_links_are_approved_with_their_mapping_fields_untouched() -> No
                 ), row
             else:
                 assert row["primary_flag"] is False, row
-    assert (realizes, supports) == (51, 49)
+    assert (realizes, supports) == (92, 49)
     assert demoted == 6
     print(
         "[p5-r] corpus links -> "
@@ -402,7 +409,7 @@ def test_the_entity_lifecycle_is_the_authors_and_was_not_touched(
             assert resource.value.lifecycle_status == "CANONICAL_APPROVED"
         eligible = supply.supply_entity_ids()
         assert isinstance(eligible, Ok), eligible
-        assert len(eligible.value) == 105
+        assert len(eligible.value) == 108
     finally:
         store.close()
 
@@ -430,14 +437,25 @@ def test_the_link_row_stays_readable_and_the_credit_face_reads_the_approved_node
     try:
         links = store.curriculum_links_of(DECISION)
         assert isinstance(links, Ok), links
-        assert len(links.value) == 1
-        assert links.value[0].editorial_status == "CANONICAL_APPROVED"
-        assert links.value[0].node_id == HEDGED_OPINION
-        assert str(links.value[0].relation) == "SUPPORTS"
-        assert links.value[0].rationale
+        # queue-2 (2026-10) added the resource's REALIZES row to the
+        # word-partnership node; the C3-R1 demoted SUPPORTS placement row
+        # stays exactly as it was (both rows readable and approved).
+        assert len(links.value) == 2
+        by_node = {str(link.node_id): link for link in links.value}
+        assert set(by_node) == {HEDGED_OPINION, WORD_PARTNERSHIP}
+        placement = by_node[HEDGED_OPINION]
+        assert placement.editorial_status == "CANONICAL_APPROVED"
+        assert str(placement.relation) == "SUPPORTS"
+        realization = by_node[WORD_PARTNERSHIP]
+        assert realization.editorial_status == "CANONICAL_APPROVED"
+        assert str(realization.relation) == "REALIZES"
+        assert realization.rationale
         teaching = store.get_teaching_content(DECISION)
         assert isinstance(teaching, Ok), teaching
-        assert teaching.value.capability_linkage is None
+        # queue-2's screening gave the resource a REALIZES row, so the credit
+        # face reads the screening's node; the demoted placement row still
+        # names the hedged-opinion node and credits nothing.
+        assert teaching.value.capability_linkage == WORD_PARTNERSHIP
         # Every unaffected field of the payload is untouched by the gate.
         assert teaching.value.canonical_forms
         assert teaching.value.alternative_realizations
@@ -449,7 +467,8 @@ def test_the_link_row_stays_readable_and_the_credit_face_reads_the_approved_node
     try:
         view = provider.resolve("RESOURCE", DECISION)
         assert isinstance(view, Ok), view
-        assert view.value.capability_linkage is None
+        # queue-2's screening: the credit face reads the screening's node.
+        assert view.value.capability_linkage == WORD_PARTNERSHIP
         assert view.value.target_status == "VALID"
     finally:
         provider.close()
@@ -463,12 +482,17 @@ def test_only_the_approved_realizes_link_credits_a_capability(
     one approved row credited its node; C2-a: all nine approved rows credited;
     C2-b: twenty-eight rows approved, fifteen crediting; C3-b: sixty-four rows
     approved and twenty-one crediting; C3-R1: sixty-four rows approved and
-    exactly the fifteen ``REALIZES`` rows crediting; **新真值 C3-c**:
+    exactly the fifteen ``REALIZES`` rows crediting; C3-c:
     eighty-two rows are approved and the thirty-three ``REALIZES`` rows
     credit — C3-c's eighteen adjudicated rows joined the fifteen, and the
     forty-nine approved ``SUPPORTS`` rows still credit nothing (the read
-    filters ``relation = REALIZES``). The count is
-    what still distinguishes this from "every entity credits": the five
+    filters ``relation = REALIZES``); C3-d: one hundred rows approved and
+    fifty-one crediting; **新真值 queue-2 (2026-10)**: one hundred
+    forty-one rows are approved and the ninety-two ``REALIZES`` rows
+    credit — the forty-one screened lexical resources joined the
+    fifty-one, and the forty-nine approved ``SUPPORTS`` rows still credit
+    nothing). The count is
+    what still distinguishes this from "every entity credits": the eight
     CAPABILITY entities carry no link row at all and read ``None``. The
     unapproved direction is pinned against a demoted variant in
     test_the_gate_is_a_gate_not_a_deletion below."""
@@ -502,8 +526,10 @@ def test_only_the_approved_realizes_link_credits_a_capability(
                 assert relations == {"SUPPORTS"}, entity_id
                 assert teaching.value.capability_linkage is None, entity_id
         assert linked == 100
-        assert credited == 51
-        assert supports_only == 49
+        assert credited == 92
+        # The SUPPORTS-only resources: queue-2's seven screening survivors
+        # plus the one SUPPORTS mapping row (res-hedge-not-really).
+        assert supports_only == 8
     finally:
         store.close()
     print(
@@ -562,15 +588,17 @@ def test_make_a_decision_no_longer_credits_its_reviewed_placement(
     teaching_controller,
     production_provider,
 ) -> None:
-    """The blocker pair, end to end, at C3-R1's truth: the attempt still
+    """The blocker pair, end to end, at queue-2's truth: the attempt still
     evaluates ALTERNATIVE_SUCCESS (the evaluator is untouched), and the §5
-    fold credits nothing — one honest NEUTRAL/ABSTAIN claim on the resource
-    and **zero** capability movement. The C1 approval admitted this row when
-    approval was the whole gate; C3-R1's capability re-review found the
-    collocation a coverage placement, so the credit the approval once
-    admitted is withdrawn — the same shape as P5-R's 旧真值, reached this time
-    by review rather than by an unapproved row. The credit path itself is
-    still exercised end to end by
+    fold credits the resource's own claim honestly (NEUTRAL/ABSTAIN) — the
+    reviewed SUPPORTS placement (the C3-R1 demotion) still credits nothing,
+    but the queue-2 screening gave this resource an approved REALIZES row on
+    the word-partnership node, so the same attempt now also mints that
+    capability's POSITIVE/SUCCESS claim (旧真值 C3-R1: the fold credited
+    nothing, because the row was a placement; the promotion is a screening
+    verdict on the resource, not a reversal of the placement review — the
+    SUPPORTS row and its history stand untouched). The credit path itself is
+    also exercised end to end by
     ``test_a_surviving_mapping_credits_its_capability_end_to_end`` below."""
 
     del conversation
@@ -602,8 +630,11 @@ def test_make_a_decision_no_longer_credits_its_reviewed_placement(
         for c in claims
     ]
     print(f"[p5-r] alternative-success claims -> {rendered}")
-    assert len(claims) == 1
-    assert rendered == [(DECISION, "FOCUS_TARGET", "NEUTRAL", "ABSTAIN")]
+    assert len(claims) == 2
+    assert rendered == [
+        (WORD_PARTNERSHIP, "CAPABILITY_LINKAGE", "POSITIVE", "SUCCESS"),
+        (DECISION, "FOCUS_TARGET", "NEUTRAL", "ABSTAIN"),
+    ]
 
     # No capability claim, so no capability durable state: the rebuild answers
     # "nothing to project" for the capability and still moves for the resource.
@@ -702,15 +733,18 @@ def test_a_surviving_mapping_credits_its_capability_end_to_end(
 def test_the_payload_is_unchanged_except_the_now_approved_linkage(
     built_content_db,
 ) -> None:
-    """One-field proof for the receipt, at C3-R1's truth: the artifact's
+    """One-field proof for the receipt, at queue-2's truth: the artifact's
     teaching payload is byte-for-byte what it was except ``capability_linkage``
     — the §24.5 rows, the ladder and the slots are unchanged, so neither C1's
     approval (a link-row status edit + the readiness evidence authoring) nor
     C3-R1's demotion (a relation-word edit + the mapping-class column)
     smuggled a content edit in behind the gate (旧真值: the linkage read
     ``None``; C1..C3-b: it read the node the approved link pointed at;
-    新真值 C3-R1: ``None`` again, because the row is no longer a
-    realization)."""
+    C3-R1: ``None`` again, because the row was no longer a
+    realization; **新真值 queue-2 (2026-10)**: it reads
+    ``cap-lexcol-word-partnership`` — the screening gave the resource an
+    approved REALIZES ``CURRICULUM_MAPPING`` row on that node, next to the
+    untouched SUPPORTS placement row)."""
 
     store = ContentStore(built_content_db)
     try:
@@ -731,13 +765,15 @@ def test_the_payload_is_unchanged_except_the_now_approved_linkage(
         assert payload.alternative_realizations == (
             "We have to take a decision today.",
         )
-        assert payload.capability_linkage is None
+        assert payload.capability_linkage == WORD_PARTNERSHIP
         links = supply.curriculum_links_of(ResourceId(DECISION))
         assert isinstance(links, Ok), links
-        assert [str(link.node_id) for link in links.value] == [HEDGED_OPINION]
+        by_node = {str(link.node_id): link for link in links.value}
+        assert set(by_node) == {HEDGED_OPINION, WORD_PARTNERSHIP}
         assert [
-            str(link.editorial_status) for link in links.value
-        ] == ["CANONICAL_APPROVED"]
-        assert [str(link.relation) for link in links.value] == ["SUPPORTS"]
+            str(by_node[node].editorial_status) for node in by_node
+        ] == ["CANONICAL_APPROVED", "CANONICAL_APPROVED"]
+        assert str(by_node[HEDGED_OPINION].relation) == "SUPPORTS"
+        assert str(by_node[WORD_PARTNERSHIP].relation) == "REALIZES"
     finally:
         store.close()

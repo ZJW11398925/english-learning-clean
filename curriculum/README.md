@@ -46,7 +46,7 @@ capability「是什么」的判定性一句话、什么行为算 realize（可�
 空列表 / 边界例 <2 ⇒ `BuildError`），由 `elc.content.build` 装载到
 `CapabilityDoc.functional_definition`，**不写进 content.db**（它是 authoring 侧
 的判定标准，其用途是 C3-R1 对 §24.7 行的重审与 build 的形状规则「`CURRICULUM_MAPPING`
-行命名的 capability 必须有定义」；声明读法，Revisit 已随裁决登记）。现役 5 个
+行命名的 capability 必须有定义」；声明读法，Revisit 已随裁决登记）。现役 8 个
 节点全部携带一份。
 
 ### C2 — CurriculumLink（§24.7 / DATA_MODEL §13）
@@ -63,7 +63,7 @@ editorial_status / mapping_class / rationale
   REQUIRES）；
 - **`mapping_class`（C3-R1 声明读法）∈ 两词表**：`CURRICULUM_MAPPING`（真语义
   映射——资源的教学功能满足该 node 功能定义 `counts_as_realization` 的至少一条
-  且不落入其 `does_not_count`）或 `COVERAGE_PLACEMENT`（覆盖记账——现役 5 个
+  且不落入其 `does_not_count`）或 `COVERAGE_PLACEMENT`（覆盖记账——现役 8 个
   节点对 100 个资源的语料所迫的就近选位，**不含语义映射主张**）。build 强制两条
   形状规则：词表成员 + **`REALIZES ⇒ CURRICULUM_MAPPING`**（实现主张即映射主张）；
   另一条规则是 `CURRICULUM_MAPPING` 行命名的 capability 必须携带
@@ -167,6 +167,7 @@ readiness 阶梯重新有区分度。四行内容门仍 GO（≥1 个 R4）。pl
 | **新增 18 行（全 18 条 REALIZES + CURRICULUM_MAPPING，`editorial_status = CANONICAL_APPROVED`）** | C3-c（Phase 11）的 18 个新实体各一行 | **新模板首跑**：C3-c 在为这 18 个新实体编写 readiness 证据时，按其 node 的 functional_definition **逐条引用 counts_as / does_not_count 具体条目**判定映射（discourse×4 → `cap-disc-topic-shift`，其中 `speaking-of-which` 即该 node boundary case 3 的本仓脸面；hedge×3 → `cap-eval-hedged-opinion`；backchannel×4 → `cap-interact-backchannel`——该 node 在 C3-R1 时尚无本形资源、其
 placement rationale 自记「等这类资源出现」；clarification×4 → `cap-ref-ask-clarification`，其中 `what-do-you-mean` 即该 node counts_as 1 点名的本仓脸面；soften×3 → `cap-stance-soften-disagreement`）。全部 `primary_flag = true`、`strength = null`，rationale 逐条含判定所依条目 + credit 面自述 + 活风险 `R-C1-credit`（登记面 15 → 33）+ **本行无 fixture 声明、由 C3-c 自己作出** + Revisit。**credit 面 15 → 33**（逐条披露）；48 条既有 PLACEMENT 与既有 64 行的其余字段零改动。 |
 | **新增 18 行（全 18 条 REALIZES + CURRICULUM_MAPPING，`editorial_status = CANONICAL_APPROVED`）** | C3-d（Phase 11）的 18 个新实体各一行 | **新模板末次批量**：C3-d 在为这 18 个新实体编写 readiness 证据时，按其 node 的 functional_definition **逐条引用 counts_as / does_not_count 具体条目**判定映射（discourse×3 → `cap-disc-topic-shift`：`before-i-forget` / `that-brings-me-to` / `where-was-i`；hedge×4 → `cap-eval-hedged-opinion`：`from-what-i-can-tell` / `more-or-less` / `in-a-way` / `if-you-ask-me`；backchannel×4 → `cap-interact-backchannel`：`right` / `no-way` / `youre-kidding` / `go-on`——四个惊讶/继续信号的惊讶接收与邀请续讲按 counts_as 2 的 receipt/invite 臂判定，`no-way` 的拒绝读法与 `go-on` 的催促动作读法以该 node 判据不适用 + 各自文档的 FALSE_POSITIVE_BOUNDARY 例收口；clarification×4 → `cap-ref-ask-clarification`：`what-was-that` / `come-again` / `run-that-by-me-again` / `could-you-clarify`；soften×3 → `cap-stance-soften-disagreement`：`i-hear-you-but` / `thats-debatable` / `im-not-convinced`——后两者的对象判定按 does_not_count 2 的「对象是负向移动的人际力度而非说话人自身断言承诺」逐条写明）。全部 `primary_flag = true`、`strength = null`，rationale 逐条含判定所依条目 + credit 面自述 + 活风险 `R-C1-credit`（登记面 33 → 51）+ **本行无 fixture 声明、由 C3-d 自己作出** + Revisit。**credit 面 33 → 51**（逐条披露）；48 条既有 PLACEMENT 与既有 82 行的其余字段零改动。另：两份 capability 文件（`cap-interact-backchannel` / `cap-ref-ask-clarification`）按 C3-c 处置 LOW-1 的登记把 boundary case 里的「no resource of the current corpus is of this shape」句改写为时点限定（**只改叙事句，判据词零改动**，判据面 digest 与父提交逐字一致）。 |
+| **新增 3 个 capability 节点（`cap-lexcol-word-partnership` / `cap-lexcol-verb-particle` / `cap-lexcol-fixed-expression`，均带五键块功能定义；family=STYLE 为十四族内的声明读法）+ 新增 41 行（全 41 条 REALIZES + CURRICULUM_MAPPING，`editorial_status = CANONICAL_APPROVED`）** | 队列② R1→R3 筛选（2026-10，DEC-OPI-c91a2957-…9）的 41 个词法 R1 实体各一行（colloc×17 → `cap-lexcol-word-partnership`；phrasal×10 → `cap-lexcol-verb-particle`；idiom×7 + frame×7 → `cap-lexcol-fixed-expression` 的习语/句式骨架两形状） | **筛选非配额**：41 个词法实体按对应新 cap 的 counts_as 逐条判定通过（rationale 逐条引条目，同 C3-c/C3-d 体裁，行首标签「Screened and adjudicated by queue-2 R1-to-R3」）；7 个语用系 R1（pragmatic3/discourse2/hedge1/softener1）按现有五 cap 重筛**全部留 R1**——每个被现有功能定义 does_not_count 明文点名（`in fact`/`long story short` → disc D2；`I mean` → ref-ask D2 ∧ interact D4；`Could I ask you a question?`/`Could you send me the file?` → ref-ask D1；`Sorry to interrupt` → interact D1；`if anything` → stance D3），判定表入 `tests/phase5/test_queue2_r1_promotion.py`。被升 41 行各在其既有 SUPPORTS placement 行**之外**追加（旧行零改动、全部 append 尾部）。全部 `primary_flag = true`、`strength = null`；**credit 面 51 → 92**（逐条披露）；语料现读 8 节点 / 141 行 / 93×R4 + 7×R1 + 8×None。 |
 
 ### C3 — Prerequisite 边（DOMAIN_MODEL §7）
 

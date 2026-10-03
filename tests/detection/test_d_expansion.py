@@ -104,11 +104,12 @@ _EXPANSION_ENTITIES = (
 
 #: The parent commit's own library-default artifact digest: the sha256 of
 #: the ``build_content_db()`` (no registry) product built from the
-#: archived parent tree. The default build's bytes did not move with this
+#: archived parent tree. The default build's bytes did not move with that
 #: cut — a corpus or build change does move them, and this pin must be
-#: re-derived then (a truth-migration pin, not a freeze).
+#: re-derived then (a truth-migration pin, not a freeze; re-derived for the
+#: queue-2 screening: 6edb57cf… was the C3-d-truth artifact).
 _PARENT_DEFAULT_SHA256 = (
-    "6edb57cf517933418c2d34436203a40f0dab61f0706dd78301a05f51109a7343"
+    "7a2816ab4fc8008599cfe6fb639e7c43739974f690e0e5707296a7faba8282c0"
 )
 
 
@@ -296,13 +297,13 @@ def _fourth_row(db: Path) -> tuple[int, int, str]:
 def test_the_pilot_artifact_opens_the_fourth_row_on_thirty_six(
     pilot_db: Path,
 ) -> None:
-    assert _fourth_row(pilot_db) == (36, 16, "GO")
+    assert _fourth_row(pilot_db) == (36, 57, "GO")
 
 
 def test_the_default_artifact_holds_the_fourth_row_on_zero_ev(
     default_db: Path,
 ) -> None:
-    assert _fourth_row(default_db) == (0, 52, "HOLD")
+    assert _fourth_row(default_db) == (0, 93, "HOLD")
 
 
 def test_the_expansion_moved_only_the_rosters_own_targets(

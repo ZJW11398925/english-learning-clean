@@ -71,6 +71,9 @@ CAPABILITY_IDS = (
     "cap-disc-topic-shift",
     "cap-eval-hedged-opinion",
     "cap-interact-backchannel",
+    "cap-lexcol-fixed-expression",
+    "cap-lexcol-verb-particle",
+    "cap-lexcol-word-partnership",
     "cap-ref-ask-clarification",
     "cap-stance-soften-disagreement",
 )
@@ -143,6 +146,64 @@ C3D_AUTHORED = (
 #: eighteen + C3-d's eighteen = 52).
 MAPPING_TARGETS_CORPUS = tuple(sorted(set(MAPPING_TARGETS) | set(C3D_AUTHORED)))
 
+#: The forty-one rows the queue-2 screening (2026-10) promoted from R1: the
+#: lexical resources (17 collocations, 10 phrasal verbs, 7 sentence frames,
+#: 7 idioms) whose taught production met the three new lexical capabilities'
+#: counts_as entries. Every row is a REALIZES + CURRICULUM_MAPPING row too.
+#: Plain id order. The seven pragmatic R1 rows that failed the screen
+#: (in-fact, long-story-short, i-mean, could-i-ask, could-you,
+#: sorry-to-interrupt, if-anything) are not here — each is named by an
+#: existing functional definition's does_not_count entry.
+QUEUE2_PROMOTED = (
+    "res-colloc-come-to-a-conclusion",
+    "res-colloc-draw-attention-to",
+    "res-colloc-have-an-effect-on",
+    "res-colloc-heavy-rain",
+    "res-colloc-keep-in-mind",
+    "res-colloc-make-a-decision",
+    "res-colloc-make-an-effort",
+    "res-colloc-make-progress",
+    "res-colloc-make-sense",
+    "res-colloc-meet-a-deadline",
+    "res-colloc-pay-attention-to",
+    "res-colloc-play-a-role",
+    "res-colloc-raise-awareness",
+    "res-colloc-save-time",
+    "res-colloc-take-a-look",
+    "res-colloc-take-advantage-of",
+    "res-colloc-take-part-in",
+    "res-frame-id-like-to",
+    "res-frame-if-you-dont-mind",
+    "res-frame-just-wondering",
+    "res-frame-lets-say",
+    "res-frame-the-thing-is",
+    "res-frame-what-im-saying-is",
+    "res-frame-would-you-mind",
+    "res-idiom-a-blessing-in-disguise",
+    "res-idiom-break-the-ice",
+    "res-idiom-hit-the-nail-on-the-head",
+    "res-idiom-on-the-same-page",
+    "res-idiom-piece-of-cake",
+    "res-idiom-the-ball-is-in-your-court",
+    "res-idiom-under-the-weather",
+    "res-phrasal-bring-up",
+    "res-phrasal-carry-on",
+    "res-phrasal-come-up-with",
+    "res-phrasal-figure-out",
+    "res-phrasal-give-up",
+    "res-phrasal-look-forward-to",
+    "res-phrasal-put-off",
+    "res-phrasal-run-out-of",
+    "res-phrasal-turn-out",
+    "res-phrasal-work-out",
+)
+
+#: The corpus-wide mapping set after queue-2 (the C3-d set + the screening's
+#: forty-one = 93).
+MAPPING_TARGETS_CORPUS = tuple(
+    sorted(set(MAPPING_TARGETS_CORPUS) | set(QUEUE2_PROMOTED))
+)
+
 #: The fifteen REALIZES rows that survived the re-review (the credit face).
 REALIZES_TARGETS = tuple(
     target for target in MAPPING_TARGETS if target != "res-hedge-not-really"
@@ -213,6 +274,19 @@ def _links_document() -> dict:
 def _link_rows() -> dict[str, dict]:
     return {
         str(row["resource_id"]): row for row in _links_document()["links"]
+    }
+
+
+def _original_rows() -> dict[str, dict]:
+    """The pre-queue-2 rows only: the forty-one screening rows carry their
+    own rationale label, so the tests that pin the earlier rows' frozen
+    shapes read this filtered view (a promoted target keeps its original
+    SUPPORTS placement row untouched next to its new REALIZES row)."""
+
+    return {
+        str(row["resource_id"]): row
+        for row in _links_document()["links"]
+        if "queue-2 R1-to-R3" not in str(row["rationale"])
     }
 
 
@@ -311,8 +385,13 @@ def test_each_capability_carries_a_definition_the_build_reads(
 @pytest.mark.parametrize("capability_id", CAPABILITY_IDS)
 def test_the_definition_basis_is_authoring_judgement(capability_id: str) -> None:
     """The basis states what it is: this repository's authoring judgement over
-    the canonical vocabulary that exists, plus the capability's own fixture
-    face — and states that no external source is claimed."""
+    the canonical vocabulary that exists, plus — for the five pragmatic
+    capabilities — the capability's own fixture face — and states that no
+    external source is claimed. The three queue-2 lexical capabilities have
+    no fixture face to cite (a capability realization carries no detection
+    fixtures, and tests/phase3/target_fixtures.py is frozen at its own cut),
+    so their basis names the vocabulary their statement is read against
+    instead."""
 
     document = json.loads(
         (CURRICULUM_DIR / "capabilities" / f"{capability_id}.json").read_text(
@@ -321,7 +400,14 @@ def test_the_definition_basis_is_authoring_judgement(capability_id: str) -> None
     )
     basis = str(document["functional_definition"]["basis"])
     assert "DOMAIN_MODEL" in basis
-    assert "tests/phase3/target_fixtures.py" in basis
+    if capability_id in (
+        "cap-lexcol-fixed-expression",
+        "cap-lexcol-verb-particle",
+        "cap-lexcol-word-partnership",
+    ):
+        assert "does_not_count" in basis
+    else:
+        assert "tests/phase3/target_fixtures.py" in basis
     assert "No external psychometric" in basis
     assert "Revisit" in basis
 
@@ -355,7 +441,9 @@ def test_the_definitions_are_operational() -> None:
 def test_the_corpus_review_splits_34_mappings_and_48_placements() -> None:
     """m + p = 100, and the split is written out rather than counted twice
     (C3-R1's 16 + 48; C3-c's and C3-d's thirty-six authored rows are all
-    mappings)."""
+    mappings; queue-2's forty-one screened rows are all mappings too and
+    their forty-one placement origins fell to 7, still per target one row —
+    the promoted targets read by their new REALIZES row)."""
 
     rows = _link_rows()
     assert len(rows) == 100
@@ -370,8 +458,8 @@ def test_the_corpus_review_splits_34_mappings_and_48_placements() -> None:
         if row["mapping_class"] == "COVERAGE_PLACEMENT"
     )
     assert mapping == sorted(MAPPING_TARGETS_CORPUS)
-    assert len(mapping) == 52
-    assert len(placement) == 48
+    assert len(mapping) == 93
+    assert len(placement) == 7
     assert len(mapping) + len(placement) == 100
 
 
@@ -387,15 +475,17 @@ def test_realizes_implies_curriculum_mapping() -> None:
     realizes = sorted(
         target for target, row in rows.items() if row["relation"] == "REALIZES"
     )
-    assert realizes == sorted(set(REALIZES_TARGETS) | set(C3D_AUTHORED))
-    assert len(realizes) == 51
+    assert realizes == sorted(
+        set(REALIZES_TARGETS) | set(C3D_AUTHORED) | set(QUEUE2_PROMOTED)
+    )
+    assert len(realizes) == 92
 
 
 def test_the_six_demotions_are_disclosed_row_by_row() -> None:
     """Each demoted row keeps its node, its approval, its frozen
     ``primary_flag`` and its own statement of the change."""
 
-    rows = _link_rows()
+    rows = _original_rows()
     for target in DEMOTED_TARGETS:
         row = rows[target]
         assert row["relation"] == "SUPPORTS", target
@@ -412,7 +502,7 @@ def test_the_migrated_rows_are_unchanged_against_the_fixture_declaration() -> No
     the node the row names, and the row's five mapping fields are exactly what
     the migration fixed (no silent re-pointing, no strength invention)."""
 
-    rows = _link_rows()
+    rows = _original_rows()
     for target in FIXTURE_LINKED_TARGETS:
         declared = TEACHING_CONTENT[target]["capability_linkage"]
         row = rows[target]
@@ -423,7 +513,7 @@ def test_the_migrated_rows_are_unchanged_against_the_fixture_declaration() -> No
 
 
 def test_every_rationale_is_written_in_the_review_genre() -> None:
-    """All 100 rationales: they name the node they point at and that node's
+    """All 141 rationales: they name the node they point at and that node's
     definition file, quote the resource's **own** first taught rung (the
     row-identity check that replaced "names its own row" — it is checkable
     against the entity source, so a copy-pasted rationale fails), state the
@@ -431,7 +521,8 @@ def test_every_rationale_is_written_in_the_review_genre() -> None:
     credit consequence in their own words, state their provenance, and
     register their Revisit. The eighteen C3-c rows and the eighteen C3-d rows
     carry their own cut's
-    authoring label instead of the C3-R1 re-review label — the genre is the
+    authoring label instead of the C3-R1 re-review label, and the forty-one
+    queue-2 screening rows carry the screening label — the genre is the
     same, the provenance line names the cut that wrote the row."""
 
     rows = _link_rows()
@@ -446,6 +537,8 @@ def test_every_rationale_is_written_in_the_review_genre() -> None:
             assert "C3-c (Phase 11)" in rationale, target
         elif target in C3D_AUTHORED:
             assert "C3-d (Phase 11)" in rationale, target
+        elif target in QUEUE2_PROMOTED:
+            assert "queue-2 R1-to-R3" in rationale, target
         else:
             assert (
                 "C3-R1 (Phase 11) capability-semantics re-review"
@@ -513,30 +606,34 @@ def test_the_artifact_carries_the_mapping_class_column(built_content_db: Path) -
     assert version == "6"
 
 
-def test_the_c1_target_falls_to_r1_although_its_evidence_is_intact(
+def test_the_c1_target_now_reads_r4_through_its_queue2_screening(
     built_content_db: Path,
 ) -> None:
     """The cut's behaviour change, pinned where it hurts: the C1 target's
-    collocation row is a placement, so §8.1's ``curriculum_link`` is False and
-    the ladder stops at R1 — while all eighteen other fact keys stay True and
-    the row itself stays readable and approved. The fall-back is a read
-    change, never a deletion."""
+    collocation row was a placement after C3-R1 (the ladder stopped at R1
+    while all eighteen other fact keys stayed True), and queue-2 (2026-10)
+    screened it into an approved REALIZES ``CURRICULUM_MAPPING`` row against
+    cap-lexcol-word-partnership — so §8.1's ``curriculum_link`` now reads
+    True and the ladder reaches R4. The read change came from a new row, not
+    from editing the old one: the frozen SUPPORTS placement row stands
+    untouched next to it, and the row itself stays readable and approved."""
 
     facts = _facts(built_content_db, "res-colloc-make-a-decision")
     for key in READINESS_FACT_KEYS:
-        if key == "curriculum_link":
-            continue
         assert facts.present(key) is True, key
-    assert facts.curriculum_link is False
+    assert facts.curriculum_link is True
     store = ContentStore(built_content_db)
     try:
         links = store.curriculum_links_of("res-colloc-make-a-decision")
         assert isinstance(links, Ok), links
-        assert len(links.value) == 1
-        assert links.value[0].editorial_status == "CANONICAL_APPROVED"
+        assert len(links.value) == 2
+        assert all(
+            link.editorial_status == "CANONICAL_APPROVED"
+            for link in links.value
+        )
         mapping = store.has_approved_curriculum_mapping("res-colloc-make-a-decision")
         assert isinstance(mapping, Ok), mapping
-        assert mapping.value is False
+        assert mapping.value is True
         unknown = store.has_approved_curriculum_mapping("res-ghost")
         assert not isinstance(unknown, Ok)
         assert unknown.error.code.value == "NOT_FOUND"
@@ -588,7 +685,7 @@ def test_flipping_one_mapping_to_a_placement_flips_that_target(tmp_path: Path) -
     )
     assert _facts(artifact, "res-hedge-not-really").curriculum_link is False
     assert _levels(artifact)["res-hedge-not-really"] == "R1_LEXICALLY_RESOLVED"
-    assert len(_mapping_resource_ids(artifact)) == 51
+    assert len(_mapping_resource_ids(artifact)) == 92
 
 
 # ---------------------------------------------------------------------------
@@ -597,20 +694,20 @@ def test_flipping_one_mapping_to_a_placement_flips_that_target(tmp_path: Path) -
 
 
 def test_the_truth_table_is_m_r4_and_the_rest_at_r1(built_content_db: Path) -> None:
-    """M × R4 + (100 − M) × R1 + 5 × None, with M = 52 stated as the mapping
-    count (C3-R1's 16 + C3-c's 18 + C3-d's 18) — the consistency the decision
-    asked to be pinned."""
+    """M × R4 + (100 − M) × R1 + 8 × None, with M = 93 stated as the mapping
+    count (C3-R1's 16 + C3-c's 18 + C3-d's 18 + queue-2's 41) — the
+    consistency the decision asked to be pinned."""
 
     levels = _levels(built_content_db)
-    assert len(levels) == 105
+    assert len(levels) == 108
     r4 = sorted(t for t, level in levels.items() if level == "R4_DETECTION_READY")
     r1 = sorted(
         t for t, level in levels.items() if level == "R1_LEXICALLY_RESOLVED"
     )
     none = sorted(t for t, level in levels.items() if level is None)
     assert r4 == sorted(MAPPING_TARGETS_CORPUS)
-    assert len(r4) == 52 == len(_mapping_resource_ids(built_content_db))
-    assert len(r1) == 48
+    assert len(r4) == 93 == len(_mapping_resource_ids(built_content_db))
+    assert len(r1) == 7
     assert len(r1) + len(r4) == 100
     assert none == sorted(CAP_ENTITIES)
     # Every resource is in exactly one of the two bands: nothing new appears.
@@ -623,12 +720,15 @@ def test_a_placement_target_stops_at_r1_on_the_link_key_alone(
     built_content_db: Path,
 ) -> None:
     """The rung itself: for a placement target the *first* missing key is the
-    link, and the R3/R4 keys are reported as unreached rather than absent."""
+    link, and the R3/R4 keys are reported as unreached rather than absent.
+    The target is one of queue-2's seven survivors — a floor bid named by
+    cap-interact-backchannel's does_not_count; the twelve other placements
+    of its cut were screened into approved mappings (2026-10)."""
 
     store = ContentStore(built_content_db)
     try:
         supply = CurriculumContentStore(store)
-        assessment = supply.readiness("res-colloc-heavy-rain")
+        assessment = supply.readiness("res-pragmatic-sorry-to-interrupt")
         assert isinstance(assessment, Ok), assessment
     finally:
         store.close()

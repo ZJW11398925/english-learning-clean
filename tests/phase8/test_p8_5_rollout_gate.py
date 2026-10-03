@@ -196,51 +196,55 @@ def test_off_refuses_at_every_stage() -> None:
 def test_the_real_corpus_answers_go_on_all_four_rows_and_the_rollout_stays_held(
     p8world: World,
 ) -> None:
-    """The measured answer at C3-d's truth, as a two-layer statement (旧真值:
+    """The measured answer at queue-2's truth, as a two-layer statement
+    (旧真值:
     every row 0, four HOLD rows, 14 targets all without a level; C1: the one
     authored R4 target made every row GO; C2-a: nine usable targets; C2-b:
     twenty-eight; C3-a: forty-six; C3-b: sixty-four; C3-R1: the sixteen
     RESOURCE targets whose §24.7 row is a curriculum mapping reached R4 (the
-    re-review's deliberate fall-back); C3-c: thirty-four; 新真值 C3-d: C3-d's
+    re-review's deliberate fall-back); C3-c: thirty-four; C3-d: C3-d's
     eighteen resources authored against the functional definitions are
     mappings by their own rows, so
-    every row reads fifty-two usable targets — BF-02 §10's "at least one
+    every row reads fifty-two usable targets; 新真值 queue-2 (2026-10): the
+    forty-one screened lexical resources joined them, so every row reads
+    ninety-three usable targets — BF-02 §10's "at least one
     target" is met on all four floors — **and the rollout is still held**):
     layer one is the content gate's GO; layer two is the stage leg, which no
     shipped caller declares — ``stage_allows_automatic`` answers False for the
     undeclared stage and for the fail-closed default, and the two-leg
     composition refuses with any frequency word — plus the Calibration100
     volume gate (docs/IMPLEMENTATION_PLAN.md §13's 100/30/2), whose floors
-    now all read met (100/32/20) but whose gate is not the rollout's only
+    now all read met (100/60/33) but whose gate is not the rollout's only
     door. Content capable ≠ rollout open."""
 
     report = corpus_rollout_gate(p8world.curriculum)
     assert isinstance(report, Ok), report
     gate = report.value
-    # Layer one: the content gate's four rows all read GO on fifty-two usable
-    # targets — 旧真值 was ("PROBE", 0) … ("automatic CURRENT_USER_ERROR", 0),
-    # C3-b was 64 per row, C3-R1 was 16 per row, C3-c was 34.
+    # Layer one: the content gate's four rows all read GO on ninety-three
+    # usable targets — 旧真值 was ("PROBE", 0) …
+    # ("automatic CURRENT_USER_ERROR", 0),
+    # C3-b was 64 per row, C3-R1 was 16 per row, C3-c was 34, C3-d was 52.
     assert [(row.row_word, row.usable_targets) for row in gate.rows] == [
-        ("PROBE", 52),
-        ("user-initiated teaching", 52),
-        ("automatic general/review", 52),
-        ("automatic CURRENT_USER_ERROR", 52),
+        ("PROBE", 93),
+        ("user-initiated teaching", 93),
+        ("automatic general/review", 93),
+        ("automatic CURRENT_USER_ERROR", 93),
     ]
     assert all(row.verdict is RolloutVerdict.GO for row in gate.rows)
     assert gate.verdict is RolloutVerdict.GO
     assert gate.automatic_verdict is RolloutVerdict.GO
-    assert gate.targets_considered == 105
-    assert gate.targets_without_level == 5
+    assert gate.targets_considered == 108
+    assert gate.targets_without_level == 8
     assert gate.unknown_levels == ()
     assert gate.summary() == (
-        "PROBE: required R2_PLANNER_READY, usable targets 52 → GO",
-        "user-initiated teaching: required R3_TEACHING_READY, usable targets 52"
+        "PROBE: required R2_PLANNER_READY, usable targets 93 → GO",
+        "user-initiated teaching: required R3_TEACHING_READY, usable targets 93"
         " → GO",
-        "automatic general/review: required R3_TEACHING_READY, usable targets 52"
+        "automatic general/review: required R3_TEACHING_READY, usable targets 93"
         " → GO",
         "automatic CURRENT_USER_ERROR: required R4_DETECTION_READY, usable"
-        " targets 52 → GO",
-        "targets: 105 considered, 5 without a level",
+        " targets 93 → GO",
+        "targets: 108 considered, 8 without a level",
         "verdict: GO (automatic rows: GO)",
     )
     # No row blocks, so the report's blocked tail is empty (旧真值: four

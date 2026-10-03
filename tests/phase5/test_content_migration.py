@@ -25,6 +25,7 @@ from elc.content.store import ContentStore
 from elc.content.types import ContentType, ExampleLinkRole
 from elc.platform.types import Ok, ResourceId
 from tests.phase3.target_fixtures import TEACHING_CONTENT, VALIDATED_TARGET_FIXTURES
+from tests.phase5.test_c3r1_capability_semantics import QUEUE2_PROMOTED
 
 FIXTURE_BY_TARGET = {view.target_id: view for view in VALIDATED_TARGET_FIXTURES}
 TARGET_IDS = tuple(FIXTURE_BY_TARGET)
@@ -227,8 +228,9 @@ def test_stable_resource_identity_is_the_fixture_id_set(store: ContentStore) -> 
     fixture ids are all still there, and eighty-six further RESOURCE
     entities were authored by the C2-b, C3-a, C3-b, C3-c and C3-d cuts, so
     the set is a strict
-    superset (105). The fixture half stays an equality: every fixture id must
-    still resolve.
+    superset (105). 新真值 (queue-2): the three lexical capability
+    realizations joined (108). The fixture half stays an equality: every
+    fixture id must still resolve.
     """
 
     rebuilt = set(store.entity_ids().value)
@@ -325,8 +327,11 @@ def test_stable_resource_identity_is_the_fixture_id_set(store: ContentStore) -> 
         "res-softener-a-bit",
         "res-softener-if-anything",
         "res-softener-to-be-fair",
+        "cap-lexcol-fixed-expression",
+        "cap-lexcol-verb-particle",
+        "cap-lexcol-word-partnership",
     }
-    assert len(rebuilt) == 105
+    assert len(rebuilt) == 108
 
 
 @pytest.mark.parametrize("target_id", TARGET_IDS)
@@ -405,6 +410,24 @@ def test_teaching_payload_matches_the_fixture_verbatim(
     assert view.required_slots == fixture.required_slots
     if fixture.capability_linkage is None:
         assert view.capability_linkage is None
+    elif target_id in QUEUE2_PROMOTED:
+        # queue-2 (2026-10) screened the demoted placement into an approved
+        # REALIZES mapping: the frozen placement row stands next to the new
+        # one, and the credit face reads the screening's node.
+        assert view.capability_linkage is not None
+        links = store.curriculum_links_of(ResourceId(target_id))
+        assert isinstance(links, Ok), links
+        assert len(links.value) == 2
+        by_relation = {
+            str(link.relation): link for link in links.value
+        }
+        assert (
+            str(by_relation["SUPPORTS"].node_id)
+            == fixture.capability_linkage
+        )
+        assert str(by_relation["SUPPORTS"].relation) == "SUPPORTS"
+        assert str(by_relation["REALIZES"].relation) == "REALIZES"
+        assert view.capability_linkage == str(by_relation["REALIZES"].node_id)
     elif target_id in C3R1_DEMOTED_TARGETS:
         # The row is still there, still approved, still naming the fixture's
         # node — and no longer a realization, so it credits nothing.
@@ -544,7 +567,7 @@ def test_hint_ladder_ordinals_are_dense_and_ordered(
     per_entity: dict[str, list[int]] = {}
     for entity_id, ordinal in rows:
         per_entity.setdefault(str(entity_id), []).append(int(ordinal))
-    assert len(per_entity) == 105
+    assert len(per_entity) == 108
     for entity_id, ordinals in per_entity.items():
         assert ordinals == list(range(len(ordinals))), entity_id
         assert len(ordinals) == 3
@@ -611,7 +634,13 @@ def test_migration_ledger_is_complete_for_all_fourteen(
             expected_node = FIXTURE_BY_TARGET[row["target_id"]].capability_linkage
             assert expected_node is not None, row["target_id"]
             assert row["link_status"] == "CANONICAL_APPROVED"
-            if row["target_id"] in C3R1_DEMOTED_TARGETS:
+            if row["target_id"] in QUEUE2_PROMOTED:
+                # queue-2 (2026-10) screened the demoted placement into an
+                # approved REALIZES mapping; the credit face reads the
+                # screening's node now.
+                assert row["linkage"] != "None"
+                assert row["linkage"] != expected_node
+            elif row["target_id"] in C3R1_DEMOTED_TARGETS:
                 assert row["linkage"] == "None"
             else:
                 assert row["linkage"] == expected_node
@@ -632,15 +661,17 @@ def test_corpus_size_is_the_migrated_fourteen_plus_the_phase11_additions(
     fourteen migrated targets are all still present (the equality above), the
     eighty-six additions are the C2-b, C3-a, C3-b, C3-c and C3-d RESOURCE
     entities, and
-    the capability registry is untouched at five. The 100 of IP §13 is now
+    the capability registry is untouched at five. 新真值 (queue-2): 108
+    entities / 8 capabilities — the three lexical capability realizations
+    joined. The 100 of IP §13 is now
     reached (100 == 100); the Calibration100 floors are read under the
     declared reading — this test pins
     the size only, and the three readings live in
     test_c2b_resource_expansion.py, test_c3a_readface_and_expansion.py and
     test_c3d_final_expansion.py."""
 
-    assert len(store.entity_ids().value) == 105
-    assert len(store.capability_ids().value) == 5
+    assert len(store.entity_ids().value) == 108
+    assert len(store.capability_ids().value) == 8
     resources = [
         entity_id
         for entity_id in store.entity_ids().value

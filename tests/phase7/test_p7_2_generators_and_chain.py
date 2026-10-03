@@ -638,6 +638,9 @@ def test_the_shipped_corpus_answers_the_scheduled_row_and_the_run_degrades(
         "cap-disc-topic-shift",
         "cap-eval-hedged-opinion",
         "cap-interact-backchannel",
+        "cap-lexcol-fixed-expression",
+        "cap-lexcol-verb-particle",
+        "cap-lexcol-word-partnership",
         "cap-ref-ask-clarification",
         "cap-stance-soften-disagreement",
     ]
@@ -886,7 +889,7 @@ def test_the_broad_readiness_read_is_the_coarse_one_and_degrades(
         FOCUS_TARGET: "R3_TEACHING_READY",
         ROW_TARGET: "R4_DETECTION_READY",
     }
-    assert len(supply.readiness) == 105
+    assert len(supply.readiness) == 108
 
 
 def test_the_scope_constraint_is_what_restricts_the_candidate_set(

@@ -527,15 +527,15 @@ def test_cross_process_determinism_with_three_hash_seeds(
 def test_the_readiness_truth_is_unchanged_52_48_5(
     built_content_db: Path,
 ) -> None:
-    """52 × R4 + 48 × R1 + 5 × None — the FK contract moves no level: a
+    """93 × R4 + 7 × R1 + 8 × None — the FK contract moves no level: a
     column addition never retires or grants §8.1 evidence."""
 
     table = _levels(built_content_db)
-    assert len(table) == 105
+    assert len(table) == 108
     r4 = sum(1 for v in table.values() if v == "R4_DETECTION_READY")
     r1 = sum(1 for v in table.values() if v == "R1_LEXICALLY_RESOLVED")
     none = sum(1 for v in table.values() if v is None)
-    assert (r4, r1, none) == (52, 48, 5)
+    assert (r4, r1, none) == (93, 7, 8)
 
 
 def test_the_three_calibration_gates_unchanged_32_20_100(
@@ -553,8 +553,8 @@ def test_the_three_calibration_gates_unchanged_32_20_100(
         f"[d1] CORE_A = {core_a}/30, CORE_C = {core_c}/2, "
         f"resource_count = {len(resources)}/100"
     )
-    assert core_a == 32
-    assert core_c == 20
+    assert core_a == 60
+    assert core_c == 33
     assert len(resources) == 100
 
 

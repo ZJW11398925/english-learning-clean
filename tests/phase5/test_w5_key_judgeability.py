@@ -407,27 +407,35 @@ def test_the_provenance_derivation_is_unchanged_by_the_w5_record(
 # ---------------------------------------------------------------------------
 
 
-def test_the_readiness_table_still_reads_52_r4_48_r1_and_5_none(
+def test_the_readiness_table_reads_93_r4_7_r1_and_8_none(
     built_content_db: Path,
 ) -> None:
-    """The W-5 key-face edit moves no §8.1 fact: the table stands."""
+    """The W-5 key-face edit moved no §8.1 fact, and queue-2 (2026-10)
+    moved no fact either — only the mapping rows: the R1 screening gave the
+    forty-one lexical resources an approved ``CURRICULUM_MAPPING`` row each
+    (C3-R1's truth 52×R4 + 48×R1 + 5×None became 93×R4 + 7×R1, with the
+    three new capability entities joining the no-evidence ``None`` set:
+    5 → 8)."""
 
     table = _readiness_levels(built_content_db)
-    assert len(table) == 105
+    assert len(table) == 108
     assert (
-        sum(1 for v in table.values() if v == "R4_DETECTION_READY") == 52
+        sum(1 for v in table.values() if v == "R4_DETECTION_READY") == 93
     )
     assert (
-        sum(1 for v in table.values() if v == "R1_LEXICALLY_RESOLVED") == 48
+        sum(1 for v in table.values() if v == "R1_LEXICALLY_RESOLVED") == 7
     )
-    assert sum(1 for v in table.values() if v is None) == 5
+    assert sum(1 for v in table.values() if v is None) == 8
 
 
-def test_the_three_calibration100_floors_still_read_32_20_100(
+def test_the_three_calibration100_floors_read_60_33_100(
     built_content_db: Path,
 ) -> None:
-    """CORE_A 32, CORE_C 20, resource_count 100 — the declared reading
-    (R3+ × core_utility band), unchanged by the key-face edit."""
+    """CORE_A 60, CORE_C 33, resource_count 100 — the declared reading
+    (R3+ × core_utility band). queue-2 (2026-10) moved the floors without
+    touching the declared reading: the forty-one screened lexical resources
+    (28 HIGH + 13 MEDIUM) joined the R3+ set, 32→60 and 20→33; the
+    resource count stands at the C3-d ceiling of 100."""
 
     levels = _readiness_levels(built_content_db)
     conn = sqlite3.connect(str(built_content_db))
@@ -456,16 +464,17 @@ def test_the_three_calibration100_floors_still_read_32_20_100(
     ]
     core_a = sum(1 for t in core if utilities.get(t) == "HIGH")
     core_c = sum(1 for t in core if utilities.get(t) in ("MEDIUM", "LOW"))
-    assert core_a == 32
-    assert core_c == 20
+    assert core_a == 60
+    assert core_c == 33
     assert len(resources) == 100
 
 
 def test_the_credit_face_fixtures_and_default_ev_stand(
     built_content_db: Path,
 ) -> None:
-    """51 REALIZES rows credit a capability, 595 fixture rows carry the
-    three-word detection face, and the default-API build (no pilot
+    """92 REALIZES rows credit a capability (C3-d's fifty-one plus the
+    forty-one screened lexical rows of queue-2, 2026-10), 595 fixture rows
+    carry the three-word detection face, and the default-API build (no pilot
     registry) verifies nothing executably — EV = 0."""
 
     conn = sqlite3.connect(str(built_content_db))
@@ -478,7 +487,7 @@ def test_the_credit_face_fixtures_and_default_ev_stand(
         ).fetchone()[0]
     finally:
         conn.close()
-    assert realizes == 51
+    assert realizes == 92
     assert fixtures == 595
 
 

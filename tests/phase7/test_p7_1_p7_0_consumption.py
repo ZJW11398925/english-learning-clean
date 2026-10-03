@@ -191,11 +191,14 @@ def test_the_real_chain_degrades_while_the_caps_stay_ungraded(
         assert isinstance(facts, Ok)
         levels[str(entity_id)] = judge_readiness(facts.value).level
     # C3-R1 moved the shipped corpus's grading: the C1 target's collocation
-    # row is a coverage placement now, so it reads R1; a mapping target (e.g.
-    # res-hedge-i-think) still reads R4.
-    assert levels["res-colloc-make-a-decision"] == "R1_LEXICALLY_RESOLVED"
+    # row was a coverage placement then, so it read R1; queue-2 (2026-10)
+    # screened it into the word-partnership mapping, so it reads R4 again. A
+    # mapping target (e.g. res-hedge-i-think) still reads R4; a screened-out
+    # pragmatic row (e.g. res-hedge-i-mean) reads R1.
+    assert levels["res-colloc-make-a-decision"] == "R4_DETECTION_READY"
     assert levels["res-hedge-i-think"] == "R4_DETECTION_READY"
-    assert sum(1 for level in levels.values() if level is None) == 5
+    assert levels["res-hedge-i-mean"] == "R1_LEXICALLY_RESOLVED"
+    assert sum(1 for level in levels.values() if level is None) == 8
 
     authority = assemble_feature_authority(
         learning_snapshot=learning_snapshot(watermark),
@@ -228,11 +231,12 @@ def test_the_real_chain_degrades_while_the_caps_stay_ungraded(
     assert result.trace.context.schedule_authority is not None
     reasons = "\n".join(result.trace.context.reasons)
     assert "no content level is reachable" in reasons
-    # 旧真值: "14 candidate(s)" → C1: "13 candidate(s)" → C2-a: "5" → 新真值
-    # (C2-b): the twenty-eight graded targets leave the note's count at the
-    # five still-ungraded CAPABILITY entities — unchanged by C2-b, because it
-    # graded every target it added.
-    assert "5 candidate(s)" in reasons
+    # 旧真值: "14 candidate(s)" → C1: "13 candidate(s)" → C2-a: "5" → C2-b:
+    # the twenty-eight graded targets leave the note's count at the five
+    # still-ungraded CAPABILITY entities — unchanged by C2-b, because it
+    # graded every target it added → 新真值 (queue-2): the three new
+    # capability realizations join the ungraded set, "8 candidate(s)".
+    assert "8 candidate(s)" in reasons
     assert AuthorityName.CURRICULUM_READINESS in (
         result.trace.context.missing_authorities
     )

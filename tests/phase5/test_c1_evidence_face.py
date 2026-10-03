@@ -380,14 +380,15 @@ def test_two_subprocess_builds_with_different_hash_seeds_hash_equal(
 def test_readiness_by_target_is_34_r4_forty_eight_r1_and_five_none(
     built_content_db: Path,
 ) -> None:
-    """The corpus table on the real artifact, at C3-d's truth: the
-    fifty-two RESOURCE targets whose §24.7 row is a curriculum mapping read
-    R4_DETECTION_READY (C3-R1's sixteen plus C3-c's and C3-d's thirty-six
-    authored mappings), the other forty-eight RESOURCE targets read
+    """The corpus table on the real artifact, at queue-2's truth: the
+    ninety-three RESOURCE targets whose §24.7 row is a curriculum mapping read
+    R4_DETECTION_READY (C3-R1's sixteen plus C3-c's, C3-d's and queue-2's
+    screened mappings), the other seven RESOURCE targets read
     R1_LEXICALLY_RESOLVED (their evidence is complete but their link is a
     coverage placement, so §8.1 R2 is not satisfied and the ladder stops at
     R1 — this is the *deliberate* fall-back, not a loss of evidence), and the
-    five CAPABILITY entities read None — no level is invented for them, §8.1
+    eight CAPABILITY entities (the five plus queue-2's three) read None — no
+    level is invented for them, §8.1
     has no word below R0, and their sources state no evidence."""
 
     store = ContentStore(built_content_db)
@@ -398,20 +399,20 @@ def test_readiness_by_target_is_34_r4_forty_eight_r1_and_five_none(
     finally:
         store.close()
     table = {a.target_id: a.level for a in assessments.value}
-    assert len(table) == 105
+    assert len(table) == 108
     res_targets = sorted(t for t in table if t.startswith("res-"))
     cap_targets = sorted(t for t in table if t.startswith("cap-"))
-    assert len(res_targets) == 100 and len(cap_targets) == 5
+    assert len(res_targets) == 100 and len(cap_targets) == 8
     r4 = [t for t in res_targets if table[t] == "R4_DETECTION_READY"]
     r1 = [t for t in res_targets if table[t] == "R1_LEXICALLY_RESOLVED"]
-    assert (len(r4), len(r1)) == (52, 48)
+    assert (len(r4), len(r1)) == (93, 7)
     # The split is exactly the link's mapping class — the level is read, and
     # it is the mapping set that carries it (the C3-R1 consistency pin).
     mapping_rows = set(_mapping_resource_ids(built_content_db))
     assert set(r4) == mapping_rows
     for target_id in cap_targets:
         assert table[target_id] is None, target_id
-    assert sum(1 for level in table.values() if level is None) == 5
+    assert sum(1 for level in table.values() if level is None) == 8
 
 
 def _mapping_resource_ids(artifact: Path) -> tuple[str, ...]:

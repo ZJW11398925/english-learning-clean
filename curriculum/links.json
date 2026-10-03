@@ -1001,6 +1001,416 @@
       "editorial_status": "CANONICAL_APPROVED",
       "mapping_class": "CURRICULUM_MAPPING",
       "rationale": "Authored and adjudicated by C3-d (Phase 11) against the functional definition of cap-interact-backchannel (curriculum/capabilities/cap-interact-backchannel.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Tell the speaker that their news is hard to believe, and invite them to go on telling it.') meets counts_as_realization 1, 2 and 3: the taught production is a listener signal -- a short unit the hearer produces while the other person holds the turn and the telling runs, saying it claims neither content nor the turn -- it acknowledges what the other person said (the surprise registers the news as received) and invites them to continue (counts_as_realization 2's invite arm verbatim; the echoed piece of news asks for the telling to go on, not for new business -- it is not a floor bid), and the taught ladder teaches it as a listening receipt, not as a request or an evaluation. No does_not_count entry applies: the phrase is not a floor bid and not a request for something other than the telling; the joking-behaviour reading (you're kidding around) is a different move, held as the FALSE_POSITIVE_BOUNDARY fixture. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from thirty-three to fifty-one rows with this cut). Row provenance: authored and approved by C3-d (Phase 11) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-4b549908-78a5-42f4-961a-252eae17b485.31)."
+    },
+    {
+      "resource_id": "res-colloc-come-to-a-conclusion",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that a group reached a judgement after thinking about the facts.') meets counts_as_realization 1, 2 and 3: the noun is fixed to its verbs come and reach (never make), the article is fixed inside the frame, and the combination names the act the sentence is about as its predicate; the taught errors are exactly partner swaps (MAKE_FOR_COME carries the light verb over, ARTICLE_OMISSION drops the frame's article). No does_not_count entry applies: no particle changes the verb, the unit is not a clause shape, and the taught production is a proposition rather than an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-draw-attention-to",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that a report or a speaker made people notice a problem.') meets counts_as_realization 1, 2 and 3: the verb is fixed to its noun (draw, not raise, cause or rise) and the noun is fixed to its preposition (to, not on), the combination is the proposition's predicate, and the taught errors are exactly partner swaps (VERB_FOR_DRAW, PREPOSITION_ON). No does_not_count entry applies: no particle changes the verb, the unit is not a clause shape, and the taught production is a proposition rather than an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-have-an-effect-on",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that one thing changed how another thing turned out.') meets counts_as_realization 1, 2 and 3: the light verb is fixed (have, not make), the article is fixed (an effect), and the noun is fixed to its preposition (on), with the combination as the proposition's predicate; the taught errors are exactly partner swaps (MAKE_FOR_HAVE, ARTICLE_OMISSION). No does_not_count entry applies: no particle changes the verb, the unit is not a clause shape, and the taught production is a proposition rather than an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-heavy-rain",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Describe rain that is falling hard and in large amounts.') meets counts_as_realization 1, 2 and 3: the adjective partner is fixed (heavy rain, not strong, big or large rain, and not the adverb heavily before the noun), the adjective--noun combination names the thing the sentence is about, and the taught errors are exactly partner swaps (TRANSLATED_ADJECTIVE, ADVERB_BEFORE_NOUN). No does_not_count entry applies: no verb or particle is in the unit, it is not a clause shape, and it names a state of affairs rather than an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-keep-in-mind",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Ask someone to remember a fact and act on it.') meets counts_as_realization 1, 2 and 3: the verb partner is fixed (keep, not make) and the preposition phrase is fixed to its noun (in mind, not detachable), the unit is the predicate of the request clause, and the taught errors are exactly partner and shape swaps (MAKE_FOR_KEEP, OBJECT_AFTER_PHRASE). The boundary case naming keep in mind applies directly: a fixed partnership, not a verb-particle row. No does_not_count entry applies: the taught production is a directive proposition, not a hedged claim (cap-eval-hedged-opinion's D3 names it outside its own jurisdiction), not a clause shape and not a pragmatic formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-make-a-decision",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Name the collocation for choosing a course of action.') meets counts_as_realization 1, 2 and 3: the light verb is fixed (make, not do) and the article is fixed (a decision), the combination is the proposition's predicate, and the taught errors are exactly partner swaps (LIGHT_VERB_CHOICE do a decision, ARTICLE_OMISSION make decision). No does_not_count entry applies: no particle changes the verb, the unit is not a clause shape, and cap-eval-hedged-opinion's own does_not_count names this very vocabulary outside its jurisdiction. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-make-an-effort",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that someone tries hard at something.') meets counts_as_realization 1, 2 and 3: the light verb is fixed (make, not do) and the article is fixed (an effort), the combination is the proposition's predicate, and the taught errors are exactly partner swaps (DO_FOR_MAKE, ARTICLE_OMISSION). No does_not_count entry applies: no particle changes the verb, the unit is not a clause shape, and the taught production is a proposition rather than an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-make-progress",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that someone is getting better at something as time passes.') meets counts_as_realization 1, 2 and 3: the light verb is fixed (make, not do), the uncountable noun takes no indefinite article, and the quantity modifier the corpus teaches (a lot of progress) rides on the partnership, with the combination as the proposition's predicate; the taught errors are exactly partner and shape swaps (DO_FOR_MAKE, INDEFINITE_ARTICLE_BEFORE_UNCOUNTABLE). No does_not_count entry applies: no particle changes the verb, the unit is not a clause shape, and the taught production is a proposition rather than an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-make-sense",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that an idea is reasonable and can be understood.') meets counts_as_realization 1, 2 and 3: the light verb is fixed (make) and the noun is bare and fixed (sense -- no article may intrude), with third-person agreement carried by the verb, and the combination is the proposition's predicate; the taught errors are exactly shape swaps inside the partnership (THIRD_PERSON_SINGULAR_MISSING, ARTICLE_INTRUSION). No does_not_count entry applies: no particle changes the verb, the unit is not a clause shape (cap-ref-ask-clarification's D2 names it as supplying a clarification rather than requesting one), and the taught production is a proposition. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-meet-a-deadline",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that the work was finished in time, before the date it was due.') meets counts_as_realization 1, 2 and 3: the verb partner is fixed (meet, not catch or finish) and the article is fixed (a/the deadline), the combination is the proposition's predicate, and the taught errors are exactly partner swaps (ARTICLE_OMISSION, WRONG_VERB_FOR_SENSE). No does_not_count entry applies: no particle changes the verb, the unit is not a clause shape, and the taught production is a proposition rather than an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-pay-attention-to",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Name the collocation for focusing on something.') meets counts_as_realization 1, 2 and 3: the verb is fixed to its noun (pay attention), the noun is fixed to its preposition (to, not on or in), the article or possessive slot inside the noun phrase is taught, and the taught errors are exactly partner swaps (PREPOSITION_CHOICE, PREPOSITION_OMISSION); the boundary case naming pay attention to applies directly. No does_not_count entry applies: no particle changes the verb, the unit is not a clause shape, and cap-ref-ask-clarification's D4 names it as content vocabulary outside its jurisdiction. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-play-a-role",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that something was one of the things that affected a result.') meets counts_as_realization 1, 2 and 3: the light verb is fixed (play), the article is fixed (a role), and the preposition after the noun (in) is part of the taught frame, with the combination as the proposition's predicate; the taught errors are exactly shape swaps inside the partnership (ARTICLE_OMISSION, MISSING_PREPOSITION). No does_not_count entry applies: no particle changes the verb, the unit is not a clause shape, and the taught production is a proposition rather than an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-raise-awareness",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that people are being made to notice an issue.') meets counts_as_realization 1, 2 and 3: the verb partner is fixed (raise, not rise) and the noun is fixed to its preposition (awareness of, not on or about), the combination is the proposition's predicate, and the taught errors are exactly partner swaps (RISE_FOR_RAISE, PREPOSITION_CHOICE). No does_not_count entry applies: no particle changes the verb, the unit is not a clause shape, and cap-interact-backchannel's D2 names it as proposition vocabulary outside its jurisdiction. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-save-time",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that a choice keeps time free for something else.') meets counts_as_realization 1, 2 and 3: the verb partner is fixed (save, not win), the noun is bare and uncountable, and the purpose complement after the unit is taught, with the combination as the proposition's predicate; the taught errors are exactly partner and shape swaps (CALQUED_VERB_CHOICE, PURPOSE_CLAUSE_AFTER_SAVE). No does_not_count entry applies: no particle changes the verb, the unit is not a clause shape, and the taught production is a proposition rather than an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-take-a-look",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Ask someone to turn their eyes to something for a moment.') meets counts_as_realization 1, 2 and 3: the light verb is fixed (take, not make or do), the article is fixed (a look), and the noun is fixed to its preposition (at), with the combination as the proposition's predicate; the taught errors are exactly partner swaps (LIGHT_VERB_CHOICE, MISSING_PREPOSITION). No does_not_count entry applies: no particle changes the verb, the unit is not a clause shape, and cap-ref-ask-clarification's D1 names it as a request for an action -- an interactional reading this row does not claim, the taught face being the partnership itself. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-take-advantage-of",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that someone used a good chance that came their way.') meets counts_as_realization 1, 2 and 3: the light verb is fixed (take, not make), the noun is bare (no article may intrude) and fixed to its preposition (of), with the combination as the proposition's predicate; the taught errors are exactly partner swaps (MAKE_FOR_TAKE, ARTICLE_INTRUSION). The boundary case naming take advantage of applies directly: a verb--noun partnership with its preposition, not a verb-particle row. No does_not_count entry applies: no particle changes the verb, the unit is not a clause shape, and the taught production is a proposition rather than an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-colloc-take-part-in",
+      "node_id": "cap-lexcol-word-partnership",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-word-partnership (curriculum/capabilities/cap-lexcol-word-partnership.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that someone joined an activity together with other people.') meets counts_as_realization 1, 2 and 3: the light verb is fixed (take), the noun is bare (take part, not take a part) and fixed to its preposition (in), with the combination as the proposition's predicate; the taught errors are exactly shape swaps inside the partnership (MISSING_PREPOSITION, ARTICLE_INTRUSION). The boundary case naming take part in applies directly. No does_not_count entry applies: no particle changes the verb, the unit is not a clause shape, and cap-interact-backchannel's D2 names it as proposition vocabulary outside its jurisdiction. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-phrasal-bring-up",
+      "node_id": "cap-lexcol-verb-particle",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-verb-particle (curriculum/capabilities/cap-lexcol-verb-particle.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that someone started talking about a subject.') meets counts_as_realization 1, 2 and 3: the particle up changes what bring means (raising a subject, not lifting), the combination is the sentence's predicate core, and the taught errors are exactly particle-shaped (PRONOUN_AFTER_PARTICLE places the object pronoun against the separable particle, PREPOSITION_AFTER_PARTICLE intrudes a preposition after up). No does_not_count entry applies: the fixed unit is the predicate, not a noun partner, not a clause shape and not an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-phrasal-carry-on",
+      "node_id": "cap-lexcol-verb-particle",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-verb-particle (curriculum/capabilities/cap-lexcol-verb-particle.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that someone kept doing what they were doing.') meets counts_as_realization 1, 2 and 3: the particle on refines the verb into the continuing sense and the unit is taught as one, the combination is the sentence's predicate core, and the taught errors are exactly particle-shaped (INFINITIVE_AFTER_ON puts a to-infinitive where the unit takes a gerund, PRONOUN_AFTER_PARTICLE misplaces the object). The boundary case naming carry on applies directly. No does_not_count entry applies: the fixed unit is the predicate, not a noun partner, not a clause shape and not an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-phrasal-come-up-with",
+      "node_id": "cap-lexcol-verb-particle",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-verb-particle (curriculum/capabilities/cap-lexcol-verb-particle.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that someone thought of an idea or found a solution.') meets counts_as_realization 1, 2 and 3: the particle combination up with changes what come means (producing, not arriving), the combination is the sentence's predicate core with its object after with, and the taught errors are exactly particle-shaped (MISSING_PREPOSITION drops with, PREPOSITION_BEFORE_OBJECT misorders the object before with). No does_not_count entry applies: the fixed unit is the predicate, not a noun partner, not a clause shape and not an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-phrasal-figure-out",
+      "node_id": "cap-lexcol-verb-particle",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-verb-particle (curriculum/capabilities/cap-lexcol-verb-particle.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that you could not understand or solve something.') meets counts_as_realization 1, 2 and 3: the particle out changes what figure means (solving, not shaping), the combination is the sentence's predicate core, and the taught error is exactly particle-shaped (PRONOUN_AFTER_PARTICLE places the object pronoun against the separable particle). No does_not_count entry applies: the fixed unit is the predicate, not a noun partner, not a clause shape, and cap-ref-ask-clarification's D3 names it as understanding-reached-by-thinking vocabulary outside its jurisdiction. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-phrasal-give-up",
+      "node_id": "cap-lexcol-verb-particle",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-verb-particle (curriculum/capabilities/cap-lexcol-verb-particle.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that someone stopped doing something they used to do.') meets counts_as_realization 1, 2 and 3: the particle up changes what give means (abandoning, not handing), the combination is the sentence's predicate core, and the taught errors are exactly particle-shaped (PRONOUN_AFTER_PARTICLE, INFINITIVE_COMPLEMENT where the unit takes a gerund). No does_not_count entry applies: the fixed unit is the predicate, not a noun partner, not a clause shape and not an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-phrasal-look-forward-to",
+      "node_id": "cap-lexcol-verb-particle",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-verb-particle (curriculum/capabilities/cap-lexcol-verb-particle.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Use the phrasal verb for anticipating something pleasant.') meets counts_as_realization 1, 2 and 3: the particle forward refines the verb into the anticipating sense and the whole unit is taught as one, the combination is the sentence's predicate core, and the taught errors are exactly particle-shaped (INFINITIVE_AFTER_PREPOSITION puts a base verb where the unit takes a gerund, PARTICLE_OBJECT_ORDER misplaces the object). The boundary case naming look forward to applies directly. No does_not_count entry applies: the fixed unit is the predicate, not a noun partner, not a clause shape, and cap-interact-backchannel's D2 names it as proposition vocabulary outside its jurisdiction. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-phrasal-put-off",
+      "node_id": "cap-lexcol-verb-particle",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-verb-particle (curriculum/capabilities/cap-lexcol-verb-particle.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that something was moved to a later time.') meets counts_as_realization 1, 2 and 3: the particle off changes what put means (postponing, not placing), the combination is the sentence's predicate core, and the taught errors are exactly particle-shaped (PRONOUN_AFTER_PARTICLE against the separable particle, INFINITIVE_AFTER_PUT_OFF where the unit takes a noun object). No does_not_count entry applies: the fixed unit is the predicate, not a noun partner, not a clause shape and not an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-phrasal-run-out-of",
+      "node_id": "cap-lexcol-verb-particle",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-verb-particle (curriculum/capabilities/cap-lexcol-verb-particle.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that there is none of something left because you have used it all.') meets counts_as_realization 1, 2 and 3: the particle out changes what run means (exhausting, not moving), the combination is the sentence's predicate core with its object after of, and the taught errors are exactly particle-shaped (MISSING_PREPOSITION drops of, OBJECT_AFTER_OF_MISSING_ALTERNATIVE_ORDER misorders the object). The word-partnership boundary case naming run out of applies directly on this node's side. No does_not_count entry applies: the fixed unit is the predicate, not a noun partner, not a clause shape and not an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-phrasal-turn-out",
+      "node_id": "cap-lexcol-verb-particle",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-verb-particle (curriculum/capabilities/cap-lexcol-verb-particle.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say how something ended up, after it became known.') meets counts_as_realization 1, 2 and 4: the particle out changes what turn means (resulting, not rotating), the combination works as the whole reporting predicate of the sentence, and the taught errors are exactly particle-and-frame shaped (SUBJECT_OMISSION drops the reporting subject, THIRD_PERSON_SINGULAR_MISSING leaves it unmarked). The boundary case naming the objectless turn out applies directly. No does_not_count entry applies: the fixed unit is the predicate, not a noun partner, not a clause shape, and cap-ref-ask-clarification's D3 names it as reporting vocabulary outside its jurisdiction. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-phrasal-work-out",
+      "node_id": "cap-lexcol-verb-particle",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-verb-particle (curriculum/capabilities/cap-lexcol-verb-particle.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that someone found the answer to a problem after thinking about it.') meets counts_as_realization 1, 2 and 3: the particle out changes what work means (solving, not labouring), the combination is the sentence's predicate core, and the taught errors are exactly particle-shaped (PRONOUN_AFTER_PARTICLE against the separable particle, NOUN_VERB_BOUNDARY writing the solid noun workout as the verb). No does_not_count entry applies: the fixed unit is the predicate, not a noun partner, not a clause shape, and cap-ref-ask-clarification's D3 names it as understanding-reached-by-thinking vocabulary outside its jurisdiction. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-frame-id-like-to",
+      "node_id": "cap-lexcol-fixed-expression",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-fixed-expression (curriculum/capabilities/cap-lexcol-fixed-expression.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Frame a polite request, not a bare imperative.') meets counts_as_realization 2 and 3: the taught production is the fixed clause skeleton \"I'd like to ...\" whose frame itself performs the move -- framing the speaker's request politely -- while the slot takes fresh content, and the taught errors are exactly frame-arm errors (INFINITIVE_MARKER_MISSING drops the frame's to, GERUND_AFTER_TO fills the slot with the wrong form). No does_not_count entry applies: the unit is not a two-word partnership, not a verb-particle predicate, and cap-interact-backchannel's D1 names \"I'd like to\" as a request frame outside its backchannel jurisdiction. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-frame-if-you-dont-mind",
+      "node_id": "cap-lexcol-fixed-expression",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-fixed-expression (curriculum/capabilities/cap-lexcol-fixed-expression.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Add a polite check to what you are doing or asking.') meets counts_as_realization 2 and 3: the taught production is the fixed clause skeleton \"..., if you don't mind\" whose frame itself performs the move -- adding the polite check -- while the host clause carries the content, and the taught errors are exactly frame-arm errors (INFINITIVE_AFTER_MIND puts a to-infinitive after mind, MISSING_NEGATIVE drops the frame's don't). No does_not_count entry applies: the unit is not a two-word partnership, not a verb-particle predicate, and its taught function is the frame's polite-check move rather than one of the five pragmatic nodes' functions. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-frame-just-wondering",
+      "node_id": "cap-lexcol-fixed-expression",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-fixed-expression (curriculum/capabilities/cap-lexcol-fixed-expression.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Ask for something without putting the other person under pressure.') meets counts_as_realization 2 and 3: the taught production is the fixed clause skeleton \"I was just wondering if ...\" whose frame itself performs the move -- framing the ask as a low-pressure wonder -- while the slot takes an embedded question, and the taught errors are exactly frame-arm errors (EMBEDDED_QUESTION_INVERSION inverts inside the embedded clause, SHAPE_OF_THE_FRAME mismatches the frame's own finite shape). No does_not_count entry applies: the unit is not a two-word partnership, not a verb-particle predicate, and cap-ref-ask-clarification's D1 names \"I was just wondering\" as a request for help -- an interactional reading outside its clarification jurisdiction that this row does not claim; the taught face is the frame itself. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-frame-lets-say",
+      "node_id": "cap-lexcol-fixed-expression",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-fixed-expression (curriculum/capabilities/cap-lexcol-fixed-expression.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Set up an example or a hypothetical case before you reason about it.') meets counts_as_realization 2 and 3: the taught production is the fixed clause skeleton \"Let's say ...\" whose frame itself performs the move -- setting up the case -- while the slot takes the hypothetical content, and the taught errors are exactly frame-arm errors (INFINITIVE_AFTER_SAY puts a to-infinitive in the slot, APOSTROPHE_OMISSION breaks the frame's contraction). No does_not_count entry applies: the unit is not a two-word partnership, not a verb-particle predicate, and cap-eval-hedged-opinion's D2 names \"let's say\" as a hypothesis frame -- a supposition setup, which is not a hedge on any claim and therefore outside that node's jurisdiction. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-frame-the-thing-is",
+      "node_id": "cap-lexcol-fixed-expression",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-fixed-expression (curriculum/capabilities/cap-lexcol-fixed-expression.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Announce the problem or the main point before you explain it.') meets counts_as_realization 2 and 3: the taught production is the fixed clause skeleton \"The thing is, ...\" whose frame itself performs the move -- announcing the point -- while the slot takes the point's clause, and the taught errors are exactly frame-arm errors (ARTICLE_OMISSION breaks the frame's the, CALQUED_CONNECTOR bolts a because onto the frame). The boundary case naming the thing is applies directly: cap-disc-topic-shift's does_not_count names it as framing the point, not moving the topic, so the frame shape counts here. No does_not_count entry applies: the unit is not a two-word partnership and not a verb-particle predicate. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-frame-what-im-saying-is",
+      "node_id": "cap-lexcol-fixed-expression",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-fixed-expression (curriculum/capabilities/cap-lexcol-fixed-expression.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Restate your own point so the listener understands what you meant.') meets counts_as_realization 2 and 3: the taught production is the fixed clause skeleton \"What I'm saying is (that) ...\" whose frame itself performs the move -- restating the point -- while the slot takes the restated content, and the taught errors are exactly frame-arm errors (MISSING_AUXILIARY drops the frame's am, WRONG_FINITE_VERB replaces the frame's is with a plural). No does_not_count entry applies: the unit is not a two-word partnership, not a verb-particle predicate, and cap-interact-backchannel's D4 names it as the speaker's own acknowledgement -- outside the listener-signal jurisdiction. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-frame-would-you-mind",
+      "node_id": "cap-lexcol-fixed-expression",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-fixed-expression (curriculum/capabilities/cap-lexcol-fixed-expression.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Ask someone politely to do something, in a way that leaves them free to refuse.') meets counts_as_realization 2 and 3: the taught production is the fixed request frame \"Would you mind ...ing\" whose frame itself performs the move -- the polite request -- while the gerund slot takes the asked-for action, and the taught errors are exactly frame-arm errors (INFINITIVE_AFTER_MIND and BARE_VERB_AFTER_MIND fill the slot with the wrong form). The boundary case naming would you mind applies directly: the repository teaches the SENTENCE_FRAME with its slot filled. No does_not_count entry applies: the unit is not a two-word partnership and not a verb-particle predicate. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-idiom-a-blessing-in-disguise",
+      "node_id": "cap-lexcol-fixed-expression",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-fixed-expression (curriculum/capabilities/cap-lexcol-fixed-expression.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that something that looked bad led to something good.') meets counts_as_realization 1 and 3: the taught production is the idiom \"a blessing in disguise\", whose overall meaning (a bad thing that turned out good) is not derivable from blessing, disguise or the preposition, the learner uses it as that one whole meaning (the boundary case naming the idiom inside a full proposition applies directly), and the taught errors are exactly whole-unit errors (WORD_ORDER_IN_IDIOM reorders the fixed form, ARTICLE_OMISSION drops the frame's article). No does_not_count entry applies: the unit is not a two-word partnership, not a verb-particle predicate and not an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-idiom-break-the-ice",
+      "node_id": "cap-lexcol-fixed-expression",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-fixed-expression (curriculum/capabilities/cap-lexcol-fixed-expression.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Name the idiom for easing initial awkwardness.') meets counts_as_realization 1 and 3: the taught production is the idiom \"break the ice\", whose meaning (ease the initial awkwardness) is not assembled from breaking or from ice (the boundary case applies directly: idiom shape here, no word-partnership claim), and the taught errors are exactly whole-unit errors (VERB_SUBSTITUTION swaps another verb into the idiom's verb slot, ARTICLE_OMISSION drops the fixed the). No does_not_count entry applies: the unit is not a two-word partnership, not a verb-particle predicate, and cap-disc-topic-shift's does_not_count names it as social-episode management -- outside the topic-shift jurisdiction this row does not claim. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-idiom-hit-the-nail-on-the-head",
+      "node_id": "cap-lexcol-fixed-expression",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-fixed-expression (curriculum/capabilities/cap-lexcol-fixed-expression.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that someone described the point exactly right.') meets counts_as_realization 1 and 3: the taught production is the idiom \"hit the nail on the head\", whose meaning (describe something exactly right) is not derivable from hitting, nails or heads, the learner uses it as that one whole meaning, and the taught errors are exactly whole-unit errors (PREPOSITION_CHOICE swaps the fixed on for in or into, ARTICLE_OMISSION drops the fixed the). No does_not_count entry applies: the unit is not a two-word partnership, not a verb-particle predicate and not an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-idiom-on-the-same-page",
+      "node_id": "cap-lexcol-fixed-expression",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-fixed-expression (curriculum/capabilities/cap-lexcol-fixed-expression.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that two people share the same understanding of a situation.') meets counts_as_realization 1 and 3: the taught production is the idiom \"(be) on the same page\", whose meaning (sharing the same understanding) is not derivable from pages, the learner uses it as that one whole meaning, and the taught errors are exactly whole-unit errors (WRONG_PREPOSITION swaps in for on, ARTICLE_OMISSION drops the fixed the). No does_not_count entry applies: the unit is not a two-word partnership, not a verb-particle predicate, and cap-stance-soften-disagreement's D4 names it as reporting the other side's agreement -- outside the mitigation jurisdiction; cap-interact-backchannel's D3 names it as a content claim rather than a receipt signal. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-idiom-piece-of-cake",
+      "node_id": "cap-lexcol-fixed-expression",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-fixed-expression (curriculum/capabilities/cap-lexcol-fixed-expression.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that a task was very easy to do.') meets counts_as_realization 1 and 3: the taught production is the idiom \"a piece of cake\", whose meaning (very easy) is not derivable from cake -- the definition's own named example -- and the taught errors are exactly whole-unit errors (ARTICLE_OMISSION drops the fixed a, PLURALISED_UNIT pluralises the fixed unit). No does_not_count entry applies: the unit is not a two-word partnership (the fixedness is the whole form, not one noun's partner), not a verb-particle predicate and not an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-idiom-the-ball-is-in-your-court",
+      "node_id": "cap-lexcol-fixed-expression",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-fixed-expression (curriculum/capabilities/cap-lexcol-fixed-expression.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that the next move now belongs to the other person.') meets counts_as_realization 1 and 3: the taught production is the idiom \"the ball is in your court\", whose meaning (the next move is theirs) is not derivable from balls or courts, the learner uses it as that one whole meaning, and the taught errors are exactly whole-unit errors (CALQUED_IDIOM rebuilds the image from the learner's first language, POSSESSIVE_MISMATCH rephrases the fixed form). No does_not_count entry applies: the unit is not a two-word partnership, not a verb-particle predicate, and cap-interact-backchannel's D3 names it as handing the decision over as a content claim -- outside the listener-signal jurisdiction this row does not claim. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
+    },
+    {
+      "resource_id": "res-idiom-under-the-weather",
+      "node_id": "cap-lexcol-fixed-expression",
+      "relation": "REALIZES",
+      "strength": null,
+      "primary_flag": true,
+      "editorial_status": "CANONICAL_APPROVED",
+      "mapping_class": "CURRICULUM_MAPPING",
+      "rationale": "Screened and adjudicated by queue-2 R1-to-R3 (2026-10, DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9) against the functional definition of cap-lexcol-fixed-expression (curriculum/capabilities/cap-lexcol-fixed-expression.json). Conclusion: CURRICULUM_MAPPING. The resource's taught function ('Say that someone feels slightly ill.') meets counts_as_realization 1 and 3: the taught production is the idiom \"(feel) under the weather\", whose meaning (slightly ill) is not derivable from weather, and the taught errors are exactly whole-unit errors (ARTICLE_OMISSION drops the fixed the, MISSING_AUXILIARY drops the be/feel the idiom rides on). No does_not_count entry applies: the unit is not a two-word partnership, not a verb-particle predicate and not an interactional formula. Relation REALIZES and primary_flag true, so this row feeds the credit face: the target's ALTERNATIVE_SUCCESS path may mint CAPABILITY/POSITIVE learner evidence (live risk R-C1-credit; the registered risk face widens from fifty-one to ninety-two rows with this cut). Row provenance: authored and approved by queue-2 (2026-10) with no authoring fixture declaring a linkage. Revisit: a canonical definition supersedes this review (DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9)."
     }
   ]
 }

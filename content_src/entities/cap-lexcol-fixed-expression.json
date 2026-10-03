@@ -1,0 +1,41 @@
+{
+  "entity": {
+    "entity_id": "cap-lexcol-fixed-expression",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "IDIOM",
+    "fixedness": "FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "CAPABILITY",
+    "target_mode": "CAPABILITY_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say the whole expression; its meaning is not in the separate words.",
+      "not my cup of tea = not the thing I like.",
+      "Fill in: Honestly, that plan is not my ___ of tea."
+    ],
+    "reveal_form": "Honestly, that plan is not my cup of tea.",
+    "canonical_forms": [
+      "Honestly, that plan is not my cup of tea."
+    ],
+    "alternative_realizations": [
+      "To be honest, that plan is not really for me."
+    ],
+    "required_slots": [
+      [
+        "that plan"
+      ]
+    ]
+  }
+}

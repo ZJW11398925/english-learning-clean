@@ -1,0 +1,41 @@
+{
+  "entity": {
+    "entity_id": "cap-lexcol-word-partnership",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "COLLOCATION",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "CAPABILITY",
+    "target_mode": "CAPABILITY_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say the noun with its usual partner word.",
+      "Use a light verb + noun partnership: take the time, not spend a time.",
+      "Fill in: Take the time to ___ the contract carefully."
+    ],
+    "reveal_form": "Take the time to read the contract carefully.",
+    "canonical_forms": [
+      "Take the time to read the contract carefully."
+    ],
+    "alternative_realizations": [
+      "Take a moment to read the contract carefully."
+    ],
+    "required_slots": [
+      [
+        "the contract"
+      ]
+    ]
+  }
+}

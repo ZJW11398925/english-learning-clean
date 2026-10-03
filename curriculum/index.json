@@ -7,6 +7,9 @@
     "capabilities/cap-disc-topic-shift.json",
     "capabilities/cap-eval-hedged-opinion.json",
     "capabilities/cap-interact-backchannel.json",
+    "capabilities/cap-lexcol-fixed-expression.json",
+    "capabilities/cap-lexcol-verb-particle.json",
+    "capabilities/cap-lexcol-word-partnership.json",
     "capabilities/cap-ref-ask-clarification.json",
     "capabilities/cap-stance-soften-disagreement.json"
   ],

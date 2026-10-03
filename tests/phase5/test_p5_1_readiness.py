@@ -168,19 +168,42 @@ RESOURCE_TARGETS = (
 )
 
 #: The five CAPABILITY entities, in id order: no evidence document, no link
-#: row of their own, no level.
+#: row of their own, no level. queue-2 (2026-10) added three lexical
+#: capability realizations in the same shape.
 NO_LEVEL_TARGETS = (
     "cap-disc-topic-shift",
     "cap-eval-hedged-opinion",
     "cap-interact-backchannel",
+    "cap-lexcol-fixed-expression",
+    "cap-lexcol-verb-particle",
+    "cap-lexcol-word-partnership",
     "cap-ref-ask-clarification",
     "cap-stance-soften-disagreement",
 )
 
 #: The RESOURCE targets whose §24.7 row is a curriculum mapping (C3-R1's
-#: sixteen, extended in place by C3-c's and C3-d's authored mappings — the
-#: R4 half of the corpus, written out rather than derived; 52 after C3-d).
+#: sixteen, extended in place by C3-c's and C3-d's authored mappings and by
+#: queue-2's forty-one screened rows — the
+#: R4 half of the corpus, written out rather than derived; 93 after
+#: queue-2).
 MAPPING_TARGETS = (
+    "res-colloc-come-to-a-conclusion",
+    "res-colloc-draw-attention-to",
+    "res-colloc-have-an-effect-on",
+    "res-colloc-heavy-rain",
+    "res-colloc-keep-in-mind",
+    "res-colloc-make-a-decision",
+    "res-colloc-make-an-effort",
+    "res-colloc-make-progress",
+    "res-colloc-make-sense",
+    "res-colloc-meet-a-deadline",
+    "res-colloc-pay-attention-to",
+    "res-colloc-play-a-role",
+    "res-colloc-raise-awareness",
+    "res-colloc-save-time",
+    "res-colloc-take-a-look",
+    "res-colloc-take-advantage-of",
+    "res-colloc-take-part-in",
     "res-discourse-anyway",
     "res-discourse-before-i-forget",
     "res-discourse-by-the-way",
@@ -193,6 +216,13 @@ MAPPING_TARGETS = (
     "res-discourse-to-be-honest",
     "res-discourse-to-get-back-to-the-point",
     "res-discourse-where-was-i",
+    "res-frame-id-like-to",
+    "res-frame-if-you-dont-mind",
+    "res-frame-just-wondering",
+    "res-frame-lets-say",
+    "res-frame-the-thing-is",
+    "res-frame-what-im-saying-is",
+    "res-frame-would-you-mind",
     "res-hedge-as-far-as-i-know",
     "res-hedge-from-what-i-can-tell",
     "res-hedge-i-guess",
@@ -206,6 +236,23 @@ MAPPING_TARGETS = (
     "res-hedge-more-or-less",
     "res-hedge-not-really",
     "res-hedge-sort-of",
+    "res-idiom-a-blessing-in-disguise",
+    "res-idiom-break-the-ice",
+    "res-idiom-hit-the-nail-on-the-head",
+    "res-idiom-on-the-same-page",
+    "res-idiom-piece-of-cake",
+    "res-idiom-the-ball-is-in-your-court",
+    "res-idiom-under-the-weather",
+    "res-phrasal-bring-up",
+    "res-phrasal-carry-on",
+    "res-phrasal-come-up-with",
+    "res-phrasal-figure-out",
+    "res-phrasal-give-up",
+    "res-phrasal-look-forward-to",
+    "res-phrasal-put-off",
+    "res-phrasal-run-out-of",
+    "res-phrasal-turn-out",
+    "res-phrasal-work-out",
     "res-pragmatic-are-you-saying",
     "res-pragmatic-come-again",
     "res-pragmatic-could-you-clarify",
@@ -752,15 +799,19 @@ def test_corpus_readiness_table_is_computed_and_printed(
     for target_id, level, missing in table:
         print(f"[readiness] {target_id:32} {level!s:22} {missing}")
 
-    assert len(table) == 105
+    assert len(table) == 108
     levels = {(target, missing): level for target, level, missing in table}
     # 旧真值 → 新真值（C1: 1×R4+13×None；C2-a: 9×R4+5×None；C2-b:
     # 28×R4+5×None；C3-a: 46×R4+5×None；C3-b: 64×R4+5×None；C3-R1:
     # 16×R4 + 48×R1 + 5×None；C3-c: 34×R4 + 48×R1 + 5×None；C3-d:
-    # 52×R4 + 48×R1 + 5×None）.
+    # 52×R4 + 48×R1 + 5×None；queue-2: 93×R4 + 7×R1 + 8×None）.
     assert levels[("res-hedge-i-think", ())] == "R4_DETECTION_READY"
     assert (
-        levels[("res-colloc-make-a-decision", ("curriculum_link",))]
+        levels[("res-colloc-make-a-decision", ())]
+        == "R4_DETECTION_READY"
+    )
+    assert (
+        levels[("res-hedge-i-mean", ("curriculum_link",))]
         == "R1_LEXICALLY_RESOLVED"
     )
     for (target_id, missing), level in levels.items():
@@ -892,7 +943,7 @@ def test_every_artifact_entity_is_an_expression(built_content_db: Path) -> None:
         store.close()
     print(f"[f1] artifact entity types -> {sorted(set(types.values()))} ({len(types)})")
     assert set(types.values()) == {"EXPRESSION"}
-    assert len(types) == 105
+    assert len(types) == 108
 
 
 def test_a_non_expression_entity_reads_the_same_no_level(tmp_path: Path) -> None:
@@ -1026,7 +1077,7 @@ def test_every_corpus_link_is_approved_and_satisfies_the_r2_fact(
                     for link in links.value
                 ), entity_id
                 approved.append(entity_id)
-        assert len(store.entity_ids().value) - len(linked) == 5
+        assert len(store.entity_ids().value) - len(linked) == 8
     finally:
         store.close()
     assert len(linked) == 100
@@ -1034,7 +1085,7 @@ def test_every_corpus_link_is_approved_and_satisfies_the_r2_fact(
     # Every linked row is approved, and the R2 fact now reads one clause
     # further: it is satisfied exactly by the mapping rows (C3-R1).
     assert approved == sorted(linked)
-    assert len(with_fact) == 52
+    assert len(with_fact) == 93
     assert set(with_fact) <= set(approved)
 
 

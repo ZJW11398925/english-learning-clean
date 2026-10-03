@@ -63,7 +63,7 @@ def test_rebuild_same_path_is_byte_identical(tmp_path: Path) -> None:
     second = build_content_db(output)
     digest_second = hashlib.sha256(output.read_bytes()).hexdigest()
     assert digest_first == digest_second
-    assert first.entity_count == second.entity_count == 105
+    assert first.entity_count == second.entity_count == 108
     assert list(tmp_path.iterdir()) == [output]  # no leftover .tmp sibling
 
 
@@ -84,14 +84,14 @@ def test_two_builds_have_the_same_id_set_and_bytes(tmp_path: Path) -> None:
 
 
 def test_build_report_counts(tmp_path: Path) -> None:
-    """The report counts what was written (C3-d truth): 105 entities (5
-    CAPABILITY + 100 RESOURCE), 5 capabilities, 100 links (51 REALIZES + 49
+    """The report counts what was written (queue-2 truth): 108 entities (8
+    CAPABILITY + 100 RESOURCE), 8 capabilities, 141 links (92 REALIZES + 49
     SUPPORTS), 100 evidence documents."""
 
     report = build_content_db(tmp_path / "content.db")
-    assert report.entity_count == 105
-    assert report.capability_count == 5
-    assert report.link_count == 100
+    assert report.entity_count == 108
+    assert report.capability_count == 8
+    assert report.link_count == 141
     assert report.evidence_count == 100
     assert report.prerequisite_count == 0
     assert report.content_version == "content-v1"
@@ -549,9 +549,9 @@ def test_cli_builds_and_reports(
     exit_code = main(["--out", str(output)])
     assert exit_code == 0
     captured = capsys.readouterr().out
-    assert "entities=105" in captured
-    assert "capabilities=5" in captured
-    assert "links=100" in captured
+    assert "entities=108" in captured
+    assert "capabilities=8" in captured
+    assert "links=141" in captured
     assert output.is_file()
 
 

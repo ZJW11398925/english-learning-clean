@@ -64,6 +64,12 @@ _NONE_COUNT = 5
 #: ``PILOT_ENTITIES`` on the corpus face below).
 _EV_COUNT = 36
 
+#: The real corpus's R4 count after queue-2 (2026-10): the fifty-two
+#: C3-R1/C3-c/C3-d mappings plus the forty-one screened lexical rows. The
+#: real-build gate tests read this; the synthetic pairs above keep their
+#: own shape.
+_REAL_R4_COUNT = 93
+
 
 def _synthetic_pairs() -> list[tuple[str, str | None]]:
     pairs: list[tuple[str, str | None]] = [
@@ -322,7 +328,7 @@ def test_the_real_pilot_build_opens_the_fourth_row_on_thirty_six(
 ) -> None:
     usable, blocked, verdict, overall = _gate_over(pilot_db)
     assert usable == _EV_COUNT
-    assert blocked == _R4_COUNT - _EV_COUNT
+    assert blocked == _REAL_R4_COUNT - _EV_COUNT
     assert verdict is RolloutVerdict.GO
     assert overall is RolloutVerdict.GO
 
@@ -332,7 +338,7 @@ def test_the_default_build_holds_the_fourth_row_on_zero_ev(
 ) -> None:
     usable, blocked, verdict, overall = _gate_over(default_db)
     assert usable == 0
-    assert blocked == _R4_COUNT
+    assert blocked == _REAL_R4_COUNT
     assert verdict is RolloutVerdict.HOLD
     assert overall is RolloutVerdict.HOLD
 

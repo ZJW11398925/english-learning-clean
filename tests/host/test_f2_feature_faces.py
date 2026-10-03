@@ -51,13 +51,14 @@ from tests.host.test_w1_web import (
 #: the same name so pytest resolves it for this module's tests too.
 pilot_content_db = test_w1_web.pilot_content_db
 
-#: The corpus truth the readiness face serves today (the C3-d calibration
-#: endpoint): 52 targets at R4, the only words at or above the R3 floor.
-READINESS_R3_PLUS_COUNT = 52
+#: The corpus truth the readiness face serves today (after the queue-2
+#: screening): 93 targets at R4, the only words at or above the R3 floor.
+READINESS_R3_PLUS_COUNT = 93
 
 #: A corpus target at R1 — declared, but below the teachable floor, so it
-#: must never appear in the R3+ list.
-R1_TARGET = "res-colloc-come-to-a-conclusion"
+#: must never appear in the R3+ list. (One of queue-2's seven survivors: a
+#: floor bid named by cap-interact-backchannel's does_not_count.)
+R1_TARGET = "res-pragmatic-sorry-to-interrupt"
 
 #: The schedule panel's exact column face (the migration's own words, the
 #: eight columns the task names).

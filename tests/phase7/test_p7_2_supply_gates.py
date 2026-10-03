@@ -314,25 +314,29 @@ def test_an_unreadable_ladder_is_no_level_and_carries_the_failure(
     assert "DEPENDENCY_UNAVAILABLE" in outcome.reasons[0]
 
 
-def test_the_shipped_corpus_levels_are_five_none_52_r4_and_48_r1(
+def test_the_shipped_corpus_levels_are_eight_none_93_r4_and_7_r1(
     content_supply,
 ) -> None:
-    """The real ladder over the real corpus, at C3-d's truth (旧真值: every
-    target read no level, blocked at R0 by ``assessment_membership`` — the
-    P5-R strict reading; C1: one target reached R4; C2-a: nine; C2-b:
+    """The real ladder over the real corpus, at queue-2's truth (旧真值:
+    every target read no level, blocked at R0 by ``assessment_membership`` —
+    the P5-R strict reading; C1: one target reached R4; C2-a: nine; C2-b:
     twenty-eight; C3-b: all sixty-four; C3-R1: the sixteen RESOURCE
     targets whose §24.7 row is a curriculum mapping read R4_DETECTION_READY
-    with no blocking key; C3-c: thirty-four; 新真值 C3-d: the fifty-two
+    with no blocking key; C3-c: thirty-four; C3-d: the fifty-two
     mappings (C3-R1's sixteen plus C3-c's and C3-d's thirty-six authored
-    rows) read R4 with no blocking
-    key, the other forty-eight read R1_LEXICALLY_RESOLVED
-    with ``curriculum_link`` as the level-1 blocking key — unusable, and
-    distinguishable from "no evidence" — and the five evidence-less
-    CAPABILITY entities still read exactly the R0 block)."""
+    rows) read R4 with no blocking key, the other forty-eight read
+    R1_LEXICALLY_RESOLVED with ``curriculum_link`` as the level-1 blocking
+    key; 新真值 queue-2 (2026-10): the ninety-three mappings (the
+    fifty-two plus the forty-one screened lexical rows against the three
+    new lexical capabilities) read R4 with no blocking key, the seven
+    screened-out pragmatic rows read R1 with the same blocking key —
+    unusable at the kernel floors, and distinguishable from "no evidence" —
+    and the eight evidence-less CAPABILITY entities (the five plus
+    queue-2's three) still read exactly the R0 block)."""
 
     ids = content_supply.supply_entity_ids()
     assert isinstance(ids, Ok)
-    assert len(ids.value) == 105
+    assert len(ids.value) == 108
     r4: list[str] = []
     r1: list[str] = []
     for entity_id in ids.value:
@@ -358,13 +362,31 @@ def test_the_shipped_corpus_levels_are_five_none_52_r4_and_48_r1(
         assert outcome.blocking_keys == ("assessment_membership",), entity_id
         assert "blocked at R0_INDEXED" in outcome.reasons[0]
     assert r4 == list(_MAPPING_TARGETS)
-    assert len(r1) == 48
+    assert len(r1) == 7
 
 
-#: The fifty-two RESOURCE targets whose §24.7 row is a curriculum mapping
-#: after C3-R1 plus C3-c's and C3-d's authored mappings (the R4 set the
-#: shipped corpus grades), written out rather than derived.
+#: The ninety-three RESOURCE targets whose §24.7 row is a curriculum mapping
+#: after C3-R1 plus C3-c's and C3-d's authored mappings plus queue-2's
+#: forty-one screened lexical rows (the R4 set the shipped corpus grades),
+#: written out rather than derived.
 _MAPPING_TARGETS = (
+    "res-colloc-come-to-a-conclusion",
+    "res-colloc-draw-attention-to",
+    "res-colloc-have-an-effect-on",
+    "res-colloc-heavy-rain",
+    "res-colloc-keep-in-mind",
+    "res-colloc-make-a-decision",
+    "res-colloc-make-an-effort",
+    "res-colloc-make-progress",
+    "res-colloc-make-sense",
+    "res-colloc-meet-a-deadline",
+    "res-colloc-pay-attention-to",
+    "res-colloc-play-a-role",
+    "res-colloc-raise-awareness",
+    "res-colloc-save-time",
+    "res-colloc-take-a-look",
+    "res-colloc-take-advantage-of",
+    "res-colloc-take-part-in",
     "res-discourse-anyway",
     "res-discourse-before-i-forget",
     "res-discourse-by-the-way",
@@ -377,6 +399,13 @@ _MAPPING_TARGETS = (
     "res-discourse-to-be-honest",
     "res-discourse-to-get-back-to-the-point",
     "res-discourse-where-was-i",
+    "res-frame-id-like-to",
+    "res-frame-if-you-dont-mind",
+    "res-frame-just-wondering",
+    "res-frame-lets-say",
+    "res-frame-the-thing-is",
+    "res-frame-what-im-saying-is",
+    "res-frame-would-you-mind",
     "res-hedge-as-far-as-i-know",
     "res-hedge-from-what-i-can-tell",
     "res-hedge-i-guess",
@@ -390,6 +419,23 @@ _MAPPING_TARGETS = (
     "res-hedge-more-or-less",
     "res-hedge-not-really",
     "res-hedge-sort-of",
+    "res-idiom-a-blessing-in-disguise",
+    "res-idiom-break-the-ice",
+    "res-idiom-hit-the-nail-on-the-head",
+    "res-idiom-on-the-same-page",
+    "res-idiom-piece-of-cake",
+    "res-idiom-the-ball-is-in-your-court",
+    "res-idiom-under-the-weather",
+    "res-phrasal-bring-up",
+    "res-phrasal-carry-on",
+    "res-phrasal-come-up-with",
+    "res-phrasal-figure-out",
+    "res-phrasal-give-up",
+    "res-phrasal-look-forward-to",
+    "res-phrasal-put-off",
+    "res-phrasal-run-out-of",
+    "res-phrasal-turn-out",
+    "res-phrasal-work-out",
     "res-pragmatic-are-you-saying",
     "res-pragmatic-come-again",
     "res-pragmatic-could-you-clarify",

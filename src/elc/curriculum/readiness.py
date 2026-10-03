@@ -119,9 +119,11 @@ forty-eight placement resources to ``R1_LEXICALLY_RESOLVED`` (their
 ``curriculum_link`` fact reads false under the approved ∧
 ``CURRICULUM_MAPPING`` reading) and left sixteen at ``R4_DETECTION_READY``;
 the C3-c and C3-d cuts' thirty-six resources authored against those
-definitions are mappings by their own rows, so the R4 side now reads
-fifty-two;
-the five capability targets still read
+definitions are mappings by their own rows, and the queue-2 screening
+(2026-10) mapped forty-one of the forty-eight placements back against the
+three lexical capabilities it added, so the R4 side now reads
+ninety-three;
+the eight capability targets still read
 ``None`` because their sources state no evidence — the same report, now
 driven by the artifact instead of by the missing tables.
 

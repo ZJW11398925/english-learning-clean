@@ -264,16 +264,16 @@ def test_the_gate_read_face_answers_from_artifact_facts(
         assert isinstance(plain, Ok)
         pilot = pilot_host.content_rollout_gate()
         assert isinstance(pilot, Ok)
-        # default build: the R4 row clears the floor with 52 targets and the
+        # default build: the R4 row clears the floor with 93 targets and the
         # provenance leg holds every one of them back
         row = plain.value.row("automatic CURRENT_USER_ERROR")
-        assert (row.usable_targets, row.blocked_by_provenance) == (0, 52)
+        assert (row.usable_targets, row.blocked_by_provenance) == (0, 93)
         assert row.verdict is RolloutVerdict.HOLD
         assert plain.value.verdict is RolloutVerdict.HOLD
-        # pilot build: thirty-six EV targets serve the row; sixteen are held
-        # back
+        # pilot build: thirty-six EV targets serve the row; fifty-seven are
+        # held back
         row = pilot.value.row("automatic CURRENT_USER_ERROR")
-        assert (row.usable_targets, row.blocked_by_provenance) == (36, 16)
+        assert (row.usable_targets, row.blocked_by_provenance) == (36, 57)
         assert row.verdict is RolloutVerdict.GO
         assert pilot.value.verdict is RolloutVerdict.GO
         # the three unmarked rows never read provenance: identical counts in
@@ -312,7 +312,7 @@ def test_the_cli_gate_subcommand_codes_the_verdict(
     ]
     assert len(row_lines) == 1
     assert "usable targets 36" in row_lines[0]
-    assert "16 blocked by provenance" in row_lines[0]
+    assert "57 blocked by provenance" in row_lines[0]
     assert any(line == "verdict: GO (automatic rows: GO)" for line in lines)
     assert any("opens nothing" in line for line in lines)  # the scope note
     assert err.getvalue() == ""

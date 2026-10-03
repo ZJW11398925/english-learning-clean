@@ -83,6 +83,7 @@ from elc.curriculum.store import CurriculumContentStore
 from elc.platform.types import Ok
 from elc.teaching.rollout import corpus_rollout_gate, stage_allows_automatic
 from tests.phase5.conftest import build_variant_artifact
+from tests.phase5.test_c3r1_capability_semantics import QUEUE2_PROMOTED
 
 #: The eighteen RESOURCE targets C3-d authored as entities, evidence
 #: documents and links, in plain id sort order (declared convention, see the
@@ -593,7 +594,7 @@ def test_the_corpus_table_reads_52_r4_48_r1_and_5_none(
     finally:
         store.close()
     table = {a.target_id: a.level for a in assessments.value}
-    assert len(table) == 105
+    assert len(table) == 108
     r4 = sorted(
         t for t, level in table.items() if level == "R4_DETECTION_READY"
     )
@@ -601,9 +602,9 @@ def test_the_corpus_table_reads_52_r4_48_r1_and_5_none(
         t for t, level in table.items() if level == "R1_LEXICALLY_RESOLVED"
     )
     none = sorted(t for t, level in table.items() if level is None)
-    assert len(r4) == 52
-    assert len(r1) == 48
-    assert len(none) == 5
+    assert len(r4) == 93
+    assert len(r1) == 7
+    assert len(none) == 8
     assert all(target.startswith("cap-") for target in none)
     unexpected = [
         level
@@ -631,9 +632,12 @@ def test_r4_is_exactly_the_prior_mappings_plus_the_eighteen_new_ones(
     r4 = sorted(
         t for t, level in table.items() if level == "R4_DETECTION_READY"
     )
-    assert r4 == sorted(set(PRIOR_R4) | set(C3D_TARGETS))
+    assert r4 == sorted(
+        set(PRIOR_R4) | set(C3D_TARGETS) | set(QUEUE2_PROMOTED)
+    )
     assert len(PRIOR_R4) == 34
     assert set(PRIOR_R4).isdisjoint(C3D_TARGETS)
+    assert set(C3D_TARGETS).isdisjoint(QUEUE2_PROMOTED)
 
 
 def test_resource_count_reads_100_of_105_entities(
@@ -654,7 +658,7 @@ def test_resource_count_reads_100_of_105_entities(
         conn.close()
     resources = [eid for eid in entity_ids if eid.startswith("res-")]
     assert len(resources) == 100
-    assert len(entity_ids) == 105
+    assert len(entity_ids) == 108
     assert set(C3D_TARGETS) <= set(resources)
 
 
@@ -694,10 +698,10 @@ def test_the_three_calibration100_floors_read_separately_and_all_met(
         f"[c3d] resource_count = 100 (floor {gates['resource_count']},"
         f" {'met' if 100 >= gates['resource_count'] else 'unmet'})"
     )
-    assert core_a >= gates["CORE_A"]  # CORE_A met (32 of 30)
+    assert core_a >= gates["CORE_A"]  # CORE_A met (60 of 30)
     assert core_c >= gates["CORE_C"]  # CORE_C met
     assert 100 >= gates["resource_count"]  # volume floor met — to the top
-    assert core_a + core_c == 52  # the CORE cells count the mapping set
+    assert core_a + core_c == 93  # the CORE cells count the mapping set
 
 
 def test_core_a_counts_the_twentyfour_survivors_plus_the_eight_new_highs(
@@ -705,14 +709,16 @@ def test_core_a_counts_the_twentyfour_survivors_plus_the_eight_new_highs(
 ) -> None:
     """CORE_A = R3+ level ∧ core_utility HIGH. At C3-c's truth the reading
     answered 24; this cut's eight HIGH targets are all mappings by their own
-    rows, so all eight read R4 and count — the reading answers 32. The bands
+    rows, so all eight read R4 and count — the reading answered 32 at this
+    cut's own truth, and queue-2's screening (2026-10) added twenty-eight
+    HIGH lexical rows to carry it to 60. The bands
     are the cut's own authoring judgements (each new document's rationale
     says so, with the Revisit), not floor-chasing: the ten MEDIUM targets
     carry the same evidence face."""
 
     levels, utilities = _levels_and_utilities(built_content_db)
     core_a, _core_c = _core_counts(built_content_db)
-    assert core_a == 32
+    assert core_a == 60
     assert len(C3D_HIGH_TARGETS) == 8
     for target in C3D_HIGH_TARGETS:
         assert utilities[target] == "HIGH", target
@@ -724,7 +730,9 @@ def test_core_c_counts_the_ten_survivors_plus_the_ten_new_mediums(
 ) -> None:
     """CORE_C = R3+ level ∧ core_utility MEDIUM/LOW. At C3-c's truth the
     reading answered 10; this cut's ten MEDIUM targets are all mappings, so
-    the reading answers 20. The corpus's LOW arm is still C3-a's
+    the reading answered 20 at this cut's own truth, and queue-2's screening
+    added thirteen MEDIUM lexical rows to carry it to 33. The corpus's LOW
+    arm is still C3-a's
     `res-pragmatic-could-i-ask`; this cut authored no LOW band.
 
     声明读法 + Revisit（用户 2026-09-26 裁决），与 CORE_A 同一条读法。
@@ -732,7 +740,7 @@ def test_core_c_counts_the_ten_survivors_plus_the_ten_new_mediums(
 
     levels, utilities = _levels_and_utilities(built_content_db)
     _core_a, core_c = _core_counts(built_content_db)
-    assert core_c == 20
+    assert core_c == 33
     assert len(C3D_MEDIUM_TARGETS) == 10
     for target in C3D_MEDIUM_TARGETS:
         assert utilities[target] == "MEDIUM", target
@@ -765,8 +773,8 @@ def test_the_four_content_gate_rows_answer_go_over_the_new_table(
     assert value.verdict.name == "GO"
     assert len(value.rows) == 4
     assert all(row.verdict.name == "GO" for row in value.rows)
-    assert value.targets_considered == 105
-    assert value.targets_without_level == 5
+    assert value.targets_considered == 108
+    assert value.targets_without_level == 8
     assert value.unknown_levels == ()
     assert stage_allows_automatic(None) is False
 
@@ -1008,13 +1016,18 @@ def test_the_existing_82_link_rows_are_untouched_blob_for_blob() -> None:
     authoring order."""
 
     rows = _links_document()["links"]
-    assert len(rows) == 100
+    assert len(rows) == 141
     first = rows[:82]
     assert _digest(first) == LINKS82_DIGEST
-    appended = [str(row["resource_id"]) for row in rows[82:]]
+    appended = [str(row["resource_id"]) for row in rows[82:100]]
     assert appended == list(APPEND_ORDER)
     assert sorted(appended) == sorted(C3D_TARGETS)
     assert len(appended) == 18
+    # queue-2 (2026-10) appended its forty-one screened rows after the
+    # frozen 82 + 18 prefix; the frozen prefix stays blob-identical.
+    queue2 = [str(row["resource_id"]) for row in rows[100:]]
+    assert sorted(queue2) == sorted(QUEUE2_PROMOTED)
+    assert len(queue2) == 41
 
 
 def test_the_existing_fixture_rows_are_untouched_blob_for_blob() -> None:
@@ -1112,10 +1125,11 @@ def test_the_existing_detection_rules_are_untouched_blob_for_blob() -> None:
 def test_the_credit_face_widens_from_33_to_51_and_the_prior_nodes_stand(
     built_content_db: Path,
 ) -> None:
-    """The credit read keys on REALIZES rows: the corpus now carries 51, the
+    """The credit read keys on REALIZES rows: the corpus now carries 92, the
     thirty-three prior rows credit exactly the node they credited before
-    this cut, and the eighteen new rows credit the node their own row names
-    — the live risk R-C1-credit's registered face widens with them, and its
+    this cut, the eighteen new rows credit the node their own row names, and
+    queue-2's forty-one screened rows (2026-10) credit their lexical nodes —
+    the live risk R-C1-credit's registered face widens with them, and its
     Revisit does not move."""
 
     rows = _links_document()["links"]
@@ -1124,7 +1138,7 @@ def test_the_credit_face_widens_from_33_to_51_and_the_prior_nodes_stand(
         for row in rows
         if row["relation"] == "REALIZES"
     }
-    assert len(realizes) == 51
+    assert len(realizes) == 92
     assert set(C3D_TARGETS) <= set(realizes)
 
     store = ContentStore(built_content_db)
@@ -1188,10 +1202,10 @@ def test_realizes_implies_curriculum_mapping_across_the_whole_corpus() -> None:
     """The build rule C3-R1 landed, read over the whole source: no row is a
     REALIZES placement. The one REALIZES + PLACEMENT mutation a careless
     author could write is a build refusal, and this pin states the source
-    side of the same rule over all 100 rows."""
+    side of the same rule over all 141 rows."""
 
     rows = _links_document()["links"]
-    assert len(rows) == 100
+    assert len(rows) == 141
     for row in rows:
         if row["relation"] == "REALIZES":
             assert row["mapping_class"] == "CURRICULUM_MAPPING", row
@@ -1374,10 +1388,10 @@ def test_two_builds_of_the_widened_source_are_byte_equal(tmp_path: Path) -> None
         second.read_bytes()
     ).hexdigest()
     report = build_content_db(tmp_path / "c.db")
-    assert report.entity_count == 105
+    assert report.entity_count == 108
     assert report.evidence_count == 100
-    assert report.link_count == 100
-    assert report.capability_count == 5
+    assert report.link_count == 141
+    assert report.capability_count == 8
 
 
 def test_a_subprocess_build_matches_the_bytes_under_pythonhashseed(
@@ -1440,8 +1454,10 @@ def test_content_db_version_tracks_the_current_generation(
 
 
 def test_the_index_lists_105_and_100_documents_in_sorted_order() -> None:
-    """The index grew in both lists: entity documents 87 → 105, evidence
-    documents 82 → 100, both full-path sort order (the declared convention),
+    """The index grew in both lists: entity documents 87 → 105 → 108
+    (queue-2's three capability realizations), evidence
+    documents 82 → 100 (the capability entities carry no evidence), both
+    full-path sort order (the declared convention),
     and the eighteen new ids appear in each list exactly once."""
 
     index = json.loads(
@@ -1449,7 +1465,7 @@ def test_the_index_lists_105_and_100_documents_in_sorted_order() -> None:
     )
     entities = [str(entry) for entry in index["entities"]]
     evidence = [str(entry) for entry in index["evidence"]]
-    assert len(entities) == 105
+    assert len(entities) == 108
     assert len(evidence) == 100
     assert entities == sorted(entities)
     assert evidence == sorted(evidence)

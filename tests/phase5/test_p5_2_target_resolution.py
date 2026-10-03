@@ -410,7 +410,7 @@ def test_every_corpus_canonical_form_resolves_to_its_own_target(
     silent_supply: ContentBackedTargetSupply,
 ) -> None:
     facts = _corpus_facts(silent_supply)
-    assert len(facts) == 105
+    assert len(facts) == 108
     for fact in facts:
         assert fact.canonical_forms, fact.target_id
         for form in fact.canonical_forms:
@@ -503,7 +503,10 @@ def test_every_corpus_alternative_realization_resolves_to_its_own_target(
     same-target via CANONICAL_FORM, 4 cross-target via CANONICAL_FORM;
     新真值 v3-1: 88 unchanged, 11 same-target (i-think's evidence-declared
     "It is going to rain, I think." joined the list), 4 cross-target —
-    every deviation pinned to its exact pair above)."""
+    every deviation pinned to its exact pair above; 新真值 queue-2 (2026-10):
+    the three new capability realizations add one SUPPORTING row each
+    (103 → 106), all resolving to their own target via
+    ALTERNATIVE_REALIZATION)."""
 
     facts = _corpus_facts(silent_supply)
     seen = 0
@@ -537,10 +540,11 @@ def test_every_corpus_alternative_realization_resolves_to_its_own_target(
                 assert (
                     resolution.matched_via is MatchVia.ALTERNATIVE_REALIZATION
                 ), (fact, form)
-    assert seen == 103, (
+    assert seen == 106, (
         "the corpus's §24.5 SUPPORTING rows (C2-a 13 + C2-b 17 + C3-a 18 +"
         " C3-b 18 + C3-c 18 + C3-d 18 + v3-1's i-think"
-        " evidence-declared realization)"
+        " evidence-declared realization + queue-2's three capability"
+        " realizations)"
     )
     assert cross == len(W5_ALTERNATIVE_CROSS_MATCHES)
     assert upgraded == len(W5_ALTERNATIVE_VIA_UPGRADES)
@@ -563,7 +567,9 @@ def test_every_discriminating_corpus_slot_key_resolves_to_its_own_target(
     cut replaced four formerly multi-group keys with the bare formula's
     single one-token group; 新真值 v3-1: 67 of 105 — the v3-1 slot rewrite
     （槽位 = 目标自身的词汇材料）rewrote 60 keys, 31 of which became
-    single-token keys and dropped out of the discriminating set)."""
+    single-token keys and dropped out of the discriminating set; 新真值
+    queue-2: 67 of 108 — the three new capability realizations carry
+    single-token keys and join the excluded set, 38 → 41)."""
 
     facts = _corpus_facts(silent_supply)
     discriminating = 0
@@ -585,7 +591,7 @@ def test_every_discriminating_corpus_slot_key_resolves_to_its_own_target(
         f"[probe] discriminating slot keys -> {discriminating};"
         f" excluded single-token keys -> {excluded}"
     )
-    assert (discriminating, excluded) == (67, 38)
+    assert (discriminating, excluded) == (67, 41)
 
 
 def test_the_corpus_resolves_to_both_kinds(

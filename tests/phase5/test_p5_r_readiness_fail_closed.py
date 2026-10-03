@@ -249,7 +249,8 @@ def test_no_single_fact_can_stand_in_for_a_lexical_resolution() -> None:
 # ---------------------------------------------------------------------------
 # ③ the corpus: the artifact's answer (P5-R: no level at all; C1: 1×R4 +
 # 13×None; C2-a: 9×R4 + 5×None; C2-b: 28×R4 + 5×None; C3-a: 46×R4 + 5×None;
-# C3-b: 64×R4 + 5×None; C3-R1: 16×R4 + 48×R1 + 5×None), and the block is named
+# C3-b: 64×R4 + 5×None; C3-R1: 16×R4 + 48×R1 + 5×None; queue-2: 93×R4 +
+# 7×R1 + 8×None), and the block is named
 # ---------------------------------------------------------------------------
 
 
@@ -267,7 +268,12 @@ def test_five_targets_read_no_level_and_the_rest_split_by_the_mapping(
     thirty-four) and the other forty-eight read
     ``R1_LEXICALLY_RESOLVED`` with ``curriculum_link`` as the level-1 blocking
     key — the same fail-closed ladder, now distinguishing "no mapping" from
-    "no evidence". The five CAPABILITY entities whose sources state no
+    "no evidence". **C3-d** brought the resource count to one hundred
+    (52×R4 + 48×R1). **queue-2 (2026-10)** screened those forty-eight: the
+    forty-one lexical resources gained an approved ``CURRICULUM_MAPPING`` row
+    against the three new lexical capabilities and read R4, while the seven
+    pragmatic rows that failed the screen keep reading R1 with the same
+    blocking key. The eight CAPABILITY entities whose sources state no
     evidence still read no level at all."""
 
     assessments = _corpus_assessments(built_content_db)
@@ -277,7 +283,7 @@ def test_five_targets_read_no_level_and_the_rest_split_by_the_mapping(
             f"[p5-r] {assessment.target_id:32} {assessment.level!s:22}"
             f" {assessment.missing_keys}"
         )
-    assert len(assessments) == 105
+    assert len(assessments) == 108
     leveled: list[str] = []
     r4_targets: list[str] = []
     r1_targets: list[str] = []
@@ -304,8 +310,8 @@ def test_five_targets_read_no_level_and_the_rest_split_by_the_mapping(
         # Cumulative reporting: the R0 blocker is still standing in R1's set.
         assert "assessment_membership" in r1.missing_keys
     assert len(leveled) == 100
-    assert len(r4_targets) == 52
-    assert len(r1_targets) == 48
+    assert len(r4_targets) == 93
+    assert len(r1_targets) == 7
 
 
 def test_the_lexical_resolution_equivalence_is_gone_from_the_code() -> None:

@@ -716,12 +716,14 @@ def test_readiness_fact_keys_gain_no_provenance_key() -> None:
 def test_the_readiness_truth_table_is_exactly_unchanged(
     built_content_db: Path,
 ) -> None:
-    """52 × R4 + 48 × R1 + 5 × None — C3-R1's truth widened by C3-c's and
-    C3-d's thirty-six authored mappings (the R1 side unchanged), re-pinned
-    here (counted, plus five named ids per band as spot checks)."""
+    """93 × R4 + 7 × R1 + 8 × None — C3-R1's truth widened by C3-c's and
+    C3-d's thirty-six authored mappings and by queue-2's forty-one screened
+    rows (the eight None = the five evidence-less capability entities plus
+    queue-2's three), re-pinned
+    here (counted, plus named ids per band as spot checks)."""
 
     table = _levels(built_content_db)
-    assert len(table) == 105
+    assert len(table) == 108
     r4 = sorted(
         t for t, v in table.items() if v == "R4_DETECTION_READY"
     )
@@ -729,22 +731,27 @@ def test_the_readiness_truth_table_is_exactly_unchanged(
         t for t, v in table.items() if v == "R1_LEXICALLY_RESOLVED"
     )
     none = sorted(t for t, v in table.items() if v is None)
-    assert (len(r4), len(r1), len(none)) == (52, 48, 5)
-    # Five named ids per band (the full sets are pinned by c3-r1's tests).
+    assert (len(r4), len(r1), len(none)) == (93, 7, 8)
+    # Named ids per band (the full sets are pinned by c3-r1's tests).
     assert {
         "res-discourse-anyway",
         "res-hedge-i-think",
         "res-softener-a-bit",
         "res-pragmatic-no-offense-but",
         "res-softener-to-be-fair",
-    } <= set(r4)
-    assert {
-        "res-colloc-make-a-decision",
         "res-colloc-heavy-rain",
         "res-phrasal-bring-up",
         "res-idiom-piece-of-cake",
-        "res-frame-lets-say",
-    } <= set(r1)
+    } <= set(r4)
+    assert {
+        "res-discourse-in-fact",
+        "res-discourse-long-story-short",
+        "res-hedge-i-mean",
+        "res-pragmatic-could-i-ask",
+        "res-pragmatic-could-you",
+        "res-pragmatic-sorry-to-interrupt",
+        "res-softener-if-anything",
+    } == set(r1)
     assert all(t.startswith("cap-") for t in none)
 
 
@@ -756,8 +763,9 @@ def test_the_readiness_truth_table_is_exactly_unchanged(
 def test_the_three_calibration_gates_are_unchanged(
     built_content_db: Path,
 ) -> None:
-    """CORE_A 32 (met) / CORE_C 20 (met) / resource_count 100 (met) — the
-    C3-R1 readings widened by C3-c's and C3-d's authored mappings, to the
+    """CORE_A 60 (met) / CORE_C 33 (met) / resource_count 100 (met) — the
+    C3-R1 readings widened by C3-c's and C3-d's authored mappings and by
+    queue-2's forty-one screened rows, to the
     value. **No rollout opening is claimed**: the floors meeting is the
     volume gate's answer, not the rollout's."""
 
@@ -767,8 +775,8 @@ def test_the_three_calibration_gates_are_unchanged(
         f"[c3r2] CORE_A = {core_a}/30, CORE_C = {core_c}/2, "
         f"resource_count = {len(resources)}/100"
     )
-    assert core_a == 32
-    assert core_c == 20
+    assert core_a == 60
+    assert core_c == 33
     assert len(resources) == 100
 
 

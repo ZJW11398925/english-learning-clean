@@ -57,6 +57,7 @@ from elc.curriculum.provider import ContentBackedTeachingTargetProvider
 from elc.curriculum.readiness import READINESS_FACT_KEYS
 from elc.curriculum.store import CurriculumContentStore
 from elc.platform.types import Ok
+from tests.phase5.test_c3r1_capability_semantics import QUEUE2_PROMOTED
 
 #: The eight targets C2-a authored evidence for (C1's own target excluded).
 C2A_TARGETS = (
@@ -555,18 +556,23 @@ def test_every_authored_documents_detection_evidence_is_paired(
 def test_the_credit_face_reads_the_fifteen_approved_realizes_nodes(
     built_content_db: Path,
 ) -> None:
-    """The behavior change, stated as a read — at C3-R1's truth. With all
-    sixty-four §24.7 rows approved, **nine** targets of the pre-C3-a corpus
+    """The behavior change, stated as a read — at queue-2's truth. With all
+    one hundred forty-one §24.7 rows approved, **nine** targets of the
+    pre-C3-a corpus
     (C2-a's three surviving REALIZES rows plus C2-b's six), **three** C3-a
-    targets and **three** C3-b targets carry the node their link names in
-    their teaching payload — fifteen in all, this is what an
+    targets, **three** C3-b targets, **eighteen** C3-c targets and
+    **eighteen** C3-d targets carry the node their link names in
+    their teaching payload, and **forty-one** more targets joined them
+    through the queue-2 screening (2026-10) against the three new lexical
+    capabilities — ninety-two in all, this is what an
     ``ALTERNATIVE_SUCCESS`` attempt can credit; the
-    targets whose single approved row is a ``SUPPORTS`` row — the eleven of
-    the earlier cuts (the thirteen C2-b placements minus the six C2-a rows
-    C3-R1 demoted, plus those six) — read ``None`` on the credit face while
+    targets whose only approved row is a ``SUPPORTS`` row read ``None`` on
+    the credit face while
     their row stays fully readable, the credit-safe direction C2-b
     introduced (and the direction C3-R1's demotions moved six more targets
-    into); and the five CAPABILITY entities — no link row of their own —
+    into — five of which the queue-2 screening later mapped for real, each
+    gaining a second row while the frozen SUPPORTS placement row stands);
+    and the eight CAPABILITY entities — no link row of their own —
     still read ``None``."""
 
     store = ContentStore(built_content_db)
@@ -575,12 +581,28 @@ def test_the_credit_face_reads_the_fifteen_approved_realizes_nodes(
         for target_id in RES_TARGETS:
             links = supply.curriculum_links_of(target_id)
             assert isinstance(links, Ok), links
+            teaching = supply.get_teaching_content(target_id)
+            assert isinstance(teaching, Ok), teaching
+            if target_id in QUEUE2_PROMOTED:
+                # queue-2 screened this row into an approved REALIZES
+                # mapping; every promoted row already carried its SUPPORTS
+                # placement row (the 48 R1 band was the placement band), so
+                # each now reads exactly two rows.
+                assert len(links.value) == 2, target_id
+                realizes = [
+                    link
+                    for link in links.value
+                    if str(link.relation) == "REALIZES"
+                ]
+                assert len(realizes) == 1, target_id
+                assert teaching.value.capability_linkage == str(
+                    realizes[0].node_id
+                ), target_id
+                continue
             assert len(links.value) == 1, target_id
             node = str(links.value[0].node_id)
             relation = str(links.value[0].relation)
             assert relation in ("REALIZES", "SUPPORTS"), target_id
-            teaching = supply.get_teaching_content(target_id)
-            assert isinstance(teaching, Ok), teaching
             if (
                 target_id in CREDIT_TARGETS
                 or target_id in C3A_CREDIT_TARGETS
@@ -611,6 +633,7 @@ def test_the_credit_face_reads_the_fifteen_approved_realizes_nodes(
     assert len(C3B_CREDIT_TARGETS) == 3
     assert len(C3C_CREDIT_TARGETS) == 18
     assert len(C3D_CREDIT_TARGETS) == 18
+    assert len(QUEUE2_PROMOTED) == 41
     # The pre-C3-a corpus's support-only side: C2-b's thirteen placements plus
     # the six C2-a rows C3-R1 demoted (the demotion moved credit, not rows).
     assert len(SUPPORT_ONLY_TARGETS) == 19
@@ -623,7 +646,14 @@ def test_the_credit_face_reads_the_fifteen_approved_realizes_nodes(
         for target_id in SUPPORT_ONLY_TARGETS:
             view = provider.resolve("RESOURCE", target_id)
             assert isinstance(view, Ok), view
-            assert view.value.capability_linkage is None, target_id
+            # Five of these nineteen were screened into REALIZES mappings by
+            # queue-2 (2026-10) and credit their new node now; the placement
+            # face this loop pins is the fourteen whose only row is the
+            # SUPPORTS row.
+            if target_id in QUEUE2_PROMOTED:
+                assert view.value.capability_linkage is not None, target_id
+            else:
+                assert view.value.capability_linkage is None, target_id
     finally:
         provider.close()
 
@@ -653,7 +683,7 @@ def test_the_index_lists_the_sixty_four_evidence_documents_in_entity_order() -> 
     assert len(expected) == 100
     for listed in index["evidence"]:
         assert (CONTENT_SRC_DIR / listed).is_file(), listed
-    assert len(entities) == 105
+    assert len(entities) == 108
     # The order rule, stated positively: both lists are plain id order, which
     # is what "the same order as the entities list" means here.
     assert entities == sorted(entities)
@@ -669,16 +699,18 @@ def test_the_calibration100_readings_at_c3b_truth(built_content_db: Path) -> Non
     whose level is R3_TEACHING_READY or R4_DETECTION_READY, split by
     ``content_pedagogical_profile.core_utility`` (HIGH versus MEDIUM/LOW) —
     not the capability-``family`` counts this file read until C3-a, which
-    could never move when resources were authored. At **C3-d's** truth the
-    artifact answers fifty-two detection-ready resource targets out of
-    105 entities, CORE_A = 32 (floor 30, **met** — only a
-    curriculum mapping satisfies §8.1 R2, and 32 of the 52 mappings carry a
-    HIGH band), CORE_C = 20 (floor 2, met) and ``resource_count`` = 100 == 100
+    could never move when resources were authored. At **queue-2's** truth the
+    artifact answers ninety-three detection-ready resource targets out of
+    108 entities, CORE_A = 60 (floor 30, **met** — only a
+    curriculum mapping satisfies §8.1 R2, and 60 of the 93 mappings carry a
+    HIGH band), CORE_C = 33 (floor 2, met) and ``resource_count`` = 100 == 100
     (met, the first rung topped) — three separate readings, never one "gate
     passed" sentence
     (旧真值: one of fourteen; C2-a: nine of fourteen with both CORE cells 0;
     C3-b: 42/22 with both cells met; C3-R1: 16 of 69 with CORE_A 11 / CORE_C
-    5; C3-c: 34 of 87 with CORE_A 24 / CORE_C 10). IP §13's own starting
+    5; C3-c: 34 of 87 with CORE_A 24 / CORE_C 10; C3-d: 52 of 105 with
+    CORE_A 32 / CORE_C 20; queue-2: the screening's forty-one lexical rows
+    joined the mapping set). IP §13's own starting
     number is 28: the RESOURCE
     count passed it long ago, and that is the first rung of "28 → 100", not a
     Calibration100 pass — C3-R1's re-adjudication dropped the detection-ready
@@ -735,9 +767,9 @@ def test_the_calibration100_readings_at_c3b_truth(built_content_db: Path) -> Non
     ]
     core_a = [t for t in banded if utilities.get(t) == "HIGH"]
     core_c = [t for t in banded if utilities.get(t) in ("MEDIUM", "LOW")]
-    assert len(ready) == 52
+    assert len(ready) == 93
     assert len(res_rows) == 100  # the IP §13 first rung: 28 — long passed, now topped
-    assert len(resources) == 105
+    assert len(resources) == 108
     print(
         f"[c3r1] calibration readings -> CORE_A {len(core_a)}/{gates['CORE_A']}"
         f" (met), CORE_C {len(core_c)}/{gates['CORE_C']} (met),"

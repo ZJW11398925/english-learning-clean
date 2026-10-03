@@ -1,0 +1,28 @@
+{
+  "curriculum_node_id": "cap-lexcol-verb-particle",
+  "capability_id": "cap-lexcol-verb-particle",
+  "family": "STYLE",
+  "level": 2,
+  "functional_definition": {
+    "statement": "Producing a verb-plus-particle combination -- an adverb or preposition particle that changes or refines what the verb means -- as one spoken unit, with the object placed where the combination demands it.",
+    "counts_as_realization": [
+      "the resource's taught production is a verb plus an adverb or preposition particle whose combination means something the bare verb alone does not (\"give up\" is not every sense of give plus every sense of up; \"run out of\" is not motion; \"figure out\" is not seeing) or whose particle refines the verb's sense (\"look forward to\");",
+      "the combination stands as the predicate core of the learner's sentence -- someone stops, discovers, postpones, exhausts or anticipates something -- rather than organising the discourse or managing the social episode;",
+      "the learner errors the teaching answers are particle-shaped: a dropped particle, an object pronoun placed on the wrong side of a separable particle, a wrong particle swapped in, or the complement form after the particle chosen wrongly (a bare infinitive where the unit takes a gerund or a that-clause);",
+      "the taught realization has the speaker producing the combination inside a proposition with the object or complement in its taught position."
+    ],
+    "does_not_count": [
+      "verb--noun partnerships with no meaning-changing particle (\"make a decision\", \"pay attention to\", \"take part in\") -- the word-partnership node's face: their fixedness lives in the noun and its preposition, not in a particle;",
+      "whole-clause fixed expressions -- idioms and sentence frames (\"the ball is in your court\", \"Would you mind ...\", \"The thing is, ...\") -- the two shapes of the fixed-expression node: their fixed unit is the clause shape, not a verb's particle;",
+      "pragmatic formulas whose taught function is interactional or attitudinal (listener signals, clarification or permission requests, floor bids, hedges, softeners) -- the five pragmatic capability nodes govern those;",
+      "prepositional phrases that follow any verb of motion with their ordinary local meaning (\"walk into the room\", \"put the box on the table\"): no particle changes the verb, so there is no combination to teach."
+    ],
+    "boundary_cases": [
+      "\"look forward to\" ends in \"to\", but \"forward\" is an adverb particle refining the verb and the whole unit is taught as one anticipating unit: it counts here, with the gerund after \"to\" taught as part of the unit's complement shape.",
+      "\"carry on\" keeps the literal local sense of \"on\" (continue along) more visibly than \"give up\" does, but the unit is still a verb-plus-particle combination taught as one predicate: it counts here.",
+      "\"keep in mind\" has a preposition but no adverb particle and nothing about \"keep\" changes: a word-partnership row, not this node's.",
+      "\"turn out\" in \"It turned out that the train was cancelled\" takes no object at all: the particle combination works as a whole reporting predicate, which this node counts -- its taught errors are still particle-shaped (a dropped or mis-formed subject arm of the reporting frame)."
+    ],
+    "basis": "Authoring judgement made in this repository (queue-2 R1-to-R3 screening, 2026-10), read against the canonical vocabulary that actually exists: docs/DOMAIN_MODEL.md \u00a78's PHRASAL_VERB expression subtype and the five pragmatic capability nodes' own does_not_count entries, which place this vocabulary outside their jurisdiction (cap-interact-backchannel names \"look forward to\" among the proposition vocabulary, cap-ref-ask-clarification names \"figure out\", \"work out\" and \"turn out\" as understanding-reached-by-thinking vocabulary rather than repair moves, cap-eval-hedged-opinion names the act vocabulary). The fourteen canonical families name no lexical family, so family STYLE is the declared nearest reading -- how naturally the predicate is phrased; a canonical family semantics that names a lexical family supersedes this declaration (Revisit registered with DEC-OPI-c91a2957-5f8e-448a-a3a5-9de2f626af36.9). No external psychometric or corpus source is claimed."
+  }
+}

@@ -51,9 +51,9 @@ one says so where it is made:
   Planner needs a target's content level and the goal/assessment pack mapping
   (IMPLEMENTATION_PLAN §7 line 340). The readiness face is landed and the
   C2/C3
-  evidence documents back it — the corpus answers fifty-two R4 resource
-  targets with five capability targets still level-less, so the readiness leg
-  fires for any candidate naming one of those five — while the
+  evidence documents back it — the corpus answers ninety-three R4 resource
+  targets with eight capability targets still level-less, so the readiness leg
+  fires for any candidate naming one of those eight — while the
   goal/assessment pack mapping is
   not landed (``assessment_targets`` has no consumer). A caller that cannot
   read one of these gets INCOMPLETE, never a number (see
@@ -577,9 +577,11 @@ def assemble_feature_authority(
 
     **Today's answer, honestly.** The shipped corpus no longer reads
     ``level=None`` across the board: the C2/C3 evidence documents give
-    fifty-two resource targets an R4 level (sixty-four did until C3-R1's
+    ninety-three resource targets an R4 level (sixty-four did until C3-R1's
     mapping re-adjudication returned the forty-eight placement resources to
-    R1; the C3-c and C3-d authored mappings rebuilt the R4 side) and leave five
+    R1; the C3-c and C3-d authored mappings rebuilt the R4 side, and the
+    queue-2 screening mapped forty-one of the forty-eight placements back
+    against the three lexical capabilities, leaving seven there) and leave eight
     capability
     targets level-less, and the goal/assessment mapping still does not exist
     (``assessment_targets`` has no consumer). So the readiness leg fires for

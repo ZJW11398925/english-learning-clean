@@ -1,0 +1,41 @@
+{
+  "entity": {
+    "entity_id": "cap-lexcol-verb-particle",
+    "entity_type": "EXPRESSION",
+    "language": "en",
+    "lifecycle_status": "CANONICAL_APPROVED",
+    "entity_revision": 1,
+    "created_in_version": "content-v1",
+    "updated_in_version": "content-v1"
+  },
+  "expression": {
+    "expression_type": "PHRASAL_VERB",
+    "fixedness": "SEMI_FIXED",
+    "recognition_policy": "LEMMA_SEQUENCE"
+  },
+  "target": {
+    "target_type": "CAPABILITY",
+    "target_mode": "CAPABILITY_PRACTICE",
+    "learning_intent": "ESTABLISH",
+    "evidence_modality": "TEXT_PRODUCTION"
+  },
+  "teaching_content": {
+    "hint_ladder": [
+      "Say the verb and its particle as one unit.",
+      "The particle changes what the verb means: call off = cancel.",
+      "Fill in: They called ___ the interview at the last minute."
+    ],
+    "reveal_form": "They called off the interview at the last minute.",
+    "canonical_forms": [
+      "They called off the interview at the last minute."
+    ],
+    "alternative_realizations": [
+      "They called the interview off at the last minute."
+    ],
+    "required_slots": [
+      [
+        "the interview"
+      ]
+    ]
+  }
+}
