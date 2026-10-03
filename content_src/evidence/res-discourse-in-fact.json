@@ -51,34 +51,6 @@
       "role": "translation",
       "ordinal": 0,
       "text": "事实上；其实（用来说明真实情况，常带纠正或加强）"
-    },
-    {
-      "sense_id": "in-fact.sense-1",
-      "language": "en",
-      "role": "usage",
-      "ordinal": 2,
-      "text": "The pilot went well; in fact, two more teams have asked to join it."
-    },
-    {
-      "sense_id": "in-fact.sense-1",
-      "language": "en",
-      "role": "usage",
-      "ordinal": 3,
-      "text": "The reform did not cut waiting times; in fact, the average wait grew by a week."
-    },
-    {
-      "sense_id": "in-fact.sense-1",
-      "language": "en",
-      "role": "usage",
-      "ordinal": 4,
-      "text": "I wasn't tired at all; in fact, I cleaned the whole kitchen when we got home."
-    },
-    {
-      "sense_id": "in-fact.sense-1",
-      "language": "en",
-      "role": "usage",
-      "ordinal": 5,
-      "text": "The scheme saved water; in fact, usage fell by a fifth in the first summer."
     }
   ],
   "forms": [
@@ -136,46 +108,6 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
-    },
-    {
-      "ordinal": 2,
-      "register": "NEUTRAL",
-      "usage_modality": "WRITTEN_AND_SPOKEN",
-      "genre": "PROFESSIONAL_DISCOURSE",
-      "context": "CONVERSATION_MANAGEMENT",
-      "style": "PLAIN",
-      "domain": "WORK",
-      "variety": "EN-US"
-    },
-    {
-      "ordinal": 3,
-      "register": "FORMAL",
-      "usage_modality": "WRITTEN_AND_SPOKEN",
-      "genre": null,
-      "context": "CONVERSATION_MANAGEMENT",
-      "style": "PLAIN",
-      "domain": "GENERAL",
-      "variety": "EN-GB"
-    },
-    {
-      "ordinal": 4,
-      "register": "CASUAL",
-      "usage_modality": "SPOKEN",
-      "genre": "SPOKEN_CONVERSATION",
-      "context": "CONVERSATION_MANAGEMENT",
-      "style": "PLAIN",
-      "domain": "GENERAL",
-      "variety": "EN-US"
-    },
-    {
-      "ordinal": 5,
-      "register": "NEUTRAL",
-      "usage_modality": "WRITTEN_AND_SPOKEN",
-      "genre": null,
-      "context": "CONVERSATION_MANAGEMENT",
-      "style": "PLAIN",
-      "domain": "GENERAL",
-      "variety": "EN-US"
     }
   ],
   "example_policy": {

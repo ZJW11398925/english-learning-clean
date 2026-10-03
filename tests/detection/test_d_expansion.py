@@ -112,9 +112,13 @@ _EXPANSION_ENTITIES = (
 #: 7a2816ab… was the queue-2 delivery artifact; re-derived for the
 #: queue-3 scenario-variant cut — its 120 usage-variant rows + 120 aligned
 #: resource-label rows moved the corpus bytes:
-#: 21d039f3… is the queue-3 delivery artifact).
+#: 21d039f3… is the queue-3 delivery artifact; re-derived for the
+#: queue-3 disposal cut (the F-1 roster swap — two unteachable R1
+#: survivors out, two R4 receipt targets in — held the 120-row shape
+#: but moved the corpus bytes:
+#: 90932ab5… is the queue-3 disposal artifact).
 _PARENT_DEFAULT_SHA256 = (
-    "21d039f3eac822fbb7ec130c7a9d5f66f78f19d7fa1496bb3ad40a7d3fac79f8"
+    "90932ab597154a3b8a3da86af1bc34529621347b012ffb8c7c539cdfd5b9d399"
 )
 
 

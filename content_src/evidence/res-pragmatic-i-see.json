@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "我明白了；原来如此（听者随口的接收信号：表示听懂了、请对方继续，不抢话轮）"
+    },
+    {
+      "sense_id": "i-see.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "I see — so the deadline moves to Friday, not Wednesday. I'll tell the team."
+    },
+    {
+      "sense_id": "i-see.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "I see, the ferry leaves from the other terminal. Thanks for pointing that out."
+    },
+    {
+      "sense_id": "i-see.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "I see what you mean about the kitchen — the window really does make it brighter."
+    },
+    {
+      "sense_id": "i-see.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "Oh, I see — the past perfect needs two times, not one. Can I try the next example?"
     }
   ],
   "forms": [
@@ -108,11 +136,51 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 4,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 5,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical receipt first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the receipt in the plain present with no object and with the floor staying with the other speaker, never present the progressive or past sentence as a model of the receipt, and never present an ERROR_INSTANCE as a model."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical receipt first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the receipt in the plain present with no object and with the floor staying with the other speaker, never present the progressive or past sentence as a model of the receipt, and never present an ERROR_INSTANCE as a model. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

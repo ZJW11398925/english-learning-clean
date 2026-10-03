@@ -51,6 +51,34 @@
       "role": "translation",
       "ordinal": 0,
       "text": "有道理；这就说得通了（听者对对方解释的接收信号：表示听明白了，不抢话轮）"
+    },
+    {
+      "sense_id": "that-makes-sense.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 2,
+      "text": "That makes sense — we'll ship the smaller change first and revisit the rest next quarter."
+    },
+    {
+      "sense_id": "that-makes-sense.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 3,
+      "text": "That makes sense; I'll take the refill pack instead of a new bottle."
+    },
+    {
+      "sense_id": "that-makes-sense.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 4,
+      "text": "That makes sense — so my appointment is Thursday at ten, not Tuesday. See you then."
+    },
+    {
+      "sense_id": "that-makes-sense.sense-1",
+      "language": "en",
+      "role": "usage",
+      "ordinal": 5,
+      "text": "That makes sense, and thanks for explaining the fee — I've confirmed the transfer this morning."
     }
   ],
   "forms": [
@@ -108,11 +136,51 @@
       "style": null,
       "domain": "GENERAL",
       "variety": "EN-GB"
+    },
+    {
+      "ordinal": 2,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "PROFESSIONAL_DISCOURSE",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "WORK",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 3,
+      "register": "CASUAL",
+      "usage_modality": "SPOKEN",
+      "genre": null,
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
+    },
+    {
+      "ordinal": 4,
+      "register": "NEUTRAL",
+      "usage_modality": "SPOKEN",
+      "genre": "SPOKEN_CONVERSATION",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-GB"
+    },
+    {
+      "ordinal": 5,
+      "register": "NEUTRAL",
+      "usage_modality": "WRITTEN_AND_SPOKEN",
+      "genre": "CORRESPONDENCE",
+      "context": "SOCIAL_INTERACTION",
+      "style": "PLAIN",
+      "domain": "GENERAL",
+      "variety": "EN-US"
     }
   ],
   "example_policy": {
     "policy_version": "example-policy-v1",
-    "policy": "Present at most two examples per attempt, whole sentences only: the canonical receipt first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the receipt with the singular frame (that makes sense) answering someone's explanation, never present the agreement-broken frame as a model of the receipt, and never present an ERROR_INSTANCE as a model."
+    "policy": "Present at most two examples per attempt, whole sentences only: the canonical receipt first; a SUPPORTING or CONTRAST sentence only after the learner has attempted the canonical form twice without producing it. Always show the receipt with the singular frame (that makes sense) answering someone's explanation, never present the agreement-broken frame as a model of the receipt, and never present an ERROR_INSTANCE as a model. Usage rows at ordinal 2 and above are scenario variants: the same expression re-seated in a distinct real context, each aligned with the resource_labels row of the same ordinal; they are models of correct use, never error instances, and stand outside the two-example-per-attempt budget."
   },
   "typical_error_required": true,
   "typical_errors": [

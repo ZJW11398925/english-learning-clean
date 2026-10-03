@@ -22,7 +22,7 @@ What this file pins (VAL-OPI-32409938-3ba8-4d3a-b988-b4942c57f69a.3):
   untouched, the six-word §24.3 role list is untouched (the variants
   ride the existing ``usage`` role at fresh ordinals), and the corpus
   still builds deterministically across processes;
-- **the detection face stays silent**: the 14 roster targets that sit
+- **the detection face stays silent**: the 16 roster targets that sit
   in the D-3 pilot registry answer NO_MATCH on every one of their
   variant sentences — correct-use sentences are not learner errors —
   and no fixture row was added or changed to buy that (the provenance
@@ -86,18 +86,18 @@ QUEUE3_TARGETS = (
     "res-phrasal-figure-out",
     "res-phrasal-work-out",
     "res-pragmatic-could-you-clarify",
-    "res-pragmatic-could-you",
     "res-pragmatic-im-not-convinced",
     "res-pragmatic-run-that-by-me-again",
     "res-pragmatic-thats-a-good-point-but",
     "res-colloc-have-an-effect-on",
     "res-discourse-before-i-forget",
-    "res-discourse-in-fact",
     "res-hedge-as-far-as-i-know",
     "res-hedge-more-or-less",
     "res-pragmatic-right",
     "res-pragmatic-fair-enough",
     "res-pragmatic-got-it",
+    "res-pragmatic-i-see",
+    "res-pragmatic-that-makes-sense",
 )
 
 #: The variant ordinals (the ordinal-0 usage row is the baseline; the
@@ -240,7 +240,10 @@ def test_the_roster_is_the_top_thirty_high_targets(
     built_content_db: Path,
 ) -> None:
     """R2's pre-selection order, re-derived: among ``core_utility = HIGH``
-    resources, order by transfer/productive/receptive (HIGH first), then
+    resources that carry an approved curriculum mapping (the R4 teachable
+    half — the queue-3 disposal cut narrowed the roster to teachable
+    targets, dropping its two R1 survivors), order by
+    transfer/productive/receptive (HIGH first), then
     productive_difficulty, then explanation_cost (both ascending), then
     the id — and the cut took the first thirty. Set equality, so the pin
     survives a tie's presentation order."""
@@ -253,7 +256,11 @@ def test_the_roster_is_the_top_thirty_high_targets(
             " p.receptive_value, p.productive_difficulty, p.explanation_cost"
             " FROM content_pedagogical_profile p"
             " JOIN content_lexical_entry l USING (entity_id)"
-            " WHERE p.core_utility = 'HIGH'"
+            " WHERE p.core_utility = 'HIGH' AND EXISTS ("
+            " SELECT 1 FROM curriculum_link k"
+            " WHERE k.resource_id = l.entity_id"
+            " AND k.editorial_status = 'CANONICAL_APPROVED'"
+            " AND k.mapping_class = 'CURRICULUM_MAPPING')"
         ).fetchall()
     finally:
         conn.close()
@@ -412,7 +419,7 @@ def test_the_pilot_matchers_stay_silent_on_every_variant_sentence(
     pilot_registry: DetectorRegistry,
 ) -> None:
     """VAL ③'s confirm-no-trigger arm: the roster targets that sit in the
-    D-3 pilot registry (14 of the 30) answer NO_MATCH on all their
+    D-3 pilot registry (16 of the 30) answer NO_MATCH on all their
     variant sentences — a correct-use model sentence is not a learner
     error, and no BOUNDARY fixture was spent buying that."""
 
@@ -435,7 +442,7 @@ def test_the_pilot_matchers_stay_silent_on_every_variant_sentence(
         assert matcher is not None, entity_id
         assert matcher(str(text)) is None, (entity_id, str(text))
         probed += 1
-    assert probed == 56
+    assert probed == 64
 
 
 def test_the_provenance_distribution_is_untouched(tmp_path: Path) -> None:
