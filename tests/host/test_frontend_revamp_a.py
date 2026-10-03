@@ -671,6 +671,12 @@ def test_the_typography_spec_section_carries_the_assignment() -> None:
     assert "| ④ 微标签与 mono 数字档 |" in spec
     assert "新规则一律 `font: var(--t-*)`" in spec
     assert "### 9.14 fr-A 修订登记" in spec
+    # ②-6 的豁免集合在法则自己的家里登记（原始法则句一字保留）
+    assert "圆角 v2 收窄一档：信纸物件 ≤2px，仅邮票/邮戳圆形" in spec
+    assert "**fr-A 豁免新增一席（2026-10-05" in spec
+    assert "邮票/邮戳/回底墨点" in spec
+    # ②-5 指向配方（不重列）
+    assert "排印配方 `--t-*` 九枚与四族应用规范见 **②-4a**" in spec
 
 
 def test_the_native_select_is_retired_and_the_ink_select_is_registered() -> None:
