@@ -125,8 +125,10 @@ class SqliteWorldLoreStore:
                     message=f"unknown lore status: {fact.status!r}",
                 )
             )
+        began = False
         try:
             self._conn.execute("BEGIN IMMEDIATE")
+            began = True
             self._conn.execute(
                 "INSERT OR IGNORE INTO world_lore_fact ("
                 " world_lore_fact_id, scope, persona_id, fact_kind,"
@@ -147,7 +149,15 @@ class SqliteWorldLoreStore:
                 ),
             )
         except sqlite3.Error as exc:
-            self._conn.execute("ROLLBACK")
+            # ml3R LOW-1: when BEGIN itself failed (a pending transaction,
+            # a lock), nothing of ours began — in_transaction then belongs
+            # to the caller and must not be rolled back here; and a failing
+            # ROLLBACK of our own must not break the Result contract.
+            if began:
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
             return Err(
                 DomainError(
                     code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,

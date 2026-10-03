@@ -586,10 +586,15 @@ def test_the_host_exposes_the_controller_over_a_seeded_store(
     host.close()
 
 
-def test_a_portless_assembly_still_compiles_lore_less(tmp_path: Path) -> None:
-    """The backward half: a coordinator assembled without the port (every
-    assembly before this cut, and any that opts out) answers ``None`` — no
-    section, byte-identical prompt to the pre-主线-3 shape."""
+def test_an_unknown_conversation_downgrades_to_no_lore_section(
+    tmp_path: Path,
+) -> None:
+    """The no-section half: a world-lore port whose conversation key is
+    unknown (and any assembly the port answers ``None`` for) compiles no
+    ``[lore]`` — byte-identical prompt to the pre-主线-3 shape. The
+    truly-portless arm is carried by the phase9_2 direct-construction
+    tests (ml3R LOW-2 renamed from its as-first-written name, which
+    claimed a portless assembly this test does not build)."""
 
     provider = ScriptedPersonaProvider(
         script=(ProviderOutput(text=REPLY),)
