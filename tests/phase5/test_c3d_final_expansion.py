@@ -1255,9 +1255,14 @@ def test_the_three_key_spaces_are_collision_free_over_100_entities() -> None:
     # res-pragmatic-go-on and res-phrasal-come-up-with, `run` via
     # res-pragmatic-run-that-by-me-again and res-phrasal-run-out-of,
     # `way` via res-discourse-by-the-way and res-hedge-in-a-way,
-    # `again` via res-pragmatic-come-again). Declared as this exact
-    # closed list — no other C3-d slot token entered any collision.
-    assert report["slot_new_vs_any"] == ["again", "ask", "come", "on", "run", "way"], (
+    # `again` via res-pragmatic-come-again). v3-d 真值: the inflection
+    # groups add `brings`（res-phrasal-bring-up 的屈折组与
+    # res-discourse-that-brings-me-to 的槽位 token 共享）. Declared as
+    # this exact closed list — no other C3-d slot token entered any
+    # collision.
+    assert report["slot_new_vs_any"] == [
+        "again", "ask", "brings", "come", "on", "run", "way",
+    ], (
         report["slot_new_vs_any"]
     )
     assert report["within_entity_overlap"] == []
@@ -1265,10 +1270,13 @@ def test_the_three_key_spaces_are_collision_free_over_100_entities() -> None:
     # tokens. 旧真值 (C3-d): 34. v3-1 真值: 21 — the slot rewrite moved
     # the example-scene topic words out of the key faces, so most of the
     # old in-sentence content-word collisions (english/design/answer/
-    # train/booking/...) left the slot space entirely. This is the
-    # registered reading — a future cut that shrinks it may move this pin
-    # with the truth.
-    assert len(report["legacy_slot_groups"]) == 21
+    # train/booking/...) left the slot space entirely. v3-d 真值: 24 —
+    # the inflection groups of the two first-touched legacy entities
+    # (make-sense 的 makes/made、carry-on 的 carries/carried) each join
+    # an existing legacy sharing pair, and make-an-effort/make-progress/
+    # make-sense 的共享 make 族合并扩面. This is the registered reading —
+    # a future cut that shrinks it may move this pin with the truth.
+    assert len(report["legacy_slot_groups"]) == 24
 
 
 def test_the_new_id_lists_declare_their_ordering_convention() -> None:

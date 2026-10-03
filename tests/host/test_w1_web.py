@@ -418,16 +418,22 @@ def test_a_turn_answers_the_full_json_contract(tmp_path: Path) -> None:
     with web_stack(tmp_path / "app.db") as stack:
         status, data = stack.post("/api/turn", {"text": CLEAN_TEXT})
         assert status == 200
+        # v3-d 随迁：响应加性携带两侧命中位图（无 content 腿 = None——
+        # 每词保持全供性的诚实形状）。
         assert set(data) == {
             "reply",
             "turn_status",
             "failure_reason",
             "teaching_moments",
+            "word_hits",
+            "user_word_hits",
         }
         assert data["reply"] == REPLY
         assert data["turn_status"] == "COMPLETED"
         assert data["failure_reason"] is None
         assert data["teaching_moments"] == []
+        assert data["word_hits"] is None
+        assert data["user_word_hits"] is None
 
 
 # ---------------------------------------------------------------------------
@@ -1230,9 +1236,20 @@ def test_history_serves_the_turns_the_page_sent(tmp_path: Path) -> None:
             assert status == 200
         status, payload = stack.get_json("/api/history")
         assert status == 200
+        # v3-d 随迁：每轮两侧加性携带命中位图（无 content 腿 = None）。
         assert payload["turns"] == [
-            {"user": CLEAN_TEXT, "assistant": REPLY},
-            {"user": SECOND_TEXT, "assistant": REPLY},
+            {
+                "user": CLEAN_TEXT,
+                "assistant": REPLY,
+                "user_word_hits": None,
+                "word_hits": None,
+            },
+            {
+                "user": SECOND_TEXT,
+                "assistant": REPLY,
+                "user_word_hits": None,
+                "word_hits": None,
+            },
         ]
 
 

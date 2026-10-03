@@ -577,7 +577,8 @@ button:focus-visible, input:focus-visible {
    教学卡参数）；墨色遮罩（--ink 降透明度 0.4，禁毛玻璃）盖住下方屏幕，
    点遮罩 = 点卡外（同一 cardCloser 机制关闭）。
    关闭语义两档同源：点卡外（遮罩）/「收起」/ Esc（v2-2 增）→ DOM 移除；
-   无 busy——命中即显，miss 按契约静默。
+   无 busy——命中即显；v3-3 起 miss 契约为「无样式」而非「静默」——
+   位图判 0 的词带 .word--off（无供性、点击短路），可点的词必有卡。
    触发词提示（v2-2 重设计，8.2.2④——「全文常显点线」永禁）：桌面维持
    hover 点线；触屏 (hover: none) 改两件——(a) 仅最新一封信的词带弱底纹
    （--accent-soft 12%，.letter--latest 由 addLine 维护，历史信静默，
@@ -634,6 +635,11 @@ button:focus-visible, input:focus-visible {
             font-weight: 400; }
 .wc-pos { margin-left: 8px; font: var(--meta-font);
           letter-spacing: var(--meta-track); color: var(--meta-ink); }
+/* v3-3 第二档（词典来源的小卡）：「词典」等宽小标 + 词头降一级——
+   与语料教学卡 visibly 两档（语料面信息量优先；词典命中不冒充教学）。 */
+.wc-src { margin-right: 8px; font: var(--meta-mono);
+          letter-spacing: var(--meta-track); color: var(--meta-ink); }
+.wc-lemma--sm { font-size: var(--fs-body); }
 .wc-forms { margin-top: 6px; font-family: var(--f-mono);
             font-size: var(--fs-micro);
             color: var(--ink-soft); overflow-wrap: anywhere; }
@@ -667,6 +673,17 @@ button:focus-visible, input:focus-visible {
 @media (hover: none) {
   .letter--latest .say .word { background-color:
     color-mix(in srgb, var(--accent-soft) 12%, transparent); }
+}
+/* v3-3 供性分层（#15 契约升级「miss 无样式」）：位图判 0 的词仍占
+   .word 队列（索引空间与查询窗口不动），但摘掉全部可点供性——
+   指针/hover/按压/底纹全数退役，读起来就是普通文本。 */
+.word--off { cursor: auto; }
+.word--off:active { background-color: transparent; }
+@media (hover: hover) {
+  .word--off:hover { text-decoration: none; }
+}
+@media (hover: none) {
+  .letter--latest .say .word--off { background-color: transparent; }
 }
 
 /* .rawtag（原文小字，R-1R）——机械事实的等宽小字形态：存储词表值的

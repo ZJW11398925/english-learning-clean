@@ -49,6 +49,9 @@ from elc.platform.types import Ok
 from elc.teaching.evaluator import evaluate_attempt
 from elc.teaching.types import AttemptOutcome
 from tests.phase5.test_content_migration import (
+    V3D_FIRST_TOUCH_TARGETS,
+    V3D_INFLECTION_TARGETS,
+    V3D_UPDATED_IN_VERSION,
     V31_REWRITE_TARGETS,
     V31_UPDATED_IN_VERSION,
 )
@@ -514,9 +517,10 @@ def test_no_other_corpus_row_moved_revision_or_version(
     built_content_db: Path,
 ) -> None:
     """The metadata face moved exactly the W-5 twelve (revision 2 /
-    content-w5; i-think 3 / content-v31) plus the v3-1 rewrite set
-    (revision 2 / content-v31): every entity outside those two cuts keeps
-    revision 1 and content-v1."""
+    content-w5; i-think 3 / content-v31), the v3-1 rewrite set
+    (revision 2 / content-v31) and the v3-d inflection twelve
+    (revision 3, 首触两件 2 / content-v3d): every entity outside those
+    cuts keeps revision 1 and content-v1."""
 
     conn = sqlite3.connect(str(built_content_db))
     try:
@@ -531,6 +535,12 @@ def test_no_other_corpus_row_moved_revision_or_version(
         if name == "res-hedge-i-think":
             assert int(revision) == 3
             assert str(version) == V31_UPDATED_IN_VERSION
+        elif name in V3D_INFLECTION_TARGETS:
+            if name in V3D_FIRST_TOUCH_TARGETS:
+                assert int(revision) == 2, name
+            else:
+                assert int(revision) == 3, name
+            assert str(version) == V3D_UPDATED_IN_VERSION, name
         elif name in V31_REWRITE_TARGETS:
             assert int(revision) == 2, name
             assert str(version) == V31_UPDATED_IN_VERSION, name
@@ -544,9 +554,10 @@ def test_no_other_corpus_row_moved_revision_or_version(
 
 def test_the_source_documents_carry_the_same_metadata_face() -> None:
     """The authoring tree and the artifact agree: the source documents
-    declare the same two-cut metadata face (W-5 twelve; v3-1 sixty with
-    i-think on top), and no other document moved (a source-side leak of
-    the metadata face would build a second-class truth)."""
+    declare the same cut metadata face (W-5 twelve; v3-1 sixty with
+    i-think on top; v3-d inflection twelve on top of that), and no other
+    document moved (a source-side leak of the metadata face would build a
+    second-class truth)."""
 
     moved = []
     for path in sorted((CONTENT_SRC_DIR / "entities").glob("*.json")):
@@ -560,6 +571,14 @@ def test_the_source_documents_carry_the_same_metadata_face() -> None:
             if name == "res-hedge-i-think":
                 assert entity["entity_revision"] == 3
                 assert entity["updated_in_version"] == V31_UPDATED_IN_VERSION
+            elif name in V3D_INFLECTION_TARGETS:
+                if name in V3D_FIRST_TOUCH_TARGETS:
+                    assert entity["entity_revision"] == 2, name
+                else:
+                    assert entity["entity_revision"] == 3, name
+                assert (
+                    entity["updated_in_version"] == V3D_UPDATED_IN_VERSION
+                ), name
             elif name in V31_REWRITE_TARGETS:
                 assert entity["entity_revision"] == 2, name
                 assert (
@@ -571,5 +590,9 @@ def test_the_source_documents_carry_the_same_metadata_face() -> None:
                 assert entity["updated_in_version"] == W5_UPDATED_IN_VERSION, (
                     name
                 )
-    assert set(moved) == set(W5_TARGETS) | set(V31_REWRITE_TARGETS)
-    assert len(moved) == 71
+    assert set(moved) == (
+        set(W5_TARGETS) | set(V31_REWRITE_TARGETS) | set(V3D_INFLECTION_TARGETS)
+    )
+    # v3-d 随迁：71 → 72（W-5 十二 ∪ v3-1 四十九 ∪ v3-d 十二，i-think
+    # 双刀去重；v3-d 的十件自 v3-1 名单移入、首触一件 carry-on 新入）。
+    assert len(moved) == 72

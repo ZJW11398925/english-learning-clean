@@ -26,6 +26,7 @@ import {
   showWordCard,
   closeWordCard,
   wordCardOpen,
+  applyLetterAffordance,
   confirmDialog,
   fieldRow,
   chip,
@@ -2119,6 +2120,9 @@ messages.addEventListener("click", async (event) => {
     target = wordFromCaret(event);   // 兜底：点在字身框之外
     if (!target) return;
   }
+  // v3-3 供性分层：无供性的词（word--off）点击即不拦截——样式已经
+  // 说了「这个词没有卡」，行为与呈现一致，「点了没反应」不再出现。
+  if (target.classList.contains("word--off")) return;
   if (!target.closest(".letter")) return;
   event.stopPropagation();
   const say = target.closest(".say");
@@ -2488,9 +2492,14 @@ async function postTurn(text) {
     if (stamp) stamp.remove();
   }
   if (data !== null) {
+    // v3-3 供性后装：寄出的信在位图到达前全供性（信还封着在途）；回信
+    // 落地即按 turn 响应把用户信的 0 位降为无供性（applyLetterAffordance
+    // 只摘不加，方向恒向不可点收）。
+    applyLetterAffordance(mine, data.user_word_hits || null);
     if (data.reply !== null && data.reply !== undefined) {
       addLine("assistant", data.reply,
-        { enter: true, when: new Date().toISOString() });
+        { enter: true, when: new Date().toISOString(),
+          hits: data.word_hits || null });
     } else if (data.turn_status !== null && data.turn_status !== undefined) {
       failLine("这封信没有回音——笔友没能联系上模型端点",
         data.failure_reason || "无回复");
@@ -2814,8 +2823,13 @@ SHORT_VIEWPORT.addEventListener?.("change", () => {
 async function loadHistory() {
   const data = await fetchHistory();
   for (const turn of data.turns) {
-    if (turn.user !== null) addLine("user", turn.user);
-    if (turn.assistant !== null) addLine("assistant", turn.assistant);
+    // v3-3：位图随信渲染——历史轮两侧各带命中位图（缺字段 = 全供性）。
+    if (turn.user !== null) {
+      addLine("user", turn.user, { hits: turn.user_word_hits || null });
+    }
+    if (turn.assistant !== null) {
+      addLine("assistant", turn.assistant, { hits: turn.word_hits || null });
+    }
   }
   // 空厅句：一封信都还没有时，客户端静态系统行开场（⑧ 8.2.2）
   showEmptyHall();

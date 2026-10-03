@@ -122,8 +122,13 @@ function humanLetterTime(iso) {
 // 信纸节点（#4 letter 的 DOM 工厂，v2-2 自 addLine 抽出）：信流
 // （addLine）与信档屏的展开读（app.js 的信档节）共用同一排印骨架
 // 工厂——单一出处条款（⑤）：展开读不是第二份信件实现。
+// v3-3：opts.hits = 本信的命中位图（段落一行、一行一词，服务端
+// _letter_hit_rows 下发）——本函数按**原始段落序**消费：称呼行与落款
+// 行也占位（它们不渲染 .say，其行被跳过即可），正文段对号入座；
+// 位图缺席 = 全供性（现役行为）。用户信单段，行 [0]。
 export function letterNode(cls, text, opts) {
   const options = opts || {};
+  const rows = options.hits || null;
   let node;
   if (cls === "user") {
     node = document.createElement("div");
@@ -134,8 +139,8 @@ export function letterNode(cls, text, opts) {
     if (date) paper.appendChild(date);
     const say = document.createElement("p");
     say.className = "say";
-    say.appendChild(letterWords(text));  // 分片（#15 触发面）：文字仍全部
-    paper.appendChild(say);              // 惰性文本，整段逐字不变
+    say.appendChild(letterWords(text, rows ? rows[0] || null : null));
+    paper.appendChild(say);
     const sign = document.createElement("p");
     sign.className = "letter-sign";
     sign.textContent = "你";
@@ -149,27 +154,33 @@ export function letterNode(cls, text, opts) {
     if (date) node.appendChild(date);
     const salut = salutationOf(paragraphs);
     let body = paragraphs;
+    let cursor = 0;   // 原始段落游标：称呼行吃掉 rows[0]
     if (salut !== null) {
       const row = document.createElement("p");
       row.className = "letter-salut";
-      row.appendChild(letterWords(salut));
+      row.appendChild(letterWords(salut, rows ? rows[cursor] || null : null));
       node.appendChild(row);
       body = paragraphs.slice(1);
+      cursor += 1;
     }
     const signBlock = signatureBlockOf(body);
+    const signBase = cursor + signBlock.rest.length;
     body = signBlock.rest;
     for (const para of body) {
       const say = document.createElement("p");
       say.className = "say" + (isPostscript(para) ? " letter-ps" : "");
-      say.appendChild(letterWords(para));
+      say.appendChild(letterWords(para, rows ? rows[cursor] || null : null));
+      cursor += 1;
       node.appendChild(say);
     }
-    for (const line of signBlock.lines) {
+    signBlock.lines.forEach((line, k) => {
       const sign = document.createElement("p");
       sign.className = "letter-sign";
-      sign.appendChild(letterWords(line));
+      // 落款行在段落尾部：行号从倒数第 k 行取（lines 已是原始顺序）。
+      const tail = rows ? rows[signBase + k] || null : null;
+      sign.appendChild(letterWords(line, tail));
       node.appendChild(sign);
-    }
+    });
   } else if (cls === "typing") {
     node = document.createElement("p");
     node.className = "typing";
@@ -516,8 +527,11 @@ function noteDelivery(card, text, kind) {
 // 批注生命周期词的界面读法（rd-2：作答→回应族；AWAITING_USER → 等你
 // 回应；未列出的词不伪装翻译——原样小字呈现。服务端 status_cn 词面
 // 已随 rd-2 处置刀同改「等你回应」，语气宪法第 6 条称你不称您全站归一）。
+// v3-d：CLOSED 补中文读法「已收场」（v31R 复测登记：收场后状态行曾
+// 以英文原词裸出）。
 const LIFECYCLE_CN = {
   AWAITING_USER: "等你回应",
+  CLOSED: "已收场",
 };
 
 function readReplyAnswer(card, data) {
@@ -743,8 +757,13 @@ export function stateBanner(kind, opts) {
 // wordWindows 以点击词为中心取 1–3 词，每种窗长把含点击词的对齐都试
 // 一遍（长窗优先、去重）；查询串 normalizeWordQuery 剥边标点 + 小写化，
 // 与服务端同一套边界字符。浮层 showWordCard 挂 body、贴点击点收进
-// 视口；关闭 = 点卡外或「收起」（closeWordCard），无 busy——命中即显，
-// miss 按契约静默。
+// 视口；关闭 = 点卡外或「收起」（closeWordCard），无 busy——命中即显。
+// v3-d 契约升级（#15 行修订）：miss 的「静默」语义升级为「无样式」——
+// 服务端随信下发命中位图（与点击同一套窗口+匹配语义预计算），命中词
+// 带 .word 供性样式，位图为 0 的词加 .word--off（不装可点样式、点击
+// 短路）——「点了没反应」从呈现层消失；位图缺席（null/缺字段）时全词
+// 保持现役全供性（向可点方向容错，行为不回退）。词典兜底命中出
+// 第二档小卡（「词典」标注，无 senses/examples——不冒充教学卡）。
 // 两条登记（p-1 评审）：①命中词可以不含被点词——点击某词的 3 词窗若
 // 含更长 lemma，出的是长窗的卡（点 "Anyway," 可能出 "I see" 的卡）；
 // 是否收紧为「命中须含被点 token」属产品裁决，Revisit。②词表 100 条
@@ -761,7 +780,7 @@ const WORD_EDGE_CHARS = "\"'`.,;:!?()[]{}<>…—–-“”‘’《》「」*_/
 const LETTER_MARKS =
   /(\*\*[^*\s](?:[^*]*[^*\s])?\*\*|\*[^*\s](?:[^*]*[^*\s])?\*|`[^`]+`)/;
 
-function appendWordSpans(parent, text) {
+function appendWordSpans(parent, text, hits, counter) {
   for (const part of String(text).split(/(\s+)/)) {
     if (!part) continue;
     if (/^\s+$/.test(part)) {
@@ -769,20 +788,27 @@ function appendWordSpans(parent, text) {
       continue;
     }
     const span = document.createElement("span");
-    span.className = "word";
+    // 位图裁决（v3-d）：0 = 无供性（word--off）；位图缺席或行越界
+    // = 全供性（向可点方向容错）。
+    span.className =
+      hits && hits[counter.index] === 0 ? "word word--off" : "word";
+    counter.index += 1;
     span.textContent = part;
     parent.appendChild(span);
   }
 }
 
-export function letterWords(text) {
+// hits = 本段一个词一个位的命中数组（letterWords 内自计数——分片横跨
+// markdown 记号时索引连续），由 letterNode 按段下发；null = 全供性。
+export function letterWords(text, hits) {
   const frag = document.createDocumentFragment();
+  const counter = { index: 0 };
   const segments = String(text).split(LETTER_MARKS);
   for (let i = 0; i < segments.length; i += 1) {
     const seg = segments[i];
     if (!seg) continue;
     if (i % 2 === 0) {
-      appendWordSpans(frag, seg);
+      appendWordSpans(frag, seg, hits || null, counter);
       continue;
     }
     let tag = "em";
@@ -795,7 +821,7 @@ export function letterWords(text) {
       inner = seg.slice(1, -1);
     }
     const el = document.createElement(tag);
-    appendWordSpans(el, inner);
+    appendWordSpans(el, inner, hits || null, counter);
     frag.appendChild(el);
   }
   return frag;
@@ -831,6 +857,39 @@ export function wordWindows(words, index) {
 export function wordCard(data) {
   const card = document.createElement("div");
   card.className = "word-card";
+  // v3-3 第二档：词典来源的小卡——词头 + 词性 + 简注，无 senses/
+  // examples/forms（不冒充教学卡）；「词典」小标与语料卡 visibly 区分，
+  // 语料面信息量优先（corpus 命中永不落词典层）。
+  if (data.source === "lexicon") {
+    card.classList.add("word-card--lexicon");
+    const src = document.createElement("span");
+    src.className = "wc-src";
+    src.textContent = "词典";
+    card.appendChild(src);
+    const lemma = document.createElement("b");
+    lemma.className = "wc-lemma wc-lemma--sm";
+    lemma.textContent = String(data.lemma || "");
+    card.appendChild(lemma);
+    if (data.pos) {
+      const pos = document.createElement("span");
+      pos.className = "wc-pos";
+      pos.textContent = data.pos;
+      card.appendChild(pos);
+    }
+    if (data.gloss) {
+      const gloss = document.createElement("p");
+      gloss.className = "wc-zh";
+      gloss.textContent = data.gloss;
+      card.appendChild(gloss);
+    }
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "btn btn--faint";
+    close.textContent = "收起";
+    close.addEventListener("click", closeWordCard);
+    card.appendChild(close);
+    return card;
+  }
   const lemma = document.createElement("b");
   lemma.className = "wc-lemma";
   lemma.textContent = String(data.lemma || "");
@@ -935,6 +994,25 @@ export function showWordCard(at, data) {
     if (event.key === "Escape") closeWordCard();
   };
   document.addEventListener("keydown", cardEsc);
+}
+
+// v3-3：已渲信纸的供性后装（postTurn 的用户信——寄出当下无位图，回信
+// 落地时按 turn 响应的 user_word_hits 补）。rows 按信内 .say 的 DOM 序
+// 对号（用户信恰一段一行）；只摘不加——初始渲染即全供性，位图只把
+// 0 位降为 word--off，方向恒向「不可点」收。off 不摘出 .word 队列
+// （索引空间与查询窗口原样保留）。
+export function applyLetterAffordance(node, rows) {
+  if (!rows) return;
+  const says = node.querySelectorAll(".say");
+  says.forEach((say, i) => {
+    const row = rows[i];
+    if (!row) return;
+    let index = 0;
+    for (const span of say.querySelectorAll(".word")) {
+      if (row[index] === 0) span.classList.add("word--off");
+      index += 1;
+    }
+  });
 }
 
 // 16. field：编辑面一行式表单行（p-3）。label 包裹控件——点名牌即聚焦；

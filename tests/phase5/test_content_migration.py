@@ -75,13 +75,10 @@ W5_UPDATED_IN_VERSION = "content-w5"
 #: fifty-nine entities that were still at revision 1 moved to revision 2
 #: with updated_in_version "content-v31"; i-think — already at revision 2
 #: from W-5 — moved to 3 / "content-v31".
+#: v3-d 随迁：其中十个动词槽位实体（下表扣除 V3D 集）随屈折组刀再动，
+#: 元数据面移交 V3D_* 承载。
 V31_REWRITE_TARGETS = frozenset(
     {
-        "res-colloc-make-an-effort",
-        "res-colloc-make-progress",
-        "res-colloc-raise-awareness",
-        "res-colloc-save-time",
-        "res-colloc-take-a-look",
         "res-discourse-by-the-way",
         "res-discourse-long-story-short",
         "res-discourse-on-another-note",
@@ -108,13 +105,7 @@ V31_REWRITE_TARGETS = frozenset(
         "res-hedge-not-really",
         "res-idiom-a-blessing-in-disguise",
         "res-idiom-the-ball-is-in-your-court",
-        "res-phrasal-bring-up",
-        "res-phrasal-come-up-with",
-        "res-phrasal-figure-out",
-        "res-phrasal-look-forward-to",
         "res-phrasal-put-off",
-        "res-phrasal-run-out-of",
-        "res-phrasal-work-out",
         "res-pragmatic-are-you-saying",
         "res-pragmatic-could-you",
         "res-pragmatic-could-you-clarify",
@@ -141,16 +132,57 @@ V31_REWRITE_TARGETS = frozenset(
 )
 V31_UPDATED_IN_VERSION = "content-v31"
 
+#: The v3-d inflection-slot cut (content_src/entities/, twelve documents):
+#: each verb slot group gained the inflected forms its own evidence
+#: declares (forms block + the ACCEPTED_REALIZATIONS rule's cited
+#: realizations), so an inflected learner sentence no longer falls out of
+#: the slot face ("made an effort" 等三例 PARTIAL→FAILURE 的回归族修复；
+#: 判据同 v3-1 A1——声明材料并组). The eleven that sat on the v3-1 rewrite
+#: moved revision 2 → 3 / "content-v3d"; carry-on (never rewritten
+#: before) moved 1 → 2 / "content-v3d".
+#: 登记面：res-colloc-make-sense **不**入本刀——its "makes" would steal
+#: res-pragmatic-that-makes-sense's discriminating slot key（P5-2 的
+#: 生产保证：utterance "makes and sense" 必须 still resolve 到
+#: that-makes-sense；smallest-id tie-break 会被 make-sense 拿走）。
+#: Revisit = that-makes-sense 的键面重设计后 make-sense 再补屈折。
+V3D_INFLECTION_TARGETS = frozenset(
+    {
+        "res-colloc-make-an-effort",
+        "res-colloc-make-progress",
+        "res-colloc-raise-awareness",
+        "res-colloc-save-time",
+        "res-colloc-take-a-look",
+        "res-phrasal-bring-up",
+        "res-phrasal-carry-on",
+        "res-phrasal-come-up-with",
+        "res-phrasal-figure-out",
+        "res-phrasal-look-forward-to",
+        "res-phrasal-run-out-of",
+        "res-phrasal-work-out",
+    }
+)
+V3D_FIRST_TOUCH_TARGETS = frozenset(
+    {
+        "res-phrasal-carry-on",
+    }
+)
+V3D_UPDATED_IN_VERSION = "content-v3d"
+
 
 def _expected_metadata(target_id: str) -> tuple[int, str]:
     """The (entity_revision, updated_in_version) each corpus row must read:
     i-think sits on top of both cuts (revision 3 / content-v31), the rest
     of the v3-1 rewrite at revision 2 / content-v31, the other W-5 rows at
-    revision 2 / content-w5, and everything else at revision 1 /
-    content-v1."""
+    revision 2 / content-w5, the v3-d inflection twelve at
+    revision 3（首触两件 2）/ content-v3d, and everything else at
+    revision 1 / content-v1."""
 
     if target_id == "res-hedge-i-think":
         return 3, V31_UPDATED_IN_VERSION
+    if target_id in V3D_INFLECTION_TARGETS:
+        if target_id in V3D_FIRST_TOUCH_TARGETS:
+            return 2, V3D_UPDATED_IN_VERSION
+        return 3, V3D_UPDATED_IN_VERSION
     if target_id in V31_REWRITE_TARGETS:
         return 2, V31_UPDATED_IN_VERSION
     if target_id in W5_KEY_FACE_TARGETS:
@@ -309,7 +341,8 @@ def test_entity_row_is_the_seven_canonical_columns(
     # 新真值 (W-5): the twelve key-face targets moved to revision 2 /
     # content-w5. 新真值 (v3-1): the sixty slot-criterion rewrites carry
     # revision 2 / content-v31 (i-think: 3 — it sat on both cuts); every
-    # other row is unchanged.
+    # other row is unchanged. 新真值 (v3-d): the twelve inflection-slot
+    # targets carry 3（首触两件 2）/ content-v3d.
     expected_revision, expected_version = _expected_metadata(target_id)
     assert view.entity_revision == expected_revision
     assert view.created_in_version == CONTENT_VERSION

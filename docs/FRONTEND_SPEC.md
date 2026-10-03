@@ -180,7 +180,7 @@ v2 起 `tokens.css` 是全套令牌的唯一物理出处，其头注即简报 §
 | 12 | system-line | `.sysline` | — | default（无交互态） | components.css + components.js（addLine system 臂） |
 | 13 | brand-mark | `.brandmark`（+ `--sm` `--lg`） | — | default 30px / 尺寸修饰 --sm 20px、--lg 64px / 静态标记无动效；**几何 = 信封 + 封缄墨线，封缄点 v2 裁用墨蓝**（`--accent`——朱砂只盖真实事件，品牌印记不是事件，简报 T2；aria-label「展信佳印记」随模板，改名只动模板与 BRAND 常量） | index.html（`<template id="brand-mark-source">` 内联 SVG，几何唯一出处）+ components.css + components.js（`brandMark()`/`installBrandMarks()`） |
 | 14 | state-banner | `.state-banner`（+ `--loading` `--empty` `--error`） | — | loading（取信中…——v2 起尾点**静态化**：零常驻循环铁律，呼吸循环件已退役）/ empty（弱化诚实句 + #22 lamp 墨线小图）/ error（人话句 + `--pencil`（墨蓝）重试链接，回调由调用方注入）/ reduced-motion 随库尾总降级块 | components.css + components.js（`stateBanner()`；`diagEmpty`/`diagError` 一律委托它） |
-| 15 | word-card | `.word-card`（+ `.wc-lemma` `.wc-pos` `.wc-forms` `.wc-zh` `.wc-en` `.wc-example` `.word`）+ sheet 档遮罩件 `.word-scrim` | — | default（--paper-high 泛起纸面 + 发丝边 + 垫纸错位层承 `--stack-shadow-soft`；开启入场 = paper-drop + ink-wash 双动画；`.word:hover` 触点泛淡墨蓝 `--pencil-soft`——hover 半区）\| sheet 档（`@media (hover: none)`——触屏 = 底部覆盖面板 bottom sheet：fixed 底部 + 墨色遮罩 + `@starting-style` 纸面曲线入场，8.2.2③）\| closed（点卡外/遮罩、「收起」或 Esc，DOM 移除语义）\| 无 busy——命中即显，miss 按契约静默。触屏词提示 = 两件（8.2.2④）：`.letter--latest .say .word` 弱底纹（仅最新一封）+ `.word:active` 按压即亮——「全文常显点线」永禁（负钉在库） | components.css + components.js（`wordCard()`/`showWordCard()`/`closeWordCard()`；触发面 = `letterWords()` 的 `.word` 分片 + `wordWindows()` 窗口查询，app.js 委派） |
+| 15 | word-card | `.word-card`（+ `.wc-lemma` `.wc-pos` `.wc-forms` `.wc-zh` `.wc-en` `.wc-example` `.word` `.word--off`）+ sheet 档遮罩件 `.word-scrim` + 词典第二档件 `.wc-src`/`.wc-lemma--sm`（`.word-card--lexicon`） | — | default（--paper-high 泛起纸面 + 发丝边 + 垫纸错位层承 `--stack-shadow-soft`；开启入场 = paper-drop + ink-wash 双动画；`.word:hover` 触点泛淡墨蓝 `--pencil-soft`——hover 半区）\| sheet 档（`@media (hover: none)`——触屏 = 底部覆盖面板 bottom sheet：fixed 底部 + 墨色遮罩 + `@starting-style` 纸面曲线入场，8.2.2③）\| closed（点卡外/遮罩、「收起」或 Esc，DOM 移除语义）\| 无 busy——命中即显；**v3-d 契约：miss 无样式而非静默**（8.2.2③-a——命中位图随信下发，位图判 0 的词 `.word--off` 无供性、点击短路，可点的词必有卡）\| **词典第二档**（`source: "lexicon"`——「词典」标注小卡，与语料卡 visibly 两档，8.2.2③-a）。触屏词提示 = 两件（8.2.2④）：`.letter--latest .say .word` 弱底纹（仅最新一封）+ `.word:active` 按压即亮——「全文常显点线」永禁（负钉在库）；`.word--off` 四态全摘（cursor/hover/active/底纹） | components.css + components.js（`wordCard()`/`showWordCard()`/`closeWordCard()`；触发面 = `letterWords()` 的 `.word` 分片（带命中位图行）+ `wordWindows()` 窗口查询，app.js 委派） |
 | 16 | field | `.field`（+ `.fieldname`） | — | default（下发丝线）/ `:focus-within`（发丝线与名转墨蓝，--dur-1 淡入）/ 控件 `[disabled]`（opacity .4 + 无 pointer）；名牌可配 #22 search 小图 | components.css + components.js（`fieldRow()`，p-3；label 包裹控件，点名牌即聚焦） |
 | 17 | chip | `.chip`（+ `--on` `--badge`） | — | off（default，发丝线描边）/ hover（边转次级墨）/ on（`--on`，主墨反白）/ `:active`（触压 1px）/ `[disabled]`（opacity .4）/ `--badge`（只读徽标，非交互） | components.css + components.js（`chip()`，p-3；考试/语域/教学频率词表 picker + modality 徽标） |
 | 18 | dock | `.navdock`（+ `.navdock-item` `--on` `.navdock-glyph` `.navdock-word` `--fold`；类名与写信区屏级类 `.dock` 异名共存） | — | **v3-a 落墨页签**：default（20×20 墨线图标描形 fill-opacity 0 + 标签次墨 400——图标与文字标签同钮上下两行）/ hover（图标与标签同落主墨，100ms——hover 半区）/ `--on`（**落墨当前态**：图标实墨填充 fill-opacity .9 + 标签 --ink 600，ink-wash 静态版；填充切换 = 一次落墨事件——进入 260ms × --ease-paper、退出 200ms × --ease-exit 一褪一落同帧；`aria-current`；下划线语汇从导航当前态岗位退役，动作链接岗位不动）/ `:active`（触压 1px）/ `[disabled]`（opacity .4）/ `--fold`（让位收半：paper-fold 200 × --ease-exit，animationend 后 [hidden]）；垫条材质 = --paper-high 顶纸（与写信区垫板同族）；宽度随 `--shell-w`（≥900px 三项收拢居中）；常驻底部三项 **案头 / 温故 / 抽屉**（门厅/全页/写作态整条让位；z 6 低于点词卡 z 9） | components.css + components.js（`wireNavdock()`/`markNavdock()`，R-1；app.js 的 `yieldNavdock()`/`restoreNavdock()` 落 --fold） |
@@ -536,6 +536,20 @@ props）——理由：桌面指针就在被点词上，卡贴词而现是视线
 bottom sheet 会把视线拽到屏底，桌面阅读面（`--measure` 版心）也会被
 整幅遮断。两形态 = 同一组件的两档布局，数据、关闭语义与无障碍面
 同源。
+
+③-a 【点词卡第二档与供性分层——现役（v3-d 落地；词表调研报告
+§3/§4 v3-3 组合）】**命中位图随信下发**：服务端以与点击同一套
+窗口+匹配语义预计算每封信的命中位图（段落一行、一行一词），随
+`/api/turn`（`word_hits` / `user_word_hits`）与 `/api/history`
+（每轮两侧）下发；`letterWords` 分片时位图判 0 的词带
+`.word--off`——**不装可点样式、点击短路**，「miss 静默」契约升级为
+「miss 无样式」，可点的词必有卡（位图缺席 = 全供性，向可点方向容错）。
+**词典第二档**：语料面 miss 后单 token 查询落离线小词典
+（`elc.lexicon`，~1850 词中文简注 + 50 条缩写映射 + 朴素还原，纯
+标准库零网络），出「词典」标注小卡（词头+词性+简注，无 senses/
+examples/forms——不冒充教学卡；语料面信息量优先，corpus 命中永不落
+词典层）；撇号归一（’→'）使弯撇号缩写可查。实测（报告 §9 口径，
+29 封真实信件）：命中 14.5% → **89.7%**（去重 88.2%）。
 
 ④ 【触屏点词可发现性——现役（v2-2 落地；原目标：用户定向
 2026-10-02）】**旧根因已除**：components.css 的 `@media (hover: none)`
@@ -1933,3 +1947,9 @@ reduced-motion 下退栈直切（0.01ms 即终 + JS 直切双面）。
 **不硬修**：miss 提示是 ③ #15「miss 按契约静默」的契约变更（R7 域，
 需用户首验）+ 词表覆盖是内容侧工程，均超本刀白名单——登记 v3-3
 裁量（方向：miss 的一次性轻提示 / 词表扩容后的复测）。
+
+**v3-d 收口（2026-10-03）**：v3-3 组合落地（8.2.2③-a）——本条登记
+的四查根因两面俱除：覆盖率 14.5% → 89.7%（离线小词典 + 缩写映射 +
+撇号归一），miss 静默升级为 miss 无样式（命中位图随信下发 +
+`.word--off` 供性分层）——「可点的词必有卡」成立；本条的「miss 按
+契约静默」引文自 v3-d 起为历史引文（现役契约见 ③ #15 行）。

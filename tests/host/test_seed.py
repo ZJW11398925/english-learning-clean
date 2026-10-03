@@ -191,6 +191,12 @@ def test_seed_writes_the_balanced_policy_and_speaking_goal(
         assert len(goals) == 1
         assert goals[0]["goal_id"] == "goal-seed-v1"
         assert goals[0]["goal_modality"] == "SPEAKING"
+        # v3-d 清扫随迁：种子目标写的是真实目标句，不是占位散文。
+        assert goals[0]["description"] == (
+            "Hold a five-minute everyday conversation in English"
+            " without switching back to Chinese."
+        )
+        assert "long-term" not in goals[0]["description"]
         assert json.loads(portfolios[0][2]) == {"SPEAKING": 1.0}
     finally:
         db.close()

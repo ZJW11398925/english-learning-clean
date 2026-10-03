@@ -1,10 +1,12 @@
-"""现役面普查（prep-0）—— 14 个顶层包的真实现面在哪，以及哪些类是有制度依据的空骨架。
+"""现役面普查（prep-0）—— 顶层包的真实现面在哪，以及哪些类是有制度依据的空骨架。
 
 本文件回答外评指出的那类问题（“interface archaeology”：新读者无法判断哪个类是
-production、哪个只是契约骨架）。它不是逐类贴标签（`src/elc` 共 **520** 个公开类，
-分布在 **130** 个定义了类的文件里 —— 全 154 个 `.py` —— 逐类贴标签是不可维护的漂移
-面），而是**以包为行**的一跳索引：每行给出该包的现役面（读者应当用的类/模块）、它自己
-的 durable store（若有），以及本包内**非现役**的骨架类。
+production、哪个只是契约骨架）。它不是逐类贴标签（`src/elc` 公开类计数随刀漂移——
+prep-0 时 **520** / 130 文件 / 154 `.py`，N13 曾登记 159 / 527 / 133；v3-d 触碰
+本文件时同刀随迁为 **560** / 141 / **171**（含 lexicon 新包——N12/N13/N20 同族
+义务）——逐类贴标签是不可维护的漂移面），而是**以包为行**的一跳索引：每行给出该包
+的现役面（读者应当用的类/模块）、它自己的 durable store（若有），以及本包内**非现役**
+的骨架类。
 
 **四类词（legend）**
 
@@ -48,7 +50,7 @@ production、哪个只是契约骨架）。它不是逐类贴标签（`src/elc` 
      ``test_gate_1_domain_interfaces.py`` 承担，且其允许名单是测试内局部表、
      不可 import）；本表与它的关系是：**派生骨架集 ⊆ 本表声明的骨架集**（新骨架在
      本表亮红）。
-  R6 逐类分类（520 个公开类）**不做**，理由见模块首段。
+  R6 逐类分类（公开类计数见模块首段的漂移史）**不做**，理由见模块首段。
   R7 本文件由 **prep-0**（``DEC-OPI-8f27d1de-…25``）**显式授权**新增：它破了一次
      「``tests/architecture/`` 冻结面零改动」的字面 —— 只**新增**此一件，**不改**该目录
      任何既有文件。散文真值不归本表管：它只保证上述六条。
@@ -157,6 +159,12 @@ SURFACE_CENSUS: tuple[Row, ...] = (
         "relationship",
         live_face="elc.relationship.controller:RelationshipController",
         store="elc.relationship.store:SqliteRelationshipStore",
+    ),
+    # v3-d（词表与清扫刀）：离线小词典——纯标准库数据包（词表 + 缩写
+    # 映射 + 朴素还原，零网络零存储），词卡第二档与命中位图的字典面。
+    Row(
+        "lexicon",
+        live_face="elc.lexicon:lookup",
     ),
     # F-G1 (web architecture): a static-asset directory, not a package —
     # the shell (index.html) plus three CSS sheets and three ES modules

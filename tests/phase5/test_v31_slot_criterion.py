@@ -40,12 +40,10 @@ from elc.teaching.types import AttemptOutcome
 
 #: The rewritten slot face, verbatim (v3-1's audit table, plain id sort
 #: order — the N-C3C-2 convention). One row per rewritten document.
+#: v3-d 随迁：其中十一个动词槽位 target 的屈折组面（evidence 明文声明的
+#: forms）移交 test_v3d_inflection_slots.py 承载——本表只钉 v3-1 重写
+#: 后未再触碰的四十九行。
 V31_SLOT_FACE: dict[str, tuple[tuple[str, ...], ...]] = {
-    "res-colloc-make-an-effort": (("effort",), ("make",)),
-    "res-colloc-make-progress": (("progress",), ("make",)),
-    "res-colloc-raise-awareness": (("awareness",), ("raise",)),
-    "res-colloc-save-time": (("time",), ("save",)),
-    "res-colloc-take-a-look": (("look",), ("take",)),
     "res-discourse-by-the-way": (("way",),),
     "res-discourse-long-story-short": (("long",), ("story",), ("short",)),
     "res-discourse-on-another-note": (("note",), ("another", "different")),
@@ -72,13 +70,7 @@ V31_SLOT_FACE: dict[str, tuple[tuple[str, ...], ...]] = {
     "res-hedge-not-really": (("really",),),
     "res-idiom-a-blessing-in-disguise": (("blessing",), ("disguise",)),
     "res-idiom-the-ball-is-in-your-court": (("ball",), ("court",)),
-    "res-phrasal-bring-up": (("up",), ("bring",)),
-    "res-phrasal-come-up-with": (("come",), ("up",), ("with",)),
-    "res-phrasal-figure-out": (("figure",), ("out",)),
-    "res-phrasal-look-forward-to": (("look",), ("forward",), ("to",)),
     "res-phrasal-put-off": (("off",), ("put",)),
-    "res-phrasal-run-out-of": (("run",), ("out",), ("of",)),
-    "res-phrasal-work-out": (("out",), ("work",)),
     "res-pragmatic-are-you-saying": (("saying",),),
     "res-pragmatic-could-you": (("could", "would"),),
     "res-pragmatic-could-you-clarify": (("clarify",),),

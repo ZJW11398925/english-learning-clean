@@ -223,7 +223,13 @@ _SEED_REQUIRED_HINT = (
 _SEED_POLICY_VERSION = "pv-seed-v1"
 _SEED_GOAL_VERSION = "gv-seed-v1"
 _SEED_GOAL_ID = "goal-seed-v1"
-_SEED_GOAL_DESCRIPTION = "a long-term speaking goal"
+#: The goal's own words (v3-d 清扫: the cold-start portfolio reads a real
+#: speaking goal, not a placeholder — the goal screen greets a first-run
+#: user with the sentence the seed actually wrote).
+_SEED_GOAL_DESCRIPTION = (
+    "Hold a five-minute everyday conversation in English"
+    " without switching back to Chinese."
+)
 
 #: The provenance level whose targets get a §5.2 row (the vocabulary is
 #: ``elc.content.types.PROVENANCE_LEVELS``; the level is read off the

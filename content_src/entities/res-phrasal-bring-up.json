@@ -4,9 +4,9 @@
     "entity_type": "EXPRESSION",
     "language": "en",
     "lifecycle_status": "CANONICAL_APPROVED",
-    "entity_revision": 2,
+    "entity_revision": 3,
     "created_in_version": "content-v1",
-    "updated_in_version": "content-v31"
+    "updated_in_version": "content-v3d"
   },
   "expression": {
     "expression_type": "PHRASAL_VERB",
@@ -37,7 +37,10 @@
         "up"
       ],
       [
-        "bring"
+        "bring",
+        "brings",
+        "brought",
+        "bringing"
       ]
     ]
   }

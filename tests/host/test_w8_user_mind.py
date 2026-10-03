@@ -246,7 +246,8 @@ def test_letterwords_renders_the_three_marks() -> None:
     assert 'tag = "strong";' in js
     assert 'tag = "code";' in js
     assert "const el = document.createElement(tag);" in js
-    assert "appendWordSpans(el, inner);" in js
+    # v3-d 随迁：分片调用带同一位图行与计数器（命中位图横跨记号连续）
+    assert "appendWordSpans(el, inner, hits || null, counter);" in js
     # pure node assembly — the XSS face stays inert
     assert ".innerHTML" not in js
     css = _text("webui/components.css")
@@ -261,8 +262,12 @@ def test_letterwords_plain_path_is_untouched() -> None:
     face — the edge charset and query normalization — keeps its shape."""
 
     js = _text("webui/components.js")
-    assert "appendWordSpans(frag, seg);" in js
-    assert 'span.className = "word";' in js
+    # v3-d 随迁：两条分片路径同一调用形（位图行 + 段内计数器；缺省全供性）
+    assert "appendWordSpans(frag, seg, hits || null, counter);" in js
+    assert (
+        'hits && hits[counter.index] === 0 ? "word word--off" : "word"'
+        in js
+    )
     assert "span.textContent = part;" in js
     word_edge = next(
         line for line in js.splitlines()

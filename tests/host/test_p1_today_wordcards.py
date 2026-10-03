@@ -443,14 +443,25 @@ def test_the_letters_fragment_into_clickable_words(tmp_path: Path) -> None:
     page = _page_of(tmp_path)
     # the user arm fragments its single paragraph; the assistant arm
     # fragments every paragraph through the same sharding call
-    assert "say.appendChild(letterWords(text));" in page
-    assert "say.appendChild(letterWords(para));" in page
+    # （v3-d 随迁：letterWords 增第二参 hits——本段命中位图行，缺省
+    # 全供性；word--off = 位图判 0 的无供性词，仍占 .word 索引空间）
+    assert (
+        "say.appendChild(letterWords(text, rows ? rows[0] || null : null));"
+        in page
+    )
+    assert (
+        "say.appendChild(letterWords(para, rows ? rows[cursor] || null : null));"
+        in page
+    )
     assert 'node.className = "letter me"' in page
     assert 'node.className = "letter may"' in page
     assert (
         page.count("say.appendChild(letterWords(") == 2
     ), "only the two letter arms fragment"
-    assert 'span.className = "word"' in page
+    assert (
+        'hits && hits[counter.index] === 0 ? "word word--off" : "word"'
+        in page
+    )
     assert ".innerHTML" not in page
 
 

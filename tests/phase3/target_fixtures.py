@@ -125,7 +125,13 @@ TEACHING_CONTENT: dict[str, dict[str, object]] = {
         "reveal_form": "I look forward to seeing you.",
         "canonical_forms": ("I look forward to seeing you.",),
         "alternative_realizations": ("I'm looking forward to seeing you.",),
-        "required_slots": (("look",), ("forward",), ("to",)),
+        # v3-d 随迁：动词槽位带 evidence 明文声明的屈折组（looks/looked/
+        # looking——"I'm looking forward to seeing you." 判分面同此）。
+        "required_slots": (
+            ("look", "looks", "looked", "looking"),
+            ("forward",),
+            ("to",),
+        ),
         "capability_linkage": "cap-interact-backchannel",
     },
     "res-pragmatic-could-you": {

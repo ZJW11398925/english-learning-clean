@@ -282,6 +282,7 @@ from __future__ import annotations
 import json
 import math
 import queue
+import re
 import socket
 import sqlite3
 import sys
@@ -294,6 +295,7 @@ from pathlib import Path
 from typing import Any, Callable, Sequence, TextIO
 from urllib.parse import parse_qs, urlsplit
 
+from elc import lexicon as _lexicon
 from elc.cli import (
     RUNTIME_VERSION,
     ObservationSection,
@@ -514,6 +516,26 @@ _STATIC_TYPES: dict[str, str] = {
     "components.js": "text/javascript; charset=utf-8",
     "app.js": "text/javascript; charset=utf-8",
 }
+
+#: The favicon (v3-d 清扫, the v31R 登记「favicon 既有」): one inline SVG —
+#: the paper tone with an ink-line envelope, the same 纸墨语汇 as the page's
+#: brand mark (two geometries, one design language; the page's copy lives
+#: in index.html's template because HTML parses inline SVG without the
+#: namespace string, which this file — read as a standalone document —
+#: must declare). Served same-origin at ``/favicon.ico`` so the browser's
+#: automatic discovery request stops 404-ing; the webui source stays free
+#: of every URI scheme (the zero-external law's pins are untouched: no
+#: ``http(s)://``, no ``data:`` — the namespace string lives here, on the
+#: Python side of the shell).
+_FAVICON_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+    '<rect width="32" height="32" fill="#efe9dc"/>'
+    '<rect x="5.5" y="9.5" width="21" height="13" fill="#efe9dc"'
+    ' stroke="#191b1e" stroke-width="1.5"/>'
+    '<path d="M6 10l10 7 10-7" fill="none" stroke="#191b1e"'
+    ' stroke-width="1.5"/>'
+    "</svg>"
+)
 
 
 def _readable_outcome(outcome: str) -> str:
@@ -1421,11 +1443,17 @@ _WORD_EXAMPLE_LIMIT = 2
 
 
 def _word_tokens(text: str) -> list[str]:
-    """A query or a lemma as lowercased, edge-stripped word tokens."""
+    """A query or a lemma as lowercased, edge-stripped word tokens.
+
+    The curly apostrophe (U+2019 — the form model output actually writes)
+    normalizes to the straight one before anything else, so ``it's`` in a
+    letter and ``it's`` in the lexicon data meet as the same token (the
+    v3-3 组合第 3 件)."""
 
     tokens: list[str] = []
     for raw in str(text).split():
-        token = raw.strip(_WORD_EDGE_CHARS).casefold()
+        token = raw.strip(_WORD_EDGE_CHARS)
+        token = token.replace("’", "'").casefold()
         if token:
             tokens.append(token)
     return tokens
@@ -1474,6 +1502,23 @@ def _word_lookup(conn: sqlite3.Connection, q: str) -> dict[str, Any]:
                 (len(lemma_tokens), str(entity_id), str(lemma), str(pos))
             )
     if not hits:
+        # The second tier (v3-3 组合第 2 件): a single-token query that the
+        # corpus cannot answer falls to the offline mini-dictionary — a
+        # *dictionary* card (head word + pos + gloss), never a teaching
+        # card. Multi-token queries stay corpus-only (the "make senses"
+        # boundary: the dictionary never participates in phrase matching),
+        # and a dictionary miss is the same honest {"found": false}.
+        if len(q_tokens) == 1:
+            entry = _lexicon.lookup(q_tokens[0])
+            if entry is not None:
+                return {
+                    "found": True,
+                    "source": "lexicon",
+                    "lemma": entry.head,
+                    "pos": entry.pos,
+                    "gloss": entry.gloss,
+                    "matched": entry.matched,
+                }
         return {"found": False}
     hits.sort(key=lambda hit: (-hit[0], hit[1]))
     _, entity_id, lemma, pos = hits[0]
@@ -1516,12 +1561,71 @@ def _word_lookup(conn: sqlite3.Connection, q: str) -> dict[str, Any]:
         senses.append(sense)
     return {
         "found": True,
+        "source": "corpus",
         "lemma": lemma,
         "pos": pos,
         "forms": forms,
         "senses": senses,
         "entity_id": entity_id,
     }
+
+
+#: The click-window widths, longest first — the same 3/2/1 the page's
+#: ``wordWindows`` walks (components.js), so the hit bitmap and a real
+#: click agree by construction (both sides feed the same ``_word_tokens``
+#: + ``_contains_run`` + dictionary covers check).
+_WINDOW_SIZES = (3, 2, 1)
+
+
+def _letter_paragraphs(text: str) -> list[str]:
+    """A letter as paragraphs — the page's own split (``letterParagraphs``:
+    runs of newlines, each paragraph trimmed, empties dropped), mirrored
+    here so the bitmap's paragraph rows line up with the rendered ones."""
+
+    return [p.strip() for p in re.split(r"\n+", str(text)) if p.strip()]
+
+
+def _word_hit_row(words: list[str], lemma_runs: tuple[list[str], ...]) -> list[int]:
+    """One paragraph's hit bitmap: for each whitespace word, whether one
+    of its 1–3 word windows would answer a real click (corpus containment
+    on the same normalization, or — single-token windows only — the
+    dictionary). The affordance face of §3(b): a 0 word is rendered
+    without the clickable style, so "miss silence" becomes "no
+    affordance" instead of a dead tap."""
+
+    row: list[int] = []
+    for index in range(len(words)):
+        hit = False
+        for size in _WINDOW_SIZES:
+            start = max(0, index - size + 1)
+            while not hit and start <= index and start + size <= len(words):
+                query = _word_tokens(" ".join(words[start : start + size]))
+                if query and (
+                    any(_contains_run(query, run) for run in lemma_runs)
+                    or (
+                        len(query) == 1
+                        and _lexicon.covers(query[0])
+                    )
+                ):
+                    hit = True
+                start += 1
+        row.append(1 if hit else 0)
+    return row
+
+
+def _letter_hit_rows(
+    text: str, lemma_runs: tuple[list[str], ...] | None
+) -> list[list[int]] | None:
+    """A whole letter's hit bitmap (one row per paragraph), or ``None``
+    when this host has no word list (the honest shape: without the
+    content leg every word keeps today's full affordance)."""
+
+    if lemma_runs is None:
+        return None
+    return [
+        _word_hit_row(paragraph.split(), lemma_runs)
+        for paragraph in _letter_paragraphs(text)
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -2085,6 +2189,29 @@ class _WebFace:
         content_store = getattr(host, "content_store", None)
         if content_store is not None:
             self._word_db_path = getattr(content_store, "_db_path", None)
+        # The affordance face's one cache (v3-3): the corpus lemmas as
+        # token runs, read once from the same artifact the word lookup
+        # reads (a face-level memo — the bitmap walks them once per word,
+        # and a fresh SELECT per letter would be fifty per history read).
+        # A content.db rebuilt underneath a running server is not a
+        # supported flow (the face binds at startup); the lookup path
+        # still reads per request, so a stale cache can only ever fail
+        # toward "no affordance style", never a wrong card.
+        self._lemma_runs: tuple[list[str], ...] | None = None
+        if self._word_db_path is not None:
+            try:
+                conn = open_read_only(self._word_db_path)
+                try:
+                    self._lemma_runs = tuple(
+                        _word_tokens(str(lemma))
+                        for (lemma,) in conn.execute(
+                            "SELECT lemma FROM content_lexical_entry"
+                        )
+                    )
+                finally:
+                    conn.close()
+            except sqlite3.Error:
+                self._lemma_runs = None
         # MC-0: the character card store (the assembly always builds one;
         # getattr with a default for the same test-double reason as the
         # word path above — a stub host simply has no roster, and the
@@ -2125,11 +2252,20 @@ class _WebFace:
                 "teaching_moments": [],
             }
         completion = result.value
+        reply = completion.reply_text
         return {
-            "reply": completion.reply_text,
+            "reply": reply,
             "turn_status": completion.turn_status.value,
             "failure_reason": completion.failure_reason,
             "teaching_moments": self._moments_of_turn(str(completion.turn_id)),
+            # The affordance bitmaps (v3-3 组合第 4 件): which words of the
+            # reply — and of the user's own committed letter — a click can
+            # actually answer. ``None`` (no content leg) keeps today's
+            # full affordance on every word.
+            "word_hits": (
+                None if reply is None else _letter_hit_rows(reply, self._lemma_runs)
+            ),
+            "user_word_hits": _letter_hit_rows(text, self._lemma_runs),
         }
 
     def _moments_of_turn(self, turn_id: str) -> list[dict[str, str]]:
@@ -3250,15 +3386,27 @@ class _WebFace:
                 "the conversation window could not be read:"
                 f" {window.error.code.value}: {window.error.message}"
             )
-        turns: list[dict[str, str | None]] = []
+        turns: list[dict[str, Any]] = []
         for slice_ in window.value.slices:
+            assistant = (
+                None
+                if slice_.assistant_turn is None
+                else slice_.assistant_turn.content
+            )
             turns.append(
                 {
                     "user": slice_.user_turn.raw_content,
-                    "assistant": (
+                    "assistant": assistant,
+                    # The affordance bitmaps per side (v3-3), the same
+                    # rows the turn response carries — ``None`` keeps
+                    # every word clickable.
+                    "user_word_hits": _letter_hit_rows(
+                        slice_.user_turn.raw_content, self._lemma_runs
+                    ),
+                    "word_hits": (
                         None
-                        if slice_.assistant_turn is None
-                        else slice_.assistant_turn.content
+                        if assistant is None
+                        else _letter_hit_rows(assistant, self._lemma_runs)
                     ),
                 }
             )
@@ -3438,6 +3586,17 @@ def _build_server(
         def do_GET(self) -> None:
             if self.path == "/":
                 self._send_page_file("index.html")
+            elif self.path == "/favicon.ico":
+                # The v3-d favicon face: one same-origin answer for the
+                # browser's automatic discovery request (a 200 with the
+                # inline SVG — never a 404, never an off-site byte).
+                body = _FAVICON_SVG.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "image/svg+xml")
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
             elif self.path.startswith("/static/"):
                 # The static face: the allowlist is the path check — a name
                 # outside it (``..``, a subdirectory, a lookalike) answers
