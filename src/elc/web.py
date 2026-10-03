@@ -372,6 +372,7 @@ from elc.persona.card_store import (
     persona_id_for_card,
     stamp_key_for,
 )
+from elc.persona.official import OFFICIAL_CHARACTER_PACKAGES
 from elc.persona.penpal import (
     PENPAL_CHARACTER_PACKAGE,
     PENPAL_CHARACTER_PACKAGE_ID,
@@ -1243,28 +1244,38 @@ def _tombstones_of(controller: DeletionController) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def _partner_card_face() -> dict[str, Any]:
+def _partner_card_face(
+    record: CharacterCardRecord | None = None,
+) -> dict[str, Any]:
     """The character card's narrative face, shaped for the page.
 
     The single-source rule (cs-1, pinned) makes this a derivation, never a
-    second spelling: the name is the identity line's first segment (the
-    text before the card's own em dash) and the identity line is the rest
-    — both read out of :data:`PENPAL_CHARACTER_PACKAGE` at call time. The
-    three prose fields pass through whole (the page renders them as the
+    second spelling. Queue ④: when the served conversation names a
+    character (any roster card — the official family seeded beside the
+    penpal, or a user's own), the face reads that **table row** — the
+    same five keys :func:`_character_card_face` serves, so the dossier
+    follows the switch and a reworded card reads reworded. When the
+    conversation names no card at all (the shipped default before any
+    switch in the cs-1 world; the tests' own conversations), the face
+    falls back to :data:`PENPAL_CHARACTER_PACKAGE` — the prompt
+    compiler's own fallback rule, restated for the dossier. The three
+    prose fields pass through whole (the page renders them as the
     dossier's paragraphs, it does not re-shape the words). Nothing here
     hardcodes a value of the character: a changed card changes this face.
     """
 
-    card = PENPAL_CHARACTER_PACKAGE
-    identity = str(card.identity)
-    head, sep, tail = identity.partition(" — ")
-    return {
-        "name": head if sep else identity,
-        "identity_line": tail if sep else "",
-        "background": str(card.background),
-        "values": str(card.values),
-        "letter_habits": str(card.speech_style),
-    }
+    if record is None:
+        card = PENPAL_CHARACTER_PACKAGE
+        identity = str(card.identity)
+        head, sep, tail = identity.partition(" — ")
+        return {
+            "name": head if sep else identity,
+            "identity_line": tail if sep else "",
+            "background": str(card.background),
+            "values": str(card.values),
+            "letter_habits": str(card.speech_style),
+        }
+    return _character_card_face(record)
 
 
 #: The canonical command-turn discriminator (the conversation store's own
@@ -2952,10 +2963,13 @@ class _WebFace:
         its own):
 
         - ``card`` — the character's narrative face
-          (:func:`_partner_card_face`), derived from
-          :data:`PENPAL_CHARACTER_PACKAGE` at call time — the single-source
-          rule holds server-side too (the page never spells a value of the
-          character, this face never spells a second copy);
+          (:func:`_partner_card_face`), resolved for the conversation this
+          face serves: a conversation that names a roster card reads the
+          card table (queue ④ — the dossier follows the switch); one that
+          names none falls back to :data:`PENPAL_CHARACTER_PACKAGE` — the
+          single-source rule holds server-side too (the page never spells
+          a value of the character, this face never spells a second
+          copy);
         - ``stats`` / ``memories`` / ``episode`` — three guarded SQL reads
           (the diagnostics construction: a panel that explodes answers
           ``{"error": …}`` in its own slot, the others still answer). The
@@ -2969,8 +2983,14 @@ class _WebFace:
 
         db = self._host.db
         conversation = str(self._conversation_id)
+        served = _character_of_conversation(conversation)
+        served_record: CharacterCardRecord | None = None
+        if served is not None:
+            read = self._require_cards().get(served)
+            if not isinstance(read, Err):
+                served_record = read.value
         return {
-            "card": _partner_card_face(),
+            "card": _partner_card_face(served_record),
             "stats": _diagnostics_panel(
                 "stats",
                 lambda conn: _partner_stats_panel(conn, conversation),
@@ -3070,10 +3090,11 @@ class _WebFace:
         (``persona-<id>`` — one card, one persona, one isolated memory),
         the prose stored as given (**untrusted text is stored as-is** —
         the no-blacklist ruling; rendering escapes it, the store is a
-        shelf). The lifecycle words come off the penpal's card (the one
-        production-proven values — no second spelling), the revision
-        starts at 1, the card is born ``is_builtin: False`` — a user card
-        can be edited and deleted like any other user card."""
+        shelf). The lifecycle words come off the official family (queue
+        ④ — all four cards carry the same pair, the family head is
+        quoted, no second spelling), the revision starts at 1, the card
+        is born ``is_builtin: False`` — a user card can be edited and
+        deleted like any other user card."""
 
         cards = self._require_cards()
         character_id = cards.mint_user_card_id()
@@ -3090,10 +3111,12 @@ class _WebFace:
             boundaries=fields.get("boundaries", ""),
             opening=fields.get("opening", ""),
             scenario=fields.get("scenario", ""),
-            generation_policy=PENPAL_CHARACTER_PACKAGE.generation_policy,
+            generation_policy=(
+                OFFICIAL_CHARACTER_PACKAGES[0].generation_policy
+            ),
             lore_refs=(),
             revision=1,
-            status=PENPAL_CHARACTER_PACKAGE.status,
+            status=OFFICIAL_CHARACTER_PACKAGES[0].status,
             is_builtin=False,
             created_at=now,
             updated_at=now,
@@ -3122,13 +3145,14 @@ class _WebFace:
         return (200, {"character": _character_summary(updated.value)})
 
     def character_delete(self, character_id: str) -> tuple[int, Any]:
-        """Remove one user-authored card (MC-0) — the builtin is refused.
+        """Remove one user-authored card (MC-0) — the builtins are refused.
 
-        ``AUTHORITY_VIOLATION`` (there is exactly one Nell) rides 409, an
-        unknown id 404. Deleting retires the card from the roster; the
-        conversation and the memories it earned stay (history is not
-        rewritten here — the deeper walk is BF-05's business, out of this
-        cut's scope)."""
+        ``AUTHORITY_VIOLATION`` (the official family — the penpal and the
+        companions seeded beside her — is not this store's to end) rides
+        409, an unknown id 404. Deleting retires the card from the
+        roster; the conversation and the memories it earned stay (history
+        is not rewritten here — the deeper walk is BF-05's business, out
+        of this cut's scope)."""
 
         cards = self._require_cards()
         deleted = cards.delete(character_id)

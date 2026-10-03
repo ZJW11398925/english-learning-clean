@@ -227,7 +227,8 @@ SWEPT_TABLES: tuple[str, ...] = (
     # end of the sweep. Only ALL_USER_DATA walks it, and only the user's own
     # cards: the store's leg carries ``is_builtin = 0``, the same authority
     # rule the card store's delete face enforces ("the builtin cannot be
-    # deleted" — there is exactly one Nell; a whole-data wipe does not
+    # deleted" — the official family, the penpal and the companions seeded
+    # beside her, queue ④; a whole-data wipe does not
     # override that, it wipes *user* data).
     "character_card",
 )

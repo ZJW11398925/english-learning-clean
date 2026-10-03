@@ -164,6 +164,7 @@ from elc.persona.card_store import (
     CharacterCardPackages,
     SqliteCharacterCardStore,
 )
+from elc.persona.official import ensure_official_cards
 from elc.persona.penpal import PENPAL_CHARACTER_PACKAGE
 from elc.persona.provider import PersonaProvider
 from elc.persona.runtime import PersonaRuntime
@@ -448,7 +449,11 @@ def open_host(
     migration 0019's ``character_card`` table — **table first, penpal
     fallback**, read-through — so a conversation bound to any card's
     persona speaks with that card as the table has it now, and a persona
-    without a row keeps the injected default.
+    without a row keeps the injected default. Queue ④: the official
+    character family (:mod:`elc.persona.official` — the penpal plus three
+    companions) seeds into the card table on every such open, idempotently
+    by id, so the roster carries all of them whether the database predates
+    the family or not; an explicit ``None`` seeds nothing.
     ``content_db_path=None`` assembles the prep-1 tier; a
     path assembles the full chain over that built artifact (read-only —
     the store refuses a writable connection by construction) and binds
@@ -491,6 +496,13 @@ def open_host(
         character_cards = SqliteCharacterCardStore(db, fence)
         character_packages: CharacterCardPackages | None = None
         if character_package is not None:
+            # Queue ④: the official character family seeds into the card
+            # table on every open — idempotently by id, so a keeper's
+            # rewording of an official card survives the reopen (the
+            # constants are the birth record; the table is the live
+            # truth). ``character_package=None`` — the bare prep-1 shape
+            # — stays bare: no seed, no card map.
+            ensure_official_cards(character_cards)
             character_packages = CharacterCardPackages(character_cards)
         persona = PersonaRuntime(actions=generation, provider=provider)
         lease = ConversationCoordinatorLease()

@@ -50,6 +50,7 @@ from pathlib import Path
 from typing import Any
 
 from elc.persona.card_store import stamp_key_for
+from elc.persona.official import OFFICIAL_CHARACTER_IDS
 from elc.web import _CHARACTER_NAME_MAX, _CHARACTER_PROSE_MAX
 from tests.host.test_mc0_multi_character import FERRYMAN_FIELDS, NELL_ID
 from tests.host.test_w1_web import web_stack
@@ -155,8 +156,11 @@ def test_the_masthead_data_face_is_live(tmp_path: Path) -> None:
         status, roster = _get_json(stack.port, "/api/characters")
         assert status == 200, roster
         assert roster["current_character_id"] is None
-        nell = roster["characters"][0]
-        assert nell["character_id"] == NELL_ID
+        nell = next(
+            item
+            for item in roster["characters"]
+            if item["character_id"] == NELL_ID
+        )
         assert nell["name"]
         assert "identity_line" in nell
         assert nell["stamp_key"] == stamp_key_for(NELL_ID)
@@ -247,12 +251,13 @@ def test_the_stack_data_face_is_live(tmp_path: Path) -> None:
         assert status == 200, payload
         card = payload["character"]
         status, roster = _get_json(stack.port, "/api/characters")
-        assert [item["character_id"] for item in roster["characters"]] == [
-            NELL_ID,
-            card["character_id"],
-        ]
-        assert roster["characters"][1]["stamp_key"] == stamp_key_for(
-            card["character_id"])
+        assert [
+            item["character_id"] for item in roster["characters"]
+        ] == sorted(OFFICIAL_CHARACTER_IDS) + [card["character_id"]]
+        row = next(
+            item for item in roster["characters"]
+            if item["character_id"] == card["character_id"])
+        assert row["stamp_key"] == stamp_key_for(card["character_id"])
 
 
 # ---------------------------------------------------------------------------
@@ -448,11 +453,13 @@ def test_f1_two_minted_cards_coexist_with_distinct_ids(
         status, roster = _get_json(stack.port, "/api/characters")
         assert status == 200, roster
         ids = [item["character_id"] for item in roster["characters"]]
-        # the roster order: builtin first, then the user's cards by id —
-        # both minted cards coexist on one roster
-        assert ids[0] == NELL_ID
-        assert set(ids[1:]) == {one, two}
-        assert len(ids) == 3
+        # the roster order: the official builtins first (by id), then the
+        # user's cards by id — both minted cards coexist on one roster
+        assert ids[: len(OFFICIAL_CHARACTER_IDS)] == sorted(
+            OFFICIAL_CHARACTER_IDS
+        )
+        assert set(ids[len(OFFICIAL_CHARACTER_IDS):]) == {one, two}
+        assert len(ids) == len(OFFICIAL_CHARACTER_IDS) + 2
         faces = {item["character_id"]: item for item in roster["characters"]}
         assert faces[one]["identity_line"] == "清晨补网的退休摆渡人"
         assert faces[two]["identity_line"] == "巷尾修钟的沉默钟表匠"

@@ -20,13 +20,14 @@ and the CRUD face over it:
 - **update** — the prose and the name, nothing else: ``character_id`` /
   ``persona_id`` / ``is_builtin`` / ``created_at`` are the card's identity
   and are immutable here. Every update bumps ``revision`` (the §5.1 package
-  revision counter) and re-stamps ``updated_at``. The **builtin is
-  editable** — the adjudication's ruling: Nell's keeper may reword her, but
-  there is exactly one Nell (her persona id is bound to the conversations
-  that already speak with her), so she can be shaped, never removed.
+  revision counter) and re-stamps ``updated_at``. The **builtins are
+  editable** — the adjudication's ruling: the keeper of an official card
+  may reword it, but an official card cannot be un-officialled (its
+  persona id is bound to the conversations that already speak with it),
+  so it can be shaped, never removed.
 - **delete** — user cards only; a builtin card answers
   ``AUTHORITY_VIOLATION`` (the same refusal family the BF-05 authorities
-  use: this store is not the authority that may end the fixed penpal).
+  use: this store is not the authority that may end an official card).
 
 The §5.1 bridge: :func:`card_to_package` lifts a row into the canonical
 :data:`CharacterPackageRecord` the prompt compiler consumes — the storage
@@ -336,9 +337,12 @@ class SqliteCharacterCardStore:
         text is stored as-is (untrusted prose is the web face's escaping
         problem, never a store refusal — the adjudication's no-blacklist
         ruling for user-authored text). ``is_builtin`` is honored as
-        passed: the migration is the only builtin seed, and a caller that
-        claims builtin for a fresh row is answered here with the same pen
-        the web face never lifts — the web face always passes ``False``.
+        passed: the builtin seeders are the 0019 migration (the penpal)
+        and the official family's open-time seed
+        (``elc.persona.official.ensure_official_cards`` — queue ④), and a
+        caller that claims builtin for a fresh row is answered here with
+        the same pen those seeders use — the web face always passes
+        ``False``.
         """
 
         if not record.name.strip():
@@ -449,10 +453,11 @@ class SqliteCharacterCardStore:
         return self.get(character_id)
 
     def delete(self, character_id: str) -> Result[None]:
-        """Remove one user-authored card; the builtin is refused.
+        """Remove one user-authored card; the builtins are refused.
 
-        ``AUTHORITY_VIOLATION`` for the builtin (there is exactly one Nell;
-        this store is not the authority that may end her), ``NOT_FOUND``
+        ``AUTHORITY_VIOLATION`` for any builtin (the official family —
+        the penpal and the companions seeded beside her — is not this
+        store's authority to end), ``NOT_FOUND``
         for an unknown id. A user card's conversations and memories are
         **not** touched here — the conversation rows keep their persona
         binding and the relationship rows keep their pair (deleting a card

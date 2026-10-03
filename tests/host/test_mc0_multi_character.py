@@ -65,6 +65,7 @@ from elc.persona.card_store import (
     persona_id_for_card,
     stamp_key_for,
 )
+from elc.persona.official import OFFICIAL_CHARACTER_IDS
 from elc.persona.penpal import (
     PENPAL_CHARACTER_PACKAGE,
     PENPAL_CHARACTER_PACKAGE_ID,
@@ -490,15 +491,21 @@ def test_the_roster_switch_and_the_two_dossiers_are_isolated(
     with web_stack(
         tmp_path / "app.db", content_db=pilot_content_db
     ) as stack:
-        # The roster at rest: the seeded penpal, builtin, with her stamp
-        # key; the served conversation names no character (the tests' own
-        # ``web-test`` follows neither mapping shape — the honest None).
+        # The roster at rest: the official family — all four builtins with
+        # their stamp keys (queue ④ seeds the companions beside the
+        # penpal); the served conversation names no character (the
+        # tests' own ``web-test`` follows neither mapping shape — the
+        # honest None).
         status, payload = _get_json(stack.port, "/api/characters")
         assert status == 200, payload
-        assert [item["character_id"] for item in payload["characters"]] == [
-            NELL_ID
-        ]
-        nell = payload["characters"][0]
+        assert [
+            item["character_id"] for item in payload["characters"]
+        ] == sorted(OFFICIAL_CHARACTER_IDS)
+        nell = next(
+            item
+            for item in payload["characters"]
+            if item["character_id"] == NELL_ID
+        )
         assert nell["is_builtin"] is True
         assert nell["name"] == "Nell Alder"
         assert nell["stamp_key"] == stamp_key_for(NELL_ID)
@@ -515,10 +522,11 @@ def test_the_roster_switch_and_the_two_dossiers_are_isolated(
         assert card["stamp_key"] == stamp_key_for(ferryman_id)
 
         status, payload = _get_json(stack.port, "/api/characters")
-        assert [item["character_id"] for item in payload["characters"]] == [
-            NELL_ID,
-            ferryman_id,
-        ]  # builtin first, then the user's
+        assert [
+            item["character_id"] for item in payload["characters"]
+        ] == sorted(OFFICIAL_CHARACTER_IDS) + [
+            ferryman_id
+        ]  # builtins first, then the user's
 
         # Switch to the ferryman: the envelope is his conversation, built
         # here, bound to his persona.
@@ -620,7 +628,12 @@ def test_the_character_http_refusals(tmp_path: Path) -> None:
 
     with web_stack(tmp_path / "app.db") as stack:
         status, payload = _get_json(stack.port, "/api/characters")
-        before_stamp = payload["characters"][0]["stamp_key"]
+        nell = next(
+            item
+            for item in payload["characters"]
+            if item["character_id"] == NELL_ID
+        )
+        before_stamp = nell["stamp_key"]
 
         status, payload = _delete_json(stack.port, f"/api/characters/{NELL_ID}")
         assert status == 409, payload
@@ -679,9 +692,9 @@ def test_the_character_http_refusals(tmp_path: Path) -> None:
         )
         assert status == 200, payload
         status, payload = _get_json(stack.port, "/api/characters")
-        assert [item["character_id"] for item in payload["characters"]] == [
-            NELL_ID
-        ]
+        assert [
+            item["character_id"] for item in payload["characters"]
+        ] == sorted(OFFICIAL_CHARACTER_IDS)
 
 
 # ---------------------------------------------------------------------------
@@ -849,9 +862,9 @@ def test_the_sweep_walks_user_cards_and_keeps_the_builtin(
     tmp_path: Path,
 ) -> None:
     """ALL_USER_DATA removes the user's authored characters and never the
-    shipped one: the sweep's ``is_builtin = 0`` leg is the same authority
+    shipped ones: the sweep's ``is_builtin = 0`` leg is the same authority
     rule the card store's delete face enforces. The user cards are gone
-    (and tombstoned), the builtin row is still there, and the empty-table
+    (and tombstoned), the official family is still there, and the
     fallback is visible: a fresh host after the sweep still assembles."""
 
     provider = ScriptedPersonaProvider(script=(ProviderOutput(text=REPLY),))
@@ -877,7 +890,7 @@ def test_the_sweep_walks_user_cards_and_keeps_the_builtin(
             "SELECT character_id FROM character_card"
         ).fetchall()
     ]
-    assert remaining == [NELL_ID]
+    assert remaining == sorted(OFFICIAL_CHARACTER_IDS)
     tombstones = [
         str(row[0])
         for row in conn.execute(
@@ -890,5 +903,7 @@ def test_the_sweep_walks_user_cards_and_keeps_the_builtin(
     reopened = open_host(tmp_path / "app.db", provider=provider)
     listed = reopened.character_cards.list_all()
     assert isinstance(listed, Ok), listed
-    assert [item.character_id for item in listed.value] == [NELL_ID]
+    assert [item.character_id for item in listed.value] == sorted(
+        OFFICIAL_CHARACTER_IDS
+    )
     reopened.close()

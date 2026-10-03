@@ -1,14 +1,19 @@
-"""The fixed penpal — Local V1's one production CharacterPackage (cs-1).
+"""The fixed penpal — Local V1's founding official CharacterPackage (cs-1).
 
-Until this cut the CharacterPackage had exactly two sources: the test-side
+Until cs-1 the CharacterPackage had exactly two sources: the test-side
 ``sample_character_package`` fixture (elc.persona.types) and ``None``. The
 production chain rendered the degradation arm of the ``[persona]`` section
 (a bare ``persona_id`` line) in every real conversation, because nothing in
-``src/`` ever carried a real character. This module is that missing source:
-**one** carefully written fixed penpal, held as constants, injected by the
-composition root (:func:`elc.host.open_host` defaults to it; a caller may
-pass a different package; ``character_package=None`` restores the bare
-shape).
+``src/`` ever carried a real character. This module was that missing
+source: **one** carefully written fixed penpal, held as constants,
+injected by the composition root. Queue ④ added three companions beside
+her (the official family, :mod:`elc.persona.official`), and she keeps two
+things no companion takes: the default seat (:func:`elc.host.open_host`
+still injects *her* card unless a caller passes another package;
+``character_package=None`` restores the bare shape) and her shipped
+conversation (the ``web-default`` envelope every cs-1-era letter lives
+in). Her card text is also the quality bar the family is held to — the
+queue-④ pins weigh each companion's nine faces against hers.
 
 The single-source rule (pinned by tests/host/test_cs1_character_activation.py):
 every literal of this character — her name, her persona id, her card text —
