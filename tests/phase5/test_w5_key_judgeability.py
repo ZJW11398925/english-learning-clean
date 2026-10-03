@@ -519,7 +519,7 @@ def test_no_other_corpus_row_moved_revision_or_version(
     """The metadata face moved exactly the W-5 twelve (revision 2 /
     content-w5; i-think 3 / content-v31), the v3-1 rewrite set
     (revision 2 / content-v31) and the v3-d inflection twelve
-    (revision 3, 首触两件 2 / content-v3d): every entity outside those
+    (revision 3, 首触一件 carry-on / content-v3d): every entity outside those
     cuts keeps revision 1 and content-v1."""
 
     conn = sqlite3.connect(str(built_content_db))

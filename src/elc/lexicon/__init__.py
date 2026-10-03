@@ -142,7 +142,13 @@ def _candidates(token: str) -> list[str]:
     for word in expansions.get(token, ()):
         if word not in ordered:
             ordered.append(word)
-    for word in sorted(_suffix_candidates(token)):
+    # v3-d 处置刀（评审 M-2）：还原候选按**最长干优先**——字母序取短干
+    # 会把 ones→on（prep 在……上）/noted→not/adding→ad/evening→even
+    # 这类真实词错答掉（短干先入表先命中）；长干是真词形的概率更高。
+    # 次级键字母序保证同长度时跨进程确定性（set 迭代序不可依赖）。
+    for word in sorted(
+        _suffix_candidates(token), key=lambda w: (-len(w), w)
+    ):
         if word not in ordered:
             ordered.append(word)
     return [word for word in ordered if word in entries]

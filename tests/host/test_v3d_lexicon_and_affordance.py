@@ -100,6 +100,26 @@ def test_lookup_de_inflects_through_the_suffix_rules() -> None:
     assert entry is not None and entry.head == "carry"
 
 
+def test_lookup_prefers_the_longest_stem_on_multi_candidates() -> None:
+    """v3-d 处置刀（评审 M-2）：还原候选多干时**最长干优先**——字母序
+    取短干曾把真实词错答（ones→on「prep 在……上」/noted→not/adding→
+    ad/evening→even 四族）；次级键字母序保证跨进程确定性。"""
+    for token, head in (
+        ("ones", "one"),
+        ("noted", "note"),
+        ("adding", "add"),
+    ):
+        entry = lexicon.lookup(token)
+        assert entry is not None, token
+        assert entry.head == head, (token, entry.head)
+    # evening/am/madam 补自条目（M-2 数据缺口）：不再被还原干抢答
+    assert lexicon.lookup("evening").head == "evening"
+    assert lexicon.lookup("am").head == "am"
+    assert lexicon.lookup("madam").head == "madam"
+    # i'm 的合成简注带全 be 分量（am 缺词时退化为单「i」卡）
+    assert "am" in lexicon.lookup("i'm").gloss
+
+
 def test_lookup_answers_none_for_what_it_does_not_carry() -> None:
     """Proper nouns and scaffolding stay out (the honest miss — the
     affordance face renders them dead instead)."""

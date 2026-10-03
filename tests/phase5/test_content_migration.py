@@ -174,7 +174,7 @@ def _expected_metadata(target_id: str) -> tuple[int, str]:
     i-think sits on top of both cuts (revision 3 / content-v31), the rest
     of the v3-1 rewrite at revision 2 / content-v31, the other W-5 rows at
     revision 2 / content-w5, the v3-d inflection twelve at
-    revision 3（首触两件 2）/ content-v3d, and everything else at
+    revision 3（首触一件 carry-on）/ content-v3d, and everything else at
     revision 1 / content-v1."""
 
     if target_id == "res-hedge-i-think":
@@ -342,7 +342,7 @@ def test_entity_row_is_the_seven_canonical_columns(
     # content-w5. 新真值 (v3-1): the sixty slot-criterion rewrites carry
     # revision 2 / content-v31 (i-think: 3 — it sat on both cuts); every
     # other row is unchanged. 新真值 (v3-d): the twelve inflection-slot
-    # targets carry 3（首触两件 2）/ content-v3d.
+    # targets carry 3（首触一件 carry-on）/ content-v3d.
     expected_revision, expected_version = _expected_metadata(target_id)
     assert view.entity_revision == expected_revision
     assert view.created_in_version == CONTENT_VERSION

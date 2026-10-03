@@ -1271,11 +1271,13 @@ def test_the_three_key_spaces_are_collision_free_over_100_entities() -> None:
     # the example-scene topic words out of the key faces, so most of the
     # old in-sentence content-word collisions (english/design/answer/
     # train/booking/...) left the slot space entirely. v3-d 真值: 24 —
-    # the inflection groups of the two first-touched legacy entities
-    # (make-sense 的 makes/made、carry-on 的 carries/carried) each join
-    # an existing legacy sharing pair, and make-an-effort/make-progress/
-    # make-sense 的共享 make 族合并扩面. This is the registered reading —
-    # a future cut that shrinks it may move this pin with the truth.
+    # the inflection groups (make/makes/made/making across make-an-effort
+    # × make-progress，且 makes 新达 that-makes-sense 的判别键) merge
+    # into the existing shared make family, and carry-on 的 carries/
+    # carried 为全语料唯一形不并入任何对（v3-d 处置刀按评审 L-2 改写：
+    # make-sense 本刀未触碰，原句归因失实）. This is the registered
+    # reading — a future cut that shrinks it may move this pin with
+    # the truth.
     assert len(report["legacy_slot_groups"]) == 24
 
 

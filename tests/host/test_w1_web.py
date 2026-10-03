@@ -408,6 +408,14 @@ def test_the_page_serves_the_title_and_the_three_calls(
         # (rd-2 词形：先搁着；R-1R 原词「这次跳过」)
         assert "/api/teaching_reply" in page
         assert "先搁着" in page
+        # v3-d 处置刀（评审 L-1）：favicon 路由的行为钉——页面挂了
+        # /favicon.ico 且路由真服务它（此前删整支路由无一钉能抓）。
+        assert 'href="/favicon.ico"' in page
+        icon_status, icon_type, icon_body = stack.get_raw("/favicon.ico")
+        assert icon_status == 200
+        assert icon_type.startswith("image/svg+xml")
+        assert b"<svg" in icon_body
+        assert len(icon_body) < 1024
 
 
 # ---------------------------------------------------------------------------
