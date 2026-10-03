@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import ast
 import importlib
+import inspect
 from pathlib import Path
 
 from elc.platform.registry import CANONICAL_OBJECTS
@@ -156,17 +157,26 @@ def test_the_registry_schema_types_are_the_canonical_column_sets() -> None:
 # -- the duplicated window constant and its equality pin --------------------
 
 
-def test_the_episode_window_matches_the_persona_window() -> None:
-    """Review INFO-1: the window size is declared twice — once by the runtime
-    (``CONVERSATION_WINDOW_MAX_TURNS``) and once by the Episode projection
-    (``EPISODE_WINDOW_MAX_TURNS``) — because P4-G1 forbids
-    ``elc.relationship`` importing ``elc.runtime``, so neither module may
-    reference the other's constant. This test is what holds them equal: an
-    episode is a projection of the same window the persona reads, and a
-    silent divergence would make the episode's start/end bounds describe a
-    different transcript than the prompt's history section."""
+def test_the_episode_layer_depth_matches_the_persona_window() -> None:
+    """Review INFO-1, rewritten for cs-3's episode-v2: the number is declared
+    twice — once by the runtime (``CONVERSATION_WINDOW_MAX_TURNS``, the
+    ``[history]`` prompt window) and once by the Episode projection
+    (``EPISODE_WINDOW_MAX_TURNS``, the fold's current-layer depth) — because
+    P4-G1 forbids ``elc.relationship`` importing ``elc.runtime``, so neither
+    module may reference the other's constant. This test is what holds them
+    equal. The equality's *meaning* moved with the v2 fold: the episode no
+    longer reads the same bounded window the prompt reads — it reads the
+    whole persona-visible transcript (``get_full_persona_visible_history``)
+    and folds everything before the current layer into the archive — so the
+    new equation this pin holds is: **the ``[history]`` depth stays 20, and
+    the episode's archive layer covers the whole history beyond it.** A
+    silent divergence of the depth would make the summary's current layer
+    start somewhere other than where the prompt's history ends."""
 
-    from elc.relationship.episode import EPISODE_WINDOW_MAX_TURNS
+    from elc.relationship.episode import (
+        EPISODE_WINDOW_MAX_TURNS,
+        EpisodeConversationSource,
+    )
     from elc.runtime.controller import CONVERSATION_WINDOW_MAX_TURNS
 
     assert EPISODE_WINDOW_MAX_TURNS == CONVERSATION_WINDOW_MAX_TURNS
@@ -177,11 +187,20 @@ def test_the_episode_window_matches_the_persona_window() -> None:
     )
     assert "CONVERSATION_WINDOW_MAX_TURNS" in episode_source
     assert "tests/phase4/test_p4_3_gates.py" in episode_source
+    # The archive covers the whole history: the fold's read face is the
+    # unbounded one, and the protocol the executor consumes declares it.
+    assert "get_full_persona_visible_history" in episode_source
+    assert "get_conversation_window(" not in episode_source
     controller_source = (SRC_ROOT / "runtime" / "controller.py").read_text(
         encoding="utf-8"
     )
     assert "EPISODE_WINDOW_MAX_TURNS" in controller_source
     assert "tests/phase4/test_p4_3_gates.py" in controller_source
+    # The protocol is importable and names the full-history face (a stub
+    # without it cannot satisfy the episode projection anymore).
+    assert "get_full_persona_visible_history" in (
+        inspect.getsource(EpisodeConversationSource)
+    )
 
 
 # -- the package pins this slice must not break -----------------------------

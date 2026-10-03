@@ -24,20 +24,33 @@ has two faces, and the split is deliberate:
 canonical text; each line is a站位 this slice takes and declares):**
 
 - *one conversation, one episode* — ``source_turn_sequence_start`` is the
-  first canonical slice's ``turn_sequence`` in the window and
-  ``source_turn_sequence_end`` the last's. The canonical text gives **no
-  segmentation algorithm** (it names neither a boundary rule nor a maximum
-  episode length), so this slice does not invent one: a conversation is one
-  episode, and a future segmentation slice will either bump
-  :data:`EPISODE_PROJECTION_VERSION` or land a second projection type.
-- ``summary`` is **extractive, verbatim** — the most recent
-  :data:`EPISODE_SUMMARY_MAX_UTTERANCES` user utterances, each truncated to
-  :data:`EPISODE_SUMMARY_UTTERANCE_MAX_CHARS`, joined with " / ". It is not a
+  first canonical slice's ``turn_sequence`` in the transcript the caller
+  hands in and ``source_turn_sequence_end`` the last's. The canonical text
+  gives **no segmentation algorithm** (it names neither a boundary rule nor
+  a maximum episode length); the archive fold declared below is the
+  segmentation **this** slice takes, cashing in the hook the episode-v1
+  stance reserved: episode-v2 *is* the bump of
+  :data:`EPISODE_PROJECTION_VERSION`, and a different segmentation shape
+  would be a further bump or a second projection type, never a silent
+  change of these bytes.
+- ``summary`` is **extractive, verbatim, two-layer** (episode-v2). The
+  *current layer* is the most recent :data:`EPISODE_SUMMARY_MAX_UTTERANCES`
+  user utterances, each truncated to
+  :data:`EPISODE_SUMMARY_UTTERANCE_MAX_CHARS`, joined with " / " — exactly
+  the episode-v1 summary. The *archive layer* folds everything before the
+  current-layer window: consecutive :data:`EPISODE_ARCHIVE_SEGMENT_TURNS`
+  slices per segment, each segment contributing at most
+  :data:`EPISODE_ARCHIVE_LINES_PER_SEGMENT` verbatim lines (the segment's
+  first user utterance and its longest), older segments first. The layers
+  join through :data:`_LAYER_SEPARATOR` (archive first); with an empty
+  archive the summary is byte-for-byte the episode-v1 render. It is not a
   generative narrative: a model-written summary would be a different
   projection (a MODEL_PROPOSAL reading of the transcript), never this one.
-- the window the caller hands in is the source: ``get_conversation_window``
-  already excludes command turns (they are not utterances), so a command
-  turn contributes no summary text and no recent event.
+- the transcript the caller hands in is the source: the full-history read
+  (``get_full_persona_visible_history``, cs-3) applies the same
+  persona-visible filters the window read always did, so command turns are
+  already excluded (they are not utterances) — a command turn contributes
+  no summary text, no archive line and no recent event.
 - ``open_threads`` is the Persona×User pair's ACTIVE ``OPEN_THREAD`` memory
   content, ordered by memory id — Relationship-domain truth read through the
   same summary the Recorder consumes, never re-derived here (DOMAIN_MODEL
@@ -82,6 +95,8 @@ from elc.relationship.types import (
 
 __all__ = [
     "EPISODE_ABSENT_BASE_VERSION",
+    "EPISODE_ARCHIVE_LINES_PER_SEGMENT",
+    "EPISODE_ARCHIVE_SEGMENT_TURNS",
     "EPISODE_PROJECTION_VERSION",
     "EPISODE_RECENT_EVENT_LIMIT",
     "EPISODE_SUMMARY_MAX_UTTERANCES",
@@ -100,7 +115,13 @@ __all__ = [
 #: the recent events *mean* renders a different version string, so a bumped
 #: template invalidates the rows the old one produced instead of silently
 #: reusing them.
-EPISODE_PROJECTION_VERSION = "episode-v1"
+#:
+#: episode-v2 (cs-3, the unlimited-chat slice): the summary became the
+#: two-layer fold declared in the module docstring — the rebuild reads the
+#: whole persona-visible transcript and folds everything before the current
+#: layer into verbatim archive segments. v1 rows (window-only summaries)
+#: are a different template's bytes, and the bump says so.
+EPISODE_PROJECTION_VERSION = "episode-v2"
 
 #: How many of the most recent slices the ``recent_events`` column carries.
 #: Calibratable (this is a Local V1 position, not a canonical number).
@@ -112,19 +133,34 @@ EPISODE_RECENT_EVENT_LIMIT = 8
 EPISODE_SUMMARY_MAX_UTTERANCES = 4
 EPISODE_SUMMARY_UTTERANCE_MAX_CHARS = 120
 
-#: How many transcript turns the rebuild reads: the episode is a projection
-#: of the conversation *window*, and the window is bounded (deliberately the
-#: same 20 the Persona Runtime consumes — elc.runtime.controller
-#: ``CONVERSATION_WINDOW_MAX_TURNS``, which carries the mirror of this
-#: note). The two constants are declared twice on purpose: P4-G1 forbids
-#: ``elc.relationship`` importing ``elc.runtime``, so neither can reference
-#: the other, and the equality is held by a test
+#: The archive layer's fold (episode-v2, both Calibratable — Local V1
+#: positions, not canonical numbers): a segment is this many consecutive
+#: slices of the persona-visible transcript, and it contributes at most this
+#: many verbatim lines to the summary (the segment's first user utterance
+#: and its longest; one line when the two are the same utterance). Together
+#: they bound the archive's prompt cost at roughly
+#: ``2 * ceil(archive_slices / 20)`` truncated lines — linear in history,
+#: small per segment, and a pure function of the transcript.
+EPISODE_ARCHIVE_SEGMENT_TURNS = 20
+EPISODE_ARCHIVE_LINES_PER_SEGMENT = 2
+
+#: The fold's *current-layer depth* (episode-v2): how many of the newest
+#: slices stay in the summary's current layer; everything before them is
+#: archive. Since cs-3 this constant no longer bounds the rebuild's read —
+#: the rebuild reads the whole persona-visible transcript
+#: (``get_full_persona_visible_history``) — it only splits the fold. It
+#: deliberately keeps the same number as elc.runtime.controller
+#: ``CONVERSATION_WINDOW_MAX_TURNS`` (the ``[history]`` window the prompt
+#: renders): P4-G1 forbids ``elc.relationship`` importing ``elc.runtime``,
+#: so neither can reference the other, and the equality is held by a test
 #: (tests/phase4/test_p4_3_gates.py) rather than by an import.
-#: Consequence, stated plainly: ``source_turn_sequence_start`` / ``_end``
-#: are the first and last slice *of that window*, not of all history. A
-#: full-history episode is a different projection (a rebuild over the whole
-#: transcript, with its own cost profile), and the canonical text pins
-#: neither.
+#:
+#: Retirement note, kept honest: through episode-v1 this constant bounded
+#: the rebuild's *read* (the episode was a projection of the window, and
+#: ``source_turn_sequence_start`` was the window's first slice — a
+#: full-history episode was called a different projection there). The v2
+#: fold replaced that reading; the window depth is all this constant still
+#: means.
 EPISODE_WINDOW_MAX_TURNS = 20
 
 #: The ``base_domain_version`` of a conversation that has no episode row yet.
@@ -152,6 +188,13 @@ _DIGEST_CHARS = 20
 #: be the whole thing ("提取式逐字" — the words are verbatim, the cut is
 #: visible).
 _ELLIPSIS = "…"
+
+#: The two-layer boundary in the summary string (episode-v2): archive lines
+#: first, then this separator, then the current layer. Utterances join with
+#: " / " inside a layer, so the wider separator is the one structural mark
+#: that says "everything before me is the folded archive" — punctuation,
+#: not content, and the only byte that is not verbatim transcript.
+_LAYER_SEPARATOR = " || "
 
 
 @dataclass(frozen=True)
@@ -223,8 +266,11 @@ class EpisodeConversationSource(Protocol):
 
     Satisfied structurally by ``SqliteConversationStore``. It is wider than
     ``elc.runtime.projections.ProjectionTurnSource`` by exactly one read —
-    the conversation window — because an episode summarizes the window, not
-    the single turn a job is keyed by.
+    the full persona-visible history — because an episode (v2) folds the
+    whole transcript, not just the single turn a job is keyed by. (Through
+    episode-v1 the extra read was the bounded window; the v2 fold needs the
+    same filters with no LIMIT, and the window read is the prompt's face,
+    not this projection's.)
     """
 
     def get_canonical_turn_slice(
@@ -237,8 +283,8 @@ class EpisodeConversationSource(Protocol):
     ) -> Result[ConversationRecord | None]:
         ...
 
-    def get_conversation_window(
-        self, conversation_id: ConversationId, max_turns: int
+    def get_full_persona_visible_history(
+        self, conversation_id: ConversationId
     ) -> Result[ConversationWindow]:
         ...
 
@@ -308,20 +354,26 @@ def rebuild_episode(
     relationship_summary: SamePersonaExistingRelationshipSummary,
     conversation_status: ConversationStatus,
 ) -> Result[EpisodeRecord]:
-    """Rebuild the episode of one conversation from the transcript window.
+    """Rebuild the episode of one conversation from the persona-visible
+    transcript.
 
     Pure: the same inputs always produce the same row, and the row's
     ``updated_at`` is left empty — the durable clock belongs to the store
-    (elc.relationship.episode_store).
+    (elc.relationship.episode_store). Since episode-v2 the caller hands the
+    **whole** persona-visible transcript (cs-3's
+    ``get_full_persona_visible_history``), not a bounded window: the summary
+    folds all of it (current layer + archive), and
+    ``source_turn_sequence_start``/``_end`` are the first and last slice of
+    everything handed in.
 
-    An empty window is refused with ``VALIDATION_FAILED``: there is no
+    An empty transcript is refused with ``VALIDATION_FAILED``: there is no
     episode without a canonical slice, and the assembly (the CP4 executor)
     declares that refusal rather than persisting an empty episode (the
     caller-visible rule of this slice).
 
     The slices are sorted by ``turn_sequence`` here, so a caller may hand
-    them in any order — the window read returns them oldest-first, but the
-    rebuild does not depend on that (a projection must not inherit its
+    them in any order — the full-history read returns them oldest-first, but
+    the rebuild does not depend on that (a projection must not inherit its
     source's incidental ordering).
     """
 
@@ -331,10 +383,10 @@ def rebuild_episode(
             DomainError(
                 code=DomainErrorCode.VALIDATION_FAILED,
                 message=(
-                    f"no canonical slice in the window of conversation"
-                    f" {conversation_id}: an episode is a projection of the"
-                    " transcript, so an empty window has nothing to project"
-                    " (docs/DATA_MODEL.md §5.3)"
+                    f"empty window: no canonical slice in the transcript of"
+                    f" conversation {conversation_id}: an episode is a"
+                    " projection of the transcript, so an empty window has"
+                    " nothing to project (docs/DATA_MODEL.md §5.3)"
                 ),
             )
         )
@@ -343,7 +395,7 @@ def rebuild_episode(
     end = int(ordered[-1].turn_sequence)
     recent = ordered[-EPISODE_RECENT_EVENT_LIMIT:]
     recent_events = tuple(describe_slice(slice_) for slice_ in recent)
-    summary = _extractive_summary(ordered)
+    summary = _two_layer_summary(ordered)
     open_threads = _open_threads(relationship_summary)
     status = conversation_status
     return Ok(
@@ -368,6 +420,52 @@ def rebuild_episode(
             updated_at="",
         )
     )
+
+
+def _two_layer_summary(slices: Sequence[CanonicalTurnSlice]) -> str:
+    """The episode-v2 summary: the archive fold, then the current layer.
+
+    The current layer is the tail the window still covers (the newest
+    :data:`EPISODE_SUMMARY_MAX_UTTERANCES` utterances, exactly the episode-v1
+    render); everything before it is folded segment by segment, older
+    segments first, and the two layers join through
+    :data:`_LAYER_SEPARATOR`. With an empty archive there is no separator
+    and the summary is byte-for-byte the episode-v1 render — a short
+    conversation reads exactly as it always did.
+    """
+
+    current = _extractive_summary(slices)
+    archive = slices[: -EPISODE_WINDOW_MAX_TURNS]
+    if not archive:
+        return current
+    lines: list[str] = []
+    for start in range(0, len(archive), EPISODE_ARCHIVE_SEGMENT_TURNS):
+        segment = archive[start : start + EPISODE_ARCHIVE_SEGMENT_TURNS]
+        lines.extend(_segment_lines(segment))
+    return _LAYER_SEPARATOR.join((" / ".join(lines), current))
+
+
+def _segment_lines(
+    segment: Sequence[CanonicalTurnSlice],
+) -> tuple[str, ...]:
+    """The at-most-:data:`EPISODE_ARCHIVE_LINES_PER_SEGMENT` verbatim lines
+    one archive segment contributes.
+
+    The deterministic selection (a fold rule, not a judgement): the
+    segment's **first** user utterance and its **longest** one (length ties
+    break to the earliest slice). When the longest *is* the first
+    utterance — short segments, or a segment whose opener is also its
+    longest line — it is contributed once, so a segment never repeats
+    itself. Truncation is the same marked cut the current layer uses.
+    """
+
+    longest = max(
+        segment, key=lambda slice_: len(slice_.user_turn.raw_content)
+    ).user_turn.raw_content
+    lines = [_truncate(segment[0].user_turn.raw_content)]
+    if longest != segment[0].user_turn.raw_content:
+        lines.append(_truncate(longest))
+    return tuple(lines[:EPISODE_ARCHIVE_LINES_PER_SEGMENT])
 
 
 def _extractive_summary(slices: Sequence[CanonicalTurnSlice]) -> str:

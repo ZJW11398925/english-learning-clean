@@ -41,7 +41,6 @@ from elc.persona import ScriptedPersonaProvider, no_output, provider_failure
 from elc.platform.sync import CoordinatorBusyError
 from elc.platform.types import ConversationId, DomainErrorCode, Ok, UserId
 from elc.relationship import SamePersonaExistingRelationshipSummary
-from elc.relationship.episode import EPISODE_WINDOW_MAX_TURNS
 from elc.runtime.controller import ConversationCoordinator
 from elc.runtime.projections import (
     PROJECTION_TYPE_EPISODE,
@@ -250,7 +249,8 @@ def test_44_alternating_turns_accumulate_without_duplicates(
     assert {str(row[5]) for row in memories} == {STRESS_MEMORY}
 
     # Episodes: one row per conversation (migration 0010's UNIQUE), its
-    # version moved by content, its window the bounded 20-turn slice.
+    # version moved by content, its bounds the whole transcript (episode-v2:
+    # the fold starts at the conversation's first slice).
     assert len(db.execute("SELECT episode_id FROM episode").fetchall()) == 2
     episode_a = episode_row(db, conv_a)
     episode_b = episode_row(db, conv_b)
@@ -261,7 +261,7 @@ def test_44_alternating_turns_accumulate_without_duplicates(
     for episode in (episode_a, episode_b):
         assert str(episode[2]).startswith("epv-")
         assert int(episode[4]) == ROUNDS
-        assert int(episode[3]) == ROUNDS - EPISODE_WINDOW_MAX_TURNS + 1
+        assert int(episode[3]) == 1
 
 
 # ---------------------------------------------------------------------------

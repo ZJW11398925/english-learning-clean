@@ -269,12 +269,16 @@ SERVER_SENT_UNCONFIRMED = "SERVER_SENT_UNCONFIRMED"
 #: Conversation window size handed to Persona Runtime (RUNTIME §11
 #: ConversationWindow view).
 #:
-#: The Episode projection reads the same window and declares the same number
-#: again as ``elc.relationship.episode.EPISODE_WINDOW_MAX_TURNS`` (that
-#: module carries the mirror of this note). The duplication is deliberate:
-#: P4-G1 forbids ``elc.relationship`` importing ``elc.runtime``, so neither
-#: constant can reference the other, and a test
-#: (tests/phase4/test_p4_3_gates.py) holds the equality instead.
+#: elc.relationship.episode declares the same number again as
+#: ``EPISODE_WINDOW_MAX_TURNS`` — and since cs-3's episode-v2 the shared
+#: number means the *current-layer depth* of the episode summary's two-layer
+#: fold: the episode rebuild reads the whole persona-visible transcript
+#: (``get_full_persona_visible_history``), and this constant is how many of
+#: the newest slices stay in the fold's current layer before the archive
+#: begins. The ``[history]`` section this constant bounds is unchanged.
+#: The duplication is deliberate: P4-G1 forbids ``elc.relationship``
+#: importing ``elc.runtime``, so neither constant can reference the other,
+#: and a test (tests/phase4/test_p4_3_gates.py) holds the equality instead.
 CONVERSATION_WINDOW_MAX_TURNS = 20
 
 #: GenerationContract id of the CP2 first teaching action (§20

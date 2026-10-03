@@ -58,7 +58,6 @@ from elc.platform.types import (
 from elc.relationship.controller import RelationshipController
 from elc.relationship.episode import (
     EPISODE_ABSENT_BASE_VERSION,
-    EPISODE_WINDOW_MAX_TURNS,
     EpisodeConversationSource,
     EpisodeRecord,
     rebuild_episode,
@@ -324,7 +323,11 @@ class EpisodeProjectionExecutor:
        review refused). No persona = the deterministic refusal
        ``VALIDATION_FAILED``, the code the runtime rejects the job with, so
        both Phase-4 projections share one eligibility rule;
-    3. read the conversation window the episode summarizes;
+    3. read the conversation's **whole** persona-visible history
+       (episode-v2, cs-3: the fold's archive layer covers everything the
+       prompt window has already slid past, so the read is unbounded — the
+       same filters, no LIMIT; the window constant only splits the
+       summary's layers inside the rebuild);
     4. read the pair's existing relationship summary — the one allow-listed
        input (DOMAIN_MODEL §17: the pair is bound into that read);
     5. :func:`elc.relationship.episode.rebuild_episode` and
@@ -332,13 +335,16 @@ class EpisodeProjectionExecutor:
 
     Idempotence is the store's: rebuilding the same truth yields the same
     content version, and the store turns that into a zero-write replay
-    (DATA_MODEL §26 — an episode is a rebuildable projection).
+    (DATA_MODEL §26 — an episode is a rebuildable projection). The O(N)
+    read-per-turn is the fold's cost profile, and it lives here on the CP4
+    async leg (RA §19/§21: a projection delay or failure never blocks the
+    next user-visible turn).
 
     Failure semantics match the relationship executor: every face returns a
     ``Result``, nothing raises, and the runtime maps the code
     (VALIDATION_FAILED / AUTHORITY_VIOLATION / CONFLICT reject the job;
     anything else leaves it retryable). A conversation whose status changed,
-    a window that lost its slices, a store write that conflicts — all of
+    a history that lost its slices, a store write that conflicts — all of
     them are reported, none of them touches the transcript (RA §19).
     """
 
@@ -352,13 +358,11 @@ class EpisodeProjectionExecutor:
         controller: RelationshipController,
         conversation: EpisodeConversationSource,
         user_id: UserId,
-        window_max_turns: int = EPISODE_WINDOW_MAX_TURNS,
     ) -> None:
         self._store = store
         self._controller = controller
         self._conversation = conversation
         self._user_id = user_id
-        self._window_max_turns = window_max_turns
 
     # -- ProjectionExecutor ------------------------------------------------
 
@@ -424,14 +428,14 @@ class EpisodeProjectionExecutor:
         conversation = status_result.value
         if conversation is None:
             return _refusal(f"conversation not found: {conversation_id}")
-        window_result = self._conversation.get_conversation_window(
-            conversation_id, self._window_max_turns
+        history_result = self._conversation.get_full_persona_visible_history(
+            conversation_id
         )
-        if isinstance(window_result, Err):
-            return window_result
+        if isinstance(history_result, Err):
+            return history_result
         rebuilt = rebuild_episode(
             conversation_id=conversation_id,
-            slices=window_result.value.slices,
+            slices=history_result.value.slices,
             relationship_summary=existing,
             conversation_status=conversation.status,
         )

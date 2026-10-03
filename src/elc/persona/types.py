@@ -255,8 +255,12 @@ PROFILE_PROMPT_SECTION_VERSION = "profile-prompt-v1"
 #: Version of the ``[relationship]`` section template (P4-3).
 RELATIONSHIP_PROMPT_SECTION_VERSION = "relationship-prompt-v1"
 
-#: Version of the ``[episode]`` section template (P4-3).
-EPISODE_PROMPT_SECTION_VERSION = "episode-prompt-v1"
+#: Version of the ``[episode]`` section template (P4-3; bumped to v2 by
+#: cs-3: the ``summary`` value now carries the episode-v2 two-layer fold —
+#: archive segments, the layer separator, then the current layer — so a
+#: stored prompt says which summary semantics produced it. The key set and
+#: order are unchanged).
+EPISODE_PROMPT_SECTION_VERSION = "episode-prompt-v2"
 
 #: The key order of each P4-3 section, pinned here and enforced by the
 #: compiler — byte-determinism (same view → same bytes) depends on it.

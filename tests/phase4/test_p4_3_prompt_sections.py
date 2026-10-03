@@ -251,7 +251,9 @@ def test_each_new_section_is_versioned_and_renders_its_version_first() -> None:
 def test_the_section_versions_are_pinned() -> None:
     assert PROFILE_PROMPT_SECTION_VERSION == "profile-prompt-v1"
     assert RELATIONSHIP_PROMPT_SECTION_VERSION == "relationship-prompt-v1"
-    assert EPISODE_PROMPT_SECTION_VERSION == "episode-prompt-v1"
+    # cs-3 bumped the [episode] template: the summary value now carries the
+    # episode-v2 two-layer fold (key set and order unchanged).
+    assert EPISODE_PROMPT_SECTION_VERSION == "episode-prompt-v2"
 
 
 def test_each_section_renders_the_pinned_key_order() -> None:

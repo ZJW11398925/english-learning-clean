@@ -55,6 +55,19 @@ class ConversationQueries(Protocol):
     ) -> Result[ConversationWindow]:
         ...
 
+    def get_full_persona_visible_history(
+        self, conversation_id: ConversationId
+    ) -> Result[ConversationWindow]:
+        """The whole persona-visible transcript, oldest first (cs-3).
+
+        :meth:`get_conversation_window` without the bound: the same
+        persona-visible filters at unbounded breadth. The episode-v2 fold
+        (elc.relationship.episode) is the consumer — its archive layer folds
+        everything the prompt window has already slid past, so the
+        projection may not silently stop at any depth.
+        """
+        ...
+
     def get_sequence_positions(
         self, conversation_id: ConversationId
     ) -> Result[SequencePositions]:

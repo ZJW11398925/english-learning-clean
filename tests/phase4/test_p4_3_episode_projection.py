@@ -8,8 +8,9 @@ pinned here, in that order:
   and the fact that the version carries no clock;
 - the row really is the §5.3 column set, column for column, and the *view*
   really drops ``updated_at`` (lifecycle metadata never reaches a prompt);
-- the rebuild is a pure function of the window: extractive summary, the
-  newest K rendered slices, the pair's ACTIVE OPEN_THREAD contents;
+- the rebuild is a pure function of the transcript handed in: the
+  episode-v2 two-layer summary (archive fold + the newest K utterances),
+  the newest K rendered slices, the pair's ACTIVE OPEN_THREAD contents;
 - the store's idempotence contract: same version = zero writes, a moved
   version = a content replace, same version with different content = a
   conflict, a foreign conversation = a conflict, a stale epoch = a raise;
@@ -39,10 +40,13 @@ from elc.platform.types import (
 from elc.relationship.controller import RelationshipController
 from elc.relationship.episode import (
     EPISODE_ABSENT_BASE_VERSION,
+    EPISODE_ARCHIVE_LINES_PER_SEGMENT,
+    EPISODE_ARCHIVE_SEGMENT_TURNS,
     EPISODE_PROJECTION_VERSION,
     EPISODE_RECENT_EVENT_LIMIT,
     EPISODE_SUMMARY_MAX_UTTERANCES,
     EPISODE_SUMMARY_UTTERANCE_MAX_CHARS,
+    EPISODE_WINDOW_MAX_TURNS,
     EpisodeRecord,
     EpisodeView,
     episode_id_for,
@@ -206,14 +210,22 @@ def test_the_episode_version_carries_the_content_and_no_clock() -> None:
     assert baseline != version(source_turn_sequence_end=4)
     assert baseline != version(status=ConversationStatus.CLOSED)
     # The template version is part of the digest: bumping the projection
-    # template invalidates the rows the old one produced.
-    assert baseline != version(projection_version="episode-v2")
+    # template invalidates the rows the old one produced. (The current
+    # template *is* episode-v2 — cs-3's two-layer fold — so the "different"
+    # probe points at the next bump.)
+    assert baseline != version(projection_version="episode-v3")
 
 
 def test_the_projection_template_version_is_pinned() -> None:
-    assert EPISODE_PROJECTION_VERSION == "episode-v1"
+    assert EPISODE_PROJECTION_VERSION == "episode-v2"
     assert EPISODE_RECENT_EVENT_LIMIT == 8
     assert EPISODE_SUMMARY_MAX_UTTERANCES == 4
+    assert EPISODE_ARCHIVE_SEGMENT_TURNS == 20
+    assert EPISODE_ARCHIVE_LINES_PER_SEGMENT == 2
+    # The fold's current-layer depth is still the persona window's depth
+    # (the equality lives in test_p4_3_gates; here it is named so a silent
+    # change of either side of *that* pin shows up in this unit too).
+    assert EPISODE_WINDOW_MAX_TURNS == 20
 
 
 # -- ① the row is the §5.3 column set ---------------------------------------
@@ -341,6 +353,60 @@ def test_a_long_utterance_is_truncated_and_marked(store) -> None:
     assert rebuilt.value.summary.endswith("…")
     assert len(rebuilt.value.summary) == EPISODE_SUMMARY_UTTERANCE_MAX_CHARS + 1
     assert rebuilt.value.summary.startswith("x" * 20)  # verbatim, not rewritten
+
+
+def test_the_v2_fold_reaches_back_beyond_the_window(store) -> None:
+    """The episode-v2 archive: everything before the current-layer window is
+    folded segment by segment (opener + longest per segment, older first),
+    and the fold's start bound is the transcript's first slice — the
+    unlimited-chat property this slice exists to pin."""
+
+    conversation = open_conversation_for(store, "conv-fold", PERSONA_A)
+    for index in range(1, 46):
+        if index == 20:
+            text = "a deliberately much longer utterance number 20 " + "y" * 100
+        else:
+            text = f"short {index}"
+        turn_id = speak(store, conversation, f"cm-fold-{index}", text)
+        deliver_reply(
+            store, turn_id, conversation, f"reply {index}",
+            assistant_turn_id=f"at-fold-{index}",
+        )
+    history = store.get_full_persona_visible_history(conversation)
+    assert isinstance(history, Ok) and len(history.value.slices) == 45
+    rebuilt = rebuild_episode(
+        conversation_id=conversation,
+        slices=history.value.slices,
+        relationship_summary=_summary(),
+        conversation_status=ConversationStatus.ACTIVE,
+    )
+    again = rebuild_episode(
+        conversation_id=conversation,
+        slices=history.value.slices,
+        relationship_summary=_summary(),
+        conversation_status=ConversationStatus.ACTIVE,
+    )
+    assert isinstance(rebuilt, Ok) and isinstance(again, Ok)
+    # Full history, both bounds; the fold itself is replay-stable.
+    assert rebuilt.value.source_turn_sequence_start == 1
+    assert rebuilt.value.source_turn_sequence_end == 45
+    assert rebuilt.value.version == again.value.version
+
+    archive_part, current_part = rebuilt.value.summary.split(" || ")
+    lines = archive_part.split(" / ")
+    # Archive = utterances 1..25 → one full segment (1..20) + one partial
+    # (21..25). The full one contributes opener + longest (truncation
+    # marked); the partial one's opener *is* its longest, so it
+    # de-duplicates to a single line instead of repeating itself.
+    assert len(lines) == 3
+    assert lines[0] == "short 1"
+    assert lines[1].startswith(
+        "a deliberately much longer utterance number 20"
+    )
+    assert lines[1].endswith("…")
+    assert lines[2] == "short 21"
+    # The current layer is unchanged: the newest four, verbatim, in order.
+    assert current_part == "short 42 / short 43 / short 44 / short 45"
 
 
 def test_the_recent_events_are_the_newest_rendered_slices(store) -> None:
