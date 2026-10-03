@@ -599,6 +599,11 @@ def test_the_settings_pull_and_save_loop_are_wired(tmp_path: Path) -> None:
     assert "policyEditor = editorFromSettings(data);" in app
     assert "await fetchSaveTeachingPolicy(payload);" in app
     assert "await loadSettings();" in app
+    # the 409 arm has a face too: the conflict branch re-reads and offers
+    # the one action that resolves it（评审 LOW-1 补钉——方向页同形分支
+    # 有钉先例 test_p3_goal_management:699/test_r1r_blueprint_v2:479）
+    assert '"配置已被别处更新，请重读再改"' in app
+    assert 'again.addEventListener("click", () => loadSettings());' in app
     # the stage readout is the raw value, None honest — no fabricated
     # mapping from the enum to the three tier names
     assert 'slot.textContent = stage ? String(stage) : "未声明";' in app
