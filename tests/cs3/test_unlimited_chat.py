@@ -155,8 +155,11 @@ def test_after_60_turns_the_early_facts_are_still_in_the_prompt(
         segment_count * EPISODE_ARCHIVE_LINES_PER_SEGMENT
         + EPISODE_SUMMARY_MAX_UTTERANCES
     )
+    # 处置刀（评审 LOW-1）：每行最坏 = 120 截断 + 1 个省略号 + 前后
+    # " / " 连接符（首行只挂一侧），显式按最坏 123+1 计——原式 988 比
+    # 真最坏 990 少 2，全最长行场景会假红。
     assert len(summary) <= (
-        quota_lines * (EPISODE_SUMMARY_UTTERANCE_MAX_CHARS + 3)
+        quota_lines * (EPISODE_SUMMARY_UTTERANCE_MAX_CHARS + 1 + 3)
         + len(_LAYER_SEPARATOR)
     )
     assert len(full.value.slices) == ROUNDS
@@ -200,9 +203,9 @@ def test_two_fresh_interpreters_rebuild_the_fold_byte_identical(
     snapshot_app_db(db, db_path)
     digests = {
         fresh_interpreter_rebuild_digest(
-            _REBUILD_SCRIPT, db_path, conversation
+            _REBUILD_SCRIPT, db_path, conversation, seed=seed
         )
-        for _ in ("0", "12345")
+        for seed in ("0", "12345")
     }
     assert len(digests) == 1  # 两个种子的输出逐字节相等
     version, summary_digest = next(iter(digests)).split()

@@ -394,9 +394,13 @@ def snapshot_app_db(db: sqlite3.Connection, path) -> None:
         dest.close()
 
 
-def fresh_interpreter_rebuild_digest(script: str, db_path, conversation) -> str:
+def fresh_interpreter_rebuild_digest(
+    script: str, db_path, conversation, seed: str | None = None
+) -> str:
     """Run the rebuild script in a fresh interpreter; return its printed
-    ``version digest`` line."""
+    ``version digest`` line. ``seed`` 显式落进子进程 ``PYTHONHASHSEED``
+    （评审 MEDIUM-1：不设则子进程继承父环境，循环种子是被丢弃的装饰，
+    跨进程确定性静默退化为同种子比对——低于 C1 先例的显式种子标准）。"""
 
     import os
     import subprocess
@@ -405,6 +409,8 @@ def fresh_interpreter_rebuild_digest(script: str, db_path, conversation) -> str:
 
     src = str(Path(__file__).resolve().parents[2] / "src")
     env = dict(os.environ)
+    if seed is not None:
+        env["PYTHONHASHSEED"] = seed
     env["PYTHONPATH"] = (
         src + os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else src
     )
