@@ -67,9 +67,11 @@ def test_navdock_ink_tab_structure_and_material() -> None:
 
 
 def test_ink_fill_state_uses_two_sided_curves() -> None:
-    """落墨当前态：--on 图标 fill-opacity .9（进入 260ms × --ease-paper），
-    非当前态过渡走退出侧（200ms × --ease-exit）——一褪一落同帧（⑨-5
-    v3-a 行）；下划线语汇从导航当前态退役（--on 无 text-decoration）。"""
+    """落墨当前态：--on 图标 fill-opacity .15 淡墨渍底（进入 260ms ×
+    --ease-paper），非当前态过渡走退出侧（200ms × --ease-exit）——
+    一褪一落同帧（⑨-5 v3-a 行；v3-aR 用户首验否决实墨填充后修订，
+    裁决 DEC-OPI-76a0a10a-…9）；下划线语汇从导航当前态退役（--on 无
+    text-decoration）。"""
 
     css = _text("webui/components.css")
     base = _block(css, ".navdock-item .inkicon {")
@@ -77,7 +79,7 @@ def test_ink_fill_state_uses_two_sided_curves() -> None:
     assert "var(--dur-panel-out)" in base
     assert "var(--ease-exit)" in base
     on = _block(css, ".navdock-item--on .inkicon {")
-    assert "fill-opacity: 0.9;" in on
+    assert "fill-opacity: 0.15;" in on
     assert "var(--dur-note)" in on
     assert "var(--ease-paper)" in on
     on_item = _block(css, ".navdock-item--on {")

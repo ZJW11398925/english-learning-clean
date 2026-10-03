@@ -765,7 +765,7 @@ button:focus-visible, input:focus-visible {
    阶位；历史 54/57 账实差消亡）。
    状态矩阵：default（图标描形 fill-opacity 0、标签次墨 400）/
    hover（图标与标签同落主墨，100ms——hover 半区）/ --on（落墨当前态：
-   图标实墨填充 fill-opacity .9 + 标签 --ink 600；填充切换 = 一次落墨
+   图标淡墨渍底 fill-opacity .15 + 标签 --ink 600；渍底切换 = 一次落墨
    事件——进入 260ms × --ease-paper、退出 200ms × --ease-exit 一褪一落
    同帧；aria-current="page"；下划线语汇从导航当前态岗位退役）/
    :active（触压 1px + state-layer press 雾）/ [disabled]（opacity .4）。
@@ -796,7 +796,7 @@ button:focus-visible, input:focus-visible {
                          transition: fill-opacity var(--dur-panel-out)
                                      var(--ease-exit); }
 .navdock-item--on { color: var(--ink); font-weight: 600; }
-.navdock-item--on .inkicon { fill-opacity: 0.9;
+.navdock-item--on .inkicon { fill-opacity: 0.15;
                              transition: fill-opacity var(--dur-note)
                                          var(--ease-paper); }
 .navdock-item[disabled] { opacity: 0.4; pointer-events: none; }
