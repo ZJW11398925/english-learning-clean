@@ -174,10 +174,12 @@ def _keys(section: str) -> list[str]:
 
 
 def test_the_declared_section_order_is_the_compiled_order() -> None:
-    # cs-0 随迁：临时槽的节名随附笺模式改为 [enclosed-note]，位置不变
+    # cs-0 随迁：临时槽的节名随附笺模式改为 [enclosed-note]，位置不变；
+    # 主线-3 随迁：[lore]（WorldLoreView，第四个 §11 视图）插在 profile 后。
     assert PROMPT_SECTION_ORDER == (
         "persona",
         "profile",
+        "lore",
         "contract",
         "history",
         "relationship",

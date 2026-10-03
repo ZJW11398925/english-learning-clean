@@ -33,6 +33,18 @@ matching ``persona_id`` onto the conversations they open, so the card, the
 conversation row and the Persona×User pair the projections write for are
 one character.
 
+**主线-3 adds the world's own leg (always built, both tiers).** The
+World/Lore authority face (:class:`~elc.world_lore.controller.
+WorldLoreController` over migration 0020's ``world_lore_fact`` table) is
+assembled next to the card store, the builtin lore batch
+(:mod:`elc.world_lore.content`) is seeded idempotently at open, and the
+controller is the coordinator's ``world_lore`` port — so a conversation's
+prompt resolves its own scope of the world (the common facts plus its
+persona's) and the compiler's framed ``[lore]`` section carries it. The
+facts are lore content, and lore content is untrusted (P-INV-013): the
+section renders inside the prompt's trust frame, and a proposal written
+through the controller lands as a ``PENDING`` row no view ever serves.
+
 **Two assembly tiers, declared rather than implied (D-5):**
 
 - ``content_db_path=None`` (the default) is the prep-1 tier, field for field:
@@ -224,6 +236,9 @@ from elc.teaching.rollout import RolloutGateReport, RolloutStage, corpus_rollout
 from elc.teaching.store import SqliteTeachingStore
 from elc.user_config.controller import UserConfigController
 from elc.user_config.store import SqliteUserConfigStore
+from elc.world_lore.content import seed_world_lore_facts
+from elc.world_lore.controller import WorldLoreController
+from elc.world_lore.store import SqliteWorldLoreStore, WorldLoreStoreError
 
 __all__ = ["LOCAL_V1_USER_ID", "Host", "open_host"]
 
@@ -296,6 +311,12 @@ class Host:
     #: leg's composition shape). The coordinator's per-persona card map is
     #: read from it at assembly ("table first, penpal fallback").
     character_cards: SqliteCharacterCardStore
+    #: 主线-3 (DEC-OPI-32409938…36): the World/Lore authority face over
+    #: migration 0020's fact table (always built — both tiers, the
+    #: character_cards shape), with the builtin lore batch seeded
+    #: idempotently at open and the resolution port wired into the
+    #: coordinator (the compiler's framed ``[lore]`` section reads it).
+    world_lore: WorldLoreController
     persona: PersonaRuntime
     coordinator: ConversationCoordinator
     secrets: SecretSource | None = None
@@ -492,6 +513,15 @@ def open_host(
         character_packages: CharacterCardPackages | None = None
         if character_package is not None:
             character_packages = CharacterCardPackages(character_cards)
+        # 主线-3: the World/Lore leg over migration 0020's table (always
+        # built, both tiers) — the builtin lore batch seeded
+        # idempotently at open (a re-seed is a no-op; a failing seed is a
+        # failed open, the fail-closed posture), and the controller wired
+        # into the coordinator as its ``world_lore`` port so every turn's
+        # prompt resolves the conversation's own scope of the world.
+        world_lore_store = SqliteWorldLoreStore(db, fence)
+        seed_world_lore_facts(world_lore_store)
+        world_lore = WorldLoreController(world_lore_store, conversations)
         persona = PersonaRuntime(actions=generation, provider=provider)
         lease = ConversationCoordinatorLease()
         lease.adopt_epoch(RuntimeEpoch(fence.current))
@@ -654,8 +684,15 @@ def open_host(
             delivery_records=deliveries,
             stream_transport=stream_transport,
             constraint_views=user_config,
+            world_lore=world_lore,
         )
-    except (sqlite3.Error, MigrationError, ContentStoreError, OSError):
+    except (
+        sqlite3.Error,
+        MigrationError,
+        ContentStoreError,
+        WorldLoreStoreError,
+        OSError,
+    ):
         db.close()
         raise
     return Host(
@@ -669,6 +706,7 @@ def open_host(
         decision_cycles=decision_cycles,
         deliveries=deliveries,
         character_cards=character_cards,
+        world_lore=world_lore,
         persona=persona,
         coordinator=coordinator,
         secrets=secrets,

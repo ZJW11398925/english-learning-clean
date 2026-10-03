@@ -83,6 +83,11 @@ from elc.relationship.types import (
 )
 from elc.runtime.types import GenerationActionType, InputEnvelope
 from elc.user_config.types import DisclosedUserProfile, DisclosureLevel
+from elc.world_lore.types import (
+    WorldLoreFactKind,
+    WorldLoreRecord,
+    WorldLoreView,
+)
 from tests.conftest import BASELINES, SRC_ROOT
 
 PERSONA = PersonaId("persona-p9-r1")
@@ -150,6 +155,29 @@ CARD_ROW_COLUMNS = ("generation_policy", "lore_refs")
 MEMORY = "the user told Maya they live in Berlin"
 FACT = "the user lives in Berlin"
 SUMMARY = "I live in Berlin. / I read every evening."
+
+#: 主线-3: the lore probe view — two records, one per render face, with the
+#: expected facts line derived from them (the same derivation the compiler
+#: does, spelled here so the value-level assertions read a literal).
+LORE_FACTS = (
+    WorldLoreRecord(
+        world_lore_fact_id="wlf-p9r1-harbour",
+        fact_kind=WorldLoreFactKind.PLACE,
+        canonical_key="lore-p9r1-harbour",
+        statement="a harbour town on a cold coast",
+    ),
+    WorldLoreRecord(
+        world_lore_fact_id="wlf-p9r1-market",
+        fact_kind=WorldLoreFactKind.RULE,
+        canonical_key="lore-p9r1-market",
+        statement="a fine morning is a borrowed day",
+    ),
+)
+LORE_FACTS_LINE = "; ".join(
+    f"{record.fact_kind.value} {record.canonical_key}: {record.statement}"
+    for record in LORE_FACTS
+)
+
 DIRECTIVE = TeachingPromptView(
     action_type="TEACHING_HINT",
     moment_id="mom-p9-r1",
@@ -223,6 +251,7 @@ def _request(
     window: ConversationWindow | None = None,
     language_policy: str = "default",
     contract: GenerationContract | None = None,
+    lore: WorldLoreView | None = None,
 ) -> PromptCompilationRequest:
     contract = contract if contract is not None else _contract()
     return PromptCompilationRequest(
@@ -252,7 +281,7 @@ def _request(
                 if summary is not None
                 else None
             ),
-            world_lore_view=None,
+            world_lore_view=lore,
             disclosed_user_profile=(
                 DisclosedUserProfile(
                     persona_id=PERSONA,
@@ -474,9 +503,11 @@ def test_the_canonical_baseline_and_the_compiler_both_declare_the_basis() -> Non
 
 
 def test_persona_joins_the_declared_untrusted_set() -> None:
+    # 主线-3 随迁：lore（BF-05 "lore·world text"）随其 carrier 刀入列。
     assert UNTRUSTED_PROMPT_SECTIONS == (
         "persona",
         "profile",
+        "lore",
         "history",
         "relationship",
         "episode",
@@ -546,6 +577,7 @@ def test_the_trusted_rows_render_as_literal_section_lines() -> None:
             summary=SUMMARY,
             directive=DIRECTIVE,
             contract=contract,
+            lore=WorldLoreView(facts=LORE_FACTS),
         )
     )
     assert _section(text, "persona").splitlines() == _structure_lines(
@@ -561,6 +593,8 @@ def test_the_trusted_rows_render_as_literal_section_lines() -> None:
     assert "user_id: user-p9-r1" in _section(text, "relationship")
     assert "version: epv-p9-r1" in _section(text, "episode")
     assert "response_mode: BUFFERED_VALIDATED" in _section(text, "contract")
+    # 主线-3 随迁：[lore] 节的模板版本行随其 carrier 刀入列。
+    assert "prompt_version: lore-prompt-v1" in _section(text, "lore")
     # cs-0 随迁（用户授权的最小随迁，D-4 honesty 随迁先例）：原钉
     # `[teaching]` 节含 `hint: try the past tense` 随附笺模式退役——钉的
     # 强度保持（指令的内容必须逐字进入 prompt），节名与形状随 cs-0 改为
@@ -693,7 +727,13 @@ def test_the_untrusted_rows_render_only_inside_their_frames() -> None:
 
     package = _package()
     text = _compile(
-        _request(package, memory=MEMORY, fact=FACT, summary=SUMMARY)
+        _request(
+            package,
+            memory=MEMORY,
+            fact=FACT,
+            summary=SUMMARY,
+            lore=WorldLoreView(facts=LORE_FACTS),
+        )
     )
     expected = {
         ("persona", "identity"): package.identity,
@@ -707,6 +747,7 @@ def test_the_untrusted_rows_render_only_inside_their_frames() -> None:
         ("persona", "generation_policy"): package.generation_policy,
         ("persona", "lore_refs"): "; ".join(package.lore_refs),
         ("profile", "disclosed_facts"): FACT,
+        ("lore", "facts"): LORE_FACTS_LINE,
         ("relationship", "memories"): MEMORY,
         ("episode", "summary"): SUMMARY,
         ("episode", "open_threads"): "a thread",

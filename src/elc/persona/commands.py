@@ -173,24 +173,22 @@ Declared readings (this cut's, each with the condition that re-opens it):
    contents. Revisit: the marker's shape changes (then the version word
    moves), or a reader needs a different quantity (e.g. the count of
    *escaped* characters rather than the block's length).
-5. **``lore/world text`` has no carrier in this compiler yet — which is why
-   it is not framed here.** BF-05's ``UNTRUSTED_CONTENT`` block lists
-   ``lore/world text`` alongside ``persona card text``, but ``WorldLoreView``
-   is not one of :data:`PROMPT_SECTION_ORDER`'s sections and
-   :meth:`PromptCompiler.compile` never reads
-   ``GenerationContext.world_lore_view`` — no lore text can reach the prompt
-   today, so this cut neither frames it nor claims to have fixed that half.
-   The ``lore_refs`` line of ``[persona]`` is not lore prose — it is the
-   card's *reference* list (opaque ids) — but it **is** a card-row value:
-   the disposal moved it (and ``generation_policy``) into the frame on
-   provenance, because BF-05 classifies ``persona card text`` and the card
-   is one editable object whose columns are not individually
-   authority-checked. That closes the reference-list half only; the lore
-   prose half stays registered here rather than claimed. Revisit: the first
-   cut that gives a lore section a carrier on this compiler — that section
-   joins :data:`UNTRUSTED_PROMPT_SECTIONS` and renders inside the frame, per
-   BF-05 and ``SEC-008``. P9-R1 registered this so the fix is not misread as
-   covering the lore half.
+5. **``lore/world text`` got its carrier in 主线-3 — framed from birth.**
+   BF-05's ``UNTRUSTED_CONTENT`` block lists ``lore/world text`` alongside
+   ``persona card text``; until 主线-3 (DEC-OPI-32409938…36) that half was
+   the one this frame did not cover, and reading 5 registered it: "the
+   first cut that gives a lore section a carrier on this compiler — that
+   section joins :data:`UNTRUSTED_PROMPT_SECTIONS` and renders inside the
+   frame". That cut is this one: ``[lore]`` renders the WorldLoreView's
+   facts (:func:`elc.persona.types.world_lore_prompt_fields`), the section
+   joined the untrusted set in the same commit that gave it a carrier, and
+   only facts the World/Lore domain resolved (ACTIVE rows of the
+   conversation's own scope) can appear in it — a ``PENDING`` proposal row
+   is visible to no view, so untrusted text cannot reach the prompt by
+   proposing. The ``lore_refs`` line of ``[persona]`` stays what it was:
+   the card's *reference* list (opaque ids), framed since P9-R1.
+   Revisit: the domain's approval face lands or the resolution scope
+   changes — then this reading is re-stated with that cut.
 
 **Registered, not fixed (P9-R1 disposal — the review's INFO items, each with
 the condition that re-opens it):**
@@ -245,6 +243,7 @@ from elc.persona.types import (
     episode_prompt_fields,
     profile_prompt_fields,
     relationship_prompt_fields,
+    world_lore_prompt_fields,
 )
 from elc.platform.types import (
     CharacterPackageId,
@@ -257,14 +256,19 @@ from elc.runtime.types import GenerationActionType
 #: it; Phase 4 P4-3 ④ extends it with the three §11 views the persona
 #: consumes — docs/RUNTIME_ARCHITECTURE.md §11 lists CharacterPackage,
 #: RelationshipView, EpisodeView, WorldLoreView, DisclosedUserProfile,
-#: ConversationWindow among the GenerationContext members):
+#: ConversationWindow among the GenerationContext members; 主线-3
+#: DEC-OPI-32409938…36 adds the fourth, ``lore`` — the WorldLoreView the
+#: domain resolves — right after ``profile``, the where-and-what-world of
+#: the who-and-to-whom pair):
 #:
-#:     persona → profile → contract → history → relationship → episode →
-#:     enclosed-note → channel
+#:     persona → profile → lore → contract → history → relationship →
+#:     episode → enclosed-note → channel
 #:
 #: The new sections sit where they do for stated reasons, not by accident:
 #: ``profile`` immediately after ``persona`` (both are "who is talking to
-#: whom"); ``relationship``/``episode`` after ``history`` (they are the
+#: whom"); ``lore`` after ``profile`` and before ``contract`` (the durable
+#: world setting the letter is written from, ahead of the rules of the
+#: exchange); ``relationship``/``episode`` after ``history`` (they are the
 #: distilled form of what history shows in full, so the model reads the
 #: transcript first and the continuity summary after it); ``enclosed-note``
 #: stays last-but-one because it is the ephemeral note this turn's letter
@@ -273,6 +277,7 @@ from elc.runtime.types import GenerationActionType
 PROMPT_SECTION_ORDER = (
     "persona",
     "profile",
+    "lore",
     "contract",
     "history",
     "relationship",
@@ -294,10 +299,16 @@ PROMPT_SECTION_ORDER = (
 #: from modifying system policy. The card-row values — the eight prose
 #: columns plus ``generation_policy`` and ``lore_refs`` (the disposal's (a)
 #: half) — render inside the frame; the rows that keep the section carrier do
-#: so with escaped values (:data:`PROMPT_FIELD_TRUST`).
+#: so with escaped values (:data:`PROMPT_FIELD_TRUST`). 主线-3
+#: (DEC-OPI-32409938…36) adds ``lore``: BF-05's block lists ``lore·world
+#: text`` alongside the card, and the section this cut gives the lore half a
+#: carrier is born framed (the reading 5 registration honoured — the
+#: registration said the section joins the frame in the same cut that wires
+#: it, and it did).
 UNTRUSTED_PROMPT_SECTIONS = (
     "persona",
     "profile",
+    "lore",
     "history",
     "relationship",
     "episode",
@@ -417,6 +428,11 @@ PROMPT_FIELD_TRUST: tuple[tuple[str, str, str, str], ...] = (
     ("profile", "persona_id", "trusted", TRUST_CARRIER_SECTION),
     ("profile", "disclosure_level", "trusted", TRUST_CARRIER_SECTION),
     ("profile", "disclosed_facts", "untrusted", TRUST_CARRIER_FRAME),
+    # lore — the WorldLoreView's canonical facts (主线-3): BF-05's
+    # "lore·world text" row, framed from birth. The template version is the
+    # system's own; the facts line is lore prose.
+    ("lore", "prompt_version", "trusted", TRUST_CARRIER_SECTION),
+    ("lore", "facts", "untrusted", TRUST_CARRIER_FRAME),
     # history — the turns themselves (BF-05 "user free text").
     ("history", "turn_text", "untrusted", TRUST_CARRIER_FRAME),
     # relationship — the memory rows: ids are the system's, the remembered
@@ -599,6 +615,26 @@ class PromptCompiler:
                 _framed_untrusted_section(
                     "profile",
                     profile_prompt_fields(context.disclosed_user_profile),
+                )
+            )
+
+        # 主线-3: the lore section — the first carrier lore/world text has
+        # had on this compiler (the P9-R1 reading 5 registration honoured:
+        # the section joined :data:`UNTRUSTED_PROMPT_SECTIONS` in the same
+        # cut that wired it). It renders only when the view carries facts —
+        # an empty view (and the NullWorldLoreView deferred boundary)
+        # renders nothing, so "lore resolved, nothing to say" costs no
+        # section, and a request with no lore view compiles byte-identically
+        # to the pre-主线-3 prompt.
+        if (
+            context is not None
+            and context.world_lore_view is not None
+            and context.world_lore_view.facts
+        ):
+            sections.append(
+                _framed_untrusted_section(
+                    "lore",
+                    world_lore_prompt_fields(context.world_lore_view),
                 )
             )
 

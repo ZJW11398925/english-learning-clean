@@ -4,9 +4,11 @@
 production、哪个只是契约骨架）。它不是逐类贴标签（`src/elc` 公开类计数随刀漂移——
 prep-0 时 **520** / 130 文件 / 154 `.py`，N13 曾登记 159 / 527 / 133；v3-d 触碰
 本文件时同刀随迁为 **560** / 141 / **171**（含 lexicon 新包——N12/N13/N20 同族
-义务）——逐类贴标签是不可维护的漂移面），而是**以包为行**的一跳索引：每行给出该包
-的现役面（读者应当用的类/模块）、它自己的 durable store（若有），以及本包内**非现役**
-的骨架类。
+义务）；主线-3 触碰本文件时同刀复测为 **564** / 142 / **173**（含 world_lore
+的 store/content 两新模块；口径同前 = 公开类（AST ``ClassDef`` 非下划线）/
+含类定义的文件 / `.py` 总数）——逐类贴标签是不可维护的漂移面），而是**以包为行**
+的一跳索引：每行给出该包的现役面（读者应当用的类/模块）、它自己的 durable store
+（若有），以及本包内**非现役**的骨架类。
 
 **四类词（legend）**
 
@@ -41,11 +43,16 @@ prep-0 时 **520** / 130 文件 / 154 `.py`，N13 曾登记 159 / 527 / 133；v3
      声明了对象形状（``OWNER_PERSONA``），没有任何表或 store 写它 —— 运行时由宿主注入
      （``ConversationCoordinator`` 的 ``character_package`` 参数）。所以该行
      ``store=None`` 是诚实的事实，不是遗漏。
-  R2 ``elc.world_lore`` **没有实装面**：只有两个 Protocol、``types`` 与骨架控制器；
-     本行 ``no_live_face_because`` 就是这条，且带 Revisit。
+  R2 ``elc.world_lore`` 的骨架行已按其自述退役（主线-3，``DEC-OPI-32409938-…36``：
+     授权触碰本冻结文件的第二刀）：实装落地 —— ``WorldLoreController`` 毕业
+     （store 迁移 0020 的 ``world_lore_fact`` 表），本行改为 ``live_face`` + ``store``，
+     原「没有实装面」登记随之删除。与 R1 的对照仍是历史事实的刻痕：mc-0 给
+     persona 落了 ``SqliteCharacterCardStore`` 而未随迁本表（见收口 drift 候选，
+     非本刀管辖）。
   R3 ``elc.runtime`` 没有单一 store：它通过端口组合 generation / delivery / projection /
      decision-cycle 等多张表 ⇒ ``store=None``；具体 store 在各自端口模块的 docstring。
-  R4 骨架计数 = **6**（5 个 ``ALL_RAISE`` + ``RuntimeOrchestrator`` 的 ``KEPT``）。
+  R4 骨架计数 = **5**（4 个 ``ALL_RAISE`` + ``RuntimeOrchestrator`` 的 ``KEPT``；
+     主线-3 前 = 6——``WorldLoreController`` 的 ``ALL_RAISE`` 随其毕业退出）。
   R5 本表**不**重复 Phase 0 红线的逐-controller 检查（那由
      ``test_gate_1_domain_interfaces.py`` 承担，且其允许名单是测试内局部表、
      不可 import）；本表与它的关系是：**派生骨架集 ⊆ 本表声明的骨架集**（新骨架在
@@ -206,12 +213,11 @@ SURFACE_CENSUS: tuple[Row, ...] = (
     ),
     Row(
         "world_lore",
-        no_live_face_because=(
-            "该包只有 WorldLoreCommands / WorldLoreQueries 两个 Protocol、types 与"
-            "骨架控制器，没有任何实装面；Persona 消费的 WorldLoreView 由注入提供。"
-            "Revisit: 实装落地时把本行改成 live_face 并把这条登记删掉"
-        ),
-        skeletons=(Skeleton("WorldLoreController", "ALL_RAISE"),),
+        # 主线-3 (DEC-OPI-32409938…36): the live face lands — the authority
+        # controller over migration 0020's fact table; the former
+        # no_live_face_because registration (R2) retired with it.
+        live_face="elc.world_lore.controller:WorldLoreController",
+        store="elc.world_lore.store:SqliteWorldLoreStore",
     ),
 )
 

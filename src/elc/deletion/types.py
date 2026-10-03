@@ -72,13 +72,16 @@ cannot add a table the sweep would silently walk past:
   resurrection §24 guards against) and ``deletion_tombstone`` (§23's
   "deletion-protection ledger");
 - :data:`GLOBAL_CONTENT_TABLES` — the global Curriculum / Content Library.
-  **It is empty in app.db on purpose**, and that emptiness is the honest
-  statement of this cut: V1 keeps global curriculum and content in
-  ``content.db``, a separate read-only build artifact opened by a different
-  connection (elc/content/store.py). SEC-025 is therefore enforced twice —
-  structurally (no app.db table is a global content table, and the sweep is a
-  closed list) and behaviourally (the deletion store opens no other database;
-  a probe asserts content.db is byte-identical after an ALL_USER_DATA sweep).
+  Curriculum is in content.db, a separate read-only build artifact opened by
+  a different connection (elc/content/store.py), so that half stays empty
+  here. 主线-3 (DEC-OPI-32409938…36) lands the set's first app.db member:
+  ``world_lore_fact`` — the shared world's canonical facts (the former cut's
+  "empty in app.db on purpose" statement was that cut's honest snapshot; the
+  world got its own table, and it belongs to no user). SEC-025 is therefore
+  enforced twice — structurally (the sweep is a closed list, and the global
+  set is on the keep side) and behaviourally (the deletion store opens no
+  other database; a probe asserts content.db is byte-identical after an
+  ALL_USER_DATA sweep).
 
 Anything else — a table in app.db that is in none of the three sets — is an
 **error**, not a table to skip: :func:`elc.deletion.plan.assert_known_tables`
@@ -244,9 +247,13 @@ RETAINED_TABLES: tuple[str, ...] = (
     "schema_migrations",
 )
 
-#: The global Curriculum / Content Library. Empty in app.db — they live in
-#: content.db, which this package never opens. See the module docstring.
-GLOBAL_CONTENT_TABLES: tuple[str, ...] = ()
+#: The global Curriculum / Content Library. Curriculum lives in content.db,
+#: which this package never opens (see the module docstring); 主线-3
+#: (DEC-OPI-32409938…36) lands the first *app.db* member: the World/Lore
+#: canonical facts — the shared world every conversation reads, owned by no
+#: user, so §23/SEC-025's keep rule covers it (an ALL_USER_DATA sweep never
+#: deletes the shared world).
+GLOBAL_CONTENT_TABLES: tuple[str, ...] = ("world_lore_fact",)
 
 
 # ---------------------------------------------------------------------------

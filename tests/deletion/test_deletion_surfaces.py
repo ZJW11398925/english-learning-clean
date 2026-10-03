@@ -124,15 +124,20 @@ def test_the_retained_set_is_the_four_infrastructure_and_ledger_tables() -> None
 
 
 def test_no_global_content_table_lives_in_app_db() -> None:
-    """SEC-025 in this repository's shape: the kept assets are content.db's.
+    """SEC-025 in this repository's shape: the kept curriculum assets are
+    content.db's, and the one app.db member of the kept set is global by
+    owner, not by database.
 
-    The set is empty *on purpose* — global curriculum and content live in a
-    separate read-only artifact, so no app.db table may be claimed as global —
-    and the sweep's closure is what makes the rule enforceable (nothing
-    unnamed can be swept).
+    The set stayed empty while the only global content lived in the separate
+    read-only artifact; 主线-3 (DEC-OPI-32409938…36) lands the first app.db
+    member — ``world_lore_fact``, the shared world's canonical facts, owned
+    by no user — and the sweep's closure is what keeps the rule enforceable
+    (nothing unnamed can be swept, and nothing in the kept set is user
+    data).
     """
 
-    assert GLOBAL_CONTENT_TABLES == ()
+    assert GLOBAL_CONTENT_TABLES == ("world_lore_fact",)
+    assert "world_lore_fact" not in SWEPT_TABLES
 
 
 # -- the per-scope surfaces ------------------------------------------------
