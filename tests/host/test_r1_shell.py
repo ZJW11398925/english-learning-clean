@@ -23,10 +23,11 @@ Groups (the task book's own):
    with a section-name slot; the parlor keeps its own bar, linkless;
 5. the default-section law — entering the study lands 今日, entering
    the drawer lands 记忆, and each section's entry is its pull by name
-   (settings pulls nothing);
-6. the settings honesty — the drawer's settings section is an honest
-   placeholder: one sentence, no promised date, and the endpoint line
-   that has nowhere else to live;
+   (settings pulls its own three-face read since 主线-1 — the absence
+   pin's truth migrated, DEC-OPI-76a0a10a-….30);
+6. the settings honesty — the drawer's settings section is a real
+   control surface since 主线-1 (the placeholder era's negatives stay:
+   no promise word anywhere);
 7. the registration — the three shell components are pinned the
    word-card way (the R-1 review's disposition: spec rows, css contract
    blocks, js factories, single-source selectors, and the dock's
@@ -276,8 +277,9 @@ def test_space_headers_and_the_linkless_parlor_bar(tmp_path: Path) -> None:
 def test_entering_a_space_lands_its_default_section(tmp_path: Path) -> None:
     """进空间落默认节（温故=今日、抽屉=记忆），切节即拉——the pulls wired
     by section key; the goal entry still clears a leftover save line, the
-    progress entry pulls the learning and diagnostics faces（R-1R：可教
-    目标面退役后剩两面）, and settings pulls nothing."""
+    progress entry pulls the learning face（R-1R：可教目标面退役后剩一
+    面）, and the settings entry pulls its own three-face read（主线-1
+    随迁：缺位钉换真值钉——保存行同法在入节时隐藏）."""
 
     app = _text("app.js")
     assert 'const DEFAULT_SECTION = { study: "today", drawer: "memory" };' \
@@ -292,13 +294,18 @@ def test_entering_a_space_lands_its_default_section(tmp_path: Path) -> None:
     )
     assert '"study-today": loadToday' in app
     assert '"drawer-memory": loadMemory' in app
-    assert '"drawer-privacy": loadDelTargets' in app
+    # 主线-1 随迁：隐私节入节拉两面（按表达 + 按伙伴）
+    assert '"drawer-privacy": () => { loadDelTargets(); loadDelPartner(); },' \
+        in app
     # rd-3 随迁（9.11-22）：档案节只拉学习一面——诊断五板移出用户面后
     # loadDiagnostics 退役（缺位钉）
     assert '"study-progress": () => { loadLearning(); },' in app
     assert "loadDiagnostics" not in app
     assert 'goalBox("goal-result").hidden = true;' in app
-    assert '"drawer-settings":' not in app
+    # 主线-1 随迁（DEC-OPI-76a0a10a-….30）：设置节入节即拉三面真值
+    assert '"drawer-settings": () => {' in app
+    assert 'settingsBox("settings-result").hidden = true;' in app
+    assert "loadSettings();" in app
 
 
 # ---------------------------------------------------------------------------
@@ -306,11 +313,11 @@ def test_entering_a_space_lands_its_default_section(tmp_path: Path) -> None:
 
 
 def test_the_settings_node_is_an_honest_placeholder(tmp_path: Path) -> None:
-    """The drawer's settings section（rd-4 随迁——8.2.8 修订版为真面，
-    原「还没铺开 / 将来这里会有」两句退役）: the two standing truths
-    survive, the teaching-mode line is the fail-closed fact（档位由启动
-    命令给定——页面读不到也不改它）, the three modes ride along as
-    reference-only copy, and no promise word anywhere."""
+    """The drawer's settings section（主线-1 随迁——8.2.8 重铸②为真控制
+    面，原「页面读不到」fail-closed 句随读面闭合退役）: the two standing
+    truths survive, the stage law is the new honest reading（读得到当前
+    档，改它仍要走启动命令）, the three modes ride along as reference-only
+    copy, and no promise word anywhere."""
 
     page = _page_of(tmp_path)
     # rd-4 缺位钉：旧两句退役，不回潮
@@ -320,8 +327,10 @@ def test_the_settings_node_is_an_honest_placeholder(tmp_path: Path) -> None:
     assert "页面不读取，也不显示" in page
     assert "这台应用只服务你一个人（127.0.0.1，无账号无密码）。" in page
     assert "批注频率在 温故 · 方向 里调。" in page
-    # 诚实读法句 + 换档句 + 三档参考（PRODUCT_CONTRACT §3 三名）
-    assert "当前这一档由启动命令给定——页面读不到，也不改它。" in page
+    # 主线-1 随迁：读面 Law 句（stage 原值槽位）+ 换档句 + 三档参考
+    assert 'id="settings-stage"' in page
+    assert "由启动命令给定，这里读得到，但不能改。" in page
+    assert "当前这一档由启动命令给定——页面读不到，也不改它。" not in page
     assert "换端点或换档 = 改启动命令再启动。" in page
     assert "娱乐 · 关系优先" in page
     assert "平衡" in page

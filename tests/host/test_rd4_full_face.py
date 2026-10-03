@@ -127,9 +127,10 @@ def test_the_who_block_is_the_trigger_and_the_bar_grows_no_button(
 
 
 def test_the_settings_face_replaces_the_placeholder(tmp_path: Path) -> None:
-    """设置节真面（r1_shell/r1r/r1w 已随迁缺位钉；本钉补正面的结构）：
-    两真句 + 指向句 + 诚实读法句 + 换档句 + 三档参考；纯静态——
-    SECTION_PULLS 不拉本节（缺位钉保持）。"""
+    """设置节真面（r1_shell/r1r/r1w 已随迁缺位钉；本钉补正面的结构）。
+    主线-1 随迁（DEC-OPI-76a0a10a-….30，8.2.8 重铸②）：静态真面块保留，
+    升级为真控制面——当前档读面槽位 + 教学策略旋钮组 + 披露规则展示组；
+    SECTION_PULLS 拉本节（缺位钉随迁为正面钉）。"""
 
     index = _page_of(tmp_path)
     settings = index.split('id="drawer-settings"', 1)[1].split(
@@ -137,7 +138,11 @@ def test_the_settings_face_replaces_the_placeholder(tmp_path: Path) -> None:
     assert "这台应用只服务你一个人（127.0.0.1，无账号无密码）。" in settings
     assert "模型端点与模型名由启动命令给定——页面不读取，也不显示。" in settings
     assert "批注频率在 温故 · 方向 里调。" in settings
-    assert "当前这一档由启动命令给定——页面读不到，也不改它。" in settings
+    # 主线-1 随迁：当前档读面（stage 原值槽位）+ 新 Law 句；旧 fail-closed
+    # 句（页面读不到）随读面闭合退役
+    assert 'id="settings-stage"' in settings
+    assert "由启动命令给定，这里读得到，但不能改。" in settings
+    assert "当前这一档由启动命令给定——页面读不到，也不改它。" not in settings
     assert "换端点或换档 = 改启动命令再启动。" in settings
     assert "娱乐 · 关系优先：聊得多，递得少，笔友以听和陪为主。" in settings
     assert "客厅以听和陪为主" not in settings
@@ -145,10 +150,22 @@ def test_the_settings_face_replaces_the_placeholder(tmp_path: Path) -> None:
     assert "学习优先：练句密度优先，批注递得勤，课程感更明显。" in settings
     assert "设置面还没有铺开。" not in settings
     assert "将来这里会有" not in settings
+    # 主线-1 随迁：真控制面两件——旋钮组（含诚实 legend）+ 披露规则组
+    assert 'id="set-settings-knobs"' in settings
+    assert "标「存面」的七钮暂无消费方——先存后用，留空 = 未配置。" in settings
+    assert 'id="settings-knobs"' in settings
+    assert 'id="settings-save"' in settings
+    assert 'id="settings-result"' in settings
+    assert 'id="set-settings-disclosure"' in settings
+    assert "规则经 profile 编辑，这里只读。" in settings
     app = index
-    assert '"drawer-settings":' not in app
+    # 主线-1 随迁：SECTION_PULLS 拉本节（旧缺位钉「不拉本节」换正面钉；
+    # 完整回路钉在 tests/host/test_mainline1_settings.py）
+    assert '"drawer-settings": () => {' in app
     spec = _spec_text()
-    assert "#### 8.2.8 抽屉 · 设置（rd-4 修订版——R-3 前端先行真面）" in spec
+    # 主线-1 随迁：8.2.8 节标题随重铸②换——rd-4 修订版标题为历史原文
+    # （9.12 登记行原样保留，不作现役断言）
+    assert "#### 8.2.8 抽屉 · 设置（主线-1 重铸②——真控制面）" in spec
 
 
 # ---------------------------------------------------------------------------
@@ -317,11 +334,14 @@ def test_the_freeze_lines_hold(tmp_path: Path) -> None:
     """冻结线：静态白名单仍是七文件（C-2）；既有端点的 turn 面原句
     仍在；⑨-5 零新行（静态圈线与在途角标不入动效注册表）。
     cs-2 随迁：/api/partner 由本刀按设计新增（档案页的唯一读面），
-    rd-4 的「无 /api/partner」禁令随之解除；/api/settings 的禁令保留
-    （C-1 的其余半边不受退役影响）。"""
+    rd-4 的「无 /api/partner」禁令随之解除。主线-1 随迁
+    （DEC-OPI-76a0a10a-….30）：/api/settings 由主线-1 按设计新增
+    （设置节三面真值 + 八旋钮白名单写面），原「/api/settings 禁令
+    保留」随之解除——禁令句的正面钉换向。"""
 
     web = WEB.read_text(encoding="utf-8")
-    assert '"/api/settings"' not in web
+    assert '"/api/settings"' in web
+    assert '"/api/settings/teaching_policy"' in web
     assert '"/api/turn"' in web
     assert '"/api/memory"' in web
     assert len(FILES) == 7

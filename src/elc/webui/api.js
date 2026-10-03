@@ -151,3 +151,15 @@ export function fetchUpdateCharacter(characterId, fields) {
 export function fetchDeleteCharacter(characterId) {
   return deleteJson("/api/characters/" + encodeURIComponent(characterId));
 }
+
+/** 设置读数（主线-1）：当前档 + 教学策略十三列 + 披露规则，一读全归；
+ *  词表（频率四词 + 八旋钮白名单）由服务端随行，客户端零拷贝。 */
+export function fetchSettings() {
+  return getJson("/api/settings");
+}
+
+/** 保存教学策略旋钮（主线-1）：八旋钮全组 upsert，版本前移；
+ *  409 = 冲突（重读再改）；mode 等系统列与词表外值都是 400 人话。 */
+export function fetchSaveTeachingPolicy(payload) {
+  return postJson("/api/settings/teaching_policy", payload);
+}

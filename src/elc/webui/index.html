@@ -453,23 +453,22 @@
       </div>
       <div class="sec">
         <h3>按伙伴关系忘掉</h3>
-        <p class="doc-line">这版做不了——页面不知道伙伴的角色编号。</p>
+        <p class="doc-line">忘掉与这位伙伴的关系记忆（她记住的你们之间的事）——信件本身保留。</p>
+        <div id="del-partner"><p class="note">暂无数据</p></div>
       </div>
       <div id="del-result" class="sec"></div>
     </section>
     </section>
 
-    <!-- 设置节（⑧ 8.2.8，rd-4 修订版；v2-2 重铸①）：R-3 前端先行——
-         旧「还没铺开 / 将来这里会有」两句退役，换成能如实说的真面：
-         两真句保留（127.0.0.1 单用户 / 模型端点页面不读不显）+ 教学模式的
-         诚实读法（fail-closed 事实：档位由启动命令给定，页面读不到也
-         不改它）+ 三档参考读物（docs/PRODUCT_CONTRACT.md §3 的中文
-         名与分寸）+ 批注频率的指向句（不与方向节重复——IA 分层）。
-         v2-2 结构重铸（8.2.8 目标设计①）：重铸只动排印——正文行高锁
-         基线（.doc-line，中文文档页排印）、micro 标签走 --meta-* 配方
-         （rd-1 现役）。纯静态：SECTION_PULLS 不拉本节（r1_shell 缺位钉
-         保留）。（8.2.8 目标设计②问候语切换设置项位：随 8.2.2① 问候
-         语面挂起——语料面缺口呈报在案，待裁后落位。） -->
+    <!-- 设置节（⑧ 8.2.8，主线-1 重铸②：真面接通）：静态真面块保留
+         （两真句 + 批注频率指向句）；「三档教学模式」升级 = 当前档读面
+         （rollout_stage 原值，None 如实——不虚构枚举到三档名的映射）+
+         三档参考并存；新增教学策略旋钮组（八旋钮真控件 + 保存回路：
+         读现值→改→POST→回读刷新——mode 等系统列拒写，服务端 400 人话）
+         与披露规则展示组（§5.1 DisclosurePolicy 现值只读——规则经
+         profile 编辑）。SECTION_PULLS 拉本节（r1_shell 缺位钉随迁）。
+         （8.2.8 目标设计②问候语切换设置项位：随 8.2.2① 问候语面挂起
+         ——语料面缺口呈报在案，待裁后落位。） -->
     <section id="drawer-settings" role="tabpanel"
              aria-labelledby="tab-drawer-settings" hidden data-reveal>
     <div class="panel-grid">
@@ -481,12 +480,24 @@
       </div>
       <div class="sec">
         <h3>三档教学模式（参考）</h3>
-        <p class="doc-line">当前这一档由启动命令给定——页面读不到，也不改它。</p>
+        <p class="doc-line">当前档：<span id="settings-stage">…</span>——由启动命令给定，这里读得到，但不能改。</p>
         <p class="doc-line">换端点或换档 = 改启动命令再启动。</p>
         <p class="doc-line">娱乐 · 关系优先：聊得多，递得少，笔友以听和陪为主。</p>
         <p class="doc-line">平衡：聊天与练句并行，批注适度。</p>
         <p class="doc-line">学习优先：练句密度优先，批注递得勤，课程感更明显。</p>
       </div>
+    </div>
+    <div class="sec" id="set-settings-knobs">
+      <h3>教学策略旋钮</h3>
+      <p class="doc-line">批注频率有真消费方；标「存面」的七钮暂无消费方——先存后用，留空 = 未配置。</p>
+      <div id="settings-knobs"><p class="note">暂无数据</p></div>
+      <div id="settings-save"></div>
+      <div id="settings-result" class="sec"></div>
+    </div>
+    <div class="sec" id="set-settings-disclosure">
+      <h3>披露规则</h3>
+      <p class="doc-line">笔友能看到你的哪些档案事实，由披露规则说了算——规则经 profile 编辑，这里只读。</p>
+      <div id="settings-disclosure"><p class="note">暂无数据</p></div>
     </div>
     </section>
 
