@@ -38,7 +38,7 @@ PYTHONPATH=src python -m elc gate --content-db ./build/content.db
 
 - 只读 content.db（不需要 app.db / 密钥 / 网络）：打印四行门报告（每行的 usable 目标数与 verdict，`automatic CURRENT_USER_ERROR` 行含 provenance 腿的 blocked 计数）+ targets 行 + verdict；退出码 **GO=0 / HOLD=1**，可脚本化判读。
 - 门报告是**内容腿的答案，不是开闸**：GO 也不开任何东西——HOLD/GO 之外的 rollout 归因（stage 腿未声明、SessionBudget 三分、独立开闸裁决）打印在报告之后。
-- `--content-db` 缺省指仓内构建产物 `build/content.db`（`PYTHONPATH=src python -m elc.content.build` 生成——该口径带 D-3 的 12 实体 EV 集；库 API `build_content_db` 缺省零 EV，两种构建的门读数不同是**产物事实**）。
+- `--content-db` 缺省指仓内构建产物 `build/content.db`（`PYTHONPATH=src python -m elc.content.build` 生成——该口径带 D-3 名单的 36 实体 EV 集；库 API `build_content_db` 缺省零 EV，两种构建的门读数不同是**产物事实**）。
 
 ### 全链 chat 与 dogfood 观察（D-6-a，用户已明示同意 D-6）
 

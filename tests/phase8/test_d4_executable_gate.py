@@ -12,8 +12,9 @@ Pinned here:
   are unchanged from the parent (hard-coded from the parent's own values);
 - **the fifth leg, both ways**: over a synthetic corpus shaped like the
   shipped one (52×R4 + 48×R1 + 5×None — the p8-5 raw-level precedent), a
-  12-EV mapping leaves the marked row GO on twelve with forty held back,
-  and a zero-EV mapping holds it with all fifty-two counted as blocked;
+  36-EV mapping leaves the marked row GO on thirty-six with sixteen held
+  back, and a zero-EV mapping holds it with all fifty-two counted as
+  blocked;
 - **the isolation**: the other three rows never read provenance (their
   readings are identical with and without a mapping), an EV below the
   readiness floor buys nothing, a missing provenance entry fails closed,
@@ -21,7 +22,7 @@ Pinned here:
 - **the backward compatibility**: ``provenance=None`` answers the plain
   call field for field, every row's blocked count zero;
 - **the corpus face**: over the real built artifact the fourth row reads
-  GO/12/40 under the D-3 pilot build's provenance and HOLD/0/52 under the
+  GO/36/16 under the D-3 pilot build's provenance and HOLD/0/52 under the
   default build's (zero EV);
 - **fail-closed vocabulary**: an unknown provenance word is held, not
   guessed; and the row's receipt line carries the blocked count.
@@ -58,10 +59,10 @@ _R4_COUNT = 52
 _R1_COUNT = 48
 _NONE_COUNT = 5
 
-#: The D-3 pilot's size: twelve R4 targets verified executable (the same set
-#: the real pilot build promotes — asserted against ``PILOT_ENTITIES`` on the
-#: corpus face below).
-_EV_COUNT = 12
+#: The D-3 pilot's size: thirty-six R4 targets verified executable (the
+#: same set the real pilot build promotes — asserted against
+#: ``PILOT_ENTITIES`` on the corpus face below).
+_EV_COUNT = 36
 
 
 def _synthetic_pairs() -> list[tuple[str, str | None]]:
@@ -316,7 +317,7 @@ def _gate_over(db: Path) -> tuple[int, int, RolloutVerdict, RolloutVerdict]:
     )
 
 
-def test_the_real_pilot_build_opens_the_fourth_row_on_twelve(
+def test_the_real_pilot_build_opens_the_fourth_row_on_thirty_six(
     pilot_db: Path,
 ) -> None:
     usable, blocked, verdict, overall = _gate_over(pilot_db)
@@ -339,8 +340,9 @@ def test_the_default_build_holds_the_fourth_row_on_zero_ev(
 def test_the_pilot_ev_set_is_what_the_fourth_row_counts(
     pilot_db: Path,
 ) -> None:
-    """The twelve the marked row counts are the pilot entities themselves —
-    the D-3 roster, read back through the corpus's own provenance face."""
+    """The thirty-six the marked row counts are the pilot entities
+    themselves — the D-3 roster, read back through the corpus's own
+    provenance face."""
 
     store = ContentStore(pilot_db)
     try:

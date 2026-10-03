@@ -221,8 +221,8 @@ def test_the_seeded_schedule_rows_are_exactly_the_ev_set(
         }
     finally:
         store.close()
-    assert len(ev_set) == 12
-    assert "12 schedule rows for 12 EV targets" in out
+    assert len(ev_set) == 36
+    assert "36 schedule rows for 36 EV targets" in out
     db = sqlite3.connect(app_db)
     try:
         scheduled = {

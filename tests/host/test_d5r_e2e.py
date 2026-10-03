@@ -56,19 +56,19 @@ CONV = ConversationId("d5r-conv")
 REPLY = "d5r reply"
 
 #: The pilot-verified target the positive chain runs on (one of the D-3
-#: twelve, so the pilot artifact's provenance table answers
+#: thirty-six, so the pilot artifact's provenance table answers
 #: EXECUTABLY_VERIFIED for it).
 EV_TARGET = TargetId("res-pragmatic-no-way")
 
 #: An R4 target the pilot build holds at EDITOR_REVIEWED (C1's first R4,
-#: never in the pilot twelve) — the exact shape the runtime eligibility leg
-#: refuses, and the release-level corpus gate counts among the blocked.
+#: never in the pilot thirty-six) — the exact shape the runtime eligibility
+#: leg refuses, and the release-level corpus gate counts among the blocked.
 NOT_EV_TARGET = TargetId("res-colloc-make-a-decision")
 
 
 @pytest.fixture(scope="module")
 def pilot_content_db(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """One pilot content.db: twelve EXECUTABLY_VERIFIED rows + its profile."""
+    """One pilot content.db: thirty-six EXECUTABLY_VERIFIED rows + profile."""
 
     path = tmp_path_factory.mktemp("d5r-pilot") / "content.db"
     registry = DetectorRegistry()

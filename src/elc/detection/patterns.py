@@ -1,6 +1,6 @@
 """Shared text primitives for the D-3 pilot matchers.
 
-The twelve pilot matchers read the learner production's plain text with
+The thirty-six pilot matchers read the learner production's plain text with
 regular expressions and small word tables. This module holds only the
 primitives those matchers share, each named for the rule family it
 serves; the entity-specific matchers live in :mod:`elc.detection.pilot`.

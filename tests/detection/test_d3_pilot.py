@@ -1,8 +1,8 @@
-"""D-3 — the pilot detector set: twelve targets, verified executable.
+"""D-3 — the pilot detector set: thirty-six targets, verified executable.
 
 Pinned here: every pilot matcher passes its own real fixture set (the
 run_fixtures judgment, against the authoring source), the CLI artifact
-carries exactly the pilot EV set (12 EV / 34 EDITOR / 54 AUTHOR), the
+carries exactly the pilot EV set (36 EV / 10 EDITOR / 54 AUTHOR), the
 two-directional face (the same tree builds EDITOR-baseline by default
 and EV under the pilot registry), the pilot registration's completeness
 (PILOT_ENTITIES ≡ the registered set; a second registration is refused;
@@ -40,12 +40,14 @@ _PATTERN_SOURCES = (
     SRC_ROOT / "detection" / "pilot.py",
 )
 
-#: Non-pilot candidates from the same R4∧EDITOR pool, sampled for the
-#: original-level pin (a pilot build must not move them).
+#: Non-pilot candidates sampled for the original-level pin (a pilot build
+#: must not move them): ``EDITOR_REVIEWED`` targets outside the pilot
+#: roster — the W-5 key-face re-audit's additions and the entity withheld
+#: from the roster pending its detection-rules reconciliation.
 _NON_PILOT_CANDIDATES = (
-    "res-discourse-on-another-note",
-    "res-pragmatic-right",
-    "res-softener-kind-of",
+    "res-colloc-make-a-decision",
+    "res-phrasal-figure-out",
+    "res-softener-if-anything",
 )
 
 
@@ -119,8 +121,8 @@ def test_the_cli_artifact_carries_exactly_the_pilot_ev_set(
         if level == "EXECUTABLY_VERIFIED"
     )
     assert ev == sorted(PILOT_ENTITIES)
-    assert levels.count("EXECUTABLY_VERIFIED") == 12
-    assert levels.count("EDITOR_REVIEWED") == 34
+    assert levels.count("EXECUTABLY_VERIFIED") == 36
+    assert levels.count("EDITOR_REVIEWED") == 10
     assert levels.count("AUTHOR_DECLARED") == 54
     assert levels.count("EMPIRICALLY_CALIBRATED") == 0
 
@@ -218,10 +220,10 @@ def test_no_fixture_sentence_opening_appears_in_the_matcher_sources(
     source_documents: dict[str, Any],
 ) -> None:
     """A matcher that echoed fixture sentences would contain them; the
-    scan takes each POSITIVE fixture's first six words and refuses the
-    sequence in patterns.py or pilot.py. Both sides are read as word
-    tokens (punctuation dropped), so a quoted sentence cannot hide its
-    commas."""
+    scan takes each POSITIVE fixture's opening words (up to six — some
+    receipt rows are short) and refuses the sequence in patterns.py or
+    pilot.py. Both sides are read as word tokens (punctuation dropped),
+    so a quoted sentence cannot hide its commas."""
 
     corpus = " ".join(
         re.findall(
@@ -236,7 +238,7 @@ def test_no_fixture_sentence_opening_appears_in_the_matcher_sources(
             if row.kind != "POSITIVE_ERROR":
                 continue
             probe = " ".join(re.findall(r"[a-z']+", row.text.lower())[:6])
-            assert len(probe.split()) == 6
+            assert probe, (entity, row.ordinal)
             assert probe not in corpus, (entity, row.ordinal, probe)
 
 

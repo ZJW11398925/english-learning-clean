@@ -356,9 +356,9 @@ def test_the_store_refuses_an_artifact_without_the_profile_table(
 def test_the_pilot_version_is_a_bump_on_behaviour_constant() -> None:
     """The identity the CLI stamps must name a set, not a snapshot: a
     non-empty word, distinct from every entity id (a version is not a
-    roster), and the roster it names is the D-3 twelve — the same set the
-    CLI assembles. The bump-on-behaviour rule lives on the constant's own
-    declaration; this pin makes a silent deletion visible."""
+    roster), and the roster it names is the D-3 thirty-six — the same set
+    the CLI assembles. The bump-on-behaviour rule lives on the constant's
+    own declaration; this pin makes a silent deletion visible."""
 
-    assert PILOT_VERSION == "d3-pilot-1"
+    assert PILOT_VERSION == "d3-pilot-2"
     assert PILOT_VERSION not in PILOT_ENTITIES

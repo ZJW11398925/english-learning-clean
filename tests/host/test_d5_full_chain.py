@@ -2,7 +2,7 @@
 
 Two content.dbs built in this module decide every gate reading below: the
 **default build** (``detector_registry=None``, zero ``EXECUTABLY_VERIFIED``
-rows) and the **pilot build** (the D-3 registry, twelve EV rows). The gate
+rows) and the **pilot build** (the D-3 registry, thirty-six EV rows). The gate
 answers are artifact facts of those two files — the numbers are pinned here
 and move only when the corpus or the pilot set does. The prep-1 tier is
 pinned field for field: without a ``content_db_path`` every full-chain leg is
@@ -98,7 +98,7 @@ def default_content_db(tmp_path_factory: pytest.TempPathFactory) -> Path:
 
 @pytest.fixture(scope="module")
 def pilot_content_db(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """One built content.db over the D-3 pilot registry: twelve EV rows."""
+    """One built content.db over the D-3 pilot registry: thirty-six EV rows."""
 
     path = tmp_path_factory.mktemp("d5-pilot") / "content.db"
     registry = DetectorRegistry()
@@ -270,9 +270,10 @@ def test_the_gate_read_face_answers_from_artifact_facts(
         assert (row.usable_targets, row.blocked_by_provenance) == (0, 52)
         assert row.verdict is RolloutVerdict.HOLD
         assert plain.value.verdict is RolloutVerdict.HOLD
-        # pilot build: twelve EV targets serve the row; forty are held back
+        # pilot build: thirty-six EV targets serve the row; sixteen are held
+        # back
         row = pilot.value.row("automatic CURRENT_USER_ERROR")
-        assert (row.usable_targets, row.blocked_by_provenance) == (12, 40)
+        assert (row.usable_targets, row.blocked_by_provenance) == (36, 16)
         assert row.verdict is RolloutVerdict.GO
         assert pilot.value.verdict is RolloutVerdict.GO
         # the three unmarked rows never read provenance: identical counts in
@@ -310,8 +311,8 @@ def test_the_cli_gate_subcommand_codes_the_verdict(
         line for line in lines if line.startswith("automatic CURRENT_USER_ERROR")
     ]
     assert len(row_lines) == 1
-    assert "usable targets 12" in row_lines[0]
-    assert "40 blocked by provenance" in row_lines[0]
+    assert "usable targets 36" in row_lines[0]
+    assert "16 blocked by provenance" in row_lines[0]
     assert any(line == "verdict: GO (automatic rows: GO)" for line in lines)
     assert any("opens nothing" in line for line in lines)  # the scope note
     assert err.getvalue() == ""

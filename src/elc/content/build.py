@@ -140,13 +140,13 @@ D-2 (Detector Executability Program) adds the execution half of
   against (rollout HOLD).
 
 D-3 (Detector Executability Program) pilots the first real matchers:
-:mod:`elc.detection.pilot` implements the declared rule prose of twelve
-``EDITOR_REVIEWED`` R4 targets and :func:`register_pilot
+:mod:`elc.detection.pilot` implements the declared rule prose of
+thirty-six ``EDITOR_REVIEWED`` R4 targets and :func:`register_pilot
 <elc.detection.pilot.register_pilot>` loads them into a registry. The
 **CLI** (:func:`main`) is the assembling entry point — it registers the
 pilot set into :data:`elc.detection.GLOBAL_REGISTRY` and hands the
-registry to the build, so the command-line artifact carries their twelve
-``EXECUTABLY_VERIFIED`` rows. The library API
+registry to the build, so the command-line artifact carries their
+thirty-six ``EXECUTABLY_VERIFIED`` rows. The library API
 (:func:`build_content_db` with no registry) keeps building the
 pre-D-3 artifact: the default answer stays zero EV, and
 ``CONTENT_DB_VERSION`` is unchanged (the schema did not move).
@@ -3112,8 +3112,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Rebuild content.db from the command line (see content_src/README.md).
 
     D-3: the CLI is the assembling build entry point. It loads the pilot
-    detector set (:func:`elc.detection.pilot.register_pilot` — twelve
-    matchers) into :data:`elc.detection.GLOBAL_REGISTRY` and hands the
+    detector set (:func:`elc.detection.pilot.register_pilot` —
+    thirty-six matchers) into :data:`elc.detection.GLOBAL_REGISTRY` and
+    hands the
     registry to :func:`build_content_db`, so the command-line artifact
     carries the ``EXECUTABLY_VERIFIED`` rows the matchers earned. D-5R
     passes the pilot set's version beside it
