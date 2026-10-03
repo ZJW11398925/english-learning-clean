@@ -107,9 +107,11 @@ _EXPANSION_ENTITIES = (
 #: archived parent tree. The default build's bytes did not move with that
 #: cut — a corpus or build change does move them, and this pin must be
 #: re-derived then (a truth-migration pin, not a freeze; re-derived for the
-#: queue-2 screening: 6edb57cf… was the C3-d-truth artifact).
+#: queue-2 screening: 6edb57cf… was the C3-d-truth artifact; re-derived
+#: again for the queue-2 disposal cut's rationale citation fix:
+#: 7a2816ab… was the queue-2 delivery artifact).
 _PARENT_DEFAULT_SHA256 = (
-    "7a2816ab4fc8008599cfe6fb639e7c43739974f690e0e5707296a7faba8282c0"
+    "3ddc19dca427cf8098baabaeeead719cc495876423d7e11db1457278c954cbf7"
 )
 
 

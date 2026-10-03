@@ -476,8 +476,10 @@ def test_editing_a_counts_as_entry_text_is_inert_but_the_word_is_load_bearing(
     so an edit that empties a judgement list cannot pass silently. The
     screening rows cite entry *numbers*, so a re-worded definition does not
     retroactively falsify a row; what guards the standard is the strict
-    block (this mutation) and the definition files' own digest discipline
-    (C3-d's N-C3D-3), not this file."""
+    block (this mutation) — the C3-d N-C3D-3 criterion digest discipline
+    covers only a subset of the definition files (queue-2 disposal LOW-2:
+    widening it to all eight is registered, not yet landed), so a plain
+    re-wording outside that subset is not pinned red today."""
 
     def break_definition(documents: dict, _index: dict) -> None:
         document = documents["capabilities/cap-lexcol-word-partnership.json"]

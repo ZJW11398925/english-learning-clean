@@ -16,7 +16,7 @@ C3-c and C3-d cuts' thirty-six resources authored against the capability
 definitions rebuilt the R4 side, and the queue-2 screening mapped forty-one
 of the forty-eight placements back against the three lexical capabilities)
 with the
-five CAPABILITY entities reading no level —
+eight CAPABILITY entities reading no level —
 their sources state no evidence.
 
 This module is the executable half of that block, and it is deliberately
@@ -604,8 +604,8 @@ class RolloutGateReport:
     ``automatic_verdict`` is the same rule over the two automatic rows alone,
     so a reader can see the task book's condition separately from the
     conjunction. ``targets_considered`` / ``targets_without_level`` count the
-    table the report was made over (the shipped corpus answers 105 and 5 —
-    the C1/C2/C3 evidence face leaves the five CAPABILITY entities without a
+    table the report was made over (the shipped corpus answers 108 and 8 —
+    the C1/C2/C3 evidence face leaves the eight CAPABILITY entities without a
     level);
     ``unknown_levels`` names any level word the ladder does not carry (empty
     for every answer the ladder itself produces).
