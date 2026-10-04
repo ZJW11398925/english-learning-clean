@@ -49,6 +49,14 @@ APP_SETTING_ROLLOUT_STAGE_KEY = "rollout_stage"
 #: page is the user's chosen place for it; single-principal local app).
 APP_SETTING_PROVIDER_BASE_URL_KEY = "provider_base_url"
 APP_SETTING_PROVIDER_MODEL_KEY = "provider_model"
+#: The model-profile face (user direction: several saved models, switched
+#: any time): each profile is one row under this prefix, the row's value a
+#: strict JSON document (name / base_url / model / api_key-or-null) written
+#: only by the profile write face — a row that fails the face's parse is
+#: omitted from the read face, never guessed into a profile.
+APP_SETTING_PROVIDER_PROFILE_PREFIX = "provider_profile:"
+#: Which profile the live pair came from ("" = custom edits / launch args).
+APP_SETTING_PROVIDER_ACTIVE_PROFILE_KEY = "provider_active_profile"
 #: The page-saved API key (startup-system cut, user direction: nothing
 #: provider-shaped is fixed at launch). Stored in the local single-user
 #: app.db only — never returned by any read face (the GET answers
@@ -90,4 +98,36 @@ class AppSettingStore:
                 "INSERT INTO app_setting (key, value) VALUES (?, ?)"
                 " ON CONFLICT(key) DO UPDATE SET value = excluded.value",
                 (key, value),
+            )
+
+    def items(self, prefix: str) -> list[tuple[str, str]]:
+        """Every ``(key, value)`` whose key starts with ``prefix``, key-ordered.
+
+        The provider-profile face's one read (multiple rows under one prefix
+        in the key-addressed table); a plain SELECT on the shared connection
+        like ``get`` — the caller's thread, no fence (a read fences nothing).
+        """
+
+        rows = self._db.execute(
+            "SELECT key, value FROM app_setting WHERE key LIKE ?"
+            " ORDER BY key",
+            (prefix + "%",),
+        ).fetchall()
+        return [(str(key), str(value)) for key, value in rows]
+
+    def delete(self, key: str) -> None:
+        """Remove one row — absent is a no-op (idempotent delete)."""
+
+        with short_transaction(self._db):
+            row = self._db.execute(
+                "SELECT MAX(epoch) FROM runtime_epoch"
+            ).fetchone()
+            newest = None if row is None or row[0] is None else int(row[0])
+            if newest is None or newest != self._fence.current:
+                raise StaleEpochError(
+                    f"app_setting epoch={self._fence.current}"
+                    f" fenced by db epoch={newest}"
+                )
+            self._db.execute(
+                "DELETE FROM app_setting WHERE key = ?", (key,)
             )

@@ -400,9 +400,11 @@ from elc.persona.penpal import (
 from elc.persona.provider import PersonaProvider
 from elc.planner.trace_document import decode_factor_trace
 from elc.platform.db.app_settings import (
+    APP_SETTING_PROVIDER_ACTIVE_PROFILE_KEY,
     APP_SETTING_PROVIDER_API_KEY_KEY,
     APP_SETTING_PROVIDER_BASE_URL_KEY,
     APP_SETTING_PROVIDER_MODEL_KEY,
+    APP_SETTING_PROVIDER_PROFILE_PREFIX,
     APP_SETTING_ROLLOUT_STAGE_KEY,
 )
 from elc.platform.types import (
@@ -2161,6 +2163,95 @@ def _provider_request_pair(
             return ("api_key 须是非空字符串（≤400 字符）。", None, None, None)
         api_key = raw.strip()
     return (None, base_url, model, api_key)
+
+
+_PROFILE_ID_PATTERN = r"[A-Za-z0-9_-]{1,40}"
+
+
+def _profile_id_request(payload: Any) -> str | None:
+    """The activate/delete bodies: exactly ``{"id": str}`` inside the id
+    pattern (fail-closed — no default, no guessing)."""
+
+    if not isinstance(payload, dict) or set(payload) != {"id"}:
+        return None
+    pid = payload["id"]
+    if not isinstance(pid, str) or not re.fullmatch(_PROFILE_ID_PATTERN, pid):
+        return None
+    return pid
+
+
+def _provider_profile_request(
+    payload: Any,
+) -> tuple[
+    str | None, str | None, str, str, str, str | None
+]:
+    """The profile-save body, parsed and fail-closed:
+    ``(error, id, name, base_url, model, api_key)`` — ``name`` is required
+    (≤60 chars), ``base_url`` / ``model`` required with the main face's
+    grammar, ``id`` and ``api_key`` optional.
+    """
+
+    if not isinstance(payload, dict):
+        return ("请求体须是 JSON 对象。", None, "", "", "", None)
+    allowed = {"id", "name", "base_url", "model", "api_key"}
+    unknown = sorted(set(payload) - allowed)
+    if unknown:
+        return (
+            "只认 id、name、base_url、model 与 api_key——多出来的键是 "
+            + "、".join(unknown) + "。",
+            None,
+            "",
+            "",
+            "",
+            None,
+        )
+    for required in ("name", "base_url", "model"):
+        if required not in payload:
+            return (f"缺 {required}——配置档要名字、端点和模型名。",
+                    None, "", "", "", None)
+    name = payload["name"]
+    if not isinstance(name, str) or not name.strip() or len(name) > 60:
+        return ("name 须是非空字符串（≤60 字符）。", None, "", "", "", None)
+    base_url: str | None
+    raw_base = payload["base_url"]
+    if not isinstance(raw_base, str) or not raw_base.strip():
+        return ("base_url 须是非空字符串。", None, "", "", "", None)
+    parts = urlsplit(raw_base.strip())
+    if parts.scheme not in ("http", "https") or not parts.netloc:
+        return (
+            "base_url 须是完整的 http(s) 端点地址（含主机名）。",
+            None,
+            "",
+            "",
+            "",
+            None,
+        )
+    base_url = raw_base.strip()
+    model = payload["model"]
+    if not isinstance(model, str) or not model.strip() or len(model) > 200:
+        return ("model 须是非空字符串（≤200 字符）。", None, "", "", "", None)
+    profile_id: str | None = None
+    if "id" in payload:
+        raw_id = payload["id"]
+        if (
+            not isinstance(raw_id, str)
+            or not re.fullmatch(_PROFILE_ID_PATTERN, raw_id)
+        ):
+            return ("id 须是字母数字、短横或下划线（≤40 字符）。",
+                    None, "", "", "", None)
+        profile_id = raw_id
+    api_key: str | None = None
+    if "api_key" in payload:
+        raw_key = payload["api_key"]
+        if (
+            not isinstance(raw_key, str)
+            or not raw_key.strip()
+            or len(raw_key) > 400
+        ):
+            return ("api_key 须是非空字符串（≤400 字符）。",
+                    None, "", "", "", None)
+        api_key = raw_key.strip()
+    return (None, profile_id, name.strip(), base_url, model.strip(), api_key)
 
 
 def _settings_system_column_refusal(key: str) -> str:
@@ -3957,11 +4048,12 @@ class _WebFace:
         frequency_words = list(_FREQUENCY_WORDS)
         disclosure_levels = [level.value for level in DisclosureLevel]
         mode_words = list(_MODE_WORDS)
+        provider = self._provider_face_with_profiles()
         if controller is None or self._host.user_id is None:
             return {
                 "available": False,
                 "rollout_stage": stage_value,
-                "provider": self._host.provider_face(),
+                "provider": provider,
                 "teaching_policy": None,
                 "disclosure": None,
                 "frequency_words": frequency_words,
@@ -3996,7 +4088,7 @@ class _WebFace:
         return {
             "available": True,
             "rollout_stage": stage_value,
-            "provider": self._host.provider_face(),
+            "provider": provider,
             "teaching_policy": (
                 None
                 if policy.value is None
@@ -4012,6 +4104,245 @@ class _WebFace:
             "mode_words": mode_words,
             "writable_knobs": list(_SETTINGS_KNOBS),
         }
+
+    def _provider_face_with_profiles(
+        self,
+    ) -> dict[str, Any] | None:
+        """The live provider face plus the model-profile roster (the
+        multi-model cut, user direction: several saved models switched any
+        time).
+
+        The roster rides the same ``provider`` object so the page reads one
+        shape: ``profiles`` (id / name / base_url / model / api_key_set —
+        the key's **value** is never in any read face) and
+        ``active_profile`` (the id the live pair came from, ``None`` for
+        custom edits / launch args). A row the strict write face could not
+        have written (hand-edited, corrupt) is omitted, never guessed into
+        a profile.
+        """
+
+        face = self._host.provider_face()
+        if face is None:
+            return None
+        profiles: list[dict[str, Any]] = []
+        for key, value in self._host.app_settings.items(
+            APP_SETTING_PROVIDER_PROFILE_PREFIX
+        ):
+            profile_id = key[len(APP_SETTING_PROVIDER_PROFILE_PREFIX):]
+            try:
+                doc = json.loads(value)
+            except ValueError:
+                continue
+            if not isinstance(doc, dict):
+                continue
+            name = doc.get("name")
+            base_url = doc.get("base_url")
+            model = doc.get("model")
+            api_key = doc.get("api_key")
+            if not (
+                isinstance(name, str)
+                and name
+                and isinstance(base_url, str)
+                and base_url
+                and isinstance(model, str)
+                and model
+            ):
+                continue
+            profiles.append(
+                {
+                    "id": profile_id,
+                    "name": name,
+                    "base_url": base_url,
+                    "model": model,
+                    "api_key_set": isinstance(api_key, str)
+                    and bool(api_key),
+                }
+            )
+        active = self._host.app_settings.get(
+            APP_SETTING_PROVIDER_ACTIVE_PROFILE_KEY
+        )
+        merged = dict(face)
+        merged["profiles"] = profiles
+        merged["active_profile"] = active or None
+        return merged
+
+    def _provider_profile_doc(self, profile_id: str) -> dict[str, Any] | None:
+        """One profile's stored document, or ``None`` when absent/corrupt."""
+
+        raw = self._host.app_settings.get(
+            APP_SETTING_PROVIDER_PROFILE_PREFIX + profile_id
+        )
+        if raw is None:
+            return None
+        try:
+            doc = json.loads(raw)
+        except ValueError:
+            return None
+        return doc if isinstance(doc, dict) else None
+
+    def provider_profile_save(
+        self,
+        profile_id: str | None,
+        name: str,
+        base_url: str,
+        model: str,
+        api_key: str | None,
+    ) -> tuple[int, dict[str, Any]]:
+        """The profile write (multi-model cut): create or update one named
+        model profile under ``provider_profile:<id>``.
+
+        The grammar was validated at the HTTP layer; an explicit ``id``
+        updates that profile in place (an absent ``api_key`` keeps the
+        stored one — the same ride-along rule as the main face), an absent
+        id mints one. The row is strict JSON written only here; activating
+        is the other face's job (this write moves no live object).
+        """
+
+        face = self._host.provider_face()
+        if face is None:
+            return (
+                200,
+                {
+                    "accepted": False,
+                    "id": None,
+                    "error": (
+                        "这个进程不是 OpenAI 兼容装配——配置档没有可生效的"
+                        "地方，什么都没写。"
+                    ),
+                },
+            )
+        pid = profile_id if profile_id else "p" + uuid.uuid4().hex[:10]
+        key = APP_SETTING_PROVIDER_PROFILE_PREFIX + pid
+        if api_key is None:
+            stored = self._provider_profile_doc(pid)
+            if stored is not None and isinstance(
+                stored.get("api_key"), str
+            ) and stored.get("api_key"):
+                api_key = str(stored.get("api_key"))
+        doc = {
+            "name": name,
+            "base_url": base_url,
+            "model": model,
+            "api_key": api_key,
+        }
+        self._host.app_settings.set(
+            key, json.dumps(doc, ensure_ascii=False)
+        )
+        return (200, {"accepted": True, "id": pid, "error": None})
+
+    def provider_profile_activate(
+        self, profile_id: str
+    ) -> tuple[int, dict[str, Any]]:
+        """The switch face: apply one profile as the live provider.
+
+        Same order as the main provider write — the profile's key first
+        (when it carries one; an absent key leaves the current active key
+        in place), then the hot swap (the *next* letter dials the new
+        destination), then the pair persists and the active pointer names
+        the profile. Activating the already-live profile answers
+        ``idempotent`` and writes nothing.
+        """
+
+        face = self._host.provider_face()
+        if face is None:
+            return (
+                200,
+                {
+                    "accepted": False,
+                    "idempotent": False,
+                    "error": (
+                        "这个进程不是 OpenAI 兼容装配——切换没有可生效的地方。"
+                    ),
+                },
+            )
+        doc = self._provider_profile_doc(profile_id)
+        if (
+            doc is None
+            or not isinstance(doc.get("base_url"), str)
+            or not doc.get("base_url")
+            or not isinstance(doc.get("model"), str)
+            or not doc.get("model")
+        ):
+            return (
+                200,
+                {
+                    "accepted": False,
+                    "idempotent": False,
+                    "error": "没有这个配置档——先存一个，再切换。",
+                },
+            )
+        final_base = str(doc["base_url"])
+        final_model = str(doc["model"])
+        active = self._host.app_settings.get(
+            APP_SETTING_PROVIDER_ACTIVE_PROFILE_KEY
+        )
+        if (
+            active == profile_id
+            and face["base_url"] == final_base
+            and face["model"] == final_model
+        ):
+            return (
+                200,
+                {
+                    "accepted": True,
+                    "idempotent": True,
+                    "error": None,
+                },
+            )
+        profile_key = doc.get("api_key")
+        if isinstance(profile_key, str) and profile_key:
+            # the key first: the swap's send-time source reads the store
+            self._host.app_settings.set(
+                APP_SETTING_PROVIDER_API_KEY_KEY, profile_key
+            )
+        refusal = self._host.replace_provider(final_base, final_model)
+        if refusal is not None:
+            return (
+                200,
+                {
+                    "accepted": False,
+                    "idempotent": False,
+                    "error": refusal,
+                },
+            )
+        self._host.app_settings.set(
+            APP_SETTING_PROVIDER_BASE_URL_KEY, final_base
+        )
+        self._host.app_settings.set(
+            APP_SETTING_PROVIDER_MODEL_KEY, final_model
+        )
+        self._host.app_settings.set(
+            APP_SETTING_PROVIDER_ACTIVE_PROFILE_KEY, profile_id
+        )
+        return (
+            200,
+            {
+                "accepted": True,
+                "idempotent": False,
+                "error": None,
+            },
+        )
+
+    def provider_profile_delete(
+        self, profile_id: str
+    ) -> tuple[int, dict[str, Any]]:
+        """The roster write: remove one profile (idempotent — an absent id
+        is fine). Deleting the active profile leaves the live pair serving
+        (it is still the configuration in force) and the pointer returns to
+        custom (``None``) — nothing hot-swaps on a delete.
+        """
+
+        self._host.app_settings.delete(
+            APP_SETTING_PROVIDER_PROFILE_PREFIX + profile_id
+        )
+        active = self._host.app_settings.get(
+            APP_SETTING_PROVIDER_ACTIVE_PROFILE_KEY
+        )
+        if active == profile_id:
+            self._host.app_settings.set(
+                APP_SETTING_PROVIDER_ACTIVE_PROFILE_KEY, ""
+            )
+        return (200, {"accepted": True, "error": None})
 
     def mode_save(self, stage_word: str) -> tuple[int, dict[str, Any]]:
         """The tier write (veto-response cut): persist the §12 word, then
@@ -4163,6 +4494,12 @@ class _WebFace:
             APP_SETTING_PROVIDER_BASE_URL_KEY, final_base
         )
         self._host.app_settings.set(APP_SETTING_PROVIDER_MODEL_KEY, final_model)
+        # manual edits diverge from any profile — the pointer returns to
+        # custom (the multi-model cut's honesty rule: the pointer names
+        # where the live pair came from, and after this it came from here)
+        self._host.app_settings.set(
+            APP_SETTING_PROVIDER_ACTIVE_PROFILE_KEY, ""
+        )
         return (
             200,
             {
@@ -5084,6 +5421,55 @@ def _build_server(
                     return
                 self._run_host_write(
                     lambda: face.provider_save(base_url, model, api_key)
+                )
+                return
+            if self.path == "/api/settings/provider/profile":
+                # 多模型配置档（用户定向）：存/改一个具名配置档（端点 +
+                # 模型名 + 可选密钥）；语法在此 fail-closed，写面只落一行
+                # 严格 JSON——激活是另一条路（切换才热换）。
+                (
+                    prof_err,
+                    prof_id,
+                    prof_name,
+                    prof_base,
+                    prof_model,
+                    prof_key,
+                ) = _provider_profile_request(self._read_json_body())
+                if prof_err is not None:
+                    self._send_json(400, {"error": prof_err})
+                    return
+                self._run_host_write(
+                    lambda: face.provider_profile_save(
+                        prof_id, prof_name, prof_base, prof_model, prof_key
+                    )
+                )
+                return
+            if self.path == "/api/settings/provider/profile_activate":
+                # 多模型配置档：切换 = 应用该档（密钥先落 → 热换 →
+                # pair + 指针；下一封信即走新档；重复激活幂等零写）。
+                activate_id = _profile_id_request(self._read_json_body())
+                if activate_id is None:
+                    self._send_json(
+                        400,
+                        {"error": "请求体须是 {\"id\": 配置档 id}。"},
+                    )
+                    return
+                self._run_host_write(
+                    lambda: face.provider_profile_activate(activate_id)
+                )
+                return
+            if self.path == "/api/settings/provider/profile_delete":
+                # 多模型配置档：删除（幂等；删现役档不动活配置——指针
+                # 归 custom，热换只属于切换面）。
+                delete_id = _profile_id_request(self._read_json_body())
+                if delete_id is None:
+                    self._send_json(
+                        400,
+                        {"error": "请求体须是 {\"id\": 配置档 id}。"},
+                    )
+                    return
+                self._run_host_write(
+                    lambda: face.provider_profile_delete(delete_id)
                 )
                 return
             if self.path == "/api/settings/disclosure":

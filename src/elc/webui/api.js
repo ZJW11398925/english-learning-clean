@@ -195,3 +195,22 @@ export function fetchSaveMode(stage) {
 export function fetchSaveProvider(payload) {
   return postJson("/api/settings/provider", payload);
 }
+
+/** 多模型配置档（用户定向：存多套模型随时切换）：把当前三件存成一个
+ * 具名配置档（id 省略 = 新建；api_key 省略 = 沿用该档已存的）。 */
+export function fetchSaveProviderProfile(payload) {
+  return postJson("/api/settings/provider/profile", payload);
+}
+
+/** 切换到某个配置档：密钥先落 → 热换 → pair + 指针——下一封信即走
+ * 该档；重复切换幂等零写。 */
+export function fetchActivateProviderProfile(profileId) {
+  return postJson("/api/settings/provider/profile_activate",
+                  { id: profileId });
+}
+
+/** 删除一个配置档（幂等；删现役档不动活配置——指针归自定义）。 */
+export function fetchDeleteProviderProfile(profileId) {
+  return postJson("/api/settings/provider/profile_delete",
+                  { id: profileId });
+}

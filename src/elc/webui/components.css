@@ -1181,6 +1181,20 @@ button:focus-visible, input:focus-visible {
    overflow 裁切框拦腰截断；fixed 逃出一切裁切与 transform 祖先。
    z 10 维持浮层家族原档（tm-pop 同档；确认窗 11/12 仍在其上）。 */
 .select-list--float { position: fixed; z-index: 10; }
+/* 多模型配置档 chip（用户定向：多套模型随时切换）——档名 + 模型名 +
+   内嵌 ✕ 删除；现役档主墨描边。chips 行自动换行（移动端一等形态）。 */
+.profile-chip { display: inline-flex; align-items: baseline;
+                gap: var(--sp-2); }
+.profile-chip--on { color: var(--ink);
+                    outline: 1px solid var(--rule);
+                    outline-offset: 2px; }
+.profile-chip-x { flex: none; font-size: var(--fs-ui);
+                  color: var(--ink-faint); cursor: pointer;
+                  padding: 0 2px; }
+.profile-chip-x:hover { color: var(--ink); }
+.profile-saveas { display: flex; flex-wrap: wrap;
+                  gap: var(--sp-2); margin-top: var(--sp-3); }
+.profile-saveas input { flex: 1; min-width: 12em; }
 .select-option--active {
   background: color-mix(in srgb, var(--ink) 12%, transparent); }
 @media (hover: hover) {

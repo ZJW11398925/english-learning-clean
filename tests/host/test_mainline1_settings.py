@@ -673,6 +673,19 @@ def test_the_settings_pull_and_save_loop_are_wired(tmp_path: Path) -> None:
     assert 'keyInput.type = "password";' in app
     assert '"API 密钥——留空 = 不改";' in app
     assert "face.api_key_set" in app
+    # 多模型配置档（用户定向）：chip 行点切、✕ 删、存为配置档
+    assert "async function activateProviderProfile(id) {" in app
+    assert "async function deleteProviderProfile(id) {" in app
+    assert "async function saveProviderProfileAs(" in app
+    assert 'chipBtn.textContent = profile.name + "（" + profile.model + "）";' \
+        in app
+    assert 'profile.id === face.active_profile ? " profile-chip--on" : ""' \
+        in app
+    assert 'saveAs.textContent = "存为配置档";' in app
+    assert 'placeholder = "配置档名字' in app
+    assert '"/api/settings/provider/profile"' in api
+    assert '"/api/settings/provider/profile_activate"' in api
+    assert '"/api/settings/provider/profile_delete"' in api
     assert "fetchSaveFrequency" not in app
     assert "renderGoalFrequency" not in app
 
@@ -799,6 +812,116 @@ def test_the_provider_face_reads_writes_and_persists(
         ) == "sk-test"
     finally:
         reopened.close()
+
+
+def test_the_model_profiles_save_switch_and_delete(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    """多模型配置档（用户定向：存多套模型随时切换）全生命周期：存两个
+    具名档（GET 列表 + 密钥值永不回显，只报 api_key_set）→ 激活 B = 密钥
+    先落 + 热换 + pair + 指针（重复激活幂等）→ 手改三件 = 指针归自定义
+    → 删现役档不动活配置、指针归 None → 幂等删除。"""
+
+    launch = OpenAICompatibleProvider(
+        OpenAICompatibleConfig(
+            base_url="http://127.0.0.1:9/v1",
+            model="launch-model",
+            secret_ref=SecretRef("OPENAI_API_KEY"),
+        ),
+        _Keychain("OPENAI_API_KEY", "sk-test"),
+    )
+    with web_stack(
+        tmp_path / "app.db",
+        content_db=pilot_content_db,
+        provider=launch,
+    ) as stack:
+        # a malformed profile body is the route's 400 人话
+        status, bad = stack.post(
+            "/api/settings/provider/profile",
+            {"name": "本地", "base_url": "ftp://x/v1", "model": "m"},
+        )
+        assert status == 400 and "http(s)" in bad["error"], bad
+        # save two profiles (one with its own key, one without)
+        status, prof_a = stack.post(
+            "/api/settings/provider/profile",
+            {
+                "name": "本地推理",
+                "base_url": "http://127.0.0.1:10/v1",
+                "model": "local-model",
+            },
+        )
+        assert status == 200 and prof_a["accepted"] is True, prof_a
+        status, prof_b = stack.post(
+            "/api/settings/provider/profile",
+            {
+                "name": "云端大模型",
+                "base_url": "http://127.0.0.1:11/v1",
+                "model": "cloud-model",
+                "api_key": "sk-cloud",
+            },
+        )
+        assert status == 200 and prof_b["accepted"] is True, prof_b
+        id_a, id_b = prof_a["id"], prof_b["id"]
+        assert id_a and id_b and id_a != id_b
+        # the roster rides the settings GET; the key's value never does
+        status, face = stack.get_json("/api/settings")
+        assert status == 200, face
+        roster = {
+            p["id"]: p for p in face["provider"]["profiles"]
+        }
+        assert set(roster) == {id_a, id_b}
+        assert roster[id_a]["name"] == "本地推理"
+        assert roster[id_a]["api_key_set"] is False
+        assert roster[id_b]["api_key_set"] is True
+        assert "sk-cloud" not in str(face)
+        assert face["provider"]["active_profile"] is None   # 尚未挂档
+        # switch to B: key first → hot swap → pair + pointer
+        status, switched = stack.post(
+            "/api/settings/provider/profile_activate", {"id": id_b}
+        )
+        assert (
+            status == 200
+            and switched["accepted"] is True
+            and switched["idempotent"] is False
+        ), switched
+        status, on_b = stack.get_json("/api/settings")
+        assert on_b["provider"]["base_url"] == "http://127.0.0.1:11/v1"
+        assert on_b["provider"]["model"] == "cloud-model"
+        assert on_b["provider"]["active_profile"] == id_b
+        # the replay is idempotent (zero writes)
+        status, replay = stack.post(
+            "/api/settings/provider/profile_activate", {"id": id_b}
+        )
+        assert status == 200 and replay["idempotent"] is True, replay
+        # an unknown id is the honest refusal
+        status, ghost = stack.post(
+            "/api/settings/provider/profile_activate", {"id": "p-nope"}
+        )
+        assert status == 200 and ghost["accepted"] is False, ghost
+        assert "没有这个配置档" in ghost["error"], ghost
+        # manual edits diverge: the pointer returns to custom (None)
+        status, manual = stack.post(
+            "/api/settings/provider",
+            {"base_url": "http://127.0.0.1:12/v1", "model": "hand-tuned"},
+        )
+        assert status == 200 and manual["accepted"] is True, manual
+        status, custom = stack.get_json("/api/settings")
+        assert custom["provider"]["model"] == "hand-tuned"
+        assert custom["provider"]["active_profile"] is None
+        # delete: the live pair stays exactly as it is (a delete never
+        # hot-swaps), the row goes, an absent id stays fine (idempotent)
+        status, gone = stack.post(
+            "/api/settings/provider/profile_delete", {"id": id_b}
+        )
+        assert status == 200 and gone["accepted"] is True, gone
+        status, roster_after = stack.get_json("/api/settings")
+        ids_after = [p["id"] for p in roster_after["provider"]["profiles"]]
+        assert ids_after == [id_a]
+        assert roster_after["provider"]["model"] == "hand-tuned"
+        status, again_gone = stack.post(
+            "/api/settings/provider/profile_delete", {"id": id_b}
+        )
+        assert status == 200 and again_gone["accepted"] is True, again_gone
 
 
 def test_the_privacy_section_names_the_partner_pair(tmp_path: Path) -> None:

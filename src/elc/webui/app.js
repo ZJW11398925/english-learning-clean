@@ -72,6 +72,9 @@ import {
   fetchSaveGoals,
   fetchSaveMode,
   fetchSaveProvider,
+  fetchSaveProviderProfile,
+  fetchActivateProviderProfile,
+  fetchDeleteProviderProfile,
   fetchSaveTeachingPolicy,
   fetchSaveDisclosure,
   fetchSchedule,
@@ -1912,6 +1915,81 @@ async function saveProvider(button, baseUrlInput, modelInput, keyInput) {
   }
 }
 
+// 多模型配置档（用户定向：存多套模型随时切换）。切换 = 激活该档（密钥
+// 先落 → 热换 → pair + 指针）；存档 = 把当前三件存成具名配置；删档幂等
+// 且不动活配置。手改三件并保存 = 指针归「自定义」（服务端语义，这里只
+// 回读呈现）。
+async function activateProviderProfile(id) {
+  let data = null;
+  try {
+    data = await fetchActivateProviderProfile(id);
+  } catch {
+    providerResult("切换没送到——再试一次。", true);
+    return;
+  }
+  if (data.accepted) {
+    providerResult(data.idempotent
+      ? "已经在这一档了。"
+      : "已切换——下一封信就走这个配置。", false);
+    loadSettings();
+  } else {
+    providerResult(data.error || "切换没送到——再试一次。", true);
+  }
+}
+
+async function deleteProviderProfile(id) {
+  let data = null;
+  try {
+    data = await fetchDeleteProviderProfile(id);
+  } catch {
+    providerResult("删除没送到——再试一次。", true);
+    return;
+  }
+  if (data.accepted) {
+    providerResult("配置档已删（正在用的配置不受影响）。", false);
+    loadSettings();
+  } else {
+    providerResult(data.error || "删除没送到——再试一次。", true);
+  }
+}
+
+async function saveProviderProfileAs(
+  button, nameInput, baseUrlInput, modelInput, keyInput
+) {
+  const name = nameInput.value.trim();
+  if (!name) {
+    providerResult("先给配置档起个名字。", true);
+    return;
+  }
+  const payload = { name: name };
+  const baseUrl = baseUrlInput.value.trim();
+  const model = modelInput.value.trim();
+  if (baseUrl) payload.base_url = baseUrl;
+  if (model) payload.model = model;
+  if (keyInput.value.trim()) payload.api_key = keyInput.value.trim();
+  button.disabled = true;
+  const original = button.textContent;
+  button.textContent = "保存中……";
+  let data = null;
+  try {
+    data = await fetchSaveProviderProfile(payload);
+  } catch {
+    providerResult("保存没送到——再试一次。", true);
+    button.disabled = false;
+    button.textContent = original;
+    return;
+  }
+  button.disabled = false;
+  button.textContent = original;
+  if (data.accepted) {
+    nameInput.value = "";
+    providerResult("配置档已存——点它即可随时切换。", false);
+    loadSettings();
+  } else {
+    providerResult(data.error || "保存没送到——再试一次。", true);
+  }
+}
+
 function renderSettingsProvider() {
   const box = settingsBox("settings-provider-editor");
   if (!box) return;
@@ -1921,6 +1999,39 @@ function renderSettingsProvider() {
     diagEmpty(box,
       "这个进程不是 OpenAI 兼容装配——端点与模型名在这里读不到、也改不了。");
     return;
+  }
+  // 配置档行（多模型切换）：点档即切换；档内 ✕ 删除；现役档高亮。
+  const profiles = face.profiles || [];
+  if (profiles.length) {
+    const head = document.createElement("p");
+    head.className = "sub";
+    head.textContent = "已存的配置档——点一下即切换：";
+    box.appendChild(head);
+    const row = document.createElement("div");
+    row.className = "chips";
+    for (const profile of profiles) {
+      const chipBtn = document.createElement("button");
+      chipBtn.type = "button";
+      chipBtn.className = "btn chip profile-chip"
+        + (profile.id === face.active_profile ? " profile-chip--on" : "");
+      chipBtn.title = profile.base_url;
+      chipBtn.textContent = profile.name + "（" + profile.model + "）";
+      chipBtn.addEventListener("click", () => {
+        activateProviderProfile(profile.id);
+      });
+      const del = document.createElement("span");
+      del.className = "profile-chip-x";
+      del.setAttribute("role", "button");
+      del.setAttribute("aria-label", "删除配置档 " + profile.name);
+      del.textContent = "✕";
+      del.addEventListener("click", (event) => {
+        event.stopPropagation();
+        deleteProviderProfile(profile.id);
+      });
+      chipBtn.appendChild(del);
+      row.appendChild(chipBtn);
+    }
+    box.appendChild(row);
   }
   const baseUrlInput = document.createElement("input");
   baseUrlInput.type = "text";
@@ -1958,6 +2069,24 @@ function renderSettingsProvider() {
     saveProvider(save, baseUrlInput, modelInput, keyInput);
   });
   box.appendChild(save);
+  // 存为配置档：把上面三件的当前输入存成具名档（密钥留空则不带）。
+  const nameInput = document.createElement("input");
+  nameInput.type = "text";
+  nameInput.placeholder = "配置档名字，如「本地推理」「云端大模型」";
+  nameInput.autocomplete = "off";
+  const saveAs = document.createElement("button");
+  saveAs.type = "button";
+  saveAs.className = "btn btn--faint";
+  saveAs.textContent = "存为配置档";
+  saveAs.addEventListener("click", () => {
+    saveProviderProfileAs(saveAs, nameInput, baseUrlInput, modelInput,
+      keyInput);
+  });
+  const saveAsRow = document.createElement("div");
+  saveAsRow.className = "profile-saveas";
+  saveAsRow.appendChild(nameInput);
+  saveAsRow.appendChild(saveAs);
+  box.appendChild(saveAsRow);
   const note = document.createElement("p");
   note.className = "doc-line";
   note.textContent = "密钥只存本机这个应用，任何页面读数都不回显它。";
