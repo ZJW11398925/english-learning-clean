@@ -7,6 +7,7 @@ import elc.content (the import pin is on ``elc.detection``, not on tests).
 
 from __future__ import annotations
 
+import hashlib
 import shutil
 import sqlite3
 from dataclasses import dataclass
@@ -117,3 +118,42 @@ def provenance_map(artifact: Path) -> dict[str, str]:
     finally:
         conn.close()
     return {str(entity): str(level) for entity, level in rows}
+
+
+def semantic_digest(artifact: Path) -> str:
+    """A library-version-independent digest of the artifact's full content.
+
+    SQLite file *bytes* are not stable across sqlite3 library minor
+    versions (page-level layout details move), so a file-byte pin breaks
+    in CI while passing locally. This digest reads every table's rows,
+    orders everything deterministically (table name, then repr of the row
+    tuple), and hashes the canonical serialization — identical content
+    yields the identical digest on any sqlite version, and any content
+    drift still changes it.
+    """
+
+    conn = sqlite3.connect(str(artifact))
+    h = hashlib.sha256()
+    try:
+        tables = sorted(
+            str(t[0])
+            for t in conn.execute(
+                "SELECT name FROM sqlite_master"
+                " WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            )
+        )
+        for table in tables:
+            cols = [
+                str(r[1]) for r in conn.execute(f'PRAGMA table_info("{table}")')
+            ]
+            rows = sorted(
+                conn.execute(f'SELECT * FROM "{table}"').fetchall(),
+                key=repr,
+            )
+            h.update(f"table:{table}:{len(cols)}:{len(rows)}\n".encode())
+            h.update((",".join(cols) + "\n").encode())
+            for row in rows:
+                h.update((repr(row) + "\n").encode())
+    finally:
+        conn.close()
+    return h.hexdigest()

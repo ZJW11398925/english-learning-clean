@@ -28,7 +28,6 @@ anchors and word tables, pass the full fixture set). Pinned here:
 
 from __future__ import annotations
 
-import hashlib
 import os
 import subprocess
 import sys
@@ -55,7 +54,7 @@ from elc.detection.pilot import (
 from elc.platform.types import Ok
 from elc.teaching.rollout import EXECUTABLE_VERIFICATION_FLOOR, corpus_rollout_gate
 from tests.conftest import REPO_ROOT
-from tests.detection.support import provenance_map
+from tests.detection.support import provenance_map, semantic_digest
 
 #: The twelve the D-3 cut landed; the expansion appends beside them and
 #: their matchers stay byte-identical (pinned by the cut's own diff).
@@ -103,22 +102,18 @@ _EXPANSION_ENTITIES = (
 )
 
 #: The parent commit's own library-default artifact digest: the sha256 of
-#: the ``build_content_db()`` (no registry) product built from the
-#: archived parent tree. The default build's bytes did not move with that
-#: cut — a corpus or build change does move them, and this pin must be
-#: re-derived then (a truth-migration pin, not a freeze; re-derived for the
-#: queue-2 screening: 6edb57cf… was the C3-d-truth artifact; re-derived
-#: again for the queue-2 disposal cut's rationale citation fix:
-#: 7a2816ab… was the queue-2 delivery artifact; re-derived for the
-#: queue-3 scenario-variant cut — its 120 usage-variant rows + 120 aligned
-#: resource-label rows moved the corpus bytes:
-#: 21d039f3… is the queue-3 delivery artifact; re-derived for the
-#: queue-3 disposal cut (the F-1 roster swap — two unteachable R1
-#: survivors out, two R4 receipt targets in — held the 120-row shape
-#: but moved the corpus bytes:
-#: 90932ab5… is the queue-3 disposal artifact).
-_PARENT_DEFAULT_SHA256 = (
-    "90932ab597154a3b8a3da86af1bc34529621347b012ffb8c7c539cdfd5b9d399"
+#: SEMANTIC digest (M0.1 CI fix): the former file-byte pin broke in CI
+#: — SQLite file bytes are not stable across sqlite3 library minor
+#: versions (local 3.45.x vs CI's Ubuntu system lib produced identical
+#: content with different bytes: CI provenance asserts all green, digest
+#: red, from queue-3 on). The pin now hashes the canonically-ordered
+#: logical content (support.semantic_digest) — library-version
+#: independent, same drift-detection force. Same truth-migration
+#: discipline: re-derive on any corpus or build change. Byte-pin lineage
+#: (pre-semantic era, local-environment values): 6edb57cf → 7a2816ab →
+#: 21d039f3 → 90932ab5 (queue-3 disposal). Semantic-pin value:
+_PARENT_SEMANTIC_SHA256 = (
+    "0bee8f49a7d0f12f15e141b743361f9174d9ed308c516ee13f13e88909dab0b7"
 )
 
 
@@ -242,10 +237,11 @@ def test_the_default_build_stays_zero_ev_and_byte_identical_with_the_parent(
     tmp_path: Path,
 ) -> None:
     """``build_content_db()`` with no registry keeps building the
-    parent's artifact: zero EV, and the same bytes the parent commit's
-    own library-default build produced (the digest above was computed
-    over the archived parent tree — this pin makes the byte-identity
-    executable in-repo)."""
+    parent's artifact: zero EV, and the same logical content the
+    parent's own library-default build produced. The pin is a SEMANTIC
+    digest (M0.1): file bytes move across sqlite3 library versions, the
+    canonically-ordered content hash does not — any content drift still
+    changes it."""
 
     out = tmp_path / "default.db"
     build_content_db(out)
@@ -256,10 +252,7 @@ def test_the_default_build_stays_zero_ev_and_byte_identical_with_the_parent(
     assert levels.count("EMPIRICALLY_CALIBRATED") == 0
     assert levels.count("EDITOR_REVIEWED") == 46
     assert levels.count("AUTHOR_DECLARED") == 54
-    assert (
-        hashlib.sha256(out.read_bytes()).hexdigest()
-        == _PARENT_DEFAULT_SHA256
-    )
+    assert semantic_digest(out) == _PARENT_SEMANTIC_SHA256
 
 
 # ---------------------------------------------------------------------------
