@@ -582,6 +582,13 @@ def test_the_settings_section_carries_the_real_controls(tmp_path: Path) -> None:
     assert "由启动命令给定" not in settings
     assert "批注频率在 温故 · 方向 里调。" not in settings
     assert 'id="set-settings-provider"' in settings
+    # 设置节导语行（家族模板 9.15 A-1 #3——记忆/隐私两节都有；旧导语
+    # 随否决文案退役后顶部留白，用户报）：一行全真文案归位，且在首个
+    # 节块之前（split 顺序断言）。
+    lead = ('<p class="doc-line">改动存本机、当下生效'
+            '——从模型端点到教学分寸。</p>')
+    assert lead in settings
+    assert 'id="set-settings-provider"' not in settings.split(lead, 1)[0]
     assert "<h3>模型与端点</h3>" in settings
     assert 'id="settings-provider-editor"' in settings
     # veto-R：模式节 = 墨选编辑器 + 分寸句 + 结果行；「由启动命令给定，

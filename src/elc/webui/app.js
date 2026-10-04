@@ -3526,11 +3526,10 @@ document.getElementById("send").addEventListener("submit", (event) => {
   } catch { /* 存储不可用——无稿可清 */ }
   // D-B 寄出编排（报告 §4.2）：写作态先收（落 = paper-fold 200ms 加速
   // 收势 + ink-wash reverse），信落信流的纸事件由 postTurn/addLine 承担
-  // ——一屏一次纸事件；焦点回触发条（落旗先于收场——fold finish 时
-  // 兑现，快慢端点两种时序都接得住）。
+  // ——一屏一次纸事件；焦点不程序化归还（用户否决寄出后收起条的假活
+  // 态边框——收场后焦点自然回落 body）。
   const wasComposing = composeOpen();
   if (wasComposing) {
-    composeFocusPending = true;
     closeComposeFace();
   }
   sending = true;
@@ -3547,8 +3546,8 @@ document.getElementById("send").addEventListener("submit", (event) => {
   postTurn(text).finally(() => {
     sending = false;
     input.disabled = false;
-    // v3-a 焦点流：写作态寄出的旗已在收场前落（finish 兑现）；条态
-    // 寄出 → 焦点留 textarea（现役续写手感原样）。
+    // 条态寄出 → 焦点留 textarea（现役续写手感原样）；写作态寄出 →
+    // 收场后焦点自然回落 body（不程序化归还——见 closeComposeFace）。
     if (!wasComposing) input.focus();
   });
 });
@@ -3574,7 +3573,6 @@ document.getElementById("text").addEventListener("keydown", (event) => {
 // ⑩ 层级互斥：升写作态先收浮层；开沓先收写作态（保稿，置灰优先——
 // 10.3-5）；进任何空间收写作态（showSpace 同批）。
 let composeFoldHandler = null;   // 收场动画的对账柄（重开即拆）
-let composeFocusPending = false;   // 寄出路径的焦点归还——fold 收场时兑现
 
 function dockDraftKey() {
   // 草稿桶 = 角色 id 派生（webui 零角色名字面——id 是机械键非文案）；
@@ -3667,7 +3665,7 @@ function restoreNavdock() {
 function composeEsc(event) {
   if (event.key !== "Escape") return;
   if (wordCardOpen()) return;
-  closeComposeFace({ refocus: true });
+  closeComposeFace();
 }
 
 function openComposeFace() {
@@ -3716,7 +3714,7 @@ function openComposeFace() {
   syncFlowRuler();
 }
 
-function closeComposeFace(opts) {
+function closeComposeFace() {
   const dock = document.querySelector(".dock");
   if (!dock || !dock.classList.contains("dock--compose")) return;
   document.removeEventListener("keydown", composeEsc);
@@ -3735,19 +3733,13 @@ function closeComposeFace(opts) {
     syncFlowBottom();
     syncFlowRuler();
     renderTokenMeter();   // veto-R：写作态让位收场，计量粒归位（藏/现对账）
-    // v3-a 焦点归还（两源一收口）：寄出路径（composeFocusPending——
-    // postTurn 的 finally 落旗，此处兑现：fold 未收完时触发条还 hidden，
-    // 直接 focus 会竞态落空）与用户显式退出（opts.refocus）——触发条
-    // 接笔，写信焦点流不丢；空间切换/开沓路径两源皆空，不抢焦点。
+    // 焦点不程序化归还（用户否决寄出后收起条的假活态边框——折叠 dock
+    // 内的焦点点燃 .dock:focus-within 聚焦臂 + 铅笔环，「点击态」赖在
+    // 收起条上）：稿纸随 compose-face 隐藏，焦点自然回落 body，收起条
+    // 完全静息；键盘 Tab 仍可达触发条，届时臂+环是正确供性。
     if (trigger) {
       trigger.hidden = false;
       trigger.setAttribute("aria-expanded", "false");
-      if (composeFocusPending) {
-        composeFocusPending = false;
-        trigger.focus();
-      } else if (opts && opts.refocus) {
-        trigger.focus();
-      }
     }
   };
   if (REDUCED_MOTION.matches) {
@@ -3772,7 +3764,7 @@ function closeComposeFace(opts) {
 document.getElementById("dock-trigger").addEventListener(
   "click", openComposeFace);
 document.getElementById("compose-close").addEventListener(
-  "click", () => closeComposeFace({ refocus: true }));
+  "click", () => closeComposeFace());
 // 触屏辅出口（报告 §4.2 D-B 状态矩阵）：面板铬件上下滑（|dy|>|dx| 且
 // >60px）= 收起——收起钮/Esc 是主出口，下滑只是补充；识别纪律同
 // wirePanelSwipe（touch 只做识别、零 preventDefault、passive；起点在

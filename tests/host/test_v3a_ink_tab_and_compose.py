@@ -187,7 +187,7 @@ def test_esc_layering_and_mutual_exclusion() -> None:
     esc = esc[: esc.index("function openComposeFace() {")]
     assert 'if (wordCardOpen()) return;' in esc
     opener = app[app.index("function openComposeFace() {"):]
-    opener = opener[: opener.index("function closeComposeFace(opts) {")]
+    opener = opener[: opener.index("function closeComposeFace() {")]
     assert 'if (dock.classList.contains("dock--stilled")) return;' in opener
     assert "closeWordCard({ skipOut: true });" in opener
     assert "closeComposeFace();" in app[
@@ -250,33 +250,32 @@ def test_draft_law_save_clear_and_keep() -> None:
                                '.addEventListener("submit"'):]
     submit_arm = submit_arm[: submit_arm.index("postTurn(text)")]
     assert "sessionStorage.removeItem(dockDraftKey());" in submit_arm
-    closer = app[app.index("function closeComposeFace(opts) {"):]
+    closer = app[app.index("function closeComposeFace() {"):]
     closer = closer[: closer.index("\n}", closer.index("restoreNavdock"))]
     assert "sessionStorage.removeItem" not in closer
     opener = app[app.index("function openComposeFace() {"):]
-    opener = opener[: opener.index("function closeComposeFace(opts) {")]
+    opener = opener[: opener.index("function closeComposeFace() {")]
     assert "sessionStorage.getItem(dockDraftKey());" in opener
 
 
 def test_focus_returns_to_the_pen_rest() -> None:
-    """写信焦点流不丢（两源一收口）：寄出路径 = composeFocusPending 落旗
-    先于收场（fold finish 时触发条接笔——直接 focus 与 fold 竞态落空，
-    活体实证过的时序）；显式退出 = opts.refocus；条态寄出 → 焦点留
-    textarea（现役续写手感）。"""
+    """收起条完全静息（用户否决寄出后收起条的假活态边框）：程序化焦点
+    归还整体退役（寄出/收起钮/Esc 三源一并）——稿纸随 compose-face
+    隐藏，焦点自然回落 body，折叠 dock 内不再有点燃 :focus-within
+    聚焦臂的焦点；键盘 Tab 仍可达触发条，届时臂+环（CSS 原样保留）
+    是正确供性。"""
 
     app = _text("webui/app.js")
-    submit_arm = app[app.index('document.getElementById("send")'
-                               '.addEventListener("submit"'):]
-    submit_arm = submit_arm[: submit_arm.index("postTurn(text)")]
-    assert "composeFocusPending = true;" in submit_arm
+    assert "trigger.focus(" not in app          # 归还删干净——负控钉
+    assert "composeFocusPending" not in app     # 寄出落旗路径一并退役
+    # 条态寄出 → 焦点留 textarea（隐藏件上 no-op，无视觉影响——原钉）
     fin = app[app.index("postTurn(text).finally(() => {"):]
     fin = fin[: fin.index("});", fin.index("if (!wasComposing)"))]
     assert "if (!wasComposing) input.focus();" in fin
-    finish = app[app.index("function closeComposeFace(opts) {"):]
+    finish = app[app.index("function closeComposeFace() {"):]
     finish = finish[: finish.index("if (REDUCED_MOTION.matches) {")]
-    assert "composeFocusPending = false;" in finish
-    assert "trigger.focus();" in finish
-    assert "opts && opts.refocus" in finish
+    assert "trigger.hidden = false;" in finish   # 收起条回归本体
+    assert 'setAttribute("aria-expanded", "false")' in finish
 
 
 # ---------------------------------------------------------------------------
