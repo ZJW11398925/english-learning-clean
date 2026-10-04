@@ -167,9 +167,10 @@ def test_the_native_confirm_is_retired() -> None:
     assert "setTimeout(settle, 480);" in js
     assert "restoreFocusTo.focus();" in js
     app = _webui("app.js")
-    # 四个调用点全部 await 形态（runDelete 双层 ×2 + 搁批注切角色 +
-    # 删笔友；reveal 臂在 components.js）
-    assert app.count("await confirmDialog(") == 4
+    # 五个调用点全部 await 形态（runDelete 双层 ×2 + 搁批注切角色 +
+    # 删笔友 + 删配置档【自查②：档内密钥不可再见=不可逆面走确认】）
+    # reveal 臂在 components.js
+    assert app.count("await confirmDialog(") == 5
     assert 'button.addEventListener("click", async () => {' in js
     assert "!(await confirmDialog(\"看了答案" in js
 
