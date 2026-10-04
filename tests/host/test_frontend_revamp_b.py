@@ -284,3 +284,40 @@ def test_the_registry_and_layer_charter_follow() -> None:
     assert "弹簧微件 flip-tick（fr-B" in spec
     assert "Revisit 就此关闭" in spec
     assert "**确认窗答 false**（fr-B" in spec
+
+
+# ---------------------------------------------------------------------------
+# 5 — 处置刀（评审 frB-M5/M6/M7 三处 NOT-RED 钉缺口补强）：
+#     reduced-motion JS 半区两处守卫 + 弹簧法则唯一消费面，各一行钉。
+
+
+def test_the_restagger_reduced_motion_guard_is_pinned() -> None:
+    """F-1 处置钉（评审 frB-M5）：restagger 的 reduced-motion 直切守卫
+    ——spec ⑨-5 与交付回执⑥都声称「JS 半区 REDUCED_MOTION 直切」，
+    守卫须在函数体内且承重（leaveLayer 同型 containment 钉法）。"""
+
+    js = _webui("components.js")
+    start = js.index("export function restagger(nodes) {")
+    body = js[start: js.index("\n}", start)]
+    assert "if (REDUCED_MOTION.matches) return;" in body
+
+
+def test_the_flip_tick_reduced_motion_guard_is_pinned() -> None:
+    """F-2 处置钉（评审 frB-M6）：设置计量开关拨动的 flip-tick 落类带
+    !REDUCED_MOTION.matches 守卫（spec ⑨-5 弹簧行的「JS 半区不落类」）。"""
+
+    app = _webui("app.js")
+    assert "if (fresh && !REDUCED_MOTION.matches)" \
+        " fresh.classList.add(\"flip-tick\");" in app
+
+
+def test_the_spring_curve_has_exactly_one_consumer() -> None:
+    """F-3 处置钉（评审 frB-M7）：弹簧法则的机器守卫——全 webui CSS 中
+    var(--ease-spring) 恰一处消费（flip-tick 的 stamp-press 盖印形）；
+    任何第二处消费（如位移 keyframes 配弹簧）即红。"""
+
+    css = (_webui("components.css") + _webui("screens.css")
+           + _webui("tokens.css"))
+    assert css.count("var(--ease-spring)") == 1
+    assert ".flip-tick { animation: stamp-press var(--dur-stamp)" \
+        " var(--ease-spring)" in css
