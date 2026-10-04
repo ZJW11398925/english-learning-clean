@@ -533,6 +533,9 @@ def test_the_meter_popup_joins_the_overlay_family() -> None:
     assert "function tokenMeterOutside(event) {" in app
     # no reading, no pill (the empty-state sentence retired with the strip)
     assert "tokenMeterTotal()" in app
+    # F-1 处置钉（评审 m8 NOT-RED）：show 条件必须由 total !== null 把门——
+    # 无读数时粒隐藏（显示 "0" 不算隐藏）；删此条件即红。
+    assert "total !== null" in app
     assert "还没有计量读数" not in app
 
 
