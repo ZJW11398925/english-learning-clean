@@ -123,10 +123,10 @@ const REGISTER_CN = {
   PLAYFUL: "俏皮",
 };
 const FREQUENCY_CN = {
-  OFF: "不递",
-  MINIMAL: "少递",
+  OFF: "关",
+  MINIMAL: "偶尔",
   BALANCED: "适度",
-  EAGER: "勤递",
+  EAGER: "勤快",
 };
 const POLARITY_CN = {
   POSITIVE: "正面",
@@ -1849,13 +1849,14 @@ async function loadGoals() {
   renderGoalTaxref();
 }
 
-// ── 主线-1（8.2.8 重铸②）：设置节真面 —— SECTION_PULLS 拉本节。
-// 三面真值一读全归：当前档（rollout_stage 原值，None 如实——不虚构
-// 枚举到三档名的映射）、教学策略（§5.1 十三列；null = 还没有）、披露
-// 规则（§5.1 DisclosurePolicy 现值，只读——规则经 profile 编辑）。
-// 八旋钮真控件 + 保存回路（读现值→改→POST→回读刷新）；mode 等系统列
-// 服务端拒写（400 人话原样上浮），七个未钉词表的旋钮是自由文本
-// （留空 = 未配置），「存面（暂无消费）」照裁决如实标注。
+// ── 主线-1（8.2.8 重铸②）+ veto-R 重做：设置节真面 —— SECTION_PULLS
+// 拉本节。三面真值一读全归：当前档（生效档——live wiring 值，热改后
+// 即变）、教学策略（§5.1 十三列；null = 还没有）、披露规则（§5.1
+// DisclosurePolicy 现值，编辑面接通）。教学模式 = 四档墨选可改
+// （fetchSaveMode → 持久化 + 换活 wiring，下一轮即新档）；八旋钮真
+// 控件 + 保存回路（读现值→改→POST→回读刷新），七钮档位墨选
+// （KNOB_TIERS display-layer 词表）+「暂不影响行为」如实标注，词表外
+// 值服务端 400 人话原样上浮。
 // ──────────────────────────────────────────────────────────────────────
 
 let settingsData = null;   // the last GET /api/settings payload
@@ -1924,54 +1925,103 @@ function editorFromDisclosure(data) {
   }));
 }
 
-function renderSettingsStage() {
-  const slot = settingsBox("settings-stage");
-  slot.textContent = "";
-  const stage = settingsData && settingsData.rollout_stage;
-  // 原值直出（Study-first 等词面是文档自己的），None 如实——三档参考
-  // 块就在旁边，页面上没有任何枚举到三档名的映射声称。
-  slot.textContent = stage ? String(stage) : "未声明";
-}
+// 教学模式四档（veto-R 可改读面）：存值 = §12 枚举词（服务端 mode_words
+// 随行，客户端零拷贝——大小写与连字符是文档自己的）；中文读法与分寸句
+// 是本刀的显示层声明（用户首验否决权保留）。页面 mode 写 = 用户的显式
+// 档位表达，与改启动命令同一权力（单用户本地应用，一个主体）——gate
+// 函数零改，默认 None 仍拒自动教学。
+const MODE_CN = {
+  "manual/user-initiated": "手动（用户发起）",
+  "Study-first": "学习优先",
+  "Balanced": "平衡",
+  "Lounge": "娱乐 · 关系优先",
+};
 
-// 模式三档（fr-A 视觉化读面）：PRODUCT_CONTRACT §3 的档名——三档名与
-// 枚举词在 §3 标题里并写（Lounge / Entertainment-first · Balanced ·
-// Study-first），映射不是页面虚构。当前档高亮（aria-current）但不可改
-// ——mode 写入继续由服务端 400 拒绝；不在三档的档（manual/user-
-// initiated）与 None 不高亮，原值在上面的读数槽如实。
-const MODE_TIERS = [
-  { stages: ["Lounge"],
-    line: "娱乐 · 关系优先：聊得多，递得少，笔友以听和陪为主。" },
-  { stages: ["Balanced"],
-    line: "平衡：聊天与练句并行，批注适度。" },
-  { stages: ["Study-first"],
-    line: "学习优先：练句密度优先，批注递得勤，课程感更明显。" },
-];
+const MODE_HINT = {
+  "manual/user-initiated": "教学只在你开口要时发生。",
+  "Study-first": "练句密度优先，批注递得勤，课程感更明显。",
+  "Balanced": "聊天与练句并行，批注适度。",
+  "Lounge": "聊得多，递得少，笔友以听和陪为主。",
+};
 
-function renderSettingsModes() {
-  const box = settingsBox("settings-modes");
+function renderSettingsMode() {
+  const box = settingsBox("settings-mode-editor");
   if (!box) return;
   box.textContent = "";
-  const stage = settingsData && settingsData.rollout_stage;
-  for (const tier of MODE_TIERS) {
-    const on = stage !== null && stage !== undefined &&
-      tier.stages.indexOf(stage) >= 0;
-    const row = document.createElement("p");
-    row.className = "modeline" + (on ? " modeline--on" : "");
-    const parts = tier.line.split("：");
-    const name = document.createElement("b");
-    name.textContent = parts[0] + "：";
-    row.appendChild(name);
-    row.appendChild(document.createTextNode(parts.slice(1).join("：")));
-    if (on) {
-      const mark = document.createElement("span");
-      mark.className = "modeline-mark";
-      mark.textContent = "当前档";
-      row.appendChild(mark);
-      row.setAttribute("aria-current", "true");
-    }
-    box.appendChild(row);
+  if (!settingsData || settingsData.available === false) {
+    diagEmpty(box, "这个进程没装配用户配置面——模式读不到也改不了。");
+    renderSettingsModeHint(null);
+    return;
   }
+  const stage = settingsData.rollout_stage;
+  const words = settingsData.mode_words || [];
+  // fr-A #27 墨选：词表由服务端随行（客户端零拷贝）；中文档名在前。
+  const control = selectField({
+    name: "教学模式",
+    options: words.map((word) => ({
+      value: word,
+      label: MODE_CN[word] || word,
+    })),
+    value: stage,
+    placeholder: "未声明——自动教学关着",
+    onChange: (next) => { saveMode(next); },
+  });
+  box.appendChild(control.root);
+  renderSettingsModeHint(stage);
 }
+
+// 当前档的分寸句一行——换档要懂的差别就在这一句（解释影响操作决策，
+// 数据优先原则的保留面）。
+function renderSettingsModeHint(stage) {
+  const note = settingsBox("settings-mode-note");
+  if (!note) return;
+  const hint = stage ? (MODE_HINT[stage] || "") : "";
+  note.hidden = hint === "";
+  note.textContent = hint;
+}
+
+function settingsModeResult(text, failure) {
+  const box = settingsBox("settings-mode-result");
+  if (!box) return;
+  box.hidden = false;
+  box.textContent = "";
+  const line = document.createElement("p");
+  line.className = failure ? "errline" : "sub";
+  line.textContent = text;
+  box.appendChild(line);
+}
+
+async function saveMode(word) {
+  let data = null;
+  try {
+    data = await fetchSaveMode(word);
+  } catch {
+    settingsModeResult("换档没送到——再试一次。", true);
+    return;
+  }
+  if (!data.accepted) {
+    // 服务端 400 人话（词表外值）或 prep-1 层的诚实拒绝，原样上浮。
+    settingsModeResult(data.error || "没能换档。", true);
+    return;
+  }
+  // 保存回路收口：回读刷新——读回来的就是存下的（下一轮就在这一档）。
+  await loadSettings();
+  settingsModeResult("已换到 " + (MODE_CN[word] || word) + "。", false);
+}
+
+// 七钮档位词表（veto-R 档位化）：**display-layer 声明**——canonical 与
+// 实现枚举都没有这些列的词表（store 是货架，存什么读什么），档位短语由
+// 本刀拟定（用户首验否决权保留）；存值仍是 verbatim 字符串列（选什么
+// 存什么），「未配置」= null 诚实保留可选。换词表 = 改这里一处。
+const KNOB_TIERS = {
+  interruption_budget: ["少", "适中", "多"],
+  curriculum_initiative: ["不主动", "偶尔主动", "主动"],
+  correction_strictness: ["宽", "适中", "严"],
+  hint_policy: ["不给提示", "点拨为主", "提示充分"],
+  assessment_visibility: ["不展示", "展示"],
+  practice_density: ["稀", "适中", "密"],
+  persona_freedom: ["贴信说话", "适度自由", "放开发挥"],
+};
 
 function renderPolicyKnobs() {
   const box = settingsBox("settings-knobs");
@@ -1982,41 +2032,46 @@ function renderPolicyKnobs() {
     const label = document.createElement("span");
     label.textContent = KNOB_CN[name] || name;
     if (name !== "teaching_frequency") {
-      // 七个未钉词表的旋钮暂无消费方——「存面」照裁决标注。
+      // 七个未钉词表的旋钮存而不用——「暂不影响行为」照 veto-R 如实标注
+      // （原存面 badge 随档位化退役）。
       const badge = document.createElement("span");
       badge.className = "rawtag";
-      badge.textContent = "存面（暂无消费）";
+      badge.textContent = "暂不影响行为";
       label.appendChild(document.createTextNode(" "));
       label.appendChild(badge);
     }
-    let control;
     let node;
     if (name === "teaching_frequency") {
       // fr-A #27 墨选：词表由服务端 frequency_words 随行（客户端零拷贝）；
-      // null = 未选——placeholder 弱墨（第一份策略必须亲手选一档）。
-      // node = 工厂的 root（DOM 节点）——工厂对象本身不是 Node，直接
-      // 交给 fieldRow 会抛 appendChild 类型错（fr-A 活体自查抓到，
-      // 结构性钉在 test_frontend_revamp_a）。
-      control = selectField({
+      // 中文读法在前（存值枚举词不变）；null = 未选——placeholder 弱墨
+      // （第一份策略必须亲手选一档）。node = 工厂的 root（DOM 节点）。
+      node = selectField({
         name: "批注频率",
         options: ((settingsData && settingsData.frequency_words) || [])
-          .map((word) => ({ value: word, label: word })),
+          .map((word) => ({
+            value: word,
+            // veto-R 词面中文化：中文档名为主（存值枚举词不变）；未知词
+            // 不兜底——原样直出，与披露层级同一读法。
+            label: FREQUENCY_CN[word] || word,
+          })),
         value: (policyEditor[name] === undefined) ? null : policyEditor[name],
         placeholder: "选一档……",
         onChange: (next) => { policyEditor[name] = next; },
-      });
-      node = control.root;
+      }).root;
     } else {
-      control = document.createElement("input");
-      control.type = "text";
-      control.placeholder = "未配置（留空 = 清除）";
-      const value = policyEditor[name];
-      if (value !== null && value !== undefined) control.value = String(value);
-      control.addEventListener("input", () => {
-        const trimmed = control.value.trim();
-        policyEditor[name] = trimmed === "" ? null : trimmed;
-      });
-      node = control;
+      // veto-R 档位化：自由文本框退役，七钮各一枚墨选——display-layer
+      // 档位 + 「未配置」（null）诚实可选。
+      const tiers = KNOB_TIERS[name] || [];
+      node = selectField({
+        name: KNOB_CN[name] || name,
+        options: [
+          { value: null, label: "未配置" },
+          ...tiers.map((tier) => ({ value: tier, label: tier })),
+        ],
+        value: (policyEditor[name] === undefined) ? null : policyEditor[name],
+        placeholder: "未配置",
+        onChange: (next) => { policyEditor[name] = next; },
+      }).root;
     }
     box.appendChild(fieldRow(label, node));
   }
@@ -2120,12 +2175,13 @@ function disclosureRuleRow(rule, levels) {
   }
   row.appendChild(who);
   // fr-A #27 墨选：层级词表由服务端 disclosure_levels 随行（客户端零
-  // 拷贝）；中文读法在前 + 原词随行（未知词不兜底——原样等宽小字）。
+  // 拷贝）；veto-R 词面中文化——中文读法 only（原「中文 · 原词」后缀
+  // 退役，存值枚举词不变；未知词不兜底，原样直出）。
   const select = selectField({
     name: "披露层级",
     options: levels.map((word) => ({
       value: word,
-      label: (DISCLOSURE_CN[word] ? DISCLOSURE_CN[word] + " · " : "") + word,
+      label: DISCLOSURE_CN[word] || word,
     })),
     value: rule.disclosure_level,
     onChange: (next) => { rule.disclosure_level = next; },
@@ -2308,8 +2364,7 @@ async function loadSettings() {
   } catch {
     disclosureRoster = null;   // 名册拉不到——角色名退 rawtag 原值，不猜
   }
-  renderSettingsStage();
-  renderSettingsModes();
+  renderSettingsMode();
   renderPolicyKnobs();
   renderSettingsSave();
   renderSettingsDisclosure();
@@ -2377,6 +2432,8 @@ const SECTION_PULLS = {
     // the hiding happens on entry (showSection), not inside loadSettings
     settingsBox("settings-result").hidden = true;
     settingsBox("settings-disclosure-result").hidden = true;
+    const modeResult = settingsBox("settings-mode-result");
+    if (modeResult) modeResult.hidden = true;
     loadSettings();
   },
 };
@@ -2442,6 +2499,7 @@ function showSpace(name) {
   closeEnvelopeSelector();
   closeComposeFace();
   closeOpenSelects();
+  closeTokenMeterPop();
   const leaving = Object.keys(spaces).find(
     (key) => key !== name && !spaces[key].hidden);
   cancelLeave(spaces[name], "space--leave");
@@ -2530,8 +2588,7 @@ async function loadObservationsFace() {
   summary.hidden = false;
   summary.textContent = "";
   summary.appendChild(document.createTextNode(
-    "六表 " + sections.length + " 张、" + rowCount + " 行读数摊在下面"
-    + " · 门规漂移信号 "));
+    "六表 " + sections.length + " 张 · " + rowCount + " 行 · 门规漂移 "));
   const drift = document.createElement("span");
   drift.className = "sumnum";
   drift.textContent = String(data.drift_count ?? 0);
@@ -3447,6 +3504,7 @@ function openComposeFace() {
   if (dock.classList.contains("dock--stilled")) return;   // 置灰优先（⑩ 10.3-5）
   // ⑩ 互斥：升全页写作态先收浮层；上一次收场的对账柄与落半类即拆
   //（快速重开不追认旧收场）。
+  closeTokenMeterPop();
   closeWordCard({ skipOut: true });
   closeOpenSelects();
   if (composeFoldHandler) {
@@ -3504,6 +3562,7 @@ function closeComposeFace(opts) {
     restoreNavdock();
     syncFlowBottom();
     syncFlowRuler();
+    renderTokenMeter();   // veto-R：写作态让位收场，计量粒归位（藏/现对账）
     // v3-a 焦点归还（两源一收口）：寄出路径（composeFocusPending——
     // postTurn 的 finally 落旗，此处兑现：fold 未收完时触发条还 hidden，
     // 直接 focus 会竞态落空）与用户显式退出（opts.refocus）——触发条
@@ -3608,16 +3667,40 @@ if (flowBottomBtn) {
   });
   window.addEventListener("scroll", syncFlowBottom, { passive: true });
   window.addEventListener("resize", syncFlowBottom);
-  window.addEventListener("scroll", syncFlowRuler, { passive: true });
-  window.addEventListener("resize", syncFlowRuler);
+  // veto-R（⑨）：刻度高亮的 scroll 对账改 rAF 节流——被动 listener 只
+  // 置旗，一帧至多量一次轮锚位（滚动风暴下不逐事件量 DOM）。
+  window.addEventListener("scroll", scheduleFlowRulerSync, { passive: true });
+  window.addEventListener("resize", scheduleFlowRulerSync);
 }
 
-// ── fr-A 轮次刻度（#25）──────────────────────────────────────────────
-// 每轮交流一个刻度点（flowTurns 锚 = 该轮我方信节点；assistant 缺席的轮
-// 锚照常），当前视位（视口 40% 线最近的锚）高亮，点击跳转到该轮。刻度
-// 基于已加载窗口（/api/history 默认 50 轮）；未加载的更早部分由信流顶部
-// 的「加载更早」衔接（按 50 轮一档往前翻——主线-2 的显式宽度参数），
-// 口径句写在信流顶部。≥2 轮才现身；写作态/离案头即藏。
+// veto-R 计量粒（#26）：dock 上沿内嵌读数钮的点击面——点按展开/收起
+// 逐轮明细浮层。
+const tokenMeterPill = document.getElementById("tokenmeter");
+if (tokenMeterPill) {
+  tokenMeterPill.addEventListener("click", toggleTokenMeterPop);
+}
+
+// ── fr-A 轮次刻度（#25；veto-R 一一对应收紧）─────────────────────────
+// 每轮交流一个刻度点，刻度点 ↔ flowTurns 轮锚**一一绑定**（buildFlowRuler
+// 按同一数组逐一生成，第 n 点即第 n 轮）。当前视位高亮按真实锚点位置
+// 计算：视位线 = 顶栏之下一档呼吸（FLOW_TURN_OFFSET，与点击跳转同一
+// 条线），取最后一个起点已过线的轮；scroll 对账走 rAF 节流的被动
+// listener（一帧至多量一次锚位）；点击 = 精确滚到该轮锚点（锚顶对齐
+// 视位线——scrollIntoView block:start 的等价对齐，含 72px 顶栏让位）。
+// 底部判据（在底 = 最新一轮）不变。刻度基于已加载窗口（/api/history
+// 默认 50 轮）；未加载的更早部分由信流顶部的「加载更早」衔接（按 50
+// 轮一档往前翻——主线-2 的显式宽度参数），口径句写在信流顶部。≥2 轮
+// 才现身；写作态/离案头即藏。
+let flowRulerSyncQueued = false;
+
+function scheduleFlowRulerSync() {
+  if (flowRulerSyncQueued) return;
+  flowRulerSyncQueued = true;
+  requestAnimationFrame(() => {
+    flowRulerSyncQueued = false;
+    syncFlowRuler();
+  });
+}
 let flowTurns = [];        // 已加载窗口的轮锚（{node, usage}）
 let parlorWindow = null;   // 案头信流的显式宽度（null = 默认窗口）
 let lastHistoryWindow = null;   // 服务端回执的窗口宽度（加载更早的基数）
@@ -3699,9 +3782,9 @@ function renderFlowCalibre(data) {
     more.textContent = "加载更早";
     more.addEventListener("click", loadEarlierLetters);
     line.appendChild(more);
-    line.appendChild(document.createTextNode(" 往前翻，翻到头为止。"));
+    line.appendChild(document.createTextNode(" 往前翻。"));
   } else if (parlorWindow !== null) {
-    line.textContent = "更早的信没有了——以上是全部。";
+    line.textContent = "更早的信没有了。";
   } else {
     return;
   }
@@ -3717,7 +3800,6 @@ function renderFlowCalibre(data) {
 const TOKEN_METER_KEY = "elc-token-meter";
 let tokenMeterOn = tokenMeterStored();
 let tokenMeterData = null;   // 会话累计（measured_calls/total_calls 随行）
-let tokenMeterTurnsOpen = false;
 
 function tokenMeterStored() {
   try { return sessionStorage.getItem(TOKEN_METER_KEY) === "1"; }
@@ -3744,84 +3826,129 @@ function tokenNum(word) {
   return num;
 }
 
-// 计量行：本段通信 token：提示 X · 补全 Y · 共 Z（计量 N/M 次调用）——
-// 未计量的字段如实「—」（端点没报，不伪造 0）；全空 = 还没有计量读数。
-function renderTokenMeter() {
-  const strip = document.getElementById("tokenmeter");
-  if (!strip) return;
-  strip.textContent = "";
-  if (!tokenMeterOn || !tokenMeterData) {
-    strip.hidden = true;
-    return;
-  }
-  strip.hidden = false;
+// 计量粒（veto-R 重铸，用户否决常驻遮挡的 sticky 条）：dock 上沿内嵌的
+// 紧凑读数钮——主数据直出（会话累计总 token，tabular-nums，无说明句）；
+// 点按展开逐轮明细浮层（墨选/词卡浮层家族：Esc 关、点外关、⑩ 互斥收）。
+// 无读数（端点没报 usage）不现位——空说明句随之退役；未计量字段在明细
+// 浮层里如实「—」。开关关 / 无读数 / 写作态 / 离案头都不现位（W-1 的
+// 50dvh 写作态与粒不同层：粒藏于写作态，无遮挡关系）。
+let tokenMeterPopOpen = false;
+let tokenMeterPop = null;
+
+function tokenMeterTotal() {
   const data = tokenMeterData;
-  const line = document.createElement("p");
-  line.className = "tm-line";
+  if (!data) return null;
   const metered = data.prompt_tokens !== null ||
     data.completion_tokens !== null || data.total_tokens !== null;
-  line.appendChild(document.createTextNode("本段通信 token："));
-  if (metered) {
-    line.appendChild(document.createTextNode("提示 "));
-    line.appendChild(tokenNum(data.prompt_tokens));
-    line.appendChild(document.createTextNode(" · 补全 "));
-    line.appendChild(tokenNum(data.completion_tokens));
-    line.appendChild(document.createTextNode(" · 共 "));
-    line.appendChild(tokenNum(data.total_tokens));
-    line.appendChild(document.createTextNode("（计量 " +
-      data.measured_calls + "/" + data.total_calls + " 次调用）"));
-  } else {
-    line.appendChild(document.createTextNode(
-      "还没有计量读数——端点没报 usage（0/" + data.total_calls +
-      " 次调用有计量）。"));
-  }
-  const fold = document.createElement("button");
-  fold.type = "button";
-  fold.className = "btn btn--faint tm-fold";
-  fold.textContent = tokenMeterTurnsOpen ? "收起逐轮" : "逐轮";
-  fold.setAttribute("aria-expanded", tokenMeterTurnsOpen ? "true" : "false");
-  fold.addEventListener("click", () => {
-    tokenMeterTurnsOpen = !tokenMeterTurnsOpen;
-    renderTokenMeter();
-  });
-  line.appendChild(document.createTextNode("　"));
-  line.appendChild(fold);
-  strip.appendChild(line);
-  if (tokenMeterTurnsOpen) strip.appendChild(tokenMeterTurns());
+  return metered ? data.total_tokens : null;
 }
 
-// 逐轮读数（每轮可选显示的展开半）：只列有计量的轮——未报 usage 的轮
-// 如实跳过并交代一句；一轮都没有时如实说。
-function tokenMeterTurns() {
+function renderTokenMeter() {
+  const pill = document.getElementById("tokenmeter");
+  if (!pill) return;
+  closeTokenMeterPop();
+  const total = tokenMeterTotal();
+  const show = Boolean(tokenMeterOn && tokenMeterData && total !== null &&
+    !spaces.parlor.hidden && !composeOpen());
+  pill.hidden = !show;
+  pill.textContent = "";
+  if (!show) return;
+  pill.textContent = Number(total).toLocaleString("en-US");
+  pill.title = "token 计量——点按看逐轮";
+  pill.setAttribute("aria-expanded", "false");
+}
+
+// 逐轮明细浮层（复用浮层家族形态）：只列有计量的轮——未报 usage 的轮
+// 如实跳过并交代一句（数据优先：短词「N 轮未报」，不再整句）；一轮都
+// 没有时如实说。Esc / 点外 / 换空间 / 开其它浮层都收（⑩ 互斥）。
+function tokenMeterPopRows() {
   const box = document.createElement("div");
-  box.className = "tm-turns";
+  box.className = "tm-pop-rows";
+  const data = tokenMeterData;
+  const head = document.createElement("p");
+  head.className = "tm-pop-head";
+  head.appendChild(document.createTextNode("提示 "));
+  head.appendChild(tokenNum(data.prompt_tokens));
+  head.appendChild(document.createTextNode(" · 补全 "));
+  head.appendChild(tokenNum(data.completion_tokens));
+  head.appendChild(document.createTextNode(" · 共 "));
+  head.appendChild(tokenNum(data.total_tokens));
+  head.appendChild(document.createTextNode(
+    " · 计量 " + data.measured_calls + "/" + data.total_calls));
+  box.appendChild(head);
   let listed = 0;
   flowTurns.forEach((turn, i) => {
     if (!turn.usage) return;
     listed += 1;
     const row = document.createElement("p");
-    row.className = "tm-turn";
-    row.appendChild(document.createTextNode("第 " + (i + 1) + " 轮 · 提示 "));
+    row.className = "tm-pop-turn";
+    row.appendChild(document.createTextNode("第 " + (i + 1) + " 轮 "));
     row.appendChild(tokenNum(turn.usage.prompt_tokens));
-    row.appendChild(document.createTextNode(" · 补全 "));
+    row.appendChild(document.createTextNode("/"));
     row.appendChild(tokenNum(turn.usage.completion_tokens));
-    row.appendChild(document.createTextNode(" · 共 "));
+    row.appendChild(document.createTextNode("/"));
     row.appendChild(tokenNum(turn.usage.total_tokens));
     box.appendChild(row);
   });
   if (!listed) {
     const row = document.createElement("p");
-    row.className = "tm-turn";
-    row.textContent = "还没有逐轮计量读数。";
+    row.className = "tm-pop-turn";
+    row.textContent = "还没有逐轮读数。";
     box.appendChild(row);
   } else if (listed < flowTurns.length) {
     const row = document.createElement("p");
-    row.className = "tm-turn tm-turn--faint";
-    row.textContent = "（" + (flowTurns.length - listed) +
-      " 轮端点没报 usage——如实跳过。）";
+    row.className = "tm-pop-turn tm-pop-turn--faint";
+    row.textContent = (flowTurns.length - listed) + " 轮未报";
     box.appendChild(row);
   }
   return box;
+}
+
+function closeTokenMeterPop() {
+  if (tokenMeterPop) {
+    tokenMeterPop.remove();
+    tokenMeterPop = null;
+  }
+  document.removeEventListener("click", tokenMeterOutside, true);
+  document.removeEventListener("keydown", tokenMeterEsc, true);
+  tokenMeterPopOpen = false;
+  const pill = document.getElementById("tokenmeter");
+  if (pill) pill.setAttribute("aria-expanded", "false");
+}
+
+function tokenMeterOutside(event) {
+  if (tokenMeterPop && !tokenMeterPop.contains(event.target)) {
+    closeTokenMeterPop();
+  }
+}
+
+function tokenMeterEsc(event) {
+  if (event.key === "Escape") {
+    event.stopPropagation();
+    closeTokenMeterPop();
+  }
+}
+
+function toggleTokenMeterPop() {
+  if (tokenMeterPopOpen) {
+    closeTokenMeterPop();
+    return;
+  }
+  // ⑩ 互斥收：开本浮层先收一切在场的浮层/沓/下拉（墨选/词卡/沓同法）。
+  closeOpenSelects();
+  closeWordCard({ skipOut: true });
+  closeEnvelopeSelector();
+  const pill = document.getElementById("tokenmeter");
+  if (!pill || pill.hidden) return;
+  const pop = document.createElement("div");
+  pop.className = "tm-pop";
+  pop.appendChild(tokenMeterPopRows());
+  document.body.appendChild(pop);
+  tokenMeterPop = pop;
+  tokenMeterPopOpen = true;
+  pill.setAttribute("aria-expanded", "true");
+  document.addEventListener("click", tokenMeterOutside, true);
+  document.addEventListener("keydown", tokenMeterEsc, true);
 }
 
 function syncFlowMeter(usage) {
@@ -4104,7 +4231,9 @@ function closeEnvelopeSelector(opts) {
   }
   panel.classList.add("envsel--fold");
   panel.addEventListener("animationend", (event) => {
-    if (event.animationName === "paper-fold") finish();
+    // veto-R：大容器退场换 paper-retract（方向性位移+淡化，无缩放——
+    // 法则句在 ⑨-5）；animationend 对账随之改名（保险丝仍在，双保险）。
+    if (event.animationName === "paper-retract") finish();
   });
   setTimeout(finish, 480);   // 保险丝（animationend 正常先到）
 }
@@ -4126,6 +4255,7 @@ function unfoldToParlor(after) {
 
 async function openEnvelopeSelector() {
   if (envselPanel) return;
+  closeTokenMeterPop();   // ⑩ 互斥：开沓先收计量明细浮层（veto-R 同法）
   closeWordCard({ skipOut: true });   // ⑩ 互斥：开下拉容器自动关浮层（fr-B 直摘）
   closeComposeFace();   // ⑩ 互斥（v3-a）：开沓先收写作态（保稿）——
                         // 两具固定底件不同屏（10.3-5 置灰优先的同一定谳）

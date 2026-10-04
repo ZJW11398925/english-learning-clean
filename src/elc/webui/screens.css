@@ -242,10 +242,11 @@ body {
 .dock-guide { margin: 0 0 8px; font: var(--meta-font);
               letter-spacing: var(--meta-track); color: var(--meta-ink); }
 
-/* ── fr-A 一键回底（#24 墨点的位置账）：右下、navdock 与笔搁触发条之上
-   ——bottom = navdock 实高 + 触发条高 + 一档呼吸；右缘贴信纸栏内缘
-   （壳宽 --shell-w 定心，窄屏自然落 --read-pad）。z5：信流之上、dock
-   垫板（z8）之下——写作态面板升起时它被面板盖住（JS 同步藏）。 */
+/* ── fr-A 一键回底（#24 的位置账；veto-R 形态重铸后位置不变）：右下、
+   navdock 与笔搁触发条之上——bottom = navdock 实高 + 触发条高 + 一档
+   呼吸；右缘贴信纸栏内缘（壳宽 --shell-w 定心，窄屏自然落 --read-pad）。
+   z5：信流之上、dock 垫板（z8）之下——写作态面板升起时它被面板盖住
+   （JS 同步藏）。 */
 .flow-bottom { position: fixed; z-index: 5;
                right: max(var(--read-pad),
                           calc(50vw - var(--shell-w) / 2
@@ -267,11 +268,9 @@ body {
 /* 信流顶部的口径行（主线-2 同口径）：居中弱墨一行，不是一轮。 */
 .flow-calibre { margin: 0 0 var(--sp-4); text-align: center;
                 font: var(--t-ui); color: var(--ink-faint); }
-/* fr-A token 计量条（#26 的屏级位置账）：sticky 贴品牌条之下（top 46
-   = .top 高度账，同 .pageback），纸底盖住从底下滚过的信——累计常显
-   不追滚；组件本体在 components.css。 */
-.tokenmeter { position: sticky; top: 46px; z-index: 4;
-              background: var(--bg); }
+/* veto-R：token 计量的 sticky 层位账退役——计量改紧凑粒内嵌案头前沿
+   垫板（.dock）上沿（组件层在 components.css #26；.dock 本身 fixed，
+   粒 absolute 挂其上沿，不占独立 sticky 层）。 */
 /* fr-A：矮视口降级块（v3-a 的 max-height:520px D-A 展开条）退役——
    基础形态本身已是「内容自适应 + 50dvh 上限 + 稿纸内滚」，composePenCap
    在矮视口自然落到 4×baseline 下限，无需第二形态。 */
@@ -473,11 +472,14 @@ pre { font: var(--meta-mono);
 .envsel--open { animation: paper-drop var(--dur-settle) var(--ease-paper) both,
                             ink-wash calc(var(--dur-settle) * 1.3)
                             var(--ease-paper) both; }
-/* 沓面板退场（v2-2 起笔向下展开的「沓收拢」半，8.2.2a）：transform
-   200ms 加速收势（--ease-exit）+ ink-wash reverse 恒慢（墨后散）；
-   类由 app.js 落，animationend 后摘 DOM（reduced-motion 随库尾总
-   降级块 0.01ms 即终 + JS 直切双面）。 */
-.envsel--fold { animation: paper-fold var(--dur-panel-out) var(--ease-exit)
+/* 沓面板退场（v2-2 起笔向下展开的「沓收拢」半，8.2.2a；veto-R 换原语）：
+   transform 200ms 加速收势（--ease-exit）+ ink-wash reverse 恒慢（墨后
+   散）——**paper-retract（方向性位移+淡化，无缩放）**：大容器退场禁
+   整体缩放（用户否决：大件整体缩放不自然；法则句入 ⑨-5 动画节），
+   原纸 fold 的微缩半只留给小卡（词卡/确认窗）。类由 app.js 落，
+   animationend 后摘 DOM（reduced-motion 随库尾总降级块 0.01ms 即终 +
+   JS 直切双面）。 */
+.envsel--fold { animation: paper-retract var(--dur-panel-out) var(--ease-exit)
                            both,
                            ink-wash calc(var(--dur-panel-out) * 1.3)
                            var(--ease-exit) both reverse; }

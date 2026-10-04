@@ -186,3 +186,10 @@ export function fetchSaveTeachingPolicy(payload) {
 export function fetchSaveDisclosure(payload) {
   return postJson("/api/settings/disclosure", payload);
 }
+
+/** 换教学模式（veto-R）：§12 档位词一枚（case-sensitive，服务端
+ *  mode_words 随行）——持久化 + 热改生效（下一轮就在这一档）；
+ *  词表外值是 400 人话。 */
+export function fetchSaveMode(stage) {
+  return postJson("/api/settings/mode", { stage: stage });
+}

@@ -1159,11 +1159,10 @@ export function chip(word, opts) {
   el.className = "chip" + (options.on ? " chip--on" : "") +
     (options.badge ? " chip--badge" : "");
   if (options.cn) {
-    el.appendChild(document.createTextNode(String(options.cn) + " "));
-    const en = document.createElement("span");
-    en.className = "rawtag";
-    en.textContent = String(word);
-    el.appendChild(en);
+    // veto-R 词面中文化：有中文读法的枚举词显中文 only（原「中文 +
+    // 等宽原词」并排退役——存值枚举词不变，原词移入 title 备查）。
+    el.textContent = String(options.cn);
+    el.title = String(word);
   } else {
     el.textContent = String(word);
   }

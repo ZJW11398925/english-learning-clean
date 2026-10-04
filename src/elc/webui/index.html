@@ -65,10 +65,9 @@
            品牌条不增长按钮元（r1_shell 的品牌条无钮钉保留）。 -->
     </header>
     <main class="flow">
-      <!-- fr-A token 计量条（#26）：会话累计（/api/history 的窗口无关
-           全量）+ 逐轮可选展开；显示开关在 抽屉 · 设置 · 显示与计量
-           （sessionStorage 客户端侧，如实标注）。无计量读数如实说。 -->
-      <div id="tokenmeter" class="tokenmeter" hidden></div>
+      <!-- v3-a 信流原计量条位（#26）：veto-R 起计量改紧凑粒，内嵌案头
+           前沿垫板（.dock）上沿——不再占独立 sticky 层（用户否决遮挡），
+           本位退空。 -->
       <div id="messages" aria-live="polite"></div>
       <div id="moments"></div>
       <!-- v2-2 信档入口（8.2.11）：信的末尾一行弱化链接——「以前的
@@ -87,6 +86,12 @@
          （路由不变，语义照旧）。沓开着：dock--stilled 置灰优先——
          触发条同批不可点（⑩ 10.3-5），开沓先收写作态（保稿）。 -->
     <div class="dock">
+      <!-- veto-R 计量粒（#26 重铸）：dock 上沿内嵌的紧凑读数钮——主数据
+           直出（会话累计 token，tabular-nums），点按展开逐轮明细浮层；
+           显示开关在 抽屉 · 设置 · 显示与计量（只活在当前标签页，关掉
+           就复位）；开关关 / 无读数 / 写作态 / 离案头都不现位。 -->
+      <button id="tokenmeter" class="tokenmeter" type="button"
+              hidden aria-haspopup="true" aria-expanded="false"></button>
       <button id="dock-trigger" class="dock-trigger" type="button"
               aria-expanded="false" aria-controls="compose-face">
         <span class="dock-trigger-word" id="dock-trigger-word"><span
@@ -118,9 +123,14 @@
          回底（reduced-motion 直落）；在底 / 写作态开着 / 离案头即藏
          （JS 账）。圆形 = 用户明示的墨点样式族（②-6 圆角法则「仅邮票/
          邮戳圆形」的 fr-A 新增豁免——墨点不盖事件，非印章）。 -->
-    <button id="flow-bottom" class="flow-bottom" type="button"
-            aria-label="回到最新一封" hidden><span class="flow-bottom-glyph"
-            data-icon="chevron"></span></button>
+    <!-- veto-R 回底钮（#24 重铸，用户否决圆形墨点）：融入现役按钮族
+         语汇——纸底 + 发丝线边 + 墨线图标 +「回到底」短字标（#22 锚位
+         契约：图标不单独表意）；显隐语义不变（离底 240px 浮现 / 在底、
+         写作态、离案头即藏），点击平滑回底（reduced-motion 直落）。 -->
+    <button id="flow-bottom" class="flow-bottom" type="button" hidden><span
+          class="flow-bottom-glyph" data-icon="chevron"
+          aria-hidden="true"></span><span
+          class="flow-bottom-word">回到底</span></button>
     <!-- fr-A 轮次刻度（#25）：信流右缘的细刻度条——每轮交流一个刻度点，
          当前视位高亮，点击跳转到该轮。刻度只管已加载的窗口（/api/history
          默认 50 轮；未加载的更早部分以信流顶部的「加载更早」衔接，
@@ -192,7 +202,7 @@
         <div class="letters-datestamp" id="letters-datestamp"
              aria-hidden="true"></div>
         <p class="sub letters-calibre"
-           id="letters-calibre">只摊开已加载的窗口——第 n 封按窗口里的顺序数；「加载更早」往前翻，翻到头为止。</p>
+           id="letters-calibre">只摊开已加载的窗口——第 n 封按窗口顺序数。「加载更早」往前翻。</p>
       </div>
       <div id="letters-board"><p class="note">暂无数据</p></div>
     </div>
@@ -416,34 +426,33 @@
     </nav>
     <div class="spacebody">
 
-    <!-- 记忆节（⑧ 8.2.6，p-2 迁入；cs-2 三区重组）：摘要行 + 三摞——
-         角色记忆（关系+剧情：笔友记住的，笔友并不知道教学系统的存在）
-         / 学习记录（学习状态+痕迹：教学系统的记录）/ 存根（审计）。
-         归属由 /api/memory 的 domain 字段分组（app.js 落位），标注写在
-         每摞脸上。cs-2 收起/展开：五个面板各是一件 #21 折叠（默认收，
-         组头=面板名+计数）——痕迹等内容不再永久摊开。字段名全中文化；
-         指纹缩前 12 位等宽 + title 全值；时间一律人话格式（title 放
-         全时间戳）。 -->
+    <!-- 记忆节（⑧ 8.2.6，p-2 迁入；cs-2 三区重组；veto-R 统一规格）：
+         导语一行（.doc-line）+ 三摞节块（h3 + .doc-line 正文）——抽屉
+         三页同模板（9.15 全应用统一规范）。归属由 /api/memory 的 domain
+         字段分组（app.js 落位），标注写在每摞脸上。cs-2 收起/展开：五个
+         面板各是一件 #21 折叠（默认收，组头=面板名+计数）——痕迹等内容
+         不再永久摊开。字段名全中文化；指纹缩前 12 位等宽 + title 全值；
+         时间一律人话格式（title 放全时间戳）。 -->
     <section id="drawer-memory" role="tabpanel"
              aria-labelledby="tab-drawer-memory" data-reveal>
-    <p class="sub">笔友记住的事都在这里——一条条如实，分三摞收纳。</p>
+    <p class="doc-line">笔友记住的事都在这里——分三摞收纳。</p>
     <p class="sub sumline" id="mem-summary" hidden></p>
     <section id="set-memory">
       <div class="sec" id="mem-zone-character">
         <h3>角色记忆</h3>
-        <p class="sub">笔友记住的——关于你们的通信。</p>
+        <p class="doc-line">笔友记住的——关于你们的通信。</p>
         <div id="mem-relationship"><p class="note">暂无数据</p></div>
         <div id="mem-episode"><p class="note">暂无数据</p></div>
       </div>
       <div class="sec" id="mem-zone-learning">
         <h3>学习记录</h3>
-        <p class="sub">教学系统的记录——笔友并不知道这些。</p>
+        <p class="doc-line">教学系统的记录——笔友并不知道这些。</p>
         <div id="mem-states"><p class="note">暂无数据</p></div>
         <div id="mem-evidence"><p class="note">暂无数据</p></div>
       </div>
       <div class="sec" id="mem-zone-audit">
         <h3>存根</h3>
-        <p class="sub">忘掉这件事留下的收据——只有单向摘要，没有正文。</p>
+        <p class="doc-line">忘掉这件事留下的收据——只有单向摘要。</p>
         <div id="mem-tombstones"><p class="note">暂无数据</p></div>
       </div>
     </section>
@@ -478,34 +487,32 @@
     </section>
     </section>
 
-    <!-- 设置节（⑧ 8.2.8，主线-1 重铸② + fr-A 完全体重做）：分组信息
-         架构五区——如实说（节首）/ 教学模式（当前档读面视觉化：三档名
-         映射展示，当前档高亮但不可改，mode 写入继续拒绝）/ 教学策略
-         （八旋钮真控件 + 保存回路）/ 隐私与披露（§5.1 DisclosurePolicy
-         编辑面——写面接通，规则行可改可增可减，冲突 409 重读）/ 显示
-         与计量（token 计量显示开关，sessionStorage 客户端侧如实标注）。
+    <!-- 设置节（⑧ 8.2.8，主线-1 重铸② + fr-A 完全体 + veto-R 重做）：
+         统一规格（9.15）——导语一行 + 节块（h3 + .doc-line），panel-grid
+         两栏退役；教学模式四档墨选可改（写面 = /api/settings/mode，热改
+         生效），「由启动命令给定不能改」「换档 = 改启动命令」两句随
+         只读读法退役。分组：如实说 / 教学模式 / 教学策略（八旋钮，七钮
+         档位墨选）/ 隐私与披露（§5.1 编辑面）/ 显示与计量。
          SECTION_PULLS 拉本节（r1_shell 缺位钉随迁）。
          （8.2.8 目标设计②问候语切换设置项位：随 8.2.2① 问候语面挂起
          ——语料面缺口呈报在案，待裁后落位。） -->
     <section id="drawer-settings" role="tabpanel"
              aria-labelledby="tab-drawer-settings" hidden data-reveal>
-    <div class="panel-grid">
-      <div class="sec">
-        <h3>现在能如实说的</h3>
-        <p class="doc-line">这台应用只服务你一个人（127.0.0.1，无账号无密码）。</p>
-        <p class="doc-line">模型端点与模型名由启动命令给定——页面不读取，也不显示。</p>
-        <p class="doc-line">批注频率在 温故 · 方向 里调。</p>
-      </div>
-      <div class="sec" id="set-settings-mode">
-        <h3>教学模式</h3>
-        <p class="doc-line">当前档：<span id="settings-stage">…</span>——由启动命令给定，这里读得到，但不能改。</p>
-        <div id="settings-modes"></div>
-        <p class="doc-line">换端点或换档 = 改启动命令再启动。</p>
-      </div>
+    <p class="doc-line">这台应用只服务你一个人（127.0.0.1，无账号无密码）。</p>
+    <div class="sec" id="set-settings-facts">
+      <h3>如实说</h3>
+      <p class="doc-line">模型端点与模型名由启动命令给定——页面不读取，也不显示。</p>
+      <p class="doc-line">批注频率在 温故 · 方向 里调。</p>
+    </div>
+    <div class="sec" id="set-settings-mode">
+      <h3>教学模式</h3>
+      <div id="settings-mode-editor"><p class="note">暂无数据</p></div>
+      <p class="doc-line" id="settings-mode-note" hidden></p>
+      <div id="settings-mode-result"></div>
     </div>
     <div class="sec" id="set-settings-knobs">
       <h3>教学策略</h3>
-      <p class="doc-line">批注频率有真消费方；标「存面」的七钮暂无消费方——先存后用，留空 = 未配置。</p>
+      <p class="doc-line">批注频率有真消费方；七钮标「暂不影响行为」——先存后用，留空 = 未配置。</p>
       <div id="settings-knobs"><p class="note">暂无数据</p></div>
       <div id="settings-save"></div>
       <div id="settings-result" class="sec"></div>
@@ -519,7 +526,7 @@
     </div>
     <div class="sec" id="set-settings-display">
       <h3>显示与计量</h3>
-      <p class="doc-line">token 计量的显示开关——只存在这个标签页这次会话里（sessionStorage 客户端侧），关掉标签页就复位。</p>
+      <p class="doc-line">token 计量的显示开关——只活在当前标签页，关掉就复位。</p>
       <div id="settings-meter"></div>
     </div>
     </section>

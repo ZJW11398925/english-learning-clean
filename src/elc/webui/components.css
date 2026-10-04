@@ -991,36 +991,43 @@ button:focus-visible, input:focus-visible {
 .sysline.emptyhall .inkicon { display: block; width: 30px;
            height: 30px; margin: 0 auto 10px; color: var(--ink-ghost); }
 
-/* ── 24. flow-bottom（一键回底墨点，fr-A）──────────────────────────────
-   结构：<button class="flow-bottom">（一枚 chevron 图标，CSS 旋转 90°
-   向下；aria-label 承担语义——图标不单独表意）。
-   状态矩阵：default（墨点 .82 不透明度 + 软纸影）/ hover·focus·press
-   （纸白薄雾三值——墨点是深件，雾用 --paper-high 反向叠，同 rd-1 三档
-   纪律）/ active（触压 1px 下沉）/ hidden（在底 / 写作态 / 离案头——
-   JS 账）。
-   圆形豁免登记（fr-A）：用户明示「悬浮墨点样式族」——②-6 圆角法则的
-   「仅邮票/邮戳圆形」新增一枚豁免；墨点不盖真实事件，不是印章。
+/* ── 24. flow-bottom（一键回底钮，fr-A 立 · veto-R 重铸）──────────────
+   结构：<button class="flow-bottom">（chevron 图标 +「回到底」短字标
+   ——#22 锚位契约：图标不单独表意，字标承担可读语义）。
+   veto-R 重铸（用户否决圆形墨点——与应用纸墨文具风格不符）：融入现役
+   按钮族语汇——纸底 --paper-high + 发丝线边（1px --rule）+ 墨线图标
+   + 字标 + --stack-shadow-soft 承影；触感层沿用 rd-1 三值（深件改浅
+   件，雾用 --ink 正向叠）。
+   圆形豁免退役（veto-R）：fr-A 的「回底墨点」第二例圆形豁免随墨点形态
+   一起退场——②-6 豁免集合回到「仅邮票/邮戳圆形」（v22r 计数钉同刀
+   随迁）。
+   状态矩阵：default / hover·focus·press（墨雾三值）/ active（触压 1px
+   下沉）/ hidden（在底 / 写作态 / 离案头——JS 账）。
    使用规则：屏级位置账在 screens.css（右下、navdock + 触发条之上）；
    点击 = 平滑回底（reduced-motion 直落）。
-   禁止变体：第二形状 / 第二色 / 常驻（在底必藏）/ 徽章计数。 */
-.flow-bottom { position: relative; width: 32px; height: 32px;
-               border-radius: 50%; border: 0; padding: 0; cursor: pointer;
-               display: flex; align-items: center; justify-content: center;
-               background: var(--ink); color: var(--paper-high);
-               opacity: 0.82; box-shadow: var(--stack-shadow-soft);
-               transition: opacity var(--dur-micro) var(--ease-press),
-                           transform var(--dur-micro) var(--ease-press); }
-.flow-bottom .inkicon { width: 15px; height: 15px;
+   禁止变体：圆形 / 第二形状 / 第二色 / 常驻（在底必藏）/ 徽章计数。 */
+.flow-bottom { position: relative; display: inline-flex;
+               align-items: center; gap: 6px;
+               border: 1px solid var(--rule); padding: 7px 12px;
+               cursor: pointer; background: var(--paper-high);
+               color: var(--ink-soft); box-shadow: var(--stack-shadow-soft);
+               transition: color var(--dur-micro) var(--ease-press),
+                           border-color var(--dur-micro)
+                                       var(--ease-press); }
+.flow-bottom .inkicon { width: 13px; height: 13px;
                         transform: rotate(90deg); }
+.flow-bottom .flow-bottom-word { font: var(--meta-font);
+                                 letter-spacing: var(--meta-track); }
 .flow-bottom:active { transform: translateY(1px); }
 .flow-bottom::after { content: ""; position: absolute; inset: 0;
-                      border-radius: 50%;
-                      background: var(--paper-high); opacity: 0;
+                      background: var(--ink); opacity: 0;
                       pointer-events: none;
                       transition: opacity var(--dur-micro)
                                   var(--ease-press); }
 .flow-bottom:active::after { opacity: var(--state-press); }
 .flow-bottom:focus-visible::after { opacity: var(--state-focus); }
+.flow-bottom:focus-visible { outline: 1px solid var(--pencil);
+                             outline-offset: 2px; }
 @media (hover: hover) {
   .flow-bottom:hover::after { opacity: var(--state-hover); }
 }
@@ -1051,29 +1058,62 @@ button:focus-visible, input:focus-visible {
   .flow-tick:hover::before { background: var(--ink-soft); }
 }
 
-/* ── 26. tokenmeter（token 计量条，fr-A）──────────────────────────────
-   结构：<div id="tokenmeter">（JS 账：开关开着且有数据才现身）——
-   计量行（累计 + 「逐轮」展开链）+ 逐轮区（可选显示的每轮读数）。
-   状态矩阵：default（等宽微标签配方 + tabular-nums 数字——账页读法，
-   零图表零徽章零彩色）/ 逐轮开合（按钮 aria-expanded）/ hidden（开关
-   关 / 无数据 / 离案头随空间）。
-   使用规则：数字一律 mono + tabular-nums（简报 3a 数据列禁令）；未
-   计量的字段如实「—」，全空如实一句——不伪造 0；累计是服务端会话
-   全量账（窗口无关），客户端不做本地加减。
-   禁止变体：进度条 / 彩色警示 / 费用换算 / 第二处数字格式。 */
-.tokenmeter { margin: 0 0 var(--sp-3); padding: 6px 0;
-              border-top: 1px solid var(--rule-soft);
-              border-bottom: 1px solid var(--rule-soft);
+/* ── 26. tokenmeter（token 计量粒 + 逐轮明细浮层，fr-A · veto-R 重铸）──
+   结构：<button id="tokenmeter" class="tokenmeter">（dock 上沿内嵌的
+   紧凑读数钮——主数据直出：会话累计总 token，tabular-nums，无说明句）
+   + .tm-pop（逐轮明细浮层——浮层家族形态：顶纸 + 发丝缘 + 软纸影，
+   Esc 关、点外关、⑩ 互斥收）。
+   veto-R 重铸（用户否决 sticky 常驻遮挡与整句读法）：独立 sticky 层
+   退役，粒内嵌案头前沿垫板（.dock）上沿；无读数不现位（端点没报
+   usage = 不占位，空说明句退役）。
+   状态矩阵：default（等宽微标签配方 + tabular-nums——账页读法，零图表
+   零徽章零彩色）/ aria-expanded（明细浮层开合）/ [hidden]（开关关 /
+   无读数 / 写作态 / 离案头——JS 账）。
+   使用规则：数字一律 mono + tabular-nums（简报 3a 数据列禁令）；未计
+   量的字段在浮层里如实「—」，不伪造 0；累计是服务端会话全量账（窗口
+   无关），客户端不做本地加减。
+   禁止变体：sticky 独立层 / 进度条 / 彩色警示 / 费用换算 / 第二处数字
+   格式。 */
+.tokenmeter { position: absolute; top: -13px; right: var(--read-pad);
+              border: 1px solid var(--rule); padding: 3px 10px;
+              cursor: pointer; background: var(--paper-high);
               font: var(--meta-mono); letter-spacing: 0;
-              color: var(--meta-ink); }
-.tokenmeter .tm-line { margin: 0; }
-.tokenmeter .tm-num { font-variant-numeric: tabular-nums;
-                      font-weight: 400; color: var(--ink-soft); }
-.tokenmeter .tm-fold { display: inline; margin: 0; }
-.tokenmeter .tm-turns { margin: 2px 0 0; padding-left: var(--sp-3);
-                        border-left: 1px solid var(--rule-soft); }
-.tokenmeter .tm-turn { margin: 0; }
-.tokenmeter .tm-turn--faint { color: var(--ink-faint); }
+              color: var(--meta-ink); box-shadow: var(--stack-shadow-soft); }
+.tokenmeter::after { content: ""; position: absolute; inset: 0;
+                     background: var(--ink); opacity: 0;
+                     pointer-events: none;
+                     transition: opacity var(--dur-micro)
+                                 var(--ease-press); }
+.tokenmeter:active::after { opacity: var(--state-press); }
+.tokenmeter:focus-visible { outline: 1px solid var(--pencil);
+                            outline-offset: 2px; }
+.tokenmeter:focus-visible::after { opacity: var(--state-focus); }
+@media (hover: hover) {
+  .tokenmeter:hover::after { opacity: var(--state-hover); }
+}
+/* 明细浮层：fixed 挂 body，锚位与粒同缘（右对齐 read-pad、dock 之上
+   一档呼吸）；z 10 与 select-list 同档（⑩ 10.2 表）。 */
+.tm-pop { position: fixed; z-index: 10;
+          right: max(var(--read-pad),
+                     calc(50vw - var(--shell-w) / 2 + var(--read-pad)));
+          bottom: calc(var(--navdock-h) + var(--dock-trigger-h)
+                       + var(--sp-7));
+          min-width: 240px; max-width: min(360px, 80vw);
+          max-height: 40vh; overflow-y: auto;
+          overscroll-behavior: contain;
+          scrollbar-gutter: stable;
+          padding: 8px 12px; background: var(--paper-high);
+          border: 1px solid var(--rule);
+          outline: 1px solid var(--rule-soft); outline-offset: 2px;
+          box-shadow: var(--stack-shadow-soft); }
+.tm-pop .tm-pop-head { margin: 0 0 4px; padding-bottom: 4px;
+                       border-bottom: 1px solid var(--rule-soft);
+                       font: var(--meta-mono); color: var(--meta-ink); }
+.tm-pop .tm-pop-turn { margin: 0; font: var(--meta-mono);
+                       color: var(--ink-soft); }
+.tm-pop .tm-pop-turn--faint { color: var(--ink-faint); }
+.tokenmeter .tm-num, .tm-pop .tm-num { font-variant-numeric: tabular-nums;
+                       font-weight: 400; color: var(--ink-soft); }
 
 /* ── 27. select（墨选，fr-A）─────────────────────────────────────────
    结构：<span class="select">（#16 fieldRow 收养）> .select-btn（当前
@@ -1143,21 +1183,10 @@ button:focus-visible, input:focus-visible {
 .field:focus-within .select-btn { border-bottom-color: var(--pencil); }
 
 /* ── fr-A 设置页完全体（模式读面 / 披露规则行）──────────────────────
-   模式三档：doc-line 同排印（17/32 文档档）+ 左缘发丝线分层；当前档
-   = 发丝线转主墨 + 名字主墨 +「当前档」微标签墨蓝下划（第一次用形态
-   与字差表达状态，不用色块——胶囊徽章保持退役）。
+   veto-R：模式读面 = 一枚 #27 墨选（.select 复用，中文档名）——fr-A 的
+   .modeline 三档参考块与「当前档」高亮随只读读法一起退役（本注释即
+   退役登记，.modeline 规则随之撤除）。
    披露规则行：.kv 账行读法 + #27 墨选（层级）+ 移出链。 */
-.modeline { margin: 0; padding: 4px 0 4px 10px;
-            border-left: 1px solid var(--rule-soft);
-            font-size: var(--fs-body); line-height: var(--baseline);
-            color: var(--ink-soft); overflow-wrap: anywhere; }
-.modeline b { font-weight: 400; color: var(--ink-soft); }
-.modeline--on { border-left-color: var(--ink); color: var(--ink); }
-.modeline--on b { color: var(--ink); }
-.modeline-mark { margin-left: var(--sp-3); font: var(--meta-font);
-                 letter-spacing: var(--meta-track); color: var(--accent);
-                 border-bottom: 1px solid var(--accent);
-                 white-space: nowrap; }
 .disclosurerule { align-items: baseline; gap: var(--sp-3); }
 .disclosurerule .select { flex: 1; min-width: 0; }
 
@@ -1234,9 +1263,11 @@ button:focus-visible, input:focus-visible {
   to { transform: none; }
 }
 /* v2-2 新注册两枚（⑨-5 目标行落库；守恒律的对价 = 消费面接上）：
-   · paper-fold 收拢——沓面板退场/起笔向下展开的「沓收拢」半：8px 上收
+   · paper-fold 收拢——小卡退场/起笔向下展开的「沓收拢」半：8px 上收
      + 微缩（transform 单属性；opacity 走 ink-wash reverse 恒慢——
-     transform/opacity 拆开）；
+     transform/opacity 拆开）。veto-R 收窄消费面：**小卡专用**（词卡/
+     确认窗/dock 落半/navdock 让位）——大容器（信封沓）退场禁整体缩放
+     （用户否决：大件缩放不自然），改 paper-retract；
    · page-turn 翻页——信封沓全览与面板横滑切换共用的 2D 翻页感：位移 +
      rotateY ≤8° + skewY 梯形（零 preserve-3d——禁 3D 书本仿真，简报
      T3 收窄注记）；方向由消费面落 --pt-x/--pt-ry/--pt-sk（变量驱动，
@@ -1244,6 +1275,14 @@ button:focus-visible, input:focus-visible {
 @keyframes paper-fold {
   from { transform: none; }
   to { transform: translateY(-8px) scale(0.985); }
+}
+/* veto-R 新注册一枚（⑨-5 名册同刀改行，全库十三枚）：paper-retract
+   沓收拢——大容器退场的方向性位移 + 淡化，**无缩放**（法则：大容器
+   退场禁整体缩放，方向性位移+淡化——沿原路向下收拢回沓锚位的方向，
+   即上收 8px；opacity 仍走 ink-wash reverse 恒慢）。 */
+@keyframes paper-retract {
+  from { transform: none; }
+  to { transform: translateY(-8px); }
 }
 @keyframes page-turn {
   from { transform: translateX(var(--pt-x, 14px))
