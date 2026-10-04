@@ -502,7 +502,8 @@ def test_the_word_card_overlay_is_the_letter_language(
     assert '"wc-en"' in page
     assert '"wc-example"' in page
     assert 'close.textContent = "收起"' in page
-    assert "export function closeWordCard() {" in page
+    # fr-B 随迁：closeWordCard 收 opts（skipOut 直摘 vs 褪下编排）
+    assert "export function closeWordCard(opts) {" in page
     assert "export function showWordCard(at, data) {" in page
     assert "document.addEventListener" in page
     # rd-4 随迁（9.12-23）+ v2 随迁（简报 §6「仅邮票/邮戳允许圆形；

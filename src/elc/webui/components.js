@@ -2,8 +2,9 @@
 // 纪律：一切用户可见的文字只走 createElement + textContent——用户的
 // 英语、模型的回复、面板读数永远是惰性文本，绝不进标记（XSS 面）。
 // 每个工厂对应 docs/FRONTEND_SPEC.md ③ 的一行契约；类名的样式唯一
-// 出处是 components.css。本文件是 window.confirm 的唯一封装点
-// （confirmDialog）；对端点的调用只走 api.js。
+// 出处是 components.css。本文件是确认窗的唯一封装点（confirmDialog——
+// fr-B 重铸为自绘纸墨确认窗，原生 window.confirm 退役）；对端点的
+// 调用只走 api.js。
 
 import { fetchTeachingReply } from "./api.js";
 
@@ -220,10 +221,81 @@ export function addLine(cls, text, opts) {
   return node;
 }
 
-// 11. confirm-dialog：原生 confirm 的唯一封装点——保持原生形态，
-// 不自制弹层；只用于不可逆面（看答案）。
+// 11. confirm-dialog（fr-B 重铸：自绘纸墨确认窗——原生 window.confirm
+// 退役：浏览器级硬弹与纸墨体系零关系）。异步 Promise<boolean>——
+// 确定 true；再想想 / 点雾 / Esc 一律 false（原生语义平移）。
+// 开 = 纸雾淡入 + 面板升起（--dur-dialog-in）；合 = 面板褪下 + 纸雾
+// 淡出（Esc 收起与确认收起对称，同一 finish 编排）；消息一律
+// textContent（XSS 纪律）；层位 z 11/12 全站最上（⑩ 10.2）；Esc 走
+// capture 闸门 + stopPropagation——只退本层，不惊动下层的词卡/沓
+// （⑩ 10.4 同刀改行）。reduced-motion：JS 半区直切 + 库尾总降级双面。
 export function confirmDialog(message) {
-  return window.confirm(message);
+  return new Promise((resolve) => {
+    const restoreFocusTo = document.activeElement;
+    const scrim = document.createElement("div");
+    scrim.className = "cfrm-scrim";
+    const box = document.createElement("div");
+    box.className = "cfrm";
+    box.setAttribute("role", "alertdialog");
+    box.setAttribute("aria-modal", "true");
+    const text = document.createElement("p");
+    text.className = "cfrm-msg";
+    text.textContent = String(message);
+    box.appendChild(text);
+    const row = document.createElement("p");
+    row.className = "cfrm-actions";
+    const no = document.createElement("button");
+    no.type = "button";
+    no.className = "btn btn--faint";
+    no.textContent = "再想想";
+    const yes = document.createElement("button");
+    yes.type = "button";
+    yes.className = "btn btn--pencil";
+    yes.textContent = "确定";
+    row.appendChild(no);
+    row.appendChild(yes);
+    box.appendChild(row);
+    document.body.appendChild(scrim);
+    document.body.appendChild(box);
+    let done = false;
+    const finish = (answer) => {
+      if (done) return;
+      done = true;
+      document.removeEventListener("keydown", onKey, true);
+      const settle = () => {
+        scrim.remove();
+        box.remove();
+        if (restoreFocusTo && restoreFocusTo.isConnected) {
+          restoreFocusTo.focus();
+        }
+        resolve(answer);
+      };
+      if (REDUCED_MOTION.matches) {
+        settle();
+        return;
+      }
+      scrim.classList.add("cfrm-scrim--out");
+      box.classList.add("cfrm--out");
+      box.addEventListener("animationend", (event) => {
+        if (event.animationName === "paper-fold") settle();
+      });
+      setTimeout(settle, 480);   // 保险丝（同沓家对账纪律）
+    };
+    const onKey = (event) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        finish(false);
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        finish(true);
+      }
+    };
+    no.addEventListener("click", () => finish(false));
+    yes.addEventListener("click", () => finish(true));
+    scrim.addEventListener("click", () => finish(false));
+    document.addEventListener("keydown", onKey, true);
+    yes.focus();
+  });
 }
 
 // W-6: the attempt loop, made legible. The verdict is a prominent strip
@@ -438,9 +510,9 @@ function helpButton(label, control, busyText, doneNote, card) {
   button.type = "button";
   button.className = "btn";
   button.textContent = label;
-  button.addEventListener("click", () => {
+  button.addEventListener("click", async () => {
     if (control === "reveal" &&
-        !confirmDialog("看了答案，完整说法就摆在眼前——看过之后仍可回应。要看吗？")) {
+        !(await confirmDialog("看了答案，完整说法就摆在眼前——看过之后仍可回应。要看吗？"))) {
       return;
     }
     postReply(card, { control: control }, busyText, doneNote);
@@ -968,7 +1040,7 @@ let cardCloser = null;
 let cardEsc = null;
 let openScrim = null;
 
-export function closeWordCard() {
+export function closeWordCard(opts) {
   if (cardCloser !== null) {
     document.removeEventListener("click", cardCloser);
     cardCloser = null;
@@ -977,14 +1049,34 @@ export function closeWordCard() {
     document.removeEventListener("keydown", cardEsc);
     cardEsc = null;
   }
-  if (openScrim !== null) {
-    openScrim.remove();
-    openScrim = null;
+  const card = openCard;
+  const scrim = openScrim;
+  openScrim = null;
+  openCard = null;
+  // fr-B 褪下半（升起+褪下双向）：Esc / 收起 / 点卡外 = paper-fold +
+  // ink-wash reverse + 纸雾 scrim-out 同步淡出，animationend 对账 +
+  // 保险丝摘 DOM；换卡与互斥路径（showWordCard/showSpace/开沓）走
+  // opts.skipOut 直摘——残影不跟层走。reduced-motion 直切。
+  const instant = REDUCED_MOTION.matches || (opts && opts.skipOut);
+  if (card === null && scrim === null) return;
+  if (instant) {
+    if (scrim !== null) scrim.remove();
+    if (card !== null) card.remove();
+    return;
   }
-  if (openCard !== null) {
-    openCard.remove();
-    openCard = null;
+  const settle = () => {
+    if (scrim !== null) scrim.remove();
+    if (card !== null) card.remove();
+  };
+  if (scrim !== null) scrim.classList.add("word-scrim--out");
+  if (card !== null) {
+    card.classList.add("word-card--out");
+    card.addEventListener("animationend", (event) => {
+      if (event.animationName === "paper-fold" ||
+          event.animationName === "sheet-out") settle();
+    });
   }
+  setTimeout(settle, 480);   // 保险丝（同沓家对账纪律）
 }
 
 // v2-2 双形态（8.2.2③）：浮卡档 = 点击点近侧（--wc-x/--wc-y custom
@@ -993,7 +1085,7 @@ export function closeWordCard() {
 // 墨色遮罩（.word-scrim——点遮罩冒泡到既有 cardCloser 即「点卡外」
 // 关闭，零新关闭机制）+ Esc 关闭（R3 语义）。DOM 移除语义两档同源。
 export function showWordCard(at, data) {
-  closeWordCard();
+  closeWordCard({ skipOut: true });   // 换卡直摘——新旧两卡不交叠
   const card = wordCard(data);
   const scrim = document.createElement("div");
   scrim.className = "word-scrim";
@@ -1475,6 +1567,28 @@ export const REDUCED_MOTION = window.matchMedia(
   "(prefers-reduced-motion: reduce)");
 const REVEAL_STAGGER_MS = 40;
 const REVEAL_STAGGER_MAX = 8;
+
+// fr-B 列表逐项错峰（⑨-5 新行；stagger 28ms 档——--dur-stagger 消费
+// 在 components.css 的 .stagger-in）：给一组「此刻可见」的列表行落
+// --i 与 .stagger-in（140ms 淡入 + 4px 上移，步长 28ms、前 8 项封
+// 顶）。消费面 = 搜索结果/目标列表的重过滤（app.js familyGroupsBlock）
+// ——wireReveal 管「首入视一次」，本函数管「重渲染即错峰」。摘类 +
+// 强制重排 + 落类 = 可重触发的最小编排；reduced-motion 直切（JS
+// 半区，与 wireReveal 同一纪律）。
+const RESTAGGER_MAX = 8;
+
+export function restagger(nodes) {
+  if (REDUCED_MOTION.matches) return;
+  let index = 0;
+  for (const node of nodes) {
+    if (index >= RESTAGGER_MAX) break;
+    node.classList.remove("stagger-in");
+    node.style.setProperty("--i", String(index));
+    void node.offsetWidth;   // 重触发动画（playPageTurn 同手法）
+    node.classList.add("stagger-in");
+    index += 1;
+  }
+}
 
 export function wireReveal(root) {
   const containers = Array.from(root.querySelectorAll("[data-reveal]"));

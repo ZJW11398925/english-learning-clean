@@ -146,6 +146,31 @@
   --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
   --ease-exit: cubic-bezier(0.3, 0, 1, 1);
   --ease-press: cubic-bezier(0.4, 0, 0.2, 1);
+  /* ── fr-B 转场档扩族（动画体系专项刀 B）──────────────────────────
+     三档时长 × 曲线族的完整读法（消费面按语义取档，不取物理值）：
+     ① 微交互档（100–140）：--dur-micro / --dur-stamp / --dur-1——
+        hover、按压、拨动、点选（手感第一律：可见反馈 ≤100ms 起）；
+     ② 面板档（200–360）：--dur-panel-in 280 / --dur-panel-out 200 /
+        --dur-note 260 / --dur-ink 360——浮层、短笺、节面板、写作态；
+     ③ 整屏转场档（fr-B 新立）：--dur-space-in 340（空间/全页进入——
+        比面板档长半档，给「淡入 + 上移 8px」的分层错峰留时）/
+        --dur-space-out 220（空间退出——略长于 panel-out，与进入侧
+        同帧起播成交叉淡化）/ --dur-dialog-in 300（弹窗升起，介于
+        面板与整屏之间）/ --dur-stagger 28（列表逐项错峰步长——
+        20–40ms 区间取中，前 8 项封顶 ≈364ms 含单项 140）。
+     曲线族三族：进场减速长尾（--ease-paper / --ease-enter）/ 退场
+     加速收势（--ease-exit）/ 弹簧（--ease-spring，fr-B 新立——
+     cubic-bezier 近似 spring，overshoot 1.25 克制）。
+     弹簧的法则登记（对 rd-1「唯一 overshoot = 盖印收束」的显式
+     收窄修订，用户任务书授权）：--ease-spring 只许消费在指尖微件
+     的盖印形 keyframes 上（scale ≤0.96→1 幅度族——与 stamp-press
+     同形异曲线），禁配位移/禁配大尺度；盖印收束的唯一 overshoot
+     地位不动。绝不弹跳轻浮：一切 spring 消费幅度 ≤4%。 */
+  --dur-space-in: 340ms;
+  --dur-space-out: 220ms;
+  --dur-dialog-in: 300ms;
+  --dur-stagger: 28ms;
+  --ease-spring: cubic-bezier(0.34, 1.25, 0.4, 1);
   /* ── 微标签配方（rd-1 沿用；元信息位的唯一物理出处——小字号 + 字距 +
      暖灰的 sans 角色，与等宽角色并存；全部引用既有标度，不自立值）── */
   --meta-font: 500 var(--fs-micro)/var(--lh-ui) var(--f-sans);

@@ -717,7 +717,9 @@ def test_the_native_select_is_retired_and_the_ink_select_is_registered() -> None
     assert "openSelects.delete(api);" in components
     app = _webui("app.js")
     assert "  closeOpenSelects();" in app
-    assert "  closeWordCard();\n  closeOpenSelects();" in app
+    # fr-B 随迁：互斥收卡改 skipOut 直摘（词卡褪下半的动画路径只属
+    # 用户三路径——Esc/收起/点卡外）
+    assert "  closeWordCard({ skipOut: true });\n  closeOpenSelects();" in app
     css = _webui("components.css")
     assert "27. select（墨选，fr-A）" in css
     assert "color-mix(in srgb, var(--ink) 8%, transparent)" in css

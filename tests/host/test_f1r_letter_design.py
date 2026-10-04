@@ -196,7 +196,10 @@ def test_the_honest_faces_split_into_drawer_and_progress(
     assert "function toggleSetBlock(" not in page
     assert 'document.getElementById("set-" + block).hidden' not in page
     assert '"learning", "diagnostics", "memory", "privacy"' not in page
-    assert "group[key].hidden = key !== name;" in page
+    # fr-B 随迁：节 hidden 账带 leaving 半（退出节在交叉淡化期保持
+    # 解隐——showSection 的 .panel--leave 编排，spec ⑨-5 抽屉开合行）；
+    # 同一份「同时只有一帧」语义不改
+    assert "group[key].hidden = key !== name && key !== leaving;" in page
     # the six section panels exist (three per space)
     for panel in ("study-today", "study-goal", "study-progress",
                   "drawer-memory", "drawer-privacy", "drawer-settings"):

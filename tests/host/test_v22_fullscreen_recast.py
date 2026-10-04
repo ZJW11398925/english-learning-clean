@@ -161,7 +161,9 @@ def test_the_sheet_semantics_are_one_component_two_tiers() -> None:
     assert 'card.style.setProperty("--wc-y",' in js
     assert "card.offsetWidth" in js      # the clamp still measures the card
     assert 'if (event.key === "Escape") closeWordCard();' in js
-    assert "openScrim.remove();" in js
+    # fr-B 随迁：scrim 的摘除并入褪下编排（instant 直摘 / settle 对账摘
+    # 两路同源——DOM 移除语义不变，只是有了褪下半）
+    assert "if (scrim !== null) scrim.remove();" in js
     css = _text("components.css")
     # the pointer tier consumes the props; the sheet tier overrides them
     assert "left: var(--wc-x, 0px); top: var(--wc-y, 0px);" in css

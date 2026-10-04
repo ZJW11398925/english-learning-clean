@@ -189,7 +189,7 @@ def test_esc_layering_and_mutual_exclusion() -> None:
     opener = app[app.index("function openComposeFace() {"):]
     opener = opener[: opener.index("function closeComposeFace(opts) {")]
     assert 'if (dock.classList.contains("dock--stilled")) return;' in opener
-    assert "closeWordCard();" in opener
+    assert "closeWordCard({ skipOut: true });" in opener
     assert "closeComposeFace();" in app[
         app.index("async function openEnvelopeSelector() {"):
         app.index("setNavdockStilled(true);   // 硬伤 A")]

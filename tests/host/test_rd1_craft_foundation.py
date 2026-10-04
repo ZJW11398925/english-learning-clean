@@ -216,12 +216,12 @@ def test_the_enter_exit_tiers_exist() -> None:
     longer): the tokens exist（v2 随迁，简报 §5：--dur-note 260 /
     --dur-panel-in 280 / --dur-ink 360 = opacity 恒慢 ≈1.3× /
     --dur-wet 600 墨水物理 / --dur-settle 320 封顶）, and the drawer
-    family consumes the enter tier through @starting-style. The exit
-    tier stays registered but deliberately unwired at the container:
-    the live walkthrough wedged the opacity at 0 whenever the
-    allow-discrete display transition shared a frame with an ancestor's
-    display toggle — the guard below keeps that poison form out of the
-    panel rules."""
+    family consumes the enter tier through @starting-style.
+    fr-B 随迁：节面板进入并入 transform + 60ms 错峰延迟（整屏档
+    --dur-space-in），退出档由 app.js 的 .panel--leave 编排接上
+    （rd-1 的「exit 不接容器」Revisit 随动画体系专项刀 B 关闭——
+    JS 编排取代了 allow-discrete 的毒形态；下面的负控仍在，毒形态
+    依旧不得进面板规则）。"""
 
     tokens = _text("tokens.css")
     for value in ("--dur-micro: 100ms;", "--dur-stamp: 120ms;",
@@ -237,13 +237,17 @@ def test_the_enter_exit_tiers_exist() -> None:
     screens = _text("screens.css")
     panel = screens[screens.index('[role="tabpanel"]'):]
     panel = panel[:panel.index("@starting-style")]
+    # fr-B：进入 = opacity + transform 双轨（整屏档 × --ease-enter，
+    # 60ms 错峰延迟）
     assert (
-        "transition: opacity var(--dur-panel-in) var(--ease-enter);"
+        "transition: opacity var(--dur-space-in) var(--ease-enter) 60ms,"
         in panel
     )
+    assert "transform var(--dur-space-in) var(--ease-enter) 60ms;" in panel
     assert "allow-discrete" not in panel
     assert "display" not in panel
-    # the exit tier stays registered in the spec (unwired, revisited)
+    # the exit tier stays registered in the spec (wired by fr-B's
+    # .panel--leave JS orchestration — see spec ⑨-5 抽屉开合行)
     assert "--dur-panel-out" in _spec()
 
 
@@ -437,9 +441,10 @@ def test_the_stack_shadows_are_ink_derived_and_two_tiered(
     # 3 → 5：信封沓的每封 soft 档 + 空白封的 none 抵消臂；v2-2 随迁
     # screens 1 → 4：垫板/页卡/缩略封三座 soft；fr-A 随迁 components
     # 5 → 7：#24 回底墨点 + #27 墨选浮层两座 soft——仍零手写阴影字面，
-    # 两级令牌之外零自造）
+    # 两级令牌之外零自造；fr-B 随迁 7 → 8：#11 确认窗面板 deep——
+    # 全站最上层的垫纸影，仍是令牌引用非手写字面）
     assert screens.count("box-shadow") == 4
-    assert css.count("box-shadow") == 7
+    assert css.count("box-shadow") == 8
     spec = _spec()
     assert "「零阴影」解除登记" in spec
     assert "DEC-OPI-dc0ba4b6-…13" in spec

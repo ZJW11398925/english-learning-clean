@@ -42,6 +42,7 @@ import {
   playPageTurn,
   disclosure,
   wireReveal,
+  restagger,
   envelopeCard,
   layoutEnvelopeStack,
   extendContainer,
@@ -710,6 +711,7 @@ function familyGroupsBlock(list, rowFor) {
   input.addEventListener("input", () => {
     const q = input.value.trim().toLowerCase();
     let any = false;
+    const shown = [];
     for (const g of groups) {
       if (!q) {
         g.disc.root.hidden = false;
@@ -722,13 +724,20 @@ function familyGroupsBlock(list, rowFor) {
       for (const r of g.rows) {
         const on = r.probe.includes(q);
         r.node.hidden = !on;
-        if (on) hit = true;
+        if (on) {
+          hit = true;
+          shown.push(r.node);
+        }
       }
       g.disc.root.hidden = !hit;
       g.disc.setOpen(hit);
       if (hit) any = true;
     }
     noHit.hidden = any;
+    // fr-B 列表进出场：搜索结果逐项错峰（stagger 28ms 档，前 8 项封顶
+    // ——components.js restagger；reduced-motion 其 JS 半区直切）。
+    // 目标列表（可以练的表达 / 按表达忘掉）与搜索结果同一工厂同一面。
+    if (q) restagger(shown);
   });
   return root;
 }
@@ -980,6 +989,7 @@ function renderArchive(evidence, retry) {
   input.addEventListener("input", () => {
     const q = input.value.trim().toLowerCase();
     let any = false;
+    const shown = [];
     for (const g of groups) {
       if (!q) {
         g.disc.root.hidden = false;
@@ -992,13 +1002,20 @@ function renderArchive(evidence, retry) {
       for (const r of g.rows) {
         const on = r.probe.includes(q);
         r.node.hidden = !on;
-        if (on) hit = true;
+        if (on) {
+          hit = true;
+          shown.push(r.node);
+        }
       }
       g.disc.root.hidden = !hit;
       g.disc.setOpen(hit);
       if (hit) any = true;
     }
     noHit.hidden = any;
+    // fr-B 列表进出场：搜索结果逐项错峰（stagger 28ms 档，前 8 项封顶
+    // ——components.js restagger；reduced-motion 其 JS 半区直切）。
+    // 目标列表（可以练的表达 / 按表达忘掉）与搜索结果同一工厂同一面。
+    if (q) restagger(shown);
   });
 }
 
@@ -1320,9 +1337,10 @@ function renderDelResult(data, rangeText) {
 }
 
 async function runDelete(payload, rangeText) {
-  if (!confirmDialog(
-    "将把「" + rangeText + "」请出抽屉，找不回来。确定继续？")) return;
-  if (!confirmDialog("再确认一次：忘掉之后无法恢复。")) return;
+  // fr-B：confirmDialog 异步化（自绘纸墨确认窗）——两层各说一件事不变
+  if (!(await confirmDialog(
+    "将把「" + rangeText + "」请出抽屉，找不回来。确定继续？"))) return;
+  if (!(await confirmDialog("再确认一次：忘掉之后无法恢复。"))) return;
   let data = null;
   try {
     data = await fetchDelete(payload);
@@ -2255,6 +2273,11 @@ function renderSettingsMeter() {
   toggle.addEventListener("click", () => {
     setTokenMeter(!tokenMeterOn);
     renderSettingsMeter();
+    // fr-B 微交互·开关拨动：重渲后的新钮补一回弹簧盖印（stamp-press
+    // 同形 × --ease-spring，幅度 ≤4%——tokens.css 弹簧法则登记面）；
+    // reduced-motion 直切（JS 半区）。
+    const fresh = box.querySelector(".btn");
+    if (fresh && !REDUCED_MOTION.matches) fresh.classList.add("flip-tick");
   });
   row.appendChild(toggle);
   box.appendChild(row);
@@ -2358,11 +2381,50 @@ const SECTION_PULLS = {
   },
 };
 
+// fr-B 退出编排（⑨-5 新行——交叉淡化的退出半；空间/节两档同构）：
+// 旧层不落 [hidden] 直切，改落 .space--leave/.panel--leave（absolute
+// 叠在锚容器之上、纸底遮住进层、ink-wash reverse × --ease-exit），与
+// 进层同帧起播 = 交叉淡化；animationend 对账 + 保险丝后 [hidden]。
+// 快进快出（A→B→A）安全：再入时撤 fuse 摘类，finish 只在类仍在时
+// 落 hidden。reduced-motion 直切（JS 半区，库尾总降级块双面）。
+function cancelLeave(node, cls) {
+  if (node._leaveFuse) {
+    clearTimeout(node._leaveFuse);
+    node._leaveFuse = null;
+  }
+  node.classList.remove(cls);
+}
+
+function leaveLayer(node, cls) {
+  if (REDUCED_MOTION.matches) {
+    node.hidden = true;
+    return;
+  }
+  node.classList.add(cls);
+  const finish = () => {
+    node._leaveFuse = null;
+    if (node.classList.contains(cls)) {
+      node.classList.remove(cls);
+      node.hidden = true;
+    }
+  };
+  node.addEventListener("animationend", (event) => {
+    if (event.animationName === "ink-wash" && event.target === node) {
+      finish();
+    }
+  });
+  node._leaveFuse = setTimeout(finish, 400);   // 保险丝（220 + 余量）
+}
+
 function showSection(space, name) {
   const group = SECTION_BODIES[space];
+  const leaving = Object.keys(group).find(
+    (key) => key !== name && !group[key].hidden);
+  cancelLeave(group[name], "panel--leave");
   for (const key of Object.keys(group)) {
-    group[key].hidden = key !== name;
+    group[key].hidden = key !== name && key !== leaving;
   }
+  if (leaving) leaveLayer(group[leaving], "panel--leave");
   markSectionTabs(document.getElementById(space + "-tabs"), name);
   sectionLabel(document.getElementById(space + "-head"),
     SECTION_NAMES[name]);
@@ -2374,15 +2436,19 @@ function showSection(space, name) {
 function showSpace(name) {
   // ⑩ 层级宪法的互斥半：进任何空间（含全页）收一切浮层与下拉容器——
   // 换空间的人不该被上一空间的浮层/沓跟着走。closeEnvelopeSelector 在
-  // 容器不在场时是安全的空操作；closeWordCard 同。v3-a：写作态同批
-  // （全页成员，8.2.2⑤——保稿收起）。
-  closeWordCard();
+  // 容器不在场时是安全的空操作；closeWordCard 同（fr-B：互斥路径直摘，
+  // skipOut 不留残影）。v3-a：写作态同批（全页成员，8.2.2⑤——保稿收起）。
+  closeWordCard({ skipOut: true });
   closeEnvelopeSelector();
   closeComposeFace();
   closeOpenSelects();
+  const leaving = Object.keys(spaces).find(
+    (key) => key !== name && !spaces[key].hidden);
+  cancelLeave(spaces[name], "space--leave");
   for (const key of Object.keys(spaces)) {
-    spaces[key].hidden = key !== name;
+    spaces[key].hidden = key !== name && key !== leaving;
   }
+  if (leaving) leaveLayer(spaces[leaving], "space--leave");
   syncFlowBottom();
   syncFlowRuler();
   markNavdock(name);
@@ -3380,7 +3446,7 @@ function openComposeFace() {
   if (dock.classList.contains("dock--stilled")) return;   // 置灰优先（⑩ 10.3-5）
   // ⑩ 互斥：升全页写作态先收浮层；上一次收场的对账柄与落半类即拆
   //（快速重开不追认旧收场）。
-  closeWordCard();
+  closeWordCard({ skipOut: true });
   closeOpenSelects();
   if (composeFoldHandler) {
     dock.removeEventListener("animationend", composeFoldHandler);
@@ -4059,7 +4125,7 @@ function unfoldToParlor(after) {
 
 async function openEnvelopeSelector() {
   if (envselPanel) return;
-  closeWordCard();   // ⑩ 互斥：开下拉容器自动关浮层
+  closeWordCard({ skipOut: true });   // ⑩ 互斥：开下拉容器自动关浮层（fr-B 直摘）
   closeComposeFace();   // ⑩ 互斥（v3-a）：开沓先收写作态（保稿）——
                         // 两具固定底件不同屏（10.3-5 置灰优先的同一定谳）
   setNavdockStilled(true);   // 硬伤 A：底坞淡化置灰且不可点（收沓即解）
@@ -4501,7 +4567,7 @@ async function switchToCharacter(characterId) {
     moment = null;
   }
   if (moment && moment.lifecycle_state === "AWAITING_USER") {
-    if (!confirmDialog("那边的批注还等着回应——切过去它会先搁着。")) {
+    if (!(await confirmDialog("那边的批注还等着回应——切过去它会先搁着。"))) {
       return false;
     }
   }
@@ -4869,9 +4935,9 @@ function buildEditorForm(form, opts) {
     del.className = "btn btn--faint editor-delete";
     del.textContent = "删了这封";
     del.addEventListener("click", async () => {
-      if (!confirmDialog(
+      if (!(await confirmDialog(
           "删了这封，沓里就再没有这位笔友——已写过的信留在信档里。"
-          + "这一步收不回来。")) {
+          + "这一步收不回来。"))) {
         return;
       }
       del.disabled = true;

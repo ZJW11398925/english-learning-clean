@@ -253,10 +253,11 @@ def test_the_editor_saves_through_the_real_crud() -> None:
     assert 'note.textContent = "这是随信来的第一位笔友——她可以改，不能删。";' in app
     assert "if (item && !item.is_builtin) {" in app
     assert 'del.textContent = "删了这封";' in app
+    # fr-B 随迁：confirmDialog 异步化（自绘纸墨确认窗）——await 形态
     assert (
-        "if (!confirmDialog(\n"
+        "if (!(await confirmDialog(\n"
         '          "删了这封，沓里就再没有这位笔友——已写过的信留在信档里。"\n'
-        '          + "这一步收不回来。")) {'
+        '          + "这一步收不回来。"))) {'
     ) in app
     # the never-open-blank guard: a failed card read refuses to open
     assert "data = await fetchPartnerOf(item.character_id);" in app

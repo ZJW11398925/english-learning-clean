@@ -170,9 +170,11 @@ def test_the_page_has_the_three_screens(tmp_path: Path) -> None:
     assert 'id="back-to-living"' not in page
     assert "← 回客厅</button>" not in page
     # the switch is plain JS show/hide (no router library); the dock
-    # carries the space switch
+    # carries the space switch. fr-B 随迁：hidden 账带上 leaving 半
+    # （退出空间在交叉淡化期保持解隐，动画对账后才落 hidden——
+    # showSpace 的 .space--leave 编排，spec ⑨-5 空间转场行）
     assert "function showSpace(" in page
-    assert "spaces[key].hidden = key !== name;" in page
+    assert "spaces[key].hidden = key !== name && key !== leaving;" in page
     assert 'id="navdock"' in page
     # rd-3 归档读法：五板 id、诊断调用与拉取函数全部退役（缺位钉）；
     # 刷新钮缺位钉照旧

@@ -529,8 +529,9 @@ def test_f3_switching_with_an_open_moment_asks_and_never_blocks() -> None:
         'if (moment && moment.lifecycle_state === "AWAITING_USER") {'
         in app
     )
+    # fr-B 随迁：confirmDialog 异步化（自绘纸墨确认窗）——await 形态
     assert (
-        'if (!confirmDialog("那边的批注还等着回应——切过去它会先搁着。")) {'
+        'if (!(await confirmDialog("那边的批注还等着回应——切过去它会先搁着。"))) {'
         in app
     )
     # the gate sits before the switch, and accepting falls through to it
@@ -538,11 +539,13 @@ def test_f3_switching_with_an_open_moment_asks_and_never_blocks() -> None:
     posted = app.index("fetchSwitchCharacter(characterId);")
     assert gate < posted
     # a refusal of the dialog aborts (return false), never silently switches
-    assert (
-        "    if (!confirmDialog(\"那边的批注还等着回应——切过去它会先搁着。\")) {\n"
+    refusal = (
+        "    if (!(await confirmDialog("
+        "\"那边的批注还等着回应——切过去它会先搁着。\"))) {\n"
         "      return false;\n"
-        "    }" in app
+        "    }"
     )
+    assert refusal in app
 
 
 # ---------------------------------------------------------------------------
