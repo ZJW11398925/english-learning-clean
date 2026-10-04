@@ -592,10 +592,13 @@ def test_the_settings_section_carries_the_real_controls(tmp_path: Path) -> None:
     assert 'id="settings-result"' in settings
     # the disclosure group: the edit face (fr-A — the read-only copy and
     # its "规则经 profile 编辑" sentence retired) + the fail-closed law
+    # (veto micro-knife: the「fail-closed 缺省」jargon parenthetical is
+    # gone — the plain-Chinese law sentence stays, the engineering word
+    # does not surface)
     assert 'id="set-settings-disclosure"' in settings
     assert "规则经 profile 编辑，这里只读。" not in settings
-    assert "规则在这里改；没有规则行时，缺省一无所露（fail-closed 缺省）。" \
-        in settings
+    assert "规则在这里改；没有规则行时，缺省一无所露。" in settings
+    assert "fail-closed" not in settings
     assert 'id="settings-disclosure"' in settings
 
 
@@ -631,7 +634,8 @@ def test_the_settings_pull_and_save_loop_are_wired(tmp_path: Path) -> None:
     assert "未配置（留空 = 清除）" not in app
     # the disclosure readout maps the ladder, unknown words pass through
     assert "DISCLOSURE_CN[word]" in app
-    assert "缺省一无所露（fail-closed 缺省）。" in app
+    assert "缺省一无所露。" in app
+    assert "（fail-closed 缺省）" not in app
     # XSS discipline: the settings block adds no markup sink
     block = app.split("8.2.8 重铸②", 1)[1].split("── R-1: the spaces", 1)[0]
     assert "innerHTML" not in block

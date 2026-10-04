@@ -2145,8 +2145,8 @@ function renderSettingsDisclosure() {
   if (!disclosureEditor.length) {
     const policy = settingsData && settingsData.disclosure;
     diagEmpty(box, policy
-      ? "没有规则行——缺省一无所露（fail-closed 缺省）。"
-      : "还没有披露规则——缺省一无所露（fail-closed 缺省）。");
+      ? "没有规则行——缺省一无所露。"
+      : "还没有披露规则——缺省一无所露。");
   }
   for (const rule of disclosureEditor) {
     box.appendChild(disclosureRuleRow(rule, levels));
