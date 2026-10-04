@@ -1873,14 +1873,16 @@ function providerResult(text, failure) {
   box.appendChild(line);
 }
 
-async function saveProvider(button, baseUrlInput, modelInput) {
+async function saveProvider(button, baseUrlInput, modelInput, keyInput) {
   const payload = {};
   const baseUrl = baseUrlInput.value.trim();
   const model = modelInput.value.trim();
+  const key = keyInput.value.trim();
   if (baseUrl) payload.base_url = baseUrl;
   if (model) payload.model = model;
+  if (key) payload.api_key = key;
   if (!Object.keys(payload).length) {
-    providerResult("至少填一个——端点地址或模型名。", true);
+    providerResult("至少填一个——端点地址、模型名或 API 密钥。", true);
     return;
   }
   button.disabled = true;
@@ -1931,17 +1933,31 @@ function renderSettingsProvider() {
   modelInput.autocomplete = "off";
   modelInput.spellcheck = false;
   box.appendChild(fieldRow("模型名", modelInput));
+  // 密钥面（启动系统刀：三件都在页面设）：值永不回显——GET 只报
+  // api_key_set；输入留空 = 不改（不是清除）。
+  const keyInput = document.createElement("input");
+  keyInput.type = "password";
+  keyInput.value = "";
+  keyInput.placeholder = "API 密钥——留空 = 不改";
+  keyInput.autocomplete = "new-password";
+  box.appendChild(fieldRow("API 密钥", keyInput));
+  const keyState = document.createElement("p");
+  keyState.className = "sub";
+  keyState.textContent = face.api_key_set
+    ? "已保存一把密钥（值不回显）。"
+    : "还没有保存过密钥——发信时用启动环境的那把；或在这里存一把。";
+  box.appendChild(keyState);
   const save = document.createElement("button");
   save.type = "button";
   save.className = "btn btn--pencil";
   save.textContent = "保存端点与模型";
   save.addEventListener("click", () => {
-    saveProvider(save, baseUrlInput, modelInput);
+    saveProvider(save, baseUrlInput, modelInput, keyInput);
   });
   box.appendChild(save);
   const note = document.createElement("p");
   note.className = "doc-line";
-  note.textContent = "接口密钥仍由启动环境提供——不存库、不在此显示。";
+  note.textContent = "密钥只存本机这个应用，任何页面读数都不回显它。";
   box.appendChild(note);
 }
 

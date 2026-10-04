@@ -400,6 +400,7 @@ from elc.persona.penpal import (
 from elc.persona.provider import PersonaProvider
 from elc.planner.trace_document import decode_factor_trace
 from elc.platform.db.app_settings import (
+    APP_SETTING_PROVIDER_API_KEY_KEY,
     APP_SETTING_PROVIDER_BASE_URL_KEY,
     APP_SETTING_PROVIDER_MODEL_KEY,
     APP_SETTING_ROLLOUT_STAGE_KEY,
@@ -2107,33 +2108,38 @@ def _mode_request_word(payload: Any) -> str | None:
 
 def _provider_request_pair(
     payload: Any,
-) -> tuple[str | None, str | None, str | None]:
+) -> tuple[str | None, str | None, str | None, str | None]:
     """The provider write's body, parsed and fail-closed.
 
-    Returns ``(error, base_url, model)``: ``error`` is a human refusal
-    sentence or ``None``; on success exactly the fields the body carried
-    (``{"base_url": str}`` and/or ``{"model": str}`` — at least one; the
-    face fills the other from the live pair). A base_url must parse with an
-    ``http``/``https`` scheme and a netloc; a model must be a non-empty
-    string (length ≤ 200). No defaulting, no guessing: a malformed body is
-    a refusal.
+    Returns ``(error, base_url, model, api_key)``: ``error`` is a human
+    refusal sentence or ``None``; on success exactly the fields the body
+    carried (``{"base_url": str}``, ``{"model": str}`` and/or
+    ``{"api_key": str}`` — at least one; the face fills the others from the
+    live pair). A base_url must parse with an ``http``/``https`` scheme and
+    a netloc; a model must be a non-empty string (length ≤ 200); an api_key
+    must be a non-empty string (length ≤ 400). No defaulting, no guessing:
+    a malformed body is a refusal.
     """
 
     if not isinstance(payload, dict) or not payload:
-        return ("请求体须是 JSON，至少带 base_url 或 model 之一。", None, None)
-    unknown = sorted(set(payload) - {"base_url", "model"})
+        return ("请求体须是 JSON，至少带 base_url、model 或 api_key 之一。",
+                None, None, None)
+    unknown = sorted(set(payload) - {"base_url", "model", "api_key"})
     if unknown:
         return (
-            "只认 base_url 与 model 两个键——多出来的键是 " + "、".join(unknown) + "。",
+            "只认 base_url、model 与 api_key 三个键——多出来的键是 "
+            + "、".join(unknown) + "。",
+            None,
             None,
             None,
         )
     base_url: str | None = None
     model: str | None = None
+    api_key: str | None = None
     if "base_url" in payload:
         raw = payload["base_url"]
         if not isinstance(raw, str) or not raw.strip():
-            return ("base_url 须是非空字符串。", None, None)
+            return ("base_url 须是非空字符串。", None, None, None)
         parts = urlsplit(raw.strip())
         if parts.scheme not in ("http", "https") or not parts.netloc:
             return (
@@ -2141,14 +2147,20 @@ def _provider_request_pair(
                 "例如 https://api.example.com/v1。",
                 None,
                 None,
+                None,
             )
         base_url = raw.strip()
     if "model" in payload:
         raw = payload["model"]
         if not isinstance(raw, str) or not raw.strip() or len(raw) > 200:
-            return ("model 须是非空字符串（≤200 字符）。", None, None)
+            return ("model 须是非空字符串（≤200 字符）。", None, None, None)
         model = raw.strip()
-    return (None, base_url, model)
+    if "api_key" in payload:
+        raw = payload["api_key"]
+        if not isinstance(raw, str) or not raw.strip() or len(raw) > 400:
+            return ("api_key 须是非空字符串（≤400 字符）。", None, None, None)
+        api_key = raw.strip()
+    return (None, base_url, model, api_key)
 
 
 def _settings_system_column_refusal(key: str) -> str:
@@ -4038,8 +4050,9 @@ class _WebFace:
                     "idempotent": False,
                     "stage": stage.value,
                     "error": (
-                        "这个进程没装配自动教学腿——换档没有可生效的地方，"
-                        "什么都没写。"
+                        "这个进程没有装内容库腿（--content-db）——教学档位"
+                        "没有可生效的地方。带上 --content-db 重启后，档位"
+                        "就能在这里改，改完即热生效。"
                     ),
                 },
             )
@@ -4069,25 +4082,29 @@ class _WebFace:
         )
 
     def provider_save(
-        self, base_url: str | None, model: str | None
+        self,
+        base_url: str | None,
+        model: str | None,
+        api_key: str | None = None,
     ) -> tuple[int, dict[str, Any]]:
-        """The provider write (user veto: endpoint/model are page-settable).
+        """The provider write (user veto: endpoint/model/key are page facts).
 
-        The HTTP layer validated the body's grammar (one or both keys,
-        well-formed); here the pair resolves against the live config — an
-        absent key rides the live value — and refuses before any write when
-        the destination is a plaintext non-loopback http URL the live
-        config's opt-in does not cover (the launch command's own rule; the
-        page grants no second, weaker rule) or the host's provider is not
-        OpenAI-shaped (a test double — 200 + ``accepted: false``, the
-        honest sentence, nothing persisted). Two writes, in this order: the
-        pair goes into ``app_setting`` (the durable half — a saved pair
-        overrides the launch arguments from the next open on; the page is
-        the user's chosen place for the pair), then the host swaps the live
-        provider so the *next* letter dials the new destination with no
-        restart. An unchanged pair answers ``idempotent`` and writes
-        nothing. The API key is never a page-writable fact: it stays with
-        the launch environment's secret source.
+        The HTTP layer validated the body's grammar (one or more of the
+        three keys, well-formed); here the pair resolves against the live
+        config — an absent key rides the live value — and refuses before any
+        write when the destination is a plaintext non-loopback http URL the
+        live config's opt-in does not cover (the launch command's own rule;
+        the page grants no second, weaker rule) or the host's provider is
+        not OpenAI-shaped (a test double — 200 + ``accepted: false``, the
+        honest sentence, nothing persisted). Writes, in order: the **key
+        first** (an independent setting — the hot swap's send-time source
+        reads it), then the host swaps the live provider, then the pair
+        persists — so the *next* letter dials the new destination with the
+        new key and no restart. A body that changes nothing answers
+        ``idempotent`` and writes nothing. The key's value is never in any
+        read face (``api_key_set`` alone) and never compared outside this
+        write path; it lives in the local single-user app.db and nowhere
+        else.
         """
 
         face = self._host.provider_face()
@@ -4104,9 +4121,19 @@ class _WebFace:
                     ),
                 },
             )
-        final_base = face["base_url"] if base_url is None else base_url
-        final_model = face["model"] if model is None else model
-        if final_base == face["base_url"] and final_model == face["model"]:
+        live_base = str(face["base_url"])
+        live_model = str(face["model"])
+        final_base = live_base if base_url is None else base_url
+        final_model = live_model if model is None else model
+        saved_key = self._host.app_settings.get(
+            APP_SETTING_PROVIDER_API_KEY_KEY
+        )
+        key_unchanged = api_key is None or api_key == saved_key
+        if (
+            final_base == live_base
+            and final_model == live_model
+            and key_unchanged
+        ):
             return (
                 200,
                 {
@@ -4115,6 +4142,11 @@ class _WebFace:
                     "provider": face,
                     "error": None,
                 },
+            )
+        if api_key is not None and not key_unchanged:
+            # the key first: the swap's send-time source reads the store
+            self._host.app_settings.set(
+                APP_SETTING_PROVIDER_API_KEY_KEY, api_key
             )
         refusal = self._host.replace_provider(final_base, final_model)
         if refusal is not None:
@@ -4139,6 +4171,13 @@ class _WebFace:
                 "provider": {
                     "base_url": final_base,
                     "model": final_model,
+                    "api_key_set": (
+                        api_key is not None
+                        or self._host.app_settings.get(
+                            APP_SETTING_PROVIDER_API_KEY_KEY
+                        )
+                        is not None
+                    ),
                 },
                 "error": None,
             },
@@ -5037,14 +5076,14 @@ def _build_server(
                 # opt-in is a 400 人话); the face persists the pair and
                 # swaps the live provider — the next letter dials the new
                 # destination with no restart.
-                base_err, base_url, model = _provider_request_pair(
+                base_err, base_url, model, api_key = _provider_request_pair(
                     self._read_json_body()
                 )
                 if base_err is not None:
                     self._send_json(400, {"error": base_err})
                     return
                 self._run_host_write(
-                    lambda: face.provider_save(base_url, model)
+                    lambda: face.provider_save(base_url, model, api_key)
                 )
                 return
             if self.path == "/api/settings/disclosure":

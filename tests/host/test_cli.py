@@ -109,6 +109,48 @@ def test_usage_errors_are_human_and_non_zero(
         assert message.strip(), (name, message)
 
 
+def test_the_bare_web_start_needs_only_the_app_db(
+    tmp_path: Path,
+) -> None:
+    """Startup-system cut: web's provider coordinates are page-settable, so
+    ``elc web --app-db …`` with no --base-url / --model / key source is NOT
+    a usage error — the bare start passes validation and reaches the port
+    probe. The probe against a busy port answers the exit-1 sentence, which
+    is the proof the pair check never fired (chat keeps the strict pair)."""
+
+    import socket
+
+    listener = socket.socket()
+    listener.bind(("127.0.0.1", 0))
+    listener.listen(1)
+    port = listener.getsockname()[1]
+    try:
+        code, _, err = run(
+            [
+                "web",
+                "--app-db",
+                str(tmp_path / "app.db"),
+                "--port",
+                str(port),
+            ],
+            stdin=io.StringIO(""),
+        )
+    finally:
+        listener.close()
+    assert code == 1, (code, err)
+    assert "already serving" in err, err
+
+
+def test_the_web_required_hint_names_the_settings_page() -> None:
+    """The one exit-2 web usage error says where the rest lives: the settings
+    page's provider face (the hint is the bare-start contract's voice)."""
+
+    from elc.cli import _WEB_REQUIRED_HINT
+
+    assert "--app-db" in _WEB_REQUIRED_HINT
+    assert "settings page" in _WEB_REQUIRED_HINT
+
+
 def test_a_scripted_turn_prints_the_reply_and_quit_exits_zero(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

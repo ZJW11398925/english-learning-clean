@@ -663,12 +663,16 @@ def test_the_settings_pull_and_save_loop_are_wired(tmp_path: Path) -> None:
     # veto-R：mode 写端点同门（页面零直连 fetch）
     assert '"/api/settings/mode"' in api
     # provider 刀（用户否决「端点/模型名不让页面直接设」）：provider 写
-    # 端点同门；渲染面 + 保存回路 + 密钥一行说明；旧频率封装退役
+    # 端点同门；渲染面 + 保存回路 + 密钥状态行；旧频率封装退役
     assert '"/api/settings/provider"' in api
     assert '"/api/teaching_frequency"' not in api
     assert "function renderSettingsProvider() {" in app
     assert "await fetchSaveProvider(payload);" in app
-    assert "接口密钥仍由启动环境提供" in app
+    # 启动系统刀：密钥也是页面可设面——password 输入、值永不回显
+    # （GET 只报 api_key_set）、留空 = 不改
+    assert 'keyInput.type = "password";' in app
+    assert '"API 密钥——留空 = 不改";' in app
+    assert "face.api_key_set" in app
     assert "fetchSaveFrequency" not in app
     assert "renderGoalFrequency" not in app
 
@@ -706,13 +710,14 @@ def test_the_provider_face_reads_writes_and_persists(
         content_db=pilot_content_db,
         provider=launch,
     ) as stack:
-        # the read: the live pair as opened
+        # the read: the live pair as opened (api_key_set rides along; the
+        # key's value is never in any read face)
         status, face = stack.get_json("/api/settings")
         assert status == 200, face
-        assert face["provider"] == {
-            "base_url": "http://127.0.0.1:9/v1",
-            "model": "launch-model",
-        }
+        assert face["provider"]["base_url"] == "http://127.0.0.1:9/v1"
+        assert face["provider"]["model"] == "launch-model"
+        assert face["provider"]["api_key_set"] is False
+        assert "sk-test" not in str(face)
         # a malformed scheme is the route's 400 人话
         status, refused = stack.post(
             "/api/settings/provider", {"base_url": "ftp://example.com/v1"}
@@ -725,13 +730,16 @@ def test_the_provider_face_reads_writes_and_persists(
         )
         assert status == 200 and insecure["accepted"] is False, insecure
         assert "明文 HTTP" in insecure["error"], insecure
-        assert face["provider"] == insecure["provider"]   # 拒收 = 零写零换
-        # the real write: both keys, hot swap + persist
+        assert face["provider"]["base_url"] == (
+            insecure["provider"]["base_url"]
+        )   # 拒收 = 零写零换
+        # the real write: both keys + the page key, hot swap + persist
         status, moved = stack.post(
             "/api/settings/provider",
             {
                 "base_url": "http://127.0.0.1:10/v1",
                 "model": "page-model",
+                "api_key": "sk-page-key",
             },
         )
         assert (
@@ -740,24 +748,26 @@ def test_the_provider_face_reads_writes_and_persists(
             and moved["idempotent"] is False
         ), moved
         assert moved["provider"]["model"] == "page-model", moved
+        assert moved["provider"]["api_key_set"] is True, moved
+        # the key's value never rides any read face — saved-ness alone
+        assert "sk-page-key" not in str(moved)
         status, after = stack.get_json("/api/settings")
         assert after["provider"]["base_url"] == "http://127.0.0.1:10/v1"
         assert after["provider"]["model"] == "page-model"
-        host = stack.box["host"]
-        assert host.provider_face() == {
-            "base_url": "http://127.0.0.1:10/v1",
-            "model": "page-model",
-        }   # the live object moved, not just the row (persistence itself is
-            # proven by the restart leg below — the store answers only the
-            # worker thread, sqlite3's one-thread rule)
-        # the idempotent replay writes nothing
+        assert after["provider"]["api_key_set"] is True
+        assert "sk-page-key" not in str(after)
+        # the live-object move is what the queued GET above reads (provider_face
+        # now touches the store, so the test thread may not call it directly —
+        # sqlite3's one-thread rule); persistence is the restart leg below
+        # the idempotent replay writes nothing (pair unchanged, key absent)
         status, again = stack.post(
             "/api/settings/provider",
             {"base_url": "http://127.0.0.1:10/v1", "model": "page-model"},
         )
         assert status == 200 and again["idempotent"] is True, again
     # the restart leg: a fresh open over the same app.db serves the saved
-    # pair even though the launch argument names another
+    # pair (and the saved key wins over the launch source at send time)
+    # even though the launch argument names another
     reopened = open_host(
         tmp_path / "app.db",
         provider=OpenAICompatibleProvider(
@@ -774,7 +784,19 @@ def test_the_provider_face_reads_writes_and_persists(
         assert reopened.provider_face() == {
             "base_url": "http://127.0.0.1:10/v1",
             "model": "page-model",
+            "api_key_set": True,
         }
+        live = reopened.coordinator.persona_provider()
+        # the saved key wins at send time: the rebuilt provider's source is
+        # the saved-key wrapper over the launch fallback (white-box — the
+        # black-box proof is the value never riding any read face)
+        from elc.host import _SavedKeySource
+
+        assert isinstance(live.secret_source, _SavedKeySource)
+        assert live.secret_source.saved == "sk-page-key"
+        assert live.secret_source.fallback.resolve(
+            SecretRef("OPENAI_API_KEY")
+        ) == "sk-test"
     finally:
         reopened.close()
 

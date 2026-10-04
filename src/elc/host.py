@@ -192,6 +192,7 @@ from elc.persona.types import CharacterPackageRecord
 from elc.planner.candidates import CandidateSupply
 from elc.planner.ledger_store import SqliteLedgerStore
 from elc.platform.db.app_settings import (
+    APP_SETTING_PROVIDER_API_KEY_KEY,
     APP_SETTING_PROVIDER_BASE_URL_KEY,
     APP_SETTING_PROVIDER_MODEL_KEY,
     APP_SETTING_ROLLOUT_STAGE_KEY,
@@ -215,6 +216,7 @@ from elc.platform.types import (
     Result,
     RuntimeEpoch,
     SceneId,
+    SecretRef,
     UserId,
 )
 from elc.relationship.candidates import PatternCandidateProvider
@@ -299,6 +301,24 @@ class _UserConfigPolicySource:
         """The §5.1 read, forwarded verbatim (never a translation)."""
 
         return cast("Result[object]", self._controller.get_teaching_policy(user_id))
+
+
+@dataclass(frozen=True)
+class _SavedKeySource:
+    """The page-saved API key over any launch source (startup-system cut).
+
+    One key, one fallback: a saved key answers every resolve; an absent
+    save never happens here (the caller only wraps when a key is stored).
+    Resolve still happens at send time only — this is a source, not a
+    lookup; the key rides no log and no transcript.
+    """
+
+    saved: str
+    fallback: SecretSource
+
+    def resolve(self, ref: SecretRef) -> str | None:
+        del ref  # The saved key is the whole addressing scheme
+        return self.saved
 
 
 @dataclass(frozen=True)
@@ -474,10 +494,12 @@ class Host:
             self.content_store.close()
         self.db.close()
 
-    def provider_face(self) -> dict[str, str] | None:
-        """The live destination pair, or ``None`` when not an OpenAI-shaped
-        provider (a test double — the settings page then shows no provider
-        section values rather than a fabricated pair)."""
+    def provider_face(self) -> dict[str, object] | None:
+        """The live destination pair plus the key's saved-ness, or ``None``
+        when not an OpenAI-shaped provider (a test double — the settings
+        page then shows no provider section values rather than a
+        fabricated pair). The key's **value** is never in any read face
+        (``api_key_set`` alone); resolve stays a send-time fact."""
 
         live = self.coordinator.persona_provider()
         if not isinstance(live, OpenAICompatibleProvider):
@@ -485,7 +507,32 @@ class Host:
         return {
             "base_url": live.config.base_url,
             "model": live.config.model,
+            "api_key_set": (
+                self.app_settings.get(APP_SETTING_PROVIDER_API_KEY_KEY)
+                is not None
+            ),
         }
+
+    def _provider_secret_source(self) -> SecretSource | None:
+        """The send-time key source for a rebuilt provider: the page-saved
+        key (if any) wins over the launch environment's source."""
+
+        saved = self.app_settings.get(APP_SETTING_PROVIDER_API_KEY_KEY)
+        live = self.coordinator.persona_provider()
+        fallback = (
+            self.secrets
+            if self.secrets is not None
+            else (
+                live.secret_source
+                if isinstance(live, OpenAICompatibleProvider)
+                else None
+            )
+        )
+        if fallback is None:
+            return None
+        if saved is not None:
+            return _SavedKeySource(saved=saved, fallback=fallback)
+        return fallback
 
     def replace_provider(self, base_url: str, model: str) -> str | None:
         """Hot-swap the provider's destination pair (the settings page's
@@ -494,11 +541,12 @@ class Host:
         Answers a human refusal sentence (the caller's 400 body) or ``None``
         on success. The swap builds a **new** provider object over
         ``dataclasses.replace`` of the live config — timeout, secret ref and
-        the insecure-http opt-in ride verbatim; the key source is the same
-        secret source the launch provider was built with (the key itself is
-        never a page-writable fact). A plaintext-http destination off this
-        machine refuses unless the live config carries the explicit opt-in
-        (the launch command's own rule, EXT-P1-02 — the page write grants no
+        the insecure-http opt-in ride verbatim; the key source is the
+        page-saved key when one exists, else the same source the launch
+        provider was built with (the key's value is resolved at send time
+        and never read here). A plaintext-http destination off this machine
+        refuses unless the live config carries the explicit opt-in (the
+        launch command's own rule, EXT-P1-02 — the page write grants no
         second, weaker rule). A non-OpenAI provider (a test double) refuses:
         the swap is a real dial-out face, never a silent no-op. The caller
         persists the pair; this method only moves the live object.
@@ -519,7 +567,12 @@ class Host:
                 "或启动时加 --allow-insecure-http。"
             )
         moved = dc_replace(live.config, base_url=base_url, model=model)
-        source = self.secrets if self.secrets is not None else live.secret_source
+        source = self._provider_secret_source()
+        if source is None:
+            return (
+                "这个进程没有可用的密钥源——先在下面保存一个 API 密钥，"
+                "或用 --api-key-env / --secrets-file 启动。"
+            )
         self.coordinator.replace_persona_provider(
             OpenAICompatibleProvider(moved, source)
         )
@@ -643,6 +696,7 @@ def open_host(
         # here is the destination pair only.
         saved_base_url = app_settings.get(APP_SETTING_PROVIDER_BASE_URL_KEY)
         saved_model = app_settings.get(APP_SETTING_PROVIDER_MODEL_KEY)
+        saved_api_key = app_settings.get(APP_SETTING_PROVIDER_API_KEY_KEY)
         if (
             provider is not None
             and saved_base_url is not None
@@ -653,6 +707,7 @@ def open_host(
             if (
                 launch.base_url != saved_base_url
                 or launch.model != saved_model
+                or saved_api_key is not None
             ):
                 provider = OpenAICompatibleProvider(
                     dc_replace(
@@ -660,9 +715,20 @@ def open_host(
                         base_url=saved_base_url,
                         model=saved_model,
                     ),
-                    secrets
-                    if secrets is not None
-                    else provider.secret_source,
+                    _SavedKeySource(
+                        saved=saved_api_key,
+                        fallback=(
+                            secrets
+                            if secrets is not None
+                            else provider.secret_source
+                        ),
+                    )
+                    if saved_api_key is not None
+                    else (
+                        secrets
+                        if secrets is not None
+                        else provider.secret_source
+                    ),
                 )
         persona = PersonaRuntime(actions=generation, provider=provider)
         lease = ConversationCoordinatorLease()

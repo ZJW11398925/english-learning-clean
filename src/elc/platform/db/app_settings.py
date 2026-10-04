@@ -47,10 +47,15 @@ APP_SETTING_ROLLOUT_STAGE_KEY = "rollout_stage"
 #: page-settable, not launch-command-only). Two keys, both optional —
 #: a saved pair overrides the launch arguments from the next open on (the
 #: page is the user's chosen place for it; single-principal local app).
-#: The API key deliberately has no key here: it stays with the launch
-#: environment's secret source, never in the database.
 APP_SETTING_PROVIDER_BASE_URL_KEY = "provider_base_url"
 APP_SETTING_PROVIDER_MODEL_KEY = "provider_model"
+#: The page-saved API key (startup-system cut, user direction: nothing
+#: provider-shaped is fixed at launch). Stored in the local single-user
+#: app.db only — never returned by any read face (the GET answers
+#: ``api_key_set`` alone), never logged, never in any transcript; the
+#: RA §24.3 surfaces are unchanged. A saved key takes precedence over the
+#: launch environment's source at send time.
+APP_SETTING_PROVIDER_API_KEY_KEY = "provider_api_key"
 
 
 class AppSettingStore:

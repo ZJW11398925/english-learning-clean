@@ -31,6 +31,7 @@ from elc.persona.openai_provider import (
     REASON_CLEARTEXT_HTTP,
     REASON_KEY_ECHO,
     REASON_MISSING_SECRET,
+    REASON_NOT_CONFIGURED,
     REASON_RESPONSE_TOO_LARGE,
     REASON_TIMEOUT,
     REASON_TRANSPORT_ERROR,
@@ -538,3 +539,25 @@ def test_a_2xx_reply_that_echoes_the_key_is_refused_as_a_value() -> None:
     assert SENTINEL_KEY not in (output.error or "")
     # The refusal is about the reply, not the request: the key travelled once.
     assert post.authorization == f"Bearer {SENTINEL_KEY}"
+
+
+def test_the_bare_web_start_answers_not_configured_as_a_value() -> None:
+    """Startup-system cut: web's provider coordinates are page-settable, so a
+    bare launch builds this provider with empty coordinates — every send
+    answers the honest ``not-configured`` value: no request is attempted
+    (fail-closed), no secret is resolved, until the settings page fills the
+    pair in."""
+
+    from elc.platform.secrets import EnvSecretSource
+
+    post = RecordingPost(b"{}")
+    bare = OpenAICompatibleProvider(
+        config(base_url="", model=""),
+        EnvSecretSource(var="OPENAI_API_KEY"),
+        transport=post,
+    )
+    output = bare.call(compiled())
+    assert (output.text, output.error) == (None, REASON_NOT_CONFIGURED)
+    # fail-closed: nothing left the process — no request, no key access
+    # (the transport recorded no call, so no Authorization was ever built)
+    assert post.calls == []

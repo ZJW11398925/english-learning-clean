@@ -59,14 +59,21 @@ PYTHONPATH=src python -m elc observations --app-db ./app.db
 ### 本地 Web 面（W-1，用户已明示同意）：浏览器里的 Study-first dogfood
 
 ```bash
+# 最小启动（启动系统刀：端点/模型/密钥都在设置页「模型与端点」里设，
+# 保存即热生效、重启后仍以页面值为准）：
+PYTHONPATH=src python -m elc web --app-db ./app.db \
+  --content-db ./build/content.db --port 8760
+# 浏览器打开 http://127.0.0.1:8760 → 抽屉 · 设置 → 模型与端点
+
+# 也可以照旧在启动命令里给全套（chat 仍要求全套；web 全可选）：
 PYTHONPATH=src python -m elc web --app-db ./app.db \
   --base-url https://api.example.com/v1 --model gpt-4o-mini \
   --api-key-env OPENAI_API_KEY \
   --content-db ./build/content.db --rollout-stage Study-first \
   --port 8760
-# 浏览器打开 http://127.0.0.1:8760
 ```
 
+- **web 的启动参数只剩 `--app-db` 必填**：端点、模型、API 密钥都是页面可设面（保存即热换——下一封信就走新设置；密钥只存本机 app.db，任何读数不回显，只报「已保存/未保存」）；裸启动时发信答诚实的 `not-configured` 值，直到页面把三件填齐。**教学档位同理**：`--rollout-stage` 可选，设置页「教学模式」可热切换（带 `--content-db` 即可，无需重启）。
 - 参数 = chat 全套 + `--port`（缺省 8760）；**只绑 127.0.0.1、无鉴权**——单用户单机 dogfood 面，不是服务，别暴露到本机之外。
 - 页面：对话区（逐轮 POST `/api/turn`）+ 本轮教学时刻卡（按 turn 血缘查，非「最新行」；等待回应的时刻带**「回应」输入框**（POST `/api/teaching_reply` `{"control":"attempt","text":"…"}`，经 coordinator 既有回应入口进 §4 评估链判分，答对结课释锁、答错再给一次）与**「先搁着」按钮**（`{"control":"skip"}` 同入口释放时刻锁））+ 观察读数按钮（与 `observations` 命令同一读数核心，数字同源）+ 打开页面即拉最近 50 轮恢复对话。
 - turn 级失败是**运行事实**（HTTP 200 + failure 字段）；只有坏请求体才是 400。

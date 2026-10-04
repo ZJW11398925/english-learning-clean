@@ -83,6 +83,7 @@ __all__ = [
     "REASON_TRANSPORT_ERROR",
     "http_reason",
     "insecure_http_destination",
+    "REASON_NOT_CONFIGURED",
 ]
 
 #: The failure vocabulary: short, stable, free of any response content.
@@ -99,6 +100,11 @@ REASON_KEY_ECHO = "key-echo"
 REASON_CLEARTEXT_HTTP = "cleartext-http"
 #: A single reply longer than :data:`MAX_PROVIDER_RESPONSE_BYTES` (EXT-P1-05).
 REASON_RESPONSE_TOO_LARGE = "response-too-large"
+#: The bare web start (startup-system cut): the endpoint/model pair is
+#: page-settable, so a launch without coordinates builds this provider and
+#: every send answers this value — fail-closed, no request is attempted,
+#: no secret is resolved — until the settings page fills the pair in.
+REASON_NOT_CONFIGURED = "not-configured"
 
 #: The most bytes of one reply this adapter will hold (4 MiB): a chat
 #: completion, not a file transfer.
@@ -260,6 +266,12 @@ class OpenAICompatibleProvider:
         is refused as a value too (:data:`REASON_RESPONSE_TOO_LARGE`).
         """
 
+        if not self._config.base_url or not self._config.model:
+            # The bare web start's honest refusal: no coordinates, no
+            # request, no secret access — the settings page fills the pair.
+            return ProviderOutput(
+                text=None, error=REASON_NOT_CONFIGURED
+            )
         if not self._config.allow_insecure_http and insecure_http_destination(
             self._config.base_url
         ):

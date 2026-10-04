@@ -1335,14 +1335,47 @@ def test_the_web_envelope_is_shape_equal_to_the_cli_envelope() -> None:
     )
 
 
-def test_the_web_subcommand_refuses_a_missing_base_url(
+def test_the_web_subcommand_needs_only_the_app_db(
     tmp_path: Path,
 ) -> None:
+    """Startup-system cut (user direction): web's provider coordinates are
+    page-settable, so a bare ``--app-db`` start is legal — the only usage
+    error left is the missing app.db itself (never created by a refusal)."""
+
     app_db = tmp_path / "app.db"
-    code, _, err = run_cli(["web", "--app-db", str(app_db)])
+    code, _, err = run_cli(["web"])
     assert code == 2
-    assert "--app-db" in err and "required" in err
+    assert "--app-db" in err and "settings page" in err
     assert not app_db.exists()
+
+
+def test_the_bare_web_start_passes_the_strict_pair_check(
+    tmp_path: Path,
+) -> None:
+    """The bare start (no --base-url / --model / key source) is not the chat
+    pair's exit 2: it walks past validation to the port probe — a busy port
+    answers the exit-1 sentence, the proof the pair check never fired."""
+
+    import socket
+
+    listener = socket.socket()
+    listener.bind(("127.0.0.1", 0))
+    listener.listen(1)
+    port = listener.getsockname()[1]
+    try:
+        code, _, err = run_cli(
+            [
+                "web",
+                "--app-db",
+                str(tmp_path / "app.db"),
+                "--port",
+                str(port),
+            ]
+        )
+    finally:
+        listener.close()
+    assert code == 1
+    assert "already serving" in err
 
 
 class _StubServeHost:
@@ -1501,12 +1534,13 @@ def test_the_cli_web_branch_answers_web_open_error_with_a_sentence(
 
 
 def test_the_web_entry_delegates_to_the_same_command(tmp_path: Path) -> None:
-    app_db = tmp_path / "app.db"
+    # 启动系统刀随迁：裸 --app-db 已合法（provider 三件页面可设）——
+    # 委托钉改用唯一的用法错（缺 app.db），仍是 2 + 人话 + 零建库
     err = io.StringIO()
-    code = web_main(["--app-db", str(app_db)], stderr=err)
+    code = web_main([], stderr=err)
     assert code == 2
-    assert "required" in err.getvalue()
-    assert not app_db.exists()
+    assert "--app-db" in err.getvalue()
+    assert not (tmp_path / "app.db").exists()
 
 
 def test_a_malformed_body_is_a_400_that_commits_no_turn(

@@ -190,6 +190,13 @@ _CHAT_REQUIRED_HINT = (
     " (the gate command needs none of them)"
 )
 
+_WEB_REQUIRED_HINT = (
+    "elc web: --app-db is the only required argument — the endpoint, the"
+    " model and the API key are set on the settings page (模型与端点),"
+    " hot-swapped and persisted there; a bare start answers sends with the"
+    " honest not-configured value until the page fills them in"
+)
+
 _GATE_LEG_NOTE = (
     "provenance leg live: the automatic CURRENT_USER_ERROR row also requires"
     " EXECUTABLY_VERIFIED provenance (its blocked count is in the row above)"
@@ -367,23 +374,52 @@ def main(
         return _seed(args, stdout=out, stderr=err)
 
     # chat's and web's required arguments are validated here rather than by
-    # argparse so the gate command can share one flat parser without them (a
-    # missing --base-url stays a human sentence and a 2, only now from this
-    # check). The web command (W-1) reuses this whole validation path — and
-    # the provider construction and the host assembly below — verbatim.
-    if args.app_db is None or args.base_url is None or args.model is None:
-        print(_CHAT_REQUIRED_HINT, file=err)
+    # argparse so the gate command can share one flat parser without them.
+    # The startup-system cut (user direction) splits the two faces: **web's
+    # provider coordinates are all optional** — the settings page is the
+    # setting place (endpoint / model / API key are page-settable,
+    # hot-swapped and persisted; a bare `elc web --app-db` starts with the
+    # provider unconfigured and answers every send with the honest
+    # ``not-configured`` value until the page fills it in). chat keeps the
+    # strict launch pair (a one-shot REPL that sends immediately wants a
+    # live provider at launch).
+    if args.app_db is None:
+        if args.command == "web":
+            print(_WEB_REQUIRED_HINT, file=err)
+        else:
+            print(_CHAT_REQUIRED_HINT, file=err)
         return 2
     app_db: str = args.app_db
-    base_url: str = args.base_url
-    model: str = args.model
-    if (args.api_key_env is None) == (args.secrets_file is None):
+    if args.command != "web" and (
+        args.base_url is None or args.model is None
+    ):
+        print(_CHAT_REQUIRED_HINT, file=err)
+        return 2
+    base_url: str = args.base_url if args.base_url is not None else ""
+    model: str = args.model if args.model is not None else ""
+    # the key-source pair: exactly one names a launch source; none given is
+    # legal only for web (the default env variable answers until the page
+    # saves its own key) — chat keeps the exactly-one rule.
+    explicit_source = (args.api_key_env is not None) != (
+        args.secrets_file is not None
+    )
+    if explicit_source:
+        secrets = _secret_source(args)
+    elif args.command == "web":
+        # the conventional variable as the bare fallback — resolve-at-send
+        # stays honest (an unset variable answers None, the provider's
+        # missing-secret value)
+        secrets = EnvSecretSource(var="OPENAI_API_KEY")
+    else:
         print(_KEY_SOURCE_HINT, file=err)
         return 2
-    if not args.allow_insecure_http and insecure_http_destination(base_url):
+    if base_url and not args.allow_insecure_http and insecure_http_destination(
+        base_url
+    ):
         # Before any host is opened and before any key is resolved: the rule the
         # adapter answers as a ``cleartext-http`` value, said as a sentence that
-        # names the way out (EXT-P1-02).
+        # names the way out (EXT-P1-02). An empty base_url (the bare web
+        # start) skips the check — there is no destination to judge.
         print(_INSECURE_HTTP_HINT, file=err)
         return 2
     rollout_stage: RolloutStage | None = None
@@ -395,8 +431,11 @@ def main(
                 _ROLLOUT_STAGE_HINT.format(word=args.rollout_stage), file=err
             )
             return 2
-    secrets = _secret_source(args)
     if provider is None:
+        # One construction site: the bare web start flows through with empty
+        # coordinates — its sends answer the honest ``not-configured`` value
+        # until the settings page fills the pair in (launch defaults for
+        # timeout / secret ref / the insecure opt-in ride verbatim).
         provider = OpenAICompatibleProvider(
             OpenAICompatibleConfig(
                 base_url=base_url,
