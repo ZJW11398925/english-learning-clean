@@ -241,7 +241,10 @@ def test_the_prep1_tier_refuses_the_mode_write_honestly(
         )
         assert status == 200, answer
         assert answer["accepted"] is False
-        assert "没装配自动教学腿" in answer["error"]
+        # 启动系统刀随迁：拒句可行动化——指名 prep-1 层缺的就是
+        # --content-db，带上重启即可页面热切
+        assert "--content-db" in answer["error"]
+        assert "热生效" in answer["error"]
     with web_stack(app_db) as stack:
         _, read = stack.get_json("/api/settings")
         assert read["rollout_stage"] is None
