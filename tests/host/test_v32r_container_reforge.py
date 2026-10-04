@@ -304,19 +304,21 @@ def test_the_window_upgrade_fills_then_measures_then_transitions() -> None:
 
 
 def test_the_pad_body_is_the_main_entry_and_the_link_is_touch_only() -> None:
-    """翻看主入口 = 点沓本体与滚到底（任务书主入口定谳）：容器纸面
-    （面板留白/沓叠背景——信封、动作行、底行各有己任）的点击升级成
-    窗口；滚底升级臂原样保留；「翻开全沓 ↓」文字链只作触屏辅入口
-    （JS 装配原样——桌面档 CSS display:none，hover:none 档现位），
-    不得成为桌面的第一入口形态。"""
+    """翻看主入口 = 点沓本体（容器纸面——信封、动作行、底行各有己任）
+    的点击升级成窗口；「翻开全沓 ↓」文字链只作触屏辅入口（JS 装配
+    原样——桌面档 CSS display:none，hover:none 档现位），不得成为桌面
+    的第一入口形态。**滚底自动升级臂已退役**（用户第三轮否决：滚到底
+    自动跳转展开全沓非常不合理——升级全沓必须显式，无一自动跳转）。"""
 
     app = _text("app.js")
     assert 'panel.addEventListener("click", (event) => {\n' \
         '    if (envselFace !== "deck") return;\n' \
         "    if (event.target !== panel && event.target !== stack) return;\n" \
         '    setEnvelopeFace("window");\n  });' in app
-    # the scroll-to-bottom upgrade rides on (一次守卫，既有)
-    assert 'stack.addEventListener("scroll", () => {' in app
+    # the scroll-to-bottom auto-upgrade is retired (user veto #3): no
+    # scroll listener may jump the deck into the window face
+    assert "stack.addEventListener(\"scroll\"" not in app
+    assert "滚到底自动跳转展开全沓非常" in app   # the retirement note
     assert 'face === "window" ? "回扇叠 ↑" : "翻开全沓 ↓";' in app
     screens = _text("screens.css")
     assert ".env-browse { display: none; }" in screens

@@ -558,7 +558,10 @@ def test_the_large_container_exit_never_scales() -> None:
     assert "@keyframes paper-retract {" in components
     retract = components[components.index("@keyframes paper-retract {"):
                          components.index("@keyframes page-turn")]
-    assert "translateY(-8px)" in retract
+    # 用户第三轮否决定形：+24px 向下沉落（可感知、与沓锚位同向）——
+    # veto-R 首版的 -8px 微移不可感知且方向相反，回退即红。
+    assert "translateY(24px)" in retract
+    assert "translateY(-8px)" not in retract
     assert "scale" not in retract
     # the small cards keep the fold (the narrowed consumer face)
     assert ".word-card--out { animation: paper-fold var(--dur-panel-out)" \

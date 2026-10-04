@@ -4084,8 +4084,10 @@ window.addEventListener("DOMContentLoaded", () => {
 // v3-2R 定谳（用户判词整刀否定上一刀的降级实现，2026-10-02）：
 //   · 翻看零跳变——窗口升级 = 内容先装满（隐藏层里异步灌完）→ 再量高 →
 //     一次拉开；上一刀量高发生在页卡内容填入前，用户看到「长到一半→
-//     跳到全高」。主入口 = 点沓本体（信封/动作/底行以外的容器纸面）与
-//     滚到底；「翻开全沓 ↓」文字链只作触屏辅入口（hover:none 档才现位）。
+//     跳到全高」。主入口 = 点沓本体（信封/动作/底行以外的容器纸面）；
+//     「翻开全沓 ↓」文字链只作触屏辅入口（hover:none 档才现位）。
+//     （滚到底自动升级臂曾列主入口——用户第三轮否决退役，全部入口
+//     显式化。）
 //   · 起笔 = 写信，不是建卡——新建角色的表单归「完整编辑」（编辑台既
 //     有），不得占用「起笔」语义；空白封只剩「完整编辑」一个入口。
 //   · 三条硬伤收编：沓开时底坞淡化置灰且不可点（disabled 形态复用，
@@ -4283,10 +4285,10 @@ async function openEnvelopeSelector() {
   panel.appendChild(composeFace);
   const foot = document.createElement("p");
   foot.className = "envsel-foot";
-  // 全览窗口的触屏辅入口（v3-2R：主入口 = 点沓本体与滚到底——本链在
-  // hover:none 档才现位，桌面档 CSS 不显示）：容器升级态的静默链
-  // 「翻开全沓 ↓」（触屏无 Esc 的回程链「回扇叠 ↑」在窗口态现位）；
-  // 升级是容器本体的延展过渡，不是子页面替换。
+  // 全览窗口的触屏辅入口（主入口 = 点沓本体——滚底自动升级已随用户
+  // 第三轮否决退役；本链在 hover:none 档才现位，桌面档 CSS 不显示）：
+  // 容器升级态的静默链「翻开全沓 ↓」（触屏无 Esc 的回程链「回扇叠 ↑」
+  // 在窗口态现位）；升级是容器本体的延展过渡，不是子页面替换。
   const browse = document.createElement("button");
   browse.type = "button";
   browse.className = "btn btn--pencil env-browse";
@@ -4326,17 +4328,10 @@ async function openEnvelopeSelector() {
     if (event.target !== panel && event.target !== stack) return;
     setEnvelopeFace("window");
   });
-  // 扇叠滚到沓底还往下滚 = 翻开全沓（触屏的主入口——静默链是键盘/
-  // 指针的兜底）。一次守卫：回扇叠时 scrollTop 归零重新武装。
-  stack.addEventListener("scroll", () => {
-    if (envselFace !== "deck") return;
-    const atEnd = stack.scrollTop + stack.clientHeight >=
-      stack.scrollHeight - 2;
-    if (atEnd && (charactersCache || {}).characters &&
-        charactersCache.characters.length > 1) {
-      setEnvelopeFace("window");
-    }
-  });
+  // 滚底自动升级退役（用户第三轮否决：滚到底自动跳转展开全沓非常
+  // 不合理——v3-2R 曾以「触屏主入口」名义落此臂，现删；翻开全沓的
+  // 入口 = 点沓本体纸面（上方 click 臂）与「翻开全沓 ↓」文字链，全部
+  // 显式，无一自动跳转）。
   await renderEnvelopeStack(stack);
   buildEnvelopeBrowser(browser);
 }
@@ -4525,7 +4520,8 @@ function renderEnvelopePageInto(page) {
 // 后」的实高；上一刀先量高（量到 loading 横幅的矮高）再异步填内容，
 // 用户看到「长到一半→跳到全高」的 snap 伪影。装满期间过渡中的二次点
 // 名（连点/连滚）由 envselFacePending 忽略；装期间沓被收则整臂弃权。
-// 回扇叠：scrollTop 归零（重武装滚底升级）。编辑/写信两态静默链让位
+// 回扇叠：scrollTop 归零（回沓首——滚底自动升级已退役，归零只是回到
+// 沓首的阅读位，不再「重武装」任何触发）。编辑/写信两态静默链让位
 // （两面各有自己的回沓行）；「收起」是容器级的——四态常在，从任何
 // 形态一记收沓。
 async function setEnvelopeFace(face) {

@@ -1278,11 +1278,15 @@ button:focus-visible, input:focus-visible {
 }
 /* veto-R 新注册一枚（⑨-5 名册同刀改行，全库十三枚）：paper-retract
    沓收拢——大容器退场的方向性位移 + 淡化，**无缩放**（法则：大容器
-   退场禁整体缩放，方向性位移+淡化——沿原路向下收拢回沓锚位的方向，
-   即上收 8px；opacity 仍走 ink-wash reverse 恒慢）。 */
+   退场禁整体缩放，方向性位移+淡化）。用户第三轮否决定形（v3-aR 族
+   小刀）：veto-R 首版只有 -8px 微移——全屏级面板上不可感知（体感
+   「没改」）且方向与「收拢回沓锚位」相反（沓在案头下方，收拢向下）。
+   现值 +24px 向下沉落：距离可感知、方向与沓锚位一致（触屏贴底
+   sheet 同向成立——向下沉出视口缘）；opacity 仍走 ink-wash reverse
+   恒慢（墨后散）。 */
 @keyframes paper-retract {
   from { transform: none; }
-  to { transform: translateY(-8px); }
+  to { transform: translateY(24px); }
 }
 @keyframes page-turn {
   from { transform: translateX(var(--pt-x, 14px))

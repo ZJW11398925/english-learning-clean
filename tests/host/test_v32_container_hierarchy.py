@@ -293,13 +293,12 @@ def test_the_window_is_the_container_upgraded_not_a_subpage() -> None:
     assert 'browser.hidden = face !== "window";' in body
     assert 'editorFace.hidden = face !== "editor";' in body
     assert 'face === "window" ? "回扇叠 ↑" : "翻开全沓 ↓";' in body
-    # the scroll-to-end upgrade with its reset-on-return re-arm
-    assert "stack.addEventListener(\"scroll\", () => {" in app
-    scroll_arm = app[app.index("stack.addEventListener(\"scroll\", () => {"):]
-    scroll_arm = scroll_arm[: scroll_arm.index("});")]
-    assert 'if (envselFace !== "deck") return;' in scroll_arm
-    assert "stack.scrollTop + stack.clientHeight >=" in scroll_arm
-    assert 'setEnvelopeFace("window");' in scroll_arm
+    # the scroll-to-end auto-upgrade is retired (user veto #3, 沓面小刀):
+    # the deck never jumps to the window face on its own — the explicit
+    # entries are the pad-body click and the touch-only silent link.
+    # The scrollTop reset on returning to the deck stays (回沓首阅读位).
+    assert "stack.addEventListener(\"scroll\"" not in app
+    assert "滚到底自动跳转展开全沓非常" in app   # the retirement note
     assert "if (face === \"deck\") {\n    stack.scrollTop = 0;" in app
     # the retired pattern: the 翻看/回沓 two-state button pair is gone
     assert '"翻看"' not in app
