@@ -1,8 +1,8 @@
-# 活世界 M0 · 工程对齐与建设方案
+# 活世界 M0.1 · 工程对齐与建设方案（架构勘误版）
 
-> 依据：`living-world-spec.md` **v2.1**（外审终裁 PASS，2026-10-05）。
+> 依据：`living-world-spec.md` **v2.1**（外审终裁 PASS）+ **M0 架构勘误（外审 NEEDS ONE ARCHITECTURE CORRECTION，2026-10-05，四项全验证成立）**。
 > 性质：M0 交付物——spec 到工程的映射、架构决策、刀序与依赖。**每把刀开工时仍走完整开工三件（DEC/VAL/TASK）**，本文是母蓝图。
-> 工程现状基线：master `32a2bc2`，全量 5158/0/0，迁移 head 0020/v20，mypy 173。
+> 工程现状基线：master 本地全量 5158/0/0（**CI 红灯见 §6**）；迁移 head 0020/v20；mypy **174**（M0 原文 173 系账面错误）。
 
 ---
 
@@ -34,17 +34,23 @@
 
 **AD-2 编排确定性、生成模型化**：七步编排中「事件判定/通信编排/时刻判定」是**确定性代码**（规则+权重+池+种子随机）；模型只做**文本生成**（事件叙述/回信内容/摘要压缩），全部经现役 provider 面与 fail-即-值纪律。与仓内 planner（确定性）/persona（模型）分层精神一致。
 
-**AD-3 世界状态投影住在 world_lore 域**：事件史的「当前事实」投影直接落 `world_lore_fact`（新 source 标记区分内置事实与事件沉降事实）；supersede 链复用。**不新建状态表。**
+**AD-3R（M0.1 撤销原 AD-3）静态 lore ≠ 世界状态，分表**：外审核验成立——`world_lore_fact.status` 是 **P-INV-013 审批生命周期**（ACTIVE=canonical 可见 / PENDING=未信提案），**无 SUPERSEDED**；且表**无 world_id**（`scope='world'` 的语义是「common to every conversation」——多世界并存时 Manchester 的对话能读到 Berrymoor 的事实，串世界）。故：
+- `world_lore_fact` 保持其本职：**静态 canonical lore**（「这个世界**是**什么」——Berrymoor 是港口小镇），世界包携带、按世界实例隔离的问题由 W-1-0 的绑定解决（lore 随世界包走）；
+- **新建 `world_state_fact`**（世界状态投影的家）：`world_id / source_event_id / canonical_key / statement / status(CURRENT→SUPERSEDED)`——「这个世界**现在怎样**」（Alder & Son 的屋顶目前损坏）。事件→状态沉降在 W-1-1 落最小面（见刀序修正）。
+
+**AD-5（M0.1 新增）身份绑定三表**：`world`（世界实例）/ `world_actor`（world_id + persona_id——「这个世界里的她」：角色模板身份 ≠ 世界内实例，模板分叉出的两个 Berrymoor 各有一个 Nell 实例）/ `world_conversation`（world_id + world_actor_id + conversation_id——现役 conversation 管线的纯外缝绑定，AD-1 保守叠加的具体形状）。W-1-0 一次钉死三表，否则 W-1-3 收件箱与 W-3-1 多世界必然回头改主键。
+
+**AD-6（M0.1 新增）World Run 必须 durable**：checkpoint 跨重启恢复是架构原则非实现细节——`world_run`（run_id / world_id / trigger_turn_id / seed / status / checkpoint_kind / cursor / state_version），与现役 TurnRecord/epoch/state_version 纪律同构；用户点「继续」不得重新掷骰。W-1-2 落表。
 
 **AD-4 域划分**：`elc/world/`（世界聚合：world/event/storyline/store）+ `elc/world/engine/`（运转编排/时刻状态机/揭示队列/通信编排）+ `elc/world/affordance.py`（供给域）+ `worlds/`（内容包，与 content_src 平级）；意图天线落 `elc/teaching/`（教学域内新面）；记忆温度投影落 world 域（world_event 上的投影函数，非独立存储域）。
 
-## 3. 刀序（M1–M4 工程化，14 刀）
+## 3. 刀序（M1–M4 工程化，17 刀——M0 原文「14」系账面错误，M0.1 对账）
 
 > 依赖：→ 线性依赖；‖ 可并行。每刀验收形态同现役纪律（VAL/TASK/独立评审/处置/章）。
 
 **M1 最小活世界——「她活起来了」**
-- **W-1-0 世界域骨架**：迁移 0021（world 表）+ `elc/world/` 域 + host 装配 + census 行 + conftest 随迁族。〔工程面刀，量级：mc-0 同型〕
-- **W-1-1 事件树**：world_event 表 + 追加面 + 编年史读面 + 跨进程确定性。→ W-1-0
+- **W-1-0 世界域骨架**：迁移 0021（**world + world_actor + world_conversation 三表一次钉死**，AD-5）+ `elc/world/` 域 + host 装配 + census 行 + conftest 随迁族。〔工程面刀，量级：mc-0 同型〕
+- **W-1-1 事件树与最小状态投影**：world_event 表（append-only）+ 编年史读面 + **world_state_fact 最小投影（M0.1 前移自 W-4-1）**——预制事件显式携带 state effects（storm → roof=DAMAGED），不待智能派生；CURRENT→SUPERSEDED 基本链。→ W-1-0
 - **W-1-2 运转引擎 v1**：七步编排骨架（确定性；RESPONSE terminal + NOTICE checkpoint 双出口；事件从预制池条件选择；种子随机可重放）+ 时刻状态机。→ W-1-1
 - **W-1-3 揭示与节奏**：揭示队列 + 通信编排 v1（间隔规则）+ 世界收件箱聚合读面（AD-1）。→ W-1-2
 - **W-1-4 世界包 v1（Berrymoor）**：`worlds/` 格式 + Berrymoor 包（设定/阵容 Nell/首批事件池/供给声明）+ host seed 幂等。→ W-1-0 ‖ W-1-2
@@ -63,7 +69,7 @@
 - **W-3-4 联动与互联**：联动事件 + 关系预设/演化 + 传闻视角 + 传话玩法。→ W-2-1
 
 **M4 记忆深化与打磨——「世界有了自己的生命」**
-- **W-4-1 状态投影全自动**：事件→事实沉降/派生 + supersede 链 + 与内置事实共存。→ W-2-3
+- **W-4-1 状态投影深化**（M0.1 收窄：最小面已前移 W-1-1）：自动事件→事实派生（非显式 effects）+ 复杂 supersede 推导 + 与 lore 共存的完整语义。→ W-2-3
 - **W-4-2 标定面**：密度/时刻配比/预算的 calibratable 参数 + 用户实测工具（观察仪表扩展）。→ W-1-2
 - **W-4-3 可见性与叙事外衣**：四档梯度渲染 + 画龙点睛阶段的外衣形态。→ W-1-3
 
@@ -75,7 +81,34 @@
 
 ## 5. 风险与开放工程题
 
-- **量级诚实**：14 刀 ≈ 一整个 Phase 的量级（对照 Phase 8 五刀/Phase 11 十余刀）；建议按 M 台阶分相位入册母计划。
+- **量级诚实**：17 刀 ≈ 一整个 Phase 的量级（对照 Phase 8 五刀/Phase 11 十余刀）；建议按 M 台阶分相位入册母计划。
 - **模型调用面扩展**：意图判定器与摘要压缩是新增模型用途——出网纪律（单出网点）与 fail-即-值沿用；判定端点的成本与延迟需在 W-2-4 评估。
 - **确定性纪律延续**：编排可重放（种子随机）、内容包构建确定性、跨进程字节钉——全刀沿用现役四查/VAL/验收链纪律。
 - **开放题**（各刀裁决时定）：事件池的持久化与热更、世界包版本化、揭示队列与多端打开的幂等、供给域聚类首轮映射的落点（content 侧 or worlds 侧）。
+
+---
+
+## 6. CI digest 对账（M0.1 新增，外审核验成立）
+
+**事实（总控亲验）**：CI 连续红灯（`gh run list` 三连 failure）；失败测试 `test_the_default_build_stays_zero_ev_and_byte_identical_with_the_parent`——provenance 断言（100 实体/EV 0/EDITOR 46/AUTHOR 54）**全过**，唯 sha256 不等（CI `3da60bc…` vs 钉 `90932ab…`）；本地同提交全量两跑 5158/0/0。工作树与 git blob 双纯 LF（CRLF 排除）；CI 与本地同为 Python 3.13。
+
+**根因（高置信）**：**sqlite3 库版本差异**——本地 sqlite 3.45.3（Windows），CI 为 Ubuntu 系统库（不同 minor）。SQLite 文件**字节不跨库版本稳定**（页内结构/空闲页细节随库版本变），同源同序插入产出不同字节。内容逻辑逐项相同（provenance 全绿即证）。
+
+**M0 原判错误自认**：M0 将 CI 预警记为「本地不复现、疑外审环境差异」——**错误**：本地当然不复现（同库版本），红灯在跨环境才显。且队列③处置刀起 CI 即红而总控只跑本地未查 CI——**验收纪律漏洞**：处置刀后应核 CI。现已补纪律：**凡重导 digest 钉的刀，收口必须核 CI 绿**。
+
+**修复方向（对账刀，W-1-0 前置，待铸）**：字节钉改为**语义 digest**——确定性行序导出 + 规范序列化的内容哈希（与库版本无关，跨环境稳定）；保留内容漂移检测力（任何内容变动仍红）。附 CI 诊断输出（python/sqlite 版本打 into 日志）。
+
+## 7. mypy 基线对账
+
+M0 原文 173 系账面错误：本地与 CI 均 **174**（主线-3 合并后即 174，总控台账未随迁）。
+
+## 8. M0.1 变更总目
+
+| # | 项 | 性质 |
+|---|---|---|
+| 1 | AD-3R：lore ≠ state 分表（world_state_fact 新建；world_lore 保持静态本职） | 撤销原裁决（外审验证成立） |
+| 2 | AD-5：world / world_actor / world_conversation 三表身份绑定（模板≠实例） | 新增 |
+| 3 | AD-6：World Run durable（跨重启恢复/seed/游标/state_version） | 新增架构原则 |
+| 4 | 刀序：最小状态投影前移 W-1-1；W-4-1 收窄为深化；17 刀对账 | 修正 |
+| 5 | CI digest 根因（sqlite 库版本）+ 语义 digest 修复方向 + 验收纪律补（重导钉必核 CI） | 基线修正 + 纪律 |
+| 6 | mypy 174 对账 | 账面修正 |
