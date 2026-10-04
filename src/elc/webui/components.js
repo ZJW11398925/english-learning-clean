@@ -1290,6 +1290,14 @@ export function selectField(opts) {
       word.className = "select-word";
       word.textContent = String(item.label);
       optionEl.appendChild(word);
+      // 双列层级（用户否决「选项层级不合理」）：中文档名主列，枚举原词
+      // 右对齐弱墨辅列——不再挤在「中文 + 空格 + 原文」一行里。
+      if (item.sub) {
+        const sub = document.createElement("span");
+        sub.className = "select-sub";
+        sub.textContent = String(item.sub);
+        optionEl.appendChild(sub);
+      }
       optionEl.addEventListener("click", () => {
         pick(i);
       });
@@ -1314,12 +1322,50 @@ export function selectField(opts) {
     }
   }
 
+  // 开单浮层化（用户否决「选项被遮挡」）：开单时把列表**过继到 body +
+  // position: fixed 对齐锚钮**——绝对定位的原形态会被任何滚动祖先
+  //（抽屉/案头的 overflow 裁切框）拦腰截断，fixed + body 挂载逃出一切
+  // 裁切与 transform 祖先；下方空间不够且上方更宽裕时向上翻。关单归位
+  //（回到锚容器原槽）。任何祖先滚动/窗口缩放即关——定位不悬空跟随。
+  function floatList() {
+    const rect = button.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom - 12;
+    const spaceAbove = rect.top - 12;
+    const cap = Math.max(112, Math.min(240, Math.max(spaceBelow, spaceAbove)));
+    list.classList.add("select-list--float");
+    document.body.appendChild(list);
+    list.style.left = Math.round(rect.left) + "px";
+    list.style.width = Math.round(rect.width) + "px";
+    list.style.maxHeight = cap + "px";
+    list.style.top = Math.round(rect.bottom + 2) + "px";
+    const h = Math.min(list.scrollHeight + 2, cap);
+    if (h > spaceBelow && spaceAbove > spaceBelow) {
+      list.style.top = Math.max(8, Math.round(rect.top - h - 2)) + "px";
+    }
+  }
+
+  function unfloatList() {
+    list.classList.remove("select-list--float");
+    list.style.left = "";
+    list.style.top = "";
+    list.style.width = "";
+    list.style.maxHeight = "";
+    root.appendChild(list);   // 归位（锚容器内、按钮之后——非浮层时的原槽）
+  }
+
+  function onAnyScroll(event) {
+    // 列表自身的滚动（overscroll contain）不算——只关「锚动了的」场景
+    if (event.target === list) return;
+    close();
+  }
+
   function openList() {
     if (open) return;
     open = true;
     openSelects.add(api);
     root.classList.add("select--open");
     list.hidden = false;
+    floatList();
     button.setAttribute("aria-expanded", "true");
     const selected = items.findIndex((entry) => entry.value === value);
     activeIndex = selected >= 0 ? selected : (items.length ? 0 : -1);
@@ -1328,6 +1374,8 @@ export function selectField(opts) {
       list.children[activeIndex].scrollIntoView({ block: "nearest" });
     }
     document.addEventListener("pointerdown", onOutside, true);
+    window.addEventListener("resize", close);
+    window.addEventListener("scroll", onAnyScroll, true);
   }
 
   function close() {
@@ -1335,15 +1383,20 @@ export function selectField(opts) {
     open = false;
     openSelects.delete(api);
     root.classList.remove("select--open");
+    unfloatList();
     list.hidden = true;
     button.setAttribute("aria-expanded", "false");
     activeIndex = -1;
     syncMarks();
     document.removeEventListener("pointerdown", onOutside, true);
+    window.removeEventListener("resize", close);
+    window.removeEventListener("scroll", onAnyScroll, true);
   }
 
   function onOutside(event) {
-    if (!root.contains(event.target)) close();
+    if (!root.contains(event.target) && !list.contains(event.target)) {
+      close();
+    }
   }
 
   button.addEventListener("click", () => {

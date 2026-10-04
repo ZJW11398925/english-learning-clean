@@ -70,10 +70,10 @@ import {
   fetchDelete,
   fetchGoals,
   fetchSaveGoals,
-  fetchSaveFrequency,
   fetchSettings,
   fetchSaveTeachingPolicy,
   fetchSaveDisclosure,
+  fetchSaveProvider,
 } from "./api.js";
 
 // ── v2 品牌名单点常量（简报 §1；改名 = 改这一处）──────────────────
@@ -1452,7 +1452,7 @@ async function loadDelPartner() {
 // 词表取自服务端 taxonomy，客户端零拷贝。 ─────────────────────────────
 
 const GOAL_PANEL_IDS = ["goal-weights", "goal-assessment",
-                        "goal-register", "goal-frequency"];
+                        "goal-register"];
 
 let goalData = null;   // the last GET /api/goals payload
 let goalEditor = null; // the working copy the save sends
@@ -1470,12 +1470,6 @@ function goalWordSet(faceName) {
     if (face.name === faceName) return face.words || [];
   }
   return [];
-}
-
-function goalFrequencyWords() {
-  return (goalData && goalData.taxonomy &&
-          goalData.taxonomy.teaching_frequency &&
-          goalData.taxonomy.teaching_frequency.words) || [];
 }
 
 // the result box: one human line, optionally with an action (the conflict's
@@ -1515,13 +1509,14 @@ function renderGoalEditor() {
   editor.goals.forEach((goal, index) => {
     const edge = document.createElement("div");
     edge.className = "goaledge";
-    // fr-A #27 墨选：原生 <select> 退役——定制下拉的选项文字同样只能是
-    // 纯文本一行（中英并置退化为「中文 + 空格 + 原文」，同原生期的读法）。
+    // fr-A #27 墨选：原生 <select> 退役——选项文字纯文本两列（中文主列
+    // + 原词弱墨辅列 sub，不再「中文 + 空格 + 原文」挤一行）。
     const select = selectField({
       name: "目标 " + (index + 1) + " · 技能",
       options: words.map((word) => ({
         value: word,
-        label: MODALITY_CN[word] ? MODALITY_CN[word] + " " + word : word,
+        label: MODALITY_CN[word] || word,
+        sub: MODALITY_CN[word] ? word : null,
       })),
       value: goal.goal_modality,
       onChange: (next) => { goal.goal_modality = next; },
@@ -1669,88 +1664,10 @@ async function savePortfolio(button) {
   }
 }
 
-function renderGoalFrequency() {
-  const box = goalBox("goal-frequency");
-  box.textContent = "";
-  if (!goalEditor) return;
-  const policy = goalData && goalData.policy;
-  if (policy) {
-    // 「现在：适度（BALANCED）」——版本号移出常显（⑧ 8.2.4：版本只出现
-    // 在保存回执与冲突句）
-    const line = document.createElement("div");
-    line.className = "kv";
-    const b = document.createElement("b");
-    b.textContent = "现在：";
-    line.appendChild(b);
-    const word = policy.teaching_frequency;
-    if (FREQUENCY_CN[word]) {
-      line.appendChild(document.createTextNode(FREQUENCY_CN[word] + "（"));
-      line.appendChild(rawTag(word));
-      line.appendChild(document.createTextNode("）"));
-    } else {
-      line.appendChild(rawTag(word));
-    }
-    box.appendChild(line);
-  } else {
-    diagLine(box, "现在", "还没有写过——在下面挑一个。");
-  }
-  const row = document.createElement("div");
-  row.className = "chips";
-  for (const word of goalFrequencyWords()) {
-    row.appendChild(chip(word, {
-      on: goalEditor.frequency === word,
-      cn: FREQUENCY_CN[word] || null,
-      onClick: () => {
-        goalEditor.frequency = word;
-        renderGoalFrequency();
-      },
-    }));
-  }
-  box.appendChild(row);
-  const save = document.createElement("button");
-  save.type = "button";
-  save.className = "btn btn--pencil";
-  save.textContent = "保存批注频率";
-  save.addEventListener("click", () => saveFrequency(save));
-  box.appendChild(save);
-}
-
-async function saveFrequency(button) {
-  const editor = goalEditor;
-  if (!editor || !editor.frequency) {
-    goalResult("先在下面选一个频率。", true);
-    return;
-  }
-  button.disabled = true;
-  const original = button.textContent;
-  button.textContent = "保存中……";
-  let data = null;
-  try {
-    data = await fetchSaveFrequency(editor.frequency);
-  } catch {
-    goalResult("保存没送到——再试一次。", true);
-    button.disabled = false;
-    button.textContent = original;
-    return;
-  }
-  button.disabled = false;
-  button.textContent = original;
-  if (data.accepted) {
-    goalResult(data.idempotent
-      ? "内容没有变化——没有写新版本。"
-      : "已保存（第 " + data.policy_version + " 版）。", false);
-    loadGoals();
-  } else if (data.conflict) {
-    const again = document.createElement("button");
-    again.type = "button";
-    again.className = "btn btn--pencil";
-    again.textContent = "重新读过";
-    again.addEventListener("click", loadGoals);
-    goalResult("这份方向刚在别处被改过——重新读过再改。", true, again);
-  } else {
-    goalResult(data.error || "保存没送到——再试一次。", true);
-  }
-}
+// 批注频率的编辑面随本刀退役（用户否决：同一键在设置 · 教学策略里已有
+// 墨选，温故 · 方向里的第二编辑面是重复设计；teaching_frequency 后端写
+// 面保留——页面唯一编辑点 = 设置节）。FREQUENCY_CN 仍服务设置节的墨选
+// 与读数。
 
 function renderGoalFocus() {
   const sec = goalBox("goal-focus-sec");
@@ -1835,8 +1752,6 @@ async function loadGoals() {
     return;
   }
   goalEditor = editorFromData(goalData);
-  goalEditor.frequency =
-    (goalData.policy && goalData.policy.teaching_frequency) || null;
   renderGoalEditor();
   renderGoalWeights();
   renderWordPicker("goal-assessment", "external_assessment",
@@ -1844,7 +1759,6 @@ async function loadGoals() {
   renderWordPicker("goal-register", "register_style",
     goalEditor.register, REGISTER_CN);
   renderGoalSave();
-  renderGoalFrequency();
   renderGoalFocus();
   renderGoalTaxref();
 }
@@ -1944,6 +1858,93 @@ const MODE_HINT = {
   "Lounge": "聊得多，递得少，笔友以听和陪为主。",
 };
 
+// 模型与端点（用户否决驱动的 provider 面）：端点地址 + 模型名两输入，
+// 保存即持久化 + 热换 provider——下一封信就走新设置，重启后仍以这里的
+// 值为准（启动参数让位）。密钥不在此面（仍由启动环境提供，不存库不显
+// 示——一句话说清，不再整节「如实说」）。非 OpenAI 装配（测试替身）服务
+// 端 provider 读数 = null——诚实空态，不虚构一对值。
+function providerResult(text, failure) {
+  const box = settingsBox("settings-provider-result");
+  if (!box) return;
+  box.textContent = "";
+  const line = document.createElement("p");
+  line.className = failure ? "errline" : "sub";
+  line.textContent = text;
+  box.appendChild(line);
+}
+
+async function saveProvider(button, baseUrlInput, modelInput) {
+  const payload = {};
+  const baseUrl = baseUrlInput.value.trim();
+  const model = modelInput.value.trim();
+  if (baseUrl) payload.base_url = baseUrl;
+  if (model) payload.model = model;
+  if (!Object.keys(payload).length) {
+    providerResult("至少填一个——端点地址或模型名。", true);
+    return;
+  }
+  button.disabled = true;
+  const original = button.textContent;
+  button.textContent = "保存中……";
+  let data = null;
+  try {
+    data = await fetchSaveProvider(payload);
+  } catch {
+    providerResult("保存没送到——再试一次。", true);
+    button.disabled = false;
+    button.textContent = original;
+    return;
+  }
+  button.disabled = false;
+  button.textContent = original;
+  if (data.accepted) {
+    providerResult(data.idempotent
+      ? "内容没有变化——没有写。"
+      : "已保存——下一封信就走新设置，重启后仍以这里为准。", false);
+    loadSettings();
+  } else {
+    providerResult(data.error || "保存没送到——再试一次。", true);
+  }
+}
+
+function renderSettingsProvider() {
+  const box = settingsBox("settings-provider-editor");
+  if (!box) return;
+  box.textContent = "";
+  const face = settingsData && settingsData.provider;
+  if (!face) {
+    diagEmpty(box,
+      "这个进程不是 OpenAI 兼容装配——端点与模型名在这里读不到、也改不了。");
+    return;
+  }
+  const baseUrlInput = document.createElement("input");
+  baseUrlInput.type = "text";
+  baseUrlInput.value = face.base_url;
+  baseUrlInput.placeholder = "https://api.example.com/v1";
+  baseUrlInput.autocomplete = "off";
+  baseUrlInput.spellcheck = false;
+  box.appendChild(fieldRow("端点地址", baseUrlInput));
+  const modelInput = document.createElement("input");
+  modelInput.type = "text";
+  modelInput.value = face.model;
+  modelInput.placeholder = "模型名";
+  modelInput.autocomplete = "off";
+  modelInput.spellcheck = false;
+  box.appendChild(fieldRow("模型名", modelInput));
+  const save = document.createElement("button");
+  save.type = "button";
+  save.className = "btn btn--pencil";
+  save.textContent = "保存端点与模型";
+  save.addEventListener("click", () => {
+    saveProvider(save, baseUrlInput, modelInput);
+  });
+  box.appendChild(save);
+  const note = document.createElement("p");
+  note.className = "doc-line";
+  note.textContent = "接口密钥仍由启动环境提供——不存库、不在此显示。";
+  box.appendChild(note);
+}
+
 function renderSettingsMode() {
   const box = settingsBox("settings-mode-editor");
   if (!box) return;
@@ -1955,12 +1956,14 @@ function renderSettingsMode() {
   }
   const stage = settingsData.rollout_stage;
   const words = settingsData.mode_words || [];
-  // fr-A #27 墨选：词表由服务端随行（客户端零拷贝）；中文档名在前。
+  // fr-A #27 墨选：词表由服务端随行（客户端零拷贝）；中文档名主列 +
+  // 原词辅列（sub——双列层级）。
   const control = selectField({
     name: "教学模式",
     options: words.map((word) => ({
       value: word,
       label: MODE_CN[word] || word,
+      sub: MODE_CN[word] ? word : null,
     })),
     value: stage,
     placeholder: "未声明——自动教学关着",
@@ -2050,9 +2053,10 @@ function renderPolicyKnobs() {
         options: ((settingsData && settingsData.frequency_words) || [])
           .map((word) => ({
             value: word,
-            // veto-R 词面中文化：中文档名为主（存值枚举词不变）；未知词
+            // veto-R 词面中文化：中文档名为主列 + 原词辅列（sub）；未知词
             // 不兜底——原样直出，与披露层级同一读法。
             label: FREQUENCY_CN[word] || word,
+            sub: FREQUENCY_CN[word] ? word : null,
           })),
         value: (policyEditor[name] === undefined) ? null : policyEditor[name],
         placeholder: "选一档……",
@@ -2175,13 +2179,14 @@ function disclosureRuleRow(rule, levels) {
   }
   row.appendChild(who);
   // fr-A #27 墨选：层级词表由服务端 disclosure_levels 随行（客户端零
-  // 拷贝）；veto-R 词面中文化——中文读法 only（原「中文 · 原词」后缀
-  // 退役，存值枚举词不变；未知词不兜底，原样直出）。
+  // 拷贝）；veto-R 词面中文化——中文读法主列 + 原词辅列（sub；存值枚举
+  // 词不变；未知词不兜底，原样直出）。
   const select = selectField({
     name: "披露层级",
     options: levels.map((word) => ({
       value: word,
       label: DISCLOSURE_CN[word] || word,
+      sub: DISCLOSURE_CN[word] ? word : null,
     })),
     value: rule.disclosure_level,
     onChange: (next) => { rule.disclosure_level = next; },
@@ -2364,6 +2369,7 @@ async function loadSettings() {
   } catch {
     disclosureRoster = null;   // 名册拉不到——角色名退 rawtag 原值，不猜
   }
+  renderSettingsProvider();
   renderSettingsMode();
   renderPolicyKnobs();
   renderSettingsSave();

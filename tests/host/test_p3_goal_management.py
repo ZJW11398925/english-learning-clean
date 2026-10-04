@@ -689,12 +689,14 @@ def test_the_goal_screen_is_wired_into_the_shell(
         assert "历史版本保留" not in page
         assert "旧版本保留" not in page
         # both endpoint call sites and the save actions（R-1R 词形：保存
-        # 方向 / rd-2 词形：保存批注频率【原「保存短笺频率」】；冲突的
-        # 重读钮「重新读过」；版本号只出现在保存回执与冲突句——「第 {n} 版」）
+        # 方向；冲突的重读钮「重新读过」；版本号只出现在保存回执与冲突
+        # 句——「第 {n} 版」。provider 刀随迁：批注频率的第二编辑面随
+        # 设置节去重退役——/api/teaching_frequency 与 fetchSaveFrequency
+        # 不再被页面消费，保存批注频率钮不再在本页）
         assert "/api/goals" in page
-        assert "/api/teaching_frequency" in page
-        assert "fetchSaveGoals" in page and "fetchSaveFrequency" in page
-        assert "保存方向" in page and "保存批注频率" in page
+        assert "/api/teaching_frequency" not in page
+        assert "fetchSaveGoals" in page and "fetchSaveFrequency" not in page
+        assert "保存方向" in page and "保存批注频率" not in page
         assert "保存组合" not in page
         assert "重新读过" in page
         assert "重新读取" not in page

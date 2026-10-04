@@ -450,9 +450,6 @@ def test_the_frozen_copy_outside_the_cover_is_verbatim(
         "请笔友忘掉一些事——走出去就找不回来。",
         # cs-2 随迁 + veto-R 随迁：记忆页引导句（数据优先收短）
         "笔友记住的事都在这里——分三摞收纳。",
-        # veto-R 随迁：设置节模式可改——只读 Law 句退役（编辑器容器
-        # 接任；句子级冻结线由 test_veto_response 的 mode 面钉承担）
-        "这台应用只服务你一个人（127.0.0.1，无账号无密码）。",
     ):
         assert sentence in page, sentence
     for retired in (
@@ -460,5 +457,7 @@ def test_the_frozen_copy_outside_the_cover_is_verbatim(
         "请客厅忘掉一些事——走出去就找不回来。",
         "客厅记住的事都在这里——一条条如实，分三摞收纳。",
         "由启动命令给定，这里读得到，但不能改。",
+        # provider 刀随迁（用户否决反复强调的单机文案）：退役
+        "这台应用只服务你一个人（127.0.0.1，无账号无密码）。",
     ):
         assert retired not in page, retired

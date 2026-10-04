@@ -123,12 +123,6 @@ export function fetchSaveGoals(payload) {
   return postJson("/api/goals", payload);
 }
 
-/** 保存教学频率（p-3）：单列写；409 = 冲突（重读再改）。 */
-export function fetchSaveFrequency(word) {
-  return postJson("/api/teaching_frequency",
-                  { teaching_frequency: word });
-}
-
 /** 角色名册（mc-0）：全部卡片（内置在前）+ 本页正服务的
  *  current_character_id（可能为 null——如实，不猜）。 */
 export function fetchCharacters() {
@@ -188,8 +182,16 @@ export function fetchSaveDisclosure(payload) {
 }
 
 /** 换教学模式（veto-R）：§12 档位词一枚（case-sensitive，服务端
- *  mode_words 随行）——持久化 + 热改生效（下一轮就在这一档）；
- *  词表外值是 400 人话。 */
+ * mode_words 随行）——持久化 + 热改生效（下一轮就在这一档）；
+ * 词表外值是 400 人话。 */
 export function fetchSaveMode(stage) {
   return postJson("/api/settings/mode", { stage: stage });
+}
+
+/** 换模型端点/模型名（用户否决驱动的 provider 面）：一键或两键，非空的
+ * base_url 须是完整 http(s) 地址；持久化 + 热换 provider——下一封信就
+ * 走新端点，重启后仍以这里的值为准（启动参数让位）。密钥不在此面
+ * ——仍由启动环境提供。非 OpenAI 装配 200 + accepted:false 人话。 */
+export function fetchSaveProvider(payload) {
+  return postJson("/api/settings/provider", payload);
 }

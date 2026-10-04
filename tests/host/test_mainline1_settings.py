@@ -58,11 +58,21 @@ import pytest
 from elc.content.build import build_content_db
 from elc.detection import DetectorRegistry
 from elc.detection.pilot import PILOT_VERSION, register_pilot
+from elc.host import open_host
+from elc.persona.openai_provider import (
+    OpenAICompatibleConfig,
+    OpenAICompatibleProvider,
+)
 from elc.persona.penpal import (
     PENPAL_CHARACTER_PACKAGE_ID,
     PENPAL_PERSONA_ID,
 )
-from elc.platform.types import ConversationId, Ok, PolicyVersion
+from elc.platform.types import (
+    ConversationId,
+    Ok,
+    PolicyVersion,
+    SecretRef,
+)
 from elc.teaching.rollout import RolloutStage
 from elc.user_config.types import (
     DisclosureLevel,
@@ -563,11 +573,16 @@ def test_the_settings_section_carries_the_real_controls(tmp_path: Path) -> None:
     index = _page_of(tmp_path)
     settings = index.split('id="drawer-settings"', 1)[1].split(
         'id="del-result"', 1)[0]
-    # the two standing truths and the pointing sentence survive the reforge
-    # （veto-R 统一规格：第一真句升为节导语，余两句归「如实说」节块）
-    assert "这台应用只服务你一个人（127.0.0.1，无账号无密码）。" in settings
-    assert "模型端点与模型名由启动命令给定——页面不读取，也不显示。" in settings
-    assert "批注频率在 温故 · 方向 里调。" in settings
+    # provider 刀（用户否决「端点/模型名不让页面直接设」）：旧三句——
+    # 「只服务你一人」导语、「如实说」节、「批注频率在温故调」（与设置
+    # 节自己的频率墨选矛盾）——全部退役；接任 = 模型与端点真写面。
+    assert "这台应用只服务你一个人" not in settings
+    assert "<h3>如实说</h3>" not in settings
+    assert "由启动命令给定" not in settings
+    assert "批注频率在 温故 · 方向 里调。" not in settings
+    assert 'id="set-settings-provider"' in settings
+    assert "<h3>模型与端点</h3>" in settings
+    assert 'id="settings-provider-editor"' in settings
     # veto-R：模式节 = 墨选编辑器 + 分寸句 + 结果行；「由启动命令给定，
     # 这里读得到，但不能改」只读读法及其两句随本刀退役
     assert 'id="set-settings-mode"' in settings
@@ -647,6 +662,121 @@ def test_the_settings_pull_and_save_loop_are_wired(tmp_path: Path) -> None:
     assert '"/api/settings/teaching_policy"' in api
     # veto-R：mode 写端点同门（页面零直连 fetch）
     assert '"/api/settings/mode"' in api
+    # provider 刀（用户否决「端点/模型名不让页面直接设」）：provider 写
+    # 端点同门；渲染面 + 保存回路 + 密钥一行说明；旧频率封装退役
+    assert '"/api/settings/provider"' in api
+    assert '"/api/teaching_frequency"' not in api
+    assert "function renderSettingsProvider() {" in app
+    assert "await fetchSaveProvider(payload);" in app
+    assert "接口密钥仍由启动环境提供" in app
+    assert "fetchSaveFrequency" not in app
+    assert "renderGoalFrequency" not in app
+
+
+class _Keychain:
+    """One fake SecretSource: one key name, one key value, no IO."""
+
+    def __init__(self, name: str, value: str) -> None:
+        self._name = name
+        self._value = value
+
+    def resolve(self, ref: Any) -> str | None:
+        # SecretRef is a NewType over str — the reference *is* the name
+        return self._value if str(ref) == self._name else None
+
+
+def test_the_provider_face_reads_writes_and_persists(
+    tmp_path: Path, pilot_content_db: Path
+) -> None:
+    """provider 刀（用户否决驱动的真写面）：GET 读现值；POST 一键或两键
+    ——持久化 + 热换（下一封信即新端点）；重启后页面值覆盖启动参数；
+    畸形 URL 是 400 人话；明文非本机端点被拒（复用启动命令的
+    EXT-P1-02 规则——页面写不授予第二条更弱的规则）；幂等重放零写。"""
+
+    launch = OpenAICompatibleProvider(
+        OpenAICompatibleConfig(
+            base_url="http://127.0.0.1:9/v1",
+            model="launch-model",
+            secret_ref=SecretRef("OPENAI_API_KEY"),
+        ),
+        _Keychain("OPENAI_API_KEY", "sk-test"),
+    )
+    with web_stack(
+        tmp_path / "app.db",
+        content_db=pilot_content_db,
+        provider=launch,
+    ) as stack:
+        # the read: the live pair as opened
+        status, face = stack.get_json("/api/settings")
+        assert status == 200, face
+        assert face["provider"] == {
+            "base_url": "http://127.0.0.1:9/v1",
+            "model": "launch-model",
+        }
+        # a malformed scheme is the route's 400 人话
+        status, refused = stack.post(
+            "/api/settings/provider", {"base_url": "ftp://example.com/v1"}
+        )
+        assert status == 400 and "http(s)" in refused["error"], refused
+        # a plaintext non-loopback destination rides the launch rule
+        status, insecure = stack.post(
+            "/api/settings/provider",
+            {"base_url": "http://provider.example.com/v1"},
+        )
+        assert status == 200 and insecure["accepted"] is False, insecure
+        assert "明文 HTTP" in insecure["error"], insecure
+        assert face["provider"] == insecure["provider"]   # 拒收 = 零写零换
+        # the real write: both keys, hot swap + persist
+        status, moved = stack.post(
+            "/api/settings/provider",
+            {
+                "base_url": "http://127.0.0.1:10/v1",
+                "model": "page-model",
+            },
+        )
+        assert (
+            status == 200
+            and moved["accepted"] is True
+            and moved["idempotent"] is False
+        ), moved
+        assert moved["provider"]["model"] == "page-model", moved
+        status, after = stack.get_json("/api/settings")
+        assert after["provider"]["base_url"] == "http://127.0.0.1:10/v1"
+        assert after["provider"]["model"] == "page-model"
+        host = stack.box["host"]
+        assert host.provider_face() == {
+            "base_url": "http://127.0.0.1:10/v1",
+            "model": "page-model",
+        }   # the live object moved, not just the row (persistence itself is
+            # proven by the restart leg below — the store answers only the
+            # worker thread, sqlite3's one-thread rule)
+        # the idempotent replay writes nothing
+        status, again = stack.post(
+            "/api/settings/provider",
+            {"base_url": "http://127.0.0.1:10/v1", "model": "page-model"},
+        )
+        assert status == 200 and again["idempotent"] is True, again
+    # the restart leg: a fresh open over the same app.db serves the saved
+    # pair even though the launch argument names another
+    reopened = open_host(
+        tmp_path / "app.db",
+        provider=OpenAICompatibleProvider(
+            OpenAICompatibleConfig(
+                base_url="http://127.0.0.1:9/v1",
+                model="launch-model",
+                secret_ref=SecretRef("OPENAI_API_KEY"),
+            ),
+            _Keychain("OPENAI_API_KEY", "sk-test"),
+        ),
+        content_db_path=pilot_content_db,
+    )
+    try:
+        assert reopened.provider_face() == {
+            "base_url": "http://127.0.0.1:10/v1",
+            "model": "page-model",
+        }
+    finally:
+        reopened.close()
 
 
 def test_the_privacy_section_names_the_partner_pair(tmp_path: Path) -> None:

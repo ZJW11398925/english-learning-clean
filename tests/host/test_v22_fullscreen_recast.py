@@ -407,9 +407,12 @@ def test_the_document_pages_read_like_documents() -> None:
     index = _text("index.html")
     for marker in (
         '<p class="doc-line">请笔友忘掉一些事——走出去就找不回来。</p>',
-        '<p class="doc-line">这台应用只服务你一个人（127.0.0.1，无账号无密码）。</p>',
+        # provider 刀随迁：「只服务你一人」导语退役（用户否决反复强调
+        # 的单机文案）——接任节 = 模型与端点
+        '<h3>模型与端点</h3>',
     ):
         assert marker in index, marker
+    assert "只服务你一个人" not in index
     # fr-A 随迁：三档模式句从静态 doc-line 迁为 JS 视觉读面（⑨-14③）；
     # veto-R 随迁：读面改可改墨选——分寸句归 MODE_HINT 一行（当前档的
     # 差别句），modeline 整句字面退役。

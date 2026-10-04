@@ -77,7 +77,9 @@ def test_the_shell_is_a_vestibule_and_three_spaces(tmp_path: Path) -> None:
     for panel in (
         "today-action", "growth-summary", "today-practice",
         "goal-editor", "goal-weights", "goal-assessment",
-        "goal-register", "goal-frequency", "goal-taxref", "goal-result",
+        "goal-register", "goal-taxref", "goal-result",
+        # provider 刀随迁：温故频率编辑面退役（设置节唯一编辑点），
+        # 容器 id 一并撤
         "record-book", "raw-readings", "obs-entry",
         "learn-schedule", "learn-goals", "learn-evidence",
         "archive-board", "plan-line", "plan-slot", "plan-detail",
@@ -323,10 +325,13 @@ def test_the_settings_node_is_an_honest_placeholder(tmp_path: Path) -> None:
     # rd-4 缺位钉：旧两句退役，不回潮
     assert "设置面还没有铺开。" not in page
     assert "教学模式读面与端点说明（位次 R-3，不承诺时点）" not in page
-    # 两真句保留 + 批注频率的指向句（IA 分层：不与方向节重复）
-    assert "页面不读取，也不显示" in page
-    assert "这台应用只服务你一个人（127.0.0.1，无账号无密码）。" in page
-    assert "批注频率在 温故 · 方向 里调。" in page
+    # provider 刀随迁（用户否决）：旧三句全退役——「只服务你一人」/
+    # 「页面不读取也不显示」/「批注频率在温故调」（与设置节自己的频率
+    # 墨选矛盾）；接任 = 模型与端点写面容器
+    assert "页面不读取，也不显示" not in page
+    assert "这台应用只服务你一个人" not in page
+    assert "批注频率在 温故 · 方向 里调。" not in page
+    assert 'id="settings-provider-editor"' in page
     # veto-R 随迁：模式可改读面（墨选编辑器容器）；只读 Law 句与换档
     # 句退役；四档词随 MODE_CN 常量在 app.js（页面词面零拷贝）
     assert 'id="settings-mode-editor"' in page

@@ -51,6 +51,7 @@ from elc.learning.target_match import (
     admitted_for_evidence,
     observe_target_match,
 )
+from elc.persona.provider import PersonaProvider
 from elc.persona.runtime import PersonaRuntime, action_intent_for_turn
 from elc.persona.types import (
     CharacterPackageRecord,
@@ -1211,6 +1212,33 @@ class ConversationCoordinator:
         """
 
         return self._automatic
+
+    def replace_persona_provider(self, provider: PersonaProvider) -> None:
+        """Swap the persona runtime's provider for a new object
+        (settings-page provider write — the page-settable endpoint/model).
+
+        One controlled write point: the runtime owns the final prompt's
+        dial-out, and this hands it a **new** provider object (the old
+        provider is never mutated — same object-swap discipline as
+        :meth:`replace_automatic_teaching`). The web write face runs on the
+        same single working thread as every turn, so no generation is in
+        flight; the *next* generation attempt dials the new destination.
+        The caller is the composition root's face, nothing else assigns
+        here.
+        """
+
+        self._persona.replace_provider(provider)
+
+    def persona_provider(self) -> PersonaProvider:
+        """The live persona provider — the read half of the swap above.
+
+        The settings page's provider face answers the effective
+        endpoint/model pair from here (what the *next* letter dials), which
+        keeps a hot-swapped provider and the page in agreement without a
+        second source of truth on the host.
+        """
+
+        return self._persona.provider
 
     # -- the §17.1 barge-in handoff (P9-3) -----------------------------------
 

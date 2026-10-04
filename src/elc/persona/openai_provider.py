@@ -230,6 +230,22 @@ class OpenAICompatibleProvider:
         self._secrets = secrets
         self._post: HttpPost = transport if transport is not None else _urllib_post
 
+    @property
+    def config(self) -> OpenAICompatibleConfig:
+        """The launch-time config, read-only (the settings page's provider
+        face reads the live endpoint/model pair from it; a hot swap builds
+        a new provider rather than mutating this one)."""
+
+        return self._config
+
+    @property
+    def secret_source(self) -> SecretSource:
+        """The secret source this provider resolves its key through,
+        read-only — a host that was opened without its own reference can
+        still rebuild a swapped provider over the same source."""
+
+        return self._secrets
+
     def call(self, prompt: CompiledPrompt) -> ProviderOutput:
         """Check the destination, resolve the key, POST once, answer a value.
 

@@ -1171,6 +1171,16 @@ button:focus-visible, input:focus-visible {
 .select-option--on { color: var(--ink); }
 .select-option .select-word { flex: 1; min-width: 0;
                               overflow-wrap: anywhere; }
+/* 双列层级（用户否决「选项层级不合理」）：枚举原词右对齐弱墨等宽——
+   与 rawtag 同族读法，主列中文、辅列原词，不再挤一行。 */
+.select-option .select-sub { flex: none; margin-left: var(--sp-2);
+                             font: var(--meta-mono); white-space: nowrap;
+                             color: var(--ink-faint); }
+/* 开单浮层（用户否决「选项被遮挡」）：开单时列表过继 body + fixed 对齐
+   锚钮（components.js floatList）——绝对定位原形态会被滚动祖先的
+   overflow 裁切框拦腰截断；fixed 逃出一切裁切与 transform 祖先。
+   z 10 维持浮层家族原档（tm-pop 同档；确认窗 11/12 仍在其上）。 */
+.select-list--float { position: fixed; z-index: 10; }
 .select-option--active {
   background: color-mix(in srgb, var(--ink) 12%, transparent); }
 @media (hover: hover) {

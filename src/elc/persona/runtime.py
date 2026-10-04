@@ -146,6 +146,26 @@ class PersonaRuntime:
         self._validator = validator if validator is not None else ResponseValidator()
         self._max_attempts = max_provider_attempts
 
+    @property
+    def provider(self) -> PersonaProvider:
+        """The live provider (the settings page's provider face reads the
+        effective endpoint/model pair through it)."""
+
+        return self._provider
+
+    def replace_provider(self, provider: PersonaProvider) -> None:
+        """Swap the provider for a new object (settings-page provider write —
+        the page-settable endpoint/model).
+
+        One controlled write point for ``self._provider``. Called between
+        turns from the web face (the handler runs on the same single working
+        thread as every turn, so no generation is in flight); the in-flight
+        action machine is untouched — the *next* generation attempt dials
+        the new destination.
+        """
+
+        self._provider = provider
+
     # -- generation pipeline (RUNTIME §4 steps 11-13) -----------------------
 
     def run_action(

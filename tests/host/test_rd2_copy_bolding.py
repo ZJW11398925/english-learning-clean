@@ -198,7 +198,9 @@ def test_the_annotation_family_heads_the_card() -> None:
     assert "另一张批注还在进行" not in app
     assert "批注锁不成立" not in app
     assert "这张批注走不下去" not in app
-    assert "保存批注频率" in app
+    # provider 刀随迁：批注频率保存钮随温故第二编辑面退役（设置节唯一
+    # 编辑点）；词面不回潮
+    assert "保存批注频率" not in app
     assert ">为什么留了这张批注</h3>" not in index
     assert "批注痕迹" in index
     # 旧家族词缺位（live 面）

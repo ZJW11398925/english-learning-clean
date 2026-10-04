@@ -306,10 +306,6 @@
       <div id="goal-register"><p class="note">暂无数据</p></div>
     </div>
     <div id="goal-save" class="sec"></div>
-    <div class="sec">
-      <h3>批注频率</h3>
-      <div id="goal-frequency"><p class="note">暂无数据</p></div>
-    </div>
     <div class="sec" id="goal-focus-sec" hidden>
       <h3>临时侧重（有才出现）</h3>
       <p class="sub">只影响当前这段通信，不改上面写下的长期方向。</p>
@@ -487,22 +483,23 @@
     </section>
     </section>
 
-    <!-- 设置节（⑧ 8.2.8，主线-1 重铸② + fr-A 完全体 + veto-R 重做）：
-         统一规格（9.15）——导语一行 + 节块（h3 + .doc-line），panel-grid
-         两栏退役；教学模式四档墨选可改（写面 = /api/settings/mode，热改
-         生效），「由启动命令给定不能改」「换档 = 改启动命令」两句随
-         只读读法退役。分组：如实说 / 教学模式 / 教学策略（八旋钮，七钮
+    <!-- 设置节（⑧ 8.2.8，主线-1 重铸② + fr-A 完全体 + veto-R 重做 +
+         provider 面）：统一规格（9.15）——节块（h3 + 控件），panel-grid
+         两栏退役；模型与端点两输入可改（写面 = /api/settings/provider，
+         持久化 + 热换，重启后以页面值为准——启动参数让位；密钥仍归启动
+         环境）；教学模式四档墨选可改（写面 = /api/settings/mode，热改
+         生效）。「由启动命令给定不能改」「只服务你一人」「如实说」节随
+         本刀退役。分组：模型与端点 / 教学模式 / 教学策略（八旋钮，七钮
          档位墨选）/ 隐私与披露（§5.1 编辑面）/ 显示与计量。
          SECTION_PULLS 拉本节（r1_shell 缺位钉随迁）。
          （8.2.8 目标设计②问候语切换设置项位：随 8.2.2① 问候语面挂起
          ——语料面缺口呈报在案，待裁后落位。） -->
     <section id="drawer-settings" role="tabpanel"
              aria-labelledby="tab-drawer-settings" hidden data-reveal>
-    <p class="doc-line">这台应用只服务你一个人（127.0.0.1，无账号无密码）。</p>
-    <div class="sec" id="set-settings-facts">
-      <h3>如实说</h3>
-      <p class="doc-line">模型端点与模型名由启动命令给定——页面不读取，也不显示。</p>
-      <p class="doc-line">批注频率在 温故 · 方向 里调。</p>
+    <div class="sec" id="set-settings-provider">
+      <h3>模型与端点</h3>
+      <div id="settings-provider-editor"><p class="note">暂无数据</p></div>
+      <div id="settings-provider-result"></div>
     </div>
     <div class="sec" id="set-settings-mode">
       <h3>教学模式</h3>

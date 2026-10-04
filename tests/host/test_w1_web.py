@@ -90,7 +90,7 @@ from elc.content.build import build_content_db
 from elc.detection import DetectorRegistry
 from elc.detection.pilot import PILOT_VERSION, register_pilot
 from elc.host import open_host
-from elc.persona.provider import ScriptedPersonaProvider
+from elc.persona.provider import PersonaProvider, ScriptedPersonaProvider
 from elc.persona.types import CompiledPrompt, ProviderOutput
 from elc.platform.types import (
     ConversationId,
@@ -254,6 +254,7 @@ def web_stack(
     content_db: Path | None = None,
     stage: RolloutStage | None = None,
     seed: Any = None,
+    provider: PersonaProvider | None = None,
 ) -> Iterator[_Stack]:
     """Serve one host until the with-block ends.
 
@@ -261,7 +262,9 @@ def web_stack(
     worker thread, because that is the one thread the work loop runs host
     touches on (``elc.web``'s one-thread rule; sqlite3 answers only the
     thread that opened the connection). A worker failure before the bind is
-    re-raised on the test thread instead of timing out.
+    re-raised on the test thread instead of timing out. ``provider``
+    overrides the scripted default (the settings provider face's behavior
+    tests pass a real OpenAICompatibleProvider).
     """
 
     port = _free_port()
@@ -273,8 +276,12 @@ def web_stack(
         try:
             host = open_host(
                 app_db,
-                provider=ScriptedPersonaProvider(
-                    script=(ProviderOutput(text=REPLY),)
+                provider=(
+                    provider
+                    if provider is not None
+                    else ScriptedPersonaProvider(
+                        script=(ProviderOutput(text=REPLY),)
+                    )
                 ),
                 content_db_path=content_db,
                 rollout_stage=stage,

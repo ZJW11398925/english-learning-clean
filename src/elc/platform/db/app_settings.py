@@ -43,6 +43,15 @@ from elc.platform.db.tx import short_transaction
 #: fork into two spellings.
 APP_SETTING_ROLLOUT_STAGE_KEY = "rollout_stage"
 
+#: The settings-page provider face (user veto: model/endpoint must be
+#: page-settable, not launch-command-only). Two keys, both optional —
+#: a saved pair overrides the launch arguments from the next open on (the
+#: page is the user's chosen place for it; single-principal local app).
+#: The API key deliberately has no key here: it stays with the launch
+#: environment's secret source, never in the database.
+APP_SETTING_PROVIDER_BASE_URL_KEY = "provider_base_url"
+APP_SETTING_PROVIDER_MODEL_KEY = "provider_model"
+
 
 class AppSettingStore:
     """The ``app_setting`` key/value face — get/set, upsert semantics."""

@@ -486,20 +486,23 @@ def test_the_settings_display_group_carries_the_meter_toggle() -> None:
 
 
 def test_the_settings_page_is_five_groups_and_the_mode_face_is_visual() -> None:
-    """分组 IA（如实说 / 教学模式 / 教学策略 / 隐私与披露 / 显示与
-    计量；veto-R：panel-grid 两栏退役，导语一行 + 节块）+ 模式可改读面
-    （veto-R 随迁）：四档墨选（#27），中文档名 + 分寸句一行，当前档 =
-    墨选现值——modeline 三档参考块随只读读法退役（行为钉在
-    test_veto_response 的 mode 写面套件）。"""
+    """分组 IA（模型与端点 / 教学模式 / 教学策略 / 隐私与披露 / 显示与
+    计量；veto-R：panel-grid 两栏退役，节块；provider 刀：「如实说」节
+    退役——接任 = 模型与端点真写面）+ 模式可改读面（veto-R 随迁）：四档
+    墨选（#27），中文档名 + 分寸句一行，当前档 = 墨选现值——modeline
+    三档参考块随只读读法退役（行为钉在 test_veto_response 的 mode 写面
+    套件）。"""
 
     index = _webui("index.html")
     settings = index.split('id="drawer-settings"', 1)[1].split(
         "<nav id=\"navdock\"", 1)[0]
-    for marker in ('id="set-settings-mode"', "<h3>教学模式</h3>",
+    for marker in ('id="set-settings-provider"', "<h3>模型与端点</h3>",
+                   'id="set-settings-mode"', "<h3>教学模式</h3>",
                    'id="set-settings-knobs"', "<h3>教学策略</h3>",
                    'id="set-settings-disclosure"', "<h3>隐私与披露</h3>",
                    'id="set-settings-display"', "<h3>显示与计量</h3>"):
         assert marker in settings, marker
+    assert "<h3>如实说</h3>" not in settings
     # veto-R 统一规格：panel-grid 两栏退役；模式节 = 墨选编辑器 + 分寸
     # 句 + 结果行
     assert "panel-grid" not in settings
@@ -777,6 +780,21 @@ def test_the_native_select_is_retired_and_the_ink_select_is_registered() -> None
     assert "27. select（墨选，fr-A）" in css
     assert "color-mix(in srgb, var(--ink) 8%, transparent)" in css
     assert "scrollbar-gutter: stable; }" in css
+    # provider 刀随迁——开单浮层化（用户否决「选项被遮挡」）：开单时列表
+    # 过继 body + position: fixed 对齐锚钮（绝对定位原形态会被滚动祖先
+    # 的 overflow 裁切框拦腰截断），关单归位；任何祖先滚动/窗口缩放即关。
+    assert "function floatList() {" in components
+    assert "function unfloatList() {" in components
+    assert 'list.classList.add("select-list--float");' in components
+    assert "document.body.appendChild(list);" in components
+    assert 'list.classList.remove("select-list--float");' in components
+    assert "root.appendChild(list);   // 归位" in components
+    assert "window.addEventListener(\"scroll\", onAnyScroll, true);" \
+        in components
+    assert ".select-list--float { position: fixed; z-index: 10; }" in css
+    # 选项双列层级（用户否决「选项层级不合理」）：中文主列 + 原词弱墨辅列
+    assert "select-sub" in components
+    assert ".select-option .select-sub" in css
     spec = (REPO_ROOT / "docs" / "FRONTEND_SPEC.md").read_text(encoding="utf-8")
     assert "| 27 | select |" in spec
     assert "| 24 | flow-bottom |" in spec

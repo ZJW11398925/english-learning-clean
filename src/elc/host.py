@@ -118,10 +118,13 @@ the permissive reading.
    runtime-level per-target half of the same fifth leg the gate reads at
    release level.
 
-``secrets`` is held, never read: the V1 secret seam belongs to the provider
-(RA §24.3 — resolve at send time), and the key never enters app.db, this module
-or any log. It is kept here so the process has one place that knows which
-source it opened with; nothing in this module calls ``resolve``.
+``secrets`` is held, and read in exactly one place: the provider face's
+swap (:meth:`Host.replace_provider` / the open-time saved-pair override)
+rebuilds the provider over the same source the launch provider was built
+with (the N1 register's Revisit — the second-provider face has arrived).
+The V1 secret seam still belongs to the provider (RA §24.3 — resolve at
+send time), and the key never enters app.db, this module or any log:
+nothing in this module calls ``resolve`` itself.
 
 ``candidate_supply`` passes through to the automatic wiring verbatim
 (``None`` — the production value — means the generators run over the ports).
@@ -153,6 +156,7 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass
+from dataclasses import replace as dc_replace
 from pathlib import Path
 from typing import cast
 
@@ -177,6 +181,10 @@ from elc.persona.card_store import (
     SqliteCharacterCardStore,
 )
 from elc.persona.official import ensure_official_cards
+from elc.persona.openai_provider import (
+    OpenAICompatibleProvider,
+    insecure_http_destination,
+)
 from elc.persona.penpal import PENPAL_CHARACTER_PACKAGE
 from elc.persona.provider import PersonaProvider
 from elc.persona.runtime import PersonaRuntime
@@ -184,6 +192,8 @@ from elc.persona.types import CharacterPackageRecord
 from elc.planner.candidates import CandidateSupply
 from elc.planner.ledger_store import SqliteLedgerStore
 from elc.platform.db.app_settings import (
+    APP_SETTING_PROVIDER_BASE_URL_KEY,
+    APP_SETTING_PROVIDER_MODEL_KEY,
     APP_SETTING_ROLLOUT_STAGE_KEY,
     AppSettingStore,
 )
@@ -464,6 +474,57 @@ class Host:
             self.content_store.close()
         self.db.close()
 
+    def provider_face(self) -> dict[str, str] | None:
+        """The live destination pair, or ``None`` when not an OpenAI-shaped
+        provider (a test double — the settings page then shows no provider
+        section values rather than a fabricated pair)."""
+
+        live = self.coordinator.persona_provider()
+        if not isinstance(live, OpenAICompatibleProvider):
+            return None
+        return {
+            "base_url": live.config.base_url,
+            "model": live.config.model,
+        }
+
+    def replace_provider(self, base_url: str, model: str) -> str | None:
+        """Hot-swap the provider's destination pair (the settings page's
+        provider write).
+
+        Answers a human refusal sentence (the caller's 400 body) or ``None``
+        on success. The swap builds a **new** provider object over
+        ``dataclasses.replace`` of the live config — timeout, secret ref and
+        the insecure-http opt-in ride verbatim; the key source is the same
+        secret source the launch provider was built with (the key itself is
+        never a page-writable fact). A plaintext-http destination off this
+        machine refuses unless the live config carries the explicit opt-in
+        (the launch command's own rule, EXT-P1-02 — the page write grants no
+        second, weaker rule). A non-OpenAI provider (a test double) refuses:
+        the swap is a real dial-out face, never a silent no-op. The caller
+        persists the pair; this method only moves the live object.
+        """
+
+        live = self.coordinator.persona_provider()
+        if not isinstance(live, OpenAICompatibleProvider):
+            return (
+                "这个进程不是 OpenAI 兼容装配——换端点没有可生效的地方，"
+                "什么都没写。"
+            )
+        if (
+            not live.config.allow_insecure_http
+            and insecure_http_destination(base_url)
+        ):
+            return (
+                "这个端点是明文 HTTP 且不在本机——换个 https 或本机端点，"
+                "或启动时加 --allow-insecure-http。"
+            )
+        moved = dc_replace(live.config, base_url=base_url, model=model)
+        source = self.secrets if self.secrets is not None else live.secret_source
+        self.coordinator.replace_persona_provider(
+            OpenAICompatibleProvider(moved, source)
+        )
+        return None
+
 
 def open_host(
     app_db_path: str | Path,
@@ -571,6 +632,38 @@ def open_host(
         world_lore_store = SqliteWorldLoreStore(db, fence)
         seed_world_lore_facts(world_lore_store)
         world_lore = WorldLoreController(world_lore_store, conversations)
+        # The settings-page provider face's persisted leg (user veto: the
+        # endpoint/model pair is page-settable). Read order is the opposite
+        # of the stage's on purpose: a **saved pair wins over the launch
+        # arguments** — the page is the user's chosen place for the pair
+        # (the launch command still names a pair so the first open can dial
+        # out, but once the page has saved, that save is the declaration
+        # that survives restarts). The API key has no persisted leg: it
+        # stays with the launch environment's secret source, so what rides
+        # here is the destination pair only.
+        saved_base_url = app_settings.get(APP_SETTING_PROVIDER_BASE_URL_KEY)
+        saved_model = app_settings.get(APP_SETTING_PROVIDER_MODEL_KEY)
+        if (
+            provider is not None
+            and saved_base_url is not None
+            and saved_model is not None
+            and isinstance(provider, OpenAICompatibleProvider)
+        ):
+            launch = provider.config
+            if (
+                launch.base_url != saved_base_url
+                or launch.model != saved_model
+            ):
+                provider = OpenAICompatibleProvider(
+                    dc_replace(
+                        launch,
+                        base_url=saved_base_url,
+                        model=saved_model,
+                    ),
+                    secrets
+                    if secrets is not None
+                    else provider.secret_source,
+                )
         persona = PersonaRuntime(actions=generation, provider=provider)
         lease = ConversationCoordinatorLease()
         lease.adopt_epoch(RuntimeEpoch(fence.current))

@@ -366,12 +366,13 @@ def test_the_human_time_and_the_fingerprint_helpers() -> None:
 
 def test_the_version_number_left_the_standing_faces() -> None:
     """⑧ 8.2.4: the version number is a save-receipt word, never a
-    standing label — the frequency block reads 现在：适度（BALANCED）."""
+    standing label（provider 刀随迁：频率块的「现在：」常显行随第二编辑
+    面退役——设置节的墨选现值即当前值，无常显版本读数）."""
 
     app = _text("app.js")
     assert "（版本 " not in app
     assert '已保存（第 "' in app
-    assert 'b.textContent = "现在：";' in app
+    assert 'b.textContent = "现在：";' not in app
 
 
 # ---------------------------------------------------------------------------
@@ -478,7 +479,10 @@ def test_the_direction_face_is_read_write_one(tmp_path: Path) -> None:
     assert '"目标 " + (index + 1) + " · 技能"' in page
     assert "· 内容" in page
     assert 'save.textContent = "保存方向";' in page
-    assert 'save.textContent = "保存批注频率";' in page
+    # provider 刀随迁：批注频率块（现在读数 + 保存钮）随温故第二编辑面
+    # 退役——设置 · 教学策略是唯一编辑点
+    assert 'save.textContent = "保存批注频率";' not in page
+    assert "renderGoalFrequency" not in page
     assert "已保存（第 " in page
     assert "内容没有变化——没有写新版本。" in page
     assert "这份方向刚在别处被改过——重新读过再改。" in page
