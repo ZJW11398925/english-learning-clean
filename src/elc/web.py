@@ -279,11 +279,14 @@ other columns verbatim. Out-of-vocabulary words are 400 人话 refusals
 leg answers the honest refusal shape instead of pretending to save.
 
 **主线-1 adds the settings face** — the 抽屉 · 设置 section's read and its
-one write, the first face that reads the rollout stage back (the 9.12-23①
+write, the first face that reads the rollout stage back (the 9.12-23①
 preview item, closed here). ``GET /api/settings`` answers the three faces
-of live truth in one payload: ``rollout_stage`` — the host's startup
-parameter verbatim (``None`` stays ``None``: the fail-closed default is a
-fact about the launch, never a stage this face invented); the §5.1
+of live truth in one payload: ``rollout_stage`` — the **effective** tier
+the next turn decides under (the veto-response cut's live reading: the
+coordinator's current wiring's stage when the automatic leg is assembled —
+which the page's hot change moves — else the host's open-time snapshot;
+``None`` stays ``None``: the fail-closed default is a fact, never a stage
+this face invented); the §5.1
 ``TeachingPolicyProfile``'s thirteen columns when a row exists (``null``
 when none does — before a first write there is nothing to read, and the
 empty state says so instead of fabricating a policy; ``version`` rides
@@ -292,22 +295,37 @@ under its declared alias ``policy_version``, the spelling
 four columns — the rule set read through the store's own existing read
 face, the same one the controller's disclosure decision consults, so the
 page shows the rules exactly as they stand with no second reading of them.
-The payload also carries the two server-declared vocabularies the knob
-editor needs (the frequency picker's four words and the eight-knob
-whitelist itself), so the page copies no word list. ``POST
-/api/settings/teaching_policy`` is the one write: the eight §5.1 knobs as
+The payload also carries the three server-declared vocabularies the two
+editors need (the frequency picker's four words, the eight-knob whitelist
+itself, and the four §12 stage words), so the page copies no word list.
+``POST /api/settings/teaching_policy`` is the knobs' write: the eight §5.1
+knobs as
 the full new set (``teaching_frequency`` inside the enum's own four words,
 the other seven a non-empty string or ``null`` = 未配置), rebuilt around
-the durable row's non-knob columns — ``mode`` / ``version`` /
+the durable row's non-knob columns — ``version`` /
 ``effective_from`` are preserved verbatim, ``updated_at`` is the store's
 own clock — with the version moved by :func:`_next_version` and the same
 200 / 409 discipline as the goal writes. Every other key is a 400 人话
-refusal: the five system columns get their own sentence (``mode`` the
-loudest — the rollout tier is the launch command's to set, and the page
-neither reads it into a change nor writes it), an unknown key names
-itself. The write changes only how/how-often teaching is configured —
-never the rollout tier, never an 开闸 face (mode is not writable by
-design; the section's own copy says so).
+refusal: the five system columns get their own sentence, an unknown key
+names itself. The write changes only how/how-often teaching is configured —
+never the rollout tier, never an 开闸 face.
+
+**The veto-response cut (user dogfood first-verification veto) makes the
+tier itself page-movable** — ``POST /api/settings/mode`` takes one §12
+stage word (case-sensitive, the server-declared four), persists it in
+migration 0022's generic ``app_setting`` table, and swaps the coordinator's
+live wiring for a new one whose ``rollout_stage`` moved
+(:func:`dataclasses.replace` over the frozen dataclass — the next turn
+decides under the new tier with no reassembly). The page's write is the
+user's explicit tier expression — the same power as choosing the tier on
+the launch command (one principal, a single-user local app); the gate
+functions are untouched, and the default ``None`` still DENIES automatic
+teaching. A launch command that declared a stage of its own is overridden
+by the page's word from the next turn on — one principal, one live tier;
+the *next* open reads the persisted word only when the launch command
+declares nothing (``open_host``'s read order: explicit argument >
+persisted word > ``None``), so the launch declaration keeps its role as
+the per-process default.
 
 **主线-2 adds the schedule/history-depth face** — three reads, zero writes
 (调度与历史纵深：读面先行，§5.2 的调度调整是复核面，不进本刀).
@@ -332,6 +350,7 @@ evidence answers ``{"found": false}``, a 200 fact, never a 404.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import math
 import queue
@@ -380,6 +399,7 @@ from elc.persona.penpal import (
 )
 from elc.persona.provider import PersonaProvider
 from elc.planner.trace_document import decode_factor_trace
+from elc.platform.db.app_settings import APP_SETTING_ROLLOUT_STAGE_KEY
 from elc.platform.types import (
     ClientMessageId,
     ConversationId,
@@ -403,7 +423,7 @@ from elc.teaching.envelope import (
     TeachingResponseEnvelope,
 )
 from elc.teaching.request import TeachingRequest
-from elc.teaching.rollout import OBSERVATION_SPECS
+from elc.teaching.rollout import OBSERVATION_SPECS, ROLLOUT_STAGES, RolloutStage
 from elc.teaching.types import MomentState
 from elc.user_config.types import (
     DisclosureLevel,
@@ -2031,15 +2051,29 @@ _SETTINGS_KNOBS: tuple[str, ...] = (
 #: system columns. ``version`` is carried under both of its declared
 #: spellings (the canonical word and the qualified alias the §5.1
 #: implementation documents), so a body that names either gets the same
-#: honest refusal instead of slipping past a spelling check.
+#: honest refusal instead of slipping past a spelling check. ``mode`` is
+#: not among them since the veto-response cut: the §12 stage moved to its
+#: own write (``/api/settings/mode``), and a body that still names
+#: ``mode`` here gets the unknown-key sentence — the old "由启动命令给定"
+#: refusal is retired with the read-only reading it defended.
 _SETTINGS_SYSTEM_COLUMNS: tuple[str, ...] = (
-    "mode",
     "teaching_policy_profile_id",
     "version",
     "policy_version",
     "effective_from",
     "updated_at",
 )
+
+#: The §12 stage words — the mode write's whitelist, read from the enum
+#: (the same spelling discipline as the frequency words: case-sensitive,
+#: the words are the document's). Importing keeps one vocabulary: a stage
+#: added to :class:`~elc.teaching.rollout.RolloutStage` rides the whitelist
+#: without a second literal.
+_MODE_WORDS: tuple[str, ...] = tuple(stage.value for stage in ROLLOUT_STAGES)
+
+#: The mode write's 400 sentence — one grammar line naming the four words.
+_MODE_GRAMMAR = f'need a JSON body {{"stage": {" | ".join(_MODE_WORDS)}}}'
+
 
 #: The knob write's own frequency sentence (the same four words the goal
 #: screen's picker takes — one vocabulary, two doors).
@@ -2048,15 +2082,29 @@ _SETTINGS_FREQUENCY_GRAMMAR = (
 )
 
 
-def _settings_system_column_refusal(key: str) -> str:
-    """The 400 sentence for a refused system column — ``mode`` the loudest,
-    because it names the rollout tier the page must not move."""
+def _mode_request_word(payload: Any) -> str | None:
+    """The mode write's body, parsed and fail-closed (the W1 law).
 
-    if key == "mode":
-        return (
-            "mode 是当前档（rollout stage），由启动命令给定——"
-            "页面只读不改；换档 = 改启动命令再启动。"
-        )
+    Returns the stage word, or ``None`` when the body is not the one-key
+    shape (``{"stage": word}``) or the word is outside the four §12 words
+    (case-sensitive — the whitelist is the enum's own values). No default:
+    an absent or malformed body is a refusal, never a guessed tier.
+    """
+
+    if not isinstance(payload, dict):
+        return None
+    if set(payload) != {"stage"}:
+        return None
+    word = payload["stage"]
+    if not isinstance(word, str) or word not in _MODE_WORDS:
+        return None
+    return word
+
+
+def _settings_system_column_refusal(key: str) -> str:
+    """The 400 sentence for a refused system column — the column names
+    itself and the write face names its own whitelist."""
+
     return f"「{key}」是系统列，不由页面写（可写面只有八个旋钮）。"
 
 
@@ -2070,8 +2118,9 @@ def _settings_knob_request(
     body is the **full new knob set** (all eight keys — the W1 full-
     combination shape, so the version discipline's replay comparison is
     well-defined); a key outside the whitelist is refused with its own
-    sentence — a system column names itself (``mode`` the rollout tier's
-    sentence), an unknown key names itself. ``teaching_frequency`` must be
+    sentence — a system column names itself, an unknown key names itself
+    (``mode`` included since the veto-response cut: the §12 tier's write
+    is ``/api/settings/mode``, not a knob). ``teaching_frequency`` must be
     one of the enum's own four words (case-sensitive); the seven unpinned
     knobs take a non-empty string (carried verbatim — the store is a
     shelf, the card store's rule) or ``null`` (= 未配置, the column's own
@@ -2404,9 +2453,10 @@ def _settings_policy_face(policy: TeachingPolicyProfile) -> dict[str, Any]:
     column is ``version``, and no sentence here claims a word-for-word
     equality). ``effective_from`` carries the F-4 ``""`` sentinel as the
     value it is, ``updated_at`` is the store's own clock, and the seven
-    unpinned knobs pass through raw (``None`` = 未配置). ``mode`` rides
-    along **read-only**: the settings write face refuses it, and this read
-    is where the page sees what it must not change.
+    unpinned knobs pass through raw (``None`` = 未配置). ``mode`` (the
+    §5.1 row's own column) rides along verbatim: the knob write face does
+    not accept it (never has), and this read is where the page sees it as
+    the row holds it.
     """
 
     return {
@@ -3796,34 +3846,55 @@ class _WebFace:
             },
         )
 
+    def _effective_stage(self) -> RolloutStage | None:
+        """The tier the **next** turn decides under — the live reading.
+
+        The veto-response cut's read order for faces: the coordinator's
+        current wiring's ``rollout_stage`` when the automatic leg is
+        assembled (the hot change swaps that wiring, so this is the truth
+        the page must show), else the host's open-time snapshot (the
+        prep-1 tier's shape — no wiring, the persisted word's display
+        reading). ``None`` stays ``None``: the fail-closed default is a
+        fact, never a stage this face substitutes.
+        """
+
+        wiring = self._host.coordinator.automatic_teaching_wiring()
+        if wiring is not None:
+            return wiring.rollout_stage
+        return getattr(self._host, "rollout_stage", None)
+
     def settings(self) -> dict[str, Any]:
         """The settings section's one read (主线-1) — three faces of live
         truth in one payload.
 
         Read-only, on the work queue (the diagnostics construction). The
-        three faces: ``rollout_stage`` is the host's startup parameter
-        verbatim — ``None`` stays ``None`` (the fail-closed launch default
-        is a fact about the launch, never a stage this face substitutes);
+        three faces: ``rollout_stage`` is the **effective** tier — the live
+        wiring's stage when the automatic leg is assembled (which the
+        page's mode write moves), else the host's open-time snapshot;
+        ``None`` stays ``None`` (the fail-closed default is a fact about
+        the launch, never a stage this face substitutes);
         the §5.1 policy row when one exists (``null`` when none does —
         before a first write there is nothing to read, never a fabricated
         policy); the §5.1 disclosure row through the store's own existing
         read face (:meth:`elc.user_config.store.SqliteUserConfigStore.
         get_disclosure_policy` — the same row the controller's disclosure
-        decision consults, shown as it stands, no second reading). The two
-        vocabularies the knob editor needs ride server-declared (the
-        frequency words and the whitelist itself — the page copies no word
-        list). A host without the user-config leg answers
-        ``available: false`` with the stage still riding (the launch
-        parameter is the host's, not the user-config leg's) and both rows
+        decision consults, shown as it stands, no second reading). The
+        three vocabularies the editors need ride server-declared (the
+        frequency words, the whitelist itself, and the four §12 stage
+        words — the page copies no word list). A host without the
+        user-config leg answers
+        ``available: false`` with the stage still riding (the stage is the
+        host's, not the user-config leg's) and both rows
         honestly ``null``. An unreadable row is a server fact (the route's
         500 posture).
         """
 
-        stage = getattr(self._host, "rollout_stage", None)
+        stage = self._effective_stage()
         stage_value = None if stage is None else str(stage.value)
         controller = self._host.user_config
         frequency_words = list(_FREQUENCY_WORDS)
         disclosure_levels = [level.value for level in DisclosureLevel]
+        mode_words = list(_MODE_WORDS)
         if controller is None or self._host.user_id is None:
             return {
                 "available": False,
@@ -3832,6 +3903,7 @@ class _WebFace:
                 "disclosure": None,
                 "frequency_words": frequency_words,
                 "disclosure_levels": disclosure_levels,
+                "mode_words": mode_words,
                 "writable_knobs": list(_SETTINGS_KNOBS),
             }
         user_id = self._host.user_id
@@ -3873,8 +3945,76 @@ class _WebFace:
             ),
             "frequency_words": frequency_words,
             "disclosure_levels": disclosure_levels,
+            "mode_words": mode_words,
             "writable_knobs": list(_SETTINGS_KNOBS),
         }
+
+    def mode_save(self, stage_word: str) -> tuple[int, dict[str, Any]]:
+        """The tier write (veto-response cut): persist the §12 word, then
+        move the live wiring.
+
+        The grammar was validated at the HTTP layer (the four-word
+        whitelist, case-sensitive) and is re-derived here only to fail
+        closed — the :class:`~elc.teaching.rollout.RolloutStage`
+        construction cannot be talked past the enum. Two writes, in this
+        order: the word goes into ``app_setting`` (migration 0022's table —
+        the durable half, what the next open reads when the launch command
+        declares nothing), then the coordinator receives a **new** wiring
+        whose ``rollout_stage`` moved (:func:`dataclasses.replace` over the
+        frozen dataclass — every face rides verbatim), so the next turn
+        decides under the new tier with no reassembly. The host's frozen
+        ``rollout_stage`` snapshot is untouched (it documents the open);
+        the settings read answers from the live wiring. An unchanged word
+        answers ``idempotent`` and writes nothing; a host without the
+        automatic leg (the prep-1 tier) is a runtime fact — 200 +
+        ``accepted: false``, the honest sentence, nothing persisted (a
+        write with nothing to move would only fork the next open's tier
+        from this process's truth). The gate functions are untouched; the
+        default ``None`` still DENIES automatic teaching.
+        """
+
+        try:
+            stage = RolloutStage(stage_word)
+        except ValueError:
+            return (400, {"accepted": False, "error": _MODE_GRAMMAR})
+        wiring = self._host.coordinator.automatic_teaching_wiring()
+        if wiring is None:
+            return (
+                200,
+                {
+                    "accepted": False,
+                    "idempotent": False,
+                    "stage": stage.value,
+                    "error": (
+                        "这个进程没装配自动教学腿——换档没有可生效的地方，"
+                        "什么都没写。"
+                    ),
+                },
+            )
+        if wiring.rollout_stage == stage:
+            return (
+                200,
+                {
+                    "accepted": True,
+                    "idempotent": True,
+                    "stage": stage.value,
+                    "error": None,
+                },
+            )
+        self._host.app_settings.set(
+            APP_SETTING_ROLLOUT_STAGE_KEY, stage.value
+        )
+        moved = dataclasses.replace(wiring, rollout_stage=stage)
+        self._host.coordinator.replace_automatic_teaching(moved)
+        return (
+            200,
+            {
+                "accepted": True,
+                "idempotent": False,
+                "stage": stage.value,
+                "error": None,
+            },
+        )
 
     def teaching_policy_save(
         self, knobs: dict[str, Any]
@@ -4732,11 +4872,10 @@ def _build_server(
                 return
             if self.path == "/api/settings/teaching_policy":
                 # 主线-1: the eight-knob write. The grammar is validated
-                # here, fail-closed (a system column — mode 最响 — is a
-                # 400 人话 naming itself; a word outside the frequency's
-                # four is a 400); the store's version discipline rides
-                # 200 / 409 from the face (an idempotent replay, a
-                # CONFLICT 上浮).
+                # here, fail-closed (a system column is a 400 人话 naming
+                # itself; a word outside the frequency's four is a 400);
+                # the store's version discipline rides 200 / 409 from the
+                # face (an idempotent replay, a CONFLICT 上浮).
                 error, knobs = _settings_knob_request(self._read_json_body())
                 if error is not None or knobs is None:
                     self._send_json(400, {"error": error})
@@ -4744,6 +4883,22 @@ def _build_server(
                 self._run_host_write(
                     lambda: face.teaching_policy_save(knobs)
                 )
+                return
+            if self.path == "/api/settings/mode":
+                # The veto-response cut: the §12 tier write. One word
+                # inside the server-declared four, case-sensitive (the
+                # enum's own spellings — ``Study-first`` keeps its hyphen);
+                # anything else is the 400 below. The face persists the
+                # word and swaps the live wiring, so the next turn decides
+                # under the new tier; the gate functions are untouched.
+                # (The variable is not the frequency route's ``word``: a
+                # second same-name assignment in this function would make
+                # mypy widen both lambdas' captured types.)
+                stage_word = _mode_request_word(self._read_json_body())
+                if stage_word is None:
+                    self._send_json(400, {"error": _MODE_GRAMMAR})
+                    return
+                self._run_host_write(lambda: face.mode_save(stage_word))
                 return
             if self.path == "/api/settings/disclosure":
                 # fr-A: the disclosure rule-set write — the full new set,

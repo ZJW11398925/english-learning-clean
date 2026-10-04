@@ -246,6 +246,12 @@ RETAINED_TABLES: tuple[str, ...] = (
     "runtime_epoch",
     "schema_meta",
     "schema_migrations",
+    # veto-response cut (migration 0022): the generic host settings table —
+    # process-level launch-configuration facts (this cut writes exactly one
+    # key, 'rollout_stage'), not learner data; the same keep rule as
+    # schema_meta covers it (an ALL_USER_DATA sweep keeps the schema and
+    # the ledger, and the host's own settings).
+    "app_setting",
 )
 
 #: The global Curriculum / Content Library. Curriculum lives in content.db,

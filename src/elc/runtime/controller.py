@@ -1180,6 +1180,38 @@ class ConversationCoordinator:
         # before this slice) keeps those sites' answer exactly ``None``.
         self._world_lore = world_lore
 
+    def replace_automatic_teaching(
+        self, wiring: AutomaticTurnWiring | None
+    ) -> None:
+        """Swap the automatic leg's wiring for a new object (veto-response
+        cut — the page-movable rollout tier).
+
+        The one controlled write point for ``self._automatic``: the hot
+        change (``POST /api/settings/mode``) persists the user's tier and
+        hands the coordinator a **new** wiring whose ``rollout_stage`` moved
+        (:func:`dataclasses.replace` over the frozen dataclass — every other
+        field rides verbatim). Every turn reads ``self._automatic`` fresh
+        (:meth:`decide_automatic_turn` receives the wiring per turn), so the
+        next turn decides under the new tier with no reassembly — that is
+        the whole point of swapping the object instead of mutating a field
+        on the frozen dataclass. ``None`` stays legal (the bare tier's
+        shape); the caller is the composition root's face, nothing else
+        assigns here.
+        """
+
+        self._automatic = wiring
+
+    def automatic_teaching_wiring(self) -> AutomaticTurnWiring | None:
+        """The live wiring, verbatim — the read half of the swap above.
+
+        The settings read answers the effective tier from here (what the
+        *next* turn will decide under), not from the host's frozen
+        ``rollout_stage`` snapshot: after a hot change the two differ, and
+        the live one is the truth. ``None`` is the bare tier's shape.
+        """
+
+        return self._automatic
+
     # -- the §17.1 barge-in handoff (P9-3) -----------------------------------
 
     def request_interrupt(self, interrupt: InterruptRequest) -> Result[InputId]:

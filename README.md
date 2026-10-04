@@ -53,7 +53,7 @@ PYTHONPATH=src python -m elc observations --app-db ./app.db
 
 - **dogfood 前对全新 app.db 跑一次 `seed`**：它经 host 自己的 controller 写入缺省教学策略（`pv-seed-v1`，BALANCED）+ 单一 SPEAKING 目标（`goal-seed-v1`）+ 每个可执行验证（EV）目标一行 §5.2 schedule 行——没有这三件，planner 生成零候选，自动教学永不触发。
 - `seed` 幂等：所有写入都是 upsert（schedule 行按 target×modality 键重放），重跑安全；它不发任何网络请求（不需要 provider/model/key），也不声明 rollout stage——只铺配置，不开闸。
-- `--content-db` 给 chat 装配**全链 tier**（自动教学腿 + 真检测器）；`--rollout-stage` 声明 §12 四词之一（缺省不声明 = fail-closed，零自动教学；非法词人话退出 2）。
+- `--content-db` 给 chat 装配**全链 tier**（自动教学腿 + 真检测器）；`--rollout-stage` 声明 §12 四词之一（非法词人话退出 2）。**可选**（veto-R 起）：不传时读 app.db 里持久的教学模式（设置页「教学模式」写入的档，migration 0022 的 `app_setting` 表）；两边都没有 = fail-closed，零自动教学。启动命令显式给档时，本进程以启动命令为准（页面仍可热改，重启后回到显式档）。
 - `observations` 是纯 SQL 读面：§12 六指标声明 + app.db 真实计数（gate_decision 按 decision×reason_codes，含 `TARGET_NOT_EXECUTABLY_VERIFIED` 漂移信号计数）+ D-3 matcher 已知假阳面清单——只打印，不写任何表。
 
 ### 本地 Web 面（W-1，用户已明示同意）：浏览器里的 Study-first dogfood

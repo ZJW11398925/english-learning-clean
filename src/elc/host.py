@@ -183,6 +183,10 @@ from elc.persona.runtime import PersonaRuntime
 from elc.persona.types import CharacterPackageRecord
 from elc.planner.candidates import CandidateSupply
 from elc.planner.ledger_store import SqliteLedgerStore
+from elc.platform.db.app_settings import (
+    APP_SETTING_ROLLOUT_STAGE_KEY,
+    AppSettingStore,
+)
 from elc.platform.db.connection import DEFAULT_MIGRATIONS_DIR, connect
 from elc.platform.db.decision_cycle_store import SqliteDecisionCycleStore
 from elc.platform.db.delivery_store import SqliteDeliveryRecordStore
@@ -318,10 +322,22 @@ class Host:
     #: idempotently at open and the resolution port wired into the
     #: coordinator (the compiler's framed ``[lore]`` section reads it).
     world_lore: WorldLoreController
+    #: veto-response cut: migration 0022's generic host settings table
+    #: (``app_setting`` key/value — always built, both tiers, the
+    #: character_cards shape). This cut writes exactly one key
+    #: (``rollout_stage``); W-1-0's world settings reuse the same table in
+    #: their own follow-up migration (0023).
+    app_settings: AppSettingStore
     persona: PersonaRuntime
     coordinator: ConversationCoordinator
     secrets: SecretSource | None = None
     # -- the full-chain tier (None in the prep-1 tier) ----------------------
+    #: The **effective** tier this open assembled under — the read order's
+    #: answer (explicit launch argument > the persisted ``app_setting`` word
+    #: > ``None``, the fail-closed default). A snapshot of the open, not a
+    #: live control: the page's hot change (``POST /api/settings/mode``)
+    #: moves the *wiring* the coordinator holds per turn (and the settings
+    #: read answers from that live wiring), never this frozen field.
     rollout_stage: RolloutStage | None = None
     user_id: UserId | None = None
     user_config: UserConfigController | None = None
@@ -478,9 +494,14 @@ def open_host(
     ``content_db_path=None`` assembles the prep-1 tier; a
     path assembles the full chain over that built artifact (read-only —
     the store refuses a writable connection by construction) and binds
-    ``rollout_stage`` into the automatic wiring verbatim (``None`` keeps
-    the fail-closed default; this function never substitutes a stage of
-    its own). ``candidate_supply`` passes through to the wiring verbatim
+    the **effective** tier into the automatic wiring. The read order is
+    the veto-response cut's: an explicit ``rollout_stage`` argument wins;
+    absent one, the persisted ``app_setting('rollout_stage')`` word (the
+    page's own tier write, migration 0022) answers; absent both, ``None``
+    keeps the fail-closed default. An unparseable stored word reads as
+    absent — this function never invents a stage the launch command and
+    the table do not name. ``candidate_supply`` passes through to the
+    wiring verbatim
     (``None`` — the production value — runs the generators over the ports;
     see the module docstring).
 
@@ -500,6 +521,22 @@ def open_host(
     try:
         applied = apply_migrations(db, migrations_dir)
         fence = open_runtime_epoch(db)
+        # veto-response cut: the host settings store over migration 0022's
+        # table (always built, both tiers), and the tier read order — the
+        # explicit launch argument wins; absent one, the persisted
+        # ``rollout_stage`` word answers; absent both, ``None`` (the
+        # fail-closed default, untouched). An unparseable stored word is
+        # read as absent — the reader never guesses a stage into being, so
+        # a corrupt word degrades to fail-closed, never to a crash open.
+        app_settings = AppSettingStore(db, fence)
+        effective_stage = rollout_stage
+        if effective_stage is None:
+            stored_word = app_settings.get(APP_SETTING_ROLLOUT_STAGE_KEY)
+            if stored_word is not None:
+                try:
+                    effective_stage = RolloutStage(stored_word)
+                except ValueError:
+                    effective_stage = None
         conversations = SqliteConversationStore(db, fence)
         generation = SqliteGenerationStore(db, fence)
         decision_cycles = SqliteDecisionCycleStore(db, fence)
@@ -658,7 +695,7 @@ def open_host(
                 session_budget=teaching,
                 user_id=LOCAL_V1_USER_ID,
                 candidate_supply=candidate_supply,
-                rollout_stage=rollout_stage,
+                rollout_stage=effective_stage,
                 provenance=provenance,
                 error_detectors=RegistryDispatch(GLOBAL_REGISTRY),
             )
@@ -722,7 +759,8 @@ def open_host(
         persona=persona,
         coordinator=coordinator,
         secrets=secrets,
-        rollout_stage=rollout_stage,
+        app_settings=app_settings,
+        rollout_stage=effective_stage,
         user_id=LOCAL_V1_USER_ID if content_db_path is not None else None,
         user_config=user_config,
         user_config_store=user_config_store,
