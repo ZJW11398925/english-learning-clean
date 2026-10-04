@@ -313,11 +313,11 @@ def test_entering_a_space_lands_its_default_section(tmp_path: Path) -> None:
 
 
 def test_the_settings_node_is_an_honest_placeholder(tmp_path: Path) -> None:
-    """The drawer's settings section（主线-1 随迁——8.2.8 重铸②为真控制
-    面，原「页面读不到」fail-closed 句随读面闭合退役）: the two standing
-    truths survive, the stage law is the new honest reading（读得到当前
-    档，改它仍要走启动命令）, the three modes ride along as reference-only
-    copy, and no promise word anywhere."""
+    """The drawer's settings section（主线-1 随迁 + veto-R 随迁——8.2.8
+    重铸②为真控制面，veto-R 起模式可改）: the two standing
+    truths survive, the mode face is the ink select editor（只读 Law 句
+    与换档句随只读读法退役）, the four tiers ride along as the select's
+    words, and no promise word anywhere."""
 
     page = _page_of(tmp_path)
     # rd-4 缺位钉：旧两句退役，不回潮
@@ -327,11 +327,11 @@ def test_the_settings_node_is_an_honest_placeholder(tmp_path: Path) -> None:
     assert "页面不读取，也不显示" in page
     assert "这台应用只服务你一个人（127.0.0.1，无账号无密码）。" in page
     assert "批注频率在 温故 · 方向 里调。" in page
-    # 主线-1 随迁：读面 Law 句（stage 原值槽位）+ 换档句 + 三档参考
-    assert 'id="settings-stage"' in page
-    assert "由启动命令给定，这里读得到，但不能改。" in page
-    assert "当前这一档由启动命令给定——页面读不到，也不改它。" not in page
-    assert "换端点或换档 = 改启动命令再启动。" in page
+    # veto-R 随迁：模式可改读面（墨选编辑器容器）；只读 Law 句与换档
+    # 句退役；四档词随 MODE_CN 常量在 app.js（页面词面零拷贝）
+    assert 'id="settings-mode-editor"' in page
+    assert "由启动命令给定，这里读得到，但不能改。" not in page
+    assert "换端点或换档 = 改启动命令再启动。" not in page
     assert "娱乐 · 关系优先" in page
     assert "平衡" in page
     assert "学习优先" in page

@@ -22,6 +22,7 @@ SCROLL_CONTAINERS = (
     ".envsel-editor",  # 编辑面（唯一滚动井）
     ".envsel-compose", # 写信工作区面
     ".select-list",    # fr-A #27 墨选浮层列表（超 240px 内滚）
+    ".tm-pop",         # veto-R #26 计量明细浮层（max-height 40vh 内滚）
 )
 
 

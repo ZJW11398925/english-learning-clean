@@ -112,11 +112,14 @@ def test_the_four_tables_are_not_in_the_narrower_scopes() -> None:
 
 
 def test_the_retained_set_is_unchanged_and_the_sweep_grew_by_four() -> None:
+    # veto-R 随迁：retained 四 → 五——0022 的主机设置表（进程级配置
+    # 事实，非学习者数据；schema_meta 同一保留读法）。
     assert set(RETAINED_TABLES) == {
         "deletion_tombstone",
         "runtime_epoch",
         "schema_meta",
         "schema_migrations",
+        "app_setting",
     }
     # 主线-3 随迁：全局内容集迎来第一个 app.db 成员（共享世界事实）。
     assert GLOBAL_CONTENT_TABLES == ("world_lore_fact",)

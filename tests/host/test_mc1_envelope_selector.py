@@ -355,7 +355,7 @@ def test_the_preview_animation_is_pinned_to_the_v2_motion_law() -> None:
         " var(--ease-paper) both," in screens
     )
     assert (
-        ".envsel--fold { animation: paper-fold var(--dur-panel-out)"
+        ".envsel--fold { animation: paper-retract var(--dur-panel-out)"
         " var(--ease-exit)" in screens
     )
     assert (
@@ -634,13 +634,14 @@ def test_the_migration_manifest_restates_the_new_truths() -> None:
     screens = _text("screens.css")
     components = _text("components.css")
     assert screens.count("border-radius") == 4
-    # .envsel + .env + 预览短笺 + .envpage (2px)；fr-A 随迁（+2 = 9）：
-    # #24 回底墨点本体与其纸白薄雾圆——用户明示墨点样式族（②-6 豁免
-    # 登记在册）
-    # 基线3 + 邮戳双圈2 + 邮票图形2 + fr-A 墨点2 = 9
-    assert components.count("border-radius") == 9
-    # fr-A 随迁（+2 = 6）：#24 墨点承影 + #27 墨选浮层纸面——两级之内
-    assert components.count("box-shadow: var(--stack-shadow-soft);") == 6
+    # .envsel + .env + 预览短笺 + .envpage (2px)；fr-A 曾随迁 +2（回底
+    # 墨点本体与薄雾圆）——veto-R 随迁：墨点形态退役（用户否决，②-6
+    # 豁免回收），9 → 7。
+    # 基线3 + 邮戳双圈2 + 邮票图形2 = 7
+    assert components.count("border-radius") == 7
+    # fr-A 曾随迁 +2 = 6；veto-R 随迁：墨点承影位由 #24 钮（重铸后仍
+    # soft）+ #26 计量粒与 .tm-pop 浮层接续 = 8——两级之内
+    assert components.count("box-shadow: var(--stack-shadow-soft);") == 8
     assert screens.count("box-shadow") == 4         # 舞台 deep + 垫板/页卡/缩略封 soft
     # the mc-1 face styles live outside the component registry (the
     # dossier precedent): no numbered contract block, no clause words

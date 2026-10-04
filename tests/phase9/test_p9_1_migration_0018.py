@@ -172,21 +172,25 @@ def _canonical_vocabulary() -> dict[str, tuple[str, ...]]:
 def test_0018_is_0017s_successor_and_the_head() -> None:
     """0018 is in the chain, 0017 is immediately behind it, and its own
     successor is MC-0's ``0019_character_cards.sql`` — followed by 主线-3's
-    ``0020_world_lore_facts.sql`` and fr-A's ``0021_provider_usage.sql``
-    (renumbered from 0020 at merge), the current head (this pin read
+    ``0020_world_lore_facts.sql``, fr-A's ``0021_provider_usage.sql``
+    (renumbered from 0020 at merge) and the veto-response cut's
+    ``0022_app_settings.sql``, the current head (this pin read
     ``names[-1] == SCHEMA_HEAD_FILE == HEAD_0018`` while 0018 was the head
     — the P8-4 suite's rule: the successor is a **literal** here so the
     head can move without silently falsifying the lineage claim)."""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert MIGRATION_IDS[-1] == "0021_provider_usage"
-    assert SCHEMA_HEAD_FILE == "0021_provider_usage.sql"
+    assert MIGRATION_IDS[-1] == "0022_app_settings"
+    assert SCHEMA_HEAD_FILE == "0022_app_settings.sql"
     assert names[names.index(HEAD_0018) + 1] == "0019_character_cards.sql"
     assert names[names.index("0019_character_cards.sql") + 1] == (
         "0020_world_lore_facts.sql"
     )
     assert names[names.index("0020_world_lore_facts.sql") + 1] == (
         "0021_provider_usage.sql"
+    )
+    assert names[names.index("0021_provider_usage.sql") + 1] == (
+        "0022_app_settings.sql"
     )
     assert names[names.index(PRE_0018) + 1] == HEAD_0018
     assert [name[:4] for name in names] == [
@@ -217,8 +221,8 @@ def test_applying_the_chain_is_idempotent(db: sqlite3.Connection) -> None:
 
 
 def test_the_stamps_move_to_the_shared_head(db: sqlite3.Connection) -> None:
-    # 主线-3 随迁：head stamp 19 → 20；fr-A 再随迁 20 → 21（合并重编号）。
-    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "21"
+    # 主线-3 随迁：head stamp 19 → 20；veto-R 再随迁 21 → 22（app_setting）。
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "22"
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"

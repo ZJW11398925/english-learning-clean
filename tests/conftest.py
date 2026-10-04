@@ -60,12 +60,17 @@ MIGRATION_IDS: tuple[str, ...] = (
     # at merge: master's 0020_world_lore_facts merged first (the
     # first-merged-side-wins law, DEC-OPI-32409938…49 R2).
     "0021_provider_usage",
+    # veto-response cut (user dogfood first-verification veto): the generic
+    # host settings key/value table — this cut writes exactly one key
+    # ('rollout_stage', the page-movable tier); W-1-0's world settings reuse
+    # the same table in their own follow-up migration (0023).
+    "0022_app_settings",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0021_provider_usage.sql"
-SCHEMA_HEAD_VERSION = "21"
+SCHEMA_HEAD_FILE = "0022_app_settings.sql"
+SCHEMA_HEAD_VERSION = "22"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

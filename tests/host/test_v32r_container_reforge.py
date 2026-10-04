@@ -479,11 +479,14 @@ def test_the_design_language_census_stands() -> None:
 
     components = _text("components.css")
     screens = _text("screens.css")
-    assert components.count("@keyframes ") == 12
+    # veto-R 随迁：@keyframes 12 → 13（paper-retract 新原语——大容器
+    # 退场禁整体缩放）；圆角 9 → 7（fr-A 墨点两枚随 #24 形态退役）；
+    # soft 阴影 6 → 8（#24 钮重铸后仍 soft + #26 粒与明细浮层各一座）。
+    assert components.count("@keyframes ") == 13
     assert screens.count("border-radius") == 4
-    assert components.count("border-radius") == 9
+    assert components.count("border-radius") == 7
     assert screens.count("box-shadow") == 4
-    assert components.count("box-shadow") == 8
+    assert components.count("box-shadow") == 10
     whole = _page()
     assert "backdrop-filter" not in whole
     app = _text("app.js")

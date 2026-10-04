@@ -127,19 +127,24 @@ def test_the_pen_cap_is_the_half_screen_minus_chrome() -> None:
 
 
 def test_the_flow_bottom_dot_exists_and_follows_the_distance() -> None:
-    """回底墨点：#24 契约块 + 屏级位置账 + 工厂接线——离底阈值浮现、在底
-    即藏、写作态藏、离案头藏；点击平滑回底（reduced-motion 直落）。"""
+    """回底钮（veto-R 重铸随迁：墨点形态退役）：#24 契约块 + 屏级位置账
+    + 工厂接线——离底阈值浮现、在底即藏、写作态藏、离案头藏；点击平滑
+    回底（reduced-motion 直落）。形态 = 纸底+发丝线+图标+「回到底」
+    字标（圆形与 aria-label 独挑语义随墨点退役——字标承担可读语义）。"""
 
     index = _webui("index.html")
     assert 'id="flow-bottom"' in index
     assert 'class="flow-bottom"' in index
-    assert 'aria-label="回到最新一封"' in index
+    assert 'class="flow-bottom-word">回到底</span>' in index
     css = _webui("components.css")
     assert "24. flow-bottom" in css
-    block = css[css.index("/* ── 24. flow-bottom"):]
+    block = css[css.index("/* ── 24. flow-bottom"):
+                css.index("/* ── 25. flow-ruler")]
     assert "状态矩阵：" in block and "使用规则：" in block
     assert "禁止变体：" in block
-    assert "border-radius: 50%;" in block
+    assert "border-radius" not in block
+    assert "background: var(--paper-high)" in block
+    assert "border: 1px solid var(--rule)" in block
     screens = _webui("screens.css")
     assert ".flow-bottom { position: fixed; z-index: 5;" in screens
     assert "var(--navdock-h) + var(--dock-trigger-h)" in screens
@@ -185,10 +190,18 @@ def test_the_turn_ruler_is_one_tick_per_turn_with_honest_paging() -> None:
         in app
     assert "function syncFlowRuler() {" in app
     assert "flowTurns.length >= 2;" in app
-    # 口径句 + 加载更早（服务端 has_more 是诚实分页位）
+    # veto-R（面⑨）：刻度 ↔ 轮锚一一对应收紧——rAF 节流的被动 listener
+    # 对账 + 高亮按真实锚点位置计算（视位线 = 顶栏之下一档呼吸，与点击
+    # 跳转同一条线）。
+    assert "function scheduleFlowRulerSync() {" in app
+    assert "requestAnimationFrame(() => {" in app
+    assert 'window.addEventListener("scroll", scheduleFlowRulerSync, ' \
+        '{ passive: true });' in app
+    # 口径句 + 加载更早（服务端 has_more 是诚实分页位；veto-R 数据优先
+    # 收短——口径句尾句收成最短词）
     assert "刻度只管已加载的窗口——" in app
-    assert "往前翻，翻到头为止。" in app
-    assert "更早的信没有了——以上是全部。" in app
+    assert " 往前翻。" in app
+    assert "更早的信没有了。" in app
     assert "async function loadEarlierLetters() {" in app
     assert "parlorWindow = (lastHistoryWindow || before || 50) + 50;" in app
     assert "const shift = flowTurns.length - before;" in app
@@ -316,7 +329,9 @@ def test_the_usage_columns_are_the_adjudicated_migration() -> None:
     ]
     for name in ("prompt_tokens", "completion_tokens", "total_tokens"):
         assert name in columns, name
-    assert migrations.schema_version(conn) == "21"
+    # veto-R 随迁：chain head = 0022（app_setting）；0021 的三列本体与
+    # 自带 stamp（'21'，上钉）不动。
+    assert migrations.schema_version(conn) == "22"
     conn.close()
 
 
@@ -407,26 +422,43 @@ def test_the_history_and_turn_faces_carry_the_measured_usage(
 
 
 def test_the_page_meter_reads_the_face_and_holds_the_switch() -> None:
-    """UI + 开关：案头计量条（#26 契约 + sticky 位置账）读 /api/history
-    的累计与逐轮；“显示 token 计量”开关存 sessionStorage（客户端侧，
-    如实标注）；未计量字段如实「—」，全空如实一句。"""
+    """UI + 开关（veto-R 重铸随迁：紧凑计量粒）：dock 上沿内嵌读数钮
+    （#26 契约 + 粒位置账）读 /api/history 的累计与逐轮；点按展开
+    .tm-pop 逐轮明细浮层（浮层家族：Esc 关、点外关、⑩ 互斥收）；
+    “显示 token 计量”开关存 sessionStorage（客户端侧，如实标注）；
+    无读数不现位（空说明句退役），未计量字段在浮层里如实「—」。"""
 
     index = _webui("index.html")
     assert 'id="tokenmeter"' in index
+    assert 'class="tokenmeter"' in index
+    assert index.index('id="tokenmeter"') < index.index('id="dock-trigger"')
     css = _webui("components.css")
     assert "26. tokenmeter" in css
-    assert ".tokenmeter .tm-num { font-variant-numeric: tabular-nums;" in css
+    assert ".tokenmeter .tm-num, .tm-pop .tm-num " \
+        "{ font-variant-numeric: tabular-nums;" in css
+    assert ".tm-pop { position: fixed; z-index: 10;" in css
     screens = _webui("screens.css")
-    assert ".tokenmeter { position: sticky; top: 46px; z-index: 4;" in screens
+    # veto-R：sticky 独立层退役——screens 的计量位置账只留退役登记注释
+    # （pageback 的 sticky 是另一处既有规则，不涉计量）
+    assert ".tokenmeter { position: sticky" not in screens
+    assert "sticky 层位账退役" in screens
     app = _webui("app.js")
     assert 'const TOKEN_METER_KEY = "elc-token-meter";' in app
     assert "sessionStorage.setItem(TOKEN_METER_KEY, \"1\");" in app
     assert "sessionStorage.removeItem(TOKEN_METER_KEY);" in app
     assert "function syncFlowMeter(usage) {" in app
     assert "function renderTokenMeter() {" in app
-    assert "line.appendChild(tokenNum(data.prompt_tokens));" in app
-    assert "还没有计量读数——端点没报 usage（0/" in app
-    assert "轮端点没报 usage——如实跳过。" in app
+    assert "function toggleTokenMeterPop() {" in app
+    assert "function closeTokenMeterPop() {" in app
+    # ⑩ 互斥收：开本浮层先收墨选/词卡/沓；反向同法（showSpace/开沓/
+    # 升写作态收本浮层）
+    assert "closeOpenSelects();" in app
+    assert "closeTokenMeterPop();   // ⑩ 互斥：开沓先收计量明细浮层" in app
+    # 主数据直出（累计总 token，toLocaleString 千分位 + tabular-nums）
+    assert "Number(total).toLocaleString" in app
+    assert 'pill.setAttribute("aria-expanded", "false");' in app
+    # 无读数不现位：端点没报 usage = 粒不占位（空说明句退役）
+    assert "还没有计量读数" not in app
     assert "async function refreshFlowMeter() {" in app
     assert "const data = await fetchHistory({ limit: 1 });" in app
     # 客户端不做本地加减：累计一律读回服务端
@@ -439,7 +471,8 @@ def test_the_settings_display_group_carries_the_meter_toggle() -> None:
     index = _webui("index.html")
     assert 'id="set-settings-display"' in index
     assert "<h3>显示与计量</h3>" in index
-    assert "sessionStorage 客户端侧" in index
+    # veto-R 数据优先收短：括号工程词退役，持久语义保留一句
+    assert "只活在当前标签页，关掉就复位" in index
     app = _webui("app.js")
     assert "function renderSettingsMeter() {" in app
     assert 'toggle.setAttribute("aria-pressed", tokenMeterOn ? "true" : "false");' \
@@ -453,10 +486,11 @@ def test_the_settings_display_group_carries_the_meter_toggle() -> None:
 
 
 def test_the_settings_page_is_five_groups_and_the_mode_face_is_visual() -> None:
-    """分组 IA 五区（如实说 / 教学模式 / 教学策略 / 隐私与披露 / 显示与
-    计量）+ 模式视觉读面：三档句整句在场（PRODUCT_CONTRACT §3 档名与
-    枚举词并写），当前档高亮 aria-current 但不可改——mode 写入继续由
-    服务端 400 拒绝（行为钉在既有 mainline1 套件）。"""
+    """分组 IA（如实说 / 教学模式 / 教学策略 / 隐私与披露 / 显示与
+    计量；veto-R：panel-grid 两栏退役，导语一行 + 节块）+ 模式可改读面
+    （veto-R 随迁）：四档墨选（#27），中文档名 + 分寸句一行，当前档 =
+    墨选现值——modeline 三档参考块随只读读法退役（行为钉在
+    test_veto_response 的 mode 写面套件）。"""
 
     index = _webui("index.html")
     settings = index.split('id="drawer-settings"', 1)[1].split(
@@ -466,24 +500,37 @@ def test_the_settings_page_is_five_groups_and_the_mode_face_is_visual() -> None:
                    'id="set-settings-disclosure"', "<h3>隐私与披露</h3>",
                    'id="set-settings-display"', "<h3>显示与计量</h3>"):
         assert marker in settings, marker
+    # veto-R 统一规格：panel-grid 两栏退役；模式节 = 墨选编辑器 + 分寸
+    # 句 + 结果行
+    assert "panel-grid" not in settings
+    assert 'id="settings-mode-editor"' in settings
+    assert 'id="settings-mode-note"' in settings
+    assert 'id="settings-mode-result"' in settings
     app = _webui("app.js")
-    assert "const MODE_TIERS = [" in app
+    assert "const MODE_CN = {" in app
     for line in (
-        "娱乐 · 关系优先：聊得多，递得少，笔友以听和陪为主。",
-        "平衡：聊天与练句并行，批注适度。",
-        "学习优先：练句密度优先，批注递得勤，课程感更明显。",
+        '"manual/user-initiated": "手动（用户发起）",',
+        '"Study-first": "学习优先",',
+        '"Balanced": "平衡",',
+        '"Lounge": "娱乐 · 关系优先",',
     ):
         assert line in app, line
-    assert 'row.className = "modeline" + (on ? " modeline--on" : "");' in app
-    assert 'row.setAttribute("aria-current", "true");' in app
-    assert 'mark.textContent = "当前档";' in app
-    # 当前档的判定只认枚举自己的词（不猜、不模糊匹配）
-    assert 'stages: ["Lounge"],' in app
-    assert 'stages: ["Balanced"],' in app
-    assert 'stages: ["Study-first"],' in app
+    # 分寸句一行（换档要懂的差别——数据优先原则的保留面）
+    for hint in (
+        "教学只在你开口要时发生。",
+        "练句密度优先，批注递得勤，课程感更明显。",
+        "聊天与练句并行，批注适度。",
+        "聊得多，递得少，笔友以听和陪为主。",
+    ):
+        assert hint in app, hint
+    assert "function renderSettingsMode() {" in app
+    assert 'placeholder: "未声明——自动教学关着",' in app
+    # modeline 读法整体退役（登记注释可提及其名，规则体不得在场）
+    assert "const MODE_TIERS = [" not in app
+    assert "modeline" not in app
     css = _webui("components.css")
-    assert ".modeline--on { border-left-color: var(--ink); color: var(--ink); }" \
-        in css
+    assert ".modeline {" not in css
+    assert ".modeline--on" not in css
 
 
 def test_the_disclosure_editor_reads_writes_and_refuses(
@@ -673,18 +720,20 @@ def test_the_typography_spec_section_carries_the_assignment() -> None:
     assert "| ④ 微标签与 mono 数字档 |" in spec
     assert "新规则一律 `font: var(--t-*)`" in spec
     assert "### 9.14 fr-A 修订登记" in spec
-    # ②-6 的豁免集合在法则自己的家里登记（原始法则句一字保留）
+    # ②-6 的豁免集合在法则自己的家里登记（原始法则句一字保留；veto-R
+    # 随迁：回底墨点豁免退役，登记句改写为退役记录）
     assert "圆角 v2 收窄一档：信纸物件 ≤2px，仅邮票/邮戳圆形" in spec
     assert "**fr-A 豁免新增一席（2026-10-05" in spec
-    assert "邮票/邮戳/回底墨点" in spec
+    assert "veto-R 退役" in spec
+    assert "回到「仅邮票/邮戳" in spec
     # ②-5 指向配方（不重列）
     assert "排印配方 `--t-*` 九枚与四族应用规范见 **②-4a**" in spec
 
 
 def test_the_native_select_is_retired_and_the_ink_select_is_registered() -> None:
     """墨选：原生 <select> 全应用退役（零 createElement("select")）；#27
-    契约块 + aria/键盘/点外关闭全链；三现役消费面（方向页技能 / 设置
-    批注频率 / 披露层级）。"""
+    契约块 + aria/键盘/点外关闭全链；消费面（fr-A 三面 + veto-R 扩面：
+    教学模式四档 + 七钮档位化——自由文本框退役）。"""
 
     app = _webui("app.js")
     assert 'createElement("select")' not in app
@@ -693,10 +742,12 @@ def test_the_native_select_is_retired_and_the_ink_select_is_registered() -> None
     assert 'onChange: (next) => { goal.goal_modality = next; },' in app
     assert 'onChange: (next) => { policyEditor[name] = next; },' in app
     assert 'onChange: (next) => { rule.disclosure_level = next; },' in app
+    assert 'onChange: (next) => { saveMode(next); },' in app
     assert "select.root" in app
     # 工厂对象不是 Node——进 DOM 必须经 root（fr-A 活体自查抓到的
-    # appendChild 类型错，此钉为该错类的结构守卫）
-    assert "node = control.root;" in app
+    # appendChild 类型错，此钉为该错类的结构守卫；veto-R 七钮直取
+    # .root 同法）
+    assert ".root;" in app
     assert "box.appendChild(fieldRow(label, node));" in app
     assert "edge.appendChild(fieldRow(\"目标 \" + (index + 1) + \" · 技能\"," in app
     components = _webui("components.js")

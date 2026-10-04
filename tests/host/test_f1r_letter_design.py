@@ -69,11 +69,11 @@ def test_the_page_keeps_the_letter_form_laws(tmp_path: Path) -> None:
     # .stamp-v5 圆拱——邮票圆形豁免位）；④信纸物件的 2px 收窄圆角
     # （.envsel 沓面板与 .env 信封——简报 §6 增补档，非面板大圆角；
     # mc-2 起加编辑台的开场信预览短笺——同 ≤2px 信纸物件档；v2-2 起
-    # 加信封沓翻页全览的页卡 .envpage——同档）；fr-A 随迁（+2 = 13）：
-    # #24 回底墨点本体与其纸白薄雾圆——用户明示墨点样式族，②-6 的
-    # fr-A 豁免登记在册。
+    # 加信封沓翻页全览的页卡 .envpage——同档）；fr-A 曾加回底墨点两枚
+    # （+2 = 13）——veto-R 随迁：墨点形态退役（用户否决，#24 重铸为
+    # 纸底+发丝线矩形），豁免集合回到「仅邮票/邮戳圆形」，13 → 11。
     # 面板大圆角仍一处即红。
-    assert page.count("border-radius") == 13
+    assert page.count("border-radius") == 11
     assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
     assert "rgba(0,0,0" not in page

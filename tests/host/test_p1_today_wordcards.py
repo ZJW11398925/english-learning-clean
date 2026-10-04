@@ -513,10 +513,11 @@ def test_the_word_card_overlay_is_the_letter_language(
     # 邮票图形两枚（.stamp-v0/.stamp-v5）+ 信封沓的 2px 两处
     # （.envsel/.env，简报 §6 增补档；mc-2 起加编辑台的开场信预览
     # 短笺——同 ≤2px 信纸物件档；v2-2 起加翻页全览页卡 .envpage）；
-    # fr-A 随迁（+2 = 13）：#24 回底墨点本体与其纸白薄雾圆——用户
-    # 明示墨点样式族，②-6 的 fr-A 豁免登记在册。
+    # fr-A 曾随迁（+2 = 13）——veto-R 随迁：#24 回底墨点本体与其纸白
+    # 薄雾圆随墨点形态退役（用户否决），13 → 11；②-6 豁免集合回到
+    # 「仅邮票/邮戳圆形」。
     # 面板大圆角仍一处即红。
-    assert page.count("border-radius") == 13
+    assert page.count("border-radius") == 11
     assert "border-radius: 50%" in page
     assert "rgba(0, 0, 0" not in page
 

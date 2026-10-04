@@ -263,11 +263,14 @@ def test_the_retained_set_is_unchanged_and_every_delivery_table_is_swept() -> No
     neither of the other two sets (the children-first order is the sibling
     test's)."""
 
+    # veto-R 随迁：retained 四 → 五——0022 的主机设置表（进程级配置
+    # 事实，非学习者数据；schema_meta 同一保留读法）。
     assert set(RETAINED_TABLES) == {
         "deletion_tombstone",
         "runtime_epoch",
         "schema_meta",
         "schema_migrations",
+        "app_setting",
     }
     # 主线-3 随迁：全局内容集从空读到第一个 app.db 成员——共享世界的事实
     # 不属于任何用户（SEC-025 的 keep 半）。

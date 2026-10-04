@@ -114,12 +114,15 @@ def test_the_all_user_data_sweep_fails_on_an_unclassified_table(
     db.execute("DROP TABLE rogue_user_table")
 
 
-def test_the_retained_set_is_the_four_infrastructure_and_ledger_tables() -> None:
+def test_the_retained_set_is_the_infrastructure_and_ledger_tables() -> None:
+    # veto-R 随迁：app_setting（migration 0022 的主机设置表——进程级
+    # 配置事实，非学习者数据）入保留集，retained 四 → 五。
     assert set(RETAINED_TABLES) == {
         "deletion_tombstone",
         "runtime_epoch",
         "schema_meta",
         "schema_migrations",
+        "app_setting",
     }
 
 

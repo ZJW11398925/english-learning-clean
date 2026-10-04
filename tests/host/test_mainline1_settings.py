@@ -447,15 +447,18 @@ def test_the_replay_is_idempotent(
 def test_the_system_columns_are_refused(
     tmp_path: Path, pilot_content_db: Path
 ) -> None:
-    """Every refused §5.1 column gets its own 400 人话 — ``mode`` the
-    rollout tier's sentence — and refuses with the durable row untouched.
+    """Every refused §5.1 column gets its own 400 人话 and refuses with the
+    durable row untouched.
 
     The five columns are enumerated **literally** (the §5.1 thirteen
-    columns' non-knob remainder, plus ``version``'s alias): looping the
-    server's own ``_SETTINGS_SYSTEM_COLUMNS`` tuple here would let a
+    columns' non-knob remainder minus ``mode``, plus ``version``'s alias):
+    looping the server's own ``_SETTINGS_SYSTEM_COLUMNS`` tuple here would let a
     mutated whitelist silently shrink this pin with it (the mutant run
     proved exactly that idle spin), so the names stand on their own and
-    the derivation pin (group 5) holds the tuple to the dataclass."""
+    the derivation pin (group 5) holds the tuple to the dataclass.
+    veto-R 随迁：``mode`` 从拒收集除名——它的写面是
+    ``/api/settings/mode``（套件后段的行为钉）；落在旋钮写体里的
+    ``mode`` 拿未知键句，照 400 照拒（零缝隙）。"""
 
     with web_stack(
         tmp_path / "app.db",
@@ -463,7 +466,6 @@ def test_the_system_columns_are_refused(
         seed=seed_settings,
     ) as stack:
         for key in (
-            "mode",
             "teaching_policy_profile_id",
             "version",
             "policy_version",
@@ -476,12 +478,14 @@ def test_the_system_columns_are_refused(
                 "/api/settings/teaching_policy", body
             )
             assert status == 400, (key, answer)
-            if key == "mode":
-                assert "mode 是当前档（rollout stage）" in answer["error"]
-                assert "换档 = 改启动命令再启动" in answer["error"]
-            else:
-                assert "系统列" in answer["error"], (key, answer)
-                assert key in answer["error"], (key, answer)
+            assert "系统列" in answer["error"], (key, answer)
+            assert key in answer["error"], (key, answer)
+        # veto-R：mode 落在旋钮写体里 = 未知键句（写面搬家，不是缝隙）
+        body = _knob_body()
+        body["mode"] = "smuggled"
+        status, answer = stack.post("/api/settings/teaching_policy", body)
+        assert status == 400, answer
+        assert "不认识的键：mode" in answer["error"]
         # nothing was written: the durable row still reads pv-m1
         status, data = stack.get_json("/api/settings")
         assert data["teaching_policy"]["policy_version"] == "pv-m1"
@@ -560,24 +564,29 @@ def test_the_settings_section_carries_the_real_controls(tmp_path: Path) -> None:
     settings = index.split('id="drawer-settings"', 1)[1].split(
         'id="del-result"', 1)[0]
     # the two standing truths and the pointing sentence survive the reforge
+    # （veto-R 统一规格：第一真句升为节导语，余两句归「如实说」节块）
     assert "这台应用只服务你一个人（127.0.0.1，无账号无密码）。" in settings
     assert "模型端点与模型名由启动命令给定——页面不读取，也不显示。" in settings
     assert "批注频率在 温故 · 方向 里调。" in settings
-    # the stage readout: the raw value slot + the read-only law, the old
-    # "页面读不到" fail-closed sentence retired by this knife
-    assert 'id="settings-stage"' in settings
-    assert "当前档：" in settings
-    assert "由启动命令给定，这里读得到，但不能改。" in settings
-    assert "当前这一档由启动命令给定——页面读不到，也不改它。" not in settings
-    assert "换端点或换档 = 改启动命令再启动。" in settings
-    # the three-tier reference block survives (PC §3's names and 分寸)
-    assert "娱乐 · 关系优先：聊得多，递得少，笔友以听和陪为主。" in settings
-    assert "平衡：聊天与练句并行，批注适度。" in settings
-    assert "学习优先：练句密度优先，批注递得勤，课程感更明显。" in settings
+    # veto-R：模式节 = 墨选编辑器 + 分寸句 + 结果行；「由启动命令给定，
+    # 这里读得到，但不能改」只读读法及其两句随本刀退役
+    assert 'id="set-settings-mode"' in settings
+    assert "<h3>教学模式</h3>" in settings
+    assert 'id="settings-mode-editor"' in settings
+    assert 'id="settings-mode-note"' in settings
+    assert 'id="settings-mode-result"' in settings
+    assert "由启动命令给定，这里读得到，但不能改。" not in settings
+    assert "换端点或换档 = 改启动命令再启动。" not in settings
+    # veto-R 统一规格：设置节面板取消 panel-grid 两栏（切到 navdock 为
+    # 止——纯设置节 HTML，不混入后续资产）
+    settings_html = index.split('id="drawer-settings"', 1)[1].split(
+        "<nav id=\"navdock\"", 1)[0]
+    assert "panel-grid" not in settings_html
     # the knob group: the honest legend, the editor, the save, the result
     assert 'id="set-settings-knobs"' in settings
+    # veto-R：legend 随档位化改写（badge 文本「暂不影响行为」）
     assert "批注频率有真消费方" in settings
-    assert "标「存面」的七钮暂无消费方——先存后用，留空 = 未配置。" in settings
+    assert "七钮标「暂不影响行为」——先存后用，留空 = 未配置。" in settings
     assert 'id="settings-knobs"' in settings
     assert 'id="settings-save"' in settings
     assert 'id="settings-result"' in settings
@@ -607,11 +616,19 @@ def test_the_settings_pull_and_save_loop_are_wired(tmp_path: Path) -> None:
     # 有钉先例 test_p3_goal_management:699/test_r1r_blueprint_v2:479）
     assert '"配置已被别处更新，请重读再改"' in app
     assert 'again.addEventListener("click", () => loadSettings());' in app
-    # the stage readout is the raw value, None honest — no fabricated
-    # mapping from the enum to the three tier names
-    assert 'slot.textContent = stage ? String(stage) : "未声明";' in app
-    # the 存面 badge rides the seven unconsumed knobs
-    assert 'badge.textContent = "存面（暂无消费）";' in app
+    # veto-R：模式编辑面 = 墨选（存值枚举词 + 中文档名），换档走
+    # fetchSaveMode → 回读刷新；mode 写端点只住在 api.js
+    assert "function renderSettingsMode() {" in app
+    assert "async function saveMode(word) {" in app
+    assert "await fetchSaveMode(word);" in app
+    assert "await loadSettings();" in app
+    assert 'placeholder: "未声明——自动教学关着",' in app
+    # veto-R：七钮档位化（display-layer 词表 + 未配置 null 可选），
+    # badge 文本改「暂不影响行为」；自由文本框（留空 = 清除）退役
+    assert "const KNOB_TIERS = {" in app
+    assert "{ value: null, label: \"未配置\" }," in app
+    assert 'badge.textContent = "暂不影响行为";' in app
+    assert "未配置（留空 = 清除）" not in app
     # the disclosure readout maps the ladder, unknown words pass through
     assert "DISCLOSURE_CN[word]" in app
     assert "缺省一无所露（fail-closed 缺省）。" in app
@@ -624,6 +641,8 @@ def test_the_settings_pull_and_save_loop_are_wired(tmp_path: Path) -> None:
     api = API.read_text(encoding="utf-8")
     assert '"/api/settings"' in api
     assert '"/api/settings/teaching_policy"' in api
+    # veto-R：mode 写端点同门（页面零直连 fetch）
+    assert '"/api/settings/mode"' in api
 
 
 def test_the_privacy_section_names_the_partner_pair(tmp_path: Path) -> None:
@@ -747,7 +766,9 @@ def test_the_whitelist_is_the_dataclass_writable_fields() -> None:
     types.py 现读 rule at the column level): a column added to the
     dataclass cannot sneak past the whitelist unnoticed, and the refused
     set is exactly the non-writable remainder plus ``version``'s canonical
-    spelling."""
+    spelling. veto-R 随迁：``mode``（§5.1 行自己的列）不在拒收集——§12
+    档位另有自己的门（``/api/settings/mode``），它落在这里就成了未知键
+    400，照拒（行为钉同刀）."""
 
     system = {
         "teaching_policy_profile_id",
@@ -762,4 +783,6 @@ def test_the_whitelist_is_the_dataclass_writable_fields() -> None:
     assert _SETTINGS_KNOBS == tuple(
         name for name in names if name not in system
     )
-    assert set(_SETTINGS_SYSTEM_COLUMNS) == system | {"version"}
+    # veto-R：拒绝集 = system − {mode} + version（mode 的写面搬家）
+    assert set(_SETTINGS_SYSTEM_COLUMNS) == system - {"mode"} | {"version"}
+    assert "mode" not in _SETTINGS_SYSTEM_COLUMNS

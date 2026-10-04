@@ -83,8 +83,9 @@ def test_no_page_internal_h2_and_the_guide_sentences_open_the_sections(
     assert "每次保存都前移版本；上一版找不回来。" in index
     assert "批注留过的痕迹与接下来的计划——要的时候来翻。" in index
     assert "客厅的账页——只读，如实。" not in index
-    # cs-2 随迁：记忆页引导句接三摞重组后的口径（分三摞收纳）
-    assert "笔友记住的事都在这里——一条条如实，分三摞收纳。" in index
+    # cs-2 随迁 + veto-R 随迁：记忆页引导句接三摞重组后的口径（数据
+    # 优先收短——「一条条如实」的铺陈句退役）
+    assert "笔友记住的事都在这里——分三摞收纳。" in index
     assert "请笔友忘掉一些事——走出去就找不回来。" in index
     for retired_line in (
         "你想把英语用在哪里——这是客厅记着的长期方向。",
@@ -94,9 +95,10 @@ def test_no_page_internal_h2_and_the_guide_sentences_open_the_sections(
         assert retired_line not in index
     # rd-4 随迁（9.12-23）：设置节升真面——旧「还没铺开」句退役不回潮
     assert "设置面还没有铺开。" not in index
-    # 主线-1 随迁（DEC-OPI-76a0a10a-….30）：读面 Law 句接任——旧
-    # fail-closed 句（页面读不到）随 stage 读面闭合退役
-    assert "由启动命令给定，这里读得到，但不能改。" in index
+    # 主线-1 随迁（DEC-OPI-76a0a10a-….30）+ veto-R 随迁：读面 Law 句
+    # 随只读读法退役（模式墨选编辑器接任——正面钉在
+    # test_mainline1_settings / test_veto_response）
+    assert "由启动命令给定，这里读得到，但不能改。" not in index
     assert "当前这一档由启动命令给定——页面读不到，也不改它。" not in index
 
 
@@ -220,8 +222,10 @@ def test_the_raw_tag_form_lives_in_the_component_library() -> None:
     assert ".rawtag {" in css
     assert ".rawtag {" not in _webui_text("screens.css")
     assert _webui_all_text().count(".rawtag {") == 1
-    # both library wearers ride it
-    assert 'en.className = "rawtag";' in _webui_text("components.js")
+    # veto-R 随迁：词面中文化（A-0 第 4 条）后 chip 的原词佩戴位退役
+    # （原词移 title）——rawtag 的库内佩戴位随之清零，现役佩戴面全在
+    # app.js（指纹缩略 / 档位 badge / 披露规则行的 id 备查位）。
+    assert 'en.className = "rawtag";' not in _webui_text("components.js")
     assert "rawTag(String(hash).slice(0, 12))" in _webui_text("app.js")
     # the screen-level summary digit form stayed where it belongs
     assert ".sumline .sumnum {" in _webui_text("screens.css")
@@ -315,10 +319,10 @@ def test_the_translation_tables_carry_the_blueprint_words() -> None:
         'UPCOMING: "排上了"',
         'DUE: "今天到期"',
         'OVERDUE: "过期了"',
-        'OFF: "不递"',
-        'MINIMAL: "少递"',
+        'OFF: "关"',
+        'MINIMAL: "偶尔"',
         'BALANCED: "适度"',
-        'EAGER: "勤递"',
+        'EAGER: "勤快"',
         'SPEAKING: "口语"',
         'LISTENING: "听力"',
         'READING: "阅读"',

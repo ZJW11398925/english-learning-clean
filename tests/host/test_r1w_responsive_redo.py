@@ -187,8 +187,9 @@ def test_the_homogeneous_panels_pair_up() -> None:
     # 清单退役，今日两块的网格原本就在（rd-3 重排不变总数减一）
     # cs-2 随迁（3 → 2）：记忆五面板重组为三摞归属分区，摞内面板各是
     # 一件折叠（全宽行不再配两栏网格）——set-memory 的 panel-grid 随
-    # 重组退役；今日两块 + 设置两块的网格保留。
-    assert index.count('class="panel-grid"') == 2
+    # 重组退役；veto-R 随迁（2 → 1）：设置节的两栏网格随抽屉统一规格
+    # 退役（panel-grid 只许「两块并列同权」的今日节用）——只剩今日块。
+    assert index.count('class="panel-grid"') == 1
     # the today blocks pair up (行动 + 成长)
     today = index.split('id="study-today"', 1)[1].split(
         'id="study-goal"', 1)[0]
@@ -447,17 +448,17 @@ def test_the_frozen_copy_outside_the_cover_is_verbatim(
         # rd-3 随迁（9.11-22）：档案节引导句接任——旧账页句退役
         "批注留过的痕迹与接下来的计划——要的时候来翻。",
         "请笔友忘掉一些事——走出去就找不回来。",
-        # cs-2 随迁：记忆页引导句接三摞重组后的口径
-        "笔友记住的事都在这里——一条条如实，分三摞收纳。",
-        # rd-4 随迁（9.12-23）：设置节升真面——冻结句换诚实读法句
-        # 主线-1 随迁（DEC-OPI-76a0a10a-….30）：stage 读面闭合，Law 句
-        # 换「读得到但不能改」的现役读法
-        "由启动命令给定，这里读得到，但不能改。",
+        # cs-2 随迁 + veto-R 随迁：记忆页引导句（数据优先收短）
+        "笔友记住的事都在这里——分三摞收纳。",
+        # veto-R 随迁：设置节模式可改——只读 Law 句退役（编辑器容器
+        # 接任；句子级冻结线由 test_veto_response 的 mode 面钉承担）
+        "这台应用只服务你一个人（127.0.0.1，无账号无密码）。",
     ):
         assert sentence in page, sentence
     for retired in (
         "你想把英语用在哪里——这是客厅记着的长期方向。",
         "请客厅忘掉一些事——走出去就找不回来。",
         "客厅记住的事都在这里——一条条如实，分三摞收纳。",
+        "由启动命令给定，这里读得到，但不能改。",
     ):
         assert retired not in page, retired

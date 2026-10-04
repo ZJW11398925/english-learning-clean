@@ -524,8 +524,9 @@ def test_the_page_carries_the_three_faces_without_residue(
     with web_stack(tmp_path / "app.db") as stack:
         page = _page_source(stack)
     # the letters archive's load-earlier interaction and its new caliber
+    # （veto-R 数据优先收短随迁：口径句尾收成最短词）
     assert "加载更早" in page
-    assert "只摊开已加载的窗口——第 n 封按窗口里的顺序数" in page
+    assert "只摊开已加载的窗口——第 n 封按窗口顺序数" in page
     # the retired wordings are gone from the whole served source
     assert "只摊开已加载的最近 50 轮" not in page
     assert "跨信重现不做" not in page

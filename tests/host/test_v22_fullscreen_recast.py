@@ -260,7 +260,9 @@ def test_the_browser_layer_lives_inside_the_selector() -> None:
 
 
 def test_the_selector_folds_and_the_talk_paths_unfold() -> None:
-    """收拢与让位（v3-2R 随迁）：fold 类 = paper-fold 200 × --ease-exit +
+    """收拢与让位（v3-2R 随迁；veto-R 随迁：大容器退场换 paper-retract
+    ——方向性位移+淡化，无缩放；paper-fold 收窄为小卡专用）：
+    fold 类 = paper-retract 200 × --ease-exit +
     ink-wash reverse 恒慢（transform/opacity 拆开）；「对话」两条让位
     路径（onTalk / 二次点选同一封）都经 unfoldToParlor；「起笔」不再
     走让位——它延展成写信工作区（v3-2r 套件钉），上一刀的「起笔成
@@ -272,7 +274,12 @@ def test_the_selector_folds_and_the_talk_paths_unfold() -> None:
     assert "function unfoldToParlor(after)" in app
     assert "function closeEnvelopeSelector(opts)" in app
     assert 'panel.classList.add("envsel--fold");' in app
-    assert 'event.animationName === "paper-fold"' in app
+    assert 'event.animationName === "paper-retract"' in app
+    # 沓收拢的 animationend 对账不再认 paper-fold（navdock/dock 落半
+    # 各自的 paper-fold 对账不在此列——按函数体切）
+    close_body = app[app.index("function closeEnvelopeSelector(opts)"):]
+    close_body = close_body[:close_body.index("function unfoldToParlor")]
+    assert 'event.animationName === "paper-fold"' not in close_body
     assert "setTimeout(finish, 480);" in app
     assert "if (REDUCED_MOTION.matches || (opts && opts.skipFold))" in app
     # the two talk paths land in the parlor unfold (kept verbatim)
@@ -290,7 +297,8 @@ def test_the_selector_folds_and_the_talk_paths_unfold() -> None:
     assert "const created = await switchToCharacter(" not in app
     fold = screens[screens.index(".envsel--fold {"):]
     fold = fold[:fold.index("}") + 1]
-    assert "paper-fold var(--dur-panel-out) var(--ease-exit)" in fold
+    assert "paper-retract var(--dur-panel-out) var(--ease-exit)" in fold
+    assert "scale" not in fold
     assert "ink-wash calc(var(--dur-panel-out) * 1.3)" in fold
     assert "both reverse;" in fold
     # Esc steps back through the container's faces before folding the
@@ -325,10 +333,10 @@ def test_the_letters_archive_is_enveloped_and_honest() -> None:
     assert "body.appendChild(letterNode(\"user\", turn.user));" in app
     assert "body.appendChild(letterNode(\"assistant\", turn.assistant));" in app
     index = _text("index.html")
-    # 主线-2 随迁：口径句升为可「加载更早」的窗口口径（默认窗口不变
-    # ——旧「最近 50 轮」定稿句退役）
-    assert ("只摊开已加载的窗口——第 n 封按窗口里的顺序数；"
-            "「加载更早」往前翻，翻到头为止。") in index
+    # 主线-2 随迁 + veto-R 数据优先收短随迁：口径句升为可「加载更早」
+    # 的窗口口径（默认窗口不变——旧「最近 50 轮」定稿句退役；尾句收短）
+    assert ("只摊开已加载的窗口——第 n 封按窗口顺序数。"
+            "「加载更早」往前翻。") in index
     # the entry rides the flow's tail, the back row is the only way home
     assert 'id="letters-go"' in index
     assert 'id="letters-back"' in index
@@ -357,7 +365,8 @@ def test_the_observations_have_a_dedicated_face() -> None:
     assert "async function loadObservationsFace()" in app
     assert 'disclosure({ name: s.title, content }).root' in app
     assert '{ name: "指标定义（原文）", content: defs }).root' in app
-    assert "门规漂移信号 " in app
+    # veto-R 数据优先收短随迁：摘要行收成最短词（「摊在下面」的铺陈退役）
+    assert "门规漂移 " in app
     # the pre block is gone with the dedicated face (rows are .kv,账页)
     assert 'id="obsout"' not in index
     assert "<pre" not in index
@@ -383,11 +392,12 @@ def test_the_document_pages_read_like_documents() -> None:
         '<p class="doc-line">这台应用只服务你一个人（127.0.0.1，无账号无密码）。</p>',
     ):
         assert marker in index, marker
-    # fr-A 随迁：三档模式句从静态 doc-line 迁为 JS 视觉读面（⑨-14③——
-    # MODE_TIERS 的整句字面，当前档高亮行由 app.js 渲染）。
+    # fr-A 随迁：三档模式句从静态 doc-line 迁为 JS 视觉读面（⑨-14③）；
+    # veto-R 随迁：读面改可改墨选——分寸句归 MODE_HINT 一行（当前档的
+    # 差别句），modeline 整句字面退役。
     app = _text("app.js")
-    assert "娱乐 · 关系优先：聊得多，递得少，笔友以听和陪为主。" in app
-    assert 'id="settings-modes"' in index
+    assert "聊得多，递得少，笔友以听和陪为主。" in app
+    assert 'id="settings-mode-editor"' in index
     # the form rows lock the ui/small line-heights (8.2.4 基线重排)
     css = _text("components.css")
     field = _block(css, ".field .fieldname {")

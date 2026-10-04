@@ -198,7 +198,9 @@ def test_the_word_card_gains_a_settle_half() -> None:
         in js
     assert "closeWordCard({ skipOut: true });   // 换卡直摘" in js
     app = _webui("app.js")
-    assert app.count("closeWordCard({ skipOut: true });") == 3
+    # veto-R 随迁 3 → 4：计量明细浮层的互斥开面（toggleTokenMeterPop）
+    # 同法直摘。
+    assert app.count("closeWordCard({ skipOut: true });") == 4
     css = _webui("components.css")
     assert ".word-card--out { animation: paper-fold var(--dur-panel-out)" \
         in css

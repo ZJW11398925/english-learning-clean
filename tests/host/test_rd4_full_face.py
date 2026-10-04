@@ -128,9 +128,10 @@ def test_the_who_block_is_the_trigger_and_the_bar_grows_no_button(
 
 def test_the_settings_face_replaces_the_placeholder(tmp_path: Path) -> None:
     """设置节真面（r1_shell/r1r/r1w 已随迁缺位钉；本钉补正面的结构）。
-    主线-1 随迁（DEC-OPI-76a0a10a-….30，8.2.8 重铸②）：静态真面块保留，
-    升级为真控制面——当前档读面槽位 + 教学策略旋钮组 + 披露规则展示组；
-    SECTION_PULLS 拉本节（缺位钉随迁为正面钉）。"""
+    主线-1 随迁（DEC-OPI-76a0a10a-….30，8.2.8 重铸②）+ veto-R 随迁：
+    静态真面块保留，模式节 = 可改墨选（编辑器容器）——只读 Law 句、
+    换档句与三档 modeline 句随只读读法退役；教学策略旋钮组 legend 随
+    档位化改写；披露规则编辑面（fr-A）保留；SECTION_PULLS 拉本节。"""
 
     index = _page_of(tmp_path)
     settings = index.split('id="drawer-settings"', 1)[1].split(
@@ -138,21 +139,17 @@ def test_the_settings_face_replaces_the_placeholder(tmp_path: Path) -> None:
     assert "这台应用只服务你一个人（127.0.0.1，无账号无密码）。" in settings
     assert "模型端点与模型名由启动命令给定——页面不读取，也不显示。" in settings
     assert "批注频率在 温故 · 方向 里调。" in settings
-    # 主线-1 随迁：当前档读面（stage 原值槽位）+ 新 Law 句；旧 fail-closed
-    # 句（页面读不到）随读面闭合退役
-    assert 'id="settings-stage"' in settings
-    assert "由启动命令给定，这里读得到，但不能改。" in settings
+    # veto-R 随迁：模式节 = 编辑器容器；只读 Law 句 + 换档句退役
+    assert 'id="settings-mode-editor"' in settings
+    assert "由启动命令给定，这里读得到，但不能改。" not in settings
     assert "当前这一档由启动命令给定——页面读不到，也不改它。" not in settings
-    assert "换端点或换档 = 改启动命令再启动。" in settings
-    assert "娱乐 · 关系优先：聊得多，递得少，笔友以听和陪为主。" in settings
-    assert "客厅以听和陪为主" not in settings
-    assert "平衡：聊天与练句并行，批注适度。" in settings
-    assert "学习优先：练句密度优先，批注递得勤，课程感更明显。" in settings
+    assert "换端点或换档 = 改启动命令再启动。" not in settings
     assert "设置面还没有铺开。" not in settings
     assert "将来这里会有" not in settings
-    # 主线-1 随迁：真控制面两件——旋钮组（含诚实 legend）+ 披露规则组
+    # 主线-1 随迁：真控制面两件——旋钮组（veto-R legend：档位化）+
+    # 披露规则组
     assert 'id="set-settings-knobs"' in settings
-    assert "标「存面」的七钮暂无消费方——先存后用，留空 = 未配置。" in settings
+    assert "七钮标「暂不影响行为」——先存后用，留空 = 未配置。" in settings
     assert 'id="settings-knobs"' in settings
     assert 'id="settings-save"' in settings
     assert 'id="settings-result"' in settings
@@ -165,9 +162,10 @@ def test_the_settings_face_replaces_the_placeholder(tmp_path: Path) -> None:
     # 完整回路钉在 tests/host/test_mainline1_settings.py）
     assert '"drawer-settings": () => {' in app
     spec = _spec_text()
-    # 主线-1 随迁：8.2.8 节标题随重铸②换——rd-4 修订版标题为历史原文
-    # （9.12 登记行原样保留，不作现役断言）
-    assert "#### 8.2.8 抽屉 · 设置（主线-1 重铸②——真控制面）" in spec
+    # veto-R 随迁：8.2.8 节标题随模式可改重做换——rd-4/主线-1 修订版
+    # 标题为历史原文（登记行原样保留，不作现役断言）
+    assert ("#### 8.2.8 抽屉 · 设置（主线-1 重铸②——真控制面；"
+            "veto-R 模式可改重做）") in spec
 
 
 # ---------------------------------------------------------------------------
@@ -203,7 +201,9 @@ def test_the_red_pencil_circle_is_one_static_mark(tmp_path: Path) -> None:
     # fr-B 随迁 9→12：stagger-rise（列表错峰）/ scrim-out（纸雾淡出，
     # scrim-in 的对偶）/ sheet-out（触屏 sheet 向底滑出）三枚——
     # ⑨-5 名册同刀改行「全库十二枚」（scrim-in 同刀首次入册）。
-    assert css.count("@keyframes ") == 12
+    # veto-R 随迁 12→13：paper-retract（沓收拢——大容器退场禁整体
+    # 缩放，paper-fold 收窄为小卡专用）。
+    assert css.count("@keyframes ") == 13
     assert "editor-zoom" not in css
 
 

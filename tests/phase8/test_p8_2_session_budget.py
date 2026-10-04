@@ -1247,10 +1247,11 @@ def test_no_migration_carries_the_view() -> None:
     the schema scan below is what holds it."""
 
     # 主线-3 随迁（the P9-1 way）：head 字面随新头迁移——本刀「不加表」的
-    # 主张不变，schema 扫描仍承重。fr-A 再随迁至 0021（合并重编号）。
-    assert MIGRATION_IDS[-1] == "0021_provider_usage"
-    assert SCHEMA_HEAD_FILE == "0021_provider_usage.sql"
-    assert SCHEMA_HEAD_VERSION == "21"
+    # 主张不变，schema 扫描仍承重。veto-R 再随迁至 0022（app_setting 泛用
+    # 键值表——「不加表」读 session_budget 仍成立：它不是本刀的表）。
+    assert MIGRATION_IDS[-1] == "0022_app_settings"
+    assert SCHEMA_HEAD_FILE == "0022_app_settings.sql"
+    assert SCHEMA_HEAD_VERSION == "22"
     schema = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted((REPO_ROOT / "migrations").glob("*.sql"))
