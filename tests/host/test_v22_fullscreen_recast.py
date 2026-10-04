@@ -282,6 +282,14 @@ def test_the_selector_folds_and_the_talk_paths_unfold() -> None:
     # 沓收拢的对账不认任何纸腿名（paper-fold / paper-retract——按函数体切）
     close_body = app[app.index("function closeEnvelopeSelector(opts)"):]
     close_body = close_body[:close_body.index("function unfoldToParlor")]
+    # 退场前先取消同名入场腿（用户五轮否决「收起没动画」的真根因）：
+    # CSS 动画按名续用——envsel--open 不撤，已完成的入场墨腿不重启、
+    # 方向翻转瞬间算出 opacity 0（面板一帧内消失）。撤类 + offsetWidth
+    # 强制结算，fold 双腿才全新起播；顺序钉（撤在落 fold 之前）。
+    assert 'panel.classList.remove("envsel--open");' in close_body
+    assert "void panel.offsetWidth;" in close_body
+    assert close_body.index('panel.classList.remove("envsel--open");') \
+        < close_body.index('panel.classList.add("envsel--fold");')
     assert 'event.animationName === "paper-fold"' not in close_body
     assert 'event.animationName === "paper-retract"' not in close_body
     # 写作面落半（dock-compose--out）同一双腿、同一根因修：对账改墨腿

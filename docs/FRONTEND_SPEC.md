@@ -1571,10 +1571,19 @@ to-only，与 scrim-in 对偶——scrim-in 自 v2-2 在库、本刀首次入册
   对账以**墨腿 animationend** 为准——纸腿先终时不得摘（此刻墨尚剩
   约三成，即摘＝半墨硬切，正是三轮否决的卡顿本体）；单腿动画对账
   本腿；对账须 `event.target === 本体`（防子件同名动画冒泡抢账——
-  沓内信封 env--born 同用 ink-wash）。现役四点 = 沓收拢
-  `.envsel--fold` / 写作面落 `.dock-compose--out` / 确认窗
-  `.cfrm--out` / 词卡 `.word-card--out`（空间交叉淡化 `leaveLayer`
-  自始即此形）。**大容器退场禁整体缩放（veto-R，用户否决驱动的
+  沓内信封 env--born 同用 ink-wash）。**退场前必先取消同名入场腿
+  （用户五轮否决「收起没动画/硬切」的真根因）**：CSS 动画按**名**续用
+  ——入场与退场墨腿同名 ink-wash 时，入场腿（both 填充、早已完成）在
+  落退场类后**不会重启**，方向翻成 reverse 的瞬间即算出填充值
+  `opacity: 0`：面板一帧内消失、纸腿全程播在隐形元素上（体感＝没有
+  任何动画）；取消法 = 撤入场类（`envsel--open`）或内联
+  `animation:none` 一拍（入场挂在基类上的 `cfrm`/`word-card`）+
+  `void offsetWidth` 强制结算，再落退场类——与写作面
+  `dock-compose--in` 入场即摘（settleIn）的现役正例同构。
+  现役双腿退场四点 = 沓收拢 `.envsel--fold` / 写作面落
+  `.dock-compose--out` / 确认窗 `.cfrm--out` / 词卡
+  `.word-card--out`（空间交叉淡化 `leaveLayer` 自始即此形）。
+  **大容器退场禁整体缩放（veto-R，用户否决驱动的
   法则句）**：大容器（信封沓等下拉容器级）退场用方向性位移 + 淡化
   （`paper-retract`——沿原路向下收拢回锚位的方向），整体微缩只许
   小卡（词卡/确认窗级）用（`paper-fold`）。**位移量必须可感知

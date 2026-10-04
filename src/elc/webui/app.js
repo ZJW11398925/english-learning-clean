@@ -4233,6 +4233,14 @@ function closeEnvelopeSelector(opts) {
     finish();
     return;
   }
+  // 先撤入场类并强制结算，再落 fold（用户五轮否决的真根因）：CSS 动画
+  // 按名续用——入场与退场墨腿同名 ink-wash，envsel--open 若不撤，已
+  // 完成的入场墨腿不重启、方向翻成 reverse 后 both 填充瞬间算出
+  // opacity 0，面板一帧内消失、位移全程播在隐形元素上（写作面
+  // dock-compose--in 入场即摘所以没这病——正例同构）。offsetWidth 一拍
+  // 让「空动画表」先结算，fold 双腿才全新起播（playPageTurn 同惯用形）。
+  panel.classList.remove("envsel--open");
+  void panel.offsetWidth;
   panel.classList.add("envsel--fold");
   panel.addEventListener("animationend", (event) => {
     // 最慢腿对账（用户三轮否决「不丝滑」的根因修）：fold 双腿并行——

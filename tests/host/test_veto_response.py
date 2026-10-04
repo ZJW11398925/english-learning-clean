@@ -577,6 +577,11 @@ def test_the_large_container_exit_never_scales() -> None:
     # 本体（沓内信封 env--born 同用 ink-wash，冒泡不抢账）。
     assert 'event.animationName === "ink-wash" && event.target === panel' \
         in close_body
+    # 退场前先取消同名入场腿（用户五轮否决「收起没动画」的真根因）：
+    # envsel--open 不撤则入场墨腿按名续用不重启、方向翻转瞬间
+    # opacity 0——面板一帧内消失。撤类 + 强制结算，fold 才全新起播。
+    assert 'panel.classList.remove("envsel--open");' in close_body
+    assert "void panel.offsetWidth;" in close_body
     assert 'event.animationName === "paper-retract"' not in close_body
     assert 'event.animationName === "paper-fold"' not in close_body
     spec = SPEC.read_text(encoding="utf-8")

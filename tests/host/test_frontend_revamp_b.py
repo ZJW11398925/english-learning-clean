@@ -159,6 +159,11 @@ def test_the_native_confirm_is_retired() -> None:
     # 窗本体。纸腿名的对账形全库（components.js）不得回潮。
     assert 'event.animationName === "ink-wash" && event.target === box' in js
     assert 'animationName === "paper-fold"' not in js
+    # 退场前先取消同名入场腿（真根因面）：入场挂在 .cfrm 基类上撤不掉
+    # ——内联 animation:none 一拍清空动画表（ink-wash 同名续用不重启、
+    # 方向翻转瞬间 opacity 0＝硬切），--out 双腿才全新起播。
+    assert 'box.style.animation = "none";' in js
+    assert "void box.offsetWidth;" in js
     assert "setTimeout(settle, 480);" in js
     assert "restoreFocusTo.focus();" in js
     app = _webui("app.js")
@@ -199,6 +204,11 @@ def test_the_word_card_gains_a_settle_half() -> None:
     assert 'scrim.classList.add("word-scrim--out");' in js
     assert 'card.classList.add("word-card--out");' in js
     assert 'event.animationName === "ink-wash" && event.target === card' in js
+    # 退场前先取消同名入场腿（真根因面）：.word-card 基类带入场
+    # ink-wash——内联 animation:none 一拍清空动画表，--out 双腿才全新
+    # 起播（触屏档基类 animation-name:none，此拍无影响）。
+    assert 'card.style.animation = "none";' in js
+    assert "void card.offsetWidth;" in js
     # 纸腿名（paper-fold / sheet-out）的对账形不得回潮
     assert 'animationName === "paper-fold"' not in js
     assert 'animationName === "sheet-out"' not in js

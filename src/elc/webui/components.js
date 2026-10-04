@@ -275,6 +275,13 @@ export function confirmDialog(message) {
         return;
       }
       scrim.classList.add("cfrm-scrim--out");
+      // 先取消入场动画并强制结算，再落 --out（同沓收拢根因修）：入场
+      // 挂在 .cfrm 基类上撤不掉——内联 animation:none 一拍清空动画表；
+      // ink-wash 与入场同名会按名续用不重启（both 填充 + 方向翻转＝
+      // 瞬间 opacity 0 硬切），清空后 --out 双腿才全新起播。
+      box.style.animation = "none";
+      void box.offsetWidth;
+      box.style.animation = "";
       box.classList.add("cfrm--out");
     box.addEventListener("animationend", (event) => {
       // 最慢腿对账：cfrm--out 双腿——纸腿 paper-fold 200ms 先终，墨腿
@@ -1073,6 +1080,13 @@ export function closeWordCard(opts) {
   };
   if (scrim !== null) scrim.classList.add("word-scrim--out");
   if (card !== null) {
+    // 先取消入场动画并强制结算，再落 --out（同沓收拢根因修）：
+    // .word-card 基类带入场 ink-wash，同名续用不重启——不取消则退场
+    // 墨腿不播、方向翻转瞬间 opacity 0＝硬切（触屏档基类 animation-name
+    // 本就是 none，此拍无影响）。内联清空动画表后 --out 双腿全新起播。
+    card.style.animation = "none";
+    void card.offsetWidth;
+    card.style.animation = "";
     card.classList.add("word-card--out");
     card.addEventListener("animationend", (event) => {
       // 最慢腿对账（同沓收拢根因修）：卡退场双腿——纸腿（浮卡
