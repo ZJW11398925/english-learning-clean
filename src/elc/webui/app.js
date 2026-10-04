@@ -30,6 +30,8 @@ import {
   confirmDialog,
   fieldRow,
   chip,
+  selectField,
+  closeOpenSelects,
   wireNavdock,
   markNavdock,
   wireSectionTabs,
@@ -40,6 +42,7 @@ import {
   playPageTurn,
   disclosure,
   wireReveal,
+  restagger,
   envelopeCard,
   layoutEnvelopeStack,
   extendContainer,
@@ -70,6 +73,7 @@ import {
   fetchSaveFrequency,
   fetchSettings,
   fetchSaveTeachingPolicy,
+  fetchSaveDisclosure,
 } from "./api.js";
 
 // ── v2 品牌名单点常量（简报 §1；改名 = 改这一处）──────────────────
@@ -707,6 +711,7 @@ function familyGroupsBlock(list, rowFor) {
   input.addEventListener("input", () => {
     const q = input.value.trim().toLowerCase();
     let any = false;
+    const shown = [];
     for (const g of groups) {
       if (!q) {
         g.disc.root.hidden = false;
@@ -719,13 +724,20 @@ function familyGroupsBlock(list, rowFor) {
       for (const r of g.rows) {
         const on = r.probe.includes(q);
         r.node.hidden = !on;
-        if (on) hit = true;
+        if (on) {
+          hit = true;
+          shown.push(r.node);
+        }
       }
       g.disc.root.hidden = !hit;
       g.disc.setOpen(hit);
       if (hit) any = true;
     }
     noHit.hidden = any;
+    // fr-B 列表进出场：搜索结果逐项错峰（stagger 28ms 档，前 8 项封顶
+    // ——components.js restagger；reduced-motion 其 JS 半区直切）。
+    // 目标列表（可以练的表达 / 按表达忘掉）与搜索结果同一工厂同一面。
+    if (q) restagger(shown);
   });
   return root;
 }
@@ -977,6 +989,7 @@ function renderArchive(evidence, retry) {
   input.addEventListener("input", () => {
     const q = input.value.trim().toLowerCase();
     let any = false;
+    const shown = [];
     for (const g of groups) {
       if (!q) {
         g.disc.root.hidden = false;
@@ -989,13 +1002,20 @@ function renderArchive(evidence, retry) {
       for (const r of g.rows) {
         const on = r.probe.includes(q);
         r.node.hidden = !on;
-        if (on) hit = true;
+        if (on) {
+          hit = true;
+          shown.push(r.node);
+        }
       }
       g.disc.root.hidden = !hit;
       g.disc.setOpen(hit);
       if (hit) any = true;
     }
     noHit.hidden = any;
+    // fr-B 列表进出场：搜索结果逐项错峰（stagger 28ms 档，前 8 项封顶
+    // ——components.js restagger；reduced-motion 其 JS 半区直切）。
+    // 目标列表（可以练的表达 / 按表达忘掉）与搜索结果同一工厂同一面。
+    if (q) restagger(shown);
   });
 }
 
@@ -1317,9 +1337,10 @@ function renderDelResult(data, rangeText) {
 }
 
 async function runDelete(payload, rangeText) {
-  if (!confirmDialog(
-    "将把「" + rangeText + "」请出抽屉，找不回来。确定继续？")) return;
-  if (!confirmDialog("再确认一次：忘掉之后无法恢复。")) return;
+  // fr-B：confirmDialog 异步化（自绘纸墨确认窗）——两层各说一件事不变
+  if (!(await confirmDialog(
+    "将把「" + rangeText + "」请出抽屉，找不回来。确定继续？"))) return;
+  if (!(await confirmDialog("再确认一次：忘掉之后无法恢复。"))) return;
   let data = null;
   try {
     data = await fetchDelete(payload);
@@ -1494,22 +1515,19 @@ function renderGoalEditor() {
   editor.goals.forEach((goal, index) => {
     const edge = document.createElement("div");
     edge.className = "goaledge";
-    const select = document.createElement("select");
-    for (const word of words) {
-      const option = document.createElement("option");
-      option.value = word;
-      // select 的 option 只能是纯文本：中英并置在此退化为纯文本形态
-      // （中文 + 空格 + 原文；等宽小字形态见 chips / field 名牌）
-      option.textContent = MODALITY_CN[word]
-        ? MODALITY_CN[word] + " " + word
-        : word;
-      if (word === goal.goal_modality) option.selected = true;
-      select.appendChild(option);
-    }
-    select.addEventListener("change", () => {
-      goal.goal_modality = select.value;
+    // fr-A #27 墨选：原生 <select> 退役——定制下拉的选项文字同样只能是
+    // 纯文本一行（中英并置退化为「中文 + 空格 + 原文」，同原生期的读法）。
+    const select = selectField({
+      name: "目标 " + (index + 1) + " · 技能",
+      options: words.map((word) => ({
+        value: word,
+        label: MODALITY_CN[word] ? MODALITY_CN[word] + " " + word : word,
+      })),
+      value: goal.goal_modality,
+      onChange: (next) => { goal.goal_modality = next; },
     });
-    edge.appendChild(fieldRow("目标 " + (index + 1) + " · 技能", select));
+    edge.appendChild(fieldRow("目标 " + (index + 1) + " · 技能",
+                              select.root));
     const description = document.createElement("input");
     description.type = "text";
     description.value = goal.description;
@@ -1842,6 +1860,8 @@ async function loadGoals() {
 
 let settingsData = null;   // the last GET /api/settings payload
 let policyEditor = null;   // the eight-knob working copy the save sends
+let disclosureEditor = null;   // 披露规则工作副本（fr-A 编辑面；null = 无写面）
+let disclosureRoster = null;   // 名册（角色名与当前 persona 的供给面）
 
 // 旋钮的中文读法（本刀拟定——用户首验否决权保留）；白名单本身由
 // 服务端 writable_knobs 随行，这里不抄名单。
@@ -1891,6 +1911,19 @@ function editorFromSettings(data) {
   return editor;
 }
 
+// 披露编辑面的工作副本（fr-A）：null = 无写面（prep-1 层——读不到也
+// 改不了）；有面无时 = []（第一次保存即建第一条 policy 行——与八旋钮
+// 的第一份策略同一读法）。
+function editorFromDisclosure(data) {
+  if (!data || data.available === false) return null;
+  const policy = data.disclosure;
+  if (!policy) return [];
+  return (policy.rules || []).map((rule) => ({
+    persona_id: rule.persona_id,
+    disclosure_level: rule.disclosure_level,
+  }));
+}
+
 function renderSettingsStage() {
   const slot = settingsBox("settings-stage");
   slot.textContent = "";
@@ -1898,6 +1931,46 @@ function renderSettingsStage() {
   // 原值直出（Study-first 等词面是文档自己的），None 如实——三档参考
   // 块就在旁边，页面上没有任何枚举到三档名的映射声称。
   slot.textContent = stage ? String(stage) : "未声明";
+}
+
+// 模式三档（fr-A 视觉化读面）：PRODUCT_CONTRACT §3 的档名——三档名与
+// 枚举词在 §3 标题里并写（Lounge / Entertainment-first · Balanced ·
+// Study-first），映射不是页面虚构。当前档高亮（aria-current）但不可改
+// ——mode 写入继续由服务端 400 拒绝；不在三档的档（manual/user-
+// initiated）与 None 不高亮，原值在上面的读数槽如实。
+const MODE_TIERS = [
+  { stages: ["Lounge"],
+    line: "娱乐 · 关系优先：聊得多，递得少，笔友以听和陪为主。" },
+  { stages: ["Balanced"],
+    line: "平衡：聊天与练句并行，批注适度。" },
+  { stages: ["Study-first"],
+    line: "学习优先：练句密度优先，批注递得勤，课程感更明显。" },
+];
+
+function renderSettingsModes() {
+  const box = settingsBox("settings-modes");
+  if (!box) return;
+  box.textContent = "";
+  const stage = settingsData && settingsData.rollout_stage;
+  for (const tier of MODE_TIERS) {
+    const on = stage !== null && stage !== undefined &&
+      tier.stages.indexOf(stage) >= 0;
+    const row = document.createElement("p");
+    row.className = "modeline" + (on ? " modeline--on" : "");
+    const parts = tier.line.split("：");
+    const name = document.createElement("b");
+    name.textContent = parts[0] + "：";
+    row.appendChild(name);
+    row.appendChild(document.createTextNode(parts.slice(1).join("：")));
+    if (on) {
+      const mark = document.createElement("span");
+      mark.className = "modeline-mark";
+      mark.textContent = "当前档";
+      row.appendChild(mark);
+      row.setAttribute("aria-current", "true");
+    }
+    box.appendChild(row);
+  }
 }
 
 function renderPolicyKnobs() {
@@ -1917,25 +1990,22 @@ function renderPolicyKnobs() {
       label.appendChild(badge);
     }
     let control;
+    let node;
     if (name === "teaching_frequency") {
-      control = document.createElement("select");
-      const words = (settingsData && settingsData.frequency_words) || [];
-      if (policyEditor[name] === null || policyEditor[name] === undefined) {
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent = "选一档……";
-        control.appendChild(placeholder);
-      }
-      for (const word of words) {
-        const option = document.createElement("option");
-        option.value = word;
-        option.textContent = word;
-        if (word === policyEditor[name]) option.selected = true;
-        control.appendChild(option);
-      }
-      control.addEventListener("change", () => {
-        policyEditor[name] = control.value === "" ? null : control.value;
+      // fr-A #27 墨选：词表由服务端 frequency_words 随行（客户端零拷贝）；
+      // null = 未选——placeholder 弱墨（第一份策略必须亲手选一档）。
+      // node = 工厂的 root（DOM 节点）——工厂对象本身不是 Node，直接
+      // 交给 fieldRow 会抛 appendChild 类型错（fr-A 活体自查抓到，
+      // 结构性钉在 test_frontend_revamp_a）。
+      control = selectField({
+        name: "批注频率",
+        options: ((settingsData && settingsData.frequency_words) || [])
+          .map((word) => ({ value: word, label: word })),
+        value: (policyEditor[name] === undefined) ? null : policyEditor[name],
+        placeholder: "选一档……",
+        onChange: (next) => { policyEditor[name] = next; },
       });
+      node = control.root;
     } else {
       control = document.createElement("input");
       control.type = "text";
@@ -1946,8 +2016,9 @@ function renderPolicyKnobs() {
         const trimmed = control.value.trim();
         policyEditor[name] = trimmed === "" ? null : trimmed;
       });
+      node = control;
     }
-    box.appendChild(fieldRow(label, control));
+    box.appendChild(fieldRow(label, node));
   }
 }
 
@@ -2010,32 +2081,206 @@ async function savePolicy(button) {
 function renderSettingsDisclosure() {
   const box = settingsBox("settings-disclosure");
   box.textContent = "";
-  const data = settingsData && settingsData.disclosure;
-  if (!data) {
-    diagEmpty(box, "还没有披露规则——缺省一无所露（fail-closed 缺省）。");
+  const levels = (settingsData && settingsData.disclosure_levels) || [];
+  if (disclosureEditor === null) {
+    // prep-1 层（无 user_config 腿）：读不到也改不了，如实一句。
+    diagEmpty(box, "这个进程没装配用户配置面——披露规则读不到也改不了。");
     return;
   }
-  const rules = data.rules || [];
-  if (!rules.length) {
-    diagEmpty(box, "没有规则行——缺省一无所露（fail-closed 缺省）。");
+  if (!disclosureEditor.length) {
+    const policy = settingsData && settingsData.disclosure;
+    diagEmpty(box, policy
+      ? "没有规则行——缺省一无所露（fail-closed 缺省）。"
+      : "还没有披露规则——缺省一无所露（fail-closed 缺省）。");
+  }
+  for (const rule of disclosureEditor) {
+    box.appendChild(disclosureRuleRow(rule, levels));
+  }
+  box.appendChild(disclosureAddRow(levels));
+}
+
+function disclosureRuleRow(rule, levels) {
+  const row = document.createElement("div");
+  row.className = "kv disclosurerule";
+  const who = document.createElement("b");
+  if (rule.persona_id === null) {
+    who.textContent = "默认规则";
+  } else {
+    const name = personaNameOf(rule.persona_id);
+    if (name) {
+      who.textContent = name + " ";
+      const tag = document.createElement("span");
+      tag.className = "rawtag";
+      tag.textContent = rule.persona_id;
+      who.appendChild(tag);
+    } else {
+      // 名册里没有这个 persona——原值直出，不发明归属。
+      who.textContent = "角色 " + rule.persona_id;
+    }
+  }
+  row.appendChild(who);
+  // fr-A #27 墨选：层级词表由服务端 disclosure_levels 随行（客户端零
+  // 拷贝）；中文读法在前 + 原词随行（未知词不兜底——原样等宽小字）。
+  const select = selectField({
+    name: "披露层级",
+    options: levels.map((word) => ({
+      value: word,
+      label: (DISCLOSURE_CN[word] ? DISCLOSURE_CN[word] + " · " : "") + word,
+    })),
+    value: rule.disclosure_level,
+    onChange: (next) => { rule.disclosure_level = next; },
+  });
+  row.appendChild(select.root);
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "btn btn--faint";
+  remove.textContent = "移出（保存后生效）";
+  remove.addEventListener("click", () => {
+    disclosureEditor.splice(disclosureEditor.indexOf(rule), 1);
+    renderSettingsDisclosure();
+  });
+  row.appendChild(remove);
+  return row;
+}
+
+function personaNameOf(personaId) {
+  const roster = (disclosureRoster && disclosureRoster.characters) || [];
+  const card = roster.find((entry) => entry.persona_id === personaId);
+  return card ? (card.name || null) : null;
+}
+
+function currentPersonaOf() {
+  const roster = (disclosureRoster && disclosureRoster.characters) || [];
+  const currentId = disclosureRoster &&
+    disclosureRoster.current_character_id;
+  const card = roster.find((entry) => entry.character_id === currentId);
+  return card && card.persona_id ? card : null;
+}
+
+// 增行控件（编辑面同构接法 = 方向页目标编辑的读法）：默认规则至多一
+// 条（缺才可加）；当前笔友的专属规则按名册供给——名册没有当前 persona
+// 就没有这个钮（不发明对象）。
+function disclosureAddRow(levels) {
+  const row = document.createElement("p");
+  row.className = "sub";
+  const first = levels[0] || "MINIMAL";
+  if (!disclosureEditor.some((rule) => rule.persona_id === null)) {
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "btn btn--pencil";
+    add.textContent = "加一条默认规则";
+    add.addEventListener("click", () => {
+      disclosureEditor.push({ persona_id: null, disclosure_level: first });
+      renderSettingsDisclosure();
+    });
+    row.appendChild(add);
+    row.appendChild(document.createTextNode("　"));
+  }
+  const current = currentPersonaOf();
+  if (current && !disclosureEditor.some(
+      (rule) => rule.persona_id === current.persona_id)) {
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "btn btn--pencil";
+    add.textContent = "加一条 " + (current.name || "当前笔友") + " 的专属规则";
+    add.addEventListener("click", () => {
+      disclosureEditor.push({
+        persona_id: current.persona_id, disclosure_level: first });
+      renderSettingsDisclosure();
+    });
+    row.appendChild(add);
+  }
+  return row;
+}
+
+function renderDisclosureSave() {
+  const box = settingsBox("settings-disclosure-save");
+  if (!box) return;
+  box.textContent = "";
+  if (disclosureEditor === null) return;
+  const save = document.createElement("button");
+  save.type = "button";
+  save.className = "btn btn--ink";
+  save.textContent = "保存披露规则";
+  save.addEventListener("click", () => saveDisclosure(save));
+  box.appendChild(save);
+}
+
+function disclosureResult(text, failure, action) {
+  const box = settingsBox("settings-disclosure-result");
+  box.hidden = false;
+  box.textContent = "";
+  const line = document.createElement("p");
+  line.className = failure ? "errline" : "sub";
+  line.textContent = text;
+  box.appendChild(line);
+  if (action) box.appendChild(action);
+}
+
+async function saveDisclosure(button) {
+  if (disclosureEditor === null) return;
+  button.disabled = true;
+  const original = button.textContent;
+  button.textContent = "保存中……";
+  let data = null;
+  try {
+    data = await fetchSaveDisclosure({ rules: disclosureEditor });
+  } catch {
+    disclosureResult("保存没送到——再试一次。", true);
+    button.disabled = false;
+    button.textContent = original;
     return;
   }
-  for (const rule of rules) {
-    const row = document.createElement("div");
-    row.className = "kv";
-    const who = document.createElement("b");
-    who.textContent = rule.persona_id
-      ? "角色 " + rule.persona_id
-      : "默认规则";
-    row.appendChild(who);
-    const word = String(rule.disclosure_level || "");
-    const level = document.createElement("span");
-    level.className = "rawtag";
-    level.textContent = (DISCLOSURE_CN[word]
-      ? DISCLOSURE_CN[word] + " · " : "") + word;
-    row.appendChild(level);
-    box.appendChild(row);
+  button.disabled = false;
+  button.textContent = original;
+  if (data.conflict) {
+    const again = document.createElement("button");
+    again.type = "button";
+    again.className = "btn btn--faint";
+    again.textContent = "重新读过";
+    again.addEventListener("click", () => loadSettings());
+    disclosureResult(data.error || "配置已被别处更新，请重读再改",
+                     true, again);
+    return;
   }
+  if (!data.accepted) {
+    // 服务端 400 人话（重复行、词表外层级）原样上浮——页面不转译。
+    disclosureResult(data.error || "没能保存。", true);
+    return;
+  }
+  // 保存回路收口：回读刷新——读回来的就是存下的。
+  await loadSettings();
+  disclosureResult("已保存——上面读回的就是它。", false);
+}
+
+// 显示与计量区（fr-A）：token 计量显示开关——sessionStorage 客户端侧
+// （如实标注：user_config 现面没有 UI 偏好的合适面）。
+function renderSettingsMeter() {
+  const box = settingsBox("settings-meter");
+  if (!box) return;
+  box.textContent = "";
+  const row = document.createElement("p");
+  row.className = "kv";
+  const label = document.createElement("b");
+  label.textContent = "显示 token 计量";
+  row.appendChild(label);
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "btn btn--pencil";
+  toggle.setAttribute("aria-pressed", tokenMeterOn ? "true" : "false");
+  toggle.textContent = tokenMeterOn ? "开着——点按关掉"
+                                    : "关着——点按打开";
+  toggle.addEventListener("click", () => {
+    setTokenMeter(!tokenMeterOn);
+    renderSettingsMeter();
+    // fr-B 微交互·开关拨动：重渲后的新钮补一回弹簧盖印（stamp-press
+    // 同形 × --ease-spring，幅度 ≤4%——tokens.css 弹簧法则登记面）；
+    // reduced-motion 直切（JS 半区）。
+    const fresh = box.querySelector(".btn");
+    if (fresh && !REDUCED_MOTION.matches) fresh.classList.add("flip-tick");
+  });
+  row.appendChild(toggle);
+  box.appendChild(row);
 }
 
 async function loadSettings() {
@@ -2057,10 +2302,19 @@ async function loadSettings() {
   }
   settingsData = data;
   policyEditor = editorFromSettings(data);
+  disclosureEditor = editorFromDisclosure(data);
+  try {
+    disclosureRoster = await fetchCharacters();
+  } catch {
+    disclosureRoster = null;   // 名册拉不到——角色名退 rawtag 原值，不猜
+  }
   renderSettingsStage();
+  renderSettingsModes();
   renderPolicyKnobs();
   renderSettingsSave();
   renderSettingsDisclosure();
+  renderDisclosureSave();
+  renderSettingsMeter();
 }
 
 // ── R-1: the spaces — 门厅 / 案头 / 温故 / 抽屉 + 两纵深（信档 ·
@@ -2122,15 +2376,55 @@ const SECTION_PULLS = {
     // a save's own line must survive the re-read that follows a save;
     // the hiding happens on entry (showSection), not inside loadSettings
     settingsBox("settings-result").hidden = true;
+    settingsBox("settings-disclosure-result").hidden = true;
     loadSettings();
   },
 };
 
+// fr-B 退出编排（⑨-5 新行——交叉淡化的退出半；空间/节两档同构）：
+// 旧层不落 [hidden] 直切，改落 .space--leave/.panel--leave（absolute
+// 叠在锚容器之上、纸底遮住进层、ink-wash reverse × --ease-exit），与
+// 进层同帧起播 = 交叉淡化；animationend 对账 + 保险丝后 [hidden]。
+// 快进快出（A→B→A）安全：再入时撤 fuse 摘类，finish 只在类仍在时
+// 落 hidden。reduced-motion 直切（JS 半区，库尾总降级块双面）。
+function cancelLeave(node, cls) {
+  if (node._leaveFuse) {
+    clearTimeout(node._leaveFuse);
+    node._leaveFuse = null;
+  }
+  node.classList.remove(cls);
+}
+
+function leaveLayer(node, cls) {
+  if (REDUCED_MOTION.matches) {
+    node.hidden = true;
+    return;
+  }
+  node.classList.add(cls);
+  const finish = () => {
+    node._leaveFuse = null;
+    if (node.classList.contains(cls)) {
+      node.classList.remove(cls);
+      node.hidden = true;
+    }
+  };
+  node.addEventListener("animationend", (event) => {
+    if (event.animationName === "ink-wash" && event.target === node) {
+      finish();
+    }
+  });
+  node._leaveFuse = setTimeout(finish, 400);   // 保险丝（220 + 余量）
+}
+
 function showSection(space, name) {
   const group = SECTION_BODIES[space];
+  const leaving = Object.keys(group).find(
+    (key) => key !== name && !group[key].hidden);
+  cancelLeave(group[name], "panel--leave");
   for (const key of Object.keys(group)) {
-    group[key].hidden = key !== name;
+    group[key].hidden = key !== name && key !== leaving;
   }
+  if (leaving) leaveLayer(group[leaving], "panel--leave");
   markSectionTabs(document.getElementById(space + "-tabs"), name);
   sectionLabel(document.getElementById(space + "-head"),
     SECTION_NAMES[name]);
@@ -2142,14 +2436,21 @@ function showSection(space, name) {
 function showSpace(name) {
   // ⑩ 层级宪法的互斥半：进任何空间（含全页）收一切浮层与下拉容器——
   // 换空间的人不该被上一空间的浮层/沓跟着走。closeEnvelopeSelector 在
-  // 容器不在场时是安全的空操作；closeWordCard 同。v3-a：写作态同批
-  // （全页成员，8.2.2⑤——保稿收起）。
-  closeWordCard();
+  // 容器不在场时是安全的空操作；closeWordCard 同（fr-B：互斥路径直摘，
+  // skipOut 不留残影）。v3-a：写作态同批（全页成员，8.2.2⑤——保稿收起）。
+  closeWordCard({ skipOut: true });
   closeEnvelopeSelector();
   closeComposeFace();
+  closeOpenSelects();
+  const leaving = Object.keys(spaces).find(
+    (key) => key !== name && !spaces[key].hidden);
+  cancelLeave(spaces[name], "space--leave");
   for (const key of Object.keys(spaces)) {
-    spaces[key].hidden = key !== name;
+    spaces[key].hidden = key !== name && key !== leaving;
   }
+  if (leaving) leaveLayer(spaces[leaving], "space--leave");
+  syncFlowBottom();
+  syncFlowRuler();
   markNavdock(name);
   // the vestibule has no spaces to switch between — the door button is
   // the one way in, so the dock stands down while the cover is up
@@ -2902,6 +3203,9 @@ async function postTurn(text) {
   // 面故 /api/turn 无时间戳字段——新信落当下、历史不造）。
   const sentAt = new Date().toISOString();
   const mine = addLine("user", text, { enter: true, when: sentAt });
+  // fr-A：寄出的这一轮即刻入刻度（usage 待响应落地回填——P2c）。
+  flowTurns.push({ node: mine, usage: null });
+  buildFlowRuler();
   // v2 封/信分物（简报 T1-4）：刚寄出的信装封在途——信封形（矩形 +
   // 封舌 + 折线，信文暂不可见），回信落地或失败即摘封见信；封上盖
   // 「寄出」邮戳（邮戳三真实事件之一——T2；盖印 120ms 唯一 overshoot，
@@ -2939,6 +3243,9 @@ async function postTurn(text) {
     // 落地即按 turn 响应把用户信的 0 位降为无供性（applyLetterAffordance
     // 只摘不加，方向恒向不可点收）。
     applyLetterAffordance(mine, data.user_word_hits || null);
+    // fr-A：这一轮的 usage 回填轮锚（/api/turn 随行）+ 累计读回刷新。
+    flowTurns[flowTurns.length - 1].usage = data.usage || null;
+    refreshFlowMeter();
     if (data.reply !== null && data.reply !== undefined) {
       addLine("assistant", data.reply,
         { enter: true, when: new Date().toISOString(),
@@ -3026,16 +3333,17 @@ document.getElementById("text").addEventListener("keydown", (event) => {
   }
 });
 
-// ── v3-a D-B 信纸全幅写作态（8.2.2⑤；⑩ 10.1 全页成员登记行）────────
+// ── v3-a D-B 信纸写作态（8.2.2⑤；⑩ 10.1 全页成员登记行；fr-A 收窄）──
 // 两态同件：收起 = 笔搁触发条（44px，常驻税 163→104px 级）；点触发条/
-// 寄出链 = 升起 .dock--compose 近全屏「新信纸」——navdock 让位（fold
-// 200ms 同 envsel--fold 语族）、Esc 收起（浮层裁决之后的一层）、草稿
-// 按角色分桶 sessionStorage（与起笔草稿层 compose-draft-* 同构独立
-// key——10.3-6 同一定谳：退出保稿、寄出即清）、矮视口（max-height
-// 520px）诚实降级为 D-A 展开条形态（autosize 封顶 160 内滚）。
+// 寄出链 = 升起 .dock--compose「新信纸」——fr-A 起**高度随稿纸内容
+// 自适应、上限 50dvh**（v3-a 的近全屏形态退役：写信不再遮全部信流，
+// 上半上下文始终可见）。navdock 让位（fold 200ms 同 envsel--fold 语族）、
+// Esc 收起（浮层裁决之后的一层）、草稿按角色分桶 sessionStorage（与起笔
+// 草稿层 compose-draft-* 同构独立 key——10.3-6 同一定谳：退出保稿、寄出
+// 即清）、稿纸 autosize 封顶内滚（composePenCap——全视口档统一形态，
+// v3-a 的 520px 降级双形态随之退役）。
 // ⑩ 层级互斥：升写作态先收浮层；开沓先收写作态（保稿，置灰优先——
 // 10.3-5）；进任何空间收写作态（showSpace 同批）。
-const SHORT_VIEWPORT = window.matchMedia("(max-height: 520px)");
 let composeFoldHandler = null;   // 收场动画的对账柄（重开即拆）
 let composeFocusPending = false;   // 寄出路径的焦点归还——fold 收场时兑现
 
@@ -3052,13 +3360,20 @@ function composeOpen() {
   return Boolean(dock && dock.classList.contains("dock--compose"));
 }
 
-// 矮视口降级半区的稿纸 autosize（D-A 形态：rows 起步、scrollHeight
-// 钳制 160 封顶后内滚；内联样式面在库——autosizeTo/clearAutosize）；
-// 正常档稿纸吃满面板余高（flex），autosize 不插手。
+// 稿纸 autosize 的封顶（fr-A）：面板上限 50dvh 减去铬件账——上下垫
+// （sp-4×2 = 32）+ 顶行（≈24）+ 称呼位（≈32）+ 寄出行（≈28）+ 余量
+// （≈32）≈ 148px；下限 4×baseline（128）——横屏/分屏的矮视口也写得
+// 了四行。CSS 侧 max-height: 50dvh 是最后一道闸；稿纸超出封顶内滚。
+function composePenCap() {
+  return Math.max(128, Math.floor(window.innerHeight / 2) - 148);
+}
+
+// 稿纸 autosize（fr-A 统一形态：写作态开着时随内容长高，封顶后内滚；
+// 内联样式面在库——autosizeTo/clearAutosize）。收起态稿纸 hidden，
+// 不量（autosizePen 的 composeOpen 守卫）。
 function autosizePen() {
-  if (!SHORT_VIEWPORT.matches) return;
   const pen = document.getElementById("text");
-  if (pen) autosizeTo(pen, 160);
+  if (pen && composeOpen()) autosizeTo(pen, composePenCap());
 }
 
 // 写作面的排印骨架：dateline = 本机当日（与边注栏/封面同一真实数据源、
@@ -3132,7 +3447,8 @@ function openComposeFace() {
   if (dock.classList.contains("dock--stilled")) return;   // 置灰优先（⑩ 10.3-5）
   // ⑩ 互斥：升全页写作态先收浮层；上一次收场的对账柄与落半类即拆
   //（快速重开不追认旧收场）。
-  closeWordCard();
+  closeWordCard({ skipOut: true });
+  closeOpenSelects();
   if (composeFoldHandler) {
     dock.removeEventListener("animationend", composeFoldHandler);
     composeFoldHandler = null;
@@ -3166,6 +3482,8 @@ function openComposeFace() {
   document.addEventListener("keydown", composeEsc);
   pen.focus();
   autosizePen();
+  syncFlowBottom();
+  syncFlowRuler();
 }
 
 function closeComposeFace(opts) {
@@ -3184,6 +3502,8 @@ function closeComposeFace(opts) {
     if (face) face.hidden = true;
     const trigger = document.getElementById("dock-trigger");
     restoreNavdock();
+    syncFlowBottom();
+    syncFlowRuler();
     // v3-a 焦点归还（两源一收口）：寄出路径（composeFocusPending——
     // postTurn 的 finally 落旗，此处兑现：fold 未收完时触发条还 hidden，
     // 直接 focus 会竞态落空）与用户显式退出（opts.refocus）——触发条
@@ -3257,23 +3577,303 @@ document.getElementById("text").addEventListener("input", () => {
   } catch { /* 存储不可用——存不上也不打断 */ }
   autosizePen();
 });
-// 矮视口档位切换时归还 autosize 内联高（降级 ↔ 全幅的几何互斥）。
-SHORT_VIEWPORT.addEventListener?.("change", () => {
-  const pen = document.getElementById("text");
-  if (pen) clearAutosize(pen);
+// 视口尺寸变化时重量稿纸封顶（fr-A：50dvh 随视口变；写作态开着才量——
+// 收起态无内联高可还，重开时 openComposeFace 自会再量）。
+window.addEventListener("resize", () => {
+  if (composeOpen()) autosizePen();
 });
 
-async function loadHistory() {
-  const data = await fetchHistory();
+// ── fr-A 一键回底（#24 悬浮墨点）────────────────────────────────────
+// flow 是整页滚动（body 滚动井）：离底超过阈值（240px——约一屏的信流
+// 上下文）墨点浮现，在底即藏；写作态开着藏（稿纸面板自己占底）；离案头
+// 藏（#space-parlor 的 hidden 账）。点击平滑回底（reduced-motion 直落）。
+const flowBottomBtn = document.getElementById("flow-bottom");
+const FLOW_BOTTOM_THRESHOLD = 240;
+
+function flowDistanceFromBottom() {
+  return Math.max(0, document.body.scrollHeight - window.innerHeight -
+    window.scrollY);
+}
+
+function syncFlowBottom() {
+  if (!flowBottomBtn) return;
+  flowBottomBtn.hidden = Boolean(spaces.parlor.hidden) || composeOpen() ||
+    flowDistanceFromBottom() < FLOW_BOTTOM_THRESHOLD;
+}
+
+if (flowBottomBtn) {
+  flowBottomBtn.addEventListener("click", () => {
+    window.scrollTo({ top: document.body.scrollHeight,
+                      behavior: REDUCED_MOTION.matches ? "auto" : "smooth" });
+  });
+  window.addEventListener("scroll", syncFlowBottom, { passive: true });
+  window.addEventListener("resize", syncFlowBottom);
+  window.addEventListener("scroll", syncFlowRuler, { passive: true });
+  window.addEventListener("resize", syncFlowRuler);
+}
+
+// ── fr-A 轮次刻度（#25）──────────────────────────────────────────────
+// 每轮交流一个刻度点（flowTurns 锚 = 该轮我方信节点；assistant 缺席的轮
+// 锚照常），当前视位（视口 40% 线最近的锚）高亮，点击跳转到该轮。刻度
+// 基于已加载窗口（/api/history 默认 50 轮）；未加载的更早部分由信流顶部
+// 的「加载更早」衔接（按 50 轮一档往前翻——主线-2 的显式宽度参数），
+// 口径句写在信流顶部。≥2 轮才现身；写作态/离案头即藏。
+let flowTurns = [];        // 已加载窗口的轮锚（{node, usage}）
+let parlorWindow = null;   // 案头信流的显式宽度（null = 默认窗口）
+let lastHistoryWindow = null;   // 服务端回执的窗口宽度（加载更早的基数）
+//: 刻度视线 / 跳转落点 = 顶栏（.top 46px）之下一档呼吸——同一常数两处
+//: 消费：点击跳转把该轮起点放上视线，scroll spy 再把视线那一轮点亮。
+const FLOW_TURN_OFFSET = 72;
+
+function flowSpyTick() {
+  if (!flowTurns.length) return -1;
+  // 在底 = 最新一轮（末点）——短尾信不因锚点离视线远而丢高亮。
+  if (flowDistanceFromBottom() <= 4) return flowTurns.length - 1;
+  // 视线 = 顶栏之下（FLOW_TURN_OFFSET）：取最后一个起点在视线之上的轮
+  // ——与 scrollToFlowTurn 的落点同一条线，点第 n 点即第 n 点亮；单调
+  // （往下滚高亮只会往后走）。
+  const line = window.scrollY + FLOW_TURN_OFFSET;
+  let index = 0;
+  for (let i = 0; i < flowTurns.length; i += 1) {
+    const top = flowTurns[i].node.getBoundingClientRect().top +
+      window.scrollY;
+    if (top > line) break;
+    index = i;
+  }
+  return index;
+}
+
+function scrollToFlowTurn(index, instant) {
+  const turn = flowTurns[index];
+  if (!turn) return;
+  const top = turn.node.getBoundingClientRect().top + window.scrollY -
+    FLOW_TURN_OFFSET;
+  window.scrollTo({ top: Math.max(0, top),
+                    behavior: (instant || REDUCED_MOTION.matches)
+                      ? "auto" : "smooth" });
+}
+
+function syncFlowRuler() {
+  const ruler = document.getElementById("flow-ruler");
+  if (!ruler) return;
+  const show = !spaces.parlor.hidden && !composeOpen() &&
+    flowTurns.length >= 2;
+  ruler.hidden = !show;
+  if (!show) return;
+  const current = flowSpyTick();
+  Array.from(ruler.children).forEach((tick, i) => {
+    const on = i === current;
+    tick.classList.toggle("flow-tick--on", on);
+    if (on) tick.setAttribute("aria-current", "true");
+    else tick.removeAttribute("aria-current");
+  });
+}
+
+function buildFlowRuler() {
+  const ruler = document.getElementById("flow-ruler");
+  if (!ruler) return;
+  ruler.textContent = "";
+  flowTurns.forEach((turn, i) => {
+    const tick = document.createElement("button");
+    tick.type = "button";
+    tick.className = "flow-tick";
+    tick.setAttribute("aria-label", "第 " + (i + 1) + " 轮");
+    tick.addEventListener("click", () => scrollToFlowTurn(i));
+    ruler.appendChild(tick);
+  });
+  syncFlowRuler();
+}
+
+// 信流顶部的口径行（主线-2 同口径）：刻度只管已加载的窗口；「加载更早」
+// 往前翻（has_more 是服务端的诚实分页位），翻到头给一句收尾——按过
+// 「加载更早」才说这句（与信档屏同一读法）。
+function renderFlowCalibre(data) {
+  const line = document.createElement("p");
+  line.className = "flow-calibre";
+  if (data.has_more) {
+    line.appendChild(document.createTextNode(
+      "刻度只管已加载的窗口——"));
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "btn btn--pencil";
+    more.textContent = "加载更早";
+    more.addEventListener("click", loadEarlierLetters);
+    line.appendChild(more);
+    line.appendChild(document.createTextNode(" 往前翻，翻到头为止。"));
+  } else if (parlorWindow !== null) {
+    line.textContent = "更早的信没有了——以上是全部。";
+  } else {
+    return;
+  }
+  messages.appendChild(line);
+}
+
+// ── fr-A token 计量（#26）────────────────────────────────────────────
+// 显示开关存 sessionStorage（客户端侧面——查过 user_config 现面：§5.1
+// 旋钮列是 canonical 教学配置、user_profile.settings 是披露给笔友的事
+// 实，都没有 UI 偏好的合适面——如实标注：只存在这个标签页这次会话里，
+// 关掉标签页就复位）。数据面：/api/history 的累计（窗口无关的会话全量
+// ——读回来的就是存下的，客户端不做本地加减）+ 每轮 usage（轮锚随行）。
+const TOKEN_METER_KEY = "elc-token-meter";
+let tokenMeterOn = tokenMeterStored();
+let tokenMeterData = null;   // 会话累计（measured_calls/total_calls 随行）
+let tokenMeterTurnsOpen = false;
+
+function tokenMeterStored() {
+  try { return sessionStorage.getItem(TOKEN_METER_KEY) === "1"; }
+  catch { return false; }   // 隐私模式等存储不可用——当次不开
+}
+
+function setTokenMeter(on) {
+  tokenMeterOn = Boolean(on);
+  try {
+    if (tokenMeterOn) sessionStorage.setItem(TOKEN_METER_KEY, "1");
+    else sessionStorage.removeItem(TOKEN_METER_KEY);
+  } catch { /* 存储不可用——开关只活在内存里 */ }
+  renderTokenMeter();
+}
+
+function tokenCount(word) {
+  return (word === null || word === undefined) ? "—" : String(word);
+}
+
+function tokenNum(word) {
+  const num = document.createElement("b");
+  num.className = "tm-num";
+  num.textContent = tokenCount(word);
+  return num;
+}
+
+// 计量行：本段通信 token：提示 X · 补全 Y · 共 Z（计量 N/M 次调用）——
+// 未计量的字段如实「—」（端点没报，不伪造 0）；全空 = 还没有计量读数。
+function renderTokenMeter() {
+  const strip = document.getElementById("tokenmeter");
+  if (!strip) return;
+  strip.textContent = "";
+  if (!tokenMeterOn || !tokenMeterData) {
+    strip.hidden = true;
+    return;
+  }
+  strip.hidden = false;
+  const data = tokenMeterData;
+  const line = document.createElement("p");
+  line.className = "tm-line";
+  const metered = data.prompt_tokens !== null ||
+    data.completion_tokens !== null || data.total_tokens !== null;
+  line.appendChild(document.createTextNode("本段通信 token："));
+  if (metered) {
+    line.appendChild(document.createTextNode("提示 "));
+    line.appendChild(tokenNum(data.prompt_tokens));
+    line.appendChild(document.createTextNode(" · 补全 "));
+    line.appendChild(tokenNum(data.completion_tokens));
+    line.appendChild(document.createTextNode(" · 共 "));
+    line.appendChild(tokenNum(data.total_tokens));
+    line.appendChild(document.createTextNode("（计量 " +
+      data.measured_calls + "/" + data.total_calls + " 次调用）"));
+  } else {
+    line.appendChild(document.createTextNode(
+      "还没有计量读数——端点没报 usage（0/" + data.total_calls +
+      " 次调用有计量）。"));
+  }
+  const fold = document.createElement("button");
+  fold.type = "button";
+  fold.className = "btn btn--faint tm-fold";
+  fold.textContent = tokenMeterTurnsOpen ? "收起逐轮" : "逐轮";
+  fold.setAttribute("aria-expanded", tokenMeterTurnsOpen ? "true" : "false");
+  fold.addEventListener("click", () => {
+    tokenMeterTurnsOpen = !tokenMeterTurnsOpen;
+    renderTokenMeter();
+  });
+  line.appendChild(document.createTextNode("　"));
+  line.appendChild(fold);
+  strip.appendChild(line);
+  if (tokenMeterTurnsOpen) strip.appendChild(tokenMeterTurns());
+}
+
+// 逐轮读数（每轮可选显示的展开半）：只列有计量的轮——未报 usage 的轮
+// 如实跳过并交代一句；一轮都没有时如实说。
+function tokenMeterTurns() {
+  const box = document.createElement("div");
+  box.className = "tm-turns";
+  let listed = 0;
+  flowTurns.forEach((turn, i) => {
+    if (!turn.usage) return;
+    listed += 1;
+    const row = document.createElement("p");
+    row.className = "tm-turn";
+    row.appendChild(document.createTextNode("第 " + (i + 1) + " 轮 · 提示 "));
+    row.appendChild(tokenNum(turn.usage.prompt_tokens));
+    row.appendChild(document.createTextNode(" · 补全 "));
+    row.appendChild(tokenNum(turn.usage.completion_tokens));
+    row.appendChild(document.createTextNode(" · 共 "));
+    row.appendChild(tokenNum(turn.usage.total_tokens));
+    box.appendChild(row);
+  });
+  if (!listed) {
+    const row = document.createElement("p");
+    row.className = "tm-turn";
+    row.textContent = "还没有逐轮计量读数。";
+    box.appendChild(row);
+  } else if (listed < flowTurns.length) {
+    const row = document.createElement("p");
+    row.className = "tm-turn tm-turn--faint";
+    row.textContent = "（" + (flowTurns.length - listed) +
+      " 轮端点没报 usage——如实跳过。）";
+    box.appendChild(row);
+  }
+  return box;
+}
+
+function syncFlowMeter(usage) {
+  tokenMeterData = usage || null;
+  renderTokenMeter();
+}
+
+// 寄出一轮后的计量刷新：累计是服务端会话全量账——读一次最窄窗口把最新
+// 累计读回来（客户端不做本地加减；读回来的就是存下的）。
+async function refreshFlowMeter() {
+  try {
+    const data = await fetchHistory({ limit: 1 });
+    syncFlowMeter(data.usage);
+  } catch { /* 拉不到就停在旧读数——下一次进入/刷新再补 */ }
+}
+
+async function loadEarlierLetters() {
+  const before = flowTurns.length;
+  parlorWindow = (lastHistoryWindow || before || 50) + 50;
+  await renderFlowHistory();
+  // 视口锚守恒：先前读着的首轮现在往后移了（新来的是更早的信，插在前
+  // 面）——跳回那一轮，不让读者跟丢。
+  const shift = flowTurns.length - before;
+  if (shift > 0 && flowTurns[shift]) scrollToFlowTurn(shift, true);
+}
+
+async function renderFlowHistory() {
+  const data = await fetchHistory(parlorWindow ? { limit: parlorWindow }
+                                               : undefined);
+  lastHistoryWindow = data.window;
+  messages.textContent = "";
+  flowTurns = [];
+  // 口径行在信流顶部（不是一轮——轮锚不收它）。
+  renderFlowCalibre(data);
   for (const turn of data.turns) {
     // v3-3：位图随信渲染——历史轮两侧各带命中位图（缺字段 = 全供性）。
+    let anchor = null;
     if (turn.user !== null) {
-      addLine("user", turn.user, { hits: turn.user_word_hits || null });
+      anchor = addLine("user", turn.user, { hits: turn.user_word_hits || null });
     }
     if (turn.assistant !== null) {
-      addLine("assistant", turn.assistant, { hits: turn.word_hits || null });
+      const reply = addLine("assistant", turn.assistant, { hits: turn.word_hits || null });
+      if (!anchor) anchor = reply;
     }
+    if (anchor) flowTurns.push({ node: anchor, usage: turn.usage || null });
   }
+  buildFlowRuler();
+  syncFlowMeter(data.usage);
+}
+
+async function loadHistory() {
+  await renderFlowHistory();
   // 空厅句：一封信都还没有时，客户端静态系统行开场（⑧ 8.2.2）
   showEmptyHall();
   // the open teaching moment survives a refresh: rebuild its card (with
@@ -3283,6 +3883,7 @@ async function loadHistory() {
   if (curData.moment !== null) {
     showMoments([curData.moment]);
   }
+  syncFlowBottom();
 }
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -3525,7 +4126,7 @@ function unfoldToParlor(after) {
 
 async function openEnvelopeSelector() {
   if (envselPanel) return;
-  closeWordCard();   // ⑩ 互斥：开下拉容器自动关浮层
+  closeWordCard({ skipOut: true });   // ⑩ 互斥：开下拉容器自动关浮层（fr-B 直摘）
   closeComposeFace();   // ⑩ 互斥（v3-a）：开沓先收写作态（保稿）——
                         // 两具固定底件不同屏（10.3-5 置灰优先的同一定谳）
   setNavdockStilled(true);   // 硬伤 A：底坞淡化置灰且不可点（收沓即解）
@@ -3967,7 +4568,7 @@ async function switchToCharacter(characterId) {
     moment = null;
   }
   if (moment && moment.lifecycle_state === "AWAITING_USER") {
-    if (!confirmDialog("那边的批注还等着回应——切过去它会先搁着。")) {
+    if (!(await confirmDialog("那边的批注还等着回应——切过去它会先搁着。"))) {
       return false;
     }
   }
@@ -4335,9 +4936,9 @@ function buildEditorForm(form, opts) {
     del.className = "btn btn--faint editor-delete";
     del.textContent = "删了这封";
     del.addEventListener("click", async () => {
-      if (!confirmDialog(
+      if (!(await confirmDialog(
           "删了这封，沓里就再没有这位笔友——已写过的信留在信档里。"
-          + "这一步收不回来。")) {
+          + "这一步收不回来。"))) {
         return;
       }
       del.disabled = true;

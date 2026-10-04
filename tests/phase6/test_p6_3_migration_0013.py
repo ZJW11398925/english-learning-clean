@@ -184,9 +184,11 @@ def test_0013_is_present_and_not_the_head() -> None:
     assert [name[:4] for name in names] == [
         f"{index:04d}" for index in range(1, len(MIGRATION_IDS) + 1)
     ]
-    # The head literal is 0020 (主线-3's 0020_world_lore_facts; the pin
-    # read 0019 while that was the head, and moved with it, the P9-1 way).
-    assert SCHEMA_HEAD_FILE == "0020_world_lore_facts.sql"
+    # The head literal is 0021 (fr-A's 0021_provider_usage, renumbered from
+    # 0020 at merge behind 主线-3's 0020_world_lore_facts; the pin read
+    # 0018, then 0019, then each 0020 while those were the heads, moving
+    # with each, the P9-1 way).
+    assert SCHEMA_HEAD_FILE == "0021_provider_usage.sql"
 
 
 def test_the_table_exists_with_the_canonical_column_set(

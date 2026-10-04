@@ -207,7 +207,9 @@ class SqliteGenerationStore:
         """Append one durable ProviderAttempt (RUNTIME §6 CP2.5) and bump
         attempt_count in the same short transaction. The provider call
         itself already happened outside the transaction; this only logs the
-        outcome (R-INV-004)."""
+        outcome (R-INV-004). The three token counters (fr-A, migration
+        0020) are the provider-reported usage exactly as the caller
+        extracted them — ``None`` where the endpoint reported nothing."""
 
         try:
             with short_transaction(self._conn):
@@ -216,8 +218,9 @@ class SqliteGenerationStore:
                     "INSERT INTO provider_attempt ("
                     " provider_attempt_id, action_id, attempt_no,"
                     " provider_request_id, request_hash, status, result_hash,"
-                    " created_at, terminal_at"
-                    ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    " created_at, terminal_at,"
+                    " prompt_tokens, completion_tokens, total_tokens"
+                    ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         attempt.provider_attempt_id,
                         attempt.action_id,
@@ -228,6 +231,9 @@ class SqliteGenerationStore:
                         attempt.result_hash,
                         attempt.created_at if attempt.created_at else _now(),
                         attempt.terminal_at if attempt.terminal_at else _now(),
+                        attempt.prompt_tokens,
+                        attempt.completion_tokens,
+                        attempt.total_tokens,
                     ),
                 )
                 self._conn.execute(
@@ -328,7 +334,8 @@ class SqliteGenerationStore:
         rows = self._conn.execute(
             "SELECT provider_attempt_id, action_id, attempt_no,"
             " provider_request_id, request_hash, status, result_hash,"
-            " created_at, terminal_at"
+            " created_at, terminal_at,"
+            " prompt_tokens, completion_tokens, total_tokens"
             " FROM provider_attempt WHERE action_id = ?"
             " ORDER BY attempt_no",
             (action_id,),
@@ -345,6 +352,15 @@ class SqliteGenerationStore:
                     result_hash=None if row[6] is None else str(row[6]),
                     created_at=None if row[7] is None else str(row[7]),
                     terminal_at=None if row[8] is None else str(row[8]),
+                    prompt_tokens=(
+                        None if row[9] is None else int(row[9])
+                    ),
+                    completion_tokens=(
+                        None if row[10] is None else int(row[10])
+                    ),
+                    total_tokens=(
+                        None if row[11] is None else int(row[11])
+                    ),
                 )
                 for row in rows
             )

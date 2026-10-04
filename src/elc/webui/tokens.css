@@ -14,7 +14,11 @@
    恢复——零大圆角面板与信纸物件 ≤2px 收窄重新现役。）
    （v2-2 起：旧「--dur-note 为 rd-1 旧档」的占位注释退役——其前提
    「spec 行更新属下一程序」已由 v2-s 重写兑现，spec ⑨-5 现行即
-   260ms，注释不再描述真实的落差。） */
+   260ms，注释不再描述真实的落差。）
+   （fr-A 排印体系化：字号/行高/字距九档的值不动（简报逐值采用在册），
+   本刀补的是**应用规范**——下方「排印配方九枚」把四族读法（标题层级/
+   正文文档档/界面档/微标签与 mono 数字档）落成 font: 速记令牌，消费面
+   零拼装；规范全文同步 docs/FRONTEND_SPEC.md ②-4。） */
 :root {
   /* ── 色彩 14 值（简报 §2 方案 A「铁胆墨」定稿；对比度已实算）────── */
   --paper: #f6f2e8;       /* 主纸 L*95.5——数码白→纸白 */
@@ -82,6 +86,33 @@
   --ls-hand: 0.04em;
   --ls-ui: 0.02em;
   --ls-caps: 0.14em;
+  /* ── 排印配方九枚（fr-A 体系化）：font: 速记整体取用——消费面零拼装
+     （不再允许「font-family + font-size 各写一半、行高靠继承」的三件
+     散写法；fr-A 前残留的相对行高 1.7/1.8 字面已全数清账）。
+     全局应用规范（哪个层级用哪档——四族读法）：
+     ① 标题层级（display 族 400，禁合成粗体——中文标题靠字号跳档 +
+        字距）：--t-display 封面题 34/42；--t-title 档案名/编辑台题
+        24/32；--t-head 信头名/信封名/词头 18/26。
+     ② 正文文档档（serif 族）：--t-body 信件正文/中文文档行 17/32
+        （行高锁基线）；--t-body-latin 纯英文散文段 17/28；--t-small
+        次墨说明/记忆行/短笺 14.5/24；--t-hand 楷体手迹位 19/30
+        （--f-hand 族——三合法面：落款/案头日期/边注，每屏 ≤2 行
+        ≤1 处）。
+     ③ 界面档（UI sans 族）：--t-ui 界面小字/链接族/说明行 12.5/20；
+        --t-note 界面弱化小字（空态/状态横幅）14.5/24 sans。
+     ④ 微标签与 mono 数字档：既有 --meta-font（sans 500）/--meta-mono
+        （等宽 400）两配方——微标签/时间/编号/计数/数据列的唯一去处，
+        数字恒配 font-variant-numeric: tabular-nums；不另立档。 */
+  --t-display: 400 var(--fs-display)/var(--lh-display) var(--f-display);
+  --t-title: 400 var(--fs-title)/var(--lh-title) var(--f-display);
+  --t-head: 400 var(--fs-head)/var(--lh-head) var(--f-display);
+  --t-body: 400 var(--fs-body)/var(--lh-body) var(--f-serif);
+  --t-body-latin: 400 var(--fs-body-latin)/var(--lh-body-latin)
+                  var(--f-serif);
+  --t-small: 400 var(--fs-small)/var(--lh-small) var(--f-serif);
+  --t-hand: 400 var(--fs-hand)/var(--lh-hand) var(--f-hand);
+  --t-ui: 400 var(--fs-ui)/var(--lh-ui) var(--f-ui);
+  --t-note: 400 var(--fs-small)/var(--lh-small) var(--f-ui);
   /* ── 版心与基线（简报 §3b：字必须落在线上）────────────────────── */
   --measure: 34em;     /* ≈578px——中西文舒适区交集 */
   --baseline: 32px;    /* = --lh-body：正文行高、稿纸横线周期、批注文字同锁 */
@@ -115,6 +146,31 @@
   --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
   --ease-exit: cubic-bezier(0.3, 0, 1, 1);
   --ease-press: cubic-bezier(0.4, 0, 0.2, 1);
+  /* ── fr-B 转场档扩族（动画体系专项刀 B）──────────────────────────
+     三档时长 × 曲线族的完整读法（消费面按语义取档，不取物理值）：
+     ① 微交互档（100–140）：--dur-micro / --dur-stamp / --dur-1——
+        hover、按压、拨动、点选（手感第一律：可见反馈 ≤100ms 起）；
+     ② 面板档（200–360）：--dur-panel-in 280 / --dur-panel-out 200 /
+        --dur-note 260 / --dur-ink 360——浮层、短笺、节面板、写作态；
+     ③ 整屏转场档（fr-B 新立）：--dur-space-in 340（空间/全页进入——
+        比面板档长半档，给「淡入 + 上移 8px」的分层错峰留时）/
+        --dur-space-out 220（空间退出——略长于 panel-out，与进入侧
+        同帧起播成交叉淡化）/ --dur-dialog-in 300（弹窗升起，介于
+        面板与整屏之间）/ --dur-stagger 28（列表逐项错峰步长——
+        20–40ms 区间取中，前 8 项封顶 ≈364ms 含单项 140）。
+     曲线族三族：进场减速长尾（--ease-paper / --ease-enter）/ 退场
+     加速收势（--ease-exit）/ 弹簧（--ease-spring，fr-B 新立——
+     cubic-bezier 近似 spring，overshoot 1.25 克制）。
+     弹簧的法则登记（对 rd-1「唯一 overshoot = 盖印收束」的显式
+     收窄修订，用户任务书授权）：--ease-spring 只许消费在指尖微件
+     的盖印形 keyframes 上（scale ≤0.96→1 幅度族——与 stamp-press
+     同形异曲线），禁配位移/禁配大尺度；盖印收束的唯一 overshoot
+     地位不动。绝不弹跳轻浮：一切 spring 消费幅度 ≤4%。 */
+  --dur-space-in: 340ms;
+  --dur-space-out: 220ms;
+  --dur-dialog-in: 300ms;
+  --dur-stagger: 28ms;
+  --ease-spring: cubic-bezier(0.34, 1.25, 0.4, 1);
   /* ── 微标签配方（rd-1 沿用；元信息位的唯一物理出处——小字号 + 字距 +
      暖灰的 sans 角色，与等宽角色并存；全部引用既有标度，不自立值）── */
   --meta-font: 500 var(--fs-micro)/var(--lh-ui) var(--f-sans);

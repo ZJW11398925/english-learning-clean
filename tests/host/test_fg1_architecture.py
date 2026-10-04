@@ -55,40 +55,50 @@ FILES: dict[str, str] = {
     "app.js": "text/javascript; charset=utf-8",
 }
 
-#: The registered components, in contract order — the numbering in
-#: components.css's contract blocks and the spec's table must both carry
-#: them (a renamed or dropped component breaks both pins at once).
-#: The registry is living (spec ⑤): F-G2 added brand-mark and
-#: state-banner, p-1 added word-card, p-3 added field and chip, R-1
-#: added the shell navigation trio (dock / space-header / section-tabs),
-#: R-1R added the disclosure group, R-1V added the icon-set, rd-4 added
-#: partner-card — each in the same cut that registered it in the spec.
+#: The registered components, in contract order — as ``(block number,
+#: name)`` pairs: the numbering in components.css's contract blocks and
+#: the spec's table must both carry them (a renamed or dropped component
+#: breaks both pins at once). The registry is living (spec ⑤): F-G2 added
+#: brand-mark and state-banner, p-1 added word-card, p-3 added field and
+#: chip, R-1 added the shell navigation trio (dock / space-header /
+#: section-tabs), R-1R added the disclosure group, R-1V added the
+#: icon-set, rd-4 added partner-card — each in the same cut that
+#: registered it in the spec.
 #: cs-2 随迁：partner-card 随档案全页视图退役（浮层与名册桩拆除，
-#: same-cut retirement）——注册表不做阁楼，编号空出不复用。
-COMPONENTS = (
-    "link-btn",
-    "pen",
-    "note-paper",
-    "letter",
-    "hairline-section",
-    "setlink-block",
-    "resultstrip",
-    "busystrip",
-    "meter-row",
-    "empty-state",
-    "confirm-dialog",
-    "system-line",
-    "brand-mark",
-    "state-banner",
-    "word-card",
-    "field",
-    "chip",
-    "dock",
-    "space-header",
-    "section-tabs",
-    "disclosure",
-    "icon-set",
+#: same-cut retirement）——注册表不做阁楼，编号空出不复用。#23 因此
+#: 空缺；fr-A 的四个新组件顺位取 #24–#27（编号显式在此，enumerate
+#: 会把空缺位错填给后继者）。
+COMPONENTS: tuple[tuple[int, str], ...] = (
+    (1, "link-btn"),
+    (2, "pen"),
+    (3, "note-paper"),
+    (4, "letter"),
+    (5, "hairline-section"),
+    (6, "setlink-block"),
+    (7, "resultstrip"),
+    (8, "busystrip"),
+    (9, "meter-row"),
+    (10, "empty-state"),
+    (11, "confirm-dialog"),
+    (12, "system-line"),
+    (13, "brand-mark"),
+    (14, "state-banner"),
+    (15, "word-card"),
+    (16, "field"),
+    (17, "chip"),
+    (18, "dock"),
+    (19, "space-header"),
+    (20, "section-tabs"),
+    (21, "disclosure"),
+    (22, "icon-set"),
+    (24, "flow-bottom"),
+    (25, "flow-ruler"),
+    (26, "tokenmeter"),
+    (27, "select"),
 )
+
+#: The names alone, in the same order — the membership checks' face.
+COMPONENT_NAMES: tuple[str, ...] = tuple(name for _, name in COMPONENTS)
 
 
 def _webui_text(name: str) -> str:
@@ -257,7 +267,7 @@ def test_the_contract_blocks_exist() -> None:
     same-cut registration is the only way a new component passes."""
 
     css = _webui_text("components.css")
-    for number, name in enumerate(COMPONENTS, start=1):
+    for number, name in COMPONENTS:
         assert f"{number}. {name}" in css, (number, name)
     # the four contract clauses, once per component (the file header's
     # rule line names them without the colon — blocks carry the colon)
@@ -366,7 +376,7 @@ def test_the_frontend_spec_exists_and_governs() -> None:
         "## ⑦ 架构说明",
     ):
         assert header in spec, header
-    for name in COMPONENTS:
+    for number, name in COMPONENTS:
         assert name in spec, name
     assert "重复实现 = 评审 finding（拒收事由）" in spec
     agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")

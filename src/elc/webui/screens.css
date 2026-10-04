@@ -116,12 +116,10 @@ body {
 .flow { padding: 18px var(--read-pad)
         calc(var(--navdock-clearance) + var(--dock-trigger-h)
              + var(--sp-6)); }
-.typing { margin: 0 0 18px; font-family: var(--f-sans);
-          font-size: var(--fs-ui); color: var(--ink-faint); }
+.typing { margin: 0 0 18px; font: var(--t-ui); color: var(--ink-faint); }
 .errline { margin: 0 0 14px; padding: 8px 10px;
            border-left: 1px solid var(--pencil);
-           font-family: var(--f-sans); font-size: var(--fs-ui);
-           color: var(--pencil); line-height: 1.7;
+           font: var(--t-ui); color: var(--pencil);
            white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* 写信区：固定底（R-1 起让位于其下的常驻 dock）、上发丝线、无边框
@@ -133,13 +131,15 @@ body {
    100ms 档——纸的物理，禁发光；非聚焦零改动）。
    v3-a（8.2.2⑤，D-B 信纸全幅写作态）：两态同件——收起态 = 笔搁触发
    条（--dock-trigger-h 44，常驻税 163→104px 级）；写作态 = .dock--compose
-   近全屏「新信纸」（⑩ 全页成员：fixed 全高、--shell-w 限宽、navdock
-   让位、Esc 收起——宪法登记行在 ⑩ 10.1）。触发条是 form#send 稿纸的
+   升起的「新信纸」（⑩ 全页成员：--shell-w 限宽、navdock 让位、
+   Esc 收起——宪法登记行在 ⑩ 10.1）。触发条是 form#send 稿纸的
    投影文案（textarea 唯一真源）；写作面升落 = paper-drop + ink-wash
    双动画（落 --dur-panel-in × --ease-paper、opacity 恒慢 ×1.3）/ 收 =
    paper-fold + ink-wash reverse（--dur-panel-out × --ease-exit），
-   reduced-motion 双面直落。矮视口（max-height: 520px）诚实降级为
-   D-A 展开条形态（稿纸 autosize 封顶内滚）。 */
+   reduced-motion 双面直落。
+   fr-A（写作态收窄）：近全屏形态退役——面板高度随稿纸内容自适应、
+   上限 50dvh（信流上半始终可见，写信不遮全部上下文）；稿纸超出
+   autosize 封顶内滚（app.js 的 composePenCap——50dvh 减铬件账）。 */
 .dock { position: fixed; left: 0; right: 0;
         bottom: var(--navdock-h); z-index: 8;
         background: var(--paper-high); border-top: 1px solid var(--rule);
@@ -168,12 +168,13 @@ body {
 .dock-trigger-word { overflow: hidden; white-space: nowrap;
                      text-overflow: ellipsis; }
 .dock-trigger-send { flex: none; }
-/* ── 写作态（.dock--compose = ⑩ 全页成员）：面板升起吃满触发条以上
-   的余高——顶行（↑ 收起 + dateline）+ 称呼位 + 稿纸（form#send）+
-   底行寄出链；navdock 让位由 JS 落 [hidden]（同门厅/全页语族）。
-   头顶让出 --sp-8 + --sp-1 的铬件账（与沓面板同一头顶账）；桌面档
-   面板两侧各让 --dock-compose-inset（一张新信纸摊在案头中央）。 */
-.dock.dock--compose { bottom: 0; top: calc(var(--sp-8) + var(--sp-1));
+/* ── 写作态（.dock--compose = ⑩ 全页成员）：面板从案头前沿升起——底缘
+   贴底（navdock 让位后），**高度随稿纸内容自适应、上限 50dvh**（fr-A
+   收窄：信流上半始终可见——写信保留上下文；v3-a 的近全屏形态退役）。
+   顶行（↑ 收起 + dateline）+ 称呼位 + 稿纸（form#send）+ 底行寄出链；
+   navdock 让位由 JS 落 [hidden]（同门厅/全页语族）。桌面档面板两侧
+   各让 --dock-compose-inset（一张新信纸摊在案头中央）。 */
+.dock.dock--compose { bottom: 0; top: auto; max-height: 50dvh;
                       padding: var(--sp-4) var(--read-pad);
                       display: flex; flex-direction: column;
                       transform: none; }
@@ -204,14 +205,15 @@ body {
 /* 称呼位：致 + 当前角色名（端点驱动零字面）+ 逗——弱墨只读；无名册
    时 JS 落 hidden（不发明称呼）。 */
 .compose-salut { margin: var(--sp-3) 0 0; color: var(--ink-faint); }
-/* 稿纸区：form#send 转纵队——textarea 吃满顶行与底行之间的余高
-   （#2 pen 的 --open 变体只落尺寸修饰，字面/线语汇仍唯一出处；
-   超长内滚、字落线上——background-attachment: local 现役机制）；
-   寄出链右齐（同现役语汇）。 */
-.dock--compose .dock-row { position: relative; flex: 1; min-height: 0;
+/* 稿纸区：form#send 转纵队——稿纸高 = JS autosize 内联高（fr-A：内容
+   自适应，composePenCap 封顶后内滚；#2 pen 的 --open 变体只落尺寸修饰，
+   字面/线语汇仍唯一出处；字落线上——background-attachment: local 现役
+   机制）；寄出链右齐（同现役语汇）。flex:none——面板高度由稿纸内联高
+   决定（fr-A 内容自适应的承重件；flex:1 basis 0 会把内联高吃掉）。 */
+.dock--compose .dock-row { position: relative; flex: none;
                            display: flex; flex-direction: column;
                            gap: var(--sp-2); margin-top: var(--sp-2); }
-.dock--compose .pen--open { flex: 1;
+.dock--compose .pen--open { flex: none;
                             min-height: calc(var(--baseline) * 4);
                             max-height: none; }
 .compose-sendrow { margin: 0; display: flex;
@@ -239,17 +241,40 @@ body {
                                        transform: scaleY(1); }
 .dock-guide { margin: 0 0 8px; font: var(--meta-font);
               letter-spacing: var(--meta-track); color: var(--meta-ink); }
-/* ── v3-a 矮视口诚实降级（报告 §4 D-B）：max-height 520px（横屏/分屏）
-   全幅写作得不偿失——写作态降为 D-A 展开条形态：面板不再吃满全高
-   （top 归还），稿纸 autosize 封顶 160px 内滚（JS 半区同键
-   matchMedia），dateline/称呼位保留（排印骨架不因降级缺席）。 */
-@media (max-height: 520px) {
-  .dock.dock--compose { top: auto; }
-  .dock--compose .pen--open { flex: none;
-                              min-height: calc(var(--baseline) * 2);
-                              max-height: 160px; }
-  .dock--compose .dock-row { flex: none; }
-}
+
+/* ── fr-A 一键回底（#24 墨点的位置账）：右下、navdock 与笔搁触发条之上
+   ——bottom = navdock 实高 + 触发条高 + 一档呼吸；右缘贴信纸栏内缘
+   （壳宽 --shell-w 定心，窄屏自然落 --read-pad）。z5：信流之上、dock
+   垫板（z8）之下——写作态面板升起时它被面板盖住（JS 同步藏）。 */
+.flow-bottom { position: fixed; z-index: 5;
+               right: max(var(--read-pad),
+                          calc(50vw - var(--shell-w) / 2
+                               + var(--read-pad)));
+               bottom: calc(var(--navdock-h) + var(--dock-trigger-h)
+                            + var(--sp-3)); }
+
+/* ── fr-A 轮次刻度（#25 的位置账）：信流右缘的细刻度条——贴信纸栏内缘
+   2px，纵向占信流中段（顶 30vh，底让 navdock + 触发条 + 一档呼吸）。
+   z5 与回底墨点同层（写作态/离案头由 JS 藏）。刻度点在组件层
+   （components.css #25）——本块只落屏级位置账。 */
+.flow-ruler { position: fixed; z-index: 5;
+              right: max(2px, calc(50vw - var(--shell-w) / 2 + 2px));
+              top: 30vh;
+              bottom: calc(var(--navdock-h) + var(--dock-trigger-h)
+                           + var(--sp-6));
+              display: flex; flex-direction: column;
+              align-items: flex-end; }
+/* 信流顶部的口径行（主线-2 同口径）：居中弱墨一行，不是一轮。 */
+.flow-calibre { margin: 0 0 var(--sp-4); text-align: center;
+                font: var(--t-ui); color: var(--ink-faint); }
+/* fr-A token 计量条（#26 的屏级位置账）：sticky 贴品牌条之下（top 46
+   = .top 高度账，同 .pageback），纸底盖住从底下滚过的信——累计常显
+   不追滚；组件本体在 components.css。 */
+.tokenmeter { position: sticky; top: 46px; z-index: 4;
+              background: var(--bg); }
+/* fr-A：矮视口降级块（v3-a 的 max-height:520px D-A 展开条）退役——
+   基础形态本身已是「内容自适应 + 50dvh 上限 + 稿纸内滚」，composePenCap
+   在矮视口自然落到 4×baseline 下限，无需第二形态。 */
 
 /* ── 温故/抽屉的空间正文（R-1）：三个节面板共用的正文留白与标题形态 ── */
 /* 页题只念一遍（节名槽承担），节内不再有 h2。
@@ -262,12 +287,12 @@ body {
    与安全区 + 一档呼吸（--sp-6）。 */
 .spacebody { padding: 26px var(--read-pad)
              calc(var(--navdock-clearance) + var(--sp-6));
+             position: relative;   /* fr-B：节退出叠层（.panel--leave）的锚 */
              transition: transform var(--dur-1) var(--ease-paper); }
 .spacebody.panel-nudge--next { transform: translateX(calc(var(--sp-3) * -1)); }
 .spacebody.panel-nudge--prev { transform: translateX(var(--sp-3)); }
-.spacebody .sub { margin: 0 0 8px; font-family: var(--f-sans);
-              font-size: var(--fs-ui);
-              color: var(--ink-faint); line-height: 1.7; }
+.spacebody .sub { margin: 0 0 8px; font: var(--t-ui);
+              color: var(--ink-faint); }
 /* v2-1R LOW-5：组头真粗体走 UI 无衬线（简报法则 2，同 .note-head b）。 */
 .grouphead { color: var(--ink-soft); font-family: var(--f-ui);
              font-weight: 600; }
@@ -275,7 +300,7 @@ body {
 .sumline .sumnum { font-family: var(--f-mono); font-size: var(--fs-micro);
               font-variant-numeric: tabular-nums; font-weight: 600;
               color: var(--ink); }
-pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
+pre { font: var(--meta-mono);
       color: var(--ink-soft); overflow-x: auto; white-space: pre-wrap;
       overflow-wrap: anywhere; border-top: 1px solid var(--rule-soft);
       border-bottom: 1px solid var(--rule-soft); padding: 8px 0; }
@@ -298,9 +323,8 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
              bottom: calc(var(--navdock-h) + var(--safe-bottom));
              z-index: 3;
              background: var(--bg); }
-.taxref { margin: 4px 0 0; font-family: var(--f-sans);
-          font-size: var(--fs-micro);
-          color: var(--ink-faint); line-height: 1.8;
+.taxref { margin: 4px 0 0; font: var(--meta-font);
+          color: var(--ink-faint);
           overflow-wrap: anywhere; }
 
 /* ── cs-2 笔友档案（全页视图）：整页形态，非浮层 ────────────────────
@@ -359,9 +383,8 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
    口径诚实：只列 /api/history 已加载的 50 轮窗口，第 n 封按窗口内
    顺序数（8.2.5 同口径），无时间戳不造日期。 */
 .letters-entry { margin: 0; text-align: center; }
-.letters-calibre { margin: 0 0 var(--sp-4); font-family: var(--f-sans);
-                   font-size: var(--fs-ui); color: var(--ink-faint);
-                   line-height: var(--lh-ui); }
+.letters-calibre { margin: 0 0 var(--sp-4); font: var(--t-ui);
+                   color: var(--ink-faint); }
 .letters-head { position: relative; }
 .letters-datestamp { position: absolute; top: calc(var(--sp-1) * -1);
                      right: 0; }
@@ -405,9 +428,8 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
    结构样式近乎零新增：摘要行走屏级 .sumline、表行走 #9 .kv、折叠走
    #21——本节只落屏头的返回/口径两行的间距语义。 */
 .obs-head { position: relative; }
-.obs-note { margin: 0 0 var(--sp-4); font-family: var(--f-sans);
-            font-size: var(--fs-ui); color: var(--ink-faint);
-            line-height: var(--lh-ui); }
+.obs-note { margin: 0 0 var(--sp-4); font: var(--t-ui);
+            color: var(--ink-faint); }
 
 /* ── mc-1 信封选择器（点案头主从条弹出的那沓信）──────────────────────
    沓形 = 案头的一叠信封：沓内绝对定位错位叠放——top 由视觉位序
@@ -709,16 +731,63 @@ pre { font-family: var(--f-mono); font-size: var(--fs-micro); line-height: 1.7;
 #space-parlor:not([hidden]) .flow {
   animation: ink-wash var(--dur-settle) var(--ease-enter) both; }
 
+/* ── fr-B 空间转场体系（动画体系专项刀 B；⑨-5 新行）─────────────────
+   空间/全页切换（案头 ↔ 温故 ↔ 抽屉 ↔ 信档/观察/档案 ↔ 门厅）双向：
+   · 进入侧——内容层「淡入 + 上移 8px」、头部件（.top/.section-tabs）
+     纯淡入并先到位、内容层延迟 60ms 跟进 = 元素分层错峰。载体分家：
+     温故/抽屉走 tabpanel 的 @starting-style transition（transform
+     并入既有 opacity 过渡——transition 终态回落元素值，不占住
+     .spacebody 的 nudge transform；keyframe fill 会压死 ux-1 滑动
+     手感，活体推演拦下）；全页纵深（.dossier）无 nudge 消费方，
+     .spacebody 走 paper-drop + ink-wash 双动画；案头例外：.flow
+     保持纯淡入（容器 transform 会让 fixed 写信区在动画期改挂——
+     rd-1 活体实证在册），仅补 .top 的纯淡入。
+   · 退出侧——JS（app.js showSpace/showSection）给旧空间/旧节落
+     .space--leave/.panel--leave：absolute 叠在锚容器（#stage /
+     .spacebody，均 relative）之上、纸底遮住进层、ink-wash reverse
+     × --ease-exit 淡出，与进层同帧起播 = 交叉淡化；animationend
+     对账 + 保险丝后 [hidden]。案头的 fixed 家具（写信区垫板/回底
+     墨点/轮次刻度）不跟 fade（opacity 会改挂 fixed 的包含块）——
+     退出帧即 visibility 藏（navdock 在 z 6 原位不动，底部连续性
+     由它承担）。
+   · :not([hidden]) 翻转即重播——每次切换恰播一次；首绘同帧一次。
+   · reduced-motion：JS 半区 REDUCED_MOTION 直切 + 库尾总降级块双面。 */
+.dossier:not([hidden]) .spacebody {
+  animation: paper-drop var(--dur-space-in) var(--ease-paper) both,
+             ink-wash calc(var(--dur-space-in) * 1.3)
+             var(--ease-paper) both;
+  animation-delay: 60ms, 60ms; }
+#space-study:not([hidden]) :is(.top, .section-tabs),
+#space-drawer:not([hidden]) :is(.top, .section-tabs),
+.dossier:not([hidden]) .top,
+#space-parlor:not([hidden]) .top {
+  animation: ink-wash var(--dur-space-in) var(--ease-paper) both; }
+.space--leave { position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+                background: var(--paper); pointer-events: none;
+                animation: ink-wash var(--dur-space-out) var(--ease-exit)
+                           reverse both; }
+.space--leave :is(.dock, .flow-bottom, .flow-ruler) { visibility: hidden; }
+.panel--leave { position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+                background: var(--paper); pointer-events: none;
+                animation: ink-wash var(--dur-panel-out) var(--ease-exit)
+                           reverse both; }
+
 /* mc-1 切换后的案头重落（app.js 落类、刷新前先摘——一屏一次纸事件）：
    复用注册双动画（纸先落、墨后渗），260ms 档。 */
 #space-parlor .flow.flow-resettle {
   animation: paper-drop var(--dur-note) var(--ease-enter) both,
              ink-wash calc(var(--dur-note) * 1.3) var(--ease-enter) both; }
 
+/* fr-B 同刀改行：节面板进入并入 transform（淡入 + 上移 8px）+ 60ms
+   错峰延迟（头部件先到位、内容跟进——transition 终态回落元素值，
+   不占 nudge transform；退出由 app.js 的 .panel--leave 编排承担，
+   ⑨-5 抽屉开合行的 Revisit 就此关闭）。 */
 [role="tabpanel"]:not([hidden]) {
-  transition: opacity var(--dur-panel-in) var(--ease-enter); }
+  transition: opacity var(--dur-space-in) var(--ease-enter) 60ms,
+              transform var(--dur-space-in) var(--ease-enter) 60ms; }
 @starting-style {
-  [role="tabpanel"]:not([hidden]) { opacity: 0; }
+  [role="tabpanel"]:not([hidden]) { opacity: 0;
+                                    transform: translateY(8px); }
 }
 
 /* 入场错步（步长 40ms × 前 8 项 = 总封顶 320ms；backwards 防先亮） */

@@ -495,15 +495,34 @@ class ValidatorResult:
 
 
 @dataclass(frozen=True)
+class ProviderUsage:
+    """An OpenAI-compatible response's standard ``usage`` object, as
+    reported (fr-A token metering).
+
+    Three counters, each ``int | None``: a compatible endpoint that omits
+    the ``usage`` object — or one counter inside it — answers ``None`` for
+    that counter, never a fabricated number (a missing ``total_tokens`` is
+    not summed back from the parts). The durable home of these counters is
+    the ProviderAttempt row (migration 0020's adjudicated columns).
+    """
+
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    total_tokens: int | None = None
+
+
+@dataclass(frozen=True)
 class ProviderOutput:
     """One provider call outcome — deterministic fake-provider contract.
 
     ``text`` empty/None plus ``error`` None means a no-output success;
     ``error`` set means the provider itself failed (exception surfaced as a
-    deterministic value by the fake provider)."""
+    deterministic value by the fake provider). ``usage`` is the endpoint's
+    reported token counters (fr-A) — ``None`` when it reported none."""
 
     text: str | None
     error: str | None = None
+    usage: ProviderUsage | None = None
 
     def has_output(self) -> bool:
         return self.text is not None and self.text != ""

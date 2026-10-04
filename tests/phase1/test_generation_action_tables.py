@@ -50,6 +50,12 @@ DM20_PROVIDER_ATTEMPT_COLUMNS = (
     "result_hash",
     "created_at",
     "terminal_at",
+    # fr-A token metering (migration 0020): the provider-reported usage —
+    # three adjudicated columns beyond §20, the owner_epoch precedent on
+    # the intent table (DATA_MODEL §19); NULL = the endpoint reported none.
+    "prompt_tokens",
+    "completion_tokens",
+    "total_tokens",
 )
 
 #: docs/DATA_MODEL.md §20 action types block, word for word.

@@ -157,7 +157,9 @@ def test_the_settings_face_replaces_the_placeholder(tmp_path: Path) -> None:
     assert 'id="settings-save"' in settings
     assert 'id="settings-result"' in settings
     assert 'id="set-settings-disclosure"' in settings
-    assert "规则经 profile 编辑，这里只读。" in settings
+    # fr-A 随迁：披露规则自只读展示组升编辑面（⑨-14③）——「只读」句退役
+    assert "规则经 profile 编辑，这里只读。" not in settings
+    assert "规则在这里改" in settings
     app = index
     # 主线-1 随迁：SECTION_PULLS 拉本节（旧缺位钉「不拉本节」换正面钉；
     # 完整回路钉在 tests/host/test_mainline1_settings.py）
@@ -198,7 +200,10 @@ def test_the_red_pencil_circle_is_one_static_mark(tmp_path: Path) -> None:
     # 落底（触屏贴底 sheet 的落纸方向原语——O2 定谳修，⑨-5 名册同刀
     # 改行「全库八枚」的 keyframes 原语账：五枚 v2 + fold/turn/scrim
     # 三枚 + drop-down 一枚；scrim-in 不在 ⑨-5 原语名册、单独计数）。
-    assert css.count("@keyframes ") == 9
+    # fr-B 随迁 9→12：stagger-rise（列表错峰）/ scrim-out（纸雾淡出，
+    # scrim-in 的对偶）/ sheet-out（触屏 sheet 向底滑出）三枚——
+    # ⑨-5 名册同刀改行「全库十二枚」（scrim-in 同刀首次入册）。
+    assert css.count("@keyframes ") == 12
     assert "editor-zoom" not in css
 
 

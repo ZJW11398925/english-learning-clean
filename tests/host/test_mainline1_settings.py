@@ -581,9 +581,12 @@ def test_the_settings_section_carries_the_real_controls(tmp_path: Path) -> None:
     assert 'id="settings-knobs"' in settings
     assert 'id="settings-save"' in settings
     assert 'id="settings-result"' in settings
-    # the disclosure group: the readout + the honest edit-path sentence
+    # the disclosure group: the edit face (fr-A — the read-only copy and
+    # its "规则经 profile 编辑" sentence retired) + the fail-closed law
     assert 'id="set-settings-disclosure"' in settings
-    assert "规则经 profile 编辑，这里只读。" in settings
+    assert "规则经 profile 编辑，这里只读。" not in settings
+    assert "规则在这里改；没有规则行时，缺省一无所露（fail-closed 缺省）。" \
+        in settings
     assert 'id="settings-disclosure"' in settings
 
 

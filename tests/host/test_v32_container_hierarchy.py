@@ -147,14 +147,15 @@ def test_the_mutual_exclusion_wiring_is_pinned() -> None:
     assert "function showSpace(name) {" in app
     body = app[app.index("function showSpace(name) {"):]
     body = body[: body.index("for (const key of Object.keys(spaces))")]
-    assert "closeWordCard();" in body
+    # fr-B 随迁：互斥路径收卡 = skipOut 直摘（褪下动画只属用户三路径）
+    assert "closeWordCard({ skipOut: true });" in body
     assert "closeEnvelopeSelector();" in body
     open_body = app[app.index("async function openEnvelopeSelector() {"):]
     open_body = open_body[: open_body.index("const panel =")]
-    assert "closeWordCard();" in open_body
+    assert "closeWordCard({ skipOut: true });" in open_body
     # one floating layer at a time: opening closes the previous first
-    assert "export function showWordCard(at, data) {\n  closeWordCard();" \
-        in js
+    assert "export function showWordCard(at, data) {\n" \
+        "  closeWordCard({ skipOut: true });" in js
 
 
 def test_the_esc_ladder_steps_one_layer_at_a_time() -> None:

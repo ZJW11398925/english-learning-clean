@@ -248,7 +248,13 @@ class GenerationActionIntentRecord:
 
 @dataclass(frozen=True)
 class ProviderAttemptRecord:
-    """docs/DATA_MODEL.md §20 — many attempts, one canonical accepted result."""
+    """docs/DATA_MODEL.md §20 — many attempts, one canonical accepted result.
+
+    The three token counters are this attempt's provider-reported usage
+    (fr-A; migration 0020's adjudicated columns — the ``owner_epoch``
+    precedent on the intent): each ``None`` when the endpoint reported no
+    value for it, never a fabricated number.
+    """
 
     provider_attempt_id: ProviderAttemptId
     action_id: ActionId
@@ -259,6 +265,9 @@ class ProviderAttemptRecord:
     result_hash: str | None = None
     created_at: str | None = None
     terminal_at: str | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    total_tokens: int | None = None
 
 
 @dataclass(frozen=True)

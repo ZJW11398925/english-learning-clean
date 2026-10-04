@@ -406,8 +406,9 @@ def test_the_page_carries_the_safety_copy_and_the_result_strip(
             in page
         )
         assert "再确认一次：忘掉之后无法恢复。" in page
+        # fr-B 随迁：confirmDialog 异步化（自绘纸墨确认窗）——await 形态
         assert (
-            'if (!confirmDialog("再确认一次：忘掉之后无法恢复。")) return;'
+            'if (!(await confirmDialog("再确认一次：忘掉之后无法恢复。"))) return;'
             in page
         )
         assert "确定继续？再次确认" not in page

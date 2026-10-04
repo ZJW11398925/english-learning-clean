@@ -148,15 +148,17 @@ def test_disclosure_is_registered_in_all_four_places() -> None:
     selectors are single-source across the tree."""
 
     from tests.host.test_fg1_architecture import (
+        COMPONENT_NAMES,
         COMPONENTS,
         _webui_all_text,
         _webui_text,
     )
 
-    assert "disclosure" in COMPONENTS
+    assert "disclosure" in COMPONENT_NAMES
     # R-1V 随迁：icon-set 入库再长一格（21 → 22）——同刀登记；
-    # rd-4 曾随迁长到 23；cs-2 随迁：浮层伙伴卡退役再缩回（23 → 22）
-    assert len(COMPONENTS) == 22
+    # rd-4 曾随迁长到 23；cs-2 随迁：浮层伙伴卡退役再缩回（23 → 22）；
+    # fr-A 随迁：会话窗三件 + 墨选四格入库（22 → 26）
+    assert len(COMPONENTS) == 26
     spec = (
         Path(__file__).resolve().parents[2]
         / "docs" / "FRONTEND_SPEC.md"

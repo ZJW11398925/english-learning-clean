@@ -415,13 +415,13 @@ def test_no_source_file_carries_this_cuts_name() -> None:
     ]
     assert tagged == [], tagged
     # and the migration head is still the lineage's own newest entry — the
-    # literal moved with MC-0's 0019_character_cards and again with 主线-3's
-    # 0020 (this pin read "0018_delivery_records.sql" while 0018 was the
-    # head, the stamp-pin discipline every head move has followed since
-    # P8-4).
+    # literal moved with MC-0's 0019, then 主线-3's 0020, then fr-A's
+    # 0021_provider_usage (renumbered from 0020 at merge; this pin read
+    # "0018_delivery_records.sql" while 0018 was the head, the stamp-pin
+    # discipline every head move has followed since P8-4).
     assert sorted(
         path.name for path in (REPO_ROOT / "migrations").glob("*.sql")
-    )[-1] == "0020_world_lore_facts.sql"
+    )[-1] == "0021_provider_usage.sql"
 
 
 def test_the_frozen_surfaces_are_read_not_written() -> None:

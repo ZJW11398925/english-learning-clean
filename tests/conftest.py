@@ -54,12 +54,18 @@ MIGRATION_IDS: tuple[str, ...] = (
     # 主线-3 (DEC-OPI-32409938…36): the World/Lore canonical facts — the
     # table the persona prompt's [lore] section is rendered from.
     "0020_world_lore_facts",
+    # fr-A (frontend revamp cut A): the provider-reported token usage
+    # counters as three adjudicated ProviderAttempt columns (the owner_epoch
+    # precedent — a fact of the attempt, no new table). Renumbered 0020→0021
+    # at merge: master's 0020_world_lore_facts merged first (the
+    # first-merged-side-wins law, DEC-OPI-32409938…49 R2).
+    "0021_provider_usage",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0020_world_lore_facts.sql"
-SCHEMA_HEAD_VERSION = "20"
+SCHEMA_HEAD_FILE = "0021_provider_usage.sql"
+SCHEMA_HEAD_VERSION = "21"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

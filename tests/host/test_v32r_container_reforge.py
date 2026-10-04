@@ -464,22 +464,26 @@ def test_the_spec_carries_the_v32r_truth() -> None:
 
 
 def test_the_design_language_census_stands() -> None:
-    """v2 内核纪律不降级：动效注册表仍 8 枚 keyframes（零新注册——
-    写信工作区复用 paper-fold/ink-wash/stamp-press 既有枚；v3-a 随迁
-    8→9：paper-drop-down 落底入册——O2 定谳修的新方向原语，⑨-5 名册
-    同刀改行）；圆角
-    census（screens 4 / components 7，全 ≤2px 信纸物件档 + 邮票邮戳
-    圆形豁免）；阴影 census（screens 4 / components 5）；零毛玻璃；
+    """v2 内核纪律不降级：动效注册表 census（v3-a 随迁 8→9：
+    paper-drop-down 落底入册——O2 定谳修的新方向原语；**fr-B 随迁
+    9→12：stagger-rise / scrim-out / sheet-out 三枚——动画体系专项
+    刀 B 的错峰与词卡褪下原语，⑨-5 名册同刀改行「全库十二枚」**）；
+    圆角
+    census（screens 4 / components 9——v2-2 的 7 + fr-A 墨点两声明，
+    全 ≤2px 信纸物件档 + 邮票邮戳圆形豁免 + fr-A 用户明示墨点豁免席）；
+    阴影 census（screens 4 / components 8——fr-A 的 7 + fr-B #11 确认
+    窗面板一座 deep，仍恰两级 --stack-shadow-* 之内、令牌引用零手写）；
+    零毛玻璃；
     reduced-motion 字面不进 app.js（REDUCED_MOTION 单一归宿）；写
     信工作区样式块零色值字面（全 var()——v2 语言对账）。"""
 
     components = _text("components.css")
     screens = _text("screens.css")
-    assert components.count("@keyframes ") == 9
+    assert components.count("@keyframes ") == 12
     assert screens.count("border-radius") == 4
-    assert components.count("border-radius") == 7
+    assert components.count("border-radius") == 9
     assert screens.count("box-shadow") == 4
-    assert components.count("box-shadow") == 5
+    assert components.count("box-shadow") == 8
     whole = _page()
     assert "backdrop-filter" not in whole
     app = _text("app.js")

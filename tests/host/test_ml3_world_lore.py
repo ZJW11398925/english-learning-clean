@@ -149,21 +149,26 @@ def _command(text: str, conversation: str, suffix: str) -> CommitUserTurn:
 
 
 def test_0020_is_the_registered_head() -> None:
-    """The lineage ends at 主线-3's migration (the task book's ``0019`` name
+    """The lineage carries 主线-3's migration (the task book's ``0019`` name
     was written before MC-0's 0019_character_cards took the number — the
-    head bump is the requirement, the number moved with it), the shared
-    constants say so, and the stamp a fresh database carries is 20."""
+    head bump is the requirement, the number moved with it), immediately
+    behind fr-A's 0021_provider_usage (renumbered from 0020 at merge, the
+    first-merged-side-wins law); the shared constants say so, and the
+    stamp a fresh database carries is 21."""
 
-    assert MIGRATION_IDS[-1] == "0020_world_lore_facts"
-    assert SCHEMA_HEAD_FILE == "0020_world_lore_facts.sql"
+    assert MIGRATION_IDS[-1] == "0021_provider_usage"
+    assert MIGRATION_IDS[-2] == "0020_world_lore_facts"
+    assert SCHEMA_HEAD_FILE == "0021_provider_usage.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "20"
+    assert (MIGRATIONS / "0020_world_lore_facts.sql").is_file()
+    assert SCHEMA_HEAD_VERSION == "21"
     assert "0019_character_cards" in MIGRATION_IDS
 
     conn = sqlite3.connect(":memory:")
     applied = apply_migrations(conn)
-    assert applied[-1] == "0020_world_lore_facts"
-    assert schema_version(conn) == "20"
+    assert applied[-1] == "0021_provider_usage"
+    assert applied[-2] == "0020_world_lore_facts"
+    assert schema_version(conn) == "21"
 
 
 def test_the_world_lore_fact_table_carries_its_columns() -> None:

@@ -65,6 +65,10 @@
            品牌条不增长按钮元（r1_shell 的品牌条无钮钉保留）。 -->
     </header>
     <main class="flow">
+      <!-- fr-A token 计量条（#26）：会话累计（/api/history 的窗口无关
+           全量）+ 逐轮可选展开；显示开关在 抽屉 · 设置 · 显示与计量
+           （sessionStorage 客户端侧，如实标注）。无计量读数如实说。 -->
+      <div id="tokenmeter" class="tokenmeter" hidden></div>
       <div id="messages" aria-live="polite"></div>
       <div id="moments"></div>
       <!-- v2-2 信档入口（8.2.11）：信的末尾一行弱化链接——「以前的
@@ -110,6 +114,18 @@
         </form>
       </div>
     </div>
+    <!-- fr-A 一键回底（#24 悬浮墨点）：flow 离底超阈值浮现，点击平滑
+         回底（reduced-motion 直落）；在底 / 写作态开着 / 离案头即藏
+         （JS 账）。圆形 = 用户明示的墨点样式族（②-6 圆角法则「仅邮票/
+         邮戳圆形」的 fr-A 新增豁免——墨点不盖事件，非印章）。 -->
+    <button id="flow-bottom" class="flow-bottom" type="button"
+            aria-label="回到最新一封" hidden><span class="flow-bottom-glyph"
+            data-icon="chevron"></span></button>
+    <!-- fr-A 轮次刻度（#25）：信流右缘的细刻度条——每轮交流一个刻度点，
+         当前视位高亮，点击跳转到该轮。刻度只管已加载的窗口（/api/history
+         默认 50 轮；未加载的更早部分以信流顶部的「加载更早」衔接，
+         口径句写在脸上）。JS 建点（flowTurns 锚），≥2 轮才现身。 -->
+    <nav id="flow-ruler" class="flow-ruler" aria-label="轮次刻度" hidden></nav>
   </section>
 
   <!-- cs-2 笔友档案（全页视图，rd-4 浮层卡退役）：同门厅 cover 的整页
@@ -462,13 +478,13 @@
     </section>
     </section>
 
-    <!-- 设置节（⑧ 8.2.8，主线-1 重铸②：真面接通）：静态真面块保留
-         （两真句 + 批注频率指向句）；「三档教学模式」升级 = 当前档读面
-         （rollout_stage 原值，None 如实——不虚构枚举到三档名的映射）+
-         三档参考并存；新增教学策略旋钮组（八旋钮真控件 + 保存回路：
-         读现值→改→POST→回读刷新——mode 等系统列拒写，服务端 400 人话）
-         与披露规则展示组（§5.1 DisclosurePolicy 现值只读——规则经
-         profile 编辑）。SECTION_PULLS 拉本节（r1_shell 缺位钉随迁）。
+    <!-- 设置节（⑧ 8.2.8，主线-1 重铸② + fr-A 完全体重做）：分组信息
+         架构五区——如实说（节首）/ 教学模式（当前档读面视觉化：三档名
+         映射展示，当前档高亮但不可改，mode 写入继续拒绝）/ 教学策略
+         （八旋钮真控件 + 保存回路）/ 隐私与披露（§5.1 DisclosurePolicy
+         编辑面——写面接通，规则行可改可增可减，冲突 409 重读）/ 显示
+         与计量（token 计量显示开关，sessionStorage 客户端侧如实标注）。
+         SECTION_PULLS 拉本节（r1_shell 缺位钉随迁）。
          （8.2.8 目标设计②问候语切换设置项位：随 8.2.2① 问候语面挂起
          ——语料面缺口呈报在案，待裁后落位。） -->
     <section id="drawer-settings" role="tabpanel"
@@ -480,26 +496,31 @@
         <p class="doc-line">模型端点与模型名由启动命令给定——页面不读取，也不显示。</p>
         <p class="doc-line">批注频率在 温故 · 方向 里调。</p>
       </div>
-      <div class="sec">
-        <h3>三档教学模式（参考）</h3>
+      <div class="sec" id="set-settings-mode">
+        <h3>教学模式</h3>
         <p class="doc-line">当前档：<span id="settings-stage">…</span>——由启动命令给定，这里读得到，但不能改。</p>
+        <div id="settings-modes"></div>
         <p class="doc-line">换端点或换档 = 改启动命令再启动。</p>
-        <p class="doc-line">娱乐 · 关系优先：聊得多，递得少，笔友以听和陪为主。</p>
-        <p class="doc-line">平衡：聊天与练句并行，批注适度。</p>
-        <p class="doc-line">学习优先：练句密度优先，批注递得勤，课程感更明显。</p>
       </div>
     </div>
     <div class="sec" id="set-settings-knobs">
-      <h3>教学策略旋钮</h3>
+      <h3>教学策略</h3>
       <p class="doc-line">批注频率有真消费方；标「存面」的七钮暂无消费方——先存后用，留空 = 未配置。</p>
       <div id="settings-knobs"><p class="note">暂无数据</p></div>
       <div id="settings-save"></div>
       <div id="settings-result" class="sec"></div>
     </div>
     <div class="sec" id="set-settings-disclosure">
-      <h3>披露规则</h3>
-      <p class="doc-line">笔友能看到你的哪些档案事实，由披露规则说了算——规则经 profile 编辑，这里只读。</p>
+      <h3>隐私与披露</h3>
+      <p class="doc-line">笔友能看到你的哪些档案事实，由披露规则说了算——规则在这里改；没有规则行时，缺省一无所露（fail-closed 缺省）。</p>
       <div id="settings-disclosure"><p class="note">暂无数据</p></div>
+      <div id="settings-disclosure-save"></div>
+      <div id="settings-disclosure-result" class="sec"></div>
+    </div>
+    <div class="sec" id="set-settings-display">
+      <h3>显示与计量</h3>
+      <p class="doc-line">token 计量的显示开关——只存在这个标签页这次会话里（sessionStorage 客户端侧），关掉标签页就复位。</p>
+      <div id="settings-meter"></div>
     </div>
     </section>
 

@@ -161,7 +161,9 @@ def test_the_sheet_semantics_are_one_component_two_tiers() -> None:
     assert 'card.style.setProperty("--wc-y",' in js
     assert "card.offsetWidth" in js      # the clamp still measures the card
     assert 'if (event.key === "Escape") closeWordCard();' in js
-    assert "openScrim.remove();" in js
+    # fr-B 随迁：scrim 的摘除并入褪下编排（instant 直摘 / settle 对账摘
+    # 两路同源——DOM 移除语义不变，只是有了褪下半）
+    assert "if (scrim !== null) scrim.remove();" in js
     css = _text("components.css")
     # the pointer tier consumes the props; the sheet tier overrides them
     assert "left: var(--wc-x, 0px); top: var(--wc-y, 0px);" in css
@@ -379,9 +381,13 @@ def test_the_document_pages_read_like_documents() -> None:
     for marker in (
         '<p class="doc-line">请笔友忘掉一些事——走出去就找不回来。</p>',
         '<p class="doc-line">这台应用只服务你一个人（127.0.0.1，无账号无密码）。</p>',
-        '<p class="doc-line">娱乐 · 关系优先：聊得多，递得少，笔友以听和陪为主。</p>',
     ):
         assert marker in index, marker
+    # fr-A 随迁：三档模式句从静态 doc-line 迁为 JS 视觉读面（⑨-14③——
+    # MODE_TIERS 的整句字面，当前档高亮行由 app.js 渲染）。
+    app = _text("app.js")
+    assert "娱乐 · 关系优先：聊得多，递得少，笔友以听和陪为主。" in app
+    assert 'id="settings-modes"' in index
     # the form rows lock the ui/small line-heights (8.2.4 基线重排)
     css = _text("components.css")
     field = _block(css, ".field .fieldname {")

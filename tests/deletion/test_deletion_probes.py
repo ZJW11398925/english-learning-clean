@@ -498,12 +498,13 @@ def test_all_user_data_keeps_the_infrastructure_and_the_ledger(
             " WHERE key LIKE '%schema_version%'"
         ).fetchall()
     ) == stamps_before
-    # 20 = the applied lineage through 主线-3's 0020_world_lore_facts (the
-    # head count; the pin moved 14 → 15 with P8-0's 0015_planner_records,
+    # 21 = the applied lineage through fr-A's 0021_provider_usage (the head
+    # count; the pin moved 14 → 15 with P8-0's 0015_planner_records,
     # 15 → 16 with P8-3's 0016_planning_ledger, 16 → 17 with P8-4's
     # 0017_ledger_event_provenance, 17 → 18 with P9-1's 0018,
-    # 18 → 19 with MC-0's 0019, and 19 → 20 with this migration).
-    assert _count(db, "schema_migrations") == 20
+    # 18 → 19 with MC-0's 0019_character_cards, 19 → 20 with 主线-3's
+    # 0020_world_lore_facts, and 20 → 21 with this migration).
+    assert _count(db, "schema_migrations") == 21
     assert _count(db, "runtime_epoch") == 1
     assert _count(db, "deletion_tombstone") > 0
 

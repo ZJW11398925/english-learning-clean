@@ -53,6 +53,7 @@ from elc.persona.types import (
     GenerationContract,
     PromptCompilationRequest,
     ProviderOutput,
+    ProviderUsage,
     ValidatorDecision,
     ValidatorResult,
 )
@@ -225,6 +226,7 @@ class PersonaRuntime:
                 prompt,
                 failed=False,
                 output_text=output.text or "",
+                usage=output.usage,
             )
             if isinstance(recorded, Err):
                 return recorded
@@ -419,6 +421,7 @@ class PersonaRuntime:
         *,
         failed: bool,
         output_text: str = "",
+        usage: ProviderUsage | None = None,
     ) -> Result[ProviderAttemptRecord]:
         record = ProviderAttemptRecord(
             provider_attempt_id=_new_attempt_id(),
@@ -430,6 +433,13 @@ class PersonaRuntime:
             result_hash=None if failed else result_hash(output_text),
             created_at=_now(),
             terminal_at=_now(),
+            # fr-A: the endpoint's reported usage rides the attempt row —
+            # None where it reported nothing (a failed call meters nothing).
+            prompt_tokens=None if usage is None else usage.prompt_tokens,
+            completion_tokens=(
+                None if usage is None else usage.completion_tokens
+            ),
+            total_tokens=None if usage is None else usage.total_tokens,
         )
         return self._actions.record_attempt(record)
 

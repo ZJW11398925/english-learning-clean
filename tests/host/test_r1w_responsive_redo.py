@@ -379,11 +379,11 @@ def test_the_stamp_icon_is_registered_the_four_step_way() -> None:
     and the spec's ③ row + ⑨-4 roster. The set stays one component
     (the icons are its members; cs-2 随迁：浮层伙伴卡退役 → 22；
     v2 随迁：水印圆戳出集，八枚 → 七枚；v3-a 随迁：#18 落墨页签三枚
-    入集，七枚 → 十枚)."""
+    入集，七枚 → 十枚；fr-A 随迁：会话窗三件 + 墨选四格入库 → 26)."""
 
     from tests.host.test_fg1_architecture import COMPONENTS
 
-    assert len(COMPONENTS) == 22
+    assert len(COMPONENTS) == 26
     index = _text("index.html")
     assert (
         '<svg id="icon-stamp" class="inkicon" viewBox="0 0 20 20" '

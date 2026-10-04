@@ -271,5 +271,6 @@ def test_the_spec_carries_the_living_registry() -> None:
     # R-1 随迁：壳导航三件再长三格（17 → 20）；
     # R-1R 随迁：折叠组 disclosure 再长一格（20 → 21）——同刀登记；
     # R-1V 随迁：icon-set 入库再长一格（21 → 22）——同刀登记；
-    # rd-4 曾随迁长到 23；cs-2 随迁：浮层伙伴卡退役再缩回（23 → 22）
-    assert len(COMPONENTS) == 22
+    # rd-4 曾随迁长到 23；cs-2 随迁：浮层伙伴卡退役再缩回（23 → 22）；
+    # fr-A 随迁：会话窗三件 + 墨选四格入库（22 → 26）——同刀登记
+    assert len(COMPONENTS) == 26

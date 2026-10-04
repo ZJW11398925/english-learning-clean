@@ -427,7 +427,8 @@ def test_a_turn_answers_the_full_json_contract(tmp_path: Path) -> None:
         status, data = stack.post("/api/turn", {"text": CLEAN_TEXT})
         assert status == 200
         # v3-d 随迁：响应加性携带两侧命中位图（无 content 腿 = None——
-        # 每词保持全供性的诚实形状）。
+        # 每词保持全供性的诚实形状）。fr-A 随迁：响应加性携带本轮
+        # usage（计量开关的数据面；未报 usage 的端点 = None，不伪造）。
         assert set(data) == {
             "reply",
             "turn_status",
@@ -435,6 +436,7 @@ def test_a_turn_answers_the_full_json_contract(tmp_path: Path) -> None:
             "teaching_moments",
             "word_hits",
             "user_word_hits",
+            "usage",
         }
         assert data["reply"] == REPLY
         assert data["turn_status"] == "COMPLETED"
@@ -442,6 +444,8 @@ def test_a_turn_answers_the_full_json_contract(tmp_path: Path) -> None:
         assert data["teaching_moments"] == []
         assert data["word_hits"] is None
         assert data["user_word_hits"] is None
+        # the scripted provider reports no usage object — the honest None
+        assert data["usage"] is None
 
 
 # ---------------------------------------------------------------------------
@@ -1245,20 +1249,32 @@ def test_history_serves_the_turns_the_page_sent(tmp_path: Path) -> None:
         status, payload = stack.get_json("/api/history")
         assert status == 200
         # v3-d 随迁：每轮两侧加性携带命中位图（无 content 腿 = None）。
+        # fr-A 随迁：每轮加性携带 usage（未报 = None）；顶层加性 usage =
+        # 会话累计（窗口无关——本栈两轮脚本 provider 未报，累计全 None、
+        # 计量 0/2 次调用）。
         assert payload["turns"] == [
             {
                 "user": CLEAN_TEXT,
                 "assistant": REPLY,
                 "user_word_hits": None,
                 "word_hits": None,
+                "usage": None,
             },
             {
                 "user": SECOND_TEXT,
                 "assistant": REPLY,
                 "user_word_hits": None,
                 "word_hits": None,
+                "usage": None,
             },
         ]
+        assert payload["usage"] == {
+            "prompt_tokens": None,
+            "completion_tokens": None,
+            "total_tokens": None,
+            "measured_calls": 0,
+            "total_calls": 2,
+        }
 
 
 # ---------------------------------------------------------------------------

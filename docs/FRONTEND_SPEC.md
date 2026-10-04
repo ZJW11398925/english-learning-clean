@@ -99,6 +99,31 @@ weight，700 = 合成粗体发糊——中文标题靠字号跳档 + 字距）�
 
 版心与页边距：窄屏 394px ≈ 23 字/行仍舒适；页边距 ≥2 行高（64px 桌面）。
 
+#### ②-4a 排印配方与全局应用规范（fr-A 体系化）
+
+九档标度的**值**不动（简报逐值采用在册）；本刀补的是**应用规范**——
+四族读法落成 `font:` 速记配方令牌（`--t-*`，物理出处 tokens.css），
+消费面**零拼装**（不再允许「font-family + font-size 各写一半、行高靠
+继承」的散写法；fr-A 前残留的相对行高 `1.7`/`1.8` 字面已全数清账）。
+
+| 族 | 配方 | 值 | 用面（哪个层级用哪档） |
+|---|---|---|---|
+| ① 标题层级（display 族，400——禁合成粗体，中文标题靠字号跳档 + 字距） | `--t-display` | 34/42 | 门厅封面题（唯一） |
+| | `--t-title` | 24/32 | 档案真名 / 编辑台题 |
+| | `--t-head` | 18/26 | 信头名 / 信封名 / 词卡词头 |
+| ② 正文文档档（serif 族） | `--t-body` | 17/32 | 信件正文 / 中文文档行（`.doc-line`——行高锁基线） |
+| | `--t-body-latin` | 17/28 | 纯英文散文段（档案人物节） |
+| | `--t-small` | 14.5/24 | 次墨说明 / 记忆行 / 短笺 |
+| | `--t-hand` | 19/30 | 楷体手迹位（三合法面：落款/案头日期/边注，每屏 ≤2 行 ≤1 处） |
+| ③ 界面档（UI sans 族） | `--t-ui` | 12.5/20 | 界面小字 / 链接族 / 说明行（`.sub` `.typing` `.errline` `.flow-calibre` 等） |
+| | `--t-note` | 14.5/24 sans | 界面弱化小字（`.note` 空态行 / `.state-banner` 状态横幅） |
+| ④ 微标签与 mono 数字档 | `--meta-font`（sans 500） | 11.5/20 | 微标签 sans 角色（状态词/节名/词性等元信息位——唯一去处） |
+| | `--meta-mono`（等宽 400） | 11.5/20 | 时间/编号/计数/日期/版本行/数据列（恒配 `font-variant-numeric: tabular-nums`） |
+
+规范：新规则一律 `font: var(--t-*)`（或 `var(--meta-*)`）整体取用；
+族内再分层靠**墨色三级**（`--ink`/`--ink-soft`/`--ink-faint`）与
+`letter-spacing` 刻度，不靠另立字号。
+
 ### ②-5 间距·动效·微标签·触感·阴影·图标·布局
 
 | token | 值 | 用途 | 禁忌 |
@@ -107,9 +132,13 @@ weight，700 = 合成粗体发糊——中文标题靠字号跳档 + 字距）�
 | `--dur-micro` | `100ms` | 触感反馈档：state layer / hover / press | 一切反馈 ≤ 此档；纸事件不走它 |
 | `--dur-stamp` `--dur-note` | `120ms` `260ms` | 纸事件：邮戳盖下 / 批注递出（教学卡展开档——v2 按简报 §5 重定 260ms，rd-1 旧档 240ms 已废） | 不裸写时长 |
 | `--dur-1` | `140ms` | 逐行落墨步长 / hover 色变 | 同上 |
-| `--dur-panel-in` `--dur-panel-out` | `280ms` `200ms` | 抽屉进·出——进入比退出略长（容器级退出现役待接，⑨-5 Revisit） | 同上 |
+| `--dur-panel-in` `--dur-panel-out` | `280ms` `200ms` | 抽屉进·出——进入比退出略长（fr-B：容器级退出已由 .panel--leave 编排接上，⑨-5 抽屉开合行） | 同上 |
 | `--dur-ink` `--dur-wet` | `360ms` `600ms` | 渗墨（opacity 恒慢于 transform ≈1.3×）/ 墨水物理（ink-ghost→ink 一次性） | opacity 先至 = 数字语汇 |
 | `--dur-settle` | `320ms` | 大件封顶：信纸落桌、编辑台过渡、逐行总封顶 | 大件 >320ms 恐过慢 |
+| `--dur-space-in` `--dur-space-out` | `340ms` `220ms` | 整屏转场档（fr-B 新立）：空间/全页进入·退出——进入比面板档长半档（分层错峰留时），退出与进入同帧起播成交叉淡化 | 整屏位移仍 8px 封顶 |
+| `--dur-dialog-in` | `300ms` | 弹窗档（fr-B 新立）：确认窗/弹层升起——介于面板与整屏之间 | 同上 |
+| `--dur-stagger` | `28ms` | 列表逐项错峰步长（fr-B 新立——20–40ms 区间取中，前 8 项封顶） | 不裸写步长 |
+| `--ease-spring` | `cubic-bezier(0.34, 1.25, 0.4, 1)` | 弹簧族（fr-B 新立——spring 近似；**对 rd-1「唯一 overshoot = 盖印收束」的显式收窄修订，用户任务书授权**：只许配盖印形 keyframes（scale ≤0.96→1 幅度族），禁配位移/大尺度，幅度 ≤4%） | 绝不弹跳轻浮 |
 | `--ease-paper` | `cubic-bezier(0.16, 1, 0.3, 1)` | 进入减速长尾（纸先落） | 禁 linear |
 | `--ease-enter` `--ease-exit` | `cubic-bezier(0.05, 0.7, 0.1, 1)` / `cubic-bezier(0.3, 0, 1, 1)` | 教学/面板进·退缓动分离（进入长尾/退出收势） | — |
 | `--ease-press` | `cubic-bezier(0.4, 0, 0.2, 1)` | 触压对称/盖印收束（唯一 overshoot 许可） | 无弹性回弹 |
@@ -128,6 +157,10 @@ weight，700 = 合成粗体发糊——中文标题靠字号跳档 + 字距）�
 | `--navdock-clearance` | `calc(var(--navdock-h) + var(--safe-bottom))` | 固定底具补偿带（v3-2，P1-1）：一切滚动容器 bottom padding 的算术底数（.flow / .spacebody 消费），零第三处手写 | 不作行高 |
 | `--shell-w` | `430px`（≥900px 媒体查询改写 `1080px`，≥1280 改 `1240px`） | 信纸栏宽：#18 navdock 与写信区 .dock 的同一宽度出处 | 不作颜色 |
 
+（fr-A 新增：排印配方 `--t-*` 九枚与四族应用规范见 **②-4a**——本表不重列；
+会话窗三件的屏级尺寸走既有 `--navdock-h` / `--dock-trigger-h` 与
+`--sp-*` 阶，零新尺寸令牌。）
+
 ### ②-6 圆角法则（2026-10-02 回退记录）
 
 圆角五档尝试（v2-2R 的 `--r-*`，commit 52aa84a）被用户否决回退（原话
@@ -136,6 +169,14 @@ weight，700 = 合成粗体发糊——中文标题靠字号跳档 + 字距）�
 物件 ≤2px，仅邮票/邮戳圆形豁免）。`--r-*` 令牌已从 tokens.css 删除，
 webui 不再有任何消费点；本轮留痕见 tests/host/test_v22r_soft_radius.py
 （回退钉）。
+
+**fr-A 豁免新增一席（2026-10-05，本文件 ⑨-14 同刀登记）**：豁免集合
+由「仅邮票/邮戳圆形」扩为**邮票/邮戳/回底墨点**——`#24 flow-bottom`
+（`.flow-bottom` 本体与其纸白薄雾圆）是用户任务书明示的「悬浮墨点样式
+族」；墨点**不盖真实事件、不是印章**，故它是圆形豁免的第二例，不是面板
+大圆角的回流。圆角普查随之由 components 7 / screens 4 记作
+components 9 / screens 4（test_v22r_soft_radius 的计数钉同刀随迁）。
+上文原始法则句一字保留（历史与法则原文不改写）。
 
 规则：组件样式只许 `var()` 引用，**禁止在任何其他文件重写令牌字面值**；
 禁止新增 token 之外的十六进制颜色（零青绿——旧双色主题不得回流）。
@@ -160,9 +201,9 @@ v2 起 `tokens.css` 是全套令牌的唯一物理出处，其头注即简报 §
 
 每组件在 components.css 有契约注释块（结构/状态矩阵/使用规则/禁止变体）。
 页面引用一律走新变体类；旧类名仅作为别名保留在同一规则的选择器表尾。
-现役注册表 = 22 组件（#1–#22 连号；rd-4 曾增 #23 partner-card，cs-2
-随档案全页视图退役——浮层与名册桩拆除、same-cut retirement，注册表
-不做阁楼，**编号空出不复用**，见本节表后注）。
+现役注册表 = 26 组件（#1–#22 连号 + fr-A 新增 #24–#27；rd-4 曾增 #23
+partner-card，cs-2 随档案全页视图退役——浮层与名册桩拆除、same-cut
+retirement，注册表不做阁楼，**编号空出不复用**，见本节表后注）。
 
 | # | 组件 | 类名（新） | 别名（现役旧名） | 状态矩阵 | 出处 |
 |---|---|---|---|---|---|
@@ -176,7 +217,7 @@ v2 起 `tokens.css` 是全套令牌的唯一物理出处，其头注即简报 §
 | 8 | busystrip | `.busystrip` | — | 出现即 busy、消失即复位 | components.css + components.js（setReplyBusy） |
 | 9 | meter-row | `.kv` `.kvgroup` `.kvtitle` | — | default（无交互态） | components.css + components.js（diagLine/diagGroup） |
 | 10 | empty-state | `.note` | — | default（无交互态）；现役面收窄为壳上静态占位行（「暂无数据」族首绘），运行时空态走 #14 | components.css + components.js（diagEmpty） |
-| 11 | confirm-dialog | 无 CSS（原生 confirm） | — | native 确定/取消两臂 | components.js（`confirmDialog()`，全页唯一 confirm 调用点） |
+| 11 | confirm-dialog | `.cfrm`（+ `.cfrm-msg` `.cfrm-actions`）+ 纸雾件 `.cfrm-scrim`（fr-B 重铸——原生 confirm 退役） | — | open（纸雾 scrim-in 淡入 + 面板 paper-drop + ink-wash 升起，`--dur-dialog-in` 弹窗档）/ close（两臂·点雾·Esc 同一路——paper-fold + ink-wash reverse 褪下 + scrim-out 同步淡出，Esc 收起与确认收起对称）/ 语义 = 原生 confirm 平移（确定 true、其余 false）；z 11/12 全站最上（⑩ 10.2） | components.css + components.js（`confirmDialog()`——全页唯一确认调用点，异步 Promise<boolean>，消息一律 textContent） |
 | 12 | system-line | `.sysline` | — | default（无交互态） | components.css + components.js（addLine system 臂） |
 | 13 | brand-mark | `.brandmark`（+ `--sm` `--lg`） | — | default 30px / 尺寸修饰 --sm 20px、--lg 64px / 静态标记无动效；**几何 = 信封 + 封缄墨线，封缄点 v2 裁用墨蓝**（`--accent`——朱砂只盖真实事件，品牌印记不是事件，简报 T2；aria-label「展信佳印记」随模板，改名只动模板与 BRAND 常量） | index.html（`<template id="brand-mark-source">` 内联 SVG，几何唯一出处）+ components.css + components.js（`brandMark()`/`installBrandMarks()`） |
 | 14 | state-banner | `.state-banner`（+ `--loading` `--empty` `--error`） | — | loading（取信中…——v2 起尾点**静态化**：零常驻循环铁律，呼吸循环件已退役）/ empty（弱化诚实句 + #22 lamp 墨线小图）/ error（人话句 + `--pencil`（墨蓝）重试链接，回调由调用方注入）/ reduced-motion 随库尾总降级块 | components.css + components.js（`stateBanner()`；`diagEmpty`/`diagError` 一律委托它） |
@@ -188,6 +229,10 @@ v2 起 `tokens.css` 是全套令牌的唯一物理出处，其头注即简报 §
 | 20 | section-tabs | `.section-tabs` / `.section-tab`（+ `--on`） | — | unselected（default，透明点线占位）/ hover（墨色微沉）/ selected（`--on`，主墨加重 + 墨蓝实线短下划 + `aria-selected`）/ focus（地基 `:focus-visible` 焦点环，不另设）/ `[disabled]`（opacity .4）；roving tabindex + 左右箭头循环移选；温故/抽屉各一排三项，切节即拉 | components.css + components.js（`wireSectionTabs()`/`markSectionTabs()`，R-1） |
 | 21 | disclosure | `.disclosure`（+ `.disclosure-head` `.disclosure-marker` `.disclosure-title` `.disclosure-examples` `.disclosure-body` `--open`） | — | collapsed（default，内容区 hidden，chevron 向右）/ expanded（`--open`，内容区展开、chevron 旋转 90°、`aria-expanded="true"`，计数保留；入场 = ⑨-5 paper-unfold）/ focus（地基环，不另设）；标记 = #22 自绘墨线 chevron；一切「超过 8 行的同质列表」与「参考 / 原始读数」走它；不得手风琴互斥、不得嵌套、不得图标外链 | components.css + components.js（`disclosure()`，R-1R） |
 | 22 | icon-set | `.inkicon`（几何模板 `id="icon-search\|chevron\|note\|write\|inbox\|lamp\|stamp\|desk\|revisit\|drawer"`） | — | default（`--icon-size` 见方、currentColor 墨色、`--icon-stroke` 1.5、圆角端点；无独立交互态——chevron 旋转是宿主 #21 的 `--open` 态面；#18 三枚的落墨填充是宿主 `.navdock-item--on` 的态面——fill-opacity 过渡，图标本体仍无独立交互态）/ reduced-motion（宿主动效随库尾总降级归零后静帧） | index.html（`<template id="icon-set-source">` 十枚内联 SVG，几何唯一出处）+ components.css + components.js（`inkIcon()`/`installIcons()`，R-1V） |
+| 24 | flow-bottom | `.flow-bottom` | — | default（墨点 .82 不透明度 + 软纸影）/ hover·focus·press（纸白薄雾三值——深件反向叠雾，rd-1 三档）/ `:active`（触压 1px）/ `[hidden]`（在底 / 写作态 / 离案头——JS 账；fr-A 会话窗三件之一，圆形 = 用户明示墨点样式族，②-6 的 fr-A 豁免登记） | index.html + components.css（视觉）+ screens.css（位置账）+ app.js（`syncFlowBottom`） |
+| 25 | flow-ruler | `.flow-ruler`（+ `.flow-tick` `--on`） | — | default（8×2 水印墨短线，flex 纵向均分条高——点距即窗口密度）/ 当前轮 `--on`（14×2 主墨 + `aria-current`，形态差异非颜色）/ hover（次墨半档）/ focus-visible（墨蓝细环）/ `[hidden]`（<2 轮 / 写作态 / 离案头）；点击 = 平滑跳该轮（reduced-motion 直落）；口径行 `.flow-calibre`（屏级，「加载更早」衔接主线-2 分页） | index.html + components.css + screens.css + app.js（`flowTurns` 锚 / `buildFlowRuler`/`syncFlowRuler`/`loadEarlierLetters`） |
+| 26 | tokenmeter | `.tokenmeter`（+ `.tm-line` `.tm-num` `.tm-fold` `.tm-turns` `.tm-turn`） | — | default（等宽微标签配方 + tabular-nums——账页读法，零图表零徽章）/ 逐轮开合（`aria-expanded`）/ `[hidden]`（开关关 / 无数据）；未计量字段如实「—」，全空如实一句——不伪造 0；累计 = 服务端会话全量（窗口无关），客户端不做本地加减 | index.html + components.css + screens.css（sticky 账 z 4）+ app.js（`setTokenMeter`/`syncFlowMeter`/`refreshFlowMeter`；开关存 sessionStorage——如实标注） |
+| 27 | select | `.select`（+ `.select-btn` `.select-value` `.select-chevron` `.select-list` `.select-option` `--on` `--active` `--open`） | — | default（按钮 = 稿纸行读法 + chevron 弱墨）/ `--open`（chevron 旋 90°，纸面浮层落 `--paper-high` + 发丝缘 + 软纸影）/ option：default（墨字）/ hover·键盘活动项（淡墨雾——color-mix 墨色同源 8%/12%，rd-1 三值读法）/ 选中 `--on`（主墨 + 勾记 ✓）/ placeholder（弱墨 ui 档）；键盘 ↑↓/Home/End/Enter/Esc/Tab 全链 + `role=listbox/option` + `aria-activedescendant` + 点外关闭 | components.css + components.js（`selectField()`，fr-A——原生 `<select>` 全应用退役，三现役消费面：方向页技能 / 设置批注频率 / 披露层级） |
 
 **#23 退役注记（cs-2，替代 rd-4 假句的现役真值）**：rd-4 的
 `.partner-card` 浮层纸卡与名册桩（名册 = 前端静态副本、选中只落
@@ -1453,6 +1498,14 @@ v2-2 起增两枚（`paper-fold` 收拢 / `page-turn` 2D 翻页——下两行�
 全库七枚）；v3-a 增一枚（`paper-drop-down` 落底——触屏贴底 sheet 的
 落纸方向原语，从上方 8px 落下到位，底缘全程不出视口；全库八枚）：
 呼吸循环件已随 v2 退役（零常驻循环铁律）。
+**fr-B 增三枚（全库十二枚）**：`stagger-rise`（列表逐项错峰——
+140ms 淡入 + 4px 上移，步长令牌的载体）/ `scrim-out`（纸雾淡出
+to-only，与 scrim-in 对偶——scrim-in 自 v2-2 在库、本刀首次入册）/
+`sheet-out`（触屏 sheet 向底滑出——与入场 @starting-style 100%
+对偶）。**fr-B 曲线族第三族立档**：`--ease-spring`（弹簧近似——
+对 rd-1「唯一 overshoot = 盖印收束」的显式收窄修订，用户任务书
+授权；法则全文在 tokens.css 动效节：只许配盖印形 keyframes、幅度
+≤4%、禁位移）。
 
 | 动效 | 触发 | 时长 × 缓动 | 实现 | reduced-motion 降级 |
 |---|---|---|---|---|
@@ -1472,12 +1525,20 @@ v2-2 起增两枚（`paper-fold` 收拢 / `page-turn` 2D 翻页——下两行�
 | 案头重落（mc-1 切换档） | 角色切换后的信流重铺（app.js 落类、刷新前先摘——一屏一次纸事件） | `--dur-note` + ×1.3 × `--ease-enter` | `.flow.flow-resettle` = paper-drop + ink-wash | 同上 |
 | 邮戳盖下 stamp-press | 信笺寄出一瞬（composer 提交，JS 落类一次，animationend 自摘）；教学卡结课同枚 | `--dur-stamp` × `--ease-press` | `.stamp-press` + `@keyframes stamp-press`（scale .96→1 的 transform 收束——全应用唯一 overshoot 许可，非投影） | 0.01ms 即终，animationend 仍到（JS 清理不失效） |
 | 容器延展（v3-2，⑩ 容器延展档；v3-2R 零跳变次序） | 沓下拉容器换形态：扇叠↔全览窗口（8.2.2a 翻看重铸）、扇叠↔编辑面（mc-2 容器化）与扇叠↔写信工作区（v3-2R 起笔重铸）——整个容器向下拉开/收回，非子页面替换；全览窗口升级 = 内容先装满 → 再量高 → 一次拉开（零跳变） | `--dur-settle`（≤320ms 档）× `--ease-paper`，height 一次过渡 | `extendContainer`（components.js：换装前后量高，`--panel-h` custom prop 落差 + `.envsel--grow` 类；prop 缺省 = auto）；reduced-motion 直切 | 直切（REDUCED_MOTION 单一归宿 + 库尾总降级块双面） |
-| 抽屉开合 drawer | tabpanel 显隐（温故/抽屉的节切换） | 进 `--dur-panel-in` × `--ease-enter`（出 200 已立待接——容器级退出需 allow-discrete 的 display 参与，待 JS 编排或引擎修正，Revisit；现役退出 = `[hidden]` 直切） | `[role="tabpanel"]:not([hidden])` transition + `@starting-style`（只走透明度，位移交给逐行落墨；旧引擎直接显隐） | 总降级块（0.01ms）直切 |
+| 抽屉开合 drawer | tabpanel 显隐（温故/抽屉的节切换） | 进 `--dur-space-in` × `--ease-enter` + 60ms 错峰（fr-B 重定——原 280 档升入整屏档）；出 `--dur-panel-out` × `--ease-exit`（**fr-B 接上**：JS 编排 `.panel--leave`——absolute 叠在 .spacebody（relative 锚）之上、纸底 ink-wash reverse 淡出，animationend 对账 + 保险丝后 [hidden]；rd-1 的「容器级退出待接」Revisit 就此关闭，allow-discrete 毒形态永禁） | 进 = `[role="tabpanel"]:not([hidden])` transition（opacity + transform 8px 双轨）+ `@starting-style`；出 = app.js `leaveLayer` 落类 | 总降级块（0.01ms）直切 + JS 半区 REDUCED_MOTION 直切 |
 | 逐行落墨 reveal stagger | tabpanel 首次入视（IntersectionObserver 落 `.is-revealed`，回调只加类） | ink-wash 纯淡入 `--dur-1` × `--ease-enter`，步长 40ms、只对前 8 项生效（`--i` 由 JS 落，**总封顶 320ms**；`animation-fill-mode: both` 防先亮一下）——v2 行级改纯淡入（简报 §5「每行 140ms fade」） | `[data-reveal].is-revealed` 子项 + `--i`（components.js `wireReveal`） | 双面：CSS 总降级块 + JS 半区 `matchMedia` 即落定 |
 | 回执首渲 @starting-style | 动态插入的回执件（.typing / .sysline / .errline / .busystrip / .resultstrip）首渲 | `--dur-micro` × `--ease-exit` | `@starting-style`（Baseline 2024-08；缺失 = 直接出现，天然渐进增强）。信笺/批注不走此路（JS 门控的双动画保历史回填静帧）；#15 词卡已有组合入场不叠加 | 总降级块归零 |
 | 起笔写信工作区（现役——v3-2R 重铸，用户判词否定上一刀降级实现 2026-10-02） | 「起笔」= 沓容器向下延展成为写信工作界面（compose 面——收件人 + 多行稿纸 + 寄出，全流程在容器内）；寄出后回执一拍 + 容器收拢让位案头信流（收拢方向与延展对称、同曲线反向）；「对话」两条路（沓中/二次点选）仍经 `unfoldToParlor` 收拢让位 | 延展 `--dur-settle`（≤320ms 档）× `--ease-paper`（height 一次过渡）；收拢 `--dur-panel-out`（200）× `--ease-exit` + ink-wash reverse 恒慢；transform/opacity 拆开且 opacity 恒慢 | 延展 = `extendContainer`（同上行）；收拢 = `.envsel--fold` = `paper-fold` + `ink-wash` reverse ×1.3；回执一拍（1000ms，reduced-motion 直落）后 `closeEnvelopeSelector`；信流半 = 切角色路径的 `flow-resettle` 同帧在播 | 直落终态 |
 | page-turn 翻页（现役——v2-2 落库，用户点名） | 全览窗口翻页（8.2.2a——v3-2 起窗口 = 沓容器升级态）与面板横滑切换 | `--dur-settle` × `--ease-paper` | **2D 翻页感**：位移 + rotateY ≤8° + 梯形 transform（skewY）与边缘卷曲阴影（墨色同源 `color-mix` 渐变）+ `--stack-shadow-soft` 承托；方向由消费面落 `--pt-x/--pt-ry/--pt-sk`（变量驱动）；**禁 3D 书本仿真**（无 preserve-3d——简报 T3 原列「翻页 flipbook」禁令按 T2 邮票豁免先例收窄（**用户点名豁免 2026-10-02**：禁令收窄为「3D 书本仿真」，2D 翻页感不在禁列） | 总降级块直切 |
 | 落墨页签（v3-a——⑨-5 新行，ink-wash 静态版；v3-aR 淡墨渍底修订） | #18 空间切换：当前项「落墨」（fill-opacity 0→.15 淡墨渍底）、旧项「墨褪为线」（.15→0）一褪一落同帧，共一屏一纸事件配额（standard 档） | 进入 `--dur-note`（260）× `--ease-paper`；退出 `--dur-panel-out`（200）× `--ease-exit` | `.navdock-item--on .inkicon` fill-opacity 过渡（进入侧 260 落墨 / 退出侧 200 褪墨，双态各持己侧曲线）；标签色重走 `--dur-micro`；零新 keyframes（复用注册原语，纯 fill-opacity 过渡） | 直落终态 |
+| 空间转场 cross-fade（fr-B——⑨-5 新行；硬切换清单 ①②③④） | navdock 三空间互切、案头 ↔ 全页纵深（信档/观察/档案）、门厅 → 案头（拆信） | 进 `--dur-space-in`（340）× `--ease-paper`（内容层 transform）+ opacity ×1.3 恒慢；出 `--dur-space-out`（220）× `--ease-exit`——进出同帧起播 = **交叉淡化**；头部件先到位、内容层 60ms 错峰跟进（分层错峰）；navdock 让位节奏不动（落墨页签行自持） | 进 = screens.css `:not([hidden])` 翻转即播：温故/抽屉走 tabpanel transition（上行），全页纵深 `.dossier .spacebody` 走 paper-drop + ink-wash 双动画，案头 `.flow` 纯淡入（fixed 写信区改挂的 rd-1 坑在册）+ `.top` 纯淡入；出 = app.js `showSpace` 落 `.space--leave`（absolute 叠 #stage 上、纸底遮进层、ink-wash reverse、fixed 家具帧即 visibility 藏）——`leaveLayer`/`cancelLeave` 编排 + 保险丝，快进快出安全 | 直落终态（REDUCED_MOTION 单一归宿——进/出/让位三面直切） |
+| 确认窗升降（fr-B——⑨-5 新行；弹窗三族 ⑤） | #11 confirmDialog 开/合（忘掉双层、看答案、搁批注切角色、删笔友） | 开 `--dur-dialog-in`（300）× `--ease-paper` + opacity ×1.3；合 `--dur-panel-out`（200）× `--ease-exit`——**Esc 收起与确认收起对称**（同一 finish 编排）；纸雾（--ink 降透明度 0.4，禁毛玻璃）scrim-in/out 同步 | `.cfrm` = paper-drop + ink-wash 升起 / `.cfrm--out` = paper-fold + ink-wash reverse 褪下；`.cfrm-scrim`（z 11）/ `.cfrm`（z 12）全站最上；JS Promise 编排 + animationend 对账 + 480ms 保险丝；Esc capture 闸门只退本层（⑩ 10.4） | 直落终态（REDUCED_MOTION 即 resolve，0.01ms 双面） |
+| 词卡褪下（fr-B——⑨-5 新行；弹窗三族 ⑥——「信到达」行的出场半） | #15 词卡关闭三路径（Esc / 收起 / 点卡外·遮罩） | `--dur-panel-out` × `--ease-exit` + opacity ×1.3 reverse；纸雾 scrim-out 同步淡出 | `.word-card--out` = paper-fold + ink-wash reverse（浮卡档）/ sheet-out 向底滑出（触屏档，与入场对偶）；JS 落类 + animationend 对账 + 保险丝摘 DOM；**换卡/互斥路径 opts.skipOut 直摘**（showWordCard/showSpace/开沓/升写作态——残影不跟层走） | 直落终态（REDUCED_MOTION 即摘） |
+| 教学卡回应区首渲（fr-B——⑨-5 新行；弹窗三族 ⑦ 的升起半） | 批注卡的回应指路行/输入行/帮助行/搁置行后插（AWAITING_USER 落定或轮询重渲） | `--dur-1`（140）× `--ease-enter`，位移 4px | `.note-paper :is(.guide, .replyrow, .skiprow)` transition + `@starting-style`（渐进增强；卡面静帧时才后插，与 note-arrive 不叠加） | 总降级块归零 |
+| 列表逐项错峰 stagger（fr-B——⑨-5 新行；硬切换清单 ⑫） | 搜索结果/目标列表重过滤（familyGroupsBlock 双消费面：温故·档案「可以练的表达」与档案时间线 / 抽屉·隐私「按表达忘掉」） | 单项 `--dur-1`（140）× `--ease-enter`，步长 `--dur-stagger`（**28ms**——20–40 区间取中），前 8 项封顶（总窗 ≈364ms） | `.stagger-in` + `@keyframes stagger-rise`（淡入 + 4px 上移）+ `--i` 由 components.js `restagger` 落（摘类 + 强制重排 + 落类 = 可重触发）；**wireReveal 管首入视、restagger 管重渲染**——两轨不叠 | JS 半区 REDUCED_MOTION 直切 + 总降级块 |
+| 墨选开单（fr-B——⑨-5 新行；面板进出场补面） | #27 select-list 开单（`hidden` 解隐） | `--dur-1` × `--ease-enter`，位移 4px 下移到位；**收单即关不动**（选定反馈不延迟——开有迎、合即答） | `.select-list:not([hidden])` transition + `@starting-style` | 总降级块归零 |
+| 弹簧微件 flip-tick（fr-B——⑨-5 新行；微交互·开关拨动） | 设置·显示与计量的计量开关拨动（重渲后新钮补一回） | `--dur-stamp`（120）× **`--ease-spring`**（弹簧族唯一现役消费面——法则：盖印形 keyframes、幅度 ≤4%、禁位移） | `.flip-tick` = stamp-press keyframes × spring 曲线（scale .96→1）；JS 落类一次、播完即终 | 直落终态（JS 半区不落类） |
+| 旋钮点选反白（fr-B——微交互补面） | #17 chip --on 切换（文风/考试/词表 picker 点选） | `--dur-micro` × `--ease-press` | `.chip` transition 族补 `background-color`（反白不再硬闪；#17 状态矩阵同刀改行） | 总降级块即达稳态 |
 | 写作态升落（v3-a——⑨-5 新行，D-B） | 案头笔搁触发条 → `.dock--compose` 全页写作面升起 / 收起（8.2.2⑤）；navdock 让位的 fold 半同帧 | 升 = `--dur-panel-in`（280）× `--ease-paper` + ink-wash ×1.3 恒慢；落 = `--dur-panel-out`（200）× `--ease-exit` + ink-wash reverse；navdock fold = `--dur-panel-out` × `--ease-exit` | 升 = `.dock-compose--in` = paper-drop + ink-wash 双动画；落 = `.dock-compose--out` = paper-fold + ink-wash reverse ×1.3；navdock = `.navdock--fold`（paper-fold，animationend 后 [hidden]）；类由 app.js 落/摘（animationend 对账 + 480ms 保险丝同沓家）；**纸的物理法则收口：升起位移取注册原语 8px（§4 报告写 14px——12px 封顶法则胜，取原语不取越值）** | 直落终态（REDUCED_MOTION 单一归宿——升/落/让位三面全部直切，JS 半区同拍） |
 
 - 纪律：零 JS 动画库、零 WAAPI；全部 CSS transitions/keyframes +
@@ -1912,6 +1973,52 @@ v2-2 起增两枚（`paper-fold` 收拢 / `page-turn` 2D 翻页——下两行�
    8px 不取越值；dateline「旧式数字」无令牌载体——mono 微标签配方
    照边注栏同源落地，不发明字位。
 
+### 9.14 fr-A 修订登记（前端修订刀 A——写作态收窄 + 会话窗三件 + 设置页完全体 + 排印体系化 + 墨选，2026-10-05）
+
+> 授权链：用户「前端修订刀 A（五问题）」任务书（分支 frontend-revamp）。
+> 五面一刀的**形态级显式修订**与登记行集中在此；逐面实现与钉在
+> `tests/host/test_frontend_revamp_a.py`（配既有套件随迁）。
+
+1. **写作态形态修订（问题 1）**：`.dock--compose` 自 v3-a 的近全屏
+   （fixed 全高）收窄为**内容自适应高 + 上限 50dvh**——信流上半始终
+   可见，写信不遮全部上下文；稿纸 autosize 封顶（`composePenCap` =
+   50dvh − 铬件账 148px，下限 4×baseline）后内滚；v3-a 的 520px 降级
+   双形态随之退役（基础形态本身已是降级读法）。Esc 收起与笔搁触发条
+   语义不变。**用户首验位** = 上限值（50dvh）与收窄方式本身，否决
+   即回改。
+2. **会话窗三件（问题 2，全新组件 #24/#25/#26）**：一键回底墨点
+   （离底 240px 浮现，平滑回底——圆形是用户明示的墨点样式族，
+   **②-6 圆角法则的 fr-A 新增豁免**：邮票/邮戳之外第二例圆形，墨点
+   不盖真实事件非印章）；轮次刻度（每轮一点、当前视位高亮、点击跳
+   转——刻度只管已加载窗口，更早部分以信流顶部「加载更早」衔接，
+   口径句写在脸上）；token 计量（数据面全链：OpenAI 兼容响应的标准
+   `usage` 字段提取 → ProviderAttempt 三列落库（迁移 0020，三列
+   NULLABLE 的 adjudicated 扩列——无该字段的兼容端点如实 NULL 不伪
+   造）→ `/api/history` 轮级 usage + 会话累计（窗口无关）→ 案头计量
+   条（累计 + 逐轮可选展开）→ 设置页显示开关——**sessionStorage 客
+   户端侧**，查过 user_config 现面无 UI 偏好合适面，如实标注）。
+3. **设置页完全体（问题 3）**：分组信息架构五区（如实说 / 教学模
+   式 / 教学策略 / 隐私与披露 / 显示与计量）；模式读面视觉化（三档
+   名映射——PRODUCT_CONTRACT §3 档名与枚举词并写非虚构，当前档高
+   亮 `aria-current` 但不可改，`mode` 写入继续 400 拒绝）；披露规则
+   **编辑面接通**（§5.1 DisclosurePolicy 写面现成——全规则集版本化
+   upsert、409 重读、重复 persona 行与词表外层级 400 人话；规则行可
+   改层级可增可减，名册供给当前 persona 的专属规则入口）；「规则经
+   profile 编辑，这里只读」句退役（钉随迁）。
+4. **排印体系化（问题 4）**：九档标度值不动（简报在册），补**应用
+   规范**——`--t-*` 配方九枚 + 四族读法（②-4a）；fr-A 前残留的相对
+   行高 `1.7`/`1.8` 字面全数清账（`.errline` `.sub` `pre` `.taxref`
+   `.state-banner` 等十处归配方）。**规范：新规则一律 `font:
+   var(--t-*)` / `var(--meta-*)` 整体取用，零拼装。**
+5. **墨选（问题 5，#27）**：原生 `<select>` 全应用退役——纸面浮层
+   下拉（`role=listbox/option`、`aria-activedescendant`、键盘
+   ↑↓/Home/End/Enter/Esc/Tab、点外关闭；选中主墨 + 勾记、hover 淡
+   墨雾 color-mix 墨色同源）；三现役消费面（方向页技能 / 设置批注
+   频率 / 披露层级）。z 序表新增 10 档（10.2 同刀改行）。
+6. **令牌账**：`--t-*` 九枚入 tokens.css（②-4a）；`--dock-compose-inset`
+   语义不变（桌面档两侧让缘照旧）；会话窗家具 z 5 与计量条 z 4 入
+   ⑩ 10.2 表。
+
 ---
 
 ## ⑩ 层级宪法（v3-2 立，2026-10-02）
@@ -1936,12 +2043,16 @@ v2-2 起增两枚（`paper-fold` 收拢 / `page-turn` 2D 翻页——下两行�
 
 | 层 | z | 成员 |
 |---|---|---|
-| 全页文档流 | 常规流（sticky 顶栏 5） | 各 `#space-*` section；`.top` z 5 |
+| 全页文档流 | 常规流（sticky 顶栏 5；fr-A 计量条 4） | 各 `#space-*` section；`.top` z 5；`#tokenmeter`（sticky 贴顶栏之下）z 4 |
+| 会话窗家具（fr-A） | 5 | `#flow-bottom`（回底墨点）/ `#flow-ruler`（轮次刻度）——信流之上、常驻 dock 之下，与 `.top` 同值不冲突（区域不交） |
 | 常驻 dock | 6 | #18 navdock |
 | 下拉容器（桌面档） | 7 | `.envsel`（扇叠/全览/编辑三形态同层——形态不换层） |
 | 写信区垫板 | 8 | `.dock`（fixed 底，与浮层遮罩同值——DOM 序在后者胜） |
 | 遮罩 | 8 | `.word-scrim` / `.envsel-scrim`（触屏档 display） |
 | 浮层卡 | 9 | `.word-card`；**触屏档的下拉容器升 9**（bottom sheet 盖过写信区垫板，`.envsel` 在 hover:none 半区改 z 9） |
+| 墨选浮层（fr-A） | 10 | `.select-list`（#27 的下拉纸面——盖过浮层卡与一切表单上下文；点外关闭由工厂接线） |
+| 确认窗纸雾（fr-B） | 11 | `.cfrm-scrim`（#11 的背景纸雾——--ink 降透明度 0.4，禁毛玻璃） |
+| 确认窗（fr-B） | 12 | `.cfrm`（#11 自绘确认窗——全站最上层：一切进行中的层（沓/写作态/浮层）都在它之下等答；Esc capture 闸门保证只退本层，见 10.4） |
 
 （沓内信封自身的 --env-z 是容器**内部**排布序，不入本表。）
 
@@ -1980,7 +2091,9 @@ v2-2 起增两枚（`paper-fold` 收拢 / `page-turn` 2D 翻页——下两行�
 
 ### 10.4 统一关闭语义（Esc 逐层退栈）
 
-Esc 永远只退**一层**，从最上层起：浮层关浮层 → 写作态收起（v3-a——
+Esc 永远只退**一层**，从最上层起：**确认窗答 false**（fr-B——z 12
+最上层；capture 闸门 + stopPropagation，下层的词卡/沓/写作态同拍
+不惊动）→ 浮层关浮层 → 写作态收起（v3-a——
 浮层裁决之后、容器退栈之前的一层；容器与写作态互斥，二者不可能同拍）
 → 下拉容器退一层
 （编辑面 → 扇叠；全览窗口 → 扇叠；写信工作区 → 扇叠；扇叠 → 收沓）
