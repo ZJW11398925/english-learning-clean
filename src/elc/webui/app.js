@@ -1916,15 +1916,18 @@ async function saveProvider(button, baseUrlInput, modelInput, keyInput) {
 }
 
 // 多模型配置档（用户定向：存多套模型随时切换）。切换 = 激活该档（密钥
-// 先落 → 热换 → pair + 指针）；存档 = 把当前三件存成具名配置；删档幂等
-// 且不动活配置。手改三件并保存 = 指针归「自定义」（服务端语义，这里只
+// 先落 → 热换 → pair + 指针）；存档 = 把当前三件存成具名配置档；删档走
+// 确认窗（档里的密钥永不回显，删了找不回——不可逆面走 confirmDialog 的
+// 既有纪律）。手改三件并保存 = 指针归「自定义」（服务端语义，这里只
 // 回读呈现）。
+// catch 臂一律因果中立（换档 ReferenceError 教训）：只说「没成功 + 再试
+// /报出来」，绝不替网络背书——服务端真有话时由 data.error 原样上浮。
 async function activateProviderProfile(id) {
   let data = null;
   try {
     data = await fetchActivateProviderProfile(id);
   } catch {
-    providerResult("切换没送到——再试一次。", true);
+    providerResult("切换没成功——刷新页面再试一次；反复出现请报出来。", true);
     return;
   }
   if (data.accepted) {
@@ -1933,23 +1936,27 @@ async function activateProviderProfile(id) {
       : "已切换——下一封信就走这个配置。", false);
     loadSettings();
   } else {
-    providerResult(data.error || "切换没送到——再试一次。", true);
+    providerResult(data.error || "切换没成功——再试一次。", true);
   }
 }
 
-async function deleteProviderProfile(id) {
+async function deleteProviderProfile(id, name) {
+  // 不可逆 + 密钥不可再见：删档必过确认窗（confirmDialog 唯一封装）。
+  const yes = await confirmDialog(
+    "删掉配置档「" + name + "」？档里的密钥不再显示，删了就找不回。");
+  if (!yes) return;
   let data = null;
   try {
     data = await fetchDeleteProviderProfile(id);
   } catch {
-    providerResult("删除没送到——再试一次。", true);
+    providerResult("删除没成功——再试一次；反复出现请报出来。", true);
     return;
   }
   if (data.accepted) {
     providerResult("配置档已删（正在用的配置不受影响）。", false);
     loadSettings();
   } else {
-    providerResult(data.error || "删除没送到——再试一次。", true);
+    providerResult(data.error || "删除没成功——再试一次。", true);
   }
 }
 
@@ -1974,7 +1981,7 @@ async function saveProviderProfileAs(
   try {
     data = await fetchSaveProviderProfile(payload);
   } catch {
-    providerResult("保存没送到——再试一次。", true);
+    providerResult("保存没成功——再试一次；反复出现请报出来。", true);
     button.disabled = false;
     button.textContent = original;
     return;
@@ -1986,7 +1993,7 @@ async function saveProviderProfileAs(
     providerResult("配置档已存——点它即可随时切换。", false);
     loadSettings();
   } else {
-    providerResult(data.error || "保存没送到——再试一次。", true);
+    providerResult(data.error || "保存没成功——再试一次。", true);
   }
 }
 
@@ -2000,36 +2007,42 @@ function renderSettingsProvider() {
       "这个进程不是 OpenAI 兼容装配——端点与模型名在这里读不到、也改不了。");
     return;
   }
-  // 配置档行（多模型切换）：点档即切换；档内 ✕ 删除；现役档高亮。
+  // 配置档行（多模型切换）：每个档 = 平级两钮（切换钮 + ✕ 删除钮）——
+  // 不许按钮套按钮（无障碍硬律：嵌套交互控件读屏器念不清、✕ 不可聚焦
+  // 键盘就删不了）；✕ 触达区 ≥36px（移动端一等）。
   const profiles = face.profiles || [];
   if (profiles.length) {
     const head = document.createElement("p");
     head.className = "sub";
-    head.textContent = "已存的配置档——点一下即切换：";
+    head.textContent = "已存的配置档——点一下即切换"
+      + "（不带密钥的档，激活时沿用当前已保存的密钥）：";
     box.appendChild(head);
     const row = document.createElement("div");
     row.className = "chips";
     for (const profile of profiles) {
-      const chipBtn = document.createElement("button");
-      chipBtn.type = "button";
-      chipBtn.className = "btn chip profile-chip"
-        + (profile.id === face.active_profile ? " profile-chip--on" : "");
-      chipBtn.title = profile.base_url;
-      chipBtn.textContent = profile.name + "（" + profile.model + "）";
-      chipBtn.addEventListener("click", () => {
+      const cell = document.createElement("span");
+      cell.className = "profile-chip"
+        + (profile.id === face.active_profile
+          ? " profile-chip--on" : "");
+      const pick = document.createElement("button");
+      pick.type = "button";
+      pick.className = "profile-chip-pick";
+      pick.title = profile.base_url;
+      pick.textContent = profile.name + "（" + profile.model + "）";
+      pick.addEventListener("click", () => {
         activateProviderProfile(profile.id);
       });
-      const del = document.createElement("span");
+      cell.appendChild(pick);
+      const del = document.createElement("button");
+      del.type = "button";
       del.className = "profile-chip-x";
-      del.setAttribute("role", "button");
       del.setAttribute("aria-label", "删除配置档 " + profile.name);
       del.textContent = "✕";
-      del.addEventListener("click", (event) => {
-        event.stopPropagation();
-        deleteProviderProfile(profile.id);
+      del.addEventListener("click", () => {
+        deleteProviderProfile(profile.id, profile.name);
       });
-      chipBtn.appendChild(del);
-      row.appendChild(chipBtn);
+      cell.appendChild(del);
+      row.appendChild(cell);
     }
     box.appendChild(row);
   }
@@ -2147,9 +2160,11 @@ async function saveMode(word) {
   try {
     data = await fetchSaveMode(word);
   } catch {
+    // 因果中立（换档 ReferenceError 教训）：catch 兜到的可能是网络、也
+    // 可能是页面自己的脚本错误——不替任何一方背书，只说怎么走。
     settingsModeResult(
-      "连不上服务（页面没送到新请求）——强制刷新页面（Ctrl+F5）；若仍失败，"
-      + "确认服务还在运行、地址栏端口与启动命令一致。", true);
+      "换档没成功——强制刷新页面（Ctrl+F5）后再试一次；反复出现请报出来。",
+      true);
     return;
   }
   if (!data.accepted) {

@@ -4213,6 +4213,34 @@ class _WebFace:
             )
         pid = profile_id if profile_id else "p" + uuid.uuid4().hex[:10]
         key = APP_SETTING_PROVIDER_PROFILE_PREFIX + pid
+        # unique names (self-audit item): two chips reading 「本地推理」 is
+        # user-facing ambiguity — a duplicate name is a 200 人话 refusal
+        # (updating a profile under its own id keeps its own name, of course)
+        for other_key, other_value in self._host.app_settings.items(
+            APP_SETTING_PROVIDER_PROFILE_PREFIX
+        ):
+            other_id = other_key[len(APP_SETTING_PROVIDER_PROFILE_PREFIX):]
+            if other_id == pid:
+                continue
+            try:
+                other_doc = json.loads(other_value)
+            except ValueError:
+                continue
+            if (
+                isinstance(other_doc, dict)
+                and other_doc.get("name") == name
+            ):
+                return (
+                    200,
+                    {
+                        "accepted": False,
+                        "id": None,
+                        "error": (
+                            "已有同名配置档——换个名字，或先删掉旧的"
+                            "（名字是切换时认档的唯一面）。"
+                        ),
+                    },
+                )
         if api_key is None:
             stored = self._provider_profile_doc(pid)
             if stored is not None and isinstance(

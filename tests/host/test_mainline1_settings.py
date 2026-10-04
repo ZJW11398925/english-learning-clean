@@ -673,14 +673,29 @@ def test_the_settings_pull_and_save_loop_are_wired(tmp_path: Path) -> None:
     assert 'keyInput.type = "password";' in app
     assert '"API 密钥——留空 = 不改";' in app
     assert "face.api_key_set" in app
-    # 多模型配置档（用户定向）：chip 行点切、✕ 删、存为配置档
+    # 多模型配置档（用户定向）+ 自查七项修：chip = 平级双钮（无嵌套交互
+    # 控件——按钮套按钮是无障碍硬伤）、删档过确认窗、catch 因果中立。
     assert "async function activateProviderProfile(id) {" in app
-    assert "async function deleteProviderProfile(id) {" in app
+    assert "async function deleteProviderProfile(id, name) {" in app
     assert "async function saveProviderProfileAs(" in app
-    assert 'chipBtn.textContent = profile.name + "（" + profile.model + "）";' \
+    assert 'pick.textContent = profile.name + "（" + profile.model + "）";' \
         in app
-    assert 'profile.id === face.active_profile ? " profile-chip--on" : ""' \
-        in app
+    assert 'profile.id === face.active_profile' in app
+    assert 'cell.className = "profile-chip"' in app
+    # 平级双钮结构钉：✕ 是真按钮（可聚焦/键盘可删），不再是 span 套钮
+    assert 'const del = document.createElement("button");' in app
+    assert 'del.className = "profile-chip-x";' in app
+    assert '"btn chip profile-chip"' not in app
+    assert 'del.setAttribute("role", "button");' not in app
+    # 删档必过确认窗（档内密钥不可再见 = 不可逆面走 confirmDialog 纪律）
+    assert 'const yes = await confirmDialog(' in app
+    assert "删掉配置档「\" + name + \"」" in app
+    # catch 因果中立（换档 ReferenceError 教训）：不再替网络背书——
+    # 「连不上服务」这类因果宣称全库缺席
+    assert "连不上服务" not in app
+    assert "反复出现请报出来" in app
+    # 档密钥语义明示（不带钥匙的档激活时沿用当前已存密钥）
+    assert "不带密钥的档，激活时沿用当前已保存的密钥" in app
     assert 'saveAs.textContent = "存为配置档";' in app
     assert 'placeholder = "配置档名字' in app
     assert '"/api/settings/provider/profile"' in api
@@ -863,6 +878,18 @@ def test_the_model_profiles_save_switch_and_delete(
         assert status == 200 and prof_b["accepted"] is True, prof_b
         id_a, id_b = prof_a["id"], prof_b["id"]
         assert id_a and id_b and id_a != id_b
+        # unique names (self-audit item 5): a duplicate name is refused —
+        # two chips reading the same name is user-facing ambiguity
+        status, dup = stack.post(
+            "/api/settings/provider/profile",
+            {
+                "name": "本地推理",
+                "base_url": "http://127.0.0.1:13/v1",
+                "model": "another",
+            },
+        )
+        assert status == 200 and dup["accepted"] is False, dup
+        assert "同名" in dup["error"], dup
         # the roster rides the settings GET; the key's value never does
         status, face = stack.get_json("/api/settings")
         assert status == 200, face

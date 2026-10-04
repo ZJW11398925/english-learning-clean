@@ -795,6 +795,9 @@ def test_the_native_select_is_retired_and_the_ink_select_is_registered() -> None
     # 选项双列层级（用户否决「选项层级不合理」）：中文主列 + 原词弱墨辅列
     assert "select-sub" in components
     assert ".select-option .select-sub" in css
+    # 自查六：合起态恢复原词常显（双列改造曾挤掉）——主读法 + 弱墨等宽
+    assert 'subSpan.className = "select-value-sub";' in components
+    assert ".select-value-sub" in css
     spec = (REPO_ROOT / "docs" / "FRONTEND_SPEC.md").read_text(encoding="utf-8")
     assert "| 27 | select |" in spec
     assert "| 24 | flow-bottom |" in spec

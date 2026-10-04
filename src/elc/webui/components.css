@@ -1133,6 +1133,9 @@ button:focus-visible, input:focus-visible {
               text-align: left; }
 .select-btn .select-value { flex: 1; min-width: 0; overflow: hidden;
                             white-space: nowrap; text-overflow: ellipsis; }
+.select-btn .select-value-sub { margin-left: var(--sp-2);
+                                font: var(--meta-mono);
+                                color: var(--ink-faint); }
 .select-btn .select-value--placeholder { color: var(--ink-faint);
                                          font-family: var(--f-sans);
                                          font-size: var(--fs-ui); }
@@ -1181,16 +1184,23 @@ button:focus-visible, input:focus-visible {
    overflow 裁切框拦腰截断；fixed 逃出一切裁切与 transform 祖先。
    z 10 维持浮层家族原档（tm-pop 同档；确认窗 11/12 仍在其上）。 */
 .select-list--float { position: fixed; z-index: 10; }
-/* 多模型配置档 chip（用户定向：多套模型随时切换）——档名 + 模型名 +
-   内嵌 ✕ 删除；现役档主墨描边。chips 行自动换行（移动端一等形态）。 */
-.profile-chip { display: inline-flex; align-items: baseline;
-                gap: var(--sp-2); }
-.profile-chip--on { color: var(--ink);
-                    outline: 1px solid var(--rule);
+/* 多模型配置档 chip（用户定向：多套模型随时切换）——**平级两钮**：
+   切换钮 + ✕ 删除钮（按钮套按钮是无障碍硬伤：读屏器念不清、✕ 不可
+   聚焦）；✕ 触达区 ≥36px（移动端一等）；现役档主墨描边。chips 行
+   自动换行（移动端一等形态）。 */
+.profile-chip { display: inline-flex; align-items: stretch;
+                border: 1px solid var(--rule);
+                background: var(--paper-high); }
+.profile-chip--on { outline: 1px solid var(--rule);
                     outline-offset: 2px; }
-.profile-chip-x { flex: none; font-size: var(--fs-ui);
-                  color: var(--ink-faint); cursor: pointer;
-                  padding: 0 2px; }
+.profile-chip-pick { border: 0; background: none; margin: 0;
+                     padding: 7px 6px 7px 10px; font: inherit;
+                     color: inherit; cursor: pointer; text-align: left; }
+.profile-chip--on .profile-chip-pick { color: var(--ink); }
+.profile-chip-x { border: 0; border-left: 1px solid var(--rule-soft);
+                  background: none; min-width: 36px; min-height: 36px;
+                  font-size: var(--fs-ui); color: var(--ink-faint);
+                  cursor: pointer; align-self: center; }
 @media (hover: hover) {
   .profile-chip-x:hover { color: var(--ink); }
 }

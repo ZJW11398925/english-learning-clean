@@ -1254,7 +1254,19 @@ export function selectField(opts) {
 
   function syncButton() {
     const item = items.find((entry) => entry.value === value) || null;
-    shown.textContent = labelOf(item);
+    // 双列在合起态保留原词（双列改造曾把它挤掉）：主读法 + 弱墨等宽辅读
+    // ——对照文档排障的人要能常显看到枚举原词，不必展开。
+    shown.textContent = "";
+    const labelSpan = document.createElement("span");
+    labelSpan.className = "select-value-label";
+    labelSpan.textContent = labelOf(item);
+    shown.appendChild(labelSpan);
+    if (item && item.sub) {
+      const subSpan = document.createElement("span");
+      subSpan.className = "select-value-sub";
+      subSpan.textContent = String(item.sub);
+      shown.appendChild(subSpan);
+    }
     shown.classList.toggle("select-value--placeholder", item === null);
   }
 
