@@ -249,24 +249,25 @@ def _delete_json(port: int, path: str) -> tuple[int, Any]:
 def test_0019_is_the_registered_head() -> None:
     """MC-0's migration is in the chain behind the current heads — 主线-3's
     0020_world_lore_facts, fr-A's 0021_provider_usage (renumbered from
-    0020 at merge) and the veto-response cut's 0022_app_settings moved the
-    shared constants and the stamp to 22 (the head
+    0020 at merge), the veto-response cut's 0022_app_settings and W-1-0's
+    0023_world_identity moved the shared constants and the stamp to 23
+    (the head
     assertion migrates with the newest slice; this pin's *lineage* claim —
     0019 in place — stands)."""
 
-    assert MIGRATION_IDS[-1] == "0022_app_settings"
-    assert MIGRATION_IDS[-2] == "0021_provider_usage"
+    assert MIGRATION_IDS[-1] == "0023_world_identity"
+    assert MIGRATION_IDS[-2] == "0022_app_settings"
     assert "0019_character_cards" in MIGRATION_IDS
-    assert SCHEMA_HEAD_FILE == "0022_app_settings.sql"
+    assert SCHEMA_HEAD_FILE == "0023_world_identity.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "22"
+    assert SCHEMA_HEAD_VERSION == "23"
 
     conn = sqlite3.connect(":memory:")
     applied = apply_migrations(conn)
-    assert applied[-1] == "0022_app_settings"
-    assert applied[-2] == "0021_provider_usage"
+    assert applied[-1] == "0023_world_identity"
+    assert applied[-2] == "0022_app_settings"
     assert "0019_character_cards" in applied
-    assert schema_version(conn) == "22"
+    assert schema_version(conn) == "23"
 
 
 def test_the_character_card_table_carries_its_columns() -> None:

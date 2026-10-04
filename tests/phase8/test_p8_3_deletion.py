@@ -167,8 +167,15 @@ def test_the_retained_set_is_unchanged() -> None:
         "schema_migrations",
         "app_setting",
     }
-    # 主线-3 随迁：全局内容集迎来第一个 app.db 成员（共享世界事实）。
-    assert GLOBAL_CONTENT_TABLES == ("world_lore_fact",)
+    # 主线-3 随迁：全局内容集迎来第一个 app.db 成员（共享世界事实）；
+    # W-1-0 再随迁：世界身份三表入 keep 半（保守读法，不接 sweep 面——
+    # 分类登记见 elc.deletion.types 的注释）。
+    assert GLOBAL_CONTENT_TABLES == (
+        "world_lore_fact",
+        "world",
+        "world_actor",
+        "world_conversation",
+    )
     for table in LEDGER_TABLES:
         assert table not in RETAINED_TABLES
         assert table not in GLOBAL_CONTENT_TABLES
@@ -479,8 +486,13 @@ def test_the_ledger_tables_are_absent_from_the_content_db_sweep(
     seed(db, ledger_store, TARGET)
     _execute(db, fence, DeletionRequest(scope=DeletionScope.ALL_USER_DATA))
     # 主线-3 随迁：全局内容集非空（world_lore_fact 在 keep 半），表集等式
-    # 随三分集扩。
-    assert GLOBAL_CONTENT_TABLES == ("world_lore_fact",)
+    # 随三分集扩；W-1-0 再随迁（世界身份三表入 keep 半）。
+    assert GLOBAL_CONTENT_TABLES == (
+        "world_lore_fact",
+        "world",
+        "world_actor",
+        "world_conversation",
+    )
     assert _tables(db) == (
         set(SWEPT_TABLES) | set(RETAINED_TABLES) | set(GLOBAL_CONTENT_TABLES)
     )

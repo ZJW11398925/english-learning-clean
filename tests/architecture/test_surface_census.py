@@ -6,7 +6,9 @@ prep-0 时 **520** / 130 文件 / 154 `.py`，N13 曾登记 159 / 527 / 133；v3
 本文件时同刀随迁为 **560** / 141 / **171**（含 lexicon 新包——N12/N13/N20 同族
 义务）；主线-3 触碰本文件时同刀复测为 **564** / 142 / **173**（含 world_lore
 的 store/content 两新模块；口径同前 = 公开类（AST ``ClassDef`` 非下划线）/
-含类定义的文件 / `.py` 总数）——逐类贴标签是不可维护的漂移面），而是**以包为行**
+含类定义的文件 / `.py` 总数）；W-1-0 触碰本文件时同刀复测为 **569** / 145 /
+**178**（含 world 新包的 types/store 两新模块；口径同前）——逐类贴标签是不可
+维护的漂移面），而是**以包为行**
 的一跳索引：每行给出该包的现役面（读者应当用的类/模块）、它自己的 durable store
 （若有），以及本包内**非现役**的骨架类。
 
@@ -210,6 +212,15 @@ SURFACE_CENSUS: tuple[Row, ...] = (
         "user_config",
         live_face="elc.user_config.controller:UserConfigController",
         store="elc.user_config.store:SqliteUserConfigStore",
+    ),
+    # W-1-0（活世界程序首刀）：身份绑定骨架——迁移 0023 三表（world /
+    # world_actor / world_conversation）的 SQL 面 + 冻结记录形。无
+    # controller/commands/queries（不在 DOMAIN_PACKAGES——Phase 0 gate 的
+    # 接口钉不适用于本包），无事件、无引擎、无揭示、无行为（横幅即边界）。
+    Row(
+        "world",
+        live_face="elc.world.store:SqliteWorldStore",
+        store="elc.world.store:SqliteWorldStore",
     ),
     Row(
         "world_lore",

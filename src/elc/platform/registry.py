@@ -43,6 +43,11 @@ from elc.user_config.types import (
     TeachingPolicyProfile,
     UserProfile,
 )
+from elc.world.types import (
+    WorldActorRecord,
+    WorldConversationRecord,
+    WorldRecord,
+)
 from elc.world_lore.types import WorldLoreRecord
 
 # Owner authority labels — one per canonical object. The owning module lives
@@ -59,6 +64,7 @@ OWNER_TEACHING = "teaching"
 OWNER_RUNTIME = "runtime"
 OWNER_CONTENT = "content"
 OWNER_WORLD_LORE = "world_lore"
+OWNER_WORLD = "world"
 OWNER_DELETION = "deletion"
 
 
@@ -243,6 +249,23 @@ CANONICAL_OBJECTS: Mapping[str, CanonicalObject] = {
     # resolved WorldLoreView).
     "world_lore_fact": CanonicalObject(
         "WorldLoreRecord", OWNER_WORLD_LORE, WorldLoreRecord
+    ),
+    # -- World identity binding (W-1-0, the living-world program's first
+    # cut; direction DEC-OPI-7e3744ee…2, M0.1 DEC-OPI-d96fd92d…7 AD-5 — the
+    # three identity tables land once, in migration 0023). The registry
+    # placement is the derived reading of the AD-1 conservative overlay:
+    # canonical names the domain, not these tables, so the entries mirror
+    # the migration's column sets via elc.world.types the way the
+    # world_lore entry mirrors its declared reading. No ``version_field``:
+    # identity rows are append-first and carry no version column (the
+    # ScheduleItem entry's rule — binding one would claim a spelling the
+    # shape does not carry).
+    "world": CanonicalObject("WorldRecord", OWNER_WORLD, WorldRecord),
+    "world_actor": CanonicalObject(
+        "WorldActorRecord", OWNER_WORLD, WorldActorRecord
+    ),
+    "world_conversation": CanonicalObject(
+        "WorldConversationRecord", OWNER_WORLD, WorldConversationRecord
     ),
     "teaching_unit": CanonicalObject(
         "TeachingUnit", OWNER_CONTENT, TeachingUnit,

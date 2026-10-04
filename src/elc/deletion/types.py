@@ -260,7 +260,29 @@ RETAINED_TABLES: tuple[str, ...] = (
 #: canonical facts — the shared world every conversation reads, owned by no
 #: user, so §23/SEC-025's keep rule covers it (an ALL_USER_DATA sweep never
 #: deletes the shared world).
-GLOBAL_CONTENT_TABLES: tuple[str, ...] = ("world_lore_fact",)
+#:
+#: W-1-0 (DEC-OPI-d96fd92d…7 AD-5) adds the world's identity tables to the
+#: same keep rule — the conservative reading, and the only one this cut may
+#: take: the classification here is registration, not deletion semantics,
+#: and no sweep walks any of the three (this module's SQL is untouched; the
+#: deletion face for the world is W-1-3's registered cut). Two FK refusals
+#: are *consequential* to this reading and registered with the same
+#: Revisit, both unreachable today (nothing in ``src/`` creates a world
+#: or binds an actor/conversation yet — elc.world.store's writers have no
+#: production caller):
+#: (a) ``world_conversation.conversation_id`` references the ``conversation``
+#: table, which ALL_USER_DATA *does* sweep — a binding row would refuse the
+#: sweep's conversation removal (the RESTRICT posture the migration
+#: spells on purpose);
+#: (b) ``world_actor.persona_id`` references ``character_card``, which the
+#: sweep removes for user-authored cards only (``is_builtin = 0``) — an
+#: actor bound to a user card would refuse that card's removal.
+GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
+    "world_lore_fact",
+    "world",
+    "world_actor",
+    "world_conversation",
+)
 
 
 # ---------------------------------------------------------------------------

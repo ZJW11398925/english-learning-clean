@@ -128,7 +128,7 @@ def test_the_retained_set_is_the_infrastructure_and_ledger_tables() -> None:
 
 def test_no_global_content_table_lives_in_app_db() -> None:
     """SEC-025 in this repository's shape: the kept curriculum assets are
-    content.db's, and the one app.db member of the kept set is global by
+    content.db's, and the app.db members of the kept set are global by
     owner, not by database.
 
     The set stayed empty while the only global content lived in the separate
@@ -136,11 +136,24 @@ def test_no_global_content_table_lives_in_app_db() -> None:
     member — ``world_lore_fact``, the shared world's canonical facts, owned
     by no user — and the sweep's closure is what keeps the rule enforceable
     (nothing unnamed can be swept, and nothing in the kept set is user
-    data).
+    data). W-1-0 (DEC-OPI-d96fd92d…7 AD-5) adds the world's identity
+    tables (migration 0023's ``world`` / ``world_actor`` /
+    ``world_conversation``) to the same keep rule — the conservative
+    reading: the classification is registration, no sweep walks them, and
+    the deletion face for the world is W-1-3's registered cut (the two FK
+    consequences are registered in elc.deletion.types itself).
     """
 
-    assert GLOBAL_CONTENT_TABLES == ("world_lore_fact",)
+    assert GLOBAL_CONTENT_TABLES == (
+        "world_lore_fact",
+        "world",
+        "world_actor",
+        "world_conversation",
+    )
     assert "world_lore_fact" not in SWEPT_TABLES
+    assert "world" not in SWEPT_TABLES
+    assert "world_actor" not in SWEPT_TABLES
+    assert "world_conversation" not in SWEPT_TABLES
 
 
 # -- the per-scope surfaces ------------------------------------------------

@@ -65,12 +65,17 @@ MIGRATION_IDS: tuple[str, ...] = (
     # ('rollout_stage', the page-movable tier); W-1-0's world settings reuse
     # the same table in their own follow-up migration (0023).
     "0022_app_settings",
+    # W-1-0 (the living-world program's first cut; M0.1
+    # DEC-OPI-d96fd92d…7 AD-5): the world's identity binding — the three
+    # tables (world / world_actor / world_conversation) the World bounded
+    # context's store (elc.world) reads and writes.
+    "0023_world_identity",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0022_app_settings.sql"
-SCHEMA_HEAD_VERSION = "22"
+SCHEMA_HEAD_FILE = "0023_world_identity.sql"
+SCHEMA_HEAD_VERSION = "23"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

@@ -498,15 +498,15 @@ def test_all_user_data_keeps_the_infrastructure_and_the_ledger(
             " WHERE key LIKE '%schema_version%'"
         ).fetchall()
     ) == stamps_before
-    # 22 = the applied lineage through the veto-response cut's
-    # 0022_app_settings (the head
+    # 23 = the applied lineage through W-1-0's 0023_world_identity (the head
     # count; the pin moved 14 → 15 with P8-0's 0015_planner_records,
     # 15 → 16 with P8-3's 0016_planning_ledger, 16 → 17 with P8-4's
     # 0017_ledger_event_provenance, 17 → 18 with P9-1's 0018,
     # 18 → 19 with MC-0's 0019_character_cards, 19 → 20 with 主线-3's
-    # 0020_world_lore_facts, 20 → 21 with fr-A's 0021_provider_usage, and
-    # 21 → 22 with this migration).
-    assert _count(db, "schema_migrations") == 22
+    # 0020_world_lore_facts, 20 → 21 with fr-A's 0021_provider_usage,
+    # 21 → 22 with the veto-response cut's 0022_app_settings, and
+    # 22 → 23 with this migration).
+    assert _count(db, "schema_migrations") == 23
     assert _count(db, "runtime_epoch") == 1
     assert _count(db, "deletion_tombstone") > 0
 

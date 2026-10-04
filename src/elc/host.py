@@ -45,6 +45,17 @@ facts are lore content, and lore content is untrusted (P-INV-013): the
 section renders inside the prompt's trust frame, and a proposal written
 through the controller lands as a ``PENDING`` row no view ever serves.
 
+**W-1-0 adds the world's identity leg (always built, both tiers).** The
+World bounded context's store (:class:`~elc.world.store.SqliteWorldStore`
+over migration 0023's ``world`` / ``world_actor`` /
+``world_conversation`` tables) is assembled next to the lore controller —
+the identity half of the living-world program (the adjudication chain
+DEC-OPI-7e3744ee…2 / DEC-OPI-7e3744ee…4 / DEC-OPI-d96fd92d…7). The host
+seeds nothing: a database opens with zero worlds, and the store's
+idempotent create/bind faces wait for a caller (W-1-4's landing pad). No
+world behaviour is wired anywhere in this assembly — no events, no
+engine, no reveal face; the later cuts are registered, not simulated.
+
 **Two assembly tiers, declared rather than implied (D-5):**
 
 - ``content_db_path=None`` (the default) is the prep-1 tier, field for field:
@@ -253,6 +264,7 @@ from elc.teaching.rollout import RolloutGateReport, RolloutStage, corpus_rollout
 from elc.teaching.store import SqliteTeachingStore
 from elc.user_config.controller import UserConfigController
 from elc.user_config.store import SqliteUserConfigStore
+from elc.world.store import SqliteWorldStore
 from elc.world_lore.content import seed_world_lore_facts
 from elc.world_lore.controller import WorldLoreController
 from elc.world_lore.store import SqliteWorldLoreStore, WorldLoreStoreError
@@ -358,6 +370,15 @@ class Host:
     #: (``rollout_stage``); W-1-0's world settings reuse the same table in
     #: their own follow-up migration (0023).
     app_settings: AppSettingStore
+    #: W-1-0: the World bounded context's identity store over migration
+    #: 0023's three tables (``world`` / ``world_actor`` /
+    #: ``world_conversation`` — always built, both tiers, the
+    #: world_lore shape). The store binds worlds, actors and conversation
+    #: bindings when a caller asks; the host seeds nothing — a database
+    #: opens with zero worlds (identity is bound, not born), and no world
+    #: behaviour is wired anywhere (the living-world program's later cuts
+    #: are registered, not simulated).
+    world_store: SqliteWorldStore
     persona: PersonaRuntime
     coordinator: ConversationCoordinator
     secrets: SecretSource | None = None
@@ -685,6 +706,12 @@ def open_host(
         world_lore_store = SqliteWorldLoreStore(db, fence)
         seed_world_lore_facts(world_lore_store)
         world_lore = WorldLoreController(world_lore_store, conversations)
+        # W-1-0: the World identity store over migration 0023's three
+        # tables (always built, both tiers, the world_lore shape). No
+        # seeding — identity is bound, not born (a database opens with
+        # zero worlds); the store's idempotent creates are W-1-4's
+        # landing pad, and nothing in this assembly calls them.
+        world_store = SqliteWorldStore(db, fence)
         # The settings-page provider face's persisted leg (user veto: the
         # endpoint/model pair is page-settable). Read order is the opposite
         # of the stage's on purpose: a **saved pair wins over the launch
@@ -915,6 +942,7 @@ def open_host(
         deliveries=deliveries,
         character_cards=character_cards,
         world_lore=world_lore,
+        world_store=world_store,
         persona=persona,
         coordinator=coordinator,
         secrets=secrets,

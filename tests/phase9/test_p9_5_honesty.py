@@ -417,12 +417,13 @@ def test_no_source_file_carries_this_cuts_name() -> None:
     # and the migration head is still the lineage's own newest entry — the
     # literal moved with MC-0's 0019, then 主线-3's 0020, then fr-A's
     # 0021_provider_usage (renumbered from 0020 at merge), then the
-    # veto-response cut's 0022_app_settings (this pin read
+    # veto-response cut's 0022_app_settings, then W-1-0's
+    # 0023_world_identity (this pin read
     # "0018_delivery_records.sql" while 0018 was the head, the stamp-pin
     # discipline every head move has followed since P8-4).
     assert sorted(
         path.name for path in (REPO_ROOT / "migrations").glob("*.sql")
-    )[-1] == "0022_app_settings.sql"
+    )[-1] == "0023_world_identity.sql"
 
 
 def test_the_frozen_surfaces_are_read_not_written() -> None:

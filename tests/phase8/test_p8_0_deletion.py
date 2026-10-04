@@ -121,8 +121,15 @@ def test_the_retained_set_is_unchanged_and_the_sweep_grew_by_four() -> None:
         "schema_migrations",
         "app_setting",
     }
-    # 主线-3 随迁：全局内容集迎来第一个 app.db 成员（共享世界事实）。
-    assert GLOBAL_CONTENT_TABLES == ("world_lore_fact",)
+    # 主线-3 随迁：全局内容集迎来第一个 app.db 成员（共享世界事实）；
+    # W-1-0 再随迁：世界身份三表入 keep 半（保守读法，不接 sweep 面——
+    # 分类登记见 elc.deletion.types 的注释）。
+    assert GLOBAL_CONTENT_TABLES == (
+        "world_lore_fact",
+        "world",
+        "world_actor",
+        "world_conversation",
+    )
     for table in PLANNER_TABLES:
         assert table in SWEPT_TABLES
         assert table not in RETAINED_TABLES
