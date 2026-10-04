@@ -2015,7 +2015,9 @@ async function saveMode(word) {
   try {
     data = await fetchSaveMode(word);
   } catch {
-    settingsModeResult("换档没送到——再试一次。", true);
+    settingsModeResult(
+      "连不上服务（页面没送到新请求）——强制刷新页面（Ctrl+F5）；若仍失败，"
+      + "确认服务还在运行、地址栏端口与启动命令一致。", true);
     return;
   }
   if (!data.accepted) {
