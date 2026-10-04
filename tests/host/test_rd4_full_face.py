@@ -136,9 +136,12 @@ def test_the_settings_face_replaces_the_placeholder(tmp_path: Path) -> None:
     index = _page_of(tmp_path)
     settings = index.split('id="drawer-settings"', 1)[1].split(
         'id="del-result"', 1)[0]
-    assert "这台应用只服务你一个人（127.0.0.1，无账号无密码）。" in settings
-    assert "模型端点与模型名由启动命令给定——页面不读取，也不显示。" in settings
-    assert "批注频率在 温故 · 方向 里调。" in settings
+    # provider 刀随迁（用户否决）：旧三句退役（单机强调导语/端点只读
+    # 句/与设置节频率墨选矛盾的指向句）；接任 = 模型与端点写面
+    assert "这台应用只服务你一个人" not in settings
+    assert "由启动命令给定" not in settings
+    assert "批注频率在 温故 · 方向 里调。" not in settings
+    assert "<h3>模型与端点</h3>" in settings
     # veto-R 随迁：模式节 = 编辑器容器；只读 Law 句 + 换档句退役
     assert 'id="settings-mode-editor"' in settings
     assert "由启动命令给定，这里读得到，但不能改。" not in settings

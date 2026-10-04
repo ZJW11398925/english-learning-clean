@@ -441,9 +441,11 @@ def test_the_drawer_pages_follow_the_unified_template() -> None:
     settings = index.split('id="drawer-settings"', 1)[1].split(
         "<nav id=\"navdock\"", 1)[0]
     assert "panel-grid" not in settings
-    assert ('<p class="doc-line">这台应用只服务你一个人'
-            "（127.0.0.1，无账号无密码）。</p>") in settings
-    assert "<h3>如实说</h3>" in settings
+    # provider 刀随迁（用户否决反复强调的单机文案）：导语与「如实说」
+    # 节退役——接任 = 模型与端点节；缺位钉防回潮
+    assert "只服务你一个人" not in settings
+    assert "<h3>如实说</h3>" not in settings
+    assert "<h3>模型与端点</h3>" in settings
     privacy = index.split('id="drawer-privacy"', 1)[1].split(
         'id="del-result"', 1)[0]
     assert '<p class="doc-line">请笔友忘掉一些事——走出去就找不回来。</p>' \

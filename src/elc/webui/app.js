@@ -1920,7 +1920,7 @@ function renderSettingsProvider() {
   const baseUrlInput = document.createElement("input");
   baseUrlInput.type = "text";
   baseUrlInput.value = face.base_url;
-  baseUrlInput.placeholder = "https://api.example.com/v1";
+  baseUrlInput.placeholder = "完整 http(s) 端点地址";
   baseUrlInput.autocomplete = "off";
   baseUrlInput.spellcheck = false;
   box.appendChild(fieldRow("端点地址", baseUrlInput));

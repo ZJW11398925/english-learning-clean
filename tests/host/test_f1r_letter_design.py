@@ -172,8 +172,9 @@ def test_the_honest_faces_split_into_drawer_and_progress(
 
     page = _page_of(tmp_path)
     assert 'id="screen-set"' not in page
-    # R-1R 随迁（⑧ 8.2.8 定稿）：端点诚实句的新词形
-    assert "页面不读取，也不显示" in page
+    # provider 刀随迁（用户否决「端点不让页面直接设」）：端点只读句
+    # 退役——模型与端点是页面可设面；缺位钉防回潮
+    assert "页面不读取，也不显示" not in page
     # the two always-mounted read blocks and the 档案 page's group
     # headings（R-1R 随迁：证据/为什么/观察 → 在学的表达/为什么/底，
     # 「底」由 #21 折叠组「原始读数（给排查用）」承担；rd-3 随迁
