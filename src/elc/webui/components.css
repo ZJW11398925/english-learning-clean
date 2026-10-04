@@ -1191,7 +1191,9 @@ button:focus-visible, input:focus-visible {
 .profile-chip-x { flex: none; font-size: var(--fs-ui);
                   color: var(--ink-faint); cursor: pointer;
                   padding: 0 2px; }
-.profile-chip-x:hover { color: var(--ink); }
+@media (hover: hover) {
+  .profile-chip-x:hover { color: var(--ink); }
+}
 .profile-saveas { display: flex; flex-wrap: wrap;
                   gap: var(--sp-2); margin-top: var(--sp-3); }
 .profile-saveas input { flex: 1; min-width: 12em; }
