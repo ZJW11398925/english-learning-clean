@@ -70,10 +70,13 @@ import {
   fetchDelete,
   fetchGoals,
   fetchSaveGoals,
-  fetchSettings,
+  fetchSaveMode,
+  fetchSaveProvider,
   fetchSaveTeachingPolicy,
   fetchSaveDisclosure,
-  fetchSaveProvider,
+  fetchSchedule,
+  fetchSettings,
+  fetchTargetFootprint,
 } from "./api.js";
 
 // ── v2 品牌名单点常量（简报 §1；改名 = 改这一处）──────────────────

@@ -1972,3 +1972,39 @@ def test_the_page_signals_generation_and_polls_the_current_face(
     assert '"/api/teaching/current"' in page
     assert "MOMENT_POLL_MS = 400" in page
     assert "MOMENT_POLL_MAX_MS = 90000" in page
+
+
+def test_every_api_call_in_the_page_is_actually_imported() -> None:
+    """导入覆盖钉（用户换档失败的真根因）：app.js 里每一个 ``fetchXxx(``
+    调用都必须出现在唯一的 ``from "./api.js"`` import 块里。裸标识符在
+    ES 模块里是**运行期** ReferenceError——模块照常加载、后端一切正常、
+    curl/HTTP 测试全绿，只有页面点击那一刻才炸（被 catch 谎报成「连不上
+    服务」）。veto-R 的 fetchSaveMode 与主线-2 的 fetchSchedule /
+    fetchTargetFootprint 三枚就这样带病上线；本钉把这一类钉死。"""
+
+    import re
+
+    webui = (
+        Path(__file__).resolve().parents[2] / "src" / "elc" / "webui"
+    )
+    app = (webui / "app.js").read_text(encoding="utf-8")
+    api = (webui / "api.js").read_text(encoding="utf-8")
+    blocks = re.findall(
+        r'import\s*\{([^}]+)\}\s*from\s*"\./api\.js"', app, re.S
+    )
+    assert len(blocks) == 1, "app.js 应只有一条 api.js import 语句"
+    imported = {name.strip() for name in blocks[0].split(",") if name.strip()}
+    calls = set(re.findall(r"\b(fetch[A-Z][A-Za-z]*)\s*\(", app))
+    assert calls, "扫描器失灵（一个 fetch 调用都没找到）"
+    missing = calls - imported
+    assert not missing, (
+        f"app.js 调用了但未导入的 api 函数：{sorted(missing)}"
+    )
+    # 反向：导入却从不调用的（死导入——同样该清）；以及导入了 api.js
+    # 根本不导出的名字（拼错）
+    exported = set(re.findall(r"export function (fetch[A-Z][A-Za-z]*)", api))
+    unused = imported - calls
+    assert not unused, f"app.js 导入了但从不调用的 api 函数：{sorted(unused)}"
+    assert imported <= exported, (
+        f"导入了 api.js 不导出的名字：{sorted(imported - exported)}"
+    )
