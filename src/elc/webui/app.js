@@ -3583,10 +3583,12 @@ function closeComposeFace(opts) {
     return;
   }
   // 落半（报告 §4.2）：paper-fold 200ms × --ease-exit + ink-wash reverse
-  // 恒慢——收势与沓家 fold 同语族；animationend 对账 + 480ms 保险丝。
+  // 恒慢——收势与沓家 fold 同语族；**墨腿 animationend 对账**（最慢腿——
+  // 纸腿 200ms 先终即 finish 会把还剩三成墨的写信面硬切 [hidden]，同
+  // closeEnvelopeSelector 根因修）+ 480ms 保险丝。
   dock.classList.add("dock-compose--out");
   composeFoldHandler = (event) => {
-    if (event.animationName !== "paper-fold") return;
+    if (event.animationName !== "ink-wash" || event.target !== dock) return;
     finish();
   };
   dock.addEventListener("animationend", composeFoldHandler);
@@ -4206,10 +4208,10 @@ function composeDraftKey(characterId) {
 }
 
 // 收沓（v2-2 重排沿用）：默认走 fold 退场（纸先落墨后渗的出场半——收拢
-// 200ms × --ease-exit + ink-wash reverse 恒慢），animationend 后摘
-// DOM（移动端遮罩随批摘）；reduced-motion 直切（REDUCED_MOTION 单一
-// 归宿 + 库尾总降级块双面）。opts.skipFold = 无动画直摘（现在仅极端
-// 路径备用）。
+// 200ms × --ease-exit + ink-wash reverse 恒慢），**墨腿 animationend 后
+// 摘 DOM**（最慢腿对账——见下）；移动端遮罩随批摘；reduced-motion 直切
+// （REDUCED_MOTION 单一归宿 + 库尾总降级块双面）。opts.skipFold = 无动画
+// 直摘（现在仅极端路径备用）。
 function closeEnvelopeSelector(opts) {
   const panel = envselPanel;
   document.removeEventListener("click", envselCloser);
@@ -4233,9 +4235,12 @@ function closeEnvelopeSelector(opts) {
   }
   panel.classList.add("envsel--fold");
   panel.addEventListener("animationend", (event) => {
-    // veto-R：大容器退场换 paper-retract（方向性位移+淡化，无缩放——
-    // 法则句在 ⑨-5）；animationend 对账随之改名（保险丝仍在，双保险）。
-    if (event.animationName === "paper-retract") finish();
+    // 最慢腿对账（用户三轮否决「不丝滑」的根因修）：fold 双腿并行——
+    // 纸腿 paper-retract 200ms 先终，墨腿 ink-wash reverse ×1.3（260ms）
+    // 恒慢后终。旧账对在纸腿上，200ms 即摘 DOM＝墨还剩约三成就被硬切。
+    // 对账改墨腿 animationend（leaveLayer 同一惯用形）；target 钉面板
+    // 本体——沓内信封 env--born 的同名动画冒泡不抢账。
+    if (event.animationName === "ink-wash" && event.target === panel) finish();
   });
   setTimeout(finish, 480);   // 保险丝（animationend 正常先到）
 }

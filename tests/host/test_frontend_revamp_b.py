@@ -154,7 +154,11 @@ def test_the_native_confirm_is_retired() -> None:
     assert "event.stopPropagation();" in js
     assert 'scrim.classList.add("cfrm-scrim--out");' in js
     assert 'box.classList.add("cfrm--out");' in js
-    assert 'event.animationName === "paper-fold"' in js
+    # 最慢腿对账（⑨-5 法则，同沓收拢根因修）：cfrm--out 双腿——纸腿
+    # paper-fold 200ms 先终即 settle＝半墨硬切；对账在墨腿 + target 钉
+    # 窗本体。纸腿名的对账形全库（components.js）不得回潮。
+    assert 'event.animationName === "ink-wash" && event.target === box' in js
+    assert 'animationName === "paper-fold"' not in js
     assert "setTimeout(settle, 480);" in js
     assert "restoreFocusTo.focus();" in js
     app = _webui("app.js")
@@ -184,16 +188,20 @@ def test_the_confirm_dialog_css() -> None:
 
 def test_the_word_card_gains_a_settle_half() -> None:
     """词卡褪下：Esc/收起/点卡外三路径同一编排（word-card--out +
-    word-scrim--out 落类，paper-fold | sheet-out 对账 + 480 保险丝）；
-    换卡/互斥路径 opts.skipOut 直摘（showWordCard/showSpace/开沓/
-    升写作态——残影不跟层走）；CSS 双形态（浮卡 fold / 触屏 sheet-out
-    与入场对偶）。"""
+    word-scrim--out 落类，**墨腿 ink-wash 对账（最慢腿，⑨-5——浮卡
+    paper-fold / 触屏 sheet-out 纸腿 200ms 先终即摘＝半墨硬切）** +
+    480 保险丝）；换卡/互斥路径 opts.skipOut 直摘（showWordCard/
+    showSpace/开沓/升写作态——残影不跟层走）；CSS 双形态（浮卡 fold /
+    触屏 sheet-out 与入场对偶）。"""
 
     js = _webui("components.js")
     assert "export function closeWordCard(opts) {" in js
     assert 'scrim.classList.add("word-scrim--out");' in js
     assert 'card.classList.add("word-card--out");' in js
-    assert 'event.animationName === "sheet-out"' in js
+    assert 'event.animationName === "ink-wash" && event.target === card' in js
+    # 纸腿名（paper-fold / sheet-out）的对账形不得回潮
+    assert 'animationName === "paper-fold"' not in js
+    assert 'animationName === "sheet-out"' not in js
     assert "const instant = REDUCED_MOTION.matches || (opts && opts.skipOut);" \
         in js
     assert "closeWordCard({ skipOut: true });   // 换卡直摘" in js

@@ -1565,7 +1565,16 @@ to-only，与 scrim-in 对偶——scrim-in 自 v2-2 在库、本刀首次入册
   （简报 §5）：位移 4–12px 封顶；无弹性回弹（唯一 overshoot = 盖印
   收束）；进入减速长尾/退出加速收势/禁 linear；transform 与 opacity
   拆开且 opacity 恒慢于 transform；纸不发光；阴影不做动画（用垫纸层
-  opacity 换）。**大容器退场禁整体缩放（veto-R，用户否决驱动的
+  opacity 换）。**双腿退场的摘除对账在最慢腿（用户三轮否决「收起
+  不丝滑」的根因修，用户第五轮点名定位）**：双腿退场（纸腿 transform
+  200ms + 墨腿 ink-wash reverse ×1.3 = 260ms 恒慢）的摘 DOM/[hidden]
+  对账以**墨腿 animationend** 为准——纸腿先终时不得摘（此刻墨尚剩
+  约三成，即摘＝半墨硬切，正是三轮否决的卡顿本体）；单腿动画对账
+  本腿；对账须 `event.target === 本体`（防子件同名动画冒泡抢账——
+  沓内信封 env--born 同用 ink-wash）。现役四点 = 沓收拢
+  `.envsel--fold` / 写作面落 `.dock-compose--out` / 确认窗
+  `.cfrm--out` / 词卡 `.word-card--out`（空间交叉淡化 `leaveLayer`
+  自始即此形）。**大容器退场禁整体缩放（veto-R，用户否决驱动的
   法则句）**：大容器（信封沓等下拉容器级）退场用方向性位移 + 淡化
   （`paper-retract`——沿原路向下收拢回锚位的方向），整体微缩只许
   小卡（词卡/确认窗级）用（`paper-fold`）。**位移量必须可感知

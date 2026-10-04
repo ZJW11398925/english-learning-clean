@@ -276,9 +276,12 @@ export function confirmDialog(message) {
       }
       scrim.classList.add("cfrm-scrim--out");
       box.classList.add("cfrm--out");
-      box.addEventListener("animationend", (event) => {
-        if (event.animationName === "paper-fold") settle();
-      });
+    box.addEventListener("animationend", (event) => {
+      // 最慢腿对账：cfrm--out 双腿——纸腿 paper-fold 200ms 先终，墨腿
+      // ink-wash reverse ×1.3 后终；纸腿先终即 settle＝半墨硬切（同沓
+      // 收拢根因修）。target 钉窗本体。
+      if (event.animationName === "ink-wash" && event.target === box) settle();
+    });
       setTimeout(settle, 480);   // 保险丝（同沓家对账纪律）
     };
     const onKey = (event) => {
@@ -1072,8 +1075,10 @@ export function closeWordCard(opts) {
   if (card !== null) {
     card.classList.add("word-card--out");
     card.addEventListener("animationend", (event) => {
-      if (event.animationName === "paper-fold" ||
-          event.animationName === "sheet-out") settle();
+      // 最慢腿对账（同沓收拢根因修）：卡退场双腿——纸腿（浮卡
+      // paper-fold / 触屏 sheet-out）200ms 先终，墨腿 ink-wash reverse
+      // ×1.3 后终；纸腿先终即摘＝半墨硬切。target 钉卡本体。
+      if (event.animationName === "ink-wash" && event.target === card) settle();
     });
   }
   setTimeout(settle, 480);   // 保险丝（同沓家对账纪律）

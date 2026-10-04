@@ -571,10 +571,18 @@ def test_the_large_container_exit_never_scales() -> None:
     app = (WEBUI / "app.js").read_text(encoding="utf-8")
     close_body = app[app.index("function closeEnvelopeSelector(opts)"):]
     close_body = close_body[:close_body.index("function unfoldToParlor")]
-    assert 'event.animationName === "paper-retract"' in close_body
+    # 最慢腿对账（用户三轮否决「不丝滑」的根因修，⑨-5 法则句）：fold
+    # 双腿——纸腿 paper-retract 200ms 先终、墨腿 ink-wash reverse ×1.3
+    # 后终；摘 DOM 对账在墨腿（纸腿先终即摘＝半墨硬切），target 钉面板
+    # 本体（沓内信封 env--born 同用 ink-wash，冒泡不抢账）。
+    assert 'event.animationName === "ink-wash" && event.target === panel' \
+        in close_body
+    assert 'event.animationName === "paper-retract"' not in close_body
+    assert 'event.animationName === "paper-fold"' not in close_body
     spec = SPEC.read_text(encoding="utf-8")
     assert "大容器退场禁整体缩放" in spec
     assert "`paper-retract`" in spec
+    assert "双腿退场的摘除对账在最慢腿" in spec
 
 
 # ---------------------------------------------------------------------------

@@ -261,25 +261,35 @@ def test_the_browser_layer_lives_inside_the_selector() -> None:
 
 def test_the_selector_folds_and_the_talk_paths_unfold() -> None:
     """收拢与让位（v3-2R 随迁；veto-R 随迁：大容器退场换 paper-retract
-    ——方向性位移+淡化，无缩放；paper-fold 收窄为小卡专用）：
-    fold 类 = paper-retract 200 × --ease-exit +
-    ink-wash reverse 恒慢（transform/opacity 拆开）；「对话」两条让位
-    路径（onTalk / 二次点选同一封）都经 unfoldToParlor；「起笔」不再
-    走让位——它延展成写信工作区（v3-2r 套件钉），上一刀的「起笔成
-    功后切换 + 让位」路径随建卡表单整件退役；reduced-motion 直切
-    （REDUCED_MOTION 归宿 + 480ms 保险丝）。"""
+    ——方向性位移+淡化，无缩放；paper-fold 收窄为小卡专用）：fold 类 =
+    paper-retract 200 × --ease-exit + ink-wash reverse 恒慢（transform/
+    opacity 拆开）；**摘 DOM 对账在墨腿**（最慢腿法则，⑨-5——纸腿
+    200ms 先终时墨尚剩约三成，即摘＝半墨硬切，用户三轮否决「收起
+    不丝滑」的根因）；「对话」两条让位路径（onTalk / 二次点选同一封）
+    都经 unfoldToParlor；「起笔」不再走让位——它延展成写信工作区
+    （v3-2r 套件钉），上一刀的「起笔成功后切换 + 让位」路径随建卡
+    表单整件退役；reduced-motion 直切（REDUCED_MOTION 归宿 + 480ms
+    保险丝）。"""
 
     app = _text("app.js")
     screens = _text("screens.css")
     assert "function unfoldToParlor(after)" in app
     assert "function closeEnvelopeSelector(opts)" in app
     assert 'panel.classList.add("envsel--fold");' in app
-    assert 'event.animationName === "paper-retract"' in app
-    # 沓收拢的 animationend 对账不再认 paper-fold（navdock/dock 落半
-    # 各自的 paper-fold 对账不在此列——按函数体切）
+    # 最慢腿对账（leaveLayer 同一惯用形）：墨腿 ink-wash animationend +
+    # target 钉面板本体——沓内信封 env--born 同用 ink-wash，冒泡不抢账。
+    assert 'event.animationName === "ink-wash" && event.target === panel' in app
+    # 沓收拢的对账不认任何纸腿名（paper-fold / paper-retract——按函数体切）
     close_body = app[app.index("function closeEnvelopeSelector(opts)"):]
     close_body = close_body[:close_body.index("function unfoldToParlor")]
     assert 'event.animationName === "paper-fold"' not in close_body
+    assert 'event.animationName === "paper-retract"' not in close_body
+    # 写作面落半（dock-compose--out）同一双腿、同一根因修：对账改墨腿
+    compose_body = app[app.index('dock.classList.add("dock-compose--out");'):]
+    compose_body = compose_body[:compose_body.index("480);")]
+    assert 'event.animationName !== "ink-wash" || event.target !== dock' \
+        in compose_body
+    assert 'animationName !== "paper-fold"' not in compose_body
     assert "setTimeout(finish, 480);" in app
     assert "if (REDUCED_MOTION.matches || (opts && opts.skipFold))" in app
     # the two talk paths land in the parlor unfold (kept verbatim)

@@ -182,7 +182,7 @@ body {
 /* 升起/落下（⑨-5 v3-a 两行）：复用注册四原语的既有组合形态——
    升 = paper-drop + ink-wash（transform 280 × --ease-paper、opacity
    恒慢 ×1.3）；落 = paper-fold + ink-wash reverse（200 × --ease-exit）。
-   类由 app.js 落/摘（animationend 对账 + 480ms 保险丝同沓家）。 */
+   类由 app.js 落/摘（墨腿 animationend 对账 + 480ms 保险丝同沓家）。 */
 .dock-compose--in { animation: paper-drop var(--dur-panel-in)
                                var(--ease-paper) both,
                                ink-wash calc(var(--dur-panel-in) * 1.3)
@@ -477,7 +477,8 @@ pre { font: var(--meta-mono);
    散）——**paper-retract（方向性位移+淡化，无缩放）**：大容器退场禁
    整体缩放（用户否决：大件整体缩放不自然；法则句入 ⑨-5 动画节），
    原纸 fold 的微缩半只留给小卡（词卡/确认窗）。类由 app.js 落，
-   animationend 后摘 DOM（reduced-motion 随库尾总降级块 0.01ms 即终 +
+   墨腿（ink-wash reverse ×1.3，最慢腿）animationend 后摘 DOM
+   （reduced-motion 随库尾总降级块 0.01ms 即终 +
    JS 直切双面）。 */
 .envsel--fold { animation: paper-retract var(--dur-panel-out) var(--ease-exit)
                            both,
