@@ -21,3 +21,6 @@ dist/
 .aoci/config.local.json
 .aoci/drafts/
 .aoci/lock
+
+# ── 取证工具产物（Playwright MCP 快照目录，只属于当前机器）──
+.playwright-mcp/

@@ -91,6 +91,7 @@ from tests.host.test_w1_web import _page_source, web_stack
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WEB = REPO_ROOT / "src" / "elc" / "web.py"
 API = REPO_ROOT / "src" / "elc" / "webui" / "api.js"
+COMPONENTS_CSS = REPO_ROOT / "src" / "elc" / "webui" / "components.css"
 
 
 @pytest.fixture(scope="module")
@@ -703,6 +704,30 @@ def test_the_settings_pull_and_save_loop_are_wired(tmp_path: Path) -> None:
     assert '"/api/settings/provider/profile_delete"' in api
     assert "fetchSaveFrequency" not in app
     assert "renderGoalFrequency" not in app
+    # 视觉整修刀（用户否决「样式一点没优化」）：配置档 chip 回归 #17
+    # 家族语汇——契约块、淡墨渍现役态、#17 排印配方、双钮触感层、
+    # ✕ 触达、裸输入框退役、零圆角。
+    css = COMPONENTS_CSS.read_text(encoding="utf-8")
+    assert "27a. profile-chip" in css
+    on_rule = " ".join(
+        css.split(".profile-chip--on {", 1)[1].split("}", 1)[0].split())
+    assert "color-mix(in srgb, var(--ink) 12%, transparent)" in on_rule
+    pick_rule = css.split(".profile-chip-pick {", 1)[1].split("}", 1)[0]
+    assert "letter-spacing: 0.04em" in pick_rule
+    assert ".profile-chip-pick::after" in css
+    assert ".profile-chip-x::after" in css
+    touch = css.split(".profile-chip-pick::after", 1)[1] \
+        .split(".profile-saveas", 1)[0]
+    assert "var(--state-press)" in touch
+    assert "var(--state-focus)" in touch
+    x_rule = css.split(".profile-chip-x {", 1)[1].split("}", 1)[0]
+    assert "min-width: 36px" in x_rule
+    assert "min-height: 36px" in x_rule
+    saveas_rule = css.split(".profile-saveas input {", 1)[1] \
+        .split("}", 1)[0]
+    assert "border-bottom: 1px solid var(--rule-soft)" in saveas_rule
+    chip_face = css.split("27a. profile-chip", 1)[1].split("/* ──", 1)[0]
+    assert "border-radius" not in chip_face
 
 
 class _Keychain:

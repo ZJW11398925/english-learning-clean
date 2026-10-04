@@ -97,6 +97,12 @@ COMPONENTS: tuple[tuple[int, str], ...] = (
     (27, "select"),
 )
 
+#: 复合变体（不入正册编号——注册表不做阁楼，#23 退役教训；随宿主块
+#: 后随段注册，契约块四件套与正册组件同格式、同计数）。
+COMPOUND_VARIANTS: tuple[tuple[str, str], ...] = (
+    ("27a", "profile-chip"),
+)
+
 #: The names alone, in the same order — the membership checks' face.
 COMPONENT_NAMES: tuple[str, ...] = tuple(name for _, name in COMPONENTS)
 
@@ -267,13 +273,14 @@ def test_the_contract_blocks_exist() -> None:
     same-cut registration is the only way a new component passes."""
 
     css = _webui_text("components.css")
-    for number, name in COMPONENTS:
+    registered = COMPONENTS + COMPOUND_VARIANTS
+    for number, name in registered:
         assert f"{number}. {name}" in css, (number, name)
     # the four contract clauses, once per component (the file header's
     # rule line names them without the colon — blocks carry the colon)
-    assert css.count("状态矩阵：") == len(COMPONENTS)
-    assert css.count("使用规则：") == len(COMPONENTS)
-    assert css.count("禁止变体：") == len(COMPONENTS)
+    assert css.count("状态矩阵：") == len(registered)
+    assert css.count("使用规则：") == len(registered)
+    assert css.count("禁止变体：") == len(registered)
 
 
 def test_core_component_styles_have_exactly_one_source() -> None:
@@ -376,7 +383,7 @@ def test_the_frontend_spec_exists_and_governs() -> None:
         "## ⑦ 架构说明",
     ):
         assert header in spec, header
-    for number, name in COMPONENTS:
+    for number, name in COMPONENTS + COMPOUND_VARIANTS:
         assert name in spec, name
     assert "重复实现 = 评审 finding（拒收事由）" in spec
     agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")

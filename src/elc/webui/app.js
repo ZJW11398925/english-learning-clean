@@ -2027,7 +2027,8 @@ function renderSettingsProvider() {
       const pick = document.createElement("button");
       pick.type = "button";
       pick.className = "profile-chip-pick";
-      pick.title = profile.base_url;
+      pick.title = profile.name + "（" + profile.model + "）· "
+        + profile.base_url;
       pick.textContent = profile.name + "（" + profile.model + "）";
       pick.addEventListener("click", () => {
         activateProviderProfile(profile.id);
@@ -2089,7 +2090,7 @@ function renderSettingsProvider() {
   nameInput.autocomplete = "off";
   const saveAs = document.createElement("button");
   saveAs.type = "button";
-  saveAs.className = "btn btn--faint";
+  saveAs.className = "btn btn--pencil";
   saveAs.textContent = "存为配置档";
   saveAs.addEventListener("click", () => {
     saveProviderProfileAs(saveAs, nameInput, baseUrlInput, modelInput,

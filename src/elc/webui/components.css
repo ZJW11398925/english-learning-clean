@@ -1184,29 +1184,89 @@ button:focus-visible, input:focus-visible {
    overflow 裁切框拦腰截断；fixed 逃出一切裁切与 transform 祖先。
    z 10 维持浮层家族原档（tm-pop 同档；确认窗 11/12 仍在其上）。 */
 .select-list--float { position: fixed; z-index: 10; }
-/* 多模型配置档 chip（用户定向：多套模型随时切换）——**平级两钮**：
-   切换钮 + ✕ 删除钮（按钮套按钮是无障碍硬伤：读屏器念不清、✕ 不可
-   聚焦）；✕ 触达区 ≥36px（移动端一等）；现役档主墨描边。chips 行
-   自动换行（移动端一等形态）。 */
+/* ── 27a. profile-chip（配置档切换片——#17 家族复合变体）──────────────
+   结构：<span class="profile-chip [--on]"> 内两枚**平级** button——
+   .profile-chip-pick（切换钮；长名 ellipsis 截断，全名在按钮 title
+   备查）+ .profile-chip-x（✕ 删除钮，aria-label 承担语义）。按钮套
+   按钮是无障碍硬伤（读屏器念不清、✕ 不可聚焦），故以平级双钮合成
+   一片。
+   状态矩阵：off（default，1px 发丝线描边、底透明、切换钮字次墨）/
+   hover（非现役：片边转次级墨、字转主墨——#17 hover 法则；✕ hover
+   字转主墨；全包 (hover: hover) 媒体内——触屏纪律）/ --on（现役档：主墨描边
+   + 淡墨渍底 color-mix(in srgb, var(--ink) 12%, transparent) + 字主墨
+   ——v3aR 用户核准的现役态语汇；**不用 #17 --on 的反白实墨**——长
+   文本实墨块是 v3aR 否决形态，大面积矩形轮廓填实淹没细节；现役档
+   不被 hover 冲淡）/ :active（触压 1px 下沉 + ::after 墨雾
+   --state-press）/ :focus-visible（::after 墨雾 --state-focus；焦点环
+   走全局 button 基线，不另设）。
+   使用规则：设置节「模型与端点」的已存档名册；chips 行自动换行
+   （移动端一等）；排印走 #17 配方（--f-sans / --fs-ui /
+   letter-spacing .04em）。
+   禁止变体：圆角、阴影、反白实墨底、彩色。 */
 .profile-chip { display: inline-flex; align-items: stretch;
-                border: 1px solid var(--rule);
-                background: var(--paper-high); }
-.profile-chip--on { outline: 1px solid var(--rule);
-                    outline-offset: 2px; }
-.profile-chip-pick { border: 0; background: none; margin: 0;
-                     padding: 7px 6px 7px 10px; font: inherit;
-                     color: inherit; cursor: pointer; text-align: left; }
+                border: 1px solid var(--rule); background: none;
+                transition: border-color var(--dur-micro)
+                            var(--ease-press),
+                            background-color var(--dur-micro)
+                            var(--ease-press); }
+.profile-chip--on { border-color: var(--ink);
+                    background: color-mix(in srgb, var(--ink) 12%,
+                                          transparent); }
+.profile-chip-pick { position: relative; border: 0; margin: 0;
+                     padding: 8px 10px;
+                     font-family: var(--f-sans);
+                     font-size: var(--fs-ui);
+                     line-height: var(--lh-ui);
+                     letter-spacing: 0.04em;
+                     color: var(--ink-soft); text-align: left;
+                     max-width: 18em; white-space: nowrap;
+                     overflow: hidden; text-overflow: ellipsis;
+                     transition: color var(--dur-micro)
+                                 var(--ease-press),
+                                 transform var(--dur-micro)
+                                            var(--ease-press); }
 .profile-chip--on .profile-chip-pick { color: var(--ink); }
-.profile-chip-x { border: 0; border-left: 1px solid var(--rule-soft);
+.profile-chip-x { position: relative; border: 0;
+                  border-left: 1px solid var(--rule-soft);
                   background: none; min-width: 36px; min-height: 36px;
                   font-size: var(--fs-ui); color: var(--ink-faint);
-                  cursor: pointer; align-self: center; }
+                  cursor: pointer;
+                  transition: color var(--dur-micro) var(--ease-press),
+                              transform var(--dur-micro)
+                                         var(--ease-press); }
+.profile-chip-pick:active, .profile-chip-x:active {
+  transform: translateY(1px); }
+.profile-chip-pick::after, .profile-chip-x::after {
+  content: ""; position: absolute; inset: 0; background: var(--ink);
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--dur-micro) var(--ease-press); }
+.profile-chip-pick:active::after,
+.profile-chip-x:active::after { opacity: var(--state-press); }
+.profile-chip-pick:focus-visible::after,
+.profile-chip-x:focus-visible::after { opacity: var(--state-focus); }
 @media (hover: hover) {
+  .profile-chip:not(.profile-chip--on):hover {
+    border-color: var(--ink-soft); }
+  .profile-chip:not(.profile-chip--on):hover .profile-chip-pick {
+    color: var(--ink); }
   .profile-chip-x:hover { color: var(--ink); }
 }
 .profile-saveas { display: flex; flex-wrap: wrap;
                   gap: var(--sp-2); margin-top: var(--sp-3); }
-.profile-saveas input { flex: 1; min-width: 12em; }
+.profile-saveas input { flex: 1; min-width: 12em;
+                        border: 0; background: none; outline: none;
+                        border-bottom: 1px solid var(--rule-soft);
+                        padding: 2px 0;
+                        font-family: var(--f-serif);
+                        font-size: var(--fs-small);
+                        line-height: var(--lh-small);
+                        color: var(--ink);
+                        transition: border-color var(--dur-micro)
+                                    var(--ease-press); }
+.profile-saveas input:focus { border-bottom-color: var(--pencil); }
+.profile-saveas input::placeholder { color: var(--ink-faint);
+                                     font-family: var(--f-sans);
+                                     font-size: var(--fs-small); }
 .select-option--active {
   background: color-mix(in srgb, var(--ink) 12%, transparent); }
 @media (hover: hover) {
