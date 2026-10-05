@@ -714,6 +714,28 @@ def test_the_page_carries_the_world_inbox_instrument() -> None:
     assert ".innerHTML" not in page
 
 
+def test_the_letter_refreshes_the_inbox_and_continue_failures_speak() -> None:
+    """W-1-3R (the live defect the user caught): a turn's landing rereads
+    the inbox — the letter wound the world, and the page that never
+    rereads renders a stepping world as 「完全没有任何效果」. The
+    continue button's failure arm speaks the server's human sentence
+    (the 400 body's ``error`` word — postJson returns the body, never
+    a throw), the LOW-1 gap this same touch closes."""
+
+    app = (REPO_ROOT / "src" / "elc" / "webui" / "app.js").read_text(
+        encoding="utf-8"
+    )
+    # The turn's response block ends with the inbox reread (the reveal
+    # is the read — the wiring pin, source-scan form like the CLI's).
+    turn_block = app[app.find("async function postTurn") : app.find(
+        "async function postTeachMe"
+    )]
+    assert "loadWorldInbox();" in turn_block
+    # The continue failure arm surfaces the server sentence.
+    assert 'typeof fresh.error === "string"' in app
+    assert "世界没能继续" in app
+
+
 # ---------------------------------------------------------------------------
 # 10 — the migration touch faces (N12/N13/N20 family)
 # ---------------------------------------------------------------------------

@@ -2887,14 +2887,27 @@ function renderWorldInbox(data) {
   cont.addEventListener("click", async () => {
     cont.disabled = true;
     let fresh = null;
+    let why = null;
     try {
       fresh = await fetchWorldContinue();
-    } catch {
+    } catch (err) {
       fresh = null;
+      why = err;
     }
     if (fresh && Array.isArray(fresh.items)) {
       renderWorldInbox(fresh);
     } else {
+      // W-1-3R（评审 LOW-1 收口）：失败不再是静默重灌——服务器的
+      // 人话（400 体 {"error": "世界不在等你点继续。"}，postJson
+      // 不抛而回体）落到收件箱里说给用户听；网络级失败才走
+      // err.message 兜底。
+      const said = document.createElement("p");
+      said.className = "note";
+      said.textContent =
+        (fresh && typeof fresh.error === "string" && fresh.error) ||
+        (why && why.message) ||
+        "世界没能继续——稍后再试。";
+      worldInboxBoard.appendChild(said);
       loadWorldInbox();
     }
   });
@@ -3583,6 +3596,10 @@ async function postTurn(text) {
     }
     const moments = data.teaching_moments || [];
     showMoments(moments);
+    // W-1-3R：这封信是世界的一轮发条（turn 落定 ⇒ 世界已步进、便条
+    // 可能已在等）——收件箱重读一次。揭示就是「读」这个动作本身
+    // （spec §4.1 的呈现半）；不读，页面就永远不知道世界动过。
+    loadWorldInbox();
   }
 }
 
