@@ -208,6 +208,19 @@ export function fetchSaveProvider(payload) {
   return postJson("/api/settings/provider", payload);
 }
 
+/** 换界面语言（W-L）："zh" | "en" 一词——持久化，下一次收件箱读就
+ *  按它渲染（读即揭示）。词表外值是 400 人话。 */
+export function fetchSaveUiLanguage(word) {
+  return postJson("/api/settings/ui_language", { ui_language: word });
+}
+
+/** 换回信语言（W-L）："zh" | "en" | "follow" 一词——持久化，下一封
+ *  信的 prompt 带上它的 language 行（coordinator 每轮现读，免重装）。
+ *  词表外值是 400 人话。 */
+export function fetchSaveReplyLanguage(word) {
+  return postJson("/api/settings/reply_language", { reply_language: word });
+}
+
 /** 多模型配置档（用户定向：存多套模型随时切换）：把当前三件存成一个
  * 具名配置档（id 省略 = 新建；api_key 省略 = 沿用该档已存的）。 */
 export function fetchSaveProviderProfile(payload) {

@@ -64,6 +64,16 @@ APP_SETTING_PROVIDER_ACTIVE_PROFILE_KEY = "provider_active_profile"
 #: RA §24.3 surfaces are unchanged. A saved key takes precedence over the
 #: launch environment's source at send time.
 APP_SETTING_PROVIDER_API_KEY_KEY = "provider_api_key"
+#: The W-L language pair. ``reply_language`` is the ``[response]`` section's
+#: language-row word (``zh`` / ``en`` / ``follow`` — the vocabulary lives on
+#: :data:`elc.persona.types.RESPONSE_LANGUAGE_WORDS`; the coordinator's
+#: best-effort port reads this key per turn). ``ui_language`` is the page's
+#: own presentation word (``zh`` / ``en`` — the world inbox's bilingual
+#: face; full-page i18n is registered out of scope). Both are stored only
+#: by the web write faces, both answer the caller's default when absent —
+#: this store carries no vocabulary and substitutes nothing.
+APP_SETTING_REPLY_LANGUAGE_KEY = "reply_language"
+APP_SETTING_UI_LANGUAGE_KEY = "ui_language"
 
 
 class AppSettingStore:

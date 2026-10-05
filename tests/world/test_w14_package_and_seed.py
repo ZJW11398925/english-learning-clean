@@ -55,6 +55,7 @@ from elc.world.engine.types import EngineConfig, PoolEvent
 from elc.world.package import (
     BUILTIN_WORLDS_DIR,
     SUPPLY_FAMILY_WORDS,
+    WORLD_PACKAGE_VERSION,
     WorldPackageError,
     ensure_builtin_worlds,
     load_world_package,
@@ -97,18 +98,20 @@ def store(conn: sqlite3.Connection) -> SqliteWorldStore:
 def _valid_payload() -> dict[str, object]:
     """One minimal valid package payload — the negative tests mutate a
     copy of this and expect the loader to refuse the copy, never the
-    shipped Berrymoor file."""
+    shipped Berrymoor file. W-L: v2 — every event carries both
+    narrations, and the version word is the loader's own constant."""
 
     return {
         "world_id": "world-x",
         "name": "X",
-        "version": 1,
+        "version": WORLD_PACKAGE_VERSION,
         "setting": ["one", "two", "three"],
         "cast": [{"persona_id": PENPAL_PERSONA_ID, "name": "Nell"}],
         "event_pool": [
             {
                 "kind": "k",
                 "narration": "n",
+                "narration_zh": "n-中文",
                 "effects": [],
                 "conditions": [],
                 "moment": "NOTICE",
@@ -208,7 +211,12 @@ def test_load_refuses_unexpected_top_level_key(tmp_path: Path) -> None:
 def test_load_refuses_unknown_moment_word_disclosing_it(tmp_path: Path) -> None:
     payload = _valid_payload()
     payload["event_pool"] = [
-        {"kind": "k", "narration": "n", "moment": "DIRECTION"}
+        {
+            "kind": "k",
+            "narration": "n",
+            "narration_zh": "n-中文",
+            "moment": "DIRECTION",
+        }
     ]
     path = _write_package(tmp_path, payload, "world-bad.json")
     result = load_world_package(path)
@@ -242,7 +250,7 @@ def test_real_package_carries_the_seven_sections() -> None:
     package = result.value
     assert package.world_id == "world-berrymoor"
     assert package.name == "Berrymoor"
-    assert package.version == 1
+    assert package.version == WORLD_PACKAGE_VERSION
     assert 3 <= len(package.setting) <= 5
     assert all(paragraph.strip() for paragraph in package.setting)
     assert [(m.persona_id, m.name) for m in package.cast] == [

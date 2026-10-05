@@ -1149,6 +1149,7 @@ class ConversationCoordinator:
         constraint_views: PlannerConstraintSource | None = None,
         character_packages: Mapping[str, CharacterPackageRecord] | None = None,
         world_lore: WorldLoreQueries | None = None,
+        reply_language_source: Callable[[], str | None] | None = None,
     ) -> None:
         self._lease = lease
         self._commands = conversation_commands
@@ -1180,6 +1181,13 @@ class ConversationCoordinator:
         # at the two GenerationContext sites, and ``None`` (every assembly
         # before this slice) keeps those sites' answer exactly ``None``.
         self._world_lore = world_lore
+        # W-L: the reply-language read port, same optional-injection
+        # discipline as every port above — held, never called at
+        # construction, consulted per turn at the two PromptCompilationRequest
+        # sites. ``None`` (every assembly before this slice, and every
+        # direct test assembly) answers ``follow`` — the compiled prompt's
+        # language row is exactly what it always was.
+        self._reply_language_source = reply_language_source
 
     def replace_automatic_teaching(
         self, wiring: AutomaticTurnWiring | None
@@ -1794,6 +1802,7 @@ class ConversationCoordinator:
                 interaction_channel=command.envelope.interaction_channel,
                 generation_context=context,
                 generation_contract=contract,
+                response_language=self._response_language(),
             )
 
             run_result = self._persona.run_action(intent, request, contract)
@@ -2815,6 +2824,35 @@ class ConversationCoordinator:
         if isinstance(resolved, Err):
             return None
         return resolved.value
+
+    def _response_language(self) -> str:
+        """Best-effort read of the reply-language word (W-L).
+
+        The same degradation shape ``_world_lore_view_for`` declared for
+        the lore view, stated for the language row: no port (every
+        assembly before W-L, and every assembly that does not wire one)
+        → ``follow`` — the compiled prompt is byte-identical to what it
+        always was; a ``None`` from the port (nothing chosen yet — the
+        absent ``app_setting`` row is the honest "not chosen") →
+        ``follow``; an exception escaping the port → ``follow`` — the
+        settings read never fails the letter. A **non-empty word** rides
+        verbatim: an out-of-vocabulary word (a hand-corrupted row the
+        write face could not have written) is refused loudly by the
+        request's own construction validation, never silently rewritten
+        to ``follow`` — the provider-profile precedent (a row the strict
+        write face could not have written is never guessed into a value).
+        """
+
+        port = self._reply_language_source
+        if port is None:
+            return "follow"
+        try:
+            word = port()
+        except Exception:  # noqa: BLE001 — a read never fails the turn
+            return "follow"
+        if not isinstance(word, str) or not word:
+            return "follow"
+        return word
 
     @staticmethod
     def _user_or_none(views: PersonaViewSource) -> UserId | None:
@@ -6957,6 +6995,7 @@ class ConversationCoordinator:
             interaction_channel=InteractionChannel.TEXT,
             generation_context=context,
             generation_contract=contract,
+            response_language=self._response_language(),
         )
         run_result = self._persona.run_action(intent, request, contract)
         if isinstance(run_result, Err):

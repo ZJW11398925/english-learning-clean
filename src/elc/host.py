@@ -210,6 +210,7 @@ from elc.platform.db.app_settings import (
     APP_SETTING_PROVIDER_API_KEY_KEY,
     APP_SETTING_PROVIDER_BASE_URL_KEY,
     APP_SETTING_PROVIDER_MODEL_KEY,
+    APP_SETTING_REPLY_LANGUAGE_KEY,
     APP_SETTING_ROLLOUT_STAGE_KEY,
     AppSettingStore,
 )
@@ -954,6 +955,15 @@ def open_host(
             stream_transport=stream_transport,
             constraint_views=user_config,
             world_lore=world_lore,
+            # W-L: the reply language rides the settings row per turn —
+            # the port is the store's own ``get`` (a read on the shared
+            # connection, the caller's thread, exactly what the provider
+            # face does); an absent row answers ``None`` and the
+            # coordinator resolves it to ``follow`` (the pre-W-L stance,
+            # byte-identical prompts).
+            reply_language_source=lambda: app_settings.get(
+                APP_SETTING_REPLY_LANGUAGE_KEY
+            ),
         )
     except (
         sqlite3.Error,

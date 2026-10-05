@@ -123,6 +123,17 @@ def sample_character_package(
     )
 
 
+#: W-L: the ``[response]`` section's language row vocabulary — the three
+#: words the reply-language setting may carry, and the only words
+#: :attr:`PromptCompilationRequest.response_language` accepts. ``follow``
+#: is the pre-W-L stance (reply in the language the user writes in);
+#: ``zh`` / ``en`` name the reply language outright. One vocabulary, two
+#: doors: the settings write face (:mod:`elc.web`) validates against this
+#: same tuple, so a renamed word cannot fork between the page and the
+#: compiler.
+RESPONSE_LANGUAGE_WORDS: tuple[str, ...] = ("zh", "en", "follow")
+
+
 @dataclass(frozen=True)
 class PromptCompilationRequest:
     """Inputs consumed by Persona Runtime to build the final provider prompt.
@@ -134,6 +145,17 @@ class PromptCompilationRequest:
     Teaching influence arrives only as an `EphemeralTeachingDirective`
     inside the context — produced by the Teaching Planner, never as a
     prompt fragment owned here.
+
+    W-L: ``response_language`` is the reply-language word the ``[response]``
+    section's language row renders (``zh`` / ``en`` / ``follow``; the
+    default ``follow`` is the pre-W-L stance verbatim, so every request
+    that does not name the field compiles byte-identically to what it
+    always compiled). The word is validated here, at the prompt boundary —
+    an out-of-vocabulary word is a construction refusal naming the word
+    and the vocabulary, never a silent fall-back to ``follow`` (a typo must
+    not quietly mean a language). The settings read may hand ``None``
+    (nothing chosen yet); resolving that to ``follow`` is the wiring's job,
+    not this type's.
     """
 
     conversation_id: ConversationId
@@ -141,6 +163,14 @@ class PromptCompilationRequest:
     interaction_channel: InteractionChannel
     generation_context: GenerationContext | None = None
     generation_contract: GenerationContract | None = None
+    response_language: str = "follow"
+
+    def __post_init__(self) -> None:
+        if self.response_language not in RESPONSE_LANGUAGE_WORDS:
+            raise ValueError(
+                f"response_language {self.response_language!r} is outside"
+                f" the vocabulary {RESPONSE_LANGUAGE_WORDS!r}"
+            )
 
 
 @dataclass(frozen=True)

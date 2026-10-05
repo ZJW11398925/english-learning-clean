@@ -50,6 +50,7 @@ from elc.world.types import StateEffect
 __all__ = [
     "BUILTIN_WORLDS_DIR",
     "SUPPLY_FAMILY_WORDS",
+    "WORLD_PACKAGE_VERSION",
     "CastMember",
     "SupplyDeclaration",
     "WorldPackage",
@@ -78,6 +79,14 @@ SUPPLY_FAMILY_WORDS: tuple[str, ...] = (
     "REF",
     "STANCE",
 )
+
+#: The package schema version this loader reads (W-L): every pool event
+#: carries its narration in both languages (``narration`` and
+#: ``narration_zh``, both required non-empty strings), and a document
+#: stamped with any other version is a refusal naming the number — a v1
+#: file cannot ride in half-read, and a future v3 must be read by the cut
+#: that writes it, never guessed at by this one.
+WORLD_PACKAGE_VERSION = 2
 
 
 class WorldPackageError(RuntimeError):
@@ -119,7 +128,14 @@ class WorldPackage:
     :class:`~elc.world.engine.types.Condition` and
     :class:`~elc.world.types.StateEffect` parts), and
     :meth:`to_event_pool` is the bridge the engine consumes: the package
-    is engine-ready as loaded, with no second translation."""
+    is engine-ready as loaded, with no second translation.
+
+    W-L: ``narrations_zh`` is the pool's Chinese narrations as
+    ``(kind, narration_zh)`` pairs — the presentation face's lookup
+    source (:meth:`narration_zh_for`), so the inbox can render the
+    package's own Chinese prose without re-reading the file. Kinds are
+    unique in a pool (the loader refuses a duplicate), so the kind key is
+    total over the package's own events."""
 
     world_id: str
     name: str
@@ -128,11 +144,24 @@ class WorldPackage:
     cast: tuple[CastMember, ...]
     event_pool: tuple[PoolEvent, ...]
     supply: SupplyDeclaration
+    narrations_zh: tuple[tuple[str, str], ...] = ()
 
     def to_event_pool(self) -> tuple[PoolEvent, ...]:
         """The engine's pool argument, as loaded (no re-decode)."""
 
         return self.event_pool
+
+    def narration_zh_for(self, kind: str) -> str | None:
+        """The Chinese narration for one event kind, or ``None`` when the
+        kind is not this package's (the caller's honest fallback to the
+        English row — a v1-era durable event, or a kind the pool never
+        carried, renders in English and says so, never guessed into
+        Chinese)."""
+
+        for key, narration in self.narrations_zh:
+            if key == kind:
+                return narration
+        return None
 
 
 _PACKAGE_KEYS = (
@@ -145,8 +174,15 @@ _PACKAGE_KEYS = (
     "supply",
 )
 _CAST_KEYS = ("persona_id", "name")
-_EVENT_REQUIRED_KEYS = ("kind", "narration")
-_EVENT_KEYS = ("kind", "narration", "effects", "conditions", "moment")
+_EVENT_REQUIRED_KEYS = ("kind", "narration", "narration_zh")
+_EVENT_KEYS = (
+    "kind",
+    "narration",
+    "narration_zh",
+    "effects",
+    "conditions",
+    "moment",
+)
 _PAIR_KEYS = frozenset({"key", "statement"})
 _SUPPLY_KEYS = ("families", "note")
 
@@ -209,11 +245,13 @@ def _decode_cast_member(entry: object, where: str) -> Result[CastMember]:
 
 
 def _decode_pool_event(entry: object, where: str) -> Result[PoolEvent]:
-    """One pool event: ``kind`` / ``narration`` required, ``effects`` /
-    ``conditions`` / ``moment`` optional (the engine shapes' own
-    defaults). An unknown moment word is refused with the word in the
-    message — the vocabulary is exactly ``NOTICE`` / ``RESPONSE``
-    (``DIRECTION`` is W-2-2's, and cannot ride in through a package)."""
+    """One pool event: ``kind`` / ``narration`` / ``narration_zh``
+    required (v2, W-L — the Chinese narration is not optional prose, it
+    is the package's second language), ``effects`` / ``conditions`` /
+    ``moment`` optional (the engine shapes' own defaults). An unknown
+    moment word is refused with the word in the message — the vocabulary
+    is exactly ``NOTICE`` / ``RESPONSE`` (``DIRECTION`` is W-2-2's, and
+    cannot ride in through a package)."""
 
     if not isinstance(entry, dict):
         return _err(f"{where}: not a JSON object")
@@ -225,10 +263,15 @@ def _decode_pool_event(entry: object, where: str) -> Result[PoolEvent]:
             return _err(f"{where}: unexpected key {key!r}")
     kind = entry["kind"]
     narration = entry["narration"]
+    narration_zh = entry["narration_zh"]
     if not isinstance(kind, str) or not kind:
         return _err(f"{where}: kind must be a non-empty string")
     if not isinstance(narration, str) or not narration:
         return _err(f"{where}: narration must be a non-empty string")
+    if not isinstance(narration_zh, str) or not narration_zh.strip():
+        return _err(
+            f"{where}: narration_zh must be a non-empty string"
+        )
     effects: tuple[StateEffect, ...] = ()
     if "effects" in entry:
         decoded = _decode_statement_pairs(entry["effects"], f"{where}: effects")
@@ -312,10 +355,12 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
 
     Every refusal is an ``Err`` naming the file and the offending key or
     word: unreadable file, bad JSON, a non-object document, a missing or
-    unexpected top-level key, a value of the wrong shape, an unknown
-    moment word, an unknown supply family word. The loader never guesses
-    past an error — fail-closed decoding, the caller decides what a
-    refusal means (the builtin seed answers: a failed open).
+    unexpected top-level key, a value of the wrong shape, a version other
+    than :data:`WORLD_PACKAGE_VERSION` (v2, W-L — every event carries
+    both narrations), a duplicated event kind, an unknown moment word, an
+    unknown supply family word. The loader never guesses past an error —
+    fail-closed decoding, the caller decides what a refusal means (the
+    builtin seed answers: a failed open).
     """
 
     where = str(path)
@@ -344,6 +389,13 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
     version = document["version"]
     if type(version) is not int:
         return _err(f"{where}: version must be an integer")
+    if version != WORLD_PACKAGE_VERSION:
+        return _err(
+            f"{where}: version must be {WORLD_PACKAGE_VERSION} (this"
+            f" loader reads v{WORLD_PACKAGE_VERSION} packages, whose"
+            " every event carries both narrations), got"
+            f" {version}"
+        )
     setting = document["setting"]
     if not isinstance(setting, list) or not setting:
         return _err(f"{where}: setting must be a non-empty array of paragraphs")
@@ -365,13 +417,25 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
     if not isinstance(pool, list) or not pool:
         return _err(f"{where}: event_pool must be a non-empty array")
     events: list[PoolEvent] = []
+    narrations_zh: list[tuple[str, str]] = []
     for index, entry in enumerate(pool):
         decoded_event = _decode_pool_event(
             entry, f"{where}: event_pool entry {index}"
         )
         if isinstance(decoded_event, Err):
             return decoded_event
-        events.append(decoded_event.value)
+        event = decoded_event.value
+        if any(event.kind == seen for seen, _ in narrations_zh):
+            # v2 (W-L): the Chinese narrations are a kind-keyed mapping,
+            # so a duplicate kind would make the lookup ambiguous — a
+            # refusal naming the kind, never a silent overwrite.
+            return _err(
+                f"{where}: event kind {event.kind!r} is declared twice"
+                " (a v2 pool's kinds are unique — the Chinese narrations"
+                " are looked up by kind)"
+            )
+        narrations_zh.append((event.kind, entry["narration_zh"]))
+        events.append(event)
     decoded_supply = _decode_supply(document["supply"], f"{where}: supply")
     if isinstance(decoded_supply, Err):
         return decoded_supply
@@ -384,6 +448,7 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
             cast=tuple(members),
             event_pool=tuple(events),
             supply=decoded_supply.value,
+            narrations_zh=tuple(narrations_zh),
         )
     )
 

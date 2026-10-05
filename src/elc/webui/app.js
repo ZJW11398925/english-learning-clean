@@ -74,6 +74,8 @@ import {
   fetchSaveGoals,
   fetchSaveMode,
   fetchSaveProvider,
+  fetchSaveUiLanguage,
+  fetchSaveReplyLanguage,
   fetchSaveProviderProfile,
   fetchActivateProviderProfile,
   fetchDeleteProviderProfile,
@@ -2158,6 +2160,108 @@ function settingsModeResult(text, failure) {
   box.appendChild(line);
 }
 
+// ── W-L：语言两旋钮（界面语言 / 回信语言）────────────────────────────
+// 词表由服务端随行（ui_language_words / reply_language_words——客户端
+// 零拷贝，fr-A #27 同读法）；中文主列 + 原词辅列（sub——双列层级）；
+// 控件标签双语（任务书点名「界面语言 Interface language」「回信语言
+// Reply language」）。存什么读什么：两词都持久 app_setting，读面回读
+// 即所见。
+const UI_LANGUAGE_CN = { zh: "中文", en: "English" };
+const REPLY_LANGUAGE_CN = {
+  zh: "中文",
+  en: "English",
+  follow: "跟随用户",
+};
+
+function renderSettingsLanguage() {
+  const box = settingsBox("settings-language-editor");
+  if (!box) return;
+  box.textContent = "";
+  if (!settingsData) {
+    diagEmpty(box, "设置读数没拉到——语言两钮暂不可用。");
+    return;
+  }
+  const uiControl = selectField({
+    name: "界面语言 Interface language",
+    options: ((settingsData && settingsData.ui_language_words) || [])
+      .map((word) => ({
+        value: word,
+        label: UI_LANGUAGE_CN[word] || word,
+        sub: UI_LANGUAGE_CN[word] ? word : null,
+      })),
+    value: (settingsData && settingsData.ui_language) || "zh",
+    placeholder: "选一种……",
+    onChange: (next) => { saveUiLanguage(next); },
+  });
+  box.appendChild(uiControl.root);
+  const replyControl = selectField({
+    name: "回信语言 Reply language",
+    options: ((settingsData && settingsData.reply_language_words) || [])
+      .map((word) => ({
+        value: word,
+        label: REPLY_LANGUAGE_CN[word] || word,
+        sub: REPLY_LANGUAGE_CN[word] ? word : null,
+      })),
+    value: (settingsData && settingsData.reply_language) || "follow",
+    placeholder: "选一种……",
+    onChange: (next) => { saveReplyLanguage(next); },
+  });
+  box.appendChild(replyControl.root);
+}
+
+function settingsLanguageResult(text, failure) {
+  const box = settingsBox("settings-language-result");
+  if (!box) return;
+  box.hidden = false;
+  box.textContent = "";
+  const line = document.createElement("p");
+  line.className = failure ? "errline" : "sub";
+  line.textContent = text;
+  box.appendChild(line);
+}
+
+async function saveUiLanguage(word) {
+  let data = null;
+  try {
+    data = await fetchSaveUiLanguage(word);
+  } catch {
+    // 因果中立（换档 ReferenceError 教训）：不替网络或脚本背书，只说怎么走。
+    settingsLanguageResult(
+      "没存上——强制刷新页面（Ctrl+F5）后再试一次；反复出现请报出来。",
+      true);
+    return;
+  }
+  if (!data.accepted) {
+    settingsLanguageResult(data.error || "没能换界面语言。", true);
+    return;
+  }
+  await loadSettings();
+  // W-L 行为接线：切换界面语言 ⇒ 收件箱立即重读重渲染（读即揭示
+  // ——同一次读已按新语言取叙述；不重读则旧语言的叙述留在屏上）。
+  await loadWorldInbox();
+  settingsLanguageResult(
+    "界面语言已换到 " + (UI_LANGUAGE_CN[word] || word) + "。", false);
+}
+
+async function saveReplyLanguage(word) {
+  let data = null;
+  try {
+    data = await fetchSaveReplyLanguage(word);
+  } catch {
+    settingsLanguageResult(
+      "没存上——强制刷新页面（Ctrl+F5）后再试一次；反复出现请报出来。",
+      true);
+    return;
+  }
+  if (!data.accepted) {
+    settingsLanguageResult(data.error || "没能换回信语言。", true);
+    return;
+  }
+  await loadSettings();
+  settingsLanguageResult(
+    "回信语言已换到 " + (REPLY_LANGUAGE_CN[word] || word) + "——下一封信起生效。", false);
+}
+
 async function saveMode(word) {
   let data = null;
   try {
@@ -2530,6 +2634,8 @@ async function loadSettings() {
     return;
   }
   settingsData = data;
+  // W-L：界面语言现值随设置读入（收件箱区双语读法的唯一来源）。
+  uiLanguage = (data && data.ui_language) || "zh";
   policyEditor = editorFromSettings(data);
   disclosureEditor = editorFromDisclosure(data);
   try {
@@ -2539,6 +2645,7 @@ async function loadSettings() {
   }
   renderSettingsProvider();
   renderSettingsMode();
+  renderSettingsLanguage();
   renderPolicyKnobs();
   renderSettingsSave();
   renderSettingsDisclosure();
@@ -2824,17 +2931,47 @@ diagBox("obs-entry").appendChild((() => {
   return wrap;
 })());
 
-// ── W-1-3: 世界收件箱（DEC-…43 例外通道：功能必需、零样式打磨）──────
+// ── W-1-3/W-L: 世界收件箱（DEC-…43 例外通道起步；W-L 改写：双语 +
+// 按运转分组散文 + 底部挂点〔DEC-…66〕）─────────────────────────────
 // 案头 = 当前世界的收件箱（活世界 spec §8.2）：世界运转留下的便条
 // ——「揭示」是呈现触发不是运转动力（§4.1），打开页面这一读就是
-// 揭示时刻——升序一列；运转等在检查点时给一枚「继续」钮（数据驱动
-// 可点，服务端 400 兜底）。文字一律 textContent（XSS 面）；调用只走
-// api.js；无绑定世界（404）= 整区隐藏，不是一只空收件箱。
+// 揭示时刻——升序一列、按运转分组（一封信之后的世界 = 一段）；运转
+// 等在检查点时给一枚「继续」钮（数据驱动可点，服务端 400 兜底）。
+// 界面语言随 ui_language 设置（zh 缺省）：标题/空态/继续/失败句双语
+// ——全页 i18n 登记不落，本区是唯一双语面。文字一律 textContent
+// （XSS 面）；调用只走 api.js；无绑定世界（404）= 整区隐藏，不是
+// 一只空收件箱。挂点 = #messages 之后（对话流底部，DEC-…66）：发信
+// 后用户视点在底部，新便条随回信落地在自然视点处出现。
+let uiLanguage = "zh";
+
+const WORLD_INBOX_TEXT = {
+  zh: {
+    head: "世界收件箱",
+    empty: "世界还什么都没留下——回一封信，世界就会动。",
+    cont: "继续",
+    fail: "世界没能继续——稍后再试。",
+    fallback: "（这张便条写在世界学会中文之前——示以原文。）",
+    runHead: (n) => "第 " + n + " 封信后的世界",
+  },
+  en: {
+    head: "World inbox",
+    empty: "The world hasn't left anything here yet — reply to a letter and it moves.",
+    cont: "Continue",
+    fail: "The world couldn't continue — try again later.",
+    fallback: "(This note predates the world's Chinese — shown as written.)",
+    runHead: (n) => "After letter " + n,
+  },
+};
+
+function worldInboxText() {
+  return WORLD_INBOX_TEXT[uiLanguage] || WORLD_INBOX_TEXT.zh;
+}
+
 const worldInboxSec = document.createElement("section");
 worldInboxSec.className = "sec world-inbox";
 worldInboxSec.hidden = true;
 const worldInboxHead = document.createElement("h3");
-worldInboxHead.textContent = "世界收件箱";
+worldInboxHead.textContent = worldInboxText().head;
 worldInboxSec.appendChild(worldInboxHead);
 const worldInboxBoard = document.createElement("div");
 worldInboxBoard.appendChild((() => {
@@ -2845,8 +2982,25 @@ worldInboxBoard.appendChild((() => {
 })());
 worldInboxSec.appendChild(worldInboxBoard);
 const parlorFlow = document.querySelector("#space-parlor main.flow");
+const parlorMessages = parlorFlow
+  ? parlorFlow.querySelector("#messages")
+  : null;
 if (parlorFlow) {
-  parlorFlow.insertBefore(worldInboxSec, parlorFlow.querySelector("#messages"));
+  // DEC-…66（W-L 增补）：底部挂点——#messages 之后；无 #messages 的
+  // 异常壳才退回流尾兜底。
+  if (parlorMessages) {
+    parlorMessages.insertAdjacentElement("afterend", worldInboxSec);
+  } else {
+    parlorFlow.appendChild(worldInboxSec);
+  }
+}
+
+// 便条的运转号：事件 id 形如 run-<token>-<seed>:<cursor>:reveal——seed
+// 段（最后一枚连字号后的数字）即分组键，第 N 封信 = seed + 1。解析不
+// 出的 id 不造组（诚实：没有运转号的便条不加标题）。
+function worldRunNumberOf(itemId) {
+  const m = /^run-.*-(\d+):\d+/.exec(String(itemId ?? ""));
+  return m ? parseInt(m[1], 10) + 1 : null;
 }
 
 function worldNoteCard(note) {
@@ -2856,6 +3010,14 @@ function worldNoteCard(note) {
   body.className = "world-note-body";
   body.textContent = String(note.narration ?? "");
   card.appendChild(body);
+  if (note.fallback) {
+    // W-L 诚实标注（服务端 fallback:true——中文叙述缺席、示以英文）：
+    // 一行小字说明，从不把英文伪装成中文。
+    const fb = document.createElement("p");
+    fb.className = "note world-note-fallback";
+    fb.textContent = worldInboxText().fallback;
+    card.appendChild(fb);
+  }
   const meta = document.createElement("p");
   meta.className = "note";
   meta.textContent = (note.actor_name || "世界") + " · " +
@@ -2867,14 +3029,27 @@ function worldNoteCard(note) {
 function renderWorldInbox(data) {
   worldInboxSec.hidden = false;
   worldInboxBoard.textContent = "";
+  const T = worldInboxText();
+  worldInboxHead.textContent = T.head;
   const notes = data.items || [];
   if (!notes.length) {
     const none = document.createElement("p");
     none.className = "note";
-    none.textContent = "世界还什么都没留下——回一封信，世界就会动。";
+    none.textContent = T.empty;
     worldInboxBoard.appendChild(none);
   }
+  // 按运转分组：seed 段变化处插一枚组题（「第 N 封信后的世界」）——
+  // 便条序不重排，组题只随组键换行而生。
+  let currentRun = null;
   for (const note of notes) {
+    const runNo = worldRunNumberOf(note.id);
+    if (runNo !== null && runNo !== currentRun) {
+      currentRun = runNo;
+      const head = document.createElement("p");
+      head.className = "world-run-head";
+      head.textContent = T.runHead(runNo);
+      worldInboxBoard.appendChild(head);
+    }
     worldInboxBoard.appendChild(worldNoteCard(note));
   }
   const actions = document.createElement("p");
@@ -2882,7 +3057,7 @@ function renderWorldInbox(data) {
   const cont = document.createElement("button");
   cont.type = "button";
   cont.className = "btn btn--faint";
-  cont.textContent = "继续";
+  cont.textContent = T.cont;
   cont.disabled = !data.at_checkpoint;
   cont.addEventListener("click", async () => {
     cont.disabled = true;
@@ -2906,7 +3081,7 @@ function renderWorldInbox(data) {
       said.textContent =
         (fresh && typeof fresh.error === "string" && fresh.error) ||
         (why && why.message) ||
-        "世界没能继续——稍后再试。";
+        T.fail;
       worldInboxBoard.appendChild(said);
       loadWorldInbox();
     }
@@ -2915,7 +3090,11 @@ function renderWorldInbox(data) {
   worldInboxBoard.appendChild(actions);
 }
 
-async function loadWorldInbox() {
+// 收件箱现宽（上次渲染的便条数；DEC-…66 的滚动判断用它——只在增长时
+// 滚，不抢用户正在输入时的焦点，仅滚动）。
+let worldInboxCount = 0;
+
+async function loadWorldInbox(opts) {
   let data = null;
   try {
     data = await fetchWorldInbox();
@@ -2925,9 +3104,17 @@ async function loadWorldInbox() {
   if (!data || !Array.isArray(data.items)) {
     // 无绑定世界（404 人话）或读失败：整区隐藏——不是空收件箱。
     worldInboxSec.hidden = true;
+    worldInboxCount = 0;
     return;
   }
+  const grew = (data.items.length || 0) > worldInboxCount;
+  worldInboxCount = data.items.length || 0;
   renderWorldInbox(data);
+  if (opts && opts.revealNew && grew) {
+    // DEC-…66 配套：新便条滚动进入视点（平滑、nearest——只滚动，
+    // 不动焦点）。
+    worldInboxSec.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
 }
 
 // ── v2-2: 信档屏（8.2.11 结构重铸件）——以前的信的专门面────────────
@@ -3599,7 +3786,9 @@ async function postTurn(text) {
     // W-1-3R：这封信是世界的一轮发条（turn 落定 ⇒ 世界已步进、便条
     // 可能已在等）——收件箱重读一次。揭示就是「读」这个动作本身
     // （spec §4.1 的呈现半）；不读，页面就永远不知道世界动过。
-    loadWorldInbox();
+    // DEC-…66：revealNew —— 新便条到达时滚入视点（底部挂点的自然
+    // 视点；只滚动，不动焦点）。
+    loadWorldInbox({ revealNew: true });
   }
 }
 

@@ -694,18 +694,25 @@ def _page_source() -> str:
 
 def test_the_page_carries_the_world_inbox_instrument() -> None:
     """The inbox region, as strings the browser actually runs: the
-    region mounts into the parlor flow, the notes render through
-    textContent (the XSS face — the family pin re-asserted on the new
-    region's own code paths), the continue button is data-driven
-    (``disabled = !data.at_checkpoint`` — the world's state enables it,
-    never a guess), and a no-binding answer hides the whole region
-    (not an empty inbox)."""
+    region mounts into the parlor flow (W-L 增补 DEC-…66: at the
+    **bottom** of the conversation flow — ``#messages`` afterend; the
+    pre-W-L top mount word ``insertBefore(worldInboxSec`` is retired),
+    the notes render through textContent (the XSS face — the family pin
+    re-asserted on the new region's own code paths), the continue button
+    is data-driven (``disabled = !data.at_checkpoint`` — the world's
+    state enables it, never a guess), and a no-binding answer hides the
+    whole region (not an empty inbox)."""
 
     app = (REPO_ROOT / "src" / "elc" / "webui" / "app.js").read_text(
         encoding="utf-8"
     )
     assert "世界收件箱" in app
-    assert 'insertBefore(worldInboxSec' in app
+    # The bottom mount (DEC-…66): the section lands after #messages —
+    # the user's viewpoint after sending is the bottom, and new notes
+    # appear where the eyes already are. The retired top-mount word must
+    # not come back.
+    assert 'insertAdjacentElement("afterend", worldInboxSec)' in app
+    assert "insertBefore(worldInboxSec" not in app
     assert "disabled = !data.at_checkpoint" in app
     assert "Array.isArray(data.items)" in app
     # The XSS face, family re-assertion: the page's text paths stay inert.
@@ -717,10 +724,12 @@ def test_the_page_carries_the_world_inbox_instrument() -> None:
 def test_the_letter_refreshes_the_inbox_and_continue_failures_speak() -> None:
     """W-1-3R (the live defect the user caught): a turn's landing rereads
     the inbox — the letter wound the world, and the page that never
-    rereads renders a stepping world as 「完全没有任何效果」. The
-    continue button's failure arm speaks the server's human sentence
-    (the 400 body's ``error`` word — postJson returns the body, never
-    a throw), the LOW-1 gap this same touch closes."""
+    rereads renders a stepping world as 「完全没有任何效果」. W-L 增补
+    DEC-…66: the turn's reread rides ``{ revealNew: true }`` — new notes
+    scroll into view (the bottom mount's natural viewpoint; scroll only,
+    never focus). The continue button's failure arm speaks the server's
+    human sentence (the 400 body's ``error`` word — postJson returns the
+    body, never a throw), the LOW-1 gap this same touch closes."""
 
     app = (REPO_ROOT / "src" / "elc" / "webui" / "app.js").read_text(
         encoding="utf-8"
@@ -730,7 +739,7 @@ def test_the_letter_refreshes_the_inbox_and_continue_failures_speak() -> None:
     turn_block = app[app.find("async function postTurn") : app.find(
         "async function postTeachMe"
     )]
-    assert "loadWorldInbox();" in turn_block
+    assert "loadWorldInbox({ revealNew: true });" in turn_block
     # The continue failure arm surfaces the server sentence.
     assert 'typeof fresh.error === "string"' in app
     assert "世界没能继续" in app

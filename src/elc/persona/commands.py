@@ -231,7 +231,7 @@ the condition that re-opens it):**
 from __future__ import annotations
 
 import json
-from typing import Protocol, runtime_checkable
+from typing import Mapping, Protocol, runtime_checkable
 
 from elc.persona.types import (
     CharacterPackageRecord,
@@ -493,19 +493,52 @@ class PersonaCommands(Protocol):
         ...
 
 
-#: The fixed trusted [response] section (W-8; cs-0 reworded the second
-#: row): the system's own response stance, zero interpolation,
-#: byte-deterministic. cs-0 removed the mechanism word from the second row
-#: while keeping its semantics verbatim — an expression the letter uses as
-#: an expression stays in English, exactly as given.
-RESPONSE_SECTION = (
-    "[response]\n"
+#: The ``[response]`` section's language row, per reply-language word
+#: (W-L). ``follow`` is the pre-W-L sentence **verbatim** — the default
+#: keeps every compiled prompt byte-identical to what it always was;
+#: ``zh`` / ``en`` name the reply language outright. The
+#: ``english expressions`` row is deliberately NOT keyed by the word: an
+#: expression the letter uses as an expression stays in English exactly
+#: as given in all three states (the row is about the letter's craft,
+#: not about the reply language).
+RESPONSE_LANGUAGE_FOLLOW_LINE = (
     "language: follow the user — reply in the language the user writes in"
-    " (simplified Chinese by default)\n"
-    "english expressions: keep an expression itself in English,"
-    " exactly as given\n"
-    "format: plain prose, no markdown markers (**, *, #, `, _)"
+    " (simplified Chinese by default)"
 )
+RESPONSE_LANGUAGE_LINE_BY_WORD: Mapping[str, str] = {
+    "zh": "language: reply in simplified Chinese",
+    "en": "language: reply in English",
+    "follow": RESPONSE_LANGUAGE_FOLLOW_LINE,
+}
+
+
+def _response_section(response_language: str) -> str:
+    """The fixed trusted ``[response]`` section for one reply-language
+    word (W-L; cs-0 reworded the follow row). The system's own response
+    stance, zero interpolation, byte-deterministic: the same word always
+    yields the same bytes. The vocabulary is
+    :attr:`elc.persona.types.RESPONSE_LANGUAGE_WORDS`; a word outside it
+    is a :class:`KeyError` here — unreachable through the public path
+    (the request type validates at construction) and a loud crash, not a
+    guessed section, if a private caller ever bypasses it. cs-0 removed
+    the mechanism word from the second row while keeping its semantics
+    verbatim — an expression the letter uses as an expression stays in
+    English, exactly as given."""
+
+    line = RESPONSE_LANGUAGE_LINE_BY_WORD[response_language]
+    return (
+        "[response]\n"
+        f"{line}\n"
+        "english expressions: keep an expression itself in English,"
+        " exactly as given\n"
+        "format: plain prose, no markdown markers (**, *, #, `, _)"
+    )
+
+
+#: The follow-state section, byte-identical to its pre-W-L constant —
+#: the name every existing pin imports stays alive, and the follow
+#: prompt's bytes never moved.
+RESPONSE_SECTION = _response_section("follow")
 
 #: cs-0: the action word the compiled ``[contract]`` renders for every
 #: non-ordinary action. The runtime's own action vocabulary
@@ -708,7 +741,7 @@ class PromptCompiler:
             )
 
         sections.append(f"[channel]\n{request.interaction_channel.value}")
-        sections.append(RESPONSE_SECTION)
+        sections.append(_response_section(request.response_language))
         prompt_text = "\n\n".join(sections)
         return Ok(
             CompiledPrompt(

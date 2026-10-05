@@ -398,6 +398,7 @@ from elc.persona.penpal import (
     PENPAL_PERSONA_ID,
 )
 from elc.persona.provider import PersonaProvider
+from elc.persona.types import RESPONSE_LANGUAGE_WORDS
 from elc.planner.trace_document import decode_factor_trace
 from elc.platform.db.app_settings import (
     APP_SETTING_PROVIDER_ACTIVE_PROFILE_KEY,
@@ -405,7 +406,9 @@ from elc.platform.db.app_settings import (
     APP_SETTING_PROVIDER_BASE_URL_KEY,
     APP_SETTING_PROVIDER_MODEL_KEY,
     APP_SETTING_PROVIDER_PROFILE_PREFIX,
+    APP_SETTING_REPLY_LANGUAGE_KEY,
     APP_SETTING_ROLLOUT_STAGE_KEY,
+    APP_SETTING_UI_LANGUAGE_KEY,
 )
 from elc.platform.types import (
     ClientMessageId,
@@ -2129,6 +2132,43 @@ def _mode_request_word(payload: Any) -> str | None:
     return word
 
 
+#: The W-L language settings' whitelists. The reply language's words are
+#: the compiler's own vocabulary (``elc.persona.types``), imported — one
+#: vocabulary, two doors, so a word the page can write is always a word
+#: the request type accepts. The interface language is the page's own
+#: presentation word, declared here (full-page i18n is registered out of
+#: scope; this word moves the world inbox's bilingual face).
+_UI_LANGUAGE_WORDS: tuple[str, ...] = ("zh", "en")
+
+#: The two writes' 400 sentences — one grammar line each, naming the words.
+_UI_LANGUAGE_GRAMMAR = (
+    'need a JSON body {"ui_language": ' + " | ".join(_UI_LANGUAGE_WORDS) + "}"
+)
+_REPLY_LANGUAGE_GRAMMAR = (
+    'need a JSON body {"reply_language": '
+    + " | ".join(RESPONSE_LANGUAGE_WORDS)
+    + "}"
+)
+
+
+def _language_request_word(
+    payload: Any, key: str, words: tuple[str, ...]
+) -> str | None:
+    """A language write's body, parsed and fail-closed (the mode write's
+    law restated, keyed): the one-key shape ``{key: word}`` with the word
+    inside the whitelist (case-sensitive), or ``None`` — an absent or
+    malformed body is a refusal, never a guessed language."""
+
+    if not isinstance(payload, dict):
+        return None
+    if set(payload) != {key}:
+        return None
+    word = payload[key]
+    if not isinstance(word, str) or word not in words:
+        return None
+    return word
+
+
 def _provider_request_pair(
     payload: Any,
 ) -> tuple[str | None, str | None, str | None, str | None]:
@@ -3160,8 +3200,25 @@ class _WebFace:
         world's own narration), the world's ``at_checkpoint`` bit (the
         latest run's own state), and the bound conversation's recent
         letters (the history face's own read, an explicit small slice —
-        reuse, never a second transcript implementation)."""
+        reuse, never a second transcript implementation).
 
+        W-L: the payload carries the interface language it rendered in
+        (the ``ui_language`` setting's row, default ``zh``), and each
+        item's narration follows it — ``zh`` renders the package's own
+        Chinese prose for the event's kind
+        (:meth:`elc.world.package.WorldPackage.narration_zh_for`); when
+        the Chinese side does not exist (a v1-era durable event whose
+        kind the v2 package never carried, a package that failed to
+        load, an unknown kind) the item falls back to the English row
+        and says so with ``fallback: true`` — an honest English note,
+        never a fabricated Chinese one. ``en`` renders the English rows
+        with ``fallback: false`` (that is the primary language, not a
+        fallback)."""
+
+        ui_language = (
+            self._host.app_settings.get(APP_SETTING_UI_LANGUAGE_KEY) or "zh"
+        )
+        package = self._world_packages.get(world_id)
         rows = self._host.db.execute(
             "SELECT e.event_id, e.narration, e.kind, e.occurred_at"
             " FROM world_event e WHERE e.world_id = ?",
@@ -3172,14 +3229,35 @@ class _WebFace:
         notes: list[dict[str, Any]] = []
         for item in items:
             event = by_id.get(item.source_event_id)
+            english = "" if event is None else str(event[1])
+            kind = "" if event is None else str(event[2])
+            narration = english
+            fallback = False
+            if ui_language == "zh":
+                zh = (
+                    package.narration_zh_for(kind)
+                    if package is not None and kind
+                    else None
+                )
+                if zh:
+                    narration = zh
+                else:
+                    # The honest arm: a durable event the package cannot
+                    # render in Chinese (v1-era history, a failed package
+                    # load, a kind the pool never carried) renders its
+                    # English row and marks itself — the page may show a
+                    # quiet language note, never a guess.
+                    narration = english
+                    fallback = True
             notes.append(
                 {
                     "id": item.item_id,
-                    "narration": "" if event is None else str(event[1]),
+                    "narration": narration,
                     "actor_name": actor_names.get(item.actor_id),
-                    "moment": "" if event is None else str(event[2]),
+                    "moment": kind,
                     "occurred_at": "" if event is None else str(event[3]),
                     "status": item.status,
+                    "fallback": fallback,
                 }
             )
         latest = self._host.db.execute(
@@ -3190,6 +3268,7 @@ class _WebFace:
         recent = self.history(limit=5)
         return {
             "world_id": world_id,
+            "language": ui_language,
             "items": notes,
             "letters": recent.get("turns", []),
             "at_checkpoint": bool(
@@ -4310,7 +4389,12 @@ class _WebFace:
         ``available: false`` with the stage still riding (the stage is the
         host's, not the user-config leg's) and both rows
         honestly ``null``. An unreadable row is a server fact (the route's
-        500 posture).
+        500 posture). W-L: the payload also carries the two language
+        words — ``ui_language`` (default ``zh``) and ``reply_language``
+        (default ``follow``), the stored row or the default, never a row
+        written by a read — plus the two whitelists, server-declared like
+        every vocabulary the editors consume (the page copies no word
+        list).
         """
 
         stage = self._effective_stage()
@@ -4320,6 +4404,14 @@ class _WebFace:
         disclosure_levels = [level.value for level in DisclosureLevel]
         mode_words = list(_MODE_WORDS)
         provider = self._provider_face_with_profiles()
+        # W-L: the two language words — the stored row, or the default
+        # when nothing is chosen yet (an absent row answers the default
+        # and writes nothing; the read substitutes, the store never
+        # does). The whitelists ride so the page copies no word list.
+        ui_language = self._host.app_settings.get(APP_SETTING_UI_LANGUAGE_KEY)
+        reply_language = self._host.app_settings.get(
+            APP_SETTING_REPLY_LANGUAGE_KEY
+        )
         if controller is None or self._host.user_id is None:
             return {
                 "available": False,
@@ -4331,6 +4423,10 @@ class _WebFace:
                 "disclosure_levels": disclosure_levels,
                 "mode_words": mode_words,
                 "writable_knobs": list(_SETTINGS_KNOBS),
+                "ui_language": ui_language or "zh",
+                "reply_language": reply_language or "follow",
+                "ui_language_words": list(_UI_LANGUAGE_WORDS),
+                "reply_language_words": list(RESPONSE_LANGUAGE_WORDS),
             }
         user_id = self._host.user_id
         policy = controller.get_teaching_policy(user_id)
@@ -4374,6 +4470,10 @@ class _WebFace:
             "disclosure_levels": disclosure_levels,
             "mode_words": mode_words,
             "writable_knobs": list(_SETTINGS_KNOBS),
+            "ui_language": ui_language or "zh",
+            "reply_language": reply_language or "follow",
+            "ui_language_words": list(_UI_LANGUAGE_WORDS),
+            "reply_language_words": list(RESPONSE_LANGUAGE_WORDS),
         }
 
     def _provider_face_with_profiles(
@@ -4710,6 +4810,65 @@ class _WebFace:
                 "error": None,
             },
         )
+
+    def _language_word_save(
+        self, key: str, word: str
+    ) -> tuple[int, dict[str, Any]]:
+        """The shared half of the two language writes (W-L): persist one
+        whitelisted word under its ``app_setting`` key, idempotently.
+
+        The grammar was validated at the HTTP layer and re-checked here
+        against the same tuple — a word outside it cannot reach this
+        store (the mode write's fail-closed re-derivation, restated).
+        One upsert; an unchanged word answers ``idempotent`` and writes
+        nothing. The very next reader sees the new word: the
+        coordinator's reply-language port reads the row per turn (no
+        reassembly), and the inbox read answers the ui-language row per
+        request — a hot change like the provider pair's, with nothing to
+        swap because the readers are per-turn reads, not held objects.
+        """
+
+        current = self._host.app_settings.get(key)
+        if current == word:
+            return (
+                200,
+                {"accepted": True, "idempotent": True, "error": None},
+            )
+        self._host.app_settings.set(key, word)
+        return (
+            200,
+            {"accepted": True, "idempotent": False, "error": None},
+        )
+
+    def ui_language_save(self, word: str) -> tuple[int, dict[str, Any]]:
+        """The interface-language write (W-L): ``zh`` / ``en`` — the page's
+        own presentation word (today: the world inbox's bilingual face;
+        full-page i18n is registered out of scope). The inbox payload
+        reads this row per request, so the next
+        ``GET /api/world/inbox`` renders in the new language."""
+
+        if word not in _UI_LANGUAGE_WORDS:
+            return (400, {"accepted": False, "error": _UI_LANGUAGE_GRAMMAR})
+        status, body = self._language_word_save(
+            APP_SETTING_UI_LANGUAGE_KEY, word
+        )
+        body["ui_language"] = word
+        return status, body
+
+    def reply_language_save(self, word: str) -> tuple[int, dict[str, Any]]:
+        """The reply-language write (W-L): ``zh`` / ``en`` / ``follow`` —
+        the ``[response]`` section's language-row word. The coordinator's
+        best-effort port reads this row on the very next compilation (no
+        reassembly), so the next letter answers in the chosen language;
+        ``follow`` restores the pre-W-L stance."""
+
+        if word not in RESPONSE_LANGUAGE_WORDS:
+            return (400, {"accepted": False, "error": _REPLY_LANGUAGE_GRAMMAR})
+        status, body = self._language_word_save(
+            APP_SETTING_REPLY_LANGUAGE_KEY, word
+        )
+        body["reply_language"] = word
+        return status, body
 
     def provider_save(
         self,
@@ -5719,6 +5878,42 @@ def _build_server(
                     self._send_json(400, {"error": _MODE_GRAMMAR})
                     return
                 self._run_host_write(lambda: face.mode_save(stage_word))
+                return
+            if self.path == "/api/settings/ui_language":
+                # W-L: the interface language — one whitelisted word
+                # (``zh`` / ``en``), persisted; the next inbox read
+                # renders in it (the face re-reads the row per request).
+                # (The variable is not the frequency route's ``word``: a
+                # second same-name assignment in this function would make
+                # mypy widen both lambdas' captured types — the mode
+                # route's own note.)
+                ui_word = _language_request_word(
+                    self._read_json_body(),
+                    "ui_language",
+                    _UI_LANGUAGE_WORDS,
+                )
+                if ui_word is None:
+                    self._send_json(400, {"error": _UI_LANGUAGE_GRAMMAR})
+                    return
+                self._run_host_write(lambda: face.ui_language_save(ui_word))
+                return
+            if self.path == "/api/settings/reply_language":
+                # W-L: the reply language — one whitelisted word
+                # (``zh`` / ``en`` / ``follow``, the compiler's own
+                # vocabulary), persisted; the next letter's prompt
+                # carries its language row (the coordinator's port
+                # re-reads the row per turn, no reassembly).
+                reply_word = _language_request_word(
+                    self._read_json_body(),
+                    "reply_language",
+                    RESPONSE_LANGUAGE_WORDS,
+                )
+                if reply_word is None:
+                    self._send_json(400, {"error": _REPLY_LANGUAGE_GRAMMAR})
+                    return
+                self._run_host_write(
+                    lambda: face.reply_language_save(reply_word)
+                )
                 return
             if self.path == "/api/settings/provider":
                 # The provider face (user veto: endpoint/model are
