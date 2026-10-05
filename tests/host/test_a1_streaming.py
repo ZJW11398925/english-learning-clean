@@ -766,7 +766,17 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     assert "loadWorldInbox" not in started_arm
     assert "fetchTurn(" not in started_arm
     assert postturn.index("fetchTurnStream(") < postturn.index("fetchTurn(")
-    assert postturn.count("await fetchTurn(text)") >= 2  # both fallback paths
+    # A2R (user report「信件内容重复打了两遍」加固): the null arm —
+    # fetchTurnStream answered null (non-2xx / no body), where the
+    # letter MAY already be committed server-side — never re-POSTs;
+    # it reconciles with history instead. Only the catch's
+    # not-started arm (fetch itself threw: the letter never left)
+    # keeps the plain fallback. One fetchTurn call site remains.
+    assert postturn.count("await fetchTurn(text)") == 1
+    null_arm = postturn[postturn.index("if (data === null)"):]
+    null_arm = null_arm[: null_arm.index("} else {")]
+    assert "fetchTurn(" not in null_arm
+    assert "loadHistory()" in null_arm
     # The finalize block survived underneath the stream attempt.
     assert "applyLetterAffordance(mine, data.user_word_hits || null);" in postturn
     assert "showMoments(moments);" in postturn

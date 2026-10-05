@@ -3818,9 +3818,19 @@ async function postTurn(text) {
       (event) => renderWorldStory(event)
     );
     if (data === null) {
-      // 回退臂（对端非 SSE）：没有 delta 也没有故事块，权威全文
-      // 走旧路——seal 一口排空（缓冲本来就空）。
-      data = await fetchTurn(text);
+      // 回退臂（A2R 加固：流面永不重发信）。fetchTurnStream 答 null
+      // = 非 2xx 或无 body——此刻**无法排除对端已把信落库**（旧服务
+      // 器的 404 是安全形，但 5xx/中断后的非 SSE 形不是）：重发一次
+      // POST 会把同一封信寄两遍（「信件内容重复打了两遍」的候选路
+      // 径）。对齐事实而不是赌它没寄——拉历史对齐：信若已落库，权
+      // 威行由历史补上；真没寄到，错误行说人话请再写一封。
+      try {
+        await loadHistory();
+        addLine("failure", "这封信的去向没能确认——已按库里的事实对齐；若没有回音，请再写一封。");
+      } catch {
+        addLine("failure", "请求没送到——再试一次。");
+      }
+      return;
     } else {
       // final 到手：权威全文的未显余量补进缓冲，排空后才 finalize。
       await typing.seal(typeof data.reply === "string" ? data.reply : "");
@@ -3833,6 +3843,8 @@ async function postTurn(text) {
       addLine("failure", "流式中断了——把已经落库的信拉回来对齐。");
       try { await loadHistory(); } catch { /* 历史读不回，留着错误行 */ }
     } else {
+      // 未开始的失败（fetch 本身抛——对端不可达）：此刻信未上链，
+      // 重走旧 POST 是安全的（唯一无「已落库」歧义的臂）。
       try {
         data = await fetchTurn(text);
       } catch {
