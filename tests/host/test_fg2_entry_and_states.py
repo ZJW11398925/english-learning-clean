@@ -126,7 +126,11 @@ def test_the_brand_bar_graces_both_screens(tmp_path: Path) -> None:
     assert "英语客厅" not in index
     app = _webui_text("app.js")
     assert "installBrandMarks();" in app
-    assert app.index("installBrandMarks();") < app.index("loadHistory();")
+    # A1 随迁（位序钉精确化，钉意不变「品牌印记先于启动首取」）：
+    # postTurn 现在也有一次 loadHistory（流中断后拉历史对齐）——钉改读
+    # installBrandMarks 之后的**启动块**首现，不再认文件序首现。
+    marks_at = app.index("installBrandMarks();")
+    assert marks_at < app.index("loadHistory();", marks_at)
     screens = _webui_text("screens.css")
     assert (
         "border-top: 1px solid var(--rule);\n"

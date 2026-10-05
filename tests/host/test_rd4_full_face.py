@@ -32,6 +32,7 @@ one endpoint cs-2 adds is ``/api/partner``, by design).
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from tests.host.test_fg1_architecture import FILES
@@ -191,7 +192,10 @@ def test_the_red_pencil_circle_is_one_static_mark(tmp_path: Path) -> None:
     assert "border: 2px solid var(--seal);" in css
     assert "border-radius: 50%; transform: rotate(-2.5deg);" in css
     # the mark rides pure geometry: no data URI anywhere on the face
-    assert "data:" not in css.split("SHELL_ASSETS")[0]
+    # （A1 随迁：钉读法精确化——「data: 」+空格是 SSE 帧前缀（api.js 的
+    # fetchTurnStream 合法需要），不是 data URI；钉改扫 URI 文法形
+    # `data:` 后非空白（image/,base64/,裸逗号等），对真资源面更强。）
+    assert re.search(r"data:(?![ \t\r\n])", css) is None
     # keyframes: the v2 five registered set + paper-fold 沓收拢 /
     # page-turn 2D 翻页 + scrim-in（from-only 遮罩——v22 黑屏修复刀）。
     # v3-2 随迁 10→8：mc-2 zoom 对枚（2 枚）随编辑台容器化退役（同刀

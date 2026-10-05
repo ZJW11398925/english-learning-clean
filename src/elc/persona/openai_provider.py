@@ -21,9 +21,11 @@ contract the Phase 1 scripted provider keeps. Three properties are deliberate:
   *does* carry the key back is refused as a ``key-echo`` value — so no reply
   this adapter answers with can carry the key into the transcript or the durable
   delivery record (RA §24.3's durable shapes);
-- one egress point — :func:`_urllib_post` is the whole of this process's
-  network surface (standard library only; ``dependencies = []`` untouched) and
-  it is injectable, which is what makes this repository's tests offline.
+- one egress *module* — :func:`_urllib_post` (the buffered reply) and
+  :func:`_urllib_stream_post` (the streamed reply's line source, A1) are the
+  whole of this process's network surface (standard library only;
+  ``dependencies = []`` untouched), both built on the same opener and both
+  injectable, which is what makes this repository's tests offline.
 
 Three destinations this adapter refuses to travel to (external review
 EXT-P1-01/02/05), each a value rather than a raise:
@@ -62,7 +64,7 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from email.message import Message
-from typing import IO, Mapping, Protocol
+from typing import IO, Callable, Iterator, Mapping, Protocol
 
 from elc.persona.types import CompiledPrompt, ProviderOutput, ProviderUsage
 from elc.platform.secrets import SecretSource
@@ -71,6 +73,7 @@ from elc.platform.types import SecretRef
 __all__ = [
     "MAX_PROVIDER_RESPONSE_BYTES",
     "HttpPost",
+    "HttpStreamPost",
     "OpenAICompatibleConfig",
     "OpenAICompatibleProvider",
     "REASON_BAD_JSON",
@@ -189,6 +192,27 @@ class HttpPost(Protocol):
     ) -> tuple[int, bytes]: ...
 
 
+class HttpStreamPost(Protocol):
+    """One HTTP POST → ``(status, line iterator)`` for a streamed reply (A1).
+
+    The iterator yields the reply body **line by line** — parsing the SSE
+    framing is the adapter's job, not the transport's. Raising is the
+    transport's way of saying "no answer at all", and it may raise
+    *mid-iteration* too: a stream that dies halfway is a transport failure
+    like any other, answered as the ``timeout`` / ``transport-error``
+    values. A non-2xx status is answered as ``(status, empty iterator)``:
+    the error body is deliberately not read, so a rejected request's text
+    never becomes a string in this process. The default is
+    :func:`_urllib_stream_post` (the buffered transport's opener, hence the
+    same redirect refusal and header split); tests inject a scripted line
+    iterator.
+    """
+
+    def __call__(
+        self, url: str, headers: Mapping[str, str], body: bytes, timeout: float
+    ) -> tuple[int, Iterator[bytes]]: ...
+
+
 @dataclass(frozen=True)
 class OpenAICompatibleConfig:
     """The §11 BYOK coordinates: baseURL + model + a secret **reference**.
@@ -231,10 +255,16 @@ class OpenAICompatibleProvider:
         config: OpenAICompatibleConfig,
         secrets: SecretSource,
         transport: HttpPost | None = None,
+        stream_transport: HttpStreamPost | None = None,
     ) -> None:
         self._config = config
         self._secrets = secrets
         self._post: HttpPost = transport if transport is not None else _urllib_post
+        self._stream: HttpStreamPost = (
+            stream_transport
+            if stream_transport is not None
+            else _urllib_stream_post
+        )
 
     @property
     def config(self) -> OpenAICompatibleConfig:
@@ -321,6 +351,129 @@ class OpenAICompatibleProvider:
             return ProviderOutput(text=None, error=REASON_KEY_ECHO)
         return output
 
+    def call_streaming(
+        self, prompt: CompiledPrompt, emit: Callable[[str], None]
+    ) -> ProviderOutput:
+        """The optional streamed face (A1): ``"stream": true``, increments
+        out as they arrive.
+
+        The prelude, the destination policy and the failure vocabulary are
+        :meth:`call`'s — the same refusals before the key is resolved, the
+        same values for everything the transport can report — and the reply
+        arrives as an SSE event stream instead of one JSON body. Every
+        ``choices[0].delta.content`` increment is handed to ``emit`` exactly
+        once, in arrival order — but never before the guard this adapter
+        owes RA §24.3: the increment is accumulated **first** and the
+        accumulated text is checked for the resolved key, so an echo split
+        across two chunks is caught on the chunk that completes it
+        (:data:`REASON_KEY_ECHO`) rather than released one increment
+        earlier. An increment ``emit`` has already received cannot be
+        recalled on a later failure — the caller owns what a partial stream
+        means; the returned value is still the honest whole: the
+        concatenated increments on success, ``text=None`` plus a reason on
+        every failure.
+
+        The read loop lives in this module over the injected
+        :class:`HttpStreamPost`; a stream that ends without a single
+        increment is the no-output success (``text=""``, no error) the
+        buffered face answers for empty content — a retry budget's input,
+        never a fabricated reply.
+        """
+
+        if not self._config.base_url or not self._config.model:
+            # The bare web start's honest refusal: no coordinates, no
+            # request, no secret access — the settings page fills the pair.
+            return ProviderOutput(text=None, error=REASON_NOT_CONFIGURED)
+        if not self._config.allow_insecure_http and insecure_http_destination(
+            self._config.base_url
+        ):
+            return ProviderOutput(text=None, error=REASON_CLEARTEXT_HTTP)
+        key = self._resolve_key()
+        if key is None:
+            return ProviderOutput(text=None, error=REASON_MISSING_SECRET)
+        headers = {
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+        }
+        try:
+            status, lines = self._stream(
+                self._config.endpoint(),
+                headers,
+                self._request_body(prompt, stream=True),
+                self._config.timeout_seconds,
+            )
+        except _ResponseTooLarge:
+            return ProviderOutput(text=None, error=REASON_RESPONSE_TOO_LARGE)
+        except TimeoutError:
+            return ProviderOutput(text=None, error=REASON_TIMEOUT)
+        except Exception:  # noqa: BLE001 — the transport boundary: values, not raises
+            return ProviderOutput(text=None, error=REASON_TRANSPORT_ERROR)
+        if not 200 <= int(status) < 300:
+            # The status word comes first, exactly as the buffered face
+            # reads it: the error body was never read (the streamed
+            # transport answers it as an empty iterator), so there is no
+            # second fact this value could carry.
+            return ProviderOutput(text=None, error=http_reason(status))
+
+        accumulated: list[str] = []
+        total = 0
+        try:
+            for raw in lines:
+                total += len(raw)
+                if total > MAX_PROVIDER_RESPONSE_BYTES:
+                    return ProviderOutput(
+                        text=None, error=REASON_RESPONSE_TOO_LARGE
+                    )
+                try:
+                    line = raw.decode("utf-8")
+                except UnicodeDecodeError:
+                    return ProviderOutput(text=None, error=REASON_BAD_JSON)
+                stripped = line.strip()
+                if not stripped.startswith("data:"):
+                    # SSE framing: blank separator lines, ``:`` comments,
+                    # ``event:``/``id:`` names — none of them increments.
+                    continue
+                payload = stripped[len("data:"):].strip()
+                if payload == "[DONE]":
+                    break
+                try:
+                    document = json.loads(payload)
+                except ValueError:
+                    return ProviderOutput(text=None, error=REASON_BAD_JSON)
+                if not isinstance(document, dict):
+                    return ProviderOutput(text=None, error=REASON_BAD_SHAPE)
+                choices = document.get("choices")
+                if not isinstance(choices, list) or not choices:
+                    return ProviderOutput(text=None, error=REASON_BAD_SHAPE)
+                first = choices[0]
+                if not isinstance(first, dict):
+                    return ProviderOutput(text=None, error=REASON_BAD_SHAPE)
+                delta = first.get("delta")
+                content = (
+                    delta.get("content") if isinstance(delta, dict) else None
+                )
+                if content is None:
+                    # A chunk without an increment (the role-only first
+                    # chunk, an empty trailing one) — not a failure.
+                    continue
+                if not isinstance(content, str):
+                    return ProviderOutput(text=None, error=REASON_BAD_SHAPE)
+                if not content:
+                    continue
+                accumulated.append(content)
+                if key in "".join(accumulated):
+                    # Checked on the accumulated buffer *before* the emit:
+                    # the chunk that completes a split echo never leaves.
+                    return ProviderOutput(text=None, error=REASON_KEY_ECHO)
+                emit(content)
+        except TimeoutError:
+            return ProviderOutput(text=None, error=REASON_TIMEOUT)
+        except _ResponseTooLarge:
+            return ProviderOutput(text=None, error=REASON_RESPONSE_TOO_LARGE)
+        except Exception:  # noqa: BLE001 — the transport boundary: values, not raises
+            return ProviderOutput(text=None, error=REASON_TRANSPORT_ERROR)
+        return ProviderOutput(text="".join(accumulated), error=None)
+
     # -- internals -----------------------------------------------------------
 
     def _resolve_key(self) -> str | None:
@@ -330,8 +483,15 @@ class OpenAICompatibleProvider:
             return None
         return key if key else None
 
-    def _request_body(self, prompt: CompiledPrompt) -> bytes:
-        """§11's minimal body: one user message, no secret anywhere in it."""
+    def _request_body(
+        self, prompt: CompiledPrompt, *, stream: bool = False
+    ) -> bytes:
+        """§11's minimal body: one user message, no secret anywhere in it.
+
+        ``stream=True`` is the streamed face's one addition (A1) — the
+        ``"stream": true`` flag, appended last so the buffered body's bytes
+        stay exactly what they were.
+        """
 
         document: dict[str, object] = {
             "model": self._config.model,
@@ -339,6 +499,8 @@ class OpenAICompatibleProvider:
         }
         if self._config.temperature is not None:
             document["temperature"] = self._config.temperature
+        if stream:
+            document["stream"] = True
         return json.dumps(document).encode("utf-8")
 
 
@@ -510,3 +672,56 @@ def _urllib_post(
         if isinstance(exc.reason, TimeoutError):
             raise TimeoutError(REASON_TIMEOUT) from exc
         raise
+
+
+def _urllib_stream_post(
+    url: str, headers: Mapping[str, str], body: bytes, timeout: float
+) -> tuple[int, Iterator[bytes]]:
+    """The streamed half of the process's egress (A1's read-loop transport).
+
+    The request is built exactly as :func:`_urllib_post` builds it — the
+    same module opener (:func:`_opener`, whose handler refuses every
+    redirect, EXT-P1-01) and the same split headers (``Authorization``
+    unredirected) — so the streamed face refuses every destination the
+    buffered face refuses, for the same reasons. A non-2xx answer is
+    ``(status, empty iterator)``: the error body is deliberately **not
+    read**, so no response text of a rejected request becomes a string in
+    this process. A 2xx answer is handed over as a line iterator whose
+    total read is bounded by :data:`MAX_PROVIDER_RESPONSE_BYTES` — past it
+    :class:`_ResponseTooLarge` rises (EXT-P1-05's streamed half: the
+    ceiling is on the whole stream, not one line) — and the response is
+    closed when the iterator is exhausted or abandoned. A timeout reported
+    through ``URLError.reason`` is normalized to ``TimeoutError`` so the
+    adapter's ``timeout`` reason means the same thing on both faces.
+    """
+
+    request = urllib.request.Request(url, data=body, method="POST")
+    for name, value in headers.items():
+        if name.lower() == "authorization":
+            request.add_unredirected_header(name, value)
+        else:
+            request.add_header(name, value)
+    try:
+        response = _opener().open(request, timeout=timeout)
+    except urllib.error.HTTPError as exc:
+        return int(exc.code), iter(())
+    except urllib.error.URLError as exc:
+        if isinstance(exc.reason, TimeoutError):
+            raise TimeoutError(REASON_TIMEOUT) from exc
+        raise
+
+    def _lines() -> Iterator[bytes]:
+        total = 0
+        try:
+            while True:
+                line = response.readline()
+                if not line:
+                    return
+                total += len(line)
+                if total > MAX_PROVIDER_RESPONSE_BYTES:
+                    raise _ResponseTooLarge
+                yield line
+        finally:
+            response.close()
+
+    return int(response.status), _lines()

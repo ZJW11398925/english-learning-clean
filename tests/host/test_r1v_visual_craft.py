@@ -509,7 +509,10 @@ def test_the_marginalia_date_is_real_client_data() -> None:
     assert "dateSlot.textContent = today.getFullYear()" in app
     assert "installIcons();" in app
     # the brand-mark install order pin's neighborhood stays intact
-    assert app.index("installBrandMarks();") < app.index("loadHistory();")
+    # （A1 随迁：位序钉精确化——postTurn 现在也有一次 loadHistory（流
+    # 中断后拉历史对齐），钉改读 installBrandMarks 之后的启动块首现。）
+    marks_at = app.index("installBrandMarks();")
+    assert marks_at < app.index("loadHistory();", marks_at)
 
 
 # ---------------------------------------------------------------------------

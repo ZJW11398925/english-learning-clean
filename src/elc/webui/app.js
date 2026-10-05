@@ -52,6 +52,7 @@ import {
 } from "./components.js";
 import {
   fetchTurn,
+  fetchTurnStream,
   fetchTeachMe,
   fetchLearning,
   fetchTargets,
@@ -3660,7 +3661,9 @@ function closePartnerDossier() {
 
 // 触发与信封沓在文件尾的 mc-1 模块（接线顺序无关紧要——type="module"
 // 全模块求值完后 DOMContentLoaded 才发；放尾部是 fg2「品牌印记先于
-// 首次取数」位序钉的伴生事实：loadHistory 的首现保持在原位）。
+// 首次取数」位序钉的伴生事实。A1 随迁：postTurn 增了一次流中断后的
+// loadHistory（在文件更早处），两处位序钉（fg2/r1v）改读
+// installBrandMarks 之后的启动块首现——启动块的次序事实原样成立）。
 
 // 返回钮：档案页的唯一回途（导航条在本页让位）。
 document.getElementById("partner-back").addEventListener(
@@ -3748,12 +3751,36 @@ async function postTurn(text) {
   // rd-2：发送后状态行「信已寄出，等回信——」收尾（8.5 流式落点句随迁）
   const pending = addLine("typing", "信已寄出，等回信——笔友把灯留着。");
   startMomentPolling();
+  // A1 流面：先走 /api/turn_stream——delta 当场打进一封在写的回信
+  // （只走 textContent，XSS 纪律），final 落地即在 finally 摘掉在写信、
+  // 由下方 finalize 的权威回信行接管。对端没说 SSE（非 200 / 无流）=
+  // 立即失败形，回退旧 POST；流真开始后中断 = 信可能已落库——不重发，
+  // 一行人话 + 拉历史对齐。
   let data = null;
+  let draftLine = null;
+  let draftText = "";
   try {
-    data = await fetchTurn(text);
-  } catch {
-    addLine("failure", "请求没送到——再试一次。");
+    data = await fetchTurnStream(text, (chunk) => {
+      if (draftLine === null) {
+        draftLine = addLine("assistant", "");
+      }
+      draftText += chunk;
+      draftLine.textContent = draftText;
+    });
+    if (data === null) data = await fetchTurn(text);
+  } catch (err) {
+    if (err && err.started) {
+      addLine("failure", "流式中断了——把已经落库的信拉回来对齐。");
+      try { await loadHistory(); } catch { /* 历史读不回，留着错误行 */ }
+    } else {
+      try {
+        data = await fetchTurn(text);
+      } catch {
+        addLine("failure", "请求没送到——再试一次。");
+      }
+    }
   } finally {
+    if (draftLine !== null) draftLine.remove();
     stopMomentPolling();
     pending.remove();
     // 摘封：回信落地（或失败）即从在途信封回到撕口信纸——同一 DOM，

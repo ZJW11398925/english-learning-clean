@@ -39,6 +39,60 @@ export function fetchTurn(text) {
   return postJson("/api/turn", { text: text });
 }
 
+/** 流式一轮（A1）：POST /api/turn_stream——每个 delta 当场回调
+ *  onDelta(text)，流走完以 final 载荷（旧 /api/turn 的全量形状）兑现。
+ *  返回 null = 对端没按 SSE 回答（调用方回退旧 POST）；抛错 = 请求已经
+ *  开始后中断（err.started 区分：流真开始过才为 true——调用方对
+ *  started 的中断不重发信，拉历史对齐）。解析是防御性的：只认
+ *  「data: 」行，坏行/坏 JSON 一律跳过、解析本身永不抛。 */
+export async function fetchTurnStream(text, onDelta) {
+  let res;
+  try {
+    res = await fetch("/api/turn_stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: text }),
+    });
+  } catch (err) {
+    err.started = false;
+    throw err;
+  }
+  if (!res.ok || !res.body) return null;
+  const interrupted = new Error("流式回应中断了");
+  interrupted.started = true;
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let final = null;
+  try {
+    for (;;) {
+      const step = await reader.read();
+      if (step.value) buffer += decoder.decode(step.value, { stream: true });
+      let cut;
+      while ((cut = buffer.indexOf("\n\n")) >= 0) {
+        const frame = buffer.slice(0, cut);
+        buffer = buffer.slice(cut + 2);
+        const line = frame.split("\n")
+          .find((candidate) => candidate.startsWith("data: "));
+        if (!line) continue;
+        let event;
+        try { event = JSON.parse(line.slice(6)); } catch { continue; }
+        if (event && event.type === "delta"
+            && typeof event.text === "string") {
+          onDelta(event.text);
+        } else if (event && event.type === "final") {
+          final = event;
+        }
+      }
+      if (step.done) break;
+    }
+  } catch (err) {
+    throw interrupted;
+  }
+  if (final === null) throw interrupted;
+  return final;
+}
+
 /** 教学回应（五个控制词之一：skip / attempt / hint / reveal / explanation）。 */
 export function fetchTeachingReply(payload) {
   return postJson("/api/teaching_reply", payload);

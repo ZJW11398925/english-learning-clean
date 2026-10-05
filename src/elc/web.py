@@ -42,6 +42,18 @@ connections, never the work queue): the page's send-time poll gets the card
 in about a request's time instead of queueing behind the generation. Every
 other route keeps the one-thread rule unchanged.
 
+**The streamed turn (A1, DEC-…77).** ``POST /api/turn_stream`` answers
+``text/event-stream``: zero or more ``delta`` frames while the host thread
+runs the turn, then exactly one ``final`` frame carrying the very payload
+``/api/turn`` would have answered. The turn itself rides the same work
+queue as ever — the handler thread only drains the turn's queue into
+frames — and the deltas are the provider's own streamed increments,
+forwarded **live** as they are generated (each one key-echo-checked by the
+adapter before it is emitted). A provider without the optional streaming
+face runs the blocking turn unchanged (zero deltas, one final), the durable
+delivery keeps its default seam, and a disconnect stops the writing, never
+the turn.
+
 **The static face (F-G1).** The shell (``index.html``) and its six assets
 (three CSS sheets — ``tokens.css`` / ``components.css`` / ``screens.css`` —
 and three ES modules — ``api.js`` / ``components.js`` / ``app.js``) live in
@@ -359,6 +371,7 @@ import socket
 import sqlite3
 import sys
 import threading
+import time
 import uuid
 from datetime import UTC, datetime
 from functools import partial
@@ -398,7 +411,11 @@ from elc.persona.penpal import (
     PENPAL_PERSONA_ID,
 )
 from elc.persona.provider import PersonaProvider
-from elc.persona.types import RESPONSE_LANGUAGE_WORDS
+from elc.persona.types import (
+    RESPONSE_LANGUAGE_WORDS,
+    CompiledPrompt,
+    ProviderOutput,
+)
 from elc.planner.trace_document import decode_factor_trace
 from elc.platform.db.app_settings import (
     APP_SETTING_PROVIDER_ACTIVE_PROFILE_KEY,
@@ -2906,6 +2923,59 @@ def _commit(conversation_id: ConversationId, raw_content: str) -> CommitUserTurn
     )
 
 
+# ---------------------------------------------------------------------------
+# A1: the streamed turn's bridge (the live generation half lives here; the
+# SSE writing lives on the handler).
+# ---------------------------------------------------------------------------
+
+
+class _StreamingProviderProxy:
+    """One streamed turn's provider: ``call_streaming`` with its emit
+    wired straight to the turn's queue (DEC-…77: the live reading).
+
+    The live provider's optional streaming face runs the real request; every
+    increment goes to the page **as it arrives** — the guard this owes is
+    the adapter's own key-echo check, which runs on the accumulated buffer
+    *before* every emit, so nothing reaches the queue un-checked. The
+    buffered contract still holds on the return value, so the generation
+    pipeline keeps its exact retry and validation semantics; a turn whose
+    validation fails answers its failure shape as the final frame, and the
+    page's existing reconcile posture (the human line + a history pull)
+    owns what was already shown. Installed and removed inside one
+    work-queue job (:meth:`_WebFace.turn_stream`), so no other face — the
+    settings provider face included — ever observes it.
+    """
+
+    def __init__(self, real: PersonaProvider, bridge: "_TurnStreamBridge"):
+        self._real = real
+        self._bridge = bridge
+
+    def call(self, prompt: CompiledPrompt) -> ProviderOutput:
+        return self._real.call_streaming(  # type: ignore[attr-defined]
+            prompt, self._bridge.push
+        )
+
+
+class _TurnStreamBridge:
+    """One streamed turn's live delta channel (A1, DEC-…77).
+
+    The queue is the page's delta stream: the provider proxy pushes each
+    SSE increment as it arrives, and the request's handler thread drains
+    the queue into SSE delta frames while the host thread is still inside
+    the turn. The durable delivery is deliberately untouched — the seam
+    keeps its constructor default, so the §22 rows and the transcript of a
+    streamed turn are exactly a blocking turn's.
+    """
+
+    def __init__(self, events: "queue.Queue[str]") -> None:
+        self._events = events
+
+    def push(self, text: str) -> None:
+        """Hand one live increment to the page's delta stream."""
+
+        self._events.put(text)
+
+
 class _WebFace:
     """The route implementations — every one touches the host, so every one
     runs on the host's thread (see the module docstring and :func:`run_web`)."""
@@ -3036,6 +3106,40 @@ class _WebFace:
                 str(completion.turn_id)
             ),
         }
+
+    def turn_stream(
+        self, text: str, events: "queue.Queue[str]"
+    ) -> dict[str, Any]:
+        """One committed turn through the streamed bridge (A1, DEC-…77).
+
+        The payload contract is :meth:`turn`'s, byte for byte — the final
+        SSE event carries exactly what ``/api/turn`` would have answered,
+        world step included (it runs inside the turn, before this returns,
+        hence before the final is written). The stream half is a capability
+        probe: a provider without the optional ``call_streaming`` face
+        (every scripted test double among them) runs the blocking turn
+        unchanged and the endpoint answers zero deltas with its one final.
+        A provider that has the face gets it wrapped for this one turn with
+        its emit wired **straight to the turn's queue** — increments reach
+        the page as they are generated (each one key-echo-checked by the
+        adapter before it is emitted), the durable delivery keeps the
+        constructor-default seam, and the swap is restored in the
+        ``finally``, so a failure anywhere leaves the assembly exactly as
+        it was (the blocking shape, zero deltas, one final).
+        """
+
+        live = self._host.coordinator.persona_provider()
+        if not hasattr(live, "call_streaming"):
+            return self.turn(text)
+        bridge = _TurnStreamBridge(events)
+        coordinator = self._host.coordinator
+        coordinator.replace_persona_provider(
+            _StreamingProviderProxy(live, bridge)
+        )
+        try:
+            return self.turn(text)
+        finally:
+            coordinator.replace_persona_provider(live)
 
     def _world_step_after_turn(self, turn_id: str) -> str | None:
         """The turn wiring's fail-soft half: one world step, or one
@@ -5589,6 +5693,86 @@ def _build_server(
                 return
             self._send_json(200, box["payload"])
 
+        def _send_sse_event(self, payload: dict[str, Any]) -> None:
+            """One SSE frame: ``data: <json>\\n\\n`` — the whole event on
+            one ``data:`` line (JSON escapes its own newlines, so a frame
+            is never split), flushed now: a delta that sits in a buffer is
+            not streaming."""
+
+            frame = (
+                b"data: "
+                + json.dumps(payload, ensure_ascii=False).encode("utf-8")
+                + b"\n\n"
+            )
+            self.wfile.write(frame)
+            self.wfile.flush()
+
+        def _run_stream_turn(self, text: str) -> None:
+            """A1: the streamed turn — deltas out while the host works.
+
+            The job rides the same one work queue as every host touch (the
+            module docstring's one-thread rule); this request thread does
+            nothing but drain the turn's queue into SSE delta frames while
+            the job runs, then write the one ``final`` frame — exactly one,
+            whatever happens: a job the worker never answers within the
+            same wait every other face uses still ends with the failure
+            shape the blocking turn answers with, and a client that
+            disconnects mid-stream stops the *writing*, never the turn (the
+            job runs to its durable end; the page's history carries it).
+            """
+
+            events: queue.Queue[str] = queue.Queue()
+            done = threading.Event()
+            box: dict[str, Any] = {}
+            failure: list[str] = []
+
+            def job() -> None:
+                try:
+                    box["payload"] = face.turn_stream(text, events)
+                except Exception as exc:  # answered, never swallowed
+                    failure.append(f"{type(exc).__name__}: {exc}")
+                finally:
+                    done.set()
+
+            work.put(job)
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            deadline = time.monotonic() + _WORKER_WAIT_SECONDS
+            while True:
+                drained = False
+                while True:
+                    try:
+                        chunk = events.get_nowait()
+                    except queue.Empty:
+                        drained = True
+                        break
+                    try:
+                        self._send_sse_event({"type": "delta", "text": chunk})
+                    except OSError:
+                        return  # the reader is gone; the turn runs on
+                if done.is_set() and drained:
+                    break
+                if done.wait(0.02):
+                    continue
+                if time.monotonic() > deadline:
+                    failure.append("the host worker did not answer in time")
+                    break
+            if failure:
+                payload: dict[str, Any] = {
+                    "reply": None,
+                    "turn_status": None,
+                    "failure_reason": failure[0],
+                    "teaching_moments": [],
+                }
+            else:
+                payload = box["payload"]
+            try:
+                self._send_sse_event({"type": "final", **payload})
+            except OSError:
+                return
+
         def _read_json_body(self) -> Any:
             """(p-3) The POST body, parsed once — the turn face's inline
             read, extracted for the two new write faces only (the existing
@@ -5813,6 +5997,22 @@ def _build_server(
                 self._send_json(404, {"error": "not found"})
 
         def do_POST(self) -> None:
+            if self.path == "/api/turn_stream":
+                # A1: the streamed turn. The grammar is the blocking turn's
+                # own ({"text": "..."} — a bad body is the same 400 人话,
+                # still JSON because nothing has streamed yet); everything
+                # after the grammar check rides SSE.
+                payload = self._read_json_body()
+                text = (
+                    payload.get("text") if isinstance(payload, dict) else None
+                )
+                if not isinstance(text, str) or not text.strip():
+                    self._send_json(
+                        400, {"error": 'need a JSON body {"text": "..."}'}
+                    )
+                    return
+                self._run_stream_turn(text)
+                return
             if self.path == "/api/world/continue":
                 # W-1-3: the 「继续」 write — the world's light action through
                 # its own orchestration (a checkpointed run resumes; a

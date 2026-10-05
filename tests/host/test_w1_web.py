@@ -2005,8 +2005,12 @@ def test_every_api_call_in_the_page_is_actually_imported() -> None:
         f"app.js 调用了但未导入的 api 函数：{sorted(missing)}"
     )
     # 反向：导入却从不调用的（死导入——同样该清）；以及导入了 api.js
-    # 根本不导出的名字（拼错）
-    exported = set(re.findall(r"export function (fetch[A-Z][A-Za-z]*)", api))
+    # 根本不导出的名字（拼错）。A1 随迁：导出面扫描补 `export async
+    # function`（fetchTurnStream 是本仓第一个 async 导出——扫描器原形
+    # 只认 `export function`；钉意「导入 ⊆ 导出」不变）。
+    exported = set(
+        re.findall(r"export (?:async )?function (fetch[A-Z][A-Za-z]*)", api)
+    )
     unused = imported - calls
     assert not unused, f"app.js 导入了但从不调用的 api 函数：{sorted(unused)}"
     assert imported <= exported, (
