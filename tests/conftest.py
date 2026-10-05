@@ -80,12 +80,17 @@ MIGRATION_IDS: tuple[str, ...] = (
     # M0.1 AD-6: a restart does not re-roll the dice), moved only through
     # SqliteWorldStore's run face.
     "0025_world_runs",
+    # W-1-3 (DEC-OPI-7e3744ee…49): the reveal queue — one row per event a
+    # run's advance wrote (item_id derived <event_id>:reveal), sitting
+    # PENDING until the inbox's atomic reveal_all flips the world's slice to
+    # REVEALED; the presentation trigger, never run fuel (spec §4.1).
+    "0026_world_reveal",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0025_world_runs.sql"
-SCHEMA_HEAD_VERSION = "25"
+SCHEMA_HEAD_FILE = "0026_world_reveal.sql"
+SCHEMA_HEAD_VERSION = "26"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

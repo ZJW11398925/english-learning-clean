@@ -56,6 +56,8 @@ import {
   fetchLearning,
   fetchTargets,
   fetchObservations,
+  fetchWorldInbox,
+  fetchWorldContinue,
   fetchHistory,
   fetchCurrentMoment,
   fetchWord,
@@ -2822,6 +2824,99 @@ diagBox("obs-entry").appendChild((() => {
   return wrap;
 })());
 
+// ── W-1-3: 世界收件箱（DEC-…43 例外通道：功能必需、零样式打磨）──────
+// 案头 = 当前世界的收件箱（活世界 spec §8.2）：世界运转留下的便条
+// ——「揭示」是呈现触发不是运转动力（§4.1），打开页面这一读就是
+// 揭示时刻——升序一列；运转等在检查点时给一枚「继续」钮（数据驱动
+// 可点，服务端 400 兜底）。文字一律 textContent（XSS 面）；调用只走
+// api.js；无绑定世界（404）= 整区隐藏，不是一只空收件箱。
+const worldInboxSec = document.createElement("section");
+worldInboxSec.className = "sec world-inbox";
+worldInboxSec.hidden = true;
+const worldInboxHead = document.createElement("h3");
+worldInboxHead.textContent = "世界收件箱";
+worldInboxSec.appendChild(worldInboxHead);
+const worldInboxBoard = document.createElement("div");
+worldInboxBoard.appendChild((() => {
+  const none = document.createElement("p");
+  none.className = "note";
+  none.textContent = "暂无数据";
+  return none;
+})());
+worldInboxSec.appendChild(worldInboxBoard);
+const parlorFlow = document.querySelector("#space-parlor main.flow");
+if (parlorFlow) {
+  parlorFlow.insertBefore(worldInboxSec, parlorFlow.querySelector("#messages"));
+}
+
+function worldNoteCard(note) {
+  const card = document.createElement("div");
+  card.className = "world-note";
+  const body = document.createElement("p");
+  body.className = "world-note-body";
+  body.textContent = String(note.narration ?? "");
+  card.appendChild(body);
+  const meta = document.createElement("p");
+  meta.className = "note";
+  meta.textContent = (note.actor_name || "世界") + " · " +
+    humanTime(note.occurred_at);
+  card.appendChild(meta);
+  return card;
+}
+
+function renderWorldInbox(data) {
+  worldInboxSec.hidden = false;
+  worldInboxBoard.textContent = "";
+  const notes = data.items || [];
+  if (!notes.length) {
+    const none = document.createElement("p");
+    none.className = "note";
+    none.textContent = "世界还什么都没留下——回一封信，世界就会动。";
+    worldInboxBoard.appendChild(none);
+  }
+  for (const note of notes) {
+    worldInboxBoard.appendChild(worldNoteCard(note));
+  }
+  const actions = document.createElement("p");
+  actions.className = "world-inbox-actions";
+  const cont = document.createElement("button");
+  cont.type = "button";
+  cont.className = "btn btn--faint";
+  cont.textContent = "继续";
+  cont.disabled = !data.at_checkpoint;
+  cont.addEventListener("click", async () => {
+    cont.disabled = true;
+    let fresh = null;
+    try {
+      fresh = await fetchWorldContinue();
+    } catch {
+      fresh = null;
+    }
+    if (fresh && Array.isArray(fresh.items)) {
+      renderWorldInbox(fresh);
+    } else {
+      loadWorldInbox();
+    }
+  });
+  actions.appendChild(cont);
+  worldInboxBoard.appendChild(actions);
+}
+
+async function loadWorldInbox() {
+  let data = null;
+  try {
+    data = await fetchWorldInbox();
+  } catch {
+    data = null;
+  }
+  if (!data || !Array.isArray(data.items)) {
+    // 无绑定世界（404 人话）或读失败：整区隐藏——不是空收件箱。
+    worldInboxSec.hidden = true;
+    return;
+  }
+  renderWorldInbox(data);
+}
+
 // ── v2-2: 信档屏（8.2.11 结构重铸件）——以前的信的专门面────────────
 // 信封形接线（T1-4 封/信分物）：条目 = 信封缩略（.env-mini），点条目
 // 展开读 = 信纸（letterNode 复用 #4 排印骨架——单一出处，非第二份
@@ -4218,6 +4313,9 @@ window.addEventListener("DOMContentLoaded", () => {
   // 打开信封沓会重读
   fetchCharacters().then(renderMasthead).catch(() => {});
   loadHistory();
+  // W-1-3: 世界收件箱首灌（绑定世界才有这一区——404 即整区隐藏）；
+  // 「继续」后的刷新走按钮自己的回路。
+  loadWorldInbox();
   // F-1R/R-1: the first visit sees the cover; every later visit lands in
   // the parlor directly (the cover never comes back once localStorage
   // says so)

@@ -175,15 +175,16 @@ def test_0018_is_0017s_successor_and_the_head() -> None:
     ``0020_world_lore_facts.sql``, fr-A's ``0021_provider_usage.sql``
     (renumbered from 0020 at merge), the veto-response cut's
     ``0022_app_settings.sql``, W-1-0's ``0023_world_identity.sql``, W-1-1's
-    ``0024_world_events.sql`` and W-1-2's ``0025_world_runs.sql``, the
+    ``0024_world_events.sql``, W-1-2's ``0025_world_runs.sql`` and W-1-3's
+    ``0026_world_reveal.sql``, the
     current head (this pin read
     ``names[-1] == SCHEMA_HEAD_FILE == HEAD_0018`` while 0018 was the head
     — the P8-4 suite's rule: the successor is a **literal** here so the
     head can move without silently falsifying the lineage claim)."""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert MIGRATION_IDS[-1] == "0025_world_runs"
-    assert SCHEMA_HEAD_FILE == "0025_world_runs.sql"
+    assert MIGRATION_IDS[-1] == "0026_world_reveal"
+    assert SCHEMA_HEAD_FILE == "0026_world_reveal.sql"
     assert names[names.index(HEAD_0018) + 1] == "0019_character_cards.sql"
     assert names[names.index("0019_character_cards.sql") + 1] == (
         "0020_world_lore_facts.sql"
@@ -202,6 +203,9 @@ def test_0018_is_0017s_successor_and_the_head() -> None:
     )
     assert names[names.index("0024_world_events.sql") + 1] == (
         "0025_world_runs.sql"
+    )
+    assert names[names.index("0025_world_runs.sql") + 1] == (
+        "0026_world_reveal.sql"
     )
     assert names[names.index(PRE_0018) + 1] == HEAD_0018
     assert [name[:4] for name in names] == [
@@ -234,8 +238,8 @@ def test_applying_the_chain_is_idempotent(db: sqlite3.Connection) -> None:
 def test_the_stamps_move_to_the_shared_head(db: sqlite3.Connection) -> None:
     # 主线-3 随迁：head stamp 19 → 20；veto-R 再随迁 21 → 22（app_setting）；
     # W-1-0 再随迁 22 → 23（世界身份三表）；W-1-1 再随迁 23 → 24（事件树两表）；
-    # W-1-2 再随迁 24 → 25（world_run 一行）。
-    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "25"
+    # W-1-2 再随迁 24 → 25（world_run 一行）；W-1-3 再随迁 25 → 26（揭示队列）。
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "26"
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"

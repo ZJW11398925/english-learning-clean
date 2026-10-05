@@ -131,23 +131,24 @@ def _assert_err(result: object, code: str) -> None:
 
 
 def test_0025_is_the_registered_head() -> None:
-    """W-1-1's migration is in the chain, immediately behind W-1-2's
-    0025_world_runs (the stamp-pin discipline every head move has
+    """W-1-1's migration is in the chain, behind W-1-2's 0025_world_runs
+    and W-1-3's 0026_world_reveal (the stamp-pin discipline every head
+    move has
     followed since P8-4; the pin read "0024 is the head" while 0024 was
     the head); the shared constants say so, and the stamp a fresh
-    database carries is 25."""
+    database carries is 26."""
 
-    assert MIGRATION_IDS[-1] == "0025_world_runs"
-    assert MIGRATION_IDS[-2] == "0024_world_events"
-    assert SCHEMA_HEAD_FILE == "0025_world_runs.sql"
+    assert MIGRATION_IDS[-1] == "0026_world_reveal"
+    assert MIGRATION_IDS[-2] == "0025_world_runs"
+    assert SCHEMA_HEAD_FILE == "0026_world_reveal.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "25"
+    assert SCHEMA_HEAD_VERSION == "26"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0025_world_runs"
-    assert applied[-2] == "0024_world_events"
-    assert schema_version(fresh) == "25"
+    assert applied[-1] == "0026_world_reveal"
+    assert applied[-2] == "0025_world_runs"
+    assert schema_version(fresh) == "26"
 
 
 def test_the_two_tables_carry_their_columns() -> None:
@@ -596,21 +597,24 @@ def test_the_registry_carries_the_six_world_objects() -> None:
 
 
 def test_global_content_tables_carry_the_seven_members() -> None:
-    """W-1-1's two tables and W-1-2's run row join the keep half
-    (SEC-025's conservative reading): seven members, and the
-    classification is registration — no sweep walks them, nothing keeps
-    them as retained either."""
+    """W-1-1's two tables and W-1-2's run row joined the keep half
+    (SEC-025's conservative reading) and W-1-3's reveal queue joins it the
+    same way, while W-1-3's deletion face moves ``world_conversation``
+    into the conversation scope's sweep: still seven members, and the
+    classification is registration — no sweep walks the world-owned half,
+    nothing keeps it as retained either."""
 
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
         "world_actor",
-        "world_conversation",
         "world_event",
         "world_state_fact",
         "world_run",
+        "world_reveal_item",
     )
-    for table in ("world_event", "world_state_fact", "world_run"):
+    for table in ("world_event", "world_state_fact", "world_run",
+                  "world_reveal_item"):
         assert table not in SWEPT_TABLES
         assert table not in RETAINED_TABLES
 

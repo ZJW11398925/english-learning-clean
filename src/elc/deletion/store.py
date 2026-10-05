@@ -218,6 +218,11 @@ _SURFACE_SELECT: Mapping[str, str] = {
     # own id. The ALL_USER_DATA walk appends ``is_builtin = 0`` — the sweep
     # removes the user's authored characters and never the builtin.
     "character_card": "SELECT rowid, character_id FROM character_card",
+    # W-1-3's deletion face (migration 0023's binding table, transferred
+    # out of the global keep set): a binding's identity is its own id.
+    "world_conversation": (
+        "SELECT rowid, binding_id FROM world_conversation"
+    ),
 }
 
 #: table → the delete head. An ``IN (…)`` run of bound rowids is appended;
@@ -304,6 +309,12 @@ _DELETE_BY_ROWID: Mapping[str, str] = {
     # rowid run the surface select collects (``is_builtin = 0`` rides the
     # walk's predicate, so the builtin row is never collected).
     "character_card": "DELETE FROM character_card WHERE rowid IN (",
+    # W-1-3's deletion face (migration 0023's binding table, transferred
+    # out of the global keep set); one literal, the same rowid run the
+    # surface select collects.
+    "world_conversation": (
+        "DELETE FROM world_conversation WHERE rowid IN ("
+    ),
 }
 
 if set(_SURFACE_SELECT) != set(SWEPT_TABLES) or set(_DELETE_BY_ROWID) != set(
@@ -1082,6 +1093,20 @@ class SqliteDeletionStore:
         )
         self._remove(
             table="input_envelope",
+            predicate="conversation_id = ?",
+            params=(cid,),
+            run=run,
+        )
+        # W-1-3's deletion face (migration 0023's binding table, transferred
+        # out of the global keep set): the conversation's world chapter
+        # closes with the conversation — the binding goes before the
+        # conversation row it references (children first), so the RESTRICT
+        # posture that FK spells can never refuse the removal below. The
+        # world, its actors and its event tree stay global (the shared
+        # world is owned by no user); only the row that says *this*
+        # conversation lived there goes.
+        self._remove(
+            table="world_conversation",
             predicate="conversation_id = ?",
             params=(cid,),
             run=run,

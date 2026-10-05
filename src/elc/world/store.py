@@ -57,11 +57,29 @@ cursor 0 / version 1), a NOTICE pause advances the cursor, the RESPONSE
 stop (or the engine's fail-closed cycle ceiling) terminates the run.
 ``state_version`` bumps on every run write — it is the row's own write
 counter, deliberately not a canonical version spelling.
+
+Reveal face (W-1-3): :class:`WorldRevealItem` is migration 0026's queue
+row — the durable form of a run's "future-revealable special moment"
+(spec §4.1: revealing is a presentation trigger, never run fuel). Two
+methods are the face's *whole* write half, and nothing else in the
+package writes either column set: ``enqueue_reveals`` lands one
+``PENDING`` item per event an engine step produced, all of them in one
+short transaction (the whole face lands or nothing does — a step that
+refuses never leaves half an inbox behind), and ``reveal_all`` is the
+atomic flip that turns one world's whole ``PENDING`` slice to
+``REVEALED`` at the moment the user next looks (and returns the world's
+whole inbox, revealed history included, in the durable order). The
+item's id derives — ``<event_id>:reveal`` — so the same event can never
+enqueue twice, the same derivation law ``world_state_fact``'s
+``fact_id`` spells; the record shape lives here beside its face rather
+than in :mod:`elc.world.types` (that module is the frozen identity and
+event shapes; this cut's authorization names the store's reveal face).
 """
 
 from __future__ import annotations
 
 import sqlite3
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
@@ -86,11 +104,38 @@ from elc.world.types import (
     encode_effects,
 )
 
-__all__ = ["SqliteWorldStore"]
+__all__ = ["SqliteWorldStore", "WorldRevealItem"]
 
 
 def _now() -> str:
     return datetime.now(tz=UTC).isoformat()
+
+
+@dataclass(frozen=True)
+class WorldRevealItem:
+    """One reveal-queue row (migration 0026's ``world_reveal_item``
+    table).
+
+    The durable form of a run's "future-revealable special moment": one
+    event the run wrote, sitting ``PENDING`` until the inbox's atomic
+    reveal flips the world's slice to ``REVEALED`` (``revealed_at`` is
+    ``None`` while pending, the reveal moment after). ``item_id``
+    derives — ``<event_id>:reveal`` — so one event can never enqueue
+    twice. ``actor_id`` is the cast member the item is signed by (the
+    comms step's chosen correspondent); ``None`` is the world's own
+    narration. The record shape lives in this module beside the face
+    that writes it (the module docstring carries the reason); the
+    projection's read joins ``world_event`` for the prose — the item
+    carries the pointer, never a copy.
+    """
+
+    item_id: str
+    world_id: str
+    source_event_id: str
+    actor_id: str | None
+    status: str
+    revealed_at: str | None
+    created_at: str
 
 
 class SqliteWorldStore:
@@ -761,6 +806,177 @@ class SqliteWorldStore:
         assert updated is not None  # the UPDATE above just touched it
         return Ok(updated)
 
+    # -- reveal face (W-1-3) ---------------------------------------------------
+
+    def enqueue_reveals(
+        self, items: tuple[WorldRevealItem, ...]
+    ) -> Result[tuple[WorldRevealItem, ...]]:
+        """Land one ``PENDING`` reveal item per produced event, atomically.
+
+        The only creator of migration 0026's rows. The whole tuple lands
+        in **one short transaction** — the orchestration's "same short
+        transaction" discipline: an engine step that wrote events either
+        leaves its whole inbox tail behind or nothing of it, and a
+        refusal anywhere upstream means this face is never reached with
+        a partial step (zero items for a refused step, never half).
+
+        The caller's items must carry the enqueue shape exactly —
+        ``status == 'PENDING'`` and ``revealed_at is None``; any other
+        shape is a ``VALIDATION_FAILED`` before anything is written
+        (there is no other legal enqueue shape; the PENDING→REVEALED
+        flip belongs to :meth:`reveal_all` alone). An empty tuple is a
+        legal no-op (a step whose trace carried no events).
+
+        Idempotence rides the derived id: a replayed ``item_id`` with
+        the same shape answers the stored rows unchanged (nothing is
+        re-inserted); the same id with a different shape is a
+        ``CONFLICT`` for the whole face. A dangling world, event or
+        actor is refused by the table's own FKs and surfaces as
+        ``NOT_FOUND``.
+        """
+
+        if not items:
+            return Ok(())
+        for item in items:
+            if item.status != "PENDING" or item.revealed_at is not None:
+                return Err(
+                    DomainError(
+                        code=DomainErrorCode.VALIDATION_FAILED,
+                        message=(
+                            f"reveal item {item.item_id!r} refused: the"
+                            " enqueue shape is PENDING with no reveal"
+                            " moment (the flip is reveal_all's alone);"
+                            " nothing was written"
+                        ),
+                    )
+                )
+        for item in items:
+            stored = self._reveal_row(item.item_id)
+            if stored is not None:
+                if (
+                    stored.world_id,
+                    stored.source_event_id,
+                    stored.actor_id,
+                    stored.created_at,
+                ) == (
+                    item.world_id,
+                    item.source_event_id,
+                    item.actor_id,
+                    item.created_at,
+                ):
+                    continue
+                return Err(
+                    DomainError(
+                        code=DomainErrorCode.CONFLICT,
+                        message=(
+                            f"reveal item {item.item_id!r} already exists"
+                            " with a different shape; reveal items derive"
+                            " from their event and do not rewrite"
+                        ),
+                    )
+                )
+        began = False
+        try:
+            self._conn.execute("BEGIN IMMEDIATE")
+            began = True
+            for item in items:
+                self._conn.execute(
+                    "INSERT INTO world_reveal_item ("
+                    " item_id, world_id, source_event_id, actor_id,"
+                    " status, revealed_at, created_at"
+                    ") VALUES (?, ?, ?, ?, 'PENDING', NULL, ?)",
+                    (
+                        item.item_id,
+                        item.world_id,
+                        item.source_event_id,
+                        item.actor_id,
+                        item.created_at,
+                    ),
+                )
+        except sqlite3.Error as exc:
+            if began:
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
+            if "FOREIGN KEY" in str(exc):
+                return Err(
+                    DomainError(
+                        code=DomainErrorCode.NOT_FOUND,
+                        message=(
+                            "reveal items not enqueued: a referenced"
+                            f" identity does not exist ({exc})"
+                        ),
+                    )
+                )
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=f"reveal items not enqueued: {exc}",
+                )
+            )
+        self._conn.execute("COMMIT")
+        return Ok(tuple(items))
+
+    def reveal_all(
+        self, world_id: str, now: str
+    ) -> Result[tuple[WorldRevealItem, ...]]:
+        """Reveal one world's whole pending slice, atomically, and read
+        the whole inbox back.
+
+        The only ``PENDING`` → ``REVEALED`` mover: one short transaction
+        flips every pending item of the world (``revealed_at`` stamped
+        with the caller's ``now`` — the moment the user next looked, the
+        spec §4.1 presentation trigger) and then reads every item of the
+        world back, revealed history included, in the durable order
+        (``created_at``, then ``item_id`` — deterministic reads are
+        content, not an implementation detail). A second reveal does not
+        re-stamp: the UPDATE matches nothing, the read returns the same
+        rows, ``revealed_at`` stays the first reveal's moment. A world
+        that does not exist is ``NOT_FOUND``.
+        """
+
+        if self._world_row(world_id) is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"inbox of {world_id!r} not read: the world does"
+                        " not exist"
+                    ),
+                )
+            )
+        began = False
+        try:
+            self._conn.execute("BEGIN IMMEDIATE")
+            began = True
+            self._conn.execute(
+                "UPDATE world_reveal_item SET status = 'REVEALED',"
+                " revealed_at = ? WHERE world_id = ? AND status = 'PENDING'",
+                (now, world_id),
+            )
+            rows = self._conn.execute(
+                "SELECT item_id, world_id, source_event_id, actor_id,"
+                " status, revealed_at, created_at"
+                " FROM world_reveal_item WHERE world_id = ?"
+                " ORDER BY created_at ASC, item_id ASC",
+                (world_id,),
+            ).fetchall()
+        except sqlite3.Error as exc:
+            if began:
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=f"inbox of {world_id!r} not read: {exc}",
+                )
+            )
+        self._conn.execute("COMMIT")
+        return Ok(tuple(self._reveal(row) for row in rows))
+
     # -- read face -----------------------------------------------------------
 
     def get_world(self, world_id: str) -> WorldRecord | None:
@@ -1027,6 +1243,35 @@ class SqliteWorldStore:
         if row is None:
             return None
         return self._run(row)
+
+    def _reveal_row(self, item_id: str) -> WorldRevealItem | None:
+        """One raw ``world_reveal_item`` row (the idempotence pre-read)."""
+
+        row = self._conn.execute(
+            "SELECT item_id, world_id, source_event_id, actor_id,"
+            " status, revealed_at, created_at"
+            " FROM world_reveal_item WHERE item_id = ?",
+            (item_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return self._reveal(row)
+
+    @staticmethod
+    def _reveal(row: tuple[Any, ...]) -> WorldRevealItem:
+        """One raw ``world_reveal_item`` row as its frozen record (pure
+        column read — ``status`` is CHECK-bound to the two lifecycle
+        words the migration spells)."""
+
+        return WorldRevealItem(
+            item_id=str(row[0]),
+            world_id=str(row[1]),
+            source_event_id=str(row[2]),
+            actor_id=None if row[3] is None else str(row[3]),
+            status=str(row[4]),
+            revealed_at=None if row[5] is None else str(row[5]),
+            created_at=str(row[6]),
+        )
 
     @staticmethod
     def _run(row: tuple[Any, ...]) -> WorldRunRecord:

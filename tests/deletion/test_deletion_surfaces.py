@@ -136,35 +136,44 @@ def test_no_global_content_table_lives_in_app_db() -> None:
     member — ``world_lore_fact``, the shared world's canonical facts, owned
     by no user — and the sweep's closure is what keeps the rule enforceable
     (nothing unnamed can be swept, and nothing in the kept set is user
-    data). W-1-0 (DEC-OPI-d96fd92d…7 AD-5) adds the world's identity
+    data). W-1-0 (DEC-OPI-d96fd92d…7 AD-5) added the world's identity
     tables (migration 0023's ``world`` / ``world_actor`` /
     ``world_conversation``) to the same keep rule, W-1-1
-    (DEC-OPI-7e3744ee…17) adds the world's event tree and its projection
-    (migration 0024's ``world_event`` / ``world_state_fact``), and W-1-2
-    (DEC-OPI-7e3744ee…26) adds the world's run row (migration 0025's
-    ``world_run``) — the
-    conservative reading throughout: the classification is registration,
-    no sweep walks them, and the deletion face for the world is W-1-3's
-    registered cut (the FK consequences are registered in
-    elc.deletion.types itself).
+    (DEC-OPI-7e3744ee…17) added the world's event tree and its projection
+    (migration 0024's ``world_event`` / ``world_state_fact``), W-1-2
+    (DEC-OPI-7e3744ee…26) added the world's run row (migration 0025's
+    ``world_run``), and W-1-3 (DEC-OPI-7e3744ee…49) adds the reveal queue
+    (migration 0026's ``world_reveal_item``) — the
+    conservative reading throughout for the world-owned half.
+
+    The same W-1-3 cut is the deletion face's own arrival: it *moves*
+    ``world_conversation`` out of this tuple and into
+    :data:`CONVERSATION_SWEPT_TABLES` — the binding is the conversation's
+    own row (its whole reason to exist is one conversation's residence in
+    one world), so §19's closure now carries it and the RESTRICT posture
+    its FK spells can no longer refuse a sweep. The world-owned half stays
+    out of every sweep; the binding is swept with the conversation it
+    bound.
     """
 
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
         "world_actor",
-        "world_conversation",
         "world_event",
         "world_state_fact",
         "world_run",
+        "world_reveal_item",
     )
-    assert "world_lore_fact" not in SWEPT_TABLES
-    assert "world" not in SWEPT_TABLES
-    assert "world_actor" not in SWEPT_TABLES
-    assert "world_conversation" not in SWEPT_TABLES
-    assert "world_event" not in SWEPT_TABLES
-    assert "world_state_fact" not in SWEPT_TABLES
-    assert "world_run" not in SWEPT_TABLES
+    for table in GLOBAL_CONTENT_TABLES:
+        assert table not in SWEPT_TABLES
+    # The transferred member's new home, both directions (the moved row is
+    # user-reachable state, not global content): the conversation scope
+    # sweeps it, the global keep set no longer names it.
+    assert "world_conversation" in CONVERSATION_SWEPT_TABLES
+    assert "world_conversation" in SWEPT_TABLES
+    assert "world_conversation" not in GLOBAL_CONTENT_TABLES
+    assert "world_conversation" not in RETAINED_TABLES
 
 
 # -- the per-scope surfaces ------------------------------------------------

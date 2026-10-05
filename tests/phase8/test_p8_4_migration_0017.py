@@ -99,15 +99,15 @@ def test_0017_is_registered_and_0018_follows_it() -> None:
     then each 0020 in turn (MC-0's stretch, 主线-3's 0020_world_lore_facts,
     fr-A's 0021_provider_usage), then the veto-response cut's
     0022_app_settings, then W-1-0's 0023_world_identity, then W-1-1's
-    0024_world_events
-    — W-1-2's 0025_world_runs is the head now), and the
+    0024_world_events, then W-1-2's 0025_world_runs
+    — W-1-3's 0026_world_reveal is the head now), and the
     successor
     is a **literal** — a ``SCHEMA_HEAD_FILE`` reference here would silently
     become false at the next migration (the pin's own rule, restated by
     the 0016 suite)."""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert MIGRATION_IDS[-1] == "0025_world_runs"
+    assert MIGRATION_IDS[-1] == "0026_world_reveal"
     assert names[names.index(HEAD_0017) + 1] == "0018_delivery_records.sql"
     assert names[names.index(PRE_0017) + 1] == HEAD_0017
     assert [name[:4] for name in names] == [
@@ -137,8 +137,9 @@ def test_applying_the_chain_is_idempotent(db: sqlite3.Connection) -> None:
 
 def test_the_stamps_move_to_the_shared_head(db: sqlite3.Connection) -> None:
     # 主线-3 随迁：head stamp 19 → 20；veto-R 再随迁 21 → 22；W-1-0 再随迁
-    # 22 → 23；W-1-1 再随迁 23 → 24；W-1-2 再随迁 24 → 25。
-    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "25"
+    # 22 → 23；W-1-1 再随迁 23 → 24；W-1-2 再随迁 24 → 25；W-1-3 再随迁
+    # 25 → 26。
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "26"
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"

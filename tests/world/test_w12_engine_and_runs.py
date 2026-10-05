@@ -6,11 +6,11 @@ DEC-OPI-7e3744ee…26; the spec §4.2 v2.1 seven-step sequence;
 M0.1 AD-6 — the run is durable so a restart does not re-roll the dice).
 The slice VAL groups, each a section below:
 
-1. **migration pins** — 0025 is the registered head, the ``world_run``
+1. **migration pins** — 0026 is the registered head, the ``world_run``
    table carries its ten columns in order, and the schema's own
    declarations hold: the single FK to ``world``, the CHECK vocabularies
    (``DIRECTION`` absent), the cursor / version guards, the double
-   ``'25'`` stamp and the RESTRICT posture;
+   ``'26'`` stamp and the RESTRICT posture;
 2. **deterministic replay** — the same seed drives two independent
    runs (two fresh databases) to bit-for-bit identical traces and
    chronicles, and a different seed diverges;
@@ -233,21 +233,22 @@ def _assert_err(result: object, code: str) -> None:
 
 
 def test_0025_is_the_registered_head() -> None:
-    """W-1-2's migration is the head, immediately behind W-1-1's
-    0024_world_events; the shared constants say so, and the stamp a
-    fresh database carries is 25."""
+    """W-1-2's migration is in the chain, behind W-1-3's 0026_world_reveal
+    (the stamp-pin discipline every head move has followed since P8-4;
+    the pin read "0025 is the head" while 0025 was the head); the shared
+    constants say so, and the stamp a fresh database carries is 26."""
 
-    assert MIGRATION_IDS[-1] == "0025_world_runs"
-    assert MIGRATION_IDS[-2] == "0024_world_events"
-    assert SCHEMA_HEAD_FILE == "0025_world_runs.sql"
+    assert MIGRATION_IDS[-1] == "0026_world_reveal"
+    assert MIGRATION_IDS[-2] == "0025_world_runs"
+    assert SCHEMA_HEAD_FILE == "0026_world_reveal.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "25"
+    assert SCHEMA_HEAD_VERSION == "26"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0025_world_runs"
-    assert applied[-2] == "0024_world_events"
-    assert schema_version(fresh) == "25"
+    assert applied[-1] == "0026_world_reveal"
+    assert applied[-2] == "0025_world_runs"
+    assert schema_version(fresh) == "26"
 
 
 def test_world_run_carries_its_ten_columns() -> None:
@@ -280,7 +281,7 @@ def test_the_run_table_declares_its_posture() -> None:
     ``trigger_turn_id`` deliberately carries none), the CHECK
     vocabularies (``DIRECTION`` cannot reach the row), the cursor /
     version guards, the RESTRICT posture against deleting a world with
-    runs, and the double ``'25'`` stamp."""
+    runs, and the double ``'26'`` stamp."""
 
     fresh = sqlite3.connect(":memory:")
     fresh.execute("PRAGMA foreign_keys=ON")
@@ -342,8 +343,8 @@ def test_the_run_table_declares_its_posture() -> None:
             "SELECT key, value FROM schema_meta WHERE key LIKE '%schema_version%'"
         ).fetchall()
     )
-    assert stamps["schema_version"] == "25"
-    assert stamps["runtime_schema_version"] == "25"
+    assert stamps["schema_version"] == "26"
+    assert stamps["runtime_schema_version"] == "26"
 
 
 # ---------------------------------------------------------------------------
@@ -868,21 +869,27 @@ def test_the_registry_carries_the_six_world_objects() -> None:
 
 
 def test_global_content_tables_carry_the_seven_members() -> None:
-    """W-1-2's run row joins the keep half (SEC-025's conservative
-    reading): seven members, and the classification is registration —
-    no sweep walks the run, nothing keeps it as retained either."""
+    """W-1-2's run row joined the keep half (SEC-025's conservative
+    reading) and W-1-3's reveal queue joins it the same way, while
+    W-1-3's deletion face moves ``world_conversation`` out of this tuple
+    into the conversation scope's sweep: still seven members, and the
+    classification is registration —
+    no sweep walks the run or the reveal item, nothing keeps them as
+    retained either."""
 
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
         "world_actor",
-        "world_conversation",
         "world_event",
         "world_state_fact",
         "world_run",
+        "world_reveal_item",
     )
     assert "world_run" not in SWEPT_TABLES
     assert "world_run" not in RETAINED_TABLES
+    assert "world_reveal_item" not in SWEPT_TABLES
+    assert "world_reveal_item" not in RETAINED_TABLES
 
 
 # ---------------------------------------------------------------------------
@@ -930,8 +937,9 @@ def test_the_pool_defends_its_tuples_at_runtime() -> None:
 def test_the_banner_claims_exactly_its_horizon() -> None:
     """The engine's banner is honest in both directions: the claim list
     (deterministic orchestration, replayable sequencing, durable run
-    state, the double exit) and the refusal list (rendering, waiting,
-    letters, reveal, DIRECTION, world clock, model generation) — the
+    state, the double exit, W-1-3's trigger orchestration) and the
+    refusal list (rendering, waiting, letters, the reveal *presentation*
+    half, DIRECTION, world clock, model generation) — the
     words are pinned so a silent widening reads red."""
 
     banner = " ".join((engine_package.__doc__ or "").split())
@@ -943,13 +951,14 @@ def test_the_banner_claims_exactly_its_horizon() -> None:
         "``NOTICE`` checkpoints pause the run",
         "``RESPONSE`` terminates it",
         "never re-rolls",
+        "trigger orchestration",
     ):
         assert claimed in banner, claimed
     for refused in (
         "no presentation rendering",
         "no waiting behaviour",
         "no real letters",
-        "no reveal face",
+        "no reveal *presentation*",
         "``DIRECTION`` word",
         "no world clock",
         "no model",

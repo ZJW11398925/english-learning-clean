@@ -64,6 +64,18 @@ export function fetchObservations() {
   return getJson("/api/observations");
 }
 
+/** 世界收件箱（W-1-3）：绑定世界的原子揭示 + 便条全列 + 最近信件 +
+ *  at_checkpoint 位。无绑定世界服务端 404 人话（页面对 error 隐藏整区）。 */
+export function fetchWorldInbox() {
+  return getJson("/api/world/inbox");
+}
+
+/** 世界轻继续（W-1-3）：恢复等在检查点的运转；世界不在等时服务端
+ *  400 人话。成功返回刷新后的收件箱。 */
+export function fetchWorldContinue() {
+  return postJson("/api/world/continue", {});
+}
+
 /** 历史窗口（默认最后 50 轮，已交付的助手输出）。主线-2 起宽度可显式
  *  指定：opts.full 取全文，opts.limit 取最近 n 轮——不带 opts 一字不变。 */
 export function fetchHistory(opts) {

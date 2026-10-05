@@ -214,6 +214,15 @@ SWEPT_TABLES: tuple[str, ...] = (
     "decision_cycle",
     "turn_record",
     "input_envelope",
+    # W-1-3's deletion face (DEC-OPI-7e3744ee…49): the conversation's world
+    # binding — transferred out of GLOBAL_CONTENT_TABLES, the three-cut
+    # Revisit closed. A binding is the conversation's own row (one
+    # conversation, one world — the column's UNIQUE), so the whole-data
+    # sweep carries it with everything else that hangs off a conversation;
+    # the world itself and its event tree stay global. Immediately before
+    # ``conversation`` (children first — the binding references the
+    # conversation row).
+    "world_conversation",
     "conversation",
     # P8-3's PlanningLedger (migration 0016). Appended, and children first
     # inside the group: the event log references the per-key row, the
@@ -290,20 +299,35 @@ RETAINED_TABLES: tuple[str, ...] = (
 #: W-1-2 (DEC-OPI-7e3744ee…26) adds migration 0025's ``world_run`` — the
 #: durable run row the deterministic engine advances — to the same keep
 #: rule, same conservative reading (registration, not deletion semantics;
-#: zero sweep face; same Revisit W-1-3). ``world_run.trigger_turn_id``
+#: zero sweep face). ``world_run.trigger_turn_id``
 #: deliberately carries NO foreign key for this posture's sake: the run
 #: must not pin a conversation's lifetime (a conversation ALL_USER_DATA
 #: does sweep) while the world's deletion face is unregistered — the
 #: loose column is what keeps a run from refusing a sweep it has no
 #: business refusing.
+#:
+#: W-1-3 (DEC-OPI-7e3744ee…49) adds migration 0026's
+#: ``world_reveal_item`` — the presentation queue one event per row — to
+#: the same keep rule, same conservative reading: an item hangs off the
+#: world's shared event tree (its FKs name ``world`` / ``world_event`` /
+#: ``world_actor``, none of them user-owned), so the shared world's keep
+#: rule carries it. The same cut is the one that *moves* a member OUT of
+#: this tuple: ``world_conversation`` is a conversation's own binding row
+#: (its ``conversation_id`` column is the whole reason the RESTRICT
+#: posture used to refuse a sweep), so it transfers to
+#: :data:`CONVERSATION_SWEPT_TABLES` — §19's closure now carries the
+#: binding with the conversation it bound, and ALL_USER_DATA's walk
+#: sweeps the table whole. The world, its actors, its events, its
+#: projection, its runs and its reveal queue stay global: they are the
+#: shared world every conversation reads, owned by no user.
 GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_lore_fact",
     "world",
     "world_actor",
-    "world_conversation",
     "world_event",
     "world_state_fact",
     "world_run",
+    "world_reveal_item",
 )
 
 
@@ -377,6 +401,16 @@ CONVERSATION_SWEPT_TABLES: tuple[str, ...] = (
     "decision_cycle",
     "turn_record",
     "input_envelope",
+    # W-1-3's deletion face (DEC-OPI-7e3744ee…49 — the three-cut Revisit
+    # closed): the conversation's world binding transfers out of the global
+    # keep set and into this scope — §19 closes the conversation's world
+    # chapter with it, so the RESTRICT posture the binding's own FK spells
+    # can no longer refuse the conversation row's removal below. The world
+    # itself, its actors and its event tree stay global (the shared world
+    # is owned by no user); what goes is the one row that says *this*
+    # conversation lived there. Listed immediately before ``conversation``
+    # (children first — the binding references the conversation row).
+    "world_conversation",
     "conversation",
     # P8-4's provenance leg (migration 0017). This scope **clears a reference,
     # it does not remove a row**: §19's clause has no row-level carrier for the

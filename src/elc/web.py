@@ -417,6 +417,7 @@ from elc.platform.types import (
     GoalVersion,
     InputId,
     InteractionChannel,
+    Ok,
     PersonaId,
     PolicyVersion,
     TargetId,
@@ -442,6 +443,18 @@ from elc.user_config.types import (
     TeachingFrequency,
     TeachingPolicyProfile,
 )
+from elc.world.engine.orchestrate import (
+    TRIGGER_CONTINUE,
+    TRIGGER_LETTER,
+    run_step,
+)
+from elc.world.engine.types import EngineConfig
+from elc.world.package import (
+    BUILTIN_WORLDS_DIR,
+    WorldPackage,
+    _actor_id_for,
+    load_world_package,
+)
 
 __all__ = [
     "DEFAULT_WEB_CONVERSATION_ID",
@@ -450,6 +463,14 @@ __all__ = [
     "port_is_serving",
     "run_web",
 ]
+
+
+#: The world inbox's no-binding answer (W-1-3): one sentence, shared by
+#: the two routes that need it (an inbox that does not exist is not an
+#: empty one — the world is bound per conversation, never global).
+_WORLD_NO_BINDING = (
+    "这个对话没有绑定任何世界——收件箱不存在（世界是对话绑定的，不是全局的）。"
+)
 
 
 class WebOpenError(RuntimeError):
@@ -2896,6 +2917,23 @@ class _WebFace:
         self._cards: SqliteCharacterCardStore | None = getattr(
             host, "character_cards", None
         )
+        # W-1-3: the builtin world packages, read once (the word-list
+        # cache's posture — the assembly's own open already validated every
+        # package, so a re-read failing here is exceptional and degrades
+        # toward "no world leg": the inbox answers its honest 404 and the
+        # turn wiring skips silently, never a broken page). The packages
+        # are what the world steps run with (the pool, the engine config's
+        # defaults) and what the run_web binding reads (the cast).
+        self._world_packages: dict[str, WorldPackage] = {}
+        try:
+            for package_path in sorted(BUILTIN_WORLDS_DIR.glob("*.json")):
+                loaded_package = load_world_package(package_path)
+                if isinstance(loaded_package, Ok):
+                    self._world_packages[loaded_package.value.world_id] = (
+                        loaded_package.value
+                    )
+        except OSError:
+            self._world_packages = {}
 
     def _require_cards(self) -> SqliteCharacterCardStore:
         """The card store, or the loud refusal (never a silent empty)."""
@@ -2948,7 +2986,240 @@ class _WebFace:
             "usage": _usage_by_turn(
                 self._host.db, [str(completion.turn_id)]
             ).get(str(completion.turn_id)),
+            # W-1-3's turn wiring (additive, normally ``None``): the bound
+            # world's step ran after the turn committed; a step that
+            # refused (or blew up) says so here in one human sentence and
+            # nothing else about this reply changes — the world leg is
+            # fail-soft by contract (the reply is the page's substance;
+            # the world's bookkeeping never blocks it).
+            "world_step_note": self._world_step_after_turn(
+                str(completion.turn_id)
+            ),
         }
+
+    def _world_step_after_turn(self, turn_id: str) -> str | None:
+        """The turn wiring's fail-soft half: one world step, or one
+        human sentence.
+
+        The bound conversation's world steps with the ``letter`` trigger
+        after the turn committed (spec §4.1: the user's reply is the only
+        run starter — this is that starter, the engine's first production
+        caller). Every failure mode answers a sentence for the
+        diagnostics and never an exception out: no binding (a
+        conversation outside any world) skips silently — the normal arm
+        for hosts and conversations the world leg does not name; a world
+        whose package is unreadable or whose step refuses says so; the
+        step's own ``trigger_turn_id`` is this turn's id, passed through.
+        """
+
+        binding = self._world_binding()
+        if binding is None:
+            return None
+        package = self._world_packages.get(str(binding["world_id"]))
+        world_store = getattr(self._host, "world_store", None)
+        if package is None or world_store is None:
+            return None
+        try:
+            stepped = run_step(
+                world_store,
+                str(binding["world_id"]),
+                package.to_event_pool(),
+                EngineConfig(),
+                TRIGGER_LETTER,
+                datetime.now(tz=UTC).isoformat(),
+                trigger_turn_id=turn_id,
+            )
+        except Exception as exc:  # fail-soft: the sentence, never the raise
+            return f"世界步进失败（回信不受影响）：{type(exc).__name__}: {exc}"
+        if isinstance(stepped, Err):
+            return f"世界步进未推进（回信不受影响）：{stepped.error.message}"
+        return None
+
+    def _world_binding(self) -> dict[str, Any] | None:
+        """This conversation's world binding row, as a plain mapping (the
+        face's own cross-table read shape — the same direct-SQL posture
+        the moments and lock reads use), or ``None`` when the
+        conversation is bound to no world (or the world leg is absent
+        from this host: a stub store is no store)."""
+
+        world_store = getattr(self._host, "world_store", None)
+        if world_store is None:
+            return None
+        try:
+            row = self._host.db.execute(
+                "SELECT binding_id, world_id, actor_id"
+                " FROM world_conversation WHERE conversation_id = ?",
+                (str(self._conversation_id),),
+            ).fetchone()
+        except sqlite3.Error:
+            return None
+        if row is None:
+            return None
+        return {
+            "binding_id": str(row[0]),
+            "world_id": str(row[1]),
+            "actor_id": None if row[2] is None else str(row[2]),
+        }
+
+    def world_inbox(self) -> tuple[int, dict[str, Any]]:
+        """The world inbox: the bound world's atomic reveal, then the
+        whole inbox, then the conversation's recent letters.
+
+        One route, three honest answers. No binding (this conversation
+        lives in no world — or the host has no world leg) is a **404**
+        naming the fact: an inbox that does not exist is not an empty
+        one. A reveal refusal is a **500** (the face never fabricates an
+        inbox). The happy path rides the work queue like every host
+        touch: :meth:`elc.world.store.SqliteWorldStore.reveal_all` flips
+        the world's whole ``PENDING`` slice to ``REVEALED`` at this
+        moment (spec §4.1 — revealing is the presentation trigger, the
+        moment the user next looks) and reads the world's items back,
+        revealed history included; each item joins its chronicle event
+        for the prose (the item carries the pointer, never a copy) and
+        resolves its signature — the comms actor's card name, or
+        ``null`` for the world's own narration (the page renders
+        「世界」). ``moment`` is the event's chronicle kind word — the
+        durable row's own word; the pool's moment vocabulary lives on
+        the run, not on the event. ``letters`` is the bound
+        conversation's recent correspondence through the history face's
+        own window read (read-only, a small explicit slice). The
+        ``at_checkpoint`` bit is the world's latest run's own status —
+        the page's 「继续」 button is enabled by the world's state, never
+        guessed.
+        """
+
+        binding = self._world_binding()
+        if binding is None:
+            return (404, {"error": _WORLD_NO_BINDING})
+        world_id = binding["world_id"]
+        world_store = getattr(self._host, "world_store", None)
+        if world_store is None:
+            return (404, {"error": _WORLD_NO_BINDING})
+        revealed = world_store.reveal_all(
+            str(world_id), datetime.now(tz=UTC).isoformat()
+        )
+        if isinstance(revealed, Err):
+            raise RuntimeError(
+                "the world inbox could not be read:"
+                f" {revealed.error.code.value}: {revealed.error.message}"
+            )
+        return 200, self._world_payload(str(world_id), revealed.value)
+
+    def world_continue(self) -> tuple[int, dict[str, Any]]:
+        """The 「继续」 write: the light action, through the world's own
+        orchestration.
+
+        No binding is the inbox's 404; a world that is not waiting at
+        its checkpoint is a **400 人话** (the run's state refuses the
+        light action — :func:`elc.world.engine.orchestrate.run_step`
+        spells the refusal, this face passes it through verbatim); any
+        other refusal is a 500 (the face never fabricates a step). The
+        happy path answers the refreshed inbox payload — one round trip
+        lands the step's new notes and the run's new checkpoint state.
+        """
+
+        binding = self._world_binding()
+        if binding is None:
+            return (404, {"error": _WORLD_NO_BINDING})
+        world_id = binding["world_id"]
+        world_store = getattr(self._host, "world_store", None)
+        package = self._world_packages.get(str(world_id))
+        if world_store is None or package is None:
+            return (404, {"error": _WORLD_NO_BINDING})
+        stepped = run_step(
+            world_store,
+            str(world_id),
+            package.to_event_pool(),
+            EngineConfig(),
+            TRIGGER_CONTINUE,
+            datetime.now(tz=UTC).isoformat(),
+        )
+        if isinstance(stepped, Err):
+            if stepped.error.code is DomainErrorCode.VALIDATION_FAILED:
+                return 400, {"error": "世界不在等你点继续。"}
+            raise RuntimeError(
+                "the world step could not run:"
+                f" {stepped.error.code.value}: {stepped.error.message}"
+            )
+        revealed = world_store.reveal_all(
+            str(world_id), datetime.now(tz=UTC).isoformat()
+        )
+        if isinstance(revealed, Err):
+            raise RuntimeError(
+                "the world inbox could not be read:"
+                f" {revealed.error.code.value}: {revealed.error.message}"
+            )
+        return 200, self._world_payload(str(world_id), revealed.value)
+
+    def _world_payload(
+        self, world_id: str, items: tuple[Any, ...]
+    ) -> dict[str, Any]:
+        """The inbox payload over one revealed item tuple: the items'
+        page shape (each joined to its chronicle event for the prose,
+        its signature resolved to a card name or ``None`` for the
+        world's own narration), the world's ``at_checkpoint`` bit (the
+        latest run's own state), and the bound conversation's recent
+        letters (the history face's own read, an explicit small slice —
+        reuse, never a second transcript implementation)."""
+
+        rows = self._host.db.execute(
+            "SELECT e.event_id, e.narration, e.kind, e.occurred_at"
+            " FROM world_event e WHERE e.world_id = ?",
+            (world_id,),
+        ).fetchall()
+        by_id = {str(row[0]): row for row in rows}
+        actor_names = self._world_actor_names(world_id)
+        notes: list[dict[str, Any]] = []
+        for item in items:
+            event = by_id.get(item.source_event_id)
+            notes.append(
+                {
+                    "id": item.item_id,
+                    "narration": "" if event is None else str(event[1]),
+                    "actor_name": actor_names.get(item.actor_id),
+                    "moment": "" if event is None else str(event[2]),
+                    "occurred_at": "" if event is None else str(event[3]),
+                    "status": item.status,
+                }
+            )
+        latest = self._host.db.execute(
+            "SELECT status FROM world_run WHERE world_id = ?"
+            " ORDER BY created_at DESC, run_id DESC LIMIT 1",
+            (world_id,),
+        ).fetchone()
+        recent = self.history(limit=5)
+        return {
+            "world_id": world_id,
+            "items": notes,
+            "letters": recent.get("turns", []),
+            "at_checkpoint": bool(
+                latest is not None and str(latest[0]) == "AT_CHECKPOINT"
+            ),
+        }
+
+    def _world_actor_names(self, world_id: str) -> dict[str | None, str]:
+        """One world's actor ids mapped to their card names (the
+        signature resolution: ``world_actor → character_card.name``);
+        ``None`` maps to the world's own byline. A card the table does
+        not name falls back to the actor id — a plain signature, never a
+        broken one."""
+
+        names: dict[str | None, str] = {None: "世界"}
+        try:
+            rows = self._host.db.execute(
+                "SELECT a.actor_id, c.name FROM world_actor a"
+                " LEFT JOIN character_card c ON c.persona_id = a.persona_id"
+                " WHERE a.world_id = ?",
+                (world_id,),
+            ).fetchall()
+        except sqlite3.Error:
+            return names
+        for row in rows:
+            actor_id = str(row[0])
+            names[actor_id] = (
+                str(row[1]) if row[1] not in (None, "") else actor_id
+            )
+        return names
 
     def _moments_of_turn(self, turn_id: str) -> list[dict[str, str]]:
         """The moments of one turn, through the durable lineage.
@@ -5370,10 +5641,27 @@ def _build_server(
                 # construction). A read failure is a server fact: the
                 # route's own 500 posture.
                 self._run_on_host_thread(face.settings)
+            elif self.path == "/api/world/inbox":
+                # W-1-3: the world inbox — the bound world's atomic reveal
+                # (the presentation trigger: what a finished run left
+                # behind becomes visible the moment the user next looks)
+                # plus the whole inbox and the conversation's recent
+                # letters, one payload, on the work queue. The face
+                # answers its own statuses (404 no binding / 500 a failed
+                # reveal — the _run_host_write posture).
+                self._run_host_write(face.world_inbox)
             else:
                 self._send_json(404, {"error": "not found"})
 
         def do_POST(self) -> None:
+            if self.path == "/api/world/continue":
+                # W-1-3: the 「继续」 write — the world's light action through
+                # its own orchestration (a checkpointed run resumes; a
+                # world that is not waiting answers the 400 人话; the happy
+                # path returns the refreshed inbox). The face answers its
+                # own statuses (the _run_host_write posture).
+                self._run_host_write(face.world_continue)
+                return
             if self.path == "/api/goals":
                 # p-3 W1: the full new combination as the portfolio's next
                 # version. The grammar is validated here, fail-closed (an
@@ -5860,6 +6148,45 @@ def run_web(
             f" {recovery.error.code.value}: {recovery.error.message}",
             file=sys.stderr,
         )
+
+    # W-1-3: the web conversation lives in the builtin world — the binding
+    # (and its cast signature) written here, idempotently, so the inbox
+    # route and the turn wiring have their referent on every fresh start.
+    # The world is the first builtin package in file-name order (one
+    # builtin ships today; the multi-world choice is a later cut's), the
+    # actor is that package's first cast member through the loader's own
+    # derivation (single source — never a second id law), and the binding
+    # id derives from the conversation so a replay is the store's
+    # idempotent no-op. A refusal — a conversation already bound to a
+    # different world, a store without the world leg — is said out loud
+    # and the serving goes on: the same failure-tolerant posture the
+    # recovery lines hold, and the inbox answers its honest 404 for as
+    # long as the binding is absent.
+    world_store = getattr(host, "world_store", None)
+    if world_store is not None:
+        builtin = None
+        try:
+            for package_path in sorted(BUILTIN_WORLDS_DIR.glob("*.json")):
+                loaded_world = load_world_package(package_path)
+                if isinstance(loaded_world, Ok):
+                    builtin = loaded_world.value
+                    break
+        except OSError:
+            builtin = None
+        if builtin is not None and builtin.cast:
+            bound = world_store.bind_conversation(
+                f"bind-{conversation}",
+                builtin.world_id,
+                _actor_id_for(builtin.world_id, builtin.cast[0].name),
+                conversation,
+                datetime.now(tz=UTC).isoformat(),
+            )
+            if isinstance(bound, Err):
+                print(
+                    "elc web: world binding unavailable:"
+                    f" {bound.error.code.value}: {bound.error.message}",
+                    file=sys.stderr,
+                )
 
     server = _build_server(host, port, conversation=conversation)
     serve_thread = threading.Thread(target=server.serve_forever, daemon=True)
