@@ -283,6 +283,43 @@ def test_the_real_egress_path_is_executed_and_its_properties_hold(
     assert provider.call(compiled()).error == REASON_TIMEOUT
 
 
+def test_the_stream_egress_path_never_reads_a_rejected_body(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A1 disposition (the review's m-p gap): the streamed reply's own egress,
+    ``_urllib_stream_post``, keeps the same discipline the buffered sibling
+    pins above — a non-2xx answer's body is **never read** (a rejected
+    request's text never becomes a string in this process). The buffered
+    path carries its execution pin; the stream twin, until this pin, had
+    only the docstring's word for it."""
+
+    read_calls: list[int] = []
+
+    class _SpyBody(io.BytesIO):
+        """A real file-like whose ``read`` records that it was ever called."""
+
+        def read(self, *args: object, **kwargs: object) -> bytes:
+            read_calls.append(1)
+            return super().read(*args, **kwargs)  # type: ignore[arg-type]
+
+    rejected = _StubOpener(
+        urllib.error.HTTPError(
+            "https://offline.invalid/v1/chat/completions",
+            401,
+            "Unauthorized",
+            {},
+            _SpyBody(f"denied: Bearer {SENTINEL_KEY}".encode()),
+        )
+    )
+    stub_opener(monkeypatch, rejected)
+    provider = OpenAICompatibleProvider(config(), FixedSecret())
+    seen: list[str] = []
+    output = provider.call_streaming(compiled(), seen.append)
+    assert (output.text, output.error) == (None, "http-401")
+    assert read_calls == []  # the rejected body never became a string here
+    assert seen == []  # a refused request streams nothing out
+
+
 # -- prep-1R: redirects, the destination policy, the ceiling -----------------
 
 
