@@ -521,6 +521,10 @@ def test_residents_roster_joins_the_cards_builtin_first(
     ]
     assert all(isinstance(row["identity"], str) for row in rows)
     assert all(row["identity"] for row in rows)
+    # wf-0 处置（评审 LOW-1）：双居民面上的「恰一真」——单成员世界的
+    # exactly-one 钉退化（m6b 形态），这里补上多居民断言：ghost 非当前、
+    # nell 当前，恰一真，永不全真。
+    assert [row["is_current"] for row in rows] == [False, True]
 
 
 def test_residents_is_current_marks_exactly_one(tmp_path: Path) -> None:
