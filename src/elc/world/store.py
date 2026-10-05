@@ -1,6 +1,6 @@
 """The World bounded context's durable face — :class:`SqliteWorldStore`
-(migration 0023's three identity tables and migration 0024's event tree +
-minimal state projection).
+(migration 0023's three identity tables, migration 0024's event tree +
+minimal state projection, and migration 0025's world run).
 
 W-1-0's identity face binds worlds, actors and conversations and reads
 them back. W-1-1 adds the event face: :meth:`SqliteWorldStore.record_event`
@@ -47,12 +47,23 @@ malformed (a duplicated canonical key inside one event; a state-facts
 effects column that does not decode); ``DEPENDENCY_UNAVAILABLE`` = the
 database itself failed outside the vocabulary above (world_lore's
 precedent — the raw sqlite error rides the message).
+
+Run face (W-1-2): ``create_run`` / ``checkpoint_run`` /
+``terminalize_run`` are the only writers of migration 0025's
+``world_run`` row, and the deterministic engine
+(:mod:`elc.world.engine.engine`) is the only caller that moves a run —
+creation is the zeroth checkpoint (``AT_CHECKPOINT`` / ``NOTICE`` /
+cursor 0 / version 1), a NOTICE pause advances the cursor, the RESPONSE
+stop (or the engine's fail-closed cycle ceiling) terminates the run.
+``state_version`` bumps on every run write — it is the row's own write
+counter, deliberately not a canonical version spelling.
 """
 
 from __future__ import annotations
 
 import sqlite3
 from datetime import UTC, datetime
+from typing import Any
 
 from elc.platform.db.epoch import RuntimeEpochFence
 from elc.platform.types import (
@@ -64,6 +75,7 @@ from elc.platform.types import (
     PersonaId,
     Result,
 )
+from elc.world.engine.types import MomentKind, RunStatus, WorldRunRecord
 from elc.world.types import (
     WorldActorRecord,
     WorldConversationRecord,
@@ -540,6 +552,215 @@ class SqliteWorldStore:
         self._conn.execute("COMMIT")
         return Ok(event)
 
+    # -- run face (W-1-2) -----------------------------------------------------
+
+    def create_run(
+        self,
+        run_id: str,
+        world_id: str,
+        trigger_turn_id: str | None,
+        seed: int,
+        now: str,
+    ) -> Result[WorldRunRecord]:
+        """Create one world run at its zeroth checkpoint, idempotently by id.
+
+        Creation **is the zeroth checkpoint** (the W-1-2 adjudication's
+        status vocabulary has no third starting word): the row lands at
+        ``AT_CHECKPOINT`` / ``NOTICE`` / cursor 0 / ``state_version`` 1 —
+        the not-yet-advanced starting point the engine's first
+        ``advance`` continues from. A replay of the same id with the same
+        shape (world, trigger, seed) answers the stored row unchanged; a
+        same-id different-shape call is a ``CONFLICT`` (runs do not
+        rewrite). A dangling world is refused by the table's own FK and
+        surfaces as ``NOT_FOUND``. ``trigger_turn_id`` deliberately
+        carries no foreign key — the run must not pin a conversation's
+        lifetime (Revisit W-1-3).
+        """
+
+        existing = self._run_row(run_id)
+        if existing is not None:
+            if (
+                existing.world_id,
+                existing.trigger_turn_id,
+                existing.seed,
+            ) == (world_id, trigger_turn_id, seed):
+                return Ok(existing)
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.CONFLICT,
+                    message=(
+                        f"run {run_id!r} already exists with a different"
+                        " shape; runs do not rewrite"
+                    ),
+                )
+            )
+        began = False
+        try:
+            self._conn.execute("BEGIN IMMEDIATE")
+            began = True
+            self._conn.execute(
+                "INSERT INTO world_run ("
+                " run_id, world_id, trigger_turn_id, seed, status,"
+                ' checkpoint_kind, "cursor", state_version, created_at,'
+                " updated_at"
+                ") VALUES (?, ?, ?, ?, 'AT_CHECKPOINT', 'NOTICE', 0, 1, ?, ?)",
+                (run_id, world_id, trigger_turn_id, seed, now, now),
+            )
+        except sqlite3.Error as exc:
+            # The ml3R LOW-1 judgement (see create_world): when BEGIN
+            # itself failed, nothing of ours began; a failing ROLLBACK of
+            # our own must not break the Result contract.
+            if began:
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
+            return Err(
+                DomainError(
+                    code=self._refusal_code(exc),
+                    message=f"run {run_id!r} not created: {exc}",
+                )
+            )
+        self._conn.execute("COMMIT")
+        return Ok(
+            WorldRunRecord(
+                run_id=run_id,
+                world_id=world_id,
+                trigger_turn_id=trigger_turn_id,
+                seed=seed,
+                status=RunStatus.AT_CHECKPOINT,
+                checkpoint_kind=MomentKind.NOTICE,
+                cursor=0,
+                state_version=1,
+                created_at=now,
+                updated_at=now,
+            )
+        )
+
+    def checkpoint_run(self, run_id: str, now: str) -> Result[WorldRunRecord]:
+        """Advance the run's cursor by one cycle and bump its version.
+
+        The engine calls this when a cycle ends at a NOTICE checkpoint:
+        the completed cycle is behind the run, the cursor names the next
+        cycle's PRNG slot — ``(seed, cursor)`` — and ``state_version``
+        bumps (the row was rewritten; ``updated_at`` moves with it).
+        ``checkpoint_kind`` stays what it was: this cut's only checkpoint
+        word is NOTICE (DIRECTION arrives W-2-2). A run that does not
+        exist is ``NOT_FOUND``; a run already ``TERMINAL`` is refused
+        (``VALIDATION_FAILED``) — a finished run does not checkpoint.
+        """
+
+        row = self._run_row(run_id)
+        if row is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"run {run_id!r} not checkpointed: the run does"
+                        " not exist"
+                    ),
+                )
+            )
+        if row.status == RunStatus.TERMINAL:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"run {run_id!r} is TERMINAL; a finished run does"
+                        " not checkpoint"
+                    ),
+                )
+            )
+        began = False
+        try:
+            self._conn.execute("BEGIN IMMEDIATE")
+            began = True
+            self._conn.execute(
+                'UPDATE world_run SET "cursor" = "cursor" + 1,'
+                " state_version = state_version + 1, updated_at = ?"
+                " WHERE run_id = ?",
+                (now, run_id),
+            )
+        except sqlite3.Error as exc:
+            if began:
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=f"run {run_id!r} not checkpointed: {exc}",
+                )
+            )
+        self._conn.execute("COMMIT")
+        updated = self._run_row(run_id)
+        assert updated is not None  # the UPDATE above just touched it
+        return Ok(updated)
+
+    def terminalize_run(self, run_id: str, now: str) -> Result[WorldRunRecord]:
+        """Terminate the run at the RESPONSE stop.
+
+        The engine calls this when a cycle ends at a RESPONSE moment (or
+        when its fail-closed cycle ceiling burns out — the trace, not
+        this row, carries that distinction): the run becomes
+        ``TERMINAL``, ``checkpoint_kind`` becomes ``RESPONSE`` (the
+        world waits for the next reply), and ``state_version`` bumps. A
+        run that does not exist is ``NOT_FOUND``; a run already
+        ``TERMINAL`` is refused (``VALIDATION_FAILED``) — terminal is
+        absorbing, and a second termination is a caller bug, not a
+        no-op.
+        """
+
+        row = self._run_row(run_id)
+        if row is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"run {run_id!r} not terminalized: the run does"
+                        " not exist"
+                    ),
+                )
+            )
+        if row.status == RunStatus.TERMINAL:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"run {run_id!r} is already TERMINAL; terminal is"
+                        " absorbing and does not terminate twice"
+                    ),
+                )
+            )
+        began = False
+        try:
+            self._conn.execute("BEGIN IMMEDIATE")
+            began = True
+            self._conn.execute(
+                "UPDATE world_run SET status = 'TERMINAL',"
+                " checkpoint_kind = 'RESPONSE',"
+                " state_version = state_version + 1, updated_at = ?"
+                " WHERE run_id = ?",
+                (now, run_id),
+            )
+        except sqlite3.Error as exc:
+            if began:
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=f"run {run_id!r} not terminalized: {exc}",
+                )
+            )
+        self._conn.execute("COMMIT")
+        updated = self._run_row(run_id)
+        assert updated is not None  # the UPDATE above just touched it
+        return Ok(updated)
+
     # -- read face -----------------------------------------------------------
 
     def get_world(self, world_id: str) -> WorldRecord | None:
@@ -678,6 +899,28 @@ class SqliteWorldStore:
         ).fetchall()
         return tuple(self._fact(row) for row in rows)
 
+    # -- run read face (W-1-2) -------------------------------------------------
+
+    def get_run(self, run_id: str) -> WorldRunRecord | None:
+        """One run by id; ``None`` when the id is unknown."""
+
+        return self._run_row(run_id)
+
+    def list_runs(self, world_id: str) -> tuple[WorldRunRecord, ...]:
+        """One world's runs, ``created_at`` then ``run_id`` ascending (the
+        durable order — deterministic reads are content, not an
+        implementation detail)."""
+
+        rows = self._conn.execute(
+            "SELECT run_id, world_id, trigger_turn_id, seed, status,"
+            ' checkpoint_kind, "cursor", state_version, created_at,'
+            " updated_at"
+            " FROM world_run WHERE world_id = ?"
+            " ORDER BY created_at ASC, run_id ASC",
+            (world_id,),
+        ).fetchall()
+        return tuple(self._run(row) for row in rows)
+
     # -- internals -----------------------------------------------------------
 
     @staticmethod
@@ -767,6 +1010,42 @@ class SqliteWorldStore:
             (event_id,),
         ).fetchone()
         return None if row is None else tuple(row)
+
+    def _run_row(self, run_id: str) -> WorldRunRecord | None:
+        """One ``world_run`` row as its frozen record, or ``None``. The
+        two lifecycle words are cast through the engine's vocabularies —
+        the row's own CHECKs bound them to exactly those words, so the
+        cast cannot meet a third."""
+
+        row = self._conn.execute(
+            "SELECT run_id, world_id, trigger_turn_id, seed, status,"
+            ' checkpoint_kind, "cursor", state_version, created_at,'
+            " updated_at"
+            " FROM world_run WHERE run_id = ?",
+            (run_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return self._run(row)
+
+    @staticmethod
+    def _run(row: tuple[Any, ...]) -> WorldRunRecord:
+        """One raw ``world_run`` row as its frozen record (pure column
+        read — ``status`` / ``checkpoint_kind`` are CHECK-bound to the
+        two vocabularies the engine's enums spell)."""
+
+        return WorldRunRecord(
+            run_id=str(row[0]),
+            world_id=str(row[1]),
+            trigger_turn_id=None if row[2] is None else str(row[2]),
+            seed=int(row[3]),
+            status=RunStatus(str(row[4])),
+            checkpoint_kind=MomentKind(str(row[5])),
+            cursor=int(row[6]),
+            state_version=int(row[7]),
+            created_at=str(row[8]),
+            updated_at=str(row[9]),
+        )
 
     @staticmethod
     def _fact(row: tuple[object, ...]) -> WorldStateFact:

@@ -1,5 +1,5 @@
-"""The World bounded context (W-1-0 + W-1-1) — identity binding and the
-event tree with its minimal state projection.
+"""The World bounded context (W-1-0 + W-1-1 + W-1-2) — identity binding,
+the event tree with its minimal state projection, and the run engine.
 
 What ships here: the three migration-0023 identity tables' SQL face
 (:class:`~elc.world.store.SqliteWorldStore` — worlds, actors,
@@ -9,15 +9,19 @@ migration 0024's two tables (``world_event``, the append-only chronicle;
 ``world_state_fact``, the minimal projection with its ``CURRENT`` /
 ``SUPERSEDED`` lifecycle) written only through the store's
 ``record_event`` (one atomic settlement), read through the chronicle /
-current-facts / fact-history faces.
+current-facts / fact-history faces — and W-1-2's run face: migration
+0025's ``world_run`` row plus the deterministic engine
+(:mod:`elc.world.engine` — replayable sequencing from ``(seed,
+cursor)``, NOTICE checkpoints pause the run, RESPONSE terminates it,
+M0.1 AD-6: a restart does not re-roll the dice).
 
-What does **not** ship here, declared rather than implied: no world
-engine, no reveal face, no narration generation, no world behaviour of
-any kind — W-1-1 lands the event tree and its minimal projection only
-(the adjudication chain DEC-OPI-7e3744ee…2 / DEC-OPI-7e3744ee…4 /
-DEC-OPI-d96fd92d…7 / DEC-OPI-7e3744ee…17; conservative overlay, AD-1).
-A world this store binds exists as rows and an event log; the cuts that
-make it live are registered, not simulated.
+What does **not** ship here, declared rather than implied: no reveal
+face, no narration generation (the engine's pool arrives pre-authored),
+no presentation rendering, no ``DIRECTION`` word (W-2-2 opens it), no
+deletion face — those are W-1-3 / W-2-x registered cuts, and this
+package ships none of them rather than a stub that pretends to. A world
+this store binds exists as rows, an event log and its runs; the cuts
+that make it live further are registered, not simulated.
 
 Deletion: none. The migrations spell no ON DELETE (the RESTRICT posture
 is SQLite's default); the deletion face is W-1-3's registered cut.

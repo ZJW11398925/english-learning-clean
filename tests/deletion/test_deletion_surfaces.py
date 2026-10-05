@@ -138,9 +138,11 @@ def test_no_global_content_table_lives_in_app_db() -> None:
     (nothing unnamed can be swept, and nothing in the kept set is user
     data). W-1-0 (DEC-OPI-d96fd92d…7 AD-5) adds the world's identity
     tables (migration 0023's ``world`` / ``world_actor`` /
-    ``world_conversation``) to the same keep rule, and W-1-1
+    ``world_conversation``) to the same keep rule, W-1-1
     (DEC-OPI-7e3744ee…17) adds the world's event tree and its projection
-    (migration 0024's ``world_event`` / ``world_state_fact``) — the
+    (migration 0024's ``world_event`` / ``world_state_fact``), and W-1-2
+    (DEC-OPI-7e3744ee…26) adds the world's run row (migration 0025's
+    ``world_run``) — the
     conservative reading throughout: the classification is registration,
     no sweep walks them, and the deletion face for the world is W-1-3's
     registered cut (the FK consequences are registered in
@@ -154,6 +156,7 @@ def test_no_global_content_table_lives_in_app_db() -> None:
         "world_conversation",
         "world_event",
         "world_state_fact",
+        "world_run",
     )
     assert "world_lore_fact" not in SWEPT_TABLES
     assert "world" not in SWEPT_TABLES
@@ -161,6 +164,7 @@ def test_no_global_content_table_lives_in_app_db() -> None:
     assert "world_conversation" not in SWEPT_TABLES
     assert "world_event" not in SWEPT_TABLES
     assert "world_state_fact" not in SWEPT_TABLES
+    assert "world_run" not in SWEPT_TABLES
 
 
 # -- the per-scope surfaces ------------------------------------------------

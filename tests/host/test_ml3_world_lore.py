@@ -154,24 +154,24 @@ def test_0020_is_the_registered_head() -> None:
     head bump is the requirement, the number moved with it), immediately
     behind fr-A's 0021_provider_usage (renumbered from 0020 at merge, the
     first-merged-side-wins law) and the veto-response cut's
-    0022_app_settings, with W-1-0's 0023_world_identity behind W-1-1's
-    0024_world_events as the head;
+    0022_app_settings, with W-1-0's 0023_world_identity and W-1-1's
+    0024_world_events behind W-1-2's 0025_world_runs as the head;
     the shared constants say so, and the
-    stamp a fresh database carries is 24."""
+    stamp a fresh database carries is 25."""
 
-    assert MIGRATION_IDS[-1] == "0024_world_events"
-    assert MIGRATION_IDS[-2] == "0023_world_identity"
-    assert SCHEMA_HEAD_FILE == "0024_world_events.sql"
+    assert MIGRATION_IDS[-1] == "0025_world_runs"
+    assert MIGRATION_IDS[-2] == "0024_world_events"
+    assert SCHEMA_HEAD_FILE == "0025_world_runs.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
     assert (MIGRATIONS / "0020_world_lore_facts.sql").is_file()
-    assert SCHEMA_HEAD_VERSION == "24"
+    assert SCHEMA_HEAD_VERSION == "25"
     assert "0019_character_cards" in MIGRATION_IDS
 
     conn = sqlite3.connect(":memory:")
     applied = apply_migrations(conn)
-    assert applied[-1] == "0024_world_events"
-    assert applied[-2] == "0023_world_identity"
-    assert schema_version(conn) == "24"
+    assert applied[-1] == "0025_world_runs"
+    assert applied[-2] == "0024_world_events"
+    assert schema_version(conn) == "25"
 
 
 def test_the_world_lore_fact_table_carries_its_columns() -> None:

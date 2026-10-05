@@ -7,9 +7,9 @@ the living state lives here, two tables; AD-2 — no model face, narration
 arrives as the caller's string). The slice VAL groups, each a section
 below:
 
-1. **migration pins** — 0024 is the registered head (the shared
-   constants and the stamp a fresh database carries say 24) and the two
-   tables carry their columns, in order;
+1. **migration pins** — 0024 is in the chain behind W-1-2's 0025 head
+   (the shared constants and the stamp a fresh database carries say 25)
+   and the two tables carry their columns, in order;
 2. **declaration pins** — the FKs, the one index, the ``status`` CHECK,
    the absence of any UNIQUE on the key and the RESTRICT posture (no ON
    DELETE anywhere), all read off the live schema through PRAGMA;
@@ -30,8 +30,8 @@ below:
    fields each refused with the discriminating word, the round trip is
    exact, and the chronicle answers a hand-corrupted column with a
    value-semantics ``Err`` (never an exception);
-9. **the registration** — five canonical objects under ``OWNER_WORLD``
-   (no version field) and six ``GLOBAL_CONTENT_TABLES`` members (zero
+9. **the registration** — six canonical objects under ``OWNER_WORLD``
+   (no version field) and seven ``GLOBAL_CONTENT_TABLES`` members (zero
    sweep face);
 10. **N-W10-6 regression** — ``create_world``'s refusal no longer blames
     the template for every database failure: the FK refusal keeps the
@@ -50,6 +50,7 @@ from elc.platform.db.epoch import open_runtime_epoch
 from elc.platform.db.migrations import apply_migrations, schema_version
 from elc.platform.registry import CANONICAL_OBJECTS, OWNER_WORLD
 from elc.platform.types import Err
+from elc.world.engine.types import WorldRunRecord
 from elc.world.store import SqliteWorldStore
 from elc.world.types import (
     StateEffect,
@@ -129,22 +130,24 @@ def _assert_err(result: object, code: str) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_0024_is_the_registered_head() -> None:
-    """W-1-1's migration is the head, immediately behind W-1-0's
-    0023_world_identity; the shared constants say so, and the stamp a
-    fresh database carries is 24."""
+def test_0025_is_the_registered_head() -> None:
+    """W-1-1's migration is in the chain, immediately behind W-1-2's
+    0025_world_runs (the stamp-pin discipline every head move has
+    followed since P8-4; the pin read "0024 is the head" while 0024 was
+    the head); the shared constants say so, and the stamp a fresh
+    database carries is 25."""
 
-    assert MIGRATION_IDS[-1] == "0024_world_events"
-    assert MIGRATION_IDS[-2] == "0023_world_identity"
-    assert SCHEMA_HEAD_FILE == "0024_world_events.sql"
+    assert MIGRATION_IDS[-1] == "0025_world_runs"
+    assert MIGRATION_IDS[-2] == "0024_world_events"
+    assert SCHEMA_HEAD_FILE == "0025_world_runs.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "24"
+    assert SCHEMA_HEAD_VERSION == "25"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0024_world_events"
-    assert applied[-2] == "0023_world_identity"
-    assert schema_version(fresh) == "24"
+    assert applied[-1] == "0025_world_runs"
+    assert applied[-2] == "0024_world_events"
+    assert schema_version(fresh) == "25"
 
 
 def test_the_two_tables_carry_their_columns() -> None:
@@ -569,11 +572,12 @@ def test_the_three_read_faces_are_deterministic(store: SqliteWorldStore) -> None
 # ---------------------------------------------------------------------------
 
 
-def test_the_registry_carries_the_five_world_objects() -> None:
-    """Five canonical objects under ``OWNER_WORLD`` — the three identity
-    rows plus W-1-1's event and fact — each schema'd by the exported
-    record class and carrying no version field (append-first rows; the
-    projection's lifecycle lives in the row, not in a version column)."""
+def test_the_registry_carries_the_six_world_objects() -> None:
+    """Six canonical objects under ``OWNER_WORLD`` — the three identity
+    rows, W-1-1's event and fact, and W-1-2's run — each schema'd by the
+    exported record class and carrying no version field (append-first
+    rows; the projection's lifecycle lives in the row, not in a version
+    column; ``state_version`` is not a canonical version spelling)."""
 
     assert OWNER_WORLD == "world"
     for key, schema in (
@@ -582,6 +586,7 @@ def test_the_registry_carries_the_five_world_objects() -> None:
         ("world_conversation", None),
         ("world_event", WorldEvent),
         ("world_state_fact", WorldStateFact),
+        ("world_run", WorldRunRecord),
     ):
         entry = CANONICAL_OBJECTS[key]
         assert entry.owner == OWNER_WORLD, key
@@ -590,10 +595,11 @@ def test_the_registry_carries_the_five_world_objects() -> None:
             assert entry.schema is schema, key
 
 
-def test_global_content_tables_carry_the_six_members() -> None:
-    """W-1-1's two tables join the keep half (SEC-025's conservative
-    reading): six members, and the classification is registration — no
-    sweep walks them, nothing keeps them as retained either."""
+def test_global_content_tables_carry_the_seven_members() -> None:
+    """W-1-1's two tables and W-1-2's run row join the keep half
+    (SEC-025's conservative reading): seven members, and the
+    classification is registration — no sweep walks them, nothing keeps
+    them as retained either."""
 
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
@@ -602,8 +608,9 @@ def test_global_content_tables_carry_the_six_members() -> None:
         "world_conversation",
         "world_event",
         "world_state_fact",
+        "world_run",
     )
-    for table in ("world_event", "world_state_fact"):
+    for table in ("world_event", "world_state_fact", "world_run"):
         assert table not in SWEPT_TABLES
         assert table not in RETAINED_TABLES
 

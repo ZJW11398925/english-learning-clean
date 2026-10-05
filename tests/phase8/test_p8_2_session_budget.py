@@ -1249,11 +1249,11 @@ def test_no_migration_carries_the_view() -> None:
     # 主线-3 随迁（the P9-1 way）：head 字面随新头迁移——本刀「不加表」的
     # 主张不变，schema 扫描仍承重。veto-R 再随迁至 0022（app_setting 泛用
     # 键值表——「不加表」读 session_budget 仍成立：它不是本刀的表）；W-1-0
-    # 再随迁至 0023（世界身份三表）；W-1-1 再随迁至 0024（世界事件树两表，
-    # 同样不是本刀的表）。
-    assert MIGRATION_IDS[-1] == "0024_world_events"
-    assert SCHEMA_HEAD_FILE == "0024_world_events.sql"
-    assert SCHEMA_HEAD_VERSION == "24"
+    # 再随迁至 0023（世界身份三表）；W-1-1 再随迁至 0024（世界事件树两表）；
+    # W-1-2 再随迁至 0025（世界运转一行，同样不是本刀的表）。
+    assert MIGRATION_IDS[-1] == "0025_world_runs"
+    assert SCHEMA_HEAD_FILE == "0025_world_runs.sql"
+    assert SCHEMA_HEAD_VERSION == "25"
     schema = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted((REPO_ROOT / "migrations").glob("*.sql"))

@@ -286,6 +286,16 @@ RETAINED_TABLES: tuple[str, ...] = (
 #: references ``world_event`` (and both tables reference ``world``) — the
 #: event tree and its projection delete together or not at all, which is
 #: W-1-3's decision, pre-empted by no one here.
+#:
+#: W-1-2 (DEC-OPI-7e3744ee…26) adds migration 0025's ``world_run`` — the
+#: durable run row the deterministic engine advances — to the same keep
+#: rule, same conservative reading (registration, not deletion semantics;
+#: zero sweep face; same Revisit W-1-3). ``world_run.trigger_turn_id``
+#: deliberately carries NO foreign key for this posture's sake: the run
+#: must not pin a conversation's lifetime (a conversation ALL_USER_DATA
+#: does sweep) while the world's deletion face is unregistered — the
+#: loose column is what keeps a run from refusing a sweep it has no
+#: business refusing.
 GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_lore_fact",
     "world",
@@ -293,6 +303,7 @@ GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_conversation",
     "world_event",
     "world_state_fact",
+    "world_run",
 )
 
 

@@ -123,8 +123,8 @@ def test_the_retained_set_is_unchanged_and_the_sweep_grew_by_four() -> None:
     }
     # 主线-3 随迁：全局内容集迎来第一个 app.db 成员（共享世界事实）；
     # W-1-0 再随迁：世界身份三表入 keep 半；W-1-1 再随迁：世界事件树两表
-    # 入 keep 半（保守读法，不接 sweep 面——分类登记见 elc.deletion.types
-    # 的注释）。
+    # 入 keep 半；W-1-2 再随迁：世界运转一行入 keep 半（保守读法，不接
+    # sweep 面——分类登记见 elc.deletion.types 的注释）。
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
@@ -132,6 +132,7 @@ def test_the_retained_set_is_unchanged_and_the_sweep_grew_by_four() -> None:
         "world_conversation",
         "world_event",
         "world_state_fact",
+        "world_run",
     )
     for table in PLANNER_TABLES:
         assert table in SWEPT_TABLES

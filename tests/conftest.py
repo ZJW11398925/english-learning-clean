@@ -75,12 +75,17 @@ MIGRATION_IDS: tuple[str, ...] = (
     # written only through SqliteWorldStore.record_event's one atomic
     # settlement.
     "0024_world_events",
+    # W-1-2 (DEC-OPI-7e3744ee…26): the world run — the one durable row per
+    # advance of the living-world engine (deterministic, replayable;
+    # M0.1 AD-6: a restart does not re-roll the dice), moved only through
+    # SqliteWorldStore's run face.
+    "0025_world_runs",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0024_world_events.sql"
-SCHEMA_HEAD_VERSION = "24"
+SCHEMA_HEAD_FILE = "0025_world_runs.sql"
+SCHEMA_HEAD_VERSION = "25"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

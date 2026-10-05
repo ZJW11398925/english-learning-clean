@@ -7,7 +7,9 @@ prep-0 时 **520** / 130 文件 / 154 `.py`，N13 曾登记 159 / 527 / 133；v3
 义务）；主线-3 触碰本文件时同刀复测为 **564** / 142 / **173**（含 world_lore
 的 store/content 两新模块；口径同前 = 公开类（AST ``ClassDef`` 非下划线）/
 含类定义的文件 / `.py` 总数）；W-1-0 触碰本文件时同刀复测为 **569** / 145 /
-**178**（含 world 新包的 types/store 两新模块；口径同前）——逐类贴标签是不可
+**178**（含 world 新包的 types/store 两新模块；口径同前）；W-1-2 触碰本文件时
+同刀复测为 **580** / 147 / **182**（含 elc.world.engine 四新模块——N12/N13/N20
+同族义务）——逐类贴标签是不可
 维护的漂移面），而是**以包为行**
 的一跳索引：每行给出该包的现役面（读者应当用的类/模块）、它自己的 durable store
 （若有），以及本包内**非现役**的骨架类。
@@ -213,11 +215,15 @@ SURFACE_CENSUS: tuple[Row, ...] = (
         live_face="elc.user_config.controller:UserConfigController",
         store="elc.user_config.store:SqliteUserConfigStore",
     ),
-    # W-1-0（活世界程序首刀）+ W-1-1（事件树与最小投影）：迁移 0023 三表
-    # （world / world_actor / world_conversation）与迁移 0024 两表
-    # （world_event / world_state_fact）的 SQL 面 + 冻结记录形。无
-    # controller/commands/queries（不在 DOMAIN_PACKAGES——Phase 0 gate 的
-    # 接口钉不适用于本包）；引擎、揭示、叙述生成、行为未落（横幅即边界）。
+    # W-1-0（活世界程序首刀）+ W-1-1（事件树与最小投影）+ W-1-2（运转引擎
+    # v1 + world_run durable）：迁移 0023 三表（world / world_actor /
+    # world_conversation）、迁移 0024 两表（world_event /
+    # world_state_fact）与迁移 0025 一表（world_run）的 SQL 面 + 冻结记录
+    # 形 + elc.world.engine 子包的确定性七步骨架（types/steps/engine——
+    # advance 面确定性可重放，NOTICE checkpoint / RESPONSE terminal 双出
+    # 口）。无 controller/commands/queries（不在 DOMAIN_PACKAGES——Phase 0
+    # gate 的接口钉不适用于本包）；揭示、叙述生成、DIRECTION、呈现渲染、
+    # 等待、删除面未落（横幅即边界）。
     Row(
         "world",
         live_face="elc.world.store:SqliteWorldStore",

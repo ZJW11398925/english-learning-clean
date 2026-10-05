@@ -93,20 +93,21 @@ def _types(db: sqlite3.Connection) -> dict[str, str]:
 def test_0017_is_registered_and_0018_follows_it() -> None:
     """0017 is in the chain, 0016 is immediately behind it, and its successor
     is the literal P9-1 landed: ``0018_delivery_records.sql``. The head
-    assertion has since moved on five times (this pin read
+    assertion has since moved on six times (this pin read
     ``names[-1] == SCHEMA_HEAD_FILE == HEAD_0017`` while 0017 was the head,
     then read ``MIGRATION_IDS[-1] == "0018…"`` while that was the head,
     then each 0020 in turn (MC-0's stretch, 主线-3's 0020_world_lore_facts,
     fr-A's 0021_provider_usage), then the veto-response cut's
-    0022_app_settings, then W-1-0's 0023_world_identity
-    — W-1-1's 0024_world_events is the head now), and the
+    0022_app_settings, then W-1-0's 0023_world_identity, then W-1-1's
+    0024_world_events
+    — W-1-2's 0025_world_runs is the head now), and the
     successor
     is a **literal** — a ``SCHEMA_HEAD_FILE`` reference here would silently
     become false at the next migration (the pin's own rule, restated by
     the 0016 suite)."""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert MIGRATION_IDS[-1] == "0024_world_events"
+    assert MIGRATION_IDS[-1] == "0025_world_runs"
     assert names[names.index(HEAD_0017) + 1] == "0018_delivery_records.sql"
     assert names[names.index(PRE_0017) + 1] == HEAD_0017
     assert [name[:4] for name in names] == [
@@ -136,8 +137,8 @@ def test_applying_the_chain_is_idempotent(db: sqlite3.Connection) -> None:
 
 def test_the_stamps_move_to_the_shared_head(db: sqlite3.Connection) -> None:
     # 主线-3 随迁：head stamp 19 → 20；veto-R 再随迁 21 → 22；W-1-0 再随迁
-    # 22 → 23；W-1-1 再随迁 23 → 24。
-    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "24"
+    # 22 → 23；W-1-1 再随迁 23 → 24；W-1-2 再随迁 24 → 25。
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "25"
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"

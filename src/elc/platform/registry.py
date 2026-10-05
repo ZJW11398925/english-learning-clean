@@ -43,6 +43,7 @@ from elc.user_config.types import (
     TeachingPolicyProfile,
     UserProfile,
 )
+from elc.world.engine.types import WorldRunRecord
 from elc.world.types import (
     WorldActorRecord,
     WorldConversationRecord,
@@ -280,6 +281,14 @@ CANONICAL_OBJECTS: Mapping[str, CanonicalObject] = {
     "world_state_fact": CanonicalObject(
         "WorldStateFact", OWNER_WORLD, WorldStateFact
     ),
+    # -- World run (W-1-2, DEC-OPI-7e3744ee…26): migration 0025's one
+    # table — the durable run row the deterministic engine advances
+    # (replayable sequencing; M0.1 AD-6 — a restart does not re-roll the
+    # dice). The record shape lives in elc.world.engine.types. No
+    # ``version_field``: ``state_version`` is not a canonical version
+    # spelling — it counters the run row's own writes, not a schema or a
+    # model (the ScheduleItem entry's rule).
+    "world_run": CanonicalObject("WorldRunRecord", OWNER_WORLD, WorldRunRecord),
     "teaching_unit": CanonicalObject(
         "TeachingUnit", OWNER_CONTENT, TeachingUnit,
         version_field="content_version",
