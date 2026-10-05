@@ -98,13 +98,16 @@ def store(conn: sqlite3.Connection) -> SqliteWorldStore:
 def _valid_payload() -> dict[str, object]:
     """One minimal valid package payload — the negative tests mutate a
     copy of this and expect the loader to refuse the copy, never the
-    shipped Berrymoor file. W-L: v2 — every event carries both
-    narrations, and the version word is the loader's own constant."""
+    shipped Berrymoor file. v3 (A2): every event carries both narrations
+    and its story span (``days``), the package names the virtual world's
+    day zero (``calendar_start``), and the version word is the loader's
+    own constant."""
 
     return {
         "world_id": "world-x",
         "name": "X",
         "version": WORLD_PACKAGE_VERSION,
+        "calendar_start": "2025-09-14",
         "setting": ["one", "two", "three"],
         "cast": [{"persona_id": PENPAL_PERSONA_ID, "name": "Nell"}],
         "event_pool": [
@@ -112,6 +115,7 @@ def _valid_payload() -> dict[str, object]:
                 "kind": "k",
                 "narration": "n",
                 "narration_zh": "n-中文",
+                "days": 1,
                 "effects": [],
                 "conditions": [],
                 "moment": "NOTICE",
@@ -215,6 +219,7 @@ def test_load_refuses_unknown_moment_word_disclosing_it(tmp_path: Path) -> None:
             "kind": "k",
             "narration": "n",
             "narration_zh": "n-中文",
+            "days": 1,
             "moment": "DIRECTION",
         }
     ]
@@ -244,13 +249,14 @@ def test_load_refuses_family_word_outside_declared_vocabulary(
 # ---------------------------------------------------------------------------
 
 
-def test_real_package_carries_the_seven_sections() -> None:
+def test_real_package_carries_the_v3_sections() -> None:
     result = load_world_package(PACKAGE_PATH)
     assert not isinstance(result, Err), result.error.message
     package = result.value
     assert package.world_id == "world-berrymoor"
     assert package.name == "Berrymoor"
     assert package.version == WORLD_PACKAGE_VERSION
+    assert package.calendar_start == "2025-09-14"
     assert 3 <= len(package.setting) <= 5
     assert all(paragraph.strip() for paragraph in package.setting)
     assert [(m.persona_id, m.name) for m in package.cast] == [
@@ -261,6 +267,7 @@ def test_real_package_carries_the_seven_sections() -> None:
         "NOTICE",
         "RESPONSE",
     }
+    assert all(event.days >= 0 for event in package.event_pool)
     assert set(package.supply.families) <= set(SUPPLY_FAMILY_WORDS)
     assert package.supply.note.startswith("declared-not-consumed")
 

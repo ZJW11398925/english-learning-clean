@@ -36,8 +36,10 @@ looks.
 
 What is deliberately absent: no model face, no provider, no narration
 generation (the pool's prose arrives pre-authored, AD-2), no waiting,
-no rendering, no world clock (the caller's ``now`` is the only
-moment), and no DIRECTION word (W-2-2 opens it).
+no rendering, and no DIRECTION word (W-2-2 opens it). The world's own
+time is the virtual calendar's (A2, DEC-…88/…90): with a package the
+step stamps its events on ``calendar_start`` plus the story's spans —
+the caller's ``now`` keeps only the run row's bookkeeping.
 
 Layering note: this module imports the engine's execution face through
 its direct module path (``elc.world.engine.engine``) — the same edge
@@ -46,6 +48,9 @@ imports back.
 """
 
 from __future__ import annotations
+
+from datetime import date, timedelta
+from typing import Callable
 
 from elc.platform.types import (
     DomainError,
@@ -56,6 +61,7 @@ from elc.platform.types import (
 )
 from elc.world.engine.engine import RunTrace, advance
 from elc.world.engine.types import EngineConfig, PoolEvent, RunStatus
+from elc.world.package import WorldPackage, story_days_of
 from elc.world.store import SqliteWorldStore, WorldRevealItem
 
 __all__ = [
@@ -95,6 +101,7 @@ def run_step(
     trigger: str,
     now: str,
     trigger_turn_id: str | None = None,
+    package: WorldPackage | None = None,
 ) -> Result[RunTrace]:
     """One world step: the trigger's act, then the engine's advance,
     then the step's reveal enqueue — in that order, refusals short-
@@ -110,6 +117,20 @@ def run_step(
     the same step. The caller owns ``now`` (no hidden clock) and, for a
     letter from nothing, ``trigger_turn_id`` (the reply that wound the
     spring, when the caller knows it).
+
+    A2 (DEC-…88/…90): with a ``package`` the step stamps its events on
+    the **virtual world calendar** — the story's own time (spec §198:
+    the world does not follow real time). The timestamp source answers
+    per event: the event's moment is ``calendar_start`` plus every
+    happened event's story span up to and including this one (落笔在
+    跨度之末), so the same history replays to the same dates and a
+    different story answers different dates at the same letter count.
+    ``now`` (the caller's wall moment) keeps the run row's own
+    bookkeeping stamps; it never reaches a world event. Every
+    production caller passes the package (the web face's letter wiring,
+    its streamed pre-step and its 「继续」 route alike); a caller
+    without a package stamps the events with its own ``now`` exactly as
+    before A2 — the engine-direct tests' shape, kept for them.
     """
 
     if trigger not in (TRIGGER_LETTER, TRIGGER_CONTINUE):
@@ -159,7 +180,13 @@ def run_step(
             # winch (spec §4.2's 收口).
             run = latest
 
-    stepped = advance(store, run, pool, config, now)
+    moment_source: str | Callable[[str], str] = now
+    stamps: dict[str, str] = {}
+    if package is not None:
+        moment_source = _calendar_source(
+            package, store, world_id, stamps
+        )
+    stepped = advance(store, run, pool, config, moment_source)
     if isinstance(stepped, Err):
         return Err(stepped.error)
 
@@ -167,7 +194,9 @@ def run_step(
     # whole batch in one short transaction. Only an Ok step reaches here,
     # so a refused path enqueues nothing (零撕裂); the items derive their
     # ids from the events, so a replayed step enqueues as the store's
-    # idempotent no-op.
+    # idempotent no-op. The item's own stamp inherits its event's moment
+    # (the calendar's date when a package rides, DEC-…88 ③) — the queue
+    # carries the story's time, never the wall clock's.
     items = tuple(
         WorldRevealItem(
             item_id=f"{cycle.event_id}:reveal",
@@ -176,7 +205,11 @@ def run_step(
             actor_id=cycle.actor,
             status="PENDING",
             revealed_at=None,
-            created_at=now,
+            created_at=(
+                stamps.get(cycle.selected, now)
+                if cycle.selected is not None
+                else now
+            ),
         )
         for cycle in stepped.value.cycles
         if cycle.event_id is not None
@@ -185,3 +218,37 @@ def run_step(
     if isinstance(enqueued, Err):
         return Err(enqueued.error)
     return Ok(stepped.value)
+
+
+def _calendar_source(
+    package: WorldPackage,
+    store: SqliteWorldStore,
+    world_id: str,
+    stamps: dict[str, str],
+) -> Callable[[str], str]:
+    """The virtual world calendar's timestamp source (A2, DEC-…88/…90):
+    per event kind, the date ``calendar_start`` plus every happened
+    event's story span **including this one** — the story writes its
+    event at the end of its own span (落笔在跨度之末). The elapsed base
+    is read once at step time from the durable chronicle
+    (:func:`elc.world.package.story_days_of`), and each stamp advances
+    the closure's running total, so a multi-event step (the engine's
+    future shape) accumulates within the step exactly as it does across
+    steps. Each stamp is also recorded into ``stamps`` (kind → moment)
+    for the reveal enqueue's inheritance. Deterministic: the same
+    chronicle answers the same dates."""
+
+    start = date.fromisoformat(package.calendar_start)
+    days_by_kind = {event.kind: event.days for event in package.event_pool}
+    state = {"total": story_days_of(package, store, world_id)}
+
+    def _stamp(kind: str) -> str:
+        # An unknown kind ("" for the LIMIT ceiling's no-event exit)
+        # carries no span of its own — the closure answers the running
+        # date without advancing the story.
+        state["total"] += days_by_kind.get(kind, 0)
+        moment = (start + timedelta(days=state["total"])).isoformat()
+        stamps[kind] = moment
+        return moment
+
+    return _stamp

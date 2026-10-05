@@ -1567,20 +1567,29 @@ h1, .grouphead, .note-head b { text-wrap: balance; }
 /* 沓内简化建卡表单的样式段随 v3-2R 退役——「起笔」不再做建卡（判词
    否定的降级实现），新建角色归「完整编辑」（容器编辑面的九面表单）；
    注册表不做阁楼，样式与 DOM 同刀清出。 */
-/* W-1-3 世界收件箱——W-L 改写（分组散文呈现）：段落体（正文排印，
-   宽行距宽留白），组题弱墨一行；语汇全部家族复用（纸墨令牌 var()
-   引用，零新令牌；间距值沿用既有档）。 */
-.world-inbox .world-run-head {
-  margin: 24px 0 0;
+/* W-1-3 世界收件箱——常驻区随 DEC-…92 整体退役（世界呈现唯一形态 =
+   信流里的内联故事块），其样式段与 DOM 同刀清出；.world-story 世界
+   故事块（DEC-…82/…88/…90/…92）：日期行一枚弱墨小字（原组题家族语
+   汇续用），叙述段落走正文排印，过渡句弱墨一行收束（回信打字机紧
+   随其下），fallback 小字与继续钮行随块；「继续」钮 = btn 家族现役
+   类零新样式。纸墨令牌 var() 引用，零新令牌；间距值沿用既有档。 */
+.world-story { margin: 24px 0 0; }
+.world-story .world-story-date {
+  margin: 0 0 8px;
   font-size: var(--fs-small);
   line-height: var(--lh-small);
   color: var(--ink-faint);
 }
-.world-inbox .world-note { margin-top: 12px; }
-.world-inbox .world-note-body {
-  margin: 0 0 4px;
+.world-story .world-story-note {
+  margin: 0 0 10px;
   font-size: var(--fs-body);
   line-height: var(--lh-body);
 }
-.world-inbox .world-note-fallback { margin: 0 0 4px; }
-.world-inbox .world-inbox-actions { margin: 12px 0 0; }
+.world-story .world-story-fallback { margin: 0 0 4px; }
+.world-story .world-story-then {
+  margin: 0 0 4px;
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  color: var(--ink-faint);
+}
+.world-story .world-story-actions { margin: 12px 0 0; }

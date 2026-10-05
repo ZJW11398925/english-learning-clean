@@ -2,9 +2,10 @@
 
 A world package is one JSON file under the repository's ``worlds/``
 directory (beside ``content_src/``): the world's identity (id, name,
-version), its setting prose, the cast it binds through existing character
-cards, the pre-authored event pool the engine draws from, and a supply
-declaration. :func:`load_world_package` decodes one file strictly — bad
+version, calendar_start), its setting prose, the cast it binds through
+existing character cards, the pre-authored event pool the engine draws
+from, and a supply declaration. :func:`load_world_package` decodes one
+file strictly — bad
 JSON, a missing or unexpected key, a value of the wrong shape, an unknown
 moment word or an unknown supply family word are all ``Err`` refusals
 whose message names the offending key or word — and
@@ -32,7 +33,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Callable
 
@@ -57,6 +58,8 @@ __all__ = [
     "WorldPackageError",
     "ensure_builtin_worlds",
     "load_world_package",
+    "story_days_of",
+    "world_date_of",
 ]
 
 #: The repository's builtin worlds directory (``worlds/`` at the repo
@@ -80,13 +83,16 @@ SUPPLY_FAMILY_WORDS: tuple[str, ...] = (
     "STANCE",
 )
 
-#: The package schema version this loader reads (W-L): every pool event
-#: carries its narration in both languages (``narration`` and
-#: ``narration_zh``, both required non-empty strings), and a document
-#: stamped with any other version is a refusal naming the number — a v1
-#: file cannot ride in half-read, and a future v3 must be read by the cut
-#: that writes it, never guessed at by this one.
-WORLD_PACKAGE_VERSION = 2
+#: The package schema version this loader reads (v3, A2 / DEC-…88):
+#: every pool event carries its narration in both languages
+#: (``narration`` and ``narration_zh``, both required non-empty strings),
+#: and the package carries ``calendar_start`` — the virtual world
+#: calendar's day zero (spec §198: the world does not follow real time;
+#: :func:`world_date_of` derives every later day from it). A document
+#: stamped with any other version is a refusal naming the number — a
+#: v1/v2 file cannot ride in half-read, and a future v4 must be read by
+#: the cut that writes it, never guessed at by this one.
+WORLD_PACKAGE_VERSION = 3
 
 
 class WorldPackageError(RuntimeError):
@@ -120,8 +126,8 @@ class SupplyDeclaration:
 
 @dataclass(frozen=True)
 class WorldPackage:
-    """One decoded world package — the JSON file's seven sections in
-    their durable shapes.
+    """One decoded world package — the JSON file's sections in their
+    durable shapes.
 
     ``event_pool`` already carries the engine's own record shapes
     (:class:`~elc.world.engine.types.PoolEvent` with its
@@ -135,11 +141,18 @@ class WorldPackage:
     source (:meth:`narration_zh_for`), so the inbox can render the
     package's own Chinese prose without re-reading the file. Kinds are
     unique in a pool (the loader refuses a duplicate), so the kind key is
-    total over the package's own events."""
+    total over the package's own events.
+
+    A2 (DEC-…88): ``calendar_start`` is the virtual world calendar's
+    day zero — an ISO date. The world's story does not follow real time
+    (spec §198); every presented day derives from this start through
+    :func:`world_date_of`, and no world presentation face ever renders
+    the caller's wall clock."""
 
     world_id: str
     name: str
     version: int
+    calendar_start: str
     setting: tuple[str, ...]
     cast: tuple[CastMember, ...]
     event_pool: tuple[PoolEvent, ...]
@@ -168,17 +181,19 @@ _PACKAGE_KEYS = (
     "world_id",
     "name",
     "version",
+    "calendar_start",
     "setting",
     "cast",
     "event_pool",
     "supply",
 )
 _CAST_KEYS = ("persona_id", "name")
-_EVENT_REQUIRED_KEYS = ("kind", "narration", "narration_zh")
+_EVENT_REQUIRED_KEYS = ("kind", "narration", "narration_zh", "days")
 _EVENT_KEYS = (
     "kind",
     "narration",
     "narration_zh",
+    "days",
     "effects",
     "conditions",
     "moment",
@@ -245,13 +260,15 @@ def _decode_cast_member(entry: object, where: str) -> Result[CastMember]:
 
 
 def _decode_pool_event(entry: object, where: str) -> Result[PoolEvent]:
-    """One pool event: ``kind`` / ``narration`` / ``narration_zh``
-    required (v2, W-L — the Chinese narration is not optional prose, it
-    is the package's second language), ``effects`` / ``conditions`` /
-    ``moment`` optional (the engine shapes' own defaults). An unknown
-    moment word is refused with the word in the message — the vocabulary
-    is exactly ``NOTICE`` / ``RESPONSE`` (``DIRECTION`` is W-2-2's, and
-    cannot ride in through a package)."""
+    """One pool event: ``kind`` / ``narration`` / ``narration_zh`` /
+    ``days`` required (the Chinese narration is not optional prose, it
+    is the package's second language; ``days`` is the story's own span,
+    v3 — a negative or non-int span would move the world's calendar by
+    a lie), ``effects`` / ``conditions`` / ``moment`` optional (the
+    engine shapes' own defaults). An unknown moment word is refused with
+    the word in the message — the vocabulary is exactly ``NOTICE`` /
+    ``RESPONSE`` (``DIRECTION`` is W-2-2's, and cannot ride in through
+    a package)."""
 
     if not isinstance(entry, dict):
         return _err(f"{where}: not a JSON object")
@@ -271,6 +288,13 @@ def _decode_pool_event(entry: object, where: str) -> Result[PoolEvent]:
     if not isinstance(narration_zh, str) or not narration_zh.strip():
         return _err(
             f"{where}: narration_zh must be a non-empty string"
+        )
+    days = entry["days"]
+    if type(days) is not int or days < 0:
+        # A2 (DEC-…90): the story's own span — a non-negative int; the
+        # calendar is story-driven, so a wrong span is a wrong world.
+        return _err(
+            f"{where}: days must be a non-negative int, got {days!r}"
         )
     effects: tuple[StateEffect, ...] = ()
     if "effects" in entry:
@@ -312,6 +336,7 @@ def _decode_pool_event(entry: object, where: str) -> Result[PoolEvent]:
             effects=effects,
             conditions=conditions,
             moment=moment,
+            days=days,
         )
     )
 
@@ -356,9 +381,10 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
     Every refusal is an ``Err`` naming the file and the offending key or
     word: unreadable file, bad JSON, a non-object document, a missing or
     unexpected top-level key, a value of the wrong shape, a version other
-    than :data:`WORLD_PACKAGE_VERSION` (v2, W-L — every event carries
-    both narrations), a duplicated event kind, an unknown moment word, an
-    unknown supply family word. The loader never guesses past an error —
+    than :data:`WORLD_PACKAGE_VERSION` (v3 — every event carries both
+    narrations and ``calendar_start`` names the virtual world's day
+    zero), a duplicated event kind, an unknown moment word, an unknown
+    supply family word. The loader never guesses past an error —
     fail-closed decoding, the caller decides what a refusal means (the
     builtin seed answers: a failed open).
     """
@@ -393,8 +419,22 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
         return _err(
             f"{where}: version must be {WORLD_PACKAGE_VERSION} (this"
             f" loader reads v{WORLD_PACKAGE_VERSION} packages, whose"
-            " every event carries both narrations), got"
+            " every event carries both narrations and whose"
+            " calendar_start names the virtual world's day zero), got"
             f" {version}"
+        )
+    calendar_start = document["calendar_start"]
+    if not isinstance(calendar_start, str) or not calendar_start.strip():
+        return _err(
+            f"{where}: calendar_start must be a non-empty ISO date"
+            " (YYYY-MM-DD)"
+        )
+    try:
+        date.fromisoformat(calendar_start)
+    except ValueError:
+        return _err(
+            f"{where}: calendar_start must be an ISO date (YYYY-MM-DD),"
+            f" got {calendar_start!r}"
         )
     setting = document["setting"]
     if not isinstance(setting, list) or not setting:
@@ -431,7 +471,7 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
             # refusal naming the kind, never a silent overwrite.
             return _err(
                 f"{where}: event kind {event.kind!r} is declared twice"
-                " (a v2 pool's kinds are unique — the Chinese narrations"
+                " (a pool's kinds are unique — the Chinese narrations"
                 " are looked up by kind)"
             )
         narrations_zh.append((event.kind, entry["narration_zh"]))
@@ -444,6 +484,7 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
             world_id=world_id,
             name=name,
             version=version,
+            calendar_start=calendar_start,
             setting=tuple(setting),
             cast=tuple(members),
             event_pool=tuple(events),
@@ -464,6 +505,47 @@ def _actor_id_for(world_id: str, name: str) -> str:
     parts = name.split()
     given = parts[0].lower() if parts else ""
     return f"actor-{world_token}-{given}"
+
+
+def story_days_of(
+    package: WorldPackage,
+    store: SqliteWorldStore,
+    world_id: str,
+) -> int:
+    """The story's elapsed span (A2, DEC-…88/…90): the happened events'
+    ``days`` summed, in the package's own kind→span mapping.
+
+    The world's calendar is **story-driven** — it moves when the story's
+    events say so, never because a letter was written (the run cursor is
+    deliberately not a clock). A durable kind the package does not carry
+    (v1-era history) contributes zero: the package does not invent a
+    span it never authored."""
+
+    days_by_kind = {event.kind: event.days for event in package.event_pool}
+    return sum(days_by_kind.get(kind, 0) for kind in store.event_kinds_of(world_id))
+
+
+def world_date_of(
+    package: WorldPackage,
+    store: SqliteWorldStore,
+    world_id: str,
+) -> str:
+    """The world's own today (A2, DEC-…88/…90) — the virtual calendar's
+    date, derived, never clocked.
+
+    Spec §198: the world does not follow real time. The world's day is
+    ``calendar_start`` plus the happened events' story spans
+    (:func:`story_days_of`) — a pure function of the durable chronicle:
+    a replayed history answers the same day (AD-6's determinism carried
+    into time), and a different story answers a different day even at
+    the same letter count. The engine stays clockless — this is the
+    base the orchestrator's timestamp source advances per event — and
+    the presentation faces render from the events' ``occurred_at``, so
+    a real wall-clock moment never enters a world event.
+    """
+
+    start = date.fromisoformat(package.calendar_start)
+    return (start + timedelta(days=story_days_of(package, store, world_id))).isoformat()
 
 
 def ensure_builtin_worlds(

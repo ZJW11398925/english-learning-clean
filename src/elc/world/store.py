@@ -1020,6 +1020,23 @@ class SqliteWorldStore:
             for row in rows
         )
 
+    def event_kinds_of(self, world_id: str) -> tuple[str, ...]:
+        """One world's chronicle kinds, in durable order (event id
+        ascending — the ``<run_id>:<cursor>`` derivation makes that the
+        story's own order). The virtual world calendar's read half (A2,
+        DEC-…88/…90): ``elc.world.package.story_days_of`` sums the
+        happened events' story spans over this read, so the world's today
+        is derived from the durable chronicle, never from a clock. A
+        narrow face on purpose — the full rows stay the web face's own
+        direct-SQL read."""
+
+        rows = self._conn.execute(
+            "SELECT kind FROM world_event WHERE world_id = ?"
+            " ORDER BY event_id ASC",
+            (world_id,),
+        ).fetchall()
+        return tuple(str(row[0]) for row in rows)
+
     def conversations_of(self, world_id: str) -> tuple[WorldConversationRecord, ...]:
         """One world's conversation bindings, binding-id ascending."""
 

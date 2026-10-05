@@ -12,14 +12,20 @@ record: step names, the mature set, the selection, the chronicle entry
 and the actor decision, cycle by cycle.
 
 What is deliberately absent: no rendering, no waiting, no letters, no
-reveal, no DIRECTION word, no world calendar, no narration generation,
-no model face, no provider — the pool's narration arrives pre-authored
-(AD-2's continuity) and the engine invents nothing.
+reveal, no DIRECTION word, no mechanical calendar, no narration
+generation, no model face, no provider — the pool's narration arrives
+pre-authored (AD-2's continuity) and the engine invents nothing.
 
 The clock: there is none. ``advance`` takes the caller's ``now`` and
 stamps it on the events this call writes; nothing in the engine reads a
 clock of its own (the chronicle stays derived from caller moments — the
-0024 convention), and the docstrings say so rather than imply it.
+0024 convention), and the docstrings say so rather than imply it. A2
+(DEC-…88/…90): ``now`` may also be a **timestamp source** — a callable
+that answers one event's moment from its kind (the virtual world
+calendar's per-event stamp, the story's own span) — and the engine asks
+it once per written event; a plain string keeps the exact pre-A2
+behavior, one moment for the whole call. The engine itself never
+computes a date.
 
 Layering note: this module imports the store (the engine is the run
 face's only mover) while the store imports only the engine's *record
@@ -34,6 +40,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass
+from typing import Callable
 
 from elc.platform.types import (
     DomainError,
@@ -148,12 +155,27 @@ def _is_mature(event: PoolEvent, facts: tuple[WorldStateFact, ...]) -> bool:
     )
 
 
+def _moment_of(
+    now: str | Callable[[str], str], kind: str | None
+) -> str:
+    """The cycle's moment, from the caller's ``now`` (the clock seam).
+
+    A plain string is the call's one moment — the pre-A2 shape, byte for
+    byte. A timestamp source (A2, DEC-…88/…90 — the virtual world
+    calendar) answers per event: ``kind`` names the event being stamped
+    (the source sums the story's spans); ``None`` marks a no-event exit
+    (the LIMIT ceiling), which the source answers without advancing
+    anything. The engine never computes a date itself."""
+
+    return now(kind or "") if callable(now) else now
+
+
 def advance(
     store: SqliteWorldStore,
     run: WorldRunRecord,
     pool: tuple[PoolEvent, ...],
     config: EngineConfig,
-    now: str,
+    now: str | Callable[[str], str],
 ) -> Result[RunTrace]:
     """Advance one world run by cycles until its next pause or stop.
 
@@ -163,15 +185,18 @@ def advance(
        run that exists; pass the run's current row, re-read through
        ``get_run`` after a pause.)*
     2. **Time advance**: ``config.days_per_cycle`` days are recorded in
-       the trace. No world calendar exists — the count is the record.
+       the trace — an internal bookkeeping count, not a calendar (the
+       world's own days are the story's, DEC-…88/…90: the events' spans
+       summed by the orchestrator's timestamp source).
     3. **Event maturity**: the pool events whose conditions all
        CURRENT-match the world's state projection are the candidates, in
        pool order; when there are any, the per-cycle RNG — seeded
        ``(seed, cursor)`` — picks one, and the event lands in the
        chronicle through the store's ``record_event`` (its effects settle
        atomically; the id derives as ``<run_id>:<cursor>``; the
-       ``occurred_at`` is this call's ``now`` — the caller's moment, no
-       hidden clock).
+       ``occurred_at`` comes from the caller's ``now`` — a plain string
+       for the whole call, or the timestamp source asked once for this
+       event's kind — never a hidden clock).
     4. **Communication (v1)**: one further draw from the same per-cycle
        RNG picks at most one actor of the world to write — or silence.
        The decision is recorded in the trace only; no letter is
@@ -251,6 +276,7 @@ def advance(
             actor = None
 
         event_id = f"{run.run_id}:{cursor}"
+        moment = _moment_of(now, selected.kind)
         written = store.record_event(
             WorldEvent(
                 event_id=event_id,
@@ -258,7 +284,7 @@ def advance(
                 kind=selected.kind,
                 narration=selected.narration,
                 effects=selected.effects,
-                occurred_at=now,
+                occurred_at=moment,
                 source=ENGINE_SOURCE,
             )
         )
@@ -267,7 +293,7 @@ def advance(
 
         # Step 5 — the moment: the selected event's exit word.
         if selected.moment == MomentKind.NOTICE:
-            stepped = store.checkpoint_run(run.run_id, now)
+            stepped = store.checkpoint_run(run.run_id, moment)
             if isinstance(stepped, Err):
                 return Err(stepped.error)
             cycles.append(
@@ -292,7 +318,7 @@ def advance(
                 )
             )
 
-        terminalized = store.terminalize_run(run.run_id, now)
+        terminalized = store.terminalize_run(run.run_id, moment)
         if isinstance(terminalized, Err):
             return Err(terminalized.error)
         cycles.append(
@@ -320,7 +346,7 @@ def advance(
     # The ceiling: max_cycles pure time-advance cycles, no mature event
     # ever — fail closed to the terminal stop, the trace saying LIMIT
     # (上限终止), the run never looping forever.
-    exhausted = store.terminalize_run(run.run_id, now)
+    exhausted = store.terminalize_run(run.run_id, _moment_of(now, None))
     if isinstance(exhausted, Err):
         return Err(exhausted.error)
     return Ok(

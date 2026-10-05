@@ -474,6 +474,7 @@ from elc.world.package import (
     WorldPackage,
     _actor_id_for,
     load_world_package,
+    world_date_of,
 )
 
 __all__ = [
@@ -491,6 +492,50 @@ __all__ = [
 _WORLD_NO_BINDING = (
     "这个对话没有绑定任何世界——收件箱不存在（世界是对话绑定的，不是全局的）。"
 )
+
+#: The virtual world calendar's presentation words (A2, DEC-…88/…90).
+#: ``_MONTH_ABBR`` is written out (never ``%b``) so the English date is
+#: the same in every locale; the zh side spells 月/日 itself. No year —
+#: the story's year sense is the setting's business, not the chrome's.
+_MONTH_ABBR: tuple[str, ...] = (
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+)
+
+#: The virtual-calendar date shape (``YYYY-MM-DD``, :meth:`re.fullmatch`):
+#: the honest discriminator between a story-dated event (the A2 stamp —
+#: the day the presentation faces render) and a legacy row whose
+#: ``occurred_at`` carries a real wall-clock moment (those render **no**
+#: date at all — an honest old row is never dressed up as a story day).
+_ISO_DAY_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
+def _localize_story_date(
+    day: str, ui_language: str, world_name: str | None = None
+) -> str:
+    """One story day, in the interface language: zh ``9月21日`` / en
+    ``Sep 21``, plus `` · <world name>`` when the caller wants the full
+    story-block headline. Deterministic in the locale (the month table
+    above), never a wall-clock read."""
+
+    year, month, day_of_month = day.split("-")
+    if ui_language == "zh":
+        text = f"{int(month)}月{int(day_of_month)}日"
+    else:
+        text = f"{_MONTH_ABBR[int(month) - 1]} {int(day_of_month)}"
+    if world_name:
+        text += f" · {world_name}"
+    return text
 
 
 class WebOpenError(RuntimeError):
@@ -3061,8 +3106,16 @@ class _WebFace:
 
         return str(self._conversation_id)
 
-    def turn(self, text: str) -> dict[str, Any]:
-        """One committed turn, as the page renders it."""
+    def turn(self, text: str, *, skip_world_step: bool = False) -> dict[str, Any]:
+        """One committed turn, as the page renders it.
+
+        A2 (DEC-…82): ``skip_world_step`` is the streamed path's
+        suppression parameter — ``turn_stream`` runs the world step
+        itself, **before** generation, and passes ``True`` here so the
+        world runs exactly once per turn (the reply's payload still
+        carries the pre-step's note under ``world_step_note``). The
+        default keeps the blocking turn's own wiring: the step runs
+        after the commit, exactly as W-1-3 shipped it."""
 
         result = self._host.coordinator.begin_turn(
             _commit(self._conversation_id, text)
@@ -3101,83 +3154,292 @@ class _WebFace:
             # refused (or blew up) says so here in one human sentence and
             # nothing else about this reply changes — the world leg is
             # fail-soft by contract (the reply is the page's substance;
-            # the world's bookkeeping never blocks it).
-            "world_step_note": self._world_step_after_turn(
-                str(completion.turn_id)
+            # the world's bookkeeping never blocks it). A2: the streamed
+            # turn answers the pre-generation step's note here instead
+            # (the shape is the same; the step ran earlier).
+            "world_step_note": (
+                None
+                if skip_world_step
+                else self._world_step_after_turn(str(completion.turn_id))
             ),
         }
 
     def turn_stream(
-        self, text: str, events: "queue.Queue[str]"
+        self, text: str, events: "queue.Queue[Any]"
     ) -> dict[str, Any]:
-        """One committed turn through the streamed bridge (A1, DEC-…77).
+        """One committed turn through the streamed bridge (A1, DEC-…77),
+        with the world's story told first (A2, DEC-…82).
 
         The payload contract is :meth:`turn`'s, byte for byte — the final
         SSE event carries exactly what ``/api/turn`` would have answered,
-        world step included (it runs inside the turn, before this returns,
-        hence before the final is written). The stream half is a capability
+        ``world_step_note`` included. The stream half is a capability
         probe: a provider without the optional ``call_streaming`` face
         (every scripted test double among them) runs the blocking turn
-        unchanged and the endpoint answers zero deltas with its one final.
-        A provider that has the face gets it wrapped for this one turn with
-        its emit wired **straight to the turn's queue** — increments reach
-        the page as they are generated (each one key-echo-checked by the
-        adapter before it is emitted), the durable delivery keeps the
-        constructor-default seam, and the swap is restored in the
+        unchanged — the world steps where it always did, inside the turn
+        — and the endpoint answers zero deltas with its one final. A
+        provider that has the face gets it wrapped for this one turn with
+        its emit wired **straight to the turn's queue** — increments
+        reach the page as they are generated (each one key-echo-checked
+        by the adapter before it is emitted), the durable delivery keeps
+        the constructor-default seam, and the swap is restored in the
         ``finally``, so a failure anywhere leaves the assembly exactly as
         it was (the blocking shape, zero deltas, one final).
+
+        A2's narrative order: **world → deltas → final**. Before the
+        first generation token, the face runs the world step once (it is
+        the millisecond-scale leg — the model call is the slow one) and
+        answers the queue with **one structured ``world`` event** (the
+        story block's data: the world's name, its virtual-calendar day
+        localized, this run's notes in the interface language) so the
+        page can tell the world's side of the day before the reply
+        starts to arrive. A step that refuses (or blows up) sends no
+        world event at all — the deltas simply start; the note, if any,
+        still rides the final's ``world_step_note``. The step runs
+        **once**: the turn itself is asked to skip its own post-commit
+        wiring (``turn(skip_world_step=True)``) and answers the
+        pre-step's note instead — one turn, one world advance, the old
+        blocking endpoint's behavior untouched.
         """
 
         live = self._host.coordinator.persona_provider()
         if not hasattr(live, "call_streaming"):
             return self.turn(text)
+        # The world first (it is fast), the reply second. The step's
+        # trigger turn id rides as ``None`` on purpose: at this point the
+        # turn is not committed, so no turn id exists to name — the run
+        # row's ``trigger_turn_id`` stays NULL for the streamed path
+        # (the column's own ``when it is known`` reading), while the
+        # blocking turn keeps naming its own.
+        world = self._world_step_face()
+        if world["note"] is None and world["bound"]:
+            # The structured frame goes through the same queue the delta
+            # chunks use; the endpoint writes a dict as its own SSE event
+            # and a str as a delta (the drain's ``isinstance`` split). A
+            # conversation outside any world tells no story block.
+            events.put(self._world_event_payload(world))
         bridge = _TurnStreamBridge(events)
         coordinator = self._host.coordinator
         coordinator.replace_persona_provider(
             _StreamingProviderProxy(live, bridge)
         )
         try:
-            return self.turn(text)
+            payload = self.turn(text, skip_world_step=True)
+            payload["world_step_note"] = world["note"]
+            return payload
         finally:
             coordinator.replace_persona_provider(live)
 
-    def _world_step_after_turn(self, turn_id: str) -> str | None:
-        """The turn wiring's fail-soft half: one world step, or one
-        human sentence.
+    def _world_step_face(self) -> dict[str, Any]:
+        """The world step as an independently callable face (A2,
+        DEC-…82): one step, then the reveal, then **this run's** notes
+        back — ``{"items": [...], "note": str | None}``.
 
-        The bound conversation's world steps with the ``letter`` trigger
-        after the turn committed (spec §4.1: the user's reply is the only
-        run starter — this is that starter, the engine's first production
-        caller). Every failure mode answers a sentence for the
-        diagnostics and never an exception out: no binding (a
-        conversation outside any world) skips silently — the normal arm
-        for hosts and conversations the world leg does not name; a world
-        whose package is unreadable or whose step refuses says so; the
-        step's own ``trigger_turn_id`` is this turn's id, passed through.
-        """
+        ``items`` are the notes the step's own run wrote, revealed on
+        presentation (the inbox's atomic flip runs here, so what the
+        story block shows is exactly what the world meant to say —
+        nothing left pending behind it). The presentation is
+        **current-run only** (A2, DEC-…90): the page's world face shows
+        the latest run's notes, not the world's whole chronicle — the
+        older notes stay durable and out of sight. Every failure mode
+        answers the sentence in ``note`` and never an exception out;
+        ``bound`` says whether this conversation lives in any world at
+        all (the streamed path tells no story block without one) — no
+        binding (or a host without the world leg) answers an empty face
+        silently, the normal arm for hosts and conversations the world
+        leg does not name; a world whose package is unreadable or whose
+        step refuses says so."""
 
         binding = self._world_binding()
         if binding is None:
-            return None
-        package = self._world_packages.get(str(binding["world_id"]))
+            return {"items": [], "note": None, "bound": False,
+                    "at_checkpoint": False}
+        world_id = str(binding["world_id"])
+        package = self._world_packages.get(world_id)
         world_store = getattr(self._host, "world_store", None)
         if package is None or world_store is None:
-            return None
+            return {"items": [], "note": None, "bound": True,
+                    "at_checkpoint": False}
         try:
             stepped = run_step(
                 world_store,
-                str(binding["world_id"]),
+                world_id,
                 package.to_event_pool(),
                 EngineConfig(),
                 TRIGGER_LETTER,
                 datetime.now(tz=UTC).isoformat(),
-                trigger_turn_id=turn_id,
+                package=package,
             )
         except Exception as exc:  # fail-soft: the sentence, never the raise
-            return f"世界步进失败（回信不受影响）：{type(exc).__name__}: {exc}"
+            return {
+                "items": [],
+                "note": f"世界步进失败（回信不受影响）：{type(exc).__name__}: {exc}",
+                "bound": True,
+                "at_checkpoint": False,
+            }
         if isinstance(stepped, Err):
-            return f"世界步进未推进（回信不受影响）：{stepped.error.message}"
-        return None
+            return {
+                "items": [],
+                "note": f"世界步进未推进（回信不受影响）：{stepped.error.message}",
+                "bound": True,
+                "at_checkpoint": False,
+            }
+        # 呈现即读即揭示: the reveal runs now (the presentation trigger,
+        # spec §4.1), so the story block's notes are already the world's
+        # read state — the page's later inbox reread adds nothing new.
+        revealed = world_store.reveal_all(
+            world_id, datetime.now(tz=UTC).isoformat()
+        )
+        if isinstance(revealed, Err):
+            return {
+                "items": [],
+                "note": (
+                    "世界揭示失败（回信不受影响）："
+                    f"{revealed.error.code.value}: {revealed.error.message}"
+                ),
+                "bound": True,
+                "at_checkpoint": False,
+            }
+        step_event_ids = {
+            str(cycle.event_id)
+            for cycle in stepped.value.cycles
+            if cycle.event_id is not None
+        }
+        items = [
+            item
+            for item in revealed.value
+            if str(item.source_event_id) in step_event_ids
+        ]
+        latest_run = world_store.list_runs(world_id)[-1]
+        return {
+            "items": self._story_notes(world_id, package, tuple(items)),
+            "note": None,
+            "bound": True,
+            # The 「继续」 button rides the story block's tail (DEC-…92):
+            # the step's own exit state, read from the run row (the same
+            # source the inbox's at_checkpoint answers from).
+            "at_checkpoint": latest_run.status.value == "AT_CHECKPOINT",
+        }
+
+    def _story_notes(
+        self,
+        world_id: str,
+        package: WorldPackage,
+        items: tuple[Any, ...],
+    ) -> list[dict[str, Any]]:
+        """The story-block shape of reveal items: each note's narration
+        in the interface language (the package's Chinese prose, or the
+        honest English fallback) and its event's story day. No byline,
+        no moment word — the story block is prose, not cards (DEC-…82)."""
+
+        ui_language = self._ui_language()
+        notes: list[dict[str, Any]] = []
+        for item in items:
+            event = self._world_event_row(world_id, str(item.source_event_id))
+            narration, fallback = self._note_narration(package, ui_language, event)
+            notes.append(
+                {
+                    "narration": narration,
+                    "occurred_at": "" if event is None else str(event[3]),
+                    "fallback": fallback,
+                }
+            )
+        return notes
+
+    def _ui_language(self) -> str:
+        """The interface language row (W-L's own read): the stored word,
+        or ``zh`` when nothing is chosen."""
+
+        return (
+            self._host.app_settings.get(APP_SETTING_UI_LANGUAGE_KEY) or "zh"
+        )
+
+    def _world_event_row(
+        self, world_id: str, event_id: str
+    ) -> tuple[Any, ...] | None:
+        """One chronicle row (the face's direct-SQL read posture): event
+        id, narration, kind, occurred_at — or ``None`` when the row is
+        gone (a dangling pointer the narration half answers honestly)."""
+
+        row = self._host.db.execute(
+            "SELECT event_id, narration, kind, occurred_at"
+            " FROM world_event WHERE world_id = ? AND event_id = ?",
+            (world_id, event_id),
+        ).fetchone()
+        return None if row is None else tuple(row)
+
+    def _note_narration(
+        self,
+        package: WorldPackage | None,
+        ui_language: str,
+        event: tuple[Any, ...] | None,
+    ) -> tuple[str, bool]:
+        """One note's narration in the interface language, and its
+        fallback bit (W-L's law, shared by the story block and the
+        inbox): ``zh`` renders the package's own Chinese prose for the
+        event's kind; when the Chinese side does not exist (a v1-era
+        durable event whose kind the v3 package never carried, a package
+        that failed to load, an unknown kind) the item falls back to the
+        English row and says so with ``fallback: True`` — an honest
+        English note, never a fabricated Chinese one."""
+
+        english = "" if event is None else str(event[1])
+        kind = "" if event is None else str(event[2])
+        if ui_language == "zh":
+            zh = (
+                package.narration_zh_for(kind)
+                if package is not None and kind
+                else None
+            )
+            if zh:
+                return zh, False
+            return english, True
+        return english, False
+
+    def _world_event_payload(self, world: dict[str, Any]) -> dict[str, Any]:
+        """The streamed ``world`` frame (A2, DEC-…82/…88/…90): the
+        world's name, its virtual-calendar day localized (the story's
+        own date — :meth:`elc.world.package.world_date_of`, never a wall
+        clock), the interface language the frame was rendered in, and
+        this run's notes (possibly none — the page's quiet-day arm)."""
+
+        binding = self._world_binding()
+        package = (
+            None if binding is None
+            else self._world_packages.get(str(binding["world_id"]))
+        )
+        world_store = getattr(self._host, "world_store", None)
+        if binding is None or package is None or world_store is None:
+            # Unreachable from the streamed path (the frame is only sent
+            # for a bound world with a readable package) — the honest
+            # defensive answer is an empty frame, never a guessed story.
+            return {
+                "type": "world",
+                "ui_language": self._ui_language(),
+                "world_name": None,
+                "date_localized": "",
+                "notes": [],
+            }
+        world_id = str(binding["world_id"])
+        ui_language = self._ui_language()
+        world_name = package.name
+        day = world_date_of(package, world_store, world_id)
+        return {
+            "type": "world",
+            "ui_language": ui_language,
+            "world_name": world_name,
+            "date_localized": _localize_story_date(day, ui_language, world_name),
+            "notes": world["items"],
+            "at_checkpoint": world["at_checkpoint"],
+        }
+
+    def _world_step_after_turn(self, turn_id: str) -> str | None:
+        """The turn wiring's fail-soft half (W-1-3's blocking shape):
+        one world step, or one human sentence — now a thin caller of
+        :meth:`_world_step_face` (A2 lifted the face out so the streamed
+        turn can run it before generation; this arm keeps the blocking
+        endpoint's byte-for-byte behavior)."""
+
+        return self._world_step_face()["note"]
 
     def _world_binding(self) -> dict[str, Any] | None:
         """This conversation's world binding row, as a plain mapping (the
@@ -3229,7 +3491,12 @@ class _WebFace:
         own window read (read-only, a small explicit slice). The
         ``at_checkpoint`` bit is the world's latest run's own status —
         the page's 「继续」 button is enabled by the world's state, never
-        guessed.
+        guessed. A2 (DEC-…92): the payload also carries ``revealed_now``
+        — the count of ``PENDING`` notes this very read flipped (counted
+        **before** the flip) — the load arm's only render trigger (a
+        read that revealed nothing renders no world block at all), plus
+        ``world_name`` and ``date_localized`` so the page's inline story
+        block consumes this payload in the streamed frame's own shape.
         """
 
         binding = self._world_binding()
@@ -3239,6 +3506,7 @@ class _WebFace:
         world_store = getattr(self._host, "world_store", None)
         if world_store is None:
             return (404, {"error": _WORLD_NO_BINDING})
+        revealed_now = self._pending_count(str(world_id))
         revealed = world_store.reveal_all(
             str(world_id), datetime.now(tz=UTC).isoformat()
         )
@@ -3247,7 +3515,22 @@ class _WebFace:
                 "the world inbox could not be read:"
                 f" {revealed.error.code.value}: {revealed.error.message}"
             )
-        return 200, self._world_payload(str(world_id), revealed.value)
+        return 200, self._world_payload(
+            str(world_id), revealed.value, revealed_now=revealed_now
+        )
+
+    def _pending_count(self, world_id: str) -> int:
+        """The world's unread ``PENDING`` note count, read **before** a
+        reveal (the count this read will flip — DEC-…92's load-arm
+        trigger). Zero is the normal arm: an inbox read that reveals
+        nothing renders nothing."""
+
+        row = self._host.db.execute(
+            "SELECT COUNT(*) FROM world_reveal_item"
+            " WHERE world_id = ? AND status = 'PENDING'",
+            (world_id,),
+        ).fetchone()
+        return int(row[0]) if row is not None else 0
 
     def world_continue(self) -> tuple[int, dict[str, Any]]:
         """The 「继续」 write: the light action, through the world's own
@@ -3270,6 +3553,9 @@ class _WebFace:
         package = self._world_packages.get(str(world_id))
         if world_store is None or package is None:
             return (404, {"error": _WORLD_NO_BINDING})
+        # The reveal-the-pending count rides **before** the flip (M1's
+        # sibling fix, DEC-…92): the page's load arm only renders a
+        # story block when this step actually revealed unread notes.
         stepped = run_step(
             world_store,
             str(world_id),
@@ -3277,6 +3563,7 @@ class _WebFace:
             EngineConfig(),
             TRIGGER_CONTINUE,
             datetime.now(tz=UTC).isoformat(),
+            package=package,
         )
         if isinstance(stepped, Err):
             if stepped.error.code is DomainErrorCode.VALIDATION_FAILED:
@@ -3285,6 +3572,7 @@ class _WebFace:
                 "the world step could not run:"
                 f" {stepped.error.code.value}: {stepped.error.message}"
             )
+        revealed_now = self._pending_count(world_id)
         revealed = world_store.reveal_all(
             str(world_id), datetime.now(tz=UTC).isoformat()
         )
@@ -3293,10 +3581,16 @@ class _WebFace:
                 "the world inbox could not be read:"
                 f" {revealed.error.code.value}: {revealed.error.message}"
             )
-        return 200, self._world_payload(str(world_id), revealed.value)
+        return 200, self._world_payload(
+            str(world_id), revealed.value, revealed_now=revealed_now
+        )
 
     def _world_payload(
-        self, world_id: str, items: tuple[Any, ...]
+        self,
+        world_id: str,
+        items: tuple[Any, ...],
+        *,
+        revealed_now: int = 0,
     ) -> dict[str, Any]:
         """The inbox payload over one revealed item tuple: the items'
         page shape (each joined to its chronicle event for the prose,
@@ -3308,60 +3602,73 @@ class _WebFace:
 
         W-L: the payload carries the interface language it rendered in
         (the ``ui_language`` setting's row, default ``zh``), and each
-        item's narration follows it — ``zh`` renders the package's own
-        Chinese prose for the event's kind
-        (:meth:`elc.world.package.WorldPackage.narration_zh_for`); when
-        the Chinese side does not exist (a v1-era durable event whose
-        kind the v2 package never carried, a package that failed to
-        load, an unknown kind) the item falls back to the English row
-        and says so with ``fallback: true`` — an honest English note,
-        never a fabricated Chinese one. ``en`` renders the English rows
-        with ``fallback: false`` (that is the primary language, not a
-        fallback)."""
+        item's narration follows it (the shared narration half with the
+        story block — :meth:`_note_narration`; an event the package
+        cannot render in Chinese renders its English row and says so
+        with ``fallback: true``).
 
-        ui_language = (
-            self._host.app_settings.get(APP_SETTING_UI_LANGUAGE_KEY) or "zh"
-        )
+        A2 (DEC-…90): the inbox is **current-run only** — the latest
+        run's notes are the world's present; the whole-chronicle
+        grouping (「第 N 封信后的世界」) is retired, and the older notes
+        stay durable and out of sight (the world's own log face is a
+        later cut's). Each note carries ``story_date`` — the event's
+        virtual-calendar day (the ``YYYY-MM-DD`` stamp A2 writes),
+        localized for the page; a legacy row whose ``occurred_at``
+        carries a real wall-clock moment answers ``None`` and renders
+        **no** date at all — an honest old row is never dressed up as a
+        story day. The payload's own assembly reads no clock (the
+        presentation faces' law, DEC-…88 ④).
+
+        A2 / DEC-…92: ``revealed_now`` answers how many unread notes
+        this very read flipped (the load arm's only render trigger);
+        ``world_name`` and ``date_localized`` (the current run's own
+        story day, localized) ride so the page's inline story block
+        consumes this payload in the streamed frame's own shape — one
+        renderer, two transports."""
+
+        ui_language = self._ui_language()
         package = self._world_packages.get(world_id)
-        rows = self._host.db.execute(
+        by_id: dict[str, tuple[Any, ...]] = {}
+        for row in self._host.db.execute(
             "SELECT e.event_id, e.narration, e.kind, e.occurred_at"
             " FROM world_event e WHERE e.world_id = ?",
             (world_id,),
-        ).fetchall()
-        by_id = {str(row[0]): row for row in rows}
+        ).fetchall():
+            by_id[str(row[0])] = tuple(row)
         actor_names = self._world_actor_names(world_id)
+        latest_run = self._host.db.execute(
+            "SELECT run_id FROM world_run WHERE world_id = ?"
+            " ORDER BY created_at DESC, run_id DESC LIMIT 1",
+            (world_id,),
+        ).fetchone()
+        current_run = str(latest_run[0]) if latest_run is not None else ""
         notes: list[dict[str, Any]] = []
         for item in items:
-            event = by_id.get(item.source_event_id)
-            english = "" if event is None else str(event[1])
-            kind = "" if event is None else str(event[2])
-            narration = english
-            fallback = False
-            if ui_language == "zh":
-                zh = (
-                    package.narration_zh_for(kind)
-                    if package is not None and kind
-                    else None
-                )
-                if zh:
-                    narration = zh
-                else:
-                    # The honest arm: a durable event the package cannot
-                    # render in Chinese (v1-era history, a failed package
-                    # load, a kind the pool never carried) renders its
-                    # English row and marks itself — the page may show a
-                    # quiet language note, never a guess.
-                    narration = english
-                    fallback = True
+            event_id = str(item.source_event_id)
+            # Current-run only: the event id derives as
+            # ``<run_id>:<cursor>``, so the prefix is the run's own name.
+            if current_run and not event_id.startswith(f"{current_run}:"):
+                continue
+            event = by_id.get(event_id)
+            narration, fallback = self._note_narration(
+                package, ui_language, event
+            )
+            occurred_at = "" if event is None else str(event[3])
+            story_day = (
+                _localize_story_date(occurred_at, ui_language)
+                if _ISO_DAY_RE.fullmatch(occurred_at)
+                else None
+            )
             notes.append(
                 {
                     "id": item.item_id,
                     "narration": narration,
                     "actor_name": actor_names.get(item.actor_id),
-                    "moment": kind,
-                    "occurred_at": "" if event is None else str(event[3]),
+                    "moment": "" if event is None else str(event[2]),
+                    "occurred_at": occurred_at,
                     "status": item.status,
                     "fallback": fallback,
+                    "story_date": story_day,
                 }
             )
         latest = self._host.db.execute(
@@ -3370,10 +3677,21 @@ class _WebFace:
             (world_id,),
         ).fetchone()
         recent = self.history(limit=5)
+        # DEC-…92: the current run's own story day (its latest event's
+        # stamp), localized — the inline story block's date line when
+        # this payload rides the load arm or the 「继续」 answer.
+        story_day = ""
+        for note in reversed(notes):
+            if note["story_date"] is not None:
+                story_day = str(note["story_date"])
+                break
         return {
             "world_id": world_id,
+            "world_name": None if package is None else package.name,
             "language": ui_language,
+            "date_localized": story_day,
             "items": notes,
+            "revealed_now": revealed_now,
             "letters": recent.get("turns", []),
             "at_checkpoint": bool(
                 latest is not None and str(latest[0]) == "AT_CHECKPOINT"
@@ -5749,7 +6067,16 @@ def _build_server(
                         drained = True
                         break
                     try:
-                        self._send_sse_event({"type": "delta", "text": chunk})
+                        if isinstance(chunk, str):
+                            # A1: a generation increment, as it arrived.
+                            self._send_sse_event(
+                                {"type": "delta", "text": chunk}
+                            )
+                        else:
+                            # A2: the world's story frame (one dict, the
+                            # face already assembled it) — the narrative
+                            # order's first beat, before any delta.
+                            self._send_sse_event(chunk)
                     except OSError:
                         return  # the reader is gone; the turn runs on
                 if done.is_set() and drained:

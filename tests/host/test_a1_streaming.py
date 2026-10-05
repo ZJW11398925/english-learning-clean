@@ -489,12 +489,25 @@ def test_stream_endpoint_answers_deltas_then_one_final_equal_to_turn(
             deltas = [f for f in frames if f["type"] == "delta"]
             finals = [f for f in frames if f["type"] == "final"]
             others = [f for f in frames if f["type"] not in ("delta", "final")]
-            assert others == []
+            # A2 (DEC-…82): the narrative order adds one structured
+            # ``world`` frame — the story block's data — before the
+            # first delta; the world's step now runs before generation.
+            # This bound stack tells Berrymoor's day, so the frame is
+            # here; the rest of the grammar is unchanged.
+            assert [f["type"] for f in others] == ["world"]
+            world = others[0]
+            assert world["world_name"] == "Berrymoor"
+            assert isinstance(world["date_localized"], str)
+            assert world["date_localized"]
+            assert world["ui_language"] in ("zh", "en")
+            assert isinstance(world["notes"], list)
             assert len(finals) == 1
             final = finals[0]
-            # The event order is the contract: deltas first, final last.
+            # The event order is the contract: the world's story first,
+            # the deltas next, the final last.
             assert frames[-1] is final
-            assert frames[0]["type"] == "delta"
+            assert frames[0] is world
+            assert frames[1]["type"] == "delta"
             # The streaming was real: one delta per character of the reply.
             assert [f["text"] for f in deltas] == list(REPLY)
             assert "".join(f["text"] for f in deltas) == final["reply"]
@@ -620,8 +633,12 @@ def test_a_failed_bridge_injection_degrades_to_one_final_with_the_assembly_intac
             assert host.coordinator.replace_persona_provider == original
             assert status == 200
             frames = _sse_frames(raw)
-            assert [f["type"] for f in frames] == ["final"]
-            final = frames[0]
+            # A2 (DEC-…82): the world step runs before the bridge is
+            # installed, so its story frame is already out when the
+            # injection refuses — the degradation answer is the world
+            # frame plus the one failure-shaped final (no deltas).
+            assert [f["type"] for f in frames] == ["world", "final"]
+            final = frames[-1]
             assert final["reply"] is None
             assert final["turn_status"] is None
             assert "injection refused" in str(final["failure_reason"])
@@ -707,7 +724,11 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     app_source = (WEBUI / "app.js").read_text(encoding="utf-8")
 
     # api.js: the stream wrapper really reads the body defensively.
-    assert "export async function fetchTurnStream(text, onDelta)" in api_source
+    # A2 (DEC-…82): the third callback — the world story frame's own
+    # handler — rides the same defensive parser.
+    assert "export async function fetchTurnStream(text, onDelta, onWorld)" in (
+        api_source
+    )
     assert "res.body.getReader()" in api_source
     assert "new TextDecoder()" in api_source
     assert 'startsWith("data: ")' in api_source
@@ -715,25 +736,40 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     assert "interrupted.started = true" in api_source
     assert "if (!res.ok || !res.body) return null;" in api_source
     assert 'event.type === "delta"' in api_source
+    assert 'event.type === "world"' in api_source
     assert 'event.type === "final"' in api_source
 
     postturn = _postturn_slice(app_source)
-    # The stream face goes first; the typewriter accumulates into
-    # textContent only (the XSS discipline); the fallback and the finalize
-    # pairing follow; the started arm pulls history and never resends.
+    # The stream face goes first; the typewriter (A2: the fixed-rate
+    # pacer — deltas land in the buffer, the render loop spends them at
+    # TYPING_CPS) accumulates into textContent only (the XSS discipline);
+    # the fallback and the finalize pairing follow; the started arm pulls
+    # history and never resends.
     assert "fetchTurnStream(" in postturn
-    assert "draftLine.textContent = draftText;" in postturn
+    assert "renderWorldStory(event)" in postturn
+    assert "typing.push(chunk)" in postturn
+    assert "await typing.seal(" in postturn
+    assert "startTypewriter()" in postturn
+    typewriter = app_source[app_source.index("function startTypewriter"):]
+    typewriter = typewriter[: typewriter.index("\n}", typewriter.index("return {"))]
+    assert "ensureLine().textContent = state.shown;" in typewriter
+    assert "requestAnimationFrame" in typewriter
+    assert "cancelAnimationFrame" in typewriter
+    assert "const TYPING_CPS = 35;" in app_source
     assert "err.started" in postturn
     started_arm = postturn[postturn.index("err.started"):]
     started_arm = started_arm[: started_arm.index("} else {")]
     assert "loadHistory()" in started_arm
+    # DEC-…92: the turn no longer rereads the world (the pre-step
+    # already revealed and presented) — neither on the started arm nor
+    # at the finalize tail.
+    assert "loadWorldInbox" not in started_arm
     assert "fetchTurn(" not in started_arm
     assert postturn.index("fetchTurnStream(") < postturn.index("fetchTurn(")
     assert postturn.count("await fetchTurn(text)") >= 2  # both fallback paths
     # The finalize block survived underneath the stream attempt.
     assert "applyLetterAffordance(mine, data.user_word_hits || null);" in postturn
     assert "showMoments(moments);" in postturn
-    assert "loadWorldInbox({ revealNew: true });" in postturn
 
 
 def test_the_server_bridge_wires_the_live_generation_stream() -> None:

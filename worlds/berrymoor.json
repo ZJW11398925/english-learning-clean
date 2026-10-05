@@ -1,7 +1,8 @@
 {
   "world_id": "world-berrymoor",
   "name": "Berrymoor",
-  "version": 2,
+  "version": 3,
+  "calendar_start": "2025-09-14",
   "setting": [
     "Berrymoor is a small harbour town on a cold coast, where the fishing boats come in with the morning tide and the day is measured by the water. The harbour path runs from the stone quay to the bindery steps, and half the town walks it twice a day without thinking about it. The sea is never far from any conversation: it decides the fish, the weather, and most of the news.",
     "The bindery sits by the water behind a green door that sticks in damp weather, and the faded sign above it still reads Alder & Son, though no Alder senior has walked the floor in years. Inside, the workbench under the north window carries the grandfather's tool marks, and his burnisher lives in the same drawer Nell opens first every morning. Repairs are slow and done properly; a book that leaves the shop leaves it whole.",
@@ -19,6 +20,7 @@
       "kind": "harbour_fog",
       "narration": "The sea fog comes up without hurry and settles over the quay: the boats at their moorings go to grey shapes, the gulls quiet down, and the green door keeps its paint as the only strong colour left on the walk.",
       "narration_zh": "海雾不慌不忙地漫上码头：泊位里的渔船成了灰蒙蒙的影子，海鸥也安静下来，这一路走过去，只剩那扇绿门还守着自己的颜色。",
+      "days": 0,
       "effects": [
         {
           "key": "harbour.fog",
@@ -32,6 +34,7 @@
       "kind": "borrowed_morning",
       "narration": "The sun is out over the water and the town does not believe it for a moment; the washing goes out anyway, and someone at the fish counter calls it a borrowed day, which is as much as a fine morning gets in Berrymoor.",
       "narration_zh": "太阳出来了，照在水面上，镇上的人却一刻也不肯信；晾衣绳照样搭了出去，鱼摊前有人管这叫「借来的好天」——在贝里摩尔，一个晴朗的上午能得到的，也就这一句。",
+      "days": 0,
       "effects": [
         {
           "key": "weather.borrowed_day",
@@ -45,6 +48,7 @@
       "kind": "low_tide",
       "narration": "The tide has gone out past the stone quay and the flats are showing: wet sand, old mooring rings, and the small archaeology of a working harbour laid open until the water comes back.",
       "narration_zh": "潮水退过了石码头，滩涂露了出来：湿沙、旧缆桩，还有一座劳作海港摊开在眼前的小小考古——要等水回来，才肯再收回去。",
+      "days": 0,
       "effects": [
         {
           "key": "harbour.tide",
@@ -58,6 +62,7 @@
       "kind": "market_day",
       "narration": "It is Saturday on the quay: the fish carts were out at dawn, the wool and bread stalls are doing their mid-morning trade, and half the town passes the green door on the way home with a nod through the window.",
       "narration_zh": "今天是码头上的星期六：鱼车天不亮就出了摊，毛线和面包摊做到半上午的生意，半个镇子回家路上都会经过那扇绿门，隔着玻璃窗点个头。",
+      "days": 1,
       "effects": [],
       "conditions": [],
       "moment": "NOTICE"
@@ -66,6 +71,7 @@
       "kind": "coach_leaves",
       "narration": "The Tuesday coach takes the far-away letters down the coast road towards Kerrow, two hours of weather between here and anywhere else; whatever was written this week is now a month from an answer, and nobody in Berrymoor finds that strange.",
       "narration_zh": "星期二的马车把寄往远方的信捎下沿海公路，往凯罗去了——从这里到任何地方，中间都隔着两个钟头的天气；这一周写下的字句，要一个月后才等得到回音，贝里摩尔没有人觉得这有什么奇怪。",
+      "days": 2,
       "effects": [
         {
           "key": "mail.coach",
@@ -79,6 +85,7 @@
       "kind": "night_storm",
       "narration": "A storm came off the water in the night and worked at the town all the small hours; by grey morning the harbour road is littered with kelp, and in the bindery there is a dark ring on the floor where the roof has let the rain in over the workbench.",
       "narration_zh": "昨夜一场风暴从海上压过来，搅了后半夜；天蒙蒙亮时，港口路上散落着海带，装订铺里，工作台上方的屋顶漏了雨，地板上洇出一圈深色的水痕。",
+      "days": 1,
       "effects": [
         {
           "key": "weather.storm",
@@ -96,6 +103,7 @@
       "kind": "fog_lifts",
       "narration": "The fog lifts all at once, the way it does: the boats come back from being grey shapes, the far shore is suddenly a fact again, and the whole quay blinks in the plain light.",
       "narration_zh": "雾说散就散了，它一向如此：渔船从灰影子里回来了，对岸一下子又成了看得见的事实，整座码头在干干净净的天光里眨了眨眼。",
+      "days": 1,
       "effects": [
         {
           "key": "harbour.fog",
@@ -114,6 +122,7 @@
       "kind": "roof_repair",
       "narration": "The leak over the workbench is dealt with the slow way: slates carried up the bindery steps, patching done properly, the press moved back under the north window by the end of the afternoon. The dark ring on the floor can stay until it decides to fade on its own.",
       "narration_zh": "工作台上方的漏雨，按老规矩慢慢修：石板一片片搬上装订铺的台阶，补得扎扎实实，傍晚之前，压书机又挪回了北窗底下。地板上那圈水痕不急着擦——等它自己肯淡下去再说。",
+      "days": 2,
       "effects": [
         {
           "key": "alderson.roof",
@@ -132,6 +141,7 @@
       "kind": "nell_thanks",
       "narration": "There is a note pinned to the green door in Nell's careful hand, thanking whoever carried the slates up the bindery steps -- the town's way of saying it noticed. The postscript asks whether the kettle is still on, and it expects an answer.",
       "narration_zh": "绿门上钉着一张便条，是奈尔一笔一画的字，谢谢那位把石板搬上装订铺台阶的人——全镇道谢的方式，就是让你知道它看见了。附言问壶里的水还开着吗，并且在等一个回答。",
+      "days": 0,
       "effects": [],
       "conditions": [
         {
@@ -145,6 +155,7 @@
       "kind": "tam_at_the_flats",
       "narration": "Old Tam is out on the flats with his nets in a bundle, working with the patience of a man who has never once said thank you in words. He looks up long enough to make it clear he has seen you, and goes back to the nets -- which, from Old Tam, is practically a letter.",
       "narration_zh": "老塔姆在滩涂上收网，网捆成一团，他做事的那份耐心，像一个从没用嘴说过谢的人。他抬头看了你一眼，刚好够让你明白他看见你了，然后又低头去理网——从老塔姆这里，这就算得上一封信了。",
+      "days": 0,
       "effects": [],
       "conditions": [
         {

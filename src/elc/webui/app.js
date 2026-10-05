@@ -2237,8 +2237,9 @@ async function saveUiLanguage(word) {
     return;
   }
   await loadSettings();
-  // W-L 行为接线：切换界面语言 ⇒ 收件箱立即重读重渲染（读即揭示
-  // ——同一次读已按新语言取叙述；不重读则旧语言的叙述留在屏上）。
+  // W-L 行为接线：切换界面语言 ⇒ 世界重读一次（读即揭示；DEC-…92
+  // 起只有遗留未读才补显一块——已呈现的块随轮瞬态，下一轮自然新语
+  // 言）。
   await loadWorldInbox();
   settingsLanguageResult(
     "界面语言已换到 " + (UI_LANGUAGE_CN[word] || word) + "。", false);
@@ -2932,35 +2933,28 @@ diagBox("obs-entry").appendChild((() => {
   return wrap;
 })());
 
-// ── W-1-3/W-L: 世界收件箱（DEC-…43 例外通道起步；W-L 改写：双语 +
-// 按运转分组散文 + 底部挂点〔DEC-…66〕）─────────────────────────────
-// 案头 = 当前世界的收件箱（活世界 spec §8.2）：世界运转留下的便条
-// ——「揭示」是呈现触发不是运转动力（§4.1），打开页面这一读就是
-// 揭示时刻——升序一列、按运转分组（一封信之后的世界 = 一段）；运转
-// 等在检查点时给一枚「继续」钮（数据驱动可点，服务端 400 兜底）。
-// 界面语言随 ui_language 设置（zh 缺省）：标题/空态/继续/失败句双语
-// ——全页 i18n 登记不落，本区是唯一双语面。文字一律 textContent
-// （XSS 面）；调用只走 api.js；无绑定世界（404）= 整区隐藏，不是
-// 一只空收件箱。挂点 = #messages 之后（对话流底部，DEC-…66）：发信
-// 后用户视点在底部，新便条随回信落地在自然视点处出现。
+// ── A2/DEC-…92：世界的文字与语言态──────────────────────────────────
+// 世界呈现唯一形态 = 信流里的内联故事块（renderWorldStory）；常驻收
+// 件箱区已整体退役（用户报告「遗留世界事件占对话末尾」的根治）。
+// 这一小节只留它的双语词表与界面语言态：继续/失败/fallback 小字/
+// 安静日/过渡句五句，随 ui_language 设置（zh 缺省）——全页 i18n 登
+// 记不落，此表是唯一双语词表。文字一律 textContent（XSS 面）。
 let uiLanguage = "zh";
 
 const WORLD_INBOX_TEXT = {
   zh: {
-    head: "世界收件箱",
-    empty: "世界还什么都没留下——回一封信，世界就会动。",
     cont: "继续",
     fail: "世界没能继续——稍后再试。",
     fallback: "（这张便条写在世界学会中文之前——示以原文。）",
-    runHead: (n) => "第 " + n + " 封信后的世界",
+    quietDay: "安静的一天，没什么特殊的事。",
+    thenLetter: "这时，她收到了你的来信。",
   },
   en: {
-    head: "World inbox",
-    empty: "The world hasn't left anything here yet — reply to a letter and it moves.",
     cont: "Continue",
     fail: "The world couldn't continue — try again later.",
     fallback: "(This note predates the world's Chinese — shown as written.)",
-    runHead: (n) => "After letter " + n,
+    quietDay: "A quiet day, nothing out of the ordinary.",
+    thenLetter: "Then, your letter arrives.",
   },
 };
 
@@ -2968,134 +2962,113 @@ function worldInboxText() {
   return WORLD_INBOX_TEXT[uiLanguage] || WORLD_INBOX_TEXT.zh;
 }
 
-const worldInboxSec = document.createElement("section");
-worldInboxSec.className = "sec world-inbox";
-worldInboxSec.hidden = true;
-const worldInboxHead = document.createElement("h3");
-worldInboxHead.textContent = worldInboxText().head;
-worldInboxSec.appendChild(worldInboxHead);
-const worldInboxBoard = document.createElement("div");
-worldInboxBoard.appendChild((() => {
-  const none = document.createElement("p");
-  none.className = "note";
-  none.textContent = "暂无数据";
-  return none;
-})());
-worldInboxSec.appendChild(worldInboxBoard);
-const parlorFlow = document.querySelector("#space-parlor main.flow");
-const parlorMessages = parlorFlow
-  ? parlorFlow.querySelector("#messages")
-  : null;
-if (parlorFlow) {
-  // DEC-…66（W-L 增补）：底部挂点——#messages 之后；无 #messages 的
-  // 异常壳才退回流尾兜底。
-  if (parlorMessages) {
-    parlorMessages.insertAdjacentElement("afterend", worldInboxSec);
-  } else {
-    parlorFlow.appendChild(worldInboxSec);
-  }
-}
+// ── A2/DEC-…92：世界呈现唯一形态 = 内联故事块──────────────────────
+// 常驻收件箱区整体退役（用户报告「遗留世界事件占对话末尾」的根治）：
+// 世界只在信流里随轮呈现——turn_stream 的 world 帧（回信气泡之前）
+// 与页面加载时的遗留补显（revealed_now>0 才有一块）。数据面（GET
+// /api/world/inbox 与 POST /api/world/continue）保留不动；GET 读即
+// 揭示——revealed_now 是本次揭示的条数（服务端翻转前计数），零 ⇒
+// 零世界区块，对话末尾干净。
 
-// 便条的运转号：事件 id 形如 run-<token>-<seed>:<cursor>:reveal——seed
-// 段（最后一枚连字号后的数字）即分组键，第 N 封信 = seed + 1。解析不
-// 出的 id 不造组（诚实：没有运转号的便条不加标题）。
-function worldRunNumberOf(itemId) {
-  const m = /^run-.*-(\d+):\d+/.exec(String(itemId ?? ""));
-  return m ? parseInt(m[1], 10) + 1 : null;
-}
-
-function worldNoteCard(note) {
-  const card = document.createElement("div");
-  card.className = "world-note";
-  const body = document.createElement("p");
-  body.className = "world-note-body";
-  body.textContent = String(note.narration ?? "");
-  card.appendChild(body);
-  if (note.fallback) {
-    // W-L 诚实标注（服务端 fallback:true——中文叙述缺席、示以英文）：
-    // 一行小字说明，从不把英文伪装成中文。
-    const fb = document.createElement("p");
-    fb.className = "note world-note-fallback";
-    fb.textContent = worldInboxText().fallback;
-    card.appendChild(fb);
-  }
-  const meta = document.createElement("p");
-  meta.className = "note";
-  meta.textContent = (note.actor_name || "世界") + " · " +
-    humanTime(note.occurred_at);
-  card.appendChild(meta);
-  return card;
-}
-
-function renderWorldInbox(data) {
-  worldInboxSec.hidden = false;
-  worldInboxBoard.textContent = "";
+// ── A2（DEC-…82/…88/…90；DEC-…92 收口）：世界故事块────────────────
+// 世界呈现的唯一形态：信流里随轮的散文块。turn_stream 的首个
+// {"type":"world"} 帧到达即渲染（回信气泡之前）：日期行（世界自己
+// 的虚拟历日，服务端按 ui_language 本地化随行）+ 本轮叙述序列（故
+// 事体散文段落，非卡片非署名）+ 过渡句，随后回信打字机接上。
+// DEC-…92：世界在检查点（at_checkpoint）时「继续」钮挂本块尾部
+// （数据驱动——世界等才可点，从不瞎猜）；点继续成功 = 新一块故事
+// 块接在流尾，失败 = 服务端人话落到钮下。加载补显（loadWorldInbox
+// 的 revealed_now 臂）与继续的成功臂复用同一渲染器（inbox 载荷形
+// 带 items 键；流帧带 notes 键——一处归一）。
+// 文字一律 textContent（XSS 纪律）；真实时间零进入——日期只来自
+// 服务的 date_localized。
+function renderWorldStory(event, opts) {
   const T = worldInboxText();
-  worldInboxHead.textContent = T.head;
-  const notes = data.items || [];
+  const withTransition = !(opts && opts.withTransition === false);
+  const wrap = document.createElement("div");
+  wrap.className = "world-story";
+  const dateLine = document.createElement("p");
+  dateLine.className = "world-story-date";
+  dateLine.textContent = String(event.date_localized ?? "");
+  wrap.appendChild(dateLine);
+  const notes = Array.isArray(event.notes) ? event.notes
+    : Array.isArray(event.items) ? event.items : [];
   if (!notes.length) {
-    const none = document.createElement("p");
-    none.className = "note";
-    none.textContent = T.empty;
-    worldInboxBoard.appendChild(none);
+    const quiet = document.createElement("p");
+    quiet.className = "world-story-note";
+    quiet.textContent = T.quietDay;
+    wrap.appendChild(quiet);
   }
-  // 按运转分组：seed 段变化处插一枚组题（「第 N 封信后的世界」）——
-  // 便条序不重排，组题只随组键换行而生。
-  let currentRun = null;
   for (const note of notes) {
-    const runNo = worldRunNumberOf(note.id);
-    if (runNo !== null && runNo !== currentRun) {
-      currentRun = runNo;
-      const head = document.createElement("p");
-      head.className = "world-run-head";
-      head.textContent = T.runHead(runNo);
-      worldInboxBoard.appendChild(head);
+    const p = document.createElement("p");
+    p.className = "world-story-note";
+    p.textContent = String(note.narration ?? "");
+    wrap.appendChild(p);
+    if (note.fallback) {
+      // W-L 诚实标注（服务端 fallback:true——中文叙述缺席、示以英
+      // 文）：一行小字说明，从不把英文伪装成中文。
+      const fb = document.createElement("p");
+      fb.className = "note world-story-fallback";
+      fb.textContent = T.fallback;
+      wrap.appendChild(fb);
     }
-    worldInboxBoard.appendChild(worldNoteCard(note));
   }
-  const actions = document.createElement("p");
-  actions.className = "world-inbox-actions";
-  const cont = document.createElement("button");
-  cont.type = "button";
-  cont.className = "btn btn--faint";
-  cont.textContent = T.cont;
-  cont.disabled = !data.at_checkpoint;
-  cont.addEventListener("click", async () => {
-    cont.disabled = true;
-    let fresh = null;
-    let why = null;
-    try {
-      fresh = await fetchWorldContinue();
-    } catch (err) {
-      fresh = null;
-      why = err;
-    }
-    if (fresh && Array.isArray(fresh.items)) {
-      renderWorldInbox(fresh);
-    } else {
-      // W-1-3R（评审 LOW-1 收口）：失败不再是静默重灌——服务器的
-      // 人话（400 体 {"error": "世界不在等你点继续。"}，postJson
-      // 不抛而回体）落到收件箱里说给用户听；网络级失败才走
-      // err.message 兜底。
-      const said = document.createElement("p");
-      said.className = "note";
-      said.textContent =
-        (fresh && typeof fresh.error === "string" && fresh.error) ||
-        (why && why.message) ||
-        T.fail;
-      worldInboxBoard.appendChild(said);
-      loadWorldInbox();
-    }
-  });
-  actions.appendChild(cont);
-  worldInboxBoard.appendChild(actions);
+  if (withTransition) {
+    const then = document.createElement("p");
+    then.className = "world-story-then";
+    then.textContent = T.thenLetter;
+    wrap.appendChild(then);
+  }
+  if (event.at_checkpoint) {
+    // 「继续」随块（DEC-…92）：世界等在检查点才挂钮，数据驱动。
+    const actions = document.createElement("p");
+    actions.className = "world-story-actions";
+    const cont = document.createElement("button");
+    cont.type = "button";
+    cont.className = "btn btn--faint";
+    cont.textContent = T.cont;
+    cont.disabled = false;
+    cont.addEventListener("click", async () => {
+      cont.disabled = true;
+      let fresh = null;
+      let why = null;
+      try {
+        fresh = await fetchWorldContinue();
+      } catch (err) {
+        fresh = null;
+        why = err;
+      }
+      if (fresh && Array.isArray(fresh.items)) {
+        // 成功 = 世界又走了一步：新一块故事块接在流尾（揭示即读）。
+        renderWorldStory(fresh, { withTransition: false });
+      } else {
+        // W-1-3R 的法则随块延续：服务器的人话（400 体
+        // {"error": "世界不在等你点继续。"}，postJson 不抛而回体）
+        // 落到钮下说给用户听；网络级失败才走 err.message 兜底。
+        const said = document.createElement("p");
+        said.className = "note world-story-fail";
+        said.textContent =
+          (fresh && typeof fresh.error === "string" && fresh.error) ||
+          (why && why.message) ||
+          T.fail;
+        actions.appendChild(said);
+      }
+    });
+    actions.appendChild(cont);
+    wrap.appendChild(actions);
+  }
+  messages.appendChild(wrap);
+  // 追底（failLine 同款直滚——scrollBottom 是 components 的内政）。
+  window.scrollTo(0, document.body.scrollHeight);
+  return wrap;
 }
 
-// 收件箱现宽（上次渲染的便条数；DEC-…66 的滚动判断用它——只在增长时
-// 滚，不抢用户正在输入时的焦点，仅滚动）。
-let worldInboxCount = 0;
-
-async function loadWorldInbox(opts) {
+// 加载臂（DEC-…92）：页面装载（历史渲染后）读一次世界——只有当本
+// 次读取真的揭示了遗留未读便条（revealed_now>0，上次会话末尾没读
+// 到的）才补显一块故事块（同形、揭示即读、按需挂继续钮）；零遗留
+// ⇒ 零世界区块，对话末尾干净。无绑定（404 人话）或读失败同样零区
+// 块——不是一只空收件箱。返回载荷（语言切换臂等调用方自用）。
+async function loadWorldInbox() {
   let data = null;
   try {
     data = await fetchWorldInbox();
@@ -3103,19 +3076,94 @@ async function loadWorldInbox(opts) {
     data = null;
   }
   if (!data || !Array.isArray(data.items)) {
-    // 无绑定世界（404 人话）或读失败：整区隐藏——不是空收件箱。
-    worldInboxSec.hidden = true;
-    worldInboxCount = 0;
-    return;
+    return null;
   }
-  const grew = (data.items.length || 0) > worldInboxCount;
-  worldInboxCount = data.items.length || 0;
-  renderWorldInbox(data);
-  if (opts && opts.revealNew && grew) {
-    // DEC-…66 配套：新便条滚动进入视点（平滑、nearest——只滚动，
-    // 不动焦点）。
-    worldInboxSec.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  if ((data.revealed_now || 0) > 0) {
+    renderWorldStory(data, { withTransition: false });
   }
+  return data;
+}
+
+// ── A2（DEC-…82）：打字机定速节奏器───────────────────────────────
+// delta 的到达与渲染解耦：增量入缓冲，渲染循环按 TYPING_CPS 定速出
+// 字——生成慢 ⇒ 跟随（缓冲空，等下一帧）；生成快 ⇒ 拉平（一帧只出
+// 定速份额，不再一闪全文）。final 落地 ⇒ 权威全文的余量补进缓冲，
+// 排空之后才 finalize（affordance/moments/usage/收件箱重读现役路径
+// 不变）；中断 ⇒ 已显部分保留在页上，人话 + 拉历史对齐。
+// Revisit：35 字/秒是「定速适中」的初值，一次 dogfood 手感裁决即可
+// 换掉它——a calibration replaces this constant。
+const TYPING_CPS = 35;
+
+function startTypewriter() {
+  const state = {
+    line: null,
+    buffer: "",
+    shown: "",
+    raf: 0,
+    last: 0,
+    sealed: false,
+    resolve: null,
+  };
+  const step = (ts) => {
+    state.raf = 0;
+    if (state.last === 0) state.last = ts;
+    const budget = Math.floor(((ts - state.last) / 1000) * TYPING_CPS);
+    if (budget > 0 && state.buffer.length > 0) {
+      state.last = ts;
+      const take = Math.min(budget, state.buffer.length);
+      state.shown += state.buffer.slice(0, take);
+      state.buffer = state.buffer.slice(take);
+      ensureLine().textContent = state.shown;
+    }
+    if (state.sealed && state.buffer.length === 0) {
+      if (state.resolve) {
+        const done = state.resolve;
+        state.resolve = null;
+        done();
+      }
+      return;
+    }
+    state.raf = requestAnimationFrame(step);
+  };
+  const ensureLine = () => {
+    if (state.line === null) state.line = addLine("assistant", "");
+    return state.line;
+  };
+  return {
+    push(chunk) {
+      state.buffer += chunk;
+      if (!state.raf) state.raf = requestAnimationFrame(step);
+    },
+    seal(fullText) {
+      return new Promise((resolve) => {
+        state.sealed = true;
+        state.resolve = resolve;
+        const rest = typeof fullText === "string"
+          ? fullText.slice(state.shown.length)
+          : "";
+        if (rest) state.buffer += rest;
+        if (!state.raf) state.raf = requestAnimationFrame(step);
+      });
+    },
+    stop() {
+      // 中断臂：循环停、已显部分保留在页上（state.line 由调用方决定
+      // 去留——postTurn 的中断臂不摘它）。
+      if (state.raf) cancelAnimationFrame(state.raf);
+      state.raf = 0;
+      state.sealed = true;
+      if (state.resolve) {
+        const done = state.resolve;
+        state.resolve = null;
+        done();
+      }
+    },
+    get line() {
+      return state.line;
+    },
+    get shownLength() {
+      return state.shown.length;
+    },
+  };
 }
 
 // ── v2-2: 信档屏（8.2.11 结构重铸件）——以前的信的专门面────────────
@@ -3756,20 +3804,32 @@ async function postTurn(text) {
   // 由下方 finalize 的权威回信行接管。对端没说 SSE（非 200 / 无流）=
   // 立即失败形，回退旧 POST；流真开始后中断 = 信可能已落库——不重发，
   // 一行人话 + 拉历史对齐。
+  // A2（DEC-…82）：事件序 world → delta＊ → final——世界故事块先讲
+  // （onWorld 渲染在信流里、回信气泡之前），delta 进打字机缓冲定速
+  // 出字（到达与渲染解耦），final 的余量排空后才 finalize；中断保留
+  // 已显部分。
   let data = null;
-  let draftLine = null;
-  let draftText = "";
+  let typing = null;
   try {
-    data = await fetchTurnStream(text, (chunk) => {
-      if (draftLine === null) {
-        draftLine = addLine("assistant", "");
-      }
-      draftText += chunk;
-      draftLine.textContent = draftText;
-    });
-    if (data === null) data = await fetchTurn(text);
+    typing = startTypewriter();
+    data = await fetchTurnStream(
+      text,
+      (chunk) => typing.push(chunk),
+      (event) => renderWorldStory(event)
+    );
+    if (data === null) {
+      // 回退臂（对端非 SSE）：没有 delta 也没有故事块，权威全文
+      // 走旧路——seal 一口排空（缓冲本来就空）。
+      data = await fetchTurn(text);
+    } else {
+      // final 到手：权威全文的未显余量补进缓冲，排空后才 finalize。
+      await typing.seal(typeof data.reply === "string" ? data.reply : "");
+    }
   } catch (err) {
+    if (typing) typing.stop();
     if (err && err.started) {
+      // 已显部分保留在页上（打字机的在写信不摘）——流中断说的是
+      // 「信可能已落库」，拉历史对齐，不重发。
       addLine("failure", "流式中断了——把已经落库的信拉回来对齐。");
       try { await loadHistory(); } catch { /* 历史读不回，留着错误行 */ }
     } else {
@@ -3780,7 +3840,6 @@ async function postTurn(text) {
       }
     }
   } finally {
-    if (draftLine !== null) draftLine.remove();
     stopMomentPolling();
     pending.remove();
     // 摘封：回信落地（或失败）即从在途信封回到撕口信纸——同一 DOM，
@@ -3789,7 +3848,11 @@ async function postTurn(text) {
     const stamp = mine.querySelector(".postmark--sent");
     if (stamp) stamp.remove();
   }
+  // finalize（A2 起在排空之后）：打字机的在写信让位给权威回信行——
+  // 只在响应到手时摘（成功 = 权威行接管；失败形 = 失败行接管）；
+  // started 中断已在上面拉历史对齐，已显部分保留在页上。
   if (data !== null) {
+    if (typing !== null && typing.line !== null) typing.line.remove();
     // v3-3 供性后装：寄出的信在位图到达前全供性（信还封着在途）；回信
     // 落地即按 turn 响应把用户信的 0 位降为无供性（applyLetterAffordance
     // 只摘不加，方向恒向不可点收）。
@@ -3810,12 +3873,9 @@ async function postTurn(text) {
     }
     const moments = data.teaching_moments || [];
     showMoments(moments);
-    // W-1-3R：这封信是世界的一轮发条（turn 落定 ⇒ 世界已步进、便条
-    // 可能已在等）——收件箱重读一次。揭示就是「读」这个动作本身
-    // （spec §4.1 的呈现半）；不读，页面就永远不知道世界动过。
-    // DEC-…66：revealNew —— 新便条到达时滚入视点（底部挂点的自然
-    // 视点；只滚动，不动焦点）。
-    loadWorldInbox({ revealNew: true });
+    // DEC-…92：世界已在生成前步进并揭示（前置步进），故事块已随
+    // world 帧呈现——turn 后不再有收件箱重读（读即揭示的第二遍是
+    // 死调用；「遗留世界事件占对话末尾」的根治半）。
   }
 }
 
@@ -4545,10 +4605,12 @@ window.addEventListener("DOMContentLoaded", () => {
   // mc-1：主从条首灌（当前角色名 + 身份行）——失败留空不轰炸，下次
   // 打开信封沓会重读
   fetchCharacters().then(renderMasthead).catch(() => {});
-  loadHistory();
-  // W-1-3: 世界收件箱首灌（绑定世界才有这一区——404 即整区隐藏）；
-  // 「继续」后的刷新走按钮自己的回路。
-  loadWorldInbox();
+  loadHistory()
+    .then(() => loadWorldInbox())
+    .catch(() => {});
+  // W-1-3 / DEC-…92: 历史落定后读一次世界——仅当上次会话遗留未读
+  // 便条（revealed_now>0）才在最末信件后补显一块故事块；零遗留 =
+  // 零世界区块。「继续」后的呈现走按钮自己的回路。
   // F-1R/R-1: the first visit sees the cover; every later visit lands in
   // the parlor directly (the cover never comes back once localStorage
   // says so)

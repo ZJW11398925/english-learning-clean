@@ -143,6 +143,13 @@ class PoolEvent:
     default is the terminal stop (the world waits; the conservative
     reading of an unmarked event).
 
+    A2 (DEC-…88/…90): ``days`` is the story's own span — the number of
+    world days this event carries (zero = a same-day beat). The virtual
+    world calendar (``elc.world.package.world_date_of``) sums the
+    happened events' days on top of the package's ``calendar_start``;
+    the engine itself stays clockless and this field is content the
+    orchestrator's timestamp source reads — never a mechanical advance.
+
     The two tuple fields are runtime-defended (this cut's own answer to
     the DC4T LOW-1 shape registered on :mod:`elc.world.types` — there
     the declared tuple is not defended and a list passed at runtime
@@ -156,9 +163,14 @@ class PoolEvent:
     effects: tuple[StateEffect, ...] = ()
     conditions: tuple[Condition, ...] = ()
     moment: MomentKind = MomentKind.RESPONSE
+    days: int = 0
 
     def __post_init__(self) -> None:
         if not isinstance(self.effects, tuple):
             object.__setattr__(self, "effects", tuple(self.effects))
         if not isinstance(self.conditions, tuple):
             object.__setattr__(self, "conditions", tuple(self.conditions))
+        if type(self.days) is not int or self.days < 0:
+            raise ValueError(
+                f"days must be a non-negative int, got {self.days!r}"
+            )
