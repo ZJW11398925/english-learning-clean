@@ -329,9 +329,9 @@ def test_the_usage_columns_are_the_adjudicated_migration() -> None:
     ]
     for name in ("prompt_tokens", "completion_tokens", "total_tokens"):
         assert name in columns, name
-    # veto-R 随迁：chain head = 0023（W-1-0 世界身份三表）；0021 的三列
-    # 本体与自带 stamp（'21'，上钉）不动。
-    assert migrations.schema_version(conn) == "23"
+    # W-1-1 随迁：chain head = 0024（W-1-1 世界事件树两表，veto-R 随迁至
+    # 0023 的先例同型）；0021 的三列本体与自带 stamp（'21'，上钉）不动。
+    assert migrations.schema_version(conn) == "24"
     conn.close()
 
 

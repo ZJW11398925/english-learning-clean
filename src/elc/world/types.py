@@ -1,13 +1,22 @@
-"""The World bounded context — identity binding skeleton (W-1-0).
+"""The World bounded context — identity binding (W-1-0) plus the event
+tree and its minimal state projection (W-1-1).
 
 W-1-0 is the living-world program's first cut (direction
 DEC-OPI-7e3744ee…2, the user's living-world mainline; the program's
-opening ruling DEC-OPI-7e3744ee…4; M0.1 DEC-OPI-d96fd92d…7): it lands
-**identity only** — the three migration-0023 tables
-(:mod:`elc.world.store` is their SQL face) and the frozen record shapes
-below. Nothing else: no events, no engine, no reveal face, no world
-behaviour — those are W-1-1+ / W-1-2 / W-1-3 registered cuts, and this
-package ships none of them rather than a stub that pretends to.
+opening ruling DEC-OPI-7e3744ee…4; M0.1 DEC-OPI-d96fd92d…7): it lands the
+three migration-0023 tables (:mod:`elc.world.store` is their SQL face)
+and the frozen identity record shapes below.
+
+W-1-1 (DEC-OPI-7e3744ee…17) lands the event tree and the minimal state
+projection: :class:`WorldEvent` is one append-only chronicle entry
+carrying its caller-written narration and zero or more
+:class:`StateEffect` claims; :class:`WorldStateFact` is one settled
+state row — ``CURRENT`` for the newest fact per ``(world_id,
+canonical_key)``, ``SUPERSEDED`` for every older one (the projection
+keeps its history; there is no unique on the key). Still not here: no
+engine, no reveal face, no narration generation, no world behaviour —
+those are W-1-2+ / W-1-3 registered cuts, and this package ships none of
+them rather than a stub that pretends to.
 
 Value semantics: a world is a named root or fork (``template_world_id``
 names the fork parent, NULL is a root — the fork lineage is W-3-2's
@@ -16,18 +25,41 @@ to one character card (migration 0019's ``character_card.persona_id``);
 a conversation binding puts one conversation inside one world through an
 actor of that world (the composite FK keeps the actor and the world a
 real pair — the migration spells it, the store refuses around it).
+
+The effects codec: :func:`encode_effects` freezes an effects tuple into
+the column's canonical JSON text (compact, non-escaped, insertion-ordered
+— the same tuple always encodes to the same bytes);
+:func:`decode_effects` is its strict inverse. A payload that is not
+valid JSON, not a JSON array, not an object of exactly ``key`` and
+``statement`` string fields, comes back as a value-semantics ``Err``
+(never an exception) with the discriminating reason in the message.
 """
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from typing import Any
 
-from elc.platform.types import ConversationId, PersonaId
+from elc.platform.types import (
+    ConversationId,
+    DomainError,
+    DomainErrorCode,
+    Err,
+    Ok,
+    PersonaId,
+    Result,
+)
 
 __all__ = [
     "WorldRecord",
     "WorldActorRecord",
     "WorldConversationRecord",
+    "StateEffect",
+    "WorldEvent",
+    "WorldStateFact",
+    "encode_effects",
+    "decode_effects",
 ]
 
 
@@ -78,3 +110,128 @@ class WorldConversationRecord:
     actor_id: str
     conversation_id: ConversationId
     created_at: str
+
+
+@dataclass(frozen=True)
+class StateEffect:
+    """One state claim an event settles (migration 0024's ``effects``
+    element shape).
+
+    ``key`` is the canonical state key (free text until W-1-2 registers a
+    vocabulary); ``statement`` is the claim the event makes about the
+    world's state. An event's effects are settled together, atomically:
+    the whole event lands or none of it does.
+    """
+
+    key: str
+    statement: str
+
+
+@dataclass(frozen=True)
+class WorldEvent:
+    """One chronicle entry (migration 0024's ``world_event`` table).
+
+    Append-only: an event is written once and never updated — corrections
+    arrive as later events. ``narration`` is the caller's own prose (this
+    cut generates none); ``effects`` is the ordered tuple of state claims
+    the event settles (an empty tuple is a legal pure-narration event);
+    ``occurred_at`` is the event's own ISO-8601 moment as the caller
+    supplies it — the log does not re-stamp it; ``source`` names the
+    origin (a free word until a later cut registers the vocabulary).
+    """
+
+    event_id: str
+    world_id: str
+    kind: str
+    narration: str
+    effects: tuple[StateEffect, ...]
+    occurred_at: str
+    source: str
+
+
+@dataclass(frozen=True)
+class WorldStateFact:
+    """One settled state row (migration 0024's ``world_state_fact``
+    table).
+
+    Every fact is settled *by* one event (``source_event_id`` — the
+    projection is a reading of the tree, never an independent write).
+    ``status`` is the two-word lifecycle the migration's CHECK spells:
+    ``CURRENT`` for the newest fact of its ``(world_id, canonical_key)``,
+    ``SUPERSEDED`` for every older one — several rows per key are the
+    design (the projection keeps its history). ``recorded_at`` is the
+    source event's own ``occurred_at`` (the settlement is synchronous
+    with the event, and the projection stays derived from the tree).
+    """
+
+    fact_id: str
+    world_id: str
+    source_event_id: str
+    canonical_key: str
+    statement: str
+    status: str
+    recorded_at: str
+
+
+def encode_effects(effects: tuple[StateEffect, ...]) -> str:
+    """Freeze an effects tuple into the column's canonical JSON text.
+
+    The encoding is deterministic (compact separators, insertion order,
+    non-escaped characters): the same tuple always encodes to the same
+    bytes — a replay writes what the first write wrote.
+    """
+
+    payload = [{"key": effect.key, "statement": effect.statement} for effect in effects]
+    return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+
+
+def decode_effects(text: str) -> Result[tuple[StateEffect, ...]]:
+    """The strict inverse of :func:`encode_effects`.
+
+    A payload that is not valid JSON, not a JSON array, not an object of
+    exactly the two string fields ``key`` and ``statement``, answers a
+    value-semantics ``Err`` (``VALIDATION_FAILED``) whose message names
+    the reason — the discrimination words are ``not valid JSON`` / ``not
+    a JSON array`` / ``not a JSON object`` / ``missing 'key'`` /
+    ``missing 'statement'`` / ``is not a string`` / ``unexpected
+    fields``. Decoding is a read-side concern only (the write face
+    encodes from typed records and cannot produce a bad payload).
+    """
+
+    def _err(message: str) -> Err[Any]:
+        return Err(
+            DomainError(
+                code=DomainErrorCode.VALIDATION_FAILED,
+                message=f"effects refused: {message}",
+            )
+        )
+
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        return _err(f"not valid JSON ({exc})")
+    if not isinstance(payload, list):
+        return _err(f"not a JSON array (got {type(payload).__name__})")
+    effects: list[StateEffect] = []
+    for index, element in enumerate(payload):
+        if not isinstance(element, dict):
+            return _err(
+                f"effects[{index}] not a JSON object (got"
+                f" {type(element).__name__})"
+            )
+        if "key" not in element:
+            return _err(f"effects[{index}] missing 'key'")
+        if "statement" not in element:
+            return _err(f"effects[{index}] missing 'statement'")
+        if not isinstance(element["key"], str):
+            return _err(f"effects[{index}].key is not a string")
+        if not isinstance(element["statement"], str):
+            return _err(f"effects[{index}].statement is not a string")
+        extra = set(element) - {"key", "statement"}
+        if extra:
+            return _err(
+                f"effects[{index}] unexpected fields"
+                f" ({', '.join(sorted(extra))})"
+            )
+        effects.append(StateEffect(key=element["key"], statement=element["statement"]))
+    return Ok(tuple(effects))

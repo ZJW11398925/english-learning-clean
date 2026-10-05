@@ -127,8 +127,9 @@ def test_0016_is_0017s_predecessor_and_0015s_successor() -> None:
         f"{index:04d}" for index in range(1, len(MIGRATION_IDS) + 1)
     ]
     # 主线-3 随迁（the P9-1 way）：head 字面随新头迁移——0016 后继钉不动，
-    # head 断言归最新的刀。veto-R 再随迁至 0022；W-1-0 再随迁至 0023。
-    assert MIGRATION_IDS[-1] == "0023_world_identity"
+    # head 断言归最新的刀。veto-R 再随迁至 0022；W-1-0 再随迁至 0023；
+    # W-1-1 再随迁至 0024。
+    assert MIGRATION_IDS[-1] == "0024_world_events"
 
 
 def test_the_pre_0016_lineage_did_not_move() -> None:
@@ -151,8 +152,8 @@ def test_applying_the_chain_is_idempotent(db: sqlite3.Connection) -> None:
 
 def test_the_stamps_move_to_the_shared_head(db: sqlite3.Connection) -> None:
     # 主线-3 随迁：head stamp 19 → 20；veto-R 再随迁 21 → 22；W-1-0 再随迁
-    # 22 → 23。
-    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "23"
+    # 22 → 23；W-1-1 再随迁 23 → 24。
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "24"
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"

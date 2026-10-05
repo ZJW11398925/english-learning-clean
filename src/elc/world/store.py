@@ -1,12 +1,18 @@
 """The World bounded context's durable face — :class:`SqliteWorldStore`
-(migration 0023's three identity tables).
+(migration 0023's three identity tables and migration 0024's event tree +
+minimal state projection).
 
-W-1-0's write and read face over ``world`` / ``world_actor`` /
-``world_conversation``. Identity only: the store binds worlds, actors and
-conversations and reads them back; it launches no world behaviour (the
-package banner's boundary is the store's too).
+W-1-0's identity face binds worlds, actors and conversations and reads
+them back. W-1-1 adds the event face: :meth:`SqliteWorldStore.record_event`
+is the *only* writer of either migration-0024 table — one short fenced
+transaction inserts the chronicle entry and settles its effects into
+``world_state_fact`` (the projection is a reading of the tree, never an
+independent write). The read face is three shapes: the chronicle (the
+tree, in its own order), the current facts (the projection's ``CURRENT``
+half) and one key's fact history (the superseded rows included).
 
-Idempotence is the seeded shape (W-1-4's host seed will sit on it):
+Identity idempotence is the seeded shape (W-1-4's host seed will sit on
+it):
 
 - ``create_world``: the same id replayed with the same shape (name +
   template) is an ``Ok`` no-op; the same id with a different shape is a
@@ -17,6 +23,12 @@ Idempotence is the seeded shape (W-1-4's host seed will sit on it):
 - ``bind_conversation``: the same binding tuple replayed is a no-op; a
   different shape under a taken binding id, or a conversation bound to a
   different (world, actor) pair (the column's UNIQUE), is a ``CONFLICT``.
+
+Event idempotence: the same ``event_id`` replayed with the same shape is
+an ``Ok`` no-op (neither the chronicle entry nor its settlement is
+redone); the same id with a different shape is a ``CONFLICT``. An event
+carrying the same canonical key twice is refused before anything is
+written (``VALIDATION_FAILED``) — the whole face lands or nothing does.
 
 Dangling references are value-semantics refusals, never exceptions: a
 write naming a world / persona card / conversation that does not exist
@@ -30,7 +42,11 @@ both exist; the pairing does not).
 Error vocabulary (the domain ``Result`` words this store answers with):
 ``CONFLICT`` = a shape or uniqueness clash with an existing row;
 ``NOT_FOUND`` = a referenced identity (world, persona card, conversation)
-does not exist.
+does not exist; ``VALIDATION_FAILED`` = the caller's own payload is
+malformed (a duplicated canonical key inside one event; a state-facts
+effects column that does not decode); ``DEPENDENCY_UNAVAILABLE`` = the
+database itself failed outside the vocabulary above (world_lore's
+precedent — the raw sqlite error rides the message).
 """
 
 from __future__ import annotations
@@ -51,7 +67,11 @@ from elc.platform.types import (
 from elc.world.types import (
     WorldActorRecord,
     WorldConversationRecord,
+    WorldEvent,
     WorldRecord,
+    WorldStateFact,
+    decode_effects,
+    encode_effects,
 )
 
 __all__ = ["SqliteWorldStore"]
@@ -131,13 +151,28 @@ class SqliteWorldStore:
                     self._conn.execute("ROLLBACK")
                 except sqlite3.Error:
                     pass
+            # N-W10-6 (closed in W-1-1): the catch used to attribute every
+            # sqlite failure to the missing template. The refusal is
+            # narrowed by message family: a FOREIGN KEY refusal here can
+            # only be the template FK (the id's UNIQUE is pre-checked, the
+            # NOT NULLs are caller input) and stays ``NOT_FOUND``; any
+            # other database failure is the database's own and answers the
+            # house's storage word (world_lore's precedent), raw error
+            # riding the message — never re-attributed to the template.
+            if "FOREIGN KEY" in str(exc):
+                return Err(
+                    DomainError(
+                        code=DomainErrorCode.NOT_FOUND,
+                        message=(
+                            f"world {world_id!r} not created: its template"
+                            f" world does not exist ({exc})"
+                        ),
+                    )
+                )
             return Err(
                 DomainError(
-                    code=DomainErrorCode.NOT_FOUND,
-                    message=(
-                        f"world {world_id!r} not created: its template world"
-                        f" does not exist ({exc})"
-                    ),
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=f"world {world_id!r} not created: write failed ({exc})",
                 )
             )
         self._conn.execute("COMMIT")
@@ -326,6 +361,185 @@ class SqliteWorldStore:
             )
         )
 
+    # -- event face (W-1-1) ---------------------------------------------------
+
+    def record_event(self, event: WorldEvent) -> Result[WorldEvent]:
+        """Write one chronicle event and settle its effects, atomically.
+
+        The only writer of migration 0024's tables — the event row and
+        its ``world_state_fact`` settlement land in one short fenced
+        transaction, so the projection is never caught between an event
+        and its claims: the whole face lands or nothing does.
+
+        Refusals, before anything is written:
+
+        - an event carrying the same canonical key twice is a
+          ``VALIDATION_FAILED`` (one event, one claim per key);
+        - a dangling ``world_id`` is a ``NOT_FOUND`` (the table's FK is
+          the backstop);
+        - a replayed ``event_id`` with a different shape is a
+          ``CONFLICT`` (events are append-only — the same id answers the
+          stored event unchanged, and neither the entry nor its
+          settlement is redone).
+
+        Each effect settles the same way: the key's ``CURRENT`` fact (if
+        any) flips to ``SUPERSEDED``, then this event's claim is inserted
+        as the new ``CURRENT`` row. The fact's id is derived —
+        ``<event_id>:<key>`` — and its ``recorded_at`` is the event's own
+        ``occurred_at``: the projection is derived from the tree, clock
+        and all. An empty effects tuple is a legal pure-narration event
+        (the chronicle entry lands, zero settlement rows).
+        """
+
+        seen_keys: set[str] = set()
+        for effect in event.effects:
+            if effect.key in seen_keys:
+                return Err(
+                    DomainError(
+                        code=DomainErrorCode.VALIDATION_FAILED,
+                        message=(
+                            f"event {event.event_id!r} refused: canonical"
+                            f" key {effect.key!r} appears twice in one"
+                            " event (one event, one claim per key);"
+                            " nothing was written"
+                        ),
+                    )
+                )
+            seen_keys.add(effect.key)
+
+        stored = self._event_values(event.event_id)
+        if stored is not None:
+            decoded = decode_effects(str(stored[4]))
+            if isinstance(decoded, Err):
+                return Err(
+                    DomainError(
+                        code=decoded.error.code,
+                        message=(
+                            f"event {event.event_id!r} replay cannot be"
+                            f" verified: {decoded.error.message}"
+                        ),
+                    )
+                )
+            stored_shape = (
+                str(stored[1]),
+                str(stored[2]),
+                str(stored[3]),
+                decoded.value,
+                str(stored[5]),
+                str(stored[6]),
+            )
+            if stored_shape == (
+                event.world_id,
+                event.kind,
+                event.narration,
+                event.effects,
+                event.occurred_at,
+                event.source,
+            ):
+                return Ok(
+                    WorldEvent(
+                        event_id=str(stored[0]),
+                        world_id=str(stored[1]),
+                        kind=str(stored[2]),
+                        narration=str(stored[3]),
+                        effects=decoded.value,
+                        occurred_at=str(stored[5]),
+                        source=str(stored[6]),
+                    )
+                )
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.CONFLICT,
+                    message=(
+                        f"event {event.event_id!r} already exists with a"
+                        " different shape; events are append-only and do"
+                        " not rewrite"
+                    ),
+                )
+            )
+
+        if self._world_row(event.world_id) is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"event {event.event_id!r} not written: world"
+                        f" {event.world_id!r} does not exist"
+                    ),
+                )
+            )
+
+        began = False
+        try:
+            self._conn.execute("BEGIN IMMEDIATE")
+            began = True
+            self._conn.execute(
+                "INSERT INTO world_event ("
+                " event_id, world_id, kind, narration, effects,"
+                " occurred_at, source"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    event.event_id,
+                    event.world_id,
+                    event.kind,
+                    event.narration,
+                    encode_effects(event.effects),
+                    event.occurred_at,
+                    event.source,
+                ),
+            )
+            for effect in event.effects:
+                # The settlement: this key's CURRENT fact (if any) flips
+                # to SUPERSEDED, then the event's claim lands as the new
+                # CURRENT row. At most one CURRENT row per key is the
+                # invariant this face maintains (the table keeps no
+                # UNIQUE on the key — the superseded history is the
+                # design) — every write runs through here.
+                self._conn.execute(
+                    "UPDATE world_state_fact SET status = 'SUPERSEDED'"
+                    " WHERE world_id = ? AND canonical_key = ?"
+                    " AND status = 'CURRENT'",
+                    (event.world_id, effect.key),
+                )
+                self._conn.execute(
+                    "INSERT INTO world_state_fact ("
+                    " fact_id, world_id, source_event_id, canonical_key,"
+                    " statement, status, recorded_at"
+                    ") VALUES (?, ?, ?, ?, ?, 'CURRENT', ?)",
+                    (
+                        f"{event.event_id}:{effect.key}",
+                        event.world_id,
+                        event.event_id,
+                        effect.key,
+                        effect.statement,
+                        event.occurred_at,
+                    ),
+                )
+        except sqlite3.Error as exc:
+            if began:
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
+            if "FOREIGN KEY" in str(exc):
+                return Err(
+                    DomainError(
+                        code=DomainErrorCode.NOT_FOUND,
+                        message=(
+                            f"event {event.event_id!r} not written: a"
+                            f" referenced identity does not exist ({exc})"
+                        ),
+                    )
+                )
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=f"event {event.event_id!r} not written: {exc}",
+                )
+            )
+        self._conn.execute("COMMIT")
+        return Ok(event)
+
     # -- read face -----------------------------------------------------------
 
     def get_world(self, world_id: str) -> WorldRecord | None:
@@ -387,6 +601,82 @@ class SqliteWorldStore:
             )
             for row in rows
         )
+
+    # -- event / projection read face (W-1-1) ---------------------------------
+
+    def chronicle_of(self, world_id: str) -> Result[tuple[WorldEvent, ...]]:
+        """One world's chronicle, event order ascending (``occurred_at``,
+        then ``event_id`` — the durable order; deterministic reads are
+        content, not an implementation detail).
+
+        The one read face that parses a column: each row's ``effects``
+        text goes through the strict codec, so a hand-corrupted column
+        answers a value-semantics ``Err`` naming the offending event —
+        never an exception, never a silently-decoded fact. (The other two
+        projection reads are pure column reads — nothing to parse.)
+        """
+
+        rows = self._conn.execute(
+            "SELECT event_id, world_id, kind, narration, effects,"
+            " occurred_at, source"
+            " FROM world_event WHERE world_id = ?"
+            " ORDER BY occurred_at ASC, event_id ASC",
+            (world_id,),
+        ).fetchall()
+        events: list[WorldEvent] = []
+        for row in rows:
+            decoded = decode_effects(str(row[4]))
+            if isinstance(decoded, Err):
+                return Err(
+                    DomainError(
+                        code=decoded.error.code,
+                        message=(
+                            f"chronicle of {world_id!r} refused at event"
+                            f" {str(row[0])!r}: {decoded.error.message}"
+                        ),
+                    )
+                )
+            events.append(
+                WorldEvent(
+                    event_id=str(row[0]),
+                    world_id=str(row[1]),
+                    kind=str(row[2]),
+                    narration=str(row[3]),
+                    effects=decoded.value,
+                    occurred_at=str(row[5]),
+                    source=str(row[6]),
+                )
+            )
+        return Ok(tuple(events))
+
+    def current_facts(self, world_id: str) -> tuple[WorldStateFact, ...]:
+        """The projection's ``CURRENT`` half: one world's live facts, key
+        ascending (the durable order)."""
+
+        rows = self._conn.execute(
+            "SELECT fact_id, world_id, source_event_id, canonical_key,"
+            " statement, status, recorded_at"
+            " FROM world_state_fact WHERE world_id = ? AND status = 'CURRENT'"
+            " ORDER BY canonical_key ASC",
+            (world_id,),
+        ).fetchall()
+        return tuple(self._fact(row) for row in rows)
+
+    def fact_history(
+        self, world_id: str, canonical_key: str
+    ) -> tuple[WorldStateFact, ...]:
+        """One key's whole fact lineage in one world — superseded rows
+        included — oldest first (``recorded_at``, then ``fact_id``; the
+        durable order)."""
+
+        rows = self._conn.execute(
+            "SELECT fact_id, world_id, source_event_id, canonical_key,"
+            " statement, status, recorded_at"
+            " FROM world_state_fact WHERE world_id = ? AND canonical_key = ?"
+            " ORDER BY recorded_at ASC, fact_id ASC",
+            (world_id, canonical_key),
+        ).fetchall()
+        return tuple(self._fact(row) for row in rows)
 
     # -- internals -----------------------------------------------------------
 
@@ -464,3 +754,31 @@ class SqliteWorldStore:
             (conversation_id,),
         ).fetchone()
         return row is not None
+
+    def _event_values(self, event_id: str) -> tuple[object, ...] | None:
+        """One raw ``world_event`` row (the idempotence pre-read); the
+        effects text stays undecoded here — :meth:`record_event` decodes
+        it through the strict codec where it can answer an ``Err``."""
+
+        row = self._conn.execute(
+            "SELECT event_id, world_id, kind, narration, effects,"
+            " occurred_at, source"
+            " FROM world_event WHERE event_id = ?",
+            (event_id,),
+        ).fetchone()
+        return None if row is None else tuple(row)
+
+    @staticmethod
+    def _fact(row: tuple[object, ...]) -> WorldStateFact:
+        """One ``world_state_fact`` row as its frozen record (pure column
+        read — every column is NOT NULL, ``status`` is CHECK-bound)."""
+
+        return WorldStateFact(
+            fact_id=str(row[0]),
+            world_id=str(row[1]),
+            source_event_id=str(row[2]),
+            canonical_key=str(row[3]),
+            statement=str(row[4]),
+            status=str(row[5]),
+            recorded_at=str(row[6]),
+        )

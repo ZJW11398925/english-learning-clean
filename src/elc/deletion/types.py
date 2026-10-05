@@ -277,11 +277,22 @@ RETAINED_TABLES: tuple[str, ...] = (
 #: (b) ``world_actor.persona_id`` references ``character_card``, which the
 #: sweep removes for user-authored cards only (``is_builtin = 0``) — an
 #: actor bound to a user card would refuse that card's removal.
+#:
+#: W-1-1 (DEC-OPI-7e3744ee…17) adds migration 0024's two tables — the
+#: world's event tree and its minimal state projection — to the same keep
+#: rule, same conservative reading (registration, not deletion semantics;
+#: zero sweep face; same Revisit W-1-3). One more consequential FK joins
+#: the register, same posture: ``world_state_fact.source_event_id``
+#: references ``world_event`` (and both tables reference ``world``) — the
+#: event tree and its projection delete together or not at all, which is
+#: W-1-3's decision, pre-empted by no one here.
 GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_lore_fact",
     "world",
     "world_actor",
     "world_conversation",
+    "world_event",
+    "world_state_fact",
 )
 
 

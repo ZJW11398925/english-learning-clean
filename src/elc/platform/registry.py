@@ -46,7 +46,9 @@ from elc.user_config.types import (
 from elc.world.types import (
     WorldActorRecord,
     WorldConversationRecord,
+    WorldEvent,
     WorldRecord,
+    WorldStateFact,
 )
 from elc.world_lore.types import WorldLoreRecord
 
@@ -266,6 +268,17 @@ CANONICAL_OBJECTS: Mapping[str, CanonicalObject] = {
     ),
     "world_conversation": CanonicalObject(
         "WorldConversationRecord", OWNER_WORLD, WorldConversationRecord
+    ),
+    # -- World event tree + minimal state projection (W-1-1,
+    # DEC-OPI-7e3744ee…17): migration 0024's two tables, written only
+    # through record_event's one atomic settlement. Same registry reading
+    # as the identity rows above — the entries mirror the migration's
+    # column sets via elc.world.types, and no ``version_field``: the
+    # chronicle is append-only and the projection's lifecycle word lives
+    # in the row (CURRENT / SUPERSEDED), not in a version column.
+    "world_event": CanonicalObject("WorldEvent", OWNER_WORLD, WorldEvent),
+    "world_state_fact": CanonicalObject(
+        "WorldStateFact", OWNER_WORLD, WorldStateFact
     ),
     "teaching_unit": CanonicalObject(
         "TeachingUnit", OWNER_CONTENT, TeachingUnit,

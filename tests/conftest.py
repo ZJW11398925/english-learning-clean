@@ -70,12 +70,17 @@ MIGRATION_IDS: tuple[str, ...] = (
     # tables (world / world_actor / world_conversation) the World bounded
     # context's store (elc.world) reads and writes.
     "0023_world_identity",
+    # W-1-1 (DEC-OPI-7e3744ee…17): the world's event tree and its minimal
+    # state projection — the two tables (world_event / world_state_fact)
+    # written only through SqliteWorldStore.record_event's one atomic
+    # settlement.
+    "0024_world_events",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0023_world_identity.sql"
-SCHEMA_HEAD_VERSION = "23"
+SCHEMA_HEAD_FILE = "0024_world_events.sql"
+SCHEMA_HEAD_VERSION = "24"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

@@ -274,13 +274,15 @@ def test_the_retained_set_is_unchanged_and_every_delivery_table_is_swept() -> No
     }
     # 主线-3 随迁：全局内容集从空读到第一个 app.db 成员——共享世界的事实
     # 不属于任何用户（SEC-025 的 keep 半）；W-1-0 再随迁：世界身份三表
-    # 入 keep 半（保守读法，不接 sweep 面——分类登记见 elc.deletion.types
-    # 的注释）。
+    # 入 keep 半；W-1-1 再随迁：世界事件树两表入 keep 半（保守读法，不接
+    # sweep 面——分类登记见 elc.deletion.types 的注释）。
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
         "world_actor",
         "world_conversation",
+        "world_event",
+        "world_state_fact",
     )
     for table in TABLES:
         assert table in SWEPT_TABLES

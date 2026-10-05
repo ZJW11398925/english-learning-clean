@@ -213,10 +213,11 @@ SURFACE_CENSUS: tuple[Row, ...] = (
         live_face="elc.user_config.controller:UserConfigController",
         store="elc.user_config.store:SqliteUserConfigStore",
     ),
-    # W-1-0（活世界程序首刀）：身份绑定骨架——迁移 0023 三表（world /
-    # world_actor / world_conversation）的 SQL 面 + 冻结记录形。无
+    # W-1-0（活世界程序首刀）+ W-1-1（事件树与最小投影）：迁移 0023 三表
+    # （world / world_actor / world_conversation）与迁移 0024 两表
+    # （world_event / world_state_fact）的 SQL 面 + 冻结记录形。无
     # controller/commands/queries（不在 DOMAIN_PACKAGES——Phase 0 gate 的
-    # 接口钉不适用于本包），无事件、无引擎、无揭示、无行为（横幅即边界）。
+    # 接口钉不适用于本包）；引擎、揭示、叙述生成、行为未落（横幅即边界）。
     Row(
         "world",
         live_face="elc.world.store:SqliteWorldStore",

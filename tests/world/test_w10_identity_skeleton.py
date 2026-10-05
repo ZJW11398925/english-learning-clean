@@ -152,22 +152,25 @@ def _assert_err(result: object, code: str) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_0023_is_the_registered_head() -> None:
-    """W-1-0's migration is the head, immediately behind the veto-response
-    cut's 0022_app_settings; the shared constants say so, and the stamp a
-    fresh database carries is 23."""
+def test_0023_is_in_place_behind_the_head() -> None:
+    """W-1-0's migration is in the chain — no longer the head: W-1-1's
+    0024_world_events sits above it (the stamp-pin discipline every head
+    move has followed since P8-4; the pin read "0023 is the head" while
+    0023 was the head). The shared constants say so, and the stamp a
+    fresh database carries is 24."""
 
-    assert MIGRATION_IDS[-1] == "0023_world_identity"
-    assert MIGRATION_IDS[-2] == "0022_app_settings"
-    assert SCHEMA_HEAD_FILE == "0023_world_identity.sql"
+    assert MIGRATION_IDS[-1] == "0024_world_events"
+    assert MIGRATION_IDS[-2] == "0023_world_identity"
+    assert SCHEMA_HEAD_FILE == "0024_world_events.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "23"
+    assert (MIGRATIONS / "0023_world_identity.sql").is_file()
+    assert SCHEMA_HEAD_VERSION == "24"
 
     conn = sqlite3.connect(":memory:")
     applied = apply_migrations(conn)
-    assert applied[-1] == "0023_world_identity"
-    assert applied[-2] == "0022_app_settings"
-    assert schema_version(conn) == "23"
+    assert applied[-1] == "0024_world_events"
+    assert applied[-2] == "0023_world_identity"
+    assert schema_version(conn) == "24"
 
 
 def test_the_three_tables_carry_their_columns() -> None:
