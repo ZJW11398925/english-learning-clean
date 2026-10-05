@@ -244,6 +244,11 @@ def test_the_envelope_selector_wears_the_residents_face() -> None:
     ) in face
     assert 'caption.className = "envsel-caption";' in face
     assert "stack.parentNode.insertBefore(caption, stack);" in face
+    # wf-1 处置（评审 LOW-1）：caption 的幂等摘旧行——面板 DOM 复用时
+    # （refreshEnvelopeStack 的重排路径，非每开新建面板的 open 路径）
+    # 无摘除则 caption 逐次堆积；该行真承重（评审 M4 变异形态），钉住。
+    assert "stale.remove();" in face
+    assert 'panel.querySelector(".envsel-caption");' in face
     assert 'note.className = "env-letters";' in face
     assert (
         'T.letters.replace(\n'
