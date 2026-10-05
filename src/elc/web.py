@@ -475,6 +475,7 @@ from elc.world.package import (
     load_world_package,
     world_date_of,
 )
+from elc.world.store import WorldRevealItem
 
 __all__ = [
     "DEFAULT_WEB_CONVERSATION_ID",
@@ -491,6 +492,15 @@ __all__ = [
 _WORLD_NO_BINDING = (
     "这个对话没有绑定任何世界——收件箱不存在（世界是对话绑定的，不是全局的）。"
 )
+
+#: The overview's quiet-day sentences (wf-0): one human line per interface
+#: language — the honest fact that today carries no revealed note. It says
+#: nothing about what still waits unread: reading is not opening, and the
+#: ``PENDING`` slice stays out of every read face's answer.
+_WORLD_QUIET_DAY: dict[str, str] = {
+    "zh": "今天风平浪静——还没有新的动静。",
+    "en": "A quiet day — nothing new has come ashore.",
+}
 
 #: The virtual world calendar's presentation words (A2, DEC-…88/…90).
 #: ``_MONTH_ABBR`` is written out (never ``%b``) so the English date is
@@ -3668,6 +3678,383 @@ class _WebFace:
             )
         return names
 
+    def _world_reveal_items(
+        self, world_id: str, status: str
+    ) -> tuple[WorldRevealItem, ...]:
+        """The world's reveal items of one lifecycle word (wf-0), the
+        store's own column order and record shape (the direct-SQL read
+        posture — the store publishes no read face for the queue's two
+        halves, and a read face here reads, never writes). The order is
+        the event's own derivation order (``source_event_id`` ascending —
+        ``<run_id>:<cursor>`` makes that the story's own order)."""
+
+        rows = self._host.db.execute(
+            "SELECT item_id, world_id, source_event_id, actor_id,"
+            " status, revealed_at, created_at"
+            " FROM world_reveal_item WHERE world_id = ? AND status = ?"
+            " ORDER BY source_event_id ASC, item_id ASC",
+            (world_id, status),
+        ).fetchall()
+        return tuple(
+            WorldRevealItem(
+                item_id=str(row[0]),
+                world_id=str(row[1]),
+                source_event_id=str(row[2]),
+                actor_id=None if row[3] is None else str(row[3]),
+                status=str(row[4]),
+                revealed_at=None if row[5] is None else str(row[5]),
+                created_at=str(row[6]),
+            )
+            for row in rows
+        )
+
+    def _world_notes_joined(
+        self,
+        world_id: str,
+        package: WorldPackage | None,
+        items: tuple[WorldRevealItem, ...],
+    ) -> list[dict[str, Any]]:
+        """The item→event join shared by the three world read faces
+        (wf-0): each reveal item joined to its chronicle event (the
+        pointer, never a copy — the inbox payload's own join shape), its
+        narration in the interface language (:meth:`_note_narration` —
+        the W-L law), its moment word, its signature (the comms actor's
+        card name, ``None`` for the world's own narration), its reveal
+        stamp, and the event's story day (the ``YYYY-MM-DD``
+        discriminator; ``None`` for a legacy wall-clock row — an honest
+        old row is never dressed up as a story day).
+
+        A read-face helper: no write, no reveal, no clock — the caller
+        decides what the notes are for."""
+
+        ui_language = self._ui_language()
+        by_id: dict[str, tuple[Any, ...]] = {}
+        for row in self._host.db.execute(
+            "SELECT e.event_id, e.narration, e.kind, e.occurred_at"
+            " FROM world_event e WHERE e.world_id = ?",
+            (world_id,),
+        ).fetchall():
+            by_id[str(row[0])] = tuple(row)
+        actor_names = self._world_actor_names(world_id)
+        notes: list[dict[str, Any]] = []
+        for item in items:
+            event = by_id.get(str(item.source_event_id))
+            narration, fallback = self._note_narration(
+                package, ui_language, event
+            )
+            occurred_at = "" if event is None else str(event[3])
+            notes.append(
+                {
+                    "narration": narration,
+                    "moment": "" if event is None else str(event[2]),
+                    "signature": (
+                        None
+                        if item.actor_id is None
+                        else actor_names.get(item.actor_id)
+                    ),
+                    "revealed_at": item.revealed_at,
+                    "occurred_at": occurred_at,
+                    "fallback": fallback,
+                    "story_day": (
+                        occurred_at
+                        if _ISO_DAY_RE.fullmatch(occurred_at)
+                        else None
+                    ),
+                }
+            )
+        return notes
+
+    def _world_actor_cards(
+        self, world_id: str
+    ) -> list[tuple[Any, Any | None]]:
+        """One world's actors joined to their character cards (wf-0), in
+        the roster's own serving order — builtin first, then by card id
+        (the card store's ``list_all`` order); a persona the card table
+        does not name rides last, by actor id — a plain resident, never
+        a broken one. The residents' rows and the overview's resident
+        block read this one join, never a second roster."""
+
+        world_store = getattr(self._host, "world_store", None)
+        if world_store is None:
+            return []
+        read = self._require_cards().list_all()
+        if isinstance(read, Err):
+            raise RuntimeError(
+                "the character roster could not be read:"
+                f" {read.error.code.value}: {read.error.message}"
+            )
+        rank = {
+            str(card.persona_id): index
+            for index, card in enumerate(read.value)
+        }
+        joined: list[tuple[Any, Any | None]] = []
+        for actor in world_store.actors_of(world_id):
+            card = next(
+                (
+                    candidate
+                    for candidate in read.value
+                    if str(candidate.persona_id) == str(actor.persona_id)
+                ),
+                None,
+            )
+            joined.append((actor, card))
+        joined.sort(
+            key=lambda pair: (
+                rank.get(str(pair[0].persona_id), len(rank)),
+                str(pair[0].actor_id),
+            )
+        )
+        return joined
+
+    def _world_resident_face(
+        self,
+        binding: dict[str, Any],
+        world_id: str,
+    ) -> dict[str, Any] | None:
+        """The overview's resident block (wf-0): the bound actor's card
+        name and persona through the ``world_actor → character_card``
+        join (:meth:`_world_actor_cards`) — ``None`` when the binding
+        names no actor (the world's own narration; a ``NULL`` actor is
+        honest, never a guessed resident)."""
+
+        actor_id = binding["actor_id"]
+        if actor_id is None:
+            return None
+        actor_id = str(actor_id)
+        matched = next(
+            (
+                (actor, card)
+                for actor, card in self._world_actor_cards(world_id)
+                if str(actor.actor_id) == actor_id
+            ),
+            None,
+        )
+        if matched is None:
+            # Unreachable while the binding's own FK stands — the honest
+            # defensive answer is a plain id, never a guessed card.
+            return {"actor_id": actor_id, "persona_id": None, "name": actor_id}
+        actor, card = matched
+        return {
+            "actor_id": actor_id,
+            "persona_id": str(actor.persona_id),
+            "name": (
+                actor_id
+                if card is None or card.name in (None, "")
+                else card.name
+            ),
+        }
+
+    def _world_letter_count(self, conversation_id: str) -> int:
+        """One conversation's letter count (wf-0): the user-visible
+        window's turn count at unbounded breadth — the history face's own
+        read family (the archive's filter, not a second transcript
+        implementation). A conversation id the table does not carry
+        answers 0 through the same read — nobody has written, and the
+        count says so."""
+
+        window = self._host.conversations.get_user_visible_conversation_window(
+            ConversationId(conversation_id), -1
+        )
+        if isinstance(window, Err):
+            raise RuntimeError(
+                "the conversation window could not be read:"
+                f" {window.error.code.value}: {window.error.message}"
+            )
+        return len(window.value.slices)
+
+    def world_overview(self) -> tuple[int, dict[str, Any]]:
+        """The world's one-screen read (wf-0): its name, its story day
+        (derived, never clocked — :func:`elc.world.package.world_date_of`
+        is the calendar's own law), today's revealed notes, and the
+        resident this conversation's binding names.
+
+        The read faces keep the inbox's own guards: no binding (this
+        conversation lives in no world — or the host has no world leg) is
+        the same **404**, the same sentence — a world overview that does
+        not exist is not an empty one. The ``today`` block carries the
+        ``REVEALED`` items whose event's story day is the world's today
+        (the shared join, :meth:`_world_notes_joined`); a day with
+        nothing said answers ``{"quiet": True, "note": …}`` — the
+        quiet-day arm is an honest fact about today, never a disclosure
+        of what still waits (the ``PENDING`` slice stays out of sight:
+        reading is not opening, the reveal belongs to the inbox's
+        presentation alone). The ``resident`` block is the bound actor's
+        card name and persona; the world's own narration (a ``NULL``
+        actor binding) answers ``None`` — nobody sits in the signature
+        seat, and the face says so. Every answer carries the interface
+        language it rendered in."""
+
+        binding = self._world_binding()
+        if binding is None:
+            return (404, {"error": _WORLD_NO_BINDING})
+        world_id = str(binding["world_id"])
+        world_store = getattr(self._host, "world_store", None)
+        if world_store is None:
+            return (404, {"error": _WORLD_NO_BINDING})
+        package = self._world_packages.get(world_id)
+        ui_language = self._ui_language()
+        world_name = None if package is None else package.name
+        day = (
+            world_date_of(package, world_store, world_id)
+            if package is not None
+            else ""
+        )
+        revealed = self._world_reveal_items(world_id, "REVEALED")
+        todays = [
+            note
+            for note in self._world_notes_joined(world_id, package, revealed)
+            if note["story_day"] == day
+        ]
+        today: dict[str, Any] = (
+            {
+                "quiet": True,
+                "note": _WORLD_QUIET_DAY.get(
+                    ui_language, _WORLD_QUIET_DAY["zh"]
+                ),
+            }
+            if not todays
+            else {"quiet": False, "items": todays}
+        )
+        return (
+            200,
+            {
+                "world_id": world_id,
+                "world_name": world_name,
+                "date_localized": (
+                    _localize_story_date(day, ui_language, world_name)
+                    if day
+                    else ""
+                ),
+                "ui_language": ui_language,
+                "today": today,
+                "resident": self._world_resident_face(binding, world_id),
+            },
+        )
+
+    def world_log(self) -> tuple[int, dict[str, Any]]:
+        """The world's revealed chronicle (wf-0), grouped by story day,
+        newest day first — the read side of the reveal discipline.
+
+        **The red line: this face never calls ``reveal_all``.** Reading
+        the log is looking, not opening — 「看一眼」不等于「拆信」: a
+        ``PENDING`` note is the world's unposted letter and stays out of
+        every answer here (the SQL's own ``WHERE status = 'REVEALED'``);
+        the only presentation triggers that flip the world's slice are
+        the inbox's atomic reveal and the turn wiring's own presentation
+        step. Each group is one story day (the event's ``YYYY-MM-DD``
+        stamp, :meth:`_world_notes_joined`'s join; a legacy wall-clock
+        row has no story day and answers ``date_localized: None``, last —
+        an honest old row is never dressed up as a story day), the items
+        in the durable order (event id ascending). No binding is the
+        same **404**, the same sentence, as the inbox's."""
+
+        binding = self._world_binding()
+        if binding is None:
+            return (404, {"error": _WORLD_NO_BINDING})
+        world_id = str(binding["world_id"])
+        world_store = getattr(self._host, "world_store", None)
+        if world_store is None:
+            return (404, {"error": _WORLD_NO_BINDING})
+        package = self._world_packages.get(world_id)
+        ui_language = self._ui_language()
+        revealed = self._world_reveal_items(world_id, "REVEALED")
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for note in self._world_notes_joined(world_id, package, revealed):
+            grouped.setdefault(str(note["story_day"] or ""), []).append(note)
+        days: list[dict[str, Any]] = []
+        for day in sorted(grouped, reverse=True):
+            days.append(
+                {
+                    "date_localized": (
+                        None
+                        if day == ""
+                        else _localize_story_date(day, ui_language)
+                    ),
+                    "items": [
+                        {
+                            "narration": note["narration"],
+                            "moment": note["moment"],
+                            "signature": note["signature"],
+                            "revealed_at": note["revealed_at"],
+                            "fallback": note["fallback"],
+                        }
+                        for note in grouped[day]
+                    ],
+                }
+            )
+        return (
+            200,
+            {
+                "world_id": world_id,
+                "world_name": None if package is None else package.name,
+                "ui_language": ui_language,
+                "days": days,
+            },
+        )
+
+    def world_residents(self) -> tuple[int, dict[str, Any]]:
+        """The bound world's residents (wf-0): every cast actor joined to
+        its character card — name, identity line, persona — with the
+        conversation's own resident marked, and each resident's letter
+        count (the user-visible turns of the conversations bound to that
+        actor, :meth:`_world_letter_count`'s read family; an actor with
+        no bound conversation answers 0 — nobody has written them, and
+        the face says so).
+
+        The order is the roster's own (builtin first,
+        :meth:`_world_actor_cards`); ``is_current`` marks exactly the
+        bound actor (all false when the binding names none). No binding
+        is the same **404**, the same sentence, as the inbox's. A read
+        face: it flips nothing and counts only what is already
+        delivered."""
+
+        binding = self._world_binding()
+        if binding is None:
+            return (404, {"error": _WORLD_NO_BINDING})
+        world_id = str(binding["world_id"])
+        world_store = getattr(self._host, "world_store", None)
+        if world_store is None:
+            return (404, {"error": _WORLD_NO_BINDING})
+        package = self._world_packages.get(world_id)
+        bindings_by_actor: dict[str, list[str]] = {}
+        for record in world_store.conversations_of(world_id):
+            bindings_by_actor.setdefault(str(record.actor_id), []).append(
+                str(record.conversation_id)
+            )
+        residents: list[dict[str, Any]] = []
+        for actor, card in self._world_actor_cards(world_id):
+            residents.append(
+                {
+                    "actor_id": str(actor.actor_id),
+                    "persona_id": str(actor.persona_id),
+                    "name": (
+                        str(actor.actor_id)
+                        if card is None or card.name in (None, "")
+                        else card.name
+                    ),
+                    "identity": "" if card is None else card.identity,
+                    "is_current": (
+                        binding["actor_id"] is not None
+                        and str(actor.actor_id) == str(binding["actor_id"])
+                    ),
+                    "letters_count": sum(
+                        self._world_letter_count(conversation_id)
+                        for conversation_id in bindings_by_actor.get(
+                            str(actor.actor_id), []
+                        )
+                    ),
+                }
+            )
+        return (
+            200,
+            {
+                "world_id": world_id,
+                "world_name": None if package is None else package.name,
+                "ui_language": self._ui_language(),
+                "residents": residents,
+            },
+        )
+
     def _moments_of_turn(self, turn_id: str) -> list[dict[str, str]]:
         """The moments of one turn, through the durable lineage.
 
@@ -6266,6 +6653,25 @@ def _build_server(
                 # answers its own statuses (404 no binding / 500 a failed
                 # reveal — the _run_host_write posture).
                 self._run_host_write(face.world_inbox)
+            elif self.path == "/api/world/overview":
+                # wf-0: the world's one-screen read — name, derived story
+                # day, today's revealed notes, the bound resident. A read
+                # face on the work queue: it never flips the reveal queue
+                # (reading is not opening — the inbox's alone is that
+                # trigger), and no binding is the same 404, the same
+                # sentence, as the inbox's.
+                self._run_host_write(lambda: face.world_overview())
+            elif self.path == "/api/world/log":
+                # wf-0: the revealed chronicle, grouped by story day,
+                # newest first. The red line lives here too: the log
+                # never calls reveal_all — a PENDING note is the world's
+                # unposted letter, and reading the log never opens it.
+                self._run_host_write(lambda: face.world_log())
+            elif self.path == "/api/world/residents":
+                # wf-0: the cast roster joined to its cards, the current
+                # resident marked, letter counts through the history
+                # window's own read family. A read face; same 404 guard.
+                self._run_host_write(lambda: face.world_residents())
             else:
                 self._send_json(404, {"error": "not found"})
 
