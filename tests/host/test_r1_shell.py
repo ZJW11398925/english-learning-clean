@@ -261,9 +261,11 @@ def test_space_headers_and_the_linkless_parlor_bar(tmp_path: Path) -> None:
     # mc-1 随迁（主从条 = 当前角色名）：信头 = 端点驱动的空槽（.who =
     # 当前角色名，/api/characters 供给）；无 JS 兜底留空——不发明人名；
     # 品牌名与副题退居门厅封面（v21 套件钉）。v2-2 随迁（8.2.2①）：
-    # who-sub 身份行长句族退役（身份介绍退入笔友档案全页）——缺位钉。
+    # 身份长句族退役（身份介绍退入笔友档案全页）。wf-1 随迁（世界优先，
+    # 单向收紧）：who-sub 回场 = 故事日 + 居民位副行（overview 端点
+    # 驱动，非旧身份长句）。
     assert '<div class="who"></div>' in parlor
-    assert 'who-sub' not in parlor
+    assert '<div class="who-sub"></div>' in parlor
     assert "英语客厅" not in parlor
     assert "<button" not in parlor
     app = _text("app.js")

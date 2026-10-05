@@ -129,6 +129,21 @@ export function fetchWorldInbox() {
   return getJson("/api/world/inbox");
 }
 
+/** 世界一屏读（wf-1）：世界名 + 派生故事日（服务端已按界面语言本地化，
+ *  并带世界名尾）+ 今日动静块（静日 quiet:true + 人话句 / 有则 items）+
+ *  本通信的居民位（可 null——世界的自述）。无绑定世界同样是 404 人话
+ *  （error 对象由调用方判形回落——fetchWorldInbox 同法）。 */
+export function fetchWorldOverview() {
+  return getJson("/api/world/overview");
+}
+
+/** 世界居民名册（wf-1）：cast⨝卡（name/identity/persona_id）+
+ *  is_current 反查 + 每居民的诚实信数（没写过就是 0）。无绑定世界
+ *  404 人话（error 对象由调用方判形——沓回落现役语境，不发明世界名）。 */
+export function fetchWorldResidents() {
+  return getJson("/api/world/residents");
+}
+
 /** 历史窗口（默认最后 50 轮，已交付的助手输出）。主线-2 起宽度可显式
  *  指定：opts.full 取全文，opts.limit 取最近 n 轮——不带 opts 一字不变。 */
 export function fetchHistory(opts) {

@@ -58,6 +58,8 @@ import {
   fetchTargets,
   fetchObservations,
   fetchWorldInbox,
+  fetchWorldOverview,
+  fetchWorldResidents,
   fetchHistory,
   fetchCurrentMoment,
   fetchWord,
@@ -2957,6 +2959,30 @@ function worldInboxText() {
   return WORLD_INBOX_TEXT[uiLanguage] || WORLD_INBOX_TEXT.zh;
 }
 
+// wf-1 案头世界优先与居民面的双语 chrome 词表（zh 缺省；全页 i18n 登记
+// 不落，此表与 WORLD_INBOX_TEXT 同族——界面 chrome 的唯一双语词表）。
+// 数据永远是端点来的：世界名/居民名/日期/计数都是占位符拼装，表里
+// 只有连接词（「与…通信中」「今日动静」「的居民」「封信」）。文字一律
+// textContent（XSS 面）。
+const PARLOR_WORLD_TEXT = {
+  zh: {
+    corresponding: "与 {name} 通信中",
+    todayCount: "今日动静 · {n} 则",
+    residentsOf: "{world} 的居民",
+    letters: "{n} 封信",
+  },
+  en: {
+    corresponding: "In correspondence with {name}",
+    todayCount: "Today · {n} notes",
+    residentsOf: "Residents of {world}",
+    letters: "{n} letters",
+  },
+};
+
+function parlorWorldText(lang) {
+  return PARLOR_WORLD_TEXT[lang] || PARLOR_WORLD_TEXT.zh;
+}
+
 // ── A2/DEC-…92：世界呈现唯一形态 = 内联故事块──────────────────────
 // 常驻收件箱区整体退役（用户报告「遗留世界事件占对话末尾」的根治）：
 // 世界只在信流里随轮呈现——turn_stream 的 world 帧（回信气泡之前）
@@ -3966,8 +3992,10 @@ function autosizePen() {
 }
 
 // 写作面的排印骨架：dateline = 本机当日（与边注栏/封面同一真实数据源、
-// 同一格式——机械事实非文案）；称呼位 = 致 + 当前角色名（.who 端点驱动
-// 空槽，零字面——无名册时 hidden，不发明称呼）。
+// 同一格式——机械事实非文案）；称呼位 = 致 + 收信人名（wf-1 起 .who 装
+// 世界名——称呼位改读主从条渲染臂各自更新的 mastheadCorrespondent：
+// 居民位或回落臂的当前角色名，端点驱动零字面——无名可称时 hidden，
+// 不发明称呼）。
 function fillComposeChrome() {
   const dateline = document.getElementById("compose-dateline");
   if (dateline) {
@@ -3978,8 +4006,7 @@ function fillComposeChrome() {
   }
   const salut = document.getElementById("compose-salut");
   if (salut) {
-    const who = document.querySelector("#space-parlor .who");
-    const name = who ? who.textContent.trim() : "";
+    const name = mastheadCorrespondent.trim();
     salut.textContent = name ? "致 " + name + "，" : "";
     salut.hidden = !name;
   }
@@ -4576,9 +4603,10 @@ window.addEventListener("DOMContentLoaded", () => {
   // rd-1：入场编排接线（⑨-5 逐行落墨——IO 只加类；reduced-motion 的
   // JS 半区由 wireReveal 自行监听）
   wireReveal(document);
-  // mc-1：主从条首灌（当前角色名 + 身份行）——失败留空不轰炸，下次
-  // 打开信封沓会重读
-  fetchCharacters().then(renderMasthead).catch(() => {});
+  // mc-1 主从条首灌，wf-1 世界优先：overview 成功臂 = 世界身份行 +
+  // 居民位 + 今日动静；世界缺席或读失败 ⇒ 现役 roster 形回落。失败留空
+  // 不轰炸，下次打开信封沓会重读。
+  loadMasthead().catch(() => {});
   loadHistory()
     .then(() => loadWorldInbox())
     .catch(() => {});
@@ -4673,11 +4701,20 @@ function envelopeDrift(stampKey) {
   return flip * (6 + size * 6) + "px";
 }
 
-// 案头主从条（mc-1 的真源；v2-2 瘦身，8.2.2①）：.who = 当前角色名
-// 一行——全部来自 /api/characters 的 current_character_id（webui
-// 零角色名字面）；读不到（无名册 / current 为 null）就留空，不发明
-// 人名。身份行副槽长句族已退役（身份介绍退入笔友档案全页）；
-// 品牌名与副题退居门厅封面（BRAND 常量的封面消费面）。
+// 案头主从条（wf-1 世界优先重铸；mc-1 的 roster 形保留为回落臂）：
+// 世界在（/api/world/overview 成功）⇒ .who = 世界名 + .who-sub 副行
+// （故事日 + 居民位）+ 今日动静行——全部端点拼装（webui 零世界名/
+// 角色名字面）；世界缺席（无绑定 404）或读失败 ⇒ 现役形回落：.who =
+// 当前角色名一行、副行与今日动静行静默——不发明任何名字。mc-1 真源
+// 注记：回落臂的 roster 仍全部来自 /api/characters 的 current_character_id；
+// 读不到（无名册 / current 为 null）就留空。品牌名与副题退居门厅封面
+// （BRAND 常量的封面消费面）。
+
+// 写作面称呼位的收信人名（fillComposeChrome 消费——世界优先后 .who
+// 装的是世界名，称呼位仍须是「致 {居民}」）：两个渲染臂各自更新；
+// 世界自述（resident 缺席）或无名册时留空——不发明称呼。
+let mastheadCorrespondent = "";
+
 function renderMasthead(roster) {
   const who = document.querySelector("#space-parlor .who");
   if (!who) return;
@@ -4685,6 +4722,82 @@ function renderMasthead(roster) {
   const current = items.find(
     (item) => item.character_id === (roster && roster.current_character_id));
   who.textContent = current ? current.name : "";
+  mastheadCorrespondent = current ? current.name : "";
+  const sub = document.querySelector("#space-parlor .who-sub");
+  if (sub) sub.textContent = "";
+  setTodayLine(null);
+}
+
+// 成功臂：世界名进 .who；副行 = 故事日 + 居民位（date_localized 服务
+// 端已本地化直显；「与…通信中」chrome 按 overview 的 ui_language 走
+// 双语词表）；今日动静行由 overview.today 驱动。
+function renderWorldMasthead(overview) {
+  const who = document.querySelector("#space-parlor .who");
+  if (!who) return;
+  const T = parlorWorldText(overview.ui_language);
+  who.textContent = String(overview.world_name ?? "");
+  const resident = overview.resident;
+  mastheadCorrespondent = resident ? String(resident.name ?? "") : "";
+  const sub = document.querySelector("#space-parlor .who-sub");
+  if (sub) {
+    const parts = [];
+    if (overview.date_localized) {
+      parts.push(String(overview.date_localized));
+    }
+    if (mastheadCorrespondent) {
+      parts.push(T.corresponding.replace("{name}", mastheadCorrespondent));
+    }
+    sub.textContent = parts.join(" · ");
+  }
+  setTodayLine(overview.today, overview.ui_language);
+}
+
+// 今日动静行（主从条下的弱化一行）：静日 = 服务端人话句透显（服务端
+// 已双语——前端零再创作）；有动静 = 计数形（「今日动静 · N 则」，chrome
+// 双语）。详情面属 wf-2——本行零跳转。回落臂 ⇒ 静默（hidden，不发明）。
+function setTodayLine(today, lang) {
+  const line = document.getElementById("today-line");
+  if (!line) return;
+  if (!today) {
+    line.hidden = true;
+    line.textContent = "";
+    return;
+  }
+  if (today.quiet) {
+    line.textContent = String(today.note ?? "");
+    line.hidden = false;
+    return;
+  }
+  const count = Array.isArray(today.items) ? today.items.length : 0;
+  line.textContent = parlorWorldText(lang).todayCount
+    .replace("{n}", String(count));
+  line.hidden = false;
+}
+
+// 主从条装载（世界优先，mc-1 回落——启动、开沓重排与切换后的案头刷新
+// 同走这里，居民位随新通信的绑定走）：overview 一读；判形带 error 键
+// （无绑定 404）或缺世界名（诚实降级）⇒ 回落臂消费 roster——调用方
+// 已取到的就不再取第二遍。
+async function loadMasthead(preFetchedRoster) {
+  let overview = null;
+  try {
+    overview = await fetchWorldOverview();
+  } catch {
+    overview = null;
+  }
+  if (overview && !overview.error && overview.world_name) {
+    renderWorldMasthead(overview);
+    return;
+  }
+  let roster = preFetchedRoster || null;
+  if (!roster) {
+    try {
+      roster = await fetchCharacters();
+    } catch {
+      return;   // 名册这会儿也读不到——主从条留空，不轰炸
+    }
+  }
+  renderMasthead(roster);
 }
 
 function envselCloser(event) {
@@ -4799,6 +4912,61 @@ function unfoldToParlor(after) {
   if (typeof after === "function") after();
 }
 
+// ── wf-1：沓面板归位居民面────────────────────────────────────────────
+// 沓的世界框定（residents 端点驱动）：面板 aria-label 与沓顶 caption
+// （沓首上方的弱化一行）换「{world_name} 的居民」语境；每封带信数弱
+// 标注（residents 的诚实计数——没写过就是 0，如实显示）。数据合流 =
+// residents（世界框定 + letters_count）⨝ roster（切换必需的
+// character_id 仍在名册行上）**by persona_id**；信封 DOM 形不变
+// （components.js 的 envelopeCard 不动——标注由本面在 app.js 侧拼装）。
+// 「当前」邮戳仍由名册的 current_character_id 驱动（切换行为零改）。
+// residents 缺席（404/error/读失败）⇒ 沓回落现役「信封沓」语境——
+// aria-label 保持原词、无 caption 无标注，不发明世界名。幂等：开沓与
+// 沓内重排（新建/编辑/删除后）同走这里，caption 先摘旧再落新。
+async function buildEnvelopeResidentsContext(panel, stack) {
+  let data = null;
+  try {
+    data = await fetchWorldResidents();
+  } catch {
+    data = null;
+  }
+  if (!envselPanel || envselPanel !== panel) return;   // 沓已收——弃权
+  if (!data || data.error || !Array.isArray(data.residents)) return;
+  const byPersona = new Map();
+  for (const resident of data.residents) {
+    if (resident && resident.persona_id != null) {
+      byPersona.set(String(resident.persona_id), resident);
+    }
+  }
+  const T = parlorWorldText(data.ui_language);
+  const worldName = String(data.world_name || "");
+  if (worldName) {
+    panel.setAttribute(
+      "aria-label", T.residentsOf.replace("{world}", worldName));
+    const stale = panel.querySelector(".envsel-caption");
+    if (stale) stale.remove();
+    const caption = document.createElement("p");
+    caption.className = "envsel-caption";
+    caption.textContent = T.residentsOf.replace("{world}", worldName);
+    stack.parentNode.insertBefore(caption, stack);
+  }
+  const roster = (charactersCache && charactersCache.characters) || [];
+  for (const env of Array.from(stack.querySelectorAll(".env[data-id]"))) {
+    const item = roster.find((row) => row.character_id === env.dataset.id);
+    const resident = item && item.persona_id != null
+      ? byPersona.get(String(item.persona_id))
+      : null;
+    if (!resident) continue;   // 合流不上（无 persona 对应）——如实缺标注
+    const note = document.createElement("p");
+    note.className = "env-letters";
+    note.textContent = T.letters.replace(
+      "{n}", String(Number(resident.letters_count) || 0));
+    const actions = env.querySelector(".env-actions");
+    if (actions) env.insertBefore(note, actions);
+    else env.appendChild(note);
+  }
+}
+
 async function openEnvelopeSelector() {
   if (envselPanel) return;
   closeTokenMeterPop();   // ⑩ 互斥：开沓先收计量明细浮层（veto-R 同法）
@@ -4877,6 +5045,7 @@ async function openEnvelopeSelector() {
   // 入口 = 点沓本体纸面（上方 click 臂）与「翻开全沓 ↓」文字链，全部
   // 显式，无一自动跳转）。
   await renderEnvelopeStack(stack);
+  buildEnvelopeResidentsContext(panel, stack);
   buildEnvelopeBrowser(browser);
 }
 
@@ -5133,7 +5302,7 @@ async function renderEnvelopeStack(stack) {
     return;
   }
   charactersCache = roster;
-  renderMasthead(roster);
+  loadMasthead(roster);   // wf-1：世界优先重灌（回落臂直接用这份名册）
   let order = 0;
   for (const item of roster.characters || []) {
     const isCurrent = item.character_id === roster.current_character_id;
@@ -5187,6 +5356,7 @@ async function refreshEnvelopeStack() {
   const stack = envselPanel && envselPanel.querySelector(".envsel-stack");
   if (!stack) return;
   await renderEnvelopeStack(stack);
+  buildEnvelopeResidentsContext(envselPanel, stack);
 }
 
 // 预览（精准动画的第一半）：点沓中一封 → 该封滑到沓首微抬，其余
@@ -5262,7 +5432,7 @@ async function switchToCharacter(characterId) {
 // 与档案是读时取数，下一次打开自然落在新通信上。纸事件恰一次。
 async function refreshCorrespondence() {
   try {
-    renderMasthead(await fetchCharacters());
+    await loadMasthead();
   } catch {
     // 名册这会儿读不到——主从条留空，下次打开选择器再灌
   }

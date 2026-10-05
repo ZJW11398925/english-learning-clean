@@ -321,10 +321,11 @@ def test_pen_ruled_period_locks_to_baseline() -> None:
 def test_letter_ps_and_brand_driver_are_wired_not_dead() -> None:
     """LOW-1/LOW-2：又及接线与品牌驱动线是消费钉不是在场钉——删
     接线（留死码）或删驱动语句（靠静态兜底假装）都必须红。mc-1 随迁：
-    案头主从条的 BRAND 驱动线退役（.who/.who-sub = 当前角色名与身份
-    行，端点驱动）；品牌驱动线的现役消费面 = 标题 + 封面副题 + 封面
-    英文并写，主从条的端点驱动线（renderMasthead 的名册消费）同场
-    在钉——删任何一条驱动线都红。"""
+    案头主从条的 BRAND 驱动线退役（主从条 = 端点驱动）；品牌驱动线的
+    现役消费面 = 标题 + 封面副题 + 封面英文并写。wf-1 随迁（世界优先）：
+    主从条的端点驱动线 = loadMasthead 编排（overview 成功臂世界名，
+    回落臂才读名册）——启动首灌与切换后刷新两条驱动线同场在钉，删任
+    何一条都红。"""
     js = _text("components.js")
     assert ('say.className = "say" + (isPostscript(para) '
             '? " letter-ps" : "");') in js
@@ -332,8 +333,8 @@ def test_letter_ps_and_brand_driver_are_wired_not_dead() -> None:
     assert "document.title = BRAND.name;" in app
     assert "coverTagline.textContent = BRAND.tagline;" in app
     assert "wordmark.textContent = BRAND.en.toUpperCase();" in app
-    assert "renderMasthead(await fetchCharacters());" in app
-    assert "fetchCharacters().then(renderMasthead)" in app
+    assert "loadMasthead().catch(() => {});" in app
+    assert "await loadMasthead();" in app
 
 
 def test_postmark_keeps_its_handmade_tilt() -> None:

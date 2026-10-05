@@ -8,10 +8,13 @@ the current correspondence postmarked 「当前」.
 
 Eight groups (the slice's own):
 
-1. **masthead truth pins** — the desk's ``.who``/``.who-sub`` read the
-   roster's current character over ``/api/characters`` (zero character
-   name literals anywhere in the webui; the brand name and tagline
-   retreat to the vestibule cover); the browser title stays the brand;
+1. **masthead truth pins** — the desk's ``.who`` reads the roster's
+   current character over ``/api/characters`` as the fallback arm (zero
+   character name literals anywhere in the webui; the brand name and
+   tagline retreat to the vestibule cover); since wf-1 the world-first
+   arm leads (``.who-sub`` is back, carrying the story day and the
+   resident from ``/api/world/overview`` — the world-first pins live in
+   test_wf1_parlor_world_first) and the browser title stays the brand;
 2. **the stack's presence pins** — every envelope carries the three
    faces (addressee name / one-line introduction / its own stamp), the
    action row (起笔 · 对话 · 档案 · 编辑), the current postmark, and the blank
@@ -107,24 +110,31 @@ def _put_json(port: int, path: str, payload: Any) -> tuple[int, Any]:
 
 
 def test_the_masthead_reads_the_roster_not_literals() -> None:
-    """案头主从条的真源钉：.who = 当前角色名一行（v2-2 瘦身，8.2.2①：
-    who-sub 身份行长句族退役——身份介绍退入笔友档案全页，缺位钉防
-    回潮）——renderMasthead 只从 /api/characters 的 current 取（删驱动
-    线即红）；webui 七文件零角色名字面（Nell 保持零出现）；无 JS 兜底
-    = 空槽（不发明人名）；品牌名与副题退居门厅封面；页面 title 保持
-    品牌（mc-1 自裁披露：不拼角色名——避免每封信重排标签页标题）。"""
+    """案头主从条的真源钉：回落臂 .who = 当前角色名一行（mc-1 真源；
+    v2-2 瘦身 8.2.2① 的「身份长句退役」保留——身份介绍仍在笔友档案
+    全页，缺位钉防回潮）。wf-1 世界优先随迁（单向收紧：who-sub 缺位
+    否定 → 端点驱动肯定）：.who-sub 副槽回场，装的是故事日 + 居民位
+    （overview 端点驱动，非旧身份长句）；世界优先臂与回落臂的编排钉
+    在 test_wf1_parlor_world_first。renderMasthead 仍只从
+    /api/characters 的 current 取（删驱动线即红）；webui 七文件零角色
+    名字面（Nell 保持零出现）；无 JS 兜底 = 空槽（不发明人名）；品牌
+    名与副题退居门厅封面；页面 title 保持品牌（mc-1 自裁披露：不拼
+    角色名——避免每封信重排标签页标题）。"""
 
     index = _text("index.html")
     assert '<div class="who"></div>' in index
-    assert 'who-sub' not in index
+    # wf-1 随迁（世界优先）：.who-sub 回场——装的是故事日 + 居民位
+    # （overview 端点驱动）；旧身份长句族仍缺席（缺位钉防回潮）
+    assert '<div class="who-sub"></div>' in index
     assert '<p class="ob-tagline">见字如晤，今日如何</p>' in index
     assert "<title>展信佳</title>" in index
     app = _text("app.js")
     assert "function renderMasthead(roster)" in app
     assert 'who.textContent = current ? current.name : "";' in app
-    # the sub slot is gone with the v2-2 slim-down (the editor's own
-    # editor-sub line in mc-2 shares the receiver name — pin the exact
-    # masthead spelling, not the bare receiver)
+    # the sub slot is wf-1's story-day + resident line now; the retired
+    # identity-line spelling stays retired (the editor's own editor-sub
+    # line in mc-2 shares the receiver name — pin the exact masthead
+    # spelling, not the bare receiver)
     assert (
         'sub.textContent = current ? current.identity_line : "";'
         not in app
@@ -134,10 +144,11 @@ def test_the_masthead_reads_the_roster_not_literals() -> None:
         "    (item) => item.character_id ==="
         " (roster && roster.current_character_id));" in app
     )
-    # the drivers: the first fill at startup, and the refresh after a
-    # switch — deleted either way goes red
-    assert "fetchCharacters().then(renderMasthead)" in app
-    assert "renderMasthead(await fetchCharacters());" in app
+    # the drivers (wf-1 随迁：世界优先装载编排的三处调用点——启动首灌、
+    # 开沓重排、切换后局部刷新；删任一即红)
+    assert "loadMasthead().catch(() => {});" in app
+    assert "loadMasthead(roster);" in app
+    assert "await loadMasthead();" in app
     # the browser title keeps the brand alone (no per-character churn)
     assert "document.title = BRAND.name;" in app
     # zero character-name literals across the whole served face
@@ -379,9 +390,10 @@ def test_the_preview_animation_is_pinned_to_the_v2_motion_law() -> None:
 
 def test_the_talk_action_wires_the_switch_and_the_local_refresh() -> None:
     """切换接线钉：点「对话」→ POST /api/characters/switch（api.js 的
-    fetchSwitchCharacter 是唯一消费形）；成功 = 局部刷新——主从条重读
-    名册、信流清空重载该角色窗口、批注面随 loadHistory 重建、案头纸
-    事件恰一次（flow-resettle 落类前先摘）；api.js 的端点字面全在。"""
+    fetchSwitchCharacter 是唯一消费形）；成功 = 局部刷新——主从条重灌
+    （wf-1 世界优先：loadMasthead 编排，回落臂才读名册）、信流清空重载
+    该角色窗口、批注面随 loadHistory 重建、案头纸事件恰一次
+    （flow-resettle 落类前先摘）；api.js 的端点字面全在。"""
 
     api = _text("api.js")
     assert 'postJson("/api/characters/switch", { character_id: characterId });' in api
@@ -395,7 +407,8 @@ def test_the_talk_action_wires_the_switch_and_the_local_refresh() -> None:
     assert (
         "async function refreshCorrespondence()" in app
     )
-    assert "renderMasthead(await fetchCharacters());" in app
+    # wf-1 随迁：切换后的主从条刷新走世界优先编排（回落臂才读名册）
+    assert "await loadMasthead();" in app
     assert 'messages.textContent = "";' in app
     assert "showMoments([]);" in app
     assert "await loadHistory();" in app
@@ -604,9 +617,9 @@ def test_the_migration_manifest_restates_the_new_truths() -> None:
 
     index = _text("index.html")
     assert '<div class="who"></div>' in index
-    # v2-2 随迁（8.2.2①）：who-sub 身份行长句族退役（身份介绍退入
-    # 笔友档案全页）——缺位钉防回潮
-    assert 'who-sub' not in index
+    # wf-1 随迁（世界优先）：who-sub 回场 = 故事日 + 居民位副行
+    # （overview 端点驱动）——v2-2 退役的是旧身份长句族，非副槽本身
+    assert '<div class="who-sub"></div>' in index
     assert "<h1>展信佳</h1>" in index
     assert '<p class="ob-tagline">见字如晤，今日如何</p>' in index
     app = _text("app.js")

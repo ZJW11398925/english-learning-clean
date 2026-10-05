@@ -94,6 +94,10 @@ body {
 .who { font-family: var(--f-display); font-size: var(--fs-head);
        line-height: var(--lh-head); font-weight: 400;
        letter-spacing: var(--ls-head); }
+/* wf-1 世界身份行：副行 = 故事日 + 居民位（overview 端点驱动；世界
+   缺席回落臂静默留空）——.sub 族弱化语汇（UI 字 + --ink-faint），
+   零新令牌。 */
+.who-sub { font: var(--t-ui); color: var(--ink-faint); }
 /* rd-4 伙伴面：身份条原地的可点手感——客厅屏的 who 块整体可点；
    hover 触点提示在 components.css（rd-1 钉：screens 零 hover 规则）。
    品牌条不增长动作钮。 */
@@ -117,6 +121,10 @@ body {
         calc(var(--navdock-clearance) + var(--dock-trigger-h)
              + var(--sp-6)); }
 .typing { margin: 0 0 18px; font: var(--t-ui); color: var(--ink-faint); }
+/* wf-1 今日动静行（主从条下、信流之上的弱化一行——overview.today
+   端点驱动；回落臂 hidden 静默）：.typing 同族语汇，零新令牌；
+   详情面属 wf-2，本行零跳转。 */
+.today-line { margin: 0 0 18px; font: var(--t-ui); color: var(--ink-faint); }
 .errline { margin: 0 0 14px; padding: 8px 10px;
            border-left: 1px solid var(--pencil);
            font: var(--t-ui); color: var(--pencil);
@@ -540,6 +548,12 @@ pre { font: var(--meta-mono);
    档不显示（hover:none 档在文件尾块现位）；「收起」恒右。 */
 .envsel-foot { margin: var(--sp-2) 0 0; display: flex;
                justify-content: space-between; align-items: baseline; }
+/* wf-1 居民面：沓顶 caption（沓首上方的弱化一行——residents 端点驱动
+   「{世界} 的居民」语境；residents 缺席回落现役形 = 无此行）与每封的
+   信数弱标注（诚实计数；.env-line 同族语汇再弱一档 --ink-faint）。 */
+.envsel-caption { margin: 0; font: var(--t-ui); color: var(--ink-faint); }
+.env-letters { margin: 2px 0 0; font-size: var(--fs-small);
+               line-height: var(--lh-small); color: var(--ink-faint); }
 .env-browse { display: none; }
 /* 「收起」恒右（翻看链在桌面档 display:none 时它独自居右；
    屏级面自定义类，按钮样式本体仍只在 components.css——fg1 纪律） */

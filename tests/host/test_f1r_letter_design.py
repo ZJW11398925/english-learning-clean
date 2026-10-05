@@ -130,10 +130,11 @@ def test_the_page_has_the_parlor_screen(tmp_path: Path) -> None:
     # mc-1 随迁（主从条 = 当前角色名）：案头 .who 改端点驱动
     # （/api/characters 的 current），静态兜底留空——品牌名与副题退居
     # 门厅封面（ob-tagline；BRAND 单点常量同值驱动，钉在 v21 套件）。
-    # v2-2 随迁（8.2.2① 主从条瘦身）：who-sub 身份行长句族退役——
-    # 身份介绍退入笔友档案全页（缺位钉防回潮）。
+    # v2-2 随迁（8.2.2① 主从条瘦身）：身份长句族退役——身份介绍退入
+    # 笔友档案全页。wf-1 随迁（世界优先，单向收紧）：who-sub 回场 =
+    # 故事日 + 居民位副行（overview 端点驱动，非旧身份长句）。
     assert '<div class="who"></div>' in page
-    assert 'who-sub' not in page
+    assert '<div class="who-sub"></div>' in page
     assert '<p class="ob-tagline">见字如晤，今日如何</p>' in page
     assert "BRAND = { name:" in page
     assert "英语客厅" not in page
