@@ -794,6 +794,48 @@ def test_state_version_is_monotonic_and_reads_are_ordered(
     assert store.get_run("run-absent") is None
 
 
+def test_checkpoint_run_refuses_a_terminal_run(store: SqliteWorldStore) -> None:
+    """A TERMINAL run is absorbing for the checkpoint mover too — the
+    store answers ``VALIDATION_FAILED`` instead of stepping a finished
+    run (review W-1-2 LOW-1: this refusal previously carried no pin)."""
+
+    _seed_world(store)
+    created = store.create_run("run-term", "world-main", None, 1, NOW)
+    assert created.value is not None
+    terminal = store.terminalize_run("run-term", LATER)
+    assert isinstance(terminal, Ok)
+    _assert_err(
+        store.checkpoint_run("run-term", LATER), "VALIDATION_FAILED"
+    )
+
+
+def test_terminalize_run_refuses_a_second_terminalization(
+    store: SqliteWorldStore,
+) -> None:
+    """Terminalizing twice is refused and must not bump the version on
+    an already-finished run (review W-1-2 LOW-1)."""
+
+    _seed_world(store)
+    created = store.create_run("run-term2", "world-main", None, 1, NOW)
+    assert created.value is not None
+    first = store.terminalize_run("run-term2", LATER)
+    assert isinstance(first, Ok)
+    _assert_err(
+        store.terminalize_run("run-term2", LATER), "VALIDATION_FAILED"
+    )
+    assert (
+        store.get_run("run-term2").state_version == first.value.state_version
+    )
+
+
+def test_run_movers_refuse_an_unknown_run_id(store: SqliteWorldStore) -> None:
+    """Both movers answer the ``NOT_FOUND`` value word for an unknown
+    run id — no raised lookup error (review W-1-2 LOW-1)."""
+
+    _assert_err(store.checkpoint_run("run-absent", NOW), "NOT_FOUND")
+    _assert_err(store.terminalize_run("run-absent", NOW), "NOT_FOUND")
+
+
 # ---------------------------------------------------------------------------
 # 9 — the registration
 # ---------------------------------------------------------------------------
