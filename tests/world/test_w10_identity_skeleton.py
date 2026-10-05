@@ -465,13 +465,17 @@ def test_open_host_builds_the_world_store(tmp_path: Path) -> None:
     (the world_lore always-built shape — the store needs only the shared
     connection and fence, so the full chain's tier builds it by the same
     construction), works over the real assembly, and the host closes
-    cleanly. No seeding: a fresh host opens with zero worlds."""
+    cleanly. W-1-4 truth (随迁): the builtin world seed makes a fresh
+    host open with Berrymoor born at open — a user-created world is
+    still bound only by a caller asking the store."""
 
     host = open_host(tmp_path / "app.db", provider=ScriptedPersonaProvider())
     try:
         assert host.world_store is not None
         assert isinstance(host.world_store, SqliteWorldStore)
-        assert host.world_store.list_worlds() == ()
+        assert [w.world_id for w in host.world_store.list_worlds()] == [
+            "world-berrymoor"
+        ]
         bound = host.world_store.create_world("world-host", "Host", None, NOW)
         assert bound.value is not None
         assert host.world_store.get_world("world-host") == bound.value

@@ -9,7 +9,8 @@ prep-0 时 **520** / 130 文件 / 154 `.py`，N13 曾登记 159 / 527 / 133；v3
 含类定义的文件 / `.py` 总数）；W-1-0 触碰本文件时同刀复测为 **569** / 145 /
 **178**（含 world 新包的 types/store 两新模块；口径同前）；W-1-2 触碰本文件时
 同刀复测为 **580** / 147 / **182**（含 elc.world.engine 四新模块——N12/N13/N20
-同族义务）——逐类贴标签是不可
+同族义务）；W-1-4 触碰本文件时同刀复测为 **584** / 148 / **183**（含 elc.world
+的 package 装载器新模块——N12/N13/N20 同族义务）——逐类贴标签是不可
 维护的漂移面），而是**以包为行**
 的一跳索引：每行给出该包的现役面（读者应当用的类/模块）、它自己的 durable store
 （若有），以及本包内**非现役**的骨架类。
@@ -224,6 +225,10 @@ SURFACE_CENSUS: tuple[Row, ...] = (
     # 口）。无 controller/commands/queries（不在 DOMAIN_PACKAGES——Phase 0
     # gate 的接口钉不适用于本包）；揭示、叙述生成、DIRECTION、呈现渲染、
     # 等待、删除面未落（横幅即边界）。
+    # W-1-4 增：世界包装载器 elc.world.package 在册（load_world_package
+    # 严格解码 worlds/*.json + ensure_builtin_worlds 开机幂等 seed——host
+    # 开机调用，失败 = 开失败 fail-closed）；worlds/ 包格式与首包
+    # Berrymoor 为内容数据面（非 .py，不入本表 .py 计数）。
     Row(
         "world",
         live_face="elc.world.store:SqliteWorldStore",

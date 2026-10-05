@@ -50,11 +50,15 @@ World bounded context's store (:class:`~elc.world.store.SqliteWorldStore`
 over migration 0023's ``world`` / ``world_actor`` /
 ``world_conversation`` tables) is assembled next to the lore controller —
 the identity half of the living-world program (the adjudication chain
-DEC-OPI-7e3744ee…2 / DEC-OPI-7e3744ee…4 / DEC-OPI-d96fd92d…7). The host
-seeds nothing: a database opens with zero worlds, and the store's
-idempotent create/bind faces wait for a caller (W-1-4's landing pad). No
-world behaviour is wired anywhere in this assembly — no events, no
-engine, no reveal face; the later cuts are registered, not simulated.
+DEC-OPI-7e3744ee…2 / DEC-OPI-7e3744ee…4 / DEC-OPI-d96fd92d…7). W-1-4:
+the builtin world packages (:mod:`elc.world.package` over the
+repository's ``worlds/`` directory) seed through the store's idempotent
+create/bind faces at open — a database is born with its builtin worlds,
+and a package refusal or a missing cast card fails the open
+(fail-closed, the lore seed posture). User-created worlds are still
+bound only by a caller asking the store. No world *behaviour* is wired
+anywhere in this assembly beyond the seed — no events, no engine, no
+reveal face; the later cuts are registered, not simulated.
 
 **Two assembly tiers, declared rather than implied (D-5):**
 
@@ -264,6 +268,7 @@ from elc.teaching.rollout import RolloutGateReport, RolloutStage, corpus_rollout
 from elc.teaching.store import SqliteTeachingStore
 from elc.user_config.controller import UserConfigController
 from elc.user_config.store import SqliteUserConfigStore
+from elc.world.package import WorldPackageError, ensure_builtin_worlds
 from elc.world.store import SqliteWorldStore
 from elc.world_lore.content import seed_world_lore_facts
 from elc.world_lore.controller import WorldLoreController
@@ -373,11 +378,14 @@ class Host:
     #: W-1-0: the World bounded context's identity store over migration
     #: 0023's three tables (``world`` / ``world_actor`` /
     #: ``world_conversation`` — always built, both tiers, the
-    #: world_lore shape). The store binds worlds, actors and conversation
-    #: bindings when a caller asks; the host seeds nothing — a database
-    #: opens with zero worlds (identity is bound, not born), and no world
-    #: behaviour is wired anywhere (the living-world program's later cuts
-    #: are registered, not simulated).
+    #: world_lore shape). W-1-4: the builtin world packages
+    #: (:mod:`elc.world.package`, the repository's ``worlds/`` directory)
+    #: seed through it at open, idempotently — a database is born with
+    #: its builtin worlds (and a package refusal or a missing cast card
+    #: fails the open); user-created worlds are still bound only by a
+    #: caller asking the store. No world behaviour is wired beyond the
+    #: seed (the living-world program's later cuts are registered, not
+    #: simulated).
     world_store: SqliteWorldStore
     persona: PersonaRuntime
     coordinator: ConversationCoordinator
@@ -608,6 +616,7 @@ def open_host(
     stream_transport: StreamTransportFactory | None = None,
     character_package: CharacterPackageRecord | None = PENPAL_CHARACTER_PACKAGE,
     migrations_dir: Path = DEFAULT_MIGRATIONS_DIR,
+    worlds_dir: Path | None = None,
     content_db_path: str | Path | None = None,
     rollout_stage: RolloutStage | None = None,
     candidate_supply: CandidateSupply | None = None,
@@ -638,7 +647,13 @@ def open_host(
     the table do not name. ``candidate_supply`` passes through to the
     wiring verbatim
     (``None`` — the production value — runs the generators over the ports;
-    see the module docstring).
+    see the module docstring). W-1-4: the builtin world packages seed at
+    open — ``worlds_dir`` names the directory of ``*.json`` world packages
+    (the repository's ``worlds/`` by default); every package is loaded
+    strictly and seeded through the world store's idempotent create/bind
+    faces, and a package refusal, a missing directory or a cast persona
+    without a character card fails this open (fail-closed — the lore seed
+    posture).
 
     D-5R: the full chain's session-budget leg is wired (assembly fact 1) and
     the wiring's ``provenance`` mapping is read from the artifact at assembly
@@ -707,11 +722,30 @@ def open_host(
         seed_world_lore_facts(world_lore_store)
         world_lore = WorldLoreController(world_lore_store, conversations)
         # W-1-0: the World identity store over migration 0023's three
-        # tables (always built, both tiers, the world_lore shape). No
-        # seeding — identity is bound, not born (a database opens with
-        # zero worlds); the store's idempotent creates are W-1-4's
-        # landing pad, and nothing in this assembly calls them.
+        # tables (always built, both tiers, the world_lore shape).
+        # W-1-4: the builtin world packages (the repository's ``worlds/``
+        # directory, overridable per open) seed through it here —
+        # idempotent creates and binds, every package loaded strictly,
+        # and any refusal (bad package, missing directory, a cast
+        # persona with no character card) fails this open through the
+        # except clause below. The persona face is the card table's own
+        # read (built two tiers; migration 0019's seed row makes the
+        # penpal real on any fresh database). User-created worlds are
+        # still bound only by a caller asking the store.
         world_store = SqliteWorldStore(db, fence)
+
+        def _persona_exists(persona_id: str) -> bool:
+            """The world seed's cast verification face: does this persona
+            exist as a character card (the table first, always)."""
+
+            card = character_cards.get_by_persona(persona_id)
+            return not isinstance(card, Err)
+
+        ensure_builtin_worlds(
+            world_store,
+            worlds_dir,
+            persona_exists=_persona_exists,
+        )
         # The settings-page provider face's persisted leg (user veto: the
         # endpoint/model pair is page-settable). Read order is the opposite
         # of the stage's on purpose: a **saved pair wins over the launch
@@ -926,6 +960,7 @@ def open_host(
         MigrationError,
         ContentStoreError,
         WorldLoreStoreError,
+        WorldPackageError,
         OSError,
     ):
         db.close()

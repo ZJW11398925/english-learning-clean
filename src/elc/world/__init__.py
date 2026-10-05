@@ -1,5 +1,6 @@
-"""The World bounded context (W-1-0 + W-1-1 + W-1-2) — identity binding,
-the event tree with its minimal state projection, and the run engine.
+"""The World bounded context (W-1-0 + W-1-1 + W-1-2 + W-1-4) — identity
+binding, the event tree with its minimal state projection, the run
+engine, and the world package face.
 
 What ships here: the three migration-0023 identity tables' SQL face
 (:class:`~elc.world.store.SqliteWorldStore` — worlds, actors,
@@ -14,6 +15,15 @@ current-facts / fact-history faces — and W-1-2's run face: migration
 (:mod:`elc.world.engine` — replayable sequencing from ``(seed,
 cursor)``, NOTICE checkpoints pause the run, RESPONSE terminates it,
 M0.1 AD-6: a restart does not re-roll the dice).
+
+W-1-4 adds the package face: the repository's builtin worlds ship as
+JSON files under ``worlds/``, and a builtin world is born at open —
+:mod:`elc.world.package` loads them strictly and seeds them through this
+store's idempotent create/bind faces (fail-closed: a bad package, a
+missing directory or a cast persona with no character card fails the
+open). User-created worlds are still bound only by a caller through
+``create_world`` / ``bind_actor`` — the builtin worlds' birth at open
+does not change who binds anything else.
 
 What does **not** ship here, declared rather than implied: no reveal
 face, no narration generation (the engine's pool arrives pre-authored),
