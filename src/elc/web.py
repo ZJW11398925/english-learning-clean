@@ -464,7 +464,6 @@ from elc.user_config.types import (
     TeachingPolicyProfile,
 )
 from elc.world.engine.orchestrate import (
-    TRIGGER_CONTINUE,
     TRIGGER_LETTER,
     run_step,
 )
@@ -3532,59 +3531,6 @@ class _WebFace:
         ).fetchone()
         return int(row[0]) if row is not None else 0
 
-    def world_continue(self) -> tuple[int, dict[str, Any]]:
-        """The 「继续」 write: the light action, through the world's own
-        orchestration.
-
-        No binding is the inbox's 404; a world that is not waiting at
-        its checkpoint is a **400 人话** (the run's state refuses the
-        light action — :func:`elc.world.engine.orchestrate.run_step`
-        spells the refusal, this face passes it through verbatim); any
-        other refusal is a 500 (the face never fabricates a step). The
-        happy path answers the refreshed inbox payload — one round trip
-        lands the step's new notes and the run's new checkpoint state.
-        """
-
-        binding = self._world_binding()
-        if binding is None:
-            return (404, {"error": _WORLD_NO_BINDING})
-        world_id = binding["world_id"]
-        world_store = getattr(self._host, "world_store", None)
-        package = self._world_packages.get(str(world_id))
-        if world_store is None or package is None:
-            return (404, {"error": _WORLD_NO_BINDING})
-        # The reveal-the-pending count rides **before** the flip (M1's
-        # sibling fix, DEC-…92): the page's load arm only renders a
-        # story block when this step actually revealed unread notes.
-        stepped = run_step(
-            world_store,
-            str(world_id),
-            package.to_event_pool(),
-            EngineConfig(),
-            TRIGGER_CONTINUE,
-            datetime.now(tz=UTC).isoformat(),
-            package=package,
-        )
-        if isinstance(stepped, Err):
-            if stepped.error.code is DomainErrorCode.VALIDATION_FAILED:
-                return 400, {"error": "世界不在等你点继续。"}
-            raise RuntimeError(
-                "the world step could not run:"
-                f" {stepped.error.code.value}: {stepped.error.message}"
-            )
-        revealed_now = self._pending_count(world_id)
-        revealed = world_store.reveal_all(
-            str(world_id), datetime.now(tz=UTC).isoformat()
-        )
-        if isinstance(revealed, Err):
-            raise RuntimeError(
-                "the world inbox could not be read:"
-                f" {revealed.error.code.value}: {revealed.error.message}"
-            )
-        return 200, self._world_payload(
-            str(world_id), revealed.value, revealed_now=revealed_now
-        )
-
     def _world_payload(
         self,
         world_id: str,
@@ -6339,14 +6285,6 @@ def _build_server(
                     )
                     return
                 self._run_stream_turn(text)
-                return
-            if self.path == "/api/world/continue":
-                # W-1-3: the 「继续」 write — the world's light action through
-                # its own orchestration (a checkpointed run resumes; a
-                # world that is not waiting answers the 400 人话; the happy
-                # path returns the refreshed inbox). The face answers its
-                # own statuses (the _run_host_write posture).
-                self._run_host_write(face.world_continue)
                 return
             if self.path == "/api/goals":
                 # p-3 W1: the full new combination as the portfolio's next

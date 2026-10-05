@@ -14,14 +14,16 @@ The slice VAL groups, each a section below:
 2. **deterministic replay** — the same seed drives two independent
    runs (two fresh databases) to bit-for-bit identical traces and
    chronicles, and a different seed diverges;
-3. **resume without re-rolling** — a NOTICE pause followed by a resume
-   continues the sequence from the persisted cursor (a re-rolled cycle
-   would derive an existing event id with a fresh ``occurred_at`` and
-   hit the chronicle's append-only CONFLICT — the pin holds precisely
-   because none of that happens);
-4. **the double exit** — NOTICE pauses at the checkpoint, RESPONSE
-   terminates, a multi-checkpoint chain walks the same run through
-   several pauses, and ``DIRECTION`` cannot reach the row;
+3. **resume without re-rolling** — a run paused by hand at its
+   checkpoint (the store's own mover — the engine no longer pauses) and
+   resumed from the re-read row continues the sequence from the
+   persisted cursor (a re-rolled cycle would derive an existing event
+   id with a fresh ``occurred_at`` and hit the chronicle's append-only
+   CONFLICT — the pin holds precisely because none of that happens);
+4. **the exits** — a NOTICE event is a beat, not a pause (A2R
+   DEC-…99: the loop continues past it, the run row unmoved), RESPONSE
+   terminates, a multi-beat chain walks inside one ``advance`` call to
+   its stop, and ``DIRECTION`` cannot reach the row;
 5. **record_event integration** — the engine's events settle their
    effects through the store's one atomic face (projection, derived
    fact ids, the engine's source word, the caller's moment);
@@ -57,7 +59,6 @@ from elc.world import engine as engine_package
 from elc.world.engine import steps as engine_steps
 from elc.world.engine.engine import (
     ENGINE_SOURCE,
-    OUTCOME_CHECKPOINT,
     OUTCOME_LIMIT,
     OUTCOME_TERMINAL,
     advance,
@@ -379,13 +380,19 @@ def test_the_same_seed_replays_the_same_run_bit_for_bit(
     first = _play(tmp_path / "a")
     second = _play(tmp_path / "b")
     assert first == second
-    # The literal shape (seed 42, cursor 0: pool index 0, then the
-    # terminal): the pin is exact, not merely "equal to each other".
+    # The literal shape (seed 42, one call: the NOTICE beat at cursor 0,
+    # then the RESPONSE stop at cursor 1 — the beat is not a pause): the
+    # pin is exact, not merely "equal to each other".
     trace, chronicle = first
     assert [(c.cursor, c.selected, c.moment) for c in trace.cycles] == [
-        (0, "morning_bell", "NOTICE")
+        (0, "morning_bell", "NOTICE"),
+        (1, "reply_arrives", "RESPONSE"),
     ]
-    assert chronicle == [("run-1:0", "the bell rings over Berrymoor")]
+    assert trace.outcome == OUTCOME_TERMINAL
+    assert chronicle == [
+        ("run-1:0", "the bell rings over Berrymoor"),
+        ("run-1:1", "her reply is waiting at the desk"),
+    ]
 
 
 def test_a_different_seed_diverges(store: SqliteWorldStore) -> None:
@@ -411,18 +418,25 @@ def test_a_different_seed_diverges(store: SqliteWorldStore) -> None:
 def test_resume_continues_the_sequence_without_re_rolling(
     store: SqliteWorldStore,
 ) -> None:
-    """A NOTICE pause, then a resume from the re-read row: the second
-    call starts at the persisted cursor (its trace holds exactly one
-    cycle, cursor 1), the chronicle holds both events in order, and
-    nothing conflicts — a re-rolled cycle 0 would derive the existing
-    ``run-1:0`` id with the resume's fresh ``occurred_at`` and hit the
-    chronicle's append-only CONFLICT, so an ``Ok`` here is the pin."""
+    """A pause, then a resume from the re-read row. The engine itself no
+    longer pauses (A2R DEC-…99), so the checkpoint is placed by the
+    store's own mover — the same persisted state a pause would have
+    left: the second call starts at the persisted cursor (its trace
+    holds exactly one cycle, cursor 1), the chronicle holds the resumed
+    call's event, and nothing conflicts — a re-rolled cycle 0 would
+    derive the existing ``run-1:0`` id with the resume's fresh
+    ``occurred_at`` and hit the chronicle's append-only CONFLICT, so an
+    ``Ok`` here is the pin."""
 
     run = _fresh_run(store, seed=42)
     pool = _two_event_pool()
 
-    first = advance(store, run, pool, EngineConfig(), LATER)
-    assert isinstance(first, Ok) and first.value.outcome == OUTCOME_CHECKPOINT
+    # The pause, by hand (the store's checkpoint face — the engine's
+    # retired exit word remains the store's legal state).
+    stepped = store.checkpoint_run(run.run_id, LATER)
+    assert isinstance(stepped, Ok)
+    assert stepped.value.status == RunStatus.AT_CHECKPOINT
+    assert stepped.value.cursor == 1
 
     resumed = store.get_run("run-1")
     assert resumed is not None and resumed.cursor == 1
@@ -436,16 +450,16 @@ def test_resume_continues_the_sequence_without_re_rolling(
     chronicle = store.chronicle_of("world-main")
     assert isinstance(chronicle, Ok)
     assert [(event.event_id, event.kind) for event in chronicle.value] == [
-        ("run-1:0", "morning_bell"),
         ("run-1:1", "reply_arrives"),
     ]
     final = store.get_run("run-1")
     assert final is not None
     assert final.status == RunStatus.TERMINAL
-    # The cursor freezes at the last checkpoint boundary on terminal (the
-    # store's terminalize moves status/kind/version only): cycle 1 ran
-    # and the run finished; the trace above is its record.
+    # The cursor stays where the checkpoint mover left it (the store's
+    # terminalize moves status/kind/version only): cycle 1 ran and the
+    # run finished; the trace above is its record.
     assert final.cursor == 1
+    assert final.state_version == 3
 
 
 # ---------------------------------------------------------------------------
@@ -453,30 +467,41 @@ def test_resume_continues_the_sequence_without_re_rolling(
 # ---------------------------------------------------------------------------
 
 
-def test_notice_pauses_the_run_at_its_checkpoint(store: SqliteWorldStore) -> None:
-    """The NOTICE exit: the call returns the CHECKPOINT outcome, the
-    cycle trace names the four executed steps and the NOTICE moment, and
-    the row stays ``AT_CHECKPOINT`` / ``NOTICE`` with the cursor advanced
-    and the version bumped."""
+def test_notice_events_are_beats_not_pauses(store: SqliteWorldStore) -> None:
+    """A2R (DEC-…99): the NOTICE exit is retired — a NOTICE event is a
+    beat the loop continues past, never a pause. One call walks the
+    NOTICE beat straight into the RESPONSE stop: the trace carries both
+    cycles (the beat's four executed steps, then the stop), the run row
+    never rests at ``AT_CHECKPOINT`` (no checkpoint mover ran — the
+    cursor stays at the creation value and the version carries only the
+    terminalize), and the outcome is TERMINAL."""
 
     run = _fresh_run(store, seed=42)
     trace = advance(store, run, _two_event_pool(), EngineConfig(), LATER)
     assert isinstance(trace, Ok)
-    assert trace.value.outcome == OUTCOME_CHECKPOINT
-    cycle = trace.value.cycles[0]
-    assert cycle.steps == (
+    assert trace.value.outcome == OUTCOME_TERMINAL
+    beat, stop = trace.value.cycles
+    assert (beat.cursor, beat.selected, beat.moment) == (
+        0, "morning_bell", "NOTICE"
+    )
+    assert beat.steps == (
         engine_steps.STEP_TIME,
         engine_steps.STEP_EVENTS,
         engine_steps.STEP_COMMS,
         engine_steps.STEP_MOMENT,
     )
-    assert cycle.moment == "NOTICE"
-    paused = store.get_run("run-1")
-    assert paused is not None
-    assert paused.status == RunStatus.AT_CHECKPOINT
-    assert paused.checkpoint_kind == MomentKind.NOTICE
-    assert paused.cursor == 1
-    assert paused.state_version == 2
+    assert (stop.cursor, stop.selected, stop.moment) == (
+        1, "reply_arrives", "RESPONSE"
+    )
+    finished = store.get_run("run-1")
+    assert finished is not None
+    assert finished.status == RunStatus.TERMINAL
+    assert finished.checkpoint_kind == MomentKind.RESPONSE
+    # No checkpoint mover ran: the row's cursor stays at the creation
+    # value and only the terminalize bumped the version — the trace, not
+    # the row, carries the beat's cursor.
+    assert finished.cursor == 0
+    assert finished.state_version == 2
 
 
 def test_response_terminates_the_run(store: SqliteWorldStore) -> None:
@@ -498,38 +523,34 @@ def test_response_terminates_the_run(store: SqliteWorldStore) -> None:
     _assert_err(refusal, "VALIDATION_FAILED")
 
 
-def test_a_run_walks_a_multi_checkpoint_chain(store: SqliteWorldStore) -> None:
-    """Several checkpoints inside one run: seed 15 walks the unfolding
-    chain through two NOTICE pauses (cursors 1 and 2, versions 2 and 3)
-    to the RESPONSE stop (version 4), the chronicle holding all three
-    cycles' events in cursor order. The same run resumes; no second
-    winch is involved."""
+def test_a_run_walks_a_multi_beat_chain_in_one_call(
+    store: SqliteWorldStore,
+) -> None:
+    """Several beats inside one call: seed 15's unfolding chain (the
+    knock matures only once the door is open, the letter only once the
+    knock was heard) walks all three events — two NOTICE beats and the
+    RESPONSE stop — in a single ``advance``, the chronicle holding all
+    three cycles' events in cursor order. The beats never pause the run
+    (A2R DEC-…99); the chain's own conditions are its pacing."""
 
     run = _fresh_run(store, seed=15)
     pool = _chain_pool()
 
-    first = advance(store, run, pool, EngineConfig(), LATER)
-    assert isinstance(first, Ok)
-    assert first.value.outcome == OUTCOME_CHECKPOINT
-    assert first.value.cycles[0].selected == "door_opens"
-    assert first.value.cycles[0].actor is None  # roster draw 2 of 2: silent
-
-    mid = store.get_run("run-1")
-    assert mid is not None and mid.cursor == 1
-    second = advance(store, mid, pool, EngineConfig(), LATER)
-    assert isinstance(second, Ok)
-    assert second.value.outcome == OUTCOME_CHECKPOINT
-    assert second.value.cycles[0].cursor == 1
-    assert second.value.cycles[0].selected == "knock_heard"
-
-    late = store.get_run("run-1")
-    assert late is not None and late.cursor == 2
-    third = advance(store, late, pool, EngineConfig(), EVEN_LATER)
-    assert isinstance(third, Ok)
-    assert third.value.outcome == OUTCOME_TERMINAL
-    assert third.value.cycles[0].cursor == 2
-    assert third.value.cycles[0].selected == "letter_arrives"
-    assert third.value.cycles[0].actor == "actor-theo"  # draw 1 of 2: writes
+    trace = advance(store, run, pool, EngineConfig(), LATER)
+    assert isinstance(trace, Ok)
+    assert trace.value.outcome == OUTCOME_TERMINAL
+    first, second, third = trace.value.cycles
+    assert (first.cursor, first.selected, first.moment) == (
+        0, "door_opens", "NOTICE"
+    )
+    assert first.actor is None  # roster draw 2 of 2: silent
+    assert (second.cursor, second.selected, second.moment) == (
+        1, "knock_heard", "NOTICE"
+    )
+    assert (third.cursor, third.selected, third.moment) == (
+        2, "letter_arrives", "RESPONSE"
+    )
+    assert third.actor == "actor-theo"  # draw 1 of 2: writes
 
     chronicle = store.chronicle_of("world-main")
     assert isinstance(chronicle, Ok)
@@ -540,10 +561,11 @@ def test_a_run_walks_a_multi_checkpoint_chain(store: SqliteWorldStore) -> None:
     ]
     final = store.get_run("run-1")
     assert final is not None
-    # The cursor freezes at the last checkpoint boundary (cursor 2 = two
-    # NOTICE pauses completed); the terminal cycle's record is the trace.
-    assert final.cursor == 2
-    assert final.state_version == 4
+    # The row never moved mid-call (no checkpoint writes): only the
+    # terminalize touched it.
+    assert final.status == RunStatus.TERMINAL
+    assert final.cursor == 0
+    assert final.state_version == 2
 
 
 def test_direction_is_not_in_the_schema_vocabulary(
@@ -590,7 +612,8 @@ def test_engine_events_settle_their_effects(store: SqliteWorldStore) -> None:
 
     chronicle = store.chronicle_of("world-main")
     assert isinstance(chronicle, Ok)
-    assert len(chronicle.value) == 1
+    # One call, two events: the NOTICE beat and the RESPONSE stop.
+    assert len(chronicle.value) == 2
     event = chronicle.value[0]
     assert event.event_id == "run-1:0"
     assert event.kind == "morning_bell"
@@ -639,7 +662,7 @@ def test_the_comms_step_is_deterministic_and_writes_nothing(
     actor_a, chronicle_a = _play(tmp_path / "a")
     actor_b, chronicle_b = _play(tmp_path / "b")
     assert actor_a == actor_b == "actor-theo"  # seed 42's draw 1 of 2
-    assert chronicle_a == chronicle_b == 1  # one event, zero letters
+    assert chronicle_a == chronicle_b == 2  # two events, zero letters
 
 
 def test_an_empty_roster_stays_silent(store: SqliteWorldStore) -> None:
@@ -937,19 +960,18 @@ def test_the_pool_defends_its_tuples_at_runtime() -> None:
 def test_the_banner_claims_exactly_its_horizon() -> None:
     """The engine's banner is honest in both directions: the claim list
     (deterministic orchestration, replayable sequencing, durable run
-    state, the double exit, W-1-3's trigger orchestration) and the
-    refusal list (rendering, waiting, letters, the reveal *presentation*
-    half, DIRECTION, world clock, model generation) — the
-    words are pinned so a silent widening reads red."""
+    state, the exits — the beat-not-pause law, W-1-3's trigger
+    orchestration) and the refusal list (rendering, waiting, letters,
+    the reveal *presentation* half, DIRECTION, world clock, model
+    generation) — the words are pinned so a silent widening reads red."""
 
     banner = " ".join((engine_package.__doc__ or "").split())
     for claimed in (
         "deterministic run orchestration",
         "replayable sequencing",
         "durable run state",
-        "double exit",
-        "``NOTICE`` checkpoints pause the run",
-        "``RESPONSE`` terminates it",
+        "a ``NOTICE`` event is a beat, not a pause",
+        "a ``RESPONSE`` event terminates the run",
         "never re-rolls",
         "trigger orchestration",
     ):

@@ -58,7 +58,6 @@ import {
   fetchTargets,
   fetchObservations,
   fetchWorldInbox,
-  fetchWorldContinue,
   fetchHistory,
   fetchCurrentMoment,
   fetchWord,
@@ -2943,15 +2942,11 @@ let uiLanguage = "zh";
 
 const WORLD_INBOX_TEXT = {
   zh: {
-    cont: "继续",
-    fail: "世界没能继续——稍后再试。",
     fallback: "（这张便条写在世界学会中文之前——示以原文。）",
     quietDay: "安静的一天，没什么特殊的事。",
     thenLetter: "这时，她收到了你的来信。",
   },
   en: {
-    cont: "Continue",
-    fail: "The world couldn't continue — try again later.",
     fallback: "(This note predates the world's Chinese — shown as written.)",
     quietDay: "A quiet day, nothing out of the ordinary.",
     thenLetter: "Then, your letter arrives.",
@@ -2965,21 +2960,21 @@ function worldInboxText() {
 // ── A2/DEC-…92：世界呈现唯一形态 = 内联故事块──────────────────────
 // 常驻收件箱区整体退役（用户报告「遗留世界事件占对话末尾」的根治）：
 // 世界只在信流里随轮呈现——turn_stream 的 world 帧（回信气泡之前）
-// 与页面加载时的遗留补显（revealed_now>0 才有一块）。数据面（GET
-// /api/world/inbox 与 POST /api/world/continue）保留不动；GET 读即
-// 揭示——revealed_now 是本次揭示的条数（服务端翻转前计数），零 ⇒
-// 零世界区块，对话末尾干净。
+// 与页面加载时的遗留补显（revealed_now>0 才有一块）。数据面只剩
+// GET /api/world/inbox（A2R DEC-…99：POST /api/world/continue 随
+// 「继续」钮一并退役）；GET 读即揭示——revealed_now 是本次揭示的
+// 条数（服务端翻转前计数），零 ⇒ 零世界区块，对话末尾干净。
 
-// ── A2（DEC-…82/…88/…90；DEC-…92 收口）：世界故事块────────────────
+// ── A2（DEC-…82/…88/…90；DEC-…92 收口；A2R DEC-…99）：世界故事块────
 // 世界呈现的唯一形态：信流里随轮的散文块。turn_stream 的首个
 // {"type":"world"} 帧到达即渲染（回信气泡之前）：日期行（世界自己
 // 的虚拟历日，服务端按 ui_language 本地化随行）+ 本轮叙述序列（故
 // 事体散文段落，非卡片非署名）+ 过渡句，随后回信打字机接上。
-// DEC-…92：世界在检查点（at_checkpoint）时「继续」钮挂本块尾部
-// （数据驱动——世界等才可点，从不瞎猜）；点继续成功 = 新一块故事
-// 块接在流尾，失败 = 服务端人话落到钮下。加载补显（loadWorldInbox
-// 的 revealed_now 臂）与继续的成功臂复用同一渲染器（inbox 载荷形
-// 带 items 键；流帧带 notes 键——一处归一）。
+// A2R（DEC-…99）：引擎的 NOTICE 事件是节拍不是停顿——一次来信一气
+// 走到运转终点（RESPONSE/上限），「继续」钮与其数据位随块退役，世
+// 界故事零中途交互。加载补显（loadWorldInbox 的 revealed_now 臂）
+// 复用同一渲染器（inbox 载荷形带 items 键；流帧带 notes 键——一处
+// 归一）。
 // 文字一律 textContent（XSS 纪律）；真实时间零进入——日期只来自
 // 服务的 date_localized。
 function renderWorldStory(event, opts) {
@@ -3019,44 +3014,11 @@ function renderWorldStory(event, opts) {
     then.textContent = T.thenLetter;
     wrap.appendChild(then);
   }
-  if (event.at_checkpoint) {
-    // 「继续」随块（DEC-…92）：世界等在检查点才挂钮，数据驱动。
-    const actions = document.createElement("p");
-    actions.className = "world-story-actions";
-    const cont = document.createElement("button");
-    cont.type = "button";
-    cont.className = "btn btn--faint";
-    cont.textContent = T.cont;
-    cont.disabled = false;
-    cont.addEventListener("click", async () => {
-      cont.disabled = true;
-      let fresh = null;
-      let why = null;
-      try {
-        fresh = await fetchWorldContinue();
-      } catch (err) {
-        fresh = null;
-        why = err;
-      }
-      if (fresh && Array.isArray(fresh.items)) {
-        // 成功 = 世界又走了一步：新一块故事块接在流尾（揭示即读）。
-        renderWorldStory(fresh, { withTransition: false });
-      } else {
-        // W-1-3R 的法则随块延续：服务器的人话（400 体
-        // {"error": "世界不在等你点继续。"}，postJson 不抛而回体）
-        // 落到钮下说给用户听；网络级失败才走 err.message 兜底。
-        const said = document.createElement("p");
-        said.className = "note world-story-fail";
-        said.textContent =
-          (fresh && typeof fresh.error === "string" && fresh.error) ||
-          (why && why.message) ||
-          T.fail;
-        actions.appendChild(said);
-      }
-    });
-    actions.appendChild(cont);
-    wrap.appendChild(actions);
-  }
+  // A2R (DEC-…99): the 「继续」 button is retired — the engine's
+  // NOTICE checkpoint is an internal rhythm concept, not a product
+  // interaction. The letter trigger now auto-advances to the run's
+  // stop (the engine's own cycle loop), so every letter answers
+  // with one complete story block, zero mid-run interaction.
   messages.appendChild(wrap);
   // 追底（failLine 同款直滚——scrollBottom 是 components 的内政）。
   window.scrollTo(0, document.body.scrollHeight);

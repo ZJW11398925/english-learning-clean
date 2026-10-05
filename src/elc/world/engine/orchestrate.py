@@ -181,11 +181,8 @@ def run_step(
             run = latest
 
     moment_source: str | Callable[[str], str] = now
-    stamps: dict[str, str] = {}
     if package is not None:
-        moment_source = _calendar_source(
-            package, store, world_id, stamps
-        )
+        moment_source = _calendar_source(package, store, world_id)
     stepped = advance(store, run, pool, config, moment_source)
     if isinstance(stepped, Err):
         return Err(stepped.error)
@@ -194,9 +191,25 @@ def run_step(
     # whole batch in one short transaction. Only an Ok step reaches here,
     # so a refused path enqueues nothing (零撕裂); the items derive their
     # ids from the events, so a replayed step enqueues as the store's
-    # idempotent no-op. The item's own stamp inherits its event's moment
-    # (the calendar's date when a package rides, DEC-…88 ③) — the queue
-    # carries the story's time, never the wall clock's.
+    # idempotent no-op. The item's own stamp inherits **its own event's**
+    # moment (the calendar's date when a package rides, DEC-…88 ③) —
+    # read back from the chronicle the step just wrote, so a multi-beat
+    # call stamps each item with its own beat, never the last one's
+    # (A2R DEC-…99); the queue carries the story's time, never the wall
+    # clock's.
+    step_event_ids = {
+        str(cycle.event_id)
+        for cycle in stepped.value.cycles
+        if cycle.event_id is not None
+    }
+    chronicle = store.chronicle_of(world_id)
+    if isinstance(chronicle, Err):
+        return Err(chronicle.error)
+    moments = {
+        str(event.event_id): str(event.occurred_at)
+        for event in chronicle.value
+        if str(event.event_id) in step_event_ids
+    }
     items = tuple(
         WorldRevealItem(
             item_id=f"{cycle.event_id}:reveal",
@@ -205,11 +218,7 @@ def run_step(
             actor_id=cycle.actor,
             status="PENDING",
             revealed_at=None,
-            created_at=(
-                stamps.get(cycle.selected, now)
-                if cycle.selected is not None
-                else now
-            ),
+            created_at=moments.get(str(cycle.event_id), now),
         )
         for cycle in stepped.value.cycles
         if cycle.event_id is not None
@@ -224,7 +233,6 @@ def _calendar_source(
     package: WorldPackage,
     store: SqliteWorldStore,
     world_id: str,
-    stamps: dict[str, str],
 ) -> Callable[[str], str]:
     """The virtual world calendar's timestamp source (A2, DEC-…88/…90):
     per event kind, the date ``calendar_start`` plus every happened
@@ -232,11 +240,9 @@ def _calendar_source(
     event at the end of its own span (落笔在跨度之末). The elapsed base
     is read once at step time from the durable chronicle
     (:func:`elc.world.package.story_days_of`), and each stamp advances
-    the closure's running total, so a multi-event step (the engine's
-    future shape) accumulates within the step exactly as it does across
-    steps. Each stamp is also recorded into ``stamps`` (kind → moment)
-    for the reveal enqueue's inheritance. Deterministic: the same
-    chronicle answers the same dates."""
+    the closure's running total, so a multi-event step (A2R DEC-…99's
+    beat run) accumulates within the step exactly as it does across
+    steps. Deterministic: the same chronicle answers the same dates."""
 
     start = date.fromisoformat(package.calendar_start)
     days_by_kind = {event.kind: event.days for event in package.event_pool}
@@ -247,8 +253,6 @@ def _calendar_source(
         # carries no span of its own — the closure answers the running
         # date without advancing the story.
         state["total"] += days_by_kind.get(kind, 0)
-        moment = (start + timedelta(days=state["total"])).isoformat()
-        stamps[kind] = moment
-        return moment
+        return (start + timedelta(days=state["total"])).isoformat()
 
     return _stamp

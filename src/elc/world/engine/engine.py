@@ -3,13 +3,15 @@ replayable, durable.
 
 What this cut claims, no more: the seven-step body's deterministic half
 (steps 2–5 of :mod:`elc.world.engine.steps`), one ``advance`` call per
-pause-or-stop, every cycle's draws seeded from ``(seed, cursor)`` — the
-same seed and the same cursor always draw the same selection, so a run
-resumed across restarts continues exactly the sequence a single sitting
-would have produced (M0.1 AD-6: 跨重启不重新撰骰 — the PRNG is never
-re-authored, it is re-played). The trace is a deterministic structural
-record: step names, the mature set, the selection, the chronicle entry
-and the actor decision, cycle by cycle.
+stop-or-ceiling (A2R, DEC-…99: a ``NOTICE`` event is a **beat, not a
+pause** — the loop continues past it; only a ``RESPONSE`` event or the
+``max_cycles`` ceiling ends the call), every cycle's draws seeded from
+``(seed, cursor)`` — the same seed and the same cursor always draw the
+same selection, so a run resumed across restarts continues exactly the
+sequence a single sitting would have produced (M0.1 AD-6: 跨重启不重新
+撰骰 — the PRNG is never re-authored, it is re-played). The trace is a
+deterministic structural record: step names, the mature set, the
+selection, the chronicle entry and the actor decision, cycle by cycle.
 
 What is deliberately absent: no rendering, no waiting, no letters, no
 reveal, no DIRECTION word, no mechanical calendar, no narration
@@ -70,17 +72,22 @@ __all__ = [
     "advance",
 ]
 
-#: The exit word when the call paused the run at its NOTICE checkpoint
-#: (the run stays ``AT_CHECKPOINT``; the user's light action resumes it).
+#: The exit word of the checkpoint outcome (the run stays
+#: ``AT_CHECKPOINT`` until something moves it). The engine itself no
+#: longer returns it (A2R, DEC-…99: a NOTICE event is a beat, not a
+#: pause); the word stays exported because the store's checkpoint face
+#: remains a legal mover for any future consumer.
 OUTCOME_CHECKPOINT = "CHECKPOINT"
 
 #: The exit word when the call reached the RESPONSE terminal stop (the
 #: run is ``TERMINAL``; the world waits for the next reply).
 OUTCOME_TERMINAL = "TERMINAL"
 
-#: The exit word 上限终止: the call burned ``max_cycles`` pure
-#: time-advance cycles without one mature event and failed closed to the
-#: terminal stop — the trace says LIMIT, never a fake RESPONSE moment.
+#: The exit word 上限终止: the call burned ``max_cycles`` cycles without
+#: one ``RESPONSE`` event and failed closed to the terminal stop — the
+#: trace says LIMIT, never a fake RESPONSE moment. (A2R, DEC-…99: the
+#: burned cycles may well carry NOTICE events — the ceiling is about
+#: never reaching a stop, not about an empty chronicle.)
 OUTCOME_LIMIT = "LIMIT"
 
 #: The chronicle ``source`` word engine-written events carry (a free
@@ -177,7 +184,7 @@ def advance(
     config: EngineConfig,
     now: str | Callable[[str], str],
 ) -> Result[RunTrace]:
-    """Advance one world run by cycles until its next pause or stop.
+    """Advance one world run by cycles until its stop or its ceiling.
 
     The loop per cycle — steps 2–5, in the spec's order:
 
@@ -201,20 +208,22 @@ def advance(
        RNG picks at most one actor of the world to write — or silence.
        The decision is recorded in the trace only; no letter is
        generated.
-    5. **Moment (the double exit)**: the selected event's moment ends
-       the call — ``NOTICE`` pauses the run at its checkpoint (the store
-       advances the cursor, the run stays ``AT_CHECKPOINT``; resume by
-       calling ``advance`` again with the re-read row — the sequence
-       continues from the same cursor, never re-rolled), ``RESPONSE``
-       terminates it (the store marks the run ``TERMINAL``).
+    5. **Moment (the exit)**: the selected event's moment decides — a
+       ``NOTICE`` event is a **beat, not a pause** (A2R, DEC-…99: the
+       cycle is traced and the loop continues immediately; the run row
+       is not moved), a ``RESPONSE`` event terminates the run (the store
+       marks it ``TERMINAL`` and the call returns). A pool whose NOTICE
+       events stay mature forever repeats them beat by beat until a
+       RESPONSE is drawn or the ceiling cuts in — the candidates are
+       never thinned by what already happened, so a pool's composition
+       is its own pacing.
 
     A cycle with no mature event is a pure time-advance cycle (steps 2–3
     only; the pool's conditions cannot change mid-call because nothing
-    else writes) — and since facts cannot change without an event, a
-    call whose first cycle finds nothing mature burns pure cycles to
-    ``config.max_cycles`` and then fails closed: the run is terminalized
-    and the trace's exit word is :data:`OUTCOME_LIMIT` (上限终止), never
-    an infinite loop and never a faked moment.
+    else writes) — and a call that never draws a RESPONSE burns its
+    cycles to ``config.max_cycles`` and then fails closed: the run is
+    terminalized and the trace's exit word is :data:`OUTCOME_LIMIT`
+    (上限终止), never an infinite loop and never a faked moment.
 
     Refusals: advancing a ``TERMINAL`` run is a ``VALIDATION_FAILED``
     (a finished run does not advance); the store's own refusals — a
@@ -292,10 +301,16 @@ def advance(
             return Err(written.error)
 
         # Step 5 — the moment: the selected event's exit word.
+        # A2R (DEC-…99): a NOTICE event is a **beat, not a pause** — the
+        # run keeps going (the next cycle starts immediately). The old
+        # behavior (checkpoint on NOTICE, wait for a UI「继续」click)
+        # was retired by the user's verdict: the concept is an internal
+        # rhythm mechanism with no product meaning when surfaced as a
+        # button. The checkpoint state machine stays in the store (any
+        # future consumer can still use it); the engine simply does not
+        # pause on NOTICE any more. Only a RESPONSE event or the cycle
+        # ceiling ends the run.
         if selected.moment == MomentKind.NOTICE:
-            stepped = store.checkpoint_run(run.run_id, moment)
-            if isinstance(stepped, Err):
-                return Err(stepped.error)
             cycles.append(
                 CycleTrace(
                     cursor=cursor,
@@ -308,15 +323,13 @@ def advance(
                     moment=MomentKind.NOTICE.value,
                 )
             )
-            return Ok(
-                RunTrace(
-                    run_id=run.run_id,
-                    world_id=run.world_id,
-                    seed=run.seed,
-                    cycles=tuple(cycles),
-                    outcome=OUTCOME_CHECKPOINT,
-                )
-            )
+            # The beat's cursor advances locally (the old code's store
+            # side went through ``checkpoint_run``, which is retired
+            # here): without it every later cycle in the call would
+            # re-derive the same event id and either conflict or
+            # idempotently rewrite the chronicle entry.
+            cursor += 1
+            continue
 
         terminalized = store.terminalize_run(run.run_id, moment)
         if isinstance(terminalized, Err):
@@ -343,9 +356,11 @@ def advance(
             )
         )
 
-    # The ceiling: max_cycles pure time-advance cycles, no mature event
-    # ever — fail closed to the terminal stop, the trace saying LIMIT
-    # (上限终止), the run never looping forever.
+    # The ceiling: max_cycles cycles without one RESPONSE event — fail
+    # closed to the terminal stop, the trace saying LIMIT (上限终止),
+    # the run never looping forever. The burned cycles may carry NOTICE
+    # beats (an always-mature pool keeps writing them); the ceiling is
+    # about never reaching a stop, not an empty chronicle.
     exhausted = store.terminalize_run(run.run_id, _moment_of(now, None))
     if isinstance(exhausted, Err):
         return Err(exhausted.error)

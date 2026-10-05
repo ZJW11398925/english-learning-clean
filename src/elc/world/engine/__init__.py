@@ -3,12 +3,14 @@ communication orchestration (W-1-3).
 
 **What this package claims** — and only this: deterministic run
 orchestration (the seven-step body's steps 2–5: time advance, event
-maturity, communication v1, the moment's double exit), replayable
+maturity, communication v1, the moment's exit), replayable
 sequencing (every cycle's draws seeded from ``(seed, cursor)`` — the
 same seed replays the same run; a resume continues it, never re-rolls
 it, M0.1 AD-6), durable run state (migration 0025's ``world_run`` row,
-advanced only through the store's run face), the double exit
-(``NOTICE`` checkpoints pause the run, ``RESPONSE`` terminates it), and
+advanced only through the store's run face), the run's exits (A2R,
+DEC-…99: a ``NOTICE`` event is a beat, not a pause — the loop continues
+past it; a ``RESPONSE`` event terminates the run, and the
+``max_cycles`` ceiling fails closed), and
 W-1-3's trigger orchestration (:mod:`elc.world.engine.orchestrate` —
 the winch and the light action as one callable, the reveal
 enqueue riding the same step in one short transaction).

@@ -15,12 +15,12 @@ with ``urllib`` over the loopback. The pinned groups:
    ``at_checkpoint`` bit read off the run row) and reveals atomically
    on the read; a conversation outside any world answers the honest
    404, not an empty inbox;
-3. **the continue endpoint** — ``POST /api/world/continue`` with no run
-   on the books is the 400 人话 (「世界不在等你点继续」), and at a
-   checkpoint it resumes the run and answers the refreshed inbox;
+3. **the continue endpoint, retired** — A2R (DEC-…99) removed
+   ``POST /api/world/continue`` with the button (the engine never
+   pauses mid-run): the route answers the plain 404, never a step;
 4. **the turn wiring** — a committed turn winds the world (the engine's
    first production caller end to end: the reply answers normally and
-   the inbox carries the step's note), and a world step that fails is
+   the inbox carries the step's notes), and a world step that fails is
    fail-soft (the reply is untouched; the sentence rides the additive
    ``world_step_note`` field).
 """
@@ -102,14 +102,15 @@ def test_the_inbox_answers_the_bound_world(tmp_path: Path) -> None:
     assert payload["world_id"] == "world-berrymoor"
 
 
-def test_continue_without_a_run_is_the_400_word(tmp_path: Path) -> None:
-    """「继续」 with no run on the books: the world is not waiting — the
-    400 carries the human sentence, never a silent step."""
+def test_the_continue_endpoint_is_retired(tmp_path: Path) -> None:
+    """A2R (DEC-…99): the 「继续」 endpoint is gone with its button — the
+    route answers the plain 404, never a step (there is no light action
+    left to refuse anything)."""
 
     with web_stack(tmp_path / "app.db") as stack:
         status, payload = stack.post("/api/world/continue", {})
-    assert status == 400
-    assert payload["error"] == "世界不在等你点继续。"
+    assert status == 404
+    assert payload == {"error": "not found"}
 
 
 def test_the_turn_winds_the_world_and_the_inbox_reveals(
@@ -117,8 +118,9 @@ def test_the_turn_winds_the_world_and_the_inbox_reveals(
 ) -> None:
     """The turn wiring end to end: the committed turn winds the world
     (the letter trigger), the reply answers normally with no step note,
-    and the inbox read reveals the step's note — Berrymoor's pool is
-    all-NOTICE, so the run sits at its checkpoint after the step."""
+    and the inbox read reveals the step's notes — one call's whole beat
+    run (A2R DEC-…99: eight events to the ceiling of the always-mature
+    ambient beats), the run at its stop, never at a checkpoint."""
 
     with web_stack(tmp_path / "app.db") as stack:
         status, turn = stack.post("/api/turn", {"text": CLEAN_TEXT})
@@ -127,37 +129,16 @@ def test_the_turn_winds_the_world_and_the_inbox_reveals(
         assert turn["world_step_note"] is None
         status, inbox = stack.get_json("/api/world/inbox")
     assert status == 200
-    assert len(inbox["items"]) >= 1
+    assert len(inbox["items"]) == 8
     # The read was the reveal: the notes answer revealed, each with its
-    # narration, its byline (a cast name or the world's own null) and
-    # the moment the event carries.
+    # narration, its byline (a cast name or the world's own 「世界」 for
+    # a silent cycle) and the moment the event carries.
     for note in inbox["items"]:
         assert note["status"] == "REVEALED"
         assert isinstance(note["narration"], str) and note["narration"]
-        assert note["actor_name"] in (None, "Nell Alder")
+        assert note["actor_name"] in ("世界", "Nell Alder")
         assert isinstance(note["moment"], str) and note["moment"]
-    assert inbox["at_checkpoint"] is True
-
-
-def test_continue_at_a_checkpoint_resumes_and_answers_the_inbox(
-    tmp_path: Path,
-) -> None:
-    """「继续」 at the checkpoint: the run resumes (the same run — the
-    cursor moves), and the answer is the refreshed inbox in one round
-    trip."""
-
-    app_db = tmp_path / "app.db"
-    with web_stack(app_db) as stack:
-        stack.post("/api/turn", {"text": CLEAN_TEXT})
-        status, payload = stack.post("/api/world/continue", {})
-    assert status == 200
-    assert isinstance(payload["items"], list)
-    assert payload["at_checkpoint"] is True
-    runs = _ro_rows(
-        app_db, "SELECT run_id, cursor FROM world_run"
-    )
-    assert len(runs) == 1
-    assert int(runs[0][1]) >= 2
+    assert inbox["at_checkpoint"] is False
 
 
 def test_the_world_step_failure_is_fail_soft(

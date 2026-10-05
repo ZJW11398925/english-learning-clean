@@ -659,10 +659,10 @@ def test_inbox_payload_shape_is_additive_over_w13(tmp_path: Path) -> None:
     for key in ("world_id", "items", "letters", "at_checkpoint"):
         assert key in inbox, key
     assert isinstance(inbox["letters"], list)
-    # One turn wound the world: Berrymoor's pool is all-NOTICE, so the
-    # run sits at its checkpoint (the w13 truth — the bit is the run's
-    # own state, never a guess).
-    assert inbox["at_checkpoint"] is True
+    # One turn wound the world: the run is at its stop, never at a
+    # checkpoint (the A2R truth — the engine never pauses mid-run; the
+    # bit is the run's own state, never a guess).
+    assert inbox["at_checkpoint"] is False
     for note in inbox["items"]:
         for key in (
             "id",

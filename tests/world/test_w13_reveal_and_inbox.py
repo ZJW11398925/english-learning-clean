@@ -13,8 +13,9 @@ each a section below:
    the index, the double ``'26'`` stamp and the RESTRICT posture;
 2. **run_step's dual triggers** — the letter winds the first run
    (seed = the world's run count, deterministic; the triggering turn
-   rides the row), the letter at a checkpoint *resumes* (the light
-   action's superset, never a second winch), continue refuses anything
+   rides the row), a letter after a finished run winds the next one
+   (the engine no longer pauses mid-run — A2R DEC-…99 — so the resume
+   superset has no reachable state left), continue refuses anything
    that is not a checkpoint, and an unknown trigger word is refused
    naming the vocabulary;
 3. **the reveal enqueue** — every event a step wrote leaves exactly one
@@ -32,7 +33,7 @@ each a section below:
    conversation (ALL_USER_DATA sweep passes end to end; the CONVERSATION
    scope carries its own binding), the world-owned half stays;
 9. **the webui instrument** — the page's inbox region is textContent-only
-   with the data-driven continue button;
+   with the continue interaction retired at the source (A2R DEC-…99);
 10. **the migration touch faces** — the census and the AOCI ledger
     record this cut (the N12/N13/N20 family obligation, pinned so the
     next touch cannot silently skip it).
@@ -275,19 +276,22 @@ def test_the_letter_winds_the_first_run(store: SqliteWorldStore) -> None:
     """The letter trigger on a world with no runs: the run is created
     with the world's run count as its seed (zero), the derived id, the
     triggering turn carried through, and the engine's advance answers
-    the checkpoint (the berrymoor-shaped pool's NOTICE exit)."""
+    the ceiling (A2R DEC-…99: the single-event NOTICE pool is always
+    mature, so every cycle writes the beat again until ``max_cycles``
+    cuts in — the run terminalizes with the LIMIT exit)."""
 
     _seed_world(store)
     stepped = run_step(
         store, WORLD, NOTICE_POOL, EngineConfig(), TRIGGER_LETTER, LATER, "turn-1"
     )
     assert isinstance(stepped, Ok), stepped.error
-    assert stepped.value.outcome == "CHECKPOINT"
+    assert stepped.value.outcome == "LIMIT"
+    assert len(stepped.value.cycles) == 8
     runs = store.list_runs(WORLD)
     assert [run.run_id for run in runs] == ["run-main-0000"]
     assert runs[0].seed == 0
     assert runs[0].trigger_turn_id == "turn-1"
-    assert runs[0].status.value == "AT_CHECKPOINT"
+    assert runs[0].status.value == "TERMINAL"
 
 
 def test_the_letter_seed_is_the_run_count(
@@ -332,26 +336,33 @@ def test_the_letter_seed_is_the_run_count(
     ]
 
 
-def test_the_letter_at_a_checkpoint_resumes(store: SqliteWorldStore) -> None:
-    """The letter is the light action's superset: with the world's run
-    paused at its checkpoint, a letter *resumes that run* — no second
-    run is wound (spec §4.2's 收口)."""
+def test_the_letter_after_a_finished_run_winds_the_next(
+    store: SqliteWorldStore,
+) -> None:
+    """A2R (DEC-…99): the engine never pauses mid-run, so the letter's
+    resume superset has no reachable state left — a letter onto a
+    finished world winds the **next** run (the second winch is the only
+    letter a finished world can get; nothing is re-rolled)."""
 
     _seed_world(store)
     first = run_step(
         store, WORLD, NOTICE_POOL, EngineConfig(), TRIGGER_LETTER, LATER, "t1"
     )
     assert isinstance(first, Ok)
+    assert first.value.outcome == "LIMIT"  # the single-event pool's ceiling
     second = run_step(
         store, WORLD, NOTICE_POOL, EngineConfig(), TRIGGER_LETTER, EVEN_LATER, "t2"
     )
     assert isinstance(second, Ok)
     runs = store.list_runs(WORLD)
-    assert len(runs) == 1
-    assert runs[0].trigger_turn_id == "t1"  # the original winch's turn
-    # Creation is cursor 0; the first letter's NOTICE pause leaves cursor
-    # 1; the resume's own event lands at cursor 1 and its pause leaves 2.
-    assert runs[0].cursor == 2
+    assert [(run.run_id, run.trigger_turn_id) for run in runs] == [
+        ("run-main-0000", "t1"),
+        ("run-main-0001", "t2"),
+    ]
+    # The second letter's events belong to the new run only.
+    assert {cycle.event_id.split(":")[0] for cycle in second.value.cycles} == {
+        "run-main-0001"
+    }
 
 
 def test_continue_refuses_off_a_checkpoint(store: SqliteWorldStore) -> None:
@@ -399,7 +410,9 @@ def test_each_event_leaves_exactly_one_pending_item(
 ) -> None:
     """One event the step wrote, one PENDING queue item: the id derives
     from the event, the byline is the world's own (no cast — actor_id
-    NULL), and nothing is revealed yet."""
+    NULL), and nothing is revealed yet. The single-event pool writes
+    eight beats in one step (the ceiling), so eight items — one per
+    event, id for id."""
 
     _seed_world(store)
     stepped = run_step(
@@ -409,32 +422,34 @@ def test_each_event_leaves_exactly_one_pending_item(
     rows = store._conn.execute(
         "SELECT item_id, world_id, source_event_id, actor_id, status,"
         " revealed_at, created_at FROM world_reveal_item"
+        " ORDER BY item_id ASC"
     ).fetchall()
-    assert len(rows) == 1
-    event_id = f"{stepped.value.run_id}:0"
-    assert (
-        str(rows[0][0]),
-        str(rows[0][1]),
-        str(rows[0][2]),
-        rows[0][3],
-        str(rows[0][4]),
-        rows[0][5],
-        str(rows[0][6]),
-    ) == (
-        f"{event_id}:reveal",
-        WORLD,
-        event_id,
-        None,
-        "PENDING",
-        None,
-        LATER,
-    )
+    assert len(rows) == len(stepped.value.cycles) == 8
+    for index, row in enumerate(rows):
+        event_id = f"{stepped.value.run_id}:{index}"
+        assert (
+            str(row[0]),
+            str(row[1]),
+            str(row[2]),
+            row[3],
+            str(row[4]),
+            row[5],
+            str(row[6]),
+        ) == (
+            f"{event_id}:reveal",
+            WORLD,
+            event_id,
+            None,
+            "PENDING",
+            None,
+            LATER,
+        )
 
 
 def test_the_item_signs_the_cast_actor_when_the_draw_chose_one(
     store: SqliteWorldStore, conn: sqlite3.Connection
 ) -> None:
-    """With a cast, the item's byline is the comms step's chosen
+    """With a cast, each item's byline is its own cycle's comms
     correspondent or the world's own narration — either way a real actor
     id or NULL, never a name the world does not know."""
 
@@ -445,17 +460,20 @@ def test_the_item_signs_the_cast_actor_when_the_draw_chose_one(
         store, WORLD, NOTICE_POOL, EngineConfig(), TRIGGER_LETTER, LATER, "t1"
     )
     assert isinstance(stepped, Ok)
-    trace_actors = [
-        cycle.actor for cycle in stepped.value.cycles if cycle.actor is not None
-    ]
+    trace_actors = {
+        str(cycle.event_id): cycle.actor
+        for cycle in stepped.value.cycles
+        if cycle.event_id is not None
+    }
     rows = store._conn.execute(
-        "SELECT actor_id FROM world_reveal_item"
+        "SELECT source_event_id, actor_id FROM world_reveal_item"
     ).fetchall()
-    assert len(rows) == 1
-    item_actor = None if rows[0][0] is None else str(rows[0][0])
-    assert item_actor == (trace_actors[0] if trace_actors else None)
-    if item_actor is not None:
-        assert item_actor == "actor-main-nell"
+    assert len(rows) == len(trace_actors) == 8
+    for source_event_id, actor_id in rows:
+        item_actor = None if actor_id is None else str(actor_id)
+        assert item_actor == trace_actors[str(source_event_id)]
+        if item_actor is not None:
+            assert item_actor == "actor-main-nell"
 
 
 def test_a_refused_step_enqueues_nothing(store: SqliteWorldStore) -> None:
@@ -535,29 +553,35 @@ def test_reveal_all_flips_the_pending_slice_and_reads_it_back(
 ) -> None:
     """The presentation trigger: one call flips the world's whole
     PENDING slice to REVEALED at one moment and reads the whole inbox
-    back — the item is PENDING before, REVEALED with the stamp after."""
+    back — every item is PENDING before, REVEALED with the stamp after
+    (the single-event pool's step leaves eight of them)."""
 
     _seed_world(store)
-    run_step(store, WORLD, NOTICE_POOL, EngineConfig(), TRIGGER_LETTER, LATER, "t1")
+    stepped = run_step(
+        store, WORLD, NOTICE_POOL, EngineConfig(), TRIGGER_LETTER, LATER, "t1"
+    )
+    assert isinstance(stepped, Ok)
     before = store.reveal_all(WORLD, EVEN_LATER)
     assert isinstance(before, Ok)
-    assert [item.status for item in before.value] == ["REVEALED"]
-    assert [item.revealed_at for item in before.value] == [EVEN_LATER]
+    assert len(before.value) == 8
+    assert {item.status for item in before.value} == {"REVEALED"}
+    assert {item.revealed_at for item in before.value} == {EVEN_LATER}
 
 
 def test_a_second_reveal_keeps_the_first_stamp(
     store: SqliteWorldStore,
 ) -> None:
     """历史接续: a second reveal does not re-stamp — the UPDATE matches
-    nothing, the read returns the same rows, ``revealed_at`` stays the
-    first reveal's moment."""
+    nothing, the read returns the same rows, every ``revealed_at`` stays
+    the first reveal's moment."""
 
     _seed_world(store)
     run_step(store, WORLD, NOTICE_POOL, EngineConfig(), TRIGGER_LETTER, LATER, "t1")
     store.reveal_all(WORLD, EVEN_LATER)
     again = store.reveal_all(WORLD, "2026-10-06T00:00:00+00:00")
     assert isinstance(again, Ok)
-    assert [item.revealed_at for item in again.value] == [EVEN_LATER]
+    assert len(again.value) == 8
+    assert {item.revealed_at for item in again.value} == {EVEN_LATER}
 
 
 def test_the_inbox_reads_ascending_with_history(
@@ -565,17 +589,27 @@ def test_the_inbox_reads_ascending_with_history(
 ) -> None:
     """Two steps' items read back in the durable order (created_at, then
     item_id), revealed history included — the inbox is the world's
-    whole ledger of what it owes you, not a transient unread pile."""
+    whole ledger of what it owes you, not a transient unread pile. The
+    second step is a letter onto the finished first run (A2R DEC-…99:
+    the light continue has no reachable state left)."""
 
     _seed_world(store)
     run_step(store, WORLD, NOTICE_POOL, EngineConfig(), TRIGGER_LETTER, LATER, "t1")
-    run_step(store, WORLD, NOTICE_POOL, EngineConfig(), TRIGGER_CONTINUE, EVEN_LATER)
+    run_step(
+        store, WORLD, NOTICE_POOL, EngineConfig(), TRIGGER_LETTER, EVEN_LATER, "t2"
+    )
     inbox = store.reveal_all(WORLD, "2026-10-05T23:00:00+00:00")
     assert isinstance(inbox, Ok)
-    assert [(item.item_id, item.created_at) for item in inbox.value] == [
-        ("run-main-0000:0:reveal", LATER),
-        ("run-main-0000:1:reveal", EVEN_LATER),
-    ]
+    assert len(inbox.value) == 16
+    # Durable order: the first run's eight items (LATER) before the
+    # second run's eight (EVEN_LATER); within a run, cursor order.
+    stamps = [item.created_at for item in inbox.value]
+    assert stamps == sorted(stamps)
+    assert [item.created_at for item in inbox.value[:8]] == [LATER] * 8
+    assert [item.created_at for item in inbox.value[8:]] == [EVEN_LATER] * 8
+    assert inbox.value[0].item_id == "run-main-0000:0:reveal"
+    assert inbox.value[7].item_id == "run-main-0000:7:reveal"
+    assert inbox.value[8].item_id == "run-main-0001:0:reveal"
     assert {item.status for item in inbox.value} == {"REVEALED"}
 
 
@@ -651,12 +685,13 @@ def test_all_user_data_sweeps_the_binding_and_keeps_the_world(
     assert counts["world_conversation"] == 0
     assert counts["world"] == 1
     assert counts["world_actor"] == 1
-    # Two events: the fixture's staged chronicle entry plus the step's
-    # own — both world-owned, both kept.
-    assert counts["world_event"] == 2
-    assert counts["world_state_fact"] == 1
+    # Ten events: the fixture's staged chronicle entry plus the step's
+    # own eight beats (the single-event pool's ceiling) — both
+    # world-owned, all kept.
+    assert counts["world_event"] == 9
+    assert counts["world_state_fact"] == 8
     assert counts["world_run"] == 1
-    assert counts["world_reveal_item"] == 1
+    assert counts["world_reveal_item"] == 8
 
 
 def test_the_conversation_scope_carries_its_own_binding(
@@ -693,14 +728,15 @@ def _page_source() -> str:
 
 
 def test_the_page_carries_the_world_inbox_instrument() -> None:
-    """DEC-…92's retirement, as strings the browser actually runs: the
-    resident inbox region is gone (no section, no bottom mount — the
-    world's only presentation is the inline story block in the letter
-    flow), the story block's own code paths render through textContent
-    (the XSS face — the family pin re-asserted), the continue button is
-    data-driven (the block carries ``at_checkpoint`` — the world's
-    state enables it, never a guess), and the load arm's item check
-    stays defensive."""
+    """DEC-…92's retirement, as strings the browser actually runs, plus
+    A2R's (DEC-…99): the resident inbox region is gone (no section, no
+    bottom mount — the world's only presentation is the inline story
+    block in the letter flow), the story block's own code paths render
+    through textContent (the XSS face — the family pin re-asserted), the
+    continue interaction is retired at the source (no ``at_checkpoint``
+    branch, no actions row, no continue fetch — the engine never pauses
+    mid-run, so the page has nothing to wait for), and the load arm's
+    item check stays defensive."""
 
     app = (REPO_ROOT / "src" / "elc" / "webui" / "app.js").read_text(
         encoding="utf-8"
@@ -708,21 +744,36 @@ def test_the_page_carries_the_world_inbox_instrument() -> None:
     assert "worldInboxSec" not in app
     assert 'insertAdjacentElement("afterend"' not in app
     assert "insertBefore(worldInboxSec" not in app
-    assert "event.at_checkpoint" in app
+    # The continue interaction, retired whole: no checkpoint branch, no
+    # actions row, no fetch, no dead import (A2R DEC-…99).
+    assert "event.at_checkpoint" not in app
+    assert "fetchWorldContinue" not in app
+    assert "world-story-actions" not in app
+    assert "世界没能继续" not in app
     assert "Array.isArray(data.items)" in app
     # The XSS face, family re-assertion: the page's text paths stay inert.
     page = _page_source()
     assert "textContent" in page
     assert ".innerHTML" not in page
+    # The style sheet carries no dead rule for the retired actions row.
+    css = (REPO_ROOT / "src" / "elc" / "webui" / "components.css").read_text(
+        encoding="utf-8"
+    )
+    assert "world-story-actions" not in css
+    # The transport module carries no retired endpoint call.
+    api = (REPO_ROOT / "src" / "elc" / "webui" / "api.js").read_text(
+        encoding="utf-8"
+    )
+    assert "world/continue" not in api
 
 
-def test_the_letter_refreshes_the_inbox_and_continue_failures_speak() -> None:
-    """W-1-3R's law carried into DEC-…92's shape: the turn no longer
+def test_the_turn_does_not_reread_the_inbox() -> None:
+    """DEC-…92's law, carried past A2R (DEC-…99): the turn no longer
     rereads the inbox (the streamed pre-step already revealed and the
     story frame already presented — a second read is a dead call), and
-    the continue button's failure arm still speaks the server's human
-    sentence (the 400 body's ``error`` word — postJson returns the
-    body, never a throw), the LOW-1 gap's wording kept on the block."""
+    the continue interaction's strings retired with the button (the
+    page's dead-text face stays empty — nothing lingers that no code
+    path can render)."""
 
     app = (REPO_ROOT / "src" / "elc" / "webui" / "app.js").read_text(
         encoding="utf-8"
@@ -733,9 +784,11 @@ def test_the_letter_refreshes_the_inbox_and_continue_failures_speak() -> None:
         "async function postTeachMe"
     )]
     assert "loadWorldInbox" not in turn_block
-    # The continue failure arm surfaces the server sentence.
-    assert 'typeof fresh.error === "string"' in app
-    assert "世界没能继续" in app
+    # The continue failure arm and its button text are gone with the
+    # interaction (A2R DEC-…99).
+    assert 'typeof fresh.error === "string"' not in app
+    assert "世界没能继续" not in app
+    assert '"Continue"' not in app
 
 
 # ---------------------------------------------------------------------------

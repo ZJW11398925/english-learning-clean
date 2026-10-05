@@ -7,9 +7,11 @@ final), the reply is typed at a fixed pace (到达与渲染解耦), and the
 world's time is the **virtual calendar** (DEC-…88, revised by DEC-…90:
 story-driven — the events' own spans summed on ``calendar_start``, never
 a letter count, never a wall clock). DEC-…92 retires the resident inbox
-region (世界呈现唯一形态 = 内联故事块; the 「继续」 button rides the
-story block's tail; the load arm renders only what it actually
-revealed). The slice VAL groups, each a section below:
+region (世界呈现唯一形态 = 内联故事块; the load arm renders only what it
+actually revealed), and A2R (DEC-…99) retires the 「继续」 interaction
+whole — the engine's NOTICE event is a beat, not a pause, so one letter
+plays the run's whole story and nothing waits mid-run. The slice VAL
+groups, each a section below:
 
 1. **the narrative order, end to end** — a live streamed turn answers
    one ``world`` frame (the story block's data) before the first delta
@@ -29,18 +31,17 @@ revealed). The slice VAL groups, each a section below:
    span**; runs accumulate and replay to the same dates; a legacy
    real-timestamp row renders **no** date at all (诚实退化); a
    ``run_step`` without a package keeps the caller's moment (the
-   engine-direct callers' unchanged shape); and the 「继续」 route
-   passes the package too — its event stamps the story day, never the
-   wall clock (M1);
+   engine-direct callers' unchanged shape);
 5. **current-run presentation** — the inbox shows only the latest
    run's notes; the letter-count grouping (「第 N 封信后的世界」) is
    retired in source; the quiet-day arm is pinned;
 6. **zero real time in the presentation; the resident region retired**
    — the world presentation faces' source carries no clock read, the
    story block stays inert text (textContent only), the resident inbox
-   region and its mount are gone at the source, the 「继续」 button
-   rides the story block data-driven, and the load arm renders only
-   what it actually revealed (``revealed_now``);
+   region and its mount are gone at the source, the 「继续」 interaction
+   is retired whole (A2R DEC-…99 — the engine never pauses, so no
+   button, no branch, no endpoint), and the load arm renders only what
+   it actually revealed (``revealed_now``);
 7. **the served calendar** — the shipped package drives the story day
    (the frame's day equals the event's own stamp; the full pool's spans
    land the story's last day on 2025-09-21).
@@ -164,7 +165,8 @@ def test_the_stream_tells_the_world_first(tmp_path: Path) -> None:
     story frame lands before the first generation increment, and the
     frame carries the story block's data (the world's name, its
     virtual-calendar day localized, the interface language, this run's
-    notes)."""
+    notes — A2R DEC-…99: one call's whole beat run, eight events to the
+    ceiling)."""
 
     endpoint = _FakeOpenAI()
     endpoint.start()
@@ -181,22 +183,15 @@ def test_the_stream_tells_the_world_first(tmp_path: Path) -> None:
             world = frames[0]
             assert world["world_name"] == "Berrymoor"
             assert world["ui_language"] == "zh"
-            # The frame's day is the event's own stamp, localized — the
-            # first event lands within the pool's first spans (0-2 days
-            # on top of 2025-09-14).
-            assert re.fullmatch(r"9月1[456]日 · Berrymoor", world[
-                "date_localized"
-            ]), world["date_localized"]
-            assert world["notes"], "the first step writes one note"
-            note = world["notes"][0]
-            assert note["occurred_at"] in (
-                "2025-09-14",
-                "2025-09-15",
-                "2025-09-16",
-            )
+            assert len(world["notes"]) == 8
+            # The frame's day is the story's current day — the run's own
+            # last event's stamp, localized (the calendar sums the whole
+            # happened story, not the first note's).
             assert world["date_localized"] == _localize_story_date(
-                note["occurred_at"], "zh", "Berrymoor"
+                world["notes"][-1]["occurred_at"], "zh", "Berrymoor"
             )
+            for note in world["notes"]:
+                assert note["occurred_at"].startswith("2025-09-")
     finally:
         endpoint.stop()
 
@@ -206,8 +201,9 @@ def test_the_streamed_turn_advances_the_world_exactly_once(
 ) -> None:
     """One streamed turn, one world advance: the pre-step runs the
     letter trigger and the turn itself skips its own wiring — one run
-    row, one event, one reveal (all revealed) after the stream; a
-    second stream adds exactly one more event (no double advance)."""
+    row, that run's whole beat set (eight events to the ceiling), zero
+    pending after the reveal; a second stream winds the next run and
+    adds exactly that run's events (no double advance)."""
 
     endpoint = _FakeOpenAI()
     endpoint.start()
@@ -224,17 +220,21 @@ def test_the_streamed_turn_advances_the_world_exactly_once(
                 "SELECT COUNT(*) FROM world_reveal_item"
                 " WHERE status = 'PENDING'",
             )[0][0]
-            assert (runs, events, pending) == (1, 1, 0)
+            assert (runs, events, pending) == (1, 8, 0)
             status, raw = _post(
                 stack.port, "/api/turn_stream", {"text": A1_TEXT}
             )
             assert status == 200
             frames = _sse_frames(raw)
             assert frames[0]["type"] == "world"
-            assert len(frames[0]["notes"]) == 1  # this run's note only
+            # This run's notes only (current-run presentation): the
+            # second run's own step — the settled facts of the first
+            # story widen the mature set, and its seed draws straight
+            # into a RESPONSE stop.
+            assert len(frames[0]["notes"]) == 1
             assert _ro_rows(
                 app_db, "SELECT COUNT(*) FROM world_event"
-            )[0][0] == 2
+            )[0][0] == 9
     finally:
         endpoint.stop()
 
@@ -352,8 +352,9 @@ def test_the_story_notes_are_already_revealed(tmp_path: Path) -> None:
 
 def test_the_blocking_turn_keeps_its_own_wiring(tmp_path: Path) -> None:
     """/api/turn is untouched by the narrative order: the world steps
-    after the commit, inside the turn (one event), and the reply's own
-    ``world_step_note`` answers ``None`` for the successful step."""
+    after the commit, inside the turn (its run's whole beat set — eight
+    events to the ceiling), and the reply's own ``world_step_note``
+    answers ``None`` for the successful step."""
 
     with web_stack(tmp_path / "app.db") as stack:
         status, turn = stack.post("/api/turn", {"text": CLEAN_TEXT})
@@ -362,7 +363,7 @@ def test_the_blocking_turn_keeps_its_own_wiring(tmp_path: Path) -> None:
         assert turn["world_step_note"] is None
         assert _ro_rows(
             tmp_path / "app.db", "SELECT COUNT(*) FROM world_event"
-        )[0][0] == 1
+        )[0][0] == 8
 
 
 # ---------------------------------------------------------------------------
@@ -375,7 +376,8 @@ def test_story_days_sum_happened_events(
 ) -> None:
     """The world's day is ``calendar_start`` plus the happened events'
     spans — zero events answer the start day itself, and the spans sum
-    in the package's kind mapping."""
+    over exactly the events the step wrote (read back from the step's
+    own trace, A2R DEC-…99: one call writes a whole beat run)."""
 
     package = _span_package()
     store.create_world(package.world_id, package.name, None, NOW)
@@ -391,13 +393,19 @@ def test_story_days_sum_happened_events(
         package=package,
     )
     assert isinstance(stepped, Ok)
-    # The engine picks one event per step; either span lands the day on
-    # its own end.
-    assert story_days_of(package, store, package.world_id) in (0, 3)
-    assert world_date_of(package, store, package.world_id) in (
-        BERRYMOOR_START,
-        "2025-09-17",
+    # The day is the sum of the spans the step actually wrote — read
+    # from the trace, the calendar never invents a span of its own.
+    spans = {event.kind: event.days for event in package.event_pool}
+    expected = sum(
+        spans[cycle.selected]
+        for cycle in stepped.value.cycles
+        if cycle.selected is not None
     )
+    assert len(stepped.value.cycles) == 8  # the ceiling's beat run
+    assert story_days_of(package, store, package.world_id) == expected
+    assert world_date_of(package, store, package.world_id) == (
+        date.fromisoformat(BERRYMOOR_START) + timedelta(days=expected)
+    ).isoformat()
     # A negative span is refused at the record shape itself (the loader
     # refuses it too; this is the direct-construction arm).
     with pytest.raises(ValueError):
@@ -433,14 +441,13 @@ def test_same_letter_count_different_story_different_day(
                 NOW,
                 package=package,
             )
-            # The one-event pool is always mature (empty conditions):
-            # the first letter winds a run, the second resumes it and
-            # writes again — two letters, two events, either way.
+            # The one-event pool is always mature: each letter winds a
+            # run (the previous one hit its ceiling) and writes a whole
+            # beat run — two letters, two runs, either way.
             assert isinstance(stepped, Ok)
-        assert len(store.list_runs(package.world_id)) <= 2
-    assert story_days_of(quiet, store, "world-quiet") < story_days_of(
-        long_story, store, "world-long"
-    )
+        assert len(store.list_runs(package.world_id)) == 2
+    assert story_days_of(quiet, store, "world-quiet") == 0
+    assert story_days_of(long_story, store, "world-long") == 80
     assert world_date_of(quiet, store, "world-quiet") != world_date_of(
         long_story, store, "world-long"
     )
@@ -449,9 +456,11 @@ def test_same_letter_count_different_story_different_day(
 def test_the_event_stamps_at_its_span_end(
     store: SqliteWorldStore,
 ) -> None:
-    """落笔在跨度之末: the step's event moment is ``calendar_start``
-    plus this event's own span (an empty history's first stamp); the
-    reveal item inherits the same moment."""
+    """落笔在跨度之末: the run's first event moment is ``calendar_start``
+    plus this event's own span (an empty history's first stamp), and
+    every later beat in the call accumulates on it (three days per
+    beat, beat after beat); the reveal item inherits its own event's
+    moment."""
 
     package = _span_package(
         spans=(("stretch", 3, "NOTICE"),),
@@ -467,24 +476,31 @@ def test_the_event_stamps_at_its_span_end(
         package=package,
     )
     assert isinstance(stepped, Ok)
-    row = store._conn.execute(  # noqa: SLF001 — the test's own read
-        "SELECT occurred_at FROM world_event"
-    ).fetchone()
-    assert row is not None
-    assert row[0] == "2025-09-17"
-    item = store._conn.execute(  # noqa: SLF001 — the test's own read
-        "SELECT created_at FROM world_reveal_item"
-    ).fetchone()
-    assert item is not None
-    assert item[0] == "2025-09-17"
+    rows = store._conn.execute(  # noqa: SLF001 — the test's own read
+        "SELECT occurred_at FROM world_event ORDER BY event_id ASC"
+    ).fetchall()
+    assert len(rows) == 8
+    stamps = [str(r[0]) for r in rows]
+    # The first beat lands at the end of its own span; each later beat
+    # rides three more days (the same span, accumulated).
+    assert stamps == [
+        (date.fromisoformat(BERRYMOOR_START) + timedelta(days=3 * (k + 1))).isoformat()
+        for k in range(8)
+    ]
+    items = store._conn.execute(  # noqa: SLF001 — the test's own read
+        "SELECT created_at FROM world_reveal_item ORDER BY item_id ASC"
+    ).fetchall()
+    assert len(items) == 8
+    assert [str(i[0]) for i in items] == stamps
 
 
 def test_runs_accumulate_and_replay_to_the_same_dates(
     tmp_path: Path,
 ) -> None:
-    """Two steps accumulate (the second stamp rides on the first's
-    span), and the same history replayed on a fresh store answers the
-    same dates — the calendar is a pure function of the chronicle."""
+    """Two steps accumulate (each stamp rides on every happened span
+    before it, including the beats of the same call), and the same
+    history replayed on a fresh store answers the same dates — the
+    calendar is a pure function of the chronicle."""
 
     def _play(path: Path) -> list[str]:
         db = sqlite3.connect(path)
@@ -495,7 +511,9 @@ def test_runs_accumulate_and_replay_to_the_same_dates(
             spans=(("first", 2, "NOTICE"), ("second", 1, "NOTICE"))
         )
         world_store.create_world(package.world_id, package.name, None, NOW)
-        stamps = []
+        spans = {event.kind: event.days for event in package.event_pool}
+        expected: list[str] = []
+        total = 0
         for _ in range(2):
             stepped = run_step(
                 world_store,
@@ -507,16 +525,25 @@ def test_runs_accumulate_and_replay_to_the_same_dates(
                 package=package,
             )
             assert isinstance(stepped, Ok)
-            rows = world_store._conn.execute(  # noqa: SLF001 — test read
-                "SELECT occurred_at FROM world_event ORDER BY event_id ASC"
-            ).fetchall()
-            stamps = [str(r[0]) for r in rows]
+            for cycle in stepped.value.cycles:
+                if cycle.selected is None:
+                    continue
+                total += spans[cycle.selected]
+                expected.append(
+                    (date.fromisoformat(BERRYMOOR_START) + timedelta(days=total))
+                    .isoformat()
+                )
+        rows = world_store._conn.execute(  # noqa: SLF001 — test read
+            "SELECT occurred_at FROM world_event ORDER BY event_id ASC"
+        ).fetchall()
+        stamps = [str(r[0]) for r in rows]
+        assert len(stamps) == len(expected) == 16
+        assert stamps == expected
         db.close()
         return stamps
 
     first = _play(tmp_path / "a.db")
     second = _play(tmp_path / "b.db")
-    assert first == ["2025-09-16", "2025-09-17"]
     assert first == second
 
 
@@ -601,54 +628,6 @@ def test_run_step_without_a_package_keeps_the_callers_moment(
     assert row[0] == NOW
 
 
-def test_the_continue_path_stamps_the_story_day(tmp_path: Path) -> None:
-    """M1 (the review's cut-fix): the 「继续」 route passes the package
-    too — the step's event stamps the **virtual calendar's** day (the
-    story's own next day), never the caller's wall clock. The run is
-    placed at its checkpoint deterministically, so the light action's
-    Ok path is the one under test."""
-
-    endpoint = _FakeOpenAI()
-    endpoint.start()
-    try:
-        with _openai_stack(tmp_path / "app.db", endpoint) as stack:
-            app_db = tmp_path / "app.db"
-            status, _ = _post(stack.port, "/api/turn", {"text": CLEAN_TEXT})
-            assert status == 200
-            before = _ro_rows(
-                app_db, "SELECT COUNT(*) FROM world_event"
-            )[0][0]
-            # Deterministic checkpoint: whatever the first step drew,
-            # the run now sits at its NOTICE stop.
-            writer = sqlite3.connect(app_db, timeout=10)
-            try:
-                writer.execute(
-                    "UPDATE world_run SET status = 'AT_CHECKPOINT',"
-                    " checkpoint_kind = 'NOTICE',"
-                    " state_version = state_version + 1"
-                    " WHERE world_id = 'world-berrymoor'"
-                )
-                writer.commit()
-            finally:
-                writer.close()
-            status, payload = stack.post("/api/world/continue", {})
-            assert status == 200
-            after = _ro_rows(
-                app_db,
-                "SELECT occurred_at FROM world_event"
-                " ORDER BY event_id DESC LIMIT 1",
-            )[0][0]
-            assert _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[
-                0
-            ][0] == before + 1
-            # The story's own next day (a 2025-09-… stamp), never the
-            # 2026 wall clock the caller passed.
-            assert after.startswith("2025-09-"), after
-            assert payload["at_checkpoint"] in (True, False)
-    finally:
-        endpoint.stop()
-
-
 def test_the_inbox_payload_counts_its_own_reveal(tmp_path: Path) -> None:
     """DEC-…92's data half: the inbox payload answers ``revealed_now``
     — the count of PENDING notes **this very read** flipped (counted
@@ -704,9 +683,10 @@ def test_the_inbox_payload_counts_its_own_reveal(tmp_path: Path) -> None:
 
 
 def test_the_streamed_frame_names_the_checkpoint(tmp_path: Path) -> None:
-    """DEC-…92: the streamed world frame carries ``at_checkpoint`` —
-    the story block's 「继续」 button rides it — and the frame's bit
-    matches the inbox's (one run row, one truth)."""
+    """The streamed world frame carries ``at_checkpoint`` and it answers
+    **False** on every reachable path (A2R DEC-…99: the engine never
+    pauses mid-run — the run is at its stop the moment the frame flies),
+    and the frame's bit matches the inbox's (one run row, one truth)."""
 
     endpoint = _FakeOpenAI()
     endpoint.start()
@@ -717,7 +697,7 @@ def test_the_streamed_frame_names_the_checkpoint(tmp_path: Path) -> None:
             )
             assert status == 200
             world = _sse_frames(raw)[0]
-            assert isinstance(world["at_checkpoint"], bool)
+            assert world["at_checkpoint"] is False
             status, inbox = stack.get_json("/api/world/inbox")
             assert status == 200
             assert inbox["at_checkpoint"] == world["at_checkpoint"]
@@ -731,34 +711,27 @@ def test_the_streamed_frame_names_the_checkpoint(tmp_path: Path) -> None:
 
 
 def test_the_inbox_shows_only_the_latest_run(tmp_path: Path) -> None:
-    """The inbox is current-run only: with a **finished first run**
-    (terminalized between the two letters), the second letter's step
-    starts a fresh run and the payload carries exactly that run's note
-    — the first run's note stays durable and out of sight (the world's
-    own log face is a later cut's)."""
+    """The inbox is current-run only: the first letter's run hits its
+    own ceiling (A2R DEC-…99), so the second letter winds a fresh run
+    and the payload carries exactly that run's notes — the first run's
+    notes stay durable and out of sight (the world's own log face is a
+    later cut's)."""
 
     endpoint = _FakeOpenAI()
     endpoint.start()
     try:
         with _openai_stack(tmp_path / "app.db", endpoint) as stack:
-            app_db = tmp_path / "app.db"
             _post(stack.port, "/api/turn_stream", {"text": A1_TEXT})
             status, inbox = stack.get_json("/api/world/inbox")
             assert status == 200
             first_ids = [str(note["id"]) for note in inbox["items"]]
-            assert len(first_ids) == 1
-            assert first_ids[0].startswith("run-berrymoor-0000:")
-            # Finish the first run, so the next letter winds a new one.
-            writer = sqlite3.connect(app_db, timeout=10)
-            try:
-                writer.execute(
-                    "UPDATE world_run SET status = 'TERMINAL',"
-                    " state_version = state_version + 1"
-                    " WHERE world_id = 'world-berrymoor'"
-                )
-                writer.commit()
-            finally:
-                writer.close()
+            assert len(first_ids) == 8
+            assert all(
+                item_id.startswith("run-berrymoor-0000:")
+                for item_id in first_ids
+            )
+            # The first run is already finished (its own ceiling), so
+            # the next letter winds a new one — no hand-rolled UPDATE.
             status, raw = _post(
                 stack.port, "/api/turn_stream", {"text": A1_TEXT}
             )
@@ -766,7 +739,9 @@ def test_the_inbox_shows_only_the_latest_run(tmp_path: Path) -> None:
             status, inbox = stack.get_json("/api/world/inbox")
             assert status == 200
             ids = [str(note["id"]) for note in inbox["items"]]
-            assert ids == ["run-berrymoor-0001:0:reveal"]
+            assert len(ids) == 1
+            assert ids[0].startswith("run-berrymoor-0001:")
+            assert ids[0].endswith(":0:reveal")
     finally:
         endpoint.stop()
 
@@ -812,31 +787,32 @@ def test_the_permanent_inbox_region_is_retired() -> None:
     assert "The world is quiet" not in app_source
 
 
-def test_the_continue_button_rides_the_story_block() -> None:
-    """DEC-…92: the 「继续」 button is the story block's tail, data-
-    driven by the world's own checkpoint state (the block carries
-    ``at_checkpoint``; the world waits ⇒ the button, never a guess);
-    the success arm renders the refreshed payload as the next story
-    block (one renderer, two transports), and the failure arm speaks
-    the server's human sentence."""
+def test_the_continue_button_is_retired_from_the_story_block() -> None:
+    """A2R (DEC-…99): the 「继续」 interaction is retired whole — the
+    story block carries no checkpoint branch, no actions row, no
+    continue fetch, and no dead button strings (the engine never pauses
+    mid-run, so the page has nothing to wait for); the inbox payload's
+    ``at_checkpoint`` bit stays (the run row's own state, read by the
+    same source as ever — false on every reachable path)."""
 
     app_source = (WEBUI / "app.js").read_text(encoding="utf-8")
     start = app_source.index("function renderWorldStory")
     end = app_source.index("\nasync function loadWorldInbox")
     story = app_source[start:end]
-    assert "event.at_checkpoint" in story
-    assert "fetchWorldContinue" in story
-    assert 'typeof fresh.error === "string"' in story
-    assert "T.fail" in story
-    assert "世界没能继续" in app_source
-    assert "withTransition: false" in story
-    # The streamed frame carries the same bit (the face reads it from
+    assert "event.at_checkpoint" not in story
+    assert "fetchWorldContinue" not in story
+    assert "world-story-actions" not in story
+    assert "世界没能继续" not in app_source
+    # The streamed frame still carries the bit (the face reads it from
     # the run row — the same source the inbox answers from).
     web_source = (REPO / "src" / "elc" / "web.py").read_text(
         encoding="utf-8"
     )
     assert '"at_checkpoint": world["at_checkpoint"]' in web_source
     assert 'latest_run.status.value == "AT_CHECKPOINT"' in web_source
+    # The endpoint behind the retired button is gone with it.
+    assert "world/continue" not in web_source
+    assert "def world_continue" not in web_source
 
 
 def test_the_load_arm_renders_only_unrevealed_notes() -> None:

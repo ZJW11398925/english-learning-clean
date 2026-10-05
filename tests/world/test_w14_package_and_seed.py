@@ -23,11 +23,14 @@ The slice VAL groups, each a section below:
    directory each fail the open (``WorldPackageError``), the lore seed
    posture;
 5. **engine E2E** — the real Berrymoor pool runs through the real
-   engine on a host-seeded world: the storm chain (``night_storm`` →
-   ``roof_repair`` → ``nell_thanks``) completes, facts settle, the
-   chronicle lands with the engine's source word, and a multi-seed scan
-   over fresh databases reaches both exits (NOTICE checkpoints and the
-   RESPONSE terminals) with both RESPONSE events reachable;
+   engine on a host-seeded world: seed 18 walks the storm chain
+   (``night_storm`` → ``roof_repair`` → ``nell_thanks``) inside one
+   call to its RESPONSE stop (A2R DEC-…99: beats never pause), facts
+   settle, the chronicle lands with the engine's source word, and a
+   multi-seed scan over fresh databases reaches both exits (the
+   RESPONSE terminals and the LIMIT ceilings — the always-mature
+   ambient beats keep a barren stretch honest) with the flats event
+   reachable;
 6. **the ledgers** — the surface census and the AOCI code ledger track
    the package face (the two books this cut is required to carry).
 """
@@ -47,7 +50,7 @@ from elc.platform.db.migrations import apply_migrations
 from elc.platform.types import Err
 from elc.world.engine.engine import (
     ENGINE_SOURCE,
-    OUTCOME_CHECKPOINT,
+    OUTCOME_LIMIT,
     OUTCOME_TERMINAL,
     advance,
 )
@@ -141,36 +144,26 @@ def _fresh_store(db_path: Path) -> SqliteWorldStore:
     return SqliteWorldStore(db, open_runtime_epoch(db))
 
 
-def _drive_to_end(
+def _drive_one_call(
     store: SqliteWorldStore,
     run_id: str,
     pool: tuple,
     seed: int,
 ) -> tuple[str, list[str], list[str]]:
-    """Advance one run through every NOTICE pause to its stop; the
-    caller's safety cap keeps a broken pool from hanging the suite (a
-    correct run always reaches a stop well inside it)."""
+    """Advance one run with a single ``advance`` call (A2R DEC-…99: the
+    engine walks beats and stops inside one call — nothing to resume);
+    the caller's safety cap is gone because there is no loop left to
+    hang."""
 
     run = store.create_run(run_id, "world-berrymoor", None, seed, NOW).value
     assert run is not None
     trace = advance(store, run, pool, EngineConfig(), NOW)
     assert isinstance(trace, object)
-    outcomes: list[str] = []
-    kinds: list[str] = []
-    calls = 0
-    while True:
-        assert not isinstance(trace, Err), trace.error.message
-        outcomes.append(trace.value.outcome)
-        kinds.extend(
-            cycle.selected for cycle in trace.value.cycles if cycle.selected
-        )
-        if trace.value.outcome != OUTCOME_CHECKPOINT:
-            return trace.value.outcome, outcomes, kinds
-        calls += 1
-        assert calls < 60, "the run never reached a stop"
-        resumed = store.get_run(run_id)
-        assert resumed is not None
-        trace = advance(store, resumed, pool, EngineConfig(), NOW)
+    assert not isinstance(trace, Err), trace.error.message
+    kinds = [
+        cycle.selected for cycle in trace.value.cycles if cycle.selected
+    ]
+    return trace.value.outcome, [trace.value.outcome], kinds
 
 
 # ---------------------------------------------------------------------------
@@ -435,18 +428,21 @@ def test_engine_runs_the_real_berrymoor_pool_end_to_end(
     tmp_path: Path,
 ) -> None:
     """The host-seeded world runs the shipped pool through the real
-    engine: seed 0 walks the whole storm chain to its RESPONSE stop,
-    the effects settle into the projection, and the chronicle carries
-    the engine's own source word."""
+    engine: seed 18 walks the whole storm chain inside one call — the
+    two NOTICE beats, then the RESPONSE stop — the effects settle into
+    the projection, and the chronicle carries the engine's own source
+    word. The chain is the pool's own pacing: its conditions mature as
+    the earlier beats settle, and the seed draws each link in order."""
 
     host = open_host(tmp_path / "app.db", provider=ScriptedPersonaProvider())
     try:
         pool = load_world_package(PACKAGE_PATH).value.to_event_pool()
-        outcome, _outcomes, kinds = _drive_to_end(
-            host.world_store, "run-e2e", pool, seed=0
+        outcome, _outcomes, kinds = _drive_one_call(
+            host.world_store, "run-e2e", pool, seed=18
         )
         assert outcome == OUTCOME_TERMINAL
-        assert {"night_storm", "roof_repair", "nell_thanks"} <= set(kinds)
+        # The storm chain, in order, inside the one call.
+        assert kinds[:3] == ["night_storm", "roof_repair", "nell_thanks"]
         facts = {
             (fact.canonical_key, fact.statement)
             for fact in host.world_store.current_facts("world-berrymoor")
@@ -468,36 +464,32 @@ def test_engine_runs_the_real_berrymoor_pool_end_to_end(
         host.close()
 
 
-def test_seed_scan_reaches_both_exits_and_the_storm_chain(
+def test_seed_scan_reaches_both_exits_and_the_flats(
     tmp_path: Path,
 ) -> None:
     """Multi-seed scan over fresh databases (a run's dice are per-run;
     the world's facts are per-world, so each seed gets its own world):
-    every run terminates, NOTICE checkpoints and RESPONSE terminals both
-    occur, and both RESPONSE events are seed-reachable — the storm
-    chain end to end, and Old Tam at the flats."""
+    every run reaches an exit inside its own single call — RESPONSE
+    terminals and LIMIT ceilings both occur (A2R DEC-…99: the
+    always-mature ambient beats keep drawing until the ceiling when no
+    RESPONSE comes) — and the flats event is seed-reachable. The storm
+    chain's reachability is the E2E's pin above."""
 
     pool = load_world_package(PACKAGE_PATH).value.to_event_pool()
     all_outcomes: set[str] = set()
-    storm_chain_done = False
     tam_reached = False
     for seed in range(16):
         store = _fresh_store(tmp_path / f"scan-{seed}.db")
         ensure_builtin_worlds(
             store, persona_exists=lambda persona_id: True
         )
-        outcome, _outcomes, kinds = _drive_to_end(
+        outcome, _outcomes, kinds = _drive_one_call(
             store, f"run-{seed}", pool, seed=seed
         )
-        assert outcome == OUTCOME_TERMINAL
-        all_outcomes.update(_outcomes)
-        storm_chain_done = storm_chain_done or (
-            {"night_storm", "roof_repair", "nell_thanks"} <= set(kinds)
-        )
+        assert outcome in (OUTCOME_TERMINAL, OUTCOME_LIMIT)
+        all_outcomes.add(outcome)
         tam_reached = tam_reached or "tam_at_the_flats" in kinds
-    assert OUTCOME_CHECKPOINT in all_outcomes
-    assert OUTCOME_TERMINAL in all_outcomes
-    assert storm_chain_done
+    assert all_outcomes == {OUTCOME_TERMINAL, OUTCOME_LIMIT}
     assert tam_reached
 
 
