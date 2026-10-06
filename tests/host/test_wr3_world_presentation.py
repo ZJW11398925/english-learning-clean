@@ -10,12 +10,14 @@ and the page presents what it left behind. The pin groups:
    calibration constant with its Revisit note); a new letter clears the
    old timer first; the turn body itself never awaits an inbox read
    (the reply is the page's substance);
-2. **the retirements** — the transition sentence
-   (「这时，她收到了你的来信。」—— the world-answers-the-letter
-   paradigm's copy) and the ``onWorld`` frame path (the third
-   ``fetchTurnStream`` parameter and the ``{"type": "world"}`` parser
-   branch) are **pinned gone**: the frame has had no producer since
-   WR-2, and the sentence's meaning died with DEC-…58's two-layer law;
+2. **the retirements, recut by WR-5** — the ``onWorld`` frame path
+   (the third ``fetchTurnStream`` parameter and the
+   ``{"type": "world"}`` parser branch) stays **pinned gone** (no
+   producer since WR-2); the transition sentence, retired by wr-3, is
+   **restored** by WR-5 (DEC-OPI-8a4f980b…7: the chronicle's own
+   record of a world-internal letter arriving — a presentation seam,
+   not the world reacting; the block lands **before the reply** with
+   the sentence at its tail, and the renderer never scrolls);
 3. **the fallback bit, recut** (the server's two-face fix) — an event
    whose source is ``world_narrator`` passes its stored narration
    through verbatim with ``fallback: False`` (the narrator already

@@ -3835,7 +3835,8 @@ async function postTurn(text) {
   // WR-2/WR-3（DEC-…49/…63）：帧序 delta＊ → final——世界步在服务端
   // final 之后才跑（模型生成不堵流），delta 进打字机缓冲定速出字
   // （到达与渲染解耦），final 的余量排空后 finalize，随后延时揭示臂
-  // 把世界的故事块接在回信之后（scheduleWorldReveal）。
+  // 把世界的故事块插在回信之前（scheduleWorldReveal(replyEl)——WR-5
+  // 织入序：信 → 世界块 → 回信）。
   let data = null;
   let typing = null;
   try {
