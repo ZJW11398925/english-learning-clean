@@ -70,8 +70,9 @@ WEBUI = SRC / "webui"
 #: per delta — the same text the scripted stacks answer with).
 A1_TEXT = "The meeting starts at nine."
 #: WR-6 世界先行：假端点对叙事者拨号（prompt 含世界叙述者的开场句）
-#: 答以 beats JSON——一具端点同时供回信面与叙事面，流序钉得以在真
-#: HTTP 形上观察 world → delta＊ → final。
+#: 答以 beats JSON——一具端点同时供回信面与叙事面；wr-7 起叙事者的
+#: 拨号也走流式（beats 切增量吐出），流序钉得以在真 HTTP 形上观察
+#: world_delta＊ → world → delta＊ → final。
 NARRATOR_MARK = "You are the narrator of a small fictional world"
 NARRATOR_BEATS = json.dumps(
     {"beats": [{"kind": "fake-tide", "narration": "The tide turned.", "days": 1}]}
@@ -419,22 +420,46 @@ class _FakeOpenAI:
                 is_narrator = NARRATOR_MARK in prose
                 self.send_response(200)
                 if body.get("stream") is True:
-                    gate = outer._gate
-                    outer._gate = None
                     self.send_header("Content-Type", "text/event-stream")
                     self.end_headers()
-                    for index, character in enumerate(REPLY):
-                        frame = json.dumps(
-                            {"choices": [{"delta": {"content": character}}]}
-                        )
-                        self.wfile.write(
-                            b"data: " + frame.encode("utf-8") + b"\n\n"
-                        )
-                        self.wfile.flush()
-                        if index == 0:
-                            outer.first_chunk_flushed.set()
-                            if gate is not None:
-                                gate.wait(timeout=60)
+                    if is_narrator:
+                        # wr-7（DEC-OPI-c73dbff3…4）：叙事者的流式拨号
+                        # ——beats JSON 切增量逐段吐出（切片穿过转义与
+                        # 键名边界），流序钉得以在真 HTTP 形上观察
+                        # world_delta＊ → world → delta＊ → final。
+                        for cut in range(0, len(NARRATOR_BEATS), 7):
+                            frame = json.dumps(
+                                {
+                                    "choices": [
+                                        {
+                                            "delta": {
+                                                "content": NARRATOR_BEATS[
+                                                    cut : cut + 7
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            )
+                            self.wfile.write(
+                                b"data: " + frame.encode("utf-8") + b"\n\n"
+                            )
+                            self.wfile.flush()
+                    else:
+                        gate = outer._gate
+                        outer._gate = None
+                        for index, character in enumerate(REPLY):
+                            frame = json.dumps(
+                                {"choices": [{"delta": {"content": character}}]}
+                            )
+                            self.wfile.write(
+                                b"data: " + frame.encode("utf-8") + b"\n\n"
+                            )
+                            self.wfile.flush()
+                            if index == 0:
+                                outer.first_chunk_flushed.set()
+                                if gate is not None:
+                                    gate.wait(timeout=60)
                     self.wfile.write(b"data: [DONE]\n\n")
                     self.wfile.flush()
                 else:
@@ -501,21 +526,32 @@ def test_stream_endpoint_answers_world_then_deltas_then_one_final_equal_to_turn(
             assert status == 200
             frames = _sse_frames(raw)
             worlds = [f for f in frames if f["type"] == "world"]
+            world_deltas = [f for f in frames if f["type"] == "world_delta"]
             deltas = [f for f in frames if f["type"] == "delta"]
             finals = [f for f in frames if f["type"] == "final"]
-            # WR-6 (DEC-OPI-8a4f980b…13): the canonical order is back —
-            # **world → delta＊ → final** — the world narrates first and
-            # her reply's deltas stream after it (the letter never shows
-            # before the world's events; spec §4.2's own order).
+            # WR-6 (DEC-OPI-8a4f980b…13) + wr-7: the canonical order is
+            # **world_delta＊ → world → delta＊ → final** — the world
+            # narrates first (its narration pieces streaming as they
+            # decode), the whole frame settles them, and her reply's
+            # deltas stream after it (the letter never shows before the
+            # world's events; spec §4.2's own order).
             assert len(worlds) == 1
             assert worlds[0]["notes"][0]["narration"] == "The tide turned."
+            assert len(world_deltas) > 0
+            joined = "".join(
+                f["text"] for f in world_deltas if f["index"] == 0
+            )
+            assert joined == "The tide turned."
             assert len(finals) == 1
             final = finals[0]
-            # The event order is the contract: the world frame first, the
-            # deltas between, the final last.
-            assert frames[0] is worlds[0]
-            assert frames[-1] is final
-            assert frames[1]["type"] == "delta"
+            # The event order is the contract: the narration pieces
+            # first, the whole frame, the reply's deltas, the final last.
+            assert [f["type"] for f in frames] == (
+                ["world_delta"] * len(world_deltas)
+                + ["world"]
+                + ["delta"] * len(REPLY)
+                + ["final"]
+            )
             # The streaming was real: one delta per character of the reply.
             assert [f["text"] for f in deltas] == list(REPLY)
             assert "".join(f["text"] for f in deltas) == final["reply"]
@@ -542,10 +578,10 @@ def test_stream_endpoint_answers_world_then_deltas_then_one_final_equal_to_turn(
                 "usage",
             ):
                 assert final[key] == blocking[key], key
-            # WR-6 世界先行：第一拨是叙事者的世界步（阻塞、无 stream
-            # 标记），第二拨才是回信的流式生成——顺序即正典（世界先
-            # 讲，回信后到）。
-            assert endpoint.received[0]["stream"] is None
+            # WR-6 世界先行 + wr-7：第一拨是叙事者的世界步（现在也走
+            # 流式——叙述增量即出），第二拨才是回信的流式生成——顺序
+            # 即正典（世界先讲，回信后到）。
+            assert endpoint.received[0]["stream"] is True
             assert endpoint.received[1]["stream"] is True
             assert all(
                 call["authorization"] == f"Bearer {SENTINEL_KEY}"
@@ -650,12 +686,17 @@ def test_a_failed_bridge_injection_degrades_to_one_final_with_the_assembly_intac
             assert host.coordinator.replace_persona_provider == original
             assert status == 200
             frames = _sse_frames(raw)
-            # WR-2 (DEC-OPI-5fc42174…49): the pre-step that used to run
-            # before the bridge is retired, so the degradation answer is
-            # exactly the one failure-shaped final (no deltas, no world
-            # frame).
-            assert [f["type"] for f in frames] == ["final"]
+            # WR-2 (DEC-OPI-5fc42174…49) + wr-7: the world step runs
+            # before the proxy install, so its streamed narration still
+            # reaches the page (pieces, then the whole frame) even when
+            # the bridge injection then fails — the degradation answer
+            # is the world half plus the one failure-shaped final.
+            prefix = [f["type"] for f in frames[:-1]]
+            assert prefix[0] == "world_delta"
+            assert prefix[-1] == "world"
+            assert set(prefix) == {"world_delta", "world"}
             final = frames[-1]
+            assert final["type"] == "final"
             assert final["reply"] is None
             assert final["turn_status"] is None
             assert "injection refused" in str(final["failure_reason"])
@@ -746,9 +787,14 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     # page's delayed reveal reads it) — the wrapper is two-parameter.
     # WR-6: the wrapper is three-parameter again — the world frame's own
     # handler rides the same defensive parser (world → delta＊ → final).
-    assert "export async function fetchTurnStream(text, onDelta, onWorld) {" in (
-        api_source
+    # wr-7: the wrapper is five-parameter — the narration pieces and the
+    # honest failure handle ride the same defensive parser
+    # (world_delta＊ → world → delta＊ → final).
+    assert (
+        "export async function fetchTurnStream(text, onDelta, onWorld,"
+        in api_source
     )
+    assert "onWorldDelta, onWorldFailed) {" in api_source
     assert "res.body.getReader()" in api_source
     assert "new TextDecoder()" in api_source
     assert 'startsWith("data: ")' in api_source
@@ -759,6 +805,9 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     # WR-6: the world frame's parser branch is back (it has a producer
     # again — the world-first pre-reply step).
     assert 'event && event.type === "world") {' in api_source
+    # wr-7: the narration-piece and failure branches.
+    assert 'event.type === "world_delta"' in api_source
+    assert 'event.type === "world_failed"' in api_source
     assert 'event.type === "final"' in api_source
 
     postturn = _postturn_slice(app_source)

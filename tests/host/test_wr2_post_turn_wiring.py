@@ -261,9 +261,10 @@ def test_the_stream_runs_the_world_before_the_reply(
 def test_the_stream_frame_order_is_world_then_deltas_then_final(
     tmp_path: Path,
 ) -> None:
-    """WR-6：流式帧序 **world → delta＊ → final**——世界帧先于首个
-    delta（世界运转在前，她的回信是运转的落点——spec §4.2 的正典顺
-    序，用户的判词：信不得先于世界事件显示）。"""
+    """WR-6：流式帧序世界半场先于回信（世界运转在前，她的回信是运转
+    的落点——spec §4.2 的正典顺序，用户的判词：信不得先于世界事件显
+    示）；wr-7：世界半场自身也流式化——恰序 **world_delta＊ → world →
+    delta＊ → final**。"""
 
     endpoint = _FakeOpenAI()
     endpoint.start()
@@ -274,12 +275,13 @@ def test_the_stream_frame_order_is_world_then_deltas_then_final(
             )
             assert status == 200
             frames = _sse_frames(raw)
-            assert frames[0]["type"] == "world"
-            assert frames[1]["type"] == "delta"
-            assert frames[-1]["type"] == "final"
-            assert [f["type"] for f in frames][1:-1] == (
-                ["delta"] * len(REPLY)
-            )
+            types = [f["type"] for f in frames]
+            world_pos = types.index("world")
+            assert types[0] == "world_delta"
+            assert all(t == "world_delta" for t in types[:world_pos])
+            assert types[world_pos + 1] == "delta"
+            assert types[-1] == "final"
+            assert types[world_pos + 1 : -1] == ["delta"] * len(REPLY)
     finally:
         endpoint.stop()
 

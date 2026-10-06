@@ -262,6 +262,7 @@ def run_generated_step(
     now: str,
     *,
     ui_language: str = "zh",
+    on_narration_increment: Callable[[int, str], None] | None = None,
 ) -> Result[tuple[WorldEvent, ...]]:
     """The production world step (WR-2, DEC-OPI-5fc42174…49; WR-4
     correction …58): the narrator's beats out, the chronicle and the
@@ -276,8 +277,10 @@ def run_generated_step(
     the user's influence on the world belongs to the direction channel
     (走向, M2), never this face.
 
-    The order: the narrator first (compose, one blocking provider call,
-    strict parse), the winch second — a letter that narrates nothing
+    The order: the narrator first (compose, one provider call —
+    blocking, or streamed through the provider's optional face when
+    ``on_narration_increment`` rides and the face exists, wr-7 — strict
+    parse), the winch second — a letter that narrates nothing
     winds no run row (an empty run is litter, not history). The winch
     arm is :func:`run_step`'s letter arm: the latest run absent or
     ``TERMINAL`` winds a fresh one (seed = the world's run count, the
@@ -327,6 +330,14 @@ def run_generated_step(
     ``ui_language`` rides to the narrator (the narration language law,
     W-L's two words). ``now`` is the caller's wall moment for the run
     row's bookkeeping stamps — it never reaches a world event.
+
+    ``on_narration_increment`` (wr-7, optional): the narration
+    **preview** callback — ``(beat_index, text)`` pieces as the
+    streamed narrator decodes them, before the strict parse rules on
+    the whole. Pure presentation: the durable half below reads none of
+    it, a refusal after shown pieces retracts nothing (the caller owes
+    the honesty arm), and the default ``None`` runs the step byte for
+    byte as before this parameter existed.
     """
 
     if provider is None:
@@ -348,6 +359,7 @@ def run_generated_step(
             for event in chronicle.value[-RECENT_CHRONICLE_LIMIT:]
         ),
         ui_language=ui_language,
+        on_increment=on_narration_increment,
     )
     if isinstance(generated, Err):
         if generated.error.message == REASON_NOT_CONFIGURED:

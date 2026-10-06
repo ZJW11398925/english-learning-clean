@@ -126,20 +126,26 @@ def test_the_transition_sentence_is_restored() -> None:
 
 
 def test_the_onworld_frame_path_is_restored() -> None:
-    """WR-6：onWorld 帧路径恢复——api.js 的 fetchTurnStream 三参（世界
-    帧解析分支回来），app.js 的调用点三参（onWorld 渲染回调）。帧有
-    生产者了（世界先行步）。"""
+    """WR-6：onWorld 帧路径恢复；wr-7：fetchTurnStream 五参——
+    world_delta（叙述增量）/world_failed（拒收诚实句柄）分支回来，
+    app.js 的调用点把世界帧交给 settleWorld（权威渲染替换流式块）。
+    帧有生产者了（世界先行步 + 叙述流式增量）。"""
 
     api = _text("api.js")
     assert (
-        "export async function fetchTurnStream(text, onDelta, onWorld)"
+        "export async function fetchTurnStream(text, onDelta, onWorld,"
         in api
     )
+    assert "onWorldDelta, onWorldFailed) {" in api
     assert 'event.type === "world"' in api
+    assert 'event.type === "world_delta"' in api
+    assert 'event.type === "world_failed"' in api
     app = _text("app.js")
     call = app[app.index("data = await fetchTurnStream(") :]
-    call = call[: call.index(");")]
-    assert "renderWorldStory" in call
+    call = call[: call.index("\n    );")]
+    assert "settleWorld(event)" in call
+    assert "worldStream.push(piece, index)" in call
+    assert "failWorld()" in call
 
 
 # ---------------------------------------------------------------------------

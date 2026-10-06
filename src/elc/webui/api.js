@@ -39,16 +39,22 @@ export function fetchTurn(text) {
   return postJson("/api/turn", { text: text });
 }
 
-/** 流式一轮（A1；WR-6 世界先行）：POST /api/turn_stream——事件序
- *  world → delta＊ → final。首个 {"type":"world"} 帧当场回调
- *  onWorld(event)（世界先讲：日期行+叙述+过渡句，回信的 delta 之后才
- *  到——DEC-OPI-8a4f980b…13 恢复 spec §4.2 的正典顺序）；每个 delta
- *  当场回调 onDelta(text)，流走完以 final 载荷（旧 /api/turn 的全量
- *  形状）兑现。返回 null = 对端没按 SSE 回答（调用方回退旧 POST）；
- *  抛错 = 请求已经开始后中断（err.started 区分：流真开始过才为
- *  true——调用方对 started 的中断不重发信，拉历史对齐）。解析是防
- *  御性的：只认「data: 」行，坏行/坏 JSON 一律跳过、解析本身永不抛。 */
-export async function fetchTurnStream(text, onDelta, onWorld) {
+/** 流式一轮（A1；WR-6 世界先行；wr-7 世界叙述流式显现）：POST
+ *  /api/turn_stream——事件序 world_delta＊ → world → delta＊ → final。
+ *  首个 {"type":"world"} 帧当场回调 onWorld(event)（世界先讲：日期行+
+ *  叙述+过渡句，回信的 delta 之后才到——DEC-OPI-8a4f980b…13 恢复
+ *  spec §4.2 的正典顺序）；wr-7：叙述增量帧 {"type":"world_delta",
+ *  "index":i,"text":…} 当场回调 onWorldDelta(text, index)（世界打字机
+ *  的原料，index=beat 序——定版前的预览），{"type":"world_failed"} 帧
+ *  回调 onWorldFailed()（增量已显示而整批未留住的诚实句柄）；每个
+ *  delta 当场回调 onDelta(text)，流走完以 final 载荷（旧 /api/turn 的
+ *  全量形状）兑现。返回 null = 对端没按 SSE 回答（调用方回退旧
+ *  POST）；抛错 = 请求已经开始后中断（err.started 区分：流真开始过
+ *  才为 true——调用方对 started 的中断不重发信，拉历史对齐）。解析
+ *  是防御性的：只认「data: 」行，坏行/坏 JSON 一律跳过、解析本身
+ *  永不抛。 */
+export async function fetchTurnStream(text, onDelta, onWorld,
+                                      onWorldDelta, onWorldFailed) {
   let res;
   try {
     res = await fetch("/api/turn_stream", {
@@ -82,6 +88,11 @@ export async function fetchTurnStream(text, onDelta, onWorld) {
         try { event = JSON.parse(line.slice(6)); } catch { continue; }
         if (event && event.type === "world") {
           if (onWorld) onWorld(event);
+        } else if (event && event.type === "world_delta"
+            && typeof event.text === "string") {
+          if (onWorldDelta) onWorldDelta(event.text, event.index);
+        } else if (event && event.type === "world_failed") {
+          if (onWorldFailed) onWorldFailed();
         } else if (event && event.type === "delta"
             && typeof event.text === "string") {
           onDelta(event.text);

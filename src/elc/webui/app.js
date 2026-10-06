@@ -2953,11 +2953,19 @@ const WORLD_INBOX_TEXT = {
     fallback: "（这张便条写在世界学会中文之前——示以原文。）",
     quietDay: "安静的一天，没什么特殊的事。",
     thenLetter: "这时，她收到了你的来信。",
+    // wr-7：世界流式呈现的两句 chrome——发信即现的占位行（首个
+    // world_delta/world/delta 到达即让位）与整批未留住的失败注
+    // （已显示的那段没记进编年史——渲染先行、持久殿后、拒收不撒谎）。
+    worldRunning: "世界运转中…",
+    worldFailed: "世界的这段没能留住——这一轮没记进编年史。",
   },
   en: {
     fallback: "(This note predates the world's Chinese — shown as written.)",
     quietDay: "A quiet day, nothing out of the ordinary.",
     thenLetter: "Then, your letter arrives.",
+    worldRunning: "The world is turning…",
+    worldFailed: "This passage of the world could not be kept —"
+      + " it was not written into the chronicle.",
   },
 };
 
@@ -3169,6 +3177,86 @@ function startTypewriter() {
     },
     get shownLength() {
       return state.shown.length;
+    },
+  };
+}
+
+// ── wr-7（DEC-OPI-c73dbff3…4）：世界叙述打字机─────────────────────
+// 与回信节奏器同制、各自缓冲各自定速：world_delta 的解码增量入独立
+// 缓冲，渲染循环按 TYPING_CPS 定速出字；index（beat 序）变化开新段，
+// 段序即到达序、排空即进下一段（无重排、无爆发）。流式块只长叙述
+// ——**日期行不在此臂**（date 需 days 累计，流内无日期，不得提前发
+// 明；整帧定版时才由 date_localized 补齐块首）。世界整帧到达 = 定版
+// （权威 renderWorldStory 渲染替换流式块）；world_failed = 块上人话
+// 失败注（已显示的那段没记进编年史——渲染先行、持久殿后、拒收不撒
+// 谎）。文字一律 textContent（XSS 纪律——增量文本 untrusted）。
+// Revisit（裁决 R9）：35 字/秒对世界叙述的适用性——世界节奏或应更
+// 慢，dogfood 信号再调不预调（a calibration replaces this constant）。
+function startWorldStream() {
+  const state = {
+    wrap: null,
+    paras: new Map(),   // beat index -> { el, buffer }
+    order: [],          // beat 到达序
+    active: 0,          // 正在打字的段
+    raf: 0,
+    last: 0,
+    done: false,
+  };
+  const ensureWrap = () => {
+    if (state.wrap === null) {
+      state.wrap = document.createElement("div");
+      state.wrap.className = "world-story";
+      messages.appendChild(state.wrap);
+    }
+    return state.wrap;
+  };
+  const ensurePara = (index) => {
+    let para = state.paras.get(index);
+    if (!para) {
+      const el = document.createElement("p");
+      el.className = "world-story-note";
+      ensureWrap().appendChild(el);
+      para = { el: el, buffer: "" };
+      state.paras.set(index, para);
+      state.order.push(index);
+    }
+    return para;
+  };
+  const step = (ts) => {
+    state.raf = 0;
+    if (state.last === 0) state.last = ts;
+    let budget = Math.floor(((ts - state.last) / 1000) * TYPING_CPS);
+    while (budget > 0 && state.active < state.order.length) {
+      const para = state.paras.get(state.order[state.active]);
+      if (para.buffer.length > 0) {
+        state.last = ts;
+        const take = Math.min(budget, para.buffer.length);
+        para.el.textContent += para.buffer.slice(0, take);
+        para.buffer = para.buffer.slice(take);
+        budget -= take;
+      }
+      if (para.buffer.length === 0) state.active += 1;
+    }
+    if (!state.done) state.raf = requestAnimationFrame(step);
+  };
+  return {
+    push(piece, index) {
+      if (state.done) return;
+      const beat = typeof index === "number"
+        ? index
+        : (state.order.length || 0);
+      ensurePara(beat).buffer += piece;
+      if (!state.raf) state.raf = requestAnimationFrame(step);
+    },
+    get wrap() {
+      return state.wrap;
+    },
+    stop() {
+      // 定版/失败/中断共用：停循环保留已显文字（定版即整块替换，
+      // 失败注追加块尾——已显示的诚实可见）。
+      state.done = true;
+      if (state.raf) cancelAnimationFrame(state.raf);
+      state.raf = 0;
     },
   };
 }
@@ -3805,24 +3893,69 @@ async function postTurn(text) {
   // moment the turn response lands (or fails) — never left behind.
   // rd-2：发送后状态行「信已寄出，等回信——」收尾（8.5 流式落点句随迁）
   const pending = addLine("typing", "信已寄出，等回信——笔友把灯留着。");
+  // wr-7（DEC-OPI-c73dbff3…4）：「世界运转中…」占位行——世界先讲
+  // （生成序不动），回信生成前的等待期不再零反馈。发信即现，首个
+  // world_delta/world/delta 到达即让位（纯前端零服务器依赖）；安全
+  // 退役在 finally（零帧轮次不留尾巴）。
+  const worldPending = addLine("typing", worldInboxText().worldRunning);
+  worldPending.classList.add("world-pending");
+  const retireWorldPending = () => {
+    if (worldPending.parentNode) worldPending.remove();
+  };
   startMomentPolling();
-  // A1 流面：先走 /api/turn_stream——世界先讲（onWorld 当场渲染世界
-  // 故事块，回信气泡之前——此时回信行尚不存在，块 append 即在信后），
-  // delta 当场打进一封在写的回信（只走 textContent，XSS 纪律），final
-  // 落地即在 finally 摘掉在写信、由下方 finalize 的权威回信行接管。
-  // 对端没说 SSE（非 200 / 无流）= 立即失败形，回退旧 POST；流真开始
-  // 后中断 = 信可能已落库——不重发，一行人话 + 拉历史对齐。
-  // WR-6（DEC-OPI-8a4f980b…13）：帧序回到 **world → delta＊ → final**
-  // ——服务端世界步先于回信生成（spec §4.2 正典顺序：世界运转在前，
-  // 她的回信是运转的落点；用户判词：信不得先于世界事件显示）。
+  // A1 流面：先走 /api/turn_stream——世界先讲（wr-7：叙述增量
+  // world_delta 当场进世界打字机，world 整帧到即定版——权威渲染替换
+  // 流式块、日期行此时才补齐块首；定版仍带过渡句），delta 当场打进
+  // 一封在写的回信（只走 textContent，XSS 纪律），final 落地即在
+  // finally 摘掉在写信、由下方 finalize 的权威回信行接管。对端没说
+  // SSE（非 200 / 无流）= 立即失败形，回退旧 POST；流真开始后中断 =
+  // 信可能已落库——不重发，一行人话 + 拉历史对齐。
+  // WR-6（DEC-OPI-8a4f980b…13）+ wr-7：帧序 **world_delta＊ → world
+  // → delta＊ → final**——服务端世界步先于回信生成（spec §4.2 正典
+  // 顺序：世界运转在前，她的回信是运转的落点；用户判词：信不得先于
+  // 世界事件显示）。world_failed = 增量已显示而整批未留住——块上
+  // 人话失败注，拒收不撒谎。
   let data = null;
   let typing = null;
+  const worldStream = startWorldStream();
+  // wr-7 定版：世界整帧 = 权威渲染替换流式文本——块文本此后与
+  // 编年史逐字一致，日期行由 date_localized 补齐块首（流内从未有
+  // 日期）。无流式块（阻塞形/零增量）即原样渲染，与 WR-6 同形。
+  const settleWorld = (event) => {
+    retireWorldPending();
+    worldStream.stop();
+    const fresh = renderWorldStory(event, { withTransition: true });
+    if (worldStream.wrap && worldStream.wrap.parentNode === messages) {
+      messages.insertBefore(fresh, worldStream.wrap);
+      worldStream.wrap.remove();
+    }
+  };
+  // wr-7 失败注：这块流式叙述没能留住（编年史未记）——块上人话一
+  // 行，已显示的诚实可见，从不悄悄抹掉。
+  const failWorld = () => {
+    retireWorldPending();
+    worldStream.stop();
+    if (worldStream.wrap) {
+      const note = document.createElement("p");
+      note.className = "world-story-note world-story-failed";
+      note.textContent = worldInboxText().worldFailed;
+      worldStream.wrap.appendChild(note);
+    }
+  };
   try {
     typing = startTypewriter();
     data = await fetchTurnStream(
       text,
-      (chunk) => typing.push(chunk),
-      (event) => renderWorldStory(event, { withTransition: true })
+      (chunk) => {
+        retireWorldPending();
+        typing.push(chunk);
+      },
+      (event) => settleWorld(event),
+      (piece, index) => {
+        retireWorldPending();
+        worldStream.push(piece, index);
+      },
+      () => failWorld()
     );
     if (data === null) {
       // 回退臂（A2R 加固：流面永不重发信）。fetchTurnStream 答 null
@@ -3844,6 +3977,9 @@ async function postTurn(text) {
     }
   } catch (err) {
     if (typing) typing.stop();
+    // wr-7：流中断（无定版无失败注会来）——世界打字机停循环保留已
+    // 显部分（与回信打字机同一中断姿态）。
+    worldStream.stop();
     if (err && err.started) {
       // 已显部分保留在页上（打字机的在写信不摘）——流中断说的是
       // 「信可能已落库」，拉历史对齐，不重发。
@@ -3861,6 +3997,9 @@ async function postTurn(text) {
   } finally {
     stopMomentPolling();
     pending.remove();
+    // wr-7：占位行安全退役——首个 world_delta/world/delta 到达即让
+    // 位；零帧轮次（安静臂/旧 POST）也不留尾巴。
+    retireWorldPending();
     // 摘封：回信落地（或失败）即从在途信封回到撕口信纸——同一 DOM，
     // 无拆信演出（T3 死刑清单）；「寄出」邮戳随信封一并离场。
     mine.classList.remove("en-route");
@@ -3875,7 +4014,9 @@ async function postTurn(text) {
     // WR-6：阻塞回退臂（fetchTurn 或对端无流面）的 world-first——
     // payload 带 world 键时先渲染世界块（回信行之前；此臂回信行尚
     // 不存在，append 即在信后），再落回信行。顺序与流面一致。
+    // wr-7：占位行让位（world 帧也算首帧）。
     if (data.world && typeof data.world === "object") {
+      retireWorldPending();
       renderWorldStory(data.world, { withTransition: true });
       delete data.world;
     }

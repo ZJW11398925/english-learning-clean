@@ -44,7 +44,11 @@ other route keeps the one-thread rule unchanged.
 
 **The streamed turn (A1, DEC-…77).** ``POST /api/turn_stream`` answers
 ``text/event-stream``: zero or more ``delta`` frames while the host thread
-runs the turn, then exactly one ``final`` frame carrying the very payload
+runs the turn's reply, interleaved by the world frames the world-first
+step owns (WR-6's whole ``world`` frame; wr-7's ``world_delta`` narration
+pieces and the honest ``world_failed`` handle — the full streaming order is
+world_delta＊ → world → delta＊ → final, the reply always last but one),
+then exactly one ``final`` frame carrying the very payload
 ``/api/turn`` would have answered. The turn itself rides the same work
 queue as ever — the handler thread only drains the turn's queue into
 frames — and the deltas are the provider's own streamed increments,
@@ -3212,52 +3216,95 @@ class _WebFace:
         ``finally``, so a failure anywhere leaves the assembly exactly
         as it was (the blocking shape, zero deltas, one final).
 
-        WR-6 (DEC-OPI-8a4f980b…13): the streamed turn's event order is
-        **world → delta＊ → final** — the world's step runs before the
-        reply is generated and its one structured ``world`` frame is
-        pushed to the bridge before the commit (the world narrates
-        first; her reply's deltas stream after it — spec §4.2's own
-        order, and the user's verdict that the letter must not show
-        before the world's events). The world's round trip is the price
-        the reply pays for the right order (1-3s before its first
+        WR-6 (DEC-OPI-8a4f980b…13): the streamed turn's event order
+        keeps the world's narration **before** the reply is generated
+        and its frames on the page ahead of the reply's first delta
+        (spec §4.2's own order, and the user's verdict that the letter
+        must not show before the world's events). wr-7 splits the
+        world's own half into its time dimension: while the narrator's
+        answer is still arriving, each decoded narration piece rides a
+        ``{"type": "world_delta", "index": i, "text": …}`` frame, and
+        the one whole ``world`` frame follows as the authoritative
+        settle — the full order is **world_delta＊ → world → delta＊ →
+        final**. Refusals do not lie (渲染先行，持久殿后): when
+        narration pieces were already shown and the whole frame never
+        comes (a strict-parse refusal, a mid-stream provider fault),
+        one ``{"type": "world_failed"}`` frame tells the page the shown
+        passage was not kept — the quiet arms (no provider,
+        ``not-configured``, zero beats) never stream a piece, so they
+        stay zero-world-frame shapes. The world's round trip is the
+        price the reply pays for the right order (1-3s before its first
         delta — the spec's own 「寄出（在途仪式）」 reading); a quiet
-        or failed world leg skips the frame and the reply streams at
-        once (fail-soft, never a broken stream).
+        or failed world leg lets the reply stream at once (fail-soft,
+        never a broken stream).
         """
 
-        frame = self._world_step_frame()
         live = self._host.coordinator.persona_provider()
         if not hasattr(live, "call_streaming"):
+            # The blocking shape: the world step runs outside the bridge
+            # and its one whole frame rides ahead of the one final
+            # (WR-6's shape, byte for byte).
+            frame = self._world_step_frame()
             if frame is not None:
-                # The blocking shape still owes the page its world-first
-                # frame: the handler drains the queue concurrently, so the
-                # frame rides ahead of the one final (WR-6).
                 events.put(frame)
             payload, turn_id = self._commit_and_answer(text)
             return payload
         bridge = _TurnStreamBridge(events)
+        shown = {"count": 0}
+
+        def on_narration_increment(index: int, piece: str) -> None:
+            shown["count"] += 1
+            bridge.push_frame(
+                {"type": "world_delta", "index": index, "text": piece}
+            )
+
+        # The world step runs **before** the reply proxy is installed:
+        # its narrator dials the live provider directly (its own
+        # streamed face, decoded pieces straight to the bridge), and
+        # the generation order is untouched — the whole narration
+        # exists before the reply's first delta is generated.
+        frame = self._world_step_frame(
+            on_narration_increment=on_narration_increment
+        )
+        if frame is not None:
+            bridge.push_frame(frame)
+        elif shown["count"] > 0:
+            # Rendering ran ahead of the durable verdict and the whole
+            # frame never came: say so, rather than leaving shown text
+            # that pretends to be kept (拒收不撒谎).
+            bridge.push_frame({"type": "world_failed"})
         coordinator = self._host.coordinator
         coordinator.replace_persona_provider(
             _StreamingProviderProxy(live, bridge)
         )
         try:
-            if frame is not None:
-                bridge.push_frame(frame)
             payload, turn_id = self._commit_and_answer(text)
             return payload
         finally:
             coordinator.replace_persona_provider(live)
 
-    def _world_step_frame(self) -> dict[str, Any] | None:
+    def _world_step_frame(
+        self,
+        *,
+        on_narration_increment: Callable[[int, str], None] | None = None,
+    ) -> dict[str, Any] | None:
         """The world-first pre-reply step (WR-6, DEC-OPI-8a4f980b…13):
         run the narrator **before** the reply is generated, reveal what
         it wrote (the frame is the user's look — spec §4.1's
         presentation trigger), and answer the one structured ``world``
         frame the page renders before the reply's first delta.
-        Fail-soft throughout: no binding, no package, no store, no
-        provider, a quiet narrator (``not-configured`` or zero beats)
-        or any refusal answers ``None`` — the reply then streams with
-        no world frame, never a broken page.
+
+        wr-7: with ``on_narration_increment`` the narrator's streamed
+        face carries the narration's own time dimension — each decoded
+        ``(beat_index, text)`` piece rides the callback as it completes
+        (the page's ``world_delta`` frames, the world's 「正在发生」
+        preview), while the whole frame stays the 「发生了」 settle. A
+        refusal after shown pieces retracts nothing here — the caller
+        (``turn_stream``) counts the shown pieces and answers the
+        honesty frame. Fail-soft throughout: no binding, no package, no
+        store, no provider, a quiet narrator (``not-configured`` or
+        zero beats) or any refusal answers ``None`` — the reply then
+        streams with no world frame, never a broken page.
 
         The turn is not yet committed at this point (the reply's own
         generation commits it), so the step runs under the
@@ -3291,6 +3338,7 @@ class _WebFace:
                 None,
                 datetime.now(tz=UTC).isoformat(),
                 ui_language=ui_language,
+                on_narration_increment=on_narration_increment,
             )
         except Exception as exc:  # fail-soft: the sentence, never the raise
             print(

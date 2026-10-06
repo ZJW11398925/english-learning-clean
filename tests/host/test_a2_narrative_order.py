@@ -4,9 +4,11 @@ presentation laws (the recut pin set; WR-6 world-first).
 WR-6 (DEC-OPI-8a4f980b…15) migrates this file back to the canon: the
 world's step runs **before the reply is generated** — the narrator's
 beats are model-generated novel prose (WR-2's face, kept) and the
-streamed order is **world → delta＊ → final** again (spec §4.2's own
+streamed order puts the world's half before the reply (spec §4.2's own
 order; the user's verdict that the letter never shows before the
-world's events). The presentation half changed with it: the frame
+world's events) — since wr-7 the world's own half streams too, so the
+full order is **world_delta＊ → world → delta＊ → final**. The
+presentation half changed with it: the frame
 **is** the look — the beats arrive revealed, a later inbox read flips
 nothing, the log never opens anything. What stays from A2 and its
 revisions:
@@ -179,17 +181,18 @@ def _span_package(
 
 
 # ---------------------------------------------------------------------------
-# 1 — the narrative order, recut (WR-6: world → delta＊ → final, the
-#     step before the reply)
+# 1 — the narrative order, recut (WR-6 + wr-7: world_delta＊ → world →
+#     delta＊ → final, the step before the reply)
 # ---------------------------------------------------------------------------
 
 
 def test_the_stream_order_is_world_then_deltas_then_final(
     tmp_path: Path,
 ) -> None:
-    """WR-6（DEC-OPI-8a4f980b…13）：流序回正典 **world → delta＊ →
-    final**——世界帧先于首个 delta（世界运转在前，她的回信是运转的
-    落点——spec §4.2；用户判词：信不得先于世界事件显示）。"""
+    """WR-6（DEC-OPI-8a4f980b…13）+ wr-7：流序正典 **world_delta＊ →
+    world → delta＊ → final**——叙述增量先流（世界运转的「正在发生」），
+    world 整帧随后定版，她的回信 delta 最后（世界运转在前，回信是运转
+    的落点——spec §4.2；用户判词：信不得先于世界事件显示）。"""
 
     endpoint = _FakeOpenAI()
     endpoint.start()
@@ -200,12 +203,15 @@ def test_the_stream_order_is_world_then_deltas_then_final(
             )
             assert status == 200
             frames = _sse_frames(raw)
-            assert frames[0]["type"] == "world"
-            assert frames[1]["type"] == "delta"
-            assert frames[-1]["type"] == "final"
-            assert [f["type"] for f in frames][1:-1] == (
-                ["delta"] * len(REPLY)
-            )
+            types = [f["type"] for f in frames]
+            world_pos = types.index("world")
+            pieces = [f for f in frames[:world_pos]]
+            assert types[0] == "world_delta"
+            assert all(f["type"] == "world_delta" for f in pieces)
+            assert "".join(f["text"] for f in pieces) == "The tide turned."
+            assert types[world_pos + 1] == "delta"
+            assert types[-1] == "final"
+            assert types[world_pos + 1 : -1] == ["delta"] * len(REPLY)
     finally:
         endpoint.stop()
 
