@@ -177,6 +177,28 @@ def test_the_blocking_turn_runs_the_world_letter_after_the_reply(
         assert letter in narrator_prompt
 
 
+def test_the_narrator_language_follows_the_interface_setting(
+    tmp_path: Path,
+) -> None:
+    """WR-2 处置（评审 LOW-2/LOW-3，变异 m10 的钉缺口）：ui_language 的
+    端到端缝——设置页切 en 后，世界信步的 narrator prompt 带英文叙述指
+    令（该缝此前只有单元钉，web→narrator 的传递无端到端证据——硬编码
+    "en" 或丢传递都曾全绿）。"""
+
+    app_db = tmp_path / "app.db"
+    provider = BeatsProvider()
+    with web_stack(app_db, provider=provider) as stack:
+        status, _ = stack.post(
+            "/api/settings/ui_language", {"ui_language": "en"}
+        )
+        assert status == 200
+        status, _ = stack.post("/api/turn", {"text": "Any letter."})
+        assert status == 200
+        narrator_prompt = provider.prompts[1]
+        assert "The narration is written in English." in narrator_prompt
+        assert "Chinese (中文)" not in narrator_prompt
+
+
 # ---------------------------------------------------------------------------
 # 2 — the streamed arm
 # ---------------------------------------------------------------------------

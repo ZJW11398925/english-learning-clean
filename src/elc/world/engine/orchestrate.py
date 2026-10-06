@@ -81,7 +81,7 @@ from elc.world.narrator import (
     RECENT_CHRONICLE_LIMIT,
     WorldNarrator,
 )
-from elc.world.package import WorldPackage, story_days_of
+from elc.world.package import WorldPackage, story_days_of, story_elapsed_days_of
 from elc.world.store import SqliteWorldStore, WorldRevealItem
 from elc.world.types import WorldEvent
 
@@ -295,16 +295,16 @@ def run_generated_step(
     empty (the generated story settles no state claim — the projection
     only moves when a future cut says so), ``source`` is
     :data:`~elc.world.narrator.NARRATOR_SOURCE`. The timestamps are the
-    virtual calendar's (the same ``_calendar_source`` semantics, but
-    the span of a beat is the beat's own generated ``days``): the base
-    is :func:`elc.world.package.story_days_of` at step time, each beat
-    advances the running total by its own span and stamps at the end of
-    it (落笔在跨度之末), and every reveal item inherits its own event's
-    moment. Note the calendar's law is unchanged: the world's *today*
-    (:func:`elc.world.package.world_date_of`) still reads the pool's
-    kind→span mapping, so generated kinds contribute zero to it — the
-    generated story lives in the events' own stamps (the presentation
-    faces' story days), not in the pool-derived today.
+    virtual calendar's, and the base is the story's **furthest stamped
+    day** (:func:`elc.world.package.story_elapsed_days_of` — WR-2's
+    disposition): each beat advances the running total by its own
+    generated span and stamps at the end of it (落笔在跨度之末), so a
+    later letter's beats land **after** every earlier one — the
+    calendar is monotonic across letters, and the world's today
+    (:func:`elc.world.package.world_date_of`) follows the same furthest
+    stamp (the pool-keyed sum froze at day zero once the pool left the
+    production path; that defect was the disposition's fix). Every
+    reveal item inherits its own event's moment.
 
     The quiet arms, in order: no provider, or the provider answering
     ``not-configured``, returns ``Ok(())`` — the world's honest silence
@@ -391,7 +391,10 @@ def run_generated_step(
         str(event.event_id) for event in chronicle.value
     }
     start = date.fromisoformat(package.calendar_start)
-    total = story_days_of(package, store, world_id)
+    # WR-2's disposition base: the story's furthest stamped day — a
+    # later letter stamps after every earlier one (monotonic by
+    # construction; the pool-keyed sum froze at day zero).
+    total = story_elapsed_days_of(package, store, world_id)
     written: list[WorldEvent] = []
     for index, beat in enumerate(beats):
         # 落笔在跨度之末: the beat advances the story by its own span,

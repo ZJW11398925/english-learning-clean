@@ -62,8 +62,9 @@ from elc.world.package import (
     SupplyDeclaration,
     WorldPackage,
     story_days_of,
+    world_date_of,
 )
-from elc.world.store import SqliteWorldStore
+from elc.world.store import SqliteWorldStore, WorldRevealItem
 from elc.world.types import WorldEvent
 
 NOW = "2026-10-06T00:00:00+00:00"
@@ -493,12 +494,9 @@ def test_the_generated_calendar_advances_within_the_batch(
     """落笔在跨度之末, the generated span in the pool's old seat: each
     beat advances the story by its own days and stamps at its end —
     spans 1 and 2 land two dates inside one batch (S+1, S+3), and a
-    same-day beat (span 0) stamps the base day itself. The pool-derived
-    story-day sum honestly stays at zero (generated kinds are the
-    story's own, not the pool's) — which is also the registered
-    consequence that the base does not accumulate **across** letters:
-    the second letter's same-day beats stamp the base day again, the
-    generated story living in the events' own stamps."""
+    same-day beat (span 0) stamps the base day itself. WR-2 处置：基 =
+    编年史最远盖章日——第二封信从第一封的 S+3 续写（跨度 0 盖当日），
+    世界今天随之推进；池键日和诚实不动（生成 kind 是故事自己的）。"""
 
     _seed_world(store)
     provider = _ScriptedNarrator(
@@ -527,13 +525,103 @@ def test_the_generated_calendar_advances_within_the_batch(
         store, WORLD, _package(), provider, LETTER, "turn-cal-2", NOW
     )
     assert isinstance(second, Ok)
+    # WR-2 处置（评审 MEDIUM）：基 = 编年史最远盖章日（story_elapsed_days_of）
+    # —— 第二封信的 beats 落在第一封之后（S+3，跨度 0 盖当日本身），
+    # 时间单调不倒退；旧基（池键日和恒零）曾把每封信拉回 day zero。
     assert [str(event.occurred_at) for event in second.value] == [
-        CALENDAR_START,
-        CALENDAR_START,
+        (date.fromisoformat(CALENDAR_START) + timedelta(days=3)).isoformat(),
+        (date.fromisoformat(CALENDAR_START) + timedelta(days=3)).isoformat(),
     ]
-    # The honest calendar law: the pool maps no generated kind, so the
-    # world's pool-derived day count does not move.
+    # The world's today follows the same furthest stamp — it advances
+    # with the generated story (the pool-keyed sum honestly stays at
+    # zero: generated kinds are the story's own, not the pool's).
     assert story_days_of(_package(), store, WORLD) == 0
+    assert world_date_of(_package(), store, WORLD) == (
+        date.fromisoformat(CALENDAR_START) + timedelta(days=3)
+    ).isoformat()
+
+
+def test_the_story_time_never_runs_backward_across_letters(
+    store: SqliteWorldStore,
+) -> None:
+    """WR-2 处置（评审 MEDIUM 的量化形态）：故事时间跨信单调——第一封
+    盖 S+2（跨度 2），第二封盖 S+3（跨度 1），后信永远落在先信之后；
+    旧基下第二封会盖 S+1，时间倒退（评审探针实证的缺陷形态）。"""
+
+    _seed_world(store)
+    provider = _ScriptedNarrator(
+        ProviderOutput(
+            text=_beats(
+                _beat(kind="long-span", narration="The fair stayed.", days=2),
+            ),
+        ),
+        ProviderOutput(
+            text=_beats(
+                _beat(kind="short-span", narration="The fair left.", days=1),
+            ),
+        ),
+    )
+    first = run_generated_step(
+        store, WORLD, _package(), provider, LETTER, "turn-mono-1", NOW
+    )
+    assert isinstance(first, Ok)
+    assert [str(event.occurred_at) for event in first.value] == [
+        (date.fromisoformat(CALENDAR_START) + timedelta(days=2)).isoformat(),
+    ]
+    second = run_generated_step(
+        store, WORLD, _package(), provider, LETTER, "turn-mono-2", NOW
+    )
+    assert isinstance(second, Ok)
+    assert [str(event.occurred_at) for event in second.value] == [
+        (date.fromisoformat(CALENDAR_START) + timedelta(days=3)).isoformat(),
+    ]
+    stamps = [
+        str(event.occurred_at)
+        for event in store.chronicle_of(WORLD).value
+    ]
+    assert stamps == sorted(stamps)
+
+
+def test_a_same_shape_replay_of_enqueue_reveals_is_a_no_op(
+    store: SqliteWorldStore,
+) -> None:
+    """WR-2 处置（评审 LOW-1）：enqueue_reveals 同形重放 = Ok 且行数不变
+    ——预存缺陷（预读臂 continue 不剔除插入集，重插 UNIQUE 崩）当刀修；
+    docstring 的「nothing is re-inserted」句自此为真。"""
+
+    _seed_world(store)
+    provider = _ScriptedNarrator(
+        ProviderOutput(
+            text=_beats(
+                _beat(kind="replay-proof", narration="Once is enough.", days=1),
+            ),
+        ),
+    )
+    stepped = run_generated_step(
+        store, WORLD, _package(), provider, LETTER, "turn-replay-1", NOW
+    )
+    assert isinstance(stepped, Ok)
+    items = tuple(
+        WorldRevealItem(
+            item_id=f"{event.event_id}:reveal",
+            world_id=WORLD,
+            source_event_id=event.event_id,
+            actor_id=None,
+            status="PENDING",
+            revealed_at=None,
+            created_at=event.occurred_at,
+        )
+        for event in stepped.value
+    )
+    before = store._conn.execute(  # noqa: SLF001 — the test's own read
+        "SELECT COUNT(*) FROM world_reveal_item"
+    ).fetchone()[0]
+    replayed = store.enqueue_reveals(items)
+    assert isinstance(replayed, Ok)
+    after = store._conn.execute(  # noqa: SLF001 — the test's own read
+        "SELECT COUNT(*) FROM world_reveal_item"
+    ).fetchone()[0]
+    assert before == after
 
 
 # ---------------------------------------------------------------------------

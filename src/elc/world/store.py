@@ -850,6 +850,7 @@ class SqliteWorldStore:
                         ),
                     )
                 )
+        fresh: list[WorldRevealItem] = []
         for item in items:
             stored = self._reveal_row(item.item_id)
             if stored is not None:
@@ -864,6 +865,12 @@ class SqliteWorldStore:
                     item.actor_id,
                     item.created_at,
                 ):
+                    # WR-2 disposition (review LOW-1): a same-shape replay
+                    # stays in the stored row and is **excluded from the
+                    # insert set** — the old arm's ``continue`` skipped
+                    # only the pre-read and the INSERT loop re-inserted
+                    # the row anyway (a UNIQUE crash the docstring's
+                    # "nothing is re-inserted" claim never matched).
                     continue
                 return Err(
                     DomainError(
@@ -875,11 +882,12 @@ class SqliteWorldStore:
                         ),
                     )
                 )
+            fresh.append(item)
         began = False
         try:
             self._conn.execute("BEGIN IMMEDIATE")
             began = True
-            for item in items:
+            for item in fresh:
                 self._conn.execute(
                     "INSERT INTO world_reveal_item ("
                     " item_id, world_id, source_event_id, actor_id,"

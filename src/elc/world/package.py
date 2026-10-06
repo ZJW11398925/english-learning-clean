@@ -59,6 +59,7 @@ __all__ = [
     "ensure_builtin_worlds",
     "load_world_package",
     "story_days_of",
+    "story_elapsed_days_of",
     "world_date_of",
 ]
 
@@ -519,10 +520,54 @@ def story_days_of(
     events say so, never because a letter was written (the run cursor is
     deliberately not a clock). A durable kind the package does not carry
     (v1-era history) contributes zero: the package does not invent a
-    span it never authored."""
+    span it never authored.
+
+    WR-2's disposition (DEC-OPI-5fc42174-…49 评审 MEDIUM): this pool-keyed
+    sum is **no longer the calendar's base** — a generated world's kinds
+    carry no package span, so summing them yields a frozen day zero (and,
+    worse, a letter could stamp before its predecessor). The base is
+    :func:`story_elapsed_days_of`; this function stays for the retired
+    engine path's own accounting and its pins."""
 
     days_by_kind = {event.kind: event.days for event in package.event_pool}
     return sum(days_by_kind.get(kind, 0) for kind in store.event_kinds_of(world_id))
+
+
+def story_elapsed_days_of(
+    package: WorldPackage,
+    store: SqliteWorldStore,
+    world_id: str,
+) -> int:
+    """The story's elapsed span as the **furthest day ever stamped**
+    (WR-2's disposition): the maximum, over the chronicle's events, of
+    the day distance between a pure virtual-calendar stamp and the
+    ``calendar_start`` — the story's own furthest reach, pool-era and
+    generated events alike, monotonic by construction (a later letter
+    can never stamp before an earlier one).
+
+    A pure stamp is an ``occurred_at`` that is a bare ISO date
+    (``YYYY-MM-DD`` — the virtual calendar's own form); a wall-clock
+    moment (the pre-A2 legacy rows) is not a story day and contributes
+    nothing — the same law the presentation faces already read (legacy
+    rows answer no story date). An unreadable chronicle answers ``0``
+    (the defensive floor the presentation faces' own guards carry — a
+    store failure never fabricates a later day)."""
+
+    start = date.fromisoformat(package.calendar_start)
+    chronicle = store.chronicle_of(world_id)
+    if isinstance(chronicle, Err):
+        return 0
+    elapsed = 0
+    for event in chronicle.value:
+        stamp = str(event.occurred_at)
+        if len(stamp) != 10:
+            continue
+        try:
+            day = date.fromisoformat(stamp)
+        except ValueError:
+            continue
+        elapsed = max(elapsed, (day - start).days)
+    return elapsed
 
 
 def world_date_of(
@@ -533,19 +578,22 @@ def world_date_of(
     """The world's own today (A2, DEC-…88/…90) — the virtual calendar's
     date, derived, never clocked.
 
-    Spec §198: the world does not follow real time. The world's day is
-    ``calendar_start`` plus the happened events' story spans
-    (:func:`story_days_of`) — a pure function of the durable chronicle:
-    a replayed history answers the same day (AD-6's determinism carried
-    into time), and a different story answers a different day even at
-    the same letter count. The engine stays clockless — this is the
-    base the orchestrator's timestamp source advances per event — and
-    the presentation faces render from the events' ``occurred_at``, so
-    a real wall-clock moment never enters a world event.
-    """
+    Spec §198: the world does not follow real time. WR-2's disposition:
+    the world's day is ``calendar_start`` plus the story's **furthest
+    stamped day** (:func:`story_elapsed_days_of`) — a pure function of
+    the durable chronicle: a replayed history answers the same day
+    (AD-6's determinism carried into time), a different story answers a
+    different day even at the same letter count, and a generated beat
+    advances the world's today by its own span (the pool-keyed sum of
+    :func:`story_days_of` froze at day zero once the pool left the
+    production path). The engine stays clockless — the presentation
+    faces render from the events' ``occurred_at``, so a real wall-clock
+    moment never enters a world event."""
 
     start = date.fromisoformat(package.calendar_start)
-    return (start + timedelta(days=story_days_of(package, store, world_id))).isoformat()
+    return (
+        start + timedelta(days=story_elapsed_days_of(package, store, world_id))
+    ).isoformat()
 
 
 def ensure_builtin_worlds(
