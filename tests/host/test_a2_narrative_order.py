@@ -1,25 +1,25 @@
 """A2 — the narrative order, the story's own calendar, and the world
-presentation laws (the migrated pin set).
+presentation laws (the recut pin set; WR-6 world-first).
 
-WR-2 (DEC-OPI-5fc42174…49) migrated this file one way, with the
-paradigm: the world's step is no longer the fixed-pool engine run
-before generation — the world's beats are **model-generated novel
-prose** (the narrator's face), running **after** the turn commits. The
-A2 pre-step and its structured ``world`` frame are retired (the
-streamed order is back to delta＊ → final), and the presentation half
-changed its law accordingly: the letter step leaves its notes
-``PENDING`` — the next look (the inbox's read) is the reveal, the log
-never opens anything. What stays from A2 and its revisions:
+WR-6 (DEC-OPI-8a4f980b…15) migrates this file back to the canon: the
+world's step runs **before the reply is generated** — the narrator's
+beats are model-generated novel prose (WR-2's face, kept) and the
+streamed order is **world → delta＊ → final** again (spec §4.2's own
+order; the user's verdict that the letter never shows before the
+world's events). The presentation half changed with it: the frame
+**is** the look — the beats arrive revealed, a later inbox read flips
+nothing, the log never opens anything. What stays from A2 and its
+revisions:
 
-1. **the narrative order, migrated** — a live streamed turn answers
-   zero ``world`` frames (deltas → final, nothing else), and the
-   streamed turn's world letter runs exactly once per letter, **after**
-   the final (the anchor run resumes, the beats add up, no double
-   step);
-2. **the presentation law, migrated** — the generated notes wait
-   ``PENDING`` until the inbox's read flips them (呈现的揭示是下一次
-   看，不是写信的那一刻), and the blocking turn runs the same letter
-   step inline (its payload carries no world key at all);
+1. **the narrative order, recut** — a live streamed turn answers its
+   one ``world`` frame before the first delta, and the world step
+   runs exactly once per letter (the anchor run resumes, the beats
+   add up, no double step — under the count-derived id arm, the
+   docstring's honest no-replay protection);
+2. **the presentation law, recut** — the turn's own beats arrive
+   revealed with the frame (呈现的揭示就是这一次看), and the blocking
+   turn carries the frame under its own ``world`` key (rendered
+   before the reply line);
 3. **the virtual calendar** — story days sum the happened events'
    spans; the same letter count with a different story answers a
    different day (与信数无关); an event stamps at the **end of its own
@@ -36,7 +36,8 @@ never opens anything. What stays from A2 and its revisions:
    region and its mount are gone at the source, the 「继续」 interaction
    is retired whole (A2R DEC-…99 — the engine never pauses, so no
    button, no branch, no endpoint), and the load arm renders only what
-   it actually revealed (``revealed_now``);
+   it actually revealed (``revealed_now`` — cross-session leftovers
+   alone, WR-6: the turn's own beats never wait);
 6. **the served calendar** — the shipped package drives the story day
    (the full pool's spans land the story's last day on 2025-09-21).
 """
@@ -122,10 +123,11 @@ def _ro_rows(app_db: Path, sql: str) -> list[tuple]:
 def _wait_for_world_rows(
     app_db: Path, sql: str, expected: int, *, timeout: float = 15.0
 ) -> list[tuple]:
-    """Wait for the streamed arm's fire-and-forget world letter job to
-    land (the job is enqueued once the final frame is out, so the test
-    polls until the durable rows say it ran — the worker loop's 0.2s
-    poll makes this quick; the timeout is the failure voice)."""
+    """Wait for the world-first step's durable rows to be visible to a
+    fresh read-only connection (WR-6: the step runs before the reply,
+    so the rows are committed by the time the turn answers — the poll
+    is SQLite's cross-connection visibility handshake, kept from the
+    post-step era because it costs nothing)."""
 
     import time
 
@@ -177,8 +179,8 @@ def _span_package(
 
 
 # ---------------------------------------------------------------------------
-# 1 — the narrative order, migrated (WR-2: deltas → final, the letter
-#     step after the stream closes)
+# 1 — the narrative order, recut (WR-6: world → delta＊ → final, the
+#     step before the reply)
 # ---------------------------------------------------------------------------
 
 
@@ -801,9 +803,9 @@ def test_the_load_arm_renders_only_unrevealed_notes() -> None:
     init_block = app_source[app_source.index("loadHistory()"):]
     assert "loadHistory()" in app_source
     assert ".then(() => loadWorldInbox())" in init_block
-    # WR-3: the turn's own *inline* reread stays retired (the delayed
-    # reveal — scheduleWorldReveal's timer — is the one legal re-read;
-    # an awaited read in the turn body would double-render).
+    # WR-6: the turn's own flow never reads the inbox (the world rides
+    # the turn's own stream; the load arm is the page-load leftover's
+    # only reader).
     postturn = app_source[
         app_source.index("async function postTurn"):
         app_source.index("async function postTeachMe")

@@ -1,34 +1,37 @@
-"""WR-2 — the post-turn world letter wiring (the paradigm flip's web
-half), served over the production assembly.
+"""WR-2 — the world letter wiring (the paradigm flip's web half; WR-6
+recut to world-first), served over the production assembly.
 
 The same shape as the W-1/A1 suites: the real ``elc.web.run_web`` over
 the real ``open_host`` (the builtin Berrymoor package binds at open),
-reached with ``urllib`` over the loopback. The world's step is no
-longer the pre-generation engine run — it is the narrator's generated
-step, running **after** the turn commits (WR-2, DEC-OPI-5fc42174…49).
-The pin groups:
+reached with ``urllib`` over the loopback. WR-6 (DEC-OPI-8a4f980b…15):
+the world's step runs **before the reply is generated** — the narrator
+narrates first, her reply arrives second (spec §4.2's own order). The
+pin groups:
 
-1. **the blocking arm** — ``/api/turn`` runs the world step inline
-   after the payload is built: the beats land in the chronicle
-   (``source = world_narrator``), the reveals wait ``PENDING``, the
-   reply is untouched, and the narrator's prompt carries **no letter
-   at all** (WR-4's judgment face, DEC-…58: the turn is the mechanical
-   wind-up; the world narrates its own life);
-2. **the streamed arm** — the streamed turn's frames are delta＊ →
-   final (no ``world`` frame anywhere — the A2 pre-step is retired),
-   and the world step runs **after** the final frame is out (the
-   fire-and-forget job the handler enqueues; the durable rows are its
-   receipt), carrying the committed turn's real id (the stash's
-   honesty — the run row names its letter);
-3. **the retirement, at the source** — the pre-step face, the world
-   frame assembly, the additive payload key and the engine-step
-   imports are gone from ``web.py``; the generated step is the one
-   world face the turn wiring calls;
+1. **the blocking arm** — ``/api/turn`` answers the world frame under
+   its own ``world`` key (rendered before the reply line): the beats
+   land in the chronicle (``source = world_narrator``) and arrive
+   **already revealed** (the frame was the look), the reply is
+   untouched, and the narrator's prompt carries **no letter at all**
+   (WR-4's judgment face, DEC-…58: the turn is the mechanical wind-up;
+   the world narrates its own life);
+2. **the streamed arm** — the streamed turn's frames are **world →
+   final** on a provider without the streaming face (and world →
+   delta＊ → final with one — see the a1/a2 suites): the frame rides
+   the stream before the reply's first delta, the beats are revealed
+   with it, and the step runs under the count-derived id arm (the
+   turn is not yet committed — the docstring's honest no-replay
+   protection);
+3. **the retirement, at the source** — the post-step face, the stash,
+   the additive payload key of the old paradigm and the engine-step
+   imports are gone from ``web.py``; the world-first frame face
+   (``_world_step_frame``) is the one world face the turn wiring
+   calls;
 4. **the read faces stay green** — inbox, log and overview keep their
    shapes over generated notes (the signatures resolve to the world's
    own byline, the story days are the beats' own stamps, and the log
    groups them newest day first);
-5. **fail-soft** — a narrator that raises costs the reply nothing:
+5. **fail-soft** — a narrator that fails costs the reply nothing:
    the turn answers whole, nothing is written, the sentence goes to
    stderr.
 """
@@ -132,9 +135,12 @@ def _ro_rows(app_db: Path, sql: str) -> list[tuple]:
 def _wait_for_world_rows(
     app_db: Path, sql: str, expected: int, *, timeout: float = 15.0
 ) -> list[tuple]:
-    """Wait for the streamed arm's fire-and-forget world letter job to
-    land (the job is enqueued once the final frame is out, so the test
-    polls until the durable rows say it ran)."""
+    """Wait for the world-first step's durable rows to be visible to a
+    fresh read-only connection (the step runs before the reply on the
+    work queue, so by the time the turn answers they are already
+    committed — the poll is SQLite's cross-connection visibility
+    handshake, kept from the post-step era because it costs
+    nothing)."""
 
     deadline = time.monotonic() + timeout
     rows: list[tuple] = []
@@ -366,14 +372,16 @@ def test_the_narrator_failure_leaves_the_turn_whole(
     app_db = tmp_path / "app.db"
 
     class _BoomOnWorld:
-        """The letter's reply works; the world's dial explodes."""
+        """The letter's reply works; the world's dial explodes (WR-6:
+        the world's dial is the first — content-judged, so the reply
+        dial never trips the raise)."""
 
         def __init__(self) -> None:
             self.calls = 0
 
         def call(self, prompt: CompiledPrompt) -> ProviderOutput:
             self.calls += 1
-            if self.calls % 2 == 0:
+            if NARRATOR_MARK in prompt.prompt_text:
                 raise RuntimeError("the narrator is down")
             return ProviderOutput(text=REPLY, error=None)
 
