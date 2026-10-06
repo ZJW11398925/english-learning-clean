@@ -354,14 +354,18 @@ def test_the_parlor_chrome_speaks_both_languages() -> None:
 
 
 def test_the_today_line_is_endpoint_driven_and_jumpless() -> None:
-    """今日动静行钉：index.html 空槽（hidden 静默——无 JS 不发明）；
-    详情面属 wf-2——本行零跳转（setTodayLine 函数体内零 open/零链接）；
-    副行同形空槽；screens.css 只用既有弱化语汇（.sub 族 var() 引令牌，
-    零新令牌）。"""
+    """今日动静行钉（wf-2 随迁：行升 button 形可点——点行进世界日志屏，
+    接线钉在 test_wf2_world_log_nav；本例保「渲染函数零跳转」半）：
+    index.html button 空槽（hidden 静默——无 JS 不发明，回落臂不可点
+    同步）；setTodayLine 函数体内零 open/零链接（跳转不在渲染函数内）；
+    副行同形空槽；screens.css 供性形态（.sub 族 var() 引令牌，零新令牌）。"""
 
     index = _text("index.html")
     assert '<div class="who-sub"></div>' in index
-    assert '<p class="today-line" id="today-line" hidden></p>' in index
+    assert (
+        '<button class="today-line" id="today-line" type="button"'
+        " hidden></button>" in index
+    )
     app = _text("app.js")
     today = _function_slice(app, "function setTodayLine(")
     assert "open(" not in today
@@ -372,8 +376,8 @@ def test_the_today_line_is_endpoint_driven_and_jumpless() -> None:
         ".who-sub { font: var(--t-ui); color: var(--ink-faint); }" in screens
     )
     assert (
-        ".today-line { margin: 0 0 18px; font: var(--t-ui);"
-        " color: var(--ink-faint); }" in screens
+        ".today-line { display: block; margin: 0 0 18px; padding: 0;"
+        in screens
     )
     assert (
         ".envsel-caption { margin: 0; font: var(--t-ui);"

@@ -60,6 +60,7 @@ import {
   fetchWorldInbox,
   fetchWorldOverview,
   fetchWorldResidents,
+  fetchWorldLog,
   fetchHistory,
   fetchCurrentMoment,
   fetchWord,
@@ -2656,16 +2657,18 @@ async function loadSettings() {
   renderSettingsMeter();
 }
 
-// ── R-1: the spaces — 门厅 / 案头 / 温故 / 抽屉 + 两纵深（信档 ·
+// ── R-1: the spaces — 门厅 / 案头 / 世界 / 温故 / 抽屉 + 两纵深（信档 ·
 // 观察）— plain show/hide, no router. The dock (#18) is the only way
 // between spaces; entering the
 // study or the drawer lands its default section, and switching a section
 // (#20 tabs) is the pull — the section always shows its own facts, never
-// a stale page. ────────────────────────────────────────────────────────
+// a stale page. wf-2：世界是 dock 级空间（一级导航），单页无节直落。
+// ────────────────────────────────────────────────────────────────────
 
 const spaces = {
   onboard: document.getElementById("screen-onboard"),
   parlor: document.getElementById("space-parlor"),
+  world: document.getElementById("space-world"),
   partner: document.getElementById("space-partner"),
   letters: document.getElementById("space-letters"),
   obs: document.getElementById("space-obs"),
@@ -2805,6 +2808,9 @@ function showSpace(name) {
   }
   if (name === "study") showSection("study", DEFAULT_SECTION.study);
   if (name === "drawer") showSection("drawer", DEFAULT_SECTION.drawer);
+  // wf-2：世界屏每次进屏重拉（无缓存发明）——日志是揭示史，回看要
+  // 现读。navdock 不让位（dock 级空间，区别于 partner/letters/obs）。
+  if (name === "world") loadWorldLogFace();
   window.scrollTo(0, 0);
 }
 
@@ -2813,6 +2819,11 @@ function showSpace(name) {
 // ux-1: the touch swipe is a supplementary switcher for the same two
 // spaces — the tabs stay the primary face.
 wireNavdock((name) => showSpace(name));
+// wf-2 今日动静行接线（wf-1 挂账兑现）：点行进世界日志屏。回落臂
+// hidden 静默（setTodayLine(null)）= 不可点同步；静日臂可见亦可点
+// ——日志屏有自己的静日句。
+document.getElementById("today-line").addEventListener("click",
+  () => showSpace("world"));
 wireSectionTabs(document.getElementById("study-tabs"),
   (name) => showSection("study", name));
 wireSectionTabs(document.getElementById("drawer-tabs"),
@@ -4754,7 +4765,8 @@ function renderWorldMasthead(overview) {
 
 // 今日动静行（主从条下的弱化一行）：静日 = 服务端人话句透显（服务端
 // 已双语——前端零再创作）；有动静 = 计数形（「今日动静 · N 则」，chrome
-// 双语）。详情面属 wf-2——本行零跳转。回落臂 ⇒ 静默（hidden，不发明）。
+// 双语）。wf-2 起可点（装配区监听 → 世界日志屏）；跳转不在本函数——
+// 本函数只管文案与显隐，回落臂 ⇒ 静默（hidden，不可点同步，不发明）。
 function setTodayLine(today, lang) {
   const line = document.getElementById("today-line");
   if (!line) return;
@@ -4798,6 +4810,141 @@ async function loadMasthead(preFetchedRoster) {
     }
   }
   renderMasthead(roster);
+}
+
+// ── wf-2：世界日志屏（一级导航，DEC-OPI-5fc42174-…5 R4）────────────
+// navdock 的「世界」项 = 世界日志的专门面——按故事日分组的历史回看
+// （DEC-…92 句义修订后与内联故事块并存：随信呈现的唯一形态仍是信流
+// 故事块，本屏不随信）。每次进屏重拉（showSpace world 臂触发）——
+// 无缓存发明。屏头 = 世界身份（overview 驱动零字面）；主体 =
+// /api/world/log 的分组日志（服务端已按新→旧排好，顺序直用）；
+// 静日态 = 日志空 + overview 静日 ⇒ 一句静日句；无绑定（404 error
+// 形）⇒ 诚实空态——屏仍可达，零发明零崩。文字一律 textContent
+// （XSS 面）；日期零再创作——date_localized 服务端直显，渲染器
+// 零时钟（零 new Date）。
+
+// 世界屏双语 chrome 词表（zh 缺省回退；PARLOR_WORLD_TEXT 同族——
+// 界面 chrome 的双语词表，语言随载荷 ui_language）：静日句/空态句/
+// 旧记录读法/fallback 小字四句。fallback 句与 WORLD_INBOX_TEXT 同句
+// ——同一事实同一句，不另造读法。
+const WORLD_LOG_TEXT = {
+  zh: {
+    quietDay: "静悄悄的——世界还没有写下什么。",
+    emptyWorld: "这个世界还没有开始。",
+    legacy: "旧记录",
+    fallback: "（这张便条写在世界学会中文之前——示以原文。）",
+  },
+  en: {
+    quietDay: "All quiet — the world hasn't written anything yet.",
+    emptyWorld: "This world hasn't begun yet.",
+    legacy: "Older entries",
+    fallback: "(This note predates the world's Chinese — shown as written.)",
+  },
+};
+
+function worldLogText(lang) {
+  return WORLD_LOG_TEXT[lang] || WORLD_LOG_TEXT.zh;
+}
+
+async function loadWorldLogFace() {
+  const title = document.getElementById("world-title");
+  const day = document.getElementById("world-day");
+  const board = document.getElementById("world-log-board");
+  const quiet = document.getElementById("world-quiet");
+  const empty = document.getElementById("world-empty");
+  if (!board) return;
+  title.textContent = "";
+  day.hidden = true;
+  quiet.hidden = true;
+  empty.hidden = true;
+  board.textContent = "";
+  let overview = null;
+  let log = null;
+  try {
+    overview = await fetchWorldOverview();
+  } catch {
+    overview = null;
+  }
+  try {
+    log = await fetchWorldLog();
+  } catch {
+    log = null;
+  }
+  const lang = (log && log.ui_language)
+    || (overview && overview.ui_language) || "zh";
+  const T = worldLogText(lang);
+  if (log && log.error) {
+    // 无绑定（404 人话——fetchWorldInbox 同法判形）⇒ 诚实空态：
+    // 屏仍可达，不发明世界名，不崩。
+    empty.textContent = T.emptyWorld;
+    empty.hidden = false;
+    return;
+  }
+  if (!log || !Array.isArray(log.days)) {
+    // 读失败（非 404 的异常臂）⇒ 观察屏同法的失败横幅，带重试。
+    board.appendChild(stateBanner("error", { retry: loadWorldLogFace }));
+    return;
+  }
+  if (overview && !overview.error && overview.world_name) {
+    title.textContent = String(overview.world_name);
+    if (overview.date_localized) {
+      day.textContent = String(overview.date_localized);
+      day.hidden = false;
+    }
+  }
+  if (!log.days.length) {
+    // 静日态（判据照书）：日志空 + overview 静日 ⇒ 一句静日句；
+    // 静日判据不成立（overview 缺席）⇒ 诚实空兜底，不硬凑。
+    if (overview && !overview.error && overview.today
+        && overview.today.quiet) {
+      quiet.textContent = T.quietDay;
+      quiet.hidden = false;
+    } else {
+      board.appendChild(stateBanner("empty"));
+    }
+    return;
+  }
+  for (const group of log.days) {
+    board.appendChild(renderWorldLogDay(group, T));
+  }
+}
+
+// 一日一节：组头（date_localized 服务端直显；legacy 组 = 诚实旧记录
+// 读法——chrome 词示组，绝不造故事日）+ 条目（叙述 + moment 词 + 署名
+// 的 meta 小字行；legacy 组条目缀 revealed_at 原样时戳——旧时戳诚实
+// 示出，零再格式化）+ fallback 小字（服务端 fallback:true——中文叙述
+// 缺席、示以原文，从不把英文伪装成中文）。
+function renderWorldLogDay(group, T) {
+  const sec = document.createElement("section");
+  sec.className = "world-log-day";
+  const legacy = group.date_localized == null;
+  const head = document.createElement("p");
+  head.className = "world-log-date";
+  head.textContent = legacy ? T.legacy : String(group.date_localized ?? "");
+  sec.appendChild(head);
+  for (const item of (Array.isArray(group.items) ? group.items : [])) {
+    const note = document.createElement("p");
+    note.className = "world-log-item";
+    note.textContent = String(item.narration ?? "");
+    sec.appendChild(note);
+    const parts = [];
+    if (item.moment) parts.push(String(item.moment));
+    if (item.signature) parts.push(String(item.signature));
+    if (legacy && item.revealed_at) parts.push(String(item.revealed_at));
+    if (parts.length) {
+      const meta = document.createElement("p");
+      meta.className = "world-log-meta";
+      meta.textContent = parts.join(" · ");
+      sec.appendChild(meta);
+    }
+    if (item.fallback) {
+      const fb = document.createElement("p");
+      fb.className = "note world-log-fallback";
+      fb.textContent = T.fallback;
+      sec.appendChild(fb);
+    }
+  }
+  return sec;
 }
 
 function envselCloser(event) {

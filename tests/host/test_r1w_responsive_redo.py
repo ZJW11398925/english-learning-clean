@@ -289,7 +289,7 @@ def test_the_cover_copy_is_the_new_final(tmp_path: Path) -> None:
         "批注——答对答错都有回音，也可以先搁着。" in page
     )
     assert (
-        "又及：进门以后，底部三个词随时可走。温故摊着今天的复习与方向，"
+        "又及：进门以后，底部四个词随时可走。温故摊着今天的复习与方向，"
         "抽屉收着它记住的事。" in page
     )
     assert "拆开这封信 →</button>" in page

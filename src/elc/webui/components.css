@@ -819,10 +819,10 @@ button:focus-visible, input:focus-visible {
 }
 .chip:active { transform: translateY(1px); }
 
-/* ── 18. dock（常驻空间导航；v3-a 落墨页签）────────────────────────
+/* ── 18. dock（常驻空间导航；v3-a 落墨页签；wf-2 四项）──────────────
    结构：<nav class="navdock"><button class="navdock-item"
    data-space="…"><span class="navdock-glyph" data-icon="…">[墨线图标]
-   </span><span class="navdock-word">空间名</span></button>×3</nav>；
+   </span><span class="navdock-word">空间名</span></button>×4</nav>；
    fixed 底栏（宽随 --shell-w），发丝线顶边 + --paper-high 顶纸垫条
    （与写信区垫板同族材质），底 padding 吃 --safe-bottom。
    v3-a 令牌账：上下 padding 用 calc() 从 --navdock-h 反推——实高恒等
@@ -837,9 +837,11 @@ button:focus-visible, input:focus-visible {
    使用规则：每空间恰一项；图标与文字标签同钮（锚位契约——图标永不
    单独承担语义）；门厅/全页/写作态整条 [hidden]；教学短笺随信流可滚
    出底栏、点词卡浮层在本组件（z 6）之上。
-   禁止变体：色块、四项以上、堆叠页签、纯图标钮（图标须与文字同钮）。
-   （v3-a 显式修订：旧条款「禁止变体——图标」随落墨页签退役——修订
-   理由与用户首验位登记在 spec 9.13；图标网格/笔重/单色契约不动。） */
+   禁止变体：色块、五项以上、堆叠页签、纯图标钮（图标须与文字同钮）。
+   （wf-2 修订：四项合规——世界日志一级导航入坞，DEC-OPI-5fc42174-…5
+   R4；dock ≤5 红线不动。v3-a 显式修订：旧条款「禁止变体——图标」随
+   落墨页签退役——修订理由与用户首验位登记在 spec 9.13；图标网格/
+   笔重/单色契约不动。） */
 .navdock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
            display: flex; max-width: var(--shell-w); margin: 0 auto;
            background: var(--paper-high);
@@ -870,6 +872,12 @@ button:focus-visible, input:focus-visible {
   .dock-trigger:hover { color: var(--ink-soft); }
 }
 .navdock-item:active { transform: translateY(1px); }
+
+/* wf-2 今日动静行的 hover 半区（screens 零 hover 规则——触点提示归
+   components 侧；行本身可点，点行进世界日志屏）。 */
+@media (hover: hover) {
+  .today-line:hover { color: var(--ink); }
+}
 
 /* ── 19. space-header（空间头部）───────────────────────────────────
    结构：<header class="top space-header">——.top（屏级品牌条基形，

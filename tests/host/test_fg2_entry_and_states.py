@@ -110,7 +110,8 @@ def test_the_brand_bar_graces_both_screens(tmp_path: Path) -> None:
     # cs-2 随迁：档案页（#space-partner）入列第四枚 --sm——同基形。
     # v2-2 随迁：信档（#space-letters）与观察（#space-obs）两纵深屏
     # 各一枚——同基形（案头与档案的纵深，非新空间）。
-    assert index.count('data-brand-mark="sm"') == 6
+    # wf-2 随迁：世界日志屏（#space-world，dock 级空间）入列第七枚。
+    assert index.count('data-brand-mark="sm"') == 7
     assert index.count('data-brand-mark="lg"') == 1
     # R-1 随迁：温故/抽屉头部走 space-header（.top 基形 + 节名槽）；
     # 旧 sethead 变体与「回客厅」钮退役（缺位钉）
@@ -233,7 +234,9 @@ def test_the_cover_is_a_complete_letter(tmp_path: Path) -> None:
     # rd-2 随迁：封面定稿段改「致明日之我」两重收信人段（豪放档）
     assert "今日落笔，明日展信。" in page
     assert "写着写着，它在旁听着。" in page
-    assert "又及：进门以后，底部三个词随时可走" in page
+    # wf-2 随迁：navdock 四项（案头/世界/温故/抽屉）——封面导语的计数句
+    # 随真值走（「三个词」在三钮时代为真，四项后过期）
+    assert "又及：进门以后，底部四个词随时可走" in page
     assert "拆开这封信 →</button>" in page
     # the honest version line: the product's own name, no invented semver
     assert '<p class="ob-version">elc · web</p>' in page

@@ -319,9 +319,10 @@ def test_the_full_page_view_is_present(tmp_path: Path) -> None:
     )
     # cs-2R INFO-1：在飞守卫源钉（读在飞时人已回案头——不往看不见的页上写）
     assert "if (!dossierOpen) return;" in index
-    # the dock keeps its three items; the dossier is not a fourth
+    # the dock keeps its items (wf-2 随迁：世界入坞后为四项——world 是
+    # dock 级空间，区别于让位的纵深); the dossier is not a dock item
     navdock = index.split('id="navdock"', 1)[1].split("</nav>", 1)[0]
-    for item in ("parlor", "study", "drawer"):
+    for item in ("parlor", "world", "study", "drawer"):
         assert f'data-space="{item}"' in navdock, item
     assert 'data-space="partner"' not in navdock
 

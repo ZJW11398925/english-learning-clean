@@ -144,6 +144,15 @@ export function fetchWorldResidents() {
   return getJson("/api/world/residents");
 }
 
+/** 世界日志（wf-2）：按故事日分组的揭示史（服务端新→旧排好，legacy
+ *  行 date_localized:null 垫底），每条 = narration/moment/signature/
+ *  revealed_at/fallback。只读 REVEALED——看一眼不等于拆信（服务端
+ *  红线）；无绑定世界同样 404 人话（error 对象由调用方判形——
+ *  fetchWorldInbox 同法）。 */
+export function fetchWorldLog() {
+  return getJson("/api/world/log");
+}
+
 /** 历史窗口（默认最后 50 轮，已交付的助手输出）。主线-2 起宽度可显式
  *  指定：opts.full 取全文，opts.limit 取最近 n 轮——不带 opts 一字不变。 */
 export function fetchHistory(opts) {
