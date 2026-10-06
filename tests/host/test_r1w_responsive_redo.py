@@ -273,24 +273,27 @@ def test_the_cover_is_a_complete_letter() -> None:
 def test_the_cover_copy_is_the_new_final(tmp_path: Path) -> None:
     """The letter's copy, word for word (⑧ 8.2.1 修订版 + rd-2「致明日
     之我」豪放档), over the served union — and the retired sentences
-    never leak back from any asset."""
+    never leak back from any asset. wf-3 随迁：第二段世界优先（案头
+    安在小镇里，通信对象是镇上的人）+ 又及四词全点名——串随真值走。"""
 
     page = _page_of(tmp_path)
     assert "致 明日之我：" in page
     assert "致明日之我" in "".join(page.split())
     assert "今日落笔，明日展信。" in page
     assert (
-        "今日落笔，明日展信。这张案头前，你同一位固定笔友通信，也在给"
-        "明日之自己写信——两重收信人，同一张信纸。想写什么就写什么，"
-        "中文英文都行；写错了，正是回信要讲给你听的地方。" in page
+        "今日落笔，明日展信。这张案头安在一座小镇里：你住进镇上，同镇"
+        "上的人一封封通信，也在给明日之自己写信——两重收信人，同一张信"
+        "纸。想写什么就写什么，中文英文都行；写错了，正是回信要讲给你"
+        "听的地方。" in page
     )
     assert (
         "写着写着，它在旁听着。发现值得练的表达，它随信递来一条英文"
         "批注——答对答错都有回音，也可以先搁着。" in page
     )
     assert (
-        "又及：进门以后，底部四个词随时可走。温故摊着今天的复习与方向，"
-        "抽屉收着它记住的事。" in page
+        "又及：进门以后，底部四个词随时可走。案头铺着信纸，世界摊着小"
+        "镇的日子与动静，温故备着今天的复习与方向，抽屉收着它记住的事。"
+        in page
     )
     assert "拆开这封信 →</button>" in page
     for retired in ("一 · 这是什么", "二 · 短笺怎么来",

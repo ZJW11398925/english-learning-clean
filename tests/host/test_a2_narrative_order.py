@@ -7,7 +7,8 @@ final), the reply is typed at a fixed pace (到达与渲染解耦), and the
 world's time is the **virtual calendar** (DEC-…88, revised by DEC-…90:
 story-driven — the events' own spans summed on ``calendar_start``, never
 a letter count, never a wall clock). DEC-…92 retires the resident inbox
-region (世界呈现唯一形态 = 内联故事块; the load arm renders only what it
+region (随信呈现的唯一形态 = 内联故事块，世界日志屏并存不随信; the load
+arm renders only what it
 actually revealed), and A2R (DEC-…99) retires the 「继续」 interaction
 whole — the engine's NOTICE event is a beat, not a pause, so one letter
 plays the run's whole story and nothing waits mid-run. The slice VAL
