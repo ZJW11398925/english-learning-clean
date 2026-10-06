@@ -810,23 +810,20 @@ def test_the_load_arm_renders_only_unrevealed_notes() -> None:
 
 def test_the_quiet_day_arm_is_pinned_in_source() -> None:
     """The story block's two-language arms sit in the page's source:
-    the quiet-day sentence (zero notes) and the fallback note's honest
-    wording. WR-3 (DEC-…63 R3): the transition sentence
-    (「这时，她收到了你的来信。」) is **pinned gone** — it was the
-    world-answers-the-letter paradigm's copy, retired with that
-    paradigm (DEC-…58's two-layer law: the world never reacts to
-    correspondence)."""
+    the quiet-day sentence (zero notes), the fallback note's honest
+    wording, and — restored by WR-5 (DEC-OPI-8a4f980b…7) — the
+    transition sentence (the chronicle's own record of a world-internal
+    letter arriving; a presentation seam, not the world reacting). The
+    world frame's parser branch stays gone (WR-2/3)."""
 
     app_source = (WEBUI / "app.js").read_text(encoding="utf-8")
     assert "安静的一天，没什么特殊的事。" in app_source
     assert "A quiet day, nothing out of the ordinary." in app_source
     assert "（这张便条写在世界学会中文之前——示以原文。）" in app_source
     assert "function renderWorldStory" in app_source
-    # The transition sentence is retired with the paradigm (WR-3).
-    assert "这时，她收到了你的来信。" not in app_source
-    assert "Then, your letter arrives." not in app_source
-    assert "thenLetter" not in app_source
-    assert "world-story-then" not in app_source
+    # WR-5 restores the transition sentence with the paradigm's reading.
+    assert "这时，她收到了你的来信。" in app_source
+    assert "Then, your letter arrives." in app_source
     # The world frame's parser branch is gone with the frame (WR-2/3).
     assert 'event.type === "world"' not in (
         (WEBUI / "api.js").read_text(encoding="utf-8")

@@ -72,9 +72,11 @@ def test_the_fixed_penfriend_leaves_the_cover() -> None:
 # 2. the postscript names all four dock words, world included
 # ---------------------------------------------------------------------------
 
-def test_the_postscript_names_all_four_words_with_the_world() -> None:
-    """又及：四词全部点名且按 navdock 现役次序（案头/世界/温故/抽屉）；
-    世界从句逐字（「世界摊着小镇的日子与动静」向）；引导句不变。"""
+def test_the_postscript_names_all_three_words_with_the_world() -> None:
+    """WR-5 随迁（世界日志屏退役，navdock 回三项）：又及句回「三个词」
+    且按现役次序点名（案头/温故/抽屉）；世界不再是底部词，但其从句
+    改读「世界就在那里过日子」——案头即世界自然发展之地（DEC-OPI-
+    8a4f980b…7）。"""
 
     index = _text("webui/index.html")
     ob_ps = ""
@@ -83,10 +85,10 @@ def test_the_postscript_names_all_four_words_with_the_world() -> None:
             ob_ps = line
             break
     assert ob_ps, "ob-ps paragraph not found"
-    assert "又及：进门以后，底部四个词随时可走。" in ob_ps
-    assert "世界摊着小镇的日子与动静" in ob_ps
-    # 四词点名 + navdock 现役次序（wf-2 起四项）
-    order = [ob_ps.index(w) for w in ("案头", "世界", "温故", "抽屉")]
+    assert "又及：进门以后，底部三个词随时可走。" in ob_ps
+    assert "世界就在那里过日子" in ob_ps
+    # 三词点名 + navdock 现役次序（WR-5 起三项）
+    order = [ob_ps.index(w) for w in ("案头", "温故", "抽屉")]
     assert order == sorted(order), order
 
 
@@ -111,9 +113,9 @@ def test_no_place_name_literal_in_webui() -> None:
 def test_stale_unique_form_prose_swept() -> None:
     """散文扫全：旧句形「世界呈现唯一形态 / 世界呈现的唯一形态」在
     app.js / components.css / index.html 缺位；修订句形「随信呈现的
-    唯一形态」在场——app.js 四处（语言态节 + DEC-…92 节头 + 故事块
-    节 + wf-2 世界日志屏节），components.css 与 index.html 各一处；
-    「历史回看面…并存」语义句在场。"""
+    唯一形态」在场——app.js 三处（语言态节 + DEC-…92 节头 + 故事块
+    节；WR-5：世界日志屏节随屏退役），components.css 一处；
+    「历史回看面…并存」语义句随屏退役（WR-5：屏不存在，无并存读法）。"""
 
     stale_forms = ("世界呈现唯一形态", "世界呈现的唯一形态")
     for rel in ("webui/app.js", "webui/components.css", "webui/index.html"):
@@ -121,13 +123,15 @@ def test_stale_unique_form_prose_swept() -> None:
         for form in stale_forms:
             assert form not in body, (rel, form)
     app = _text("webui/app.js")
-    # 四处 = :语言态节 / :DEC-…92 节头 / :故事块节 / :世界日志屏节
-    assert app.count("随信呈现的唯一形态") == 4
+    # 三处 = :语言态节 / :DEC-…92 节头 / :故事块节（WR-5：世界日志屏
+    # 节随屏退役，其第四处计数随迁）。
+    assert app.count("随信呈现的唯一形态") == 3
     assert _text("webui/components.css").count("随信呈现的唯一形态") == 1
-    assert _text("webui/index.html").count("随信呈现的唯一形态") == 1
-    # 修订读法的语义句（世界日志屏并存，不随信）
-    assert "历史回看面" in app
-    assert "两者并存" in app
+    # WR-5：index.html 的第四处（世界日志屏注释）随屏退役归零。
+    assert _text("webui/index.html").count("随信呈现的唯一形态") == 0
+    # WR-5：世界日志屏已退役，「历史回看面…并存」句随之缺位。
+    assert "历史回看面" not in app
+    assert "两者并存" not in app
 
 
 # ---------------------------------------------------------------------------

@@ -1595,3 +1595,9 @@ h1, .grouphead, .note-head b { text-wrap: balance; }
   line-height: var(--lh-body);
 }
 .world-story .world-story-fallback { margin: 0 0 4px; }
+.world-story .world-story-then {
+  margin: 0 0 4px;
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+  color: var(--ink-faint);
+}

@@ -354,23 +354,25 @@ def test_the_parlor_chrome_speaks_both_languages() -> None:
 
 
 def test_the_today_line_is_endpoint_driven_and_jumpless() -> None:
-    """今日动静行钉（wf-2 随迁：行升 button 形可点——点行进世界日志屏，
-    接线钉在 test_wf2_world_log_nav；本例保「渲染函数零跳转」半）：
-    index.html button 空槽（hidden 静默——无 JS 不发明，回落臂不可点
-    同步）；setTodayLine 函数体内零 open/零链接（跳转不在渲染函数内）；
-    副行同形空槽；screens.css 供性形态（.sub 族 var() 引令牌，零新令牌）。"""
+    """今日动静行钉（WR-5 随迁：行回纯信息 <p>——世界日志屏整体退役，
+    点击接线与 button 供性随屏退役；信息仍在：overview.today 端点驱动，
+    静日句/计数形/回落静默三臂不变）：index.html <p> 空槽（hidden 静默
+    ——无 JS 不发明）；setTodayLine 函数体内零跳转零链接；副行同形
+    空槽；screens.css .sub 族 var() 引令牌零新令牌。"""
 
     index = _text("index.html")
     assert '<div class="who-sub"></div>' in index
     assert (
-        '<button class="today-line" id="today-line" type="button"'
-        " hidden></button>" in index
+        '<p class="today-line" id="today-line" hidden></p>' in index
     )
+    # WR-5: the button form and its click wiring are gone with the screen.
+    assert 'today-line" type="button"' not in index
     app = _text("app.js")
     today = _function_slice(app, "function setTodayLine(")
     assert "open(" not in today
     assert "<a" not in today
     assert "location" not in today
+    assert 'showSpace("world")' not in app
     screens = _text("screens.css")
     assert (
         ".who-sub { font: var(--t-ui); color: var(--ink-faint); }" in screens

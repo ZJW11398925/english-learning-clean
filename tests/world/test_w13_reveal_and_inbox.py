@@ -785,9 +785,10 @@ def test_the_turn_does_not_reread_the_inbox() -> None:
         "async function postTeachMe"
     )]
     assert "await loadWorldInbox" not in turn_block
-    # WR-3's delayed arm: the finalize tail schedules the one legal
-    # reread (the timer callback dials loadWorldInbox, not the body).
-    assert "scheduleWorldReveal();" in turn_block
+    # WR-3/WR-5's delayed arm: the finalize tail schedules the one legal
+    # reread (the timer callback dials loadWorldInbox, not the body);
+    # WR-5 rides the reply element so the block lands before the reply.
+    assert "scheduleWorldReveal(replyEl);" in turn_block
     # The continue failure arm and its button text are gone with the
     # interaction (A2R DEC-…99).
     assert 'typeof fresh.error === "string"' not in app

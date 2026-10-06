@@ -12,8 +12,9 @@ Groups (the task book's own):
 
 1. the shell — the vestibule and the three spaces exist, every old
    screen id and nav control is absent, and the panel-level ids survive;
-2. the dock (#18) — four items with their data-space wiring (wf-2 收紧：
-   the world's log joins the dock), the fixed
+2. the dock (#18) — three items with their data-space wiring (WR-5 收紧：
+   the world log screen retired — the parlor is the world's stream),
+   the fixed
    bottom form over the safe area, the active mark, the layout tokens
    (body padding, the composer's offset), and the z-order law (the
    word-card overlay floats above the dock);
@@ -139,26 +140,30 @@ def test_the_old_nav_controls_are_all_gone(tmp_path: Path) -> None:
 
 
 def test_the_navdock_is_the_only_way_between_spaces(tmp_path: Path) -> None:
-    """The dock: exactly four items (案头/世界/温故/抽屉——wf-2 世界日志
-    一级导航入坞，DEC-OPI-5fc42174-…5 R4，三→四单向收紧；v2-1R 品牌更名
-    后旧空间词「客厅」退役) with their data-space
+    """The dock: exactly three items (案头/温故/抽屉——WR-5 世界日志屏
+    随「案头即世界自然发展之地」定谳整体退役，四→三单向收紧，DEC-OPI-
+    8a4f980b…7；v2-1R 品牌更名后旧空间词「客厅」退役) with their data-space
     wiring, the app-side wiring, and the fixed bottom form — hairline top
     edge, paper ground, the safe area in its own padding."""
 
     index = _text("index.html")
     assert '<nav id="navdock" class="navdock" aria-label="空间">' in index
     navdock = index.split('id="navdock"', 1)[1].split("</nav>", 1)[0]
-    for space in ("parlor", "world", "study", "drawer"):
+    for space in ("parlor", "study", "drawer"):
         assert f'class="navdock-item" data-space="{space}"' in index
-    assert navdock.count('class="navdock-item"') == 4
+    assert navdock.count('class="navdock-item"') == 3
     # v3-a 随迁（落墨页签）：每项 = 图标插槽 + 文字标签同钮——文字行
-    # 语义由标签承担（图标永不单独承担语义），四条签行逐字在册。
-    for label in (">案头</span></button>", ">世界</span></button>",
-                  ">温故</span></button>", ">抽屉</span></button>"):
+    # 语义由标签承担（图标永不单独承担语义），三条签行逐字在册。
+    for label in (">案头</span></button>", ">温故</span></button>",
+                  ">抽屉</span></button>"):
         assert label in index
-    for glyph in ("data-icon=\"desk\"", "data-icon=\"world\"",
-                  "data-icon=\"revisit\"", "data-icon=\"drawer\""):
+    for glyph in ("data-icon=\"desk\"", "data-icon=\"revisit\"",
+                  "data-icon=\"drawer\""):
         assert glyph in index
+    # WR-5: the world item and its icon are gone with the screen (the
+    # icon-set keeps no unused registrations — the no-attic law).
+    assert 'data-space="world"' not in index
+    assert "data-icon=\"world\"" not in index
     app = _text("app.js")
     assert "wireNavdock((name) => showSpace(name));" in app
     assert "markNavdock(name);" in app

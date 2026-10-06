@@ -60,7 +60,6 @@ import {
   fetchWorldInbox,
   fetchWorldOverview,
   fetchWorldResidents,
-  fetchWorldLog,
   fetchHistory,
   fetchCurrentMoment,
   fetchWord,
@@ -2668,7 +2667,6 @@ async function loadSettings() {
 const spaces = {
   onboard: document.getElementById("screen-onboard"),
   parlor: document.getElementById("space-parlor"),
-  world: document.getElementById("space-world"),
   partner: document.getElementById("space-partner"),
   letters: document.getElementById("space-letters"),
   obs: document.getElementById("space-obs"),
@@ -2808,9 +2806,6 @@ function showSpace(name) {
   }
   if (name === "study") showSection("study", DEFAULT_SECTION.study);
   if (name === "drawer") showSection("drawer", DEFAULT_SECTION.drawer);
-  // wf-2：世界屏每次进屏重拉（无缓存发明）——日志是揭示史，回看要
-  // 现读。navdock 不让位（dock 级空间，区别于 partner/letters/obs）。
-  if (name === "world") loadWorldLogFace();
   window.scrollTo(0, 0);
 }
 
@@ -2818,12 +2813,10 @@ function showSpace(name) {
 // (a click and the left/right arrows both land on the same showSection).
 // ux-1: the touch swipe is a supplementary switcher for the same two
 // spaces — the tabs stay the primary face.
+// WR-5：世界日志屏随「案头即世界自然发展之地」定谳整体退役——
+// navdock 回三项，今日动静行回纯信息行（无点击接线；历史活在信流的
+// 故事块序列）。
 wireNavdock((name) => showSpace(name));
-// wf-2 今日动静行接线（wf-1 挂账兑现）：点行进世界日志屏。回落臂
-// hidden 静默（setTodayLine(null)）= 不可点同步；静日臂可见亦可点
-// ——日志屏有自己的静日句。
-document.getElementById("today-line").addEventListener("click",
-  () => showSpace("world"));
 wireSectionTabs(document.getElementById("study-tabs"),
   (name) => showSection("study", name));
 wireSectionTabs(document.getElementById("drawer-tabs"),
@@ -2945,25 +2938,26 @@ diagBox("obs-entry").appendChild((() => {
   return wrap;
 })());
 
-// ── A2/DEC-…92；WR-2/WR-3 随迁：世界的文字与语言态──────────────────
-// 随信呈现的唯一形态 = 信流里的内联故事块（renderWorldStory）；世界
-// 日志屏是历史回看面不随信，两者并存。常驻收件箱区已整体退役（用户
-// 报告「遗留世界事件占对话末尾」的根治）。WR-3：过渡句（世界收到
-// 来信的转场句）随「世界回应信」范式一并退役——
-// 双层律下世界不回应信，故事块只有日期行与叙述段。
-// 这一小节只留它的双语词表与界面语言态：fallback 小字/安静日两句，
-// 随 ui_language 设置（zh 缺省）——全页 i18n 登记不落，此表是唯一
-// 双语词表。文字一律 textContent（XSS 面）。
+// ── A2/DEC-…92；WR-2/WR-5 随迁：世界的文字与语言态──────────────────
+// 随信呈现的唯一形态 = 信流里的内联故事块（renderWorldStory）。WR-5
+// （用户定向第四击，DEC-OPI-8a4f980b…7）：世界日志屏整体退役——案头
+// 即世界自然发展之地，历史活在信流的故事块序列。过渡句恢复（WR-3 曾
+// 误退）：「这时，她收到了你的来信。」是世界编年史对一封世界内信件
+// 的如实记录（信是用户角色寄入世界的事件——呈现层合法，双层律不破）。
+// 这一小节只留它的双语词表与界面语言态：fallback 小字/安静日/过渡句
+// 三句，随 ui_language 设置（zh 缺省）。文字一律 textContent（XSS 面）。
 let uiLanguage = "zh";
 
 const WORLD_INBOX_TEXT = {
   zh: {
     fallback: "（这张便条写在世界学会中文之前——示以原文。）",
     quietDay: "安静的一天，没什么特殊的事。",
+    thenLetter: "这时，她收到了你的来信。",
   },
   en: {
     fallback: "(This note predates the world's Chinese — shown as written.)",
     quietDay: "A quiet day, nothing out of the ordinary.",
+    thenLetter: "Then, your letter arrives.",
   },
 };
 
@@ -3003,17 +2997,20 @@ function parlorWorldText(lang) {
 // 「继续」钮一并退役）；GET 读即揭示——revealed_now 是本次揭示的
 // 条数（服务端翻转前计数），零 ⇒ 零世界区块，对话末尾干净。
 
-// ── A2/DEC-…92；WR-2/WR-3 随迁：世界故事块──────────────────────────
-// 随信呈现的唯一形态：信流里的散文块，append 在信流尾 = 回信之后
-// （WR-3：服务端已无前置世界帧——世界步在 final 后跑，世界自己的日子
-// 恰在回信后显现）。渲染入口两臂：页面加载时的遗留补显与 final 后的
-// 延时揭示（loadWorldInbox 的 revealed_now 臂——读即揭示，零揭示零
-// 块）。日期行（世界自己的虚拟历日，服务端按 ui_language 本地化随
-// 行）+ 叙述序列（故事体散文段落，非卡片非署名）；过渡句已随范式退役。
-// 文字一律 textContent（XSS 纪律）；真实时间零进入——日期只来自
-// 服务的 date_localized。
-function renderWorldStory(event) {
+// ── A2/DEC-…92；WR-2/WR-5 随迁：世界故事块──────────────────────────
+// 随信呈现的唯一形态：信流里的散文块。WR-5（用户定向第四击）：**回原
+// 位原样**——当前轮的块插在**用户信与回信气泡之间**（信 → 世界块〔日
+// 期行+叙述+过渡句〕→ 回信，A2 织入序回归）；生成仍在服务端回信后跑
+// 不堵流（WR-2 不变），呈现位置与生成时机分离裁。**零滚动劫持**：插
+// 入不动视口（用户正在读回信不受拽——wr-3 的追底滚动随用户报告退役）。
+// 渲染入口两臂：页面加载时的遗留补显（尾部追加、无过渡句——A2 原分
+// 工）与 final 后的延时揭示（插回信之前、带过渡句——loadWorldInbox
+// 的 revealed_now 臂，读即揭示，零揭示零块）。文字一律 textContent
+// （XSS 纪律）；真实时间零进入——日期只来自服务的 date_localized。
+function renderWorldStory(event, opts) {
   const T = worldInboxText();
+  const withTransition = !!(opts && opts.withTransition);
+  const beforeEl = opts && opts.beforeEl ? opts.beforeEl : null;
   const wrap = document.createElement("div");
   wrap.className = "world-story";
   const dateLine = document.createElement("p");
@@ -3044,25 +3041,36 @@ function renderWorldStory(event) {
       wrap.appendChild(fb);
     }
   }
+  if (withTransition) {
+    // WR-5 恢复（wr-3 曾误退）：世界编年史对一封世界内信件的如实记
+    // 录——信是用户角色寄入世界的事件，这句是呈现层的缝合句，不是
+    // 「世界回应信」的剧情反应（双层律不破）。
+    const then = document.createElement("p");
+    then.className = "world-story-then";
+    then.textContent = T.thenLetter;
+    wrap.appendChild(then);
+  }
   // A2R (DEC-…99): the 「继续」 button is retired — the engine's
   // NOTICE checkpoint is an internal rhythm concept, not a product
-  // interaction. The letter trigger now auto-advances to the run's
-  // stop (the engine's own cycle loop), so every letter answers
-  // with one complete story block, zero mid-run interaction.
-  messages.appendChild(wrap);
-  // 追底（failLine 同款直滚——scrollBottom 是 components 的内政）。
-  window.scrollTo(0, document.body.scrollHeight);
+  // interaction. The letter trigger now auto-advances the run's
+  // stop, so every letter answers with one complete story block.
+  if (beforeEl && beforeEl.parentNode === messages) {
+    messages.insertBefore(wrap, beforeEl);
+  } else {
+    messages.appendChild(wrap);
+  }
+  // 零滚动劫持（WR-5）：插入不动视口——正在读的回信不受拽。
   return wrap;
 }
 
-// 加载臂（DEC-…92；WR-3 随迁）：页面装载（历史渲染后）读一次世界——
+// 加载臂（DEC-…92；WR-5 随迁）：页面装载（历史渲染后）读一次世界——
 // 只有当本次读取真的揭示了遗留未读便条（revealed_now>0，上次会话
-// 末尾没读到的）才补显一块故事块（同形、揭示即读）；零遗留 ⇒ 零世
-// 界区块，对话末尾干净。WR-3：同一臂兼作 final 后的延时揭示（下方
-// WORLD_REVEAL_DELAY_MS）——读即揭示幂等，二次读零块。无绑定（404
+// 末尾没读到的）才补显一块故事块（尾部追加、无过渡句——A2 原分工）；
+// 零遗留 ⇒ 零世界区块，对话末尾干净。WR-5：opts 透传给延时揭示臂
+// （插回信之前 + 过渡句）；读即揭示幂等，二次读零块。无绑定（404
 // 人话）或读失败同样零区块——不是一只空收件箱。返回载荷（语言切换
 // 臂等调用方自用）。
-async function loadWorldInbox() {
+async function loadWorldInbox(opts) {
   let data = null;
   try {
     data = await fetchWorldInbox();
@@ -3073,15 +3081,16 @@ async function loadWorldInbox() {
     return null;
   }
   if ((data.revealed_now || 0) > 0) {
-    renderWorldStory(data);
+    renderWorldStory(data, opts);
   }
   return data;
 }
 
-// WR-3 延时揭示（DEC-…63 R1）：finalize 之后世界步还在服务端跑
-// （模型生成 1-3s，回信先到不堵流）——前端在 final 落定后延时重读
-// 一次世界，揭示即呈现（「信到故事完零交互」在生成范式下的维持）。
-// 慢于延时的诚实降级不变：下次 load/进世界屏补显，不发明假即时。
+// WR-3 延时揭示（DEC-…63 R1；WR-5 随迁）：finalize 之后世界步还在
+// 服务端跑（模型生成 1-3s，回信先到不堵流）——前端在 final 落定后
+// 延时重读一次世界，揭示即呈现。WR-5：块插**回信气泡之前**并带过渡
+// 句（A2 织入序回归——信 → 世界块 → 回信），不滚动不拽视口。慢于
+// 延时的诚实降级不变：下次 load 补显（尾部追加形），不发明假即时。
 // 防重入：新一轮寄信开始时清旧 timer（loadWorldInbox 幂等臂保零
 // 双块——清 timer 是卫生不是正确性前提）。
 // Revisit：4000ms 是「生成耗时 + 余量」的校准初值——a calibration
@@ -3089,11 +3098,11 @@ async function loadWorldInbox() {
 const WORLD_REVEAL_DELAY_MS = 4000;
 let worldRevealTimer = 0;
 
-function scheduleWorldReveal() {
+function scheduleWorldReveal(replyEl) {
   if (worldRevealTimer) clearTimeout(worldRevealTimer);
   worldRevealTimer = setTimeout(() => {
     worldRevealTimer = 0;
-    loadWorldInbox();
+    loadWorldInbox({ withTransition: true, beforeEl: replyEl });
   }, WORLD_REVEAL_DELAY_MS);
 }
 
@@ -3890,8 +3899,9 @@ async function postTurn(text) {
     // fr-A：这一轮的 usage 回填轮锚（/api/turn 随行）+ 累计读回刷新。
     flowTurns[flowTurns.length - 1].usage = data.usage || null;
     refreshFlowMeter();
+    let replyEl = null;
     if (data.reply !== null && data.reply !== undefined) {
-      addLine("assistant", data.reply,
+      replyEl = addLine("assistant", data.reply,
         { enter: true, when: new Date().toISOString(),
           hits: data.word_hits || null });
     } else if (data.turn_status !== null && data.turn_status !== undefined) {
@@ -3903,11 +3913,12 @@ async function postTurn(text) {
     }
     const moments = data.teaching_moments || [];
     showMoments(moments);
-    // WR-3（DEC-…63 R1）：finalize 之后延时揭示——世界步此刻正在服务
-    // 端跑（final 后的模型生成，不堵流），WORLD_REVEAL_DELAY_MS 后重
-    // 读一次世界：揭示即呈现，故事块接在回信之后（生成范式下「信到
-    // 故事完零交互」的维持；慢于延时则下次 load/进世界屏补显）。
-    scheduleWorldReveal();
+    // WR-3/WR-5（DEC-…63/…7）：finalize 之后延时揭示——世界步此刻正在
+    // 服务端跑（final 后的模型生成，不堵流），WORLD_REVEAL_DELAY_MS 后
+    // 重读一次世界：块**插回这轮的回信气泡之前**并带过渡句（A2 织入序
+    // 回归——信 → 世界块 → 回信）；无回信行时退尾部追加形。慢于延时
+    // 则下次 load 补显（尾部追加）。
+    scheduleWorldReveal(replyEl);
   }
 }
 
@@ -4833,140 +4844,12 @@ async function loadMasthead(preFetchedRoster) {
   renderMasthead(roster);
 }
 
-// ── wf-2：世界日志屏（一级导航，DEC-OPI-5fc42174-…5 R4）────────────
-// navdock 的「世界」项 = 世界日志的专门面——按故事日分组的历史回看
-// （DEC-…92 句义修订后与内联故事块并存：随信呈现的唯一形态仍是信流
-// 故事块，本屏不随信）。每次进屏重拉（showSpace world 臂触发）——
-// 无缓存发明。屏头 = 世界身份（overview 驱动零字面）；主体 =
-// /api/world/log 的分组日志（服务端已按新→旧排好，顺序直用）；
-// 静日态 = 日志空 + overview 静日 ⇒ 一句静日句；无绑定（404 error
-// 形）⇒ 诚实空态——屏仍可达，零发明零崩。文字一律 textContent
-// （XSS 面）；日期零再创作——date_localized 服务端直显，渲染器
-// 零时钟（零 new Date）。
-
-// 世界屏双语 chrome 词表（zh 缺省回退；PARLOR_WORLD_TEXT 同族——
-// 界面 chrome 的双语词表，语言随载荷 ui_language）：静日句/空态句/
-// 旧记录读法/fallback 小字四句。fallback 句与 WORLD_INBOX_TEXT 同句
-// ——同一事实同一句，不另造读法。
-const WORLD_LOG_TEXT = {
-  zh: {
-    quietDay: "静悄悄的——世界还没有写下什么。",
-    emptyWorld: "这个世界还没有开始。",
-    legacy: "旧记录",
-    fallback: "（这张便条写在世界学会中文之前——示以原文。）",
-  },
-  en: {
-    quietDay: "All quiet — the world hasn't written anything yet.",
-    emptyWorld: "This world hasn't begun yet.",
-    legacy: "Older entries",
-    fallback: "(This note predates the world's Chinese — shown as written.)",
-  },
-};
-
-function worldLogText(lang) {
-  return WORLD_LOG_TEXT[lang] || WORLD_LOG_TEXT.zh;
-}
-
-async function loadWorldLogFace() {
-  const title = document.getElementById("world-title");
-  const day = document.getElementById("world-day");
-  const board = document.getElementById("world-log-board");
-  const quiet = document.getElementById("world-quiet");
-  const empty = document.getElementById("world-empty");
-  if (!board) return;
-  title.textContent = "";
-  day.hidden = true;
-  quiet.hidden = true;
-  empty.hidden = true;
-  board.textContent = "";
-  let overview = null;
-  let log = null;
-  try {
-    overview = await fetchWorldOverview();
-  } catch {
-    overview = null;
-  }
-  try {
-    log = await fetchWorldLog();
-  } catch {
-    log = null;
-  }
-  const lang = (log && log.ui_language)
-    || (overview && overview.ui_language) || "zh";
-  const T = worldLogText(lang);
-  if (log && log.error) {
-    // 无绑定（404 人话——fetchWorldInbox 同法判形）⇒ 诚实空态：
-    // 屏仍可达，不发明世界名，不崩。
-    empty.textContent = T.emptyWorld;
-    empty.hidden = false;
-    return;
-  }
-  if (!log || !Array.isArray(log.days)) {
-    // 读失败（非 404 的异常臂）⇒ 观察屏同法的失败横幅，带重试。
-    board.appendChild(stateBanner("error", { retry: loadWorldLogFace }));
-    return;
-  }
-  if (overview && !overview.error && overview.world_name) {
-    title.textContent = String(overview.world_name);
-    if (overview.date_localized) {
-      day.textContent = String(overview.date_localized);
-      day.hidden = false;
-    }
-  }
-  if (!log.days.length) {
-    // 静日态（判据照书）：日志空 + overview 静日 ⇒ 一句静日句；
-    // 静日判据不成立（overview 缺席）⇒ 诚实空兜底，不硬凑。
-    if (overview && !overview.error && overview.today
-        && overview.today.quiet) {
-      quiet.textContent = T.quietDay;
-      quiet.hidden = false;
-    } else {
-      board.appendChild(stateBanner("empty"));
-    }
-    return;
-  }
-  for (const group of log.days) {
-    board.appendChild(renderWorldLogDay(group, T));
-  }
-}
-
-// 一日一节：组头（date_localized 服务端直显；legacy 组 = 诚实旧记录
-// 读法——chrome 词示组，绝不造故事日）+ 条目（叙述 + moment 词 + 署名
-// 的 meta 小字行；legacy 组条目缀 revealed_at 原样时戳——旧时戳诚实
-// 示出，零再格式化）+ fallback 小字（服务端 fallback:true——中文叙述
-// 缺席、示以原文，从不把英文伪装成中文）。
-function renderWorldLogDay(group, T) {
-  const sec = document.createElement("section");
-  sec.className = "world-log-day";
-  const legacy = group.date_localized == null;
-  const head = document.createElement("p");
-  head.className = "world-log-date";
-  head.textContent = legacy ? T.legacy : String(group.date_localized ?? "");
-  sec.appendChild(head);
-  for (const item of (Array.isArray(group.items) ? group.items : [])) {
-    const note = document.createElement("p");
-    note.className = "world-log-item";
-    note.textContent = String(item.narration ?? "");
-    sec.appendChild(note);
-    const parts = [];
-    if (item.moment) parts.push(String(item.moment));
-    if (item.signature) parts.push(String(item.signature));
-    if (legacy && item.revealed_at) parts.push(String(item.revealed_at));
-    if (parts.length) {
-      const meta = document.createElement("p");
-      meta.className = "world-log-meta";
-      meta.textContent = parts.join(" · ");
-      sec.appendChild(meta);
-    }
-    if (item.fallback) {
-      const fb = document.createElement("p");
-      fb.className = "note world-log-fallback";
-      fb.textContent = T.fallback;
-      sec.appendChild(fb);
-    }
-  }
-  return sec;
-}
+// ── wf-2 世界日志屏：已随 WR-5 整体退役 ────────────────────────────
+// WR-5（用户定向第四击，DEC-OPI-8a4f980b…7）：「案头就是世界自然发展
+// 的地方」——navdock 的「世界」项、space-world 屏、loadWorldLogFace/
+// renderWorldLogDay/WORLD_LOG_TEXT 词表与 today-line 点击接线全部退役；
+// 历史活在案头信流的故事块序列（A2/DEC-…92 的原判断回归）。
+// /api/world/log 端点保留在服务端（零成本读面），前端零消费方。
 
 function envselCloser(event) {
   if (!(event.target instanceof Element)) return;

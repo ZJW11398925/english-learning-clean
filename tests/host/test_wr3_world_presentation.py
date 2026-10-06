@@ -83,8 +83,7 @@ def test_the_delayed_reveal_is_wired_with_a_named_constant() -> None:
     comment = app[block_start:constant_at]
     assert "a calibration" in comment
     assert "replaces this constant" in comment
-    assert "function scheduleWorldReveal()" in app
-    assert "scheduleWorldReveal();" in app
+    assert "function scheduleWorldReveal(replyEl)" in app
     # The timer is module-level and cleared both on schedule and on a
     # new letter (the re-entry hygiene — 处置 LOW-4 pins the in-turn
     # clear arm itself, not just the single existence).
@@ -95,18 +94,22 @@ def test_the_delayed_reveal_is_wired_with_a_named_constant() -> None:
         app.index("async function postTeachMe")
     ]
     assert "clearTimeout(worldRevealTimer);" in turn_block
-    # The timer callback is the read — the delayed arm dials the same
-    # idempotent loadWorldInbox (zero reveal ⇒ zero block).
+    # WR-5: the delayed read carries the woven presentation — the
+    # transition sentence and the reply element as the insert anchor.
     schedule = app[app.index("function scheduleWorldReveal"):]
     needle = schedule.index("}, WORLD_REVEAL_DELAY_MS")
     schedule = schedule[: schedule.index("}", needle)]
-    assert "loadWorldInbox();" in schedule
+    assert "loadWorldInbox({ withTransition: true, beforeEl: replyEl });" in (
+        schedule
+    )
 
 
 def test_the_turn_body_never_awaits_the_inbox() -> None:
-    """The turn's own flow never touches the inbox read — not awaited,
-    not bare (处置收紧评审 LOW-1/m10：裸 loadWorldInbox() 调用同样绕过
-    4s 延时，负控钉到调用串级)；the delayed arm is the one legal read."""
+    """The turn's own flow never touches the inbox read inline — not
+    awaited, not bare (wr-3); WR-5 keeps the law and restores the
+    presentation order: the delayed reveal's block lands **before the
+    reply bubble** (the A2 woven order — letter → world block →
+    reply), carrying the transition sentence, without scrolling."""
 
     app = _text("app.js")
     turn_block = app[
@@ -114,30 +117,35 @@ def test_the_turn_body_never_awaits_the_inbox() -> None:
         app.index("async function postTeachMe")
     ]
     assert "loadWorldInbox(" not in turn_block
-    assert "scheduleWorldReveal();" in turn_block
+    assert "scheduleWorldReveal(replyEl);" in turn_block
+    # WR-5: the reveal rides the reply element (the block inserts
+    # before it) and the renderer never scrolls.
+    assert "messages.insertBefore(wrap, beforeEl);" in app
+    renderer = app[
+        app.index("function renderWorldStory"):
+        app.index("async function loadWorldInbox")
+    ]
+    assert "window.scrollTo" not in renderer
 
 
 # ---------------------------------------------------------------------------
-# 2 — the retirements
+# 2 — the retirements (WR-5 flips the transition retirement back)
 
 
-def test_the_transition_sentence_is_retired() -> None:
-    """WR-3 R3：过渡句（「这时，她收到了你的来信。」/ "Then, your letter
-    arrives."）与 world-story-then 分支、thenLetter 键、withTransition
-    形参——全部退役（「世界回应信」范式的文案，双层律下语义错误）。"""
+def test_the_transition_sentence_is_restored() -> None:
+    """WR-5（DEC-OPI-8a4f980b…7，用户定向第四击）：过渡句恢复（wr-3
+    曾误退）——「这时，她收到了你的来信。」是世界编年史对一封世界内
+    信件的如实记录（信是用户角色寄入世界的事件；呈现层缝合句，非
+    「世界回应信」的剧情反应）。thenLetter 双语句、world-story-then
+    分支与 CSS 规则全部回到位。"""
 
     app = _text("app.js")
-    for gone in (
-        "这时，她收到了你的来信。",
-        "Then, your letter arrives.",
-        "thenLetter",
-        "world-story-then",
-        "withTransition",
-    ):
-        assert gone not in app, gone
-    # 处置（评审 INFO-1/m8）：append 位置钉——故事块挂信流尾（= 回信
-    # 之后，WR-3 R2 的位置事实）。
-    assert "messages.appendChild(wrap);" in app
+    assert "这时，她收到了你的来信。" in app
+    assert "Then, your letter arrives." in app
+    assert "thenLetter" in app
+    assert "world-story-then" in app
+    components = (WEBUI / "components.css").read_text(encoding="utf-8")
+    assert ".world-story .world-story-then {" in components
 
 
 def test_the_onworld_frame_path_is_retired() -> None:

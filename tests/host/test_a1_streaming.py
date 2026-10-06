@@ -742,9 +742,10 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     # history and never resends.
     assert "fetchTurnStream(" in postturn
     # WR-3: the onWorld frame call is retired with the frame — the
-    # turn body dials the delayed reveal instead (never an inline read).
+    # turn body dials the delayed reveal instead (never an inline read);
+    # WR-5 rides the reply element (the block lands before the reply).
     assert "renderWorldStory(event)" not in postturn
-    assert "scheduleWorldReveal();" in postturn
+    assert "scheduleWorldReveal(replyEl);" in postturn
     assert "typing.push(chunk)" in postturn
     assert "await typing.seal(" in postturn
     assert "startTypewriter()" in postturn
