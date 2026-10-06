@@ -1,19 +1,22 @@
 """WR-2 — the world narrator and the generated step (the paradigm
-flip's domain half).
+flip's domain half; WR-4 correction …58: no letter ever enters).
 
-The living-world paradigm flip (direction DEC-OPI-5fc42174…49, the
-user's own words in the ledger: 「世界发展应当是随机的，其基本由用户决
-定发展方向的过程，类似写小说，而不是从某个固定的库里组合几个没有价值
-和意义的东西出来」): the world's step is model-generated novel prose,
-one letter in, one or two beats out. The pin groups:
+The living-world paradigm flip (direction DEC-OPI-5fc42174…49, then the
+user's third direction DEC-…58: 「信不是剧情发展方向……世界的发展则完全
+不受影响」): the world's step is model-generated novel prose, wound by
+the turn's mechanical trigger and narrated from the world's own life —
+**the letter's text never reaches this layer** (spec §4.1 / the 走向
+entry's two-layer law; the letter shapes the penpal layer's reply
+only). The pin groups:
 
-1. **the prompt** — the letter rides **in full** (the direction v1's
-   judgment face: the letter steers the story), the bible's three parts
-   are present (setting prose, the cast on one line, the whole lore
-   fact set — an empty set says so honestly), the recent chronicle
-   rides old→new (only the recent slice, only what happened), and the
-   interface language picks the narration language (zh / en; anything
-   else is a construction refusal);
+1. **the prompt** — carries **no letter at all** (WR-4's judgment
+   face: every letter line is absent, the letter section header is
+   gone, and the world-autonomy instruction is present), the bible's
+   three parts are present (setting prose, the cast on one line, the
+   whole lore fact set — an empty set says so honestly), the recent
+   chronicle rides old→new (only the recent slice, only what
+   happened), and the interface language picks the narration language
+   (zh / en; anything else is a construction refusal);
 2. **the strict parse** — a well-formed batch of one or two beats
    passes; days out of range, a malformed kind, prose around the JSON,
    an empty or oversized batch, a blank narration, an unexpected field
@@ -202,9 +205,6 @@ def test_the_prompt_carries_no_letter_at_all() -> None:
     )
     for line in LETTER.splitlines():
         assert line not in prompt
-    marker = "ZZQ-UNIQUE-LETTER-MARKER-ZZQ"
-    tainted = build_narrator_prompt(_package(), (), (), "zh") + ""
-    assert marker not in tainted
     assert "The letter ==" not in prompt
     assert (
         "It does not react to any correspondence" in prompt

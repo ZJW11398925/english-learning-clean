@@ -229,9 +229,9 @@ class _BeatProvider(Protocol):
 
 
 class WorldNarrator:
-    """The model face that turns one letter into the world's next beats
-    (WR-2, DEC-OPI-5fc42174…49) — the production path the fixed-pool
-    engine retired out of.
+    """The model face that narrates the world's own next beats (WR-2,
+    DEC-OPI-5fc42174…49; WR-4 correction …58 — no letter ever enters)
+    — the production path the fixed-pool engine retired out of.
 
     One instance, one injected provider (the same object the persona
     runtime dials — the host's provider seam, the settings page's hot

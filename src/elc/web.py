@@ -3095,13 +3095,14 @@ class _WebFace:
         except OSError:
             self._world_packages = {}
         # WR-2 (DEC-OPI-5fc42174…49): the streamed arm's post-turn world
-        # letter rides this stash — the streamed job records the letter
-        # it just committed (text plus the turn id), and the handler's
+        # step rides this stash — the streamed job records the turn id
+        # it just committed (WR-4: the id only — the letter's text never
+        # reaches the world layer), and the handler's
         # fire-and-forget job consumes it **after** the final frame is
         # out (流已关，零流延迟). The work queue's one-thread discipline
         # makes the handoff race-free: the write and the consume are two
         # queue jobs, never two threads.
-        self._stream_world_letter: str | None = None
+        self._stream_world_turn: str | None = None
 
     def _require_cards(self) -> SqliteCharacterCardStore:
         """The card store, or the loud refusal (never a silent empty)."""
@@ -3123,10 +3124,11 @@ class _WebFace:
         """One committed turn, as the page renders it.
 
         WR-2 (DEC-OPI-5fc42174…49): after the payload is built, the
-        world's letter step runs **inline on this path** — the narrator
-        turns the letter into the world's next beats (one blocking
+        world's step runs **inline on this path** — the narrator writes
+        the world's own next beats (one blocking
         provider call, one to two story beats, the chronicle and the
-        reveal queue written). A real provider makes this honest price
+        reveal queue written; WR-4: the turn is the wind-up, the letter
+        text never enters). A real provider makes this honest price
         explicit: the blocking answer now carries the world's narration
         round trip too (+1-3s); the world's leg is fail-soft to stderr
         (the reply is the page's substance; its bookkeeping never blocks
@@ -3137,7 +3139,7 @@ class _WebFace:
 
         payload, turn_id = self._commit_and_answer(text)
         if turn_id is not None:
-            self._world_post_turn_letter(turn_id)
+            self._world_post_turn_step(turn_id)
         return payload
 
     def _commit_and_answer(
@@ -3216,9 +3218,9 @@ class _WebFace:
         The A2 pre-step (and its structured ``world`` frame) is retired
         with the fixed-pool engine step it served; the page's
         ``onWorld`` callback simply never fires (the frontend face is
-        wr-3's). The world's letter step rides **after the final
-        frame** — this job stashes the committed letter (text plus its
-        turn id) and the handler enqueues the face's
+        wr-3's). The world's step rides **after the final
+        frame** — this job stashes the committed turn's id (WR-4: the
+        id only) and the handler enqueues the face's
         :meth:`world_step_for_stream` once the stream is closed, so the
         narration's round trip costs the stream nothing
         (流已关，零流延迟). The blocking face keeps its inline leg.
@@ -3227,7 +3229,7 @@ class _WebFace:
         live = self._host.coordinator.persona_provider()
         if not hasattr(live, "call_streaming"):
             payload, turn_id = self._commit_and_answer(text)
-            self._stream_world_letter = turn_id
+            self._stream_world_turn = turn_id
             return payload
         bridge = _TurnStreamBridge(events)
         coordinator = self._host.coordinator
@@ -3236,29 +3238,27 @@ class _WebFace:
         )
         try:
             payload, turn_id = self._commit_and_answer(text)
-            self._stream_world_letter = turn_id
+            self._stream_world_turn = turn_id
             return payload
         finally:
             coordinator.replace_persona_provider(live)
 
     def world_step_for_stream(self) -> None:
-        """The streamed arm's world letter step (WR-2): the
-        fire-and-forget job the handler enqueues once the final frame
-        is out. It consumes the letter the streamed turn stashed — a
-        job that finds nothing (a stream that never committed, or a
-        second enqueue) answers the honest quiet — and runs the same
-        fail-soft letter face the blocking turn runs inline."""
+        """The streamed arm's world step (WR-2; WR-4: the wind-up id
+        only): the fire-and-forget job the handler enqueues once the
+        final frame is out. It consumes the turn id the streamed turn
+        stashed — a job that finds nothing (a stream that never
+        committed, or a second enqueue) answers the honest quiet — and
+        runs the same fail-soft step face the blocking turn runs
+        inline."""
 
-        letter = self._stream_world_letter
-        self._stream_world_letter = None
-        if letter is None:
-            return
-        turn_id = letter
+        turn_id = self._stream_world_turn
+        self._stream_world_turn = None
         if turn_id is None:
             return
-        self._world_post_turn_letter(turn_id)
+        self._world_post_turn_step(turn_id)
 
-    def _world_post_turn_letter(self, turn_id: str) -> None:
+    def _world_post_turn_step(self, turn_id: str) -> None:
         """The world's letter step, fail-soft (WR-2, DEC-OPI-5fc42174…49;
         WR-4 correction …58): the committed turn is the run's mechanical
         wind-up and goes to the narrator through

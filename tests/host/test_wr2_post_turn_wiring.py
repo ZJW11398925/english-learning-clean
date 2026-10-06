@@ -8,14 +8,15 @@ longer the pre-generation engine run — it is the narrator's generated
 step, running **after** the turn commits (WR-2, DEC-OPI-5fc42174…49).
 The pin groups:
 
-1. **the blocking arm** — ``/api/turn`` runs the letter step inline
+1. **the blocking arm** — ``/api/turn`` runs the world step inline
    after the payload is built: the beats land in the chronicle
    (``source = world_narrator``), the reveals wait ``PENDING``, the
-   reply is untouched, and the narrator's prompt carries **this turn's
-   letter text in full** (the wiring's own judgment face);
+   reply is untouched, and the narrator's prompt carries **no letter
+   at all** (WR-4's judgment face, DEC-…58: the turn is the mechanical
+   wind-up; the world narrates its own life);
 2. **the streamed arm** — the streamed turn's frames are delta＊ →
    final (no ``world`` frame anywhere — the A2 pre-step is retired),
-   and the letter step runs **after** the final frame is out (the
+   and the world step runs **after** the final frame is out (the
    fire-and-forget job the handler enqueues; the durable rows are its
    receipt), carrying the committed turn's real id (the stash's
    honesty — the run row names its letter);
