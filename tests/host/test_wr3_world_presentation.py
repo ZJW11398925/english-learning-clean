@@ -64,54 +64,27 @@ def _text(name: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 1 — the delayed reveal's wiring
+# 1 — the world-first wiring (WR-6 recut: the delayed reveal is retired)
 
 
-def test_the_delayed_reveal_is_wired_with_a_named_constant() -> None:
-    """WR-3 R1：finalize 之后恰一次 timer 驱动的世界读——命名常量
-    WORLD_REVEAL_DELAY_MS（4000，Revisit 校准注在场）+ scheduleWorldReveal
-    挂在 postTurn 成功尾 + 新信先清旧 timer（防重入）。处置（评审
-    LOW-3/LOW-4）：Revisit 注的钉锚定在常量自己的注释块（断行形——
-    旧针被 TYPING_CPS 的同句错位满足）；清 timer 臂钉进 postTurn 体
-    （m7 缺口——单在位断言不辨臂）。"""
+def test_the_delayed_reveal_is_fully_retired() -> None:
+    """WR-6（DEC-OPI-8a4f980b…13）：延时揭示臂整体退役——世界步已回到
+    回信之前（流内 world 帧先讲），无需事后 timer 重读。常量、timer
+    句柄、schedule 函数与 turn 体内的清 timer 臂全部缺位（负控）。"""
 
     app = _text("app.js")
-    assert "const WORLD_REVEAL_DELAY_MS = 4000;" in app
-    # The constant's own comment block carries the calibration note (the
-    # pin anchors the two lines together — a same-sentence hit anywhere
-    # else in the file does not satisfy it; 处置 LOW-3).
-    constant_at = app.index("const WORLD_REVEAL_DELAY_MS = 4000;")
-    block_start = app.rindex("\n\n", 0, constant_at)
-    comment = app[block_start:constant_at]
-    assert "a calibration" in comment
-    assert "replaces this constant" in comment
-    assert "function scheduleWorldReveal(replyEl)" in app
-    # The timer is module-level and cleared both on schedule and on a
-    # new letter (the re-entry hygiene — 处置 LOW-4 pins the in-turn
-    # clear arm itself, not just the single existence).
-    assert "let worldRevealTimer = 0;" in app
-    assert "clearTimeout(worldRevealTimer);" in app
-    turn_block = app[
+    assert "WORLD_REVEAL_DELAY_MS" not in app
+    assert "worldRevealTimer" not in app
+    assert "scheduleWorldReveal" not in app
+    assert "setTimeout" not in app[
         app.index("async function postTurn"):
         app.index("async function postTeachMe")
     ]
-    assert "clearTimeout(worldRevealTimer);" in turn_block
-    # WR-5: the delayed read carries the woven presentation — the
-    # transition sentence and the reply element as the insert anchor.
-    schedule = app[app.index("function scheduleWorldReveal"):]
-    needle = schedule.index("}, WORLD_REVEAL_DELAY_MS")
-    schedule = schedule[: schedule.index("}", needle)]
-    assert "loadWorldInbox({ withTransition: true, beforeEl: replyEl });" in (
-        schedule
-    )
 
 
-def test_the_turn_body_never_awaits_the_inbox() -> None:
-    """The turn's own flow never touches the inbox read inline — not
-    awaited, not bare (wr-3); WR-5 keeps the law and restores the
-    presentation order: the delayed reveal's block lands **before the
-    reply bubble** (the A2 woven order — letter → world block →
-    reply), carrying the transition sentence, without scrolling."""
+def test_the_world_frame_renders_inline_before_the_reply() -> None:
+    """WR-6：世界帧当场渲染——onWorld 回调带过渡句、零滚动；turn 体零
+    inbox 读（帧即呈现，load 臂只管页面装载遗留）。"""
 
     app = _text("app.js")
     turn_block = app[
@@ -119,10 +92,12 @@ def test_the_turn_body_never_awaits_the_inbox() -> None:
         app.index("async function postTeachMe")
     ]
     assert "loadWorldInbox(" not in turn_block
-    assert "scheduleWorldReveal(replyEl);" in turn_block
-    # WR-5: the reveal rides the reply element (the block inserts
-    # before it) and the renderer never scrolls.
-    assert "messages.insertBefore(wrap, beforeEl);" in app
+    assert (
+        "renderWorldStory(event, { withTransition: true })" in turn_block
+    )
+    # The blocking fallback renders the payload's world key first.
+    assert "renderWorldStory(data.world, { withTransition: true });" in app
+    # The renderer never scrolls (wr-5's law survives).
     renderer = app[
         app.index("function renderWorldStory"):
         app.index("async function loadWorldInbox")
@@ -150,19 +125,21 @@ def test_the_transition_sentence_is_restored() -> None:
     assert ".world-story .world-story-then {" in components
 
 
-def test_the_onworld_frame_path_is_retired() -> None:
-    """WR-3 R4：onWorld 死路径退役——api.js 的 fetchTurnStream 回双参
-    （第三参与 {"type":"world"} 帧解析分支不在），app.js 的调用点双参。"""
+def test_the_onworld_frame_path_is_restored() -> None:
+    """WR-6：onWorld 帧路径恢复——api.js 的 fetchTurnStream 三参（世界
+    帧解析分支回来），app.js 的调用点三参（onWorld 渲染回调）。帧有
+    生产者了（世界先行步）。"""
 
     api = _text("api.js")
-    assert "export async function fetchTurnStream(text, onDelta) {" in api
-    assert 'event.type === "world"' not in api
-    assert "onWorld" not in api
+    assert (
+        "export async function fetchTurnStream(text, onDelta, onWorld)"
+        in api
+    )
+    assert 'event.type === "world"' in api
     app = _text("app.js")
-    assert "fetchTurnStream(" in app
     call = app[app.index("data = await fetchTurnStream(") :]
     call = call[: call.index(");")]
-    assert "renderWorldStory" not in call
+    assert "renderWorldStory" in call
 
 
 # ---------------------------------------------------------------------------
@@ -193,9 +170,10 @@ def test_generated_narrations_carry_no_fallback_bit(
 
         def call(self, prompt: CompiledPrompt) -> ProviderOutput:
             self._dial += 1
-            if self._dial % 2 == 1:
-                return ProviderOutput(text=REPLY, error=None)
-            return ProviderOutput(text=BEATS_JSON, error=None)
+            # WR-6 世界先行：叙事拨号在前（答 beats JSON）。
+            if self._dial == 1:
+                return ProviderOutput(text=BEATS_JSON, error=None)
+            return ProviderOutput(text=REPLY, error=None)
 
     with web_stack(app_db, provider=BeatsProvider()) as stack:
         status, _ = stack.post("/api/turn", {"text": "Any letter."})

@@ -39,17 +39,16 @@ export function fetchTurn(text) {
   return postJson("/api/turn", { text: text });
 }
 
-/** 流式一轮（A1）：POST /api/turn_stream——每个 delta 当场回调
- *  onDelta(text)，流走完以 final 载荷（旧 /api/turn 的全量形状）兑现。
- *  WR-2/WR-3：帧序 delta＊ → final——世界步在服务端 final 之后才跑
- *  （模型生成不堵流），世界不再有任何流内帧（旧 world 帧与其解析
- *  分支随范式退役）；前端在 final 后延时重读世界（app.js 的
- *  WORLD_REVEAL_DELAY_MS 揭示臂）。返回 null = 对端没按 SSE 回答
- *  （调用方回退旧 POST）；抛错 = 请求已经开始后中断
- *  （err.started 区分：流真开始过才为 true——调用方对 started 的中断
- *  不重发信，拉历史对齐）。解析是防御性的：只认「data: 」行，坏行/
- *  坏 JSON 一律跳过、解析本身永不抛。 */
-export async function fetchTurnStream(text, onDelta) {
+/** 流式一轮（A1；WR-6 世界先行）：POST /api/turn_stream——事件序
+ *  world → delta＊ → final。首个 {"type":"world"} 帧当场回调
+ *  onWorld(event)（世界先讲：日期行+叙述+过渡句，回信的 delta 之后才
+ *  到——DEC-OPI-8a4f980b…13 恢复 spec §4.2 的正典顺序）；每个 delta
+ *  当场回调 onDelta(text)，流走完以 final 载荷（旧 /api/turn 的全量
+ *  形状）兑现。返回 null = 对端没按 SSE 回答（调用方回退旧 POST）；
+ *  抛错 = 请求已经开始后中断（err.started 区分：流真开始过才为
+ *  true——调用方对 started 的中断不重发信，拉历史对齐）。解析是防
+ *  御性的：只认「data: 」行，坏行/坏 JSON 一律跳过、解析本身永不抛。 */
+export async function fetchTurnStream(text, onDelta, onWorld) {
   let res;
   try {
     res = await fetch("/api/turn_stream", {
@@ -81,7 +80,9 @@ export async function fetchTurnStream(text, onDelta) {
         if (!line) continue;
         let event;
         try { event = JSON.parse(line.slice(6)); } catch { continue; }
-        if (event && event.type === "delta"
+        if (event && event.type === "world") {
+          if (onWorld) onWorld(event);
+        } else if (event && event.type === "delta"
             && typeof event.text === "string") {
           onDelta(event.text);
         } else if (event && event.type === "final") {

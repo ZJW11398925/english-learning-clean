@@ -768,27 +768,28 @@ def test_the_page_carries_the_world_inbox_instrument() -> None:
 
 
 def test_the_turn_does_not_reread_the_inbox() -> None:
-    """DEC-…92's law, **carried into the WR-3 era**: the turn still
-    never rereads the inbox *inline* (no awaited second read in the
-    turn's own flow — the reply lands first, the world steps after);
-    the delayed reveal (WR-3, DEC-…63) is the one legal re-read, and it
-    rides the timer, not the turn body. The continue interaction's
+    """DEC-…92's law, **carried into the WR-6 era**: the turn's own flow
+    never touches the inbox read — the world rides the turn's own
+    stream (the world-first frame renders inline; the delayed reveal of
+    wr-3/wr-5 is retired with the post-reply paradigm), and no inline
+    inbox read exists in the turn body. The continue interaction's
     strings retired with the button (A2R DEC-…99) and stay gone."""
 
     app = (REPO_ROOT / "src" / "elc" / "webui" / "app.js").read_text(
         encoding="utf-8"
     )
-    # The turn's response block carries no inline inbox reread (the
-    # reply is the page's substance; the world's beats arrive by the
-    # delayed arm — scheduleWorldReveal, never an awaited read).
     turn_block = app[app.find("async function postTurn") : app.find(
         "async function postTeachMe"
     )]
-    assert "await loadWorldInbox" not in turn_block
-    # WR-3/WR-5's delayed arm: the finalize tail schedules the one legal
-    # reread (the timer callback dials loadWorldInbox, not the body);
-    # WR-5 rides the reply element so the block lands before the reply.
-    assert "scheduleWorldReveal(replyEl);" in turn_block
+    # No inbox read in the turn body, and no delayed-reveal timer
+    # anywhere (WR-6: the world frame is pre-reply; the load arm is the
+    # page-load leftover's only reader).
+    assert "loadWorldInbox(" not in turn_block
+    assert "scheduleWorldReveal" not in app
+    # WR-6: the world-first frame renders inline with its transition.
+    assert (
+        "renderWorldStory(event, { withTransition: true })" in turn_block
+    )
     # The continue failure arm and its button text are gone with the
     # interaction (A2R DEC-…99).
     assert 'typeof fresh.error === "string"' not in app

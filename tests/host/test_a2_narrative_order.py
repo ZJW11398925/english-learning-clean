@@ -182,11 +182,12 @@ def _span_package(
 # ---------------------------------------------------------------------------
 
 
-def test_the_stream_order_is_deltas_then_final(tmp_path: Path) -> None:
-    """The streamed turn's event order is delta＊ → final, nothing else:
-    the A2 ``world`` frame is retired with the pre-step it carried
-    (WR-2, DEC-OPI-5fc42174…49) — no structured frame lands before the
-    first delta, no matter that this conversation is world-bound."""
+def test_the_stream_order_is_world_then_deltas_then_final(
+    tmp_path: Path,
+) -> None:
+    """WR-6（DEC-OPI-8a4f980b…13）：流序回正典 **world → delta＊ →
+    final**——世界帧先于首个 delta（世界运转在前，她的回信是运转的
+    落点——spec §4.2；用户判词：信不得先于世界事件显示）。"""
 
     endpoint = _FakeOpenAI()
     endpoint.start()
@@ -197,13 +198,12 @@ def test_the_stream_order_is_deltas_then_final(tmp_path: Path) -> None:
             )
             assert status == 200
             frames = _sse_frames(raw)
-            others = [
-                f for f in frames if f["type"] not in ("delta", "final")
-            ]
-            assert others == []
-            assert frames[0]["type"] == "delta"
+            assert frames[0]["type"] == "world"
+            assert frames[1]["type"] == "delta"
             assert frames[-1]["type"] == "final"
-            assert [f["type"] for f in frames][:-1] == ["delta"] * len(REPLY)
+            assert [f["type"] for f in frames][1:-1] == (
+                ["delta"] * len(REPLY)
+            )
     finally:
         endpoint.stop()
 
@@ -211,12 +211,11 @@ def test_the_stream_order_is_deltas_then_final(tmp_path: Path) -> None:
 def test_the_streamed_turn_advances_the_world_exactly_once(
     tmp_path: Path,
 ) -> None:
-    """One streamed letter, one world letter step, run **after** the
-    final: the post-step job winds the anchor run once and writes the
-    narrator's beats; a second letter resumes the same anchor run and
-    adds exactly its own beats (no double step, no second winch). The
-    provider is the scripted beats double (no streaming face — the
-    blocking shape, zero deltas, one final)."""
+    """WR-6：一封流式信、一次世界步——**先于 final**（world 帧先行，
+    锚定 run 由步内落库；阻塞形 provider 下流序恰 world → final）；
+    第二封信 resume 同一锚定 run 只添自己的 beats（无双步无第二发
+    条）。步先于 commit，事件 id 走计数派生臂（WR-2 docstring 自认
+    的无重放保护臂——诚实）。"""
 
     app_db = tmp_path / "app.db"
     provider = BeatsProvider(beats_json=BEATS_TWO)
@@ -225,7 +224,7 @@ def test_the_streamed_turn_advances_the_world_exactly_once(
             stack.port, "/api/turn_stream", {"text": A1_TEXT}
         )
         assert status == 200
-        assert [f["type"] for f in _sse_frames(raw)] == ["final"]
+        assert [f["type"] for f in _sse_frames(raw)] == ["world", "final"]
         _wait_for_world_rows(app_db, "SELECT event_id FROM world_event", 2)
         runs = _ro_rows(app_db, "SELECT run_id FROM world_run")
         assert len(runs) == 1
@@ -243,9 +242,10 @@ def test_the_streamed_turn_advances_the_world_exactly_once(
 
 
 def test_the_final_carries_no_world_key(tmp_path: Path) -> None:
-    """The final's payload keeps the blocking shape byte for byte — and
-    the retired ``world_step_note`` key is gone from both (WR-2: the
-    world's leg is stderr-fail-soft, never a payload key)."""
+    """The streamed final keeps its own shape — the world rides the
+    frame, never a final key — and the retired ``world_step_note`` key
+    is gone from both (the blocking answer carries the frame under its
+    own ``world`` key, WR-6)."""
 
     endpoint = _FakeOpenAI()
     endpoint.start()
@@ -258,13 +258,17 @@ def test_the_final_carries_no_world_key(tmp_path: Path) -> None:
             final = _sse_frames(raw)[-1]
             assert final["type"] == "final"
             assert "world_step_note" not in final
+            assert "world" not in final
             assert final["reply"] == REPLY
             status, blocking_raw = _post(
                 stack.port, "/api/turn", {"text": A1_TEXT}
             )
             assert status == 200
             blocking = json.loads(blocking_raw.decode("utf-8"))
-            assert set(final.keys()) - {"type"} == set(blocking.keys())
+            assert set(final.keys()) - {"type"} == set(blocking.keys()) - {
+                "world"
+            }
+            assert blocking["world"]["type"] == "world"
     finally:
         endpoint.stop()
 
@@ -275,13 +279,14 @@ def test_the_final_carries_no_world_key(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_the_generated_notes_wait_pending_until_the_look(
+def test_the_generated_notes_reveal_with_the_frame(
     tmp_path: Path,
 ) -> None:
-    """WR-2's presentation law: the letter step writes its beats and
-    leaves exactly one ``PENDING`` reveal per beat — the inbox's read
-    (the presentation trigger) is what flips them, and the read
-    afterwards finds everything revealed (nothing left behind)."""
+    """WR-6's presentation law: the world-first step writes its beats
+    and the frame **is** the look — ``reveal_all`` rides the frame's
+    emission, so the page's world block arrives already revealed and a
+    later inbox read flips nothing (``revealed_now == 0``; nothing left
+    behind)."""
 
     app_db = tmp_path / "app.db"
     provider = BeatsProvider(beats_json=BEATS_TWO)
@@ -289,22 +294,18 @@ def test_the_generated_notes_wait_pending_until_the_look(
         status, turn = stack.post("/api/turn", {"text": CLEAN_TEXT})
         assert status == 200
         assert turn["reply"] == provider.reply_text
+        # The frame is the look: everything arrived revealed.
         pending = _ro_rows(
             app_db,
             "SELECT item_id FROM world_reveal_item WHERE status = 'PENDING'",
         )
-        assert len(pending) == 2
+        assert len(pending) == 0
         status, inbox = stack.get_json("/api/world/inbox")
         assert status == 200
-        assert inbox["revealed_now"] == 2
+        assert inbox["revealed_now"] == 0
         for note in inbox["items"]:
             assert note["status"] == "REVEALED"
             assert note["story_date"] is not None
-        assert _ro_rows(
-            app_db,
-            "SELECT COUNT(*) FROM world_reveal_item"
-            " WHERE status = 'PENDING'",
-        )[0][0] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -603,9 +604,10 @@ def test_run_step_without_a_package_keeps_the_callers_moment(
 def test_the_inbox_payload_counts_its_own_reveal(tmp_path: Path) -> None:
     """DEC-…92's data half: the inbox payload answers ``revealed_now``
     — the count of PENDING notes **this very read** flipped (counted
-    before the flip). The letter's own beats read first (WR-2: the
-    letter step leaves its beats pending); a note left pending by hand
-    (the last session's unread leg) reads one and rides the items."""
+    before the flip). WR-6: the turn's own beats arrive already
+    revealed (the frame was the look), so the turn's read flips zero —
+    a note left pending by hand (the last session's unread leg) is the
+    one this read flips and rides the items."""
 
     app_db = tmp_path / "app.db"
     provider = BeatsProvider(beats_json=BEATS_TWO)
@@ -614,8 +616,9 @@ def test_the_inbox_payload_counts_its_own_reveal(tmp_path: Path) -> None:
         assert status == 200
         status, payload = stack.get_json("/api/world/inbox")
         assert status == 200
-        # The letter's own beats were the unread leg this read flipped.
-        assert payload["revealed_now"] == 2
+        # WR-6: the turn's own beats were revealed with the frame — this
+        # read flips nothing.
+        assert payload["revealed_now"] == 0
         current_run = _ro_rows(
             app_db,
             "SELECT run_id FROM world_run ORDER BY created_at DESC,"
@@ -824,8 +827,8 @@ def test_the_quiet_day_arm_is_pinned_in_source() -> None:
     # WR-5 restores the transition sentence with the paradigm's reading.
     assert "这时，她收到了你的来信。" in app_source
     assert "Then, your letter arrives." in app_source
-    # The world frame's parser branch is gone with the frame (WR-2/3).
-    assert 'event.type === "world"' not in (
+    # The world frame's parser branch is back with its producer (WR-6).
+    assert 'event.type === "world"' in (
         (WEBUI / "api.js").read_text(encoding="utf-8")
     )
 

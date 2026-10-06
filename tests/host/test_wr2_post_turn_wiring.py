@@ -72,13 +72,19 @@ _BEATS_OBJ: dict[str, Any] = {
 BEATS_TWO = json.dumps(_BEATS_OBJ)
 
 
+#: WR-6 世界先行：叙事者拨号的判别标记（prompt 内容级——比奇偶更稳，
+#: 事后步被 patch 掉时回信是唯一拨号，奇偶会错位）。
+NARRATOR_MARK = "You are the narrator of a small fictional world"
+
+
 class BeatsProvider:
-    """The scripted double for the post-turn wiring: the odd calls (the
-    persona round trips) answer the letter's reply, the even calls (the
-    world letter steps) answer the beats JSON. No ``call_streaming``
-    face — the streamed path runs its blocking shape, so the pins hold
-    for both turn faces with one double. The prompts it saw are the
-    wiring's own reading instrument."""
+    """The scripted double for the world-first wiring (WR-6): a call
+    whose prompt carries the narrator's opening line answers the beats
+    JSON (the world's pre-reply narration), every other call answers
+    the letter's reply. No ``call_streaming`` face — the streamed path
+    runs its blocking shape, so the pins hold for both turn faces with
+    one double. The prompts it saw are the wiring's own reading
+    instrument."""
 
     def __init__(
         self,
@@ -92,13 +98,17 @@ class BeatsProvider:
 
     def call(self, prompt: CompiledPrompt) -> ProviderOutput:
         self.prompts.append(prompt.prompt_text)
-        if len(self.prompts) % 2 == 1:
-            return ProviderOutput(text=self._reply, error=None)
-        return ProviderOutput(text=self._beats, error=None)
+        if NARRATOR_MARK in prompt.prompt_text:
+            return ProviderOutput(text=self._beats, error=None)
+        return ProviderOutput(text=self._reply, error=None)
 
     @property
     def reply_text(self) -> str:
         return self._reply
+
+    @property
+    def beats_text(self) -> str:
+        return self._beats
 
     @property
     def narrations(self) -> list[str]:
@@ -144,14 +154,12 @@ def _wait_for_world_rows(
 # ---------------------------------------------------------------------------
 
 
-def test_the_blocking_turn_runs_the_world_letter_after_the_reply(
+def test_the_blocking_turn_runs_the_world_before_the_reply(
     tmp_path: Path,
 ) -> None:
-    """/api/turn's letter step rides inline after the payload is built:
-    the beats land (``world_narrator``), the reveals wait ``PENDING``,
-    the reply is whole — and WR-4: the narrator's prompt carries **no
-    letter at all** (the turn is the mechanical wind-up; the world
-    narrates its own life, unreactive to correspondence)."""
+    """WR-6（DEC-OPI-8a4f980b…13）：世界步先于回信生成——阻塞载荷带
+    ``world`` 键（世界块数据），beats 已落库并**当场揭示**（帧即看），
+    回信在后；WR-4：叙事者的 prompt 零信文（世界自主，不回应通信）。"""
 
     app_db = tmp_path / "app.db"
     provider = BeatsProvider()
@@ -161,6 +169,12 @@ def test_the_blocking_turn_runs_the_world_letter_after_the_reply(
         assert status == 200
         assert turn["reply"] == provider.reply_text
         assert "world_step_note" not in turn
+        # The world-first frame rides the payload (rendered before the
+        # reply line on the page), narrations verbatim, no fallback bit.
+        assert turn["world"]["notes"][0]["fallback"] is False
+        assert (
+            turn["world"]["notes"][0]["narration"] in provider.beats_text
+        )
         rows = _ro_rows(
             app_db,
             "SELECT source FROM world_event ORDER BY event_id ASC",
@@ -169,14 +183,15 @@ def test_the_blocking_turn_runs_the_world_letter_after_the_reply(
             "world_narrator",
             "world_narrator",
         ]
+        # WR-6: the frame was the look — the beats arrive already revealed.
         assert _ro_rows(
-            app_db,
-            "SELECT COUNT(*) FROM world_reveal_item WHERE status = 'PENDING'",
-        )[0][0] == 2
-        # WR-4（DEC-…58）：信永不进入世界层——第二次拨号（叙事者的）的
-        # prompt 零信文（负控），且带世界自主指令（正控）。信只属于笔友
-        # 层（回信面），发条只是机械触发。
-        narrator_prompt = provider.prompts[1]
+            app_db, "SELECT COUNT(*) FROM world_reveal_item"
+            " WHERE status = 'PENDING'"
+        )[0][0] == 0
+        # WR-4（DEC-…58）：信永不进入世界层——第一次拨号（叙事者的，
+        # WR-6 起在最前）的 prompt 零信文（负控），且带世界自主指令
+        # （正控）。信只属于笔友层（回信面），发条只是机械触发。
+        narrator_prompt = provider.prompts[0]
         assert letter not in narrator_prompt
         assert "It does not react to any correspondence" in narrator_prompt
 
@@ -184,10 +199,9 @@ def test_the_blocking_turn_runs_the_world_letter_after_the_reply(
 def test_the_narrator_language_follows_the_interface_setting(
     tmp_path: Path,
 ) -> None:
-    """WR-2 处置（评审 LOW-2/LOW-3，变异 m10 的钉缺口）：ui_language 的
-    端到端缝——设置页切 en 后，世界信步的 narrator prompt 带英文叙述指
-    令（该缝此前只有单元钉，web→narrator 的传递无端到端证据——硬编码
-    "en" 或丢传递都曾全绿）。"""
+    """WR-2 处置（评审 LOW-2/LOW-3，变异 m10 的钉缺口）；WR-6 随迁
+    （叙事拨号升至第一次）：ui_language 的端到端缝——设置页切 en 后，
+    世界步的 narrator prompt 带英文叙述指令。"""
 
     app_db = tmp_path / "app.db"
     provider = BeatsProvider()
@@ -198,7 +212,7 @@ def test_the_narrator_language_follows_the_interface_setting(
         assert status == 200
         status, _ = stack.post("/api/turn", {"text": "Any letter."})
         assert status == 200
-        narrator_prompt = provider.prompts[1]
+        narrator_prompt = provider.prompts[0]
         assert "The narration is written in English." in narrator_prompt
         assert "Chinese (中文)" not in narrator_prompt
 
@@ -208,14 +222,13 @@ def test_the_narrator_language_follows_the_interface_setting(
 # ---------------------------------------------------------------------------
 
 
-def test_the_stream_runs_the_world_letter_after_the_final(
+def test_the_stream_runs_the_world_before_the_reply(
     tmp_path: Path,
 ) -> None:
-    """The streamed turn's frames are exactly one final (the blocking
-    shape for a provider without a streaming face), and the letter step
-    runs **after** the response is complete — the durable rows are the
-    fire-and-forget job's receipt, and the run row names the committed
-    turn (the stash's honesty: no anonymous letter)."""
+    """WR-6：世界步先于回信——流式面（无流形 provider 走阻塞形）的第
+    一帧是 ``world`` 帧（世界块数据），final 随后；beats 当场揭示（帧
+    即看），run 行由计数派生 id 落库（步先于 commit——WR-2 的 turn-id
+    派生需要已提交的 turn，docstring 自认无重放保护的诚实臂）。"""
 
     app_db = tmp_path / "app.db"
     provider = BeatsProvider()
@@ -224,24 +237,27 @@ def test_the_stream_runs_the_world_letter_after_the_final(
             stack.port, "/api/turn_stream", {"text": A1_TEXT}
         )
         assert status == 200
-        assert [f["type"] for f in _sse_frames(raw)] == ["final"]
-        rows = _wait_for_world_rows(
-            app_db, "SELECT trigger_turn_id FROM world_run", 1
-        )
-        # The stash carried the committed turn's real id.
-        assert rows[0][0] is not None
+        frames = _sse_frames(raw)
+        # The world frame lands first — before the (here absent) deltas
+        # and the final: the world narrates, her reply arrives second.
+        assert [f["type"] for f in frames] == ["world", "final"]
+        assert frames[0]["notes"][0]["narration"] == provider.narrations[0]
         assert _ro_rows(
             app_db, "SELECT COUNT(*) FROM world_event"
         )[0][0] == 2
+        # The frame was the look: nothing waits behind it.
+        assert _ro_rows(
+            app_db, "SELECT COUNT(*) FROM world_reveal_item"
+            " WHERE status = 'PENDING'"
+        )[0][0] == 0
 
 
-def test_the_stream_frame_order_is_deltas_then_final(tmp_path: Path) -> None:
-    """The streamed order is delta＊ → final, nothing else — no
-    ``world`` frame lands before the first delta even on a world-bound
-    stack (the A2 pre-step is retired with the engine step it carried;
-    the streaming provider's own narrator dial happens after the final
-    and refuses the endpoint's prose honestly, off this stream's
-    clock)."""
+def test_the_stream_frame_order_is_world_then_deltas_then_final(
+    tmp_path: Path,
+) -> None:
+    """WR-6：流式帧序 **world → delta＊ → final**——世界帧先于首个
+    delta（世界运转在前，她的回信是运转的落点——spec §4.2 的正典顺
+    序，用户的判词：信不得先于世界事件显示）。"""
 
     endpoint = _FakeOpenAI()
     endpoint.start()
@@ -252,39 +268,40 @@ def test_the_stream_frame_order_is_deltas_then_final(tmp_path: Path) -> None:
             )
             assert status == 200
             frames = _sse_frames(raw)
-            others = [
-                f for f in frames if f["type"] not in ("delta", "final")
-            ]
-            assert others == []
-            assert frames[0]["type"] == "delta"
+            assert frames[0]["type"] == "world"
+            assert frames[1]["type"] == "delta"
             assert frames[-1]["type"] == "final"
-            assert [f["type"] for f in frames][:-1] == ["delta"] * len(REPLY)
+            assert [f["type"] for f in frames][1:-1] == (
+                ["delta"] * len(REPLY)
+            )
     finally:
         endpoint.stop()
 
 
 # ---------------------------------------------------------------------------
-# 3 — the retirement, at the source
+# 3 — the retirement, at the source (WR-6 recut)
 # ---------------------------------------------------------------------------
 
 
-def test_the_pre_step_is_retired_at_the_source() -> None:
-    """The pre-step's whole apparatus is gone from ``web.py``: no
-    ``_world_step_face``, no ``world_step_note`` payload literal, no
-    engine-step imports — the generated step is the one world face the
-    turn wiring calls."""
+def test_the_post_step_is_retired_at_the_source() -> None:
+    """WR-6：事后步的整套机具退役——无 ``world_step_for_stream``、无
+    ``_stream_world_turn`` stash、无 handler 的 fire-and-forget 入队；
+    世界面是唯一的 ``_world_step_frame``（回信之前的先行步）。旧
+    A2 前置步的退役钉（WR-2 时代）随 WR-6 翻转——先行步回来了，但
+    走的是生成面，不是引擎步。"""
 
     source = (
         (Path(__file__).resolve().parents[2] / "src" / "elc" / "web.py")
         .read_text(encoding="utf-8")
     )
-    assert "_world_step_face" not in source
+    assert "def world_step_for_stream" not in source
+    assert "_stream_world_turn" not in source
     assert '"world_step_note"' not in source
     assert "skip_world_step" not in source
     assert "TRIGGER_LETTER" not in source
     assert "EngineConfig" not in source
+    assert "def _world_step_frame" in source
     assert "run_generated_step" in source
-    assert "def world_step_for_stream" in source
 
 
 # ---------------------------------------------------------------------------
@@ -306,21 +323,16 @@ def test_the_read_faces_stay_green_over_generated_notes(
     with web_stack(app_db, provider=provider) as stack:
         status, _ = stack.post("/api/turn", {"text": CLEAN_TEXT})
         assert status == 200
-        status, log = stack.get_json("/api/world/log")
-        assert status == 200
-        # The log never reveals: both notes still wait, unseen.
-        assert log["days"] == []
+        # WR-6: the turn's own frame already revealed both notes — the
+        # log (which never reveals) shows them whole; a fresh inbox read
+        # flips nothing (revealed_now == 0).
         status, inbox = stack.get_json("/api/world/inbox")
         assert status == 200
-        assert inbox["revealed_now"] == 2
+        assert inbox["revealed_now"] == 0
         assert [note["narration"] for note in inbox["items"]] == (
             provider.narrations
         )
         assert all(note["actor_name"] == "世界" for note in inbox["items"])
-        assert [note["story_date"] for note in inbox["items"]] == [
-            "9月14日",
-            "9月16日",
-        ]
         status, log = stack.get_json("/api/world/log")
         assert status == 200
         days = log["days"]

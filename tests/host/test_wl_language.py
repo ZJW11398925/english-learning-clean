@@ -330,21 +330,21 @@ def test_the_next_letter_answers_in_the_set_language(tmp_path: Path) -> None:
         status, turn = stack.post("/api/turn", {"text": CLEAN_TEXT})
         assert status == 200
         assert turn["reply"] == REPLY
-        # WR-2 随迁: every turn dials twice now — the letter's reply,
-        # then the world letter step's narration prompt (which this
-        # recorder answers with the same fixed reply; the world step
-        # refuses it quietly). The letter prompts sit at the even
-        # indices.
+        # WR-6 随迁: every turn dials twice — the world-first narration
+        # prompt first, then the letter's reply (which this recorder
+        # answers with the same fixed reply; the world step refuses it
+        # quietly). The letter prompts sit at the even indices now
+        # (0-based: the reply is index 1, 3, …).
         assert len(recorder.prompts) == 2
-        assert "language: reply in English" in recorder.prompts[0]
-        assert _FOLLOW_LINE not in recorder.prompts[0]
+        assert "language: reply in English" in recorder.prompts[1]
+        assert _FOLLOW_LINE not in recorder.prompts[1]
         status, _ = stack.post("/api/settings/reply_language",
                                {"reply_language": "zh"})
         assert status == 200
         status, turn = stack.post("/api/turn", {"text": CLEAN_TEXT})
         assert status == 200
         assert len(recorder.prompts) == 4
-        assert "language: reply in simplified Chinese" in recorder.prompts[2]
+        assert "language: reply in simplified Chinese" in recorder.prompts[3]
 
 
 def test_the_default_letter_is_zero_drift(tmp_path: Path) -> None:
@@ -357,7 +357,9 @@ def test_the_default_letter_is_zero_drift(tmp_path: Path) -> None:
         status, turn = stack.post("/api/turn", {"text": CLEAN_TEXT})
         assert status == 200
         assert turn["reply"] == REPLY
-    prompt = recorder.prompts[0]
+    # WR-6: dial 0 is the world-first narration prompt; the letter's
+    # reply prompt is dial 1.
+    prompt = recorder.prompts[1]
     assert _FOLLOW_LINE in prompt
     assert "language: reply in English" not in prompt
     assert "language: reply in simplified Chinese" not in prompt

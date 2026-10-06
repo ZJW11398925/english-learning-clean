@@ -3063,14 +3063,14 @@ function renderWorldStory(event, opts) {
   return wrap;
 }
 
-// 加载臂（DEC-…92；WR-5 随迁）：页面装载（历史渲染后）读一次世界——
+// 加载臂（DEC-…92；WR-6 随迁）：页面装载（历史渲染后）读一次世界——
 // 只有当本次读取真的揭示了遗留未读便条（revealed_now>0，上次会话
 // 末尾没读到的）才补显一块故事块（尾部追加、无过渡句——A2 原分工）；
-// 零遗留 ⇒ 零世界区块，对话末尾干净。WR-5：opts 透传给延时揭示臂
-// （插回信之前 + 过渡句）；读即揭示幂等，二次读零块。无绑定（404
-// 人话）或读失败同样零区块——不是一只空收件箱。返回载荷（语言切换
-// 臂等调用方自用）。
-async function loadWorldInbox(opts) {
+// 零遗留 ⇒ 零世界区块，对话末尾干净。WR-6：随信世界块已回归流内
+// world 帧（回信之前），本臂只管跨会话遗留。无绑定（404 人话）或读
+// 失败同样零区块——不是一只空收件箱。返回载荷（语言切换臂等调用方
+// 自用）。
+async function loadWorldInbox() {
   let data = null;
   try {
     data = await fetchWorldInbox();
@@ -3081,30 +3081,14 @@ async function loadWorldInbox(opts) {
     return null;
   }
   if ((data.revealed_now || 0) > 0) {
-    renderWorldStory(data, opts);
+    renderWorldStory(data);
   }
   return data;
 }
 
-// WR-3 延时揭示（DEC-…63 R1；WR-5 随迁）：finalize 之后世界步还在
-// 服务端跑（模型生成 1-3s，回信先到不堵流）——前端在 final 落定后
-// 延时重读一次世界，揭示即呈现。WR-5：块插**回信气泡之前**并带过渡
-// 句（A2 织入序回归——信 → 世界块 → 回信），不滚动不拽视口。慢于
-// 延时的诚实降级不变：下次 load 补显（尾部追加形），不发明假即时。
-// 防重入：新一轮寄信开始时清旧 timer（loadWorldInbox 幂等臂保零
-// 双块——清 timer 是卫生不是正确性前提）。
-// Revisit：4000ms 是「生成耗时 + 余量」的校准初值——a calibration
-// replaces this constant（dogfood 实测后可调）。
-const WORLD_REVEAL_DELAY_MS = 4000;
-let worldRevealTimer = 0;
-
-function scheduleWorldReveal(replyEl) {
-  if (worldRevealTimer) clearTimeout(worldRevealTimer);
-  worldRevealTimer = setTimeout(() => {
-    worldRevealTimer = 0;
-    loadWorldInbox({ withTransition: true, beforeEl: replyEl });
-  }, WORLD_REVEAL_DELAY_MS);
-}
+// WR-6（DEC-OPI-8a4f980b…13）：延时揭示臂整体退役——世界步已回到
+// 回信**之前**（服务端生成序 + 流内 world 帧），世界块随流先到，无需
+// 事后重读。加载补显臂（loadWorldInbox，页面装载时的遗留揭示）仍在。
 
 // ── A2（DEC-…82）：打字机定速节奏器───────────────────────────────
 // delta 的到达与渲染解耦：增量入缓冲，渲染循环按 TYPING_CPS 定速出
@@ -3821,29 +3805,23 @@ async function postTurn(text) {
   // rd-2：发送后状态行「信已寄出，等回信——」收尾（8.5 流式落点句随迁）
   const pending = addLine("typing", "信已寄出，等回信——笔友把灯留着。");
   startMomentPolling();
-  // WR-3 防重入：新一轮寄信先清上一轮的延时揭示 timer（loadWorldInbox
-  // 幂等臂本就保零双块——清 timer 是卫生）。
-  if (worldRevealTimer) {
-    clearTimeout(worldRevealTimer);
-    worldRevealTimer = 0;
-  }
-  // A1 流面：先走 /api/turn_stream——delta 当场打进一封在写的回信
-  // （只走 textContent，XSS 纪律），final 落地即在 finally 摘掉在写信、
-  // 由下方 finalize 的权威回信行接管。对端没说 SSE（非 200 / 无流）=
-  // 立即失败形，回退旧 POST；流真开始后中断 = 信可能已落库——不重发，
-  // 一行人话 + 拉历史对齐。
-  // WR-2/WR-3（DEC-…49/…63）：帧序 delta＊ → final——世界步在服务端
-  // final 之后才跑（模型生成不堵流），delta 进打字机缓冲定速出字
-  // （到达与渲染解耦），final 的余量排空后 finalize，随后延时揭示臂
-  // 把世界的故事块插在回信之前（scheduleWorldReveal(replyEl)——WR-5
-  // 织入序：信 → 世界块 → 回信）。
+  // A1 流面：先走 /api/turn_stream——世界先讲（onWorld 当场渲染世界
+  // 故事块，回信气泡之前——此时回信行尚不存在，块 append 即在信后），
+  // delta 当场打进一封在写的回信（只走 textContent，XSS 纪律），final
+  // 落地即在 finally 摘掉在写信、由下方 finalize 的权威回信行接管。
+  // 对端没说 SSE（非 200 / 无流）= 立即失败形，回退旧 POST；流真开始
+  // 后中断 = 信可能已落库——不重发，一行人话 + 拉历史对齐。
+  // WR-6（DEC-OPI-8a4f980b…13）：帧序回到 **world → delta＊ → final**
+  // ——服务端世界步先于回信生成（spec §4.2 正典顺序：世界运转在前，
+  // 她的回信是运转的落点；用户判词：信不得先于世界事件显示）。
   let data = null;
   let typing = null;
   try {
     typing = startTypewriter();
     data = await fetchTurnStream(
       text,
-      (chunk) => typing.push(chunk)
+      (chunk) => typing.push(chunk),
+      (event) => renderWorldStory(event, { withTransition: true })
     );
     if (data === null) {
       // 回退臂（A2R 加固：流面永不重发信）。fetchTurnStream 答 null
@@ -3893,6 +3871,13 @@ async function postTurn(text) {
   // started 中断已在上面拉历史对齐，已显部分保留在页上。
   if (data !== null) {
     if (typing !== null && typing.line !== null) typing.line.remove();
+    // WR-6：阻塞回退臂（fetchTurn 或对端无流面）的 world-first——
+    // payload 带 world 键时先渲染世界块（回信行之前；此臂回信行尚
+    // 不存在，append 即在信后），再落回信行。顺序与流面一致。
+    if (data.world && typeof data.world === "object") {
+      renderWorldStory(data.world, { withTransition: true });
+      delete data.world;
+    }
     // v3-3 供性后装：寄出的信在位图到达前全供性（信还封着在途）；回信
     // 落地即按 turn 响应把用户信的 0 位降为无供性（applyLetterAffordance
     // 只摘不加，方向恒向不可点收）。
@@ -3900,9 +3885,8 @@ async function postTurn(text) {
     // fr-A：这一轮的 usage 回填轮锚（/api/turn 随行）+ 累计读回刷新。
     flowTurns[flowTurns.length - 1].usage = data.usage || null;
     refreshFlowMeter();
-    let replyEl = null;
     if (data.reply !== null && data.reply !== undefined) {
-      replyEl = addLine("assistant", data.reply,
+      addLine("assistant", data.reply,
         { enter: true, when: new Date().toISOString(),
           hits: data.word_hits || null });
     } else if (data.turn_status !== null && data.turn_status !== undefined) {
@@ -3914,12 +3898,6 @@ async function postTurn(text) {
     }
     const moments = data.teaching_moments || [];
     showMoments(moments);
-    // WR-3/WR-5（DEC-…63/…7）：finalize 之后延时揭示——世界步此刻正在
-    // 服务端跑（final 后的模型生成，不堵流），WORLD_REVEAL_DELAY_MS 后
-    // 重读一次世界：块**插回这轮的回信气泡之前**并带过渡句（A2 织入序
-    // 回归——信 → 世界块 → 回信）；无回信行时退尾部追加形。慢于延时
-    // 则下次 load 补显（尾部追加）。
-    scheduleWorldReveal(replyEl);
   }
 }
 

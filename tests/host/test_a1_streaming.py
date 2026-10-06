@@ -69,6 +69,13 @@ WEBUI = SRC / "webui"
 #: What every streamed turn says (the fake endpoint's reply, one character
 #: per delta — the same text the scripted stacks answer with).
 A1_TEXT = "The meeting starts at nine."
+#: WR-6 世界先行：假端点对叙事者拨号（prompt 含世界叙述者的开场句）
+#: 答以 beats JSON——一具端点同时供回信面与叙事面，流序钉得以在真
+#: HTTP 形上观察 world → delta＊ → final。
+NARRATOR_MARK = "You are the narrator of a small fictional world"
+NARRATOR_BEATS = json.dumps(
+    {"beats": [{"kind": "fake-tide", "narration": "The tide turned.", "days": 1}]}
+)
 
 #: The blocking turn's payload keys, in the shape every existing consumer
 #: reads them — the exact set A1's ``final`` must carry and the one contract
@@ -406,6 +413,10 @@ class _FakeOpenAI:
                         "authorization": self.headers.get("Authorization"),
                     }
                 )
+                # WR-6 世界先行：叙事者的阻塞拨号答 beats JSON（回信
+                # 面不触发此臂——其 prompt 不含叙述者开场句）。
+                prose = json.dumps(body.get("messages", []))
+                is_narrator = NARRATOR_MARK in prose
                 self.send_response(200)
                 if body.get("stream") is True:
                     gate = outer._gate
@@ -429,9 +440,10 @@ class _FakeOpenAI:
                 else:
                     self.send_header("Content-Type", "application/json")
                     self.end_headers()
+                    content = NARRATOR_BEATS if is_narrator else REPLY
                     self.wfile.write(
                         json.dumps(
-                            {"choices": [{"message": {"content": REPLY}}]}
+                            {"choices": [{"message": {"content": content}}]}
                         ).encode("utf-8")
                     )
 
@@ -478,7 +490,7 @@ def _sse_frames(raw: bytes) -> list[dict[str, object]]:
     return frames
 
 
-def test_stream_endpoint_answers_deltas_then_one_final_equal_to_turn(
+def test_stream_endpoint_answers_world_then_deltas_then_one_final_equal_to_turn(
     tmp_path: Path,
 ) -> None:
     endpoint = _FakeOpenAI()
@@ -488,20 +500,22 @@ def test_stream_endpoint_answers_deltas_then_one_final_equal_to_turn(
             status, raw = _post(stack.port, "/api/turn_stream", {"text": A1_TEXT})
             assert status == 200
             frames = _sse_frames(raw)
+            worlds = [f for f in frames if f["type"] == "world"]
             deltas = [f for f in frames if f["type"] == "delta"]
             finals = [f for f in frames if f["type"] == "final"]
-            others = [f for f in frames if f["type"] not in ("delta", "final")]
-            # WR-2 (DEC-OPI-5fc42174…49): the narrative order is back to
-            # **deltas → final** — the A2 ``world`` frame is retired with
-            # the pre-step it carried; the stream carries generation
-            # increments and the one final, nothing else.
-            assert others == []
+            # WR-6 (DEC-OPI-8a4f980b…13): the canonical order is back —
+            # **world → delta＊ → final** — the world narrates first and
+            # her reply's deltas stream after it (the letter never shows
+            # before the world's events; spec §4.2's own order).
+            assert len(worlds) == 1
+            assert worlds[0]["notes"][0]["narration"] == "The tide turned."
             assert len(finals) == 1
             final = finals[0]
-            # The event order is the contract: the deltas first, the
-            # final last, no world frame anywhere.
+            # The event order is the contract: the world frame first, the
+            # deltas between, the final last.
+            assert frames[0] is worlds[0]
             assert frames[-1] is final
-            assert frames[0]["type"] == "delta"
+            assert frames[1]["type"] == "delta"
             # The streaming was real: one delta per character of the reply.
             assert [f["text"] for f in deltas] == list(REPLY)
             assert "".join(f["text"] for f in deltas) == final["reply"]
@@ -509,8 +523,15 @@ def test_stream_endpoint_answers_deltas_then_one_final_equal_to_turn(
             status, blocking_raw = _post(stack.port, "/api/turn", {"text": A1_TEXT})
             assert status == 200
             blocking = json.loads(blocking_raw.decode("utf-8"))
-            assert set(final.keys()) - {"type"} == set(blocking.keys())
-            assert set(blocking.keys()) == TURN_PAYLOAD_KEYS
+            # WR-6: the blocking answer carries the world-first frame under
+            # its own key (rendered before the reply line); the streamed
+            # final keeps its own shape — world rides as the frame, not a
+            # final key, so the two key sets differ by exactly this.
+            assert "world" not in final
+            assert set(final.keys()) - {"type"} == set(blocking.keys()) - {
+                "world"
+            }
+            assert blocking["world"]["type"] == "world"
             for key in (
                 "reply",
                 "turn_status",
@@ -521,9 +542,11 @@ def test_stream_endpoint_answers_deltas_then_one_final_equal_to_turn(
                 "usage",
             ):
                 assert final[key] == blocking[key], key
-            # The streamed request is the one that carried "stream": true.
-            assert endpoint.received[0]["stream"] is True
-            assert endpoint.received[1]["stream"] is None
+            # WR-6 世界先行：第一拨是叙事者的世界步（阻塞、无 stream
+            # 标记），第二拨才是回信的流式生成——顺序即正典（世界先
+            # 讲，回信后到）。
+            assert endpoint.received[0]["stream"] is None
+            assert endpoint.received[1]["stream"] is True
             assert all(
                 call["authorization"] == f"Bearer {SENTINEL_KEY}"
                 for call in endpoint.received
@@ -721,7 +744,9 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     # WR-2/WR-3: the world frame and its parser branch are retired with
     # the paradigm (the world steps after the reply server-side; the
     # page's delayed reveal reads it) — the wrapper is two-parameter.
-    assert "export async function fetchTurnStream(text, onDelta) {" in (
+    # WR-6: the wrapper is three-parameter again — the world frame's own
+    # handler rides the same defensive parser (world → delta＊ → final).
+    assert "export async function fetchTurnStream(text, onDelta, onWorld) {" in (
         api_source
     )
     assert "res.body.getReader()" in api_source
@@ -731,7 +756,9 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     assert "interrupted.started = true" in api_source
     assert "if (!res.ok || !res.body) return null;" in api_source
     assert 'event.type === "delta"' in api_source
-    assert 'event.type === "world"' not in api_source
+    # WR-6: the world frame's parser branch is back (it has a producer
+    # again — the world-first pre-reply step).
+    assert 'event && event.type === "world") {' in api_source
     assert 'event.type === "final"' in api_source
 
     postturn = _postturn_slice(app_source)
@@ -741,11 +768,11 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     # the fallback and the finalize pairing follow; the started arm pulls
     # history and never resends.
     assert "fetchTurnStream(" in postturn
-    # WR-3: the onWorld frame call is retired with the frame — the
-    # turn body dials the delayed reveal instead (never an inline read);
-    # WR-5 rides the reply element (the block lands before the reply).
-    assert "renderWorldStory(event)" not in postturn
-    assert "scheduleWorldReveal(replyEl);" in postturn
+    # WR-6: the onWorld callback is back — the world frame renders as it
+    # arrives (before the reply's deltas), the transition sentence woven
+    # in; no delayed reveal anywhere (the world is pre-reply now).
+    assert "renderWorldStory(event, { withTransition: true })" in postturn
+    assert "scheduleWorldReveal" not in app_source
     assert "typing.push(chunk)" in postturn
     assert "await typing.seal(" in postturn
     assert "startTypewriter()" in postturn
@@ -830,7 +857,8 @@ def test_a_blocking_turn_after_a_streamed_one_is_unchanged(
             streamed = [f for f in _sse_frames(stream_raw) if f["type"] == "final"][0]
             _, blocking_raw = _post(stack.port, "/api/turn", {"text": A1_TEXT})
             blocking = json.loads(blocking_raw.decode("utf-8"))
-            assert set(blocking.keys()) == TURN_PAYLOAD_KEYS
+            # WR-6: the blocking answer carries the world frame key.
+            assert set(blocking.keys()) - {"world"} == TURN_PAYLOAD_KEYS
             assert blocking["reply"] == streamed["reply"] == REPLY
             assert blocking["turn_status"] == streamed["turn_status"]
             assert blocking["usage"] == streamed["usage"] is None

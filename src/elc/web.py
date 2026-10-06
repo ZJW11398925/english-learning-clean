@@ -3007,23 +3007,34 @@ class _StreamingProviderProxy:
 
 
 class _TurnStreamBridge:
-    """One streamed turn's live delta channel (A1, DEC-…77).
+    """One streamed turn's live event channel (A1, DEC-…77; WR-6).
 
-    The queue is the page's delta stream: the provider proxy pushes each
+    The queue is the page's event stream: the provider proxy pushes each
     SSE increment as it arrives, and the request's handler thread drains
-    the queue into SSE delta frames while the host thread is still inside
-    the turn. The durable delivery is deliberately untouched — the seam
-    keeps its constructor default, so the §22 rows and the transcript of a
-    streamed turn are exactly a blocking turn's.
+    the queue into SSE frames while the host thread is still inside the
+    turn. WR-6 (DEC-OPI-8a4f980b…13): the queue carries **str deltas and
+    structured ``dict`` frames** again — the world-first order needs the
+    ``{"type": "world"}`` frame to reach the page **before** the reply's
+    first delta (the world narrates, then her reply arrives — spec §4.2's
+    own order, the run culminating in the reply). The durable delivery is
+    deliberately untouched — the seam keeps its constructor default, so
+    the §22 rows and the transcript of a streamed turn are exactly a
+    blocking turn's.
     """
 
-    def __init__(self, events: "queue.Queue[str]") -> None:
+    def __init__(self, events: "queue.Queue[str | dict]") -> None:
         self._events = events
 
     def push(self, text: str) -> None:
         """Hand one live increment to the page's delta stream."""
 
         self._events.put(text)
+
+    def push_frame(self, frame: dict) -> None:
+        """Hand one structured frame (the world-first ``world`` frame) to
+        the page's stream — the handler serializes it whole."""
+
+        self._events.put(frame)
 
 
 class _WebFace:
@@ -3094,15 +3105,6 @@ class _WebFace:
                     )
         except OSError:
             self._world_packages = {}
-        # WR-2 (DEC-OPI-5fc42174…49): the streamed arm's post-turn world
-        # step rides this stash — the streamed job records the turn id
-        # it just committed (WR-4: the id only — the letter's text never
-        # reaches the world layer), and the handler's
-        # fire-and-forget job consumes it **after** the final frame is
-        # out (流已关，零流延迟). The work queue's one-thread discipline
-        # makes the handoff race-free: the write and the consume are two
-        # queue jobs, never two threads.
-        self._stream_world_turn: str | None = None
 
     def _require_cards(self) -> SqliteCharacterCardStore:
         """The card store, or the loud refusal (never a silent empty)."""
@@ -3123,23 +3125,20 @@ class _WebFace:
     def turn(self, text: str) -> dict[str, Any]:
         """One committed turn, as the page renders it.
 
-        WR-2 (DEC-OPI-5fc42174…49): after the payload is built, the
-        world's step runs **inline on this path** — the narrator writes
-        the world's own next beats (one blocking
-        provider call, one to two story beats, the chronicle and the
-        reveal queue written; WR-4: the turn is the wind-up, the letter
-        text never enters). A real provider makes this honest price
-        explicit: the blocking answer now carries the world's narration
-        round trip too (+1-3s); the world's leg is fail-soft to stderr
-        (the reply is the page's substance; its bookkeeping never blocks
-        it and never reaches the payload — the old additive
-        ``world_step_note`` key is retired with the pre-step it
-        reported). Revisit: backgrounding the leg like the streamed arm
-        already does."""
+        WR-6 (DEC-OPI-8a4f980b…13): the world's step runs **before the
+        reply is generated** — the world narrates first, her reply
+        arrives second (spec §4.2's own order; the user's fourth-plus
+        direction: the letter must not hold the main seat nor show
+        before the world's events). The frame the step produced rides
+        the payload under ``world`` (rendered before the reply line); a
+        quiet or failed world leg simply omits the key (fail-soft — the
+        reply never waits on a broken narration beyond its own round
+        trip)."""
 
+        frame = self._world_step_frame()
         payload, turn_id = self._commit_and_answer(text)
-        if turn_id is not None:
-            self._world_post_turn_step(turn_id)
+        if frame is not None:
+            payload["world"] = frame
         return payload
 
     def _commit_and_answer(
@@ -3195,7 +3194,7 @@ class _WebFace:
         return payload, str(completion.turn_id)
 
     def turn_stream(
-        self, text: str, events: "queue.Queue[str]"
+        self, text: str, events: "queue.Queue[str | dict]"
     ) -> dict[str, Any]:
         """One committed turn through the streamed bridge (A1, DEC-…77).
 
@@ -3213,23 +3212,28 @@ class _WebFace:
         ``finally``, so a failure anywhere leaves the assembly exactly
         as it was (the blocking shape, zero deltas, one final).
 
-        WR-2 (DEC-OPI-5fc42174…49): the streamed turn's event order is
-        **deltas → final** — the world no longer tells its story first.
-        The A2 pre-step (and its structured ``world`` frame) is retired
-        with the fixed-pool engine step it served; the page's
-        ``onWorld`` callback simply never fires (the frontend face is
-        wr-3's). The world's step rides **after the final
-        frame** — this job stashes the committed turn's id (WR-4: the
-        id only) and the handler enqueues the face's
-        :meth:`world_step_for_stream` once the stream is closed, so the
-        narration's round trip costs the stream nothing
-        (流已关，零流延迟). The blocking face keeps its inline leg.
+        WR-6 (DEC-OPI-8a4f980b…13): the streamed turn's event order is
+        **world → delta＊ → final** — the world's step runs before the
+        reply is generated and its one structured ``world`` frame is
+        pushed to the bridge before the commit (the world narrates
+        first; her reply's deltas stream after it — spec §4.2's own
+        order, and the user's verdict that the letter must not show
+        before the world's events). The world's round trip is the price
+        the reply pays for the right order (1-3s before its first
+        delta — the spec's own 「寄出（在途仪式）」 reading); a quiet
+        or failed world leg skips the frame and the reply streams at
+        once (fail-soft, never a broken stream).
         """
 
+        frame = self._world_step_frame()
         live = self._host.coordinator.persona_provider()
         if not hasattr(live, "call_streaming"):
+            if frame is not None:
+                # The blocking shape still owes the page its world-first
+                # frame: the handler drains the queue concurrently, so the
+                # frame rides ahead of the one final (WR-6).
+                events.put(frame)
             payload, turn_id = self._commit_and_answer(text)
-            self._stream_world_turn = turn_id
             return payload
         bridge = _TurnStreamBridge(events)
         coordinator = self._host.coordinator
@@ -3237,66 +3241,56 @@ class _WebFace:
             _StreamingProviderProxy(live, bridge)
         )
         try:
+            if frame is not None:
+                bridge.push_frame(frame)
             payload, turn_id = self._commit_and_answer(text)
-            self._stream_world_turn = turn_id
             return payload
         finally:
             coordinator.replace_persona_provider(live)
 
-    def world_step_for_stream(self) -> None:
-        """The streamed arm's world step (WR-2; WR-4: the wind-up id
-        only): the fire-and-forget job the handler enqueues once the
-        final frame is out. It consumes the turn id the streamed turn
-        stashed — a job that finds nothing (a stream that never
-        committed, or a second enqueue) answers the honest quiet — and
-        runs the same fail-soft step face the blocking turn runs
-        inline."""
+    def _world_step_frame(self) -> dict[str, Any] | None:
+        """The world-first pre-reply step (WR-6, DEC-OPI-8a4f980b…13):
+        run the narrator **before** the reply is generated, reveal what
+        it wrote (the frame is the user's look — spec §4.1's
+        presentation trigger), and answer the one structured ``world``
+        frame the page renders before the reply's first delta.
+        Fail-soft throughout: no binding, no package, no store, no
+        provider, a quiet narrator (``not-configured`` or zero beats)
+        or any refusal answers ``None`` — the reply then streams with
+        no world frame, never a broken page.
 
-        turn_id = self._stream_world_turn
-        self._stream_world_turn = None
-        if turn_id is None:
-            return
-        self._world_post_turn_step(turn_id)
+        The turn is not yet committed at this point (the reply's own
+        generation commits it), so the step runs under the
+        count-derived id arm — the docstring's honest no-replay
+        protection (WR-2's turn-id derivation needs a committed turn;
+        a refused begin after a moved world is the accepted edge — the
+        letter was sent, the world heard the wind-up).
 
-    def _world_post_turn_step(self, turn_id: str) -> None:
-        """The world's letter step, fail-soft (WR-2, DEC-OPI-5fc42174…49;
-        WR-4 correction …58): the committed turn is the run's mechanical
-        wind-up and goes to the narrator through
-        :func:`elc.world.engine.orchestrate.run_generated_step` — one
-        blocking provider call, one or two generated beats, the
-        chronicle and the ``PENDING`` reveal items written. **The
-        letter's text never enters the narration** (spec §4.1: the
-        reply is the run starter, never content; the world narrates its
-        own life — WR-4). Every
-        failure mode is one human sentence on stderr and never an
-        exception out (the reply the user is reading is the page's
-        substance); the world's own presentation stays where the spec
-        puts it — the inbox's read is the reveal, the next look opens
-        what this step left pending. No binding, no package, no world
-        leg, no provider: the honest quiet, never a fallback to the
-        retired pool."""
+        WR-4 stands: the letter's text never enters the narration —
+        the narrator reads the world's bible and chronicle only."""
 
         binding = self._world_binding()
         if binding is None:
-            return
+            return None
         world_id = str(binding["world_id"])
         package = self._world_packages.get(world_id)
         world_store = getattr(self._host, "world_store", None)
         if package is None or world_store is None:
-            return
+            return None
         coordinator = getattr(self._host, "coordinator", None)
         provider = (
             None if coordinator is None else coordinator.persona_provider()
         )
+        ui_language = self._ui_language()
         try:
             stepped = run_generated_step(
                 world_store,
                 world_id,
                 package,
                 provider,
-                turn_id,
+                None,
                 datetime.now(tz=UTC).isoformat(),
-                ui_language=self._ui_language(),
+                ui_language=ui_language,
             )
         except Exception as exc:  # fail-soft: the sentence, never the raise
             print(
@@ -3304,13 +3298,43 @@ class _WebFace:
                 f"{type(exc).__name__}: {exc}",
                 file=sys.stderr,
             )
-            return
+            return None
         if isinstance(stepped, Err):
             print(
                 "elc web: 世界叙事步未推进（回信不受影响）："
                 f"{stepped.error.code.value}: {stepped.error.message}",
                 file=sys.stderr,
             )
+            return None
+        beats = stepped.value
+        if not beats:
+            return None
+        revealed = world_store.reveal_all(
+            world_id, datetime.now(tz=UTC).isoformat()
+        )
+        if isinstance(revealed, Err):
+            # The frame is the look; a reveal the store refused leaves the
+            # beats PENDING — the load arm presents them on the next read
+            # instead. Never a half-frame.
+            return None
+        last_day = str(beats[-1].occurred_at)
+        return {
+            "type": "world",
+            "ui_language": ui_language,
+            "world_name": package.name,
+            "date_localized": (
+                _localize_story_date(last_day, ui_language)
+                if len(last_day) == 10
+                else ""
+            ),
+            "notes": [
+                {
+                    "narration": str(beat.narration),
+                    "fallback": False,
+                }
+                for beat in beats
+            ],
+        }
 
     def _ui_language(self) -> str:
         """The interface language row (W-L's own read): the stored word,
@@ -6285,7 +6309,7 @@ def _build_server(
             job runs to its durable end; the page's history carries it).
             """
 
-            events: queue.Queue[str] = queue.Queue()
+            events: "queue.Queue[str | dict]" = queue.Queue()
             done = threading.Event()
             box: dict[str, Any] = {}
             failure: list[str] = []
@@ -6313,14 +6337,17 @@ def _build_server(
                         drained = True
                         break
                     try:
-                        # A1: a generation increment, as it arrived. (A2's
-                        # second branch — the structured ``world`` frame —
-                        # is retired with the pre-step it carried, WR-2,
-                        # DEC-OPI-5fc42174…49: the queue carries deltas
-                        # only now.)
-                        self._send_sse_event(
-                            {"type": "delta", "text": chunk}
-                        )
+                        # WR-6 (DEC-OPI-8a4f980b…13): the queue carries
+                        # deltas **and** structured frames again — a dict
+                        # is the world-first ``world`` frame (sent whole,
+                        # before the reply's first delta); a str is a
+                        # generation increment, as it arrived (A1).
+                        if isinstance(chunk, dict):
+                            self._send_sse_event(chunk)
+                        else:
+                            self._send_sse_event(
+                                {"type": "delta", "text": chunk}
+                            )
                     except OSError:
                         return  # the reader is gone; the turn runs on
                 if done.is_set() and drained:
@@ -6343,14 +6370,6 @@ def _build_server(
                 self._send_sse_event({"type": "final", **payload})
             except OSError:
                 return
-            # WR-2 (DEC-OPI-5fc42174…49): the world's letter step runs
-            # **after** the final frame is out (流已关，零流延迟): one
-            # fire-and-forget job on the work queue — the face consumes
-            # the letter the streamed turn stashed, the narration's round
-            # trip costs this stream nothing, and a failure anywhere is
-            # the face's own stderr sentence (fail-soft, the stream is
-            # already closed and answered).
-            work.put(face.world_step_for_stream)
 
         def _read_json_body(self) -> Any:
             """(p-3) The POST body, parsed once — the turn face's inline
