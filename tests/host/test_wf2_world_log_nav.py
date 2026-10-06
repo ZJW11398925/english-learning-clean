@@ -323,6 +323,34 @@ def test_the_quiet_day_arm() -> None:
     assert 'board.appendChild(stateBanner("empty"));' in face
 
 
+def test_the_log_face_fails_closed_on_a_broken_payload() -> None:
+    """wf-2 处置（评审 LOW-2）：坏载荷的 fail-closed 守卫与 error 横幅
+    钉——log 读到但 days 非数组（形坏）⇒ 守卫先拦 + stateBanner error
+    带 retry；守卫被删时坏载荷走 TypeError 静默死而套件不红，此钉补口。"""
+
+    app = _text("app.js")
+    face = _function_slice(app, "async function loadWorldLogFace(")
+    assert "if (!log || !Array.isArray(log.days)) {" in face
+    assert (
+        'board.appendChild(stateBanner("error",'
+        " { retry: loadWorldLogFace }));" in face
+    )
+
+
+def test_the_today_line_button_supply_is_pinned() -> None:
+    """wf-2 处置（评审 LOW-1）：today-line 按钮化的完整 supply 声明钉
+    ——border: 0 + background: none + cursor: pointer + text-align
+    全在（只钉 display 前缀时，掉 supply 行会回归原生钮 chrome 而全绿）。"""
+
+    screens = _text("screens.css")
+    assert (
+        ".today-line { display: block; margin: 0 0 18px; padding: 0;"
+        in screens
+    )
+    assert "border: 0; background: none; text-align: left;" in screens
+    assert "cursor: pointer; }" in screens
+
+
 # ---------------------------------------------------------------------------
 # 10 — the bilingual chrome
 
