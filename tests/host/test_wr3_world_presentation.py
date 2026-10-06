@@ -68,17 +68,33 @@ def _text(name: str) -> str:
 def test_the_delayed_reveal_is_wired_with_a_named_constant() -> None:
     """WR-3 R1：finalize 之后恰一次 timer 驱动的世界读——命名常量
     WORLD_REVEAL_DELAY_MS（4000，Revisit 校准注在场）+ scheduleWorldReveal
-    挂在 postTurn 成功尾 + 新信先清旧 timer（防重入）。"""
+    挂在 postTurn 成功尾 + 新信先清旧 timer（防重入）。处置（评审
+    LOW-3/LOW-4）：Revisit 注的钉锚定在常量自己的注释块（断行形——
+    旧针被 TYPING_CPS 的同句错位满足）；清 timer 臂钉进 postTurn 体
+    （m7 缺口——单在位断言不辨臂）。"""
 
     app = _text("app.js")
     assert "const WORLD_REVEAL_DELAY_MS = 4000;" in app
-    assert "a calibration replaces this constant" in app
+    # The constant's own comment block carries the calibration note (the
+    # pin anchors the two lines together — a same-sentence hit anywhere
+    # else in the file does not satisfy it; 处置 LOW-3).
+    constant_at = app.index("const WORLD_REVEAL_DELAY_MS = 4000;")
+    block_start = app.rindex("\n\n", 0, constant_at)
+    comment = app[block_start:constant_at]
+    assert "a calibration" in comment
+    assert "replaces this constant" in comment
     assert "function scheduleWorldReveal()" in app
     assert "scheduleWorldReveal();" in app
     # The timer is module-level and cleared both on schedule and on a
-    # new letter (the re-entry hygiene).
+    # new letter (the re-entry hygiene — 处置 LOW-4 pins the in-turn
+    # clear arm itself, not just the single existence).
     assert "let worldRevealTimer = 0;" in app
     assert "clearTimeout(worldRevealTimer);" in app
+    turn_block = app[
+        app.index("async function postTurn"):
+        app.index("async function postTeachMe")
+    ]
+    assert "clearTimeout(worldRevealTimer);" in turn_block
     # The timer callback is the read — the delayed arm dials the same
     # idempotent loadWorldInbox (zero reveal ⇒ zero block).
     schedule = app[app.index("function scheduleWorldReveal"):]
@@ -88,15 +104,16 @@ def test_the_delayed_reveal_is_wired_with_a_named_constant() -> None:
 
 
 def test_the_turn_body_never_awaits_the_inbox() -> None:
-    """The turn's own flow never awaits an inbox read (the reply is the
-    page's substance); the delayed arm is the one legal re-read."""
+    """The turn's own flow never touches the inbox read — not awaited,
+    not bare (处置收紧评审 LOW-1/m10：裸 loadWorldInbox() 调用同样绕过
+    4s 延时，负控钉到调用串级)；the delayed arm is the one legal read."""
 
     app = _text("app.js")
     turn_block = app[
         app.index("async function postTurn"):
         app.index("async function postTeachMe")
     ]
-    assert "await loadWorldInbox" not in turn_block
+    assert "loadWorldInbox(" not in turn_block
     assert "scheduleWorldReveal();" in turn_block
 
 
@@ -118,6 +135,9 @@ def test_the_transition_sentence_is_retired() -> None:
         "withTransition",
     ):
         assert gone not in app, gone
+    # 处置（评审 INFO-1/m8）：append 位置钉——故事块挂信流尾（= 回信
+    # 之后，WR-3 R2 的位置事实）。
+    assert "messages.appendChild(wrap);" in app
 
 
 def test_the_onworld_frame_path_is_retired() -> None:
