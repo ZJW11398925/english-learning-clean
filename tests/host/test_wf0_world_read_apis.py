@@ -96,19 +96,6 @@ def _pending_count(app_db: Path) -> int:
     return int(rows[0][0])
 
 
-def _current_run(app_db: Path) -> str:
-    """The latest run's id (the a2 suite's read — the current-run filter's
-    own prefix)."""
-
-    return str(
-        _ro_rows(
-            app_db,
-            "SELECT run_id FROM world_run"
-            " ORDER BY created_at DESC, run_id DESC LIMIT 1",
-        )[0][0]
-    )
-
-
 def _inject_note(
     app_db: Path,
     event_id: str,
@@ -354,26 +341,41 @@ def test_reading_never_flips_pending_only_the_inbox_does(
     """The decisive triple: one ``PENDING`` note left by hand, then the
     overview read (the note survives, unread, and today does not show
     it), then the log read (the same), then the inbox read — the one
-    presentation trigger — flips it ``REVEALED``. The durable queue's own
-    count is the gauge after every leg."""
+    presentation trigger — flips it ``REVEALED``. The durable queue's
+    own count is the gauge after every leg. (WR-2 随迁: the letter no
+    longer writes engine events — the note rides the world's own story
+    day, ``calendar_start`` on an empty chronicle, and the turn leg is
+    only here to prove the read faces ignore it.)"""
 
     app_db = tmp_path / "app.db"
     with web_stack(app_db) as stack:
         status, turn = stack.post("/api/turn", {"text": CLEAN_TEXT})
         assert status == 200
         assert turn["reply"] == REPLY
-        current_run = _current_run(app_db)
-        today_iso = str(
-            _ro_rows(app_db, "SELECT MAX(occurred_at) FROM world_event")[0][0]
-        )
-        # A kind the package does not carry: zero story days (today does
-        # not move) and the narration renders as the English row in every
-        # language — the text stays searchable in the payloads.
+        # The letter step with an unversed provider writes nothing: the
+        # world's today stays the story's day zero.
+        assert _ro_rows(
+            app_db, "SELECT COUNT(*) FROM world_event"
+        )[0][0] == 0
+        # The day's revealed note (the old pre-step's own legacy shape —
+        # what made today non-quiet) and the unread leg: a kind the
+        # package does not carry (zero story days, the English row in
+        # every language — the text stays searchable in the payloads).
         _inject_note(
             app_db,
-            f"{current_run}:98",
+            "today-revealed-1",
             "unread_kind",
-            today_iso,
+            "2025-09-14",
+            actor_id=None,
+            status="REVEALED",
+            narration="A note the world already showed.",
+            revealed_at="2025-09-14T08:00:00+00:00",
+        )
+        _inject_note(
+            app_db,
+            "unread-pending-1",
+            "unread_kind",
+            "2025-09-14",
             actor_id=None,
             status="PENDING",
             narration=PENDING_NOTE,
@@ -666,9 +668,11 @@ def test_log_group_dates_follow_the_interface_language(
 def test_the_read_faces_never_call_reveal_all() -> None:
     """AST-level over the web.py source: the three read faces and every
     helper they share contain zero ``reveal_all`` calls — reading is not
-    opening. The walker's positive control: the two presentation
-    triggers that legitimately keep the call (the inbox's atomic reveal
-    and the turn wiring's own presentation step) are still seen."""
+    opening. The walker's positive control: the one presentation
+    trigger that legitimately keeps the call (the inbox's atomic
+    reveal) is still seen. (WR-2 随迁: the turn wiring's old
+    presentation step is retired with the pre-step — the letter step
+    leaves its notes pending and never reveals.)"""
 
     source = (REPO / "src" / "elc" / "web.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
@@ -704,5 +708,5 @@ def test_the_read_faces_never_call_reveal_all() -> None:
     )
     for name in read_faces:
         assert reveal_calls(name) == 0, name
-    for name in ("world_inbox", "_world_step_face"):
+    for name in ("world_inbox",):
         assert reveal_calls(name) == 1, name

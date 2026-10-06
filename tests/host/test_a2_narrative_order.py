@@ -1,57 +1,50 @@
-"""A2 — the narrative order, the story's own calendar, and the story
-block as the world's only presentation (the 23 pins).
+"""A2 — the narrative order, the story's own calendar, and the world
+presentation laws (the migrated pin set).
 
-The streamed turn tells the world's story **before** the reply starts to
-arrive (DEC-…82: 世界故事先讲，回信自然接上——事件序 world → delta＊ →
-final), the reply is typed at a fixed pace (到达与渲染解耦), and the
-world's time is the **virtual calendar** (DEC-…88, revised by DEC-…90:
-story-driven — the events' own spans summed on ``calendar_start``, never
-a letter count, never a wall clock). DEC-…92 retires the resident inbox
-region (随信呈现的唯一形态 = 内联故事块，世界日志屏并存不随信; the load
-arm renders only what it
-actually revealed), and A2R (DEC-…99) retires the 「继续」 interaction
-whole — the engine's NOTICE event is a beat, not a pause, so one letter
-plays the run's whole story and nothing waits mid-run. The slice VAL
-groups, each a section below:
+WR-2 (DEC-OPI-5fc42174…49) migrated this file one way, with the
+paradigm: the world's step is no longer the fixed-pool engine run
+before generation — the world's beats are **model-generated novel
+prose** (the narrator's face), running **after** the turn commits. The
+A2 pre-step and its structured ``world`` frame are retired (the
+streamed order is back to delta＊ → final), and the presentation half
+changed its law accordingly: the letter step leaves its notes
+``PENDING`` — the next look (the inbox's read) is the reveal, the log
+never opens anything. What stays from A2 and its revisions:
 
-1. **the narrative order, end to end** — a live streamed turn answers
-   one ``world`` frame (the story block's data) before the first delta
-   and the one final; the streamed turn advances the world **exactly
-   once** (the pre-step, not the turn's own wiring — one turn, one
-   event, one run), and the final still carries ``world_step_note``
-   (the blocking shape's key, byte for byte);
-2. **the story data** — the frame's notes carry the package's Chinese
-   prose by default, follow the ``ui_language`` write, and are
-   **already revealed** when they reach the page (呈现即读即揭示 — the
-   reveal runs with the pre-step, nothing left pending for the reread);
-3. **the blocking turn is untouched** — ``/api/turn`` keeps its own
-   post-commit wiring (one event, the note in its payload);
-4. **the virtual calendar** — story days sum the happened events'
+1. **the narrative order, migrated** — a live streamed turn answers
+   zero ``world`` frames (deltas → final, nothing else), and the
+   streamed turn's world letter runs exactly once per letter, **after**
+   the final (the anchor run resumes, the beats add up, no double
+   step);
+2. **the presentation law, migrated** — the generated notes wait
+   ``PENDING`` until the inbox's read flips them (呈现的揭示是下一次
+   看，不是写信的那一刻), and the blocking turn runs the same letter
+   step inline (its payload carries no world key at all);
+3. **the virtual calendar** — story days sum the happened events'
    spans; the same letter count with a different story answers a
    different day (与信数无关); an event stamps at the **end of its own
    span**; runs accumulate and replay to the same dates; a legacy
    real-timestamp row renders **no** date at all (诚实退化); a
    ``run_step`` without a package keeps the caller's moment (the
    engine-direct callers' unchanged shape);
-5. **current-run presentation** — the inbox shows only the latest
+4. **current-run presentation** — the inbox shows exactly the anchor
    run's notes; the letter-count grouping (「第 N 封信后的世界」) is
    retired in source; the quiet-day arm is pinned;
-6. **zero real time in the presentation; the resident region retired**
+5. **zero real time in the presentation; the resident region retired**
    — the world presentation faces' source carries no clock read, the
    story block stays inert text (textContent only), the resident inbox
    region and its mount are gone at the source, the 「继续」 interaction
    is retired whole (A2R DEC-…99 — the engine never pauses, so no
    button, no branch, no endpoint), and the load arm renders only what
    it actually revealed (``revealed_now``);
-7. **the served calendar** — the shipped package drives the story day
-   (the frame's day equals the event's own stamp; the full pool's spans
-   land the story's last day on 2025-09-21).
+6. **the served calendar** — the shipped package drives the story day
+   (the full pool's spans land the story's last day on 2025-09-21).
 """
 
 from __future__ import annotations
 
 import inspect
-import re
+import json
 import sqlite3
 from datetime import date, timedelta
 from pathlib import Path
@@ -82,7 +75,11 @@ from tests.host.test_a1_streaming import (
     _post,
     _sse_frames,
 )
-from tests.host.test_w1_web import CLEAN_TEXT, web_stack
+from tests.host.test_w1_web import CLEAN_TEXT, SECOND_TEXT, web_stack
+from tests.host.test_wr2_post_turn_wiring import (
+    BEATS_TWO,
+    BeatsProvider,
+)
 
 REPO = Path(__file__).resolve().parents[2]
 PACKAGE_PATH = REPO / "worlds" / "berrymoor.json"
@@ -122,6 +119,29 @@ def _ro_rows(app_db: Path, sql: str) -> list[tuple]:
         ro.close()
 
 
+def _wait_for_world_rows(
+    app_db: Path, sql: str, expected: int, *, timeout: float = 15.0
+) -> list[tuple]:
+    """Wait for the streamed arm's fire-and-forget world letter job to
+    land (the job is enqueued once the final frame is out, so the test
+    polls until the durable rows say it ran — the worker loop's 0.2s
+    poll makes this quick; the timeout is the failure voice)."""
+
+    import time
+
+    deadline = time.monotonic() + timeout
+    rows: list[tuple] = []
+    while time.monotonic() < deadline:
+        rows = _ro_rows(app_db, sql)
+        if len(rows) >= expected:
+            return rows
+        time.sleep(0.05)
+    raise AssertionError(
+        f"the world letter job never landed: wanted {expected} rows for"
+        f" {sql!r}, saw {len(rows)}"
+    )
+
+
 def _span_package(
     world_id: str = WORLD,
     calendar_start: str = BERRYMOOR_START,
@@ -157,17 +177,16 @@ def _span_package(
 
 
 # ---------------------------------------------------------------------------
-# 1 — the narrative order, end to end
+# 1 — the narrative order, migrated (WR-2: deltas → final, the letter
+#     step after the stream closes)
 # ---------------------------------------------------------------------------
 
 
-def test_the_stream_tells_the_world_first(tmp_path: Path) -> None:
-    """The streamed turn's event order is world → delta＊ → final: the
-    story frame lands before the first generation increment, and the
-    frame carries the story block's data (the world's name, its
-    virtual-calendar day localized, the interface language, this run's
-    notes — A2R DEC-…99: one call's whole beat run, eight events to the
-    ceiling)."""
+def test_the_stream_order_is_deltas_then_final(tmp_path: Path) -> None:
+    """The streamed turn's event order is delta＊ → final, nothing else:
+    the A2 ``world`` frame is retired with the pre-step it carried
+    (WR-2, DEC-OPI-5fc42174…49) — no structured frame lands before the
+    first delta, no matter that this conversation is world-bound."""
 
     endpoint = _FakeOpenAI()
     endpoint.start()
@@ -178,21 +197,13 @@ def test_the_stream_tells_the_world_first(tmp_path: Path) -> None:
             )
             assert status == 200
             frames = _sse_frames(raw)
-            assert [f["type"] for f in frames][:1] == ["world"]
+            others = [
+                f for f in frames if f["type"] not in ("delta", "final")
+            ]
+            assert others == []
+            assert frames[0]["type"] == "delta"
             assert frames[-1]["type"] == "final"
-            assert [f["type"] for f in frames][1:-1] == ["delta"] * len(REPLY)
-            world = frames[0]
-            assert world["world_name"] == "Berrymoor"
-            assert world["ui_language"] == "zh"
-            assert len(world["notes"]) == 8
-            # The frame's day is the story's current day — the run's own
-            # last event's stamp, localized (the calendar sums the whole
-            # happened story, not the first note's).
-            assert world["date_localized"] == _localize_story_date(
-                world["notes"][-1]["occurred_at"], "zh", "Berrymoor"
-            )
-            for note in world["notes"]:
-                assert note["occurred_at"].startswith("2025-09-")
+            assert [f["type"] for f in frames][:-1] == ["delta"] * len(REPLY)
     finally:
         endpoint.stop()
 
@@ -200,52 +211,41 @@ def test_the_stream_tells_the_world_first(tmp_path: Path) -> None:
 def test_the_streamed_turn_advances_the_world_exactly_once(
     tmp_path: Path,
 ) -> None:
-    """One streamed turn, one world advance: the pre-step runs the
-    letter trigger and the turn itself skips its own wiring — one run
-    row, that run's whole beat set (eight events to the ceiling), zero
-    pending after the reveal; a second stream winds the next run and
-    adds exactly that run's events (no double advance)."""
+    """One streamed letter, one world letter step, run **after** the
+    final: the post-step job winds the anchor run once and writes the
+    narrator's beats; a second letter resumes the same anchor run and
+    adds exactly its own beats (no double step, no second winch). The
+    provider is the scripted beats double (no streaming face — the
+    blocking shape, zero deltas, one final)."""
 
-    endpoint = _FakeOpenAI()
-    endpoint.start()
-    try:
-        with _openai_stack(tmp_path / "app.db", endpoint) as stack:
-            app_db = tmp_path / "app.db"
-            _post(stack.port, "/api/turn_stream", {"text": A1_TEXT})
-            runs = _ro_rows(app_db, "SELECT COUNT(*) FROM world_run")[0][0]
-            events = _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[
-                0
-            ][0]
-            pending = _ro_rows(
-                app_db,
-                "SELECT COUNT(*) FROM world_reveal_item"
-                " WHERE status = 'PENDING'",
-            )[0][0]
-            assert (runs, events, pending) == (1, 8, 0)
-            status, raw = _post(
-                stack.port, "/api/turn_stream", {"text": A1_TEXT}
-            )
-            assert status == 200
-            frames = _sse_frames(raw)
-            assert frames[0]["type"] == "world"
-            # This run's notes only (current-run presentation): the
-            # second run's own step — the settled facts of the first
-            # story widen the mature set, and its seed draws straight
-            # into a RESPONSE stop.
-            assert len(frames[0]["notes"]) == 1
-            assert _ro_rows(
-                app_db, "SELECT COUNT(*) FROM world_event"
-            )[0][0] == 9
-    finally:
-        endpoint.stop()
+    app_db = tmp_path / "app.db"
+    provider = BeatsProvider(beats_json=BEATS_TWO)
+    with web_stack(app_db, provider=provider) as stack:
+        status, raw = _post(
+            stack.port, "/api/turn_stream", {"text": A1_TEXT}
+        )
+        assert status == 200
+        assert [f["type"] for f in _sse_frames(raw)] == ["final"]
+        _wait_for_world_rows(app_db, "SELECT event_id FROM world_event", 2)
+        runs = _ro_rows(app_db, "SELECT run_id FROM world_run")
+        assert len(runs) == 1
+        sources = _ro_rows(
+            app_db, "SELECT DISTINCT source FROM world_event"
+        )
+        assert [str(row[0]) for row in sources] == ["world_narrator"]
+        # The second letter: the anchor run resumes, its beats add.
+        status, raw = _post(
+            stack.port, "/api/turn_stream", {"text": A1_TEXT}
+        )
+        assert status == 200
+        _wait_for_world_rows(app_db, "SELECT event_id FROM world_event", 4)
+        assert _ro_rows(app_db, "SELECT COUNT(*) FROM world_run")[0][0] == 1
 
 
-def test_the_final_still_carries_the_world_step_note(
-    tmp_path: Path,
-) -> None:
-    """The final's payload keeps the blocking shape byte for byte: the
-    ``world_step_note`` key is present (a successful pre-step answers
-    ``None``) and the rest of the keys are exactly ``/api/turn``'s."""
+def test_the_final_carries_no_world_key(tmp_path: Path) -> None:
+    """The final's payload keeps the blocking shape byte for byte — and
+    the retired ``world_step_note`` key is gone from both (WR-2: the
+    world's leg is stderr-fail-soft, never a payload key)."""
 
     endpoint = _FakeOpenAI()
     endpoint.start()
@@ -257,114 +257,88 @@ def test_the_final_still_carries_the_world_step_note(
             assert status == 200
             final = _sse_frames(raw)[-1]
             assert final["type"] == "final"
-            assert "world_step_note" in final
-            assert final["world_step_note"] is None
+            assert "world_step_note" not in final
             assert final["reply"] == REPLY
+            status, blocking_raw = _post(
+                stack.port, "/api/turn", {"text": A1_TEXT}
+            )
+            assert status == 200
+            blocking = json.loads(blocking_raw.decode("utf-8"))
+            assert set(final.keys()) - {"type"} == set(blocking.keys())
     finally:
         endpoint.stop()
 
 
 # ---------------------------------------------------------------------------
-# 2 — the story data: language and the reveal that rode the pre-step
+# 2 — the presentation law, migrated (the letter leaves PENDING; the
+#     look is the reveal)
 # ---------------------------------------------------------------------------
 
 
-def test_the_story_notes_carry_the_chinese_prose(tmp_path: Path) -> None:
-    """The default interface language is zh: the frame's note renders
-    the package's own Chinese prose (CJK script), ``fallback`` false —
-    the primary, not a stand-in."""
+def test_the_generated_notes_wait_pending_until_the_look(
+    tmp_path: Path,
+) -> None:
+    """WR-2's presentation law: the letter step writes its beats and
+    leaves exactly one ``PENDING`` reveal per beat — the inbox's read
+    (the presentation trigger) is what flips them, and the read
+    afterwards finds everything revealed (nothing left behind)."""
 
-    endpoint = _FakeOpenAI()
-    endpoint.start()
-    try:
-        with _openai_stack(tmp_path / "app.db", endpoint) as stack:
-            status, raw = _post(
-                stack.port, "/api/turn_stream", {"text": A1_TEXT}
-            )
-            assert status == 200
-            note = _sse_frames(raw)[0]["notes"][0]
-            assert re.search(r"[\u4e00-\u9fff]", note["narration"])
-            assert note["fallback"] is False
-    finally:
-        endpoint.stop()
-
-
-def test_the_story_follows_the_ui_language(tmp_path: Path) -> None:
-    """The interface write moves the story's language: after the page
-    writes ``ui_language: en``, the frame's note renders the English
-    row and says ``fallback: false`` (the primary language, not a
-    fallback), and the date line answers in English."""
-
-    endpoint = _FakeOpenAI()
-    endpoint.start()
-    try:
-        with _openai_stack(tmp_path / "app.db", endpoint) as stack:
-            status, _ = stack.post(
-                "/api/settings/ui_language", {"ui_language": "en"}
-            )
-            assert status == 200
-            status, raw = _post(
-                stack.port, "/api/turn_stream", {"text": A1_TEXT}
-            )
-            assert status == 200
-            world = _sse_frames(raw)[0]
-            assert world["ui_language"] == "en"
-            assert re.fullmatch(
-                r"(Sep|Oct) \d{1,2} · Berrymoor", world["date_localized"]
-            ), world["date_localized"]
-            note = world["notes"][0]
-            latin = note["narration"]
-            assert latin and not re.search(r"[\u4e00-\u9fff]", latin)
-            assert note["fallback"] is False
-    finally:
-        endpoint.stop()
-
-
-def test_the_story_notes_are_already_revealed(tmp_path: Path) -> None:
-    """呈现即读即揭示: the story frame's notes are already ``REVEALED``
-    when the page later rereads the inbox — the reveal rode the
-    pre-step, so the reread adds nothing new (nothing left pending)."""
-
-    endpoint = _FakeOpenAI()
-    endpoint.start()
-    try:
-        with _openai_stack(tmp_path / "app.db", endpoint) as stack:
-            status, raw = _post(
-                stack.port, "/api/turn_stream", {"text": A1_TEXT}
-            )
-            assert status == 200
-            story = _sse_frames(raw)[0]
-            status, inbox = stack.get_json("/api/world/inbox")
-            assert status == 200
-            # The frame's note and the inbox's note are the same fact:
-            # one per step, already revealed, no second copy.
-            assert len(inbox["items"]) == len(story["notes"])
-            for note in inbox["items"]:
-                assert note["status"] == "REVEALED"
-                assert note["story_date"] is not None
-    finally:
-        endpoint.stop()
-
-
-# ---------------------------------------------------------------------------
-# 3 — the blocking turn keeps its own wiring
-# ---------------------------------------------------------------------------
-
-
-def test_the_blocking_turn_keeps_its_own_wiring(tmp_path: Path) -> None:
-    """/api/turn is untouched by the narrative order: the world steps
-    after the commit, inside the turn (its run's whole beat set — eight
-    events to the ceiling), and the reply's own ``world_step_note``
-    answers ``None`` for the successful step."""
-
-    with web_stack(tmp_path / "app.db") as stack:
+    app_db = tmp_path / "app.db"
+    provider = BeatsProvider(beats_json=BEATS_TWO)
+    with web_stack(app_db, provider=provider) as stack:
         status, turn = stack.post("/api/turn", {"text": CLEAN_TEXT})
         assert status == 200
-        assert turn["reply"] == REPLY
-        assert turn["world_step_note"] is None
+        assert turn["reply"] == provider.reply_text
+        pending = _ro_rows(
+            app_db,
+            "SELECT item_id FROM world_reveal_item WHERE status = 'PENDING'",
+        )
+        assert len(pending) == 2
+        status, inbox = stack.get_json("/api/world/inbox")
+        assert status == 200
+        assert inbox["revealed_now"] == 2
+        for note in inbox["items"]:
+            assert note["status"] == "REVEALED"
+            assert note["story_date"] is not None
         assert _ro_rows(
-            tmp_path / "app.db", "SELECT COUNT(*) FROM world_event"
-        )[0][0] == 8
+            app_db,
+            "SELECT COUNT(*) FROM world_reveal_item"
+            " WHERE status = 'PENDING'",
+        )[0][0] == 0
+
+
+# ---------------------------------------------------------------------------
+# 3 — the blocking turn runs the same letter step inline
+# ---------------------------------------------------------------------------
+
+
+def test_the_blocking_turn_runs_the_letter_step_inline(
+    tmp_path: Path,
+) -> None:
+    """/api/turn's letter step rides inline after the payload is built
+    (WR-2): the beats land in the chronicle in the same request, the
+    reply is untouched, and the payload carries no world key."""
+
+    app_db = tmp_path / "app.db"
+    provider = BeatsProvider(beats_json=BEATS_TWO)
+    with web_stack(app_db, provider=provider) as stack:
+        status, turn = stack.post("/api/turn", {"text": CLEAN_TEXT})
+        assert status == 200
+        assert turn["reply"] == provider.reply_text
+        assert "world_step_note" not in turn
+        rows = _ro_rows(
+            app_db,
+            "SELECT source, occurred_at FROM world_event"
+            " ORDER BY event_id ASC",
+        )
+        assert len(rows) == 2
+        assert all(str(row[0]) == "world_narrator" for row in rows)
+        # The beats' own spans stamp the story days (0 then 2 — the
+        # calendar base is the story's day zero on an empty chronicle).
+        assert [str(row[1]) for row in rows] == [
+            "2025-09-14",
+            "2025-09-16",
+        ]
 
 
 # ---------------------------------------------------------------------------
@@ -552,56 +526,53 @@ def test_legacy_realtime_rows_render_no_date(tmp_path: Path) -> None:
     """A legacy row whose ``occurred_at`` carries a real wall-clock
     moment answers ``story_date: None`` — an honest old row renders no
     date at all, never a fabricated story day (DEC-…88 ④'s retirement
-    arm). The row is injected inside the current run so the
-    current-run filter does not hide it."""
+    arm). The row is injected inside the anchor run so the
+    current-run filter does not hide it (WR-2 随迁: the anchor run is
+    the generated step's own — the beats double winds it)."""
 
-    endpoint = _FakeOpenAI()
-    endpoint.start()
-    try:
-        with _openai_stack(tmp_path / "app.db", endpoint) as stack:
-            status, _ = _post(stack.port, "/api/turn", {"text": CLEAN_TEXT})
-            assert status == 200
-            app_db = tmp_path / "app.db"
-            current_run = _ro_rows(
-                app_db,
-                "SELECT run_id FROM world_run ORDER BY created_at DESC,"
-                " run_id DESC LIMIT 1",
-            )[0][0]
-            # The injection rides its own short-lived writable connection
-            # (the worker thread owns the serving one and sits idle in
-            # its work loop while this runs).
-            writer = sqlite3.connect(app_db, timeout=10)
-            try:
-                writer.execute(
-                    "INSERT INTO world_event (event_id, world_id, kind,"
-                    " narration, effects, occurred_at, source)"
-                    " VALUES (?, 'world-berrymoor', 'old_kind', 'An old"
-                    " letter-time note.', '[]',"
-                    " '2026-10-05T12:00:00+00:00', 'test')",
-                    (f"{current_run}:99",),
-                )
-                writer.execute(
-                    "INSERT INTO world_reveal_item (item_id, world_id,"
-                    " source_event_id, actor_id, status, revealed_at,"
-                    " created_at)"
-                    " VALUES (?, 'world-berrymoor', ?, NULL, 'PENDING',"
-                    " NULL, ?)",
-                    (f"{current_run}:99:reveal", f"{current_run}:99", NOW),
-                )
-                writer.commit()
-            finally:
-                writer.close()
-            status, inbox = stack.get_json("/api/world/inbox")
-            assert status == 200
-            legacy = [
-                note
-                for note in inbox["items"]
-                if str(note["id"]).endswith(":99:reveal")
-            ]
-            assert len(legacy) == 1
-            assert legacy[0]["story_date"] is None
-    finally:
-        endpoint.stop()
+    app_db = tmp_path / "app.db"
+    provider = BeatsProvider(beats_json=BEATS_TWO)
+    with web_stack(app_db, provider=provider) as stack:
+        status, _ = stack.post("/api/turn", {"text": CLEAN_TEXT})
+        assert status == 200
+        current_run = _ro_rows(
+            app_db,
+            "SELECT run_id FROM world_run ORDER BY created_at DESC,"
+            " run_id DESC LIMIT 1",
+        )[0][0]
+        # The injection rides its own short-lived writable connection
+        # (the worker thread owns the serving one and sits idle in
+        # its work loop while this runs).
+        writer = sqlite3.connect(app_db, timeout=10)
+        try:
+            writer.execute(
+                "INSERT INTO world_event (event_id, world_id, kind,"
+                " narration, effects, occurred_at, source)"
+                " VALUES (?, 'world-berrymoor', 'old_kind', 'An old"
+                " letter-time note.', '[]',"
+                " '2026-10-05T12:00:00+00:00', 'test')",
+                (f"{current_run}:99",),
+            )
+            writer.execute(
+                "INSERT INTO world_reveal_item (item_id, world_id,"
+                " source_event_id, actor_id, status, revealed_at,"
+                " created_at)"
+                " VALUES (?, 'world-berrymoor', ?, NULL, 'PENDING',"
+                " NULL, ?)",
+                (f"{current_run}:99:reveal", f"{current_run}:99", NOW),
+            )
+            writer.commit()
+        finally:
+            writer.close()
+        status, inbox = stack.get_json("/api/world/inbox")
+        assert status == 200
+        legacy = [
+            note
+            for note in inbox["items"]
+            if str(note["id"]).endswith(":99:reveal")
+        ]
+        assert len(legacy) == 1
+        assert legacy[0]["story_date"] is None
 
 
 def test_run_step_without_a_package_keeps_the_callers_moment(
@@ -632,78 +603,74 @@ def test_run_step_without_a_package_keeps_the_callers_moment(
 def test_the_inbox_payload_counts_its_own_reveal(tmp_path: Path) -> None:
     """DEC-…92's data half: the inbox payload answers ``revealed_now``
     — the count of PENDING notes **this very read** flipped (counted
-    before the flip). A clean world reads zero; a note left pending by
-    hand (the last session's unread leg) reads one and rides the
-    items."""
+    before the flip). The letter's own beats read first (WR-2: the
+    letter step leaves its beats pending); a note left pending by hand
+    (the last session's unread leg) reads one and rides the items."""
 
-    endpoint = _FakeOpenAI()
-    endpoint.start()
-    try:
-        with _openai_stack(tmp_path / "app.db", endpoint) as stack:
-            status, _ = _post(stack.port, "/api/turn", {"text": CLEAN_TEXT})
-            assert status == 200
-            status, payload = stack.get_json("/api/world/inbox")
-            assert status == 200
-            assert payload["revealed_now"] == 0  # nothing left unread
-            app_db = tmp_path / "app.db"
-            current_run = _ro_rows(
-                app_db,
-                "SELECT run_id FROM world_run ORDER BY created_at DESC,"
-                " run_id DESC LIMIT 1",
-            )[0][0]
-            writer = sqlite3.connect(app_db, timeout=10)
-            try:
-                writer.execute(
-                    "INSERT INTO world_event (event_id, world_id, kind,"
-                    " narration, effects, occurred_at, source)"
-                    " VALUES (?, 'world-berrymoor', 'left_kind', 'A note"
-                    " the last session never read.', '[]',"
-                    " '2025-09-18', 'test')",
-                    (f"{current_run}:98",),
-                )
-                writer.execute(
-                    "INSERT INTO world_reveal_item (item_id, world_id,"
-                    " source_event_id, actor_id, status, revealed_at,"
-                    " created_at)"
-                    " VALUES (?, 'world-berrymoor', ?, NULL, 'PENDING',"
-                    " NULL, ?)",
-                    (f"{current_run}:98:reveal", f"{current_run}:98", NOW),
-                )
-                writer.commit()
-            finally:
-                writer.close()
-            status, payload = stack.get_json("/api/world/inbox")
-            assert status == 200
-            assert payload["revealed_now"] == 1
-            assert any(
-                str(note["id"]).endswith(":98:reveal")
-                for note in payload["items"]
+    app_db = tmp_path / "app.db"
+    provider = BeatsProvider(beats_json=BEATS_TWO)
+    with web_stack(app_db, provider=provider) as stack:
+        status, _ = stack.post("/api/turn", {"text": CLEAN_TEXT})
+        assert status == 200
+        status, payload = stack.get_json("/api/world/inbox")
+        assert status == 200
+        # The letter's own beats were the unread leg this read flipped.
+        assert payload["revealed_now"] == 2
+        current_run = _ro_rows(
+            app_db,
+            "SELECT run_id FROM world_run ORDER BY created_at DESC,"
+            " run_id DESC LIMIT 1",
+        )[0][0]
+        writer = sqlite3.connect(app_db, timeout=10)
+        try:
+            writer.execute(
+                "INSERT INTO world_event (event_id, world_id, kind,"
+                " narration, effects, occurred_at, source)"
+                " VALUES (?, 'world-berrymoor', 'left_kind', 'A note"
+                " the last session never read.', '[]',"
+                " '2025-09-18', 'test')",
+                (f"{current_run}:98",),
             )
-    finally:
-        endpoint.stop()
-
-
-def test_the_streamed_frame_names_the_checkpoint(tmp_path: Path) -> None:
-    """The streamed world frame carries ``at_checkpoint`` and it answers
-    **False** on every reachable path (A2R DEC-…99: the engine never
-    pauses mid-run — the run is at its stop the moment the frame flies),
-    and the frame's bit matches the inbox's (one run row, one truth)."""
-
-    endpoint = _FakeOpenAI()
-    endpoint.start()
-    try:
-        with _openai_stack(tmp_path / "app.db", endpoint) as stack:
-            status, raw = _post(
-                stack.port, "/api/turn_stream", {"text": A1_TEXT}
+            writer.execute(
+                "INSERT INTO world_reveal_item (item_id, world_id,"
+                " source_event_id, actor_id, status, revealed_at,"
+                " created_at)"
+                " VALUES (?, 'world-berrymoor', ?, NULL, 'PENDING',"
+                " NULL, ?)",
+                (f"{current_run}:98:reveal", f"{current_run}:98", NOW),
             )
-            assert status == 200
-            world = _sse_frames(raw)[0]
-            assert world["at_checkpoint"] is False
-            status, inbox = stack.get_json("/api/world/inbox")
-            assert status == 200
-            assert inbox["at_checkpoint"] == world["at_checkpoint"]
-    finally:
-        endpoint.stop()
+            writer.commit()
+        finally:
+            writer.close()
+        status, payload = stack.get_json("/api/world/inbox")
+        assert status == 200
+        assert payload["revealed_now"] == 1
+        assert any(
+            str(note["id"]).endswith(":98:reveal")
+            for note in payload["items"]
+        )
+
+
+def test_the_inbox_names_the_anchor_checkpoint(tmp_path: Path) -> None:
+    """The inbox payload's ``at_checkpoint`` bit is the anchor run's own
+    state, read straight off the row (WR-2: the streamed frame that
+    carried the bit is retired with the pre-step): a fresh world reads
+    False (no run), and one generated letter leaves the anchor at its
+    checkpoint — True, and honest (the generated step never
+    terminalizes its run)."""
+
+    app_db = tmp_path / "app.db"
+    with web_stack(app_db) as stack:
+        status, inbox = stack.get_json("/api/world/inbox")
+        assert status == 200
+        assert inbox["at_checkpoint"] is False
+    provider = BeatsProvider(beats_json=BEATS_TWO)
+    with web_stack(app_db, provider=provider) as stack:
+        status, _ = stack.post("/api/turn", {"text": CLEAN_TEXT})
+        assert status == 200
+        status, inbox = stack.get_json("/api/world/inbox")
+        assert status == 200
+        assert inbox["at_checkpoint"] is True
 
 
 # ---------------------------------------------------------------------------
@@ -711,40 +678,35 @@ def test_the_streamed_frame_names_the_checkpoint(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_the_inbox_shows_only_the_latest_run(tmp_path: Path) -> None:
-    """The inbox is current-run only: the first letter's run hits its
-    own ceiling (A2R DEC-…99), so the second letter winds a fresh run
-    and the payload carries exactly that run's notes — the first run's
-    notes stay durable and out of sight (the world's own log face is a
-    later cut's)."""
+def test_the_inbox_shows_the_anchor_run(tmp_path: Path) -> None:
+    """The inbox is current-run only, and under WR-2 the anchor run is
+    the world's one durable run: two letters' generated notes share the
+    anchor run's id prefix and the payload carries exactly that run's
+    notes (the ids stay the story's own order — run, turn, beat)."""
 
-    endpoint = _FakeOpenAI()
-    endpoint.start()
-    try:
-        with _openai_stack(tmp_path / "app.db", endpoint) as stack:
-            _post(stack.port, "/api/turn_stream", {"text": A1_TEXT})
-            status, inbox = stack.get_json("/api/world/inbox")
-            assert status == 200
-            first_ids = [str(note["id"]) for note in inbox["items"]]
-            assert len(first_ids) == 8
-            assert all(
-                item_id.startswith("run-berrymoor-0000:")
-                for item_id in first_ids
-            )
-            # The first run is already finished (its own ceiling), so
-            # the next letter winds a new one — no hand-rolled UPDATE.
-            status, raw = _post(
-                stack.port, "/api/turn_stream", {"text": A1_TEXT}
-            )
-            assert status == 200
-            status, inbox = stack.get_json("/api/world/inbox")
-            assert status == 200
-            ids = [str(note["id"]) for note in inbox["items"]]
-            assert len(ids) == 1
-            assert ids[0].startswith("run-berrymoor-0001:")
-            assert ids[0].endswith(":0:reveal")
-    finally:
-        endpoint.stop()
+    app_db = tmp_path / "app.db"
+    provider = BeatsProvider(beats_json=BEATS_TWO)
+    with web_stack(app_db, provider=provider) as stack:
+        stack.post("/api/turn", {"text": CLEAN_TEXT})
+        status, inbox = stack.get_json("/api/world/inbox")
+        assert status == 200
+        first_ids = [str(note["id"]) for note in inbox["items"]]
+        assert len(first_ids) == 2
+        assert all(
+            item_id.startswith("run-berrymoor-0000:") for item_id in first_ids
+        )
+        assert all(item_id.endswith(":reveal") for item_id in first_ids)
+        # The second letter resumes the anchor run: its notes land under
+        # the same prefix, and the inbox carries the run's whole set.
+        stack.post("/api/turn", {"text": SECOND_TEXT})
+        status, inbox = stack.get_json("/api/world/inbox")
+        assert status == 200
+        ids = [str(note["id"]) for note in inbox["items"]]
+        assert len(ids) == 4
+        assert all(item_id.startswith("run-berrymoor-0000:") for item_id in ids)
+        # The two turns' event ids are disjoint (each letter's turn id
+        # sits in its own ids).
+        assert len(set(ids)) == 4
 
 
 def test_the_letter_count_grouping_is_retired() -> None:
@@ -804,16 +766,18 @@ def test_the_continue_button_is_retired_from_the_story_block() -> None:
     assert "fetchWorldContinue" not in story
     assert "world-story-actions" not in story
     assert "世界没能继续" not in app_source
-    # The streamed frame still carries the bit (the face reads it from
-    # the run row — the same source the inbox answers from).
+    # The endpoint behind the retired button is gone with it. WR-2: the
+    # pre-step's frame assembly and its at_checkpoint ride are retired
+    # with it — the inbox payload's bit (the run row's own state) is the
+    # one reader left, read straight off the row in the payload's own
+    # assembly.
     web_source = (REPO / "src" / "elc" / "web.py").read_text(
         encoding="utf-8"
     )
-    assert '"at_checkpoint": world["at_checkpoint"]' in web_source
-    assert 'latest_run.status.value == "AT_CHECKPOINT"' in web_source
-    # The endpoint behind the retired button is gone with it.
     assert "world/continue" not in web_source
     assert "def world_continue" not in web_source
+    assert "_world_event_payload" not in web_source
+    assert "_world_step_face" not in web_source
 
 
 def test_the_load_arm_renders_only_unrevealed_notes() -> None:
@@ -873,8 +837,6 @@ def test_the_world_presentation_faces_never_read_a_clock() -> None:
 
     for face_name in (
         _WebFace._world_payload,
-        _WebFace._story_notes,
-        _WebFace._world_event_payload,
         _WebFace._note_narration,
     ):
         source = inspect.getsource(face_name)

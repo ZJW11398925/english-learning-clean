@@ -72,7 +72,10 @@ A1_TEXT = "The meeting starts at nine."
 
 #: The blocking turn's payload keys, in the shape every existing consumer
 #: reads them — the exact set A1's ``final`` must carry and the one contract
-#: this cut may not widen or shrink.
+#: this cut may not widen or shrink. (WR-2, DEC-OPI-5fc42174…49: the
+#: additive ``world_step_note`` key is retired with the pre-step it
+#: reported — the world's letter step is stderr-fail-soft now, never a
+#: payload key.)
 TURN_PAYLOAD_KEYS = {
     "reply",
     "turn_status",
@@ -81,7 +84,6 @@ TURN_PAYLOAD_KEYS = {
     "word_hits",
     "user_word_hits",
     "usage",
-    "world_step_note",
 }
 
 
@@ -489,25 +491,17 @@ def test_stream_endpoint_answers_deltas_then_one_final_equal_to_turn(
             deltas = [f for f in frames if f["type"] == "delta"]
             finals = [f for f in frames if f["type"] == "final"]
             others = [f for f in frames if f["type"] not in ("delta", "final")]
-            # A2 (DEC-…82): the narrative order adds one structured
-            # ``world`` frame — the story block's data — before the
-            # first delta; the world's step now runs before generation.
-            # This bound stack tells Berrymoor's day, so the frame is
-            # here; the rest of the grammar is unchanged.
-            assert [f["type"] for f in others] == ["world"]
-            world = others[0]
-            assert world["world_name"] == "Berrymoor"
-            assert isinstance(world["date_localized"], str)
-            assert world["date_localized"]
-            assert world["ui_language"] in ("zh", "en")
-            assert isinstance(world["notes"], list)
+            # WR-2 (DEC-OPI-5fc42174…49): the narrative order is back to
+            # **deltas → final** — the A2 ``world`` frame is retired with
+            # the pre-step it carried; the stream carries generation
+            # increments and the one final, nothing else.
+            assert others == []
             assert len(finals) == 1
             final = finals[0]
-            # The event order is the contract: the world's story first,
-            # the deltas next, the final last.
+            # The event order is the contract: the deltas first, the
+            # final last, no world frame anywhere.
             assert frames[-1] is final
-            assert frames[0] is world
-            assert frames[1]["type"] == "delta"
+            assert frames[0]["type"] == "delta"
             # The streaming was real: one delta per character of the reply.
             assert [f["text"] for f in deltas] == list(REPLY)
             assert "".join(f["text"] for f in deltas) == final["reply"]
@@ -633,11 +627,11 @@ def test_a_failed_bridge_injection_degrades_to_one_final_with_the_assembly_intac
             assert host.coordinator.replace_persona_provider == original
             assert status == 200
             frames = _sse_frames(raw)
-            # A2 (DEC-…82): the world step runs before the bridge is
-            # installed, so its story frame is already out when the
-            # injection refuses — the degradation answer is the world
-            # frame plus the one failure-shaped final (no deltas).
-            assert [f["type"] for f in frames] == ["world", "final"]
+            # WR-2 (DEC-OPI-5fc42174…49): the pre-step that used to run
+            # before the bridge is retired, so the degradation answer is
+            # exactly the one failure-shaped final (no deltas, no world
+            # frame).
+            assert [f["type"] for f in frames] == ["final"]
             final = frames[-1]
             assert final["reply"] is None
             assert final["turn_status"] is None

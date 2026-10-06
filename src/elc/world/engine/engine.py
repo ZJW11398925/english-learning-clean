@@ -1,6 +1,10 @@
 """The world-run engine's advance face (W-1-2) — deterministic,
 replayable, durable.
 
+WR-2（DEC-OPI-5fc42174…49）起非生产面——生产世界步走 narrator 生成面
+（:mod:`elc.world.narrator` 经 orchestrate.run_generated_step）；本模块
+留库为确定性引擎面（W-1-2 测试在册）。
+
 What this cut claims, no more: the seven-step body's deterministic half
 (steps 2–5 of :mod:`elc.world.engine.steps`), one ``advance`` call per
 stop-or-ceiling (A2R, DEC-…99: a ``NOTICE`` event is a **beat, not a

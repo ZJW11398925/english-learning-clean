@@ -18,11 +18,14 @@ with ``urllib`` over the loopback. The pinned groups:
 3. **the continue endpoint, retired** — A2R (DEC-…99) removed
    ``POST /api/world/continue`` with the button (the engine never
    pauses mid-run): the route answers the plain 404, never a step;
-4. **the turn wiring** — a committed turn winds the world (the engine's
-   first production caller end to end: the reply answers normally and
-   the inbox carries the step's notes), and a world step that fails is
-   fail-soft (the reply is untouched; the sentence rides the additive
-   ``world_step_note`` field).
+4. **the turn wiring** — a committed turn's letter goes to the
+   narrator (WR-2, DEC-OPI-5fc42174…49: the world's beats are
+   model-generated now; the fixed-pool engine step is retired out of
+   the production path), the reply answers normally with no world key
+   in the payload, and the inbox read reveals what the step left
+   pending; a world letter that fails is fail-soft (the reply is
+   untouched, nothing is written, and the sentence goes to stderr —
+   the payload carries no world key at all).
 """
 
 from __future__ import annotations
@@ -37,8 +40,11 @@ from elc.web import _WebFace
 from tests.host.test_w1_web import (
     CLEAN_TEXT,
     CONV,
-    REPLY,
     web_stack,
+)
+from tests.host.test_wr2_post_turn_wiring import (
+    BEATS_TWO,
+    BeatsProvider,
 )
 
 REPO = Path(__file__).resolve().parents[2]
@@ -116,57 +122,67 @@ def test_the_continue_endpoint_is_retired(tmp_path: Path) -> None:
 def test_the_turn_winds_the_world_and_the_inbox_reveals(
     tmp_path: Path,
 ) -> None:
-    """The turn wiring end to end: the committed turn winds the world
-    (the letter trigger), the reply answers normally with no step note,
-    and the inbox read reveals the step's notes — one call's whole beat
-    run (A2R DEC-…99: eight events to the ceiling of the always-mature
-    ambient beats), the run at its stop, never at a checkpoint."""
+    """The turn wiring end to end (WR-2): the committed letter goes to
+    the narrator, the reply answers normally with no world key in the
+    payload, and the inbox read reveals the step's beats — the
+    generated narrations verbatim, the world's own byline (the
+    narrator signs nothing), the beat's story day, the run left at its
+    checkpoint (the anchor run — the generated step never
+    terminalizes)."""
 
-    with web_stack(tmp_path / "app.db") as stack:
+    provider = BeatsProvider(beats_json=BEATS_TWO)
+    with web_stack(tmp_path / "app.db", provider=provider) as stack:
         status, turn = stack.post("/api/turn", {"text": CLEAN_TEXT})
         assert status == 200
-        assert turn["reply"] == REPLY
-        assert turn["world_step_note"] is None
+        assert turn["reply"] == provider.reply_text
+        assert "world_step_note" not in turn
         status, inbox = stack.get_json("/api/world/inbox")
     assert status == 200
-    assert len(inbox["items"]) == 8
+    assert len(inbox["items"]) == 2
     # The read was the reveal: the notes answer revealed, each with its
-    # narration, its byline (a cast name or the world's own 「世界」 for
-    # a silent cycle) and the moment the event carries.
-    for note in inbox["items"]:
+    # generated narration verbatim, the world's own byline (the item
+    # carries no actor) and the moment the beat carries.
+    for note, narration in zip(inbox["items"], provider.narrations):
         assert note["status"] == "REVEALED"
-        assert isinstance(note["narration"], str) and note["narration"]
-        assert note["actor_name"] in ("世界", "Nell Alder")
-        assert isinstance(note["moment"], str) and note["moment"]
-    assert inbox["at_checkpoint"] is False
+        assert note["narration"] == narration
+        assert note["actor_name"] == "世界"
+        assert note["moment"]
+    assert inbox["at_checkpoint"] is True
 
 
-def test_the_world_step_failure_is_fail_soft(
+def test_the_world_letter_failure_is_fail_soft(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The fail-soft contract: a world step that blows up says one human
-    sentence in the additive ``world_step_note`` field and the reply is
-    untouched — the page's substance never waits on the world's
-    bookkeeping. The next unpatched turn answers with no note again."""
+    """The fail-soft contract (WR-2 shape): a world letter that blows
+    up costs the reply nothing — the payload is untouched and carries
+    no world key — and nothing is written (no run, no event, no
+    reveal). The next unpatched turn narrates again."""
 
     import elc.web
 
     def _boom(*args: Any, **kwargs: Any) -> Any:
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(elc.web, "run_step", _boom)
+    monkeypatch.setattr(elc.web, "run_generated_step", _boom)
     app_db = tmp_path / "app.db"
-    with web_stack(app_db) as stack:
+    provider = BeatsProvider(beats_json=BEATS_TWO)
+    with web_stack(app_db, provider=provider) as stack:
         status, broken = stack.post("/api/turn", {"text": CLEAN_TEXT})
         assert status == 200
-        assert broken["reply"] == REPLY
-        assert "世界步进失败" in str(broken["world_step_note"])
+        assert broken["reply"] == provider.reply_text
+        assert "world_step_note" not in broken
+        rows = _ro_rows(app_db, "SELECT COUNT(*) FROM world_run")
+        assert rows[0][0] == 0
     monkeypatch.undo()
-    with web_stack(app_db) as stack:
+    # A fresh double for the fresh session (the scripted parity of the
+    # first double stayed with its own two calls).
+    fine_provider = BeatsProvider(beats_json=BEATS_TWO)
+    with web_stack(app_db, provider=fine_provider) as stack:
         status, fine = stack.post("/api/turn", {"text": CLEAN_TEXT})
         assert status == 200
-        assert fine["reply"] == REPLY
-        assert fine["world_step_note"] is None
+        assert fine["reply"] == fine_provider.reply_text
+        assert "world_step_note" not in fine
+        assert _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 2
 
 
 def test_the_inbox_404s_without_a_binding() -> None:

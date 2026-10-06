@@ -93,6 +93,39 @@ def _ro_rows(app_db: Path, sql: str) -> list[tuple]:
         conn.close()
 
 
+def _inject_event(
+    app_db: Path,
+    event_id: str,
+    kind: str,
+    day: str,
+    *,
+    narration: str,
+) -> None:
+    """One chronicle event plus its ``PENDING`` reveal row, written by
+    hand from the test thread (a second connection; the worker holds no
+    write lock between requests — the wf-0 suite's injection posture).
+    WR-2 随迁: the turn no longer writes engine events, so the payload
+    language pins inject the rows they read."""
+
+    conn = sqlite3.connect(str(app_db), timeout=10)
+    try:
+        conn.execute(
+            "INSERT INTO world_event (event_id, world_id, kind, narration,"
+            " effects, occurred_at, source)"
+            " VALUES (?, 'world-berrymoor', ?, ?, '[]', ?, 'test')",
+            (event_id, kind, narration, day),
+        )
+        conn.execute(
+            "INSERT INTO world_reveal_item (item_id, world_id,"
+            " source_event_id, actor_id, status, revealed_at, created_at)"
+            " VALUES (?, 'world-berrymoor', ?, NULL, 'PENDING', NULL, ?)",
+            (f"{event_id}:reveal", event_id, day),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 class _PromptRecorder:
     """A provider that answers a fixed reply and records the **prompt
     text** of every call — the E2E's reading instrument (the scripted
@@ -297,7 +330,12 @@ def test_the_next_letter_answers_in_the_set_language(tmp_path: Path) -> None:
         status, turn = stack.post("/api/turn", {"text": CLEAN_TEXT})
         assert status == 200
         assert turn["reply"] == REPLY
-        assert len(recorder.prompts) == 1
+        # WR-2 随迁: every turn dials twice now — the letter's reply,
+        # then the world letter step's narration prompt (which this
+        # recorder answers with the same fixed reply; the world step
+        # refuses it quietly). The letter prompts sit at the even
+        # indices.
+        assert len(recorder.prompts) == 2
         assert "language: reply in English" in recorder.prompts[0]
         assert _FOLLOW_LINE not in recorder.prompts[0]
         status, _ = stack.post("/api/settings/reply_language",
@@ -305,8 +343,8 @@ def test_the_next_letter_answers_in_the_set_language(tmp_path: Path) -> None:
         assert status == 200
         status, turn = stack.post("/api/turn", {"text": CLEAN_TEXT})
         assert status == 200
-        assert len(recorder.prompts) == 2
-        assert "language: reply in simplified Chinese" in recorder.prompts[1]
+        assert len(recorder.prompts) == 4
+        assert "language: reply in simplified Chinese" in recorder.prompts[2]
 
 
 def test_the_default_letter_is_zero_drift(tmp_path: Path) -> None:
@@ -470,12 +508,19 @@ def test_inbox_payload_names_language_and_serves_chinese(
     """The payload names the language it rendered in, and ``zh`` items
     carry the package's own Chinese prose (the default language is
     ``zh``): CJK script in the narration, ``fallback`` false — the
-    Chinese row is the primary, not a stand-in."""
+    Chinese row is the primary, not a stand-in. (WR-2 随迁: the note
+    rides a hand-injected row whose kind the package carries — the turn
+    no longer writes engine events for the payload to read.)"""
 
     app_db = tmp_path / "app.db"
     with web_stack(app_db) as stack:
-        status, _ = stack.post("/api/turn", {"text": CLEAN_TEXT})
-        assert status == 200
+        _inject_event(
+            app_db,
+            "wl-zh-1",
+            "market_day",
+            "2025-09-14",
+            narration="Saturday on the quay: the fish carts were out.",
+        )
         status, inbox = stack.get_json("/api/world/inbox")
     assert status == 200
     assert inbox["language"] == "zh"
@@ -487,24 +532,21 @@ def test_inbox_payload_names_language_and_serves_chinese(
 
 def test_inbox_fallback_marks_the_english_leg(tmp_path: Path) -> None:
     """A durable event the v2 package cannot render in Chinese (v1-era
-    history, simulated by kinds the package never carried) falls back to
-    its **English** row and says so with ``fallback: true`` — never a
+    history, simulated by a kind the package never carried) falls back
+    to its **English** row and says so with ``fallback: true`` — never a
     fabricated Chinese one. The ``en`` leg is the primary language:
-    ``fallback`` false there."""
+    ``fallback`` false there. (WR-2 随迁: hand-injected rows, same
+    reason as the zh pin above.)"""
 
     app_db = tmp_path / "app.db"
     with web_stack(app_db) as stack:
-        status, _ = stack.post("/api/turn", {"text": CLEAN_TEXT})
-        assert status == 200
-    # Simulate the v1-era residue from the test thread (a second
-    # connection; the worker holds no write lock between requests).
-    conn = sqlite3.connect(str(app_db))
-    try:
-        conn.execute("UPDATE world_event SET kind = kind || '_v1'")
-        conn.commit()
-    finally:
-        conn.close()
-    with web_stack(app_db) as stack:
+        _inject_event(
+            app_db,
+            "wl-old-1",
+            "old_kind",
+            "2025-09-14",
+            narration="A note the world wrote before its Chinese.",
+        )
         status, zh = stack.get_json("/api/world/inbox")
         assert status == 200
         assert zh["language"] == "zh"

@@ -436,8 +436,8 @@ def test_a_turn_answers_the_full_json_contract(tmp_path: Path) -> None:
         # v3-d 随迁：响应加性携带两侧命中位图（无 content 腿 = None——
         # 每词保持全供性的诚实形状）。fr-A 随迁：响应加性携带本轮
         # usage（计量开关的数据面；未报 usage 的端点 = None，不伪造）。
-        # W-1-3 随迁：响应加性携带世界步进备注（正常 = None；fail-soft
-        # 失败 = 一句人话——回信本体永不受阻）。
+        # WR-2 随迁（DEC-OPI-5fc42174…49）：``world_step_note`` 键随前置
+        # 步退役——世界腿 stderr fail-soft，不再进载荷。
         assert set(data) == {
             "reply",
             "turn_status",
@@ -446,7 +446,6 @@ def test_a_turn_answers_the_full_json_contract(tmp_path: Path) -> None:
             "word_hits",
             "user_word_hits",
             "usage",
-            "world_step_note",
         }
         assert data["reply"] == REPLY
         assert data["turn_status"] == "COMPLETED"
@@ -456,7 +455,6 @@ def test_a_turn_answers_the_full_json_contract(tmp_path: Path) -> None:
         assert data["user_word_hits"] is None
         # the scripted provider reports no usage object — the honest None
         assert data["usage"] is None
-        assert data["world_step_note"] is None
 
 
 # ---------------------------------------------------------------------------

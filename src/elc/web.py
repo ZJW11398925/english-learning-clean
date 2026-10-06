@@ -463,11 +463,7 @@ from elc.user_config.types import (
     TeachingFrequency,
     TeachingPolicyProfile,
 )
-from elc.world.engine.orchestrate import (
-    TRIGGER_LETTER,
-    run_step,
-)
-from elc.world.engine.types import EngineConfig
+from elc.world.engine.orchestrate import run_generated_step
 from elc.world.package import (
     BUILTIN_WORLDS_DIR,
     WorldPackage,
@@ -3098,6 +3094,14 @@ class _WebFace:
                     )
         except OSError:
             self._world_packages = {}
+        # WR-2 (DEC-OPI-5fc42174…49): the streamed arm's post-turn world
+        # letter rides this stash — the streamed job records the letter
+        # it just committed (text plus the turn id), and the handler's
+        # fire-and-forget job consumes it **after** the final frame is
+        # out (流已关，零流延迟). The work queue's one-thread discipline
+        # makes the handoff race-free: the write and the consume are two
+        # queue jobs, never two threads.
+        self._stream_world_letter: tuple[str, str | None] | None = None
 
     def _require_cards(self) -> SqliteCharacterCardStore:
         """The card store, or the loud refusal (never a silent empty)."""
@@ -3115,32 +3119,59 @@ class _WebFace:
 
         return str(self._conversation_id)
 
-    def turn(self, text: str, *, skip_world_step: bool = False) -> dict[str, Any]:
+    def turn(self, text: str) -> dict[str, Any]:
         """One committed turn, as the page renders it.
 
-        A2 (DEC-…82): ``skip_world_step`` is the streamed path's
-        suppression parameter — ``turn_stream`` runs the world step
-        itself, **before** generation, and passes ``True`` here so the
-        world runs exactly once per turn (the reply's payload still
-        carries the pre-step's note under ``world_step_note``). The
-        default keeps the blocking turn's own wiring: the step runs
-        after the commit, exactly as W-1-3 shipped it."""
+        WR-2 (DEC-OPI-5fc42174…49): after the payload is built, the
+        world's letter step runs **inline on this path** — the narrator
+        turns the letter into the world's next beats (one blocking
+        provider call, one to two story beats, the chronicle and the
+        reveal queue written). A real provider makes this honest price
+        explicit: the blocking answer now carries the world's narration
+        round trip too (+1-3s); the world's leg is fail-soft to stderr
+        (the reply is the page's substance; its bookkeeping never blocks
+        it and never reaches the payload — the old additive
+        ``world_step_note`` key is retired with the pre-step it
+        reported). Revisit: backgrounding the leg like the streamed arm
+        already does."""
+
+        payload, turn_id = self._commit_and_answer(text)
+        if turn_id is not None:
+            self._world_post_turn_letter(text, turn_id)
+        return payload
+
+    def _commit_and_answer(
+        self, text: str
+    ) -> tuple[dict[str, Any], str | None]:
+        """The turn's commit half, shared byte for byte by both turn
+        faces: the envelope minted, the coordinator's round trip run,
+        the payload assembled — and the committed turn's id answered
+        beside it (``None`` when the turn never committed — a refused
+        begin — so the world's letter step knows there is no letter).
+
+        The payload is the page's whole contract: the reply, its
+        status, the teaching moments it opened, the affordance bitmaps
+        and the measured usage. The world's own bookkeeping has no key
+        here (WR-2 retired ``world_step_note`` with the pre-step)."""
 
         result = self._host.coordinator.begin_turn(
             _commit(self._conversation_id, text)
         )
         if isinstance(result, Err):
-            return {
-                "reply": None,
-                "turn_status": None,
-                "failure_reason": (
-                    f"{result.error.code.value}: {result.error.message}"
-                ),
-                "teaching_moments": [],
-            }
+            return (
+                {
+                    "reply": None,
+                    "turn_status": None,
+                    "failure_reason": (
+                        f"{result.error.code.value}: {result.error.message}"
+                    ),
+                    "teaching_moments": [],
+                },
+                None,
+            )
         completion = result.value
         reply = completion.reply_text
-        return {
+        payload = {
             "reply": reply,
             "turn_status": completion.turn_status.value,
             "failure_reason": completion.failure_reason,
@@ -3158,201 +3189,125 @@ class _WebFace:
             "usage": _usage_by_turn(
                 self._host.db, [str(completion.turn_id)]
             ).get(str(completion.turn_id)),
-            # W-1-3's turn wiring (additive, normally ``None``): the bound
-            # world's step ran after the turn committed; a step that
-            # refused (or blew up) says so here in one human sentence and
-            # nothing else about this reply changes — the world leg is
-            # fail-soft by contract (the reply is the page's substance;
-            # the world's bookkeeping never blocks it). A2: the streamed
-            # turn answers the pre-generation step's note here instead
-            # (the shape is the same; the step ran earlier).
-            "world_step_note": (
-                None
-                if skip_world_step
-                else self._world_step_after_turn(str(completion.turn_id))
-            ),
         }
+        return payload, str(completion.turn_id)
 
     def turn_stream(
-        self, text: str, events: "queue.Queue[Any]"
+        self, text: str, events: "queue.Queue[str]"
     ) -> dict[str, Any]:
-        """One committed turn through the streamed bridge (A1, DEC-…77),
-        with the world's story told first (A2, DEC-…82).
+        """One committed turn through the streamed bridge (A1, DEC-…77).
 
-        The payload contract is :meth:`turn`'s, byte for byte — the final
-        SSE event carries exactly what ``/api/turn`` would have answered,
-        ``world_step_note`` included. The stream half is a capability
-        probe: a provider without the optional ``call_streaming`` face
-        (every scripted test double among them) runs the blocking turn
-        unchanged — the world steps where it always did, inside the turn
-        — and the endpoint answers zero deltas with its one final. A
-        provider that has the face gets it wrapped for this one turn with
-        its emit wired **straight to the turn's queue** — increments
-        reach the page as they are generated (each one key-echo-checked
-        by the adapter before it is emitted), the durable delivery keeps
+        The payload contract is :meth:`_commit_and_answer`'s, byte for
+        byte — the final SSE event carries exactly what ``/api/turn``
+        would have answered. The stream half is a capability probe: a
+        provider without the optional ``call_streaming`` face (every
+        scripted test double among them) runs the commit unchanged —
+        the endpoint answers zero deltas with its one final. A provider
+        that has the face gets it wrapped for this one turn with its
+        emit wired **straight to the turn's queue** — increments reach
+        the page as they are generated (each one key-echo-checked by
+        the adapter before it is emitted), the durable delivery keeps
         the constructor-default seam, and the swap is restored in the
-        ``finally``, so a failure anywhere leaves the assembly exactly as
-        it was (the blocking shape, zero deltas, one final).
+        ``finally``, so a failure anywhere leaves the assembly exactly
+        as it was (the blocking shape, zero deltas, one final).
 
-        A2's narrative order: **world → deltas → final**. Before the
-        first generation token, the face runs the world step once (it is
-        the millisecond-scale leg — the model call is the slow one) and
-        answers the queue with **one structured ``world`` event** (the
-        story block's data: the world's name, its virtual-calendar day
-        localized, this run's notes in the interface language) so the
-        page can tell the world's side of the day before the reply
-        starts to arrive. A step that refuses (or blows up) sends no
-        world event at all — the deltas simply start; the note, if any,
-        still rides the final's ``world_step_note``. The step runs
-        **once**: the turn itself is asked to skip its own post-commit
-        wiring (``turn(skip_world_step=True)``) and answers the
-        pre-step's note instead — one turn, one world advance, the old
-        blocking endpoint's behavior untouched.
+        WR-2 (DEC-OPI-5fc42174…49): the streamed turn's event order is
+        **deltas → final** — the world no longer tells its story first.
+        The A2 pre-step (and its structured ``world`` frame) is retired
+        with the fixed-pool engine step it served; the page's
+        ``onWorld`` callback simply never fires (the frontend face is
+        wr-3's). The world's letter step rides **after the final
+        frame** — this job stashes the committed letter (text plus its
+        turn id) and the handler enqueues the face's
+        :meth:`world_step_for_stream` once the stream is closed, so the
+        narration's round trip costs the stream nothing
+        (流已关，零流延迟). The blocking face keeps its inline leg.
         """
 
         live = self._host.coordinator.persona_provider()
         if not hasattr(live, "call_streaming"):
-            return self.turn(text)
-        # The world first (it is fast), the reply second. The step's
-        # trigger turn id rides as ``None`` on purpose: at this point the
-        # turn is not committed, so no turn id exists to name — the run
-        # row's ``trigger_turn_id`` stays NULL for the streamed path
-        # (the column's own ``when it is known`` reading), while the
-        # blocking turn keeps naming its own.
-        world = self._world_step_face()
-        if world["note"] is None and world["bound"]:
-            # The structured frame goes through the same queue the delta
-            # chunks use; the endpoint writes a dict as its own SSE event
-            # and a str as a delta (the drain's ``isinstance`` split). A
-            # conversation outside any world tells no story block.
-            events.put(self._world_event_payload(world))
+            payload, turn_id = self._commit_and_answer(text)
+            self._stream_world_letter = (text, turn_id)
+            return payload
         bridge = _TurnStreamBridge(events)
         coordinator = self._host.coordinator
         coordinator.replace_persona_provider(
             _StreamingProviderProxy(live, bridge)
         )
         try:
-            payload = self.turn(text, skip_world_step=True)
-            payload["world_step_note"] = world["note"]
+            payload, turn_id = self._commit_and_answer(text)
+            self._stream_world_letter = (text, turn_id)
             return payload
         finally:
             coordinator.replace_persona_provider(live)
 
-    def _world_step_face(self) -> dict[str, Any]:
-        """The world step as an independently callable face (A2,
-        DEC-…82): one step, then the reveal, then **this run's** notes
-        back — ``{"items": [...], "note": str | None}``.
+    def world_step_for_stream(self) -> None:
+        """The streamed arm's world letter step (WR-2): the
+        fire-and-forget job the handler enqueues once the final frame
+        is out. It consumes the letter the streamed turn stashed — a
+        job that finds nothing (a stream that never committed, or a
+        second enqueue) answers the honest quiet — and runs the same
+        fail-soft letter face the blocking turn runs inline."""
 
-        ``items`` are the notes the step's own run wrote, revealed on
-        presentation (the inbox's atomic flip runs here, so what the
-        story block shows is exactly what the world meant to say —
-        nothing left pending behind it). The presentation is
-        **current-run only** (A2, DEC-…90): the page's world face shows
-        the latest run's notes, not the world's whole chronicle — the
-        older notes stay durable and out of sight. Every failure mode
-        answers the sentence in ``note`` and never an exception out;
-        ``bound`` says whether this conversation lives in any world at
-        all (the streamed path tells no story block without one) — no
-        binding (or a host without the world leg) answers an empty face
-        silently, the normal arm for hosts and conversations the world
-        leg does not name; a world whose package is unreadable or whose
-        step refuses says so."""
+        letter = self._stream_world_letter
+        self._stream_world_letter = None
+        if letter is None:
+            return
+        letter_text, turn_id = letter
+        if turn_id is None:
+            return
+        self._world_post_turn_letter(letter_text, turn_id)
+
+    def _world_post_turn_letter(self, letter_text: str, turn_id: str) -> None:
+        """The world's letter step, fail-soft (WR-2, DEC-OPI-5fc42174…49):
+        the committed letter goes to the narrator through
+        :func:`elc.world.engine.orchestrate.run_generated_step` — one
+        blocking provider call, one or two generated beats, the
+        chronicle and the ``PENDING`` reveal items written. Every
+        failure mode is one human sentence on stderr and never an
+        exception out (the reply the user is reading is the page's
+        substance); the world's own presentation stays where the spec
+        puts it — the inbox's read is the reveal, the next look opens
+        what this step left pending. No binding, no package, no world
+        leg, no provider: the honest quiet, never a fallback to the
+        retired pool."""
 
         binding = self._world_binding()
         if binding is None:
-            return {"items": [], "note": None, "bound": False,
-                    "at_checkpoint": False}
+            return
         world_id = str(binding["world_id"])
         package = self._world_packages.get(world_id)
         world_store = getattr(self._host, "world_store", None)
         if package is None or world_store is None:
-            return {"items": [], "note": None, "bound": True,
-                    "at_checkpoint": False}
+            return
+        coordinator = getattr(self._host, "coordinator", None)
+        provider = (
+            None if coordinator is None else coordinator.persona_provider()
+        )
         try:
-            stepped = run_step(
+            stepped = run_generated_step(
                 world_store,
                 world_id,
-                package.to_event_pool(),
-                EngineConfig(),
-                TRIGGER_LETTER,
+                package,
+                provider,
+                letter_text,
+                turn_id,
                 datetime.now(tz=UTC).isoformat(),
-                package=package,
+                ui_language=self._ui_language(),
             )
         except Exception as exc:  # fail-soft: the sentence, never the raise
-            return {
-                "items": [],
-                "note": f"世界步进失败（回信不受影响）：{type(exc).__name__}: {exc}",
-                "bound": True,
-                "at_checkpoint": False,
-            }
-        if isinstance(stepped, Err):
-            return {
-                "items": [],
-                "note": f"世界步进未推进（回信不受影响）：{stepped.error.message}",
-                "bound": True,
-                "at_checkpoint": False,
-            }
-        # 呈现即读即揭示: the reveal runs now (the presentation trigger,
-        # spec §4.1), so the story block's notes are already the world's
-        # read state — the page's later inbox reread adds nothing new.
-        revealed = world_store.reveal_all(
-            world_id, datetime.now(tz=UTC).isoformat()
-        )
-        if isinstance(revealed, Err):
-            return {
-                "items": [],
-                "note": (
-                    "世界揭示失败（回信不受影响）："
-                    f"{revealed.error.code.value}: {revealed.error.message}"
-                ),
-                "bound": True,
-                "at_checkpoint": False,
-            }
-        step_event_ids = {
-            str(cycle.event_id)
-            for cycle in stepped.value.cycles
-            if cycle.event_id is not None
-        }
-        items = [
-            item
-            for item in revealed.value
-            if str(item.source_event_id) in step_event_ids
-        ]
-        latest_run = world_store.list_runs(world_id)[-1]
-        return {
-            "items": self._story_notes(world_id, package, tuple(items)),
-            "note": None,
-            "bound": True,
-            # The 「继续」 button rides the story block's tail (DEC-…92):
-            # the step's own exit state, read from the run row (the same
-            # source the inbox's at_checkpoint answers from).
-            "at_checkpoint": latest_run.status.value == "AT_CHECKPOINT",
-        }
-
-    def _story_notes(
-        self,
-        world_id: str,
-        package: WorldPackage,
-        items: tuple[Any, ...],
-    ) -> list[dict[str, Any]]:
-        """The story-block shape of reveal items: each note's narration
-        in the interface language (the package's Chinese prose, or the
-        honest English fallback) and its event's story day. No byline,
-        no moment word — the story block is prose, not cards (DEC-…82)."""
-
-        ui_language = self._ui_language()
-        notes: list[dict[str, Any]] = []
-        for item in items:
-            event = self._world_event_row(world_id, str(item.source_event_id))
-            narration, fallback = self._note_narration(package, ui_language, event)
-            notes.append(
-                {
-                    "narration": narration,
-                    "occurred_at": "" if event is None else str(event[3]),
-                    "fallback": fallback,
-                }
+            print(
+                "elc web: 世界叙事步失败（回信不受影响）："
+                f"{type(exc).__name__}: {exc}",
+                file=sys.stderr,
             )
-        return notes
+            return
+        if isinstance(stepped, Err):
+            print(
+                "elc web: 世界叙事步未推进（回信不受影响）："
+                f"{stepped.error.code.value}: {stepped.error.message}",
+                file=sys.stderr,
+            )
 
     def _ui_language(self) -> str:
         """The interface language row (W-L's own read): the stored word,
@@ -3361,20 +3316,6 @@ class _WebFace:
         return (
             self._host.app_settings.get(APP_SETTING_UI_LANGUAGE_KEY) or "zh"
         )
-
-    def _world_event_row(
-        self, world_id: str, event_id: str
-    ) -> tuple[Any, ...] | None:
-        """One chronicle row (the face's direct-SQL read posture): event
-        id, narration, kind, occurred_at — or ``None`` when the row is
-        gone (a dangling pointer the narration half answers honestly)."""
-
-        row = self._host.db.execute(
-            "SELECT event_id, narration, kind, occurred_at"
-            " FROM world_event WHERE world_id = ? AND event_id = ?",
-            (world_id, event_id),
-        ).fetchone()
-        return None if row is None else tuple(row)
 
     def _note_narration(
         self,
@@ -3403,52 +3344,6 @@ class _WebFace:
                 return zh, False
             return english, True
         return english, False
-
-    def _world_event_payload(self, world: dict[str, Any]) -> dict[str, Any]:
-        """The streamed ``world`` frame (A2, DEC-…82/…88/…90): the
-        world's name, its virtual-calendar day localized (the story's
-        own date — :meth:`elc.world.package.world_date_of`, never a wall
-        clock), the interface language the frame was rendered in, and
-        this run's notes (possibly none — the page's quiet-day arm)."""
-
-        binding = self._world_binding()
-        package = (
-            None if binding is None
-            else self._world_packages.get(str(binding["world_id"]))
-        )
-        world_store = getattr(self._host, "world_store", None)
-        if binding is None or package is None or world_store is None:
-            # Unreachable from the streamed path (the frame is only sent
-            # for a bound world with a readable package) — the honest
-            # defensive answer is an empty frame, never a guessed story.
-            return {
-                "type": "world",
-                "ui_language": self._ui_language(),
-                "world_name": None,
-                "date_localized": "",
-                "notes": [],
-            }
-        world_id = str(binding["world_id"])
-        ui_language = self._ui_language()
-        world_name = package.name
-        day = world_date_of(package, world_store, world_id)
-        return {
-            "type": "world",
-            "ui_language": ui_language,
-            "world_name": world_name,
-            "date_localized": _localize_story_date(day, ui_language, world_name),
-            "notes": world["items"],
-            "at_checkpoint": world["at_checkpoint"],
-        }
-
-    def _world_step_after_turn(self, turn_id: str) -> str | None:
-        """The turn wiring's fail-soft half (W-1-3's blocking shape):
-        one world step, or one human sentence — now a thin caller of
-        :meth:`_world_step_face` (A2 lifted the face out so the streamed
-        turn can run it before generation; this arm keeps the blocking
-        endpoint's byte-for-byte behavior)."""
-
-        return self._world_step_face()["note"]
 
     def _world_binding(self) -> dict[str, Any] | None:
         """This conversation's world binding row, as a plain mapping (the
@@ -3939,14 +3834,17 @@ class _WebFace:
         the log is looking, not opening — 「看一眼」不等于「拆信」: a
         ``PENDING`` note is the world's unposted letter and stays out of
         every answer here (the SQL's own ``WHERE status = 'REVEALED'``);
-        the only presentation triggers that flip the world's slice are
-        the inbox's atomic reveal and the turn wiring's own presentation
-        step. Each group is one story day (the event's ``YYYY-MM-DD``
-        stamp, :meth:`_world_notes_joined`'s join; a legacy wall-clock
-        row has no story day and answers ``date_localized: None``, last —
-        an honest old row is never dressed up as a story day), the items
-        in the durable order (event id ascending). No binding is the
-        same **404**, the same sentence, as the inbox's."""
+        the only presentation trigger that flips the world's slice is
+        the inbox's atomic reveal (WR-2, DEC-OPI-5fc42174…49: the turn
+        wiring's old presentation step is retired with the pre-step —
+        the letter step leaves its notes pending, and the next look
+        opens them). Each group is one story day (the event's
+        ``YYYY-MM-DD`` stamp, :meth:`_world_notes_joined`'s join; a
+        legacy wall-clock row has no story day and answers
+        ``date_localized: None``, last — an honest old row is never
+        dressed up as a story day), the items in the durable order
+        (event id ascending). No binding is the same **404**, the same
+        sentence, as the inbox's."""
 
         binding = self._world_binding()
         if binding is None:
@@ -6400,16 +6298,14 @@ def _build_server(
                         drained = True
                         break
                     try:
-                        if isinstance(chunk, str):
-                            # A1: a generation increment, as it arrived.
-                            self._send_sse_event(
-                                {"type": "delta", "text": chunk}
-                            )
-                        else:
-                            # A2: the world's story frame (one dict, the
-                            # face already assembled it) — the narrative
-                            # order's first beat, before any delta.
-                            self._send_sse_event(chunk)
+                        # A1: a generation increment, as it arrived. (A2's
+                        # second branch — the structured ``world`` frame —
+                        # is retired with the pre-step it carried, WR-2,
+                        # DEC-OPI-5fc42174…49: the queue carries deltas
+                        # only now.)
+                        self._send_sse_event(
+                            {"type": "delta", "text": chunk}
+                        )
                     except OSError:
                         return  # the reader is gone; the turn runs on
                 if done.is_set() and drained:
@@ -6432,6 +6328,14 @@ def _build_server(
                 self._send_sse_event({"type": "final", **payload})
             except OSError:
                 return
+            # WR-2 (DEC-OPI-5fc42174…49): the world's letter step runs
+            # **after** the final frame is out (流已关，零流延迟): one
+            # fire-and-forget job on the work queue — the face consumes
+            # the letter the streamed turn stashed, the narration's round
+            # trip costs this stream nothing, and a failure anywhere is
+            # the face's own stderr sentence (fail-soft, the stream is
+            # already closed and answered).
+            work.put(face.world_step_for_stream)
 
         def _read_json_body(self) -> Any:
             """(p-3) The POST body, parsed once — the turn face's inline

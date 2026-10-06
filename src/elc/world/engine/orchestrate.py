@@ -1,6 +1,15 @@
 """The world's communication orchestration (W-1-3) — the winch and the
 light action, as one callable.
 
+WR-2 (DEC-OPI-5fc42174…49), the paradigm flip: the **production** world
+step is now :func:`run_generated_step` — the world's beats are model-
+generated novel prose (the narrator's face,
+:mod:`elc.world.narrator`), one letter in, one or two beats out. The
+fixed-pool engine step below (:func:`run_step`) is **retired out of the
+production path**: it stays the deterministic engine's orchestration
+face for the engine-direct callers (the W-1-2/W-1-3 test families run
+on it), and nothing in ``src/`` calls it any more.
+
 What this module claims, no more: :func:`run_step` is the living
 world's first production caller of the engine (:func:`elc.world.engine.
 engine.advance` — the engine stays the only mover of a run row; this
@@ -34,12 +43,16 @@ inbox's atomic flip (:meth:`elc.world.store.SqliteWorldStore.
 reveal_all`) is the presentation half, called when the user next
 looks.
 
-What is deliberately absent: no model face, no provider, no narration
-generation (the pool's prose arrives pre-authored, AD-2), no waiting,
-no rendering, and no DIRECTION word (W-2-2 opens it). The world's own
-time is the virtual calendar's (A2, DEC-…88/…90): with a package the
-step stamps its events on ``calendar_start`` plus the story's spans —
-the caller's ``now`` keeps only the run row's bookkeeping.
+What is deliberately absent from :func:`run_step`: no model face, no
+provider, no narration generation (the pool's prose arrives
+pre-authored, AD-2), no waiting, no rendering, and no DIRECTION word
+(W-2-2 opens it). The world's own time is the virtual calendar's (A2,
+DEC-…88/…90): with a package the step stamps its events on
+``calendar_start`` plus the story's spans — the caller's ``now`` keeps
+only the run row's bookkeeping. :func:`run_generated_step` carries the
+model face instead: the provider is the caller's injection, the beats
+are the narrator's, and an unconfigured provider is the world's quiet —
+never a fallback to the retired pool.
 
 Layering note: this module imports the engine's execution face through
 its direct module path (``elc.world.engine.engine``) — the same edge
@@ -52,6 +65,8 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Callable
 
+from elc.persona.openai_provider import REASON_NOT_CONFIGURED
+from elc.persona.provider import PersonaProvider
 from elc.platform.types import (
     DomainError,
     DomainErrorCode,
@@ -61,12 +76,19 @@ from elc.platform.types import (
 )
 from elc.world.engine.engine import RunTrace, advance
 from elc.world.engine.types import EngineConfig, PoolEvent, RunStatus
+from elc.world.narrator import (
+    NARRATOR_SOURCE,
+    RECENT_CHRONICLE_LIMIT,
+    WorldNarrator,
+)
 from elc.world.package import WorldPackage, story_days_of
 from elc.world.store import SqliteWorldStore, WorldRevealItem
+from elc.world.types import WorldEvent
 
 __all__ = [
     "TRIGGER_CONTINUE",
     "TRIGGER_LETTER",
+    "run_generated_step",
     "run_step",
 ]
 
@@ -227,6 +249,194 @@ def run_step(
     if isinstance(enqueued, Err):
         return Err(enqueued.error)
     return Ok(stepped.value)
+
+
+def run_generated_step(
+    store: SqliteWorldStore,
+    world_id: str,
+    package: WorldPackage,
+    provider: PersonaProvider | None,
+    letter_text: str,
+    trigger_turn_id: str | None,
+    now: str,
+    *,
+    ui_language: str = "zh",
+) -> Result[tuple[WorldEvent, ...]]:
+    """The production world step (WR-2, DEC-OPI-5fc42174…49): one
+    letter in, the narrator's beats out, the chronicle and the reveal
+    queue written — and **no pool sampling anywhere** (the fixed pool
+    is retired out of the production path; a step that cannot narrate
+    goes quiet, never back to the engine).
+
+    The order: the narrator first (compose, one blocking provider call,
+    strict parse), the winch second — a letter that narrates nothing
+    winds no run row (an empty run is litter, not history). The winch
+    arm is :func:`run_step`'s letter arm: the latest run absent or
+    ``TERMINAL`` winds a fresh one (seed = the world's run count, the
+    id derived by :func:`_run_id_for`, the triggering turn riding the
+    row when the caller knows it), a run paused at its checkpoint is
+    resumed (the letter is the light action's superset). The generated
+    step **never terminalizes its run** — the row stays the world's
+    anchor at its checkpoint, every later letter resumes it, and that
+    is what makes a replayed call land as a no-op: the beats' event ids
+    derive from the anchor run plus the triggering turn
+    (``<run_id>:<trigger_turn_id>:<index>`` — the turn is the step's
+    identity), and the step pre-reads the chronicle's own ids and
+    writes **only the beats that are not already durable** — the
+    calendar base and the spans are pure functions of the durable
+    chronicle, so a replay recomputes the same stamps, skips the whole
+    batch and enqueues nothing (the events and their reveals stay
+    exactly as the first call left them). A caller without a turn id
+    derives count-based ids instead and carries **no** replay
+    protection (the docstring says so rather than pretending).
+
+    The beats land verbatim (untrusted-as-is): the narrator's ``kind``
+    and ``narration`` are the chronicle row's own words, ``effects`` is
+    empty (the generated story settles no state claim — the projection
+    only moves when a future cut says so), ``source`` is
+    :data:`~elc.world.narrator.NARRATOR_SOURCE`. The timestamps are the
+    virtual calendar's (the same ``_calendar_source`` semantics, but
+    the span of a beat is the beat's own generated ``days``): the base
+    is :func:`elc.world.package.story_days_of` at step time, each beat
+    advances the running total by its own span and stamps at the end of
+    it (落笔在跨度之末), and every reveal item inherits its own event's
+    moment. Note the calendar's law is unchanged: the world's *today*
+    (:func:`elc.world.package.world_date_of`) still reads the pool's
+    kind→span mapping, so generated kinds contribute zero to it — the
+    generated story lives in the events' own stamps (the presentation
+    faces' story days), not in the pool-derived today.
+
+    The quiet arms, in order: no provider, or the provider answering
+    ``not-configured``, returns ``Ok(())`` — the world's honest silence
+    (nothing to say until the settings page fills the pair), never a
+    fallback to the retired pool. Any other narrator refusal or fault
+    is an ``Err`` passthrough (the caller's fail-soft log is the
+    observer); a store refusal on the way down is an ``Err`` too — the
+    beats already landed stay (the chronicle is append-only and every
+    write was atomic; there is no tearing claim across beats, and the
+    pre-read makes a replay of the same letter write nothing).
+
+    ``ui_language`` rides to the narrator (the narration language law,
+    W-L's two words). ``now`` is the caller's wall moment for the run
+    row's bookkeeping stamps — it never reaches a world event.
+    """
+
+    if provider is None:
+        # The honest quiet: no provider, no narration, no fallback to
+        # the retired pool. The world says nothing this letter.
+        return Ok(())
+    chronicle = store.chronicle_of(world_id)
+    if isinstance(chronicle, Err):
+        return Err(chronicle.error)
+    narrator = WorldNarrator(provider)
+    generated = narrator.generate(
+        package=package,
+        lore_facts=tuple(
+            (fact.canonical_key, fact.statement)
+            for fact in store.current_facts(world_id)
+        ),
+        recent_narrations=tuple(
+            event.narration
+            for event in chronicle.value[-RECENT_CHRONICLE_LIMIT:]
+        ),
+        letter_text=letter_text,
+        ui_language=ui_language,
+    )
+    if isinstance(generated, Err):
+        if generated.error.message == REASON_NOT_CONFIGURED:
+            # The bare web start's honest silence: the narrator's
+            # provider has no coordinates yet — the world waits, the
+            # letter's reader does not.
+            return Ok(())
+        return Err(generated.error)
+    beats = generated.value
+    if not beats:
+        # The strict narrator never produces an empty batch (that is a
+        # refusal upstream); this arm is the contract's own quiet.
+        return Ok(())
+
+    runs = store.list_runs(world_id)
+    latest = runs[-1] if runs else None
+    if latest is None or latest.status is RunStatus.TERMINAL:
+        seed = len(runs)
+        created = store.create_run(
+            _run_id_for(world_id, seed),
+            world_id,
+            trigger_turn_id,
+            seed,
+            now,
+        )
+        if isinstance(created, Err):
+            return Err(created.error)
+        run = created.value
+    else:
+        run = latest
+
+    if trigger_turn_id is not None:
+        # The turn is the step's identity: the same letter replayed
+        # re-derives the same ids and lands as the store's no-op.
+        id_prefix = f"{run.run_id}:{trigger_turn_id}:"
+        first_ordinal = 0
+    else:
+        # No turn to name: the durable count derives the ids —
+        # deterministic, collision-free, and honestly without replay
+        # protection (the docstring says so).
+        id_prefix = f"{run.run_id}:g"
+        first_ordinal = sum(
+            1
+            for event in chronicle.value
+            if str(event.event_id).startswith(f"{run.run_id}:")
+        )
+    existing_event_ids = {
+        str(event.event_id) for event in chronicle.value
+    }
+    start = date.fromisoformat(package.calendar_start)
+    total = story_days_of(package, store, world_id)
+    written: list[WorldEvent] = []
+    for index, beat in enumerate(beats):
+        # 落笔在跨度之末: the beat advances the story by its own span,
+        # then stamps at its end — the calendar accumulates within the
+        # step exactly as it does across steps (A2R DEC-…99's law, the
+        # generated span in the pool's old seat).
+        total += beat.days
+        event_id = f"{id_prefix}{first_ordinal + index}"
+        if event_id in existing_event_ids:
+            # The replayed letter's own beats: the durable rows stand,
+            # this call writes nothing of them (the step's replay
+            # protection — the derived ids plus this pre-read — keeps
+            # the whole step a no-op, reveals included).
+            continue
+        recorded = store.record_event(
+            WorldEvent(
+                event_id=event_id,
+                world_id=world_id,
+                kind=beat.kind,
+                narration=beat.narration,
+                effects=(),
+                occurred_at=(start + timedelta(days=total)).isoformat(),
+                source=NARRATOR_SOURCE,
+            )
+        )
+        if isinstance(recorded, Err):
+            return Err(recorded.error)
+        written.append(recorded.value)
+    enqueued = store.enqueue_reveals(
+        tuple(
+            WorldRevealItem(
+                item_id=f"{event.event_id}:reveal",
+                world_id=world_id,
+                source_event_id=event.event_id,
+                actor_id=None,
+                status="PENDING",
+                revealed_at=None,
+                created_at=event.occurred_at,
+            )
+            for event in written
+        )
+    )
+    if isinstance(enqueued, Err):
+        return Err(enqueued.error)
+    return Ok(tuple(written))
 
 
 def _calendar_source(
