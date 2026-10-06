@@ -277,6 +277,27 @@ def test_the_extractor_never_matches_a_key_inside_a_string_value() -> None:
     assert charwise == {0: expected}
 
 
+def test_the_extractor_does_not_treat_a_narration_valued_kind_as_the_key() -> None:
+    """kind 值恰为 "narration" 的 decoy 键形：键确认需后随冒号（DEC R2
+    「需后随冒号确认」；评审 F-M1——摘除 _drain_key 的拒确臂后全量不
+    红，本钉补上该护栏缺口）。kind 值后随逗号或闭花括号都不算键——
+    两段真叙述照常逐段外发，结构字串零混入。"""
+
+    comma_form = (
+        '{"beats": [{"kind": "narration", "narration": "Real one.",'
+        ' "days": 0}, {"kind": "k", "narration": "Second.", "days": 1}]}'
+    )
+    brace_form = (
+        '{"beats": [{"narration": "Real one.", "kind": "narration"},'
+        ' {"kind": "k", "narration": "Second.", "days": 1}]}'
+    )
+    for text in (comma_form, brace_form):
+        whole = _join(NarrationExtractor().feed(text))
+        assert whole == {0: "Real one.", 1: "Second."}, text
+        charwise = _join(_feed_all(NarrationExtractor(), text, 1))
+        assert charwise == whole, text
+
+
 def test_the_extractor_does_not_depend_on_the_json_key_order() -> None:
     """不依赖 JSON 键序：days 先于 narration（kind 亦然）仍正确提取，
     beat 序即 narration 键的序（VAL ③）。"""
