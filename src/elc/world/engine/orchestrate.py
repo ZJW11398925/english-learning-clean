@@ -256,17 +256,23 @@ def run_generated_step(
     world_id: str,
     package: WorldPackage,
     provider: PersonaProvider | None,
-    letter_text: str,
     trigger_turn_id: str | None,
     now: str,
     *,
     ui_language: str = "zh",
 ) -> Result[tuple[WorldEvent, ...]]:
-    """The production world step (WR-2, DEC-OPI-5fc42174…49): one
-    letter in, the narrator's beats out, the chronicle and the reveal
-    queue written — and **no pool sampling anywhere** (the fixed pool
-    is retired out of the production path; a step that cannot narrate
-    goes quiet, never back to the engine).
+    """The production world step (WR-2, DEC-OPI-5fc42174…49; WR-4
+    correction …58): the narrator's beats out, the chronicle and the
+    reveal queue written — and **no pool sampling anywhere** (the fixed
+    pool is retired out of the production path; a step that cannot
+    narrate goes quiet, never back to the engine).
+
+    WR-4 (the user's third direction): **the letter never enters the
+    narration** — the triggering turn is the run's mechanical wind-up
+    only (spec §4.1: the reply is the sole run starter, never content),
+    and the world narrates its own life, unreactive to correspondence;
+    the user's influence on the world belongs to the direction channel
+    (走向, M2), never this face.
 
     The order: the narrator first (compose, one blocking provider call,
     strict parse), the winch second — a letter that narrates nothing
@@ -339,7 +345,6 @@ def run_generated_step(
             event.narration
             for event in chronicle.value[-RECENT_CHRONICLE_LIMIT:]
         ),
-        letter_text=letter_text,
         ui_language=ui_language,
     )
     if isinstance(generated, Err):

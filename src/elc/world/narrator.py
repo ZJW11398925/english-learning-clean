@@ -1,18 +1,22 @@
-"""The world narrator (WR-2, DEC-OPI-5fc42174…49) — the paradigm flip's
-generation face: one letter in, one or two story beats out.
+"""The world narrator (WR-2, DEC-OPI-5fc42174…49; WR-4 correction
+…58) — the paradigm flip's generation face: the world's own next one
+or two story beats, generated from the world's own life alone.
 
 What this module claims, no more: the prompt is composed from the world
 package's bible (the setting prose, the cast on one line, the whole
 CURRENT lore fact set), the recent chronicle (the last eight narrations,
 oldest first — an empty chronicle answers an honest ``story begins``
-line), **the user's letter in full** (the user's own direction, v1: the
-letter steers the story — 「世界发展应当是随机的，其基本由用户决定发展
-方向的过程，类似写小说，而不是从某个固定的库里组合几个没有价值和意义的
-东西出来」) and the rhythm law (novel prose, small-town voice; consistent
+line) and the rhythm law (novel prose, small-town voice; consistent
 with the history above; nothing already happened repeated; each beat one
 to three sentences; exactly one or two beats; each beat spanning zero to
 two story days; the narration in the interface language; kinds as short
-slugs). The provider is called **once**, blocking (the same protocol the
+slugs). **WR-4 (the user's third direction, DEC-…58): no letter ever
+enters the prompt** — the living-world spec keeps the layers apart
+(§4.1: the reply is the run's mechanical wind-up, never content; the
+走向 entry: the user's influence on the world rides the direction
+channel, never the letter layer) — the world narrates its own life,
+unreactive to correspondence. The provider is called **once**, blocking
+(the same protocol the
 persona runtime dials — never the streamed face), and the answer is
 parsed **strictly**: the whole text must be exactly one JSON object
 ``{"beats": [...]}`` carrying one or two beat objects, each with exactly
@@ -126,7 +130,6 @@ def build_narrator_prompt(
     package: WorldPackage,
     lore_facts: tuple[tuple[str, str], ...],
     recent_narrations: tuple[str, ...],
-    letter_text: str,
     ui_language: str,
 ) -> str:
     """The narrator's prompt, as one pure string (testable without a
@@ -137,13 +140,18 @@ def build_narrator_prompt(
     pairs, the projection's CURRENT half the caller read — is the
     world's established lore, in full; an empty set says so honestly
     (无则空诚实). ``recent_narrations`` is the story's immediate past,
-    oldest first, exactly as the caller sliced it. ``letter_text`` is
-    the user's letter **in full, verbatim** — the direction v1's whole
-    point (the letter steers the story; a prompt without it would be
-    the retired pool with extra steps). ``ui_language`` picks the
-    narration language instruction (``zh`` / ``en``; anything else is a
-    refusal naming the two words).
-    """
+    oldest first, exactly as the caller sliced it. ``ui_language`` picks
+    the narration language instruction (``zh`` / ``en``; anything else is
+    a refusal naming the two words).
+
+    WR-4 (DEC-OPI-5fc42174-…58, the user's third direction): **no
+    letter ever enters this prompt** — the living-world spec is
+    two-layer about influence (§4.1 / the 走向 entry): the user's reply
+    is the run's *wind-up* (a mechanical starter, never content), the
+    user's influence on the *world* rides the direction channel (走向,
+    M2), and letters belong to the penpal layer only — they shape the
+    character's reply, never the world's narration. The world moves on
+    its own here."""
 
     if ui_language not in _NARRATION_LANGUAGE:
         raise ValueError(
@@ -153,6 +161,12 @@ def build_narrator_prompt(
     sections: list[str] = []
     sections.append("You are the narrator of a small fictional world.")
     sections.append("Write what happens there next, as a novel would.")
+    sections.append(
+        "The world moves on its own — weather, seasons, the town's"
+        " rhythms, the cast's lives off-stage. It does not react to any"
+        " correspondence: letters belong to the penpal layer, not to"
+        " the world's narration."
+    )
     sections.append("== The world ==")
     sections.extend(package.setting)
     cast_line = ", ".join(member.name for member in package.cast)
@@ -167,16 +181,14 @@ def build_narrator_prompt(
         sections.extend(f"- {narration}" for narration in recent_narrations)
     else:
         sections.append("- (The chronicle is empty — this is where the story begins.)")
-    sections.append("== The letter ==")
-    sections.append(letter_text)
     sections.append("== Your task ==")
     sections.append(
-        "Write the world's next beats — what happens in the world after"
-        " this letter. Novel prose, small-town voice. Stay consistent"
-        " with everything above; never repeat what already happened."
-        f" Write exactly {MIN_BEATS} or {MAX_BEATS} beats. Each beat is"
-        " one to three sentences of narration and spans 0, 1 or 2 story"
-        " days (its ``days``)."
+        "Write the world's next beats — whatever happens next in the"
+        " world's own life. Novel prose, small-town voice. Stay"
+        " consistent with everything above; never repeat what already"
+        f" happened. Write exactly {MIN_BEATS} or {MAX_BEATS} beats."
+        " Each beat is one to three sentences of narration and spans"
+        " 0, 1 or 2 story days (its ``days``)."
     )
     sections.append(_NARRATION_LANGUAGE[ui_language])
     sections.append(
@@ -236,7 +248,6 @@ class WorldNarrator:
         package: WorldPackage,
         lore_facts: tuple[tuple[str, str], ...],
         recent_narrations: tuple[str, ...],
-        letter_text: str,
         ui_language: str,
     ) -> Result[tuple[GeneratedBeat, ...]]:
         """One narration round: the prompt, the one blocking call, the
@@ -259,7 +270,6 @@ class WorldNarrator:
                 package,
                 lore_facts,
                 recent_narrations,
-                letter_text,
                 ui_language,
             ),
             generation_contract=NARRATOR_CONTRACT,

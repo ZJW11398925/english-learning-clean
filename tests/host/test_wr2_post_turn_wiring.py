@@ -148,8 +148,9 @@ def test_the_blocking_turn_runs_the_world_letter_after_the_reply(
 ) -> None:
     """/api/turn's letter step rides inline after the payload is built:
     the beats land (``world_narrator``), the reveals wait ``PENDING``,
-    the reply is whole — and the narrator's prompt carries this turn's
-    letter in full (the wiring hands the step the user's own text)."""
+    the reply is whole — and WR-4: the narrator's prompt carries **no
+    letter at all** (the turn is the mechanical wind-up; the world
+    narrates its own life, unreactive to correspondence)."""
 
     app_db = tmp_path / "app.db"
     provider = BeatsProvider()
@@ -171,10 +172,12 @@ def test_the_blocking_turn_runs_the_world_letter_after_the_reply(
             app_db,
             "SELECT COUNT(*) FROM world_reveal_item WHERE status = 'PENDING'",
         )[0][0] == 2
-        # The second dial was the narrator's — and the letter rode it
-        # verbatim (the direction v1: the letter steers the story).
+        # WR-4（DEC-…58）：信永不进入世界层——第二次拨号（叙事者的）的
+        # prompt 零信文（负控），且带世界自主指令（正控）。信只属于笔友
+        # 层（回信面），发条只是机械触发。
         narrator_prompt = provider.prompts[1]
-        assert letter in narrator_prompt
+        assert letter not in narrator_prompt
+        assert "It does not react to any correspondence" in narrator_prompt
 
 
 def test_the_narrator_language_follows_the_interface_setting(

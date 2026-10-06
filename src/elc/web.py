@@ -3101,7 +3101,7 @@ class _WebFace:
         # out (流已关，零流延迟). The work queue's one-thread discipline
         # makes the handoff race-free: the write and the consume are two
         # queue jobs, never two threads.
-        self._stream_world_letter: tuple[str, str | None] | None = None
+        self._stream_world_letter: str | None = None
 
     def _require_cards(self) -> SqliteCharacterCardStore:
         """The card store, or the loud refusal (never a silent empty)."""
@@ -3137,7 +3137,7 @@ class _WebFace:
 
         payload, turn_id = self._commit_and_answer(text)
         if turn_id is not None:
-            self._world_post_turn_letter(text, turn_id)
+            self._world_post_turn_letter(turn_id)
         return payload
 
     def _commit_and_answer(
@@ -3227,7 +3227,7 @@ class _WebFace:
         live = self._host.coordinator.persona_provider()
         if not hasattr(live, "call_streaming"):
             payload, turn_id = self._commit_and_answer(text)
-            self._stream_world_letter = (text, turn_id)
+            self._stream_world_letter = turn_id
             return payload
         bridge = _TurnStreamBridge(events)
         coordinator = self._host.coordinator
@@ -3236,7 +3236,7 @@ class _WebFace:
         )
         try:
             payload, turn_id = self._commit_and_answer(text)
-            self._stream_world_letter = (text, turn_id)
+            self._stream_world_letter = turn_id
             return payload
         finally:
             coordinator.replace_persona_provider(live)
@@ -3253,17 +3253,21 @@ class _WebFace:
         self._stream_world_letter = None
         if letter is None:
             return
-        letter_text, turn_id = letter
+        turn_id = letter
         if turn_id is None:
             return
-        self._world_post_turn_letter(letter_text, turn_id)
+        self._world_post_turn_letter(turn_id)
 
-    def _world_post_turn_letter(self, letter_text: str, turn_id: str) -> None:
-        """The world's letter step, fail-soft (WR-2, DEC-OPI-5fc42174…49):
-        the committed letter goes to the narrator through
+    def _world_post_turn_letter(self, turn_id: str) -> None:
+        """The world's letter step, fail-soft (WR-2, DEC-OPI-5fc42174…49;
+        WR-4 correction …58): the committed turn is the run's mechanical
+        wind-up and goes to the narrator through
         :func:`elc.world.engine.orchestrate.run_generated_step` — one
         blocking provider call, one or two generated beats, the
-        chronicle and the ``PENDING`` reveal items written. Every
+        chronicle and the ``PENDING`` reveal items written. **The
+        letter's text never enters the narration** (spec §4.1: the
+        reply is the run starter, never content; the world narrates its
+        own life — WR-4). Every
         failure mode is one human sentence on stderr and never an
         exception out (the reply the user is reading is the page's
         substance); the world's own presentation stays where the spec
@@ -3290,7 +3294,6 @@ class _WebFace:
                 world_id,
                 package,
                 provider,
-                letter_text,
                 turn_id,
                 datetime.now(tz=UTC).isoformat(),
                 ui_language=self._ui_language(),

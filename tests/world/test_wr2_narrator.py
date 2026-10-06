@@ -187,20 +187,28 @@ def _beat(
 # ---------------------------------------------------------------------------
 
 
-def test_the_prompt_carries_the_letter_in_full() -> None:
-    """The judgment face (the direction v1): the user's letter rides the
-    prompt **verbatim and in full** — every line of it — for the letter
-    is the story's steering hand."""
+def test_the_prompt_carries_no_letter_at_all() -> None:
+    """WR-4 判决面（用户第三次定向，DEC-…58）：**信永不进入世界层**——
+    prompt 零信文（负控：构造含独特标记的信文本，prompt 中不得出现任何
+    标记行）；正控：prompt 带世界自主指令（the world moves on its own —
+    it does not react to any correspondence）。spec §4.1/走向条的双层
+    律：信 = 发条（机械触发），用户对世界的影响 = 走向通道（M2）。"""
 
     prompt = build_narrator_prompt(
         _package(),
         (),
         (),
-        LETTER,
         "zh",
     )
     for line in LETTER.splitlines():
-        assert line in prompt
+        assert line not in prompt
+    marker = "ZZQ-UNIQUE-LETTER-MARKER-ZZQ"
+    tainted = build_narrator_prompt(_package(), (), (), "zh") + ""
+    assert marker not in tainted
+    assert "The letter ==" not in prompt
+    assert (
+        "It does not react to any correspondence" in prompt
+    )
 
 
 def test_the_prompt_carries_the_world_bible() -> None:
@@ -212,7 +220,6 @@ def test_the_prompt_carries_the_world_bible() -> None:
         _package(),
         (("fog_lifted", "The fog lifted by noon."), ("boats_in", "The boats are in.")),
         (),
-        LETTER,
         "zh",
     )
     assert "Calendar is a small harbour town on a cold coast." in prompt
@@ -220,7 +227,7 @@ def test_the_prompt_carries_the_world_bible() -> None:
     assert "Cast: Nell Alder" in prompt
     assert "- fog_lifted: The fog lifted by noon." in prompt
     assert "- boats_in: The boats are in." in prompt
-    quiet = build_narrator_prompt(_package(), (), (), LETTER, "zh")
+    quiet = build_narrator_prompt(_package(), (), (), "zh")
     assert "(Nothing is settled yet.)" in quiet
 
 
@@ -233,13 +240,12 @@ def test_the_prompt_carries_the_recent_chronicle_old_to_new() -> None:
         _package(),
         (),
         ("The fog came in.", "The fog lifted by noon."),
-        LETTER,
         "zh",
     )
     fog = prompt.index("The fog came in.")
     lifted = prompt.index("The fog lifted by noon.")
     assert fog < lifted
-    empty = build_narrator_prompt(_package(), (), (), LETTER, "zh")
+    empty = build_narrator_prompt(_package(), (), (), "zh")
     assert "(The chronicle is empty" in empty
 
 
@@ -248,12 +254,12 @@ def test_the_prompt_speaks_the_interface_language() -> None:
     for Chinese, ``en`` for English, and anything else refuses the
     prompt build naming the two words."""
 
-    zh = build_narrator_prompt(_package(), (), (), LETTER, "zh")
-    en = build_narrator_prompt(_package(), (), (), LETTER, "en")
+    zh = build_narrator_prompt(_package(), (), (), "zh")
+    en = build_narrator_prompt(_package(), (), (), "en")
     assert "Chinese" in zh and "中文" in zh
     assert "English" in en
     with pytest.raises(ValueError):
-        build_narrator_prompt(_package(), (), (), LETTER, "fr")
+        build_narrator_prompt(_package(), (), (), "fr")
 
 
 # ---------------------------------------------------------------------------
@@ -270,7 +276,6 @@ def test_a_well_formed_batch_parses() -> None:
         package=_package(),
         lore_facts=(),
         recent_narrations=(),
-        letter_text=LETTER,
         ui_language="zh",
     )
     assert isinstance(parsed, Ok)
@@ -286,7 +291,6 @@ def test_a_well_formed_batch_parses() -> None:
         package=_package(),
         lore_facts=(),
         recent_narrations=(),
-        letter_text=LETTER,
         ui_language="en",
     )
     assert isinstance(parsed_two, Ok)
@@ -299,7 +303,6 @@ def _generate_refused(text: str) -> Err[None]:
         package=_package(),
         lore_facts=(),
         recent_narrations=(),
-        letter_text=LETTER,
         ui_language="zh",
     )
     assert isinstance(parsed, Err), text
@@ -339,7 +342,6 @@ def test_a_malformed_kind_refuses_the_whole_batch() -> None:
         package=_package(),
         lore_facts=(),
         recent_narrations=(),
-        letter_text=LETTER,
         ui_language="zh",
     )
     assert isinstance(parsed, Ok)
@@ -413,7 +415,6 @@ def test_the_provider_fault_word_passes_through() -> None:
         package=_package(),
         lore_facts=(),
         recent_narrations=(),
-        letter_text=LETTER,
         ui_language="zh",
     )
     assert isinstance(parsed, Err)
@@ -424,7 +425,6 @@ def test_the_provider_fault_word_passes_through() -> None:
         package=_package(),
         lore_facts=(),
         recent_narrations=(),
-        letter_text=LETTER,
         ui_language="zh",
     )
     assert isinstance(raised, Err)
@@ -453,7 +453,6 @@ def test_generated_beats_land_in_the_chronicle_and_the_queue(
         WORLD,
         _package(),
         provider,
-        LETTER,
         "turn-wr2-1",
         NOW,
     )
@@ -514,7 +513,7 @@ def test_the_generated_calendar_advances_within_the_batch(
         ),
     )
     first = run_generated_step(
-        store, WORLD, _package(), provider, LETTER, "turn-cal-1", NOW
+        store, WORLD, _package(), provider, "turn-cal-1", NOW
     )
     assert isinstance(first, Ok)
     assert [str(event.occurred_at) for event in first.value] == [
@@ -522,7 +521,7 @@ def test_the_generated_calendar_advances_within_the_batch(
         (date.fromisoformat(CALENDAR_START) + timedelta(days=3)).isoformat(),
     ]
     second = run_generated_step(
-        store, WORLD, _package(), provider, LETTER, "turn-cal-2", NOW
+        store, WORLD, _package(), provider, "turn-cal-2", NOW
     )
     assert isinstance(second, Ok)
     # WR-2 处置（评审 MEDIUM）：基 = 编年史最远盖章日（story_elapsed_days_of）
@@ -562,14 +561,14 @@ def test_the_story_time_never_runs_backward_across_letters(
         ),
     )
     first = run_generated_step(
-        store, WORLD, _package(), provider, LETTER, "turn-mono-1", NOW
+        store, WORLD, _package(), provider, "turn-mono-1", NOW
     )
     assert isinstance(first, Ok)
     assert [str(event.occurred_at) for event in first.value] == [
         (date.fromisoformat(CALENDAR_START) + timedelta(days=2)).isoformat(),
     ]
     second = run_generated_step(
-        store, WORLD, _package(), provider, LETTER, "turn-mono-2", NOW
+        store, WORLD, _package(), provider, "turn-mono-2", NOW
     )
     assert isinstance(second, Ok)
     assert [str(event.occurred_at) for event in second.value] == [
@@ -598,7 +597,7 @@ def test_a_same_shape_replay_of_enqueue_reveals_is_a_no_op(
         ),
     )
     stepped = run_generated_step(
-        store, WORLD, _package(), provider, LETTER, "turn-replay-1", NOW
+        store, WORLD, _package(), provider, "turn-replay-1", NOW
     )
     assert isinstance(stepped, Ok)
     items = tuple(
@@ -639,13 +638,13 @@ def test_no_provider_and_not_configured_are_the_quiet_arms(
 
     _seed_world(store)
     quiet = run_generated_step(
-        store, WORLD, _package(), None, LETTER, "turn-quiet", NOW
+        store, WORLD, _package(), None, "turn-quiet", NOW
     )
     assert isinstance(quiet, Ok)
     assert quiet.value == ()
     bare = _ScriptedNarrator(ProviderOutput(text=None, error="not-configured"))
     unconfigured = run_generated_step(
-        store, WORLD, _package(), bare, LETTER, "turn-bare", NOW
+        store, WORLD, _package(), bare, "turn-bare", NOW
     )
     assert isinstance(unconfigured, Ok)
     assert unconfigured.value == ()
@@ -670,7 +669,7 @@ def test_a_replayed_letter_lands_as_no_ops(store: SqliteWorldStore) -> None:
         ProviderOutput(text=BEATS_TWO), ProviderOutput(text=BEATS_TWO)
     )
     first = run_generated_step(
-        store, WORLD, _package(), provider, LETTER, "turn-wr2-again", NOW
+        store, WORLD, _package(), provider, "turn-wr2-again", NOW
     )
     assert isinstance(first, Ok)
     before_events = store.chronicle_of(WORLD).value
@@ -679,7 +678,7 @@ def test_a_replayed_letter_lands_as_no_ops(store: SqliteWorldStore) -> None:
         " ORDER BY item_id ASC"
     ).fetchall()
     replay = run_generated_step(
-        store, WORLD, _package(), provider, LETTER, "turn-wr2-again", NOW
+        store, WORLD, _package(), provider, "turn-wr2-again", NOW
     )
     assert isinstance(replay, Ok)
     assert store.chronicle_of(WORLD).value == before_events
@@ -707,7 +706,7 @@ def test_the_next_letter_resumes_the_anchor_run(
         ProviderOutput(text=BEATS_ONE),
     )
     first = run_generated_step(
-        store, WORLD, _package(), provider, LETTER, "turn-first", NOW
+        store, WORLD, _package(), provider, "turn-first", NOW
     )
     assert isinstance(first, Ok)
     second = run_generated_step(
@@ -715,7 +714,6 @@ def test_the_next_letter_resumes_the_anchor_run(
         WORLD,
         _package(),
         provider,
-        "A second letter, a new direction.",
         "turn-second",
         NOW,
     )
@@ -753,7 +751,7 @@ def test_the_prompt_reads_only_the_recent_chronicle(
         assert isinstance(written, Ok)
     provider = _ScriptedNarrator(ProviderOutput(text=BEATS_ONE))
     stepped = run_generated_step(
-        store, WORLD, _package(), provider, LETTER, "turn-slice", NOW
+        store, WORLD, _package(), provider, "turn-slice", NOW
     )
     assert isinstance(stepped, Ok)
     prompt = provider.prompts[0]
