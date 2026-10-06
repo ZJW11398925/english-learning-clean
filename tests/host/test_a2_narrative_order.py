@@ -798,28 +798,37 @@ def test_the_load_arm_renders_only_unrevealed_notes() -> None:
     init_block = app_source[app_source.index("loadHistory()"):]
     assert "loadHistory()" in app_source
     assert ".then(() => loadWorldInbox())" in init_block
-    # The turn's own reread is retired (the pre-step already revealed).
+    # WR-3: the turn's own *inline* reread stays retired (the delayed
+    # reveal — scheduleWorldReveal's timer — is the one legal re-read;
+    # an awaited read in the turn body would double-render).
     postturn = app_source[
         app_source.index("async function postTurn"):
         app_source.index("async function postTeachMe")
     ]
-    assert "loadWorldInbox" not in postturn
+    assert "await loadWorldInbox" not in postturn
 
 
 def test_the_quiet_day_arm_is_pinned_in_source() -> None:
     """The story block's two-language arms sit in the page's source:
-    the quiet-day sentence (zero notes), the transition into the reply,
-    and the fallback note's honest wording (the retired region's own
-    strings are pinned gone by the retirement test above)."""
+    the quiet-day sentence (zero notes) and the fallback note's honest
+    wording. WR-3 (DEC-…63 R3): the transition sentence
+    (「这时，她收到了你的来信。」) is **pinned gone** — it was the
+    world-answers-the-letter paradigm's copy, retired with that
+    paradigm (DEC-…58's two-layer law: the world never reacts to
+    correspondence)."""
 
     app_source = (WEBUI / "app.js").read_text(encoding="utf-8")
     assert "安静的一天，没什么特殊的事。" in app_source
     assert "A quiet day, nothing out of the ordinary." in app_source
-    assert "这时，她收到了你的来信。" in app_source
-    assert "Then, your letter arrives." in app_source
     assert "（这张便条写在世界学会中文之前——示以原文。）" in app_source
     assert "function renderWorldStory" in app_source
-    assert 'event.type === "world"' in (
+    # The transition sentence is retired with the paradigm (WR-3).
+    assert "这时，她收到了你的来信。" not in app_source
+    assert "Then, your letter arrives." not in app_source
+    assert "thenLetter" not in app_source
+    assert "world-story-then" not in app_source
+    # The world frame's parser branch is gone with the frame (WR-2/3).
+    assert 'event.type === "world"' not in (
         (WEBUI / "api.js").read_text(encoding="utf-8")
     )
 

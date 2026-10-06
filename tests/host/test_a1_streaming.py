@@ -718,9 +718,10 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     app_source = (WEBUI / "app.js").read_text(encoding="utf-8")
 
     # api.js: the stream wrapper really reads the body defensively.
-    # A2 (DEC-…82): the third callback — the world story frame's own
-    # handler — rides the same defensive parser.
-    assert "export async function fetchTurnStream(text, onDelta, onWorld)" in (
+    # WR-2/WR-3: the world frame and its parser branch are retired with
+    # the paradigm (the world steps after the reply server-side; the
+    # page's delayed reveal reads it) — the wrapper is two-parameter.
+    assert "export async function fetchTurnStream(text, onDelta) {" in (
         api_source
     )
     assert "res.body.getReader()" in api_source
@@ -730,7 +731,7 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     assert "interrupted.started = true" in api_source
     assert "if (!res.ok || !res.body) return null;" in api_source
     assert 'event.type === "delta"' in api_source
-    assert 'event.type === "world"' in api_source
+    assert 'event.type === "world"' not in api_source
     assert 'event.type === "final"' in api_source
 
     postturn = _postturn_slice(app_source)
@@ -740,7 +741,10 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     # the fallback and the finalize pairing follow; the started arm pulls
     # history and never resends.
     assert "fetchTurnStream(" in postturn
-    assert "renderWorldStory(event)" in postturn
+    # WR-3: the onWorld frame call is retired with the frame — the
+    # turn body dials the delayed reveal instead (never an inline read).
+    assert "renderWorldStory(event)" not in postturn
+    assert "scheduleWorldReveal();" in postturn
     assert "typing.push(chunk)" in postturn
     assert "await typing.seal(" in postturn
     assert "startTypewriter()" in postturn

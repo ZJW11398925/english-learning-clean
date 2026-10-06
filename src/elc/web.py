@@ -3333,10 +3333,20 @@ class _WebFace:
         durable event whose kind the v3 package never carried, a package
         that failed to load, an unknown kind) the item falls back to the
         English row and says so with ``fallback: True`` — an honest
-        English note, never a fabricated Chinese one."""
+        English note, never a fabricated Chinese one.
+
+        WR-3 (DEC-…63 R5) — the generated arm: an event whose source is
+        ``world_narrator`` **is already written in the interface
+        language** (the narrator's own language law, WR-2), so its
+        stored narration passes through verbatim with ``fallback:
+        False`` — no kind mapping is consulted (a generated kind has
+        none) and the bit never lies about a note that is exactly the
+        language it claims."""
 
         english = "" if event is None else str(event[1])
         kind = "" if event is None else str(event[2])
+        if event is not None and str(event[4]) == "world_narrator":
+            return english, False
         if ui_language == "zh":
             zh = (
                 package.narration_zh_for(kind)
@@ -3484,7 +3494,8 @@ class _WebFace:
         package = self._world_packages.get(world_id)
         by_id: dict[str, tuple[Any, ...]] = {}
         for row in self._host.db.execute(
-            "SELECT e.event_id, e.narration, e.kind, e.occurred_at"
+            "SELECT e.event_id, e.narration, e.kind, e.occurred_at,"
+            " e.source"
             " FROM world_event e WHERE e.world_id = ?",
             (world_id,),
         ).fetchall():
@@ -3628,7 +3639,8 @@ class _WebFace:
         ui_language = self._ui_language()
         by_id: dict[str, tuple[Any, ...]] = {}
         for row in self._host.db.execute(
-            "SELECT e.event_id, e.narration, e.kind, e.occurred_at"
+            "SELECT e.event_id, e.narration, e.kind, e.occurred_at,"
+            " e.source"
             " FROM world_event e WHERE e.world_id = ?",
             (world_id,),
         ).fetchall():

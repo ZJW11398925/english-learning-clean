@@ -2945,25 +2945,25 @@ diagBox("obs-entry").appendChild((() => {
   return wrap;
 })());
 
-// ── A2/DEC-…92：世界的文字与语言态──────────────────────────────────
+// ── A2/DEC-…92；WR-2/WR-3 随迁：世界的文字与语言态──────────────────
 // 随信呈现的唯一形态 = 信流里的内联故事块（renderWorldStory）；世界
 // 日志屏是历史回看面不随信，两者并存。常驻收件箱区已整体退役（用户
-// 报告「遗留世界事件占对话末尾」的根治）。
-// 这一小节只留它的双语词表与界面语言态：继续/失败/fallback 小字/
-// 安静日/过渡句五句，随 ui_language 设置（zh 缺省）——全页 i18n 登
-// 记不落，此表是唯一双语词表。文字一律 textContent（XSS 面）。
+// 报告「遗留世界事件占对话末尾」的根治）。WR-3：过渡句（世界收到
+// 来信的转场句）随「世界回应信」范式一并退役——
+// 双层律下世界不回应信，故事块只有日期行与叙述段。
+// 这一小节只留它的双语词表与界面语言态：fallback 小字/安静日两句，
+// 随 ui_language 设置（zh 缺省）——全页 i18n 登记不落，此表是唯一
+// 双语词表。文字一律 textContent（XSS 面）。
 let uiLanguage = "zh";
 
 const WORLD_INBOX_TEXT = {
   zh: {
     fallback: "（这张便条写在世界学会中文之前——示以原文。）",
     quietDay: "安静的一天，没什么特殊的事。",
-    thenLetter: "这时，她收到了你的来信。",
   },
   en: {
     fallback: "(This note predates the world's Chinese — shown as written.)",
     quietDay: "A quiet day, nothing out of the ordinary.",
-    thenLetter: "Then, your letter arrives.",
   },
 };
 
@@ -3003,21 +3003,17 @@ function parlorWorldText(lang) {
 // 「继续」钮一并退役）；GET 读即揭示——revealed_now 是本次揭示的
 // 条数（服务端翻转前计数），零 ⇒ 零世界区块，对话末尾干净。
 
-// ── A2（DEC-…82/…88/…90；DEC-…92 收口；A2R DEC-…99）：世界故事块────
-// 随信呈现的唯一形态：信流里随轮的散文块。turn_stream 的首个
-// {"type":"world"} 帧到达即渲染（回信气泡之前）：日期行（世界自己
-// 的虚拟历日，服务端按 ui_language 本地化随行）+ 本轮叙述序列（故
-// 事体散文段落，非卡片非署名）+ 过渡句，随后回信打字机接上。
-// A2R（DEC-…99）：引擎的 NOTICE 事件是节拍不是停顿——一次来信一气
-// 走到运转终点（RESPONSE/上限），「继续」钮与其数据位随块退役，世
-// 界故事零中途交互。加载补显（loadWorldInbox 的 revealed_now 臂）
-// 复用同一渲染器（inbox 载荷形带 items 键；流帧带 notes 键——一处
-// 归一）。
+// ── A2/DEC-…92；WR-2/WR-3 随迁：世界故事块──────────────────────────
+// 随信呈现的唯一形态：信流里的散文块，append 在信流尾 = 回信之后
+// （WR-3：服务端已无前置世界帧——世界步在 final 后跑，世界自己的日子
+// 恰在回信后显现）。渲染入口两臂：页面加载时的遗留补显与 final 后的
+// 延时揭示（loadWorldInbox 的 revealed_now 臂——读即揭示，零揭示零
+// 块）。日期行（世界自己的虚拟历日，服务端按 ui_language 本地化随
+// 行）+ 叙述序列（故事体散文段落，非卡片非署名）；过渡句已随范式退役。
 // 文字一律 textContent（XSS 纪律）；真实时间零进入——日期只来自
 // 服务的 date_localized。
-function renderWorldStory(event, opts) {
+function renderWorldStory(event) {
   const T = worldInboxText();
-  const withTransition = !(opts && opts.withTransition === false);
   const wrap = document.createElement("div");
   wrap.className = "world-story";
   const dateLine = document.createElement("p");
@@ -3039,18 +3035,14 @@ function renderWorldStory(event, opts) {
     wrap.appendChild(p);
     if (note.fallback) {
       // W-L 诚实标注（服务端 fallback:true——中文叙述缺席、示以英
-      // 文）：一行小字说明，从不把英文伪装成中文。
+      // 文）：一行小字说明，从不把英文伪装成中文。（WR-3：生成事件
+      // 服务端已不标 fallback——叙述本就是目标语言；此位只属于遗留
+      // 英文行。）
       const fb = document.createElement("p");
       fb.className = "note world-story-fallback";
       fb.textContent = T.fallback;
       wrap.appendChild(fb);
     }
-  }
-  if (withTransition) {
-    const then = document.createElement("p");
-    then.className = "world-story-then";
-    then.textContent = T.thenLetter;
-    wrap.appendChild(then);
   }
   // A2R (DEC-…99): the 「继续」 button is retired — the engine's
   // NOTICE checkpoint is an internal rhythm concept, not a product
@@ -3063,11 +3055,13 @@ function renderWorldStory(event, opts) {
   return wrap;
 }
 
-// 加载臂（DEC-…92）：页面装载（历史渲染后）读一次世界——只有当本
-// 次读取真的揭示了遗留未读便条（revealed_now>0，上次会话末尾没读
-// 到的）才补显一块故事块（同形、揭示即读、按需挂继续钮）；零遗留
-// ⇒ 零世界区块，对话末尾干净。无绑定（404 人话）或读失败同样零区
-// 块——不是一只空收件箱。返回载荷（语言切换臂等调用方自用）。
+// 加载臂（DEC-…92；WR-3 随迁）：页面装载（历史渲染后）读一次世界——
+// 只有当本次读取真的揭示了遗留未读便条（revealed_now>0，上次会话
+// 末尾没读到的）才补显一块故事块（同形、揭示即读）；零遗留 ⇒ 零世
+// 界区块，对话末尾干净。WR-3：同一臂兼作 final 后的延时揭示（下方
+// WORLD_REVEAL_DELAY_MS）——读即揭示幂等，二次读零块。无绑定（404
+// 人话）或读失败同样零区块——不是一只空收件箱。返回载荷（语言切换
+// 臂等调用方自用）。
 async function loadWorldInbox() {
   let data = null;
   try {
@@ -3079,9 +3073,28 @@ async function loadWorldInbox() {
     return null;
   }
   if ((data.revealed_now || 0) > 0) {
-    renderWorldStory(data, { withTransition: false });
+    renderWorldStory(data);
   }
   return data;
+}
+
+// WR-3 延时揭示（DEC-…63 R1）：finalize 之后世界步还在服务端跑
+// （模型生成 1-3s，回信先到不堵流）——前端在 final 落定后延时重读
+// 一次世界，揭示即呈现（「信到故事完零交互」在生成范式下的维持）。
+// 慢于延时的诚实降级不变：下次 load/进世界屏补显，不发明假即时。
+// 防重入：新一轮寄信开始时清旧 timer（loadWorldInbox 幂等臂保零
+// 双块——清 timer 是卫生不是正确性前提）。
+// Revisit：4000ms 是「生成耗时 + 余量」的校准初值——a calibration
+// replaces this constant（dogfood 实测后可调）。
+const WORLD_REVEAL_DELAY_MS = 4000;
+let worldRevealTimer = 0;
+
+function scheduleWorldReveal() {
+  if (worldRevealTimer) clearTimeout(worldRevealTimer);
+  worldRevealTimer = setTimeout(() => {
+    worldRevealTimer = 0;
+    loadWorldInbox();
+  }, WORLD_REVEAL_DELAY_MS);
 }
 
 // ── A2（DEC-…82）：打字机定速节奏器───────────────────────────────
@@ -3799,23 +3812,28 @@ async function postTurn(text) {
   // rd-2：发送后状态行「信已寄出，等回信——」收尾（8.5 流式落点句随迁）
   const pending = addLine("typing", "信已寄出，等回信——笔友把灯留着。");
   startMomentPolling();
+  // WR-3 防重入：新一轮寄信先清上一轮的延时揭示 timer（loadWorldInbox
+  // 幂等臂本就保零双块——清 timer 是卫生）。
+  if (worldRevealTimer) {
+    clearTimeout(worldRevealTimer);
+    worldRevealTimer = 0;
+  }
   // A1 流面：先走 /api/turn_stream——delta 当场打进一封在写的回信
   // （只走 textContent，XSS 纪律），final 落地即在 finally 摘掉在写信、
   // 由下方 finalize 的权威回信行接管。对端没说 SSE（非 200 / 无流）=
   // 立即失败形，回退旧 POST；流真开始后中断 = 信可能已落库——不重发，
   // 一行人话 + 拉历史对齐。
-  // A2（DEC-…82）：事件序 world → delta＊ → final——世界故事块先讲
-  // （onWorld 渲染在信流里、回信气泡之前），delta 进打字机缓冲定速
-  // 出字（到达与渲染解耦），final 的余量排空后才 finalize；中断保留
-  // 已显部分。
+  // WR-2/WR-3（DEC-…49/…63）：帧序 delta＊ → final——世界步在服务端
+  // final 之后才跑（模型生成不堵流），delta 进打字机缓冲定速出字
+  // （到达与渲染解耦），final 的余量排空后 finalize，随后延时揭示臂
+  // 把世界的故事块接在回信之后（scheduleWorldReveal）。
   let data = null;
   let typing = null;
   try {
     typing = startTypewriter();
     data = await fetchTurnStream(
       text,
-      (chunk) => typing.push(chunk),
-      (event) => renderWorldStory(event)
+      (chunk) => typing.push(chunk)
     );
     if (data === null) {
       // 回退臂（A2R 加固：流面永不重发信）。fetchTurnStream 答 null
@@ -3885,9 +3903,11 @@ async function postTurn(text) {
     }
     const moments = data.teaching_moments || [];
     showMoments(moments);
-    // DEC-…92：世界已在生成前步进并揭示（前置步进），故事块已随
-    // world 帧呈现——turn 后不再有收件箱重读（读即揭示的第二遍是
-    // 死调用；「遗留世界事件占对话末尾」的根治半）。
+    // WR-3（DEC-…63 R1）：finalize 之后延时揭示——世界步此刻正在服务
+    // 端跑（final 后的模型生成，不堵流），WORLD_REVEAL_DELAY_MS 后重
+    // 读一次世界：揭示即呈现，故事块接在回信之后（生成范式下「信到
+    // 故事完零交互」的维持；慢于延时则下次 load/进世界屏补显）。
+    scheduleWorldReveal();
   }
 }
 
