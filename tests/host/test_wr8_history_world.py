@@ -330,6 +330,44 @@ def test_legacy_and_tail_reveals_lands_honestly(tmp_path: Path) -> None:
 # 3 — the window's lower edge
 
 
+def test_an_event_revealed_exactly_at_a_turn_moment_rides_that_turn(
+    tmp_path: Path,
+) -> None:
+    """处置刀（评审 LOW-1 钉缺口闭合）：bisect 边界的确定性——事件
+    revealed_at **恰等于**某轮 turn 的提交时刻时挂该轮（交错区间
+    (前轮, 本轮] 的闭上沿，docstring 声明与实现同一；评审 m7b
+    NOT-RED 探针收编——bisect_right 形态会把等值事件挪到下一轮）。"""
+
+    app_db = tmp_path / "app.db"
+    with web_stack(app_db, provider=TwoStepProvider()) as stack:
+        for text in ("第一封信。", "第二封信。", "第三封信。"):
+            assert stack.post("/api/turn", {"text": text})[0] == 200
+        conn = sqlite3.connect(app_db)
+        moments = [
+            row[0]
+            for row in conn.execute(
+                "SELECT created_at FROM user_turn ORDER BY rowid"
+            ).fetchall()
+        ]
+        assert len(moments) == 3 and len(set(moments)) == 3
+        _insert_event(
+            conn,
+            event_id="probe-eq",
+            narration="边界的一行：正午的钟声恰好停在此刻。",
+            created_at="2026-06-03",
+            revealed_at=moments[1],  # exactly turn two's commit moment
+        )
+        conn.commit()
+        conn.close()
+        status, history = stack.get_json("/api/history?full=1")
+        assert status == 200
+        first, second, third = history["turns"]
+        narrations = [_frame_narrations(t) for t in (first, second, third)]
+        assert "边界的一行：正午的钟声恰好停在此刻。" in narrations[1]
+        assert "边界的一行：正午的钟声恰好停在此刻。" not in narrations[0]
+        assert "边界的一行：正午的钟声恰好停在此刻。" not in narrations[2]
+
+
 def test_events_before_a_real_lower_edge_stay_outside(tmp_path: Path) -> None:
     """VAL ④ 窗口边界（窄窗形）：?limit=1 的滑窗里，下沿时刻**之前**
     被揭示的事件不入（轮 1 自己的世界步事件——属于未服务的轮，加载
