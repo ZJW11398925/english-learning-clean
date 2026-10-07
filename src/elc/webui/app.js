@@ -3153,8 +3153,11 @@ function startTypewriter() {
       return new Promise((resolve) => {
         state.sealed = true;
         state.resolve = resolve;
+        // wr-7R2 LOW-1（同族扫全）：余量按**已显+已缓冲**切——缓冲
+        // 里未打出的增量已被权威全文覆盖，按「仅已显」切会把它再补
+        // 一遍（final 早到 + 缓冲未空 ⇒ 排空期打出 2× 文本）。
         const rest = typeof fullText === "string"
-          ? fullText.slice(state.shown.length)
+          ? fullText.slice(state.shown.length + state.buffer.length)
           : "";
         if (rest) state.buffer += rest;
         if (!state.raf) state.raf = requestAnimationFrame(step);
@@ -3191,10 +3194,13 @@ function startTypewriter() {
 // ——**日期行不在此臂**（date 需 days 累计，流内无日期，不得提前发
 // 明；定版时才由 date_localized 补齐块首）。wr-7R 排空定版（对齐回
 // 信 A2）：seal(整帧) = 权威每段 narration 的未显余量以段（index）
-// 为序补进缓冲（已显部分据实——DOM 已打出的字不重打、不回退），打
-// 字机继续定速排空，**全部段排空后** resolve 交回定版——整批到达
-// （快模型/端点缓冲/网关聚合）不再「刚启动就被整块替换」的闪现；
-// 排空无上限定时器（rAF 自然排空，与回信打字机并行、互不精等）。
+// 为序补进缓冲——余量按**已显+已缓冲**切（wr-7R2：缓冲里未打出的
+// 流式增量已被权威覆盖，按「仅已显」切会把它再补一遍 = 排空期双打
+// 全文），打字机继续定速排空，**全部段排空后** resolve 交回定版
+// ——整批到达（快模型/端点缓冲/网关聚合）不再「刚启动就被整块替
+// 换」的闪现；只对曾有增量到达的段补（wr-7R2 conform-R4：零增量
+// 臂不凭空造段——从未有流式预览，整帧即整块渲染）；排空无上限定
+// 时器（rAF 自然排空，与回信打字机并行、互不精等）。
 // seal 后迟到 push 丢弃（权威全文已在，流面无新话）。world_failed =
 // 块上人话失败注（已显示的那段没记进编年史——渲染先行、持久殿后、
 // 拒收不撒谎；失败路径无 seal，stop 保留已显不变）。文字一律
@@ -3294,19 +3300,25 @@ function startWorldStream() {
       if (!state.raf) state.raf = requestAnimationFrame(step);
     },
     seal(event) {
-      // wr-7R：world 整帧 = 权威全文。每段权威 narration 的未显余量
-      // 以段（beat index）为序补进缓冲（已显部分据实——slice 已显
-      // 长度，不重打不回退），打字机继续定速排空；全部段排空后
-      // resolve，同位替换（renderWorldStory）由调用方在此之后执行。
+      // wr-7R/wr-7R2：world 整帧 = 权威全文。每段权威 narration 的
+      // 未显余量以段（beat index）为序补进缓冲——余量按**已显+已缓
+      // 冲**切（wr-7R2 HIGH-1：缓冲里未打出的流式增量已被权威覆盖，
+      // 按「仅已显」切会把它再补一遍 = 排空期双打全文）；只对曾有
+      // 增量到达的段补（wr-7R2 MEDIUM-1 conform-R4：零增量臂不凭空
+      // 造段——seal 前无任何 push ⇒ 无流式预览可续，整帧即整块渲
+      // 染）。全部段排空后 resolve，同位替换（renderWorldStory）由
+      // 调用方在此之后执行。
       return new Promise((resolve) => {
         state.sealed = true;
         state.resolve = resolve;
         const notes = Array.isArray(event.notes) ? event.notes
           : Array.isArray(event.items) ? event.items : [];
         notes.forEach((note, index) => {
-          const para = ensurePara(index);
-          const rest = String(note.narration ?? "")
-            .slice(para.el.textContent.length);
+          const para = state.paras.get(index);
+          if (!para) return;
+          const rest = String(note.narration ?? "").slice(
+            para.el.textContent.length + para.buffer.length
+          );
           if (rest) para.buffer += rest;
         });
         if (!state.raf) state.raf = requestAnimationFrame(step);

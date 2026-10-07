@@ -828,6 +828,13 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     typewriter = app_source[app_source.index("function startTypewriter"):]
     typewriter = typewriter[: typewriter.index("\n}", typewriter.index("return {"))]
     assert "ensureLine().textContent = state.shown;" in typewriter
+    # wr-7R2 LOW-1: the final's remainder is cut by shown PLUS buffered
+    # — pieces still in the buffer are already covered by the
+    # authoritative reply (仅按已显切 = the drained line doubles).
+    assert (
+        "fullText.slice(state.shown.length + state.buffer.length)"
+        in typewriter
+    )
     assert "requestAnimationFrame" in typewriter
     assert "cancelAnimationFrame" in typewriter
     assert "const TYPING_CPS = 35;" in app_source

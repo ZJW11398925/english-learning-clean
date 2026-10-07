@@ -432,17 +432,24 @@ def test_the_whole_frame_settles_only_after_the_stream_drains() -> None:
 
 
 def test_the_seal_feeds_the_remainder_and_drops_late_pushes() -> None:
-    """seal/settle 语义（wr-7R）：seal(整帧) 把每段权威 narration 的
-    未显余量（按已显长度切片——已显部分据实，不重打不回退）以段
-    （beat index）为序补进缓冲；push 在 seal 后丢弃；排空交回只在
-    sealed 且全段排空时发生（变异 m2：seal 不补权威余量——排空后文
-    本 != 权威 narration / m4 族：迟到 push 不丢弃）。"""
+    """seal/settle 语义（wr-7R + wr-7R2）：seal(整帧) 把每段权威
+    narration 的未显余量（按**已显+已缓冲**切——缓冲里未打出的增量
+    已被权威覆盖，仅按已显切会把排空期双打全文）以段（beat index）
+    为序补进缓冲；push 在 seal 后丢弃；排空交回只在 sealed 且全段排
+    空时发生（变异 m2：seal 不补权威余量 / m6：退回仅已显切——双打
+    回归）。"""
 
     app = _app_source()
     stream = _slice(app, "function startWorldStream() {", "\nfunction ")
     assert "seal(event)" in stream
-    assert 'String(note.narration ?? "")' in stream
-    assert ".slice(para.el.textContent.length)" in stream
+    # wr-7R2 HIGH-1: the remainder is cut by shown PLUS buffered — the
+    # pieces sitting in the buffer are already covered by the
+    # authoritative text (仅按已显切 = the drained text doubles).
+    assert (
+        'String(note.narration ?? "").slice(\n'
+        "            para.el.textContent.length + para.buffer.length\n"
+        "          )" in stream
+    )
     assert "para.buffer += rest" in stream
     # Late pushes after the seal are dropped: the authoritative text is
     # in, the stream has nothing more to say.
@@ -457,3 +464,23 @@ def test_the_seal_feeds_the_remainder_and_drops_late_pushes() -> None:
     # the settle swapped the whole block in — the flash's amplifier).
     assert "state.sealed || laterParaHasContent()" in stream
     assert "para.buffer.length === 0 &&" in stream
+
+
+def test_the_seal_never_fabricates_a_stream_block() -> None:
+    """零增量臂（wr-7R2 MEDIUM-1，conform-R4）：seal 只对曾有增量到
+    达的段补余量——seal 块内零 ensurePara（凭空造段的唯一通道），
+    缺段即跳过；零 push 到达时 wrap 恒为 null，settleWorld 的替换条
+    件臂让 renderWorldStory 原样整块落位（wr-6 形，无打字机参与）
+    （变异 m7：seal 恢复 ensurePara——零增量被拉进打字机）。"""
+
+    app = _app_source()
+    seal_block = app[app.index("seal(event) {") : app.index("get wrap")]
+    assert "ensurePara" not in seal_block
+    assert "const para = state.paras.get(index);" in seal_block
+    assert "if (!para) return;" in seal_block
+    # The settle's whole-block arm stays exactly the wr-6 shape.
+    settle = _slice(app, "const settleWorld = (event) => {", "\n  };\n")
+    assert (
+        "if (worldStream.wrap && worldStream.wrap.parentNode === messages) {"
+        in settle
+    )
