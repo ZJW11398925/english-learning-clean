@@ -69,7 +69,10 @@ _STEP1 = json.dumps(
                 "narration": "潮水在午后转向，滩涂重新露了出来。",
                 "days": 0,
             },
-        ]
+        ],
+        # lr-1：单步即停形（每轮信模型一步 letter_arrives——链一步出，
+        # 多轮交错行为与 pre-lr-1 相同）。
+        "stop": {"kind": "letter_arrives"},
     },
     ensure_ascii=False,
 )
@@ -82,7 +85,8 @@ _STEP2 = json.dumps(
                 "narration": "集市在广场上支起来了，鱼车天不亮就出了摊。",
                 "days": 2,
             }
-        ]
+        ],
+        "stop": {"kind": "letter_arrives"},
     },
     ensure_ascii=False,
 )
@@ -95,7 +99,8 @@ _STEP3 = json.dumps(
                 "narration": "守夜人在灯塔上换了一班，灯芯剪得极短。",
                 "days": 1,
             }
-        ]
+        ],
+        "stop": {"kind": "letter_arrives"},
     },
     ensure_ascii=False,
 )

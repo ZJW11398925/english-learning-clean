@@ -53,7 +53,9 @@ BEATS_JSON = json.dumps(
                 "narration": "潮水在午后转向，滩涂重新露了出来。",
                 "days": 0,
             },
-        ]
+        ],
+        # lr-1：单步即停形（模型一步 letter_arrives）。
+        "stop": {"kind": "letter_arrives"},
     },
     ensure_ascii=False,
 )

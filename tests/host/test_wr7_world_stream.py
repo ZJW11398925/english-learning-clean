@@ -65,7 +65,8 @@ REPO = Path(__file__).resolve().parents[2]
 #: The streamed beats' own material: two beats, the first carrying an
 #: escaped newline and the second non-ASCII prose (``ensure_ascii`` makes
 #: the JSON text carry real ``\uXXXX`` escapes — the extractor decodes
-#: them over the real stack).
+#: them over the real stack). lr-1: the stop signal rides the same
+#: answer — the single-step shape (模型一步停) these pins hold.
 WR7_BEATS = json.dumps(
     {
         "beats": [
@@ -79,7 +80,8 @@ WR7_BEATS = json.dumps(
                 "narration": "The lamp stayed lit — 灯亮着。",
                 "days": 0,
             },
-        ]
+        ],
+        "stop": {"kind": "letter_arrives"},
     }
 )
 

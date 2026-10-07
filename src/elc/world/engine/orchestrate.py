@@ -83,6 +83,7 @@ from elc.world.narrator import (
     NARRATOR_SOURCE,
     RECENT_CHRONICLE_LIMIT,
     DirectionCandidate,
+    StopSignal,
     WorldNarrator,
 )
 from elc.world.package import WorldPackage, story_days_of, story_elapsed_days_of
@@ -270,6 +271,8 @@ def run_generated_step(
     on_directions: (
         Callable[[tuple[DirectionCandidate, ...]], None] | None
     ) = None,
+    letter_elapsed_days: int | None = None,
+    on_stop: Callable[[StopSignal | None], None] | None = None,
 ) -> Result[tuple[WorldEvent, ...]]:
     """The production world step (WR-2, DEC-OPI-5fc42174…49; WR-4
     correction …58): the narrator's beats out, the chronicle and the
@@ -293,6 +296,24 @@ def run_generated_step(
     beats to land, before the durable half. The defaults (immersive,
     no pending, no callback) run the step byte for byte as before
     wr-10.
+
+    lr-1 (DEC-OPI-c73dbff3…95, the natural-run chain): the chain
+    itself lives with the caller (the web face runs the steps — each
+    frame it pushes is presentation, a concern this layer has none
+    of); this function stays **one step** and hands the caller the
+    step's own verdict. ``letter_elapsed_days`` — the world-inbound
+    fact of the letter's journey (how many days ago it was sent) —
+    rides to the narrator's prompt (the letter-on-its-way section;
+    ``None`` keeps the prompt byte for byte the pre-lr-1 text; **the
+    letter's contents never ride here or anywhere** — WR-4 stands,
+    the section names the journey, never the words). ``on_stop`` —
+    the verdict seam, :attr:`on_directions`' sibling — receives the
+    answer's parsed stop signal (``None`` = keep going) at the same
+    beat the candidates fire, past the quiet arms; the step itself
+    never branches on it (the caller's chain loop owns the verdict:
+    v1 keeps turning on every signal but ``letter_arrives`` — the
+    honest restraint the plan logs, the full stop-round semantics
+    belong to lr-4).
 
     The order: the narrator first (compose, one provider call —
     blocking, or streamed through the provider's optional face when
@@ -379,6 +400,7 @@ def run_generated_step(
         on_increment=on_narration_increment,
         direction_mode=direction_mode,
         pending_direction=pending_direction,
+        letter_elapsed_days=letter_elapsed_days,
     )
     if isinstance(generated, Err):
         if generated.error.message == REASON_NOT_CONFIGURED:
@@ -387,7 +409,7 @@ def run_generated_step(
             # letter's reader does not.
             return Ok(())
         return Err(generated.error)
-    beats, directions = generated.value
+    beats, directions, stop = generated.value
     if not beats:
         # The strict narrator never produces an empty batch (that is a
         # refusal upstream); this arm is the contract's own quiet.
@@ -397,6 +419,11 @@ def run_generated_step(
         # candidates, empty unless the narrator wrote them. Fired only
         # past the quiet arms — a silent world offers no choices.
         on_directions(directions)
+    if on_stop is not None:
+        # The chain verdict's out-seam (lr-1): the answer's own natural
+        # stopping point, ``None`` = keep going. Fired beside the
+        # candidates — past the quiet arms, before the durable half.
+        on_stop(stop)
 
     runs = store.list_runs(world_id)
     latest = runs[-1] if runs else None

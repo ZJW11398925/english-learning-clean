@@ -483,12 +483,13 @@ from elc.user_config.types import (
     TeachingPolicyProfile,
 )
 from elc.world.engine.orchestrate import run_generated_step
-from elc.world.narrator import DirectionCandidate
+from elc.world.narrator import STOP_LETTER_ARRIVES, DirectionCandidate, StopSignal
 from elc.world.package import (
     BUILTIN_WORLDS_DIR,
     WorldPackage,
     _actor_id_for,
     load_world_package,
+    story_elapsed_days_of,
     world_date_of,
 )
 from elc.world.store import WorldRevealItem
@@ -2289,6 +2290,17 @@ _APP_SETTING_WORLD_PENDING_DIRECTION_PREFIX = "world_pending_direction:"
 _WORLD_DIRECTION_LABEL_CAP = 80
 _WORLD_DIRECTION_HINT_CAP = 200
 
+#: The world step chain's defensive ceiling (lr-1, DEC-OPI-c73dbff3…95).
+#: **A safety line, never a narrative rule** — the narrator is asked (in
+#: narrative terms, the prompt's letter-on-its-way section) to let the
+#: letter arrive naturally, and nothing in the chain forces a step
+#: count onto the story; this ceiling exists only so a model that keeps
+#: turning without ever raising ``letter_arrives`` cannot spin the
+#: world forever (the docstring on :meth:`_WebFace._world_step_frame`
+#: says the same honestly). Not presented anywhere as 「must arrive in
+#: N steps」 — the VAL negative-control holds that line.
+MAX_CHAIN_STEPS = 5
+
 
 def _world_pending_direction_key(world_id: str) -> str:
     """The pending-direction row's key for one world (the prefix plus
@@ -3218,16 +3230,26 @@ class _WebFace:
         reply is generated** — the world narrates first, her reply
         arrives second (spec §4.2's own order; the user's fourth-plus
         direction: the letter must not hold the main seat nor show
-        before the world's events). The frame the step produced rides
-        the payload under ``world`` (rendered before the reply line); a
-        quiet or failed world leg simply omits the key (fail-soft — the
-        reply never waits on a broken narration beyond its own round
-        trip)."""
+        before the world's events). lr-1 (DEC-OPI-c73dbff3…95): the
+        world's half is the **step chain** — the world keeps turning
+        until the letter naturally arrives (or the defensive ceiling),
+        one ``world`` frame per landed step. The frames ride the
+        payload under ``world`` (the last step's frame — a one-step
+        chain is byte for byte the WR-6 shape) and, when the chain ran
+        longer, under ``world_steps`` (every frame in order — lr-2's
+        raw material); the chain's tail stop signal rides ``stop`` when
+        the narrator declared one. A quiet or failed world leg simply
+        omits the keys (fail-soft — the reply never waits on a broken
+        narration beyond its own round trip)."""
 
-        frame = self._world_step_frame()
+        frames, stop, _failed = self._world_step_frame()
         payload, turn_id = self._commit_and_answer(text)
-        if frame is not None:
-            payload["world"] = frame
+        if frames:
+            payload["world"] = frames[-1]
+            if len(frames) > 1:
+                payload["world_steps"] = frames
+        if stop is not None:
+            payload["stop"] = stop
         return payload
 
     def _commit_and_answer(
@@ -3322,17 +3344,29 @@ class _WebFace:
         delta — the spec's own 「寄出（在途仪式）」 reading); a quiet
         or failed world leg lets the reply stream at once (fail-soft,
         never a broken stream).
+
+        lr-1 (DEC-OPI-c73dbff3…95): the world's half is the step chain
+        — the order becomes **world_delta＊ → world₁ → world_delta＊ →
+        world₂ → … → delta＊ → final** (each step's increments then its
+        whole frame, pushed as the step lands; the handler already
+        carries dict frames whole, one ``data:`` line each). The
+        chain's tail stop signal rides the final payload's ``stop`` key
+        when the narrator declared one (lr-2's raw material); a chain
+        that ended on the defensive ceiling without a signal answers
+        no key — never an invented one.
         """
 
         live = self._host.coordinator.persona_provider()
         if not hasattr(live, "call_streaming"):
-            # The blocking shape: the world step runs outside the bridge
-            # and its one whole frame rides ahead of the one final
-            # (WR-6's shape, byte for byte).
-            frame = self._world_step_frame()
-            if frame is not None:
+            # The blocking shape: the world chain runs outside the
+            # bridge and its frames ride ahead of the one final
+            # (WR-6's shape, one frame per landed step).
+            frames, stop, _failed = self._world_step_frame()
+            for frame in frames:
                 events.put(frame)
             payload, turn_id = self._commit_and_answer(text)
+            if stop is not None:
+                payload["stop"] = stop
             return payload
         bridge = _TurnStreamBridge(events)
         shown = {"count": 0}
@@ -3343,20 +3377,19 @@ class _WebFace:
                 {"type": "world_delta", "index": index, "text": piece}
             )
 
-        # The world step runs **before** the reply proxy is installed:
+        # The world chain runs **before** the reply proxy is installed:
         # its narrator dials the live provider directly (its own
         # streamed face, decoded pieces straight to the bridge), and
-        # the generation order is untouched — the whole narration
-        # exists before the reply's first delta is generated.
-        frame = self._world_step_frame(
-            on_narration_increment=on_narration_increment
+        # the generation order is untouched — every step's whole
+        # narration exists before the reply's first delta is generated.
+        frames, stop, failed_after_shown = self._world_step_frame(
+            on_narration_increment=on_narration_increment,
+            on_frame=bridge.push_frame,
         )
-        if frame is not None:
-            bridge.push_frame(frame)
-        elif shown["count"] > 0:
-            # Rendering ran ahead of the durable verdict and the whole
-            # frame never came: say so, rather than leaving shown text
-            # that pretends to be kept (拒收不撒谎).
+        if failed_after_shown:
+            # Rendering ran ahead of the durable verdict and a step's
+            # whole frame never came: say so, rather than leaving shown
+            # text that pretends to be kept (拒收不撒谎).
             bridge.push_frame({"type": "world_failed"})
         coordinator = self._host.coordinator
         coordinator.replace_persona_provider(
@@ -3364,6 +3397,8 @@ class _WebFace:
         )
         try:
             payload, turn_id = self._commit_and_answer(text)
+            if stop is not None:
+                payload["stop"] = stop
             return payload
         finally:
             coordinator.replace_persona_provider(live)
@@ -3372,144 +3407,231 @@ class _WebFace:
         self,
         *,
         on_narration_increment: Callable[[int, str], None] | None = None,
-    ) -> dict[str, Any] | None:
-        """The world-first pre-reply step (WR-6, DEC-OPI-8a4f980b…13):
-        run the narrator **before** the reply is generated, reveal what
-        it wrote (the frame is the user's look — spec §4.1's
-        presentation trigger), and answer the one structured ``world``
-        frame the page renders before the reply's first delta.
+        on_frame: Callable[[dict[str, Any]], None] | None = None,
+    ) -> tuple[list[dict[str, Any]], str | None, bool]:
+        """The world-first pre-reply **step chain** (WR-6,
+        DEC-OPI-8a4f980b…13; the natural-run chain, lr-1,
+        DEC-OPI-c73dbff3…95): run the narrator **before** the reply is
+        generated, keep the world turning step by step — one
+        generation, one durable landing, one reveal, one ``world``
+        frame per step — until the letter **naturally arrives** (the
+        narrator's own ``letter_arrives`` stop signal) or the defensive
+        ceiling :data:`MAX_CHAIN_STEPS` stops the chain (a safety line,
+        never a narrative rule: the prompt only ever *invites* the
+        letter to arrive in its own time — no step count, no deadline —
+        and this ceiling exists so a model that never raises the
+        signal cannot spin the world forever; nothing presents it to
+        the user as a rule).
+
+        The v1 restraint, honestly stated: the narrator's other two
+        signals (``she_thinks_of_you``, ``awaits_you``) **keep the
+        world turning** in this cut — the plan logs this as the chain's
+        deliberate incompleteness, the full stop-round semantics (the
+        world pausing for the user's choice) belong to lr-4. The last
+        step's own signal is what the caller sees, never an invented
+        verdict.
+
+        Each step's ``elapsed_days`` is computed fresh (the letter's
+        journey as the world's own calendar tells it: the furthest
+        stamped story day minus the day the chain began — 0 for the
+        first step, the story's own advance for each later one), and
+        **the letter's contents ride nowhere** (WR-4): the prompt names
+        the journey's existence and its day count, never a word of the
+        letter itself.
 
         wr-7: with ``on_narration_increment`` the narrator's streamed
-        face carries the narration's own time dimension — each decoded
-        ``(beat_index, text)`` piece rides the callback as it completes
-        (the page's ``world_delta`` frames, the world's 「正在发生」
-        preview), while the whole frame stays the 「发生了」 settle. A
-        refusal after shown pieces retracts nothing here — the caller
-        (``turn_stream``) counts the shown pieces and answers the
-        honesty frame. Fail-soft throughout: no binding, no package, no
-        store, no provider, a quiet narrator (``not-configured`` or
-        zero beats) or any refusal answers ``None`` — the reply then
-        streams with no world frame, never a broken page.
+        face carries each narration piece to the caller as it decodes
+        (the page's ``world_delta`` preview); with ``on_frame`` each
+        landed step's whole frame is handed over the moment it settles
+        (the streamed chain's per-step ``world`` frame). A refusal
+        after shown pieces retracts nothing here — the third return
+        value (``failed_after_shown``) tells the caller whether the
+        **last** step showed increments and then failed, the honest
+        ``world_failed`` handle. Fail-soft throughout: no binding, no
+        package, no store, no provider, a quiet narrator
+        (``not-configured`` or zero beats) or any refusal ends the
+        chain — the steps that landed stay landed, the reply then
+        streams with whatever frames exist, never a broken page.
 
         The turn is not yet committed at this point (the reply's own
-        generation commits it), so the step runs under the
+        generation commits it), so every step runs under the
         count-derived id arm — the docstring's honest no-replay
-        protection (WR-2's turn-id derivation needs a committed turn;
-        a refused begin after a moved world is the accepted edge — the
-        letter was sent, the world heard the wind-up).
+        protection (WR-2's turn-id derivation needs a committed turn).
+        The ids do not collide across the chain: each step pre-reads
+        the chronicle (including the steps landed moments before), so
+        the derived ordinals advance step by step — step two's events
+        never overwrite step one's.
 
-        WR-4 stands: the letter's text never enters the narration —
-        the narrator reads the world's bible and chronicle only.
         wr-10 (DEC-OPI-c73dbff3…64): the step reads the mode and the
-        pending direction per run — ``directed`` rides the choice (the
-        direction channel's own door) and renders the answer's
-        candidates on the frame; ``immersive``, the default, passes
-        neither and renders no ``directions`` key, byte for byte the
-        pre-wr-10 shape."""
+        pending direction per chain — ``directed`` rides the choice
+        into the **first** step's prompt (consumed on its success, the
+        wr-10 消费即清 law untouched) and renders each step's own
+        candidates on that step's frame; ``immersive``, the default,
+        passes neither. The answer's returns:
+        ``([frame, …], stop_word_or_None, failed_after_shown)`` — the
+        frames in landing order, the chain's tail signal word (lr-2's
+        raw material; ``None`` = the chain ended without one: a quiet
+        arm, a refusal, or the ceiling with no signal on the final
+        step), and the failure handle above.
+        """
 
         binding = self._world_binding()
         if binding is None:
-            return None
+            return [], None, False
         world_id = str(binding["world_id"])
         package = self._world_packages.get(world_id)
         world_store = getattr(self._host, "world_store", None)
         if package is None or world_store is None:
-            return None
+            return [], None, False
         coordinator = getattr(self._host, "coordinator", None)
         provider = (
             None if coordinator is None else coordinator.persona_provider()
         )
         ui_language = self._ui_language()
         # wr-10 (DEC-OPI-c73dbff3…64): the mode and the pending
-        # direction are per-step reads. ``directed`` rides both (the
+        # direction are per-chain reads. ``directed`` rides both (the
         # pending choice is the director's input — the direction
         # channel, never a letter); ``immersive`` passes neither — the
-        # world autonomous, the prompt byte for byte the pre-wr-10
-        # text. The candidates come back through the wr-7 increments
-        # seam's sibling callback and land on the frame only in
-        # directed mode.
+        # world autonomous. The choice is consumed on the first
+        # landing step (the law below), so later steps turn without
+        # it.
         mode = self._world_direction_mode()
         pending = (
             self._world_pending_direction(world_id)
             if mode == "directed"
             else None
         )
-        directions: list[DirectionCandidate] = []
-        try:
-            stepped = run_generated_step(
-                world_store,
-                world_id,
-                package,
-                provider,
-                None,
-                datetime.now(tz=UTC).isoformat(),
-                ui_language=ui_language,
-                on_narration_increment=on_narration_increment,
-                direction_mode=mode,
-                pending_direction=pending,
-                on_directions=directions.extend,
+        # lr-1: the letter's journey, as the world's own calendar tells
+        # it. The chain's first step reads the story's furthest stamped
+        # day as the day the letter was sent; every step's elapsed is
+        # that day's distance from the present stamp — fresh per step,
+        # advancing as the chain lands beats (the变异-sensitive seam).
+        sent_base = story_elapsed_days_of(package, world_store, world_id)
+        frames: list[dict[str, Any]] = []
+        stop_word: str | None = None
+        failed_after_shown = False
+        for _step in range(MAX_CHAIN_STEPS):
+            elapsed_days = (
+                story_elapsed_days_of(package, world_store, world_id)
+                - sent_base
             )
-        except Exception as exc:  # fail-soft: the sentence, never the raise
-            print(
-                "elc web: 世界叙事步失败（回信不受影响）："
-                f"{type(exc).__name__}: {exc}",
-                file=sys.stderr,
+            step_directions: list[DirectionCandidate] = []
+            signals: list[StopSignal | None] = []
+            saw_increment = {"this_step": False}
+
+            def _counting_increment(
+                index: int, piece: str, _saw=saw_increment
+            ) -> None:
+                _saw["this_step"] = True
+                if on_narration_increment is not None:
+                    on_narration_increment(index, piece)
+
+            try:
+                stepped = run_generated_step(
+                    world_store,
+                    world_id,
+                    package,
+                    provider,
+                    None,
+                    datetime.now(tz=UTC).isoformat(),
+                    ui_language=ui_language,
+                    on_narration_increment=(
+                        _counting_increment
+                        if on_narration_increment is not None
+                        else None
+                    ),
+                    direction_mode=mode,
+                    pending_direction=pending,
+                    on_directions=step_directions.extend,
+                    letter_elapsed_days=elapsed_days,
+                    on_stop=signals.append,
+                )
+            except Exception as exc:  # fail-soft: the sentence, never the raise
+                print(
+                    "elc web: 世界叙事步失败（回信不受影响）："
+                    f"{type(exc).__name__}: {exc}",
+                    file=sys.stderr,
+                )
+                failed_after_shown = saw_increment["this_step"]
+                break
+            if isinstance(stepped, Err):
+                print(
+                    "elc web: 世界叙事步未推进（回信不受影响）："
+                    f"{stepped.error.code.value}: {stepped.error.message}",
+                    file=sys.stderr,
+                )
+                failed_after_shown = saw_increment["this_step"]
+                break
+            beats = stepped.value
+            if not beats:
+                # The quiet arm (no provider, ``not-configured``, zero
+                # beats): it streams no pieces, so no failure handle —
+                # the chain simply ends with what landed before.
+                break
+            if pending is not None:
+                # 选了即用即清 (wr-10): the choice rode into this
+                # chain's first prompt and the step succeeded — the
+                # pending row is consumed and the rest of the chain
+                # turns without it. Every quiet or refused arm broke
+                # above, so 拒收/安静不清 stands.
+                self._host.app_settings.delete(
+                    _world_pending_direction_key(world_id)
+                )
+                pending = None
+            revealed = world_store.reveal_all(
+                world_id, datetime.now(tz=UTC).isoformat()
             )
-            return None
-        if isinstance(stepped, Err):
-            print(
-                "elc web: 世界叙事步未推进（回信不受影响）："
-                f"{stepped.error.code.value}: {stepped.error.message}",
-                file=sys.stderr,
+            if isinstance(revealed, Err):
+                # The frame is the look; a reveal the store refused leaves the
+                # beats PENDING — the load arm presents them on the next read
+                # instead. Never a half-frame.
+                failed_after_shown = saw_increment["this_step"]
+                break
+            last_day = str(beats[-1].occurred_at)
+            frame: dict[str, Any] = {
+                "type": "world",
+                "ui_language": ui_language,
+                "world_name": package.name,
+                "date_localized": (
+                    _localize_story_date(last_day, ui_language)
+                    if len(last_day) == 10
+                    else ""
+                ),
+                "notes": [
+                    {
+                        "narration": str(beat.narration),
+                        "fallback": False,
+                    }
+                    for beat in beats
+                ],
+            }
+            if mode == "directed" and step_directions:
+                # The candidates ride this step's frame only in
+                # directed mode (an answer that carried them in
+                # immersive form is the world keeping its own counsel —
+                # never rendered). Each step's candidates are its own.
+                frame["directions"] = [
+                    {"label": candidate.label, "hint": candidate.hint}
+                    for candidate in step_directions
+                ]
+            frames.append(frame)
+            if on_frame is not None:
+                on_frame(frame)
+            stop_word = (
+                signals[-1].kind
+                if signals and signals[-1] is not None
+                else None
             )
-            return None
-        beats = stepped.value
-        if not beats:
-            return None
-        if pending is not None:
-            # 选了即用即清 (wr-10): the choice rode into this very
-            # prompt and the world step succeeded — the pending row is
-            # consumed. Every quiet or refused arm returned above, so
-            # 拒收/安静不清 stands: a direction the world could not
-            # hear stays parked for the next step.
-            self._host.app_settings.delete(
-                _world_pending_direction_key(world_id)
-            )
-        revealed = world_store.reveal_all(
-            world_id, datetime.now(tz=UTC).isoformat()
-        )
-        if isinstance(revealed, Err):
-            # The frame is the look; a reveal the store refused leaves the
-            # beats PENDING — the load arm presents them on the next read
-            # instead. Never a half-frame.
-            return None
-        last_day = str(beats[-1].occurred_at)
-        frame: dict[str, Any] = {
-            "type": "world",
-            "ui_language": ui_language,
-            "world_name": package.name,
-            "date_localized": (
-                _localize_story_date(last_day, ui_language)
-                if len(last_day) == 10
-                else ""
-            ),
-            "notes": [
-                {
-                    "narration": str(beat.narration),
-                    "fallback": False,
-                }
-                for beat in beats
-            ],
-        }
-        if mode == "directed" and directions:
-            # The candidates ride the frame only in directed mode (an
-            # answer that carried them in immersive form is the world
-            # keeping its own counsel — never rendered).
-            frame["directions"] = [
-                {"label": candidate.label, "hint": candidate.hint}
-                for candidate in directions
-            ]
-        return frame
+            if stop_word == STOP_LETTER_ARRIVES:
+                # The letter has arrived and been read: the round's
+                # natural end — the reply is generated next (the chain
+                # tail's落点).
+                break
+            # The v1 restraint: any other signal (she_thinks_of_you /
+            # awaits_you — or none at all) keeps the world turning;
+            # lr-4 owns the full stop-round semantics. The loop's
+            # ceiling is the safety line, not the story's rule.
+        return frames, stop_word, failed_after_shown
 
     def _ui_language(self) -> str:
         """The interface language row (W-L's own read): the stored word,

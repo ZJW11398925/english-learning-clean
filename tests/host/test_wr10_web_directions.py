@@ -76,6 +76,8 @@ DIRECTED_BEATS = json.dumps(
             },
         ],
         "directions": list(_CANDIDATES),
+        # lr-1：单步即停形（模型一步 letter_arrives）。
+        "stop": {"kind": "letter_arrives"},
     }
 )
 

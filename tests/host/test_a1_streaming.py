@@ -75,7 +75,13 @@ A1_TEXT = "The meeting starts at nine."
 #: world_delta＊ → world → delta＊ → final。
 NARRATOR_MARK = "You are the narrator of a small fictional world"
 NARRATOR_BEATS = json.dumps(
-    {"beats": [{"kind": "fake-tide", "narration": "The tide turned.", "days": 1}]}
+    {
+        "beats": [
+            {"kind": "fake-tide", "narration": "The tide turned.", "days": 1}
+        ],
+        # lr-1：单步即停形——模型一步 letter_arrives，链一步出。
+        "stop": {"kind": "letter_arrives"},
+    }
 )
 
 #: The blocking turn's payload keys, in the shape every existing consumer
@@ -918,7 +924,13 @@ def test_a_blocking_turn_after_a_streamed_one_is_unchanged(
             _, blocking_raw = _post(stack.port, "/api/turn", {"text": A1_TEXT})
             blocking = json.loads(blocking_raw.decode("utf-8"))
             # WR-6: the blocking answer carries the world frame key.
-            assert set(blocking.keys()) - {"world"} == TURN_PAYLOAD_KEYS
+            # lr-1 (DEC-OPI-c73dbff3…95): the chain's tail stop signal
+            # rides ``stop`` when the narrator declared one — the
+            # additive key the natural-run cut is authorized to widen
+            # by (任务书 §4④); absent when the world stayed silent.
+            assert set(blocking.keys()) - {"world"} - {"stop"} == (
+                TURN_PAYLOAD_KEYS
+            )
             assert blocking["reply"] == streamed["reply"] == REPLY
             assert blocking["turn_status"] == streamed["turn_status"]
             assert blocking["usage"] == streamed["usage"] is None

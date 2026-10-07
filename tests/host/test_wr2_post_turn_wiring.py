@@ -55,7 +55,11 @@ from tests.host.test_a1_streaming import (
 from tests.host.test_w1_web import CLEAN_TEXT, REPLY, web_stack
 
 #: The beats JSON the world letter steps answer with (two beats, spans
-#: 0 and 2 — the presentation pins' own story days).
+#: 0 and 2 — the presentation pins' own story days). lr-1
+#: (DEC-OPI-c73dbff3…95): the answer carries the narrator's own stop
+#: signal — ``letter_arrives`` — so the single-step shape (模型一步停)
+#: is the compatibility shape these pins hold: the chain stops after
+#: one landed step, byte for byte the pre-lr-1 behavior.
 _BEATS_OBJ: dict[str, Any] = {
     "beats": [
         {
@@ -68,7 +72,8 @@ _BEATS_OBJ: dict[str, Any] = {
             "narration": "A stranger walked the cliff path to the keeper's door.",
             "days": 2,
         },
-    ]
+    ],
+    "stop": {"kind": "letter_arrives"},
 }
 
 #: The beats JSON string (the a2/w13 suites import this constant).

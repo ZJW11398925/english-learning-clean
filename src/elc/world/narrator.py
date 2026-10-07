@@ -37,8 +37,18 @@ an optional ``directions`` array beside ``beats`` — the direction
 candidates (走向) the director's seat asked for: zero (or no key at all
 — the immersive shape), or two to four candidates, each exactly
 ``label`` (a short phrase) and ``hint`` (one sentence of how the world
-might go). The whole-batch law covers the candidates with the beats:
-one answer, one fate — a bad array refuses the narration it rode in on.
+might go). lr-1 (DEC-OPI-c73dbff3…95, the natural-run chain): the
+object may **also** carry an optional ``stop`` object — the natural
+stopping point the world itself declares when a letter is on its way:
+exactly ``{"kind": <word>}`` where ``word`` is one of the three
+narrative signals (:data:`STOP_LETTER_ARRIVES` — she has the letter and
+has read it, the round's end; :data:`STOP_SHE_THINKS_OF_YOU` — she
+thinks of you, a checkpoint; :data:`STOP_AWAITS_YOU` — the world waits
+for your reaction) or :data:`STOP_NONE` (= keep going — the same as no
+key at all). A stop word outside the vocabulary refuses the whole
+batch. The whole-batch law covers the candidates and the stop signal
+with the beats: one answer, one fate — a bad array or a bad stop
+refuses the narration it rode in on.
 Anything else — prose around the JSON, a missing or
 malformed field, an out-of-range span, an empty or oversized batch, an
 unexpected key — refuses the **whole batch** (诚实不造假: no partial
@@ -46,8 +56,9 @@ adoption, no guessed beat, and **no fallback to the retired pool** —
 the fixed-pool sampling is no longer a production path of any step).
 
 The return shape is the Result the orchestrator consumes: ``Ok`` with
-the generated beats and their direction candidates (a two-tuple — the
-candidates are empty unless the answer carried them; the type allows an
+the generated beats, their direction candidates, and the stop signal (a
+three-tuple — the candidates are empty and the stop is ``None`` unless
+the answer carried them; ``None`` means keep going; the type allows an
 empty beat tuple — the world's quiet
 — though the strict parser itself never produces one: an empty batch is
 a refusal), or ``Err`` carrying either the provider's own fault word
@@ -93,6 +104,12 @@ __all__ = [
     "NARRATOR_SOURCE",
     "NarrationExtractor",
     "RECENT_CHRONICLE_LIMIT",
+    "STOP_AWAITS_YOU",
+    "STOP_LETTER_ARRIVES",
+    "STOP_NONE",
+    "STOP_SHE_THINKS_OF_YOU",
+    "StopSignal",
+    "STOP_WORDS",
     "WorldNarrator",
     "build_narrator_prompt",
 ]
@@ -139,6 +156,33 @@ MAX_DIRECTIONS = 4
 DIRECTION_DIRECTED = "directed"
 DIRECTION_IMMERSIVE = "immersive"
 _DIRECTION_MODE_WORDS = (DIRECTION_DIRECTED, DIRECTION_IMMERSIVE)
+
+#: The natural stopping point's own words (lr-1, DEC-OPI-c73dbff3…95 —
+#: the natural-run chain's signal vocabulary, the world declaring where
+#: a round ends in its own narrative terms): ``letter_arrives`` — she
+#: has the letter and has read it (the round's natural end, the reply's
+#: turn); ``she_thinks_of_you`` — she thinks of you (a checkpoint, not
+#: an end); ``awaits_you`` — the world waits for the user's reaction.
+#: ``none`` spells *keep going* — the same as leaving the key out; the
+#: parser answers ``None`` for both (继续 = absence, one word for the
+#: caller to test).
+STOP_LETTER_ARRIVES = "letter_arrives"
+STOP_SHE_THINKS_OF_YOU = "she_thinks_of_you"
+STOP_AWAITS_YOU = "awaits_you"
+STOP_NONE = "none"
+STOP_WORDS = (
+    STOP_LETTER_ARRIVES,
+    STOP_SHE_THINKS_OF_YOU,
+    STOP_AWAITS_YOU,
+    STOP_NONE,
+)
+
+#: The letter-on-its-way section's own words (lr-1): the prompt only
+#: ever says the letter **exists** and **how many days ago it was sent**
+#: — the world-inbound fact of its journey — and never one word of what
+#: it says (WR-4, DEC-…58: the letter's contents stay in the penpal
+#: layer, zero compromise; the negative-control tests hold the line).
+_LETTER_ON_WAY_HEADER = "== A letter on its way =="
 
 #: The kind slug's shape: lowercase letters, digits and hyphens, one
 #: non-separator character first, at most 32 characters.
@@ -413,6 +457,7 @@ def build_narrator_prompt(
     ui_language: str,
     direction_mode: str = DIRECTION_IMMERSIVE,
     pending_direction: tuple[str, str] | None = None,
+    letter_elapsed_days: int | None = None,
 ) -> str:
     """The narrator's prompt, as one pure string (testable without a
     provider, a store or a world row).
@@ -448,6 +493,18 @@ def build_narrator_prompt(
     adds its own section when present: **the director's input, the
     direction channel's own door** (走向, spec §4.6), never a letter's.
 
+    lr-1 (DEC-OPI-c73dbff3…95, the natural-run chain):
+    ``letter_elapsed_days`` — how many days ago the user character's
+    letter was sent, a **world-inbound fact of its journey** — adds the
+    letter-on-its-way section and widens the JSON shape line with the
+    ``stop`` key. The section only ever states the letter's **existence
+    and its elapsed days** — never one word of what it says (WR-4,
+    zero compromise; the section says so in its own sentence). Its
+    guidance is narrative, never a mechanical rule: no step count, no
+    deadline — the world decides in its own terms when the letter
+    naturally arrives. ``None`` (the default) adds nothing: the prompt
+    is byte for byte the pre-lr-1 text.
+
     WR-4 (DEC-OPI-5fc42174-…58, the user's third direction): **no
     letter ever enters this prompt** — the living-world spec is
     two-layer about influence (§4.1 / the 走向 entry): the user's reply
@@ -479,6 +536,13 @@ def build_narrator_prompt(
                 "pending_direction must carry a non-blank label and"
                 " hint"
             )
+    if letter_elapsed_days is not None and (
+        type(letter_elapsed_days) is not int or letter_elapsed_days < 0
+    ):
+        raise ValueError(
+            "letter_elapsed_days must be a non-negative int or None"
+            f" (got {letter_elapsed_days!r})"
+        )
     sections: list[str] = []
     sections.append("You are the narrator of a small fictional world.")
     sections.append("Write what happens there next, as a novel would.")
@@ -523,6 +587,22 @@ def build_narrator_prompt(
         sections.extend(f"- {narration}" for narration in recent_narrations)
     else:
         sections.append("- (The chronicle is empty — this is where the story begins.)")
+    if letter_elapsed_days is not None:
+        # lr-1's letter-on-its-way section: a world-inbound fact of the
+        # journey (existence + elapsed days), never a word of contents
+        # (WR-4), and a narrative invitation to let the letter arrive
+        # naturally — no step count, no deadline.
+        day_word = "day" if letter_elapsed_days == 1 else "days"
+        sections.append(_LETTER_ON_WAY_HEADER)
+        sections.append(
+            "A letter from the user's character is on its way to the"
+            f" cast — it was sent {letter_elapsed_days} {day_word} ago."
+            " That is a fact of the world's own calendar, not the"
+            " letter's contents: the world never knows what the letter"
+            " says, and never quotes it. The world moves naturally;"
+            " when the letter naturally arrives and she reads it, mark"
+            " that beat's stop as letter_arrives."
+        )
     sections.append("== Your task ==")
     sections.append(
         "Write the world's next beats — whatever happens next in the"
@@ -550,19 +630,32 @@ def build_narrator_prompt(
             " this direction."
         )
     sections.append(_NARRATION_LANGUAGE[ui_language])
+    stop_shape = (
+        ' , "stop": {"kind": "<letter_arrives|she_thinks_of_you'
+        '|awaits_you|none>"}'
+        " The ``stop`` kind tells the world's own verdict: keep going"
+        " (none, or no key at all), the letter arriving and read, or"
+        " the world waiting on the user."
+        if letter_elapsed_days is not None
+        else ""
+    )
     if direction_mode == DIRECTION_DIRECTED:
         sections.append(
             "Answer with strict JSON only — no prose outside it:"
             ' {"beats": [{"kind": "<slug>", "narration": "<...>",'
             ' "days": 0}], "directions": [{"label": "<short phrase>",'
-            ' "hint": "<one sentence>"}]}'
+            ' "hint": "<one sentence>"}]'
+            + stop_shape
+            + "}"
             " The ``kind`` is a short slug: lowercase letters, digits"
             " and hyphens only, at most 32 characters."
         )
     else:
         sections.append(
             "Answer with strict JSON only — no prose outside it:"
-            ' {"beats": [{"kind": "<slug>", "narration": "<...>", "days": 0}]}'
+            ' {"beats": [{"kind": "<slug>", "narration": "<...>", "days": 0}'
+            + stop_shape
+            + "}"
             " The ``kind`` is a short slug: lowercase letters, digits and"
             " hyphens only, at most 32 characters."
         )
@@ -598,6 +691,21 @@ class DirectionCandidate:
 
     label: str
     hint: str
+
+
+@dataclass(frozen=True)
+class StopSignal:
+    """The world's own natural stopping point (lr-1, DEC-OPI-c73dbff3…95
+    — the natural-run chain's signal): ``kind`` is one of
+    :data:`STOP_LETTER_ARRIVES` / :data:`STOP_SHE_THINKS_OF_YOU` /
+    :data:`STOP_AWAITS_YOU` (the parser normalizes an explicit
+    :data:`STOP_NONE` to ``None`` — keep going and no key at all are
+    the same answer). A narrative verdict in the world's own terms,
+    never a durable fact: the orchestrator reads it to decide whether
+    the round ends here; nothing lands in the chronicle because of it.
+    """
+
+    kind: str
 
 
 class _BeatProvider(Protocol):
@@ -648,8 +756,13 @@ class WorldNarrator:
         on_increment: Callable[[int, str], None] | None = None,
         direction_mode: str = DIRECTION_IMMERSIVE,
         pending_direction: tuple[str, str] | None = None,
+        letter_elapsed_days: int | None = None,
     ) -> Result[
-        tuple[tuple[GeneratedBeat, ...], tuple[DirectionCandidate, ...]]
+        tuple[
+            tuple[GeneratedBeat, ...],
+            tuple[DirectionCandidate, ...],
+            StopSignal | None,
+        ]
     ]:
         """One narration round: the prompt, the one provider call, the
         strict parse.
@@ -672,18 +785,29 @@ class WorldNarrator:
         ``pending_direction`` ride to the prompt builder (the
         candidates requirement and the chosen-direction section; the
         defaults keep the immersive, direction-free shape). The return
-        is the parsed **two-tuple** — the beats and the answer's own
-        direction candidates (empty unless the answer carried them).
+        is the parsed **three-tuple** — the beats, the answer's own
+        direction candidates (empty unless the answer carried them),
+        and the stop signal (lr-1: ``None`` unless the answer declared
+        one — an explicit ``none`` normalizes to ``None``, keep
+        going).
+
+        lr-1 (DEC-OPI-c73dbff3…95): ``letter_elapsed_days`` rides to
+        the prompt builder (the letter-on-its-way section and the
+        widened JSON shape line; ``None`` keeps the prompt byte for
+        byte the pre-lr-1 text). The extractor is untouched by the
+        stop key — it watches narration values only, so the streamed
+        preview shows the prose, never the signal.
 
         The provider's own fault words pass through as the ``Err``
         message verbatim (``not-configured``, ``timeout``, … — the
         orchestrator's quiet arm reads ``not-configured`` and stays
         silent; every other fault surfaces to the caller's fail-soft
         log). A provider that raises dies at this boundary as a value
-        too (the same posture the persona adapter holds). A syntactically
-        unusable answer is a whole-batch refusal: ``narrator refused:
-        …`` naming what the answer got wrong — never a partial adoption,
-        never a guessed beat, never the retired pool.
+        too (the same posture the persona adapter holds). A
+        syntactically unusable answer is a whole-batch refusal:
+        ``narrator refused: …`` naming what the answer got wrong —
+        never a partial adoption, never a guessed beat, never the
+        retired pool.
         """
 
         prompt = CompiledPrompt(
@@ -695,6 +819,7 @@ class WorldNarrator:
                 ui_language,
                 direction_mode,
                 pending_direction,
+                letter_elapsed_days,
             ),
             generation_contract=NARRATOR_CONTRACT,
         )
@@ -733,14 +858,23 @@ class WorldNarrator:
 
 def _parse_beats(
     text: str,
-) -> Result[tuple[tuple[GeneratedBeat, ...], tuple[DirectionCandidate, ...]]]:
+) -> Result[
+    tuple[
+        tuple[GeneratedBeat, ...],
+        tuple[DirectionCandidate, ...],
+        StopSignal | None,
+    ]
+]:
     """The strict batch parser: the whole answer is one JSON object
-    ``{"beats": [...]}`` — or ``{"beats": [...], "directions": [...]}`
-    (wr-10: the candidates ride the same answer; zero candidates, or an
-    absent key, is the immersive shape) — one or two beat objects, each
-    exactly ``kind`` / ``narration`` / ``days`` in shape and range, and
-    each candidate exactly ``label`` / ``hint``, both non-blank, the
-    array none or :data:`MIN_DIRECTIONS` through :data:`MAX_DIRECTIONS`.
+    ``{"beats": [...]}`` — or with an optional ``directions`` array
+    (wr-10: the candidates ride the same answer) and an optional
+    ``stop`` object (lr-1: the natural stopping point rides the same
+    answer) — one or two beat objects, each exactly ``kind`` /
+    ``narration`` / ``days`` in shape and range, each candidate exactly
+    ``label`` / ``hint``, both non-blank, the array none or
+    :data:`MIN_DIRECTIONS` through :data:`MAX_DIRECTIONS`, and the stop
+    exactly ``{"kind": <word>}`` with ``word`` in :data:`STOP_WORDS` (an
+    explicit ``none`` answers ``None`` — the same as no key at all).
     Any miss refuses the whole batch — the discriminator word rides
     every refusal's message."""
 
@@ -752,10 +886,14 @@ def _parse_beats(
         return _refused(
             f"the answer is not a JSON object (got {type(payload).__name__})"
         )
-    if "beats" not in payload or not set(payload) <= {"beats", "directions"}:
+    if "beats" not in payload or not set(payload) <= {
+        "beats",
+        "directions",
+        "stop",
+    }:
         return _refused(
-            f"the answer must carry exactly {{'beats'}} or"
-            f" {{'beats', 'directions'}} (got"
+            f"the answer must carry at most {{'beats', 'directions',"
+            f" 'stop'}} with 'beats' present (got"
             f" {', '.join(sorted(map(str, payload))) or 'nothing'})"
         )
     batch = payload["beats"]
@@ -796,9 +934,34 @@ def _parse_beats(
                 f" [{MIN_DAYS}, {MAX_DAYS}]: {days!r}"
             )
         beats.append(GeneratedBeat(kind=kind, narration=narration, days=days))
+    raw_stop = payload.get("stop")
+    stop: StopSignal | None = None
+    if raw_stop is not None:
+        # lr-1's same-batch law: a bad stop refuses the narration it
+        # rode in on (one answer, one fate — no salvage of the beats).
+        if not isinstance(raw_stop, dict):
+            return _refused(
+                f"'stop' is not a JSON object"
+                f" (got {type(raw_stop).__name__})"
+            )
+        if set(raw_stop) != {"kind"}:
+            return _refused(
+                f"'stop' must carry exactly 'kind' (got"
+                f" {', '.join(sorted(map(str, raw_stop))) or 'nothing'})"
+            )
+        stop_kind = raw_stop["kind"]
+        if stop_kind == STOP_NONE:
+            stop = None  # an explicit none is keep-going, same as absence
+        elif isinstance(stop_kind, str) and stop_kind in STOP_WORDS:
+            stop = StopSignal(kind=stop_kind)
+        else:
+            return _refused(
+                f"'stop'.kind is not one of {', '.join(STOP_WORDS)}:"
+                f" {stop_kind!r}"
+            )
     raw_directions = payload.get("directions")
     if raw_directions is None:
-        return Ok((tuple(beats), ()))
+        return Ok((tuple(beats), (), stop))
     if not isinstance(raw_directions, list):
         return _refused("'directions' is not a JSON array")
     count = len(raw_directions)
@@ -829,4 +992,4 @@ def _parse_beats(
         if not isinstance(hint, str) or not hint.strip():
             return _refused(f"directions[{index}].hint is blank or not a string")
         directions.append(DirectionCandidate(label=label, hint=hint))
-    return Ok((tuple(beats), tuple(directions)))
+    return Ok((tuple(beats), tuple(directions), stop))

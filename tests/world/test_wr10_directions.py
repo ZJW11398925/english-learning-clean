@@ -129,7 +129,10 @@ def test_a_directed_answer_parses_beats_and_candidates(count: int) -> None:
         direction_mode=DIRECTION_DIRECTED,
     )
     assert isinstance(parsed, Ok)
-    beats, directions = parsed.value
+    # lr-1（DEC-OPI-c73dbff3…95）：返回形扩 = (beats, directions, stop)
+    # 三元组——无 stop 键的答案 stop 恒 None（继续）。
+    beats, directions, stop = parsed.value
+    assert stop is None
     assert [beat.kind for beat in beats] == ["quiet-morning"]
     assert directions == tuple(
         DirectionCandidate(label=c["label"], hint=c["hint"])
