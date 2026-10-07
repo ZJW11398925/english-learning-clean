@@ -304,6 +304,21 @@ export function fetchSaveReplyLanguage(word) {
   return postJson("/api/settings/reply_language", { reply_language: word });
 }
 
+/** 换世界走向模式（wr-10）："directed" | "immersive" 一词——导演模式
+ *  下世界步同批产出 2-4 个走向候选并渲染在世界块尾；沉浸（默认）=
+ *  现状零候选零渲染。词表外值是 400 人话。 */
+export function fetchSaveWorldDirectionMode(word) {
+  return postJson("/api/settings/world_direction_mode",
+                  { world_direction_mode: word });
+}
+
+/** 选一个走向（wr-10）：{label, hint} 存为待用——下一次世界步把它带
+ *  进叙事 prompt（导演输入，非信）并随成功消费即清（拒收/安静仍留）；
+ *  后选覆盖前选；空体 {} = 清除待用。 */
+export function fetchSaveWorldDirection(payload) {
+  return postJson("/api/world/direction", payload);
+}
+
 /** 多模型配置档（用户定向：存多套模型随时切换）：把当前三件存成一个
  * 具名配置档（id 省略 = 新建；api_key 省略 = 沿用该档已存的）。 */
 export function fetchSaveProviderProfile(payload) {

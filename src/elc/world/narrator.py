@@ -32,14 +32,23 @@ exactly one JSON object
 ``{"beats": [...]}`` carrying one or two beat objects, each with exactly
 ``kind`` (a slug of lowercase letters, digits and hyphens, at most 32
 characters), ``narration`` (non-blank) and ``days`` (an honest int, 0
-through 2). Anything else — prose around the JSON, a missing or
+through 2). wr-10 (DEC-OPI-c73dbff3…64): the object may **also** carry
+an optional ``directions`` array beside ``beats`` — the direction
+candidates (走向) the director's seat asked for: zero (or no key at all
+— the immersive shape), or two to four candidates, each exactly
+``label`` (a short phrase) and ``hint`` (one sentence of how the world
+might go). The whole-batch law covers the candidates with the beats:
+one answer, one fate — a bad array refuses the narration it rode in on.
+Anything else — prose around the JSON, a missing or
 malformed field, an out-of-range span, an empty or oversized batch, an
 unexpected key — refuses the **whole batch** (诚实不造假: no partial
 adoption, no guessed beat, and **no fallback to the retired pool** —
 the fixed-pool sampling is no longer a production path of any step).
 
 The return shape is the Result the orchestrator consumes: ``Ok`` with
-the generated beats (the type allows an empty tuple — the world's quiet
+the generated beats and their direction candidates (a two-tuple — the
+candidates are empty unless the answer carried them; the type allows an
+empty beat tuple — the world's quiet
 — though the strict parser itself never produces one: an empty batch is
 a refusal), or ``Err`` carrying either the provider's own fault word
 verbatim as the message (the passthrough the orchestrator's quiet arm
@@ -72,7 +81,12 @@ from elc.platform.types import (
 from elc.world.package import CastMember, WorldPackage
 
 __all__ = [
+    "DIRECTION_DIRECTED",
+    "DIRECTION_IMMERSIVE",
+    "DirectionCandidate",
     "GeneratedBeat",
+    "MIN_DIRECTIONS",
+    "MAX_DIRECTIONS",
     "NARRATION_KEY",
     "NARRATOR_CONTRACT",
     "NARRATOR_PERSONA_ID",
@@ -111,6 +125,20 @@ MIN_BEATS = 1
 MAX_BEATS = 2
 MIN_DAYS = 0
 MAX_DAYS = 2
+
+#: The direction candidates' bounds (wr-10, spec §4.4's 2-4 候选): the
+#: ``directions`` array carries none (the immersive shape) or two
+#: through four — one is not a choice and five is a menu.
+MIN_DIRECTIONS = 2
+MAX_DIRECTIONS = 4
+
+#: The world-direction mode's two words (wr-10, spec §8's 模式 as this
+#: face reads it): ``directed`` asks the narrator for direction
+#: candidates beside its beats; ``immersive`` is the world's autonomous
+#: shape — the pre-wr-10 prompt, byte for byte.
+DIRECTION_DIRECTED = "directed"
+DIRECTION_IMMERSIVE = "immersive"
+_DIRECTION_MODE_WORDS = (DIRECTION_DIRECTED, DIRECTION_IMMERSIVE)
 
 #: The kind slug's shape: lowercase letters, digits and hyphens, one
 #: non-separator character first, at most 32 characters.
@@ -383,6 +411,8 @@ def build_narrator_prompt(
     lore_facts: tuple[tuple[str, str], ...],
     recent_narrations: tuple[str, ...],
     ui_language: str,
+    direction_mode: str = DIRECTION_IMMERSIVE,
+    pending_direction: tuple[str, str] | None = None,
 ) -> str:
     """The narrator's prompt, as one pure string (testable without a
     provider, a store or a world row).
@@ -406,20 +436,49 @@ def build_narrator_prompt(
     frictions, gossip — not only weather and scenery, the same event
     refracting through several lives.
 
+    wr-10 (DEC-OPI-c73dbff3…64): ``direction_mode`` is one of the two
+    words (:data:`DIRECTION_DIRECTED` / :data:`DIRECTION_IMMERSIVE`;
+    anything else is a ``ValueError`` naming them). ``directed`` adds
+    the candidates requirement — 2 to 4 direction candidates under the
+    ``directions`` key, each ``label`` short phrase + ``hint`` one
+    sentence of how the world might go — and widens the JSON shape
+    line; ``immersive`` adds nothing: the prompt is byte for byte the
+    pre-wr-10 text (the zero-change default). ``pending_direction`` —
+    the user's already-chosen ``(label, hint)`` awaiting consumption —
+    adds its own section when present: **the director's input, the
+    direction channel's own door** (走向, spec §4.6), never a letter's.
+
     WR-4 (DEC-OPI-5fc42174-…58, the user's third direction): **no
     letter ever enters this prompt** — the living-world spec is
     two-layer about influence (§4.1 / the 走向 entry): the user's reply
     is the run's *wind-up* (a mechanical starter, never content), the
     user's influence on the *world* rides the direction channel (走向,
-    M2), and letters belong to the penpal layer only — they shape the
-    character's reply, never the world's narration. The world moves on
-    its own here."""
+    wr-10 opens it), and letters belong to the penpal layer only —
+    they shape the character's reply, never the world's narration. The
+    world moves on its own here."""
 
     if ui_language not in _NARRATION_LANGUAGE:
         raise ValueError(
             f"ui_language {ui_language!r} is outside the vocabulary"
             f" {_NARRATION_LANGUAGE_WORDS!r}"
         )
+    if direction_mode not in _DIRECTION_MODE_WORDS:
+        raise ValueError(
+            f"direction_mode {direction_mode!r} is outside the"
+            f" vocabulary {_DIRECTION_MODE_WORDS!r}"
+        )
+    if pending_direction is not None:
+        label, hint = pending_direction
+        if not (
+            isinstance(label, str)
+            and label.strip()
+            and isinstance(hint, str)
+            and hint.strip()
+        ):
+            raise ValueError(
+                "pending_direction must carry a non-blank label and"
+                " hint"
+            )
     sections: list[str] = []
     sections.append("You are the narrator of a small fictional world.")
     sections.append("Write what happens there next, as a novel would.")
@@ -473,13 +532,40 @@ def build_narrator_prompt(
         " Each beat is one to three sentences of narration and spans"
         " 0, 1 or 2 story days (its ``days``)."
     )
+    if direction_mode == DIRECTION_DIRECTED:
+        sections.append(
+            "Direction candidates: in the same answer, also write"
+            f" {MIN_DIRECTIONS} to {MAX_DIRECTIONS} directions — each"
+            ' is {"label": <a short phrase>, "hint": <one sentence of'
+            " how the world might go>}. A direction is a next step the"
+            " world could take, one the user may pick for it; list"
+            ' them under the "directions" key beside the beats.'
+        )
+    if pending_direction is not None:
+        chosen_label, chosen_hint = pending_direction
+        sections.append("== The user's chosen direction ==")
+        sections.append(
+            "The user has chosen where the world goes next:"
+            f" {chosen_label} — {chosen_hint}. The world moves in"
+            " this direction."
+        )
     sections.append(_NARRATION_LANGUAGE[ui_language])
-    sections.append(
-        "Answer with strict JSON only — no prose outside it:"
-        ' {"beats": [{"kind": "<slug>", "narration": "<...>", "days": 0}]}'
-        " The ``kind`` is a short slug: lowercase letters, digits and"
-        " hyphens only, at most 32 characters."
-    )
+    if direction_mode == DIRECTION_DIRECTED:
+        sections.append(
+            "Answer with strict JSON only — no prose outside it:"
+            ' {"beats": [{"kind": "<slug>", "narration": "<...>",'
+            ' "days": 0}], "directions": [{"label": "<short phrase>",'
+            ' "hint": "<one sentence>"}]}'
+            " The ``kind`` is a short slug: lowercase letters, digits"
+            " and hyphens only, at most 32 characters."
+        )
+    else:
+        sections.append(
+            "Answer with strict JSON only — no prose outside it:"
+            ' {"beats": [{"kind": "<slug>", "narration": "<...>", "days": 0}]}'
+            " The ``kind`` is a short slug: lowercase letters, digits and"
+            " hyphens only, at most 32 characters."
+        )
     return "\n\n".join(sections)
 
 
@@ -498,6 +584,20 @@ class GeneratedBeat:
     kind: str
     narration: str
     days: int
+
+
+@dataclass(frozen=True)
+class DirectionCandidate:
+    """One direction candidate the narrator offered beside its beats
+    (wr-10, DEC-OPI-c73dbff3…64 — the 走向 channel's first production
+    face): ``label`` is the short phrase the page renders as the
+    user's choice, ``hint`` the one sentence of how the world might go
+    under it. Prompt material and payload cargo only — a candidate is
+    never a durable fact until a later cut says the chosen direction
+    shaped a beat."""
+
+    label: str
+    hint: str
 
 
 class _BeatProvider(Protocol):
@@ -546,7 +646,11 @@ class WorldNarrator:
         recent_narrations: tuple[str, ...],
         ui_language: str,
         on_increment: Callable[[int, str], None] | None = None,
-    ) -> Result[tuple[GeneratedBeat, ...]]:
+        direction_mode: str = DIRECTION_IMMERSIVE,
+        pending_direction: tuple[str, str] | None = None,
+    ) -> Result[
+        tuple[tuple[GeneratedBeat, ...], tuple[DirectionCandidate, ...]]
+    ]:
         """One narration round: the prompt, the one provider call, the
         strict parse.
 
@@ -563,6 +667,13 @@ class WorldNarrator:
         — the preview never influences the verdict, and an answer the
         strict parse refuses is refused whole even though its
         increments may already have been shown.
+
+        wr-10 (DEC-OPI-c73dbff3…64): ``direction_mode`` /
+        ``pending_direction`` ride to the prompt builder (the
+        candidates requirement and the chosen-direction section; the
+        defaults keep the immersive, direction-free shape). The return
+        is the parsed **two-tuple** — the beats and the answer's own
+        direction candidates (empty unless the answer carried them).
 
         The provider's own fault words pass through as the ``Err``
         message verbatim (``not-configured``, ``timeout``, … — the
@@ -582,6 +693,8 @@ class WorldNarrator:
                 lore_facts,
                 recent_narrations,
                 ui_language,
+                direction_mode,
+                pending_direction,
             ),
             generation_contract=NARRATOR_CONTRACT,
         )
@@ -618,12 +731,18 @@ class WorldNarrator:
         return _parse_beats(output.text)
 
 
-def _parse_beats(text: str) -> Result[tuple[GeneratedBeat, ...]]:
+def _parse_beats(
+    text: str,
+) -> Result[tuple[tuple[GeneratedBeat, ...], tuple[DirectionCandidate, ...]]]:
     """The strict batch parser: the whole answer is one JSON object
-    ``{"beats": [...]}``, one or two beat objects, each exactly
-    ``kind`` / ``narration`` / ``days`` in shape and range. Any miss
-    refuses the whole batch — the discriminator word rides every
-    refusal's message."""
+    ``{"beats": [...]}`` — or ``{"beats": [...], "directions": [...]}`
+    (wr-10: the candidates ride the same answer; zero candidates, or an
+    absent key, is the immersive shape) — one or two beat objects, each
+    exactly ``kind`` / ``narration`` / ``days`` in shape and range, and
+    each candidate exactly ``label`` / ``hint``, both non-blank, the
+    array none or :data:`MIN_DIRECTIONS` through :data:`MAX_DIRECTIONS`.
+    Any miss refuses the whole batch — the discriminator word rides
+    every refusal's message."""
 
     try:
         payload = json.loads(text)
@@ -633,9 +752,10 @@ def _parse_beats(text: str) -> Result[tuple[GeneratedBeat, ...]]:
         return _refused(
             f"the answer is not a JSON object (got {type(payload).__name__})"
         )
-    if set(payload) != {"beats"}:
+    if "beats" not in payload or not set(payload) <= {"beats", "directions"}:
         return _refused(
-            f"the answer must carry exactly {{'beats'}} (got"
+            f"the answer must carry exactly {{'beats'}} or"
+            f" {{'beats', 'directions'}} (got"
             f" {', '.join(sorted(map(str, payload))) or 'nothing'})"
         )
     batch = payload["beats"]
@@ -676,4 +796,37 @@ def _parse_beats(text: str) -> Result[tuple[GeneratedBeat, ...]]:
                 f" [{MIN_DAYS}, {MAX_DAYS}]: {days!r}"
             )
         beats.append(GeneratedBeat(kind=kind, narration=narration, days=days))
-    return Ok(tuple(beats))
+    raw_directions = payload.get("directions")
+    if raw_directions is None:
+        return Ok((tuple(beats), ()))
+    if not isinstance(raw_directions, list):
+        return _refused("'directions' is not a JSON array")
+    count = len(raw_directions)
+    if count != 0 and not MIN_DIRECTIONS <= count <= MAX_DIRECTIONS:
+        return _refused(
+            f"'directions' must carry none or {MIN_DIRECTIONS}-"
+            f"{MAX_DIRECTIONS} candidates (got {count})"
+        )
+    directions: list[DirectionCandidate] = []
+    for index, element in enumerate(raw_directions):
+        if not isinstance(element, dict):
+            return _refused(
+                f"directions[{index}] is not a JSON object"
+                f" (got {type(element).__name__})"
+            )
+        if set(element) != {"label", "hint"}:
+            return _refused(
+                f"directions[{index}] must carry exactly 'label' and"
+                f" 'hint' (got"
+                f" {', '.join(sorted(map(str, element))) or 'nothing'})"
+            )
+        label = element["label"]
+        hint = element["hint"]
+        if not isinstance(label, str) or not label.strip():
+            return _refused(
+                f"directions[{index}].label is blank or not a string"
+            )
+        if not isinstance(hint, str) or not hint.strip():
+            return _refused(f"directions[{index}].hint is blank or not a string")
+        directions.append(DirectionCandidate(label=label, hint=hint))
+    return Ok((tuple(beats), tuple(directions)))

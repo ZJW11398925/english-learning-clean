@@ -627,20 +627,23 @@ def test_bottom_mount_and_scroll_into_view_are_wired() -> None:
 
 
 def test_language_controls_ride_the_family_machinery() -> None:
-    """The two controls are the family's ink-select (``selectField`` —
+    """The controls are the family's ink-select (``selectField`` —
     keyboard/touch machinery the component already carries), labeled
     bilingually, fed from the server-declared word lists; the served
-    page carries the section's ids."""
+    page carries the section's ids. wr-10（DEC-OPI-c73dbff3…64）随迁：
+    世界走向模式第三钮同构入列（词表服务端随行）。"""
 
     app = _app_js()
     start = app.find("function renderSettingsLanguage")
     end = app.find("function settingsLanguageResult")
     block = app[start:end]
-    assert block.count("selectField({") == 2
+    assert block.count("selectField({") == 3
     assert "界面语言 Interface language" in block
     assert "回信语言 Reply language" in block
     assert "ui_language_words" in block
     assert "reply_language_words" in block
+    assert "世界走向模式 World direction mode" in block
+    assert "world_direction_mode_words" in block
     page = (REPO / "src" / "elc" / "webui" / "index.html").read_text(
         encoding="utf-8"
     )

@@ -362,6 +362,20 @@ the role's reading, not the archive's). ``GET
 evidence distributed over the turns that produced it — per turn the claim
 count and the outcomes as the evaluator wrote them; a target with no
 evidence answers ``{"found": false}``, a 200 fact, never a 404.
+
+**wr-10 opens the direction channel's web half** (DEC-OPI-c73dbff3…64):
+``POST /api/settings/world_direction_mode`` stores the mode word
+(``directed`` / ``immersive``, default immersive = the pre-wr-10
+behavior byte for byte) and ``POST /api/world/direction`` parks or
+clears the pending direction choice under the bound world's key. The
+world step reads both per run: directed mode asks the narrator for the
+2-4 direction candidates (spec §4.4), rides the pending choice into
+its prompt (**the director's input — the direction channel, never a
+letter**; the WR-4 law stands) and consumes it on success (选了即用即清
+— a refused or quiet step leaves it parked); the candidates land on
+the world frame as the optional ``directions`` key the page renders at
+the story block's tail. The settings read face carries the mode word
+and its whitelist like the two language words.
 """
 
 from __future__ import annotations
@@ -469,6 +483,7 @@ from elc.user_config.types import (
     TeachingPolicyProfile,
 )
 from elc.world.engine.orchestrate import run_generated_step
+from elc.world.narrator import DirectionCandidate
 from elc.world.package import (
     BUILTIN_WORLDS_DIR,
     WorldPackage,
@@ -2237,6 +2252,50 @@ def _mode_request_word(payload: Any) -> str | None:
 #: scope; this word moves the world inbox's bilingual face).
 _UI_LANGUAGE_WORDS: tuple[str, ...] = ("zh", "en")
 
+#: The wr-10 world-direction mode's two words (spec §8's 模式 as this
+#: face stores it): ``directed`` asks the world step for direction
+#: candidates and renders them in the world block; ``immersive`` — the
+#: default, and the pre-wr-10 behavior byte for byte — keeps the world
+#: autonomous and direction-free.
+_WORLD_DIRECTION_MODE_WORDS: tuple[str, ...] = ("directed", "immersive")
+
+#: The mode write's 400 sentence — one grammar line, naming the words.
+_WORLD_DIRECTION_MODE_GRAMMAR = (
+    'need a JSON body {"world_direction_mode": '
+    + " | ".join(_WORLD_DIRECTION_MODE_WORDS) + "}"
+)
+
+#: The direction-choice write's 400 sentence: the two-key shape (the
+#: candidate's own fields) or the empty body that clears the pending
+#: choice. Lengths cap what a hand-rolled request can park in the
+#: prompt (the provider write's own caps posture).
+_WORLD_DIRECTION_GRAMMAR = (
+    'need a JSON body {"label": <short phrase, at most 80 characters>,'
+    ' "hint": <one sentence, at most 200 characters>}'
+    " — or an empty {} to clear the pending choice"
+)
+
+#: The two wr-10 ``app_setting`` keys. The mode word lives under its own
+#: key; the pending direction lives under a per-world key (the prefix +
+#: the bound world id — one world per conversation today, the key shape
+#: already multi-world if a later cut binds more). Both are stored only
+#: by the web write faces; the reads substitute the defaults and parse
+#: defensively (a corrupt row is an absent row, never a guess).
+_APP_SETTING_WORLD_DIRECTION_MODE_KEY = "world_direction_mode"
+_APP_SETTING_WORLD_PENDING_DIRECTION_PREFIX = "world_pending_direction:"
+
+#: The pending direction candidate's length caps (the grammar line's
+#: own numbers, spelled once).
+_WORLD_DIRECTION_LABEL_CAP = 80
+_WORLD_DIRECTION_HINT_CAP = 200
+
+
+def _world_pending_direction_key(world_id: str) -> str:
+    """The pending-direction row's key for one world (the prefix plus
+    the world id — the multi-world key shape, one binding today)."""
+
+    return _APP_SETTING_WORLD_PENDING_DIRECTION_PREFIX + world_id
+
 #: The two writes' 400 sentences — one grammar line each, naming the words.
 _UI_LANGUAGE_GRAMMAR = (
     'need a JSON body {"ui_language": ' + " | ".join(_UI_LANGUAGE_WORDS) + "}"
@@ -3340,7 +3399,13 @@ class _WebFace:
         letter was sent, the world heard the wind-up).
 
         WR-4 stands: the letter's text never enters the narration —
-        the narrator reads the world's bible and chronicle only."""
+        the narrator reads the world's bible and chronicle only.
+        wr-10 (DEC-OPI-c73dbff3…64): the step reads the mode and the
+        pending direction per run — ``directed`` rides the choice (the
+        direction channel's own door) and renders the answer's
+        candidates on the frame; ``immersive``, the default, passes
+        neither and renders no ``directions`` key, byte for byte the
+        pre-wr-10 shape."""
 
         binding = self._world_binding()
         if binding is None:
@@ -3355,6 +3420,21 @@ class _WebFace:
             None if coordinator is None else coordinator.persona_provider()
         )
         ui_language = self._ui_language()
+        # wr-10 (DEC-OPI-c73dbff3…64): the mode and the pending
+        # direction are per-step reads. ``directed`` rides both (the
+        # pending choice is the director's input — the direction
+        # channel, never a letter); ``immersive`` passes neither — the
+        # world autonomous, the prompt byte for byte the pre-wr-10
+        # text. The candidates come back through the wr-7 increments
+        # seam's sibling callback and land on the frame only in
+        # directed mode.
+        mode = self._world_direction_mode()
+        pending = (
+            self._world_pending_direction(world_id)
+            if mode == "directed"
+            else None
+        )
+        directions: list[DirectionCandidate] = []
         try:
             stepped = run_generated_step(
                 world_store,
@@ -3365,6 +3445,9 @@ class _WebFace:
                 datetime.now(tz=UTC).isoformat(),
                 ui_language=ui_language,
                 on_narration_increment=on_narration_increment,
+                direction_mode=mode,
+                pending_direction=pending,
+                on_directions=directions.extend,
             )
         except Exception as exc:  # fail-soft: the sentence, never the raise
             print(
@@ -3383,6 +3466,15 @@ class _WebFace:
         beats = stepped.value
         if not beats:
             return None
+        if pending is not None:
+            # 选了即用即清 (wr-10): the choice rode into this very
+            # prompt and the world step succeeded — the pending row is
+            # consumed. Every quiet or refused arm returned above, so
+            # 拒收/安静不清 stands: a direction the world could not
+            # hear stays parked for the next step.
+            self._host.app_settings.delete(
+                _world_pending_direction_key(world_id)
+            )
         revealed = world_store.reveal_all(
             world_id, datetime.now(tz=UTC).isoformat()
         )
@@ -3392,7 +3484,7 @@ class _WebFace:
             # instead. Never a half-frame.
             return None
         last_day = str(beats[-1].occurred_at)
-        return {
+        frame: dict[str, Any] = {
             "type": "world",
             "ui_language": ui_language,
             "world_name": package.name,
@@ -3409,6 +3501,15 @@ class _WebFace:
                 for beat in beats
             ],
         }
+        if mode == "directed" and directions:
+            # The candidates ride the frame only in directed mode (an
+            # answer that carried them in immersive form is the world
+            # keeping its own counsel — never rendered).
+            frame["directions"] = [
+                {"label": candidate.label, "hint": candidate.hint}
+                for candidate in directions
+            ]
+        return frame
 
     def _ui_language(self) -> str:
         """The interface language row (W-L's own read): the stored word,
@@ -3417,6 +3518,52 @@ class _WebFace:
         return (
             self._host.app_settings.get(APP_SETTING_UI_LANGUAGE_KEY) or "zh"
         )
+
+    def _world_direction_mode(self) -> str:
+        """The world-direction mode row (wr-10's own read): the stored
+        word when it is one of the two, else ``immersive`` — the
+        default and a corrupt row's honest landing (the world stays
+        autonomous unless the word says otherwise; the read substitutes,
+        the store never does)."""
+
+        stored = self._host.app_settings.get(
+            _APP_SETTING_WORLD_DIRECTION_MODE_KEY
+        )
+        return (
+            stored
+            if stored in _WORLD_DIRECTION_MODE_WORDS
+            else "immersive"
+        )
+
+    def _world_pending_direction(
+        self, world_id: str
+    ) -> tuple[str, str] | None:
+        """The bound world's pending ``(label, hint)`` (wr-10), parsed
+        defensively: only a row the write face could have written
+        answers; a missing, corrupt or oddly-shaped row is an absent
+        choice — never a guess, never a crash."""
+
+        raw = self._host.app_settings.get(
+            _world_pending_direction_key(world_id)
+        )
+        if raw is None:
+            return None
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(parsed, dict) or set(parsed) != {"label", "hint"}:
+            return None
+        label = parsed["label"]
+        hint = parsed["hint"]
+        if not (
+            isinstance(label, str)
+            and bool(label)
+            and isinstance(hint, str)
+            and bool(hint)
+        ):
+            return None
+        return (label, hint)
 
     def _note_narration(
         self,
@@ -5344,6 +5491,18 @@ class _WebFace:
                 "reply_language": reply_language or "follow",
                 "ui_language_words": list(_UI_LANGUAGE_WORDS),
                 "reply_language_words": list(RESPONSE_LANGUAGE_WORDS),
+                # wr-10: the world-direction mode rides like the
+                # languages — the stored row or the default
+                # (``immersive`` = 现状), the whitelist server-declared.
+                "world_direction_mode": (
+                    self._host.app_settings.get(
+                        _APP_SETTING_WORLD_DIRECTION_MODE_KEY
+                    )
+                    or "immersive"
+                ),
+                "world_direction_mode_words": list(
+                    _WORLD_DIRECTION_MODE_WORDS
+                ),
             }
         user_id = self._host.user_id
         policy = controller.get_teaching_policy(user_id)
@@ -5391,6 +5550,16 @@ class _WebFace:
             "reply_language": reply_language or "follow",
             "ui_language_words": list(_UI_LANGUAGE_WORDS),
             "reply_language_words": list(RESPONSE_LANGUAGE_WORDS),
+            # wr-10: the world-direction mode rides like the languages —
+            # the stored row or the default (``immersive`` = 现状), the
+            # whitelist server-declared.
+            "world_direction_mode": (
+                self._host.app_settings.get(
+                    _APP_SETTING_WORLD_DIRECTION_MODE_KEY
+                )
+                or "immersive"
+            ),
+            "world_direction_mode_words": list(_WORLD_DIRECTION_MODE_WORDS),
         }
 
     def _provider_face_with_profiles(
@@ -5786,6 +5955,77 @@ class _WebFace:
         )
         body["reply_language"] = word
         return status, body
+
+    def world_direction_mode_save(
+        self, word: str
+    ) -> tuple[int, dict[str, Any]]:
+        """The world-direction mode write (wr-10, DEC-OPI-c73dbff3…64):
+        ``directed`` / ``immersive`` — the word the next world step
+        reads per step (the pending direction's ride-along gate, the
+        candidates requirement's switch). Absent row = immersive and
+        writes nothing (the W-L read law); the fail-closed re-check
+        names the two words."""
+
+        if word not in _WORLD_DIRECTION_MODE_WORDS:
+            return (
+                400,
+                {"accepted": False, "error": _WORLD_DIRECTION_MODE_GRAMMAR},
+            )
+        status, body = self._language_word_save(
+            _APP_SETTING_WORLD_DIRECTION_MODE_KEY, word
+        )
+        body["world_direction_mode"] = word
+        return status, body
+
+    def world_direction_save(self, payload: Any) -> tuple[int, dict[str, Any]]:
+        """The direction-choice write (wr-10): the user picked one
+        candidate — ``{"label", "hint"}`` parks it under the bound
+        world's pending key (a later choice overwrites the earlier one);
+        the empty body ``{}`` clears it. The **next** world step
+        carries it into the narrator's prompt (the director's input —
+        the direction channel, never a letter) and consumes it on
+        success (选了即用即清); a refused or quiet step leaves it
+        parked. A conversation bound to no world is the honest 404."""
+
+        binding = self._world_binding()
+        if binding is None:
+            return (404, {"error": _WORLD_NO_BINDING})
+        world_id = str(binding["world_id"])
+        if not isinstance(payload, dict):
+            return (
+                400,
+                {"accepted": False, "error": _WORLD_DIRECTION_GRAMMAR},
+            )
+        if not payload:
+            # The clear arm: an idempotent delete — absent is fine.
+            self._host.app_settings.delete(
+                _world_pending_direction_key(world_id)
+            )
+            return (200, {"accepted": True, "cleared": True, "error": None})
+        if set(payload) != {"label", "hint"}:
+            return (
+                400,
+                {"accepted": False, "error": _WORLD_DIRECTION_GRAMMAR},
+            )
+        label = payload["label"]
+        hint = payload["hint"]
+        if not (
+            isinstance(label, str)
+            and label.strip()
+            and len(label) <= _WORLD_DIRECTION_LABEL_CAP
+            and isinstance(hint, str)
+            and hint.strip()
+            and len(hint) <= _WORLD_DIRECTION_HINT_CAP
+        ):
+            return (
+                400,
+                {"accepted": False, "error": _WORLD_DIRECTION_GRAMMAR},
+            )
+        self._host.app_settings.set(
+            _world_pending_direction_key(world_id),
+            json.dumps({"label": label, "hint": hint}, ensure_ascii=False),
+        )
+        return (200, {"accepted": True, "cleared": False, "error": None})
 
     def provider_save(
         self,
@@ -6986,6 +7226,41 @@ def _build_server(
                     return
                 self._run_host_write(
                     lambda: face.reply_language_save(reply_word)
+                )
+                return
+            if self.path == "/api/settings/world_direction_mode":
+                # wr-10: the world-direction mode — one whitelisted word
+                # (``directed`` / ``immersive``; default immersive =
+                # the pre-wr-10 behavior), persisted; the next world
+                # step reads it per step (no swap, the W-L posture).
+                # (The variable is not the frequency route's ``word``
+                # nor the mode route's ``stage_word``: a third
+                # same-name assignment in this function would make mypy
+                # widen all the captured lambdas' types.)
+                wdm_word = _language_request_word(
+                    self._read_json_body(),
+                    "world_direction_mode",
+                    _WORLD_DIRECTION_MODE_WORDS,
+                )
+                if wdm_word is None:
+                    self._send_json(
+                        400, {"error": _WORLD_DIRECTION_MODE_GRAMMAR}
+                    )
+                    return
+                self._run_host_write(
+                    lambda: face.world_direction_mode_save(wdm_word)
+                )
+                return
+            if self.path == "/api/world/direction":
+                # wr-10: the direction choice — {"label","hint"} parks
+                # the pending candidate under the bound world's key
+                # (a later choice overwrites the earlier one), {} clears
+                # it, no binding is the 404. The next world step carries
+                # it into the narrator's prompt (the director's input —
+                # a direction, never a letter) and consumes it on
+                # success (选了即用即清).
+                self._run_host_write(
+                    lambda: face.world_direction_save(self._read_json_body())
                 )
                 return
             if self.path == "/api/settings/provider":

@@ -79,8 +79,10 @@ from elc.platform.types import (
 from elc.world.engine.engine import RunTrace, advance
 from elc.world.engine.types import EngineConfig, PoolEvent, RunStatus
 from elc.world.narrator import (
+    DIRECTION_IMMERSIVE,
     NARRATOR_SOURCE,
     RECENT_CHRONICLE_LIMIT,
+    DirectionCandidate,
     WorldNarrator,
 )
 from elc.world.package import WorldPackage, story_days_of, story_elapsed_days_of
@@ -263,6 +265,11 @@ def run_generated_step(
     *,
     ui_language: str = "zh",
     on_narration_increment: Callable[[int, str], None] | None = None,
+    direction_mode: str = DIRECTION_IMMERSIVE,
+    pending_direction: tuple[str, str] | None = None,
+    on_directions: (
+        Callable[[tuple[DirectionCandidate, ...]], None] | None
+    ) = None,
 ) -> Result[tuple[WorldEvent, ...]]:
     """The production world step (WR-2, DEC-OPI-5fc42174…49; WR-4
     correction …58): the narrator's beats out, the chronicle and the
@@ -274,8 +281,18 @@ def run_generated_step(
     narration** — the triggering turn is the run's mechanical wind-up
     only (spec §4.1: the reply is the sole run starter, never content),
     and the world narrates its own life, unreactive to correspondence;
-    the user's influence on the world belongs to the direction channel
-    (走向, M2), never this face.
+    the user's influence on the world belongs to the direction channel.
+    wr-10 (DEC-OPI-c73dbff3…64) opens that channel's read side:
+    ``direction_mode`` (the narrator's two words — ``directed`` asks
+    for the 2-4 direction candidates beside the beats) and
+    ``pending_direction`` (the user's already-chosen ``(label, hint)``
+    — **the director's input, a direction, never a letter** — rides
+    into the prompt as its own section) pass through to the narrator;
+    ``on_directions`` — the wr-7 increments seam's sibling — receives
+    the answer's parsed candidates (possibly none) once the step has
+    beats to land, before the durable half. The defaults (immersive,
+    no pending, no callback) run the step byte for byte as before
+    wr-10.
 
     The order: the narrator first (compose, one provider call —
     blocking, or streamed through the provider's optional face when
@@ -360,6 +377,8 @@ def run_generated_step(
         ),
         ui_language=ui_language,
         on_increment=on_narration_increment,
+        direction_mode=direction_mode,
+        pending_direction=pending_direction,
     )
     if isinstance(generated, Err):
         if generated.error.message == REASON_NOT_CONFIGURED:
@@ -368,11 +387,16 @@ def run_generated_step(
             # letter's reader does not.
             return Ok(())
         return Err(generated.error)
-    beats = generated.value
+    beats, directions = generated.value
     if not beats:
         # The strict narrator never produces an empty batch (that is a
         # refusal upstream); this arm is the contract's own quiet.
         return Ok(())
+    if on_directions is not None:
+        # The direction channel's out-seam (wr-10): the answer's own
+        # candidates, empty unless the narrator wrote them. Fired only
+        # past the quiet arms — a silent world offers no choices.
+        on_directions(directions)
 
     runs = store.list_runs(world_id)
     latest = runs[-1] if runs else None

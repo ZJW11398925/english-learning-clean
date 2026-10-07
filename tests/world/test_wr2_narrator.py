@@ -279,13 +279,16 @@ def test_a_well_formed_batch_parses() -> None:
         ui_language="zh",
     )
     assert isinstance(parsed, Ok)
-    assert parsed.value == (
+    # wr-10（DEC-OPI-c73dbff3…64）：返回形扩 = (beats, directions) 二元组
+    # ——沉浸形（无 directions 键）候选恒空。
+    assert parsed.value[0] == (
         GeneratedBeat(
             kind="lamp-relit",
             narration="The lamp burned all night.",
             days=1,
         ),
     )
+    assert parsed.value[1] == ()
     two = WorldNarrator(_ScriptedNarrator(ProviderOutput(text=BEATS_TWO)))
     parsed_two = two.generate(
         package=_package(),
@@ -294,7 +297,7 @@ def test_a_well_formed_batch_parses() -> None:
         ui_language="en",
     )
     assert isinstance(parsed_two, Ok)
-    assert [beat.days for beat in parsed_two.value] == [0, 2]
+    assert [beat.days for beat in parsed_two.value[0]] == [0, 2]
 
 
 def _generate_refused(text: str) -> Err[None]:

@@ -357,10 +357,12 @@ def test_streamed_generate_emits_pieces_and_still_parses_whole() -> None:
     seen: list[tuple[int, str]] = []
     result = _narrator_with_streaming(provider, lambda i, t: seen.append((i, t)))
     assert isinstance(result, Ok)
-    assert [beat.narration for beat in result.value] == [
+    # wr-10 随迁：返回形 = (beats, directions)，流面同样答二元组。
+    assert [beat.narration for beat in result.value[0]] == [
         beat["narration"]
         for beat in _beats_object(BEATS_ESCAPY)["beats"]
     ]
+    assert result.value[1] == ()
     joined = _join(tuple(seen))
     assert joined == {
         index: beat["narration"]

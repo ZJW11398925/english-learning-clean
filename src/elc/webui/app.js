@@ -78,6 +78,8 @@ import {
   fetchSaveProvider,
   fetchSaveUiLanguage,
   fetchSaveReplyLanguage,
+  fetchSaveWorldDirectionMode,
+  fetchSaveWorldDirection,
   fetchSaveProviderProfile,
   fetchActivateProviderProfile,
   fetchDeleteProviderProfile,
@@ -2162,17 +2164,22 @@ function settingsModeResult(text, failure) {
   box.appendChild(line);
 }
 
-// ── W-L：语言两旋钮（界面语言 / 回信语言）────────────────────────────
-// 词表由服务端随行（ui_language_words / reply_language_words——客户端
-// 零拷贝，fr-A #27 同读法）；中文主列 + 原词辅列（sub——双列层级）；
-// 控件标签双语（任务书点名「界面语言 Interface language」「回信语言
-// Reply language」）。存什么读什么：两词都持久 app_setting，读面回读
-// 即所见。
+// ── W-L：语言两旋钮 + 世界走向模式（wr-10 第三钮）────────────────────
+// 词表由服务端随行（ui_language_words / reply_language_words /
+// world_direction_mode_words——客户端零拷贝，fr-A #27 同读法）；中文
+// 主列 + 原词辅列（sub——双列层级）；控件标签双语（任务书点名「界面
+// 语言 Interface language」「回信语言 Reply language」）。存什么读
+// 什么：三词都持久 app_setting，读面回读即所见。
 const UI_LANGUAGE_CN = { zh: "中文", en: "English" };
 const REPLY_LANGUAGE_CN = {
   zh: "中文",
   en: "English",
   follow: "跟随用户",
+};
+// wr-10：世界走向模式两词的中文读法（沉浸 = 现状缺省）。
+const WORLD_DIRECTION_MODE_CN = {
+  directed: "导演——世界出走向候选",
+  immersive: "沉浸——世界自主",
 };
 
 function renderSettingsLanguage() {
@@ -2209,6 +2216,23 @@ function renderSettingsLanguage() {
     onChange: (next) => { saveReplyLanguage(next); },
   });
   box.appendChild(replyControl.root);
+  // wr-10（DEC-OPI-c73dbff3…64）：世界走向模式——导演模式下世界步
+  // 同批出 2-4 个走向候选（世界块尾选项行）；沉浸（缺省）= 现状。
+  // 词表服务端随行（world_direction_mode_words——客户端零拷贝）。
+  const modeControl = selectField({
+    name: "世界走向模式 World direction mode",
+    options: ((settingsData && settingsData.world_direction_mode_words) || [])
+      .map((word) => ({
+        value: word,
+        label: WORLD_DIRECTION_MODE_CN[word] || word,
+        sub: WORLD_DIRECTION_MODE_CN[word] ? word : null,
+      })),
+    value: (settingsData && settingsData.world_direction_mode)
+      || "immersive",
+    placeholder: "选一种……",
+    onChange: (next) => { saveWorldDirectionMode(next); },
+  });
+  box.appendChild(modeControl.root);
 }
 
 function settingsLanguageResult(text, failure) {
@@ -2263,6 +2287,27 @@ async function saveReplyLanguage(word) {
   await loadSettings();
   settingsLanguageResult(
     "回信语言已换到 " + (REPLY_LANGUAGE_CN[word] || word) + "——下一封信起生效。", false);
+}
+
+// wr-10：世界走向模式的保存回路（W-L 同构——存读一致，下一步现读）。
+async function saveWorldDirectionMode(word) {
+  let data = null;
+  try {
+    data = await fetchSaveWorldDirectionMode(word);
+  } catch {
+    settingsLanguageResult(
+      "没存上——强制刷新页面（Ctrl+F5）后再试一次；反复出现请报出来。",
+      true);
+    return;
+  }
+  if (!data.accepted) {
+    settingsLanguageResult(data.error || "没能换世界走向模式。", true);
+    return;
+  }
+  await loadSettings();
+  settingsLanguageResult(
+    "世界走向模式已换到 " + (WORLD_DIRECTION_MODE_CN[word] || word)
+      + "——下一步世界步起生效。", false);
 }
 
 async function saveMode(word) {
@@ -2958,6 +3003,10 @@ const WORLD_INBOX_TEXT = {
     // （已显示的那段没记进编年史——渲染先行、持久殿后、拒收不撒谎）。
     worldRunning: "世界运转中…",
     worldFailed: "世界的这段没能留住——这一轮没记进编年史。",
+    // wr-10（DEC-OPI-c73dbff3…64）：走向选项行的两句 chrome——块尾的
+    // 提问行（可不选=世界自主）与选择没存上的人话。
+    directionAsk: "世界接下来可以往哪走？选一个方向，也可以不选。",
+    directionMiss: "没存上——稍后再试一次。",
   },
   en: {
     fallback: "(This note predates the world's Chinese — shown as written.)",
@@ -2966,6 +3015,9 @@ const WORLD_INBOX_TEXT = {
     worldRunning: "The world is turning…",
     worldFailed: "This passage of the world could not be kept —"
       + " it was not written into the chronicle.",
+    directionAsk: "Where could the world go next? Pick a direction,"
+      + " or none.",
+    directionMiss: "Could not save it — try again shortly.",
   },
 };
 
@@ -3014,12 +3066,100 @@ function parlorWorldText(lang) {
 // 再落回信行）。**零滚动劫持**（wr-5 律延续）。渲染入口两臂：流内
 // onWorld（带过渡句——当前轮）与历史交错恢复（wr-8 DEC-OPI-c73dbff3…34
 // ——历史轮的世界帧同形渲染，带过渡句、不用打字机——历史恢复是
-// 已完成事实）。文字一律 textContent（XSS 纪律）；真实时间零进入——
+// 已完成事实）。wr-10：world 帧 directions 在场时块尾渲染走向选项行
+// （可点选可不选、随下一轮自然过期——renderWorldDirectionRow）。
+// 文字一律 textContent（XSS 纪律）；真实时间零进入——
 // 日期只来自服务的 date_localized。
+// ── wr-10（DEC-OPI-c73dbff3…64）：走向选项行────────────────────────
+// 世界块尾的选项行（导演模式 world 帧 directions 在场时渲染）：提问行
+// + 每候选一枚 chip（label 主词 + hint 小字）。**可不选**——不选 = 世
+// 界自主，选项随下一轮自然过期；点选 POST /api/world/direction 存待用
+// （后选覆盖前选），选中态 = chip--on + aria-pressed。零滚动劫持
+// （wr-5 律——渲染不动视口，点击不拽屏）；文字一律 textContent（XSS
+// 面）。样式钩子只复用现役类（chip/chip--on/note——components.css 的
+// 走向行专属样式未落，Revisit：dogfood 信号后随 CSS 刀补）。
+let liveWorldDirectionRow = null;
+
+function expireWorldDirectionRow() {
+  // 自然过期：新世界块渲染即退役上一行的选项（禁点 + 过期类）——
+  // 待用走向已随上一次世界步消费或仍在等下一步，旧候选不再是现役
+  // 选择面。
+  if (!liveWorldDirectionRow) return;
+  liveWorldDirectionRow.classList.add("world-direction-row--expired");
+  liveWorldDirectionRow.querySelectorAll("button").forEach((b) => {
+    b.disabled = true;
+  });
+  liveWorldDirectionRow = null;
+}
+
+function renderWorldDirectionRow(directions) {
+  const T = worldInboxText();
+  expireWorldDirectionRow();
+  const row = document.createElement("div");
+  row.className = "world-direction-row";
+  const caption = document.createElement("p");
+  caption.className = "note";
+  caption.textContent = T.directionAsk;
+  row.appendChild(caption);
+  const opts = document.createElement("div");
+  opts.className = "world-direction-options";
+  for (const candidate of directions) {
+    const label = String((candidate && candidate.label) ?? "");
+    const hint = String((candidate && candidate.hint) ?? "");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "chip world-direction-option";
+    button.setAttribute("aria-pressed", "false");
+    const main = document.createElement("span");
+    main.className = "world-direction-option-label";
+    main.textContent = label;
+    button.appendChild(main);
+    if (hint) {
+      const small = document.createElement("span");
+      small.className = "note world-direction-option-hint";
+      small.textContent = hint;
+      button.appendChild(small);
+    }
+    button.addEventListener("click", async () => {
+      let data = null;
+      try {
+        data = await fetchSaveWorldDirection({ label: label, hint: hint });
+      } catch {
+        data = null;
+      }
+      if (!data || !data.accepted) {
+        let miss = row.querySelector(".world-direction-miss");
+        if (!miss) {
+          miss = document.createElement("p");
+          miss.className = "note world-direction-miss";
+          row.appendChild(miss);
+        }
+        miss.textContent = (data && data.error) || T.directionMiss;
+        return;
+      }
+      // 选中态：本枚 chip--on + aria-pressed，兄弟退选（后选覆盖前选
+      // 是服务端语义——同一待用键）；不阻止再点别的枚改主意。
+      opts.querySelectorAll(".world-direction-option").forEach((other) => {
+        other.classList.remove("chip--on");
+        other.setAttribute("aria-pressed", "false");
+      });
+      button.classList.add("chip--on");
+      button.setAttribute("aria-pressed", "true");
+    });
+    opts.appendChild(button);
+  }
+  row.appendChild(opts);
+  liveWorldDirectionRow = row;
+  return row;
+}
+
 function renderWorldStory(event, opts) {
   const T = worldInboxText();
   const withTransition = !!(opts && opts.withTransition);
   const beforeEl = opts && opts.beforeEl ? opts.beforeEl : null;
+  // wr-10：新世界块 = 旧选项行的自然过期（新帧无此选项即换代——块
+  // 自身的选项行在下方重建并接管现役位）。
+  expireWorldDirectionRow();
   const wrap = document.createElement("div");
   wrap.className = "world-story";
   const dateLine = document.createElement("p");
@@ -3058,6 +3198,11 @@ function renderWorldStory(event, opts) {
     then.className = "world-story-then";
     then.textContent = T.thenLetter;
     wrap.appendChild(then);
+  }
+  // wr-10：走向选项行——只在 world 帧真的带 directions 时渲染（沉浸
+  // 形零字段零行，块尾干净如旧）；落点 = 块尾，非独立页（wr-5 律）。
+  if (Array.isArray(event.directions) && event.directions.length) {
+    wrap.appendChild(renderWorldDirectionRow(event.directions));
   }
   // A2R (DEC-…99): the 「继续」 button is retired — the engine's
   // NOTICE checkpoint is an internal rhythm concept, not a product
