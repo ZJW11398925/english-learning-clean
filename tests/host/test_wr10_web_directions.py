@@ -408,6 +408,17 @@ def test_the_page_renders_the_option_row_and_the_settings_knob() -> None:
     assert start != -1 and end != -1 and start < end
     direction_code = app[start:end]
     assert "scroll" not in direction_code.lower()
+    # 处置刀（评审 F-1，m9 NOT-RED 缺口闭合）：自然过期有钉——
+    # renderWorldStory 的函数体内必须调 expireWorldDirectionRow（新块
+    # 渲染即换代旧选项行；摘掉它源级 9/9 仍绿的钉缺口在此闭合）。
+    story_start = app.find("function renderWorldStory")
+    story_end = app.find("\nfunction ", story_start + 1)
+    assert story_start != -1 and story_end != -1
+    story_body = app[story_start:story_end]
+    assert "expireWorldDirectionRow()" in story_body, (
+        "renderWorldStory must retire the previous direction row — "
+        "the natural-expiry law has no other enforcer"
+    )
     # textContent discipline: no innerHTML anywhere in the page code.
     assert ".innerHTML" not in app
     assert ".innerHTML" not in api
