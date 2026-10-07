@@ -1,14 +1,17 @@
-"""wr-7 — the world's narration streams to the page (DEC-OPI-c73dbff3…4).
+"""wr-7 — the world's narration streams to the page (DEC-OPI-c73dbff3…4)
+/ wr-7R — the settle waits for the drain (DEC-OPI-c73dbff3…23).
 
 The user's verdict that closed the handover block: 「事件没有及时以流式
 慢慢显现，而是在较长等待后突然全部闪现出来」— wr-6 fixed the *order*
 (the world's step runs before the reply is generated); wr-7 fixes the
 *time grain*: the narrator's streamed face feeds the incremental
-extractor, the page receives ``world_delta`` pieces as they decode, the
-whole ``world`` frame settles them, and a refusal after shown pieces
-answers the honest ``world_failed`` handle (渲染先行，持久殿后，拒收不
-撒谎 — the chronicle still takes the whole batch or nothing). The pin
-groups:
+extractor, the page receives ``world_delta`` pieces as they decode, and
+a refusal after shown pieces answers the honest ``world_failed`` handle
+(渲染先行，持久殿后，拒收不撒谎 — the chronicle still takes the whole
+batch or nothing). wr-7R fixes the *settle*: the whole ``world`` frame
+no longer stops the typewriter and swaps the block on arrival — it
+seals the authoritative remainder into the same pacer and replaces only
+after every paragraph has drained (整批到达不再闪现). The pin groups:
 
 1. **the streamed order over the real web stack** — a fake streaming
    provider (``call_streaming`` slicing the beats JSON through an
@@ -27,8 +30,13 @@ groups:
    row (shown at send, retired by the first world_delta/world/delta,
    the finally safety), the world typewriter (an independent buffer at
    the same TYPING_CPS law, index changes open a new paragraph, the
-   streaming block invents no date), the authoritative settle and the
-   failure note — textContent throughout.
+   streaming block invents no date), the wr-7R drain-then-settle (the
+   whole frame seals the authoritative remainder in beat-index order,
+   the handback fires only when sealed and every paragraph is spent,
+   the replace rides the post-drain callback, late pushes after the
+   seal are dropped) and the failure note with the three postures kept
+   (fail = stop + note, interrupt = stop keeps shown) — textContent
+   throughout.
 """
 
 from __future__ import annotations
@@ -381,18 +389,27 @@ def test_the_world_typewriter_is_an_independent_buffer_at_the_same_law() -> None
     assert "textContent" in stream
 
 
-def test_the_whole_frame_settles_and_the_failure_note_tells_the_truth() -> None:
-    """定版与失败注：world 整帧 = 权威渲染替换流式块（同位插入、流式
-    块摘除——块文本此后与编年史逐字一致）；world_failed = 块上人话一
-    行（已显示的那段没记进编年史）（VAL ⑥；变异 m7：打字机不定版）。"""
+def test_the_whole_frame_settles_only_after_the_stream_drains() -> None:
+    """定版（wr-7R）：world 整帧不再 stop 不再立即替换——seal 把权威
+    余量补进世界打字机缓冲，**排空之后**才权威渲染同位替换流式块
+    （日期行/过渡句此时才补齐）；world_failed = 块上人话一行（已显
+    示的那段没记进编年史），三姿态不变（fail = stop + 注；中断 =
+    stop 保留已显）（DEC-OPI-c73dbff3…23；变异 m1：settle 退回立即
+    替换——整批到达闪现回归 / m3：fail/中断姿态被 seal 语义破坏）。"""
 
     app = _app_source()
     assert 'worldFailed: "世界的这段没能留住——这一轮没记进编年史。"' in app
     settle = _slice(app, "const settleWorld = (event) => {", "\n  };\n")
-    assert "renderWorldStory(event, { withTransition: true })" in settle
-    # The replace path is live: the exact conditional, the same-position
+    # The whole frame seals the authoritative text into the typewriter:
+    # never stop, never an immediate replace (变异 m1 的回归形态).
+    assert "worldStream.seal(event)" in settle
+    assert "worldStream.stop()" not in settle
+    # The replace path is live only AFTER the drain — it rides the
+    # post-drain callback: the exact conditional, the same-position
     # insert and the streaming block's removal (变异 m7：打字机不定版
     # ——流式残留与权威渲染并立).
+    assert ".then(" in settle
+    assert "renderWorldStory(event, { withTransition: true })" in settle
     assert (
         "if (worldStream.wrap && worldStream.wrap.parentNode === messages) {"
         in settle
@@ -403,3 +420,40 @@ def test_the_whole_frame_settles_and_the_failure_note_tells_the_truth() -> None:
     assert "world-story-failed" in fail
     assert "worldInboxText().worldFailed" in fail
     assert "textContent" in fail
+    # The fail posture keeps its own stop (seal never rides this path;
+    # 变异 m3：failWorld 的 stop 被 seal 语义挤掉).
+    assert "worldStream.stop()" in fail
+    # The interrupt posture keeps stop-keeps-shown in the catch arm.
+    postturn = app[
+        app.index("async function postTurn") :
+        app.index("async function postTeachMe")
+    ]
+    assert "worldStream.stop();" in postturn
+
+
+def test_the_seal_feeds_the_remainder_and_drops_late_pushes() -> None:
+    """seal/settle 语义（wr-7R）：seal(整帧) 把每段权威 narration 的
+    未显余量（按已显长度切片——已显部分据实，不重打不回退）以段
+    （beat index）为序补进缓冲；push 在 seal 后丢弃；排空交回只在
+    sealed 且全段排空时发生（变异 m2：seal 不补权威余量——排空后文
+    本 != 权威 narration / m4 族：迟到 push 不丢弃）。"""
+
+    app = _app_source()
+    stream = _slice(app, "function startWorldStream() {", "\nfunction ")
+    assert "seal(event)" in stream
+    assert 'String(note.narration ?? "")' in stream
+    assert ".slice(para.el.textContent.length)" in stream
+    assert "para.buffer += rest" in stream
+    # Late pushes after the seal are dropped: the authoritative text is
+    # in, the stream has nothing more to say.
+    assert "if (state.done || state.sealed) return;" in stream
+    # The drain hands back to settle only when sealed AND every
+    # paragraph is spent — the exact negation of the flash.
+    assert "state.sealed && state.active >= state.order.length" in stream
+    # The paragraph pointer's law (wr-7R): an empty paragraph is no
+    # longer skipped unconditionally — the advance waits for the seal
+    # or for a later paragraph holding typed content (the wr-7 defect
+    # let a mid-beat gap freeze the rest of that beat's pieces until
+    # the settle swapped the whole block in — the flash's amplifier).
+    assert "state.sealed || laterParaHasContent()" in stream
+    assert "para.buffer.length === 0 &&" in stream
