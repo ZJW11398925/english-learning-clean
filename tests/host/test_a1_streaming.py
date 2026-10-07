@@ -824,7 +824,11 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     assert "scheduleWorldReveal" not in app_source
     assert "typing.push(chunk)" in postturn
     assert "await typing.seal(" in postturn
-    assert "startTypewriter()" in postturn
+    # wr-11（DEC-OPI-c73dbff3…76）：the typewriter is wired with the
+    # reply-hold gate — the emit loop consults the world-stream state
+    # every frame (真值随迁：was "startTypewriter()"; the gate wiring
+    # is now the call's own shape).
+    assert "startTypewriter(replyMayType)" in postturn
     typewriter = app_source[app_source.index("function startTypewriter"):]
     typewriter = typewriter[: typewriter.index("\n}", typewriter.index("return {"))]
     assert "ensureLine().textContent = state.shown;" in typewriter

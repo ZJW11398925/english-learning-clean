@@ -3248,11 +3248,14 @@ async function loadWorldInbox() {
 // 定速份额，不再一闪全文）。final 落地 ⇒ 权威全文的余量补进缓冲，
 // 排空之后才 finalize（affordance/moments/usage/收件箱重读现役路径
 // 不变）；中断 ⇒ 已显部分保留在页上，人话 + 拉历史对齐。
+// wr-11（DEC-OPI-c73dbff3…76）：出字循环挂**世界流 gate**——世界
+// 叙述打字未完时回信零出字（用户第五报：世界事件尚未结束、回信已开
+// 始输出）；delta 照常入缓冲不丢；gate 判据在出字循环内逐帧判决。
 // Revisit：35 字/秒是「定速适中」的初值，一次 dogfood 手感裁决即可
 // 换掉它——a calibration replaces this constant。
 const TYPING_CPS = 35;
 
-function startTypewriter() {
+function startTypewriter(gate) {
   const state = {
     line: null,
     buffer: "",
@@ -3265,14 +3268,8 @@ function startTypewriter() {
   const step = (ts) => {
     state.raf = 0;
     if (state.last === 0) state.last = ts;
-    const budget = Math.floor(((ts - state.last) / 1000) * TYPING_CPS);
-    if (budget > 0 && state.buffer.length > 0) {
-      state.last = ts;
-      const take = Math.min(budget, state.buffer.length);
-      state.shown += state.buffer.slice(0, take);
-      state.buffer = state.buffer.slice(take);
-      ensureLine().textContent = state.shown;
-    }
+    // 零字回信先于 gate 判决：sealed 且缓冲空 = 无字可出，finalize
+    // 照走（gate 与零字回信的节奏无关——不因 gate 卡死 finalize）。
     if (state.sealed && state.buffer.length === 0) {
       if (state.resolve) {
         const done = state.resolve;
@@ -3280,6 +3277,26 @@ function startTypewriter() {
         done();
       }
       return;
+    }
+    // wr-11（DEC-OPI-c73dbff3…76）：世界流 gate——判据（postTurn 的
+    // replyMayType）为假 = 世界流式块在途（wrap 存在且未 settled/未
+    // done），回信零出字：不建行、不出字、缓冲原样（delta 不丢）；
+    // 出字预算随帧归零（last = ts）——开闸后按 35cps 从缓冲接续，
+    // 不把候场时长折成一次性爆发。三臂不 gate：零世界轮次（无 wrap
+    // ⇒ 判据恒真）、world_failed（done ⇒ 判据真）、流中断（stop 停
+    // 循环，A2 姿态不变）。
+    if (gate && !gate()) {
+      state.last = ts;
+      state.raf = requestAnimationFrame(step);
+      return;
+    }
+    const budget = Math.floor(((ts - state.last) / 1000) * TYPING_CPS);
+    if (budget > 0 && state.buffer.length > 0) {
+      state.last = ts;
+      const take = Math.min(budget, state.buffer.length);
+      state.shown += state.buffer.slice(0, take);
+      state.buffer = state.buffer.slice(take);
+      ensureLine().textContent = state.shown;
     }
     state.raf = requestAnimationFrame(step);
   };
@@ -3360,6 +3377,7 @@ function startWorldStream() {
     last: 0,
     done: false,
     sealed: false,      // 权威整帧已到（wr-7R：排空后交回定版）
+    settled: false,     // wr-11：排空交回已发生（回信 gate 的开闸点）
     resolve: null,      // seal 的排空交回
   };
   const ensureWrap = () => {
@@ -3423,6 +3441,11 @@ function startWorldStream() {
     // wr-7R：seal 后全段排空 ⇒ 交回定版（resolve）——定版在排空之
     // 后（对齐回信 A2）；此前循环照常定速，无上限、无超时。
     if (state.sealed && state.active >= state.order.length) {
+      // wr-11：排空交回 = 世界定版，回信 gate 在此开闸。settleWorld
+      // 的同位替换（含过渡句落定）跑在本交回触发的 .then 微任务里，
+      // 微任务检查点先于下一帧的任何 rAF 回调——替换必先于回信首字
+      // 落地，过渡句永远先行。
+      state.settled = true;
       if (state.resolve) {
         const settled = state.resolve;
         state.resolve = null;
@@ -3469,6 +3492,15 @@ function startWorldStream() {
     },
     get wrap() {
       return state.wrap;
+    },
+    // wr-11：回信 gate 的两个状态读数——settled = 权威整帧已排空交回
+    //（世界定版）；done = 世界流已终止（failWorld 失败注 / catch 中
+    // 断共用 stop）。两者任一为真即开闸。
+    get settled() {
+      return state.settled;
+    },
+    get done() {
+      return state.done;
     },
     stop() {
       // 失败/中断共用：停循环保留已显文字（失败注追加块尾——已显示
@@ -4144,6 +4176,18 @@ async function postTurn(text) {
   let data = null;
   let typing = null;
   const worldStream = startWorldStream();
+  // wr-11（DEC-OPI-c73dbff3…76）：回信候场——叙事节奏串行化。回信
+  // 打字机的出字判据：世界流式块**不在途**才放行。在途 = wrap 存在
+  // 且未 settled 且未 done；gate 期间 delta 照常入缓冲不丢（数据流
+  // 不动，gate 只在出字循环内逐帧判决）。三臂不 gate：①零世界轮次
+  // （无 wrap——服务端串行保证此时世界永不未出帧）②world_failed
+  //（done = 世界已结束）③流中断（catch 的 stop 停循环，A2 姿态）。
+  // 世界定版（排空交回，settleWorld 的 .then 同位替换含过渡句落定）
+  // 即开闸——回信是世界运转的落点（spec §2）。
+  const replyMayType = () =>
+    worldStream.wrap === null ||
+    worldStream.settled ||
+    worldStream.done;
   // wr-7R 定版（DEC-OPI-c73dbff3…23，修正 wr-7 R6 的定版半——对齐
   // 回信 A2 排空语义）：world 整帧到达**不 stop 不立即替换**——权威
   // 全文经 worldStream.seal 以段为序补进世界打字机缓冲，定速排空；
@@ -4175,7 +4219,7 @@ async function postTurn(text) {
     }
   };
   try {
-    typing = startTypewriter();
+    typing = startTypewriter(replyMayType);
     data = await fetchTurnStream(
       text,
       (chunk) => {
