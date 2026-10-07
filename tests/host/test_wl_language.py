@@ -579,18 +579,19 @@ def _app_js() -> str:
     )
 
 
-def test_ui_language_switch_rereads_the_inbox() -> None:
-    """The pairing: the interface-language save block re-reads the
-    inbox — the reveal is the read, and the same read already carries
-    the narrations in the new language (a switch without the re-read
-    would leave the old language on screen)."""
+def test_ui_language_switch_rerenders_the_history() -> None:
+    """wr-8（DEC-OPI-c73dbff3…34）真值随迁（本钉原断言切换后重读收
+    件箱——该臂随尾部补显退役）：界面语言保存块改走历史重渲染——世
+    界块已入 history 交错，叙述按界面语言现读（a switch without the
+    re-render would leave the old language on screen）。"""
 
     app = _app_js()
     start = app.find("async function saveUiLanguage")
     end = app.find("async function saveReplyLanguage")
     assert start != -1 and end != -1 and start < end
     block = app[start:end]
-    assert "await loadWorldInbox();" in block
+    assert "await loadHistory();" in block
+    assert "loadWorldInbox" not in block
     # …and the reply-language save does not (nothing world-shaped moves):
     # the function body is the slice up to the next top-level def.
     next_def = min(
@@ -603,6 +604,7 @@ def test_ui_language_switch_rereads_the_inbox() -> None:
         if p != -1
     )
     assert "loadWorldInbox" not in app[end:next_def]
+    assert "loadHistory" not in app[end:next_def]
 
 
 def test_bottom_mount_and_scroll_into_view_are_wired() -> None:

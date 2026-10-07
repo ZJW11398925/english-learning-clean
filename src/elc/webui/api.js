@@ -135,7 +135,9 @@ export function fetchObservations() {
 }
 
 /** 世界收件箱（W-1-3）：绑定世界的原子揭示 + 便条全列 + 最近信件 +
- *  at_checkpoint 位。无绑定世界服务端 404 人话（页面对 error 隐藏整区）。 */
+ *  at_checkpoint 位。无绑定世界服务端 404 人话（页面对 error 隐藏整区）。
+ *  wr-8（DEC-OPI-c73dbff3…34）：本读在加载序里先行——唯一职责是触发
+ *  揭示（遗留 PENDING 在服务端翻开），呈现归 history 交错恢复。 */
 export function fetchWorldInbox() {
   return getJson("/api/world/inbox");
 }
@@ -156,7 +158,9 @@ export function fetchWorldResidents() {
 }
 
 /** 历史窗口（默认最后 50 轮，已交付的助手输出）。主线-2 起宽度可显式
- *  指定：opts.full 取全文，opts.limit 取最近 n 轮——不带 opts 一字不变。 */
+ *  指定：opts.full 取全文，opts.limit 取最近 n 轮——不带 opts 一字不变。
+ *  wr-8（DEC-OPI-c73dbff3…34）：轮载荷可带可选 world 帧（已揭示世界
+ *  事件按 revealed_at 真实时刻交错——刷新恢复的世界块由此一手重建）。 */
 export function fetchHistory(opts) {
   const query = [];
   if (opts && opts.full) query.push("full=1");

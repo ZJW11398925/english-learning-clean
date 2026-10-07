@@ -2238,10 +2238,10 @@ async function saveUiLanguage(word) {
     return;
   }
   await loadSettings();
-  // W-L 行为接线：切换界面语言 ⇒ 世界重读一次（读即揭示；DEC-…92
-  // 起只有遗留未读才补显一块——已呈现的块随轮瞬态，下一轮自然新语
-  // 言）。
-  await loadWorldInbox();
+  // W-L 行为接线（wr-8 随迁）：切换界面语言 ⇒ 历史重渲染一次——世界
+  // 块已入 history 交错，叙述按界面语言现读（W-L 律），块随新语言
+  // 重落位（inbox 无需重读：世界块不再是尾部瞬态件）。
+  await loadHistory();
   settingsLanguageResult(
     "界面语言已换到 " + (UI_LANGUAGE_CN[word] || word) + "。", false);
 }
@@ -3012,10 +3012,10 @@ function parlorWorldText(lang) {
 // 她的回信随后打字机跟上——A2 织入序回归且**时序正确**（世界先讲，
 // 回信后到，spec §4.2 正典）。阻塞回退臂同形（payload.world 先渲染
 // 再落回信行）。**零滚动劫持**（wr-5 律延续）。渲染入口两臂：流内
-// onWorld（带过渡句——当前轮）与页面加载时的遗留补显（尾部追加、
-// 无过渡句——跨会话 PENDING 专属，wr-6 起帧即揭示使当前轮永不再
-// 走此臂）。文字一律 textContent（XSS 纪律）；真实时间零进入——日
-// 期只来自服务的 date_localized。
+// onWorld（带过渡句——当前轮）与历史交错恢复（wr-8 DEC-OPI-c73dbff3…34
+// ——历史轮的世界帧同形渲染，带过渡句、不用打字机——历史恢复是
+// 已完成事实）。文字一律 textContent（XSS 纪律）；真实时间零进入——
+// 日期只来自服务的 date_localized。
 function renderWorldStory(event, opts) {
   const T = worldInboxText();
   const withTransition = !!(opts && opts.withTransition);
@@ -3072,13 +3072,13 @@ function renderWorldStory(event, opts) {
   return wrap;
 }
 
-// 加载臂（DEC-…92；WR-6 随迁）：页面装载（历史渲染后）读一次世界——
-// 只有当本次读取真的揭示了遗留未读便条（revealed_now>0，上次会话
-// 末尾没读到的）才补显一块故事块（尾部追加、无过渡句——A2 原分工）；
-// 零遗留 ⇒ 零世界区块，对话末尾干净。WR-6：随信世界块已回归流内
-// world 帧（回信之前），本臂只管跨会话遗留。无绑定（404 人话）或读
-// 失败同样零区块——不是一只空收件箱。返回载荷（语言切换臂等调用方
-// 自用）。
+// 加载臂（wr-8 重铸，DEC-OPI-c73dbff3…34）：页面装载读一次世界——
+// 唯一职责是**触发揭示**（读即揭示；上次会话遗留的 PENDING 在这里被
+// 服务端翻成 REVEALED），零渲染——世界块由 history 的交错载荷完整
+// 恢复（加载序 = inbox 先 → history 后，保证刚翻开的遗留已在交错
+// 载荷里）。旧「revealed_now>0 尾部补显」臂退役：世界块已随轮入史
+// （history 交错），尾部补显会与交错恢复双显同一事件。无绑定（404
+// 人话）或读失败同样返回 null——调用方当无事发生。
 async function loadWorldInbox() {
   let data = null;
   try {
@@ -3089,15 +3089,13 @@ async function loadWorldInbox() {
   if (!data || !Array.isArray(data.items)) {
     return null;
   }
-  if ((data.revealed_now || 0) > 0) {
-    renderWorldStory(data);
-  }
   return data;
 }
 
 // WR-6（DEC-OPI-8a4f980b…13）：延时揭示臂整体退役——世界步已回到
 // 回信**之前**（服务端生成序 + 流内 world 帧），世界块随流先到，无需
-// 事后重读。加载补显臂（loadWorldInbox，页面装载时的遗留揭示）仍在。
+// 事后重读。wr-8：加载补显臂（revealed_now>0 补显）也退役——职责
+// 并入 history 交错恢复（inbox 先读只管触发揭示，零显示）。
 
 // ── A2（DEC-…82）：打字机定速节奏器───────────────────────────────
 // delta 的到达与渲染解耦：增量入缓冲，渲染循环按 TYPING_CPS 定速出
@@ -4798,6 +4796,12 @@ async function renderFlowHistory() {
     if (turn.user !== null) {
       anchor = addLine("user", turn.user, { hits: turn.user_word_hits || null });
     }
+    if (turn.world) {
+      // wr-8 刷新恢复（DEC-OPI-c73dbff3…34）：本轮世界帧织入在该轮
+      // 用户信**之前**（织入序还原——世界块与用户信相邻）；与当轮
+      // 同形（含过渡句）、零打字机（历史恢复是已完成事实）。
+      renderWorldStory(turn.world, { withTransition: true, beforeEl: anchor });
+    }
     if (turn.assistant !== null) {
       const reply = addLine("assistant", turn.assistant, { hits: turn.word_hits || null });
       if (!anchor) anchor = reply;
@@ -4861,12 +4865,13 @@ window.addEventListener("DOMContentLoaded", () => {
   // 居民位 + 今日动静；世界缺席或读失败 ⇒ 现役 roster 形回落。失败留空
   // 不轰炸，下次打开信封沓会重读。
   loadMasthead().catch(() => {});
-  loadHistory()
-    .then(() => loadWorldInbox())
+  // wr-8（DEC-OPI-c73dbff3…34）加载序 = inbox 先 → history 后：inbox
+  // 读是揭示触发（遗留 PENDING 在这里翻开、零渲染），history 的交错
+  // 载荷随后带着全部 REVEALED（含刚翻开的遗留）一次重建信流——
+  // 刷新恢复由 history 一手完成。旧尾部补显臂退役（见 loadWorldInbox）。
+  loadWorldInbox()
+    .then(() => loadHistory())
     .catch(() => {});
-  // W-1-3 / DEC-…92: 历史落定后读一次世界——仅当上次会话遗留未读
-  // 便条（revealed_now>0）才在最末信件后补显一块故事块；零遗留 =
-  // 零世界区块。「继续」后的呈现走按钮自己的回路。
   // F-1R/R-1: the first visit sees the cover; every later visit lands in
   // the parlor directly (the cover never comes back once localStorage
   // says so)

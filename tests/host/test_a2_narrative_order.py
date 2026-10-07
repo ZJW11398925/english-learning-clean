@@ -791,27 +791,27 @@ def test_the_continue_button_is_retired_from_the_story_block() -> None:
     assert "_world_step_face" not in web_source
 
 
-def test_the_load_arm_renders_only_unrevealed_notes() -> None:
-    """DEC-…92's load arm: the page reads the world once after the
-    history lands, and renders a story block **only** when that read
-    revealed notes left unread from the last session (``revealed_now``
-    — counted server-side before the flip); zero legacy ⇒ zero world
-    blocks, the conversation's tail stays clean."""
+def test_the_load_arm_triggers_reveal_without_rendering() -> None:
+    """wr-8（DEC-OPI-c73dbff3…34）真值随迁（本钉原断言 DEC-…92 的
+    加载补显臂——``revealed_now``>0 才补显一块；wr-8 尾部补显臂退役，
+    世界块由 history 交错载荷恢复，本钉随臂改写、强度只增）：
+    loadWorldInbox 只触发揭示、零渲染（函数体零 ``revealed_now``、零
+    ``renderWorldStory``）；加载序 = inbox 先 → history 后（旧序负控）；
+    turn 体零 inbox 读（WR-6 律不变）。"""
 
     app_source = (WEBUI / "app.js").read_text(encoding="utf-8")
     start = app_source.index("async function loadWorldInbox")
     end = app_source.index("\n", app_source.index("return data;", start))
     load_arm = app_source[start:end]
-    assert "revealed_now" in load_arm
-    assert "renderWorldStory(data" in load_arm
-    # The history-first ordering: the load rides after loadHistory (the
-    # block lands after the last letter).
-    init_block = app_source[app_source.index("loadHistory()"):]
-    assert "loadHistory()" in app_source
-    assert ".then(() => loadWorldInbox())" in init_block
+    assert "revealed_now" not in load_arm
+    assert "renderWorldStory" not in load_arm
+    # wr-8's load order: the inbox read (the reveal trigger) lands
+    # before loadHistory, so the interleaved payload already carries the
+    # just-flipped leftovers.
+    assert "loadWorldInbox()\n    .then(() => loadHistory())" in app_source
+    assert ".then(() => loadWorldInbox())" not in app_source
     # WR-6: the turn's own flow never reads the inbox (the world rides
-    # the turn's own stream; the load arm is the page-load leftover's
-    # only reader).
+    # the turn's own stream).
     postturn = app_source[
         app_source.index("async function postTurn"):
         app_source.index("async function postTeachMe")

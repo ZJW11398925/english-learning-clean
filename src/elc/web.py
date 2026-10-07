@@ -377,6 +377,7 @@ import sys
 import threading
 import time
 import uuid
+from bisect import bisect_left
 from datetime import UTC, datetime
 from functools import partial
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -1174,6 +1175,31 @@ def _usage_by_turn(
         tuple(turn_ids),
     ).fetchall()
     return {str(row[0]): _usage_face(row[1:5]) for row in rows}
+
+
+def _turn_created_at_of(
+    db: sqlite3.Connection, turn_ids: list[str]
+) -> list[str]:
+    """The window's per-turn commit moments (wr-8's interleave key half):
+    one ``user_turn.created_at`` per turn id, in the caller's order —
+    ``""`` for a turn id the table does not name (an unreachable arm:
+    every slice came from that table). A read-only sums-free batch like
+    :func:`_usage_by_turn` — the same direct-SQL posture (the store
+    publishes no per-turn moment read, and a read here reads, never
+    writes). Both halves of the wr-8 comparison carry the same ISO-8601
+    wall-clock form (``datetime.now(tz=UTC).isoformat()`` wrote them),
+    so the lexicographic order is the chronological one."""
+
+    if not turn_ids:
+        return []
+    placeholders = ", ".join("?" for _ in turn_ids)
+    rows = db.execute(
+        "SELECT turn_id, created_at FROM user_turn"
+        " WHERE turn_id IN (" + placeholders + ")",
+        tuple(turn_ids),
+    ).fetchall()
+    moments = {str(row[0]): str(row[1]) for row in rows}
+    return [moments.get(turn_id, "") for turn_id in turn_ids]
 
 
 def _goals_panel(db: sqlite3.Connection) -> dict[str, Any]:
@@ -3520,6 +3546,157 @@ class _WebFace:
             (world_id,),
         ).fetchone()
         return int(row[0]) if row is not None else 0
+
+    def _world_frames_for_window(
+        self, turn_moments: list[str], lower_edge: str
+    ) -> dict[int, dict[str, Any]]:
+        """The wr-8 refresh-recovery half: the served window's per-turn
+        ``world`` frames, keyed by turn index — an empty dict when this
+        conversation binds no world (or the host has no world leg), so a
+        worldless history answers exactly the pre-wr-8 payload.
+
+        **The interleave key (wr-8's adjudicated fact — the task book's
+        ``created_at`` premise was wrong and the adjudication moved the
+        key to ``revealed_at``):** an event's real moment is its reveal
+        item's ``revealed_at`` — the first reveal's wall-clock stamp,
+        never re-stamped (:meth:`elc.world.store.SqliteWorldStore.reveal_all`).
+        After wr-6 the in-stream reveal rides the world step, seconds
+        before the triggering turn commits — the precise weave-in
+        position. A leftover ``PENDING`` note the refresh's inbox read
+        flips carries the refresh moment (later than the last turn ⇒ it
+        attaches to the last turn — the honest "you are seeing it now"
+        approximation); a wr-2-era post-reply event was revealed at its
+        page load (⇒ it lands before the *next* letter — its true
+        chronological spot) — the same registered approximation family.
+        **Not** the item's ``created_at``: that column carries the
+        *virtual story day* the calendar wrote (a bare ``YYYY-MM-DD``,
+        spec §198 — the world does not follow real time), unusable
+        against wall-clock turns.
+
+        The bucket rule over the window's turn moments (each an ISO-8601
+        wall-clock string, so lexicographic order is chronological): the
+        world step runs **before** its turn's letter, so an event belongs
+        to the first turn whose moment is ``>=`` the event's — the
+        weave-in position (``(previous turn, this turn]``, the interval's
+        inclusive upper edge at ``==``); an event later than every turn
+        attaches to the last turn (the honest tail approximation).
+        ``bisect_left`` gives exactly this: the first index whose moment
+        does not sort before the event — ``len`` clamps to the last
+        turn, otherwise that index is the bucket.
+
+        The window's *lower edge* is the moment of the turn immediately
+        before the served window (``lower_edge`` — the slice the bounded
+        read fetched and trimmed away; ``""`` when the window covers the
+        whole transcript, and an empty string sorts before every real
+        moment). Events in ``(lower_edge, first turn]`` belong to the
+        first *served* turn — its own just-revealed step events among
+        them (a window that starts at turn K must not drop K's frame).
+        Events at or before ``lower_edge`` belong to *unserved* turns and
+        stay out (the letters' own law — they re-enter with their true
+        turn through ``?limit``/``?full``, never piled onto the window's
+        first frame).
+
+        **The red line: this face never flips a reveal.** Only
+        ``status = 'REVEALED'`` rows are read (a read here reads, never
+        writes — the wf-0 law this face now shares); a malformed
+        ``REVEALED`` row without a reveal stamp is skipped rather than
+        guessed into a bucket (unreachable through the store, whose
+        reveal flip always stamps).
+
+        The frame shape is the streamed world frame's own (one renderer,
+        two transports): ``world_name`` / ``ui_language`` /
+        ``date_localized`` / ``notes[{'narration', 'fallback'?}]`` —
+        the notes in the story's own durable order
+        (``created_at, item_id`` — the reveal queue's deterministic
+        read, the story day sequence), each narrated in the interface
+        language through the shared
+        :meth:`_note_narration` (the W-L law, fallback bit included);
+        the date line is the frame's last story day (the streamed
+        frame's ``beats[-1]`` convention), ``""`` when no note carries
+        one. Multi-event turns share one frame, notes side by side.
+        """
+
+        if not turn_moments:
+            return {}
+        binding = self._world_binding()
+        if binding is None:
+            return {}
+        world_id = binding["world_id"]
+        package = self._world_packages.get(world_id)
+        ui_language = self._ui_language()
+        rows = self._host.db.execute(
+            "SELECT item_id, source_event_id, actor_id, revealed_at"
+            " FROM world_reveal_item WHERE world_id = ? AND status ="
+            " 'REVEALED' ORDER BY created_at ASC, item_id ASC",
+            (world_id,),
+        ).fetchall()
+        if not rows:
+            return {}
+        by_id: dict[str, tuple[Any, ...]] = {}
+        for row in self._host.db.execute(
+            "SELECT e.event_id, e.narration, e.kind, e.occurred_at,"
+            " e.source"
+            " FROM world_event e WHERE e.world_id = ?",
+            (world_id,),
+        ).fetchall():
+            by_id[str(row[0])] = tuple(row)
+        buckets: dict[int, list[dict[str, Any]]] = {}
+        for row in rows:
+            moment = None if row[3] is None else str(row[3])
+            if not moment:
+                continue
+            position = bisect_left(turn_moments, moment)
+            if position == 0:
+                # At or before the first served turn: inside it when the
+                # moment clears the lower edge (the boundary turn's own
+                # step events — and everything earlier when the window
+                # covers the whole transcript); at or before a real
+                # lower edge the event belongs to an unserved turn —
+                # outside the window.
+                if lower_edge and moment <= lower_edge:
+                    continue
+                index = 0
+            elif position >= len(turn_moments):
+                # revealed after the last served turn: the tail
+                # approximation — the last turn's frame carries it.
+                index = len(turn_moments) - 1
+            else:
+                index = position
+            event = by_id.get(str(row[1]))
+            narration, fallback = self._note_narration(
+                package, ui_language, event
+            )
+            occurred_at = "" if event is None else str(event[3])
+            buckets.setdefault(index, []).append(
+                {
+                    "narration": narration,
+                    "fallback": fallback,
+                    "story_day": (
+                        occurred_at
+                        if _ISO_DAY_RE.fullmatch(occurred_at)
+                        else None
+                    ),
+                }
+            )
+        frames: dict[int, dict[str, Any]] = {}
+        for index, notes in buckets.items():
+            date_localized = ""
+            for note in reversed(notes):
+                if note["story_day"] is not None:
+                    date_localized = _localize_story_date(
+                        str(note["story_day"]), ui_language
+                    )
+                    break
+            frames[index] = {
+                "world_name": None if package is None else package.name,
+                "ui_language": ui_language,
+                "date_localized": date_localized,
+                "notes": [
+                    {"narration": note["narration"], "fallback": note["fallback"]}
+                    for note in notes
+                ],
+            }
+        return frames
 
     def _world_payload(
         self,
@@ -6037,6 +6214,14 @@ class _WebFace:
         ambiguous by itself); an unbounded read is never ``true``. The
         per-turn shape and the default-window answer are exactly what they
         were — the two extra payload keys are additive.
+
+        wr-8 (DEC-OPI-c73dbff3…34) adds one more additive key, per turn:
+        an optional ``world`` frame so a reloaded page rebuilds the
+        story blocks from this face alone (the refresh-recovery
+        interleave — :meth:`_world_frames_for_window` holds the rule and
+        the red line). A turn with no frame carries no ``world`` key at
+        all: the worldless history stays byte-identical to the pre-wr-8
+        shape.
         """
 
         bound: int | None
@@ -6055,6 +6240,11 @@ class _WebFace:
                 f" {window.error.code.value}: {window.error.message}"
             )
         slices = list(window.value.slices)
+        # wr-8: the window's lower edge — the turn the bounded read
+        # trimmed away (its moment is the bucket rule's exclusive floor:
+        # events at or before it belong to unserved turns; ``""`` when
+        # the window covers the whole transcript).
+        lower_edge = ""
         if bound is None:
             has_more = False
         else:
@@ -6062,6 +6252,7 @@ class _WebFace:
             if has_more:
                 # the store answers oldest-first; the bound-sized answer is
                 # the most recent tail of the bound+1 it fetched
+                lower_edge = str(slices[len(slices) - bound - 1].turn_id)
                 slices = slices[len(slices) - bound :]
         # fr-A: the window's per-turn usage and the conversation-wide
         # cumulative — additive payload keys (the 主线-2 breadth keys'
@@ -6069,33 +6260,58 @@ class _WebFace:
         usage_by_turn = _usage_by_turn(
             self._host.db, [str(slice_.turn_id) for slice_ in slices]
         )
+        # wr-8 (DEC-OPI-c73dbff3…34): the refresh-recovery interleave —
+        # each turn may carry an optional ``world`` frame so a reloaded
+        # page rebuilds the story blocks from the history face alone.
+        # The read half is :meth:`_world_frames_for_window` and it reads
+        # ``REVEALED`` rows only: the red line (history never flips a
+        # reveal) holds at this call site by construction. The window's
+        # lower edge is the moment of the turn the bounded read trimmed
+        # away (``""`` when nothing fell out — the whole transcript is
+        # served, so the first letter's own frame has no earlier bucket
+        # to hide in).
+        turn_ids = [str(slice_.turn_id) for slice_ in slices]
+        lower_edge = (
+            _turn_created_at_of(self._host.db, [lower_edge])[0]
+            if lower_edge
+            else ""
+        )
+        world_frames = self._world_frames_for_window(
+            _turn_created_at_of(self._host.db, turn_ids), lower_edge
+        )
         turns: list[dict[str, Any]] = []
-        for slice_ in slices:
+        for index, slice_ in enumerate(slices):
             assistant = (
                 None
                 if slice_.assistant_turn is None
                 else slice_.assistant_turn.content
             )
-            turns.append(
-                {
-                    "user": slice_.user_turn.raw_content,
-                    "assistant": assistant,
-                    # The affordance bitmaps per side (v3-3), the same
-                    # rows the turn response carries — ``None`` keeps
-                    # every word clickable.
-                    "user_word_hits": _letter_hit_rows(
-                        slice_.user_turn.raw_content, self._lemma_runs
-                    ),
-                    "word_hits": (
-                        None
-                        if assistant is None
-                        else _letter_hit_rows(assistant, self._lemma_runs)
-                    ),
-                    # fr-A: this turn's measured token usage, ``None`` when
-                    # its attempts reported none — never a fabricated 0.
-                    "usage": usage_by_turn.get(str(slice_.turn_id)),
-                }
-            )
+            turn = {
+                "user": slice_.user_turn.raw_content,
+                "assistant": assistant,
+                # The affordance bitmaps per side (v3-3), the same
+                # rows the turn response carries — ``None`` keeps
+                # every word clickable.
+                "user_word_hits": _letter_hit_rows(
+                    slice_.user_turn.raw_content, self._lemma_runs
+                ),
+                "word_hits": (
+                    None
+                    if assistant is None
+                    else _letter_hit_rows(assistant, self._lemma_runs)
+                ),
+                # fr-A: this turn's measured token usage, ``None`` when
+                # its attempts reported none — never a fabricated 0.
+                "usage": usage_by_turn.get(str(slice_.turn_id)),
+            }
+            # wr-8: the turn's own world frame when the window's real
+            # moments put revealed events in (previous turn, this turn]
+            # — absent (no key) on a worldless turn, the payload stays
+            # byte-identical to the pre-wr-8 shape there.
+            frame = world_frames.get(index)
+            if frame is not None:
+                turn["world"] = frame
+            turns.append(turn)
         return {
             "turns": turns,
             "window": bound,
