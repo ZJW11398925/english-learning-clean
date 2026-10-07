@@ -631,8 +631,12 @@ def build_narrator_prompt(
         )
     sections.append(_NARRATION_LANGUAGE[ui_language])
     stop_shape = (
-        ' , "stop": {"kind": "<letter_arrives|she_thinks_of_you'
+        ', "stop": {"kind": "<letter_arrives|she_thinks_of_you'
         '|awaits_you|none>"}'
+        if letter_elapsed_days is not None
+        else ""
+    )
+    stop_note = (
         " The ``stop`` kind tells the world's own verdict: keep going"
         " (none, or no key at all), the letter arriving and read, or"
         " the world waiting on the user."
@@ -647,16 +651,18 @@ def build_narrator_prompt(
             ' "hint": "<one sentence>"}]'
             + stop_shape
             + "}"
-            " The ``kind`` is a short slug: lowercase letters, digits"
+            + stop_note
+            + " The ``kind`` is a short slug: lowercase letters, digits"
             " and hyphens only, at most 32 characters."
         )
     else:
         sections.append(
             "Answer with strict JSON only — no prose outside it:"
-            ' {"beats": [{"kind": "<slug>", "narration": "<...>", "days": 0}'
+            ' {"beats": [{"kind": "<slug>", "narration": "<...>", "days": 0}]'
             + stop_shape
             + "}"
-            " The ``kind`` is a short slug: lowercase letters, digits and"
+            + stop_note
+            + " The ``kind`` is a short slug: lowercase letters, digits and"
             " hyphens only, at most 32 characters."
         )
     return "\n\n".join(sections)

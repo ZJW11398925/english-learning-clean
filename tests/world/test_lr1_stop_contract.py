@@ -333,7 +333,10 @@ def test_the_natural_arrival_guidance_is_narrative_not_a_rule() -> None:
 def test_none_elapsed_days_keeps_the_prompt_byte_identical() -> None:
     """The zero-change default: without ``letter_elapsed_days`` the
     prompt is byte for byte the pre-lr-1 text (the regression judgment
-    face — the old call shapes compose the old prompt exactly)."""
+    face — the old call shapes compose the old prompt exactly).
+
+    处置刀（评审 F-H1）：原钉是模块内自比——两侧同错恒绿，接不住
+    形状行坏形；真对照与良构由下方两钉承担。"""
 
     old = build_narrator_prompt(_package(), (), (), "zh")
     new = build_narrator_prompt(
@@ -359,6 +362,90 @@ def test_none_elapsed_days_keeps_the_prompt_byte_identical() -> None:
     )
     assert directed_old == directed_new
     assert '"stop"' not in directed_old
+
+
+def _shape_line(prompt: str) -> str:
+    for line in prompt.split("\n\n"):
+        if line.startswith("Answer with strict JSON"):
+            return line
+    raise AssertionError("shape line not found")
+
+
+#: pre-lr-1 父提交（29bdf61）的形状行字面——真对照源（处置刀 F-H1）。
+PARENT_IMMERSIVE_SHAPE = (
+    "Answer with strict JSON only — no prose outside it:"
+    ' {"beats": [{"kind": "<slug>", "narration": "<...>", "days": 0}]}'
+    " The ``kind`` is a short slug: lowercase letters, digits and"
+    " hyphens only, at most 32 characters."
+)
+PARENT_DIRECTED_SHAPE = (
+    "Answer with strict JSON only — no prose outside it:"
+    ' {"beats": [{"kind": "<slug>", "narration": "<...>",'
+    ' "days": 0}], "directions": [{"label": "<short phrase>",'
+    ' "hint": "<one sentence>"}]}'
+    " The ``kind`` is a short slug: lowercase letters, digits"
+    " and hyphens only, at most 32 characters."
+)
+
+
+def test_the_none_elapsed_shape_lines_match_the_parent_literals() -> None:
+    """elapsed=None 两态的形状行 == 父提交字面（处置刀 F-H1 真对照——
+    原自比钉对形状行坏形零捕获，本钉逐字对照父版良形）。"""
+
+    immersive = _shape_line(
+        build_narrator_prompt(_package(), (), (), "zh", letter_elapsed_days=None)
+    )
+    assert immersive == PARENT_IMMERSIVE_SHAPE
+    directed = _shape_line(
+        build_narrator_prompt(
+            _package(), (), (), "zh", "directed", None, None
+        )
+    )
+    assert directed == PARENT_DIRECTED_SHAPE
+
+
+@pytest.mark.parametrize(
+    "mode,elapsed",
+    [
+        ("immersive", None),
+        ("immersive", 0),
+        ("directed", None),
+        ("directed", 0),
+    ],
+)
+def test_every_shape_line_is_wellformed_json(
+    mode: str, elapsed: int | None
+) -> None:
+    """四态良构（处置刀 F-H1）：形状行的 JSON 部分在占位符替换后
+    ``json.loads`` 可解析——模板教形状，模板自身必须良构（三态坏形
+    曾静默存活于自比钉之下）。"""
+
+    prompt = build_narrator_prompt(
+        _package(), (), (), "zh", mode, None, elapsed
+    )
+    line = _shape_line(prompt)
+    depth = 0
+    end: int | None = None
+    for index, char in enumerate(line):
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                end = index + 1
+                break
+    assert end is not None, line
+    filled = (
+        line[line.index("{"):end]
+        .replace("<slug>", "k")
+        .replace("<...>", "t")
+        .replace("<short phrase>", "L")
+        .replace("<one sentence>", "H")
+        .replace(
+            "<letter_arrives|she_thinks_of_you|awaits_you|none>", "none"
+        )
+    )
+    json.loads(filled)  # 坏形在此抛 ValueError
 
 
 def test_letter_elapsed_days_validates() -> None:
