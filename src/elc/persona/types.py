@@ -32,7 +32,7 @@ from elc.relationship.episode import EpisodeView
 from elc.relationship.types import RelationshipView
 from elc.runtime.types import GenerationActionType
 from elc.user_config.types import DisclosedUserProfile
-from elc.world_lore.types import WorldLoreView
+from elc.world_lore.types import WorldChronicleView, WorldLoreView
 
 
 @dataclass(frozen=True)
@@ -233,6 +233,14 @@ class GenerationContext:
     (elc.world_lore.types; the owning domain's Phase 0 shape), because the
     compiler renders lore facts since this cut and renders a *declared*
     shape. ``conversation_window`` stays the remaining ``object | None``.
+    wr-12 (DEC-OPI-c73dbff3…84): the lore view gains its dynamic sibling —
+    ``world_chronicle_view`` (``WorldChronicleView | None``, same owning
+    domain's shape) carries the conversation's world's *recent* chronicle
+    (at most ``RECENT_WORLD_EVENT_WINDOW`` narrations, oldest first), so
+    the role writes from inside a world that has just been happening
+    around her, not beside a frozen one. The degradation is the lore
+    view's own: ``None`` compiles byte-identically to the pre-wr-12
+    prompt; a resolved view with no events renders no section.
 
     Import direction: this module imports the view *types* from the domains
     that own them, which is exactly how §11 works — Persona Runtime consumes
@@ -252,6 +260,7 @@ class GenerationContext:
     generation_policy: str
     generation_contract: GenerationContract | None = None
     ephemeral_teaching_directive: object | None = None
+    world_chronicle_view: WorldChronicleView | None = None
 
 
 #: cs-0（附笺模式）: the ``[teaching]`` section is retired. The compiled
@@ -430,6 +439,17 @@ def world_lore_prompt_fields(
         ),
     }
     return tuple((key, values[key]) for key in WORLD_LORE_PROMPT_KEY_ORDER)
+
+
+#: The ``[recent_world_events]`` section's guidance line (wr-12,
+#: DEC-OPI-c73dbff3…84 R5, the semantic law): the events below it are her
+#: **life's background** — what has been going on around her — and never a
+#: task list. The line is declarative on purpose: no imperative, no
+#: "respond", no "must" — her letter is written to the user, and the
+#: world's recent past is what it happened against, not what it answers.
+RECENT_WORLD_EVENTS_GUIDANCE = (
+    "Recent events in her world, for background only."
+)
 
 
 @dataclass(frozen=True)

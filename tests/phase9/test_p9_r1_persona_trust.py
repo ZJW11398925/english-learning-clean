@@ -84,6 +84,8 @@ from elc.relationship.types import (
 from elc.runtime.types import GenerationActionType, InputEnvelope
 from elc.user_config.types import DisclosedUserProfile, DisclosureLevel
 from elc.world_lore.types import (
+    WorldChronicleEntry,
+    WorldChronicleView,
     WorldLoreFactKind,
     WorldLoreRecord,
     WorldLoreView,
@@ -178,6 +180,26 @@ LORE_FACTS_LINE = "; ".join(
     for record in LORE_FACTS
 )
 
+#: wr-12: the chronicle probe view — two entries, escape-clean so the
+#: expected line reads literally (the frame/escape laws over this section
+#: get their own dedicated pins in ``test_wr12_chronicle_view.py``; here
+#: the row only has to join the table-vs-rendering closed loop the way
+#: the lore row did).
+CHRONICLE_EVENTS = (
+    WorldChronicleEntry(
+        occurred_at="day 12",
+        narration="Rain tapped the bindery roof.",
+    ),
+    WorldChronicleEntry(
+        occurred_at="day 13",
+        narration="The market stalls came back to the square.",
+    ),
+)
+CHRONICLE_EVENTS_LINE = (
+    "day 12：Rain tapped the bindery roof.\n"
+    "day 13：The market stalls came back to the square."
+)
+
 DIRECTIVE = TeachingPromptView(
     action_type="TEACHING_HINT",
     moment_id="mom-p9-r1",
@@ -252,6 +274,7 @@ def _request(
     language_policy: str = "default",
     contract: GenerationContract | None = None,
     lore: WorldLoreView | None = None,
+    chronicle: WorldChronicleView | None = None,
 ) -> PromptCompilationRequest:
     contract = contract if contract is not None else _contract()
     return PromptCompilationRequest(
@@ -296,6 +319,7 @@ def _request(
             generation_policy="default",
             generation_contract=contract,
             ephemeral_teaching_directive=directive,
+            world_chronicle_view=chronicle,
         ),
         generation_contract=contract,
     )
@@ -504,10 +528,12 @@ def test_the_canonical_baseline_and_the_compiler_both_declare_the_basis() -> Non
 
 def test_persona_joins_the_declared_untrusted_set() -> None:
     # 主线-3 随迁：lore（BF-05 "lore·world text"）随其 carrier 刀入列。
+    # wr-12 随迁：recent_world_events（编年史叙述——BF-05 同族）同律入列。
     assert UNTRUSTED_PROMPT_SECTIONS == (
         "persona",
         "profile",
         "lore",
+        "recent_world_events",
         "history",
         "relationship",
         "episode",
@@ -733,6 +759,7 @@ def test_the_untrusted_rows_render_only_inside_their_frames() -> None:
             fact=FACT,
             summary=SUMMARY,
             lore=WorldLoreView(facts=LORE_FACTS),
+            chronicle=WorldChronicleView(events=CHRONICLE_EVENTS),
         )
     )
     expected = {
@@ -748,6 +775,7 @@ def test_the_untrusted_rows_render_only_inside_their_frames() -> None:
         ("persona", "lore_refs"): "; ".join(package.lore_refs),
         ("profile", "disclosed_facts"): FACT,
         ("lore", "facts"): LORE_FACTS_LINE,
+        ("recent_world_events", "event_text"): CHRONICLE_EVENTS_LINE,
         ("relationship", "memories"): MEMORY,
         ("episode", "summary"): SUMMARY,
         ("episode", "open_threads"): "a thread",

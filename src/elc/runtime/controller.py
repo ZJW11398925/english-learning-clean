@@ -251,7 +251,11 @@ from elc.user_config.types import (
     PlannerConstraintType,
 )
 from elc.world_lore.queries import WorldLoreQueries
-from elc.world_lore.types import WorldLoreView
+from elc.world_lore.types import (
+    WorldChronicleQueries,
+    WorldChronicleView,
+    WorldLoreView,
+)
 
 if TYPE_CHECKING:
     # Annotations only: the coordinator calls the injected authority faces,
@@ -1080,6 +1084,24 @@ class ConversationCoordinator:
       degrades (``_world_lore_view_for`` — the prompt loses a section,
       never a reply).
 
+    wr-12 (DEC-OPI-c73dbff3…84) adds one more optional injection beside it:
+
+    - ``world_chronicle``
+      (``elc.world_lore.types.WorldChronicleQueries``): the
+      conversation→world-chronicle read port — the composition root's
+      binding-table lookup plus the world store's own ``chronicle_of``
+      sliced to the recent window. At each GenerationContext site the
+      view is resolved for the turn's own conversation (the recent
+      events of the world she lives in, oldest first) and handed to the
+      compiler, whose framed ``[recent_world_events]`` section renders
+      it. The degradation is the lore view's own shape
+      (``_world_chronicle_view_for``): no port → ``None`` (byte-identical
+      prompts), an ``Err`` (a conversation bound to no world, a store
+      refusal) → ``None`` — the prompt loses a section, never a reply —
+      an escaping exception → ``None``, and a resolved view with no
+      events is returned as resolved (the compiler renders no section —
+      the honest "world resolved, nothing has happened yet").
+
     ``finalize_delivery`` (the ``BUFFERED_VALIDATED`` face) stays the teaching
     legs' delivery — §13's default table sends every teaching action type and
     ``PERSONA_RESUME`` through it, and only ``NORMAL_PERSONA_REPLY`` through
@@ -1149,6 +1171,7 @@ class ConversationCoordinator:
         constraint_views: PlannerConstraintSource | None = None,
         character_packages: Mapping[str, CharacterPackageRecord] | None = None,
         world_lore: WorldLoreQueries | None = None,
+        world_chronicle: WorldChronicleQueries | None = None,
         reply_language_source: Callable[[], str | None] | None = None,
     ) -> None:
         self._lease = lease
@@ -1181,6 +1204,12 @@ class ConversationCoordinator:
         # at the two GenerationContext sites, and ``None`` (every assembly
         # before this slice) keeps those sites' answer exactly ``None``.
         self._world_lore = world_lore
+        # wr-12 (DEC-OPI-c73dbff3…84): the conversation→world-chronicle
+        # port. Same held-never-called discipline: the view is resolved
+        # per turn at the two GenerationContext sites, and ``None``
+        # (every assembly before this slice) keeps those sites' answer
+        # exactly ``None`` — no section, byte-identical prompts.
+        self._world_chronicle = world_chronicle
         # W-L: the reply-language read port, same optional-injection
         # discipline as every port above — held, never called at
         # construction, consulted per turn at the two PromptCompilationRequest
@@ -1787,6 +1816,9 @@ class ConversationCoordinator:
                 relationship_view=relationship_view,
                 episode_view=episode_view,
                 world_lore_view=self._world_lore_view_for(
+                    command.conversation_id
+                ),
+                world_chronicle_view=self._world_chronicle_view_for(
                     command.conversation_id
                 ),
                 disclosed_user_profile=disclosed_profile,
@@ -2819,6 +2851,36 @@ class ConversationCoordinator:
             return None
         try:
             resolved = port.resolve_world_lore_view(conversation_id)
+        except Exception:  # noqa: BLE001 — a read never fails the turn
+            return None
+        if isinstance(resolved, Err):
+            return None
+        return resolved.value
+
+    def _world_chronicle_view_for(
+        self, conversation_id: ConversationId
+    ) -> WorldChronicleView | None:
+        """Best-effort read of the recent-world-events view of one turn
+        (wr-12, DEC-OPI-c73dbff3…84 R2).
+
+        The same degradation shape ``_world_lore_view_for`` declared for
+        the lore view, stated for its dynamic sibling: no port (every
+        assembly before wr-12, and every assembly that does not wire one)
+        → ``None``, so the compiled prompt is byte-identical to what it
+        was; an ``Err`` from the resolution (a conversation bound to no
+        world, a store failure the port answered) → ``None`` — the prompt
+        loses a section, never a reply, and it never carries a *guessed*
+        world; an exception escaping the port → ``None``. A resolved view
+        with no events is returned as resolved — the compiler renders no
+        section for it, which is the honest "world resolved, nothing has
+        happened yet" and not a failure.
+        """
+
+        port = self._world_chronicle
+        if port is None:
+            return None
+        try:
+            resolved = port.resolve_world_chronicle_view(conversation_id)
         except Exception:  # noqa: BLE001 — a read never fails the turn
             return None
         if isinstance(resolved, Err):
@@ -6982,6 +7044,9 @@ class ConversationCoordinator:
             relationship_view=relationship_view,
             episode_view=episode_view,
             world_lore_view=self._world_lore_view_for(conversation_id),
+            world_chronicle_view=self._world_chronicle_view_for(
+                conversation_id
+            ),
             disclosed_user_profile=disclosed_profile,
             conversation_window=window,
             language_policy="follow-user",

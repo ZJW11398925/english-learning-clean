@@ -275,6 +275,7 @@ def test_the_framed_sections_and_the_version_word_are_declared() -> None:
         "persona",
         "profile",
         "lore",
+        "recent_world_events",
         "history",
         "relationship",
         "episode",

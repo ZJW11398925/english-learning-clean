@@ -228,6 +228,7 @@ from elc.platform.types import (
     DomainError,
     DomainErrorCode,
     Err,
+    Ok,
     PersonaId,
     Result,
     RuntimeEpoch,
@@ -274,6 +275,11 @@ from elc.world.store import SqliteWorldStore
 from elc.world_lore.content import seed_world_lore_facts
 from elc.world_lore.controller import WorldLoreController
 from elc.world_lore.store import SqliteWorldLoreStore, WorldLoreStoreError
+from elc.world_lore.types import (
+    RECENT_WORLD_EVENT_WINDOW,
+    WorldChronicleEntry,
+    WorldChronicleView,
+)
 
 __all__ = ["LOCAL_V1_USER_ID", "Host", "open_host"]
 
@@ -337,6 +343,72 @@ class _SavedKeySource:
     def resolve(self, ref: SecretRef) -> str | None:
         del ref  # The saved key is the whole addressing scheme
         return self.saved
+
+
+class _WorldChroniclePort:
+    """The conversation→world-chronicle read, wired from the real world
+    leg (wr-12, DEC-OPI-c73dbff3…84 R3).
+
+    Exactly the one member the coordinator's ``WorldChronicleQueries``
+    port names: the conversation's world **binding row** (the same
+    direct-SQL read of ``world_conversation`` the web face's
+    ``_world_binding`` uses — the binding table has no controller-level
+    read face, and this adapter inherits that posture rather than minting
+    a second one), then the world store's own ``chronicle_of`` sliced to
+    :data:`RECENT_WORLD_EVENT_WINDOW`, oldest first, projected onto the
+    view type Persona Runtime consumes. It adds nothing and translates
+    nothing: a conversation bound to no world is a ``NOT_FOUND`` ``Err``
+    (the prompt loses a section, never a reply — the coordinator's
+    degradation owns the ``None``); the store's own ``Err`` rides through
+    verbatim; an empty chronicle resolves to an empty view (the honest
+    "world resolved, nothing has happened yet"). The store leg is always
+    present in this assembly (``SqliteWorldStore`` is built on both
+    tiers), so the port is wired unconditionally.
+    """
+
+    __slots__ = ("_conn", "_world")
+
+    def __init__(
+        self, conn: sqlite3.Connection, world: SqliteWorldStore
+    ) -> None:
+        self._conn = conn
+        self._world = world
+
+    def resolve_world_chronicle_view(
+        self, conversation_id: ConversationId
+    ) -> Result[WorldChronicleView]:
+        """The recent-events view of one conversation's world (the port's
+        whole contract — see the class docstring for the degradation)."""
+
+        row = self._conn.execute(
+            "SELECT world_id FROM world_conversation"
+            " WHERE conversation_id = ?",
+            (str(conversation_id),),
+        ).fetchone()
+        if row is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"conversation bound to no world: {conversation_id}"
+                    ),
+                )
+            )
+        chronicle = self._world.chronicle_of(str(row[0]))
+        if isinstance(chronicle, Err):
+            return chronicle
+        recent = chronicle.value[-RECENT_WORLD_EVENT_WINDOW:]
+        return Ok(
+            WorldChronicleView(
+                events=tuple(
+                    WorldChronicleEntry(
+                        occurred_at=event.occurred_at,
+                        narration=event.narration,
+                    )
+                    for event in recent
+                )
+            )
+        )
 
 
 @dataclass(frozen=True)
@@ -734,6 +806,12 @@ def open_host(
         # penpal real on any fresh database). User-created worlds are
         # still bound only by a caller asking the store.
         world_store = SqliteWorldStore(db, fence)
+        # wr-12 (DEC-OPI-c73dbff3…84): the conversation→world-chronicle
+        # port over the same store — wired unconditionally (the world
+        # store is built on both tiers), so every turn's reply prompt
+        # resolves the bound world's recent events (a conversation bound
+        # to no world degrades to no section, the coordinator's shape).
+        world_chronicle_port = _WorldChroniclePort(db, world_store)
 
         def _persona_exists(persona_id: str) -> bool:
             """The world seed's cast verification face: does this persona
@@ -955,6 +1033,7 @@ def open_host(
             stream_transport=stream_transport,
             constraint_views=user_config,
             world_lore=world_lore,
+            world_chronicle=world_chronicle_port,
             # W-L: the reply language rides the settings row per turn —
             # the port is the store's own ``get`` (a read on the shared
             # connection, the caller's thread, exactly what the provider

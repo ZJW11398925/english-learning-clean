@@ -27,8 +27,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Protocol, runtime_checkable
 
-from elc.platform.types import WorldLoreFactId
+from elc.platform.types import ConversationId, Result, WorldLoreFactId
 
 
 class WorldLoreFactKind(StrEnum):
@@ -81,3 +82,78 @@ class NullWorldLoreView(WorldLoreView):
     Runtime)."""
 
     deferred_reason: str = "WORLD_LORE_RESOLUTION_DEFERRED"
+
+
+#: How many recent chronicle events the view carries (wr-12,
+#: DEC-OPI-c73dbff3…84 R1: "近 5 条" — restraint: her recent past is not
+#: the whole history). The composition root slices the world's chronicle
+#: to this window; the view itself is shaped, not enforced, so a test
+#: hand-building a wider view still compiles — the window is the
+#: assembly's duty, pinned where the slicing lives.
+RECENT_WORLD_EVENT_WINDOW = 5
+
+
+@dataclass(frozen=True)
+class WorldChronicleEntry:
+    """One recent world event as Persona Runtime sees it (wr-12,
+    DEC-OPI-c73dbff3…84 R1).
+
+    ``occurred_at`` is the chronicle entry's own moment word (the durable
+    ``world_event.occurred_at`` verbatim — the view is a reading, never a
+    re-stamp); ``narration`` is the event's prose verbatim. Both are
+    **non-empty** by construction (an event with no moment or no prose is
+    not a fact anyone could read — a ValueError at construction, the
+    PoolEvent ``__post_init__`` precedent in :mod:`elc.world.types`).
+    """
+
+    occurred_at: str
+    narration: str
+
+    def __post_init__(self) -> None:
+        if not self.occurred_at:
+            raise ValueError(
+                "WorldChronicleEntry.occurred_at must be non-empty"
+            )
+        if not self.narration:
+            raise ValueError(
+                "WorldChronicleEntry.narration must be non-empty"
+            )
+
+
+@dataclass(frozen=True)
+class WorldChronicleView:
+    """The resolved recent-events view handed to Persona Runtime (wr-12,
+    DEC-OPI-c73dbff3…84 R1) — the conversation's world's recent
+    chronicle, **oldest first**, at most
+    :data:`RECENT_WORLD_EVENT_WINDOW` entries.
+
+    The worlddynamic half of the lore pairing: ``WorldLoreView`` is the
+    static setting (the town's shape), ``WorldChronicleView`` is what has
+    just been happening in it (the durable ``world_event`` narrations —
+    wr-2's per-turn chronicle, now readable by the role it happens
+    around). An empty ``events`` tuple is legal — the honest "world
+    resolved, nothing has happened yet"; the compiler renders no section
+    for it, exactly like an empty ``WorldLoreView``.
+    """
+
+    events: tuple[WorldChronicleEntry, ...] = ()
+
+
+@runtime_checkable
+class WorldChronicleQueries(Protocol):
+    """The conversation→world-chronicle read (wr-12, DEC-OPI-c73dbff3…84
+    R2) — the port the composition root wires so each turn's reply prompt
+    carries the world's recent events.
+
+    Declared beside the view shape it resolves, in this module's family;
+    its ``WorldLoreQueries`` sibling lives in :mod:`elc.world_lore.queries`
+    (the domain's query face). Registered Revisit: the next cut that
+    touches that module moves this declaration next to the sibling — the
+    protocol is structural, so the composition root's implementation and
+    the coordinator's port annotation need no import of it either way.
+    """
+
+    def resolve_world_chronicle_view(
+        self, conversation_id: ConversationId
+    ) -> Result[WorldChronicleView]:
+        ...

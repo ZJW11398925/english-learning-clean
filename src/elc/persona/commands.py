@@ -234,6 +234,7 @@ import json
 from typing import Mapping, Protocol, runtime_checkable
 
 from elc.persona.types import (
+    RECENT_WORLD_EVENTS_GUIDANCE,
     CharacterPackageRecord,
     CompiledPrompt,
     GenerationContext,
@@ -261,14 +262,18 @@ from elc.runtime.types import GenerationActionType
 #: domain resolves — right after ``profile``, the where-and-what-world of
 #: the who-and-to-whom pair):
 #:
-#:     persona → profile → lore → contract → history → relationship →
-#:     episode → enclosed-note → channel
+#:     persona → profile → lore → recent_world_events → contract →
+#:     history → relationship → episode → enclosed-note → channel
 #:
 #: The new sections sit where they do for stated reasons, not by accident:
 #: ``profile`` immediately after ``persona`` (both are "who is talking to
 #: whom"); ``lore`` after ``profile`` and before ``contract`` (the durable
 #: world setting the letter is written from, ahead of the rules of the
-#: exchange); ``relationship``/``episode`` after ``history`` (they are the
+#: exchange); ``recent_world_events`` right after ``lore`` (wr-12,
+#: DEC-OPI-c73dbff3…84: the lore view is the world's *shape* and the
+#: chronicle view is what has just been *happening* in it — the static
+#: and the dynamic halves of the same where-she-lives read, read together
+#: or not at all); ``relationship``/``episode`` after ``history`` (they are the
 #: distilled form of what history shows in full, so the model reads the
 #: transcript first and the continuity summary after it); ``enclosed-note``
 #: stays last-but-one because it is the ephemeral note this turn's letter
@@ -278,6 +283,7 @@ PROMPT_SECTION_ORDER = (
     "persona",
     "profile",
     "lore",
+    "recent_world_events",
     "contract",
     "history",
     "relationship",
@@ -304,11 +310,16 @@ PROMPT_SECTION_ORDER = (
 #: text`` alongside the card, and the section this cut gives the lore half a
 #: carrier is born framed (the reading 5 registration honoured — the
 #: registration said the section joins the frame in the same cut that wires
-#: it, and it did).
+#: it, and it did). wr-12 (DEC-OPI-c73dbff3…84) adds
+#: ``recent_world_events`` the same way: BF-05's block lists ``lore·world
+#: text``, the chronicle's narrations are model/world-produced durable
+#: text of exactly that family, and the section that carries them is born
+#: framed, joining this tuple in the same cut that wires it.
 UNTRUSTED_PROMPT_SECTIONS = (
     "persona",
     "profile",
     "lore",
+    "recent_world_events",
     "history",
     "relationship",
     "episode",
@@ -433,6 +444,18 @@ PROMPT_FIELD_TRUST: tuple[tuple[str, str, str, str], ...] = (
     # system's own; the facts line is lore prose.
     ("lore", "prompt_version", "trusted", TRUST_CARRIER_SECTION),
     ("lore", "facts", "untrusted", TRUST_CARRIER_FRAME),
+    # recent_world_events — the chronicle's narrations (wr-12, DEC-OPI-
+    # c73dbff3…84): the dynamic sibling of the lore row, framed from
+    # birth. The guidance line is the system's own words; the event lines
+    # are world prose (BF-05 "lore·world text" again) — one value row for
+    # the whole section, the history row's own shape (the
+    # "occurred_at：narration" prefixes are the system's skeleton).
+    (
+        "recent_world_events",
+        "event_text",
+        "untrusted",
+        TRUST_CARRIER_FRAME,
+    ),
     # history — the turns themselves (BF-05 "user free text").
     ("history", "turn_text", "untrusted", TRUST_CARRIER_FRAME),
     # relationship — the memory rows: ids are the system's, the remembered
@@ -668,6 +691,38 @@ class PromptCompiler:
                 _framed_untrusted_section(
                     "lore",
                     world_lore_prompt_fields(context.world_lore_view),
+                )
+            )
+
+        # wr-12 (DEC-OPI-c73dbff3…84): the recent-world-events section —
+        # the first carrier the chronicle's narrations have had on this
+        # compiler. It renders only when the view carries events; an empty
+        # view (and the absent view) renders nothing, so "world resolved,
+        # nothing has happened yet" costs no section, and a request with
+        # no chronicle view compiles byte-identically to the pre-wr-12
+        # prompt. The block form is the history section's own (one line
+        # per event — a line count that moves with the data, which the
+        # key/value section form's pinned key order could not carry); the
+        # frame, the escapes and the membership are the lore carrier's
+        # law. The guidance line is the R5 semantic law in text: the
+        # events are her life's background, never a task — nothing in the
+        # section asks her to respond to any of it.
+        if (
+            context is not None
+            and context.world_chronicle_view is not None
+            and context.world_chronicle_view.events
+        ):
+            event_lines = [
+                f"{_escaped_untrusted_text(entry.occurred_at)}："
+                f"{_escaped_untrusted_text(entry.narration)}"
+                for entry in context.world_chronicle_view.events
+            ]
+            sections.append(
+                _framed_untrusted_block(
+                    "recent_world_events",
+                    "[recent_world_events]\n"
+                    f"{RECENT_WORLD_EVENTS_GUIDANCE}\n"
+                    + "\n".join(event_lines),
                 )
             )
 

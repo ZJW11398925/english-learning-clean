@@ -190,11 +190,14 @@ def test_the_rendered_section_follows_the_pinned_key_order() -> None:
     # three §11 views Persona Runtime consumes (profile / relationship /
     # episode) at their stated positions. cs-0 renamed the ephemeral slot's
     # section; the position is the old one. 主线-3 inserted the fourth §11
-    # view (lore, the WorldLoreView) after profile.
+    # view (lore, the WorldLoreView) after profile. wr-12 inserted the
+    # chronicle section right after it (the static and dynamic halves of
+    # the same where-she-lives read).
     assert PROMPT_SECTION_ORDER == (
         "persona",
         "profile",
         "lore",
+        "recent_world_events",
         "contract",
         "history",
         "relationship",
