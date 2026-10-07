@@ -3,10 +3,16 @@
 or two story beats, generated from the world's own life alone.
 
 What this module claims, no more: the prompt is composed from the world
-package's bible (the setting prose, the cast on one line, the whole
+package's bible (the setting prose, the cast — each member with their
+optional vignette, the town's narrative residents one line each when
+the package carries them — and the whole
 CURRENT lore fact set), the recent chronicle (the last eight narrations,
 oldest first — an empty chronicle answers an honest ``story begins``
-line) and the rhythm law (novel prose, small-town voice; consistent
+line), the people instruction (when the package carries residents or
+more than one cast member: write around their lives and how they touch
+— encounters, errands, small kindnesses, frictions, gossip — not only
+weather and scenery, one event refracting through several lives) and
+the rhythm law (novel prose, small-town voice; consistent
 with the history above; nothing already happened repeated; each beat one
 to three sentences; exactly one or two beats; each beat spanning zero to
 two story days; the narration in the interface language; kinds as short
@@ -63,7 +69,7 @@ from elc.platform.types import (
     PersonaId,
     Result,
 )
-from elc.world.package import WorldPackage
+from elc.world.package import CastMember, WorldPackage
 
 __all__ = [
     "GeneratedBeat",
@@ -382,13 +388,23 @@ def build_narrator_prompt(
     provider, a store or a world row).
 
     ``package`` contributes the bible: the setting prose in full, the
-    cast on one line. ``lore_facts`` — ``(canonical_key, statement)``
-    pairs, the projection's CURRENT half the caller read — is the
-    world's established lore, in full; an empty set says so honestly
-    (无则空诚实). ``recent_narrations`` is the story's immediate past,
-    oldest first, exactly as the caller sliced it. ``ui_language`` picks
-    the narration language instruction (``zh`` / ``en``; anything else is
-    a refusal naming the two words).
+    cast — one member with their optional vignette after the name (a
+    bare name when the member carries none, the pre-v4 shape), the
+    town's narrative residents one line each under their own section
+    when the package carries any (``Resident`` rows are prompt material
+    only; the section's absence adds nothing). ``lore_facts`` —
+    ``(canonical_key, statement)`` pairs, the projection's CURRENT half
+    the caller read — is the world's established lore, in full; an
+    empty set says so honestly (无则空诚实). ``recent_narrations`` is
+    the story's immediate past, oldest first, exactly as the caller
+    sliced it. ``ui_language`` picks the narration language instruction
+    (``zh`` / ``en``; anything else is a refusal naming the two words).
+
+    When the package carries residents or more than one cast member the
+    prompt adds the people instruction: write around these people's
+    lives and how they touch — encounters, errands, small kindnesses,
+    frictions, gossip — not only weather and scenery, the same event
+    refracting through several lives.
 
     WR-4 (DEC-OPI-5fc42174-…58, the user's third direction): **no
     letter ever enters this prompt** — the living-world spec is
@@ -415,8 +431,29 @@ def build_narrator_prompt(
     )
     sections.append("== The world ==")
     sections.extend(package.setting)
-    cast_line = ", ".join(member.name for member in package.cast)
-    sections.append(f"Cast: {cast_line}")
+
+    def _cast_row(member: CastMember) -> str:
+        if member.vignette:
+            return f"{member.name} — {member.vignette}"
+        return member.name
+
+    sections.append(
+        "Cast: " + ", ".join(_cast_row(member) for member in package.cast)
+    )
+    if package.residents:
+        sections.append("== The town's residents ==")
+        sections.extend(
+            f"{resident.name}, {resident.role} — {resident.vignette}"
+            for resident in package.residents
+        )
+    if package.residents or len(package.cast) > 1:
+        sections.append(
+            "The world's life is its people: write around their lives"
+            " and how they touch each other — encounters, errands,"
+            " small kindnesses, frictions, gossip — not only the"
+            " weather and the scenery. The same event may refract"
+            " through several lives."
+        )
     sections.append("== The world's established facts ==")
     if lore_facts:
         sections.extend(f"- {key}: {statement}" for key, statement in lore_facts)

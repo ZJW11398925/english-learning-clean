@@ -1,13 +1,19 @@
 """The world package loader (W-1-4) — builtin worlds as data, not code.
 
-A world package is one JSON file under the repository's ``worlds/``
+A world package is one JSON file under the repository's ``worlds``
 directory (beside ``content_src/``): the world's identity (id, name,
 version, calendar_start), its setting prose, the cast it binds through
-existing character cards, the pre-authored event pool the engine draws
-from, and a supply declaration. :func:`load_world_package` decodes one
+existing character cards (each member optionally carrying a one-line
+``vignette`` of the member's life), an optional ``residents`` section —
+the town's purely narrative residents, who have no persona and bind no
+actor (prompt material, never correspondence faces; the web face's
+``world_residents`` reads the *bound* cast and is a different thing) —
+the pre-authored event pool the engine draws from, and a supply
+declaration. :func:`load_world_package` decodes one
 file strictly — bad
 JSON, a missing or unexpected key, a value of the wrong shape, an unknown
-moment word or an unknown supply family word are all ``Err`` refusals
+moment word, an unknown supply family word or a name collision between
+a resident and the cast are all ``Err`` refusals
 whose message names the offending key or word — and
 :func:`ensure_builtin_worlds` seeds every ``*.json`` in a directory
 through the store's idempotent create/bind faces at open time. Any
@@ -53,6 +59,7 @@ __all__ = [
     "SUPPLY_FAMILY_WORDS",
     "WORLD_PACKAGE_VERSION",
     "CastMember",
+    "Resident",
     "SupplyDeclaration",
     "WorldPackage",
     "WorldPackageError",
@@ -84,16 +91,17 @@ SUPPLY_FAMILY_WORDS: tuple[str, ...] = (
     "STANCE",
 )
 
-#: The package schema version this loader reads (v3, A2 / DEC-…88):
-#: every pool event carries its narration in both languages
-#: (``narration`` and ``narration_zh``, both required non-empty strings),
-#: and the package carries ``calendar_start`` — the virtual world
-#: calendar's day zero (spec §198: the world does not follow real time;
-#: :func:`world_date_of` derives every later day from it). A document
-#: stamped with any other version is a refusal naming the number — a
-#: v1/v2 file cannot ride in half-read, and a future v4 must be read by
-#: the cut that writes it, never guessed at by this one.
-WORLD_PACKAGE_VERSION = 3
+#: The package schema version this loader reads (v4, wr-9 /
+#: DEC-OPI-c73dbff3…50): every pool event still carries its narration in
+#: both languages and the package its ``calendar_start`` (the v3 face,
+#: kept), plus the v4 additions — a cast member may carry an optional
+#: one-line ``vignette`` of their life, and the package may carry an
+#: optional ``residents`` section naming the town's purely narrative
+#: residents (no persona, no actor binding). A document stamped with any
+#: other version is a refusal naming the number — a v3-and-below file
+#: cannot ride in half-read, and a future v5 must be read by the cut
+#: that writes it, never guessed at by this one.
+WORLD_PACKAGE_VERSION = 4
 
 
 class WorldPackageError(RuntimeError):
@@ -105,11 +113,34 @@ class WorldPackageError(RuntimeError):
 @dataclass(frozen=True)
 class CastMember:
     """One cast row: the character card the actor speaks through (the
-    persona must exist as a card when the package seeds) and the name
-    the world's prose knows it by."""
+    persona must exist as a card when the package seeds), the name
+    the world's prose knows it by, and — v4, optional — a one-line
+    ``vignette`` of the member's off-stage life (identity, daily round,
+    and what they care about) the narrator's prompt carries as material.
+    A member without a vignette rides the prompt as a bare name (the
+    pre-v4 shape, still legal)."""
 
     persona_id: str
     name: str
+    vignette: str | None = None
+
+
+@dataclass(frozen=True)
+class Resident:
+    """One purely narrative resident (v4, wr-9): a name, a role in the
+    town's life, and a one-line vignette — all three required non-empty.
+
+    A resident has **no persona and binds no actor**: they are prompt
+    material for the narrator's cast-of-the-town face, never
+    correspondence faces (no letters to or from a resident; the web
+    face's ``world_residents`` rows are the *bound cast*, a different
+    thing). The loader refuses a resident whose name collides with the
+    cast's or with another resident's, case-insensitively — one town,
+    one name-space."""
+
+    name: str
+    role: str
+    vignette: str
 
 
 @dataclass(frozen=True)
@@ -148,7 +179,15 @@ class WorldPackage:
     day zero — an ISO date. The world's story does not follow real time
     (spec §198); every presented day derives from this start through
     :func:`world_date_of`, and no world presentation face ever renders
-    the caller's wall clock."""
+    the caller's wall clock.
+
+    v4 (wr-9, DEC-OPI-c73dbff3…50): ``residents`` is the town's purely
+    narrative cast (:class:`Resident` — no persona, no actor binding);
+    the section's absence in the file decodes to the empty tuple, an
+    honest zero-resident world. The narrator reads it live from the
+    loaded package every step — a re-seeded v4 package arms the
+    material on the next open, and no already-written chronicle is
+    rewritten (append-only history, no backfill)."""
 
     world_id: str
     name: str
@@ -159,6 +198,7 @@ class WorldPackage:
     event_pool: tuple[PoolEvent, ...]
     supply: SupplyDeclaration
     narrations_zh: tuple[tuple[str, str], ...] = ()
+    residents: tuple[Resident, ...] = ()
 
     def to_event_pool(self) -> tuple[PoolEvent, ...]:
         """The engine's pool argument, as loaded (no re-decode)."""
@@ -188,7 +228,12 @@ _PACKAGE_KEYS = (
     "event_pool",
     "supply",
 )
+#: The optional top-level sections (v4, wr-9): absent is legal, present
+#: is decoded strictly — a section is never half-read.
+_PACKAGE_OPTIONAL_KEYS = ("residents",)
 _CAST_KEYS = ("persona_id", "name")
+_CAST_OPTIONAL_KEYS = ("vignette",)
+_RESIDENT_KEYS = ("name", "role", "vignette")
 _EVENT_REQUIRED_KEYS = ("kind", "narration", "narration_zh", "days")
 _EVENT_KEYS = (
     "kind",
@@ -241,7 +286,9 @@ def _decode_statement_pairs(
 
 
 def _decode_cast_member(entry: object, where: str) -> Result[CastMember]:
-    """One cast row, exactly ``{persona_id, name}``."""
+    """One cast row: ``{persona_id, name}`` required, plus the optional
+    v4 ``vignette`` (a one-line life; absent decodes to ``None`` — the
+    pre-v4 bare-name shape stays legal)."""
 
     if not isinstance(entry, dict):
         return _err(f"{where}: not a JSON object")
@@ -249,7 +296,7 @@ def _decode_cast_member(entry: object, where: str) -> Result[CastMember]:
         if key not in entry:
             return _err(f"{where}: key {key!r} is missing")
     for key in entry:
-        if key not in _CAST_KEYS:
+        if key not in _CAST_KEYS and key not in _CAST_OPTIONAL_KEYS:
             return _err(f"{where}: unexpected key {key!r}")
     persona_id = entry["persona_id"]
     name = entry["name"]
@@ -257,14 +304,49 @@ def _decode_cast_member(entry: object, where: str) -> Result[CastMember]:
         return _err(f"{where}: persona_id must be a non-empty string")
     if not isinstance(name, str) or not name:
         return _err(f"{where}: name must be a non-empty string")
-    return Ok(CastMember(persona_id=persona_id, name=name))
+    vignette: str | None = None
+    if "vignette" in entry:
+        raw = entry["vignette"]
+        if not isinstance(raw, str) or not raw.strip():
+            return _err(
+                f"{where}: vignette must be a non-empty string when"
+                " present"
+            )
+        vignette = raw
+    return Ok(CastMember(persona_id=persona_id, name=name, vignette=vignette))
+
+
+def _decode_resident(entry: object, where: str) -> Result[Resident]:
+    """One purely narrative resident: exactly ``{name, role, vignette}``,
+    all three required non-empty strings (a resident is prompt
+    material — a half-drawn one would ride the narrator's prompt as a
+    half-drawn person)."""
+
+    if not isinstance(entry, dict):
+        return _err(f"{where}: not a JSON object")
+    for key in _RESIDENT_KEYS:
+        if key not in entry:
+            return _err(f"{where}: key {key!r} is missing")
+    for key in entry:
+        if key not in _RESIDENT_KEYS:
+            return _err(f"{where}: unexpected key {key!r}")
+    for key in _RESIDENT_KEYS:
+        value = entry[key]
+        if not isinstance(value, str) or not value.strip():
+            return _err(f"{where}: {key!r} must be a non-empty string")
+    return Ok(
+        Resident(
+            name=entry["name"], role=entry["role"], vignette=entry["vignette"]
+        )
+    )
 
 
 def _decode_pool_event(entry: object, where: str) -> Result[PoolEvent]:
     """One pool event: ``kind`` / ``narration`` / ``narration_zh`` /
     ``days`` required (the Chinese narration is not optional prose, it
     is the package's second language; ``days`` is the story's own span,
-    v3 — a negative or non-int span would move the world's calendar by
+    a v3 face kept in v4 — a negative or non-int span would move the
+    world's calendar by
     a lie), ``effects`` / ``conditions`` / ``moment`` optional (the
     engine shapes' own defaults). An unknown moment word is refused with
     the word in the message — the vocabulary is exactly ``NOTICE`` /
@@ -382,12 +464,13 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
     Every refusal is an ``Err`` naming the file and the offending key or
     word: unreadable file, bad JSON, a non-object document, a missing or
     unexpected top-level key, a value of the wrong shape, a version other
-    than :data:`WORLD_PACKAGE_VERSION` (v3 — every event carries both
-    narrations and ``calendar_start`` names the virtual world's day
-    zero), a duplicated event kind, an unknown moment word, an unknown
-    supply family word. The loader never guesses past an error —
-    fail-closed decoding, the caller decides what a refusal means (the
-    builtin seed answers: a failed open).
+    than :data:`WORLD_PACKAGE_VERSION` (v4 — the v3 face kept, plus an
+    optional cast ``vignette`` and an optional ``residents`` section), a
+    duplicated event kind, an unknown moment word, an unknown supply
+    family word, a resident whose name collides with the cast's or with
+    another resident's (case-insensitively). The loader never guesses
+    past an error — fail-closed decoding, the caller decides what a
+    refusal means (the builtin seed answers: a failed open).
     """
 
     where = str(path)
@@ -405,7 +488,7 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
         if key not in document:
             return _err(f"{where}: key {key!r} is missing")
     for key in document:
-        if key not in _PACKAGE_KEYS:
+        if key not in _PACKAGE_KEYS and key not in _PACKAGE_OPTIONAL_KEYS:
             return _err(f"{where}: unexpected key {key!r}")
     world_id = document["world_id"]
     name = document["name"]
@@ -419,9 +502,10 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
     if version != WORLD_PACKAGE_VERSION:
         return _err(
             f"{where}: version must be {WORLD_PACKAGE_VERSION} (this"
-            f" loader reads v{WORLD_PACKAGE_VERSION} packages, whose"
-            " every event carries both narrations and whose"
-            " calendar_start names the virtual world's day zero), got"
+            f" loader reads v{WORLD_PACKAGE_VERSION} packages — the v3"
+            " face kept, plus an optional cast vignette and an optional"
+            " residents section; v3-and-below files are refused rather"
+            " than read half-way), got"
             f" {version}"
         )
     calendar_start = document["calendar_start"]
@@ -454,6 +538,31 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
         if isinstance(decoded, Err):
             return decoded
         members.append(decoded.value)
+    raw_residents = document.get("residents", [])
+    if not isinstance(raw_residents, list):
+        return _err(f"{where}: residents must be an array")
+    residents: list[Resident] = []
+    # One name-space across the whole town: a resident colliding with
+    # the cast or with another resident is a refusal naming the name
+    # (case-insensitively — prose does not distinguish case, and neither
+    # does the town).
+    known_names = {member.name.casefold() for member in members}
+    for index, entry in enumerate(raw_residents):
+        decoded_resident = _decode_resident(
+            entry, f"{where}: residents entry {index}"
+        )
+        if isinstance(decoded_resident, Err):
+            return decoded_resident
+        resident = decoded_resident.value
+        folded = resident.name.casefold()
+        if folded in known_names:
+            return _err(
+                f"{where}: resident name {resident.name!r} collides with"
+                " an existing name (cast and residents share one"
+                " name-space, case-insensitively)"
+            )
+        known_names.add(folded)
+        residents.append(resident)
     pool = document["event_pool"]
     if not isinstance(pool, list) or not pool:
         return _err(f"{where}: event_pool must be a non-empty array")
@@ -491,6 +600,7 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
             event_pool=tuple(events),
             supply=decoded_supply.value,
             narrations_zh=tuple(narrations_zh),
+            residents=tuple(residents),
         )
     )
 

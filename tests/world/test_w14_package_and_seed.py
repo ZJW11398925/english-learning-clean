@@ -101,10 +101,13 @@ def store(conn: sqlite3.Connection) -> SqliteWorldStore:
 def _valid_payload() -> dict[str, object]:
     """One minimal valid package payload — the negative tests mutate a
     copy of this and expect the loader to refuse the copy, never the
-    shipped Berrymoor file. v3 (A2): every event carries both narrations
-    and its story span (``days``), the package names the virtual world's
-    day zero (``calendar_start``), and the version word is the loader's
-    own constant."""
+    shipped Berrymoor file. v4 (wr-9; the v3 face kept): every event
+    carries both narrations and its story span (``days``), the package
+    names the virtual world's day zero (``calendar_start``), and the
+    version word is the loader's own constant. The optional v4
+    additions (a cast ``vignette``, a ``residents`` section) are absent
+    here on purpose — their absence is legal and pinned in the wr-9
+    file."""
 
     return {
         "world_id": "world-x",
@@ -242,7 +245,7 @@ def test_load_refuses_family_word_outside_declared_vocabulary(
 # ---------------------------------------------------------------------------
 
 
-def test_real_package_carries_the_v3_sections() -> None:
+def test_real_package_carries_the_v4_sections() -> None:
     result = load_world_package(PACKAGE_PATH)
     assert not isinstance(result, Err), result.error.message
     package = result.value

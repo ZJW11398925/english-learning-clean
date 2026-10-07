@@ -1,7 +1,7 @@
 {
   "world_id": "world-berrymoor",
   "name": "Berrymoor",
-  "version": 3,
+  "version": 4,
   "calendar_start": "2025-09-14",
   "setting": [
     "Berrymoor is a small harbour town on a cold coast, where the fishing boats come in with the morning tide and the day is measured by the water. The harbour path runs from the stone quay to the bindery steps, and half the town walks it twice a day without thinking about it. The sea is never far from any conversation: it decides the fish, the weather, and most of the news.",
@@ -12,7 +12,35 @@
   "cast": [
     {
       "persona_id": "persona-nell-alder",
-      "name": "Nell Alder"
+      "name": "Nell Alder",
+      "vignette": "the bindery's owner behind the green door; mends books slowly and properly, and keeps her grandfather's burnisher in the drawer she opens first every morning"
+    }
+  ],
+  "residents": [
+    {
+      "name": "Old Tam",
+      "role": "runs the fish counter at the Saturday market",
+      "vignette": "saves a piece of mackerel for whoever mends his nets, and has never once said thank you in words"
+    },
+    {
+      "name": "Mrs. Fenwick",
+      "role": "keeps the post office by the marketplace",
+      "vignette": "reads the postmarks before she hands a letter over, and tells you plainly which stamps take a fortnight"
+    },
+    {
+      "name": "Silas Croft",
+      "role": "the boatyard by the stone quay",
+      "vignette": "mends the fishing boats' hulls, and reads the morning water the way other men read the paper"
+    },
+    {
+      "name": "Edie Marsh",
+      "role": "the bread stall on the Saturday quay",
+      "vignette": "bakes her loaves before dawn and trades a warm heel for whatever the boats brought in"
+    },
+    {
+      "name": "Hester Cowley",
+      "role": "the village school",
+      "vignette": "sets the slates out while the harbour fog is still lifting, and marks the foggy mornings late"
     }
   ],
   "event_pool": [

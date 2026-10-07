@@ -19,7 +19,7 @@ Nine pin groups (the slice VAL's nine):
    carries the row: a prompt-recording provider sees ``reply in
    English`` after the page write (persisted across the restart), the
    default letter carries the follow sentence and nothing else moved;
-4. **package v3** — the loader reads v3 strictly: the shipped Berrymoor
+4. **package v4** — the loader reads v4 strictly: the shipped Berrymoor
    file is bilingual truth, a monolingual event is refused, a v1 stamp
    is refused, a missing or negative story span is refused, an empty
    ``narration_zh`` is refused, a duplicated kind is refused;
@@ -366,19 +366,19 @@ def test_the_default_letter_is_zero_drift(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 4 — package v3: the loader reads v3 strictly
+# 4 — package v4: the loader reads v4 strictly
 # ---------------------------------------------------------------------------
 
 
-def _v3_payload() -> dict[str, object]:
-    """One minimal valid v3 payload — the negative tests mutate a copy
+def _v4_payload() -> dict[str, object]:
+    """One minimal valid v4 payload — the negative tests mutate a copy
     of this and expect the loader to refuse the copy, never the shipped
     Berrymoor file."""
 
     return {
         "world_id": "world-x",
         "name": "X",
-        "version": 3,
+        "version": 4,
         "calendar_start": "2025-09-14",
         "setting": ["one", "two", "three"],
         "cast": [{"persona_id": "persona-nell-alder", "name": "Nell"}],
@@ -403,8 +403,8 @@ def _write_package(tmp_path: Path, payload: object, name: str) -> Path:
     return path
 
 
-def test_berrymoor_is_v3_bilingual_truth_with_a_kind_lookup() -> None:
-    """The shipped package: version 3, ten events each carrying its
+def test_berrymoor_is_v4_bilingual_truth_with_a_kind_lookup() -> None:
+    """The shipped package: version 4, ten events each carrying its
     story span, every Chinese narration present and non-empty, kinds
     unique, and the kind-keyed lookup answers each row (the presentation
     face's source)."""
@@ -412,7 +412,7 @@ def test_berrymoor_is_v3_bilingual_truth_with_a_kind_lookup() -> None:
     result = load_world_package(PACKAGE_PATH)
     assert not isinstance(result, Err), result.error.message
     package = result.value
-    assert package.version == 3
+    assert package.version == 4
     assert package.calendar_start == "2025-09-14"
     assert len(package.event_pool) == 10
     assert all(event.days >= 0 for event in package.event_pool)
@@ -424,10 +424,10 @@ def test_berrymoor_is_v3_bilingual_truth_with_a_kind_lookup() -> None:
 
 
 def test_loader_refuses_a_monolingual_package(tmp_path: Path) -> None:
-    """A v3 event without its Chinese narration is a refusal naming the
+    """A v4 event without its Chinese narration is a refusal naming the
     key — half a language cannot ride in silently."""
 
-    payload = _v3_payload()
+    payload = _v4_payload()
     del payload["event_pool"][0]["narration_zh"]  # type: ignore[index]
     result = load_world_package(_write_package(tmp_path, payload, "w.json"))
     assert isinstance(result, Err)
@@ -439,13 +439,13 @@ def test_loader_refuses_v1_and_empty_chinese(tmp_path: Path) -> None:
     is not read half-way), and an empty / whitespace ``narration_zh``
     is a refusal, not a note."""
 
-    v1 = _v3_payload()
+    v1 = _v4_payload()
     v1["version"] = 1
     result = load_world_package(_write_package(tmp_path, v1, "w1.json"))
     assert isinstance(result, Err)
-    assert "version must be 3" in result.error.message
+    assert "version must be 4" in result.error.message
     assert "got 1" in result.error.message
-    blank = _v3_payload()
+    blank = _v4_payload()
     blank["event_pool"][0]["narration_zh"] = "   "  # type: ignore[index]
     result = load_world_package(_write_package(tmp_path, blank, "w2.json"))
     assert isinstance(result, Err)
@@ -454,17 +454,17 @@ def test_loader_refuses_v1_and_empty_chinese(tmp_path: Path) -> None:
 
 def test_loader_refuses_a_bad_story_span(tmp_path: Path) -> None:
     """A missing or negative ``days`` is a refusal naming the field
-    (v3): the calendar is story-driven, so a wrong span is a wrong
-    world."""
+    (a v3 face kept in v4): the calendar is story-driven, so a wrong
+    span is a wrong world."""
 
-    missing = _v3_payload()
+    missing = _v4_payload()
     del missing["event_pool"][0]["days"]  # type: ignore[index]
     result = load_world_package(
         _write_package(tmp_path, missing, "wd1.json")
     )
     assert isinstance(result, Err)
     assert "days" in result.error.message
-    negative = _v3_payload()
+    negative = _v4_payload()
     negative["event_pool"][0]["days"] = -1  # type: ignore[index]
     result = load_world_package(
         _write_package(tmp_path, negative, "wd2.json")
@@ -478,7 +478,7 @@ def test_loader_refuses_a_duplicated_kind(tmp_path: Path) -> None:
     kind would make the lookup ambiguous — a refusal naming the kind,
     never a silent overwrite."""
 
-    payload = _v3_payload()
+    payload = _v4_payload()
     payload["event_pool"] = [  # type: ignore[index]
         {
             "kind": "k",
