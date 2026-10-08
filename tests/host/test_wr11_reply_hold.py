@@ -164,23 +164,33 @@ def test_the_placeholder_and_stream_wiring_keep_their_own_timing() -> None:
 
 def test_the_gate_opens_at_the_world_drain_handback() -> None:
     """开闸点（VAL ③ 后半）：世界打字机排空交回处置 settled（先于
-    resolve 交回；settleWorld 的 .then 同位替换含过渡句落定在微任务
-    先行——替换必先于回信首字）；settled/done 两 getter 在（gate 判
-    据的状态读数）；failWorld 的 stop 即 done 即开闸（world_failed 臂）
-    （变异 m4 settled 不置位——gate 永不开）。"""
+    resolve 交回；settleWorld 的 .then 同位替换落在微任务先行——替换
+    必先于回信首字）；settled/done 两 getter 在（gate 判据的状态读
+    数）；failWorld 的 stop 即 done 即开闸（world_failed 臂）（变异
+    m4 settled 不置位——gate 永不开）。lr-2 随迁（DEC-OPI-c73dbff3
+    …114）：排空交回活在每台单代引擎里（gen.settled 于 resolve 处置
+    位），链级 settled getter = 链已收口 ∧ 全部代定版 ∧ 无在途代——
+    回信等整条链讲完（一幕一幕，回信殿后）。"""
 
     app = _app_source()
     stream = _slice(app, "function startWorldStream() {", "\nfunction ")
     assert "settled: false," in stream
     # The flag flips exactly at the drain-complete handback — after the
-    # sealed-and-all-spent verdict, before the resolve is handed back.
-    verdict = "state.sealed && state.active >= state.order.length"
+    # sealed-and-all-spent verdict, before the resolve is handed back
+    # (per generation: the engine is the wr-7R one, verbatim).
+    verdict = "gen.sealed && gen.active >= gen.order.length"
     assert verdict in stream
-    settled_at = stream.index("state.settled = true;")
+    settled_at = stream.index("gen.settled = true;")
     assert settled_at > stream.index(verdict)
-    assert settled_at < stream.index("const settled = state.resolve;")
-    # The state readouts the reply's predicate consumes.
+    assert settled_at < stream.index("const settled = gen.resolve;")
+    # The state readouts the reply's predicate consumes — the chain
+    # level: closed ∧ every generation replaced-or-stopped ∧ none in
+    # flight (the lr-2 gate upgrade: the reply waits for the whole
+    # chain, one act at a time).
     assert "get settled() {" in stream
+    assert "state.chainClosed &&" in stream
+    assert "state.current === null &&" in stream
+    assert "gen.replaced || gen.stopped" in stream
     assert "get done() {" in stream
     # world_failed rides stop ⇒ done ⇒ open (the fail posture keeps its
     # own stop — never swallowed by the settle semantics).

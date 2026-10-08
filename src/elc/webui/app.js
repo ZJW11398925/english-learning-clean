@@ -3344,8 +3344,8 @@ function startTypewriter(gate) {
   };
 }
 
-// ── wr-7（DEC-OPI-c73dbff3…4）/ wr-7R（DEC-OPI-c73dbff3…23）：世界
-// 叙述打字机──────────────────────────────────────────────────────────
+// ── wr-7（DEC-OPI-c73dbff3…4）/ wr-7R（DEC-OPI-c73dbff3…23）/ lr-2
+// （DEC-OPI-c73dbff3…114）：世界叙述打字机（代际模型）────────────────
 // 与回信节奏器同制、各自缓冲各自定速：world_delta 的解码增量入独立
 // 缓冲，渲染循环按 TYPING_CPS 定速出字；index（beat 序）变化开新段，
 // 段序即到达序；wr-7R 段指针律：空段不无条件跳过（seal 或后段已有
@@ -3360,160 +3360,301 @@ function startTypewriter(gate) {
 // ——整批到达（快模型/端点缓冲/网关聚合）不再「刚启动就被整块替
 // 换」的闪现；只对曾有增量到达的段补（wr-7R2 conform-R4：零增量
 // 臂不凭空造段——从未有流式预览，整帧即整块渲染）；排空无上限定
-// 时器（rAF 自然排空，与回信打字机并行、互不精等）。
-// seal 后迟到 push 丢弃（权威全文已在，流面无新话）。world_failed =
-// 块上人话失败注（已显示的那段没记进编年史——渲染先行、持久殿后、
-// 拒收不撒谎；失败路径无 seal，stop 保留已显不变）。文字一律
-// textContent（XSS 纪律——增量文本 untrusted）。
+// 时器（rAF 自然排空）。
+// lr-2 代际模型：lr-1 步链的流形是 world_delta＊ → world₁ →
+// world_delta＊ → world₂ → …——单块引擎对第二帧不容忍（seal 后
+// push 丢弃/整帧闪没）。重铸为**代际链**：每台单块引擎是一「代」，
+// world 帧到 = 当代 seal（wr-7R2 排空定版语义逐代原样——余量切法/
+// 迟到 push 丢弃/零增量不造段全不动）；seal 后的增量归**新一代**
+// （新流式块 append 在已定版块之下）。**串行事序（一幕一幕讲）**：
+// 上一代排空定版（权威替换落地）之前，下一代按住不出字——增量照
+// 收进缓冲，rAF 循环不排程。链级 settled =「链已收口且全部代定版」
+//（wr-11 gate 判据随之升级：回信等整条链讲完）。world_failed 附
+// **当代**块尾失败注、后代照常（lr-1 链中拒收后续步语义——失败不
+// 毒化代际机构）；末代 failed = 开闸（wr-11 臂保留）。**过渡句仅链
+// 尾末代**（「这时，她收到了你的来信。」是回信缝台）：定版渲染一律
+// 不带过渡句，closeChain（回信首增量 / final / 失败 / 中断四触点，
+// 幂等）点缝——末代权威块替换落地且无后续代时补落 world-story-then
+//（走向行在场则插其前——与 renderWorldStory 的块内序一致），恒先于
+// 回信首字。单步轮 = 单代：时序与现役形态兼容（wr-7R2/wr-11 回归钉
+// 全绿）。文字一律 textContent（XSS 纪律——增量文本 untrusted）。
 // Revisit（裁决 R9）：35 字/秒对世界叙述的适用性——世界节奏或应更
 // 慢，dogfood 信号再调不预调（a calibration replaces this constant）。
 function startWorldStream() {
   const state = {
-    wrap: null,
-    paras: new Map(),   // beat index -> { el, buffer }
-    order: [],          // beat 到达序
-    active: 0,          // 正在打字的段
-    raf: 0,
-    last: 0,
-    done: false,
-    sealed: false,      // 权威整帧已到（wr-7R：排空后交回定版）
-    settled: false,     // wr-11：排空交回已发生（回信 gate 的开闸点）
-    resolve: null,      // seal 的排空交回
+    generations: [],         // 已开代（到达序；每代一台排空定版引擎）
+    current: null,           // 当代（接收 push；seal 后的 push 开新一代）
+    done: false,             // world_failed / 流中断终态（wr-11 开闸臂）
+    chainClosed: false,      // 链已收口（回信首增量 / final / 失败 / 中断）
+    seamWanted: false,       // 收口点了缝台（干净收口才点——失败/中断无缝）
+    seamDone: false,         // 过渡句已落（幂等）
+    lastAuthoritative: null, // 最近一块权威定版块（末代缝台落点）
   };
-  const ensureWrap = () => {
-    if (state.wrap === null) {
-      state.wrap = document.createElement("div");
-      state.wrap.className = "world-story";
-      messages.appendChild(state.wrap);
-    }
-    return state.wrap;
-  };
-  const ensurePara = (index) => {
-    let para = state.paras.get(index);
-    if (!para) {
-      const el = document.createElement("p");
-      el.className = "world-story-note";
-      ensureWrap().appendChild(el);
-      para = { el: el, buffer: "" };
-      state.paras.set(index, para);
-      state.order.push(index);
-    }
-    return para;
-  };
-  // wr-7R 段指针律的判据：后段是否已有待打内容——段序即到达序，
-  // 后段有字 ⇒ 前段的增量已完结（beat 序 contiguous）。
-  const laterParaHasContent = () => {
-    for (let j = state.active + 1; j < state.order.length; j++) {
-      if (state.paras.get(state.order[j]).buffer.length > 0) return true;
-    }
-    return false;
-  };
-  const step = (ts) => {
-    state.raf = 0;
-    if (state.last === 0) state.last = ts;
-    let budget = Math.floor(((ts - state.last) / 1000) * TYPING_CPS);
-    // 每轮必须真进展（打出字或推进指针），否则退出——段指针律的
-    // 「空段按住不跳」在无进展时必须让循环落地，rAF 下一帧再来。
-    let progressed = true;
-    while (budget > 0 && progressed && state.active < state.order.length) {
-      progressed = false;
-      const para = state.paras.get(state.order[state.active]);
-      if (para.buffer.length > 0) {
-        state.last = ts;
-        const take = Math.min(budget, para.buffer.length);
-        para.el.textContent += para.buffer.slice(0, take);
-        para.buffer = para.buffer.slice(take);
-        budget -= take;
-        progressed = true;
+
+  // 单代引擎：wr-7/wr-7R/wr-7R2 的原语义原样（缓冲/定速/段指针律/
+  // 排空定版/迟到 push 丢弃/零增量不造段），新增三个链级读数：
+  // held（串行按住）、replaced（权威替换落地）、stopped（链终停机）。
+  const makeGeneration = () => {
+    const gen = {
+      wrap: null,
+      paras: new Map(),   // beat index -> { el, buffer }
+      order: [],          // beat 到达序
+      active: 0,          // 正在打字的段
+      raf: 0,
+      last: 0,
+      done: false,
+      sealed: false,      // 权威整帧已到（wr-7R：排空后交回定版）
+      settled: false,     // 本代排空交回已发生
+      resolve: null,      // seal 的排空交回
+      held: false,        // lr-2 串行律：上一代定版前按住不出字
+      replaced: false,    // 权威替换已落地（链级 settled 的判定半）
+      stopped: false,     // 链终停机（失败注/中断姿态的保留已显）
+    };
+    const ensureWrap = () => {
+      if (gen.wrap === null) {
+        gen.wrap = document.createElement("div");
+        gen.wrap.className = "world-story";
+        messages.appendChild(gen.wrap);
       }
-      // wr-7R 段指针律：空段**不再无条件跳过**——wr-7 既有缺陷是
-      // 段中增量间隙把指针推过本段，同段后续增量永远不显（流中冻
-      // 结、定版时整块补上＝闪现的放大器）。前进仅当本段已空且：
-      // 权威已 seal（本段不会再有增量），或后段已有待打内容。
-      if (
-        para.buffer.length === 0 &&
-        (state.sealed || laterParaHasContent())
-      ) {
-        state.active += 1;
-        progressed = true;
+      return gen.wrap;
+    };
+    const ensurePara = (index) => {
+      let para = gen.paras.get(index);
+      if (!para) {
+        const el = document.createElement("p");
+        el.className = "world-story-note";
+        ensureWrap().appendChild(el);
+        para = { el: el, buffer: "" };
+        gen.paras.set(index, para);
+        gen.order.push(index);
       }
-    }
-    // wr-7R：seal 后全段排空 ⇒ 交回定版（resolve）——定版在排空之
-    // 后（对齐回信 A2）；此前循环照常定速，无上限、无超时。
-    if (state.sealed && state.active >= state.order.length) {
-      // wr-11：排空交回 = 世界定版，回信 gate 在此开闸。settleWorld
-      // 的同位替换（含过渡句落定）跑在本交回触发的 .then 微任务里，
-      // 微任务检查点先于下一帧的任何 rAF 回调——替换必先于回信首字
-      // 落地，过渡句永远先行。
-      state.settled = true;
-      if (state.resolve) {
-        const settled = state.resolve;
-        state.resolve = null;
-        settled();
+      return para;
+    };
+    // wr-7R 段指针律的判据：后段是否已有待打内容——段序即到达序，
+    // 后段有字 ⇒ 前段的增量已完结（beat 序 contiguous）。
+    const laterParaHasContent = () => {
+      for (let j = gen.active + 1; j < gen.order.length; j++) {
+        if (gen.paras.get(gen.order[j]).buffer.length > 0) return true;
       }
-      return;
-    }
-    if (!state.done) state.raf = requestAnimationFrame(step);
-  };
-  return {
-    push(piece, index) {
-      // wr-7R：seal 后迟到 push 丢弃——权威全文已在，流面无新话。
-      if (state.done || state.sealed) return;
+      return false;
+    };
+    const step = (ts) => {
+      gen.raf = 0;
+      if (gen.last === 0) gen.last = ts;
+      let budget = Math.floor(((ts - gen.last) / 1000) * TYPING_CPS);
+      // 每轮必须真进展（打出字或推进指针），否则退出——段指针律的
+      // 「空段按住不跳」在无进展时必须让循环落地，rAF 下一帧再来。
+      let progressed = true;
+      while (budget > 0 && progressed && gen.active < gen.order.length) {
+        progressed = false;
+        const para = gen.paras.get(gen.order[gen.active]);
+        if (para.buffer.length > 0) {
+          gen.last = ts;
+          const take = Math.min(budget, para.buffer.length);
+          para.el.textContent += para.buffer.slice(0, take);
+          para.buffer = para.buffer.slice(take);
+          budget -= take;
+          progressed = true;
+        }
+        // wr-7R 段指针律：空段**不再无条件跳过**——wr-7 既有缺陷是
+        // 段中增量间隙把指针推过本段，同段后续增量永远不显（流中冻
+        // 结、定版时整块补上＝闪现的放大器）。前进仅当本段已空且：
+        // 权威已 seal（本段不会再有增量），或后段已有待打内容。
+        if (
+          para.buffer.length === 0 &&
+          (gen.sealed || laterParaHasContent())
+        ) {
+          gen.active += 1;
+          progressed = true;
+        }
+      }
+      // wr-7R：seal 后全段排空 ⇒ 交回定版（resolve）——定版在排空之
+      // 后（对齐回信 A2）；此前循环照常定速，无上限、无超时。settleWorld
+      // 的同位替换跑在本交回触发的 .then 微任务里，替换必先于下一帧
+      // 的任何 rAF 回调落地。
+      if (gen.sealed && gen.active >= gen.order.length) {
+        gen.settled = true;
+        if (gen.resolve) {
+          const settled = gen.resolve;
+          gen.resolve = null;
+          settled(gen);
+        }
+        return;
+      }
+      if (!gen.done) gen.raf = requestAnimationFrame(step);
+    };
+    // lr-2 串行律的两面：hold(flag)（按住——增量照收、rAF 不排程；
+    // 首代或前代已定版时 flag=false 照常开打）与 release（上一代权
+    // 威替换落地后开打）。
+    gen.hold = (flag) => {
+      gen.held = flag;
+    };
+    gen.release = () => {
+      gen.held = false;
+      if (!gen.raf && !gen.done) gen.raf = requestAnimationFrame(step);
+    };
+    gen.push = (piece, index) => {
+      // wr-7R：seal 后迟到 push 丢弃——权威全文已在，本代流面无新
+      // 话（代际链上 seal 后的增量由链开新一代承接，不入本代）。
+      if (gen.done || gen.sealed) return;
       const beat = typeof index === "number"
         ? index
-        : (state.order.length || 0);
+        : (gen.order.length || 0);
       ensurePara(beat).buffer += piece;
-      if (!state.raf) state.raf = requestAnimationFrame(step);
-    },
-    seal(event) {
+      if (!gen.held && !gen.raf) gen.raf = requestAnimationFrame(step);
+    };
+    gen.seal = (event) => {
       // wr-7R/wr-7R2：world 整帧 = 权威全文。每段权威 narration 的
       // 未显余量以段（beat index）为序补进缓冲——余量按**已显+已缓
       // 冲**切（wr-7R2 HIGH-1：缓冲里未打出的流式增量已被权威覆盖，
       // 按「仅已显」切会把它再补一遍 = 排空期双打全文）；只对曾有
       // 增量到达的段补（wr-7R2 MEDIUM-1 conform-R4：零增量臂不凭空
       // 造段——seal 前无任何 push ⇒ 无流式预览可续，整帧即整块渲
-      // 染）。全部段排空后 resolve，同位替换（renderWorldStory）由
-      // 调用方在此之后执行。
+      // 染）。全部段排空后 resolve（携本代交回——调用方在此之后执
+      // 行同位替换与链级定版回调）。
       return new Promise((resolve) => {
-        state.sealed = true;
-        state.resolve = resolve;
+        gen.sealed = true;
+        gen.resolve = resolve;
         const notes = Array.isArray(event.notes) ? event.notes
           : Array.isArray(event.items) ? event.items : [];
         notes.forEach((note, index) => {
-          const para = state.paras.get(index);
+          const para = gen.paras.get(index);
           if (!para) return;
           const rest = String(note.narration ?? "").slice(
             para.el.textContent.length + para.buffer.length
           );
           if (rest) para.buffer += rest;
         });
-        if (!state.raf) state.raf = requestAnimationFrame(step);
+        if (!gen.held && !gen.raf) gen.raf = requestAnimationFrame(step);
       });
+    };
+    gen.stop = () => {
+      // 失败/中断共用：停循环保留已显文字（失败注追加块尾——已显示
+      // 的诚实可见）。seal 已在途时交回（整帧已到即权威存在，排空
+      // 未毕的中断由权威定版接手——与 wr-7 的即到即定版同观感）。
+      gen.done = true;
+      gen.stopped = true;
+      if (gen.raf) cancelAnimationFrame(gen.raf);
+      gen.raf = 0;
+      if (gen.resolve) {
+        const settled = gen.resolve;
+        gen.resolve = null;
+        settled(gen);
+      }
+    };
+    return gen;
+  };
+
+  // 开新一代（seal 后的首个增量到达时）：串行律——尚有未定版的前代
+  // ⇒ 本代按住（缓冲照收，不出字）。
+  const openGeneration = () => {
+    const gen = makeGeneration();
+    gen.hold(
+      state.generations.some((prior) => !prior.replaced && !prior.stopped)
+    );
+    state.generations.push(gen);
+    state.current = gen;
+    return gen;
+  };
+
+  // lr-2 缝台句（过渡句仅末代）：closeChain 点缝、末代权威块替换落
+  // 地且无后续代时补落——恒先于回信首字（回信 delta 回调先 closeChain
+  // 后 typing.push；append 与 push 同步，出字在 rAF）。
+  const appendSeam = () => {
+    if (state.seamDone || !state.seamWanted || !state.chainClosed) return;
+    if (state.current !== null) return;   // 末代未定——还不是缝台时刻
+    const block = state.lastAuthoritative;
+    if (block === null || block.parentNode !== messages) return;
+    state.seamDone = true;
+    const then = document.createElement("p");
+    then.className = "world-story-then";
+    then.textContent = worldInboxText().thenLetter;
+    // 走向行在场则插其前——与 renderWorldStory 的块内序一致
+    //（过渡句、走向行、回信）。
+    const row = block.querySelector(".world-direction-row");
+    if (row) {
+      block.insertBefore(then, row);
+    } else {
+      block.appendChild(then);
+    }
+  };
+
+  // 链收口（四触点幂等）：回信首增量 / final（干净收口——点缝台）；
+  // 失败 / 中断（closeChain(false)——失败注是诚实尾注，无缝可缝）。
+  const closeChain = (withSeam) => {
+    state.chainClosed = true;
+    if (withSeam) state.seamWanted = true;
+    appendSeam();
+  };
+
+  return {
+    push(piece, index) {
+      if (state.done) return;
+      if (state.current === null || state.current.sealed) {
+        openGeneration();
+      }
+      state.current.push(piece, index);
+    },
+    seal(event) {
+      // world 帧到 = 当代 seal（wr-7R2 排空定版）；无当代（零增量臂
+      // ——整帧先于任何增量到达）⇒ 零打字机参与，立即交回 null：
+      // 替换条件臂让 renderWorldStory 原样整块落位（wr-6 形）。
+      if (state.current === null) return Promise.resolve(null);
+      return state.current.seal(event);
+    },
+    // 定版落地回调（postTurn 的替换 .then 尾）：累计链级 settled 的
+    // 判定半、释放**最早仍按住的代**（创建序 = 出字序——不是
+    // current：current 恒指最新开的代，快形下上一代定版时更后的代
+    // 已开，释放错代会永久跳过中间代）、末代缝台检查。
+    concluded(gen, fresh) {
+      state.lastAuthoritative = fresh;
+      if (gen !== null) {
+        gen.replaced = true;
+        if (state.current === gen) state.current = null;
+      }
+      const next = state.generations.find((g) => g.held);
+      if (next) next.release();
+      appendSeam();
+    },
+    // lr-2 缝台点（回信首增量 / final 调用；失败与中断走 stop 内部
+    // 的 closeChain(false)）。
+    closeChain(withSeam) {
+      closeChain(withSeam);
     },
     get wrap() {
-      return state.wrap;
+      // wr-11 零世界臂的读数：从未开代（零增量到达的流式轮）⇒ null。
+      const gen = state.current ||
+        state.generations[state.generations.length - 1];
+      return gen === undefined ? null : gen.wrap;
     },
-    // wr-11：回信 gate 的两个状态读数——settled = 权威整帧已排空交回
-    //（世界定版）；done = 世界流已终止（failWorld 失败注 / catch 中
-    // 断共用 stop）。两者任一为真即开闸。
+    // wr-11 gate 升级（lr-2）：settled = 链已收口且**全部代定版**且
+    // 无在途代——回信等整条链讲完（一幕一幕，回信殿后）；三臂不
+    // gate：零世界轮次（无 wrap）、done（失败/中断）、流中断（stop）。
     get settled() {
-      return state.settled;
+      return (
+        state.chainClosed &&
+        state.current === null &&
+        state.generations.every((gen) => gen.replaced || gen.stopped)
+      );
     },
     get done() {
       return state.done;
     },
     stop() {
-      // 失败/中断共用：停循环保留已显文字（失败注追加块尾——已显示
-      // 的诚实可见）。seal 已在途时交回（整帧已到即权威存在，排空
-      // 未毕的中断由权威定版接手——与 wr-7 的即到即定版同观感）。
+      // 失败/中断共用（链终）：停循环保留已显文字；已 seal 而未定版
+      // 的在排代交回（整帧已到即权威存在——排空未毕的中断由权威定
+      // 版接手，wr-7R 姿态逐代成立）；返回当代块（failWorld 的失败
+      // 注落点——当代块尾）。
+      closeChain(false);
       state.done = true;
-      if (state.raf) cancelAnimationFrame(state.raf);
-      state.raf = 0;
-      if (state.resolve) {
-        const settled = state.resolve;
-        state.resolve = null;
-        settled();
+      const gen = state.current;
+      state.current = null;
+      for (const prior of state.generations) {
+        if (prior !== gen && !prior.replaced) prior.stop();
       }
+      if (gen === null) return null;
+      gen.stop();
+      return gen.wrap;
     },
   };
 }
@@ -4176,46 +4317,50 @@ async function postTurn(text) {
   let data = null;
   let typing = null;
   const worldStream = startWorldStream();
-  // wr-11（DEC-OPI-c73dbff3…76）：回信候场——叙事节奏串行化。回信
-  // 打字机的出字判据：世界流式块**不在途**才放行。在途 = wrap 存在
-  // 且未 settled 且未 done；gate 期间 delta 照常入缓冲不丢（数据流
-  // 不动，gate 只在出字循环内逐帧判决）。三臂不 gate：①零世界轮次
-  // （无 wrap——服务端串行保证此时世界永不未出帧）②world_failed
-  //（done = 世界已结束）③流中断（catch 的 stop 停循环，A2 姿态）。
-  // 世界定版（排空交回，settleWorld 的 .then 同位替换含过渡句落定）
-  // 即开闸——回信是世界运转的落点（spec §2）。
+  // wr-11（DEC-OPI-c73dbff3…76）+ lr-2（DEC-OPI-c73dbff3…114）：回
+  // 信候场——叙事节奏串行化。回信打字机的出字判据：世界流式块**不在
+  // 途**才放行；lr-2 判据升级——settled = 链已收口且**全部代定版**
+  //（多步轮回信等整条链一幕一幕讲完）。在途 = wrap 存在且未 settled
+  // 且未 done；gate 期间 delta 照常入缓冲不丢（数据流不动，gate 只在
+  // 出字循环内逐帧判决）。三臂不 gate：①零世界轮次（无 wrap——服
+  // 务端串行保证此时世界永不未出帧）②world_failed（done = 世界已结
+  // 束）③流中断（catch 的 stop 停循环，A2 姿态）。末代定版（排空交
+  // 回，settleWorld 的 .then 同位替换落地）即开闸——回信是世界运转
+  // 的落点（spec §2）。
   const replyMayType = () =>
     worldStream.wrap === null ||
     worldStream.settled ||
     worldStream.done;
-  // wr-7R 定版（DEC-OPI-c73dbff3…23，修正 wr-7 R6 的定版半——对齐
-  // 回信 A2 排空语义）：world 整帧到达**不 stop 不立即替换**——权威
-  // 全文经 worldStream.seal 以段为序补进世界打字机缓冲，定速排空；
-  // **全部段排空后**才权威渲染同位替换流式块（日期行/过渡句/
-  // fallback 注记此时才补齐——流内无日期的律不动）。增量到达快于
-  // 35cps 消费（快模型/端点缓冲/网关聚合）不再「刚启动就被整块替
-  // 换」的闪现。无流式块（零增量臂）时 wrap 为 null，替换条件臂让
-  // renderWorldStory 原样落位，与 WR-6 同形。
+  // wr-7R 定版（DEC-OPI-c73dbff3…23，lr-2 代际化）：world 整帧到达
+  // **不 stop 不立即替换**——权威全文经 worldStream.seal 以段为序补
+  // 进当代打字机缓冲，定速排空；**全部段排空后**才权威渲染同位替换
+  // 流式块（日期行/fallback 注记此时才补齐；**过渡句不在此臂**——缝
+  // 台句属链尾末代，closeChain 在回信首增量/final 落定，恒先于回信
+  // 首字）。增量到达快于 35cps 消费（快模型/端点缓冲/网关聚合）不再
+  // 「刚启动就被整块替换」的闪现。无流式块（零增量臂）时 seal 交回
+  // null，替换条件臂让 renderWorldStory 原样落位，与 WR-6 同形。
   const settleWorld = (event) => {
     retireWorldPending();
-    worldStream.seal(event).then(() => {
-      const fresh = renderWorldStory(event, { withTransition: true });
-      if (worldStream.wrap && worldStream.wrap.parentNode === messages) {
-        messages.insertBefore(fresh, worldStream.wrap);
-        worldStream.wrap.remove();
+    worldStream.seal(event).then((gen) => {
+      const fresh = renderWorldStory(event, { withTransition: false });
+      if (gen !== null && gen.wrap && gen.wrap.parentNode === messages) {
+        messages.insertBefore(fresh, gen.wrap);
+        gen.wrap.remove();
       }
+      worldStream.concluded(gen, fresh);
     });
   };
-  // wr-7 失败注：这块流式叙述没能留住（编年史未记）——块上人话一
-  // 行，已显示的诚实可见，从不悄悄抹掉。
+  // wr-7 失败注（lr-2 多代位）：这块流式叙述没能留住（编年史未记）
+  // ——失败注附**当代**块尾，已显示的诚实可见，从不悄悄抹掉；后代
+  // 照常（失败不毒化代际机构——lr-1 链中拒收后续步语义）。
   const failWorld = () => {
     retireWorldPending();
-    worldStream.stop();
-    if (worldStream.wrap) {
+    const block = worldStream.stop();
+    if (block) {
       const note = document.createElement("p");
       note.className = "world-story-note world-story-failed";
       note.textContent = worldInboxText().worldFailed;
-      worldStream.wrap.appendChild(note);
+      block.appendChild(note);
     }
   };
   try {
@@ -4224,6 +4369,9 @@ async function postTurn(text) {
       text,
       (chunk) => {
         retireWorldPending();
+        // lr-2：回信首增量 = 服务端链已尽（世界帧/增量全数到齐）——
+        // 末代确权，缝台句落定（恒先于回信首字；幂等）。
+        worldStream.closeChain(true);
         typing.push(chunk);
       },
       (event) => settleWorld(event),
@@ -4248,7 +4396,9 @@ async function postTurn(text) {
       }
       return;
     } else {
-      // final 到手：权威全文的未显余量补进缓冲，排空后才 finalize。
+      // final 到手：链收口（末代确权——缝台句落定；零增量臂在此点
+      // 缝，幂等）；权威全文的未显余量补进缓冲，排空后才 finalize。
+      worldStream.closeChain(true);
       await typing.seal(typeof data.reply === "string" ? data.reply : "");
     }
   } catch (err) {
@@ -4289,13 +4439,24 @@ async function postTurn(text) {
   if (data !== null) {
     if (typing !== null && typing.line !== null) typing.line.remove();
     // WR-6：阻塞回退臂（fetchTurn 或对端无流面）的 world-first——
-    // payload 带 world 键时先渲染世界块（回信行之前；此臂回信行尚
-    // 不存在，append 即在信后），再落回信行。顺序与流面一致。
-    // wr-7：占位行让位（world 帧也算首帧）。
+    // payload 带世界键时先渲染世界块（回信行之前；此臂回信行尚不
+    // 存在，append 即在信后），再落回信行。顺序与流面一致。
+    // wr-7：占位行让位（world 帧也算首帧）。lr-2：链形多块——
+    // payload.world_steps（全链，lr-1 起随行）逐块渲染、过渡句仅末
+    // 块；单帧轮 = 单块原形（WR-6 形字节兼容）。
     if (data.world && typeof data.world === "object") {
       retireWorldPending();
-      renderWorldStory(data.world, { withTransition: true });
+      const steps = Array.isArray(data.world_steps) &&
+        data.world_steps.length
+        ? data.world_steps
+        : [data.world];
+      steps.forEach((frame, frameIndex) => {
+        renderWorldStory(frame, {
+          withTransition: frameIndex === steps.length - 1,
+        });
+      });
       delete data.world;
+      delete data.world_steps;
     }
     // v3-3 供性后装：寄出的信在位图到达前全供性（信还封着在途）；回信
     // 落地即按 turn 响应把用户信的 0 位降为无供性（applyLetterAffordance
@@ -4986,10 +5147,21 @@ async function renderFlowHistory() {
       anchor = addLine("user", turn.user, { hits: turn.user_word_hits || null });
     }
     if (turn.world) {
-      // wr-8 刷新恢复（DEC-OPI-c73dbff3…34）：本轮世界帧织入在该轮
-      // 用户信**之前**（织入序还原——世界块与用户信相邻）；与当轮
-      // 同形（含过渡句）、零打字机（历史恢复是已完成事实）。
-      renderWorldStory(turn.world, { withTransition: true, beforeEl: anchor });
+      // wr-8 刷新恢复（DEC-OPI-c73dbff3…34）+ lr-2 交错面多帧
+      //（DEC-OPI-c73dbff3…114）：本轮世界帧织入在该轮用户信**之前**
+      //（织入序还原——世界块与用户信相邻）；一轮多块按 world_steps
+      // 序逐块渲染（world_steps 缺席 = 单帧轮，wr-8 单块原形）；过渡
+      // 句仅末块（回信缝台语义随恢复面同构）。与当轮同形、零打字机
+      //（历史恢复是已完成事实）。
+      const steps = Array.isArray(turn.world_steps) && turn.world_steps.length
+        ? turn.world_steps
+        : [turn.world];
+      steps.forEach((frame, frameIndex) => {
+        renderWorldStory(frame, {
+          withTransition: frameIndex === steps.length - 1,
+          beforeEl: anchor,
+        });
+      });
     }
     if (turn.assistant !== null) {
       const reply = addLine("assistant", turn.assistant, { hits: turn.word_hits || null });

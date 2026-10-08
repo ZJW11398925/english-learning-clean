@@ -786,9 +786,12 @@ def test_the_turn_does_not_reread_the_inbox() -> None:
     # page-load leftover's only reader).
     assert "loadWorldInbox(" not in turn_block
     assert "scheduleWorldReveal" not in app
-    # WR-6: the world-first frame renders inline with its transition.
+    # WR-6: the world-first frame renders inline (lr-2 truth,
+    # DEC-OPI-c73dbff3…114: the settle renders without the seam — the
+    # transition sentence belongs to the chain's last generation and
+    # lands via closeChain, always ahead of the reply's first char).
     assert (
-        "renderWorldStory(event, { withTransition: true })" in turn_block
+        "renderWorldStory(event, { withTransition: false })" in turn_block
     )
     # The continue failure arm and its button text are gone with the
     # interaction (A2R DEC-…99).

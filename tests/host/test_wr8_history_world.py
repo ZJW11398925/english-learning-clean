@@ -155,10 +155,20 @@ class MuteProvider:
 
 
 def _frame_narrations(turn: dict[str, Any]) -> list[str]:
-    frame = turn.get("world")
-    if frame is None:
-        return []
-    return [str(note["narration"]) for note in frame["notes"]]
+    # lr-2 multi-frame shape (DEC-OPI-c73dbff3…114): the round's whole
+    # chain — world_steps (one frame per landed step) when present, else
+    # the single world frame; narrations concatenate in frame order.
+    steps = turn.get("world_steps")
+    if not steps:
+        frame = turn.get("world")
+        if frame is None:
+            return []
+        steps = [frame]
+    return [
+        str(note["narration"])
+        for frame in steps
+        for note in frame["notes"]
+    ]
 
 
 def _insert_event(
@@ -560,29 +570,37 @@ def test_the_tail_top_up_arm_is_retired() -> None:
 
 def test_history_frames_render_before_the_letter_same_shape() -> None:
     """VAL ⑥ 前端恢复钉：历史轮的世界帧在该轮用户信**之前**渲染
-    （织入序还原），与当轮同形（含过渡句——withTransition: true）；用
-    户行先建、世界块插入其前、回信行后落——次序由源序钉死；零打字机
-    （历史恢复是已完成事实）。"""
+    （织入序还原）；lr-2 交错面多帧（DEC-OPI-c73dbff3…114）：一轮多
+    块按 world_steps 序逐块渲染（world_steps 缺席 = 单帧轮原形）、
+    **过渡句仅末块**；用户行先建、世界块插入其前、回信行后落——次序
+    由源序钉死；零打字机（历史恢复是已完成事实）。"""
 
     app = _text("app.js")
     flow = app[
         app.index("async function renderFlowHistory"):
         app.index("async function loadHistory()")
     ]
-    assert (
-        "renderWorldStory(turn.world,"
-        " { withTransition: true, beforeEl: anchor });" in flow
-    )
+    assert "const steps = Array.isArray(turn.world_steps" in flow
+    assert ": [turn.world];" in flow
+    # Multi-block loop: every frame renders before the letter, the
+    # transition sentence on the last block only (the seam above the
+    # reply), the world_steps order preserved.
+    assert "steps.forEach((frame, frameIndex) => {" in flow
+    assert "withTransition: frameIndex === steps.length - 1," in flow
+    assert "beforeEl: anchor," in flow
+    assert "renderWorldStory(frame, {" in flow
     user_add = flow.index('addLine("user"')
-    world_add = flow.index("renderWorldStory(turn.world")
+    world_add = flow.index("const steps = Array.isArray(turn.world_steps")
     assistant_add = flow.index('addLine("assistant"')
     assert user_add < world_add < assistant_add
-    # the live-turn arm keeps its own shape (the wr-7 regression anchor)
+    # the live-turn arm keeps its own shape (the wr-7 regression anchor,
+    # lr-2 truth: the settle renders without the seam — closeChain lands
+    # it on the last generation, always ahead of the reply's first char)
     turn_body = app[
         app.index("async function postTurn"):
         app.index("async function postTeachMe")
     ]
-    assert "renderWorldStory(event, { withTransition: true })" in turn_body
+    assert "renderWorldStory(event, { withTransition: false })" in turn_body
     assert "startWorldStream" not in flow
 
 

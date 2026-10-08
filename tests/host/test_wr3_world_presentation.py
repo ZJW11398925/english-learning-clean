@@ -85,8 +85,10 @@ def test_the_delayed_reveal_is_fully_retired() -> None:
 
 
 def test_the_world_frame_renders_inline_before_the_reply() -> None:
-    """WR-6：世界帧当场渲染——onWorld 回调带过渡句、零滚动；turn 体零
-    inbox 读（帧即呈现，load 臂只管页面装载遗留）。"""
+    """WR-6：世界帧当场渲染——onWorld 回调零滚动、turn 体零 inbox 读
+    （帧即呈现，load 臂只管页面装载遗留）。lr-2 真值随迁
+    （DEC-OPI-c73dbff3…114）：定版渲染不带过渡句——缝台句属链尾末
+    代，closeChain 在回信首增量/final 落定，恒先于回信首字。"""
 
     app = _text("app.js")
     turn_block = app[
@@ -95,10 +97,13 @@ def test_the_world_frame_renders_inline_before_the_reply() -> None:
     ]
     assert "loadWorldInbox(" not in turn_block
     assert (
-        "renderWorldStory(event, { withTransition: true })" in turn_block
+        "renderWorldStory(event, { withTransition: false })" in turn_block
     )
-    # The blocking fallback renders the payload's world key first.
-    assert "renderWorldStory(data.world, { withTransition: true });" in app
+    # The blocking fallback renders the payload's whole chain (lr-2:
+    # world_steps, one block per landed step, the seam on the last
+    # block only; a single frame keeps the WR-6 single-block shape).
+    assert "const steps = Array.isArray(data.world_steps) &&" in app
+    assert "withTransition: frameIndex === steps.length - 1," in app
     # The renderer never scrolls (wr-5's law survives).
     renderer = app[
         app.index("function renderWorldStory"):

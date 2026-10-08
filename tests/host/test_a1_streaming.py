@@ -824,9 +824,12 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     # history and never resends.
     assert "fetchTurnStream(" in postturn
     # WR-6: the onWorld callback is back — the world frame renders as it
-    # arrives (before the reply's deltas), the transition sentence woven
-    # in; no delayed reveal anywhere (the world is pre-reply now).
-    assert "renderWorldStory(event, { withTransition: true })" in postturn
+    # arrives (before the reply's deltas); no delayed reveal anywhere
+    # (the world is pre-reply now). lr-2 truth (DEC-OPI-c73dbff3…114):
+    # the settle renders without the seam — the transition sentence
+    # belongs to the chain's last generation and lands via closeChain,
+    # always ahead of the reply's first char.
+    assert "renderWorldStory(event, { withTransition: false })" in postturn
     assert "scheduleWorldReveal" not in app_source
     assert "typing.push(chunk)" in postturn
     assert "await typing.seal(" in postturn

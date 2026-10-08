@@ -618,7 +618,9 @@ def test_bottom_mount_and_scroll_into_view_are_wired() -> None:
     assert "worldInboxSec" not in app
     assert 'insertAdjacentElement("afterend"' not in app
     assert "revealed_now" in app
-    assert "renderWorldStory(data" in app
+    # lr-2 truth: the blocking fallback renders the payload's chain per
+    # frame (world_steps, one block per landed step).
+    assert "renderWorldStory(frame" in app
 
 
 # ---------------------------------------------------------------------------

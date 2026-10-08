@@ -36,7 +36,11 @@ after every paragraph has drained (整批到达不再闪现). The pin groups:
    the replace rides the post-drain callback, late pushes after the
    seal are dropped) and the failure note with the three postures kept
    (fail = stop + note, interrupt = stop keeps shown) — textContent
-   throughout.
+   throughout. lr-2 (DEC-OPI-c73dbff3…114): the wiring reads the
+   generational source — every pin above holds per generation inside
+   the chain (makeGeneration), and the settle carries the chain-level
+   handback (concluded) the serial act order and the last-generation
+   seam both ride.
 """
 
 from __future__ import annotations
@@ -374,14 +378,19 @@ def test_the_world_running_placeholder_shows_at_send_and_retires() -> None:
 def test_the_world_typewriter_is_an_independent_buffer_at_the_same_law() -> None:
     """世界打字机：独立缓冲（paras Map 与回信节奏器各自缓冲），同
     TYPING_CPS 定速律，index 变化开新段；流式块不发明日期（date 只
-    属于整帧定版的权威渲染）；文字一律 textContent（VAL ⑥）。"""
+    属于整帧定版的权威渲染）；文字一律 textContent（VAL ⑥）。lr-2
+    代际随迁：缓冲与定速律活在每台单代引擎里（makeGeneration——
+    代际链的每一代是一台完整的 wr-7R2 排空定版引擎）。"""
 
     app = _app_source()
     stream = _slice(app, "function startWorldStream() {", "\nfunction ")
     assert "new Map()" in stream
     assert "TYPING_CPS" in stream
     assert "requestAnimationFrame" in stream
-    assert "state.order.push(index)" in stream
+    assert "gen.order.push(index)" in stream
+    # The generational chain: every generation is a full engine of its
+    # own (lr-2), the buffer and the pacer law per generation.
+    assert "const makeGeneration = () => {" in stream
     # The streaming block invents no date: the pacer neither reads the
     # frame's localized date nor builds the date row — both carriers
     # belong to the authoritative render only (变异 m6：日期行提前发明).
@@ -393,11 +402,13 @@ def test_the_world_typewriter_is_an_independent_buffer_at_the_same_law() -> None
 
 def test_the_whole_frame_settles_only_after_the_stream_drains() -> None:
     """定版（wr-7R）：world 整帧不再 stop 不再立即替换——seal 把权威
-    余量补进世界打字机缓冲，**排空之后**才权威渲染同位替换流式块
-    （日期行/过渡句此时才补齐）；world_failed = 块上人话一行（已显
-    示的那段没记进编年史），三姿态不变（fail = stop + 注；中断 =
-    stop 保留已显）（DEC-OPI-c73dbff3…23；变异 m1：settle 退回立即
-    替换——整批到达闪现回归 / m3：fail/中断姿态被 seal 语义破坏）。"""
+    余量补进当代打字机缓冲，**排空之后**才权威渲染同位替换流式块
+    （日期行/fallback 注记此时才补齐；**过渡句不在此臂**——缝台句属
+    链尾末代，closeChain 在回信首增量/final 落定），world_failed = 当
+    代块尾人话一行（已显示的那段没记进编年史），三姿态不变（fail =
+    stop + 注；中断 = stop 保留已显）（DEC-OPI-c73dbff3…23 + lr-2
+    DEC-OPI-c73dbff3…114；变异 m1：settle 退回立即替换——整批到达闪
+    现回归 / m3：fail/中断姿态被 seal 语义破坏）。"""
 
     app = _app_source()
     assert 'worldFailed: "世界的这段没能留住——这一轮没记进编年史。"' in app
@@ -409,22 +420,26 @@ def test_the_whole_frame_settles_only_after_the_stream_drains() -> None:
     # The replace path is live only AFTER the drain — it rides the
     # post-drain callback: the exact conditional, the same-position
     # insert and the streaming block's removal (变异 m7：打字机不定版
-    # ——流式残留与权威渲染并立).
-    assert ".then(" in settle
-    assert "renderWorldStory(event, { withTransition: true })" in settle
+    # ——流式残留与权威渲染并立)。lr-2：替换带链级定版回调（concluded
+    # ——串行事序的释放点与末代缝台的判定点）。
+    assert ".then((gen) => {" in settle
+    assert "renderWorldStory(event, { withTransition: false })" in settle
     assert (
-        "if (worldStream.wrap && worldStream.wrap.parentNode === messages) {"
+        "if (gen !== null && gen.wrap && gen.wrap.parentNode === messages) {"
         in settle
     )
-    assert "insertBefore(fresh, worldStream.wrap)" in settle
-    assert "worldStream.wrap.remove()" in settle
+    assert "insertBefore(fresh, gen.wrap)" in settle
+    assert "gen.wrap.remove()" in settle
+    assert "worldStream.concluded(gen, fresh)" in settle
     fail = _slice(app, "const failWorld = () => {", "\n  };\n")
     assert "world-story-failed" in fail
     assert "worldInboxText().worldFailed" in fail
     assert "textContent" in fail
     # The fail posture keeps its own stop (seal never rides this path;
-    # 变异 m3：failWorld 的 stop 被 seal 语义挤掉).
+    # 变异 m3：failWorld 的 stop 被 seal 语义挤掉)。lr-2：失败注落
+    # **当代**块尾（stop 交回当代块——多代位）。
     assert "worldStream.stop()" in fail
+    assert "const block = worldStream.stop();" in fail
     # The interrupt posture keeps stop-keeps-shown in the catch arm.
     postturn = app[
         app.index("async function postTurn") :
@@ -434,16 +449,17 @@ def test_the_whole_frame_settles_only_after_the_stream_drains() -> None:
 
 
 def test_the_seal_feeds_the_remainder_and_drops_late_pushes() -> None:
-    """seal/settle 语义（wr-7R + wr-7R2）：seal(整帧) 把每段权威
-    narration 的未显余量（按**已显+已缓冲**切——缓冲里未打出的增量
-    已被权威覆盖，仅按已显切会把排空期双打全文）以段（beat index）
-    为序补进缓冲；push 在 seal 后丢弃；排空交回只在 sealed 且全段排
-    空时发生（变异 m2：seal 不补权威余量 / m6：退回仅已显切——双打
-    回归）。"""
+    """seal/settle 语义（wr-7R + wr-7R2，逐代原样）：seal(整帧) 把每段
+    权威 narration 的未显余量（按**已显+已缓冲**切——缓冲里未打出的
+    增量已被权威覆盖，仅按已显切会把排空期双打全文）以段（beat index）
+    为序补进缓冲；push 在 seal 后丢弃（本代内——代际链上 seal 后的增
+    量由链开新一代承接）；排空交回只在 sealed 且全段排空时发生（变异
+    m2：seal 不补权威余量 / m6：退回仅已显切——双打回归）。lr-2 串行
+    律同钉：按住代不排程 rAF（增量照收不出字），释放后才开打。"""
 
     app = _app_source()
     stream = _slice(app, "function startWorldStream() {", "\nfunction ")
-    assert "seal(event)" in stream
+    assert "gen.seal = (event) => {" in stream
     # wr-7R2 HIGH-1: the remainder is cut by shown PLUS buffered — the
     # pieces sitting in the buffer are already covered by the
     # authoritative text (仅按已显切 = the drained text doubles).
@@ -454,35 +470,46 @@ def test_the_seal_feeds_the_remainder_and_drops_late_pushes() -> None:
     )
     assert "para.buffer += rest" in stream
     # Late pushes after the seal are dropped: the authoritative text is
-    # in, the stream has nothing more to say.
-    assert "if (state.done || state.sealed) return;" in stream
+    # in, the stream has nothing more to say (per generation).
+    assert "if (gen.done || gen.sealed) return;" in stream
     # The drain hands back to settle only when sealed AND every
     # paragraph is spent — the exact negation of the flash.
-    assert "state.sealed && state.active >= state.order.length" in stream
+    assert "gen.sealed && gen.active >= gen.order.length" in stream
     # The paragraph pointer's law (wr-7R): an empty paragraph is no
     # longer skipped unconditionally — the advance waits for the seal
     # or for a later paragraph holding typed content (the wr-7 defect
     # let a mid-beat gap freeze the rest of that beat's pieces until
     # the settle swapped the whole block in — the flash's amplifier).
-    assert "state.sealed || laterParaHasContent()" in stream
+    assert "gen.sealed || laterParaHasContent()" in stream
     assert "para.buffer.length === 0 &&" in stream
+    # The lr-2 serial law: a held generation never schedules its loop
+    # (the deltas keep buffering, nothing types) — both entry points
+    # guard the schedule on the hold.
+    assert (
+        "if (!gen.held && !gen.raf) gen.raf = requestAnimationFrame(step);"
+        in stream
+    )
+    assert stream.count("if (!gen.held && !gen.raf)") == 2
 
 
 def test_the_seal_never_fabricates_a_stream_block() -> None:
     """零增量臂（wr-7R2 MEDIUM-1，conform-R4）：seal 只对曾有增量到
     达的段补余量——seal 块内零 ensurePara（凭空造段的唯一通道），
-    缺段即跳过；零 push 到达时 wrap 恒为 null，settleWorld 的替换条
-    件臂让 renderWorldStory 原样整块落位（wr-6 形，无打字机参与）
+    缺段即跳过；零 push 到达时当代不存在（链 seal 交回 null），替换
+    条件臂让 renderWorldStory 原样整块落位（wr-6 形，无打字机参与）
     （变异 m7：seal 恢复 ensurePara——零增量被拉进打字机）。"""
 
     app = _app_source()
-    seal_block = app[app.index("seal(event) {") : app.index("get wrap")]
+    seal_block = app[app.index("gen.seal = (event) => {") : app.index("gen.stop")]
     assert "ensurePara" not in seal_block
-    assert "const para = state.paras.get(index);" in seal_block
+    assert "const para = gen.paras.get(index);" in seal_block
     assert "if (!para) return;" in seal_block
-    # The settle's whole-block arm stays exactly the wr-6 shape.
+    # The zero-increment chain arm: no current generation ⇒ seal hands
+    # back null and the settle's whole-block arm stays the wr-6 shape.
+    stream = _slice(app, "function startWorldStream() {", "\nfunction ")
+    assert "if (state.current === null) return Promise.resolve(null);" in stream
     settle = _slice(app, "const settleWorld = (event) => {", "\n  };\n")
     assert (
-        "if (worldStream.wrap && worldStream.wrap.parentNode === messages) {"
+        "if (gen !== null && gen.wrap && gen.wrap.parentNode === messages) {"
         in settle
     )

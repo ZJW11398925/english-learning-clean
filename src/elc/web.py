@@ -3818,11 +3818,16 @@ class _WebFace:
 
     def _world_frames_for_window(
         self, turn_moments: list[str], lower_edge: str
-    ) -> dict[int, dict[str, Any]]:
+    ) -> dict[int, list[dict[str, Any]]]:
         """The wr-8 refresh-recovery half: the served window's per-turn
-        ``world`` frames, keyed by turn index — an empty dict when this
-        conversation binds no world (or the host has no world leg), so a
-        worldless history answers exactly the pre-wr-8 payload.
+        ``world`` frames as ordered lists keyed by turn index (lr-2's
+        multi-frame bucket — a round that landed a chain comes back as
+        one frame per step) — an empty dict when this conversation binds
+        no world (or the host has no world leg), so a worldless history
+        answers exactly the pre-wr-8 payload. The caller emits the last
+        frame under ``world`` (single-frame rounds byte-identical) and
+        the whole list under ``world_steps`` only when a round carries
+        more than one (the streamed payload's own additive shape).
 
         **The interleave key (wr-8's adjudicated fact — the task book's
         ``created_at`` premise was wrong and the adjudication moved the
@@ -3882,7 +3887,13 @@ class _WebFace:
         :meth:`_note_narration` (the W-L law, fallback bit included);
         the date line is the frame's last story day (the streamed
         frame's ``beats[-1]`` convention), ``""`` when no note carries
-        one. Multi-event turns share one frame, notes side by side.
+        one. lr-2 (DEC-OPI-c73dbff3…114): a round's notes regroup by
+        reveal stamp — the lr-1 chain stamps one reveal_all moment per
+        step, so a multi-step round returns one frame per step in
+        landing order (the streamed ``world_steps`` convention, refresh
+        side); same-stamp notes share one frame, notes side by side
+        (a single-step round or a legacy/tail batch keeps the pre-lr-2
+        single-block shape byte for byte).
         """
 
         if not turn_moments:
@@ -3909,7 +3920,7 @@ class _WebFace:
             (world_id,),
         ).fetchall():
             by_id[str(row[0])] = tuple(row)
-        buckets: dict[int, list[dict[str, Any]]] = {}
+        buckets: dict[int, list[tuple[str, dict[str, Any]]]] = {}
         for row in rows:
             moment = None if row[3] is None else str(row[3])
             if not moment:
@@ -3937,34 +3948,59 @@ class _WebFace:
             )
             occurred_at = "" if event is None else str(event[3])
             buckets.setdefault(index, []).append(
-                {
-                    "narration": narration,
-                    "fallback": fallback,
-                    "story_day": (
-                        occurred_at
-                        if _ISO_DAY_RE.fullmatch(occurred_at)
-                        else None
-                    ),
-                }
+                (
+                    moment,
+                    {
+                        "narration": narration,
+                        "fallback": fallback,
+                        "story_day": (
+                            occurred_at
+                            if _ISO_DAY_RE.fullmatch(occurred_at)
+                            else None
+                        ),
+                    },
+                )
             )
-        frames: dict[int, dict[str, Any]] = {}
-        for index, notes in buckets.items():
-            date_localized = ""
-            for note in reversed(notes):
-                if note["story_day"] is not None:
-                    date_localized = _localize_story_date(
-                        str(note["story_day"]), ui_language
-                    )
-                    break
-            frames[index] = {
-                "world_name": None if package is None else package.name,
-                "ui_language": ui_language,
-                "date_localized": date_localized,
-                "notes": [
-                    {"narration": note["narration"], "fallback": note["fallback"]}
-                    for note in notes
-                ],
-            }
+        frames: dict[int, list[dict[str, Any]]] = {}
+        for index, stamped in buckets.items():
+            # lr-2 multi-frame buckets (DEC-OPI-c73dbff3…114): within a
+            # turn the notes regroup by their reveal stamp — the lr-1
+            # chain stamps one reveal_all moment per step, so a landed
+            # chain comes back as one frame per step in landing order
+            # (the streamed ``world_steps`` convention, refresh side).
+            # Same-stamp notes share one frame (a single-step round, or
+            # the legacy/tail approximations revealed in one batch —
+            # the pre-lr-2 single-block shape, byte for byte).
+            groups: dict[str, list[dict[str, Any]]] = {}
+            for moment, note in stamped:
+                groups.setdefault(moment, []).append(note)
+            turn_frames: list[dict[str, Any]] = []
+            for moment in sorted(groups):
+                notes = groups[moment]
+                date_localized = ""
+                for note in reversed(notes):
+                    if note["story_day"] is not None:
+                        date_localized = _localize_story_date(
+                            str(note["story_day"]), ui_language
+                        )
+                        break
+                turn_frames.append(
+                    {
+                        "world_name": (
+                            None if package is None else package.name
+                        ),
+                        "ui_language": ui_language,
+                        "date_localized": date_localized,
+                        "notes": [
+                            {
+                                "narration": note["narration"],
+                                "fallback": note["fallback"],
+                            }
+                            for note in notes
+                        ],
+                    }
+                )
+            frames[index] = turn_frames
         return frames
 
     def _world_payload(
@@ -6583,7 +6619,10 @@ class _WebFace:
         interleave — :meth:`_world_frames_for_window` holds the rule and
         the red line). A turn with no frame carries no ``world`` key at
         all: the worldless history stays byte-identical to the pre-wr-8
-        shape.
+        shape. lr-2 (DEC-OPI-c73dbff3…114): a multi-step round's whole
+        chain rides additively under ``world_steps`` (one frame per
+        landed step, in landing order) — ``world`` keeps holding the
+        last frame, single-frame rounds stay keyless.
         """
 
         bound: int | None
@@ -6648,7 +6687,7 @@ class _WebFace:
                 if slice_.assistant_turn is None
                 else slice_.assistant_turn.content
             )
-            turn = {
+            turn: dict[str, Any] = {
                 "user": slice_.user_turn.raw_content,
                 "assistant": assistant,
                 # The affordance bitmaps per side (v3-3), the same
@@ -6669,10 +6708,16 @@ class _WebFace:
             # wr-8: the turn's own world frame when the window's real
             # moments put revealed events in (previous turn, this turn]
             # — absent (no key) on a worldless turn, the payload stays
-            # byte-identical to the pre-wr-8 shape there.
-            frame = world_frames.get(index)
-            if frame is not None:
-                turn["world"] = frame
+            # byte-identical to the pre-wr-8 shape there. lr-2
+            # (DEC-OPI-c73dbff3…114): the interleave carries the round's
+            # whole chain — ``world`` holds the last frame (single-frame
+            # rounds byte-identical), ``world_steps`` rides additively
+            # only when a round landed more than one frame.
+            steps = world_frames.get(index) or []
+            if steps:
+                turn["world"] = steps[-1]
+                if len(steps) > 1:
+                    turn["world_steps"] = steps
             turns.append(turn)
         return {
             "turns": turns,
