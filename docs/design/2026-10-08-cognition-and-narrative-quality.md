@@ -144,6 +144,7 @@
 | P13 | 走向行专属 CSS | lr-2 或 C 系列前端刀 | 触碰前端样式 | chip 复用改专属样式 |
 | P14 | F-2 消费即清输入丢失窗口 / wr-7 F-L1 提取器增量 flush / wr-11 INFO-1 违约挂起 | lr-4 评估同场 / dogfood 信号各自触发 | 见各原登记 | 兜底 settle / 增量 flush / reveal 序调整 |
 | P15 | observations origin 读出（D-6-a M-2） | observations 面触碰刀或外评轮 | 下次触碰该面 | factor_trace 加 origins 或 ledger 事件 |
+| P16 | **用户互动入编年史（数据层归属）**：信件/走向选择落 durable 编年史行 + 事件-run 归属（world_event 挂 run_id，run 已带 trigger_turn_id）——历史分桶按「触发轮」语义归属而非时间戳近似（第十五击原则「用户互动在世界史对应位置显示与普通事件无异」的精确解；wr-8R v2 已兑现显示层首轮族精确，**continue 拍晚一格近似为已知壁障**：两族（流内初拍 M<A_N vs continue 拍 M>A_N）时间戳公式不可区分） | C1 认知视图刀（其本动编年史/participants 面；或用户 dogfood 点名 continue 拍错位时提前） | C1 开工，或 dogfood「到达拍浮到下一封信后」信号先到 | world_event.run_id 迁移 + 新行回填策略 + _world_frames_for_window 按 run→trigger_turn 分桶 + 流读面统一（信/走向在编年史位） |
 
 **单一台账律**（R6）：本表为**唯一跨刀 Revisit 载体**——刀级登记仅限当刀上下文内项目；开工四查第⑤查扫此表；命中即兑现或显式改判留痕。
 
