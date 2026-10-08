@@ -63,6 +63,19 @@ def _postturn_slice() -> str:
     ]
 
 
+def _postcontinue_slice() -> str:
+    """lr-3T disposal (review LOW-1): the continue arm carries its own
+    copy of the reply gate — the parked round's reply also waits for
+    the chain to finish telling its beat. That arm had no pin; this
+    slice closes the gap."""
+
+    app = _app_source()
+    return app[
+        app.index("async function postContinue") :
+        app.index("async function postTurn")
+    ]
+
+
 # ---------------------------------------------------------------------------
 # 1 — the emit-loop verdict
 
@@ -125,6 +138,32 @@ def test_the_gate_predicate_and_the_three_open_arms() -> None:
     # loop regardless of any gate state.
     assert "typing.stop();" in postturn
     assert "worldStream.stop();" in postturn
+
+
+def test_the_continue_arm_gates_the_reply_the_same_way() -> None:
+    """lr-3T disposal (review LOW-1 closure): postContinue carries its
+    own copy of the reply gate — the letter-arrives arm's reply also
+    waits for the chain to settle. The predicate, the wiring and the
+    interruption posture mirror postTurn's pinned trio."""
+
+    continue_arm = _postcontinue_slice()
+    # The contiguous head pin: a short-circuiting prefix (``true ||``)
+    # must break the predicate, not just delete a condition — the
+    # substring trio alone cannot tell those apart (the disposal's own
+    # mutation probe caught this exact shape).
+    assert (
+        "const replyMayType = () =>\n"
+        "    worldStream.wrap === null ||" in continue_arm
+    )
+    predicate = continue_arm[
+        continue_arm.index("const replyMayType = () =>") :
+    ]
+    predicate = predicate[: predicate.index(";") + 1]
+    assert "worldStream.settled" in predicate
+    assert "worldStream.done" in predicate
+    assert "typing = startTypewriter(replyMayType)" in continue_arm
+    assert "typing.stop();" in continue_arm
+    assert "worldStream.stop();" in continue_arm
 
 
 # ---------------------------------------------------------------------------

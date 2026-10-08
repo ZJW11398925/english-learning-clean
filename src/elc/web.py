@@ -515,8 +515,12 @@ _WORLD_NO_BINDING = (
 #: nothing about what still waits unread: reading is not opening, and the
 #: ``PENDING`` slice stays out of every read face's answer.
 _WORLD_QUIET_DAY: dict[str, str] = {
-    "zh": "今天风平浪静——还没有新的动静。",
-    "en": "A quiet day — nothing new has come ashore.",
+    # lr-3T disposal (the zero-template law's fifth sentence, the
+    # review's INFO-2 find): the masthead's today-line quiet form is
+    # status chrome, not narration — terse and functional, never
+    # literary canned prose.
+    "zh": "今日暂无动静。",
+    "en": "Nothing new today.",
 }
 
 #: The virtual world calendar's presentation words (A2, DEC-…88/…90).

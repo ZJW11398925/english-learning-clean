@@ -249,7 +249,7 @@ def test_overview_on_a_quiet_day_answers_honestly(tmp_path: Path) -> None:
     assert payload["date_localized"] == "9月14日 · Berrymoor"
     assert payload["today"] == {
         "quiet": True,
-        "note": "今天风平浪静——还没有新的动静。",
+        "note": "今日暂无动静。",
     }
     assert payload["resident"] == {
         "actor_id": "actor-berrymoor-nell",
@@ -602,7 +602,7 @@ def test_overview_reads_in_both_interface_languages(tmp_path: Path) -> None:
         assert status == 200
         assert zh["ui_language"] == "zh"
         assert zh["date_localized"] == "9月14日 · Berrymoor"
-        assert zh["today"]["note"] == "今天风平浪静——还没有新的动静。"
+        assert zh["today"]["note"] == "今日暂无动静。"
         status, _ = stack.post(
             "/api/settings/ui_language", {"ui_language": "en"}
         )
@@ -611,7 +611,7 @@ def test_overview_reads_in_both_interface_languages(tmp_path: Path) -> None:
         assert status == 200
         assert en["ui_language"] == "en"
         assert en["date_localized"] == "Sep 14 · Berrymoor"
-        assert en["today"]["note"] == "A quiet day — nothing new has come ashore."
+        assert en["today"]["note"] == "Nothing new today."
 
 
 def test_log_group_dates_follow_the_interface_language(
