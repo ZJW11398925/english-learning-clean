@@ -621,6 +621,16 @@ def test_the_parked_chrome_waits_for_the_chain_to_settle() -> None:
     #    chain, so does the parked chrome).
     assert "function renderWorldWaitsWhenSettled" in app
     assert "!stream.settled && !stream.done" in app
+    # ①b The wiring pin (review MEDIUM-1, m1a): the gate must be what
+    #     enterParkedRound actually calls — a dead gate function beside
+    #     a direct render is exactly the dogfood bug this knife kills.
+    enter_body = app[app.index("function enterParkedRound"):]
+    enter_body = enter_body[: enter_body.index("\n}")]
+    assert (
+        "renderWorldWaitsWhenSettled(stream, directions, capped);"
+        in enter_body
+    )
+    assert "renderWorldWaits(directions, capped)" not in enter_body
     # ② The token cancel arm: exitParkedRound bumps the gate token —
     #    a pending render dies when a new letter leaves or the reply
     #    lands.
