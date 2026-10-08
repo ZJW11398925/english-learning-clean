@@ -4453,9 +4453,18 @@ async function postContinue() {
   // 回信形（信到：链收口点缝、打字机、摘封、回信行、usage/moments——
   // postTurn 的 finalize 同构，落点是原信行而非新信）。null = 非 SSE
   //（409：这一轮已结束）⇒ 拉历史对齐；started 中断不重发（round 还在
-  // 库里，拉历史对齐）；未开始的失败留着停点态原样可再按。
+  // 库里，拉历史对齐）；未开始的失败拉历史对齐（chrome 已随起手退场，
+  // parked 键在则重建——同一枚钮可再按）。
   if (!parkedRound || continueInFlight) return;
   continueInFlight = true;
+  // lr-3R 处置（活体探针发现）：续链起手即视觉退场——世界已经继续，
+  // 停点 chrome（提示行+继续钮+旧候选行）不再挂着等到下一拍定版；轮锚
+  // parkedRound 保留（in-flight 续链与失败恢复仍用它）。「原样可再按」
+  // 由失败臂的 loadHistory 重建（parked 键在则 chrome 回来——服务端事
+  // 实对齐，而非留着陈旧行）。
+  if (liveWorldWaits && liveWorldWaits.parentNode) liveWorldWaits.remove();
+  liveWorldWaits = null;
+  expireWorldDirectionRow();
   const T = worldInboxText();
   const pending = addLine("typing", T.worldRunning);
   const letterNode = parkedRound.letterNode;
@@ -4549,8 +4558,12 @@ async function postContinue() {
       addLine("failure", "流式中断了——把已经落库的部分拉回来对齐。");
       try { await loadHistory(); } catch { /* 历史读不回，留着错误行 */ }
     } else {
-      // 未开始的失败（fetch 本身抛——服务端零触碰）：停点态原样保留，
-      // 提示行还在，同一枚钮可再按；只落一行人话。
+      // 未开始的失败（fetch 本身抛——服务端零触碰）：chrome 已随续链
+      // 起手退场，拉历史对齐重建（parked 键在则 chrome 回来——同一枚
+      // 钮可再按）；历史读不回只落人话。
+      try {
+        await loadHistory();
+      } catch { /* 历史读不回，留着错误行 */ }
       addLine("failure", T.continueMiss);
     }
   } finally {

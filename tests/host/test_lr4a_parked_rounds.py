@@ -656,3 +656,37 @@ def test_the_parked_chrome_waits_for_the_chain_to_settle() -> None:
         "enterParkedRound(lastUserNode, flowTurns.length - 1, null,"
         in app
     )
+
+
+def test_a_continue_retires_the_chrome_upfront() -> None:
+    """lr-3R disposal (the live-probe find): clicking「让世界继续」
+    retires the chrome up front — the world is already telling its
+    next beat, so the「故事停在这里」row and the stale candidates must
+    not hang on until that beat settles. The round anchor
+    (``parkedRound``) stays (the in-flight continue and the failure
+    recovery still read it); the not-yet-started failure arm re-aligns
+    via ``loadHistory`` (a still-parked round rebuilds its chrome from
+    the server's fact, not from a stale row)."""
+
+    app = (REPO / "src" / "elc" / "webui" / "app.js").read_text(
+        encoding="utf-8"
+    )
+    body = app[app.index("async function postContinue"):]
+    body = body[: body.index("\nasync function ")]
+    # ① The retire trio rides postContinue's head — before the
+    #    continue fetch leaves (index order, not just presence: the
+    #    chrome must be gone the moment the click lands).
+    retire_at = body.index("liveWorldWaits.remove()")
+    fetch_at = body.index("await fetchWorldContinue(")
+    assert retire_at < fetch_at
+    assert "liveWorldWaits = null;" in body
+    assert "expireWorldDirectionRow();" in body
+    # ② The round anchor survives the retire (the in-flight continue
+    #    still reads it — the trio must not ride exitParkedRound).
+    assert "exitParkedRound();" not in body[:retire_at]
+    # ③ The not-yet-started failure arm re-aligns from the server's
+    #    fact: loadHistory precedes the human line there.
+    fail_arm = body[body.index("未开始的失败（fetch"):]
+    fail_arm = fail_arm[: fail_arm.index("\n    }")]
+    assert "await loadHistory();" in fail_arm
+    assert fail_arm.index("loadHistory") < fail_arm.index("addLine")
