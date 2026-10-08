@@ -173,10 +173,25 @@ def test_the_transition_sentence_rides_only_the_last_generation() -> None:
     closer = closer[: closer.index("return {")]
     assert "if (withSeam) state.seamWanted = true;" in closer
     assert "appendSeam();" in closer
-    # The chain stop closes without a seam (failWorld / interrupt arm).
+    # 处置刀（评审 F9 裁决落地）：seamWanted 单向——失败/中断触点
+    # （closeChain(false)）从不撤销已点的缝。失败链上回信照到 ⇒ 首增
+    # 量触点 closeChain(true) 重开缝 ⇒ 缝台照落（缝台缝合的是回信与
+    # 世界流，非链的成功；世界某步拒收是另一拍，失败注已诚实标注）。
+    assert "state.seamWanted = false" not in closer, (
+        "seamWanted must be one-way — a false close never revokes a "
+        "seam the reply's arrival has earned"
+    )
+    assert closer.count("seamWanted") == 1, (
+        "the closer writes seamWanted exactly once (the one-way mark)"
+    )
+    # The chain stop closes without a seam (failWorld / interrupt arm) —
+    # never revoking one the reply's arrival has already marked.
     stop = stream[stream.index("stop() {") :]
     stop = stop[: stop.index("if (gen === null) return null;")]
     assert "closeChain(false);" in stop
+    assert "seamWanted" not in stop, (
+        "the stop arm must not touch the seam mark"
+    )
     # The live触点: the reply's first delta closes the chain (and lands
     # the seam) before the reply's first push; the final closes it
     # before the seal (the zero-delta arms — both closes ahead of any

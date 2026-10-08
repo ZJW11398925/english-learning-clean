@@ -3580,7 +3580,11 @@ function startWorldStream() {
   };
 
   // 链收口（四触点幂等）：回信首增量 / final（干净收口——点缝台）；
-  // 失败 / 中断（closeChain(false)——失败注是诚实尾注，无缝可缝）。
+  // 失败 / 中断（closeChain(false)——失败注是诚实尾注）。缝台由
+  // 「回信真的到达」决定，非链的成功：失败链上回信照到 ⇒ 缝台照落
+  // （seamWanted 单向——false 触点从不撤销已点的缝；处置刀 F9 裁决：
+  // 缝台缝合的是回信与世界流，世界某步拒收是另一拍，失败注已诚实
+  // 标注那一拍）。
   const closeChain = (withSeam) => {
     state.chainClosed = true;
     if (withSeam) state.seamWanted = true;
