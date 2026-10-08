@@ -745,9 +745,13 @@ def test_the_page_carries_the_world_inbox_instrument() -> None:
     assert 'insertAdjacentElement("afterend"' not in app
     assert "insertBefore(worldInboxSec" not in app
     # The continue interaction, retired whole: no checkpoint branch, no
-    # actions row, no fetch, no dead import (A2R DEC-…99).
+    # actions row, no dead strings (A2R DEC-…99). lr-4a
+    # (DEC-OPI-c73dbff3…128) rebirths the fetch for a different tenant —
+    # the **parked round's** continuation (a live import again, driving
+    # the waits line's continue button, never a story-block checkpoint
+    # branch): the at_checkpoint read and the actions row stay retired.
     assert "event.at_checkpoint" not in app
-    assert "fetchWorldContinue" not in app
+    assert "fetchWorldContinue" in app
     assert "world-story-actions" not in app
     assert "世界没能继续" not in app
     assert "Array.isArray(data.items)" in app
@@ -760,11 +764,14 @@ def test_the_page_carries_the_world_inbox_instrument() -> None:
         encoding="utf-8"
     )
     assert "world-story-actions" not in css
-    # The transport module carries no retired endpoint call.
+    # The transport module carries the parked round's endpoint (lr-4a's
+    # rebirth — the A2R retiral named the *light action*, not this
+    # tenant); the retired shape it must never grow back is the engine
+    # light action's, checked on the web face above.
     api = (REPO_ROOT / "src" / "elc" / "webui" / "api.js").read_text(
         encoding="utf-8"
     )
-    assert "world/continue" not in api
+    assert "/api/world/continue" in api
 
 
 def test_the_turn_does_not_reread_the_inbox() -> None:

@@ -109,14 +109,17 @@ def test_the_inbox_answers_the_bound_world(tmp_path: Path) -> None:
 
 
 def test_the_continue_endpoint_is_retired(tmp_path: Path) -> None:
-    """A2R (DEC-…99): the 「继续」 endpoint is gone with its button — the
-    route answers the plain 404, never a step (there is no light action
-    left to refuse anything)."""
+    """A2R (DEC-…99) retired the 「继续」 light action; lr-4a
+    (DEC-OPI-c73dbff3…128) rebirths the route for a different tenant —
+    the **parked round's** continuation, not the engine's light action.
+    With no parked round the preflight answers the plain 409 人话 (the
+    A2R 404 truth is gone with the route's rebirth; the light action
+    itself stays retired — there is no engine checkpoint to refuse)."""
 
     with web_stack(tmp_path / "app.db") as stack:
         status, payload = stack.post("/api/world/continue", {})
-    assert status == 404
-    assert payload == {"error": "not found"}
+    assert status == 409
+    assert "停下来的世界" in payload["error"]
 
 
 def test_the_turn_winds_the_world_and_the_inbox_reveals(

@@ -462,7 +462,7 @@ from elc.platform.types import (
     TargetId,
 )
 from elc.runtime.controller import TeachingReplyRequest
-from elc.runtime.types import InputEnvelope
+from elc.runtime.types import TERMINAL_TURN_STATUSES, InputEnvelope
 from elc.scheduler.types import ScheduleItem
 from elc.teaching.envelope import (
     AttemptPayload,
@@ -2301,12 +2301,44 @@ _WORLD_DIRECTION_HINT_CAP = 200
 #: N steps」 — the VAL negative-control holds that line.
 MAX_CHAIN_STEPS = 5
 
+#: The parked round's own stop word (lr-4a, DEC-OPI-c73dbff3…128): the
+#: **turn flow's** verdict that the world turned its step and now waits
+#: for the director's choice — the narrator's own signal words (the
+#: ``elc.world.narrator`` vocabulary) say why the world paused; this one
+#: says what the round is doing. It rides the parked final's ``stop``
+#: key, never a narrator frame.
+WORLD_STOP_AWAITS_DIRECTION = "awaits_direction"
+
+#: The parked round's directionless crank ceiling (lr-4a R7's safety
+#: line): the number of stop points one round may be driven through
+#: without a chosen direction before ``/api/world/continue`` refuses to
+#: turn the world again and asks for a direction or a new letter. **A
+#: safety line, never a narrative rule** — the letter arrives in its own
+#: time, and a chosen direction keeps the world moving past any count.
+MAX_PARKED_STOPS = 10
+
+#: The parked round's app_settings key prefix (lr-4a): one row per
+#: conversation holding the durable command (the re-entry material), the
+#: choice-point state (the candidates, the stop count, the round's
+#: phase) — the continue face's memory across requests **and** across a
+#: restart (the parking row is durable; the parked turn's own §23
+#: re-entry semantics make a new process's continue just work).
+_APP_SETTING_WORLD_PARKED_TURN_PREFIX = "world_parked_turn:"
+
 
 def _world_pending_direction_key(world_id: str) -> str:
     """The pending-direction row's key for one world (the prefix plus
     the world id — the multi-world key shape, one binding today)."""
 
     return _APP_SETTING_WORLD_PENDING_DIRECTION_PREFIX + world_id
+
+
+def _world_parked_turn_key(conversation_id: str) -> str:
+    """The parked-round row's key for one conversation (the prefix plus
+    the conversation id — the conversation is the round's scope: one
+    parked round per desk at a time, the newest letter's)."""
+
+    return _APP_SETTING_WORLD_PARKED_TURN_PREFIX + conversation_id
 
 #: The two writes' 400 sentences — one grammar line each, naming the words.
 _UI_LANGUAGE_GRAMMAR = (
@@ -3240,15 +3272,33 @@ class _WebFace:
         raw material); the chain's tail stop signal rides ``stop`` when
         the narrator declared one. A quiet or failed world leg simply
         omits the keys (fail-soft — the reply never waits on a broken
-        narration beyond its own round trip)."""
+        narration beyond its own round trip).
 
-        frames, stop, _failed = self._world_step_frame()
-        payload, turn_id = self._commit_and_answer(text)
+        lr-4a (DEC-OPI-c73dbff3…128 R1/R2): in **directed** mode the
+        chain is one step and every step is a choice point — when the
+        step landed and the letter has not arrived, the round parks
+        (``begin_turn_parked``; CP0 + the learning leg, no generation)
+        and the payload is the parked shape: ``reply: null``, ``parked:
+        true``, ``stop: awaits_direction``, the candidates under
+        ``directions``. Immersive mode runs the pre-lr-4a chain byte for
+        byte — zero stop points, zero parking (the R6 regression
+        surface)."""
+
+        mode = self._world_direction_mode()
+        directed = mode == "directed"
+        frames, stop, _failed = self._world_step_frame(
+            chain_limit=1 if directed else None
+        )
+        parked = directed and bool(frames) and stop != STOP_LETTER_ARRIVES
+        if parked:
+            payload = self._park_round(text=text, frames=frames)
+        else:
+            payload, turn_id = self._commit_and_answer(text)
         if frames:
             payload["world"] = frames[-1]
             if len(frames) > 1:
                 payload["world_steps"] = frames
-        if stop is not None:
+        if not parked and stop is not None:
             payload["stop"] = stop
         return payload
 
@@ -3266,9 +3316,18 @@ class _WebFace:
         and the measured usage. The world's own bookkeeping has no key
         here (WR-2 retired ``world_step_note`` with the pre-step)."""
 
-        result = self._host.coordinator.begin_turn(
-            _commit(self._conversation_id, text)
-        )
+        return self._answer_command(_commit(self._conversation_id, text))
+
+    def _answer_command(
+        self, command: CommitUserTurn
+    ) -> tuple[dict[str, Any], str | None]:
+        """The commit half above, over a **given** command (lr-4a): the
+        parked round's re-entry re-runs the exact original command — the
+        same ``client_message_id`` CP0 committed — so the idempotent
+        replay continues the parked turn instead of minting a second
+        one. The payload contract is :meth:`_commit_and_answer`'s."""
+
+        result = self._host.coordinator.begin_turn(command)
         if isinstance(result, Err):
             return (
                 {
@@ -3295,7 +3354,9 @@ class _WebFace:
             "word_hits": (
                 None if reply is None else _letter_hit_rows(reply, self._lemma_runs)
             ),
-            "user_word_hits": _letter_hit_rows(text, self._lemma_runs),
+            "user_word_hits": _letter_hit_rows(
+                command.raw_content, self._lemma_runs
+            ),
             # fr-A: this turn's measured token usage (all its actions'
             # attempts) — ``None`` when the endpoint reported none.
             "usage": _usage_by_turn(
@@ -3361,9 +3422,18 @@ class _WebFace:
             # The blocking shape: the world chain runs outside the
             # bridge and its frames ride ahead of the one final
             # (WR-6's shape, one frame per landed step).
-            frames, stop, _failed = self._world_step_frame()
+            mode = self._world_direction_mode()
+            directed = mode == "directed"
+            frames, stop, _failed = self._world_step_frame(
+                chain_limit=1 if directed else None
+            )
             for frame in frames:
                 events.put(frame)
+            if directed and frames and stop != STOP_LETTER_ARRIVES:
+                # lr-4a: the directed round's step is a choice point —
+                # park (the parked final carries the candidates; the
+                # frames above already rode the stream).
+                return self._park_round(text=text, frames=frames)
             payload, turn_id = self._commit_and_answer(text)
             if stop is not None:
                 payload["stop"] = stop
@@ -3382,15 +3452,23 @@ class _WebFace:
         # streamed face, decoded pieces straight to the bridge), and
         # the generation order is untouched — every step's whole
         # narration exists before the reply's first delta is generated.
+        mode = self._world_direction_mode()
+        directed = mode == "directed"
         frames, stop, failed_after_shown = self._world_step_frame(
             on_narration_increment=on_narration_increment,
             on_frame=bridge.push_frame,
+            chain_limit=1 if directed else None,
         )
         if failed_after_shown:
             # Rendering ran ahead of the durable verdict and a step's
             # whole frame never came: say so, rather than leaving shown
             # text that pretends to be kept (拒收不撒谎).
             bridge.push_frame({"type": "world_failed"})
+        if directed and frames and stop != STOP_LETTER_ARRIVES:
+            # lr-4a: the directed round's step is a choice point — park.
+            # The parked half (CP0 + the learning leg) dials no provider,
+            # so the live proxy never installs for it.
+            return self._park_round(text=text, frames=frames)
         coordinator = self._host.coordinator
         coordinator.replace_persona_provider(
             _StreamingProviderProxy(live, bridge)
@@ -3408,6 +3486,7 @@ class _WebFace:
         *,
         on_narration_increment: Callable[[int, str], None] | None = None,
         on_frame: Callable[[dict[str, Any]], None] | None = None,
+        chain_limit: int | None = None,
     ) -> tuple[list[dict[str, Any]], str | None, bool]:
         """The world-first pre-reply **step chain** (WR-6,
         DEC-OPI-8a4f980b…13; the natural-run chain, lr-1,
@@ -3423,13 +3502,16 @@ class _WebFace:
         signal cannot spin the world forever; nothing presents it to
         the user as a rule).
 
-        The v1 restraint, honestly stated: the narrator's other two
-        signals (``she_thinks_of_you``, ``awaits_you``) **keep the
-        world turning** in this cut — the plan logs this as the chain's
-        deliberate incompleteness, the full stop-round semantics (the
-        world pausing for the user's choice) belong to lr-4. The last
-        step's own signal is what the caller sees, never an invented
-        verdict.
+        The v1 restraint, honestly stated **as of lr-4a's own cut**: the
+        narrator's other two signals (``she_thinks_of_you``,
+        ``awaits_you``) keep the world turning in **immersive** mode —
+        the mode where nobody is asked to choose. lr-4a
+        (DEC-OPI-c73dbff3…128) gave directed mode the full stop-round
+        semantics — every step is a choice point and the caller parks
+        after one — so the restraint survives only as the immersive
+        posture; this method stays the step engine either way (it stops
+        where ``chain_limit`` tells it and hands the caller the last
+        step's own signal, never an invented verdict).
 
         Each step's ``elapsed_days`` is computed fresh (the letter's
         journey as the world's own calendar tells it: the furthest
@@ -3473,6 +3555,15 @@ class _WebFace:
         raw material; ``None`` = the chain ended without one: a quiet
         arm, a refusal, or the ceiling with no signal on the final
         step), and the failure handle above.
+
+        lr-4a (DEC-OPI-c73dbff3…128): ``chain_limit`` bounds the loop —
+        ``None`` keeps the defensive :data:`MAX_CHAIN_STEPS` ceiling (the
+        natural-run chain's shape, immersive and every pre-lr-4a caller);
+        a directed-mode caller passes 1: the world turns **one step per
+        request** and the step is a choice point — the round parks (the
+        caller owns the parking; this method only stops where it is
+        told). The bound is a loop bound only: refusals, quiet arms and
+        ``letter_arrives`` end the chain exactly as before.
         """
 
         binding = self._world_binding()
@@ -3510,7 +3601,9 @@ class _WebFace:
         frames: list[dict[str, Any]] = []
         stop_word: str | None = None
         failed_after_shown = False
-        for _step in range(MAX_CHAIN_STEPS):
+        for _step in range(
+            MAX_CHAIN_STEPS if chain_limit is None else chain_limit
+        ):
             elapsed_days = (
                 story_elapsed_days_of(package, world_store, world_id)
                 - sent_base
@@ -3627,9 +3720,11 @@ class _WebFace:
                 # natural end — the reply is generated next (the chain
                 # tail's落点).
                 break
-            # The v1 restraint: any other signal (she_thinks_of_you /
-            # awaits_you — or none at all) keeps the world turning;
-            # lr-4 owns the full stop-round semantics. The loop's
+            # The immersive posture (lr-4a): any other signal
+            # (she_thinks_of_you / awaits_you — or none at all) keeps
+            # the world turning — nobody in immersive mode was asked to
+            # choose. Directed mode never reaches this line: its caller
+            # bounds the chain to one step and parks on it. The loop's
             # ceiling is the safety line, not the story's rule.
         return frames, stop_word, failed_after_shown
 
@@ -6185,6 +6280,456 @@ class _WebFace:
         )
         return (200, {"accepted": True, "cleared": False, "error": None})
 
+    # -- lr-4a: the directed-mode parked round (DEC-OPI-c73dbff3…128) ----
+
+    def _parked_round_row(self) -> dict[str, Any] | None:
+        """This conversation's parked-round row (lr-4a), parsed
+        defensively: only a row the write face could have written
+        answers — a missing, corrupt or oddly-shaped row is an absent
+        round, never a guess, never a crash. The row is the continue
+        face's memory across requests **and** across a restart: the
+        durable command inside it is what the re-entry replays, so a
+        parked round survives a dead process (the turn's own §23
+        re-entry semantics do the rest)."""
+
+        raw = self._host.app_settings.get(
+            _world_parked_turn_key(str(self._conversation_id))
+        )
+        if raw is None:
+            return None
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(parsed, dict):
+            return None
+        if not set(parsed) >= {
+            "turn_id",
+            "input_id",
+            "client_message_id",
+            "raw_content",
+            "received_at",
+            "runtime_version",
+            "stops",
+            "phase",
+        }:
+            return None
+        for key in ("turn_id", "input_id", "client_message_id",
+                    "raw_content", "received_at", "runtime_version",
+                    "phase"):
+            if not isinstance(parsed[key], str) or not parsed[key]:
+                return None
+        if not isinstance(parsed["stops"], int) or parsed["stops"] < 1:
+            return None
+        directions = parsed.get("directions", [])
+        if not isinstance(directions, list):
+            return None
+        for candidate in directions:
+            if not (
+                isinstance(candidate, dict)
+                and set(candidate) == {"label", "hint"}
+                and isinstance(candidate["label"], str)
+                and isinstance(candidate["hint"], str)
+            ):
+                return None
+        return parsed
+
+    def _write_parked_round_row(self, row: dict[str, Any]) -> None:
+        """Persist the parked-round row (one strict-JSON row, the
+        provider-profile posture)."""
+
+        self._host.app_settings.set(
+            _world_parked_turn_key(str(self._conversation_id)),
+            json.dumps(row, ensure_ascii=False),
+        )
+
+    def _clear_parked_round_row(self) -> None:
+        """The round is over (replied, cancelled or corrupted beyond
+        reading): the row goes. Idempotent — an absent row deletes as
+        nothing."""
+
+        self._host.app_settings.delete(
+            _world_parked_turn_key(str(self._conversation_id))
+        )
+
+    def _parked_turn_status_word(self, turn_id: str) -> str | None:
+        """The parked turn's durable status word, read straight from the
+        turn-record table (the face's direct-SQL posture, the moments
+        and lock reads' own shape); ``None`` when the id names nothing —
+        an unknown round is not an open one."""
+
+        row = self._host.db.execute(
+            "SELECT status FROM turn_record WHERE turn_id = ?",
+            (turn_id,),
+        ).fetchone()
+        return str(row[0]) if row is not None else None
+
+    def _parked_command_of(
+        self, row: dict[str, Any]
+    ) -> CommitUserTurn | None:
+        """The parked round's original CP0 command, rebuilt from the
+        durable row: every field byte-equal to the commit the letter
+        minted — the identity is the ``client_message_id``, and the
+        idempotent CP0 replay answers it with the *same* turn
+        (the re-entry, never a second letter)."""
+
+        try:
+            return CommitUserTurn(
+                conversation_id=self._conversation_id,
+                envelope=InputEnvelope(
+                    input_id=InputId(str(row["input_id"])),
+                    client_message_id=ClientMessageId(
+                        str(row["client_message_id"])
+                    ),
+                    conversation_id=str(self._conversation_id),
+                    persona_id=None,
+                    scene_id=None,
+                    interaction_channel=InteractionChannel.TEXT,
+                    raw_payload=str(row["raw_content"]),
+                    received_at=str(row["received_at"]),
+                ),
+                raw_content=str(row["raw_content"]),
+                runtime_version=str(row["runtime_version"]),
+            )
+        except (TypeError, ValueError):
+            # A row that cannot rebuild is a corrupt row: the caller
+            # clears it and says so, never a fabricated command.
+            return None
+
+    def _frame_directions(
+        self, frames: list[dict[str, Any]]
+    ) -> list[dict[str, str]]:
+        """The last landed frame's own candidates (the world's freshest
+        offer), empty when the frames carry none."""
+
+        if not frames:
+            return []
+        directions = frames[-1].get("directions")
+        if not isinstance(directions, list):
+            return []
+        return [
+            {
+                "label": str(candidate.get("label", "")),
+                "hint": str(candidate.get("hint", "")),
+            }
+            for candidate in directions
+            if isinstance(candidate, dict)
+        ]
+
+    def _park_round(
+        self,
+        *,
+        text: str,
+        frames: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Park the directed round (lr-4a R2): the half round runs
+        (``begin_turn_parked`` — CP0 + the learning leg, the turn rests
+        at GENERATING, generation never starts), the durable row is
+        written (the re-entry material + the choice-point state), and
+        the parked payload answers. A refused half round answers the
+        failure shape and leaves no row — a round that never parked is
+        not a waiting one."""
+
+        command = _commit(self._conversation_id, text)
+        result = self._host.coordinator.begin_turn_parked(command)
+        if isinstance(result, Err):
+            self._clear_parked_round_row()
+            return {
+                "reply": None,
+                "turn_status": None,
+                "failure_reason": (
+                    f"{result.error.code.value}: {result.error.message}"
+                ),
+                "teaching_moments": [],
+            }
+        parked = result.value
+        directions = self._frame_directions(frames)
+        envelope = command.envelope
+        self._write_parked_round_row(
+            {
+                "turn_id": str(parked.turn_id),
+                "input_id": str(envelope.input_id),
+                "client_message_id": str(envelope.client_message_id),
+                "raw_content": command.raw_content,
+                "received_at": envelope.received_at,
+                "runtime_version": command.runtime_version,
+                "stops": 1,
+                "phase": "chain",
+                "directions": directions,
+            }
+        )
+        return {
+            "reply": None,
+            "turn_status": parked.status.value,
+            "failure_reason": None,
+            "teaching_moments": [],
+            "word_hits": None,
+            "user_word_hits": _letter_hit_rows(text, self._lemma_runs),
+            "usage": None,
+            "turn_id": str(parked.turn_id),
+            "parked": True,
+            "stop": WORLD_STOP_AWAITS_DIRECTION,
+            "directions": directions,
+        }
+
+    def _parked_payload_from_row(
+        self,
+        row: dict[str, Any],
+        *,
+        capped: bool = False,
+    ) -> dict[str, Any]:
+        """The parked final's shape over the durable row (the continue
+        face's own park arm): the same contract the first park answers,
+        with the row's freshest candidates and stop count."""
+
+        return {
+            "reply": None,
+            "turn_status": "GENERATING",
+            "failure_reason": None,
+            "teaching_moments": [],
+            "word_hits": None,
+            "user_word_hits": _letter_hit_rows(
+                str(row["raw_content"]), self._lemma_runs
+            ),
+            "usage": None,
+            "turn_id": str(row["turn_id"]),
+            "parked": True,
+            "stop": WORLD_STOP_AWAITS_DIRECTION,
+            "directions": row.get("directions", []),
+            "capped": capped,
+        }
+
+    def continue_world_preflight(self) -> tuple[int, dict[str, Any]]:
+        """The continue route's plain-JSON gate (lr-4a R3): every refusal
+        is a human sentence before any stream starts — no parked round
+        (cleared or never written), a round whose turn already reached a
+        terminal state (stale row: cleared here, the honest 409), or a
+        round whose durable command no longer rebuilds. ``200`` with the
+        row's round summary means the stream may run."""
+
+        row = self._parked_round_row()
+        if row is None:
+            return (
+                409,
+                {
+                    "error": (
+                        "现在没有停下来的世界——寄一封信，或等这一轮讲完。"
+                    ),
+                },
+            )
+        status = self._parked_turn_status_word(str(row["turn_id"]))
+        if status is not None and status in {
+            word.value for word in TERMINAL_TURN_STATUSES
+        }:
+            self._clear_parked_round_row()
+            return (
+                409,
+                {
+                    "error": (
+                        "这一轮已经结束了（回信或关闭）——没有可以继续的"
+                        "停点。"
+                    ),
+                },
+            )
+        if self._parked_command_of(row) is None:
+            self._clear_parked_round_row()
+            return (
+                409,
+                {
+                    "error": (
+                        "停点记录读不回来了——这一轮没法继续；写一封新信"
+                        "重新开始。"
+                    ),
+                },
+            )
+        return (
+            200,
+            {
+                "turn_id": str(row["turn_id"]),
+                "stops": int(row["stops"]),
+                "phase": str(row["phase"]),
+            },
+        )
+
+    def continue_world_stream(
+        self, events: "queue.Queue[str | dict]"
+    ) -> dict[str, Any]:
+        """The parked round's continuation (lr-4a R3), one streamed step
+        at a time — the event contract is :meth:`turn_stream`'s:
+        ``world_delta＊ → world → (delta＊ →) final``. The order of the
+        round:
+
+        1. a round in its ``reply`` phase (the letter arrived on an
+           earlier step — perhaps before a crash) skips straight to the
+           re-entry: ``begin_turn`` with the **durable original
+           command**, the idempotent replay continuing the parked turn
+           through generation, delivery and terminalization; the full
+           reply payload is the final, and the row goes when the turn
+           reached a terminal state;
+        2. otherwise the directionless crank ceiling is checked first
+           (R7's safety line — only when no direction is pending and
+           the round is directed), then the world turns **one step**
+           (the pending direction rides in and is consumed on success,
+           the wr-10 law untouched);
+        3. the letter arriving (the narrator's own ``letter_arrives``)
+           durably flips the row to its ``reply`` phase *before* the
+           re-entry — a crash between the two retries the re-entry,
+           never the step (the arrival beat is already durable);
+        4. any other outcome parks the round again: the stop count
+           advances, the freshest candidates replace the stale ones (a
+           quiet or refused step keeps the previous ones — the world
+           could not move, its offer stands), and the parked final
+           answers.
+
+        The preflight owns the refusals; this face re-checks the row
+        (belt) and answers its failure shape rather than raising — the
+        stream always carries exactly one final."""
+
+        row = self._parked_round_row()
+        if row is None:
+            return {
+                "reply": None,
+                "turn_status": None,
+                "failure_reason": "no parked round",
+                "teaching_moments": [],
+            }
+        turn_status = self._parked_turn_status_word(str(row["turn_id"]))
+        if turn_status is not None and turn_status in {
+            word.value for word in TERMINAL_TURN_STATUSES
+        }:
+            self._clear_parked_round_row()
+            return {
+                "reply": None,
+                "turn_status": None,
+                "failure_reason": (
+                    "这一轮已经结束了（回信或关闭）——没有可以继续的停点。"
+                ),
+                "teaching_moments": [],
+            }
+
+        def _world_half(
+            *,
+            on_narration_increment: Callable[[int, str], None] | None,
+            on_frame: Callable[[dict[str, Any]], None] | None,
+        ) -> tuple[list[dict[str, Any]], str | None, bool]:
+            """The one streamed step (or none, for a round already in
+            its reply phase)."""
+
+            if str(row["phase"]) == "reply":
+                return [], None, False
+            mode = self._world_direction_mode()
+            if mode == "directed":
+                binding = self._world_binding()
+                pending = (
+                    self._world_pending_direction(
+                        str(binding["world_id"])
+                    )
+                    if binding is not None
+                    else None
+                )
+                if pending is None and int(row["stops"]) >= MAX_PARKED_STOPS:
+                    # R7's directionless crank ceiling: the world stops
+                    # answering bare continues — a direction (or a new
+                    # letter) moves it. The parked final says so via
+                    # ``capped`` (the caller reads the row).
+                    row["capped"] = True
+                    return [], None, False
+            frames, stop, failed = self._world_step_frame(
+                on_narration_increment=on_narration_increment,
+                on_frame=on_frame,
+                chain_limit=1,
+            )
+            return frames, stop, failed
+
+        live = self._host.coordinator.persona_provider()
+        reply_bridge: _TurnStreamBridge | None = None
+        capped = {"hit": False}
+        if not hasattr(live, "call_streaming"):
+            # The blocking shape: the step's frames ride the stream
+            # whole (one ``world`` frame), then the one final; the
+            # reply's re-entry runs the plain provider (no streaming
+            # face to proxy).
+            frames, stop, _failed = _world_half(
+                on_narration_increment=None, on_frame=None
+            )
+            capped["hit"] = bool(row.pop("capped", False))
+            for frame in frames:
+                events.put(frame)
+        else:
+            reply_bridge = _TurnStreamBridge(events)
+
+            def _counting(index: int, piece: str) -> None:
+                reply_bridge.push_frame(
+                    {"type": "world_delta", "index": index, "text": piece}
+                )
+
+            frames, stop, failed_after_shown = _world_half(
+                on_narration_increment=_counting,
+                on_frame=reply_bridge.push_frame,
+            )
+            capped["hit"] = bool(row.pop("capped", False))
+            if failed_after_shown:
+                reply_bridge.push_frame({"type": "world_failed"})
+
+        if capped["hit"]:
+            return self._parked_payload_from_row(row, capped=True)
+
+        coordinator = self._host.coordinator
+        command = self._parked_command_of(row)
+        if command is None:
+            self._clear_parked_round_row()
+            return {
+                "reply": None,
+                "turn_status": None,
+                "failure_reason": (
+                    "停点记录读不回来了——这一轮没法继续；写一封新信重新"
+                    "开始。"
+                ),
+                "teaching_moments": [],
+            }
+        letter_arrived = stop == STOP_LETTER_ARRIVES or (
+            str(row["phase"]) == "reply"
+        )
+        if letter_arrived:
+            # Durably the reply phase *before* the re-entry: a crash
+            # between the two retries the re-entry (the idempotent
+            # replay), never the step.
+            if str(row["phase"]) != "reply":
+                row["phase"] = "reply"
+                self._write_parked_round_row(row)
+            if reply_bridge is not None:
+                # The streamed shape: the reply's generation dials the
+                # live provider through the proxy, its deltas straight
+                # to the page's queue (turn_stream's own posture), the
+                # swap restored in the finally whatever happens.
+                coordinator.replace_persona_provider(
+                    _StreamingProviderProxy(live, reply_bridge)
+                )
+                try:
+                    payload, _turn_id = self._answer_command(command)
+                finally:
+                    coordinator.replace_persona_provider(live)
+            else:
+                payload, _turn_id = self._answer_command(command)
+            completion_status = payload.get("turn_status")
+            if (
+                payload.get("failure_reason") is None
+                and isinstance(completion_status, str)
+                and completion_status
+                in {word.value for word in TERMINAL_TURN_STATUSES}
+            ):
+                self._clear_parked_round_row()
+            return payload
+        # Park again: the stop count advances, the freshest candidates
+        # replace the stale ones (a quiet or refused step keeps the
+        # previous offer — the world could not move).
+        fresh = self._frame_directions(frames)
+        row["stops"] = int(row["stops"]) + 1
+        if fresh:
+            row["directions"] = fresh
+        self._write_parked_round_row(row)
+        return self._parked_payload_from_row(row)
+
     def provider_save(
         self,
         base_url: str | None,
@@ -6719,13 +7264,36 @@ class _WebFace:
                 if len(steps) > 1:
                     turn["world_steps"] = steps
             turns.append(turn)
-        return {
+        answer: dict[str, Any] = {
             "turns": turns,
             "window": bound,
             "has_more": has_more,
             # fr-A: the conversation-wide cumulative (window-independent).
             "usage": _usage_totals(self._host.db, str(self._conversation_id)),
         }
+        # lr-4a (DEC-OPI-c73dbff3…128 R4): the parked round rides the
+        # history payload **additively and only when it exists** — a
+        # conversation with no parked round answers the byte-identical
+        # pre-lr-4a shape (the wr-8 world key's own law). The page's
+        # refresh recovery re-renders the waiting state from these keys:
+        # the user's letter and the world's frames come from the turns
+        # above (the nonterminal turn's user line is in the window), the
+        # waiting affordance comes from here. A stale row (its turn
+        # already terminal) reads as no round — the read face writes
+        # nothing; the continue route's own arms clear it.
+        parked_row = self._parked_round_row()
+        if parked_row is not None:
+            parked_status = self._parked_turn_status_word(
+                str(parked_row["turn_id"])
+            )
+            if parked_status is None or parked_status not in {
+                word.value for word in TERMINAL_TURN_STATUSES
+            }:
+                answer["parked"] = True
+                answer["parked_directions"] = parked_row.get(
+                    "directions", []
+                )
+        return answer
 
     def schedule(self) -> dict[str, Any]:
         """The review-schedule zone's read — the Scheduler's own view.
@@ -7042,6 +7610,72 @@ def _build_server(
             except OSError:
                 return
 
+        def _run_stream_continue(self) -> None:
+            """lr-4a: the parked round's streamed continuation —
+            :meth:`_run_stream_turn`'s drain posture over the continue
+            face (the event contract is the stream turn's:
+            ``world_delta＊ → world → (delta＊ →) final``; the final is
+            the parked shape or the reply's). The same-queue discipline,
+            the same exactly-one-final guarantee, the same
+            disconnect-stops-the-writing-never-the-round rule."""
+
+            events: "queue.Queue[str | dict]" = queue.Queue()
+            done = threading.Event()
+            box: dict[str, Any] = {}
+            failure: list[str] = []
+
+            def job() -> None:
+                try:
+                    box["payload"] = face.continue_world_stream(events)
+                except Exception as exc:  # answered, never swallowed
+                    failure.append(f"{type(exc).__name__}: {exc}")
+                finally:
+                    done.set()
+
+            work.put(job)
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            deadline = time.monotonic() + _WORKER_WAIT_SECONDS
+            while True:
+                drained = False
+                while True:
+                    try:
+                        chunk = events.get_nowait()
+                    except queue.Empty:
+                        drained = True
+                        break
+                    try:
+                        if isinstance(chunk, dict):
+                            self._send_sse_event(chunk)
+                        else:
+                            self._send_sse_event(
+                                {"type": "delta", "text": chunk}
+                            )
+                    except OSError:
+                        return  # the reader is gone; the round runs on
+                if done.is_set() and drained:
+                    break
+                if done.wait(0.02):
+                    continue
+                if time.monotonic() > deadline:
+                    failure.append("the host worker did not answer in time")
+                    break
+            if failure:
+                payload: dict[str, Any] = {
+                    "reply": None,
+                    "turn_status": None,
+                    "failure_reason": failure[0],
+                    "teaching_moments": [],
+                }
+            else:
+                payload = box["payload"]
+            try:
+                self._send_sse_event({"type": "final", **payload})
+            except OSError:
+                return
+
         def _read_json_body(self) -> Any:
             """(p-3) The POST body, parsed once — the turn face's inline
             read, extracted for the two new write faces only (the existing
@@ -7094,6 +7728,41 @@ def _build_server(
                 return
             status, payload = box["answer"]
             self._send_json(status, payload)
+
+        def _run_host_check(
+            self, route: Callable[[], tuple[int, Any]]
+        ) -> tuple[int, Any] | None:
+            """The preflight sibling of :meth:`_run_host_write` (lr-4a):
+            the same queue discipline, but the ``(status, payload)``
+            comes **back** to the handler thread instead of going out —
+            the caller decides (a refusal is sent as-is; a pass hands
+            over to the stream). A timeout or a host-thread exception is
+            answered here (500, the same 人话) and ``None`` returned: the
+            route arm then does nothing."""
+
+            box: dict[str, Any] = {}
+            failure: list[str] = []
+            done = threading.Event()
+
+            def job() -> None:
+                try:
+                    box["answer"] = route()
+                except Exception as exc:  # answered, never swallowed
+                    failure.append(f"{type(exc).__name__}: {exc}")
+                finally:
+                    done.set()
+
+            work.put(job)
+            if not done.wait(timeout=_WORKER_WAIT_SECONDS):
+                self._send_json(
+                    500, {"error": "the host worker did not answer in time"}
+                )
+                return None
+            if failure:
+                self._send_json(500, {"error": failure[0]})
+                return None
+            status, payload = box["answer"]
+            return status, payload
 
         def do_GET(self) -> None:
             if self.path == "/":
@@ -7429,6 +8098,26 @@ def _build_server(
                 self._run_host_write(
                     lambda: face.world_direction_save(self._read_json_body())
                 )
+                return
+            if self.path == "/api/world/continue":
+                # lr-4a (DEC-OPI-c73dbff3…128 R3): the parked round's
+                # continuation. The preflight answers every refusal as
+                # plain JSON (no round, a round already over, a corrupt
+                # row); a 200 starts the SSE step — the same event
+                # contract as /api/turn_stream, ending in the parked
+                # final (another stop point) or the reply's final (the
+                # letter arrived and the re-entry answered). No body —
+                # the round's own durable state is the request.
+                answer = self._run_host_check(
+                    lambda: face.continue_world_preflight()
+                )
+                if answer is None:
+                    return
+                status, body = answer
+                if status != 200:
+                    self._send_json(status, body)
+                    return
+                self._run_stream_continue()
                 return
             if self.path == "/api/settings/provider":
                 # The provider face (user veto: endpoint/model are

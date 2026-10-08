@@ -32,7 +32,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Callable, Mapping, TypeVar
+from typing import TYPE_CHECKING, Callable, Mapping, TypeVar, cast
 
 from elc.conversation.commands import CommitUserTurn, ConversationCommands
 from elc.conversation.queries import ConversationQueries
@@ -640,6 +640,23 @@ class TurnRecoveryClosure:
     moment_id: str
     outcome: str
     action_status: str
+
+
+@dataclass(frozen=True)
+class ParkedTurn:
+    """One directed-mode turn parked between the world and the reply
+    (lr-4a, DEC-OPI-c73dbff3…128 R2): CP0 committed, the learning leg
+    run, the turn resting nonterminal at GENERATING with no cycle and no
+    generation action. The world's step chain may turn while the reply
+    waits for the letter to arrive; :meth:
+    `ConversationCoordinator.begin_turn` with the same command continues
+    the turn from this durable status (§23 re-entry semantics), which is
+    also the whole crash-recovery story — a restart adopts the
+    nonterminal turn exactly as any other, and the re-entry resumes it.
+    """
+
+    turn_id: TurnId
+    status: TurnStatus
 
 
 @dataclass(frozen=True)
@@ -1562,15 +1579,83 @@ class ConversationCoordinator:
         """
 
         result = self._begin_turn_guarded(command)
-        self._run_post_turn_projections(command.conversation_id, result)
-        return result
+        if isinstance(result, Err):
+            self._run_post_turn_projections(command.conversation_id, result)
+            return result
+        completion = result.value
+        if isinstance(completion, ParkedTurn):
+            # Unreachable from this entry: only a ``park=True`` call turns a
+            # success into the parked half. The refusal keeps the narrowing
+            # honest instead of a silent cast.
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        "begin_turn never returns the parked half; park"
+                        " through begin_turn_parked"
+                    ),
+                )
+            )
+        self._run_post_turn_projections(
+            command.conversation_id, Ok(completion)
+        )
+        return Ok(completion)
+
+    def begin_turn_parked(self, command: CommitUserTurn) -> Result[ParkedTurn]:
+        """The directed-mode **half round** (lr-4a, DEC-OPI-c73dbff3…128
+        R2): guard → CP0 → the learning leg — then park, *before*
+        generation. The turn stays nonterminal at
+        :attr:`TurnStatus.GENERATING` with no DecisionCycle and no
+        generation action; the world may turn (the caller's step chain)
+        while the reply's generation waits for the letter to arrive.
+
+        The half is the ordinary guarded path's conditional early return,
+        not a second state machine: every guard, the epoch adoption and
+        the idempotent CP0 replay run exactly as in :meth:`begin_turn` —
+        so re-entering through :meth:`begin_turn` with the **same
+        command** (same ``client_message_id``) continues the parked turn
+        from its durable status (GENERATING skips the learning replay,
+        records the cycle, generates, delivers, terminalizes). A
+        ``begin_turn_parked`` re-entry (duplicate) re-parks idempotently:
+        CP0 replays, the status is already GENERATING, nothing runs
+        twice.
+
+        The CP4 projections deliberately do not run here: nothing was
+        delivered — the projections belong to the completion the re-entry
+        will reach."""
+
+        result = self._begin_turn_guarded(command, park=True)
+        if isinstance(result, Err):
+            return result
+        parked = result.value
+        if not isinstance(parked, ParkedTurn):
+            # Unreachable with ``park=True``: every success is the parked
+            # half. The refusal keeps the narrowing honest instead of a
+            # silent cast.
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        "begin_turn_parked always returns the parked half"
+                    ),
+                )
+            )
+        return Ok(parked)
 
     def _begin_turn_guarded(
-        self, command: CommitUserTurn
-    ) -> Result[TurnCompletion]:
+        self,
+        command: CommitUserTurn,
+        *,
+        park: bool = False,
+    ) -> Result[TurnCompletion | ParkedTurn]:
         """The guard-holding half of ``begin_turn``: CP0 → learning leg →
         DecisionCycle → generation → buffered validated delivery →
-        terminalization, exactly as P1/P2/P3 pinned it."""
+        terminalization, exactly as P1/P2/P3 pinned it.
+
+        lr-4a: with ``park=True`` the half returns right after the
+        learning leg settles the turn at GENERATING — the cycle, the
+        generation and the delivery never start (the parked half's
+        conditional early return; :meth:`begin_turn_parked`)."""
 
         with self._lease.hold(command.conversation_id):
             # RA §17.1 rules 3-5 (P9-3): the guard holder is the only actor
@@ -1609,7 +1694,7 @@ class ConversationCoordinator:
                 # Duplicate input whose turn already finalized: replay the
                 # durable terminal result; nothing re-runs (§3 duplicate
                 # input; never retry whole turn).
-                return self._replay_terminal(turn)
+                return _parkable(self._replay_terminal(turn))
 
             # Review F9: a teaching command turn belongs to the teaching
             # pipeline. Recovery must not run it through the normal persona
@@ -1692,6 +1777,23 @@ class ConversationCoordinator:
                     f" {turn.status.value} is outside the Phase 1 loop"
                 )
 
+            if park:
+                # lr-4a (DEC-OPI-c73dbff3…128 R2): the parked half's early
+                # return. CP0 has committed (or idempotently replayed) and
+                # the learning leg has settled the turn at GENERATING —
+                # by construction in every arm above (a fresh transition or
+                # a re-entry that found it there). The cycle, the
+                # generation and the delivery never start; the world may
+                # turn while the reply waits (the caller's step chain),
+                # and begin_turn with the same command continues from the
+                # durable status (§23 re-entry semantics untouched).
+                return Ok(
+                    ParkedTurn(
+                        turn_id=cp0.turn_id,
+                        status=TurnStatus.GENERATING,
+                    )
+                )
+
             # RA §4 step 5 / migration 0007 lineage (P3-1A ②): every
             # generation action belongs to a DecisionCycle, and the normal
             # persona turn opens its own — before generation, after the
@@ -1767,7 +1869,7 @@ class ConversationCoordinator:
                     plan=plan_result.value,
                 )
                 if automatic is not None:
-                    return automatic
+                    return _parkable(automatic)
 
             existing_result = self._generation.get_action_for_turn(cp0.turn_id)
             if isinstance(existing_result, Err):
@@ -1873,18 +1975,20 @@ class ConversationCoordinator:
                 # RUNTIME §13's default table: ordinary persona chat streams
                 # (each chunk guarded before it is released), every teaching
                 # action type is delivered buffered-validated.
-                return self.finalize_streamed_delivery(
-                    StreamedDelivery(
-                        conversation_id=command.conversation_id,
-                        turn_id=cp0.turn_id,
-                        action_id=reply.action_id,
-                        assistant_turn_id=reply.assistant_turn_id,
-                        text=reply.text,
-                        turn_sequence=cp0.turn_sequence,
-                        message_sequence=cp0.message_sequence,
-                        contract=contract,
-                    ),
-                    state_version,
+                return _parkable(
+                    self.finalize_streamed_delivery(
+                        StreamedDelivery(
+                            conversation_id=command.conversation_id,
+                            turn_id=cp0.turn_id,
+                            action_id=reply.action_id,
+                            assistant_turn_id=reply.assistant_turn_id,
+                            text=reply.text,
+                            turn_sequence=cp0.turn_sequence,
+                            message_sequence=cp0.message_sequence,
+                            contract=contract,
+                        ),
+                        state_version,
+                    )
                 )
             delivery = AssistantDelivery(
                 conversation_id=command.conversation_id,
@@ -1897,7 +2001,7 @@ class ConversationCoordinator:
                 delivery_state=DeliveryState.SENT_COMPLETE,
                 outcome=TurnOutcome.REPLIED_FULL,
             )
-            return self.finalize_delivery(delivery, state_version)
+            return _parkable(self.finalize_delivery(delivery, state_version))
 
     # -- the automatic teaching leg (P8-4) -----------------------------------
 
@@ -8220,6 +8324,18 @@ def _missing(message: str) -> Err[_E]:
 
 def _conflict(message: str) -> Err[_E]:
     return Err(DomainError(code=DomainErrorCode.CONFLICT, message=message))
+
+
+def _parkable(
+    result: Result[TurnCompletion],
+) -> Result[TurnCompletion | ParkedTurn]:
+    """The guarded half's shared widening (lr-4a): a completion answer
+    rides the park-capable union. The union exists for the parked half's
+    early return alone (:meth:`begin_turn_parked`); ``Ok`` is invariant,
+    so the widening is this one explicit lift rather than a silent
+    conversion at every completion return."""
+
+    return cast("Result[TurnCompletion | ParkedTurn]", result)
 
 
 def _joined_note(existing: str | None, note: str) -> str:

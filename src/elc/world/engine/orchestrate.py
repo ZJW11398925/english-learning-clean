@@ -311,9 +311,11 @@ def run_generated_step(
     answer's parsed stop signal (``None`` = keep going) at the same
     beat the candidates fire, past the quiet arms; the step itself
     never branches on it (the caller's chain loop owns the verdict:
-    v1 keeps turning on every signal but ``letter_arrives`` — the
-    honest restraint the plan logs, the full stop-round semantics
-    belong to lr-4).
+    immersive keeps turning on every signal but ``letter_arrives`` —
+    the honest restraint, nobody there was asked to choose; lr-4a
+    (DEC-OPI-c73dbff3…128) gave directed mode the stop-round
+    semantics, and its chain runs one step per request and parks —
+    this layer neither knows nor cares which).
 
     The order: the narrator first (compose, one provider call —
     blocking, or streamed through the provider's optional face when

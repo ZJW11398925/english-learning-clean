@@ -767,7 +767,16 @@ def test_the_continue_button_is_retired_from_the_story_block() -> None:
     continue fetch, and no dead button strings (the engine never pauses
     mid-run, so the page has nothing to wait for); the inbox payload's
     ``at_checkpoint`` bit stays (the run row's own state, read by the
-    same source as ever — false on every reachable path)."""
+    same source as ever — false on every reachable path).
+
+    lr-4a (DEC-OPI-c73dbff3…128) rebirths the route for the **parked
+    round** (a different tenant than A2R's engine light action): the
+    route string is back in web.py, the A2R retiral that survives is
+    the story-block one — the waiting state's continue affordance is
+    the parked round's own line, never a story-block checkpoint branch
+    (no ``at_checkpoint`` read, no actions row in the block renderer),
+    and the light-action shape (``def world_continue``), the pre-step
+    frame assembly and the at_checkpoint ride stay retired."""
 
     app_source = (WEBUI / "app.js").read_text(encoding="utf-8")
     start = app_source.index("function renderWorldStory")
@@ -777,15 +786,17 @@ def test_the_continue_button_is_retired_from_the_story_block() -> None:
     assert "fetchWorldContinue" not in story
     assert "world-story-actions" not in story
     assert "世界没能继续" not in app_source
-    # The endpoint behind the retired button is gone with it. WR-2: the
+    # The endpoint behind the retired button: A2R retired it; lr-4a
+    # rebirthed the route string for the parked round. WR-2: the
     # pre-step's frame assembly and its at_checkpoint ride are retired
     # with it — the inbox payload's bit (the run row's own state) is the
     # one reader left, read straight off the row in the payload's own
-    # assembly.
+    # assembly. The light-action face name stays retired (the parked
+    # face is ``continue_world_stream``, a different word).
     web_source = (REPO / "src" / "elc" / "web.py").read_text(
         encoding="utf-8"
     )
-    assert "world/continue" not in web_source
+    assert "/api/world/continue" in web_source
     assert "def world_continue" not in web_source
     assert "_world_event_payload" not in web_source
     assert "_world_step_face" not in web_source

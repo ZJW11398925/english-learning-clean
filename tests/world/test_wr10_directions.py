@@ -262,7 +262,12 @@ def test_a_bad_directions_array_refuses_the_whole_batch(
 def test_the_directed_prompt_carries_the_candidates_requirement() -> None:
     """Directed mode asks for the 2-4 candidates under the
     ``directions`` key and widens the JSON shape line; the bounds are
-    the module's own constants (one spelling, two doors)."""
+    the module's own constants (one spelling, two doors). lr-4a
+    (DEC-OPI-c73dbff3…128 R5) tightens the copy: a direction is **the
+    immediate next step the world takes** — one concrete development,
+    never a far horizon — and the label is a few words, never a
+    sentence (the pre-lr-4a wording is the retired copy, named so a
+    regression to it lands here)."""
 
     prompt = build_narrator_prompt(
         _package(), (), (), "zh", direction_mode=DIRECTION_DIRECTED
@@ -270,7 +275,11 @@ def test_the_directed_prompt_carries_the_candidates_requirement() -> None:
     assert f"{MIN_DIRECTIONS} to {MAX_DIRECTIONS} directions" in prompt
     assert '"directions" key' in prompt
     assert '"directions": [{"label": "<short phrase>",' in prompt
-    assert "one the user may pick for it" in prompt
+    assert "the immediate" in prompt
+    assert "next step the world takes" in prompt
+    assert "a few words, never a sentence" in prompt
+    assert "never a far horizon" in prompt
+    assert "one the user may pick for it" not in prompt
 
 
 def test_the_immersive_prompt_carries_no_direction_words() -> None:

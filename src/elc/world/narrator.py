@@ -616,9 +616,11 @@ def build_narrator_prompt(
         sections.append(
             "Direction candidates: in the same answer, also write"
             f" {MIN_DIRECTIONS} to {MAX_DIRECTIONS} directions — each"
-            ' is {"label": <a short phrase>, "hint": <one sentence of'
-            " how the world might go>}. A direction is a next step the"
-            " world could take, one the user may pick for it; list"
+            ' is {"label": <a few words, never a sentence>, "hint":'
+            " <one sentence of how the world might go>}. A direction is"
+            " the immediate next step the world takes — one concrete"
+            " development right now, never a far horizon or a long-range"
+            " plan; the user may pick one for it; list"
             ' them under the "directions" key beside the beats.'
         )
     if pending_direction is not None:

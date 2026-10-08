@@ -55,12 +55,32 @@ export function fetchTurn(text) {
  *  永不抛。 */
 export async function fetchTurnStream(text, onDelta, onWorld,
                                       onWorldDelta, onWorldFailed) {
+  return consumeTurnStream("/api/turn_stream", { text: text },
+    onDelta, onWorld, onWorldDelta, onWorldFailed);
+}
+
+/** 停点轮的续链（lr-4a，DEC-OPI-c73dbff3…128）：POST /api/world/
+ *  continue——读面与消费协议同 fetchTurnStream（同一 SSE 解析器、同一
+ *  四回调、同一 null/started 契约）；final 是停点形（parked:true +
+ *  stop:"awaits_direction" + directions 候选）或回信形（同 /api/turn
+ *  全量形状）。无 body——请求的就是库里那一轮停点。 */
+export async function fetchWorldContinue(onDelta, onWorld,
+                                         onWorldDelta, onWorldFailed) {
+  return consumeTurnStream("/api/world/continue", {},
+    onDelta, onWorld, onWorldDelta, onWorldFailed);
+}
+
+/** 两条流面的同一解析器（lr-4a 抽出——行为逐行同 fetchTurnStream 原
+ *  体）：只认「data: 」行、坏行/坏 JSON 跳过、world/world_delta/
+ *  world_failed/delta/final 五词分发、null=非 SSE、抛错带 started。 */
+async function consumeTurnStream(path, body, onDelta, onWorld,
+                                 onWorldDelta, onWorldFailed) {
   let res;
   try {
-    res = await fetch("/api/turn_stream", {
+    res = await fetch(path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: text }),
+      body: JSON.stringify(body),
     });
   } catch (err) {
     err.started = false;

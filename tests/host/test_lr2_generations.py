@@ -195,7 +195,12 @@ def test_the_transition_sentence_rides_only_the_last_generation() -> None:
     # The live触点: the reply's first delta closes the chain (and lands
     # the seam) before the reply's first push; the final closes it
     # before the seal (the zero-delta arms — both closes ahead of any
-    # reply text).
+    # reply text). lr-4a (DEC-OPI-c73dbff3…128): the final's seam is
+    # **conditional** — a parked final (the letter has not arrived) is
+    # closeChain(false): the transition sentence is the reply's seam and
+    # the round is still waiting; every non-parked final keeps the
+    # literal-true close (the second close rides the conditional, ahead
+    # of the seal as before).
     postturn = app[
         app.index("async function postTurn") :
         app.index("async function postTeachMe")
@@ -203,10 +208,10 @@ def test_the_transition_sentence_rides_only_the_last_generation() -> None:
     delta_cb = postturn[postturn.index("(chunk) => {") :]
     delta_cb = delta_cb[: delta_cb.index("typing.push(chunk);")]
     assert "worldStream.closeChain(true);" in delta_cb
-    assert postturn.count("worldStream.closeChain(true);") >= 2
+    assert "worldStream.closeChain(data.parked !== true);" in postturn
     first_close = postturn.index("worldStream.closeChain(true);")
     second_close = postturn.index(
-        "worldStream.closeChain(true);", first_close + 1
+        "worldStream.closeChain(data.parked !== true);", first_close + 1
     )
     assert second_close < postturn.index("await typing.seal(")
 

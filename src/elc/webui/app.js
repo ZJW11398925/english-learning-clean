@@ -80,6 +80,7 @@ import {
   fetchSaveReplyLanguage,
   fetchSaveWorldDirectionMode,
   fetchSaveWorldDirection,
+  fetchWorldContinue,
   fetchSaveProviderProfile,
   fetchActivateProviderProfile,
   fetchDeleteProviderProfile,
@@ -3007,6 +3008,12 @@ const WORLD_INBOX_TEXT = {
     // 提问行（可不选=世界自主）与选择没存上的人话。
     directionAsk: "世界接下来可以往哪走？选一个方向，也可以不选。",
     directionMiss: "没存上——稍后再试一次。",
+    // lr-4a（DEC-OPI-c73dbff3…128）：停点轮的三句 chrome——「世界在等
+    // 你」停点提示句（双语）、继续钮、方向缺位防上限句与继续失败句。
+    worldWaits: "世界在等你决定下一步——选一个走向，或让它自己走。",
+    continueLabel: "让世界继续",
+    worldCapped: "世界已经走了很远，还没收到你的方向——选一个走向，或再写一封信。",
+    continueMiss: "继续没能送达——稍后再试一次。",
   },
   en: {
     fallback: "(This note predates the world's Chinese — shown as written.)",
@@ -3018,6 +3025,14 @@ const WORLD_INBOX_TEXT = {
     directionAsk: "Where could the world go next? Pick a direction,"
       + " or none.",
     directionMiss: "Could not save it — try again shortly.",
+    // lr-4a: the parked round's chrome (the waits sentence, the continue
+    // button, the cap sentence and the miss sentence).
+    worldWaits: "The world waits for your direction — pick one, or let"
+      + " it wander on.",
+    continueLabel: "Let the world go on",
+    worldCapped: "The world has walked far without your direction —"
+      + " pick one, or write a new letter.",
+    continueMiss: "The continue did not arrive — try again shortly.",
   },
 };
 
@@ -3145,6 +3160,9 @@ function renderWorldDirectionRow(directions) {
       });
       button.classList.add("chip--on");
       button.setAttribute("aria-pressed", "true");
+      // lr-4a：停点轮的选向就是下一步——点选存好待用走向后**立刻续链
+      // 一步**（选向 ⇒ continue；世界走这一步，然后又停或信到）。
+      if (parkedRound) postContinue();
     });
     opts.appendChild(button);
   }
@@ -4269,8 +4287,194 @@ function dismissEmptyHall() {
   }
 }
 
+// ── lr-4a（DEC-OPI-c73dbff3…128）：停点轮——directed 模式每步=选择点──
+// 世界步 1 后服务端停（parked final：reply:null + stop:"awaits_direction"
+// + directions 候选），前端进入停点态：「世界在等你」提示行 + 走向选项行
+// + 「让世界继续」钮；选向 = 存待用走向后立刻 POST /api/world/continue 续
+// 链一步（消费待用走向现成机制），又停（新候选）或信到（同 command 幂等
+// 重入 ⇒ 完整回信归位：摘封 + 打字机 + gate 到链尾 + finalize）。半轮刷
+// 刷恢复：/api/history 的 additive 键（parked + parked_directions）驱动
+// 同一停点态重建（user 信行 + 世界块无回信行，renderFlowHistory 天然容
+// 半轮）。文字一律 textContent（XSS 纪律）；样式钩子只复用现役类。
+let parkedRound = null;        // 停点态：{ letterNode, flowIndex } | null
+let liveWorldWaits = null;     // 「世界在等你」行（单例，重渲即换）
+let continueInFlight = false;  // 续链一次一枚（双击不重入）
+
+function exitParkedRound() {
+  // 停点态退役：新信寄出或回信落地时——提示行摘除、状态清零。已在途
+  // 的续链不被打断（continueInFlight 保护）。
+  if (liveWorldWaits && liveWorldWaits.parentNode) liveWorldWaits.remove();
+  liveWorldWaits = null;
+  parkedRound = null;
+}
+
+function renderWorldWaits(directions, capped) {
+  // 停点态的提示行：人话句（上限句或寻常句）+ 候选行缺位时补一行
+  // （刷新恢复臂——历史世界帧不带 directions，候选由 history 的
+  // parked_directions 补齐；流内臂候选已随世界块渲染，不重铺）。
+  const T = worldInboxText();
+  if (liveWorldWaits && liveWorldWaits.parentNode) liveWorldWaits.remove();
+  const row = document.createElement("div");
+  row.className = "world-waits";
+  const hint = document.createElement("p");
+  hint.className = "note";
+  hint.textContent = capped ? T.worldCapped : T.worldWaits;
+  row.appendChild(hint);
+  if (Array.isArray(directions) && directions.length
+      && liveWorldDirectionRow === null) {
+    // 候选行的补位臂：流内臂的候选已随世界块渲染（liveWorldDirection-
+    // Row 在场不重铺——双行是谎报）；刷新恢复臂的历史帧不带候选行，
+    // 这里用 history 的 parked_directions 补齐同一选择面。
+    row.appendChild(renderWorldDirectionRow(directions));
+  }
+  const go = document.createElement("button");
+  go.type = "button";
+  go.className = "chip world-waits-continue";
+  go.textContent = T.continueLabel;
+  go.addEventListener("click", () => postContinue());
+  row.appendChild(go);
+  messages.appendChild(row);
+  liveWorldWaits = row;
+  syncFlowBottom();
+}
+
+function enterParkedRound(letterNode, flowIndex, directions, capped) {
+  // 停点态登记：这封信还封着在途（回信未到，摘封只属回信落地/失败）
+  // ——提示行起，选向或继续由用户落子。
+  parkedRound = { letterNode: letterNode, flowIndex: flowIndex };
+  renderWorldWaits(directions, capped);
+}
+
+async function postContinue() {
+  // 续链一步（POST /api/world/continue，SSE 流面）：事件序 world_delta＊
+  // → world → (delta＊ →) final——停点形（又停：刷新提示行与新候选）或
+  // 回信形（信到：链收口点缝、打字机、摘封、回信行、usage/moments——
+  // postTurn 的 finalize 同构，落点是原信行而非新信）。null = 非 SSE
+  //（409：这一轮已结束）⇒ 拉历史对齐；started 中断不重发（round 还在
+  // 库里，拉历史对齐）；未开始的失败留着停点态原样可再按。
+  if (!parkedRound || continueInFlight) return;
+  continueInFlight = true;
+  const T = worldInboxText();
+  const pending = addLine("typing", T.worldRunning);
+  const letterNode = parkedRound.letterNode;
+  const flowIndex = parkedRound.flowIndex;
+  const retirePending = () => {
+    if (pending.parentNode) pending.remove();
+  };
+  const worldStream = startWorldStream();
+  const replyMayType = () =>
+    worldStream.wrap === null ||
+    worldStream.settled ||
+    worldStream.done;
+  const settleWorld = (event) => {
+    retirePending();
+    worldStream.seal(event).then((gen) => {
+      const fresh = renderWorldStory(event, { withTransition: false });
+      if (gen !== null && gen.wrap && gen.wrap.parentNode === messages) {
+        messages.insertBefore(fresh, gen.wrap);
+        gen.wrap.remove();
+      }
+      worldStream.concluded(gen, fresh);
+    });
+  };
+  const failWorld = () => {
+    retirePending();
+    const block = worldStream.stop();
+    if (block) {
+      const note = document.createElement("p");
+      note.className = "world-story-note world-story-failed";
+      note.textContent = worldInboxText().worldFailed;
+      block.appendChild(note);
+    }
+  };
+  let data = null;
+  let typing = null;
+  try {
+    typing = startTypewriter(replyMayType);
+    data = await fetchWorldContinue(
+      (chunk) => {
+        retirePending();
+        // 回信首增量 = 链已尽——末代确权，缝台句落定（先于回信首字）。
+        worldStream.closeChain(true);
+        typing.push(chunk);
+      },
+      (event) => settleWorld(event),
+      (piece, index) => {
+        retirePending();
+        worldStream.push(piece, index);
+      },
+      () => failWorld()
+    );
+    if (data === null) {
+      // 非 SSE（预检 409：没有停点/这一轮已结束）——人话 + 拉历史对齐
+      // （停点态由 history 的 parked 键裁决去留）。
+      try {
+        await loadHistory();
+        addLine("failure", "这一轮已经不能继续了——已按库里的事实对齐。");
+      } catch {
+        addLine("failure", T.continueMiss);
+      }
+      return;
+    }
+    // final 到手：停点形不点缝（信还没到，过渡句是回信的缝台）；回信
+    // 形才收口。
+    worldStream.closeChain(data.parked !== true);
+    if (data.parked === true) {
+      if (typing) typing.stop();
+      enterParkedRound(letterNode, flowIndex,
+        data.directions || [], !!data.capped);
+    } else {
+      // 信到回信到：摘封（在途信封回撕口信纸）+ 权威回信行接管。
+      await typing.seal(typeof data.reply === "string" ? data.reply : "");
+      if (letterNode) {
+        letterNode.classList.remove("en-route");
+        const stamp = letterNode.querySelector(".postmark--sent");
+        if (stamp) stamp.remove();
+        applyLetterAffordance(letterNode, data.user_word_hits || null);
+      }
+      if (flowIndex !== null && flowTurns[flowIndex]) {
+        flowTurns[flowIndex].usage = data.usage || null;
+        refreshFlowMeter();
+      }
+    }
+  } catch (err) {
+    if (typing) typing.stop();
+    worldStream.stop();
+    if (err && err.started) {
+      // 流中断——round 可能已推进（步已落/回信已生成），拉历史对齐，
+      // 不重发（库里那一轮还在，再按「继续」是安全的）。
+      addLine("failure", "流式中断了——把已经落库的部分拉回来对齐。");
+      try { await loadHistory(); } catch { /* 历史读不回，留着错误行 */ }
+    } else {
+      // 未开始的失败（fetch 本身抛——服务端零触碰）：停点态原样保留，
+      // 提示行还在，同一枚钮可再按；只落一行人话。
+      addLine("failure", T.continueMiss);
+    }
+  } finally {
+    continueInFlight = false;
+    retirePending();
+  }
+  // 回信形的收尾（停点形没有回信行可落）：
+  if (data !== null && data.parked !== true) {
+    if (typing !== null && typing.line !== null) typing.line.remove();
+    if (typeof data.reply === "string") {
+      addLine("assistant", data.reply,
+        { enter: true, when: new Date().toISOString(),
+          hits: data.word_hits || null });
+    } else if (data.failure_reason) {
+      failLine("这封信没有回音——笔友没能联系上模型端点",
+        data.failure_reason);
+    }
+    exitParkedRound();
+    showMoments(data.teaching_moments || []);
+  }
+}
+
 async function postTurn(text) {
   dismissEmptyHall();
+  // lr-4a：新信寄出 = 上一停点态退役（旧停点轮的提示行与状态让位——
+  // 服务端会在新轮停点时覆写它自己的行；旧轮如实半轮留在历史里）。
+  exitParkedRound();
   // 寄出的当下 = 信件日期行的真实时间源（客户端本机时间；web.py 冻结
   // 面故 /api/turn 无时间戳字段——新信落当下、历史不造）。
   const sentAt = new Date().toISOString();
@@ -4402,7 +4606,8 @@ async function postTurn(text) {
     } else {
       // final 到手：链收口（末代确权——缝台句落定；零增量臂在此点
       // 缝，幂等）；权威全文的未显余量补进缓冲，排空后才 finalize。
-      worldStream.closeChain(true);
+      // lr-4a：停点形不点缝——过渡句是回信的缝台，信还没到。
+      worldStream.closeChain(data.parked !== true);
       await typing.seal(typeof data.reply === "string" ? data.reply : "");
     }
   } catch (err) {
@@ -4433,9 +4638,13 @@ async function postTurn(text) {
     retireWorldPending();
     // 摘封：回信落地（或失败）即从在途信封回到撕口信纸——同一 DOM，
     // 无拆信演出（T3 死刑清单）；「寄出」邮戳随信封一并离场。
-    mine.classList.remove("en-route");
-    const stamp = mine.querySelector(".postmark--sent");
-    if (stamp) stamp.remove();
+    // lr-4a：停点形不摘封——回信未到，信还在路上（摘封只属回信落
+    // 地：continue 的回信形或下一轮）。
+    if (!(data && data.parked === true)) {
+      mine.classList.remove("en-route");
+      const stamp = mine.querySelector(".postmark--sent");
+      if (stamp) stamp.remove();
+    }
   }
   // finalize（A2 起在排空之后）：打字机的在写信让位给权威回信行——
   // 只在响应到手时摘（成功 = 权威行接管；失败形 = 失败行接管）；
@@ -4469,7 +4678,12 @@ async function postTurn(text) {
     // fr-A：这一轮的 usage 回填轮锚（/api/turn 随行）+ 累计读回刷新。
     flowTurns[flowTurns.length - 1].usage = data.usage || null;
     refreshFlowMeter();
-    if (data.reply !== null && data.reply !== undefined) {
+    if (data.parked === true) {
+      // lr-4a：停点形——「世界在等你」态起（提示行 + 选项行 + 继续
+      // 钮），信保持封着在途，无回信行、无失败行（停点不是失败）。
+      enterParkedRound(mine, flowTurns.length - 1,
+        data.directions || [], !!data.capped);
+    } else if (data.reply !== null && data.reply !== undefined) {
       addLine("assistant", data.reply,
         { enter: true, when: new Date().toISOString(),
           hits: data.word_hits || null });
@@ -5142,13 +5356,20 @@ async function renderFlowHistory() {
   lastHistoryWindow = data.window;
   messages.textContent = "";
   flowTurns = [];
+  // lr-4a：全量重建 ⇒ 停点态与选项行引用全部失效归零（恢复臂在尾部
+  // 按 history 的 parked 键重建）。
+  liveWorldDirectionRow = null;
+  liveWorldWaits = null;
+  parkedRound = null;
   // 口径行在信流顶部（不是一轮——轮锚不收它）。
   renderFlowCalibre(data);
+  let lastUserNode = null;
   for (const turn of data.turns) {
     // v3-3：位图随信渲染——历史轮两侧各带命中位图（缺字段 = 全供性）。
     let anchor = null;
     if (turn.user !== null) {
       anchor = addLine("user", turn.user, { hits: turn.user_word_hits || null });
+      lastUserNode = anchor;
     }
     if (turn.world) {
       // wr-8 刷新恢复（DEC-OPI-c73dbff3…34）+ lr-2 交错面多帧
@@ -5175,6 +5396,18 @@ async function renderFlowHistory() {
   }
   buildFlowRuler();
   syncFlowMeter(data.usage);
+  // lr-4a：停点轮的刷新恢复——history 的 additive 键（parked +
+  // parked_directions）在场 ⇒ 「世界在等你」态原地重建：信行（上面
+  // 已渲染，封着的形态由 addLine 的素行承担——历史恢复不重演在途演
+  // 出）+ 世界块（交错面已落）+ 候选补位行 + 继续钮。半轮天然容：
+  // 无回信行即无回信行。
+  if (data.parked === true && lastUserNode) {
+    parkedRound = {
+      letterNode: lastUserNode,
+      flowIndex: flowTurns.length - 1,
+    };
+    renderWorldWaits(data.parked_directions || [], false);
+  }
 }
 
 async function loadHistory() {
