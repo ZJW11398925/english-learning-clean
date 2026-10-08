@@ -579,8 +579,8 @@ def test_the_page_carries_the_waiting_state() -> None:
     app = (REPO / "src" / "elc" / "webui" / "app.js").read_text(
         encoding="utf-8"
     )
-    assert "世界在等你决定下一步——选一个走向，或让它自己走。" in app
-    assert "The world waits for your direction — pick one, or let" in app
+    assert "故事停在这里——下一笔，由你来落。" in app
+    assert "The story rests here — the next line is yours." in app
     assert "让世界继续" in app
     assert "Let the world go on" in app
     assert "世界已经走了很远，还没收到你的方向" in app
@@ -599,3 +599,60 @@ def test_the_page_carries_the_waiting_state() -> None:
     assert "export async function fetchWorldContinue" in api
     assert "/api/world/continue" in api
     assert "async function consumeTurnStream" in api
+
+
+def test_the_parked_chrome_waits_for_the_chain_to_settle() -> None:
+    """lr-3R (DEC-OPI-09b3935b…1): the parked chrome rides the settle
+    gate — the user's dogfood signal was the chrome (hint row, direction
+    options, continue button) landing while the world's generational
+    chain was still typing (the server's final ≠ the client finished).
+    The pins, over the served source: the gate reads the stream's
+    ``settled``/``done`` getters, the token cancel arm arms
+    ``exitParkedRound``, the 60s defense ceiling stands, both parked
+    arms pass their own worldStream, the recovery arm passes ``null``,
+    the recast copy rides the T table and zero residue of the old
+    sentences remains."""
+
+    app = (REPO / "src" / "elc" / "webui" / "app.js").read_text(
+        encoding="utf-8"
+    )
+    # ① The gate exists and reads the stream's settled/done getters
+    #    (the wr-11 gate law generalized: the reply typing waits for the
+    #    chain, so does the parked chrome).
+    assert "function renderWorldWaitsWhenSettled" in app
+    assert "!stream.settled && !stream.done" in app
+    # ② The token cancel arm: exitParkedRound bumps the gate token —
+    #    a pending render dies when a new letter leaves or the reply
+    #    lands.
+    exit_body = app[app.index("function exitParkedRound"):]
+    exit_body = exit_body[:exit_body.index("\n}")]
+    assert "worldWaitsGateToken += 1" in exit_body
+    # ③ The 60s defense ceiling (a Date.now deadline, fallback render).
+    assert "Date.now() + 60000" in app
+    assert "Date.now() >= deadline" in app
+    # ④ Zero residue of the old sentences (both languages, both keys).
+    assert "世界在等你决定下一步" not in app
+    assert "The world waits for your direction" not in app
+    assert "世界接下来可以往哪走" not in app
+    assert "Where could the world go next" not in app
+    # ⑤ The recast copy rides the T table (both languages): the hint
+    #    line carries the mood, the ask line carries the instruction.
+    assert 'worldWaits: "故事停在这里——下一笔，由你来落。"' in app
+    assert (
+        'worldWaits: "The story rests here'
+        ' — the next line is yours."' in app
+    )
+    assert 'directionAsk: "选一个走向，或自己写一个。"' in app
+    assert 'directionAsk: "Pick a direction — or write your own."' in app
+    # ⑥ The call shapes: both in-stream parked arms pass their own
+    #    worldStream; the refresh recovery passes null (renders
+    #    immediately, as before).
+    assert "enterParkedRound(letterNode, flowIndex, worldStream," in app
+    assert (
+        "enterParkedRound(mine, flowTurns.length - 1, worldStream,"
+        in app
+    )
+    assert (
+        "enterParkedRound(lastUserNode, flowTurns.length - 1, null,"
+        in app
+    )

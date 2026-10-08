@@ -3006,16 +3006,17 @@ const WORLD_INBOX_TEXT = {
     worldFailed: "世界的这段没能留住——这一轮没记进编年史。",
     // wr-10（DEC-OPI-c73dbff3…64）：走向选项行的 chrome——块尾的提问
     // 行与选择没存上的人话。lr-3（DEC-OPI-17b0a47f…7）：候选之外还有
-    // 自由输入形——提问句改为「或自己写一个走向」，输入占位、寄送钮、
-    // 记下前缀句三件随行。
-    directionAsk: "世界接下来可以往哪走？选一个方向，或自己写一个走向。",
+    // 自由输入形——输入占位、寄送钮、记下前缀句三件随行。lr-3R
+    //（DEC-OPI-09b3935b…1）：文案重铸——提问行只承指令，不再双问句。
+    directionAsk: "选一个走向，或自己写一个。",
     directionMiss: "没存上——稍后再试一次。",
     directionFreePlaceholder: "自己写一个走向……",
     directionSendLabel: "记下这条走向",
     directionParked: "你的走向已记下：",
-    // lr-4a（DEC-OPI-c73dbff3…128）：停点轮的三句 chrome——「世界在等
-    // 你」停点提示句（双语）、继续钮、方向缺位防上限句与继续失败句。
-    worldWaits: "世界在等你决定下一步——选一个走向，或让它自己走。",
+    // lr-4a（DEC-OPI-c73dbff3…128）：停点轮的三句 chrome——停点提示句
+    //（双语）、继续钮、方向缺位防上限句与继续失败句。lr-3R
+    //（DEC-OPI-09b3935b…1）：提示句承氛围不承指令（指令归提问行）。
+    worldWaits: "故事停在这里——下一笔，由你来落。",
     continueLabel: "让世界继续",
     worldCapped: "世界已经走了很远，还没收到你的方向——选一个走向，或再写一封信。",
     continueMiss: "继续没能送达——稍后再试一次。",
@@ -3029,18 +3030,19 @@ const WORLD_INBOX_TEXT = {
       + " it was not written into the chronicle.",
     // wr-10: the direction row's chrome (the ask sentence and the miss
     // sentence). lr-3: the free-input shape rides beside the candidates
-    // — the ask sentence, the input placeholder, the send button and
-    // the parked-prefix sentence, all bilingual.
-    directionAsk: "Where could the world go next? Pick a direction,"
-      + " or write your own.",
+    // — the input placeholder, the send button and the parked-prefix
+    // sentence, all bilingual. lr-3R (DEC-OPI-09b3935b…1): recast — the
+    // ask line carries the instruction only, no double question.
+    directionAsk: "Pick a direction — or write your own.",
     directionMiss: "Could not save it — try again shortly.",
     directionFreePlaceholder: "Write your own direction…",
     directionSendLabel: "Set this direction",
     directionParked: "Your direction is set: ",
     // lr-4a: the parked round's chrome (the waits sentence, the continue
-    // button, the cap sentence and the miss sentence).
-    worldWaits: "The world waits for your direction — pick one, or let"
-      + " it wander on.",
+    // button, the cap sentence and the miss sentence). lr-3R
+    // (DEC-OPI-09b3935b…1): the hint carries the mood, not the
+    // instruction (the instruction lives on the ask line).
+    worldWaits: "The story rests here — the next line is yours.",
     continueLabel: "Let the world go on",
     worldCapped: "The world has walked far without your direction —"
       + " pick one, or write a new letter.",
@@ -4365,10 +4367,13 @@ function dismissEmptyHall() {
 let parkedRound = null;        // 停点态：{ letterNode, flowIndex } | null
 let liveWorldWaits = null;     // 「世界在等你」行（单例，重渲即换）
 let continueInFlight = false;  // 续链一次一枚（双击不重入）
+let worldWaitsGateToken = 0;   // 停点 chrome 门的 token——bump 即作废在途渲染
 
 function exitParkedRound() {
   // 停点态退役：新信寄出或回信落地时——提示行摘除、状态清零。已在途
-  // 的续链不被打断（continueInFlight 保护）。
+  // 的续链不被打断（continueInFlight 保护）。lr-3R：同时 bump 门 token
+  // ——还没渲出来的停点 chrome（等链 settle 的 pending 渲染）就此作废。
+  worldWaitsGateToken += 1;
   if (liveWorldWaits && liveWorldWaits.parentNode) liveWorldWaits.remove();
   liveWorldWaits = null;
   parkedRound = null;
@@ -4404,11 +4409,42 @@ function renderWorldWaits(directions, capped) {
   syncFlowBottom();
 }
 
-function enterParkedRound(letterNode, flowIndex, directions, capped) {
+// lr-3R（DEC-OPI-09b3935b…1）：停点 chrome 的时序门——wr-11 gate 同律
+// 推广（回信打字等链讲完，停点 chrome 也等链讲完）：服务端 final 到手
+// ≠ 客户端讲完——lr-2 代际链还在 35cps 排空，此刻就把提示行与继续钮
+// 铺上去，chrome 抢在故事余韵前头（dogfood 实证）。登记即时（parked-
+// Round 已置——选向/续链可用性不变），只有渲染等 settled || done；
+// 无流（刷新恢复臂）或链已收口/已停则立即渲。只读 getter，lr-2 代际
+// 机构零触碰。
+function renderWorldWaitsWhenSettled(stream, directions, capped) {
+  const token = ++worldWaitsGateToken;
+  // 防御上界 60s：门是前端防御不是叙事规则——链万一永不收口（对端挂
+  // 死等），超时兜底渲，chrome 不因 getter 而缺席（同 MAX_PARKED_STOPS
+  // 姿态：上限自录于注释）。
+  const deadline = Date.now() + 60000;
+  const settleGate = () => {
+    // 取消臂：新信寄出/回信落地（exitParkedRound bump token）或停点态
+    // 已退役——在途的 pending 渲染作废，迟到的 chrome 不再铺上页。
+    if (token !== worldWaitsGateToken || parkedRound === null) return;
+    if (stream && !stream.settled && !stream.done) {
+      if (Date.now() >= deadline) {
+        renderWorldWaits(directions, capped);
+        return;
+      }
+      setTimeout(settleGate, 80);
+      return;
+    }
+    renderWorldWaits(directions, capped);
+  };
+  settleGate();
+}
+
+function enterParkedRound(letterNode, flowIndex, stream, directions, capped) {
   // 停点态登记：这封信还封着在途（回信未到，摘封只属回信落地/失败）
-  // ——提示行起，选向或继续由用户落子。
+  // ——提示行起，选向或继续由用户落子。lr-3R：chrome 渲染走时序门
+  //（stream = 本轮的 worldStream；恢复臂无流传 null——立即渲）。
   parkedRound = { letterNode: letterNode, flowIndex: flowIndex };
-  renderWorldWaits(directions, capped);
+  renderWorldWaitsWhenSettled(stream, directions, capped);
 }
 
 async function postContinue() {
@@ -4483,11 +4519,12 @@ async function postContinue() {
       return;
     }
     // final 到手：停点形不点缝（信还没到，过渡句是回信的缝台）；回信
-    // 形才收口。
+    // 形才收口。lr-3R：停点臂把 worldStream 交给门——closeChain 只收口
+    // 链，代际还在 35cps 排空，settled 正确反映「讲完没有」。
     worldStream.closeChain(data.parked !== true);
     if (data.parked === true) {
       if (typing) typing.stop();
-      enterParkedRound(letterNode, flowIndex,
+      enterParkedRound(letterNode, flowIndex, worldStream,
         data.directions || [], !!data.capped);
     } else {
       // 信到回信到：摘封（在途信封回撕口信纸）+ 权威回信行接管。
@@ -4747,7 +4784,8 @@ async function postTurn(text) {
     if (data.parked === true) {
       // lr-4a：停点形——「世界在等你」态起（提示行 + 选项行 + 继续
       // 钮），信保持封着在途，无回信行、无失败行（停点不是失败）。
-      enterParkedRound(mine, flowTurns.length - 1,
+      // lr-3R：chrome 等链讲完——postTurn 局部 worldStream 交给门。
+      enterParkedRound(mine, flowTurns.length - 1, worldStream,
         data.directions || [], !!data.capped);
     } else if (data.reply !== null && data.reply !== undefined) {
       addLine("assistant", data.reply,
@@ -5468,11 +5506,10 @@ async function renderFlowHistory() {
   // 出）+ 世界块（交错面已落）+ 候选补位行 + 继续钮。半轮天然容：
   // 无回信行即无回信行。
   if (data.parked === true && lastUserNode) {
-    parkedRound = {
-      letterNode: lastUserNode,
-      flowIndex: flowTurns.length - 1,
-    };
-    renderWorldWaits(data.parked_directions || [], false);
+    // lr-3R：恢复臂无流（历史恢复是已完成事实，零打字机）——stream
+    // 传 null，门立即渲，行为与直渲同形。
+    enterParkedRound(lastUserNode, flowTurns.length - 1, null,
+      data.parked_directions || [], false);
   }
 }
 
