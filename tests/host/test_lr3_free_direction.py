@@ -450,6 +450,13 @@ def test_the_read_face_tells_the_two_shapes() -> None:
         json.dumps({"label": "a", "hint": "b", "extra": 1}),
         json.dumps({"text": 9, "source": "free"}),
         json.dumps([1, 2]),
+        # LOW-1 family (the disposal knife): a whitespace-only row is
+        # corrupt too — the write face's strip law must not leak past
+        # this reader (its own docstring promises absent, never a
+        # prompt-builder ValueError downstream).
+        json.dumps({"label": "   ", "hint": "b"}),
+        json.dumps({"label": "a", "hint": "  ", "source": "candidate"}),
+        json.dumps({"text": "   ", "source": "free"}),
     ):
         face._host.app_settings.set(key, corrupt)
         assert face._world_pending_direction("world-x") is None, corrupt

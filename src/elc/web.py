@@ -3814,15 +3814,15 @@ class _WebFace:
             hint = parsed["hint"]
             if not (
                 isinstance(label, str)
-                and bool(label)
+                and bool(label.strip())
                 and isinstance(hint, str)
-                and bool(hint)
+                and bool(hint.strip())
             ):
                 return None
             return ("candidate", (label, hint))
         if keys == {"text", "source"} and parsed["source"] == "free":
             text = parsed["text"]
-            if not (isinstance(text, str) and bool(text)):
+            if not (isinstance(text, str) and bool(text.strip())):
                 return None
             return ("free", text)
         return None
