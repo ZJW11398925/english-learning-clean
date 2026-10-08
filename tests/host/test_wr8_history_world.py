@@ -583,24 +583,24 @@ def test_history_frames_render_before_the_letter_same_shape() -> None:
     assert "const steps = Array.isArray(turn.world_steps" in flow
     assert ": [turn.world];" in flow
     # Multi-block loop: every frame renders before the letter, the
-    # transition sentence on the last block only (the seam above the
-    # reply), the world_steps order preserved.
-    assert "steps.forEach((frame, frameIndex) => {" in flow
-    assert "withTransition: frameIndex === steps.length - 1," in flow
-    assert "beforeEl: anchor," in flow
-    assert "renderWorldStory(frame, {" in flow
+    # world_steps order preserved (lr-3T: the last-block-only seam is
+    # retired — every block renders the same shape, no transition
+    # parameter anywhere).
+    assert "steps.forEach((frame) => {" in flow
+    assert "withTransition" not in flow
+    assert "renderWorldStory(frame, { beforeEl: anchor });" in flow
     user_add = flow.index('addLine("user"')
     world_add = flow.index("const steps = Array.isArray(turn.world_steps")
     assistant_add = flow.index('addLine("assistant"')
     assert user_add < world_add < assistant_add
     # the live-turn arm keeps its own shape (the wr-7 regression anchor,
-    # lr-2 truth: the settle renders without the seam — closeChain lands
-    # it on the last generation, always ahead of the reply's first char)
+    # lr-2/lr-3T truth: the settle renders without the seam — the
+    # transition sentence is retired; closeChain keeps the gate duty)
     turn_body = app[
         app.index("async function postTurn"):
         app.index("async function postTeachMe")
     ]
-    assert "renderWorldStory(event, { withTransition: false })" in turn_body
+    assert "renderWorldStory(event)" in turn_body
     assert "startWorldStream" not in flow
 
 

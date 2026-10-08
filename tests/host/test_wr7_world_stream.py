@@ -403,8 +403,8 @@ def test_the_world_typewriter_is_an_independent_buffer_at_the_same_law() -> None
 def test_the_whole_frame_settles_only_after_the_stream_drains() -> None:
     """定版（wr-7R）：world 整帧不再 stop 不再立即替换——seal 把权威
     余量补进当代打字机缓冲，**排空之后**才权威渲染同位替换流式块
-    （日期行/fallback 注记此时才补齐；**过渡句不在此臂**——缝台句属
-    链尾末代，closeChain 在回信首增量/final 落定），world_failed = 当
+    （日期行/fallback 注记此时才补齐；lr-3T：过渡句已随缝台机构退役
+    ——定版臂再无句子），world_failed = 当
     代块尾人话一行（已显示的那段没记进编年史），三姿态不变（fail =
     stop + 注；中断 = stop 保留已显）（DEC-OPI-c73dbff3…23 + lr-2
     DEC-OPI-c73dbff3…114；变异 m1：settle 退回立即替换——整批到达闪
@@ -421,16 +421,16 @@ def test_the_whole_frame_settles_only_after_the_stream_drains() -> None:
     # post-drain callback: the exact conditional, the same-position
     # insert and the streaming block's removal (变异 m7：打字机不定版
     # ——流式残留与权威渲染并立)。lr-2：替换带链级定版回调（concluded
-    # ——串行事序的释放点与末代缝台的判定点）。
+    # ——串行事序的释放点；lr-3T：缝台判定随缝台机构退役）。
     assert ".then((gen) => {" in settle
-    assert "renderWorldStory(event, { withTransition: false })" in settle
+    assert "renderWorldStory(event)" in settle
     assert (
         "if (gen !== null && gen.wrap && gen.wrap.parentNode === messages) {"
         in settle
     )
     assert "insertBefore(fresh, gen.wrap)" in settle
     assert "gen.wrap.remove()" in settle
-    assert "worldStream.concluded(gen, fresh)" in settle
+    assert "worldStream.concluded(gen)" in settle
     fail = _slice(app, "const failWorld = () => {", "\n  };\n")
     assert "world-story-failed" in fail
     assert "worldInboxText().worldFailed" in fail

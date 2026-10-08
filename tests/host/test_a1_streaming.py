@@ -825,11 +825,11 @@ def test_the_page_wires_reader_typewriter_finalize_fallback_and_no_resend() -> N
     assert "fetchTurnStream(" in postturn
     # WR-6: the onWorld callback is back — the world frame renders as it
     # arrives (before the reply's deltas); no delayed reveal anywhere
-    # (the world is pre-reply now). lr-2 truth (DEC-OPI-c73dbff3…114):
-    # the settle renders without the seam — the transition sentence
-    # belongs to the chain's last generation and lands via closeChain,
-    # always ahead of the reply's first char.
-    assert "renderWorldStory(event, { withTransition: false })" in postturn
+    # (the world is pre-reply now). lr-2/lr-3T truth (DEC-OPI-
+    # c73dbff3…114 / DEC-OPI-09b3935b…13): the settle renders without
+    # the seam — the transition sentence is retired outright; the close
+    # keeps only its gate duty.
+    assert "renderWorldStory(event)" in postturn
     assert "scheduleWorldReveal" not in app_source
     assert "typing.push(chunk)" in postturn
     assert "await typing.seal(" in postturn

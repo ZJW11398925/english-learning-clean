@@ -2990,59 +2990,62 @@ diagBox("obs-entry").appendChild((() => {
 // 即世界自然发展之地，历史活在信流的故事块序列。过渡句恢复（WR-3 曾
 // 误退）：「这时，她收到了你的来信。」是世界编年史对一封世界内信件
 // 的如实记录（信是用户角色寄入世界的事件——呈现层合法，双层律不破）。
-// 这一小节只留它的双语词表与界面语言态：fallback 小字/安静日/过渡句
-// 三句，随 ui_language 设置（zh 缺省）。文字一律 textContent（XSS 面）。
+// 【lr-3T 退役注（DEC-OPI-09b3935b…13，呈现散文零模板律）】该句及其
+// 同族三件（安静日句/停点提示句/走向提问句）已自词表与渲染分支清出
+// ——呈现面的散文只来自叙事者生成，模板句不再回场；上段为历史裁决
+// 句留档。这一小节只留它的双语词表与界面语言态：fallback 小字一句
+// （系统诚实标注，非叙事散文），随 ui_language 设置（zh 缺省）。文字
+// 一律 textContent（XSS 面）。
 let uiLanguage = "zh";
 
 const WORLD_INBOX_TEXT = {
   zh: {
     fallback: "（这张便条写在世界学会中文之前——示以原文。）",
-    quietDay: "安静的一天，没什么特殊的事。",
-    thenLetter: "这时，她收到了你的来信。",
     // wr-7：世界流式呈现的两句 chrome——发信即现的占位行（首个
     // world_delta/world/delta 到达即让位）与整批未留住的失败注
     // （已显示的那段没记进编年史——渲染先行、持久殿后、拒收不撒谎）。
     worldRunning: "世界运转中…",
     worldFailed: "世界的这段没能留住——这一轮没记进编年史。",
-    // wr-10（DEC-OPI-c73dbff3…64）：走向选项行的 chrome——块尾的提问
-    // 行与选择没存上的人话。lr-3（DEC-OPI-17b0a47f…7）：候选之外还有
-    // 自由输入形——输入占位、寄送钮、记下前缀句三件随行。lr-3R
-    //（DEC-OPI-09b3935b…1）：文案重铸——提问行只承指令，不再双问句。
-    directionAsk: "选一个走向，或自己写一个。",
+    // wr-10（DEC-OPI-c73dbff3…64）：走向选项行的 chrome——选择没存上
+    // 的人话。lr-3（DEC-OPI-17b0a47f…7）：候选之外还有自由输入形——
+    // 输入占位、寄送钮、记下前缀句三件随行。lr-3R（DEC-OPI-09b3935b
+    // …1）曾把提问行收短只承指令；lr-3T（DEC-OPI-09b3935b…13）提问句
+    // 退役——行的供性由输入占位承担（呈现散文零模板律）。
     directionMiss: "没存上——稍后再试一次。",
     directionFreePlaceholder: "自己写一个走向……",
     directionSendLabel: "记下这条走向",
     directionParked: "你的走向已记下：",
-    // lr-4a（DEC-OPI-c73dbff3…128）：停点轮的三句 chrome——停点提示句
-    //（双语）、继续钮、方向缺位防上限句与继续失败句。lr-3R
-    //（DEC-OPI-09b3935b…1）：提示句承氛围不承指令（指令归提问行）。
-    worldWaits: "故事停在这里——下一笔，由你来落。",
+    // lr-4a（DEC-OPI-c73dbff3…128）：停点轮的 chrome——继续钮、方向
+    // 缺位防上限句与继续失败句。lr-3R（DEC-OPI-09b3935b…1）提示句曾
+    // 承氛围；lr-3T（DEC-OPI-09b3935b…13）寻常停点零句子——chrome =
+    // 候选行 + 继续钮，唯上限态仍渲 worldCapped（防缺位的功能句，非
+    // 叙事散文）。
     continueLabel: "让世界继续",
     worldCapped: "世界已经走了很远，还没收到你的方向——选一个走向，或再写一封信。",
     continueMiss: "继续没能送达——稍后再试一次。",
   },
   en: {
     fallback: "(This note predates the world's Chinese — shown as written.)",
-    quietDay: "A quiet day, nothing out of the ordinary.",
-    thenLetter: "Then, your letter arrives.",
     worldRunning: "The world is turning…",
     worldFailed: "This passage of the world could not be kept —"
       + " it was not written into the chronicle.",
-    // wr-10: the direction row's chrome (the ask sentence and the miss
-    // sentence). lr-3: the free-input shape rides beside the candidates
-    // — the input placeholder, the send button and the parked-prefix
-    // sentence, all bilingual. lr-3R (DEC-OPI-09b3935b…1): recast — the
-    // ask line carries the instruction only, no double question.
-    directionAsk: "Pick a direction — or write your own.",
+    // wr-10: the direction row's chrome (the miss sentence). lr-3: the
+    // free-input shape rides beside the candidates — the input
+    // placeholder, the send button and the parked-prefix sentence, all
+    // bilingual. lr-3R (DEC-OPI-09b3935b…1) recast the ask line to the
+    // instruction only; lr-3T (DEC-OPI-09b3935b…13) retires the ask
+    // sentence — the placeholder carries the affordance (the
+    // zero-template law).
     directionMiss: "Could not save it — try again shortly.",
     directionFreePlaceholder: "Write your own direction…",
     directionSendLabel: "Set this direction",
     directionParked: "Your direction is set: ",
-    // lr-4a: the parked round's chrome (the waits sentence, the continue
-    // button, the cap sentence and the miss sentence). lr-3R
-    // (DEC-OPI-09b3935b…1): the hint carries the mood, not the
-    // instruction (the instruction lives on the ask line).
-    worldWaits: "The story rests here — the next line is yours.",
+    // lr-4a: the parked round's chrome (the continue button, the cap
+    // sentence and the miss sentence). lr-3R (DEC-OPI-09b3935b…1) gave
+    // the hint the mood; lr-3T (DEC-OPI-09b3935b…13) leaves a plain
+    // stop with no sentence — the chrome is the candidate row plus the
+    // continue button, and only the capped state still speaks
+    // (worldCapped, a functional warning, not narrative prose).
     continueLabel: "Let the world go on",
     worldCapped: "The world has walked far without your direction —"
       + " pick one, or write a new letter.",
@@ -3093,9 +3096,10 @@ function parlorWorldText(lang) {
 // 她的回信随后打字机跟上——A2 织入序回归且**时序正确**（世界先讲，
 // 回信后到，spec §4.2 正典）。阻塞回退臂同形（payload.world 先渲染
 // 再落回信行）。**零滚动劫持**（wr-5 律延续）。渲染入口两臂：流内
-// onWorld（带过渡句——当前轮）与历史交错恢复（wr-8 DEC-OPI-c73dbff3…34
-// ——历史轮的世界帧同形渲染，带过渡句、不用打字机——历史恢复是
-// 已完成事实）。wr-10：world 帧 directions 在场时块尾渲染走向选项行
+// onWorld（当前轮）与历史交错恢复（wr-8 DEC-OPI-c73dbff3…34——历史
+// 轮的世界帧同形渲染、不用打字机——历史恢复是已完成事实）。lr-3T：
+// 两臂的过渡句均退役（缝句已随缝台机构一并清出——呈现散文零模板律）。
+// wr-10：world 帧 directions 在场时块尾渲染走向选项行
 // （可点选可不选、随下一轮自然过期——renderWorldDirectionRow）。
 // 文字一律 textContent（XSS 纪律）；真实时间零进入——
 // 日期只来自服务的 date_localized。
@@ -3131,10 +3135,8 @@ function renderWorldDirectionRow(directions) {
   expireWorldDirectionRow();
   const row = document.createElement("div");
   row.className = "world-direction-row";
-  const caption = document.createElement("p");
-  caption.className = "note";
-  caption.textContent = T.directionAsk;
-  row.appendChild(caption);
+  // lr-3T：提问行 caption 退役（呈现散文零模板律）——行 = 候选 chips
+  // + 自由输入形，供性由输入占位（directionFreePlaceholder）承担。
   const opts = document.createElement("div");
   opts.className = "world-direction-options";
   const showMiss = (data) => {
@@ -3241,7 +3243,6 @@ function renderWorldDirectionRow(directions) {
 
 function renderWorldStory(event, opts) {
   const T = worldInboxText();
-  const withTransition = !!(opts && opts.withTransition);
   const beforeEl = opts && opts.beforeEl ? opts.beforeEl : null;
   // wr-10：新世界块 = 旧选项行的自然过期（新帧无此选项即换代——块
   // 自身的选项行在下方重建并接管现役位）。
@@ -3254,12 +3255,8 @@ function renderWorldStory(event, opts) {
   wrap.appendChild(dateLine);
   const notes = Array.isArray(event.notes) ? event.notes
     : Array.isArray(event.items) ? event.items : [];
-  if (!notes.length) {
-    const quiet = document.createElement("p");
-    quiet.className = "world-story-note";
-    quiet.textContent = T.quietDay;
-    wrap.appendChild(quiet);
-  }
+  // lr-3T：notes 空即诚实空——帧只有日期行，不造「安静的一天」散文句
+  // （模板句已退役）。
   for (const note of notes) {
     const p = document.createElement("p");
     p.className = "world-story-note";
@@ -3276,17 +3273,10 @@ function renderWorldStory(event, opts) {
       wrap.appendChild(fb);
     }
   }
-  if (withTransition) {
-    // WR-5 恢复（wr-3 曾误退）：世界编年史对一封世界内信件的如实记
-    // 录——信是用户角色寄入世界的事件，这句是呈现层的缝合句，不是
-    // 「世界回应信」的剧情反应（双层律不破）。
-    const then = document.createElement("p");
-    then.className = "world-story-then";
-    then.textContent = T.thenLetter;
-    wrap.appendChild(then);
-  }
   // wr-10：走向选项行——只在 world 帧真的带 directions 时渲染（沉浸
   // 形零字段零行，块尾干净如旧）；落点 = 块尾，非独立页（wr-5 律）。
+  // lr-3T：块内序自此为日期行、叙述段、fallback 小字、走向行——无
+  // 过渡句位（缝句退役）。
   if (Array.isArray(event.directions) && event.directions.length) {
     wrap.appendChild(renderWorldDirectionRow(event.directions));
   }
@@ -3457,13 +3447,13 @@ function startTypewriter(gate) {
 // 收进缓冲，rAF 循环不排程。链级 settled =「链已收口且全部代定版」
 //（wr-11 gate 判据随之升级：回信等整条链讲完）。world_failed 附
 // **当代**块尾失败注、后代照常（lr-1 链中拒收后续步语义——失败不
-// 毒化代际机构）；末代 failed = 开闸（wr-11 臂保留）。**过渡句仅链
-// 尾末代**（「这时，她收到了你的来信。」是回信缝台）：定版渲染一律
-// 不带过渡句，closeChain（回信首增量 / final / 失败 / 中断四触点，
-// 幂等）点缝——末代权威块替换落地且无后续代时补落 world-story-then
-//（走向行在场则插其前——与 renderWorldStory 的块内序一致），恒先于
-// 回信首字。单步轮 = 单代：时序与现役形态兼容（wr-7R2/wr-11 回归钉
-// 全绿）。文字一律 textContent（XSS 纪律——增量文本 untrusted）。
+// 毒化代际机构）；末代 failed = 开闸（wr-11 臂保留）。【lr-3T 退役注
+//（DEC-OPI-09b3935b…13）】lr-2 的「过渡句仅链尾末代」缝台机构（点缝
+// 函数/单向缝标记/带参收口）已随呈现散文零模板律整体退役——
+// closeChain 只保留收口语义（chainClosed 置位，wr-11 gate
+// 判据零变化），缝句不再落；上句为历史裁决句留档。单步轮 = 单代：
+// 时序与现役形态兼容（wr-7R2/wr-11 回归钉全绿）。文字一律
+// textContent（XSS 纪律——增量文本 untrusted）。
 // Revisit（裁决 R9）：35 字/秒对世界叙述的适用性——世界节奏或应更
 // 慢，dogfood 信号再调不预调（a calibration replaces this constant）。
 function startWorldStream() {
@@ -3472,9 +3462,6 @@ function startWorldStream() {
     current: null,           // 当代（接收 push；seal 后的 push 开新一代）
     done: false,             // world_failed / 流中断终态（wr-11 开闸臂）
     chainClosed: false,      // 链已收口（回信首增量 / final / 失败 / 中断）
-    seamWanted: false,       // 收口点了缝台（干净收口才点——失败/中断无缝）
-    seamDone: false,         // 过渡句已落（幂等）
-    lastAuthoritative: null, // 最近一块权威定版块（末代缝台落点）
   };
 
   // 单代引擎：wr-7/wr-7R/wr-7R2 的原语义原样（缓冲/定速/段指针律/
@@ -3643,38 +3630,13 @@ function startWorldStream() {
     return gen;
   };
 
-  // lr-2 缝台句（过渡句仅末代）：closeChain 点缝、末代权威块替换落
-  // 地且无后续代时补落——恒先于回信首字（回信 delta 回调先 closeChain
-  // 后 typing.push；append 与 push 同步，出字在 rAF）。
-  const appendSeam = () => {
-    if (state.seamDone || !state.seamWanted || !state.chainClosed) return;
-    if (state.current !== null) return;   // 末代未定——还不是缝台时刻
-    const block = state.lastAuthoritative;
-    if (block === null || block.parentNode !== messages) return;
-    state.seamDone = true;
-    const then = document.createElement("p");
-    then.className = "world-story-then";
-    then.textContent = worldInboxText().thenLetter;
-    // 走向行在场则插其前——与 renderWorldStory 的块内序一致
-    //（过渡句、走向行、回信）。
-    const row = block.querySelector(".world-direction-row");
-    if (row) {
-      block.insertBefore(then, row);
-    } else {
-      block.appendChild(then);
-    }
-  };
-
-  // 链收口（四触点幂等）：回信首增量 / final（干净收口——点缝台）；
-  // 失败 / 中断（closeChain(false)——失败注是诚实尾注）。缝台由
-  // 「回信真的到达」决定，非链的成功：失败链上回信照到 ⇒ 缝台照落
-  // （seamWanted 单向——false 触点从不撤销已点的缝；处置刀 F9 裁决：
-  // 缝台缝合的是回信与世界流，世界某步拒收是另一拍，失败注已诚实
-  // 标注那一拍）。
-  const closeChain = (withSeam) => {
+  // 链收口（四触点幂等）：回信首增量 / final / 失败 / 中断——chain-
+  // Closed 置位是 wr-11 gate 的判据半（回信等链讲完）。lr-2 缝台机构
+  // （点缝函数与单向缝标记）已随 lr-3T 退役（DEC-OPI-09b3935b…13，
+  // 呈现散文零模板律）——收口语义零变化，缝句不再落；点缝时刻的时
+  // 序裁决句为历史留档。
+  const closeChain = () => {
     state.chainClosed = true;
-    if (withSeam) state.seamWanted = true;
-    appendSeam();
   };
 
   return {
@@ -3695,21 +3657,19 @@ function startWorldStream() {
     // 定版落地回调（postTurn 的替换 .then 尾）：累计链级 settled 的
     // 判定半、释放**最早仍按住的代**（创建序 = 出字序——不是
     // current：current 恒指最新开的代，快形下上一代定版时更后的代
-    // 已开，释放错代会永久跳过中间代）、末代缝台检查。
-    concluded(gen, fresh) {
-      state.lastAuthoritative = fresh;
+    // 已开，释放错代会永久跳过中间代）。（lr-3T：末代缝台检查已随缝
+    // 台机构退役。）
+    concluded(gen) {
       if (gen !== null) {
         gen.replaced = true;
         if (state.current === gen) state.current = null;
       }
       const next = state.generations.find((g) => g.held);
       if (next) next.release();
-      appendSeam();
     },
-    // lr-2 缝台点（回信首增量 / final 调用；失败与中断走 stop 内部
-    // 的 closeChain(false)）。
-    closeChain(withSeam) {
-      closeChain(withSeam);
+    // 链收口点（回信首增量 / final / 失败 / 中断——stop 内部同调）。
+    closeChain() {
+      closeChain();
     },
     get wrap() {
       // wr-11 零世界臂的读数：从未开代（零增量到达的流式轮）⇒ null。
@@ -3735,7 +3695,7 @@ function startWorldStream() {
       // 的在排代交回（整帧已到即权威存在——排空未毕的中断由权威定
       // 版接手，wr-7R 姿态逐代成立）；返回当代块（failWorld 的失败
       // 注落点——当代块尾）。
-      closeChain(false);
+      closeChain();
       state.done = true;
       const gen = state.current;
       state.current = null;
@@ -4357,20 +4317,21 @@ function dismissEmptyHall() {
 
 // ── lr-4a（DEC-OPI-c73dbff3…128）：停点轮——directed 模式每步=选择点──
 // 世界步 1 后服务端停（parked final：reply:null + stop:"awaits_direction"
-// + directions 候选），前端进入停点态：「世界在等你」提示行 + 走向选项行
-// + 「让世界继续」钮；选向 = 存待用走向后立刻 POST /api/world/continue 续
+// + directions 候选），前端进入停点态：走向选项行 + 「让世界继续」钮
+//（lr-3T：提示句退役——寻常停点零句子，唯上限态渲 worldCapped 功能
+// 句）；选向 = 存待用走向后立刻 POST /api/world/continue 续
 // 链一步（消费待用走向现成机制），又停（新候选）或信到（同 command 幂等
 // 重入 ⇒ 完整回信归位：摘封 + 打字机 + gate 到链尾 + finalize）。半轮刷
 // 刷恢复：/api/history 的 additive 键（parked + parked_directions）驱动
 // 同一停点态重建（user 信行 + 世界块无回信行，renderFlowHistory 天然容
 // 半轮）。文字一律 textContent（XSS 纪律）；样式钩子只复用现役类。
 let parkedRound = null;        // 停点态：{ letterNode, flowIndex } | null
-let liveWorldWaits = null;     // 「世界在等你」行（单例，重渲即换）
+let liveWorldWaits = null;     // 停点 chrome 行（单例，重渲即换；lr-3T 起零句）
 let continueInFlight = false;  // 续链一次一枚（双击不重入）
 let worldWaitsGateToken = 0;   // 停点 chrome 门的 token——bump 即作废在途渲染
 
 function exitParkedRound() {
-  // 停点态退役：新信寄出或回信落地时——提示行摘除、状态清零。已在途
+  // 停点态退役：新信寄出或回信落地时——停点 chrome 摘除、状态清零。已在途
   // 的续链不被打断（continueInFlight 保护）。lr-3R：同时 bump 门 token
   // ——还没渲出来的停点 chrome（等链 settle 的 pending 渲染）就此作废。
   worldWaitsGateToken += 1;
@@ -4380,17 +4341,21 @@ function exitParkedRound() {
 }
 
 function renderWorldWaits(directions, capped) {
-  // 停点态的提示行：人话句（上限句或寻常句）+ 候选行缺位时补一行
-  // （刷新恢复臂——历史世界帧不带 directions，候选由 history 的
-  // parked_directions 补齐；流内臂候选已随世界块渲染，不重铺）。
+  // 停点态的 chrome 行：候选行缺位时补一行（刷新恢复臂——历史世界帧
+  // 不带 directions，候选由 history 的 parked_directions 补齐；流内臂
+  // 候选已随世界块渲染，不重铺）。lr-3T（呈现散文零模板律）：寻常停
+  // 点零句子——行 = 候选 + 继续钮；唯上限态建 hint 段渲 worldCapped
+  //（方向缺位防上限的功能句，非叙事散文）。
   const T = worldInboxText();
   if (liveWorldWaits && liveWorldWaits.parentNode) liveWorldWaits.remove();
   const row = document.createElement("div");
   row.className = "world-waits";
-  const hint = document.createElement("p");
-  hint.className = "note";
-  hint.textContent = capped ? T.worldCapped : T.worldWaits;
-  row.appendChild(hint);
+  if (capped) {
+    const hint = document.createElement("p");
+    hint.className = "note";
+    hint.textContent = T.worldCapped;
+    row.appendChild(hint);
+  }
   if (Array.isArray(directions) && directions.length
       && liveWorldDirectionRow === null) {
     // 候选行的补位臂：流内臂的候选已随世界块渲染（liveWorldDirection-
@@ -4411,8 +4376,9 @@ function renderWorldWaits(directions, capped) {
 
 // lr-3R（DEC-OPI-09b3935b…1）：停点 chrome 的时序门——wr-11 gate 同律
 // 推广（回信打字等链讲完，停点 chrome 也等链讲完）：服务端 final 到手
-// ≠ 客户端讲完——lr-2 代际链还在 35cps 排空，此刻就把提示行与继续钮
-// 铺上去，chrome 抢在故事余韵前头（dogfood 实证）。登记即时（parked-
+// ≠ 客户端讲完——lr-2 代际链还在 35cps 排空，此刻就把停点 chrome
+// （候选行与继续钮）铺上去，chrome 抢在故事余韵前头（dogfood 实证）。
+// 登记即时（parked-
 // Round 已置——选向/续链可用性不变），只有渲染等 settled || done；
 // 无流（刷新恢复臂）或链已收口/已停则立即渲。只读 getter，lr-2 代际
 // 机构零触碰。
@@ -4441,7 +4407,7 @@ function renderWorldWaitsWhenSettled(stream, directions, capped) {
 
 function enterParkedRound(letterNode, flowIndex, stream, directions, capped) {
   // 停点态登记：这封信还封着在途（回信未到，摘封只属回信落地/失败）
-  // ——提示行起，选向或继续由用户落子。lr-3R：chrome 渲染走时序门
+  // ——停点 chrome 起，选向或继续由用户落子。lr-3R：chrome 渲染走时序门
   //（stream = 本轮的 worldStream；恢复臂无流传 null——立即渲）。
   parkedRound = { letterNode: letterNode, flowIndex: flowIndex };
   renderWorldWaitsWhenSettled(stream, directions, capped);
@@ -4449,8 +4415,8 @@ function enterParkedRound(letterNode, flowIndex, stream, directions, capped) {
 
 async function postContinue() {
   // 续链一步（POST /api/world/continue，SSE 流面）：事件序 world_delta＊
-  // → world → (delta＊ →) final——停点形（又停：刷新提示行与新候选）或
-  // 回信形（信到：链收口点缝、打字机、摘封、回信行、usage/moments——
+  // → world → (delta＊ →) final——停点形（又停：刷新停点 chrome 与新候选）或
+  // 回信形（信到：链收口、打字机、摘封、回信行、usage/moments——
   // postTurn 的 finalize 同构，落点是原信行而非新信）。null = 非 SSE
   //（409：这一轮已结束）⇒ 拉历史对齐；started 中断不重发（round 还在
   // 库里，拉历史对齐）；未开始的失败拉历史对齐（chrome 已随起手退场，
@@ -4458,7 +4424,7 @@ async function postContinue() {
   if (!parkedRound || continueInFlight) return;
   continueInFlight = true;
   // lr-3R 处置（活体探针发现）：续链起手即视觉退场——世界已经继续，
-  // 停点 chrome（提示行+继续钮+旧候选行）不再挂着等到下一拍定版；轮锚
+  // 停点 chrome（继续钮+旧候选行）不再挂着等到下一拍定版；轮锚
   // parkedRound 保留（in-flight 续链与失败恢复仍用它）。「原样可再按」
   // 由失败臂的 loadHistory 重建（parked 键在则 chrome 回来——服务端事
   // 实对齐，而非留着陈旧行）。
@@ -4480,12 +4446,12 @@ async function postContinue() {
   const settleWorld = (event) => {
     retirePending();
     worldStream.seal(event).then((gen) => {
-      const fresh = renderWorldStory(event, { withTransition: false });
+      const fresh = renderWorldStory(event);
       if (gen !== null && gen.wrap && gen.wrap.parentNode === messages) {
         messages.insertBefore(fresh, gen.wrap);
         gen.wrap.remove();
       }
-      worldStream.concluded(gen, fresh);
+      worldStream.concluded(gen);
     });
   };
   const failWorld = () => {
@@ -4505,8 +4471,9 @@ async function postContinue() {
     data = await fetchWorldContinue(
       (chunk) => {
         retirePending();
-        // 回信首增量 = 链已尽——末代确权，缝台句落定（先于回信首字）。
-        worldStream.closeChain(true);
+        // 回信首增量 = 链已尽——链收口（wr-11 判据半；缝句已随
+        // lr-3T 退役，恒先于回信首字的时序不再有句可落）。
+        worldStream.closeChain();
         typing.push(chunk);
       },
       (event) => settleWorld(event),
@@ -4527,10 +4494,10 @@ async function postContinue() {
       }
       return;
     }
-    // final 到手：停点形不点缝（信还没到，过渡句是回信的缝台）；回信
-    // 形才收口。lr-3R：停点臂把 worldStream 交给门——closeChain 只收口
-    // 链，代际还在 35cps 排空，settled 正确反映「讲完没有」。
-    worldStream.closeChain(data.parked !== true);
+    // final 到手：链收口（gate 判据半；lr-3R：停点臂把 worldStream 交
+    // 给门——代际还在 35cps 排空，settled 正确反映「讲完没有」。lr-3T：
+    // 缝句退役，收口无停点形之分——chainClosed 两形同置）。
+    worldStream.closeChain();
     if (data.parked === true) {
       if (typing) typing.stop();
       enterParkedRound(letterNode, flowIndex, worldStream,
@@ -4588,7 +4555,7 @@ async function postContinue() {
 
 async function postTurn(text) {
   dismissEmptyHall();
-  // lr-4a：新信寄出 = 上一停点态退役（旧停点轮的提示行与状态让位——
+  // lr-4a：新信寄出 = 上一停点态退役（旧停点轮的 chrome 与状态让位——
   // 服务端会在新轮停点时覆写它自己的行；旧轮如实半轮留在历史里）。
   exitParkedRound();
   // 寄出的当下 = 信件日期行的真实时间源（客户端本机时间；web.py 冻结
@@ -4627,8 +4594,8 @@ async function postTurn(text) {
   startMomentPolling();
   // A1 流面：先走 /api/turn_stream——世界先讲（wr-7：叙述增量
   // world_delta 当场进世界打字机；wr-7R：world 整帧到即 seal——权
-  // 威余量入缓冲、排空后定版，日期行此时才补齐块首；定版仍带过渡
-  // 句），delta 当场打进
+  // 威余量入缓冲、排空后定版，日期行此时才补齐块首；lr-3T：定版不
+  // 再带过渡句——缝句退役），delta 当场打进
   // 一封在写的回信（只走 textContent，XSS 纪律），final 落地即在
   // finally 摘掉在写信、由下方 finalize 的权威回信行接管。对端没说
   // SSE（非 200 / 无流）= 立即失败形，回退旧 POST；流真开始后中断 =
@@ -4658,20 +4625,20 @@ async function postTurn(text) {
   // wr-7R 定版（DEC-OPI-c73dbff3…23，lr-2 代际化）：world 整帧到达
   // **不 stop 不立即替换**——权威全文经 worldStream.seal 以段为序补
   // 进当代打字机缓冲，定速排空；**全部段排空后**才权威渲染同位替换
-  // 流式块（日期行/fallback 注记此时才补齐；**过渡句不在此臂**——缝
-  // 台句属链尾末代，closeChain 在回信首增量/final 落定，恒先于回信
-  // 首字）。增量到达快于 35cps 消费（快模型/端点缓冲/网关聚合）不再
+  // 流式块（日期行/fallback 注记此时才补齐；lr-3T：过渡句已随缝台机
+  // 构退役——定版臂再无句子）。增量到达快于 35cps 消费（快模型/端
+  // 点缓冲/网关聚合）不再
   // 「刚启动就被整块替换」的闪现。无流式块（零增量臂）时 seal 交回
   // null，替换条件臂让 renderWorldStory 原样落位，与 WR-6 同形。
   const settleWorld = (event) => {
     retireWorldPending();
     worldStream.seal(event).then((gen) => {
-      const fresh = renderWorldStory(event, { withTransition: false });
+      const fresh = renderWorldStory(event);
       if (gen !== null && gen.wrap && gen.wrap.parentNode === messages) {
         messages.insertBefore(fresh, gen.wrap);
         gen.wrap.remove();
       }
-      worldStream.concluded(gen, fresh);
+      worldStream.concluded(gen);
     });
   };
   // wr-7 失败注（lr-2 多代位）：这块流式叙述没能留住（编年史未记）
@@ -4694,8 +4661,8 @@ async function postTurn(text) {
       (chunk) => {
         retireWorldPending();
         // lr-2：回信首增量 = 服务端链已尽（世界帧/增量全数到齐）——
-        // 末代确权，缝台句落定（恒先于回信首字；幂等）。
-        worldStream.closeChain(true);
+        // 链收口（wr-11 判据半；缝句已随 lr-3T 退役）。
+        worldStream.closeChain();
         typing.push(chunk);
       },
       (event) => settleWorld(event),
@@ -4720,10 +4687,10 @@ async function postTurn(text) {
       }
       return;
     } else {
-      // final 到手：链收口（末代确权——缝台句落定；零增量臂在此点
-      // 缝，幂等）；权威全文的未显余量补进缓冲，排空后才 finalize。
-      // lr-4a：停点形不点缝——过渡句是回信的缝台，信还没到。
-      worldStream.closeChain(data.parked !== true);
+      // final 到手：链收口（gate 判据半；零增量臂同收，幂等；lr-3T：
+      // 缝句退役，收口无停点形之分——chainClosed 两形同置）；权威全
+      // 文的未显余量补进缓冲，排空后才 finalize。
+      worldStream.closeChain();
       await typing.seal(typeof data.reply === "string" ? data.reply : "");
     }
   } catch (err) {
@@ -4771,18 +4738,17 @@ async function postTurn(text) {
     // payload 带世界键时先渲染世界块（回信行之前；此臂回信行尚不
     // 存在，append 即在信后），再落回信行。顺序与流面一致。
     // wr-7：占位行让位（world 帧也算首帧）。lr-2：链形多块——
-    // payload.world_steps（全链，lr-1 起随行）逐块渲染、过渡句仅末
-    // 块；单帧轮 = 单块原形（WR-6 形字节兼容）。
+    // payload.world_steps（全链，lr-1 起随行）逐块渲染；单帧轮 = 单
+    // 块原形（WR-6 形字节兼容）。lr-3T：过渡句仅末块随缝台退役——
+    // 逐块同形。
     if (data.world && typeof data.world === "object") {
       retireWorldPending();
       const steps = Array.isArray(data.world_steps) &&
         data.world_steps.length
         ? data.world_steps
         : [data.world];
-      steps.forEach((frame, frameIndex) => {
-        renderWorldStory(frame, {
-          withTransition: frameIndex === steps.length - 1,
-        });
+      steps.forEach((frame) => {
+        renderWorldStory(frame);
       });
       delete data.world;
       delete data.world_steps;
@@ -4795,7 +4761,7 @@ async function postTurn(text) {
     flowTurns[flowTurns.length - 1].usage = data.usage || null;
     refreshFlowMeter();
     if (data.parked === true) {
-      // lr-4a：停点形——「世界在等你」态起（提示行 + 选项行 + 继续
+      // lr-4a：停点形——停点态起（候选行 + 继续
       // 钮），信保持封着在途，无回信行、无失败行（停点不是失败）。
       // lr-3R：chrome 等链讲完——postTurn 局部 worldStream 交给门。
       enterParkedRound(mine, flowTurns.length - 1, worldStream,
@@ -5493,16 +5459,13 @@ async function renderFlowHistory() {
       //（DEC-OPI-c73dbff3…114）：本轮世界帧织入在该轮用户信**之前**
       //（织入序还原——世界块与用户信相邻）；一轮多块按 world_steps
       // 序逐块渲染（world_steps 缺席 = 单帧轮，wr-8 单块原形）；过渡
-      // 句仅末块（回信缝台语义随恢复面同构）。与当轮同形、零打字机
+      // 句仅末块已随 lr-3T 缝台退役——逐块同形。与当轮同形、零打字机
       //（历史恢复是已完成事实）。
       const steps = Array.isArray(turn.world_steps) && turn.world_steps.length
         ? turn.world_steps
         : [turn.world];
-      steps.forEach((frame, frameIndex) => {
-        renderWorldStory(frame, {
-          withTransition: frameIndex === steps.length - 1,
-          beforeEl: anchor,
-        });
+      steps.forEach((frame) => {
+        renderWorldStory(frame, { beforeEl: anchor });
       });
     }
     if (turn.assistant !== null) {
@@ -5514,7 +5477,7 @@ async function renderFlowHistory() {
   buildFlowRuler();
   syncFlowMeter(data.usage);
   // lr-4a：停点轮的刷新恢复——history 的 additive 键（parked +
-  // parked_directions）在场 ⇒ 「世界在等你」态原地重建：信行（上面
+  // parked_directions）在场 ⇒ 停点态原地重建：信行（上面
   // 已渲染，封着的形态由 addLine 的素行承担——历史恢复不重演在途演
   // 出）+ 世界块（交错面已落）+ 候选补位行 + 继续钮。半轮天然容：
   // 无回信行即无回信行。

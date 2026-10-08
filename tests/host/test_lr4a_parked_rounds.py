@@ -579,8 +579,12 @@ def test_the_page_carries_the_waiting_state() -> None:
     app = (REPO / "src" / "elc" / "webui" / "app.js").read_text(
         encoding="utf-8"
     )
-    assert "故事停在这里——下一笔，由你来落。" in app
-    assert "The story rests here — the next line is yours." in app
+    # lr-3T (DEC-OPI-09b3935b…13): the waits sentence is retired — a
+    # plain stop carries no sentence (both languages, prose and key).
+    assert "故事停在这里——下一笔，由你来落。" not in app
+    assert "The story rests here — the next line is yours." not in app
+    assert "T.worldWaits" not in app
+    assert 'worldWaits: "' not in app
     assert "让世界继续" in app
     assert "Let the world go on" in app
     assert "世界已经走了很远，还没收到你的方向" in app
@@ -588,11 +592,22 @@ def test_the_page_carries_the_waiting_state() -> None:
     assert "function enterParkedRound" in app
     assert "async function postContinue" in app
     assert "if (parkedRound) postContinue();" in app
-    # The parked final's arms: no seam, no unseal, no failure line.
-    assert "worldStream.closeChain(data.parked !== true);" in app
+    # The parked final's arms: the chain close (the seam parameter is
+    # retired with lr-3T — both final shapes close identically), no
+    # unseal, no failure line.
+    assert "worldStream.closeChain();" in app
     assert "if (!(data && data.parked === true)) {" in app
     # The refresh recovery reads the additive history keys.
     assert "data.parked_directions || []" in app
+    # lr-3T: the waits chrome carries no sentence unless capped — the
+    # hint paragraph is built only inside the capped branch.
+    waits_body = app[app.index("function renderWorldWaits"):]
+    waits_body = waits_body[: waits_body.index("\nfunction ")]
+    capped_at = waits_body.index("if (capped) {")
+    hint_at = waits_body.index('createElement("p")')
+    assert capped_at < hint_at
+    assert "hint.textContent = T.worldCapped;" in waits_body
+    assert "T.worldWaits" not in waits_body
     api = (REPO / "src" / "elc" / "webui" / "api.js").read_text(
         encoding="utf-8"
     )
@@ -645,15 +660,14 @@ def test_the_parked_chrome_waits_for_the_chain_to_settle() -> None:
     assert "The world waits for your direction" not in app
     assert "世界接下来可以往哪走" not in app
     assert "Where could the world go next" not in app
-    # ⑤ The recast copy rides the T table (both languages): the hint
-    #    line carries the mood, the ask line carries the instruction.
-    assert 'worldWaits: "故事停在这里——下一笔，由你来落。"' in app
-    assert (
-        'worldWaits: "The story rests here'
-        ' — the next line is yours."' in app
-    )
-    assert 'directionAsk: "选一个走向，或自己写一个。"' in app
-    assert 'directionAsk: "Pick a direction — or write your own."' in app
+    # ⑤ lr-3T (DEC-OPI-09b3935b…13): the waits sentence and the ask
+    #    sentence are retired from the T table (both languages); the
+    #    cap sentence stays (a functional warning, not narrative prose).
+    assert 'worldWaits: "' not in app
+    assert "T.worldWaits" not in app
+    assert "T.directionAsk" not in app
+    assert "directionAsk" not in app
+    assert 'worldCapped: "世界已经走了很远，还没收到你的方向' in app
     # ⑥ The call shapes: both in-stream parked arms pass their own
     #    worldStream; the refresh recovery passes null (renders
     #    immediately, as before).
@@ -671,7 +685,8 @@ def test_the_parked_chrome_waits_for_the_chain_to_settle() -> None:
 def test_a_continue_retires_the_chrome_upfront() -> None:
     """lr-3R disposal (the live-probe find): clicking「让世界继续」
     retires the chrome up front — the world is already telling its
-    next beat, so the「故事停在这里」row and the stale candidates must
+    next beat, so the stop chrome (candidates and continue button;
+    its sentence retired by lr-3T) and the stale candidates must
     not hang on until that beat settles. The round anchor
     (``parkedRound``) stays (the in-flight continue and the failure
     recovery still read it); the not-yet-started failure arm re-aligns

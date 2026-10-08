@@ -830,22 +830,41 @@ def test_the_load_arm_triggers_reveal_without_rendering() -> None:
     assert "await loadWorldInbox" not in postturn
 
 
-def test_the_quiet_day_arm_is_pinned_in_source() -> None:
-    """The story block's two-language arms sit in the page's source:
-    the quiet-day sentence (zero notes), the fallback note's honest
-    wording, and — restored by WR-5 (DEC-OPI-8a4f980b…7) — the
-    transition sentence (the chronicle's own record of a world-internal
-    letter arriving; a presentation seam, not the world reacting). The
-    world frame's parser branch stays gone (WR-2/3)."""
+def test_the_story_block_carries_no_template_prose() -> None:
+    """lr-3T (DEC-OPI-09b3935b…13, the zero-template law): the story
+    block's presentation prose comes from the narrator alone — the
+    quiet-day sentence and the transition sentence (once restored by
+    WR-5, DEC-OPI-8a4f980b…7) are retired in both languages, keys and
+    render branches together. The fallback note's honest wording stays
+    (a system annotation, not narrative prose), the renderer stays, and
+    the world frame's parser branch is back with its producer (WR-6)."""
 
     app_source = (WEBUI / "app.js").read_text(encoding="utf-8")
-    assert "安静的一天，没什么特殊的事。" in app_source
-    assert "A quiet day, nothing out of the ordinary." in app_source
+    # The template sentences are gone from the page source — both
+    # languages, prose and key identifiers together.
+    assert "安静的一天，没什么特殊的事。" not in app_source
+    assert "A quiet day, nothing out of the ordinary." not in app_source
+    assert "Then, your letter arrives." not in app_source
+    assert "quietDay" not in app_source
+    assert "thenLetter" not in app_source
+    # The zh transition sentence is pinned on the presentation faces
+    # (the bilingual table and the renderer) rather than the whole file:
+    # the WR-5 adjudication sentence in the section header deliberately
+    # quotes it as history (lr-3T keeps historical adjudications, it
+    # only retires the live prose).
+    inbox_table = app_source[
+        app_source.index("const WORLD_INBOX_TEXT"):
+        app_source.index("function worldInboxText")
+    ]
+    renderer = app_source[
+        app_source.index("function renderWorldStory"):
+        app_source.index("async function loadWorldInbox")
+    ]
+    for face in (inbox_table, renderer):
+        assert "这时，她收到了你的来信。" not in face
+    # The honest fallback annotation and the renderer remain.
     assert "（这张便条写在世界学会中文之前——示以原文。）" in app_source
     assert "function renderWorldStory" in app_source
-    # WR-5 restores the transition sentence with the paradigm's reading.
-    assert "这时，她收到了你的来信。" in app_source
-    assert "Then, your letter arrives." in app_source
     # The world frame's parser branch is back with its producer (WR-6).
     assert 'event.type === "world"' in (
         (WEBUI / "api.js").read_text(encoding="utf-8")

@@ -86,9 +86,9 @@ def test_the_delayed_reveal_is_fully_retired() -> None:
 
 def test_the_world_frame_renders_inline_before_the_reply() -> None:
     """WR-6：世界帧当场渲染——onWorld 回调零滚动、turn 体零 inbox 读
-    （帧即呈现，load 臂只管页面装载遗留）。lr-2 真值随迁
-    （DEC-OPI-c73dbff3…114）：定版渲染不带过渡句——缝台句属链尾末
-    代，closeChain 在回信首增量/final 落定，恒先于回信首字。"""
+    （帧即呈现，load 臂只管页面装载遗留）。lr-3T 真值随迁
+    （DEC-OPI-09b3935b…13）：定版渲染不带过渡句——缝句已随缝台机构退
+    役，渲染调用零过渡参。"""
 
     app = _text("app.js")
     turn_block = app[
@@ -96,14 +96,14 @@ def test_the_world_frame_renders_inline_before_the_reply() -> None:
         app.index("async function postTeachMe")
     ]
     assert "loadWorldInbox(" not in turn_block
-    assert (
-        "renderWorldStory(event, { withTransition: false })" in turn_block
-    )
+    assert "renderWorldStory(event)" in turn_block
+    assert "withTransition" not in turn_block
     # The blocking fallback renders the payload's whole chain (lr-2:
-    # world_steps, one block per landed step, the seam on the last
-    # block only; a single frame keeps the WR-6 single-block shape).
+    # world_steps, one block per landed step; a single frame keeps the
+    # WR-6 single-block shape — the last-block-only seam is retired
+    # with lr-3T, every block renders the same shape).
     assert "const steps = Array.isArray(data.world_steps) &&" in app
-    assert "withTransition: frameIndex === steps.length - 1," in app
+    assert "withTransition" not in app
     # The renderer never scrolls (wr-5's law survives).
     renderer = app[
         app.index("function renderWorldStory"):
@@ -113,23 +113,39 @@ def test_the_world_frame_renders_inline_before_the_reply() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 2 — the retirements (WR-5 flips the transition retirement back)
+# 2 — the retirements (WR-5 restored the sentence; lr-3T retires it)
 
 
-def test_the_transition_sentence_is_restored() -> None:
-    """WR-5（DEC-OPI-8a4f980b…7，用户定向第四击）：过渡句恢复（wr-3
-    曾误退）——「这时，她收到了你的来信。」是世界编年史对一封世界内
-    信件的如实记录（信是用户角色寄入世界的事件；呈现层缝合句，非
-    「世界回应信」的剧情反应）。thenLetter 双语句、world-story-then
-    分支与 CSS 规则全部回到位。"""
+def test_the_transition_sentence_is_retired() -> None:
+    """lr-3T（DEC-OPI-09b3935b…13，呈现散文零模板律）：过渡句退役——
+    WR-5（DEC-OPI-8a4f980b…7）曾恢复的「这时，她收到了你的来信。」
+    双语句、thenLetter 键、world-story-then 段与 CSS 规则全部清出；
+    呈现散文只来自叙事者生成。中文句钉在呈现面切片（双语词表 + 渲染
+    器 + 世界流）而非全文——app.js 节头的 WR-5 历史裁决注释刻意引用该
+    句作留档（lr-3T 不重写历史裁决句，只退役现役散文）。"""
 
     app = _text("app.js")
-    assert "这时，她收到了你的来信。" in app
-    assert "Then, your letter arrives." in app
-    assert "thenLetter" in app
-    assert "world-story-then" in app
+    faces = (
+        app[
+            app.index("const WORLD_INBOX_TEXT"):
+            app.index("function worldInboxText")
+        ],
+        app[
+            app.index("function renderWorldStory"):
+            app.index("async function loadWorldInbox")
+        ],
+        app[
+            app.index("function startWorldStream() {"):
+            app.index("async function postTurn")
+        ],
+    )
+    for face in faces:
+        assert "这时，她收到了你的来信。" not in face
+    assert "Then, your letter arrives." not in app
+    assert "thenLetter" not in app
+    assert "world-story-then" not in app
     components = (WEBUI / "components.css").read_text(encoding="utf-8")
-    assert ".world-story .world-story-then {" in components
+    assert ".world-story .world-story-then {" not in components
 
 
 def test_the_onworld_frame_path_is_restored() -> None:

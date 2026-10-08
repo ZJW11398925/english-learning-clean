@@ -11,8 +11,10 @@ is one act; a ``world`` frame seals the current act; deltas after a
 seal open the next act **below** the sealed block; the serial law —
 the next act never types until the previous one has drained and been
 replaced by its authoritative render; the transition sentence (「这时，
-她收到了你的来信。」 — the reply's seam) rides **the last generation
-only**; ``world_failed`` attaches to the current act's block tail and
+她收到了你的来信。」 — the reply's seam) once rode the last generation
+only, and is retired outright by lr-3T (DEC-OPI-09b3935b…13, the
+zero-template law — the seam machinery went with it); ``world_failed``
+attaches to the current act's block tail and
 later acts keep working; the reply gate widens to "the whole chain has
 settled". The refresh-recovery face mirrors the chain: ``/api/history``
 regroups a round's revealed notes by reveal stamp (one reveal_all per
@@ -25,13 +27,11 @@ stay byte-identical). The pin groups:
    while held), the hold releases only from the previous generation's
    authoritative-replacement callback, and each act replaces its own
    block in place;
-2. **the seam on the last generation only** — the settle renders
-   without the transition sentence, ``closeChain`` fires at the reply's
-   first delta and at the final (idempotent, seam wanted), the seam
-   lands on the last authoritative block exactly when no later
-   generation is in flight (ahead of the reply's first char — the
-   append rides the same callback as the reply's first buffered push),
-   and the failure/interrupt posture closes the chain without a seam;
+2. **the seam retired, the close still gates (lr-3T)** — the settle
+   renders without the transition sentence (no source carries one),
+   ``closeChain`` keeps only the chain-closed mark and still fires at
+   the reply's first delta and at the final (ahead of the seal), and
+   the failure/interrupt posture closes the chain the same way;
 3. **the failure note, multi-generation placement** — the note attaches
    to the **current** act's block tail (stop hands the current wrap
    back), the chain stop settles every not-yet-replaced generation,
@@ -128,8 +128,8 @@ def test_the_serial_act_order_is_pinned_in_the_source() -> None:
     # fast shape the acts after the next one are already open when an
     # earlier act settles, and releasing by ``current`` would skip the
     # middle act forever — the live probe caught exactly that shape).
-    concluded = stream[stream.index("concluded(gen, fresh) {") :]
-    concluded = concluded[: concluded.index("closeChain(withSeam) {")]
+    concluded = stream[stream.index("concluded(gen) {") :]
+    concluded = concluded[: concluded.index("closeChain() {")]
     assert "gen.replaced = true;" in concluded
     assert "if (state.current === gen) state.current = null;" in concluded
     assert 'state.generations.find((g) => g.held);' in concluded
@@ -141,77 +141,58 @@ def test_the_serial_act_order_is_pinned_in_the_source() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 2 — the seam on the last generation only (VAL ③'s 过渡句仅末幕)
+# 2 — the seam retired, the close still gates (lr-3T's zero-template law)
 
 
-def test_the_transition_sentence_rides_only_the_last_generation() -> None:
-    """过渡句仅链尾末代：定版渲染一律不带缝台句（withTransition:
-    false）；closeChain 四触点——回信首增量（先于 typing.push）与
-    final（先于 seal）点缝、失败与中断走 stop 内部的 closeChain
-    (false)（无缝可缝——失败注是诚实尾注）；缝台只落在「末代权威块
-    替换落地且无在途代」的时刻（幂等）；走向行在场则插其前——块内
-    序与 renderWorldStory 一致（过渡句、走向行、回信）。"""
+def test_the_seam_mechanism_is_retired_and_the_close_still_gates() -> None:
+    """lr-3T（DEC-OPI-09b3935b…13，呈现散文零模板律）：缝台机构随过渡句
+    整体退役——点缝函数、单向缝标记、带参收口在源里零残留，页面上再无
+    world-story-then 段与 thenLetter 句；closeChain 只保留收口语义
+    （chainClosed 置位，wr-11/lr-2 的 settled 判据零变化），四触点同
+    前——回信首增量（先于 typing.push）、final（先于 seal）、失败与
+    中断走 stop 内部；缝参退役后停点形与回信形同收（chainClosed 本就
+    两形同置）。"""
 
     app = _app_source()
+    # Zero residue: no seam mechanism, no seam paragraph, no seam
+    # sentence — anywhere in the page source.
+    for gone in (
+        "appendSeam",
+        "seamWanted",
+        "seamDone",
+        "withSeam",
+        "withTransition",
+        "world-story-then",
+        "thenLetter",
+    ):
+        assert gone not in app
     stream = _slice(app, "function startWorldStream() {", "\nfunction ")
-    seam = stream[stream.index("const appendSeam = () => {") :]
-    seam = seam[: seam.index("// 链收口")]
-    # The seam lands only when the chain is closed, a seam was wanted,
-    # and no later generation is in flight — the last act's block.
-    assert (
-        "if (state.seamDone || !state.seamWanted || !state.chainClosed)"
-        " return;" in seam
-    )
-    assert "if (state.current !== null) return;" in seam
-    assert 'block.querySelector(".world-direction-row")' in seam
-    assert "block.insertBefore(then, row)" in seam
-    assert "world-story-then" in seam
-    assert "worldInboxText().thenLetter" in seam
-    assert "textContent" in seam
-    # The clean-close marking is the only seam-wanted writer.
-    closer = stream[stream.index("const closeChain = (withSeam) => {") :]
+    closer = stream[stream.index("const closeChain = () => {") :]
     closer = closer[: closer.index("return {")]
-    assert "if (withSeam) state.seamWanted = true;" in closer
-    assert "appendSeam();" in closer
-    # 处置刀（评审 F9 裁决落地）：seamWanted 单向——失败/中断触点
-    # （closeChain(false)）从不撤销已点的缝。失败链上回信照到 ⇒ 首增
-    # 量触点 closeChain(true) 重开缝 ⇒ 缝台照落（缝台缝合的是回信与
-    # 世界流，非链的成功；世界某步拒收是另一拍，失败注已诚实标注）。
-    assert "state.seamWanted = false" not in closer, (
-        "seamWanted must be one-way — a false close never revokes a "
-        "seam the reply's arrival has earned"
-    )
-    assert closer.count("seamWanted") == 1, (
-        "the closer writes seamWanted exactly once (the one-way mark)"
-    )
-    # The chain stop closes without a seam (failWorld / interrupt arm) —
-    # never revoking one the reply's arrival has already marked.
+    # The close keeps exactly one job: the chain-closed mark (the gate's
+    # first half). Nothing renders at the touchpoint.
+    assert "state.chainClosed = true;" in closer
+    assert "createElement" not in closer
+    assert "textContent" not in closer
+    # The chain stop closes too (failWorld / interrupt arm).
     stop = stream[stream.index("stop() {") :]
     stop = stop[: stop.index("if (gen === null) return null;")]
-    assert "closeChain(false);" in stop
-    assert "seamWanted" not in stop, (
-        "the stop arm must not touch the seam mark"
-    )
-    # The live触点: the reply's first delta closes the chain (and lands
-    # the seam) before the reply's first push; the final closes it
-    # before the seal (the zero-delta arms — both closes ahead of any
-    # reply text). lr-4a (DEC-OPI-c73dbff3…128): the final's seam is
-    # **conditional** — a parked final (the letter has not arrived) is
-    # closeChain(false): the transition sentence is the reply's seam and
-    # the round is still waiting; every non-parked final keeps the
-    # literal-true close (the second close rides the conditional, ahead
-    # of the seal as before).
+    assert "closeChain();" in stop
+    # The live touchpoints: the reply's first delta closes the chain
+    # before the reply's first push; the final closes before the seal
+    # (the parked conditional is gone with the seam — both final shapes
+    # close identically).
     postturn = app[
         app.index("async function postTurn") :
         app.index("async function postTeachMe")
     ]
     delta_cb = postturn[postturn.index("(chunk) => {") :]
     delta_cb = delta_cb[: delta_cb.index("typing.push(chunk);")]
-    assert "worldStream.closeChain(true);" in delta_cb
-    assert "worldStream.closeChain(data.parked !== true);" in postturn
-    first_close = postturn.index("worldStream.closeChain(true);")
+    assert "worldStream.closeChain();" in delta_cb
+    assert "worldStream.closeChain();" in postturn
+    first_close = postturn.index("worldStream.closeChain();")
     second_close = postturn.index(
-        "worldStream.closeChain(data.parked !== true);", first_close + 1
+        "worldStream.closeChain();", first_close + 1
     )
     assert second_close < postturn.index("await typing.seal(")
 
@@ -413,21 +394,21 @@ def test_history_buckets_regroup_by_reveal_stamp() -> None:
     assert 'turn["world_steps"] = steps' in caller
 
 
-def test_the_seam_inserts_before_the_direction_row() -> None:
-    """缝台×走向行块内序（wr-10 资产交互）：appendSeam 在走向行在场时
-    插其**前**——块内序与 renderWorldStory 一致（过渡句、走向行、回
-    信）；零走向行则 append 块尾。走向行专属 CSS 未落（P13 仍留——
-    本刀零触碰样式，chip 复用现役类）。"""
+def test_the_story_block_orders_notes_then_direction_row() -> None:
+    """lr-3T 块内序（缝台退役后的诚实空形态）：故事块 = 日期行、叙述段
+    （含 fallback 小字）、走向行——再无过渡句位；走向行在场则随块尾
+    渲染（wr-10 资产交互原序保留：走向行、回信）。零滚动劫持与
+    textContent 纪律照旧。"""
 
     app = _app_source()
-    stream = _slice(app, "function startWorldStream() {", "\nfunction ")
-    seam = stream[stream.index("const appendSeam = () => {") :]
-    seam = seam[: seam.index("// 链收口")]
-    insert_at = seam.index("block.insertBefore(then, row);")
-    append_at = seam.index("block.appendChild(then);")
-    guard = seam.index('block.querySelector(".world-direction-row")')
-    assert guard < insert_at < append_at
-    assert "const row = " in seam
+    renderer = app[app.index("function renderWorldStory") :]
+    renderer = renderer[: renderer.index("async function loadWorldInbox")]
+    date_at = renderer.index("world-story-date")
+    notes_at = renderer.index("world-story-note")
+    row_at = renderer.index("renderWorldDirectionRow(event.directions)")
+    assert date_at < notes_at < row_at
+    assert "world-story-then" not in renderer
+    assert "window.scrollTo" not in renderer
 
 
 def test_a_blocking_multi_step_round_rides_world_steps(

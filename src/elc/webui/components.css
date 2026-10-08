@@ -1579,8 +1579,9 @@ h1, .grouphead, .note-head b { text-wrap: balance; }
    信流里的内联故事块），其样式段与 DOM 同刀清出；.world-story 世界
    故事块（DEC-…82/…88/…90/…92；WR-3 处置随迁）：日期行一枚弱墨小字
    （原组题家族语汇续用），叙述段落走正文排印，fallback 小字随块——
-   过渡句的行与规则随 wr-3 与范式一并清出（其唯一 DOM 生产者已退役，
-   样式段与 DOM 同刀清出的纪律自引兑现）。纸墨令牌 var() 引用，零新
+   过渡句的行与规则（wr-5 曾自 wr-3 清出后恢复）已随 lr-3T（DEC-
+   OPI-09b3935b…13，呈现散文零模板律）再次清出：唯一 DOM 生产者退
+   役，样式段与 DOM 同刀清出的纪律自引兑现。纸墨令牌 var() 引用，零新
    令牌；间距值沿用既有档。 */
 .world-story { margin: 24px 0 0; }
 .world-story .world-story-date {
@@ -1595,12 +1596,6 @@ h1, .grouphead, .note-head b { text-wrap: balance; }
   line-height: var(--lh-body);
 }
 .world-story .world-story-fallback { margin: 0 0 4px; }
-.world-story .world-story-then {
-  margin: 0 0 4px;
-  font-size: var(--fs-small);
-  line-height: var(--lh-small);
-  color: var(--ink-faint);
-}
 /* ── lr-3（DEC-OPI-17b0a47f…7）：走向行专属样式（P13 兑现）──────────
    走向行自此有自己的样式段（wr-10 曾复用 .chip 家族——在册 Revisit
    随刀转真）：row 一枚弱发丝线分隔的块；候选项续用弱墨小字边框态的

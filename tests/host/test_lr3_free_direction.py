@@ -551,11 +551,13 @@ def test_the_page_carries_the_free_input_form() -> None:
     assert "Set this direction" in app
     assert "你的走向已记下：" in app
     assert "Your direction is set: " in app
-    # The ask sentence names the second door, both languages. lr-3R
-    # (DEC-OPI-09b3935b…1): recast — the ask line carries the
-    # instruction only, no double question.
-    assert "选一个走向，或自己写一个。" in app
-    assert "or write your own." in app
+    # lr-3T (DEC-OPI-09b3935b…13, the zero-template law): the ask
+    # sentence is retired — the row is the candidates plus the free
+    # form, and the input placeholder carries the affordance (pinned
+    # above, both languages).
+    assert "选一个走向，或自己写一个。" not in app
+    assert "or write your own." not in app
+    assert "T.directionAsk" not in app
     # The postContinue law rides both doors now.
     assert app.count("if (parkedRound) postContinue();") == 2
     # P13: the row's own classes; no chip reuse in the direction code.
