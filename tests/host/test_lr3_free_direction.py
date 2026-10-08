@@ -626,6 +626,11 @@ def test_the_sheet_declares_the_row_s_own_styles() -> None:
     assert "display: block" in label_body and "display: block" in hint_body
     assert "font-weight: 600" in label_body
     assert "margin: var(--sp-1) 0 0" in hint_body
+    # 处置补（总控目验抓到尺寸倒挂）：label 是主行、hint 是注行——
+    # 字号不许倒挂（.note 的 t-note 是 14.5px fs-small，比 chip 底字
+    # 12.5px fs-ui 还大，hint 若不显式降档反而成为 chip 里最大的字）。
+    assert "font-size: var(--fs-small)" in label_body
+    assert "font-size: var(--fs-ui)" in hint_body
     # 反白保护：label 不显式设色——按钮态色由继承承担，显式 color 破 --on 反白。
     assert "color" not in label_body
 
