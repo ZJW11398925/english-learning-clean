@@ -3004,10 +3004,15 @@ const WORLD_INBOX_TEXT = {
     // （已显示的那段没记进编年史——渲染先行、持久殿后、拒收不撒谎）。
     worldRunning: "世界运转中…",
     worldFailed: "世界的这段没能留住——这一轮没记进编年史。",
-    // wr-10（DEC-OPI-c73dbff3…64）：走向选项行的两句 chrome——块尾的
-    // 提问行（可不选=世界自主）与选择没存上的人话。
-    directionAsk: "世界接下来可以往哪走？选一个方向，也可以不选。",
+    // wr-10（DEC-OPI-c73dbff3…64）：走向选项行的 chrome——块尾的提问
+    // 行与选择没存上的人话。lr-3（DEC-OPI-17b0a47f…7）：候选之外还有
+    // 自由输入形——提问句改为「或自己写一个走向」，输入占位、寄送钮、
+    // 记下前缀句三件随行。
+    directionAsk: "世界接下来可以往哪走？选一个方向，或自己写一个走向。",
     directionMiss: "没存上——稍后再试一次。",
+    directionFreePlaceholder: "自己写一个走向……",
+    directionSendLabel: "记下这条走向",
+    directionParked: "你的走向已记下：",
     // lr-4a（DEC-OPI-c73dbff3…128）：停点轮的三句 chrome——「世界在等
     // 你」停点提示句（双语）、继续钮、方向缺位防上限句与继续失败句。
     worldWaits: "世界在等你决定下一步——选一个走向，或让它自己走。",
@@ -3022,9 +3027,16 @@ const WORLD_INBOX_TEXT = {
     worldRunning: "The world is turning…",
     worldFailed: "This passage of the world could not be kept —"
       + " it was not written into the chronicle.",
+    // wr-10: the direction row's chrome (the ask sentence and the miss
+    // sentence). lr-3: the free-input shape rides beside the candidates
+    // — the ask sentence, the input placeholder, the send button and
+    // the parked-prefix sentence, all bilingual.
     directionAsk: "Where could the world go next? Pick a direction,"
-      + " or none.",
+      + " or write your own.",
     directionMiss: "Could not save it — try again shortly.",
+    directionFreePlaceholder: "Write your own direction…",
+    directionSendLabel: "Set this direction",
+    directionParked: "Your direction is set: ",
     // lr-4a: the parked round's chrome (the waits sentence, the continue
     // button, the cap sentence and the miss sentence).
     worldWaits: "The world waits for your direction — pick one, or let"
@@ -3087,12 +3099,17 @@ function parlorWorldText(lang) {
 // 日期只来自服务的 date_localized。
 // ── wr-10（DEC-OPI-c73dbff3…64）：走向选项行────────────────────────
 // 世界块尾的选项行（导演模式 world 帧 directions 在场时渲染）：提问行
-// + 每候选一枚 chip（label 主词 + hint 小字）。**可不选**——不选 = 世
-// 界自主，选项随下一轮自然过期；点选 POST /api/world/direction 存待用
-// （后选覆盖前选），选中态 = chip--on + aria-pressed。零滚动劫持
-// （wr-5 律——渲染不动视口，点击不拽屏）；文字一律 textContent（XSS
-// 面）。样式钩子只复用现役类（chip/chip--on/note——components.css 的
-// 走向行专属样式未落，Revisit：dogfood 信号后随 CSS 刀补）。
+// + 每候选一枚自有样式的选项钮（label 主词 + hint 小字）。**可不选**
+// ——不选 = 世界自主，选项随下一轮自然过期；点选 POST
+// /api/world/direction 存待用（后选覆盖前选），选中态 =
+// world-direction-option--on + aria-pressed。lr-3（DEC-OPI-17b0a47f…7）
+// ：候选之外还有**自由输入形**——input + 寄送钮，提交 {text}（trim
+// 空白不发；服务端 strip 非空白 + ≤200 白名单），成功即落「你的走向
+// 已记下：{text}」行（消费可见——P14 族）+ 退选全部候选 + 停点在场
+// 即续链一步（与候选点选同律）。零滚动劫持（wr-5 律——渲染不动视口，
+// 点击不拽屏）；文字一律 textContent（XSS 面）。样式钩子自有（
+// world-direction-* 家族——P13：走向行专属样式已落 components.css，
+// 不再借 .chip 类名；note 仍是全站弱墨小字基类，不算专属复用）。
 let liveWorldDirectionRow = null;
 
 function expireWorldDirectionRow() {
@@ -3118,12 +3135,21 @@ function renderWorldDirectionRow(directions) {
   row.appendChild(caption);
   const opts = document.createElement("div");
   opts.className = "world-direction-options";
+  const showMiss = (data) => {
+    let miss = row.querySelector(".world-direction-miss");
+    if (!miss) {
+      miss = document.createElement("p");
+      miss.className = "note world-direction-miss";
+      row.appendChild(miss);
+    }
+    miss.textContent = (data && data.error) || T.directionMiss;
+  };
   for (const candidate of directions) {
     const label = String((candidate && candidate.label) ?? "");
     const hint = String((candidate && candidate.hint) ?? "");
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "chip world-direction-option";
+    button.className = "world-direction-option";
     button.setAttribute("aria-pressed", "false");
     const main = document.createElement("span");
     main.className = "world-direction-option-label";
@@ -3143,22 +3169,16 @@ function renderWorldDirectionRow(directions) {
         data = null;
       }
       if (!data || !data.accepted) {
-        let miss = row.querySelector(".world-direction-miss");
-        if (!miss) {
-          miss = document.createElement("p");
-          miss.className = "note world-direction-miss";
-          row.appendChild(miss);
-        }
-        miss.textContent = (data && data.error) || T.directionMiss;
+        showMiss(data);
         return;
       }
-      // 选中态：本枚 chip--on + aria-pressed，兄弟退选（后选覆盖前选
-      // 是服务端语义——同一待用键）；不阻止再点别的枚改主意。
+      // 选中态：本枚落墨 + aria-pressed，兄弟退选（后选覆盖前选是服
+      // 务端语义——同一待用键）；不阻止再点别的枚改主意。
       opts.querySelectorAll(".world-direction-option").forEach((other) => {
-        other.classList.remove("chip--on");
+        other.classList.remove("world-direction-option--on");
         other.setAttribute("aria-pressed", "false");
       });
-      button.classList.add("chip--on");
+      button.classList.add("world-direction-option--on");
       button.setAttribute("aria-pressed", "true");
       // lr-4a：停点轮的选向就是下一步——点选存好待用走向后**立刻续链
       // 一步**（选向 ⇒ continue；世界走这一步，然后又停或信到）。
@@ -3167,6 +3187,52 @@ function renderWorldDirectionRow(directions) {
     opts.appendChild(button);
   }
   row.appendChild(opts);
+  // lr-3：自由输入形——候选是灵感菜单，用户自己写的走向是另一扇门。
+  // trim 空白不发；存上即记下行（消费可见）+ 候选退选 + 停点在场续链。
+  const free = document.createElement("div");
+  free.className = "world-direction-free";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "world-direction-free-input";
+  input.placeholder = T.directionFreePlaceholder;
+  input.maxLength = 200;
+  const send = document.createElement("button");
+  send.type = "button";
+  send.className = "world-direction-option world-direction-send";
+  send.textContent = T.directionSendLabel;
+  send.addEventListener("click", async () => {
+    const value = input.value.trim();
+    if (!value) return;
+    let data = null;
+    try {
+      data = await fetchSaveWorldDirection({ text: value });
+    } catch {
+      data = null;
+    }
+    if (!data || !data.accepted) {
+      showMiss(data);
+      return;
+    }
+    // 记下行（一次一枚——后写覆盖前写的页面读法）。
+    let parked = row.querySelector(".world-direction-parked");
+    if (!parked) {
+      parked = document.createElement("p");
+      parked.className = "note world-direction-parked";
+      row.appendChild(parked);
+    }
+    parked.textContent = T.directionParked + value;
+    // 自由走向落定：候选退选（后写覆盖前选是服务端语义——同一键）。
+    opts.querySelectorAll(".world-direction-option").forEach((other) => {
+      other.classList.remove("world-direction-option--on");
+      other.setAttribute("aria-pressed", "false");
+    });
+    input.value = "";
+    // lr-4a 同律：停点轮的走向就是下一步——存好待用走向后立刻续链。
+    if (parkedRound) postContinue();
+  });
+  free.appendChild(input);
+  free.appendChild(send);
+  row.appendChild(free);
   liveWorldDirectionRow = row;
   return row;
 }

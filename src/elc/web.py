@@ -2266,13 +2266,15 @@ _WORLD_DIRECTION_MODE_GRAMMAR = (
     + " | ".join(_WORLD_DIRECTION_MODE_WORDS) + "}"
 )
 
-#: The direction-choice write's 400 sentence: the two-key shape (the
-#: candidate's own fields) or the empty body that clears the pending
-#: choice. Lengths cap what a hand-rolled request can park in the
-#: prompt (the provider write's own caps posture).
+#: The direction-choice write's 400 sentence (lr-3, DEC-OPI-17b0a47f…7):
+#: the three shapes — the free-text direction, the candidate's own two
+#: fields, or the empty body that clears the pending choice. Lengths
+#: cap what a hand-rolled request can park in the prompt (the provider
+#: write's own caps posture).
 _WORLD_DIRECTION_GRAMMAR = (
-    'need a JSON body {"label": <short phrase, at most 80 characters>,'
-    ' "hint": <one sentence, at most 200 characters>}'
+    'need a JSON body {"text": <your own direction, at most 200'
+    ' characters>} — or {"label": <short phrase, at most 80'
+    ' characters>, "hint": <one sentence, at most 200 characters>}'
     " — or an empty {} to clear the pending choice"
 )
 
@@ -2289,6 +2291,12 @@ _APP_SETTING_WORLD_PENDING_DIRECTION_PREFIX = "world_pending_direction:"
 #: own numbers, spelled once).
 _WORLD_DIRECTION_LABEL_CAP = 80
 _WORLD_DIRECTION_HINT_CAP = 200
+
+#: The free-text direction's own cap (lr-3, DEC-OPI-17b0a47f…7 — the
+#: grammar line's own number, spelled once; the narrator's prompt
+#: builder re-checks the same bound, so a wider row cannot reach the
+#: prompt through this door).
+_WORLD_DIRECTION_TEXT_CAP = 200
 
 #: The world step chain's defensive ceiling (lr-1, DEC-OPI-c73dbff3…95).
 #: **A safety line, never a narrative rule** — the narrator is asked (in
@@ -3549,7 +3557,12 @@ class _WebFace:
         into the **first** step's prompt (consumed on its success, the
         wr-10 消费即清 law untouched) and renders each step's own
         candidates on that step's frame; ``immersive``, the default,
-        passes neither. The answer's returns:
+        passes neither. lr-3 (DEC-OPI-17b0a47f…7) widens the pending
+        read to its two shapes: a picked candidate rides as
+        ``pending_direction``, the user's own written text rides as
+        ``free_direction`` — both the director's input, both consumed
+        on the first landing step, neither ever a letter. The answer's
+        returns:
         ``([frame, …], stop_word_or_None, failed_after_shown)`` — the
         frames in landing order, the chain's tail signal word (lr-2's
         raw material; ``None`` = the chain ended without one: a quiet
@@ -3592,6 +3605,20 @@ class _WebFace:
             if mode == "directed"
             else None
         )
+        # lr-3 (DEC-OPI-17b0a47f…7): the pending direction comes in two
+        # shapes — a picked candidate or the user's own written text —
+        # and they ride different prompt doors: the candidate stays
+        # ``pending_direction``, the text rides ``free_direction``.
+        # Either shape is the director's input (never a letter); the
+        # consumption below clears both the same (选了即用即清).
+        pending_choice: tuple[str, str] | None = None
+        free_direction: str | None = None
+        if pending is not None:
+            kind, value = pending
+            if kind == "free" and isinstance(value, str):
+                free_direction = value
+            elif isinstance(value, tuple):
+                pending_choice = value
         # lr-1: the letter's journey, as the world's own calendar tells
         # it. The chain's first step reads the story's furthest stamped
         # day as the day the letter was sent; every step's elapsed is
@@ -3634,7 +3661,8 @@ class _WebFace:
                         else None
                     ),
                     direction_mode=mode,
-                    pending_direction=pending,
+                    pending_direction=pending_choice,
+                    free_direction=free_direction,
                     on_directions=step_directions.extend,
                     letter_elapsed_days=elapsed_days,
                     on_stop=signals.append,
@@ -3662,11 +3690,12 @@ class _WebFace:
                 # the chain simply ends with what landed before.
                 break
             if pending is not None:
-                # 选了即用即清 (wr-10): the choice rode into this
-                # chain's first prompt and the step succeeded — the
-                # pending row is consumed and the rest of the chain
-                # turns without it. Every quiet or refused arm broke
-                # above, so 拒收/安静不清 stands.
+                # 选了即用即清 (wr-10; lr-3's two shapes alike): the
+                # director's input rode into this chain's first prompt
+                # and the step succeeded — the pending row is consumed
+                # and the rest of the chain turns without it. Every
+                # quiet or refused arm broke above, so 拒收/安静不清
+                # stands.
                 self._host.app_settings.delete(
                     _world_pending_direction_key(world_id)
                 )
@@ -3754,11 +3783,15 @@ class _WebFace:
 
     def _world_pending_direction(
         self, world_id: str
-    ) -> tuple[str, str] | None:
-        """The bound world's pending ``(label, hint)`` (wr-10), parsed
-        defensively: only a row the write face could have written
-        answers; a missing, corrupt or oddly-shaped row is an absent
-        choice — never a guess, never a crash."""
+    ) -> tuple[str, tuple[str, str] | str] | None:
+        """The bound world's pending direction (wr-10; lr-3's two
+        shapes), parsed defensively: a candidate row — the legacy
+        ``{"label", "hint"}`` or the marked
+        ``{"label", "hint", "source": "candidate"}`` — answers
+        ``("candidate", (label, hint))``; a free-text row
+        (``{"text", "source": "free"}``) answers ``("free", text)``.
+        A missing, corrupt or oddly-shaped row is an absent direction
+        — never a guess, never a crash."""
 
         raw = self._host.app_settings.get(
             _world_pending_direction_key(world_id)
@@ -3769,18 +3802,30 @@ class _WebFace:
             parsed = json.loads(raw)
         except json.JSONDecodeError:
             return None
-        if not isinstance(parsed, dict) or set(parsed) != {"label", "hint"}:
+        if not isinstance(parsed, dict):
             return None
-        label = parsed["label"]
-        hint = parsed["hint"]
-        if not (
-            isinstance(label, str)
-            and bool(label)
-            and isinstance(hint, str)
-            and bool(hint)
-        ):
-            return None
-        return (label, hint)
+        keys = set(parsed)
+        if keys in ({"label", "hint"}, {"label", "hint", "source"}):
+            if keys == {"label", "hint", "source"} and (
+                parsed["source"] != "candidate"
+            ):
+                return None
+            label = parsed["label"]
+            hint = parsed["hint"]
+            if not (
+                isinstance(label, str)
+                and bool(label)
+                and isinstance(hint, str)
+                and bool(hint)
+            ):
+                return None
+            return ("candidate", (label, hint))
+        if keys == {"text", "source"} and parsed["source"] == "free":
+            text = parsed["text"]
+            if not (isinstance(text, str) and bool(text)):
+                return None
+            return ("free", text)
+        return None
 
     def _note_narration(
         self,
@@ -6231,14 +6276,19 @@ class _WebFace:
         return status, body
 
     def world_direction_save(self, payload: Any) -> tuple[int, dict[str, Any]]:
-        """The direction-choice write (wr-10): the user picked one
-        candidate — ``{"label", "hint"}`` parks it under the bound
-        world's pending key (a later choice overwrites the earlier one);
-        the empty body ``{}`` clears it. The **next** world step
-        carries it into the narrator's prompt (the director's input —
-        the direction channel, never a letter) and consumes it on
-        success (选了即用即清); a refused or quiet step leaves it
-        parked. A conversation bound to no world is the honest 404."""
+        """The direction-choice write (wr-10; lr-3, DEC-OPI-17b0a47f…7
+        adds the free-text shape): ``{"text"}`` — the user's **own
+        written** direction (strip-nonblank, at most 200 characters) —
+        parks under the bound world's pending key marked
+        ``source: "free"``; ``{"label", "hint"}`` parks a picked
+        candidate marked ``source: "candidate"``; either later write
+        overwrites the earlier one (one row, the newest call); the
+        empty body ``{}`` clears it, idempotently. The **next** world
+        step carries either shape into the narrator's prompt (the
+        director's input — the direction channel, never a letter) and
+        consumes it on success (选了即用即清); a refused or quiet step
+        leaves it parked. A conversation bound to no world is the
+        honest 404."""
 
         binding = self._world_binding()
         if binding is None:
@@ -6255,7 +6305,30 @@ class _WebFace:
                 _world_pending_direction_key(world_id)
             )
             return (200, {"accepted": True, "cleared": True, "error": None})
-        if set(payload) != {"label", "hint"}:
+        keys = set(payload)
+        if keys == {"text"}:
+            # lr-3's free-text arm: the user's own written direction —
+            # the candidate's own strip-nonblank and cap law, stored
+            # under the same key with its own source word (the read
+            # face tells the two shapes apart by it).
+            text = payload["text"]
+            if not (
+                isinstance(text, str)
+                and text.strip()
+                and len(text) <= _WORLD_DIRECTION_TEXT_CAP
+            ):
+                return (
+                    400,
+                    {"accepted": False, "error": _WORLD_DIRECTION_GRAMMAR},
+                )
+            self._host.app_settings.set(
+                _world_pending_direction_key(world_id),
+                json.dumps(
+                    {"text": text, "source": "free"}, ensure_ascii=False
+                ),
+            )
+            return (200, {"accepted": True, "cleared": False, "error": None})
+        if keys != {"label", "hint"}:
             return (
                 400,
                 {"accepted": False, "error": _WORLD_DIRECTION_GRAMMAR},
@@ -6276,7 +6349,10 @@ class _WebFace:
             )
         self._host.app_settings.set(
             _world_pending_direction_key(world_id),
-            json.dumps({"label": label, "hint": hint}, ensure_ascii=False),
+            json.dumps(
+                {"label": label, "hint": hint, "source": "candidate"},
+                ensure_ascii=False,
+            ),
         )
         return (200, {"accepted": True, "cleared": False, "error": None})
 
@@ -6629,9 +6705,12 @@ class _WebFace:
                 )
                 if pending is None and int(row["stops"]) >= MAX_PARKED_STOPS:
                     # R7's directionless crank ceiling: the world stops
-                    # answering bare continues — a direction (or a new
-                    # letter) moves it. The parked final says so via
-                    # ``capped`` (the caller reads the row).
+                    # answering bare continues — a direction (either
+                    # lr-3 shape: a picked candidate or the user's own
+                    # written text — the read answers non-None for
+                    # both) or a new letter moves it. The parked final
+                    # says so via ``capped`` (the caller reads the
+                    # row).
                     row["capped"] = True
                     return [], None, False
             frames, stop, failed = self._world_step_frame(

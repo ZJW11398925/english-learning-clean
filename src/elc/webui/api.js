@@ -332,9 +332,11 @@ export function fetchSaveWorldDirectionMode(word) {
                   { world_direction_mode: word });
 }
 
-/** 选一个走向（wr-10）：{label, hint} 存为待用——下一次世界步把它带
- *  进叙事 prompt（导演输入，非信）并随成功消费即清（拒收/安静仍留）；
- *  后选覆盖前选；空体 {} = 清除待用。 */
+/** 选一个走向（wr-10；lr-3 自由文本形）：两形 payload——{label, hint}
+ *  存 picked 候选（source:"candidate"），{text} 存自己写的走向
+ *  （strip 非空白、≤200，source:"free"）——同键待用，后写覆盖前写；
+ *  下一次世界步把任一形带进叙事 prompt（导演输入，非信）并随成功
+ *  消费即清（拒收/安静仍留）；空体 {} = 清除待用。 */
 export function fetchSaveWorldDirection(payload) {
   return postJson("/api/world/direction", payload);
 }

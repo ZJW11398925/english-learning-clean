@@ -1601,3 +1601,53 @@ h1, .grouphead, .note-head b { text-wrap: balance; }
   line-height: var(--lh-small);
   color: var(--ink-faint);
 }
+/* ── lr-3（DEC-OPI-17b0a47f…7）：走向行专属样式（P13 兑现）──────────
+   走向行自此有自己的样式段（wr-10 曾复用 .chip 家族——在册 Revisit
+   随刀转真）：row 一枚弱发丝线分隔的块；候选项续用弱墨小字边框态的
+   家族语汇但自有声明（不再借 .chip 类名）；自由输入形（下划线输入 +
+   寄送钮）与记下行同段。纸墨令牌 var() 引用，零新令牌、零新动效
+   （过渡沿用 micro 档）；间距走 --sp 档。触屏律：悬停态只活在
+   这层包裹里。 */
+.world-direction-row {
+  margin: var(--sp-4) 0 0;
+  padding: var(--sp-3) 0 0;
+  border-top: 1px solid var(--rule-soft);
+}
+.world-direction-row .world-direction-options {
+  display: flex; flex-wrap: wrap; gap: var(--sp-2);
+  margin: 0 0 var(--sp-2);
+}
+.world-direction-option {
+  font-family: var(--f-sans); font-size: var(--fs-ui);
+  line-height: var(--lh-ui); letter-spacing: var(--ls-ui);
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--rule); background: none;
+  color: var(--ink-soft); text-align: left;
+  transition: border-color var(--dur-micro) var(--ease-press),
+              color var(--dur-micro) var(--ease-press),
+              background-color var(--dur-micro) var(--ease-press);
+}
+.world-direction-option--on {
+  border-color: var(--ink); color: var(--bg); background: var(--ink);
+}
+.world-direction-option[disabled] { opacity: 0.4; pointer-events: none; }
+.world-direction-option:active { transform: translateY(1px); }
+@media (hover: hover) {
+  .world-direction-option:not(.world-direction-option--on):hover {
+    border-color: var(--ink-soft); color: var(--ink);
+  }
+}
+.world-direction-free { display: flex; gap: var(--sp-2);
+  align-items: flex-end; margin: 0 0 var(--sp-2); }
+.world-direction-free .world-direction-free-input {
+  flex: 1; min-width: 0; border: 0;
+  border-bottom: 1px solid var(--rule-soft);
+  background: none; outline: none; padding: var(--sp-1) 0;
+  font-family: var(--f-serif); font-size: var(--fs-small);
+  line-height: var(--lh-small); color: var(--ink);
+}
+.world-direction-free .world-direction-free-input::placeholder {
+  color: var(--ink-faint); font-family: var(--f-sans);
+  font-size: var(--fs-small);
+}
+.world-direction-parked { margin: var(--sp-1) 0 0; }

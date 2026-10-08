@@ -273,6 +273,7 @@ def run_generated_step(
     ) = None,
     letter_elapsed_days: int | None = None,
     on_stop: Callable[[StopSignal | None], None] | None = None,
+    free_direction: str | None = None,
 ) -> Result[tuple[WorldEvent, ...]]:
     """The production world step (WR-2, DEC-OPI-5fc42174…49; WR-4
     correction …58): the narrator's beats out, the chronicle and the
@@ -316,6 +317,16 @@ def run_generated_step(
     (DEC-OPI-c73dbff3…128) gave directed mode the stop-round
     semantics, and its chain runs one step per request and parks —
     this layer neither knows nor cares which).
+
+    lr-3 (DEC-OPI-17b0a47f…7, the director's free-input channel):
+    ``free_direction`` — the user's **own written** direction, the
+    free-text shape of the same 走向 channel (the candidates the
+    narrator offers stay the inspiration menu beside it — both doors
+    coexist; the written text is the call itself) — rides to the
+    prompt as its own section, the candidate section's sibling.
+    ``None`` (the default) runs the step byte for byte as before
+    lr-3 (the zero-change default, the wr-10 posture again); the
+    strict parse and the durable half read nothing of it.
 
     The order: the narrator first (compose, one provider call —
     blocking, or streamed through the provider's optional face when
@@ -403,6 +414,7 @@ def run_generated_step(
         direction_mode=direction_mode,
         pending_direction=pending_direction,
         letter_elapsed_days=letter_elapsed_days,
+        free_direction=free_direction,
     )
     if isinstance(generated, Err):
         if generated.error.message == REASON_NOT_CONFIGURED:

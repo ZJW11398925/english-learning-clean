@@ -179,12 +179,19 @@ def test_the_direction_choice_parks_overwrites_and_clears(
             "cleared": False,
             "error": None,
         }
+        # lr-3（DEC-OPI-17b0a47f…7）随迁（增强向）：新写行带诚实的
+        # ``source`` 标记——候选形是 "candidate"（自由文本形是 "free"，
+        # 由 test_lr3_free_direction.py 钉）。
         rows = _pending_rows(tmp_path / "app.db")
         assert rows == [
             (
                 _PENDING_PREFIX + WORLD_ID,
                 json.dumps(
-                    {"label": "the fair arrives", "hint": "Tents dot the meadow."},
+                    {
+                        "label": "the fair arrives",
+                        "hint": "Tents dot the meadow.",
+                        "source": "candidate",
+                    },
                     ensure_ascii=False,
                 ),
             )

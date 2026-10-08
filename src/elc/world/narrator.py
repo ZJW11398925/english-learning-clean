@@ -37,7 +37,11 @@ an optional ``directions`` array beside ``beats`` — the direction
 candidates (走向) the director's seat asked for: zero (or no key at all
 — the immersive shape), or two to four candidates, each exactly
 ``label`` (a short phrase) and ``hint`` (one sentence of how the world
-might go). lr-1 (DEC-OPI-c73dbff3…95, the natural-run chain): the
+might go). lr-3 (DEC-OPI-17b0a47f…7) opens the channel's free-text
+door beside that menu: the user's own written direction rides the
+prompt builder's ``free_direction`` as its own section — the director's
+call in the user's words, still never a letter. lr-1
+(DEC-OPI-c73dbff3…95, the natural-run chain): the
 object may **also** carry an optional ``stop`` object — the natural
 stopping point the world itself declares when a letter is on its way:
 exactly ``{"kind": <word>}`` where ``word`` is one of the three
@@ -96,6 +100,7 @@ __all__ = [
     "DIRECTION_IMMERSIVE",
     "DirectionCandidate",
     "GeneratedBeat",
+    "MAX_FREE_DIRECTION_CHARS",
     "MIN_DIRECTIONS",
     "MAX_DIRECTIONS",
     "NARRATION_KEY",
@@ -156,6 +161,12 @@ MAX_DIRECTIONS = 4
 DIRECTION_DIRECTED = "directed"
 DIRECTION_IMMERSIVE = "immersive"
 _DIRECTION_MODE_WORDS = (DIRECTION_DIRECTED, DIRECTION_IMMERSIVE)
+
+#: The free-text direction's own bound (lr-3, DEC-OPI-17b0a47f…7): the
+#: user's own written direction — the 走向 channel's free-text shape,
+#: the same cap law the web write face enforces on the way in; the
+#: prompt builder re-checks it (a boundary the caller cannot widen).
+MAX_FREE_DIRECTION_CHARS = 200
 
 #: The natural stopping point's own words (lr-1, DEC-OPI-c73dbff3…95 —
 #: the natural-run chain's signal vocabulary, the world declaring where
@@ -458,6 +469,7 @@ def build_narrator_prompt(
     direction_mode: str = DIRECTION_IMMERSIVE,
     pending_direction: tuple[str, str] | None = None,
     letter_elapsed_days: int | None = None,
+    free_direction: str | None = None,
 ) -> str:
     """The narrator's prompt, as one pure string (testable without a
     provider, a store or a world row).
@@ -505,6 +517,17 @@ def build_narrator_prompt(
     naturally arrives. ``None`` (the default) adds nothing: the prompt
     is byte for byte the pre-lr-1 text.
 
+    lr-3 (DEC-OPI-17b0a47f…7, the director's free-input channel):
+    ``free_direction`` — the user's **own written** direction, the
+    free-text shape of the same 走向 channel (the candidates stay the
+    inspiration menu beside it — both doors coexist) — adds its own
+    section right after the chosen-candidate section's place: the
+    director's call in the user's words, honored as the direction the
+    world moves in. The text is re-checked here (a non-blank string of
+    at most :data:`MAX_FREE_DIRECTION_CHARS` characters — anything
+    else is a ``ValueError`` naming the bound). ``None`` (the default)
+    adds nothing: the prompt is byte for byte the pre-lr-3 text.
+
     WR-4 (DEC-OPI-5fc42174-…58, the user's third direction): **no
     letter ever enters this prompt** — the living-world spec is
     two-layer about influence (§4.1 / the 走向 entry): the user's reply
@@ -542,6 +565,16 @@ def build_narrator_prompt(
         raise ValueError(
             "letter_elapsed_days must be a non-negative int or None"
             f" (got {letter_elapsed_days!r})"
+        )
+    if free_direction is not None and (
+        not isinstance(free_direction, str)
+        or not free_direction.strip()
+        or len(free_direction) > MAX_FREE_DIRECTION_CHARS
+    ):
+        raise ValueError(
+            "free_direction must be a non-blank string of at most"
+            f" {MAX_FREE_DIRECTION_CHARS} characters (got"
+            f" {free_direction!r})"
         )
     sections: list[str] = []
     sections.append("You are the narrator of a small fictional world.")
@@ -630,6 +663,17 @@ def build_narrator_prompt(
             "The user has chosen where the world goes next:"
             f" {chosen_label} — {chosen_hint}. The world moves in"
             " this direction."
+        )
+    if free_direction is not None:
+        # lr-3's own section: the user's written direction — the same
+        # director's-input door, the free-text shape (the candidates
+        # the narrator offers stay the inspiration menu beside it;
+        # the written text is the call itself).
+        sections.append("== The user's written direction ==")
+        sections.append(
+            "The user has written their own direction for where the"
+            f" world goes next: {free_direction}. Honor it as the"
+            " director's call — the world moves in this direction."
         )
     sections.append(_NARRATION_LANGUAGE[ui_language])
     stop_shape = (
@@ -765,6 +809,7 @@ class WorldNarrator:
         direction_mode: str = DIRECTION_IMMERSIVE,
         pending_direction: tuple[str, str] | None = None,
         letter_elapsed_days: int | None = None,
+        free_direction: str | None = None,
     ) -> Result[
         tuple[
             tuple[GeneratedBeat, ...],
@@ -806,6 +851,11 @@ class WorldNarrator:
         stop key — it watches narration values only, so the streamed
         preview shows the prose, never the signal.
 
+        lr-3 (DEC-OPI-17b0a47f…7): ``free_direction`` rides to the
+        prompt builder the same way (the written-direction section;
+        ``None`` keeps the prompt byte for byte the pre-lr-3 text —
+        the strict parse and the extractor read nothing of it).
+
         The provider's own fault words pass through as the ``Err``
         message verbatim (``not-configured``, ``timeout``, … — the
         orchestrator's quiet arm reads ``not-configured`` and stays
@@ -825,10 +875,11 @@ class WorldNarrator:
                 lore_facts,
                 recent_narrations,
                 ui_language,
-                direction_mode,
-                pending_direction,
-                letter_elapsed_days,
-            ),
+            direction_mode,
+            pending_direction,
+            letter_elapsed_days,
+            free_direction,
+        ),
             generation_contract=NARRATOR_CONTRACT,
         )
         streaming = getattr(self._provider, "call_streaming", None)
