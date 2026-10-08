@@ -568,12 +568,14 @@ def test_the_tail_top_up_arm_is_retired() -> None:
     assert "loadWorldInbox" not in save
 
 
-def test_history_frames_render_before_the_letter_same_shape() -> None:
-    """VAL ⑥ 前端恢复钉：历史轮的世界帧在该轮用户信**之前**渲染
-    （织入序还原）；lr-2 交错面多帧（DEC-OPI-c73dbff3…114）：一轮多
-    块按 world_steps 序逐块渲染（world_steps 缺席 = 单帧轮原形）、
-    **过渡句仅末块**；用户行先建、世界块插入其前、回信行后落——次序
-    由源序钉死；零打字机（历史恢复是已完成事实）。"""
+def test_history_frames_render_after_the_letter_same_shape() -> None:
+    """VAL ⑥ 前端恢复钉（wr-8R 正序织入，DEC-OPI-41a4df20…16）：历史
+    轮的世界帧落在该轮用户信**之后**渲染（用户互动=世界史事件——刷
+    新序=实况序 [信][世界帧][回信]，回信 addLine 在帧后）；lr-2 交错
+    面多帧（DEC-OPI-c73dbff3…114）：一轮多块按 world_steps 序逐块渲
+    染（world_steps 缺席 = 单帧轮原形）；用户行先建、世界块信后落、
+    回信行最后——次序由源序钉死；零打字机（历史恢复是已完成事实）；
+    负控：beforeEl 织入形在 renderFlowHistory 切片内零残留。"""
 
     app = _text("app.js")
     flow = app[
@@ -582,13 +584,13 @@ def test_history_frames_render_before_the_letter_same_shape() -> None:
     ]
     assert "const steps = Array.isArray(turn.world_steps" in flow
     assert ": [turn.world];" in flow
-    # Multi-block loop: every frame renders before the letter, the
-    # world_steps order preserved (lr-3T: the last-block-only seam is
-    # retired — every block renders the same shape, no transition
-    # parameter anywhere).
+    # Multi-block loop: every frame renders after the letter, the
+    # world_steps order preserved (wr-8R: the refresh order equals the
+    # live order — the beforeEl weave is gone from the flow slice).
     assert "steps.forEach((frame) => {" in flow
     assert "withTransition" not in flow
-    assert "renderWorldStory(frame, { beforeEl: anchor });" in flow
+    assert "renderWorldStory(frame);" in flow
+    assert "beforeEl" not in flow
     user_add = flow.index('addLine("user"')
     world_add = flow.index("const steps = Array.isArray(turn.world_steps")
     assistant_add = flow.index('addLine("assistant"')

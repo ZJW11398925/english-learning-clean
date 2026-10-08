@@ -5456,16 +5456,17 @@ async function renderFlowHistory() {
     }
     if (turn.world) {
       // wr-8 刷新恢复（DEC-OPI-c73dbff3…34）+ lr-2 交错面多帧
-      //（DEC-OPI-c73dbff3…114）：本轮世界帧织入在该轮用户信**之前**
-      //（织入序还原——世界块与用户信相邻）；一轮多块按 world_steps
-      // 序逐块渲染（world_steps 缺席 = 单帧轮，wr-8 单块原形）；过渡
-      // 句仅末块已随 lr-3T 缝台退役——逐块同形。与当轮同形、零打字机
-      //（历史恢复是已完成事实）。
+      //（DEC-OPI-c73dbff3…114）+ wr-8R 正序织入（DEC-OPI-41a4df20
+      //…16）：本轮世界帧落在该轮用户信**之后**（用户互动=世界史事
+      //件——刷新序=实况序 [信][世界帧][回信]，回信 addLine 在帧后）；
+      // 一轮多块按 world_steps 序逐块渲染（world_steps 缺席 = 单帧
+      // 轮，wr-8 单块原形）；过渡句仅末块已随 lr-3T 缝台退役——逐块
+      // 同形。与当轮同形、零打字机（历史恢复是已完成事实）。
       const steps = Array.isArray(turn.world_steps) && turn.world_steps.length
         ? turn.world_steps
         : [turn.world];
       steps.forEach((frame) => {
-        renderWorldStory(frame, { beforeEl: anchor });
+        renderWorldStory(frame);
       });
     }
     if (turn.assistant !== null) {
