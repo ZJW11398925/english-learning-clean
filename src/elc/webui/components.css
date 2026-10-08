@@ -1632,6 +1632,8 @@ h1, .grouphead, .note-head b { text-wrap: balance; }
     border-color: var(--ink-soft); color: var(--ink);
   }
 }
+.world-direction-option .world-direction-option-label { display: block; font-weight: 600; }
+.world-direction-option .world-direction-option-hint { display: block; margin: var(--sp-1) 0 0; }
 .world-direction-free { display: flex; gap: var(--sp-2);
   align-items: flex-end; margin: 0 0 var(--sp-2); }
 .world-direction-free .world-direction-free-input {

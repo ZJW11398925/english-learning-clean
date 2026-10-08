@@ -616,6 +616,18 @@ def test_the_sheet_declares_the_row_s_own_styles() -> None:
     hover_at = code.find(":hover")
     wrapper_before = code.rfind("@media (hover: hover)", 0, hover_at)
     assert wrapper_before != -1
+    # lr-3V（DEC-OPI-41a4df20…1）：候选 chip 两行形——label 主行与 hint
+    # 注行各自块化（摘要与内容两行可读，不再行内连排糊成一句）。
+    label_at = code.find(".world-direction-option .world-direction-option-label {")
+    hint_at = code.find(".world-direction-option .world-direction-option-hint {")
+    assert label_at != -1 and hint_at != -1
+    label_body = code[code.find("{", label_at) + 1 : code.find("}", label_at)]
+    hint_body = code[code.find("{", hint_at) + 1 : code.find("}", hint_at)]
+    assert "display: block" in label_body and "display: block" in hint_body
+    assert "font-weight: 600" in label_body
+    assert "margin: var(--sp-1) 0 0" in hint_body
+    # 反白保护：label 不显式设色——按钮态色由继承承担，显式 color 破 --on 反白。
+    assert "color" not in label_body
 
 
 # ---------------------------------------------------------------------------
