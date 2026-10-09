@@ -370,8 +370,10 @@ evidence answers ``{"found": false}``, a 200 fact, never a 404.
 
 **wr-10 opens the direction channel's web half** (DEC-OPI-c73dbff3…64):
 ``POST /api/settings/world_direction_mode`` stores the mode word
-(``directed`` / ``immersive``, default immersive = the pre-wr-10
-behavior byte for byte) and ``POST /api/world/direction`` parks or
+(``directed`` / ``immersive``, default immersive — the mode that asks
+for no direction candidates; the pre-wr-10 posture, though C1-b's
+unconditional prompt teachings mean the prompt bytes are no longer the
+pre-wr-10 bytes) and ``POST /api/world/direction`` parks or
 clears the pending direction choice under the bound world's key. The
 world step reads both per run: directed mode asks the narrator for the
 2-4 direction candidates (spec §4.4), rides the pending choice into
@@ -2288,8 +2290,9 @@ _UI_LANGUAGE_WORDS: tuple[str, ...] = ("zh", "en")
 #: The wr-10 world-direction mode's two words (spec §8's 模式 as this
 #: face stores it): ``directed`` asks the world step for direction
 #: candidates and renders them in the world block; ``immersive`` — the
-#: default, and the pre-wr-10 behavior byte for byte — keeps the world
-#: autonomous and direction-free.
+#: default — keeps the world autonomous and direction-free (the
+#: pre-wr-10 posture; C1-b's prompt teachings ride both modes' prompts,
+#: so the bytes themselves have moved on).
 _WORLD_DIRECTION_MODE_WORDS: tuple[str, ...] = ("directed", "immersive")
 
 #: The mode write's 400 sentence — one grammar line, naming the words.

@@ -222,6 +222,8 @@ def test_missing_optional_keys_answer_empty_tuples() -> None:
     "effects",
     [
         "not-an-array",
+        7,
+        True,
         [{"key": "k", "statement": "s", "extra": 1}],
         [{"statement": "missing the key"}],
         [{"key": "missing the statement"}],
@@ -253,6 +255,7 @@ def test_a_malformed_effects_array_refuses_the_whole_batch(
     "participants",
     [
         "not-an-array",
+        7,
         [7],
         [""],
         ["   "],
@@ -270,7 +273,9 @@ def test_bad_participants_refuse_the_whole_batch(participants: object) -> None:
         _beat(kind="peopled", participants=participants),
     )
     refused = _refused(text)
-    if any(p == "persona-stranger" for p in participants if isinstance(p, str)):
+    if isinstance(participants, list) and any(
+        p == "persona-stranger" for p in participants if isinstance(p, str)
+    ):
         assert "persona-stranger" in refused.error.message
         assert "roster" in refused.error.message
 
