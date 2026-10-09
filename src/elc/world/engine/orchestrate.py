@@ -356,7 +356,10 @@ def run_generated_step(
     and ``narration`` are the chronicle row's own words, ``effects`` is
     empty (the generated story settles no state claim — the projection
     only moves when a future cut says so), ``source`` is
-    :data:`~elc.world.narrator.NARRATOR_SOURCE`. The timestamps are the
+    :data:`~elc.world.narrator.NARRATOR_SOURCE`, and every row carries
+    its run's id (C1-a, migration 0027's attribution column — the
+    anchor run above; the replayed-letter arm writes nothing, so a
+    stored row's attribution is never rewritten). The timestamps are the
     virtual calendar's, and the base is the story's **furthest stamped
     day** (:func:`elc.world.package.story_elapsed_days_of` — WR-2's
     disposition): each beat advances the running total by its own
@@ -502,6 +505,11 @@ def run_generated_step(
                 effects=(),
                 occurred_at=(start + timedelta(days=total)).isoformat(),
                 source=NARRATOR_SOURCE,
+                # C1-a: every beat carries the run it rode (migration
+                # 0027's attribution column) — the anchor run's id, the
+                # same row the winch just adopted or wound, so a whole
+                # chain's beats share their run's attribution.
+                run_id=run.run_id,
             )
         )
         if isinstance(recorded, Err):

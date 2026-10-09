@@ -7,10 +7,11 @@ semantics — 揭示是呈现触发非运转动力; AD-1's conservative overlay:
 conversation pipeline's write face is untouched). The slice VAL groups,
 each a section below:
 
-1. **migration pins** — 0026 is the registered head, the
+1. **migration pins** — C1-a's 0027_chronicle_attribution is the
+   registered head (W-1-3's 0026_world_reveal one behind it), the
    ``world_reveal_item`` table carries its columns in order, and the
    schema's own declarations hold: the three FKs, the CHECK vocabulary,
-   the index, the double ``'26'`` stamp and the RESTRICT posture;
+   the index, the double ``'27'`` stamp and the RESTRICT posture;
 2. **run_step's dual triggers** — the letter winds the first run
    (seed = the world's run count, deterministic; the triggering turn
    rides the row), a letter after a finished run winds the next one
@@ -158,23 +159,24 @@ def _fresh_db(tmp_path: Path, name: str) -> sqlite3.Connection:
 # ---------------------------------------------------------------------------
 
 
-def test_0026_is_the_registered_head() -> None:
-    """W-1-3's migration is the head, immediately behind W-1-2's
-    0025_world_runs; the shared constants say so, and the stamp a fresh
-    database carries is 26 (the stamp-pin discipline every head move
-    has followed since P8-4)."""
+def test_0027_is_the_registered_head() -> None:
+    """C1-a's migration is the head, immediately behind W-1-3's
+    0026_world_reveal; the shared constants say so, and the stamp a fresh
+    database carries is 27 (the stamp-pin discipline every head move
+    has followed since P8-4; this pin read "0026 is the head" while 0026
+    was the head)."""
 
-    assert MIGRATION_IDS[-1] == "0026_world_reveal"
-    assert MIGRATION_IDS[-2] == "0025_world_runs"
-    assert SCHEMA_HEAD_FILE == "0026_world_reveal.sql"
+    assert MIGRATION_IDS[-1] == "0027_chronicle_attribution"
+    assert MIGRATION_IDS[-2] == "0026_world_reveal"
+    assert SCHEMA_HEAD_FILE == "0027_chronicle_attribution.sql"
     assert (REPO_ROOT / "migrations" / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "26"
+    assert SCHEMA_HEAD_VERSION == "27"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0026_world_reveal"
-    assert applied[-2] == "0025_world_runs"
-    assert schema_version(fresh) == "26"
+    assert applied[-1] == "0027_chronicle_attribution"
+    assert applied[-2] == "0026_world_reveal"
+    assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 
 def test_world_reveal_item_carries_its_columns() -> None:
@@ -263,8 +265,8 @@ def test_the_reveal_table_declares_its_posture() -> None:
             "SELECT key, value FROM schema_meta WHERE key LIKE '%schema_version%'"
         ).fetchall()
     )
-    assert stamps["schema_version"] == "26"
-    assert stamps["runtime_schema_version"] == "26"
+    assert stamps["schema_version"] == SCHEMA_HEAD_VERSION
+    assert stamps["runtime_schema_version"] == SCHEMA_HEAD_VERSION
 
 
 # ---------------------------------------------------------------------------
@@ -840,5 +842,9 @@ def test_the_aoci_ledger_records_the_w13_faces() -> None:
     ledger = (REPO_ROOT / "aoci.code.txt").read_text(encoding="utf-8")
     assert "orchestrate.py[DB7T]" in ledger
     assert "0026_world_reveal.sql[PD7T]" in ledger
+    # C1-a (DEC-OPI-41a4df20…55): the new migration carries its entry —
+    # the N12/N13/N20 family obligation, pinned so the next touch
+    # cannot silently skip it.
+    assert "0027_chronicle_attribution.sql[PD7T]" in ledger
     assert "世界收件箱/轻继续/turn 接线（W-1-3）" in ledger
     assert "已换桶入 CONVERSATION_SWEPT_TABLES" in ledger

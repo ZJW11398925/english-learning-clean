@@ -221,8 +221,8 @@ def test_the_stream_order_is_world_delta_then_world_then_reply(
         deltas = [f for f in frames if f["type"] == "delta"]
         assert "".join(str(f["text"]) for f in deltas) == REPLY
         # 生成序不动：世界步仍先于回信——final 落地时编年史已在库，
-        # 帧即揭示（无 PENDING 残留）。
-        assert _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 2
+        # 帧即揭示（无 PENDING 残留）。C1-a 随迁：+1 信寄出事实行。
+        assert _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 3
         assert (
             _ro_rows(
                 app_db,
@@ -278,11 +278,20 @@ def test_a_refusal_after_shown_pieces_answers_world_failed_and_writes_nothing(
             str(f["text"]) for f in frames[:failed_pos] if f["index"] == 0
         )
         assert "Shown before the verdict." in joined
-        # 编年史零写入：整批拒收零部分采纳。
-        assert _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 0
+        # 编年史零写入：整批拒收零部分采纳（C1-a 随迁：钉义不变——
+        # 信寄出事实行是互动行，非被拒批次的写入，按世界叙述源过滤）。
         assert (
-            _ro_rows(app_db, "SELECT COUNT(*) FROM world_reveal_item")[0][0]
+            _ro_rows(
+                app_db,
+                "SELECT COUNT(*) FROM world_event"
+                " WHERE source = 'world_narrator'",
+            )[0][0]
             == 0
+        )
+        assert (
+            # C1-a 随迁：+1 信寄出事实行的揭示行（REVEALED 直落）。
+            _ro_rows(app_db, "SELECT COUNT(*) FROM world_reveal_item")[0][0]
+            == 1
         )
         assert _ro_rows(app_db, "SELECT COUNT(*) FROM world_run")[0][0] == 0
 
@@ -303,7 +312,16 @@ def test_a_stream_fault_after_shown_pieces_answers_world_failed(
         assert "world" not in types
         assert "world_failed" in types
         assert types[-1] == "final"
-        assert _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 0
+        # C1-a 随迁：钉义不变（流故障零世界写入——信寄出事实行是互动行，
+        # 按世界叙述源过滤）。
+        assert (
+            _ro_rows(
+                app_db,
+                "SELECT COUNT(*) FROM world_event"
+                " WHERE source = 'world_narrator'",
+            )[0][0]
+            == 0
+        )
 
 
 # ---------------------------------------------------------------------------

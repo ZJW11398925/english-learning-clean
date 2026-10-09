@@ -239,7 +239,11 @@ def test_the_streamed_turn_advances_the_world_exactly_once(
         sources = _ro_rows(
             app_db, "SELECT DISTINCT source FROM world_event"
         )
-        assert [str(row[0]) for row in sources] == ["world_narrator"]
+        # C1-a 随迁：第二行是信寄出事实行的互动行源。
+        assert [str(row[0]) for row in sources] == [
+            "world_narrator",
+            "user_interaction",
+        ]
         # The second letter: the anchor run resumes, its beats add.
         status, raw = _post(
             stack.port, "/api/turn_stream", {"text": A1_TEXT}
@@ -337,7 +341,10 @@ def test_the_blocking_turn_runs_the_letter_step_inline(
         assert "world_step_note" not in turn
         rows = _ro_rows(
             app_db,
+            # C1-a 随迁：信寄出事实行的墙钟戳不入故事日断言——按世界
+            # 叙述源读拍（行数钉在本测试族另行随迁）。
             "SELECT source, occurred_at FROM world_event"
+            " WHERE source = 'world_narrator'"
             " ORDER BY event_id ASC",
         )
         assert len(rows) == 2

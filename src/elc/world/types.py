@@ -60,6 +60,8 @@ __all__ = [
     "WorldStateFact",
     "encode_effects",
     "decode_effects",
+    "encode_participants",
+    "decode_participants",
 ]
 
 
@@ -129,7 +131,8 @@ class StateEffect:
 
 @dataclass(frozen=True)
 class WorldEvent:
-    """One chronicle entry (migration 0024's ``world_event`` table).
+    """One chronicle entry (migration 0024's ``world_event`` table,
+    extended by migration 0027's two attribution columns).
 
     Append-only: an event is written once and never updated — corrections
     arrive as later events. ``narration`` is the caller's own prose (this
@@ -138,6 +141,14 @@ class WorldEvent:
     ``occurred_at`` is the event's own ISO-8601 moment as the caller
     supplies it — the log does not re-stamp it; ``source`` names the
     origin (a free word until a later cut registers the vocabulary).
+
+    C1-a (DEC-OPI-41a4df20…55): ``participants`` is the ordered tuple of
+    cast members the event is about (the chronicle's who — the strict
+    codec below freezes it into migration 0027's JSON column; an empty
+    tuple is the default, and a legacy row reads back as one);
+    ``run_id`` is the world run the event rode (``None`` for the user
+    interaction rows — an interaction is not a run event — and for a
+    pre-0027 legacy row, which honestly does not know).
     """
 
     event_id: str
@@ -147,6 +158,8 @@ class WorldEvent:
     effects: tuple[StateEffect, ...]
     occurred_at: str
     source: str
+    participants: tuple[str, ...] = ()
+    run_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -235,3 +248,46 @@ def decode_effects(text: str) -> Result[tuple[StateEffect, ...]]:
             )
         effects.append(StateEffect(key=element["key"], statement=element["statement"]))
     return Ok(tuple(effects))
+
+
+def encode_participants(participants: tuple[str, ...]) -> str:
+    """Freeze a participants tuple into migration 0027's canonical JSON
+    column text — the same deterministic law :func:`encode_effects`
+    spells (compact, insertion-ordered, non-escaped): the same tuple
+    always encodes to the same bytes, so a replay writes what the first
+    write wrote."""
+
+    return json.dumps(list(participants), ensure_ascii=False, separators=(",", ":"))
+
+
+def decode_participants(text: str) -> Result[tuple[str, ...]]:
+    """The strict inverse of :func:`encode_participants`.
+
+    A payload that is not valid JSON or not a JSON array of strings
+    answers a value-semantics ``Err`` (``VALIDATION_FAILED``) whose
+    message names the reason — the discrimination words are ``not valid
+    JSON`` / ``not a JSON array`` / ``is not a string``. Decoding is a
+    read-side concern only (the write face encodes from typed records
+    and cannot produce a bad payload)."""
+
+    def _err(message: str) -> Err[Any]:
+        return Err(
+            DomainError(
+                code=DomainErrorCode.VALIDATION_FAILED,
+                message=f"participants refused: {message}",
+            )
+        )
+
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        return _err(f"not valid JSON ({exc})")
+    if not isinstance(payload, list):
+        return _err(f"not a JSON array (got {type(payload).__name__})")
+    for index, element in enumerate(payload):
+        if not isinstance(element, str):
+            return _err(
+                f"participants[{index}] is not a string (got"
+                f" {type(element).__name__})"
+            )
+    return Ok(tuple(payload))

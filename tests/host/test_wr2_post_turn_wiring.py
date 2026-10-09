@@ -190,9 +190,11 @@ def test_the_blocking_turn_runs_the_world_before_the_reply(
             app_db,
             "SELECT source FROM world_event ORDER BY event_id ASC",
         )
+        # C1-a 随迁：第三行是信寄出事实行（互动行源）。
         assert [str(row[0]) for row in rows] == [
             "world_narrator",
             "world_narrator",
+            "user_interaction",
         ]
         # WR-6: the frame was the look — the beats arrive already revealed.
         assert _ro_rows(
@@ -254,8 +256,9 @@ def test_the_stream_runs_the_world_before_the_reply(
         assert [f["type"] for f in frames] == ["world", "final"]
         assert frames[0]["notes"][0]["narration"] == provider.narrations[0]
         assert _ro_rows(
+            # C1-a 随迁：+1 信寄出事实行。
             app_db, "SELECT COUNT(*) FROM world_event"
-        )[0][0] == 2
+        )[0][0] == 3
         # The frame was the look: nothing waits behind it.
         assert _ro_rows(
             app_db, "SELECT COUNT(*) FROM world_reveal_item"
@@ -349,17 +352,23 @@ def test_the_read_faces_stay_green_over_generated_notes(
         status, log = stack.get_json("/api/world/log")
         assert status == 200
         days = log["days"]
+        # C1-a 随迁：信寄出事实行是墙钟时刻（无故事日）——编年史日志
+        # 的 null 日组垫底（legacy 行同族）。
         assert [day["date_localized"] for day in days] == [
             "9月16日",
             "9月14日",
+            None,
         ]
-        newest, older = days
+        newest, older, unbound = days
         assert [item["narration"] for item in newest["items"]] == [
             provider.narrations[1]
         ]
         assert all(item["signature"] is None for item in newest["items"])
         assert [item["narration"] for item in older["items"]] == [
             provider.narrations[0]
+        ]
+        assert [item["narration"] for item in unbound["items"]] == [
+            "A letter from the user's character was sent."
         ]
 
 
@@ -372,9 +381,10 @@ def test_the_narrator_failure_leaves_the_turn_whole(
     tmp_path: Path,
 ) -> None:
     """A narrator that raises costs the reply nothing: the turn answers
-    whole, nothing is written (no run, no event, no reveal), and the
-    failure is the face's own stderr sentence — the page's substance
-    never waits on the world's bookkeeping."""
+    whole, the world writes nothing of its own (no run, no narrator
+    event, no world reveal — C1-a 起，信寄出事实行照落：信已寄出是世界
+    的真事实），and the failure is the face's own stderr sentence — the
+    page's substance never waits on the world's bookkeeping."""
 
     app_db = tmp_path / "app.db"
 
@@ -398,10 +408,13 @@ def test_the_narrator_failure_leaves_the_turn_whole(
         assert status == 200
         assert turn["reply"] == REPLY
         assert _ro_rows(app_db, "SELECT COUNT(*) FROM world_run")[0][0] == 0
-        assert _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 0
+        # C1-a 随迁：叙述者死了回信照常——但信已寄出，寄出事实行（互动
+        # 行，REVEALED）落库；世界自己的行仍是零。「nothing is written」
+        # 的刀面由此收窄为「世界零写」。
+        assert _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 1
         assert (
             _ro_rows(
                 app_db, "SELECT COUNT(*) FROM world_reveal_item"
             )[0][0]
-            == 0
+            == 1
         )

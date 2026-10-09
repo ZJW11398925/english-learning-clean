@@ -353,10 +353,11 @@ def test_reading_never_flips_pending_only_the_inbox_does(
         assert status == 200
         assert turn["reply"] == REPLY
         # The letter step with an unversed provider writes nothing: the
-        # world's today stays the story's day zero.
+        # world's today stays the story's day zero. C1-a 随迁：信寄出
+        # 事实行照落（互动行，墙钟戳——不进任何故事日读面）。
         assert _ro_rows(
             app_db, "SELECT COUNT(*) FROM world_event"
-        )[0][0] == 0
+        )[0][0] == 1
         # The day's revealed note (the old pre-step's own legacy shape —
         # what made today non-quiet) and the unread leg: a kind the
         # package does not carry (zero story days, the English row in

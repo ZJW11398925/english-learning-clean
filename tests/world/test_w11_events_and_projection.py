@@ -131,29 +131,32 @@ def _assert_err(result: object, code: str) -> None:
 
 
 def test_0025_is_the_registered_head() -> None:
-    """W-1-1's migration is in the chain, behind W-1-2's 0025_world_runs
-    and W-1-3's 0026_world_reveal (the stamp-pin discipline every head
+    """W-1-1's migration is in the chain, behind W-1-2's 0025_world_runs,
+    W-1-3's 0026_world_reveal and C1-a's 0027_chronicle_attribution (the
+    stamp-pin discipline every head
     move has
     followed since P8-4; the pin read "0024 is the head" while 0024 was
     the head); the shared constants say so, and the stamp a fresh
-    database carries is 26."""
+    database carries is 27."""
 
-    assert MIGRATION_IDS[-1] == "0026_world_reveal"
-    assert MIGRATION_IDS[-2] == "0025_world_runs"
-    assert SCHEMA_HEAD_FILE == "0026_world_reveal.sql"
+    assert MIGRATION_IDS[-1] == "0027_chronicle_attribution"
+    assert MIGRATION_IDS[-2] == "0026_world_reveal"
+    assert SCHEMA_HEAD_FILE == "0027_chronicle_attribution.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "26"
+    assert SCHEMA_HEAD_VERSION == "27"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0026_world_reveal"
-    assert applied[-2] == "0025_world_runs"
-    assert schema_version(fresh) == "26"
+    assert applied[-1] == "0027_chronicle_attribution"
+    assert applied[-2] == "0026_world_reveal"
+    assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 
 def test_the_two_tables_carry_their_columns() -> None:
     """The physical column set, in order — the adjudication's own
-    spelling, column for column."""
+    spelling, column for column (C1-a 随迁：migration 0027 adds
+    ``participants`` / ``run_id`` after the W-1-1 seven, in the
+    migration's own order)."""
 
     fresh = sqlite3.connect(":memory:")
     apply_migrations(fresh)
@@ -166,6 +169,8 @@ def test_the_two_tables_carry_their_columns() -> None:
             "effects",
             "occurred_at",
             "source",
+            "participants",
+            "run_id",
         ],
         "world_state_fact": [
             "fact_id",

@@ -549,9 +549,13 @@ def test_the_reply_knows_what_just_happened_in_her_world(
         status, _ = _post_json(stack.port, "/api/turn", {"text": "hello"})
         assert status == 200
     # The world step settled its chronicle before the reply was generated
-    # (the wr-6 order is the premise this cut reads).
+    # (the wr-6 order is the premise this cut reads). C1-a 随迁：信寄出
+    # 事实行在 CP0 后落（晚于世界拍）——「最新世界叙述」取世界自己的行，
+    # 互动行不是她的世界刚发生的事。
     rows = _ro_rows(
-        app_db, "SELECT narration FROM world_event ORDER BY rowid"
+        app_db,
+        "SELECT narration FROM world_event WHERE source = 'world_narrator'"
+        " ORDER BY rowid",
     )
     assert rows, "the world step never settled a chronicle"
     freshest = str(rows[-1][0])

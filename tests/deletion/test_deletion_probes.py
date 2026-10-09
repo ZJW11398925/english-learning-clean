@@ -506,9 +506,10 @@ def test_all_user_data_keeps_the_infrastructure_and_the_ledger(
     # 0020_world_lore_facts, 20 → 21 with fr-A's 0021_provider_usage,
     # 21 → 22 with the veto-response cut's 0022_app_settings, 22 → 23
     # with W-1-0's 0023_world_identity, 23 → 24 with W-1-1's
-    # 0024_world_events, 24 → 25 with W-1-2's 0025_world_runs, and
-    # 25 → 26 with this migration).
-    assert _count(db, "schema_migrations") == 26
+    # 0024_world_events, 24 → 25 with W-1-2's 0025_world_runs, 25 → 26
+    # with W-1-3's 0026_world_reveal, and 26 → 27 with C1-a's
+    # 0027_chronicle_attribution).
+    assert _count(db, "schema_migrations") == 27
     assert _count(db, "runtime_epoch") == 1
     assert _count(db, "deletion_tombstone") > 0
 

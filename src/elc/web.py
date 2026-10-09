@@ -504,7 +504,11 @@ from elc.world.package import (
     story_elapsed_days_of,
     world_date_of,
 )
-from elc.world.store import WorldRevealItem
+from elc.world.store import (
+    INTERACTION_SOURCE,
+    WorldRevealItem,
+)
+from elc.world.types import WorldEvent
 
 __all__ = [
     "DEFAULT_WEB_CONVERSATION_ID",
@@ -521,6 +525,18 @@ __all__ = [
 _WORLD_NO_BINDING = (
     "这个对话没有绑定任何世界——收件箱不存在（世界是对话绑定的，不是全局的）。"
 )
+
+#: The letter-sent interaction row's whole narration (C1-a,
+#: DEC-OPI-41a4df20…55): one neutral fact sentence — and **zero letter
+#: text** (WR-4's zero-compromise law extends to the chronicle: the
+#: user's words ride the conversation tables, never the world's tree).
+_WORLD_LETTER_SENT_NARRATION = "A letter from the user's character was sent."
+
+#: The direction-chosen narration's join (C1-a): the candidate's two
+#: fields, composed the way the direction row renders them — the
+#: director-channel content is the world face's own (the free-text form
+#: rides verbatim, no join).
+_WORLD_DIRECTION_JOIN = " — "
 
 #: The overview's quiet-day sentences (wf-0): one human line per interface
 #: language — the honest fact that today carries no revealed note. It says
@@ -3404,6 +3420,13 @@ class _WebFace:
                 None,
             )
         completion = result.value
+        # C1-a: the letter-sent fact, right after this face's CP0 commit
+        # (both turn shapes route through here; the parked round's
+        # re-entry replays the same command, so the derived id lands the
+        # store's idempotent no-op — one letter, one chronicle row).
+        self._record_letter_sent(
+            str(completion.turn_id), command.envelope.received_at
+        )
         reply = completion.reply_text
         payload = {
             "reply": reply,
@@ -3781,6 +3804,11 @@ class _WebFace:
                 # while the failure arm told her the offer stands. Every
                 # quiet, refused or reveal-failed arm now breaks above
                 # the consumption — 拒收/安静/未定着不清 stands whole.
+                # C1-a: the choice's chronicle row lands just before the
+                # row clears (a chronicled choice implies a consumed
+                # one; the fail-soft law above keeps the consumption
+                # load-bearing exactly as F-2 left it).
+                self._record_direction_chosen(world_id, pending)
                 self._host.app_settings.delete(
                     _world_pending_direction_key(world_id)
                 )
@@ -3967,6 +3995,107 @@ class _WebFace:
             "actor_id": None if row[2] is None else str(row[2]),
         }
 
+    def _record_letter_sent(self, turn_id: str, received_at: str) -> None:
+        """The letter-sent chronicle row (C1-a, DEC-OPI-41a4df20…55):
+        one ``user-letter-sent`` event, landed right after the calling
+        face's CP0 commit — the neutral fact sentence only (**zero
+        letter text**, WR-4's law extended to the world's tree; the
+        words live in the conversation tables), ``occurred_at`` = the
+        envelope's own received moment (deterministic, so the parked
+        round's command replay derives the same id and shape and lands
+        the store's idempotent no-op), ``run_id`` ``None`` (an
+        interaction is not a run event). Fail-soft by law: a worldless
+        conversation writes nothing, and a store refusal is a stderr
+        note — the letter itself never waits on its chronicle row."""
+
+        binding = self._world_binding()
+        if binding is None:
+            return
+        world_store = getattr(self._host, "world_store", None)
+        if world_store is None:
+            return
+        recorded = world_store.record_interaction_event(
+            WorldEvent(
+                event_id=f"user-letter-sent:{turn_id}",
+                world_id=str(binding["world_id"]),
+                kind="user-letter-sent",
+                narration=_WORLD_LETTER_SENT_NARRATION,
+                effects=(),
+                occurred_at=received_at,
+                source=INTERACTION_SOURCE,
+            ),
+            received_at,
+        )
+        if isinstance(recorded, Err):
+            print(
+                "elc web: 寄信编年史行未落（回信不受影响）："
+                f"{recorded.error.code.value}: {recorded.error.message}",
+                file=sys.stderr,
+            )
+
+    def _interaction_event_count(self, world_id: str, kind: str) -> int:
+        """One interaction kind's durable count in one world (the
+        direction event's id material — the count-derived arm, the same
+        honesty :meth:`run_generated_step`'s no-turn arm spells: no
+        replay protection, said rather than pretended). A read — the
+        face's own direct-SQL posture."""
+
+        row = self._host.db.execute(
+            "SELECT COUNT(*) FROM world_event WHERE world_id = ? AND kind = ?",
+            (world_id, kind),
+        ).fetchone()
+        return int(row[0]) if row is not None else 0
+
+    def _record_direction_chosen(
+        self,
+        world_id: str,
+        direction: tuple[str, tuple[str, str] | str],
+    ) -> None:
+        """The direction-chosen chronicle row (C1-a): landed at the
+        consumption point, **before** the pending row clears — a
+        chronicled choice implies a consumed one (the crash window
+        between the two writes over-chronicles a retry, never loses
+        the call). The narration **is** the direction (the
+        director-channel content is the world face's own): a picked
+        candidate as ``label — hint``, the user's written text
+        verbatim. ``occurred_at`` is the consumption's wall moment;
+        the id derives from the kind's durable count (no replay
+        protection, the docstring above says so). Fail-soft: a store
+        refusal is a stderr note — 选了即用即清 stands, the world
+        already moved."""
+
+        world_store = getattr(self._host, "world_store", None)
+        if world_store is None:
+            return
+        _kind, value = direction
+        narration = (
+            f"{value[0]}{_WORLD_DIRECTION_JOIN}{value[1]}"
+            if isinstance(value, tuple)
+            else str(value)
+        )
+        moment = datetime.now(tz=UTC).isoformat()
+        count = self._interaction_event_count(
+            world_id, "user-direction-chosen"
+        )
+        recorded = world_store.record_interaction_event(
+            WorldEvent(
+                event_id=f"user-direction-chosen:{count}",
+                world_id=world_id,
+                kind="user-direction-chosen",
+                narration=narration,
+                effects=(),
+                occurred_at=moment,
+                source=INTERACTION_SOURCE,
+            ),
+            moment,
+        )
+        if isinstance(recorded, Err):
+            print(
+                "elc web: 走向编年史行未落（轮次不受影响）："
+                f"{recorded.error.code.value}: {recorded.error.message}",
+                file=sys.stderr,
+            )
+
     def world_inbox(self) -> tuple[int, dict[str, Any]]:
         """The world inbox: the bound world's atomic reveal, then the
         whole inbox, then the conversation's recent letters.
@@ -4034,7 +4163,10 @@ class _WebFace:
         return int(row[0]) if row is not None else 0
 
     def _world_frames_for_window(
-        self, turn_moments: list[str], lower_edge: str
+        self,
+        turn_moments: list[str],
+        lower_edge: str,
+        turn_ids: list[str] | None = None,
     ) -> dict[int, list[dict[str, Any]]]:
         """The wr-8 refresh-recovery half: the served window's per-turn
         ``world`` frames as ordered lists keyed by turn index (lr-2's
@@ -4046,9 +4178,26 @@ class _WebFace:
         the whole list under ``world_steps`` only when a round carries
         more than one (the streamed payload's own additive shape).
 
-        **The interleave key (wr-8's adjudicated fact — the task book's
-        ``created_at`` premise was wrong and the adjudication moved the
-        key to ``revealed_at``):** an event's real moment is its reveal
+        **The attribution arm (C1-a, DEC-OPI-41a4df20…55 — P16's
+        barrier down):** an event whose row carries a ``run_id`` and
+        whose run carries a ``trigger_turn_id`` names its turn exactly —
+        the bucket is that turn's index when the turn is served here;
+        when the trigger names an *unserved* turn the event stays out
+        (the letters' own law — it re-enters with its true turn through
+        ``?limit``/``?full``, never piled onto the window). This is the
+        continue-拍 fix: the wr-8R probe's late-by-one float (a parked
+        round's beats revealed after turn N drifting into turn N+1's
+        bucket) becomes exact wherever the run knows its trigger.
+        ``turn_ids`` (the served window's own ids, the caller has them)
+        is the arm's index; ``None`` keeps the caller's old shape.
+
+        **The fallback arm — the timestamp approximation, byte for byte
+        the pre-C1-a rule:** a legacy row (``run_id`` ``NULL``, the
+        pre-0027 chronicle) and a run without a trigger still bucket by
+        reveal stamp, as follows. The interleave key (wr-8's adjudicated
+        fact — the task book's ``created_at`` premise was wrong and the
+        adjudication moved the key to ``revealed_at``): an event's real
+        moment is its reveal
         item's ``revealed_at`` — the first reveal's wall-clock stamp,
         never re-stamped (:meth:`elc.world.store.SqliteWorldStore.reveal_all`).
         After wr-6 the in-stream reveal rides the world step, seconds
@@ -4132,34 +4281,70 @@ class _WebFace:
         by_id: dict[str, tuple[Any, ...]] = {}
         for row in self._host.db.execute(
             "SELECT e.event_id, e.narration, e.kind, e.occurred_at,"
-            " e.source"
+            " e.source, e.run_id"
             " FROM world_event e WHERE e.world_id = ?",
             (world_id,),
         ).fetchall():
             by_id[str(row[0])] = tuple(row)
+        # The attribution arm's index: the served turns' id → bucket, and
+        # the trigger of every run the window's events name (one batch
+        # read — the same direct-SQL posture as the joins above).
+        turn_index_by_id = {
+            turn_id: index for index, turn_id in enumerate(turn_ids or [])
+        }
+        run_triggers: dict[str, str | None] = {}
+        event_run_ids = {
+            str(event[5]) for event in by_id.values() if event[5] is not None
+        }
+        if turn_index_by_id and event_run_ids:
+            placeholders = ", ".join("?" for _ in event_run_ids)
+            for row in self._host.db.execute(
+                "SELECT run_id, trigger_turn_id FROM world_run"
+                " WHERE run_id IN (" + placeholders + ")",
+                tuple(event_run_ids),
+            ).fetchall():
+                run_triggers[str(row[0])] = (
+                    None if row[1] is None else str(row[1])
+                )
         buckets: dict[int, list[tuple[str, dict[str, Any]]]] = {}
         for row in rows:
             moment = None if row[3] is None else str(row[3])
             if not moment:
                 continue
-            position = bisect_left(turn_moments, moment)
-            if position == 0:
-                # At or before the first served turn: inside it when the
-                # moment clears the lower edge (the boundary turn's own
-                # step events — and everything earlier when the window
-                # covers the whole transcript); at or before a real
-                # lower edge the event belongs to an unserved turn —
-                # outside the window.
-                if lower_edge and moment <= lower_edge:
-                    continue
-                index = 0
-            elif position >= len(turn_moments):
-                # revealed after the last served turn: the tail
-                # approximation — the last turn's frame carries it.
-                index = len(turn_moments) - 1
-            else:
-                index = position
             event = by_id.get(str(row[1]))
+            index: int | None = None
+            if event is not None and event[5] is not None:
+                trigger = run_triggers.get(str(event[5]))
+                if trigger is not None:
+                    if trigger in turn_index_by_id:
+                        # The exact bucket: the event's own run names
+                        # this served turn (P16's barrier down — the
+                        # continue-拍 rides its round, never the next).
+                        index = turn_index_by_id[trigger]
+                    else:
+                        # Attributed to an unserved turn: outside the
+                        # window, the letters' own law — it re-enters
+                        # with its true turn, never piled onto this
+                        # window's first frame.
+                        continue
+            if index is None:
+                position = bisect_left(turn_moments, moment)
+                if position == 0:
+                    # At or before the first served turn: inside it when the
+                    # moment clears the lower edge (the boundary turn's own
+                    # step events — and everything earlier when the window
+                    # covers the whole transcript); at or before a real
+                    # lower edge the event belongs to an unserved turn —
+                    # outside the window.
+                    if lower_edge and moment <= lower_edge:
+                        continue
+                    index = 0
+                elif position >= len(turn_moments):
+                    # revealed after the last served turn: the tail
+                    # approximation — the last turn's frame carries it.
+                    index = len(turn_moments) - 1
+                else:
+                    index = position
             narration, fallback = self._note_narration(
                 package, ui_language, event
             )
@@ -6619,6 +6804,12 @@ class _WebFace:
                 "teaching_moments": [],
             }
         parked = result.value
+        # C1-a: the parked letter is a sent letter all the same (its CP0
+        # just committed) — the same fact row, the same derived id, the
+        # same replay law as :meth:`_answer_command`'s arm.
+        self._record_letter_sent(
+            str(parked.turn_id), command.envelope.received_at
+        )
         directions = self._frame_directions(frames)
         envelope = command.envelope
         kind_word = _parked_stop_kind_word(stop_kind)
@@ -7497,7 +7688,9 @@ class _WebFace:
             else ""
         )
         world_frames = self._world_frames_for_window(
-            _turn_created_at_of(self._host.db, turn_ids), lower_edge
+            _turn_created_at_of(self._host.db, turn_ids),
+            lower_edge,
+            turn_ids,
         )
         turns: list[dict[str, Any]] = []
         for index, slice_ in enumerate(slices):

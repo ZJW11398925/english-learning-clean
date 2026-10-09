@@ -1251,10 +1251,11 @@ def test_no_migration_carries_the_view() -> None:
     # 键值表——「不加表」读 session_budget 仍成立：它不是本刀的表）；W-1-0
     # 再随迁至 0023（世界身份三表）；W-1-1 再随迁至 0024（世界事件树两表）；
     # W-1-2 再随迁至 0025（世界运转一行）；W-1-3 再随迁至 0026（揭示队列
-    # 一表，同样不是本刀的表）。
-    assert MIGRATION_IDS[-1] == "0026_world_reveal"
-    assert SCHEMA_HEAD_FILE == "0026_world_reveal.sql"
-    assert SCHEMA_HEAD_VERSION == "26"
+    # 一表，同样不是本刀的表）；C1-a 再随迁至 0027（编年史归属两列，同样
+    # 不是本刀的表）。
+    assert MIGRATION_IDS[-1] == "0027_chronicle_attribution"
+    assert SCHEMA_HEAD_FILE == "0027_chronicle_attribution.sql"
+    assert SCHEMA_HEAD_VERSION == "27"
     schema = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted((REPO_ROOT / "migrations").glob("*.sql"))

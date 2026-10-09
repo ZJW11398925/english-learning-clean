@@ -185,7 +185,8 @@ def test_the_world_letter_failure_is_fail_soft(
         assert status == 200
         assert fine["reply"] == fine_provider.reply_text
         assert "world_step_note" not in fine
-        assert _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 2
+        # C1-a 随迁：两轮各 +1 信寄出事实行（2 世界拍 + 2 互动行）。
+        assert _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 4
 
 
 def test_the_inbox_404s_without_a_binding() -> None:

@@ -203,7 +203,11 @@ def test_a_three_step_chain_streams_three_frames_then_the_reply(
                 narrations[order]
             ]
         chronicle = _ro_rows(
-            app_db, "SELECT narration FROM world_event ORDER BY rowid"
+            # C1-a 随迁：信寄出事实行 CP0 后落（rowid 末位）——世界拍的
+            # 编年史序仍以世界自己的行读。
+            app_db,
+            "SELECT narration FROM world_event"
+            " WHERE source = 'world_narrator' ORDER BY rowid",
         )
         assert [str(row[0]) for row in chronicle] == narrations
 
@@ -223,13 +227,19 @@ def test_each_step_lands_its_own_rows_and_the_ids_advance(
         ids = [
             str(row[0])
             for row in _ro_rows(
-                app_db, "SELECT event_id FROM world_event ORDER BY rowid"
+                app_db,
+                "SELECT event_id FROM world_event"
+                " WHERE source = 'world_narrator' ORDER BY rowid",
             )
         ]
         assert len(ids) == 3
         assert len(set(ids)) == 3
         # The count arm's ordinals advance across the chain steps.
         assert ids == [f"run-berrymoor-0000:g{i}" for i in range(3)]
+        # C1-a 随迁：编年史另含信寄出事实行（互动行，链后落）。
+        assert (
+            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 4
+        )
         assert (
             _ro_rows(app_db, "SELECT COUNT(*) FROM world_run")[0][0] == 1
         )
@@ -300,7 +310,8 @@ def test_a_single_step_letter_arrives_matches_the_old_shape(
         assert types[-1] == "final"
         assert frames[-1]["stop"] == "letter_arrives"
         assert (
-            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 1
+            # C1-a 随迁：+1 信寄出事实行（互动行，CP0 后落）。
+            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 2
         )
         assert len(provider.prompts) == 2  # one narration + one reply
 
@@ -331,7 +342,8 @@ def test_the_chain_stops_at_the_defensive_ceiling_and_replies_anyway(
         assert frames[-1]["reply"] == REPLY
         assert "stop" not in frames[-1]
         assert (
-            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 5
+            # C1-a 随迁：+1 信寄出事实行。
+            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 6
         )
 
 
@@ -393,7 +405,8 @@ def test_non_letter_signals_keep_the_world_turning_and_ride_the_final(
         assert types[-1] == "final"
         assert frames[-1]["stop"] == "letter_arrives"
         assert (
-            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 2
+            # C1-a 随迁：+1 信寄出事实行。
+            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 3
         )
 
 
@@ -448,7 +461,8 @@ def test_a_mid_chain_refusal_keeps_landed_steps_and_answers_world_failed(
         assert frames[-1]["reply"] == REPLY
         # The landed step stays landed; the refused step wrote nothing.
         assert (
-            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 1
+            # C1-a 随迁：+1 信寄出事实行。
+            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 2
         )
 
 
@@ -505,7 +519,8 @@ def test_the_blocking_turn_carries_world_steps_and_stop(tmp_path: Path) -> None:
         assert payload["stop"] == "letter_arrives"
         assert payload["reply"] == REPLY
         assert (
-            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 3
+            # C1-a 随迁：+1 信寄出事实行。
+            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 4
         )
 
     app_db_one = tmp_path / "one.db"

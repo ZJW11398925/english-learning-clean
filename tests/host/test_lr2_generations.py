@@ -260,10 +260,11 @@ def test_the_reply_gate_waits_for_the_whole_chain() -> None:
 
 
 def test_a_three_step_round_recovers_as_three_blocks(tmp_path: Path) -> None:
-    """三步轮刷新恢复 = 三块：/api/turn_stream 落一轮三步链 →
-    /api/history 该轮带 world_steps 三帧（落库序），world == 末帧；
-    每帧叙述 == 该步编年史逐字（I1 跨面——恢复的就是当轮显过的）；
-    帧形齐全（ui_language / date_localized / notes 带 fallback 位）。"""
+    """三步轮刷新恢复 = 三步块 + C1-a 信寄出帧：/api/turn_stream 落一轮
+    三步链 → /api/history 该轮带 world_steps 三帧 + 信行帧（落库序），
+    world == 末帧；每步帧叙述 == 该步编年史逐字（I1 跨面——恢复的就
+    是当轮显过的）；帧形齐全（ui_language / date_localized / notes 带
+    fallback 位）。"""
 
     app_db = tmp_path / "app.db"
     provider = ChainProvider(STEP_ONE, STEP_TWO, STEP_THREE)
@@ -279,27 +280,33 @@ def test_a_three_step_round_recovers_as_three_blocks(tmp_path: Path) -> None:
         assert len(framed) == 1
         turn = framed[0]
         steps = turn["world_steps"]
-        assert len(steps) == 3
+        assert len(steps) == 4
+        assert [
+            n["narration"] for n in steps[-1]["notes"]
+        ] == ["A letter from the user's character was sent."]
         # ``world`` holds the last frame; the chain rides additively.
         assert turn["world"] == steps[-1]
         # I1, cross face: every recovered frame is the streamed frame's
         # own narration set, verbatim, in landing order.
-        for recovered, live in zip(steps, streamed):
+        for recovered, live in zip(steps[:3], streamed):
             assert [n["narration"] for n in recovered["notes"]] == [
                 n["narration"] for n in live["notes"]
             ]
-        for frame in steps:
+        for frame in steps[:3]:
             assert frame["ui_language"] == "zh"
             assert frame["date_localized"]
             assert frame["world_name"]
             for note in frame["notes"]:
                 assert note["fallback"] is False
+        # C1-a 信行帧：fallback 位诚实为 True（英文事实句，包无 zh 映射）。
+        assert steps[-1]["notes"][0]["fallback"] is True
 
 
 def test_a_single_step_round_stays_keyless_one_block(tmp_path: Path) -> None:
     """单步回归（单代兼容，E2E 半）：单步轮（一步 letter_arrives 即停）
-    历史载荷带 world 一帧、**零 world_steps 键**——pre-lr-2 形字节不
-    动（可加性键的另一半）。"""
+    历史载荷带世界帧——pre-lr-2 的「零 world_steps 键」形随 C1-a 互动
+    行退役（信寄出事实行按自己的揭示戳成第二帧，加性键自然点亮）；
+    `world` 持末帧（信行帧）。"""
 
     app_db = tmp_path / "app.db"
     one_step = _batch(
@@ -317,11 +324,15 @@ def test_a_single_step_round_stays_keyless_one_block(tmp_path: Path) -> None:
         framed = [t for t in history["turns"] if "world" in t]
         assert len(framed) == 1
         turn = framed[0]
-        assert "world_steps" not in turn
-        narrations = [
-            str(note["narration"]) for note in turn["world"]["notes"]
-        ]
-        assert narrations == ["她拆开了那封等着的信。"]
+        steps = turn["world_steps"]
+        assert len(steps) == 2
+        assert [
+            str(note["narration"]) for note in steps[0]["notes"]
+        ] == ["她拆开了那封等着的信。"]
+        assert [
+            str(note["narration"]) for note in steps[1]["notes"]
+        ] == ["A letter from the user's character was sent."]
+        assert turn["world"] == steps[-1]
 
 
 def test_a_mid_chain_failure_keeps_one_landed_frame_and_completes(
@@ -360,13 +371,17 @@ def test_a_mid_chain_failure_keeps_one_landed_frame_and_completes(
         framed = [t for t in history["turns"] if "world" in t]
         assert len(framed) == 1
         turn = framed[0]
-        assert "world_steps" not in turn
+        # C1-a 随迁：轮帧 = step one 帧 + 信寄出帧（互动行；拒收步零写）。
+        steps = turn["world_steps"]
+        assert len(steps) == 2
         assert [
-            str(note["narration"]) for note in turn["world"]["notes"]
+            str(note["narration"]) for note in steps[0]["notes"]
         ] == ["早市在广场上支起来了。"]
+        assert turn["world"] == steps[-1]
         # The refused step wrote nothing; the landed step stays landed.
         assert (
-            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 1
+            # C1-a 随迁：+1 信寄出事实行。
+            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 2
         )
 
 
@@ -435,8 +450,12 @@ def test_a_blocking_multi_step_round_rides_world_steps(
         framed = [t for t in history["turns"] if "world" in t]
         assert len(framed) == 1
         recovered = framed[0]["world_steps"]
-        assert len(recovered) == 3
-        for live, fresh in zip(steps, recovered):
+        # C1-a 随迁：历史帧 = 三步帧 + 信寄出帧（互动行帧，恢复面末位）。
+        assert len(recovered) == 4
+        assert [
+            n["narration"] for n in recovered[-1]["notes"]
+        ] == ["A letter from the user's character was sent."]
+        for live, fresh in zip(steps, recovered[:3]):
             assert [n["narration"] for n in live["notes"]] == [
                 n["narration"] for n in fresh["notes"]
             ]

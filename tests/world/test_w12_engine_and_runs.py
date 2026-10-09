@@ -6,11 +6,13 @@ DEC-OPI-7e3744ee…26; the spec §4.2 v2.1 seven-step sequence;
 M0.1 AD-6 — the run is durable so a restart does not re-roll the dice).
 The slice VAL groups, each a section below:
 
-1. **migration pins** — 0026 is the registered head, the ``world_run``
+1. **migration pins** — C1-a's 0027_chronicle_attribution is the
+   registered head (W-1-3's 0026_world_reveal one behind it), the
+   ``world_run``
    table carries its ten columns in order, and the schema's own
    declarations hold: the single FK to ``world``, the CHECK vocabularies
    (``DIRECTION`` absent), the cursor / version guards, the double
-   ``'26'`` stamp and the RESTRICT posture;
+   ``'27'`` stamp and the RESTRICT posture;
 2. **deterministic replay** — the same seed drives two independent
    runs (two fresh databases) to bit-for-bit identical traces and
    chronicles, and a different seed diverges;
@@ -235,21 +237,22 @@ def _assert_err(result: object, code: str) -> None:
 
 def test_0025_is_the_registered_head() -> None:
     """W-1-2's migration is in the chain, behind W-1-3's 0026_world_reveal
+    and C1-a's 0027_chronicle_attribution
     (the stamp-pin discipline every head move has followed since P8-4;
     the pin read "0025 is the head" while 0025 was the head); the shared
-    constants say so, and the stamp a fresh database carries is 26."""
+    constants say so, and the stamp a fresh database carries is 27."""
 
-    assert MIGRATION_IDS[-1] == "0026_world_reveal"
-    assert MIGRATION_IDS[-2] == "0025_world_runs"
-    assert SCHEMA_HEAD_FILE == "0026_world_reveal.sql"
+    assert MIGRATION_IDS[-1] == "0027_chronicle_attribution"
+    assert MIGRATION_IDS[-2] == "0026_world_reveal"
+    assert SCHEMA_HEAD_FILE == "0027_chronicle_attribution.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "26"
+    assert SCHEMA_HEAD_VERSION == "27"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0026_world_reveal"
-    assert applied[-2] == "0025_world_runs"
-    assert schema_version(fresh) == "26"
+    assert applied[-1] == "0027_chronicle_attribution"
+    assert applied[-2] == "0026_world_reveal"
+    assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 
 def test_world_run_carries_its_ten_columns() -> None:
@@ -344,8 +347,8 @@ def test_the_run_table_declares_its_posture() -> None:
             "SELECT key, value FROM schema_meta WHERE key LIKE '%schema_version%'"
         ).fetchall()
     )
-    assert stamps["schema_version"] == "26"
-    assert stamps["runtime_schema_version"] == "26"
+    assert stamps["schema_version"] == SCHEMA_HEAD_VERSION
+    assert stamps["runtime_schema_version"] == SCHEMA_HEAD_VERSION
 
 
 # ---------------------------------------------------------------------------

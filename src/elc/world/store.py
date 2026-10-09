@@ -74,6 +74,21 @@ enqueue twice, the same derivation law ``world_state_fact``'s
 ``fact_id`` spells; the record shape lives here beside its face rather
 than in :mod:`elc.world.types` (that module is the frozen identity and
 event shapes; this cut's authorization names the store's reveal face).
+
+Attribution face (C1-a, DEC-OPI-41a4df20…55): migration 0027 adds two
+columns to ``world_event`` — ``participants`` (the strict JSON array
+the types codec owns; the who of the chronicle) and ``run_id`` (the run
+the event rode; ``None`` for a legacy row, honestly empty). Every
+write/read above carries them; 存量行 answer the migration's DEFAULT
+with zero back-fill inference. The **interaction face** lands beside
+the event face: :meth:`SqliteWorldStore.record_interaction_event` is
+the only writer of the two user interaction kinds
+(:data:`INTERACTION_EVENT_KINDS` — the letter-sent fact and the
+direction-chosen call), and its discipline is the queue law's mirror:
+an interaction row lands **directly ``REVEALED``** (the user just did
+it — there is nothing to sit in an inbox), in the same one short
+transaction as its chronicle entry, while the world's own events keep
+walking the ``PENDING`` queue exactly as before.
 """
 
 from __future__ import annotations
@@ -101,10 +116,33 @@ from elc.world.types import (
     WorldRecord,
     WorldStateFact,
     decode_effects,
+    decode_participants,
     encode_effects,
+    encode_participants,
 )
 
-__all__ = ["SqliteWorldStore", "WorldRevealItem"]
+__all__ = [
+    "SqliteWorldStore",
+    "WorldRevealItem",
+    "INTERACTION_EVENT_KINDS",
+    "INTERACTION_SOURCE",
+]
+
+#: The two user interaction kinds the chronicle carries (C1-a): the
+#: letter-sent fact and the direction-chosen call.
+#: :meth:`SqliteWorldStore.record_interaction_event` refuses every other
+#: word (fail-closed — the world's own events go through
+#: :meth:`SqliteWorldStore.record_event` and the PENDING queue, never
+#: here).
+INTERACTION_EVENT_KINDS: tuple[str, ...] = (
+    "user-letter-sent",
+    "user-direction-chosen",
+)
+
+#: The ``source`` word every interaction row carries — the origin the
+#: presentation faces read to narrate the row honestly (never the
+#: narrator's word, never the engine's).
+INTERACTION_SOURCE = "user_interaction"
 
 
 def _now() -> str:
@@ -477,6 +515,17 @@ class SqliteWorldStore:
                         ),
                     )
                 )
+            decoded_participants = decode_participants(str(stored[7]))
+            if isinstance(decoded_participants, Err):
+                return Err(
+                    DomainError(
+                        code=decoded_participants.error.code,
+                        message=(
+                            f"event {event.event_id!r} replay cannot be"
+                            f" verified: {decoded_participants.error.message}"
+                        ),
+                    )
+                )
             stored_shape = (
                 str(stored[1]),
                 str(stored[2]),
@@ -484,6 +533,8 @@ class SqliteWorldStore:
                 decoded.value,
                 str(stored[5]),
                 str(stored[6]),
+                decoded_participants.value,
+                None if stored[8] is None else str(stored[8]),
             )
             if stored_shape == (
                 event.world_id,
@@ -492,6 +543,8 @@ class SqliteWorldStore:
                 event.effects,
                 event.occurred_at,
                 event.source,
+                event.participants,
+                event.run_id,
             ):
                 return Ok(
                     WorldEvent(
@@ -502,6 +555,8 @@ class SqliteWorldStore:
                         effects=decoded.value,
                         occurred_at=str(stored[5]),
                         source=str(stored[6]),
+                        participants=decoded_participants.value,
+                        run_id=None if stored[8] is None else str(stored[8]),
                     )
                 )
             return Err(
@@ -533,8 +588,8 @@ class SqliteWorldStore:
             self._conn.execute(
                 "INSERT INTO world_event ("
                 " event_id, world_id, kind, narration, effects,"
-                " occurred_at, source"
-                ") VALUES (?, ?, ?, ?, ?, ?, ?)",
+                " occurred_at, source, participants, run_id"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     event.event_id,
                     event.world_id,
@@ -543,6 +598,8 @@ class SqliteWorldStore:
                     encode_effects(event.effects),
                     event.occurred_at,
                     event.source,
+                    encode_participants(event.participants),
+                    event.run_id,
                 ),
             )
             for effect in event.effects:
@@ -592,6 +649,199 @@ class SqliteWorldStore:
                 DomainError(
                     code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
                     message=f"event {event.event_id!r} not written: {exc}",
+                )
+            )
+        self._conn.execute("COMMIT")
+        return Ok(event)
+
+    # -- interaction face (C1-a) -----------------------------------------------
+
+    def record_interaction_event(
+        self, event: WorldEvent, now: str
+    ) -> Result[WorldEvent]:
+        """Write one user interaction row and reveal it, atomically.
+
+        The only writer of the two interaction kinds
+        (:data:`INTERACTION_EVENT_KINDS` — C1-a's letter-sent fact and
+        direction-chosen call). The discipline is the reveal queue's
+        law **mirrored**: the world's own events land ``PENDING`` and
+        wait for the inbox's presentation trigger, but an interaction
+        is the user's own just-done act — its item lands **directly
+        ``REVEALED``** (``revealed_at`` = the caller's ``now``), so the
+        chronicle rows and their presentation exist in the same one
+        short transaction: the whole face lands or nothing does.
+
+        Refusals, before anything is written: a kind outside the
+        two-word vocabulary, a non-empty ``effects`` tuple (an
+        interaction settles no state claim), a ``source`` that is not
+        :data:`INTERACTION_SOURCE`, or a non-``None`` ``run_id`` (an
+        interaction is not a run event) — each a ``VALIDATION_FAILED``
+        naming the law. The replay law is :meth:`record_event`'s own:
+        the same ``event_id`` with the same shape answers the stored
+        row unchanged (nothing re-written, the reveal included); a
+        different shape is a ``CONFLICT``; a dangling world is a
+        ``NOT_FOUND`` (the table's FK is the backstop).
+        """
+
+        if event.kind not in INTERACTION_EVENT_KINDS:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"event {event.event_id!r} refused: kind"
+                        f" {event.kind!r} is not an interaction kind"
+                        f" (the vocabulary is"
+                        f" {', '.join(INTERACTION_EVENT_KINDS)});"
+                        " the world's own events go through record_event"
+                    ),
+                )
+            )
+        if event.effects:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"event {event.event_id!r} refused: an"
+                        " interaction row settles no state claim"
+                        " (empty effects); nothing was written"
+                    ),
+                )
+            )
+        if event.source != INTERACTION_SOURCE:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"event {event.event_id!r} refused: source"
+                        f" {event.source!r} is not the interaction"
+                        f" source {INTERACTION_SOURCE!r}; nothing was"
+                        " written"
+                    ),
+                )
+            )
+        if event.run_id is not None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"event {event.event_id!r} refused: an"
+                        " interaction row is not a run event (run_id"
+                        " stays None); nothing was written"
+                    ),
+                )
+            )
+
+        stored = self._event_values(event.event_id)
+        if stored is not None:
+            decoded = decode_effects(str(stored[4]))
+            if isinstance(decoded, Err):
+                return Err(
+                    DomainError(
+                        code=decoded.error.code,
+                        message=(
+                            f"event {event.event_id!r} replay cannot be"
+                            f" verified: {decoded.error.message}"
+                        ),
+                    )
+                )
+            decoded_participants = decode_participants(str(stored[7]))
+            if isinstance(decoded_participants, Err):
+                return Err(
+                    DomainError(
+                        code=decoded_participants.error.code,
+                        message=(
+                            f"event {event.event_id!r} replay cannot be"
+                            f" verified: {decoded_participants.error.message}"
+                        ),
+                    )
+                )
+            if (
+                str(stored[1]),
+                str(stored[2]),
+                str(stored[3]),
+                decoded.value,
+                str(stored[5]),
+                str(stored[6]),
+                decoded_participants.value,
+                None if stored[8] is None else str(stored[8]),
+            ) == (
+                event.world_id,
+                event.kind,
+                event.narration,
+                event.effects,
+                event.occurred_at,
+                event.source,
+                event.participants,
+                event.run_id,
+            ):
+                return Ok(event)
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.CONFLICT,
+                    message=(
+                        f"event {event.event_id!r} already exists with a"
+                        " different shape; events are append-only and do"
+                        " not rewrite"
+                    ),
+                )
+            )
+
+        began = False
+        try:
+            self._conn.execute("BEGIN IMMEDIATE")
+            began = True
+            self._conn.execute(
+                "INSERT INTO world_event ("
+                " event_id, world_id, kind, narration, effects,"
+                " occurred_at, source, participants, run_id"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    event.event_id,
+                    event.world_id,
+                    event.kind,
+                    event.narration,
+                    encode_effects(event.effects),
+                    event.occurred_at,
+                    event.source,
+                    encode_participants(event.participants),
+                    event.run_id,
+                ),
+            )
+            self._conn.execute(
+                "INSERT INTO world_reveal_item ("
+                " item_id, world_id, source_event_id, actor_id,"
+                " status, revealed_at, created_at"
+                ") VALUES (?, ?, ?, NULL, 'REVEALED', ?, ?)",
+                (
+                    f"{event.event_id}:reveal",
+                    event.world_id,
+                    event.event_id,
+                    now,
+                    now,
+                ),
+            )
+        except sqlite3.Error as exc:
+            if began:
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
+            if "FOREIGN KEY" in str(exc):
+                return Err(
+                    DomainError(
+                        code=DomainErrorCode.NOT_FOUND,
+                        message=(
+                            f"interaction {event.event_id!r} not written:"
+                            f" a referenced identity does not exist ({exc})"
+                        ),
+                    )
+                )
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=(
+                        f"interaction {event.event_id!r} not written: {exc}"
+                    ),
                 )
             )
         self._conn.execute("COMMIT")
@@ -1080,7 +1330,7 @@ class SqliteWorldStore:
 
         rows = self._conn.execute(
             "SELECT event_id, world_id, kind, narration, effects,"
-            " occurred_at, source"
+            " occurred_at, source, participants, run_id"
             " FROM world_event WHERE world_id = ?"
             " ORDER BY occurred_at ASC, event_id ASC",
             (world_id,),
@@ -1098,6 +1348,18 @@ class SqliteWorldStore:
                         ),
                     )
                 )
+            decoded_participants = decode_participants(str(row[7]))
+            if isinstance(decoded_participants, Err):
+                return Err(
+                    DomainError(
+                        code=decoded_participants.error.code,
+                        message=(
+                            f"chronicle of {world_id!r} refused at event"
+                            f" {str(row[0])!r}:"
+                            f" {decoded_participants.error.message}"
+                        ),
+                    )
+                )
             events.append(
                 WorldEvent(
                     event_id=str(row[0]),
@@ -1107,6 +1369,8 @@ class SqliteWorldStore:
                     effects=decoded.value,
                     occurred_at=str(row[5]),
                     source=str(row[6]),
+                    participants=decoded_participants.value,
+                    run_id=None if row[8] is None else str(row[8]),
                 )
             )
         return Ok(tuple(events))
@@ -1242,11 +1506,13 @@ class SqliteWorldStore:
     def _event_values(self, event_id: str) -> tuple[object, ...] | None:
         """One raw ``world_event`` row (the idempotence pre-read); the
         effects text stays undecoded here — :meth:`record_event` decodes
-        it through the strict codec where it can answer an ``Err``."""
+        it through the strict codec where it can answer an ``Err``. The
+        same posture covers migration 0027's two attribution columns
+        (``participants`` at index 7, ``run_id`` at index 8)."""
 
         row = self._conn.execute(
             "SELECT event_id, world_id, kind, narration, effects,"
-            " occurred_at, source"
+            " occurred_at, source, participants, run_id"
             " FROM world_event WHERE event_id = ?",
             (event_id,),
         ).fetchone()

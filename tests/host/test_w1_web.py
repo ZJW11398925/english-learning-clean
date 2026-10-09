@@ -1260,7 +1260,21 @@ def test_history_serves_the_turns_the_page_sent(tmp_path: Path) -> None:
         # v3-d 随迁：每轮两侧加性携带命中位图（无 content 腿 = None）。
         # fr-A 随迁：每轮加性携带 usage（未报 = None）；顶层加性 usage =
         # 会话累计（窗口无关——本栈两轮脚本 provider 未报，累计全 None、
-        # 计量 0/2 次调用）。
+        # 计量 0/2 次调用）。C1-a 随迁：每轮 + 信寄出事实行的世界帧
+        # （bound 世界，叙事者脚本拒收 ⇒ 零世界拍，唯一便条 = 信行）。
+        _letter_frame = {
+            "world_name": "Berrymoor",
+            "ui_language": "zh",
+            "date_localized": "",
+            "notes": [
+                {
+                    "narration": (
+                        "A letter from the user's character was sent."
+                    ),
+                    "fallback": True,
+                }
+            ],
+        }
         assert payload["turns"] == [
             {
                 "user": CLEAN_TEXT,
@@ -1268,6 +1282,7 @@ def test_history_serves_the_turns_the_page_sent(tmp_path: Path) -> None:
                 "user_word_hits": None,
                 "word_hits": None,
                 "usage": None,
+                "world": _letter_frame,
             },
             {
                 "user": SECOND_TEXT,
@@ -1275,6 +1290,7 @@ def test_history_serves_the_turns_the_page_sent(tmp_path: Path) -> None:
                 "user_word_hits": None,
                 "word_hits": None,
                 "usage": None,
+                "world": _letter_frame,
             },
         ]
         assert payload["usage"] == {

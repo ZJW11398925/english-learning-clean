@@ -241,10 +241,16 @@ def test_the_frame_rides_the_history_payload(tmp_path: Path) -> None:
         assert len(framed) == 1
         index, turn = framed[0]
         assert index == len(history["turns"]) - 1  # 本轮（唯一一轮）
-        frame = turn["world"]
+        frame = turn["world_steps"][0]  # the step frame
         # I1: the history frame is the authority — what the live turn
-        # showed is what the refresh recovers, verbatim.
-        assert _frame_narrations(turn) == shown
+        # showed is what the refresh recovers, verbatim. C1-a 随迁：
+        # 恢复面另带信寄出帧（互动行，本轮自己的事实），步帧逐字不变；
+        # world 持末帧（信行帧——真实时刻，零故事日行）。
+        assert _frame_narrations(turn) == shown + [
+            "A letter from the user's character was sent."
+        ]
+        assert turn["world"] == turn["world_steps"][-1]
+        assert turn["world"]["date_localized"] == ""
         assert frame["ui_language"] == "zh"
         assert frame["date_localized"]  # a story day line, localized
         assert frame["world_name"]
@@ -286,15 +292,20 @@ def test_each_turn_keeps_its_own_frame(tmp_path: Path) -> None:
         status, history = stack.get_json("/api/history")
         assert status == 200
         first, second, third = history["turns"]
+        # C1-a 随迁：每轮自己的信寄出事实行也挂自己轮（交互行按信封
+        # received_at 分桶——恒在本轮）。
         assert _frame_narrations(first) == [
             "雾又漫上码头，镇子把它当作日常。",
             "潮水在午后转向，滩涂重新露了出来。",
+            "A letter from the user's character was sent.",
         ]
         assert _frame_narrations(second) == [
-            "集市在广场上支起来了，鱼车天不亮就出了摊。"
+            "集市在广场上支起来了，鱼车天不亮就出了摊。",
+            "A letter from the user's character was sent.",
         ]
         assert _frame_narrations(third) == [
-            "守夜人在灯塔上换了一班，灯芯剪得极短。"
+            "守夜人在灯塔上换了一班，灯芯剪得极短。",
+            "A letter from the user's character was sent.",
         ]
 
 
@@ -611,8 +622,11 @@ def test_history_frames_render_after_the_letter_same_shape() -> None:
 
 
 def test_worldless_history_stays_unkeyed(tmp_path: Path) -> None:
-    """VAL ⑥ 零迁移半 + 载荷形状：无世界事件的通信，历史载荷逐轮不
-    带 world 键——pre-wr-8 形分毫不动（可加性键的另一半）。"""
+    """VAL ⑥ 载荷形状：零世界拍的通信，历史载荷每轮**恰一帧**——
+    C1-a 随迁改真：绑定栈上「零事件」不再可达（用户互动=世界史事件，
+    wr-8R DEC-…16 的读法兑现——每封信自己的事实行按信封时刻挂自己
+    轮）；真「无世界」场景（解绑会话零行）由
+    ``test_c1a_chronicle_attribution`` 钉。"""
 
     app_db = tmp_path / "app.db"
     with web_stack(app_db, provider=MuteProvider()) as stack:
@@ -622,4 +636,6 @@ def test_worldless_history_stays_unkeyed(tmp_path: Path) -> None:
         assert status == 200
         assert len(history["turns"]) == 2
         for turn in history["turns"]:
-            assert "world" not in turn
+            assert _frame_narrations(turn) == [
+                "A letter from the user's character was sent."
+            ]

@@ -299,6 +299,10 @@ def advance(
                 effects=selected.effects,
                 occurred_at=moment,
                 source=ENGINE_SOURCE,
+                # C1-a: the chronicle row carries the run it rode
+                # (migration 0027's attribution column — the same run
+                # in, the same id on every cycle's row).
+                run_id=run.run_id,
             )
         )
         if isinstance(written, Err):

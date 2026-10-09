@@ -43,6 +43,7 @@ from elc.platform.types import ConversationId, Ok, PersonaId, SecretRef
 from elc.teaching.rollout import RolloutStage
 from elc.user_config.types import DisclosureLevel
 from elc.web import DEFAULT_WEB_CONVERSATION_ID, _WebFace
+from tests.conftest import SCHEMA_HEAD_VERSION
 from tests.host.test_w1_web import _page_source, web_stack
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -329,10 +330,11 @@ def test_the_usage_columns_are_the_adjudicated_migration() -> None:
     ]
     for name in ("prompt_tokens", "completion_tokens", "total_tokens"):
         assert name in columns, name
-    # W-1-1 随迁、W-1-2 再随迁、W-1-3 三随迁：chain head = 0026（W-1-1 世界
-    # 事件树两表，W-1-2 世界运转一行，W-1-3 揭示队列一表；veto-R 随迁至
-    # 0023 的先例同型）；0021 的三列本体与自带 stamp（'21'，上钉）不动。
-    assert migrations.schema_version(conn) == "26"
+    # W-1-1 随迁、W-1-2 再随迁、W-1-3 三随迁、C1-a 四随迁：chain head =
+    # 0027（W-1-1 世界事件树两表，W-1-2 世界运转一行，W-1-3 揭示队列一表，
+    # C1-a 编年史归属两列；veto-R 随迁至 0023 的先例同型）；0021 的三列
+    # 本体与自带 stamp（'21'，上钉）不动。
+    assert migrations.schema_version(conn) == SCHEMA_HEAD_VERSION
     conn.close()
 
 

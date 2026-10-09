@@ -273,14 +273,29 @@ def test_the_directed_round_parks_then_walks_to_the_letter(
         assert turns[0][1] == "COMPLETED"
         assert _parked_rows(tmp_path / "app.db") == []
         assert provider.reply_dials == 1
-        # History tells the whole round: the user line, three world
-        # frames, the reply — and no parked key.
+        # History tells the whole round: the user line, the world's
+        # frames, the reply — and no parked key. C1-a 随迁：轮桶 3 步帧
+        # 之外 + 信寄出帧 + 走向选择帧（各按自己揭示戳成帧）。
         status, history = stack.get_json("/api/history")
         assert status == 200
         assert "parked" not in history
         turn = history["turns"][-1]
         assert turn["assistant"] == REPLY
-        assert len(turn["world_steps"]) == 3
+        assert len(turn["world_steps"]) == 5
+        step_narrations = [
+            note["narration"]
+            for frame in turn["world_steps"]
+            for note in frame["notes"]
+            if note["narration"]
+            != "A letter from the user's character was sent."
+            and note["narration"]
+            != "a storm rolls in — The harbour braces for weather."
+        ]
+        assert step_narrations == [
+            "The harbour kept its morning silence.",
+            "A stranger walked the cliff path to the keeper's door.",
+            "She broke the seal and read your letter by the window.",
+        ]
 
 
 def test_the_replied_round_refuses_further_continues(

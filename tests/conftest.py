@@ -85,12 +85,17 @@ MIGRATION_IDS: tuple[str, ...] = (
     # PENDING until the inbox's atomic reveal_all flips the world's slice to
     # REVEALED; the presentation trigger, never run fuel (spec §4.1).
     "0026_world_reveal",
+    # C1-a (DEC-OPI-41a4df20…55): the chronicle attribution foundation —
+    # world_event gains participants (the who, strict JSON array) and
+    # run_id (the run the event rode, deliberately FK-less); 存量行
+    # answer the DEFAULT ('[]' / NULL) with zero back-fill inference.
+    "0027_chronicle_attribution",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0026_world_reveal.sql"
-SCHEMA_HEAD_VERSION = "26"
+SCHEMA_HEAD_FILE = "0027_chronicle_attribution.sql"
+SCHEMA_HEAD_VERSION = "27"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md
