@@ -6,12 +6,19 @@ What this module claims, no more: the prompt is composed from the world
 package's bible (the setting prose, the cast — each member with their
 optional vignette, the town's narrative residents one line each when
 the package carries them — and the whole
-CURRENT lore fact set), the recent chronicle (the last eight narrations,
+CURRENT lore fact set), the cast-id roster (C1-b: every cast member's
+id beside the name the prose knows — the only ids a beat's
+``participants`` may name), the current-state section (C1-b: the
+state projection's CURRENT half as ``key: statement`` lines, when the
+caller carries any — the live state board the ``effects`` proposals
+write onto), the recent chronicle (the last eight narrations,
 oldest first — an empty chronicle answers an honest ``story begins``
 line), the people instruction (when the package carries residents or
 more than one cast member: write around their lives and how they touch
 — encounters, errands, small kindnesses, frictions, gossip — not only
-weather and scenery, one event refracting through several lives) and
+weather and scenery, one event refracting through several lives), the
+optional-keys teaching (C1-b: the ``effects`` / ``participants``
+filling rules, both modes) and
 the rhythm law (novel prose, small-town voice; consistent
 with the history above; nothing already happened repeated; each beat one
 to three sentences; exactly one or two beats; each beat spanning zero to
@@ -32,7 +39,23 @@ exactly one JSON object
 ``{"beats": [...]}`` carrying one or two beat objects, each with exactly
 ``kind`` (a slug of lowercase letters, digits and hyphens, at most 32
 characters), ``narration`` (non-blank) and ``days`` (an honest int, 0
-through 2). wr-10 (DEC-OPI-c73dbff3…64): the object may **also** carry
+through 2). C1-b (DEC-OPI-b290799a…17, the narrative-semantics cut —
+the external review HIGH-1's root fix): a beat object may **also**
+carry two optional keys beside the required three — an ``effects``
+array, the beat's structured state-effect proposals (each element
+exactly ``key`` and ``statement``, both non-blank strings; the key
+names the canonical state claim whose CURRENT fact the proposal
+replaces), and a ``participants`` array, the cast members present in or
+taking part in the beat (each element a non-blank string naming a cast
+id of the package's own roster — the roster the prompt teaches; a
+stranger id refuses the whole batch, fail-closed). A missing key
+answers the empty tuple — the pre-C1-b three-key shape parses exactly
+as before. The proposals land through the durable half unchanged: the
+store's settlement is the atomic final word (the key's CURRENT fact
+flips ``SUPERSEDED``, the beat's claim becomes the new ``CURRENT``
+row), so the projection moves with the story instead of the generated
+events being a log without state. wr-10 (DEC-OPI-c73dbff3…64): the
+object may **also** carry
 an optional ``directions`` array beside ``beats`` — the direction
 candidates (走向) the director's seat asked for: zero (or no key at all
 — the immersive shape), or two to four candidates, each exactly
@@ -50,9 +73,10 @@ has read it, the round's end; :data:`STOP_SHE_THINKS_OF_YOU` — she
 thinks of you, a checkpoint; :data:`STOP_AWAITS_YOU` — the world waits
 for your reaction) or :data:`STOP_NONE` (= keep going — the same as no
 key at all). A stop word outside the vocabulary refuses the whole
-batch. The whole-batch law covers the candidates and the stop signal
-with the beats: one answer, one fate — a bad array or a bad stop
-refuses the narration it rode in on.
+batch. The whole-batch law covers the candidates, the stop signal and
+the two optional beat keys with the beats: one answer, one fate — a bad
+array, a bad stop or a stranger participant refuses the narration it
+rode in on.
 Anything else — prose around the JSON, a missing or
 malformed field, an out-of-range span, an empty or oversized batch, an
 unexpected key — refuses the **whole batch** (诚实不造假: no partial
@@ -94,6 +118,7 @@ from elc.platform.types import (
     Result,
 )
 from elc.world.package import CastMember, WorldPackage
+from elc.world.types import StateEffect
 
 __all__ = [
     "DIRECTION_DIRECTED",
@@ -157,7 +182,9 @@ MAX_DIRECTIONS = 4
 #: The world-direction mode's two words (wr-10, spec §8's 模式 as this
 #: face reads it): ``directed`` asks the narrator for direction
 #: candidates beside its beats; ``immersive`` is the world's autonomous
-#: shape — the pre-wr-10 prompt, byte for byte.
+#: shape — none of the direction channel's text (the pre-wr-10
+#: byte-for-byte law held until C1-b's unconditional contract
+#: teaching).
 DIRECTION_DIRECTED = "directed"
 DIRECTION_IMMERSIVE = "immersive"
 _DIRECTION_MODE_WORDS = (DIRECTION_DIRECTED, DIRECTION_IMMERSIVE)
@@ -198,6 +225,19 @@ _LETTER_ON_WAY_HEADER = "== A letter on its way =="
 #: The kind slug's shape: lowercase letters, digits and hyphens, one
 #: non-separator character first, at most 32 characters.
 _KIND_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
+
+#: The beat object's key vocabulary (C1-b): the three required keys plus
+#: the two optional ones — an effects proposal array and a participants
+#: naming array. Anything else is an unexpected field (whole-batch
+#: refusal, the pre-C1-b law unchanged).
+_BEAT_REQUIRED_KEYS = {"kind", "narration", "days"}
+_BEAT_OPTIONAL_KEYS = {"effects", "participants"}
+_BEAT_KEYS = _BEAT_REQUIRED_KEYS | _BEAT_OPTIONAL_KEYS
+
+#: The one effect element's exact shape (C1-b): the canonical state key
+#: and the claim that becomes true — both non-blank strings, nothing
+#: else.
+_EFFECT_KEYS = {"key", "statement"}
 
 #: The narration language the interface language asks for (W-L's two
 #: words — anything else is a prompt-build refusal naming the pair).
@@ -470,6 +510,7 @@ def build_narrator_prompt(
     pending_direction: tuple[str, str] | None = None,
     letter_elapsed_days: int | None = None,
     free_direction: str | None = None,
+    state_facts: tuple[tuple[str, str], ...] = (),
 ) -> str:
     """The narrator's prompt, as one pure string (testable without a
     provider, a store or a world row).
@@ -499,8 +540,10 @@ def build_narrator_prompt(
     the candidates requirement — 2 to 4 direction candidates under the
     ``directions`` key, each ``label`` short phrase + ``hint`` one
     sentence of how the world might go — and widens the JSON shape
-    line; ``immersive`` adds nothing: the prompt is byte for byte the
-    pre-wr-10 text (the zero-change default). ``pending_direction`` —
+    line; ``immersive`` adds nothing of the direction channel: no
+    candidates requirement, no chosen-direction section, and the word
+    itself appears nowhere (the pre-wr-10 byte law held until C1-b's
+    unconditional contract teaching, below). ``pending_direction`` —
     the user's already-chosen ``(label, hint)`` awaiting consumption —
     adds its own section when present: **the director's input, the
     direction channel's own door** (走向, spec §4.6), never a letter's.
@@ -514,8 +557,9 @@ def build_narrator_prompt(
     zero compromise; the section says so in its own sentence). Its
     guidance is narrative, never a mechanical rule: no step count, no
     deadline — the world decides in its own terms when the letter
-    naturally arrives. ``None`` (the default) adds nothing: the prompt
-    is byte for byte the pre-lr-1 text.
+    naturally arrives. ``None`` (the default) adds nothing: no letter
+    section, no ``stop`` teaching (the pre-lr-1 byte law held until
+    C1-b's unconditional contract teaching, below).
 
     lr-3 (DEC-OPI-17b0a47f…7, the director's free-input channel):
     ``free_direction`` — the user's **own written** direction, the
@@ -526,7 +570,25 @@ def build_narrator_prompt(
     world moves in. The text is re-checked here (a non-blank string of
     at most :data:`MAX_FREE_DIRECTION_CHARS` characters — anything
     else is a ``ValueError`` naming the bound). ``None`` (the default)
-    adds nothing: the prompt is byte for byte the pre-lr-3 text.
+    adds nothing: no written-direction section (the pre-lr-3 byte law
+    held until C1-b's unconditional contract teaching, below).
+
+    C1-b (DEC-OPI-b290799a…17, the narrative-semantics cut): the
+    contract itself widened, and the prompt teaches it in three places.
+    The **cast-id roster** — a line after the cast row naming every
+    member's id beside the name the prose knows — is the only
+    vocabulary a beat's ``participants`` may draw from (the parser
+    refuses a stranger id, fail-closed). The **current-state section**
+    — ``state_facts`` as ``key: statement`` lines under its own header,
+    plus the effects-writing invitation — appears only when the caller
+    carries facts; an empty tuple adds nothing (the state board's
+    absence is the honest zero). The **optional-keys paragraph** —
+    after the JSON shape line, both modes — spells the widened beat
+    shape and the filling rules. The pre-C1-b byte-for-byte claims in
+    the paragraphs above are their own cuts' history: each parameter's
+    absence still adds nothing, and the absolute baselines that pinned
+    the whole default prompt (the C1-a golden, the lr-3 assembly) were
+    consciously re-cast for this widening.
 
     WR-4 (DEC-OPI-5fc42174-…58, the user's third direction): **no
     letter ever enters this prompt** — the living-world spec is
@@ -596,6 +658,17 @@ def build_narrator_prompt(
     sections.append(
         "Cast: " + ", ".join(_cast_row(member) for member in package.cast)
     )
+    # C1-b's cast-id roster: the only vocabulary a beat's
+    # ``participants`` may draw from (the parser refuses a stranger id,
+    # fail-closed). The id is the cast member's persona id — the
+    # durable actor face — taught beside the name the prose knows.
+    sections.append(
+        "Cast ids (a beat's ``participants`` names these ids and no"
+        " others): "
+        + ", ".join(
+            f"{member.persona_id} = {member.name}" for member in package.cast
+        )
+    )
     if package.residents:
         sections.append("== The town's residents ==")
         sections.extend(
@@ -615,6 +688,21 @@ def build_narrator_prompt(
         sections.extend(f"- {key}: {statement}" for key, statement in lore_facts)
     else:
         sections.append("- (Nothing is settled yet.)")
+    if state_facts:
+        # C1-b's current-state section: the projection's live half as
+        # the effects board — present only when the caller carries
+        # facts, so an empty projection adds nothing (the honest zero).
+        sections.append("== The world's current state ==")
+        sections.extend(f"- {key}: {statement}" for key, statement in state_facts)
+        sections.append(
+            "This is the world's live state — each line is one claim"
+            " under its key, true right now. When one of your beats"
+            " changes what is true, propose the change in that beat's"
+            " ``effects``: one element per changed key, the same key"
+            " naming the claim it replaces and a statement saying what"
+            " becomes true. Propose nothing when the beat changes"
+            " nothing."
+        )
     sections.append("== The story so far ==")
     if recent_narrations:
         sections.extend(f"- {narration}" for narration in recent_narrations)
@@ -711,6 +799,21 @@ def build_narrator_prompt(
             + " The ``kind`` is a short slug: lowercase letters, digits and"
             " hyphens only, at most 32 characters."
         )
+    # C1-b's optional-keys paragraph: the widened beat contract, both
+    # modes, after the shape line (the shape line itself is every
+    # earlier cut's byte — the extension teaches beside it, never over
+    # it).
+    sections.append(
+        "Beside the required ``kind``, ``narration`` and ``days``, each"
+        " beat may carry two optional keys. ``effects`` is the beat's"
+        " state-effect proposals — an array, each element exactly"
+        ' {"key": <the state key>, "statement": <what becomes true>};'
+        " include it only when the beat genuinely changes what is true,"
+        " and leave it out when the beat settles nothing."
+        " ``participants`` is an array of the cast ids present in or"
+        " taking part in the beat — drawn from the roster above and"
+        " nothing else; leave it out when none do."
+    )
     return "\n\n".join(sections)
 
 
@@ -724,11 +827,24 @@ class GeneratedBeat:
     the beat's prose (written as the model wrote it — untrusted-as-is
     downstream: the chronicle stores it verbatim, the presentation faces
     render it as text), ``days`` the story span the beat covers (0-2;
-    the orchestrator's calendar rides on it)."""
+    the orchestrator's calendar rides on it).
+
+    C1-b (DEC-OPI-b290799a…17): ``effects`` is the beat's own ordered
+    tuple of :class:`~elc.world.types.StateEffect` proposals — the
+    structured state claims the beat settles when it lands (the
+    external review HIGH-1's root fix: the generated chronicle moves
+    the projection, it is no longer a log without state); the store's
+    settlement is the atomic final word. ``participants`` is the beat's
+    own ordered tuple of cast ids (migration 0027's attribution
+    column) — parser-verified members of the package's roster, never
+    guessed. Both default to the empty tuple: the pre-C1-b three-key
+    shape answers exactly the pre-C1-b beat."""
 
     kind: str
     narration: str
     days: int
+    effects: tuple[StateEffect, ...] = ()
+    participants: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -810,6 +926,7 @@ class WorldNarrator:
         pending_direction: tuple[str, str] | None = None,
         letter_elapsed_days: int | None = None,
         free_direction: str | None = None,
+        state_facts: tuple[tuple[str, str], ...] = (),
     ) -> Result[
         tuple[
             tuple[GeneratedBeat, ...],
@@ -846,15 +963,26 @@ class WorldNarrator:
 
         lr-1 (DEC-OPI-c73dbff3…95): ``letter_elapsed_days`` rides to
         the prompt builder (the letter-on-its-way section and the
-        widened JSON shape line; ``None`` keeps the prompt byte for
-        byte the pre-lr-1 text). The extractor is untouched by the
+        widened JSON shape line; ``None`` adds nothing of the letter
+        channel). The extractor is untouched by the
         stop key — it watches narration values only, so the streamed
         preview shows the prose, never the signal.
 
         lr-3 (DEC-OPI-17b0a47f…7): ``free_direction`` rides to the
         prompt builder the same way (the written-direction section;
-        ``None`` keeps the prompt byte for byte the pre-lr-3 text —
+        ``None`` adds nothing of the written door —
         the strict parse and the extractor read nothing of it).
+
+        C1-b (DEC-OPI-b290799a…17): ``state_facts`` — the caller's
+        reading of the projection's CURRENT half — rides to the prompt
+        builder as the current-state section (an empty tuple adds
+        nothing), and the parse now verifies the answer's optional
+        ``effects`` (shape and non-blankness — :class:`StateEffect`
+        tuples out) and ``participants`` (each id a member of the
+        package's own cast roster, fail-closed on a stranger) beside
+        the three required keys. The beats come out carrying their
+        proposals and their named cast — the durable half lands them
+        verbatim.
 
         The provider's own fault words pass through as the ``Err``
         message verbatim (``not-configured``, ``timeout``, … — the
@@ -868,6 +996,7 @@ class WorldNarrator:
         retired pool.
         """
 
+        cast_ids = frozenset(member.persona_id for member in package.cast)
         prompt = CompiledPrompt(
             persona_id=NARRATOR_PERSONA_ID,
             prompt_text=build_narrator_prompt(
@@ -875,11 +1004,12 @@ class WorldNarrator:
                 lore_facts,
                 recent_narrations,
                 ui_language,
-            direction_mode,
-            pending_direction,
-            letter_elapsed_days,
-            free_direction,
-        ),
+                direction_mode,
+                pending_direction,
+                letter_elapsed_days,
+                free_direction,
+                state_facts,
+            ),
             generation_contract=NARRATOR_CONTRACT,
         )
         streaming = getattr(self._provider, "call_streaming", None)
@@ -912,11 +1042,12 @@ class WorldNarrator:
             )
         if output.text is None or not output.text.strip():
             return _refused("the provider answered no text")
-        return _parse_beats(output.text)
+        return _parse_beats(output.text, cast_ids)
 
 
 def _parse_beats(
     text: str,
+    cast_ids: frozenset[str],
 ) -> Result[
     tuple[
         tuple[GeneratedBeat, ...],
@@ -928,14 +1059,20 @@ def _parse_beats(
     ``{"beats": [...]}`` — or with an optional ``directions`` array
     (wr-10: the candidates ride the same answer) and an optional
     ``stop`` object (lr-1: the natural stopping point rides the same
-    answer) — one or two beat objects, each exactly ``kind`` /
-    ``narration`` / ``days`` in shape and range, each candidate exactly
-    ``label`` / ``hint``, both non-blank, the array none or
+    answer) — one or two beat objects, each ``kind`` / ``narration`` /
+    ``days`` in shape and range plus at most the two C1-b optional
+    keys: an ``effects`` array (each element exactly ``key`` /
+    ``statement``, both non-blank strings — the beat's state-effect
+    proposals) and a ``participants`` array (each element a non-blank
+    string that must be one of ``cast_ids`` — the package's roster; a
+    stranger id refuses the whole batch, fail-closed), each candidate
+    exactly ``label`` / ``hint``, both non-blank, the array none or
     :data:`MIN_DIRECTIONS` through :data:`MAX_DIRECTIONS`, and the stop
     exactly ``{"kind": <word>}`` with ``word`` in :data:`STOP_WORDS` (an
     explicit ``none`` answers ``None`` — the same as no key at all).
-    Any miss refuses the whole batch — the discriminator word rides
-    every refusal's message."""
+    Missing optional keys answer empty tuples (the pre-C1-b shape
+    parses exactly as before). Any miss refuses the whole batch — the
+    discriminator word rides every refusal's message."""
 
     try:
         payload = json.loads(text)
@@ -970,10 +1107,13 @@ def _parse_beats(
                 f"beats[{index}] is not a JSON object"
                 f" (got {type(element).__name__})"
             )
-        if set(element) != {"kind", "narration", "days"}:
+        if not _BEAT_REQUIRED_KEYS <= set(element) or not set(
+            element
+        ) <= _BEAT_KEYS:
             return _refused(
-                f"beats[{index}] must carry exactly 'kind', 'narration'"
-                f" and 'days' (got"
+                f"beats[{index}] must carry 'kind', 'narration' and"
+                f" 'days' (plus at most the optional 'effects' and"
+                f" 'participants') (got"
                 f" {', '.join(sorted(map(str, element))) or 'nothing'})"
             )
         kind = element["kind"]
@@ -992,7 +1132,85 @@ def _parse_beats(
                 f"beats[{index}].days is not an int in"
                 f" [{MIN_DAYS}, {MAX_DAYS}]: {days!r}"
             )
-        beats.append(GeneratedBeat(kind=kind, narration=narration, days=days))
+        raw_effects = element.get("effects")
+        effects: tuple[StateEffect, ...] = ()
+        if raw_effects is not None:
+            # C1-b's same-batch law at the beat level: a malformed
+            # effects array refuses the whole answer (one answer, one
+            # fate — no salvage of the well-formed half).
+            if not isinstance(raw_effects, list):
+                return _refused(
+                    f"beats[{index}].effects is not a JSON array"
+                    f" (got {type(raw_effects).__name__})"
+                )
+            proposals: list[StateEffect] = []
+            for effect_index, effect in enumerate(raw_effects):
+                if not isinstance(effect, dict):
+                    return _refused(
+                        f"beats[{index}].effects[{effect_index}] is not a"
+                        f" JSON object (got {type(effect).__name__})"
+                    )
+                if set(effect) != _EFFECT_KEYS:
+                    shape = ", ".join(sorted(map(str, effect))) or "nothing"
+                    return _refused(
+                        f"beats[{index}].effects[{effect_index}] must"
+                        f" carry exactly 'key' and 'statement' (got"
+                        f" {shape})"
+                    )
+                effect_key = effect["key"]
+                effect_statement = effect["statement"]
+                if not isinstance(effect_key, str) or not effect_key.strip():
+                    return _refused(
+                        f"beats[{index}].effects[{effect_index}].key is"
+                        " blank or not a string"
+                    )
+                if not isinstance(effect_statement, str) or not (
+                    effect_statement.strip()
+                ):
+                    return _refused(
+                        f"beats[{index}].effects[{effect_index}]"
+                        ".statement is blank or not a string"
+                    )
+                proposals.append(
+                    StateEffect(key=effect_key, statement=effect_statement)
+                )
+            effects = tuple(proposals)
+        raw_participants = element.get("participants")
+        participants: tuple[str, ...] = ()
+        if raw_participants is not None:
+            # C1-b's roster law: every named participant is a cast id of
+            # this world's own package — a stranger refuses the whole
+            # batch (fail-closed; the chronicle never carries a name the
+            # world does not know).
+            if not isinstance(raw_participants, list):
+                return _refused(
+                    f"beats[{index}].participants is not a JSON array"
+                    f" (got {type(raw_participants).__name__})"
+                )
+            named: list[str] = []
+            for participant_index, participant in enumerate(raw_participants):
+                if not isinstance(participant, str) or not participant.strip():
+                    return _refused(
+                        f"beats[{index}].participants[{participant_index}]"
+                        " is blank or not a string"
+                    )
+                if participant not in cast_ids:
+                    return _refused(
+                        f"beats[{index}].participants[{participant_index}]"
+                        f" names {participant!r} — not a cast id of this"
+                        " world's roster"
+                    )
+                named.append(participant)
+            participants = tuple(named)
+        beats.append(
+            GeneratedBeat(
+                kind=kind,
+                narration=narration,
+                days=days,
+                effects=effects,
+                participants=participants,
+            )
+        )
     raw_stop = payload.get("stop")
     stop: StopSignal | None = None
     if raw_stop is not None:

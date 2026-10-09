@@ -27,8 +27,9 @@ the seven VAL groups:
 5. **immersion zero-change** — a worldless conversation's turn writes
    no chronicle row at all;
 6. **the narrator contract byte pin** — ``build_narrator_prompt``'s
-   output hashes to the pre-C1-a golden (the C1-b prerequisite: the
-   attribution cut feeds nothing into the prompt);
+   output hashes to the C1-b golden (the pre-C1-a original
+   ``ceb73d7e…`` held until C1-b widened the contract; the attribution
+   cut still feeds nothing into the prompt);
 7. the served face still takes the attribution material (the caller
    hands the window its turn ids; the arm reads the runs) — the
    lr-2 source-fact posture; the wr-8/lr-2 suites ride unchanged in
@@ -681,9 +682,15 @@ def test_a_worldless_letter_writes_no_chronicle_row(tmp_path: Path) -> None:
 
 
 def test_the_narrator_prompt_is_byte_untouched() -> None:
-    """``build_narrator_prompt`` hashes to the pre-C1-a golden: the
-    attribution cut feeds nothing into the prompt (no participants, no
-    run ids, no interaction words). C1-b re-pins consciously."""
+    """``build_narrator_prompt`` hashes to the C1-b golden (was the
+    pre-C1-a golden ``ceb73d7e…8100e``). Re-cast consciously, twice:
+    C1-a itself fed nothing into the prompt (the attribution cut's own
+    zero-change law), and C1-b (DEC-OPI-b290799a…17) then widened the
+    contract — the cast-id roster line, the optional-keys paragraph,
+    both unconditional — so the hash moved to the widened shape. The
+    judgment that survives: the attribution columns (participants
+    values, run ids, interaction words) still feed nothing — the
+    roster/teaching lines are contract, not attribution."""
 
     prompt = build_narrator_prompt(
         _minimal_package(),
@@ -693,7 +700,7 @@ def test_the_narrator_prompt_is_byte_untouched() -> None:
     )
     assert (
         hashlib.sha256(prompt.encode("utf-8")).hexdigest()
-        == "ceb73d7ec4b1e0aa967b0636c48f023f3bc54632daedba15b6d6381152a8100e"
+        == "4b484ae7c497f8be291689b8ec9a54c8e5287616f6e0ed452e2662b65cc2eaba"
     )
 
 

@@ -296,8 +296,9 @@ def run_generated_step(
     ``on_directions`` — the wr-7 increments seam's sibling — receives
     the answer's parsed candidates (possibly none) once the step has
     beats to land, before the durable half. The defaults (immersive,
-    no pending, no callback) run the step byte for byte as before
-    wr-10.
+    no pending, no callback) run the step without any of the direction
+    channel's parts (the zero-change default; the pre-wr-10 byte law
+    held until C1-b's unconditional contract teaching).
 
     lr-1 (DEC-OPI-c73dbff3…95, the natural-run chain): the chain
     itself lives with the caller (the web face runs the steps — each
@@ -306,7 +307,7 @@ def run_generated_step(
     step's own verdict. ``letter_elapsed_days`` — the world-inbound
     fact of the letter's journey (how many days ago it was sent) —
     rides to the narrator's prompt (the letter-on-its-way section;
-    ``None`` keeps the prompt byte for byte the pre-lr-1 text; **the
+    ``None`` adds nothing of the letter channel; **the
     letter's contents never ride here or anywhere** — WR-4 stands,
     the section names the journey, never the words). ``on_stop`` —
     the verdict seam, :attr:`on_directions`' sibling — receives the
@@ -325,9 +326,20 @@ def run_generated_step(
     narrator offers stay the inspiration menu beside it — both doors
     coexist; the written text is the call itself) — rides to the
     prompt as its own section, the candidate section's sibling.
-    ``None`` (the default) runs the step byte for byte as before
-    lr-3 (the zero-change default, the wr-10 posture again); the
+    ``None`` (the default) runs the step without the written door (the
+    zero-change default, the wr-10 posture again); the
     strict parse and the durable half read nothing of it.
+
+    C1-b (DEC-OPI-b290799a…17, the narrative-semantics cut): the step
+    feeds the narrator's prompt its own current-state section (the
+    projection's CURRENT half, the same read the lore face carries —
+    the live state board the beats' ``effects`` write onto), and the
+    durable half lands each beat's verified ``effects`` and
+    ``participants`` verbatim (:data:`~elc.world.narrator.
+    NARRATOR_SOURCE` rows that settle state claims and name their
+    cast) — the feed-forward loop the external review HIGH-1 asked
+    for: a settled claim shows up in the next step's prompt, and the
+    generated chronicle is no longer a log without state.
 
     The order: the narrator first (compose, one provider call —
     blocking, or streamed through the provider's optional face when
@@ -379,8 +391,16 @@ def run_generated_step(
 
     The beats land verbatim (untrusted-as-is): the narrator's ``kind``
     and ``narration`` are the chronicle row's own words, ``effects`` is
-    empty (the generated story settles no state claim — the projection
-    only moves when a future cut says so), ``source`` is
+    the beat's own state-effect proposals — parsed strict at the
+    narrator (shape, non-blankness; C1-b, DEC-OPI-b290799a…17) and
+    settled atomically by the store (the key's CURRENT fact flips
+    ``SUPERSEDED``, the beat's claim lands as the new ``CURRENT`` row —
+    the projection moves with the generated story, the external
+    review's 「有日志的故事生成器」 risk closed at the root; a beat that
+    proposes nothing lands as the legal pure-narration event exactly as
+    before), ``participants`` is the beat's own cast-id naming riding
+    migration 0027's attribution column (parser-verified roster
+    members), and ``source`` is
     :data:`~elc.world.narrator.NARRATOR_SOURCE`, and every row carries
     its run's id (C1-a, migration 0027's attribution column — the
     anchor run above; the replayed-letter arm writes nothing, so a
@@ -426,12 +446,12 @@ def run_generated_step(
     chronicle = store.chronicle_of(world_id)
     if isinstance(chronicle, Err):
         return Err(chronicle.error)
+    facts = store.current_facts(world_id)
     narrator = WorldNarrator(provider)
     generated = narrator.generate(
         package=package,
         lore_facts=tuple(
-            (fact.canonical_key, fact.statement)
-            for fact in store.current_facts(world_id)
+            (fact.canonical_key, fact.statement) for fact in facts
         ),
         recent_narrations=tuple(
             event.narration
@@ -443,6 +463,13 @@ def run_generated_step(
         pending_direction=pending_direction,
         letter_elapsed_days=letter_elapsed_days,
         free_direction=free_direction,
+        # C1-b (DEC-OPI-b290799a…17): the same CURRENT half rides again
+        # as the prompt's current-state section — the live state board
+        # the beats' ``effects`` proposals write onto (the feed-forward
+        # loop: a settled claim shows up here on the next step).
+        state_facts=tuple(
+            (fact.canonical_key, fact.statement) for fact in facts
+        ),
     )
     if isinstance(generated, Err):
         if generated.error.message == REASON_NOT_CONFIGURED:
@@ -527,9 +554,15 @@ def run_generated_step(
                 world_id=world_id,
                 kind=beat.kind,
                 narration=beat.narration,
-                effects=(),
+                # C1-b (DEC-OPI-b290799a…17): the beat's own proposals
+                # and its named cast land verbatim — the parser already
+                # verified shape and roster membership, and the store's
+                # settlement is the atomic final word (the key's CURRENT
+                # fact flips SUPERSEDED, the beat's claim lands CURRENT).
+                effects=beat.effects,
                 occurred_at=(start + timedelta(days=total)).isoformat(),
                 source=NARRATOR_SOURCE,
+                participants=beat.participants,
                 # C1-a: every beat carries the run it rode (migration
                 # 0027's attribution column) — the anchor run's id, the
                 # same row the winch just adopted or wound, so a whole

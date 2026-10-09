@@ -80,8 +80,12 @@ _FREE_ROW = json.dumps({"text": FREE_TEXT, "source": "free"},
 # 1 — the prompt contract (VAL ①), the byte-for-byte judgment face
 # ---------------------------------------------------------------------------
 
-#: The pre-lr-3 immersive default prompt, machine-read off the parent
-#: commit's own code (the absolute zero-change baseline).
+#: The default immersive prompt, machine-read off the post-C1-b builder
+#: (the absolute zero-change baseline). C1-b (DEC-OPI-b290799a…17) re-cast
+#: this literal from the pre-lr-3 original when the contract teaching
+#: went unconditional (the cast-id roster + the optional-keys paragraph);
+#: the judgment is unchanged — with ``free_direction`` at its default the
+#: prompt is exactly this, byte for byte.
 _A_BASELINE = (
     'You are the narrator of a small fictional world.\n\n'
     'Write what happens there next, as a novel would.\n\n'
@@ -93,6 +97,8 @@ _A_BASELINE = (
     'Calendar is a small harbour town on a cold coast.\n\n'
     'The boats come in with the morning tide.\n\n'
     'Cast: Nell Alder\n\n'
+    "Cast ids (a beat's ``participants`` names these ids and no"
+    ' others): persona-nell = Nell Alder\n\n'
     "== The world's established facts ==\n\n"
     '- (Nothing is settled yet.)\n\n'
     '== The story so far ==\n\n'
@@ -108,7 +114,16 @@ _A_BASELINE = (
     'Answer with strict JSON only — no prose outside it: {"beats":'
     ' [{"kind": "<slug>", "narration": "<...>", "days": 0}]} The'
     ' ``kind`` is a short slug: lowercase letters, digits and hyphens'
-    ' only, at most 32 characters.'
+    ' only, at most 32 characters.\n\n'
+    'Beside the required ``kind``, ``narration`` and ``days``, each'
+    " beat may carry two optional keys. ``effects`` is the beat's"
+    ' state-effect proposals — an array, each element exactly {"key":'
+    ' <the state key>, "statement": <what becomes true>}; include it'
+    ' only when the beat genuinely changes what is true, and leave it'
+    ' out when the beat settles nothing. ``participants`` is an array'
+    ' of the cast ids present in or taking part in the beat — drawn'
+    ' from the roster above and nothing else; leave it out when none'
+    ' do.'
 )
 
 #: The directed+pending+letter shape's sections below the shared head
@@ -166,6 +181,24 @@ _FREE_SECTION = (
     " world moves in this direction.\n\n"
 )
 
+#: C1-b's contract-teaching paragraph, as the assembly of the
+#: directed+pending+letter shape reads it (the leading blank line joins
+#: it to the stop-JSON line; the paragraph text is pinned inside
+#: ``_A_BASELINE`` above — this constant exists so the assembly test
+#: names the piece it gained at C1-b).
+_C1B_CONTRACT = (
+    "\n\n"
+    'Beside the required ``kind``, ``narration`` and ``days``, each'
+    " beat may carry two optional keys. ``effects`` is the beat's"
+    ' state-effect proposals — an array, each element exactly {"key":'
+    ' <the state key>, "statement": <what becomes true>}; include it'
+    ' only when the beat genuinely changes what is true, and leave it'
+    ' out when the beat settles nothing. ``participants`` is an array'
+    ' of the cast ids present in or taking part in the beat — drawn'
+    ' from the roster above and nothing else; leave it out when none'
+    ' do.'
+)
+
 
 def test_the_free_direction_rides_its_own_section() -> None:
     """The written direction is its own section — the chosen-candidate
@@ -206,10 +239,12 @@ def test_the_free_direction_rides_its_own_section() -> None:
 
 def test_the_zero_change_default_holds_byte_for_byte() -> None:
     """The judgment face: with ``free_direction`` at its default the
-    prompt is byte for byte the pre-lr-3 text — the immersive default
-    against the absolute parent-run baseline, the directed + pending +
-    letter shape against the parent-run section assembly (the head is
-    the pinned absolute baseline itself)."""
+    prompt is byte for byte the default text — the immersive default
+    against the absolute baseline, the directed + pending + letter
+    shape against the section assembly (the head is the pinned absolute
+    baseline itself). C1-b (DEC-OPI-b290799a…17) re-cast the baseline
+    when the contract teaching went unconditional; the judgment (the
+    written door adds nothing at the baseline) is lr-3's own, held."""
 
     pkg = _package()
     assert build_narrator_prompt(pkg, (), (), "zh") == _A_BASELINE
@@ -231,6 +266,7 @@ def test_the_zero_change_default_holds_byte_for_byte() -> None:
         + _CHOSEN_SECTION
         + _LANGUAGE_LINE
         + _STOP_JSON_LINE
+        + _C1B_CONTRACT
     )
 
 
