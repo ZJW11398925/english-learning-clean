@@ -460,6 +460,7 @@ from elc.platform.types import (
     PersonaId,
     PolicyVersion,
     TargetId,
+    TurnId,
 )
 from elc.runtime.controller import TeachingReplyRequest
 from elc.runtime.types import TERMINAL_TURN_STATUSES, InputEnvelope
@@ -483,7 +484,13 @@ from elc.user_config.types import (
     TeachingPolicyProfile,
 )
 from elc.world.engine.orchestrate import run_generated_step
-from elc.world.narrator import STOP_LETTER_ARRIVES, DirectionCandidate, StopSignal
+from elc.world.narrator import (
+    STOP_AWAITS_YOU,
+    STOP_LETTER_ARRIVES,
+    STOP_NONE,
+    DirectionCandidate,
+    StopSignal,
+)
 from elc.world.package import (
     BUILTIN_WORLDS_DIR,
     WorldPackage,
@@ -2318,7 +2325,12 @@ MAX_CHAIN_STEPS = 5
 #: for the director's choice — the narrator's own signal words (the
 #: ``elc.world.narrator`` vocabulary) say why the world paused; this one
 #: says what the round is doing. It rides the parked final's ``stop``
-#: key, never a narrator frame.
+#: key, never a narrator frame. 刀 N (lr-4 no-reply, DEC-OPI-41a4df20…46):
+#: the two families now also ride **beside** each other — the narrator's
+#: own word lands in the row and the parked finals as the additive
+#: ``stop_kind`` key (an absent field reads :data:`STOP_NONE`, the old
+#: rows' backward-compatible word) while this key stays byte for byte
+#: what lr-4a pinned.
 WORLD_STOP_AWAITS_DIRECTION = "awaits_direction"
 
 #: The parked round's directionless crank ceiling (lr-4a R7's safety
@@ -2351,6 +2363,20 @@ def _world_parked_turn_key(conversation_id: str) -> str:
     parked round per desk at a time, the newest letter's)."""
 
     return _APP_SETTING_WORLD_PARKED_TURN_PREFIX + conversation_id
+
+
+def _parked_stop_kind_word(stop: str | None) -> str:
+    """The narrator's own stop word, as the parked row and the parked
+    finals record it (刀 N, DEC-OPI-41a4df20…46): the word itself —
+    ``letter_arrives`` never reaches a park (that word ends the chain
+    into the reply, the pre-刀 law) — and the absence of a signal is
+    recorded under the narrator's own keep-going word
+    :data:`STOP_NONE` (the parser already normalizes an explicit
+    ``none`` and no key at all to the same answer; this only spells
+    that answer where a durable field needs one)."""
+
+    return stop if stop is not None else STOP_NONE
+
 
 #: The two writes' 400 sentences — one grammar line each, naming the words.
 _UI_LANGUAGE_GRAMMAR = (
@@ -3294,8 +3320,26 @@ class _WebFace:
         true``, ``stop: awaits_direction``, the candidates under
         ``directions``. Immersive mode runs the pre-lr-4a chain byte for
         byte — zero stop points, zero parking (the R6 regression
-        surface)."""
+        surface).
 
+        刀 N (lr-4 no-reply, DEC-OPI-41a4df20…46): a new letter is the
+        parked round's supersession — a desk holds at most one open
+        round, the newest letter's — so an existing parked round whose
+        turn is still open is **closed first** (the coordinator's
+        ``close_parked_turn_without_reply``: ``NO_ASSISTANT_OUTPUT``,
+        the old-epoch round adopted, the row cleared) before this
+        letter's chain runs; the parked finals carry the narrator's own
+        stop word additively under ``stop_kind`` (an ``awaits_you`` stop
+        closes its round the same way right at the park)."""
+
+        superseded = self._close_superseded_parked_round()
+        if superseded is not None:
+            return {
+                "reply": None,
+                "turn_status": None,
+                "failure_reason": superseded,
+                "teaching_moments": [],
+            }
         mode = self._world_direction_mode()
         directed = mode == "directed"
         frames, stop, _failed = self._world_step_frame(
@@ -3303,7 +3347,9 @@ class _WebFace:
         )
         parked = directed and bool(frames) and stop != STOP_LETTER_ARRIVES
         if parked:
-            payload = self._park_round(text=text, frames=frames)
+            payload = self._park_round(
+                text=text, frames=frames, stop_kind=stop
+            )
         else:
             payload, turn_id = self._commit_and_answer(text)
         if frames:
@@ -3427,8 +3473,22 @@ class _WebFace:
         when the narrator declared one (lr-2's raw material); a chain
         that ended on the defensive ceiling without a signal answers
         no key — never an invented one.
+
+        刀 N (lr-4 no-reply, DEC-OPI-41a4df20…46): the blocking face's
+        supersession law is this face's too — a new letter closes an
+        open parked round first (:meth:`turn`'s docstring carries the
+        whole shape), and the parked finals carry the narrator's word
+        additively under ``stop_kind``.
         """
 
+        superseded = self._close_superseded_parked_round()
+        if superseded is not None:
+            return {
+                "reply": None,
+                "turn_status": None,
+                "failure_reason": superseded,
+                "teaching_moments": [],
+            }
         live = self._host.coordinator.persona_provider()
         if not hasattr(live, "call_streaming"):
             # The blocking shape: the world chain runs outside the
@@ -3445,7 +3505,9 @@ class _WebFace:
                 # lr-4a: the directed round's step is a choice point —
                 # park (the parked final carries the candidates; the
                 # frames above already rode the stream).
-                return self._park_round(text=text, frames=frames)
+                return self._park_round(
+                    text=text, frames=frames, stop_kind=stop
+                )
             payload, turn_id = self._commit_and_answer(text)
             if stop is not None:
                 payload["stop"] = stop
@@ -3480,7 +3542,7 @@ class _WebFace:
             # lr-4a: the directed round's step is a choice point — park.
             # The parked half (CP0 + the learning leg) dials no provider,
             # so the live proxy never installs for it.
-            return self._park_round(text=text, frames=frames)
+            return self._park_round(text=text, frames=frames, stop_kind=stop)
         coordinator = self._host.coordinator
         coordinator.replace_persona_provider(
             _StreamingProviderProxy(live, bridge)
@@ -3693,17 +3755,6 @@ class _WebFace:
                 # beats): it streams no pieces, so no failure handle —
                 # the chain simply ends with what landed before.
                 break
-            if pending is not None:
-                # 选了即用即清 (wr-10; lr-3's two shapes alike): the
-                # director's input rode into this chain's first prompt
-                # and the step succeeded — the pending row is consumed
-                # and the rest of the chain turns without it. Every
-                # quiet or refused arm broke above, so 拒收/安静不清
-                # stands.
-                self._host.app_settings.delete(
-                    _world_pending_direction_key(world_id)
-                )
-                pending = None
             revealed = world_store.reveal_all(
                 world_id, datetime.now(tz=UTC).isoformat()
             )
@@ -3713,6 +3764,22 @@ class _WebFace:
                 # instead. Never a half-frame.
                 failed_after_shown = saw_increment["this_step"]
                 break
+            if pending is not None:
+                # 选了即用即清 (wr-10; lr-3's two shapes alike): the
+                # director's input rode into this chain's first prompt
+                # and the step succeeded — the pending row is consumed
+                # and the rest of the chain turns without it. F-2
+                # (wr-10 处置登记，P14 项；刀 N 兑现，DEC-OPI-41a4df20…46):
+                # the consumption runs only **after** the step's own
+                # reveal has settled — the old order consumed before the
+                # reveal, so a refused reveal ate the director's input
+                # while the failure arm told her the offer stands. Every
+                # quiet, refused or reveal-failed arm now breaks above
+                # the consumption — 拒收/安静/未定着不清 stands whole.
+                self._host.app_settings.delete(
+                    _world_pending_direction_key(world_id)
+                )
+                pending = None
             last_day = str(beats[-1].occurred_at)
             frame: dict[str, Any] = {
                 "type": "world",
@@ -6401,6 +6468,12 @@ class _WebFace:
                 return None
         if not isinstance(parsed["stops"], int) or parsed["stops"] < 1:
             return None
+        stop_kind = parsed.get("stop_kind")
+        if stop_kind is not None and not isinstance(stop_kind, str):
+            # 刀 N's field is optional (the pre-刀 rows read as
+            # ``none``) but never a non-string: a row that cannot be
+            # read back whole is an absent round (the corrupt-row law).
+            return None
         directions = parsed.get("directions", [])
         if not isinstance(directions, list):
             return None
@@ -6501,6 +6574,7 @@ class _WebFace:
         *,
         text: str,
         frames: list[dict[str, Any]],
+        stop_kind: str | None = None,
     ) -> dict[str, Any]:
         """Park the directed round (lr-4a R2): the half round runs
         (``begin_turn_parked`` — CP0 + the learning leg, the turn rests
@@ -6508,7 +6582,23 @@ class _WebFace:
         written (the re-entry material + the choice-point state), and
         the parked payload answers. A refused half round answers the
         failure shape and leaves no row — a round that never parked is
-        not a waiting one."""
+        not a waiting one.
+
+        刀 N (lr-4 no-reply, DEC-OPI-41a4df20…46): the narrator's own
+        word for this stop rides the row and the final additively
+        (``stop_kind``; the turn-flow word above stays byte for byte).
+        An ``awaits_you`` stop is the RESPONSE verdict with no reply in
+        it — the round parks (the letter is a fact, the world saw it)
+        and is then **closed on the spot**:
+        ``close_parked_turn_without_reply`` lands the
+        ``NO_ASSISTANT_OUTPUT`` transcript fact (CP4 riding the
+        completion path, the world's run untouched — the next letter is
+        the crank) and the row goes. The final keeps the parked chrome
+        shape (the page's waiting state is the same, zero new copy)
+        with the turn's durable truth in ``turn_status``; a close that
+        the store refused leaves the round parked — an honest degraded
+        wait the continue face's own ``awaits_you`` arm converges on
+        the next press."""
 
         command = _commit(self._conversation_id, text)
         result = self._host.coordinator.begin_turn_parked(command)
@@ -6525,6 +6615,7 @@ class _WebFace:
         parked = result.value
         directions = self._frame_directions(frames)
         envelope = command.envelope
+        kind_word = _parked_stop_kind_word(stop_kind)
         self._write_parked_round_row(
             {
                 "turn_id": str(parked.turn_id),
@@ -6536,9 +6627,10 @@ class _WebFace:
                 "stops": 1,
                 "phase": "chain",
                 "directions": directions,
+                "stop_kind": kind_word,
             }
         )
-        return {
+        payload = {
             "reply": None,
             "turn_status": parked.status.value,
             "failure_reason": None,
@@ -6549,8 +6641,68 @@ class _WebFace:
             "turn_id": str(parked.turn_id),
             "parked": True,
             "stop": WORLD_STOP_AWAITS_DIRECTION,
+            "stop_kind": kind_word,
             "directions": directions,
         }
+        if kind_word == STOP_AWAITS_YOU:
+            if self._close_parked_round_now():
+                payload["turn_status"] = "COMPLETED"
+        return payload
+
+    def _close_parked_round_now(self) -> bool:
+        """Close the row's parked round without a reply, right now (刀 N's
+        awaits_you law — the park arms' shared closer): the coordinator
+        lands the ``NO_ASSISTANT_OUTPUT`` fact and the row goes. A close
+        the store refused is a degraded live park — ``False`` keeps the
+        row and the waiting shape, never a lie about a round that is
+        still open."""
+
+        row = self._parked_round_row()
+        if row is None:
+            return False
+        closed = self._host.coordinator.close_parked_turn_without_reply(
+            self._conversation_id, TurnId(str(row["turn_id"]))
+        )
+        if isinstance(closed, Err):
+            return False
+        self._clear_parked_round_row()
+        return True
+
+    def _close_superseded_parked_round(self) -> str | None:
+        """A new letter's supersession arm (刀 N): the desk holds at most
+        one open parked round — the newest letter's — so an existing
+        parked round whose turn is still open is closed first (the
+        coordinator's ``close_parked_turn_without_reply``, the old-epoch
+        round adopted on the way) and its row cleared, before this
+        letter's chain runs. A stale row (its turn already terminal —
+        replied, cancelled, or closed by an earlier arm) just loses the
+        row. Answers ``None`` when the desk is clear, else the human
+        failure sentence that must stop the new letter: minting a new
+        round on top of a round that could not be closed is exactly the
+        forever-hanging gap this face exists to kill."""
+
+        row = self._parked_round_row()
+        if row is None:
+            return None
+        status = self._parked_turn_status_word(str(row["turn_id"]))
+        if status is not None and status in {
+            word.value for word in TERMINAL_TURN_STATUSES
+        }:
+            self._clear_parked_round_row()
+            return None
+        closed = self._host.coordinator.close_parked_turn_without_reply(
+            self._conversation_id, TurnId(str(row["turn_id"]))
+        )
+        if isinstance(closed, Err):
+            if closed.error.code is DomainErrorCode.NOT_FOUND:
+                # The row's turn names nothing — a row that cannot be
+                # an open round (the corrupt-row law): the row goes and
+                # the new letter proceeds.
+                self._clear_parked_round_row()
+                return None
+            return f"{closed.error.code.value}: {closed.error.message}"
+        self._clear_parked_round_row()
+        return None
 
     def _parked_payload_from_row(
         self,
@@ -6560,7 +6712,9 @@ class _WebFace:
     ) -> dict[str, Any]:
         """The parked final's shape over the durable row (the continue
         face's own park arm): the same contract the first park answers,
-        with the row's freshest candidates and stop count."""
+        with the row's freshest candidates and stop count. The
+        narrator's stop word rides additively beside the turn-flow word
+        (刀 N) — the row's freshest word, ``none`` for a pre-刀 row."""
 
         return {
             "reply": None,
@@ -6575,6 +6729,7 @@ class _WebFace:
             "turn_id": str(row["turn_id"]),
             "parked": True,
             "stop": WORLD_STOP_AWAITS_DIRECTION,
+            "stop_kind": _parked_stop_kind_word(row.get("stop_kind")),
             "directions": row.get("directions", []),
             "capped": capped,
         }
@@ -6658,12 +6813,22 @@ class _WebFace:
         4. any other outcome parks the round again: the stop count
            advances, the freshest candidates replace the stale ones (a
            quiet or refused step keeps the previous ones — the world
-           could not move, its offer stands), and the parked final
-           answers.
+           could not move, its offer stands), the narrator's freshest
+           word replaces the stale ``stop_kind`` (刀 N; a step that
+           never landed keeps the previous word — no verdict, no
+           rewrite), and the parked final answers. An ``awaits_you``
+           step closes the round right here (the same no-reply close
+           the first park makes — the RESPONSE verdict with no reply in
+           it never waits for a director's crank).
 
         The preflight owns the refusals; this face re-checks the row
         (belt) and answers its failure shape rather than raising — the
-        stream always carries exactly one final."""
+        stream always carries exactly one final. 刀 N: a row whose
+        ``stop_kind`` already reads ``awaits_you`` (the crash-window
+        residue of a park whose close never landed, or a close the
+        store once refused) converges on that close instead of turning
+        the world — the world said it was waiting; it never cranks
+        without a letter."""
 
         row = self._parked_round_row()
         if row is None:
@@ -6686,6 +6851,16 @@ class _WebFace:
                 ),
                 "teaching_moments": [],
             }
+        if _parked_stop_kind_word(row.get("stop_kind")) == STOP_AWAITS_YOU:
+            # 刀 N: the row is the crash-window residue of an
+            # awaits_you stop (written before the park's own close
+            # landed) or a close the store once refused — the owed
+            # close converges here; a refused close falls through to
+            # the degraded live park (the round stays open, honestly).
+            if self._close_parked_round_now():
+                payload = self._parked_payload_from_row(row)
+                payload["turn_status"] = "COMPLETED"
+                return payload
 
         def _world_half(
             *,
@@ -6805,13 +6980,23 @@ class _WebFace:
             return payload
         # Park again: the stop count advances, the freshest candidates
         # replace the stale ones (a quiet or refused step keeps the
-        # previous offer — the world could not move).
+        # previous offer — the world could not move), and a landed
+        # step's own narrator word replaces the stale ``stop_kind``
+        # (刀 N — a step that never landed keeps the previous word).
         fresh = self._frame_directions(frames)
         row["stops"] = int(row["stops"]) + 1
+        if frames:
+            row["stop_kind"] = _parked_stop_kind_word(stop)
         if fresh:
             row["directions"] = fresh
         self._write_parked_round_row(row)
-        return self._parked_payload_from_row(row)
+        payload = self._parked_payload_from_row(row)
+        if (
+            row.get("stop_kind") == STOP_AWAITS_YOU
+            and self._close_parked_round_now()
+        ):
+            payload["turn_status"] = "COMPLETED"
+        return payload
 
     def provider_save(
         self,

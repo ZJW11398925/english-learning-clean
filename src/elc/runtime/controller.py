@@ -1642,6 +1642,74 @@ class ConversationCoordinator:
             )
         return Ok(parked)
 
+    def close_parked_turn_without_reply(
+        self, conversation_id: ConversationId, turn_id: TurnId
+    ) -> Result[TurnRecordData]:
+        """Close one parked round as a finished turn that never replies
+        (刀 N, lr-4 no-reply stop rounds — DEC-OPI-41a4df20…46).
+
+        The typed no-reply law behind it: a narrator ``awaits_you`` stop
+        (and a parked round a new letter supersedes) is not "a turn still
+        waiting to be continued" but "a turn whose story ended without an
+        assistant message" — a transcript fact the contract already spells
+        (``CanonicalTurnSlice.AssistantTurn?``; ``NO_ASSISTANT_OUTPUT`` is
+        one of the five terminal outcomes and STATE_MACHINES §10 does not
+        require an AssistantTurn to exist). The parked half's own early
+        return leaves the turn nonterminal at GENERATING on purpose; this
+        face is the one controlled closer for the rounds whose re-entry
+        will never come.
+
+        The sequence, each step a fact of its own:
+
+        - the conversation lease is held (the same one-coordinator window
+          every turn runs under — RA §19);
+        - an already-terminal turn answers ``Ok`` unchanged (idempotent:
+          the caller's row-clearing arms stay the only cleanup, and a
+          crash between close and clear converges here);
+        - a foreign-epoch turn is adopted first (RUNTIME §24 restart
+          ownership — the same ``claim_turn_for_recovery`` move the
+          guarded begin and the residual-turn closer make), so a round
+          parked before a process death closes on the new epoch's
+          initiative too;
+        - ``terminalize_turn(NO_ASSISTANT_OUTPUT)`` lands the transcript
+          fact (CAS + epoch fence, the store's own unit);
+        - the CP4 post-turn projections run *outside* the guard, exactly
+          as ``begin_turn``'s completion path runs them (the
+          :meth:`_run_post_turn_projections` shape — recorder/episode
+          tolerate a turn with no assistant row, the teaching-command
+          shape already covered).
+
+        The world's own run is deliberately untouched: nothing here
+        terminalizes a world run — the world's ``AT_CHECKPOINT`` survives
+        and the next letter is the crank (the orchestrator's
+        checkpoint-resume semantics, never this face's business)."""
+
+        with self._lease.hold(conversation_id):
+            record_result = self._commands.get_turn_record(turn_id)
+            if isinstance(record_result, Err):
+                return record_result
+            record = record_result.value
+            if record is None:
+                return _missing(f"turn record not found: {turn_id}")
+            if record.status in TERMINAL_TURN_STATUSES:
+                # Idempotent close: the round is over, the caller clears
+                # its row — a second close is a no-op, never an error.
+                return Ok(record)
+            epoch = self._lease.epoch
+            if epoch is not None and record.owner_epoch != epoch:
+                claimed = self._commands.claim_turn_for_recovery(turn_id)
+                if isinstance(claimed, Err):
+                    return claimed
+            terminal = self._commands.terminalize_turn(
+                turn_id, TurnOutcome.NO_ASSISTANT_OUTPUT
+            )
+            if isinstance(terminal, Err):
+                return terminal
+        self._run_post_turn_projection_for(
+            conversation_id, terminal.value.turn_id
+        )
+        return terminal
+
     def _begin_turn_guarded(
         self,
         command: CommitUserTurn,
@@ -3076,11 +3144,28 @@ class ConversationCoordinator:
         coordinator behaves exactly as before P4-2.
         """
 
+        if self._projections is None or isinstance(result, Err):
+            return
+        self._run_post_turn_projection_for(
+            conversation_id, result.value.turn_id
+        )
+
+    def _run_post_turn_projection_for(
+        self, conversation_id: ConversationId, turn_id: TurnId
+    ) -> None:
+        """The CP4 run for one finished turn, **by id** — the guard-released
+        half the Result-shaping wrapper above and the no-reply close face
+        (:meth:`close_parked_turn_without_reply`, whose finished turn is a
+        ``TurnRecordData``, never a ``TurnCompletion``) share. Failure
+        semantics are R-INV-010's, restated: a projection ``Err`` or any
+        exception escaping it is dropped here — the transcript fact stands,
+        the durable job row is the trace."""
+
         projections = self._projections
-        if projections is None or isinstance(result, Err):
+        if projections is None:
             return
         try:
-            projections.run_after_turn(conversation_id, result.value.turn_id)
+            projections.run_after_turn(conversation_id, turn_id)
         except Exception:  # noqa: BLE001 — never travel into the turn
             return
 
