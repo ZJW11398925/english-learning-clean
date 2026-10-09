@@ -129,9 +129,11 @@ def test_the_turn_winds_the_world_and_the_inbox_reveals(
     the narrator, the reply answers normally with no world key in the
     payload, and the inbox read reveals the step's beats — the
     generated narrations verbatim, the world's own byline (the
-    narrator signs nothing), the beat's story day, the run left at its
-    checkpoint (the anchor run — the generated step never
-    terminalizes)."""
+    narrator signs nothing), the beat's story day. C1-aR v2 真值前进
+    （DEC-OPI-b290799a…9，spec §4.2 对齐）：letter_arrives = RESPONSE
+    终停 ⇒ run 终态化——``at_checkpoint`` 读 False，世界等下一封信
+    （旧钉的 True「the generated step never terminalizes」恰是病根钉
+    面；checkpoint 位的 True 面由 a2 的三读形承载）。"""
 
     provider = BeatsProvider(beats_json=BEATS_TWO)
     with web_stack(tmp_path / "app.db", provider=provider) as stack:
@@ -150,7 +152,7 @@ def test_the_turn_winds_the_world_and_the_inbox_reveals(
         assert note["narration"] == narration
         assert note["actor_name"] == "世界"
         assert note["moment"]
-    assert inbox["at_checkpoint"] is True
+    assert inbox["at_checkpoint"] is False
 
 
 def test_the_world_letter_failure_is_fail_soft(

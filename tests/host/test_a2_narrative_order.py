@@ -15,9 +15,11 @@ revisions:
 
 1. **the narrative order, recut** — a live streamed turn answers its
    one ``world`` frame before the first delta, and the world step
-   runs exactly once per letter (the anchor run resumes, the beats
-   add up, no double step — under the count-derived id arm, the
-   docstring's honest no-replay protection);
+   runs exactly once per letter (C1-aR v2: a letter_arrives letter
+   terminalizes its run inside the step — the next letter winds a
+   fresh run, the letter is the only run starter; a checkpoint chain
+   keeps resuming its one anchor run — under the count-derived id
+   arm, the docstring's honest no-replay protection);
 2. **the presentation law, recut** — the turn's own beats arrive
    revealed with the frame (呈现的揭示就是这一次看), and the blocking
    turn carries the frame under its own ``world`` key (rendered
@@ -220,10 +222,12 @@ def test_the_streamed_turn_advances_the_world_exactly_once(
     tmp_path: Path,
 ) -> None:
     """WR-6：一封流式信、一次世界步——**先于 final**（world 帧先行，
-    锚定 run 由步内落库；阻塞形 provider 下流序恰 world → final）；
-    第二封信 resume 同一锚定 run 只添自己的 beats（无双步无第二发
-    条）。步先于 commit，事件 id 走计数派生臂（WR-2 docstring 自认
-    的无重放保护臂——诚实）。"""
+    锚定 run 由步内落库；阻塞形 provider 下流序恰 world → final）。
+    C1-aR v2 真值前进（DEC-OPI-b290799a…9，spec §4.2 对齐）：叙事者
+    每步判 letter_arrives（RESPONSE 终停）⇒ 步终态化自己的 run ⇒ 第二
+    封信绕**新** run（信是唯一发条，resume 只属 checkpoint 链）。步先
+    于 commit，事件 id 走计数派生臂（WR-2 docstring 自认的无重放保护
+    臂——诚实）。"""
 
     app_db = tmp_path / "app.db"
     provider = BeatsProvider(beats_json=BEATS_TWO)
@@ -234,8 +238,14 @@ def test_the_streamed_turn_advances_the_world_exactly_once(
         assert status == 200
         assert [f["type"] for f in _sse_frames(raw)] == ["world", "final"]
         _wait_for_world_rows(app_db, "SELECT event_id FROM world_event", 2)
-        runs = _ro_rows(app_db, "SELECT run_id FROM world_run")
-        assert len(runs) == 1
+        runs = _ro_rows(
+            app_db,
+            "SELECT run_id, status FROM world_run"
+            " ORDER BY created_at, run_id",
+        )
+        # One letter, one run — terminalized at its RESPONSE stop.
+        assert [str(row[0]) for row in runs] == ["run-berrymoor-0000"]
+        assert str(runs[0][1]) == "TERMINAL"
         sources = _ro_rows(
             app_db, "SELECT DISTINCT source FROM world_event"
         )
@@ -244,13 +254,23 @@ def test_the_streamed_turn_advances_the_world_exactly_once(
             "world_narrator",
             "user_interaction",
         ]
-        # The second letter: the anchor run resumes, its beats add.
+        # The second letter: the first run rests TERMINAL, so the letter
+        # winds a fresh one (the only run starter) and its beats ride it.
         status, raw = _post(
             stack.port, "/api/turn_stream", {"text": A1_TEXT}
         )
         assert status == 200
         _wait_for_world_rows(app_db, "SELECT event_id FROM world_event", 4)
-        assert _ro_rows(app_db, "SELECT COUNT(*) FROM world_run")[0][0] == 1
+        runs = _ro_rows(
+            app_db,
+            "SELECT run_id, status FROM world_run"
+            " ORDER BY created_at, run_id",
+        )
+        assert [str(row[0]) for row in runs] == [
+            "run-berrymoor-0000",
+            "run-berrymoor-0001",
+        ]
+        assert {str(row[1]) for row in runs} == {"TERMINAL"}
 
 
 def test_the_final_carries_no_world_key(tmp_path: Path) -> None:
@@ -672,10 +692,11 @@ def test_the_inbox_payload_counts_its_own_reveal(tmp_path: Path) -> None:
 def test_the_inbox_names_the_anchor_checkpoint(tmp_path: Path) -> None:
     """The inbox payload's ``at_checkpoint`` bit is the anchor run's own
     state, read straight off the row (WR-2: the streamed frame that
-    carried the bit is retired with the pre-step): a fresh world reads
-    False (no run), and one generated letter leaves the anchor at its
-    checkpoint — True, and honest (the generated step never
-    terminalizes its run)."""
+    carried the bit is retired with the pre-step). C1-aR v2 真值前进
+    （DEC-OPI-b290799a…9，spec §4.2 对齐）三读形：无 run ⇒ False（原
+    钉不变）；letter_arrives 信后 ⇒ False——run 已在自己的 RESPONSE
+    终停上 TERMINAL（旧钉的 True 恰是病根钉面）；无停词信（ceiling 链）
+    ⇒ True——run 仍在 AT_CHECKPOINT 等下一封。"""
 
     app_db = tmp_path / "app.db"
     with web_stack(app_db) as stack:
@@ -688,6 +709,33 @@ def test_the_inbox_names_the_anchor_checkpoint(tmp_path: Path) -> None:
         assert status == 200
         status, inbox = stack.get_json("/api/world/inbox")
         assert status == 200
+        # The RESPONSE terminal stop: the world waits for the next
+        # letter, the row rests TERMINAL — the bit reads it honestly.
+        assert inbox["at_checkpoint"] is False
+        row = _ro_rows(
+            app_db, "SELECT status FROM world_run"
+        )
+        assert [str(r[0]) for r in row] == ["TERMINAL"]
+    # The checkpoint face: a narrator that never stops the chain keeps
+    # its run at the checkpoint (the defensive ceiling ends the chain,
+    # the run row is untouched) — the bit reads True.
+    nostop = json.dumps(
+        {
+            "beats": [
+                {
+                    "kind": "quiet-morning",
+                    "narration": "The harbour kept its silence.",
+                    "days": 0,
+                },
+            ]
+        }
+    )
+    provider = BeatsProvider(beats_json=nostop)
+    with web_stack(app_db, provider=provider) as stack:
+        status, _ = stack.post("/api/turn", {"text": SECOND_TEXT})
+        assert status == 200
+        status, inbox = stack.get_json("/api/world/inbox")
+        assert status == 200
         assert inbox["at_checkpoint"] is True
 
 
@@ -697,10 +745,12 @@ def test_the_inbox_names_the_anchor_checkpoint(tmp_path: Path) -> None:
 
 
 def test_the_inbox_shows_the_anchor_run(tmp_path: Path) -> None:
-    """The inbox is current-run only, and under WR-2 the anchor run is
-    the world's one durable run: two letters' generated notes share the
-    anchor run's id prefix and the payload carries exactly that run's
-    notes (the ids stay the story's own order — run, turn, beat)."""
+    """The inbox is current-run only. C1-aR v2 真值前进
+    （DEC-OPI-b290799a…9，spec §4.2 对齐）：letter_arrives 每信终停
+    自己的 run ⇒ current run 随信更替——首信的 inbox 载 run-0000 的
+    两拍；二信的 inbox 载 run-0001 的两拍（旧钉的「两信共锚 run 四拍」
+    恰是病根钉面）；旧拍 durably 留在编年史与 history 的各轮桶里
+    （current-run 律不变，变的是谁是 current）。"""
 
     app_db = tmp_path / "app.db"
     provider = BeatsProvider(beats_json=BEATS_TWO)
@@ -714,17 +764,27 @@ def test_the_inbox_shows_the_anchor_run(tmp_path: Path) -> None:
             item_id.startswith("run-berrymoor-0000:") for item_id in first_ids
         )
         assert all(item_id.endswith(":reveal") for item_id in first_ids)
-        # The second letter resumes the anchor run: its notes land under
-        # the same prefix, and the inbox carries the run's whole set.
+        # The second letter: the first run rests TERMINAL, the letter
+        # winds run-0001 and the inbox shows exactly that run's notes.
         stack.post("/api/turn", {"text": SECOND_TEXT})
         status, inbox = stack.get_json("/api/world/inbox")
         assert status == 200
         ids = [str(note["id"]) for note in inbox["items"]]
-        assert len(ids) == 4
-        assert all(item_id.startswith("run-berrymoor-0000:") for item_id in ids)
-        # The two turns' event ids are disjoint (each letter's turn id
-        # sits in its own ids).
-        assert len(set(ids)) == 4
+        assert len(ids) == 2
+        assert all(item_id.startswith("run-berrymoor-0001:") for item_id in ids)
+        assert all(item_id.endswith(":reveal") for item_id in ids)
+        # Two runs stand (one per letter, the letter the only starter);
+        # the first letter's notes stay durable in the chronicle.
+        runs = _ro_rows(app_db, "SELECT run_id FROM world_run ORDER BY run_id")
+        assert [str(row[0]) for row in runs] == [
+            "run-berrymoor-0000",
+            "run-berrymoor-0001",
+        ]
+        notes = _ro_rows(
+            app_db,
+            "SELECT COUNT(*) FROM world_event WHERE source = 'world_narrator'",
+        )
+        assert notes == [(4,)]
 
 
 def test_the_letter_count_grouping_is_retired() -> None:

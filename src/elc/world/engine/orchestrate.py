@@ -274,6 +274,7 @@ def run_generated_step(
     letter_elapsed_days: int | None = None,
     on_stop: Callable[[StopSignal | None], None] | None = None,
     free_direction: str | None = None,
+    terminal_stop_kinds: tuple[str, ...] | None = None,
 ) -> Result[tuple[WorldEvent, ...]]:
     """The production world step (WR-2, DEC-OPI-5fc42174…49; WR-4
     correction …58): the narrator's beats out, the chronicle and the
@@ -337,10 +338,13 @@ def run_generated_step(
     ``TERMINAL`` winds a fresh one (seed = the world's run count, the
     id derived by :func:`_run_id_for`, the triggering turn riding the
     row when the caller knows it), a run paused at its checkpoint is
-    resumed (the letter is the light action's superset). The generated
-    step **never terminalizes its run** — the row stays the world's
-    anchor at its checkpoint, every later letter resumes it, and that
-    is what makes a replayed call land as a no-op: the beats' event ids
+    resumed (the letter is the light action's superset).
+
+    C1-aR v2 (DEC-OPI-b290799a…9, the canonical §4.2 alignment): by
+    default the generated step still **never terminalizes its run** —
+    the row stays the world's anchor at its checkpoint, every later
+    letter resumes it, and that is what makes a replayed call land as
+    a no-op: the beats' event ids
     derive from the anchor run plus the triggering turn
     (``<run_id>:<trigger_turn_id>:<index>`` — the turn is the step's
     identity), and the step pre-reads the chronicle's own ids and
@@ -351,6 +355,27 @@ def run_generated_step(
     exactly as the first call left them). A caller without a turn id
     derives count-based ids instead and carries **no** replay
     protection (the docstring says so rather than pretending).
+    ``terminal_stop_kinds`` arms the spec's other exit: when this
+    step's own stop signal's kind is one of the named words (the
+    production caller names the RESPONSE vocabulary —
+    ``letter_arrives`` / ``awaits_you``, lr-4 §3.2's terminal pair),
+    the step terminalizes its run **after** the durable half settles —
+    beats and reveals written first, then
+    :meth:`elc.world.store.SqliteWorldStore.terminalize_run` (the
+    engine's own RESPONSE arm, spec §4.2 step 5: a RESPONSE moment ends
+    the RUN; the next letter is a new winch, never a resume). The arm
+    rides the same landed-something condition as the reveal enqueue —
+    a replayed step whose beats are all already durable touches no run
+    row, so the replay contract above holds for as long as the anchor
+    stands (``AT_CHECKPOINT``); once the terminal stop has ended the
+    anchor, the same letter arriving again is — canonically (§4.2) — a
+    new winch for a fresh run, not a replay of the old RUN.
+    ``she_thinks_of_you`` (the
+    NOTICE checkpoint) and ``None`` (keep going) never terminalize.
+    The arm lands after the anchor run's beats, so a whole chain's
+    steps still share their run's attribution; the caller's own
+    backfill (:meth:`elc.world.store.SqliteWorldStore.adopt_trigger_turn`)
+    names the run's starter turn once the letter's turn commits.
 
     The beats land verbatim (untrusted-as-is): the narrator's ``kind``
     and ``narration`` are the chronicle row's own words, ``effects`` is
@@ -531,6 +556,23 @@ def run_generated_step(
     )
     if isinstance(enqueued, Err):
         return Err(enqueued.error)
+    if (
+        terminal_stop_kinds
+        and written
+        and stop is not None
+        and stop.kind in terminal_stop_kinds
+    ):
+        # C1-aR v2 (DEC-OPI-b290799a…9): the caller-armed terminal stop —
+        # the RESPONSE verdict ends the RUN (spec §4.2 step 5), the
+        # engine's own arm mirrored for the generated face. It fires
+        # only past the durable half (beats and reveals written) and
+        # only when this step actually landed beats (a replayed no-op
+        # touches no run row — the replay contract stands whole); the
+        # NOTICE checkpoint (``she_thinks_of_you``) and ``None`` (keep
+        # going) never reach the store.
+        terminalized = store.terminalize_run(run.run_id, now)
+        if isinstance(terminalized, Err):
+            return Err(terminalized.error)
     return Ok(tuple(written))
 
 

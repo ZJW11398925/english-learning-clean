@@ -14,10 +14,12 @@ transcript fact:
 2. **awaits_you closes the round** (VAL ②) — a stop the narrator words
    ``awaits_you`` parks (the letter is a fact) and is then closed on
    the spot: ``NO_ASSISTANT_OUTPUT`` (the STATE_MACHINES §10 terminal
-   that does not require an AssistantTurn), the row gone, the world's
-   own run untouched at its checkpoint — the next letter is the crank,
-   the reply belongs to the new turn, the closed turn never grows an
-   assistant row;
+   that does not require an AssistantTurn), the row gone — and since
+   C1-aR v2 (DEC-OPI-b290799a…9, the canonical §4.2 alignment) the
+   world's own run terminalizes at its RESPONSE stop with the step
+   (the word IS a RESPONSE: the RUN ends, the next letter is the crank
+   that winds the fresh run), the reply belongs to the new turn, the
+   closed turn never grows an assistant row;
 3. **a new letter supersedes** (VAL ③, the probe P-1 gap closed) — a
    parked round a new letter runs into is closed first (any stop_kind,
    a restart's old epoch adopted on the way), so no turn hangs at
@@ -277,9 +279,9 @@ def test_awaits_you_closes_the_round_and_the_next_letter_replies(
         status, payload = stack.post("/api/world/continue", {})
         assert status == 409
         assert "停下来的世界" in payload["error"]
-        # The next letter is the crank: the world turns from its
-        # checkpoint (the narrator dials), the letter arrives and the
-        # NEW turn answers.
+        # The next letter is the crank: it winds the fresh run (the
+        # first one terminalized at its RESPONSE stop — C1-aR v2), the
+        # narrator dials, the letter arrives and the NEW turn answers.
         status, raw = _post(stack.port, "/api/turn_stream",
                             {"text": "the second letter"})
         assert status == 200

@@ -665,7 +665,9 @@ def test_a_replayed_letter_lands_as_no_ops(store: SqliteWorldStore) -> None:
     """同参重跑 = 编年史/揭示不变: the same letter, the same turn id and
     the same beats re-derive the same event ids; the store answers its
     idempotent no-ops and nothing grows (the anchor run is resumed, not
-    re-wound — the generated step never terminalizes its run)."""
+    re-wound — the default step never terminalizes its run; the C1-aR
+    v2 terminal arm is the caller's explicit opt-in and a replayed
+    no-op touches no run row)."""
 
     _seed_world(store)
     provider = _ScriptedNarrator(

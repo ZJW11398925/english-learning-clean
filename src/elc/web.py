@@ -3427,6 +3427,10 @@ class _WebFace:
         self._record_letter_sent(
             str(completion.turn_id), command.envelope.received_at
         )
+        # C1-aR v2: the same committed turn names the chain's run (the
+        # run was wound before the commit — WR-6's order), so the wr-8
+        # buckets go exact. Idempotent on the replayed command.
+        self._adopt_world_run_trigger(str(completion.turn_id))
         reply = completion.reply_text
         payload = {
             "reply": reply,
@@ -3671,6 +3675,23 @@ class _WebFace:
         caller owns the parking; this method only stops where it is
         told). The bound is a loop bound only: refusals, quiet arms and
         ``letter_arrives`` end the chain exactly as before.
+
+        C1-aR v2 (DEC-OPI-b290799a…9, the run's lifecycle aligns with
+        spec §4.2): every step of this chain arms the step's terminal
+        stop — a step the narrator ends with ``letter_arrives`` or
+        ``awaits_you`` terminalizes its run **inside the step** (after
+        the beats and reveals land), so the next letter winds a fresh
+        run instead of resuming a story the world itself called
+        finished; a checkpoint chain (``she_thinks_of_you`` or no
+        signal) keeps its one anchor run. World-face only: this loop's
+        frames, the stop word it answers and the reply order are byte
+        for byte as before (the immersive posture rides untouched).
+        The chain-tail stop word is the caller's own collection — the
+        step reads its own signal, the loop only stops where it did
+        before. The run row's starter turn is backfilled after the
+        letter's CP0 commit (:meth:`_adopt_world_run_trigger`), which
+        is what turns the wr-8 history buckets to the exact trigger
+        arm in production.
         """
 
         binding = self._world_binding()
@@ -3760,6 +3781,20 @@ class _WebFace:
                     on_directions=step_directions.extend,
                     letter_elapsed_days=elapsed_days,
                     on_stop=signals.append,
+                    # C1-aR v2 (DEC-OPI-b290799a…9): the canonical §4.2
+                    # alignment — the RESPONSE vocabulary arms the
+                    # terminal stop inside the step: a step the narrator
+                    # ends with ``letter_arrives`` or ``awaits_you``
+                    # terminalizes its run after the durable half, so
+                    # the next letter winds a fresh run (the letter is
+                    # the only run starter; a checkpoint chain —
+                    # ``she_thinks_of_you``/none — keeps resuming its
+                    # one run). World-face only: the frames, the reply
+                    # order and this loop are byte for byte as before.
+                    terminal_stop_kinds=(
+                        STOP_LETTER_ARRIVES,
+                        STOP_AWAITS_YOU,
+                    ),
                 )
             except Exception as exc:  # fail-soft: the sentence, never the raise
                 print(
@@ -4030,6 +4065,48 @@ class _WebFace:
             print(
                 "elc web: 寄信编年史行未落（回信不受影响）："
                 f"{recorded.error.code.value}: {recorded.error.message}",
+                file=sys.stderr,
+            )
+
+    def _adopt_world_run_trigger(self, turn_id: str) -> None:
+        """Name the world's latest run's starter turn (C1-aR v2,
+        DEC-OPI-b290799a…9): the chain's run was wound **before** this
+        letter's turn committed (WR-6's order), so its
+        ``trigger_turn_id`` landed NULL and the committed turn's id
+        rides the row only here — the wr-8 exact-bucket arm's
+        production key (the run's events then bucket to this letter's
+        turn, never by reveal-stamp approximation). The world's latest
+        run is the locator; a world with no run (the quiet chain — zero
+        beats, zero runs) skips quietly, a run that already knows its
+        starter is left alone (the idempotent replay, and the
+        checkpoint chain's law: the run belongs to its first letter,
+        spec §4.2 — the second letter's beats ride that same row), and
+        a store refusal is a stderr note — the turn itself never waits
+        on its attribution."""
+
+        binding = self._world_binding()
+        if binding is None:
+            return
+        world_store = getattr(self._host, "world_store", None)
+        if world_store is None:
+            return
+        runs = world_store.list_runs(str(binding["world_id"]))
+        if not runs:
+            return
+        latest = runs[-1]
+        if latest.trigger_turn_id is not None:
+            # The run already names its starter — the replayed command's
+            # idempotent face, or a checkpoint chain's second letter
+            # (§4.2: the same RUN's execution continues; the row keeps
+            # its first letter). Nothing to fill, nothing to refuse.
+            return
+        adopted = world_store.adopt_trigger_turn(
+            latest.run_id, turn_id, datetime.now(tz=UTC).isoformat()
+        )
+        if isinstance(adopted, Err):
+            print(
+                "elc web: 世界 run 归属未记（回信不受影响）："
+                f"{adopted.error.code.value}: {adopted.error.message}",
                 file=sys.stderr,
             )
 
@@ -6810,6 +6887,10 @@ class _WebFace:
         self._record_letter_sent(
             str(parked.turn_id), command.envelope.received_at
         )
+        # C1-aR v2: the parked turn is the chain's run's starter all the
+        # same — the same backfill, so the parked round's beats bucket
+        # to their own letter while the round waits.
+        self._adopt_world_run_trigger(str(parked.turn_id))
         directions = self._frame_directions(frames)
         envelope = command.envelope
         kind_word = _parked_stop_kind_word(stop_kind)

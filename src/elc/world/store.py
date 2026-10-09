@@ -1056,6 +1056,82 @@ class SqliteWorldStore:
         assert updated is not None  # the UPDATE above just touched it
         return Ok(updated)
 
+    def adopt_trigger_turn(
+        self, run_id: str, turn_id: str, now: str
+    ) -> Result[WorldRunRecord]:
+        """Backfill the run's ``trigger_turn_id`` (C1-aR v2, the canonical
+        §4.2 alignment's attribution half).
+
+        The generated step winds its run **before** the triggering turn
+        commits (WR-6: the world narrates first), so the row lands with
+        a ``NULL`` trigger and this face names the turn once it exists —
+        the wr-8 exact-bucket arm's production key. The discipline is
+        the run face's own rewrite law: an id the table does not know is
+        ``NOT_FOUND``; a run that **already carries this same turn** is
+        the idempotent no-op (the parked round's command replay lands
+        here); a run carrying a **different** turn is refused
+        (``VALIDATION_FAILED`` — runs do not rewrite, the same law
+        :meth:`create_run` spells for shapes; the TERMINAL case is the
+        defensive spelling the caller's crash windows could reach). One
+        run, one starter letter (spec §4.1) — the second letter of a
+        checkpoint chain keeps the first letter's name on the row it
+        resumes, and its own beats ride that same row (§4.2: the same
+        RUN's execution continues). The write bumps ``state_version``
+        and moves ``updated_at`` — every run write does.
+        """
+
+        row = self._run_row(run_id)
+        if row is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"run {run_id!r} not adopted: the run does not"
+                        " exist"
+                    ),
+                )
+            )
+        if row.trigger_turn_id == turn_id:
+            return Ok(row)
+        if row.trigger_turn_id is not None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"run {run_id!r} already names trigger turn"
+                        f" {row.trigger_turn_id!r}; runs do not rewrite"
+                        " their starter (the world's latest run is the"
+                        " caller's own locator — adopt nothing blind)"
+                    ),
+                )
+            )
+        began = False
+        try:
+            self._conn.execute("BEGIN IMMEDIATE")
+            began = True
+            self._conn.execute(
+                "UPDATE world_run SET trigger_turn_id = ?,"
+                " state_version = state_version + 1, updated_at = ?"
+                " WHERE run_id = ?",
+                (turn_id, now, run_id),
+            )
+        except sqlite3.Error as exc:
+            if began:
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=f"run {run_id!r} not adopted: {exc}",
+                )
+            )
+        self._conn.execute("COMMIT")
+        updated = self._run_row(run_id)
+        assert updated is not None  # the UPDATE above just touched it
+        return Ok(updated)
+
     # -- reveal face (W-1-3) ---------------------------------------------------
 
     def enqueue_reveals(
