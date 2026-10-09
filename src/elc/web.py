@@ -1,8 +1,11 @@
 """The W-1 local web face — one study-first dogfood page over one host.
 
-``python -m elc web --app-db … --base-url … --model … [--content-db …]
-[--rollout-stage …] [--port 8760]`` serves the same assembly the ``chat``
-command builds (the argument validation, the provider construction and the
+``python -m elc web --app-db …`` serves the same assembly the ``chat``
+command builds (``--app-db`` is the only required flag — endpoint, model
+and key are page-settable at runtime; the legacy full-parameter form
+``--base-url … --model … [--content-db …] [--rollout-stage …]
+[--port 8760]`` still works; the argument validation, the provider
+construction and the
 host opening are ``elc.cli.main``'s — this module never re-implements them;
 the CLI's ``web`` branch is the only caller and ``main`` here is the thin
 delegating entry for it). The page's shell is static HTML/CSS/JS under
@@ -46,8 +49,10 @@ other route keeps the one-thread rule unchanged.
 ``text/event-stream``: zero or more ``delta`` frames while the host thread
 runs the turn's reply, interleaved by the world frames the world-first
 step owns (WR-6's whole ``world`` frame; wr-7's ``world_delta`` narration
-pieces and the honest ``world_failed`` handle — the full streaming order is
-world_delta＊ → world → delta＊ → final, the reply always last but one),
+pieces and the honest ``world_failed`` handle — lr-1's natural-run chain
+makes that one step per landed beat, so the full streaming order is
+world_delta＊ → world₁ → world_delta＊ → world₂ → … → delta＊ → final,
+the reply always last),
 then exactly one ``final`` frame carrying the very payload
 ``/api/turn`` would have answered. The turn itself rides the same work
 queue as ever — the handler thread only drains the turn's queue into
@@ -3985,8 +3990,9 @@ class _WebFace:
         conversation's recent correspondence through the history face's
         own window read (read-only, a small explicit slice). The
         ``at_checkpoint`` bit is the world's latest run's own status —
-        the page's 「继续」 button is enabled by the world's state, never
-        guessed. A2 (DEC-…92): the payload also carries ``revealed_now``
+        a fact the page may read (lr-4a: the stop-point chrome is driven
+        by the parked round's own additive keys, not by this bit).
+        A2 (DEC-…92): the payload also carries ``revealed_now``
         — the count of ``PENDING`` notes this very read flipped (counted
         **before** the flip) — the load arm's only render trigger (a
         read that revealed nothing renders no world block at all), plus
