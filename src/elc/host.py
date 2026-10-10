@@ -347,21 +347,40 @@ class _SavedKeySource:
 
 class _WorldChroniclePort:
     """The conversation→world-chronicle read, wired from the real world
-    leg (wr-12, DEC-OPI-c73dbff3…84 R3).
+    leg (wr-12, DEC-OPI-c73dbff3…84 R3; the cognitive view since C1-c,
+    DEC-OPI-b290799a…27).
 
     Exactly the one member the coordinator's ``WorldChronicleQueries``
     port names: the conversation's world **binding row** (the same
     direct-SQL read of ``world_conversation`` the web face's
     ``_world_binding`` uses — the binding table has no controller-level
     read face, and this adapter inherits that posture rather than minting
-    a second one), then the world store's own ``chronicle_of`` sliced to
-    :data:`RECENT_WORLD_EVENT_WINDOW`, oldest first, projected onto the
-    view type Persona Runtime consumes. It adds nothing and translates
-    nothing: a conversation bound to no world is a ``NOT_FOUND`` ``Err``
-    (the prompt loses a section, never a reply — the coordinator's
-    degradation owns the ``None``); the store's own ``Err`` rides through
-    verbatim; an empty chronicle resolves to an empty view (the honest
-    "world resolved, nothing has happened yet"). The store leg is always
+    a second one; the C1-c read adds the row's ``actor_id``), then the
+    world store's own ``chronicle_of`` filtered to the binding actor's
+    **cognitive view** and sliced to :data:`RECENT_WORLD_EVENT_WINDOW`,
+    oldest first, projected onto the view type Persona Runtime consumes.
+
+    The cognitive view (the design supplement 域一's three-source law —
+    the data layer knows all, a character knows her side of it): an
+    actor-bound conversation keeps the **public** events
+    (``participants`` empty) and the events she **witnessed** (the
+    binding actor's persona id — the namespace the narrator's cast-id
+    roster teaches, resolved from the binding's actor through
+    ``world_actor`` — names the ``participants``), and drops the peopled
+    events that name only others: what she did not attend she does not
+    know (the rumour half of the law is P1's deferred layer, not this
+    read's). A binding whose actor row is gone is corruption and answers
+    an ``Err`` — never the omniscient whole. An actor-less read keeps
+    the whole chronicle (no perspective is all perspectives); the
+    schema's ``actor_id`` is NOT NULL, so that arm is the defensive
+    posture the web face's binding read shares, not a reachable state.
+    The degradation below is unchanged by the filter: a conversation
+    bound to no world is a ``NOT_FOUND`` ``Err`` (the prompt loses a
+    section, never a reply — the coordinator's degradation owns the
+    ``None``); the store's own ``Err`` rides through verbatim; an empty
+    chronicle — or a chronicle every peopled event of which names only
+    others — resolves to an empty view (the honest "world resolved,
+    nothing she knows has happened yet"). The store leg is always
     present in this assembly (``SqliteWorldStore`` is built on both
     tiers), so the port is wired unconditionally.
     """
@@ -377,11 +396,12 @@ class _WorldChroniclePort:
     def resolve_world_chronicle_view(
         self, conversation_id: ConversationId
     ) -> Result[WorldChronicleView]:
-        """The recent-events view of one conversation's world (the port's
-        whole contract — see the class docstring for the degradation)."""
+        """The binding actor's cognitive recent-events view of her world
+        (the port's whole contract — the class docstring carries the
+        filtering law and the degradation)."""
 
         row = self._conn.execute(
-            "SELECT world_id FROM world_conversation"
+            "SELECT world_id, actor_id FROM world_conversation"
             " WHERE conversation_id = ?",
             (str(conversation_id),),
         ).fetchone()
@@ -397,7 +417,38 @@ class _WorldChroniclePort:
         chronicle = self._world.chronicle_of(str(row[0]))
         if isinstance(chronicle, Err):
             return chronicle
-        recent = chronicle.value[-RECENT_WORLD_EVENT_WINDOW:]
+        events = chronicle.value
+        actor_id = None if row[1] is None else str(row[1])
+        if actor_id is not None:
+            # The binding actor's cognitive view: resolve the actor to
+            # the persona id the ``participants`` namespace spells (the
+            # narrator's cast-id roster), keep the public events and the
+            # ones she witnessed, drop the peopled ones that name only
+            # others. The filter is order-preserving, so the chronicle's
+            # own (occurred_at, event_id) order survives the merge and
+            # the window slices the kept newest — never an excluded one.
+            persona_row = self._conn.execute(
+                "SELECT persona_id FROM world_actor WHERE actor_id = ?",
+                (actor_id,),
+            ).fetchone()
+            if persona_row is None:
+                return Err(
+                    DomainError(
+                        code=DomainErrorCode.VALIDATION_FAILED,
+                        message=(
+                            f"conversation {conversation_id!r} binds actor"
+                            f" {actor_id!r}, which the world tables do not"
+                            " know"
+                        ),
+                    )
+                )
+            persona_id = str(persona_row[0])
+            events = tuple(
+                event
+                for event in events
+                if not event.participants or persona_id in event.participants
+            )
+        recent = events[-RECENT_WORLD_EVENT_WINDOW:]
         return Ok(
             WorldChronicleView(
                 events=tuple(
