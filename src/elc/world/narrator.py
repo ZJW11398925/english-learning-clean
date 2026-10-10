@@ -27,8 +27,16 @@ slugs). **WR-4 (the user's third direction, DEC-…58): no letter ever
 enters the prompt** — the living-world spec keeps the layers apart
 (§4.1: the reply is the run's mechanical wind-up, never content; the
 走向 entry: the user's influence on the world rides the direction
-channel, never the letter layer) — the world narrates its own life,
-unreactive to correspondence. The provider is called **once** —
+channel, never the letter layer) — the world narrates its own life.
+C1.5 (DEC-OPI-b290799a…36, the intermediary-causality bridge) keeps
+the law and names the one door through it: the reply layer may let a
+single world-inbound **fact** cross — the caller's
+``letter_response`` projection, *(the reader's persona id, one
+world-language summary sentence composed deterministically from no
+letter word)* — and the prompt then teaches her read-and-react as a
+fact of her own life. The letter's contents still never ride here:
+the section carries the fact, never the text, and its own sentence
+says so. The provider is called **once** —
 blocking, or through its optional streamed face when the caller asks
 for the narration increments (wr-7: both faces dial the same protocol
 the persona runtime dials; the streamed arm feeds its increments
@@ -221,6 +229,16 @@ STOP_WORDS = (
 #: it says (WR-4, DEC-…58: the letter's contents stay in the penpal
 #: layer, zero compromise; the negative-control tests hold the line).
 _LETTER_ON_WAY_HEADER = "== A letter on its way =="
+
+#: The letter-read reaction section's own header (C1.5,
+#: DEC-OPI-b290799a…36 — the intermediary-causality bridge's prompt
+#: door). The section rides **only** when the caller passes a
+#: ``letter_response`` projection (the conditional-section law: the
+#: default prompt stays byte for byte the pre-C1.5 shape, both golden
+#: pins immovable); its body carries the caller's fact sentence and the
+#: never-quote teaching — the world-side half of WR-4's two-layer law,
+#: now named instead of implied.
+_LETTER_READ_HEADER = "== She has read the letter =="
 
 #: The kind slug's shape: lowercase letters, digits and hyphens, one
 #: non-separator character first, at most 32 characters.
@@ -511,6 +529,7 @@ def build_narrator_prompt(
     letter_elapsed_days: int | None = None,
     free_direction: str | None = None,
     state_facts: tuple[tuple[str, str], ...] = (),
+    letter_response: tuple[str, str] | None = None,
 ) -> str:
     """The narrator's prompt, as one pure string (testable without a
     provider, a store or a world row).
@@ -590,14 +609,37 @@ def build_narrator_prompt(
     the whole default prompt (the C1-a golden, the lr-3 assembly) were
     consciously re-cast for this widening.
 
+    C1.5 (DEC-OPI-b290799a…36, the intermediary-causality bridge —
+    the external review HIGH-2's root fix): ``letter_response`` — the
+    caller's projection *(the reader's persona id, one world-language
+    summary sentence)*, the reply layer's one world-inbound **fact**
+    let through to the world layer — adds the letter-read reaction
+    section, right after the letter-on-its-way section's place. The
+    section carries the caller's fact sentence verbatim (the prompt
+    face is a pass-through: it composes nothing, guesses nothing) and
+    the two-layer teaching: her reaction may happen in the beats (her
+    own actions, decisions, arrangements) with her id in the beat's
+    ``participants`` — and the letter's words may never be quoted,
+    referenced or guessed (WR-4 stands; the bridge moves the **fact**
+    of her reading, never the text). Both elements must be non-blank
+    strings (anything else is a ``ValueError`` naming the pair).
+    ``None`` (the default) adds nothing: no reaction section (the
+    conditional-section law — the default prompt stays byte for byte
+    the pre-C1.5 shape, both golden pins immovable).
+
     WR-4 (DEC-OPI-5fc42174-…58, the user's third direction): **no
     letter ever enters this prompt** — the living-world spec is
     two-layer about influence (§4.1 / the 走向 entry): the user's reply
     is the run's *wind-up* (a mechanical starter, never content), the
     user's influence on the *world* rides the direction channel (走向,
     wr-10 opens it), and letters belong to the penpal layer only —
-    they shape the character's reply, never the world's narration. The
-    world moves on its own here."""
+    they shape the character's reply, never the world's narration.
+    C1.5 names the bridge the law always implied but never built: the
+    reply layer may let one world-inbound fact cross (the
+    ``letter_response`` projection above — the fact she read it, a
+    sentence composed by the caller from no letter word), and the
+    world moves on that fact as on her own life; the letter's *text*
+    still rides nowhere in this prompt."""
 
     if ui_language not in _NARRATION_LANGUAGE:
         raise ValueError(
@@ -638,6 +680,18 @@ def build_narrator_prompt(
             f" {MAX_FREE_DIRECTION_CHARS} characters (got"
             f" {free_direction!r})"
         )
+    if letter_response is not None:
+        reader_id, summary = letter_response
+        if not (
+            isinstance(reader_id, str)
+            and reader_id.strip()
+            and isinstance(summary, str)
+            and summary.strip()
+        ):
+            raise ValueError(
+                "letter_response must carry a non-blank persona id and"
+                " a non-blank summary sentence"
+            )
     sections: list[str] = []
     sections.append("You are the narrator of a small fictional world.")
     sections.append("Write what happens there next, as a novel would.")
@@ -723,6 +777,31 @@ def build_narrator_prompt(
             " says, and never quotes it. The world moves naturally;"
             " when the letter naturally arrives and she reads it, mark"
             " that beat's stop as letter_arrives."
+        )
+    if letter_response is not None:
+        # C1.5's letter-read reaction section (DEC-OPI-b290799a…36),
+        # right after the letter-on-its-way section's place: the reply
+        # layer's one world-inbound fact let through the bridge. The
+        # caller's summary rides verbatim (a pass-through — the prompt
+        # face composes nothing); the teaching names her reaction as the
+        # world-side half of the two-layer law and holds the never-quote
+        # line. Conditional section: ``None`` adds nothing (the golden
+        # pins' immovability).
+        reader_id, summary = letter_response
+        sections.append(_LETTER_READ_HEADER)
+        sections.append(
+            "One fact crosses over from the penpal layer, stated and"
+            f" nothing more: {summary}"
+        )
+        sections.append(
+            "Her reaction may happen in your beats — her own actions,"
+            " decisions and arrangements in the world's life — and the"
+            f" beat that carries it names her cast id ({reader_id}) in"
+            " its ``participants``. Never quote the letter and never"
+            " refer to what it said: its words never cross (WR-4's"
+            " two-layer law) — the world knows only the fact this"
+            " section states, and she reacts as a person living her"
+            " own life, never as a reader quoting text."
         )
     sections.append("== Your task ==")
     sections.append(
@@ -927,6 +1006,7 @@ class WorldNarrator:
         letter_elapsed_days: int | None = None,
         free_direction: str | None = None,
         state_facts: tuple[tuple[str, str], ...] = (),
+        letter_response: tuple[str, str] | None = None,
     ) -> Result[
         tuple[
             tuple[GeneratedBeat, ...],
@@ -984,6 +1064,15 @@ class WorldNarrator:
         proposals and their named cast — the durable half lands them
         verbatim.
 
+        C1.5 (DEC-OPI-b290799a…36, the intermediary-causality bridge):
+        ``letter_response`` — the caller's *(reader persona id, summary
+        sentence)* projection — rides to the prompt builder as the
+        letter-read reaction section (after the letter-on-its-way
+        section's place; the strict parse and the extractor read
+        nothing of it — the beats' own ``participants`` verification is
+        the roster law, unchanged). ``None`` (the default) adds
+        nothing: the prompt is byte for byte the pre-C1.5 shape.
+
         The provider's own fault words pass through as the ``Err``
         message verbatim (``not-configured``, ``timeout``, … — the
         orchestrator's quiet arm reads ``not-configured`` and stays
@@ -1009,6 +1098,7 @@ class WorldNarrator:
                 letter_elapsed_days,
                 free_direction,
                 state_facts,
+                letter_response,
             ),
             generation_contract=NARRATOR_CONTRACT,
         )

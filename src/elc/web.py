@@ -2322,6 +2322,29 @@ _WORLD_DIRECTION_GRAMMAR = (
 _APP_SETTING_WORLD_DIRECTION_MODE_KEY = "world_direction_mode"
 _APP_SETTING_WORLD_PENDING_DIRECTION_PREFIX = "world_pending_direction:"
 
+#: C1.5's letter-read projection key (DEC-OPI-b290799a…36, the
+#: intermediary-causality bridge): the reply layer's one world-inbound
+#: fact, parked under a per-world key (the pending-direction posture —
+#: the prefix + the bound world id) after a reply lands, read and
+#: **consumed on success** (consumption-on-use-consumption-clear, F-2
+#: posture) by the next letter's world chain. Stored only by the web
+#: write face; the read parses defensively (a corrupt row is an absent
+#: projection, never a guess). **Never the pending-direction key's
+#: business**: two keys, two prompt sections, two channels (WR-4's
+#: two-layer law — the director's door and the reading's fact do not
+#: mix).
+_APP_SETTING_WORLD_LETTER_RESPONSE_PREFIX = "world_letter_response:"
+
+#: The letter-read projection's single deterministic summary template
+#: (C1.5 v1, DEC-OPI-b290799a…36): v1 adds **no provider call** — the
+#: reconnaissance found no tone/sentiment field anywhere on the reply
+#: pipeline (``TurnCompletion`` carries status/failure/usage shapes
+#: only; ``ProviderOutput`` carries text/error/usage), so there is no
+#: signal to grade a tone ladder by and the bridge ships the one
+#: template. A tone ladder needs a payload field first (registered
+#: boundary; revisit when the reply face grows one).
+_WORLD_LETTER_RESPONSE_SUMMARY = "She has read the letter through."
+
 #: The pending direction candidate's length caps (the grammar line's
 #: own numbers, spelled once).
 _WORLD_DIRECTION_LABEL_CAP = 80
@@ -2379,6 +2402,13 @@ def _world_pending_direction_key(world_id: str) -> str:
     the world id — the multi-world key shape, one binding today)."""
 
     return _APP_SETTING_WORLD_PENDING_DIRECTION_PREFIX + world_id
+
+
+def _world_letter_response_key(world_id: str) -> str:
+    """The letter-read projection's key for one world (C1.5, the
+    pending-direction key's sibling shape — prefix + world id)."""
+
+    return _APP_SETTING_WORLD_LETTER_RESPONSE_PREFIX + world_id
 
 
 def _world_parked_turn_key(conversation_id: str) -> str:
@@ -3407,7 +3437,15 @@ class _WebFace:
         parked round's re-entry re-runs the exact original command — the
         same ``client_message_id`` CP0 committed — so the idempotent
         replay continues the parked turn instead of minting a second
-        one. The payload contract is :meth:`_commit_and_answer`'s."""
+        one. The payload contract is :meth:`_commit_and_answer`'s.
+
+        C1.5 (DEC-OPI-b290799a…36): the completion arm is the
+        intermediary-causality bridge's **write** point — a landed
+        reply parks the letter-read projection for the next letter's
+        world chain (:meth:`_record_letter_response_projection`); a
+        failed turn writes nothing (no reply, no reading, no
+        projection). Deterministic and idempotent: a replayed command
+        rewrites the same row."""
 
         result = self._host.coordinator.begin_turn(command)
         if isinstance(result, Err):
@@ -3435,6 +3473,16 @@ class _WebFace:
         # buckets go exact. Idempotent on the replayed command.
         self._adopt_world_run_trigger(str(completion.turn_id))
         reply = completion.reply_text
+        # C1.5 (DEC-OPI-b290799a…36): the reply is in — the bridge's
+        # write half. The projection lands only on an actual reply (a
+        # failed turn and the parked rounds write nothing: no reply, no
+        # reading, no projection), deterministically, from no letter
+        # word (WR-4: the fact crosses, never the text). Both turn
+        # faces and the parked round's reply-phase re-entry route
+        # through here, so all three completion points write the same
+        # row.
+        if isinstance(reply, str) and reply.strip():
+            self._record_letter_response_projection()
         payload = {
             "reply": reply,
             "turn_status": completion.turn_status.value,
@@ -3670,6 +3718,22 @@ class _WebFace:
         arm, a refusal, or the ceiling with no signal on the final
         step), and the failure handle above.
 
+        C1.5 (DEC-OPI-b290799a…36, the intermediary-causality bridge —
+        the consumption half): the bound world's letter-read projection
+        (:meth:`_world_letter_response`) rides per chain as the step's
+        ``letter_response`` — **both modes** (a world-inbound fact like
+        ``letter_elapsed_days``, never a director input, so the mode
+        gates nothing here; the two channels stay separate: two keys,
+        two prompt sections). The key is consumed on the first landing
+        step, **after** that step's reveal has settled — the exact F-2
+        posture: every quiet, refused or reveal-failed arm breaks above
+        the consumption, so 拒收/安静/未定着不清 holds and the next
+        retry still carries the projection; a landed step deletes the
+        row and the rest of the chain turns without it. The reaction
+        event itself is the narrator's to write (a beat with her
+        ``participants``); the projection only tells the prompt the
+        fact and never carries a letter word (WR-4).
+
         lr-4a (DEC-OPI-c73dbff3…128): ``chain_limit`` bounds the loop —
         ``None`` keeps the defensive :data:`MAX_CHAIN_STEPS` ceiling (the
         natural-run chain's shape, immersive and every pre-lr-4a caller);
@@ -3737,6 +3801,11 @@ class _WebFace:
                 free_direction = value
             elif isinstance(value, tuple):
                 pending_choice = value
+        # C1.5 (DEC-OPI-b290799a…36): the letter-read projection, per
+        # chain, both modes — the reading's fact rides its own door
+        # (never the pending-direction key's), consumed on the first
+        # landing step below.
+        letter_response = self._world_letter_response(world_id)
         # lr-1: the letter's journey, as the world's own calendar tells
         # it. The chain's first step reads the story's furthest stamped
         # day as the day the letter was sent; every step's elapsed is
@@ -3781,6 +3850,10 @@ class _WebFace:
                     direction_mode=mode,
                     pending_direction=pending_choice,
                     free_direction=free_direction,
+                    # C1.5 (DEC-OPI-b290799a…36): the letter-read
+                    # projection, its own prompt door — the fact she
+                    # read it, never a word of the letter (WR-4).
+                    letter_response=letter_response,
                     on_directions=step_directions.extend,
                     letter_elapsed_days=elapsed_days,
                     on_stop=signals.append,
@@ -3851,6 +3924,21 @@ class _WebFace:
                     _world_pending_direction_key(world_id)
                 )
                 pending = None
+            if letter_response is not None:
+                # C1.5 消费即清 (DEC-OPI-b290799a…36), the same
+                # 选了即用即清 law and the same F-2 posture as the
+                # director's input above: the projection rode this
+                # chain's first prompt and the step landed (reveal
+                # settled — every quiet, refused or reveal-failed arm
+                # broke above), so the row is consumed and the rest of
+                # the chain turns without it. The reaction itself is
+                # the narrator's beat to write; a round that never
+                # lands leaves the projection parked for the next
+                # letter.
+                self._host.app_settings.delete(
+                    _world_letter_response_key(world_id)
+                )
+                letter_response = None
             last_day = str(beats[-1].occurred_at)
             frame: dict[str, Any] = {
                 "type": "world",
@@ -3968,6 +4056,100 @@ class _WebFace:
                 return None
             return ("free", text)
         return None
+
+    def _world_letter_response(
+        self, world_id: str
+    ) -> tuple[str, str] | None:
+        """The bound world's letter-read projection (C1.5,
+        DEC-OPI-b290799a…36), parsed defensively: only a row the write
+        face could have written — exactly ``{"persona_id", "summary"}``,
+        both non-blank strings — answers the pair; a missing, corrupt
+        or oddly-shaped row is an absent projection, never a guess,
+        never a crash. The caller hands the pair to the world step's
+        ``letter_response`` and clears the key on a landed step
+        (consumption-on-use-consumption-clear, the F-2 posture)."""
+
+        raw = self._host.app_settings.get(
+            _world_letter_response_key(world_id)
+        )
+        if raw is None:
+            return None
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(parsed, dict):
+            return None
+        if set(parsed) != {"persona_id", "summary"}:
+            return None
+        persona_id = parsed["persona_id"]
+        summary = parsed["summary"]
+        if not (
+            isinstance(persona_id, str)
+            and bool(persona_id.strip())
+            and isinstance(summary, str)
+            and bool(summary.strip())
+        ):
+            return None
+        return (persona_id, summary)
+
+    def _record_letter_response_projection(self) -> None:
+        """The bridge's write half (C1.5, DEC-OPI-b290799a…36): after a
+        reply lands, park the reading's fact for the next letter's
+        world chain — *(the binding actor's persona id resolved through
+        ``world_actor`` — the C1-c namespace precedent, the same
+        vocabulary the narrator's cast-id roster and the beats'
+        ``participants`` spell — one deterministic summary sentence
+        composed from the single template, from no letter word)*.
+
+        Fail-soft by law, the letter-sent row's posture: a worldless
+        conversation, an actor-less binding (the schema's NOT NULL
+        keeps that unreachable today), an actor the world tables do
+        not know, and a refused write all write nothing and note the
+        store's word on stderr — the reply never waits on its
+        projection. A wrong write is self-correcting at the read (the
+        defensive parse) and at the durable half (the parser's
+        fail-closed roster law)."""
+
+        binding = self._world_binding()
+        if binding is None:
+            return
+        actor_id = binding["actor_id"]
+        if actor_id is None:
+            return
+        world_id = str(binding["world_id"])
+        try:
+            row = self._host.db.execute(
+                "SELECT persona_id FROM world_actor WHERE actor_id = ?",
+                (actor_id,),
+            ).fetchone()
+        except sqlite3.Error as exc:
+            print(
+                "elc web: 回信投影的收信人解析失败（回信不受影响）："
+                f"{exc}",
+                file=sys.stderr,
+            )
+            return
+        if row is None or not str(row[0]).strip():
+            return
+        persona_id = str(row[0])
+        try:
+            self._host.app_settings.set(
+                _world_letter_response_key(world_id),
+                json.dumps(
+                    {
+                        "persona_id": persona_id,
+                        "summary": _WORLD_LETTER_RESPONSE_SUMMARY,
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+        except (sqlite3.Error, RuntimeError) as exc:
+            print(
+                "elc web: 回信投影未落（回信不受影响）："
+                f"{type(exc).__name__}: {exc}",
+                file=sys.stderr,
+            )
 
     def _note_narration(
         self,

@@ -275,6 +275,7 @@ def run_generated_step(
     on_stop: Callable[[StopSignal | None], None] | None = None,
     free_direction: str | None = None,
     terminal_stop_kinds: tuple[str, ...] | None = None,
+    letter_response: tuple[str, str] | None = None,
 ) -> Result[tuple[WorldEvent, ...]]:
     """The production world step (WR-2, DEC-OPI-5fc42174…49; WR-4
     correction …58): the narrator's beats out, the chronicle and the
@@ -437,6 +438,23 @@ def run_generated_step(
     it, a refusal after shown pieces retracts nothing (the caller owes
     the honesty arm), and the default ``None`` runs the step byte for
     byte as before this parameter existed.
+
+    C1.5 (DEC-OPI-b290799a…36, the intermediary-causality bridge — the
+    external review HIGH-2's root fix): ``letter_response`` — the
+    caller's projection *(the reader's persona id, one world-language
+    summary sentence)* — is the reply layer's one world-inbound **fact**
+    let through to the world layer: the letter was read, her reaction
+    may now happen in the world's own life. It rides to the narrator's
+    prompt as the letter-read reaction section (beside
+    ``letter_elapsed_days``' journey section — the journey's fact and
+    the reading's fact are different facts under the same two-layer
+    law); the summary is the caller's sentence, passed through
+    verbatim — this layer composes nothing and sees no letter word,
+    and the beats' ``participants`` still parse against the package
+    roster (fail-closed). ``None`` (the default) runs the step byte
+    for byte as before this parameter existed: the zero-change
+    default, the wr-10 posture again — the bridge's absence is the
+    honest pre-C1.5 world.
     """
 
     if provider is None:
@@ -470,6 +488,11 @@ def run_generated_step(
         state_facts=tuple(
             (fact.canonical_key, fact.statement) for fact in facts
         ),
+        # C1.5 (DEC-OPI-b290799a…36): the caller's letter-read
+        # projection rides through — the prompt's reaction section when
+        # present, nothing at all when ``None`` (the zero-change
+        # default).
+        letter_response=letter_response,
     )
     if isinstance(generated, Err):
         if generated.error.message == REASON_NOT_CONFIGURED:
