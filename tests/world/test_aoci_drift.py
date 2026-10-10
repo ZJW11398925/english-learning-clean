@@ -63,6 +63,35 @@ def _entry_line(tag: str) -> str:
     return hits[0]
 
 
+def _entry_line_in_section(section_header: str, tag: str) -> str:
+    """One entry addressed the ledger's own way — section + tag. The
+    ledger's tags are **not** globally unique (``types.py[DD7M]`` names
+    four entries in four sections; the N-AOCI-disp-1 mechanism fact):
+    the section header is the disambiguator the one-hop reader uses."""
+
+    lines = _ledger_text().split("\n")
+    start = next(
+        index
+        for index, line in enumerate(lines)
+        if line.startswith(section_header)
+    )
+    end = next(
+        (
+            index
+            for index in range(start + 1, len(lines))
+            if lines[index].startswith("===D:")
+        ),
+        len(lines),
+    )
+    hits = [
+        line for line in lines[start + 1 : end] if line.startswith(tag)
+    ]
+    assert len(hits) == 1, (
+        f"aoci entry {tag!r} in {section_header!r}: {len(hits)} lines"
+    )
+    return hits[0]
+
+
 def _migrations_section() -> list[str]:
     """The ledger's migrations section: its header up to the next
     directory header."""
@@ -217,3 +246,60 @@ def test_the_six_touched_entries_are_single_lines() -> None:
     lines = _ledger_text().split("\n")
     for tag in TOUCHED_TAGS:
         assert sum(1 for line in lines if line.startswith(tag)) == 1, tag
+
+
+# ---------------------------------------------------------------------------
+# the disposition's widened face (review MEDIUM-1): the remaining nine
+# ---------------------------------------------------------------------------
+
+
+def test_deletion_entry_counts_eight_global_content_tables() -> None:
+    """The disposition's fixed falsehood (review MEDIUM-1, one live lie
+    found by the mechanical sweep): ``GLOBAL_CONTENT_TABLES`` gained
+    ``world_storyline`` at C2 — the entry's 「七员」 was false; 「八员」
+    is the truth, and the source constant must carry the same eight."""
+
+    from elc.deletion.types import GLOBAL_CONTENT_TABLES
+
+    entry = _entry_line_in_section(
+        "===D:/english-learning-clean/src/elc/deletion/===", "types.py[DD7M]"
+    )
+    assert "八员" in entry
+    assert "七员" not in entry
+    assert "world_storyline" in entry
+    assert len(GLOBAL_CONTENT_TABLES) == 8
+    assert "world_storyline" in GLOBAL_CONTENT_TABLES
+
+
+def test_the_widened_entries_carry_the_voice_face() -> None:
+    """The disposition's widened entries: the C3 voice library's wiring
+    chain (host port → coordinator → compiler block → context view) and
+    the C2 storyline faces ride their entries — and the leaf module has
+    an entry of its own."""
+
+    _ELC = "===D:/english-learning-clean/src/elc/==="
+    _PERSONA = "===D:/english-learning-clean/src/elc/persona/==="
+    _RUNTIME = "===D:/english-learning-clean/src/elc/runtime/==="
+    _WORLD = "===D:/english-learning-clean/src/elc/world/==="
+    for section, tag, keywords in (
+        (_ELC, "host.py[AW9L]", ("_WorldVoicePort",)),
+        (_PERSONA, "commands.py[DB9L]", ("persona-voice",)),
+        (_PERSONA, "types.py[DB7L]", ("world_voice_view",)),
+        (_RUNTIME, "controller.py[AC9L]", ("world_voice",)),
+        (_WORLD, "__init__.py[DC4T]", ("voice", "剧情线")),
+        (_WORLD, "types.py[DC4T]", ("STORYLINE_EFFECT_KEY_PREFIX",)),
+        (
+            _WORLD,
+            "store.py[DB7T]",
+            ("active_storylines", "resolve_storyline", "adopt_trigger_turn"),
+        ),
+    ):
+        entry = _entry_line_in_section(section, tag)
+        for keyword in keywords:
+            assert keyword in entry, (tag, keyword)
+
+    # the leaf module's own entry (the one file the sweep found with no
+    # entry at all)
+    voice_entry = _entry_line_in_section(_WORLD, "voice.py[EW9T]")
+    for keyword in ("CharacterVoice", "WorldVoiceQueries", "VOICE_SAMPLE_COUNT"):
+        assert keyword in voice_entry
