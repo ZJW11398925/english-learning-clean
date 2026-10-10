@@ -233,6 +233,43 @@ def test_a_world_without_a_seeded_package_is_a_not_found_err(
         host.close()
 
 
+def test_an_actor_whose_persona_the_package_does_not_cast_is_a_validation_err(
+    tmp_path: Path,
+) -> None:
+    """The disagreement arm (review LOW-2): an actor bound through the
+    public store API to a real card the seeded package does **not** cast —
+    the tables and the package disagree, which is corruption, so the port
+    answers ``VALIDATION_FAILED``, never a guessed voice. The other two
+    arms (a NULL / unknown actor) are schema-unreachable (the binding
+    table's ``NOT NULL`` + FK), the same posture the chronicle port
+    declares; this one is reachable and so it carries the pin."""
+
+    host, _, world, _ = _host_with_binding(tmp_path)
+    try:
+        stranger = host.world_store.bind_actor(
+            "actor-not-cast", str(world.world_id), "persona-theo-marsh", NOW
+        )
+        assert isinstance(stranger, Ok), stranger
+        opened = host.open_conversation(ConversationId(OTHER_CONV))
+        assert isinstance(opened, Ok), opened
+        bound = host.world_store.bind_conversation(
+            "wcb-not-cast",
+            str(world.world_id),
+            "actor-not-cast",
+            OTHER_CONV,
+            NOW,
+        )
+        assert isinstance(bound, Ok), bound
+        port = host.coordinator._world_voice  # type: ignore[attr-defined]
+        answered = port.resolve_world_voice_view(ConversationId(OTHER_CONV))
+        assert isinstance(answered, Err)
+        assert answered.error.code is DomainErrorCode.VALIDATION_FAILED
+        assert "does not cast persona" in answered.error.message
+        assert "persona-theo-marsh" in answered.error.message
+    finally:
+        host.close()
+
+
 def test_the_port_resolves_the_binding_characters_entry_not_the_first(
     tmp_path: Path,
 ) -> None:
