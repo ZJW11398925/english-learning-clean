@@ -3734,6 +3734,18 @@ class _WebFace:
         ``participants``); the projection only tells the prompt the
         fact and never carries a letter word (WR-4).
 
+        C2 (DEC-OPI-b290799a…45, the plot layer's web bridge): every
+        step reads the bound world's open arcs from the store
+        (:meth:`elc.world.store.SqliteWorldStore.active_storylines` —
+        the two-layer read) and passes them as the step's
+        ``active_storylines``, so the narrator's prompt carries the
+        active-storylines section (empty read ⇒ the honest
+        no-open-arcs line). The read is **per step**: a closure an
+        earlier step's beat proposed through its ``effects`` is
+        durable by the next iteration, and its line retires from the
+        next prompt — 收束即刻生效, with no chain-level bookkeeping
+        here (the store's read is the whole mechanism).
+
         lr-4a (DEC-OPI-c73dbff3…128): ``chain_limit`` bounds the loop —
         ``None`` keeps the defensive :data:`MAX_CHAIN_STEPS` ceiling (the
         natural-run chain's shape, immersive and every pre-lr-4a caller);
@@ -3833,6 +3845,21 @@ class _WebFace:
                 if on_narration_increment is not None:
                     on_narration_increment(index, piece)
 
+            # C2 (DEC-OPI-b290799a…45): the world's open arcs, read
+            # **per step** from the durable store — the two-layer read
+            # (the structure row active *and* no projection fact
+            # retiring the line). Per step on purpose: a closure an
+            # earlier step's beat proposed through its ``effects``
+            # retires the line before the next step's prompt composes,
+            # so the arcs the narrator sees are the story's own current
+            # ones. An empty read passes as the empty tuple — the
+            # prompt's honest no-open-arcs line (the section's presence
+            # is the face's, its content the store's).
+            active_storylines = tuple(
+                (record.line_id, record.theme, record.resolve_at)
+                for record in world_store.active_storylines(world_id)
+            )
+
             try:
                 stepped = run_generated_step(
                     world_store,
@@ -3854,6 +3881,11 @@ class _WebFace:
                     # projection, its own prompt door — the fact she
                     # read it, never a word of the letter (WR-4).
                     letter_response=letter_response,
+                    # C2 (DEC-OPI-b290799a…45): the per-step active
+                    # read above rides the prompt's storyline section —
+                    # the world's open arcs, the arcs its beats may
+                    # advance and the closure door they may propose.
+                    active_storylines=active_storylines,
                     on_directions=step_directions.extend,
                     letter_elapsed_days=elapsed_days,
                     on_stop=signals.append,

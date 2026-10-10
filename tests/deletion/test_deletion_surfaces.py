@@ -144,7 +144,10 @@ def test_no_global_content_table_lives_in_app_db() -> None:
     (DEC-OPI-7e3744ee…26) added the world's run row (migration 0025's
     ``world_run``), and W-1-3 (DEC-OPI-7e3744ee…49) adds the reveal queue
     (migration 0026's ``world_reveal_item``) — the
-    conservative reading throughout for the world-owned half.
+    conservative reading throughout for the world-owned half. C2
+    (DEC-OPI-b290799a…45) adds migration 0028's ``world_storyline``
+    (the plot layer's structure rows) to the same keep rule, same
+    conservative reading.
 
     The same W-1-3 cut is the deletion face's own arrival: it *moves*
     ``world_conversation`` out of this tuple and into
@@ -164,6 +167,7 @@ def test_no_global_content_table_lives_in_app_db() -> None:
         "world_state_fact",
         "world_run",
         "world_reveal_item",
+        "world_storyline",
     )
     for table in GLOBAL_CONTENT_TABLES:
         assert table not in SWEPT_TABLES

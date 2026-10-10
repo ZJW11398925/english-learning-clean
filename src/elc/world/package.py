@@ -8,7 +8,10 @@ existing character cards (each member optionally carrying a one-line
 the town's purely narrative residents, who have no persona and bind no
 actor (prompt material, never correspondence faces; the web face's
 ``world_residents`` reads the *bound* cast and is a different thing) —
-the pre-authored event pool the engine draws from, and a supply
+an optional ``initial_storylines`` section (v5, C2: the world's opening
+arcs, ``{theme, resolve_at}`` pairs the seed lands as migration 0028's
+``world_storyline`` rows), the pre-authored event pool the engine draws
+from, and a supply
 declaration. :func:`load_world_package` decodes one
 file strictly — bad
 JSON, a missing or unexpected key, a value of the wrong shape, an unknown
@@ -91,17 +94,17 @@ SUPPLY_FAMILY_WORDS: tuple[str, ...] = (
     "STANCE",
 )
 
-#: The package schema version this loader reads (v4, wr-9 /
-#: DEC-OPI-c73dbff3…50): every pool event still carries its narration in
-#: both languages and the package its ``calendar_start`` (the v3 face,
-#: kept), plus the v4 additions — a cast member may carry an optional
-#: one-line ``vignette`` of their life, and the package may carry an
-#: optional ``residents`` section naming the town's purely narrative
-#: residents (no persona, no actor binding). A document stamped with any
-#: other version is a refusal naming the number — a v3-and-below file
-#: cannot ride in half-read, and a future v5 must be read by the cut
-#: that writes it, never guessed at by this one.
-WORLD_PACKAGE_VERSION = 4
+#: The package schema version this loader reads (v5, C2 /
+#: DEC-OPI-b290799a…45): every v4 face is kept (the bilingual pool
+#: events, ``calendar_start``, an optional cast ``vignette`` and an
+#: optional ``residents`` section), plus the v5 addition — an optional
+#: ``initial_storylines`` section naming the world's opening arcs
+#: (``{theme, resolve_at}`` pairs the seed lands as migration 0028's
+#: ``world_storyline`` rows). A document stamped with any other version
+#: is a refusal naming the number — a v4-and-below file cannot ride in
+#: half-read, and a future v6 must be read by the cut that writes it,
+#: never guessed at by this one.
+WORLD_PACKAGE_VERSION = 5
 
 
 class WorldPackageError(RuntimeError):
@@ -185,9 +188,20 @@ class WorldPackage:
     narrative cast (:class:`Resident` — no persona, no actor binding);
     the section's absence in the file decodes to the empty tuple, an
     honest zero-resident world. The narrator reads it live from the
-    loaded package every step — a re-seeded v4 package arms the
+    loaded package every step — a re-seeded package arms the
     material on the next open, and no already-written chronicle is
-    rewritten (append-only history, no backfill)."""
+    rewritten (append-only history, no backfill).
+
+    v5 (C2, DEC-OPI-b290799a…45): ``initial_storylines`` is the world's
+    opening arcs as ``(theme, resolve_at)`` pairs — the package names
+    the arcs, never their ids: the seed derives each line's id
+    (:func:`_line_id_for`, the actor-id derivation's sibling) and lands
+    the rows through the store's idempotent create face at open time.
+    The section's absence decodes to the empty tuple, an honest
+    three-line-capped-by-the-author zero; the reader (:meth:`elc.world.
+    store.SqliteWorldStore.active_storylines`) is what the narrator's
+    prompt is fed from, and the package's own copy stays here as the
+    seed's source."""
 
     world_id: str
     name: str
@@ -199,6 +213,7 @@ class WorldPackage:
     supply: SupplyDeclaration
     narrations_zh: tuple[tuple[str, str], ...] = ()
     residents: tuple[Resident, ...] = ()
+    initial_storylines: tuple[tuple[str, str], ...] = ()
 
     def to_event_pool(self) -> tuple[PoolEvent, ...]:
         """The engine's pool argument, as loaded (no re-decode)."""
@@ -228,9 +243,9 @@ _PACKAGE_KEYS = (
     "event_pool",
     "supply",
 )
-#: The optional top-level sections (v4, wr-9): absent is legal, present
-#: is decoded strictly — a section is never half-read.
-_PACKAGE_OPTIONAL_KEYS = ("residents",)
+#: The optional top-level sections (v4, wr-9; v5, C2): absent is legal,
+#: present is decoded strictly — a section is never half-read.
+_PACKAGE_OPTIONAL_KEYS = ("residents", "initial_storylines")
 _CAST_KEYS = ("persona_id", "name")
 _CAST_OPTIONAL_KEYS = ("vignette",)
 _RESIDENT_KEYS = ("name", "role", "vignette")
@@ -341,11 +356,48 @@ def _decode_resident(entry: object, where: str) -> Result[Resident]:
     )
 
 
+def _decode_initial_storylines(
+    value: object, where: str
+) -> Result[tuple[tuple[str, str], ...]]:
+    """The v5 ``initial_storylines`` section (C2): an array of
+    ``{theme, resolve_at}`` pairs — both required non-empty strings, no
+    other key (an arc the seed lands needs its topic and its closure
+    condition; anything less is half an arc). An empty array is legal
+    (a world with no opening arcs), and shape errors are refused with
+    the offending entry named, the residents decoder's posture."""
+
+    if not isinstance(value, list):
+        return _err(
+            f"{where}: must be an array of theme/resolve_at pairs"
+        )
+    lines: list[tuple[str, str]] = []
+    for index, entry in enumerate(value):
+        spot = f"{where} entry {index}"
+        if not isinstance(entry, dict):
+            return _err(f"{spot}: not a JSON object")
+        if set(entry) != {"theme", "resolve_at"}:
+            return _err(
+                f"{spot}: expected exactly the keys 'theme' and"
+                f" 'resolve_at', got {sorted(entry)!r}"
+            )
+        theme = entry["theme"]
+        resolve_at = entry["resolve_at"]
+        if not isinstance(theme, str) or not theme.strip():
+            return _err(f"{spot}: 'theme' must be a non-empty string")
+        if not isinstance(resolve_at, str) or not resolve_at.strip():
+            return _err(
+                f"{spot}: 'resolve_at' must be a non-empty string"
+            )
+        lines.append((theme, resolve_at))
+    return Ok(tuple(lines))
+
+
 def _decode_pool_event(entry: object, where: str) -> Result[PoolEvent]:
     """One pool event: ``kind`` / ``narration`` / ``narration_zh`` /
     ``days`` required (the Chinese narration is not optional prose, it
     is the package's second language; ``days`` is the story's own span,
-    a v3 face kept in v4 — a negative or non-int span would move the
+    a v3 face kept through v4 and v5 — a negative or non-int span would
+    move the
     world's calendar by
     a lie), ``effects`` / ``conditions`` / ``moment`` optional (the
     engine shapes' own defaults). An unknown moment word is refused with
@@ -464,11 +516,13 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
     Every refusal is an ``Err`` naming the file and the offending key or
     word: unreadable file, bad JSON, a non-object document, a missing or
     unexpected top-level key, a value of the wrong shape, a version other
-    than :data:`WORLD_PACKAGE_VERSION` (v4 — the v3 face kept, plus an
-    optional cast ``vignette`` and an optional ``residents`` section), a
+    than :data:`WORLD_PACKAGE_VERSION` (v5 — the v4 face kept, plus an
+    optional ``initial_storylines`` section), a
     duplicated event kind, an unknown moment word, an unknown supply
     family word, a resident whose name collides with the cast's or with
-    another resident's (case-insensitively). The loader never guesses
+    another resident's (case-insensitively), an ``initial_storylines``
+    entry outside the exact ``{theme, resolve_at}`` shape. The loader
+    never guesses
     past an error — fail-closed decoding, the caller decides what a
     refusal means (the builtin seed answers: a failed open).
     """
@@ -502,11 +556,10 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
     if version != WORLD_PACKAGE_VERSION:
         return _err(
             f"{where}: version must be {WORLD_PACKAGE_VERSION} (this"
-            f" loader reads v{WORLD_PACKAGE_VERSION} packages — the v3"
-            " face kept, plus an optional cast vignette and an optional"
-            " residents section; v3-and-below files are refused rather"
-            " than read half-way), got"
-            f" {version}"
+            f" loader reads v{WORLD_PACKAGE_VERSION} packages — the v4"
+            " face kept, plus an optional initial_storylines section;"
+            " v4-and-below files are refused rather than read half-way),"
+            f" got {version}"
         )
     calendar_start = document["calendar_start"]
     if not isinstance(calendar_start, str) or not calendar_start.strip():
@@ -563,6 +616,12 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
             )
         known_names.add(folded)
         residents.append(resident)
+    raw_storylines = document.get("initial_storylines", [])
+    decoded_storylines = _decode_initial_storylines(
+        raw_storylines, f"{where}: initial_storylines"
+    )
+    if isinstance(decoded_storylines, Err):
+        return decoded_storylines
     pool = document["event_pool"]
     if not isinstance(pool, list) or not pool:
         return _err(f"{where}: event_pool must be a non-empty array")
@@ -601,6 +660,7 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
             supply=decoded_supply.value,
             narrations_zh=tuple(narrations_zh),
             residents=tuple(residents),
+            initial_storylines=decoded_storylines.value,
         )
     )
 
@@ -616,6 +676,19 @@ def _actor_id_for(world_id: str, name: str) -> str:
     parts = name.split()
     given = parts[0].lower() if parts else ""
     return f"actor-{world_token}-{given}"
+
+
+def _line_id_for(world_id: str, ordinal: int) -> str:
+    """The derived storyline id: ``line-<world token>-<ordinal,
+    zero-padded>`` — ``world-berrymoor`` plus the package's own order
+    derives ``line-berrymoor-0000``. The ordinal is the section
+    position at seed time, so a replayed seed re-derives the same ids
+    and lands through the store's idempotent create face; zero-padding
+    keeps the ids and the durable order legible past ten lines
+    (``_run_id_for``'s own spelling)."""
+
+    world_token = world_id.removeprefix("world-")
+    return f"line-{world_token}-{ordinal:04d}"
 
 
 def story_days_of(
@@ -724,7 +797,11 @@ def ensure_builtin_worlds(
     shape is a no-op, so an open re-seed writes nothing) and each cast
     member is bound under the derived actor id (see
     :func:`_actor_id_for` — ``world-berrymoor`` plus the cast name's
-    given word derives ``actor-berrymoor-nell``).
+    given word derives ``actor-berrymoor-nell``). The package's v5
+    ``initial_storylines`` land the same way, through the store's
+    idempotent ``create_storyline`` under the derived line ids (see
+    :func:`_line_id_for`) — a re-seed re-derives the same ids and
+    rewrites nothing.
 
     Every failure raises :class:`WorldPackageError` — the composition
     root's open fails closed (the ``world_lore`` seed posture: a database
@@ -771,4 +848,25 @@ def ensure_builtin_worlds(
                     f"builtin world {package.world_id!r}: actor"
                     f" {actor_id!r} not bound for persona"
                     f" {member.persona_id!r}: {bound.error.message}"
+                )
+        # v5 (C2, DEC-OPI-b290799a…45): the package's opening arcs land
+        # through the store's idempotent create face — the derived line
+        # id plus the same section shape replays as a no-op, so an open
+        # re-seed writes nothing. The lines are born ``active`` with no
+        # opening event (``opened_by=None``: a package-initial line has
+        # no chronicle row to name — the migration's own no-FK
+        # posture); closure is the projection's or the explicit face's
+        # business, never the seed's.
+        for ordinal, (theme, resolve_at) in enumerate(
+            package.initial_storylines
+        ):
+            line_id = _line_id_for(package.world_id, ordinal)
+            seeded_line = store.create_storyline(
+                line_id, package.world_id, theme, None, resolve_at, now
+            )
+            if isinstance(seeded_line, Err):
+                raise WorldPackageError(
+                    f"builtin world {package.world_id!r}: storyline"
+                    f" {line_id!r} not seeded:"
+                    f" {seeded_line.error.message}"
                 )

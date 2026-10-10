@@ -90,12 +90,17 @@ MIGRATION_IDS: tuple[str, ...] = (
     # run_id (the run the event rode, deliberately FK-less); 存量行
     # answer the DEFAULT ('[]' / NULL) with zero back-fill inference.
     "0027_chronicle_attribution",
+    # C2 (DEC-OPI-b290799a…45): the storyline cut — the plot layer's
+    # own table (world_storyline: theme / opened_by / status /
+    # resolve_at; the arcs the narrator's prompt carries and the
+    # projection's resolved claims retire from the active read).
+    "0028_world_storyline",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0027_chronicle_attribution.sql"
-SCHEMA_HEAD_VERSION = "27"
+SCHEMA_HEAD_FILE = "0028_world_storyline.sql"
+SCHEMA_HEAD_VERSION = "28"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

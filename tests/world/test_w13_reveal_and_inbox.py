@@ -7,11 +7,12 @@ semantics — 揭示是呈现触发非运转动力; AD-1's conservative overlay:
 conversation pipeline's write face is untouched). The slice VAL groups,
 each a section below:
 
-1. **migration pins** — C1-a's 0027_chronicle_attribution is the
-   registered head (W-1-3's 0026_world_reveal one behind it), the
+1. **migration pins** — C1-a's 0027_chronicle_attribution sits behind
+   C2's 0028_world_storyline, the registered head (W-1-3's
+   0026_world_reveal one behind it), the
    ``world_reveal_item`` table carries its columns in order, and the
    schema's own declarations hold: the three FKs, the CHECK vocabulary,
-   the index, the double ``'27'`` stamp and the RESTRICT posture;
+   the index, the double ``'28'`` stamp and the RESTRICT posture;
 2. **run_step's dual triggers** — the letter winds the first run
    (seed = the world's run count, deterministic; the triggering turn
    rides the row), a letter after a finished run winds the next one
@@ -160,22 +161,24 @@ def _fresh_db(tmp_path: Path, name: str) -> sqlite3.Connection:
 
 
 def test_0027_is_the_registered_head() -> None:
-    """C1-a's migration is the head, immediately behind W-1-3's
-    0026_world_reveal; the shared constants say so, and the stamp a fresh
-    database carries is 27 (the stamp-pin discipline every head move
+    """C1-a's migration sits behind the head, immediately behind W-1-3's
+    0026_world_reveal; C2's 0028_world_storyline is the head now; the
+    shared constants say so, and the stamp a fresh
+    database carries is 28 (the stamp-pin discipline every head move
     has followed since P8-4; this pin read "0026 is the head" while 0026
     was the head)."""
 
-    assert MIGRATION_IDS[-1] == "0027_chronicle_attribution"
-    assert MIGRATION_IDS[-2] == "0026_world_reveal"
-    assert SCHEMA_HEAD_FILE == "0027_chronicle_attribution.sql"
+    assert MIGRATION_IDS[-1] == "0028_world_storyline"
+    assert MIGRATION_IDS[-2] == "0027_chronicle_attribution"
+    assert MIGRATION_IDS[-3] == "0026_world_reveal"
+    assert SCHEMA_HEAD_FILE == "0028_world_storyline.sql"
     assert (REPO_ROOT / "migrations" / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "27"
+    assert SCHEMA_HEAD_VERSION == "28"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0027_chronicle_attribution"
-    assert applied[-2] == "0026_world_reveal"
+    assert applied[-1] == "0028_world_storyline"
+    assert applied[-2] == "0027_chronicle_attribution"
     assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 

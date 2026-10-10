@@ -58,10 +58,13 @@ __all__ = [
     "StateEffect",
     "WorldEvent",
     "WorldStateFact",
+    "STORYLINE_EFFECT_KEY_PREFIX",
+    "STORYLINE_RESOLVED_STATEMENT",
     "encode_effects",
     "decode_effects",
     "encode_participants",
     "decode_participants",
+    "storyline_effect_key",
 ]
 
 
@@ -291,3 +294,28 @@ def decode_participants(text: str) -> Result[tuple[str, ...]]:
                 f" {type(element).__name__})"
             )
     return Ok(tuple(payload))
+
+
+#: The state-effect key prefix a storyline closure proposal carries
+#: (C2, DEC-OPI-b290799a…45): the narrator declares a storyline
+#: resolved by proposing, in the beat's own ``effects``, the canonical
+#: key :func:`storyline_effect_key` spells — the same key namespace
+#: every other projection claim rides, one layer for the structure and
+#: one for the state.
+STORYLINE_EFFECT_KEY_PREFIX = "storyline:"
+
+#: The statement word that makes a closure a closure (C2): the
+#: projection filter in ``SqliteWorldStore.active_storylines`` honors
+#: exactly this word — a different statement under a
+#: :data:`STORYLINE_EFFECT_KEY_PREFIX` key is a state claim about the
+#: line, never its retirement.
+STORYLINE_RESOLVED_STATEMENT = "resolved"
+
+
+def storyline_effect_key(line_id: str) -> str:
+    """The canonical state key one storyline's closure proposal carries:
+    ``storyline:<line_id>`` (C2). The narrator's prompt teaches the
+    format and the store's active read filters on it — one derivation,
+    both consumers, never two spellings."""
+
+    return f"{STORYLINE_EFFECT_KEY_PREFIX}{line_id}"

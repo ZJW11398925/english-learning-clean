@@ -1,7 +1,7 @@
 {
   "world_id": "world-berrymoor",
   "name": "Berrymoor",
-  "version": 4,
+  "version": 5,
   "calendar_start": "2025-09-14",
   "setting": [
     "Berrymoor is a small harbour town on a cold coast, where the fishing boats come in with the morning tide and the day is measured by the water. The harbour path runs from the stone quay to the bindery steps, and half the town walks it twice a day without thinking about it. The sea is never far from any conversation: it decides the fish, the weather, and most of the news.",
@@ -41,6 +41,16 @@
       "name": "Hester Cowley",
       "role": "the village school",
       "vignette": "sets the slates out while the harbour fog is still lifting, and marks the foggy mornings late"
+    }
+  ],
+  "initial_storylines": [
+    {
+      "theme": "Alder & Son's order book is thinning: fewer books come in for mending, and whether the green door stays open past the winter is Nell's to decide. The faded sign has outlived the last two Alders, and the town has begun to talk about the shop in the past tense.",
+      "resolve_at": "Nell settles the bindery's future — an apprentice taken on and the sign repainted, or the tools sold and the shop let to another trade."
+    },
+    {
+      "theme": "Silas Croft is short of hands at the boatyard, and the winter refits are already drawing the young boatwrights up the coast to Kerrow for steadier pay. The boats that stay need mending before the first hard frost, and Silas is too proud to say so plainly.",
+      "resolve_at": "The first hard frost decides the boatyard's winter — the refits secured, or the work gone up the coast for good."
     }
   ],
   "event_pool": [

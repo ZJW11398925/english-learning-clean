@@ -276,6 +276,7 @@ def run_generated_step(
     free_direction: str | None = None,
     terminal_stop_kinds: tuple[str, ...] | None = None,
     letter_response: tuple[str, str] | None = None,
+    active_storylines: tuple[tuple[str, str, str], ...] | None = None,
 ) -> Result[tuple[WorldEvent, ...]]:
     """The production world step (WR-2, DEC-OPI-5fc42174…49; WR-4
     correction …58): the narrator's beats out, the chronicle and the
@@ -455,6 +456,21 @@ def run_generated_step(
     for byte as before this parameter existed: the zero-change
     default, the wr-10 posture again — the bridge's absence is the
     honest pre-C1.5 world.
+
+    C2 (DEC-OPI-b290799a…45, the plot layer): ``active_storylines`` —
+    the caller's read of the world's open arcs (the store's two-layer
+    ``active_storylines``), ``(line_id, theme, resolve_at)`` triples —
+    rides to the narrator's prompt as the active-storylines section
+    (after the story-so-far section's place): the beats see the arcs
+    they are following, may advance one, and close one by proposing
+    ``storyline:<line_id>`` = ``resolved`` in the beat's ordinary
+    ``effects`` — the durable half below settles it exactly as every
+    other state claim, and the store's active read retires the line on
+    the next step (the two-layer law: this layer adds no closure
+    branch and no second state machine — the parser needs no new key,
+    the projection does the work). An empty tuple earns the honest
+    no-open-arcs prompt line; ``None`` (the default) runs the step
+    byte for byte as before this parameter existed.
     """
 
     if provider is None:
@@ -493,6 +509,13 @@ def run_generated_step(
         # present, nothing at all when ``None`` (the zero-change
         # default).
         letter_response=letter_response,
+        # C2 (DEC-OPI-b290799a…45): the caller's read of the world's
+        # open arcs rides through — the prompt's active-storylines
+        # section (an empty tuple earns the honest no-open-arcs line),
+        # nothing at all when ``None`` (the zero-change default). The
+        # caller reads (the web face reads the store per step), this
+        # layer only passes — the two-layer read stays the store's.
+        active_storylines=active_storylines,
     )
     if isinstance(generated, Err):
         if generated.error.message == REASON_NOT_CONFIGURED:

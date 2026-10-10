@@ -126,7 +126,11 @@ from elc.platform.types import (
     Result,
 )
 from elc.world.package import CastMember, WorldPackage
-from elc.world.types import StateEffect
+from elc.world.types import (
+    STORYLINE_EFFECT_KEY_PREFIX,
+    STORYLINE_RESOLVED_STATEMENT,
+    StateEffect,
+)
 
 __all__ = [
     "DIRECTION_DIRECTED",
@@ -239,6 +243,18 @@ _LETTER_ON_WAY_HEADER = "== A letter on its way =="
 #: never-quote teaching — the world-side half of WR-4's two-layer law,
 #: now named instead of implied.
 _LETTER_READ_HEADER = "== She has read the letter =="
+
+#: The active-storylines section's own header (C2,
+#: DEC-OPI-b290799a…45 — the plot layer's prompt door). The section
+#: rides **only** when the caller passes ``active_storylines`` (the
+#: conditional-section law again: the default prompt stays byte for
+#: byte the pre-C2 shape, both golden pins immovable); an empty tuple
+#: earns the honest no-open-arcs line, and the section's teaching names
+#: the closure's own door — the canonical ``storyline:<line_id>``
+#: state key with the statement ``resolved`` proposed through the
+#: beat's ordinary ``effects`` (the same pipe C1-b taught; the store's
+#: two-layer active read is what makes the proposal retire the line).
+_ACTIVE_STORYLINES_HEADER = "== Active storylines =="
 
 #: The kind slug's shape: lowercase letters, digits and hyphens, one
 #: non-separator character first, at most 32 characters.
@@ -530,6 +546,7 @@ def build_narrator_prompt(
     free_direction: str | None = None,
     state_facts: tuple[tuple[str, str], ...] = (),
     letter_response: tuple[str, str] | None = None,
+    active_storylines: tuple[tuple[str, str, str], ...] | None = None,
 ) -> str:
     """The narrator's prompt, as one pure string (testable without a
     provider, a store or a world row).
@@ -627,6 +644,23 @@ def build_narrator_prompt(
     conditional-section law — the default prompt stays byte for byte
     the pre-C1.5 shape, both golden pins immovable).
 
+    C2 (DEC-OPI-b290799a…45, the plot layer): ``active_storylines`` —
+    the caller's read of the world's open arcs (the store's two-layer
+    ``active_storylines``: structure row ``active`` **and** no
+    ``CURRENT`` projection fact retiring the line), one
+    ``(line_id, theme, resolve_at)`` triple each — adds the
+    active-storylines section, after the story-so-far section's place.
+    The id rides the line's roster row because the closure proposal
+    must name it: a beat that settles a line proposes
+    ``storyline:<line_id>`` = ``resolved`` in its ordinary ``effects``
+    (the C1-b pipe), and the store's active read retires the line on
+    the next step without a second state machine. An empty tuple earns
+    the honest no-open-arcs line (and no closure teaching — nothing to
+    close); every triple must be a tuple of three non-blank strings
+    (anything else is a ``ValueError`` naming the entry). ``None``
+    (the default) adds nothing: the conditional-section law again —
+    the default prompt stays byte for byte the pre-C2 shape.
+
     WR-4 (DEC-OPI-5fc42174-…58, the user's third direction): **no
     letter ever enters this prompt** — the living-world spec is
     two-layer about influence (§4.1 / the 走向 entry): the user's reply
@@ -692,6 +726,26 @@ def build_narrator_prompt(
                 "letter_response must carry a non-blank persona id and"
                 " a non-blank summary sentence"
             )
+    if active_storylines is not None:
+        for index, entry in enumerate(active_storylines):
+            if not isinstance(entry, tuple) or len(entry) != 3:
+                raise ValueError(
+                    f"active_storylines entry {index} must be a"
+                    " (line_id, theme, resolve_at) tuple"
+                )
+            line_id, theme, resolve_at = entry
+            if not (
+                isinstance(line_id, str)
+                and line_id.strip()
+                and isinstance(theme, str)
+                and theme.strip()
+                and isinstance(resolve_at, str)
+                and resolve_at.strip()
+            ):
+                raise ValueError(
+                    f"active_storylines entry {index} must carry a"
+                    " non-blank line id, theme and resolve_at"
+                )
     sections: list[str] = []
     sections.append("You are the narrator of a small fictional world.")
     sections.append("Write what happens there next, as a novel would.")
@@ -762,6 +816,39 @@ def build_narrator_prompt(
         sections.extend(f"- {narration}" for narration in recent_narrations)
     else:
         sections.append("- (The chronicle is empty — this is where the story begins.)")
+    if active_storylines is not None:
+        # C2's active-storylines section (DEC-OPI-b290799a…45), after
+        # the story's immediate past: the world's open arcs as the
+        # caller read them (the store's two-layer read) — the plot
+        # layer's own face. Conditional section: ``None`` adds nothing
+        # (the golden pins' immovability); an empty tuple earns the
+        # honest no-open-arcs line and no closure teaching (there is no
+        # line to close — the door is taught only where handles exist).
+        sections.append(_ACTIVE_STORYLINES_HEADER)
+        if active_storylines:
+            sections.extend(
+                f"- {line_id}: {theme} (resolves when: {resolve_at})"
+                for line_id, theme, resolve_at in active_storylines
+            )
+            sections.append(
+                "These are the world's open storylines — the arcs the"
+                " story is following, each with the condition that"
+                " closes it. Your beats may advance one of them (a"
+                " development that moves the arc along) or leave it be:"
+                " not every beat belongs to a line. When a beat brings"
+                " a line's closure condition to pass, declare the line"
+                " resolved by proposing the closure in that beat's"
+                " ``effects``:"
+                f' {{"key": "{STORYLINE_EFFECT_KEY_PREFIX}<line_id>",'
+                f' "statement": "{STORYLINE_RESOLVED_STATEMENT}"}}'
+                " (the placeholder is that line's own id, as listed"
+                " above). A line closed this way is retired — the"
+                " world moves on without it — so only close a line"
+                " when the beat genuinely settles it, and never close"
+                " one merely because the beats have moved elsewhere."
+            )
+        else:
+            sections.append("- (No storylines are open right now.)")
     if letter_elapsed_days is not None:
         # lr-1's letter-on-its-way section: a world-inbound fact of the
         # journey (existence + elapsed days), never a word of contents
@@ -1007,6 +1094,7 @@ class WorldNarrator:
         free_direction: str | None = None,
         state_facts: tuple[tuple[str, str], ...] = (),
         letter_response: tuple[str, str] | None = None,
+        active_storylines: tuple[tuple[str, str, str], ...] | None = None,
     ) -> Result[
         tuple[
             tuple[GeneratedBeat, ...],
@@ -1073,6 +1161,16 @@ class WorldNarrator:
         the roster law, unchanged). ``None`` (the default) adds
         nothing: the prompt is byte for byte the pre-C1.5 shape.
 
+        C2 (DEC-OPI-b290799a…45): ``active_storylines`` — the caller's
+        read of the world's open arcs, ``(line_id, theme, resolve_at)``
+        triples — rides to the prompt builder as the active-storylines
+        section (after the story-so-far section's place; the strict
+        parse and the extractor read nothing of it — a closure is a
+        beat's ordinary ``effects`` proposal and the store's active
+        read is what retires the line). ``None`` (the default) adds
+        nothing: the prompt is byte for byte the pre-C2 shape; an
+        empty tuple earns the honest no-open-arcs section.
+
         The provider's own fault words pass through as the ``Err``
         message verbatim (``not-configured``, ``timeout``, … — the
         orchestrator's quiet arm reads ``not-configured`` and stays
@@ -1099,6 +1197,7 @@ class WorldNarrator:
                 free_direction,
                 state_facts,
                 letter_response,
+                active_storylines,
             ),
             generation_contract=NARRATOR_CONTRACT,
         )

@@ -1,6 +1,8 @@
-"""The World bounded context (W-1-0 + W-1-1 + W-1-2 + W-1-4 + W-1-3) —
+"""The World bounded context (W-1-0 + W-1-1 + W-1-2 + W-1-4 + W-1-3 +
+C2) —
 identity binding, the event tree with its minimal state projection, the
-run engine, the world package face, and the reveal/inbox half.
+run engine, the world package face, the reveal/inbox half, and the plot
+layer's storyline structure.
 
 What ships here: the three migration-0023 identity tables' SQL face
 (:class:`~elc.world.store.SqliteWorldStore` — worlds, actors,
@@ -32,6 +34,16 @@ open). User-created worlds are still bound only by a caller through
 does not change who binds anything else. W-1-3's web face binds the web
 conversation into the builtin world (idempotent, fail-soft); the CLI
 binds nothing.
+
+C2 (DEC-OPI-b290799a…45) adds the plot layer's own structure face:
+migration 0028's ``world_storyline`` table — the story's opening arcs,
+landed by the v5 package's ``initial_storylines`` through the store's
+idempotent ``create_storyline``, read as ``active_storylines`` (the
+two-layer read: the structure row ``active`` **and** no CURRENT
+``storyline:<line_id>`` = ``resolved`` claim in the projection), and
+retired from the narrator's prompt by that same projection claim when a
+beat proposes the closure through its ordinary ``effects`` (the
+narrator module's active-storylines section is the prompt door).
 
 What does **not** ship here, declared rather than implied: no narration
 generation (the engine's pool arrives pre-authored), no presentation

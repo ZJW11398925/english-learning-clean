@@ -276,7 +276,8 @@ def test_the_retained_set_is_unchanged_and_every_delivery_table_is_swept() -> No
     # 不属于任何用户（SEC-025 的 keep 半）；W-1-0 再随迁：世界身份三表
     # 入 keep 半；W-1-1 再随迁：世界事件树两表入 keep 半；W-1-2 再随迁：
     # 世界运转一行入 keep 半；W-1-3 再随迁：揭示队列入 keep 半、
-    # world_conversation 换桶出（分类登记见 elc.deletion.types 的注释）。
+    # world_conversation 换桶出（分类登记见 elc.deletion.types 的注释）；
+    # C2 再随迁：剧情线一表入 keep 半（world_storyline）。
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
@@ -285,6 +286,7 @@ def test_the_retained_set_is_unchanged_and_every_delivery_table_is_swept() -> No
         "world_state_fact",
         "world_run",
         "world_reveal_item",
+        "world_storyline",
     )
     for table in TABLES:
         assert table in SWEPT_TABLES

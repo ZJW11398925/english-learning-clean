@@ -89,6 +89,25 @@ an interaction row lands **directly ``REVEALED``** (the user just did
 it — there is nothing to sit in an inbox), in the same one short
 transaction as its chronicle entry, while the world's own events keep
 walking the ``PENDING`` queue exactly as before.
+
+Storyline face (C2, DEC-OPI-b290799a…45): :class:`WorldStorylineRecord`
+is migration 0028's ``world_storyline`` row — the plot layer's own
+structure (theme / opened_by / status / resolve_at). ``create_storyline``
+is the seed's idempotent entry (the package's ``initial_storylines``
+ride it at open time, the same replay law ``create_world`` spells);
+``list_storylines`` / ``active_storylines`` are the read half and
+``resolve_storyline`` the structure's one legal move (active →
+resolved; ``settled`` is the later cut's word). **The two-layer law**
+(v1 adjudication): the projection is the world's state face and the
+storyline table its structure face, and neither writes the other — a
+beat closes a line by proposing ``storyline:<line_id>`` =
+``resolved`` through the ordinary effects settlement (C1-b's pipe),
+and ``active_storylines`` filters through that projection, so an
+effects-proposed closure takes effect on the very next step's prompt
+with no second state machine; the row's own ``status`` moves only
+through :meth:`SqliteWorldStore.resolve_storyline` (the explicit face
+a later cut or a manual hand calls — the structure's word, kept
+deliberately behind the projection's word).
 """
 
 from __future__ import annotations
@@ -110,6 +129,8 @@ from elc.platform.types import (
 )
 from elc.world.engine.types import MomentKind, RunStatus, WorldRunRecord
 from elc.world.types import (
+    STORYLINE_EFFECT_KEY_PREFIX,
+    STORYLINE_RESOLVED_STATEMENT,
     WorldActorRecord,
     WorldConversationRecord,
     WorldEvent,
@@ -124,6 +145,7 @@ from elc.world.types import (
 __all__ = [
     "SqliteWorldStore",
     "WorldRevealItem",
+    "WorldStorylineRecord",
     "INTERACTION_EVENT_KINDS",
     "INTERACTION_SOURCE",
 ]
@@ -173,6 +195,33 @@ class WorldRevealItem:
     actor_id: str | None
     status: str
     revealed_at: str | None
+    created_at: str
+
+
+@dataclass(frozen=True)
+class WorldStorylineRecord:
+    """One storyline row (migration 0028's ``world_storyline`` table).
+
+    The plot layer's own structure — the arc's identity, its theme and
+    its closure condition: ``status`` is the three-word lifecycle the
+    migration's CHECK spells (``active`` / ``resolved`` / ``settled``;
+    this cut moves only active → resolved), ``opened_by`` is the
+    chronicle event that opened the line when one exists (``None`` for
+    a package-initial line — deliberately no foreign key, the
+    migration's own comment), and ``resolve_at`` is the closure
+    condition in the narrator's own narrative terms — the store never
+    evaluates it. The row carries no ``updated_at``: the closure's
+    moment lives in the projection's fact when a beat closes the line
+    (migration 0028's comment), and the structure row says the line is
+    closed, not when.
+    """
+
+    line_id: str
+    world_id: str
+    theme: str
+    opened_by: str | None
+    status: str
+    resolve_at: str
     created_at: str
 
 
@@ -1132,6 +1181,227 @@ class SqliteWorldStore:
         assert updated is not None  # the UPDATE above just touched it
         return Ok(updated)
 
+    # -- storyline face (C2, DEC-OPI-b290799a…45) ------------------------------
+
+    def create_storyline(
+        self,
+        line_id: str,
+        world_id: str,
+        theme: str,
+        opened_by: str | None,
+        resolve_at: str,
+        now: str,
+    ) -> Result[WorldStorylineRecord]:
+        """Create one storyline, idempotently by id (C2) — the package
+        seed's ``initial_storylines`` ride this face at open time, the
+        same replay law :meth:`create_world` spells.
+
+        A replay of the same id with the same shape (world, theme,
+        ``opened_by``, ``resolve_at``) answers the stored row
+        unchanged — the row as it stands, its own ``status`` included:
+        the create face never rewrites a lifecycle word (the row's one
+        legal move belongs to :meth:`resolve_storyline` alone). A
+        same-id different-shape call answers ``CONFLICT`` (storylines
+        do not rewrite). A dangling ``world_id`` is refused by the
+        table's own FK and surfaces as ``NOT_FOUND``. ``opened_by``
+        deliberately carries no foreign key (migration 0028's comment):
+        a package-initial line has no opening event, and a ``None``
+        here says exactly that.
+
+        Creation mints the row ``active`` — the migration's DEFAULT,
+        the only starting word this face can write — stamped with the
+        caller's ``now``.
+        """
+
+        existing = self._storyline_row(line_id)
+        if existing is not None:
+            if (
+                existing.world_id,
+                existing.theme,
+                existing.opened_by,
+                existing.resolve_at,
+            ) == (world_id, theme, opened_by, resolve_at):
+                return Ok(existing)
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.CONFLICT,
+                    message=(
+                        f"storyline {line_id!r} already exists with a"
+                        " different shape; storylines do not rewrite"
+                    ),
+                )
+            )
+        began = False
+        try:
+            self._conn.execute("BEGIN IMMEDIATE")
+            began = True
+            self._conn.execute(
+                "INSERT INTO world_storyline ("
+                " line_id, world_id, theme, opened_by, status,"
+                " resolve_at, created_at"
+                ") VALUES (?, ?, ?, ?, 'active', ?, ?)",
+                (line_id, world_id, theme, opened_by, resolve_at, now),
+            )
+        except sqlite3.Error as exc:
+            # The ml3R LOW-1 judgement (see create_world): when BEGIN
+            # itself failed, nothing of ours began; a failing ROLLBACK of
+            # our own must not break the Result contract.
+            if began:
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
+            return Err(
+                DomainError(
+                    code=self._refusal_code(exc),
+                    message=f"storyline {line_id!r} not created: {exc}",
+                )
+            )
+        self._conn.execute("COMMIT")
+        return Ok(
+            WorldStorylineRecord(
+                line_id=line_id,
+                world_id=world_id,
+                theme=theme,
+                opened_by=opened_by,
+                status="active",
+                resolve_at=resolve_at,
+                created_at=now,
+            )
+        )
+
+    def resolve_storyline(
+        self, line_id: str, now: str
+    ) -> Result[WorldStorylineRecord]:
+        """Close one storyline through the structure's own word (C2).
+
+        The row's one legal move: ``active`` → ``resolved``. A line the
+        table does not know is ``NOT_FOUND``; a line that is not
+        ``active`` — ``resolved`` itself, or the ``settled`` a later
+        cut will write — is refused (``VALIDATION_FAILED``): closing is
+        not a no-op and does not close twice, the absorbing-word
+        posture :meth:`terminalize_run` spells for the run.
+
+        This is the **explicit** face — a later cut's or a manual
+        hand's door. The production closure is the projection's: a beat
+        that brings the line's condition to pass proposes
+        ``storyline:<line_id>`` = ``resolved`` through the ordinary
+        effects settlement (C1-b's pipe), and :meth:`active_storylines`
+        retires the line on the next read without this method ever
+        running (the two-layer law — neither face writes the other).
+        ``now`` rides the signature for the house lifecycle-writer
+        shape and lands nowhere: migration 0028 deliberately carries no
+        ``updated_at``, the closure's moment belongs to the event that
+        closed the line (its fact's ``recorded_at``), and the structure
+        row is the word, never a clock.
+        """
+
+        row = self._storyline_row(line_id)
+        if row is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"storyline {line_id!r} not resolved: the line"
+                        " does not exist"
+                    ),
+                )
+            )
+        if row.status != "active":
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"storyline {line_id!r} is already"
+                        f" {row.status!r}; only an active line resolves"
+                    ),
+                )
+            )
+        began = False
+        try:
+            self._conn.execute("BEGIN IMMEDIATE")
+            began = True
+            self._conn.execute(
+                "UPDATE world_storyline SET status = 'resolved'"
+                " WHERE line_id = ?",
+                (line_id,),
+            )
+        except sqlite3.Error as exc:
+            if began:
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=f"storyline {line_id!r} not resolved: {exc}",
+                )
+            )
+        self._conn.execute("COMMIT")
+        updated = self._storyline_row(line_id)
+        assert updated is not None  # the UPDATE above just touched it
+        return Ok(updated)
+
+    def list_storylines(
+        self, world_id: str
+    ) -> tuple[WorldStorylineRecord, ...]:
+        """One world's storylines, line-id ascending (the durable order
+        — deterministic reads are content, not an implementation
+        detail). Every lifecycle word rides out: an inactive line is
+        history, not an error (the read is a pure column read, the
+        ``current_facts`` posture)."""
+
+        rows = self._conn.execute(
+            "SELECT line_id, world_id, theme, opened_by, status,"
+            " resolve_at, created_at FROM world_storyline"
+            " WHERE world_id = ? ORDER BY line_id ASC",
+            (world_id,),
+        ).fetchall()
+        return tuple(self._storyline(row) for row in rows)
+
+    def active_storylines(
+        self, world_id: str
+    ) -> tuple[WorldStorylineRecord, ...]:
+        """The world's open arcs — **the two-layer read** (C2's core
+        semantics).
+
+        A line is active when *both* faces say so: the structure row is
+        ``active`` **and** the projection carries no ``CURRENT`` fact
+        under the line's canonical key
+        (:func:`elc.world.types.storyline_effect_key`) with the
+        statement ``resolved``. Either face retires the line from this
+        read — the structure's word through :meth:`resolve_storyline`,
+        the projection's word through an effects-proposed closure —
+        and neither writes the other, so a beat that closes a line
+        takes effect on the next step's prompt with no second state
+        machine. The statement match is exact: a different statement
+        under the key is a state claim about the line, never its
+        retirement. Order and shape are :meth:`list_storylines`'s
+        (line-id ascending).
+        """
+
+        rows = self._conn.execute(
+            "SELECT s.line_id, s.world_id, s.theme, s.opened_by,"
+            " s.status, s.resolve_at, s.created_at"
+            " FROM world_storyline s"
+            " WHERE s.world_id = ? AND s.status = 'active'"
+            " AND NOT EXISTS ("
+            "  SELECT 1 FROM world_state_fact f"
+            "  WHERE f.world_id = s.world_id"
+            "   AND f.canonical_key = ? || s.line_id"
+            "   AND f.statement = ?"
+            "   AND f.status = 'CURRENT'"
+            " )"
+            " ORDER BY s.line_id ASC",
+            (
+                world_id,
+                STORYLINE_EFFECT_KEY_PREFIX,
+                STORYLINE_RESOLVED_STATEMENT,
+            ),
+        ).fetchall()
+        return tuple(self._storyline(row) for row in rows)
+
     # -- reveal face (W-1-3) ---------------------------------------------------
 
     def enqueue_reveals(
@@ -1637,6 +1907,36 @@ class SqliteWorldStore:
             actor_id=None if row[3] is None else str(row[3]),
             status=str(row[4]),
             revealed_at=None if row[5] is None else str(row[5]),
+            created_at=str(row[6]),
+        )
+
+    def _storyline_row(self, line_id: str) -> WorldStorylineRecord | None:
+        """One raw ``world_storyline`` row (the create face's idempotence
+        pre-read and the resolve face's precondition read)."""
+
+        row = self._conn.execute(
+            "SELECT line_id, world_id, theme, opened_by, status,"
+            " resolve_at, created_at FROM world_storyline"
+            " WHERE line_id = ?",
+            (line_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return self._storyline(row)
+
+    @staticmethod
+    def _storyline(row: tuple[Any, ...]) -> WorldStorylineRecord:
+        """One raw ``world_storyline`` row as its frozen record (pure
+        column read — ``status`` is CHECK-bound to the three lifecycle
+        words the migration spells)."""
+
+        return WorldStorylineRecord(
+            line_id=str(row[0]),
+            world_id=str(row[1]),
+            theme=str(row[2]),
+            opened_by=None if row[3] is None else str(row[3]),
+            status=str(row[4]),
+            resolve_at=str(row[5]),
             created_at=str(row[6]),
         )
 

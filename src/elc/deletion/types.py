@@ -320,6 +320,16 @@ RETAINED_TABLES: tuple[str, ...] = (
 #: sweeps the table whole. The world, its actors, its events, its
 #: projection, its runs and its reveal queue stay global: they are the
 #: shared world every conversation reads, owned by no user.
+#:
+#: C2 (DEC-OPI-b290799a…45) adds migration 0028's ``world_storyline`` —
+#: the plot layer's own structure rows — to the same keep rule, same
+#: conservative reading (registration, not deletion semantics; zero
+#: sweep face). A line belongs to the shared world
+#: (``world_storyline.world_id`` references ``world`` — both keep-side,
+#: so no sweep can be refused through this table), and its ``opened_by``
+#: column deliberately carries no foreign key (migration 0028's own
+#: no-FK posture, pre-empted here rather than decided): the table adds
+#: no consequential FK to the world's registered deletion face.
 GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_lore_fact",
     "world",
@@ -328,6 +338,7 @@ GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_state_fact",
     "world_run",
     "world_reveal_item",
+    "world_storyline",
 )
 
 

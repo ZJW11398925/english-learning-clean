@@ -184,10 +184,11 @@ def test_0013_is_present_and_not_the_head() -> None:
     assert [name[:4] for name in names] == [
         f"{index:04d}" for index in range(1, len(MIGRATION_IDS) + 1)
     ]
-    # The head literal is 0027 (C1-a's 0027_chronicle_attribution; the pin
-    # read 0018, then 0019, then each 0020/0021/0022/0023/0024/0025/0026
-    # while those were the heads, moving with each, the P9-1 way).
-    assert SCHEMA_HEAD_FILE == "0027_chronicle_attribution.sql"
+    # The head literal is 0028 (C2's 0028_world_storyline; the pin
+    # read 0018, then 0019, then each 0020/0021/0022/0023/0024/0025/0026,
+    # then 0027, while those were the heads, moving with each, the P9-1
+    # way).
+    assert SCHEMA_HEAD_FILE == "0028_world_storyline.sql"
 
 
 def test_the_table_exists_with_the_canonical_column_set(

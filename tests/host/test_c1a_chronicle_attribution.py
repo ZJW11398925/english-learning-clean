@@ -1,10 +1,12 @@
 """C1-a — the chronicle attribution foundation (DEC-OPI-41a4df20…55),
 the seven VAL groups:
 
-1. **migration pins** — 0027 is the head, ``world_event`` carries the
+1. **migration pins** — ``world_event`` carries the
    two attribution columns in the migration's own order
    (``participants`` NOT NULL DEFAULT '[]', ``run_id`` NULL), the
-   double ``'27'`` stamp lands, and a legacy-shaped row (written the
+   chain's stamps land (the head moved to ``'28'`` with C2's 0028 —
+   the stamp-pin discipline every head move has followed since P8-4),
+   and a legacy-shaped row (written the
    pre-0027 way) answers honestly empty — zero back-fill inference;
 2. **the run attribution chain** — every event a run writes carries
    that run's id: the engine-direct path (two cycles, one run) and the
@@ -162,11 +164,13 @@ def _minimal_package() -> WorldPackage:
 
 def test_0027_columns_stamps_and_legacy_honesty() -> None:
     """The migration's own spelling: two columns after the W-1-1 seven,
-    the double '27' stamp, and a legacy-shaped row reading back honestly
+    the chain's own head stamps (C2's 0028 moved them — the head
+    literal and the stamps are the chain's, the column claims are
+    0027's), and a legacy-shaped row reading back honestly
     empty (``'[]'`` / NULL via the DEFAULT — zero back-fill)."""
 
-    assert SCHEMA_HEAD_FILE == "0027_chronicle_attribution.sql"
-    assert SCHEMA_HEAD_VERSION == "27"
+    assert SCHEMA_HEAD_FILE == "0028_world_storyline.sql"
+    assert SCHEMA_HEAD_VERSION == "28"
     fresh = sqlite3.connect(":memory:")
     apply_migrations(fresh)
     columns = [
@@ -187,8 +191,8 @@ def test_0027_columns_stamps_and_legacy_honesty() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "27",
-        "runtime_schema_version": "27",
+        "schema_version": "28",
+        "runtime_schema_version": "28",
     }
     # The legacy shape: a pre-0027 write names none of the new columns —
     # the DEFAULT carries it, and the store reads it back honestly.

@@ -154,26 +154,27 @@ def _assert_err(result: object, code: str) -> None:
 
 def test_0023_is_in_place_behind_the_head() -> None:
     """W-1-0's migration is in the chain — no longer the head: W-1-2's
-    0025_world_runs, W-1-3's 0026_world_reveal and C1-a's
-    0027_chronicle_attribution sit above it (the
+    0025_world_runs, W-1-3's 0026_world_reveal, C1-a's
+    0027_chronicle_attribution and C2's 0028_world_storyline sit above it
+    (the
     stamp-pin discipline every head
     move has followed since P8-4; the pin read "0023 is the head" while
     0023 was the head). The shared constants say so, and the stamp a
-    fresh database carries is 27."""
+    fresh database carries is 28."""
 
-    assert MIGRATION_IDS[-1] == "0027_chronicle_attribution"
-    assert MIGRATION_IDS[-2] == "0026_world_reveal"
-    assert MIGRATION_IDS[-3] == "0025_world_runs"
-    assert SCHEMA_HEAD_FILE == "0027_chronicle_attribution.sql"
+    assert MIGRATION_IDS[-1] == "0028_world_storyline"
+    assert MIGRATION_IDS[-2] == "0027_chronicle_attribution"
+    assert MIGRATION_IDS[-3] == "0026_world_reveal"
+    assert SCHEMA_HEAD_FILE == "0028_world_storyline.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
     assert (MIGRATIONS / "0023_world_identity.sql").is_file()
-    assert SCHEMA_HEAD_VERSION == "27"
+    assert SCHEMA_HEAD_VERSION == "28"
 
     conn = sqlite3.connect(":memory:")
     applied = apply_migrations(conn)
-    assert applied[-1] == "0027_chronicle_attribution"
-    assert applied[-2] == "0026_world_reveal"
-    assert applied[-3] == "0025_world_runs"
+    assert applied[-1] == "0028_world_storyline"
+    assert applied[-2] == "0027_chronicle_attribution"
+    assert applied[-3] == "0026_world_reveal"
     assert schema_version(conn) == SCHEMA_HEAD_VERSION
 
 

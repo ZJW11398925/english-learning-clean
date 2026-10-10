@@ -132,23 +132,24 @@ def _assert_err(result: object, code: str) -> None:
 
 def test_0025_is_the_registered_head() -> None:
     """W-1-1's migration is in the chain, behind W-1-2's 0025_world_runs,
-    W-1-3's 0026_world_reveal and C1-a's 0027_chronicle_attribution (the
+    W-1-3's 0026_world_reveal, C1-a's 0027_chronicle_attribution and
+    C2's 0028_world_storyline (the
     stamp-pin discipline every head
     move has
     followed since P8-4; the pin read "0024 is the head" while 0024 was
     the head); the shared constants say so, and the stamp a fresh
-    database carries is 27."""
+    database carries is 28."""
 
-    assert MIGRATION_IDS[-1] == "0027_chronicle_attribution"
-    assert MIGRATION_IDS[-2] == "0026_world_reveal"
-    assert SCHEMA_HEAD_FILE == "0027_chronicle_attribution.sql"
+    assert MIGRATION_IDS[-1] == "0028_world_storyline"
+    assert MIGRATION_IDS[-2] == "0027_chronicle_attribution"
+    assert SCHEMA_HEAD_FILE == "0028_world_storyline.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "27"
+    assert SCHEMA_HEAD_VERSION == "28"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0027_chronicle_attribution"
-    assert applied[-2] == "0026_world_reveal"
+    assert applied[-1] == "0028_world_storyline"
+    assert applied[-2] == "0027_chronicle_attribution"
     assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 
@@ -601,11 +602,12 @@ def test_the_registry_carries_the_six_world_objects() -> None:
             assert entry.schema is schema, key
 
 
-def test_global_content_tables_carry_the_seven_members() -> None:
+def test_global_content_tables_carry_the_eight_members() -> None:
     """W-1-1's two tables and W-1-2's run row joined the keep half
     (SEC-025's conservative reading) and W-1-3's reveal queue joins it the
     same way, while W-1-3's deletion face moves ``world_conversation``
-    into the conversation scope's sweep: still seven members, and the
+    into the conversation scope's sweep; C2's storyline table joins the
+    same keep half: eight members, and the
     classification is registration — no sweep walks the world-owned half,
     nothing keeps it as retained either."""
 
@@ -617,6 +619,7 @@ def test_global_content_tables_carry_the_seven_members() -> None:
         "world_state_fact",
         "world_run",
         "world_reveal_item",
+        "world_storyline",
     )
     for table in ("world_event", "world_state_fact", "world_run",
                   "world_reveal_item"):
