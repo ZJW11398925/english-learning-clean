@@ -20,8 +20,10 @@ ends. The contract pins:
    elapsed days — 0 days, 1 day, 2 days) and **never one word of its
    contents** (WR-4's iron negative-control, DEC-…58, zero compromise);
    the arrival guidance is narrative, not a rule (no step count, no
-   deadline anywhere in the prompt); ``None`` keeps the prompt byte for
-   byte the pre-lr-1 text;
+   deadline anywhere in the prompt); ``None`` adds no letter section
+   (the lr-1 zero-change arm — the prompt's other lines have since been
+   widened by C1-b and C4, so "byte for byte the pre-lr-1 text" is no
+   longer the claim; what holds is that ``None`` adds nothing);
 3. **the return shape** — the parsed value is now a three-tuple
    ``(beats, directions, stop)``; ``stop`` is ``None`` unless the
    answer declared a signal; the extractor stays untouched (the stop
@@ -331,9 +333,13 @@ def test_the_natural_arrival_guidance_is_narrative_not_a_rule() -> None:
 
 
 def test_none_elapsed_days_keeps_the_prompt_byte_identical() -> None:
-    """The zero-change default: without ``letter_elapsed_days`` the
-    prompt is byte for byte the pre-lr-1 text (the regression judgment
-    face — the old call shapes compose the old prompt exactly).
+    """The zero-change arm: without ``letter_elapsed_days`` the prompt
+    carries no letter section — ``None`` adds nothing (the regression
+    judgment face: the old call shapes compose no new section). The
+    prompt's other lines have since been widened (C1-b's roster and
+    optional-keys paragraph, C4's craft laws), so "byte for byte the
+    pre-lr-1 text" is no longer the claim; the claim that survives is
+    the conditional section's absence under ``None``.
 
     处置刀（评审 F-H1）：原钉是模块内自比——两侧同错恒绿，接不住
     形状行坏形；真对照与良构由下方两钉承担。"""

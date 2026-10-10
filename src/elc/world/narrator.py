@@ -292,8 +292,9 @@ _CRAFT_LAWS_BODY = (
     "1. An action never stands bare: beside what was done, carry at"
     " least two of — a modifier, a state, a mind, an aftermath.",
     "2. Triage the short quoted line: keep it when it is character;"
-    " when it is only shorthand, drop the line and carry the beat in"
-    " posture and aftermath.",
+    " when it is only shorthand, hold it up with a gesture, a look,"
+    " or the beat's aftermath (the canon's 托住 — the line stays,"
+    " propped; the fix is the prop, never the deletion).",
     "3. Keep the weight uneven: ornament at the paragraph's stress"
     " point alone, and let the rest run plain — when every line is"
     " dressed, none of them carries.",

@@ -12,9 +12,12 @@ The pin groups:
    whole answer, the narration included);
 2. **the prompt** — directed mode carries the candidates requirement
    and the widened JSON line; immersive mode carries neither (the
-   pre-wr-10 text, byte for byte — the zero-change default); the
-   pending choice rides its own section; **the letter still never
-   enters** (WR-4's law with the director's input present);
+   wr-10 zero-change arm: no candidates requirement, no widened shape
+   line, no chosen-direction section — the C1-b/C4 widenings since
+   ride both modes alike, so the immersive default is no longer the
+   pre-wr-10 bytes); the pending choice rides its own section; **the
+   letter still never enters** (WR-4's law with the director's input
+   present);
 3. **the extractor** — the streamed preview emits the narrations only:
    label and hint text never leave through it (the wr-7 machine reads
    one key, unchanged);
@@ -283,9 +286,12 @@ def test_the_directed_prompt_carries_the_candidates_requirement() -> None:
 
 
 def test_the_immersive_prompt_carries_no_direction_words() -> None:
-    """Immersive mode is the pre-wr-10 prompt byte for byte: no
+    """Immersive mode carries no direction face: no
     candidates requirement, no widened shape line, no chosen-direction
-    section — the zero-change default (the mutation that adds a
+    section — the wr-10 zero-change arm (the prompt's other lines have
+    since been widened by C1-b and C4, so "byte for byte the pre-wr-10
+    text" is no longer the claim; the claim that survives is the
+    direction vocabulary's absence — the mutation that adds a
     requirement line to the immersive arm lands here)."""
 
     prompt = build_narrator_prompt(_package(), (), (), "zh")
@@ -422,8 +428,10 @@ def test_the_defaults_run_the_step_as_before_wr10(
     store: SqliteWorldStore,
 ) -> None:
     """The defaults (immersive, no pending, no callback) run the step
-    byte for byte as before wr-10: the prompt carries no direction
-    words, the events land unchanged."""
+    as before wr-10 in every direction respect: the prompt carries no
+    direction words, the events land unchanged (the prompt itself has
+    since been widened by C1-b and C4 — the zero-change claim here is
+    the direction face's absence, not the old bytes)."""
 
     _seed_world(store)
     provider = _ScriptedNarrator(ProviderOutput(text=_beats(_beat(days=1))))

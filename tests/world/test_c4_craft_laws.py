@@ -69,8 +69,9 @@ _CRAFT_SECTION_PINNED = (
     '1. An action never stands bare: beside what was done, carry at'
     ' least two of — a modifier, a state, a mind, an aftermath.\n\n'
     '2. Triage the short quoted line: keep it when it is character;'
-    ' when it is only shorthand, drop the line and carry the beat in'
-    ' posture and aftermath.\n\n'
+    " when it is only shorthand, hold it up with a gesture, a look,"
+    " or the beat's aftermath (the canon's 托住 — the line stays,"
+    " propped; the fix is the prop, never the deletion).\n\n"
     "3. Keep the weight uneven: ornament at the paragraph's stress"
     ' point alone, and let the rest run plain — when every line is'
     ' dressed, none of them carries.\n\n'
@@ -90,8 +91,9 @@ _LAW_A_BARE = (
 )
 _LAW_B_TRIAGE = (
     "2. Triage the short quoted line: keep it when it is character;"
-    " when it is only shorthand, drop the line and carry the beat in"
-    " posture and aftermath."
+    " when it is only shorthand, hold it up with a gesture, a look,"
+    " or the beat's aftermath (the canon's 托住 — the line stays,"
+    " propped; the fix is the prop, never the deletion)."
 )
 _LAW_C_WEIGHT = (
     "3. Keep the weight uneven: ornament at the paragraph's stress"
@@ -347,3 +349,47 @@ def test_the_guardrail_honors_every_standing_word_law() -> None:
         assert word.lower() not in lowered, word
     for word in PEDAGOGY_WORDS:
         assert word.lower() not in lowered, word
+
+
+# ---------------------------------------------------------------------------
+# 7 — the same-family sweep (review MEDIUM-1): no stale "byte for byte the
+# pre-X text" claim survives a prompt-widening cut
+# ---------------------------------------------------------------------------
+
+
+def test_no_stale_byte_for_byte_claim_survives_the_widening() -> None:
+    """MEDIUM-1's standing pin (c2-b F2 / c3-b F1's discipline, made
+    permanent): every time the prompt is widened, prose of the form
+    「byte for byte the pre-X text」 goes stale in the files that pinned
+    the *previous* shape. The wr-10 and lr-1 claims were reworded in the
+    C4 disposition; this pin makes the next widening loud: the known
+    claim sites must not carry the stale sentence pattern, and the one
+    relative claim that stays legal (the C3 splice: removing the voice
+    section recovers the pre-v6 bytes) is pinned by its own test, not by
+    prose."""
+
+    claim_files = (
+        Path("tests/world/test_wr10_directions.py"),
+        Path("tests/world/test_lr1_stop_contract.py"),
+    )
+    stale_fragments = (
+        "pre-wr-10 text, byte for byte",
+        "pre-wr-10 prompt byte for byte",
+        "byte for byte as before wr-10",
+        "byte for byte the pre-lr-1 text",
+        "byte for byte the pre-lr-1",
+    )
+    # A line that *discusses* the stale claim to retire it is legal — the
+    # reworded prose quotes the old sentence inside scare quotes with the
+    # retirement marker beside it (the quote may wrap mid-word, so the
+    # marker is looked up in a whitespace-folded continuation window).
+    # Only an unmarked line still asserts it.
+    retirement_marker = "no longer the claim"
+    for path in claim_files:
+        lines = path.read_text(encoding="utf-8").splitlines()
+        for index, line in enumerate(lines):
+            window = " ".join(lines[index : index + 3])
+            folded = " ".join(window.split())
+            for fragment in stale_fragments:
+                if fragment in line:
+                    assert retirement_marker in folded, (str(path), line.strip())
