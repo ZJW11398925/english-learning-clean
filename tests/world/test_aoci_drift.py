@@ -172,6 +172,7 @@ def test_berrymoor_entry_carries_the_v5_arcs_and_the_v6_voices() -> None:
     for keyword in (
         "initial_storylines",
         "voice",
+        "v6 墙",
         "Alder & Son",
         "Silas Croft",
         "speech_habits",
