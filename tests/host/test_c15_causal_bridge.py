@@ -479,3 +479,40 @@ def test_a_failed_world_step_leaves_the_projection_parked(
         assert provider.key_at_reply_dial[-1] is None, (
             "the landed step must consume the projection"
         )
+
+
+# ---------------------------------------------------------------------------
+# 7 — the projection is no director input (LOW-2's mode-blind law)
+# ---------------------------------------------------------------------------
+
+
+def test_the_projection_rides_in_directed_mode_too(tmp_path: Path) -> None:
+    """模式不设门钉（评审 LOW-2 收口）：经真 settings 路由切 directed 后，
+    信 1 回信照常写投影；信 2 世界步（directed 单步停点链）照常携反应区
+    ——「信已读」是世界入站事实、非导演输入，不受 direction mode 门控。
+    若有人给 ``_world_letter_response`` 的读加 mode 门，本钉即 RED。"""
+
+    app_db = tmp_path / "app.db"
+    provider = _BridgeProvider(app_db)
+    with web_stack(app_db, provider=provider) as stack:
+        status, mode_payload = stack.post(
+            "/api/settings/world_direction_mode",
+            {"world_direction_mode": "directed"},
+        )
+        assert status == 200 and mode_payload["accepted"] is True
+
+        status, _turn = stack.post("/api/turn", {"text": LETTER_TEXT})
+        assert status == 200
+        assert _projection_raw(app_db) is not None, (
+            "directed mode's reply writes the projection all the same"
+        )
+
+        status, _turn = stack.post("/api/turn", {"text": LETTER_TEXT})
+        assert status == 200
+        assert provider.narrator_dials == 2
+        second_narrator = provider.narrator_prompts()[1]
+        assert REACTION_HEADER in second_narrator, (
+            "the world step carries the reading's fact in directed mode"
+            " too — it is a world-inbound fact, never a director input"
+        )
+        assert NELL in second_narrator and SUMMARY in second_narrator
