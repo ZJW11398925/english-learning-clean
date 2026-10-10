@@ -22,12 +22,17 @@ more than one cast member: write around their lives and how they touch
 — encounters, errands, small kindnesses, frictions, gossip — not only
 weather and scenery, one event refracting through several lives), the
 optional-keys teaching (C1-b: the ``effects`` / ``participants``
-filling rules, both modes) and
+filling rules, both modes),
 the rhythm law (novel prose, small-town voice; consistent
 with the history above; nothing already happened repeated; each beat one
 to three sentences; exactly one or two beats; each beat spanning zero to
 two story days; the narration in the interface language; kinds as short
-slugs). **WR-4 (the user's third direction, DEC-…58): no letter ever
+slugs) and the craft laws (C4, DEC-OPI-a4cf2d0e…18, 域四: the canon's
+three iron laws plus the eight highest-frequency habits to avoid —
+**unconditional**, every call shape carries them, the one explicit
+exception to the conditional-section law; the English stock-phrase
+blacklist stays empty for now — P3, it waits for English dogfood
+signals). **WR-4 (the user's third direction, DEC-…58): no letter ever
 enters the prompt** — the living-world spec keeps the layers apart
 (§4.1: the reply is the run's mechanical wind-up, never content; the
 走向 entry: the user's influence on the world rides the direction
@@ -268,6 +273,47 @@ _ACTIVE_STORYLINES_HEADER = "== Active storylines =="
 #: bilingual passages; the section's closing sentence is 域三's lever
 #: stated as an instruction — 「她说话时像她自己的语样，不模仿抽象描述」.
 _CAST_VOICES_HEADER = "== The cast's own voices =="
+
+#: The craft laws' own header (C4, DEC-OPI-a4cf2d0e…18 — 域四「叙事工艺
+#: 指引」的护栏级注入). **Unconditional** — the one explicit exception to
+#: the conditional-section law above: every call shape carries it, whatever
+#: the package, the mode or the caller's facts (the guardrail rides the
+#: task region, before the technical contract — never over it).
+_CRAFT_LAWS_HEADER = "== The craft laws =="
+
+#: The craft laws' body (C4): the canon's 三铁律（动作不许干打 / 台词分诊 /
+#: 详略主次——语言无关直接迁移）stated as operative instructions, then the
+#: eight highest-frequency anti-AI habits as prohibitions（裁断点⑤：注入
+#: ≤10 条最高频；规范全量 36 条挂参考位，不进 prompt）. Six prompt lines
+#: with the header — the canon's 「护栏 ≤15 行进节律段」 with room to spare
+#: (the bound is machine-checked in the C4 pins).
+_CRAFT_LAWS_BODY = (
+    "Hold every beat of the prose to these three laws:",
+    "1. An action never stands bare: beside what was done, carry at"
+    " least two of — a modifier, a state, a mind, an aftermath.",
+    "2. Triage the short quoted line: keep it when it is character;"
+    " when it is only shorthand, drop the line and carry the beat in"
+    " posture and aftermath.",
+    "3. Keep the weight uneven: ornament at the paragraph's stress"
+    " point alone, and let the rest run plain — when every line is"
+    " dressed, none of them carries.",
+    "Do not fall into these habits: empty grandiosity; an elevating"
+    " formula where the beat should simply end; inflation through"
+    " degree adverbs; more than one metaphor in a single paragraph; an"
+    " emotion named outright where a body would show it; scenery that"
+    " no one in the beat notices; every paragraph cut to the same"
+    " length; a log that keeps order but never emphasis.",
+)
+
+#: The guardrail's exact contribution to the prompt (the header, its body
+#: lines and their blank-line joins) — the one substring the C4 splice pin
+#: removes to recover the pre-C4 bytes.
+#:
+#: 英文套语表 v1 先空——待英文 dogfood 信号补（P3，域四裁断点⑥）：本段不写
+#: 套语表（双语各维护一份套语黑名单；英文那份无信号则无内容）。
+_CRAFT_SECTION = (
+    _CRAFT_LAWS_HEADER + "\n\n" + "\n\n".join(_CRAFT_LAWS_BODY) + "\n\n"
+)
 
 #: The kind slug's shape: lowercase letters, digits and hyphens, one
 #: non-separator character first, at most 32 characters.
@@ -697,7 +743,20 @@ def build_narrator_prompt(
     ``letter_response`` projection above — the fact she read it, a
     sentence composed by the caller from no letter word), and the
     world moves on that fact as on her own life; the letter's *text*
-    still rides nowhere in this prompt."""
+    still rides nowhere in this prompt.
+
+    C4 (DEC-OPI-a4cf2d0e…18, 域四's craft guardrail): the **craft
+    laws** — the canon's three iron laws as operative instructions plus
+    the eight highest-frequency anti-AI habits as prohibitions — ride
+    **unconditionally**, at the task paragraph's tail and before the
+    technical contract (the candidates requirement, the shape line, the
+    optional-keys paragraph). This is the one explicit exception to the
+    conditional-section law above: no package, mode or caller fact
+    turns it off, and every baseline that pinned the whole default
+    prompt (the C1-a golden, the lr-3 assembly) was consciously re-cast
+    for it. The English stock-phrase blacklist stays empty for now (P3:
+    it waits for English dogfood signals — 双语各维护一份，英文那份无
+    信号则无内容)."""
 
     if ui_language not in _NARRATION_LANGUAGE:
         raise ValueError(
@@ -955,6 +1014,14 @@ def build_narrator_prompt(
         " Each beat is one to three sentences of narration and spans"
         " 0, 1 or 2 story days (its ``days``)."
     )
+    # C4 (DEC-OPI-a4cf2d0e…18, 域四「叙事工艺指引」): the craft laws ride
+    # at the task paragraph's tail — before the technical contract (the
+    # candidates requirement, the shape line, the optional-keys
+    # paragraph), which keeps its order untouched. Unconditional: no
+    # package, mode or caller fact turns the guardrail off (the one
+    # explicit exception to the conditional-section law).
+    sections.append(_CRAFT_LAWS_HEADER)
+    sections.extend(_CRAFT_LAWS_BODY)
     if direction_mode == DIRECTION_DIRECTED:
         sections.append(
             "Direction candidates: in the same answer, also write"

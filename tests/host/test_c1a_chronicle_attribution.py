@@ -29,8 +29,9 @@ the seven VAL groups:
 5. **immersion zero-change** — a worldless conversation's turn writes
    no chronicle row at all;
 6. **the narrator contract byte pin** — ``build_narrator_prompt``'s
-   output hashes to the C1-b golden (the pre-C1-a original
-   ``ceb73d7e…`` held until C1-b widened the contract; the attribution
+   output hashes to the C4 golden (the pre-C1-a original
+   ``ceb73d7e…`` held until C1-b widened the contract, and C4's
+   unconditional craft laws moved it again; the attribution
    cut still feeds nothing into the prompt);
 7. the served face still takes the attribution material (the caller
    hands the window its turn ids; the arm reads the runs) — the
@@ -686,15 +687,19 @@ def test_a_worldless_letter_writes_no_chronicle_row(tmp_path: Path) -> None:
 
 
 def test_the_narrator_prompt_is_byte_untouched() -> None:
-    """``build_narrator_prompt`` hashes to the C1-b golden (was the
-    pre-C1-a golden ``ceb73d7e…8100e``). Re-cast consciously, twice:
-    C1-a itself fed nothing into the prompt (the attribution cut's own
-    zero-change law), and C1-b (DEC-OPI-b290799a…17) then widened the
-    contract — the cast-id roster line, the optional-keys paragraph,
-    both unconditional — so the hash moved to the widened shape. The
-    judgment that survives: the attribution columns (participants
-    values, run ids, interaction words) still feed nothing — the
-    roster/teaching lines are contract, not attribution."""
+    """``build_narrator_prompt`` hashes to the C4 golden (was the
+    pre-C1-a golden ``ceb73d7e…8100e``, then the C1-b golden
+    ``4b484ae7…c2eaba``). Re-cast consciously, three times: C1-a itself
+    fed nothing into the prompt (the attribution cut's own zero-change
+    law), C1-b (DEC-OPI-b290799a…17) then widened the contract — the
+    cast-id roster line, the optional-keys paragraph, both
+    unconditional — and C4 (DEC-OPI-a4cf2d0e…18, 域四's craft guardrail)
+    injected the craft laws unconditionally — the three iron laws plus
+    the eight habits, at the task paragraph's tail — so the hash moved
+    again. The judgment that survives: the attribution columns
+    (participants values, run ids, interaction words) still feed
+    nothing — the roster/teaching lines and the guardrail are contract,
+    not attribution."""
 
     prompt = build_narrator_prompt(
         _minimal_package(),
@@ -704,7 +709,7 @@ def test_the_narrator_prompt_is_byte_untouched() -> None:
     )
     assert (
         hashlib.sha256(prompt.encode("utf-8")).hexdigest()
-        == "4b484ae7c497f8be291689b8ec9a54c8e5287616f6e0ed452e2662b65cc2eaba"
+        == "15a16fd5e37efa47d207259af8800fa06dc26c0318d07a7a28429975d17de487"
     )
 
 

@@ -7,10 +7,10 @@ over the real ``open_host``, the wr-10/lr-4a suites' own shape):
 
 1. **the prompt contract** (VAL ①) — ``free_direction`` rides its own
    section (the chosen-candidate section's sibling); the zero-change
-   default holds **byte for byte** against the pre-lr-3 prompts (the
-   absolute parent-run baselines below — the judgment face); the
-   builder re-checks the bound (blank / over 200 / not a string ⇒
-   ``ValueError``);
+   default holds **byte for byte** against the pinned absolute
+   baselines below (re-cast per widening cut — C1-b, then C4's craft
+   laws; the judgment face); the builder re-checks the bound (blank /
+   over 200 / not a string ⇒ ``ValueError``);
 2. **the endpoint** (VAL ②) — ``POST /api/world/direction`` takes the
    ``{"text"}`` shape (strip-nonblank, ≤200, 200 accepted), refuses
    the malformed family with the two-shape grammar sentence, a free
@@ -80,10 +80,35 @@ _FREE_ROW = json.dumps({"text": FREE_TEXT, "source": "free"},
 # 1 — the prompt contract (VAL ①), the byte-for-byte judgment face
 # ---------------------------------------------------------------------------
 
-#: The default immersive prompt, machine-read off the post-C1-b builder
+#: C4's craft guardrail (DEC-OPI-a4cf2d0e…18), as the prompt gains it:
+#: the header, its six lines and their blank-line joins. The literal is
+#: this test file's own — never spliced in from the module constant — so
+#: a weakened guardrail turns these pins red instead of following along.
+_CRAFT_SECTION = (
+    '== The craft laws ==\n\n'
+    'Hold every beat of the prose to these three laws:\n\n'
+    '1. An action never stands bare: beside what was done, carry at'
+    ' least two of — a modifier, a state, a mind, an aftermath.\n\n'
+    '2. Triage the short quoted line: keep it when it is character;'
+    ' when it is only shorthand, drop the line and carry the beat in'
+    ' posture and aftermath.\n\n'
+    "3. Keep the weight uneven: ornament at the paragraph's stress"
+    ' point alone, and let the rest run plain — when every line is'
+    ' dressed, none of them carries.\n\n'
+    'Do not fall into these habits: empty grandiosity; an elevating'
+    ' formula where the beat should simply end; inflation through'
+    ' degree adverbs; more than one metaphor in a single paragraph; an'
+    ' emotion named outright where a body would show it; scenery that'
+    ' no one in the beat notices; every paragraph cut to the same'
+    ' length; a log that keeps order but never emphasis.\n\n'
+)
+
+#: The default immersive prompt, machine-read off the post-C4 builder
 #: (the absolute zero-change baseline). C1-b (DEC-OPI-b290799a…17) re-cast
 #: this literal from the pre-lr-3 original when the contract teaching
 #: went unconditional (the cast-id roster + the optional-keys paragraph);
+#: C4 (DEC-OPI-a4cf2d0e…18) re-cast it once more when the craft laws
+#: became unconditional (the guardrail at the task paragraph's tail);
 #: the judgment is unchanged — with ``free_direction`` at its default the
 #: prompt is exactly this, byte for byte.
 _A_BASELINE = (
@@ -110,7 +135,8 @@ _A_BASELINE = (
     " happened. Write exactly 1 or 2 beats. Each beat is one to three"
     " sentences of narration and spans 0, 1 or 2 story days (its"
     " ``days``).\n\n"
-    'The narration is written in Chinese (中文).\n\n'
+    + _CRAFT_SECTION
+    + 'The narration is written in Chinese (中文).\n\n'
     'Answer with strict JSON only — no prose outside it: {"beats":'
     ' [{"kind": "<slug>", "narration": "<...>", "days": 0}]} The'
     ' ``kind`` is a short slug: lowercase letters, digits and hyphens'
@@ -243,8 +269,11 @@ def test_the_zero_change_default_holds_byte_for_byte() -> None:
     against the absolute baseline, the directed + pending + letter
     shape against the section assembly (the head is the pinned absolute
     baseline itself). C1-b (DEC-OPI-b290799a…17) re-cast the baseline
-    when the contract teaching went unconditional; the judgment (the
-    written door adds nothing at the baseline) is lr-3's own, held."""
+    when the contract teaching went unconditional; C4
+    (DEC-OPI-a4cf2d0e…18) re-cast it again when the craft laws became
+    unconditional (the guardrail rides the assembly between the task
+    and the candidates requirement); the judgment (the written door
+    adds nothing at the baseline) is lr-3's own, held."""
 
     pkg = _package()
     assert build_narrator_prompt(pkg, (), (), "zh") == _A_BASELINE
@@ -262,6 +291,7 @@ def test_the_zero_change_default_holds_byte_for_byte() -> None:
         head
         + _LETTER_SECTION
         + _TASK_SECTION
+        + _CRAFT_SECTION
         + _DIRECTIONS_SECTION
         + _CHOSEN_SECTION
         + _LANGUAGE_LINE
