@@ -5,7 +5,11 @@ or two story beats, generated from the world's own life alone.
 What this module claims, no more: the prompt is composed from the world
 package's bible (the setting prose, the cast — each member with their
 optional vignette, the town's narrative residents one line each when
-the package carries them — and the whole
+the package carries them — the cast's own voices when the package ships
+a v6 voice library: one summary line per character plus her own
+bilingual passages, under the closing instruction that she sounds like
+those passages, never like an abstract description (C3,
+DEC-OPI-a4cf2d0e…6) — and the whole
 CURRENT lore fact set), the cast-id roster (C1-b: every cast member's
 id beside the name the prose knows — the only ids a beat's
 ``participants`` may name), the current-state section (C1-b: the
@@ -255,6 +259,15 @@ _LETTER_READ_HEADER = "== She has read the letter =="
 #: beat's ordinary ``effects`` (the same pipe C1-b taught; the store's
 #: two-layer active read is what makes the proposal retire the line).
 _ACTIVE_STORYLINES_HEADER = "== Active storylines =="
+
+#: The cast's-own-voices section's header (C3, DEC-OPI-a4cf2d0e…6 — 域三's
+#: prompt door). The section rides **only** when the package carries a
+#: voice library (the conditional-section law: a package without one
+#: leaves the prompt byte for byte its pre-v6 shape, both golden pins
+#: immovable). Each character contributes one summary line and her own
+#: bilingual passages; the section's closing sentence is 域三's lever
+#: stated as an instruction — 「她说话时像她自己的语样，不模仿抽象描述」.
+_CAST_VOICES_HEADER = "== The cast's own voices =="
 
 #: The kind slug's shape: lowercase letters, digits and hyphens, one
 #: non-separator character first, at most 32 characters.
@@ -570,6 +583,17 @@ def build_narrator_prompt(
     frictions, gossip — not only weather and scenery, the same event
     refracting through several lives.
 
+    C3 (DEC-OPI-a4cf2d0e…6, 域三's narrator half): when the package
+    carries a v6 ``voice`` library the prompt adds the cast's-own-voices
+    section — one summary line per character (speech habits, register,
+    quirks, the words she never says) plus her own bilingual passages in
+    the package's own order, and the closing instruction that a speaking
+    character sounds like those passages, never like an abstract
+    description of her. Conditional section: a package with no voice
+    library adds nothing — the pre-v6 prompt, byte for byte (both golden
+    pins immovable), and a voice entry for a character the town does not
+    name cannot exist (the loader refuses it).
+
     wr-10 (DEC-OPI-c73dbff3…64): ``direction_mode`` is one of the two
     words (:data:`DIRECTION_DIRECTED` / :data:`DIRECTION_IMMERSIVE`;
     anything else is a ``ValueError`` naming them). ``directed`` adds
@@ -790,6 +814,38 @@ def build_narrator_prompt(
             " small kindnesses, frictions, gossip — not only the"
             " weather and the scenery. The same event may refract"
             " through several lives."
+        )
+    if package.voice:
+        # C3 (DEC-OPI-a4cf2d0e…6, 域三's narrator half): the cast's own
+        # voices — 「模仿具体语样远胜遵循抽象描述」. One summary line per
+        # character (her speech habits, register, quirks and the words
+        # she never says) plus her own bilingual passages, rendered in
+        # the package's own order. Conditional section: a package with
+        # no voice library adds nothing (the pre-v6 prompt byte for
+        # byte, the golden pins immovable). The material is the world
+        # package's own authored prose — the same trust posture as the
+        # setting paragraphs and the residents' vignettes above.
+        sections.append(_CAST_VOICES_HEADER)
+        for name, voice in package.voice:
+            summary = (
+                f"{name} — {voice.speech_habits}"
+                f" Register: {voice.register}."
+            )
+            if voice.quirks:
+                summary += " Quirks: " + "; ".join(voice.quirks) + "."
+            if voice.never_says:
+                summary += (
+                    " Never says: " + "; ".join(voice.never_says) + "."
+                )
+            sections.append(summary)
+            sections.append(f"In {name}'s own hand, in English:")
+            sections.extend(f"- {passage}" for passage in voice.samples_en)
+            sections.append(f"In {name}'s own hand, in Chinese:")
+            sections.extend(f"- {passage}" for passage in voice.samples_zh)
+        sections.append(
+            "When one of these people speaks or writes, she sounds like"
+            " her own passages above: their voice is the model — never"
+            " an abstract description of how she talks."
         )
     sections.append("== The world's established facts ==")
     if lore_facts:

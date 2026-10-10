@@ -152,7 +152,12 @@ Declared readings (this cut's, each with the condition that re-opens it):
    values (eight prose columns plus ``generation_policy`` and ``lore_refs``)
    render inside the frame, and every value this cut classes as foreign text
    — the framed card values and the id / language-policy / contract rows —
-   is escaped whether it carries the frame or the section. Revisit: a future
+   is escaped whether it carries the frame or the section. C3
+   (DEC-OPI-a4cf2d0e…6) adds the ``("persona", "voice", …)`` row: the
+   world package's voice library is world text (BF-05's *lore·world text*
+   family beside the card's own), it renders in its own ``persona-voice``
+   frame right after the card's, and it joins neither the card's ten rows
+   nor the section's structure. Revisit: a future
    section is fed by user- or model-produced
    durable text — it joins :data:`UNTRUSTED_PROMPT_SECTIONS`, and the frame
    travels with it.
@@ -252,6 +257,7 @@ from elc.platform.types import (
     Result,
 )
 from elc.runtime.types import GenerationActionType
+from elc.world.voice import CharacterVoice
 
 #: The fixed section order of the compiled prompt (Phase 3 P3-1B ⑨ pinned
 #: it; Phase 4 P4-3 ④ extends it with the three §11 views the persona
@@ -433,6 +439,14 @@ PROMPT_FIELD_TRUST: tuple[tuple[str, str, str, str], ...] = (
     ("persona", "scenario", "untrusted", TRUST_CARRIER_FRAME),
     ("persona", "generation_policy", "untrusted", TRUST_CARRIER_FRAME),
     ("persona", "lore_refs", "untrusted", TRUST_CARRIER_FRAME),
+    # C3 (DEC-OPI-a4cf2d0e…6): the voice library is not a card column —
+    # it is the world package's authored record of **how this character
+    # speaks** (域三), and the compiler renders it as its own framed
+    # block (``persona-voice``) right after the card's frame. It is
+    # world text, BF-05's untrusted class beside the card's own ("persona
+    # card text" / "lore·world text"), so it carries the frame and the
+    # escape like every other foreign value.
+    ("persona", "voice", "untrusted", TRUST_CARRIER_FRAME),
     # profile — the disclosure view: ids/level are the system's, the
     # disclosed facts are user free text.
     ("profile", "prompt_version", "trusted", TRUST_CARRIER_SECTION),
@@ -634,6 +648,16 @@ class PromptCompiler:
     resolves no secrets and creates no teaching directive (D-INV-002;
     RUNTIME §24.3 "PromptCompiler … 只能消费 action-specific disclosure
     view").
+
+    C3 (DEC-OPI-a4cf2d0e…6): one more view joins — ``world_voice_view``,
+    the speaking character's own voice library (the world package's v6
+    ``voice`` section, resolved by the composition root's port). It does
+    not become a card column: it renders as its own framed block
+    (``persona-voice``) right after the card's frame, in the same
+    ``[persona]`` section position, so her letters sound like her own
+    passages (域三). ``None`` — the field's default, every assembly
+    before C3 and every character the library does not name — compiles
+    byte-identically to the pre-C3 prompt, the compatibility hard line.
     """
 
     def compile(self, request: PromptCompilationRequest) -> Result[CompiledPrompt]:
@@ -664,6 +688,23 @@ class PromptCompiler:
                 f"[persona]\n"
                 f"persona_id: {_escaped_untrusted_text(request.persona_id)}\n"
                 "language_policy: default"
+            )
+
+        # C3 (DEC-OPI-a4cf2d0e…6): the speaking character's own voice
+        # library, right after the persona section's card frame — the
+        # canon 域三's lever on the reply face ("她的信像她"). Its own
+        # frame (``persona-voice``), the trust table's
+        # ``("persona", "voice", …)`` row its declaration. Conditional
+        # section: no resolved voice view adds nothing — a request
+        # without one compiles byte-identically to the pre-C3 prompt
+        # (the compatibility hard line), and a voice-free package
+        # resolves no view at all.
+        if context is not None and context.world_voice_view is not None:
+            sections.append(
+                _framed_untrusted_block(
+                    "persona-voice",
+                    _persona_voice_block(context.world_voice_view),
+                )
             )
 
         if context is not None and context.disclosed_user_profile is not None:
@@ -880,6 +921,61 @@ def _persona_card_text_block(package: CharacterPackageRecord) -> str:
             f"lore_refs: {_escaped_untrusted_text('; '.join(package.lore_refs))}",
         )
     )
+
+
+def _persona_voice_block(voice: CharacterVoice) -> str:
+    """The speaking character's voice library, as a frame payload (C3).
+
+    The canon 域三's five faces in their declared order —
+    ``speech_habits`` / ``register`` / ``quirks`` / ``never_says`` and the
+    bilingual ``samples`` — rendered ``key: value`` per scalar row and one
+    ``- ``-prefixed line per passage under each sample heading (the
+    history/chronicle block form: a line count that moves with the data,
+    which the fixed key/value form could not carry). It is not a card
+    column, so it is *not* part of :func:`_persona_card_text_block`: the
+    card's ten rows stay exactly ten, and this block rides its own frame
+    (``persona-voice``) right after the card's, in the same
+    ``[persona]`` section position — the trust table's
+    ``("persona", "voice", …)`` row is this block's declaration.
+
+    Escaping and the marker pair are the shared mechanism, not a second
+    one: every interpolated value goes through
+    :func:`_escaped_untrusted_text`, and the caller wraps the result with
+    :func:`_framed_untrusted_block`. The scrap of prose at the top is the
+    system's own instruction — the same lever the narrator's
+    cast-of-the-town section states for the world's side: she sounds like
+    her own passages, never like an abstract description of her.
+    ``motivation`` (the optional sixth face, R4's P6 first leg) renders
+    only when the package carries one; the five canon faces are required
+    by the loader and always render — an empty ``quirks`` / ``never_says``
+    list renders the row with an empty value (the key order is fixed, so
+    a reader never learns a face's shape from its presence).
+    """
+
+    lines = [
+        "The passages below are in her own hand and are the model for"
+        " how she writes: her letters sound like these, never like an"
+        " abstract description of her.",
+        f"speech_habits: {_escaped_untrusted_text(voice.speech_habits)}",
+        f"register: {_escaped_untrusted_text(voice.register)}",
+        f"quirks: {_escaped_untrusted_text('; '.join(voice.quirks))}",
+        f"never_says: {_escaped_untrusted_text('; '.join(voice.never_says))}",
+    ]
+    if voice.motivation is not None:
+        lines.append(
+            f"motivation: {_escaped_untrusted_text(voice.motivation)}"
+        )
+    lines.append("samples_en:")
+    lines.extend(
+        f"- {_escaped_untrusted_text(passage)}"
+        for passage in voice.samples_en
+    )
+    lines.append("samples_zh:")
+    lines.extend(
+        f"- {_escaped_untrusted_text(passage)}"
+        for passage in voice.samples_zh
+    )
+    return "\n".join(lines)
 
 
 def _section(name: str, fields: tuple[tuple[str, str], ...]) -> str:

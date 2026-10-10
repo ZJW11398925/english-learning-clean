@@ -250,6 +250,7 @@ from elc.user_config.types import (
     DisclosedUserProfile,
     PlannerConstraintType,
 )
+from elc.world.voice import CharacterVoice, WorldVoiceQueries
 from elc.world_lore.queries import WorldLoreQueries
 from elc.world_lore.types import (
     WorldChronicleQueries,
@@ -1121,6 +1122,22 @@ class ConversationCoordinator:
       events is returned as resolved (the compiler renders no section —
       the honest "world resolved, nothing has happened yet").
 
+    C3 (DEC-OPI-a4cf2d0e…6) adds one more optional injection beside them:
+
+    - ``world_voice`` (``elc.world.voice.WorldVoiceQueries``): the
+      conversation→character-voice read port — the composition root's
+      binding-table lookup plus the seeded world package's v6 ``voice``
+      library, resolved to the speaking character's own entry. At each
+      GenerationContext site the entry is resolved for the turn's own
+      conversation and handed to the compiler, whose framed
+      ``persona-voice`` block renders it (域三: her letters sound like
+      her own passages). The degradation is the chronicle view's own
+      shape (``_world_voice_view_for``): no port → ``None``
+      (byte-identical prompts), an ``Err`` (no world binding, an actor
+      the tables do not know, a character the library does not name) →
+      ``None`` — the prompt loses a block, never a reply — and an
+      escaping exception → ``None``.
+
     ``finalize_delivery`` (the ``BUFFERED_VALIDATED`` face) stays the teaching
     legs' delivery — §13's default table sends every teaching action type and
     ``PERSONA_RESUME`` through it, and only ``NORMAL_PERSONA_REPLY`` through
@@ -1191,6 +1208,7 @@ class ConversationCoordinator:
         character_packages: Mapping[str, CharacterPackageRecord] | None = None,
         world_lore: WorldLoreQueries | None = None,
         world_chronicle: WorldChronicleQueries | None = None,
+        world_voice: WorldVoiceQueries | None = None,
         reply_language_source: Callable[[], str | None] | None = None,
     ) -> None:
         self._lease = lease
@@ -1229,6 +1247,14 @@ class ConversationCoordinator:
         # (every assembly before this slice) keeps those sites' answer
         # exactly ``None`` — no section, byte-identical prompts.
         self._world_chronicle = world_chronicle
+        # C3 (DEC-OPI-a4cf2d0e…6): the conversation→character-voice port —
+        # the world package's v6 voice library, resolved to the speaking
+        # character's own entry. Same held-never-called discipline: the
+        # entry is resolved per turn at the two GenerationContext sites,
+        # and ``None`` (every assembly before this cut) keeps those
+        # sites' answer exactly ``None`` — no block, byte-identical
+        # prompts.
+        self._world_voice = world_voice
         # W-L: the reply-language read port, same optional-injection
         # discipline as every port above — held, never called at
         # construction, consulted per turn at the two PromptCompilationRequest
@@ -1991,6 +2017,9 @@ class ConversationCoordinator:
                     command.conversation_id
                 ),
                 world_chronicle_view=self._world_chronicle_view_for(
+                    command.conversation_id
+                ),
+                world_voice_view=self._world_voice_view_for(
                     command.conversation_id
                 ),
                 disclosed_user_profile=disclosed_profile,
@@ -3055,6 +3084,37 @@ class ConversationCoordinator:
             return None
         try:
             resolved = port.resolve_world_chronicle_view(conversation_id)
+        except Exception:  # noqa: BLE001 — a read never fails the turn
+            return None
+        if isinstance(resolved, Err):
+            return None
+        return resolved.value
+
+    def _world_voice_view_for(
+        self, conversation_id: ConversationId
+    ) -> CharacterVoice | None:
+        """Best-effort read of the speaking character's voice library
+        (C3, DEC-OPI-a4cf2d0e…6 R3).
+
+        The same degradation shape ``_world_chronicle_view_for`` declared
+        for the chronicle view, stated for the voice entry: no port
+        (every assembly before C3, and every assembly that does not wire
+        one) → ``None``, so the compiled prompt is byte-identical to
+        what it was; an ``Err`` from the resolution (a conversation bound
+        to no world, an actor the world tables do not know, a character
+        the package's library does not name) → ``None`` — the prompt
+        loses a block, never a reply, and it never carries a *guessed*
+        voice; an exception escaping the port → ``None``. A resolved
+        entry is returned as resolved — the compiler renders its framed
+        block, which is the whole point of this cut (域三: the letters
+        sound like her).
+        """
+
+        port = self._world_voice
+        if port is None:
+            return None
+        try:
+            resolved = port.resolve_world_voice_view(conversation_id)
         except Exception:  # noqa: BLE001 — a read never fails the turn
             return None
         if isinstance(resolved, Err):
@@ -7238,6 +7298,7 @@ class ConversationCoordinator:
             world_chronicle_view=self._world_chronicle_view_for(
                 conversation_id
             ),
+            world_voice_view=self._world_voice_view_for(conversation_id),
             disclosed_user_profile=disclosed_profile,
             conversation_window=window,
             language_policy="follow-user",

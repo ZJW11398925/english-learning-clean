@@ -32,6 +32,7 @@ from elc.relationship.episode import EpisodeView
 from elc.relationship.types import RelationshipView
 from elc.runtime.types import GenerationActionType
 from elc.user_config.types import DisclosedUserProfile
+from elc.world.voice import CharacterVoice
 from elc.world_lore.types import WorldChronicleView, WorldLoreView
 
 
@@ -242,6 +243,19 @@ class GenerationContext:
     view's own: ``None`` compiles byte-identically to the pre-wr-12
     prompt; a resolved view with no events renders no section.
 
+    C3 (DEC-OPI-a4cf2d0e…6): ``world_voice_view`` — the speaking
+    character's own voice-library entry (``CharacterVoice | None``, the
+    world package's v6 record; its home is :mod:`elc.world.voice`) —
+    carries 域三's lever into the reply prompt: the compiler renders it
+    as the framed ``persona-voice`` block, right after the persona
+    section's card frame, so her letters sound like her own passages
+    rather than like a description of them. The degradation is the
+    chronicle view's own: ``None`` (no port wired, no world binding, a
+    character the library does not name) compiles byte-identically to the
+    pre-C3 prompt, and the value is the package's authored prose — an
+    untrusted-content class, so it renders inside the same frame and
+    under the same escape as every other foreign-text value.
+
     Import direction: this module imports the view *types* from the domains
     that own them, which is exactly how §11 works — Persona Runtime consumes
     these views and owns none of them (DOMAIN_MODEL §4 "Persona Runtime
@@ -261,6 +275,7 @@ class GenerationContext:
     generation_contract: GenerationContract | None = None
     ephemeral_teaching_directive: object | None = None
     world_chronicle_view: WorldChronicleView | None = None
+    world_voice_view: CharacterVoice | None = None
 
 
 #: cs-0（附笺模式）: the ``[teaching]`` section is retired. The compiled

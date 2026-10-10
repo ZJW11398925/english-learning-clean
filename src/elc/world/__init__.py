@@ -45,6 +45,15 @@ retired from the narrator's prompt by that same projection claim when a
 beat proposes the closure through its ordinary ``effects`` (the
 narrator module's active-storylines section is the prompt door).
 
+C3 (DEC-OPI-a4cf2d0e…6) adds the voice-library face: the v6 package's
+optional ``voice`` section decodes into
+:class:`~elc.world.voice.CharacterVoice` entries (域三's five faces plus
+the optional ``motivation``; :mod:`elc.world.voice` is the record's
+home), and the two prompt doors read it — the narrator's
+cast-of-the-town section and the persona reply prompt's framed
+``persona-voice`` block. No store column and no seed row: the library is
+prompt material, and the package's own copy is its home.
+
 What does **not** ship here, declared rather than implied: no narration
 generation (the engine's pool arrives pre-authored), no presentation
 rendering, no ``DIRECTION`` word (W-2-2 opens it) — those are W-2-x
@@ -72,6 +81,7 @@ from elc.world.types import (
     decode_effects,
     encode_effects,
 )
+from elc.world.voice import CharacterVoice, WorldVoiceQueries
 
 __all__ = [
     "SqliteWorldStore",
@@ -83,4 +93,6 @@ __all__ = [
     "WorldStateFact",
     "encode_effects",
     "decode_effects",
+    "CharacterVoice",
+    "WorldVoiceQueries",
 ]

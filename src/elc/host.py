@@ -173,7 +173,7 @@ import sqlite3
 from dataclasses import dataclass
 from dataclasses import replace as dc_replace
 from pathlib import Path
-from typing import cast
+from typing import Mapping, cast
 
 from elc.content.store import ContentStore, ContentStoreError
 from elc.conversation import SqliteConversationStore
@@ -270,8 +270,13 @@ from elc.teaching.rollout import RolloutGateReport, RolloutStage, corpus_rollout
 from elc.teaching.store import SqliteTeachingStore
 from elc.user_config.controller import UserConfigController
 from elc.user_config.store import SqliteUserConfigStore
-from elc.world.package import WorldPackageError, ensure_builtin_worlds
+from elc.world.package import (
+    WorldPackage,
+    WorldPackageError,
+    ensure_builtin_worlds,
+)
 from elc.world.store import SqliteWorldStore
+from elc.world.voice import CharacterVoice
 from elc.world_lore.content import seed_world_lore_facts
 from elc.world_lore.controller import WorldLoreController
 from elc.world_lore.store import SqliteWorldLoreStore, WorldLoreStoreError
@@ -460,6 +465,138 @@ class _WorldChroniclePort:
                 )
             )
         )
+
+
+class _WorldVoicePort:
+    """The conversation→character-voice read, wired from the seeded world
+    packages (C3, DEC-OPI-a4cf2d0e…6 R3).
+
+    Exactly the one member the coordinator's ``WorldVoiceQueries`` port
+    names. The read is the chronicle port's own binding lookup (the
+    direct-SQL ``world_conversation`` row — ``world_id`` and ``actor_id``)
+    followed by two namespaces the world tables already spell: the binding
+    actor's ``world_actor`` row gives the persona id (the cast-id roster's
+    namespace, C1-c's precedent), and the seeded package's cast row gives
+    the name the package's prose and its voice library's keys share. The
+    library entry is then a case-insensitive
+    :meth:`~elc.world.package.WorldPackage.voice_for` lookup.
+
+    The packages are the ones :func:`~elc.world.package.ensure_builtin_worlds`
+    **returned** — the seed's own decode, held here for the process's life
+    (the file is read once at open, and a re-seed on a later open re-reads
+    it, exactly as the narrator's own `live` reads do). The degradation is
+    an ``Err`` for every arm that cannot name a voice, never a guessed one:
+    a conversation bound to no world (``NOT_FOUND``), a world whose package
+    this assembly did not seed — a user-created world has no file
+    (``NOT_FOUND``), an actor the world tables do not know
+    (``VALIDATION_FAILED``), an actor bound to a persona its package does
+    not cast (``VALIDATION_FAILED`` — the tables and the package disagree,
+    which is corruption, not a silent skip), and a character whose library
+    entry is absent or empty (``NOT_FOUND`` — the honest "no authored
+    voice yet"). Every one of them is the coordinator's ``None``: the
+    prompt loses a block, never a reply.
+    """
+
+    __slots__ = ("_conn", "_packages")
+
+    def __init__(
+        self,
+        conn: sqlite3.Connection,
+        packages: Mapping[str, WorldPackage],
+    ) -> None:
+        self._conn = conn
+        self._packages = packages
+
+    def resolve_world_voice_view(
+        self, conversation_id: ConversationId
+    ) -> Result[CharacterVoice]:
+        """The speaking character's own voice-library entry (the port's
+        whole contract — the class docstring carries the resolution and
+        the degradation)."""
+
+        row = self._conn.execute(
+            "SELECT world_id, actor_id FROM world_conversation"
+            " WHERE conversation_id = ?",
+            (str(conversation_id),),
+        ).fetchone()
+        if row is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"conversation bound to no world: {conversation_id}"
+                    ),
+                )
+            )
+        world_id = str(row[0])
+        package = self._packages.get(world_id)
+        if package is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"world {world_id!r} carries no seeded package, so"
+                        " its characters' voices cannot be resolved"
+                    ),
+                )
+            )
+        actor_id = None if row[1] is None else str(row[1])
+        if actor_id is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"conversation {conversation_id!r} binds no actor,"
+                        " so no character's voice can be named"
+                    ),
+                )
+            )
+        persona_row = self._conn.execute(
+            "SELECT persona_id FROM world_actor WHERE actor_id = ?",
+            (actor_id,),
+        ).fetchone()
+        if persona_row is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"conversation {conversation_id!r} binds actor"
+                        f" {actor_id!r}, which the world tables do not know"
+                    ),
+                )
+            )
+        persona_id = str(persona_row[0])
+        member = next(
+            (
+                cast_member
+                for cast_member in package.cast
+                if cast_member.persona_id == persona_id
+            ),
+            None,
+        )
+        if member is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"world {world_id!r} does not cast persona"
+                        f" {persona_id!r}, so the binding and the package"
+                        " disagree"
+                    ),
+                )
+            )
+        voice = package.voice_for(member.name)
+        if voice is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.NOT_FOUND,
+                    message=(
+                        f"character {member.name!r} has no voice-library"
+                        " entry in the package"
+                    ),
+                )
+            )
+        return Ok(voice)
 
 
 @dataclass(frozen=True)
@@ -871,11 +1008,22 @@ def open_host(
             card = character_cards.get_by_persona(persona_id)
             return not isinstance(card, Err)
 
-        ensure_builtin_worlds(
-            world_store,
-            worlds_dir,
-            persona_exists=_persona_exists,
-        )
+        # C3 (DEC-OPI-a4cf2d0e…6): the seeded packages, held for the
+        # process's life as the voice port's library — the seed already
+        # decoded them (its return value), so the files are read once,
+        # and the port reads only the binding tables per turn. A world
+        # this assembly did not seed (a user-created world has no file)
+        # has no entry here; the port answers an Err for it, which is
+        # the coordinator's "no voice block", never a guessed voice.
+        world_voices: dict[str, WorldPackage] = {
+            package.world_id: package
+            for package in ensure_builtin_worlds(
+                world_store,
+                worlds_dir,
+                persona_exists=_persona_exists,
+            )
+        }
+        world_voice_port = _WorldVoicePort(db, world_voices)
         # The settings-page provider face's persisted leg (user veto: the
         # endpoint/model pair is page-settable). Read order is the opposite
         # of the stage's on purpose: a **saved pair wins over the launch
@@ -1085,6 +1233,7 @@ def open_host(
             constraint_views=user_config,
             world_lore=world_lore,
             world_chronicle=world_chronicle_port,
+            world_voice=world_voice_port,
             # W-L: the reply language rides the settings row per turn —
             # the port is the store's own ``get`` (a read on the shared
             # connection, the caller's thread, exactly what the provider

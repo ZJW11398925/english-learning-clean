@@ -10,16 +10,23 @@ actor (prompt material, never correspondence faces; the web face's
 ``world_residents`` reads the *bound* cast and is a different thing) —
 an optional ``initial_storylines`` section (v5, C2: the world's opening
 arcs, ``{theme, resolve_at}`` pairs the seed lands as migration 0028's
-``world_storyline`` rows), the pre-authored event pool the engine draws
+``world_storyline`` rows), an optional ``voice`` section (v6, C3: the
+characters' own voice library — see :mod:`elc.world.voice` for the canon
+and the faces), the pre-authored event pool the engine draws
 from, and a supply
 declaration. :func:`load_world_package` decodes one
 file strictly — bad
 JSON, a missing or unexpected key, a value of the wrong shape, an unknown
-moment word, an unknown supply family word or a name collision between
-a resident and the cast are all ``Err`` refusals
+moment word, an unknown supply family word, a name collision between
+a resident and the cast, a voice entry whose character name is not one
+of the town's own or whose ``samples`` sides are not
+:data:`~elc.world.voice.VOICE_SAMPLE_COUNT` passages each are all ``Err``
+refusals
 whose message names the offending key or word — and
 :func:`ensure_builtin_worlds` seeds every ``*.json`` in a directory
-through the store's idempotent create/bind faces at open time. Any
+through the store's idempotent create/bind faces at open time (and hands
+the decoded packages back, so a caller that needs the package faces — the
+voice library — reads them from the same pass). Any
 refusal (or a cast persona with no character card) raises
 :class:`WorldPackageError`, so the composition root's open fails loudly
 instead of serving a half-seeded world — the ``world_lore`` seed
@@ -56,6 +63,11 @@ from elc.platform.types import (
 from elc.world.engine.types import Condition, MomentKind, PoolEvent
 from elc.world.store import SqliteWorldStore
 from elc.world.types import StateEffect
+from elc.world.voice import (
+    VOICE_MAX_QUIRKS,
+    VOICE_SAMPLE_COUNT,
+    CharacterVoice,
+)
 
 __all__ = [
     "BUILTIN_WORLDS_DIR",
@@ -94,17 +106,18 @@ SUPPLY_FAMILY_WORDS: tuple[str, ...] = (
     "STANCE",
 )
 
-#: The package schema version this loader reads (v5, C2 /
-#: DEC-OPI-b290799a…45): every v4 face is kept (the bilingual pool
-#: events, ``calendar_start``, an optional cast ``vignette`` and an
-#: optional ``residents`` section), plus the v5 addition — an optional
-#: ``initial_storylines`` section naming the world's opening arcs
-#: (``{theme, resolve_at}`` pairs the seed lands as migration 0028's
-#: ``world_storyline`` rows). A document stamped with any other version
-#: is a refusal naming the number — a v4-and-below file cannot ride in
-#: half-read, and a future v6 must be read by the cut that writes it,
+#: The package schema version this loader reads (v6, C3 /
+#: DEC-OPI-a4cf2d0e…6): every v5 face is kept (the bilingual pool
+#: events, ``calendar_start``, an optional cast ``vignette``, an optional
+#: ``residents`` section and an optional ``initial_storylines`` section),
+#: plus the v6 addition — an optional ``voice`` section naming the
+#: characters' own voice library (speech habits, taboos, quirks, bilingual
+#: samples and register, plus the optional ``motivation``; the canon is
+#: :mod:`elc.world.voice`). A document stamped with any other version
+#: is a refusal naming the number — a v5-and-below file cannot ride in
+#: half-read, and a future v7 must be read by the cut that writes it,
 #: never guessed at by this one.
-WORLD_PACKAGE_VERSION = 5
+WORLD_PACKAGE_VERSION = 6
 
 
 class WorldPackageError(RuntimeError):
@@ -201,7 +214,18 @@ class WorldPackage:
     three-line-capped-by-the-author zero; the reader (:meth:`elc.world.
     store.SqliteWorldStore.active_storylines`) is what the narrator's
     prompt is fed from, and the package's own copy stays here as the
-    seed's source."""
+    seed's source.
+
+    v6 (C3, DEC-OPI-a4cf2d0e…6): ``voice`` is the characters' own voice
+    library as ``(name, CharacterVoice)`` pairs in the file's own order —
+    the key every direct lookup goes through is :meth:`voice_for`, and
+    the loader has already promised every name is one of the town's
+    (cast ∪ residents, case-insensitively; the one-name-space law). The
+    section's absence decodes to the empty tuple — an honest
+    no-library world, and the byte-identical prompt law's other half: a
+    package without voices renders exactly the pre-v6 bytes on both
+    prompt faces. The face is prompt material end to end: no store
+    column, no actor binding, no seed row."""
 
     world_id: str
     name: str
@@ -214,11 +238,29 @@ class WorldPackage:
     narrations_zh: tuple[tuple[str, str], ...] = ()
     residents: tuple[Resident, ...] = ()
     initial_storylines: tuple[tuple[str, str], ...] = ()
+    voice: tuple[tuple[str, CharacterVoice], ...] = ()
 
     def to_event_pool(self) -> tuple[PoolEvent, ...]:
         """The engine's pool argument, as loaded (no re-decode)."""
 
         return self.event_pool
+
+    def voice_for(self, name: str) -> CharacterVoice | None:
+        """One character's voice-library entry, or ``None`` when the
+        library does not name them — the honest "this character has no
+        authored voice yet", never a guessed one.
+
+        The match is case-insensitive (the town's own name-space law:
+        prose does not distinguish case, and neither does the town), so a
+        caller resolving a cast member's name reaches the entry the file
+        spells in its own casing.
+        """
+
+        folded = name.casefold()
+        for key, voice in self.voice:
+            if key.casefold() == folded:
+                return voice
+        return None
 
     def narration_zh_for(self, kind: str) -> str | None:
         """The Chinese narration for one event kind, or ``None`` when the
@@ -243,9 +285,9 @@ _PACKAGE_KEYS = (
     "event_pool",
     "supply",
 )
-#: The optional top-level sections (v4, wr-9; v5, C2): absent is legal,
-#: present is decoded strictly — a section is never half-read.
-_PACKAGE_OPTIONAL_KEYS = ("residents", "initial_storylines")
+#: The optional top-level sections (v4, wr-9; v5, C2; v6, C3): absent is
+#: legal, present is decoded strictly — a section is never half-read.
+_PACKAGE_OPTIONAL_KEYS = ("residents", "initial_storylines", "voice")
 _CAST_KEYS = ("persona_id", "name")
 _CAST_OPTIONAL_KEYS = ("vignette",)
 _RESIDENT_KEYS = ("name", "role", "vignette")
@@ -261,6 +303,11 @@ _EVENT_KEYS = (
 )
 _PAIR_KEYS = frozenset({"key", "statement"})
 _SUPPLY_KEYS = ("families", "note")
+#: The v6 ``voice`` entry's five canon keys, all required, plus the
+#: optional sixth (:data:`~elc.world.voice.CharacterVoice`).
+_VOICE_KEYS = ("speech_habits", "never_says", "quirks", "samples", "register")
+_VOICE_OPTIONAL_KEYS = ("motivation",)
+_SAMPLE_KEYS = ("en", "zh")
 
 
 def _err(message: str) -> Err[WorldPackage]:
@@ -392,11 +439,179 @@ def _decode_initial_storylines(
     return Ok(tuple(lines))
 
 
+def _decode_voice_words(
+    value: object, where: str
+) -> Result[tuple[str, ...]]:
+    """The shared string-list shape of ``never_says`` / ``quirks``:
+    every entry a non-empty string, no entry declared twice (a repeated
+    word is a typo — the supply-families posture). An empty array is
+    legal: a person who bans or tics nothing is not half a person, and
+    the honest zero costs no refusal."""
+
+    if not isinstance(value, list):
+        return _err(f"{where}: must be an array of strings")
+    words: list[str] = []
+    for index, word in enumerate(value):
+        if not isinstance(word, str) or not word.strip():
+            return _err(f"{where} entry {index}: must be a non-empty string")
+        if word in words:
+            return _err(
+                f"{where} entry {index}: {word!r} is declared twice"
+            )
+        words.append(word)
+    return Ok(tuple(words))
+
+
+def _decode_voice_samples(
+    value: object, where: str
+) -> Result[tuple[tuple[str, ...], tuple[str, ...]]]:
+    """The ``{en, zh}`` sample pair (域三 裁断点五, the user's
+    adjudication: 「语样双语各三段——英文为源 + 中文对照」): each side
+    exactly :data:`~elc.world.voice.VOICE_SAMPLE_COUNT` non-empty
+    passages, English the source and Chinese its companion. A section
+    whose sides disagree in count — or whose side is not exactly the
+    canon's number — is refused with the offending side and the count in
+    the message (half a paired library cannot ride in silently)."""
+
+    if not isinstance(value, dict):
+        return _err(f"{where}: not a JSON object")
+    for key in _SAMPLE_KEYS:
+        if key not in value:
+            return _err(f"{where}: key {key!r} is missing")
+    for key in value:
+        if key not in _SAMPLE_KEYS:
+            return _err(f"{where}: unexpected key {key!r}")
+    sides: dict[str, tuple[str, ...]] = {}
+    for key in _SAMPLE_KEYS:
+        raw = value[key]
+        if not isinstance(raw, list) or len(raw) != VOICE_SAMPLE_COUNT:
+            got = len(raw) if isinstance(raw, list) else repr(raw)
+            return _err(
+                f"{where}: {key!r} must be an array of exactly"
+                f" {VOICE_SAMPLE_COUNT} passages (the canon's bilingual"
+                f" pair — English the source, Chinese its companion),"
+                f" got {got}"
+            )
+        for index, passage in enumerate(raw):
+            if not isinstance(passage, str) or not passage.strip():
+                return _err(
+                    f"{where}: {key!r} entry {index} must be a non-empty"
+                    " string"
+                )
+        sides[key] = tuple(raw)
+    return Ok((sides["en"], sides["zh"]))
+
+
+def _decode_voice_entry(entry: object, where: str) -> Result[CharacterVoice]:
+    """One voice-library entry: the canon's five keys — ``speech_habits``
+    / ``never_says`` / ``quirks`` / ``samples`` / ``register`` — all
+    required, plus the optional sixth ``motivation`` (one static
+    sentence, R4's P6 first leg). A missing or unexpected key is a
+    refusal naming it; the quirks ceiling and the bilingual sample pair
+    are the canon's own bounds."""
+
+    if not isinstance(entry, dict):
+        return _err(f"{where}: not a JSON object")
+    for key in _VOICE_KEYS:
+        if key not in entry:
+            return _err(f"{where}: key {key!r} is missing")
+    for key in entry:
+        if key not in _VOICE_KEYS and key not in _VOICE_OPTIONAL_KEYS:
+            return _err(f"{where}: unexpected key {key!r}")
+    speech_habits = entry["speech_habits"]
+    register = entry["register"]
+    if not isinstance(speech_habits, str) or not speech_habits.strip():
+        return _err(f"{where}: speech_habits must be a non-empty string")
+    if not isinstance(register, str) or not register.strip():
+        return _err(f"{where}: register must be a non-empty string")
+    never_says = _decode_voice_words(
+        entry["never_says"], f"{where}: never_says"
+    )
+    if isinstance(never_says, Err):
+        return never_says
+    quirks = _decode_voice_words(entry["quirks"], f"{where}: quirks")
+    if isinstance(quirks, Err):
+        return quirks
+    if len(quirks.value) > VOICE_MAX_QUIRKS:
+        return _err(
+            f"{where}: quirks must carry at most {VOICE_MAX_QUIRKS}"
+            f" entries (the canon's ceiling), got {len(quirks.value)}"
+        )
+    samples = _decode_voice_samples(entry["samples"], f"{where}: samples")
+    if isinstance(samples, Err):
+        return samples
+    motivation: str | None = None
+    if "motivation" in entry:
+        raw = entry["motivation"]
+        if not isinstance(raw, str) or not raw.strip():
+            return _err(
+                f"{where}: motivation must be a non-empty string when"
+                " present"
+            )
+        motivation = raw
+    samples_en, samples_zh = samples.value
+    return Ok(
+        CharacterVoice(
+            speech_habits=speech_habits,
+            register=register,
+            quirks=quirks.value,
+            never_says=never_says.value,
+            samples_en=samples_en,
+            samples_zh=samples_zh,
+            motivation=motivation,
+        )
+    )
+
+
+def _decode_voice_section(
+    value: object, where: str, known_names: frozenset[str]
+) -> Result[tuple[tuple[str, CharacterVoice], ...]]:
+    """The optional v6 ``voice`` section (C3): a JSON object mapping each
+    character name to the five-key voice entry. Every name must be one
+    of the town's own — the cast's or a resident's, case-insensitively
+    (``known_names`` carries them folded) — two names colliding
+    case-insensitively are refused (the one-name-space law continues),
+    and an empty object is the same honest zero as an absent section.
+    The file's own order survives into the returned tuple: it is the
+    order both prompt faces render in, and re-reading the same file
+    answers the same order."""
+
+    if not isinstance(value, dict):
+        return _err(
+            f"{where}: must be an object mapping character names to"
+            " voice entries"
+        )
+    seen: set[str] = set()
+    entries: list[tuple[str, CharacterVoice]] = []
+    for name, entry in value.items():
+        if not isinstance(name, str) or not name.strip():
+            return _err(f"{where}: character names must be non-empty strings")
+        folded = name.casefold()
+        if folded in seen:
+            return _err(
+                f"{where}: character name {name!r} collides with another"
+                " voice entry's name (one town, one name-space,"
+                " case-insensitively)"
+            )
+        seen.add(folded)
+        if folded not in known_names:
+            return _err(
+                f"{where}: character name {name!r} is neither a cast"
+                " member nor a resident of this world (the voice library's"
+                " names are the town's own names)"
+            )
+        decoded = _decode_voice_entry(entry, f"{where}: {name}")
+        if isinstance(decoded, Err):
+            return decoded
+        entries.append((name, decoded.value))
+    return Ok(tuple(entries))
+
+
 def _decode_pool_event(entry: object, where: str) -> Result[PoolEvent]:
     """One pool event: ``kind`` / ``narration`` / ``narration_zh`` /
     ``days`` required (the Chinese narration is not optional prose, it
     is the package's second language; ``days`` is the story's own span,
-    a v3 face kept through v4 and v5 — a negative or non-int span would
+    a v3 face kept through v4 and v5 and v6 — a negative or non-int span would
     move the
     world's calendar by
     a lie), ``effects`` / ``conditions`` / ``moment`` optional (the
@@ -516,12 +731,17 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
     Every refusal is an ``Err`` naming the file and the offending key or
     word: unreadable file, bad JSON, a non-object document, a missing or
     unexpected top-level key, a value of the wrong shape, a version other
-    than :data:`WORLD_PACKAGE_VERSION` (v5 — the v4 face kept, plus an
-    optional ``initial_storylines`` section), a
+    than :data:`WORLD_PACKAGE_VERSION` (v6 — the v5 face kept, plus an
+    optional ``voice`` section), a
     duplicated event kind, an unknown moment word, an unknown supply
     family word, a resident whose name collides with the cast's or with
     another resident's (case-insensitively), an ``initial_storylines``
-    entry outside the exact ``{theme, resolve_at}`` shape. The loader
+    entry outside the exact ``{theme, resolve_at}`` shape, and — v6 — a
+    ``voice`` entry whose character name is neither the cast's nor a
+    resident's, whose name collides with another entry's, whose shape is
+    not the canon's five keys (plus the optional ``motivation``), whose
+    ``quirks`` exceed the ceiling or whose ``samples`` sides are not
+    :data:`~elc.world.voice.VOICE_SAMPLE_COUNT` passages each. The loader
     never guesses
     past an error — fail-closed decoding, the caller decides what a
     refusal means (the builtin seed answers: a failed open).
@@ -556,9 +776,10 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
     if version != WORLD_PACKAGE_VERSION:
         return _err(
             f"{where}: version must be {WORLD_PACKAGE_VERSION} (this"
-            f" loader reads v{WORLD_PACKAGE_VERSION} packages — the v4"
-            " face kept, plus an optional initial_storylines section;"
-            " v4-and-below files are refused rather than read half-way),"
+            f" loader reads v{WORLD_PACKAGE_VERSION} packages — the v5"
+            " face kept, plus an optional voice section carrying the"
+            " characters' own voice library;"
+            " v5-and-below files are refused rather than read half-way),"
             f" got {version}"
         )
     calendar_start = document["calendar_start"]
@@ -622,6 +843,15 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
     )
     if isinstance(decoded_storylines, Err):
         return decoded_storylines
+    # v6 (C3, DEC-OPI-a4cf2d0e…6): the voice library — decoded after the
+    # residents so the name-space check sees the whole town (cast +
+    # residents), the one-name-space law the resident decoder opened.
+    raw_voice = document.get("voice", {})
+    decoded_voice = _decode_voice_section(
+        raw_voice, f"{where}: voice", frozenset(known_names)
+    )
+    if isinstance(decoded_voice, Err):
+        return decoded_voice
     pool = document["event_pool"]
     if not isinstance(pool, list) or not pool:
         return _err(f"{where}: event_pool must be a non-empty array")
@@ -661,6 +891,7 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
             narrations_zh=tuple(narrations_zh),
             residents=tuple(residents),
             initial_storylines=decoded_storylines.value,
+            voice=decoded_voice.value,
         )
     )
 
@@ -784,9 +1015,13 @@ def ensure_builtin_worlds(
     worlds_dir: Path | None = None,
     *,
     persona_exists: Callable[[str], bool],
-) -> None:
+) -> tuple[WorldPackage, ...]:
     """Seed every ``*.json`` world package in ``worlds_dir`` into the
-    store, idempotently, at composition time.
+    store, idempotently, at composition time, and return the decoded
+    packages (in the same sorted-by-file-name order) for callers that
+    need the package faces — the v6 voice library is the first one:
+    re-reading the files a second time would be a second decode of the
+    same bytes, so the seed hands back what it read.
 
     One deterministic pass, sorted by file name. Each package is decoded
     strictly (:func:`load_world_package` — an ``Err`` raises, the message
@@ -801,7 +1036,8 @@ def ensure_builtin_worlds(
     ``initial_storylines`` land the same way, through the store's
     idempotent ``create_storyline`` under the derived line ids (see
     :func:`_line_id_for`) — a re-seed re-derives the same ids and
-    rewrites nothing.
+    rewrites nothing. The v6 ``voice`` section seeds nothing: it is
+    prompt material, and the returned package carries it whole.
 
     Every failure raises :class:`WorldPackageError` — the composition
     root's open fails closed (the ``world_lore`` seed posture: a database
@@ -816,6 +1052,7 @@ def ensure_builtin_worlds(
             f"builtin worlds directory {directory} does not exist; the"
             " builtin worlds cannot be seeded, so the open fails closed"
         )
+    packages: list[WorldPackage] = []
     for path in sorted(directory.glob("*.json")):
         loaded = load_world_package(path)
         if isinstance(loaded, Err):
@@ -870,3 +1107,5 @@ def ensure_builtin_worlds(
                     f" {line_id!r} not seeded:"
                     f" {seeded_line.error.message}"
                 )
+        packages.append(package)
+    return tuple(packages)

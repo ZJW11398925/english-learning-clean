@@ -1,7 +1,7 @@
 {
   "world_id": "world-berrymoor",
   "name": "Berrymoor",
-  "version": 5,
+  "version": 6,
   "calendar_start": "2025-09-14",
   "setting": [
     "Berrymoor is a small harbour town on a cold coast, where the fishing boats come in with the morning tide and the day is measured by the water. The harbour path runs from the stone quay to the bindery steps, and half the town walks it twice a day without thinking about it. The sea is never far from any conversation: it decides the fish, the weather, and most of the news.",
@@ -53,6 +53,122 @@
       "resolve_at": "The first hard frost decides the boatyard's winter — the refits secured, or the work gone up the coast for good."
     }
   ],
+  "voice": {
+    "Nell Alder": {
+      "speech_habits": "Measured and unhurried; two or three plain clauses to a sentence, joined by commas, with no hurry to reach the point. She explains a job the way she does it — in order, by hand.",
+      "never_says": ["can't", "impossible"],
+      "quirks": ["taps the awl twice on the bench before starting a job", "says 'there we are' when a piece is finished"],
+      "register": "Quiet tradesman's English — plain words, concrete nouns, no flourish; warmth shows in practical care, never in endearments.",
+      "motivation": "To keep the green door open and the tools in use — the shop is the last thing the Alders still do properly.",
+      "samples": {
+        "en": [
+          "The green ledger came apart at the spine, not the boards — that is the good news, and it is most of the news. I have the sections flattened under weight and I will sew them back on fresh tapes. Three days, if the weather keeps out of the shop.",
+          "You asked whether the old sign can stay. It can stay. I have rubbed the lettering back to the wood and I am painting it in again, the same shade, only this time the ground is dry before the paint goes on.",
+          "There we are. The clasp sits true now and the pages turn without catching. Come by on Saturday and tell me if it feels right in your hand — that is the only test that counts."
+        ],
+        "zh": [
+          "绿账簿坏的是书脊，不是封板——这是好消息，也几乎就是全部的消息。我已把书帖压平，会用新衬线重新缝上。三天，前提是天气不进店门。",
+          "你问那块旧招牌能不能留着。能留。我把字迹磨回木头，正在重新上漆，同一个色号，只是这回底子是干透的。",
+          "这就好了。扣子对得正，页子翻起来不再挂手。周六过来，自己掂一掂合不合手——那才是唯一算数的检验。"
+        ]
+      }
+    },
+    "Old Tam": {
+      "speech_habits": "Short and flat — four or five words where a sentence would do. He answers the question he was asked and stops; silence is part of how he talks.",
+      "never_says": ["thank", "please", "sorry"],
+      "quirks": ["wipes the counter before every answer, asked for or not", "calls every boat 'she', however small"],
+      "register": "Harbour-side bluntness: concrete, weathered, no courtesies and no adjectives that cost anything.",
+      "motivation": "To hold his corner of the quay steady, on the days the water is not.",
+      "samples": {
+        "en": [
+          "Cod's good today. Came in with the morning tide. Take the middle of the slab, not the edge — edge has been sitting.",
+          "You want it cleaned? Two minutes. Stand back from the board, the knife swings wide.",
+          "Storm coming tonight. Boats know it before the glass does. You'll hear them knocking on the harbour wall by dark."
+        ],
+        "zh": [
+          "今天的鳕鱼不错。晨潮带回来的。取鱼排中间，别拿边——边搁久了。",
+          "要收拾干净？两分钟。离案板远点，刀口抡得开。",
+          "今晚有风暴。船比气压计先知道。天黑前你能听见它们撞港墙。"
+        ]
+      }
+    },
+    "Mrs. Fenwick": {
+      "speech_habits": "Short sentences, one fact each, and she does not repeat herself. What she says is already the summary.",
+      "never_says": ["perhaps", "maybe", "I suppose"],
+      "quirks": ["taps the counter twice when a letter is franked", "reads a name twice before she says it aloud"],
+      "register": "Post-office English — plain, exact, a little formal in the way of forms; no small talk unless it carries information.",
+      "motivation": "To see the town's letters out and back without one of them going astray.",
+      "samples": {
+        "en": [
+          "Your parcel came on Tuesday. Second delivery. It is behind the counter; bring the slip.",
+          "The London post goes at four. Anything after four waits for tomorrow. That is the rule, not my rule.",
+          "There is a letter here for you. The hand is careful; the address is right; it has been to Kerrow first and come back. You will want to open it at home."
+        ],
+        "zh": [
+          "你的包裹周二到的。第二班。还搁在柜台后头，带单据来。",
+          "寄伦敦的信四点发。四点以后的等明天。这是规矩，不是我的规矩。",
+          "这儿有你一封信。字写得很稳；地址没错；它先去了一趟克罗又回来。你大概想拿回家再拆。"
+        ]
+      }
+    },
+    "Silas Croft": {
+      "speech_habits": "Spare and deliberate; he lets a sentence stand and does not dress it. Maritime when a boat is the subject, plain when a person is.",
+      "never_says": ["lost cause", "hopeless"],
+      "quirks": ["says 'she'll hold' about boats, and rarely about people", "checks the sky before answering anything"],
+      "register": "Boatyard English — technical words worn smooth, dry understatement, no ornament beyond one sea figure at a time.",
+      "motivation": "To get the winter refits done and keep the yard's name on the quay where his father left it.",
+      "samples": {
+        "en": [
+          "The Nancy's strakes are sound; it is the caulking that has gone. She will hold another winter if I get her out before the frost. I would not leave her in past October.",
+          "Two more hands would see the refits done by the first gale. I have not asked for them. Asking has a price on this quay.",
+          "You want plain words, so: the boat is worth mending, the yard is worth keeping, and I am not certain of either by next spring. Both things can be true at once."
+        ],
+        "zh": [
+          "南希号的船板是好的，坏的是捻缝。冻前把她拖上来，她还能撑一个冬天。过了十月我可不敢把她留在水里。",
+          "再有两个帮手，第一场大风前就能把检修做完。我没开口要。在这码头，开口是有价钱的。",
+          "你要实话，那就直说：船值得修，船坞值得留，可到明春这两样我都不敢打包票。两件事能同时为真。"
+        ]
+      }
+    },
+    "Edie Marsh": {
+      "speech_habits": "Warm and quick — two clauses and a laugh in between. She asks after people before she asks for anything.",
+      "never_says": ["stale", "sour"],
+      "quirks": ["slips a broken roll to whoever is standing closest", "greets regulars by what they bought last week"],
+      "register": "Market-stall English — homely and generous, things said while the hands are busy; the early stall's smell of yeast and salt is in it.",
+      "motivation": "To be the first warm thing in the town's morning, in every weather the harbour sends.",
+      "samples": {
+        "en": [
+          "You're the one who takes the seeded loaf. Still warm — I pulled it out before the bell. Take it while the crust still talks.",
+          "The fog came up off the harbour this morning and the whole stall smelled of yeast and salt at once. Best morning of the week, that.",
+          "No, put your coin away. That one leaned against the tray and it's not fit to sell — it's fit to eat, though, if you'll do me the kindness."
+        ],
+        "zh": [
+          "你就是买籽面包的那位。还热着——铃响前我把它拎出来的。趁脆皮还响，拿走吧。",
+          "今早雾从港里漫上来，一整个摊子又是酵母味又是海盐味。一周里最好的早晨，就是这个。",
+          "别，把钱收起来。那个靠在盘子上歪了，卖是不好卖——吃倒是好吃，你肯赏脸的话。"
+        ]
+      }
+    },
+    "Hester Cowley": {
+      "speech_habits": "Precise and dry; she notices the one detail that gives a day away and sets it down without comment. Sentences end where the thought ends.",
+      "never_says": ["stupid", "lazy"],
+      "quirks": ["counts the room's chairs when she is thinking", "writes the date on every note she sends"],
+      "register": "Schoolroom English — exact and quiet, the habit of naming the thing rather than the feeling, with dry humour under it.",
+      "motivation": "To keep the schoolroom's twelve chairs filled, and to notice which child each chair is waiting for.",
+      "samples": {
+        "en": [
+          "Twelve chairs, eleven children — the twelfth is the dog, who attends most days and is never asked to recite. I mark him present anyway.",
+          "Your girl reads a year above her age and writes two years behind it. Both are true and neither is a verdict; the second is simply the one we can work on.",
+          "I have set them to copy the market list. They take to handwriting better from words that mean something — a child will forgive a long word, but never a pointless one."
+        ],
+        "zh": [
+          "十二把椅子，十一个孩子——第十二把是那条狗，它大多日子都来，从不被要求背书。我照样给它记出勤。",
+          "你家姑娘的阅读高过年龄一岁，写字落后年龄两岁。两样都是真的，都不是判决；要紧的只是后一样我们能下功夫。",
+          "我让他们抄集市上的清单。练字要从有意义的词里练——又长又没意思的词，孩子是不买账的。"
+        ]
+      }
+    }
+  },
   "event_pool": [
     {
       "kind": "harbour_fog",

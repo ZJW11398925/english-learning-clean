@@ -20,7 +20,7 @@ writes the other. Pin groups:
    ``list_storylines`` reads every lifecycle word in id order;
    ``active_storylines`` is the two-layer read (structure ``active``
    **and** no CURRENT resolved claim under the line's key);
-3. **package v5** — the loader decodes the optional
+3. **package v6** — the loader decodes the optional
    ``initial_storylines`` section strictly (``{theme, resolve_at}``
    pairs; absent / empty legal; malformed refused naming the entry),
    the shipped Berrymoor file carries its opening arcs, and the seed
@@ -451,12 +451,13 @@ def test_active_storylines_are_scoped_to_their_world(
 
 
 # ---------------------------------------------------------------------------
-# 3 — package v5 and the seed (VAL ③)
+# 3 — package v6 and the seed (VAL ③)
 # ---------------------------------------------------------------------------
 
 
 def _payload() -> dict[str, object]:
-    """One minimal valid v5 package payload — the negative tests mutate
+    """One minimal valid package payload (the loader's own v6) — the
+    negative tests mutate
     a copy of this and expect the loader to refuse the copy, never the
     shipped Berrymoor file."""
 
@@ -497,7 +498,7 @@ def test_v5_storylines_decode_and_absent_is_legal(tmp_path: Path) -> None:
     ]
     loaded = load_world_package(_write_package(tmp_path, payload, "a.json"))
     assert isinstance(loaded, Ok), loaded.error.message
-    assert loaded.value.version == WORLD_PACKAGE_VERSION == 5
+    assert loaded.value.version == WORLD_PACKAGE_VERSION == 6
     assert loaded.value.initial_storylines == (
         ("theme one", "resolve one"),
         ("theme two", "resolve two"),
@@ -549,7 +550,7 @@ def test_the_shipped_package_carries_its_opening_arcs() -> None:
     loaded = load_world_package(PACKAGE_PATH)
     assert isinstance(loaded, Ok), loaded.error.message
     package = loaded.value
-    assert package.version == WORLD_PACKAGE_VERSION == 5
+    assert package.version == WORLD_PACKAGE_VERSION == 6
     assert 1 <= len(package.initial_storylines) <= 3
     for theme, resolve_at in package.initial_storylines:
         assert isinstance(theme, str) and theme.strip()

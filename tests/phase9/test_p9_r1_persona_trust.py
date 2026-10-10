@@ -561,7 +561,10 @@ def test_the_persona_rows_split_the_canonical_columns() -> None:
     — the eight free-text columns plus ``generation_policy`` and
     ``lore_refs``, which the review's MEDIUM-1 showed still punched through —
     renders inside the frame, in the canonical §5.1 column order, no column
-    missing and none added."""
+    missing and none added. C3 (DEC-OPI-a4cf2d0e…6) adds the one row that is
+    not a card column: ``voice``, the world package's voice library, framed
+    in its own ``persona-voice`` block right after the card's — the card's
+    ten columns stay exactly ten."""
 
     rows = [row for row in PROMPT_FIELD_TRUST if row[0] == "persona"]
     assert [field for _, field, trust, _ in rows if trust == "trusted"] == [
@@ -572,8 +575,13 @@ def test_the_persona_rows_split_the_canonical_columns() -> None:
         "style_constraints",
         "forbidden_claims",
     ]
+    # C3 随迁（DEC-OPI-a4cf2d0e…6）：voice 不是卡列——它是世界包 v6 的
+    # 角色声音库（域三），由编译器渲染为卡块之后自己的 ``persona-voice``
+    # 框块（该块的渲染、转义与 None 兼容臂由 C3 自己的钉族承担：
+    # tests/persona/test_c3_voice_prompt.py）。本钉保持原形：被声明的
+    # persona 行集 = 卡列 + voice，一列不多不少。
     assert [field for _, field, trust, _ in rows if trust == "untrusted"] == (
-        list(FREE_TEXT_COLUMNS) + list(CARD_ROW_COLUMNS)
+        list(FREE_TEXT_COLUMNS) + list(CARD_ROW_COLUMNS) + ["voice"]
     )
     carriers = {field: carrier for _, field, _, carrier in rows}
     for field in CARD_ROW_COLUMNS:
@@ -786,7 +794,15 @@ def test_the_untrusted_rows_render_only_inside_their_frames() -> None:
         for row in PROMPT_FIELD_TRUST
         if row[2] == "untrusted"
     ]
-    assert set(rows) == set(expected) | {("history", "turn_text")}
+    # C3 随迁（DEC-OPI-a4cf2d0e…6）：声明行集新增 ("persona", "voice")。本
+    # 测试的请求不携带 voice 视图（诚实零臂），故该行的**值级**渲染钉由
+    # C3 自己的钉族承担（tests/persona/test_c3_voice_prompt.py：frame /
+    # escaped / None 兼容）；此处保持本钉的原形——声明集与渲染集逐一对应，
+    # 未携带视图的行在此没有值可查。
+    assert set(rows) == set(expected) | {
+        ("history", "turn_text"),
+        ("persona", "voice"),
+    }
     for key, value in expected.items():
         section, field = key
         frame = _frame_of(text, section)
