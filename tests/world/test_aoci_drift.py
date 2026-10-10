@@ -1,0 +1,218 @@
+"""AOCI-CODE drift pins — the six entries the C programme left behind
+stay true (the aoci catch-up cut, DEC-OPI-a4cf2d0e…30).
+
+``aoci.code.txt`` is the repository's cognition ledger: one line per
+file, the one-hop index a reader trusts when deciding what that file
+is. C1-b through C4 moved live faces — the beats' ``effects`` /
+``participants`` proposals, the letter-read reaction bridge, the
+storyline layer, the voice library and the craft laws — without
+carrying their entries along, and the 0028 migration arrived with no
+entry at all. This module pins the six caught-up entries to the
+strings the live source carries today: the next drift is a red test,
+never a silent ledger lie.
+
+Two kinds of pin:
+
+* keyword pins — each entry carries the words its new faces own
+  (``letter_response``, ``terminal_stop_kinds``, ``effects`` /
+  ``participants``, the four narrator section headers, ``v6``, the
+  ``initial_storylines`` / ``voice`` sections);
+* coherence pins — where an entry quotes a live constant or a section
+  header, the source file must carry the same string, so a cut that
+  renames one side alone is caught.
+
+The coverage law closes the class: every ``migrations/*.sql`` file
+carries an entry in the ledger's migrations section — the 0028 case,
+generalized.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[2]
+AOCI_FILE = REPO / "aoci.code.txt"
+MIGRATIONS_DIR = REPO / "migrations"
+NARRATOR_SOURCE = REPO / "src" / "elc" / "world" / "narrator.py"
+PACKAGE_SOURCE = REPO / "src" / "elc" / "world" / "package.py"
+
+#: The six tags this cut caught up, each on its own line (the layout
+#: law the last test re-checks).
+TOUCHED_TAGS = (
+    "web.py[EC8L]",
+    "orchestrate.py[DB7T]",
+    "narrator.py[EW8T]",
+    "package.py[W14A]",
+    "berrymoor.json[FQ8W]",
+    "0028_world_storyline.sql[PD7T]",
+)
+
+
+def _ledger_text() -> str:
+    return AOCI_FILE.read_text(encoding="utf-8")
+
+
+def _entry_line(tag: str) -> str:
+    """One entry, exactly one — a tag that vanished or split is a drift
+    this module exists to catch."""
+
+    hits = [
+        line for line in _ledger_text().split("\n") if line.startswith(tag)
+    ]
+    assert len(hits) == 1, f"aoci entry {tag!r}: {len(hits)} lines start with it"
+    return hits[0]
+
+
+def _migrations_section() -> list[str]:
+    """The ledger's migrations section: its header up to the next
+    directory header."""
+
+    lines = _ledger_text().split("\n")
+    start = next(
+        index
+        for index, line in enumerate(lines)
+        if line.startswith("===D:/english-learning-clean/migrations/===")
+    )
+    end = next(
+        index
+        for index in range(start + 1, len(lines))
+        if lines[index].startswith("===D:")
+    )
+    return lines[start + 1 : end]
+
+
+def test_web_entry_carries_the_letter_response_face() -> None:
+    """C1.5's projection read face (DEC-OPI-b290799a…36): the per-world
+    key, the defensive read and the write half are the web entry's own
+    words."""
+
+    entry = _entry_line("web.py[EC8L]")
+    for keyword in (
+        "letter_response",
+        "_world_letter_response",
+        "world_letter_response:<world_id>",
+        "_record_letter_response_projection",
+    ):
+        assert keyword in entry
+
+
+def test_orchestrate_entry_carries_the_bridge_and_the_terminal_stop() -> None:
+    """C1.5 / C2 / C1-aR v2 (DEC-OPI-b290799a…36 / …45 / …9): the step's
+    two pass-through faces, the RESPONSE-word run terminalization and
+    the caller's trigger backfill."""
+
+    entry = _entry_line("orchestrate.py[DB7T]")
+    for keyword in (
+        "letter_response",
+        "active_storylines",
+        "terminal_stop_kinds",
+        "letter_arrives",
+        "awaits_you",
+        "terminalize_run",
+        "adopt_trigger_turn",
+    ):
+        assert keyword in entry
+
+
+def test_narrator_entry_carries_the_five_prompt_faces() -> None:
+    """C1-b / C1.5 / C2 / C3 / C4: the optional beat keys, the reaction
+    section, the storyline section, the voices section and the
+    unconditional craft laws — the five faces the entry was missing."""
+
+    entry = _entry_line("narrator.py[EW8T]")
+    for keyword in (
+        "effects",
+        "participants",
+        "state_facts",
+        "== She has read the letter ==",
+        "== Active storylines ==",
+        "== The cast's own voices ==",
+        "== The craft laws ==",
+    ):
+        assert keyword in entry
+
+
+def test_narrator_entry_headers_match_the_live_source() -> None:
+    """Coherence: the four section headers the entry quotes are the
+    source's own strings — renaming one side alone reddens this."""
+
+    entry = _entry_line("narrator.py[EW8T]")
+    source = NARRATOR_SOURCE.read_text(encoding="utf-8")
+    for header in (
+        "== She has read the letter ==",
+        "== Active storylines ==",
+        "== The cast's own voices ==",
+        "== The craft laws ==",
+    ):
+        assert header in entry
+        assert header in source
+
+
+def test_package_entry_reads_v6_and_matches_the_live_constant() -> None:
+    """The v6 wall (C2 → v5, C3 → v6, DEC-OPI-b290799a…45 /
+    DEC-OPI-a4cf2d0e…6): the stale v4 claim is gone, the v5/v6 decode
+    law rides the entry, and the number is the source's own."""
+
+    entry = _entry_line("package.py[W14A]")
+    assert "WORLD_PACKAGE_VERSION=6" in entry
+    assert "v6 墙" in entry
+    assert "version≠4" not in entry  # the stale claim this cut replaced
+    for keyword in ("initial_storylines", "voice 可选节", "voice_for"):
+        assert keyword in entry
+    assert "WORLD_PACKAGE_VERSION = 6" in PACKAGE_SOURCE.read_text(
+        encoding="utf-8"
+    )
+
+
+def test_berrymoor_entry_carries_the_v5_arcs_and_the_v6_voices() -> None:
+    """C2's two opening arcs and C3's six-character bilingual voice
+    library are the shipped package's own content."""
+
+    entry = _entry_line("berrymoor.json[FQ8W]")
+    for keyword in (
+        "initial_storylines",
+        "voice",
+        "Alder & Son",
+        "Silas Croft",
+        "speech_habits",
+        "samples",
+    ):
+        assert keyword in entry
+
+
+def test_the_storyline_migration_carries_its_entry() -> None:
+    """0028 (C2, DEC-OPI-b290799a…45): the migration arrived without an
+    entry — the debt this cut closes; its shape stays pinned too."""
+
+    entry = _entry_line("0028_world_storyline.sql[PD7T]")
+    assert entry in _migrations_section()
+    for keyword in (
+        "world_storyline",
+        "opened_by",
+        "('active','resolved','settled')",
+        "resolve_at",
+        "双 stamp '28'",
+    ):
+        assert keyword in entry
+
+
+def test_every_migration_file_carries_a_ledger_entry() -> None:
+    """The coverage law, generalized from the 0028 case: a migration
+    with no entry is exactly the drift the entry debt left."""
+
+    section = "\n".join(_migrations_section())
+    files = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
+    assert len(files) > 0, "the migrations directory is empty — wrong path"
+    for name in files:
+        assert f"{name}[" in section, f"migration {name!r} has no ledger entry"
+
+
+def test_the_six_touched_entries_are_single_lines() -> None:
+    """The ledger's layout law for the touched entries: one line each,
+    tag at the start, no carriage returns — a split or duplicated
+    entry is drift too."""
+
+    assert "\r" not in _ledger_text()
+    lines = _ledger_text().split("\n")
+    for tag in TOUCHED_TAGS:
+        assert sum(1 for line in lines if line.startswith(tag)) == 1, tag
