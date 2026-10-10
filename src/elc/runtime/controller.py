@@ -1106,10 +1106,12 @@ class ConversationCoordinator:
     - ``world_chronicle``
       (``elc.world_lore.types.WorldChronicleQueries``): the
       conversation→world-chronicle read port — the composition root's
-      binding-table lookup plus the world store's own ``chronicle_of``
+      binding-table lookup plus the world store's own ``chronicle_of``,
+      filtered to the bound actor's cognitive view (the public events
+      plus the ones she took part in — C1-c, DEC-OPI-b290799a…25) and
       sliced to the recent window. At each GenerationContext site the
       view is resolved for the turn's own conversation (the recent
-      events of the world she lives in, oldest first) and handed to the
+      events of the world she knows, oldest first) and handed to the
       compiler, whose framed ``[recent_world_events]`` section renders
       it. The degradation is the lore view's own shape
       (``_world_chronicle_view_for``): no port → ``None`` (byte-identical
