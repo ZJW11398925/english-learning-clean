@@ -281,7 +281,7 @@ def test_the_port_resolves_the_binding_characters_entry_not_the_first(
     package = {
         "world_id": "world-two-voices",
         "name": "Two Voices",
-        "version": 6,
+        "version": 7,
         "calendar_start": "2025-09-14",
         "setting": ["A small town."],
         "cast": [

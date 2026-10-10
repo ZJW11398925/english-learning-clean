@@ -12,7 +12,10 @@ an optional ``initial_storylines`` section (v5, C2: the world's opening
 arcs, ``{theme, resolve_at}`` pairs the seed lands as migration 0028's
 ``world_storyline`` rows), an optional ``voice`` section (v6, C3: the
 characters' own voice library — see :mod:`elc.world.voice` for the canon
-and the faces), the pre-authored event pool the engine draws
+and the faces), an optional ``user_character`` section (v7, D-1: the
+reader's own character in the town — her id, name, one-line anchor and
+home; prompt material and the ``participants`` vocabulary's extension,
+see :class:`UserCharacter`), the pre-authored event pool the engine draws
 from, and a supply
 declaration. :func:`load_world_package` decodes one
 file strictly — bad
@@ -20,7 +23,9 @@ JSON, a missing or unexpected key, a value of the wrong shape, an unknown
 moment word, an unknown supply family word, a name collision between
 a resident and the cast, a voice entry whose character name is not one
 of the town's own or whose ``samples`` sides are not
-:data:`~elc.world.voice.VOICE_SAMPLE_COUNT` passages each are all ``Err``
+:data:`~elc.world.voice.VOICE_SAMPLE_COUNT` passages each, a
+``user_character`` section outside its exact four-key non-empty-string
+shape are all ``Err``
 refusals
 whose message names the offending key or word — and
 :func:`ensure_builtin_worlds` seeds every ``*.json`` in a directory
@@ -76,6 +81,7 @@ __all__ = [
     "CastMember",
     "Resident",
     "SupplyDeclaration",
+    "UserCharacter",
     "WorldPackage",
     "WorldPackageError",
     "ensure_builtin_worlds",
@@ -106,18 +112,19 @@ SUPPLY_FAMILY_WORDS: tuple[str, ...] = (
     "STANCE",
 )
 
-#: The package schema version this loader reads (v6, C3 /
-#: DEC-OPI-a4cf2d0e…6): every v5 face is kept (the bilingual pool
+#: The package schema version this loader reads (v7, D-1 /
+#: DEC-OPI-a4cf2d0e…40): every v6 face is kept (the bilingual pool
 #: events, ``calendar_start``, an optional cast ``vignette``, an optional
-#: ``residents`` section and an optional ``initial_storylines`` section),
-#: plus the v6 addition — an optional ``voice`` section naming the
-#: characters' own voice library (speech habits, taboos, quirks, bilingual
-#: samples and register, plus the optional ``motivation``; the canon is
-#: :mod:`elc.world.voice`). A document stamped with any other version
-#: is a refusal naming the number — a v5-and-below file cannot ride in
-#: half-read, and a future v7 must be read by the cut that writes it,
+#: ``residents`` section, an optional ``initial_storylines`` section and
+#: the optional ``voice`` library), plus the v7 addition — an optional
+#: ``user_character`` section naming the reader's own character in the
+#: town (her id — the ``participants`` vocabulary's extension — her name,
+#: a one-line anchor and her home; the shape is :class:`UserCharacter`).
+#: A document stamped with any other version
+#: is a refusal naming the number — a v6-and-below file cannot ride in
+#: half-read, and a future v8 must be read by the cut that writes it,
 #: never guessed at by this one.
-WORLD_PACKAGE_VERSION = 6
+WORLD_PACKAGE_VERSION = 7
 
 
 class WorldPackageError(RuntimeError):
@@ -157,6 +164,35 @@ class Resident:
     name: str
     role: str
     vignette: str
+
+
+@dataclass(frozen=True)
+class UserCharacter:
+    """The reader's own character in the town (v7, D-1 /
+    DEC-OPI-a4cf2d0e…40 — the design supplement
+    ``docs/IMPLEMENTATION_PLAN.md`` §19's first engineering meaning).
+
+    The world's player is **a resident of the town**, not an outside
+    observer (living-world-spec §3.2 v2.2): ``id`` is the durable
+    participant id the chronicle's ``participants`` column may name
+    (beside the cast's persona ids — the narrator's teaching names it,
+    the parser verifies the union), ``name`` what the world calls her,
+    ``anchor`` one line saying who she is here, and ``home`` where she
+    lives. All four are required non-empty strings (a half-drawn
+    resident would ride the narrator's prompt as a half-drawn person).
+
+    Prompt material end to end, plus the id's one parser seat: no
+    persona, no character card, no actor binding, no store column —
+    the section is the world package's declaration, nothing more. The
+    name is the package's default; a later cut may let the user's own
+    name override it (the settings face's business, never the
+    loader's).
+    """
+
+    id: str
+    name: str
+    anchor: str
+    home: str
 
 
 @dataclass(frozen=True)
@@ -225,7 +261,15 @@ class WorldPackage:
     no-library world, and the byte-identical prompt law's other half: a
     package without voices renders exactly the pre-v6 bytes on both
     prompt faces. The face is prompt material end to end: no store
-    column, no actor binding, no seed row."""
+    column, no actor binding, no seed row.
+
+    v7 (D-1, DEC-OPI-a4cf2d0e…40): ``user_character`` is the reader's
+    own character in the town (:class:`UserCharacter`) — the world
+    knows who lives here. The section's absence decodes to ``None``:
+    an honest world without a declared player, whose prompt is exactly
+    the pre-v7 bytes on both faces and whose ``participants``
+    vocabulary is exactly the cast roster (the conditional law).
+    """
 
     world_id: str
     name: str
@@ -239,6 +283,7 @@ class WorldPackage:
     residents: tuple[Resident, ...] = ()
     initial_storylines: tuple[tuple[str, str], ...] = ()
     voice: tuple[tuple[str, CharacterVoice], ...] = ()
+    user_character: UserCharacter | None = None
 
     def to_event_pool(self) -> tuple[PoolEvent, ...]:
         """The engine's pool argument, as loaded (no re-decode)."""
@@ -285,12 +330,21 @@ _PACKAGE_KEYS = (
     "event_pool",
     "supply",
 )
-#: The optional top-level sections (v4, wr-9; v5, C2; v6, C3): absent is
-#: legal, present is decoded strictly — a section is never half-read.
-_PACKAGE_OPTIONAL_KEYS = ("residents", "initial_storylines", "voice")
+#: The optional top-level sections (v4, wr-9; v5, C2; v6, C3; v7, D-1):
+#: absent is legal, present is decoded strictly — a section is never
+#: half-read.
+_PACKAGE_OPTIONAL_KEYS = (
+    "residents",
+    "initial_storylines",
+    "voice",
+    "user_character",
+)
 _CAST_KEYS = ("persona_id", "name")
 _CAST_OPTIONAL_KEYS = ("vignette",)
 _RESIDENT_KEYS = ("name", "role", "vignette")
+#: The v7 ``user_character`` section's exact keys, all required
+#: non-empty strings.
+_USER_CHARACTER_KEYS = ("id", "name", "anchor", "home")
 _EVENT_REQUIRED_KEYS = ("kind", "narration", "narration_zh", "days")
 _EVENT_KEYS = (
     "kind",
@@ -399,6 +453,35 @@ def _decode_resident(entry: object, where: str) -> Result[Resident]:
     return Ok(
         Resident(
             name=entry["name"], role=entry["role"], vignette=entry["vignette"]
+        )
+    )
+
+
+def _decode_user_character(value: object, where: str) -> Result[UserCharacter]:
+    """The optional v7 ``user_character`` section (D-1): exactly
+    ``{id, name, anchor, home}``, all four required non-empty strings, no
+    other key (a missing or unexpected key, or a wrong scalar shape, is
+    a refusal naming it — the residents decoder's posture, because the
+    section rides the narrator's prompt the same way)."""
+
+    if not isinstance(value, dict):
+        return _err(f"{where}: not a JSON object")
+    for key in _USER_CHARACTER_KEYS:
+        if key not in value:
+            return _err(f"{where}: key {key!r} is missing")
+    for key in value:
+        if key not in _USER_CHARACTER_KEYS:
+            return _err(f"{where}: unexpected key {key!r}")
+    for key in _USER_CHARACTER_KEYS:
+        raw = value[key]
+        if not isinstance(raw, str) or not raw.strip():
+            return _err(f"{where}: {key!r} must be a non-empty string")
+    return Ok(
+        UserCharacter(
+            id=value["id"],
+            name=value["name"],
+            anchor=value["anchor"],
+            home=value["home"],
         )
     )
 
@@ -731,17 +814,19 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
     Every refusal is an ``Err`` naming the file and the offending key or
     word: unreadable file, bad JSON, a non-object document, a missing or
     unexpected top-level key, a value of the wrong shape, a version other
-    than :data:`WORLD_PACKAGE_VERSION` (v6 — the v5 face kept, plus an
-    optional ``voice`` section), a
+    than :data:`WORLD_PACKAGE_VERSION` (v7 — the v6 face kept, plus an
+    optional ``user_character`` section), a
     duplicated event kind, an unknown moment word, an unknown supply
     family word, a resident whose name collides with the cast's or with
     another resident's (case-insensitively), an ``initial_storylines``
-    entry outside the exact ``{theme, resolve_at}`` shape, and — v6 — a
+    entry outside the exact ``{theme, resolve_at}`` shape, a v6
     ``voice`` entry whose character name is neither the cast's nor a
-    resident's, whose name collides with another entry's, whose shape is
+    resident's — whose name collides with another entry's, whose shape is
     not the canon's five keys (plus the optional ``motivation``), whose
     ``quirks`` exceed the ceiling or whose ``samples`` sides are not
-    :data:`~elc.world.voice.VOICE_SAMPLE_COUNT` passages each. The loader
+    :data:`~elc.world.voice.VOICE_SAMPLE_COUNT` passages each — and a
+    v7 ``user_character`` section outside its exact four-key
+    non-empty-string shape. The loader
     never guesses
     past an error — fail-closed decoding, the caller decides what a
     refusal means (the builtin seed answers: a failed open).
@@ -776,10 +861,10 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
     if version != WORLD_PACKAGE_VERSION:
         return _err(
             f"{where}: version must be {WORLD_PACKAGE_VERSION} (this"
-            f" loader reads v{WORLD_PACKAGE_VERSION} packages — the v5"
-            " face kept, plus an optional voice section carrying the"
-            " characters' own voice library;"
-            " v5-and-below files are refused rather than read half-way),"
+            f" loader reads v{WORLD_PACKAGE_VERSION} packages — the v6"
+            " face kept, plus an optional user_character section naming"
+            " the reader's own character in the town;"
+            " v6-and-below files are refused rather than read half-way),"
             f" got {version}"
         )
     calendar_start = document["calendar_start"]
@@ -878,6 +963,21 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
     decoded_supply = _decode_supply(document["supply"], f"{where}: supply")
     if isinstance(decoded_supply, Err):
         return decoded_supply
+    # v7 (D-1, DEC-OPI-a4cf2d0e…40): the reader's own character — decoded
+    # after the town's own faces (the section is prompt material and the
+    # participants vocabulary's one extension; the town's name-space
+    # checks are the cast's and the residents', unchanged). Absent
+    # decodes to ``None`` — the honest world without a declared player;
+    # an explicit ``null`` is present-but-wrong-shape and refused, the
+    # residents / voice siblings' own posture.
+    user_character: UserCharacter | None = None
+    if "user_character" in document:
+        decoded_user = _decode_user_character(
+            document["user_character"], f"{where}: user_character"
+        )
+        if isinstance(decoded_user, Err):
+            return decoded_user
+        user_character = decoded_user.value
     return Ok(
         WorldPackage(
             world_id=world_id,
@@ -892,6 +992,7 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
             residents=tuple(residents),
             initial_storylines=decoded_storylines.value,
             voice=decoded_voice.value,
+            user_character=user_character,
         )
     )
 
@@ -1037,7 +1138,12 @@ def ensure_builtin_worlds(
     idempotent ``create_storyline`` under the derived line ids (see
     :func:`_line_id_for`) — a re-seed re-derives the same ids and
     rewrites nothing. The v6 ``voice`` section seeds nothing: it is
-    prompt material, and the returned package carries it whole.
+    prompt material, and the returned package carries it whole. The v7
+    ``user_character`` section seeds nothing either — no persona, no
+    actor binding, no row: it is prompt material plus the
+    ``participants`` vocabulary's one extension, and the returned
+    package carries it whole (the narrator and the chronicle read are
+    its consumers, not this seed).
 
     Every failure raises :class:`WorldPackageError` — the composition
     root's open fails closed (the ``world_lore`` seed posture: a database

@@ -11,7 +11,7 @@ pin groups:
    entries (the cast's Nell Alder plus the five residents; one
    name-space, the residents law continued), the lookup is
    case-insensitive, an absent section and an empty object are the same
-   honest zero, and the version wall now stands at v6;
+   honest zero, and the version wall now stands at v7;
 2. **the strict refusals** — a name outside the town, a name colliding
    case-insensitively with another entry's, a missing / unexpected key, a
    wrong scalar shape, the quirks ceiling, a duplicated taboo or quirk, a
@@ -81,7 +81,7 @@ def _shipped() -> WorldPackage:
 
 
 def _minimal_payload() -> dict[str, object]:
-    """One minimal valid v6 payload — the negative tests mutate a copy of
+    """One minimal valid v7 payload — the negative tests mutate a copy of
     this; the optional sections are absent."""
 
     return {
@@ -146,7 +146,8 @@ def _refusal(tmp_path: Path, voice: object) -> str:
 
 
 def test_the_shipped_package_carries_the_six_characters_voices() -> None:
-    """Berrymoor v6: one voice entry per character the town names — the
+    """Berrymoor's v6 voice library: one voice entry per character the
+    town names — the
     cast's Nell Alder plus the five residents — each with the five canon
     faces, the bilingual 3 + 3 pair, and the optional motivation."""
 
@@ -195,16 +196,16 @@ def test_an_absent_or_empty_library_is_the_same_honest_zero(
     assert empty.value.voice == ()
 
 
-def test_a_v5_stamp_is_refused_by_the_v6_wall(tmp_path: Path) -> None:
-    """The version wall moved with the version: v5 — and a fortiori every
+def test_a_v6_stamp_is_refused_by_the_v7_wall(tmp_path: Path) -> None:
+    """The version wall moved with the version: v6 — and a fortiori every
     below-version — is refused with both numbers in the message."""
 
     payload = _minimal_payload()
-    payload["version"] = 5
+    payload["version"] = 6
     result = load_world_package(_write_package(tmp_path, payload))
     assert isinstance(result, Err)
-    assert "version must be 6" in result.error.message
-    assert "got 5" in result.error.message
+    assert "version must be 7" in result.error.message
+    assert "got 6" in result.error.message
 
 
 # ---------------------------------------------------------------------------

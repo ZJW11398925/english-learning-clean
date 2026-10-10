@@ -12,7 +12,17 @@ those passages, never like an abstract description (C3,
 DEC-OPI-a4cf2d0e…6) — and the whole
 CURRENT lore fact set), the cast-id roster (C1-b: every cast member's
 id beside the name the prose knows — the only ids a beat's
-``participants`` may name), the current-state section (C1-b: the
+``participants`` may name among the cast), the reader's-character
+block (D-1, v7, DEC-OPI-a4cf2d0e…40: right after the roster, when the
+package declares a ``user_character`` section — the line ``Your
+character: {name} — {anchor}`` and the teaching that she is a resident
+of the town, not a bystander: you may write her into the beats — a
+beat that carries her names her id (cast ids ∪ {her declared id}, the
+parser's own vocabulary) in its ``participants`` beside the cast ids —
+and she lives her days here even while she is not writing right now,
+an existence statement never a generation instruction (R5: the
+immersive 「替你活」 generation is the later cut's)), the
+current-state section (C1-b: the
 state projection's CURRENT half as ``key: statement`` lines, when the
 caller carries any — the live state board the ``effects`` proposals
 write onto), the recent chronicle (the last eight narrations,
@@ -757,7 +767,24 @@ def build_narrator_prompt(
     prompt (the C1-a golden, the lr-3 assembly) was consciously re-cast
     for it. The English stock-phrase blacklist stays empty for now (P3:
     it waits for English dogfood signals — 双语各维护一份，英文那份无
-    信号则无内容)."""
+    信号则无内容).
+
+    D-1 (DEC-OPI-a4cf2d0e…40, v7, the design supplement §19's second
+    engineering meaning): when the package carries a ``user_character``
+    section the prompt adds, right after the cast-id roster, one
+    **contiguous** block — ``Your character: {name} — {anchor}`` and the
+    teaching that she is a resident of the town, not a bystander: you
+    may write her into your beats — a beat that carries her names her
+    id (the parser's vocabulary extension, R3: cast ids ∪ {her declared
+    id}) in its ``participants``, beside the cast ids — and she lives
+    her days here even while she is not writing right now. That last
+    clause is an **existence statement, never a generation
+    instruction** (R5): the immersive 「替你活」 generation is the
+    later cut's, and this prompt does not ask for her actions. The
+    block is self-contained: splice it out and the pre-v7 bytes come
+    back exactly (the conditional-section law's own testable form; the
+    roster line's own words and ids are untouched — only a package that
+    declares her gains anything)."""
 
     if ui_language not in _NARRATION_LANGUAGE:
         raise ValueError(
@@ -861,6 +888,31 @@ def build_narrator_prompt(
             f"{member.persona_id} = {member.name}" for member in package.cast
         )
     )
+    if package.user_character is not None:
+        # D-1's own block (R2/R3/R5), right after the roster: the two
+        # added paragraphs are **contiguous** — splice them out and the
+        # pre-v7 bytes come back exactly (the conditional-section law's
+        # own testable form). The reader's character is a resident of
+        # the town, not a bystander: you may write her into the beats —
+        # a beat that carries her names her id (the parser's vocabulary
+        # extension, R3: cast ids ∪ {her declared id}) in its
+        # ``participants``, beside the cast ids — and she lives her days
+        # here even while she is not writing right now. That last clause
+        # is an **existence statement, never a generation instruction**
+        # (R5): the immersive 「替你活」 generation is the later cut's
+        # business, not this prompt's.
+        user_character = package.user_character
+        sections.append(
+            f"Your character: {user_character.name} —"
+            f" {user_character.anchor}"
+        )
+        sections.append(
+            f"Your character ({user_character.id}) is a resident of the"
+            " town, not a bystander: you may write her into your beats —"
+            " a beat that carries her names her id in its"
+            " ``participants``, beside the cast ids — and she lives her"
+            " days here even while she is not writing right now."
+        )
     if package.residents:
         sections.append("== The town's residents ==")
         sections.extend(
@@ -1271,10 +1323,19 @@ class WorldNarrator:
         nothing), and the parse now verifies the answer's optional
         ``effects`` (shape and non-blankness — :class:`StateEffect`
         tuples out) and ``participants`` (each id a member of the
-        package's own cast roster, fail-closed on a stranger) beside
+        package's own roster, fail-closed on a stranger) beside
         the three required keys. The beats come out carrying their
         proposals and their named cast — the durable half lands them
         verbatim.
+
+        D-1 (DEC-OPI-a4cf2d0e…40, v7): the roster the parse verifies
+        against — and the roster the prompt teaches — carries one
+        declared extension when the package ships a ``user_character``
+        section: the reader's own id. A beat may name her beside the
+        cast (she is a resident of the town, and the co-lived event is
+        hers as much as the cast's — the chronicle's attribution is
+        what the cognitive view's user layer reads). A package without
+        the section answers exactly the pre-v7 vocabulary and prompt.
 
         C1.5 (DEC-OPI-b290799a…36, the intermediary-causality bridge):
         ``letter_response`` — the caller's *(reader persona id, summary
@@ -1307,7 +1368,20 @@ class WorldNarrator:
         retired pool.
         """
 
-        cast_ids = frozenset(member.persona_id for member in package.cast)
+        # C1-b's roster law, D-1's one extension (R3): the vocabulary a
+        # beat's ``participants`` may draw from is the package's own
+        # roster — the cast's persona ids, plus the user character's
+        # declared id when the package carries one (the reader is a
+        # resident of the town; the prompt teaches the same union). A
+        # stranger id still refuses the whole batch, fail-closed.
+        roster_ids = frozenset(
+            [member.persona_id for member in package.cast]
+            + (
+                [package.user_character.id]
+                if package.user_character is not None
+                else []
+            )
+        )
         prompt = CompiledPrompt(
             persona_id=NARRATOR_PERSONA_ID,
             prompt_text=build_narrator_prompt(
@@ -1355,12 +1429,12 @@ class WorldNarrator:
             )
         if output.text is None or not output.text.strip():
             return _refused("the provider answered no text")
-        return _parse_beats(output.text, cast_ids)
+        return _parse_beats(output.text, roster_ids)
 
 
 def _parse_beats(
     text: str,
-    cast_ids: frozenset[str],
+    roster_ids: frozenset[str],
 ) -> Result[
     tuple[
         tuple[GeneratedBeat, ...],
@@ -1377,7 +1451,9 @@ def _parse_beats(
     keys: an ``effects`` array (each element exactly ``key`` /
     ``statement``, both non-blank strings — the beat's state-effect
     proposals) and a ``participants`` array (each element a non-blank
-    string that must be one of ``cast_ids`` — the package's roster; a
+    string that must be one of ``roster_ids`` — the package's roster:
+    the cast's persona ids, plus D-1's one extension, the user
+    character's declared id when the package carries one; a
     stranger id refuses the whole batch, fail-closed), each candidate
     exactly ``label`` / ``hint``, both non-blank, the array none or
     :data:`MIN_DIRECTIONS` through :data:`MAX_DIRECTIONS`, and the stop
@@ -1491,8 +1567,10 @@ def _parse_beats(
         raw_participants = element.get("participants")
         participants: tuple[str, ...] = ()
         if raw_participants is not None:
-            # C1-b's roster law: every named participant is a cast id of
-            # this world's own package — a stranger refuses the whole
+            # C1-b's roster law, D-1's one extension: every named
+            # participant is an id of this world's own roster — the
+            # cast's persona ids plus (when the package declares one)
+            # the user character's id; a stranger refuses the whole
             # batch (fail-closed; the chronicle never carries a name the
             # world does not know).
             if not isinstance(raw_participants, list):
@@ -1507,10 +1585,10 @@ def _parse_beats(
                         f"beats[{index}].participants[{participant_index}]"
                         " is blank or not a string"
                     )
-                if participant not in cast_ids:
+                if participant not in roster_ids:
                     return _refused(
                         f"beats[{index}].participants[{participant_index}]"
-                        f" names {participant!r} — not a cast id of this"
+                        f" names {participant!r} — not an id of this"
                         " world's roster"
                     )
                 named.append(participant)

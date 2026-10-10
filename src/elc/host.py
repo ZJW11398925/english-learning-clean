@@ -353,7 +353,8 @@ class _SavedKeySource:
 class _WorldChroniclePort:
     """The conversation→world-chronicle read, wired from the real world
     leg (wr-12, DEC-OPI-c73dbff3…84 R3; the cognitive view since C1-c,
-    DEC-OPI-b290799a…27).
+    DEC-OPI-b290799a…27; the user layer since D-1,
+    DEC-OPI-a4cf2d0e…40).
 
     Exactly the one member the coordinator's ``WorldChronicleQueries``
     port names: the conversation's world **binding row** (the same
@@ -388,15 +389,38 @@ class _WorldChroniclePort:
     nothing she knows has happened yet"). The store leg is always
     present in this assembly (``SqliteWorldStore`` is built on both
     tiers), so the port is wired unconditionally.
+
+    D-1 (DEC-OPI-a4cf2d0e…40, v7 — the design supplement 域一 v1.2's
+    user layer): the witnessed arm gains its second half. When the
+    world's package declares a ``user_character`` section — the
+    assembly hands this port the ``world_id → user character id``
+    mapping read off the seeded packages (``None`` keeps the pre-D-1
+    filter: the tests' two-argument construction and any world whose
+    package declares no player) — the events that name the **user
+    character's declared id** among their ``participants`` are kept
+    too: the time she and the character lived through together is her
+    memory of the reader, not only the reader's memory of her (「你上周
+    帮她修了书架」是她的记忆). The filter stays order-preserving and
+    per-event; the window still slices **after** it, and a world the
+    mapping does not name (a user-created world, a package without the
+    section) keeps exactly the three-arm pre-D-1 law. A missing
+    mapping entry is not a failure and never a guess: an honest "this
+    world declares no player", never a fabricated co-presence.
     """
 
-    __slots__ = ("_conn", "_world")
+    __slots__ = ("_conn", "_world", "_user_character_ids")
 
     def __init__(
-        self, conn: sqlite3.Connection, world: SqliteWorldStore
+        self,
+        conn: sqlite3.Connection,
+        world: SqliteWorldStore,
+        user_character_ids: Mapping[str, str] | None = None,
     ) -> None:
         self._conn = conn
         self._world = world
+        self._user_character_ids: Mapping[str, str] = (
+            {} if user_character_ids is None else dict(user_character_ids)
+        )
 
     def resolve_world_chronicle_view(
         self, conversation_id: ConversationId
@@ -429,7 +453,12 @@ class _WorldChroniclePort:
             # the persona id the ``participants`` namespace spells (the
             # narrator's cast-id roster), keep the public events and the
             # ones she witnessed, drop the peopled ones that name only
-            # others. The filter is order-preserving, so the chronicle's
+            # others. D-1 (DEC-OPI-a4cf2d0e…40): the world's declared
+            # user character counts as witnessed company too — an event
+            # naming her id is a memory the character and the reader
+            # lived together (the user layer, 域一 v1.2), and a world
+            # without a declared player keeps exactly the pre-D-1
+            # filter. The filter is order-preserving, so the chronicle's
             # own (occurred_at, event_id) order survives the merge and
             # the window slices the kept newest — never an excluded one.
             persona_row = self._conn.execute(
@@ -448,10 +477,16 @@ class _WorldChroniclePort:
                     )
                 )
             persona_id = str(persona_row[0])
+            user_character_id = self._user_character_ids.get(str(row[0]))
             events = tuple(
                 event
                 for event in events
-                if not event.participants or persona_id in event.participants
+                if not event.participants
+                or persona_id in event.participants
+                or (
+                    user_character_id is not None
+                    and user_character_id in event.participants
+                )
             )
         recent = events[-RECENT_WORLD_EVENT_WINDOW:]
         return Ok(
@@ -994,12 +1029,6 @@ def open_host(
         # penpal real on any fresh database). User-created worlds are
         # still bound only by a caller asking the store.
         world_store = SqliteWorldStore(db, fence)
-        # wr-12 (DEC-OPI-c73dbff3…84): the conversation→world-chronicle
-        # port over the same store — wired unconditionally (the world
-        # store is built on both tiers), so every turn's reply prompt
-        # resolves the bound world's recent events (a conversation bound
-        # to no world degrades to no section, the coordinator's shape).
-        world_chronicle_port = _WorldChroniclePort(db, world_store)
 
         def _persona_exists(persona_id: str) -> bool:
             """The world seed's cast verification face: does this persona
@@ -1023,6 +1052,24 @@ def open_host(
                 persona_exists=_persona_exists,
             )
         }
+        # wr-12 (DEC-OPI-c73dbff3…84): the conversation→world-chronicle
+        # port over the same store — wired unconditionally (the world
+        # store is built on both tiers), so every turn's reply prompt
+        # resolves the bound world's recent events (a conversation bound
+        # to no world degrades to no section, the coordinator's shape).
+        # D-1 (DEC-OPI-a4cf2d0e…40): the cognitive view's user layer
+        # reads the same seeded packages — the ``world_id → user
+        # character id`` mapping a package declares (a world without the
+        # section contributes nothing, and the pre-D-1 filter stands for
+        # it), so the construction sits after the seed that read them.
+        world_user_characters: dict[str, str] = {
+            world_id: package.user_character.id
+            for world_id, package in world_voices.items()
+            if package.user_character is not None
+        }
+        world_chronicle_port = _WorldChroniclePort(
+            db, world_store, world_user_characters
+        )
         world_voice_port = _WorldVoicePort(db, world_voices)
         # The settings-page provider face's persisted leg (user veto: the
         # endpoint/model pair is page-settable). Read order is the opposite

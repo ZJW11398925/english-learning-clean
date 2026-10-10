@@ -24,6 +24,15 @@ Two kinds of pin:
 The coverage law closes the class: every ``migrations/*.sql`` file
 carries an entry in the ledger's migrations section — the 0028 case,
 generalized.
+
+D-1 (``DEC-OPI-a4cf2d0e…40``, the user-character cut) re-touches four
+of the entries in place — ``package.py`` (the v7 wall and the
+``user_character`` section), ``narrator.py`` (the ``Your character``
+line and the roster's vocabulary extension), ``berrymoor.json`` (the
+shipped player) and ``host.py`` (the seeded packages' mapping the
+cognitive view's user layer reads) — and the pins below carry the new
+faces the same way (the next touch is a red test, never a silent
+ledger lie).
 """
 
 from __future__ import annotations
@@ -177,35 +186,44 @@ def test_narrator_entry_headers_match_the_live_source() -> None:
         assert header in source
 
 
-def test_package_entry_reads_v6_and_matches_the_live_constant() -> None:
-    """The v6 wall (C2 → v5, C3 → v6, DEC-OPI-b290799a…45 /
-    DEC-OPI-a4cf2d0e…6): the stale v4 claim is gone, the v5/v6 decode
-    law rides the entry, and the number is the source's own."""
+def test_package_entry_reads_v7_and_matches_the_live_constant() -> None:
+    """The v7 wall (C2 → v5, C3 → v6, D-1 → v7, DEC-OPI-b290799a…45 /
+    DEC-OPI-a4cf2d0e…6 / …40): the stale v4 claim is gone, the v5/v6/v7
+    decode law rides the entry, and the number is the source's own."""
 
     entry = _entry_line("package.py[W14A]")
-    assert "WORLD_PACKAGE_VERSION=6" in entry
-    assert "v6 墙" in entry
+    assert "WORLD_PACKAGE_VERSION=7" in entry
+    assert "v7 墙" in entry
     assert "version≠4" not in entry  # the stale claim this cut replaced
-    for keyword in ("initial_storylines", "voice 可选节", "voice_for"):
+    for keyword in (
+        "initial_storylines",
+        "voice 可选节",
+        "voice_for",
+        "user_character",
+    ):
         assert keyword in entry
-    assert "WORLD_PACKAGE_VERSION = 6" in PACKAGE_SOURCE.read_text(
+    assert "WORLD_PACKAGE_VERSION = 7" in PACKAGE_SOURCE.read_text(
         encoding="utf-8"
     )
 
 
 def test_berrymoor_entry_carries_the_v5_arcs_and_the_v6_voices() -> None:
     """C2's two opening arcs and C3's six-character bilingual voice
-    library are the shipped package's own content."""
+    library are the shipped package's own content — and, since D-1
+    (DEC-OPI-a4cf2d0e…40), the v7 ``user_character`` section: the entry
+    carries the reader's own declared face and the moved version wall."""
 
     entry = _entry_line("berrymoor.json[FQ8W]")
     for keyword in (
         "initial_storylines",
         "voice",
-        "v6 墙",
+        "v7 墙",
         "Alder & Son",
         "Silas Croft",
         "speech_habits",
         "samples",
+        "user_character",
+        "actor-berrymoor-you",
     ):
         assert keyword in entry
 
@@ -298,8 +316,47 @@ def test_the_widened_entries_carry_the_voice_face() -> None:
         for keyword in keywords:
             assert keyword in entry, (tag, keyword)
 
+    # D-1 (DEC-OPI-a4cf2d0e…40): the world package's own banner carries
+    # the user-character face (the ``__init__`` entry above is pinned
+    # for voice/剧情线; the reader's-own-character cut rides it too).
+    banner = _entry_line_in_section(_WORLD, "__init__.py[DC4T]")
+    for keyword in ("UserCharacter", "user_character"):
+        assert keyword in banner, keyword
+
     # the leaf module's own entry (the one file the sweep found with no
     # entry at all)
     voice_entry = _entry_line_in_section(_WORLD, "voice.py[EW9T]")
     for keyword in ("CharacterVoice", "WorldVoiceQueries", "VOICE_SAMPLE_COUNT"):
         assert keyword in voice_entry
+
+
+# ---------------------------------------------------------------------------
+# D-1 (DEC-OPI-a4cf2d0e…40): the user-character cut's own four entries
+# ---------------------------------------------------------------------------
+
+
+def test_narrator_entry_carries_the_user_character_line() -> None:
+    """D-1's narrator face rides its entry: the conditional
+    ``Your character`` line and the roster's vocabulary extension — and
+    the entry's quoted string is the source's own (rename one side alone
+    and this reddens)."""
+
+    entry = _entry_line("narrator.py[EW8T]")
+    assert "Your character" in entry
+    assert "user_character" in entry
+    source = NARRATOR_SOURCE.read_text(encoding="utf-8")
+    assert "Your character" in source
+    assert "user_character" in source
+
+
+def test_host_entry_carries_the_cognitive_views_user_layer() -> None:
+    """D-1's assembly face rides the host entry: the seeded packages'
+    ``user_character`` mapping the chronicle port's fourth filter arm
+    reads, and the source keeps the same symbols."""
+
+    entry = _entry_line("host.py[AW9L]")
+    assert "user_character" in entry
+    assert "world_user_characters" in entry
+    source = (REPO / "src" / "elc" / "host.py").read_text(encoding="utf-8")
+    assert "world_user_characters" in source
+    assert "_user_character_ids" in source

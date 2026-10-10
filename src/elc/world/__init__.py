@@ -1,5 +1,5 @@
 """The World bounded context (W-1-0 + W-1-1 + W-1-2 + W-1-4 + W-1-3 +
-C2) —
+C2 + D-1) —
 identity binding, the event tree with its minimal state projection, the
 run engine, the world package face, the reveal/inbox half, and the plot
 layer's storyline structure.
@@ -53,6 +53,17 @@ home), and the two prompt doors read it — the narrator's
 cast-of-the-town section and the persona reply prompt's framed
 ``persona-voice`` block. No store column and no seed row: the library is
 prompt material, and the package's own copy is its home.
+
+D-1 (DEC-OPI-a4cf2d0e…40) adds the reader's own place in the town: the
+v7 package's optional ``user_character`` section decodes into
+:class:`~elc.world.package.UserCharacter` (her id, name, anchor and
+home), and two faces read it — the narrator's prompt carries her line
+and teaching right after the cast-id roster, and the chronicle's
+cognitive view treats an event naming her id as the bound character's
+own memory of the reader (the user layer, 域一 v1.2). No store column,
+no actor binding, no seed row: prompt material plus the
+``participants`` vocabulary's one declared extension (the parser admits
+cast ids ∪ {her declared id}).
 
 What does **not** ship here, declared rather than implied: no narration
 generation (the engine's pool arrives pre-authored), no presentation
