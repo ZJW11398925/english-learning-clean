@@ -2872,7 +2872,16 @@ function showSpace(name) {
 // 导航一级成员——navdock「世界」项重新入坞（世界架 = 世界切换面在单世界
 // 时的最小就位；同一空间名的第三代表：日志屏退役 → 详情屏承接 → 入坞
 // 常驻）。
-wireNavdock((name) => showSpace(name));
+// D-4 处置（评审 MEDIUM-1）：world 入坞后点它必须驱动数据加载——
+// showSpace 只切屏不读数（study/drawer 靠 showSection 带数据），world
+// 走 openWorldDetail（切屏 + 五区三读 + 人面两臂桥），其余三项照旧。
+wireNavdock((name) => {
+  if (name === "world") {
+    openWorldDetail();
+    return;
+  }
+  showSpace(name);
+});
 wireSectionTabs(document.getElementById("study-tabs"),
   (name) => showSection("study", name));
 wireSectionTabs(document.getElementById("drawer-tabs"),
@@ -6126,7 +6135,8 @@ function envelopeDrift(stampKey) {
 // 案头主从条（wf-1 世界优先重铸；mc-1 的 roster 形保留为回落臂）：世界在
 // （/api/world/overview 成功）⇒ D-4 世界指示器升格（正典 §7.4「世界名 +
 // 世界内时间/天气的静默暗示」）：.who-line 主位一行 = .who（世界名）+
-// .who-when（世界内时间——overview 的 date_localized，弱化静默暗示），
+// .who-when（世界内时间——overview 的 date_story〔去世界名尾的故事日；
+// 评审 MEDIUM-2 勘正〕，弱化静默暗示），
 // 副行 .who-sub 只留「与…通信中」的通信 chrome，今日动静行照旧——全部
 // 端点拼装（webui 零世界名/角色名字面）；世界缺席（无绑定 404）或读失败
 // ⇒ 现役形回落：.who = 当前角色名一行、两个世界槽（.who-when / .who-sub）
@@ -6206,7 +6216,8 @@ function renderMasthead(roster) {
 }
 
 // 成功臂：世界指示器（§7.4）= .who（世界名）+ .who-when（世界内时间——
-// date_localized 服务端已本地化直显，弱化静默暗示，D-4 起占主位）；
+// date_story 是局部的故事日（去世界名尾；评审 MEDIUM-2 勘正——用
+// date_localized 会让世界名在指示器重复），D-4 起占主位，弱化静默暗示）；
 // 副行只留「与…通信中」chrome（按 overview 的 ui_language 走双语词表）；
 // 今日动静行由 overview.today 驱动。世界臂下 .who-line 同时是进世界详情
 // 屏的门（见 markMastheadWorldArm）。
@@ -6568,7 +6579,11 @@ function buildWorldResidentRow(row) {
     vignette.textContent = String(row.vignette);
     person.appendChild(vignette);
   }
-  wirePersonIntro(person, { name: row.name, vignette: row.vignette });
+  wirePersonIntro(person, {
+    name: row.name,
+    role: row.role,
+    vignette: row.vignette,
+  });
   return person;
 }
 

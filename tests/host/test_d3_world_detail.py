@@ -473,8 +473,13 @@ def test_the_screen_is_registered_and_guarded() -> None:
 
     app = _text("app.js")
     assert 'world: document.getElementById("space-world"),' in app
-    # D-4: the stand-down arms are gone (the world is a dock member now)
-    assert 'if (name === "world")' not in app
+    # D-4: the stand-down arms are gone (the world is a dock member now).
+    # Disposition (review MEDIUM-1 follow-up): the negative control pins
+    # the stand-down **shape** (a name-judged hidden flip), not the bare
+    # name test anywhere — the wireNavdock callback's world branch (the
+    # entry that drives the reads) is a different layer, never a
+    # stand-down.
+    assert 'if (name === "world") navdock.hidden = true;' not in app
     assert 'if (current === "world") navdock.hidden = true;' not in app
     # the dock item itself (the shelf's door)
     assert 'data-space="world"' in _text("index.html")

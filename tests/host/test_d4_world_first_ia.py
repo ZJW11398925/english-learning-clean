@@ -264,10 +264,11 @@ def test_the_residents_expand_an_intro_and_never_a_communication_face() -> None:
     for banned in ("switchToCharacter", "fetchSwitchCharacter",
                    "openCorrespondence", "characterIdForPersona"):
         assert banned not in resident_row, banned
-    assert (
-        "wirePersonIntro(person, { name: row.name, vignette: row.vignette });"
-        in resident_row
-    )
+    # Disposition (review LOW-3): the intro fields carry the role too —
+    # the deck's expand matches the world screen's four-field shape.
+    assert "wirePersonIntro(person, {" in resident_row
+    assert "role: row.role," in resident_row
+    assert "vignette: row.vignette," in resident_row
     people = _function_slice(app, "function renderWorldPeople(")
     assert "wirePersonIntro(el, fields);" in people
     # the you row is a display seat (no role, no tabindex, no listener)
@@ -314,8 +315,10 @@ def test_the_world_screen_wears_the_shelf_and_the_doors() -> None:
     assert "await readCharacterRoster();" in open_detail
     roster_read = _function_slice(app, "async function readCharacterRoster()")
     assert "charactersCache = await fetchCharacters();" in roster_read
-    # navdock：让位两臂退役（世界是一级成员）
-    assert 'if (name === "world")' not in app
+    # navdock：让位两臂退役（世界是一级成员）——负控钉让位**形态**
+    # （name 判据 + hidden 翻转同行）；处置刀在 wireNavdock 回调加的
+    # 世界分叉（评审 MEDIUM-1 的入口接线）是另一层，不属让位语汇。
+    assert 'if (name === "world") navdock.hidden = true;' not in app
     assert 'if (current === "world") navdock.hidden = true;' not in app
     assert (
         'document.getElementById("world-back").addEventListener(\n'
@@ -468,4 +471,18 @@ def test_the_world_shelf_feeds_from_the_ensemble_seam() -> None:
     status, payload = face.world_ensemble()
     assert status == 404
     assert "没有绑定任何世界" in payload["error"]
+
+
+def test_the_navdock_world_item_drives_the_read_not_only_the_switch() -> None:
+    """D-4 处置钉（评审 MEDIUM-1）：navdock 的「世界」项必须驱动数据
+    加载——showSpace 只切屏（study/drawer 靠 showSection 带数据），world
+    在全量刷新外的唯一数据源是 openWorldDetail（三读 + 人面两臂桥）。
+    本钉把「入坞后点它走 openWorldDetail」钉在源上：回调的 world 分叉
+    一旦被简化回裸 showSpace，页面就是一张空屏（评审真浏览器实证）。"""
+
+    app = _text("app.js")
+    start = app.index("wireNavdock(")
+    callback = app[start : app.index("});", start) + 3]
+    assert 'if (name === "world")' in callback
+    assert "openWorldDetail();" in callback
 

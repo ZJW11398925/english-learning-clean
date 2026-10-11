@@ -225,7 +225,7 @@ retirement，注册表不做阁楼，**编号空出不复用**，见本节表后
 | 15 | word-card | `.word-card`（+ `.wc-lemma` `.wc-pos` `.wc-forms` `.wc-zh` `.wc-en` `.wc-example` `.word` `.word--off`）+ sheet 档遮罩件 `.word-scrim` + 词典第二档件 `.wc-src`/`.wc-lemma--sm`（`.word-card--lexicon`） | — | default（--paper-high 泛起纸面 + 发丝边 + 垫纸错位层承 `--stack-shadow-soft`；开启入场 = paper-drop + ink-wash 双动画；`.word:hover` 触点泛淡墨蓝 `--pencil-soft`——hover 半区）\| sheet 档（`@media (hover: none)`——触屏 = 底部覆盖面板 bottom sheet：fixed 底部 + 墨色遮罩 + `@starting-style` 纸面曲线入场，8.2.2③）\| closed（点卡外/遮罩、「收起」或 Esc，DOM 移除语义）\| 无 busy——命中即显；**v3-d 契约：miss 无样式而非静默**（8.2.2③-a——命中位图随信下发，位图判 0 的词 `.word--off` 无供性、点击短路，可点的词必有卡）\| **词典第二档**（`source: "lexicon"`——「词典」标注小卡，与语料卡 visibly 两档，8.2.2③-a）。触屏词提示 = 两件（8.2.2④）：`.letter--latest .say .word` 弱底纹（仅最新一封）+ `.word:active` 按压即亮——「全文常显点线」永禁（负钉在库）；`.word--off` 四态全摘（cursor/hover/active/底纹） | components.css + components.js（`wordCard()`/`showWordCard()`/`closeWordCard()`；触发面 = `letterWords()` 的 `.word` 分片（带命中位图行）+ `wordWindows()` 窗口查询，app.js 委派） |
 | 16 | field | `.field`（+ `.fieldname`） | — | default（下发丝线）/ `:focus-within`（发丝线与名转墨蓝，--dur-1 淡入）/ 控件 `[disabled]`（opacity .4 + 无 pointer）；名牌可配 #22 search 小图 | components.css + components.js（`fieldRow()`，p-3；label 包裹控件，点名牌即聚焦） |
 | 17 | chip | `.chip`（+ `--on` `--badge`） | — | off（default，发丝线描边）/ hover（边转次级墨）/ on（`--on`，主墨反白）/ `:active`（触压 1px）/ `[disabled]`（opacity .4）/ `--badge`（只读徽标，非交互） | components.css + components.js（`chip()`，p-3；考试/语域/教学频率词表 picker + modality 徽标）+ 配置档切换复合变体（`.profile-chip` 平级双钮——淡墨渍现役态，注册块 components.css #27 后随段） |
-| 18 | dock | `.navdock`（+ `.navdock-item` `--on` `.navdock-glyph` `.navdock-word` `--fold`；类名与写信区屏级类 `.dock` 异名共存） | — | **v3-a 落墨页签**：default（20×20 墨线图标描形 fill-opacity 0 + 标签次墨 400——图标与文字标签同钮上下两行）/ hover（图标与标签同落主墨，100ms——hover 半区）/ `--on`（**落墨当前态**：图标淡墨渍底 fill-opacity .15 + 标签 --ink 600，ink-wash 静态版——v3-aR 用户首验否决实墨填充后修订，裁决 DEC-OPI-76a0a10a-…9；填充切换 = 一次落墨事件——进入 260ms × --ease-paper、退出 200ms × --ease-exit 一褪一落同帧；`aria-current`；下划线语汇从导航当前态岗位退役，动作链接岗位不动）/ `:active`（触压 1px）/ `[disabled]`（opacity .4）/ `--fold`（让位收半：paper-fold 200 × --ease-exit，animationend 后 [hidden]）；垫条材质 = --paper-high 顶纸（与写信区垫板同族）；宽度随 `--shell-w`（≥900px 三项收拢居中）；常驻底部三项 **案头 / 温故 / 抽屉**（门厅/全页/写作态整条让位；z 6 低于点词卡 z 9） | components.css + components.js（`wireNavdock()`/`markNavdock()`，R-1；app.js 的 `yieldNavdock()`/`restoreNavdock()` 落 --fold） |
+| 18 | dock | `.navdock`（+ `.navdock-item` `--on` `.navdock-glyph` `.navdock-word` `--fold`；类名与写信区屏级类 `.dock` 异名共存） | — | **v3-a 落墨页签**：default（20×20 墨线图标描形 fill-opacity 0 + 标签次墨 400——图标与文字标签同钮上下两行）/ hover（图标与标签同落主墨，100ms——hover 半区）/ `--on`（**落墨当前态**：图标淡墨渍底 fill-opacity .15 + 标签 --ink 600，ink-wash 静态版——v3-aR 用户首验否决实墨填充后修订，裁决 DEC-OPI-76a0a10a-…9；填充切换 = 一次落墨事件——进入 260ms × --ease-paper、退出 200ms × --ease-exit 一褪一落同帧；`aria-current`；下划线语汇从导航当前态岗位退役，动作链接岗位不动）/ `:active`（触压 1px）/ `[disabled]`（opacity .4）/ `--fold`（让位收半：paper-fold 200 × --ease-exit，animationend 后 [hidden]）；垫条材质 = --paper-high 顶纸（与写信区垫板同族）；宽度随 `--shell-w`（≥900px 四项收拢居中）；常驻底部四项 **案头 / 世界 / 温故 / 抽屉**（D-4 起世界入坞；门厅/全页/写作态整条让位；z 6 低于点词卡 z 9） | components.css + components.js（`wireNavdock()`/`markNavdock()`，R-1；app.js 的 `yieldNavdock()`/`restoreNavdock()` 落 --fold） |
 | 19 | space-header | `.space-header`（+ 节名槽 `.spacehead-sec`；与屏级基形 `.top` 合用） | — | default（发丝线夹持 sticky 顶栏，随 `.top`）；无交互态——静态头部；案头头部用 `.top` 原形（who 块端点驱动空槽，mc-1 起点开信封沓）；温故/抽屉头部 = `.top` 基形 + 本类；品牌名与副题退居门厅封面，空间头不再增长链接 | components.css + components.js（`sectionLabel()`，R-1） |
 | 20 | section-tabs | `.section-tabs` / `.section-tab`（+ `--on`） | — | unselected（default，透明点线占位）/ hover（墨色微沉）/ selected（`--on`，主墨加重 + 墨蓝实线短下划 + `aria-selected`）/ focus（地基 `:focus-visible` 焦点环，不另设）/ `[disabled]`（opacity .4）；roving tabindex + 左右箭头循环移选；温故/抽屉各一排三项，切节即拉 | components.css + components.js（`wireSectionTabs()`/`markSectionTabs()`，R-1） |
 | 21 | disclosure | `.disclosure`（+ `.disclosure-head` `.disclosure-marker` `.disclosure-title` `.disclosure-examples` `.disclosure-body` `--open`） | — | collapsed（default，内容区 hidden，chevron 向右）/ expanded（`--open`，内容区展开、chevron 旋转 90°、`aria-expanded="true"`，计数保留；入场 = ⑨-5 paper-unfold）/ focus（地基环，不另设）；标记 = #22 自绘墨线 chevron；一切「超过 8 行的同质列表」与「参考 / 原始读数」走它；不得手风琴互斥、不得嵌套、不得图标外链 | components.css + components.js（`disclosure()`，R-1R） |
@@ -387,7 +387,7 @@ R-1 时代的逐页剖析（信息组织 / 表达方式 / 特色延续三个否�
 #### 8.1.1 层级定谳
 
 门厅（首访一次）→ 三空间（常驻）→ 空间内节（页）→ 页内块 → 块内行。
-**空间模型保留**（门厅 + 案头 / 温故 / 抽屉 + dock 三项）；v2 增两处
+**空间模型保留**（门厅 + 案头 / 温故 / 抽屉 + dock 四项〔D-4 起世界入坞，WR-5–D-3 间曾三项〕）；v2 增两处
 附属面：**笔友档案全页**（`#space-partner`，从信封沓的「档案」动作进，
 返回钮回案头）与**角色编辑台**（mc-2 全页 DIY，从信封沓进）——两者
 是案头的纵深，不是新空间（dock ≤5 红线不动）。壳层 v2-1 已按内核
@@ -468,7 +468,7 @@ mc-1 信封沓 + mc-2 编辑台——8.2.2a）与设置面（rd-4 真面——8.
       ｜    什么，中文英文都行；写错了，正是回信要讲给你听的地方。       ｜
       ｜    写着写着，它在旁听着。发现值得练的表达，它随信递来一条      ｜
       ｜    英文批注——答对答错都有回音，也可以先搁着。                  ｜
-      ｜  又及：进门以后，底部三个词随时可走。温故摊着今天的复习        ｜
+      ｜  又及：进门以后，底部四个词随时可走。温故摊着今天的复习        ｜
       ｜  与方向，抽屉收着它记住的事。                                   ｜
       ｜                       拆开这封信 →                              ｜
       ｜                        elc · web                                ｜
@@ -1648,7 +1648,7 @@ to-only，与 scrim-in 对偶——scrim-in 自 v2-2 在库、本刀首次入册
   （R-1W 处置修正：交付版 280px 阈值 592>564，平板档永不两栏——
   算术钉 test_r1w_responsive_redo 使其可执行）。
 - 边注栏内容（案头日期 / 界尺；**装饰邮戳水印已随 v2 撤除**）与
-  dock 三项 ≥900 收拢居中不动；`--shell-w` 是 #stage / #18 navdock /
+  dock 四项（D-4 起）≥900 收拢居中不动；`--shell-w` 是 #stage / #18 navdock /
   写信区 .dock 三者的同一宽度出处。
 - 交互件逐档：点词卡浮层的视口收进由 JS clamp 承担（各档同面；
   触屏档 = bottom sheet，分档走输入形态查询而非宽度断点，见
@@ -1704,7 +1704,7 @@ to-only，与 scrim-in 对偶——scrim-in 自 v2-2 在库、本刀首次入册
    aria-expanded / roving / 默认折叠 / 禁手风琴语义零回退（既有钉
    随迁：`tests/host/test_r1r_blueprint_v2.py` 的标记两钉改钉
    chevron 形）。
-10. **#18 dock**：宽度 430px → `--shell-w`、≥900px 三项收拢居中——
+10. **#18 dock**：宽度 430px → `--shell-w`、≥900px 三项收拢居中（D-4 起四项）——
     桌面构图（否决词「留白过分」的主因）。
 11. **新增 #22 icon-set**（⑤ 四步同刀）：③ 表行 + 契约块 +
     `inkIcon()`/`installIcons()` + `COMPONENTS` 元组（21 → 22，三处
@@ -2114,7 +2114,7 @@ to-only，与 scrim-in 对偶——scrim-in 自 v2-2 在库、本刀首次入册
 2. **案头**（#space-parlor）：品牌条（`.top`：印记 + 端点驱动角色名，
    不增长按钮元）+ 信流（轮 = 用户信/回信 + 可选批注卡；口径行
    `.flow-calibre` 一行居中弱墨）+ 写作区（dock：触发条/写作面两态）
-   + navdock 三项。案头家具（刻度/回底钮/计量粒）全部「有事才现身」。
+   + navdock 四项（D-4 起）。案头家具（刻度/回底钮/计量粒）全部「有事才现身」。
 3. **温故 / 抽屉**（tabpanel 族）：**每 tabpanel = 一行导语
    （.doc-line）+ 若干 .sec 节块（h3 节题 + .doc-line 正文 + 控件 +
    空态 .note）**；节内不再有第二层导语；panel-grid 两栏只许「两块

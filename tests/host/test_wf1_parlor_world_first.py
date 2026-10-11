@@ -304,8 +304,12 @@ def test_the_deck_wears_the_worlds_people() -> None:
     assert 'act("编辑", "person-act-edit"' in cast_row
     resident_row = _function_slice(app, "function buildWorldResidentRow(row)")
     assert 'person.className = "person person--resident";' in resident_row
-    assert "wirePersonIntro(person, { name: row.name, vignette: row.vignette });" \
-        in resident_row
+    # Disposition (review LOW-3): the intro fields now carry the role too
+    # (the deck's expand matches the world screen's four-field shape).
+    assert "wirePersonIntro(person, {" in resident_row
+    assert "name: row.name," in resident_row
+    assert "role: row.role," in resident_row
+    assert "vignette: row.vignette," in resident_row
     # 两臂的闸与布局类（世界臂的人行区）
     deck = _function_slice(app, "async function renderEnvelopeStack(")
     assert (

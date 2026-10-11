@@ -169,7 +169,15 @@ def test_the_navdock_is_the_only_way_between_spaces(tmp_path: Path) -> None:
     assert 'data-space="world"' in index
     assert "data-icon=\"world\"" in index
     app = _text("app.js")
-    assert "wireNavdock((name) => showSpace(name));" in app
+    # D-4 disposition (review MEDIUM-1): the dock's wiring now branches —
+    # the world item must drive its reads (openWorldDetail), the three
+    # classic spaces keep the plain switch. The law pinned is unchanged:
+    # the dock remains the one channel between spaces.
+    dock_start = app.index("wireNavdock(")
+    dock_callback = app[dock_start : app.index("});", dock_start) + 3]
+    assert 'if (name === "world")' in dock_callback
+    assert "openWorldDetail();" in dock_callback
+    assert "showSpace(name);" in dock_callback
     assert "markNavdock(name);" in app
     # the vestibule stands the dock down (the door button is the way in)
     assert 'document.getElementById("navdock").hidden = name === "onboard";' \

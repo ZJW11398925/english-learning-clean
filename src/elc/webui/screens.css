@@ -98,8 +98,9 @@ body {
    驱动；世界缺席回落臂静默留空）——.sub 族弱化语汇（UI 字 +
    --ink-faint），零新令牌。
    D-4 世界指示器升格（正典 §7.4）：.who-line = 主位一行——.who（世界
-   名，head 档）+ .who-when（世界内时间，overview 的 date_localized
-   直显，弱化「静默暗示」）；故事日不再走副行（副行只剩通信 chrome）。 */
+   名，head 档）+ .who-when（世界内时间，overview 的 date_story 直显
+   ——去世界名尾的故事日；评审 MEDIUM-2 勘正），弱化「静默暗示」；
+   故事日不再走副行（副行只剩通信 chrome）。 */
 .who-line { display: flex; align-items: baseline; gap: var(--sp-2); }
 .who-when { font: var(--t-ui); color: var(--ink-faint); }
 .who-sub { font: var(--t-ui); color: var(--ink-faint); }
