@@ -21,18 +21,18 @@
 
 （历史：p8-4 = COMPLETE（第十八会话）——七面全部落地；交付 `08dda87`（含处置），评审 ACCEPT-WITH-FINDINGS 无 HIGH/MEDIUM，读数 2929/0/0；详见「当前状态」p8-4 块与 ⑲）**p8-3（台账落表 + 删除面 + ReviewEvent 语义）= COMPLETE**（交付 `ff769e9`+`280adc1` + 处置 `ddbfd90`，盖 `VR-OPI-6d40862d-…15` PASS 于 `ddbfd90`；三件 = `TASK-OPI-6d40862d-…9` / `VAL-OPI-6d40862d-…11` / 处置 `DEC-OPI-6d40862d-…13`）；**p8-2 = COMPLETE**（交付 `14041d0` + 处置 `2f0b8e3`，盖 `VR-OPI-6d40862d-…7` PASS）；**p8-1 = COMPLETE**（交付 `b43d4bc` + 处置 `325e7a6`，盖 `VR-OPI-64c88704-…23` PASS）；**p8-0 = COMPLETE**（交付 `42d1b16` + 处置 `0479cbf`，盖 `VR-OPI-64c88704-…13` PASS）；**Phase 8 = 开工第 0 步已完成**（`DEC-OPI-0f76024b-…3` / `PLAN-…5` / `VAL-…7`）；四查必答面见 ⑩ 的五项 + 迁移面预写 + ⑭/⑯/⑰/⑱；**p8-4 的四查面（供参考）**：`RUNTIME_ARCHITECTURE.md` §4 步 11–20（prompt/Provider/Validator/Guard/Delivery/CP3a/terminalization/CP4）+ §6 CP3a 与 §13/§14/§15（delivery 与曝光语义）+ §22/§23（恢复与崩溃窗口的 Moment 半）+ `DATA_MODEL §22`（Delivery Data）/§15（TeachingMoment 的 lifecycle 与 delivery 转移）+ `IMPLEMENTATION_PLAN §9`（§7.2 自动路径）与 §12（rollout）+ p8-3 的 `teaching_presented` 事件面（`elc/planner/ledger_store.py` 的写面 + `planning_ledger_event` 五词）与 `ConversationPriorityView` 的生产者（RA §4 步 3））：**Phase 8** 读 `docs/IMPLEMENTATION_PLAN.md` §9（及 §12）/`docs/RUNTIME_ARCHITECTURE.md` §CP2 与 10A–10B 与崩溃窗口/`docs/DATA_MODEL.md` §14·§14.1·§15·§18/`docs/DOMAIN_MODEL.md` §13·§14/`docs/STATE_MACHINES.md` 的 Teaching 与 Gate 转移面/`behavioral_baselines/gate/*`（BF-03 v1.1 + 60 例 benchmark + 参考实现 + 决策表）。**Phase 7** 读 `docs/DOMAIN_MODEL.md` §10/§10.1/§11/§12/§13、`docs/DATA_MODEL.md` §14/§24.14、`docs/IMPLEMENTATION_PLAN.md` §8 与 `behavioral_baselines/planner/*`（BF-02 §5 的 `feature_assembly_status`/`snapshot_status`/missing_authorities 与 DEFERRED 路径）。派单协议同下：四查+VAL+TASK 同铸；**四查必答：列名/词表/判据照 canonical 原文逐字；本刀若新增迁移，stamp 钉搬迁必须预先写明**（p6-1 16 处 / p6-3 22 处的判决性实验先例；自 p6-3 起 head/stamp 值集中在 `tests/conftest.py` 常量，边际成本已降）；读数口径按 `DEC-…a68fd9eb.32`；内容补课未落地前不得假设任何 target readiness ≥ R2；禁 `_seed()`/fixture 供给；**VAL 一律带实际触及路径集**）
 - **执行者遗留处理先例**（已发生三次：P3-1A/P3-2/P4-4 前均因 API 余额中断留下半成品）：开工前必查 git status——不干净时先取证（快照/sha256/差异分析），按「吸收+逐文件复核+修正+补齐+留痕」或「拒收重交」二选一，绝不静默覆盖；**P4-4 先例**：遗留半成品 3 条失败被判测试侧，评审以 as-found 原件复跑逐条复核成立
-- **当前状态**（2026-10-11；rev 747；**D-3 世界详情屏毕（前端世界层级第一刀）**；读数 **5845/0/0**，master tip `80dc7bc`）：
+- **当前状态**（2026-10-11；rev 754；**D 程序交付面收官（D-1/D-3/D-2 全毕）+ D-4 显示层级统一在飞**；读数基线 **5854/0/0**，master tip `91a85df`）：
   - **Phase 9/10 = COMPLETE**；**真实 rollout 仍 HOLD**（SessionBudget 三分 + 内容补课为开闸前置）；
   - **C 程序全毕**（C1-a/b/c、C1.5、C2、C3、C4 + AOCI 随迁）；
-  - **D 程序（用户 dogfood 报告驱动）**：总设计补写 `ea2ba64` + **D-1 用户角色入世界 = COMPLETE**（交付 `5fc65ec`+处置 `2c52002`；收口 `DEC-OPI-a4cf2d0e-…47`）+ **D-3 世界详情屏 = COMPLETE**（交付 `56d9aaf`+处置 `80dc7bc`；`/api/world/ensemble` 六角色全阵容 + `/api/world/storylines` + `#space-world` 四区屏 + 两入口 + FRONTEND_SPEC 9.16；评审 12/12 RED 无 HIGH/MEDIUM；**通道违规第 6 起追认**〔记录级更正 A/B 入册〕；收口 `DEC-OPI-a4cf2d0e-…55`）；**下一动 = D-2 叙事密度与重量校准**（MIN_BEATS/MAX_DAYS 上调 + narrator 戏剧重量指令 + 走向后果写面）；其后候选：沓升世界入口/角色卡降子页（前端第二刀）/外评第七轮；
-  - **现役先读**（新会话续接）：①`design_status` 刷基 ②`design_get` 最新收口 DEC（`DEC-OPI-a4cf2d0e-…55`）③`git log --oneline -5` ④本文件基准纪律区 ⑤按下一动读 docs/design/ + docs/IMPLEMENTATION_PLAN.md §19；
-  - **台账面**：P1/P4/P7/P15/P17 未触发；P3 已销账；P6 起步腿已兑现；**用户 dogfood 报告四缺口**：①用户零存在→D-1 毕 ②密度碎→D-2（下一动）③前端卡逻辑→D-3 毕（沓本体留后续）④六角色不可见→D-3 毕；
-  - **防坑区**（跨会话生效，最新在最上）：⑲通道违规记录两更正（终态≠快照应为「重做时点==快照」；命令形须保真）⑯台账 tag 非全局唯一 ⑰取证区分文件字节与终端渲染 ⑱不 amend、改错追加 ⑮「byte for byte the pre-X」句族有扫全钉 ⑪验收探测先记分支/git worktree ⑫通道违规记录标哈希类型 ⑬never_says 一致性含语义族 ⑭中文译写术语仓内自证词义；
+  - **D 程序（用户 dogfood 报告驱动）**：总设计补写 `ea2ba64` + **D-1 用户角色入世界**（`5fc65ec`+`2c52002`；收口 `DEC-OPI-a4cf2d0e-…47`）+ **D-3 世界详情屏**（`56d9aaf`+`80dc7bc`；收口 `…55`）+ **D-2 叙事密度与重量**（`182accd`+`91a85df`；常量 2/3×0/3 + §4.3 重量句 + §4.4 后果句；收口 `…69`）+ **D-4 显示层级统一在飞**（`DEC-…63`/`TASK-…65`/`VAL-…67`；**用户裁「两套 70 分混合=50 分，目标 90 分」→ §7 IA 翻转落地**：世界指示器升格+沓改「世界里的人」+人对象两统一+世界面升格）；**D-4 后下一动 = 用户浏览器验收 + dogfood 观察窗**（密度效力：琐屑纹理/失败率；D-2 评审载）；
+  - **现役先读**（新会话续接）：①`design_status` 刷基 ②`design_get` 最新收口 DEC（`DEC-OPI-a4cf2d0e-…69`，D-4 完成后 `…71+`）③`git log --oneline -5` ④本文件基准纪律区 ⑤按下一动读 docs/design/ + docs/IMPLEMENTATION_PLAN.md §19；
+  - **台账面**：P1/P4/P7/P15/P17 未触发；P3 已销账；P6 起步腿已兑现；**用户 dogfood 报告四缺口**：①用户零存在→D-1 毕 ②密度碎→D-2 毕 ③前端卡逻辑→D-3 毕+D-4 统一中 ④六角色不可见→D-3 毕；**用户评价「50 分→90 分」（两套逻辑混合）= D-4 的直接驱动**；
+  - **防坑区**（跨会话生效，最新在最上）：⑳**密集小刀期工作树并发**（多执行者并行时 add 须按文件——勿把旁刀半成品带入提交）⑲通道违规记录两更正 ⑯台账 tag 非全局唯一 ⑰取证区分文件字节与终端渲染 ⑱不 amend、改错追加 ⑮「byte for byte the pre-X」句族有扫全钉 ⑪验收探测先记分支/git worktree ⑫通道违规记录标哈希类型 ⑬never_says 一致性含语义族 ⑭中文译写术语仓内自证词义；
   - **历史交接块**：归档在 `docs/sessions/session-handoffs-archive.md`（第三十至三十三会话 + 更早）；
 
 ## 会话交接索引（详细块归档在 docs/sessions/session-handoffs-archive.md）
 
-- 第三十四/三十五会话（2026-10-11）：**总设计补写 + D-1 用户角色入世界 + D-3 世界详情屏**——详见「当前状态」块；DEC 链：`…40/44/47`（D-1）、`…49/53/55`（D-3）
+- 第三十四/三十五/三十六会话（2026-10-11）：**总设计补写 + D-1 用户角色 + D-3 世界详情 + D-2 密度重量 + D-4 显示层级统一**——详见「当前状态」块；DEC 链：`…40/44/47`（D-1）、`…49/53/55`（D-3）、`…57/61/69`（D-2）、`…63/65/67`（D-4）
 - 第三十三会话交接块
 - 第三十二会话交接块
 - 第三十一会话交接块
