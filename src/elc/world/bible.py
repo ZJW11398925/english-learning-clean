@@ -9,10 +9,15 @@ current revision, every past revision kept and citable. The
 template/package relationship is one-way (DOMAIN §20.3-6, N-INV-006):
 a template seeds the world's first revision at creation time
 (:meth:`SqliteBibleStore.seed_bible`, called from
-``elc.world.package.ensure_builtin_worlds`` so the Bible is born with
-the world), and a template's later updates **never** rewrite an
-existing world — a replayed seed is a zero-write no-op that answers
-what is already stored, and a real change is an explicit
+``elc.world.package.ensure_builtin_worlds`` right after each
+``create_world`` in the same open pass — **two separate short
+transactions, not one ACID group**; fail-closed and idempotent, so a
+retry of an interrupted open completes a partial seed — while a
+user-created world's truly atomic world+initial-Bible creation
+service is a registered later-cut obligation, not built here), and a
+template's later updates **never** rewrite an existing world — a
+replayed seed is a zero-write no-op that answers what is already
+stored, and a real change is an explicit
 :meth:`SqliteBibleStore.revise_bible` decision, never a silent
 template push.
 
@@ -29,12 +34,24 @@ Discipline (the house store law, :mod:`elc.world.store`'s and
   never re-attributed as a missing identity; the raw sqlite error
   rides the message). Messages are human sentences naming the row and
   the reason.
-- **state_version CAS** — creation mints ``state_version = 1``; the
-  revision move takes the caller's ``expected_state_version`` and
-  updates under ``WHERE ... state_version = ?``: a rowcount of zero
-  means either the row is gone (``NOT_FOUND``) or another writer moved
-  it first (``CONFLICT`` — re-read and retry is the caller's move).
-  Every successful write bumps the counter it touches.
+- **identity + state CAS (the ABA fix, V3-2R)** — creation mints
+  ``state_version = 1`` and so does **every new revision** (the
+  counter belongs to its row; it is not a cross-revision identity),
+  so the revision move takes the caller's
+  ``expected_bible_revision_id`` **and** ``expected_state_version`` —
+  the revision row the caller read, named and counted — reads the
+  CURRENT row **inside** the transaction, and refuses any mismatch
+  with ``CONFLICT`` before a word is written: without the identity
+  half, a stale edit based on an old revision would pass the moment a
+  newer revision re-minted the same counter (A reads revision 1 at
+  ``state_version = 1``; B writes revision 2, which mints its own
+  ``state_version = 1``; A commits its stale edit — the identity
+  check is what refuses it). The guarded
+  ``UPDATE ... WHERE bible_revision_id = ? AND state_version = ?``
+  keeps its rowcount guard: a zero means either the row is gone
+  (``NOT_FOUND``) or another writer moved it first (``CONFLICT`` —
+  re-read and retry is the caller's move). Every successful
+  supersede bumps the counter of the row it supersedes.
 - **Append-only versioning** — a revision never rewrites; it
   supersedes. :meth:`SqliteBibleStore.revise_bible` flips the current
   row to ``SUPERSEDED`` and lands the new ``CURRENT`` row in **one
@@ -66,7 +83,7 @@ work; this module builds none and reads none.
 from __future__ import annotations
 
 import sqlite3
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from enum import StrEnum
 from typing import Any
 
@@ -81,33 +98,47 @@ from elc.platform.types import (
 
 __all__ = [
     "BIBLE_FIELDS",
+    "BibleContent",
     "BibleRevision",
     "BibleRevisionStatus",
     "SqliteBibleStore",
 ]
 
-#: The fourteen content fields of one Bible revision, in the canonical
-#: order (DATA §26.2.1's semantic fields, the migration's column order
-#: after ``status``). The single vocabulary source: the record, the
-#: store's SQL and the tests all spell the same list, and the seed
-#: face writes the empty string into every field but ``premise`` —
-#: the honest "not yet declared" — so a caller can tell a field the
-#: world's template never spoke from one it did.
-BIBLE_FIELDS: tuple[str, ...] = (
-    "premise",
-    "genre",
-    "tone",
-    "calendar",
-    "physics",
-    "magic_rules",
-    "geography",
-    "society",
-    "politics",
-    "technology",
-    "religion",
-    "history",
-    "hard_rules",
-    "narrative_preferences",
+@dataclass(frozen=True)
+class BibleContent:
+    """The fourteen content fields of one Bible revision — the shared
+    content model both write faces take (the seed and the revision say
+    the same shape: DATA §26.2.1's semantic fields, in the canonical
+    order). A field left at its default is the empty string: the
+    honest *undeclared* — the caller did not speak it — never an
+    inheritance from a previous revision and never a guess."""
+
+    premise: str = ""
+    genre: str = ""
+    tone: str = ""
+    calendar: str = ""
+    physics: str = ""
+    magic_rules: str = ""
+    geography: str = ""
+    society: str = ""
+    politics: str = ""
+    technology: str = ""
+    religion: str = ""
+    history: str = ""
+    hard_rules: str = ""
+    narrative_preferences: str = ""
+
+
+#: The fourteen content fields of one Bible revision, derived from the
+#: shared content model above — the single vocabulary source: the
+#: record, the store's SQL and the tests all spell the same list (the
+#: dataclass's own field order, DATA §26.2.1's semantic fields, the
+#: migration's column order after ``status``). A field the writer did
+#: not declare is the empty string — the honest "not yet declared" —
+#: so a caller can tell a field the world's template never spoke from
+#: one it did.
+BIBLE_FIELDS: tuple[str, ...] = tuple(
+    field.name for field in fields(BibleContent)
 )
 
 
@@ -181,7 +212,7 @@ class SqliteBibleStore:
         self,
         bible_revision_id: str,
         world_id: str,
-        premise: str,
+        content: BibleContent,
         now: str,
     ) -> Result[BibleRevision]:
         """Seed the world's first Bible revision — the template's
@@ -189,17 +220,18 @@ class SqliteBibleStore:
 
         **Idempotent and never rewriting**: if the world already holds
         a ``CURRENT`` revision the stored row is answered unchanged and
-        *nothing is written* — the caller's ``premise`` is not compared
+        *nothing is written* — the caller's ``content`` is not compared
         and not applied, so a template's later update replayed through
         this face is silently ignored (a template does not own an
         existing world's rewrite; making it so is an explicit
         :meth:`revise_bible` decision, a later cut's business). The
         seed mints revision 1 with ``parent_revision = NULL`` (the
-        source the world was born from), ``CURRENT``, the caller's
-        ``premise`` and the empty string in the other thirteen content
-        fields (honest undeclared — the template spoke only the
-        premise), ``created_at`` / ``updated_at`` the caller's ``now``
-        and ``state_version = 1``. A dangling ``world_id`` is refused
+        source the world was born from), ``CURRENT``, the fourteen
+        content fields **verbatim from the caller's ``content``** (a
+        field the model leaves at its default is the empty string —
+        honest undeclared, never inherited, never guessed),
+        ``created_at`` / ``updated_at`` the caller's ``now`` and
+        ``state_version = 1``. A dangling ``world_id`` is refused
         by the table's own FK and surfaces as ``NOT_FOUND``.
         """
 
@@ -217,10 +249,28 @@ class SqliteBibleStore:
                 " magic_rules, geography, society, politics, technology,"
                 " religion, history, hard_rules, narrative_preferences,"
                 " created_at, updated_at, state_version"
-                ") VALUES (?, ?, 1, NULL, 'CURRENT', ?,"
-                " '', '', '', '', '', '', '', '', '', '', '', '', '',"
-                " ?, ?, 1)",
-                (bible_revision_id, world_id, premise, now, now),
+                ") VALUES (?, ?, 1, NULL, 'CURRENT',"
+                " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)",
+                (
+                    bible_revision_id,
+                    world_id,
+                    content.premise,
+                    content.genre,
+                    content.tone,
+                    content.calendar,
+                    content.physics,
+                    content.magic_rules,
+                    content.geography,
+                    content.society,
+                    content.politics,
+                    content.technology,
+                    content.religion,
+                    content.history,
+                    content.hard_rules,
+                    content.narrative_preferences,
+                    now,
+                    now,
+                ),
             )
         except sqlite3.Error as exc:
             if began:
@@ -246,40 +296,46 @@ class SqliteBibleStore:
         self,
         bible_revision_id: str,
         world_id: str,
+        content: BibleContent,
         *,
-        premise: str,
-        genre: str,
-        tone: str,
-        calendar: str,
-        physics: str,
-        magic_rules: str,
-        geography: str,
-        society: str,
-        politics: str,
-        technology: str,
-        religion: str,
-        history: str,
-        hard_rules: str,
-        narrative_preferences: str,
+        expected_bible_revision_id: str,
         expected_state_version: int,
         now: str,
     ) -> Result[BibleRevision]:
         """Write the world's next Bible revision — the explicit
         full-content decision (never a template push, N-INV-006).
 
-        Every one of the fourteen content fields is **required and
-        written as given**: a revision is self-contained, so an omitted
-        or empty field lands as the empty string — honest undeclared,
-        **not** an inheritance from the previous revision (the caller
-        says what the world is like; the store does not carry old
-        words forward on the caller's behalf). Semantics: a world with
-        no ``CURRENT`` revision has nothing to revise
-        (``NOT_FOUND``); a stale ``expected_state_version`` is refused
-        ``CONFLICT`` (the expected and actual counters ride the
-        message). Otherwise one short transaction supersedes the
-        current row (``status = 'SUPERSEDED'``, ``updated_at`` the
-        caller's ``now``, ``state_version`` bumped) and lands the new
-        row (``revision = old + 1``, ``parent_revision = old``,
+        The content rides the shared model: every one of the fourteen
+        fields is **written as given** — a revision is self-contained,
+        so a field the model leaves at its default lands as the empty
+        string, honest undeclared, **not** an inheritance from the
+        previous revision (the caller says what the world is like; the
+        store does not carry old words forward on the caller's
+        behalf).
+
+        **The ABA law (V3-2R)**: ``state_version`` is not a
+        cross-revision identity — every new revision mints it from 1 —
+        so a counter alone cannot tell the revision row the caller
+        read from a fresh one. The caller must therefore also name the
+        ``CURRENT`` row it based the edit on
+        (``expected_bible_revision_id``): identity and state are
+        checked **together**, inside the transaction, and only the
+        pair closes the stale-write hole (A reads revision 1 at
+        ``state_version = 1``; B writes revision 2, which mints its
+        own ``state_version = 1``; A commits its stale edit with the
+        old counter — without the identity half the pre-check would
+        pass 1 == 1 and B's word would be silently superseded).
+
+        Semantics: a world with no ``CURRENT`` revision has nothing to
+        revise (``NOT_FOUND``); an identity mismatch is ``CONFLICT``
+        (the expected and the actual revision ids ride the message);
+        a stale ``expected_state_version`` is ``CONFLICT`` (the
+        expected and actual counters ride the message). Otherwise one
+        short transaction — ``BEGIN IMMEDIATE`` first, the ``CURRENT``
+        read inside it — supersedes the current row
+        (``status = 'SUPERSEDED'``, ``updated_at`` the caller's
+        ``now``, ``state_version`` bumped) and lands the new row
+        (``revision = old + 1``, ``parent_revision = old``,
         ``CURRENT``, the fourteen fields as given, both stamps the
         caller's ``now``, ``state_version = 1``) — supersede first,
         insert second, the order the single-CURRENT partial UNIQUE
@@ -288,35 +344,59 @@ class SqliteBibleStore:
         :meth:`get_bible`.
         """
 
-        current = self.current_bible(world_id)
-        if current is None:
-            return Err(
-                DomainError(
-                    code=DomainErrorCode.NOT_FOUND,
-                    message=(
-                        f"world {world_id!r} has no Bible revision to"
-                        " revise"
-                    ),
-                )
-            )
-        if current.state_version != expected_state_version:
-            return Err(
-                DomainError(
-                    code=DomainErrorCode.CONFLICT,
-                    message=(
-                        f"world {world_id!r}'s current Bible revision"
-                        " not revised: another writer moved it first"
-                        f" (the expected state_version was"
-                        f" {expected_state_version}; its state_version"
-                        f" is now {current.state_version}) — re-read"
-                        " and retry"
-                    ),
-                )
-            )
         began = False
         try:
             self._conn.execute("BEGIN IMMEDIATE")
             began = True
+            current = self.current_bible(world_id)
+            if current is None:
+                self._conn.execute("ROLLBACK")
+                began = False
+                return Err(
+                    DomainError(
+                        code=DomainErrorCode.NOT_FOUND,
+                        message=(
+                            f"world {world_id!r} has no Bible revision"
+                            " to revise"
+                        ),
+                    )
+                )
+            if current.bible_revision_id != expected_bible_revision_id:
+                self._conn.execute("ROLLBACK")
+                began = False
+                return Err(
+                    DomainError(
+                        code=DomainErrorCode.CONFLICT,
+                        message=(
+                            f"world {world_id!r}'s current Bible"
+                            " revision not revised: the caller's"
+                            " expected revision is not the current"
+                            " one (the caller expected"
+                            f" {expected_bible_revision_id!r}; the"
+                            " current one is"
+                            f" {current.bible_revision_id!r}) —"
+                            " re-read and retry"
+                        ),
+                    )
+                )
+            if current.state_version != expected_state_version:
+                self._conn.execute("ROLLBACK")
+                began = False
+                return Err(
+                    DomainError(
+                        code=DomainErrorCode.CONFLICT,
+                        message=(
+                            f"world {world_id!r}'s current Bible"
+                            " revision not revised: another writer"
+                            " moved it first (the expected"
+                            " state_version was"
+                            f" {expected_state_version}; its"
+                            f" state_version is now"
+                            f" {current.state_version}) — re-read"
+                            " and retry"
+                        ),
+                    )
+                )
             cursor = self._conn.execute(
                 "UPDATE world_bible_revision SET status = 'SUPERSEDED',"
                 " updated_at = ?, state_version = state_version + 1"
@@ -341,20 +421,20 @@ class SqliteBibleStore:
                     world_id,
                     current.revision + 1,
                     current.revision,
-                    premise,
-                    genre,
-                    tone,
-                    calendar,
-                    physics,
-                    magic_rules,
-                    geography,
-                    society,
-                    politics,
-                    technology,
-                    religion,
-                    history,
-                    hard_rules,
-                    narrative_preferences,
+                    content.premise,
+                    content.genre,
+                    content.tone,
+                    content.calendar,
+                    content.physics,
+                    content.magic_rules,
+                    content.geography,
+                    content.society,
+                    content.politics,
+                    content.technology,
+                    content.religion,
+                    content.history,
+                    content.hard_rules,
+                    content.narrative_preferences,
                     now,
                     now,
                 ),

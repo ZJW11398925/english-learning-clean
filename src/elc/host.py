@@ -1032,9 +1032,12 @@ def open_host(
         world_store = SqliteWorldStore(db, fence)
         # V3-2 (DEC-OPI-bab4da9f…29): the World Bible's store — the
         # instance world's sole setting authority (migration 0030's
-        # world_bible_revision); the seed rides with the world's birth
-        # below (the same open pass), so a world is never born without
-        # its Bible.
+        # world_bible_revision). The seed is attempted in this same
+        # open pass, immediately after each create_world below — two
+        # separate short transactions, not one ACID group — and it is
+        # fail-closed and idempotent, so a retry of an interrupted
+        # open completes a partial seed: no open ever finishes without
+        # the builtin worlds' Bibles in place.
         bible_store = SqliteBibleStore(db, fence)
 
         def _persona_exists(persona_id: str) -> bool:

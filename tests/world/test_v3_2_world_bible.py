@@ -7,8 +7,16 @@ the seed wired into the world's birth (``ensure_builtin_worlds`` /
 ``open_host``). The authority contract was already canonical — DATA
 §26.2.1's entity contract, DOMAIN §20.3-6 and N-INV-006, the design
 supplement's authority direction (World Bible → projection → legacy
-view, never the reverse), IMPLEMENTATION_PLAN §20's V3-2 row. The
-groups:
+view, never the reverse), IMPLEMENTATION_PLAN §20's V3-2 row. V3-2R
+(TASK-OPI-bab4da9f…41) corrects the external review's revision
+concurrency HIGH — the revision move now names the CURRENT row it
+edits (``expected_bible_revision_id`` + ``expected_state_version``,
+read and checked inside the transaction: state_version is not a
+cross-revision identity, so identity + state together close the ABA
+stale-write hole) — and lands the shared content model
+(:class:`BibleContent`: the seed takes the full fourteen fields, the
+package's ``calendar_start`` riding the creation-time mapping into
+the Bible's ``calendar``). The groups:
 
 1. **migration and shape** — the column set verbatim (PRAGMA order),
    the status CHECK's two-word vocabulary (a third word refuses), the
@@ -21,9 +29,13 @@ groups:
    a fresh database stamps exactly that);
 2. **open-time seed** — a builtin package's birth carries its Bible:
    revision 1, ``CURRENT``, ``parent_revision`` None, the premise
-   being the package's setting prose joined with `` · ``, the other
-   thirteen fields honestly empty, the derived id
-   ``bible-<token>-0001``; a replayed seed writes nothing;
+   being the package's setting prose joined with `` · `` and the
+   calendar the package's ``calendar_start`` through the creation-time
+   mapping, the other twelve fields honestly empty, the derived id
+   ``bible-<token>-0001``; a replayed seed writes nothing; the seed
+   face itself takes the full shared content model and lands all
+   fourteen fields verbatim (a default-constructed content is the
+   honest all-undeclared shape);
 3. **the N-INV-006 machine pin (this cut's core)** — the package file
    edited after the seed, then the seed re-run: the open succeeds, and
    the stored row is byte-identical to the first write (premise,
@@ -34,9 +46,11 @@ groups:
    ``updated_at`` and ``state_version`` move), rows are never deleted
    (count only grows), the history reads ascending; a stale
    ``expected_state_version`` is a ``CONFLICT`` with the database
-   unchanged, a world with no current revision a ``NOT_FOUND``, and an
+   unchanged, a world with no current revision a ``NOT_FOUND``, an
    empty field in a revision is honest undeclared — never inherited
-   from the previous revision;
+   from the previous revision — and the ABA pin: a caller holding a
+   stale revision's identity cannot resurrect its old edit even when
+   the new revision re-mints the same ``state_version``;
 5. **the read/citation face** — an unseeded world answers ``None``
    (honest), a superseded revision stays citable by number exactly as
    it was written, and the history orders ascending;
@@ -48,7 +62,8 @@ groups:
 7. **the wiring face** — ``bible_store`` is a required keyword-only
    parameter (no caller can silently skip the seed), and the real
    composition root seeds the real builtin world's Bible (one row,
-   revision 1, ``CURRENT``; a reopen writes nothing);
+   revision 1, ``CURRENT``, its premise and its ``start=`` calendar
+   from the shipped package; a reopen writes nothing);
 8. **the database-surface error vocabulary** — the store's mapping of
    the database's own refusals (the world store's ``create_world``
    narrowing): a ``UNIQUE (world_id, revision)`` clash answers
@@ -81,6 +96,7 @@ from elc.platform.db.migrations import apply_migrations, schema_version
 from elc.platform.types import DomainErrorCode, Err, Ok
 from elc.world.bible import (
     BIBLE_FIELDS,
+    BibleContent,
     BibleRevisionStatus,
     SqliteBibleStore,
 )
@@ -412,9 +428,10 @@ def test_the_seed_lands_revision_one_with_the_package_premise(
 ) -> None:
     """The world's birth carries its Bible: revision 1, ``CURRENT``,
     no parent (the template's own word), the premise being the
-    package's setting prose joined with `` · ``, the other thirteen
-    content fields honestly empty, the derived id, both stamps the
-    seed's ``now`` and ``state_version`` 1."""
+    package's setting prose joined with `` · `` and the calendar the
+    package's ``calendar_start`` through the creation-time mapping,
+    the other twelve content fields honestly empty, the derived id,
+    both stamps the seed's ``now`` and ``state_version`` 1."""
 
     _seed_one_world(world_store, bible, tmp_path)
     current = bible.current_bible(TEST_WORLD_ID)
@@ -425,8 +442,12 @@ def test_the_seed_lands_revision_one_with_the_package_premise(
     assert current.parent_revision is None
     assert current.status is BibleRevisionStatus.CURRENT
     assert current.premise == " · ".join(_seed_setting())
+    # The creation-time calendar mapping: the package's own
+    # calendar_start, seated as ``start=<ISO date>`` — the instance
+    # calendar's authority seat a V3 reader takes the epoch from.
+    assert current.calendar == "start=2026-01-01"
     for field in BIBLE_FIELDS:
-        if field == "premise":
+        if field in ("premise", "calendar"):
             continue
         assert getattr(current, field) == UNDECLARED, field
     # The no-hidden-clock law on the seed path: the caller here is the
@@ -476,6 +497,58 @@ def test_a_replayed_seed_writes_nothing(
     assert after == before
 
 
+def test_the_seed_lands_the_full_content(
+    world_store: SqliteWorldStore,
+    bible: SqliteBibleStore,
+    tmp_path: Path,
+) -> None:
+    """The seed face takes the shared content model whole: all fourteen
+    fields land verbatim as given, and a field the model leaves at its
+    default reads back the empty string — the honest undeclared, never
+    an inheritance and never a guess."""
+
+    world_store.create_world("world-fullbible", "Fullbible", None, NOW)
+    full = BibleContent(
+        premise="The full word of the template.",
+        genre="fable",
+        tone="warm",
+        calendar="start=2026-01-01",
+        physics="ordinary",
+        magic_rules="none spoken",
+        geography="two hills and a river",
+        society="mill folk",
+        politics="a town council",
+        technology="water wheels",
+        religion="the river keepers",
+        history="founded by the first mill",
+        hard_rules="No one lies about the river.",
+        narrative_preferences="slow reveals",
+    )
+    seeded = bible.seed_bible("bible-fullbible-0001", "world-fullbible", full, NOW)
+    assert isinstance(seeded, Ok)
+    stored = bible.current_bible("world-fullbible")
+    assert stored is not None
+    assert stored.revision == 1
+    assert stored.parent_revision is None
+    assert stored.status is BibleRevisionStatus.CURRENT
+    assert stored.state_version == 1
+    for field in BIBLE_FIELDS:
+        assert getattr(stored, field) == getattr(full, field), field
+
+    # The default-constructed content is the all-undeclared shape: a
+    # new world seeded with it reads the empty string in every content
+    # field — the caller declared nothing, so nothing is stored.
+    world_store.create_world("world-barebible", "Barebible", None, NOW)
+    bare_seeded = bible.seed_bible(
+        "bible-barebible-0001", "world-barebible", BibleContent(), NOW
+    )
+    assert isinstance(bare_seeded, Ok)
+    bare = bible.current_bible("world-barebible")
+    assert bare is not None
+    for field in BIBLE_FIELDS:
+        assert getattr(bare, field) == UNDECLARED, field
+
+
 # ---------------------------------------------------------------------------
 # 3. the N-INV-006 machine pin (this cut's core)
 # ---------------------------------------------------------------------------
@@ -522,17 +595,17 @@ def test_a_template_update_does_not_rewrite_the_seeded_world(
 # ---------------------------------------------------------------------------
 
 
-def _revise_kwargs(**overrides: str) -> dict[str, str]:
-    """The fourteen content fields as one explicit payload — the
-    revision face's full-content contract (nothing rides on the
-    previous revision)."""
+def _content(**overrides: str) -> BibleContent:
+    """The fourteen content fields as one explicit payload — the shared
+    content model both write faces take (the revision face's
+    full-content contract: nothing rides on the previous revision)."""
 
     fields = dict.fromkeys(BIBLE_FIELDS, "")
     fields["premise"] = _revised_premise()
     fields["genre"] = "fable"
     fields["hard_rules"] = "No one lies about the river."
     fields.update(overrides)
-    return fields
+    return BibleContent(**fields)
 
 
 def test_a_revision_supersedes_and_appends(
@@ -554,9 +627,10 @@ def test_a_revision_supersedes_and_appends(
     moved = bible.revise_bible(
         _bible_id(2),
         TEST_WORLD_ID,
+        _content(),
+        expected_bible_revision_id=before.bible_revision_id,
         expected_state_version=1,
         now=LATER,
-        **_revise_kwargs(),
     )
     assert isinstance(moved, Ok)
     revised = moved.value
@@ -595,9 +669,10 @@ def test_a_stale_expected_version_is_a_conflict_and_writes_nothing(
     refused = bible.revise_bible(
         _bible_id(2),
         TEST_WORLD_ID,
+        _content(),
+        expected_bible_revision_id=_bible_id(1),
         expected_state_version=99,
         now=LATER,
-        **_revise_kwargs(),
     )
     assert isinstance(refused, Err)
     assert refused.error.code is DomainErrorCode.CONFLICT
@@ -619,9 +694,10 @@ def test_a_world_with_no_current_revision_cannot_revise(
     refused = bible.revise_bible(
         _bible_id(1),
         "world-nowhere",
+        _content(),
+        expected_bible_revision_id=_bible_id(1),
         expected_state_version=1,
         now=NOW,
-        **_revise_kwargs(),
     )
     assert isinstance(refused, Err)
     assert refused.error.code is DomainErrorCode.NOT_FOUND
@@ -643,9 +719,10 @@ def test_an_empty_field_is_undeclared_not_inherited(
     first = bible.revise_bible(
         _bible_id(2),
         TEST_WORLD_ID,
+        _content(),
+        expected_bible_revision_id=_bible_id(1),
         expected_state_version=1,
         now=LATER,
-        **_revise_kwargs(),
     )
     assert isinstance(first, Ok)
     assert first.value.genre == "fable"
@@ -653,9 +730,10 @@ def test_an_empty_field_is_undeclared_not_inherited(
     second = bible.revise_bible(
         _bible_id(3),
         TEST_WORLD_ID,
+        _content(genre=""),
+        expected_bible_revision_id=_bible_id(2),
         expected_state_version=1,
         now=LATER,
-        **_revise_kwargs(genre=""),
     )
     assert isinstance(second, Ok)
     assert second.value.revision == 3
@@ -664,6 +742,70 @@ def test_an_empty_field_is_undeclared_not_inherited(
     history = bible.bible_revisions(TEST_WORLD_ID)
     assert history[1].genre == "fable"  # the previous revision, intact
     assert history[2].genre == UNDECLARED  # not inherited
+
+
+def test_a_stale_revision_identity_cannot_resurrect_an_old_edit(
+    world_store: SqliteWorldStore,
+    bible: SqliteBibleStore,
+    conn: sqlite3.Connection,
+    tmp_path: Path,
+) -> None:
+    """The ABA pin (the external review's revision-concurrency HIGH):
+    ``state_version`` is not a cross-revision identity — every new
+    revision mints it from 1 — so a caller holding a stale revision's
+    row is refused even when the counters coincide, and its old edit
+    cannot silently supersede the newer writer's word. A reads
+    revision 1 (``state_version = 1``); B writes revision 2, which
+    mints its own ``state_version = 1`` (the ABA witness); A commits
+    its stale edit with revision 1's identity — ``CONFLICT``, and no
+    revision 3 is born: two rows, revision 2 still ``CURRENT`` with
+    B's content."""
+
+    _seed_one_world(world_store, bible, tmp_path)
+    # A reads the seeded revision and holds its identity + counter.
+    a_view = bible.current_bible(TEST_WORLD_ID)
+    assert a_view is not None
+    assert a_view.bible_revision_id == _bible_id(1)
+    assert a_view.state_version == 1
+
+    # B revises: revision 2 lands and mints state_version = 1 again —
+    # the exact coincidence the identity half of the check exists for.
+    b_write = bible.revise_bible(
+        _bible_id(2),
+        TEST_WORLD_ID,
+        _content(premise="B's word on the world."),
+        expected_bible_revision_id=a_view.bible_revision_id,
+        expected_state_version=a_view.state_version,
+        now=LATER,
+    )
+    assert isinstance(b_write, Ok)
+    assert b_write.value.revision == 2
+    assert b_write.value.state_version == 1
+
+    # A commits its stale edit, still holding revision 1's identity and
+    # counter: refused CONFLICT, both ids named in the human sentence.
+    a_write = bible.revise_bible(
+        _bible_id(3),
+        TEST_WORLD_ID,
+        _content(),
+        expected_bible_revision_id=a_view.bible_revision_id,
+        expected_state_version=a_view.state_version,
+        now=LATER,
+    )
+    assert isinstance(a_write, Err)
+    assert a_write.error.code is DomainErrorCode.CONFLICT
+    assert a_view.bible_revision_id in a_write.error.message
+    assert _bible_id(2) in a_write.error.message
+
+    # Nothing was written: no revision 3, the current row is still B's
+    # revision 2 with B's content.
+    assert _row_count(conn, TEST_WORLD_ID) == 2
+    current = bible.current_bible(TEST_WORLD_ID)
+    assert current is not None
+    assert current.revision == 2
+    assert current.bible_revision_id == _bible_id(2)
+    assert current.premise == "B's word on the world."
+    assert current.status is BibleRevisionStatus.CURRENT
 
 
 # ---------------------------------------------------------------------------
@@ -698,9 +840,10 @@ def test_a_superseded_revision_stays_citable(
     moved = bible.revise_bible(
         _bible_id(2),
         TEST_WORLD_ID,
+        _content(),
+        expected_bible_revision_id=before.bible_revision_id,
         expected_state_version=1,
         now=LATER,
-        **_revise_kwargs(),
     )
     assert isinstance(moved, Ok)
 
@@ -835,6 +978,14 @@ def test_the_composition_root_seeds_the_builtin_worlds_bible(
         assert current.parent_revision is None
         assert current.status is BibleRevisionStatus.CURRENT
         assert current.premise == package_premise
+        # The creation-time calendar mapping (V3-2R): the shipped
+        # package's calendar_start rides the seed into the Bible's
+        # calendar field — the instance calendar's authority seat — so
+        # a V3 reader takes the world's epoch from here without
+        # re-reading the package. The loaded package's own value is
+        # the known ``2025-09-14``.
+        assert package.calendar_start == "2025-09-14"
+        assert current.calendar == f"start={package.calendar_start}"
     finally:
         host.close()
 
@@ -884,9 +1035,10 @@ def test_the_unique_clash_maps_to_conflict_and_rolls_back(
     refused = bible.revise_bible(
         _bible_id(2),
         TEST_WORLD_ID,
+        _content(),
+        expected_bible_revision_id=_bible_id(1),
         expected_state_version=1,
         now=LATER,
-        **_revise_kwargs(),
     )
     assert isinstance(refused, Err)
     assert refused.error.code is DomainErrorCode.CONFLICT
@@ -943,9 +1095,10 @@ def test_a_locked_database_maps_to_dependency_unavailable(
             refused = writer_b.revise_bible(
                 _bible_id(2),
                 TEST_WORLD_ID,
+                _content(),
+                expected_bible_revision_id=_bible_id(1),
                 expected_state_version=1,
                 now=LATER,
-                **_revise_kwargs(),
             )
         finally:
             conn.execute("ROLLBACK")
@@ -958,9 +1111,10 @@ def test_a_locked_database_maps_to_dependency_unavailable(
         retried = writer_b.revise_bible(
             _bible_id(2),
             TEST_WORLD_ID,
+            _content(),
+            expected_bible_revision_id=_bible_id(1),
             expected_state_version=1,
             now=LATER,
-            **_revise_kwargs(),
         )
         assert isinstance(retried, Ok)
         assert retried.value.revision == 2

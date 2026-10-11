@@ -65,7 +65,7 @@ from elc.platform.types import (
     Ok,
     Result,
 )
-from elc.world.bible import SqliteBibleStore
+from elc.world.bible import BibleContent, SqliteBibleStore
 from elc.world.engine.types import Condition, MomentKind, PoolEvent
 from elc.world.store import SqliteWorldStore
 from elc.world.types import StateEffect
@@ -1032,6 +1032,15 @@ def _bible_id_for(world_id: str, revision: int) -> str:
     return f"bible-{world_token}-{revision:04d}"
 
 
+def _bible_calendar_for(calendar_start: str) -> str:
+    """The creation-time mapping of the package's calendar declaration
+    (v3, A2's ``calendar_start``) into the Bible's ``calendar`` field —
+    the instance calendar's authority seat: ``start=<ISO date>``. V3
+    readers take the world's epoch from here and never re-read the
+    package for it."""
+    return f"start={calendar_start}"
+
+
 def story_days_of(
     package: WorldPackage,
     store: SqliteWorldStore,
@@ -1156,21 +1165,30 @@ def ensure_builtin_worlds(
     its consumers, not this seed).
 
     V3-2 (DEC-OPI-bab4da9f…29): a world's birth carries its Bible's
-    seed — right after ``create_world`` lands, the package's ``setting``
-    prose becomes the Bible's ``premise`` (the other thirteen content
-    fields stay the empty string: honest undeclared, the template
-    spoke only the setting) through the caller-wired ``bible_store``'s
-    idempotent ``seed_bible`` under the derived revision id (see
-    :func:`_bible_id_for`). The face is idempotent and **never
-    rewriting** (N-INV-006's machine half): a re-open re-seeds nothing,
-    and a template file edited between opens changes no stored row —
-    the instance Bible's authority lives in ``world_bible_revision``,
-    and a template's later update making it into a stored world is an
-    explicit revision decision, never a silent push. The
-    ``bible_store`` keyword is **required**, deliberately: no caller
-    can silently skip the Bible seed and open a world without its
-    authority row (the ``persona_exists`` keyword's own posture —
-    fail-closed, the same family).
+    seed — the seed is attempted in the same open pass, immediately
+    after each ``create_world`` lands in its own short transaction
+    (**two separate short transactions, not one ACID group**;
+    fail-closed and idempotent, so a retry of an interrupted open
+    completes a partial seed — a truly atomic world+initial-Bible
+    creation service for user-created worlds is a registered
+    later-cut obligation, not built here). The package's ``setting``
+    prose becomes the Bible's ``premise`` and the package's
+    ``calendar_start`` rides the creation-time mapping
+    (:func:`_bible_calendar_for`) into the Bible's ``calendar`` — the
+    instance calendar's authority seat — while the other twelve
+    content fields stay the empty string (honest undeclared: the
+    template spoke only what it declared). The content rides the
+    caller-wired ``bible_store``'s idempotent ``seed_bible`` under the
+    derived revision id (see :func:`_bible_id_for`). The face is
+    idempotent and **never rewriting** (N-INV-006's machine half): a
+    re-open re-seeds nothing, and a template file edited between opens
+    changes no stored row — the instance Bible's authority lives in
+    ``world_bible_revision``, and a template's later update making it
+    into a stored world is an explicit revision decision, never a
+    silent push. The ``bible_store`` keyword is **required**,
+    deliberately: no caller can silently skip the Bible seed and open
+    a world without its authority row (the ``persona_exists``
+    keyword's own posture — fail-closed, the same family).
 
     Every failure raises :class:`WorldPackageError` — the composition
     root's open fails closed (the ``world_lore`` seed posture: a database
@@ -1209,17 +1227,25 @@ def ensure_builtin_worlds(
                 f" {created.error.message}"
             )
         # V3-2 (DEC-OPI-bab4da9f…29): the world's birth carries its
-        # Bible's seed — the package's setting prose as the premise, the
-        # other thirteen fields honestly undeclared. The face is
-        # idempotent and never rewriting (N-INV-006: a template's later
-        # update replayed through this seed changes no stored row — a
-        # re-open writes nothing, a re-worded template is silently
-        # ignored), so a failed seed here means the database itself
-        # refused (the FK's dangling world), and fail-closed is the
-        # same posture every other seed refusal below keeps.
-        premise = " · ".join(package.setting)
+        # Bible's seed — attempted immediately after the create_world
+        # above, in its own short transaction (two separate short
+        # transactions, not one ACID group; fail-closed and idempotent,
+        # so a retry of an interrupted open completes a partial seed).
+        # The package's setting prose as the premise, the calendar_start
+        # through the creation-time calendar mapping, the other twelve
+        # fields honestly undeclared. The face is idempotent and never
+        # rewriting (N-INV-006: a template's later update replayed
+        # through this seed changes no stored row — a re-open writes
+        # nothing, a re-worded template is silently ignored), so a
+        # failed seed here means the database itself refused (the FK's
+        # dangling world), and fail-closed is the same posture every
+        # other seed refusal below keeps.
+        content = BibleContent(
+            premise=" · ".join(package.setting),
+            calendar=_bible_calendar_for(package.calendar_start),
+        )
         seeded_bible = bible_store.seed_bible(
-            _bible_id_for(package.world_id, 1), package.world_id, premise, now
+            _bible_id_for(package.world_id, 1), package.world_id, content, now
         )
         if isinstance(seeded_bible, Err):
             raise WorldPackageError(
