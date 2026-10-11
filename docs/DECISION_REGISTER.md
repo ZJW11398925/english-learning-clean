@@ -75,3 +75,20 @@
 
 不变：教学系统、用户配置与安全边界、persona 生成基础、Local V1 运行时纪律、Golden Scenario Baseline V1（工程回归门）与全部 behavioral baselines 继续有效。`Explicitly Deferred` 的 multi-character Scene Runtime 指「完整多角色场景运行时」——Narrative V3 MVP 仍为一 AI 主角 + 一用户角色，该条维持。
 
+### v1.2.1 — 2026-10-12 V3-0R 设计修订（外评 PASS WITH DESIGN CORRECTION）
+
+状态：Narrative V3 设计收口稿升 **v3.1**；**V3.0 冻结待复核**（复核通过前不开 V3-1，更不写代码）。
+
+内容（六项修订 + 三项追加，落 design 三件 + `IMPLEMENTATION_PLAN §20`）：
+
+1. **结算两级（HIGH）**：**SEGMENT/SCENE COMMIT** 为唯一微观事实落地边界（正文段 / Action 裁定结果**即时**入正史）；**Chapter Settlement** 降为压缩与收束（摘要/线推进·收束/hooks/显著性/章关闭/下一章输入包）。修正原「Settlement 是唯一沉淀边界」表述（设计篇 §2.7/§八/十问第 2·3·5 问）。
+2. **World Bible 权威独立（HIGH）**：`world_lore_fact`（0020 无 `world_id`；`scope=world` 为「所有会话共有」旧语义）**不作 per-world Bible 存储**，legacy 保留；只复用 authority/proposal 思想；方向 = World Bible → projection/adapter → legacy lore view。`world_bible_revision` 自带 `world_id`/`revision` 与 premise/genre/tone/calendar/physics/magic_rules/geography/society/politics/technology/religion/history/hard_rules/narrative_preferences。
+3. **WorldActorProfile 入 V3-3**：V3-3 扩为「**World Cast & Player Identity**」（`world_actor_profile` + durable player character + participant namespace）——Director 的 cast 输入（谁是主角/可 POV/长期弧）在 V3-4 之前齐备。
+4. **Reader Exposure 本体**：三种知道 = WORLD TRUTH / ACTOR KNOWLEDGE / READER EXPOSURE；`narrative passage exposure ≠ actor cognition`，绝不自动写入 Player Character Memory（实现可后置，本体先行）。
+5. **时间语义**：`story_tick` = **整数世界时间单位**（数据层唯一形态；World Calendar 解释显示，不依赖地球公历；MVP 粒度 V3-1 钉死）；**planned_start/end_tick（Plan）≠ actual_start/end_tick（Canon）**。
+6. **canonical 隔离**：living-world-spec §2/§4 重标题**【Legacy V2 Runtime】**、术语表拆 **V3 / Legacy V2** 两表（撤销「全稿唯一定义处」）、受影响节加【v3 处置】标注（旧文不删）。
+
+追加三项：**Blueprint 措辞律**（`desired_closing_state` → 软期望集 `closing_pressure`/`desired_development`/`soft_outcomes`/`chapter_questions_to_advance`；硬条件只允许世界规则/已发生因果/不可撤销事实）；**V3-8 结构验收 12 条**（「好玩」为唯一用户门但**不作唯一工程门**）；**刀序微调**（V3-1 Narrative foundations〔story_tick + chapter/scene 生命周期类型 + Plan/Canon 边界类型〕/ V3-5 含 SEGMENT COMMIT / V3-6 含 OUTCOME COMMIT + replan / V3-7 = Actor Memory + Chapter Settlement）。
+
+授权：外评（用户转呈，2026-10-12）「PASS WITH DESIGN CORRECTION」；DMCP 决策 `DEC-OPI-bab4da9f-…9`。
+

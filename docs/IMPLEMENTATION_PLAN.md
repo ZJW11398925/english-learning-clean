@@ -763,16 +763,16 @@ massive content expansion
 
 ## 20. Narrative V3 — 范式转折后的实现程序（2026-10-12，用户主导）
 
-**依据**：范式转折交接（用户，2026-10-12）+ 设计篇 `docs/design/2026-10-12-narrative-v3-paradigm-shift.md`（同一套设计的补充收敛篇：职责分离 / Plan≠Canon / story_tick / Passage≠Event / 记忆六分 / durable 用户角色 / 映射审计 / slicing）。living-world-spec v3 已把 §2/§4 等旧条款降 legacy；cognition 篇 v1.3 已重挂记忆域。
+**依据**：范式转折交接（用户，2026-10-12）+ 设计篇 `docs/design/2026-10-12-narrative-v3-paradigm-shift.md`（同一套设计的补充收敛篇：职责分离 / Plan≠Canon / story_tick / Passage≠Event / 记忆六分 + 三种知道 / durable 用户角色 / 映射审计 / slicing；**已按外评 V3-0R 六项修订：结算两级 / World Bible 权威独立 / World Cast 入 V3-3 / Reader Exposure 本体 / tick 语义 / canonical 隔离**）。living-world-spec v3 已把 §2/§4 等旧条款降 legacy（物理重标题 + 术语拆表）；cognition 篇 v1.3 已重挂记忆域。
 
 **产品核心**：一个持续存在、能够自己发展剧情的小说世界；用户本人是其中一个真实角色，章内只控制自己的角色（User Gate），章间有限参与故事方向（作者层）。**信件只是 UI/narrative presentation element。**
 
 **原则**：
 
 1. **并行新链**——不把现 `run_generated_step()` 改成新系统；旧生产链（letter-triggered run / NOTICE·RESPONSE / reveal 队列 / 每步 direction）保留、全绿，直到新纵向切片完整后再显式裁决退役。
-2. **Plan ≠ Canon**（物理或语义分离）：Director 规划过而未发生的内容不得进入历史；Settlement 是唯一沉淀边界。
+2. **Plan ≠ Canon**（物理或语义分离）：Director 规划过而未发生的内容不得进入历史；**落地边界 = SEGMENT/SCENE COMMIT（微观、即时）**——每一段正文/每一次裁定结果立即入正史；**Chapter Settlement 只做压缩与收束，不是唯一沉淀边界**（V3-0R 修订）。
 3. **USER INTENT ≠ WORLD FACT**：用户输入一律经 Action Resolver 裁定后才可能成为事实。
-4. **单一时间刻度**：新链自始 story_tick；世界历法属 World Bible；wall clock 仅系统 bookkeeping；不允许三套时间混成用户时间线。
+### 4. **单一时间刻度（V3-0R 裁定）**：`story_tick` = 整数世界时间单位（数据层唯一形态；粒度/含义由 World Calendar 解释，不依赖地球公历）；**Plan 时间（planned_start/end_tick）≠ Canon 时间（actual_start/end_tick）**；wall clock 仅系统 bookkeeping；不允许三套时间混成用户时间线。
 5. **复用优先**：world/template_world_id/world_actor/character_card/voice/world_event/world_state_fact/world_storyline/participants/C1 认知视图/persona 生成基础/教学系统/用户配置与安全边界——全部保留复用（设计篇 §9.1）。
 6. **MVP 规模纪律**：先只做一个世界、一名 AI 主角、一名用户角色、一章；**纵向切片真正「好玩」以前不扩大规模**（不做多世界 UI / 多主角 / 复杂遗忘 / 学习桥 / 多模板）。
 
@@ -780,16 +780,18 @@ massive content expansion
 
 | 刀 | 内容 | 门/兑现面 |
 |---|---|---|
-| V3-0 | 设计收口（设计篇 + 三份文档修订同刀）+ 数据模型最小集设计 | 总控复核通过才开 V3-1 |
-| V3-1 | story_tick / World Calendar | 同世界单调、可比较；显示由 Bible 决定 |
-| V3-2 | World Bible 面（`world_bible_revision` + 读取 + 包升格） | 版本化、可引用 |
-| V3-3 | player character durable（新表 + 创建面 + participant namespace） | 用户角色有行有状态；旧 `world_actor` 不动 |
-| V3-4 | Director + `world_chapter(_plan)`（Blueprint 严格 schema；Plan≠Canon 落表） | 计划不上屏入史 |
-| V3-5 | Scene + Dossier + POV Writer + `narrative_passage` | 一场一 POV；秘密不泄漏钉 |
-| V3-6 | User Gate + `user_action` + Action Resolver | intent≠fact；replan_scope 三值可测 |
-| V3-7 | Chapter Settlement + chapter summary/narrative memory + actor memory/belief 最小面 | 章末强边界；下一章只读摘要面 |
-| V3-8 | 纵向切片联调（Gold Scenario 端到端）+ 最小阅读面 | **「好玩」用户验收门**；通过后才议 UI 切换与旧链退役 |
+| V3-0R | 设计修订（外评六项：结算两级 / Bible 权威 / V3-3 扩面 / Reader Exposure / tick 语义 / canonical 隔离）——**复核通过即冻结 V3.0** | 复核通过才开 V3-1 |
+| V3-1 | **Narrative foundations**：story_tick（整数刻度 + 粒度裁定）+ chapter/scene 生命周期类型 + Plan/Canon 边界类型 | tick 单调可比较；计划时间与事实时间类型分离可测 |
+| V3-2 | World Bible（`world_bible_revision` 权威面 + 读取；权威方向 = Bible → projection → legacy lore） | 版本化、可引用；与 legacy lore 不双权威 |
+| V3-3 | **World Cast & Player Identity**：`world_actor_profile` + durable player character + participant namespace | Director 的 cast 输入齐备；旧 `world_actor` 不动 |
+| V3-4 | Director + `world_chapter(_plan)`（Blueprint 严格 schema；软期望集 + 硬条件律；Plan≠Canon 落表） | 计划不上屏入史；`closing_pressure` 非 postcondition 有钉 |
+| V3-5 | Scene + Dossier + POV Writer + `narrative_passage` + **SEGMENT COMMIT** | 一场一 POV；秘密不泄漏；commit 后下一场立即可读 |
+| V3-6 | User Gate + `user_action` + Action Resolver + **OUTCOME COMMIT** + SCENE/CHAPTER replan | intent≠fact；用户选择让原计划失效后不许绕回 |
+| V3-7 | Actor Memory/Belief + Chapter Settlement + chapter summary + Narrative Memory | 章末只做压缩/收束；下一章只读摘要面 |
+| V3-8 | Gold Scenario 端到端 + 最小阅读面 + **结构验收 12 条** | 12 条全绿 + 用户亲验「好玩」（两者同时）；通过后才议 UI 切换与旧链退役 |
 
-**Gold Scenario（固定）**：帝国历 105 年 10 月 1 日——主角莉亚；用户角色远房表弟；父亲凌晨赴帝都、母亲上午从乡下带用户回来；初见；至少一次自由 User Gate；ActionResolver 裁定；按用户选择继续；第一章结束、Settlement、生成第二章 Blueprint。验收链：创建世界→创建角色→Chapter Blueprint→Scene Dossier→POV prose→User Gate→User Action→Action Resolver→必要时 Replan→继续正文→Chapter Settlement→Chapter 2 Blueprint。
+**Gold Scenario（固定）**：帝国历 105 年 10 月 1 日——主角莉亚；用户角色远房表弟；父亲凌晨赴帝都、母亲上午从乡下带用户回来；初见；至少一次自由 User Gate；ActionResolver 裁定；按用户选择继续；第一章结束、Settlement、生成第二章 Blueprint。验收链：创建世界→创建角色→Chapter Blueprint→Scene Dossier→POV prose→User Gate→User Action→Action Resolver→必要时 Replan→继续正文（每段 SEGMENT COMMIT）→Chapter Settlement→Chapter 2 Blueprint。
+
+**结构验收 12 条（V3-0R，与用户「好玩」门并列）**：① Director 产出完整 Blueprint ② Writer 正确保持莉亚 POV ③ 秘密没有提前泄漏 ④ User Gate 只在真实意志点触发 ⑤ 用户自由输入被 Resolver 裁定 ⑥ 一个用户选择真正让原计划失效 ⑦ Replan 后没有强行绕回旧计划 ⑧ Scene 3 能读取 Scene 2 已 commit 的事实 ⑨ 第一章实际结果与 Blueprint 可以明显不同 ⑩ Chapter Settlement 生成摘要 ⑪ Chapter 2 使用真实 Chapter 1 结果，而不是原计划 ⑫ 重启后能够从最新 narrative state 恢复。
 
 **与既有 Phase 的关系**：Phase 0–10 runtime 面（conversation/persona/learning/teaching/runtime/……）全部不动；Narrative V3 是在其上新增的叙事域程序。真实 automatic-teaching rollout 维持 HOLD（SessionBudget 三分与内容补课为开闸前置）不变；P17 学习桥硬门转由叙事域的咬合面承接（触发条件改判须显式留痕）。

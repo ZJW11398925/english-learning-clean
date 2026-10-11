@@ -2,8 +2,8 @@
 
 > **性质**：`living-world-spec.md`（v2.1）与 `cognition-and-narrative-quality.md`（v1.1）的**补充收敛篇**（模式同 cognition 篇——同一套设计的组成部分，不是并行新总体设计）。本稿承接用户 2026-10-12 范式转折交接，把「世界自行发展的持续小说」定为产品核心，把信件驱动/World Run/停点协议降为 legacy 路径。
 > **归属**：范式与职责分离为用户主创（交接原文逐条在案）；体系化收敛、与现役仓库事实的对接、审计与 slicing 为总控设计。
-> **状态**：设计收口稿（待总控复核后进入实现；未复核前不写代码、不续 E 程序）。
-> 日期：2026-10-12 · 版本：v3.0（首版）
+> **状态**：设计收口稿 **v3.1（V3-0R，2026-10-12）**——外评 PASS WITH DESIGN CORRECTION 六项已处置（结算两级 / World Bible 权威独立 / WorldActorProfile 入 V3-3 / Reader Exposure 本体 / tick 语义与 planned≠actual / canonical legacy 隔离），外加 Blueprint 措辞与 V3-8 结构验收、刀序微调。**待复核冻结 V3.0 后再进入实现（未复核前不写代码、不续 E 程序）。**
+> 日期：2026-10-12 · 版本：v3.0（首版）/ **v3.1（V3-0R 修订）**
 
 ---
 
@@ -13,10 +13,11 @@
 
 ```
 创建 / 选择世界 → 创建世界主要角色（AI） → 创建用户角色 → 进入世界
-→ 世界以持续小说的形式发展（章 → 场 → 正文；用户角色是世界里真实的一员）
-→ 章内：用户只控制自己的角色（User Gate）
+→ 世界以持续小说的形式发展：
+   章内：SEGMENT / SCENE COMMIT（每段落即入正史）→ 用户意志点停（User Gate）→ 继续
+      → 章末 CHAPTER SETTLEMENT（压缩与收束；不负责第一次落地）
 → 章间：作者层（让世界自行发展 / 几个故事方向 / 用户输入下一章基调）
-→ 章末 Settlement（强边界） → 下一章 Blueprint → 循环
+→ 下一章 Blueprint → 循环
 ```
 
 产品核心定义（用户原话）：**一个持续存在、能够自己发展剧情的小说世界；用户本人是其中一个真实角色，同时可以在章与章之间有限地参与故事方向。**
@@ -56,10 +57,13 @@
 
 每章首先生成详细 Blueprint，不能只是「今天用户和莉亚第一次见面」。至少包括：
 
-- `chapter_goal` / `dramatic_question` / 时间范围（story_tick 起止）；
-- 本章重点剧情线；`opening_state` / `desired_closing_state`；
-- `scenes[]`：每场含 purpose / 时间 / 地点 / POV / 参与人物 / 人物进入场景前的目标 / `required_beats` / `optional_beats` / 可揭示信息 / 必须隐藏的信息 / 用户是否在场 / 可能出现的 User Gate / scene exit / elasticity；
+- `chapter_goal` / `dramatic_question` / 时间范围（**`planned_start_tick` / `planned_end_tick`**——Plan 时间，见 §四）；
+- 本章重点剧情线；`opening_state` / **软期望集：`closing_pressure`（收束压力）/ `desired_development` / `soft_outcomes` / `chapter_questions_to_advance`**；
+- `scenes[]`：每场含 purpose / 时间（planned）/ 地点 / POV / 参与人物 / 人物进入场景前的目标 / `required_beats` / `optional_beats` / 可揭示信息 / 必须隐藏的信息 / 用户是否在场 / 可能出现的 User Gate / scene exit / elasticity；
 - 三档可变更性（§三）：required narrative objectives / optional development / flexible scene arrangement。
+
+**措辞律（V3-0R）**：软期望**不是 postcondition**——`closing_pressure` 表达「这一章朝哪里压」，不表达「必须到达哪里」。
+**硬条件只允许**：**世界规则 / 已发生因果 / 不可撤销事实**。「作者希望本章结束时用户和莉亚成为朋友」不是硬条件——否则 Resolver 再强，Director 也会偷偷把关系绕回去（铁路化）。
 
 **第一原则**：**Chapter Blueprint 是 PLAN，不是 CANON。规划过但实际没有发生的内容绝不能进入世界历史。**
 
@@ -95,10 +99,31 @@
 例：用户输入「我拔剑刺向卫兵」——系统必须根据用户角色是否有剑、能力、身体状态、当前地点、世界规则、对方状态、环境，裁定真实结果。
 **输出**至少：`interpretation` / `outcome` / `actual_action` / `consequences` / `state_effects` / `participants` / `replan_scope`。
 `replan_scope` 第一版只三值：**NONE | SCENE | CHAPTER**。
+裁定结果**不悬空**：经 **ACTION OUTCOME COMMIT**（§2.7 微观结算的 User Action 臂）立即落地为 Canon——用户行为的后果与正文段同级入史，不等到章末。
 
-### 2.7 Chapter Settlement（章末结算，强边界）
+### 2.7 结算两级：SEGMENT / SCENE COMMIT（微观，落地）与 CHAPTER SETTLEMENT（章末，压缩与收束）
 
-章结束必须结算（§八 实体）：本章真实发生了什么；哪些 passages 已成 canon；主要事件；当前 state；actor memory；belief；relationship changes；storyline progression；resolved storylines；new hooks；user character location/state；chapter summary。
+**微观结算（V3-0R 修订——唯一的事实落地边界）**：每一段真正落地的 narrative segment、每一次 User Action 的裁定结果、每一个 Scene 边界，都**立即**以 **SEGMENT COMMIT / SCENE COMMIT** 把「事情现在已经真的发生了」写进 Canon：
+
+```
+Narrative Segment（正文段） / User Action 裁定结果
+      ↓ SEGMENT COMMIT（一个事务）
+Canon 立即成立：
+  ├─ narrative_passage（正文，不可变）
+  ├─ world_event（沉淀事实）+ current_state effects
+  ├─ actor_memory / belief 增量（亲历者）
+  ├─ user action outcome（经 Action Resolver 裁定）
+  └─ story_tick 推进（actual ticks）
+      ↓ 下一段 / 下一 Scene（读得到刚 commit 的一切）
+...
+      ↓ CHAPTER SETTLEMENT（章末；压缩与收束——不做第一次落地）
+  chapter summary / narrative memory 压缩 / storyline 推进·收束 /
+  hooks / 记忆显著性 / 章状态关闭 / 下一章输入包
+```
+
+**反例（为什么不能只留章末）**：Scene 2 里用户回答「我父亲刚去世」——Scene 3 的莉亚认知、世界状态、后续 Scene Planner 必须**立刻**把它当正式事实。若等到章末才落地，场与场之间就活在「未被承认的事实」上，运行链断裂。
+
+**Chapter Settlement 只负责**：「这一章结束以后，我们怎样整理已经发生过的东西」——摘要、压缩、线推进/收束、hooks、显著性、章关闭、下一章输入包；**它不负责第一次让事实成为事实**（那是 SEGMENT/SCENE COMMIT 的职责）。
 
 **下一章 Director 主要读取**：World Bible + Current State + Chapter Summaries + Active Storylines + relevant Actor Memories——**而不是把整本小说全文重新塞入上下文**。
 
@@ -107,6 +132,7 @@
 ## 三、规划必须允许被用户真正改变（反铁路剧情）
 
 1. **三档可变更性**：Blueprint 区分 required narrative objectives（章目标——如「莉亚与用户第一次真正认识」）、optional development、flexible scene arrangement（候选实现方式——如「一起去镇里」只是候选之一）。
+1.5 **硬条件只允许**：世界规则 / 已发生因果 / 不可撤销事实——软期望（`closing_pressure` / `desired_development` / `soft_outcomes` / `chapter_questions_to_advance`，§2.2）**永远不是 postcondition**；「必须让用户和莉亚成为朋友」这类作者愿望不得把 Director 变成铁路调度。
 2. 用户行为使某场景不成立时，**改剧情，不是把用户拉回原计划**（禁止铁路剧情）。
 3. **三层吸收**：
    - 小变化 → Writer 自然吸收；
@@ -130,6 +156,8 @@
 ```
 
 纪律：
+- **tick 语义（V3-0R 裁定）**：`story_tick` = **整数世界时间单位**（数据层唯一形态，单位粒度与含义由该世界的 World Calendar 解释——**数据库不得依赖地球公历**）。MVP（Gold Scenario 帝国历）在 V3-1 落表前钉死具体粒度（建议 1 tick = 1 分钟；历法只做解释，不参与排序）；
+- **Plan 时间 ≠ Canon 时间**：Blueprint/Dossier 携带 `planned_start_tick` / `planned_end_tick`（Plan）；真正落地时写 `actual_start_tick` / `actual_end_tick`（Canon）——用户行为可以把计划 10:00 的场拖到 11:20，**两套字段不许共用一个「story_tick 起止」**（这也是 Plan≠Canon 的时间版本）；
 - **排序与因果基于 story time**（同一世界内单调、可比较）；
 - 世界日期格式属于 World Bible（每世界自己的历法，可完全虚构）；
 - wall clock **只用于系统 bookkeeping**（行时间戳、审计），不进入用户时间线；
@@ -151,18 +179,30 @@
 
 ---
 
-## 六、记忆体系六分与角色记忆域
+## 六、记忆体系六分、「三种知道」与角色记忆域
 
 不要把所有东西叫 memory。新分类（原 §5 双投影与记忆温度的对照见附录 A）：
 
 | # | 类别 | 语义 | 与旧面的关系 |
 |---|---|---|---|
-| 1 | **World Bible** | 稳定世界规则、设定、历史背景（版本化） | `world_lore_fact` 是其雏形；包内 setting/supply/affordance 归此 |
+| 1 | **World Bible** | 稳定世界规则、设定、历史背景（版本化） | **权威独立（V3-0R）**：`world_bible_revision` 自带 `world_id` + `revision`（premise / genre / tone / calendar / physics / magic_rules / geography / society / politics / technology / religion / history / hard_rules / narrative_preferences）。**`world_lore_fact`（0020 无 world_id、`scope=world` 是「所有会话共有」的旧语义）不作 per-world Bible 存储**——只复用其 authority/proposal 思想；方向 = **World Bible → projection/adapter → legacy lore view**，不许反 |
 | 2 | **Event History** | 真正发生过的事情，append-only | = 现 `world_event`（语义收窄为「沉淀事实」，见 §五） |
 | 3 | **Current State** | 当前仍然为真的事实 | = 现 `world_state_fact`（CURRENT/SUPERSEDED 语义直接复用） |
 | 4 | **Actor Memory / Belief** | 某个 actor 经历过、听说过、相信、误解、推断出的内容 | 域一「亲历/听闻」的正式化 + 新增 belief；**新域** |
 | 5 | **Narrative Memory** | 剧情线、伏笔、开放问题、章节总结、未完成承诺 | `world_storyline` 是其结构半；新增 chapter summary/hooks |
 | 6 | **Chapter / Scene Plan** | 未来规划，**不是真实历史** | **新域**（Blueprint/Dossier） |
+
+### 6.1 三种「知道」（V3-0R 立本体；实现可后置）
+
+```
+WORLD TRUTH      世界真实发生了什么（event / state）
+ACTOR KNOWLEDGE  每个 actor（莉亚 / 用户角色 / 主角 2…）各自知道、相信、误解什么
+READER EXPOSURE  现实用户作为读者已经看到了什么（passage 级暴露面）
+```
+
+- 多 POV 一落地必然出现 **Reader Knowledge ≠ Player Character Knowledge**：第二章切到主角 2，读者看见莉亚父亲参与政变——但世界里的「表弟」**不知道**。
+- 用户的输入始终是对**用户角色**的 intent：系统不得因为玩家知道，就把知识塞进用户角色（metagame 规则可后置，**本体必须先对**——否则多 POV 落地即重构 cognition）。
+- **narrative passage exposure ≠ actor cognition**：`reader_exposure`（读者看过哪些 passage）是独立记录面，**绝不自动写入** Player Character Memory / Actor Memory。
 
 - **hot / warm / cold 降级为 retrieval policy**（未来检索策略），不再是 memory 类型本身。
 - **角色记忆独立成域**：莉亚对用户角色的记忆、莉亚对母亲的记忆、父亲对莉亚的判断、主角 2 对某事件的误解、用户角色对别人知道什么——都属于虚构世界，**绝不污染**：现实 User Profile、现实用户隐私、现有 Persona × User `relationship_memory`。
@@ -182,6 +222,7 @@
 - `CharacterCard` 回答：**她是谁**（现役 0019 表，保留）。
 - `WorldActorProfile` 回答：**她在当前世界/小说中的作用**——`story_role`（PROTAGONIST / MAJOR / SUPPORTING）、`pov_eligible`、`pov_weight`、`long_term_drive`、`current_arc_seed`、`private_context`。
 - 同一个角色模板在不同 world fork 中可以拥有不同故事身份（模板 fork = `template_world_id`，现役复用）。
+- **落地位置（V3-0R）**：`world_actor_profile` 与 durable player character **同归 V3-3（World Cast & Player Identity）**——Director 第一次规划莉亚时必须知道「她是主角不是普通居民 / 她能作 POV / 她这部小说里的长期弧是什么」；**不许把这些塞回 CharacterCard**（卡回答「她是谁」，档案回答「她在本世界里是什么人」）。
 
 ---
 
@@ -195,9 +236,10 @@
 - `narrative_passage`（正文）
 - `user_gate`（停点与选项）/ `user_action`（用户行为与裁定结果）
 - actor memory / belief
+- `reader_exposure`（读者暴露面；**≠ actor cognition**，见 §6.1）
 - chapter summary / narrative memory（线/伏笔/开放问题/承诺）
 
-**硬要求**：**Plan 与 Canon 必须物理或语义分离**——绝不能让「World Director 计划过」自动成为「世界已经发生」。（落地建议：Plan 类表带 `plan_status`，Settlement 才把事实写进 `world_event`/`world_state_fact`/memory 面。）
+**硬要求**：**Plan 与 Canon 必须物理或语义分离**——绝不能让「World Director 计划过」自动成为「世界已经发生」。（落地建议：Plan 类表带 `plan_status`；事实写进 `world_event` / `world_state_fact` / memory 面**只经 SEGMENT/SCENE COMMIT 事务**——章末 Settlement **不是**落地边界，见 §2.7。）
 
 ---
 
@@ -209,7 +251,7 @@
    - `elc/world/scene.py`（Scene + Dossier）
    - `elc/world/writer.py`（POV Writer）
    - `elc/world/action.py`（User Gate + Action Resolver）
-   - `elc/world/settlement.py`（Chapter Settlement + memory 沉淀）
+   - `elc/world/settlement.py`（结算两级：**SEGMENT/SCENE COMMIT 事务** + Chapter Settlement 压缩收束）
    - 配套：`elc/world/time.py`（story_tick / World Calendar）、`elc/world/bible.py`、actor profile / player character 面。
 3. **当新纵向切片真正完成后，才逐步切 UI 和退役旧逻辑**（旧链退役本身是一次显式裁决，不在本稿预设）。
 4. 迁移编号接现 head（0028 之后）；新表一律走现 store 纪律（幂等/值语义拒收/append-first）。
@@ -231,9 +273,9 @@ letter-triggered `world_run`；NOTICE/RESPONSE 停点语义；`world_reveal_item
 | `world_event` | **复用升格**（语义收窄为「沉淀事实」；正文另落 `narrative_passage`） |
 | `world_state_fact` | **直接复用**（Current State） |
 | `world_storyline` | **复用升格**（Narrative Memory 的结构半；接章总结/伏笔队列） |
-| `world_lore_fact` | **复用升格**（World Bible 雏形；接 `world_bible_revision`） |
+| `world_lore_fact` | **legacy 保留**（0020 无 `world_id`、`scope=world` 是「所有会话共有」的旧语义——**不作 per-world Bible 存储**；只复用其 authority/proposal 思想。权威方向 = World Bible → projection/adapter → legacy lore view） |
 | `world_run` / `world_reveal_item` | **legacy 保留**（退出新主线，不删、不迁） |
-| 新增（MVP 最小集） | `world_chapter` / `world_chapter_plan` / `world_scene` / `narrative_passage` / `user_gate` / `user_action` / `world_actor_profile` / player character / actor memory（belief）/ chapter settlement/summary |
+| 新增（MVP 最小集） | `world_chapter` / `world_chapter_plan` / `world_scene` / `narrative_passage` / `user_gate` / `user_action` / `world_actor_profile` / player character / actor memory（belief）/ `reader_exposure` / chapter settlement/summary |
 
 ---
 
@@ -255,24 +297,42 @@ letter-triggered `world_run`；NOTICE/RESPONSE 停点语义；`world_reveal_item
 **完整验收链**：
 ```
 创建世界 → 创建角色 → Chapter Blueprint → Scene Dossier → POV prose
-→ User Gate → User Action → Action Resolver → 必要时 Replan → 继续正文
+→ User Gate → User Action → Action Resolver → 必要时 Replan → 继续正文（每段 SEGMENT COMMIT）
 → Chapter Settlement → Chapter 2 Blueprint
 ```
-**门**：这条纵向切片真正「好玩」以前，不扩大规模。
 
-### 10.3 刀序（第一阶段，供总控复核）
+**结构验收 12 条（V3-0R 补齐——「好玩」是用户门，不作唯一工程门）**：
+
+```
+① Director 产出完整 Blueprint
+② Writer 正确保持莉亚 POV
+③ 秘密没有提前泄漏
+④ User Gate 只在真实意志点触发
+⑤ 用户自由输入被 Resolver 裁定
+⑥ 一个用户选择真正让原计划失效
+⑦ Replan 后没有强行绕回旧计划
+⑧ Scene 3 能读取 Scene 2 已 commit 的事实
+⑨ 第一章实际结果与 Blueprint 可以明显不同
+⑩ Chapter Settlement 生成摘要
+⑪ Chapter 2 使用真实 Chapter 1 结果，而不是原计划
+⑫ 重启后能够从最新 narrative state 恢复
+```
+
+**门**：12 条结构验收全绿 **+** 用户亲验「是否有趣」——两者同时，才不扩大规模。
+
+### 10.3 刀序（V3-0R 微调版，供总控复核）
 
 | 刀 | 内容 | 门/兑现面 |
 |---|---|---|
-| **V3-0** | 设计收口（本稿 + 三份 canonical 修订同刀）+ 数据模型最小集设计 + 四查 | 总控复核通过才开 V3-1 |
-| **V3-1** | story_tick / World Calendar（世界级唯一时间刻度 + 显示层本地化；新链自始单一刻度） | 时间面钉：同世界单调、可比较；显示由 Bible 决定 |
-| **V3-2** | World Bible 面（`world_bible_revision` + 读取 + 包升格接入） | Bible 版本化、可引用 |
-| **V3-3** | player character durable（新表 + 创建面 + participant namespace 统一） | 用户角色有行、有状态；旧 `world_actor` 不动 |
-| **V3-4** | Director + `world_chapter(_plan)`（Blueprint 严格 schema；Plan≠Canon 分离落表） | 章规划可生成、可审计；计划不上屏入史 |
-| **V3-5** | Scene + Dossier + POV Writer + `narrative_passage`（限知纪律） | 正文入 passage；一场一 POV；秘密不泄漏钉 |
-| **V3-6** | User Gate + `user_action` + Action Resolver（intent≠fact；replan_scope 三值） | 拔剑例：裁定≠意图；replan 分层可测 |
-| **V3-7** | Chapter Settlement + chapter summary/narrative memory + actor memory/belief 最小面 | 章末结算强边界；下一章只读摘要面 |
-| **V3-8** | 纵向切片联调（Gold Scenario 端到端）+ 最小阅读面（Chapter Reader 雏形） | **「好玩」验收门**（用户亲验）；通过后才议 UI 切换与旧链退役 |
+| **V3-0R** | 本修订（单一评分：结算两级 / Bible 权威 / V3-3 扩面 / Reader Exposure / tick 语义 / canonical 隔离）——**复核通过即冻结 V3.0** | 复核通过才开 V3-1 |
+| **V3-1** | **Narrative foundations**：story_tick（整数刻度 + 粒度裁定）+ **chapter/scene 生命周期类型** + **Plan/Canon 边界类型**（不只 Calendar） | tick 单调可比较；计划时间与事实时间类型分离可测 |
+| **V3-2** | World Bible（`world_bible_revision` 权威面 + 读取；**权威方向 = Bible → projection → legacy lore**） | Bible 版本化、可引用；与 legacy lore 不双权威 |
+| **V3-3** | **World Cast & Player Identity**：`world_actor_profile`（PROTAGONIST/POV/drive）+ durable player character + participant namespace | Director 的 cast 输入齐备（谁是主角/可 POV/长期弧）；旧 `world_actor` 不动 |
+| **V3-4** | Director + `world_chapter(_plan)`（Blueprint 严格 schema；软期望集 + 硬条件律；Plan≠Canon 落表） | 计划不上屏入史；`closing_pressure` 非 postcondition 有钉 |
+| **V3-5** | Scene + Dossier + POV Writer + `narrative_passage` + **SEGMENT COMMIT（event/state 即时落地）** | 正文入 passage；一场一 POV；秘密不泄漏；commit 后下一场立即可读 |
+| **V3-6** | User Gate + `user_action` + Action Resolver + **OUTCOME COMMIT** + SCENE/CHAPTER replan | 拔剑例：裁定≠意图；用户选择让原计划失效后不许绕回 |
+| **V3-7** | Actor Memory/Belief + **Chapter Settlement** + chapter summary + Narrative Memory | 章末只做压缩/收束；下一章只读摘要面 |
+| **V3-8** | Gold Scenario 端到端 + 最小阅读面 + **结构验收 12 条** | 12 条全绿 + 用户亲验「好玩」；通过后才议 UI 切换与旧链退役 |
 
 ---
 
@@ -280,24 +340,26 @@ letter-triggered `world_run`；NOTICE/RESPONSE 停点语义；`world_reveal_item
 
 ### A1. living-world-spec 逐节处置
 
+> **V3-0R 落地**：spec 已同步执行结构隔离——§2 与 §4 重标题为 **【Legacy V2 Runtime】**（非 V3 产品定义）、术语表拆为 **V3 术语（第一权威）** 与 **Legacy V2 术语** 两表、受影响节加【v3 处置】标注；**旧文不删**（历史与旧链对照用）。
+
 | 节 | 处置 | 说明 |
 |---|---|---|
-| §1 愿景 | **修订** | 「用户为世界而来，把英语学会了带走」保留；「世界在用户每次回信后运转一步」废止 |
-| §2 核心体验循环 | **废止** | 信件循环不再是核心；新循环见本稿 §1.1 |
+| §1 愿景 | **修订** | 「用户为世界而来，把英语学会了带走」保留；「世界在用户每次回信后运转一步」废止（已加处置标注） |
+| §2 核心体验循环 | **废止→Legacy 节** | 信件循环不再是核心；新循环见本稿 §1.1；原节重标题为 Legacy V2 Runtime |
 | §3.1 世界构成 | **保留升格** | 设定→World Bible；时间→story_tick/World Calendar；阵容/事件树/记忆→新实体面 |
 | §3.2 角色与关系/用户角色 | **保留升格** | 亲历/听闻→Actor Memory（域一正式化）；v2.2 用户角色款→durable player character（§七） |
-| §3.3 多世界 | **冻结至 MVP 后** | 互不影响/一次住一个/template fork 保留设计；不先做 UI |
+| §3.3 多世界 | **冻结至 MVP 后** | 互不影响/一次住一个/template fork 保留设计；不先做 UI（已加处置标注） |
 | §4.1 双启动条件 | **废止** | 世界不再依赖回信启动；揭示降为 legacy |
-| §4.2 World Run 七步/checkpoint | **legacy** | 旧链运行语义保留；新主线走章/场 |
-| §4.3 事件池 | **修订** | 池不再驱动生产；事件由 Director 规划 + Settlement 沉淀（池可作为素材/素材库） |
+| §4.2 World Run 七步/checkpoint | **legacy→Legacy 节** | 旧链运行语义保留；新主线走章/场；原节重标题为 Legacy V2 Runtime |
+| §4.3 事件池 | **修订** | 池不再驱动生产；事件由 Director 规划、经 Scene 落地（**SEGMENT COMMIT**）沉淀（池可作为素材） |
 | §4.4 走向选项 | **升格** | 高频步内操作废止；方向选择成为**章间**作者层 |
 | §4.5 可见性 | **保留** | 焦点视角 = 场景 POV 的天然前身；四档梯度保留为渲染设置候选 |
 | §4.6 特殊时刻协议 | **legacy** | NOTICE/RESPONSE/DIRECTION 保留于旧链 |
 | §4.7 密度 | **修订** | 由 chapter/scene 节奏（Blueprint 内）取代；用户亲调转为偏好输入 |
-| §5 记忆系统双投影 | **重构为六分** | 记忆温度→retrieval policy；状态投影=Current State（保留）；新增 Actor Memory/Narrative Memory/Plan |
+| §5 记忆系统双投影 | **重构为六分 + 三种知道** | 记忆温度→retrieval policy；状态投影=Current State（保留）；新增 Actor Memory/Narrative Memory/Plan/Reader Exposure |
 | §6 教学系统咬合 | **保留** | 三天线/五砝码/三层/延迟/闭环全部有效；咬合点从「信/走向」扩展到「章/场/User Gate」 |
 | §7 IA | **修订** | 世界第一层保留；案头/沓/信箱降 legacy 呈现；新 IA = 世界书架→世界主页→Chapter/Story Reader（等切片后设计） |
-| §7.2 新手路径 | **修订** | 首开 = 创建世界/角色（原「Nell 第一封信」路径降 legacy） |
+| §7.2 新手路径 | **修订** | 首开 = 创建世界/角色（原「Nell 第一封信」路径降 legacy，已加处置标注） |
 | §7.3 世界创建三档 | **升格** | 创建世界 + 创建角色成为核心路径 |
 | §7.4 多世界 UI | **保留（MVP 后）** | 世界架设计保留 |
 | §8 设置面 | **修订** | 世界级设置映射到新模型（风格/节奏/基调成为章间偏好） |
@@ -340,13 +402,13 @@ letter-triggered `world_run`；NOTICE/RESPONSE 停点语义；`world_reveal_item
 
 ## 附录 B：十问自检（实现前必须答清）
 
-1. **新核心循环**：创建/选择世界 → 创建主角与用户角色 → 进入世界 → 世界以持续小说发展（章：POV 正文 + User Gate；章末 Settlement；章间作者层）。
-2. **权力**：Director=决定下一章发生什么（产出 Blueprint，不写正文）；Scene Planner=把章规划落为本场 dossier；POV Writer=按限知把已允许之事写成正文；Action Resolver=把用户 intent 裁定为 world fact（含 consequences 与 replan_scope）。Gate 的停点权在 User Gate（§2.5 表），不是 Writer。
-3. **Plan vs Canon**：Plan 是未来意图（Blueprint/Dossier），Canon 是已发生事实（passage/event/state/memory）；计划过而未发生不得入史；Settlement 是唯一沉淀边界。
+1. **新核心循环**：创建/选择世界 → 创建主角与用户角色 → 进入世界 → 世界以持续小说发展（章内：POV 正文段即时 COMMIT、User Gate 停点；章末 Chapter Settlement 压缩收束；章间作者层）。
+2. **权力**：Director=决定下一章发生什么（产出 Blueprint，不写正文）；Scene Planner=把章规划落为本场 dossier；POV Writer=按限知把已允许之事写成正文；Action Resolver=把用户 intent 裁定为 world fact（含 consequences 与 replan_scope）。另有两条边界权：**User Gate** 决定何时必须停下问用户；**SEGMENT/SCENE COMMIT** 决定「什么已经发生」，**Chapter Settlement 只决定「怎么整理已经发生的东西」**（§2.7，V3-0R 修订）。
+3. **Plan vs Canon**：Plan 是未来意图（Blueprint/Dossier，含 planned ticks），Canon 是已发生事实（passage/event/state/memory/actual ticks）；计划过而未发生不得入史。**落地边界 = SEGMENT/SCENE COMMIT（微观、即时）**；Chapter Settlement 只做压缩与收束，不是唯一沉淀边界（V3-0R 修订）。
 4. **User Gate 时机**：继续生成会替用户决定「有意义的意志行为」（说什么/答应拒绝/攻击/表白/撒谎/透露秘密/重大感情反应/明显改变关系或剧情）时必须停；可自动的是已选定跟随、自然身体动作、不影响人格与重大关系的小动作。
-5. **用户输入≠World Event**：输入只是 intent；须经 Action Resolver 按能力/物品/身体/地点/规则/对方/环境裁定，产出实际发生的后果后，才由 Settlement 沉淀为事件。
+5. **用户输入≠World Event**：输入只是 intent；须经 Action Resolver 按能力/物品/身体/地点/规则/对方/环境裁定，产出实际发生的后果后，经 **ACTION OUTCOME COMMIT** 立即落地为事件（与正文段同级，不等章末）。
 6. **Passage vs Event**：passage 回答「当时具体怎样发生」（正文，不可变）；event 回答「到底发生了什么」（结构化事实 + participants/effects/story time）；只有对未来连续性重要的事实进 Current State。
-7. **Current State vs Actor Memory**：Current State 是世界层面「现在仍为真」的事实（无视角）；Actor Memory 是某一 actor 的经历/听闻/相信/误解/推断（有视角、可失真、可错误）。
+7. **Current State vs Actor Memory**：Current State 是世界层面「现在仍为真」的事实（无视角）；Actor Memory 是某一 actor 的经历/听闻/相信/误解/推断（有视角、可失真、可错误）。**第三种知道是 Reader Exposure**（读者看过哪些 passage）——独立记录面，绝不自动写入角色记忆（§6.1）。
 8. **为何不改 world_run**：它是 letter-triggered 单发条的生命周期（触发信归属、停点语义），与新章/场生命周期不同构；原地改造会让旧链测试全红且混两套语义——并行新链、旧链保留才是正解。
-9. **可直接复用**：world/template_world_id/world_actor/character_card/voice/world_event/world_state_fact/world_storyline/participants/C1 认知视图/世界规则/persona 生成基础/教学系统/用户配置与安全边界（§9.1）。
-10. **第一条 vertical slice**：Gold Scenario（帝国历105年10月1日，莉亚/远房表弟/初见）沿 §10.2 验收链从「创建世界」跑到「第二章 Blueprint」，以「好玩」为用户验收门。
+9. **可直接复用**：world/template_world_id/world_actor/character_card/voice/world_event/world_state_fact/world_storyline/participants/C1 认知视图/世界规则/persona 生成基础/教学系统/用户配置与安全边界（§9.1）。**`world_lore_fact` 不在其列**——legacy 保留、不作 per-world Bible 存储（§六/§9.3）。
+10. **第一条 vertical slice**：Gold Scenario（帝国历105年10月1日，莉亚/远房表弟/初见）沿 §10.2 验收链从「创建世界」跑到「第二章 Blueprint」；验收 = **结构验收 12 条全绿 + 用户亲验「好玩」**（两者同时）。

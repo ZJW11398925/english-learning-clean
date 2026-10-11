@@ -168,6 +168,7 @@ lr 收口（在飞+呈现）→ **C1 认知视图**（participants 列 + 按角�
 - 三源结构（公共 / 亲历 / 听闻）**保留**，但从「记忆温度的视角描述」重挂为 **Actor Memory / Belief 独立域**：每个 actor 的经历、听闻、相信、误解、推断——有视角、可失真、可错误（失真是剧情素材的定性不变）。
 - **记忆温度（滚烫/温/冷）降级为 retrieval policy**（未来检索策略），不再是记忆类型本身；「遗忘」同理（检索降权，非删除）。
 - 用户层（v1.2 款）**保留升格**：用户角色成为 durable world entity 后，「她记得你」从 participants 过滤升级为 actor memory 的读面；C1 认知视图（`host.py` 世界端口，公共 ∪ 亲历 ∪ 用户层）是其现役读面基础。
+- **第三种知道（V3-0R 补）**：**Reader Exposure**（现实用户作为读者看过哪些 passage）与 actor cognition 分离——`narrative passage exposure ≠ actor cognition`，绝不自动写入 Player Character Memory / Actor Memory（设计篇 §6.1）；多 POV 落地前本体先行。
 - 台账 **P1 传闻失真**语义随新域重挂（落点刀改为「Actor Memory 域落地刀」），其余触发条件不变。
 
 ### 新增域五：叙事限知与 POV 纪律（承设计篇 §2.3/§2.4）
@@ -178,7 +179,7 @@ lr 收口（在飞+呈现）→ **C1 认知视图**（participants 列 + 按角�
 
 ### 新增域六：叙事记忆（Narrative Memory）
 
-- 结构半 = 剧情线（域二全部保留）+ 伏笔队列（hooks）+ 开放问题 + 未完成承诺；压缩半 = 章节总结（Chapter Settlement 产出）；
+- 结构半 = 剧情线（域二全部保留）+ 伏笔队列（hooks）+ 开放问题 + 未完成承诺；压缩半 = 章节总结（Chapter Settlement 产出）；**V3-0R：章末 Settlement 只做压缩与收束——事实落地边界是 SEGMENT/SCENE COMMIT（微观、即时）**；
 - 下一章 Director **只读摘要面**（World Bible / Current State / Chapter Summaries / Active Storylines / relevant Actor Memories），不把全文重新塞入上下文。
 
 ### 域三 / 域四
