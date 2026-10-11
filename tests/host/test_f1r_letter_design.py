@@ -131,8 +131,9 @@ def test_the_page_has_the_parlor_screen(tmp_path: Path) -> None:
     # （/api/characters 的 current），静态兜底留空——品牌名与副题退居
     # 门厅封面（ob-tagline；BRAND 单点常量同值驱动，钉在 v21 套件）。
     # v2-2 随迁（8.2.2① 主从条瘦身）：身份长句族退役——身份介绍退入
-    # 笔友档案全页。wf-1 随迁（世界优先，单向收紧）：who-sub 回场 =
-    # 故事日 + 居民位副行（overview 端点驱动，非旧身份长句）。
+    # 笔友档案全页。wf-1 随迁（世界优先，单向收紧）：who-sub 回场
+    # （overview 端点驱动，非旧身份长句）。D-4 随迁：故事日升主位
+    # （.who-when），副行只留「与…通信中」chrome——副槽本身不变。
     assert '<div class="who"></div>' in page
     assert '<div class="who-sub"></div>' in page
     assert '<p class="ob-tagline">见字如晤，今日如何</p>' in page

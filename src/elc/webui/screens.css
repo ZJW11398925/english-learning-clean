@@ -94,9 +94,14 @@ body {
 .who { font-family: var(--f-display); font-size: var(--fs-head);
        line-height: var(--lh-head); font-weight: 400;
        letter-spacing: var(--ls-head); }
-/* wf-1 世界身份行：副行 = 故事日 + 居民位（overview 端点驱动；世界
-   缺席回落臂静默留空）——.sub 族弱化语汇（UI 字 + --ink-faint），
-   零新令牌。 */
+/* wf-1 世界身份行：副行 = 通信 chrome（「与…通信中」，overview 端点
+   驱动；世界缺席回落臂静默留空）——.sub 族弱化语汇（UI 字 +
+   --ink-faint），零新令牌。
+   D-4 世界指示器升格（正典 §7.4）：.who-line = 主位一行——.who（世界
+   名，head 档）+ .who-when（世界内时间，overview 的 date_localized
+   直显，弱化「静默暗示」）；故事日不再走副行（副行只剩通信 chrome）。 */
+.who-line { display: flex; align-items: baseline; gap: var(--sp-2); }
+.who-when { font: var(--t-ui); color: var(--ink-faint); }
 .who-sub { font: var(--t-ui); color: var(--ink-faint); }
 /* rd-4 伙伴面：身份条原地的可点手感——客厅屏的 who 块整体可点；
    hover 触点提示在 components.css（rd-1 钉：screens 零 hover 规则）。
@@ -475,6 +480,37 @@ pre { font: var(--meta-mono);
 .world-day-date { margin: 0; font: var(--meta-font);
                   letter-spacing: var(--meta-track); color: var(--meta-ink); }
 
+/* D-4 世界屏人区两臂（R3）：cast 行 = 通信门（点行进通信），residents 行
+   = 介绍门（点行展开只读介绍）——与案头沓「世界里的人」同一套行为。
+   手感只落在 cursor 与行本身的既有左缘发丝线上（零新装饰、screens 零
+   hover 规则照旧）；行内 vignette 收单行省略（展开面读全文——两处
+   同一行为的前提）。 */
+.world-person--door { cursor: pointer; }
+.world-person:focus-visible { outline: 1px solid var(--pencil);
+                             outline-offset: 2px; }
+.world-person-vignette { white-space: nowrap; overflow: hidden;
+                         text-overflow: ellipsis; }
+.person-intro { margin: 4px 0 0; padding-left: 10px;
+                border-left: 1px solid var(--rule); }
+.person-intro-role { margin: 0; font: var(--t-ui); color: var(--ink-faint);
+                     overflow-wrap: anywhere; }
+.person-intro-vignette { margin: 4px 0 0; font-size: var(--fs-small);
+                         line-height: var(--lh-small); color: var(--ink-soft);
+                         overflow-wrap: anywhere; }
+
+/* D-4 世界架（§7.4 世界切换面在单世界时的最小就位）：一格 = 当前世界。
+   格 = 左缘发丝线的读法（与名册行同族），当前世界带现役标记——与
+   名册行的 .note 同档弱墨。多世界的一格一世界与其待读信角标是后续刀
+   （本刀不造第二格、不造角标：没有的东西不上屏）。 */
+.world-shelf-cell { margin: var(--sp-3) 0 0; padding-left: 10px;
+                    border-left: 1px solid var(--rule); }
+.world-shelf-cell:first-child { margin-top: 0; }
+.world-shelf-name { margin: 0; font-size: var(--fs-small);
+                    line-height: var(--lh-small); font-weight: 600;
+                    overflow-wrap: anywhere; }
+.world-shelf-mark { margin-left: var(--sp-2); font: var(--t-ui);
+                    font-weight: 400; color: var(--ink-faint); }
+
 /* ── mc-1 信封选择器（点案头主从条弹出的那沓信）──────────────────────
    沓形 = 案头的一叠信封：沓内绝对定位错位叠放——top 由视觉位序
    --env-i 驱动（components.js 的 layoutEnvelopeStack 排名重算，custom
@@ -593,12 +629,44 @@ pre { font: var(--meta-mono);
    只在本类（文字链样式本体仍只在 components.css 的 link-btn 族——
    fg1 纪律）。 */
 .envsel-world-link { margin-left: var(--sp-2); }
-.env-letters { margin: 2px 0 0; font-size: var(--fs-small);
-               line-height: var(--lh-small); color: var(--ink-faint); }
 .env-browse { display: none; }
 /* 「收起」恒右（翻看链在桌面档 display:none 时它独自居右；
    屏级面自定义类，按钮样式本体仍只在 components.css——fg1 纪律） */
 .envsel-fold { margin-left: auto; }
+
+/* ── D-4 沓的世界臂 =「世界里的人」（DEC-OPI-a4cf2d0e…63 R2）────────
+   世界在时沓的行不是信封，是人：你的角色（展示位，虚线左缘一处不
+   加）+ 绑定 cast（可通信：名 + 一句 vignette + 信数 + 当前标记 +
+   起笔/档案/编辑动作行）+ 镇民（名/角色/一句；点行展开介绍——只读）。
+   行语汇与世界屏人区同族（左缘发丝线分层：简报 §6「分层靠上下发丝
+   线，零卡片零气泡」——同一「人」对象在两处同一个样子）；vignette
+   两处都收单行省略，展开面读全文（同一行为的同一前提）。沓堆叠量
+   由内容定高（--people 覆盖基础的 --env-n 账，回落臂一字不动）。 */
+.envsel-stack--people { height: auto; max-height: 60dvh; }
+.envsel--people .env-browse { display: none; }
+.person { margin: var(--sp-3) 0 0; padding-left: 10px;
+          border-left: 1px solid var(--rule); }
+.person:first-child { margin-top: 0; }
+.person--you { border-left-style: dashed; }
+.person--door { cursor: pointer; }
+.person:focus-visible { outline: 1px solid var(--pencil);
+                        outline-offset: 2px; }
+.person-name { margin: 0; font-size: var(--fs-small);
+               line-height: var(--lh-small); font-weight: 600;
+               overflow-wrap: anywhere; }
+.person-note { margin-left: var(--sp-2); font: var(--t-ui);
+               font-weight: 400; color: var(--ink-faint); }
+.person-line { margin: 2px 0 0; font-size: var(--fs-small);
+               line-height: var(--lh-small); color: var(--ink-soft);
+               white-space: nowrap; overflow: hidden;
+               text-overflow: ellipsis; }
+.person-vignette { margin: 2px 0 0; font-size: var(--fs-small);
+                   line-height: var(--lh-small); color: var(--ink-faint);
+                   white-space: nowrap; overflow: hidden;
+                   text-overflow: ellipsis; }
+.person-meta { margin: 2px 0 0; font-size: var(--fs-small);
+               line-height: var(--lh-small); color: var(--ink-faint); }
+.person-actions { display: flex; gap: 16px; margin: 4px 0 0; }
 
 /* ── mc-1 全览窗口（v3-2 容器升级重铸，8.2.2a）：**整个沓面板升级成
    的全览窗口**——窗口态是容器自身的形态（.envsel 内的 hidden 翻转 +

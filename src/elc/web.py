@@ -5028,6 +5028,12 @@ class _WebFace:
         is the calendar's own law), today's revealed notes, and the
         resident this conversation's binding names.
 
+        The story day answers twice, one localization law: ``date_localized``
+        is the headline form (the bare day plus the world name — the story
+        block's own) and ``date_story`` is the bare day (D-4, the world
+        indicator's in-world time — the name already rides the main slot,
+        so the indicator never repeats it).
+
         The read faces keep the inbox's own guards: no binding (this
         conversation lives in no world — or the host has no world leg) is
         the same **404**, the same sentence — a world overview that does
@@ -5084,6 +5090,13 @@ class _WebFace:
                     _localize_story_date(day, ui_language, world_name)
                     if day
                     else ""
+                ),
+                # D-4（DEC-OPI-a4cf2d0e…63 R1）：世界指示器（世界名 +
+                # 世界内时间的一行）要的是**不带世界名尾**的故事日——
+                # 名字在主位已有一次，重复一次不是信息。同一本地化律、
+                # 同一 day 输入，唯省名尾（world_log 的日头同形）。
+                "date_story": (
+                    _localize_story_date(day, ui_language) if day else ""
                 ),
                 "ui_language": ui_language,
                 "today": today,

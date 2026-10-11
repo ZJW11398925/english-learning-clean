@@ -229,7 +229,7 @@ retirement，注册表不做阁楼，**编号空出不复用**，见本节表后
 | 19 | space-header | `.space-header`（+ 节名槽 `.spacehead-sec`；与屏级基形 `.top` 合用） | — | default（发丝线夹持 sticky 顶栏，随 `.top`）；无交互态——静态头部；案头头部用 `.top` 原形（who 块端点驱动空槽，mc-1 起点开信封沓）；温故/抽屉头部 = `.top` 基形 + 本类；品牌名与副题退居门厅封面，空间头不再增长链接 | components.css + components.js（`sectionLabel()`，R-1） |
 | 20 | section-tabs | `.section-tabs` / `.section-tab`（+ `--on`） | — | unselected（default，透明点线占位）/ hover（墨色微沉）/ selected（`--on`，主墨加重 + 墨蓝实线短下划 + `aria-selected`）/ focus（地基 `:focus-visible` 焦点环，不另设）/ `[disabled]`（opacity .4）；roving tabindex + 左右箭头循环移选；温故/抽屉各一排三项，切节即拉 | components.css + components.js（`wireSectionTabs()`/`markSectionTabs()`，R-1） |
 | 21 | disclosure | `.disclosure`（+ `.disclosure-head` `.disclosure-marker` `.disclosure-title` `.disclosure-examples` `.disclosure-body` `--open`） | — | collapsed（default，内容区 hidden，chevron 向右）/ expanded（`--open`，内容区展开、chevron 旋转 90°、`aria-expanded="true"`，计数保留；入场 = ⑨-5 paper-unfold）/ focus（地基环，不另设）；标记 = #22 自绘墨线 chevron；一切「超过 8 行的同质列表」与「参考 / 原始读数」走它；不得手风琴互斥、不得嵌套、不得图标外链 | components.css + components.js（`disclosure()`，R-1R） |
-| 22 | icon-set | `.inkicon`（几何模板 `id="icon-search\|chevron\|note\|write\|inbox\|lamp\|stamp\|desk\|revisit\|drawer"`） | — | default（`--icon-size` 见方、currentColor 墨色、`--icon-stroke` 1.5、圆角端点；无独立交互态——chevron 旋转是宿主 #21 的 `--open` 态面；#18 三枚的落墨填充是宿主 `.navdock-item--on` 的态面——fill-opacity 过渡，图标本体仍无独立交互态）/ reduced-motion（宿主动效随库尾总降级归零后静帧） | index.html（`<template id="icon-set-source">` 十枚内联 SVG，几何唯一出处）+ components.css + components.js（`inkIcon()`/`installIcons()`，R-1V） |
+| 22 | icon-set | `.inkicon`（几何模板 `id="icon-search\|chevron\|note\|write\|inbox\|lamp\|stamp\|desk\|revisit\|drawer\|world"`） | — | default（`--icon-size` 见方、currentColor 墨色、`--icon-stroke` 1.5、圆角端点；无独立交互态——chevron 旋转是宿主 #21 的 `--open` 态面；#18 四枚的落墨填充是宿主 `.navdock-item--on` 的态面——fill-opacity 过渡，图标本体仍无独立交互态）/ reduced-motion（宿主动效随库尾总降级归零后静帧） | index.html（`<template id="icon-set-source">` 十一枚内联 SVG，几何唯一出处）+ components.css + components.js（`inkIcon()`/`installIcons()`，R-1V；D-4 起 world 回集） |
 | 24 | flow-bottom | `.flow-bottom`（+ `.flow-bottom-glyph` `.flow-bottom-word`） | — | default（纸底 `--paper-high` + 发丝线边 1px `--rule` + 墨线图标 +「回到底」短字标 + `--stack-shadow-soft` 承影——veto-R 重铸，融入现役按钮族语汇）/ hover·focus·press（墨雾三值正向叠，rd-1 三档）/ `:active`（触压 1px）/ `[hidden]`（在底 / 写作态 / 离案头——JS 账）；**圆形退役**（用户否决墨点形态，②-6 的 fr-A 豁免随之退役——豁免集合回到「仅邮票/邮戳圆形」） | index.html + components.css（视觉）+ screens.css（位置账）+ app.js（`syncFlowBottom`） |
 | 25 | flow-ruler | `.flow-ruler`（+ `.flow-tick` `--on`） | — | default（8×2 水印墨短线，flex 纵向均分条高——点距即窗口密度）/ 当前轮 `--on`（14×2 主墨 + `aria-current`，形态差异非颜色）/ hover（次墨半档）/ focus-visible（墨蓝细环）/ `[hidden]`（<2 轮 / 写作态 / 离案头）；**刻度点 ↔ flowTurns 轮锚一一绑定**（veto-R：高亮按真实锚点位置计算——视位线 = 顶栏之下一档呼吸，rAF 节流的被动 listener 对账；点击 = 精确滚到该轮锚点）；口径行 `.flow-calibre`（屏级，「加载更早」衔接主线-2 分页） | index.html + components.css + screens.css + app.js（`flowTurns` 锚 / `buildFlowRuler`/`scheduleFlowRulerSync`/`loadEarlierLetters`） |
 | 26 | tokenmeter | `.tokenmeter`（+ `.tm-pop` `.tm-pop-head` `.tm-pop-turn` `.tm-num`） | — | **紧凑计量粒**（veto-R 重铸——用户否决 sticky 常驻遮挡与整句读法）：dock 上沿内嵌读数钮，主数据直出（会话累计总 token，tabular-nums，无说明句）；点按展开 `.tm-pop` 逐轮明细浮层（浮层家族：Esc 关、点外关、⑩ 互斥收，z 10）；未计量字段在浮层里如实「—」，不伪造 0；累计 = 服务端会话全量（窗口无关），客户端不做本地加减；`[hidden]`（开关关 / 无读数 / 写作态 / 离案头） | index.html（dock 内）+ components.css（粒 + 浮层）+ app.js（`setTokenMeter`/`toggleTokenMeterPop`/`closeTokenMeterPop`/`syncFlowMeter`/`refreshFlowMeter`；开关存 sessionStorage——如实标注） |
@@ -314,11 +314,12 @@ src/elc/webui/
                     （品牌条端点驱动空槽 + 信流 + 写信区）+ #space-partner
                     笔友档案全页（cs-2）+ #space-study 温故（今日/方向/
                     档案三节）+ #space-drawer 抽屉（记忆/隐私/设置三节；
-                    记忆 = cs-2 三摞）+ #navdock 常驻三项 + .marginalia
+                    记忆 = cs-2 三摞）+ #navdock 常驻四项（D-4 起世界
+                    详情屏入坞；WR-5–D-3 间曾三项）+ .marginalia
                     桌面边注栏（案头日期 + 界尺；装饰邮戳水印已随 v2
                     撤除——邮戳只落真实事件）；brand-mark 与 #22
-                    icon-set 的 <template> 几何出处（icon-set 现役七枚，
-                    圆戳已出集）
+                    icon-set 的 <template> 几何出处（icon-set 现役
+                    十一枚，圆戳已出集、world 已回集）
   tokens.css        v2 内核令牌唯一物理出处（简报 §2 十四色 + 水印墨
                     + 旧名别名 + §3a 五字体栈 + §3b 九档标度/行高/字距
                     + 版心与基线 + 间距阶 + 动效档 + 微标签配方 + 触感
@@ -417,7 +418,9 @@ R-1 时代的逐页剖析（信息组织 / 表达方式 / 特色延续三个否�
 
 #### 8.1.3 导航模型
 
-- dock 三项常驻不变；门厅 dock 让位不变；节签横排不变（#20 契约）。
+- dock 四项常驻（案头 / 世界 / 温故 / 抽屉；D-4 起世界入坞——世界详情
+  屏升格为导航一级成员，见 9.17；WR-5–D-3 间曾三项）；门厅 dock 让位
+  不变；节签横排不变（#20 契约）。
 - **页题只念一遍**：spacehead 节名槽承担「我在哪」，节签承担「还能去哪」；
   页内 h2 取消，页首以引导句开场（8.2.9）。
 - 「为什么」的归处：读数与原委归 温故 · 档案 的 why_not 面与原始读数；
@@ -671,6 +674,20 @@ textarea；常驻税 163→104px 级）；**点触发条/寄出链 = 升起 `.do
   辑」（编辑台既有），不得占用「起笔」语义**——上一刀把「起笔」做
   成建卡表单的降级实现已被判词否定）。点沓中一封 → 滑到沓首
   微抬（260ms 减速长尾 + 让位 stagger）；再点或点「对话」→ 切换。
+- **【D-4 世界里的人——沓的世界臂（DEC-OPI-a4cf2d0e…63 R2）】** 世界
+  在（`/api/world/ensemble` 成功）时，沓的行区不再是信封，是世界里的
+  人：**你的角色**（`user_character`，name + anchor 一句，展示位——非
+  可点）/ **绑定 cast**（名 + 一句 vignette + 信数 + 「当前」标记；点
+  行 → 通信：persona_id 经名册桥到 character_id，走既有切换流程后关沓
+  让位；行上动作 起笔 · 档案 · 编辑 各自拦截行点击）/ **镇民**（name /
+  role / vignette；点行 → 展开她的介绍——只读，无通信面：正典
+  「镇民无 persona 不通信」）。行的读法 = 世界屏人区的同族语汇（左缘
+  发丝线分层，零卡片）；vignette 两处都收单行省略、点开读全文；沓顶
+  caption 与 aria-label 由同一载荷的 `world_name` 拼装（世界详情行内
+  链照旧）。**回落臂**（世界缺席/读失败）= 现役名册沓（本节上述信封面
+  一字不动——wf-1「世界优先，mc-1 回落」同律；世界绑定随会话走，切换
+  角色后本臂即现役态）；世界臂下全览窗口（「翻开全沓」）让位（行是
+  「人」不是信封，没有卡片全览页——全貌在档案与世界屏人区）。
 - **【起笔 = 容器向下延展成为写信工作界面——现役（v3-2R 重铸；
   用户判词整刀否定上一刀降级实现，2026-10-02）】**「直接起草编辑
   时，面板应当自动向下延伸拉开，是**整个容器的变化**，而不是多一
@@ -1487,14 +1504,16 @@ textarea；常驻税 163→104px 级）；**点触发条/寄出链 = 升起 `.do
   `currentColor` 随宿主墨色层级（弱化位 `--ink-faint` / 水印位
   `--ink-ghost`）；默认见方 `--icon-size` 18px，语境尺寸随宿主登记
   在 #22 契约块。
-- **现役十枚与锚位**：`search` → 筛框名牌（随 #16）/ `chevron` → #21
+- **现役十一枚与锚位**：`search` → 筛框名牌（随 #16）/ `chevron` → #21
   折叠箭头 / `note` → #3 卡头 / `write` → 回信在途中（.typing）/
   `inbox` → 空厅（.sysline.emptyhall）/ `lamp` → #14 空态 / `stamp` →
   门厅封面邮票角标 + 教学卡结课邮票 / `desk` → #18 案头签行 /
   `revisit` → #18 温故签行 / `drawer` → #18 抽屉签行（v3-a 三枚——
   「禁止变体：图标」契约显式修订，见 9.13；锚位 = 图标与文字标签
-  同钮，图标永不单独承担语义）。（v2 随边注栏水印撤除退役的那枚
-  圆戳图标已出集——注册的图标是使用的图标，注册表不做阁楼。）
+  同钮，图标永不单独承担语义）/ `world` → #18 世界签行——圆界之内、
+  地平线上的小岛（wf-2 入集；WR-5 随世界日志屏出集；D-4 随世界详情屏
+  升格为导航一级成员重新入集，见 9.17）。（v2 随边注栏水印撤除退役的
+  那枚圆戳图标已出集——注册的图标是使用的图标，注册表不做阁楼。）
 - 新增图标：同网格同笔重自绘 + ⑤ 四步登记；永远 `aria-hidden` 且
   锚位必有文字同行（图标永不单独承担语义）。
 - 禁：外链图标 / 图标字体 / data URI / 彩色填充 / 第二套网格或笔重 /
@@ -2221,6 +2240,79 @@ noLines/noChronicle）——世界领域一支词表。
 
 **6. 本刀不做的（R4）**：沓本体结构 / 角色卡屏 / 编辑面不动；零迁移、
 零开闸；docs/ 除本节外不动。
+
+---
+
+### 9.17 D-4 修订登记（显示层级统一——世界指示器 + 世界里的人 + 世界入坞，2026-10-11）
+
+> 授权链：正典 §7.1「世界是第一公民：先有世界，再有角色」+ §7.4
+> 「案头 = 当前世界的收件箱；世界架 = 世界切换面；世界指示器 = 当前
+> 世界名 + 世界内时间/天气的静默暗示」（`docs/design/2026-10-05-living-
+> world-spec.md`）；开工裁决 DEC-OPI-a4cf2d0e…63（R1–R8）+ 切片验收
+> VAL-…67。本刀把前端从「两套逻辑并存」（角色卡沓 + D-3 世界面）重组
+> 为正典的一层体系。钉位：`tests/host/test_d4_world_first_ia.py`（六
+> 组）；随迁钉逐文件列下（同刀真值搬迁，不降强度）。
+
+**1. 世界指示器升格（R1，§7.4）**：主从条主位一行 = `.who-line`——
+`.who`（世界名）+ `.who-when`（世界内时间：`overview.date_story` 直显
+——同律故事日、不带世界名尾，弱化「静默暗示」；故事日不再走副行）；
+`.who-sub` 副行只留「与…通信中」chrome；世界臂下可点角色与 aria 落
+`.who-line`（世界详情门）。零世界绑定回落现役形（`.who` = 角色名，
+`.who-when`/`.who-sub` 两槽静默）。屏级新类 `.who-line`/`.who-when` 只
+在 screens.css，零新令牌。服务端配套（读面加键，纯增不删）：
+`GET /api/world/overview` 增 `date_story`（`_localize_story_date(day,
+ui_language)`——`date_localized` 的名尾头条形一字不动，wf-0 钉全绿）。
+
+**2. 沓 =「世界里的人」（R2）**：`renderEnvelopeStack` 数据源从角色
+名册换为 `/api/world/ensemble`——行 = 你的角色（展示位）+ 绑定 cast
+（名 + 一句 vignette + 信数 + 当前标记；点行 → 通信）+ 镇民（name/
+role/vignette；点行 → 展开介绍，只读）。名册（`charactersCache`）留作
+persona_id → character_id 的桥与回落臂数据源。**点击语义统一**（沓与
+世界屏两处同一实现）：cast 行 → `openCorrespondence`（桥 → 既有
+`switchToCharacter` 确认/失败姿态 → 关沓/回案头）；居民行 →
+`wirePersonIntro`（aria-expanded 开合 `.person-intro` 全文，绝无通信
+面）；你的角色行非可点。世界臂下全览窗口让位、`envsel--people` 面板臂
+类与 `.envsel-stack--people` 行区布局；**回落臂**（无世界/读失败）=
+现役名册沓一字不动（wf-1 同律）。行语汇 = 世界屏人区同族（左缘发丝线
+分层；vignette 两处收单行省略、展开读全文）。
+
+**3. 世界面升格（R3/R4）**：世界屏人区两臂可点（同第 2 条）；新增
+「世界架」区（`#world-shelf`，单世界一格 = 当前世界 + 当前标记；多
+世界一格一世界与待读信角标是后续刀——本刀不造第二格）。入口取舍：
+**navdock 增「世界」项**（§7.4 世界架 = 世界切换面的最小就位）——世界
+详情屏升格为导航一级成员，D-3 的 navdock 让位两臂与纵深语义随升格
+退役（返回钮与 Esc 保留为额外回案头路）；`icon-world` 随新消费者回集
+（十枚 → 十一枚）。
+
+**4. 库唯一出处答案（⑤ 四步）**：**不新增注册组件**——新类全部落为
+屏级（`screens.css`：`.person*`/`.person-intro*`/`.world-shelf*`/
+`.envsel-stack--people`/`.envsel--people` 臂类/`.who-line`/`.who-when`），
+`components.css` 仅加一条屏级面动作命中带规则（`.person-actions .btn`，
+与 `.env-actions .btn` 同族、同 2px 命中带账）；`COMPONENTS` 注册表零
+改动。旧类退休：`.env-letters`（沓中信数标注——信数迁到 `.person-meta`）
+随其生产者同刀清出。
+
+**5. 随迁钉清单（同刀真值搬迁，逐文件）**：`test_wf1_parlor_world_first.py`
+（主从条两臂 + 世界里的人 + 回落臂 + 双语/今日行里的计数标注 CSS 行 +
+E2E 载荷换 ensemble）/`test_d3_world_detail.py`（五区结构 + 让位两臂
+退役的缺位钉 + caption 生产者改造）/`test_r1_shell.py`（navdock 计数
+3→4 + 世界项与图标在场）/`test_cs2_dossier_and_memory.py`（navdock 成员
+集）/`test_fg2_entry_and_states.py`、`test_wf3_onboard_world_first.py`、
+`test_r1w_responsive_redo.py`（封面又及句三词→四词）/
+`test_r1w_responsive_redo.py`、`test_r1v_visual_craft.py`、
+`test_v3a_ink_tab_and_compose.py`（icon-set 十枚→十一枚）/
+`test_v3a`（同上）。api.js 的 `fetchWorldResidents` 封装随其唯一消费者
+（沓的居民面）出集（阁楼纪律）；服务端 `/api/world/residents` 端点照旧
+（wf-0 读面钉不动）。
+
+**6. 语汇登记（8.3 表随迁）**：世界架（world shelf——世界切换面）/ 世
+界里的人（沓行区——你的角色 / 可通信的人 / 镇民三臂）；chrome 双语词表
+`PARLOR_WORLD_TEXT` 加一键 `noWorldShelf`（世界架无世界时的诚实空句，
+zh/en）——仍是一支世界词表，不另起第二张。
+
+**7. 本刀不做的（R5）**：信流与案头写作区不动；teaching/word 面不动；
+角色卡工厂与服务端读面不动（回落臂与回落臂之外零改）；零迁移、零开
+闸、不动包格式；docs/ 除本节与 8.1.3/8.2.2a/9.4 的现役真值行外不动。
 
 ---
 

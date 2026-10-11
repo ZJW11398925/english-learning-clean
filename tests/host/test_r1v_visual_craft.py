@@ -272,21 +272,23 @@ def test_the_seven_icons_share_one_grid_and_one_stroke() -> None:
     v3-a 随迁：#18 落墨页签的导航三枚入集（desk/revisit/drawer，
     「禁止变体：图标」显式修订）——七枚 → 十枚。wf-2 曾入第四枚 world
     ——WR-5 随迁：世界日志屏退役，world 图标随唯一消费者出集（阁楼
-    纪律自引）——十一枚 → 十枚。"""
+    纪律自引）——十一枚 → 十枚。D-4 随迁：世界详情屏升格为导航一级
+    成员（世界架 = 世界切换面），world 随新消费者回集——十枚 → 十一枚
+    （DEC-OPI-a4cf2d0e…63 R4）。"""
 
     index = _text("index.html")
     assert '<template id="icon-set-source">' in index
     for name in ("search", "chevron", "note", "write",
                  "inbox", "lamp", "stamp",
-                 "desk", "revisit", "drawer"):
+                 "desk", "revisit", "drawer", "world"):
         assert f'<svg id="icon-{name}" class="inkicon" ' \
             f'viewBox="0 0 20 20" aria-hidden="true">' in index, name
     # the retired watermark icon is gone with its anchor
     assert 'id="icon-postmark"' not in index
-    # WR-5: the world icon is gone with the screen (no attic).
-    assert 'id="icon-world"' not in index
-    # the grid is uniform: ten icons, ten identical viewBoxes
-    assert index.count('viewBox="0 0 20 20"') == 10
+    # D-4: the world icon is back with its consumer (the navdock item)
+    assert 'id="icon-world"' in index
+    # the grid is uniform: eleven icons, eleven identical viewBoxes
+    assert index.count('viewBox="0 0 20 20"') == 11
     css = _text("components.css")
     assert (
         ".inkicon { width: var(--icon-size); height: var(--icon-size);"

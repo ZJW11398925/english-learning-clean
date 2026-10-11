@@ -72,11 +72,12 @@ def test_the_fixed_penfriend_leaves_the_cover() -> None:
 # 2. the postscript names all four dock words, world included
 # ---------------------------------------------------------------------------
 
-def test_the_postscript_names_all_three_words_with_the_world() -> None:
-    """WR-5 随迁（世界日志屏退役，navdock 回三项）：又及句回「三个词」
-    且按现役次序点名（案头/温故/抽屉）；世界不再是底部词，但其从句
-    改读「世界就在那里过日子」——案头即世界自然发展之地（DEC-OPI-
-    8a4f980b…7）。"""
+def test_the_postscript_names_all_four_words_with_the_world() -> None:
+    """D-4 随迁（世界详情屏升格为导航一级成员——世界项重新入坞）：又及
+    句回「四个词」且按现役次序点名（案头/世界/温故/抽屉）；世界从句
+    照旧「世界就在那里过日子」——案头即世界自然发展之地（DEC-OPI-
+    8a4f980b…7；计数句随真值走：WR-5 三项时代曾为「三个词」，
+    DEC-OPI-a4cf2d0e…63 R4 起四项）。"""
 
     index = _text("webui/index.html")
     ob_ps = ""
@@ -85,10 +86,10 @@ def test_the_postscript_names_all_three_words_with_the_world() -> None:
             ob_ps = line
             break
     assert ob_ps, "ob-ps paragraph not found"
-    assert "又及：进门以后，底部三个词随时可走。" in ob_ps
+    assert "又及：进门以后，底部四个词随时可走。" in ob_ps
     assert "世界就在那里过日子" in ob_ps
-    # 三词点名 + navdock 现役次序（WR-5 起三项）
-    order = [ob_ps.index(w) for w in ("案头", "温故", "抽屉")]
+    # 四词点名 + navdock 现役次序（D-4 起四项）
+    order = [ob_ps.index(w) for w in ("案头", "世界", "温故", "抽屉")]
     assert order == sorted(order), order
 
 

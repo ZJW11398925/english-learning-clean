@@ -839,9 +839,11 @@ button:focus-visible, input:focus-visible {
    出底栏、点词卡浮层在本组件（z 6）之上。
    禁止变体：色块、五项以上、堆叠页签、纯图标钮（图标须与文字同钮）。
    （wf-2 修订：四项合规——世界日志一级导航入坞，DEC-OPI-5fc42174-…5
-   R4；dock ≤5 红线不动。v3-a 显式修订：旧条款「禁止变体——图标」随
-   落墨页签退役——修订理由与用户首验位登记在 spec 9.13；图标网格/
-   笔重/单色契约不动。） */
+   R4；dock ≤5 红线不动。WR-5：世界日志屏退役回三项。D-4：世界详情屏
+   按正典 §7.4 升格为导航一级成员（世界架 = 世界切换面），world 项重新
+   入坞——四项合规照旧，DEC-OPI-a4cf2d0e…63 R4。v3-a 显式修订：旧条款
+   「禁止变体——图标」随落墨页签退役——修订理由与用户首验位登记在 spec
+   9.13；图标网格/笔重/单色契约不动。） */
 .navdock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
            display: flex; max-width: var(--shell-w); margin: 0 auto;
            background: var(--paper-high);
@@ -968,13 +970,17 @@ button:focus-visible, input:focus-visible {
    index.html 的 <template id="icon-set-source">；工厂 inkIcon(name)
    从模板内容查一枚克隆并摘掉 id；installIcons() 把 <span data-icon>
    换成克隆，插槽 class 过继给克隆体。
-   现役十枚（v2：postmark 随边注栏水印撤除退役——注册的图标是使用的
-   图标，注册表不做阁楼；v3-a：#18 落墨页签三枚入集）：search（筛框
+   现役十一枚（v2：postmark 随边注栏水印撤除退役——注册的图标是使用的
+   图标，注册表不做阁楼；v3-a：#18 落墨页签三枚入集；wf-2：#18 第四枚
+   world 入集——WR-5 随世界日志屏出集；D-4：世界详情屏升格为导航一级
+   成员，world 随新消费者重新入集）：search（筛框
    名牌）/ chevron（折叠箭头）/ note（批注卡头）/ write（回信在途中）/
    inbox（空厅空信箱）/ lamp（空态未点亮的灯）/
    stamp（门厅封面邮票角标 + 教学卡结课邮票）。
    v3-a 三枚锚位（#18 落墨页签——图标与文字标签同钮）：desk（案头
    签行）/ revisit（温故签行）/ drawer（抽屉签行）。
+   wf-2/D-4 第四枚锚位（#18 落墨页签）：world（世界签行——圆界之内，
+   地平线上的小岛；D-3 详情屏 + D-4 入坞）。
    全部 aria-hidden——语义由宿主文字承担。
    状态矩阵：default（--icon-size 见方、currentColor 墨色、
    --icon-stroke 笔重 1.5、圆角端点；chevron 的旋转是宿主 #21 的
@@ -1518,6 +1524,10 @@ h1, .grouphead, .note-head b { text-wrap: balance; }
 .env-mark::before { content: ""; position: absolute; inset: 4px;
                     border: 1px solid var(--seal); border-radius: 50%; }
 .env-mark span { position: relative; }
+/* D-4 世界里的人（沓的世界臂）行上动作：与信封动作行同一命中带账
+   （ui 档行高 20px + 12px = 32px 级；起笔 · 档案 · 编辑三词各自
+   stopPropagation 拦行点击）——样式本体仍只在 .btn--pencil 族。 */
+.person-actions .btn { padding: 6px 2px; }
 /* 专属邮票：齿孔 = 纸色虚线凿边 + 发丝外缘；内框墨线（雕版感）；
    票面中央角色名首字母（衬线 display 档）。变体三轴全部确定性
    （stamp_key 派生，app.js 的 stampVariantClasses）：stamp-v0..7

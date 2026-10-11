@@ -84,13 +84,14 @@ def test_the_who_block_is_the_trigger_and_the_bar_grows_no_button(
     是信封沓，mc-1 的选择器；再点一次收沓），品牌条不增长按钮元
     （r1_shell 的品牌条无钮钉随迁保留）；.who = 端点驱动的空槽
     （v2-2 起 no more identity prose——身份介绍退入笔友档案全页）；
-    wf-1 随迁（世界优先，单向收紧）：who-sub 回场 = 故事日 + 居民位
-    副行（overview 端点驱动，非旧身份长句）。"""
+    wf-1 随迁（世界优先，单向收紧）：who-sub 回场（overview 端点驱动，
+    非旧身份长句）。D-4 随迁：故事日升主位（.who-when），副行只留
+    「与…通信中」chrome——副槽本身不变。"""
 
     index = _page_of(tmp_path)
     parlor = index.split('id="space-parlor"', 1)[1].split("</header>", 1)[0]
     # mc-1 随迁：信头 = 端点驱动的空槽（品牌名与副题退居门厅封面）；
-    # wf-1 随迁：who-sub 回场（故事日 + 居民位）
+    # wf-1 随迁：who-sub 回场（D-4 起只装「与…通信中」chrome）
     assert '<div class="who"></div>' in parlor
     assert '<div class="who-sub"></div>' in parlor
     assert "<button" not in parlor

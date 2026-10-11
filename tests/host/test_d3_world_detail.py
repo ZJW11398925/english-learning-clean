@@ -438,10 +438,11 @@ def test_a_closed_line_leaves_the_read_and_an_empty_read_is_empty(
 # ---------------------------------------------------------------------------
 
 
-def test_the_world_screen_exists_with_its_four_zones() -> None:
-    """index.html: the fourth depth screen — the four zone slots, the
-    lead line, the back button, the static header title (no-JS honest),
-    the four Chinese h3s (the dossier family's own chrome)."""
+def test_the_screen_exists_with_its_five_zones() -> None:
+    """index.html: the world screen — the five zone slots (D-4 adds the
+    world shelf), the lead line, the back button, the static header title
+    (no-JS honest), the five Chinese h3s (the dossier family's own
+    chrome)."""
 
     index = _text("index.html")
     assert '<section id="space-world" class="dossier" hidden>' in index
@@ -449,32 +450,39 @@ def test_the_world_screen_exists_with_its_four_zones() -> None:
     assert 'id="world-back"' in index
     assert 'id="world-name"' in index
     for slot in (
+        "world-shelf",
         "world-you",
         "world-people",
         "world-lines",
         "world-chronicle",
     ):
         assert f'id="{slot}"' in index, slot
-    for title in ("你的角色", "世界的人", "剧情线", "编年史"):
+    for title in ("世界架", "你的角色", "世界的人", "剧情线", "编年史"):
         assert f"<h3>{title}</h3>" in index, title
 
 
 def test_the_screen_is_registered_and_guarded() -> None:
-    """app.js: the spaces registry entry, the navdock stand-down (the
-    showSpace arm and the restoreNavdock arm), the Esc return, and the
-    back button — the depth screen's full wiring, each line pinned."""
+    """app.js: the spaces registry entry, the Esc return and the back
+    button — the screen's wiring, each line pinned.
+
+    D-4 迁移（DEC-OPI-a4cf2d0e…63 R4）：本屏按正典 §7.4 升格为导航一级
+    成员（navdock「世界」项入坞：世界架 = 世界切换面在单世界时的最小
+    就位）——D-3 的 navdock 让位两臂（showSpace 与 restoreNavdock）随
+    升格退役（让位只属门厅/三全页）；返回钮与 Esc 保留为额外的回案头
+    路。缺位钉（两臂 not in app）让「让位回潮」必红。"""
 
     app = _text("app.js")
     assert 'world: document.getElementById("space-world"),' in app
-    assert (
-        'if (name === "world")'
-        " document.getElementById(\"navdock\").hidden = true;" in app
-    )
-    assert 'if (current === "world") navdock.hidden = true;' in app
+    # D-4: the stand-down arms are gone (the world is a dock member now)
+    assert 'if (name === "world")' not in app
+    assert 'if (current === "world") navdock.hidden = true;' not in app
+    # the dock item itself (the shelf's door)
+    assert 'data-space="world"' in _text("index.html")
     assert (
         '} else if (current === "world") {\n'
-        "    // D-3：世界详情屏是第四纵深——Esc 与返回钮同效（回案头；原两臂\n"
-        "    // 一字不动，世界臂为行内增补）。\n"
+        "    // D-3：世界详情屏的回途（Esc 与返回钮同效）——D-4 世界入坞后\n"
+        "    // 它仍保留为「回案头」的额外一路（常驻空间本无 Esc 义务，此臂\n"
+        "    // 只增不减：纵深时代的回程语义对首入的用户仍成立）。\n"
         '    showSpace("parlor");'
     ) in app
     assert (
@@ -570,11 +578,14 @@ def test_the_masthead_world_name_is_the_door() -> None:
 def test_the_envelope_caption_carries_the_world_link() -> None:
     """The 沓 entry (R3, minimal): the caption carries an in-line link
     that closes the stack and opens the world screen — the caption's own
-    text line and the stack's structure are untouched."""
+    text line and the stack's structure are untouched.
+
+    D-4 迁移：caption 的生产者从 buildEnvelopeResidentsContext（residents
+    读）迁到世界臂自己的 buildPeopleCaption（ensemble 一读；同一份
+    world_name 一个出处）——壳形态与行内链逐行不动。"""
 
     app = _text("app.js")
-    face = _function_slice(
-        app, "async function buildEnvelopeResidentsContext(")
+    face = _function_slice(app, "function buildPeopleCaption(")
     assert 'caption.className = "envsel-caption";' in face
     assert (
         'caption.textContent = T.residentsOf.replace("{world}", worldName);'
@@ -583,8 +594,8 @@ def test_the_envelope_caption_carries_the_world_link() -> None:
     assert 'worldLink.className = "btn btn--faint envsel-world-link";' in face
     assert "worldLink.textContent = T.worldDetail;" in face
     assert (
-        "event.stopPropagation();\n      closeEnvelopeSelector();\n"
-        "      openWorldDetail();" in face
+        "event.stopPropagation();\n    closeEnvelopeSelector();\n"
+        "    openWorldDetail();" in face
     )
     assert "caption.appendChild(worldLink);" in face
     assert "stack.parentNode.insertBefore(caption, stack);" in face

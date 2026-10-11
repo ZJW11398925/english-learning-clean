@@ -59,7 +59,6 @@ import {
   fetchObservations,
   fetchWorldInbox,
   fetchWorldOverview,
-  fetchWorldResidents,
   fetchWorldEnsemble,
   fetchWorldStorylines,
   fetchWorldLog,
@@ -2854,10 +2853,10 @@ function showSpace(name) {
   if (name === "partner" || name === "letters" || name === "obs") {
     document.getElementById("navdock").hidden = true;
   }
-  // D-3：世界详情屏同族让位（纵深第 4 屏，返回钮回案头）——原三屏
-  // 条件行一字不动，世界臂的行内增补独立成句（既有屏的缺位钉与
-  // 在场钉都不动）。
-  if (name === "world") document.getElementById("navdock").hidden = true;
+  // D-3 的世界详情屏曾是纵深第五屏（navdock 让位）；D-4 按正典 §7.4
+  // 「世界架 = 世界切换面」升格为导航一级成员（navdock 的「世界」项
+  // 入坞）——让位臂就此退役，本屏与案头/温故/抽屉同属常驻 dock 族
+  // （返回钮与 Esc 保留为额外的回案头路）。
   if (name === "study") showSection("study", DEFAULT_SECTION.study);
   if (name === "drawer") showSection("drawer", DEFAULT_SECTION.drawer);
   window.scrollTo(0, 0);
@@ -2867,10 +2866,12 @@ function showSpace(name) {
 // (a click and the left/right arrows both land on the same showSection).
 // ux-1: the touch swipe is a supplementary switcher for the same two
 // spaces — the tabs stay the primary face.
-// WR-5：世界日志屏随「案头即世界自然发展之地」定谳整体退役——
-// navdock 回三项，今日动静行回纯信息行（无点击接线；历史活在信流的
-// 故事块序列）。D-3（DEC-OPI-a4cf2d0e…49）：世界详情屏承接同名
-// space-world（进屏时 navdock 让位两臂，非新增项——见 spaces.world）。
+// WR-5：世界日志屏随「案头即世界自然发展之地」定谳整体退役——navdock
+// 曾回三项。D-3：同名 space-world 由世界详情屏承接（入口 = 主从条世界名
+// + 沓顶链）。D-4（DEC-OPI-a4cf2d0e…63）：世界详情屏按正典 §7.4 升格为
+// 导航一级成员——navdock「世界」项重新入坞（世界架 = 世界切换面在单世界
+// 时的最小就位；同一空间名的第三代表：日志屏退役 → 详情屏承接 → 入坞
+// 常驻）。
 wireNavdock((name) => showSpace(name));
 wireSectionTabs(document.getElementById("study-tabs"),
   (name) => showSection("study", name));
@@ -3072,7 +3073,9 @@ function worldInboxText() {
 // 只有连接词（「与…通信中」「今日动静」「的居民」「封信」）。D-3：世界
 // 详情屏的四区 chrome 同走此表（同一世界领域一支词表——世界名入口、
 // 你的角色的住处标签、当前通信标记、剧情线的了结条件、编年史的世界
-// 自述与两个诚实空句）。文字一律 textContent（XSS 面）。
+// 自述与两个诚实空句）。D-4：世界架空句（noWorldShelf）与沓的「世界里
+// 的人」面同表（同一支世界词表，不另起第二张）。文字一律 textContent
+// （XSS 面）。
 const PARLOR_WORLD_TEXT = {
   zh: {
     corresponding: "与 {name} 通信中",
@@ -3089,6 +3092,7 @@ const PARLOR_WORLD_TEXT = {
     noPeople: "这镇上还没有写下可看的人。",
     noLines: "眼下没有打开的剧情线。",
     noChronicle: "编年史还没有翻开过的一页。",
+    noWorldShelf: "世界架上还没有能打开的世界。",
   },
   en: {
     corresponding: "In correspondence with {name}",
@@ -3105,6 +3109,7 @@ const PARLOR_WORLD_TEXT = {
     noPeople: "No one is written into this town yet.",
     noLines: "No storyline is open right now.",
     noChronicle: "The chronicle has nothing revealed yet.",
+    noWorldShelf: "The shelf has no world to open yet.",
   },
 };
 
@@ -3885,8 +3890,9 @@ document.addEventListener("keydown", (event) => {
     showSpace("study");
     showSection("study", "progress");
   } else if (current === "world") {
-    // D-3：世界详情屏是第四纵深——Esc 与返回钮同效（回案头；原两臂
-    // 一字不动，世界臂为行内增补）。
+    // D-3：世界详情屏的回途（Esc 与返回钮同效）——D-4 世界入坞后
+    // 它仍保留为「回案头」的额外一路（常驻空间本无 Esc 义务，此臂
+    // 只增不减：纵深时代的回程语义对首入的用户仍成立）。
     showSpace("parlor");
   }
 });
@@ -4295,17 +4301,23 @@ function closePartnerDossier() {
 document.getElementById("partner-back").addEventListener(
   "click", closePartnerDossier);
 
-// ── D-3 世界详情屏（#space-world，整页纵深第四屏）────────────────────
-// 你看见自己住在镇上（IMPLEMENTATION_PLAN §19 前端面）。三读到四区，
+// ── D-3 世界详情屏（#space-world，整页纵深第四屏；D-4 升格为导航一级）──
+// 你看见自己住在镇上（IMPLEMENTATION_PLAN §19 前端面）。三读到五区，
 // 各自三态（#14 state-banner——一面对了别面不陪葬；重试只重拉本区）：
+//   ⓪ 世界架               ← /api/world/ensemble（D-4：单世界一格 = 当前
+//                             世界；世界架 = 世界切换面，多世界后续刀）
 //   ① 你的角色 + ② 世界的人 ← /api/world/ensemble
 //   ③ 剧情线               ← /api/world/storylines
 //   ④ 编年史               ← /api/world/log（服务端已按界面语言本地化
 //                            日期与叙述；读面零翻转——PENDING 不入列）
+// D-4（DEC-OPI-a4cf2d0e…63）R3：② 区两臂可点，与案头沓「世界里的人」
+// 同一行为（同一「人」对象的两个呈现位）——cast 行点 → 通信（persona_id
+// 经名册桥到 character_id 再走既有切换流程），residents 行点 → 展开她的
+// 介绍（只读，无通信面——镇民无 persona 不通信是正典事实）。
 // 404（无绑定世界）原句上屏：服务端的人话，不发明任何名字；读失败同法
-// 一行人话。入口两处（案头主从条世界名 + 沓顶 caption 行内链）；返回
-// 钮与 Esc 回案头。文字一律 textContent（XSS 纪律）；世界名/人名/散文
-// 全端点来（webui 零字面——wf-1 律）。
+// 一行人话。入口三处（navdock「世界」项 + 案头主从条世界名 + 沓顶
+// caption 行内链）；返回钮与 Esc 回案头。文字一律 textContent（XSS
+// 纪律）；世界名/人名/散文全端点来（webui 零字面——wf-1 律）。
 
 // D-3 在飞守卫：读在飞时人已离开本屏（返回钮 / Esc / 任何换空间路径）
 // ⇒ 载荷落地即弃权——不往看不见的页上写。判据 = 屏自身的 [hidden] 态
@@ -4342,6 +4354,20 @@ async function readWorldLog() {
   }
 }
 
+// D-4：人面两臂（沓的人区与世界屏的人区）的桥——persona_id → 名册行的
+// character_id。名册（/api/characters）是桥的唯一出处：cast 行带
+// persona_id 而切换只需要 character_id。D-4 起世界屏的读也顺带把名册
+// 读新（缓存供桥与两臂共用）；读不到（罕见）退回缓存，缓存也没有就
+// 如实「没有卡 = 没有通信面」，绝不发明一个 id。
+async function readCharacterRoster() {
+  try {
+    charactersCache = await fetchCharacters();
+    return charactersCache;
+  } catch {
+    return charactersCache;
+  }
+}
+
 function worldZoneError(box, payload, retry) {
   const text = payload && typeof payload.error === "string"
     ? payload.error
@@ -4362,9 +4388,10 @@ async function worldZoneRetry(name) {
     renderWorldChronicle(log);
     return;
   }
-  // ① 与 ② 共用同一份 ensemble 载荷——重试同拉一次、同刷两区。
+  // ⓪ ① ② 共用同一份 ensemble 载荷——重试同拉一次、同刷三区。
   const ensemble = await readWorldEnsemble();
   if (worldDetailGone()) return;
+  renderWorldShelf(ensemble);
   renderWorldYou(ensemble);
   renderWorldPeople(ensemble);
 }
@@ -4373,6 +4400,7 @@ async function openWorldDetail() {
   showSpace("world");
   diagBox("world-name").textContent = "";
   for (const id of [
+    "world-shelf",
     "world-you",
     "world-people",
     "world-lines",
@@ -4387,6 +4415,7 @@ async function openWorldDetail() {
     readWorldStorylines(),
     readWorldLog(),
   ]);
+  await readCharacterRoster();   // D-4：人面两臂的桥（persona_id → 卡）
   if (worldDetailGone()) return;   // 人已回案头——不往看不见的页上写
   renderWorldDetail(ensemble, storylines, log);
 }
@@ -4396,10 +4425,42 @@ function renderWorldDetail(ensemble, storylines, log) {
     // 屏头静态「世界」是无 JS 兜底；真名在正文首行（端点驱动）。
     diagBox("world-name").textContent = String(ensemble.world_name);
   }
+  renderWorldShelf(ensemble);
   renderWorldYou(ensemble);
   renderWorldPeople(ensemble);
   renderWorldLines(storylines);
   renderWorldChronicle(log);
+}
+
+// ⓪ 世界架（D-4，§7.4「世界架 = 世界切换面」）：单世界时的最小就位——
+// 一格 = 当前世界（世界名 + 「当前通信」同族的现役标记）。多世界一格
+// 一世界、待读信角标是后续刀（本刀不造第二格、不造角标：没有的东西
+// 不上屏）。数据 = ensemble 的 world_id/world_name；读不到整区走
+// 同一份 ensemble 的人话（与 ① ② 同源）。
+function renderWorldShelf(ensemble) {
+  const box = diagBox("world-shelf");
+  box.textContent = "";
+  if (!ensemble || ensemble.error) {
+    worldZoneError(box, ensemble, () => worldZoneRetry("shelf"));
+    return;
+  }
+  const T = parlorWorldText(ensemble.ui_language);
+  const worldName = String(ensemble.world_name ?? "");
+  if (!worldName) {
+    box.appendChild(stateBanner("empty", { text: T.noWorldShelf }));
+    return;
+  }
+  const cell = document.createElement("div");
+  cell.className = "world-shelf-cell world-shelf-cell--on";
+  const name = document.createElement("p");
+  name.className = "world-shelf-name";
+  name.textContent = worldName;
+  cell.appendChild(name);
+  const mark = document.createElement("span");
+  mark.className = "world-shelf-mark";
+  mark.textContent = T.current;
+  name.appendChild(mark);
+  box.appendChild(cell);
 }
 
 function renderWorldYou(ensemble) {
@@ -4461,6 +4522,104 @@ function worldPersonRow(fields) {
   return row;
 }
 
+// ── D-4 人面共享行为（案头沓「世界里的人」与世界屏人区同一套）────────
+// 同一「人」对象的两个呈现位，点击语义统一（DEC-OPI-a4cf2d0e…63 R2/R3）：
+//   cast 行（有 persona）      → 通信：persona_id 经名册桥到 character_id，
+//                                走既有 switchToCharacter 流程（确认/失败
+//                                姿态原样），成功后关沓（或回案头）落通信；
+//   residents 行（无 persona） → 展开她的介绍（只读——正典：镇民无 persona
+//                                不通信；本行绝不落任何通信面）；
+//   你的角色行（user_character）→ 非可点展示位。
+// 桥的唯一出处 = /api/characters 名册（charactersCache）——cast 行带
+// persona_id、切换只要 character_id；名册里没有这张卡 ⇒ 没有通信面，
+// 行如实不做门（不发明 id，不造假门）。
+function characterIdForPersona(personaId) {
+  const roster = (charactersCache && charactersCache.characters) || [];
+  const row = roster.find(
+    (item) => item.persona_id != null
+      && String(item.persona_id) === String(personaId));
+  return row ? row.character_id : null;
+}
+
+async function openCorrespondence(personaId) {
+  const characterId = characterIdForPersona(personaId);
+  if (!characterId) return false;   // 没有卡——没有通信面（如实不动）
+  const done = await switchToCharacter(characterId);
+  if (!done) return false;
+  if (envselPanel) unfoldToParlor();   // 沓开着——收沓让位（既有切换流程）
+  else showSpace("parlor");            // 世界屏上——回案头看通信
+  return true;
+}
+
+// cast 行的门（世界屏位）：可点 = 可通信；行上的动作（若有）自行拦截。
+function wireCastRow(row, personaId) {
+  if (characterIdForPersona(personaId) === null) return;   // 无卡不作门
+  row.classList.add("world-person--door");
+  row.setAttribute("role", "button");
+  row.tabIndex = 0;
+  row.addEventListener("click", (event) => {
+    event.stopPropagation();
+    openCorrespondence(personaId);
+  });
+  row.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    event.stopPropagation();
+    openCorrespondence(personaId);
+  });
+}
+
+// 居民介绍（只读小页的屏内展开形）：点行就地开合——role + 全文 vignette
+// 逐字（textContent），aria-expanded 同步；再次点击收起。沓与世界屏两处
+// 同一实现（同一「人」的两个呈现位同一行为）。行上的 vignette 是行高
+// 的截断预览（单行省略号，CSS），展开面读全文。
+function personIntroBlock(fields) {
+  const intro = document.createElement("div");
+  intro.className = "person-intro";
+  const role = String(fields.role ?? "");
+  if (role) {
+    const line = document.createElement("p");
+    line.className = "person-intro-role";
+    line.textContent = role;
+    intro.appendChild(line);
+  }
+  const vignette = String(fields.vignette ?? "");
+  if (vignette) {
+    const prose = document.createElement("p");
+    prose.className = "person-intro-vignette";
+    prose.textContent = vignette;
+    intro.appendChild(prose);
+  }
+  return intro;
+}
+
+function wirePersonIntro(row, fields) {
+  row.classList.add("world-person--door");
+  row.setAttribute("role", "button");
+  row.tabIndex = 0;
+  row.setAttribute("aria-expanded", "false");
+  const toggle = () => {
+    const existing = row.querySelector(".person-intro");
+    if (existing) {
+      existing.remove();
+      row.setAttribute("aria-expanded", "false");
+      return;
+    }
+    row.setAttribute("aria-expanded", "true");
+    row.appendChild(personIntroBlock(fields));
+  };
+  row.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggle();
+  });
+  row.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    event.stopPropagation();
+    toggle();
+  });
+}
+
 function renderWorldPeople(ensemble) {
   const box = diagBox("world-people");
   box.textContent = "";
@@ -4477,26 +4636,32 @@ function renderWorldPeople(ensemble) {
     return;
   }
   // 名册 = 绑定 cast（含当前通信与信数——诚实零）在前，镇民在后：
-  // 与世界名册自身的服务序同族（builtin 先，镇民补全）。
+  // 与世界名册自身的服务序同族（builtin 先，镇民补全）。D-4：两臂
+  // 可点（cast → 通信 / residents → 展开介绍），与案头沓同一行为。
   for (const row of cast) {
     const note = [];
     if (row.is_current) note.push(T.current);
     note.push(T.letters.replace(
       "{n}", String(Number(row.letters_count) || 0)));
-    box.appendChild(worldPersonRow({
+    const el = worldPersonRow({
       name: row.name,
       role: String(row.identity ?? ""),
       vignette: row.vignette,
       note: note.join(" · "),
-    }));
+    });
+    wireCastRow(el, row.persona_id);
+    box.appendChild(el);
   }
   for (const row of residents) {
-    box.appendChild(worldPersonRow({
+    const fields = {
       name: row.name,
       role: String(row.role ?? ""),
       vignette: row.vignette,
       note: "",
-    }));
+    };
+    const el = worldPersonRow(fields);
+    wirePersonIntro(el, fields);
+    box.appendChild(el);
   }
 }
 
@@ -5255,7 +5420,8 @@ function yieldNavdock() {
 }
 
 // navdock 归位：按当前空间还其可见性（与 showSpace 同一账——门厅与
-// 三全页让位、三空间常驻）；在飞 fold 即刻摘类（fill both 的冻结形防呆）。
+// 三全页让位、四空间常驻；D-4 起世界同属常驻族）；在飞 fold 即刻摘类
+// （fill both 的冻结形防呆）。
 function restoreNavdock() {
   const navdock = document.getElementById("navdock");
   if (!navdock) return;
@@ -5263,9 +5429,6 @@ function restoreNavdock() {
   const current = Object.keys(spaces).find((key) => !spaces[key].hidden);
   navdock.hidden = current === "onboard" || current === "partner" ||
     current === "letters" || current === "obs";
-  // D-3：世界详情屏同属让位族（与 showSpace 同一账——纵深 +1；原
-  // 三屏赋值行一字不动）。
-  if (current === "world") navdock.hidden = true;
 }
 
 // Esc 逐层退栈（⑩ 10.4）：浮层在场 → 归浮层（wordCardOpen 裁决，它的
@@ -5921,6 +6084,11 @@ let envselFace = "deck";   // 容器态：deck 扇叠 / window 全览 / editor �
                            // / compose 写信工作区（v3-2R 第四形态）
 let envselPageAt = 0;      // 当前页（全览窗口页序）
 let envselFacePending = null;   // 窗口升级的内容先装满——过渡中的二次点名忽略
+// D-4：沓的臂判据（世界臂 =「世界里的人」；回落臂 = 现役名册沓）。
+// renderEnvelopeStack 每轮写下；面板纸面点击的全览升级与「翻开全沓」
+// 入口只在回落臂成立——世界臂的行是「人」不是信封，没有卡片全览页
+// （全貌在档案/世界屏人区）。
+let envselPeopleArm = false;
 
 // 邮票变体的确定性派生（mc-0 stamp_key 的前端消费半区）：key 是角色
 // id 的 SHA-256 前 16 位十六进制（elc.persona.card_store.stamp_key_for，
@@ -5955,33 +6123,38 @@ function envelopeDrift(stampKey) {
   return flip * (6 + size * 6) + "px";
 }
 
-// 案头主从条（wf-1 世界优先重铸；mc-1 的 roster 形保留为回落臂）：
-// 世界在（/api/world/overview 成功）⇒ .who = 世界名 + .who-sub 副行
-// （故事日 + 居民位）+ 今日动静行——全部端点拼装（webui 零世界名/
-// 角色名字面）；世界缺席（无绑定 404）或读失败 ⇒ 现役形回落：.who =
-// 当前角色名一行、副行与今日动静行静默——不发明任何名字。mc-1 真源
-// 注记：回落臂的 roster 仍全部来自 /api/characters 的 current_character_id；
-// 读不到（无名册 / current 为 null）就留空。品牌名与副题退居门厅封面
-// （BRAND 常量的封面消费面）。
+// 案头主从条（wf-1 世界优先重铸；mc-1 的 roster 形保留为回落臂）：世界在
+// （/api/world/overview 成功）⇒ D-4 世界指示器升格（正典 §7.4「世界名 +
+// 世界内时间/天气的静默暗示」）：.who-line 主位一行 = .who（世界名）+
+// .who-when（世界内时间——overview 的 date_localized，弱化静默暗示），
+// 副行 .who-sub 只留「与…通信中」的通信 chrome，今日动静行照旧——全部
+// 端点拼装（webui 零世界名/角色名字面）；世界缺席（无绑定 404）或读失败
+// ⇒ 现役形回落：.who = 当前角色名一行、两个世界槽（.who-when / .who-sub）
+// 与今日动静行静默——不发明任何名字。mc-1 真源注记：回落臂的 roster 仍
+// 全部来自 /api/characters 的 current_character_id；读不到（无名册 /
+// current 为 null）就留空。品牌名与副题退居门厅封面（BRAND 常量的封面
+// 消费面）。
 
 // 写作面称呼位的收信人名（fillComposeChrome 消费——世界优先后 .who
 // 装的是世界名，称呼位仍须是「致 {居民}」）：两个渲染臂各自更新；
 // 世界自述（resident 缺席）或无名册时留空——不发明称呼。
 let mastheadCorrespondent = "";
 
-// D-3 入口①：世界臂在场时 .who（世界名）自成一道门——点它进世界详情
-// 屏；副行（故事日 · 居民位）与其余块面仍走 whoBlock 的既有接线（信封
-// 沓）。两臂各自刷新手感位：世界臂把可点角色与 aria 落到 .who 与副行
+// D-3 入口①：世界臂在场时 .who-line（世界指示器整行——D-4 起可点角色
+// 与 aria 落它，名与时间两格同属这道门）自成一道门——点它进世界详情
+// 屏；副行（通信 chrome）与其余块面仍走 whoBlock 的既有接线（信封沓）。
+// 两臂各自刷新手感位：世界臂把可点角色与 aria 落到 .who-line 与副行
 // （块本体让位——嵌套可点元素不合法，整块的「信封沓」角色由副行承
-// 担，副行在世界臂恒非空：故事日由 package 日历派生）；回落臂（世界
-// 缺席/读失败）把整块还给 mc-1 的单一语义（.who 复位普通文本，块回
-// 「信封沓——挑一位笔友」）。判据由本函数写入、.who 的监听读取。
+// 担，副行在世界臂恒非空：通信 chrome 由 overview 的 resident 派生）；
+// 回落臂（世界缺席/读失败）把整块还给 mc-1 的单一语义（.who-line 复位
+// 普通文本，块回「信封沓——挑一位笔友」）。判据由本函数写入、.who-line
+// 的监听读取。
 let mastheadWorldArmed = false;
 
 function markMastheadWorldArm(armed, worldLabel) {
   mastheadWorldArmed = armed;
   const block = document.querySelector("#space-parlor .top > div");
-  const who = document.querySelector("#space-parlor .who");
+  const who = document.querySelector("#space-parlor .who-line");
   const sub = document.querySelector("#space-parlor .who-sub");
   if (armed) {
     if (who) {
@@ -6025,15 +6198,18 @@ function renderMasthead(roster) {
     (item) => item.character_id === (roster && roster.current_character_id));
   who.textContent = current ? current.name : "";
   mastheadCorrespondent = current ? current.name : "";
+  const when = document.querySelector("#space-parlor .who-when");
+  if (when) when.textContent = "";
   const sub = document.querySelector("#space-parlor .who-sub");
   if (sub) sub.textContent = "";
   setTodayLine(null);
 }
 
-// 成功臂：世界名进 .who（D-3 起它同时是进世界详情屏的门——见
-// markMastheadWorldArm）；副行 = 故事日 + 居民位（date_localized 服务
-// 端已本地化直显；「与…通信中」chrome 按 overview 的 ui_language 走
-// 双语词表）；今日动静行由 overview.today 驱动。
+// 成功臂：世界指示器（§7.4）= .who（世界名）+ .who-when（世界内时间——
+// date_localized 服务端已本地化直显，弱化静默暗示，D-4 起占主位）；
+// 副行只留「与…通信中」chrome（按 overview 的 ui_language 走双语词表）；
+// 今日动静行由 overview.today 驱动。世界臂下 .who-line 同时是进世界详情
+// 屏的门（见 markMastheadWorldArm）。
 function renderWorldMasthead(overview) {
   const who = document.querySelector("#space-parlor .who");
   if (!who) return;
@@ -6041,16 +6217,16 @@ function renderWorldMasthead(overview) {
   who.textContent = String(overview.world_name ?? "");
   const resident = overview.resident;
   mastheadCorrespondent = resident ? String(resident.name ?? "") : "";
+  // 世界内时间的静默暗示（D-4）：date_story = 世界指示器专读的故事日
+  // （同一本地化律、不带世界名尾——名字在主位已有一次，不重复；R1 的
+  // 「overview 的 date 驱动」即此键）。缺席（空串）就留空槽。
+  const when = document.querySelector("#space-parlor .who-when");
+  if (when) when.textContent = String(overview.date_story ?? "");
   const sub = document.querySelector("#space-parlor .who-sub");
   if (sub) {
-    const parts = [];
-    if (overview.date_localized) {
-      parts.push(String(overview.date_localized));
-    }
-    if (mastheadCorrespondent) {
-      parts.push(T.corresponding.replace("{name}", mastheadCorrespondent));
-    }
-    sub.textContent = parts.join(" · ");
+    sub.textContent = mastheadCorrespondent
+      ? T.corresponding.replace("{name}", mastheadCorrespondent)
+      : "";
   }
   markMastheadWorldArm(
     true, T.worldDetailLabel.replace("{world}", who.textContent || ""));
@@ -6230,72 +6406,291 @@ function unfoldToParlor(after) {
   if (typeof after === "function") after();
 }
 
-// ── wf-1：沓面板归位居民面────────────────────────────────────────────
-// 沓的世界框定（residents 端点驱动）：面板 aria-label 与沓顶 caption
-// （沓首上方的弱化一行）换「{world_name} 的居民」语境；每封带信数弱
-// 标注（residents 的诚实计数——没写过就是 0，如实显示）。数据合流 =
-// residents（世界框定 + letters_count）⨝ roster（切换必需的
-// character_id 仍在名册行上）**by persona_id**；信封 DOM 形不变
-// （components.js 的 envelopeCard 不动——标注由本面在 app.js 侧拼装）。
-// 「当前」邮戳仍由名册的 current_character_id 驱动（切换行为零改）。
-// residents 缺席（404/error/读失败）⇒ 沓回落现役「信封沓」语境——
-// aria-label 保持原词、无 caption 无标注，不发明世界名。幂等：开沓与
-// 沓内重排（新建/编辑/删除后）同走这里，caption 先摘旧再落新。
-async function buildEnvelopeResidentsContext(panel, stack) {
-  let data = null;
-  try {
-    data = await fetchWorldResidents();
-  } catch {
-    data = null;
+// ── D-4：沓的世界臂 =「世界里的人」（DEC-OPI-a4cf2d0e…63 R2）─────────
+// 世界在（ensemble 一读成功）⇒ 沓的行不是信封，是人：
+//   你的角色（name + anchor 一句，展示位——非可点）
+//   绑定 cast（名 + 一句 vignette + 信数 + 当前标记；点行 → 通信：与
+//     世界屏人区同一套桥与流程——见 characterIdForPersona/openCorrespondence；
+//     行上动作 = 起笔 · 档案 · 编辑，各自拦截行点击）
+//   镇民（name/role/vignette；点行 → 展开介绍——只读，无通信面）
+// 全端点拼装（webui 零字面）；名/信数/标记全来自 ensemble，角色卡只在
+// 桥与动作里出现（persona_id → character_id 的桥由名册承担）。世界
+// 缺席/读失败 ⇒ 回落臂 = 现役名册沓（wf-1「世界优先，mc-1 回落」同律；
+// 世界绑定随会话走——切到别的角色后本回落臂即现役态，切换面不断）。
+// 沓顶 caption（世界名 + 世界详情行内链）由世界臂自己的读数拼装——
+// 不再二次读 residents（同一份 world_name 一个出处）；回落臂保持现役
+// 「信封沓」原词、无 caption，不发明世界名（幂等：先摘旧再落新）。
+function buildPeopleCaption(stack, worldName, T) {
+  const panel = envselPanel;
+  if (!panel || !worldName) return;
+  panel.setAttribute(
+    "aria-label", T.residentsOf.replace("{world}", worldName));
+  const stale = panel.querySelector(".envsel-caption");
+  if (stale) stale.remove();
+  const caption = document.createElement("p");
+  caption.className = "envsel-caption";
+  caption.textContent = T.residentsOf.replace("{world}", worldName);
+  // D-3 入口②：沓顶 caption 的行内链——从沓可跳到世界详情屏（沓本体
+  // 结构零改：链是 caption 行内的增补件；收沓与进屏同批，回程走屏的
+  // 返回钮/Esc/navdock）。
+  const worldLink = document.createElement("button");
+  worldLink.type = "button";
+  worldLink.className = "btn btn--faint envsel-world-link";
+  worldLink.textContent = T.worldDetail;
+  worldLink.addEventListener("click", (event) => {
+    event.stopPropagation();
+    closeEnvelopeSelector();
+    openWorldDetail();
+  });
+  caption.appendChild(worldLink);
+  stack.parentNode.insertBefore(caption, stack);
+}
+
+// 你的角色行（展示位——非可点，无 role/tabindex）。
+function buildWorldYouRow(you) {
+  const row = document.createElement("article");
+  row.className = "person person--you";
+  const name = document.createElement("p");
+  name.className = "person-name";
+  name.textContent = String(you.name ?? "");
+  row.appendChild(name);
+  const anchor = document.createElement("p");
+  anchor.className = "person-line";
+  anchor.textContent = String(you.anchor ?? "");
+  row.appendChild(anchor);
+  return row;
+}
+
+// 绑定 cast 行（可通信的人）：「名 + 一句 vignette + 信数 + 当前标记」+
+// 行上动作（起笔 · 档案 · 编辑——三者都需要名册上那张卡：切换、卡面与
+// 编辑台同源；卡不在（名册读不全的诚实臂）⇒ 行退化为展示位，不装门、
+// 不装动作）。行点击 = 通信（openCorrespondence 的桥与确认/失败姿态）；
+// 动作按钮各自 stopPropagation 拦截行点击。
+function buildWorldCastRow(row, card, T) {
+  const person = document.createElement("article");
+  person.className = "person person--cast";
+  const name = document.createElement("p");
+  name.className = "person-name";
+  name.appendChild(document.createTextNode(String(row.name ?? "")));
+  if (row.is_current) {
+    const note = document.createElement("span");
+    note.className = "person-note";
+    note.textContent = T.current;
+    name.appendChild(note);
   }
-  if (!envselPanel || envselPanel !== panel) return;   // 沓已收——弃权
-  if (!data || data.error || !Array.isArray(data.residents)) return;
-  const byPersona = new Map();
-  for (const resident of data.residents) {
-    if (resident && resident.persona_id != null) {
-      byPersona.set(String(resident.persona_id), resident);
-    }
+  person.appendChild(name);
+  const line = String(row.vignette ?? (card && card.identity_line) ?? "");
+  if (line) {
+    const prose = document.createElement("p");
+    prose.className = "person-line";
+    prose.textContent = line;
+    person.appendChild(prose);
   }
-  const T = parlorWorldText(data.ui_language);
-  const worldName = String(data.world_name || "");
-  if (worldName) {
-    panel.setAttribute(
-      "aria-label", T.residentsOf.replace("{world}", worldName));
-    const stale = panel.querySelector(".envsel-caption");
-    if (stale) stale.remove();
-    const caption = document.createElement("p");
-    caption.className = "envsel-caption";
-    caption.textContent = T.residentsOf.replace("{world}", worldName);
-    // D-3 入口②：沓顶 caption 的行内链——从沓可跳到世界详情屏（沓本体
-    // 结构零改：链是 caption 行内的增补件；收沓与进屏同批，回程走屏的
-    // 返回钮/Esc）。
-    const worldLink = document.createElement("button");
-    worldLink.type = "button";
-    worldLink.className = "btn btn--faint envsel-world-link";
-    worldLink.textContent = T.worldDetail;
-    worldLink.addEventListener("click", (event) => {
-      event.stopPropagation();
-      closeEnvelopeSelector();
-      openWorldDetail();
+  const meta = document.createElement("p");
+  meta.className = "person-meta";
+  meta.textContent = T.letters.replace(
+    "{n}", String(Number(row.letters_count) || 0));
+  person.appendChild(meta);
+  if (card) {
+    const actions = document.createElement("p");
+    actions.className = "person-actions";
+    const act = (word, cls, handler) => {
+      const link = document.createElement("button");
+      link.type = "button";
+      link.className = "btn btn--pencil " + cls;
+      link.textContent = word;
+      link.addEventListener("click", (event) => {
+        event.stopPropagation();
+        handler();
+      });
+      actions.appendChild(link);
+    };
+    // 起笔 = 容器延展成写信工作区（现役语义一字不动，item 组装自
+    // cast 行 + 名册卡：写信面读的是名与一句身份）。
+    act("起笔", "person-act-compose", () => {
+      startComposing({
+        character_id: card.character_id,
+        name: row.name,
+        identity_line: line || card.identity_line || "",
+      });
     });
-    caption.appendChild(worldLink);
-    stack.parentNode.insertBefore(caption, stack);
+    act("档案", "person-act-dossier", () => {
+      closeEnvelopeSelector();
+      openPartnerDossier(card.character_id);
+    });
+    act("编辑", "person-act-edit", () => {
+      openCharacterEditor({ item: card, mode: "edit" });
+    });
+    person.appendChild(actions);
   }
+  if (card) {
+    person.classList.add("person--door");
+    person.setAttribute("role", "button");
+    person.tabIndex = 0;
+    person.addEventListener("click", (event) => {
+      if (event.target instanceof Element &&
+          event.target.closest(".person-actions")) {
+        return;   // 动作行自理
+      }
+      openCorrespondence(row.persona_id);
+    });
+    person.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      if (event.target instanceof Element &&
+          event.target.closest(".person-actions")) {
+        return;
+      }
+      event.preventDefault();
+      openCorrespondence(row.persona_id);
+    });
+  }
+  return person;
+}
+
+// 镇民行：「name/role/vignette」三句；行点击 = 展开介绍（只读小页的
+// 屏内展开形——与世界屏人区同一实现 wirePersonIntro，绝不落通信面）。
+function buildWorldResidentRow(row) {
+  const person = document.createElement("article");
+  person.className = "person person--resident";
+  const name = document.createElement("p");
+  name.className = "person-name";
+  name.textContent = String(row.name ?? "");
+  person.appendChild(name);
+  if (row.role) {
+    const role = document.createElement("p");
+    role.className = "person-line";
+    role.textContent = String(row.role);
+    person.appendChild(role);
+  }
+  if (row.vignette) {
+    const vignette = document.createElement("p");
+    vignette.className = "person-vignette";
+    vignette.textContent = String(row.vignette);
+    person.appendChild(vignette);
+  }
+  wirePersonIntro(person, { name: row.name, vignette: row.vignette });
+  return person;
+}
+
+function renderWorldPeopleStack(stack, ensemble) {
+  const T = parlorWorldText(ensemble.ui_language);
+  buildPeopleCaption(stack, String(ensemble.world_name ?? ""), T);
+  const you = ensemble.user_character;
+  if (you) stack.appendChild(buildWorldYouRow(you));
   const roster = (charactersCache && charactersCache.characters) || [];
-  for (const env of Array.from(stack.querySelectorAll(".env[data-id]"))) {
-    const item = roster.find((row) => row.character_id === env.dataset.id);
-    const resident = item && item.persona_id != null
-      ? byPersona.get(String(item.persona_id))
-      : null;
-    if (!resident) continue;   // 合流不上（无 persona 对应）——如实缺标注
-    const note = document.createElement("p");
-    note.className = "env-letters";
-    note.textContent = T.letters.replace(
-      "{n}", String(Number(resident.letters_count) || 0));
-    const actions = env.querySelector(".env-actions");
-    if (actions) env.insertBefore(note, actions);
-    else env.appendChild(note);
+  for (const row of Array.isArray(ensemble.cast) ? ensemble.cast : []) {
+    const card = roster.find(
+      (item) => item.persona_id != null
+        && String(item.persona_id) === String(row.persona_id)) || null;
+    stack.appendChild(buildWorldCastRow(row, card, T));
   }
+  for (const row of Array.isArray(ensemble.residents)
+    ? ensemble.residents : []) {
+    stack.appendChild(buildWorldResidentRow(row));
+  }
+}
+
+// ── mc-1 信封沓（回落臂 = 现役名册形；v3-2 容器化）─────────────────
+// 世界缺席（无绑定 404）或世界读失败时，沓仍是「信封沓——挑一位笔友」：
+// 名册逐封成卡（读/写/切全在）、空白封 + 完整编辑（新笔友）、全览窗口
+// 与预览/姿态（mc-1 的工艺面）原样——wf-1 的「世界优先，mc-1 回落」
+// 同律；D-4 只把世界在时的面换成「世界里的人」，回落形一字不动。
+function renderRosterStack(stack, roster) {
+  let order = 0;
+  for (const item of roster.characters || []) {
+    const isCurrent = item.character_id === roster.current_character_id;
+    const env = envelopeCard(item, {
+      current: isCurrent,
+      stampClasses: stampVariantClasses(item.stamp_key).join(" "),
+      rot: envelopeTilt(item.stamp_key),
+      dx: envelopeDrift(item.stamp_key),
+      onTalk: () => {
+        if (isCurrent) {
+          unfoldToParlor();   // 已在通信中——沓收拢、信纸摊开（8.2.2a）
+          return;
+        }
+        switchToCharacter(item.character_id).then((done) => {
+          if (done) unfoldToParlor();
+        });
+      },
+      onDossier: () => {
+        closeEnvelopeSelector();
+        openPartnerDossier(item.character_id);
+      },
+      onEdit: () =>
+        openCharacterEditor({ item: item, mode: "edit" }),
+      onCompose: () =>
+        startComposing(item),   // v3-2R：起笔 = 容器延展成写信工作区
+    });
+    if (item.character_id === envselBornId) env.classList.add("env--born");
+    env.dataset.order = String(order);
+    env.addEventListener("click", (event) => {
+      if (event.target instanceof Element &&
+          event.target.closest(".env-actions")) {
+        return;   // 动作行自理
+      }
+      previewEnvelope(item.character_id);
+    });
+    env.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && event.target === env) {
+        event.preventDefault();
+        previewEnvelope(item.character_id);
+      }
+    });
+    stack.appendChild(env);
+    order += 1;
+  }
+  stack.appendChild(newEnvelopeCard());
+  layoutEnvelopeStack(stack);
+  envselBornId = null;   // 纸事件只播一次——下轮重排不再落
+}
+
+async function renderEnvelopeStack(stack) {
+  envselPreviewId = null;
+  stack.textContent = "";
+  stack.appendChild(stateBanner("loading"));
+  let roster = null;
+  try {
+    roster = await fetchCharacters();
+  } catch {
+    roster = null;
+  }
+  stack.textContent = "";
+  if (!roster) {
+    stack.appendChild(stateBanner("error", {
+      text: "信封沓没取到。",
+      retry: () => {
+        closeEnvelopeSelector();
+        openEnvelopeSelector();
+      },
+    }));
+    return;
+  }
+  charactersCache = roster;
+  loadMasthead(roster);   // wf-1：世界优先重灌（回落臂直接用这份名册）
+  // D-4（R2）：世界在 ⇒ 世界里的人（行 = 你的角色 + cast + 镇民）；
+  // 世界缺席/读失败 ⇒ 现役名册沓（回落臂）。臂判据同时写进
+  // envselPeopleArm（面板纸面点击的全览升级只在回落臂成立）。
+  const ensemble = await readWorldEnsemble();
+  stack.textContent = "";
+  envselPeopleArm = !!(ensemble && !ensemble.error && ensemble.world_name);
+  stack.classList.toggle("envsel-stack--people", envselPeopleArm);
+  // 面板同挂臂类（D-4）：世界臂下「翻开全沓」辅入口让位（行是「人」
+  // 不是信封——全览页只在回落臂有主）。
+  if (envselPanel) {
+    envselPanel.classList.toggle("envsel--people", envselPeopleArm);
+  }
+  if (envselPeopleArm) {
+    renderWorldPeopleStack(stack, ensemble);
+    return;
+  }
+  renderRosterStack(stack, roster);
+}
+
+async function refreshEnvelopeStack() {
+  const stack = envselPanel && envselPanel.querySelector(".envsel-stack");
+  if (!stack) return;
+  await renderEnvelopeStack(stack);
 }
 
 async function openEnvelopeSelector() {
@@ -6359,13 +6754,15 @@ async function openEnvelopeSelector() {
   document.getElementById("space-parlor").appendChild(panel);
   envselPanel = panel;
   envselFace = "deck";
+  envselPeopleArm = false;   // 臂判据由 renderEnvelopeStack 每轮重写
   panel.classList.add("envsel--open");   // 入场一次（复用注册双动画）
   panel.focus();
   document.addEventListener("click", envselCloser);
   document.addEventListener("keydown", envselEsc);
   // 点沓本体 = 翻开全览（v3-2R 主入口）：落在容器纸面（面板留白/沓叠
   // 背景）上的点击升级成窗口；信封、动作行、底行上的点击各有己任
-  // （预览/动作/收沓），不在这条路上。
+  // （预览/动作/收沓），不在这条路上。（D-4：世界臂下全览面不存在——
+  // 闸在 setEnvelopeFace，本臂一字不动。）
   panel.addEventListener("click", (event) => {
     if (envselFace !== "deck") return;
     if (event.target !== panel && event.target !== stack) return;
@@ -6376,7 +6773,6 @@ async function openEnvelopeSelector() {
   // 入口 = 点沓本体纸面（上方 click 臂）与「翻开全沓 ↓」文字链，全部
   // 显式，无一自动跳转）。
   await renderEnvelopeStack(stack);
-  buildEnvelopeResidentsContext(panel, stack);
   buildEnvelopeBrowser(browser);
 }
 
@@ -6572,6 +6968,10 @@ async function setEnvelopeFace(face) {
   if (!envselPanel) return;
   if (face !== "deck" && face !== "window" && face !== "editor" &&
       face !== "compose") return;
+  // D-4：世界臂下没有卡片全览页（行是「人」不是信封）——window 点名
+  // 一律拒绝（纸面点击与「翻开全沓」两个入口同闸；该入口在世界臂
+  // 已由 .envsel--people 让位）。
+  if (face === "window" && envselPeopleArm) return;
   if (envselFace === face) return;
   if (envselFacePending) return;   // 一次只拉一次——过渡中的二次点名忽略
   const panel = envselPanel;
@@ -6609,85 +7009,6 @@ async function setEnvelopeFace(face) {
   if (face === "compose") {
     followComposeWorkspace(panel, composeFace);   // 硬伤 C：延展落定视口跟随
   }
-}
-
-async function renderEnvelopeStack(stack) {
-  envselPreviewId = null;
-  stack.textContent = "";
-  stack.appendChild(stateBanner("loading"));
-  let roster = null;
-  try {
-    roster = await fetchCharacters();
-  } catch {
-    roster = null;
-  }
-  stack.textContent = "";
-  if (!roster) {
-    stack.appendChild(stateBanner("error", {
-      text: "信封沓没取到。",
-      retry: () => {
-        closeEnvelopeSelector();
-        openEnvelopeSelector();
-      },
-    }));
-    return;
-  }
-  charactersCache = roster;
-  loadMasthead(roster);   // wf-1：世界优先重灌（回落臂直接用这份名册）
-  let order = 0;
-  for (const item of roster.characters || []) {
-    const isCurrent = item.character_id === roster.current_character_id;
-    const env = envelopeCard(item, {
-      current: isCurrent,
-      stampClasses: stampVariantClasses(item.stamp_key).join(" "),
-      rot: envelopeTilt(item.stamp_key),
-      dx: envelopeDrift(item.stamp_key),
-      onTalk: () => {
-        if (isCurrent) {
-          unfoldToParlor();   // 已在通信中——沓收拢、信纸摊开（8.2.2a）
-          return;
-        }
-        switchToCharacter(item.character_id).then((done) => {
-          if (done) unfoldToParlor();
-        });
-      },
-      onDossier: () => {
-        closeEnvelopeSelector();
-        openPartnerDossier(item.character_id);
-      },
-      onEdit: () =>
-        openCharacterEditor({ item: item, mode: "edit" }),
-      onCompose: () =>
-        startComposing(item),   // v3-2R：起笔 = 容器延展成写信工作区
-    });
-    if (item.character_id === envselBornId) env.classList.add("env--born");
-    env.dataset.order = String(order);
-    env.addEventListener("click", (event) => {
-      if (event.target instanceof Element &&
-          event.target.closest(".env-actions")) {
-        return;   // 动作行自理
-      }
-      previewEnvelope(item.character_id);
-    });
-    env.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" && event.target === env) {
-        event.preventDefault();
-        previewEnvelope(item.character_id);
-      }
-    });
-    stack.appendChild(env);
-    order += 1;
-  }
-  stack.appendChild(newEnvelopeCard());
-  layoutEnvelopeStack(stack);
-  envselBornId = null;   // 纸事件只播一次——下轮重排不再落
-}
-
-async function refreshEnvelopeStack() {
-  const stack = envselPanel && envselPanel.querySelector(".envsel-stack");
-  if (!stack) return;
-  await renderEnvelopeStack(stack);
-  buildEnvelopeResidentsContext(envselPanel, stack);
 }
 
 // 预览（精准动画的第一半）：点沓中一封 → 该封滑到沓首微抬，其余
@@ -7384,11 +7705,12 @@ if (whoBlock) {
 }
 
 // D-3 入口①（案头主从条世界名）：世界臂在场时（markMastheadWorldArm
-// 的判据），点/敲 .who 进世界详情屏——本监听先于块的监听截住事件
-// （stopPropagation），块的回信封沓语义一字不动；回落臂直接让路（整块
-// 仍是信封沓的单一语义）。世界臂下 aria 角色由 markMastheadWorldArm
-// 落在 .who 与副行上（嵌套可点元素不合法——块让位）。
-const whoName = document.querySelector("#space-parlor .who");
+// 的判据），点/敲 .who-line（世界指示器整行——名字与时间两格同属一道
+// 门）进世界详情屏——本监听先于块的监听截住事件（stopPropagation），
+// 块的回信封沓语义一字不动；回落臂直接让路（整块仍是信封沓的单一
+// 语义）。世界臂下 aria 角色由 markMastheadWorldArm 落在 .who-line 与
+// 副行上（嵌套可点元素不合法——块让位）。
+const whoName = document.querySelector("#space-parlor .who-line");
 if (whoName) {
   whoName.addEventListener("click", (event) => {
     if (!mastheadWorldArmed) return;

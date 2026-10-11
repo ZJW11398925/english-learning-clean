@@ -1,4 +1,4 @@
-"""WF-1 — the parlor's world-first masthead and the residents face.
+"""WF-1 — the parlor's world-first masthead and the world's people.
 
 The user's ruling (DEC-OPI-5fc42174-…5 R3/R7, verbatim intent): the desk
 is the world's — the master-detail bar names the world first, the story
@@ -8,45 +8,51 @@ whole face is endpoint-assembled: zero world-name literals in the webui
 (the character-name precedent), and the mc-1 roster shape survives as
 the honest fallback arm when no world is bound.
 
-Nine groups (the slice's own):
+Nine groups (the slice's own), with the D-4 cut's truth migrations
+(DEC-OPI-a4cf2d0e…63 R1/R2 — the display-hierarchy unification: the
+world indicator takes the main slot, and the deck becomes the world's
+people);
 
 1. **the zero-literal pin** — no 「Berrymoor」 in any served file (any
    casing); the world name only ever arrives through
    ``/api/world/overview``'s ``world_name``;
 2. **the world-first arm** — ``renderWorldMasthead`` puts the world name
-   in ``.who``, assembles the sub row from ``date_localized`` (server-
-   localized, shown as-is) plus the 「与…通信中」 chrome keyed by the
-   payload's ``ui_language``, and feeds ``overview.today`` to the today
-   line;
+   in ``.who`` and the in-world time in ``.who-when`` (one line: the
+   §7.4 world indicator), assembles the sub row from the 「与…通信中」
+   chrome keyed by the payload's ``ui_language``, and feeds
+   ``overview.today`` to the today line;
 3. **the fallback arm** — ``renderMasthead`` keeps the mc-1 truth
-   (``.who`` = the roster's current character only), clears the sub row
-   and silences the today line: removing the fallback call from
+   (``.who`` = the roster's current character only), clears both world
+   slots and silences the today line: removing the fallback call from
    ``loadMasthead`` leaves an empty masthead, and the pin goes red on
    exactly that;
 4. **the wiring pins** — both fetchers are exported by api.js, imported
    by app.js's single api.js import block, and called at their posts
    (the mc-1 wiring-pin shape; the import-coverage pin in test_w1_web
    keeps the block honest mechanically);
-5. **the residents face** — the panel's aria-label and the deck caption
-   are assembled from ``world_name`` through the sentence table; every
-   envelope may carry the honest letters count; the confluence joins
-   residents ⨝ roster **by persona_id** (the switch-required
-   ``character_id`` stays on the roster row); the envelopeCard DOM shape
-   is untouched (components.js carries none of the new names);
-6. **the residents fallback** — a residents read that errors or 404s
-   leaves the panel on the current 「信封沓」 context: no caption, no
-   annotation, no invented world name;
+5. **the world's people (D-4)** — the deck's world arm renders the
+   ensemble: your character (display), the cast (name / one-line
+   vignette / letter count / current mark; clicking the row lands in the
+   correspondence) and the residents (name / role / vignette; clicking
+   expands her read-only introduction) — the caption and aria-label are
+   assembled from the ensemble's own ``world_name`` through the sentence
+   table, and the bridge to the switch is cast ``persona_id`` ⨝ roster
+   ``persona_id`` (the switch-required ``character_id`` stays on the
+   roster row);
+6. **the fallback arm's context** — no world (or a failed read) leaves
+   the deck on the current 「信封沓」 context: the roster stack, no
+   caption, no invented world name (the D-4 arm judge);
 7. **the switch face is untouched** — the switch call lines survive
-   verbatim (api.js's POST, app.js's await, the three switch call sites,
-   the local reload): re-framing the deck re-frames nothing about
+   verbatim (api.js's POST, app.js's await, the switch call sites, the
+   local reload): re-framing the deck re-frames nothing about
    switching;
 8. **the bilingual chrome** — the sentence table reads in zh and en for
    every chrome sentence; the quiet-day sentence passes through
    verbatim (the server's own human words, never re-written here);
 9. **the E2E faces** — a real server on a bound stack answers the
-   overview and the residents with exactly the keys the frontend
-   assembles from (the roster join's ``persona_id`` premise included),
-   and a no-binding stack answers the same honest 404 the frontend's
+   overview and the ensemble with exactly the keys the frontend
+   assembles from (the bridge's ``persona_id`` premise included), and a
+   no-binding stack answers the same honest 404 the frontend's
    error-shape judge consumes.
 """
 
@@ -128,20 +134,25 @@ def test_no_world_name_literal_in_the_webui() -> None:
 
 
 def test_the_masthead_world_first_arm() -> None:
-    """成功臂钉（源级）：renderWorldMasthead 把 world_name 放进 .who；
-    副行 = date_localized（服务端已本地化直显）+ 「与…通信中」 chrome
-    （按载荷 ui_language 走词表）——两段拼装都在；今日动静行吃
-    overview.today。删世界名行或任一拼装段即红。"""
+    """成功臂钉（源级）：renderWorldMasthead 把 world_name 放进 .who、
+    世界内时间放进 .who-when（D-4 世界指示器：§7.4「世界名 + 世界内
+    时间的静默暗示」= .who-line 主位一行两格——故事日不再走副行；
+    时间格读 date_story = 不带世界名尾的同律故事日，名字不重复）；
+    副行只留「与…通信中」chrome（按载荷 ui_language 走词表）；今日动静
+    行吃 overview.today。删世界名行、时间格或任一拼装段即红。"""
 
     app = _text("app.js")
     arm = _function_slice(app, "function renderWorldMasthead(overview)")
     assert 'who.textContent = String(overview.world_name ?? "");' in arm
-    assert "parts.push(String(overview.date_localized));" in arm
+    # D-4：时间格在 .who-line 里（与名同行的静默暗示；date_story 无名尾）
+    assert 'when.textContent = String(overview.date_story ?? "");' in arm
+    assert 'document.querySelector("#space-parlor .who-when");' in arm
     assert (
-        'parts.push(T.corresponding.replace("{name}",'
-        " mastheadCorrespondent));" in arm
+        "sub.textContent = mastheadCorrespondent\n"
+        '      ? T.corresponding.replace("{name}",'
+        " mastheadCorrespondent)\n"
+        '      : "";' in arm
     )
-    assert 'sub.textContent = parts.join(" · ");' in arm
     assert "setTodayLine(overview.today, overview.ui_language);" in arm
     # the resident feeds the compose salutation's correspondent too —
     # a null resident (the world's own narration) leaves it empty
@@ -154,9 +165,10 @@ def test_the_masthead_world_first_arm() -> None:
 def test_the_masthead_fallback_arm_keeps_the_roster_truth() -> None:
     """回落臂钉（源级，两分支都有断言——解掉回落臂 ⇒ 空主从条的变异
     恰红）：renderMasthead 保持 mc-1 真源（.who = 名册 current 一行，
-    不发明人名），并清空副行、静默今日动静行；loadMasthead 的编排 =
-    overview 判形成功走世界臂、否则回落臂消费名册（调用方已取到的
-    不取第二遍），回落调用 renderMasthead(roster) 恰此一处。"""
+    不发明人名），并清空两个世界槽（.who-when / .who-sub）、静默今日
+    动静行；loadMasthead 的编排 = overview 判形成功走世界臂、否则回落
+    臂消费名册（调用方已取到的不取第二遍），回落调用 renderMasthead(roster)
+    恰此一处。"""
 
     app = _text("app.js")
     arm = _function_slice(app, "function renderMasthead(roster)")
@@ -166,6 +178,7 @@ def test_the_masthead_fallback_arm_keeps_the_roster_truth() -> None:
         "    (item) => item.character_id ==="
         " (roster && roster.current_character_id));" in arm
     )
+    assert 'if (when) when.textContent = "";' in arm   # D-4 时间格同静默
     assert 'if (sub) sub.textContent = "";' in arm
     assert "setTodayLine(null);" in arm
     assert (
@@ -191,105 +204,141 @@ def test_the_masthead_fallback_arm_keeps_the_roster_truth() -> None:
 # 3 — the wiring pins
 
 
-def test_the_two_world_fetchers_are_wired() -> None:
-    """wiring 钉（mc-1 同形）：两 fetcher 在 api.js export（各带端点
-    字面）+ app.js 唯一 api.js import 块 + 各自调用点（装载臂与居民
-    面）。删导出、删导入、删调用三者任一即红；块内一致性由
-    test_w1_web 的 import-coverage 钉机械保障。"""
+def test_the_world_fetcher_is_wired() -> None:
+    """wiring 钉（mc-1 同形；D-4 迁移）：overview 的封装在 api.js export
+    （带端点字面）+ app.js 唯一 api.js import 块 + 两个调用点（主从条
+    装载臂 + 沓的世界臂）。删导出、删导入、删调用三者任一即红；块内
+    一致性由 test_w1_web 的 import-coverage 钉机械保障。
+    D-4 迁移：residents 读的前端消费者（沓的居民面）被「世界里的人」
+    替下——封装 fetchWorldResidents 出集（阁楼纪律：没有消费者的封装
+    不留），服务端端点照旧（wf-0 读面钉不动）。"""
 
     api = _text("api.js")
     assert (
         'export function fetchWorldOverview() {\n'
         '  return getJson("/api/world/overview");\n}'
     ) in api
-    assert (
-        'export function fetchWorldResidents() {\n'
-        '  return getJson("/api/world/residents");\n}'
-    ) in api
+    assert "export function fetchWorldResidents" not in api   # retired
     app = _text("app.js")
     start = app.index('import {\n  fetchTurn,')
     end = app.index('} from "./api.js";', start)
     block = app[start:end]
     assert "fetchWorldOverview," in block
-    assert "fetchWorldResidents," in block
+    assert "fetchWorldResidents" not in block
     loader = _function_slice(app, "async function loadMasthead(")
     assert "overview = await fetchWorldOverview();" in loader
-    residents_face = _function_slice(
-        app, "async function buildEnvelopeResidentsContext(")
-    assert "data = await fetchWorldResidents();" in residents_face
-    # the three masthead call sites: startup, the stack's own refresh,
-    # and the post-switch reload
+    # D-4：沓的世界臂经 readWorldEnsemble（同一读面族的 null-on-failure
+    # 包装）取世界里的人
+    deck = _function_slice(app, "async function renderEnvelopeStack(")
+    assert "const ensemble = await readWorldEnsemble();" in deck
+    # the masthead call sites: startup, the stack's own refresh, and the
+    # post-switch reload
     assert "loadMasthead().catch(() => {});" in app
     assert "loadMasthead(roster);" in app
     assert "await loadMasthead();" in app
 
 
 # ---------------------------------------------------------------------------
-# 4 — the residents face
+# 4 — the world's people (D-4: the deck's world arm)
 
 
-def test_the_envelope_selector_wears_the_residents_face() -> None:
-    """居民面钉（源级）：面板 aria-label 与沓顶 caption 经词表从
-    world_name 拼装（caption 落沓首上方——insertBefore(stack)）；每封
-    信数弱标注用 residents 的诚实计数；合流 = residents ⨝ roster
-    **by persona_id**（character_id 仍在名册行上——切换必需）；
-    envelopeCard DOM 形不变——components.js 不携带任何新名。"""
+def test_the_deck_wears_the_worlds_people() -> None:
+    """世界里的人钉（源级，D-4 重铸 wf-1 的居民面）：沓的世界臂（世界在）
+    的行 = 你的角色（.person--you，展示位——非可点）+ cast（.person--cast：
+    名 + 一句 vignette + 信数 + 当前标记；行点击 = 通信）+ 镇民
+    （.person--resident：名/角色/vignette；点行展开介绍）。caption 与
+    aria-label 由世界臂自己的 ensemble 载荷经词表从 world_name 拼装
+    （caption 落沓首上方——insertBefore(stack)；幂等摘旧）；桥 = cast
+    的 persona_id 在名册（charactersCache）上找 character_id（切换必需
+    的 id 在名册行上）。evelopeCard 工厂不在世界臂出现（回落臂仍是它
+    ——见 mc-1）；components.js 不携带任何新名。"""
 
     app = _text("app.js")
-    face = _function_slice(
-        app, "async function buildEnvelopeResidentsContext(")
+    face = _function_slice(app, "function buildPeopleCaption(")
     assert (
         'panel.setAttribute(\n'
-        '      "aria-label", T.residentsOf.replace("{world}", worldName));'
+        '    "aria-label", T.residentsOf.replace("{world}", worldName));'
     ) in face
     assert 'caption.className = "envsel-caption";' in face
     assert "stack.parentNode.insertBefore(caption, stack);" in face
-    # wf-1 处置（评审 LOW-1）：caption 的幂等摘旧行——面板 DOM 复用时
-    # （refreshEnvelopeStack 的重排路径，非每开新建面板的 open 路径）
-    # 无摘除则 caption 逐次堆积；该行真承重（评审 M4 变异形态），钉住。
+    # wf-1 处置（评审 LOW-1）的真值随迁：caption 的幂等摘旧行——面板
+    # DOM 复用时（refreshEnvelopeStack 的重排路径）无摘除则 caption
+    # 逐次堆积；该行真承重，钉住。
     assert "stale.remove();" in face
     assert 'panel.querySelector(".envsel-caption");' in face
-    assert 'note.className = "env-letters";' in face
+    assert "if (!panel || !worldName) return;" in face   # 无世界名不装框定
+    # 世界详情行内链（D-3 入口②）随 caption 同处
+    assert "worldLink.textContent = T.worldDetail;" in face
+
+    people = _function_slice(app, "function renderWorldPeopleStack(")
     assert (
-        'T.letters.replace(\n'
-        '      "{n}", String(Number(resident.letters_count) || 0));' in face
+        'buildPeopleCaption(stack, String(ensemble.world_name ?? ""), T);'
+        in people
     )
-    # the confluence: residents keyed by persona_id, the roster row
-    # found by character_id, joined on persona_id
-    assert 'byPersona.set(String(resident.persona_id), resident);' in face
+    assert "buildWorldYouRow(you)" in people
+    assert "buildWorldCastRow(row, card, T)" in people
+    assert "buildWorldResidentRow(row)" in people
+    # 桥（D-4）：cast 行 persona_id ⨝ 名册行 persona_id → 卡
     assert (
-        "const resident = item && item.persona_id != null\n"
-        "      ? byPersona.get(String(item.persona_id))\n"
-        "      : null;" in face
+        "const card = roster.find(\n"
+        "      (item) => item.persona_id != null\n"
+        "        && String(item.persona_id) === String(row.persona_id)"
+        ") || null;" in people
     )
     assert (
         "const roster = (charactersCache && charactersCache.characters)"
-        " || [];" in face
+        " || [];" in people
     )
-    # the envelopeCard factory is untouched — the annotation is a
-    # sibling appended app-side, never a new envelopeCard part
+    person_you = _function_slice(app, "function buildWorldYouRow(you)")
+    assert 'row.className = "person person--you";' in person_you
+    assert "name.textContent = String(you.name ?? \"\");" in person_you
+    assert "anchor.textContent = String(you.anchor ?? \"\");" in person_you
+    assert "addEventListener" not in person_you   # 展示位——非可点
+    cast_row = _function_slice(app, "function buildWorldCastRow(row, card, T)")
+    assert 'person.className = "person person--cast";' in cast_row
+    assert "note.textContent = T.current;" in cast_row     # 当前标记
+    assert "meta.textContent = T.letters.replace(" in cast_row
+    assert "openCorrespondence(row.persona_id);" in cast_row
+    assert 'act("起笔", "person-act-compose"' in cast_row
+    assert 'act("档案", "person-act-dossier"' in cast_row
+    assert 'act("编辑", "person-act-edit"' in cast_row
+    resident_row = _function_slice(app, "function buildWorldResidentRow(row)")
+    assert 'person.className = "person person--resident";' in resident_row
+    assert "wirePersonIntro(person, { name: row.name, vignette: row.vignette });" \
+        in resident_row
+    # 两臂的闸与布局类（世界臂的人行区）
+    deck = _function_slice(app, "async function renderEnvelopeStack(")
+    assert (
+        "envselPeopleArm = !!(ensemble && !ensemble.error"
+        " && ensemble.world_name);" in deck
+    )
+    assert 'stack.classList.toggle("envsel-stack--people", envselPeopleArm);' \
+        in deck
+    assert "renderWorldPeopleStack(stack, ensemble);" in deck
+    # components.js 不携带任何新名（envelopeCard 工厂只服务回落臂）
     components = _text("components.js")
-    for marker in ("envsel-caption", "env-letters", "persona_id",
-                   "residents"):
+    for marker in ("envsel-caption", "person--cast", "person--resident",
+                   "persona_id", "residents"):
         assert marker not in components, marker
-    # the deck and the refresh share the face (idempotent re-dress)
-    assert "buildEnvelopeResidentsContext(panel, stack);" in app
-    assert "buildEnvelopeResidentsContext(envselPanel, stack);" in app
 
 
-def test_the_selector_falls_back_without_residents() -> None:
-    """回落钉（源级）：residents 缺席（404 的 error 键判形 / 读失败 /
-    载荷坏形）⇒ 居民面整面弃权——aria-label 保持现役「信封沓」原词、
-    无 caption 无标注，不发明世界名。守卫句与原词两断言都红才容得下
+def test_the_selector_falls_back_without_a_world() -> None:
+    """回落钉（源级，D-4 迁移）：世界缺席（无绑定 404 的 error 键判形 /
+    读失败 / 无 world_name）⇒ 世界臂整面弃权——沓回落现役名册形
+    （renderRosterStack：信封卡与空白封的原装配线），aria-label 保持
+    现役「信封沓」原词、无 caption，不发明世界名。两断言都红才容得下
     「回落被拆」。"""
 
     app = _text("app.js")
-    face = _function_slice(
-        app, "async function buildEnvelopeResidentsContext(")
+    deck = _function_slice(app, "async function renderEnvelopeStack(")
     assert (
-        "if (!data || data.error || !Array.isArray(data.residents))"
-        " return;" in face
+        "envselPeopleArm = !!(ensemble && !ensemble.error"
+        " && ensemble.world_name);" in deck
     )
+    assert "renderRosterStack(stack, roster);" in deck
+    # the world name guard: a caption without a world name is never built
+    face = _function_slice(app, "function buildPeopleCaption(")
+    assert "if (!panel || !worldName) return;" in face
     assert 'panel.setAttribute("aria-label", "信封沓");' in app
 
 
@@ -362,6 +411,9 @@ def test_the_today_line_is_endpoint_driven_and_jumpless() -> None:
 
     index = _text("index.html")
     assert '<div class="who-sub"></div>' in index
+    # D-4 世界指示器：主位一行两槽（名 + 世界内时间）——两槽都在册
+    assert '<div class="who-line">' in index
+    assert '<div class="who-when"></div>' in index
     assert (
         '<p class="today-line" id="today-line" hidden></p>' in index
     )
@@ -376,14 +428,22 @@ def test_the_today_line_is_endpoint_driven_and_jumpless() -> None:
     # 三大件名只许活在 WR-5 的历史注记里，不得有任何调用位；原字面
     # `showSpace("world") not in app` 的钉意（旧屏不回场）由「world 空间
     # 键的进屏调用恰一处——新世界详情屏」承担，新屏的在场钉落
-    # tests/host/test_d3_world_detail.py（同一空间名两代屏：旧屏 = 单页
-    # 日志，新屏 = 四区详情——同名不是回场，是承接）。
+    # tests/host/test_d3_world_detail.py（同一空间名三代屏：旧屏 = 单页
+    # 日志，新屏 = 五区详情；同名不是回场，是承接）。
     for gone in ("loadWorldLogFace", "renderWorldLogDay", "WORLD_LOG_TEXT"):
         assert f"{gone}(" not in app, gone
     assert app.count('showSpace("world")') == 1
     screens = _text("screens.css")
     assert (
         ".who-sub { font: var(--t-ui); color: var(--ink-faint); }" in screens
+    )
+    # D-4：时间格与名同行的指示器一行（.who-line flex 基线对齐）
+    assert (
+        ".who-line { display: flex; align-items: baseline;"
+        " gap: var(--sp-2); }" in screens
+    )
+    assert (
+        ".who-when { font: var(--t-ui); color: var(--ink-faint); }" in screens
     )
     assert (
         ".today-line { display: block; margin: 0 0 18px; padding: 0;"
@@ -393,7 +453,10 @@ def test_the_today_line_is_endpoint_driven_and_jumpless() -> None:
         ".envsel-caption { margin: 0; font: var(--t-ui);"
         " color: var(--ink-faint); }" in screens
     )
-    assert ".env-letters { margin: 2px 0 0; font-size: var(--fs-small);" in (
+    # D-4 迁移：沓中信数标注（.env-letters）随居民面出集——信数现在住在
+    # 世界里的人行上（.person-meta，同族弱化语汇）
+    assert ".env-letters" not in screens
+    assert ".person-meta { margin: 2px 0 0; font-size: var(--fs-small);" in (
         screens
     )
 
@@ -415,10 +478,11 @@ def test_the_compose_salutation_names_the_correspondent() -> None:
 # 8 — the E2E faces
 
 
-def test_overview_and_residents_feed_the_new_face(tmp_path: Path) -> None:
+def test_overview_and_ensemble_feed_the_new_face(tmp_path: Path) -> None:
     """前端消费的两份载荷，活体对表（真服务器 + 内置世界自动绑定）：
-    overview 的 world_name/date_localized/today/resident 与 residents
-    的六键行全在；合流前提 = 名册行与居民行共享 persona_id（join 键
+    overview 的 world_name/date_localized/today/resident 与 ensemble 的
+    cast 行全在（D-4 迁移：世界里的人读 ensemble——旧 residents 面已
+    无前端消费者）；桥前提 = cast 行与名册行共享 persona_id（join 键
     两侧都在）。"""
 
     with web_stack(tmp_path / "app.db") as stack:
@@ -434,33 +498,35 @@ def test_overview_and_residents_feed_the_new_face(tmp_path: Path) -> None:
         }
         assert overview["ui_language"] in ("zh", "en")
 
-        status, residents = stack.get_json("/api/world/residents")
+        status, ensemble = stack.get_json("/api/world/ensemble")
         assert status == 200
-        rows = residents["residents"]
-        assert rows and residents["world_name"]
+        rows = ensemble["cast"]
+        assert rows and ensemble["world_name"]
         for row in rows:
             assert set(row) == {
                 "actor_id", "persona_id", "name", "identity",
-                "is_current", "letters_count",
+                "vignette", "is_current", "letters_count",
             }
             assert row["letters_count"] == 0
+            assert row["vignette"]        # 世界里的人读的那句
         assert sum(1 for row in rows if row["is_current"]) == 1
+        assert ensemble["residents"] and ensemble["user_character"]
 
         status, roster = stack.get_json("/api/characters")
         assert status == 200
         roster_personas = {
             row["persona_id"] for row in roster["characters"]
         }
-        resident_personas = {row["persona_id"] for row in rows}
-        # the join key lives on both sides — the confluence's premise
-        assert resident_personas & roster_personas
+        cast_personas = {row["persona_id"] for row in rows}
+        # the join key lives on both sides — the bridge's premise
+        assert cast_personas & roster_personas
 
 
 def test_the_read_faces_404_without_a_binding(
     tmp_path: Path, monkeypatch: Any
 ) -> None:
     """无绑定栈（HTTP 级）：run_web 的绑定循环拿不到内置包 ⇒ 无绑定
-    ——overview 与 residents 同答 404 同句（判形路径可构造：404 体带
+    ——overview 与 ensemble 同答 404 同句（判形路径可构造：404 体带
     error 键，前端 `data.error` 判形回落臂消费的正是这个形）。"""
 
     empty_dir = tmp_path / "no-worlds"
@@ -471,7 +537,7 @@ def test_the_read_faces_404_without_a_binding(
         assert status == 404
         assert "error" in overview
         assert "没有绑定任何世界" in overview["error"]
-        status, residents = _get_json(stack.port, "/api/world/residents")
+        status, ensemble = _get_json(stack.port, "/api/world/ensemble")
         assert status == 404
-        assert "error" in residents
-        assert residents["error"] == overview["error"]
+        assert "error" in ensemble
+        assert ensemble["error"] == overview["error"]

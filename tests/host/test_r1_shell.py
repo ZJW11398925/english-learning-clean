@@ -140,30 +140,34 @@ def test_the_old_nav_controls_are_all_gone(tmp_path: Path) -> None:
 
 
 def test_the_navdock_is_the_only_way_between_spaces(tmp_path: Path) -> None:
-    """The dock: exactly three items (案头/温故/抽屉——WR-5 世界日志屏
-    随「案头即世界自然发展之地」定谳整体退役，四→三单向收紧，DEC-OPI-
-    8a4f980b…7；v2-1R 品牌更名后旧空间词「客厅」退役) with their data-space
-    wiring, the app-side wiring, and the fixed bottom form — hairline top
-    edge, paper ground, the safe area in its own padding."""
+    """The dock: exactly four items (案头/世界/温故/抽屉——D-4 按正典
+    §7.4「世界架 = 世界切换面」把世界详情屏升格为导航一级成员，世界项
+    重新入坞；WR-5 曾随世界日志屏退役回三项，同空间名第三代屏（详情屏）
+    承接后按用户裁决入坞——DEC-OPI-a4cf2d0e…63 R4；v2-1R 品牌更名后旧
+    空间词「客厅」退役) with their data-space wiring, the app-side
+    wiring, and the fixed bottom form — hairline top edge, paper ground,
+    the safe area in its own padding."""
 
     index = _text("index.html")
     assert '<nav id="navdock" class="navdock" aria-label="空间">' in index
     navdock = index.split('id="navdock"', 1)[1].split("</nav>", 1)[0]
-    for space in ("parlor", "study", "drawer"):
+    for space in ("parlor", "world", "study", "drawer"):
         assert f'class="navdock-item" data-space="{space}"' in index
-    assert navdock.count('class="navdock-item"') == 3
+    assert navdock.count('class="navdock-item"') == 4
     # v3-a 随迁（落墨页签）：每项 = 图标插槽 + 文字标签同钮——文字行
-    # 语义由标签承担（图标永不单独承担语义），三条签行逐字在册。
-    for label in (">案头</span></button>", ">温故</span></button>",
-                  ">抽屉</span></button>"):
+    # 语义由标签承担（图标永不单独承担语义），四条签行逐字在册。
+    for label in (">案头</span></button>", ">世界</span></button>",
+                  ">温故</span></button>", ">抽屉</span></button>"):
         assert label in index
-    for glyph in ("data-icon=\"desk\"", "data-icon=\"revisit\"",
-                  "data-icon=\"drawer\""):
+    for glyph in ("data-icon=\"desk\"", "data-icon=\"world\"",
+                  "data-icon=\"revisit\"", "data-icon=\"drawer\""):
         assert glyph in index
-    # WR-5: the world item and its icon are gone with the screen (the
-    # icon-set keeps no unused registrations — the no-attic law).
-    assert 'data-space="world"' not in index
-    assert "data-icon=\"world\"" not in index
+    # D-4: the world item and its icon are back with the world shelf's
+    # door (the retired world *log* screen's own names stay retired —
+    # test_wf1's absence pin; the icon-set keeps no unused registrations
+    # — the no-attic law — and this registration has its consumer again).
+    assert 'data-space="world"' in index
+    assert "data-icon=\"world\"" in index
     app = _text("app.js")
     assert "wireNavdock((name) => showSpace(name));" in app
     assert "markNavdock(name);" in app
@@ -271,8 +275,8 @@ def test_space_headers_and_the_linkless_parlor_bar(tmp_path: Path) -> None:
     # 当前角色名，/api/characters 供给）；无 JS 兜底留空——不发明人名；
     # 品牌名与副题退居门厅封面（v21 套件钉）。v2-2 随迁（8.2.2①）：
     # 身份长句族退役（身份介绍退入笔友档案全页）。wf-1 随迁（世界优先，
-    # 单向收紧）：who-sub 回场 = 故事日 + 居民位副行（overview 端点
-    # 驱动，非旧身份长句）。
+    # 单向收紧）：who-sub 回场（overview 端点驱动，非旧身份长句）。
+    # D-4 随迁：故事日升主位（.who-when），副行只留「与…通信中」chrome。
     assert '<div class="who"></div>' in parlor
     assert '<div class="who-sub"></div>' in parlor
     assert "英语客厅" not in parlor

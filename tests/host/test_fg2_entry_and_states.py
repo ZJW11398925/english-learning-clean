@@ -238,9 +238,10 @@ def test_the_cover_is_a_complete_letter(tmp_path: Path) -> None:
     # rd-2 随迁：封面定稿段改「致明日之我」两重收信人段（豪放档）
     assert "今日落笔，明日展信。" in page
     assert "写着写着，它在旁听着。" in page
-    # WR-5 随迁：navdock 回三项（世界日志屏退役）——封面导语的计数句
-    # 随真值走（「四个词」在四钮时代为真，三项后过期）
-    assert "又及：进门以后，底部三个词随时可走" in page
+    # D-4 随迁：navdock 四项（世界详情屏升格为导航一级成员——世界项
+    # 重新入坞）——封面导语的计数句随真值走（「四个词」现役；三项时代
+    # 曾为「三个词」）
+    assert "又及：进门以后，底部四个词随时可走" in page
     assert "拆开这封信 →</button>" in page
     # the honest version line: the product's own name, no invented semver
     assert '<p class="ob-version">elc · web</p>' in page

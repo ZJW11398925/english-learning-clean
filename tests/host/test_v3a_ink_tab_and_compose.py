@@ -300,7 +300,7 @@ def test_tokens_and_spec_registrations_are_in_place() -> None:
         "案头写作态（`.dock--compose`，v3-a",
         "| 落墨页签（v3-a——⑨-5 新行",
         "| 写作态升落（v3-a——⑨-5 新行",
-        "现役十枚与锚位",
+        "现役十一枚与锚位",   # D-4 随迁：world 回集（十枚 → 十一枚）
         "「禁止变体——图标」条款显式修订",
     ):
         assert mark in spec, mark

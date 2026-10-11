@@ -291,10 +291,10 @@ def test_the_cover_copy_is_the_new_final(tmp_path: Path) -> None:
         "批注——答对答错都有回音，也可以先搁着。" in page
     )
     assert (
-        "又及：进门以后，底部三个词随时可走。案头铺着信纸——世界就在那"
+        "又及：进门以后，底部四个词随时可走。案头铺着信纸——世界就在那"
         "里过日子，温故备着今天的复习与方向，抽屉收着它记住的事。"
         in page
-    )
+    )   # D-4 随迁：世界项入坞（世界详情屏升格为导航一级成员）——四词
     assert "拆开这封信 →</button>" in page
     for retired in ("一 · 这是什么", "二 · 短笺怎么来",
                     "就这么定", "跟一位固定笔友用英语通信——想写什么，"
@@ -396,14 +396,15 @@ def test_the_stamp_icon_is_registered_the_four_step_way() -> None:
     )
     assert 'data-icon="stamp"' in index
     css = _text("components.css")
-    assert "现役十枚" in css
+    assert "现役十一枚" in css
     assert "stamp（门厅封面邮票角标 + 教学卡结课邮票）" in css
     spec = _spec()
     # v2-s 随迁：spec ③ 行与 ⑨-4 名册随实现同真（v3-a 起十枚——圆戳
-    # 出集 + 落墨页签三枚入集）——冻结面更新由本刀承载（spec 重写授权
+    # 出集 + 落墨页签三枚入集；D-4 起十一枚——world 随世界详情屏升格
+    # 为导航一级成员回集）——冻结面更新由本刀承载（spec 重写授权
     # DEC-OPI-10bbc3c8-…3）
-    assert 'lamp\\|stamp\\|desk\\|revisit\\|drawer"' in spec  # ③ 行尾
-    assert "现役十枚与锚位" in spec     # ⑨-4's roster, ten icons now
+    assert 'drawer\\|world"' in spec               # ③ 行尾
+    assert "现役十一枚与锚位" in spec     # ⑨-4's roster, eleven icons now
 
 
 def test_the_cover_date_is_real_client_data() -> None:

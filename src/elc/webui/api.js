@@ -170,17 +170,15 @@ export function fetchWorldOverview() {
   return getJson("/api/world/overview");
 }
 
-/** 世界居民名册（wf-1）：cast⨝卡（name/identity/persona_id）+
- *  is_current 反查 + 每居民的诚实信数（没写过就是 0）。无绑定世界
- *  404 人话（error 对象由调用方判形——沓回落现役语境，不发明世界名）。 */
-export function fetchWorldResidents() {
-  return getJson("/api/world/residents");
-}
-
 /** 世界全阵容（D-3）：世界名 + 你的角色（user_character，无声明=null）
  *  + 绑定 cast 名册（含 vignette / is_current / letters_count）+ 镇民
  *  residents（name/role/vignette）。无绑定世界 404 人话（error 对象由
- *  调用方判形——世界详情屏四区各自三态，一面对了别面不陪葬）。 */
+ *  调用方判形——世界详情屏五区各自三态，一面对了别面不陪葬）。
+ *  D-4：本读面同时是案头沓「世界里的人」的唯一数据源（cast 带
+ *  persona_id，切换的 character_id 经名册桥）——旧 fetchWorldResidents
+ *  封装随其唯一消费者（沓的居民面）同刀出集（阁楼纪律：没有消费者的
+ *  封装不留）；服务端 /api/world/residents 端点照旧（wf-0 读面钉不动，
+ *  ensemble 的 cast 与之同源同事实）。 */
 export function fetchWorldEnsemble() {
   return getJson("/api/world/ensemble");
 }

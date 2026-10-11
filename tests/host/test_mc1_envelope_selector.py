@@ -12,13 +12,18 @@ Eight groups (the slice's own):
    current character over ``/api/characters`` as the fallback arm (zero
    character name literals anywhere in the webui; the brand name and
    tagline retreat to the vestibule cover); since wf-1 the world-first
-   arm leads (``.who-sub`` is back, carrying the story day and the
-   resident from ``/api/world/overview`` — the world-first pins live in
-   test_wf1_parlor_world_first) and the browser title stays the brand;
-2. **the stack's presence pins** — every envelope carries the three
-   faces (addressee name / one-line introduction / its own stamp), the
-   action row (起笔 · 对话 · 档案 · 编辑), the current postmark, and the blank
-   envelope at the tail (「写给一位新笔友」);
+   arm leads (``.who-sub`` is back, carrying the correspondence chrome
+   from ``/api/world/overview``; D-4 lifts the story day to the main
+   line's ``.who-when`` — the world-first and D-4 pins live in
+   test_wf1_parlor_world_first / test_d4_world_first_ia) and the browser
+   title stays the brand;
+2. **the stack's presence pins** — the fallback arm's every envelope
+   carries the three faces (addressee name / one-line introduction / its
+   own stamp), the action row (起笔 · 对话 · 档案 · 编辑), the current postmark,
+   and the blank envelope at the tail (「写给一位新笔友」); D-4's world
+   arm draws the world's people instead (the mc-1 pins stay true of
+   ``renderRosterStack``, the no-world fallback — test_d4_world_first_ia
+   holds the world arm's row pins);
 3. **stamp determinism pins** — the variant classes derive purely from
    the server's ``stamp_key`` (8 motifs × 4 inks × 3 papers, all v2
    palette); the same key always lands the same classes;
@@ -113,9 +118,10 @@ def test_the_masthead_reads_the_roster_not_literals() -> None:
     """案头主从条的真源钉：回落臂 .who = 当前角色名一行（mc-1 真源；
     v2-2 瘦身 8.2.2① 的「身份长句退役」保留——身份介绍仍在笔友档案
     全页，缺位钉防回潮）。wf-1 世界优先随迁（单向收紧：who-sub 缺位
-    否定 → 端点驱动肯定）：.who-sub 副槽回场，装的是故事日 + 居民位
-    （overview 端点驱动，非旧身份长句）；世界优先臂与回落臂的编排钉
-    在 test_wf1_parlor_world_first。renderMasthead 仍只从
+    否定 → 端点驱动肯定）：.who-sub 副槽回场（端点驱动，非旧身份长句；
+    D-4 起只装「与…通信中」chrome——故事日升主位 .who-when）；世界优先
+    臂与回落臂的编排钉在 test_wf1_parlor_world_first，D-4 的世界指示器
+    两槽与沓的世界臂钉在 test_d4_world_first_ia。renderMasthead 仍只从
     /api/characters 的 current 取（删驱动线即红）；webui 七文件零角色
     名字面（Nell 保持零出现）；无 JS 兜底 = 空槽（不发明人名）；品牌
     名与副题退居门厅封面；页面 title 保持品牌（mc-1 自裁披露：不拼
@@ -617,8 +623,9 @@ def test_the_migration_manifest_restates_the_new_truths() -> None:
 
     index = _text("index.html")
     assert '<div class="who"></div>' in index
-    # wf-1 随迁（世界优先）：who-sub 回场 = 故事日 + 居民位副行
-    # （overview 端点驱动）——v2-2 退役的是旧身份长句族，非副槽本身
+    # wf-1 随迁（世界优先）：who-sub 回场（overview 端点驱动）——v2-2
+    # 退役的是旧身份长句族，非副槽本身；D-4 起副行只装「与…通信中」
+    # chrome（故事日升主位 .who-when）
     assert '<div class="who-sub"></div>' in index
     assert "<h1>展信佳</h1>" in index
     assert '<p class="ob-tagline">见字如晤，今日如何</p>' in index
