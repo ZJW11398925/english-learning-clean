@@ -27,8 +27,10 @@ obeyed. The pin groups:
    on the books (the source comment and the module docstring), and the
    guardrail carries no blacklist of its own (v1 is empty by ruling);
 5. **the only difference this cut makes** — splice the guardrail out of
-   the default prompt and the parent commit's absolute baseline comes
-   back byte for byte. This is the in-suite arm of the delivery
+   the default prompt and the hand-pinned guardrail-free baseline comes
+   back byte for byte (D-2, DEC-OPI-a4cf2d0e…57, re-cast that literal:
+   the guardrail-free half moved with the density calibration and the
+   splice arm follows). This is the in-suite arm of the delivery
    report's reverse proof (withdraw the guardrail ⇒ the lr-3 baseline
    pin and the C1-a golden hash pin both go red);
 6. **the guardrail's own words honor the standing prompt laws** — zero
@@ -116,11 +118,14 @@ _HABIT_ITEMS = (
 
 _HABITS_LEAD = "Do not fall into these habits: "
 
-#: The parent commit's (c670d5d) absolute default prompt, machine-read
-#: off that commit's own ``_A_BASELINE`` — the pre-C4 bytes the splice
-#: arm recovers. An absolute literal on purpose: no part of it follows a
-#: weakening of this cut's source change.
-_PRE_C4_BASELINE = (
+#: The guardrail-free default prompt, machine-read off the live builder
+#: — the bytes the splice arm recovers. An absolute literal on purpose:
+#: no part of it follows a weakening of this cut's source change. It
+#: was the parent commit's (c670d5d) pre-C4 literal until D-2
+#: (DEC-OPI-a4cf2d0e…57) moved the task region (two-or-three beats, days
+#: 0-3, the dramatic-weight sentence); D-2's task text rides it now and
+#: the old value lives in git history.
+_GUARDRAIL_FREE_BASELINE = (
     'You are the narrator of a small fictional world.\n\n'
     'Write what happens there next, as a novel would.\n\n'
     "The world moves on its own — weather, seasons, the town's"
@@ -141,9 +146,13 @@ _PRE_C4_BASELINE = (
     "Write the world's next beats — whatever happens next in the"
     " world's own life. Novel prose, small-town voice. Stay"
     " consistent with everything above; never repeat what already"
-    " happened. Write exactly 1 or 2 beats. Each beat is one to three"
-    " sentences of narration and spans 0, 1 or 2 story days (its"
-    " ``days``).\n\n"
+    " happened. Write exactly 2 or 3 beats. Each beat is one to three"
+    " sentences of narration and spans 0, 1, 2 or 3 story days (its"
+    " ``days``). Each beat must carry dramatic weight: it must be able"
+    " to enter memory and earn an echo — the random may start it, but"
+    " continuity must make it feel like fate. Weather and errands"
+    " alone are not enough: something must actually happen, change,"
+    " or be at stake.\n\n"
     'The narration is written in Chinese (中文).\n\n'
     'Answer with strict JSON only — no prose outside it: {"beats":'
     ' [{"kind": "<slug>", "narration": "<...>", "days": 0}]} The'
@@ -213,7 +222,7 @@ def test_the_guardrail_sits_at_the_task_tail_before_the_contract() -> None:
     rich = _rich_prompt()
     task_at = rich.index("== Your task ==")
     craft_at = rich.index(CRAFT_HEADER)
-    task_tail_at = rich.index(" ``days``).")
+    task_tail_at = rich.index("or be at stake.")
     candidates_at = rich.index("Direction candidates:")
     chosen_at = rich.index("== The user's chosen direction ==")
     written_at = rich.index("== The user's written direction ==")
@@ -223,8 +232,12 @@ def test_the_guardrail_sits_at_the_task_tail_before_the_contract() -> None:
     assert craft_at < candidates_at < chosen_at < written_at
     assert craft_at < shape_at < optional_at
     # The guardrail is the task region's last instruction before the
-    # contract: nothing but blank-line joins sits between them.
-    assert rich[task_tail_at:craft_at].endswith("``days``).\n\n")
+    # contract: nothing but blank-line joins sits between them. D-2
+    # (DEC-OPI-a4cf2d0e…57) moved the task region's tail: the
+    # dramatic-weight sentence now closes it, and the guardrail follows
+    # it exactly as it followed the ``days`` clause before.
+    assert rich[task_tail_at:craft_at].endswith("or be at stake.\n\n")
+    assert rich.index("Write exactly 2 or 3 beats.") < task_tail_at
 
 
 # ---------------------------------------------------------------------------
@@ -316,16 +329,17 @@ def test_the_english_stock_phrase_blacklist_is_deferred_on_the_books() -> None:
 
 def test_the_guardrail_is_the_only_difference_this_cut_makes() -> None:
     """⑤ 本刀唯一之差（库内承重臂）：默认 prompt 去掉护栏节（恰一次出现）
-    即父提交（c670d5d）的绝对基线逐字回来——护栏之外一字未动；rich 形
-    拼接后，任务段尾紧接候选要求段（无第三插入点）。"""
+    即无护栏基线逐字回来（该基线于 D-2 重铸——任务段随密度校准更新，其余
+    一字未动；D-2 之前的 pre-C4 母提交回返关系已入 git 史）；rich 形
+    拼接后，任务段尾（D-2 的重量句）紧接候选要求段（无第三插入点）。"""
 
     prompt = build_narrator_prompt(_package(), (), (), "zh")
     assert prompt.count(_CRAFT_SECTION) == 1
-    assert prompt.replace(_CRAFT_SECTION, "") == _PRE_C4_BASELINE
+    assert prompt.replace(_CRAFT_SECTION, "") == _GUARDRAIL_FREE_BASELINE
     rich = _rich_prompt()
     assert rich.count(_CRAFT_SECTION) == 1
     spliced = rich.replace(_CRAFT_SECTION, "")
-    assert "``days``).\n\nDirection candidates:" in spliced
+    assert "or be at stake.\n\nDirection candidates:" in spliced
     assert spliced.count(CRAFT_HEADER) == 0
 
 

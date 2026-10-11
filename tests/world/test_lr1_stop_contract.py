@@ -135,8 +135,9 @@ def _beats_with(
     stop: str | None = None,
     **extra: object,
 ) -> str:
-    """One legal batch, optionally carrying a stop object (and any
-    extra top-level keys the shape law should refuse)."""
+    """One legal batch (D-2, DEC-OPI-a4cf2d0e…57: two beats — the
+    rhythm law's lower bound), optionally carrying a stop object (and
+    any extra top-level keys the shape law should refuse)."""
 
     payload: dict[str, object] = {
         "beats": [
@@ -144,7 +145,12 @@ def _beats_with(
                 "kind": "lamp-relit",
                 "narration": "The lamp burned all night.",
                 "days": 1,
-            }
+            },
+            {
+                "kind": "quiet-witness",
+                "narration": "The town let the day pass.",
+                "days": 0,
+            },
         ]
     }
     if stop is not None:
@@ -193,7 +199,10 @@ def test_the_three_signals_and_none_parse() -> None:
         beats, directions, stop = parsed.value
         assert isinstance(stop, StopSignal) and stop.kind == word
         assert directions == ()
-        assert [beat.kind for beat in beats] == ["lamp-relit"]
+        assert [beat.kind for beat in beats] == [
+            "lamp-relit",
+            "quiet-witness",
+        ]
     for shape in (_beats_with(stop=STOP_NONE), _beats_with()):
         parsed = _generate(shape)
         assert isinstance(parsed, Ok)
@@ -217,51 +226,34 @@ def test_a_malformed_stop_object_refuses_the_whole_batch() -> None:
     whole batch (the same-batch verification law wr-10 gave the
     candidates, lr-1 gives the signal)."""
 
+    legal_pair = [
+        {
+            "kind": "lamp-relit",
+            "narration": "The lamp burned all night.",
+            "days": 1,
+        },
+        {
+            "kind": "quiet-witness",
+            "narration": "The town let the day pass.",
+            "days": 0,
+        },
+    ]
     assert "not a JSON object" in _refused(
-        json.dumps(
-            {
-                "beats": [
-                    {
-                        "kind": "lamp-relit",
-                        "narration": "The lamp burned all night.",
-                        "days": 1,
-                    }
-                ],
-                "stop": "letter_arrives",
-            }
-        )
+        json.dumps({"beats": legal_pair, "stop": "letter_arrives"})
     )
     assert "exactly 'kind'" in _refused(
         json.dumps(
             {
-                "beats": [
-                    {
-                        "kind": "lamp-relit",
-                        "narration": "The lamp burned all night.",
-                        "days": 1,
-                    }
-                ],
+                "beats": legal_pair,
                 "stop": {"kind": "letter_arrives", "when": "now"},
             }
         )
     )
     assert "exactly 'kind'" in _refused(
-        json.dumps(
-            {
-                "beats": [
-                    {
-                        "kind": "lamp-relit",
-                        "narration": "The lamp burned all night.",
-                        "days": 1,
-                    }
-                ],
-                "stop": {},
-            }
-        )
+        json.dumps({"beats": legal_pair, "stop": {}})
     )
     assert "not one of" in _refused(
-        '{"beats": [{"kind": "a", "narration": "b", "days": 0}],'
-        ' "stop": {"kind": 7}}'
+        json.dumps({"beats": legal_pair, "stop": {"kind": 7}})
     )
 
 

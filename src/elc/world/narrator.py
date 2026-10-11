@@ -1,6 +1,7 @@
 """The world narrator (WR-2, DEC-OPI-5fc42174…49; WR-4 correction
-…58) — the paradigm flip's generation face: the world's own next one
-or two story beats, generated from the world's own life alone.
+…58; D-2 density calibration DEC-OPI-a4cf2d0e…57) — the paradigm
+flip's generation face: the world's own next two or three story
+beats, generated from the world's own life alone.
 
 What this module claims, no more: the prompt is composed from the world
 package's bible (the setting prose, the cast — each member with their
@@ -35,9 +36,17 @@ optional-keys teaching (C1-b: the ``effects`` / ``participants``
 filling rules, both modes),
 the rhythm law (novel prose, small-town voice; consistent
 with the history above; nothing already happened repeated; each beat one
-to three sentences; exactly one or two beats; each beat spanning zero to
-two story days; the narration in the interface language; kinds as short
-slugs) and the craft laws (C4, DEC-OPI-a4cf2d0e…18, 域四: the canon's
+to three sentences; exactly two or three beats; each beat spanning zero
+to three story days; the narration in the interface language; kinds as
+short slugs), the dramatic-weight teaching (D-2,
+DEC-OPI-a4cf2d0e…57 — spec §4.3 直迁: every beat must be able to enter
+memory and earn an echo — the random may start it, but continuity must
+make it feel like fate; weather and errands alone are not enough) in the
+task region right beside the beat-count sentence, and the
+direction-consequence teaching (D-2 — spec §4.4: when the caller carries
+a chosen direction, the world honors it as a development whose
+consequences land with weight in the beats, never a one-line footnote)
+and the craft laws (C4, DEC-OPI-a4cf2d0e…18, 域四: the canon's
 three iron laws plus the eight highest-frequency habits to avoid —
 **unconditional**, every call shape carries them, the one explicit
 exception to the conditional-section law; the English stock-phrase
@@ -63,10 +72,10 @@ through :class:`NarrationExtractor`, a preview-only decode — the
 durable contract below never reads it) — and the answer (the whole
 text, either face) is parsed **strictly**: the whole text must be
 exactly one JSON object
-``{"beats": [...]}`` carrying one or two beat objects, each with exactly
+``{"beats": [...]}`` carrying two or three beat objects, each with exactly
 ``kind`` (a slug of lowercase letters, digits and hyphens, at most 32
 characters), ``narration`` (non-blank) and ``days`` (an honest int, 0
-through 2). C1-b (DEC-OPI-b290799a…17, the narrative-semantics cut —
+through 3). C1-b (DEC-OPI-b290799a…17, the narrative-semantics cut —
 the external review HIGH-1's root fix): a beat object may **also**
 carry two optional keys beside the required three — an ``effects``
 array, the beat's structured state-effect proposals (each element
@@ -197,12 +206,18 @@ NARRATOR_CONTRACT = "gc-world-narrator-beats"
 #: to become one).
 RECENT_CHRONICLE_LIMIT = 8
 
-#: The beat batch's bounds (the rhythm law's own numbers): exactly one
-#: or two beats, each spanning zero to two story days.
-MIN_BEATS = 1
-MAX_BEATS = 2
+#: The beat batch's bounds (the rhythm law's own numbers): exactly two
+#: or three beats, each spanning zero to three story days. D-2
+#: (DEC-OPI-a4cf2d0e…57, the density calibration — spec §4.7 「运转密度
+#: 不做先验定值——calibratable，用户实测亲调」's first标定): the pre-D-2
+#: bounds were one or two beats and zero to two days; the user's dogfood
+#: signal (「故事短而无力／选项后发展极简单」) moved each up one — 1-2 则
+#: 是碎屑密度，2-3 则才有「一件事 + 它的余波」的空间，days 上限 3 给
+#: 余波时间跨度。
+MIN_BEATS = 2
+MAX_BEATS = 3
 MIN_DAYS = 0
-MAX_DAYS = 2
+MAX_DAYS = 3
 
 #: The direction candidates' bounds (wr-10, spec §4.4's 2-4 候选): the
 #: ``directions`` array carries none (the immersive shape) or two
@@ -784,7 +799,24 @@ def build_narrator_prompt(
     block is self-contained: splice it out and the pre-v7 bytes come
     back exactly (the conditional-section law's own testable form; the
     roster line's own words and ids are untouched — only a package that
-    declares her gains anything)."""
+    declares her gains anything).
+
+    D-2 (DEC-OPI-a4cf2d0e…57, the density-and-weight calibration — the
+    user's dogfood signal 「故事短而无力／选项后发展极简单」 answered as
+    spec §4.7's first标定): the rhythm law's numbers move one notch up
+    (two or three beats, each spanning zero to three story days — the
+    constants above, whose change moves this paragraph and the parser's
+    bounds together), and the task region gains two teachings, both
+    transplanted from the design's own words. **Unconditional** (§4.3
+    直迁): right after the beat-count sentence, each beat must carry
+    dramatic weight — able to enter memory and earn an echo (随机负责
+    发生，连续性负责让它显得像命运), and weather or errands alone are
+    not enough: something must actually happen, change, or be at
+    stake. **Conditional** (§4.4, the chosen-direction section's own
+    bytes): when ``pending_direction`` rides, the world is told to
+    honor it as a development, not a mention — the consequences land
+    with weight in the beats, never a one-line footnote; ``None`` keeps
+    that section (and every other byte) exactly as it was."""
 
     if ui_language not in _NARRATION_LANGUAGE:
         raise ValueError(
@@ -1065,7 +1097,16 @@ def build_narrator_prompt(
         " consistent with everything above; never repeat what already"
         f" happened. Write exactly {MIN_BEATS} or {MAX_BEATS} beats."
         " Each beat is one to three sentences of narration and spans"
-        " 0, 1 or 2 story days (its ``days``)."
+        " 0, 1, 2 or 3 story days (its ``days``)."
+        # D-2 (DEC-OPI-a4cf2d0e…57), spec §4.3 直迁: the dramatic-weight
+        # teaching rides right after the beat-count sentence — the
+        # density calibration's own content half (R2). 随机负责发生，
+        # 连续性负责让它显得像命运；天气与差事单独不成一则。
+        " Each beat must carry dramatic weight: it must be able to"
+        " enter memory and earn an echo — the random may start it, but"
+        " continuity must make it feel like fate. Weather and errands"
+        " alone are not enough: something must actually happen, change,"
+        " or be at stake."
     )
     # C4 (DEC-OPI-a4cf2d0e…18, 域四「叙事工艺指引」): the craft laws ride
     # at the task paragraph's tail — before the technical contract (the
@@ -1093,6 +1134,14 @@ def build_narrator_prompt(
             "The user has chosen where the world goes next:"
             f" {chosen_label} — {chosen_hint}. The world moves in"
             " this direction."
+            # D-2 (DEC-OPI-a4cf2d0e…57), spec §4.4: the chosen direction
+            # is a development, not a mention — its consequences land in
+            # the beats (R3; conditional region: no pending row, no
+            # bytes).
+            " Honor it as a development, not a mention — the"
+            " consequences of that direction land with weight in your"
+            " beats: a thing that actually happens because of it, never"
+            " a one-line footnote."
         )
     if free_direction is not None:
         # lr-3's own section: the user's written direction — the same
@@ -1168,7 +1217,7 @@ class GeneratedBeat:
     slug — new kinds are the story's own, never the pool's), ``narration``
     the beat's prose (written as the model wrote it — untrusted-as-is
     downstream: the chronicle stores it verbatim, the presentation faces
-    render it as text), ``days`` the story span the beat covers (0-2;
+    render it as text), ``days`` the story span the beat covers (0-3;
     the orchestrator's calendar rides on it).
 
     C1-b (DEC-OPI-b290799a…17): ``effects`` is the beat's own ordered
@@ -1446,7 +1495,7 @@ def _parse_beats(
     ``{"beats": [...]}`` — or with an optional ``directions`` array
     (wr-10: the candidates ride the same answer) and an optional
     ``stop`` object (lr-1: the natural stopping point rides the same
-    answer) — one or two beat objects, each ``kind`` / ``narration`` /
+    answer) — two or three beat objects, each ``kind`` / ``narration`` /
     ``days`` in shape and range plus at most the two C1-b optional
     keys: an ``effects`` array (each element exactly ``key`` /
     ``statement``, both non-blank strings — the beat's state-effect

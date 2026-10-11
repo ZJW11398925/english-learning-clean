@@ -687,20 +687,23 @@ def test_a_worldless_letter_writes_no_chronicle_row(tmp_path: Path) -> None:
 
 
 def test_the_narrator_prompt_is_byte_untouched() -> None:
-    """``build_narrator_prompt`` hashes to the C4-disposition golden
-    (was the pre-C1-a golden ``ceb73d7e…8100e``, then the C1-b golden
-    ``4b484ae7…c2eaba``, then the C4 golden ``15a16fd5…de487``).
-    Re-cast consciously, four times: C1-a itself fed nothing into the
+    """``build_narrator_prompt`` hashes to the D-2 golden (was the
+    pre-C1-a golden ``ceb73d7e…8100e``, then the C1-b golden
+    ``4b484ae7…c2eaba``, then the C4 golden ``15a16fd5…de487``, then
+    the D-2 golden ``cdf96939…185ca3``).
+    Re-cast consciously, five times: C1-a itself fed nothing into the
     prompt (the attribution cut's own zero-change law), C1-b
     (DEC-OPI-b290799a…17) then widened the contract — the cast-id
     roster line, the optional-keys paragraph, both unconditional — and
     C4 (DEC-OPI-a4cf2d0e…18, 域四's craft guardrail) injected the craft
     laws unconditionally; the C4 disposition (review MEDIUM-2) then
     narrowed law 2's remedy — the canon's 「补托住」, not a deletion —
-    so the hash moved once more. The judgment that survives: the
-    attribution columns (participants values, run ids, interaction
-    words) still feed nothing — the roster/teaching lines and the
-    guardrail are contract, not attribution."""
+    so the hash moved once more; D-2 (DEC-OPI-a4cf2d0e…57, the density
+    calibration) moved the task region (two-or-three beats, days 0-3,
+    the dramatic-weight sentence) and the hash with it. The judgment
+    that survives: the attribution columns (participants values, run
+    ids, interaction words) still feed nothing — the roster/teaching
+    lines and the guardrail are contract, not attribution."""
 
     prompt = build_narrator_prompt(
         _minimal_package(),
@@ -710,7 +713,7 @@ def test_the_narrator_prompt_is_byte_untouched() -> None:
     )
     assert (
         hashlib.sha256(prompt.encode("utf-8")).hexdigest()
-        == "aba4c3b14669ae70e919448494cb2039ab52c81f19b2c6dbe69eb73405c090c1"
+        == "cdf96939c79199b1fa406029de352f24941f052deb2b1d77376de2cc6e185ca3"
     )
 
 

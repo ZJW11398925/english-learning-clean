@@ -4,7 +4,7 @@ light action, as one callable.
 WR-2 (DEC-OPI-5fc42174…49), the paradigm flip: the **production** world
 step is now :func:`run_generated_step` — the world's beats are model-
 generated novel prose (the narrator's face,
-:mod:`elc.world.narrator`), the world's own life one or two beats at a
+:mod:`elc.world.narrator`), the world's own life two or three beats at a
 time (**WR-4: the triggering turn is the mechanical wind-up only — no
 letter text ever reaches the narration**, DEC-…58). The
 fixed-pool engine step below (:func:`run_step`) is **retired out of the

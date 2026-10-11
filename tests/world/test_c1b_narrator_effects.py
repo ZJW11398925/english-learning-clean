@@ -145,6 +145,17 @@ def _beats(*beats: dict[str, object]) -> str:
     return json.dumps({"beats": list(beats)})
 
 
+def _companion() -> dict[str, object]:
+    """The D-2 second beat (DEC-OPI-a4cf2d0e…57): every positive script
+    is a legal two-beat batch now — the rhythm law's lower bound moved
+    to two, and this plain beat rides beside the beat under test
+    (proposing nothing, naming no one)."""
+
+    return _beat(
+        kind="quiet-witness", narration="The town let the day pass.", days=0
+    )
+
+
 def _generate(
     text: str,
     package: WorldPackage | None = None,
@@ -181,7 +192,8 @@ def test_a_beat_with_effects_and_participants_parses() -> None:
                     {"key": "loom-key", "statement": "The loom sings."},
                 ],
                 participants=["persona-nell", "persona-silas"],
-            )
+            ),
+            _companion(),
         )
     )
     assert isinstance(parsed, Ok)
@@ -193,6 +205,11 @@ def test_a_beat_with_effects_and_participants_parses() -> None:
             effects=(StateEffect(key="loom-key", statement="The loom sings."),),
             participants=("persona-nell", "persona-silas"),
         ),
+        GeneratedBeat(
+            kind="quiet-witness",
+            narration="The town let the day pass.",
+            days=0,
+        ),
     )
 
 
@@ -200,7 +217,7 @@ def test_missing_optional_keys_answer_empty_tuples() -> None:
     """The pre-C1-b three-key shape parses exactly as before: no keys,
     no proposals, no names — the empty tuples."""
 
-    parsed = _generate(_beats(_beat()))
+    parsed = _generate(_beats(_beat(), _companion()))
     assert isinstance(parsed, Ok)
     assert parsed.value[0] == (
         GeneratedBeat(
@@ -208,10 +225,15 @@ def test_missing_optional_keys_answer_empty_tuples() -> None:
             narration="The loom sang at dusk.",
             days=1,
         ),
+        GeneratedBeat(
+            kind="quiet-witness",
+            narration="The town let the day pass.",
+            days=0,
+        ),
     )
     # Explicit empty arrays are the same answer.
     emptied = _generate(
-        _beats(_beat(effects=[], participants=[])),
+        _beats(_beat(effects=[], participants=[]), _companion()),
     )
     assert isinstance(emptied, Ok)
     assert emptied.value[0][0].effects == ()
@@ -285,7 +307,7 @@ def test_the_roster_is_the_calling_package_cast() -> None:
     one world refuses for a package that does not carry it (the parser
     gets its roster from the caller's package, never a global)."""
 
-    text = _beats(_beat(participants=["persona-nell"]))
+    text = _beats(_beat(participants=["persona-nell"]), _companion())
     assert isinstance(_generate(text), Ok)
     lonely = _cast_package()
     object.__setattr__(  # noqa: SLF001 — test-side package surgery
@@ -403,7 +425,8 @@ def test_a_proposing_beat_lands_its_effects_and_cast(store: SqliteWorldStore) ->
                         },
                     ],
                     participants=["persona-nell"],
-                )
+                ),
+                _companion(),
             )
         )
     )
@@ -411,12 +434,16 @@ def test_a_proposing_beat_lands_its_effects_and_cast(store: SqliteWorldStore) ->
         store, WORLD, _cast_package(), provider, "turn-c1b-1", NOW
     )
     assert isinstance(stepped, Ok)
-    (event,) = stepped.value
+    event, companion = stepped.value
     assert event.source == NARRATOR_SOURCE
     assert event.effects == (
         StateEffect(key="loom-key", statement="The loom sings at dusk."),
     )
     assert event.participants == ("persona-nell",)
+    # The plain companion lands beside it, settling nothing, naming no
+    # one (the same batch, the same fate — the D-2 second beat).
+    assert companion.effects == ()
+    assert companion.participants == ()
     facts = store.current_facts(WORLD)
     assert [(fact.canonical_key, fact.statement) for fact in facts] == [
         ("loom-key", "The loom sings at dusk.")
@@ -443,12 +470,14 @@ def test_the_next_step_prompt_carries_the_settled_claim(
                     effects=[
                         {"key": "loom-key", "statement": "The loom sings."},
                     ],
-                )
+                ),
+                _companion(),
             )
         ),
         ProviderOutput(
             text=_beats(
                 _beat(kind="market-day", narration="The stalls went up.", days=1),
+                _companion(),
             )
         ),
     )
@@ -477,6 +506,7 @@ def test_a_second_proposal_supersedes_through_the_generated_path(
         ProviderOutput(
             text=_beats(
                 _beat(effects=[{"key": "loom-key", "statement": "It sings."}]),
+                _companion(),
             )
         ),
         ProviderOutput(
@@ -490,7 +520,8 @@ def test_a_second_proposal_supersedes_through_the_generated_path(
                             "statement": "The loom is silent.",
                         },
                     ],
-                )
+                ),
+                _companion(),
             )
         ),
     )
@@ -517,16 +548,18 @@ def test_a_pure_narration_beat_lands_exactly_as_before(
     assert store.create_world(WORLD, "Calendar", None, NOW).value is not None
     provider = _ScriptedNarrator(
         ProviderOutput(
-            text=_beats(_beat(kind="quiet-morning", narration="Quiet.", days=0)),
+            text=_beats(
+                _beat(kind="quiet-morning", narration="Quiet.", days=0),
+                _companion(),
+            ),
         )
     )
     stepped = run_generated_step(
         store, WORLD, _cast_package(), provider, "turn-c1b-6", NOW
     )
     assert isinstance(stepped, Ok)
-    (event,) = stepped.value
-    assert event.effects == ()
-    assert event.participants == ()
+    assert all(event.effects == () for event in stepped.value)
+    assert all(event.participants == () for event in stepped.value)
     assert store.current_facts(WORLD) == ()
 
 
@@ -545,7 +578,8 @@ def test_an_effects_bearing_replay_stays_a_no_op(
                 _beat(
                     effects=[{"key": "loom-key", "statement": "It sings."}],
                     participants=["persona-silas"],
-                )
+                ),
+                _companion(),
             )
         ),
     )

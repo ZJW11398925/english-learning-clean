@@ -311,6 +311,7 @@ def test_a_single_step_round_stays_keyless_one_block(tmp_path: Path) -> None:
     app_db = tmp_path / "app.db"
     one_step = _batch(
         _beat("letter-arrives", "她拆开了那封等着的信。", 0),
+        _beat("letter-kept", "她把信压在糖罐下面。", 0),
         stop="letter_arrives",
     )
     provider = ChainProvider(one_step)
@@ -328,7 +329,7 @@ def test_a_single_step_round_stays_keyless_one_block(tmp_path: Path) -> None:
         assert len(steps) == 2
         assert [
             str(note["narration"]) for note in steps[0]["notes"]
-        ] == ["她拆开了那封等着的信。"]
+        ] == ["她拆开了那封等着的信。", "她把信压在糖罐下面。"]
         assert [
             str(note["narration"]) for note in steps[1]["notes"]
         ] == ["A letter from the user's character was sent."]
@@ -376,12 +377,12 @@ def test_a_mid_chain_failure_keeps_one_landed_frame_and_completes(
         assert len(steps) == 2
         assert [
             str(note["narration"]) for note in steps[0]["notes"]
-        ] == ["早市在广场上支起来了。"]
+        ] == ["早市在广场上支起来了。", "摊主们收起了木箱。"]
         assert turn["world"] == steps[-1]
         # The refused step wrote nothing; the landed step stays landed.
         assert (
-            # C1-a 随迁：+1 信寄出事实行。
-            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 2
+            # C1-a 随迁：+1 信寄出事实行；D-2：落地的步两 beat。
+            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 3
         )
 
 

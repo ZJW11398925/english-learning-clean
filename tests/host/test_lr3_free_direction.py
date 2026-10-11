@@ -9,7 +9,8 @@ over the real ``open_host``, the wr-10/lr-4a suites' own shape):
    section (the chosen-candidate section's sibling); the zero-change
    default holds **byte for byte** against the pinned absolute
    baselines below (re-cast per widening cut — C1-b, then C4's craft
-   laws; the judgment face); the builder re-checks the bound (blank /
+   laws, then D-2's density calibration; the judgment face); the
+   builder re-checks the bound (blank /
    over 200 / not a string ⇒ ``ValueError``);
 2. **the endpoint** (VAL ②) — ``POST /api/world/direction`` takes the
    ``{"text"}`` shape (strip-nonblank, ≤200, 200 accepted), refuses
@@ -110,8 +111,10 @@ _CRAFT_SECTION = (
 #: went unconditional (the cast-id roster + the optional-keys paragraph);
 #: C4 (DEC-OPI-a4cf2d0e…18) re-cast it once more when the craft laws
 #: became unconditional (the guardrail at the task paragraph's tail);
-#: the judgment is unchanged — with ``free_direction`` at its default the
-#: prompt is exactly this, byte for byte.
+#: D-2 (DEC-OPI-a4cf2d0e…57) re-cast the task half again (two-or-three
+#: beats, days 0-3, the dramatic-weight sentence); the judgment is
+#: unchanged — with ``free_direction`` at its default the prompt is
+#: exactly this, byte for byte.
 _A_BASELINE = (
     'You are the narrator of a small fictional world.\n\n'
     'Write what happens there next, as a novel would.\n\n'
@@ -133,9 +136,13 @@ _A_BASELINE = (
     "Write the world's next beats — whatever happens next in the"
     " world's own life. Novel prose, small-town voice. Stay"
     " consistent with everything above; never repeat what already"
-    " happened. Write exactly 1 or 2 beats. Each beat is one to three"
-    " sentences of narration and spans 0, 1 or 2 story days (its"
-    " ``days``).\n\n"
+    " happened. Write exactly 2 or 3 beats. Each beat is one to three"
+    " sentences of narration and spans 0, 1, 2 or 3 story days (its"
+    " ``days``). Each beat must carry dramatic weight: it must be able"
+    " to enter memory and earn an echo — the random may start it, but"
+    " continuity must make it feel like fate. Weather and errands"
+    " alone are not enough: something must actually happen, change,"
+    " or be at stake.\n\n"
     + _CRAFT_SECTION
     + 'The narration is written in Chinese (中文).\n\n'
     'Answer with strict JSON only — no prose outside it: {"beats":'
@@ -170,9 +177,13 @@ _TASK_SECTION = (
     "Write the world's next beats — whatever happens next in the"
     " world's own life. Novel prose, small-town voice. Stay"
     " consistent with everything above; never repeat what already"
-    " happened. Write exactly 1 or 2 beats. Each beat is one to three"
-    " sentences of narration and spans 0, 1 or 2 story days (its"
-    " ``days``).\n\n"
+    " happened. Write exactly 2 or 3 beats. Each beat is one to three"
+    " sentences of narration and spans 0, 1, 2 or 3 story days (its"
+    " ``days``). Each beat must carry dramatic weight: it must be able"
+    " to enter memory and earn an echo — the random may start it, but"
+    " continuity must make it feel like fate. Weather and errands"
+    " alone are not enough: something must actually happen, change,"
+    " or be at stake.\n\n"
 )
 _DIRECTIONS_SECTION = (
     'Direction candidates: in the same answer, also write 2 to 4'
@@ -187,7 +198,10 @@ _CHOSEN_SECTION = (
     "== The user's chosen direction ==\n\n"
     "The user has chosen where the world goes next: the fair arrives"
     " — Tents dot the cliff meadow.. The world moves in this"
-    " direction.\n\n"
+    " direction. Honor it as a development, not a mention — the"
+    " consequences of that direction land with weight in your beats:"
+    " a thing that actually happens because of it, never a one-line"
+    " footnote.\n\n"
 )
 _LANGUAGE_LINE = "The narration is written in Chinese (中文).\n\n"
 _STOP_JSON_LINE = (

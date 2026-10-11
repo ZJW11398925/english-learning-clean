@@ -210,7 +210,15 @@ def test_the_stream_order_is_world_then_deltas_then_final(
             pieces = [f for f in frames[:world_pos]]
             assert types[0] == "world_delta"
             assert all(f["type"] == "world_delta" for f in pieces)
-            assert "".join(f["text"] for f in pieces) == "The tide turned."
+            # wr-7's preview decode: the increments are the narration
+            # values' own text — with D-2's two-beat batch
+            # (DEC-OPI-a4cf2d0e…57) both narrations arrive, in the
+            # answer's order (the extractor emits pieces, it never
+            # joins).
+            assert "".join(f["text"] for f in pieces) == (
+                "The tide turned."
+                "The lamps came on along the quay."
+            )
             assert types[world_pos + 1] == "delta"
             assert types[-1] == "final"
             assert types[world_pos + 1 : -1] == ["delta"] * len(REPLY)
@@ -725,6 +733,12 @@ def test_the_inbox_names_the_anchor_checkpoint(tmp_path: Path) -> None:
                 {
                     "kind": "quiet-morning",
                     "narration": "The harbour kept its silence.",
+                    "days": 0,
+                },
+                # D-2 (DEC-OPI-a4cf2d0e…57): the legal two-beat batch.
+                {
+                    "kind": "quiet-witness",
+                    "narration": "The town let the day pass.",
                     "days": 0,
                 },
             ]

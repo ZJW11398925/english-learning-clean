@@ -144,13 +144,21 @@ class BlockingChainProvider(ChainProvider):
         return self._inner.call(prompt)
 
 
-#: The three-step script: the world turns twice with no signal, the
-#: third step lands the letter (its days sum: 1 + 2 → the third step's
-#: letter has traveled three days).
-STEP_ONE = _batch(_beat("morning-market", "早市在广场上支起来了。", 1))
-STEP_TWO = _batch(_beat("tide-turns", "午后的潮水转向了。", 2))
+#: The three-step script (D-2, DEC-OPI-a4cf2d0e…57: every batch is the
+#: legal two-beat minimum — the second beat of each step spans 0 days,
+#: so the elapsed-day sums the pins below read stay 1 + 2 → 3): the
+#: world turns twice with no signal, the third step lands the letter.
+STEP_ONE = _batch(
+    _beat("morning-market", "早市在广场上支起来了。", 1),
+    _beat("market-packs-up", "摊主们收起了木箱。", 0),
+)
+STEP_TWO = _batch(
+    _beat("tide-turns", "午后的潮水转向了。", 2),
+    _beat("gulls-land", "海鸟落在湿沙上。", 0),
+)
 STEP_THREE = _batch(
     _beat("letter-arrives", "她拆开了那封等了三天的信。", 0),
+    _beat("letter-read-twice", "她把信纸读了两遍。", 0),
     stop="letter_arrives",
 )
 
@@ -192,16 +200,17 @@ def test_a_three_step_chain_streams_three_frames_then_the_reply(
         assert frames[-1]["stop"] == "letter_arrives"
         assert frames[-1]["reply"] == REPLY
         # I1: every frame's notes are the authoritative narrations,
-        # verbatim — three steps, three narrations, one chronicle.
+        # verbatim — three steps, two beats each, one chronicle (D-2:
+        # the beat batch's floor).
         narrations = [
-            "早市在广场上支起来了。",
-            "午后的潮水转向了。",
-            "她拆开了那封等了三天的信。",
+            ["早市在广场上支起来了。", "摊主们收起了木箱。"],
+            ["午后的潮水转向了。", "海鸟落在湿沙上。"],
+            ["她拆开了那封等了三天的信。", "她把信纸读了两遍。"],
         ]
         for order, pos in enumerate(world_pos):
-            assert [note["narration"] for note in frames[pos]["notes"]] == [
-                narrations[order]
-            ]
+            assert [
+                note["narration"] for note in frames[pos]["notes"]
+            ] == narrations[order]
         chronicle = _ro_rows(
             # C1-a 随迁：信寄出事实行 CP0 后落（rowid 末位）——世界拍的
             # 编年史序仍以世界自己的行读。
@@ -209,7 +218,9 @@ def test_a_three_step_chain_streams_three_frames_then_the_reply(
             "SELECT narration FROM world_event"
             " WHERE source = 'world_narrator' ORDER BY rowid",
         )
-        assert [str(row[0]) for row in chronicle] == narrations
+        assert [str(row[0]) for row in chronicle] == [
+            narration for pair in narrations for narration in pair
+        ]
 
 
 def test_each_step_lands_its_own_rows_and_the_ids_advance(
@@ -232,13 +243,13 @@ def test_each_step_lands_its_own_rows_and_the_ids_advance(
                 " WHERE source = 'world_narrator' ORDER BY rowid",
             )
         ]
-        assert len(ids) == 3
-        assert len(set(ids)) == 3
+        assert len(ids) == 6
+        assert len(set(ids)) == 6
         # The count arm's ordinals advance across the chain steps.
-        assert ids == [f"run-berrymoor-0000:g{i}" for i in range(3)]
+        assert ids == [f"run-berrymoor-0000:g{i}" for i in range(6)]
         # C1-a 随迁：编年史另含信寄出事实行（互动行，链后落）。
         assert (
-            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 4
+            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 7
         )
         assert (
             _ro_rows(app_db, "SELECT COUNT(*) FROM world_run")[0][0] == 1
@@ -295,6 +306,7 @@ def test_a_single_step_letter_arrives_matches_the_old_shape(
     app_db = tmp_path / "app.db"
     one_step = _batch(
         _beat("letter-arrives", "她拆开了信。", 1),
+        _beat("letter-folded", "她把信折好放进了抽屉。", 0),
         stop="letter_arrives",
     )
     provider = ChainProvider(one_step)
@@ -310,8 +322,9 @@ def test_a_single_step_letter_arrives_matches_the_old_shape(
         assert types[-1] == "final"
         assert frames[-1]["stop"] == "letter_arrives"
         assert (
-            # C1-a 随迁：+1 信寄出事实行（互动行，CP0 后落）。
-            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 2
+            # C1-a 随迁：+1 信寄出事实行（互动行，CP0 后落）；D-2：
+            # 一步两 beat。
+            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 3
         )
         assert len(provider.prompts) == 2  # one narration + one reply
 
@@ -330,7 +343,10 @@ def test_the_chain_stops_at_the_defensive_ceiling_and_replies_anyway(
     payload invents no stop word."""
 
     app_db = tmp_path / "app.db"
-    never = _batch(_beat("endless-drizzle", "细雨下个不停。", 0))
+    never = _batch(
+        _beat("endless-drizzle", "细雨下个不停。", 0),
+        _beat("puddles-form", "水洼映着灰白的天。", 0),
+    )
     provider = ChainProvider(never)
     with web_stack(app_db, provider=provider) as stack:
         status, raw = _post(stack.port, "/api/turn_stream", {"text": A1_TEXT})
@@ -342,8 +358,8 @@ def test_the_chain_stops_at_the_defensive_ceiling_and_replies_anyway(
         assert frames[-1]["reply"] == REPLY
         assert "stop" not in frames[-1]
         assert (
-            # C1-a 随迁：+1 信寄出事实行。
-            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 6
+            # C1-a 随迁：+1 信寄出事实行；D-2：五步各两 beat。
+            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 11
         )
 
 
@@ -389,10 +405,12 @@ def test_non_letter_signals_keep_the_world_turning_and_ride_the_final(
     provider = ChainProvider(
         _batch(
             _beat("a-thought", "她忽然想起了写信的人。", 0),
+            _beat("the-thought-passes", "她把念头压回了手头的活计。", 0),
             stop="she_thinks_of_you",
         ),
         _batch(
             _beat("letter-arrives", "信到了，她坐在门廊上读完了它。", 1),
+            _beat("letter-kept", "她把信压在糖罐下面。", 0),
             stop="letter_arrives",
         ),
     )
@@ -405,8 +423,8 @@ def test_non_letter_signals_keep_the_world_turning_and_ride_the_final(
         assert types[-1] == "final"
         assert frames[-1]["stop"] == "letter_arrives"
         assert (
-            # C1-a 随迁：+1 信寄出事实行。
-            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 3
+            # C1-a 随迁：+1 信寄出事实行；D-2：两步各两 beat。
+            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 5
         )
 
 
@@ -421,6 +439,7 @@ def test_a_ceiling_chain_with_a_non_letter_signal_reports_that_signal(
     app_db = tmp_path / "app.db"
     waiting = _batch(
         _beat("the-world-waits", "镇子安静下来，像在等什么。", 0),
+        _beat("a-lamp-in-the-window", "只有一扇窗还亮着灯。", 0),
         stop="awaits_you",
     )
     provider = ChainProvider(waiting)
@@ -461,8 +480,8 @@ def test_a_mid_chain_refusal_keeps_landed_steps_and_answers_world_failed(
         assert frames[-1]["reply"] == REPLY
         # The landed step stays landed; the refused step wrote nothing.
         assert (
-            # C1-a 随迁：+1 信寄出事实行。
-            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 2
+            # C1-a 随迁：+1 信寄出事实行；D-2：落地的步两 beat。
+            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 3
         )
 
 
@@ -519,14 +538,15 @@ def test_the_blocking_turn_carries_world_steps_and_stop(tmp_path: Path) -> None:
         assert payload["stop"] == "letter_arrives"
         assert payload["reply"] == REPLY
         assert (
-            # C1-a 随迁：+1 信寄出事实行。
-            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 4
+            # C1-a 随迁：+1 信寄出事实行；D-2：三步各两 beat。
+            _ro_rows(app_db, "SELECT COUNT(*) FROM world_event")[0][0] == 7
         )
 
     app_db_one = tmp_path / "one.db"
     one_provider = BlockingChainProvider(
         _batch(
             _beat("letter-arrives", "她拆开了信。", 0),
+            _beat("letter-folded", "她把信折好放进了抽屉。", 0),
             stop="letter_arrives",
         )
     )

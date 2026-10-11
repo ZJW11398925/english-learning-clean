@@ -105,8 +105,20 @@ _REACTION_BEAT = {
     "days": 1,
     "participants": [NELL],
 }
+#: D-2 (DEC-OPI-a4cf2d0e…57): the reaction batch is the legal two-beat
+#: shape — the plain witness rides beside her reaction (settling
+#: nothing, naming no one), so the bridge's own beat is not the batch's
+#: only member.
+_REACTION_WITNESS = {
+    "kind": "quiet-witness",
+    "narration": "The town let the day pass.",
+    "days": 0,
+}
 BEATS_REACTION = json.dumps(
-    {"beats": [_REACTION_BEAT], "stop": {"kind": "letter_arrives"}}
+    {
+        "beats": [_REACTION_BEAT, _REACTION_WITNESS],
+        "stop": {"kind": "letter_arrives"},
+    }
 )
 
 
@@ -246,7 +258,18 @@ def test_the_step_rides_the_projection_through(store: SqliteWorldStore) -> None:
     默认，wr-10 姿势）。"""
 
     _seed_world(store)
-    carrier = _ScriptedNarrator(ProviderOutput(text=_beats(_beat(days=1))))
+    carrier = _ScriptedNarrator(
+        ProviderOutput(
+            text=_beats(
+                _beat(days=1),
+                _beat(
+                    kind="quiet-witness",
+                    narration="The town let the day pass.",
+                    days=0,
+                ),
+            )
+        )
+    )
     stepped = run_generated_step(
         store,
         "world-main",
@@ -260,7 +283,18 @@ def test_the_step_rides_the_projection_through(store: SqliteWorldStore) -> None:
     assert REACTION_HEADER in carrier.prompts[0]
     assert SUMMARY in carrier.prompts[0]
 
-    bare = _ScriptedNarrator(ProviderOutput(text=_beats(_beat(days=1))))
+    bare = _ScriptedNarrator(
+        ProviderOutput(
+            text=_beats(
+                _beat(days=1),
+                _beat(
+                    kind="quiet-witness",
+                    narration="The town let the day pass.",
+                    days=0,
+                ),
+            )
+        )
+    )
     plain = run_generated_step(
         store,
         "world-main",

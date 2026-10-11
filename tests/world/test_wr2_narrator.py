@@ -17,8 +17,10 @@ only). The pin groups:
    chronicle rides old→new (only the recent slice, only what
    happened), and the interface language picks the narration language
    (zh / en; anything else is a construction refusal);
-2. **the strict parse** — a well-formed batch of one or two beats
-   passes; days out of range, a malformed kind, prose around the JSON,
+2. **the strict parse** — a well-formed batch of two or three beats
+   passes (D-2, DEC-OPI-a4cf2d0e…57: the density calibration moved the
+   bounds up one — one beat is a refusal now, and ``days`` runs 0-3);
+   days out of range, a malformed kind, prose around the JSON,
    an empty or oversized batch, a blank narration, an unexpected field
    each refuse the **whole batch** (诚实不造假 — no partial adoption,
    zero beats); the provider's fault word passes through verbatim (the
@@ -88,6 +90,26 @@ BEATS_ONE = json.dumps(
                 "narration": "The lamp burned all night.",
                 "days": 1,
             }
+        ]
+    }
+)
+#: D-2 (DEC-OPI-a4cf2d0e…57): the minimal legal batch — the rhythm law's
+#: new lower bound is two beats, so ``BEATS_ONE`` above is no longer a
+#: positive script (it is the low-bound refusal witness now); this pair
+#: carries the two-beat shape the positive pins dial.
+BEATS_MIN = json.dumps(
+    {
+        "beats": [
+            {
+                "kind": "lamp-relit",
+                "narration": "The lamp burned all night.",
+                "days": 1,
+            },
+            {
+                "kind": "keeper-visits",
+                "narration": "The keeper climbed the path at dawn.",
+                "days": 1,
+            },
         ]
     }
 )
@@ -268,10 +290,14 @@ def test_the_prompt_speaks_the_interface_language() -> None:
 
 
 def test_a_well_formed_batch_parses() -> None:
-    """One or two beats, exactly shaped, pass: the GeneratedBeat carries
-    the kind, the narration and the span the model wrote."""
+    """Two or three beats, exactly shaped, pass (D-2: the bounds moved
+    up one — two is the minimum now, three the maximum): the
+    GeneratedBeat carries the kind, the narration and the span the
+    model wrote."""
 
-    narrator = WorldNarrator(_ScriptedNarrator(ProviderOutput(text=BEATS_ONE)))
+    narrator = WorldNarrator(
+        _ScriptedNarrator(ProviderOutput(text=BEATS_MIN))
+    )
     parsed = narrator.generate(
         package=_package(),
         lore_facts=(),
@@ -287,8 +313,37 @@ def test_a_well_formed_batch_parses() -> None:
             narration="The lamp burned all night.",
             days=1,
         ),
+        GeneratedBeat(
+            kind="keeper-visits",
+            narration="The keeper climbed the path at dawn.",
+            days=1,
+        ),
     )
     assert parsed.value[1] == ()
+    # D-2: three beats and the new span ceiling (days = 3) are inside.
+    three = WorldNarrator(
+        _ScriptedNarrator(
+            ProviderOutput(
+                text=_beats(
+                    _beat(kind="first-beat", narration="The tide turned."),
+                    _beat(
+                        kind="second-beat",
+                        narration="The fog stayed in a long while.",
+                        days=3,
+                    ),
+                    _beat(kind="third-beat", narration="The lamps went out."),
+                )
+            )
+        )
+    )
+    parsed_three = three.generate(
+        package=_package(),
+        lore_facts=(),
+        recent_narrations=(),
+        ui_language="en",
+    )
+    assert isinstance(parsed_three, Ok)
+    assert [beat.days for beat in parsed_three.value[0]] == [1, 3, 1]
     two = WorldNarrator(_ScriptedNarrator(ProviderOutput(text=BEATS_TWO)))
     parsed_two = two.generate(
         package=_package(),
@@ -314,15 +369,39 @@ def _generate_refused(text: str) -> Err[None]:
 
 
 def test_days_out_of_range_refuses_the_whole_batch() -> None:
-    """A span outside 0-2 — three days, a negative, a float — refuses
-    the whole batch: no beat of it is adopted."""
+    """A span outside 0-3 — four days, a negative, a float — refuses
+    the whole batch: no beat of it is adopted (D-2, DEC-OPI-a4cf2d0e…57:
+    the ceiling moved to 3; three days is inside and parsed)."""
 
-    for days in (3, -1, 1.5):
+    for days in (4, -1, 1.5):
         text = _beats(
             _beat(days=1),
             _beat(kind="second-beat", narration="The tide turned.", days=days),
         )
         assert isinstance(_generate_refused(text), Err)
+    # The new ceiling is inside: days = 3 parses (the D-2 boundary).
+    ok = WorldNarrator(
+        _ScriptedNarrator(
+            ProviderOutput(
+                text=_beats(
+                    _beat(days=3),
+                    _beat(
+                        kind="second-beat",
+                        narration="The tide turned.",
+                        days=0,
+                    ),
+                )
+            )
+        )
+    )
+    parsed = ok.generate(
+        package=_package(),
+        lore_facts=(),
+        recent_narrations=(),
+        ui_language="zh",
+    )
+    assert isinstance(parsed, Ok)
+    assert parsed.value[0][0].days == 3
 
 
 def test_a_malformed_kind_refuses_the_whole_batch() -> None:
@@ -339,7 +418,14 @@ def test_a_malformed_kind_refuses_the_whole_batch() -> None:
         assert isinstance(_generate_refused(text), Err)
     # The boundary holds the other way too: 32 characters is a slug.
     ok = WorldNarrator(
-        _ScriptedNarrator(ProviderOutput(text=_beats(_beat(kind="a" * 32))))
+        _ScriptedNarrator(
+            ProviderOutput(
+                text=_beats(
+                    _beat(kind="a" * 32),
+                    _beat(kind="second-beat", narration="The tide turned."),
+                )
+            )
+        )
     )
     parsed = ok.generate(
         package=_package(),
@@ -352,28 +438,33 @@ def test_a_malformed_kind_refuses_the_whole_batch() -> None:
 
 def test_prose_around_the_json_refuses_the_whole_batch() -> None:
     """不猜: prose before or after the JSON object — a polite preamble,
-    a closing line, markdown fences — refuses the whole batch."""
+    a closing line, markdown fences — refuses the whole batch (the
+    wrapped batch is the legal two-beat shape, so the prose is the only
+    defect on trial)."""
 
     for text in (
-        f"Here are the beats:\n{BEATS_ONE}",
-        f"{BEATS_ONE}\nI hope this helps!",
-        f"```json\n{BEATS_ONE}\n```",
+        f"Here are the beats:\n{BEATS_MIN}",
+        f"{BEATS_MIN}\nI hope this helps!",
+        f"```json\n{BEATS_MIN}\n```",
     ):
         assert isinstance(_generate_refused(text), Err)
 
 
-def test_an_empty_or_oversized_batch_refuses_the_whole() -> None:
-    """The rhythm law is exactly one or two beats: an empty batch (the
-    model declining to write) and a three-beat batch each refuse the
-    whole answer."""
+def test_an_empty_oversized_or_single_beat_batch_refuses_the_whole() -> None:
+    """The rhythm law is exactly two or three beats (D-2,
+    DEC-OPI-a4cf2d0e…57): an empty batch (the model declining to
+    write), a **one-beat** batch (the chaff density the calibration
+    retired) and a four-beat batch each refuse the whole answer."""
 
     assert isinstance(_generate_refused('{"beats": []}'), Err)
+    assert isinstance(_generate_refused(BEATS_ONE), Err)
     assert isinstance(
         _generate_refused(
             _beats(
                 _beat(kind="first-beat"),
                 _beat(kind="second-beat", narration="The tide turned."),
                 _beat(kind="third-beat", narration="The lamps went out."),
+                _beat(kind="fourth-beat", narration="The fog came in."),
             )
         ),
         Err,
@@ -399,9 +490,9 @@ def test_an_unexpected_field_refuses_the_whole() -> None:
     ``days``: an extra field (the model adding its own commentary key)
     refuses the whole batch."""
 
-    extra = _beat()
+    extra = _beat(kind="a-good-beat", narration="The tide turned.")
     extra["mood"] = "wistful"
-    assert isinstance(_generate_refused(_beats(extra)), Err)
+    assert isinstance(_generate_refused(_beats(extra, _beat())), Err)
     assert isinstance(_generate_refused('{"beats": [], "mood": "calm"}'), Err)
 
 
@@ -546,20 +637,31 @@ def test_the_generated_calendar_advances_within_the_batch(
 def test_the_story_time_never_runs_backward_across_letters(
     store: SqliteWorldStore,
 ) -> None:
-    """WR-2 处置（评审 MEDIUM 的量化形态）：故事时间跨信单调——第一封
-    盖 S+2（跨度 2），第二封盖 S+3（跨度 1），后信永远落在先信之后；
-    旧基下第二封会盖 S+1，时间倒退（评审探针实证的缺陷形态）。"""
+    """WR-2 处置（评审 MEDIUM 的量化形态）+ D-2（DEC-OPI-a4cf2d0e…57，
+    两条 beat 的批）：故事时间跨信单调——第一封盖 S+2、S+3，第二封在
+    其后（S+4、S+5），后信永远落在先信之后；旧基下第二封会盖 S+1，
+    时间倒退（评审探针实证的缺陷形态）。"""
 
     _seed_world(store)
     provider = _ScriptedNarrator(
         ProviderOutput(
             text=_beats(
                 _beat(kind="long-span", narration="The fair stayed.", days=2),
+                _beat(
+                    kind="fair-winds-down",
+                    narration="The tents stood through a quiet day.",
+                    days=1,
+                ),
             ),
         ),
         ProviderOutput(
             text=_beats(
                 _beat(kind="short-span", narration="The fair left.", days=1),
+                _beat(
+                    kind="lamps-relit",
+                    narration="The lamps came on along the quay.",
+                    days=1,
+                ),
             ),
         ),
     )
@@ -569,13 +671,15 @@ def test_the_story_time_never_runs_backward_across_letters(
     assert isinstance(first, Ok)
     assert [str(event.occurred_at) for event in first.value] == [
         (date.fromisoformat(CALENDAR_START) + timedelta(days=2)).isoformat(),
+        (date.fromisoformat(CALENDAR_START) + timedelta(days=3)).isoformat(),
     ]
     second = run_generated_step(
         store, WORLD, _package(), provider, "turn-mono-2", NOW
     )
     assert isinstance(second, Ok)
     assert [str(event.occurred_at) for event in second.value] == [
-        (date.fromisoformat(CALENDAR_START) + timedelta(days=3)).isoformat(),
+        (date.fromisoformat(CALENDAR_START) + timedelta(days=4)).isoformat(),
+        (date.fromisoformat(CALENDAR_START) + timedelta(days=5)).isoformat(),
     ]
     stamps = [
         str(event.occurred_at)
@@ -596,6 +700,11 @@ def test_a_same_shape_replay_of_enqueue_reveals_is_a_no_op(
         ProviderOutput(
             text=_beats(
                 _beat(kind="replay-proof", narration="Once is enough.", days=1),
+                _beat(
+                    kind="replay-witness",
+                    narration="The second beat proves the pair.",
+                    days=0,
+                ),
             ),
         ),
     )
@@ -708,7 +817,7 @@ def test_the_next_letter_resumes_the_anchor_run(
     _seed_world(store)
     provider = _ScriptedNarrator(
         ProviderOutput(text=BEATS_TWO),
-        ProviderOutput(text=BEATS_ONE),
+        ProviderOutput(text=BEATS_MIN),
     )
     first = run_generated_step(
         store, WORLD, _package(), provider, "turn-first", NOW
@@ -727,10 +836,10 @@ def test_the_next_letter_resumes_the_anchor_run(
     assert len(runs) == 1
     assert runs[0].status.value == "AT_CHECKPOINT"
     events = store.chronicle_of(WORLD).value
-    assert len(events) == 3
+    assert len(events) == 4
     assert all(str(event.event_id).startswith("run-main-0000:") for event in events)
     assert sum(1 for event in events if ":turn-first:" in str(event.event_id)) == 2
-    assert sum(1 for event in events if ":turn-second:" in str(event.event_id)) == 1
+    assert sum(1 for event in events if ":turn-second:" in str(event.event_id)) == 2
 
 
 def test_the_prompt_reads_only_the_recent_chronicle(
@@ -754,7 +863,7 @@ def test_the_prompt_reads_only_the_recent_chronicle(
             )
         )
         assert isinstance(written, Ok)
-    provider = _ScriptedNarrator(ProviderOutput(text=BEATS_ONE))
+    provider = _ScriptedNarrator(ProviderOutput(text=BEATS_MIN))
     stepped = run_generated_step(
         store, WORLD, _package(), provider, "turn-slice", NOW
     )

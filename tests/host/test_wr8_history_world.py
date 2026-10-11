@@ -84,7 +84,15 @@ _STEP2 = json.dumps(
                 "kind": "market-day",
                 "narration": "集市在广场上支起来了，鱼车天不亮就出了摊。",
                 "days": 2,
-            }
+            },
+            # D-2 (DEC-OPI-a4cf2d0e…57): the legal two-beat batch —
+            # the second beat spans 0 days, so the story day the pins
+            # below read stays the first beat's own.
+            {
+                "kind": "market-packs-up",
+                "narration": "摊主们收起木箱，鱼车先走了一步。",
+                "days": 0,
+            },
         ],
         "stop": {"kind": "letter_arrives"},
     },
@@ -98,7 +106,13 @@ _STEP3 = json.dumps(
                 "kind": "night-watch",
                 "narration": "守夜人在灯塔上换了一班，灯芯剪得极短。",
                 "days": 1,
-            }
+            },
+            # D-2 (DEC-OPI-a4cf2d0e…57): the legal two-beat batch.
+            {
+                "kind": "night-quiet",
+                "narration": "换班的人沿着石阶往镇里走。",
+                "days": 0,
+            },
         ],
         "stop": {"kind": "letter_arrives"},
     },
@@ -301,10 +315,12 @@ def test_each_turn_keeps_its_own_frame(tmp_path: Path) -> None:
         ]
         assert _frame_narrations(second) == [
             "集市在广场上支起来了，鱼车天不亮就出了摊。",
+            "摊主们收起木箱，鱼车先走了一步。",
             "A letter from the user's character was sent.",
         ]
         assert _frame_narrations(third) == [
             "守夜人在灯塔上换了一班，灯芯剪得极短。",
+            "换班的人沿着石阶往镇里走。",
             "A letter from the user's character was sent.",
         ]
 

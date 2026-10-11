@@ -447,15 +447,23 @@ def test_a_lone_world_without_the_section_adds_nothing(tmp_path: Path) -> None:
 def test_a_beat_may_name_the_user_character() -> None:
     """R3's own arm: a beat whose ``participants`` names the declared
     user id parses — the reader's part in the story is chronicle-worthy
-    beside the cast's, alone or riding with a cast id."""
+    beside the cast's, alone or riding with a cast id (D-2: every
+    positive script is the legal two-beat batch)."""
 
     parsed = _generate(
-        _beats(_beat(participants=[SHIPPED_ID])), _shipped()
+        _beats(
+            _beat(participants=[SHIPPED_ID]),
+            _beat(kind="work-continues"),
+        ),
+        _shipped(),
     )
     assert isinstance(parsed, Ok), parsed.error
     assert parsed.value[0][0].participants == (SHIPPED_ID,)
     both = _generate(
-        _beats(_beat(participants=["persona-nell-alder", SHIPPED_ID])),
+        _beats(
+            _beat(participants=["persona-nell-alder", SHIPPED_ID]),
+            _beat(kind="work-continues"),
+        ),
         _shipped(),
     )
     assert isinstance(both, Ok), both.error
@@ -477,7 +485,11 @@ def test_a_package_without_the_section_refuses_her_id(
     loaded = _load(tmp_path, payload)
     assert isinstance(loaded, Ok), loaded.error.message
     refused = _generate(
-        _beats(_beat(participants=[SHIPPED_ID])), loaded.value
+        _beats(
+            _beat(participants=[SHIPPED_ID]),
+            _beat(kind="work-continues"),
+        ),
+        loaded.value,
     )
     assert isinstance(refused, Err)
     assert refused.error.message.startswith("narrator refused:")

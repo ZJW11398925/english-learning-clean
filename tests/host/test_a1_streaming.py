@@ -77,9 +77,15 @@ NARRATOR_MARK = "You are the narrator of a small fictional world"
 NARRATOR_BEATS = json.dumps(
     {
         "beats": [
-            {"kind": "fake-tide", "narration": "The tide turned.", "days": 1}
+            {"kind": "fake-tide", "narration": "The tide turned.", "days": 1},
+            {
+                "kind": "fake-dawn",
+                "narration": "The lamps came on along the quay.",
+                "days": 0,
+            },
         ],
         # lr-1：单步即停形——模型一步 letter_arrives，链一步出。
+        # D-2（DEC-OPI-a4cf2d0e…57：节律律下界升为两 beat）。
         "stop": {"kind": "letter_arrives"},
     }
 )

@@ -51,7 +51,7 @@ from elc.world.narrator import (
 )
 from elc.world.store import SqliteWorldStore
 from tests.world.test_wr2_narrator import (
-    BEATS_ONE,
+    BEATS_MIN,
     NOW,
     WORLD,
     _beat,
@@ -89,7 +89,9 @@ def store(conn: sqlite3.Connection) -> SqliteWorldStore:
 
 
 def _directed_answer(candidates: tuple[dict[str, str], ...]) -> str:
-    """One directed answer: the beats batch plus the candidates."""
+    """One directed answer: the beats batch (D-2,
+    DEC-OPI-a4cf2d0e…57: the legal two-beat minimum) plus the
+    candidates."""
 
     return json.dumps(
         {
@@ -98,7 +100,12 @@ def _directed_answer(candidates: tuple[dict[str, str], ...]) -> str:
                     "kind": "quiet-morning",
                     "narration": "The harbour kept its silence.",
                     "days": 0,
-                }
+                },
+                {
+                    "kind": "quiet-witness",
+                    "narration": "The town let the day pass.",
+                    "days": 0,
+                },
             ],
             "directions": list(candidates),
         }
@@ -136,7 +143,10 @@ def test_a_directed_answer_parses_beats_and_candidates(count: int) -> None:
     # 三元组——无 stop 键的答案 stop 恒 None（继续）。
     beats, directions, stop = parsed.value
     assert stop is None
-    assert [beat.kind for beat in beats] == ["quiet-morning"]
+    assert [beat.kind for beat in beats] == [
+        "quiet-morning",
+        "quiet-witness",
+    ]
     assert directions == tuple(
         DirectionCandidate(label=c["label"], hint=c["hint"])
         for c in candidates
@@ -150,7 +160,7 @@ def test_both_immersive_shapes_parse_with_no_candidates(shape: str) -> None:
     answers ``(beats, ())``."""
 
     if shape == "no-key":
-        text = BEATS_ONE
+        text = BEATS_MIN
     else:
         text = json.dumps(
             {
@@ -159,7 +169,12 @@ def test_both_immersive_shapes_parse_with_no_candidates(shape: str) -> None:
                         "kind": "lamp-relit",
                         "narration": "The lamp burned all night.",
                         "days": 1,
-                    }
+                    },
+                    {
+                        "kind": "quiet-witness",
+                        "narration": "The town let the day pass.",
+                        "days": 0,
+                    },
                 ],
                 "directions": [],
             }
@@ -230,7 +245,12 @@ def test_both_immersive_shapes_parse_with_no_candidates(shape: str) -> None:
                             "kind": "lamp-relit",
                             "narration": "The lamp burned all night.",
                             "days": 1,
-                        }
+                        },
+                        {
+                            "kind": "quiet-witness",
+                            "narration": "The town let the day pass.",
+                            "days": 0,
+                        },
                     ],
                     "directions": "two labels, no array",
                 }
@@ -356,6 +376,7 @@ def test_the_extractor_emits_the_narrations_only() -> None:
     text = _directed_answer(_CANDIDATES)
     expected = {
         0: "The harbour kept its silence.",
+        1: "The town let the day pass.",
     }
     whole = _join(NarrationExtractor().feed(text))
     assert whole == expected
@@ -412,7 +433,10 @@ def test_the_step_passes_mode_and_pending_through(store: SqliteWorldStore) -> No
         on_directions=seen.append,
     )
     assert isinstance(stepped, Ok)
-    assert len(stepped.value) == 1
+    assert [event.kind for event in stepped.value] == [
+        "quiet-morning",
+        "quiet-witness",
+    ]
     prompt = provider.prompts[0]
     assert f"{MIN_DIRECTIONS} to {MAX_DIRECTIONS} directions" in prompt
     assert "the fair arrives — Tents dot the cliff meadow." in prompt
@@ -434,12 +458,23 @@ def test_the_defaults_run_the_step_as_before_wr10(
     the direction face's absence, not the old bytes)."""
 
     _seed_world(store)
-    provider = _ScriptedNarrator(ProviderOutput(text=_beats(_beat(days=1))))
+    provider = _ScriptedNarrator(
+        ProviderOutput(
+            text=_beats(
+                _beat(days=1),
+                _beat(
+                    kind="quiet-witness",
+                    narration="The town let the day pass.",
+                    days=0,
+                ),
+            )
+        )
+    )
     stepped = run_generated_step(
         store, WORLD, _package(), provider, "turn-wr10-2", NOW
     )
     assert isinstance(stepped, Ok)
-    assert len(stepped.value) == 1
+    assert len(stepped.value) == 2
     prompt = provider.prompts[0]
     assert "direction" not in prompt.lower()
 

@@ -714,7 +714,15 @@ def test_the_step_rides_the_read_through(store: SqliteWorldStore) -> None:
     空元组 ⇒ 诚实无线句。"""
 
     _seed_world(store)
-    carrier = _ScriptedNarrator(ProviderOutput(text=_beats(_beat(days=1))))
+    # D-2 (DEC-OPI-a4cf2d0e…57): every positive script is a legal
+    # two-beat batch — the plain witness beat rides beside the beat
+    # under test.
+    witness = _beat(
+        kind="quiet-witness", narration="The town let the day pass.", days=0
+    )
+    carrier = _ScriptedNarrator(
+        ProviderOutput(text=_beats(_beat(days=1), witness))
+    )
     stepped = run_generated_step(
         store,
         WORLD,
@@ -728,7 +736,9 @@ def test_the_step_rides_the_read_through(store: SqliteWorldStore) -> None:
     assert STORYLINE_HEADER in carrier.prompts[0]
     assert LINE in carrier.prompts[0]
 
-    bare = _ScriptedNarrator(ProviderOutput(text=_beats(_beat(days=1))))
+    bare = _ScriptedNarrator(
+        ProviderOutput(text=_beats(_beat(days=1), witness))
+    )
     plain = run_generated_step(
         store, WORLD, _package(), bare, "turn-c2-seam-2", NOW
     )
@@ -736,7 +746,7 @@ def test_the_step_rides_the_read_through(store: SqliteWorldStore) -> None:
     assert STORYLINE_HEADER not in bare.prompts[0]
 
     empty_read = _ScriptedNarrator(
-        ProviderOutput(text=_beats(_beat(days=1)))
+        ProviderOutput(text=_beats(_beat(days=1), witness))
     )
     no_lines = run_generated_step(
         store,
@@ -772,7 +782,12 @@ def test_a_beat_proposal_closes_the_line_at_the_projection(
             "effects": [
                 {"key": storyline_effect_key(LINE), "statement": "resolved"}
             ],
-        }
+        },
+        _beat(
+            kind="notice-read",
+            narration="Someone stopped to read the notice.",
+            days=0,
+        ),
     )
     narrator = _ScriptedNarrator(ProviderOutput(text=closure))
     stepped = run_generated_step(
@@ -801,7 +816,18 @@ def test_a_beat_proposal_closes_the_line_at_the_projection(
         " by resolve_storyline alone"
     )
 
-    second = _ScriptedNarrator(ProviderOutput(text=_beats(_beat(days=1))))
+    second = _ScriptedNarrator(
+        ProviderOutput(
+            text=_beats(
+                _beat(days=1),
+                _beat(
+                    kind="quiet-witness",
+                    narration="The town let the day pass.",
+                    days=0,
+                ),
+            )
+        )
+    )
     again = run_generated_step(
         store,
         WORLD,

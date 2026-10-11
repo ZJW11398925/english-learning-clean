@@ -77,15 +77,24 @@ def _beats(
     *,
     stop: str | None = None,
     narration: str = "The harbour kept its morning silence.",
+    witness: str = "The quay emptied as the light failed.",
 ) -> str:
-    """One directed narrator answer: one beat, the candidates, the
-    optional stop verdict."""
+    """One directed narrator answer: the legal **two-beat** batch (D-2,
+    DEC-OPI-a4cf2d0e…57 — the rhythm law's floor moved to two), the
+    candidates, the optional stop verdict. The second beat is the plain
+    witness beside the beat under test (settling nothing, naming no
+    one)."""
 
     answer: dict[str, object] = {
         "beats": [
             {
                 "kind": "quiet-morning",
                 "narration": narration,
+                "days": 0,
+            },
+            {
+                "kind": "quay-upkeep",
+                "narration": witness,
                 "days": 0,
             },
         ],
@@ -293,8 +302,11 @@ def test_the_directed_round_parks_then_walks_to_the_letter(
         ]
         assert step_narrations == [
             "The harbour kept its morning silence.",
+            "The quay emptied as the light failed.",
             "A stranger walked the cliff path to the keeper's door.",
+            "The quay emptied as the light failed.",
             "She broke the seal and read your letter by the window.",
+            "The quay emptied as the light failed.",
         ]
 
 

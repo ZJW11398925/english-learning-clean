@@ -67,9 +67,11 @@ from tests.host.test_w1_web import CLEAN_TEXT, REPLY, web_stack
 from tests.host.test_wr2_post_turn_wiring import NARRATOR_MARK
 
 
-#: The one-beat letter-arrival batch (a distinct narration per letter —
-#: the two-bucket discrimination needs the words to tell the letters
-#: apart).
+#: The letter-arrival batch (D-2, DEC-OPI-a4cf2d0e…57: the legal
+#: two-beat batch — the second beat's narration is derived from the
+#: first's words, so the two-bucket discrimination below still tells
+#: the letters apart by their own words). A distinct narration per
+#: letter remains the discrimination material.
 def _letter_step(narration: str) -> str:
     return json.dumps(
         {
@@ -77,6 +79,11 @@ def _letter_step(narration: str) -> str:
                 {
                     "kind": "quiet-morning",
                     "narration": narration,
+                    "days": 0,
+                },
+                {
+                    "kind": "day-closes",
+                    "narration": narration + " The day closed over it.",
                     "days": 0,
                 },
             ],
@@ -95,6 +102,11 @@ def _checkpoint_step(narration: str) -> str:
                     "narration": narration,
                     "days": 0,
                 },
+                {
+                    "kind": "day-closes",
+                    "narration": narration + " The day closed over it.",
+                    "days": 0,
+                },
             ],
             "stop": {"kind": STOP_SHE_THINKS_OF_YOU},
         },
@@ -109,6 +121,11 @@ def _awaits_step(narration: str) -> str:
                 {
                     "kind": "quiet-morning",
                     "narration": narration,
+                    "days": 0,
+                },
+                {
+                    "kind": "day-closes",
+                    "narration": narration + " The day closed over it.",
                     "days": 0,
                 },
             ],
@@ -205,7 +222,8 @@ def test_letter_arrives_terminalizes_and_the_next_letter_winds_fresh(
         assert runs == [("run-berrymoor-0000", "TERMINAL", first_turn,
                          "RESPONSE")]
         assert _chronicle_of_run(app_db, "run-berrymoor-0000") == [
-            "The harbour woke under its first fog."
+            "The harbour woke under its first fog.",
+            "The harbour woke under its first fog. The day closed over it.",
         ]
         # The second letter: the first run rests TERMINAL, so the letter
         # winds a fresh one and names it.
@@ -218,7 +236,8 @@ def test_letter_arrives_terminalizes_and_the_next_letter_winds_fresh(
             ("run-berrymoor-0001", "TERMINAL", second_turn, "RESPONSE"),
         ]
         assert _chronicle_of_run(app_db, "run-berrymoor-0001") == [
-            "The market filled the square by noon."
+            "The market filled the square by noon.",
+            "The market filled the square by noon. The day closed over it.",
         ]
         # The wr-8 buckets, exact: each letter's beats ride their own
         # turn's frame (the trigger arm in production — the reveal
@@ -229,10 +248,12 @@ def test_letter_arrives_terminalizes_and_the_next_letter_winds_fresh(
         first, second = history["turns"]
         assert _frame_narrations(first) == [
             "The harbour woke under its first fog.",
+            "The harbour woke under its first fog. The day closed over it.",
             LETTER_SENT,
         ]
         assert _frame_narrations(second) == [
             "The market filled the square by noon.",
+            "The market filled the square by noon. The day closed over it.",
             LETTER_SENT,
         ]
 
@@ -352,7 +373,9 @@ def test_checkpoint_chain_keeps_one_run_and_its_starter_turn(
         ]
         assert _chronicle_of_run(app_db, "run-berrymoor-0000") == [
             "She looked up from her desk.",
+            "She looked up from her desk. The day closed over it.",
             "She walked the harbour road thinking.",
+            "She walked the harbour road thinking. The day closed over it.",
         ]
         # The superseded first turn closed without a reply (刀 N's law).
         facts = _turn_facts(app_db)
@@ -593,9 +616,9 @@ def _seed_triggerless_note(app_db: Path, *, run_id: str) -> None:
 
 
 class _StopScript:
-    """A narrator double whose every dial answers one one-beat batch
-    with a fixed stop verdict (``None`` = no stop key — keep going);
-    the letter's dial answers a plain reply."""
+    """A narrator double whose every dial answers one two-beat batch
+    (D-2, DEC-OPI-a4cf2d0e…57) with a fixed stop verdict (``None`` = no
+    stop key — keep going); the letter's dial answers a plain reply."""
 
     def __init__(self, stop: str | None) -> None:
         answer: dict[str, object] = {
@@ -603,6 +626,11 @@ class _StopScript:
                 {
                     "kind": "quiet-morning",
                     "narration": "The harbour kept its silence.",
+                    "days": 0,
+                },
+                {
+                    "kind": "day-closes",
+                    "narration": "The day closed over it.",
                     "days": 0,
                 },
             ]
@@ -647,7 +675,7 @@ def test_the_terminal_arm_is_the_callers_explicit_opt_in() -> None:
     stepped = _stepped(
         store, _StopScript(STOP_LETTER_ARRIVES), turn_id=None, terminal=None
     )
-    assert isinstance(stepped, Ok) and len(stepped.value) == 1
+    assert isinstance(stepped, Ok) and len(stepped.value) == 2
     assert _status(store) == "AT_CHECKPOINT"
 
     # The NOTICE checkpoint never terminalizes, armed or not.
@@ -708,7 +736,7 @@ def test_an_armed_replay_in_the_checkpoint_window_touches_no_run() -> None:
     stepped = _stepped(
         store, provider, turn_id="turn-again", terminal=None
     )
-    assert isinstance(stepped, Ok) and len(stepped.value) == 1
+    assert isinstance(stepped, Ok) and len(stepped.value) == 2
     before = store.list_runs("world-attrib")[0]
     assert before.status.value == "AT_CHECKPOINT"
     # The replay, fully armed: the no-op lands, the run row untouched —
@@ -721,4 +749,4 @@ def test_an_armed_replay_in_the_checkpoint_window_touches_no_run() -> None:
     assert replay.value == ()
     after = store.list_runs("world-attrib")[0]
     assert after == before
-    assert len(store.chronicle_of("world-attrib").value) == 1
+    assert len(store.chronicle_of("world-attrib").value) == 2

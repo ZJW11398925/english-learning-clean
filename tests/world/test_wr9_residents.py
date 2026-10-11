@@ -360,7 +360,7 @@ def test_wr4_no_letter_enters_even_when_residents_ride() -> None:
     assert (
         "It does not react to any correspondence" in prompt
     )
-    assert "Write exactly 1 or 2 beats." in prompt
+    assert "Write exactly 2 or 3 beats." in prompt
 
 
 # ---------------------------------------------------------------------------
