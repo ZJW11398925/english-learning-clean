@@ -1726,7 +1726,9 @@ chapter_settlement            # 章末压缩产出（Narrative Memory）
 reader_exposure               # 读者暴露面（记录语义；本轮无 metagame）
   exposure_id, passage_id, reader_id（MVP = 本地用户）, exposed_at
   边界：不写 actor_memory / belief（N-INV-005）
-  建表刀位：随 V3-5 与 narrative_passage 同刀（与 NCP-3 原子组一致）
+  建表刀位：随 V3-5；**与 SEGMENT COMMIT 解耦（评审 #2，V3-5 硬门）**——
+  passage commit ≠ 用户已看见；exposure 在交付/渲染侧独立记录（MVP 可保守
+  estimate），绝不与提交同事务充当 reader knowledge
 ```
 
 ### 26.2.2 时间字段（story_tick）
@@ -1736,9 +1738,11 @@ Plan 面时间字段带 planned_ 前缀（planned_start_tick / planned_end_tick�
 Canon 面时间一律 tick 语义、禁 ISO（字段名可为 actual_start_tick / actual_end_tick /
 opened_at_tick / closed_at_tick / created_at_tick；共性 = 整数 tick、由提交事务写）
 world.current_tick: 单调不减；由提交事务推进（§25 / STATE_MACHINES §26）
-V3 事件行的叙事时间 = 其提交事务的 actual tick，经派生键连回：
-  SEGMENT 族 → narrative_passage.created_at_tick；ACTION 族 → user_action.actual_tick
-（不为 world_event 增 ISO / tick 列——读路连回即可）
+V3 事件行的叙事时间 = 其提交事务的 actual tick，经**显式 lineage 面**归属：
+  提交记录表（commit_id / kind / passage_id|action_id / actual ticks / event ids，
+  V3-5 落表）——**禁止以 opaque event-id 命名规则反推**（评审 #1，V3-5 硬门）；
+  V3 cognition 不得把 legacy `occurred_at`（Legacy V2 ISO 语义）当世界时间
+（不为 world_event 增 ISO / tick 列——读路经 lineage 连回）
 ```
 
 ### 26.2.3 V3-5 最小读路（不依赖 V3-7 表）
@@ -1761,8 +1765,8 @@ UNIQUE(scene_id, segment_seq)                # 段落提交幂等（replay = no-
 UNIQUE(chapter_id, plan_revision)            # Plan 版本单调
 UNIQUE(scene_id, dossier_revision)           # Dossier 版本单调
 UNIQUE(world_id, chapter_index)              # 章序单调
-passage/event id 由 segment_key 派生          # 重放写同一批 id（§25）
-action 族 event/outcome id 由 action_commit_key 派生（与 segment_key 命名空间不相交）
+passage/event id 由 segment_key 派生          # 重放写同一批 id（§25；**id 派生只服务幂等重放——叙事时间归属不得依赖 id 命名**，见 §26.2.2 的 lineage 要求）
+action 族 event/outcome id 由 action_commit_key 派生（与 segment_key 命名空间不相交；同一 lineage 纪律）
 ```
 
 ### 26.2.5 可重建投影（V3）

@@ -126,3 +126,17 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 
 授权：独立评审（executor-pro 新上下文只读，2026-10-12）+ 用户口径「合同合理即放行迁移与代码」；DMCP 处置决策 `DEC-OPI-bab4da9f-…16`（注：本条目初稿预填 `…15`，服务器实际分配 `…16`——如实更正）。**V3-1 状态：允许开工；三件已铸（TASK `…18` / VAL `…20`），executor-pro 已派单。**
 
+### v1.3.2 — 2026-10-12 V3-1 外审（ACCEPT WITH FINDINGS）+ 五项跨刀义务处置
+
+**结论**：V3-1 **维持 COMPLETE**（不重开）；无 HIGH；批准进入 V3-2。五项跨刀义务（外审新增）全部收讫入册——#2/#5 即修文档；#1/#3/#4 写入合同并标注执行刀位：
+
+1. **V3-5 硬门 #1：Narrative Event story-time attribution**——`world_event.occurred_at` / `chronicle_of()` 属 **Legacy V2 ISO 语义**，而 V3 唯一时间权威是 `story_tick`；V3-5 接通 Segment Commit / C1 cognition 前必须建立**显式 V3 event lineage + story-time read path**（提交记录表面），**禁止以 opaque event-id 命名规则反推**，V3 cognition 不得把 legacy `occurred_at` 当世界时间。**已入合同**：`DATA_MODEL §26.2.2`（lineage 要求 + legacy 禁入语）+ `§26.2.4`（id 派生只服务幂等重放的收窄）。
+2. **V3-5 硬门 #2：Reader Exposure 与 Canon Commit 解耦**——passage commit ≠ 用户已看见；删除「NCP-3 同事务即代表呈现」语义；exposure 需独立 delivered/rendered 记录或保守 estimate（RA §14 certainty 家族）；**DB commit 不是 reader knowledge**。**已入合同**：`STATE_MACHINES §25`（移出 SEGMENT COMMIT 原子组 + 解耦注）+ `RUNTIME_ARCHITECTURE §28` NCP-3 + `DATA_MODEL §26.2.1`（reader_exposure 建表刀位句改）。
+3. **V3-4/V3-5 前置修正 #3：lifecycle time authority**——`opened_at_tick` / `closed_at_tick` 不得由任意调用方伪造；正式管线必须取自 `world.current_tick` 并在转移事务内验证（V3-1 staging 的调用方代书为过渡态）。**已入合同**：`STATE_MACHINES §21`。
+4. **V3-4 前裁决 #4：transition prerequisites（MVP 按外审建议全采）**——①章 `ACTIVE` 须有 `ADOPTED` Blueprint；②场 `ACTIVE` 须有 `ADOPTED` Dossier；③**章重叠禁止**（`SETTLING` 与下一章 `ACTIVE` 共存亦禁）。**已入合同**：`STATE_MACHINES §21/§22`（标注 V3-4 起强制；**V3-1 store 为 staging，不重开**）。
+5. **文档歧义修正 #5**：「行为事实与正文同批提交」语义删除——用户行为经 **ACTION OUTCOME COMMIT** 先成为 canon 事实；POV Writer **随后引用该 committed outcome** 生成 prose，再由 **SEGMENT COMMIT** 落正文及其新产生的非用户事实；**两者不是同一事务**。**已入合同**：`STATE_MACHINES §25` 共同纪律 + `RUNTIME_ARCHITECTURE §27` 边界。
+
+**V3-2 口径重申**：Template/Package 只负责创建时 seed；World Instance 的 `world_bible_revision` 是唯一世界设定权威；模板升级不得静默改写既有世界（N-INV-006）。
+
+授权：外审（用户转呈，2026-10-12）；DMCP 决策 `DEC-OPI-bab4da9f-…27`。
+

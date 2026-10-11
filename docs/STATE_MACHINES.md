@@ -659,6 +659,9 @@ Blueprint(plan_revision ADOPTED) → PLANNED
 规则：
 
 - 一个世界同一时间至多一章 `ACTIVE`（MVP；并行章禁止）。
+- **章重叠禁止（评审 #4 前置裁决，V3-4 起强制）**：前一章 `CLOSED` 之前，其世界不得出现新的 `ACTIVE` 章——`SETTLING` 章与下一章 `ACTIVE` 共存亦禁止。
+- **ACTIVE 前置（评审 #4 前置裁决，V3-4 起强制）**：章进入 `ACTIVE` 必须已有一份 `ADOPTED` 的 Chapter Blueprint（plan_revision）。
+- **lifecycle tick authority（评审 #3，V3-4/V3-5 起强制）**：`opened_at_tick` / `closed_at_tick` 在正式管线中必须取自当前 `world.current_tick`，并在转移事务内校验（V3-1 staging 的调用方代书为过渡态，提交刀接管）。
 - `CLOSED` 不可 reopen；修正走后续章（N-INV-003）。
 - `ACTIVE` 期间允许 Plan Revision（重规划**剩余**部分）；已 commit 的场景/段落不受影响。
 - `chapter_index` 单调 +1；chapter identity 稳定。
@@ -686,6 +689,7 @@ PLANNED → DISCARDED（Plan Revision）
 规则：
 
 - **SCENE COMMIT = 场的最后一段 SEGMENT COMMIT 的别名**（`ACTIVE → COMMITTED` 的翻转与该段提交**同事务**完成）；**不是第三种提交事务**。
+- **ACTIVE 前置（评审 #4 前置裁决，V3-4 起强制）**：场进入 `ACTIVE` 必须已有一份 `ADOPTED` 的 Scene Dossier（dossier_revision）。
 - **一旦有 segment commit，场景不可 DISCARDED / 取消**——已发生事实不可重写；只能按实际发生的方向 `COMMITTED`（提前收束合法）。
 - 场内段落顺序 commit；段与段之间世界可被读取（下一段看得到上一段的事实）。
 - 崩溃于 `ACTIVE`：从最后已 commit 段落续跑（未 commit 的正文草案不构成事实）；同 `segment_key` 重放 = no-op（§25）。
@@ -742,12 +746,13 @@ REJECTED      # 显式否决（记录理由）
 
 ```text
 narrative_passage（正文，不可变）
-world_event（本段沉淀事实；participants / effects）
+world_event（本段沉淀的非用户事实；participants / effects）
 world_state_fact 结算（effects → CURRENT / SUPERSEDED）
 story_tick actual 推进（该段 duration_ticks）
 （V3-7 起）actor memory / belief 增量
-reader_exposure 记录（MVP 口径：本地单读者，呈现即暴露，与 commit 同批）
 ```
+
+**reader_exposure 不在本提交内（评审 #2 解耦）**：passage commit ≠ 用户已看见；exposure 需要独立的 delivered/rendered 记录或保守 estimate（RA §14 的 certainty 家族），绝不与提交同事务充当 reader knowledge。
 
 幂等键：`segment_key = (scene_id, segment_seq)`；passage 与 event 的 id 由 segment_key 派生（重放写同一批 id）。
 
@@ -779,7 +784,8 @@ COMMITTED 后重放            → 幂等 no-op；呈现层从 durable 状态重
 
 ### 两条提交的共同纪律
 
-- 任何 commit 不得部分落地；同一段落的行为事实与正文**同批**提交（零撕裂）。
+- 每个 commit 各自全或无；正文与其**本段新产生的非用户事实**同批提交（零撕裂）。
+- **两级不同事务（评审 #5 澄清）**：用户行为先经 ACTION OUTCOME COMMIT 成为 canon 事实；POV Writer **随后引用该已 committed 的 outcome** 生成 prose，再由 SEGMENT COMMIT 落正文及其新产生的非用户事实——**两者不是同一事务**（不存在「行为事实与正文同批」）。
 - POV Writer 的呈现引用**已 committed** 的 outcome/passage；正文不得重新裁定用户行为（N-INV-002）。
 - **SCENE COMMIT 不是第三种事务**（见 §22：它是场的最后一段 SEGMENT COMMIT 的别名，翻转与提交同事务）。
 - Chapter Settlement **不是**提交事务（只压缩 / 收束；不新增事实）。

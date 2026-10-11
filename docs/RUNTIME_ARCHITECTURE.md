@@ -854,7 +854,7 @@ R-INV-018 same-turn second DecisionCycle 不重复消费已提交 analysis。
 边界（与 DOMAIN_MODEL §20.3 同源）：
 
 - **Resolver 唯一裁定权**：outcome 先落（ACTION OUTCOME COMMIT）；Writer 只做文学化呈现（passage 的 `outcome_ref`），不得重复裁定或重复写同一 event/effects。
-- Writer 拥有的只有**随后新产生的非用户事实**（经规划与规则允许），随 SEGMENT COMMIT 落地。
+- Writer 拥有的只有**随后新产生的非用户事实**（经规划与规则允许），随 SEGMENT COMMIT 落地。**评审 #5 澄清：ACTION OUTCOME COMMIT 与随后呈现该 outcome 的 SEGMENT COMMIT 是三个事务链中的两环（resolver 裁定 → outcome commit → 引用呈现 → segment commit），不是同一事务。**
 - Plan 面（Blueprint/Dossier）与 Canon 面（passage/event/state/memory）**类型隔离**；读 canon 只见已 commit 的内容。
 
 ## 28. Narrative V3 Commit Points（NCP）
@@ -894,9 +894,10 @@ narrative_passage（不可变）
 world_event（本段非用户事实）
 world_state_fact 结算
 story_tick actual 推进
-reader_exposure 记录（MVP：呈现即暴露，与 commit 同批）
 （V3-7 起）actor memory / belief 增量
 ```
+
+**reader_exposure 不在本提交内（评审 #2 解耦）**：passage commit ≠ 用户已看见——exposure 在交付/渲染侧独立记录或保守 estimate（RA §14 家族），绝不与提交同事务充当 reader knowledge。
 
 ### NCP-4 — Chapter Settlement
 
