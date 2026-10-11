@@ -170,8 +170,12 @@ def test_0027_columns_stamps_and_legacy_honesty() -> None:
     0027's), and a legacy-shaped row reading back honestly
     empty (``'[]'`` / NULL via the DEFAULT — zero back-fill)."""
 
-    assert SCHEMA_HEAD_FILE == "0029_narrative_v3_foundations.sql"
-    assert SCHEMA_HEAD_VERSION == "29"
+    # The head literal moves with each head (the P9-1 way): this pin
+    # read 0028's names while 0028 was the head, then V3-1's
+    # 0029_narrative_v3_foundations, and now V3-2's 0030_world_bible —
+    # the column claims stay 0027's own.
+    assert SCHEMA_HEAD_FILE == "0030_world_bible.sql"
+    assert SCHEMA_HEAD_VERSION == "30"
     fresh = sqlite3.connect(":memory:")
     apply_migrations(fresh)
     columns = [
@@ -192,8 +196,8 @@ def test_0027_columns_stamps_and_legacy_honesty() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "29",
-        "runtime_schema_version": "29",
+        "schema_version": "30",
+        "runtime_schema_version": "30",
     }
     # The legacy shape: a pre-0027 write names none of the new columns —
     # the DEFAULT carries it, and the store reads it back honestly.

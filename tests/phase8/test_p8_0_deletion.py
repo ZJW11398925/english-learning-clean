@@ -127,7 +127,8 @@ def test_the_retained_set_is_unchanged_and_the_sweep_grew_by_four() -> None:
     # 揭示队列入 keep 半、world_conversation 换桶出（入 conversation
     # scope 的 sweep——分类登记见 elc.deletion.types 的注释）；C2 再随迁：
     # 剧情线一表入 keep 半（world_storyline）；V3-1 再随迁：叙事基础四表
-    # 入 keep 半（0029 四表——L5 裁同刀入册）。
+    # 入 keep 半（0029 四表——L5 裁同刀入册）；V3-2 再随迁：World Bible
+    # 一表入 keep 半（0030 一表——实例世界设定的唯一权威）。
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
@@ -141,6 +142,7 @@ def test_the_retained_set_is_unchanged_and_the_sweep_grew_by_four() -> None:
         "world_chapter_plan",
         "world_scene",
         "world_scene_dossier",
+        "world_bible_revision",
     )
     for table in PLANNER_TABLES:
         assert table in SWEPT_TABLES

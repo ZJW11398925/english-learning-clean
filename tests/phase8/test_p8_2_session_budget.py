@@ -1253,10 +1253,11 @@ def test_no_migration_carries_the_view() -> None:
     # W-1-2 再随迁至 0025（世界运转一行）；W-1-3 再随迁至 0026（揭示队列
     # 一表，同样不是本刀的表）；C1-a 再随迁至 0027（编年史归属两列，同样
     # 不是本刀的表）；C2 再随迁至 0028（剧情线一表，同样不是本刀的表）；
-    # V3-1 再随迁至 0029（叙事基础一列四表，同样不是本刀的表）。
-    assert MIGRATION_IDS[-1] == "0029_narrative_v3_foundations"
-    assert SCHEMA_HEAD_FILE == "0029_narrative_v3_foundations.sql"
-    assert SCHEMA_HEAD_VERSION == "29"
+    # V3-1 再随迁至 0029（叙事基础一列四表，同样不是本刀的表）；
+    # V3-2 再随迁至 0030（World Bible 一表，同样不是本刀的表）。
+    assert MIGRATION_IDS[-1] == "0030_world_bible"
+    assert SCHEMA_HEAD_FILE == "0030_world_bible.sql"
+    assert SCHEMA_HEAD_VERSION == "30"
     schema = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted((REPO_ROOT / "migrations").glob("*.sql"))

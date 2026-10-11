@@ -240,18 +240,24 @@ def test_0025_is_the_registered_head() -> None:
     C1-a's 0027_chronicle_attribution and C2's 0028_world_storyline
     (the stamp-pin discipline every head move has followed since P8-4;
     the pin read "0025 is the head" while 0025 was the head); the shared
-    constants say so, and the stamp a fresh database carries is 29."""
+    constants say so, and the stamp a fresh database carries is 30 (the
+    head literal moved with each later head, most recently V3-2's
+    0030_world_bible)."""
 
-    assert MIGRATION_IDS[-1] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-2] == "0028_world_storyline"
-    assert SCHEMA_HEAD_FILE == "0029_narrative_v3_foundations.sql"
+    # The head literal moves with each head (the P9-1 way); the
+    # migration-shape claims in the sibling tests stay 0025's own.
+    assert MIGRATION_IDS[-1] == "0030_world_bible"
+    assert MIGRATION_IDS[-2] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-3] == "0028_world_storyline"
+    assert SCHEMA_HEAD_FILE == "0030_world_bible.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "29"
+    assert SCHEMA_HEAD_VERSION == "30"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0029_narrative_v3_foundations"
-    assert applied[-2] == "0028_world_storyline"
+    assert applied[-1] == "0030_world_bible"
+    assert applied[-2] == "0029_narrative_v3_foundations"
+    assert applied[-3] == "0028_world_storyline"
     assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 
@@ -894,13 +900,16 @@ def test_the_registry_carries_the_six_world_objects() -> None:
     ]
 
 
-def test_global_content_tables_carry_the_twelve_members() -> None:
+def test_global_content_tables_carry_the_thirteen_members() -> None:
     """W-1-2's run row joined the keep half (SEC-025's conservative
     reading) and W-1-3's reveal queue joins it the same way, while
     W-1-3's deletion face moves ``world_conversation`` out of this tuple
     into the conversation scope's sweep; C2's storyline table joins the
-    same keep half, and V3-1 (DEC-OPI-bab4da9f…11/…16, the L5 ruling)
-    adds migration 0029's four narrative tables the same way: twelve
+    same keep half, V3-1 (DEC-OPI-bab4da9f…11/…16, the L5 ruling)
+    adds migration 0029's four narrative tables the same way, and V3-2
+    (TASK-OPI-bab4da9f…29) adds migration 0030's
+    ``world_bible_revision`` (the instance Bible's sole authority row —
+    its FK chain names the shared world only) the same way: thirteen
     members, and the
     classification is registration —
     no sweep walks the run or the reveal item, nothing keeps them as
@@ -919,6 +928,7 @@ def test_global_content_tables_carry_the_twelve_members() -> None:
         "world_chapter_plan",
         "world_scene",
         "world_scene_dossier",
+        "world_bible_revision",
     )
     assert "world_run" not in SWEPT_TABLES
     assert "world_run" not in RETAINED_TABLES

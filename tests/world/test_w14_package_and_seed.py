@@ -48,6 +48,7 @@ from elc.persona.provider import ScriptedPersonaProvider
 from elc.platform.db.epoch import open_runtime_epoch
 from elc.platform.db.migrations import apply_migrations
 from elc.platform.types import Err
+from elc.world.bible import SqliteBibleStore
 from elc.world.engine.engine import (
     ENGINE_SOURCE,
     OUTCOME_LIMIT,
@@ -141,11 +142,16 @@ def _write_package(tmp_path: Path, payload: object, name: str) -> Path:
     return path
 
 
-def _fresh_store(db_path: Path) -> SqliteWorldStore:
+def _fresh_stores(db_path: Path) -> tuple[SqliteWorldStore, SqliteBibleStore]:
+    """One fresh database, both world-side stores over it (V3-2, TASK-
+    OPI-bab4da9f…29: the seed now also needs the Bible store — the
+    pair rides one connection, the same composition-root shape)."""
+
     db = sqlite3.connect(str(db_path))
     db.execute("PRAGMA foreign_keys=ON")
     apply_migrations(db)
-    return SqliteWorldStore(db, open_runtime_epoch(db))
+    fence = open_runtime_epoch(db)
+    return SqliteWorldStore(db, fence), SqliteBibleStore(db, fence)
 
 
 def _drive_one_call(
@@ -386,12 +392,13 @@ def test_missing_cast_persona_refused_before_any_write(tmp_path: Path) -> None:
     payload["world_id"] = "world-orphan"
     payload["cast"] = [{"persona_id": "persona-nobody", "name": "Nobody"}]
     _write_package(directory, payload, "world-orphan.json")
-    store = _fresh_store(tmp_path / "seed.db")
+    store, bible = _fresh_stores(tmp_path / "seed.db")
     with pytest.raises(WorldPackageError) as excinfo:
         ensure_builtin_worlds(
             store,
             directory,
             persona_exists=lambda persona_id: persona_id == PENPAL_PERSONA_ID,
+            bible_store=bible,
         )
     assert "persona-nobody" in str(excinfo.value)
     assert store.list_worlds() == ()
@@ -483,9 +490,11 @@ def test_seed_scan_reaches_both_exits_and_the_flats(
     all_outcomes: set[str] = set()
     tam_reached = False
     for seed in range(16):
-        store = _fresh_store(tmp_path / f"scan-{seed}.db")
+        store, bible = _fresh_stores(tmp_path / f"scan-{seed}.db")
         ensure_builtin_worlds(
-            store, persona_exists=lambda persona_id: True
+            store,
+            persona_exists=lambda persona_id: True,
+            bible_store=bible,
         )
         outcome, _outcomes, kinds = _drive_one_call(
             store, f"run-{seed}", pool, seed=seed

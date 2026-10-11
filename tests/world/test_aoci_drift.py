@@ -289,27 +289,32 @@ def test_the_six_touched_entries_are_single_lines() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_deletion_entry_counts_twelve_global_content_tables() -> None:
+def test_deletion_entry_counts_thirteen_global_content_tables() -> None:
     """The disposition's fixed falsehood (review MEDIUM-1, one live lie
     found by the mechanical sweep): ``GLOBAL_CONTENT_TABLES`` gained
     ``world_storyline`` at C2 — the entry's 「七员」 was false; 「八员」
     was the truth then. V3-1 (DEC-OPI-bab4da9f…11/…16, the L5 ruling)
-    adds migration 0029's four narrative tables — 「十二员」 is the
-    truth now, and the source constant must carry the same twelve."""
+    adds migration 0029's four narrative tables, and V3-2
+    (TASK-OPI-bab4da9f…29) adds migration 0030's
+    ``world_bible_revision`` — 「十三员」 is the truth now, and the
+    source constant must carry the same thirteen."""
 
     from elc.deletion.types import GLOBAL_CONTENT_TABLES
 
     entry = _entry_line_in_section(
         "===D:/english-learning-clean/src/elc/deletion/===", "types.py[DD7M]"
     )
-    assert "十二员" in entry
+    assert "十三员" in entry
+    assert "十二员" not in entry
     assert "八员" not in entry
     assert "七员" not in entry
     assert "world_storyline" in entry
     assert "world_scene_dossier" in entry
-    assert len(GLOBAL_CONTENT_TABLES) == 12
+    assert "world_bible_revision" in entry
+    assert len(GLOBAL_CONTENT_TABLES) == 13
     assert "world_storyline" in GLOBAL_CONTENT_TABLES
     assert "world_scene_dossier" in GLOBAL_CONTENT_TABLES
+    assert "world_bible_revision" in GLOBAL_CONTENT_TABLES
 
 
 def test_the_widened_entries_carry_the_voice_face() -> None:

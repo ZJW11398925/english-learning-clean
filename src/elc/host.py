@@ -270,6 +270,7 @@ from elc.teaching.rollout import RolloutGateReport, RolloutStage, corpus_rollout
 from elc.teaching.store import SqliteTeachingStore
 from elc.user_config.controller import UserConfigController
 from elc.user_config.store import SqliteUserConfigStore
+from elc.world.bible import SqliteBibleStore
 from elc.world.package import (
     WorldPackage,
     WorldPackageError,
@@ -1029,6 +1030,12 @@ def open_host(
         # penpal real on any fresh database). User-created worlds are
         # still bound only by a caller asking the store.
         world_store = SqliteWorldStore(db, fence)
+        # V3-2 (DEC-OPI-bab4da9f…29): the World Bible's store — the
+        # instance world's sole setting authority (migration 0030's
+        # world_bible_revision); the seed rides with the world's birth
+        # below (the same open pass), so a world is never born without
+        # its Bible.
+        bible_store = SqliteBibleStore(db, fence)
 
         def _persona_exists(persona_id: str) -> bool:
             """The world seed's cast verification face: does this persona
@@ -1050,6 +1057,7 @@ def open_host(
                 world_store,
                 worlds_dir,
                 persona_exists=_persona_exists,
+                bible_store=bible_store,
             )
         }
         # wr-12 (DEC-OPI-c73dbff3…84): the conversation→world-chronicle

@@ -65,6 +65,7 @@ from elc.platform.types import (
     Ok,
     Result,
 )
+from elc.world.bible import SqliteBibleStore
 from elc.world.engine.types import Condition, MomentKind, PoolEvent
 from elc.world.store import SqliteWorldStore
 from elc.world.types import StateEffect
@@ -1023,6 +1024,14 @@ def _line_id_for(world_id: str, ordinal: int) -> str:
     return f"line-{world_token}-{ordinal:04d}"
 
 
+def _bible_id_for(world_id: str, revision: int) -> str:
+    """The derived Bible revision id: ``bible-<world token>-<revision
+    zero-padded>`` — ``world-berrymoor`` derives ``bible-berrymoor-0001``."""
+
+    world_token = world_id.removeprefix("world-")
+    return f"bible-{world_token}-{revision:04d}"
+
+
 def story_days_of(
     package: WorldPackage,
     store: SqliteWorldStore,
@@ -1116,6 +1125,7 @@ def ensure_builtin_worlds(
     worlds_dir: Path | None = None,
     *,
     persona_exists: Callable[[str], bool],
+    bible_store: SqliteBibleStore,
 ) -> tuple[WorldPackage, ...]:
     """Seed every ``*.json`` world package in ``worlds_dir`` into the
     store, idempotently, at composition time, and return the decoded
@@ -1144,6 +1154,23 @@ def ensure_builtin_worlds(
     ``participants`` vocabulary's one extension, and the returned
     package carries it whole (the narrator and the chronicle read are
     its consumers, not this seed).
+
+    V3-2 (DEC-OPI-bab4da9f…29): a world's birth carries its Bible's
+    seed — right after ``create_world`` lands, the package's ``setting``
+    prose becomes the Bible's ``premise`` (the other thirteen content
+    fields stay the empty string: honest undeclared, the template
+    spoke only the setting) through the caller-wired ``bible_store``'s
+    idempotent ``seed_bible`` under the derived revision id (see
+    :func:`_bible_id_for`). The face is idempotent and **never
+    rewriting** (N-INV-006's machine half): a re-open re-seeds nothing,
+    and a template file edited between opens changes no stored row —
+    the instance Bible's authority lives in ``world_bible_revision``,
+    and a template's later update making it into a stored world is an
+    explicit revision decision, never a silent push. The
+    ``bible_store`` keyword is **required**, deliberately: no caller
+    can silently skip the Bible seed and open a world without its
+    authority row (the ``persona_exists`` keyword's own posture —
+    fail-closed, the same family).
 
     Every failure raises :class:`WorldPackageError` — the composition
     root's open fails closed (the ``world_lore`` seed posture: a database
@@ -1180,6 +1207,24 @@ def ensure_builtin_worlds(
             raise WorldPackageError(
                 f"builtin world {package.world_id!r} not seeded:"
                 f" {created.error.message}"
+            )
+        # V3-2 (DEC-OPI-bab4da9f…29): the world's birth carries its
+        # Bible's seed — the package's setting prose as the premise, the
+        # other thirteen fields honestly undeclared. The face is
+        # idempotent and never rewriting (N-INV-006: a template's later
+        # update replayed through this seed changes no stored row — a
+        # re-open writes nothing, a re-worded template is silently
+        # ignored), so a failed seed here means the database itself
+        # refused (the FK's dangling world), and fail-closed is the
+        # same posture every other seed refusal below keeps.
+        premise = " · ".join(package.setting)
+        seeded_bible = bible_store.seed_bible(
+            _bible_id_for(package.world_id, 1), package.world_id, premise, now
+        )
+        if isinstance(seeded_bible, Err):
+            raise WorldPackageError(
+                f"builtin world {package.world_id!r} Bible not seeded:"
+                f" {seeded_bible.error.message}"
             )
         for member in package.cast:
             actor_id = _actor_id_for(package.world_id, member.name)

@@ -894,13 +894,17 @@ def test_v3_writes_leave_the_legacy_surfaces_untouched(
 
 
 def test_the_shared_constants_and_a_fresh_db_say_29() -> None:
-    assert MIGRATION_IDS[-1] == "0029_narrative_v3_foundations"
-    assert SCHEMA_HEAD_FILE == "0029_narrative_v3_foundations.sql"
-    assert SCHEMA_HEAD_VERSION == "29"
+    # The head literal moves with each head (the P9-1 way): this pin
+    # read 0029's own names while 0029 was the head; V3-2's
+    # 0030_world_bible moved them again — the migration-shape claims in
+    # the sibling tests stay 0029's own.
+    assert MIGRATION_IDS[-1] == "0030_world_bible"
+    assert SCHEMA_HEAD_FILE == "0030_world_bible.sql"
+    assert SCHEMA_HEAD_VERSION == "30"
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0029_narrative_v3_foundations"
-    assert schema_version(fresh) == SCHEMA_HEAD_VERSION == "29"
+    assert applied[-1] == "0030_world_bible"
+    assert schema_version(fresh) == SCHEMA_HEAD_VERSION == "30"
     stamps = dict(
         fresh.execute(
             "SELECT key, value FROM schema_meta"
@@ -908,8 +912,8 @@ def test_the_shared_constants_and_a_fresh_db_say_29() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "29",
-        "runtime_schema_version": "29",
+        "schema_version": "30",
+        "runtime_schema_version": "30",
     }
 
 

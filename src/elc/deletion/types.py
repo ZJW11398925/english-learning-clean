@@ -341,6 +341,15 @@ RETAINED_TABLES: tuple[str, ...] = (
 #: dossier → scene — every link keep-side, so no sweep can be refused
 #: through any of them), and they add no consequential FK to the
 #: registered deletion face.
+#:
+#: V3-2 (TASK-OPI-bab4da9f…29) adds migration 0030's one table —
+#: ``world_bible_revision``, the instance world's sole setting
+#: authority (the World Bible; append-only versioned, never rewritten)
+#: — to the same keep rule, same conservative reading (registration,
+#: not deletion semantics; zero sweep face). Its FK chain
+#: (``world_id`` → ``world``) is keep-side at every link, so no sweep
+#: can be refused through it, and it adds no consequential FK to the
+#: registered deletion face.
 GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_lore_fact",
     "world",
@@ -354,6 +363,7 @@ GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_chapter_plan",
     "world_scene",
     "world_scene_dossier",
+    "world_bible_revision",
 )
 
 

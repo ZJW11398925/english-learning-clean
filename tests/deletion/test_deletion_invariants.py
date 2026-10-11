@@ -356,9 +356,10 @@ def test_sec_025_all_user_data_keeps_the_schema_and_the_ledger(
     # 0024_world_events, 24 → 25 with W-1-2's 0025_world_runs, 25 → 26
     # with W-1-3's 0026_world_reveal, 26 → 27 with C1-a's
     # 0027_chronicle_attribution, 27 → 28 with C2's
-    # 0028_world_storyline, and 28 → 29 with V3-1's
-    # 0029_narrative_v3_foundations).
-    assert _count(db, "schema_migrations") == 29
+    # 0028_world_storyline, 28 → 29 with V3-1's
+    # 0029_narrative_v3_foundations, and 29 → 30 with V3-2's
+    # 0030_world_bible).
+    assert _count(db, "schema_migrations") == 30
     assert _count(db, "runtime_epoch") == 1
     assert _count(db, "deletion_tombstone") > 0
 

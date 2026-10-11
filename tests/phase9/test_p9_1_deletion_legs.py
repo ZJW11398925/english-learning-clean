@@ -278,7 +278,8 @@ def test_the_retained_set_is_unchanged_and_every_delivery_table_is_swept() -> No
     # 世界运转一行入 keep 半；W-1-3 再随迁：揭示队列入 keep 半、
     # world_conversation 换桶出（分类登记见 elc.deletion.types 的注释）；
     # C2 再随迁：剧情线一表入 keep 半（world_storyline）；V3-1 再随迁：
-    # 叙事基础四表入 keep 半（0029 四表——L5 裁同刀入册）。
+    # 叙事基础四表入 keep 半（0029 四表——L5 裁同刀入册）；V3-2 再随迁：
+    # World Bible 一表入 keep 半（0030 一表——实例世界设定的唯一权威）。
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
@@ -292,6 +293,7 @@ def test_the_retained_set_is_unchanged_and_every_delivery_table_is_swept() -> No
         "world_chapter_plan",
         "world_scene",
         "world_scene_dossier",
+        "world_bible_revision",
     )
     for table in TABLES:
         assert table in SWEPT_TABLES

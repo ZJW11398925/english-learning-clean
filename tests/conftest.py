@@ -103,12 +103,18 @@ MIGRATION_IDS: tuple[str, ...] = (
     # canon progress rows and the two append-only PLAN rows;
     # elc.world.narrative is their store).
     "0029_narrative_v3_foundations",
+    # V3-2 (TASK-OPI-bab4da9f…29): the World Bible — the instance
+    # world's sole setting authority as one append-only versioned table
+    # (world_bible_revision; the template seeds the first revision at
+    # creation and never rewrites an existing world, N-INV-006;
+    # elc.world.bible is its store).
+    "0030_world_bible",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0029_narrative_v3_foundations.sql"
-SCHEMA_HEAD_VERSION = "29"
+SCHEMA_HEAD_FILE = "0030_world_bible.sql"
+SCHEMA_HEAD_VERSION = "30"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md
