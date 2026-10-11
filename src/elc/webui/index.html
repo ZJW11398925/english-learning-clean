@@ -240,6 +240,46 @@
     </div>
   </section>
 
+  <!-- D-3 世界详情屏（#space-world，前端世界层级第一刀）：整页纵深第
+       四屏——你看见自己住在镇上（IMPLEMENTATION_PLAN §19 前端面）。
+       四区全端点驱动（三读各自三态，#14 state-banner——一面对了别面
+       不陪葬）：① 你的角色（ensemble.user_character——包无此节 ⇒ 诚
+       实空句）② 世界的人（ensemble：绑定 cast 名册 + 镇民全阵容——
+       恰六位）③ 剧情线（storylines：打开中的线逐条）④ 编年史（log：
+       已揭示事件按故事日——读面零翻转）。入口 = 案头主从条世界名
+       （世界臂在场时点击进入）+ 沓顶「…的居民」行内链；返回钮与 Esc
+       回案头。屏头静态「世界」是无 JS 兜底，真名在正文首行端点驱动
+       （webui 零世界名字面）。 -->
+  <section id="space-world" class="dossier" hidden>
+    <header class="top space-header" id="world-head">
+      <span data-brand-mark="sm"></span>
+      <div>
+        <div class="who">世界</div>
+      </div>
+    </header>
+    <div class="spacebody">
+      <p class="pageback"><button id="world-back" class="btn btn--pencil"
+              type="button">← 回案头</button></p>
+      <p class="world-name" id="world-name"></p>
+      <div class="sec">
+        <h3>你的角色</h3>
+        <div id="world-you"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>世界的人</h3>
+        <div id="world-people"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>剧情线</h3>
+        <div id="world-lines"><p class="note">暂无数据</p></div>
+      </div>
+      <div class="sec">
+        <h3>编年史</h3>
+        <div id="world-chronicle"><p class="note">暂无数据</p></div>
+      </div>
+    </div>
+  </section>
+
   <!-- 温故空间：书桌。三节（今日 / 方向 / 档案），节签切换（#20），
        进空间落默认节（今日）。头部 = #19 space-header（品牌条基形 +
        节名槽，随节签联动）。页题只念一遍：节名槽是「我在哪」，节内

@@ -445,6 +445,36 @@ pre { font: var(--meta-mono);
 .obs-note { margin: 0 0 var(--sp-4); font: var(--t-ui);
             color: var(--ink-faint); }
 
+/* ── D-3 世界详情屏（#space-world，整页纵深第四屏）：你看见自己住在
+   镇上。四区节块同 8.2.8 A-1 #8 的全页纵深模板（品牌条 + 返回钮唯一
+   回途 + .sec 节块）；世界名 = 正文首行（title 档，端点驱动——屏头
+   静态「世界」只是无 JS 兜底）。名册行 / 剧情线 / 编年史日共用一支
+   「左缘发丝线分层」读法（简报 §6：分层靠上下发丝线，零卡片零气泡）；
+   名册人名行内联弱化注（当前通信 + 信数），身份/角色行与散文行分两
+   档墨色（次墨 prose / 弱墨 meta）。全部引用令牌，零新值。 */
+.world-name { margin: 0 0 var(--sp-4); font: var(--t-title); }
+.world-name:empty { display: none; }
+.world-you-name { margin: 0; font: var(--t-title); }
+.world-you-anchor, .world-person-vignette, .world-line-theme,
+.world-day-note { margin: 4px 0 0; font-size: var(--fs-small);
+                  line-height: var(--lh-small); color: var(--ink-soft);
+                  overflow-wrap: anywhere; }
+.world-you-home, .world-person-role, .world-line-resolve,
+.world-day-signature { margin: 2px 0 0; font: var(--t-ui);
+                       color: var(--ink-faint); overflow-wrap: anywhere; }
+.world-person, .world-line, .world-day { margin: var(--sp-3) 0 0;
+                                         padding-left: 10px;
+                                         border-left: 1px solid var(--rule); }
+.world-person:first-child, .world-line:first-child,
+.world-day:first-child { margin-top: 0; }
+.world-person-name { margin: 0; font-size: var(--fs-small);
+                     line-height: var(--lh-small); font-weight: 600;
+                     overflow-wrap: anywhere; }
+.world-person-note { margin-left: var(--sp-2); font: var(--t-ui);
+                     font-weight: 400; color: var(--ink-faint); }
+.world-day-date { margin: 0; font: var(--meta-font);
+                  letter-spacing: var(--meta-track); color: var(--meta-ink); }
+
 /* ── mc-1 信封选择器（点案头主从条弹出的那沓信）──────────────────────
    沓形 = 案头的一叠信封：沓内绝对定位错位叠放——top 由视觉位序
    --env-i 驱动（components.js 的 layoutEnvelopeStack 排名重算，custom
@@ -559,6 +589,10 @@ pre { font: var(--meta-mono);
    「{世界} 的居民」语境；residents 缺席回落现役形 = 无此行）与每封的
    信数弱标注（诚实计数；.env-line 同族语汇再弱一档 --ink-faint）。 */
 .envsel-caption { margin: 0; font: var(--t-ui); color: var(--ink-faint); }
+/* D-3：caption 行内的世界详情入口链（从沓跳世界详情屏）。行的位置账
+   只在本类（文字链样式本体仍只在 components.css 的 link-btn 族——
+   fg1 纪律）。 */
+.envsel-world-link { margin-left: var(--sp-2); }
 .env-letters { margin: 2px 0 0; font-size: var(--fs-small);
                line-height: var(--lh-small); color: var(--ink-faint); }
 .env-browse { display: none; }

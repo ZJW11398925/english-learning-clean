@@ -2164,6 +2164,64 @@ to-only，与 scrim-in 对偶——scrim-in 自 v2-2 在库、本刀首次入册
    回扇叠 scrollTop 归零保留为回沓首阅读位；两处负控钉在库
    （scroll 监听不得再现 / 24px 方向距离钉）。
 
+### 9.16 D-3 修订登记（世界详情屏——前端世界层级第一刀，2026-10-11）
+
+> 授权链：IMPLEMENTATION_PLAN §19「前端面：世界详情页（六角色名册 +
+> 你的角色卡 + 线 + 编年史）——你看见自己住在镇上」（D-1 用户角色入
+> 世界之后第一次上屏）；开工裁决 DEC-OPI-a4cf2d0e…49（R1–R7）+ 切片
+> 验收 VAL-…53。用户 dogfood 最痛面 =「看不到六个角色 / 前端仍是角色
+> 卡逻辑」。钉位：`tests/host/test_d3_world_detail.py`（端点行为 + 前端
+> 结构）；两处既有钉同刀随迁（记账在案，不降强度）：
+> `test_wf1_parlor_world_first.py` 的 `showSpace("world")` 缺位钉
+> （WR-5 退役的是世界**日志**屏；新屏是同空间名的四区详情屏——缺位钉
+> 改钉旧屏三大件名，进屏调用恰一处）与
+> `test_fg2_entry_and_states.py` 的 `data-brand-mark="sm"` 计数 6→7
+> （每纵深屏一枚品牌条，同基形）。
+
+**1. 新屏 `#space-world`（整页纵深第四屏）**：`class="dossier"` 沿
+A-1 #8 全页纵深模板（品牌条 + 返回钮唯一回途 + `.sec` 节块）；正文
+首行 `.world-name` = 世界名（端点驱动，屏头静态「世界」是无 JS 兜底
+——零字面律不动）。四区全端点驱动，三读各自三态（#14）、per-区重试、
+在飞守卫 = 屏自身 `[hidden]` 态：
+
+| 区 | 读面 | 数据 |
+|---|---|---|
+| ① 你的角色 | `GET /api/world/ensemble` | `user_character{id,name,anchor,home}`（包无此节 ⇒ `null`，区渲诚实空句） |
+| ② 世界的人 | 同上 | `cast[*]{name,identity,vignette,is_current,letters_count}` + `residents[*]{name,role,vignette}`（恰六位：绑定 cast + 五镇民） |
+| ③ 剧情线 | `GET /api/world/storylines` | `storylines[*]{theme,resolve_at}`（存储层两层语义读——active ∧ 无 resolved 投影事实） |
+| ④ 编年史 | `GET /api/world/log` | `days[*]{date_localized, items[*]{narration,signature}}`（读面零翻转——PENDING 不入列；`signature: null` ⇒ 渲「世界」） |
+
+**2. 后端两读面（R1）**：`world_ensemble` / `world_storylines` 入
+wf-0 读面族——同一 `_WORLD_NO_BINDING` 404 同句、零写面、包缺席诚实
+降级（cast 仍答、`residents []`、`world_name null`）；`_world_bindings_by_actor`
+为 `world_residents` 与本刀 ensemble 的同一分组读（禁第二份实现）。
+
+**3. 入口两处与回途**：①案头主从条世界名（`.who`）——世界臂在场时
+可点进屏（`markMastheadWorldArm` 两臂：可点角色/aria 落 `.who`
+〔世界详情〕与副行〔信封沓〕，块本体让位——嵌套可点元素不合法；回落
+臂整块还原 mc-1 的信封沓语义）；②沓顶 caption 行内链
+（`.envsel-world-link`，沓本体结构零改）。回途 = 返回钮 + Esc（第四
+纵深，`showSpace("parlor")`）；navdock 同族让位（showSpace 与
+restoreNavdock 两臂）。
+
+**4. 库唯一出处答案（⑤ 四步）**：**不新增注册组件**——本刀复现役
+组件（#1 `--pencil` 返回钮 / #14 state-banner / #5 `.sec`）并把新类
+全部落为**屏级**（④-3：屏级布局类留 screens.css）：新 `.world-*`
+十六类与 `.envsel-world-link` 的位置账均只在 `screens.css`，
+`components.css` 与 `COMPONENTS` 注册表零改动（对照先例：wf-1 的
+`.envsel-caption`/`.env-letters` 同为屏级未入册）。
+
+**5. 语汇登记（8.3 表随迁）**：世界名（端点驱动）/ 你的角色（用户
+在世界内的居民身份）/ 镇民（residents——无 persona、不通信的街坊，
+与「居民」的绑定 cast 以 ①② 两区分居表达）/ 剧情线 / 了结条件
+（`resolve_at`）/ 编年史（行 `signature: null` 渲「世界」）。chrome
+双语词表 `PARLOR_WORLD_TEXT` 扩 D-3 十键（zh/en 各十句：worldDetail/
+worldDetailLabel/current/home/resolve/worldVoice/noPlayer/noPeople/
+noLines/noChronicle）——世界领域一支词表。
+
+**6. 本刀不做的（R4）**：沓本体结构 / 角色卡屏 / 编辑面不动；零迁移、
+零开闸；docs/ 除本节外不动。
+
 ---
 
 ## ⑩ 层级宪法（v3-2 立，2026-10-02）

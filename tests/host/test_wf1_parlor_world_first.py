@@ -372,7 +372,15 @@ def test_the_today_line_is_endpoint_driven_and_jumpless() -> None:
     assert "open(" not in today
     assert "<a" not in today
     assert "location" not in today
-    assert 'showSpace("world")' not in app
+    # WR-5 退役面（世界日志屏）的缺位钉随迁（D-3 世界详情屏）：旧屏的
+    # 三大件名只许活在 WR-5 的历史注记里，不得有任何调用位；原字面
+    # `showSpace("world") not in app` 的钉意（旧屏不回场）由「world 空间
+    # 键的进屏调用恰一处——新世界详情屏」承担，新屏的在场钉落
+    # tests/host/test_d3_world_detail.py（同一空间名两代屏：旧屏 = 单页
+    # 日志，新屏 = 四区详情——同名不是回场，是承接）。
+    for gone in ("loadWorldLogFace", "renderWorldLogDay", "WORLD_LOG_TEXT"):
+        assert f"{gone}(" not in app, gone
+    assert app.count('showSpace("world")') == 1
     screens = _text("screens.css")
     assert (
         ".who-sub { font: var(--t-ui); color: var(--ink-faint); }" in screens

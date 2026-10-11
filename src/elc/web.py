@@ -5155,6 +5155,23 @@ class _WebFace:
             },
         )
 
+    def _world_bindings_by_actor(self, world_id: str) -> dict[str, list[str]]:
+        """One world's conversation bindings, keyed by actor id (the
+        roster faces' shared read): every conversation the world binds,
+        grouped under the actor it corresponds through — the letter
+        counts' own join. One read, two faces (``world_residents`` and
+        the D-3 ensemble), never a second grouping."""
+
+        world_store = getattr(self._host, "world_store", None)
+        if world_store is None:
+            return {}
+        bindings_by_actor: dict[str, list[str]] = {}
+        for record in world_store.conversations_of(world_id):
+            bindings_by_actor.setdefault(str(record.actor_id), []).append(
+                str(record.conversation_id)
+            )
+        return bindings_by_actor
+
     def world_residents(self) -> tuple[int, dict[str, Any]]:
         """The bound world's residents (wf-0): every cast actor joined to
         its character card — name, identity line, persona — with the
@@ -5179,11 +5196,7 @@ class _WebFace:
         if world_store is None:
             return (404, {"error": _WORLD_NO_BINDING})
         package = self._world_packages.get(world_id)
-        bindings_by_actor: dict[str, list[str]] = {}
-        for record in world_store.conversations_of(world_id):
-            bindings_by_actor.setdefault(str(record.actor_id), []).append(
-                str(record.conversation_id)
-            )
+        bindings_by_actor = self._world_bindings_by_actor(world_id)
         residents: list[dict[str, Any]] = []
         for actor, card in self._world_actor_cards(world_id):
             residents.append(
@@ -5215,6 +5228,158 @@ class _WebFace:
                 "world_name": None if package is None else package.name,
                 "ui_language": self._ui_language(),
                 "residents": residents,
+            },
+        )
+
+    def world_ensemble(self) -> tuple[int, dict[str, Any]]:
+        """The world's whole cast, one read (D-3): your own character,
+        the bound cast and the town's purely narrative residents.
+
+        Three honest answers in one payload — the world detail screen's
+        zones ① and ② (IMPLEMENTATION_PLAN §19's roster face). The
+        ``cast`` rows are the roster's own join (:meth:`_world_actor_cards`:
+        actor → character card, builtin first) enriched with the bound
+        conversation facts the residents face already counts
+        (``is_current`` / ``letters_count``, :meth:`_world_bindings_by_actor`
+        + :meth:`_world_letter_count`) and, from the package's own cast
+        section, the member's ``vignette`` (``None`` when the package
+        carries none for that persona — an undeclared vignette is an
+        absent one, never invented). ``residents`` are the package's
+        narrative townsfolk, verbatim (name / role / vignette) — they
+        have no actor and no letters, and the face says so by shape.
+        ``user_character`` is the package's declared player
+        (v7 / D-1) — exactly its four non-empty strings; ``None`` when
+        the package declares no player (an honest world whose page
+        renders no "you" card) or when the package is absent
+        altogether.
+
+        The guards are the read family's own: no binding (or no world
+        leg) is the same **404**, the same sentence, as the inbox's —
+        an ensemble that does not exist is not an empty one. A read
+        face: it flips nothing, writes nothing, and answers the
+        package's declarations verbatim; a package the process does
+        not carry degrades to the honest zero shape (empty cast,
+        empty residents, ``None`` player) rather than a fabricated
+        one."""
+
+        binding = self._world_binding()
+        if binding is None:
+            return (404, {"error": _WORLD_NO_BINDING})
+        world_id = str(binding["world_id"])
+        world_store = getattr(self._host, "world_store", None)
+        if world_store is None:
+            return (404, {"error": _WORLD_NO_BINDING})
+        package = self._world_packages.get(world_id)
+        vignettes: dict[str, str | None] = (
+            {}
+            if package is None
+            else {
+                str(member.persona_id): member.vignette
+                for member in package.cast
+            }
+        )
+        bindings_by_actor = self._world_bindings_by_actor(world_id)
+        cast: list[dict[str, Any]] = []
+        for actor, card in self._world_actor_cards(world_id):
+            cast.append(
+                {
+                    "actor_id": str(actor.actor_id),
+                    "persona_id": str(actor.persona_id),
+                    "name": (
+                        str(actor.actor_id)
+                        if card is None or card.name in (None, "")
+                        else card.name
+                    ),
+                    "identity": "" if card is None else card.identity,
+                    "vignette": vignettes.get(str(actor.persona_id)),
+                    "is_current": (
+                        binding["actor_id"] is not None
+                        and str(actor.actor_id) == str(binding["actor_id"])
+                    ),
+                    "letters_count": sum(
+                        self._world_letter_count(conversation_id)
+                        for conversation_id in bindings_by_actor.get(
+                            str(actor.actor_id), []
+                        )
+                    ),
+                }
+            )
+        user = None
+        if package is not None and package.user_character is not None:
+            player = package.user_character
+            user = {
+                "id": player.id,
+                "name": player.name,
+                "anchor": player.anchor,
+                "home": player.home,
+            }
+        residents: list[dict[str, Any]] = (
+            []
+            if package is None
+            else [
+                {
+                    "name": member.name,
+                    "role": member.role,
+                    "vignette": member.vignette,
+                }
+                for member in package.residents
+            ]
+        )
+        return (
+            200,
+            {
+                "world_id": world_id,
+                "world_name": None if package is None else package.name,
+                "ui_language": self._ui_language(),
+                "user_character": user,
+                "cast": cast,
+                "residents": residents,
+            },
+        )
+
+    def world_storylines(self) -> tuple[int, dict[str, Any]]:
+        """The world's open arcs, one read (D-3): the storylines the
+        narrator is still living inside.
+
+        The read is the store's own two-layer semantics
+        (:meth:`elc.world.store.SqliteWorldStore.active_storylines`):
+        a line answers here only when the structure row is ``active``
+        **and** the projection carries no ``CURRENT`` resolved fact —
+        either face retires it, and this face retires nothing. Each row
+        carries its three narrative columns (``line_id`` / ``theme`` /
+        ``resolve_at``) verbatim; the store never evaluates
+        ``resolve_at``, and neither does this face. An empty answer is
+        the honest zero: a world with no open line, or a package whose
+        arcs all closed, renders an empty list — never a placeholder
+        arc.
+
+        The guards and the posture are the read family's own: no
+        binding (or no world leg) is the same **404**, the same
+        sentence, as the inbox's; nothing here writes, flips or
+        evaluates — the prompt's own reader is the same store call."""
+
+        binding = self._world_binding()
+        if binding is None:
+            return (404, {"error": _WORLD_NO_BINDING})
+        world_id = str(binding["world_id"])
+        world_store = getattr(self._host, "world_store", None)
+        if world_store is None:
+            return (404, {"error": _WORLD_NO_BINDING})
+        package = self._world_packages.get(world_id)
+        return (
+            200,
+            {
+                "world_id": world_id,
+                "world_name": None if package is None else package.name,
+                "ui_language": self._ui_language(),
+                "storylines": [
+                    {
+                        "line_id": line.line_id,
+                        "theme": line.theme,
+                        "resolve_at": line.resolve_at,
+                    }
+                    for line in world_store.active_storylines(world_id)
+                ],
             },
         )
 
@@ -8715,6 +8880,19 @@ def _build_server(
                 # resident marked, letter counts through the history
                 # window's own read family. A read face; same 404 guard.
                 self._run_host_write(lambda: face.world_residents())
+            elif self.path == "/api/world/ensemble":
+                # D-3: the world detail screen's roster read — your own
+                # character (user_character, honest None), the bound
+                # cast (card join + vignette + is_current + letter
+                # counts) and the town's narrative residents, one
+                # payload. A read face on the work queue; same 404.
+                self._run_host_write(lambda: face.world_ensemble())
+            elif self.path == "/api/world/storylines":
+                # D-3: the world detail screen's plot read — the open
+                # arcs through the store's own two-layer semantics
+                # (active ∧ no resolved projection fact). Nothing is
+                # evaluated or retired here; same 404 guard.
+                self._run_host_write(lambda: face.world_storylines())
             else:
                 self._send_json(404, {"error": "not found"})
 

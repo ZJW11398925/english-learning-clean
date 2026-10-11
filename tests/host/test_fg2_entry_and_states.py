@@ -112,7 +112,10 @@ def test_the_brand_bar_graces_both_screens(tmp_path: Path) -> None:
     # 各一枚——同基形（案头与档案的纵深，非新空间）。
     # wf-2 曾随迁世界日志屏入列第七枚——WR-5 随迁：屏整体退役回六枚
     # （案头即世界自然发展之地，DEC-OPI-8a4f980b…7）。
-    assert index.count('data-brand-mark="sm"') == 6
+    # D-3 随迁：世界详情屏（#space-world，整页纵深第四屏）入列第七枚
+    # ——同基形（品牌条 + 屏名）；屏本体的在场钉落
+    # tests/host/test_d3_world_detail.py。
+    assert index.count('data-brand-mark="sm"') == 7
     assert index.count('data-brand-mark="lg"') == 1
     # R-1 随迁：温故/抽屉头部走 space-header（.top 基形 + 节名槽）；
     # 旧 sethead 变体与「回客厅」钮退役（缺位钉）

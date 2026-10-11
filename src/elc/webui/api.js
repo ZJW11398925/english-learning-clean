@@ -177,6 +177,28 @@ export function fetchWorldResidents() {
   return getJson("/api/world/residents");
 }
 
+/** 世界全阵容（D-3）：世界名 + 你的角色（user_character，无声明=null）
+ *  + 绑定 cast 名册（含 vignette / is_current / letters_count）+ 镇民
+ *  residents（name/role/vignette）。无绑定世界 404 人话（error 对象由
+ *  调用方判形——世界详情屏四区各自三态，一面对了别面不陪葬）。 */
+export function fetchWorldEnsemble() {
+  return getJson("/api/world/ensemble");
+}
+
+/** 世界剧情线（D-3）：打开中的线逐条（line_id/theme/resolve_at）——
+ *  两层语义由服务端读（active 且无 resolved 投影事实）；空线 = 空
+ *  数组诚实答。无绑定世界 404 人话（error 对象由调用方判形）。 */
+export function fetchWorldStorylines() {
+  return getJson("/api/world/storylines");
+}
+
+/** 世界编年史（D-3）：已揭示事件按故事日分组、新日在前（服务端已按
+ *  界面语言本地化日期与叙述）。读面零翻转——PENDING 不入列。无绑定
+ *  世界 404 人话（error 对象由调用方判形）。 */
+export function fetchWorldLog() {
+  return getJson("/api/world/log");
+}
+
 /** 历史窗口（默认最后 50 轮，已交付的助手输出）。主线-2 起宽度可显式
  *  指定：opts.full 取全文，opts.limit 取最近 n 轮——不带 opts 一字不变。
  *  wr-8（DEC-OPI-c73dbff3…34）：轮载荷可带可选 world 帧（已揭示世界

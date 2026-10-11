@@ -60,6 +60,9 @@ import {
   fetchWorldInbox,
   fetchWorldOverview,
   fetchWorldResidents,
+  fetchWorldEnsemble,
+  fetchWorldStorylines,
+  fetchWorldLog,
   fetchHistory,
   fetchCurrentMoment,
   fetchWord,
@@ -2716,6 +2719,7 @@ const spaces = {
   partner: document.getElementById("space-partner"),
   letters: document.getElementById("space-letters"),
   obs: document.getElementById("space-obs"),
+  world: document.getElementById("space-world"),
   study: document.getElementById("space-study"),
   drawer: document.getElementById("space-drawer"),
 };
@@ -2850,6 +2854,10 @@ function showSpace(name) {
   if (name === "partner" || name === "letters" || name === "obs") {
     document.getElementById("navdock").hidden = true;
   }
+  // D-3：世界详情屏同族让位（纵深第 4 屏，返回钮回案头）——原三屏
+  // 条件行一字不动，世界臂的行内增补独立成句（既有屏的缺位钉与
+  // 在场钉都不动）。
+  if (name === "world") document.getElementById("navdock").hidden = true;
   if (name === "study") showSection("study", DEFAULT_SECTION.study);
   if (name === "drawer") showSection("drawer", DEFAULT_SECTION.drawer);
   window.scrollTo(0, 0);
@@ -3060,20 +3068,42 @@ function worldInboxText() {
 // wf-1 案头世界优先与居民面的双语 chrome 词表（zh 缺省；全页 i18n 登记
 // 不落，此表与 WORLD_INBOX_TEXT 同族——界面 chrome 的唯一双语词表）。
 // 数据永远是端点来的：世界名/居民名/日期/计数都是占位符拼装，表里
-// 只有连接词（「与…通信中」「今日动静」「的居民」「封信」）。文字一律
-// textContent（XSS 面）。
+// 只有连接词（「与…通信中」「今日动静」「的居民」「封信」）。D-3：世界
+// 详情屏的四区 chrome 同走此表（同一世界领域一支词表——世界名入口、
+// 你的角色的住处标签、当前通信标记、剧情线的了结条件、编年史的世界
+// 自述与两个诚实空句）。文字一律 textContent（XSS 面）。
 const PARLOR_WORLD_TEXT = {
   zh: {
     corresponding: "与 {name} 通信中",
     todayCount: "今日动静 · {n} 则",
     residentsOf: "{world} 的居民",
     letters: "{n} 封信",
+    worldDetail: "看看这个世界 →",
+    worldDetailLabel: "世界详情——看看{world}",
+    current: "当前通信",
+    home: "住处",
+    resolve: "了结条件 · {text}",
+    worldVoice: "世界",
+    noPlayer: "这世界还没写下你的角色。",
+    noPeople: "这镇上还没有写下可看的人。",
+    noLines: "眼下没有打开的剧情线。",
+    noChronicle: "编年史还没有翻开过的一页。",
   },
   en: {
     corresponding: "In correspondence with {name}",
     todayCount: "Today · {n} notes",
     residentsOf: "Residents of {world}",
     letters: "{n} letters",
+    worldDetail: "See this world →",
+    worldDetailLabel: "World detail — see {world}",
+    current: "In correspondence now",
+    home: "Home",
+    resolve: "Resolves when · {text}",
+    worldVoice: "The world",
+    noPlayer: "This world has not written your character yet.",
+    noPeople: "No one is written into this town yet.",
+    noLines: "No storyline is open right now.",
+    noChronicle: "The chronicle has nothing revealed yet.",
   },
 };
 
@@ -3853,6 +3883,10 @@ document.addEventListener("keydown", (event) => {
   } else if (current === "obs") {
     showSpace("study");
     showSection("study", "progress");
+  } else if (current === "world") {
+    // D-3：世界详情屏是第四纵深——Esc 与返回钮同效（回案头；原两臂
+    // 一字不动，世界臂为行内增补）。
+    showSpace("parlor");
   }
 });
 
@@ -4259,6 +4293,285 @@ function closePartnerDossier() {
 // 返回钮：档案页的唯一回途（导航条在本页让位）。
 document.getElementById("partner-back").addEventListener(
   "click", closePartnerDossier);
+
+// ── D-3 世界详情屏（#space-world，整页纵深第四屏）────────────────────
+// 你看见自己住在镇上（IMPLEMENTATION_PLAN §19 前端面）。三读到四区，
+// 各自三态（#14 state-banner——一面对了别面不陪葬；重试只重拉本区）：
+//   ① 你的角色 + ② 世界的人 ← /api/world/ensemble
+//   ③ 剧情线               ← /api/world/storylines
+//   ④ 编年史               ← /api/world/log（服务端已按界面语言本地化
+//                            日期与叙述；读面零翻转——PENDING 不入列）
+// 404（无绑定世界）原句上屏：服务端的人话，不发明任何名字；读失败同法
+// 一行人话。入口两处（案头主从条世界名 + 沓顶 caption 行内链）；返回
+// 钮与 Esc 回案头。文字一律 textContent（XSS 纪律）；世界名/人名/散文
+// 全端点来（webui 零字面——wf-1 律）。
+
+// D-3 在飞守卫：读在飞时人已离开本屏（返回钮 / Esc / 任何换空间路径）
+// ⇒ 载荷落地即弃权——不往看不见的页上写。判据 = 屏自身的 [hidden] 态
+// （cs-2R INFO-1 的同一种守卫；比闭包标志多覆盖 Esc 与程序化换空间两
+// 条路径——本屏没有自己的标志可同步）。
+function worldDetailGone() {
+  return spaces.world.hidden;
+}
+
+// 三读各自的「失败即值」（null = 读失败 / 无绑定 404——区级三态由渲染
+// 臂判形）。一读一函数：首载、per-区重试同走它们（fetch 调用点在本
+// 文件可见——导入覆盖钉的同一形）。
+async function readWorldEnsemble() {
+  try {
+    return await fetchWorldEnsemble();
+  } catch {
+    return null;
+  }
+}
+
+async function readWorldStorylines() {
+  try {
+    return await fetchWorldStorylines();
+  } catch {
+    return null;
+  }
+}
+
+async function readWorldLog() {
+  try {
+    return await fetchWorldLog();
+  } catch {
+    return null;
+  }
+}
+
+function worldZoneError(box, payload, retry) {
+  const text = payload && typeof payload.error === "string"
+    ? payload.error
+    : "这一区没取到。";
+  box.appendChild(stateBanner("error", { text: text, retry: retry }));
+}
+
+async function worldZoneRetry(name) {
+  if (name === "lines") {
+    const storylines = await readWorldStorylines();
+    if (worldDetailGone()) return;
+    renderWorldLines(storylines);
+    return;
+  }
+  if (name === "chronicle") {
+    const log = await readWorldLog();
+    if (worldDetailGone()) return;
+    renderWorldChronicle(log);
+    return;
+  }
+  // ① 与 ② 共用同一份 ensemble 载荷——重试同拉一次、同刷两区。
+  const ensemble = await readWorldEnsemble();
+  if (worldDetailGone()) return;
+  renderWorldYou(ensemble);
+  renderWorldPeople(ensemble);
+}
+
+async function openWorldDetail() {
+  showSpace("world");
+  diagBox("world-name").textContent = "";
+  for (const id of [
+    "world-you",
+    "world-people",
+    "world-lines",
+    "world-chronicle",
+  ]) {
+    const box = diagBox(id);
+    box.textContent = "";
+    box.appendChild(stateBanner("loading"));
+  }
+  const [ensemble, storylines, log] = await Promise.all([
+    readWorldEnsemble(),
+    readWorldStorylines(),
+    readWorldLog(),
+  ]);
+  if (worldDetailGone()) return;   // 人已回案头——不往看不见的页上写
+  renderWorldDetail(ensemble, storylines, log);
+}
+
+function renderWorldDetail(ensemble, storylines, log) {
+  if (ensemble && !ensemble.error && ensemble.world_name) {
+    // 屏头静态「世界」是无 JS 兜底；真名在正文首行（端点驱动）。
+    diagBox("world-name").textContent = String(ensemble.world_name);
+  }
+  renderWorldYou(ensemble);
+  renderWorldPeople(ensemble);
+  renderWorldLines(storylines);
+  renderWorldChronicle(log);
+}
+
+function renderWorldYou(ensemble) {
+  const box = diagBox("world-you");
+  box.textContent = "";
+  if (!ensemble || ensemble.error) {
+    worldZoneError(box, ensemble, () => worldZoneRetry("you"));
+    return;
+  }
+  const T = parlorWorldText(ensemble.ui_language);
+  const who = ensemble.user_character;
+  if (!who) {
+    // 包无 user_character 节：本区诚实缺席——一句人话，不渲染空卡。
+    box.appendChild(stateBanner("empty", { text: T.noPlayer }));
+    return;
+  }
+  const name = document.createElement("p");
+  name.className = "world-you-name";
+  name.textContent = String(who.name ?? "");
+  box.appendChild(name);
+  const anchor = document.createElement("p");
+  anchor.className = "world-you-anchor";
+  anchor.textContent = String(who.anchor ?? "");
+  box.appendChild(anchor);
+  const home = String(who.home ?? "");
+  if (home) {
+    const line = document.createElement("p");
+    line.className = "world-you-home";
+    line.textContent = T.home + " · " + home;
+    box.appendChild(line);
+  }
+}
+
+function worldPersonRow(fields) {
+  const row = document.createElement("div");
+  row.className = "world-person";
+  const name = document.createElement("p");
+  name.className = "world-person-name";
+  name.appendChild(document.createTextNode(String(fields.name ?? "")));
+  if (fields.note) {
+    const note = document.createElement("span");
+    note.className = "world-person-note";
+    note.textContent = String(fields.note);
+    name.appendChild(note);
+  }
+  row.appendChild(name);
+  if (fields.role) {
+    const role = document.createElement("p");
+    role.className = "world-person-role";
+    role.textContent = String(fields.role);
+    row.appendChild(role);
+  }
+  if (fields.vignette) {
+    const vignette = document.createElement("p");
+    vignette.className = "world-person-vignette";
+    vignette.textContent = String(fields.vignette);
+    row.appendChild(vignette);
+  }
+  return row;
+}
+
+function renderWorldPeople(ensemble) {
+  const box = diagBox("world-people");
+  box.textContent = "";
+  if (!ensemble || ensemble.error) {
+    worldZoneError(box, ensemble, () => worldZoneRetry("people"));
+    return;
+  }
+  const T = parlorWorldText(ensemble.ui_language);
+  const cast = Array.isArray(ensemble.cast) ? ensemble.cast : [];
+  const residents = Array.isArray(ensemble.residents)
+    ? ensemble.residents : [];
+  if (!cast.length && !residents.length) {
+    box.appendChild(stateBanner("empty", { text: T.noPeople }));
+    return;
+  }
+  // 名册 = 绑定 cast（含当前通信与信数——诚实零）在前，镇民在后：
+  // 与世界名册自身的服务序同族（builtin 先，镇民补全）。
+  for (const row of cast) {
+    const note = [];
+    if (row.is_current) note.push(T.current);
+    note.push(T.letters.replace(
+      "{n}", String(Number(row.letters_count) || 0)));
+    box.appendChild(worldPersonRow({
+      name: row.name,
+      role: String(row.identity ?? ""),
+      vignette: row.vignette,
+      note: note.join(" · "),
+    }));
+  }
+  for (const row of residents) {
+    box.appendChild(worldPersonRow({
+      name: row.name,
+      role: String(row.role ?? ""),
+      vignette: row.vignette,
+      note: "",
+    }));
+  }
+}
+
+function renderWorldLines(storylines) {
+  const box = diagBox("world-lines");
+  box.textContent = "";
+  if (!storylines || storylines.error) {
+    worldZoneError(box, storylines, () => worldZoneRetry("lines"));
+    return;
+  }
+  const T = parlorWorldText(storylines.ui_language);
+  const lines = Array.isArray(storylines.storylines)
+    ? storylines.storylines : [];
+  if (!lines.length) {
+    // 空线 = 空数组诚实答（两层语义都退役了）——一句人话，不造线。
+    box.appendChild(stateBanner("empty", { text: T.noLines }));
+    return;
+  }
+  for (const line of lines) {
+    const item = document.createElement("div");
+    item.className = "world-line";
+    const theme = document.createElement("p");
+    theme.className = "world-line-theme";
+    theme.textContent = String(line.theme ?? "");
+    item.appendChild(theme);
+    const resolve = document.createElement("p");
+    resolve.className = "world-line-resolve";
+    resolve.textContent = T.resolve.replace(
+      "{text}", String(line.resolve_at ?? ""));
+    item.appendChild(resolve);
+    box.appendChild(item);
+  }
+}
+
+function renderWorldChronicle(log) {
+  const box = diagBox("world-chronicle");
+  box.textContent = "";
+  if (!log || log.error) {
+    worldZoneError(box, log, () => worldZoneRetry("chronicle"));
+    return;
+  }
+  const T = parlorWorldText(log.ui_language);
+  const days = Array.isArray(log.days) ? log.days : [];
+  if (!days.length) {
+    box.appendChild(stateBanner("empty", { text: T.noChronicle }));
+    return;
+  }
+  for (const day of days) {
+    const group = document.createElement("div");
+    group.className = "world-day";
+    const date = day.date_localized;
+    if (date) {
+      const head = document.createElement("p");
+      head.className = "world-day-date";
+      head.textContent = String(date);
+      group.appendChild(head);
+    }
+    for (const item of Array.isArray(day.items) ? day.items : []) {
+      const note = document.createElement("p");
+      note.className = "world-day-note";
+      note.textContent = String(item.narration ?? "");
+      group.appendChild(note);
+      const signature = document.createElement("p");
+      signature.className = "world-day-signature";
+      signature.textContent = item.signature
+        ? String(item.signature)
+        : T.worldVoice;   // 世界自述（signature null）的诚实读法
+      group.appendChild(signature);
+    }
+    box.appendChild(group);
+  }
+}
+
+// 返回钮：世界详情屏的唯一回途（导航条在本屏让位）。
+document.getElementById("world-back").addEventListener(
+  "click", () => showSpace("parlor"));
 
 // W-4: the teaching card must not wait for the model. The moment row is
 // durable the instant the turn opens it (OPENING), so the page polls the
@@ -4949,6 +5262,9 @@ function restoreNavdock() {
   const current = Object.keys(spaces).find((key) => !spaces[key].hidden);
   navdock.hidden = current === "onboard" || current === "partner" ||
     current === "letters" || current === "obs";
+  // D-3：世界详情屏同属让位族（与 showSpace 同一账——纵深 +1；原
+  // 三屏赋值行一字不动）。
+  if (current === "world") navdock.hidden = true;
 }
 
 // Esc 逐层退栈（⑩ 10.4）：浮层在场 → 归浮层（wordCardOpen 裁决，它的
@@ -5652,9 +5968,57 @@ function envelopeDrift(stampKey) {
 // 世界自述（resident 缺席）或无名册时留空——不发明称呼。
 let mastheadCorrespondent = "";
 
+// D-3 入口①：世界臂在场时 .who（世界名）自成一道门——点它进世界详情
+// 屏；副行（故事日 · 居民位）与其余块面仍走 whoBlock 的既有接线（信封
+// 沓）。两臂各自刷新手感位：世界臂把可点角色与 aria 落到 .who 与副行
+// （块本体让位——嵌套可点元素不合法，整块的「信封沓」角色由副行承
+// 担，副行在世界臂恒非空：故事日由 package 日历派生）；回落臂（世界
+// 缺席/读失败）把整块还给 mc-1 的单一语义（.who 复位普通文本，块回
+// 「信封沓——挑一位笔友」）。判据由本函数写入、.who 的监听读取。
+let mastheadWorldArmed = false;
+
+function markMastheadWorldArm(armed, worldLabel) {
+  mastheadWorldArmed = armed;
+  const block = document.querySelector("#space-parlor .top > div");
+  const who = document.querySelector("#space-parlor .who");
+  const sub = document.querySelector("#space-parlor .who-sub");
+  if (armed) {
+    if (who) {
+      who.setAttribute("role", "button");
+      who.setAttribute("tabindex", "0");
+      who.setAttribute("aria-label", worldLabel || "");
+    }
+    if (sub) {
+      sub.setAttribute("role", "button");
+      sub.setAttribute("tabindex", "0");
+    }
+    if (block) {
+      block.removeAttribute("role");
+      block.removeAttribute("tabindex");
+      block.removeAttribute("aria-label");
+    }
+    return;
+  }
+  if (who) {
+    who.removeAttribute("role");
+    who.removeAttribute("tabindex");
+    who.removeAttribute("aria-label");
+  }
+  if (sub) {
+    sub.removeAttribute("role");
+    sub.removeAttribute("tabindex");
+  }
+  if (block) {
+    block.setAttribute("role", "button");
+    block.setAttribute("tabindex", "0");
+    block.setAttribute("aria-label", "信封沓——挑一位笔友");
+  }
+}
+
 function renderMasthead(roster) {
   const who = document.querySelector("#space-parlor .who");
   if (!who) return;
+  markMastheadWorldArm(false);
   const items = (roster && roster.characters) || [];
   const current = items.find(
     (item) => item.character_id === (roster && roster.current_character_id));
@@ -5665,7 +6029,8 @@ function renderMasthead(roster) {
   setTodayLine(null);
 }
 
-// 成功臂：世界名进 .who；副行 = 故事日 + 居民位（date_localized 服务
+// 成功臂：世界名进 .who（D-3 起它同时是进世界详情屏的门——见
+// markMastheadWorldArm）；副行 = 故事日 + 居民位（date_localized 服务
 // 端已本地化直显；「与…通信中」chrome 按 overview 的 ui_language 走
 // 双语词表）；今日动静行由 overview.today 驱动。
 function renderWorldMasthead(overview) {
@@ -5686,6 +6051,8 @@ function renderWorldMasthead(overview) {
     }
     sub.textContent = parts.join(" · ");
   }
+  markMastheadWorldArm(
+    true, T.worldDetailLabel.replace("{world}", who.textContent || ""));
   setTodayLine(overview.today, overview.ui_language);
 }
 
@@ -5893,6 +6260,19 @@ async function buildEnvelopeResidentsContext(panel, stack) {
     const caption = document.createElement("p");
     caption.className = "envsel-caption";
     caption.textContent = T.residentsOf.replace("{world}", worldName);
+    // D-3 入口②：沓顶 caption 的行内链——从沓可跳到世界详情屏（沓本体
+    // 结构零改：链是 caption 行内的增补件；收沓与进屏同批，回程走屏的
+    // 返回钮/Esc）。
+    const worldLink = document.createElement("button");
+    worldLink.type = "button";
+    worldLink.className = "btn btn--faint envsel-world-link";
+    worldLink.textContent = T.worldDetail;
+    worldLink.addEventListener("click", (event) => {
+      event.stopPropagation();
+      closeEnvelopeSelector();
+      openWorldDetail();
+    });
+    caption.appendChild(worldLink);
     stack.parentNode.insertBefore(caption, stack);
   }
   const roster = (charactersCache && charactersCache.characters) || [];
@@ -6993,6 +7373,28 @@ if (whoBlock) {
         return;
       }
       openEnvelopeSelector();
+    }
+  });
+}
+
+// D-3 入口①（案头主从条世界名）：世界臂在场时（markMastheadWorldArm
+// 的判据），点/敲 .who 进世界详情屏——本监听先于块的监听截住事件
+// （stopPropagation），块的回信封沓语义一字不动；回落臂直接让路（整块
+// 仍是信封沓的单一语义）。世界臂下 aria 角色由 markMastheadWorldArm
+// 落在 .who 与副行上（嵌套可点元素不合法——块让位）。
+const whoName = document.querySelector("#space-parlor .who");
+if (whoName) {
+  whoName.addEventListener("click", (event) => {
+    if (!mastheadWorldArmed) return;
+    event.stopPropagation();
+    openWorldDetail();
+  });
+  whoName.addEventListener("keydown", (event) => {
+    if (!mastheadWorldArmed) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      event.stopPropagation();
+      openWorldDetail();
     }
   });
 }
