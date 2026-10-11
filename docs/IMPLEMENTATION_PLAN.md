@@ -758,3 +758,38 @@ massive content expansion
 **前端面**（D-3 的前置）：世界详情页（六角色名册 + 你的角色卡 + 线 + 编年史）——你看见自己住在镇上。
 
 **验收**：用户 dogfood 报告的四缺口（①用户角色零存在 ②叙事密度碎 ③前端卡逻辑 ④六角色不可见）中，①④由本刀根治；②③由后续刀（D-2 密度校准 / D-3 前端重构）根治。
+
+---
+
+## 20. Narrative V3 — 范式转折后的实现程序（2026-10-12，用户主导）
+
+**依据**：范式转折交接（用户，2026-10-12）+ 设计篇 `docs/design/2026-10-12-narrative-v3-paradigm-shift.md`（同一套设计的补充收敛篇：职责分离 / Plan≠Canon / story_tick / Passage≠Event / 记忆六分 / durable 用户角色 / 映射审计 / slicing）。living-world-spec v3 已把 §2/§4 等旧条款降 legacy；cognition 篇 v1.3 已重挂记忆域。
+
+**产品核心**：一个持续存在、能够自己发展剧情的小说世界；用户本人是其中一个真实角色，章内只控制自己的角色（User Gate），章间有限参与故事方向（作者层）。**信件只是 UI/narrative presentation element。**
+
+**原则**：
+
+1. **并行新链**——不把现 `run_generated_step()` 改成新系统；旧生产链（letter-triggered run / NOTICE·RESPONSE / reveal 队列 / 每步 direction）保留、全绿，直到新纵向切片完整后再显式裁决退役。
+2. **Plan ≠ Canon**（物理或语义分离）：Director 规划过而未发生的内容不得进入历史；Settlement 是唯一沉淀边界。
+3. **USER INTENT ≠ WORLD FACT**：用户输入一律经 Action Resolver 裁定后才可能成为事实。
+4. **单一时间刻度**：新链自始 story_tick；世界历法属 World Bible；wall clock 仅系统 bookkeeping；不允许三套时间混成用户时间线。
+5. **复用优先**：world/template_world_id/world_actor/character_card/voice/world_event/world_state_fact/world_storyline/participants/C1 认知视图/persona 生成基础/教学系统/用户配置与安全边界——全部保留复用（设计篇 §9.1）。
+6. **MVP 规模纪律**：先只做一个世界、一名 AI 主角、一名用户角色、一章；**纵向切片真正「好玩」以前不扩大规模**（不做多世界 UI / 多主角 / 复杂遗忘 / 学习桥 / 多模板）。
+
+**第一阶段 slicing（刀序，开工前逐刀走本仓四查+VAL+TASK 流程）**：
+
+| 刀 | 内容 | 门/兑现面 |
+|---|---|---|
+| V3-0 | 设计收口（设计篇 + 三份文档修订同刀）+ 数据模型最小集设计 | 总控复核通过才开 V3-1 |
+| V3-1 | story_tick / World Calendar | 同世界单调、可比较；显示由 Bible 决定 |
+| V3-2 | World Bible 面（`world_bible_revision` + 读取 + 包升格） | 版本化、可引用 |
+| V3-3 | player character durable（新表 + 创建面 + participant namespace） | 用户角色有行有状态；旧 `world_actor` 不动 |
+| V3-4 | Director + `world_chapter(_plan)`（Blueprint 严格 schema；Plan≠Canon 落表） | 计划不上屏入史 |
+| V3-5 | Scene + Dossier + POV Writer + `narrative_passage` | 一场一 POV；秘密不泄漏钉 |
+| V3-6 | User Gate + `user_action` + Action Resolver | intent≠fact；replan_scope 三值可测 |
+| V3-7 | Chapter Settlement + chapter summary/narrative memory + actor memory/belief 最小面 | 章末强边界；下一章只读摘要面 |
+| V3-8 | 纵向切片联调（Gold Scenario 端到端）+ 最小阅读面 | **「好玩」用户验收门**；通过后才议 UI 切换与旧链退役 |
+
+**Gold Scenario（固定）**：帝国历 105 年 10 月 1 日——主角莉亚；用户角色远房表弟；父亲凌晨赴帝都、母亲上午从乡下带用户回来；初见；至少一次自由 User Gate；ActionResolver 裁定；按用户选择继续；第一章结束、Settlement、生成第二章 Blueprint。验收链：创建世界→创建角色→Chapter Blueprint→Scene Dossier→POV prose→User Gate→User Action→Action Resolver→必要时 Replan→继续正文→Chapter Settlement→Chapter 2 Blueprint。
+
+**与既有 Phase 的关系**：Phase 0–10 runtime 面（conversation/persona/learning/teaching/runtime/……）全部不动；Narrative V3 是在其上新增的叙事域程序。真实 automatic-teaching rollout 维持 HOLD（SessionBudget 三分与内容补课为开闸前置）不变；P17 学习桥硬门转由叙事域的咬合面承接（触发条件改判须显式留痕）。

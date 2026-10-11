@@ -1,6 +1,7 @@
 # 认知与叙事质量 · 设计补充篇 v1.1（已裁入典）
 
 > **性质**：`living-world-spec.md`（v2.1）的补充收敛篇——回答第八击四问：角色认知模型、小说水平缺件、剧情生成质量、语言去 AI 味。**v1.1（2026-10-08）：六裁断点经用户授权按建议值定谳入典，正文生效。**
+> **v1.3（2026-10-12，Narrative V3 范式转折）：记忆六分重挂（温度→retrieval policy）、Actor Memory/Belief 独立成域、新增叙事限知与 POV 纪律、叙事记忆域——见文末「v1.3 修订」节**（依据：`2026-10-12-narrative-v3-paradigm-shift.md`）。
 > **借鉴声明**：本篇站在现成资产上收敛，不造轮子——①`D:\小说学习\小说ai行文规范`（四本网文 598 万字语料反向分析的行文工艺，用户提供）；②SillyTavern 开放生态（世界书 lorebook 机制 / 角色卡 v3 规格）；③Dramatron（层级戏剧生成）；④RecurrentGPT（长篇滚动记忆）。各域标注借鉴源。
 > 日期：2026-10-08
 
@@ -155,3 +156,31 @@
 
 
 lr 收口（在飞+呈现）→ **C1 认知视图**（participants 列 + 按角色过滤——迁移 0027）→ **C2 剧情线**（表 + 叙事者咬合 + 走向配比——迁移 0028）→ **C3 声音库与素材深化**（包 **v6**：voice 节 + Berrymoor 六角色语样双语——**v5 已由 C2 `initial_storylines` 占用**〔DEC-OPI-b290799a…45〕，C3 按图施工须用 v6）→ **C4 工艺护栏注入**（叙事者三铁律+负例——纯 prompt 刀小）→ 多世界 v1 → 记忆预算（按需）。
+
+---
+
+## v1.3 修订（2026-10-12，Narrative V3 范式转折）
+
+**依据**：范式转折设计篇 `2026-10-12-narrative-v3-paradigm-shift.md`（用户交接 + 总控收敛）。**本节的修订以该篇为准；与本节冲突的旧表述按 legacy 读。**
+
+### 域一（认知模型）重挂
+
+- 三源结构（公共 / 亲历 / 听闻）**保留**，但从「记忆温度的视角描述」重挂为 **Actor Memory / Belief 独立域**：每个 actor 的经历、听闻、相信、误解、推断——有视角、可失真、可错误（失真是剧情素材的定性不变）。
+- **记忆温度（滚烫/温/冷）降级为 retrieval policy**（未来检索策略），不再是记忆类型本身；「遗忘」同理（检索降权，非删除）。
+- 用户层（v1.2 款）**保留升格**：用户角色成为 durable world entity 后，「她记得你」从 participants 过滤升级为 actor memory 的读面；C1 认知视图（`host.py` 世界端口，公共 ∪ 亲历 ∪ 用户层）是其现役读面基础。
+- 台账 **P1 传闻失真**语义随新域重挂（落点刀改为「Actor Memory 域落地刀」），其余触发条件不变。
+
+### 新增域五：叙事限知与 POV 纪律（承设计篇 §2.3/§2.4）
+
+- 一场一个主 POV；禁止无控制 head hopping；只有明确 scene transition 才可切主视角；
+- Director 全知 ≠ POV 限知：Director 知道的秘密**不自动泄漏**给 POV Writer；Scene Dossier 显式携带「可揭示/必须隐藏」两面；
+- 认知视图（C1）是 POV 限知的数据基础。
+
+### 新增域六：叙事记忆（Narrative Memory）
+
+- 结构半 = 剧情线（域二全部保留）+ 伏笔队列（hooks）+ 开放问题 + 未完成承诺；压缩半 = 章节总结（Chapter Settlement 产出）；
+- 下一章 Director **只读摘要面**（World Bible / Current State / Chapter Summaries / Active Storylines / relevant Actor Memories），不把全文重新塞入上下文。
+
+### 域三 / 域四
+
+**全部保留**（voice 库、三铁律与反 AI 味负例注入）；注入面由「叙事者 prompt」迁移为「POV Writer prompt」——注入纪律（无条件、段位、字节钉）随迁。

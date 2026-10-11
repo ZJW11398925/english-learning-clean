@@ -62,3 +62,16 @@
 仓库真相以 CI 重放读数为准（见 behavioral_baselines/runtime/REPO_RUN_NOTES.md
 与 tests/behavioral/test_local_runtime_reference.py）。
 
+### v1.2.0 — 2026-10-12 范式转折（Narrative V3；授权：用户交接 2026-10-12）
+
+状态：工程基线（Phase 0–10 runtime 面）不重写；新增叙事域程序 **Narrative V3**，现役世界链（letter-triggered `world_run` / NOTICE·RESPONSE 停点 / reveal 推进 / 每步 direction / WorldNarrator 单体）降 **legacy 保留**（不删、测试不拆、继续全绿；退役须待新纵向切片完整后显式裁决）。
+
+内容（四份文档同刀）：
+
+1. 新增 `docs/design/2026-10-12-narrative-v3-paradigm-shift.md`——范式声明（新核心循环 + 旧理解七条废止/降级）+ 职责分离（World Director / Chapter Blueprint / Scene Planner·Dossier / POV Writer / User Gate / Action Resolver / Chapter Settlement）+ Plan≠Canon + story_tick 时间模型 + Passage≠Event + 记忆六分（温度降为 retrieval policy）+ durable 用户角色与 WorldActorProfile + Narrative Domain 实体清单 + 并行新链迁移原则 + 第一阶段 slicing（V3-0..V3-8；Gold Scenario 帝国历 105 年 10 月 1 日）+ 附录 A 旧→新映射审计 + 附录 B 十问自检。
+2. `docs/design/2026-10-05-living-world-spec.md` 升 v3——头部范式转折节（信件降为 UI/narrative presentation element；§2/§4 等旧条款降 legacy）+ v3 变更清单；逐节处置见新篇附录 A。
+3. `docs/design/2026-10-08-cognition-and-narrative-quality.md` 升 v1.3——域一重挂（Actor Memory/Belief 独立域；温度→retrieval policy；台账 P1 落点改判）；新增域五（叙事限知与 POV 纪律）与域六（叙事记忆）；域三/域四保留、注入面迁 POV Writer。
+4. `docs/IMPLEMENTATION_PLAN.md` §20——Narrative V3 程序（原则六条 / 第一阶段 slicing 表 / Gold Scenario / MVP 规模纪律 / 与既有 Phase 的关系：Phase 0–10 不动，真实 rollout HOLD 不变）。
+
+不变：教学系统、用户配置与安全边界、persona 生成基础、Local V1 运行时纪律、Golden Scenario Baseline V1（工程回归门）与全部 behavioral baselines 继续有效。`Explicitly Deferred` 的 multi-character Scene Runtime 指「完整多角色场景运行时」——Narrative V3 MVP 仍为一 AI 主角 + 一用户角色，该条维持。
+
