@@ -92,3 +92,18 @@
 
 授权：外评（用户转呈，2026-10-12）「PASS WITH DESIGN CORRECTION」；DMCP 决策 `DEC-OPI-bab4da9f-…9`。
 
+### v1.3.0 — 2026-10-12 V3-1 实现合同（design-first；授权：V3-0R 复审通过 + 用户批准进入 V3-1）
+
+状态：**Narrative V3 产品范式与高层架构正式冻结**；V3-1 以 design-first 开工——实现合同先写入四份 canonical 实现文档，**再**设计 migration（0029+）与 V3-1 代码（不得边写表边反推 authority）。
+
+内容（四份文档同刀；语义冻结，具体 DDL 留待 V3-1 migration 设计）：
+
+1. `DOMAIN_MODEL.md` §20（并 §1/§2 增行）—— Narrative（World）Domain 升为第一层；authority 明细表；**六条硬边界**（Resolver 唯一裁定权 / V3-5 最小 commit 不依赖 V3-7 表 / 两级提交语义 / 生命周期 / story_tick 粒度与写权 / 模板≠实例 Bible + Reader Exposure 只冻结本体）；不变量 N-INV-001..008。
+2. `STATE_MACHINES.md` §21–§27 —— Chapter（PLANNED/ACTIVE/SETTLING/CLOSED）、Scene（PLANNED/ACTIVE/COMMITTED/CLOSED/DISCARDED；**有段落即不可取消**）、User Gate（OPEN/ANSWERED/RESOLVING/COMMITTED/CLOSED；一次 submission、无取消）、Plan Revision（PROPOSED/ADOPTED/SUPERSEDED/REJECTED；append-only 版本化）、**两级提交的原子组与崩溃重试**、story_tick 规则（MVP 1 tick = 1 分钟；actual 只在提交事务）、非法转移清单。
+3. `DATA_MODEL.md` §26.2 —— V3 实体语义合同（`world_bible_revision` / `world_player_character` / `world_actor_profile` / `world_chapter(_plan)` / `world_scene(_dossier)` / `narrative_passage` / `user_gate` / `user_action` / actor memory·belief / `chapter_settlement` / `reader_exposure`）、时间字段律、**V3-5 最小读路**（`world_event`+participants+C1 认知视图）、幂等键集、可重建投影。
+4. `RUNTIME_ARCHITECTURE.md` §27–§30 —— V3 管线（Director→Blueprint→Scene/Dossier→Writer→Gate→Resolver→两级 commit→Settlement）、**NCP-1..NCP-4 提交点与崩溃窗口**、V3 recovery 扫描面、不变量 N-R-INV-001..008。
+
+V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时间单调、状态机合法、两个 commit 原子边界成立、崩溃后不重复用户行为裁定、旧 Narrative V2 链继续全绿。
+
+授权：用户（2026-10-12）——V3-0R 复审通过、范式冻结、批准进入 V3-1（design-first）；DMCP 决策 `DEC-OPI-bab4da9f-…11`。
+

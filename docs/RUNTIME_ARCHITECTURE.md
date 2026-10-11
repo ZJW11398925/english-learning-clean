@@ -827,3 +827,121 @@ R-INV-016 service 不宣称知道人类视觉注意力；Exposure 有 certainty�
 R-INV-017 external execution 可重复，canonical side effect 不重复。
 R-INV-018 same-turn second DecisionCycle 不重复消费已提交 analysis。
 ```
+
+---
+
+## 27. Narrative V3 Runtime Pipeline（V3-1 实现合同）
+
+> 依据：`docs/design/2026-10-12-narrative-v3-paradigm-shift.md`（v3.1 / V3-0R）+ `DOMAIN_MODEL.md §20` + `STATE_MACHINES.md §21–§27`。旧 turn pipeline（§4）与 Narrative V2 链（letter/run/reveal）为 legacy，继续全绿；V3 管线并行新增。
+
+```text
+章内循环（每章）：
+  Director（读 Bible/State/Summaries/Storylines/relevant memories）
+    → Chapter Blueprint（plan_revision ADOPTED；只写计划面）
+  → Scene Planner：Dossier（planned ticks；POV；revealable / must_hide）
+  → POV Writer：正文段（只写已规划且规则允许之事）
+      → [遇到用户意志点] User Gate OPEN（故事停止）
+            → 用户提交（ANSWERED；submission durable）
+            → Action Resolver（事务外裁定）→ ACTION OUTCOME COMMIT
+            → replan_scope 非 NONE → Plan Revision（SCENE/CHAPTER 级）
+      → SEGMENT COMMIT（每段：passage + event + state + tick〔+ memory V3-7〕）
+  → 场内段序循环；scene exit 达成 → SCENE COMMIT（场关闭）
+章末：
+  → CHAPTER SETTLEMENT（压缩 / 收束：summary / 线 / hooks / 显著性；不新增事实）
+  → 下一章 Director 输入包（Bible + Current State + Chapter Summaries + Active Storylines + relevant memories）
+```
+
+边界（与 DOMAIN_MODEL §20.3 同源）：
+
+- **Resolver 唯一裁定权**：outcome 先落（ACTION OUTCOME COMMIT）；Writer 只做文学化呈现（passage 的 `outcome_ref`），不得重复裁定或重复写同一 event/effects。
+- Writer 拥有的只有**随后新产生的非用户事实**（经规划与规则允许），随 SEGMENT COMMIT 落地。
+- Plan 面（Blueprint/Dossier）与 Canon 面（passage/event/state/memory）**类型隔离**；读 canon 只见已 commit 的内容。
+
+## 28. Narrative V3 Commit Points（NCP）
+
+与 legacy CP0–CP4 并列，V3 管线使用自己的提交点（物理可同库，authority 不合并）：
+
+### NCP-1 — Submission durable（用户提交）
+
+```text
+user_gate: OPEN → ANSWERED（submission_id 落定）
+```
+在裁定（provider 调用）之前必须成功；此点之后重复到达按 `(gate_id, submission_id)` 去重。
+
+### NCP-2 — Action Outcome Commit
+
+原子组（一个短事务）：
+
+```text
+user_action（终态：interpretation / outcome / actual_action / consequences）
+world_event（用户行为事实；participants 含用户角色）
+world_state_fact 结算（state_effects）
+story_tick actual 推进
+replan 记录（NONE | SCENE | CHAPTER）
+（V3-7 起）actor memory / belief 增量
+```
+
+### NCP-3 — Segment Commit
+
+原子组（一个短事务）：
+
+```text
+narrative_passage（不可变）
+world_event（本段非用户事实）
+world_state_fact 结算
+story_tick actual 推进
+reader_exposure 记录（MVP：呈现即暴露，与 commit 同批）
+（V3-7 起）actor memory / belief 增量
+```
+
+### NCP-4 — Chapter Settlement
+
+```text
+chapter_settlement（summary / storyline updates / hooks / salience）
+chapter: SETTLING → CLOSED
+```
+
+**不是**事实落地边界——只压缩 / 收束已 commit 内容（N-INV-004）。
+
+崩溃窗口与恢复：
+
+```text
+NCP-1 后崩溃      → recovery 以同一 submission_id 重新裁定（唯一终态）
+NCP-2 中崩溃      → 事务全或无；重启后从 gate 的 ANSWERED 重放（幂等）
+NCP-2 后崩溃      → 重放 = no-op；呈现层从 durable 状态重读
+NCP-3 前崩溃      → 该段未发生；重新生成该段（只提交一次）
+NCP-3 中崩溃      → 回到「最后已提交段」续跑
+NCP-3 后崩溃      → 同 segment_key 重放 = no-op
+NCP-4 中崩溃      → 重跑 Settlement（同章 summary 只落一版）
+```
+
+## 29. Narrative V3 Recovery
+
+Startup / opportunistic recovery 扫描（在 legacy 面之外新增）：
+
+```text
+user_gate（ANSWERED / RESOLVING 未 COMMITTED）
+user_action（RESOLVING 未 COMMITTED）
+world_scene（ACTIVE 未 COMMITTED）
+world_chapter（ACTIVE / SETTLING）
+```
+
+规则：
+
+- 只恢复未完成动作；不重跑已 committed 内容。
+- 不重复用户行为裁定（N-INV-002）：submission 幂等键是恢复锚点。
+- 未 commit 的正文草案不是事实——恢复时可按 dossier 重新生成该段。
+- 旧链 recovery（§22/§23）不受影响；两套恢复面互不写对方的行。
+
+## 30. Narrative V3 Runtime Invariants
+
+```text
+N-R-INV-001 用户行为裁定唯一（Resolver）；恢复不产生第二份 outcome。
+N-R-INV-002 Plan 面可重规划（版本化），Canon 面永不重写。
+N-R-INV-003 提交事务外的正文/裁定草案不构成事实、不可被读取。
+N-R-INV-004 两套提交（NCP-2 / NCP-3）全或无；同批写正文与其事实（零撕裂）。
+N-R-INV-005 actual story_tick 只由提交事务推进，单调不减。
+N-R-INV-006 Writer 不重复裁定用户行为；只呈现已 committed 结果。
+N-R-INV-007 V3 读 canon 走已 commit 面；不得以 Plan 面冒充事实。
+N-R-INV-008 legacy Narrative V2 链与 V3 管线互不写对方的表。
+```

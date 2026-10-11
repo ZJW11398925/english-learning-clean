@@ -634,3 +634,180 @@ state_version + compare-and-swap
 ```
 
 避免 callback/user interrupt/recovery worker 乱序覆盖。
+
+---
+
+## 21. Chapter Lifecycle（Narrative V3）
+
+```text
+PLANNED       # Blueprint 已落（Plan 面）；章未开
+ACTIVE        # 至少一场开始（≥1 scene ACTIVE）
+SETTLING      # 章末结算进行中
+CLOSED        # Settlement 完成（summary / narrative memory 已落）
+```
+
+主流程：
+
+```text
+Blueprint(plan_revision ADOPTED) → PLANNED
+→ 第一场 ACTIVE → ACTIVE
+→ 章目标达成 / 收束判定 → SETTLING
+→ Settlement 完成 → CLOSED
+→ 下一章规划（新 chapter + 新 plan revision）
+```
+
+规则：
+
+- 一个世界同一时间至多一章 `ACTIVE`（MVP；并行章禁止）。
+- `CLOSED` 不可 reopen；修正走后续章（N-INV-003）。
+- `ACTIVE` 期间允许 Plan Revision（重规划**剩余**部分）；已 commit 的场景/段落不受影响。
+- `chapter_index` 单调 +1；chapter identity 稳定。
+- `SETTLING` 是短窗口：Settlement 产出全部落完才 `CLOSED`；崩溃于 `SETTLING` → recovery 重跑 Settlement（同章 summary 只落一版；重跑 = no-op 或显式新 revision）。
+
+## 22. Scene Lifecycle（Narrative V3）
+
+```text
+PLANNED       # Plan 面：Blueprint/Dossier 计划的场（可被重规划 DISCARDED）
+ACTIVE        # Dossier 已落；正文段写入中（含 User Gate 停点）
+COMMITTED     # 场的全部段落已 commit（canon 面已成立）
+CLOSED        # 场关闭（下一场输入包已生成）
+DISCARDED     # 仅 PLANNED 可达：重规划使该场不再成立（从未发生）
+```
+
+主流程：
+
+```text
+PLANNED → ACTIVE（Dossier 落）
+ACTIVE  → COMMITTED（最后一段 SEGMENT COMMIT + scene exit 达成）
+COMMITTED → CLOSED
+PLANNED → DISCARDED（Plan Revision）
+```
+
+规则：
+
+- **一旦有 segment commit，场景不可 DISCARDED / 取消**——已发生事实不可重写；只能按实际发生的方向 `COMMITTED`（提前收束合法）。
+- 场内段落顺序 commit；段与段之间世界可被读取（下一段看得到上一段的事实）。
+- 崩溃于 `ACTIVE`：从最后已 commit 段落续跑（未 commit 的正文草案不构成事实）；同 `segment_key` 重放 = no-op（§25）。
+- User Gate 是场内的停点：gate `OPEN` 时 scene 保持 `ACTIVE`。
+
+## 23. User Gate Lifecycle（Narrative V3）
+
+```text
+OPEN          # 呈现停点（2–4 选项 + 自由输入）；故事停止
+ANSWERED      # 用户提交一次（submission durable；幂等锚点）
+RESOLVING     # Action Resolver 裁定中（事务外 provider 调用）
+COMMITTED     # ACTION OUTCOME COMMIT 完成（结果成为 canon）
+CLOSED        # 续写（新段落/场）已开始，或章末结算接管
+```
+
+主流程：
+
+```text
+OPEN → ANSWERED → RESOLVING → COMMITTED → CLOSED
+```
+
+规则：
+
+- 一个 gate 只接受**一次** submission；重复到达按幂等键 `(gate_id, submission_id)` 去重（§25）。
+- 一旦 `OPEN` 必须走完：无取消 / 无超时（本地单用户；故事停在该点直到用户回答）。
+- `RESOLVING` 崩溃 → recovery 以同一 `submission_id` 重新裁定；**绝不产生第二份 outcome**。
+- `COMMITTED` 后不可回到 `ANSWERED` / `RESOLVING`；修正走后续叙事。
+- 选项与自由输入都只是 **intent**，不是事实（DOMAIN_MODEL §20.3-1）。
+
+## 24. Plan Revision Lifecycle（Narrative V3）
+
+适用范围：Chapter 重规划（replan_scope=CHAPTER）与 Scene 重规划（replan_scope=SCENE，落为 Dossier 新版本）。
+
+```text
+PROPOSED      # Director / Scene Planner 产出新 plan revision
+ADOPTED       # 成为当前 plan（旧 revision 保留为历史）
+SUPERSEDED    # 被更新的 revision 取代（历史保留）
+REJECTED      # 显式否决（记录理由）
+```
+
+规则：
+
+- Plan 面 **append-only 版本化**：不改写旧 revision；`ADOPTED` 指向当前。
+- 已 commit 的 canon 永不因 Plan Revision 改变（N-INV-003）。
+- SCENE 级：未开的 `PLANNED` 场可 `DISCARDED`；`ACTIVE` 场只能以已发生方向收束。
+- CHAPTER 级：只重规划**剩余**部分；对已 `COMMITTED` 场无写权。
+- 用户章间作者层输入（方向/基调）= plan 的偏好输入，不自动成事实；采纳与否由 Director 在 Blueprint/Revision 中体现。
+
+## 25. Commit Transactions（Narrative V3）——原子组 / 幂等 / 崩溃重试
+
+### SEGMENT COMMIT
+
+原子组（一个短事务；全或无）：
+
+```text
+narrative_passage（正文，不可变）
+world_event（本段沉淀事实；participants / effects）
+world_state_fact 结算（effects → CURRENT / SUPERSEDED）
+story_tick actual 推进（该段 duration_ticks）
+（V3-7 起）actor memory / belief 增量
+reader_exposure 记录（MVP 口径：本地单读者，呈现即暴露，与 commit 同批）
+```
+
+幂等键：`segment_key = (scene_id, segment_seq)`；passage 与 event 的 id 由 segment_key 派生（重放写同一批 id）。
+
+```text
+commit 前崩溃 → 未发生；重跑该段（重生成正文，只提交一次）
+commit 中崩溃 → 事务全或无；重启后回到「最后已提交段」续跑
+commit 后崩溃 → 同 segment_key 重放 = 幂等 no-op（不产生第二行、不重复推进 tick）
+```
+
+### ACTION OUTCOME COMMIT
+
+原子组（一个短事务；全或无）：
+
+```text
+user_action（裁定终态：interpretation / outcome / actual_action / consequences）
+world_event（用户行为事实行；participants 含用户角色）
+world_state_fact 结算（state_effects）
+story_tick actual 推进（行为时长）
+（V3-7 起）actor memory / belief 增量
+replan 记录（replan_scope = NONE | SCENE | CHAPTER）
+```
+
+幂等键：`action_commit_key = (gate_id, submission_id)`（submission_id 在 `ANSWERED` 时 durable，源自输入去重链）。
+
+```text
+ANSWERED 后、COMMITTED 前崩溃 → recovery 以同一 submission_id 重新裁定（只此一次终态）
+COMMITTED 后重放            → 幂等 no-op；呈现层从 durable 状态重读
+```
+
+### 两条提交的共同纪律
+
+- 任何 commit 不得部分落地；同一段落的行为事实与正文**同批**提交（零撕裂）。
+- POV Writer 的呈现引用**已 committed** 的 outcome/passage；正文不得重新裁定用户行为（N-INV-002）。
+- Chapter Settlement **不是**提交事务（只压缩 / 收束；不新增事实）。
+
+## 26. story_tick Rules（Narrative V3）
+
+```text
+数据层：整数 tick，world-local；World Calendar 解释显示（MVP：1 tick = 1 分钟）
+planned_*_tick：Plan 面（Director / Scene Planner 写）
+actual_*_tick：Canon 面（只由 SEGMENT / ACTION OUTCOME COMMIT 写；单调不减）
+```
+
+规则：
+
+- `actual_start_tick` = 推进行为前的 world tick；`actual_end_tick` = 加 `duration_ticks` 后的 world tick（`duration_ticks >= 0`）。
+- 同一世界 actual 区间非递减；跨章继续；章/场的 actual 区间由 commit 决定（可与 planned 不同——用户行为可改变时间进程）。
+- 排序与因果读 actual；显示由 Calendar 把 tick 解释成世界日期（不依赖地球公历）。
+- 章规划中的时间只写 planned；不得预写 actual。
+
+## 27. Invalid Narrative Transitions（V3）
+
+以下直接拒绝：
+
+```text
+未 commit 的 Plan 内容作为事实读取
+CLOSED chapter / scene 重新 ACTIVE
+有已 commit 段落的 scene → DISCARDED
+同一 gate 二次 submission 重新裁定（应按幂等键去重）
+COMMITTED 之后 gate 回退
+一个世界并行两个 ACTIVE 章（MVP）
+writer 写入与已 committed outcome 冲突的同一 event / effects（N-INV-002）
+actual tick 回退，或非提交事务写 actual tick
+```

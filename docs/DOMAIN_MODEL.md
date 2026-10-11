@@ -31,6 +31,8 @@ User Configuration / Profile
 World / Lore
 ```
 
+**Narrative V3（2026-10-12 范式转折；产品范式已冻结）**：`World / Lore` 升格为第一层 **Narrative（World）Domain**——叙事引擎（World Director / Scene Planner / POV Writer / User Gate / Action Resolver / Chapter Settlement）、实例级 World Bible、玩家角色与 actor 叙事档案、章/场/正文与两级提交事务均归其下（见 §20）。旧 World/Lore 面（`world_event` / `world_state_fact` / `world_storyline` 等真相层）继续复用；letter/run/reveal 旧链为 **legacy**（并行保留，不进 V3 authority 面）。
+
 `Pedagogy Planner` 是 Application Service，横跨 Learning/Curriculum/Scheduler/Conversation/User Configuration，但不拥有这些 Domain 的 truth。
 
 `Content Library` 拥有 canonical teaching resources；`User Configuration/Profile` 拥有长期目标、教学策略、用户资料与 disclosure policy；`World/Lore` 拥有场景/世界事实。
@@ -48,6 +50,14 @@ World / Lore
 | 长期 GoalPortfolio / TeachingPolicy / SessionFocus | User Configuration/Profile |
 | UserProfile / DisclosurePolicy | User Configuration/Profile |
 | World/Lore canonical facts | World/Lore |
+| 世界设定/规则/历法/历史背景（实例级） | World Bible（`world_bible_revision`；模板只 seed，见 §20.3-6） |
+| 下一章发生什么（PLAN） | World Director（Blueprint） |
+| 一场怎样展开（PLAN） | Scene Planner（Dossier） |
+| 用户行为的真实 outcome | **Action Resolver（唯一权威）** |
+| 何时必须停下问用户 | User Gate |
+| 什么已经发生（CANON 落地） | **SEGMENT / ACTION OUTCOME COMMIT**（§20；Chapter Settlement 只压缩收束） |
+| actor 知道/相信什么 | Actor Memory / Belief（V3-7 物化） |
+| 读者看过什么 | Reader Exposure（记录面；不写 actor cognition） |
 | 当前 session teaching/probe/cooldown budget | Teaching Policy + Runtime Session State |
 | 当前最值得学什么 | Pedagogy Planner |
 | 是否允许自动教学 | Teaching Gate |
@@ -904,4 +914,65 @@ D-INV-009 Scheduler 决定 review due；Learning 只提供 freshness。
 D-INV-010 Planner 决定 transfer need；Learning 只提供 transfer evidence。
 D-INV-011 Relationship / Episode / RetrievalIndex 均为投影或独立域，不拥有 transcript truth。
 D-INV-012 final provider prompt 只能由 Persona Runtime / PromptCompiler 构建。
+```
+
+---
+
+## 20. Narrative V3 Domain（World 第一层；V3-1 实现合同）
+
+> 依据：`docs/design/2026-10-12-narrative-v3-paradigm-shift.md`（v3.1 / V3-0R，产品范式与高层架构已冻结）。本节是 V3-1 的 domain 合同：authority、边界与不变量在此冻结；migration 与代码不得反向改写本节（design-first）。
+
+### 20.1 Domain Map
+
+```text
+Narrative (World) Domain
+  World Bible      —— 实例级世界权威（world_bible_revision）
+  Cast             —— world_actor（复用）+ world_actor_profile + world_player_character
+  Planning         —— World Director + Chapter Blueprint + Scene Dossier（PLAN 面）
+  Writing          —— POV Writer → narrative_passage（CANON 面·正文）
+  Interaction      —— User Gate + Action Resolver → user_action
+  Commit           —— SEGMENT COMMIT / ACTION OUTCOME COMMIT（唯一落地边界）
+  Memory           —— world_event / world_state_fact / world_storyline（复用）
+                      + actor memory / belief + chapter summary（Narrative Memory）
+  Exposure         —— reader_exposure（记录面；≠ actor cognition）
+```
+
+### 20.2 Authority 明细
+
+| 问题 | Authority |
+|---|---|
+| 世界设定 / 规则 / 历法 / 历史背景（实例级） | World Bible（`world_bible_revision`；`world_id` 归属） |
+| 下一章发生什么（PLAN） | World Director（产出 Blueprint；不写正文、不写 canon） |
+| 一场具体怎样展开（PLAN） | Scene Planner（Dossier；对 Blueprint 的即时再规划） |
+| 用户行为的真实 outcome | **Action Resolver（唯一权威）** |
+| 何时必须停下问用户 | User Gate |
+| 正文怎么写（文学化呈现） | POV Writer（只呈现已成立结果） |
+| 随后新产生的非用户事实 | POV Writer（经规划与规则允许；进入 segment commit 才会成真） |
+| 什么已经发生（CANON 落地） | **SEGMENT COMMIT / ACTION OUTCOME COMMIT** |
+| 章末整理（压缩 / 收束） | Chapter Settlement（**不负责第一次落地**） |
+| 每个 actor 知道 / 相信 / 误解什么 | Actor Memory / Belief（有视角；V3-7 物化） |
+| 读者看过什么 | Reader Exposure（记录面；**不写 actor cognition**） |
+| 世界当前时刻（actual） | commit 事务（唯一推进者）；Director/Scene 只写 planned |
+
+### 20.3 六条硬边界（V3-1 冻结）
+
+1. **Resolver 唯一裁定权**：ACTION OUTCOME COMMIT 之后，POV Writer 只能文学化呈现该已成立结果（passage 引用 outcome）；**不得**重复裁定或重复写入同一 event/effects。Writer 只拥有随后新产生的非用户事实。
+2. **V3-5 最小 commit 不依赖 V3-7 表**：V3-5 的 SEGMENT COMMIT 落地面 = `narrative_passage` + `world_event`（participants / effects）+ `world_state_fact` + `story_tick` 推进；「下一场立即知道上一场」由 `world_event.participants` + 现役 **C1 cognition view**（host 世界端口）保证。V3-7 物化 actor memory / belief 后接入 commit 与 dossier，C1 读面降为兼容层。
+3. **两级提交的原子组 / 幂等键 / crash-retry-recovery 语义**：见 `DATA_MODEL.md §26.2` 与 `RUNTIME_ARCHITECTURE.md §28`（同一合同的三张脸）。
+4. **合法生命周期**：Chapter / Scene / User Gate / Plan Revision 状态机见 `STATE_MACHINES.md §21–§24`。
+5. **story_tick**：MVP 粒度 1 tick = 1 分钟（World Calendar 解释显示）；actual ticks 推进权只在提交事务；planned ticks 写权在 Director（Blueprint）/ Scene Planner（Dossier）。见 `STATE_MACHINES.md §26`。
+6. **模板 ≠ 实例 Bible**：世界模板 / 包只在**创建时 seed**；实例的 `world_bible_revision` 是唯一权威；**模板后续更新不得自动改写已存在世界**（更新须显式 fork / migrate 决策——V3-2 按此预留）。
+7. **Reader Exposure 本轮只冻结本体与引用边界**：`reader_exposure` 引用 `narrative_passage`；不写 actor memory；不做 metagame 机制。
+
+### 20.4 Narrative Invariants
+
+```text
+N-INV-001 未 commit 的 Plan 内容不得作为 canon 事实被读取。
+N-INV-002 同一用户行为只有一份权威 outcome（Resolver 产出）；Writer 不得再裁定。
+N-INV-003 已提交的 passage / event / state / memory 不可改写（append-only；修正以后续事件到达）。
+N-INV-004 Chapter Settlement 不产生新事实（只压缩 / 收束已 commit 的内容）。
+N-INV-005 reader_exposure 不写入 actor memory / belief。
+N-INV-006 实例 Bible 权威在 world_bible_revision；模板不拥有已存在世界的改写权。
+N-INV-007 actual story_tick 只由提交事务推进，且单调不减。
+N-INV-008 旧 Narrative V2 链（world_run / reveal / letter 触发）为 legacy，不进入 V3 authority 面。
 ```

@@ -781,7 +781,7 @@ massive content expansion
 | 刀 | 内容 | 门/兑现面 |
 |---|---|---|
 | V3-0R | 设计修订（外评六项：结算两级 / Bible 权威 / V3-3 扩面 / Reader Exposure / tick 语义 / canonical 隔离）——**复核通过即冻结 V3.0** | 复核通过才开 V3-1 |
-| V3-1 | **Narrative foundations**：story_tick（整数刻度 + 粒度裁定）+ chapter/scene 生命周期类型 + Plan/Canon 边界类型 | tick 单调可比较；计划时间与事实时间类型分离可测 |
+| V3-1 | **Narrative foundations（design-first）**：实现合同已入四份 canonical（见下表后注）；本刀落 story_tick + chapter/scene 生命周期**类型** + Plan/Canon 边界类型 + 最小 migration | 验收：同一世界 Plan/Canon 类型隔离；tick 单调；状态机合法；两 commit 原子边界成立；崩溃不重复用户行为裁定；旧 V2 链全绿 |
 | V3-2 | World Bible（`world_bible_revision` 权威面 + 读取；权威方向 = Bible → projection → legacy lore） | 版本化、可引用；与 legacy lore 不双权威 |
 | V3-3 | **World Cast & Player Identity**：`world_actor_profile` + durable player character + participant namespace | Director 的 cast 输入齐备；旧 `world_actor` 不动 |
 | V3-4 | Director + `world_chapter(_plan)`（Blueprint 严格 schema；软期望集 + 硬条件律；Plan≠Canon 落表） | 计划不上屏入史；`closing_pressure` 非 postcondition 有钉 |
@@ -789,6 +789,8 @@ massive content expansion
 | V3-6 | User Gate + `user_action` + Action Resolver + **OUTCOME COMMIT** + SCENE/CHAPTER replan | intent≠fact；用户选择让原计划失效后不许绕回 |
 | V3-7 | Actor Memory/Belief + Chapter Settlement + chapter summary + Narrative Memory | 章末只做压缩/收束；下一章只读摘要面 |
 | V3-8 | Gold Scenario 端到端 + 最小阅读面 + **结构验收 12 条** | 12 条全绿 + 用户亲验「好玩」（两者同时）；通过后才议 UI 切换与旧链退役 |
+
+**V3-1 实现合同位置（先合同后 migration，不得边写表边反推 authority）**：`DOMAIN_MODEL.md §20`（权威与六条硬边界）/ `STATE_MACHINES.md §21–§27`（生命周期、两级提交、tick 规则）/ `DATA_MODEL.md §26.2`（实体语义、幂等键、V3-5 最小读路）/ `RUNTIME_ARCHITECTURE.md §27–§30`（管线、NCP-1..4、恢复与不变量）。V3-1 的 migration 设计（0029+）与本实现合同同批评审。
 
 **Gold Scenario（固定）**：帝国历 105 年 10 月 1 日——主角莉亚；用户角色远房表弟；父亲凌晨赴帝都、母亲上午从乡下带用户回来；初见；至少一次自由 User Gate；ActionResolver 裁定；按用户选择继续；第一章结束、Settlement、生成第二章 Blueprint。验收链：创建世界→创建角色→Chapter Blueprint→Scene Dossier→POV prose→User Gate→User Action→Action Resolver→必要时 Replan→继续正文（每段 SEGMENT COMMIT）→Chapter Settlement→Chapter 2 Blueprint。
 

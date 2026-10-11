@@ -1652,7 +1652,121 @@ updated_at
 
 ---
 
-## 27. Data Model Non-goals
+## 26.2 Narrative V3 Additions（V3-1 实现合同）
+
+> 依据：`docs/design/2026-10-12-narrative-v3-paradigm-shift.md`（v3.1 / V3-0R）+ `DOMAIN_MODEL.md §20`。语义在此冻结；具体 SQLite DDL 由 V3-1 migration 设计（0029+），但不得改变本节语义边界（design-first）。
+
+### 26.2.1 实体合同（字段为语义字段，非最终列名）
+
+```text
+world_bible_revision          # 实例级 World Bible（权威）
+  world_id, revision, parent_revision?
+  premise, genre, tone, calendar, physics, magic_rules,
+  geography, society, politics, technology, religion, history,
+  hard_rules, narrative_preferences
+  status: CURRENT | SUPERSEDED（append-only 版本化；不减删）
+  注：模板/Package 只在创建时 seed（parent_revision 记录来源）；
+      模板后续更新不改写本表（N-INV-006；V3-2 实现）
+
+world_player_character        # durable 用户角色（不改 world_actor）
+  player_character_id, world_id, name, background, appearance,
+  abilities, limits, location, state, knowledge_refs?
+  与 participants namespace 统一（cast ids ∪ {player_character_id} ∪ 居民名）
+
+world_actor_profile           # AI actor 的叙事档案（CharacterCard ≠ 本表）
+  actor_id, world_id, story_role（PROTAGONIST|MAJOR|SUPPORTING）,
+  pov_eligible, pov_weight, long_term_drive, current_arc_seed,
+  private_context
+
+world_chapter                 # 章（canon 面进度）
+  chapter_id, world_id, chapter_index, status（§21）,
+  opened_at_tick, closed_at_tick?
+
+world_chapter_plan            # 章规划（PLAN 面，append-only 版本化）
+  chapter_plan_id, chapter_id, plan_revision, status（§24）,
+  goal, dramatic_question, planned_start_tick, planned_end_tick,
+  closing_pressure, desired_development, soft_outcomes,
+  chapter_questions_to_advance, scenes_json（场景表）
+
+world_scene                   # 场（canon 面进度）
+  scene_id, chapter_id, scene_index, status（§22）,
+  actual_start_tick, actual_end_tick?
+
+world_scene_dossier           # 场的执行规划（PLAN 面；重规划 = 新版本）
+  dossier_id, scene_id, dossier_revision,
+  pov_actor_id, participants, place, planned_start_tick,
+  revealable, must_hide, entry_goals, exit_condition, elasticity
+
+narrative_passage             # 正文（CANON 面；不可变）
+  passage_id, scene_id, segment_seq, body, language,
+  outcome_ref?（引用已 committed 的 action outcome；Writer 只呈现）
+  created_at_tick
+
+user_gate                     # 用户意志停点
+  gate_id, scene_id, status（§23）, opened_at_tick,
+  options_json（2–4 选项 + 自由输入）
+
+user_action                   # 用户提交与裁定
+  user_action_id, gate_id, submission_id（幂等锚点；UNIQUE(gate_id, submission_id)）,
+  intent_text, selected_option?,
+  status: ANSWERED | RESOLVING | COMMITTED,
+  interpretation, outcome, actual_action, consequences,
+  state_effects, participants, replan_scope（NONE|SCENE|CHAPTER）
+
+actor_memory / belief         # （V3-7 物化；V3-5 不做，路径见 §26.2.3）
+  memory_id, world_id, actor_id（或 player_character_id）,
+  kind: EXPERIENCED | HEARD | BELIEVED | INFERRED | MISTAKEN?,
+  content, source_event_id?, learned_at_tick, salience?
+
+chapter_settlement            # 章末压缩产出（Narrative Memory）
+  chapter_id, summary, storyline_updates, hooks, resolved_lines,
+  salience_notes, created_at_revision
+
+reader_exposure               # 读者暴露面（记录语义；本轮无 metagame）
+  exposure_id, passage_id, reader_id（MVP = 本地用户）, exposed_at
+  边界：不写 actor_memory / belief（N-INV-005）
+```
+
+### 26.2.2 时间字段（story_tick）
+
+```text
+所有 V3 实体一律带 tick 字段：planned_*_tick（Plan 面）或 actual_*_tick（Canon 面）
+禁止 V3 新表出现 ISO 日期/时间戳作为叙事时间（wall clock 仅限 bookkeeping 列）
+world.current_tick: 单调不减；由提交事务推进（§25 / STATE_MACHINES §26）
+```
+
+### 26.2.3 V3-5 最小读路（不依赖 V3-7 表）
+
+「下一场立即知道上一场」的保证不依赖 actor memory：
+
+```text
+1) 事实读：world_event（含 participants/effects）+ world_state_fact(CURRENT)
+2) 认知读：现役 C1 cognition view（host.py 世界端口：公共 ∪ 亲历 ∪ 用户层）
+   —— scene planner 以 POV 角色的 C1 视图（章内事件过滤）作为 dossier 输入
+V3-7 物化 actor memory/belief 后：commit 增加该臂；dossier 改读 actor memory；
+C1 读面降为兼容/兜底。
+```
+
+### 26.2.4 幂等与键
+
+```text
+UNIQUE(gate_id, submission_id)               # 用户提交去重（裁定只此一次）
+UNIQUE(scene_id, segment_seq)                # 段落提交幂等（replay = no-op）
+UNIQUE(chapter_id, plan_revision)            # Plan 版本单调
+UNIQUE(scene_id, dossier_revision)           # Dossier 版本单调
+UNIQUE(world_id, chapter_index)              # 章序单调
+passage/event id 由 segment_key 派生          # 重放写同一批 id（§25）
+```
+
+### 26.2.5 可重建投影（V3）
+
+```text
+chapter progress view（由 chapter/scene/segment 状态派生）
+cognition view（V3-7 起可由 actor memory 重建；C1 读面为兼容兜底）
+reader_exposure 未来可由 passage + render ack 重建（MVP 记录为准）
+```
+
+
 
 本阶段不冻结：
 
