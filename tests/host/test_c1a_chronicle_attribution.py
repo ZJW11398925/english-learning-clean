@@ -170,8 +170,8 @@ def test_0027_columns_stamps_and_legacy_honesty() -> None:
     0027's), and a legacy-shaped row reading back honestly
     empty (``'[]'`` / NULL via the DEFAULT — zero back-fill)."""
 
-    assert SCHEMA_HEAD_FILE == "0028_world_storyline.sql"
-    assert SCHEMA_HEAD_VERSION == "28"
+    assert SCHEMA_HEAD_FILE == "0029_narrative_v3_foundations.sql"
+    assert SCHEMA_HEAD_VERSION == "29"
     fresh = sqlite3.connect(":memory:")
     apply_migrations(fresh)
     columns = [
@@ -192,8 +192,8 @@ def test_0027_columns_stamps_and_legacy_honesty() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "28",
-        "runtime_schema_version": "28",
+        "schema_version": "29",
+        "runtime_schema_version": "29",
     }
     # The legacy shape: a pre-0027 write names none of the new columns —
     # the DEFAULT carries it, and the store reads it back honestly.

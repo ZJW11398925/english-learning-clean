@@ -95,12 +95,20 @@ MIGRATION_IDS: tuple[str, ...] = (
     # resolve_at; the arcs the narrator's prompt carries and the
     # projection's resolved claims retire from the active read).
     "0028_world_storyline",
+    # V3-1 (DEC-OPI-bab4da9f…11/…16): the Narrative V3 foundations —
+    # world.current_tick (the story_tick column; the actual tick moves
+    # only inside a commit transaction, a later cut's) plus the four
+    # tables the Plan/Canon boundary needs: world_chapter /
+    # world_chapter_plan / world_scene / world_scene_dossier (the two
+    # canon progress rows and the two append-only PLAN rows;
+    # elc.world.narrative is their store).
+    "0029_narrative_v3_foundations",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0028_world_storyline.sql"
-SCHEMA_HEAD_VERSION = "28"
+SCHEMA_HEAD_FILE = "0029_narrative_v3_foundations.sql"
+SCHEMA_HEAD_VERSION = "29"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

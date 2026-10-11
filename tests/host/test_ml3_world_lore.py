@@ -157,22 +157,22 @@ def test_0020_is_the_registered_head() -> None:
     0022_app_settings, with W-1-0's 0023_world_identity, W-1-1's
     0024_world_events and W-1-2's 0025_world_runs behind W-1-3's
     0026_world_reveal, with C1-a's 0027_chronicle_attribution and C2's
-    0028_world_storyline as the head;
+    0029_narrative_v3_foundations as the head;
     the shared constants say so, and the
-    stamp a fresh database carries is 28."""
+    stamp a fresh database carries is 29."""
 
-    assert MIGRATION_IDS[-1] == "0028_world_storyline"
-    assert MIGRATION_IDS[-2] == "0027_chronicle_attribution"
-    assert SCHEMA_HEAD_FILE == "0028_world_storyline.sql"
+    assert MIGRATION_IDS[-1] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-2] == "0028_world_storyline"
+    assert SCHEMA_HEAD_FILE == "0029_narrative_v3_foundations.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
     assert (MIGRATIONS / "0020_world_lore_facts.sql").is_file()
-    assert SCHEMA_HEAD_VERSION == "28"
+    assert SCHEMA_HEAD_VERSION == "29"
     assert "0019_character_cards" in MIGRATION_IDS
 
     conn = sqlite3.connect(":memory:")
     applied = apply_migrations(conn)
-    assert applied[-1] == "0028_world_storyline"
-    assert applied[-2] == "0027_chronicle_attribution"
+    assert applied[-1] == "0029_narrative_v3_foundations"
+    assert applied[-2] == "0028_world_storyline"
     assert schema_version(conn) == SCHEMA_HEAD_VERSION
 
 

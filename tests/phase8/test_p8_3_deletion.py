@@ -172,7 +172,8 @@ def test_the_retained_set_is_unchanged() -> None:
     # 入 keep 半；W-1-2 再随迁：世界运转一行入 keep 半；W-1-3 再随迁：
     # 揭示队列入 keep 半、world_conversation 换桶出（入 conversation
     # scope 的 sweep——分类登记见 elc.deletion.types 的注释）；C2 再随迁：
-    # 剧情线一表入 keep 半（world_storyline）。
+    # 剧情线一表入 keep 半（world_storyline）；V3-1 再随迁：叙事基础四表
+    # 入 keep 半（0029 四表——L5 裁同刀入册）。
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
@@ -182,6 +183,10 @@ def test_the_retained_set_is_unchanged() -> None:
         "world_run",
         "world_reveal_item",
         "world_storyline",
+        "world_chapter",
+        "world_chapter_plan",
+        "world_scene",
+        "world_scene_dossier",
     )
     for table in LEDGER_TABLES:
         assert table not in RETAINED_TABLES
@@ -496,7 +501,8 @@ def test_the_ledger_tables_are_absent_from_the_content_db_sweep(
     # 随三分集扩；W-1-0 再随迁（世界身份三表入 keep 半）；W-1-1 再随迁
     # （世界事件树两表入 keep 半）；W-1-2 再随迁（世界运转一行入 keep 半）；
     # W-1-3 再随迁（揭示队列入 keep 半；world_conversation 换桶出）；
-    # C2 再随迁（剧情线一表入 keep 半——world_storyline）。
+    # C2 再随迁（剧情线一表入 keep 半——world_storyline）；V3-1 再随迁
+    # （叙事基础四表入 keep 半——0029 四表，L5 裁同刀入册）。
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
@@ -506,6 +512,10 @@ def test_the_ledger_tables_are_absent_from_the_content_db_sweep(
         "world_run",
         "world_reveal_item",
         "world_storyline",
+        "world_chapter",
+        "world_chapter_plan",
+        "world_scene",
+        "world_scene_dossier",
     )
     assert _tables(db) == (
         set(SWEPT_TABLES) | set(RETAINED_TABLES) | set(GLOBAL_CONTENT_TABLES)

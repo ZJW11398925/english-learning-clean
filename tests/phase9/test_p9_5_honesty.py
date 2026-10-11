@@ -426,7 +426,7 @@ def test_no_source_file_carries_this_cuts_name() -> None:
     # discipline every head move has followed since P8-4).
     assert sorted(
         path.name for path in (REPO_ROOT / "migrations").glob("*.sql")
-    )[-1] == "0028_world_storyline.sql"
+    )[-1] == "0029_narrative_v3_foundations.sql"
 
 
 def test_the_frozen_surfaces_are_read_not_written() -> None:

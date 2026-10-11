@@ -147,7 +147,11 @@ def test_no_global_content_table_lives_in_app_db() -> None:
     conservative reading throughout for the world-owned half. C2
     (DEC-OPI-b290799a…45) adds migration 0028's ``world_storyline``
     (the plot layer's structure rows) to the same keep rule, same
-    conservative reading.
+    conservative reading, and V3-1 (DEC-OPI-bab4da9f…11/…16, the L5
+    ruling) adds migration 0029's four narrative tables
+    (``world_chapter`` / ``world_chapter_plan`` / ``world_scene`` /
+    ``world_scene_dossier``) the same way — all four hang off the
+    shared world through keep-side FK chains.
 
     The same W-1-3 cut is the deletion face's own arrival: it *moves*
     ``world_conversation`` out of this tuple and into
@@ -168,6 +172,10 @@ def test_no_global_content_table_lives_in_app_db() -> None:
         "world_run",
         "world_reveal_item",
         "world_storyline",
+        "world_chapter",
+        "world_chapter_plan",
+        "world_scene",
+        "world_scene_dossier",
     )
     for table in GLOBAL_CONTENT_TABLES:
         assert table not in SWEPT_TABLES

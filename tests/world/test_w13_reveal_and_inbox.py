@@ -164,21 +164,21 @@ def test_0027_is_the_registered_head() -> None:
     """C1-a's migration sits behind the head, immediately behind W-1-3's
     0026_world_reveal; C2's 0028_world_storyline is the head now; the
     shared constants say so, and the stamp a fresh
-    database carries is 28 (the stamp-pin discipline every head move
+    database carries is 29 (the stamp-pin discipline every head move
     has followed since P8-4; this pin read "0026 is the head" while 0026
     was the head)."""
 
-    assert MIGRATION_IDS[-1] == "0028_world_storyline"
-    assert MIGRATION_IDS[-2] == "0027_chronicle_attribution"
-    assert MIGRATION_IDS[-3] == "0026_world_reveal"
-    assert SCHEMA_HEAD_FILE == "0028_world_storyline.sql"
+    assert MIGRATION_IDS[-1] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-2] == "0028_world_storyline"
+    assert MIGRATION_IDS[-3] == "0027_chronicle_attribution"
+    assert SCHEMA_HEAD_FILE == "0029_narrative_v3_foundations.sql"
     assert (REPO_ROOT / "migrations" / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "28"
+    assert SCHEMA_HEAD_VERSION == "29"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0028_world_storyline"
-    assert applied[-2] == "0027_chronicle_attribution"
+    assert applied[-1] == "0029_narrative_v3_foundations"
+    assert applied[-2] == "0028_world_storyline"
     assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 

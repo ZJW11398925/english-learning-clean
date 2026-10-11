@@ -160,21 +160,21 @@ def test_0023_is_in_place_behind_the_head() -> None:
     stamp-pin discipline every head
     move has followed since P8-4; the pin read "0023 is the head" while
     0023 was the head). The shared constants say so, and the stamp a
-    fresh database carries is 28."""
+    fresh database carries is 29."""
 
-    assert MIGRATION_IDS[-1] == "0028_world_storyline"
-    assert MIGRATION_IDS[-2] == "0027_chronicle_attribution"
-    assert MIGRATION_IDS[-3] == "0026_world_reveal"
-    assert SCHEMA_HEAD_FILE == "0028_world_storyline.sql"
+    assert MIGRATION_IDS[-1] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-2] == "0028_world_storyline"
+    assert MIGRATION_IDS[-3] == "0027_chronicle_attribution"
+    assert SCHEMA_HEAD_FILE == "0029_narrative_v3_foundations.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
     assert (MIGRATIONS / "0023_world_identity.sql").is_file()
-    assert SCHEMA_HEAD_VERSION == "28"
+    assert SCHEMA_HEAD_VERSION == "29"
 
     conn = sqlite3.connect(":memory:")
     applied = apply_migrations(conn)
-    assert applied[-1] == "0028_world_storyline"
-    assert applied[-2] == "0027_chronicle_attribution"
-    assert applied[-3] == "0026_world_reveal"
+    assert applied[-1] == "0029_narrative_v3_foundations"
+    assert applied[-2] == "0028_world_storyline"
+    assert applied[-3] == "0027_chronicle_attribution"
     assert schema_version(conn) == SCHEMA_HEAD_VERSION
 
 
@@ -185,7 +185,17 @@ def test_the_three_tables_carry_their_columns() -> None:
     conn = sqlite3.connect(":memory:")
     apply_migrations(conn)
     expected = {
-        "world": ["world_id", "name", "template_world_id", "created_at"],
+        "world": [
+            "world_id",
+            "name",
+            "template_world_id",
+            "created_at",
+            # V3-1 (DEC-OPI-bab4da9f…11/…16): the story_tick column —
+            # the world's own time, moved only inside a commit
+            # transaction (N-INV-007; the primitives live in
+            # elc.world.time).
+            "current_tick",
+        ],
         "world_actor": ["actor_id", "world_id", "persona_id", "created_at"],
         "world_conversation": [
             "binding_id",

@@ -138,18 +138,18 @@ def test_0025_is_the_registered_head() -> None:
     move has
     followed since P8-4; the pin read "0024 is the head" while 0024 was
     the head); the shared constants say so, and the stamp a fresh
-    database carries is 28."""
+    database carries is 29."""
 
-    assert MIGRATION_IDS[-1] == "0028_world_storyline"
-    assert MIGRATION_IDS[-2] == "0027_chronicle_attribution"
-    assert SCHEMA_HEAD_FILE == "0028_world_storyline.sql"
+    assert MIGRATION_IDS[-1] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-2] == "0028_world_storyline"
+    assert SCHEMA_HEAD_FILE == "0029_narrative_v3_foundations.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "28"
+    assert SCHEMA_HEAD_VERSION == "29"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0028_world_storyline"
-    assert applied[-2] == "0027_chronicle_attribution"
+    assert applied[-1] == "0029_narrative_v3_foundations"
+    assert applied[-2] == "0028_world_storyline"
     assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 
@@ -602,12 +602,14 @@ def test_the_registry_carries_the_six_world_objects() -> None:
             assert entry.schema is schema, key
 
 
-def test_global_content_tables_carry_the_eight_members() -> None:
+def test_global_content_tables_carry_the_twelve_members() -> None:
     """W-1-1's two tables and W-1-2's run row joined the keep half
     (SEC-025's conservative reading) and W-1-3's reveal queue joins it the
     same way, while W-1-3's deletion face moves ``world_conversation``
     into the conversation scope's sweep; C2's storyline table joins the
-    same keep half: eight members, and the
+    same keep half, and V3-1 (DEC-OPI-bab4da9f…11/…16, the L5 ruling)
+    adds migration 0029's four narrative tables the same way: twelve
+    members, and the
     classification is registration — no sweep walks the world-owned half,
     nothing keeps it as retained either."""
 
@@ -620,6 +622,10 @@ def test_global_content_tables_carry_the_eight_members() -> None:
         "world_run",
         "world_reveal_item",
         "world_storyline",
+        "world_chapter",
+        "world_chapter_plan",
+        "world_scene",
+        "world_scene_dossier",
     )
     for table in ("world_event", "world_state_fact", "world_run",
                   "world_reveal_item"):

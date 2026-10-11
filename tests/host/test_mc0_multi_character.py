@@ -259,17 +259,17 @@ def test_0019_is_the_registered_head() -> None:
     assertion migrates with the newest slice; this pin's *lineage* claim —
     0019 in place — stands)."""
 
-    assert MIGRATION_IDS[-1] == "0028_world_storyline"
-    assert MIGRATION_IDS[-2] == "0027_chronicle_attribution"
+    assert MIGRATION_IDS[-1] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-2] == "0028_world_storyline"
     assert "0019_character_cards" in MIGRATION_IDS
-    assert SCHEMA_HEAD_FILE == "0028_world_storyline.sql"
+    assert SCHEMA_HEAD_FILE == "0029_narrative_v3_foundations.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "28"
+    assert SCHEMA_HEAD_VERSION == "29"
 
     conn = sqlite3.connect(":memory:")
     applied = apply_migrations(conn)
-    assert applied[-1] == "0028_world_storyline"
-    assert applied[-2] == "0027_chronicle_attribution"
+    assert applied[-1] == "0029_narrative_v3_foundations"
+    assert applied[-2] == "0028_world_storyline"
     assert "0019_character_cards" in applied
     assert schema_version(conn) == SCHEMA_HEAD_VERSION
 

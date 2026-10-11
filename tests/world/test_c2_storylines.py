@@ -167,19 +167,19 @@ def _land_claim(store: SqliteWorldStore, line_id: str, statement: str) -> None:
 def test_0028_is_the_registered_head() -> None:
     """C2's migration is the chain's newest entry, immediately behind
     C1-a's 0027; the shared constants say so, and the stamp a fresh
-    database carries is 28."""
+    database carries is 29."""
 
-    assert MIGRATION_IDS[-1] == "0028_world_storyline"
-    assert MIGRATION_IDS[-2] == "0027_chronicle_attribution"
-    assert SCHEMA_HEAD_FILE == "0028_world_storyline.sql"
-    assert SCHEMA_HEAD_VERSION == "28"
+    assert MIGRATION_IDS[-1] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-2] == "0028_world_storyline"
+    assert SCHEMA_HEAD_FILE == "0029_narrative_v3_foundations.sql"
+    assert SCHEMA_HEAD_VERSION == "29"
     assert (REPO_ROOT / "migrations" / SCHEMA_HEAD_FILE).is_file()
 
     fresh = sqlite3.connect(":memory:")
     fresh.execute("PRAGMA foreign_keys=ON")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0028_world_storyline"
-    assert applied[-2] == "0027_chronicle_attribution"
+    assert applied[-1] == "0029_narrative_v3_foundations"
+    assert applied[-2] == "0028_world_storyline"
 
 
 def test_world_storyline_carries_its_columns_and_posture() -> None:

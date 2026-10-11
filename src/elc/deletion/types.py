@@ -330,6 +330,17 @@ RETAINED_TABLES: tuple[str, ...] = (
 #: column deliberately carries no foreign key (migration 0028's own
 #: no-FK posture, pre-empted here rather than decided): the table adds
 #: no consequential FK to the world's registered deletion face.
+#:
+#: V3-1 (DEC-OPI-bab4da9f…11/…16, the L5 ruling) adds migration 0029's
+#: four narrative tables — ``world_chapter`` / ``world_chapter_plan`` /
+#: ``world_scene`` / ``world_scene_dossier`` (the two canon progress
+#: rows and the two append-only PLAN rows) — to the same keep rule,
+#: same conservative reading (registration, not deletion semantics;
+#: zero sweep face). All four hang off the shared world through their
+#: FK chains (chapter → world; plan → chapter; scene → chapter;
+#: dossier → scene — every link keep-side, so no sweep can be refused
+#: through any of them), and they add no consequential FK to the
+#: registered deletion face.
 GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_lore_fact",
     "world",
@@ -339,6 +350,10 @@ GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_run",
     "world_reveal_item",
     "world_storyline",
+    "world_chapter",
+    "world_chapter_plan",
+    "world_scene",
+    "world_scene_dossier",
 )
 
 

@@ -205,8 +205,11 @@ def test_the_module_quotes_section_8_and_the_two_status_sentences() -> None:
         assert _one_line(plan_lines[index]) in source, plan_lines[index]
 
     domain_lines = document_text("DOMAIN_MODEL.md")
-    assert "不伪装成" in domain_lines[558]
-    assert "PlannerExecutionStatus" in domain_lines[558]
+    # V3-1 随迁（先在红钉，非本刀所伤）：V3-1 实现合同提交（10daf43，
+    # DEC-OPI-bab4da9f…11）给 DOMAIN_MODEL.md §1/§2 增行，行号 558 → 568
+    # ——该提交漏迁本行号钉，V3-1 全量复跑抓出，本刀随迁。钉句本身不动。
+    assert "不伪装成" in domain_lines[568]
+    assert "PlannerExecutionStatus" in domain_lines[568]
     architecture_lines = document_text("RUNTIME_ARCHITECTURE.md")
     assert (
         architecture_lines[98].strip()
@@ -216,7 +219,7 @@ def test_the_module_quotes_section_8_and_the_two_status_sentences() -> None:
         architecture_lines[99].strip()
         == "→ RuntimeDecisionOutcome = DEGRADED_NO_AUTOMATIC_TEACHING"
     )
-    assert _one_line(domain_lines[558]) in source
+    assert _one_line(domain_lines[568]) in source
     assert _one_line(architecture_lines[98]) in source
     assert _one_line(architecture_lines[99]) in source
 
