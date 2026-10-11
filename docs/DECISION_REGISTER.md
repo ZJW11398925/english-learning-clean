@@ -124,5 +124,5 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 
 **登记（后刀落点）**：**L1**（0029 DDL 定稿三处：`CHECK (state_version > 0)`、文件尾双 stamp INSERT〔schema_version/runtime_schema_version → '29'〕、PLAN 行补 `updated_at` + `state_version`）归 V3-1 任务书定稿；**L3**（Blueprint `scenes`(JSON) ↔ `world_scene` 行对账规则）落点 = **V3-4 开工四查**。
 
-授权：独立评审（executor-pro 新上下文只读，2026-10-12）+ 用户口径「合同合理即放行迁移与代码」；DMCP 处置决策 `DEC-OPI-bab4da9f-…15`。**V3-1 状态：允许开工。**
+授权：独立评审（executor-pro 新上下文只读，2026-10-12）+ 用户口径「合同合理即放行迁移与代码」；DMCP 处置决策 `DEC-OPI-bab4da9f-…16`（注：本条目初稿预填 `…15`，服务器实际分配 `…16`——如实更正）。**V3-1 状态：允许开工；三件已铸（TASK `…18` / VAL `…20`），executor-pro 已派单。**
 
