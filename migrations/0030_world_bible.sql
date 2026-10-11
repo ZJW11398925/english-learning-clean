@@ -42,7 +42,10 @@
 --     row per world (DATA §26.2.1's single-authority semantics, and
 --     the race-free form the 0029 narrative store's docstring
 --     registered as the commit cuts' obligation — landing it here
---     where the invariant is this table's own).
+--     where the invariant is this table's own; this index settles
+--     only this table's own invariant — the chapter's ``at most one
+--     ACTIVE`` obligation the 0029 store named stays V3-5/V3-6's
+--     work, not settled by this cut).
 --   * No ON DELETE clause anywhere: SQLite's default NO ACTION
 --     equivalent (RESTRICT posture) is this cut's whole deletion
 --     story — the same posture 0023–0025, 0028 and 0029 spell; the

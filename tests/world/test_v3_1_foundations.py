@@ -893,7 +893,7 @@ def test_v3_writes_leave_the_legacy_surfaces_untouched(
 # ---------------------------------------------------------------------------
 
 
-def test_the_shared_constants_and_a_fresh_db_say_29() -> None:
+def test_the_shared_constants_and_a_fresh_db_say_the_chain_head() -> None:
     # The head literal moves with each head (the P9-1 way): this pin
     # read 0029's own names while 0029 was the head; V3-2's
     # 0030_world_bible moved them again — the migration-shape claims in

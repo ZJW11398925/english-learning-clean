@@ -1,4 +1,4 @@
-"""V3-2 — the World Bible (seven pin groups).
+"""V3-2 — the World Bible (eight pin groups).
 
 The Narrative V3 program's second cut (TASK-OPI-bab4da9f…29 /
 VAL-OPI-bab4da9f…33): migration 0030's ``world_bible_revision`` table
@@ -48,7 +48,14 @@ groups:
 7. **the wiring face** — ``bible_store`` is a required keyword-only
    parameter (no caller can silently skip the seed), and the real
    composition root seeds the real builtin world's Bible (one row,
-   revision 1, ``CURRENT``; a reopen writes nothing).
+   revision 1, ``CURRENT``; a reopen writes nothing);
+8. **the database-surface error vocabulary** — the store's mapping of
+   the database's own refusals (the world store's ``create_world``
+   narrowing): a ``UNIQUE (world_id, revision)`` clash answers
+   ``CONFLICT`` with the refused transaction rolled back whole (the
+   supersede half lands nowhere), and a write lock held by a second
+   connection answers ``DEPENDENCY_UNAVAILABLE`` — never re-attributed
+   as a missing identity — with the retry after release succeeding.
 """
 
 from __future__ import annotations
@@ -65,7 +72,11 @@ import pytest
 
 from elc.host import open_host
 from elc.persona.provider import ScriptedPersonaProvider
-from elc.platform.db.epoch import open_runtime_epoch
+from elc.platform.db.epoch import (
+    RuntimeEpochFence,
+    load_current_epoch,
+    open_runtime_epoch,
+)
 from elc.platform.db.migrations import apply_migrations, schema_version
 from elc.platform.types import DomainErrorCode, Err, Ok
 from elc.world.bible import (
@@ -826,3 +837,133 @@ def test_the_composition_root_seeds_the_builtin_worlds_bible(
         assert current.premise == package_premise
     finally:
         host.close()
+
+
+# ---------------------------------------------------------------------------
+# 8. the database-surface error vocabulary
+# ---------------------------------------------------------------------------
+
+
+def test_the_unique_clash_maps_to_conflict_and_rolls_back(
+    world_store: SqliteWorldStore,
+    bible: SqliteBibleStore,
+    conn: sqlite3.Connection,
+    tmp_path: Path,
+) -> None:
+    """The storage half of the refusal vocabulary (the world store's
+    ``create_world`` narrowing, spelled the same here): a revision
+    whose number is already taken — a pre-planted ``SUPERSEDED`` row
+    sitting at the next revision, so the partial single-CURRENT index
+    is not what fires — is a ``UNIQUE (world_id, revision)`` clash and
+    answers ``CONFLICT`` (the identities exist, the shapes collide;
+    never ``NOT_FOUND``). And the refused write's transaction rolls
+    back whole: the supersede half lands nowhere, the seeded revision
+    keeps its status and its counter, and the table holds exactly the
+    rows that predated the refusal."""
+
+    _seed_one_world(world_store, bible, tmp_path)
+
+    # The row that owns the next revision number, planted straight
+    # through the table (``SUPERSEDED`` — the partial UNIQUE index
+    # stays satisfied; the plain ``(world_id, revision)`` key is what
+    # the revise's INSERT will hit).
+    conn.execute(
+        "INSERT INTO world_bible_revision ("
+        " bible_revision_id, world_id, revision, parent_revision,"
+        " status, premise, genre, tone, calendar, physics,"
+        " magic_rules, geography, society, politics, technology,"
+        " religion, history, hard_rules, narrative_preferences,"
+        " created_at, updated_at, state_version"
+        ") VALUES (?, ?, 2, 1, 'SUPERSEDED',"
+        " '', '', '', '', '', '', '', '', '', '', '', '', '', '',"
+        " ?, ?, 1)",
+        ("bible-bibletest-0002-ghost", TEST_WORLD_ID, NOW, NOW),
+    )
+    conn.commit()
+
+    refused = bible.revise_bible(
+        _bible_id(2),
+        TEST_WORLD_ID,
+        expected_state_version=1,
+        now=LATER,
+        **_revise_kwargs(),
+    )
+    assert isinstance(refused, Err)
+    assert refused.error.code is DomainErrorCode.CONFLICT
+    # Which key fired, said by the raw sqlite error riding the
+    # message: the (world_id, revision) pair, not the primary key.
+    assert "world_bible_revision.world_id" in refused.error.message
+    assert "world_bible_revision.revision" in refused.error.message
+
+    # The rollback is whole: the supersede half of the refused
+    # transaction lands nowhere — revision 1 is still ``CURRENT`` with
+    # its own ``state_version``, and the table holds exactly the two
+    # rows that predated the refusal (the seed's one and the planted
+    # one; the refused revise adds nothing).
+    current = bible.current_bible(TEST_WORLD_ID)
+    assert current is not None
+    assert current.revision == 1
+    assert current.status is BibleRevisionStatus.CURRENT
+    assert current.state_version == 1
+    assert _row_count(conn, TEST_WORLD_ID) == 2
+
+
+def test_a_locked_database_maps_to_dependency_unavailable(
+    world_store: SqliteWorldStore,
+    bible: SqliteBibleStore,
+    conn: sqlite3.Connection,
+    tmp_path: Path,
+) -> None:
+    """The database's own failure is the database's own (the
+    ``create_world`` narrowing's third segment): while another
+    connection holds the write transaction, the store's
+    ``BEGIN IMMEDIATE`` raises ``OperationalError`` (a short
+    ``busy_timeout`` keeps the wait short — the test must not hang on
+    the lock) and the refusal answers ``DEPENDENCY_UNAVAILABLE`` —
+    never re-attributed as a missing identity. After the lock
+    releases, the same call succeeds."""
+
+    _seed_one_world(world_store, bible, tmp_path)
+
+    # A second connection to the same file, on the same runtime epoch
+    # (the P8-5 posture: two ``:memory:`` connections would be two
+    # different databases), waiting briefly — not long — on the lock.
+    conn_b = sqlite3.connect(tmp_path / "app.db")
+    try:
+        conn_b.execute("PRAGMA foreign_keys=ON")
+        epoch_now = load_current_epoch(conn_b)
+        assert epoch_now is not None
+        conn_b.execute("PRAGMA busy_timeout = 50")
+        writer_b = SqliteBibleStore(
+            conn_b, RuntimeEpochFence(current=epoch_now)
+        )
+
+        conn.execute("BEGIN IMMEDIATE")  # the first writer holds the lock
+        try:
+            refused = writer_b.revise_bible(
+                _bible_id(2),
+                TEST_WORLD_ID,
+                expected_state_version=1,
+                now=LATER,
+                **_revise_kwargs(),
+            )
+        finally:
+            conn.execute("ROLLBACK")
+        assert isinstance(refused, Err)
+        assert refused.error.code is DomainErrorCode.DEPENDENCY_UNAVAILABLE
+        assert "locked" in refused.error.message
+
+        # The recovery evidence: with the lock released, the same call
+        # goes through and the revision lands.
+        retried = writer_b.revise_bible(
+            _bible_id(2),
+            TEST_WORLD_ID,
+            expected_state_version=1,
+            now=LATER,
+            **_revise_kwargs(),
+        )
+        assert isinstance(retried, Ok)
+        assert retried.value.revision == 2
+        assert _row_count(conn, TEST_WORLD_ID) == 2
+    finally:
+        conn_b.close()
