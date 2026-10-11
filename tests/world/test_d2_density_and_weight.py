@@ -140,11 +140,21 @@ def test_the_density_constants_are_the_calibration() -> None:
 
 def test_the_prompts_own_sentences_move_with_the_constants() -> None:
     """① prompt 面：任务段改说「恰 2 或 3 则」「跨 0、1、2 或 3 故事日」
-    ——旧句不在（不是并存），且两句都与常量同源（改常量即此句随动）。"""
+    ——旧句不在（不是并存），且两句都与常量同源。评审 F1 处置后：days
+    断言不再用手抄字面，改为现场按常量拼装——源回硬编码或常量与句脱钩
+    时此钉变红（旧形态在 MAX_DAYS 变异下恒绿，正是 F1 缺口）。"""
 
     prompt = build_narrator_prompt(_package(), (), (), "zh")
     assert "Write exactly 2 or 3 beats." in prompt
-    assert "spans 0, 1, 2 or 3 story days (its ``days``)." in prompt
+    expected_days = (
+        "spans "
+        + ", ".join(str(day) for day in range(MIN_DAYS, MAX_DAYS))
+        + f" or {MAX_DAYS} story days (its ``days``)."
+    )
+    assert expected_days in prompt
+    assert (
+        f"Write exactly {MIN_BEATS} or {MAX_BEATS} beats." in prompt
+    )
     assert "Write exactly 1 or 2 beats." not in prompt
     assert "spans 0, 1 or 2 story days" not in prompt
 
@@ -191,7 +201,9 @@ def test_the_weight_teaching_rides_the_task_region_verbatim() -> None:
 
 def test_the_weight_teaching_is_unconditional() -> None:
     """② 无条件在场：裸包与出厂 Berrymoor 包、沉浸与 directed 两模式各
-    恰一次（C4 护栏是先例，重量句随任务段无条件——条件区律的又一例外）。"""
+    恰一次。评审 F3 措辞勘正：它**不是**条件区律的例外——它是无条件任务
+    段内部的一句（例外的是段本身/整段的无条件注入〔C4 护栏〕，不是区内
+    句子）；本钉测的是「无论何形恰一次」。"""
 
     loaded = load_world_package(BUILTIN_WORLDS_DIR / "berrymoor.json")
     assert isinstance(loaded, Ok), loaded.error.message

@@ -1097,7 +1097,12 @@ def build_narrator_prompt(
         " consistent with everything above; never repeat what already"
         f" happened. Write exactly {MIN_BEATS} or {MAX_BEATS} beats."
         " Each beat is one to three sentences of narration and spans"
-        " 0, 1, 2 or 3 story days (its ``days``)."
+        # Review F1 (D-2 disposition): the days span is assembled from
+        # the constants, never hand-copied — moving MAX_DAYS moves the
+        # sentence (the beats count above was already derived).
+        " "
+        + ", ".join(str(day) for day in range(MIN_DAYS, MAX_DAYS))
+        + f" or {MAX_DAYS} story days (its ``days``)."
         # D-2 (DEC-OPI-a4cf2d0e…57), spec §4.3 直迁: the dramatic-weight
         # teaching rides right after the beat-count sentence — the
         # density calibration's own content half (R2). 随机负责发生，

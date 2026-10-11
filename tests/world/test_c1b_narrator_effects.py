@@ -558,6 +558,10 @@ def test_a_pure_narration_beat_lands_exactly_as_before(
         store, WORLD, _cast_package(), provider, "turn-c1b-6", NOW
     )
     assert isinstance(stepped, Ok)
+    # Review F2 (D-2 disposition): the arity pin is restored beside the
+    # per-event pins — the D-2 migration had weakened this arm to an
+    # arity-blind ``all(...)``.
+    assert len(stepped.value) == 2
     assert all(event.effects == () for event in stepped.value)
     assert all(event.participants == () for event in stepped.value)
     assert store.current_facts(WORLD) == ()

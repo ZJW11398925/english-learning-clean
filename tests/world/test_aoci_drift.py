@@ -153,9 +153,12 @@ def test_orchestrate_entry_carries_the_bridge_and_the_terminal_stop() -> None:
 
 
 def test_narrator_entry_carries_the_five_prompt_faces() -> None:
-    """C1-b / C1.5 / C2 / C3 / C4: the optional beat keys, the reaction
-    section, the storyline section, the voices section and the
-    unconditional craft laws — the five faces the entry was missing."""
+    """C1-b / C1.5 / C2 / C3 / C4 / D-2: the optional beat keys, the
+    reaction section, the storyline section, the voices section, the
+    unconditional craft laws and the density-and-weight calibration —
+    the faces the entry was missing (D-2's own words added by its
+    disposition, review F4's second half: the entry's D-2段 was outside
+    this pin's keyword set)."""
 
     entry = _entry_line("narrator.py[EW8T]")
     for keyword in (
@@ -166,6 +169,9 @@ def test_narrator_entry_carries_the_five_prompt_faces() -> None:
         "== Active storylines ==",
         "== The cast's own voices ==",
         "== The craft laws ==",
+        "earn an echo",
+        "development, not a mention",
+        "1/2→2/3",
     ):
         assert keyword in entry
 
@@ -257,10 +263,22 @@ def test_every_migration_file_carries_a_ledger_entry() -> None:
 
 def test_the_six_touched_entries_are_single_lines() -> None:
     """The ledger's layout law for the touched entries: one line each,
-    tag at the start, no carriage returns — a split or duplicated
-    entry is drift too."""
+    tag at the start, no stray carriage returns — a split or duplicated
+    entry is drift too.
 
-    assert "\r" not in _ledger_text()
+    Review F4 (D-2 disposition): the CR check reads **raw bytes** — the
+    old ``read_text`` default (universal newlines) normalized ``\\r\\n``
+    away, so the assertion was vacuously true. The law pinned here is
+    environment-independent: whatever the line-ending style a checkout
+    carries (CRLF under ``core.autocrlf``, LF on CI), a **lone** ``\\r``
+    — a classic-Mac ending or an embedded control byte — reddens this;
+    the committed blob's LF form itself is git's (``.gitattributes``
+    ``eol=lf``), not a working-tree fact this test could pin on both
+    platforms."""
+
+    raw = AOCI_FILE.read_bytes()
+    lone_cr = raw.replace(b"\r\n", b"").count(b"\r")
+    assert lone_cr == 0
     lines = _ledger_text().split("\n")
     for tag in TOUCHED_TAGS:
         assert sum(1 for line in lines if line.startswith(tag)) == 1, tag
