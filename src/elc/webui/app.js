@@ -2869,7 +2869,8 @@ function showSpace(name) {
 // spaces — the tabs stay the primary face.
 // WR-5：世界日志屏随「案头即世界自然发展之地」定谳整体退役——
 // navdock 回三项，今日动静行回纯信息行（无点击接线；历史活在信流的
-// 故事块序列）。
+// 故事块序列）。D-3（DEC-OPI-a4cf2d0e…49）：世界详情屏承接同名
+// space-world（进屏时 navdock 让位两臂，非新增项——见 spaces.world）。
 wireNavdock((name) => showSpace(name));
 wireSectionTabs(document.getElementById("study-tabs"),
   (name) => showSection("study", name));
@@ -6058,8 +6059,9 @@ function renderWorldMasthead(overview) {
 
 // 今日动静行（主从条下的弱化一行）：静日 = 服务端人话句透显（服务端
 // 已双语——前端零再创作）；有动静 = 计数形（「今日动静 · N 则」，chrome
-// 双语）。wf-2 起可点（装配区监听 → 世界日志屏）；跳转不在本函数——
-// 本函数只管文案与显隐，回落臂 ⇒ 静默（hidden，不可点同步，不发明）。
+// 双语）。WR-5 起纯信息行（无点击接线——世界日志屏已退役，D-3 的它职
+// 由世界详情屏的编年史区承接）；跳转不在本函数——本函数只管文案与显
+// 隐，回落臂 ⇒ 静默（hidden，不可点同步，不发明）。
 function setTodayLine(today, lang) {
   const line = document.getElementById("today-line");
   if (!line) return;
@@ -6105,12 +6107,16 @@ async function loadMasthead(preFetchedRoster) {
   renderMasthead(roster);
 }
 
-// ── wf-2 世界日志屏：已随 WR-5 整体退役 ────────────────────────────
+// ── wf-2 世界日志屏：已随 WR-5 整体退役；D-3 承接为世界详情屏 ─────
 // WR-5（用户定向第四击，DEC-OPI-8a4f980b…7）：「案头就是世界自然发展
-// 的地方」——navdock 的「世界」项、space-world 屏、loadWorldLogFace/
+// 的地方」——navdock 的「世界」项、当时的 space-world 屏、loadWorldLogFace/
 // renderWorldLogDay/WORLD_LOG_TEXT 词表与 today-line 点击接线全部退役；
-// 历史活在案头信流的故事块序列（A2/DEC-…92 的原判断回归）。
-// /api/world/log 端点保留在服务端（零成本读面），前端零消费方。
+// 历史活在案头信流的故事块序列（A2/DEC-…92 的原判断回归）。D-3
+// （DEC-OPI-a4cf2d0e…49）：同名 space-world 由世界详情屏承接——它不是
+// 旧日志屏的回场，是六角色名册/你的角色/剧情线/编年史四区的新屏（评审
+// LOW-1：本段旧句「前端零消费方」为假已随本行核销）。
+// /api/world/log 端点保留在服务端；D-3 起前端消费方 = 世界详情屏编年史
+// 区（fetchWorldLog + renderWorldChronicle）。
 
 function envselCloser(event) {
   if (!(event.target instanceof Element)) return;
