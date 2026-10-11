@@ -685,6 +685,7 @@ PLANNED → DISCARDED（Plan Revision）
 
 规则：
 
+- **SCENE COMMIT = 场的最后一段 SEGMENT COMMIT 的别名**（`ACTIVE → COMMITTED` 的翻转与该段提交**同事务**完成）；**不是第三种提交事务**。
 - **一旦有 segment commit，场景不可 DISCARDED / 取消**——已发生事实不可重写；只能按实际发生的方向 `COMMITTED`（提前收束合法）。
 - 场内段落顺序 commit；段与段之间世界可被读取（下一段看得到上一段的事实）。
 - 崩溃于 `ACTIVE`：从最后已 commit 段落续跑（未 commit 的正文草案不构成事实）；同 `segment_key` 重放 = no-op（§25）。
@@ -780,6 +781,7 @@ COMMITTED 后重放            → 幂等 no-op；呈现层从 durable 状态重
 
 - 任何 commit 不得部分落地；同一段落的行为事实与正文**同批**提交（零撕裂）。
 - POV Writer 的呈现引用**已 committed** 的 outcome/passage；正文不得重新裁定用户行为（N-INV-002）。
+- **SCENE COMMIT 不是第三种事务**（见 §22：它是场的最后一段 SEGMENT COMMIT 的别名，翻转与提交同事务）。
 - Chapter Settlement **不是**提交事务（只压缩 / 收束；不新增事实）。
 
 ## 26. story_tick Rules（Narrative V3）

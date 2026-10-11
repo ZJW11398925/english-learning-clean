@@ -954,7 +954,7 @@ Narrative (World) Domain
 | 读者看过什么 | Reader Exposure（记录面；**不写 actor cognition**） |
 | 世界当前时刻（actual） | commit 事务（唯一推进者）；Director/Scene 只写 planned |
 
-### 20.3 六条硬边界（V3-1 冻结）
+### 20.3 七条硬边界（V3-1 冻结）
 
 1. **Resolver 唯一裁定权**：ACTION OUTCOME COMMIT 之后，POV Writer 只能文学化呈现该已成立结果（passage 引用 outcome）；**不得**重复裁定或重复写入同一 event/effects。Writer 只拥有随后新产生的非用户事实。
 2. **V3-5 最小 commit 不依赖 V3-7 表**：V3-5 的 SEGMENT COMMIT 落地面 = `narrative_passage` + `world_event`（participants / effects）+ `world_state_fact` + `story_tick` 推进；「下一场立即知道上一场」由 `world_event.participants` + 现役 **C1 cognition view**（host 世界端口）保证。V3-7 物化 actor memory / belief 后接入 commit 与 dossier，C1 读面降为兼容层。

@@ -863,10 +863,14 @@ R-INV-018 same-turn second DecisionCycle 不重复消费已提交 analysis。
 
 ### NCP-1 — Submission durable（用户提交）
 
+原子组（一个短事务）：
+
 ```text
-user_gate: OPEN → ANSWERED（submission_id 落定）
+user_gate: OPEN → ANSWERED
+user_action: 建 ANSWERED 行（intent_text / selected_option? / submission_id）
 ```
-在裁定（provider 调用）之前必须成功；此点之后重复到达按 `(gate_id, submission_id)` 去重。
+
+在裁定（provider 调用）之前必须成功（gate 行与 action 行**同事务**落，不得拆开）；此点之后重复到达按 `(gate_id, submission_id)` 去重；action 族 event/outcome id 由 `action_commit_key` 派生。
 
 ### NCP-2 — Action Outcome Commit
 

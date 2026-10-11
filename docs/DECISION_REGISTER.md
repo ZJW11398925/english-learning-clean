@@ -107,3 +107,22 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 
 授权：用户（2026-10-12）——V3-0R 复审通过、范式冻结、批准进入 V3-1（design-first）；DMCP 决策 `DEC-OPI-bab4da9f-…11`。
 
+### v1.3.1 — 2026-10-12 V3-1 合同 + migration 独立评审处置（PASS WITH CORRECTIONS → 放行）
+
+**评审结论**：独立评审（新上下文只读）对四份 canonical V3 节 + migration 0029 设计 + 搬迁清单给出 **PASS WITH CORRECTIONS**，并**明确放行 migration 与 V3-1 代码实现**（修正随 V3-1 同刀落盘后生效）。INFO 核证：0029 忠实（CHECK/UNIQUE/FK 与 STATE/DATA 逐字）、最小（无提前/漏落面）、存量兼容（`current_tick` ALTER 安全）；**不迫使 V3-5..V3-7 重拆数据模型**；无静默转绿漏钉。
+
+**内容的更正与补充**（评审 M1–M6 / L2 / L4 处置；四份文档已同步）：
+
+1. **M1 计数更正**：DOMAIN §20.3「六条」→「**七条**硬边界」（编号实为 1–7；§20.3-6 模板条引用不变）。
+2. **M2 验收改标（更正 v1.3.0 的 V3-1 验收行）**：V3-1 本刀验收 = 同一世界 Plan/Canon 类型隔离 + tick 单调 + 状态机合法 + 旧 V2 链全绿 + 两 commit 的**类型与幂等键基础**就位；「两个 commit 原子边界成立 / 崩溃后不重复用户行为裁定」= **V3-5 / V3-6 兑现门**（V3-1 无 passage/gate/action 表，物理上不可测）。
+3. **M3 补句**：`user_action` 增 `actual_tick`（ACTION 族 Canon 时间锚）；DATA §26.2.2 增「V3 事件叙事时间 = 其提交事务的 actual tick，经派生键连回（SEGMENT→`narrative_passage.created_at_tick` / ACTION→`user_action.actual_tick`）；不为 `world_event` 增 ISO/tick 列」。
+4. **M4 补句**：**SCENE COMMIT = 场的最后一段 SEGMENT COMMIT 的别名**（`ACTIVE→COMMITTED` 与提交同事务），非第三种事务（STATE §22/§25）。
+5. **M5 补句**：RA §28 NCP-1 原子组 = {`user_gate` OPEN→ANSWERED；`user_action` 建 ANSWERED 行（intent_text / submission_id）} **同一短事务**；DATA §26.2.4 增 action 族 event/outcome id 由 `action_commit_key` 派生。
+6. **M6 搬迁清单更正**（归任务书）：补 `tests/world/test_c2_storylines.py:172/174/175/181`、`tests/world/test_w13_reveal_and_inbox.py:171/174/176/180`、`tests/host/test_c1a_chronicle_attribution.py:194–197`（stamps 两处）；全量面以 `grep -rn '"0028\|== "28"\|== 28\b' tests/` 为准（**51 处字面钉**）。**L5 裁**：四张新表随刀入 **`GLOBAL_CONTENT_TABLES`**（world 系 keep 集惯例，`src/elc/deletion/types.py:334-340` 同区），`tests/deletion/test_deletion_surfaces.py` 的表元组钉随迁。
+7. **L2 措辞**：DATA §26.2.2 前缀律改实质表述（Plan 面带 `planned_` 前缀；Canon 面一律 tick 语义、禁 ISO；字段名可含 `opened_at_tick`/`created_at_tick` 等）。
+8. **L4 钉**：`reader_exposure` 建表刀位 = **V3-5** 与 `narrative_passage` 同刀（与 NCP-3 原子组一致）。
+
+**登记（后刀落点）**：**L1**（0029 DDL 定稿三处：`CHECK (state_version > 0)`、文件尾双 stamp INSERT〔schema_version/runtime_schema_version → '29'〕、PLAN 行补 `updated_at` + `state_version`）归 V3-1 任务书定稿；**L3**（Blueprint `scenes`(JSON) ↔ `world_scene` 行对账规则）落点 = **V3-4 开工四查**。
+
+授权：独立评审（executor-pro 新上下文只读，2026-10-12）+ 用户口径「合同合理即放行迁移与代码」；DMCP 处置决策 `DEC-OPI-bab4da9f-…15`。**V3-1 状态：允许开工。**
+

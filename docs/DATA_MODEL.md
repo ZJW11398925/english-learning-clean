@@ -1711,7 +1711,8 @@ user_action                   # 用户提交与裁定
   intent_text, selected_option?,
   status: ANSWERED | RESOLVING | COMMITTED,
   interpretation, outcome, actual_action, consequences,
-  state_effects, participants, replan_scope（NONE|SCENE|CHAPTER）
+  state_effects, participants, replan_scope（NONE|SCENE|CHAPTER）,
+  actual_tick（裁定终态的 story tick——ACTION 族的 Canon 时间锚）
 
 actor_memory / belief         # （V3-7 物化；V3-5 不做，路径见 §26.2.3）
   memory_id, world_id, actor_id（或 player_character_id）,
@@ -1725,14 +1726,19 @@ chapter_settlement            # 章末压缩产出（Narrative Memory）
 reader_exposure               # 读者暴露面（记录语义；本轮无 metagame）
   exposure_id, passage_id, reader_id（MVP = 本地用户）, exposed_at
   边界：不写 actor_memory / belief（N-INV-005）
+  建表刀位：随 V3-5 与 narrative_passage 同刀（与 NCP-3 原子组一致）
 ```
 
 ### 26.2.2 时间字段（story_tick）
 
 ```text
-所有 V3 实体一律带 tick 字段：planned_*_tick（Plan 面）或 actual_*_tick（Canon 面）
-禁止 V3 新表出现 ISO 日期/时间戳作为叙事时间（wall clock 仅限 bookkeeping 列）
+Plan 面时间字段带 planned_ 前缀（planned_start_tick / planned_end_tick…）；
+Canon 面时间一律 tick 语义、禁 ISO（字段名可为 actual_start_tick / actual_end_tick /
+opened_at_tick / closed_at_tick / created_at_tick；共性 = 整数 tick、由提交事务写）
 world.current_tick: 单调不减；由提交事务推进（§25 / STATE_MACHINES §26）
+V3 事件行的叙事时间 = 其提交事务的 actual tick，经派生键连回：
+  SEGMENT 族 → narrative_passage.created_at_tick；ACTION 族 → user_action.actual_tick
+（不为 world_event 增 ISO / tick 列——读路连回即可）
 ```
 
 ### 26.2.3 V3-5 最小读路（不依赖 V3-7 表）
@@ -1756,6 +1762,7 @@ UNIQUE(chapter_id, plan_revision)            # Plan 版本单调
 UNIQUE(scene_id, dossier_revision)           # Dossier 版本单调
 UNIQUE(world_id, chapter_index)              # 章序单调
 passage/event id 由 segment_key 派生          # 重放写同一批 id（§25）
+action 族 event/outcome id 由 action_commit_key 派生（与 segment_key 命名空间不相交）
 ```
 
 ### 26.2.5 可重建投影（V3）
