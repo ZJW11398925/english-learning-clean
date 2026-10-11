@@ -20,7 +20,7 @@ writes the other. Pin groups:
    ``list_storylines`` reads every lifecycle word in id order;
    ``active_storylines`` is the two-layer read (structure ``active``
    **and** no CURRENT resolved claim under the line's key);
-3. **package v7** — the loader decodes the optional
+3. **package v8** — the loader decodes the optional
    ``initial_storylines`` section strictly (``{theme, resolve_at}``
    pairs; absent / empty legal; malformed refused naming the entry),
    the shipped Berrymoor file carries its opening arcs, and the seed
@@ -472,12 +472,12 @@ def test_active_storylines_are_scoped_to_their_world(
 
 
 # ---------------------------------------------------------------------------
-# 3 — package v7 and the seed (VAL ③)
+# 3 — package v8 and the seed (VAL ③)
 # ---------------------------------------------------------------------------
 
 
 def _payload() -> dict[str, object]:
-    """One minimal valid package payload (the loader's own v7) — the
+    """One minimal valid package payload (the loader's own v8) — the
     negative tests mutate
     a copy of this and expect the loader to refuse the copy, never the
     shipped Berrymoor file."""

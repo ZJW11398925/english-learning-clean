@@ -11,7 +11,7 @@ pin groups:
    entries (the cast's Nell Alder plus the five residents; one
    name-space, the residents law continued), the lookup is
    case-insensitive, an absent section and an empty object are the same
-   honest zero, and the version wall now stands at v7;
+   honest zero, and the version wall now stands at v8;
 2. **the strict refusals** — a name outside the town, a name colliding
    case-insensitively with another entry's, a missing / unexpected key, a
    wrong scalar shape, the quirks ceiling, a duplicated taboo or quirk, a
@@ -81,7 +81,7 @@ def _shipped() -> WorldPackage:
 
 
 def _minimal_payload() -> dict[str, object]:
-    """One minimal valid v7 payload — the negative tests mutate a copy of
+    """One minimal valid v8 payload — the negative tests mutate a copy of
     this; the optional sections are absent."""
 
     return {

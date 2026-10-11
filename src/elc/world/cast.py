@@ -118,7 +118,11 @@ class StoryRole(StrEnum):
     word): ``PROTAGONIST`` — the story is hers; ``MAJOR`` — her arc
     carries chapters; ``SUPPORTING`` — she colours the town's scenes.
     A profile the package (or caller) never declared rides ``None`` —
-    the honest undeclared, not a fourth word."""
+    the honest undeclared, not a fourth word. This enum and migration
+    0031's ``story_role`` CHECK literal are one word list in two
+    spellings: if the vocabulary ever grows, the DDL moves in the same
+    cut (the loader's validation reads this enum, never a second
+    tuple)."""
 
     PROTAGONIST = "PROTAGONIST"
     MAJOR = "MAJOR"

@@ -994,7 +994,7 @@ def test_the_story_block_stays_inert_text() -> None:
 
 
 def test_the_shipped_package_sums_to_its_last_day() -> None:
-    """The shipped Berrymoor configuration: the loader's own version (v7
+    """The shipped Berrymoor configuration: the loader's own version (v8
     today), the start day, ten
     events, and the full pool's spans landing the story's last day on
     2025-09-21 — the shipped reading of DEC-…90's story-driven

@@ -26,7 +26,8 @@ carries an entry in the ledger's migrations section — the 0028 case,
 generalized.
 
 D-1 (``DEC-OPI-a4cf2d0e…40``, the user-character cut) re-touches four
-of the entries in place — ``package.py`` (the v7 wall and the
+of the entries in place — ``package.py`` (the version wall — then v7 —
+and the
 ``user_character`` section), ``narrator.py`` (the ``Your character``
 line and the roster's vocabulary extension), ``berrymoor.json`` (the
 shipped player) and ``host.py`` (the seeded packages' mapping the

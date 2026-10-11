@@ -12,7 +12,7 @@ groups:
 1. **the package face** — the shipped Berrymoor file decodes its
    ``user_character`` section with the four exact values, an absent
    section is the honest ``None``, every shape violation is an ``Err``
-   naming the offending key, and the v7 wall refuses a v6 stamp;
+   naming the offending key, and the v8 wall refuses a v7 stamp;
 2. **the narrator's conditional line** — the shipped prompt carries
    ``Your character: …`` right after the cast-id roster (her id joins
    the roster's vocabulary), teaches the resident-not-a-bystander
@@ -110,7 +110,7 @@ def _user_section(**overrides: object) -> dict[str, object]:
 
 
 def _payload(with_user: bool = True) -> dict[str, object]:
-    """One minimal valid v7 payload — the negative tests mutate a copy
+    """One minimal valid v8 payload — the negative tests mutate a copy
     of this; the user_character section rides only when asked for."""
 
     payload: dict[str, object] = {
@@ -253,7 +253,7 @@ def _view(host) -> tuple[str, ...]:
 
 
 # ---------------------------------------------------------------------------
-# 1 — the package face (v7)
+# 1 — the package face (v8)
 # ---------------------------------------------------------------------------
 
 

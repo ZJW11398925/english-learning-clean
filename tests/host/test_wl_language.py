@@ -19,7 +19,7 @@ Nine pin groups (the slice VAL's nine):
    carries the row: a prompt-recording provider sees ``reply in
    English`` after the page write (persisted across the restart), the
    default letter carries the follow sentence and nothing else moved;
-4. **package v7** — the loader reads v7 strictly: the shipped Berrymoor
+4. **package v8** — the loader reads v8 strictly: the shipped Berrymoor
    file is bilingual truth, a monolingual event is refused, a v6 stamp
    is refused, a missing or negative story span is refused, an empty
    ``narration_zh`` is refused, a duplicated kind is refused;
@@ -370,12 +370,12 @@ def test_the_default_letter_is_zero_drift(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 4 — package v7: the loader reads v7 strictly
+# 4 — package v8: the loader reads v8 strictly
 # ---------------------------------------------------------------------------
 
 
-def _v7_payload() -> dict[str, object]:
-    """One minimal valid v7 payload — the negative tests mutate a copy
+def _valid_payload() -> dict[str, object]:
+    """One minimal valid v8 payload — the negative tests mutate a copy
     of this and expect the loader to refuse the copy, never the shipped
     Berrymoor file."""
 
@@ -407,8 +407,8 @@ def _write_package(tmp_path: Path, payload: object, name: str) -> Path:
     return path
 
 
-def test_berrymoor_is_v7_bilingual_truth_with_a_kind_lookup() -> None:
-    """The shipped package: the loader's own version (v7), ten events
+def test_berrymoor_is_bilingual_truth_with_a_kind_lookup() -> None:
+    """The shipped package: the loader's own version (v8), ten events
     each carrying its
     story span, every Chinese narration present and non-empty, kinds
     unique, and the kind-keyed lookup answers each row (the presentation
@@ -432,7 +432,7 @@ def test_loader_refuses_a_monolingual_package(tmp_path: Path) -> None:
     """An event without its Chinese narration is a refusal naming the
     key — half a language cannot ride in silently."""
 
-    payload = _v7_payload()
+    payload = _valid_payload()
     del payload["event_pool"][0]["narration_zh"]  # type: ignore[index]
     result = load_world_package(_write_package(tmp_path, payload, "w.json"))
     assert isinstance(result, Err)
@@ -444,13 +444,13 @@ def test_loader_refuses_v1_and_empty_chinese(tmp_path: Path) -> None:
     is not read half-way), and an empty / whitespace ``narration_zh``
     is a refusal, not a note."""
 
-    v1 = _v7_payload()
+    v1 = _valid_payload()
     v1["version"] = 1
     result = load_world_package(_write_package(tmp_path, v1, "w1.json"))
     assert isinstance(result, Err)
     assert "version must be 8" in result.error.message
     assert "got 1" in result.error.message
-    blank = _v7_payload()
+    blank = _valid_payload()
     blank["event_pool"][0]["narration_zh"] = "   "  # type: ignore[index]
     result = load_world_package(_write_package(tmp_path, blank, "w2.json"))
     assert isinstance(result, Err)
@@ -462,14 +462,14 @@ def test_loader_refuses_a_bad_story_span(tmp_path: Path) -> None:
     (a v3 face kept through v4 and v5): the calendar is story-driven, so a wrong
     span is a wrong world."""
 
-    missing = _v7_payload()
+    missing = _valid_payload()
     del missing["event_pool"][0]["days"]  # type: ignore[index]
     result = load_world_package(
         _write_package(tmp_path, missing, "wd1.json")
     )
     assert isinstance(result, Err)
     assert "days" in result.error.message
-    negative = _v7_payload()
+    negative = _valid_payload()
     negative["event_pool"][0]["days"] = -1  # type: ignore[index]
     result = load_world_package(
         _write_package(tmp_path, negative, "wd2.json")
@@ -483,7 +483,7 @@ def test_loader_refuses_a_duplicated_kind(tmp_path: Path) -> None:
     kind would make the lookup ambiguous — a refusal naming the kind,
     never a silent overwrite."""
 
-    payload = _v7_payload()
+    payload = _valid_payload()
     payload["event_pool"] = [  # type: ignore[index]
         {
             "kind": "k",

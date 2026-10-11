@@ -6,11 +6,11 @@ characters — a series of events happens around the principals too, and
 the characters can meet, interact and befriend each other. The pin
 groups:
 
-1. **loading (package v7)** — the shipped Berrymoor file decodes with
+1. **loading (package v8)** — the shipped Berrymoor file decodes with
    the cast vignette and the residents section (the v4 faces), the v5
    ``initial_storylines`` section, the v6 ``voice`` library and the v7
    ``user_character`` section; a
-   v6-and-below
+   v6-and-below (or any other non-v8)
    stamp is refused with the number in the message (the version wall);
    an absent cast ``vignette`` and an absent (or empty) ``residents``
    section are both legal (an honest zero-resident world); a resident
@@ -66,9 +66,10 @@ LETTER = (
 )
 
 
-def _v7_payload() -> dict[str, object]:
-    """One minimal valid v7 payload — the negative tests mutate a copy
-    of this; the optional v4/v5/v6/v7 sections are absent."""
+def _valid_payload() -> dict[str, object]:
+    """One minimal valid v8 payload — the negative tests mutate a copy
+    of this; the optional v4/v5/v6/v7 sections (and every v8 cast
+    profile key) are absent."""
 
     return {
         "world_id": "world-x",
@@ -145,11 +146,11 @@ def _peopled_package() -> WorldPackage:
 
 
 # ---------------------------------------------------------------------------
-# 1 — loading: package v7
+# 1 — loading: package v8
 # ---------------------------------------------------------------------------
 
 
-def test_the_shipped_package_is_v7_with_vignette_and_residents() -> None:
+def test_the_shipped_package_carries_vignette_and_residents() -> None:
     """The shipped Berrymoor file rides the loader's own version: the
     cast member carries a non-empty vignette, and the residents section
     carries four or five fully-drawn residents (name, role and vignette
@@ -174,7 +175,7 @@ def test_earlier_versions_are_refused_with_the_number(tmp_path: Path) -> None:
     old file cannot ride in half-read)."""
 
     for old in (6, 5, 4, 3, 2):
-        payload = _v7_payload()
+        payload = _valid_payload()
         payload["version"] = old
         result = load_world_package(
             _write_package(tmp_path, payload, f"w{old}.json")
@@ -193,12 +194,12 @@ def test_absent_vignette_and_absent_residents_are_legal(
     zero-resident world."""
 
     plain = load_world_package(
-        _write_package(tmp_path, _v7_payload(), "plain.json")
+        _write_package(tmp_path, _valid_payload(), "plain.json")
     )
     assert isinstance(plain, Ok), plain.error.message
     assert plain.value.cast[0].vignette is None
     assert plain.value.residents == ()
-    payload = _v7_payload()
+    payload = _valid_payload()
     payload["residents"] = []
     empty = load_world_package(
         _write_package(tmp_path, payload, "empty.json")
@@ -214,7 +215,7 @@ def test_a_resident_colliding_with_the_cast_name_is_refused(
     refused naming the name — and the check is case-insensitive (prose
     does not distinguish case, and neither does the town)."""
 
-    payload = _v7_payload()
+    payload = _valid_payload()
     payload["residents"] = [
         {
             "name": "NELL",
@@ -234,7 +235,7 @@ def test_duplicate_resident_names_are_refused(tmp_path: Path) -> None:
     """Two residents sharing one name are refused naming the name — the
     prompt's residents section would present the same person twice."""
 
-    payload = _v7_payload()
+    payload = _valid_payload()
     payload["residents"] = [
         {"name": "Edie Marsh", "role": "the bakery", "vignette": "bakes"},
         {
@@ -256,14 +257,14 @@ def test_a_half_drawn_resident_is_refused(tmp_path: Path) -> None:
     refusal naming the key: a half-drawn person would ride the
     narrator's prompt as a half-drawn person."""
 
-    missing = _v7_payload()
+    missing = _valid_payload()
     missing["residents"] = [{"name": "A", "vignette": "b"}]
     result = load_world_package(
         _write_package(tmp_path, missing, "m.json")
     )
     assert isinstance(result, Err)
     assert "role" in result.error.message
-    blank = _v7_payload()
+    blank = _valid_payload()
     blank["residents"] = [
         {"name": "A", "role": "the role", "vignette": "   "}
     ]
