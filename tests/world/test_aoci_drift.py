@@ -337,9 +337,13 @@ def test_the_widened_entries_carry_the_voice_face() -> None:
 
 def test_narrator_entry_carries_the_user_character_line() -> None:
     """D-1's narrator face rides its entry: the conditional
-    ``Your character`` line and the roster's vocabulary extension — and
-    the entry's quoted string is the source's own (rename one side alone
-    and this reddens)."""
+    ``Your character`` line and the roster's vocabulary extension. The
+    entry side is the binding one — renaming the entry's claim reddens
+    here; the source check is an existence check (the phrase must live
+    somewhere in the source), not a line-level binding: the source
+    carries the phrase in rendered and teaching contexts both, so a
+    silent rename of one output line alone would not be caught by this
+    pin (review LOW-4 — the honest claim, narrowed)."""
 
     entry = _entry_line("narrator.py[EW8T]")
     assert "Your character" in entry

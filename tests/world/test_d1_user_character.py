@@ -280,6 +280,23 @@ def test_an_absent_section_is_the_honest_none(tmp_path: Path) -> None:
     assert loaded.value.user_character is None
 
 
+@pytest.mark.parametrize("stamp", [8, 9, 6, 5])
+def test_a_foreign_stamp_is_refused_by_the_v7_wall(
+    tmp_path: Path, stamp: int
+) -> None:
+    """The version wall is an equality, not a floor (review LOW-2): a
+    stamp other than 7 — a future v8+ guessed at, or an old v6-and-below
+    read half-way — is refused naming both numbers, never silently
+    accepted by a floor-shaped check."""
+
+    payload = _payload()
+    payload["version"] = stamp
+    refused = _load(tmp_path, payload)
+    assert isinstance(refused, Err)
+    assert f"version must be {WORLD_PACKAGE_VERSION}" in refused.error.message
+    assert f"got {stamp}" in refused.error.message
+
+
 @pytest.mark.parametrize("missing", ["id", "name", "anchor", "home"])
 def test_a_missing_key_is_refused_with_its_name(
     tmp_path: Path, missing: str
@@ -543,10 +560,14 @@ def test_the_user_arm_feeds_the_filter_before_the_window(
     tmp_path: Path,
 ) -> None:
     """Order law: the kept set is public ∪ witnessed ∪ co-lived and the
-    window slices **after** it. Six events — one old public one, five
-    naming her — answer the newest window of five; without the user
-    arm only the public one would survive, so the length itself is the
-    arm's witness."""
+    window slices **after** it (review LOW-3 — the discriminating
+    construction). Ten events: six kept (one old public one, five naming
+    her), then four others-only ones at the newest positions. The
+    newest window of five therefore *starts* inside the dropped tail —
+    slice-then-filter answers exactly one event (the last others-only
+    one's kept neighbour), filter-then-slice answers the five co-lived
+    ones. The result set itself is the discriminator, not the length
+    alone."""
 
     host, world_id = _bound_host(tmp_path)
     try:
@@ -573,12 +594,25 @@ def test_the_user_arm_feeds_the_filter_before_the_window(
                     index,
                 ),
             )
+        for index in range(6, 10):
+            _record(
+                host,
+                world_id,
+                _event(
+                    world_id,
+                    f"we-d1-x{index}",
+                    f"A stranger mended a sail, day {index}.",
+                    (STRANGER_ID,),
+                    index,
+                ),
+            )
         view = _view(host)
         assert len(view) == RECENT_WORLD_EVENT_WINDOW
         assert view == tuple(
             f"Together at the bindery, day {index}." for index in range(1, 6)
         )
         assert "The harbour clock struck eight." not in view
+        assert not any("A stranger mended" in line for line in view)
     finally:
         host.close()
 
