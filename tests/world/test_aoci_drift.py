@@ -192,23 +192,31 @@ def test_narrator_entry_headers_match_the_live_source() -> None:
         assert header in source
 
 
-def test_package_entry_reads_v7_and_matches_the_live_constant() -> None:
-    """The v7 wall (C2 → v5, C3 → v6, D-1 → v7, DEC-OPI-b290799a…45 /
-    DEC-OPI-a4cf2d0e…6 / …40): the stale v4 claim is gone, the v5/v6/v7
+def test_package_entry_reads_v8_and_matches_the_live_constant() -> None:
+    """The v8 wall (C2 → v5, C3 → v6, D-1 → v7, V3-3 → v8,
+    DEC-OPI-b290799a…45 /
+    DEC-OPI-a4cf2d0e…6 / …40 / TASK-OPI-bab4da9f…52): the stale v4 claim is
+    gone, the v5/v6/v7/v8
     decode law rides the entry, and the number is the source's own."""
 
     entry = _entry_line("package.py[W14A]")
-    assert "WORLD_PACKAGE_VERSION=7" in entry
-    assert "v7 墙" in entry
+    assert "WORLD_PACKAGE_VERSION=8" in entry
+    assert "v8 墙" in entry
     assert "version≠4" not in entry  # the stale claim this cut replaced
     for keyword in (
         "initial_storylines",
         "voice 可选节",
         "voice_for",
         "user_character",
+        "story_role",
+        "pov_eligible",
+        "pov_weight",
+        "long_term_drive",
+        "current_arc_seed",
+        "private_context",
     ):
         assert keyword in entry
-    assert "WORLD_PACKAGE_VERSION = 7" in PACKAGE_SOURCE.read_text(
+    assert "WORLD_PACKAGE_VERSION = 8" in PACKAGE_SOURCE.read_text(
         encoding="utf-8"
     )
 
@@ -216,20 +224,24 @@ def test_package_entry_reads_v7_and_matches_the_live_constant() -> None:
 def test_berrymoor_entry_carries_the_v5_arcs_and_the_v6_voices() -> None:
     """C2's two opening arcs and C3's six-character bilingual voice
     library are the shipped package's own content — and, since D-1
-    (DEC-OPI-a4cf2d0e…40), the v7 ``user_character`` section: the entry
+    (DEC-OPI-a4cf2d0e…40), the v7 ``user_character`` section, and,
+    since V3-3 (TASK-OPI-bab4da9f…52), Nell's v8 narrative profile
+    six keys: the entry
     carries the reader's own declared face and the moved version wall."""
 
     entry = _entry_line("berrymoor.json[FQ8W]")
     for keyword in (
         "initial_storylines",
         "voice",
-        "v7 墙",
+        "v8 墙",
         "Alder & Son",
         "Silas Croft",
         "speech_habits",
         "samples",
         "user_character",
         "actor-berrymoor-you",
+        "story_role",
+        "private_context",
     ):
         assert keyword in entry
 
@@ -289,32 +301,39 @@ def test_the_six_touched_entries_are_single_lines() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_deletion_entry_counts_thirteen_global_content_tables() -> None:
+def test_deletion_entry_counts_fifteen_global_content_tables() -> None:
     """The disposition's fixed falsehood (review MEDIUM-1, one live lie
     found by the mechanical sweep): ``GLOBAL_CONTENT_TABLES`` gained
     ``world_storyline`` at C2 — the entry's 「七员」 was false; 「八员」
     was the truth then. V3-1 (DEC-OPI-bab4da9f…11/…16, the L5 ruling)
-    adds migration 0029's four narrative tables, and V3-2
+    adds migration 0029's four narrative tables, V3-2
     (TASK-OPI-bab4da9f…29) adds migration 0030's
-    ``world_bible_revision`` — 「十三员」 is the truth now, and the
-    source constant must carry the same thirteen."""
+    ``world_bible_revision``, and V3-3 (TASK-OPI-bab4da9f…52) adds
+    migration 0031's two cast tables (``world_player_character`` /
+    ``world_actor_profile``) — 「十五员」 is the truth now, and the
+    source constant must carry the same fifteen."""
 
     from elc.deletion.types import GLOBAL_CONTENT_TABLES
 
     entry = _entry_line_in_section(
         "===D:/english-learning-clean/src/elc/deletion/===", "types.py[DD7M]"
     )
-    assert "十三员" in entry
+    assert "十五员" in entry
+    assert "十三员" not in entry
     assert "十二员" not in entry
     assert "八员" not in entry
     assert "七员" not in entry
     assert "world_storyline" in entry
     assert "world_scene_dossier" in entry
     assert "world_bible_revision" in entry
-    assert len(GLOBAL_CONTENT_TABLES) == 13
+    assert "world_player_character" in entry
+    assert "world_actor_profile" in entry
+    assert len(GLOBAL_CONTENT_TABLES) == 15
     assert "world_storyline" in GLOBAL_CONTENT_TABLES
     assert "world_scene_dossier" in GLOBAL_CONTENT_TABLES
     assert "world_bible_revision" in GLOBAL_CONTENT_TABLES
+    assert "world_player_character" in GLOBAL_CONTENT_TABLES
+    assert "world_actor_profile" in GLOBAL_CONTENT_TABLES
 
 
 def test_the_widened_entries_carry_the_voice_face() -> None:

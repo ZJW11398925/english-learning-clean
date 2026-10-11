@@ -63,6 +63,7 @@ from elc.platform.db.epoch import open_runtime_epoch
 from elc.platform.db.migrations import apply_migrations
 from elc.platform.types import DomainErrorCode, Err, Ok
 from elc.world.bible import SqliteBibleStore
+from elc.world.cast import SqliteCastStore
 from elc.world.engine.orchestrate import run_generated_step
 from elc.world.narrator import build_narrator_prompt
 from elc.world.package import (
@@ -140,6 +141,11 @@ def bible(conn: sqlite3.Connection) -> SqliteBibleStore:
     return SqliteBibleStore(conn, open_runtime_epoch(conn))
 
 
+@pytest.fixture()
+def cast(conn: sqlite3.Connection) -> SqliteCastStore:
+    return SqliteCastStore(conn, open_runtime_epoch(conn))
+
+
 def _land_claim(store: SqliteWorldStore, line_id: str, statement: str) -> None:
     """Settle one ``storyline:<line_id>`` claim through the ordinary
     event pipe — the only writer of the projection (C1-b's settlement:
@@ -173,25 +179,28 @@ def _land_claim(store: SqliteWorldStore, line_id: str, statement: str) -> None:
 def test_0028_is_the_registered_head() -> None:
     """C2's migration is the chain's newest entry, immediately behind
     C1-a's 0027; the shared constants say so, and the stamp a fresh
-    database carries is 30 (the head literal moves with each head —
+    database carries is 31 (the head literal moves with each head —
     this pin read 0028's own name while 0028 was the head, then
     V3-1's 0029_narrative_v3_foundations, then V3-2's
-    0030_world_bible; the lineage claim behind it — 0028 in place —
+    0030_world_bible, then V3-3's 0031_world_cast; the lineage claim
+    behind it — 0028 in place —
     stands)."""
 
-    assert MIGRATION_IDS[-1] == "0030_world_bible"
-    assert MIGRATION_IDS[-2] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-3] == "0028_world_storyline"
-    assert SCHEMA_HEAD_FILE == "0030_world_bible.sql"
-    assert SCHEMA_HEAD_VERSION == "30"
+    assert MIGRATION_IDS[-1] == "0031_world_cast"
+    assert MIGRATION_IDS[-2] == "0030_world_bible"
+    assert MIGRATION_IDS[-3] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-4] == "0028_world_storyline"
+    assert SCHEMA_HEAD_FILE == "0031_world_cast.sql"
+    assert SCHEMA_HEAD_VERSION == "31"
     assert (REPO_ROOT / "migrations" / SCHEMA_HEAD_FILE).is_file()
 
     fresh = sqlite3.connect(":memory:")
     fresh.execute("PRAGMA foreign_keys=ON")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0030_world_bible"
-    assert applied[-2] == "0029_narrative_v3_foundations"
-    assert applied[-3] == "0028_world_storyline"
+    assert applied[-1] == "0031_world_cast"
+    assert applied[-2] == "0030_world_bible"
+    assert applied[-3] == "0029_narrative_v3_foundations"
+    assert applied[-4] == "0028_world_storyline"
 
 
 def test_world_storyline_carries_its_columns_and_posture() -> None:
@@ -510,7 +519,7 @@ def test_v5_storylines_decode_and_absent_is_legal(tmp_path: Path) -> None:
     ]
     loaded = load_world_package(_write_package(tmp_path, payload, "a.json"))
     assert isinstance(loaded, Ok), loaded.error.message
-    assert loaded.value.version == WORLD_PACKAGE_VERSION == 7
+    assert loaded.value.version == WORLD_PACKAGE_VERSION == 8
     assert loaded.value.initial_storylines == (
         ("theme one", "resolve one"),
         ("theme two", "resolve two"),
@@ -562,7 +571,7 @@ def test_the_shipped_package_carries_its_opening_arcs() -> None:
     loaded = load_world_package(PACKAGE_PATH)
     assert isinstance(loaded, Ok), loaded.error.message
     package = loaded.value
-    assert package.version == WORLD_PACKAGE_VERSION == 7
+    assert package.version == WORLD_PACKAGE_VERSION == 8
     assert 1 <= len(package.initial_storylines) <= 3
     for theme, resolve_at in package.initial_storylines:
         assert isinstance(theme, str) and theme.strip()
@@ -572,6 +581,7 @@ def test_the_shipped_package_carries_its_opening_arcs() -> None:
 def test_berrymoor_seed_lands_the_storylines_idempotently(
     store: SqliteWorldStore,
     bible: SqliteBibleStore,
+    cast: SqliteCastStore,
 ) -> None:
     """The seed's landed shape: the derived id (``line-<world
     token>-<ordinal>``), the package's theme and resolve_at, ``active``
@@ -585,6 +595,7 @@ def test_berrymoor_seed_lands_the_storylines_idempotently(
         BUILTIN_WORLDS_DIR,
         persona_exists=lambda persona_id: persona_id == "persona-nell-alder",
         bible_store=bible,
+        cast_store=cast,
     )
     lines = store.list_storylines("world-berrymoor")
     assert [
@@ -609,6 +620,7 @@ def test_berrymoor_seed_lands_the_storylines_idempotently(
         BUILTIN_WORLDS_DIR,
         persona_exists=lambda persona_id: persona_id == "persona-nell-alder",
         bible_store=bible,
+        cast_store=cast,
     )
     assert store.list_storylines("world-berrymoor") == lines, (
         "a replayed seed writes nothing"

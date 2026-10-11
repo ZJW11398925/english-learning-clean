@@ -1,7 +1,7 @@
 {
   "world_id": "world-berrymoor",
   "name": "Berrymoor",
-  "version": 7,
+  "version": 8,
   "calendar_start": "2025-09-14",
   "setting": [
     "Berrymoor is a small harbour town on a cold coast, where the fishing boats come in with the morning tide and the day is measured by the water. The harbour path runs from the stone quay to the bindery steps, and half the town walks it twice a day without thinking about it. The sea is never far from any conversation: it decides the fish, the weather, and most of the news.",
@@ -13,7 +13,13 @@
     {
       "persona_id": "persona-nell-alder",
       "name": "Nell Alder",
-      "vignette": "the bindery's owner behind the green door; mends books slowly and properly, and keeps her grandfather's burnisher in the drawer she opens first every morning"
+      "vignette": "the bindery's owner behind the green door; mends books slowly and properly, and keeps her grandfather's burnisher in the drawer she opens first every morning",
+      "story_role": "PROTAGONIST",
+      "pov_eligible": true,
+      "pov_weight": 1,
+      "long_term_drive": "Keep the green door open on her own terms — the bindery working, her grandfather's tools staying hers, and the sign repainted rather than taken down.",
+      "current_arc_seed": "The order book is thinning and the town has started to talk about the shop in the past tense; the first hard frost is coming.",
+      "private_context": "She has priced the tools once already, on the back page of the ledger, and has told no one."
     }
   ],
   "residents": [

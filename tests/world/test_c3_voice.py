@@ -196,7 +196,7 @@ def test_an_absent_or_empty_library_is_the_same_honest_zero(
     assert empty.value.voice == ()
 
 
-def test_a_v6_stamp_is_refused_by_the_v7_wall(tmp_path: Path) -> None:
+def test_a_v6_stamp_is_refused_by_the_v8_wall(tmp_path: Path) -> None:
     """The version wall moved with the version: v6 — and a fortiori every
     below-version — is refused with both numbers in the message."""
 
@@ -204,7 +204,7 @@ def test_a_v6_stamp_is_refused_by_the_v7_wall(tmp_path: Path) -> None:
     payload["version"] = 6
     result = load_world_package(_write_package(tmp_path, payload))
     assert isinstance(result, Err)
-    assert "version must be 7" in result.error.message
+    assert "version must be 8" in result.error.message
     assert "got 6" in result.error.message
 
 

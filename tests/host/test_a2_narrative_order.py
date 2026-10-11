@@ -1003,7 +1003,7 @@ def test_the_shipped_package_sums_to_its_last_day() -> None:
     result = load_world_package(PACKAGE_PATH)
     assert isinstance(result, Ok), result.error.message
     package = result.value
-    assert package.version == WORLD_PACKAGE_VERSION == 7
+    assert package.version == WORLD_PACKAGE_VERSION == 8
     assert package.calendar_start == BERRYMOOR_START
     assert len(package.event_pool) == 10
     assert sum(event.days for event in package.event_pool) == 7

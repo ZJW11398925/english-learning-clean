@@ -271,6 +271,7 @@ from elc.teaching.store import SqliteTeachingStore
 from elc.user_config.controller import UserConfigController
 from elc.user_config.store import SqliteUserConfigStore
 from elc.world.bible import SqliteBibleStore
+from elc.world.cast import SqliteCastStore
 from elc.world.package import (
     WorldPackage,
     WorldPackageError,
@@ -1039,6 +1040,16 @@ def open_host(
         # open completes a partial seed: no open ever finishes without
         # the builtin worlds' Bibles in place.
         bible_store = SqliteBibleStore(db, fence)
+        # V3-3 (TASK-OPI-bab4da9f…52): the World Cast's durable faces —
+        # migration 0031's world_actor_profile (each cast member's
+        # narrative profile: the Director input) and
+        # world_player_character (the reader's own durable character,
+        # one per world) — seeded in this same open pass, right after
+        # each member's bind and after the package's user_character.
+        # The old chain is untouched: the narrator's roster, the
+        # cognitive view's user layer and the web face all read as
+        # before — the consumers move to the durable faces in V3-4+.
+        cast_store = SqliteCastStore(db, fence)
 
         def _persona_exists(persona_id: str) -> bool:
             """The world seed's cast verification face: does this persona
@@ -1061,6 +1072,7 @@ def open_host(
                 worlds_dir,
                 persona_exists=_persona_exists,
                 bible_store=bible_store,
+                cast_store=cast_store,
             )
         }
         # wr-12 (DEC-OPI-c73dbff3…84): the conversation→world-chronicle

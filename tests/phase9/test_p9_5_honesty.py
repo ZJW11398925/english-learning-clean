@@ -421,13 +421,14 @@ def test_no_source_file_carries_this_cuts_name() -> None:
     # 0023_world_identity, then W-1-1's 0024_world_events, then W-1-2's
     # 0025_world_runs, then W-1-3's 0026_world_reveal, then C1-a's
     # 0027_chronicle_attribution, then C2's 0028_world_storyline, then
-    # V3-1's 0029_narrative_v3_foundations (this pin
+    # V3-1's 0029_narrative_v3_foundations, then V3-2's
+    # 0030_world_bible (this pin
     # read
     # "0018_delivery_records.sql" while 0018 was the head, the stamp-pin
     # discipline every head move has followed since P8-4).
     assert sorted(
         path.name for path in (REPO_ROOT / "migrations").glob("*.sql")
-    )[-1] == "0030_world_bible.sql"
+    )[-1] == "0031_world_cast.sql"
 
 
 def test_the_frozen_surfaces_are_read_not_written() -> None:

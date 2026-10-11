@@ -262,7 +262,7 @@ def test_the_shipped_section_decodes_with_the_designs_values() -> None:
     reader is a townsperson with a name, an anchor and a home."""
 
     package = _shipped()
-    assert package.version == WORLD_PACKAGE_VERSION == 7
+    assert package.version == WORLD_PACKAGE_VERSION == 8
     assert package.user_character == UserCharacter(
         id=SHIPPED_ID,
         name=SHIPPED_NAME,
@@ -280,12 +280,12 @@ def test_an_absent_section_is_the_honest_none(tmp_path: Path) -> None:
     assert loaded.value.user_character is None
 
 
-@pytest.mark.parametrize("stamp", [8, 9, 6, 5])
-def test_a_foreign_stamp_is_refused_by_the_v7_wall(
+@pytest.mark.parametrize("stamp", [9, 7, 6, 5])
+def test_a_foreign_stamp_is_refused_by_the_v8_wall(
     tmp_path: Path, stamp: int
 ) -> None:
     """The version wall is an equality, not a floor (review LOW-2): a
-    stamp other than 7 — a future v8+ guessed at, or an old v6-and-below
+    stamp other than 8 — a future v9+ guessed at, or an old v7-and-below
     read half-way — is refused naming both numbers, never silently
     accepted by a floor-shaped check."""
 
@@ -368,7 +368,7 @@ def test_a_blank_or_non_string_value_is_refused(
     assert f"{key!r} must be a non-empty string" in refused.error.message
 
 
-def test_a_v6_stamp_is_refused_by_the_v7_wall(tmp_path: Path) -> None:
+def test_a_v6_stamp_is_refused_by_the_v8_wall(tmp_path: Path) -> None:
     """The version wall moved with the version: a v6 stamp is refused
     with both numbers in the message (an old file cannot ride in
     half-read)."""
@@ -377,7 +377,7 @@ def test_a_v6_stamp_is_refused_by_the_v7_wall(tmp_path: Path) -> None:
     payload["version"] = 6
     refused = _load(tmp_path, payload)
     assert isinstance(refused, Err)
-    assert "version must be 7" in refused.error.message
+    assert "version must be 8" in refused.error.message
     assert "got 6" in refused.error.message
 
 

@@ -150,10 +150,14 @@ def test_no_global_content_table_lives_in_app_db() -> None:
     conservative reading, V3-1 (DEC-OPI-bab4da9f…11/…16, the L5
     ruling) adds migration 0029's four narrative tables
     (``world_chapter`` / ``world_chapter_plan`` / ``world_scene`` /
-    ``world_scene_dossier``) the same way, and V3-2
+    ``world_scene_dossier``) the same way, V3-2
     (TASK-OPI-bab4da9f…29) adds migration 0030's
     ``world_bible_revision`` (the instance Bible's sole authority row)
-    the same way — every one hangs off the
+    the same way, and V3-3 (TASK-OPI-bab4da9f…52) adds migration
+    0031's two cast tables (``world_player_character`` — the reader's
+    own durable character, one per world — and ``world_actor_profile``
+    — each AI actor's narrative profile) the same way — every one
+    hangs off the
     shared world through keep-side FK chains.
 
     The same W-1-3 cut is the deletion face's own arrival: it *moves*
@@ -183,6 +187,12 @@ def test_no_global_content_table_lives_in_app_db() -> None:
         # the instance world's sole setting authority, keep-side like
         # every world-owned table before it.
         "world_bible_revision",
+        # V3-3 (TASK-OPI-bab4da9f…52): migration 0031's two cast
+        # tables — the reader's own durable character (one per world)
+        # and each AI actor's narrative profile — keep-side the same
+        # way.
+        "world_player_character",
+        "world_actor_profile",
     )
     for table in GLOBAL_CONTENT_TABLES:
         assert table not in SWEPT_TABLES

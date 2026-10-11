@@ -162,27 +162,29 @@ def _fresh_db(tmp_path: Path, name: str) -> sqlite3.Connection:
 
 def test_0027_is_the_registered_head() -> None:
     """C1-a's migration sits behind the head, immediately behind W-1-3's
-    0026_world_reveal; C2's 0028_world_storyline and V3-1's
-    0029_narrative_v3_foundations sit behind V3-2's 0030_world_bible,
+    0026_world_reveal; C2's 0028_world_storyline, V3-1's
+    0029_narrative_v3_foundations and V3-2's 0030_world_bible sit
+    behind V3-3's 0031_world_cast,
     the head now; the
     shared constants say so, and the stamp a fresh
-    database carries is 30 (the stamp-pin discipline every head move
+    database carries is 31 (the stamp-pin discipline every head move
     has followed since P8-4; this pin read "0026 is the head" while 0026
     was the head, and the head literal has moved with each head since)."""
 
-    assert MIGRATION_IDS[-1] == "0030_world_bible"
-    assert MIGRATION_IDS[-2] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-3] == "0028_world_storyline"
-    assert MIGRATION_IDS[-4] == "0027_chronicle_attribution"
-    assert SCHEMA_HEAD_FILE == "0030_world_bible.sql"
+    assert MIGRATION_IDS[-1] == "0031_world_cast"
+    assert MIGRATION_IDS[-2] == "0030_world_bible"
+    assert MIGRATION_IDS[-3] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-4] == "0028_world_storyline"
+    assert MIGRATION_IDS[-5] == "0027_chronicle_attribution"
+    assert SCHEMA_HEAD_FILE == "0031_world_cast.sql"
     assert (REPO_ROOT / "migrations" / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "30"
+    assert SCHEMA_HEAD_VERSION == "31"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0030_world_bible"
-    assert applied[-2] == "0029_narrative_v3_foundations"
-    assert applied[-3] == "0028_world_storyline"
+    assert applied[-1] == "0031_world_cast"
+    assert applied[-2] == "0030_world_bible"
+    assert applied[-3] == "0029_narrative_v3_foundations"
     assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 

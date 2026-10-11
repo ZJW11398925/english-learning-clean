@@ -350,6 +350,18 @@ RETAINED_TABLES: tuple[str, ...] = (
 #: (``world_id`` → ``world``) is keep-side at every link, so no sweep
 #: can be refused through it, and it adds no consequential FK to the
 #: registered deletion face.
+#:
+#: V3-3 (TASK-OPI-bab4da9f…52) adds migration 0031's two tables —
+#: ``world_player_character`` (the reader's own durable character in
+#: one world; one per world by ``UNIQUE (world_id)``) and
+#: ``world_actor_profile`` (each AI actor's narrative profile: story
+#: role, POV eligibility and weight, drive, arc seed, private context)
+#: — to the same keep rule, same conservative reading (registration,
+#: not deletion semantics; zero sweep face). Both FK chains
+#: (``world_id`` → ``world``; ``actor_id`` → ``world_actor`` →
+#: ``world``) are keep-side at every link, so no sweep can be refused
+#: through them, and they add no consequential FK to the registered
+#: deletion face.
 GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_lore_fact",
     "world",
@@ -364,6 +376,8 @@ GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_scene",
     "world_scene_dossier",
     "world_bible_revision",
+    "world_player_character",
+    "world_actor_profile",
 )
 
 

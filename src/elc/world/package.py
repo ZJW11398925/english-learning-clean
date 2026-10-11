@@ -4,7 +4,11 @@ A world package is one JSON file under the repository's ``worlds``
 directory (beside ``content_src/``): the world's identity (id, name,
 version, calendar_start), its setting prose, the cast it binds through
 existing character cards (each member optionally carrying a one-line
-``vignette`` of the member's life), an optional ``residents`` section —
+``vignette`` of the member's life and — v8 — an optional six-key
+narrative profile the seed lands in ``world_actor_profile``: the
+Director input saying who is the protagonist, who may carry a POV and
+at what weight, what her long-term drive and current arc seed are, and
+what is private to her), an optional ``residents`` section —
 the town's purely narrative residents, who have no persona and bind no
 actor (prompt material, never correspondence faces; the web face's
 ``world_residents`` reads the *bound* cast and is a different thing) —
@@ -25,7 +29,10 @@ a resident and the cast, a voice entry whose character name is not one
 of the town's own or whose ``samples`` sides are not
 :data:`~elc.world.voice.VOICE_SAMPLE_COUNT` passages each, a
 ``user_character`` section outside its exact four-key non-empty-string
-shape are all ``Err``
+shape, or a cast member's profile key outside its own shape (a
+``story_role`` outside the three canonical words, a non-bool
+``pov_eligible``, a negative or non-int ``pov_weight`` or a blank arc
+text) are all ``Err``
 refusals
 whose message names the offending key or word — and
 :func:`ensure_builtin_worlds` seeds every ``*.json`` in a directory
@@ -66,6 +73,7 @@ from elc.platform.types import (
     Result,
 )
 from elc.world.bible import BibleContent, SqliteBibleStore
+from elc.world.cast import SqliteCastStore, StoryRole
 from elc.world.engine.types import Condition, MomentKind, PoolEvent
 from elc.world.store import SqliteWorldStore
 from elc.world.types import StateEffect
@@ -113,19 +121,21 @@ SUPPLY_FAMILY_WORDS: tuple[str, ...] = (
     "STANCE",
 )
 
-#: The package schema version this loader reads (v7, D-1 /
-#: DEC-OPI-a4cf2d0e…40): every v6 face is kept (the bilingual pool
+#: The package schema version this loader reads (v8, V3-3 /
+#: TASK-OPI-bab4da9f…52): every v7 face is kept (the bilingual pool
 #: events, ``calendar_start``, an optional cast ``vignette``, an optional
-#: ``residents`` section, an optional ``initial_storylines`` section and
-#: the optional ``voice`` library), plus the v7 addition — an optional
-#: ``user_character`` section naming the reader's own character in the
-#: town (her id — the ``participants`` vocabulary's extension — her name,
-#: a one-line anchor and her home; the shape is :class:`UserCharacter`).
-#: A document stamped with any other version
-#: is a refusal naming the number — a v6-and-below file cannot ride in
-#: half-read, and a future v8 must be read by the cut that writes it,
+#: ``residents`` section, an optional ``initial_storylines`` section,
+#: the optional ``voice`` library and the optional ``user_character``
+#: section), plus the v8 addition — a cast member may carry her
+#: narrative profile (``story_role`` / ``pov_eligible`` / ``pov_weight``
+#: / ``long_term_drive`` / ``current_arc_seed`` / ``private_context``,
+#: all optional; the profile the seed lands in
+#: :mod:`elc.world.cast`'s ``world_actor_profile``). A document stamped
+#: with any other version
+#: is a refusal naming the number — a v7-and-below file cannot ride in
+#: half-read, and a future v9 must be read by the cut that writes it,
 #: never guessed at by this one.
-WORLD_PACKAGE_VERSION = 7
+WORLD_PACKAGE_VERSION = 8
 
 
 class WorldPackageError(RuntimeError):
@@ -138,15 +148,32 @@ class WorldPackageError(RuntimeError):
 class CastMember:
     """One cast row: the character card the actor speaks through (the
     persona must exist as a card when the package seeds), the name
-    the world's prose knows it by, and — v4, optional — a one-line
+    the world's prose knows it by, — v4, optional — a one-line
     ``vignette`` of the member's off-stage life (identity, daily round,
-    and what they care about) the narrator's prompt carries as material.
-    A member without a vignette rides the prompt as a bare name (the
-    pre-v4 shape, still legal)."""
+    and what they care about) the narrator's prompt carries as material,
+    and — v8, optional — the member's narrative profile
+    (:class:`~elc.world.cast.StoryRole` / ``pov_eligible`` /
+    ``pov_weight`` / ``long_term_drive`` / ``current_arc_seed`` /
+    ``private_context``): who she is *in this world* — the Director
+    input the seed lands in ``world_actor_profile`` (the design
+    supplement §7.2's separation: the card answers *who she is*, the
+    profile answers *who she is in this world*; never the same
+    question, never one table). A member without the six rides as
+    before (the profile columns honest ``None`` / empty), and the
+    profile face is the seed's business — the loader only decodes and
+    validates it (a declared word outside the vocabulary, a non-bool
+    ``pov_eligible``, a negative or non-int ``pov_weight`` or a blank
+    arc text is a refusal naming the key)."""
 
     persona_id: str
     name: str
     vignette: str | None = None
+    story_role: str | None = None
+    pov_eligible: bool | None = None
+    pov_weight: int | None = None
+    long_term_drive: str | None = None
+    current_arc_seed: str | None = None
+    private_context: str | None = None
 
 
 @dataclass(frozen=True)
@@ -341,7 +368,15 @@ _PACKAGE_OPTIONAL_KEYS = (
     "user_character",
 )
 _CAST_KEYS = ("persona_id", "name")
-_CAST_OPTIONAL_KEYS = ("vignette",)
+_CAST_OPTIONAL_KEYS = (
+    "vignette",
+    "story_role",
+    "pov_eligible",
+    "pov_weight",
+    "long_term_drive",
+    "current_arc_seed",
+    "private_context",
+)
 _RESIDENT_KEYS = ("name", "role", "vignette")
 #: The v7 ``user_character`` section's exact keys, all required
 #: non-empty strings.
@@ -405,7 +440,13 @@ def _decode_statement_pairs(
 def _decode_cast_member(entry: object, where: str) -> Result[CastMember]:
     """One cast row: ``{persona_id, name}`` required, plus the optional
     v4 ``vignette`` (a one-line life; absent decodes to ``None`` — the
-    pre-v4 bare-name shape stays legal)."""
+    pre-v4 bare-name shape stays legal) and the optional v8 profile six
+    (:class:`~elc.world.cast.StoryRole`'s word for ``story_role``,
+    a JSON bool for ``pov_eligible``, a non-negative non-bool int for
+    ``pov_weight``, and three non-blank arc texts; absent decodes to
+    ``None``/``None`` — the honest undeclared, the profile's NULL/empty
+    posture). A declared key outside its shape is a refusal naming the
+    key."""
 
     if not isinstance(entry, dict):
         return _err(f"{where}: not a JSON object")
@@ -430,7 +471,65 @@ def _decode_cast_member(entry: object, where: str) -> Result[CastMember]:
                 " present"
             )
         vignette = raw
-    return Ok(CastMember(persona_id=persona_id, name=name, vignette=vignette))
+    story_role: str | None = None
+    if "story_role" in entry:
+        raw = entry["story_role"]
+        words = {role.value for role in StoryRole}
+        if not isinstance(raw, str) or raw not in words:
+            return _err(
+                f"{where}: story_role must be one of"
+                f" {', '.join(sorted(words))} when present,"
+                f" got {raw!r}"
+            )
+        story_role = raw
+    pov_eligible: bool | None = None
+    if "pov_eligible" in entry:
+        raw = entry["pov_eligible"]
+        if not isinstance(raw, bool):
+            return _err(
+                f"{where}: pov_eligible must be a JSON bool when"
+                f" present, got {raw!r}"
+            )
+        pov_eligible = raw
+    pov_weight: int | None = None
+    if "pov_weight" in entry:
+        raw = entry["pov_weight"]
+        # `type(raw) is not int` is the bool exclusion too (True is a
+        # bool, not an int, under this check — the ``days`` face's own
+        # posture): a JSON true/false is not a weight.
+        if type(raw) is not int or raw < 0:
+            return _err(
+                f"{where}: pov_weight must be a non-negative int when"
+                f" present, got {raw!r}"
+            )
+        pov_weight = raw
+    arc_texts: dict[str, str | None] = {}
+    for key in (
+        "long_term_drive",
+        "current_arc_seed",
+        "private_context",
+    ):
+        if key in entry:
+            raw = entry[key]
+            if not isinstance(raw, str) or not raw.strip():
+                return _err(
+                    f"{where}: {key!r} must be a non-empty string when"
+                    " present"
+                )
+            arc_texts[key] = raw
+    return Ok(
+        CastMember(
+            persona_id=persona_id,
+            name=name,
+            vignette=vignette,
+            story_role=story_role,
+            pov_eligible=pov_eligible,
+            pov_weight=pov_weight,
+            long_term_drive=arc_texts.get("long_term_drive"),
+            current_arc_seed=arc_texts.get("current_arc_seed"),
+            private_context=arc_texts.get("private_context"),
+        )
+    )
 
 
 def _decode_resident(entry: object, where: str) -> Result[Resident]:
@@ -815,8 +914,8 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
     Every refusal is an ``Err`` naming the file and the offending key or
     word: unreadable file, bad JSON, a non-object document, a missing or
     unexpected top-level key, a value of the wrong shape, a version other
-    than :data:`WORLD_PACKAGE_VERSION` (v7 — the v6 face kept, plus an
-    optional ``user_character`` section), a
+    than :data:`WORLD_PACKAGE_VERSION` (v8 — the v7 face kept, plus an
+    optional per-cast-member narrative profile), a
     duplicated event kind, an unknown moment word, an unknown supply
     family word, a resident whose name collides with the cast's or with
     another resident's (case-insensitively), an ``initial_storylines``
@@ -862,10 +961,13 @@ def load_world_package(path: str | Path) -> Result[WorldPackage]:
     if version != WORLD_PACKAGE_VERSION:
         return _err(
             f"{where}: version must be {WORLD_PACKAGE_VERSION} (this"
-            f" loader reads v{WORLD_PACKAGE_VERSION} packages — the v6"
-            " face kept, plus an optional user_character section naming"
-            " the reader's own character in the town;"
-            " v6-and-below files are refused rather than read half-way),"
+            f" loader reads v{WORLD_PACKAGE_VERSION} packages — the v7"
+            " face kept, plus an optional per-cast-member narrative"
+            " profile: story_role / pov_eligible / pov_weight /"
+            " long_term_drive / current_arc_seed / private_context —"
+            " the Director input the seed lands in"
+            " world_actor_profile;"
+            " v7-and-below files are refused rather than read half-way),"
             f" got {version}"
         )
     calendar_start = document["calendar_start"]
@@ -1135,6 +1237,7 @@ def ensure_builtin_worlds(
     *,
     persona_exists: Callable[[str], bool],
     bible_store: SqliteBibleStore,
+    cast_store: SqliteCastStore,
 ) -> tuple[WorldPackage, ...]:
     """Seed every ``*.json`` world package in ``worlds_dir`` into the
     store, idempotently, at composition time, and return the decoded
@@ -1189,6 +1292,39 @@ def ensure_builtin_worlds(
     deliberately: no caller can silently skip the Bible seed and open
     a world without its authority row (the ``persona_exists``
     keyword's own posture — fail-closed, the same family).
+
+    V3-3 (TASK-OPI-bab4da9f…52): a world's birth also carries its cast
+    narrative profiles and its durable player character — the Director
+    input (who is the protagonist, who may carry a POV and at what
+    weight, what each AI actor's long-term drive and current arc seed
+    are, what is private to each, and who the player is) landed as
+    migration 0031's rows through the caller-wired ``cast_store``
+    (**another required keyword**, the same fail-closed family — no
+    open skips the cast's durable half). Each cast member's profile is
+    seeded **immediately after her ``bind_actor`` lands** —
+    ``story_role`` / ``pov_eligible`` / ``pov_weight`` riding the
+    package's declared values (absent honest ``None``) and the three
+    arc texts the package's words (absent the empty string) — and the
+    package's ``user_character`` lands as the world's one
+    ``world_player_character`` row under the **same id the package
+    declares** (``actor-berrymoor-you`` stays ``actor-berrymoor-you``):
+    name from the package's ``name``, background from the
+    ``anchor``, location from the ``home``, the rest honestly empty.
+    Both seeds ride the same atomicity posture as the Bible's (the
+    V3-2R corrected wording): **two separate short transactions, not
+    one ACID group**, fail-closed and idempotent, so a retry of an
+    interrupted open completes a partial seed — and **never
+    rewriting**: a replayed open re-seeds nothing, and a template file
+    edited between opens (a member's arc re-worded, the player's name
+    changed) changes no stored row — the instance profile and the
+    instance player are the authority, and a template's later update
+    making it into a stored world is an explicit later decision, never
+    a silent push. The old ``world_actor`` chain is untouched (the
+    design supplement §7.1's boundary); the narrator's roster and the
+    ``participants`` vocabulary it computes live are *not* rewired by
+    this cut — the durable namespace half
+    (:func:`elc.world.cast.participant_namespace`) is the derivation
+    the later cuts' consumers read.
 
     Every failure raises :class:`WorldPackageError` — the composition
     root's open fails closed (the ``world_lore`` seed posture: a database
@@ -1262,6 +1398,59 @@ def ensure_builtin_worlds(
                     f"builtin world {package.world_id!r}: actor"
                     f" {actor_id!r} not bound for persona"
                     f" {member.persona_id!r}: {bound.error.message}"
+                )
+            # V3-3 (TASK-OPI-bab4da9f…52): each member's narrative
+            # profile lands immediately after her bind — the Director
+            # input (story role, POV eligibility and weight, the
+            # long-term drive, the current arc's seed, the private
+            # context) as migration 0031's world_actor_profile row.
+            # The face is idempotent and never rewriting (a replayed
+            # open writes nothing; a template's later edit is silently
+            # ignored), and the same atomicity posture as the Bible's
+            # seed above holds: its own short transaction, fail-closed
+            # (a refusal here fails this open — never a half-cast
+            # world).
+            seeded_profile = cast_store.seed_actor_profile(
+                actor_id,
+                package.world_id,
+                story_role=(
+                    StoryRole(member.story_role)
+                    if member.story_role is not None
+                    else None
+                ),
+                pov_eligible=member.pov_eligible,
+                pov_weight=member.pov_weight,
+                long_term_drive=member.long_term_drive or "",
+                current_arc_seed=member.current_arc_seed or "",
+                private_context=member.private_context or "",
+                now=now,
+            )
+            if isinstance(seeded_profile, Err):
+                raise WorldPackageError(
+                    f"builtin world {package.world_id!r}: actor"
+                    f" {actor_id!r} narrative profile not seeded:"
+                    f" {seeded_profile.error.message}"
+                )
+        # V3-3 (TASK-OPI-bab4da9f…52): the package's ``user_character``
+        # becomes the world's one durable player character under the
+        # same id the package declares — name from the package's name,
+        # background from the anchor, location from the home, the rest
+        # honestly empty. The same idempotent, never-rewriting,
+        # fail-closed posture as every seed above.
+        if package.user_character is not None:
+            seeded_player = cast_store.seed_player_character(
+                package.user_character.id,
+                package.world_id,
+                name=package.user_character.name,
+                background=package.user_character.anchor,
+                location=package.user_character.home,
+                now=now,
+            )
+            if isinstance(seeded_player, Err):
+                raise WorldPackageError(
+                    f"builtin world {package.world_id!r}: player"
+                    " character not seeded:"
+                    f" {seeded_player.error.message}"
                 )
         # v5 (C2, DEC-OPI-b290799a…45): the package's opening arcs land
         # through the store's idempotent create face — the derived line

@@ -382,7 +382,7 @@ def _v7_payload() -> dict[str, object]:
     return {
         "world_id": "world-x",
         "name": "X",
-        "version": 7,
+        "version": 8,
         "calendar_start": "2025-09-14",
         "setting": ["one", "two", "three"],
         "cast": [{"persona_id": "persona-nell-alder", "name": "Nell"}],
@@ -417,7 +417,7 @@ def test_berrymoor_is_v7_bilingual_truth_with_a_kind_lookup() -> None:
     result = load_world_package(PACKAGE_PATH)
     assert not isinstance(result, Err), result.error.message
     package = result.value
-    assert package.version == WORLD_PACKAGE_VERSION == 7
+    assert package.version == WORLD_PACKAGE_VERSION == 8
     assert package.calendar_start == "2025-09-14"
     assert len(package.event_pool) == 10
     assert all(event.days >= 0 for event in package.event_pool)
@@ -448,7 +448,7 @@ def test_loader_refuses_v1_and_empty_chinese(tmp_path: Path) -> None:
     v1["version"] = 1
     result = load_world_package(_write_package(tmp_path, v1, "w1.json"))
     assert isinstance(result, Err)
-    assert "version must be 7" in result.error.message
+    assert "version must be 8" in result.error.message
     assert "got 1" in result.error.message
     blank = _v7_payload()
     blank["event_pool"][0]["narration_zh"] = "   "  # type: ignore[index]

@@ -25,8 +25,9 @@ the Bible's ``calendar``). The groups:
    UNIQUE** admitting at most one ``CURRENT`` row per world (two
    CURRENT rows refuse; a CURRENT beside a SUPERSEDED row is legal), a
    dangling ``world_id`` refused by the table's own FK, and the chain
-   self-pin (the shared constants say ``0030_world_bible`` / ``30``,
-   a fresh database stamps exactly that);
+   self-pin (the shared constants say ``0031_world_cast`` / ``31``,
+   a fresh database stamps exactly that — the head literal moved with
+   V3-3's 0031_world_cast, the migration-shape claims stay 0030's own);
 2. **open-time seed** — a builtin package's birth carries its Bible:
    revision 1, ``CURRENT``, ``parent_revision`` None, the premise
    being the package's setting prose joined with `` · `` and the
@@ -100,6 +101,7 @@ from elc.world.bible import (
     BibleRevisionStatus,
     SqliteBibleStore,
 )
+from elc.world.cast import SqliteCastStore
 from elc.world.package import (
     BUILTIN_WORLDS_DIR,
     WORLD_PACKAGE_VERSION,
@@ -158,6 +160,15 @@ def world_store(conn: sqlite3.Connection) -> SqliteWorldStore:
     """The world store over the same fresh database."""
 
     return SqliteWorldStore(conn, open_runtime_epoch(conn))
+
+
+@pytest.fixture()
+def cast(conn: sqlite3.Connection) -> SqliteCastStore:
+    """The cast store over the same fresh database (V3-3: the seed now
+    also needs it — the trio rides one connection, the same
+    composition-root shape)."""
+
+    return SqliteCastStore(conn, open_runtime_epoch(conn))
 
 
 def _write_world_dir(tmp_path: Path, setting: list[str]) -> Path:
@@ -233,6 +244,7 @@ def _row_count(conn: sqlite3.Connection, world_id: str) -> int:
 def _seed_one_world(
     world_store: SqliteWorldStore,
     bible: SqliteBibleStore,
+    cast: SqliteCastStore,
     tmp_path: Path,
 ) -> Path:
     """One temporary worlds directory, seeded through the real
@@ -245,6 +257,7 @@ def _seed_one_world(
         directory,
         persona_exists=lambda _: True,
         bible_store=bible,
+        cast_store=cast,
     )
     return directory
 
@@ -254,14 +267,14 @@ def _seed_one_world(
 # ---------------------------------------------------------------------------
 
 
-def test_the_shared_constants_and_a_fresh_db_say_30() -> None:
-    assert MIGRATION_IDS[-1] == "0030_world_bible"
-    assert SCHEMA_HEAD_FILE == "0030_world_bible.sql"
-    assert SCHEMA_HEAD_VERSION == "30"
+def test_the_shared_constants_and_a_fresh_db_say_31() -> None:
+    assert MIGRATION_IDS[-1] == "0031_world_cast"
+    assert SCHEMA_HEAD_FILE == "0031_world_cast.sql"
+    assert SCHEMA_HEAD_VERSION == "31"
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0030_world_bible"
-    assert schema_version(fresh) == SCHEMA_HEAD_VERSION == "30"
+    assert applied[-1] == "0031_world_cast"
+    assert schema_version(fresh) == SCHEMA_HEAD_VERSION == "31"
     stamps = dict(
         fresh.execute(
             "SELECT key, value FROM schema_meta"
@@ -269,8 +282,8 @@ def test_the_shared_constants_and_a_fresh_db_say_30() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "30",
-        "runtime_schema_version": "30",
+        "schema_version": "31",
+        "runtime_schema_version": "31",
     }
 
 
@@ -424,6 +437,7 @@ def test_a_dangling_world_id_is_refused_by_the_table_fk(
 def test_the_seed_lands_revision_one_with_the_package_premise(
     world_store: SqliteWorldStore,
     bible: SqliteBibleStore,
+    cast: SqliteCastStore,
     tmp_path: Path,
 ) -> None:
     """The world's birth carries its Bible: revision 1, ``CURRENT``,
@@ -433,7 +447,7 @@ def test_the_seed_lands_revision_one_with_the_package_premise(
     the other twelve content fields honestly empty, the derived id,
     both stamps the seed's ``now`` and ``state_version`` 1."""
 
-    _seed_one_world(world_store, bible, tmp_path)
+    _seed_one_world(world_store, bible, cast, tmp_path)
     current = bible.current_bible(TEST_WORLD_ID)
     assert current is not None
     assert current.bible_revision_id == _bible_id(1)
@@ -459,13 +473,14 @@ def test_the_seed_lands_revision_one_with_the_package_premise(
 def test_the_world_row_and_the_bible_id_derive_together(
     world_store: SqliteWorldStore,
     bible: SqliteBibleStore,
+    cast: SqliteCastStore,
     tmp_path: Path,
 ) -> None:
     """The seed lands through the world store's own create face — the
     world row exists, and the Bible hangs off it (the FK chain is the
     real one, not a parallel bookkeeping)."""
 
-    _seed_one_world(world_store, bible, tmp_path)
+    _seed_one_world(world_store, bible, cast, tmp_path)
     world = world_store.get_world(TEST_WORLD_ID)
     assert world is not None
     assert world.name == "Bibletest"
@@ -476,13 +491,14 @@ def test_the_world_row_and_the_bible_id_derive_together(
 def test_a_replayed_seed_writes_nothing(
     world_store: SqliteWorldStore,
     bible: SqliteBibleStore,
+    cast: SqliteCastStore,
     conn: sqlite3.Connection,
     tmp_path: Path,
 ) -> None:
     """An open re-seed is a no-op: the row count stays 1 and the stored
     row is field-for-field identical (its ``created_at`` included)."""
 
-    _seed_one_world(world_store, bible, tmp_path)
+    _seed_one_world(world_store, bible, cast, tmp_path)
     before = bible.current_bible(TEST_WORLD_ID)
     assert before is not None
 
@@ -491,6 +507,7 @@ def test_a_replayed_seed_writes_nothing(
         _write_world_dir(tmp_path, _seed_setting()),
         persona_exists=lambda _: True,
         bible_store=bible,
+        cast_store=cast,
     )
     assert _row_count(conn, TEST_WORLD_ID) == 1
     after = bible.current_bible(TEST_WORLD_ID)
@@ -500,6 +517,7 @@ def test_a_replayed_seed_writes_nothing(
 def test_the_seed_lands_the_full_content(
     world_store: SqliteWorldStore,
     bible: SqliteBibleStore,
+    cast: SqliteCastStore,
     tmp_path: Path,
 ) -> None:
     """The seed face takes the shared content model whole: all fourteen
@@ -557,6 +575,7 @@ def test_the_seed_lands_the_full_content(
 def test_a_template_update_does_not_rewrite_the_seeded_world(
     world_store: SqliteWorldStore,
     bible: SqliteBibleStore,
+    cast: SqliteCastStore,
     conn: sqlite3.Connection,
     tmp_path: Path,
 ) -> None:
@@ -567,7 +586,7 @@ def test_a_template_update_does_not_rewrite_the_seeded_world(
     existing world's rewrite (DOMAIN §20.3-6 / N-INV-006); making a
     change so is an explicit revision decision, never a silent push."""
 
-    directory = _seed_one_world(world_store, bible, tmp_path)
+    directory = _seed_one_world(world_store, bible, cast, tmp_path)
     before = bible.current_bible(TEST_WORLD_ID)
     assert before is not None
 
@@ -581,6 +600,7 @@ def test_a_template_update_does_not_rewrite_the_seeded_world(
         directory,
         persona_exists=lambda _: True,
         bible_store=bible,
+        cast_store=cast,
     )
 
     assert _row_count(conn, TEST_WORLD_ID) == 1
@@ -611,6 +631,7 @@ def _content(**overrides: str) -> BibleContent:
 def test_a_revision_supersedes_and_appends(
     world_store: SqliteWorldStore,
     bible: SqliteBibleStore,
+    cast: SqliteCastStore,
     conn: sqlite3.Connection,
     tmp_path: Path,
 ) -> None:
@@ -620,7 +641,7 @@ def test_a_revision_supersedes_and_appends(
     never deleted (the count only grows) and the history reads
     ascending."""
 
-    _seed_one_world(world_store, bible, tmp_path)
+    _seed_one_world(world_store, bible, cast, tmp_path)
     before = bible.current_bible(TEST_WORLD_ID)
     assert before is not None
 
@@ -657,6 +678,7 @@ def test_a_revision_supersedes_and_appends(
 def test_a_stale_expected_version_is_a_conflict_and_writes_nothing(
     world_store: SqliteWorldStore,
     bible: SqliteBibleStore,
+    cast: SqliteCastStore,
     conn: sqlite3.Connection,
     tmp_path: Path,
 ) -> None:
@@ -664,7 +686,7 @@ def test_a_stale_expected_version_is_a_conflict_and_writes_nothing(
     ``CONFLICT`` (the expected and actual counters ride the message)
     and the database is exactly as it was."""
 
-    _seed_one_world(world_store, bible, tmp_path)
+    _seed_one_world(world_store, bible, cast, tmp_path)
 
     refused = bible.revise_bible(
         _bible_id(2),
@@ -707,6 +729,7 @@ def test_a_world_with_no_current_revision_cannot_revise(
 def test_an_empty_field_is_undeclared_not_inherited(
     world_store: SqliteWorldStore,
     bible: SqliteBibleStore,
+    cast: SqliteCastStore,
     tmp_path: Path,
 ) -> None:
     """The full-content law: a revision carries what its caller said
@@ -715,7 +738,7 @@ def test_an_empty_field_is_undeclared_not_inherited(
     what the world is like; the store does not carry old words
     forward)."""
 
-    _seed_one_world(world_store, bible, tmp_path)
+    _seed_one_world(world_store, bible, cast, tmp_path)
     first = bible.revise_bible(
         _bible_id(2),
         TEST_WORLD_ID,
@@ -747,6 +770,7 @@ def test_an_empty_field_is_undeclared_not_inherited(
 def test_a_stale_revision_identity_cannot_resurrect_an_old_edit(
     world_store: SqliteWorldStore,
     bible: SqliteBibleStore,
+    cast: SqliteCastStore,
     conn: sqlite3.Connection,
     tmp_path: Path,
 ) -> None:
@@ -761,7 +785,7 @@ def test_a_stale_revision_identity_cannot_resurrect_an_old_edit(
     revision 3 is born: two rows, revision 2 still ``CURRENT`` with
     B's content."""
 
-    _seed_one_world(world_store, bible, tmp_path)
+    _seed_one_world(world_store, bible, cast, tmp_path)
     # A reads the seeded revision and holds its identity + counter.
     a_view = bible.current_bible(TEST_WORLD_ID)
     assert a_view is not None
@@ -825,6 +849,7 @@ def test_an_unseeded_world_answers_none(bible: SqliteBibleStore) -> None:
 def test_a_superseded_revision_stays_citable(
     world_store: SqliteWorldStore,
     bible: SqliteBibleStore,
+    cast: SqliteCastStore,
     tmp_path: Path,
 ) -> None:
     """The citation read: after a revision, revision 1 answers by
@@ -833,7 +858,7 @@ def test_a_superseded_revision_stays_citable(
     row's own (the supersede moved only the word, the bookkeeping
     stamp and the counter)."""
 
-    _seed_one_world(world_store, bible, tmp_path)
+    _seed_one_world(world_store, bible, cast, tmp_path)
     before = bible.current_bible(TEST_WORLD_ID)
     assert before is not None
 
@@ -872,13 +897,14 @@ def test_a_superseded_revision_stays_citable(
 def test_a_seeded_world_writes_no_legacy_lore(
     world_store: SqliteWorldStore,
     bible: SqliteBibleStore,
+    cast: SqliteCastStore,
     conn: sqlite3.Connection,
     tmp_path: Path,
 ) -> None:
     """One authority: the seed touches the Bible table and the legacy
     lore table not at all — zero rows there, one row here."""
 
-    _seed_one_world(world_store, bible, tmp_path)
+    _seed_one_world(world_store, bible, cast, tmp_path)
     assert (
         conn.execute("SELECT COUNT(*) FROM world_lore_fact").fetchone()[0]
         == 0
@@ -998,6 +1024,7 @@ def test_the_composition_root_seeds_the_builtin_worlds_bible(
 def test_the_unique_clash_maps_to_conflict_and_rolls_back(
     world_store: SqliteWorldStore,
     bible: SqliteBibleStore,
+    cast: SqliteCastStore,
     conn: sqlite3.Connection,
     tmp_path: Path,
 ) -> None:
@@ -1012,7 +1039,7 @@ def test_the_unique_clash_maps_to_conflict_and_rolls_back(
     keeps its status and its counter, and the table holds exactly the
     rows that predated the refusal."""
 
-    _seed_one_world(world_store, bible, tmp_path)
+    _seed_one_world(world_store, bible, cast, tmp_path)
 
     # The row that owns the next revision number, planted straight
     # through the table (``SUPERSEDED`` — the partial UNIQUE index
@@ -1063,6 +1090,7 @@ def test_the_unique_clash_maps_to_conflict_and_rolls_back(
 def test_a_locked_database_maps_to_dependency_unavailable(
     world_store: SqliteWorldStore,
     bible: SqliteBibleStore,
+    cast: SqliteCastStore,
     conn: sqlite3.Connection,
     tmp_path: Path,
 ) -> None:
@@ -1075,7 +1103,7 @@ def test_a_locked_database_maps_to_dependency_unavailable(
     never re-attributed as a missing identity. After the lock
     releases, the same call succeeds."""
 
-    _seed_one_world(world_store, bible, tmp_path)
+    _seed_one_world(world_store, bible, cast, tmp_path)
 
     # A second connection to the same file, on the same runtime epoch
     # (the P8-5 posture: two ``:memory:`` connections would be two

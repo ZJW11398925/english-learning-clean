@@ -160,24 +160,26 @@ def test_0023_is_in_place_behind_the_head() -> None:
     stamp-pin discipline every head
     move has followed since P8-4; the pin read "0023 is the head" while
     0023 was the head). The shared constants say so, and the stamp a
-    fresh database carries is 30 (the head literal moved with each
-    later head, most recently V3-2's 0030_world_bible)."""
+    fresh database carries is 31 (the head literal moved with each
+    later head, most recently V3-3's 0031_world_cast)."""
 
-    assert MIGRATION_IDS[-1] == "0030_world_bible"
-    assert MIGRATION_IDS[-2] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-3] == "0028_world_storyline"
-    assert MIGRATION_IDS[-4] == "0027_chronicle_attribution"
-    assert SCHEMA_HEAD_FILE == "0030_world_bible.sql"
+    assert MIGRATION_IDS[-1] == "0031_world_cast"
+    assert MIGRATION_IDS[-2] == "0030_world_bible"
+    assert MIGRATION_IDS[-3] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-4] == "0028_world_storyline"
+    assert MIGRATION_IDS[-5] == "0027_chronicle_attribution"
+    assert SCHEMA_HEAD_FILE == "0031_world_cast.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
     assert (MIGRATIONS / "0023_world_identity.sql").is_file()
-    assert SCHEMA_HEAD_VERSION == "30"
+    assert SCHEMA_HEAD_VERSION == "31"
 
     conn = sqlite3.connect(":memory:")
     applied = apply_migrations(conn)
-    assert applied[-1] == "0030_world_bible"
-    assert applied[-2] == "0029_narrative_v3_foundations"
-    assert applied[-3] == "0028_world_storyline"
-    assert applied[-4] == "0027_chronicle_attribution"
+    assert applied[-1] == "0031_world_cast"
+    assert applied[-2] == "0030_world_bible"
+    assert applied[-3] == "0029_narrative_v3_foundations"
+    assert applied[-4] == "0028_world_storyline"
+    assert applied[-5] == "0027_chronicle_attribution"
     assert schema_version(conn) == SCHEMA_HEAD_VERSION
 
 

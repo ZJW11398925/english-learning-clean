@@ -179,16 +179,17 @@ def test_0018_is_0017s_successor_and_the_head() -> None:
     ``0026_world_reveal.sql``, C1-a's
     ``0027_chronicle_attribution.sql``, C2's
     ``0028_world_storyline.sql``, V3-1's
-    ``0029_narrative_v3_foundations.sql`` and V3-2's
-    ``0030_world_bible.sql``, the
+    ``0029_narrative_v3_foundations.sql``, V3-2's
+    ``0030_world_bible.sql`` and V3-3's
+    ``0031_world_cast.sql``, the
     current head (this pin read
     ``names[-1] == SCHEMA_HEAD_FILE == HEAD_0018`` while 0018 was the head
     — the P8-4 suite's rule: the successor is a **literal** here so the
     head can move without silently falsifying the lineage claim)."""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert MIGRATION_IDS[-1] == "0030_world_bible"
-    assert SCHEMA_HEAD_FILE == "0030_world_bible.sql"
+    assert MIGRATION_IDS[-1] == "0031_world_cast"
+    assert SCHEMA_HEAD_FILE == "0031_world_cast.sql"
     assert names[names.index(HEAD_0018) + 1] == "0019_character_cards.sql"
     assert names[names.index("0019_character_cards.sql") + 1] == (
         "0020_world_lore_facts.sql"
@@ -250,8 +251,9 @@ def test_the_stamps_move_to_the_shared_head(db: sqlite3.Connection) -> None:
     # W-1-0 再随迁 22 → 23（世界身份三表）；W-1-1 再随迁 23 → 24（事件树两表）；
     # W-1-2 再随迁 24 → 25（world_run 一行）；W-1-3 再随迁 25 → 26（揭示队列）；
     # C1-a 再随迁 26 → 27（编年史归属两列）；C2 再随迁 27 → 28（剧情线一表）；
-    # V3-1 再随迁 28 → 29（叙事基础一列四表）；V3-2 再随迁 29 → 30（World Bible 一表）。
-    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "30"
+    # V3-1 再随迁 28 → 29（叙事基础一列四表）；V3-2 再随迁 29 → 30（World Bible 一表）；
+    # V3-3 再随迁 30 → 31（世界 cast 两表）。
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "31"
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"

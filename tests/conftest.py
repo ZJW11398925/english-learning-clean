@@ -109,12 +109,19 @@ MIGRATION_IDS: tuple[str, ...] = (
     # creation and never rewrites an existing world, N-INV-006;
     # elc.world.bible is its store).
     "0030_world_bible",
+    # V3-3 (TASK-OPI-bab4da9f…52): the World Cast & Player Identity —
+    # the two durable cast faces (world_player_character: the reader's
+    # own character, one per world by UNIQUE(world_id);
+    # world_actor_profile: each AI actor's narrative profile — story
+    # role, POV eligibility/weight, drive, arc seed, private context;
+    # elc.world.cast is their store; world_actor untouched).
+    "0031_world_cast",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0030_world_bible.sql"
-SCHEMA_HEAD_VERSION = "30"
+SCHEMA_HEAD_FILE = "0031_world_cast.sql"
+SCHEMA_HEAD_VERSION = "31"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

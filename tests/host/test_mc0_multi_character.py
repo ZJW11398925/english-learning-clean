@@ -254,25 +254,27 @@ def test_0019_is_the_registered_head() -> None:
     0025_world_runs, W-1-3's 0026_world_reveal and C1-a's
     0027_chronicle_attribution moved the shared
     constants and the stamp to 27, and C2's 0028_world_storyline moved
-    them again to 28, V3-1's 0029_narrative_v3_foundations to 29 and
-    V3-2's 0030_world_bible to 30
+    them again to 28, V3-1's 0029_narrative_v3_foundations to 29, V3-2's
+    0030_world_bible to 30 and V3-3's 0031_world_cast to 31
     (the head
     assertion migrates with the newest slice; this pin's *lineage* claim —
     0019 in place — stands)."""
 
-    assert MIGRATION_IDS[-1] == "0030_world_bible"
-    assert MIGRATION_IDS[-2] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-3] == "0028_world_storyline"
+    assert MIGRATION_IDS[-1] == "0031_world_cast"
+    assert MIGRATION_IDS[-2] == "0030_world_bible"
+    assert MIGRATION_IDS[-3] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-4] == "0028_world_storyline"
     assert "0019_character_cards" in MIGRATION_IDS
-    assert SCHEMA_HEAD_FILE == "0030_world_bible.sql"
+    assert SCHEMA_HEAD_FILE == "0031_world_cast.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "30"
+    assert SCHEMA_HEAD_VERSION == "31"
 
     conn = sqlite3.connect(":memory:")
     applied = apply_migrations(conn)
-    assert applied[-1] == "0030_world_bible"
-    assert applied[-2] == "0029_narrative_v3_foundations"
-    assert applied[-3] == "0028_world_storyline"
+    assert applied[-1] == "0031_world_cast"
+    assert applied[-2] == "0030_world_bible"
+    assert applied[-3] == "0029_narrative_v3_foundations"
+    assert applied[-4] == "0028_world_storyline"
     assert "0019_character_cards" in applied
     assert schema_version(conn) == SCHEMA_HEAD_VERSION
 

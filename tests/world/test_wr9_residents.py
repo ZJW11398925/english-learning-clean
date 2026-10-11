@@ -158,7 +158,7 @@ def test_the_shipped_package_is_v7_with_vignette_and_residents() -> None:
     result = load_world_package(PACKAGE_PATH)
     assert isinstance(result, Ok), result.error.message
     package = result.value
-    assert package.version == WORLD_PACKAGE_VERSION == 7
+    assert package.version == WORLD_PACKAGE_VERSION == 8
     assert package.cast[0].vignette
     assert 4 <= len(package.residents) <= 5
     for resident in package.residents:
@@ -180,7 +180,7 @@ def test_earlier_versions_are_refused_with_the_number(tmp_path: Path) -> None:
             _write_package(tmp_path, payload, f"w{old}.json")
         )
         assert isinstance(result, Err)
-        assert "version must be 7" in result.error.message
+        assert "version must be 8" in result.error.message
         assert f"got {old}" in result.error.message
 
 
