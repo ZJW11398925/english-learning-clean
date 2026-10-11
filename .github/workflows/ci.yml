@@ -1,29 +1,12 @@
 name: CI
 
-# 额度纪律（用户明令 2026-10-11「不要老是触发 CI，损耗太多 action 额度」）：
-# 本仓 workflow 全程本地验证（总控亲跑全量 + 四门）为硬流程，push 是
-# 备份/里程碑动作而非每刀动作 —— 三条节流：
-#   1) concurrency：同一 ref 的连续 push 只跑最新一次（旧跑自动取消）；
-#   2) paths-ignore：纯文档/台账/生成数据改动不触发（代码与测试才触发）；
-#   3) 流程侧（AGENTS.md）：不主动 push；批量 push（多刀合一），逐刀 push 禁止。
+# 触发纪律（用户明令 2026-10-11「不要老是触发 CI，损耗太多 action 额度；
+# 不是不 push，而是 push 跳过 CI」）：push 照常做（代码同步/备份是硬要求），
+# 但 push 与 PR 都不自动跑 CI —— 本仓全流程本地验证（总控亲跑全量+四门）
+# 为硬门，CI 是**按需手动**的备用复核面。
+# 需要跑时：GitHub UI 的 Actions → CI → Run workflow，或 `gh workflow run ci.yml`。
 on:
-  push:
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - "aoci.txt"
-      - "aoci.meta.txt"
-      - "aoci.code.txt"
-      - "AGENTS.md"
-      - "content_src/**"
-      - "curriculum/**"
-      - "worlds/**"
-      - ".aoci/**"
-  pull_request:
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_dispatch:
 
 jobs:
   verify:
