@@ -198,8 +198,13 @@ class SqliteNarrativeStore:
         ``CLOSED`` chapter never reopens (§27's list). **A world holds
         at most one ACTIVE chapter** (MVP, §21's rule): if another
         chapter of the same world is already ``ACTIVE`` the move is
-        refused before anything is written. ``opened_at_tick`` is the
-        canon-face tick stamp — the caller's value (in the full
+        refused before anything is written. (The twin check runs
+        *outside* the CAS transaction — under Local V1's single-
+        connection discipline the window is unreachable; the race-free
+        form — the check inside the ``BEGIN IMMEDIATE``, or a partial
+        UNIQUE index — is a **registered obligation for the commit cuts
+        (V3-5/V3-6)**: the V3-1 review's MEDIUM.) ``opened_at_tick`` is
+        the canon-face tick stamp — the caller's value (in the full
         pipeline the chapter opens as its first scene starts, and the
         value rides from the current actual tick); the CAS counter
         makes the move stale-safe.

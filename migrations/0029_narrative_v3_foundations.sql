@@ -37,7 +37,10 @@
 --     §26.2.4 — the chapter order is monotone +1), ``status`` with the
 --     §21 word list exactly ('PLANNED','ACTIVE','SETTLING','CLOSED'),
 --     ``opened_at_tick`` / ``closed_at_tick`` nullable (the canon-face
---     time fields; only a commit transaction writes them — §26),
+--     time fields; this cut has no commit transaction — the lifecycle
+--     flip faces write them from the caller's value, which in the full
+--     pipeline rides from the current actual tick; the tick's *advance*
+--     stays commit-only, §26),
 --     ``created_at`` / ``updated_at`` the caller's ISO-8601 bookkeeping
 --     stamps, ``state_version`` NOT NULL CHECK (state_version > 0) the
 --     row's CAS counter (the house store discipline).
