@@ -309,3 +309,16 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 7. **迁移刀纪律**：0036 头（conftest 0036/36、负索引 shift、SCHEMA_HEAD 字面族、GLOBAL_CONTENT_TABLES 20→21 + aoci 廿一员钉、0036 条目）；禁改面；四门亲跑。
 
 授权：外审（用户转呈，2026-10-13）；DMCP 开工裁决 `DEC-OPI-dc1bafdf-…31`（rev 802）。
+
+### v1.5.3 — 2026-10-13 V3-6R 独立评审处置（ACCEPT-WITH-FINDINGS 无 HIGH/MEDIUM；授权：评审结论转呈）
+
+**结论**：V3-6R **维持推进**（不重开）；四面逐项在码在册；**15/15 承重变异全红、无盲区**；禁改面全空；吸收完整性确认；副本定向 1068 钉全绿 + collect 6127 对齐。INFO×4 全登记（无代码改动）。
+
+1. **执行者中断与吸收（如实留痕，V3-5 遗留先例同族）**：执行者先遭 API 余额中断（首次派单即拒），重试后在 600s 静默中断（长命令）——遗留**未提交半成品**（43 文件，含四面代码与 25+26 新钉；中间快照 +2106/−542）。总控取证（新钉族 25/25 绿、ruff/mypy(198)/compileall 全绿、禁改面 diff 空、无 TODO 残标、`replan_scene`/`apply_action_replan`/claim·complete/第五族逐面在码）→ 裁 **「吸收+复核」** → 代提交 **`ebc1020`**（43 文件 +3808/−542；提交信息已载明中断与吸收裁定）。
+2. **F1（INFO，登记）**：提交信息「树 43 文件+2106/−542」的 +2106 为吸收取证时点的中间快照；终态 `git show --numstat` 为 **+3808/−542**。纯口径，不改提交（不 amend 纪律）。
+3. **F2（INFO，登记）**：SCENE/CHAPTER 消费的崩溃收敛——「claim 后、work 前」窗口重算与已存 claim 同值（由 claim 的同值幂等兜底）；绕过语义由 before-complete / resumes-created-proposed 两钉捕获。收敛语义完整，登记「同值重算依赖幂等第二道」。
+4. **F3（INFO，登记）**：`_replay_action` 与 `apply_action_replan` 的 `assert` 姿态在 `-O` 下剔除（后者有下游 `get_plan(None)` → ValueError 腐坏防御）——store 家族同姿态，非缺陷。
+5. **F4（INFO，维护须知）**：`test_the_new_faces_are_one_transaction_and_the_close_targeted` 的全树 AST 断言将拦 action.py 未来**任何** `.commit(`/`.rollback(` 属性调用（含合法用途）——刻意纪律钉（p8-3 F2 先例同形态），消费刀须知。
+6. **口径澄清（评审）**：新钉计数 = 25（新文件）+ 净 26（6127−6101）其中旧 V3-6 文件 36→36 持平、drift 净 +1；outcome_ref 校验实为六类检查（非五类）。
+
+授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\v36r_review\`，2026-10-13）+ 总控处置（历刀先例：总控亲写）；处置提交随本条目同刀。
