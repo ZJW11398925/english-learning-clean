@@ -65,12 +65,15 @@ cannot add a table the sweep would silently walk past:
   **children-before-parents** order (the order the foreign keys require; the
   graph is acyclic apart from two self-references, and the store deletes in
   this order inside one transaction);
-- :data:`RETAINED_TABLES` — the four tables ALL_USER_DATA keeps:
+- :data:`RETAINED_TABLES` — the five tables ALL_USER_DATA keeps:
   ``schema_meta`` and ``schema_migrations`` (the schema stamp and the applied
   lineage — infrastructure, not user data), ``runtime_epoch`` (the restart
   fence; deleting it would reset the ownership boundary and is exactly the
-  resurrection §24 guards against) and ``deletion_tombstone`` (§23's
-  "deletion-protection ledger");
+  resurrection §24 guards against), ``deletion_tombstone`` (§23's
+  "deletion-protection ledger") and ``app_setting`` (the generic host
+  settings key/value table — process-level launch configuration, not learner
+  data; the veto-response cut's migration 0022 added it, and the tuple's own
+  comment below carries the keep argument);
 - :data:`GLOBAL_CONTENT_TABLES` — the global Curriculum / Content Library.
   Curriculum is in content.db, a separate read-only build artifact opened by
   a different connection (elc/content/store.py), so that half stays empty
@@ -387,7 +390,7 @@ RETAINED_TABLES: tuple[str, ...] = (
 #: gate) are keep-side at every link, so no sweep can be refused
 #: through them, and they add no consequential FK to the registered
 #: deletion face. The two join at the tuple's tail (the same
-#: chronological append law; 0035 is the head this registration rides).
+#: chronological append law; 0035 was the head this registration rode).
 #:
 #: V3-6R (TASK-OPI-dc1bafdf…33 / the opening ruling DEC-OPI-dc1bafdf…31)
 #: adds migration 0036's one table — ``action_replan``, the durable
@@ -399,7 +402,21 @@ RETAINED_TABLES: tuple[str, ...] = (
 #: world) is keep-side at every link, so no sweep can be refused through
 #: it, and it adds no consequential FK to the registered deletion face.
 #: It joins at the tuple's tail (the same chronological append law;
-#: 0036 is the head this registration rides).
+#: 0036 was the head this registration rode).
+#:
+#: V3-7 (TASK-OPI-d274a7fb…8 / the opening ruling DEC-OPI-d274a7fb…6)
+#: adds migration 0037's two tables — ``actor_memory`` (the actors'
+#: durable memory / belief: what each canonical participant witnessed or
+#: was told, append-only, five kind words) and ``chapter_settlement``
+#: (the chapter-end compression product, one version per chapter) — to
+#: the same keep rule, same conservative reading (registration, not
+#: deletion semantics; zero sweep face). Both FK chains
+#: (memory → ``world``; memory → ``world_event``; settlement →
+#: ``world_chapter`` → ``world``) are keep-side at every link, so no
+#: sweep can be refused through them, and they add no consequential FK
+#: to the registered deletion face. The two join at the tuple's tail
+#: (the same chronological append law; 0037 is the head this
+#: registration rides).
 GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "world_lore_fact",
     "world",
@@ -422,6 +439,14 @@ GLOBAL_CONTENT_TABLES: tuple[str, ...] = (
     "user_gate",
     "user_action",
     "action_replan",
+    # V3-7 (TASK-OPI-d274a7fb…8): migration 0037's two tables — the
+    # actors' durable memory / belief rows (five kind words, append-only)
+    # and the one-version chapter settlement — append at the tail (the
+    # same chronological law); every FK link is keep-side
+    # (memory → world and memory → world_event; settlement →
+    # world_chapter → world), zero sweep face.
+    "actor_memory",
+    "chapter_settlement",
 )
 
 

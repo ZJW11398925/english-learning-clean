@@ -138,36 +138,38 @@ def test_0025_is_the_registered_head() -> None:
     move has
     followed since P8-4; the pin read "0024 is the head" while 0024 was
     the head); the shared constants say so, and the stamp a fresh
-    database carries is 36 (the head literal moved with each later
+    database carries is 37 (the head literal moved with each later
     head, most recently V3-5's 0033_segment_commit, V3-5R's
-    0034_segment_terminality, V3-6's 0035_user_gate_action and V3-6R's
-    0036_action_replan)."""
+    0034_segment_terminality, V3-6's 0035_user_gate_action, V3-6R's
+    0036_action_replan and V3-7's 0037_actor_memory_chapter_settlement)."""
 
     # The head literal moves with each head (the P9-1 way); the
     # migration-shape claims in the sibling tests stay 0024's own.
-    assert MIGRATION_IDS[-1] == "0036_action_replan"
-    assert MIGRATION_IDS[-2] == "0035_user_gate_action"
-    assert MIGRATION_IDS[-3] == "0034_segment_terminality"
-    assert MIGRATION_IDS[-4] == "0033_segment_commit"
-    assert MIGRATION_IDS[-5] == "0032_actor_profile_world_fk"
-    assert MIGRATION_IDS[-6] == "0031_world_cast"
-    assert MIGRATION_IDS[-7] == "0030_world_bible"
-    assert MIGRATION_IDS[-8] == "0029_narrative_v3_foundations"
-    assert MIGRATION_IDS[-9] == "0028_world_storyline"
-    assert SCHEMA_HEAD_FILE == "0036_action_replan.sql"
+    assert MIGRATION_IDS[-1] == "0037_actor_memory_chapter_settlement"
+    assert MIGRATION_IDS[-2] == "0036_action_replan"
+    assert MIGRATION_IDS[-3] == "0035_user_gate_action"
+    assert MIGRATION_IDS[-4] == "0034_segment_terminality"
+    assert MIGRATION_IDS[-5] == "0033_segment_commit"
+    assert MIGRATION_IDS[-6] == "0032_actor_profile_world_fk"
+    assert MIGRATION_IDS[-7] == "0031_world_cast"
+    assert MIGRATION_IDS[-8] == "0030_world_bible"
+    assert MIGRATION_IDS[-9] == "0029_narrative_v3_foundations"
+    assert MIGRATION_IDS[-10] == "0028_world_storyline"
+    assert SCHEMA_HEAD_FILE == "0037_actor_memory_chapter_settlement.sql"
     assert (MIGRATIONS / SCHEMA_HEAD_FILE).is_file()
-    assert SCHEMA_HEAD_VERSION == "36"
+    assert SCHEMA_HEAD_VERSION == "37"
 
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0036_action_replan"
-    assert applied[-2] == "0035_user_gate_action"
-    assert applied[-3] == "0034_segment_terminality"
-    assert applied[-4] == "0033_segment_commit"
-    assert applied[-5] == "0032_actor_profile_world_fk"
-    assert applied[-6] == "0031_world_cast"
-    assert applied[-7] == "0030_world_bible"
-    assert applied[-8] == "0029_narrative_v3_foundations"
+    assert applied[-1] == "0037_actor_memory_chapter_settlement"
+    assert applied[-2] == "0036_action_replan"
+    assert applied[-3] == "0035_user_gate_action"
+    assert applied[-4] == "0034_segment_terminality"
+    assert applied[-5] == "0033_segment_commit"
+    assert applied[-6] == "0032_actor_profile_world_fk"
+    assert applied[-7] == "0031_world_cast"
+    assert applied[-8] == "0030_world_bible"
+    assert applied[-9] == "0029_narrative_v3_foundations"
     assert schema_version(fresh) == SCHEMA_HEAD_VERSION
 
 
@@ -638,9 +640,12 @@ def test_global_content_tables_carry_the_registered_members() -> None:
     ``reader_exposure`` / ``segment_commit``) the same way, V3-6
     (TASK-OPI-dc1bafdf…23) adds migration 0035's two tables
     (``user_gate`` — the story's stop — and ``user_action`` — the
-    submission and its ruling) the same way, and V3-6R
+    submission and its ruling) the same way, V3-6R
     (TASK-OPI-dc1bafdf…33) migration 0036's ``action_replan`` — the
-    durable replan obligation — the same way: twenty-one
+    durable replan obligation — the same way, and V3-7
+    (TASK-OPI-d274a7fb…8) migration 0037's two tables (``actor_memory``
+    — the actors' durable memory / belief — and ``chapter_settlement``
+    — the one-version chapter settlement) the same way: twenty-three
     members, and the
     classification is registration — no sweep walks the world-owned half,
     nothing keeps it as retained either (the name is count-neutral since
@@ -668,6 +673,8 @@ def test_global_content_tables_carry_the_registered_members() -> None:
         "user_gate",
         "user_action",
         "action_replan",
+        "actor_memory",
+        "chapter_settlement",
     )
     for table in ("world_event", "world_state_fact", "world_run",
                   "world_reveal_item"):

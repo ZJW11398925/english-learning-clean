@@ -160,8 +160,15 @@ def test_no_global_content_table_lives_in_app_db() -> None:
     (TASK-OPI-be7b094f…34) adds migration 0033's three narrative
     tables (``narrative_passage`` / ``reader_exposure`` /
     ``segment_commit`` — the segment's prose, the decoupled exposure
-    record and the story-time lineage row) the same way — every one
-    hangs off the
+    record and the story-time lineage row) the same way, V3-6
+    (TASK-OPI-dc1bafdf…23) adds migration 0035's two tables
+    (``user_gate`` / ``user_action``) and V3-6R
+    (TASK-OPI-dc1bafdf…33) migration 0036's one
+    (``action_replan``) the same way, and V3-7
+    (TASK-OPI-d274a7fb…8) adds migration 0037's two tables
+    (``actor_memory`` — the actors' durable memory / belief rows —
+    and ``chapter_settlement`` — the one-version chapter settlement)
+    the same way — every one hangs off the
     shared world through keep-side FK chains.
 
     The same W-1-3 cut is the deletion face's own arrival: it *moves*
@@ -219,6 +226,14 @@ def test_no_global_content_table_lives_in_app_db() -> None:
         # world_scene → world_chapter → world) is keep-side at every
         # link, zero sweep face.
         "action_replan",
+        # V3-7 (TASK-OPI-d274a7fb…8): migration 0037's two tables — the
+        # actors' durable memory / belief rows (five kind words,
+        # append-only) and the one-version chapter settlement — append
+        # at the tail (the same chronological law); every FK link is
+        # keep-side (memory → world and memory → world_event;
+        # settlement → world_chapter → world), zero sweep face.
+        "actor_memory",
+        "chapter_settlement",
     )
     for table in GLOBAL_CONTENT_TABLES:
         assert table not in SWEPT_TABLES

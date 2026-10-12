@@ -68,7 +68,13 @@ honestly decide for the user. The face set is the lifecycle's own:
   ``PENDING`` in this same transaction (``NONE`` ⇒ zero rows — zero
   rows is "no obligation"), its ``replan_request_id`` derived
   ``f"rp:{gate_id}:{submission_id}"``; a replayed commit_action touches
-  it never (the replay arm answers first).
+  it never (the replay arm answers first); and ⑨ the **V3-7 memory arm**
+  (STATE §25's "V3-7 落法"; TASK-OPI-d274a7fb…8): one ``EXPERIENCED``
+  ``actor_memory`` row per event participant, through
+  :func:`elc.world.memory.record_experienced_in_transaction` — content =
+  the event's narration (the ruling's ``outcome``), learned_at_tick =
+  the commit's ``actual_end``; the fresh path only, so a replay never
+  double-lands memory.
 
 **The replan obligation** (:func:`claim_replan_target` /
 :func:`mark_replan_applied`, the V3-6R HIGH-1): the ruling's
@@ -90,9 +96,14 @@ family), and :func:`scene_of_action` resolves the obligation's durable
 chain (obligation → action → gate → scene) for the two consumers.
 - :func:`recovery_scan` — RA §29's scan face for this cut's families,
   plainly read: gates ``ANSWERED`` / ``RESOLVING``, actions
-  ``RESOLVING``, scenes ``ACTIVE``, chapters ``ACTIVE`` / ``SETTLING``
-  and **replan obligations ``PENDING``** (the V3-6R fifth family), each
-  family deterministically ordered. The automatic resume 编排
+  ``RESOLVING``, scenes ``ACTIVE``, chapters ``ACTIVE`` / ``SETTLING``,
+  **replan obligations ``PENDING``** (the V3-6R fifth family) and —
+  since V3-7 (TASK-OPI-d274a7fb…8, RA §29's "V3-7 落法") — the
+  **``settling_chapters``** sixth family: the ``SETTLING`` subset of the
+  chapter scan, distinctly named (NCP-4's crash anchor — the recovery
+  face re-runs :func:`elc.world.settlement.settle_chapter`, which
+  converges to ``CLOSED`` with the same one-version settlement row);
+  each family deterministically ordered. The automatic resume 编排
   belongs to the pipeline cut; this face is the durable survey, and the
   semantics it carries are the contract's: after NCP-1 an interruption
   re-adjudicates with the **same ``submission_id``** (the unique
@@ -188,6 +199,7 @@ from elc.platform.types import (
     Ok,
     Result,
 )
+from elc.world.memory import record_experienced_in_transaction
 from elc.world.narrative.store import SqliteNarrativeStore
 from elc.world.narrative.types import (
     ChapterStatus,
@@ -444,23 +456,32 @@ class ActionOutcome:
 
 @dataclass(frozen=True)
 class RecoveryScan:
-    """RA §29's scan answer for this cut's five families: gates
+    """RA §29's scan answer for this cut's families: gates
     ``ANSWERED`` / ``RESOLVING`` (not ``COMMITTED``), actions
     ``RESOLVING`` (not ``COMMITTED``), scenes ``ACTIVE``, chapters
-    ``ACTIVE`` / ``SETTLING`` and — since V3-6R — replan obligations
+    ``ACTIVE`` / ``SETTLING``, — since V3-6R — replan obligations
     ``PENDING`` (the durable anchor between a ruling and its plan face:
     the claim's ``target_ref`` is written before the work, so a retry
-    converges on the same revision). Each tuple is deterministically
-    ordered (``gate_id`` / ``user_action_id`` / ``(chapter_id,
-    scene_index)`` / ``(world_id, chapter_index)`` / ``gate_id`` for the
-    obligations), so a recovery walk replays the same survey byte for
-    byte.
+    converges on the same revision), and — since V3-7 — the
+    ``settling_chapters`` family: the ``SETTLING`` subset of the chapter
+    scan, surfaced as its own recovery semantic (NCP-4's crash anchor —
+    a chapter interrupted inside the settlement re-runs
+    :func:`elc.world.settlement.settle_chapter`, and the one-version-per-
+    chapter PK makes the re-run a no-op; RA §29's "V3-7 落法"). Each
+    tuple is deterministically ordered (``gate_id`` /
+    ``user_action_id`` / ``(chapter_id, scene_index)`` /
+    ``(world_id, chapter_index)`` / ``gate_id`` for the obligations /
+    ``(world_id, chapter_index)`` for the settling family), so a
+    recovery walk replays the same survey byte for byte. ``chapters``
+    keeps its ``ACTIVE`` / ``SETTLING`` rows intact — the sixth family
+    is a distinctly-named subset, not a replacement.
     """
 
     gates: tuple[UserGateRecord, ...]
     actions: tuple[UserActionRecord, ...]
     scenes: tuple[WorldSceneRecord, ...]
     chapters: tuple[WorldChapterRecord, ...]
+    settling_chapters: tuple[WorldChapterRecord, ...]
     replans: tuple[ActionReplanRecord, ...]
 
 
@@ -1514,6 +1535,20 @@ def _commit_action_tx(
                 now,
             ),
         )
+    # ⑨ the V3-7 memory arm (STATE §25's "V3-7 落法"): every participant
+    # of the action's event lived it — one EXPERIENCED row each, landed
+    # in this same transaction through the shared arm (content = the
+    # event's narration, the ruling's outcome). The replay arm above
+    # answered first, so a replayed ruling never double-lands memory.
+    record_experienced_in_transaction(
+        conn,
+        world_id=world_id,
+        event_id=event_id,
+        participants=adjudication.participants,
+        content=adjudication.outcome,
+        learned_at_tick=actual_end,
+        now=now,
+    )
 
     return Ok(
         ActionOutcome(
@@ -1972,13 +2007,17 @@ def recovery_scan(
     *,
     narrative_store: SqliteNarrativeStore,
 ) -> Result[RecoveryScan]:
-    """RA §29's scan face for this cut's five families (a pure read — no
+    """RA §29's scan face for this cut's families (a pure read — no
     transaction of its own): gates ``ANSWERED`` / ``RESOLVING``, actions
     ``RESOLVING``, scenes ``ACTIVE``, chapters ``ACTIVE`` /
-    ``SETTLING`` and — since V3-6R — replan obligations ``PENDING``
-    (the fifth family; the claim's ``target_ref`` is written before the
-    work, so a retry converges on the same revision), each
-    deterministically ordered. The story's resume 编排 belongs to the
+    ``SETTLING``, — since V3-6R — replan obligations ``PENDING`` (the
+    fifth family; the claim's ``target_ref`` is written before the
+    work, so a retry converges on the same revision), and — since V3-7 —
+    the sixth family ``settling_chapters``: the ``SETTLING`` subset of
+    the chapter scan, distinctly named and deterministically ordered
+    (RA §29's "V3-7 落法": the chapter interrupted inside NCP-4 re-runs
+    :func:`elc.world.settlement.settle_chapter`, whose one-version PK
+    carries the no-op). The story's resume 编排 belongs to the
     pipeline cut; the semantics this face carries are the contract's
     own: after NCP-1 an interruption re-adjudicates with the same
     ``submission_id`` (the unique outcome), and the scan's rows are the
@@ -2024,6 +2063,18 @@ def recovery_scan(
         )
         if chapter is not None
     )
+    settling_rows = conn.execute(
+        "SELECT chapter_id FROM world_chapter WHERE status = 'SETTLING'"
+        " ORDER BY world_id ASC, chapter_index ASC"
+    ).fetchall()
+    settling_chapters = tuple(
+        chapter
+        for chapter in (
+            narrative_store.get_chapter(str(row[0]))
+            for row in settling_rows
+        )
+        if chapter is not None
+    )
     replans = pending_replans(conn)
     return Ok(
         RecoveryScan(
@@ -2031,6 +2082,7 @@ def recovery_scan(
             actions=actions,
             scenes=scenes,
             chapters=chapters,
+            settling_chapters=settling_chapters,
             replans=replans,
         )
     )

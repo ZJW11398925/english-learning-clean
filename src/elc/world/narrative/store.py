@@ -21,7 +21,11 @@ lifecycle face :meth:`commit_scene` wraps; **since V3-6R**
 (TASK-OPI-dc1bafdf…33 / DEC-OPI-dc1bafdf…31) the span arm is *two*
 commit transactions' shared arm: NCP-3 calls it with
 ``close_scene=is_last_segment``, NCP-2 with ``close_scene=False`` —
-STATE §26's two-caller law).
+STATE §26's two-caller law; **since V3-7** (TASK-OPI-d274a7fb…8)
+``_close_chapter_tx`` is the chapter-closing arm the NCP-4 settlement
+orchestration (:func:`elc.world.settlement.settle_chapter`) calls
+inside its own short atomic group — the settlement row and the
+``SETTLING → CLOSED`` flip land together or not at all).
 
 Discipline (the house store law, :mod:`elc.world.store`'s posture):
 
@@ -339,33 +343,45 @@ class SqliteNarrativeStore:
         and a ``CLOSED`` chapter never reopens (§27's list).
         ``closed_at_tick`` is the canon-face tick stamp, the caller's
         value as :meth:`activate_chapter` spells.
+
+        **Since V3-7** (TASK-OPI-d274a7fb…8) the move itself is the
+        composable no-transaction arm :meth:`_close_chapter_tx` — the
+        :meth:`activate_chapter` / ``_flip_chapter_activated_tx``
+        split's second member: this explicit face wraps it in its own
+        ``BEGIN IMMEDIATE``, and the NCP-4 chapter-settlement
+        orchestration
+        (:func:`elc.world.settlement.settle_chapter`) calls it inside
+        its own short atomic group, where the settlement row and this
+        close land together or not at all (STATE §25's "V3-7 落法").
+        The behaviour is the pre-split move's, byte for byte; the
+        checks now judge inside the CAS transaction (strictly stronger,
+        the V3-5 discharge's same move).
         """
 
-        row = self.get_chapter(chapter_id)
-        if row is None:
-            return self._missing("chapter", chapter_id)
-        if row.status != ChapterStatus.SETTLING:
+        began = False
+        try:
+            self._conn.execute("BEGIN IMMEDIATE")
+            began = True
+            closed = self._close_chapter_tx(
+                chapter_id, closed_at_tick, now, expected_state_version
+            )
+            if isinstance(closed, Err):
+                self._conn.execute("ROLLBACK")
+                began = False
+                return Err(closed.error)
+        except sqlite3.Error as exc:
+            if began:
+                try:
+                    self._conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
             return Err(
                 DomainError(
-                    code=DomainErrorCode.VALIDATION_FAILED,
-                    message=(
-                        f"chapter {chapter_id!r} is {row.status.value!r};"
-                        " only a SETTLING chapter closes (settlement"
-                        " runs first)"
-                    ),
+                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
+                    message=f"chapter {chapter_id!r} not closed: {exc}",
                 )
             )
-        moved = self._cas_update(
-            "world_chapter",
-            "chapter_id",
-            chapter_id,
-            "status = 'CLOSED', closed_at_tick = ?",
-            (closed_at_tick,),
-            now,
-            expected_state_version,
-        )
-        if isinstance(moved, Err):
-            return Err(moved.error)
+        self._conn.execute("COMMIT")
         updated = self.get_chapter(chapter_id)
         assert updated is not None  # the UPDATE above just touched it
         return Ok(updated)
@@ -1453,6 +1469,66 @@ class SqliteNarrativeStore:
             return self._cas_miss("world_chapter", chapter_id)
         return Ok(None)
 
+    def _close_chapter_tx(
+        self,
+        chapter_id: str,
+        closed_at_tick: int,
+        now: str,
+        expected_state_version: int,
+    ) -> Result[None]:
+        """The chapter-closing move — the ``SETTLING → CLOSED`` status
+        check and the CAS write together — as a **no-transaction arm**
+        (the V3-7 split, TASK-OPI-d274a7fb…8, the
+        :meth:`activate_chapter` / ``_flip_chapter_activated_tx``
+        split's second member): :meth:`close_chapter` wraps it in its
+        own ``BEGIN IMMEDIATE``, and NCP-4's chapter settlement
+        (:func:`elc.world.settlement.settle_chapter`) calls it inside
+        its own short atomic group — the settlement row and the close
+        land together or not at all (STATE §25's "V3-7 落法"). The
+        caller owns the transaction; this arm runs no BEGIN/COMMIT of
+        its own.
+
+        One truth, two callers: the status check and the ``CLOSED``
+        write below are :meth:`close_chapter`'s checks and write,
+        spelled once (the pre-split face rode the generic
+        ``_cas_update`` machinery — this arm replaces it, its only
+        caller; the checks now judge inside the caller's transaction,
+        strictly stronger and race-free). ``closed_at_tick`` is the
+        caller's canon read — NCP-4 reads ``world.current_tick`` inside
+        its own transaction and never advances it (the settlement has
+        no duration); the explicit face still writes the caller's
+        value, the staging-layer sentence :meth:`activate_chapter`
+        keeps.
+
+        The CAS guard is the one every transition rides — a rowcount of
+        zero answers ``NOT_FOUND`` / ``CONFLICT`` through
+        :meth:`_cas_miss`.
+        """
+
+        row = self.get_chapter(chapter_id)
+        if row is None:
+            return self._missing("chapter", chapter_id)
+        if row.status != ChapterStatus.SETTLING:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"chapter {chapter_id!r} is {row.status.value!r};"
+                        " only a SETTLING chapter closes (settlement"
+                        " runs first)"
+                    ),
+                )
+            )
+        cursor = self._conn.execute(
+            "UPDATE world_chapter SET status = 'CLOSED',"
+            " closed_at_tick = ?, state_version = state_version + 1,"
+            " updated_at = ? WHERE chapter_id = ? AND state_version = ?",
+            (closed_at_tick, now, chapter_id, expected_state_version),
+        )
+        if cursor.rowcount != 1:
+            return self._cas_miss("world_chapter", chapter_id)
+        return Ok(None)
+
     def _flip_scene_committed_tx(
         self,
         scene_id: str,
@@ -1585,48 +1661,6 @@ class SqliteNarrativeStore:
                 DomainError(
                     code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
                     message=f"{noun} {row_id!r} not moved: {exc}",
-                )
-            )
-        self._conn.execute("COMMIT")
-        return Ok(None)
-
-    def _cas_update(
-        self,
-        table: str,
-        id_column: str,
-        row_id: str,
-        assignments: str,
-        params: tuple[Any, ...],
-        now: str,
-        expected_state_version: int,
-    ) -> Result[None]:
-        """The CAS flip with extra assignments (the tick stamps) —
-        same guard, same counter bump, same miss vocabulary."""
-
-        began = False
-        try:
-            self._conn.execute("BEGIN IMMEDIATE")
-            began = True
-            cursor = self._conn.execute(
-                f"UPDATE {table} SET {assignments},"
-                " state_version = state_version + 1, updated_at = ?"
-                f" WHERE {id_column} = ? AND state_version = ?",
-                (*params, now, row_id, expected_state_version),
-            )
-            if cursor.rowcount != 1:
-                self._conn.execute("ROLLBACK")
-                began = False
-                return self._cas_miss(table, row_id)
-        except sqlite3.Error as exc:
-            if began:
-                try:
-                    self._conn.execute("ROLLBACK")
-                except sqlite3.Error:
-                    pass
-            return Err(
-                DomainError(
-                    code=DomainErrorCode.DEPENDENCY_UNAVAILABLE,
-                    message=f"{table} row {row_id!r} not moved: {exc}",
                 )
             )
         self._conn.execute("COMMIT")

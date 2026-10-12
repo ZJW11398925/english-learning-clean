@@ -4,7 +4,11 @@ the V3-5R corrections TASK-OPI-dc1bafdf…13 / DEC-OPI-dc1bafdf…11; the
 V3-6R correction TASK-OPI-dc1bafdf…33 / the opening ruling
 DEC-OPI-dc1bafdf…31 — the ``outcome_ref`` arm and the targeted close) —
 plus the two faces the cut's hard doors freeze: the explicit story-time
-lineage read and the decoupled reader-exposure record.
+lineage read and the decoupled reader-exposure record; and, since V3-7
+(TASK-OPI-d274a7fb…8 / the opening ruling DEC-OPI-d274a7fb…6), the
+**NCP-4 chapter-settlement orchestration** (:func:`settle_chapter` — the
+short transaction that lands one ``chapter_settlement`` row and flips
+``SETTLING → CLOSED``; not a fact-landing boundary, N-INV-004).
 
 **The commit transaction** (:func:`commit_segment`): one
 ``BEGIN IMMEDIATE`` … ``COMMIT`` lands, all or nothing (N-R-INV-004):
@@ -42,7 +46,15 @@ lineage read and the decoupled reader-exposure record.
    commit transaction took the pipeline over from the caller-supplied
    staging; the chapter-side checks — ADOPTED Blueprint and the
    overlap ban — judge inside this same transaction, which is the
-   0029 race-free obligation's discharge).
+   0029 race-free obligation's discharge);
+7. ``actor_memory`` — the **V3-7 memory arm** (STATE §25's "V3-7
+   落法"): one ``EXPERIENCED`` row per event participant, in order,
+   through :func:`elc.world.memory.record_experienced_in_transaction`
+   (the two commit transactions' one shared arm), with ``content`` =
+   the event's ``narration`` and ``learned_at_tick`` = this segment's
+   ``actual_end_tick``. The arm sits on the **fresh** path only — the
+   replay arm answers first, so a replayed segment never double-lands
+   a memory.
 
 **The fresh segment's ordering law (V3-5R, the review's MEDIUM-HIGH)**:
 a fresh segment takes strictly ``segment_seq == max(committed_seq) +
@@ -163,6 +175,7 @@ from elc.platform.types import (
     Result,
 )
 from elc.world.cast import participant_namespace
+from elc.world.memory import record_experienced_in_transaction
 from elc.world.narrative.store import SqliteNarrativeStore
 from elc.world.narrative.types import (
     ChapterStatus,
@@ -183,12 +196,15 @@ from elc.world.types import (
 )
 
 __all__ = [
+    "ChapterSettlementRecord",
     "CommitOutcome",
     "ExposureRecord",
+    "chapter_settlements_of",
     "commit_segment",
     "participant_namespace_of",
     "player_character_id_of",
     "record_exposure",
+    "settle_chapter",
     "story_time_of",
 ]
 
@@ -750,6 +766,21 @@ def _commit_segment_tx(
             return Err(opened.error)
         chapter_activated = True
 
+    # The V3-7 memory arm (STATE §25's "V3-7 落法"): every participant of
+    # the segment's event witnessed it — one EXPERIENCED row each, landed
+    # in this same transaction through the shared arm. The replay read
+    # above answered first, so a replayed segment never reaches this arm
+    # (a replay must not double-land memory).
+    record_experienced_in_transaction(
+        conn,
+        world_id=world_id,
+        event_id=event_id,
+        participants=participants,
+        content=narration,
+        learned_at_tick=actual_end,
+        now=now,
+    )
+
     return Ok(
         CommitOutcome(
             passage_id=passage_id,
@@ -1098,6 +1129,391 @@ def player_character_id_of(
         (world_id,),
     ).fetchone()
     return None if row is None else str(row[0])
+
+
+# ---------------------------------------------------------------------------
+# NCP-4 — the chapter-settlement orchestration (V3-7)
+# ---------------------------------------------------------------------------
+
+
+#: The conservative salience placeholder every deterministic-baseline
+#: settlement carries (``salience_notes`` is 恒为保守占位 this cut — the
+#: significance evaluation is a later cut's; the string is fixed so the
+#: derived shape stays byte-stable across replays).
+_SETTLEMENT_SALIENCE_PLACEHOLDER = (
+    "salience not evaluated (the deterministic baseline stores no"
+    " judgement; the retrieval policy lands with a later cut)"
+)
+
+
+@dataclass(frozen=True)
+class ChapterSettlementRecord:
+    """One ``chapter_settlement`` row — the chapter-end compression
+    product (Narrative Memory's compressed half; migration 0037, one
+    version per chapter by the ``chapter_id`` PK).
+
+    ``summary`` / ``storyline_updates`` / ``hooks`` / ``resolved_lines``
+    / ``salience_notes`` are the deterministic baseline's conservative
+    strings (see :func:`settle_chapter`); ``created_at_revision`` is the
+    chapter's latest ``plan_revision`` when the row landed — the Plan
+    face's version witness.
+    """
+
+    chapter_id: str
+    summary: str
+    storyline_updates: str
+    hooks: str
+    resolved_lines: str
+    salience_notes: str
+    created_at_revision: int
+    created_at: str
+    updated_at: str
+    state_version: int
+
+
+def settle_chapter(
+    conn: sqlite3.Connection,
+    *,
+    narrative_store: SqliteNarrativeStore,
+    world_store: SqliteWorldStore,
+    chapter_id: str,
+    now: str,
+) -> Result[ChapterSettlementRecord]:
+    """Land one chapter's settlement — **NCP-4**, the chapter-end
+    compression of already-committed content (STATE §25's "V3-7 落法";
+    RA §28). One short ``BEGIN IMMEDIATE`` … ``COMMIT``:
+
+    1. the chapter must be ``SETTLING`` (its ``ACTIVE → SETTLING``
+       entry is the narrative store's own face,
+       :meth:`~elc.world.narrative.store.SqliteNarrativeStore.settle_chapter`
+       — the same name, a different move: that one *begins* the
+       settlement, this one *lands* it); ``PLANNED`` (or ``ACTIVE``)
+       and a settlement-less ``CLOSED`` chapter are refused
+       ``VALIDATION_FAILED``;
+    2. one ``chapter_settlement`` row lands (``chapter_id`` PK — one
+       version per chapter; the conservative assembly below);
+    3. the same transaction flips ``SETTLING → CLOSED`` through the
+       narrative store's no-transaction arm
+       (``_close_chapter_tx``), with ``closed_at_tick`` = this
+       transaction's own read of ``world.current_tick`` — **the tick is
+       never advanced**: a settlement has no duration (N-INV-007);
+    4. **N-INV-004's storage face** — this face writes no
+       ``world_event``, no ``world_state_fact`` and no ``actor_memory``:
+       a settlement only compresses / closes what is already committed.
+
+    **The deterministic baseline's conservative assembly** (the LLM
+    summary generation and the structured narrative-memory half are
+    registered later cuts):
+
+    - ``summary`` — the chapter's committed lineage rows, one line each
+      (``commit_id: narration``), in lineage order
+      (``actual_start_tick``, ``actual_end_tick``, ``commit_id``
+      ascending): the committed faces' own conservative concatenation;
+    - ``storyline_updates`` — the world's active storylines snapshot at
+      the settle (``line_id: theme`` per line, the store's own
+      two-layer read); the structural advancement (opening / closing /
+      settling lines) is a later cut's;
+    - ``hooks`` — the chapter's latest plan revision's
+      ``chapter_questions_to_advance`` verbatim: the durable Plan-face
+      record of the chapter's open questions is this cut's conservative
+      snapshot of the unredeemed hook queue (no hooks store exists
+      yet);
+    - ``resolved_lines`` — the honest empty family this cut (the
+      structural half is registered with the storyline work);
+    - ``salience_notes`` — the fixed conservative placeholder
+      (significance is a later cut's judgement);
+    - ``created_at_revision`` — the chapter's latest ``plan_revision``
+      (a chapter in ``SETTLING`` holds a plan by the #4 prerequisite; a
+      state without one is answered honestly, refused).
+
+    **Replay = no-op** (the one-version PK carries the idempotence): a
+    chapter already settled answers its stored row when the freshly
+    derived shape matches — zero write — and a ``CONFLICT`` when it
+    differs (one version per chapter; it does not rewrite). A crash
+    inside NCP-4 leaves no half state (the transaction is all-or-
+    nothing), so the recovery face's re-run re-derives the same shape
+    and rides the stored row back (RA §29's sixth family).
+
+    Refusals, all value semantics, the whole group rolling back: a
+    dangling chapter — ``NOT_FOUND``; a chapter not ``SETTLING`` (and
+    not a settled replay) — ``VALIDATION_FAILED`` naming its status;
+    a chapter holding no plan revision — ``VALIDATION_FAILED`` (a
+    corrupted state: the #4 door admitted only chapters with an
+    ``ADOPTED`` Blueprint); a stored row whose shape differs from the
+    freshly derived one — ``CONFLICT``.
+    """
+
+    began = False
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        began = True
+        outcome = _settle_chapter_tx(
+            conn,
+            narrative_store=narrative_store,
+            world_store=world_store,
+            chapter_id=chapter_id,
+            now=now,
+        )
+        if isinstance(outcome, Err):
+            conn.execute("ROLLBACK")
+            began = False
+            return Err(outcome.error)
+    except sqlite3.Error as exc:
+        if began:
+            try:
+                conn.execute("ROLLBACK")
+            except sqlite3.Error:
+                pass
+        return Err(
+            DomainError(
+                code=_refusal_code(exc),
+                message=(
+                    f"chapter {chapter_id!r} not settled: {exc}"
+                ),
+            )
+        )
+    conn.execute("COMMIT")
+    return Ok(outcome.value)
+
+
+def _settle_chapter_tx(
+    conn: sqlite3.Connection,
+    *,
+    narrative_store: SqliteNarrativeStore,
+    world_store: SqliteWorldStore,
+    chapter_id: str,
+    now: str,
+) -> Result[ChapterSettlementRecord]:
+    """NCP-4's body, inside the caller's transaction (the
+    arm/owner split the module's other faces keep)."""
+
+    chapter = narrative_store.get_chapter(chapter_id)
+    if chapter is None:
+        return Err(
+            DomainError(
+                code=DomainErrorCode.NOT_FOUND,
+                message=(
+                    f"chapter {chapter_id!r} not settled: it does not"
+                    " exist"
+                ),
+            )
+        )
+    draft = _settlement_draft(
+        conn,
+        narrative_store=narrative_store,
+        world_store=world_store,
+        chapter_id=chapter_id,
+        world_id=chapter.world_id,
+    )
+    if isinstance(draft, Err):
+        return Err(draft.error)
+    (
+        summary,
+        storyline_updates,
+        hooks,
+        resolved_lines,
+        salience_notes,
+        created_at_revision,
+    ) = draft.value
+
+    # The replay arm answers an already-settled chapter first (the house
+    # posture — the one-version PK carries the idempotence): shape-equal
+    # rides back as the stored row, shape-different is a CONFLICT.
+    existing = _chapter_settlement_row(conn, chapter_id)
+    if existing is not None:
+        if (
+            existing.summary,
+            existing.storyline_updates,
+            existing.hooks,
+            existing.resolved_lines,
+            existing.salience_notes,
+            existing.created_at_revision,
+        ) == (
+            summary,
+            storyline_updates,
+            hooks,
+            resolved_lines,
+            salience_notes,
+            created_at_revision,
+        ):
+            return Ok(existing)
+        return Err(
+            DomainError(
+                code=DomainErrorCode.CONFLICT,
+                message=(
+                    f"chapter {chapter_id!r} is already settled with a"
+                    " different shape; one version per chapter — the"
+                    " settlement landed once and does not rewrite"
+                    " (STATE §21's SETTLING recovery sentence)"
+                ),
+            )
+        )
+
+    if chapter.status is not ChapterStatus.SETTLING:
+        return Err(
+            DomainError(
+                code=DomainErrorCode.VALIDATION_FAILED,
+                message=(
+                    f"chapter {chapter_id!r} is"
+                    f" {chapter.status.value!r}; only a SETTLING chapter"
+                    " is settled (an ACTIVE chapter enters SETTLING"
+                    " first — the story stops, then the compression; a"
+                    " PLANNED one has nothing committed to compress)"
+                ),
+            )
+        )
+
+    # The close's tick: the transaction's OWN read of the world's
+    # canonical time — the settlement has no duration, so the tick is
+    # read and never advanced (N-INV-007; the N-INV-004 storage face).
+    tick = read_current_tick(conn, chapter.world_id)
+    if isinstance(tick, Err):
+        return Err(tick.error)
+    closed_at_tick = tick.value
+
+    conn.execute(
+        "INSERT INTO chapter_settlement ("
+        " chapter_id, summary, storyline_updates, hooks, resolved_lines,"
+        " salience_notes, created_at_revision, created_at, updated_at,"
+        " state_version"
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)",
+        (
+            chapter_id,
+            summary,
+            storyline_updates,
+            hooks,
+            resolved_lines,
+            salience_notes,
+            created_at_revision,
+            now,
+            now,
+        ),
+    )
+    closed = narrative_store._close_chapter_tx(
+        chapter_id,
+        closed_at_tick,
+        now,
+        expected_state_version=chapter.state_version,
+    )
+    if isinstance(closed, Err):
+        return Err(closed.error)
+    row = _chapter_settlement_row(conn, chapter_id)
+    assert row is not None  # the INSERT above just landed it
+    return Ok(row)
+
+
+def _settlement_draft(
+    conn: sqlite3.Connection,
+    *,
+    narrative_store: SqliteNarrativeStore,
+    world_store: SqliteWorldStore,
+    chapter_id: str,
+    world_id: str,
+) -> Result[tuple[str, str, str, str, str, int]]:
+    """The deterministic baseline's conservative assembly (see
+    :func:`settle_chapter` for what each field is): purely derived from
+    already-committed faces and the Plan face's own text, so a replay
+    re-derives the same shape byte for byte. A chapter holding no plan
+    revision is refused honestly — the #4 door admitted only chapters
+    with an ``ADOPTED`` Blueprint, so this is a corrupted state and it
+    is named, never guessed."""
+
+    lineage = conn.execute(
+        "SELECT c.commit_id, e.narration FROM segment_commit c"
+        " JOIN world_event e ON e.event_id = c.event_id"
+        " JOIN world_scene s ON s.scene_id = c.scene_id"
+        " WHERE s.chapter_id = ?"
+        " ORDER BY c.actual_start_tick ASC, c.actual_end_tick ASC,"
+        " c.commit_id ASC",
+        (chapter_id,),
+    ).fetchall()
+    summary = "\n".join(f"{str(row[0])}: {str(row[1])}" for row in lineage)
+    storyline_updates = "\n".join(
+        f"{line.line_id}: {line.theme}"
+        for line in world_store.active_storylines(world_id)
+    )
+    plans = narrative_store.plans_of(chapter_id)
+    if not plans:
+        return Err(
+            DomainError(
+                code=DomainErrorCode.VALIDATION_FAILED,
+                message=(
+                    f"chapter {chapter_id!r} not settled: it holds no"
+                    " plan revision — the summary's version witness (the"
+                    " latest plan_revision) has nothing to name (a"
+                    " chapter reaches SETTLING only through an ADOPTED"
+                    " Blueprint; this is a corrupted state answered"
+                    " honestly)"
+                ),
+            )
+        )
+    latest = plans[-1]
+    return Ok(
+        (
+            summary,
+            storyline_updates,
+            latest.chapter_questions_to_advance,
+            "",  # resolved_lines — the honest empty family this cut
+            _SETTLEMENT_SALIENCE_PLACEHOLDER,
+            latest.plan_revision,
+        )
+    )
+
+
+def chapter_settlements_of(
+    conn: sqlite3.Connection, world_id: str
+) -> tuple[ChapterSettlementRecord, ...]:
+    """One world's settled chapters' rows — the next-chapter read-only
+    summary face (DATA §26.2.1's "下一章只读摘要面"): exactly the rows
+    :attr:`elc.world.director.DirectorContext.chapter_summaries`
+    carries, the ``CLOSED`` chapters' settlements in ``chapter_index``
+    ascending order. A pure read, no transaction of its own — the
+    recovery and the Director's context both read it freely."""
+
+    rows = conn.execute(
+        "SELECT s.chapter_id, s.summary, s.storyline_updates, s.hooks,"
+        " s.resolved_lines, s.salience_notes, s.created_at_revision,"
+        " s.created_at, s.updated_at, s.state_version"
+        " FROM chapter_settlement s"
+        " JOIN world_chapter c ON c.chapter_id = s.chapter_id"
+        " WHERE c.world_id = ? AND c.status = 'CLOSED'"
+        " ORDER BY c.chapter_index ASC",
+        (world_id,),
+    ).fetchall()
+    return tuple(_chapter_settlement_record(row) for row in rows)
+
+
+def _chapter_settlement_row(
+    conn: sqlite3.Connection, chapter_id: str
+) -> ChapterSettlementRecord | None:
+    """One settlement row by its chapter id, or ``None`` — the read the
+    replay answer uses."""
+
+    row = conn.execute(
+        "SELECT chapter_id, summary, storyline_updates, hooks,"
+        " resolved_lines, salience_notes, created_at_revision,"
+        " created_at, updated_at, state_version FROM chapter_settlement"
+        " WHERE chapter_id = ?",
+        (chapter_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    return _chapter_settlement_record(row)
+
+
+def _chapter_settlement_record(row: tuple[Any, ...]) -> ChapterSettlementRecord:
+    return ChapterSettlementRecord(
+        chapter_id=str(row[0]),
+        summary=str(row[1]),
+        storyline_updates=str(row[2]),
+        hooks=str(row[3]),
+        resolved_lines=str(row[4]),
+        salience_notes=str(row[5]),
+        created_at_revision=int(row[6]),
+        created_at=str(row[7]),
+        updated_at=str(row[8]),
+        state_version=int(row[9]),
+    )
 
 
 def _refusal_code(exc: sqlite3.Error) -> DomainErrorCode:

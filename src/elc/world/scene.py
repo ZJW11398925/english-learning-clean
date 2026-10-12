@@ -52,12 +52,17 @@ dossier from durable data alone:
   start is kept — and the scene's actual span still moves only through
   the commits (STATE §26);
 - **the scene's planning context** (:class:`SceneContext`, V3-5R's
-  HIGH-1): ``current_tick`` as the Director context reads it, the POV's
-  canonical identity, and the POV's **V3 cognition view**
-  (:func:`elc.world.cognition.v3_cognition_view`) — the lineage-based
-  read (V3 events only via their ``segment_commit`` row, actual-interval
-  order, canonical-identity layers). The view rides out on
-  :attr:`SceneOpening.context`; a read refusal rides out unchanged;
+  HIGH-1; the memory arm added by V3-7): ``current_tick`` as the
+  Director context reads it, the POV's canonical identity, the POV's
+  **V3 cognition view** (:func:`elc.world.cognition.v3_cognition_view`)
+  — the lineage-based read (V3 events only via their
+  ``segment_commit`` row, actual-interval order, canonical-identity
+  layers), now the compatibility / fallback arm — and, since V3-7
+  (TASK-OPI-d274a7fb…8), the POV's **actor memory**
+  (:func:`elc.world.memory.v3_memory_view`: the materialized memory
+  rows, kind-layered — DATA §26.2.1's "dossier 改读 actor memory").
+  Both views ride out on :attr:`SceneOpening.context`; a read refusal
+  rides out unchanged;
 - the write chain is the store's own faces, each idempotent by id:
   create dossier revision 1 (``f"{scene_id}-d1"`` — the planner's local
   naming for replays; the contract freezes three derivation laws and
@@ -120,6 +125,7 @@ from elc.world.bible import SqliteBibleStore
 from elc.world.cast import SqliteCastStore
 from elc.world.cognition import V3CognitionView, v3_cognition_view
 from elc.world.director import build_director_context
+from elc.world.memory import V3MemoryView, v3_memory_view
 from elc.world.narrative.store import SqliteNarrativeStore
 from elc.world.narrative.types import (
     PlanRevisionStatus,
@@ -173,17 +179,23 @@ def _dossier_revision_of(scene_id: str, dossier_id: str) -> int | None:
 @dataclass(frozen=True)
 class SceneContext:
     """One scene's planning context (V3-5R, TASK-OPI-dc1bafdf…13 /
-    DEC-OPI-dc1bafdf…11's HIGH-1): the canonical story time the Director
-    context reads (``current_tick``), the POV's own canonical identity,
-    and the POV's V3 cognition view — the lineage read
+    DEC-OPI-dc1bafdf…11's HIGH-1; the memory arm added by V3-7,
+    TASK-OPI-d274a7fb…8): the canonical story time the Director context
+    reads (``current_tick``), the POV's own canonical identity, the
+    POV's V3 cognition view — the lineage read
     (:func:`elc.world.cognition.v3_cognition_view`) the scene plans
-    from. The view is built for this scene's POV, so its ``viewer_id``
-    equals ``pov_actor_id``; the dossier's ``planned_start_tick`` rides
-    ``max(current_tick, element's)`` (the V3-5R time law)."""
+    from, now the compatibility / fallback arm — and, since V3-7, the
+    POV's **actor memory** (:func:`elc.world.memory.v3_memory_view` —
+    the dossier's materialized memory face; DATA §26.2.1's "dossier
+    改读 actor memory"). Both views are built for this scene's POV, so
+    their ``viewer_id`` equals ``pov_actor_id``; the dossier's
+    ``planned_start_tick`` rides ``max(current_tick, element's)`` (the
+    V3-5R time law)."""
 
     current_tick: int
     pov_actor_id: str
     cognition: V3CognitionView
+    memory: V3MemoryView
 
 
 @dataclass(frozen=True)
@@ -561,10 +573,23 @@ class ScenePlanner:
         )
         if isinstance(cognition, Err):
             return Err(cognition.error)
+        # The POV's actor memory (V3-7, TASK-OPI-d274a7fb…8): the
+        # dossier's materialized memory face (DATA §26.2.1's "dossier
+        # 改读 actor memory"); the cognition view above stays beside it
+        # as the compatibility / fallback arm; a refusal rides out
+        # unchanged.
+        memory = v3_memory_view(
+            self._conn,
+            world_id=chapter.world_id,
+            viewer_id=fields.value["pov_actor_id"],
+        )
+        if isinstance(memory, Err):
+            return Err(memory.error)
         context = SceneContext(
             current_tick=director_context.current_tick,
             pov_actor_id=fields.value["pov_actor_id"],
             cognition=cognition.value,
+            memory=memory.value,
         )
         # The V3-5R time law (DEC-OPI-dc1bafdf…11's item 4): the later
         # of the world's reality and the Blueprint's own guess.

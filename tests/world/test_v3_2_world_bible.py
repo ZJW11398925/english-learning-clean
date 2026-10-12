@@ -26,11 +26,12 @@ the Bible's ``calendar``). The groups:
    CURRENT rows refuse; a CURRENT beside a SUPERSEDED row is legal), a
    dangling ``world_id`` refused by the table's own FK, and the chain
    self-pin (the shared constants say
-   ``0036_action_replan`` / ``36``,
+   ``0037_actor_memory_chapter_settlement`` / ``37``,
    a fresh database stamps exactly that — the head literal moved with
    V3-3R's 0032_actor_profile_world_fk, V3-5's 0033_segment_commit,
-   V3-5R's 0034_segment_terminality, V3-6's 0035_user_gate_action and
-   V3-6R's 0036_action_replan,
+   V3-5R's 0034_segment_terminality, V3-6's 0035_user_gate_action,
+   V3-6R's 0036_action_replan and V3-7's
+   0037_actor_memory_chapter_settlement,
    the migration-shape claims stay
    0030's own);
 2. **open-time seed** — a builtin package's birth carries its Bible:
@@ -273,13 +274,13 @@ def _seed_one_world(
 
 
 def test_the_shared_constants_and_a_fresh_db_say_the_chain_head() -> None:
-    assert MIGRATION_IDS[-1] == "0036_action_replan"
-    assert SCHEMA_HEAD_FILE == "0036_action_replan.sql"
-    assert SCHEMA_HEAD_VERSION == "36"
+    assert MIGRATION_IDS[-1] == "0037_actor_memory_chapter_settlement"
+    assert SCHEMA_HEAD_FILE == "0037_actor_memory_chapter_settlement.sql"
+    assert SCHEMA_HEAD_VERSION == "37"
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0036_action_replan"
-    assert schema_version(fresh) == SCHEMA_HEAD_VERSION == "36"
+    assert applied[-1] == "0037_actor_memory_chapter_settlement"
+    assert schema_version(fresh) == SCHEMA_HEAD_VERSION == "37"
     stamps = dict(
         fresh.execute(
             "SELECT key, value FROM schema_meta"
@@ -287,8 +288,8 @@ def test_the_shared_constants_and_a_fresh_db_say_the_chain_head() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "36",
-        "runtime_schema_version": "36",
+        "schema_version": "37",
+        "runtime_schema_version": "37",
     }
 
 

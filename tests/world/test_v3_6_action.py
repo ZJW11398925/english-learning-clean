@@ -44,8 +44,10 @@ correction's own new pins. The groups:
 8. **the recovery scan, the module discipline and the chain head** —
    RA §29's five families, the post-NCP-1 re-adjudication's unique
    outcome, no Package face / no interpolated SQL / one transaction per
-   face / the cold start, and the shared constants ending at
-   ``0036_action_replan`` / ``36``.
+   face / the cold start, and the shared constants ending at V3-7's
+   ``0037_actor_memory_chapter_settlement`` / ``37`` (``0036_action_replan``
+   / ``36`` was the head when this cut landed; the head literal migrated
+   the P9-1 way).
 """
 
 from __future__ import annotations
@@ -811,21 +813,24 @@ def test_the_rebuilt_segment_commit_carries_both_kinds(
 
 def test_the_chain_head_and_the_stamps_agree() -> None:
     """The migration self-pin: the shared constants and a fresh database
-    end at V3-6R's ``0036_action_replan`` / ``36`` — behind it V3-6's
+    end at V3-7's ``0037_actor_memory_chapter_settlement`` / ``37`` —
+    behind it V3-6R's ``0036_action_replan``, V3-6's
     ``0035_user_gate_action``, V3-5R's ``0034_segment_terminality`` and
     the chain's own V3 tables behind those."""
 
-    assert MIGRATION_IDS[-1] == "0036_action_replan"
-    assert SCHEMA_HEAD_FILE == "0036_action_replan.sql"
-    assert SCHEMA_HEAD_VERSION == "36"
-    assert MIGRATION_IDS[-2] == "0035_user_gate_action"
-    assert MIGRATION_IDS[-3] == "0034_segment_terminality"
+    assert MIGRATION_IDS[-1] == "0037_actor_memory_chapter_settlement"
+    assert SCHEMA_HEAD_FILE == "0037_actor_memory_chapter_settlement.sql"
+    assert SCHEMA_HEAD_VERSION == "37"
+    assert MIGRATION_IDS[-2] == "0036_action_replan"
+    assert MIGRATION_IDS[-3] == "0035_user_gate_action"
+    assert MIGRATION_IDS[-4] == "0034_segment_terminality"
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0036_action_replan"
-    assert applied[-2] == "0035_user_gate_action"
-    assert applied[-3] == "0034_segment_terminality"
-    assert applied[-4] == "0033_segment_commit"
+    assert applied[-1] == "0037_actor_memory_chapter_settlement"
+    assert applied[-2] == "0036_action_replan"
+    assert applied[-3] == "0035_user_gate_action"
+    assert applied[-4] == "0034_segment_terminality"
+    assert applied[-5] == "0033_segment_commit"
     stamps = dict(
         fresh.execute(
             "SELECT key, value FROM schema_meta"
@@ -833,8 +838,8 @@ def test_the_chain_head_and_the_stamps_agree() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "36",
-        "runtime_schema_version": "36",
+        "schema_version": "37",
+        "runtime_schema_version": "37",
     }
     tables = {
         str(row[0])

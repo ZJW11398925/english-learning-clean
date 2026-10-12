@@ -425,14 +425,15 @@ def test_no_source_file_carries_this_cuts_name() -> None:
     # 0030_world_bible, then V3-3's 0031_world_cast, then V3-3R's
     # 0032_actor_profile_world_fk, then V3-5's 0033_segment_commit,
     # then V3-5R's 0034_segment_terminality, then V3-6's
-    # 0035_user_gate_action, then V3-6R's 0036_action_replan
+    # 0035_user_gate_action, then V3-6R's 0036_action_replan, then
+    # V3-7's 0037_actor_memory_chapter_settlement
     # (this pin
     # read
     # "0018_delivery_records.sql" while 0018 was the head, the stamp-pin
     # discipline every head move has followed since P8-4).
     assert sorted(
         path.name for path in (REPO_ROOT / "migrations").glob("*.sql")
-    )[-1] == "0036_action_replan.sql"
+    )[-1] == "0037_actor_memory_chapter_settlement.sql"
 
 
 def test_the_frozen_surfaces_are_read_not_written() -> None:

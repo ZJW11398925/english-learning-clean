@@ -185,16 +185,17 @@ def test_0018_is_0017s_successor_and_the_head() -> None:
     ``0032_actor_profile_world_fk.sql``, V3-5's
     ``0033_segment_commit.sql``, V3-5R's
     ``0034_segment_terminality.sql``, V3-6's
-    ``0035_user_gate_action.sql`` and V3-6R's
-    ``0036_action_replan.sql``, the
+    ``0035_user_gate_action.sql``, V3-6R's
+    ``0036_action_replan.sql`` and V3-7's
+    ``0037_actor_memory_chapter_settlement.sql``, the
     current head (this pin read
     ``names[-1] == SCHEMA_HEAD_FILE == HEAD_0018`` while 0018 was the head
     — the P8-4 suite's rule: the successor is a **literal** here so the
     head can move without silently falsifying the lineage claim)."""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert MIGRATION_IDS[-1] == "0036_action_replan"
-    assert SCHEMA_HEAD_FILE == "0036_action_replan.sql"
+    assert MIGRATION_IDS[-1] == "0037_actor_memory_chapter_settlement"
+    assert SCHEMA_HEAD_FILE == "0037_actor_memory_chapter_settlement.sql"
     assert names[names.index(HEAD_0018) + 1] == "0019_character_cards.sql"
     assert names[names.index("0019_character_cards.sql") + 1] == (
         "0020_world_lore_facts.sql"
@@ -260,8 +261,9 @@ def test_the_stamps_move_to_the_shared_head(db: sqlite3.Connection) -> None:
     # V3-3 再随迁 30 → 31（世界 cast 两表）；V3-3R 再随迁 31 → 32（复合 FK 重建）；
     # V3-5 再随迁 32 → 33（段落提交三表）；V3-5R 再随迁 33 → 34（terminality 一列）；
     # V3-6 再随迁 34 → 35（User Gate/用户行动两表 + segment_commit 重建）；
-    # V3-6R 再随迁 35 → 36（replan 义务一表）。
-    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "36"
+    # V3-6R 再随迁 35 → 36（replan 义务一表）；V3-7 再随迁 36 → 37（actor
+    # memory 与章结算两表）。
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "37"
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"

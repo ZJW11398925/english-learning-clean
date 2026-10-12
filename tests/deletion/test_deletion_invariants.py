@@ -363,9 +363,10 @@ def test_sec_025_all_user_data_keeps_the_schema_and_the_ledger(
     # 0032_actor_profile_world_fk, 32 → 33 with V3-5's
     # 0033_segment_commit, 33 → 34 with V3-5R's
     # 0034_segment_terminality, 34 → 35 with V3-6's
-    # 0035_user_gate_action, and 35 → 36 with V3-6R's
-    # 0036_action_replan).
-    assert _count(db, "schema_migrations") == 36
+    # 0035_user_gate_action, 35 → 36 with V3-6R's
+    # 0036_action_replan, and 36 → 37 with V3-7's
+    # 0037_actor_memory_chapter_settlement).
+    assert _count(db, "schema_migrations") == 37
     assert _count(db, "runtime_epoch") == 1
     assert _count(db, "deletion_tombstone") > 0
 

@@ -147,12 +147,20 @@ MIGRATION_IDS: tuple[str, ...] = (
     # crash-proof anchor between NCP-2's short transaction and the plan
     # face that consumes the verdict; claim → work → complete).
     "0036_action_replan",
+    # V3-7 (TASK-OPI-d274a7fb…8 / the opening ruling …6): the actor
+    # memory / belief materialization (actor_memory — the five-kind
+    # memory table the two commit transactions feed automatically and
+    # record_belief fills) plus the chapter settlement (chapter_settlement
+    # — the chapter-end compression product, one version per chapter,
+    # NCP-4's only row); elc.world.memory and elc.world.settlement are
+    # the faces.
+    "0037_actor_memory_chapter_settlement",
 )
 
 #: The newest migration's file name, and the ``schema_version`` /
 #: ``runtime_schema_version`` stamp that applying the whole chain leaves.
-SCHEMA_HEAD_FILE = "0036_action_replan.sql"
-SCHEMA_HEAD_VERSION = "36"
+SCHEMA_HEAD_FILE = "0037_actor_memory_chapter_settlement.sql"
+SCHEMA_HEAD_VERSION = "37"
 
 # Phase 0 packages: the domains from docs/IMPLEMENTATION_PLAN.md §2 plus
 # the User Configuration/Profile bounded context (docs/DOMAIN_MODEL.md

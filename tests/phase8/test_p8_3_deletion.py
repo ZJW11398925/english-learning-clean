@@ -177,7 +177,9 @@ def test_the_retained_set_is_unchanged() -> None:
     # 一表入 keep 半（0030 一表——实例世界设定的唯一权威）；V3-3 再随迁：
     # 世界 cast 两表入 keep 半（0031 两表——读者 durable 角色一世界一行 +
     # AI actor 叙事档案）；V3-5 再随迁：段落提交三表入 keep 半（0033 三表
-    # ——正文 CANON 行 / 解耦曝光记录 / story-time lineage 行）。
+    # ——正文 CANON 行 / 解耦曝光记录 / story-time lineage 行）；V3-6/V3-6R
+    # 再随迁：门/行动两表与 replan 义务一表入 keep 半；V3-7 再随迁：actor
+    # memory 与章结算两表入 keep 半（0037 两表——全链 keep 侧）。
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
@@ -200,6 +202,8 @@ def test_the_retained_set_is_unchanged() -> None:
         "user_gate",
         "user_action",
         "action_replan",
+        "actor_memory",
+        "chapter_settlement",
     )
     for table in LEDGER_TABLES:
         assert table not in RETAINED_TABLES
@@ -520,7 +524,8 @@ def test_the_ledger_tables_are_absent_from_the_content_db_sweep(
     # 两表入 keep 半——0031 两表）；V3-5 再随迁（段落提交三表入 keep 半
     # ——0033 三表）；V3-6 再随迁（User Gate/用户行动两表入 keep 半——
     # 0035 两表 + segment_commit 重建）；V3-6R 再随迁（replan 义务一表
-    # 入 keep 半——0036 一表）。
+    # 入 keep 半——0036 一表）；V3-7 再随迁（actor memory 与章结算两表
+    # 入 keep 半——0037 两表）。
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
@@ -543,6 +548,8 @@ def test_the_ledger_tables_are_absent_from_the_content_db_sweep(
         "user_gate",
         "user_action",
         "action_replan",
+        "actor_memory",
+        "chapter_settlement",
     )
     assert _tables(db) == (
         set(SWEPT_TABLES) | set(RETAINED_TABLES) | set(GLOBAL_CONTENT_TABLES)

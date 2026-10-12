@@ -208,6 +208,10 @@ from elc.world.narrative.types import (
     WorldSceneRecord,
     encode_scenes,
 )
+from elc.world.settlement import (
+    ChapterSettlementRecord,
+    chapter_settlements_of,
+)
 from elc.world.store import SqliteWorldStore, WorldStorylineRecord
 from elc.world.time import read_current_tick
 from elc.world.types import WorldStateFact
@@ -355,16 +359,21 @@ class DirectorContext:
     The arms are the ones the contract names: the Bible revision (the
     instance-level world authority), the cast input, the world's
     ``active_storylines`` (0028's two-layer read), the
-    ``world_state_fact`` CURRENT half (0024) and ``current_tick`` —
-    the canonical story time (the V3-4R review's item 2,
-    :func:`elc.world.time.read_current_tick`). A Director producing
-    planned ticks must know the canonical time: initial chapter
-    planning takes ``current_tick`` as its reality anchor; a
+    ``world_state_fact`` CURRENT half (0024), ``current_tick`` — the
+    canonical story time (the V3-4R review's item 2,
+    :func:`elc.world.time.read_current_tick`) — and, since V3-7
+    (TASK-OPI-d274a7fb…8, DATA §26.2.1's "下一章只读摘要面"),
+    ``chapter_summaries``: the settled (``CLOSED``) chapters'
+    ``chapter_settlement`` rows, ``chapter_index`` ascending — the
+    next-chapter read-only summary face
+    (:func:`elc.world.settlement.chapter_settlements_of`). A Director
+    producing planned ticks must know the canonical time: initial
+    chapter planning takes ``current_tick`` as its reality anchor; a
     replanning may keep the historical planned time of what already
     happened, and fresh planning must not unconsciously regress the
-    canonical time. Chapter Summaries and Reader Exposure are **not**
-    arms yet — they are V3-7's / V3-5's (registered; a later cut grows
-    this shape, not a placeholder now).
+    canonical time. Reader Exposure is still **not** an arm — it is
+    V3-5's decoupled record face (registered; a later cut grows this
+    shape, not a placeholder now).
     """
 
     world_id: str
@@ -373,6 +382,7 @@ class DirectorContext:
     storylines: tuple[WorldStorylineRecord, ...]
     current_facts: tuple[WorldStateFact, ...]
     current_tick: int
+    chapter_summaries: tuple[ChapterSettlementRecord, ...]
 
 
 @dataclass(frozen=True)
@@ -1210,11 +1220,14 @@ def build_director_context(
     bible_store: SqliteBibleStore,
 ) -> DirectorContext:
     """The Director's context read face: the Bible revision, the cast
-    input, the world's active storylines, its CURRENT facts and the
+    input, the world's active storylines, its CURRENT facts, the
     canonical story time (``current_tick``, read through
-    :func:`elc.world.time.read_current_tick`) — the arms the contract
-    names (Chapter Summaries / Reader Exposure are later cuts' arms and
-    are not invented here).
+    :func:`elc.world.time.read_current_tick`) and — since V3-7 — the
+    settled chapters' summaries
+    (:func:`elc.world.settlement.chapter_settlements_of`: the
+    ``CLOSED`` chapters' ``chapter_settlement`` rows, ``chapter_index``
+    ascending). Reader Exposure is a later cut's arm and is not
+    invented here.
 
     The face's calling precondition is a **seeded world**: the tick is
     the one arm with no honest empty answer, so a dangling world raises
@@ -1239,6 +1252,7 @@ def build_director_context(
         storylines=world_store.active_storylines(world_id),
         current_facts=world_store.current_facts(world_id),
         current_tick=tick.value,
+        chapter_summaries=chapter_settlements_of(conn, world_id),
     )
 
 

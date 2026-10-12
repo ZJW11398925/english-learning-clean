@@ -12,7 +12,8 @@ write faces that land a Blueprint as an adopted plan revision plus its
 tables were V3-1's; this cut is pure code (the chain head then ended at
 ``0032_actor_profile_world_fk`` / ``32`` — V3-5's
 ``0033_segment_commit``, V3-5R's ``0034_segment_terminality``, V3-6's
-``0035_user_gate_action`` and V3-6R's ``0036_action_replan`` moved
+``0035_user_gate_action``, V3-6R's ``0036_action_replan`` and V3-7's
+``0037_actor_memory_chapter_settlement`` moved
 it afterwards, and group 6 speaks the
 live lineage). The #4 prerequisites (an
 ``ADOPTED`` Blueprint / Dossier before an activation; the overlap ban
@@ -1004,10 +1005,11 @@ def test_the_player_arm_carries_the_profile_face_only(
 
 def test_the_context_carries_the_named_arms(tmp_path: Path) -> None:
     """The context read face: the Bible revision, the cast input, the
-    world's active storylines (the package's two opening arcs) and the
-    CURRENT facts (empty on a freshly seeded town) — and the arms the
-    contract has not granted yet (Chapter Summaries / Reader Exposure)
-    do not exist on the shape."""
+    world's active storylines (the package's two opening arcs), the
+    CURRENT facts (empty on a freshly seeded town) and — since V3-7
+    (TASK-OPI-d274a7fb…8) — the settled chapters' summaries (empty
+    here: nothing has settled) — and the arm the contract has not
+    granted yet (Reader Exposure) does not exist on the shape."""
 
     world_store, bible_store, cast_store, _narrative, db = _seed_berrymoor(
         tmp_path
@@ -1027,8 +1029,11 @@ def test_the_context_carries_the_named_arms(tmp_path: Path) -> None:
     assert context.current_facts == ()
     assert context.current_tick == 0  # the seed world starts at tick zero
     assert context.cast.namespace == BERRYMOOR_NAMESPACE
+    # the V3-7 arm is here (the settled-chapter summaries; empty on an
+    # un-settled world) — the at-the-time registration 「Chapter
+    # Summaries ... are V3-7's」 is now discharged.
+    assert context.chapter_summaries == ()
     for absent in (
-        "chapter_summaries",
         "summaries",
         "reader_exposure",
         "exposures",
@@ -2428,16 +2433,17 @@ def test_the_chain_head_moved_on_after_this_cut() -> None:
     """The cut's own historical pin: V3-4 shipped **zero migration** —
     the shared constants and the applied chain ended at 0032 while it
     was the head — and V3-5's ``0033_segment_commit``, V3-5R's
-    ``0034_segment_terminality``, V3-6's ``0035_user_gate_action`` then
-    V3-6R's ``0036_action_replan``
+    ``0034_segment_terminality``, V3-6's ``0035_user_gate_action``, then
+    V3-6R's ``0036_action_replan`` and then V3-7's
+    ``0037_actor_memory_chapter_settlement``
     moved them
     afterwards (TASK-OPI-be7b094f…34 / TASK-OPI-dc1bafdf…13 /
-    …23 / …33). The live
+    …23 / …33 / TASK-OPI-d274a7fb…8). The live
     lineage the shared
     constants carry is pinned here; V3-4's own claim is the sentence
     above, kept as history."""
 
-    assert MIGRATION_IDS[-1] == "0036_action_replan"
-    assert SCHEMA_HEAD_FILE == "0036_action_replan.sql"
-    assert SCHEMA_HEAD_VERSION == "36"
+    assert MIGRATION_IDS[-1] == "0037_actor_memory_chapter_settlement"
+    assert SCHEMA_HEAD_FILE == "0037_actor_memory_chapter_settlement.sql"
+    assert SCHEMA_HEAD_VERSION == "37"
     assert "0032_actor_profile_world_fk" in MIGRATION_IDS

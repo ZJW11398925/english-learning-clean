@@ -106,7 +106,8 @@ def test_0017_is_registered_and_0018_follows_it() -> None:
     V3-3's 0031_world_cast, then V3-3R's 0032_actor_profile_world_fk,
     then V3-5's 0033_segment_commit, then V3-5R's
     0034_segment_terminality, then V3-6's
-    0035_user_gate_action, and now V3-6R's 0036_action_replan is the
+    0035_user_gate_action, then V3-6R's 0036_action_replan, and
+    now V3-7's 0037_actor_memory_chapter_settlement is the
     head), and the
     successor
     is a **literal** — a ``SCHEMA_HEAD_FILE`` reference here would silently
@@ -114,7 +115,7 @@ def test_0017_is_registered_and_0018_follows_it() -> None:
     the 0016 suite)."""
 
     names = sorted(path.name for path in MIGRATIONS_DIR.glob("*.sql"))
-    assert MIGRATION_IDS[-1] == "0036_action_replan"
+    assert MIGRATION_IDS[-1] == "0037_actor_memory_chapter_settlement"
     assert names[names.index(HEAD_0017) + 1] == "0018_delivery_records.sql"
     assert names[names.index(PRE_0017) + 1] == HEAD_0017
     assert [name[:4] for name in names] == [
@@ -148,8 +149,8 @@ def test_the_stamps_move_to_the_shared_head(db: sqlite3.Connection) -> None:
     # 25 → 26；C1-a 再随迁 26 → 27；C2 再随迁 27 → 28；V3-1 再随迁 28 → 29；
     # V3-2 再随迁 29 → 30；V3-3 再随迁 30 → 31；V3-3R 再随迁 31 → 32；
     # V3-5 再随迁 32 → 33；V3-5R 再随迁 33 → 34；V3-6 再随迁 34 → 35；
-    # V3-6R 再随迁 35 → 36。
-    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "36"
+    # V3-6R 再随迁 35 → 36；V3-7 再随迁 36 → 37。
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "37"
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"

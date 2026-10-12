@@ -63,6 +63,18 @@ obligation-keyed replan), ``director.py`` (``apply_action_replan``),
 (the span arm's ``close_scene`` two-caller law) and
 ``deletion/types.py`` (the keep set's twenty → twenty-one members) — and
 the pins below carry those faces too.
+
+V3-7 (``TASK-OPI-d274a7fb…8`` / the opening ruling ``…6``) adds the
+memory-and-settlement migration
+(``0037_actor_memory_chapter_settlement.sql``), the new memory face
+(``memory.py``) and re-touches seven entries in place — ``settlement.py``
+(the NCP-4 orchestration and the settlement read face), ``action.py``
+(the ⑨ memory arm and the recovery scan's sixth family), ``scene.py``
+(the memory arm on ``SceneContext``), ``director.py``
+(``chapter_summaries``), ``cognition.py`` (the descent to its
+compatibility role), the narrative ``store.py`` (the ``_close_chapter_tx``
+arm) and ``deletion/types.py`` (the keep set's twenty-one → twenty-three
+members) — and the pins below carry those faces too.
 """
 
 from __future__ import annotations
@@ -85,6 +97,7 @@ TOUCHED_TAGS = (
     "berrymoor.json[FQ8W]",
     "0028_world_storyline.sql[PD7T]",
     "0036_action_replan.sql[",
+    "0037_actor_memory_chapter_settlement.sql[",
 )
 
 
@@ -333,7 +346,7 @@ def test_the_touched_entries_are_single_lines() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_deletion_entry_counts_the_twenty_one_global_content_tables() -> None:
+def test_deletion_entry_counts_the_global_content_tables() -> None:
     """The disposition's fixed falsehood (review MEDIUM-1, one live lie
     found by the mechanical sweep): ``GLOBAL_CONTENT_TABLES`` gained
     ``world_storyline`` at C2 — the entry's 「七员」 was false; 「八员」
@@ -344,20 +357,23 @@ def test_deletion_entry_counts_the_twenty_one_global_content_tables() -> None:
     migration 0031's two cast tables (``world_player_character`` /
     ``world_actor_profile``), V3-5 (TASK-OPI-be7b094f…34) adds
     migration 0033's three narrative-commit tables
-    (``narrative_passage`` / ``reader_exposure`` / ``segment_commit``)
-    and V3-6 (TASK-OPI-dc1bafdf…23) adds migration 0035's two tables
+    (``narrative_passage`` / ``reader_exposure`` / ``segment_commit``),
+    V3-6 (TASK-OPI-dc1bafdf…23) adds migration 0035's two tables
     (``user_gate`` / ``user_action``) and V3-6R (TASK-OPI-dc1bafdf…33)
-    migration 0036's one (``action_replan``)
-    — 「廿一员」 is the truth now, and the source constant must carry
-    the same twenty-one."""
+    migration 0036's one (``action_replan``), and V3-7
+    (TASK-OPI-d274a7fb…8) adds migration 0037's two
+    (``actor_memory`` / ``chapter_settlement``)
+    — 「廿三员」 is the truth now, and the source constant must carry
+    the same twenty-three."""
 
     from elc.deletion.types import GLOBAL_CONTENT_TABLES
 
     entry = _entry_line_in_section(
         "===D:/english-learning-clean/src/elc/deletion/===", "types.py[DD7M]"
     )
-    assert "廿一员" in entry
-    assert entry.count("廿一员") == 1
+    assert "廿三员" in entry
+    assert entry.count("廿三员") == 1
+    assert "廿一员" not in entry
     assert "二十员" not in entry
     assert "十八员" not in entry
     assert "十五员" not in entry
@@ -376,7 +392,9 @@ def test_deletion_entry_counts_the_twenty_one_global_content_tables() -> None:
     assert "user_gate" in entry
     assert "user_action" in entry
     assert "action_replan" in entry
-    assert len(GLOBAL_CONTENT_TABLES) == 21
+    assert "actor_memory" in entry
+    assert "chapter_settlement" in entry
+    assert len(GLOBAL_CONTENT_TABLES) == 23
     assert "world_storyline" in GLOBAL_CONTENT_TABLES
     assert "world_scene_dossier" in GLOBAL_CONTENT_TABLES
     assert "world_bible_revision" in GLOBAL_CONTENT_TABLES
@@ -388,6 +406,8 @@ def test_deletion_entry_counts_the_twenty_one_global_content_tables() -> None:
     assert "user_gate" in GLOBAL_CONTENT_TABLES
     assert "user_action" in GLOBAL_CONTENT_TABLES
     assert "action_replan" in GLOBAL_CONTENT_TABLES
+    assert "actor_memory" in GLOBAL_CONTENT_TABLES
+    assert "chapter_settlement" in GLOBAL_CONTENT_TABLES
 
 
 def test_v3_5_entries_carry_the_segment_commit_faces() -> None:
@@ -761,4 +781,121 @@ def test_v3_6r_entries_carry_the_obligation_and_outcome_faces() -> None:
     )
     store_entry = _entry_line_in_section(narrative_section, "store.py[PD9T]")
     for keyword in ("close_scene", "_advance_scene_actual_span_tx", "V3-6R"):
+        assert keyword in store_entry, keyword
+
+
+# ---------------------------------------------------------------------------
+# V3-7 (TASK-OPI-d274a7fb…8): the memory-and-settlement migration, the new
+# memory face and the re-touched entries
+# ---------------------------------------------------------------------------
+
+
+def test_v3_7_entries_carry_the_memory_and_settlement_faces() -> None:
+    """V3-7's ledger faces ride their entries: the 0037 migration (the
+    two tables, the five kind words, the memory arm, the one-version
+    settlement and N-INV-004's storage face), the new ``memory.py``
+    (``record_belief`` / ``v3_memory_view`` / the shared EXPERIENCED
+    arm) and the re-touched entries — ``settlement.py`` (the NCP-4
+    orchestration and the settlement read face), ``action.py`` (the ⑨
+    memory arm and the recovery scan's sixth family), ``scene.py`` (the
+    memory arm on ``SceneContext``), ``director.py``
+    (``chapter_summaries``), ``cognition.py`` (the descent to its
+    compatibility / fallback role) and the narrative ``store.py`` (the
+    ``_close_chapter_tx`` arm). The coverage law above keeps the 0037
+    entry present; this pin keeps the words true."""
+
+    section = "\n".join(_migrations_section())
+    assert "0037_actor_memory_chapter_settlement.sql[" in section
+    migration_entry = _entry_line("0037_actor_memory_chapter_settlement.sql[")
+    for keyword in (
+        "actor_memory",
+        "chapter_settlement",
+        "'EXPERIENCED','HEARD','BELIEVED','INFERRED','MISTAKEN'",
+        "memory_id",
+        "N-INV-004",
+        "21→23 员",
+        "双 stamp '37'",
+    ):
+        assert keyword in migration_entry, keyword
+
+    world_section = "===D:/english-learning-clean/src/elc/world/==="
+    for tag, keywords in (
+        (
+            "memory.py[",
+            (
+                "MemoryKind",
+                "record_belief",
+                "v3_memory_view",
+                "record_experienced_in_transaction",
+                "EXPERIENCED",
+                "叶子模块",
+            ),
+        ),
+        (
+            "settlement.py[",
+            (
+                "settle_chapter",
+                "chapter_settlements_of",
+                "NCP-4",
+                "N-INV-004",
+                "record_experienced_in_transaction",
+                "V3-7",
+            ),
+        ),
+        (
+            "action.py[",
+            (
+                "settling_chapters",
+                "record_experienced_in_transaction",
+                "第六族",
+                "V3-7",
+            ),
+        ),
+        (
+            "scene.py[",
+            (
+                "V3MemoryView",
+                "v3_memory_view",
+                "V3-7",
+            ),
+        ),
+        (
+            "director.py[",
+            (
+                "chapter_summaries",
+                "chapter_settlements_of",
+                "V3-7",
+            ),
+        ),
+        (
+            "cognition.py[",
+            (
+                "V3-7",
+                "兼容/fallback",
+            ),
+        ),
+    ):
+        entry = _entry_line_in_section(world_section, tag)
+        for keyword in keywords:
+            assert keyword in entry, (tag, keyword)
+
+    # coherence: the new face's entry and the live module carry the same
+    # symbols — renaming one side alone reddens here.
+    memory_source = (
+        REPO / "src" / "elc" / "world" / "memory.py"
+    ).read_text(encoding="utf-8")
+    for symbol in (
+        "class MemoryKind",
+        "def record_belief",
+        "def v3_memory_view",
+        "def record_experienced_in_transaction",
+        "def memory_id_for",
+    ):
+        assert symbol in memory_source, symbol
+
+    narrative_section = (
+        "===D:/english-learning-clean/src/elc/world/narrative/==="
+    )
+    store_entry = _entry_line_in_section(narrative_section, "store.py[PD9T]")
+    for keyword in ("_close_chapter_tx", "V3-7"):
         assert keyword in store_entry, keyword

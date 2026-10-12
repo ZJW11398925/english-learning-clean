@@ -135,7 +135,9 @@ def test_the_retained_set_is_unchanged_and_the_sweep_grew_by_four() -> None:
     # 再随迁：User Gate/用户行动两表入 keep 半（0035 两表 + segment_commit
     # 重建——门与裁定行的 FK 链全 keep 侧：gate → scene → chapter → world、
     # action → gate）；V3-6R 再随迁：replan 义务一表入 keep 半（0036 一表
-    # ——FK 链 obligation → action → gate 全 keep 侧）。
+    # ——FK 链 obligation → action → gate 全 keep 侧）；V3-7 再随迁：actor
+    # memory 与章结算两表入 keep 半（0037 两表——FK 链 memory → world 与
+    # memory → world_event、settlement → world_chapter → world 全 keep 侧）。
     assert GLOBAL_CONTENT_TABLES == (
         "world_lore_fact",
         "world",
@@ -158,6 +160,8 @@ def test_the_retained_set_is_unchanged_and_the_sweep_grew_by_four() -> None:
         "user_gate",
         "user_action",
         "action_replan",
+        "actor_memory",
+        "chapter_settlement",
     )
     for table in PLANNER_TABLES:
         assert table in SWEPT_TABLES

@@ -132,8 +132,8 @@ def test_0016_is_0017s_predecessor_and_0015s_successor() -> None:
     # C1-a 再随迁至 0027；C2 再随迁至 0028；V3-1 再随迁至 0029；
     # V3-2 再随迁至 0030；V3-3 再随迁至 0031；V3-3R 再随迁至 0032；
     # V3-5 再随迁至 0033；V3-5R 再随迁至 0034；V3-6 再随迁至 0035；
-    # V3-6R 再随迁至 0036。
-    assert MIGRATION_IDS[-1] == "0036_action_replan"
+    # V3-6R 再随迁至 0036；V3-7 再随迁至 0037。
+    assert MIGRATION_IDS[-1] == "0037_actor_memory_chapter_settlement"
 
 
 def test_the_pre_0016_lineage_did_not_move() -> None:
@@ -160,8 +160,8 @@ def test_the_stamps_move_to_the_shared_head(db: sqlite3.Connection) -> None:
     # 25 → 26；C1-a 再随迁 26 → 27；C2 再随迁 27 → 28；V3-1 再随迁 28 → 29；
     # V3-2 再随迁 29 → 30；V3-3 再随迁 30 → 31；V3-3R 再随迁 31 → 32；
     # V3-5 再随迁 32 → 33；V3-5R 再随迁 33 → 34；V3-6 再随迁 34 → 35；
-    # V3-6R 再随迁 35 → 36。
-    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "36"
+    # V3-6R 再随迁 35 → 36；V3-7 再随迁 36 → 37。
+    assert migrations.schema_version(db) == SCHEMA_HEAD_VERSION == "37"
     stamps = dict(
         db.execute(
             "SELECT key, value FROM schema_meta WHERE key IN"

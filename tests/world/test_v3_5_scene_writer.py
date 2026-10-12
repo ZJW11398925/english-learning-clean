@@ -1934,24 +1934,26 @@ def test_the_v2_surfaces_and_vocabulary_stay_untouched(
 
 def test_the_chain_head_and_the_stamps_agree() -> None:
     """The migration self-pin: the shared constants and a fresh database
-    end at V3-6R's ``0036_action_replan`` / ``36`` — behind it V3-6's
+    end at V3-7's ``0037_actor_memory_chapter_settlement`` / ``37`` —
+    behind it V3-6R's ``0036_action_replan``, V3-6's
     ``0035_user_gate_action``, V3-5R's ``0034_segment_terminality`` and
     V3-5's ``0033_segment_commit``, and V3-1's four tables and V3-5's
     three join the chain behind that."""
 
-    assert MIGRATION_IDS[-1] == "0036_action_replan"
-    assert SCHEMA_HEAD_FILE == "0036_action_replan.sql"
-    assert SCHEMA_HEAD_VERSION == "36"
+    assert MIGRATION_IDS[-1] == "0037_actor_memory_chapter_settlement"
+    assert SCHEMA_HEAD_FILE == "0037_actor_memory_chapter_settlement.sql"
+    assert SCHEMA_HEAD_VERSION == "37"
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0036_action_replan"
-    assert applied[-2] == "0035_user_gate_action"
-    assert applied[-3] == "0034_segment_terminality"
-    assert applied[-4] == "0033_segment_commit"
-    assert applied[-5] == "0032_actor_profile_world_fk"
-    assert applied[-6] == "0031_world_cast"
-    assert applied[-7] == "0030_world_bible"
-    assert applied[-8] == "0029_narrative_v3_foundations"
+    assert applied[-1] == "0037_actor_memory_chapter_settlement"
+    assert applied[-2] == "0036_action_replan"
+    assert applied[-3] == "0035_user_gate_action"
+    assert applied[-4] == "0034_segment_terminality"
+    assert applied[-5] == "0033_segment_commit"
+    assert applied[-6] == "0032_actor_profile_world_fk"
+    assert applied[-7] == "0031_world_cast"
+    assert applied[-8] == "0030_world_bible"
+    assert applied[-9] == "0029_narrative_v3_foundations"
     stamps = dict(
         fresh.execute(
             "SELECT key, value FROM schema_meta"
@@ -1959,8 +1961,8 @@ def test_the_chain_head_and_the_stamps_agree() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "36",
-        "runtime_schema_version": "36",
+        "schema_version": "37",
+        "runtime_schema_version": "37",
     }
     tables = {
         str(row[0])

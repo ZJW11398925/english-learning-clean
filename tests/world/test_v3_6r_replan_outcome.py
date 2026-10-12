@@ -14,7 +14,9 @@ the one-gate law. The groups:
 1. **migration 0036's shape** — ``action_replan``'s columns, the CHECK
    vocabularies, the ``UNIQUE (user_action_id)`` anchor, the composite
    ``APPLIED ⇒ target_ref`` CHECK, the stamps, and the table's place in
-   ``GLOBAL_CONTENT_TABLES`` (the 21-member chain head);
+   ``GLOBAL_CONTENT_TABLES`` (this cut's 21-member tail append; V3-7's
+   two tables extend the set to 23 at the same tail — the shared
+   constants' head literal migrated the P9-1 way);
 2. **the obligation's birth** — NCP-2's arm ⑧ lands the ``PENDING`` row
    in its own transaction for SCENE / CHAPTER rulings, zero rows for
    ``NONE``, and a replay births no second row;
@@ -379,18 +381,22 @@ def test_action_replan_carries_its_columns_and_checks(
 
 
 def test_the_chain_head_and_the_ledger_membership() -> None:
-    """The migration self-pin: the shared constants end at V3-6R's
-    ``0036_action_replan`` / ``36``, a fresh database carries the table
-    and the stamp, and the obligation joins the global keep set (the
-    21-member tail append)."""
+    """The migration self-pin: the shared constants end at V3-7's
+    ``0037_actor_memory_chapter_settlement`` / ``37`` (V3-6R's
+    ``0036_action_replan`` / ``36`` was the head when this cut landed),
+    a fresh database carries the table
+    and the stamp, and the obligation joins the global keep set (this
+    cut's 21-member tail append; V3-7's two tables extend the set to 23
+    at the same tail)."""
 
-    assert MIGRATION_IDS[-1] == "0036_action_replan"
-    assert MIGRATION_IDS[-2] == "0035_user_gate_action"
-    assert SCHEMA_HEAD_FILE == "0036_action_replan.sql"
-    assert SCHEMA_HEAD_VERSION == "36"
+    assert MIGRATION_IDS[-1] == "0037_actor_memory_chapter_settlement"
+    assert MIGRATION_IDS[-2] == "0036_action_replan"
+    assert MIGRATION_IDS[-3] == "0035_user_gate_action"
+    assert SCHEMA_HEAD_FILE == "0037_actor_memory_chapter_settlement.sql"
+    assert SCHEMA_HEAD_VERSION == "37"
     fresh = sqlite3.connect(":memory:")
     applied = apply_migrations(fresh)
-    assert applied[-1] == "0036_action_replan"
+    assert applied[-1] == "0037_actor_memory_chapter_settlement"
     stamps = dict(
         fresh.execute(
             "SELECT key, value FROM schema_meta"
@@ -398,8 +404,8 @@ def test_the_chain_head_and_the_ledger_membership() -> None:
         ).fetchall()
     )
     assert stamps == {
-        "schema_version": "36",
-        "runtime_schema_version": "36",
+        "schema_version": "37",
+        "runtime_schema_version": "37",
     }
     tables = {
         str(row[0])
@@ -411,8 +417,9 @@ def test_the_chain_head_and_the_ledger_membership() -> None:
 
     from elc.deletion.types import GLOBAL_CONTENT_TABLES
 
-    assert len(GLOBAL_CONTENT_TABLES) == 21
-    assert GLOBAL_CONTENT_TABLES[-1] == "action_replan"
+    assert len(GLOBAL_CONTENT_TABLES) == 23
+    assert "action_replan" in GLOBAL_CONTENT_TABLES
+    assert GLOBAL_CONTENT_TABLES[-2:] == ("actor_memory", "chapter_settlement")
 
 
 # ---------------------------------------------------------------------------
