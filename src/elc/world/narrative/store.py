@@ -48,12 +48,19 @@ The two state machines (STATE_MACHINES §21 / §22, the illegal list §27
 
 - Chapter: ``PLANNED → ACTIVE → SETTLING → CLOSED``. A world holds **at
   most one ACTIVE chapter** (MVP, §21's rule / §27's list — the second
-  is refused); ``CLOSED`` never reopens (corrections go through later
-  chapters, N-INV-003).
+  is refused), and since V3-4 the overlap ban extends to a ``SETTLING``
+  chapter: the next chapter does not open before the previous one
+  closes (§21's #4 ruling, DEC-OPI-be7b094f…7). **The #4 prerequisite —
+  enforced from V3-4 — also gates this move**: a chapter enters
+  ``ACTIVE`` only with an ``ADOPTED`` plan revision (its Blueprint).
+  ``CLOSED`` never reopens (corrections go through later chapters,
+  N-INV-003).
 - Scene: ``PLANNED → ACTIVE → COMMITTED → CLOSED``, and ``DISCARDED``
   reachable **only from PLANNED** (§22: a scene a commit has touched is
   a happened thing — it can only close in the direction it actually
-  went; §27's list spells the same).
+  went; §27's list spells the same). **The #4 prerequisite gates this
+  move too**: a scene enters ``ACTIVE`` only with an ``ADOPTED``
+  Dossier revision.
 
 The Plan face (§24, append-only): a plan/dossier revision is created
 ``PROPOSED`` and never rewritten; adopting moves ``PROPOSED →
@@ -195,19 +202,35 @@ class SqliteNarrativeStore:
 
         Legal only from ``PLANNED`` — anything else (``ACTIVE`` again,
         ``SETTLING``, ``CLOSED``) is refused ``VALIDATION_FAILED``; a
-        ``CLOSED`` chapter never reopens (§27's list). **A world holds
-        at most one ACTIVE chapter** (MVP, §21's rule): if another
-        chapter of the same world is already ``ACTIVE`` the move is
-        refused before anything is written. (The twin check runs
-        *outside* the CAS transaction — under Local V1's single-
-        connection discipline the window is unreachable; the race-free
-        form — the check inside the ``BEGIN IMMEDIATE``, or a partial
-        UNIQUE index — is a **registered obligation for the commit cuts
-        (V3-5/V3-6)**: the V3-1 review's MEDIUM.) ``opened_at_tick`` is
-        the canon-face tick stamp — the caller's value (in the full
-        pipeline the chapter opens as its first scene starts, and the
-        value rides from the current actual tick); the CAS counter
-        makes the move stale-safe.
+        ``CLOSED`` chapter never reopens (§27's list).
+
+        **The #4 prerequisites (enforced from V3-4, STATE §21 /
+        DEC-OPI-be7b094f…7)**, checked before anything is written:
+
+        - the chapter must hold an ``ADOPTED`` plan revision — it enters
+          ``ACTIVE`` only after its Blueprint is adopted (a chapter
+          without one is refused ``VALIDATION_FAILED``, the message
+          naming the missing Blueprint);
+        - **a world runs one chapter at a time, and the overlap ban
+          covers a settling chapter too**: if another chapter of the
+          same world is ``ACTIVE`` **or** ``SETTLING`` the move is
+          refused — the next chapter does not open before the previous
+          one closes (the #4 extension; ``active_chapter`` stays the
+          ACTIVE-only "where are we" read, the wider query lives in
+          :meth:`_overlap_chapter`).
+
+        Both checks run *outside* the CAS transaction — under Local
+        V1's single-connection discipline the window is unreachable;
+        the race-free form — the checks inside the ``BEGIN
+        IMMEDIATE``, or a partial UNIQUE index — is a **registered
+        obligation for the commit cuts (V3-5/V3-6)**: the V3-1 review's
+        MEDIUM, its wording widened to the two overlap words.
+        ``opened_at_tick`` is the canon-face tick stamp — the caller's
+        value (in the full pipeline the chapter opens as its first
+        scene starts, and the value rides from the current actual tick
+        under the #3 lifecycle tick authority; this face writes the
+        caller's value, the commit cut takes over the pipeline); the
+        CAS counter makes the move stale-safe.
         """
 
         row = self.get_chapter(chapter_id)
@@ -223,16 +246,31 @@ class SqliteNarrativeStore:
                     ),
                 )
             )
-        twin = self.active_chapter(row.world_id)
+        if self.adopted_plan(chapter_id) is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"chapter {chapter_id!r} not opened: it holds no"
+                        " ADOPTED Blueprint (plan revision) — a chapter"
+                        " enters ACTIVE only after its plan is adopted"
+                        " (the #4 prerequisite)"
+                    ),
+                )
+            )
+        twin = self._overlap_chapter(row.world_id)
         if twin is not None and twin.chapter_id != chapter_id:
             return Err(
                 DomainError(
                     code=DomainErrorCode.VALIDATION_FAILED,
                     message=(
                         f"chapter {chapter_id!r} not opened: world"
-                        f" {row.world_id!r} already holds an ACTIVE"
-                        f" chapter ({twin.chapter_id!r}) — a world runs"
-                        " one chapter at a time (MVP)"
+                        f" {row.world_id!r} already holds a"
+                        f" {twin.status.value} chapter"
+                        f" ({twin.chapter_id!r}) — a world runs one"
+                        " chapter at a time (MVP), and the next chapter"
+                        " does not open before the previous one closes"
+                        " (§21)"
                     ),
                 )
             )
@@ -379,10 +417,12 @@ class SqliteNarrativeStore:
         )
 
     def active_chapter(self, world_id: str) -> WorldChapterRecord | None:
-        """The world's one ``ACTIVE`` chapter, or ``None`` — the read
-        the single-ACTIVE enforcement and the pipeline's "where are we"
-        both use (the store never assumes the invariant holds; it
-        returns what is there)."""
+        """The world's one ``ACTIVE`` chapter, or ``None`` — the read the
+        pipeline's "where are we" uses (the store never assumes the
+        invariant holds; it returns what is there). The single-ACTIVE
+        *enforcement* reads wider since V3-4 — :meth:`_overlap_chapter`
+        (``ACTIVE`` or ``SETTLING``, the #4 overlap ban); this face
+        stays the ACTIVE-only answer its name promises."""
 
         rows = self._conn.execute(
             "SELECT chapter_id FROM world_chapter"
@@ -470,9 +510,20 @@ class SqliteNarrativeStore:
     ) -> Result[WorldSceneRecord]:
         """Begin the scene: ``PLANNED → ACTIVE`` (§22 — the Dossier is
         in, the passage segments start). Legal only from ``PLANNED``.
+
+        **The #4 prerequisite (enforced from V3-4, STATE §22 /
+        DEC-OPI-be7b094f…7)**: the scene must hold an ``ADOPTED``
+        Dossier revision — it enters ``ACTIVE`` only after its dossier
+        is adopted (a scene without one is refused
+        ``VALIDATION_FAILED``, the message naming the missing Dossier).
+        The check runs *outside* the CAS transaction, the same posture
+        as :meth:`activate_chapter`'s overlap check — the registered
+        race-free obligation belongs to the commit cuts (V3-5/V3-6).
+
         The actual tick columns are deliberately not touched here: the
         scene's actual span is its commits' (§26), and the commit
-        transactions are the later cuts' write face."""
+        transactions are the later cuts' write face.
+        """
 
         row = self.get_scene(scene_id)
         if row is None:
@@ -484,6 +535,18 @@ class SqliteNarrativeStore:
                     message=(
                         f"scene {scene_id!r} is {row.status.value!r};"
                         " only a PLANNED scene activates"
+                    ),
+                )
+            )
+        if self.adopted_dossier(scene_id) is None:
+            return Err(
+                DomainError(
+                    code=DomainErrorCode.VALIDATION_FAILED,
+                    message=(
+                        f"scene {scene_id!r} not activated: it holds no"
+                        " ADOPTED Dossier (dossier revision) — a scene"
+                        " enters ACTIVE only after its dossier is"
+                        " adopted (the #4 prerequisite)"
                     ),
                 )
             )
@@ -1282,6 +1345,25 @@ class SqliteNarrativeStore:
         return dossier
 
     # -- shared machinery -------------------------------------------------------
+
+    def _overlap_chapter(self, world_id: str) -> WorldChapterRecord | None:
+        """The world's chapter that blocks a new opening — an ``ACTIVE``
+        or ``SETTLING`` one (the #4 overlap ban: the next chapter does
+        not open before the previous one closes; V3-4, STATE §21), or
+        ``None``. The wider twin query :meth:`activate_chapter` runs;
+        :meth:`active_chapter` stays the ACTIVE-only read."""
+
+        rows = self._conn.execute(
+            "SELECT chapter_id FROM world_chapter"
+            " WHERE world_id = ? AND status IN ('ACTIVE', 'SETTLING')"
+            " ORDER BY chapter_index ASC",
+            (world_id,),
+        ).fetchall()
+        if not rows:
+            return None
+        chapter = self.get_chapter(str(rows[0][0]))
+        assert chapter is not None  # selected from the same table
+        return chapter
 
     def _cas_status(
         self,

@@ -1738,6 +1738,15 @@ reader_exposure               # 读者暴露面（记录语义；本轮无 metag
 - **seed 语义**：`world_player_character` 的 `name/background/appearance/abilities/limits` 属角色档案；**`location` / `state` / `knowledge_refs` 仅表示 creation-time seed**——当前 location/state 的权威在 `world_state_fact`，当前 knowledge/belief 的权威归 V3-7 actor memory/belief；**V3-4 Director 不得把 seed 字段当运行态当前事实**。
 - **Legacy 不回写**：`world_event.participants`（Legacy V2：cast persona ids ∪ user id）语义不动、零回填——**V3-5 的 lineage / cognition read path 负责区分 Legacy 与 V3**。
 
+**V3-4 Blueprint 严格 schema 与 scenes ↔ world_scene 对账规则（L3 落点，2026-10-12；开工裁决 `DEC-OPI-be7b094f-…7`）**：
+
+- **Blueprint 严格 schema**（`world_chapter_plan` 行内容与 `scenes` JSON 的元素形状；`src/elc/world/director.py` 是机件化面）：章面字段照 §26.2.1 合同逐字（`goal` / `dramatic_question` / `planned_start_tick` / `planned_end_tick` / 软期望集 `closing_pressure` / `desired_development` / `soft_outcomes` / `chapter_questions_to_advance` / `scenes`）。**软期望集永远不是 postcondition**（设计篇 §2.2 措辞律——`closing_pressure` 表达「朝哪里压」，不表达「必须到达哪里」）；**硬条件只允许世界规则 / 已发生因果 / 不可撤销事实**——作者愿望（「必须成为朋友」类）不得把 Director 变成铁路调度（设计篇 §三 1.5）。
+- **`scenes[]` 元素的规范键集**（Blueprint 的场景草案，Plan 素材）：`purpose` / `place` / `pov_actor_id` / `participants` / `planned_start_tick` / `entry_goals` / `exit_condition` / `elasticity` / `revealable` / `must_hide`；可容的自由补充键（beats / gate 提示等）由 Director 自定义，schema 校验不拒。**identity 一律 canonical**：AI 侧 = `world_actor.actor_id`、user 侧 = `world_player_character.player_character_id`；`persona_id` 不入口径（V3-3R 冻结块，见上）。
+- **对账方向单向**：Director 采纳（ADOPT）一份 Blueprint revision 时，为 `scenes[]` 每个元素创建一行 `world_scene`（`PLANNED`，`scene_index` = 数组序位 1..N）；**行是对账锚、JSON 是内容源**——内容权威永远在最新 ADOPTED plan revision 的 `scenes` JSON，`world_scene` 行只是 canon 面进度锚（状态字 + actual tick 列）。
+- **`scene_id` 派生律**：`f"{chapter_id}-s{scene_index:02d}"`（同章内确定、可重放；与 §26.2.4 幂等键族同姿——派生只服务幂等与对账，叙事时间归属不靠 id 命名）。
+- **重规划 Diff 规则**（新 `plan_revision` 整体重述 `scenes[]`；STATE §24 append-only，旧 revision 保留为历史）：①新增位次 → 新行 `PLANNED`；②消失位次且行仍 `PLANNED` → `discard_scene`（§22：仅 PLANNED 可达 DISCARDED）；③已 `ACTIVE` / `COMMITTED` / `CLOSED` 行**永不动**（N-INV-003——重规划对已发生无写权）；④位次仍在但元素内容变 → 行不动（行只是进度锚）；⑤`scene_index` 不复用。
+- **Director 全程不推进 `world.current_tick`**（#3 lifecycle tick authority：opened/closed tick 在正式管线取自 `world.current_tick` 且转移事务内校验；本刀 Director 只写 Plan 面与 `PLANNED` 行，tick 推进权只在提交事务，N-INV-007）。
+
 ### 26.2.2 时间字段（story_tick）
 
 ```text

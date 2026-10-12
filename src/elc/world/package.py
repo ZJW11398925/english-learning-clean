@@ -8,7 +8,12 @@ existing character cards (each member optionally carrying a one-line
 narrative profile the seed lands in ``world_actor_profile``: the
 Director input saying who is the protagonist, who may carry a POV and
 at what weight, what her long-term drive and current arc seed are, and
-what is private to her), an optional ``residents`` section —
+what is private to her; the six-key declaration's runtime consumer
+seat is :mod:`elc.world.director`'s durable cast-input assembly
+(``world_actor`` + ``character_card.name`` + ``world_actor_profile`` +
+``world_player_character`` — the V3-3R recipe — so this package is the
+seed source, never the Director's runtime authority), an optional
+``residents`` section —
 the town's purely narrative residents, who have no persona and bind no
 actor (prompt material, never correspondence faces; the web face's
 ``world_residents`` reads the *bound* cast and is a different thing) —

@@ -154,3 +154,17 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 
 **边界重申**：不扩 StoryRole 词表、不建居民系统、不多玩家角色、不动 UI。
 
+
+### v1.3.4 — 2026-10-12 V3-4 开工裁决（L3 定谳落表 + 范围裁决 + #4 起强制；授权：总控开工四查，IP §20 刀序 V3-4 行）
+
+**结论**：V3-4（Director + `world_chapter(_plan)`）按 IP §20 刀序开工；**零迁移**（0029 四表已备——V3-1 先例：地基在前刀、首个生产消费者本刀纯代码）；**L3（Blueprint `scenes`(JSON) ↔ `world_scene` 行对账规则）定谳并落表**（登记落点 = 本刀开工四查，v1.3.1 在册）；**#4 transition prerequisites 本刀起强制**（STATE §21/§22 合同标注「V3-4 起强制」到期）；cast input 按 V3-3R 外审 item 5 的 durable 配方装配。
+
+1. **L3 定谳全文（落点 = `DATA_MODEL §26.2.1` 新增「V3-4 Blueprint 严格 schema 与 scenes↔world_scene 对账规则」块，同刀生效）**：`scenes[]` 元素 = Director 的场景草案（Plan 素材），规范键集 = `purpose` / `place` / `pov_actor_id` / `participants` / `planned_start_tick` / `entry_goals` / `exit_condition` / `elasticity` / `revealable` / `must_hide`（pov/participants 用 canonical identity——AI=`actor_id`、user=`player_character_id`，persona 不入口径）；对账方向单向——ADOPT 一份 Blueprint revision 时为每个元素创建一行 `world_scene`（`PLANNED`，`scene_index` = 数组序位 1..N），**行是对账锚、JSON 是内容源**；`scene_id` 派生律 = `f"{chapter_id}-s{scene_index:02d}"`；重规划 Diff 规则：新增位次→新行 PLANNED／消失位次且仍 PLANNED→`discard_scene`／已 ACTIVE·COMMITTED·CLOSED 行永不动（N-INV-003）／位次仍在但内容变→行不动／`scene_index` 不复用。
+2. **范围裁决（schema-and-table-side-only）**：IP §20 V3-4 行字面 = Director + `world_chapter(_plan)`（Blueprint 严格 schema；软期望集+硬条件律；Plan≠Canon 落表）——**表侧与 schema 侧**；LLM 驱动的 Blueprint 生产面（prompt/provider/严格解析）不在其内，**登记为独立后刀（V3-8 Gold Scenario 前置依赖）**。Director 的 storyline/state 摘要读面以 `world_storyline`（0028 现役）+ `world_state_fact` CURRENT（0024 现役）为真实读面（Chapter Summaries/Reader Exposure 尚不存在，V3-7/V3-5 接入）。
+3. **#4 强制形（STATE §21/§22 合同标注「V3-4 起强制」本刀生效）**：`activate_chapter` 增前置 = 该章须有 ADOPTED plan revision；**章重叠禁止从 ACTIVE-only 扩到「SETTLING 章与下一章 ACTIVE 共存亦禁」**（world 内存在 ACTIVE 或 SETTLING 章即拒开新章）；`activate_scene` 增前置 = 该场须有 ADOPTED dossier revision。
+4. **cast input durable 配方（V3-3R 外审 item 5 的登记落点）**：仅从 durable instance data 装配——`world_actor.actor_id` + `character_card.name`（web `_world_actor_names` 同款 LEFT JOIN 配方）+ `world_actor_profile` + `world_player_character`；`participant_namespace` THE ONE 派生；Package 只是 seed source，绝不回读作运行时 authority；player 的 `location/state/knowledge_refs` 是 creation-time seed，不当运行态事实（V3-3R 冻结块 #3）。
+5. **Director 全程不推进 `world.current_tick`**（#3 lifecycle tick authority；N-INV-007：tick 推进权只在提交事务）。
+6. **窗口回归册义务落点维持**：0029 章单 ACTIVE race-free（partial UNIQUE／查进 BEGIN IMMEDIATE）仍归 V3-5/V3-6 组合翻转一次收（store docstring 已铭）；用户创建世界 world+initial Bible 真原子创建服务 = 后刀义务；narrative store docstring 同族矛盾 sealed 待下次触碰；INFO-1 CAS 守卫承重（bible.py）不动；narrator roster 迁移到 `participant_namespace` 归消费迁移刀；StoryRole 扩词时 0031+0032 CHECK 与枚举同刀随迁；`world_actor_profile` 现役定义在 0032。
+7. **边界重申**：旧 V2 链零改；UI 不动；真实 automatic-teaching rollout 维持 HOLD；不开新迁移（`tests/conftest.py` 的 MIGRATION_IDS/SCHEMA_HEAD_* 不动）。
+
+授权：总控开工四查（IP §20 刀序 V3-4 行 + v1.3.1 登记的 L3 落点到期）；DMCP 决策 `DEC-OPI-be7b094f-…7`；三件 = TASK `…11` / VAL `…13`（同铸）。

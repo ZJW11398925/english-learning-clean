@@ -18,7 +18,12 @@ canon). The groups:
    SETTLING → CLOSED`` walks legally, every illegal move (including
    ``CLOSED → ACTIVE``, §27's list) is refused ``VALIDATION_FAILED``,
    and a world holds **at most one ACTIVE chapter** (the second is
-   refused until the first closes);
+   refused until the first closes — and since V3-4 the overlap ban
+   covers a ``SETTLING`` chapter too, and the opening needs its
+   ``ADOPTED`` Blueprint first: the #4 prerequisites the store
+   enforces from V3-4, DEC-OPI-be7b094f…7; the walk here adopts the
+   plan first, and the prerequisites' own refusal pins live in
+   tests/world/test_v3_4_director.py);
 3. **scene pins** — the five-word machine walks legally
    (``PLANNED → ACTIVE → COMMITTED → CLOSED`` plus ``PLANNED →
    DISCARDED``), ``DISCARDED`` is reachable **only from PLANNED**
@@ -26,7 +31,8 @@ canon). The groups:
    §22's rule / §27's 「有已 commit 段落的 scene → DISCARDED」), a
    committed scene cannot regress, and the actual tick columns stay
    ``None`` (the actual span is the commits' — the later cuts' write
-   face);
+   face); since V3-4 the activation needs its ``ADOPTED`` Dossier
+   first (the #4 prerequisite — the walk here adopts it first);
 4. **plan / dossier pins** — the Plan face is append-only versioned
    (revisions never rewrite; a same-(chapter, revision) different-id
    clash is a ``CONFLICT``), ``ADOPTED`` is unique per planned row
@@ -227,6 +233,48 @@ def _create_dossier(
     )
 
 
+def _adopt_plan_for(
+    store: SqliteNarrativeStore,
+    chapter_id: str = "chapter-main-1",
+    plan_revision: int = 1,
+    chapter_plan_id: str = "plan-main-1-r1",
+) -> None:
+    """Land and adopt one Blueprint revision — since V3-4 the #4
+    prerequisite a chapter's opening needs (STATE §21: the chapter
+    enters ACTIVE only with an ADOPTED plan)."""
+
+    created = _create_plan(
+        store,
+        chapter_id=chapter_id,
+        plan_revision=plan_revision,
+        chapter_plan_id=chapter_plan_id,
+    )
+    assert isinstance(created, Ok)
+    adopted = store.adopt_plan(chapter_plan_id, now=NOW, expected_state_version=1)
+    assert isinstance(adopted, Ok)
+
+
+def _adopt_dossier_for(
+    store: SqliteNarrativeStore,
+    scene_id: str = "scene-main-1-1",
+    dossier_revision: int = 1,
+) -> None:
+    """Land and adopt one Dossier revision — since V3-4 the #4
+    prerequisite a scene's activation needs (STATE §22: the scene
+    enters ACTIVE only with an ADOPTED Dossier)."""
+
+    dossier_id = f"dossier-{scene_id}-r{dossier_revision}"
+    created = _create_dossier(
+        store,
+        scene_id=scene_id,
+        dossier_revision=dossier_revision,
+        dossier_id=dossier_id,
+    )
+    assert isinstance(created, Ok)
+    adopted = store.adopt_dossier(dossier_id, now=NOW, expected_state_version=1)
+    assert isinstance(adopted, Ok)
+
+
 # ---------------------------------------------------------------------------
 # 1. tick pins
 # ---------------------------------------------------------------------------
@@ -309,6 +357,9 @@ def test_chapter_walks_the_full_legal_path(
 ) -> None:
     _seed_world(world_store)
     chapter = _seed_chapter(store)
+    # The #4 prerequisite (V3-4): a chapter opens only with its
+    # Blueprint adopted.
+    _adopt_plan_for(store)
     opened = store.activate_chapter(
         chapter.chapter_id, opened_at_tick=0, now=NOW, expected_state_version=1
     )
@@ -350,6 +401,7 @@ def test_chapter_illegal_moves_are_refused(
     assert isinstance(early, Err)
     assert early.error.code == DomainErrorCode.VALIDATION_FAILED
     # CLOSED from ACTIVE — the settlement runs first.
+    _adopt_plan_for(store)
     opened = store.activate_chapter(
         chapter.chapter_id, opened_at_tick=0, now=NOW, expected_state_version=1
     )
@@ -382,6 +434,21 @@ def test_a_world_holds_at_most_one_active_chapter(
     _seed_world(world_store)
     first = _seed_chapter(store, "chapter-main-1", chapter_index=1)
     second = _seed_chapter(store, "chapter-main-2", chapter_index=2)
+    # Both chapters hold their ADOPTED Blueprints (the #4 prerequisite),
+    # so each refusal below is the overlap ban's own — not the missing
+    # plan's.
+    _adopt_plan_for(
+        store,
+        chapter_id="chapter-main-1",
+        plan_revision=1,
+        chapter_plan_id="plan-main-1-r1",
+    )
+    _adopt_plan_for(
+        store,
+        chapter_id="chapter-main-2",
+        plan_revision=1,
+        chapter_plan_id="plan-main-2-r1",
+    )
     assert isinstance(
         store.activate_chapter(first.chapter_id, 0, NOW, expected_state_version=1),
         Ok,
@@ -396,10 +463,24 @@ def test_a_world_holds_at_most_one_active_chapter(
     active = store.active_chapter("world-main")
     assert active is not None
     assert active.chapter_id == "chapter-main-1"
-    # Once the first closes, the second may open (the chapters walk on).
+    # The #4 extension (V3-4): the overlap ban covers a SETTLING
+    # chapter too — the next chapter does not open before the previous
+    # one closes.
     assert isinstance(
         store.settle_chapter(first.chapter_id, NOW, expected_state_version=2), Ok
     )
+    while_settling = store.activate_chapter(
+        second.chapter_id, 90, NOW, expected_state_version=1
+    )
+    assert isinstance(while_settling, Err)
+    assert while_settling.error.code == DomainErrorCode.VALIDATION_FAILED
+    assert "SETTLING" in (while_settling.error.message or "")
+    assert "chapter-main-1" in (while_settling.error.message or "")
+    still = store.get_chapter("chapter-main-2")
+    assert still is not None
+    assert still.status.value == "PLANNED"
+    assert still.state_version == 1
+    # Once the first closes, the second may open (the chapters walk on).
     assert isinstance(
         store.close_chapter(first.chapter_id, 90, NOW, expected_state_version=3),
         Ok,
@@ -422,7 +503,11 @@ def test_chapter_refusals_are_value_semantics(
     assert isinstance(clash, Err)
     assert clash.error.code == DomainErrorCode.CONFLICT
     # The CAS guard: a stale expected version is a CONFLICT, the row
-    # answers where it stands.
+    # answers where it stands. (The ADOPTED Blueprint is in place so
+    # the #4 prerequisite passes and the refusal below is the CAS's
+    # own — V3-4's prerequisite ordering, pinned in
+    # tests/world/test_v3_4_director.py.)
+    _adopt_plan_for(store)
     stale = store.activate_chapter(
         "chapter-main-1", 0, NOW, expected_state_version=99
     )
@@ -459,6 +544,9 @@ def test_scene_walks_the_full_legal_path(
     _seed_world(world_store)
     _seed_chapter(store)
     scene = _seed_scene(store)
+    # The #4 prerequisite (V3-4): a scene activates only with its
+    # Dossier adopted.
+    _adopt_dossier_for(store)
     activated = store.activate_scene(scene.scene_id, now=NOW, expected_state_version=1)
     assert isinstance(activated, Ok)
     assert activated.value is not None
@@ -490,6 +578,7 @@ def test_discarded_is_reachable_only_from_planned(
     assert discarded.value.status.value == "DISCARDED"
     # An ACTIVE scene has the Dossier's writing under way — not discardable.
     active = _seed_scene(store, "scene-active", scene_index=2)
+    _adopt_dossier_for(store, scene_id="scene-active")
     assert isinstance(store.activate_scene(active.scene_id, NOW, 1), Ok)
     active_refused = store.discard_scene(
         active.scene_id, now=NOW, expected_state_version=2
@@ -515,6 +604,7 @@ def test_a_committed_scene_cannot_regress(
     _seed_world(world_store)
     _seed_chapter(store)
     scene = _seed_scene(store)
+    _adopt_dossier_for(store)
     assert isinstance(store.activate_scene(scene.scene_id, NOW, 1), Ok)
     assert isinstance(store.commit_scene(scene.scene_id, NOW, 2), Ok)
     back_to_active = store.activate_scene(
