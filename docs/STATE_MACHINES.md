@@ -796,6 +796,14 @@ COMMITTED 后重放            → 幂等 no-op；呈现层从 durable 状态重
 
 **V3-6R 落法（开工裁决 `DEC-OPI-dc1bafdf-…31`）**：⑧ **义务出生**——`replan_scope ≠ NONE` ⇒ 同事务建 `action_replan` `PENDING` 行（`replan_request_id = f"rp:{gate_id}:{submission_id}"`；`NONE` ⇒ 零行）；**消费协议改为 claim → work → complete**：`ScenePlanner.replan_scene(replan_request_id, …)`（SCENE）/ `Director.apply_action_replan(replan_request_id, …)`（CHAPTER）——`APPLIED` 重试零写返回 `target_ref`；`PENDING` 先写 `target_ref`（claim）再执行，崩溃重试收敛**同一 revision**、零第二次计划变更。**场 span 臂**：`advance_scene_actual_span_tx(..., close_scene=False)`——扩展场 actual 区间、不关场（§26 两臂律）。`status` 仅自 `RESOLVING` 入 `COMMITTED`（§23 V3-6R 收紧①）。
 
+**V3-7 落法（开工裁决 `DEC-OPI-d274a7fb-…6`）**：**记忆臂（两条提交共同的「（V3-7 起）actor memory / belief 增量」落实）**——`commit_segment`（NCP-3）与 `commit_action`（NCP-2）各自事务内为事件的每个 `participants` 落一行 `actor_memory`（`kind='EXPERIENCED'`，亲历者自动臂；`memory_id = f"mem:{event_id}:{participant_id}:{kind}"` 派生，`content` = 事件 `narration` 的确定性基线，`source_event_id` = 本事件，`learned_at_tick` = actual_end_tick）；**调用方供非 EXPERIENCED**（HEARD/BELIEVED/INFERRED/MISTAKEN 经显式增量面，五词全可达）。**replay 形状含之**——同 `segment_key` / `action_commit_key` 重放不二次落记忆（记忆臂在 fresh 路径，replay 臂先行）。
+
+### CHAPTER SETTLEMENT（NCP-4）
+
+**不是提交事务、不是事实落地边界**——只压缩/收束已 commit 内容（N-INV-004；§25 两条提交的共同纪律同句）。
+
+**V3-7 落法（开工裁决 `DEC-OPI-d274a7fb-…6`）**：编排面 `settle_chapter`（Chapter Settlement 的编排，非 `SqliteNarrativeStore.settle_chapter` 的 ACTIVE→SETTLING 翻转——后者已在库）——一个短事务：①章须 `SETTLING`（`ACTIVE` 先经现役翻转面进入；`PLANNED`/`CLOSED` 拒 `VALIDATION_FAILED`）；②落 `chapter_settlement` **一章一版**行（`chapter_id` PK；summary/storyline_updates/hooks/resolved_lines/salience_notes/created_at_revision——确定性基线的保守拼接，见 DATA §26.2.1「V3-7 落表形」）；③同事务 `SETTLING → CLOSED` 复用现役 `close_chapter` 臂，`closed_at_tick` = 事务内读 `world.current_tick`（**tick 不推进**——结算无 duration，N-INV-007：只读不推）；**N-INV-004 存储面**——不写 `world_event`、不写 `world_state_fact`、不改 `actor_memory`、不推进 tick。**重跑 = no-op**：`chapter_id` 已存 ⇒ 同形返回存行（一章一版 PK 承载幂等；崩溃于 `SETTLING` ⇒ recovery 重跑 Settlement 落同一版，§21/§28 崩溃窗口句）；形状异 `CONFLICT`（一章一版，不重写）。
+
 ### 两条提交的共同纪律
 
 - 每个 commit 各自全或无；正文与其**本段新产生的非用户事实**同批提交（零撕裂）。

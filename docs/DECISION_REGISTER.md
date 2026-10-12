@@ -322,3 +322,18 @@ V3-1 验收重点（用户明令）：同一世界 Plan/Canon 类型隔离、时
 6. **口径澄清（评审）**：新钉计数 = 25（新文件）+ 净 26（6127−6101）其中旧 V3-6 文件 36→36 持平、drift 净 +1；outcome_ref 校验实为六类检查（非五类）。
 
 授权：独立评审（executor-pro 新上下文只读 + 仓外副本 `D:\v36r_review\`，2026-10-13）+ 总控处置（历刀先例：总控亲写）；处置提交随本条目同刀。
+
+### v1.6.0 — 2026-10-13 V3-7 开工裁决（Actor Memory/Belief + Chapter Settlement + chapter summary + Narrative Memory；授权：IP §20 刀序 + 外审放行〔V3-6R 收口 rev 805「下一动 = V3-7」〕）
+
+**结论**：V3-6R 已 COMPLETE（rev 805，6127/0/0，迁移 0036/36）——按 IP §20 刀序开工 **V3-7**，把四 canonical 已冻结的「（V3-7 起）actor memory/belief 增量」臂与 NCP-4 面落成物理形（确定性基线，schema-and-table-side-only）。
+
+1. **开工依据（四查①）**：合同面已冻结——`DATA §26.2.1`「actor_memory / belief」块（五词 kind）与「chapter_settlement」块；`STATE §25` 两原子组的「（V3-7 起）actor memory / belief 增量」臂；`RA §27-28` NCP-4 + `§29` 恢复；`DOMAIN §20.2` authority 表 + N-INV-004；`§26.2.3`「V3-7 物化后 commit 增臂、dossier 改读、读面降兼容」。**不另起炉灶**——合同增量（DATA §26.2.1「V3-7 落表形」块 + STATE §25 臂落实 + RA §28/§29 落法）与代码同刀提交（基准纪律③）。
+2. **迁移 0037 两表**：`actor_memory`（`memory_id` 派生 `f"mem:{event_id}:{participant_id}:{kind}"` / `participant_id` = canonical identity / `kind` 五词 CHECK 全可达 / `content` / `source_event_id` FK / `learned_at_tick` / `salience` NULL / append-only）+ `chapter_settlement`（`chapter_id` 一章一版 PK / summary / storyline_updates / hooks / resolved_lines / salience_notes / created_at_revision；**N-INV-004 存储面**——不写 event/state/tick）。schema_version 36→37。
+3. **两提交事务记忆臂**：`commit_segment`（NCP-3）与 `commit_action`（NCP-2）同事务为事件 `participants` 落 `EXPERIENCED`（自动臂）；调用方供 HEARD/BELIEVED/INFERRED/MISTAKEN（显式增量面）；**replay 形状含之**（重放不二次落记忆——fresh 路径，replay 先行）。
+4. **NCP-4 编排面**：`settle_chapter` 编排——一个短事务：章须 SETTLING ⇒ 落一章一版 settlement + 同事务 SETTLING→CLOSED（复用现役 `close_chapter` 臂，`closed_at_tick`=事务内读，tick 不推进）；**重跑 = no-op**（一章一版 PK），形状异 CONFLICT；storyline 结构性推进归后刀登记。
+5. **下一章只读摘要面**：`chapter_settlement` 读面 + `DirectorContext.chapter_summaries` 增臂（`build_director_context` 装配已 CLOSED 章 settlement，chapter_index 升序）。
+6. **dossier 改读 actor memory**：新 `v3_memory_view`（`elc/world/memory.py`——viewer 的 canonical identity 读面，kind 分层 + learned_at_tick 排序）+ `SceneContext` 增 `memory` 字段；`v3_cognition_view` **行为不变、钉不破**（降兼容/fallback——35 钉族须全绿）。
+7. **RA §29 第六族**：`world_chapter SETTLING` 恢复族（NCP-4 中崩溃 ⇒ 重跑 Settlement 落同一版；扫描行不变、语义升族）。
+8. **范围收紧与登记**：确定性基线（EXPERIENCED 自动臂 + 调用方供值面 + 保守拼接摘要）；LLM 显著性评估/摘要生成/传闻失真归 provider 生产面后刀（与 Writer/Planner/Resolver 同批，V3-8 前置族）；**P1 传闻失真未触发**（触发条件〔dogfood「知道得太准」信号或多世界开工〕未命中——本刀是 P1 落点归属刀但不兑现、维持后置、留痕）；`salience` 只存储透传（retrieval policy 后刀）。**搬迁面预写（四查④）**：conftest 0037/37；GLOBAL_CONTENT_TABLES 21→23 员 + deletion/types.py 注释与钉随迁；aoci.code.txt 0037 条目 + 受影响模块条目（覆盖律会红）；负索引钉族 grep（`MIGRATION_IDS[-N]`/`applied[-N]`）；散文扫尾（0036 头注释改历史层；本刀触 deletion/types.py ⇒ 顺笔核其 docstring 与 RETAINED_TABLES 不符句——V3-6 处置 F4 候选）。**窗口回归册核对**：LLM 生产面/replan 自动路由/reader 渲染 ack/record_exposure race-free/chapter_activated 读时推导——均维持登记不动。**禁改面**：behavioral_baselines 一字节不动；sealed 0029–0036 不改；reader_exposure 写面不动；legacy V2 链不动。**门**：pytest（自 6127 起）/ruff/mypy（198 起）/compileall 亲跑全绿。
+
+授权：IP §20 刀序 + 外审放行；DMCP 开工裁决 `DEC-OPI-d274a7fb-bf78-4149-b38d-1e59b44b697c.6`（rev 806）；三件 = TASK `…8`（rev 807）/ VAL `…10`（rev 808）。

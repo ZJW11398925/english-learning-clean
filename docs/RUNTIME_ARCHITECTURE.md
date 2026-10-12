@@ -918,6 +918,8 @@ chapter: SETTLING → CLOSED
 
 **不是**事实落地边界——只压缩 / 收束已 commit 内容（N-INV-004）。
 
+**V3-7 落法（开工裁决 `DEC-OPI-d274a7fb-…6`）**：编排面 `settle_chapter`（Chapter Settlement 的编排，在 `elc/world/settlement.py` 或新模块；区别于 `SqliteNarrativeStore.settle_chapter` 的 ACTIVE→SETTLING 翻转——后者已在库）——一个短事务：章须 `SETTLING` ⇒ 落 `chapter_settlement` **一章一版**行（`chapter_id` PK；确定性基线的保守拼接）+ 同事务 `SETTLING → CLOSED`（复用现役 `close_chapter` 臂，`closed_at_tick` = 事务内读 `world.current_tick`，**tick 不推进**——结算无 duration）；**N-INV-004 存储面**——不写 `world_event` / `world_state_fact` / `actor_memory`，不推进 tick。**重跑 = no-op**（一章一版 PK 承载幂等）；形状异 `CONFLICT`。崩溃窗口与恢复见 §28 下方表与 §29。
+
 崩溃窗口与恢复：
 
 ```text
@@ -951,6 +953,8 @@ world_chapter（ACTIVE / SETTLING）
 **V3-6 落法（开工裁决 `DEC-OPI-dc1bafdf-…5`；重放行修订 `…21`）**：扫描面落于 `elc/world/action.py` 的 `recovery_scan`（纯读；四族逐字：gates `ANSWERED`/`RESOLVING` 未 `COMMITTED`、actions `RESOLVING` 未 `COMMITTED`、scenes `ACTIVE`、chapters `ACTIVE`/`SETTLING`）；resume 的自动编排归管线刀（V3-8 前置），本阶段交扫描面与「submission 幂等键是恢复锚」的语义（NCP-1 后中断 ⇒ 扫描见 gate ⇒ 同一 `submission_id` 重裁定 ⇒ 唯一 outcome）。
 
 **V3-6R 落法（开工裁决 `DEC-OPI-dc1bafdf-…31`）**：**第五族**——`action_replan` `status='PENDING'` 的义务（durable 恢复锚：claim 先行写入 `target_ref`，重试收敛同一 revision；`APPLIED` 零写返回）。
+
+**V3-7 落法（开工裁决 `DEC-OPI-d274a7fb-…6`）**：**第六族**——`world_chapter` `status='SETTLING'` 的章（Chapter Settlement 的崩溃恢复锚：NCP-4 中崩溃 ⇒ recovery 重跑 Settlement，同章 summary 只落一版——`chapter_settlement` 的一章一版 PK 承载「重跑 = no-op」；恢复面读取该族并调用 `settle_chapter` 编排面收敛至 `CLOSED`）。`recovery_scan` 的章族本已含 `ACTIVE`/`SETTLING`（V3-6 落法），本族将其中的 `SETTLING` 显式化为独立的恢复语义族（扫描行不变、语义升族）。
 
 ## 30. Narrative V3 Runtime Invariants
 
